@@ -1,0 +1,65 @@
+
+{% extends "container.html" %}
+
+{% block styles %}
+
+<link href="{{ url_for('static', filename='main.css') }}" rel='stylesheet' type='text/css'>
+
+{% endblock %}
+
+{% block scripts %}
+
+{% endblock %}
+
+{% block content %}
+
+   <div class="input">
+
+      <p class="header">Reynir</p>
+
+      <p class="author">málgreinir fyrir íslensku<br>eftir Vilhjálm Þorsteinsson</p>
+
+      <p>Sláðu inn vefslóð á texta til að greina:</p>
+
+      <input type="text" name="url" id="url" tabindex="1"
+         maxlength=128 autofocus required class="text" value="{{ default_url }}"></input>
+
+      <div class="btn" id="url-ok" title="Greina" tabindex="2"
+         onclick="analyzeUrl()"
+         onmouseover="buttonOver(this)"
+         onmouseout="buttonOut(this)">Greina</div>
+
+   </div>
+
+   <div class="output">
+
+      <!-- Popup with info about the word being hovered over -->
+      <div class="info"></div>
+
+      <div id="result">
+      <!-- Result of analysis goes here -->
+      </div>
+
+      <!-- Spinner that appears while the analysis is in progress -->
+      <div id="wait"></div>
+
+   </div>
+
+{% endblock %}
+
+{% block endscripts %}
+
+<script src="{{ url_for('static', filename='main.js') }}"></script>
+
+<script>
+
+   function initMain(jQuery) {
+      // Initialization
+   }
+
+   $(document).ready(initMain);
+
+</script>
+
+{% endblock %}
+

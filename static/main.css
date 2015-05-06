@@ -1,0 +1,203 @@
+/*
+
+   main.css
+
+   CSS file for Reynir front-end web
+
+   Author: Vilhjalmur Thorsteinsson
+   Copyright (C) 2015
+   All rights reserved
+
+*/
+
+body {
+   font-family: 'Open Sans', sans-serif;
+   padding: 12px;
+   margin: 0;
+   background-color: white;
+}
+
+div.container {
+   width: 640px;
+   margin: 0 auto;
+}
+
+.over {
+   outline-style: solid;
+   outline-color: yellow;
+   outline-width: 2px;
+}
+
+input.text {
+   font-family: 'Open Sans', sans-serif;
+   font-size: 16px;
+   font-weight: normal;
+   height: 28px;
+   border-style: solid;
+   border-color: black;
+   border-width: 2px;
+   border-radius: 3px;
+   margin-bottom: 4px;
+   padding-top: 2px;
+   padding-bottom: 2px;
+   padding-left: 8px;
+   padding-right: 8px;
+}
+
+input.text:focus {
+   background-color: #f4f4ff;
+   outline-style: none;
+}
+
+input#url {
+   width: 520px;
+}
+
+div.btn {
+   display: inline-block;
+   text-align: center;
+   font-size: 16px;
+   font-weight: 700;
+   color: white;
+   margin: 0;
+   padding: 4px;
+   border-radius: 3px;
+   vertical-align: middle;
+   cursor: pointer;
+   -webkit-user-select: none;
+   -khtml-user-select: none;
+   -moz-user-select: none;
+   -ms-user-select: none;
+   user-select: none;
+}
+
+div.btn:focus {
+   outline-style: none;
+}
+
+div#url-ok {
+   width: 82px;
+   height: 24px;
+   background-color: #448844;
+}
+
+p.header {
+   font-size: 28px;
+   font-weight: bold;
+   text-align: left;
+   margin-bottom: 0;
+   padding-bottom: 0;
+}
+
+p.author {
+   font-size: 16px;
+   font-style: italic;
+   text-align: right;
+   margin-top: 0;
+   padding-top: 0;
+}
+
+div.output {
+   position: relative;
+   text-align: left;
+   cursor: default;
+   margin-top: 60px;
+}
+
+div#result i {
+   font-style: normal;
+}
+
+div#result i.nf {
+   /* Word not found */
+   color: red;
+}
+
+div#result i.number {
+   font-weight: 600;
+   color: green;
+}
+
+div#result i.percent {
+   font-weight: 600;
+   color: blue;
+}
+
+div#result i.ordinal {
+   font-weight: 600;
+   color: orange;
+}
+
+div#result i.date {
+   font-weight: 600;
+   color: orange;
+}
+
+div#result i.timestamp {
+   font-weight: 600;
+   color: orange;
+}
+
+div#result i.currency {
+   font-weight: 600;
+   color: green;
+}
+
+div#result i.amount {
+   font-weight: 600;
+   color: green;
+}
+
+div#result i.person {
+   font-weight: 600;
+   font-style: italic;
+   color: blue;
+}
+
+span.sent {
+   margin-right: 8px;
+}
+
+span.sent:hover {
+   background-color: #f0f0f0;
+}
+
+div#wait {
+   display: none;
+   position: absolute;
+   top: 220px;
+   left: 406px;
+   width: 48px;
+   height: 48px;
+   z-index: 10;
+   background-image: url("wait.gif");
+   background-repeat: no-repeat;
+}
+
+div.info {
+   visibility: hidden;
+   position: absolute;
+   background-color: #f0f0f0;
+   border-radius: 5px;
+   box-shadow: 2px 2px 4px 2px #333333;
+   z-index: 10;
+   min-width: 150px;
+   margin-top: 48px;
+   padding-top: 6px;
+   padding-bottom: 6px;
+   padding-left: 12px;
+   padding-right: 12px;
+}
+
+div.info p {
+   font-size: 16px;
+   line-height: 20px;
+   margin-top: 0px;
+   margin-bottom: 4px;
+   padding: 0;
+}
+
+.highlight {
+   background-color: #FFD080;
+}
+
