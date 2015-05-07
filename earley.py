@@ -86,6 +86,40 @@ class Token:
         return self.kind == terminal.name
 
 
+class Production:
+
+    """ A right-hand side of a grammar rule """
+
+    _INDEX = 0 # Running sequence number of productions
+
+    def __init__(self, rhs = None):
+        self._rhs = [] if rhs is None else rhs
+        self._index = Production._INDEX
+        Production._INDEX += 1
+
+    def __hash__(self):
+        """ Use the index of this production as a basis for the hash """
+        return self._index.__hash__()
+
+    def append(self, t):
+        self._rhs.append(t)
+
+    def expand(self, l):
+        self._rhs.expand(l)
+
+    def length(self):
+        return len(self._rhs)
+
+    def __getitem__(self, index):
+        return self._rhs.__getitem__(index)
+
+    def __len__(self):
+        return self._rhs.__len__()
+
+    def __repr__(self):
+        return self._rhs.__repr__()
+
+
 # Abbreviations
 
 NT = Nonterminal
@@ -284,30 +318,73 @@ class Parser:
             See Elizabeth Scott, Adrian Johnstone (2010):
             "Recognition is not parsing — SPPF-style parsing from cubic recognisers"
 
+            Comments refer to the pseudocode given in the paper.
+
         """
+
+        class _Node:
+
+            """ Shared Packed Parse Forest (SPPF) node representation """
+
+            def __init__(self, label):
+                """ Initialize a SPPF node with a given label tuple """
+                self._label = label
+                self._families = None # Families of children
+                self._hash = None
+
+            def add_family(self, children):
+                """ Add a family of children to this node, in parallel with other families """
+                if children is None:
+                    return
+                if self._families is None:
+                    self._families = [ children ]
+                    return
+                if children not in self._families:
+                    self._families.append(children)
+
+            def __hash__(self):
+                """ Calculate and cache our hash value """
+                # Note that Python does not cache tuple hashes;
+                # therefore it's wise do to this manually
+                if self._hash is None:
+                    self._hash = self._label.__hash__()
+                return self._hash
+
+            def __repr__(self):
+                """ Create a reasonably nice text representation of this node
+                    and its families of children, if any """
+                label_rep = self._label.__repr__()
+                families_rep = ""
+                if self._families:
+                    if len(self._families) == 1:
+                        families_rep = self._families[0].__repr__()
+                    else:
+                        families_rep = "<" + self._families.__repr__() + ">"
+                return label_rep + ((": " + families_rep + "\n") if families_rep else "")
+
 
         def _make_node(nt_B, dot, prod, j, i, w, v, V):
             """ MAKE_NODE(B ::= αx · β, j, i, w, v, V) """
             len_prod = len(prod)
             if dot == 1 and len_prod >= 2:
                 return v
-            # if β = empty:
+            # Create a label for the new node
             if dot >= len_prod:
-                s = (nt_B,)
+                # β is empty (i.e. the nonterminal B is complete)
+                s = nt_B
             else:
                 s = (nt_B, dot, prod)
-            # if there is no node y ∈ V labelled (s, j, i):
-            #     create one and add it to V
+            # If there is no node y ∈ V labelled (s, j, i),
+            # create one and add it to V
             label = (s, j, i)
             if label not in V:
-                V[label] = [] # Family of children
+                V[label] = _Node(label)
             y = V[label]
+            assert v is not None
             if w is None:
-                if v not in y:
-                    y.append(v)
+                y.add_family(v)
             else:
-                if (w, v) not in y:
-                    y.append((w, v))
+                y.add_family((w, v)) # The code breaks if this is modified!
             return y
 
         def _in_sigma(dot, prod, len_prod = None):
@@ -319,7 +396,17 @@ class Parser:
         def _match(dot, prod, token_index, len_prod = None):
             if len_prod is None:
                 len_prod = len(prod)
-            return False if dot >= len_prod else tokens[token_index].matches(prod[dot])
+            return False if dot >= len_prod or token_index >= n else tokens[token_index].matches(prod[dot])
+
+        def _push(newstate, i, _E, _Q):
+            # newstate = (nt, dot, prod, h, y)
+            _, dot, prod, _, _ = newstate
+            len_prod = len(prod)
+            if _in_sigma(dot, prod, len_prod):
+                if newstate not in _E:
+                    _E.append(newstate)
+            elif _match(dot, prod, i, len_prod):
+                _Q.append(newstate)
 
         # V = ∅
         V = { }
@@ -333,12 +420,8 @@ class Parser:
         for root_p in self.grammar[self.root]:
             # Go through root productions
             newstate = (self.root, 0, root_p, 0, None)
-            if _in_sigma(0, root_p):
-                # add (S ::= ·α, 0, null) to E0
-                E0.append(newstate)
-            elif _match(0, root_p, 0):
-                # add (S ::= ·α, 0, null) to Q0
-                Q0.append(newstate)
+            # add (S ::= ·α, 0, null) to E0 and Q0
+            _push(newstate, 0, E0, Q0)
         # Step through the Earley columns
         for i, Ei in enumerate(E):
             # R = Ei
@@ -361,34 +444,23 @@ class Parser:
                     for p in self.grammar[nt_C]:
                         # if δ ∈ ΣN and (C ::= ·δ, i, null) !∈ Ei:
                         newstate = (nt_C, 0, p, i, None)
-                        if _in_sigma(0, p):
-                            if newstate not in Ei:
-                                # add (C ::= ·δ, i, null) to Ei and R
-                                Ei.append(newstate)
-                        elif _match(0, p, i):
-                            # add (C ::= ·δ, i, null) to Q
-                            Q.append(newstate)
+                        _push(newstate, i, Ei, Q)
                     # if ((C, v) ∈ H):
                     if nt_C in H:
                         for v in H[nt_C]:
                             # y = MAKE_NODE(B ::= αC · β, h, i, w, v, V)
                             y = _make_node(nt_B, dot + 1, prod, h, i, w, v, V)
                             newstate = (nt_B, dot + 1, prod, h, y)
-                            if _in_sigma(dot + 1, prod, len_prod):
-                                if newstate not in Ei:
-                                    Ei.append(newstate)
-                            elif _match(dot + 1, prod, i, len_prod):
-                                Q.append(newstate)
+                            _push(newstate, i, Ei, Q)
                 # if Λ = (D ::= α·, h, w):
                 elif dot >= len_prod:
                     # Earley completer
                     if not w:
                         label = (nt_B, i, i)
                         if label not in V:
-                            V[label] = []
+                            V[label] = _Node(label)
                         w = v = V[label]
-                        if None not in w:
-                            w.append(None)
+                        # w.add_family(None)
                     if h == i:
                         if nt_B in H:
                             H[nt_B].append(w)
@@ -402,33 +474,26 @@ class Parser:
                             # y = MAKE_NODE(A ::= τD · δ, k, i, z, w, V)
                             y = _make_node(nt_A, dot0 + 1, prod0, k, i, z, w, V)
                             newstate = (nt_A, dot0 + 1, prod0, k, y)
-                            if _in_sigma(dot0 + 1, prod0, len_prod0):
-                                if newstate not in Ei:
-                                    Ei.append(newstate)
-                            elif _match(dot0 + 1, prod0, i, len_prod0):
-                                Q.append(newstate)
+                            _push(newstate, i, Ei, Q)
             V = { }
-            label = (tokens[i], i, i + 1)
-            V[label] = []
-            v = V[label]
+            if Q:
+                label = (tokens[i], i, i + 1)
+                v = V[label] = _Node(label)
             while Q:
                 state = Q.pop()
                 # Earley scanner
                 # Remove an element, Λ = (B ::= α · ai+1β, h, w) say, from Q
                 nt_B, dot, prod, h, w = state
-                len_prod = len(prod)
-                assert dot < len_prod
                 assert isinstance(prod[dot], Terminal)
                 assert tokens[i].matches(prod[dot])
                 # y = MAKE_NODE(B ::= αai+1 · β, h, i + 1, w, v, V)
                 y = _make_node(nt_B, dot + 1, prod, h, i + 1, w, v, V)
                 newstate = (nt_B, dot + 1, prod, h, y)
                 # if β ∈ ΣN:
-                if _in_sigma(dot + 1, prod, len_prod):
-                    E[i + 1].append(newstate)
-                # if β = ai+2β_:
-                elif _match(dot + 1, prod, i + 1, len_prod):
-                    Q0.append(newstate)
+                _push(newstate, i + 1, E[i + 1], Q0)
+        # print("End of Earley-Scott, E(n) is:")
+        # pp(E[n])
+        # print("---------")
         # if (S ::= τ ·, 0, w) ∈ En: return w
         for state in E[n]:
             nt, dot, prod, k, w = state
@@ -485,7 +550,7 @@ def read_grammar(fname):
                 def parse_rhs(s):
                     """ Parse a right-hand side sequence """
                     rhs = s.strip().split()
-                    result = []
+                    result = Production()
                     for r in rhs:
                         if r[0] in "\"'":
                             # Literal terminal symbol
@@ -506,7 +571,7 @@ def read_grammar(fname):
                             if r not in terminals:
                                 terminals[r] = Terminal(r)
                             result.append(terminals[r])
-                    if len(result) == 1 and result[0] == current_NT:
+                    if result.length() == 1 and result[0] == current_NT:
                         # Nonterminal derives itself
                         raise GrammarError("Nonterminal {0} deriving itself".format(current_NT))
                     return result
@@ -554,10 +619,10 @@ mult = TERM ('*')
 ident = TERM ('ident')
 
 g = {
-    E: [[E,plus,T], [T]],
-    T: [[T,mult,P], [P]],
-    P: [[ident]],
-    }
+    E: [Production([E,plus,T]), Production([T])],
+    T: [Production([T,mult,P]), Production([P])],
+    P: [Production([ident])],
+}
 
 p = Parser(g, E)
 s = [TOK('ident', 'a'),
