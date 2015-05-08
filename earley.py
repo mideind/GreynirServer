@@ -344,8 +344,6 @@ class Parser:
 
             def add_family(self, children):
                 """ Add a family of children to this node, in parallel with other families """
-                if children is None:
-                    return
                 if self._families is None:
                     self._families = [ children ]
                     return
@@ -425,27 +423,17 @@ class Parser:
                 y.add_family((w, v)) # The code breaks if this is modified!
             return y
 
-        def _in_sigma(dot, prod, len_prod = None):
-            """ Check whether the right-hand-side symbol prod[dot] is empty or a Nonterminal """
-            if len_prod is None:
-                len_prod = len(prod)
-            return True if dot >= len_prod else isinstance(prod[dot], Nonterminal)
-
-        def _match(dot, prod, token_index, len_prod = None):
-            """ Check whether the terminal at dot[prod] matches the token at token_index """
-            if len_prod is None:
-                len_prod = len(prod)
-            return False if dot >= len_prod or token_index >= n else tokens[token_index].matches(prod[dot])
-
         def _push(newstate, i, _E, _Q):
             """ Append a new state to an Earley column (_E) and a look-ahead set (_Q), as appropriate """
-            # newstate = (nt, dot, prod, h, y)
+            # (N ::= α·δ, h, y)
+            # newstate = (N, dot, prod, h, y)
             _, dot, prod, _, _ = newstate
             len_prod = len(prod)
-            if _in_sigma(dot, prod, len_prod):
+            if dot >= len_prod or isinstance(prod[dot], Nonterminal):
+                # δ ∈ ΣN
                 if newstate not in _E:
                     _E.append(newstate)
-            elif _match(dot, prod, i, len_prod):
+            elif dot < len_prod and i < n and tokens[i].matches(prod[dot]):
                 _Q.append(newstate)
 
         # V = ∅
@@ -501,7 +489,7 @@ class Parser:
                         if label not in V:
                             V[label] = _Node(label)
                         w = v = V[label]
-                        # w.add_family(None) # !!! Not necessary?
+                        w.add_family(None) # Add e (empty production) as a family
                     if h == i:
                         if nt_B in H:
                             H[nt_B].append(w)
@@ -543,8 +531,12 @@ class Parser:
         """ Print an Earley-Scott parse tree """
 
         def _print_helper(w, level):
-            h = w.head()
             indent = "  " * level
+            if w is None:
+                # Epsilon node
+                print(indent + "(empty)")
+                return
+            h = w.head()
             if not isinstance(h, tuple):
                 print(indent + str(h))
                 level += 1
