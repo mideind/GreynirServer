@@ -6,9 +6,9 @@
 
     Author: Vilhjalmur Thorsteinsson
 
-    This software is in its early development stages.
-    Until further notice it is:
-    Copyright (c) 2015
+    This software is at a very early development stage.
+    While that is the case, it is:
+    Copyright (c) 2015 Vilhjalmur Thorsteinsson
     All rights reserved
 
     An Earley parser can recognize all valid context-free grammars,
@@ -42,7 +42,7 @@ class ParseError(Exception):
 
 class Nonterminal:
 
-    """ A nonterminal, either at the right hand side of
+    """ A nonterminal, either at the left hand side of
         a rule or within a production """
 
     def __init__(self, name):
@@ -54,10 +54,13 @@ class Nonterminal:
     def __repr__(self):
         return '<{0}>'.format(self.name)
 
+    def __str__(self):
+        return '<{0}>'.format(self.name)
+
 
 class Terminal:
 
-    """ A terminal within a production """
+    """ A terminal within a right-hand-side production """
 
     def __init__(self, name):
         self.name = name
@@ -66,7 +69,10 @@ class Terminal:
         return self.name.__hash__()
 
     def __repr__(self):
-        return '({0})'.format(self.name)
+        return '\'{0}\''.format(self.name)
+
+    def __str__(self):
+        return '\'{0}\''.format(self.name)
 
 
 class Token:
@@ -83,6 +89,7 @@ class Token:
         return '{0}:{1}'.format(self.kind, self.val)
 
     def matches(self, terminal):
+        """ Does this token match the given terminal? """
         return self.kind == terminal.name
 
 
@@ -90,10 +97,13 @@ class Production:
 
     """ A right-hand side of a grammar rule """
 
-    _INDEX = 0 # Running sequence number of productions
+    _INDEX = 0 # Running sequence number of all productions
 
     def __init__(self, rhs = None):
+        """ Initialize a production from a list of
+            right-hand-side nonterminals and terminals """
         self._rhs = [] if rhs is None else rhs
+        # Give all productions a unique sequence number for hashing purposes
         self._index = Production._INDEX
         Production._INDEX += 1
 
@@ -102,26 +112,31 @@ class Production:
         return self._index.__hash__()
 
     def append(self, t):
+        """ Append a terminal or nonterminal to this production """
         self._rhs.append(t)
 
     def expand(self, l):
+        """ Add a list of terminals and/or nonterminals to this production """
         self._rhs.expand(l)
 
     def length(self):
+        """ Return the length of this production """
         return len(self._rhs)
 
     def __getitem__(self, index):
+        """ Return the terminal or nonterminal at the given index position """
         return self._rhs.__getitem__(index)
 
     def __len__(self):
+        """ Return the length of this production """
         return self._rhs.__len__()
 
     def __repr__(self):
+        """ Return a representation of this production """
         return self._rhs.__repr__()
 
 
 # Abbreviations
-
 NT = Nonterminal
 TERM = Terminal
 TOK = Token
@@ -201,8 +216,6 @@ class Parser:
                     nt0, dot0, prod0, start0, tok0 = state0
                     if dot0 < len(prod0) and prod0[dot0] == nt:
                         maybe_new = (nt0, dot0 + 1, prod0, start0, tok0)
-                        if start == 0 and nt0 == S0:
-                            print("Completing S0 in column {0}".format(i))
                         if maybe_new not in states: # or (last and start0 == 0):
                             # Add duplicate state if we're at the last token (before EOF)
                             # and the state spans the entire tree
@@ -289,9 +302,6 @@ class Parser:
             # assert False # Shouldn't come here?
             return r, return_end, limit
 
-        print("build_parse_trees():")
-        pp(allcomp)
-
         forest = []
 
         lastindex = len(allcomp) - 2
@@ -313,12 +323,12 @@ class Parser:
     def _earley_scott_parse(self, tokens):
 
         """ Parse the tokens and build a parse forest using
-            the Earley-Scott algorithm.
+            the Earley algorithm as improved by Scott (referencing Tomita).
 
             See Elizabeth Scott, Adrian Johnstone (2010):
             "Recognition is not parsing — SPPF-style parsing from cubic recognisers"
 
-            Comments refer to the pseudocode given in the paper.
+            Comments refer to the EARLEY_PARSER pseudocode given in the paper.
 
         """
 
@@ -341,6 +351,33 @@ class Parser:
                     return
                 if children not in self._families:
                     self._families.append(children)
+
+            def label(self):
+                """ Return the node label """
+                return self._label
+
+            def head(self):
+                """ Return the 'head' of this node, i.e. a top-level readable name for it """
+                h = self._label
+                # while isinstance(h, tuple):
+                if isinstance(h, tuple):
+                    h = h[0]
+                # assert isinstance(h, Nonterminal) or isinstance(h, Terminal) or isinstance(h, Token)
+                return h
+
+            def is_ambiguous(self):
+                """ Return True if this node has more than one family of children """
+                return self._families and len(self._families) >= 2
+
+            def has_children(self):
+                return bool(self._families)
+
+            def enum_children(self):
+                """ Enumerate families of children """
+                if not self._families:
+                    raise StopIteration
+                for c in self._families:
+                    yield c
 
             def __hash__(self):
                 """ Calculate and cache our hash value """
@@ -377,9 +414,10 @@ class Parser:
             # If there is no node y ∈ V labelled (s, j, i),
             # create one and add it to V
             label = (s, j, i)
-            if label not in V:
-                V[label] = _Node(label)
-            y = V[label]
+            if label in V:
+                y = V[label]
+            else:
+                V[label] = y = _Node(label)
             assert v is not None
             if w is None:
                 y.add_family(v)
@@ -394,11 +432,13 @@ class Parser:
             return True if dot >= len_prod else isinstance(prod[dot], Nonterminal)
 
         def _match(dot, prod, token_index, len_prod = None):
+            """ Check whether the terminal at dot[prod] matches the token at token_index """
             if len_prod is None:
                 len_prod = len(prod)
             return False if dot >= len_prod or token_index >= n else tokens[token_index].matches(prod[dot])
 
         def _push(newstate, i, _E, _Q):
+            """ Append a new state to an Earley column (_E) and a look-ahead set (_Q), as appropriate """
             # newstate = (nt, dot, prod, h, y)
             _, dot, prod, _, _ = newstate
             len_prod = len(prod)
@@ -424,13 +464,14 @@ class Parser:
             _push(newstate, 0, E0, Q0)
         # Step through the Earley columns
         for i, Ei in enumerate(E):
-            # R = Ei
+            # The agenda set R is Ei[j..len(Ei)]
             j = 0
             H = { }
             Q = Q0
             Q0 = [ ]
             while j < len(Ei):
                 # Remove an element, Λ say, from R
+                # Λ = state
                 state = Ei[j]
                 j += 1
                 nt_B, dot, prod, h, w = state
@@ -460,7 +501,7 @@ class Parser:
                         if label not in V:
                             V[label] = _Node(label)
                         w = v = V[label]
-                        # w.add_family(None)
+                        # w.add_family(None) # !!! Not necessary?
                     if h == i:
                         if nt_B in H:
                             H[nt_B].append(w)
@@ -478,22 +519,18 @@ class Parser:
             V = { }
             if Q:
                 label = (tokens[i], i, i + 1)
-                v = V[label] = _Node(label)
+                v = _Node(label)
             while Q:
-                state = Q.pop()
                 # Earley scanner
                 # Remove an element, Λ = (B ::= α · ai+1β, h, w) say, from Q
+                state = Q.pop()
                 nt_B, dot, prod, h, w = state
                 assert isinstance(prod[dot], Terminal)
                 assert tokens[i].matches(prod[dot])
                 # y = MAKE_NODE(B ::= αai+1 · β, h, i + 1, w, v, V)
                 y = _make_node(nt_B, dot + 1, prod, h, i + 1, w, v, V)
                 newstate = (nt_B, dot + 1, prod, h, y)
-                # if β ∈ ΣN:
                 _push(newstate, i + 1, E[i + 1], Q0)
-        # print("End of Earley-Scott, E(n) is:")
-        # pp(E[n])
-        # print("---------")
         # if (S ::= τ ·, 0, w) ∈ En: return w
         for state in E[n]:
             nt, dot, prod, k, w = state
@@ -501,6 +538,27 @@ class Parser:
                 return w
         # No parse
         return None
+
+    def print_parse_tree(self, w):
+        """ Print an Earley-Scott parse tree """
+
+        def _print_helper(w, level):
+            h = w.head()
+            indent = "  " * level
+            if not isinstance(h, tuple):
+                print(indent + str(h))
+                level += 1
+            ambig = w.is_ambiguous()
+            for ix, f in enumerate(w.enum_children()):
+                if ambig:
+                    print(indent + "Option " + str(ix + 1) + ":")
+                if isinstance(f, tuple):
+                    for c in f:
+                        _print_helper(c, level)
+                else:
+                    _print_helper(f, level)
+
+        _print_helper(w, 0)
 
 
 class GrammarError(Exception):
@@ -647,6 +705,7 @@ g, root = read_grammar("Reynir.grammar")
 
 # s = "Villi leit út eða Anna og köttur komu beint heim og kona eða maður fóru snemma inn"
 s = "kona með kött myrti mann með hálsbindi og Villi fór út"
+# s = "kona með kött myrti mann með hund og Villi fór út"
 
 toklist = [TOK(w, w) for w in s.split()]
 
@@ -662,4 +721,4 @@ print("------Earley-Scott--------")
 
 forest = p._earley_scott_parse(toklist)
 
-pp(forest)
+p.print_parse_tree(forest)

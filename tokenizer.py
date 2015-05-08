@@ -6,9 +6,9 @@
 
     Author: Vilhjalmur Thorsteinsson
 
-    This software is in its early development stages.
-    Until further notice it is:
-    Copyright (C) 2015
+    This software is at a very early development stage.
+    While that is the case, it is:
+    Copyright (c) 2015 Vilhjalmur Thorsteinsson
     All rights reserved
 
     This module is written in Python 3 for Python 3.4
