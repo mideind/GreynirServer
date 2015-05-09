@@ -1173,8 +1173,7 @@ def parse_static_phrases(token_stream):
                         # by including a starting phrase in its entirety in
                         # the static phrase dictionary
                         break
-                    else:
-                        add_to_state(newstate, sl, ix)
+                    add_to_state(newstate, sl, ix)
 
             # Add all possible new states for phrases that could be starting
             if w in pdict:

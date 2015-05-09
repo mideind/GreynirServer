@@ -6,10 +6,10 @@ Setning ->
 	| Setningarhluti
 	| Setning Samtenging Setningarhluti
 
+# Andlag is nullable
+# Forsetningarliður_þgf is nullable
+
 Setningarhluti ->
-	| Frumlag_Umsögn
-	| Frumlag_Umsögn Andlag
-	| Frumlag_Umsögn Atviksliður Andlag
 	| Frumlag_Umsögn Andlag Forsetningarliður_þgf
 	| Frumlag_Umsögn Atviksliður Andlag Forsetningarliður_þgf
 
@@ -91,8 +91,10 @@ Andlag -> 'út'
 	| 'inn'
 	| 'heim'
 	| Nafnliður_þf
+    | 0
 
 Forsetningarliður_þgf -> 'með' Nafnliður_þgf
+    | 0
 
 Forsetningarliður_þf -> 'með' Nafnliður_þf
 
