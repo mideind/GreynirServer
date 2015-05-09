@@ -42,17 +42,19 @@
 """
 
 import codecs
-import itertools
 
 from pprint import pprint as pp
 
 
 class ParseError(Exception):
+
     """ Exception class for parser errors """
+
     pass
 
 
 class GrammarError(Exception):
+
     """ Exception class for errors in a grammar """
 
     def __init__(self, text, fname = None, line = 0):
@@ -189,6 +191,12 @@ class Production:
     def is_empty(self):
         """ Return True if this is an empty (epsilon) production """
         return len(self._rhs) == 0
+
+    def fname(self):
+        return self._fname
+
+    def line(self):
+        return self._line
 
     def __getitem__(self, index):
         """ Return the terminal or nonterminal at the given index position """
@@ -348,6 +356,46 @@ class Grammar:
         for nt, plist in grammar.items():
             if len(plist) == 0:
                 raise GrammarError("Nonterminal {0} has no productions".format(nt), nt.fname(), nt.line())
+            else:
+                for p in plist:
+                    if len(p) == 1 and plist[0] == nt:
+                        raise GrammarError("Nonterminal {0} produces itself".format(nt), p.fname(), p.line())
+
+        # Check that all nonterminals derive terminal strings
+        agenda = [ nt for nt in nonterminals.values() ]
+        der_t = set()
+        while agenda:
+            reduced = False
+            for nt in agenda:
+                for p in grammar[nt]:
+                    if all([True if isinstance(s, Terminal) else s in der_t for s in p]):
+                        der_t.add(nt)
+                        break
+                if nt in der_t:
+                    reduced = True
+            if not reduced:
+                break
+            agenda = [ nt for nt in nonterminals.values() if nt not in der_t ]
+        if agenda:
+            raise GrammarError("Nonterminals {0} do not derive terminal strings"
+                .format(", ".join([str(nt) for nt in agenda])), fname, 0)
+
+        # Check that all nonterminals are reachable from the root
+        unreachable = { nt for nt in nonterminals.values() }
+
+        def _remove(nt):
+            """ Recursively remove all nonterminals that are reachable from nt """
+            unreachable.remove(nt)
+            for p in grammar[nt]:
+                for s in p:
+                    if isinstance(s, Nonterminal) and s in unreachable:
+                        _remove(s)
+
+        _remove(self._root)
+
+        if unreachable:
+            raise GrammarError("Nonterminals {0} are unreachable from the root"
+                .format(", ".join([str(nt) for nt in unreachable])), fname, 0)
 
 
 class Parser:
@@ -427,8 +475,17 @@ class Parser:
 
     def __init__(self, grammar, root):
         """ Initialize the parser from a grammar and a root nonterminal within it """
+        assert grammar is not None
+        assert root is not None
+        assert root in grammar
         self.grammar = grammar
         self.root = root
+
+
+    @classmethod
+    def from_grammar(cls, g):
+        """ Create a Parser from a Grammar object """
+        return cls(g.grammar(), g.root())
 
 
     def go(self, tokens):
@@ -439,8 +496,9 @@ class Parser:
             The parser handles ambiguity, returning alternative options within
             a single packed tree.
 
-            See Elizabeth Scott, Adrian Johnstone (2010):
+            See Elizabeth Scott, Adrian Johnstone:
             "Recognition is not parsing — SPPF-style parsing from cubic recognisers"
+            Science of Computer Programming, Volume 75, Issues 1–2, 1 January 2010, Pages 55–70
 
             Comments refer to the EARLEY_PARSER pseudocode given in the paper.
 
@@ -571,6 +629,7 @@ class Parser:
                 y = _make_node(nt_B, dot + 1, prod, h, i + 1, w, v, V)
                 newstate = (nt_B, dot + 1, prod, h, y)
                 _push(newstate, i + 1, E[i + 1], Q0)
+
         # if (S ::= τ ·, 0, w) ∈ En: return w
         for state in E[n]:
             nt, dot, prod, k, w = state
@@ -580,22 +639,26 @@ class Parser:
         return None
 
 
-    def print_parse_tree(self, w):
-        """ Print an Earley-Scott-Tomita SPPF parse tree in a nice indented format """
+    def print_parse_forest(self, w):
+        """ Print an Earley-Scott-Tomita SPPF parse forest in a nice indented format """
 
         def _print_helper(w, level):
-            indent = "  " * level
+            """ Print the node w at the given indentation level """
+            indent = "  " * level # Two spaces per indent level
             if w is None:
                 # Epsilon node
                 print(indent + "(empty)")
                 return
             h = w.head()
+            # If h is a tuple, this is an interor node that is not printed
+            # and does not increment the indentation level
             if not isinstance(h, tuple):
                 print(indent + str(h))
                 level += 1
             ambig = w.is_ambiguous()
             for ix, f in enumerate(w.enum_children()):
                 if ambig:
+                    # Identify the available parse options
                     print(indent + "Option " + str(ix + 1) + ":")
                 if isinstance(f, tuple):
                     for c in f:
@@ -614,6 +677,8 @@ print("------ Test 1 ---------")
 NT = Nonterminal
 TERM = Terminal
 TOK = Token
+
+# Hard-coded test case - grammar not read from file
 
 E = NT ('E')
 T = NT ('T')
@@ -643,11 +708,11 @@ s = [
     TOK ('ident', 'f')
 ]
 forest = p.go(s)
-p.print_parse_tree(forest)
+p.print_parse_forest(forest)
 
 print("------ Test 2 ---------")
 
-# Test grammar 2
+# Test grammar 2 - read from file
 
 g = Grammar()
 g.read("Reynir.grammar")
@@ -661,8 +726,8 @@ s = "kona með kött myrti mann með hálsbindi og Villi fór út"
 
 toklist = [TOK(w, w) for w in s.split()]
 
-p = Parser(g.grammar(), g.root())
+p = Parser.from_grammar(g)
 
 forest = p.go(toklist)
 
-p.print_parse_tree(forest)
+p.print_parse_forest(forest)

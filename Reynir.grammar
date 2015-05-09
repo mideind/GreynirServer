@@ -45,9 +45,7 @@ Nafnorð_nf -> 'maður'
     | 'hundur'
     | 'hálsbindi'
 
-Nafn_nf -> 'Villi'
-    | 'Hlín'
-    | 'Anna'
+Nafn_nf -> nafn_nf
 
 Nafnorð_þf -> 'mann'
     | 'konu'
@@ -56,9 +54,7 @@ Nafnorð_þf -> 'mann'
     | 'hund'
     | 'hálsbindi'
 
-Nafn_þf -> 'Villa'
-    | 'Hlín'
-    | 'Önnu'
+Nafn_þf -> nafn_þf
 
 Nafnorð_þgf -> 'manni'
     | 'konu'
@@ -67,9 +63,7 @@ Nafnorð_þgf -> 'manni'
     | 'hundi'
     | 'hálsbindi'
 
-Nafn_þgf -> 'Villa'
-    | 'Hlín'
-    | 'Önnu'
+Nafn_þgf -> nafn_þgf
 
 Eintölu_umsögn -> 'fór'
 	| 'kom'
