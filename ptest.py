@@ -1,6 +1,5 @@
-# -*- coding: utf-8 -*-
-
-""" Reynir: Natural language processing for Icelandic
+"""
+    Reynir: Natural language processing for Icelandic
 
     Parser test module
 
@@ -17,6 +16,7 @@ import codecs
 
 from pprint import pprint as pp
 
+from tokenizer import TOK, parse_text
 from grammar import Nonterminal, Terminal, Token, Production, Grammar, GrammarError
 from parser import Parser, ParseError
 
@@ -28,7 +28,6 @@ print("------ Test 1 ---------")
 # Abbreviations
 NT = Nonterminal
 TERM = Terminal
-TOK = Token
 
 # Hard-coded test case - grammar not read from file
 
@@ -47,17 +46,17 @@ g = {
 
 p = Parser(g, E)
 s = [
-    TOK('ident', 'a'),
-    TOK('*', '*'),
-    TOK ('ident', 'b'),
-    TOK ('+', '+'),
-    TOK ('ident', 'c'),
-    TOK ('*', '*'),
-    TOK ('ident', 'd'),
-    TOK ('+', '+'),
-    TOK ('ident', 'e'),
-    TOK ('+', '+'),
-    TOK ('ident', 'f')
+    Token('ident', 'a'),
+    Token('*', '*'),
+    Token('ident', 'b'),
+    Token('+', '+'),
+    Token('ident', 'c'),
+    Token('*', '*'),
+    Token('ident', 'd'),
+    Token('+', '+'),
+    Token('ident', 'e'),
+    Token('+', '+'),
+    Token('ident', 'f')
 ]
 forest = p.go(s)
 Parser.print_parse_forest(forest)
@@ -67,7 +66,7 @@ print("------ Test 2 ---------")
 # Test grammar 2 - read from file
 
 g = Grammar()
-g.read("Reynir.grammar")
+g.read("Reynir.test.grammar")
 
 # pp(g.grammar())
 
@@ -97,7 +96,7 @@ class NameToken(Token):
 def make_token(w):
     if w[0].isupper():
         return NameToken('nafn', w)
-    return TOK('orð', w)
+    return Token('orð', w)
 
 toklist = [make_token(w) for w in s.split()]
 
@@ -105,4 +104,85 @@ p = Parser.for_grammar(g)
 
 forest = p.go(toklist)
 
+Parser.print_parse_forest(forest)
+
+print("------ Test 3 ---------")
+
+g = Grammar()
+g.read("Reynir.grammar")
+
+print("Grammar:")
+print(str(g))
+print()
+
+p = Parser.for_grammar(g)
+
+tokens = parse_text("Páll fór með kött og Jón keypti graut")
+
+class BIN_Token(Token):
+
+    """ Token tuple:
+        t[0] Token type (TOK.WORD, etc.)
+        t[1] Token text
+        t[2] Meaning list, where each item is a tuple:
+            m[0] Word stem
+            m[1] BIN index (integer)
+            m[2] Word type (kk/kvk/hk, so, lo, ao, fs, etc.)
+            m[3] Word category (alm/fyr/ism etc.)
+            m[4] Word form (in most cases identical to t[1])
+            m[5] Grammatical form (declension, tense, etc.)
+    """
+
+    # Map word types to those used in the grammar
+    kind = {
+        "kk": "no",
+        "kvk": "no",
+        "hk": "no",
+        "so": "so",
+        "ao": "ao",
+        "fs": "fs",
+        "lo": "lo",
+        "fn": "fn",
+        "pfn": "pfn",
+        "gr": "gr",
+        "to": "to",
+        "töl": "töl",
+        "uh": "uh",
+        "st": "st",
+        "abfn": "abfn",
+        "nhm": "nhm"
+    }
+
+    def __init__(self, t):
+
+        Token.__init__(self, TOK.descr[t[0]], t[1])
+        self.t = t
+
+    def matches(self, terminal):
+        """ Return True if this token matches the given terminal """
+
+        if self.t[0] == TOK.PERSON:
+            # Handle a person name
+            return terminal.matches(BIN_Token.kind[self.t[2][1]], self.t[1])
+
+        def meaning_match(m):
+            # print("meaning_match: kind {0}, val {1}".format(BIN_Token.kind[m[2]], m[4]))
+            return terminal.matches(BIN_Token.kind[m[2]], m[4])
+        # We have a match if any of the possible meanings
+        # of this token match the terminal
+        return any(meaning_match(m) for m in self.t[2])
+
+    def __repr__(self):
+        return self.t.__repr__()
+
+def is_word(t):
+    return t[0] < 10000
+
+toklist = [ BIN_Token(t) for t in tokens if is_word(t) ]
+
+print("Toklist:")
+for t in toklist:
+    print("{0}".format(t))
+
+forest = p.go(toklist)
 Parser.print_parse_forest(forest)

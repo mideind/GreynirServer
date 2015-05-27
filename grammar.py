@@ -1,6 +1,5 @@
-# -*- coding: utf-8 -*-
-
-""" Reynir: Natural language processing for Icelandic
+"""
+    Reynir: Natural language processing for Icelandic
 
     Grammar module
 
@@ -98,12 +97,13 @@ class Terminal:
         return self.name.__hash__()
 
     def __repr__(self):
-        return '\'{0}\''.format(self.name)
+        return '{0}'.format(self.name)
 
     def __str__(self):
-        return '\'{0}\''.format(self.name)
+        return '{0}'.format(self.name)
 
     def matches(self, t_kind, t_val):
+        # print("Terminal.matches: self.name is {0}, t_kind is {1}".format(self.name, t_kind))
         return self.name == t_kind
 
 
@@ -114,6 +114,12 @@ class LiteralTerminal(Terminal):
 
     def matches(self, t_kind, t_val):
         return self.name == t_val
+
+    def __repr__(self):
+        return '\'{0}\''.format(self.name)
+
+    def __str__(self):
+        return '\'{0}\''.format(self.name)
 
 
 class Token:
@@ -196,7 +202,11 @@ class Production:
 
     def __repr__(self):
         """ Return a representation of this production """
-        return "Prod: " + self._rhs.__repr__()
+        return "<Production: " + repr(self._rhs) + ">"
+
+    def __str__(self):
+        """ Return a representation of this production """
+        return " ".join([str(t) for t in self._rhs]) if self._rhs else "0"
 
 
 class Grammar:
@@ -235,6 +245,13 @@ class Grammar:
         """ Return the root nonterminal for this grammar """
         return self._root
 
+    def __str__(self):
+
+        def to_str(plist):
+            return " | ".join([str(p) for p in plist])
+
+        return "".join([str(nt) + " -> " + to_str(plist) + "\n" for nt, plist in self._grammar.items()])
+
     def read(self, fname):
         """ Read grammar from a text file """
 
@@ -268,17 +285,15 @@ class Grammar:
                             return
                         if rhs.is_empty():
                             # Adding epsilon production: avoid multiple ones
-                            for p in grammar[nt]:
-                                if p.is_empty():
-                                    # Another epsilon already there: quit
-                                    return
+                            if any(p.is_empty() for p in grammar[nt]):
+                                return
                         grammar[nt].append(rhs)
 
-                    def _parse_rhs(s):
+                    def _parse_rhs(nt, s):
                         """ Parse a right-hand side sequence """
                         s = s.strip()
                         if not s:
-                            return None
+                            return
                         rhs = s.split()
                         result = Production(fname, line)
                         for r in rhs:
@@ -287,39 +302,82 @@ class Grammar:
                                 if len(rhs) != 1:
                                     raise GrammarError("Empty (epsilon) rule must be of the form NT -> 0", fname, line)
                                 break
+                            repeat = None
+                            if r[-1] in '*+?':
+                                # Optional repeat/conditionality specifier
+                                # Asterisk: Can be repeated 0 or more times
+                                # Plus: Can be repeated 1 or more times
+                                # Question mark: optionally present once
+                                repeat = r[-1]
+                                r = r[0:-1]
                             if r[0] in "\"'":
                                 # Literal terminal symbol
                                 sym = r
                                 lit = r[1:-1]
                                 if sym not in terminals:
                                     terminals[sym] = LiteralTerminal(lit)
-                                result.append(terminals[sym])
-                                continue
-                            if not r.isidentifier():
-                                raise GrammarError("Invalid identifier '{0}'".format(r), fname, line)
-                            if r[0].isupper():
-                                # Reference to nonterminal
-                                if r not in nonterminals:
-                                    nonterminals[r] = Nonterminal(r, fname, line)
-                                nonterminals[r].add_ref() # Note that the nonterminal has been referenced
-                                result.append(nonterminals[r])
+                                n = terminals[sym]
                             else:
-                                # Identifier of terminal
-                                if r not in terminals:
-                                    terminals[r] = Terminal(r)
-                                result.append(terminals[r])
+                                if not r.isidentifier():
+                                    raise GrammarError("Invalid identifier '{0}'".format(r), fname, line)
+                                if r[0].isupper():
+                                    # Reference to nonterminal
+                                    if r not in nonterminals:
+                                        nonterminals[r] = Nonterminal(r, fname, line)
+                                    nonterminals[r].add_ref() # Note that the nonterminal has been referenced
+                                    n = nonterminals[r]
+                                else:
+                                    # Identifier of terminal
+                                    if r not in terminals:
+                                        terminals[r] = Terminal(r)
+                                    n = terminals[r]
+                            # If the production item can be repeated,
+                            # create a new production and substitute.
+                            # A -> B C* D becomes:
+                            # A -> B C_new_* D
+                            # C_new_* -> C_new_* C | 0
+                            # A -> B C+ D becomes:
+                            # A -> B C_new_+ D
+                            # C_new_+ -> C_new_+ C | C
+                            # A -> B C? D becomes:
+                            # A -> B C_new_? D
+                            # C_new_? -> C | 0
+                            if repeat is not None:
+                                new_nt_id = r + repeat
+                                # Make the new nonterminal and production if not already there
+                                if new_nt_id not in nonterminals:
+                                    new_nt = nonterminals[new_nt_id] = Nonterminal(new_nt_id, fname, line)
+                                    new_nt.add_ref()
+                                    # First production: C_new_x C
+                                    new_p = Production(fname, line)
+                                    if repeat != '?':
+                                        new_p.append(new_nt) # C_new_x
+                                    new_p.append(n) # C
+                                    _add_rhs(new_nt, new_p)
+                                    # Second production: epsilon(*, ?) or C(+)
+                                    new_p = Production(fname, line)
+                                    if repeat == '+':
+                                        new_p.append(n)
+                                    _add_rhs(new_nt, new_p)
+                                # Substitute the C_new_x in the original production
+                                n = nonterminals[new_nt_id]
+                            result.append(n)
                         if result.length() == 1 and result[0] == current_NT:
                             # Nonterminal derives itself
                             raise GrammarError("Nonterminal {0} deriving itself".format(current_NT), fname, line)
-                        return result
+                        _add_rhs(nt, result)
 
                     if s.startswith('|'):
                         # Alternative to previous nonterminal rule
                         if current_NT is None:
                             raise GrammarError("Missing nonterminal", fname, line)
-                        _add_rhs(current_NT, _parse_rhs(s[1:]))
+                        _parse_rhs(current_NT, s[1:])
                     else:
-                        rule = s.split("->", maxsplit=1)
+                        if "→" in s:
+                            # Fancy schmancy arrow sign: use it
+                            rule = s.split("→", maxsplit=1)
+                        else:
+                            rule = s.split("->", maxsplit=1)
                         nt = rule[0].strip()
                         if not nt.isidentifier():
                             raise GrammarError("Invalid nonterminal name '{0}' in grammar".format(nt), fname, line)
@@ -334,8 +392,7 @@ class Grammar:
                             grammar[current_NT] = [ ]
                         if len(rule) >= 2:
                             # We have a right hand side: add a grammar rule
-                            rhs = _parse_rhs(rule[1])
-                            _add_rhs(current_NT, rhs)
+                            _parse_rhs(current_NT, rule[1])
 
         except (IOError, OSError):
             raise GrammarError("Unable to open or read grammar file", fname, 0)

@@ -1,6 +1,5 @@
-# -*- coding: utf-8 -*-
-
-""" Reynir: Natural language processing for Icelandic
+"""
+    Reynir: Natural language processing for Icelandic
 
     Settings module
 

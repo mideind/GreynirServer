@@ -1,0 +1,94 @@
+# Reynir.grammar
+
+S0 -> Setning
+
+Setning ->
+	| Setningarhluti
+	| Setning Samtenging Setningarhluti
+
+# Andlag is nullable
+# Forsetningarliður_þgf is nullable
+
+Setningarhluti ->
+	| Frumlag_Umsögn Andlag Forsetningarliður_þgf
+	| Frumlag_Umsögn Atviksliður Andlag Forsetningarliður_þgf
+
+Samtenging -> 'og'
+	| 'eða'
+
+Frumlag_Umsögn -> Eintölu_FU
+	| Fleirtölu_FU
+
+Eintölu_FU -> Nafnliður_nf Eintölu_umsögn
+
+Fleirtölu_FU -> Fleirtölu_F Fleirtölu_umsögn
+
+Fleirtölu_F -> Nafnliður_nf Samtenging Nafnliður_nf
+	| Fleirtölu_F Samtenging Nafnliður_nf
+
+Nafnliður_nf -> Nafnorð_nf
+    | Nafn_nf
+    | Nafnliður_nf Forsetningarliður_þf
+
+Nafnliður_þf -> Nafnorð_þf
+    | Nafn_þf
+    | Nafnliður_þf Forsetningarliður_þf
+
+Nafnliður_þgf -> Nafnorð_þgf
+    | Nafn_þgf
+    | Nafnliður_þgf Forsetningarliður_þf
+
+Nafnorð_nf -> 'maður'
+    | 'kona'
+    | 'barn'
+    | 'köttur'
+    | 'hundur'
+    | 'hálsbindi'
+
+Nafn_nf -> nafn_nf
+
+Nafnorð_þf -> 'mann'
+    | 'konu'
+    | 'barn'
+    | 'kött'
+    | 'hund'
+    | 'hálsbindi'
+
+Nafn_þf -> nafn_þf
+
+Nafnorð_þgf -> 'manni'
+    | 'konu'
+    | 'barni'
+    | 'ketti'
+    | 'hundi'
+    | 'hálsbindi'
+
+Nafn_þgf -> nafn_þgf
+
+Eintölu_umsögn -> 'fór'
+	| 'kom'
+	| 'leit'
+	| 'myrti'
+
+Fleirtölu_umsögn -> 'fóru'
+	| 'komu'
+	| 'litu'
+	| 'myrtu'
+
+Atviksliður -> 'oft'
+	| 'sjaldan'
+	| 'beint'
+	| 'seint'
+	| 'snemma'
+
+Andlag -> 'út'
+	| 'inn'
+	| 'heim'
+	| Nafnliður_þf
+    | 0
+
+Forsetningarliður_þgf -> 'með' Nafnliður_þgf
+    | 0
+
+Forsetningarliður_þf -> 'með' Nafnliður_þf
+

@@ -1,6 +1,5 @@
-# -*- coding: utf-8 -*-
-
-""" Reynir: Natural language processing for Icelandic
+"""
+    Reynir: Natural language processing for Icelandic
 
     Parser module
 
@@ -25,8 +24,8 @@
     Communications of the Association for Computing Machinery, 13:2:94-102, 1970.
 
     The Earley parser used here is the improved version described by Scott et al,
-    referencing Tomita. This allows worst-case O(n^2) order, where n is the length
-    of the input sentence, while still returning all possible parse trees
+    referencing Tomita. This allows worst-case cubic (O(n^3)) order, where n is the
+    length of the input sentence, while still returning all possible parse trees
     for an ambiguous grammar. See comments in Parser.go() below.
 
 """
@@ -55,10 +54,20 @@ class Parser:
 
     class Node:
 
-        """ Shared Packed Parse Forest (SPPF) node representation """
+        """ Shared Packed Parse Forest (SPPF) node representation.
+
+            A node label is a tuple (s, j, i) where s can be
+            (a) a nonterminal, for completed productions;
+            (b) a terminal;
+            (c) a (nonterminal, dot, prod) tuple, for partially parsed productions.
+
+            j and i are the start and end token indices, respectively.
+
+        """
 
         def __init__(self, label):
             """ Initialize a SPPF node with a given label tuple """
+            assert isinstance(label, tuple)
             self._label = label
             self._families = None # Families of children
             self._hash = None
@@ -77,20 +86,28 @@ class Parser:
 
         def head(self):
             """ Return the 'head' of this node, i.e. a top-level readable name for it """
-            h = self._label
-            # while isinstance(h, tuple):
-            if isinstance(h, tuple):
-                h = h[0]
-            # assert isinstance(h, Nonterminal) or isinstance(h, Terminal) or isinstance(h, Token)
-            return h
+            return self._label[0]
+
+            #h = self._label
+            #if isinstance(h, tuple):
+            #    h = h[0]
+            #return h
 
         def is_ambiguous(self):
             """ Return True if this node has more than one family of children """
             return self._families and len(self._families) >= 2
 
+        def is_interior(self):
+            """ Returns True if this is an interior node (partially parsed production) """
+            return isinstance(self._label[0], tuple)
+
         def has_children(self):
             """ Return True if there are any families of children of this node """
             return bool(self._families)
+
+        def is_empty(self):
+            """ Return True if there is only a single empty family of this node """
+            return self._families and len(self._families) == 1 and self._families[0] == None
 
         def enum_children(self):
             """ Enumerate families of children """
@@ -100,7 +117,7 @@ class Parser:
                 yield c
 
         def __hash__(self):
-            """ Calculate and cache our hash value """
+            """ Calculate and cache this node's hash value """
             # Note that Python does not cache tuple hashes;
             # therefore it's wise do to this manually
             if self._hash is None:
@@ -139,7 +156,7 @@ class Parser:
 
     def go(self, tokens):
 
-        """ Parse the tokens and return a forest of nodes using
+        """ Parse the token stream and return a forest of nodes using
             the Earley algorithm as improved by Scott (referencing Tomita).
 
             The parser handles ambiguity, returning alternative options within
@@ -157,12 +174,14 @@ class Parser:
             """ MAKE_NODE(B ::= αx · β, j, i, w, v, V) """
             len_prod = len(prod)
             if dot == 1 and len_prod >= 2:
+                # α is empty and β is nonempty: return v
                 return v
             # Create a label for the new node
             if dot >= len_prod:
                 # β is empty (i.e. the nonterminal B is complete)
                 s = nt_B
             else:
+                # Intermediate position within production of B
                 s = (nt_B, dot, prod)
             # If there is no node y ∈ V labelled (s, j, i),
             # create one and add it to V
@@ -178,6 +197,13 @@ class Parser:
                 y.add_family((w, v)) # The code breaks if this is modified!
             return y
 
+        def _match(i, prod, dot):
+            """ Check whether the token with index i matches the given terminal """
+            if i >= n:
+                return False
+            # print("_match token {0}".format(i))
+            return tokens[i].matches(prod[dot])
+
         def _push(newstate, i, _E, _Q):
             """ Append a new state to an Earley column (_E) and a look-ahead set (_Q), as appropriate """
             # (N ::= α·δ, h, y)
@@ -189,7 +215,7 @@ class Parser:
                 # δ ∈ ΣN
                 if newstate not in _E:
                     _E.append(newstate)
-            elif dot < len_prod and i < n and tokens[i].matches(prod[dot]):
+            elif _match(i, prod, dot):
                 # Terminal matching the current token
                 _Q.append(newstate)
 
@@ -248,11 +274,13 @@ class Parser:
                     # Earley completer
                     if not w:
                         label = (nt_B, i, i)
-                        if label not in V:
-                            V[label] = Parser.Node(label)
-                        w = v = V[label]
+                        if label in V:
+                            w = v = V[label]
+                        else:
+                            w = v = V[label] = Parser.Node(label)
                         w.add_family(None) # Add e (empty production) as a family
                     if h == i:
+                        # Empty production satisfied
                         if nt_B in H:
                             H[nt_B].append(w)
                         else:
@@ -277,7 +305,7 @@ class Parser:
                 state = Q.pop()
                 nt_B, dot, prod, h, w = state
                 assert isinstance(prod[dot], Terminal)
-                assert tokens[i].matches(prod[dot])
+                # assert tokens[i].matches(prod[dot])
                 # y = MAKE_NODE(B ::= αai+1 · β, h, i + 1, w, v, V)
                 y = _make_node(nt_B, dot + 1, prod, h, i + 1, w, v, V)
                 newstate = (nt_B, dot + 1, prod, h, y)
@@ -311,11 +339,14 @@ class Parser:
                 # Epsilon node
                 print(indent + "(empty)")
                 return
-            h = w.head()
-            # If h is a tuple, this is an interor node that is not printed
-            # and does not increment the indentation level
-            if not isinstance(h, tuple):
-                print(indent + str(h))
+            # Interior nodes are not printed
+            # and do not increment the indentation level
+            if not w.is_interior():
+                h = str(w.head())
+                if (h.endswith("?>") or h.endswith("*>")) and w.is_empty():
+                    # Skip printing optional nodes that don't contain anything
+                    return
+                print(indent + h)
                 level += 1
             ambig = w.is_ambiguous()
             for ix, f in enumerate(w.enum_children()):
