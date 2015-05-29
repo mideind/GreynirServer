@@ -19,7 +19,10 @@ from pprint import pprint as pp
 from tokenizer import TOK, parse_text
 from grammar import Nonterminal, Terminal, Token, Production, Grammar, GrammarError
 from parser import Parser, ParseError
+from settings import Settings
 
+
+Settings.read("Reynir.conf")
 
 # Test grammar 1
 
@@ -58,7 +61,11 @@ s = [
     Token('+', '+'),
     Token('ident', 'f')
 ]
+
 forest = p.go(s)
+
+print("Parse combinations: {0}".format(Parser.num_combinations(forest)))
+
 Parser.print_parse_forest(forest)
 
 print("------ Test 2 ---------")
@@ -104,6 +111,8 @@ p = Parser.for_grammar(g)
 
 forest = p.go(toklist)
 
+print("Parse combinations: {0}".format(Parser.num_combinations(forest)))
+
 Parser.print_parse_forest(forest)
 
 print("------ Test 3 ---------")
@@ -116,8 +125,6 @@ print(str(g))
 print()
 
 p = Parser.for_grammar(g)
-
-tokens = parse_text("Páll fór með kött og Jón keypti graut")
 
 class BIN_Token(Token):
 
@@ -157,6 +164,7 @@ class BIN_Token(Token):
 
         Token.__init__(self, TOK.descr[t[0]], t[1])
         self.t = t
+        self._hash = None
 
     def matches(self, terminal):
         """ Return True if this token matches the given terminal """
@@ -167,22 +175,52 @@ class BIN_Token(Token):
 
         def meaning_match(m):
             # print("meaning_match: kind {0}, val {1}".format(BIN_Token.kind[m[2]], m[4]))
-            return terminal.matches(BIN_Token.kind[m[2]], m[4])
+            return terminal.matches(BIN_Token.kind[m[2]], m[0])
         # We have a match if any of the possible meanings
         # of this token match the terminal
         return any(meaning_match(m) for m in self.t[2])
 
     def __repr__(self):
-        return self.t.__repr__()
+        return repr(self.t)
+
+    def __str__(self):
+        return "\'" + self.t[1] + "\'"
+
+    def __hash__(self):
+        if self._hash is None:
+            self._hash = hash((self.t[0], self.t[1]))
+        return self._hash
 
 def is_word(t):
     return t[0] < 10000
 
-toklist = [ BIN_Token(t) for t in tokens if is_word(t) ]
+TEXTS = [
+    "Páll fór með stóran kött og Jón keypti heitan graut",
+    "Konan elti feita karlinn",
+    "Kötturinn sem strákurinn átti veiddi feitu músina",
+    "Gamla bláa kommóðan var máluð gul með olíumálningu",
+    "Landsframleiðslan hefur aukist frá því í fyrra",
+    "Þú skalt fara til Danmerkur",
+    "Ég og þú fórum til Frakklands í utanlandsferð",
+    "Stóra bláa kannan mun hafa verið sett í ruslið"
+]
 
-print("Toklist:")
-for t in toklist:
-    print("{0}".format(t))
+for txt in TEXTS:
 
-forest = p.go(toklist)
-Parser.print_parse_forest(forest)
+    print("\"{0}\"".format(txt))
+
+    tokens = parse_text(txt)
+
+    toklist = [ BIN_Token(t) for t in tokens if is_word(t) ]
+
+    #print("Toklist:")
+    #for t in toklist:
+    #    print("{0}".format(t))
+
+    forest = p.go_no_exc(toklist)
+
+    num = 0 if forest is None else Parser.num_combinations(forest)
+
+    print("Parse combinations: {0}".format(num))
+
+    Parser.print_parse_forest(forest)

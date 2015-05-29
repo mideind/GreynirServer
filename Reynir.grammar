@@ -1,3 +1,4 @@
+
 # Reynir.grammar
 
 S0 → Setning Samtengingarliður*
@@ -8,18 +9,38 @@ Setning → Nafnliður Atviksliður? Sagnliður Sagnfylling?
 
 Sagnfylling → Forsetningarliður
     | Atviksliður
-    | Sagnliður
+#    | Sagnliður
     | Nafnliður
     | Lýsingarorðsliður
 
-Sagnliður → so
-	| so Nafnliður
-	| so Nafnliður Nafnliður
+Sagnliður → Sögn_0
+	| Sögn_1
+	| Sögn_2
+
+# Sögn með engu viðfangi (dó)
+Sögn_0 → Hjálparsögn* so
+
+# Sögn með einu viðfangi (borðaði e-ð)
+Sögn_1 → Hjálparsögn* so Nafnliður
+
+# Sögn með tveimur viðföngum (gaf e-m e-ð)
+Sögn_2 → Hjálparsögn* so Nafnliður Nafnliður
+
+# Hjálparsögn: vera, hafa, skulu, munu...
+Hjálparsögn → 'vera'
+	| 'hafa'
+	| 'skulu'
+	| 'munu'
 
 Nafnliður → Nafnliður Samtenging_NL+
-	| Óákveðið_fn? Ákveðið_fn? Töluorð? Lýsingarorðsliður? no Forsetningarliður?
+	| Óákveðið_fn? Ákveðið_fn? Töluorð* Lýsingarorðsliður* no Forsetningarliður?
     | pfn
-    | Nafnliður? Setning
+    | Undirsetning
+
+Undirsetning → Nafnliður Tengiorð Setning
+
+Tengiorð → 'sem'
+	| 'er'
 
 Óákveðið_fn → fn
 
@@ -28,7 +49,8 @@ Nafnliður → Nafnliður Samtenging_NL+
 Töluorð → to
 	| töl
 
-Samtenging_NL → st Nafnliður
+Samtenging_NL → 'og' Nafnliður
+	| 'eða' Nafnliður
 
 Lýsingarorðsliður → Atviksliður? lo
 

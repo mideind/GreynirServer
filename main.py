@@ -171,113 +171,12 @@ def server_error(e):
     """ Return a custom 500 error """
     return 'Eftirfarandi villa kom upp: {}'.format(e), 500
 
-# Configuration settings from the Reynir.conf file
-
-def handle_settings(s):
-    """ Handle config parameters in the settings section """
-    a = s.lower().split('=', maxsplit=1)
-    par = a[0].strip()
-    val = a[1].strip()
-    if val == 'none':
-        val = None
-    elif val == 'true':
-        val = True
-    elif val == 'false':
-        val = False
-    if par == 'db_hostname':
-        Settings.DB_HOSTNAME = val
-    elif par == 'host':
-        Settings.HOST = val
-    elif par == 'debug':
-        Settings.DEBUG = bool(val)
-    else:
-        print("Ignoring unknown config parameter {0}".format(par))
-
-def handle_static_phrases(s):
-    """ Handle static phrases in the settings section """
-    if s[0] == '\"' and s[-1] == '\"':
-        StaticPhrases.add(s[1:-1])
-        return
-    # Check for a meaning spec
-    a = s.lower().split('=', maxsplit=1)
-    par = a[0].strip()
-    val = a[1].strip()
-    if par == 'meaning':
-        m = val.split(" ")
-        if len(m) == 3:
-            StaticPhrases.set_meaning(m)
-        else:
-            print("Meaning in static_phrases should have 3 arguments")
-    else:
-        print("Ignoring unknown config parameter {0} in static_phrases".format(par))
-
-def handle_abbreviations(s):
-    """ Handle abbreviations in the settings section """
-    # Format: abbrev = "meaning" gender (kk|kvk|hk)
-    a = s.split('=', maxsplit=1)
-    abbrev = a[0].strip()
-    m = a[1].strip().split('\"')
-    par = ""
-    if len(m) >= 3:
-        # Something follows the last quote
-        par = m[-1].strip()
-    gender = "hk" # Default gender is neutral
-    fl = None # Default word category is None
-    if par:
-        p = par.split(' ')
-        if len(p) >= 1:
-            gender = p[0].strip()
-        if len(p) >= 2:
-            fl = p[1].strip()
-    Abbreviations.add(abbrev, m[1], gender, fl)
-
-def read_config(fname):
-    """ Read configuration file """
-
-    CONFIG_HANDLERS = {
-        "settings" : handle_settings,
-        "static_phrases" : handle_static_phrases,
-        "abbreviations" : handle_abbreviations
-    }
-    handler = None # Current section handler
-
-    try:
-        with codecs.open(fname, "r", "utf-8") as inp:
-            # Read config file line-by-line
-            for s in inp:
-                # Ignore comments
-                ix = s.find('#')
-                if ix >= 0:
-                    s = s[0:ix]
-                s = s.strip()
-                if not s:
-                    # Blank line: ignore
-                    continue
-                if s[0] == '[' and s[-1] == ']':
-                    # New section
-                    section = s[1:-1].strip().lower()
-                    if section in CONFIG_HANDLERS:
-                        handler = CONFIG_HANDLERS[section]
-                    else:
-                        print("Unknown section name '{0}'".format(section))
-                        handler = None
-                    continue
-                if handler is None:
-                    print("No handler for config line '{0}'".format(s))
-                else:
-                    # Call the correct handler depending on the section
-                    handler(s)
-
-    except (IOError, OSError):
-        print("Error while opening or reading config file '{0}'".format(fname))
-
-
 # Run a default Flask web server for testing if invoked directly as a main program
 
 if __name__ == "__main__":
 
     # Read configuration file
-    read_config("Reynir.conf")
+    Settings.read("Reynir.conf")
 
     print("Running Reynir with debug={0}, host={1}, db_hostname={2}"
         .format(Settings.DEBUG, Settings.HOST, Settings.DB_HOSTNAME))

@@ -34,7 +34,7 @@ import psycopg2.extensions
 psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
 psycopg2.extensions.register_type(psycopg2.extensions.UNICODEARRAY)
 
-from settings import Settings
+from settings import Settings, StaticPhrases, Abbreviations
 
 
 # Recognized punctuation
@@ -495,22 +495,6 @@ class Bin_DB:
             print(" Word {0} causing DB exception".format(w).encode('utf-8'))
             # Fall through with m set to None
         return m
-
-
-class Abbreviations:
-
-    """ Wrapper around dictionary of abbreviations, initialized from the config file """
-
-    # Dictionary of abbreviations and their meanings
-    DICT = { }
-
-    @staticmethod
-    def add (abbrev, meaning, gender, fl = None):
-        """ Add a static phrase to the dictionary. Called from the config file handler. """
-
-        # print("Adding abbrev {0} meaning {1} gender {2} fl {3}".format(abbrev, meaning, gender, fl))
-        # Append the abbreviation and its meaning in tuple form
-        Abbreviations.DICT[abbrev] = (meaning, 0, gender, "skst" if fl is None else fl, abbrev, "-")
 
 
 def lookup_abbreviation(w):
@@ -1076,53 +1060,6 @@ def parse_phrases_2(token_stream):
     # Final token (previous lookahead)
     if token:
         yield token
-
-
-class StaticPhrases:
-
-    """ Wrapper around dictionary of static phrases, initialized from the config file """
-
-    # Default meaning for static phrases
-    MEANING = ("ao", "frasi", "-")
-    # List of all static phrases and their meanings
-    LIST = []
-    # Parsing dictionary keyed by first word of phrase
-    DICT = { }
-
-    @staticmethod
-    def add (phrase):
-        """ Add a static phrase to the dictionary. Called from the config file handler. """
-
-        # First add to phrase list
-        ix = len(StaticPhrases.LIST)
-        m = StaticPhrases.MEANING
-
-        # Append the phrase as well as its meaning in tuple form
-        StaticPhrases.LIST.append((phrase, (phrase, 0, m[0], m[1], phrase, m[2])))
-
-        # Dictionary structure: dict { firstword: [ (restword_list, phrase_index) ] }
-
-        # Split phrase into words
-        wlist = phrase.split(" ")
-        # Dictionary is keyed by first word
-        w = wlist[0]
-        d = StaticPhrases.DICT
-        if w in d:
-            # First word already there: add a subsequent list
-            d[w].append((wlist[1:], ix))
-        else:
-            # Create a new entry for this first word
-            d[w] = [ (wlist[1:], ix) ]
-
-    @staticmethod
-    def set_meaning(meaning):
-        """ Set the default meaning for static phrases """
-        StaticPhrases.MEANING = tuple(meaning)
-
-    @staticmethod
-    def get_meaning(ix):
-        """ Return the meaning of the phrase with index ix """
-        return [ StaticPhrases.LIST[ix][1] ]
 
 
 def parse_static_phrases(token_stream):
