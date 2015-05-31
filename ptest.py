@@ -19,7 +19,7 @@ from pprint import pprint as pp
 from tokenizer import TOK, parse_text
 from grammar import Nonterminal, Terminal, Token, Production, Grammar, GrammarError
 from parser import Parser, ParseError
-from settings import Settings
+from settings import Settings, Verbs
 
 
 Settings.read("Reynir.conf")
@@ -128,7 +128,10 @@ p = Parser.for_grammar(g)
 
 class BIN_Token(Token):
 
-    """ Token tuple:
+    """
+        Wrapper class for a token to be processed by the parser
+
+        Token tuple:
         t[0] Token type (TOK.WORD, etc.)
         t[1] Token text
         t[2] Meaning list, where each item is a tuple:
@@ -166,6 +169,18 @@ class BIN_Token(Token):
         self.t = t
         self._hash = None
 
+    def verb_matches(self, verb, category):
+        """ Return True if the verb in question matches the verb category,
+            where the category is one of so_0, so_1, so_2 depending on
+            the allowable number of noun arguments """
+        nargs = int(category[3:])
+        for i in range(0, nargs):
+            if verb in Verbs.VERBS[i]:
+                # Prevent verb from taking more arguments than allowed
+                return False
+        # Unknown verb or arguments not too many: consider this a match
+        return True
+
     def matches(self, terminal):
         """ Return True if this token matches the given terminal """
 
@@ -174,8 +189,18 @@ class BIN_Token(Token):
             return terminal.matches(BIN_Token.kind[self.t[2][1]], self.t[1])
 
         def meaning_match(m):
+            """ Check for a match between a terminal and a single potential meaning
+                of the word """
             # print("meaning_match: kind {0}, val {1}".format(BIN_Token.kind[m[2]], m[4]))
+            if m[2] == "so" and terminal.name.startswith("so_"):
+                # Special case for verbs: match only the appropriate
+                # argument number, i.e. so_0 for verbs having no noun argument,
+                # so_1 for verbs having a single noun argument, and
+                # so_2 for verbs with two noun arguments. A verb may
+                # match more than one argument number category.
+                return self.verb_matches(m[0], terminal.name)
             return terminal.matches(BIN_Token.kind[m[2]], m[0])
+
         # We have a match if any of the possible meanings
         # of this token match the terminal
         return any(meaning_match(m) for m in self.t[2])
@@ -191,18 +216,20 @@ class BIN_Token(Token):
             self._hash = hash((self.t[0], self.t[1]))
         return self._hash
 
+
 def is_word(t):
     return t[0] < 10000
 
+
 TEXTS = [
-    "Páll fór með stóran kött og Jón keypti heitan graut",
+    "Páll fór út með stóran kött og Jón keypti heitan graut",
     "Konan elti feita karlinn",
     "Kötturinn sem strákurinn átti veiddi feitu músina",
     "Gamla bláa kommóðan var máluð gul með olíumálningu",
     "Landsframleiðslan hefur aukist frá því í fyrra",
     "Þú skalt fara til Danmerkur",
     "Ég og þú fórum til Frakklands í utanlandsferð",
-    "Stóra bláa kannan mun hafa verið sett í ruslið"
+    "Stóru bláu könnunni mun hafa verið fleygt í ruslið"
 ]
 
 for txt in TEXTS:
@@ -223,4 +250,4 @@ for txt in TEXTS:
 
     print("Parse combinations: {0}".format(num))
 
-    Parser.print_parse_forest(forest)
+    Parser.print_parse_forest(forest, detailed = False)

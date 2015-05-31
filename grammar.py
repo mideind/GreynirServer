@@ -33,6 +33,10 @@ class GrammarError(Exception):
     """ Exception class for errors in a grammar """
 
     def __init__(self, text, fname = None, line = 0):
+
+        """ A GrammarError contains an error text and optionally the name
+            of a grammar file and a line number where the error occurred """
+
         self.fname = fname
         self.line = line
         prefix = ""
@@ -65,9 +69,11 @@ class Nonterminal:
         return self._ref
 
     def fname(self):
+        """ Return the name of the grammar file where this nonterminal was defined """
         return self._fname
 
     def line(self):
+        """ Return the number of the line within the grammar file where this nt was defined """
         return self._line
 
     def __eq__(self, other):
@@ -77,7 +83,7 @@ class Nonterminal:
         return not isinstance(other, Nonterminal) or self.name != other.name
 
     def __hash__(self):
-        return self.name.__hash__()
+        return hash(self.name)
 
     def __repr__(self):
         return '<{0}>'.format(self.name)
@@ -94,7 +100,7 @@ class Terminal:
         self.name = name
 
     def __hash__(self):
-        return self.name.__hash__()
+        return hash(self.name)
 
     def __repr__(self):
         return '{0}'.format(self.name)
@@ -109,10 +115,13 @@ class Terminal:
 
 class LiteralTerminal(Terminal):
 
+    """ A literal (constant string) terminal within a right-hand-side production """
+
     def __init__(self, lit):
         Terminal.__init__(self, lit)
 
     def matches(self, t_kind, t_val):
+        """ A literal terminal matches a token if the token text is identical to the literal """
         return self.name == t_val
 
     def __repr__(self):
@@ -127,16 +136,19 @@ class Token:
     """ A token from the input stream tokenizer """
 
     def __init__(self, kind, val):
+        """ A basic token has a kind and a value, both strings """
         self.kind = kind
         self.val = val
 
     def __repr__(self):
+        """ Return a simple string representation of this token """
         if self.kind == self.val:
             return '{0}'.format(self.kind)
         return '{0}:{1}'.format(self.kind, self.val)
 
     def matches(self, terminal):
         """ Does this token match the given terminal? """
+        # By default, ask the terminal
         return terminal.matches(self.kind, self.val)
 
 
@@ -250,7 +262,7 @@ class Grammar:
         def to_str(plist):
             return " | ".join([str(p) for p in plist])
 
-        return "".join([str(nt) + " -> " + to_str(plist) + "\n" for nt, plist in self._grammar.items()])
+        return "".join([str(nt) + " → " + to_str(plist) + "\n" for nt, plist in self._grammar.items()])
 
     def read(self, fname):
         """ Read grammar from a text file """

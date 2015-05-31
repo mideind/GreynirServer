@@ -153,18 +153,7 @@ class Parser:
 
         def __str__(self):
             """ Return a string representation of this node """
-#            if isinstance(self._label[0], tuple):
-#                # If this is an interor node corresponding to a terminal,
-#                # print a consensed representation of the terminal and the
-#                # associated token
-#                _, dot, prod = self._label[0]
-#                if isinstance(prod[dot-1], Terminal):
-#                    assert len(self._families) == 1
-#                    print(repr(self._families[0]))
-#                    token = self._families[0]._label[0]
-#                    assert isinstance(token, Token)
-#                    return str(prod[dot-1]) + ": " + str(token)
-            return str(self.head()) # + ("" if self._prod is None else " (" + str(self._prod) + ")")
+            return str(self.head())
 
 
     def __init__(self, grammar, root):
@@ -366,7 +355,7 @@ class Parser:
 
 
     @staticmethod
-    def print_parse_forest(w):
+    def print_parse_forest(w, detailed = False):
         """ Print an Earley-Scott-Tomita SPPF parse forest in a nice indented format """
 
         def _print_helper(w, level, index, parent):
@@ -377,17 +366,23 @@ class Parser:
                 print(indent + "(empty)")
                 return
             if w.is_token():
-                print(indent + str(parent.prod(index)) + ": " + str(w))
+                p = parent.prod(index)
+                if detailed:
+                    print("{0} [{1}] {2}: {3}".format(indent, index, p, w))
+                    assert isinstance(p, Terminal)
+                else:
+                    print("{0} {1}: {2}".format(indent, p, w))
                 return
             # Interior nodes are not printed
             # and do not increment the indentation level
-            if not w.is_interior():
+            if detailed or not w.is_interior():
                 h = str(w)
                 if (h.endswith("?>") or h.endswith("*>")) and w.is_empty():
                     # Skip printing optional nodes that don't contain anything
                     return
                 print(indent + h)
-                level += 1
+                if not w.is_interior():
+                    level += 1
             ambig = w.is_ambiguous()
             for ix, f in enumerate(w.enum_children()):
                 if ambig:
@@ -414,17 +409,14 @@ class Parser:
     def num_combinations(w):
         """ Count the number of possible parse trees in the given forest """
 
-        if w is None:
-            # Epsilon node
-            return 1
-        if w.is_token():
+        if w is None or w.is_token():
+            # Empty (epsilon) node or token node
             return 1
         comb = 0
         for f in w.enum_children():
             if isinstance(f, tuple):
                 cnt = 1
                 for c in f:
-                    #print("{1}Tuple element {0}:".format(j, indent))
                     cnt *= Parser.num_combinations(c)
                 comb += cnt
             else:

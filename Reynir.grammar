@@ -10,7 +10,7 @@ Setning → Nafnliður Atviksliður? Sagnliður Sagnfylling?
 Sagnfylling → Forsetningarliður
     | Atviksliður
 #    | Sagnliður
-    | Nafnliður
+#    | Nafnliður
     | Lýsingarorðsliður
 
 Sagnliður → Sögn_0
@@ -18,13 +18,13 @@ Sagnliður → Sögn_0
 	| Sögn_2
 
 # Sögn með engu viðfangi (dó)
-Sögn_0 → Hjálparsögn* so
+Sögn_0 → Hjálparsögn* so_0
 
 # Sögn með einu viðfangi (borðaði e-ð)
-Sögn_1 → Hjálparsögn* so Nafnliður
+Sögn_1 → Hjálparsögn* so_1 Nafnliður
 
 # Sögn með tveimur viðföngum (gaf e-m e-ð)
-Sögn_2 → Hjálparsögn* so Nafnliður Nafnliður
+Sögn_2 → Hjálparsögn* so_2 Nafnliður Nafnliður
 
 # Hjálparsögn: vera, hafa, skulu, munu...
 Hjálparsögn → 'vera'
@@ -57,11 +57,4 @@ Lýsingarorðsliður → Atviksliður? lo
 Forsetningarliður → Atviksliður? fs Nafnliður
 
 Atviksliður → ao+
-
-#Ábendingarliður → ML? Ábending NL?
-#
-#Ábending → áfn
-#	| gr
-#
-#ML → ófn
 

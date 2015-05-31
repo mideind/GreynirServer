@@ -32,6 +32,22 @@ class Abbreviations:
         Abbreviations.DICT[abbrev] = (meaning, 0, gender, "skst" if fl is None else fl, abbrev, "-")
 
 
+class Verbs:
+
+    """ Wrapper around dictionary of abbreviations, initialized from the config file """
+
+    # Dictionary of verbs by argument number, 0, 1 or 2
+    VERBS = [ { }, { }, { } ]
+
+    @staticmethod
+    def add (verb, args):
+        """ Add a verb and its arguments. Called from the config file handler. """
+
+        la = len(args)
+        assert 0 <= la < 3
+        Verbs.VERBS[la][verb] = args if la else None
+
+
 class StaticPhrases:
 
     """ Wrapper around dictionary of static phrases, initialized from the config file """
@@ -155,13 +171,25 @@ class Settings:
                 fl = p[1].strip()
         Abbreviations.add(abbrev, m[1], gender, fl)
 
+    @staticmethod
+    def _handle_verbs(s):
+        """ Handle verb specifications in the settings section """
+        # Format: verb [arg1] [arg2]
+        a = s.split()
+        if len(a) < 1 or len(a) > 3:
+            print("Verb should have zero, one or two arguments")
+            return
+        verb = a[0]
+        Verbs.add(verb, a[1:])
+
     def read(fname):
         """ Read configuration file """
 
         CONFIG_HANDLERS = {
             "settings" : Settings._handle_settings,
             "static_phrases" : Settings._handle_static_phrases,
-            "abbreviations" : Settings._handle_abbreviations
+            "abbreviations" : Settings._handle_abbreviations,
+            "verbs" : Settings._handle_verbs
         }
         handler = None # Current section handler
 
