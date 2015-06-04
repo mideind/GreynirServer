@@ -9,6 +9,7 @@
     While that is the case, it is:
     Copyright (c) 2015 Vilhjalmur Thorsteinsson
     All rights reserved
+    See the accompanying README.md file for further licensing and copyright information.
 
     This module is written in Python 3 for Python 3.4
 

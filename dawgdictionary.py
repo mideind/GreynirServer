@@ -1,6 +1,15 @@
-""" Compound word analyzer
+"""
+    Reynir: Natural language processing for Icelandic
 
-    Author: Vilhjalmur Thorsteinsson, 2015
+    Compound word analyzer
+
+    Author: Vilhjalmur Thorsteinsson
+
+    This software is at a very early development stage.
+    While that is the case, it is:
+    Copyright (c) 2015 Vilhjalmur Thorsteinsson
+    All rights reserved
+    See the accompanying README.md file for further licensing and copyright information.
 
     The compound word analyzer takes a word not found in the
     BIN word database and attempts to resolve it into parts

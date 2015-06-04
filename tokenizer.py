@@ -9,6 +9,7 @@
     While that is the case, it is:
     Copyright (c) 2015 Vilhjalmur Thorsteinsson
     All rights reserved
+    See the accompanying README.md file for further licensing and copyright information.
 
     This module is written in Python 3 for Python 3.4
 
@@ -174,8 +175,9 @@ class TOK:
     def Unknown(w):
         return (TOK.UNKNOWN, w)
 
-    def Person(w, name, gender):
-        return (TOK.PERSON, w, (name, gender))
+    def Person(w, name, gender, cases):
+        """ cases is a set of possible cases for this name """
+        return (TOK.PERSON, w, (name, gender, list(cases)))
 
     def Begin_Paragraph():
         return (TOK.P_BEGIN, None)
@@ -930,6 +932,7 @@ def parse_phrases_2(token_stream):
                 # Look through the token meanings
                 gender = None
                 stem = None
+                cases = set()
                 for m in token[2]:
                     # print("In_category checking {0}".format(m))
                     if m[3] == category:
@@ -939,7 +942,15 @@ def parse_phrases_2(token_stream):
                             gender = m[2]
                         elif gender != m[2]:
                             gender = "" # Multiple genders
-                return None if stem is None else (stem, gender)
+                        c = "nf" # Nominative case
+                        if "ÞF" in m[5]:
+                            c = "þf"
+                        elif "ÞGF" in m[5]:
+                            c = "þgf"
+                        elif "EF" in m[5]:
+                            c = "ef"
+                        cases.add(c)
+                return None if stem is None else (stem, gender, cases)
 
             def not_in_category(token, category):
                 """ Return True if the token can denote something besides a given name """
@@ -975,7 +986,7 @@ def parse_phrases_2(token_stream):
                     return None
                 # One or two letters, capitalized: accept as middle name abbrev
                 # (no gender)
-                return (w, "")
+                return (w, "", { })
 
             # Check for surnames
             def surname(token):
@@ -990,7 +1001,7 @@ def parse_phrases_2(token_stream):
                 # Found a given name: look for a sequence of given names
                 # of the same gender
                 w = token[1]
-                name, gender = gn
+                name, gender, cases = gn
                 patronym = False
                 gnames = [ name ] # Accumulate list of given names
                 while True:
@@ -1063,7 +1074,7 @@ def parse_phrases_2(token_stream):
 
                 if not weak:
                     # Return a person token with the accumulated name
-                    token = TOK.Person(w, name, gender)
+                    token = TOK.Person(w, name, gender, cases)
 
             # Yield the current token and advance to the lookahead
             yield token

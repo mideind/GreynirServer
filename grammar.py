@@ -9,6 +9,7 @@
     While that is the case, it is:
     Copyright (c) 2015 Vilhjalmur Thorsteinsson
     All rights reserved
+    See the accompanying README.md file for further licensing and copyright information.
 
     A grammar is specified as a set of rules. Each rule has a single
     left-hand-side nonterminal, associated with 1..n right-hand-side

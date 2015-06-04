@@ -9,6 +9,7 @@
     While that is the case, it is:
     Copyright (c) 2015 Vilhjalmur Thorsteinsson
     All rights reserved
+    See the accompanying README.md file for further licensing and copyright information.
 
 """
 
@@ -196,13 +197,31 @@ class BIN_Token(Token):
         """ Return True if the verb in question matches the verb category,
             where the category is one of so_0, so_1, so_2 depending on
             the allowable number of noun arguments """
-        if category[-3:] == "_et" and "FT" in form:
+        number = category[-3:]
+        if number == "_et" and "FT" in form:
             # Can't use plural verb if singular terminal
             return False
-        if category[-3:] == "_ft" and "ET" in form:
+        if number == "_ft" and "ET" in form:
             # Can't use singular verb if plural terminal
             return False
+        # Check whether the verb token can potentially match the argument number
+        # of the terminal in question. If the verb is known to take fewer
+        # arguments than the terminal wants, this is not a match.
         nargs = int(category[3:4])
+        if verb in Verbs.VERBS[nargs]:
+            # Seems to take the correct number of arguments:
+            # do a further check on the supported cases
+            # collect the signature
+            if nargs == 0:
+                return True
+            # Hack to check for presence of argument cases
+            if len(category) <= 7:
+                return True
+            c = "".join("_" + c for c in Verbs.VERBS[nargs][verb])
+            assert c
+            return c in category
+        # It's not there with the correct number of arguments:
+        # see if it definitely has fewer ones
         for i in range(0, nargs):
             if verb in Verbs.VERBS[i]:
                 # Prevent verb from taking more arguments than allowed
@@ -222,10 +241,12 @@ class BIN_Token(Token):
         """ Return True if this token matches the given terminal """
 
         if self.t[0] == TOK.PERSON:
-            # Handle a person name, matching it with a noun
-            # !!! TBD !!! missing case information with TOK_PERSON
-            return terminal.name.startswith("no_et_")
-            #return terminal.matches("no", self.t[1])
+            # Handle a person name, matching it with a singular noun
+            if not terminal.name.startswith("no_et_"):
+                return False
+            # The case must also be correct
+            # For a TOK.PERSON, t[2][2] contains a list of possible cases
+            return any("_" + s in terminal.name for s in self.t[2][2])
 
         def meaning_match(m):
             """ Check for a match between a terminal and a single potential meaning
