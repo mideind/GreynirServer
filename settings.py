@@ -16,6 +16,29 @@
 
 import codecs
 
+
+class ConfigError(Exception):
+
+    """ Exception class for configuration errors """
+
+    def __init__(self, s):
+        Exception.__init__(self, s)
+        self.fname = None
+        self.line = 0
+
+    def set_pos(self, fname, line):
+        """ Set file name and line information """
+        self.fname = fname
+        self.line = line
+
+    def __str__(self):
+        """ Return a string representation of this exception """
+        s = Exception.__str__(self)
+        if not self.fname:
+            return s
+        return "File {0}, line {1}: {2}".format(self.fname, self.line, s)
+
+
 class Abbreviations:
 
     """ Wrapper around dictionary of abbreviations, initialized from the config file """
@@ -37,6 +60,8 @@ class Verbs:
     """ Wrapper around dictionary of verbs, initialized from the config file """
 
     # Dictionary of verbs by argument number, 0, 1 or 2
+    # Verbs can control zero, one or two arguments (noun phrases),
+    # where each argument must have a particular case
     VERBS = [ { }, { }, { } ]
 
     @staticmethod
@@ -52,18 +77,18 @@ class Prepositions:
 
     """ Wrapper around dictionary of prepositions, initialized from the config file """
 
-    # Dictionary of prepositions: preposition -> case
+    # Dictionary of prepositions: preposition -> { set of cases that it controls }
     PP = { }
 
     @staticmethod
     def add (prep, case):
         """ Add a preposition and its case. Called from the config file handler. """
         if prep in Prepositions.PP:
-            # Already there: add a case
-            Prepositions.PP[prep].append(case)
+            # Already there: add a case to the set of controlled cases
+            Prepositions.PP[prep].add(case)
         else:
-            # Initialize the preposition with its case
-            Prepositions.PP[prep] = [ case ]
+            # Initialize the preposition with its controlled case
+            Prepositions.PP[prep] = { case }
 
 
 class StaticPhrases:
@@ -147,7 +172,7 @@ class Settings:
         elif par == 'debug':
             Settings.DEBUG = bool(val)
         else:
-            print("Ignoring unknown config parameter {0}".format(par))
+            raise ConfigError("Unknown configuration parameter '{0}'".format(par))
 
     @staticmethod
     def _handle_static_phrases(s):
@@ -164,9 +189,9 @@ class Settings:
             if len(m) == 3:
                 StaticPhrases.set_meaning(m)
             else:
-                print("Meaning in static_phrases should have 3 arguments")
+                raise ConfigError("Meaning in static_phrases should have 3 arguments")
         else:
-            print("Ignoring unknown config parameter {0} in static_phrases".format(par))
+            raise ConfigError("Unknown configuration parameter '{0}' in static_phrases".format(par))
 
     @staticmethod
     def _handle_abbreviations(s):
@@ -195,8 +220,7 @@ class Settings:
         # Format: verb [arg1] [arg2]
         a = s.split()
         if len(a) < 1 or len(a) > 3:
-            print("Verb should have zero, one or two arguments")
-            return
+            raise ConfigError("Verb should have zero, one or two arguments")
         verb = a[0]
         Verbs.add(verb, a[1:])
 
@@ -206,8 +230,7 @@ class Settings:
         # Format: preposition case
         a = s.split()
         if len(a) != 2:
-            print("Preposition should have a single case argument")
-            return
+            raise ConfigError("Preposition should have a single case argument")
         Prepositions.add(a[0], a[1])
 
     def read(fname):
@@ -221,11 +244,14 @@ class Settings:
             "prepositions" : Settings._handle_prepositions
         }
         handler = None # Current section handler
+        line = 0
 
         try:
+
             with codecs.open(fname, "r", "utf-8") as inp:
                 # Read config file line-by-line
                 for s in inp:
+                    line += 1
                     # Ignore comments
                     ix = s.find('#')
                     if ix >= 0:
@@ -239,17 +265,19 @@ class Settings:
                         section = s[1:-1].strip().lower()
                         if section in CONFIG_HANDLERS:
                             handler = CONFIG_HANDLERS[section]
-                        else:
-                            print("Unknown section name '{0}'".format(section))
-                            handler = None
-                        continue
+                            continue
+                        raise ConfigError("Unknown section name '{0}'".format(section))
                     if handler is None:
-                        print("No handler for config line '{0}'".format(s))
-                    else:
-                        # Call the correct handler depending on the section
-                        handler(s)
+                        raise ConfigError("No handler for config line '{0}'".format(s))
+                    # Call the correct handler depending on the section
+                    handler(s)
+
+        except ConfigError as e:
+            # Add file name and line number information to the exception
+            e.set_pos(fname, line)
+            raise e
 
         except (IOError, OSError):
-            print("Error while opening or reading config file '{0}'".format(fname))
+            raise ConfigError("Error while opening or reading config file '{0}'".format(fname))
 
 

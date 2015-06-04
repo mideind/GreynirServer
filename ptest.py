@@ -19,10 +19,16 @@ from pprint import pprint as pp
 from tokenizer import TOK, parse_text
 from grammar import Nonterminal, Terminal, Token, Production, Grammar, GrammarError
 from parser import Parser, ParseError
-from settings import Settings, Verbs, Prepositions
+from settings import Settings, Verbs, Prepositions, ConfigError
 
 
-Settings.read("Reynir.conf")
+# Read the configuration settings file
+
+try:
+    Settings.read("Reynir.conf")
+except ConfigError as e:
+    print("Configuration error: {0}".format(e))
+    quit()
 
 # Test grammar 1
 
