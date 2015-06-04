@@ -35,6 +35,7 @@ psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
 psycopg2.extensions.register_type(psycopg2.extensions.UNICODEARRAY)
 
 from settings import Settings, StaticPhrases, Abbreviations
+from dawgdictionary import Wordbase
 
 
 # Recognized punctuation
@@ -497,6 +498,41 @@ class Bin_DB:
         return m
 
 
+def lookup_word(db, w, at_sentence_start):
+    """ Lookup simple or compound word in database and return its meanings """
+    # Start with a simple lookup
+    m = db.meanings(w)
+    if at_sentence_start or not m:
+        # No meanings found in database, or at sentence start
+        # Try a lowercase version of the word, if different
+        lower_w = w.lower()
+        if lower_w != w:
+            # Do another lookup, this time for lowercase only
+            if not m:
+                m = db.meanings(lower_w)
+            else:
+                m.extend(db.meanings(lower_w))
+
+        if not m and (lower_w != w or w[0] == '['):
+            # Still nothing: check abbreviations
+            m = lookup_abbreviation(w)
+            if m and w[0] == '[':
+                # Remove brackets from known abbreviations
+                w = w[1:-1]
+
+        if not m:
+            # Still nothing: check compound words
+            cw = Wordbase.dawg().slice_compound_word(lower_w)
+            if cw:
+                # This looks like a compound word:
+                # use the meaning of its last part
+                prefix = "-".join(cw[0:-1])
+                m = db.meanings(cw[-1])
+                m = [ (prefix + "-" + stem, ix, wtype, wcat, prefix + "-" + wform, gform)
+                    for stem, ix, wtype, wcat, wform, gform in m]
+    return m
+
+
 def lookup_abbreviation(w):
     """ Lookup abbreviation from abbreviation list """
     return [ Abbreviations.DICT[w] ] if w in Abbreviations.DICT else None
@@ -527,23 +563,7 @@ def annotate(token_stream):
                 continue
             # Look up word in BIN database
             w = t[1]
-            m = db.meanings(w)
-            if at_sentence_start or not m:
-                # No meanings found in database, or at sentence start
-                # Try a lowercase version of the word, if different
-                lower_w = w.lower()
-                if lower_w != w:
-                    # Do another lookup, this time for lowercase only
-                    if not m:
-                        m = db.meanings(lower_w)
-                    else:
-                        m.extend(db.meanings(lower_w))
-                if not m and (lower_w != w or w[0] == '['):
-                    # Still nothing: check abbreviations
-                    m = lookup_abbreviation(w)
-                    if m and w[0] == '[':
-                        # Remove brackets from known abbreviations
-                        w = w[1:-1]
+            m = lookup_word(db, w, at_sentence_start)
             # Yield a word tuple with meanings
             yield TOK.Word(w, m)
             # No longer at sentence start

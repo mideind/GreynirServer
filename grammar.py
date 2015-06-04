@@ -277,6 +277,8 @@ class Grammar:
             with codecs.open(fname, "r", "utf-8") as inp:
                 # Read grammar file line-by-line
                 current_NT = None
+                current_variants = []
+                variants = { }
                 for s in inp:
                     line += 1
                     # Ignore comments
@@ -288,8 +290,9 @@ class Grammar:
                         # Blank line: ignore
                         continue
 
-                    def _add_rhs(nt, rhs):
+                    def _add_rhs(nt_id, rhs):
                         """ Add a right-hand-side production to a nonterminal rule """
+                        nt = nonterminals[nt_id]
                         if nt not in grammar:
                             grammar[nt] = [ ] if rhs is None else [ rhs ]
                             return
@@ -301,19 +304,28 @@ class Grammar:
                                 return
                         grammar[nt].append(rhs)
 
-                    def _parse_rhs(nt, s):
+                    def _parse_rhs(nt_id, vts, s):
                         """ Parse a right-hand side sequence """
                         s = s.strip()
                         if not s:
                             return
-                        rhs = s.split()
-                        result = Production(fname, line)
-                        for r in rhs:
+
+                        tokens = s.split()
+
+                        # rhs is a list of tuples, one for each token, as follows:
+                        # (id, repeat, variants)
+                        rhs = []
+
+                        for r in tokens:
+
                             if r == "0":
                                 # Empty (epsilon) production
-                                if len(rhs) != 1:
+                                if len(tokens) != 1:
                                     raise GrammarError("Empty (epsilon) rule must be of the form NT -> 0", fname, line)
+                                rhs.append((None, None, None))
                                 break
+
+                            # Check for repeat/conditionality
                             repeat = None
                             if r[-1] in '*+?':
                                 # Optional repeat/conditionality specifier
@@ -322,89 +334,190 @@ class Grammar:
                                 # Question mark: optionally present once
                                 repeat = r[-1]
                                 r = r[0:-1]
+
+                            # Check for variant specs
+                            v = r.split('/')
+                            r = v[0]
+                            v = v[1:]
+                            if not v:
+                                v = None
+                            else:
+                                for vspec in v:
+                                    if vspec not in vts:
+                                        raise GrammarError("Variant '{0}' not specified for nonterminal '{1}'".format(vspec, nt_id), fname, line)
+
                             if r[0] in "\"'":
                                 # Literal terminal symbol
-                                sym = r
-                                lit = r[1:-1]
-                                if sym not in terminals:
-                                    terminals[sym] = LiteralTerminal(lit)
-                                n = terminals[sym]
+                                if len(r) < 3 or r[-1] != r[0]:
+                                    raise GrammarError("Invalid literal terminal '{0}'".format(r), fname, line)
                             else:
+                                # Identifier of nonterminal or terminal
                                 if not r.isidentifier():
                                     raise GrammarError("Invalid identifier '{0}'".format(r), fname, line)
-                                if r[0].isupper():
-                                    # Reference to nonterminal
-                                    if r not in nonterminals:
-                                        nonterminals[r] = Nonterminal(r, fname, line)
-                                    nonterminals[r].add_ref() # Note that the nonterminal has been referenced
-                                    n = nonterminals[r]
-                                else:
-                                    # Identifier of terminal
-                                    if r not in terminals:
-                                        terminals[r] = Terminal(r)
-                                    n = terminals[r]
-                            # If the production item can be repeated,
-                            # create a new production and substitute.
-                            # A -> B C* D becomes:
-                            # A -> B C_new_* D
-                            # C_new_* -> C_new_* C | 0
-                            # A -> B C+ D becomes:
-                            # A -> B C_new_+ D
-                            # C_new_+ -> C_new_+ C | C
-                            # A -> B C? D becomes:
-                            # A -> B C_new_? D
-                            # C_new_? -> C | 0
-                            if repeat is not None:
-                                new_nt_id = r + repeat
-                                # Make the new nonterminal and production if not already there
-                                if new_nt_id not in nonterminals:
-                                    new_nt = nonterminals[new_nt_id] = Nonterminal(new_nt_id, fname, line)
-                                    new_nt.add_ref()
-                                    # First production: C_new_x C
-                                    new_p = Production(fname, line)
-                                    if repeat != '?':
-                                        new_p.append(new_nt) # C_new_x
-                                    new_p.append(n) # C
-                                    _add_rhs(new_nt, new_p)
-                                    # Second production: epsilon(*, ?) or C(+)
-                                    new_p = Production(fname, line)
-                                    if repeat == '+':
-                                        new_p.append(n)
-                                    _add_rhs(new_nt, new_p)
-                                # Substitute the C_new_x in the original production
-                                n = nonterminals[new_nt_id]
-                            result.append(n)
-                        if result.length() == 1 and result[0] == current_NT:
-                            # Nonterminal derives itself
-                            raise GrammarError("Nonterminal {0} deriving itself".format(current_NT), fname, line)
-                        _add_rhs(nt, result)
+                            rhs.append((r, repeat, v))
 
-                    if s.startswith('|'):
+                        assert len(rhs) == len(tokens)
+
+                        # Generate productions for all variants
+
+                        def variant_values(vts):
+                            """ Returns a list of names with all applicable variant options appended """
+                            if not vts:
+                                yield [ "" ]
+                                return
+                            if len(vts) == 1:
+                                for vopt in variants[vts[0]]:
+                                    yield [ vopt ]
+                                return
+                            for v in variant_values(vts[1:]):
+                                for vopt in variants[vts[0]]:
+                                    yield [ vopt ] + v
+
+                        # print("Variants are: {0}".format(vts))
+
+                        for vval in variant_values(vts):
+                            # Generate a production for every variant combination
+                            # print("Processing combination {0}".format(vval))
+                            result = Production(fname, line)
+                            for r, repeat, v in rhs:
+                                # Calculate the identifier suffix, if any
+                                suffix = "_".join(vval[vts.index(vx)] for vx in v) if v else ""
+                                if suffix:
+                                    suffix = "_" + suffix
+                                if r is None:
+                                    # Epsilon
+                                    n = None
+                                elif r[0] in "'\"":
+                                    # Literal token
+                                    sym = r + suffix
+                                    lit = r[1:-1]
+                                    if sym not in terminals:
+                                        terminals[sym] = LiteralTerminal(lit)
+                                    n = terminals[sym]
+                                else:
+                                    # Identifier for terminal or nonterminal
+                                    if r[0].isupper():
+                                        # Reference to nonterminal
+                                        if r + suffix not in nonterminals:
+                                            nonterminals[r + suffix] = Nonterminal(r + suffix, fname, line)
+                                        nonterminals[r + suffix].add_ref() # Note that the nonterminal has been referenced
+                                        n = nonterminals[r + suffix]
+                                    else:
+                                        # Identifier of terminal
+                                        if r + suffix not in terminals:
+                                            terminals[r + suffix] = Terminal(r + suffix)
+                                        n = terminals[r + suffix]
+
+                                # If the production item can be repeated,
+                                # create a new production and substitute.
+                                # A -> B C* D becomes:
+                                # A -> B C_new_* D
+                                # C_new_* -> C_new_* C | 0
+                                # A -> B C+ D becomes:
+                                # A -> B C_new_+ D
+                                # C_new_+ -> C_new_+ C | C
+                                # A -> B C? D becomes:
+                                # A -> B C_new_? D
+                                # C_new_? -> C | 0
+
+                                if repeat is not None:
+                                    new_nt_id = r + suffix + repeat
+                                    # Make the new nonterminal and production if not already there
+                                    if new_nt_id not in nonterminals:
+                                        new_nt = nonterminals[new_nt_id] = Nonterminal(new_nt_id, fname, line)
+                                        new_nt.add_ref()
+                                        # First production: C_new_x C
+                                        new_p = Production(fname, line)
+                                        if repeat != '?':
+                                            new_p.append(new_nt) # C_new_x
+                                        new_p.append(n) # C
+                                        _add_rhs(new_nt_id, new_p)
+                                        # Second production: epsilon(*, ?) or C(+)
+                                        new_p = Production(fname, line)
+                                        if repeat == '+':
+                                            new_p.append(n)
+                                        _add_rhs(new_nt_id, new_p)
+                                    # Substitute the C_new_x in the original production
+                                    n = nonterminals[new_nt_id]
+
+                                if n is not None:
+                                    result.append(n)
+
+                            assert len(result) == len(rhs) or (len(rhs) == 1 and rhs[0] == (None, None, None))
+
+                            nt_id_full = "_".join([ nt_id ] + vval) if vts else nt_id
+
+                            if len(result) == 1 and result[0] == nonterminals[nt_id_full]:
+                                # Nonterminal derives itself
+                                raise GrammarError("Nonterminal {0} deriving itself".format(nt_id), fname, line)
+                            _add_rhs(nt_id_full, result)
+
+                    def variant_names(nt, vts):
+                        """ Returns a list of names with all applicable variant options appended """
+                        result = [ nt ]
+                        for v in vts:
+                            newresult = []
+                            for vopt in variants[v]:
+                                for r in result:
+                                    newresult.append(r + "_" + vopt)
+                            result = newresult
+                        return result
+
+                    if s.startswith('/'):
+                        # Definition of variant
+                        # A variant is specified as /varname = opt1 opt2 opt3...
+                        v = s.split('=', maxsplit = 1)
+                        if len(v) < 2:
+                            continue
+                        vname = v[0].strip()[1:]
+                        if not vname.isidentifier():
+                            raise GrammarError("Invalid variant name '{0}'".format(vname), fname, line)
+                        v = v[1].split()
+                        for vopt in v:
+                            if not vopt.isidentifier():
+                                raise GrammarError("Invalid option '{0}' in variant '{1}'".format(vopt, vname), fname, line)
+                        variants[vname] = v
+                    elif s.startswith('|'):
                         # Alternative to previous nonterminal rule
                         if current_NT is None:
                             raise GrammarError("Missing nonterminal", fname, line)
-                        _parse_rhs(current_NT, s[1:])
+                        _parse_rhs(current_NT, current_variants, s[1:])
                     else:
+                        # New nonterminal
                         if "→" in s:
                             # Fancy schmancy arrow sign: use it
                             rule = s.split("→", maxsplit=1)
                         else:
                             rule = s.split("->", maxsplit=1)
-                        nt = rule[0].strip()
+                        # Split nonterminal spec into name and variant(s),
+                        # i.e. NtName/var1/var2...
+                        ntv = rule[0].strip().split('/')
+                        current_NT = nt = ntv[0]
+                        current_variants = ntv[1:]
                         if not nt.isidentifier():
-                            raise GrammarError("Invalid nonterminal name '{0}' in grammar".format(nt), fname, line)
-                        if nt not in nonterminals:
-                            nonterminals[nt] = Nonterminal(nt, fname, line)
-                        current_NT = nonterminals[nt]
-                        if self._root is None:
-                            # Remember first nonterminal as the root
-                            self._root = current_NT
-                            self._root.add_ref() # Implicitly referenced
-                        if current_NT not in grammar:
-                            grammar[current_NT] = [ ]
+                            raise GrammarError("Invalid nonterminal name '{0}'".format(nt), fname, line)
+                        for vname in current_variants:
+                            if vname not in variants:
+                                raise GrammarError("Unknown variant '{0}' for nonterminal '{1}'".format(vname, nt), fname, line)
+                        var_names = variant_names(nt, current_variants)
+
+                        # Add all previously unknown nonterminal variants
+                        for nt_var in var_names:
+                            if nt_var in nonterminals:
+                                cnt = nonterminals[nt_var]
+                            else:
+                                cnt = Nonterminal(nt_var, fname, line)
+                                nonterminals[nt_var] = cnt
+                                if self._root is None:
+                                    # Remember first nonterminal as the root
+                                    self._root = cnt
+                                    self._root.add_ref() # Implicitly referenced
+                            if cnt not in grammar:
+                                grammar[cnt] = [ ]
+
                         if len(rule) >= 2:
                             # We have a right hand side: add a grammar rule
-                            _parse_rhs(current_NT, rule[1])
+                            _parse_rhs(current_NT, current_variants, rule[1])
 
         except (IOError, OSError):
             raise GrammarError("Unable to open or read grammar file", fname, 0)
@@ -413,6 +526,8 @@ class Grammar:
         for nt in nonterminals.values():
             if not nt.has_ref():
                 raise GrammarError("Nonterminal {0} is never referenced in a production".format(nt), nt.fname(), nt.line())
+            if nt not in grammar:
+                raise GrammarError("Nonterminal {0} is referenced but not defined".format(nt), nt.fname(), nt.line())
         for nt, plist in grammar.items():
             if len(plist) == 0:
                 raise GrammarError("Nonterminal {0} has no productions".format(nt), nt.fname(), nt.line())

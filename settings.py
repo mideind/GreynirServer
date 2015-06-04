@@ -34,7 +34,7 @@ class Abbreviations:
 
 class Verbs:
 
-    """ Wrapper around dictionary of abbreviations, initialized from the config file """
+    """ Wrapper around dictionary of verbs, initialized from the config file """
 
     # Dictionary of verbs by argument number, 0, 1 or 2
     VERBS = [ { }, { }, { } ]
@@ -46,6 +46,24 @@ class Verbs:
         la = len(args)
         assert 0 <= la < 3
         Verbs.VERBS[la][verb] = args if la else None
+
+
+class Prepositions:
+
+    """ Wrapper around dictionary of prepositions, initialized from the config file """
+
+    # Dictionary of prepositions: preposition -> case
+    PP = { }
+
+    @staticmethod
+    def add (prep, case):
+        """ Add a preposition and its case. Called from the config file handler. """
+        if prep in Prepositions.PP:
+            # Already there: add a case
+            Prepositions.PP[prep].append(case)
+        else:
+            # Initialize the preposition with its case
+            Prepositions.PP[prep] = [ case ]
 
 
 class StaticPhrases:
@@ -182,6 +200,16 @@ class Settings:
         verb = a[0]
         Verbs.add(verb, a[1:])
 
+    @staticmethod
+    def _handle_prepositions(s):
+        """ Handle preposition specifications in the settings section """
+        # Format: preposition case
+        a = s.split()
+        if len(a) != 2:
+            print("Preposition should have a single case argument")
+            return
+        Prepositions.add(a[0], a[1])
+
     def read(fname):
         """ Read configuration file """
 
@@ -189,7 +217,8 @@ class Settings:
             "settings" : Settings._handle_settings,
             "static_phrases" : Settings._handle_static_phrases,
             "abbreviations" : Settings._handle_abbreviations,
-            "verbs" : Settings._handle_verbs
+            "verbs" : Settings._handle_verbs,
+            "prepositions" : Settings._handle_prepositions
         }
         handler = None # Current section handler
 
