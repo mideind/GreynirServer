@@ -44,15 +44,16 @@ Samtengingarliður → st Yfirsetning
 Yfirsetning → Setning_et
     | Setning_ft
 
-Setning/tala → Frumlag/tala Atviksliður? Sagnliður/tala Sagnfylling/tala*
+Setning/tala → Frumlag/tala Atviksliður? Sagnliður/tala Sagnfylling/tala
 
 Frumlag_et → Nafnliður_et_nf
 
 Frumlag_ft → Nafnliður_ft_nf
 
-Sagnfylling/tala → Atviksliður
+Sagnfylling/tala → Lýsingarliður/tala? Forsetningarliður*
+
+Lýsingarliður/tala → Atviksliður
     | Lýsingarorðsliður/tala
-    | Forsetningarliður
 
 Sagnliður/tala → Sögn_0/tala
     | Sögn_1/tala
@@ -86,12 +87,17 @@ Hjálparsögn/tala → 'vera'/tala
 NafnliðurAlm/fall → Nafnliður_et/fall
     | Nafnliður_ft/fall
 
-Nafnliður_et/fall → ÓákveðiðFornafn_et/fall? ÁkveðiðFornafn_et/fall? Töluorð* Lýsingarorðsliður_et/fall* no_et/fall Forsetningarliður?
+Nafnliður_et/fall → ÓákveðiðFornafn_et/fall? ÁkveðiðFornafn_et/fall? Töluorð* Lýsingarorðsliður_et/fall* Fyrirbæri/fall Eignarfallsliður? Forsetningarliður*
     | pfn_et/fall
     | Undirsetning_et/fall
 
-Nafnliður_ft/fall → NafnliðurAlm/fall Samtenging_NL/fall+
-    | ÓákveðiðFornafn_ft/fall? ÁkveðiðFornafn_ft/fall? Töluorð* Lýsingarorðsliður_ft/fall* no_ft/fall Forsetningarliður?
+Fyrirbæri/fall → no_et/fall
+    | Manneskja/fall
+
+Manneskja/fall → person/fall no_et/fall?
+
+Nafnliður_ft/fall → NafnliðurAlm/fall SamtengingNL/fall+
+    | ÓákveðiðFornafn_ft/fall? ÁkveðiðFornafn_ft/fall? Töluorð* Lýsingarorðsliður_ft/fall* no_ft/fall Eignarfallsliður? Forsetningarliður*
     | pfn_ft/fall
     | Undirsetning_ft/fall
 
@@ -100,6 +106,9 @@ Undirsetning/tala/fall → Nafnliður/tala/fall Tengiorð Setning/tala
 Tengiorð → 'sem'
     | 'er'
 
+Eignarfallsliður → Nafnliður_et_ef
+    | Nafnliður_ft_ef
+
 ÓákveðiðFornafn/tala/fall → fn/tala/fall
 
 ÁkveðiðFornafn/tala/fall → fn/tala/fall
@@ -107,12 +116,16 @@ Tengiorð → 'sem'
 Töluorð → to
     | töl
 
-Samtenging_NL/fall → 'og' NafnliðurAlm/fall
-    | 'eða' NafnliðurAlm/fall
+OgEða → 'og'
+    | 'eða'
+
+SamtengingNL/fall → OgEða NafnliðurAlm/fall
 
 Lýsingarorðsliður/tala → Atviksliður? lo/tala
+    | Lýsingarorðsliður/tala OgEða Atviksliður? lo/tala
 
 Lýsingarorðsliður/tala/fall → Atviksliður? lo/tala/fall
+    | Lýsingarorðsliður/tala/fall OgEða Atviksliður? lo/tala/fall
 
 Forsetningarliður → Atviksliður? FsMeðFallstjórn
 

@@ -99,6 +99,12 @@ class Terminal:
 
     def __init__(self, name):
         self.name = name
+        # Do a bit of pre-calculation to speed up various
+        # checks against this terminal
+        self.parts = name.split("_")
+        # The variant set for this terminal, i.e.
+        # tname_var1_var2_var3 -> { 'var1', 'var2', 'var3' }
+        self.vset = set(self.parts[1:])
 
     def __hash__(self):
         return hash(self.name)
@@ -109,9 +115,33 @@ class Terminal:
     def __str__(self):
         return '{0}'.format(self.name)
 
+    def has_variant(self, v):
+        """ Returns True if the terminal name has the given variant """
+        return v in self.vset
+
+    def num_variants(self):
+        """ Return the number of variants in the terminal name """
+        return len(self.parts) - 1
+
+    def variants(self):
+        """ Returns the variants contained in this terminal name as a list """
+        return self.parts[1:]
+
+    def variant(self, index):
+        """ Return the variant with the given index """
+        assert index >= 0
+        return self.parts[1 + index]
+
+    def startswith(self, part):
+        """ Returns True if the terminal name starts with the given string """
+        return self.parts[0] == part
+
     def matches(self, t_kind, t_val):
         # print("Terminal.matches: self.name is {0}, t_kind is {1}".format(self.name, t_kind))
         return self.name == t_kind
+
+    def matches_first(self, t_kind, t_val):
+        return self.parts[0] == t_kind
 
 
 class LiteralTerminal(Terminal):
@@ -124,6 +154,10 @@ class LiteralTerminal(Terminal):
     def matches(self, t_kind, t_val):
         """ A literal terminal matches a token if the token text is identical to the literal """
         return self.name == t_val
+
+    def matches_first(self, t_kind, t_val):
+        """ A literal terminal matches a token if the token text is identical to the literal """
+        return self.parts[0] == t_val
 
     def __repr__(self):
         return '\'{0}\''.format(self.name)
@@ -257,6 +291,19 @@ class Grammar:
     def root(self):
         """ Return the root nonterminal for this grammar """
         return self._root
+
+    def num_nonterminals(self):
+        """ Return the number of nonterminals in the grammar """
+        return len(self._nonterminals)
+
+    def num_terminals(self):
+        """ Return the number of terminals in the grammar """
+        return len(self._terminals)
+
+    def num_productions(self):
+        """ Return the total number of productions in the grammar,
+            were each right hand side option is counted as one """
+        return sum(len(nt_p) for nt_p in self._grammar.values())
 
     def __str__(self):
 
