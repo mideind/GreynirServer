@@ -20,14 +20,17 @@ from bs4 import BeautifulSoup, NavigableString
 import urllib.request
 import codecs
 import re
+import time
 from contextlib import closing
 
 from flask import Flask
 from flask import render_template, redirect, jsonify
 from flask import request, session, url_for
 
-from settings import Settings
-from tokenizer import parse_text, dump_tokens_to_file, StaticPhrases, Abbreviations
+from settings import Settings, ConfigError
+from tokenizer import parse_text, dump_tokens_to_file, StaticPhrases, Abbreviations, TOK
+from parser import Parser, ParseError
+from binparser import BIN_Parser
 
 # Initialize Flask framework
 
@@ -142,12 +145,52 @@ def analyze():
     url = request.form.get('url', None)
 
     # Scrape the URL, tokenize the text content and return the token list
+
+    t0 = time.time()
+    toklist = list(process_url(url))
+    tok_time = time.time() - t0
+
+    # Count sentences
+    num_sent = 0
+    sent_begin = 0
+    bp = BIN_Parser()
+
+    t0 = time.time()
+
+    for ix, t in enumerate(toklist):
+        if t[0] == TOK.S_BEGIN:
+            num_sent += 1
+            sent = []
+            sent_begin = ix
+        elif t[0] == TOK.S_END:
+            # Parse the accumulated sentence
+            try:
+                forest = bp.go(sent)
+            except ParseError as e:
+                forest = None
+            num = 0 if forest is None else Parser.num_combinations(forest)
+            print("Parsed sentence of length {0} with {1} combinations".format(len(sent), num))
+            # Mark the sentence beginning with the number of parses
+            toklist[sent_begin] = TOK.Begin_Sentence(num_parses = num)
+        elif t[0] == TOK.P_BEGIN:
+            pass
+        elif t[0] == TOK.P_END:
+            pass
+        else:
+            sent.append(t)
+
+    parse_time = time.time() - t0
+
     result = dict(
-        tokens = list(process_url(url))
+        tokens = toklist,
+        tok_time = tok_time,
+        tok_num = len(toklist),
+        tok_sent = num_sent,
+        parse_time = parse_time
     )
 
     # Dump the tokens to a text file for inspection
-    dump_tokens_to_file("txt", result["tokens"])
+    dump_tokens_to_file("txt", toklist)
 
     # Return the tokens as a JSON structure to the client
     return jsonify(result = result)
@@ -176,8 +219,12 @@ def server_error(e):
 
 if __name__ == "__main__":
 
-    # Read configuration file
-    Settings.read("Reynir.conf")
+    try:
+        # Read configuration file
+        Settings.read("Reynir.conf")
+    except ConfigError as e:
+        print("Configuration error: {0}".format(e))
+        quit()
 
     print("Running Reynir with debug={0}, host={1}, db_hostname={2}"
         .format(Settings.DEBUG, Settings.HOST, Settings.DB_HOSTNAME))

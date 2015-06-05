@@ -185,8 +185,8 @@ class TOK:
     def End_Paragraph():
         return (TOK.P_END, None)
 
-    def Begin_Sentence():
-        return (TOK.S_BEGIN, None)
+    def Begin_Sentence(num_parses = 0):
+        return (TOK.S_BEGIN, None, num_parses)
 
     def End_Sentence():
         return (TOK.S_END, None)

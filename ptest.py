@@ -134,7 +134,7 @@ def test3():
         t1 = time.time()
     except GrammarError as e:
         print("{0}".format(e))
-        quit()
+        return
 
     print("Reynir.grammar loaded in {0:.2f} seconds".format(t1 - t0))
     print("{0} nonterminals, {1} terminals, {2} productions"
@@ -237,7 +237,7 @@ def test3():
             return True
 
         def prep_matches(self, prep, case):
-            # Check whether a preposition matches this terminal
+            """ Check whether a preposition matches this terminal """
             if prep not in Prepositions.PP:
                 # Not recognized as a preposition
                 return False
@@ -254,6 +254,9 @@ def test3():
                 # The case must also be correct
                 # For a TOK.PERSON, t[2][2] contains a list of possible cases
                 return any(terminal.has_variant(s) for s in self.t[2][2])
+
+            if self.t[0] == TOK.PUNCTUATION:
+                return terminal.matches("punctuation", self.t[1])
 
             def meaning_match(m):
                 """ Check for a match between a terminal and a single potential meaning
@@ -297,20 +300,20 @@ def test3():
 
 
     TEXTS = [
-        "Páll fór út með stóran kött og Jón keypti heitan graut",
+        "Páll fór út með stóran kött og Jón keypti heitan graut.",
         "Unga fallega konan frá Garðabæ elti ljóta og feita karlinn rösklega og fumlaust í svörtu myrkrinu",
         "Kötturinn sem strákurinn átti veiddi feitu músina",
         "Gamla bláa kommóðan var máluð fjólublá með olíumálningu",
         "Landsframleiðslan hefur aukist frá því í fyrra",
         "Guðmundur og Guðrún kusu Framsóknarflokkinn",
         "Guðmundur og Guðrún kaus Framsóknarflokkinn",
-        "Þú skalt fara til Danmerkur",
-        "Þú skalt fara til Danmörk",
+        "Þú skalt fara til Danmerkur.",
+        "Þú skalt fara til Danmörk.",
         "Ég og þú fórum til Frakklands í utanlandsferð",
         "Stóru bláu könnunni mun hafa verið fleygt í ruslið",
         "Már Guðmundsson segir margskonar misskilnings gæta hjá Hannesi Hólmsteini",
-        "Már Guðmundsson seðlabankastjóri Íslands segir þetta við Morgunblaðið í dag",
-        "Þetta segir Már Guðmundsson seðlabankastjóri við Morgunblaðið í dag"
+        "Már Guðmundsson seðlabankastjóri Íslands segir þetta við Morgunblaðið í dag.",
+        "Þetta segir Már Guðmundsson seðlabankastjóri við Morgunblaðið í dag."
     ]
 
     for txt in TEXTS:

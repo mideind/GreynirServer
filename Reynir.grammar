@@ -8,8 +8,8 @@
 # All rights reserved
 # See the accompanying README.md file for further licensing and copyright information.
 #
-# This file contains a (partial) context-free grammar for parsing text
-# in the Icelandic language.
+# This file contains a (partial) context-free grammar for parsing
+# Icelandic text.
 #
 # The grammar is presented in augmented Backus-Naur form, where
 # repetition specifiers are allowed on right-hand-side tokens
@@ -37,12 +37,13 @@
 
 # Grammar rules
 
-S0 → Yfirsetning Samtengingarliður*
+S0 → Yfirsetning Samtengingarliður* '.'?
 
-Samtengingarliður → st Yfirsetning
+Samtengingarliður → Samtenging Yfirsetning
 
-Yfirsetning → Setning_et
-    | Setning_ft
+Samtenging → st | 'þar' 'sem'
+
+Yfirsetning → Setning_et | Setning_ft
 
 Setning/tala → Frumlag/tala Atviksliður? Sagnliður/tala Sagnfylling/tala
 
@@ -52,12 +53,9 @@ Frumlag_ft → Nafnliður_ft_nf
 
 Sagnfylling/tala → Lýsingarliður/tala? Forsetningarliður*
 
-Lýsingarliður/tala → Atviksliður
-    | Lýsingarorðsliður/tala
+Lýsingarliður/tala → Atviksliður | Lýsingarorðsliður/tala
 
-Sagnliður/tala → Sögn_0/tala
-    | Sögn_1/tala
-    | Sögn_2/tala
+Sagnliður/tala → Sögn_0/tala | Sögn_1/tala | Sögn_2/tala
 
 # Sögn með engu viðfangi (dó)
 Sögn_0/tala → Hjálparsögn/tala* so_0/tala
@@ -66,12 +64,9 @@ Sögn_0/tala → Hjálparsögn/tala* so_0/tala
 Sögn_1/tala → Hjálparsögn/tala* so_1_þf/tala NafnliðurAlm_þf
     | Hjálparsögn/tala* so_1_þgf/tala NafnliðurAlm_þgf
     | Hjálparsögn/tala* so_1_ef/tala NafnliðurAlm_ef
-#    | Hjálparsögn/tala* so_1/tala NafnliðurAlm
-#    | Hjálparsögn/tala* so_1_nf/tala NafnliðurAlm_nf
 
 # Sögn með tveimur viðföngum (gaf e-m e-ð)
 Sögn_2/tala → Hjálparsögn/tala* so_2_þgf_þf/tala NafnliðurAlm_þgf NafnliðurAlm_þf
-#    | Hjálparsögn/tala* so_2/tala NafnliðurAlm NafnliðurAlm
 
 # Hjálparsögn: vera, hafa, skulu, munu...
 Hjálparsögn/tala → 'vera'/tala
@@ -79,45 +74,43 @@ Hjálparsögn/tala → 'vera'/tala
     | 'skulu'/tala
     | 'munu'/tala
 
-# NafnliðurAlm → NafnliðurAlm_þf
-#     | NafnliðurAlm_þgf
-#     | NafnliðurAlm_ef
-#     | NafnliðurAlm_nf
+NafnliðurAlm/fall → Nafnliður_et/fall | Nafnliður_ft/fall
 
-NafnliðurAlm/fall → Nafnliður_et/fall
-    | Nafnliður_ft/fall
+Nafnliður_et/fall →
 
-Nafnliður_et/fall → ÓákveðiðFornafn_et/fall? ÁkveðiðFornafn_et/fall? Töluorð* Lýsingarorðsliður_et/fall* Fyrirbæri/fall Eignarfallsliður? Forsetningarliður*
+    ÓákveðiðFornafn_et/fall? ÁkveðiðFornafn_et/fall? Töluorð*
+        Lýsingarorðsliður_et/fall* Fyrirbæri/fall Eignarfallsliður? Forsetningarliður*
+
     | pfn_et/fall
     | Undirsetning_et/fall
 
-Fyrirbæri/fall → no_et/fall
-    | Manneskja/fall
+Fyrirbæri/fall → no_et/fall | Manneskja/fall
 
-Manneskja/fall → person/fall no_et/fall?
+Manneskja/fall → person/fall ','? no_et/fall?
 
-Nafnliður_ft/fall → NafnliðurAlm/fall SamtengingNL/fall+
-    | ÓákveðiðFornafn_ft/fall? ÁkveðiðFornafn_ft/fall? Töluorð* Lýsingarorðsliður_ft/fall* no_ft/fall Eignarfallsliður? Forsetningarliður*
+Nafnliður_ft/fall →
+
+    NafnliðurAlm/fall SamtengingNL/fall+
+
+    | ÓákveðiðFornafn_ft/fall? ÁkveðiðFornafn_ft/fall? Töluorð*
+        Lýsingarorðsliður_ft/fall* no_ft/fall Eignarfallsliður? Forsetningarliður*
+
     | pfn_ft/fall
     | Undirsetning_ft/fall
 
 Undirsetning/tala/fall → Nafnliður/tala/fall Tengiorð Setning/tala
 
-Tengiorð → 'sem'
-    | 'er'
+Tengiorð → 'sem' | 'er'
 
-Eignarfallsliður → Nafnliður_et_ef
-    | Nafnliður_ft_ef
+Eignarfallsliður → Nafnliður_et_ef | Nafnliður_ft_ef
 
 ÓákveðiðFornafn/tala/fall → fn/tala/fall
 
 ÁkveðiðFornafn/tala/fall → fn/tala/fall
 
-Töluorð → to
-    | töl
+Töluorð → to | töl
 
-OgEða → 'og'
-    | 'eða'
+OgEða → 'og' | 'eða'
 
 SamtengingNL/fall → OgEða NafnliðurAlm/fall
 
@@ -129,7 +122,8 @@ Lýsingarorðsliður/tala/fall → Atviksliður? lo/tala/fall
 
 Forsetningarliður → Atviksliður? FsMeðFallstjórn
 
-FsMeðFallstjórn → fs_þf NafnliðurAlm_þf
+FsMeðFallstjórn →
+    fs_þf NafnliðurAlm_þf
     | fs_þgf NafnliðurAlm_þgf
     | fs_ef NafnliðurAlm_ef
     | fs_nf NafnliðurAlm_nf

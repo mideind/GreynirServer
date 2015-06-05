@@ -97,11 +97,22 @@ p.author {
    padding-top: 0;
 }
 
+p#tok-info {
+   font-style: italic;
+   margin-top: 0px;
+   margin-bottom: 24px;
+   visibility: hidden;
+}
+
+p#tok-info span {
+   font-weight: bold;
+}
+
 div.output {
    position: relative;
    text-align: left;
    cursor: default;
-   margin-top: 60px;
+   margin-top: 32px;
 }
 
 div#result i {
@@ -156,6 +167,10 @@ div#result i.person {
 
 span.sent {
    margin-right: 8px;
+}
+
+span.sent.parsed {
+   background-color: #f0fff0;
 }
 
 span.sent:hover {

@@ -224,6 +224,11 @@ function populateResult(json) {
    $("div#wait").css("display", "none");
    // Clear the previous result, if any, and associate the
    // incoming token list with the result DIV
+   $("#tok-time").text(json.result.tok_time.toFixed(2));
+   $("#parse-time").text(json.result.parse_time.toFixed(2));
+   $("#tok-num").text(json.result.tok_num);
+   $("#tok-sent").text(json.result.tok_sent);
+   $("#tok-info").css("visibility", "visible");
    var out = $("div#result");
    var tokens = json.result.tokens;
    out.data("tokens", tokens);
@@ -276,7 +281,11 @@ function populateResult(json) {
       }
       else
       if (wl[0] == TOK_S_BEGIN) {
-         s += "<span class='sent'>";
+         var c = "sent";
+         if (wl[2] > 0)
+            // This sentence has at least one parse tree: mark it
+            c += " parsed";
+         s += "<span class='" + c + "'>";
          wsp = "";
       }
       else
@@ -347,6 +356,8 @@ function analyzeUrl() {
    $("div#result").html("");
    // Display progress indicator
    $("div#wait").css("display", "block");
+   // Hide the statistics
+   $("#tok-info").css("visibility", "hidden");
    // Launch the query
    serverQuery('/analyze',
       { url: $("#url").val().trim() },
