@@ -15,6 +15,9 @@
     BIN_Parser parses sentences in Icelandic according to the grammar
     in the file Reynir.grammar.
 
+    BIN refers to 'Beygingarlýsing íslensks nútímamáls', the database of
+    word forms in modern Icelandic.
+
 """
 
 from tokenizer import TOK
@@ -28,20 +31,23 @@ class BIN_Token(Token):
     """
         Wrapper class for a token to be processed by the parser
 
-        Token tuple:
+        The layout of a token tuple coming from the tokenizer is
+        as follows:
+
         t[0] Token type (TOK.WORD, etc.)
         t[1] Token text
         t[2] Meaning list, where each item is a tuple:
             m[0] Word stem
             m[1] BIN index (integer)
-            m[2] Word type (kk/kvk/hk, so, lo, ao, fs, etc.)
+            m[2] Word type (kk/kvk/hk (=noun), so, lo, ao, fs, etc.)
             m[3] Word category (alm/fyr/ism etc.)
             m[4] Word form (in most cases identical to t[1])
-            m[5] Grammatical form (declension, tense, etc.)
+            m[5] Grammatical form (case, gender, number, etc.)
+
     """
 
     # Map word types to those used in the grammar
-    KIND = {
+    _KIND = {
         "kk": "no",
         "kvk": "no",
         "hk": "no",
@@ -61,7 +67,7 @@ class BIN_Token(Token):
     }
 
     # Strings that must be present in the grammatical form for variants
-    VARIANT = {
+    _VARIANT = {
         "nf" : "NF",
         "þf" : "ÞF",
         "þgf" : "ÞGF",
@@ -79,7 +85,7 @@ class BIN_Token(Token):
     def verb_matches(self, verb, terminal, form):
         """ Return True if the verb in question matches the verb category,
             where the category is one of so_0, so_1, so_2 depending on
-            the allowable number of noun arguments """
+            the allowable number of noun phrase arguments """
         if terminal.has_variant("et") and "FT" in form:
             # Can't use plural verb if singular terminal
             return False
@@ -93,21 +99,27 @@ class BIN_Token(Token):
         if verb in Verbs.VERBS[nargs]:
             # Seems to take the correct number of arguments:
             # do a further check on the supported cases
-            # collect the signature
             if nargs == 0:
+                # Zero arguments: that's simple
                 return True
-            # Hack to check for presence of argument cases
+            # Does this terminal require argument cases?
             if terminal.num_variants() <= 2:
+                # No: we don't need to check further
                 return True
+            # Check whether the parameters of this verb
+            # match up with the requirements of the terminal
+            # as specified in its variants at indices 1 and onward
             for ix, c in enumerate(Verbs.VERBS[nargs][verb]):
                 if terminal.variant(1 + ix) != c:
                     return False
+            # No mismatch so far: this verb fulfills the requirements
             return True
         # It's not there with the correct number of arguments:
         # see if it definitely has fewer ones
         for i in range(0, nargs):
             if verb in Verbs.VERBS[i]:
-                # Prevent verb from taking more arguments than allowed
+                # Prevent verb from matching a terminal if it
+                # doesn't have all the arguments that the terminal requires
                 return False
         # Unknown verb or arguments not too many: consider this a match
         return True
@@ -129,7 +141,7 @@ class BIN_Token(Token):
                 return False
             # The case must also be correct
             # For a TOK.PERSON, t[2][2] contains a list of possible cases
-            return any(terminal.has_variant(s) for s in self.t[2][2])
+            return terminal.variant(0) in self.t[2][2]
 
         if self.t[0] == TOK.PUNCTUATION:
             return terminal.matches("punctuation", self.t[1])
@@ -150,10 +162,10 @@ class BIN_Token(Token):
             elif terminal.startswith("fs"):
                 return self.prep_matches(m[0], terminal.variant(0))
             for v in terminal.variants():
-                if BIN_Token.VARIANT[v] not in m[5]:
+                if BIN_Token._VARIANT[v] not in m[5]:
                     # Not matching
                     return False
-            return terminal.matches_first(BIN_Token.KIND[m[2]], m[0])
+            return terminal.matches_first(BIN_Token._KIND[m[2]], m[0])
 
         # We have a match if any of the possible meanings
         # of this token match the terminal
@@ -173,23 +185,38 @@ class BIN_Token(Token):
 
 class BIN_Parser(Parser):
 
+    """ BIN_Parser parses sentences according to the Icelandic
+        grammar in the Reynir.grammar file. It subclasses Parser
+        and wraps the interface between the BIN grammatical
+        data on one hand and the tokens and grammar terminals on
+        the other. """
+
+    # A singleton instance of the parsed Reynir.grammar
     _grammar = None
 
-    def __init__(self):
+    # The token types that the parser currently knows how to handle
+    _UNDERSTOOD = { TOK.WORD, TOK.PUNCTUATION, TOK.PERSON }
 
+    def __init__(self):
+        """ Load the shared BIN grammar if not already there, then initialize
+            the Parser parent class """
         g = BIN_Parser._grammar
         if g is None:
             g = Grammar()
             g.read("Reynir.grammar")
             BIN_Parser._grammar = g
+        Parser.__init__(self, g.nt_dict(), g.root())
 
-        Parser.__init__(self, g.grammar(), g.root())
+    def grammar(self):
+        """ Return the grammar loaded from Reynir.grammar """
+        return BIN_Parser._grammar
 
     def go(self, tokens):
-        """ Parse the token list after wrapping each simple token in the BIN_Token class """
+        """ Parse the token list after wrapping each understood token in the BIN_Token class """
 
-        def is_simple(t):
-            return t[0] in { TOK.WORD, TOK.PUNCTUATION, TOK.PERSON }
+        def is_understood(t):
+            return t[0] in BIN_Parser._UNDERSTOOD
 
-        return Parser.go(self, [BIN_Token(t) for t in tokens if is_simple(t)])
+        # After wrapping, call the parent class go()
+        return Parser.go(self, [BIN_Token(t) for t in tokens if is_understood(t)])
 

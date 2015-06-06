@@ -156,21 +156,21 @@ class Parser:
             return str(self.head())
 
 
-    def __init__(self, grammar, root):
+    def __init__(self, nt_dict, root):
 
         """ Initialize a parser from a "raw" grammar dictionary and a root nonterminal within it """
 
-        assert grammar is not None
+        assert nt_dict is not None
         assert root is not None
-        assert root in grammar
-        self.grammar = grammar
+        assert root in nt_dict
+        self.nt_dict = nt_dict
         self.root = root
 
 
     @classmethod
     def for_grammar(cls, g):
         """ Create a Parser for the Grammar in g """
-        return cls(g.grammar(), g.root())
+        return cls(g.nt_dict(), g.root())
 
 
     def go(self, tokens):
@@ -253,7 +253,7 @@ class Parser:
         Q0 = [ ]
 
         # Populate column 0 (E0) with start states and Q0 with lookaheads
-        for root_p in self.grammar[self.root]:
+        for root_p in self.nt_dict[self.root]:
             # Go through root productions
             newstate = (self.root, 0, root_p, 0, None)
             # add (S ::= ·α, 0, null) to E0 and Q0
@@ -282,7 +282,7 @@ class Parser:
                     # for all (C ::= δ) ∈ P:
                     nt_C = prod[dot]
                     # Go through all right hand sides of non-terminal nt_C
-                    for p in self.grammar[nt_C]:
+                    for p in self.nt_dict[nt_C]:
                         # if δ ∈ ΣN and (C ::= ·δ, i, null) !∈ Ei:
                         newstate = (nt_C, 0, p, i, None)
                         _push(newstate, i, Ei, Q)

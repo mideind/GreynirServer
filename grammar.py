@@ -281,12 +281,12 @@ class Grammar:
     def __init__(self):
         self._nonterminals = { }
         self._terminals = { }
-        self._grammar = { }
+        self._nt_dict = { }
         self._root = None
 
-    def grammar(self):
-        """ Return the raw grammar dictionary, Nonterminal -> Production """
-        return self._grammar
+    def nt_dict(self):
+        """ Return the raw grammar dictionary, Nonterminal -> [ Productions ] """
+        return self._nt_dict
 
     def root(self):
         """ Return the root nonterminal for this grammar """
@@ -303,14 +303,14 @@ class Grammar:
     def num_productions(self):
         """ Return the total number of productions in the grammar,
             were each right hand side option is counted as one """
-        return sum(len(nt_p) for nt_p in self._grammar.values())
+        return sum(len(nt_p) for nt_p in self._nt_dict.values())
 
     def __str__(self):
 
         def to_str(plist):
             return " | ".join([str(p) for p in plist])
 
-        return "".join([str(nt) + " → " + to_str(plist) + "\n" for nt, plist in self._grammar.items()])
+        return "".join([str(nt) + " → " + to_str(plist) + "\n" for nt, plist in self._nt_dict.items()])
 
     def read(self, fname):
         """ Read grammar from a text file """
@@ -318,7 +318,7 @@ class Grammar:
         # Shortcuts
         terminals = self._terminals
         nonterminals = self._nonterminals
-        grammar = self._grammar
+        grammar = self._nt_dict
         line = 0
 
         current_NT = None

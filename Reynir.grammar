@@ -51,7 +51,9 @@ Frumlag_et → Nafnliður_et_nf
 
 Frumlag_ft → Nafnliður_ft_nf
 
-Sagnfylling/tala → Lýsingarliður/tala? Forsetningarliður*
+Sagnfylling/tala → Lýsingarliður/tala? Forsetningarfylling?
+
+Forsetningarfylling → FsMeðFallstjórn Forsetningarliður*
 
 Lýsingarliður/tala → Atviksliður | Lýsingarorðsliður/tala
 
