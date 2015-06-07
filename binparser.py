@@ -86,6 +86,7 @@ class BIN_Token(Token):
         """ Return True if the verb in question matches the verb category,
             where the category is one of so_0, so_1, so_2 depending on
             the allowable number of noun phrase arguments """
+        # print("verb_matches {0} terminal {1} form {2}".format(verb, terminal, form))
         if terminal.has_variant("et") and "FT" in form:
             # Can't use plural verb if singular terminal
             return False
@@ -146,6 +147,32 @@ class BIN_Token(Token):
         if self.t[0] == TOK.PUNCTUATION:
             return terminal.matches("punctuation", self.t[1])
 
+        if self.t[0] == TOK.CURRENCY:
+            # A currency name matches a noun
+            if not terminal.startswith("no"):
+                return False
+            if self.t[2][1] is None:
+                # No associated case: match all cases
+                return True
+            # See whether any of the allowed cases match the terminal
+            return terminal.variant(1) in self.t[2][1]
+
+        if self.t[0] == TOK.AMOUNT:
+            # An amount matches a noun
+            if not terminal.startswith("no"):
+                return False
+            if terminal.variant(0) == "et" and float(self.t[2][1]) != 1.0:
+                # Singular only matches an amount of one
+                return False
+            if terminal.variant(0) == "ft" and float(self.t[2][1]) == 1.0:
+                # Plural does not match an amount of one
+                return False
+            if self.t[2][2] is None:
+                # No associated case: match all cases
+                return True
+            # See whether any of the allowed cases match the terminal
+            return terminal.variant(1) in self.t[2][2]
+
         def meaning_match(m):
             """ Check for a match between a terminal and a single potential meaning
                 of the word """
@@ -195,7 +222,8 @@ class BIN_Parser(Parser):
     _grammar = None
 
     # The token types that the parser currently knows how to handle
-    _UNDERSTOOD = { TOK.WORD, TOK.PUNCTUATION, TOK.PERSON }
+    _UNDERSTOOD = { TOK.WORD, TOK.PUNCTUATION, TOK.PERSON,
+        TOK.CURRENCY, TOK.AMOUNT }
 
     def __init__(self):
         """ Load the shared BIN grammar if not already there, then initialize

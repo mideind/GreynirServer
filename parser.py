@@ -90,6 +90,14 @@ class Parser:
             """ Return the node label """
             return self._label
 
+        def start(self):
+            """ Return the start token index """
+            return self._label[1]
+
+        def end(self):
+            """ Return the end token index """
+            return self._label[2]
+
         def head(self):
             """ Return the 'head' of this node, i.e. a top-level readable name for it """
             return self._label[0]
@@ -422,4 +430,97 @@ class Parser:
             else:
                 comb += Parser.num_combinations(f)
         return comb if comb > 0 else 1
+
+
+    @staticmethod
+    def make_schema(w):
+        """ Create a flattened parse schema from the forest w """
+
+        def _part(w, level, index, parent, suffix):
+            """ Return a tuple (colheading + options, start_token, end_token, partlist, info) where the
+                partlist is again a list of the component schemas - or a terminal
+                matching a single token - or None if empty """
+            if w is None:
+                # Epsilon node: return empty list
+                return None
+            if w.is_token():
+                p = parent.prod(index)
+                assert isinstance(p, Terminal)
+                return ([ level ] + suffix, w.start(), w.end(), None, (p, w.head().text()))
+            # Interior nodes are not returned
+            # and do not increment the indentation level
+            if not w.is_interior():
+                level += 1
+            # Accumulate the resulting parts
+            plist = [ ]
+            ambig = w.is_ambiguous()
+            add_suffix = [ ]
+
+            for ix, f in enumerate(w.enum_children()):
+                if ambig:
+                    # Identify the available parse options
+                    add_suffix = [ ix ]
+                if w.is_completed():
+                    # Completed nonterminal: start counting children from zero
+                    child_ix = -1
+                    parent = w
+                else:
+                    # Interior node: continue the indexing from where we left off
+                    child_ix = index
+
+                def add_part(p):
+                    """ Add a subtuple p to the part list plist """
+                    if p:
+                        if p[0] is None:
+                            # p describes an interior node
+                            plist.extend(p[3])
+                        elif p[2] > p[1]:
+                            # Only include subtrees that actually contain terminals
+                            plist.append(p)
+
+                if isinstance(f, tuple):
+                    child_ix -= len(f) - 1
+                    for j, c in enumerate(f):
+                        add_part(_part(c, level, child_ix + j, parent, suffix + add_suffix))
+                else:
+                    add_part(_part(f, level, child_ix, parent, suffix + add_suffix))
+
+            if w.is_interior():
+                # Interior node: relay plist up the tree
+                return (None, 0, 0, plist, None)
+            # Completed nonterminal
+            return ([ level - 1] + suffix, w.start(), w.end(), plist, w.head())
+
+        return _part(w, 0, 0, None, [ ])
+
+
+    @staticmethod
+    def make_grid(w):
+        """ Make a 2d grid from a flattened parse schema """
+        schema = Parser.make_schema(w)
+        assert schema[1] == 0
+        n = schema[2] # Number of tokens (rows)
+        cols = [] # The columns to be populated
+
+        def _traverse(p):
+            """ Traverse a schema subtree and insert the nodes into their
+                respective grid columns """
+            col = p[0][0] # Level of this subtree
+            while len(cols) <= col:
+                # Add empty columns as required to reach this level
+                cols.append([])
+
+            # Add a tuple describing the rows spanned and the node info
+            cols[col].append((p[1], p[2], p[4]))
+
+            # Navigate into subparts, if any
+            if p[3]:
+                for subpart in p[3]:
+                    # !!! TBD: The following is hard coded to traverse
+                    # !!! the first option subtree only in case of ambiguity
+                    if len(subpart[0]) == 1 or all(x == 0 for x in subpart[0][1:]):
+                        _traverse(subpart)
+
+        _traverse(schema)
+        return cols
 

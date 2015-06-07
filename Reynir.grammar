@@ -63,9 +63,11 @@ Sagnliður/tala → Sögn_0/tala | Sögn_1/tala | Sögn_2/tala
 Sögn_0/tala → Hjálparsögn/tala* so_0/tala
 
 # Sögn með einu viðfangi (borðaði e-ð)
-Sögn_1/tala → Hjálparsögn/tala* so_1_þf/tala NafnliðurAlm_þf
+Sögn_1/tala →
+    Hjálparsögn/tala* so_1_þf/tala NafnliðurAlm_þf
     | Hjálparsögn/tala* so_1_þgf/tala NafnliðurAlm_þgf
     | Hjálparsögn/tala* so_1_ef/tala NafnliðurAlm_ef
+    | Hjálparsögn/tala* so_1_nf/tala NafnliðurAlm_nf
 
 # Sögn með tveimur viðföngum (gaf e-m e-ð)
 Sögn_2/tala → Hjálparsögn/tala* so_2_þgf_þf/tala NafnliðurAlm_þgf NafnliðurAlm_þf
@@ -104,7 +106,9 @@ Undirsetning/tala/fall → Nafnliður/tala/fall Tengiorð Setning/tala
 
 Tengiorð → 'sem' | 'er'
 
-Eignarfallsliður → Nafnliður_et_ef | Nafnliður_ft_ef
+Eignarfallsliður →
+    Nafnliður_et_ef Lýsingarorðsliður_et_ef*
+    | Nafnliður_ft_ef Lýsingarorðsliður_ft_ef*
 
 ÓákveðiðFornafn/tala/fall → fn/tala/fall
 

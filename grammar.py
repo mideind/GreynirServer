@@ -181,6 +181,10 @@ class Token:
             return '{0}'.format(self.kind)
         return '{0}:{1}'.format(self.kind, self.val)
 
+    def text(self):
+        """ Return the token text, as it was in the source """
+        return self.val
+
     def matches(self, terminal):
         """ Does this token match the given terminal? """
         # By default, ask the terminal

@@ -162,7 +162,11 @@ function hoverIn() {
    if (wl[0] == TOK_NUMBER) {
       $("div.info").html("<p><b>" + wl[1] + "</b></p>");
       // Show the parsed floating-point number to 2 decimal places
-      $("div.info").append("<p>" + wl[2].toFixed(2) + "</p>");
+      $("div.info").append("<p>" + wl[2][0].toFixed(2) + "</p>");
+      // Show cases, if available
+      if (wl[2][1] !== null)
+         for (i = 0; i < wl[2][1].length; i++)
+            $("div.info").append("<p>" + wl[2][1][i] + "</p>");
    }
    else
    if (wl[0] == TOK_PERCENT) {
@@ -186,19 +190,31 @@ function hoverIn() {
    if (wl[0] == TOK_CURRENCY) {
       $("div.info").html("<p><b>" + wl[1] + "</b></p>");
       // Show the ISO code for the currency
-      $("div.info").append("<p>" + wl[2] + "</p>");
+      $("div.info").append("<p>" + wl[2][0] + "</p>");
+      // Show cases, if available
+      if (wl[2][1] !== null)
+         for (i = 0; i < wl[2][1].length; i++)
+            $("div.info").append("<p>" + wl[2][1][i] + "</p>");
    }
    else
    if (wl[0] == TOK_AMOUNT) {
       $("div.info").html("<p><b>" + wl[1] + "</b></p>");
       // Show the amount as well as the ISO code for its currency
       $("div.info").append("<p>" + wl[2][0] + " " + wl[2][1].toFixed(2) + "</p>");
+      // Show cases, if available
+      if (wl[2][2] !== null)
+         for (i = 0; i < wl[2][2].length; i++)
+            $("div.info").append("<p>" + wl[2][2][i] + "</p>");
    }
    else
    if (wl[0] == TOK_PERSON) {
       $("div.info").html("<p><b>" + wl[1] + "</b></p>");
       // Show name and gender
       $("div.info").append("<p>" + wl[2][0] + " " + wl[2][1] + "</p>");
+      // Show cases, if available
+      if (wl[2][2] !== null)
+         for (i = 0; i < wl[2][2].length; i++)
+            $("div.info").append("<p>" + wl[2][2][i] + "</p>");
    }
    else
    if (wl[0] == TOK_TIMESTAMP) {

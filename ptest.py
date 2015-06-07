@@ -153,7 +153,10 @@ def test3():
         "Már Guðmundsson segir margskonar misskilnings gæta hjá Hannesi Hólmsteini",
         "Már Guðmundsson seðlabankastjóri Íslands segir þetta við Morgunblaðið í dag.",
         "Þetta segir Már Guðmundsson seðlabankastjóri við Morgunblaðið í dag.",
-        "Það er náttúrlega einungis í samfélögum sem eiga við býsna stór vandamál að stríða að ný stjórnmálaöfl geta snögglega sveiflast upp í þriðjungs fylgi."
+        "Það er náttúrlega einungis í samfélögum sem eiga við býsna stór vandamál að stríða að ný stjórnmálaöfl geta snögglega sveiflast upp í þriðjungs fylgi.",
+        "Jón greiddi reikninginn með 1000 krónum",
+        "Áætlaður kostnaður verkefnisins var tíu milljónir króna og áætluð verklok eru í byrjun september næstkomandi.",
+        "Pakkinn snerist um að ábyrgjast innlán og skuldabréfaútgáfu danskra fjármálafyrirtækja."
     ]
 
     for txt in TEXTS:
@@ -168,13 +171,22 @@ def test3():
             t1 = time.time()
         except ParseError as e:
             print("{0}".format(e))
-            continue
+            forest = None
 
         num = 0 if forest is None else Parser.num_combinations(forest)
 
         print("Parsed in {0:.4f} seconds, {1} combinations".format(t1 - t0, num))
 
-        Parser.print_parse_forest(forest, detailed = False)
+        if forest:
+
+            Parser.print_parse_forest(forest, detailed = False)
+
+            # Create a 2d parsing grid from the forest
+            grid = Parser.make_grid(forest)
+
+            for col in grid:
+                print("\n{0}".format(col))
+
 
 
 if __name__ == "__main__":
