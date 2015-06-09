@@ -1,6 +1,5 @@
-# -*- coding: utf-8 -*-
-
-""" Reynir: Natural language processing for Icelandic
+"""
+    Reynir: Natural language processing for Icelandic
 
     Main module, URL scraper and web server
 
@@ -10,6 +9,7 @@
     While that is the case, it is:
     Copyright (c) 2015 Vilhjalmur Thorsteinsson
     All rights reserved
+    See the accompanying README.md file for further licensing and copyright information.
 
     This module is written in Python 3 for Python 3.4
 
@@ -20,14 +20,17 @@ from bs4 import BeautifulSoup, NavigableString
 import urllib.request
 import codecs
 import re
+import time
 from contextlib import closing
 
 from flask import Flask
 from flask import render_template, redirect, jsonify
 from flask import request, session, url_for
 
-from settings import Settings
-from tokenizer import parse_text, dump_tokens_to_file, StaticPhrases, Abbreviations
+from settings import Settings, ConfigError
+from tokenizer import parse_text, dump_tokens_to_file, StaticPhrases, Abbreviations, TOK
+from parser import Parser, ParseError
+from binparser import BIN_Parser
 
 # Initialize Flask framework
 
@@ -142,15 +145,95 @@ def analyze():
     url = request.form.get('url', None)
 
     # Scrape the URL, tokenize the text content and return the token list
+
+    t0 = time.time()
+    toklist = list(process_url(url))
+    tok_time = time.time() - t0
+
+    # Count sentences
+    num_sent = 0
+    sent_begin = 0
+    bp = BIN_Parser()
+
+    t0 = time.time()
+
+    for ix, t in enumerate(toklist):
+        if t[0] == TOK.S_BEGIN:
+            num_sent += 1
+            sent = []
+            sent_begin = ix
+        elif t[0] == TOK.S_END:
+            # Parse the accumulated sentence
+            try:
+                forest = bp.go(sent)
+            except ParseError as e:
+                forest = None
+            num = 0 if forest is None else Parser.num_combinations(forest)
+            print("Parsed sentence of length {0} with {1} combinations".format(len(sent), num))
+            # Mark the sentence beginning with the number of parses
+            toklist[sent_begin] = TOK.Begin_Sentence(num_parses = num)
+        elif t[0] == TOK.P_BEGIN:
+            pass
+        elif t[0] == TOK.P_END:
+            pass
+        else:
+            sent.append(t)
+
+    parse_time = time.time() - t0
+
     result = dict(
-        tokens = list(process_url(url))
+        tokens = toklist,
+        tok_time = tok_time,
+        tok_num = len(toklist),
+        tok_sent = num_sent,
+        parse_time = parse_time
     )
 
     # Dump the tokens to a text file for inspection
-    dump_tokens_to_file("txt", result["tokens"])
+    dump_tokens_to_file("txt", toklist)
 
     # Return the tokens as a JSON structure to the client
     return jsonify(result = result)
+
+
+@app.route("/parsegrid", methods=['POST'])
+def parse_grid():
+    """ Show the parse grid for a sentence """
+
+    txt = request.form.get('txt', "")
+
+    bp = BIN_Parser()
+    tokens = list(parse_text(txt))
+    forest = bp.go(tokens)
+    combinations = Parser.num_combinations(forest)
+    grid, ncols = Parser.make_grid(forest)
+    # The grid is columnar; convert it to row-major
+    # form for convenient translation into HTML
+    # There will be as many columns as there are tokens
+    nrows = len(grid)
+    tbl = [ [] for _ in range(nrows) ]
+    for gix, gcol in enumerate(grid):
+        col = 0
+        for startcol, endcol, info in gcol:
+            if col < startcol:
+                tbl[gix].append((startcol-col, 1, "", ""))
+            rowspan = 1
+            if isinstance(info, tuple):
+                cls = { "terminal" }
+                # rowspan = nrows - gix
+                # !!! When adding rowspan to the mix,
+                # the following rows also need to be updated
+                # to subtract one colspan from the calculation
+                # in the right places
+            else:
+                cls = { "nonterminal" }
+            if endcol - startcol == 1:
+                cls |= { "vertical" }
+            tbl[gix].append((endcol-startcol, rowspan, info, cls))
+            col = endcol
+        if col < ncols:
+            tbl[gix].append((ncols - col, 1, "", ""))
+    return render_template("parsegrid.html", txt = txt, tbl = tbl, combinations = combinations)
 
 
 @app.route("/")
@@ -158,6 +241,13 @@ def main():
     """ Handler for the main (index) page """
 
     return render_template("main.html", default_url = DEFAULT_URL)
+
+
+@app.route("/test")
+def test():
+    """ Handler for a page of sentences for testing """
+
+    return render_template("test.html")
 
 
 # Flask handlers
@@ -172,113 +262,16 @@ def server_error(e):
     """ Return a custom 500 error """
     return 'Eftirfarandi villa kom upp: {}'.format(e), 500
 
-# Configuration settings from the Reynir.conf file
-
-def handle_settings(s):
-    """ Handle config parameters in the settings section """
-    a = s.lower().split('=', maxsplit=1)
-    par = a[0].strip()
-    val = a[1].strip()
-    if val == 'none':
-        val = None
-    elif val == 'true':
-        val = True
-    elif val == 'false':
-        val = False
-    if par == 'db_hostname':
-        Settings.DB_HOSTNAME = val
-    elif par == 'host':
-        Settings.HOST = val
-    elif par == 'debug':
-        Settings.DEBUG = bool(val)
-    else:
-        print("Ignoring unknown config parameter {0}".format(par))
-
-def handle_static_phrases(s):
-    """ Handle static phrases in the settings section """
-    if s[0] == '\"' and s[-1] == '\"':
-        StaticPhrases.add(s[1:-1])
-        return
-    # Check for a meaning spec
-    a = s.lower().split('=', maxsplit=1)
-    par = a[0].strip()
-    val = a[1].strip()
-    if par == 'meaning':
-        m = val.split(" ")
-        if len(m) == 3:
-            StaticPhrases.set_meaning(m)
-        else:
-            print("Meaning in static_phrases should have 3 arguments")
-    else:
-        print("Ignoring unknown config parameter {0} in static_phrases".format(par))
-
-def handle_abbreviations(s):
-    """ Handle abbreviations in the settings section """
-    # Format: abbrev = "meaning" gender (kk|kvk|hk)
-    a = s.split('=', maxsplit=1)
-    abbrev = a[0].strip()
-    m = a[1].strip().split('\"')
-    par = ""
-    if len(m) >= 3:
-        # Something follows the last quote
-        par = m[-1].strip()
-    gender = "hk" # Default gender is neutral
-    fl = None # Default word category is None
-    if par:
-        p = par.split(' ')
-        if len(p) >= 1:
-            gender = p[0].strip()
-        if len(p) >= 2:
-            fl = p[1].strip()
-    Abbreviations.add(abbrev, m[1], gender, fl)
-
-def read_config(fname):
-    """ Read configuration file """
-
-    CONFIG_HANDLERS = {
-        "settings" : handle_settings,
-        "static_phrases" : handle_static_phrases,
-        "abbreviations" : handle_abbreviations
-    }
-    handler = None # Current section handler
-
-    try:
-        with codecs.open(fname, "r", "utf-8") as inp:
-            # Read config file line-by-line
-            for s in inp:
-                # Ignore comments
-                ix = s.find('#')
-                if ix >= 0:
-                    s = s[0:ix]
-                s = s.strip()
-                if not s:
-                    # Blank line: ignore
-                    continue
-                if s[0] == '[' and s[-1] == ']':
-                    # New section
-                    section = s[1:-1].strip().lower()
-                    if section in CONFIG_HANDLERS:
-                        handler = CONFIG_HANDLERS[section]
-                    else:
-                        print("Unknown section name '{0}'".format(section))
-                        handler = None
-                    continue
-                if handler is None:
-                    print("No handler for config line '{0}'".format(s))
-                else:
-                    # Call the correct handler depending on the section
-                    handler(s)
-
-    except (IOError, OSError):
-        print("Error while opening or reading config file '{0}'".format(fname))
-
-
 # Run a default Flask web server for testing if invoked directly as a main program
 
 if __name__ == "__main__":
 
-    # Read configuration file
-    read_config("Reynir.conf")
+    try:
+        # Read configuration file
+        Settings.read("Reynir.conf")
+    except ConfigError as e:
+        print("Configuration error: {0}".format(e))
+        quit()
 
     print("Running Reynir with debug={0}, host={1}, db_hostname={2}"
         .format(Settings.DEBUG, Settings.HOST, Settings.DB_HOSTNAME))

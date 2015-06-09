@@ -13,9 +13,11 @@
 
 {% block content %}
 
+<div class="text-container">
+
    <div class="input">
 
-      <p class="header">Reynir</p>
+      <p class="header"><a href="{{ url_for('main') }}">Reynir</a></p>
 
       <p class="author">málgreinir fyrir íslensku<br>eftir Vilhjálm Þorsteinsson</p>
 
@@ -36,6 +38,11 @@
       <!-- Popup with info about the word being hovered over -->
       <div class="info"></div>
 
+      <p id="tok-info">Textinn inniheldur <span id="tok-num"></span> eindir í
+         <span id="tok-sent"></span> málsgreinum.
+         Eindagreining tók <span id="tok-time"></span> sekúndur en
+         málfræðigreining <span id="parse-time"></span> sekúndur.</p>
+
       <div id="result">
       <!-- Result of analysis goes here -->
       </div>
@@ -44,6 +51,8 @@
       <div id="wait"></div>
 
    </div>
+
+</div>
 
 {% endblock %}
 

@@ -106,6 +106,30 @@ function serverQuery(requestUrl, jsonData, successFunc, completeFunc, errorFunc)
    });
 }
 
+function serverPost(url, parameters) {
+   /* Post to the provided URL with the specified parameters */
+   var form = $('<form method="post"></form>');
+   form.attr("action", url);
+   $.each(parameters, function(key, value) {
+      var field = $('<input type="hidden"></input>');
+      field.attr("name", key);
+      field.attr("value", value);
+      form.append(field);
+   });
+   // The form needs to be a part of the document
+   // to allow submission, at least in some browsers
+   $(document.body).append(form);
+   form.submit();
+}
+
+function showParse(ev) {
+   /* A sentence has been clicked: show its parse grid */
+   var sentText = $(ev.delegateTarget).text();
+   // Do an HTML POST to the parsegrid URL, passing
+   // the sentence text within a synthetic form
+   serverPost("/parsegrid", { txt: sentText })
+}
+
 function buttonOver(elem) {
    /* Show a hover effect on a button */
    if (!$(elem).hasClass("disabled"))
@@ -162,7 +186,11 @@ function hoverIn() {
    if (wl[0] == TOK_NUMBER) {
       $("div.info").html("<p><b>" + wl[1] + "</b></p>");
       // Show the parsed floating-point number to 2 decimal places
-      $("div.info").append("<p>" + wl[2].toFixed(2) + "</p>");
+      $("div.info").append("<p>" + wl[2][0].toFixed(2) + "</p>");
+      // Show cases, if available
+      if (wl[2][1] !== null)
+         for (i = 0; i < wl[2][1].length; i++)
+            $("div.info").append("<p>" + wl[2][1][i] + "</p>");
    }
    else
    if (wl[0] == TOK_PERCENT) {
@@ -186,19 +214,31 @@ function hoverIn() {
    if (wl[0] == TOK_CURRENCY) {
       $("div.info").html("<p><b>" + wl[1] + "</b></p>");
       // Show the ISO code for the currency
-      $("div.info").append("<p>" + wl[2] + "</p>");
+      $("div.info").append("<p>" + wl[2][0] + "</p>");
+      // Show cases, if available
+      if (wl[2][1] !== null)
+         for (i = 0; i < wl[2][1].length; i++)
+            $("div.info").append("<p>" + wl[2][1][i] + "</p>");
    }
    else
    if (wl[0] == TOK_AMOUNT) {
       $("div.info").html("<p><b>" + wl[1] + "</b></p>");
       // Show the amount as well as the ISO code for its currency
       $("div.info").append("<p>" + wl[2][0] + " " + wl[2][1].toFixed(2) + "</p>");
+      // Show cases, if available
+      if (wl[2][2] !== null)
+         for (i = 0; i < wl[2][2].length; i++)
+            $("div.info").append("<p>" + wl[2][2][i] + "</p>");
    }
    else
    if (wl[0] == TOK_PERSON) {
       $("div.info").html("<p><b>" + wl[1] + "</b></p>");
       // Show name and gender
       $("div.info").append("<p>" + wl[2][0] + " " + wl[2][1] + "</p>");
+      // Show cases, if available
+      if (wl[2][2] !== null)
+         for (i = 0; i < wl[2][2].length; i++)
+            $("div.info").append("<p>" + wl[2][2][i] + "</p>");
    }
    else
    if (wl[0] == TOK_TIMESTAMP) {
@@ -224,6 +264,11 @@ function populateResult(json) {
    $("div#wait").css("display", "none");
    // Clear the previous result, if any, and associate the
    // incoming token list with the result DIV
+   $("#tok-time").text(json.result.tok_time.toFixed(2));
+   $("#parse-time").text(json.result.parse_time.toFixed(2));
+   $("#tok-num").text(json.result.tok_num);
+   $("#tok-sent").text(json.result.tok_sent);
+   $("#tok-info").css("visibility", "visible");
    var out = $("div#result");
    var tokens = json.result.tokens;
    out.data("tokens", tokens);
@@ -276,7 +321,11 @@ function populateResult(json) {
       }
       else
       if (wl[0] == TOK_S_BEGIN) {
-         s += "<span class='sent'>";
+         var c = "sent";
+         if (wl[2] > 0)
+            // This sentence has at least one parse tree: mark it
+            c += " parsed";
+         s += "<span class='" + c + "'>";
          wsp = "";
       }
       else
@@ -339,6 +388,8 @@ function populateResult(json) {
    out.html(s);
    // Put a hover handler on each word
    $("div#result i").hover(hoverIn, hoverOut);
+   // Put a click handler on each parsed sentence
+   $("span.sent.parsed").click(showParse);
 }
 
 function analyzeUrl() {
@@ -347,6 +398,8 @@ function analyzeUrl() {
    $("div#result").html("");
    // Display progress indicator
    $("div#wait").css("display", "block");
+   // Hide the statistics
+   $("#tok-info").css("visibility", "hidden");
    // Launch the query
    serverQuery('/analyze',
       { url: $("#url").val().trim() },
