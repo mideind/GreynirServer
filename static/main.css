@@ -18,14 +18,25 @@ body {
 }
 
 div.container {
+   margin: 0 12px;
+}
+
+div.text-container {
    width: 640px;
-   margin: 0 auto;
+   margin: 0 12px;
 }
 
 .over {
    outline-style: solid;
    outline-color: yellow;
    outline-width: 2px;
+}
+
+.header a,
+.header a:visited,
+.header a:link {
+   text-decoration: none;
+   color: #660066;
 }
 
 input.text {
@@ -165,16 +176,61 @@ div#result i.person {
    color: blue;
 }
 
+p.txt {
+   font-weight: bold;
+   font-style: italic;
+}
+
+div.grid {
+   text-align: left;
+}
+
+div.grid table {
+   border-collapse: collapse;
+}
+
+div.grid table tr td {
+   background-color: #e8ffe8;
+   border-style: solid;
+   border-width: 3px;
+   border-color: #ffffff;
+   text-align: center;
+   padding-left: 3px;
+   padding-right: 3px;
+   padding-top: 2px;
+   padding-bottom: 2px;
+}
+
+div.grid table tr td.t {
+   font-style: italic;
+   background-color: #fbe6b3;
+}
+
+div.grid table tr td.t.vert,
+div.grid table tr td.nt.vert {
+   /* TBD: Show text vertically */
+}
+
+td.t span.tok {
+   font-style: normal;
+   font-weight: bold;
+}
+
 span.sent {
    margin-right: 8px;
 }
 
 span.sent.parsed {
-   background-color: #f0fff0;
+   background-color: #e8ffe8;
+   cursor: pointer;
 }
 
 span.sent:hover {
    background-color: #f0f0f0;
+}
+
+span.sent.parsed:hover {
+   background-color: #d8ffd8;
 }
 
 div#wait {

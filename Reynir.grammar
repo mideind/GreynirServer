@@ -82,7 +82,7 @@ NafnliðurAlm/fall → Nafnliður_et/fall | Nafnliður_ft/fall
 
 Nafnliður_et/fall →
 
-    ÓákveðiðFornafn_et/fall? ÁkveðiðFornafn_et/fall? Töluorð*
+    Fornöfn_et/fall? Töluorð*
         Lýsingarorðsliður_et/fall* Fyrirbæri/fall Eignarfallsliður? Forsetningarliður*
 
     | pfn_et/fall
@@ -96,7 +96,7 @@ Nafnliður_ft/fall →
 
     NafnliðurAlm/fall SamtengingNL/fall+
 
-    | ÓákveðiðFornafn_ft/fall? ÁkveðiðFornafn_ft/fall? Töluorð*
+    | Fornöfn_ft/fall? Töluorð*
         Lýsingarorðsliður_ft/fall* no_ft/fall Eignarfallsliður? Forsetningarliður*
 
     | pfn_ft/fall
@@ -110,9 +110,8 @@ Eignarfallsliður →
     Nafnliður_et_ef Lýsingarorðsliður_et_ef*
     | Nafnliður_ft_ef Lýsingarorðsliður_ft_ef*
 
-ÓákveðiðFornafn/tala/fall → fn/tala/fall
-
-ÁkveðiðFornafn/tala/fall → fn/tala/fall
+# Væri unnt að skipta í óákveðin og ákveðin fornöfn ef þarf
+Fornöfn/tala/fall → fn/tala/fall fn/tala/fall?
 
 Töluorð → to | töl
 

@@ -491,15 +491,18 @@ class Parser:
             # Completed nonterminal
             return ([ level - 1] + suffix, w.start(), w.end(), plist, w.head())
 
+        if w is None:
+            return None
         return _part(w, 0, 0, None, [ ])
 
 
     @staticmethod
     def make_grid(w):
         """ Make a 2d grid from a flattened parse schema """
+        if w is None:
+            return None
         schema = Parser.make_schema(w)
         assert schema[1] == 0
-        n = schema[2] # Number of tokens (rows)
         cols = [] # The columns to be populated
 
         def _traverse(p):
@@ -522,5 +525,6 @@ class Parser:
                         _traverse(subpart)
 
         _traverse(schema)
-        return cols
+        # Return a tuple with the grid and the number of tokens
+        return (cols, schema[2])
 

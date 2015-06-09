@@ -145,18 +145,16 @@ def test3():
         "Gamla bláa kommóðan var máluð fjólublá með olíumálningu",
         "Landsframleiðslan hefur aukist frá því í fyrra",
         "Guðmundur og Guðrún kusu Framsóknarflokkinn",
-        "Guðmundur og Guðrún kaus Framsóknarflokkinn",
         "Þú skalt fara til Danmerkur.",
-        "Þú skalt fara til Danmörk.",
         "Ég og þú fórum til Frakklands í utanlandsferð",
         "Stóru bláu könnunni mun hafa verið fleygt í ruslið",
         "Már Guðmundsson segir margskonar misskilnings gæta hjá Hannesi Hólmsteini",
         "Már Guðmundsson seðlabankastjóri Íslands segir þetta við Morgunblaðið í dag.",
-        "Þetta segir Már Guðmundsson seðlabankastjóri við Morgunblaðið í dag.",
         "Það er náttúrlega einungis í samfélögum sem eiga við býsna stór vandamál að stríða að ný stjórnmálaöfl geta snögglega sveiflast upp í þriðjungs fylgi.",
-        "Jón greiddi reikninginn með 1000 krónum",
         "Áætlaður kostnaður verkefnisins var tíu milljónir króna og áætluð verklok eru í byrjun september næstkomandi.",
-        "Pakkinn snerist um að ábyrgjast innlán og skuldabréfaútgáfu danskra fjármálafyrirtækja."
+        "Pakkinn snerist um að ábyrgjast innlán og skuldabréfaútgáfu danskra fjármálafyrirtækja.",
+        "Kynningarfundurinn sem ég hélt í dag fjallaði um lausnina á þessum vanda.",
+        "Kynningarfundurinn sem haldinn var í dag fjallaði um lausnina á þessum vanda."
     ]
 
     for txt in TEXTS:
@@ -168,10 +166,11 @@ def test3():
         try:
             t0 = time.time()
             forest = p.go(tokens)
-            t1 = time.time()
         except ParseError as e:
             print("{0}".format(e))
             forest = None
+        finally:
+            t1 = time.time()
 
         num = 0 if forest is None else Parser.num_combinations(forest)
 
@@ -180,13 +179,6 @@ def test3():
         if forest:
 
             Parser.print_parse_forest(forest, detailed = False)
-
-            # Create a 2d parsing grid from the forest
-            grid = Parser.make_grid(forest)
-
-            for col in grid:
-                print("\n{0}".format(col))
-
 
 
 if __name__ == "__main__":

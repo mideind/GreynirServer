@@ -106,6 +106,30 @@ function serverQuery(requestUrl, jsonData, successFunc, completeFunc, errorFunc)
    });
 }
 
+function serverPost(url, parameters) {
+   /* Post to the provided URL with the specified parameters */
+   var form = $('<form method="post"></form>');
+   form.attr("action", url);
+   $.each(parameters, function(key, value) {
+      var field = $('<input type="hidden"></input>');
+      field.attr("name", key);
+      field.attr("value", value);
+      form.append(field);
+   });
+   // The form needs to be a part of the document
+   // to allow submission, at least in some browsers
+   $(document.body).append(form);
+   form.submit();
+}
+
+function showParse(ev) {
+   /* A sentence has been clicked: show its parse grid */
+   var sentText = $(ev.delegateTarget).text();
+   // Do an HTML POST to the parsegrid URL, passing
+   // the sentence text within a synthetic form
+   serverPost("/parsegrid", { txt: sentText })
+}
+
 function buttonOver(elem) {
    /* Show a hover effect on a button */
    if (!$(elem).hasClass("disabled"))
@@ -364,6 +388,8 @@ function populateResult(json) {
    out.html(s);
    // Put a hover handler on each word
    $("div#result i").hover(hoverIn, hoverOut);
+   // Put a click handler on each parsed sentence
+   $("span.sent.parsed").click(showParse);
 }
 
 function analyzeUrl() {

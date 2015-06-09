@@ -1,0 +1,72 @@
+
+{% extends "container.html" %}
+
+{% block styles %}
+
+<link href="{{ url_for('static', filename='main.css') }}" rel='stylesheet' type='text/css'>
+
+{% endblock %}
+
+{% block scripts %}
+
+{% endblock %}
+
+{% block content %}
+
+   <div class="input">
+
+      <p class="header"><a href="{{ url_for('main') }}">Reynir</a></p>
+
+      <p class="author">málgreinir fyrir íslensku<br>eftir Vilhjálm Þorsteinsson</p>
+
+      <p class="txt">"{{ txt }}"</p>
+
+{% if combinations == 1 %}
+      <p>Ein trjágreining fannst:</p>
+{% else %}
+      <p>{{ combinations }} trjágreiningar fundust:</p>
+{% endif %}
+
+   </div>
+
+   <div class="grid">
+      <table>
+{% for r in tbl %}
+         <tr>
+{% for c in r %}
+{% if 'terminal' in c[3] %}
+<td
+   class='t{{ ' vert' if 'vertical' in c[3] else '' }}'
+   colspan={{ c[0] }}
+   rowspan={{ c[1] }}>
+{%- if c[2][0] | string | first != "'" -%}
+   {{ c[2][0] }}:<br>
+{%- endif -%}
+   <span class='tok'>{{ c[2][1] }}</span></td>
+{% elif c[2] == '' %}
+<td colspan={{ c[0] }}>&nbsp;</td>
+{% else %}
+<td class='nt{{ ' vert' if 'vertical' in c[3] else '' }}' colspan={{ c[0] }}>{{ c[2] }}</td>
+{% endif %}
+{% endfor %}
+         </tr>
+{% endfor %}
+      </table>
+   </div>
+
+{% endblock %}
+
+{% block endscripts %}
+
+<script>
+
+   function initMain(jQuery) {
+      // Initialization
+   }
+
+   $(document).ready(initMain);
+
+</script>
+
+{% endblock %}
+

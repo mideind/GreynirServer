@@ -1,0 +1,58 @@
+
+{% extends "container.html" %}
+
+{% block styles %}
+
+<link href="{{ url_for('static', filename='main.css') }}" rel='stylesheet' type='text/css'>
+
+{% endblock %}
+
+{% block scripts %}
+
+{% endblock %}
+
+{% block content %}
+
+   <div class="input">
+
+      <p class="header"><a href="{{ url_for('main') }}">Reynir</a></p>
+
+      <p class="author">málgreinir fyrir íslensku<br>eftir Vilhjálm Þorsteinsson</p>
+
+      <p>Páll fór út með stóran kött og Jón keypti heitan graut.</p>
+      <p>Unga fallega konan frá Garðabæ elti ljóta og feita karlinn rösklega og fumlaust í svörtu myrkrinu</p>
+      <p>Kötturinn sem strákurinn átti veiddi feitu músina</p>
+      <p>Gamla bláa kommóðan var máluð fjólublá með olíumálningu</p>
+      <p>Landsframleiðslan hefur aukist frá því í fyrra</p>
+      <p>Guðmundur og Guðrún kusu Framsóknarflokkinn</p>
+      <p>Guðmundur og Guðrún kaus Framsóknarflokkinn</p>
+      <p>Þú skalt fara til Danmerkur.</p>
+      <p>Þú skalt fara til Danmörk.</p>
+      <p>Ég og þú fórum til Frakklands í utanlandsferð</p>
+      <p>Stóru bláu könnunni mun hafa verið fleygt í ruslið</p>
+      <p>Már Guðmundsson segir margskonar misskilnings gæta hjá Hannesi Hólmsteini</p>
+      <p>Már Guðmundsson seðlabankastjóri Íslands segir þetta við Morgunblaðið í dag.</p>
+      <p>Þetta segir Már Guðmundsson seðlabankastjóri við Morgunblaðið í dag.</p>
+      <p>Það er náttúrlega einungis í samfélögum sem eiga við býsna stór vandamál að stríða að ný stjórnmálaöfl geta snögglega sveiflast upp í þriðjungs fylgi.</p>
+      <p>Jón greiddi reikninginn með 1000 krónum</p>
+      <p>Áætlaður kostnaður verkefnisins var tíu milljónir króna og áætluð verklok eru í byrjun september næstkomandi.</p>
+      <p>Pakkinn snerist um að ábyrgjast innlán og skuldabréfaútgáfu danskra fjármálafyrirtækja.</p>
+
+   </div>
+
+{% endblock %}
+
+{% block endscripts %}
+
+<script>
+
+   function initMain(jQuery) {
+      // Initialization
+   }
+
+   $(document).ready(initMain);
+
+</script>
+
+{% endblock %}
+

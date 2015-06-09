@@ -196,11 +196,58 @@ def analyze():
     return jsonify(result = result)
 
 
+@app.route("/parsegrid", methods=['POST'])
+def parse_grid():
+    """ Show the parse grid for a sentence """
+
+    txt = request.form.get('txt', "")
+
+    bp = BIN_Parser()
+    tokens = list(parse_text(txt))
+    forest = bp.go(tokens)
+    combinations = Parser.num_combinations(forest)
+    grid, ncols = Parser.make_grid(forest)
+    # The grid is columnar; convert it to row-major
+    # form for convenient translation into HTML
+    # There will be as many columns as there are tokens
+    nrows = len(grid)
+    tbl = [ [] for _ in range(nrows) ]
+    for gix, gcol in enumerate(grid):
+        col = 0
+        for startcol, endcol, info in gcol:
+            if col < startcol:
+                tbl[gix].append((startcol-col, 1, "", ""))
+            rowspan = 1
+            if isinstance(info, tuple):
+                cls = { "terminal" }
+                # rowspan = nrows - gix
+                # !!! When adding rowspan to the mix,
+                # the following rows also need to be updated
+                # to subtract one colspan from the calculation
+                # in the right places
+            else:
+                cls = { "nonterminal" }
+            if endcol - startcol == 1:
+                cls |= { "vertical" }
+            tbl[gix].append((endcol-startcol, rowspan, info, cls))
+            col = endcol
+        if col < ncols:
+            tbl[gix].append((ncols - col, 1, "", ""))
+    return render_template("parsegrid.html", txt = txt, tbl = tbl, combinations = combinations)
+
+
 @app.route("/")
 def main():
     """ Handler for the main (index) page """
 
     return render_template("main.html", default_url = DEFAULT_URL)
+
+
+@app.route("/test")
+def test():
+    """ Handler for a page of sentences for testing """
+
+    return render_template("test.html")
 
 
 # Flask handlers
