@@ -204,6 +204,7 @@ div.grid table tr td {
 div.grid table tr td.t {
    font-style: italic;
    background-color: #fbe6b3;
+   vertical-align: bottom;
 }
 
 div.grid table tr td.t.vert,

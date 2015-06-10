@@ -489,6 +489,8 @@ class Parser:
                 # Interior node: relay plist up the tree
                 return (None, 0, 0, plist, None)
             # Completed nonterminal
+            assert w.is_completed()
+            assert isinstance(w.head(), Nonterminal)
             return ([ level - 1] + suffix, w.start(), w.end(), plist, w.head())
 
         if w is None:
@@ -514,6 +516,7 @@ class Parser:
                 cols.append([])
 
             # Add a tuple describing the rows spanned and the node info
+            assert isinstance(p[4], Nonterminal) or isinstance(p[4], tuple)
             cols[col].append((p[1], p[2], p[4]))
 
             # Navigate into subparts, if any

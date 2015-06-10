@@ -29,8 +29,10 @@ from flask import request, session, url_for
 
 from settings import Settings, ConfigError
 from tokenizer import parse_text, dump_tokens_to_file, StaticPhrases, Abbreviations, TOK
+from grammar import Nonterminal
 from parser import Parser, ParseError
 from binparser import BIN_Parser
+from ptest import run_test
 
 # Initialize Flask framework
 
@@ -212,27 +214,36 @@ def parse_grid():
     # There will be as many columns as there are tokens
     nrows = len(grid)
     tbl = [ [] for _ in range(nrows) ]
+    # Info about previous row spans
+    rs = [ [] for _ in range(nrows) ]
     for gix, gcol in enumerate(grid):
         col = 0
         for startcol, endcol, info in gcol:
+            assert isinstance(info, Nonterminal) or isinstance(info, tuple)
             if col < startcol:
-                tbl[gix].append((startcol-col, 1, "", ""))
+                gap = startcol - col
+                gap -= sum(1 for c in rs[gix] if c < startcol)
+                if gap > 0:
+                    tbl[gix].append((gap, 1, "", ""))
             rowspan = 1
             if isinstance(info, tuple):
                 cls = { "terminal" }
-                # rowspan = nrows - gix
-                # !!! When adding rowspan to the mix,
-                # the following rows also need to be updated
-                # to subtract one colspan from the calculation
-                # in the right places
+                rowspan = nrows - gix
+                for i in range(gix + 1, nrows):
+                    # Note the rowspan's effect on subsequent rows
+                    rs[i].append(startcol)
             else:
                 cls = { "nonterminal" }
+                # Get the 'pure' name of the nonterminal in question
+                assert isinstance(info, Nonterminal)
+                info = info.name()
             if endcol - startcol == 1:
                 cls |= { "vertical" }
             tbl[gix].append((endcol-startcol, rowspan, info, cls))
             col = endcol
-        if col < ncols:
-            tbl[gix].append((ncols - col, 1, "", ""))
+        ncols_adj = ncols - len(rs[gix])
+        if col < ncols_adj:
+            tbl[gix].append((ncols_adj - col, 1, "", ""))
     return render_template("parsegrid.html", txt = txt, tbl = tbl, combinations = combinations)
 
 
@@ -247,7 +258,10 @@ def main():
 def test():
     """ Handler for a page of sentences for testing """
 
-    return render_template("test.html")
+    # Run test and show the result
+    bp = BIN_Parser()
+
+    return render_template("test.html", result = run_test(bp))
 
 
 # Flask handlers

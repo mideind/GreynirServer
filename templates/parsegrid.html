@@ -40,7 +40,7 @@
    colspan={{ c[0] }}
    rowspan={{ c[1] }}>
 {%- if c[2][0] | string | first != "'" -%}
-   {{ c[2][0] }}:<br>
+   {{ c[2][0] }}<br>
 {%- endif -%}
    <span class='tok'>{{ c[2][1] }}</span></td>
 {% elif c[2] == '' %}

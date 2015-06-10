@@ -54,7 +54,7 @@ class Nonterminal:
         a rule or within a production """
 
     def __init__(self, name, fname = None, line = 0):
-        self.name = name
+        self._name = name
         # Place of initial definition in a grammar file
         self._fname = fname
         self._line = line
@@ -69,6 +69,9 @@ class Nonterminal:
         """ Return True if the nonterminal has been referenced in a production """
         return self._ref
 
+    def name(self):
+        return self._name
+
     def fname(self):
         """ Return the name of the grammar file where this nonterminal was defined """
         return self._fname
@@ -78,19 +81,19 @@ class Nonterminal:
         return self._line
 
     def __eq__(self, other):
-        return isinstance(other, Nonterminal) and self.name == other.name
+        return isinstance(other, Nonterminal) and self._name == other._name
 
     def __ne__(self, other):
-        return not isinstance(other, Nonterminal) or self.name != other.name
+        return not isinstance(other, Nonterminal) or self._name != other._name
 
     def __hash__(self):
-        return hash(self.name)
+        return hash(self._name)
 
     def __repr__(self):
-        return '<{0}>'.format(self.name)
+        return '<{0}>'.format(self._name)
 
     def __str__(self):
-        return '<{0}>'.format(self.name)
+        return '<{0}>'.format(self._name)
 
 
 class Terminal:
@@ -98,50 +101,50 @@ class Terminal:
     """ A terminal within a right-hand-side production """
 
     def __init__(self, name):
-        self.name = name
+        self._name = name
         # Do a bit of pre-calculation to speed up various
         # checks against this terminal
-        self.parts = name.split("_")
+        self._parts = name.split("_")
         # The variant set for this terminal, i.e.
         # tname_var1_var2_var3 -> { 'var1', 'var2', 'var3' }
-        self.vset = set(self.parts[1:])
+        self._vset = set(self._parts[1:])
 
     def __hash__(self):
-        return hash(self.name)
+        return hash(self._name)
 
     def __repr__(self):
-        return '{0}'.format(self.name)
+        return '{0}'.format(self._name)
 
     def __str__(self):
-        return '{0}'.format(self.name)
+        return '{0}'.format(self._name)
 
     def has_variant(self, v):
         """ Returns True if the terminal name has the given variant """
-        return v in self.vset
+        return v in self._vset
 
     def num_variants(self):
         """ Return the number of variants in the terminal name """
-        return len(self.parts) - 1
+        return len(self._parts) - 1
 
     def variants(self):
         """ Returns the variants contained in this terminal name as a list """
-        return self.parts[1:]
+        return self._parts[1:]
 
     def variant(self, index):
         """ Return the variant with the given index """
         assert index >= 0
-        return self.parts[1 + index]
+        return self._parts[1 + index]
 
     def startswith(self, part):
         """ Returns True if the terminal name starts with the given string """
-        return self.parts[0] == part
+        return self._parts[0] == part
 
     def matches(self, t_kind, t_val):
         # print("Terminal.matches: self.name is {0}, t_kind is {1}".format(self.name, t_kind))
-        return self.name == t_kind
+        return self._name == t_kind
 
     def matches_first(self, t_kind, t_val):
-        return self.parts[0] == t_kind
+        return self._parts[0] == t_kind
 
 
 class LiteralTerminal(Terminal):
@@ -153,17 +156,17 @@ class LiteralTerminal(Terminal):
 
     def matches(self, t_kind, t_val):
         """ A literal terminal matches a token if the token text is identical to the literal """
-        return self.name == t_val
+        return self._name == t_val
 
     def matches_first(self, t_kind, t_val):
         """ A literal terminal matches a token if the token text is identical to the literal """
-        return self.parts[0] == t_val
+        return self._parts[0] == t_val
 
     def __repr__(self):
-        return '\'{0}\''.format(self.name)
+        return '\'{0}\''.format(self._name)
 
     def __str__(self):
-        return '\'{0}\''.format(self.name)
+        return '\'{0}\''.format(self._name)
 
 
 class Token:
@@ -172,23 +175,23 @@ class Token:
 
     def __init__(self, kind, val):
         """ A basic token has a kind and a value, both strings """
-        self.kind = kind
-        self.val = val
+        self._kind = kind
+        self._val = val
 
     def __repr__(self):
         """ Return a simple string representation of this token """
-        if self.kind == self.val:
-            return '{0}'.format(self.kind)
-        return '{0}:{1}'.format(self.kind, self.val)
+        if self._kind == self._val:
+            return '{0}'.format(self._kind)
+        return '{0}:{1}'.format(self._kind, self._val)
 
     def text(self):
         """ Return the token text, as it was in the source """
-        return self.val
+        return self._val
 
     def matches(self, terminal):
         """ Does this token match the given terminal? """
         # By default, ask the terminal
-        return terminal.matches(self.kind, self.val)
+        return terminal.matches(self._kind, self._val)
 
 
 class Production:
