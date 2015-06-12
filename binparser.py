@@ -68,12 +68,16 @@ class BIN_Token(Token):
 
     # Strings that must be present in the grammatical form for variants
     _VARIANT = {
-        "nf" : "NF",
-        "þf" : "ÞF",
-        "þgf" : "ÞGF",
-        "ef" : "EF",
-        "et" : "ET",
-        "ft" : "FT"
+        "nf" : "NF", # Nefnifall / nominative
+        "þf" : "ÞF", # Þolfall / accusative
+        "þgf" : "ÞGF", # Þágufall / dative
+        "ef" : "EF", # Eignarfall / possessive
+        "et" : "ET", # Eintala / singular
+        "ft" : "FT", # Fleirtala / plural
+        "p1" : "1P", # Fyrsta persóna / first person
+        "p2" : "2P", # Önnur persóna / second person
+        "p3" : "3P", # Þriðja persóna / third person
+        "nh" : "NH" # Nafnháttur
     }
 
     def __init__(self, t):
@@ -93,9 +97,21 @@ class BIN_Token(Token):
         if terminal.has_variant("ft") and "ET" in form:
             # Can't use singular verb if plural terminal
             return False
+        # Check that person (1st, 2nd, 3rd) matches
+        if terminal.has_variant("p1") and not "1P" in form:
+            return False
+        if terminal.has_variant("p2") and not "2P" in form:
+            return False
+        if terminal.has_variant("p3") and not "3P" in form:
+            return False
+        if terminal.has_variant("nh") and not "NH" in form:
+            return False
         # Check whether the verb token can potentially match the argument number
         # of the terminal in question. If the verb is known to take fewer
         # arguments than the terminal wants, this is not a match.
+        if terminal.variant(0) not in "012":
+            # No argument number: all verbs match
+            return True
         nargs = int(terminal.variant(0))
         if verb in Verbs.VERBS[nargs]:
             # Seems to take the correct number of arguments:
@@ -186,12 +202,13 @@ class BIN_Token(Token):
                 # so_2 for verbs with two noun arguments. A verb may
                 # match more than one argument number category.
                 return self.verb_matches(m[0], terminal, m[5])
-            elif terminal.startswith("fs"):
+            elif terminal.startswith("fs") and terminal.num_variants() > 0:
                 return self.prep_matches(m[0], terminal.variant(0))
-            for v in terminal.variants():
-                if BIN_Token._VARIANT[v] not in m[5]:
-                    # Not matching
-                    return False
+            if m[5] != "-": # Tokens without a form specifier are assumed to be universally matching
+                for v in terminal.variants():
+                    if BIN_Token._VARIANT[v] not in m[5]:
+                        # Not matching
+                        return False
             return terminal.matches_first(BIN_Token._KIND[m[2]], m[0])
 
         # We have a match if any of the possible meanings
@@ -222,7 +239,7 @@ class BIN_Parser(Parser):
     _grammar = None
 
     # The token types that the parser currently knows how to handle
-    _UNDERSTOOD = { TOK.WORD, TOK.PUNCTUATION, TOK.PERSON,
+    _UNDERSTOOD = { TOK.WORD, TOK.PERSON,
         TOK.CURRENCY, TOK.AMOUNT }
 
     def __init__(self):
@@ -243,7 +260,12 @@ class BIN_Parser(Parser):
         """ Parse the token list after wrapping each understood token in the BIN_Token class """
 
         def is_understood(t):
-            return t[0] in BIN_Parser._UNDERSTOOD
+            if t[0] in BIN_Parser._UNDERSTOOD:
+                return True
+            if t[0] == TOK.PUNCTUATION:
+                # A limited number of punctuation symbols is currently understood
+                return t[1] in ".?" # „“
+            return False
 
         # After wrapping, call the parent class go()
         return Parser.go(self, [BIN_Token(t) for t in tokens if is_understood(t)])

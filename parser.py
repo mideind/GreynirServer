@@ -437,8 +437,8 @@ class Parser:
         """ Create a flattened parse schema from the forest w """
 
         def _part(w, level, index, parent, suffix):
-            """ Return a tuple (colheading + options, start_token, end_token, partlist, info) where the
-                partlist is again a list of the component schemas - or a terminal
+            """ Return a tuple (colheading + options, start_token, end_token, partlist, info)
+                where the partlist is again a list of the component schemas - or a terminal
                 matching a single token - or None if empty """
             if w is None:
                 # Epsilon node: return empty list
@@ -510,22 +510,35 @@ class Parser:
         def _traverse(p):
             """ Traverse a schema subtree and insert the nodes into their
                 respective grid columns """
-            col = p[0][0] # Level of this subtree
+            # p[0] is the coordinate of this subtree (level + suffix)
+            # p[1] is the start column of this subtree
+            # p[2] is the end column of this subtree
+            # p[3] is the subpart list
+            # p[4] is the nonterminal or terminal/token at the head of this subtree
+            col, option = p[0][0], p[0][1:] # Level of this subtree and option
+
+            if not option:
+                # No option: use a 'clean key' of None
+                option = None
+            else:
+                # Convert list to a frozen (hashable) tuple
+                option = tuple(option)
+
             while len(cols) <= col:
                 # Add empty columns as required to reach this level
-                cols.append([])
+                cols.append(dict())
 
             # Add a tuple describing the rows spanned and the node info
             assert isinstance(p[4], Nonterminal) or isinstance(p[4], tuple)
-            cols[col].append((p[1], p[2], p[4]))
+            if option not in cols[col]:
+                # Put in a dictionary entry for this option
+                cols[col][option] = []
+            cols[col][option].append((p[1], p[2], p[4]))
 
             # Navigate into subparts, if any
             if p[3]:
                 for subpart in p[3]:
-                    # !!! TBD: The following is hard coded to traverse
-                    # !!! the first option subtree only in case of ambiguity
-                    if len(subpart[0]) == 1 or all(x == 0 for x in subpart[0][1:]):
-                        _traverse(subpart)
+                    _traverse(subpart)
 
         _traverse(schema)
         # Return a tuple with the grid and the number of tokens

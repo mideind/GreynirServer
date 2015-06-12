@@ -26,6 +26,11 @@ div.text-container {
    margin: 0 12px;
 }
 
+div.test-container {
+   width: 1024px;
+   margin: 0 12px;
+}
+
 .over {
    outline-style: solid;
    outline-color: yellow;
@@ -61,17 +66,17 @@ input.text:focus {
 }
 
 input#url {
-   width: 520px;
+   width: 516px;
 }
 
 div.btn {
    display: inline-block;
    text-align: center;
-   font-size: 16px;
+   font-size: 17px;
    font-weight: 700;
    color: white;
    margin: 0;
-   padding: 4px;
+   padding: 6px;
    border-radius: 3px;
    vertical-align: middle;
    cursor: pointer;
@@ -80,6 +85,7 @@ div.btn {
    -moz-user-select: none;
    -ms-user-select: none;
    user-select: none;
+   margin-bottom: 3px;
 }
 
 div.btn:focus {
@@ -271,5 +277,77 @@ div.info p {
 
 .highlight {
    background-color: #FFD080;
+}
+
+div.result table {
+   border-collapse: collapse;
+   width: 1024px;
+}
+
+div.result table tbody tr td {
+   vertical-align: top;
+   padding-left: 5px;
+   padding-right: 5px;
+   padding-top: 4px;
+   padding-bottom: 4px;
+   background-color: #e8ffe8;
+   border-style: solid;
+   border-width: 3px;
+   border-color: #ffffff;
+}
+
+div.result table thead tr th {
+   vertical-align: top;
+   padding-left: 5px;
+   padding-right: 5px;
+   padding-top: 4px;
+   padding-bottom: 4px;
+}
+
+td.result-id, th.result_id {
+   text-align: right;
+}
+
+td.result-sent {
+   font-weight: bold;
+   cursor: pointer;
+   text-align: left;
+}
+
+td.result-sent:hover {
+   background-color: #d8ffd8;
+}
+
+th.result-sent {
+   text-align: left;
+}
+
+td.result-num, th.result-num {
+   text-align: right;
+   width: 32px;
+}
+
+td.result-best, th.result-best {
+   text-align: right;
+   width: 32px;
+}
+
+td.result-time, th.result-time {
+   text-align: right;
+   width: 40px;
+}
+
+td.result-err, th.result-err {
+   color: red;
+   text-align: left;
+}
+
+p.options {
+   padding-top: 6px;
+   padding-bottom: 6px;
+}
+
+p.options span {
+   margin-left: 12px;
 }
 

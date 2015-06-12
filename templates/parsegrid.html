@@ -22,14 +22,19 @@
       <p class="txt">"{{ txt }}"</p>
 
 {% if combinations == 1 %}
-      <p>Ein trjágreining fannst:</p>
+      <p class="options">Ein trjágreining fannst:</p>
 {% else %}
-      <p>{{ combinations }} trjágreiningar fundust:</p>
+      <p class="options">{{ combinations }} trjágreiningar fundust:
+{% for c in choice_list %}
+<span>{{ c }}</span>
+{% endfor %}
+      </p>
 {% endif %}
 
    </div>
 
    <div class="grid">
+
       <table>
 {% for r in tbl %}
          <tr>

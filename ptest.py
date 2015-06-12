@@ -232,7 +232,7 @@ def run_test(p):
             # print("Parsed in {0:.4f} seconds, {1} combinations".format(t1 - t0, num))
 
             best = s["best"]
-            if best < 0 or abs(1 - num) < abs(1 - best):
+            if best <= 0 or abs(1 - num) < abs(1 - best):
                 # We are closer to the ideal 1 parse tree than
                 # the best parse so far: change the best one
                 best = num
@@ -245,7 +245,8 @@ def run_test(p):
                 numtrees = num,
                 best = best,
                 parse_time = t1 - t0,
-                err = err
+                err = err,
+                forest = forest
             )
 
 
@@ -296,7 +297,16 @@ def test3():
             except Exception as e:
                 print("{0}".format(e))
 
-    run_test(p)
+    for test in run_test(p):
+
+        print("\n'{0}'\n{1} parse trees found in {2:.3f} seconds\n"
+            .format(test["sentence"], test["numtrees"], test["parse_time"]))
+
+        if test["numtrees"] > 0:
+            Parser.print_parse_forest(test["forest"])
+            print("{0}".format(Parser.make_schema(test["forest"])))
+        elif test["err"]:
+            print("Error: {0}".format(test["err"]))
 
 
 if __name__ == "__main__":

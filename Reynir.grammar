@@ -34,22 +34,39 @@
 # Number (singular/plural) variant
 /tala = et ft
 
+# Person (1st, 2nd, 3rd) variant
+/pers = p1 p2 p3
+
 
 # Grammar rules
 
-S0 → Yfirsetning Samtengingarliður* '.'?
+S0 → VenjulegSetning | Tilvitnun | Spurning
+
+VenjulegSetning →
+    Yfirsetning Samtengingarliður* '.'?
+
+Spurning →
+    Yfirsetning Samtengingarliður* '?'
+
+Tilvitnun →
+    '„' Yfirsetning Samtengingarliður* TilvitnunarEnding
+
+TilvitnunarEnding →
+    '.'? '“' | '“' '.'?
 
 Samtengingarliður → Samtenging Yfirsetning
 
 Samtenging → st | 'þar' 'sem'
 
-Yfirsetning → Setning_et | Setning_ft
+Yfirsetning → SetningAlm_et | SetningAlm_ft
 
-Setning/tala → Frumlag/tala Atviksliður? Sagnliður/tala Sagnfylling/tala
+SetningAlm_et →
+    Setning_et_p1 | Setning_et_p2 | Setning_et_p3
 
-Frumlag_et → Nafnliður_et_nf
+SetningAlm_ft →
+    Setning_ft_p1 | Setning_ft_p2 | Setning_ft_p3
 
-Frumlag_ft → Nafnliður_ft_nf
+Setning/tala/pers → Frumlag/tala/pers Atviksliður? Sagnliður/tala/pers Sagnfylling/tala
 
 Sagnfylling/tala → Lýsingarliður/tala? Forsetningarfylling?
 
@@ -57,30 +74,83 @@ Forsetningarfylling → FsMeðFallstjórn Forsetningarliður*
 
 Lýsingarliður/tala → Atviksliður | Lýsingarorðsliður/tala
 
-Sagnliður/tala → Sögn_0/tala | Sögn_1/tala | Sögn_2/tala
+Sagnliður/tala/pers → Sögn_0/tala/pers | Sögn_1/tala/pers | Sögn_2/tala/pers
+    | so/tala/pers Nafnháttarliður
 
 # Sögn með engu viðfangi (dó)
-Sögn_0/tala → Hjálparsögn/tala* so_0/tala
+Sögn_0/tala/pers → Hjálparsögn/tala/pers+ so_0/tala
+    | so_0/tala/pers
 
 # Sögn með einu viðfangi (borðaði e-ð)
-Sögn_1/tala →
-    Hjálparsögn/tala* so_1_þf/tala NafnliðurAlm_þf
-    | Hjálparsögn/tala* so_1_þgf/tala NafnliðurAlm_þgf
-    | Hjálparsögn/tala* so_1_ef/tala NafnliðurAlm_ef
-    | Hjálparsögn/tala* so_1_nf/tala NafnliðurAlm_nf
+Sögn_1/tala/pers →
+    Hjálparsögn/tala/pers+ so_1_þf/tala NafnliðurAlm_þf
+    | so_1_þf/tala/pers NafnliðurAlm_þf
+    | Hjálparsögn/tala/pers+ so_1_þgf/tala NafnliðurAlm_þgf
+    | so_1_þgf/tala/pers NafnliðurAlm_þgf
+    | Hjálparsögn/tala/pers+ so_1_ef/tala NafnliðurAlm_ef
+    | so_1_ef/tala/pers NafnliðurAlm_ef
+    | Hjálparsögn/tala/pers+ so_1_nf/tala NafnliðurAlm_nf
+    | so_1_nf/tala/pers NafnliðurAlm_nf
 
 # Sögn með tveimur viðföngum (gaf e-m e-ð)
-Sögn_2/tala → Hjálparsögn/tala* so_2_þgf_þf/tala NafnliðurAlm_þgf NafnliðurAlm_þf
+Sögn_2/tala/pers →
+    Hjálparsögn/tala/pers+ so_2_þgf_þf/tala NafnliðurAlm_þgf NafnliðurAlm_þf
+    | so_2_þgf_þf/tala/pers NafnliðurAlm_þgf NafnliðurAlm_þf
 
 # Hjálparsögn: vera, hafa, skulu, munu...
-Hjálparsögn/tala → 'vera'/tala
-    | 'hafa'/tala
-    | 'skulu'/tala
-    | 'munu'/tala
+Hjálparsögn/tala/pers → 'vera'/tala/pers
+    | 'hafa'/tala/pers 'vera'/tala?
+    | 'skulu'/tala/pers 'hafa'/tala? 'vera'/tala?
+    | 'munu'/tala/pers 'hafa'/tala? 'vera'/tala?
 
-NafnliðurAlm/fall → Nafnliður_et/fall | Nafnliður_ft/fall
+Nafnháttarliður →
+    'að' Nafnháttarsögn Forsetningarfylling?
 
-Nafnliður_et/fall →
+Nafnháttarsögn →
+    so_0_nh
+    | so_1_þf_nh NafnliðurAlm_þf
+    | so_1_þgf_nh NafnliðurAlm_þgf
+    | so_1_ef_nh NafnliðurAlm_þgf
+    | so_1_nf_nh NafnliðurAlm_nf
+    | so_2_þgf_þf_nh NafnliðurAlm_þgf NafnliðurAlm_þf
+
+Frumlag_et_p1 →
+    'ég'
+
+Frumlag_et_p2 →
+    'þú'
+
+Frumlag_ft_p1 →
+    'við'
+    | 'ég' SamtengingNL_nf+
+    | NafnliðurAlm_nf OgEða 'ég' SamtengingNL_nf*
+
+Frumlag_ft_p2 →
+    'þið'
+    | 'þú' SamtengingNL_nf+
+    | NafnliðurAlm_nf OgEða 'þú' SamtengingNL_nf*
+
+Frumlag_et_p3 →
+
+    Fornöfn_et_nf? Töluorð*
+        Lýsingarorðsliður_et_nf* Fyrirbæri_nf Eignarfallsliður? Forsetningarliður*
+
+    | pfn_et_nf_p3
+    | Undirsetning_et_nf
+
+Frumlag_ft_p3 →
+
+    NafnliðurAlm_nf SamtengingNL_nf+
+
+    | Fornöfn_ft_nf? Töluorð*
+        Lýsingarorðsliður_ft_nf* no_ft_nf Eignarfallsliður? Forsetningarliður*
+
+    | pfn_ft_nf_p3
+    | Undirsetning_ft_nf
+
+NafnliðurAlm/fall → NafnliðurAlm_et/fall | NafnliðurAlm_ft/fall
+
+NafnliðurAlm_et/fall →
 
     Fornöfn_et/fall? Töluorð*
         Lýsingarorðsliður_et/fall* Fyrirbæri/fall Eignarfallsliður? Forsetningarliður*
@@ -92,7 +162,7 @@ Fyrirbæri/fall → no_et/fall | Manneskja/fall
 
 Manneskja/fall → person/fall ','? no_et/fall?
 
-Nafnliður_ft/fall →
+NafnliðurAlm_ft/fall →
 
     NafnliðurAlm/fall SamtengingNL/fall+
 
@@ -102,13 +172,13 @@ Nafnliður_ft/fall →
     | pfn_ft/fall
     | Undirsetning_ft/fall
 
-Undirsetning/tala/fall → Nafnliður/tala/fall Tengiorð Setning/tala
+Undirsetning/tala/fall → NafnliðurAlm/tala/fall Tengiorð SetningAlm/tala
 
 Tengiorð → 'sem' | 'er'
 
 Eignarfallsliður →
-    Nafnliður_et_ef Lýsingarorðsliður_et_ef*
-    | Nafnliður_ft_ef Lýsingarorðsliður_ft_ef*
+    NafnliðurAlm_et_ef Lýsingarorðsliður_et_ef*
+    | NafnliðurAlm_ft_ef Lýsingarorðsliður_ft_ef*
 
 # Væri unnt að skipta í óákveðin og ákveðin fornöfn ef þarf
 Fornöfn/tala/fall → fn/tala/fall fn/tala/fall?
@@ -132,6 +202,10 @@ FsMeðFallstjórn →
     | fs_þgf NafnliðurAlm_þgf
     | fs_ef NafnliðurAlm_ef
     | fs_nf NafnliðurAlm_nf
+    | fs Nafnháttarliður # 'um að...', 'í að...', 'eftir að...'
+    | fs_þf 'það' Nafnháttarliður # 'kringum það að...'
+    | fs_þgf 'því' Nafnháttarliður # 'frá því að...'
+    | fs_ef 'þess' Nafnháttarliður # 'til þess að...'
 
 Atviksliður → ao+
 

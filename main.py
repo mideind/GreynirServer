@@ -38,6 +38,12 @@ from ptest import run_test
 
 app = Flask(__name__)
 
+from flask import current_app
+
+def debug():
+    # Call this to trigger the Flask debugger on purpose
+    assert current_app.debug == False, "Don't panic! You're here by request of debug()"
+
 # Current default URL for testing
 
 DEFAULT_URL = 'http://kjarninn.is/2015/04/mar-gudmundsson-segir-margskonar-misskilnings-gaeta-hja-hannesi-holmsteini/'
@@ -200,14 +206,18 @@ def analyze():
 
 @app.route("/parsegrid", methods=['POST'])
 def parse_grid():
-    """ Show the parse grid for a sentence """
+    """ Show the parse grid for a particular parse tree of a sentence """
 
     txt = request.form.get('txt', "")
 
-    bp = BIN_Parser()
+    # Tokenize the text
     tokens = list(parse_text(txt))
+    # Parse the text
+    bp = BIN_Parser()
     forest = bp.go(tokens)
+    # Find the number of parse combinations
     combinations = Parser.num_combinations(forest)
+    # Make the parse grid with all options
     grid, ncols = Parser.make_grid(forest)
     # The grid is columnar; convert it to row-major
     # form for convenient translation into HTML
@@ -216,9 +226,27 @@ def parse_grid():
     tbl = [ [] for _ in range(nrows) ]
     # Info about previous row spans
     rs = [ [] for _ in range(nrows) ]
+
+    # The particular option path we are displaying
+    path = [(0,), (0, 0), (0, 0, 0)]
+    # This set will contain all option path choices
+    choices = set()
+
     for gix, gcol in enumerate(grid):
+        # gcol is a dictionary of options
+        # Accumulate the options that we want do display
+        # according to chosen path
+        cols = gcol[None] if None in gcol else [] # Default content
+        # Add the options we're displaying
+        for p in path:
+            if p in gcol:
+                cols.extend(gcol[p])
+        # Accumulate all possible path choices
+        choices |= gcol.keys()
+        # Sort the columns that will be displayed
+        cols.sort(key = lambda x: x[0])
         col = 0
-        for startcol, endcol, info in gcol:
+        for startcol, endcol, info in cols:
             assert isinstance(info, Nonterminal) or isinstance(info, tuple)
             if col < startcol:
                 gap = startcol - col
@@ -244,7 +272,16 @@ def parse_grid():
         ncols_adj = ncols - len(rs[gix])
         if col < ncols_adj:
             tbl[gix].append((ncols_adj - col, 1, "", ""))
-    return render_template("parsegrid.html", txt = txt, tbl = tbl, combinations = combinations)
+    # Calculate the unique path choices available for this parse grid
+    choices -= { None } # Default choice: don't need it in the set
+    unique_choices = choices.copy()
+    for c in choices:
+        # Remove all shorter prefixes of c from the unique_choices set
+        unique_choices -= { c[0:i] for i in range(1, len(c)) }
+    # Create a nice string representation of the unique path choices
+    uc_list = [ "_".join(str(c) for c in choice) for choice in unique_choices ]
+    return render_template("parsegrid.html", txt = txt, tbl = tbl,
+        combinations = combinations, choice_list = uc_list)
 
 
 @app.route("/")

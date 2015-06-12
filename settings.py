@@ -28,9 +28,10 @@ class ConfigError(Exception):
         self.line = 0
 
     def set_pos(self, fname, line):
-        """ Set file name and line information """
-        self.fname = fname
-        self.line = line
+        """ Set file name and line information, if not already set """
+        if not self.fname:
+            self.fname = fname
+            self.line = line
 
     def __str__(self):
         """ Return a string representation of this exception """
@@ -38,6 +39,54 @@ class ConfigError(Exception):
         if not self.fname:
             return s
         return "File {0}, line {1}: {2}".format(self.fname, self.line, s)
+
+
+class LineReader:
+    """ Read lines from a text file, recognizing $include directives """
+
+    def __init__(self, fname, outer_fname = None, outer_line = 0):
+        self._fname = fname
+        self._line = 0
+        self._outer_fname = outer_fname
+        self._outer_line = outer_line
+
+    def fname(self):
+        return self._fname
+
+    def line(self):
+        return self._line
+
+    def lines(self):
+        """ Generator yielding lines from a text file """
+        self._line = 0
+        try:
+            with codecs.open(self._fname, "r", "utf-8") as inp:
+                # Read config file line-by-line
+                for s in inp:
+                    self._line += 1
+                    # Check for include directive: $include filename.txt
+                    if s.startswith("$") and s.lower().startswith("$include "):
+                        iname = s.split(maxsplit = 1)[1].strip()
+                        rdr = LineReader(iname, self._fname, self._line)
+                        # Successfully opened the include file: switch context to it
+                        save = (self._line, self._fname)
+                        self._line = 0
+                        self._fname = iname
+                        for incl_s in rdr.lines():
+                            self._line += 1
+                            yield incl_s
+                        self._line, self._fname = save
+                    else:
+                        yield s
+        except (IOError, OSError):
+            if self._outer_fname:
+                # This is an include file within an outer config file
+                c = ConfigError("Error while opening or reading include file '{0}'".format(self._fname))
+                c.set_pos(self._outer_fname, self._outer_line)
+            else:
+                # This is an outermost config file
+                c = ConfigError("Error while opening or reading config file '{0}'".format(self._fname))
+            raise c
 
 
 class Abbreviations:
@@ -234,6 +283,7 @@ class Settings:
             raise ConfigError("Preposition should have a single case argument")
         Prepositions.add(a[0], a[1])
 
+
     def read(fname):
         """ Read configuration file """
 
@@ -245,40 +295,36 @@ class Settings:
             "prepositions" : Settings._handle_prepositions
         }
         handler = None # Current section handler
-        line = 0
 
+        rdr = None
         try:
-
-            with codecs.open(fname, "r", "utf-8") as inp:
-                # Read config file line-by-line
-                for s in inp:
-                    line += 1
-                    # Ignore comments
-                    ix = s.find('#')
-                    if ix >= 0:
-                        s = s[0:ix]
-                    s = s.strip()
-                    if not s:
-                        # Blank line: ignore
+            rdr = LineReader(fname)
+            for s in rdr.lines():
+                # Ignore comments
+                ix = s.find('#')
+                if ix >= 0:
+                    s = s[0:ix]
+                s = s.strip()
+                if not s:
+                    # Blank line: ignore
+                    continue
+                if s[0] == '[' and s[-1] == ']':
+                    # New section
+                    section = s[1:-1].strip().lower()
+                    if section in CONFIG_HANDLERS:
+                        handler = CONFIG_HANDLERS[section]
                         continue
-                    if s[0] == '[' and s[-1] == ']':
-                        # New section
-                        section = s[1:-1].strip().lower()
-                        if section in CONFIG_HANDLERS:
-                            handler = CONFIG_HANDLERS[section]
-                            continue
-                        raise ConfigError("Unknown section name '{0}'".format(section))
-                    if handler is None:
-                        raise ConfigError("No handler for config line '{0}'".format(s))
-                    # Call the correct handler depending on the section
-                    handler(s)
+                    raise ConfigError("Unknown section name '{0}'".format(section))
+                if handler is None:
+                    raise ConfigError("No handler for config line '{0}'".format(s))
+                # Call the correct handler depending on the section
+                handler(s)
 
         except ConfigError as e:
             # Add file name and line number information to the exception
-            e.set_pos(fname, line)
+            if rdr:
+                e.set_pos(rdr.fname(), rdr.line())
             raise e
 
-        except (IOError, OSError):
-            raise ConfigError("Error while opening or reading config file '{0}'".format(fname))
 
 
