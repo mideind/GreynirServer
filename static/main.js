@@ -325,6 +325,9 @@ function populateResult(json) {
          if (wl[2] > 0)
             // This sentence has at least one parse tree: mark it
             c += " parsed";
+         if (wl[2] > 100)
+            // This sentence has a lot of parses: mark it
+            c += " very-ambig";
          s += "<span class='" + c + "'>";
          wsp = "";
       }
@@ -388,8 +391,8 @@ function populateResult(json) {
    out.html(s);
    // Put a hover handler on each word
    $("div#result i").hover(hoverIn, hoverOut);
-   // Put a click handler on each parsed sentence
-   $("span.sent.parsed").click(showParse);
+   // Put a click handler on each sentence
+   $("span.sent").click(showParse);
 }
 
 function analyzeUrl() {

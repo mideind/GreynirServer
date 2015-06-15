@@ -43,18 +43,18 @@
 S0 → VenjulegSetning | Tilvitnun | Spurning
 
 VenjulegSetning →
-    Yfirsetning Samtengingarliður* '.'?
+    Yfirsetning StLiður* '.'?
 
 Spurning →
-    Yfirsetning Samtengingarliður* '?'
+    Yfirsetning StLiður* '?'
 
 Tilvitnun →
-    '„' Yfirsetning Samtengingarliður* TilvitnunarEnding
+    '„' Yfirsetning StLiður* TilvitnunarEnding
 
 TilvitnunarEnding →
     '.'? '“' | '“' '.'?
 
-Samtengingarliður → Samtenging Yfirsetning
+StLiður → Samtenging Yfirsetning
 
 Samtenging → st | 'þar' 'sem'
 
@@ -66,94 +66,159 @@ SetningAlm_et →
 SetningAlm_ft →
     Setning_ft_p1 | Setning_ft_p2 | Setning_ft_p3
 
+# Setningar án frumlags (notaðar t.d. í tengisetningum eftir 'sem')
+
+SetningÁnF_et →
+    SetningÁnF_et_p1 | SetningÁnF_et_p2 | SetningÁnF_et_p3
+
+SetningÁnF_ft →
+    SetningÁnF_ft_p1 | SetningÁnF_ft_p2 | SetningÁnF_ft_p3
+
 Setning/tala/pers → Frumlag/tala/pers Atviksliður? Sagnliður/tala/pers Sagnfylling/tala
 
-Sagnfylling/tala → Lýsingarliður/tala? Forsetningarfylling?
+SetningÁnF/tala/pers → Atviksliður? ÖfugurSagnliður/tala/pers Sagnfylling/tala
 
-Forsetningarfylling → FsMeðFallstjórn Forsetningarliður*
+Sagnfylling/tala → Lýsingarliður/tala? FsFylling?
 
-Lýsingarliður/tala → Atviksliður | Lýsingarorðsliður/tala
+FsFylling → FsMeðFallstjórn FsLiður*
+
+Lýsingarliður/tala → Atviksliður | LoLiður/tala
 
 Sagnliður/tala/pers → Sögn_0/tala/pers | Sögn_1/tala/pers | Sögn_2/tala/pers
-    | so/tala/pers Nafnháttarliður
+    | so/tala/pers NhLiður
 
-# Sögn með engu viðfangi (dó)
-Sögn_0/tala/pers → Hjálparsögn/tala/pers+ so_0/tala
-    | so_0/tala/pers
+ÖfugurSagnliður/tala/pers → ÖfugSögn_0/tala/pers | ÖfugSögn_1/tala/pers | ÖfugSögn_2/tala/pers
+    | so/tala/pers NhLiður
+
+# Sögn með engu viðfangi ('lenti')
+Sögn_0/tala/pers →
+    so_0/tala/pers                          # Mennirnir lenda
+    | HjSögn/tala/pers so_0/tala            # Mennirnir munu lenda / munu hafa lent
+    | LhÞtSögn/tala/pers so_0_lhþt/tala     # Mennirnir eru lentir
+
+# Sögn sem sendur í undirsetningu (Maðurinn sem kyssti / var kysstur / kysstur var)
+ÖfugSögn_0/tala/pers →
+    so_0/tala/pers                          # Mennirnir sem lenda
+    | HjSögn/tala/pers so_0/tala            # Mennirnir sem munu lenda / hafa lent
+    | so_0/tala HjSögn/tala/pers            # Mennirnir sem lenda munu / lent hafa
+    | so_0_lhþt/tala LhÞtSögn/tala/pers     # Mennirnir sem eru/munu vera lentir/kosnir
+    | LhÞtSögn/tala/pers so_0_lhþt/tala     # Mennirnir sem lentir/kosnir eru/munu vera
 
 # Sögn með einu viðfangi (borðaði e-ð)
 Sögn_1/tala/pers →
-    Hjálparsögn/tala/pers+ so_1_þf/tala NafnliðurAlm_þf
-    | so_1_þf/tala/pers NafnliðurAlm_þf
-    | Hjálparsögn/tala/pers+ so_1_þgf/tala NafnliðurAlm_þgf
-    | so_1_þgf/tala/pers NafnliðurAlm_þgf
-    | Hjálparsögn/tala/pers+ so_1_ef/tala NafnliðurAlm_ef
-    | so_1_ef/tala/pers NafnliðurAlm_ef
-    | Hjálparsögn/tala/pers+ so_1_nf/tala NafnliðurAlm_nf
-    | so_1_nf/tala/pers NafnliðurAlm_nf
+    so_1_þf/tala/pers NlAlm_þf              # Konurnar borðuðu matinn
+    | HjSögn/tala/pers so_1_þf NlAlm_þf     # Konurnar hafa borðað matinn
+    | so_1_þgf/tala/pers NlAlm_þgf          # Konurnar höfnuðu Páli
+    | HjSögn/tala/pers so_1_þgf NlAlm_þgf   # Konurnar hafa hafnað Páli
+    | so_1_ef/tala/pers NlAlm_ef            # Konurnar nutu matarins
+    | HjSögn/tala/pers so_1_ef NlAlm_ef     # Konurnar hafa notið matarins
+    | so_1_nf/tala/pers NlAlm_nf            # Konurnar voru leikarar
+    | HjSögn/tala/pers so_1_nf NlAlm_nf     # Konurnar höfðu verið leikarar
+    | LhÞtSögn/tala/pers so_2_þgf_þf_lhþt/tala NlAlm_þgf # Konan er gefin Páli
+
+# Sögn með einu viðfangi sem stendur í undirsetningu
+ÖfugSögn_1/tala/pers →
+    so_1_þf/tala/pers NlAlm_þf                  # Konurnar sem borðuðu matinn
+    | HjSögn/tala/pers so_1_þf_sagnb NlAlm_þf   # Konurnar sem höfðu borðað matinn
+    | so_1_þf_sagnb HjSögn/tala/pers NlAlm_þf   # Konurnar sem borðað höfðu matinn
+    | so_1_þgf/tala/pers NlAlm_þgf              # Konurnar sem höfnuðu Páli
+    | HjSögn/tala/pers so_1_þgf_sagnb NlAlm_þgf # Konurnar sem höfðu hafnað Páli
+    | so_1_þgf_sagnb HjSögn/tala/pers NlAlm_þgf # Konurnar sem hafnað höfðu Páli
+    | so_1_ef/tala/pers NlAlm_ef                # Konurnar sem nutu matarins
+    | HjSögn/tala/pers so_1_ef_sagnb NlAlm_ef   # Konurnar sem höfðu notið matarins
+    | so_1_ef_sagnb HjSögn/tala/pers NlAlm_ef   # Konurnar sem notið höfðu matarins
+    | so_1_nf/tala/pers NlAlm_nf                # Konurnar sem voru leikarar
+    | HjSögn/tala/pers so_1_nf_sagnb NlAlm_nf   # Konurnar sem höfðu verið leikarar
+    | so_1_nf_sagnb HjSögn/tala/pers NlAlm_nf   # Konurnar sem verið höfðu leikarar
+    | LhÞtSögn/tala/pers so_2_þgf_þf_lhþt/tala NlAlm_þgf # Konan sem var gefin Páli
+    | so_2_þgf_þf_lhþt/tala LhÞtSögn/tala/pers NlAlm_þgf # Konan sem gefin var Páli
 
 # Sögn með tveimur viðföngum (gaf e-m e-ð)
 Sögn_2/tala/pers →
-    Hjálparsögn/tala/pers+ so_2_þgf_þf/tala NafnliðurAlm_þgf NafnliðurAlm_þf
-    | so_2_þgf_þf/tala/pers NafnliðurAlm_þgf NafnliðurAlm_þf
+    so_2_þgf_þf/tala/pers NlAlm_þgf NlAlm_þf    # Konurnar gáfu Páli gjöfina
+    | HjSögn/tala/pers so_2_þgf_þf_sagnb NlAlm_þgf NlAlm_þf # Konurnar höfðu gefið Páli gjöfina
 
-# Hjálparsögn: vera, hafa, skulu, munu...
-Hjálparsögn/tala/pers → 'vera'/tala/pers
-    | 'hafa'/tala/pers 'vera'/tala?
-    | 'skulu'/tala/pers 'hafa'/tala? 'vera'/tala?
-    | 'munu'/tala/pers 'hafa'/tala? 'vera'/tala?
+# Sögn með tveimur viðföngum (gaf e-m e-ð) sem stendur í undirsetningu
+ÖfugSögn_2/tala/pers →
+    so_2_þgf_þf/tala/pers NlAlm_þgf NlAlm_þf   # Konan sem gaf Páli gjöfina
+    | HjSögn/tala/pers so_2_þgf_þf_sagnb
+        NlAlm_þgf NlAlm_þf                     # Konurnar sem hafa gefið Páli gjöfina
+    | so_2_þgf_þf_sagnb HjSögn/tala/pers 
+        NlAlm_þgf NlAlm_þf                     # Konurnar sem gefið hafa Páli gjöfina
 
-Nafnháttarliður →
-    'að' Nafnháttarsögn Forsetningarfylling?
+# Hjálparsagnasambönd: vera, hafa, geta, skulu, munu...
+HjSögn/tala/pers →
+    'hafa'/tala/pers                    # hafa farið
+    | 'geta'/tala/pers 'hafa'_nh?       # geta farið / geta hafa farið
+# !!! Ath: Skulu og munu taka með sér nafnhátt ef einar og sér    
+    | 'skulu'/tala/pers 'hafa'_nh?      # skulu fara / skulu hafa farið
+    | 'munu'/tala/pers 'hafa'_nh?       # munu fara / munu hafa farið
 
-Nafnháttarsögn →
+# Lýsingarháttur þátíðar: vera farinn, hafa verið farinn, skal vera farinn, mun vera farinn
+LhÞtSögn/tala/pers →
+    'vera'/tala/pers                             # eru farnar
+    | 'hafa'/tala/pers 'vera'_sagnb              # hafa verið farnar
+    | 'geta'/tala/pers 'hafa'_nh? 'vera'_sagnb   # geta verið farnar / geta hafa verið farnar
+# !!! Ath: Skulu og munu taka með sér nafnhátt ef einar og sér    
+    | 'skulu'/tala/pers 'hafa'_nh? 'vera'_sagnb  # skulu vera farnar / skulu hafa verið farnar
+    | 'munu'/tala/pers 'hafa'_nh? 'vera'_sagnb   # munu vera farnar / munu hafa verið farnar
+
+NhLiður →
+    nhm NhSögn FsFylling?
+
+NhSögn →
     so_0_nh
-    | so_1_þf_nh NafnliðurAlm_þf
-    | so_1_þgf_nh NafnliðurAlm_þgf
-    | so_1_ef_nh NafnliðurAlm_þgf
-    | so_1_nf_nh NafnliðurAlm_nf
-    | so_2_þgf_þf_nh NafnliðurAlm_þgf NafnliðurAlm_þf
+    | so_1_þf_nh NlAlm_þf
+    | so_1_þgf_nh NlAlm_þgf
+    | so_1_ef_nh NlAlm_þgf
+    | so_1_nf_nh NlAlm_nf
+    | so_2_þgf_þf_nh NlAlm_þgf NlAlm_þf
 
 Frumlag_et_p1 →
-    'ég'
+    'ég'_nf_et
 
 Frumlag_et_p2 →
-    'þú'
+    'þú'_nf_et
 
 Frumlag_ft_p1 →
-    'við'
-    | 'ég' SamtengingNL_nf+
-    | NafnliðurAlm_nf OgEða 'ég' SamtengingNL_nf*
+    'ég'_nf_ft | 'vér'_nf_ft
+    | 'ég'_nf_et SamtengingNL_nf+
+    | NlAlm_nf OgEða 'ég'_nf_et SamtengingNL_nf*
 
 Frumlag_ft_p2 →
-    'þið'
-    | 'þú' SamtengingNL_nf+
-    | NafnliðurAlm_nf OgEða 'þú' SamtengingNL_nf*
+    'þú'_nf_ft | 'þér'_nf_ft
+    | 'þú'_nf_et SamtengingNL_nf+
+    | NlAlm_nf OgEða 'þú'_nf_et SamtengingNL_nf*
 
 Frumlag_et_p3 →
 
     Fornöfn_et_nf? Töluorð*
-        Lýsingarorðsliður_et_nf* Fyrirbæri_nf Eignarfallsliður? Forsetningarliður*
+        LoLiður_et_nf* Fyrirbæri_nf
+        EfLiður? Fornöfn_et_nf? FsLiður*
 
-    | pfn_et_nf_p3
+    | 'hann'_nf_et | 'hún'_nf_et | 'það'_nf_et
+    | Fornöfn_et_nf
     | Undirsetning_et_nf
 
 Frumlag_ft_p3 →
 
-    NafnliðurAlm_nf SamtengingNL_nf+
+    NlAlm_nf SamtengingNL_nf+
 
     | Fornöfn_ft_nf? Töluorð*
-        Lýsingarorðsliður_ft_nf* no_ft_nf Eignarfallsliður? Forsetningarliður*
+        LoLiður_ft_nf* no_ft_nf
+        EfLiður? Fornöfn_ft_nf? FsLiður*
 
-    | pfn_ft_nf_p3
+    | 'hann'_nf_ft | 'hún'_nf_ft | 'það'_nf_ft
+    | Fornöfn_ft_nf
     | Undirsetning_ft_nf
 
-NafnliðurAlm/fall → NafnliðurAlm_et/fall | NafnliðurAlm_ft/fall
+NlAlm/fall → NlAlm_et/fall | NlAlm_ft/fall
 
-NafnliðurAlm_et/fall →
+NlAlm_et/fall →
 
     Fornöfn_et/fall? Töluorð*
-        Lýsingarorðsliður_et/fall* Fyrirbæri/fall Eignarfallsliður? Forsetningarliður*
+        LoLiður_et/fall* Fyrirbæri/fall
+        EfLiður? Fornöfn_et/fall? FsLiður*
 
     | pfn_et/fall
     | Undirsetning_et/fall
@@ -162,50 +227,56 @@ Fyrirbæri/fall → no_et/fall | Manneskja/fall
 
 Manneskja/fall → person/fall ','? no_et/fall?
 
-NafnliðurAlm_ft/fall →
+NlAlm_ft/fall →
 
-    NafnliðurAlm/fall SamtengingNL/fall+
+    NlAlm/fall SamtengingNL/fall+
 
     | Fornöfn_ft/fall? Töluorð*
-        Lýsingarorðsliður_ft/fall* no_ft/fall Eignarfallsliður? Forsetningarliður*
+        LoLiður_ft/fall* no_ft/fall
+        EfLiður? Fornöfn_ft/fall? FsLiður*
 
     | pfn_ft/fall
     | Undirsetning_ft/fall
 
-Undirsetning/tala/fall → NafnliðurAlm/tala/fall Tengiorð SetningAlm/tala
+Undirsetning/tala/fall →
+    NlAlm/tala/fall Tengiorð Tengisetning/tala
 
-Tengiorð → 'sem' | 'er'
+Tengiorð → 'sem'    # | 'er'  # Be careful with this one...
 
-Eignarfallsliður →
-    NafnliðurAlm_et_ef Lýsingarorðsliður_et_ef*
-    | NafnliðurAlm_ft_ef Lýsingarorðsliður_ft_ef*
+Tengisetning/tala →
+    Yfirsetning    # Maðurinn sem konan kyssti í gær / konurnar kysstu í gær
+    | SetningÁnF/tala  # Maðurinn sem kyssti konuna í gær
+
+EfLiður →
+    NlAlm_et_ef LoLiður_et_ef*
+    | NlAlm_ft_ef LoLiður_ft_ef*
 
 # Væri unnt að skipta í óákveðin og ákveðin fornöfn ef þarf
 Fornöfn/tala/fall → fn/tala/fall fn/tala/fall?
 
 Töluorð → to | töl
 
-OgEða → 'og' | 'eða'
+OgEða → 'og' | 'eða' # | 'svo og' # Spaces are presently not allowed in literal terminals
 
-SamtengingNL/fall → OgEða NafnliðurAlm/fall
+SamtengingNL/fall → OgEða NlAlm/fall
 
-Lýsingarorðsliður/tala → Atviksliður? lo/tala
-    | Lýsingarorðsliður/tala OgEða Atviksliður? lo/tala
+LoLiður/tala → Atviksliður? lo/tala
+    | LoLiður/tala OgEða Atviksliður? lo/tala
 
-Lýsingarorðsliður/tala/fall → Atviksliður? lo/tala/fall
-    | Lýsingarorðsliður/tala/fall OgEða Atviksliður? lo/tala/fall
+LoLiður/tala/fall → Atviksliður? lo/tala/fall
+    | LoLiður/tala/fall OgEða Atviksliður? lo/tala/fall
 
-Forsetningarliður → Atviksliður? FsMeðFallstjórn
+FsLiður → Atviksliður? FsMeðFallstjórn
 
 FsMeðFallstjórn →
-    fs_þf NafnliðurAlm_þf
-    | fs_þgf NafnliðurAlm_þgf
-    | fs_ef NafnliðurAlm_ef
-    | fs_nf NafnliðurAlm_nf
-    | fs Nafnháttarliður # 'um að...', 'í að...', 'eftir að...'
-    | fs_þf 'það' Nafnháttarliður # 'kringum það að...'
-    | fs_þgf 'því' Nafnháttarliður # 'frá því að...'
-    | fs_ef 'þess' Nafnháttarliður # 'til þess að...'
+    fs_þf NlAlm_þf
+    | fs_þgf NlAlm_þgf
+    | fs_ef NlAlm_ef
+    | fs_nf NlAlm_nf
+    | fs NhLiður # 'um að...', 'í að...', 'eftir að...'
+    | fs_þf 'það'_þf_et NhLiður # 'kringum það að...'
+    | fs_þgf 'það'_þgf_et NhLiður # 'frá því að...'
+    | fs_ef 'það'_ef_et NhLiður # 'til þess að...'
 
 Atviksliður → ao+
 

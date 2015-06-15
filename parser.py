@@ -36,6 +36,12 @@ from pprint import pprint as pp
 
 from grammar import Nonterminal, Terminal, Token
 
+#from flask import current_app
+#
+#def debug():
+#   # Call this to trigger the Flask debugger on purpose
+#   assert current_app.debug == False, "Don't panic! You're here by request of debug()"
+
 
 class ParseError(Exception):
 
@@ -71,20 +77,21 @@ class Parser:
             self._label = label
             self._families = None # Families of children
             self._hash = None
-            self._prod = None # For a nonterminal node, the production that was being completed
+            # self._prod = None # For a nonterminal node, the production that was being completed
 
-        def set_prod(self, prod):
-            # Set the associated production, if any
-            assert (self._prod is None) or (self._prod == prod)
-            self._prod = prod
+        #def set_prod(self, prod):
+        #    # Set the associated production, if any
+        #    assert (self._prod is None) or (self._prod == prod)
+        #    self._prod = prod
 
-        def add_family(self, children):
+        def add_family(self, prod, children):
             """ Add a family of children to this node, in parallel with other families """
+            pc_tuple = (prod, children)
             if self._families is None:
-                self._families = [ children ]
+                self._families = [ pc_tuple ]
                 return
-            if children not in self._families:
-                self._families.append(children)
+            if pc_tuple not in self._families:
+                self._families.append(pc_tuple)
 
         def label(self):
             """ Return the node label """
@@ -118,11 +125,11 @@ class Parser:
             """ Returns True if this is a token node """
             return isinstance(self._label[0], Token)
 
-        def prod(self, dot):
-            """ For a completed nonterminal, return the requested item
-                in the associated production """
-            assert self._prod is not None
-            return self._prod[dot]
+        #def prod(self, dot):
+        #    """ For a completed nonterminal, return the requested item
+        #        in the associated production """
+        #    assert self._prod is not None
+        #    return self._prod[dot]
 
         def has_children(self):
             """ Return True if there are any families of children of this node """
@@ -136,8 +143,8 @@ class Parser:
             """ Enumerate families of children """
             if not self._families:
                 raise StopIteration
-            for c in self._families:
-                yield c
+            for prod, c in self._families:
+                yield (prod, c)
 
         def __hash__(self):
             """ Calculate and cache this node's hash value """
@@ -217,23 +224,22 @@ class Parser:
                 y = V[label]
             else:
                 V[label] = y = Parser.Node(label)
-                if dot >= len_prod:
-                    # Memorize which production was being completed
-                    y.set_prod(prod)
+                #if dot >= len_prod:
+                #    # Memorize which production was being completed
+                #    y.set_prod(prod)
             assert v is not None
             if w is None:
-                y.add_family(v)
+                y.add_family(prod, v)
             else:
                 # w is an already built subtree that we're putting a new
                 # node on top of
-                y.add_family((w, v)) # The code breaks if this is modified!
+                y.add_family(prod, (w, v)) # The code breaks if this is modified!
             return y
 
         def _match(i, prod, dot):
             """ Check whether the token with index i matches the given terminal """
             if i >= n:
                 return False
-            # print("_match token {0}".format(i))
             return tokens[i].matches(prod[dot])
 
         def _push(newstate, i, _E, _Q):
@@ -310,8 +316,8 @@ class Parser:
                             w = v = V[label]
                         else:
                             w = v = V[label] = Parser.Node(label)
-                            v.set_prod(prod)
-                        w.add_family(None) # Add e (empty production) as a family
+                            # v.set_prod(prod)
+                        w.add_family(prod, None) # Add e (empty production) as a family
                     if h == i:
                         # Empty production satisfied
                         if nt_B in H:
@@ -374,10 +380,10 @@ class Parser:
                 print(indent + "(empty)")
                 return
             if w.is_token():
-                p = parent.prod(index)
+                p = parent[index]
+                assert isinstance(p, Terminal)
                 if detailed:
                     print("{0} [{1}] {2}: {3}".format(indent, index, p, w))
-                    assert isinstance(p, Terminal)
                 else:
                     print("{0} {1}: {2}".format(indent, p, w))
                 return
@@ -392,23 +398,26 @@ class Parser:
                 if not w.is_interior():
                     level += 1
             ambig = w.is_ambiguous()
-            for ix, f in enumerate(w.enum_children()):
+            for ix, pc in enumerate(w.enum_children()):
+                prod, f = pc
                 if ambig:
                     # Identify the available parse options
                     print(indent + "Option " + str(ix + 1) + ":")
                 if w.is_completed():
                     # Completed nonterminal: start counting children from zero
                     child_ix = -1
-                    parent = w
+                    # parent = w
                 else:
                     child_ix = index
                 if isinstance(f, tuple):
-                    child_ix -= len(f) - 1
-                    for j, c in enumerate(f):
-                        #print("{1}Tuple element {0}:".format(j, indent))
-                        _print_helper(c, level, child_ix + j, parent)
+                    assert len(f) == 2
+                    child_ix -= 1
+                    #print("{0}Tuple element 0:".format(indent))
+                    _print_helper(f[0], level, child_ix, prod)
+                    #print("{0}Tuple element 1:".format(indent))
+                    _print_helper(f[1], level, child_ix + 1, prod)
                 else:
-                    _print_helper(f, level, child_ix, parent)
+                    _print_helper(f, level, child_ix, prod)
 
         _print_helper(w, 0, 0, None)
 
@@ -421,7 +430,7 @@ class Parser:
             # Empty (epsilon) node or token node
             return 1
         comb = 0
-        for f in w.enum_children():
+        for _, f in w.enum_children():
             if isinstance(f, tuple):
                 cnt = 1
                 for c in f:
@@ -444,7 +453,7 @@ class Parser:
                 # Epsilon node: return empty list
                 return None
             if w.is_token():
-                p = parent.prod(index)
+                p = parent[index]
                 assert isinstance(p, Terminal)
                 return ([ level ] + suffix, w.start(), w.end(), None, (p, w.head().text()))
             # Interior nodes are not returned
@@ -456,14 +465,15 @@ class Parser:
             ambig = w.is_ambiguous()
             add_suffix = [ ]
 
-            for ix, f in enumerate(w.enum_children()):
+            for ix, pc in enumerate(w.enum_children()):
+                prod, f = pc
                 if ambig:
-                    # Identify the available parse options
+                    # Uniquely identify the available parse options with a coordinate
                     add_suffix = [ ix ]
                 if w.is_completed():
-                    # Completed nonterminal: start counting children from zero
+                    # Completed nonterminal: start counting children from the last one
                     child_ix = -1
-                    parent = w
+                    # parent = w
                 else:
                     # Interior node: continue the indexing from where we left off
                     child_ix = index
@@ -479,11 +489,12 @@ class Parser:
                             plist.append(p)
 
                 if isinstance(f, tuple):
-                    child_ix -= len(f) - 1
-                    for j, c in enumerate(f):
-                        add_part(_part(c, level, child_ix + j, parent, suffix + add_suffix))
+                    # len(f) is always 2
+                    child_ix -= 1
+                    add_part(_part(f[0], level, child_ix, prod, suffix + add_suffix))
+                    add_part(_part(f[1], level, child_ix + 1, prod, suffix + add_suffix))
                 else:
-                    add_part(_part(f, level, child_ix, parent, suffix + add_suffix))
+                    add_part(_part(f, level, child_ix, prod, suffix + add_suffix))
 
             if w.is_interior():
                 # Interior node: relay plist up the tree
@@ -495,6 +506,8 @@ class Parser:
 
         if w is None:
             return None
+        # !!! DEBUG
+        #Parser.print_parse_forest(w, True)
         return _part(w, 0, 0, None, [ ])
 
 

@@ -19,9 +19,12 @@
 
       <p class="author">málgreinir fyrir íslensku<br>eftir Vilhjálm Þorsteinsson</p>
 
-      <p class="txt">"{{ txt }}"</p>
+      <p class="txt">{{ txt }}</p>
 
-{% if combinations == 1 %}
+{% if combinations == 0 %}
+      <p class="options">Engin greining fannst.</p>
+      <p class="err">{{ err }}</p>
+{% elif combinations == 1 %}
       <p class="options">Ein trjágreining fannst:</p>
 {% else %}
       <p class="options">{{ combinations }} trjágreiningar fundust:
@@ -33,9 +36,11 @@
 
    </div>
 
+{% if tbl %}
    <div class="grid">
 
       <table>
+
 {% for r in tbl %}
          <tr>
 {% for c in r %}
@@ -58,6 +63,7 @@
 {% endfor %}
       </table>
    </div>
+{% endif %}
 
 {% endblock %}
 

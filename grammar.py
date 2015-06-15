@@ -153,20 +153,19 @@ class LiteralTerminal(Terminal):
 
     def __init__(self, lit):
         Terminal.__init__(self, lit)
+        # Peel off the quotes from the first part
+        assert len(self._parts[0]) >= 3
+        assert self._parts[0][0] in "\'\""
+        assert self._parts[0][0] == self._parts[0][-1]
+        self._parts[0] = self._parts[0][1:-1]
 
     def matches(self, t_kind, t_val):
         """ A literal terminal matches a token if the token text is identical to the literal """
-        return self._name == t_val
+        return self._parts[0] == t_val
 
     def matches_first(self, t_kind, t_val):
         """ A literal terminal matches a token if the token text is identical to the literal """
         return self._parts[0] == t_val
-
-    def __repr__(self):
-        return '\'{0}\''.format(self._name)
-
-    def __str__(self):
-        return '\'{0}\''.format(self._name)
 
 
 class Token:
@@ -398,8 +397,8 @@ class Grammar:
 
                     if r[0] in "\"'":
                         # Literal terminal symbol
-                        if len(r) < 3 or r[-1] != r[0]:
-                            raise GrammarError("Invalid literal terminal '{0}'".format(r), fname, line)
+                        if len(r) < 3 or r[0] not in r[2:]:
+                            raise GrammarError("Invalid literal terminal {0}".format(r), fname, line)
                     else:
                         # Identifier of nonterminal or terminal
                         if not r.isidentifier():
@@ -440,9 +439,8 @@ class Grammar:
                         elif r[0] in "'\"":
                             # Literal token
                             sym = r + suffix
-                            lit = r[1:-1]
                             if sym not in terminals:
-                                terminals[sym] = LiteralTerminal(lit)
+                                terminals[sym] = LiteralTerminal(r + suffix)
                             n = terminals[sym]
                         else:
                             # Identifier for terminal or nonterminal

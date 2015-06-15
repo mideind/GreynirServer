@@ -784,8 +784,9 @@ def all_cases(token):
     cases = set()
     if token[0] == TOK.WORD:
         # Roll through the potential meanings and extract the cases therefrom
-        for m in token[2]:
-            add_cases(cases, m[5], None)
+        if token[2]:
+            for m in token[2]:
+                add_cases(cases, m[5], None)
     return list(cases)
 
 
@@ -1223,8 +1224,8 @@ def parse_static_phrases(token_stream):
     for t in tq: yield t
 
 
-def parse_text(text):
-    """ Parse text into a generator (iterable sequence) of tokens """
+def tokenize(text):
+    """ Tokenize text into a generator (iterable sequence) of tokens """
 
     token_stream = parse_tokens(text)
 

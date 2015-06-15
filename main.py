@@ -28,7 +28,7 @@ from flask import render_template, redirect, jsonify
 from flask import request, session, url_for
 
 from settings import Settings, ConfigError
-from tokenizer import parse_text, dump_tokens_to_file, StaticPhrases, Abbreviations, TOK
+from tokenizer import tokenize, dump_tokens_to_file, StaticPhrases, Abbreviations, TOK
 from grammar import Nonterminal
 from parser import Parser, ParseError
 from binparser import BIN_Parser
@@ -137,8 +137,8 @@ def process_url(url):
     # Eliminate consecutive whitespace
     text = re.sub(r'\s+', ' ', text)
 
-    # Parse the resulting text, returning a generator
-    return parse_text(text)
+    # Tokenize the resulting text, returning a generator
+    return tokenize(text)
 
 
 def run():
@@ -150,12 +150,16 @@ def run():
 def analyze():
     """ Analyze text from a given URL """
 
-    url = request.form.get('url', None)
-
-    # Scrape the URL, tokenize the text content and return the token list
-
+    url = request.form.get("url", "").strip()
     t0 = time.time()
-    toklist = list(process_url(url))
+
+    if url.startswith("http:") or url.startswith("https:"):
+        # Scrape the URL, tokenize the text content and return the token list
+        toklist = list(process_url(url))
+    else:
+        # Tokenize the text entered as-is and return the token list
+        toklist = list(tokenize(url))
+
     tok_time = time.time() - t0
 
     # Count sentences
@@ -177,7 +181,8 @@ def analyze():
             except ParseError as e:
                 forest = None
             num = 0 if forest is None else Parser.num_combinations(forest)
-            print("Parsed sentence of length {0} with {1} combinations".format(len(sent), num))
+            print("Parsed sentence of length {0} with {1} combinations{2}".format(len(sent), num,
+                "\n" + " ".join(s[1] for s in sent) if num >= 100 else ""))
             # Mark the sentence beginning with the number of parses
             toklist[sent_begin] = TOK.Begin_Sentence(num_parses = num)
         elif t[0] == TOK.P_BEGIN:
@@ -211,14 +216,21 @@ def parse_grid():
     txt = request.form.get('txt', "")
 
     # Tokenize the text
-    tokens = list(parse_text(txt))
+    tokens = list(tokenize(txt))
     # Parse the text
     bp = BIN_Parser()
-    forest = bp.go(tokens)
+    err = None
+
+    try:
+        forest = bp.go(tokens)
+    except ParseError as e:
+        err = str(e)
+        forest = None
+
     # Find the number of parse combinations
-    combinations = Parser.num_combinations(forest)
+    combinations = Parser.num_combinations(forest) if forest else 0
     # Make the parse grid with all options
-    grid, ncols = Parser.make_grid(forest)
+    grid, ncols = Parser.make_grid(forest) if forest else ([], 0)
     # The grid is columnar; convert it to row-major
     # form for convenient translation into HTML
     # There will be as many columns as there are tokens
@@ -228,7 +240,7 @@ def parse_grid():
     rs = [ [] for _ in range(nrows) ]
 
     # The particular option path we are displaying
-    path = [(0,), (0, 0), (0, 0, 0)]
+    path = [(0,) * i for i in range(1,20)]
     # This set will contain all option path choices
     choices = set()
 
@@ -275,12 +287,14 @@ def parse_grid():
     # Calculate the unique path choices available for this parse grid
     choices -= { None } # Default choice: don't need it in the set
     unique_choices = choices.copy()
-    for c in choices:
-        # Remove all shorter prefixes of c from the unique_choices set
-        unique_choices -= { c[0:i] for i in range(1, len(c)) }
+    #
+    #for c in choices:
+    #    # Remove all shorter prefixes of c from the unique_choices set
+    #    unique_choices -= { c[0:i] for i in range(1, len(c)) }
     # Create a nice string representation of the unique path choices
     uc_list = [ "_".join(str(c) for c in choice) for choice in unique_choices ]
-    return render_template("parsegrid.html", txt = txt, tbl = tbl,
+    # debug()
+    return render_template("parsegrid.html", txt = txt, err = err, tbl = tbl,
         combinations = combinations, choice_list = uc_list)
 
 

@@ -25,6 +25,12 @@ from grammar import Terminal, Token, Grammar
 from parser import Parser
 from settings import Verbs, Prepositions
 
+from flask import current_app
+
+def debug():
+    # Call this to trigger the Flask debugger on purpose
+    assert current_app.debug == False, "Don't panic! You're here by request of debug()"
+
 
 class BIN_Token(Token):
 
@@ -77,7 +83,9 @@ class BIN_Token(Token):
         "p1" : "1P", # Fyrsta persóna / first person
         "p2" : "2P", # Önnur persóna / second person
         "p3" : "3P", # Þriðja persóna / third person
-        "nh" : "NH" # Nafnháttur
+        "nh" : "NH", # Nafnháttur
+        "sagnb" : "SAGNB", # Sagnbeyging ('vera' -> 'verið')
+        "lhþt" : "LHÞT" # Lýsingarháttur þátíðar ('var lentur')
     }
 
     def __init__(self, t):
@@ -97,15 +105,10 @@ class BIN_Token(Token):
         if terminal.has_variant("ft") and "ET" in form:
             # Can't use singular verb if plural terminal
             return False
-        # Check that person (1st, 2nd, 3rd) matches
-        if terminal.has_variant("p1") and not "1P" in form:
-            return False
-        if terminal.has_variant("p2") and not "2P" in form:
-            return False
-        if terminal.has_variant("p3") and not "3P" in form:
-            return False
-        if terminal.has_variant("nh") and not "NH" in form:
-            return False
+        # Check that person (1st, 2nd, 3rd) and other variant requirements match
+        for v in [ "p1", "p2", "p3", "nh", "sagnb", "lhþt"]:
+            if terminal.has_variant(v) and not BIN_Token._VARIANT[v] in form:
+                return False
         # Check whether the verb token can potentially match the argument number
         # of the terminal in question. If the verb is known to take fewer
         # arguments than the terminal wants, this is not a match.
@@ -120,7 +123,7 @@ class BIN_Token(Token):
                 # Zero arguments: that's simple
                 return True
             # Does this terminal require argument cases?
-            if terminal.num_variants() <= 2:
+            if terminal.num_variants() < 2:
                 # No: we don't need to check further
                 return True
             # Check whether the parameters of this verb
@@ -216,7 +219,7 @@ class BIN_Token(Token):
         return any(meaning_match(m) for m in self.t[2]) if self.t[2] else False
 
     def __repr__(self):
-        return repr(self.t)
+        return "[" + TOK.descr[self.t[0]] + ": " + self.t[1] + "]"
 
     def __str__(self):
         return "\'" + self.t[1] + "\'"

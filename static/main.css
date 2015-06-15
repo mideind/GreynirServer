@@ -225,10 +225,6 @@ td.t span.tok {
 
 span.sent {
    margin-right: 8px;
-}
-
-span.sent.parsed {
-   background-color: #e8ffe8;
    cursor: pointer;
 }
 
@@ -236,8 +232,20 @@ span.sent:hover {
    background-color: #f0f0f0;
 }
 
+span.sent.parsed {
+   background-color: #e8ffe8;
+}
+
 span.sent.parsed:hover {
    background-color: #d8ffd8;
+}
+
+span.sent.parsed.very-ambig {
+   background-color: #fcf0c8;
+}
+
+span.sent.parsed.very-ambig:hover {
+   background-color: #fbe6b3;
 }
 
 div#wait {
@@ -351,3 +359,6 @@ p.options span {
    margin-left: 12px;
 }
 
+p.err {
+   color: red;
+}

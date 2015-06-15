@@ -25,7 +25,7 @@ import psycopg2.extensions
 psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
 psycopg2.extensions.register_type(psycopg2.extensions.UNICODEARRAY)
 
-from tokenizer import TOK, parse_text
+from tokenizer import TOK, tokenize
 from grammar import Nonterminal, Terminal, Token, Production, Grammar, GrammarError
 from parser import Parser, ParseError
 from binparser import BIN_Parser
@@ -215,7 +215,7 @@ def run_test(p):
 
             txt = s["sentence"]
 
-            tokens = parse_text(txt)
+            tokens = tokenize(txt)
 
             err = ""
             try:
