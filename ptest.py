@@ -41,13 +41,17 @@ class Test_DB:
         self._conn = None # Connection
         self._c = None # Cursor
 
+    @classmethod
+    def open_db(cls):
+        """ Return an open instance of the database on the default host """
+        return cls().open(Settings.DB_HOSTNAME)
+
     def open(self, host):
         """ Open and initialize a database connection """
         self._conn = psycopg2.connect(dbname="test", user="reynir", password="reynir",
             host=host, client_encoding="utf8")
         if not self._conn:
-            print("Unable to open connection to database")
-            return None
+            raise Exception("Unable to open connection to database at host " + host)
         # Ask for automatic commit after all operations
         # We're doing only reads, so this is fine and makes things less complicated
         self._conn.autocommit = True
@@ -63,43 +67,43 @@ class Test_DB:
     def create_sentence_table(self):
         """ Create a fresh test sentence table if it doesn't already exist """
         assert self._c is not None
-        try:
-            self._c.execute("CREATE TABLE sentences (id serial PRIMARY KEY, sentence varchar, numtrees int, best int);")
-            return True
-        except psycopg2.DataError as e:
-            return False
+        self._c.execute("CREATE TABLE sentences (id serial PRIMARY KEY, sentence varchar, numtrees int, best int, target int);")
+        return True
 
-    def add_sentence(self, sentence, numtrees = 0, best = -1):
+    def add_sentence(self, sentence, numtrees = 0, best = -1, target = 1):
         """ Add a sentence to the test sentence table """
         assert self._c is not None
-        try:
-            self._c.execute("INSERT INTO sentences (sentence, numtrees, best) VALUES (%s, %s, %s);",
-                [ sentence, numtrees, best ])
-            return True
-        except psycopg2.DataError as e:
-            return False
+        self._c.execute("INSERT INTO sentences (sentence, numtrees, best, target) VALUES (%s, %s, %s, %s);",
+            [ sentence, numtrees, best, target ])
+        return True
 
-    def update_sentence(self, identity, sentence, numtrees = 0, best = -1):
+    def update_sentence(self, identity, sentence, numtrees = 0, best = -1, target = 1):
         """ Update a sentence and its statistics in the table """
         assert self._c is not None
-        try:
-            self._c.execute("UPDATE sentences SET (sentence, numtrees, best) = (%s, %s, %s) WHERE id = %s;",
-                [ sentence, numtrees, best, identity ])
-            return True
-        except psycopg2.DataError as e:
-            return False
+        self._c.execute("UPDATE sentences SET (sentence, numtrees, best, target) = (%s, %s, %s, %s) WHERE id = %s;",
+            [ sentence, numtrees, best, target, identity ])
+        return True
+
+    def delete_sentence(self, identity):
+        """ Delete a sentence from the table """
+        assert self._c is not None
+        self._c.execute("DELETE FROM sentences WHERE id = %s;", [ identity ])
+        return True
 
     def sentences(self):
         """ Return a list of all test sentences in the database """
         assert self._c is not None
         m = None
         try:
-            self._c.execute("SELECT id, sentence, numtrees, best FROM sentences ORDER BY id;")
+            self._c.execute("SELECT id, sentence, numtrees, best, target FROM sentences ORDER BY id;")
             t = self._c.fetchall()
-            m = [ dict(identity = r[0],
-                sentence = r[1],
-                numtrees = r[2],
-                best = r[3]) for r in t]
+            m = [ dict(
+                    identity = r[0],
+                    sentence = r[1],
+                    numtrees = r[2],
+                    best = r[3],
+                    target = r[4])
+                for r in t]
         except psycopg2.DataError as e:
             # Fall through with m set to None
             pass
@@ -207,13 +211,14 @@ def test2():
 def run_test(p):
     """ Run a test parse on all sentences in the test table """
 
-    with closing(Test_DB().open(Settings.DB_HOSTNAME)) as db:
+    with closing(Test_DB.open_db()) as db:
 
         slist = db.sentences()
 
         for s in slist:
 
             txt = s["sentence"]
+            target = s["target"] # The ideal number of parse trees (1 or 0)
 
             tokens = tokenize(txt)
 
@@ -232,20 +237,21 @@ def run_test(p):
             # print("Parsed in {0:.4f} seconds, {1} combinations".format(t1 - t0, num))
 
             best = s["best"]
-            if best <= 0 or abs(1 - num) < abs(1 - best):
-                # We are closer to the ideal 1 parse tree than
+            if best <= 0 or abs(target - num) < abs(target - best):
+                # We are closer to the ideal number of parse trees (target) than
                 # the best parse so far: change the best one
                 best = num
 
-            db.update_sentence(s["identity"], s["sentence"], num, best)
+            db.update_sentence(s["identity"], s["sentence"], num, best, target)
 
             yield dict(
                 identity = s["identity"],
                 sentence = txt,
                 numtrees = num,
                 best = best,
+                target = target,
                 parse_time = t1 - t0,
-                err = err,
+                err = "" if target == 0 else err, # Don't bother showing errors that are expected
                 forest = forest
             )
 
@@ -262,7 +268,7 @@ def test3():
 
     def create_sentence_table():
         """ Only used to create a test fresh sentence table if one doesn't exist """
-        with closing(Test_DB().open(Settings.DB_HOSTNAME)) as db:
+        with closing(Test_DB.open_db()) as db:
 
             try:
                 db.create_sentence_table()

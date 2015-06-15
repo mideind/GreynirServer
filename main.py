@@ -32,7 +32,7 @@ from tokenizer import tokenize, dump_tokens_to_file, StaticPhrases, Abbreviation
 from grammar import Nonterminal
 from parser import Parser, ParseError
 from binparser import BIN_Parser
-from ptest import run_test
+from ptest import run_test, Test_DB
 
 # Initialize Flask framework
 
@@ -203,7 +203,7 @@ def analyze():
     )
 
     # Dump the tokens to a text file for inspection
-    dump_tokens_to_file("txt", toklist)
+    # dump_tokens_to_file("txt", toklist)
 
     # Return the tokens as a JSON structure to the client
     return jsonify(result = result)
@@ -296,6 +296,23 @@ def parse_grid():
     # debug()
     return render_template("parsegrid.html", txt = txt, err = err, tbl = tbl,
         combinations = combinations, choice_list = uc_list)
+
+
+@app.route("/addsentence", methods=['POST'])
+def add_sentence():
+    """ Add a sentence to the test database """
+    sentence = request.form.get('sentence', "")
+    # The sentence may be one that should parse and give us ideally one result tree,
+    # or one that is wrong and should not parse, giving 0 result trees.
+    should_parse = request.form.get('shouldparse', 'true') == 'true'
+    result = False
+    if sentence:
+        try:
+            with closing(Test_DB.open_db()) as db:
+                result = db.add_sentence(sentence, target = 1 if should_parse else 0)
+        except Exception as e:
+            return jsonify(result = False, err = str(e))
+    return jsonify(result = result)
 
 
 @app.route("/")

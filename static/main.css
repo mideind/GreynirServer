@@ -50,8 +50,8 @@ input.text {
    font-weight: normal;
    height: 28px;
    border-style: solid;
-   border-color: black;
-   border-width: 2px;
+   border-color: #666666;
+   border-width: 1px;
    border-radius: 3px;
    margin-bottom: 4px;
    padding-top: 2px;
@@ -72,11 +72,11 @@ input#url {
 div.btn {
    display: inline-block;
    text-align: center;
-   font-size: 17px;
+   font-size: 16px;
    font-weight: 700;
    color: white;
    margin: 0;
-   padding: 6px;
+   padding: 5px;
    border-radius: 3px;
    vertical-align: middle;
    cursor: pointer;
@@ -86,6 +86,7 @@ div.btn {
    -ms-user-select: none;
    user-select: none;
    margin-bottom: 3px;
+   margin-left: 4px;
 }
 
 div.btn:focus {
@@ -248,11 +249,48 @@ span.sent.parsed.very-ambig:hover {
    background-color: #fbe6b3;
 }
 
+p.buttons {
+   margin-top: 12px;
+   margin-bottom: 12px;
+}
+
+span.btn {
+   padding: 4px;
+   border-style: solid;
+   border-width: 3px;
+   border-radius: 5px;
+   color: white;
+   margin-right: 16px;
+   cursor: pointer;
+}
+
+span#add-valid-sent {
+   background-color: #22dd33;
+   border-color: #22dd33;
+}
+
+span#add-invalid-sent {
+   background-color: #dd2233;
+   border-color: #dd2233;
+}
+
+span#add-valid-sent.disabled {
+   background-color: #dddddd;
+   border-color: #dddddd;
+   cursor: default;
+}
+
+span#add-invalid-sent.disabled {
+   background-color: #dddddd;
+   border-color: #dddddd;
+   cursor: default;
+}
+
 div#wait {
    display: none;
    position: absolute;
-   top: 220px;
-   left: 406px;
+   top: 160px;
+   left: 320px;
    width: 48px;
    height: 48px;
    z-index: 10;
@@ -345,8 +383,12 @@ td.result-time, th.result-time {
    width: 40px;
 }
 
-td.result-err, th.result-err {
+td.result-err {
    color: red;
+   text-align: left;
+}
+
+th.result-err {
    text-align: left;
 }
 

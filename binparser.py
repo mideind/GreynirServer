@@ -180,10 +180,10 @@ class BIN_Token(Token):
             # An amount matches a noun
             if not terminal.startswith("no"):
                 return False
-            if terminal.variant(0) == "et" and float(self.t[2][1]) != 1.0:
+            if terminal.has_variant("et") and float(self.t[2][1]) != 1.0:
                 # Singular only matches an amount of one
                 return False
-            if terminal.variant(0) == "ft" and float(self.t[2][1]) == 1.0:
+            if terminal.has_variant("ft") and float(self.t[2][1]) == 1.0:
                 # Plural does not match an amount of one
                 return False
             if self.t[2][2] is None:
@@ -191,6 +191,41 @@ class BIN_Token(Token):
                 return True
             # See whether any of the allowed cases match the terminal
             return terminal.variant(1) in self.t[2][2]
+
+        if self.t[0] == TOK.NUMBER:
+            if terminal.startswith("to") or terminal.startswith("töl"):
+                # Match number words
+                return True
+            if not terminal.startswith("no"):
+                # Not noun: no match
+                return False
+            if terminal.has_variant("et") and float(self.t[2][0]) != 1.0:
+                # Singular only matches an amount of one
+                return False
+            if terminal.has_variant("ft") and float(self.t[2][0]) == 1.0:
+                # Plural does not match an amount of one
+                return False
+            if self.t[2][1] is None:
+                # No associated case: match all cases
+                return True
+            # See whether any of the allowed cases match the terminal
+            return terminal.variant(1) in self.t[2][1]
+
+        if self.t[0] == TOK.PERCENT:
+            if terminal.startswith("to") or terminal.startswith("töl"):
+                # Match number words
+                return True
+            if not terminal.startswith("no"):
+                # Not noun: no match
+                return False
+            if terminal.has_variant("et") and float(self.t[2]) != 1.0:
+                # Singular only matches an percentage of one
+                return False
+            if terminal.has_variant("ft") and float(self.t[2]) == 1.0:
+                # Plural does not match an percentage of one
+                return False
+            # No case associated with percentages: match all
+            return True
 
         def meaning_match(m):
             """ Check for a match between a terminal and a single potential meaning
@@ -243,7 +278,7 @@ class BIN_Parser(Parser):
 
     # The token types that the parser currently knows how to handle
     _UNDERSTOOD = { TOK.WORD, TOK.PERSON,
-        TOK.CURRENCY, TOK.AMOUNT }
+        TOK.CURRENCY, TOK.AMOUNT, TOK.NUMBER, TOK.PERCENT }
 
     def __init__(self):
         """ Load the shared BIN grammar if not already there, then initialize

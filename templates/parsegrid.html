@@ -21,6 +21,11 @@
 
       <p class="txt">{{ txt }}</p>
 
+      <p class="buttons">
+         <span class="btn" id="add-valid-sent">Bæta við prófanir sem gildri setningu</span>
+         <span class="btn" id="add-invalid-sent">Bæta við prófanir sem ógildri setningu</span>
+      </p>
+
 {% if combinations == 0 %}
       <p class="options">Engin greining fannst.</p>
       <p class="err">{{ err }}</p>
@@ -71,11 +76,100 @@
 
 <script>
 
-   function initMain(jQuery) {
-      // Initialization
-   }
+// HTML transcoding entities
 
-   $(document).ready(initMain);
+var entityMap = {
+   "&": "&amp;",
+   "<": "&lt;",
+   ">": "&gt;",
+   '"': '&quot;',
+   "'": '&#39;',
+   "/": '&#x2F;'
+};
+
+function escapeHtml(string) {
+   /* Utility function to properly encode a string into HTML */
+   return String(string).replace(/[&<>"'\/]/g, function (s) {
+      return entityMap[s];
+   });
+}
+
+function nullFunc(json) {
+   /* Null placeholder function to use for Ajax queries that don't need a success func */
+}
+
+function nullCompleteFunc(xhr, status) {
+   /* Null placeholder function for Ajax completion */
+}
+
+function errFunc(xhr, status, errorThrown) {
+   /* Default error handling function for Ajax communications */
+   // alert("Villa í netsamskiptum");
+   console.log("Error: " + errorThrown);
+   console.log("Status: " + status);
+   console.dir(xhr);
+}
+
+function serverQuery(requestUrl, jsonData, successFunc, completeFunc, errorFunc) {
+   /* Wraps a simple, standard Ajax request to the server */
+   $.ajax({
+      // The URL for the request
+      url: requestUrl,
+
+      // The data to send
+      data: jsonData,
+
+      // Whether this is a POST or GET request
+      type: "POST",
+
+      // The type of data we expect back
+      dataType : "json",
+
+      cache: false,
+
+      // Code to run if the request succeeds;
+      // the response is passed to the function
+      success: (!successFunc) ? nullFunc : successFunc,
+
+      // Code to run if the request fails; the raw request and
+      // status codes are passed to the function
+      error: (!errorFunc) ? errFunc : errorFunc,
+
+      // code to run regardless of success or failure
+      complete: (!completeFunc) ? nullCompleteFunc : completeFunc
+   });
+}
+
+function addSentence(sentence, shouldParse) {
+   // Add a sentence to the test database
+   serverQuery('/addsentence',
+      { sentence: sentence, shouldparse: shouldParse }
+   );
+}
+
+function addValidSentence() {
+   if (!$("#add-valid-sent").prop("disabled"))
+      addSentence("{{ txt | safe }}", true);
+   // Prevent adding multiple instances
+   $(".btn").prop("disabled", true);
+   $(".btn").addClass("disabled");
+}
+
+function addInvalidSentence() {
+   if (!$("#add-invalid-sent").prop("disabled"))
+      addSentence("{{ txt | safe }}", false);
+   // Prevent adding multiple instances
+   $(".btn").prop("disabled", true);
+   $(".btn").addClass("disabled");
+}
+
+function initMain(jQuery) {
+   // Initialization
+   $("#add-valid-sent").click(addValidSentence);
+   $("#add-invalid-sent").click(addInvalidSentence);
+}
+
+$(document).ready(initMain);
 
 </script>
 

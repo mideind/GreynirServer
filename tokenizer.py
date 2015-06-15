@@ -505,9 +505,14 @@ class Bin_DB:
             self._c.execute("select * from ord where ordmynd=(%s);", [ w ])
             m = self._c.fetchall()
         except psycopg2.DataError as e:
-            print(" Word {0} causing DB exception".format(w).encode('utf-8'))
+            print(" Word {0} causing DB exception".format(w))
             # Fall through with m set to None
         return m
+
+
+def lookup_abbreviation(w):
+    """ Lookup abbreviation from abbreviation list """
+    return [ Abbreviations.DICT[w] ] if w in Abbreviations.DICT else None
 
 
 def lookup_word(db, w, at_sentence_start):
@@ -528,6 +533,10 @@ def lookup_word(db, w, at_sentence_start):
         if not m and (lower_w != w or w[0] == '['):
             # Still nothing: check abbreviations
             m = lookup_abbreviation(w)
+            if not m and w[0] == '[':
+                # Could be an abbreviation with periods at the start of a sentence:
+                # Lookup a lowercase version
+                m = lookup_abbreviation(lower_w)
             if m and w[0] == '[':
                 # Remove brackets from known abbreviations
                 w = w[1:-1]
@@ -542,12 +551,7 @@ def lookup_word(db, w, at_sentence_start):
                 m = db.meanings(cw[-1])
                 m = [ (prefix + "-" + stem, ix, wtype, wcat, prefix + "-" + wform, gform)
                     for stem, ix, wtype, wcat, wform, gform in m]
-    return m
-
-
-def lookup_abbreviation(w):
-    """ Lookup abbreviation from abbreviation list """
-    return [ Abbreviations.DICT[w] ] if w in Abbreviations.DICT else None
+    return (w, m)
 
 
 def annotate(token_stream):
@@ -575,7 +579,7 @@ def annotate(token_stream):
                 continue
             # Look up word in BIN database
             w = t[1]
-            m = lookup_word(db, w, at_sentence_start)
+            w, m = lookup_word(db, w, at_sentence_start)
             # Yield a word tuple with meanings
             yield TOK.Word(w, m)
             # No longer at sentence start
@@ -1263,5 +1267,5 @@ def dump_tokens_to_file(fname, tokens):
     #                    stofn = "" + f[0]
     #                    ordfl = "" + f[2]
     #                    beyging = "" + f[5]
-    #                    print("   {0} '{1}' {2}".format(ordfl, stofn, beyging).encode("utf-8"))
+    #                    print("   {0} '{1}' {2}".format(ordfl, stofn, beyging))
 
