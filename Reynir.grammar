@@ -196,6 +196,7 @@ LhÞtSögn/tala/pers →
     | 'skulu'/tala/pers 'hafa'_nh 'vera'_sagnb   # skulu hafa verið farnar
     | 'munu'/tala/pers 'hafa'_nh 'vera'_sagnb    # munu hafa verið farnar
 
+# Nafnháttarliður
 NhLiður →
     nhm NhSögn FsFylling?
 
@@ -215,13 +216,13 @@ Frumlag_et_p2/kyn →
 
 Frumlag_ft_p1/kyn →
     'ég'_nf_ft | 'vér'_nf_ft
-    | 'ég'_nf_et SamtengingNL_nf/kyn+
-    | NlAlm_nf OgEða 'ég'_nf_et SamtengingNL_nf/kyn*
+    | 'ég'_nf_et SamtengingNl_nf/kyn+
+    | NlAlm_nf OgEða 'ég'_nf_et SamtengingNl_nf/kyn*
 
 Frumlag_ft_p2/kyn →
     'þú'_nf_ft | 'þér'_nf_ft
-    | 'þú'_nf_et SamtengingNL_nf/kyn+
-    | NlAlm_nf OgEða 'þú'_nf_et SamtengingNL_nf/kyn*
+    | 'þú'_nf_et SamtengingNl_nf/kyn+
+    | NlAlm_nf OgEða 'þú'_nf_et SamtengingNl_nf/kyn*
 
 # Persónufornöfn þriðju persónu
 
@@ -245,7 +246,7 @@ Frumlag_et_p3/kyn →
 
 Frumlag_ft_p3/kyn →
 
-    NlAlm_nf/kyn SamtengingNL_nf/kyn+
+    NlAlm_nf/kyn SamtengingNl_nf/kyn+
 
     | Fornöfn_ft_nf/kyn? Töluorð/kyn*
         LoLiður_ft_nf/kyn* no_ft_nf/kyn
@@ -295,12 +296,13 @@ Fyrirbæri/fall/kyn → no_et/fall/kyn | Manneskja/fall/kyn
 
 Manneskja/fall/kyn → person/fall/kyn Titill/fall?
 
-# Már Guðmundsson, seðlabankastjóri
+# 'Már Guðmundsson, seðlabankastjóri'
 Titill/fall → ','? no_et/fall
 
+# !!! ATH: Ráða við blandað kyn (hann og hún -> þau)
 NlAlm_ft/fall/kyn →
 
-    NlAlm/fall/kyn SamtengingNL/fall/kyn+
+    NlAlm/fall/kyn SamtengingNl/fall/kyn+
 
     | Fornöfn_ft/fall/kyn? Töluorð/kyn*
         LoLiður_ft/fall/kyn* no_ft/fall/kyn
@@ -334,7 +336,7 @@ Töluorð/kyn → to/kyn | töl/kyn
 
 OgEða → 'og' | 'eða' # | 'svo og' # Spaces are presently not allowed in literal terminals
 
-SamtengingNL/fall/kyn → OgEða NlAlm/fall/kyn
+SamtengingNl/fall/kyn → OgEða NlAlm/fall/kyn
 
 LoLiður/tala/kyn → Atviksliður? lo/tala/kyn
     | LoLiður/tala/kyn OgEða Atviksliður? lo/tala/kyn
