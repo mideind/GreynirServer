@@ -78,6 +78,9 @@ class BIN_Token(Token):
         "þf" : "ÞF", # Þolfall / accusative
         "þgf" : "ÞGF", # Þágufall / dative
         "ef" : "EF", # Eignarfall / possessive
+        "kk" : "KK", # Karlkyn / masculine
+        "kvk" : "KVK", # Kvenkyn / feminine
+        "hk" : "HK", # Hvorugkyn / neutral
         "et" : "ET", # Eintala / singular
         "ft" : "FT", # Fleirtala / plural
         "p1" : "1P", # Fyrsta persóna / first person
@@ -158,6 +161,9 @@ class BIN_Token(Token):
         if self.t[0] == TOK.PERSON:
             # Handle a person name, matching it with a singular noun
             if not terminal.startswith("person"):
+                return False
+            # Check the gender
+            if terminal.variant(1) != self.t[2][1]:
                 return False
             # The case must also be correct
             # For a TOK.PERSON, t[2][2] contains a list of possible cases
@@ -240,8 +246,20 @@ class BIN_Token(Token):
                 # so_2 for verbs with two noun arguments. A verb may
                 # match more than one argument number category.
                 return self.verb_matches(m[0], terminal, m[5])
-            elif terminal.startswith("fs") and terminal.num_variants() > 0:
+            if terminal.startswith("fs") and terminal.num_variants() > 0:
                 return self.prep_matches(m[0], terminal.variant(0))
+            if terminal.startswith("no"):
+                # Check noun
+                for v in terminal.variants():
+                    if v in { "kk", "kvk", "hk"}:
+                        if m[2] != v:
+                            # Mismatched gender
+                            return False
+                    elif BIN_Token._VARIANT[v] not in m[5] and m[5] != "-":
+                        # Case or number not matching
+                        return False
+                return BIN_Token._KIND[m[2]] == "no"
+            # Check other word categories
             if m[5] != "-": # Tokens without a form specifier are assumed to be universally matching
                 for v in terminal.variants():
                     if BIN_Token._VARIANT[v] not in m[5]:

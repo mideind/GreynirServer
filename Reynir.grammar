@@ -58,43 +58,63 @@ StLiður → Samtenging Yfirsetning
 
 Samtenging → st | 'þar' 'sem'
 
-Yfirsetning → SetningAlm_et | SetningAlm_ft
+Yfirsetning → SetningAlm_kk | SetningAlm_kvk | SetningAlm_hk
 
-SetningAlm_et →
-    Setning_et_p1 | Setning_et_p2 | Setning_et_p3
+# Setningar með frumlagi
 
-SetningAlm_ft →
-    Setning_ft_p1 | Setning_ft_p2 | Setning_ft_p3
+SetningAlm/kyn → SetningAlm_p1/kyn | SetningAlm_p2/kyn | SetningAlm_p3/kyn
 
-# Setningar án frumlags (notaðar t.d. í tengisetningum eftir 'sem')
+SetningAlm/pers/kyn → Setning_et/pers/kyn | Setning_ft/pers/kyn
 
-SetningÁnF_et →
-    SetningÁnF_et_p1 | SetningÁnF_et_p2 | SetningÁnF_et_p3
-
-SetningÁnF_ft →
-    SetningÁnF_ft_p1 | SetningÁnF_ft_p2 | SetningÁnF_ft_p3
-
-Setning/tala/pers →
+Setning/tala/pers/kyn →
     # Venjuleg setningarskipan með frumlagi fremst:
     # 'Jón fór bersýnilega í bága við reglurnar með þessu'
-    Frumlag/tala/pers Atviksliður? Sagnliður/tala/pers Sagnfylling/tala
+    Frumlag/tala/pers/kyn Atviksliður? Sagnliður/tala/pers Sagnfylling/tala/kyn
 
+    # Frumlag fyrir aftan sögn:
     # 'Bersýnilega fór Jón í bága við reglurnar með þessu'
-    | Atviksliður? Sagnliður/tala/pers Frumlag/tala/pers Sagnfylling/tala
+    | Atviksliður? Sagnliður/tala/pers Frumlag/tala/pers/kyn Sagnfylling/tala/kyn
 
-    # 'Í bága við reglurnar fór Jón bersýnilega'
-    | Sagnfylling/tala Sagnliður/tala/pers Frumlag/tala/pers Atviksliður?
+    # Forsetningarliður, sögn, frumlag:
+    # 'Undir húsinu voru illa farnar skolpleiðslur'
+    # 'Í skólann fór Gunna aldrei eftir þetta'
+    | FsFylling Sagnliður/tala/pers Frumlag/tala/pers/kyn Sagnfylling/tala/kyn
 
-SetningÁnF/tala/pers → Atviksliður? ÖfugurSagnliður/tala/pers Sagnfylling/tala
+    # Ekkert frumlag í nefnifalli, sögn í lýsingarhætti þátíðar:
+    # 'Hannesi var í fyrra falið að stýra rannsóknarverkefni'
+    # !!! TBD
 
-Sagnfylling/tala → Lýsingarliður/tala? FsFylling?
+    # Ekkert frumlag í nefnifalli, sögn í miðmynd:
+    # 'Búist er við vondu veðri í dag'
+    # !!! TBD
+
+# Setningar án frumlags (notaðar t.d. í tengisetningum eftir 'sem').
+# Í setningum án frumlags getur sagnliðurinn verið "öfugur",
+# þ.e. "konurnar sem borðað höfðu matinn" í stað "höfðu borðað".
+# Þá má atviksliður ekki koma inn á milli sagnanna, þ.e.
+# "höfðu ekki borðað" er gilt, en "borðað ekki höfðu" ógilt.
+
+SetningÁnF/tala/kyn →
+    Atviksliður? ÖfugurSagnliður/tala Sagnfylling/tala/kyn
+
+# Sagnfyllingar
+
+Sagnfylling/tala/kyn → Lýsingarliður/tala/kyn? FsFylling?
+
+Lýsingarliður/tala/kyn → Atviksliður | LoLiður/tala/kyn
 
 FsFylling → FsMeðFallstjórn FsLiður*
 
-Lýsingarliður/tala → Atviksliður | LoLiður/tala
+# Sagnliðir
 
 Sagnliður/tala/pers → Sögn_0/tala/pers | Sögn_1/tala/pers | Sögn_2/tala/pers
     | so/tala/pers NhLiður
+
+ÖfugurSagnliður_et →
+    ÖfugurSagnliður_et_p1 | ÖfugurSagnliður_et_p2 | ÖfugurSagnliður_et_p3
+
+ÖfugurSagnliður_ft →
+    ÖfugurSagnliður_ft_p1 | ÖfugurSagnliður_ft_p2 | ÖfugurSagnliður_ft_p3
 
 ÖfugurSagnliður/tala/pers → ÖfugSögn_0/tala/pers | ÖfugSögn_1/tala/pers | ÖfugSögn_2/tala/pers
     | so/tala/pers NhLiður
@@ -187,97 +207,140 @@ NhSögn →
     | so_1_nf_nh NlAlm_nf
     | so_2_þgf_þf_nh NlAlm_þgf NlAlm_þf
 
-Frumlag_et_p1 →
+Frumlag_et_p1/kyn →
     'ég'_nf_et
 
-Frumlag_et_p2 →
+Frumlag_et_p2/kyn →
     'þú'_nf_et
 
-Frumlag_ft_p1 →
+Frumlag_ft_p1/kyn →
     'ég'_nf_ft | 'vér'_nf_ft
-    | 'ég'_nf_et SamtengingNL_nf+
-    | NlAlm_nf OgEða 'ég'_nf_et SamtengingNL_nf*
+    | 'ég'_nf_et SamtengingNL_nf/kyn+
+    | NlAlm_nf OgEða 'ég'_nf_et SamtengingNL_nf/kyn*
 
-Frumlag_ft_p2 →
+Frumlag_ft_p2/kyn →
     'þú'_nf_ft | 'þér'_nf_ft
-    | 'þú'_nf_et SamtengingNL_nf+
-    | NlAlm_nf OgEða 'þú'_nf_et SamtengingNL_nf*
+    | 'þú'_nf_et SamtengingNL_nf/kyn+
+    | NlAlm_nf OgEða 'þú'_nf_et SamtengingNL_nf/kyn*
 
-Frumlag_et_p3 →
+# Persónufornöfn þriðju persónu
 
-    Fornöfn_et_nf? Töluorð*
-        LoLiður_et_nf* Fyrirbæri_nf
-        EfLiður? Fornöfn_et_nf? FsLiður*
+HannHúnÞað_kk/fall/tala → 'hann'/fall/tala
+HannHúnÞað_kvk/fall/tala → 'hún'/fall/tala
+HannHúnÞað_hk/fall/tala → 'það'/fall/tala
 
-    | 'hann'_nf_et | 'hún'_nf_et | 'það'_nf_et
-    | Fornöfn_et_nf
-    | Undirsetning_et_nf
+HannHúnÞað/tala/fall/kyn → HannHúnÞað/kyn/fall/tala
 
-Frumlag_ft_p3 →
+Frumlag_et_p3/kyn →
 
-    NlAlm_nf SamtengingNL_nf+
+    Fornöfn_et_nf/kyn? Töluorð/kyn*
+        LoLiður_et_nf/kyn* Fyrirbæri_nf/kyn
+        EfLiður? Fornöfn_et_nf/kyn? FsLiður*
 
-    | Fornöfn_ft_nf? Töluorð*
-        LoLiður_ft_nf* no_ft_nf
-        EfLiður? Fornöfn_ft_nf? FsLiður*
+    | HannHúnÞað_et_nf/kyn
+    | Fornöfn_et_nf/kyn
+    | Undirsetning_et_nf/kyn
 
-    | 'hann'_nf_ft | 'hún'_nf_ft | 'það'_nf_ft
-    | Fornöfn_ft_nf
-    | Undirsetning_ft_nf
+# !!! Ath: blandað kyn ef fleirtala: hann og hún voru falleg
 
-NlAlm/fall → NlAlm_et/fall | NlAlm_ft/fall
+Frumlag_ft_p3/kyn →
 
-NlAlm_et/fall →
+    NlAlm_nf/kyn SamtengingNL_nf/kyn+
 
-    Fornöfn_et/fall? Töluorð*
-        LoLiður_et/fall* Fyrirbæri/fall
-        EfLiður? Fornöfn_et/fall? FsLiður*
+    | Fornöfn_ft_nf/kyn? Töluorð/kyn*
+        LoLiður_ft_nf/kyn* no_ft_nf/kyn
+        EfLiður? Fornöfn_ft_nf/kyn? FsLiður*
 
-    | pfn_et/fall
-    | Undirsetning_et/fall
+    | HannHúnÞað_ft_nf/kyn
+    | Fornöfn_ft_nf/kyn
+    | Undirsetning_ft_nf/kyn
 
-Fyrirbæri/fall → no_et/fall | Manneskja/fall
+# NlAlm → NlAlm_kk | NlAlm_kvk | NlAlm_hk
 
-Manneskja/fall → person/fall ','? no_et/fall?
+# NlAlm/kyn → NlAlm_nf/kyn | NlAlm_þf/kyn | NlAlm_þgf/kyn | NlAlm_ef/kyn
 
-NlAlm_ft/fall →
+NlAlm_nf →
+    NlAlm_nf_kk
+    | NlAlm_nf_kvk
+    | NlAlm_nf_hk
 
-    NlAlm/fall SamtengingNL/fall+
+NlAlm_þf →
+    NlAlm_þf_kk
+    | NlAlm_þf_kvk
+    | NlAlm_þf_hk
 
-    | Fornöfn_ft/fall? Töluorð*
-        LoLiður_ft/fall* no_ft/fall
-        EfLiður? Fornöfn_ft/fall? FsLiður*
+NlAlm_þgf →
+    NlAlm_þgf_kk
+    | NlAlm_þgf_kvk
+    | NlAlm_þgf_hk
 
-    | pfn_ft/fall
-    | Undirsetning_ft/fall
+NlAlm_ef →
+    NlAlm_ef_kk
+    | NlAlm_ef_kvk
+    | NlAlm_ef_hk
 
-Undirsetning/tala/fall →
-    NlAlm/tala/fall Tengiorð Tengisetning/tala
+NlAlm/fall/kyn → NlAlm_et/fall/kyn | NlAlm_ft/fall/kyn
+
+NlAlm_et/fall/kyn →
+
+    Fornöfn_et/fall/kyn? Töluorð/kyn*
+        LoLiður_et/fall/kyn* Fyrirbæri/fall/kyn
+        EfLiður? Fornöfn_et/fall/kyn? FsLiður*
+
+    | HannHúnÞað_et/fall/kyn
+    | Undirsetning_et/fall/kyn
+
+# !!! ATH: Ráða við "Bernhöfts bakaríið", "FIH bankinn", "FIH-bankinn"
+Fyrirbæri/fall/kyn → no_et/fall/kyn | Manneskja/fall/kyn
+
+Manneskja/fall/kyn → person/fall/kyn Titill/fall?
+
+# Már Guðmundsson, seðlabankastjóri
+Titill/fall → ','? no_et/fall
+
+NlAlm_ft/fall/kyn →
+
+    NlAlm/fall/kyn SamtengingNL/fall/kyn+
+
+    | Fornöfn_ft/fall/kyn? Töluorð/kyn*
+        LoLiður_ft/fall/kyn* no_ft/fall/kyn
+        EfLiður? Fornöfn_ft/fall/kyn? FsLiður*
+
+    | HannHúnÞað_ft/fall/kyn
+    | Undirsetning_ft/fall/kyn
+
+Undirsetning/tala/fall/kyn →
+    NlAlm/tala/fall/kyn Tengiorð Tengisetning/tala/kyn
 
 Tengiorð → 'sem'    # | 'er'  # Be careful with this one...
 
-Tengisetning/tala →
+Tengisetning/tala/kyn →
     Yfirsetning    # Maðurinn sem konan kyssti í gær / konurnar kysstu í gær
-    | SetningÁnF/tala  # Maðurinn sem kyssti konuna í gær
+    | SetningÁnF/tala/kyn  # Maðurinn sem kyssti konuna í gær / Maðurinn sem var fallegur
 
 EfLiður →
-    NlAlm_et_ef LoLiður_et_ef*
-    | NlAlm_ft_ef LoLiður_ft_ef*
+    EfLiður_kk | EfLiður_kvk | EfLiður_hk
+
+# karlsins langa, konunnar löngu, barnsins langa
+# karlanna löngu, kvennanna löngu, barnanna löngu
+EfLiður/kyn →
+    NlAlm_et_ef/kyn LoLiður_et_ef/kyn*
+    | NlAlm_ft_ef/kyn LoLiður_ft_ef/kyn*
 
 # Væri unnt að skipta í óákveðin og ákveðin fornöfn ef þarf
-Fornöfn/tala/fall → fn/tala/fall fn/tala/fall?
+Fornöfn/tala/fall/kyn → fn/tala/fall/kyn fn/tala/fall/kyn?
 
-Töluorð → to | töl
+Töluorð/kyn → to/kyn | töl/kyn
 
 OgEða → 'og' | 'eða' # | 'svo og' # Spaces are presently not allowed in literal terminals
 
-SamtengingNL/fall → OgEða NlAlm/fall
+SamtengingNL/fall/kyn → OgEða NlAlm/fall/kyn
 
-LoLiður/tala → Atviksliður? lo/tala
-    | LoLiður/tala OgEða Atviksliður? lo/tala
+LoLiður/tala/kyn → Atviksliður? lo/tala/kyn
+    | LoLiður/tala/kyn OgEða Atviksliður? lo/tala/kyn
 
-LoLiður/tala/fall → Atviksliður? lo/tala/fall
-    | LoLiður/tala/fall OgEða Atviksliður? lo/tala/fall
+LoLiður/tala/fall/kyn → Atviksliður? lo/tala/fall/kyn
+    | LoLiður/tala/fall/kyn OgEða Atviksliður? lo/tala/fall/kyn
 
 FsLiður → Atviksliður? FsMeðFallstjórn
 
