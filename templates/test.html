@@ -17,7 +17,7 @@
 
    <div class="input">
 
-      <p class="header"><a href="{{ url_for('main') }}">Reynir</a></p>
+      <p class="header"><a href="{{ url_for('main') }}">Greynir</a></p>
 
       <p class="author">málgreinir fyrir íslensku<br>eftir Vilhjálm Þorsteinsson</p>
 
@@ -34,6 +34,7 @@
          <th class="result-sent">Setning</th>
          <th class="result-num">Tré</th>
          <th class="result-best">Best</th>
+         <th class="result-target">Mark</th>
          <th class="result-time">Tími</th>
          <th class="result-err">Villa</th>
          </tr>
@@ -45,6 +46,7 @@
       <td class="result-sent">{{ r["sentence"] }}</td>
       <td class="result-num">{{ r["numtrees"] }}</td>
       <td class="result-best">{{ r["best"] }}</td>
+      <td class="result-target">{{ r["target"] }}</td>
       <td class="result-time">{{ '%0.2f' | format(r["parse_time"]) }}</td>
       <td class="result-err">{{ r["err"] }}</td>
       </tr>

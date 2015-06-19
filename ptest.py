@@ -310,7 +310,7 @@ def test3():
 
         if test["numtrees"] > 0:
             Parser.print_parse_forest(test["forest"])
-            print("{0}".format(Parser.make_schema(test["forest"])))
+            # print("{0}".format(Parser.make_schema(test["forest"])))
         elif test["err"]:
             print("Error: {0}".format(test["err"]))
 
@@ -331,4 +331,19 @@ if __name__ == "__main__":
 
     # test2()
 
-    test3()
+    import cProfile as profile
+    import pstats
+
+    filename = 'Reynir.profile'
+
+    profile.run('test3()', filename)
+
+    stats = pstats.Stats(filename)
+
+    # Clean up filenames for the report
+    stats.strip_dirs()
+
+    # Sort the statistics by the total time spent in the function itself
+    stats.sort_stats('tottime')
+
+    stats.print_stats()

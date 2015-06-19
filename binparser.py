@@ -22,7 +22,7 @@
 
 from tokenizer import TOK
 from grammar import Terminal, Token, Grammar
-from parser import Parser
+from parser import Parser, ParseError
 from settings import Verbs, Prepositions
 
 from flask import current_app
@@ -109,8 +109,13 @@ class BIN_Token(Token):
             # Can't use singular verb if plural terminal
             return False
         # Check that person (1st, 2nd, 3rd) and other variant requirements match
-        for v in [ "p1", "p2", "p3", "nh", "sagnb", "lhþt"]:
+        for v in [ "p1", "p2", "p3", "nh", "sagnb", "lhþt" ]:
             if terminal.has_variant(v) and not BIN_Token._VARIANT[v] in form:
+                return False
+        # Check restrictive variants, i.e. we don't accept meanings
+        # that have those unless they are explicitly present in the terminal
+        for v in [ "sagnb", "lhþt" ]:
+            if BIN_Token._VARIANT[v] in form and not terminal.has_variant(v):
                 return False
         # Check whether the verb token can potentially match the argument number
         # of the terminal in question. If the verb is known to take fewer
@@ -180,7 +185,7 @@ class BIN_Token(Token):
                 # No associated case: match all cases
                 return True
             # See whether any of the allowed cases match the terminal
-            return terminal.variant(1) in self.t[2][1]
+            return terminal.num_variants() >= 2 and terminal.variant(1) in self.t[2][1]
 
         if self.t[0] == TOK.AMOUNT:
             # An amount matches a noun
@@ -196,7 +201,7 @@ class BIN_Token(Token):
                 # No associated case: match all cases
                 return True
             # See whether any of the allowed cases match the terminal
-            return terminal.variant(1) in self.t[2][2]
+            return terminal.num_variants() >= 2 and terminal.variant(1) in self.t[2][2]
 
         if self.t[0] == TOK.NUMBER:
             if terminal.startswith("to") or terminal.startswith("töl"):
@@ -215,7 +220,7 @@ class BIN_Token(Token):
                 # No associated case: match all cases
                 return True
             # See whether any of the allowed cases match the terminal
-            return terminal.variant(1) in self.t[2][1]
+            return terminal.num_variants() >= 2 and terminal.variant(1) in self.t[2][1]
 
         if self.t[0] == TOK.PERCENT:
             if terminal.startswith("to") or terminal.startswith("töl"):
@@ -250,6 +255,9 @@ class BIN_Token(Token):
                 return self.prep_matches(m[0], terminal.variant(0))
             if terminal.startswith("no"):
                 # Check noun
+                if terminal.has_variant("abbrev"):
+                    # Only match abbreviations; gender, case and number do not matter
+                    return BIN_Token._KIND[m[2]] == "no" and m[5] == "-"
                 for v in terminal.variants():
                     if v in { "kk", "kvk", "hk"}:
                         if m[2] != v:
@@ -323,6 +331,11 @@ class BIN_Parser(Parser):
                 return t[1] in ".?" # „“
             return False
 
+        bt = [BIN_Token(t) for t in tokens if is_understood(t)]
+        # Count the tokens, excluding punctuation
+        cw = sum(1 if t.t[0] != TOK.PUNCTUATION else 0 for t in bt)
+        if cw <= 1:
+            raise ParseError("A valid sentence must have at least two words")
         # After wrapping, call the parent class go()
-        return Parser.go(self, [BIN_Token(t) for t in tokens if is_understood(t)])
+        return Parser.go(self, bt)
 

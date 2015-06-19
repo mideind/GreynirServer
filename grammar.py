@@ -53,6 +53,8 @@ class Nonterminal:
     """ A nonterminal, either at the left hand side of
         a rule or within a production """
 
+    _INDEX = 0 # Running sequence number of all nonterminals
+
     def __init__(self, name, fname = None, line = 0):
         self._name = name
         # Place of initial definition in a grammar file
@@ -60,6 +62,19 @@ class Nonterminal:
         self._line = line
         # Has this nonterminal been referenced in a production?
         self._ref = False
+        # Give all nonterminals a unique sequence number for hashing purposes
+        self._index = Nonterminal._INDEX
+        Nonterminal._INDEX += 1
+
+    def __hash__(self):
+        """ Use the index of this production as a basis for the hash """
+        return self._index.__hash__()
+
+    def __eq__(self, other):
+        return isinstance(other, Nonterminal) and self._index == other._index
+
+    def __ne__(self, other):
+        return not isinstance(other, Nonterminal) or self._index != other._index
 
     def add_ref(self):
         """ Mark this as being referenced """
@@ -79,15 +94,6 @@ class Nonterminal:
     def line(self):
         """ Return the number of the line within the grammar file where this nt was defined """
         return self._line
-
-    def __eq__(self, other):
-        return isinstance(other, Nonterminal) and self._name == other._name
-
-    def __ne__(self, other):
-        return not isinstance(other, Nonterminal) or self._name != other._name
-
-    def __hash__(self):
-        return hash(self._name)
 
     def __repr__(self):
         return '<{0}>'.format(self._name)
@@ -209,6 +215,8 @@ class Production:
         # in the file
         self._fname = fname
         self._line = line
+        # Cache the length of the production as it is used A LOT
+        self._len = len(self._rhs)
         # Give all productions a unique sequence number for hashing purposes
         self._index = Production._INDEX
         Production._INDEX += 1
@@ -226,18 +234,20 @@ class Production:
     def append(self, t):
         """ Append a terminal or nonterminal to this production """
         self._rhs.append(t)
+        self._len += 1
 
     def expand(self, l):
         """ Add a list of terminals and/or nonterminals to this production """
         self._rhs.expand(l)
+        self._len += len(l)
 
     def length(self):
         """ Return the length of this production """
-        return len(self._rhs)
+        return self._len
 
     def is_empty(self):
         """ Return True if this is an empty (epsilon) production """
-        return len(self._rhs) == 0
+        return self._len == 0
 
     def fname(self):
         return self._fname
@@ -245,13 +255,17 @@ class Production:
     def line(self):
         return self._line
 
+    def nonterminal_at(self, dot):
+        """ Return True if prod[dot] is a nonterminal or completed """
+        return dot >= self._len or isinstance(self._rhs[dot], Nonterminal)
+
     def __getitem__(self, index):
         """ Return the terminal or nonterminal at the given index position """
         return self._rhs[index]
 
     def __len__(self):
         """ Return the length of this production """
-        return len(self._rhs)
+        return self._len
 
     def __repr__(self):
         """ Return a representation of this production """

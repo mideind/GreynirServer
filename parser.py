@@ -32,8 +32,6 @@
 
 import codecs
 
-from pprint import pprint as pp
-
 from grammar import Nonterminal, Terminal, Token
 
 #from flask import current_app
@@ -58,6 +56,30 @@ class Parser:
 
     """
 
+    class EarleyColumn:
+
+        def __init__(self):
+            """ Maintain a list and a set in parallel """
+            self._states = []
+            self._set = set()
+
+        def add(self, newstate):
+            """ Add a new state to the column if it is not already there """
+            if newstate not in self._set:
+                self._states.append(newstate)
+                self._set.add(newstate)
+
+        def __len__(self):
+            return len(self._states)
+
+        def __getitem__(self, index):
+            """ Return the terminal or nonterminal at the given index position """
+            return self._states[index]
+
+        def __iter__(self):
+            return iter(self._states)
+
+
     class Node:
 
         """ Shared Packed Parse Forest (SPPF) node representation.
@@ -73,7 +95,7 @@ class Parser:
 
         def __init__(self, label):
             """ Initialize a SPPF node with a given label tuple """
-            assert isinstance(label, tuple)
+            # assert isinstance(label, tuple)
             self._label = label
             self._families = None # Families of children
             self._hash = None
@@ -137,7 +159,9 @@ class Parser:
 
         def is_empty(self):
             """ Return True if there is only a single empty family of this node """
-            return self._families and len(self._families) == 1 and self._families[0] == None
+            if not self._families:
+                return True
+            return len(self._families) == 1 and self._families[0][1] == None
 
         def enum_children(self):
             """ Enumerate families of children """
@@ -227,7 +251,7 @@ class Parser:
                 #if dot >= len_prod:
                 #    # Memorize which production was being completed
                 #    y.set_prod(prod)
-            assert v is not None
+            # assert v is not None
             if w is None:
                 y.add_family(prod, v)
             else:
@@ -247,12 +271,10 @@ class Parser:
             # (N ::= α·δ, h, y)
             # newstate = (N, dot, prod, h, y)
             _, dot, prod, _, _ = newstate
-            len_prod = len(prod)
-            if dot >= len_prod or isinstance(prod[dot], Nonterminal):
+            if prod.nonterminal_at(dot):
                 # Nonterminal or epsilon
                 # δ ∈ ΣN
-                if newstate not in _E:
-                    _E.append(newstate)
+                _E.add(newstate)
             elif _match(i, prod, dot):
                 # Terminal matching the current token
                 _Q.append(newstate)
@@ -262,7 +284,7 @@ class Parser:
 
         n = len(tokens)
         # Initialize the Earley columns
-        E = [ [] for _ in range(n + 1) ]
+        E = [ Parser.EarleyColumn() for _ in range(n + 1) ]
         E0 = E[0]
         Q0 = [ ]
 
@@ -343,7 +365,7 @@ class Parser:
                 # Remove an element, Λ = (B ::= α · ai+1β, h, w) say, from Q
                 state = Q.pop()
                 nt_B, dot, prod, h, w = state
-                assert isinstance(prod[dot], Terminal)
+                # assert isinstance(prod[dot], Terminal)
                 # assert tokens[i].matches(prod[dot])
                 # y = MAKE_NODE(B ::= αai+1 · β, h, i + 1, w, v, V)
                 y = _make_node(nt_B, dot + 1, prod, h, i + 1, w, v, V)
@@ -410,7 +432,7 @@ class Parser:
                 else:
                     child_ix = index
                 if isinstance(f, tuple):
-                    assert len(f) == 2
+                    # assert len(f) == 2
                     child_ix -= 1
                     #print("{0}Tuple element 0:".format(indent))
                     _print_helper(f[0], level, child_ix, prod)

@@ -378,6 +378,11 @@ td.result-best, th.result-best {
    width: 32px;
 }
 
+td.result-target, th.result-target {
+   text-align: right;
+   width: 32px;
+}
+
 td.result-time, th.result-time {
    text-align: right;
    width: 40px;
