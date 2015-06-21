@@ -181,6 +181,9 @@ class BIN_Token(Token):
             # A currency name matches a noun
             if not terminal.startswith("no"):
                 return False
+            if terminal.has_variant("abbrev"):
+                # A currency does not match an abbreviation
+                return False
             if self.t[2][1] is None:
                 # No associated case: match all cases
                 return True
@@ -190,6 +193,9 @@ class BIN_Token(Token):
         if self.t[0] == TOK.AMOUNT:
             # An amount matches a noun
             if not terminal.startswith("no"):
+                return False
+            if terminal.has_variant("abbrev"):
+                # An amount does not match an abbreviation
                 return False
             if terminal.has_variant("et") and float(self.t[2][1]) != 1.0:
                 # Singular only matches an amount of one
@@ -204,11 +210,14 @@ class BIN_Token(Token):
             return terminal.num_variants() >= 2 and terminal.variant(1) in self.t[2][2]
 
         if self.t[0] == TOK.NUMBER:
-            if terminal.startswith("to") or terminal.startswith("töl"):
-                # Match number words
+            if terminal.startswith("töl"):
+                # Match number words without further ado
                 return True
             if not terminal.startswith("no"):
                 # Not noun: no match
+                return False
+            if terminal.has_variant("abbrev"):
+                # A number does not match an abbreviation
                 return False
             if terminal.has_variant("et") and float(self.t[2][0]) != 1.0:
                 # Singular only matches an amount of one
@@ -223,11 +232,14 @@ class BIN_Token(Token):
             return terminal.num_variants() >= 2 and terminal.variant(1) in self.t[2][1]
 
         if self.t[0] == TOK.PERCENT:
-            if terminal.startswith("to") or terminal.startswith("töl"):
-                # Match number words
+            if terminal.startswith("töl"):
+                # Match number words without further ado
                 return True
             if not terminal.startswith("no"):
                 # Not noun: no match
+                return False
+            if terminal.has_variant("abbrev"):
+                # A percentage does not match an abbreviation
                 return False
             if terminal.has_variant("et") and float(self.t[2]) != 1.0:
                 # Singular only matches an percentage of one

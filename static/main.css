@@ -406,6 +406,18 @@ p.options span {
    margin-left: 12px;
 }
 
+span.shown {
+   font-weight: bold;
+}
+
+span.choice {
+   cursor: pointer;
+}
+
+span.choice:hover {
+   background-color: #d8ffd8;
+}
+
 p.err {
    color: red;
 }

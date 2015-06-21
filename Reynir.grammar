@@ -68,11 +68,13 @@ SetningAlm/pers/kyn → Setning_et/pers/kyn | Setning_ft/pers/kyn
 
 Setning/tala/pers/kyn →
     # Venjuleg setningarskipan með frumlagi fremst:
-    # 'Jón fór bersýnilega í bága við reglurnar með þessu'
-    Frumlag/tala/pers/kyn Atviksliður? Sagnliður/tala/pers Sagnfylling/tala/kyn
+    # 'Jón sterki fór bersýnilega í bága við reglurnar með þessu'
+    # 'Katrín formaður félagsins hefur augljóslega verið alveg hnífskörp í gær'
+    Frumlag/tala/pers/kyn Sagnliður/tala/pers Sagnfylling/tala/kyn
 
     # Frumlag fyrir aftan sögn:
-    # 'Bersýnilega fór Jón í bága við reglurnar með þessu'
+    # 'Bersýnilega fór Jón sterki í bága við reglurnar með þessu'
+    # 'Gengu þau galvösk á Esjuna þrátt fyrir veðurútlitið'
     | Atviksliður? Sagnliður/tala/pers Frumlag/tala/pers/kyn Sagnfylling/tala/kyn
 
     # Forsetningarliður, sögn, frumlag:
@@ -82,11 +84,16 @@ Setning/tala/pers/kyn →
 
     # Ekkert frumlag í nefnifalli, sögn í lýsingarhætti þátíðar:
     # 'Hannesi var í fyrra falið að stýra rannsóknarverkefni'
+    #| NlAlm_þgf HjSögnVeraSkuluMunu so_1_þgf_þf_sagnb Atviksliður? Andlag
     # !!! TBD
 
     # Ekkert frumlag í nefnifalli, sögn í miðmynd:
     # 'Búist er við vondu veðri í dag'
     # !!! TBD
+
+#Andlag →
+#    SagnliðurNh Sagnfylling?    # 'að stjórna skipinu í land'
+#    | NlAlm_nf                  # 'stuttur frestur'
 
 # Setningar án frumlags (notaðar t.d. í tengisetningum eftir 'sem').
 # Í setningum án frumlags getur sagnliðurinn verið "öfugur",
@@ -120,6 +127,7 @@ Sagnliður/tala/pers → Sögn_0/tala/pers | Sögn_1/tala/pers | Sögn_2/tala/pe
     | so/tala/pers NhLiður
 
 # Sögn með engu viðfangi ('lenti')
+# ('Maðurinn lenti')
 Sögn_0/tala/pers →
 
     so_0/tala/pers                                      # Mennirnir lenda
@@ -128,7 +136,8 @@ Sögn_0/tala/pers →
     | HjSögnNh/tala/pers Atviksliður? so_0_nh           # Mennirnir munu [ekki] lenda
     | HjSögnLhÞt/tala/pers Atviksliður? so_0_lhþt/tala  # Mennirnir eru [ekki] lentir !!! ATH kyn!
 
-# Sögn sem sendur í undirsetningu (Maðurinn sem kyssti / var kysstur / kysstur var)
+# Sögn með engu viðfangi ('lenti') sem sendur í undirsetningu
+# ('Maðurinn sem lenti')
 ÖfugSögn_0/tala/pers →
 
     so_0/tala/pers                                      # Mennirnir sem lenda
@@ -142,7 +151,7 @@ Sögn_0/tala/pers →
     | so_0_lhþt/tala HjSögnLhÞt/tala/pers               # Mennirnir sem lentir eru
     | HjSögnLhÞt/tala/pers Atviksliður? so_0_lhþt/tala  # Mennirnir sem eru [ekki] lentir
 
-# Sögn með einu viðfangi (borðaði e-ð)
+# Sögn með einu viðfangi ('borðaði matinn')
 Sögn_1/tala/pers →
 
     so_1_þf/tala/pers Atviksliður? NlAlm_þf                     # Konurnar borðuðu [ekki] matinn
@@ -165,6 +174,7 @@ Sögn_1/tala/pers →
     | HjSögnVeraSkuluMunu/tala/pers Atviksliður? so_2_þf_ef_lhþt/tala NlAlm_ef      # Konan er/skal/mun [ekki] spurð álits
 
 # Sögn með einu viðfangi sem stendur í undirsetningu
+# ('Konurnar sem borðuðu matinn')
 ÖfugSögn_1/tala/pers →
 
     so_1_þf/tala/pers Atviksliður? NlAlm_þf                  # Konurnar sem borðuðu [ekki] matinn
@@ -194,7 +204,7 @@ Sögn_1/tala/pers →
     | so_2_þgf_þf_lhþt/tala HjSögnVeraSkuluMunu/tala/pers NlAlm_þgf     # Konan sem gefin er/skal/mun Páli
     | HjSögnVeraSkuluMunu/tala/pers Atviksliður? so_2_þgf_þf_lhþt/tala NlAlm_þgf # Konan sem er/skal/mun [ekki] gefin Páli
 
-# Sögn með tveimur viðföngum (gaf e-m e-ð)
+# Sögn með tveimur viðföngum ('gaf Páli gjöfina')
 Sögn_2/tala/pers →
 
     # Þágufall + þolfall ('að gefa einhverjum kött')
@@ -209,7 +219,8 @@ Sögn_2/tala/pers →
     | HjSögn/tala/pers Atviksliður? so_2_þf_ef_sagnb NlAlm_þf NlAlm_ef  # Konurnar höfðu [ekki] krafið Pál svara
     | HjSögnNh/tala/pers Atviksliður? so_2_þf_ef_nh NlAlm_þf NlAlm_ef  # Konurnar munu [ekki] krefja Pál svara
 
-# Sögn með tveimur viðföngum (gaf e-m e-ð) sem stendur í undirsetningu
+# Sögn með tveimur viðföngum sem stendur í undirsetningu
+# ('Konan sem gaf Páli gjöfina')
 ÖfugSögn_2/tala/pers →
 
     # Þágufall + þolfall ('að gefa einhverjum kött')
@@ -279,6 +290,8 @@ NhSögn →
     | so_1_nf_nh Atviksliður? NlAlm_nf
     | so_2_þgf_þf_nh Atviksliður? NlAlm_þgf NlAlm_þf
     | so_2_þf_ef_nh Atviksliður? NlAlm_þf NlAlm_ef
+
+# Nafnliðir og frumlög (nafnliðir í nefnifalli)
 
 Frumlag_et_p1/kyn →
     'ég'_nf_et
@@ -407,6 +420,8 @@ Tengisetning/tala/kyn →
     Yfirsetning    # Maðurinn sem konan kyssti í gær / konurnar kysstu í gær
     | SetningÁnF/tala/kyn  # Maðurinn sem kyssti konuna í gær / Maðurinn sem var fallegur
 
+# Eignarfallsliður á eftir nafnlið
+# ('formaður félags eldri borgara')
 EfLiður →
     EfLiður_kk | EfLiður_kvk | EfLiður_hk
 

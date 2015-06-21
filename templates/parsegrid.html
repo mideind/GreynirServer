@@ -35,7 +35,7 @@
       <p class="options">{{ combinations }} trjágreiningar fundust:
 {% if choice_list | length < 20 %}
 {% for c in choice_list %}
-<span>{{ c }}</span>
+<span class='choice{{ " shown" if c == parse_path else "" }}'>{{ c }}</span>
 {% endfor %}
 {% endif %}
       </p>
@@ -142,6 +142,30 @@ function serverQuery(requestUrl, jsonData, successFunc, completeFunc, errorFunc)
    });
 }
 
+function serverPost(url, parameters) {
+   /* Post to the provided URL with the specified parameters */
+   var form = $('<form method="post"></form>');
+   form.attr("action", url);
+   $.each(parameters, function(key, value) {
+      var field = $('<input type="hidden"></input>');
+      field.attr("name", key);
+      field.attr("value", value);
+      form.append(field);
+   });
+   // The form needs to be a part of the document
+   // to allow submission, at least in some browsers
+   $(document.body).append(form);
+   form.submit();
+}
+
+function showOption(ev) {
+   /* A parse option has been clicked: show its parse grid */
+   var parsePath = $(ev.delegateTarget).text();
+   // Do an HTML POST to the parsegrid URL, passing
+   // the sentence text within a synthetic form
+   serverPost("/parsegrid", { txt: "{{ txt | safe }}", option: parsePath })
+}
+
 function addSentence(sentence, shouldParse) {
    // Add a sentence to the test database
    serverQuery('/addsentence',
@@ -169,6 +193,8 @@ function initMain(jQuery) {
    // Initialization
    $("#add-valid-sent").click(addValidSentence);
    $("#add-invalid-sent").click(addInvalidSentence);
+   // Allow clicking on parse options to show them
+   $("span.choice").click(showOption);
 }
 
 $(document).ready(initMain);

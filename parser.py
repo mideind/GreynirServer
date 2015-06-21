@@ -52,31 +52,58 @@ class Parser:
 
     """ Parses a sequence of tokens according to a given grammar and
         a root nonterminal within that grammar, returning a forest of
-        possible parses
-
+        possible parses. The parses uses an Earley algorithm.
     """
 
     class EarleyColumn:
 
+        """ Container for the (unique) states in a single Earley column.
+            This class stores the states both in a list for easy indexed
+            access, and in a set to enable a quick check for whether
+            a state is already present. It also stores a dictionary
+            of all states keyed by the particular nonterminal at the
+            'dot' in the production that the state refers to. This greatly
+            speeds up the Earley completion phase. """
+
         def __init__(self):
             """ Maintain a list and a set in parallel """
             self._states = []
+            self._numstates = 0
             self._set = set()
+            # Dictionary of all states keyed by nonterminal at prod[dot]
+            self._ntdict = dict()
 
         def add(self, newstate):
             """ Add a new state to the column if it is not already there """
             if newstate not in self._set:
                 self._states.append(newstate)
                 self._set.add(newstate)
+                _, dot, prod, _, _ = newstate
+                if dot < len(prod) and isinstance(prod[dot], Nonterminal):
+                    # The state is at a nonterminal: add its index to our dict
+                    nt = prod[dot]
+                    if nt in self._ntdict:
+                        self._ntdict[nt].append(self._numstates)
+                    else:
+                        self._ntdict[nt] = [ self._numstates ]
+                self._numstates += 1
+
+        def enum_nt(self, nt):
+            """ Enumerate through all states where prod[dot] is nt """
+            if nt in self._ntdict:
+                for ix in self._ntdict[nt]:
+                    yield self._states[ix]
 
         def __len__(self):
-            return len(self._states)
+            """ Return the number of states in the column """
+            return self._numstates
 
         def __getitem__(self, index):
             """ Return the terminal or nonterminal at the given index position """
             return self._states[index]
 
         def __iter__(self):
+            """ Return an iterator over the state list """
             return iter(self._states)
 
 
@@ -98,16 +125,10 @@ class Parser:
             # assert isinstance(label, tuple)
             self._label = label
             self._families = None # Families of children
-            self._hash = None
-            # self._prod = None # For a nonterminal node, the production that was being completed
-
-        #def set_prod(self, prod):
-        #    # Set the associated production, if any
-        #    assert (self._prod is None) or (self._prod == prod)
-        #    self._prod = prod
 
         def add_family(self, prod, children):
             """ Add a family of children to this node, in parallel with other families """
+            # Note which production is responsible for this subtree
             pc_tuple = (prod, children)
             if self._families is None:
                 self._families = [ pc_tuple ]
@@ -147,12 +168,6 @@ class Parser:
             """ Returns True if this is a token node """
             return isinstance(self._label[0], Token)
 
-        #def prod(self, dot):
-        #    """ For a completed nonterminal, return the requested item
-        #        in the associated production """
-        #    assert self._prod is not None
-        #    return self._prod[dot]
-
         def has_children(self):
             """ Return True if there are any families of children of this node """
             return bool(self._families)
@@ -171,12 +186,8 @@ class Parser:
                 yield (prod, c)
 
         def __hash__(self):
-            """ Calculate and cache this node's hash value """
-            # Note that Python does not cache tuple hashes;
-            # therefore it's wise do to this manually
-            if self._hash is None:
-                self._hash = self._label.__hash__()
-            return self._hash
+            """ Make this node hashable """
+            return id(self).__hash__()
 
         def __repr__(self):
             """ Create a reasonably nice text representation of this node
@@ -263,6 +274,7 @@ class Parser:
         def _match(i, prod, dot):
             """ Check whether the token with index i matches the given terminal """
             if i >= n:
+                # Token index beyond the end of the token list
                 return False
             return tokens[i].matches(prod[dot])
 
@@ -294,6 +306,7 @@ class Parser:
             newstate = (self.root, 0, root_p, 0, None)
             # add (S ::= ·α, 0, null) to E0 and Q0
             _push(newstate, 0, E0, Q0)
+
         # Step through the Earley columns
         for i, Ei in enumerate(E):
             # The agenda set R is Ei[j..len(Ei)]
@@ -347,14 +360,11 @@ class Parser:
                         else:
                             H[nt_B] = [w]
                     # for all (A ::= τ · Dδ, k, z) in Eh:
-                    for st0 in E[h]:
+                    for st0 in E[h].enum_nt(nt_B):
                         nt_A, dot0, prod0, k, z = st0
-                        len_prod0 = len(prod0)
-                        if dot0 < len_prod0 and prod0[dot0] == nt_B:
-                            # y = MAKE_NODE(A ::= τD · δ, k, i, z, w, V)
-                            y = _make_node(nt_A, dot0 + 1, prod0, k, i, z, w, V)
-                            newstate = (nt_A, dot0 + 1, prod0, k, y)
-                            _push(newstate, i, Ei, Q)
+                        y = _make_node(nt_A, dot0 + 1, prod0, k, i, z, w, V)
+                        newstate = (nt_A, dot0 + 1, prod0, k, y)
+                        _push(newstate, i, Ei, Q)
 
             V = { }
             if Q:
@@ -373,8 +383,7 @@ class Parser:
                 _push(newstate, i + 1, E[i + 1], Q0)
 
         # if (S ::= τ ·, 0, w) ∈ En: return w
-        for state in E[n]:
-            nt, dot, prod, k, w = state
+        for nt, dot, prod, k, w in E[n]:
             if nt == self.root and dot >= len(prod) and k == 0:
                 # Completed production that spans the entire chart: we're done
                 return w
@@ -467,6 +476,33 @@ class Parser:
     def make_schema(w):
         """ Create a flattened parse schema from the forest w """
 
+        class CC:
+            """ Manages choice coordinates """
+
+            stack = []
+            level = 0
+
+            @classmethod
+            def push(cls, option):
+                """ Identify each option subtree with a different root index """
+                cls.level += 1
+                while len(cls.stack) < cls.level:
+                    cls.stack.append(0)
+                r = cls.stack[cls.level - 1]
+                cls.stack[cls.level - 1] += 1
+                return r
+
+            @classmethod
+            def pop(cls):
+                """ Maintain one level count above the now current level """
+                while len(cls.stack) > cls.level:
+                    cls.stack.pop()
+                cls.level -= 1
+
+            @classmethod
+            def coord(cls):
+                return tuple(cls.stack[0:cls.level])
+
         def _part(w, level, index, parent, suffix):
             """ Return a tuple (colheading + options, start_token, end_token, partlist, info)
                 where the partlist is again a list of the component schemas - or a terminal
@@ -541,6 +577,7 @@ class Parser:
         schema = Parser.make_schema(w)
         assert schema[1] == 0
         cols = [] # The columns to be populated
+        NULL_TUPLE = tuple()
 
         def _traverse(p):
             """ Traverse a schema subtree and insert the nodes into their
@@ -553,8 +590,8 @@ class Parser:
             col, option = p[0][0], p[0][1:] # Level of this subtree and option
 
             if not option:
-                # No option: use a 'clean key' of None
-                option = None
+                # No option: use a 'clean key' of NULL_TUPLE
+                option = NULL_TUPLE
             else:
                 # Convert list to a frozen (hashable) tuple
                 option = tuple(option)

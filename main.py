@@ -213,7 +213,9 @@ def analyze():
 def parse_grid():
     """ Show the parse grid for a particular parse tree of a sentence """
 
+    MAX_LEVEL = 32 # Maximum level of option depth we can handle
     txt = request.form.get('txt', "")
+    parse_path = request.form.get('option', "")
 
     # Tokenize the text
     tokens = list(tokenize(txt))
@@ -240,15 +242,32 @@ def parse_grid():
     rs = [ [] for _ in range(nrows) ]
 
     # The particular option path we are displaying
-    path = [(0,) * i for i in range(1,20)]
+    if not parse_path:
+        # Not specified: display the all-zero path
+        path = [(0,) * i for i in range(1, MAX_LEVEL)]
+    else:
+        # Disassemble the passed-in path
+
+        def toint(s):
+            """ Safe conversion of string to int """
+            try:
+                n = int(s)
+            except ValueError:
+                n = 0
+            return n if n >= 0 else 0
+
+        p = [ toint(s) for s in parse_path.split("_") ]
+        path = [tuple(p[0 : i + 1]) for i in range(len(p))]
+
     # This set will contain all option path choices
     choices = set()
+    NULL_TUPLE = tuple()
 
     for gix, gcol in enumerate(grid):
         # gcol is a dictionary of options
         # Accumulate the options that we want do display
         # according to chosen path
-        cols = gcol[None] if None in gcol else [] # Default content
+        cols = gcol[NULL_TUPLE] if NULL_TUPLE in gcol else [] # Default content
         # Add the options we're displaying
         for p in path:
             if p in gcol:
@@ -285,17 +304,23 @@ def parse_grid():
         if col < ncols_adj:
             tbl[gix].append((ncols_adj - col, 1, "", ""))
     # Calculate the unique path choices available for this parse grid
-    choices -= { None } # Default choice: don't need it in the set
+    choices -= { NULL_TUPLE } # Default choice: don't need it in the set
     unique_choices = choices.copy()
-    #
-    #for c in choices:
-    #    # Remove all shorter prefixes of c from the unique_choices set
-    #    unique_choices -= { c[0:i] for i in range(1, len(c)) }
+    for c in choices:
+        # Remove all shorter prefixes of c from the unique_choices set
+        unique_choices -= { c[0:i] for i in range(1, len(c)) }
     # Create a nice string representation of the unique path choices
     uc_list = [ "_".join(str(c) for c in choice) for choice in unique_choices ]
+    if not parse_path:
+        # We are displaying the longest possible all-zero choice: find it
+        i = 0
+        while (0,) * (i + 1) in unique_choices:
+            i += 1
+        parse_path = "_".join(["0"] * i)
     # debug()
     return render_template("parsegrid.html", txt = txt, err = err, tbl = tbl,
-        combinations = combinations, choice_list = uc_list)
+        combinations = combinations, choice_list = uc_list,
+        parse_path = parse_path)
 
 
 @app.route("/addsentence", methods=['POST'])

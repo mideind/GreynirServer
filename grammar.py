@@ -67,14 +67,16 @@ class Nonterminal:
         Nonterminal._INDEX += 1
 
     def __hash__(self):
-        """ Use the index of this production as a basis for the hash """
+        """ Use the index of this nonterminal as a basis for the hash """
         return self._index.__hash__()
 
     def __eq__(self, other):
-        return isinstance(other, Nonterminal) and self._index == other._index
+    #    return isinstance(other, Nonterminal) and self._index == other._index
+        return id(self) == id(other)
 
     def __ne__(self, other):
-        return not isinstance(other, Nonterminal) or self._index != other._index
+    #    return not isinstance(other, Nonterminal) or self._index != other._index
+        return id(self) != id(other)
 
     def add_ref(self):
         """ Mark this as being referenced """
@@ -226,10 +228,12 @@ class Production:
         return self._index.__hash__()
 
     def __eq__(self, other):
-        return isinstance(other, Production) and self._index == other._index
+        #return isinstance(other, Production) and self._index == other._index
+        return id(self) == id(other)
 
     def __ne__(self, other):
-        return not isinstance(other, Production) or self._index != other._index
+        #return not isinstance(other, Production) or self._index != other._index
+        return id(self) != id(other)
 
     def append(self, t):
         """ Append a terminal or nonterminal to this production """
@@ -445,6 +449,11 @@ class Grammar:
                     for r, repeat, v in rhs:
                         # Calculate the identifier suffix, if any
                         suffix = "_".join(vval[vts.index(vx)] for vx in v) if v else ""
+                        # !!! TODO: distinguish between global variants
+                        # !!! (those that appear in the nonterminal spec)
+                        # !!! and local ones (those that only appear within
+                        # !!! the rhs derivation). Generate the local ones
+                        # !!! separately for each vval iteration.
                         if suffix:
                             suffix = "_" + suffix
                         if r is None:
@@ -532,11 +541,13 @@ class Grammar:
                 if len(v) != 2:
                     raise GrammarError("Invalid variant syntax", fname, line)
                 vname = v[0].strip()[1:]
-                if not vname.isidentifier():
+                if "_" in vname or not vname.isidentifier():
+                    # Variant names must be valid identifiers without underscores
                     raise GrammarError("Invalid variant name '{0}'".format(vname), fname, line)
                 v = v[1].split()
                 for vopt in v:
-                    if not vopt.isidentifier():
+                    if "_"  in vopt or not vopt.isidentifier():
+                        # Variant options must be valid identifiers without underscores
                         raise GrammarError("Invalid option '{0}' in variant '{1}'".format(vopt, vname), fname, line)
                 variants[vname] = v
             else:
@@ -548,6 +559,7 @@ class Grammar:
                     rule = s.split("->", maxsplit=1)
                 if len(rule) != 2:
                     raise GrammarError("Invalid syntax", fname, line)
+
                 # Split nonterminal spec into name and variant(s),
                 # i.e. NtName/var1/var2...
                 ntv = rule[0].strip().split('/')
