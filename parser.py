@@ -12,7 +12,7 @@
 
     This module uses an Earley-Scott parser to transform token sequences
     (sentences) into forests of parse trees, with each tree representing a
-    possible parse of a sequence.
+    possible parse of a sentence.
 
     An Earley parser handles all valid context-free grammars,
     irrespective of ambiguity, recursion (left/middle/right), nullability, etc.
@@ -26,11 +26,13 @@
     The Earley parser used here is the improved version described by Scott et al,
     referencing Tomita. This allows worst-case cubic (O(n^3)) order, where n is the
     length of the input sentence, while still returning all possible parse trees
-    for an ambiguous grammar. See comments in Parser.go() below.
+    for an ambiguous grammar.
+
+    See Elizabeth Scott, Adrian Johnstone:
+    "Recognition is not parsing — SPPF-style parsing from cubic recognisers"
+    Science of Computer Programming, Volume 75, Issues 1–2, 1 January 2010, Pages 55–70
 
 """
-
-import codecs
 
 from grammar import Nonterminal, Terminal, Token
 
@@ -70,11 +72,11 @@ class Parser:
             self._states = []
             self._numstates = 0
             self._set = set()
-            # Dictionary of all states keyed by nonterminal at prod[dot]
+            # Dictionary of states keyed by nonterminal at prod[dot]
             self._ntdict = dict()
 
         def add(self, newstate):
-            """ Add a new state to the column if it is not already there """
+            """ Add a new state to this column if it is not already there """
             if newstate not in self._set:
                 self._states.append(newstate)
                 self._set.add(newstate)
@@ -89,7 +91,7 @@ class Parser:
                 self._numstates += 1
 
         def enum_nt(self, nt):
-            """ Enumerate through all states where prod[dot] is nt """
+            """ Enumerate all states where prod[dot] is nt """
             if nt in self._ntdict:
                 for ix in self._ntdict[nt]:
                     yield self._states[ix]
@@ -99,7 +101,7 @@ class Parser:
             return self._numstates
 
         def __getitem__(self, index):
-            """ Return the terminal or nonterminal at the given index position """
+            """ Return the state at the given index position """
             return self._states[index]
 
         def __iter__(self):
@@ -128,7 +130,8 @@ class Parser:
 
         def add_family(self, prod, children):
             """ Add a family of children to this node, in parallel with other families """
-            # Note which production is responsible for this subtree
+            # Note which production is responsible for this subtree,
+            # to help navigate the tree in case of ambiguity
             pc_tuple = (prod, children)
             if self._families is None:
                 self._families = [ pc_tuple ]
@@ -180,10 +183,9 @@ class Parser:
 
         def enum_children(self):
             """ Enumerate families of children """
-            if not self._families:
-                raise StopIteration
-            for prod, c in self._families:
-                yield (prod, c)
+            if self._families:
+                for prod, c in self._families:
+                    yield (prod, c)
 
         def __hash__(self):
             """ Make this node hashable """
@@ -208,7 +210,8 @@ class Parser:
 
     def __init__(self, nt_dict, root):
 
-        """ Initialize a parser from a "raw" grammar dictionary and a root nonterminal within it """
+        """ Initialize a parser from a "raw" grammar dictionary and a
+            root nonterminal within it """
 
         assert nt_dict is not None
         assert root is not None
@@ -231,11 +234,8 @@ class Parser:
             The parser handles ambiguity, returning alternative options within
             a single packed tree.
 
-            See Elizabeth Scott, Adrian Johnstone:
-            "Recognition is not parsing — SPPF-style parsing from cubic recognisers"
-            Science of Computer Programming, Volume 75, Issues 1–2, 1 January 2010, Pages 55–70
-
-            Comments refer to the EARLEY_PARSER pseudocode given in the paper.
+            Comments refer to the EARLEY_PARSER pseudocode given in the
+            Scott/Johnstone paper, cf. the reference at the top of this module.
 
         """
 
@@ -259,9 +259,6 @@ class Parser:
                 y = V[label]
             else:
                 V[label] = y = Parser.Node(label)
-                #if dot >= len_prod:
-                #    # Memorize which production was being completed
-                #    y.set_prod(prod)
             # assert v is not None
             if w is None:
                 y.add_family(prod, v)
@@ -271,23 +268,16 @@ class Parser:
                 y.add_family(prod, (w, v)) # The code breaks if this is modified!
             return y
 
-        def _match(i, prod, dot):
-            """ Check whether the token with index i matches the given terminal """
-            if i >= n:
-                # Token index beyond the end of the token list
-                return False
-            return tokens[i].matches(prod[dot])
-
         def _push(newstate, i, _E, _Q):
             """ Append a new state to an Earley column (_E) and a look-ahead set (_Q), as appropriate """
             # (N ::= α·δ, h, y)
             # newstate = (N, dot, prod, h, y)
-            _, dot, prod, _, _ = newstate
+            dot, prod = newstate[1], newstate[2]
             if prod.nonterminal_at(dot):
                 # Nonterminal or epsilon
                 # δ ∈ ΣN
                 _E.add(newstate)
-            elif _match(i, prod, dot):
+            elif i < n and tokens[i].matches(prod[dot]):
                 # Terminal matching the current token
                 _Q.append(newstate)
 
@@ -387,8 +377,10 @@ class Parser:
             if nt == self.root and dot >= len(prod) and k == 0:
                 # Completed production that spans the entire chart: we're done
                 return w
-        # No parse
-        return None
+
+        # No parse at last token
+        raise ParseError("No parse available at token {0} ({1})"
+            .format(n, tokens[n-1])) # Token index is 1-based
 
 
     def go_no_exc(self, tokens):
