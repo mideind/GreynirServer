@@ -28,7 +28,22 @@
 
 {% if combinations == 0 %}
       <p class="options">Engin greining fannst.</p>
-      <p class="err">{{ err }}</p>
+      <p class="err">{{ err.msg }}</p>
+      <p>Síðasta staða málgreinis:</p>
+<table>
+{% for state in err.info %}
+<tr>
+<td>{{ state[0] }}</td>
+<td>
+{% for p in state[2] %}
+{{ "\u25CF " if loop.index0 == state[1] else "" }}{{ p }}
+{% endfor %}
+{{ "\u25CF" if state[2] | length == state[1] else "" }}
+</td>
+<td>{{ state[3] }}</td>
+</tr>
+{% endfor %}
+</table>
 {% elif combinations == 1 %}
       <p class="options">Ein trjágreining fannst:</p>
 {% else %}

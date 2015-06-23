@@ -110,6 +110,7 @@ function serverPost(url, parameters) {
    /* Post to the provided URL with the specified parameters */
    var form = $('<form method="post"></form>');
    form.attr("action", url);
+   form.attr("target", "_blank"); // Display in new window
    $.each(parameters, function(key, value) {
       var field = $('<input type="hidden"></input>');
       field.attr("name", key);

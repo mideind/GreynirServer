@@ -267,9 +267,11 @@ class BIN_Token(Token):
                 return self.prep_matches(m[0], terminal.variant(0))
             if terminal.startswith("no"):
                 # Check noun
+                if BIN_Token._KIND[m[2]] != "no":
+                    return False
                 if terminal.has_variant("abbrev"):
                     # Only match abbreviations; gender, case and number do not matter
-                    return BIN_Token._KIND[m[2]] == "no" and m[5] == "-"
+                    return m[5] == "-"
                 for v in terminal.variants():
                     if v in { "kk", "kvk", "hk"}:
                         if m[2] != v:
@@ -278,7 +280,7 @@ class BIN_Token(Token):
                     elif BIN_Token._VARIANT[v] not in m[5] and m[5] != "-":
                         # Case or number not matching
                         return False
-                return BIN_Token._KIND[m[2]] == "no"
+                return True
             # Check other word categories
             if m[5] != "-": # Tokens without a form specifier are assumed to be universally matching
                 for v in terminal.variants():
@@ -326,7 +328,7 @@ class BIN_Parser(Parser):
             g = Grammar()
             g.read("Reynir.grammar")
             BIN_Parser._grammar = g
-        Parser.__init__(self, g.nt_dict(), g.root())
+        Parser.__init__(self, g)
 
     def grammar(self):
         """ Return the grammar loaded from Reynir.grammar """

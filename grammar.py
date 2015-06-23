@@ -53,7 +53,7 @@ class Nonterminal:
     """ A nonterminal, either at the left hand side of
         a rule or within a production """
 
-    _INDEX = 0 # Running sequence number of all nonterminals
+    _INDEX = -1 # Running sequence number (negative) of all nonterminals
 
     def __init__(self, name, fname = None, line = 0):
         self._name = name
@@ -62,21 +62,23 @@ class Nonterminal:
         self._line = line
         # Has this nonterminal been referenced in a production?
         self._ref = False
-        # Give all nonterminals a unique sequence number for hashing purposes
+        # Give all nonterminals a unique, negative sequence number for hashing purposes
         self._index = Nonterminal._INDEX
-        Nonterminal._INDEX += 1
+        Nonterminal._INDEX -= 1
 
     def __hash__(self):
         """ Use the index of this nonterminal as a basis for the hash """
         return self._index.__hash__()
 
     def __eq__(self, other):
-    #    return isinstance(other, Nonterminal) and self._index == other._index
         return id(self) == id(other)
 
     def __ne__(self, other):
-    #    return not isinstance(other, Nonterminal) or self._index != other._index
         return id(self) != id(other)
+
+    def index(self):
+        """ Return the (negative) sequence number of this nonterminal """
+        return self._index
 
     def add_ref(self):
         """ Mark this as being referenced """
@@ -108,6 +110,8 @@ class Terminal:
 
     """ A terminal within a right-hand-side production """
 
+    _INDEX = 1 # Running sequence number (positive) of all terminals
+
     def __init__(self, name):
         self._name = name
         # Do a bit of pre-calculation to speed up various
@@ -116,15 +120,21 @@ class Terminal:
         # The variant set for this terminal, i.e.
         # tname_var1_var2_var3 -> { 'var1', 'var2', 'var3' }
         self._vset = set(self._parts[1:])
+        self._index = Terminal._INDEX
+        Terminal._INDEX += 1
 
     def __hash__(self):
-        return hash(self._name)
+        return self._index.__hash__()
 
     def __repr__(self):
         return '{0}'.format(self._name)
 
     def __str__(self):
         return '{0}'.format(self._name)
+
+    def index(self):
+        """ Return the (negative) sequence number of this nonterminal """
+        return self._index
 
     def has_variant(self, v):
         """ Returns True if the terminal name has the given variant """
@@ -172,6 +182,8 @@ class LiteralTerminal(Terminal):
         return self._parts[0] == t_val
 
     def matches_first(self, t_kind, t_val):
+        #print("LiteralTerminal.matches: parts[0] is '{0}', t_val is '{1}'"
+        #    .format(self._parts[0], t_val))
         """ A literal terminal matches a token if the token text is identical to the literal """
         return self._parts[0] == t_val
 
@@ -222,6 +234,8 @@ class Production:
         # Give all productions a unique sequence number for hashing purposes
         self._index = Production._INDEX
         Production._INDEX += 1
+        # Cached tuple representation of this production
+        self._tuple = None
 
     def __hash__(self):
         """ Use the index of this production as a basis for the hash """
@@ -239,11 +253,15 @@ class Production:
         """ Append a terminal or nonterminal to this production """
         self._rhs.append(t)
         self._len += 1
+        # Destroy the cached tuple, if any
+        self._tuple = None
 
     def expand(self, l):
         """ Add a list of terminals and/or nonterminals to this production """
         self._rhs.expand(l)
         self._len += len(l)
+        # Destroy the cached tuple, if any
+        self._tuple = None
 
     def length(self):
         """ Return the length of this production """
@@ -259,12 +277,19 @@ class Production:
     def line(self):
         return self._line
 
+    def prod(self):
+        """ Return this production in tuple form """
+        if self._tuple is None:
+            # Nonterminals have negative indices and terminals have positive ones
+            self._tuple = tuple(t.index() for t in self._rhs) if self._rhs else tuple()
+        return self._tuple
+
     def nonterminal_at(self, dot):
         """ Return True if prod[dot] is a nonterminal or completed """
         return dot >= self._len or isinstance(self._rhs[dot], Nonterminal)
 
     def __getitem__(self, index):
-        """ Return the terminal or nonterminal at the given index position """
+        """ Return the Terminal or Nonterminal at the given index position """
         return self._rhs[index]
 
     def __len__(self):
@@ -315,6 +340,12 @@ class Grammar:
     def root(self):
         """ Return the root nonterminal for this grammar """
         return self._root
+
+    def terminals(self):
+        return self._terminals
+
+    def nonterminals(self):
+        return self._nonterminals
 
     def num_nonterminals(self):
         """ Return the number of nonterminals in the grammar """

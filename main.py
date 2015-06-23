@@ -221,12 +221,14 @@ def parse_grid():
     tokens = list(tokenize(txt))
     # Parse the text
     bp = BIN_Parser()
-    err = None
+    err = dict()
 
     try:
         forest = bp.go(tokens)
     except ParseError as e:
-        err = str(e)
+        err["msg"] = str(e)
+        # Relay information about the parser state at the time of the error
+        err["info"] = e.info()
         forest = None
 
     # Find the number of parse combinations

@@ -34,6 +34,8 @@
 
 """
 
+from collections import defaultdict
+
 from grammar import Nonterminal, Terminal, Token
 
 #from flask import current_app
@@ -47,7 +49,14 @@ class ParseError(Exception):
 
     """ Exception class for parser errors """
 
-    pass
+    def __init__(self, txt, info = None):
+        """ Store an information object with the exception,
+            containing the parser state immediately before the error """
+        self._info = info
+        Exception.__init__(self, txt)
+
+    def info(self):
+        return self._info
 
 
 class Parser:
@@ -73,7 +82,7 @@ class Parser:
             self._numstates = 0
             self._set = set()
             # Dictionary of states keyed by nonterminal at prod[dot]
-            self._ntdict = dict()
+            self._nt_dict = defaultdict(list)
 
         def add(self, newstate):
             """ Add a new state to this column if it is not already there """
@@ -81,19 +90,17 @@ class Parser:
                 self._states.append(newstate)
                 self._set.add(newstate)
                 _, dot, prod, _, _ = newstate
-                if dot < len(prod) and isinstance(prod[dot], Nonterminal):
+                if dot < len(prod) and prod[dot] < 0:
                     # The state is at a nonterminal: add its index to our dict
                     nt = prod[dot]
-                    if nt in self._ntdict:
-                        self._ntdict[nt].append(self._numstates)
-                    else:
-                        self._ntdict[nt] = [ self._numstates ]
+                    # defaultdict automatically creates empty list if no entry for nt
+                    self._nt_dict[nt].append(self._numstates)
                 self._numstates += 1
 
         def enum_nt(self, nt):
             """ Enumerate all states where prod[dot] is nt """
-            if nt in self._ntdict:
-                for ix in self._ntdict[nt]:
+            if nt in self._nt_dict:
+                for ix in self._nt_dict[nt]:
                     yield self._states[ix]
 
         def __len__(self):
@@ -107,6 +114,17 @@ class Parser:
         def __iter__(self):
             """ Return an iterator over the state list """
             return iter(self._states)
+
+        def info(self, parser):
+            """ Return a list of the parser states within this column in a 'readable' format """
+
+            def readable(s):
+                """ Return a 'readable' form of parser state s where
+                    item indices have been converted to object references """
+                nt, dot, prod, i, w = s
+                return (parser._lookup(nt), dot, [parser._lookup(t) for t in prod], i)
+
+            return [readable(s) for s in self._states]
 
 
     class Node:
@@ -122,16 +140,22 @@ class Parser:
 
         """
 
-        def __init__(self, label):
+        def __init__(self, parser, label):
             """ Initialize a SPPF node with a given label tuple """
             # assert isinstance(label, tuple)
+            if isinstance(label[0], int):
+                # Convert the label from (nt-index, i, j) to (nt, i, j)
+                assert label[0] < 0 # Nonterminal indices are negative
+                label = (parser._nonterminals[label[0]], label[1], label[2])
             self._label = label
             self._families = None # Families of children
 
-        def add_family(self, prod, children):
+        def add_family(self, parser, prod, children):
             """ Add a family of children to this node, in parallel with other families """
             # Note which production is responsible for this subtree,
             # to help navigate the tree in case of ambiguity
+
+            prod = [parser._lookup(ix) for ix in prod]
             pc_tuple = (prod, children)
             if self._families is None:
                 self._families = [ pc_tuple ]
@@ -208,22 +232,39 @@ class Parser:
             return str(self.head())
 
 
-    def __init__(self, nt_dict, root):
+    def __init__(self, g):
 
-        """ Initialize a parser from a "raw" grammar dictionary and a
-            root nonterminal within it """
+        """ Initialize a parser for a grammar """
 
-        assert nt_dict is not None
-        assert root is not None
-        assert root in nt_dict
-        self.nt_dict = nt_dict
-        self.root = root
+        nt_d = g.nt_dict()
+        r = g.root()
+        assert nt_d is not None
+        assert r is not None
+        assert r in nt_d
+        # Convert the grammar to integer index representation for speed
+        self._root = r.index()
+        # Make new grammar dictionary keyed by nonterminal index
+        self._nt_dict = { }
+        for nt, plist in nt_d.items():
+            self._nt_dict[nt.index()] = None if plist is None else [ p.prod() for p in plist ]
+        # Make a dictionary of nonterminals from the grammar
+        # keyed by the nonterminal index instead of its name
+        self._nonterminals = { }
+        for nt in g.nonterminals().values():
+            assert nt.index() not in self._nonterminals
+            self._nonterminals[nt.index()] = nt
+        # Make a dictionary of terminals from the grammar
+        # keyed by the terminal index instead of its name
+        self._terminals = { }
+        for t in g.terminals().values():
+            assert t.index() not in self._terminals
+            self._terminals[t.index()] = t
 
 
     @classmethod
     def for_grammar(cls, g):
         """ Create a Parser for the Grammar in g """
-        return cls(g.nt_dict(), g.root())
+        return cls(g)
 
 
     def go(self, tokens):
@@ -258,14 +299,14 @@ class Parser:
             if label in V:
                 y = V[label]
             else:
-                V[label] = y = Parser.Node(label)
+                V[label] = y = Parser.Node(self, label)
             # assert v is not None
             if w is None:
-                y.add_family(prod, v)
+                y.add_family(self, prod, v)
             else:
                 # w is an already built subtree that we're putting a new
                 # node on top of
-                y.add_family(prod, (w, v)) # The code breaks if this is modified!
+                y.add_family(self, prod, (w, v)) # The code breaks if this is modified!
             return y
 
         def _push(newstate, i, _E, _Q):
@@ -273,11 +314,11 @@ class Parser:
             # (N ::= α·δ, h, y)
             # newstate = (N, dot, prod, h, y)
             dot, prod = newstate[1], newstate[2]
-            if prod.nonterminal_at(dot):
+            if dot >= len(prod) or prod[dot] < 0:
                 # Nonterminal or epsilon
                 # δ ∈ ΣN
                 _E.add(newstate)
-            elif i < n and tokens[i].matches(prod[dot]):
+            elif i < n and tokens[i].matches(self._terminals[prod[dot]]):
                 # Terminal matching the current token
                 _Q.append(newstate)
 
@@ -291,9 +332,9 @@ class Parser:
         Q0 = [ ]
 
         # Populate column 0 (E0) with start states and Q0 with lookaheads
-        for root_p in self.nt_dict[self.root]:
+        for root_p in self._nt_dict[self._root]:
             # Go through root productions
-            newstate = (self.root, 0, root_p, 0, None)
+            newstate = (self._root, 0, root_p, 0, None)
             # add (S ::= ·α, 0, null) to E0 and Q0
             _push(newstate, 0, E0, Q0)
 
@@ -303,9 +344,9 @@ class Parser:
             if not Ei:
                 # Parse options exhausted, nothing to do
                 raise ParseError("No parse available at token {0} ({1})"
-                    .format(i, tokens[i-1])) # Token index is 1-based
+                    .format(i, tokens[i-1]), E[i-1].info(self)) # Token index is 1-based
             j = 0
-            H = { }
+            H = defaultdict(list)
             Q = Q0
             Q0 = [ ]
             while j < len(Ei):
@@ -316,22 +357,21 @@ class Parser:
                 nt_B, dot, prod, h, w = state
                 len_prod = len(prod)
                 # if Λ = (B ::= α · Cβ, h, w):
-                if dot < len_prod and isinstance(prod[dot], Nonterminal):
+                if dot < len_prod and prod[dot] < 0: # Nonterminal
                     # Earley predictor
                     # for all (C ::= δ) ∈ P:
                     nt_C = prod[dot]
                     # Go through all right hand sides of non-terminal nt_C
-                    for p in self.nt_dict[nt_C]:
+                    for p in self._nt_dict[nt_C]:
                         # if δ ∈ ΣN and (C ::= ·δ, i, null) !∈ Ei:
                         newstate = (nt_C, 0, p, i, None)
                         _push(newstate, i, Ei, Q)
                     # if ((C, v) ∈ H):
-                    if nt_C in H:
-                        for v in H[nt_C]:
-                            # y = MAKE_NODE(B ::= αC · β, h, i, w, v, V)
-                            y = _make_node(nt_B, dot + 1, prod, h, i, w, v, V)
-                            newstate = (nt_B, dot + 1, prod, h, y)
-                            _push(newstate, i, Ei, Q)
+                    for v in H.get(nt_C, []):
+                        # y = MAKE_NODE(B ::= αC · β, h, i, w, v, V)
+                        y = _make_node(nt_B, dot + 1, prod, h, i, w, v, V)
+                        newstate = (nt_B, dot + 1, prod, h, y)
+                        _push(newstate, i, Ei, Q)
                 # if Λ = (D ::= α·, h, w):
                 elif dot >= len_prod:
                     # Earley completer
@@ -340,15 +380,11 @@ class Parser:
                         if label in V:
                             w = v = V[label]
                         else:
-                            w = v = V[label] = Parser.Node(label)
-                            # v.set_prod(prod)
-                        w.add_family(prod, None) # Add e (empty production) as a family
+                            w = v = V[label] = Parser.Node(self, label)
+                        w.add_family(self, prod, None) # Add e (empty production) as a family
                     if h == i:
                         # Empty production satisfied
-                        if nt_B in H:
-                            H[nt_B].append(w)
-                        else:
-                            H[nt_B] = [w]
+                        H[nt_B].append(w) # defaultdict automatically creates an empty list
                     # for all (A ::= τ · Dδ, k, z) in Eh:
                     for st0 in E[h].enum_nt(nt_B):
                         nt_A, dot0, prod0, k, z = st0
@@ -359,7 +395,7 @@ class Parser:
             V = { }
             if Q:
                 label = (tokens[i], i, i + 1)
-                v = Parser.Node(label)
+                v = Parser.Node(self, label)
             while Q:
                 # Earley scanner
                 # Remove an element, Λ = (B ::= α · ai+1β, h, w) say, from Q
@@ -374,13 +410,13 @@ class Parser:
 
         # if (S ::= τ ·, 0, w) ∈ En: return w
         for nt, dot, prod, k, w in E[n]:
-            if nt == self.root and dot >= len(prod) and k == 0:
+            if nt == self._root and dot >= len(prod) and k == 0:
                 # Completed production that spans the entire chart: we're done
                 return w
 
         # No parse at last token
         raise ParseError("No parse available at token {0} ({1})"
-            .format(n, tokens[n-1])) # Token index is 1-based
+            .format(n, tokens[n-1]), E[n].info(self)) # Token index is 1-based
 
 
     def go_no_exc(self, tokens):
@@ -389,6 +425,11 @@ class Parser:
             return self.go(tokens)
         except ParseError:
             return None
+
+
+    def _lookup(self, ix):
+        """ Convert a production item from an index to an object reference """
+        return self._nonterminals[ix] if ix < 0 else self._terminals[ix]
 
 
     @staticmethod
