@@ -100,10 +100,10 @@ class Nonterminal:
         return self._line
 
     def __repr__(self):
-        return '<{0}>'.format(self._name)
+        return '{0}'.format(self._name)
 
     def __str__(self):
-        return '<{0}>'.format(self._name)
+        return '{0}'.format(self._name)
 
 
 class Terminal:
@@ -298,7 +298,7 @@ class Production:
 
     def __repr__(self):
         """ Return a representation of this production """
-        return "<Production: " + repr(self._rhs) + ">"
+        return "<P: " + repr(self._rhs) + ">"
 
     def __str__(self):
         """ Return a representation of this production """

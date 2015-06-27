@@ -50,16 +50,6 @@ PUNCTUATION = LEFT_PUNCTUATION + CENTER_PUNCTUATION + RIGHT_PUNCTUATION + NONE_P
 # Punctuation symbols that may occur at the end of a sentence, after the period
 SENTENCE_FINISHERS = ")]“»”’"
 
-# Single-word abbreviations (i.e. those that don't contain an embedded period)
-ABBREV = frozenset([
-    "bls", "skv", "nk", "sbr", "ca", "ath", "e", "kl", "kr",
-    "þús", "ma", "sl", "gr", "nr", "pr", "fv", "mkr", "ehf",
-    # Note that 'Ð' is excluded from single-letter abbreviations
-    "A", "Á", "B", "C", "D", "E", "É", "F", "G", "H", "I", "Í", "J", "K",
-    "L", "M", "N", "O", "Ó", "P", "Q", "R", "S", "T", "U", "V", "W",
-    "X", "Y", "Z", "Þ", "Æ", "Ö", "Th", "St", "Fr"
-])
-
 CLOCK_ABBREV = "kl"
 
 # Punctuation types: left, center or right of word
@@ -375,7 +365,8 @@ def parse_particles(token_stream):
             # Coalesce abbreviations ending with a period into a single
             # abbreviation token
             if next_token[0] == TOK.PUNCTUATION and next_token[1] == '.':
-                if token[0] == TOK.WORD and ('.' in token[1] or token[1].lower() in ABBREV or token[1] in ABBREV):
+                if token[0] == TOK.WORD and ('.' in token[1] or
+                    token[1].lower() in Abbreviations.SINGLES or token[1] in Abbreviations.SINGLES):
                     # Abbreviation: make a special token for it
                     # and advance the input stream
                     clock = token[1].lower() == CLOCK_ABBREV
@@ -512,7 +503,11 @@ class Bin_DB:
 
 def lookup_abbreviation(w):
     """ Lookup abbreviation from abbreviation list """
-    return [ Abbreviations.DICT[w] ] if w in Abbreviations.DICT else None
+    # Remove brackets, if any, before lookup
+    clean_w = w[1:-1] if w[0] == '[' else w
+    # Return a single-entity list with one meaning
+    m = Abbreviations.DICT.get(clean_w, None)
+    return None if m is None else [ m ]
 
 
 def lookup_word(db, w, at_sentence_start):
@@ -628,12 +623,12 @@ MULTIPLIERS = {
     "tylft": 12,
     "hundrað": 100,
     "þúsund": 1000,
-    "[þús.]": 1000,
+    "þús.": 1000,
     "milljón": 1e6,
     "milla": 1e6,
     "milljarður": 1e9,
     "miljarður": 1e9,
-    "[ma.]": 1e9
+    "ma.": 1e9
 }
 
 # Recognize words for fractions
@@ -738,13 +733,9 @@ ISO_CURRENCIES = {
 
 # Amount abbreviations including 'kr' for the ISK
 AMOUNT_ABBREV = {
-    "[þús.kr.]": 1e3,
     "þús.kr.": 1e3,
-    "[m.kr.]": 1e6,
     "m.kr.": 1e6,
-    "[mkr.]": 1e6,
     "mkr.": 1e6,
-    "[ma.kr.]": 1e9,
     "ma.kr.": 1e9
 }
 
@@ -763,8 +754,12 @@ def match_stem_list(token, stems, filter_func=None):
     # Go through the meanings with their stems
     for m in token[2]:
         # If a filter function is given, pass candidates to it
-        if m[0] in stems and (filter_func is None or filter_func(m)):
-            return stems[m[0]]
+        try:
+            if m[0] in stems and (filter_func is None or filter_func(m)):
+                return stems[m[0]]
+        except Exception as e:
+            print("Exception {0} in match_stem_list\nToken: {1}\nStems: {2}".format(e, token, stems))
+            raise e
     return None
 
 

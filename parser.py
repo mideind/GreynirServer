@@ -455,7 +455,7 @@ class Parser:
             # and do not increment the indentation level
             if detailed or not w.is_interior():
                 h = str(w)
-                if (h.endswith("?>") or h.endswith("*>")) and w.is_empty():
+                if (h.endswith("?") or h.endswith("*")) and w.is_empty():
                     # Skip printing optional nodes that don't contain anything
                     return
                 print(indent + h)

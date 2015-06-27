@@ -11,18 +11,18 @@ __pycache__/
 # Pickled DAWG trees
 *.pickle
 
-# Secret session key
-resources/secret_key.bin
+# Various resource files
+resources/*
 
 # Minified JavaScript
 static/*.min.js
 
 # Scratch work files
-resources/*.csv
 profile.bin
 *.sublime-project
 *.sublime-workspace
 *.bak
+*.profile
 txt
 
 # Distribution / packaging

@@ -30,7 +30,15 @@
       <p class="options">Engin greining fannst.</p>
       <p class="err">{{ err.msg }}</p>
       <p>Síðasta staða málgreinis:</p>
-<table>
+<table class="parser-state">
+<thead>
+<tr>
+<th>Nonterminal</th>
+<th>Production</th>
+<th class="parser-start">Start</th>
+</tr>
+</thead>
+<tbody>
 {% for state in err.info %}
 <tr>
 <td>{{ state[0] }}</td>
@@ -40,9 +48,10 @@
 {% endfor %}
 {{ "\u25CF" if state[2] | length == state[1] else "" }}
 </td>
-<td>{{ state[3] }}</td>
+<td class="parser-start">{{ state[3] }}</td>
 </tr>
 {% endfor %}
+</tbody>
 </table>
 {% elif combinations == 1 %}
       <p class="options">Ein trjágreining fannst:</p>

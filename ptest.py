@@ -29,7 +29,7 @@ from tokenizer import TOK, tokenize
 from grammar import Nonterminal, Terminal, Token, Production, Grammar, GrammarError
 from parser import Parser, ParseError
 from binparser import BIN_Parser
-from settings import Settings, Verbs, Prepositions, ConfigError
+from settings import Settings, ConfigError
 
 
 class Test_DB:

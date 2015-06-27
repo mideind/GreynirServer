@@ -54,23 +54,39 @@ Tilvitnun →
 TilvitnunarEnding →
     '.'? '“' | '“' '.'?
 
-StLiður → Samtenging Yfirsetning
+StLiður → ','? Samtenging Yfirsetning
 
-Samtenging → st | 'þar' 'sem' | 'þannig' 'að'
+Samtenging → st | 'þar' 'sem' | 'þannig' 'að' | 'svo' 'sem'
 
-Yfirsetning → SetningAlm_kk | SetningAlm_kvk | SetningAlm_hk
+Yfirsetning →
+    SetningAlm | SetningAukafall
 
 # Setningar með frumlagi
+
+SetningAlm →
+    SetningAlm_kk | SetningAlm_kvk | SetningAlm_hk
 
 SetningAlm/kyn → SetningAlm_p1/kyn | SetningAlm_p2/kyn | SetningAlm_p3/kyn
 
 SetningAlm/pers/kyn → Setning_et/pers/kyn | Setning_ft/pers/kyn
 
+# Tilvik þar sem einu frumlagi fylgja nokkrir sagnliðir:
+# 'Anna tók bílinn, keyrði í bæinn [,] og keypti í matinn'
+
+SagnRuna/tala/pers/kyn →
+    Sagnliður/tala/pers Sagnfylling/tala/kyn SagnFramhald/tala/pers/kyn?
+
+SagnFramhald/tala/pers/kyn →
+    SagnKomma/tala/pers/kyn* ','? OgEða Sagnliður/tala/pers Sagnfylling/tala/kyn
+
+SagnKomma/tala/pers/kyn →
+    ',' Sagnliður/tala/pers Sagnfylling/tala/kyn
+
 Setning/tala/pers/kyn →
     # Venjuleg setningarskipan með frumlagi fremst:
     # 'Jón sterki fór bersýnilega í bága við reglurnar með þessu'
     # 'Katrín formaður félagsins hefur augljóslega verið alveg hnífskörp í gær'
-    Frumlag/tala/pers/kyn Sagnliður/tala/pers Sagnfylling/tala/kyn
+    Frumlag/tala/pers/kyn SagnRuna/tala/pers/kyn
 
     # Frumlag fyrir aftan sögn:
     # 'Bersýnilega fór Jón sterki í bága við reglurnar með þessu'
@@ -91,6 +107,30 @@ Setning/tala/pers/kyn →
     # 'Búist er við vondu veðri í dag'
     # !!! TBD
 
+# Setning þar sem frumlag (aðalnafnliður) er í aukafalli
+# vegna þess að sögnin tekur viðfang (subject) í aukafalli,
+# eða vegna þess að að sögnin er í miðmynd
+# 'Mér blöskrar athæfið', 'Mér sýnist að öllu sé óhætt'
+
+SetningAukafall →
+    SetningAukafall_nf | SetningAukafall_þf | SetningAukafall_þgf | SetningAukafall_ef
+
+SetningAukafall/fall →
+    NlAlm/fall so_subj/fall AukafallsBotn
+
+SetningAukafall_þgf →
+    NlAlm_þgf so_subj_mm AukafallsBotn  # Miðmynd sagna: Mér áskotnaðist, mér fyrirgefst, mér gremst...
+
+# !!! ATH:
+# 'Mér finnst kisan *vera* sæt', ekki '*er*'
+
+AukafallsBotn →
+    FsAtv?                             # Mér hlýnaði um hjartarætur
+    | Atviksliður? NlAlm_nf_þf FsAtv?  # Mér blöskraði mjög vitleysan í Páli
+    | Yfirsetning                      # Mér sýnist þér blöskra þegar ég tala
+
+NlAlm_nf_þf → NlAlm_nf | NlAlm_þf
+
 #Andlag →
 #    SagnliðurNh Sagnfylling?    # 'að stjórna skipinu í land'
 #    | NlAlm_nf                  # 'stuttur frestur'
@@ -108,9 +148,9 @@ SetningÁnF/tala →
 
 Sagnfylling/tala/kyn → Lýsingarliður/tala/kyn? FsFylling?
 
-Lýsingarliður/tala/kyn → Atviksliður | LoLiður/tala/kyn
+Lýsingarliður/tala/kyn → Atviksliður | LoLiður/tala/kyn+
 
-Lýsingarliður/tala → Atviksliður | LoLiður/tala
+Lýsingarliður/tala → Atviksliður | LoLiður/tala+
 
 LoLiður_et → LoLiður_et_kk | LoLiður_et_kvk | LoLiður_et_hk
 LoLiður_ft → LoLiður_ft_kk | LoLiður_ft_kvk | LoLiður_ft_hk
@@ -347,34 +387,63 @@ HannHúnÞað/tala/fall/kyn → HannHúnÞað/kyn/fall/tala
 ÉgÞú/tala/fall → 'ég'/tala/fall | 'þú'/tala/fall
 ÉgÞú_ft/fall → 'vér'_ft/fall | 'þér'_ft/fall
 
+# Taka sérstaklega á runu forsetningarliða sem er afmörkuð milli komma;
+# það minnkar tvíræðni
+
+FsRuna → ',' FsLiður+ ','
+    | FsLiður+
+
+# Nafnliðarkjarni
+
+NlKjarni_et/fall/kyn →
+
+    # 'fullorðni sprúðlandi sonur Íslands'
+
+    LoLiður_et/fall/kyn*        # glæsileg (kona)
+    so_lh_nt*                   # leiðandi (fyrirtæki)
+    Skst?                       # FIH (bankinn)
+    Fyrirbæri/fall/kyn          # Már Guðmundsson seðlabankastjóri
+    EfLiður?                    # (forstöðumaður) fræðaseturs
+
+    # Eignarfallsliður á undan: 'Íslands fullorðni sprúðlandi sonur'
+    | EfLiður LoLiður_et/fall/kyn* so_lh_nt* Skst? Fyrirbæri/fall/kyn
+
+NlKjarni_ft/fall/kyn →
+    LoLiður_ft/fall/kyn* so_lh_nt* Skst? no_ft/fall/kyn EfLiður?
+    | EfLiður LoLiður_ft/fall/kyn* so_lh_nt* Skst? no_ft/fall/kyn
+
+# Frumlag í nefnifalli
+
 Frumlag_et_p3/kyn →
 
-    Fornöfn_et_nf/kyn? Töluorð/kyn*
-        LoLiður_et_nf/kyn* Skst? Fyrirbæri_nf/kyn
-        EfLiður? Fornöfn_et_nf/kyn? FsLiður*
+    # 'hinir tveir sönnu synir sérhvers í sveitinni'
+    Fornöfn_et_nf/kyn? Töluorð/kyn* NlKjarni_et_nf/kyn Fornöfn_et_nf/kyn? FsRuna?
 
     | HannHúnÞað_et_nf/kyn
     | Fornöfn_et_nf/kyn
     | Undirsetning_et_nf/kyn
-
-# !!! Ath: blandað kyn ef fleirtala: hann og hún voru falleg
+    | 'hver'_et_nf 'og' 'einn'_et_nf     # 'hver og einn ber ábyrgð'
 
 Frumlag_ft_p3/kyn →
 
-    Frumlag_et_p3/kyn SamtengingNl_nf/kyn+
-    | Frumlag_ft_p3/kyn SamtengingNl_nf/kyn+
+    Frumlag_et_p3/kyn SamtengingNl_nf/kyn+    # Sama kyn á öllum liðum
+    | Frumlag_ft_p3/kyn SamtengingNl_nf/kyn+  # Sama kyn á öllum liðum
 
-    | Fornöfn_ft_nf/kyn? Töluorð/kyn*
-        LoLiður_ft_nf/kyn* Skst? no_ft_nf/kyn
-        EfLiður? Fornöfn_ft_nf/kyn? FsLiður*
+    | Fornöfn_ft_nf/kyn? Töluorð/kyn* NlKjarni_ft_nf/kyn Fornöfn_ft_nf/kyn? FsRuna?
 
     | HannHúnÞað_ft_nf/kyn
     | Fornöfn_ft_nf/kyn
     | Undirsetning_ft_nf/kyn
 
-# NlAlm → NlAlm_kk | NlAlm_kvk | NlAlm_hk
+# Sértilvik fyrir fleirtölu hvorugkyns: getur innifalið frumlög af blönduðu kyni
 
-# NlAlm/kyn → NlAlm_nf/kyn | NlAlm_þf/kyn | NlAlm_þgf/kyn | NlAlm_ef/kyn
+Frumlag_ft_p3_hk →
+
+    Frumlag_et_p3 SamtengingNl_nf+             # Blandað kyn
+    | Frumlag_ft_p3 SamtengingNl_nf+           # Blandað kyn
+
+Frumlag_et_p3 → Frumlag_et_p3_kk | Frumlag_et_p3_kvk | Frumlag_et_p3_hk
+Frumlag_ft_p3 → Frumlag_ft_p3_kk | Frumlag_ft_p3_kvk | Frumlag_ft_p3_hk
 
 NlAlm_nf →
     NlAlm_nf_kk
@@ -400,9 +469,11 @@ NlAlm/fall/kyn → NlAlm_et/fall/kyn | NlAlm_ft/fall/kyn
 
 NlAlm_et/fall/kyn →
 
-    Fornöfn_et/fall/kyn? Töluorð/kyn*
-        LoLiður_et/fall/kyn* Skst? Fyrirbæri/fall/kyn
-        EfLiður? Fornöfn_et/fall/kyn? FsLiður*
+    Fornöfn_et/fall/kyn?        # Sá (stóri maður), allt þetta (víkjandi lán)
+        Töluorð/kyn*            # þrjá (gangandi menn)
+        NlKjarni_et/fall/kyn
+        Fornöfn_et/fall/kyn?    # (stjórnarframkvæmdum) öllum
+        FsRuna?                 # (fulltrúi bankans) í nefndinni
 
     | HannHúnÞað_et/fall/kyn
     | ÉgÞú_et/fall
@@ -420,27 +491,36 @@ Manneskja/fall/kyn → person/fall/kyn Titill/fall?
 # 'Már Guðmundsson, seðlabankastjóri'
 Titill/fall → ','? no_et/fall
 
-# !!! ATH: Ráða við blandað kyn (hann og hún -> þau)
 NlAlm_ft/fall/kyn →
 
-    NlAlm/fall/kyn SamtengingNl/fall+ # Ekki gerð krafa um kynjasamræmi hér
+    NlAlm/fall/kyn SamtengingNl/kyn/fall+ # Allir liðir af sama kyni
 
-    | Fornöfn_ft/fall/kyn? Töluorð/kyn*
-        LoLiður_ft/fall/kyn* Skst? no_ft/fall/kyn
-        EfLiður? Fornöfn_ft/fall/kyn? FsLiður*
+    | Fornöfn_ft/fall/kyn? Töluorð/kyn* NlKjarni_ft/fall/kyn Fornöfn_ft/fall/kyn? FsRuna?
 
     | HannHúnÞað_ft/fall/kyn
     | ÉgÞú_ft/fall
     | Undirsetning_ft/fall/kyn
 
-Undirsetning/tala/fall/kyn →
-    NlAlm/tala/fall/kyn Tengiorð Tengisetning/tala
+NlAlm_ft_nf_hk →
+    NlAlm_nf SamtengingNl_nf+ # Blandað kyn verður að hvorugkyni fleirtölu
 
-Tengiorð → 'sem'    # | 'er'  # Be careful with this one...
+NlAlm_ft_þf_hk →
+    NlAlm_þf SamtengingNl_þf+ # Blandað kyn verður að hvorugkyni fleirtölu
+
+NlAlm_ft_þgf_hk →
+    NlAlm_þgf SamtengingNl_þgf+ # Blandað kyn verður að hvorugkyni fleirtölu
+
+NlAlm_ft_ef_hk →
+    NlAlm_ef SamtengingNl_ef+ # Blandað kyn verður að hvorugkyni fleirtölu
+
+Undirsetning/tala/fall/kyn →
+    NlAlm/tala/fall/kyn ','? Tengiorð Tengisetning/tala ','?
+
+Tengiorð → 'sem'    # | 'er'  # 'er' er vandmeðfarið!!!
 
 Tengisetning/tala →
-    Yfirsetning    # Maðurinn sem konan kyssti í gær / konurnar kysstu í gær
-    | SetningÁnF/tala  # Maðurinn sem kyssti konuna í gær / Maðurinn sem var fallegur
+    Yfirsetning    # (Maðurinn sem) konan kyssti í gær / konurnar kysstu í gær
+    | SetningÁnF/tala  # (Maðurinn sem) kyssti konuna í gær / (Maðurinn sem) var fallegur
 
 # Eignarfallsliður á eftir nafnlið
 # ('formaður félags eldri borgara')
@@ -458,17 +538,47 @@ Fornöfn/tala/fall/kyn → fn/tala/fall/kyn fn/tala/fall/kyn?
 
 Töluorð/kyn → to/kyn | töl/kyn
 
-OgEða → 'og' | 'eða' # | 'svo og' # Spaces are presently not allowed in literal terminals
+OgEða → 'og' | 'eða' | 'svo' 'og'
 
-SamtengingNl/fall → SamtengingNl_kk/fall | SamtengingNl_kvk/fall | SamtengingNl_hk/fall
-SamtengingNl_nf/kyn → OgEða NlAlm_nf/kyn
-SamtengingNl/kyn/fall → OgEða NlAlm/fall/kyn
+# Leyfa 'maðurinn og konan' og 'kötturinn, hundurinn og músin',
+# og einnig 'sumir, þar á meðal jón,'
+
+# Allir liðir af sama kyni
+
+SamtengingNl_nf/kyn →
+    KommuSamtenging_nf/kyn* OgEða NlAlm_nf/kyn
+    | ',' st NlAlm_nf/kyn ','
+
+SamtengingNl/kyn/fall →
+    KommuSamtenging/kyn/fall* OgEða NlAlm/fall/kyn
+    | ',' st NlAlm/fall/kyn ','
+
+KommuSamtenging_nf/kyn → ',' NlAlm_nf/kyn
+KommuSamtenging/kyn/fall → ',' NlAlm/fall/kyn
+
+# Blandað kyn
+
+SamtengingNl/fall →
+    KommuSamtenging/fall* OgEða NlAlm/fall
+    | ',' st NlAlm/fall ','
+
+KommuSamtenging_nf → ',' NlAlm_nf
+KommuSamtenging/fall → ',' NlAlm/fall
+
+# Lýsingarorðaliður
 
 LoLiður/tala/kyn → Atviksliður? lo/tala/kyn
     | LoLiður/tala/kyn OgEða Atviksliður? lo/tala/kyn
 
 LoLiður/tala/fall/kyn → Atviksliður? lo/tala/fall/kyn
     | LoLiður/tala/fall/kyn OgEða Atviksliður? lo/tala/fall/kyn
+
+# Blandað kyn (aðeins ef fleirtala)
+
+LoLiður_ft → Atviksliður? lo_ft_hk
+    | LoLiður_ft OgEða Atviksliður? lo_ft_hk
+
+# Forsetningarliðir
 
 FsLiður → Atviksliður? FsMeðFallstjórn
 
@@ -485,4 +595,16 @@ FsMeðFallstjórn →
     | fs_ef 'það'_ef_et NhLiður # 'til þess að...'
 
 Atviksliður → ao ao? # Var ao+ - prófun á því hvort tveir atviksliðir séu nóg
+    | Dagsetning
+
+Dagsetning →
+    'sá'_et_kk? dags # 'þann 3. júlí 2007'
+    # !!! Do the following in the tokenizer instead?
+    | 'sunnudagur'_þf dags
+    | 'mánudagur'_þf dags
+    | 'þriðjudagur'_þf dags
+    | 'miðvikudagur'_þf dags
+    | 'fimmtudagur'_þf dags
+    | 'föstudagur'_þf dags
+    | 'laugardagur'_þf dags
 

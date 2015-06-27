@@ -17,6 +17,8 @@
 
 import codecs
 
+from collections import defaultdict
+
 
 class ConfigError(Exception):
 
@@ -95,6 +97,8 @@ class Abbreviations:
 
     # Dictionary of abbreviations and their meanings
     DICT = { }
+    # Single-word abbreviations, i.e. those with only one dot at the end
+    SINGLES = set()
 
     @staticmethod
     def add (abbrev, meaning, gender, fl = None):
@@ -103,24 +107,54 @@ class Abbreviations:
         # print("Adding abbrev {0} meaning {1} gender {2} fl {3}".format(abbrev, meaning, gender, fl))
         # Append the abbreviation and its meaning in tuple form
         Abbreviations.DICT[abbrev] = (meaning, 0, gender, "skst" if fl is None else fl, abbrev, "-")
+        if abbrev[-1] == '.' and '.' not in abbrev[0:-1]:
+            # Only one dot, at the end
+            Abbreviations.SINGLES.add(abbrev[0:-1]) # Lookup is without the dot
 
 
-class Verbs:
+class VerbObjects:
 
-    """ Wrapper around dictionary of verbs, initialized from the config file """
+    """ Wrapper around dictionary of verbs and their objects,
+        initialized from the config file """
 
-    # Dictionary of verbs by argument number, 0, 1 or 2
+    # Dictionary of verbs by object (argument) number, 0, 1 or 2
     # Verbs can control zero, one or two arguments (noun phrases),
     # where each argument must have a particular case
-    VERBS = [ { }, { }, { } ]
+    VERBS = [ set(), defaultdict(list), defaultdict(list) ]
 
     @staticmethod
     def add (verb, args):
-        """ Add a verb and its arguments. Called from the config file handler. """
-
+        """ Add a verb and its objects (arguments). Called from the config file handler. """
         la = len(args)
         assert 0 <= la < 3
-        Verbs.VERBS[la][verb] = args if la else None
+        if la:
+            # Append a possible argument list
+            VerbObjects.VERBS[la][verb].append(args)
+        else:
+            # Note that the verb can be argument-free
+            VerbObjects.VERBS[0].add(verb)
+
+
+class VerbSubjects:
+
+    """ Wrapper around dictionary of verbs and their subjects,
+        initialized from the config file """
+
+    # Dictionary of verbs and their associated subject case
+    VERBS = { }
+    _CASE = "þgf" # Default subject case
+
+    @staticmethod
+    def set_case(case):
+        """ Set the case of the subject for the following verbs """
+        if case not in { "þf", "þgf", "ef" }:
+            raise ConfigError("Unknown verb subject case '{0}' in verb_subjects".format(case))
+        VerbSubjects._CASE = case
+
+    @staticmethod
+    def add (verb):
+        """ Add a verb and its arguments. Called from the config file handler. """
+        VerbSubjects.VERBS[verb] = VerbSubjects._CASE
 
 
 class Prepositions:
@@ -265,14 +299,30 @@ class Settings:
         Abbreviations.add(abbrev, m[1], gender, fl)
 
     @staticmethod
-    def _handle_verbs(s):
-        """ Handle verb specifications in the settings section """
+    def _handle_verb_objects(s):
+        """ Handle verb object specifications in the settings section """
         # Format: verb [arg1] [arg2]
         a = s.split()
         if len(a) < 1 or len(a) > 3:
             raise ConfigError("Verb should have zero, one or two arguments")
         verb = a[0]
-        Verbs.add(verb, a[1:])
+        VerbObjects.add(verb, a[1:])
+
+    @staticmethod
+    def _handle_verb_subjects(s):
+        """ Handle verb subject specifications in the settings section """
+        # Format: subject = [case] followed by verb list
+        a = s.lower().split("=", maxsplit = 1)
+        par = a[0].strip()
+        if len(a) == 2:
+            val = a[1].strip()
+            if par == 'subject':
+                VerbSubjects.set_case(val)
+            else:
+                raise ConfigError("Unknown setting '{0}' in verb_subjects".format(par))
+            return
+        assert len(a) == 1
+        VerbSubjects.add(par)
 
     @staticmethod
     def _handle_prepositions(s):
@@ -291,7 +341,8 @@ class Settings:
             "settings" : Settings._handle_settings,
             "static_phrases" : Settings._handle_static_phrases,
             "abbreviations" : Settings._handle_abbreviations,
-            "verbs" : Settings._handle_verbs,
+            "verb_objects" : Settings._handle_verb_objects,
+            "verb_subjects" : Settings._handle_verb_subjects,
             "prepositions" : Settings._handle_prepositions
         }
         handler = None # Current section handler

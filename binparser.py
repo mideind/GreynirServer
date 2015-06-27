@@ -23,7 +23,7 @@
 from tokenizer import TOK
 from grammar import Terminal, Token, Grammar
 from parser import Parser, ParseError
-from settings import Verbs, Prepositions
+from settings import VerbObjects, VerbSubjects, Prepositions
 
 from flask import current_app
 
@@ -86,7 +86,11 @@ class BIN_Token(Token):
         "p1" : "1P", # Fyrsta persóna / first person
         "p2" : "2P", # Önnur persóna / second person
         "p3" : "3P", # Þriðja persóna / third person
+        "op" : "OP", # Ópersónuleg sögn
         "nh" : "NH", # Nafnháttur
+        "lh" : "LH", # Lýsingarháttur (nútíðar)
+        "nt" : "NT", # Nútíð
+        "þt" : "ÞT", # Nútíð
         "sagnb" : "SAGNB", # Sagnbeyging ('vera' -> 'verið')
         "lhþt" : "LHÞT" # Lýsingarháttur þátíðar ('var lentur')
     }
@@ -101,6 +105,16 @@ class BIN_Token(Token):
         """ Return True if the verb in question matches the verb category,
             where the category is one of so_0, so_1, so_2 depending on
             the allowable number of noun phrase arguments """
+        if terminal.has_variant("subj"):
+            # Verb subject in non-nominative case
+            if not "OP" in form:
+                # !!! BIN seems to be not 100% consistent in the OP annotation
+                return False
+            if terminal.has_variant("mm"):
+                # Central form of verb ('miðmynd')
+                return "MM" in form
+            # Make sure that the subject case matches the terminal
+            return VerbSubjects.VERBS.get(verb, "") == terminal.variant(1)
         # print("verb_matches {0} terminal {1} form {2}".format(verb, terminal, form))
         if terminal.has_variant("et") and "FT" in form:
             # Can't use plural verb if singular terminal
@@ -109,12 +123,13 @@ class BIN_Token(Token):
             # Can't use singular verb if plural terminal
             return False
         # Check that person (1st, 2nd, 3rd) and other variant requirements match
-        for v in [ "p1", "p2", "p3", "nh", "sagnb", "lhþt" ]:
+        for v in [ "p1", "p2", "p3", "nh", "sagnb", "lhþt", "lh", "nt" ]:
             if terminal.has_variant(v) and not BIN_Token._VARIANT[v] in form:
-                return False
+                if v != "sagnb" or "SB" not in form:
+                    return False
         # Check restrictive variants, i.e. we don't accept meanings
         # that have those unless they are explicitly present in the terminal
-        for v in [ "sagnb", "lhþt" ]:
+        for v in [ "sagnb", "lhþt" ]: # Be careful with "lh" here
             if BIN_Token._VARIANT[v] in form and not terminal.has_variant(v):
                 return False
         # Check whether the verb token can potentially match the argument number
@@ -124,7 +139,7 @@ class BIN_Token(Token):
             # No argument number: all verbs match
             return True
         nargs = int(terminal.variant(0))
-        if verb in Verbs.VERBS[nargs]:
+        if verb in VerbObjects.VERBS[nargs]:
             # Seems to take the correct number of arguments:
             # do a further check on the supported cases
             if nargs == 0:
@@ -137,15 +152,16 @@ class BIN_Token(Token):
             # Check whether the parameters of this verb
             # match up with the requirements of the terminal
             # as specified in its variants at indices 1 and onward
-            for ix, c in enumerate(Verbs.VERBS[nargs][verb]):
-                if terminal.variant(1 + ix) != c:
-                    return False
-            # No mismatch so far: this verb fulfills the requirements
-            return True
+            for argspec in VerbObjects.VERBS[nargs][verb]:
+                if all(terminal.variant(1 + ix) == c for ix, c in enumerate(argspec)):
+                    # All variants match this spec: we're fine
+                    return True
+            # No match: return False
+            return False
         # It's not there with the correct number of arguments:
         # see if it definitely has fewer ones
         for i in range(0, nargs):
-            if verb in Verbs.VERBS[i]:
+            if verb in VerbObjects.VERBS[i]:
                 # Prevent verb from matching a terminal if it
                 # doesn't have all the arguments that the terminal requires
                 return False
@@ -250,6 +266,9 @@ class BIN_Token(Token):
             # No case associated with percentages: match all
             return True
 
+        if self.t[0] == TOK.DATE:
+            return terminal.startswith("dags")
+
         def meaning_match(m):
             """ Check for a match between a terminal and a single potential meaning
                 of the word """
@@ -317,7 +336,7 @@ class BIN_Parser(Parser):
     _grammar = None
 
     # The token types that the parser currently knows how to handle
-    _UNDERSTOOD = { TOK.WORD, TOK.PERSON,
+    _UNDERSTOOD = { TOK.WORD, TOK.PERSON, TOK.DATE,
         TOK.CURRENCY, TOK.AMOUNT, TOK.NUMBER, TOK.PERCENT }
 
     def __init__(self):
@@ -342,7 +361,7 @@ class BIN_Parser(Parser):
                 return True
             if t[0] == TOK.PUNCTUATION:
                 # A limited number of punctuation symbols is currently understood
-                return t[1] in ".?" # „“
+                return t[1] in ".?," # „“
             return False
 
         bt = [BIN_Token(t) for t in tokens if is_understood(t)]

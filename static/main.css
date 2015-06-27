@@ -421,3 +421,17 @@ span.choice:hover {
 p.err {
    color: red;
 }
+
+table.parser-state {
+   font-size: 0.8em;
+}
+
+table.parser-state thead tr th {
+   background-color: #d8ffd8;
+   font-weight: bold;
+   text-align: left;
+}
+
+td.parser-start, th.parser-start {
+   text-align: right;
+}
