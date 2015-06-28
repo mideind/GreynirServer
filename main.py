@@ -319,7 +319,9 @@ def parse_grid():
         while (0,) * (i + 1) in unique_choices:
             i += 1
         parse_path = "_".join(["0"] * i)
-    # debug()
+
+    #debug()
+
     return render_template("parsegrid.html", txt = txt, err = err, tbl = tbl,
         combinations = combinations, choice_list = uc_list,
         parse_path = parse_path)

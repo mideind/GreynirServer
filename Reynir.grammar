@@ -21,9 +21,12 @@
 # becomes 8 rules: Undirsetning_et_nf, Undirsetning_et_þf, etc.
 # with corresponding substitutions being made in the right-hand-side
 # productions.
+#
+# A syntax highlighting specification for .grammar files has been
+# written for the Sublime Text editor. Its use is highly recommended.
 
 
-# Variant definitions
+# VARIANT DEFINITIONS
 
 # Gender (m, f, n) variant
 /kyn = kk kvk hk
@@ -38,7 +41,9 @@
 /pers = p1 p2 p3
 
 
-# Grammar rules
+# GRAMMAR RULES
+
+# Setningargerðir
 
 S0 → VenjulegSetning | Tilvitnun | Spurning
 
@@ -56,19 +61,19 @@ TilvitnunarEnding →
 
 StLiður → ','? Samtenging Yfirsetning
 
-Samtenging → st | 'þar' 'sem' | 'þannig' 'að' | 'svo' 'sem'
+Samtenging →
+    st
+    | 'þar' 'sem'
+    | 'þannig' 'að'
+    | 'svo' 'sem'
+    | 'og' 'að'
 
 Yfirsetning →
     SetningAlm | SetningAukafall
 
 # Setningar með frumlagi
 
-SetningAlm →
-    SetningAlm_kk | SetningAlm_kvk | SetningAlm_hk
-
-SetningAlm/kyn → SetningAlm_p1/kyn | SetningAlm_p2/kyn | SetningAlm_p3/kyn
-
-SetningAlm/pers/kyn → Setning_et/pers/kyn | Setning_ft/pers/kyn
+SetningAlm → Setning/tala/pers/kyn
 
 # Tilvik þar sem einu frumlagi fylgja nokkrir sagnliðir:
 # 'Anna tók bílinn, keyrði í bæinn [,] og keypti í matinn'
@@ -113,13 +118,8 @@ Setning/tala/pers/kyn →
 # 'Mér blöskrar athæfið', 'Mér sýnist að öllu sé óhætt'
 
 SetningAukafall →
-    SetningAukafall_nf | SetningAukafall_þf | SetningAukafall_þgf | SetningAukafall_ef
-
-SetningAukafall/fall →
     NlAlm/fall so_subj/fall AukafallsBotn
-
-SetningAukafall_þgf →
-    NlAlm_þgf so_subj_mm AukafallsBotn  # Miðmynd sagna: Mér áskotnaðist, mér fyrirgefst, mér gremst...
+    | NlAlm_þgf so_subj_mm AukafallsBotn  # Miðmynd sagna: Mér áskotnaðist, mér fyrirgefst, mér gremst...
 
 # !!! ATH:
 # 'Mér finnst kisan *vera* sæt', ekki '*er*'
@@ -152,8 +152,7 @@ Lýsingarliður/tala/kyn → Atviksliður | LoLiður/tala/kyn+
 
 Lýsingarliður/tala → Atviksliður | LoLiður/tala+
 
-LoLiður_et → LoLiður_et_kk | LoLiður_et_kvk | LoLiður_et_hk
-LoLiður_ft → LoLiður_ft_kk | LoLiður_ft_kvk | LoLiður_ft_hk
+LoLiður/tala → LoLiður/tala/kyn
 
 FsFylling → FsMeðFallstjórn FsLiður*
 
@@ -162,13 +161,12 @@ FsFylling → FsMeðFallstjórn FsLiður*
 Sagnliður/tala/pers → Sögn_0/tala/pers | Sögn_1/tala/pers | Sögn_2/tala/pers
     | so/tala/pers Lýsingarliður/tala? NhLiður
 
-ÖfugurSagnliður_et →
-    ÖfugurSagnliður_et_p1 | ÖfugurSagnliður_et_p2 | ÖfugurSagnliður_et_p3
+ÖfugurSagnliður/tala → ÖfugurSagnliður/tala/pers
 
-ÖfugurSagnliður_ft →
-    ÖfugurSagnliður_ft_p1 | ÖfugurSagnliður_ft_p2 | ÖfugurSagnliður_ft_p3
-
-ÖfugurSagnliður/tala/pers → ÖfugSögn_0/tala/pers | ÖfugSögn_1/tala/pers | ÖfugSögn_2/tala/pers
+ÖfugurSagnliður/tala/pers →
+    ÖfugSögn_0/tala/pers
+    | ÖfugSögn_1/tala/pers
+    | ÖfugSögn_2/tala/pers
     | so/tala/pers Lýsingarliður/tala? NhLiður
 
 # Sögn með engu viðfangi ('lenti')
@@ -199,19 +197,22 @@ Sögn_0/tala/pers →
 # Sögn með einu viðfangi ('borðaði matinn')
 Sögn_1/tala/pers →
 
-    so_1_þf/tala/pers Atviksliður? NlAlm_þf                     # Konurnar borðuðu [ekki] matinn
+    # (þf:)  Konurnar borðuðu [ekki] matinn
+    # (þgf:) Konurnar höfnuðu [ekki] Páli
+    # (ef:)  Konurnar nutu [ekki] matarins
+    # (nf:)  Konurnar voru [ekki] leikarar
+
+    so_1_/fall/tala/pers Atviksliður? NlAlm/fall
+
     | HjSögn/tala/pers Atviksliður? so_1_þf_sagnb NlAlm_þf      # Konurnar hafa [ekki] borðað matinn
     | HjSögnNh/tala/pers Atviksliður? so_1_þf_nh NlAlm_þf       # Konurnar munu [ekki] borða matinn
 
-    | so_1_þgf/tala/pers Atviksliður? NlAlm_þgf                 # Konurnar höfnuðu [ekki] Páli
     | HjSögn/tala/pers Atviksliður? so_1_þgf_sagnb NlAlm_þgf    # Konurnar hafa [ekki] hafnað Páli
     | HjSögnNh/tala/pers Atviksliður? so_1_þgf_nh NlAlm_þgf     # Konurnar munu [ekki] hafna Páli
 
-    | so_1_ef/tala/pers Atviksliður? NlAlm_ef                   # Konurnar nutu [ekki] matarins
     | HjSögn/tala/pers Atviksliður? so_1_ef_sagnb NlAlm_ef      # Konurnar hafa [ekki] notið matarins
     | HjSögnNh/tala/pers Atviksliður? so_1_ef_nh NlAlm_ef       # Konurnar munu [ekki] njóta matarins
 
-    | so_1_nf/tala/pers Atviksliður? NlAlm_nf                   # Konurnar voru [ekki] leikarar
     | HjSögn/tala/pers Atviksliður? so_1_nf_sagnb NlAlm_nf      # Konurnar höfðu [ekki] verið leikarar
     | HjSögnNh/tala/pers Atviksliður? so_1_nf_nh NlAlm_nf       # Konurnar munu [ekki] vera leikarar
 
@@ -225,28 +226,31 @@ Sögn_1/tala/pers →
 # ('Konurnar sem borðuðu matinn')
 ÖfugSögn_1/tala/pers →
 
-    so_1_þf/tala/pers Atviksliður? NlAlm_þf                  # Konurnar sem borðuðu [ekki] matinn
+    # (þf:)  Konurnar sem borðuðu [ekki] matinn
+    # (þgf:) Konurnar sem höfnuðu [ekki] Páli
+    # (ef:)  Konurnar sem nutu [ekki] matarins
+    # (nf:)  Konurnar sem voru [ekki] leikarar
+
+    so_1/fall/tala/pers Atviksliður? NlAlm/fall
+
     | NlAlm_þf so_1_þf/tala/pers                             # Konurnar sem matinn borðuðu
     | HjSögn/tala/pers Atviksliður? so_1_þf_sagnb NlAlm_þf   # Konurnar sem höfðu [ekki] borðað matinn
     | so_1_þf_sagnb HjSögn/tala/pers NlAlm_þf                # Konurnar sem borðað höfðu matinn
     | HjSögnNh/tala/pers Atviksliður? so_1_þf_nh NlAlm_þf    # Konurnar sem munu [ekki] borða matinn
     | so_1_þf_nh HjSögnNh/tala/pers NlAlm_þf                 # Konurnar sem borða munu matinn
 
-    | so_1_þgf/tala/pers Atviksliður? NlAlm_þgf              # Konurnar sem höfnuðu [ekki] Páli
     | NlAlm_þgf so_1_þgf/tala/pers                           # Konurnar sem Páli höfnuðu
     | HjSögn/tala/pers Atviksliður? so_1_þgf_sagnb NlAlm_þgf # Konurnar sem höfðu [ekki] hafnað Páli
     | so_1_þgf_sagnb HjSögn/tala/pers NlAlm_þgf              # Konurnar sem hafnað höfðu Páli
     | HjSögnNh/tala/pers Atviksliður? so_1_þgf_nh NlAlm_þgf  # Konurnar sem munu [ekki] hafna Páli
     | so_1_þgf_nh HjSögnNh/tala/pers NlAlm_þgf               # Konurnar sem hafna munu Páli
 
-    | so_1_ef/tala/pers Atviksliður? NlAlm_ef                # Konurnar sem nutu [ekki] matarins
     | NlAlm_ef so_1_ef/tala/pers                             # Konurnar sem matarins nutu
     | HjSögn/tala/pers Atviksliður? so_1_ef_sagnb NlAlm_ef   # Konurnar sem höfðu [ekki] notið matarins
     | so_1_ef_sagnb HjSögn/tala/pers NlAlm_ef                # Konurnar sem notið höfðu matarins
     | HjSögnNh/tala/pers Atviksliður? so_1_ef_nh NlAlm_ef    # Konurnar sem munu [ekki] njóta matarins
     | so_1_ef_nh HjSögnNh/tala/pers NlAlm_ef                 # Konurnar sem njóta munu matarins
 
-    | so_1_nf/tala/pers Atviksliður? NlAlm_nf                # Konurnar sem voru [ekki] leikarar
     | HjSögn/tala/pers Atviksliður? so_1_nf_sagnb NlAlm_nf   # Konurnar sem höfðu [ekki] verið leikarar
     | so_1_nf_sagnb HjSögn/tala/pers NlAlm_nf                # Konurnar sem verið höfðu leikarar
     | HjSögnNh/tala/pers Atviksliður? so_1_nf_nh NlAlm_nf    # Konurnar sem munu [ekki] vera leikarar
@@ -439,33 +443,15 @@ Frumlag_ft_p3/kyn →
 
 Frumlag_ft_p3_hk →
 
-    Frumlag_et_p3 SamtengingNl_nf+             # Blandað kyn
-    | Frumlag_ft_p3 SamtengingNl_nf+           # Blandað kyn
+    Frumlag_et_p3/kyn SamtengingNl_nf+             # Blandað kyn
+    | Frumlag_ft_p3/kyn SamtengingNl_nf+           # Blandað kyn
 
-Frumlag_et_p3 → Frumlag_et_p3_kk | Frumlag_et_p3_kvk | Frumlag_et_p3_hk
-Frumlag_ft_p3 → Frumlag_ft_p3_kk | Frumlag_ft_p3_kvk | Frumlag_ft_p3_hk
+#Frumlag_et_p3 → Frumlag_et_p3/kyn
+#Frumlag_ft_p3 → Frumlag_ft_p3/kyn
 
-NlAlm_nf →
-    NlAlm_nf_kk
-    | NlAlm_nf_kvk
-    | NlAlm_nf_hk
+NlAlm/fall → NlAlm/fall/kyn
 
-NlAlm_þf →
-    NlAlm_þf_kk
-    | NlAlm_þf_kvk
-    | NlAlm_þf_hk
-
-NlAlm_þgf →
-    NlAlm_þgf_kk
-    | NlAlm_þgf_kvk
-    | NlAlm_þgf_hk
-
-NlAlm_ef →
-    NlAlm_ef_kk
-    | NlAlm_ef_kvk
-    | NlAlm_ef_hk
-
-NlAlm/fall/kyn → NlAlm_et/fall/kyn | NlAlm_ft/fall/kyn
+NlAlm/fall/kyn → NlAlm/tala/fall/kyn
 
 NlAlm_et/fall/kyn →
 
@@ -524,8 +510,7 @@ Tengisetning/tala →
 
 # Eignarfallsliður á eftir nafnlið
 # ('formaður félags eldri borgara')
-EfLiður →
-    EfLiður_kk | EfLiður_kvk | EfLiður_hk
+EfLiður → EfLiður/kyn
 
 # karlsins langa, konunnar löngu, barnsins langa
 # karlanna löngu, kvennanna löngu, barnanna löngu

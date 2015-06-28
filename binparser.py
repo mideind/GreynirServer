@@ -179,53 +179,55 @@ class BIN_Token(Token):
     def matches(self, terminal):
         """ Return True if this token matches the given terminal """
 
-        if self.t[0] == TOK.PERSON:
+        t0, t1, t2 = self.t
+
+        if t0 == TOK.PERSON:
             # Handle a person name, matching it with a singular noun
             if not terminal.startswith("person"):
                 return False
             # Check the gender
-            if terminal.variant(1) != self.t[2][1]:
+            if terminal.variant(1) != t2[1]:
                 return False
             # The case must also be correct
             # For a TOK.PERSON, t[2][2] contains a list of possible cases
-            return terminal.variant(0) in self.t[2][2]
+            return terminal.variant(0) in t2[2]
 
-        if self.t[0] == TOK.PUNCTUATION:
-            return terminal.matches("punctuation", self.t[1])
+        if t0 == TOK.PUNCTUATION:
+            return terminal.matches("punctuation", t1)
 
-        if self.t[0] == TOK.CURRENCY:
+        if t0 == TOK.CURRENCY:
             # A currency name matches a noun
             if not terminal.startswith("no"):
                 return False
             if terminal.has_variant("abbrev"):
                 # A currency does not match an abbreviation
                 return False
-            if self.t[2][1] is None:
+            if t2[1] is None:
                 # No associated case: match all cases
                 return True
             # See whether any of the allowed cases match the terminal
-            return terminal.num_variants() >= 2 and terminal.variant(1) in self.t[2][1]
+            return terminal.num_variants() >= 2 and terminal.variant(1) in t2[1]
 
-        if self.t[0] == TOK.AMOUNT:
+        if t0 == TOK.AMOUNT:
             # An amount matches a noun
             if not terminal.startswith("no"):
                 return False
             if terminal.has_variant("abbrev"):
                 # An amount does not match an abbreviation
                 return False
-            if terminal.has_variant("et") and float(self.t[2][1]) != 1.0:
+            if terminal.has_variant("et") and float(t2[1]) != 1.0:
                 # Singular only matches an amount of one
                 return False
-            if terminal.has_variant("ft") and float(self.t[2][1]) == 1.0:
+            if terminal.has_variant("ft") and float(t2[1]) == 1.0:
                 # Plural does not match an amount of one
                 return False
-            if self.t[2][2] is None:
+            if t2[2] is None:
                 # No associated case: match all cases
                 return True
             # See whether any of the allowed cases match the terminal
-            return terminal.num_variants() >= 2 and terminal.variant(1) in self.t[2][2]
+            return terminal.num_variants() >= 2 and terminal.variant(1) in t2[2]
 
-        if self.t[0] == TOK.NUMBER:
+        if t0 == TOK.NUMBER:
             if terminal.startswith("töl"):
                 # Match number words without further ado
                 return True
@@ -235,19 +237,19 @@ class BIN_Token(Token):
             if terminal.has_variant("abbrev"):
                 # A number does not match an abbreviation
                 return False
-            if terminal.has_variant("et") and float(self.t[2][0]) != 1.0:
+            if terminal.has_variant("et") and float(t2[0]) != 1.0:
                 # Singular only matches an amount of one
                 return False
-            if terminal.has_variant("ft") and float(self.t[2][0]) == 1.0:
+            if terminal.has_variant("ft") and float(t2[0]) == 1.0:
                 # Plural does not match an amount of one
                 return False
-            if self.t[2][1] is None:
+            if t2[1] is None:
                 # No associated case: match all cases
                 return True
             # See whether any of the allowed cases match the terminal
-            return terminal.num_variants() >= 2 and terminal.variant(1) in self.t[2][1]
+            return terminal.num_variants() >= 2 and terminal.variant(1) in t2[1]
 
-        if self.t[0] == TOK.PERCENT:
+        if t0 == TOK.PERCENT:
             if terminal.startswith("töl"):
                 # Match number words without further ado
                 return True
@@ -257,16 +259,16 @@ class BIN_Token(Token):
             if terminal.has_variant("abbrev"):
                 # A percentage does not match an abbreviation
                 return False
-            if terminal.has_variant("et") and float(self.t[2]) != 1.0:
+            if terminal.has_variant("et") and float(t2) != 1.0:
                 # Singular only matches an percentage of one
                 return False
-            if terminal.has_variant("ft") and float(self.t[2]) == 1.0:
+            if terminal.has_variant("ft") and float(t2) == 1.0:
                 # Plural does not match an percentage of one
                 return False
             # No case associated with percentages: match all
             return True
 
-        if self.t[0] == TOK.DATE:
+        if t0 == TOK.DATE:
             return terminal.startswith("dags")
 
         def meaning_match(m):
@@ -310,7 +312,7 @@ class BIN_Token(Token):
 
         # We have a match if any of the possible meanings
         # of this token match the terminal
-        return any(meaning_match(m) for m in self.t[2]) if self.t[2] else False
+        return any(meaning_match(m) for m in t2) if t2 else False
 
     def __repr__(self):
         return "[" + TOK.descr[self.t[0]] + ": " + self.t[1] + "]"

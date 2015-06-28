@@ -26,8 +26,6 @@
 
 import codecs
 
-from pprint import pprint as pp
-
 
 class GrammarError(Exception):
 
@@ -182,9 +180,9 @@ class LiteralTerminal(Terminal):
         return self._parts[0] == t_val
 
     def matches_first(self, t_kind, t_val):
+        """ A literal terminal matches a token if the token text is identical to the literal """
         #print("LiteralTerminal.matches: parts[0] is '{0}', t_val is '{1}'"
         #    .format(self._parts[0], t_val))
-        """ A literal terminal matches a token if the token text is identical to the literal """
         return self._parts[0] == t_val
 
 
@@ -374,10 +372,15 @@ class Grammar:
         terminals = self._terminals
         nonterminals = self._nonterminals
         grammar = self._nt_dict
+        # The number of the current line in the grammar file
         line = 0
 
+        # The nonterminal for which productions are being specified
         current_NT = None
+        # The variants of the current nonterminal
         current_variants = []
+        # Dictionary of variants, keyed by variant name
+        # where the values are lists of variant options (strings)
         variants = { }
         current_line = ""
 
@@ -389,9 +392,10 @@ class Grammar:
                 return
 
             def _add_rhs(nt_id, rhs):
-                """ Add a right-hand-side production to a nonterminal rule """
+                """ Add a fully expanded right-hand-side production to a nonterminal rule """
                 nt = nonterminals[nt_id]
                 if nt not in grammar:
+                    # First production of this nonterminal
                     grammar[nt] = [ ] if rhs is None else [ rhs ]
                     return
                 if rhs is None:
@@ -400,6 +404,7 @@ class Grammar:
                     # Adding epsilon production: avoid multiple ones
                     if any(p.is_empty() for p in grammar[nt]):
                         return
+                # Append to the list of productions of this nonterminal
                 grammar[nt].append(rhs)
 
             def _parse_rhs(nt_id, vts, s):
@@ -413,6 +418,11 @@ class Grammar:
                 # rhs is a list of tuples, one for each token, as follows:
                 # (id, repeat, variants)
                 rhs = []
+
+                # vfree is a list of 'free variants', i.e. variants that
+                # occur in the right hand side of the production but not in
+                # the nonterminal (those are in vts)
+                vfree = []
 
                 for r in tokens:
 
@@ -441,8 +451,13 @@ class Grammar:
                         v = None
                     else:
                         for vspec in v:
+                            # if vspec not in vts:
+                            if vspec not in variants:
+                                # raise GrammarError("Variant '{0}' not specified for nonterminal '{1}'".format(vspec, nt_id), fname, line)
+                                raise GrammarError("Unknown variant '{0}'".format(vspec), fname, line)
                             if vspec not in vts:
-                                raise GrammarError("Variant '{0}' not specified for nonterminal '{1}'".format(vspec, nt_id), fname, line)
+                                # Free variant
+                                vfree.append(vspec)
 
                     if r[0] in "\"'":
                         # Literal terminal symbol
@@ -458,33 +473,42 @@ class Grammar:
 
                 # Generate productions for all variants
 
-                def variant_values(vts):
+                def variant_values(vlist):
                     """ Returns a list of names with all applicable variant options appended """
-                    if not vts:
+                    if not vlist:
                         yield [ "" ]
                         return
-                    if len(vts) == 1:
-                        for vopt in variants[vts[0]]:
+                    if len(vlist) == 1:
+                        for vopt in variants[vlist[0]]:
                             yield [ vopt ]
                         return
-                    for v in variant_values(vts[1:]):
-                        for vopt in variants[vts[0]]:
+                    for v in variant_values(vlist[1:]):
+                        for vopt in variants[vlist[0]]:
                             yield [ vopt ] + v
 
                 # print("Variants are: {0}".format(vts))
 
-                for vval in variant_values(vts):
+                # Make a list of all variants that occur in the
+                # nonterminal or on the right hand side
+                vall = vts + vfree
+
+                for vval in variant_values(vall):
                     # Generate a production for every variant combination
                     # print("Processing combination {0}".format(vval))
+
+                    # Calculate the nonterminal suffix for this variant
+                    # combination
+                    nt_suffix = "_".join(vval[vall.index(vx)] for vx in vts) if vts else ""
+                    if nt_suffix:
+                        nt_suffix = "_" + nt_suffix
+
                     result = Production(fname, line)
                     for r, repeat, v in rhs:
-                        # Calculate the identifier suffix, if any
-                        suffix = "_".join(vval[vts.index(vx)] for vx in v) if v else ""
-                        # !!! TODO: distinguish between global variants
-                        # !!! (those that appear in the nonterminal spec)
-                        # !!! and local ones (those that only appear within
-                        # !!! the rhs derivation). Generate the local ones
-                        # !!! separately for each vval iteration.
+                        # Calculate the token suffix, if any
+                        # This may be different from the nonterminal suffix as
+                        # the token may have fewer variants than the nonterminal,
+                        # and/or free ones that don't appear in the nonterminal.
+                        suffix = "_".join(vval[vall.index(vx)] for vx in v) if v else ""
                         if suffix:
                             suffix = "_" + suffix
                         if r is None:
@@ -547,11 +571,12 @@ class Grammar:
 
                     assert len(result) == len(rhs) or (len(rhs) == 1 and rhs[0] == (None, None, None))
 
-                    nt_id_full = "_".join([ nt_id ] + vval) if vts else nt_id
+                    nt_id_full = nt_id + nt_suffix
 
                     if len(result) == 1 and result[0] == nonterminals[nt_id_full]:
                         # Nonterminal derives itself
-                        raise GrammarError("Nonterminal {0} deriving itself".format(nt_id), fname, line)
+                        raise GrammarError("Nonterminal {0} deriving itself".format(nt_id_full), fname, line)
+                    # print("Adding nonterminal {0}".format(nt_id_full))
                     _add_rhs(nt_id_full, result)
 
             def variant_names(nt, vts):
