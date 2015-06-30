@@ -91,7 +91,8 @@ Setning/tala/pers/kyn →
     # Venjuleg setningarskipan með frumlagi fremst:
     # 'Jón sterki fór bersýnilega í bága við reglurnar með þessu'
     # 'Katrín formaður félagsins hefur augljóslega verið alveg hnífskörp í gær'
-    Frumlag/tala/pers/kyn SagnRuna/tala/pers/kyn
+    # 'Rúmlega helmingur tvítugra karlmanna vill flugvöll í Vatnsmýri'
+    Atviksliður? Frumlag/tala/pers/kyn SagnRuna/tala/pers/kyn
 
     # Frumlag fyrir aftan sögn:
     # 'Bersýnilega fór Jón sterki í bága við reglurnar með þessu'
@@ -101,7 +102,7 @@ Setning/tala/pers/kyn →
     # Forsetningarliður, sögn, frumlag:
     # 'Undir húsinu voru illa farnar skolpleiðslur'
     # 'Í skólann fór Gunna aldrei eftir þetta'
-    | FsFylling Sagnliður/tala/pers Frumlag/tala/pers/kyn Sagnfylling/tala/kyn
+    | Atviksliður? FsFylling Sagnliður/tala/pers Frumlag/tala/pers/kyn Sagnfylling/tala/kyn
 
     # Ekkert frumlag í nefnifalli, sögn í lýsingarhætti þátíðar:
     # 'Hannesi var í fyrra falið að stýra rannsóknarverkefni'
@@ -115,19 +116,22 @@ Setning/tala/pers/kyn →
 # Setning þar sem frumlag (aðalnafnliður) er í aukafalli
 # vegna þess að sögnin tekur viðfang (subject) í aukafalli,
 # eða vegna þess að að sögnin er í miðmynd
-# 'Mér blöskrar athæfið', 'Mér sýnist að öllu sé óhætt'
+# 'Mér blöskrar athæfið', 'Mér sýnist að öllu sé óhætt',
+# 'Helmingi ungmenna finnst skólinn skemmtilegur'
 
 SetningAukafall →
-    NlAlm/fall so_subj/fall AukafallsBotn
-    | NlAlm_þgf so_subj_mm AukafallsBotn  # Miðmynd sagna: Mér áskotnaðist, mér fyrirgefst, mér gremst...
-
-# !!! ATH:
-# 'Mér finnst kisan *vera* sæt', ekki '*er*'
+    NlAlm/fall Atviksliður? so_subj/fall AukafallsBotn
+    | NlAlm_þgf so_subj_mm MiðmyndarBotn  # Miðmynd sagna: Mér áskotnaðist, mér fyrirgefst, mér gremst...
 
 AukafallsBotn →
-    FsAtv?                             # Mér hlýnaði um hjartarætur
-    | Atviksliður? NlAlm_nf_þf FsAtv?  # Mér blöskraði mjög vitleysan í Páli
-    | Yfirsetning                      # Mér sýnist þér blöskra þegar ég tala
+    FsAtv?                             # (Mér hlýnaði) um hjartarætur
+    | Atviksliður? NlAlm_nf_þf FsAtv?  # (Mér blöskraði) mjög vitleysan í Páli, (Mig þraut) örendið
+
+MiðmyndarBotn →
+    NlAlm_et_nf/kyn Atviksliður? NhSögn Sagnfylling_et/kyn   # (Mér sýndist) kötturinn [ekki] lepja mjólkina í gær
+    | NlAlm_ft_nf/kyn Atviksliður? NhSögn Sagnfylling_ft/kyn   # (Mér fannst) börnin [ekki] vera falleg í sólinni
+    | NlAlm/fall Atviksliður? so_subj_nh/fall AukafallsBotn # (Mér virtist) ykkur [ekki] blöskra undir ræðunni
+    | NlAlm_þgf Atviksliður? so_subj_nh_mm MiðmyndarBotn # (Mér virtist) þeim [ekki] sýnast börnin vera falleg
 
 NlAlm_nf_þf → NlAlm_nf | NlAlm_þf
 
@@ -148,9 +152,9 @@ SetningÁnF/tala →
 
 Sagnfylling/tala/kyn → Lýsingarliður/tala/kyn? FsFylling?
 
-Lýsingarliður/tala/kyn → Atviksliður | LoLiður/tala/kyn+
+Lýsingarliður/tala/kyn → Atviksliður | LoLiður/tala/kyn+ Atviksliður?
 
-Lýsingarliður/tala → Atviksliður | LoLiður/tala+
+Lýsingarliður/tala → Atviksliður | LoLiður/tala+ Atviksliður?
 
 LoLiður/tala → LoLiður/tala/kyn
 
@@ -202,7 +206,7 @@ Sögn_1/tala/pers →
     # (ef:)  Konurnar nutu [ekki] matarins
     # (nf:)  Konurnar voru [ekki] leikarar
 
-    so_1_/fall/tala/pers Atviksliður? NlAlm/fall
+    so_1/fall/tala/pers Atviksliður? NlAlm/fall
 
     | HjSögn/tala/pers Atviksliður? so_1_þf_sagnb NlAlm_þf      # Konurnar hafa [ekki] borðað matinn
     | HjSögnNh/tala/pers Atviksliður? so_1_þf_nh NlAlm_þf       # Konurnar munu [ekki] borða matinn
@@ -463,6 +467,7 @@ NlAlm_et/fall/kyn →
 
     | HannHúnÞað_et/fall/kyn
     | ÉgÞú_et/fall
+    | fn_et/fall/kyn       # ekkert, einhver
     | Undirsetning_et/fall/kyn
 
 # Skammstöfun: 'FIH bankinn', 'FIH-bankinn'
@@ -485,6 +490,7 @@ NlAlm_ft/fall/kyn →
 
     | HannHúnÞað_ft/fall/kyn
     | ÉgÞú_ft/fall
+    | fn_ft/fall/kyn       # allir, einhverjir
     | Undirsetning_ft/fall/kyn
 
 NlAlm_ft_nf_hk →

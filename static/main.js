@@ -171,6 +171,7 @@ function hoverIn() {
    var offset = $(this).position();
    var left = Math.min(offset.left, 600);
    var i;
+   var gender;
 
    // Highlight the token
    $(this).addClass("highlight");
@@ -187,7 +188,8 @@ function hoverIn() {
    if (wl[0] == TOK_NUMBER) {
       $("div.info").html("<p><b>" + wl[1] + "</b></p>");
       // Show the parsed floating-point number to 2 decimal places
-      $("div.info").append("<p>" + wl[2][0].toFixed(2) + "</p>");
+      gender = (wl[2][2] !== null) ? (" " + wl[2][2]) : "";
+      $("div.info").append("<p>" + wl[2][0].toFixed(2) + gender + "</p>");
       // Show cases, if available
       if (wl[2][1] !== null)
          for (i = 0; i < wl[2][1].length; i++)
@@ -225,7 +227,8 @@ function hoverIn() {
    if (wl[0] == TOK_AMOUNT) {
       $("div.info").html("<p><b>" + wl[1] + "</b></p>");
       // Show the amount as well as the ISO code for its currency
-      $("div.info").append("<p>" + wl[2][0] + " " + wl[2][1].toFixed(2) + "</p>");
+      gender = (wl[2][3] !== null) ? (" " + wl[2][3]) : "";
+      $("div.info").append("<p>" + wl[2][0] + " " + wl[2][1].toFixed(2) + gender + "</p>");
       // Show cases, if available
       if (wl[2][2] !== null)
          for (i = 0; i < wl[2][2].length; i++)

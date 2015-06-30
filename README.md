@@ -42,7 +42,7 @@ on the [Flask](http://flask.pocoo.org/) framework.
 
 Reynir uses the official BÍN ([Beygingarlýsing íslensks nútímamáls](http://bin.arnastofnun.is)) database of
 Icelandic word forms to identify and tokenize words, and find their grammatical roots and forms. The database
-has been downloaded from the official BÍN webside and stored in PostgreSQL.
+has been downloaded from the official BÍN website and stored in PostgreSQL.
 
 The tokenizer divides text chunks into sentences and recognizes entities such as dates, numbers,
 amounts and person names, as well as common abbreviations and punctuation.
@@ -69,7 +69,7 @@ fails, it identifies the token at which no parse was available.
 * `tokenizer.py` : Tokenizer, designed as a pipeline of Python generators
 * `grammar.py` : Parsing of `.grammar` files, grammar constructs
 * `parser.py` : Earley parser generic base classes
-* `binparser.py` : Parser related subclasses for BIN (Icelandic word) tokens 
+* `binparser.py` : Parser related subclasses for BIN (Icelandic word) tokens
 * `ptest.py` : Parser test module
 * `Reynir.conf` : Editable configuration file for the tokenizer and parser
 * `Reynir.grammar` : A context-free grammar specification for Icelandic
@@ -81,4 +81,3 @@ fails, it identifies the token at which no parse was available.
 The intent is to release Reynir under a GNU GPL license once the code stabilizes. However, while
 Reynir is still in early stages of development the code is *copyright (C) 2015 by Vilhjalmur
 Thorsteinsson*, all rights reserved.
-

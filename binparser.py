@@ -95,6 +95,9 @@ class BIN_Token(Token):
         "lhþt" : "LHÞT" # Lýsingarháttur þátíðar ('var lentur')
     }
 
+    _GENDERS = [ "kk", "kvk", "hk" ]
+
+
     def __init__(self, t):
 
         Token.__init__(self, TOK.descr[t[0]], t[1])
@@ -107,14 +110,18 @@ class BIN_Token(Token):
             the allowable number of noun phrase arguments """
         if terminal.has_variant("subj"):
             # Verb subject in non-nominative case
-            if not "OP" in form:
+            if terminal.has_variant("nh"):
+                if "NH" not in form:
+                    # Nominative mode (nafnháttur)
+                    return False
+            elif "OP" not in form:
                 # !!! BIN seems to be not 100% consistent in the OP annotation
                 return False
             if terminal.has_variant("mm"):
                 # Central form of verb ('miðmynd')
                 return "MM" in form
-            # Make sure that the subject case matches the terminal
-            return VerbSubjects.VERBS.get(verb, "") == terminal.variant(1)
+            # Make sure that the subject case (last variant) matches the terminal
+            return VerbSubjects.VERBS.get(verb, "") == terminal.variant(-1)
         # print("verb_matches {0} terminal {1} form {2}".format(verb, terminal, form))
         if terminal.has_variant("et") and "FT" in form:
             # Can't use plural verb if singular terminal
@@ -221,6 +228,11 @@ class BIN_Token(Token):
             if terminal.has_variant("ft") and float(t2[1]) == 1.0:
                 # Plural does not match an amount of one
                 return False
+            if t2[3] is not None:
+                # Associated gender
+                for g in BIN_Token._GENDERS:
+                    if terminal.has_variant(g) and t2[3] != g:
+                        return False
             if t2[2] is None:
                 # No associated case: match all cases
                 return True
@@ -229,7 +241,12 @@ class BIN_Token(Token):
 
         if t0 == TOK.NUMBER:
             if terminal.startswith("töl"):
-                # Match number words without further ado
+                # Match number words if gender matches
+                if t2[2] is not None:
+                    # Associated gender
+                    for g in BIN_Token._GENDERS:
+                        if terminal.has_variant(g) and t2[2] != g:
+                            return False
                 return True
             if not terminal.startswith("no"):
                 # Not noun: no match
@@ -243,6 +260,11 @@ class BIN_Token(Token):
             if terminal.has_variant("ft") and float(t2[0]) == 1.0:
                 # Plural does not match an amount of one
                 return False
+            if t2[2] is not None:
+                # Associated gender
+                for g in BIN_Token._GENDERS:
+                    if terminal.has_variant(g) and t2[2] != g:
+                        return False
             if t2[1] is None:
                 # No associated case: match all cases
                 return True
@@ -264,6 +286,9 @@ class BIN_Token(Token):
                 return False
             if terminal.has_variant("ft") and float(t2) == 1.0:
                 # Plural does not match an percentage of one
+                return False
+            if terminal.has_variant("kk") or terminal.has_variant("kvk"):
+                # Percentages only match the neutral gender
                 return False
             # No case associated with percentages: match all
             return True

@@ -387,6 +387,10 @@ if __name__ == "__main__":
     print("Running Reynir with debug={0}, host={1}, db_hostname={2}"
         .format(Settings.DEBUG, Settings.HOST, Settings.DB_HOSTNAME))
 
+    # Additional files that should cause a reload of the web server application
+    extra_files = ['Reynir.grammar', 'Reynir.conf', 'Verbs.conf']
+
     # Run the Flask web server application
-    app.run(debug=Settings.DEBUG, host=Settings.HOST, use_reloader=True)
+    app.run(debug=Settings.DEBUG, host=Settings.HOST, use_reloader=True,
+        extra_files = extra_files)
 

@@ -148,8 +148,8 @@ class Terminal:
 
     def variant(self, index):
         """ Return the variant with the given index """
-        assert index >= 0
-        return self._parts[1 + index]
+        # Allows negative indices, starting from the end
+        return self._parts[1 + index if index >= 0 else index]
 
     def startswith(self, part):
         """ Returns True if the terminal name starts with the given string """

@@ -16,7 +16,11 @@
     The function parse_text() consumes a text string and
     yields a generator of tokens. Each token is a tuple,
     typically having the form (type, word, meaning),
-    where type is one of the 
+    where type is one of the constants specified in the
+    TOK class, word is the original word found in the
+    source text, and meaning is a list of tuples with
+    potential interpretations of the word, as retrieved
+    from the BIN database of word forms.
 
 """
 
@@ -145,20 +149,20 @@ class TOK:
     def Telno(w):
         return (TOK.TELNO, w)
 
-    def Number(w, n, cases=None):
+    def Number(w, n, cases=None, gender=None):
         """ cases is a list of possible cases for this number
             (if it was originally stated in words) """
-        return (TOK.NUMBER, w, (n, cases))
+        return (TOK.NUMBER, w, (n, cases, gender))
 
-    def Currency(w, iso, cases=None):
+    def Currency(w, iso, cases=None, gender=None):
         """ cases is a list of possible cases for this currency name
             (if it was originally stated in words, i.e. not abbreviated) """
-        return (TOK.CURRENCY, w, (iso, cases))
+        return (TOK.CURRENCY, w, (iso, cases, gender))
 
-    def Amount(w, iso, n, cases=None):
+    def Amount(w, iso, n, cases=None, gender=None):
         """ cases is a list of possible cases for this amount
             (if it was originally stated in words) """
-        return (TOK.AMOUNT, w, (iso, n, cases))
+        return (TOK.AMOUNT, w, (iso, n, cases, gender))
 
     def Percent(w, n):
         return (TOK.PERCENT, w, n)
@@ -352,14 +356,14 @@ def parse_particles(token_stream):
             if token[0] == TOK.PUNCTUATION and token[1] == '$' and \
                 next_token[0] == TOK.NUMBER:
 
-                token = TOK.Amount(token[1] + next_token[1], "USD", next_token[2][0])
+                token = TOK.Amount(token[1] + next_token[1], "USD", next_token[2][0]) # Unknown gender
                 next_token = next(token_stream)
 
             # Check for €[number]
             if token[0] == TOK.PUNCTUATION and token[1] == '€' and \
                 next_token[0] == TOK.NUMBER:
 
-                token = TOK.Amount(token[1] + next_token[1], "EUR", next_token[2][0])
+                token = TOK.Amount(token[1] + next_token[1], "EUR", next_token[2][0]) # Unknown gender
                 next_token = next(token_stream)
 
             # Coalesce abbreviations ending with a period into a single
@@ -584,12 +588,12 @@ def annotate(token_stream):
 
 # Recognize words that multiply numbers
 MULTIPLIERS = {
-    "núll": 0,
-    "hálfur": 0.5,
-    "helmingur": 0.5,
-    "þriðjungur": 1.0 / 3,
-    "fjórðungur": 1.0 / 4,
-    "fimmtungur": 1.0 / 5,
+    #"núll": 0,
+    #"hálfur": 0.5,
+    #"helmingur": 0.5,
+    #"þriðjungur": 1.0 / 3,
+    #"fjórðungur": 1.0 / 4,
+    #"fimmtungur": 1.0 / 5,
     "einn": 1,
     "tveir": 2,
     "þrír": 3,
@@ -618,11 +622,11 @@ MULTIPLIERS = {
     "sjötíu": 70,
     "áttatíu": 80,
     "níutíu": 90,
-    "par": 2,
-    "tugur": 10,
-    "tylft": 12,
+    #"par": 2,
+    #"tugur": 10,
+    #"tylft": 12,
     "hundrað": 100,
-    "þúsund": 1000,
+    #"þúsund": 1000, # !!! Bæði hk og kvk!
     "þús.": 1000,
     "milljón": 1e6,
     "milla": 1e6,
@@ -789,6 +793,33 @@ def all_cases(token):
     return list(cases)
 
 
+_GENDER_SET = { "kk", "kvk", "hk" }
+_GENDER_DICT = { "KK": "kk", "KVK": "kvk", "HK": "hk" }
+
+def gender(token):
+    """ Return the gender of the word in the token, if any """
+    if token[0] != TOK.WORD:
+        return None
+    g = None
+    if token[2]:
+        for m in token[2]:
+
+            def find_gender(m):
+                if m[2] in _GENDER_SET:
+                    return m[2] # Plain noun
+                # Probably number word ('töl' or 'to'): look at its spec
+                for k, v in _GENDER_DICT.items():
+                    if k in m[5]:
+                        return v
+                return None
+
+            gn = find_gender(m)
+            if gn is not None and g is None:
+                g = gn
+                break # We choose the first gender and ignore conflicts
+    return g
+
+
 def parse_phrases_1(token_stream):
     """ Parse a stream of tokens looking for phrases and making substitutions.
         First pass
@@ -829,19 +860,20 @@ def parse_phrases_1(token_stream):
                         # a number word
                         if next_token[0] == TOK.WORD:
                             if number(next_token) is not None:
-                                token = TOK.Number(token[1], num, all_cases(token))
+                                token = TOK.Number(token[1], num, all_cases(token), gender(token))
                             else:
                                 # Check for fractions ('einn þriðji')
                                 frac = fraction(next_token)
                                 if frac is not None:
                                     # We have a fraction: eat it and return it,
                                     # but use the case of the first word in the fraction
-                                    token = TOK.Number(token[1] + " " + next_token[1], frac, all_cases(token))
+                                    token = TOK.Number(token[1] + " " + next_token[1], frac,
+                                        all_cases(token), token[2][2])
                                     next_token = next(token_stream)
                     else:
                         # Replace number word with number token,
                         # preserving its case
-                        token = TOK.Number(token[1], num, all_cases(token))
+                        token = TOK.Number(token[1], num, all_cases(token), gender(token))
 
             # Check for [number] 'hundred|thousand|million|billion'
             while token[0] == TOK.NUMBER and next_token[0] == TOK.WORD:
@@ -851,7 +883,7 @@ def parse_phrases_1(token_stream):
                     # Retain the case of the last multiplier
                     token = TOK.Number(token[1] + " " + next_token[1],
                         token[2][0] * multiplier,
-                        all_cases(next_token))
+                        all_cases(next_token), gender(next_token))
                     # Eat the multiplier token
                     next_token = next(token_stream)
                 elif next_token[1] in AMOUNT_ABBREV:
@@ -859,8 +891,8 @@ def parse_phrases_1(token_stream):
                     # For abbreviations, we do not know the case,
                     # but we try to retain the previous case information if any
                     token = TOK.Amount(token[1] + " " + next_token[1], "ISK",
-                        token[2][0] * AMOUNT_ABBREV[next_token[1]],
-                        token[2][1])
+                        token[2][0] * AMOUNT_ABBREV[next_token[1]], # Number
+                        token[2][1], token[2][2]) # Cases and gender
                     next_token = next(token_stream)
                 else:
                     # Check for [number] 'percent'
@@ -966,9 +998,9 @@ def parse_phrases_2(token_stream):
 
                 if cur is not None:
                     # Create an amount
-                    # Use the case information from the number, if any
+                    # Use the case and gender information from the number, if any
                     token = TOK.Amount(token[1] + " " + next_token[1],
-                        cur, token[2][0], token[2][1])
+                        cur, token[2][0], token[2][1], token[2][2])
                     # Eat the currency token
                     next_token = next(token_stream)
 
