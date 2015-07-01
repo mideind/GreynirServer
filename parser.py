@@ -76,13 +76,23 @@ class Parser:
             'dot' in the production that the state refers to. This greatly
             speeds up the Earley completion phase. """
 
-        def __init__(self):
+        def __init__(self, token):
             """ Maintain a list and a set in parallel """
+            self._token = token
+            if token is None:
+                # If no token associated with this column
+                # (because it's the last one), call
+                # self.matches_none() instead of self.matches()
+                # to avoid a check for this (rare) condition
+                # on every call to self.matches()
+                self.matches = self.matches_none
             self._states = []
             self._numstates = 0
             self._set = set()
             # Dictionary of states keyed by nonterminal at prod[dot]
             self._nt_dict = defaultdict(list)
+            # Cache of terminal matches
+            self._matches = dict()
 
         def add(self, newstate):
             """ Add a new state to this column if it is not already there """
@@ -96,6 +106,19 @@ class Parser:
                     # defaultdict automatically creates empty list if no entry for nt
                     self._nt_dict[nt].append(self._numstates)
                 self._numstates += 1
+
+        def matches(self, terminal):
+            """ Check whether the token in this column matches the given terminal """
+            # Cache lookup
+            m = self._matches.get(terminal)
+            if m is None:
+                # Not found in cache: do the actual match and cache it
+                self._matches[terminal] = m = self._token.matches(terminal)
+            return m
+
+        def matches_none(self, terminal):
+            """ Shadow function for matches() that is called if there is no token in this column """
+            return False
 
         def enum_nt(self, nt):
             """ Enumerate all states where prod[dot] is nt """
@@ -309,16 +332,17 @@ class Parser:
                 y.add_family(self, prod, (w, v)) # The code breaks if this is modified!
             return y
 
-        def _push(newstate, i, _E, _Q):
+        def _push(newstate, _E, _Q):
             """ Append a new state to an Earley column (_E) and a look-ahead set (_Q), as appropriate """
             # (N ::= α·δ, h, y)
             # newstate = (N, dot, prod, h, y)
+
             dot, prod = newstate[1], newstate[2]
             if dot >= len(prod) or prod[dot] < 0:
                 # Nonterminal or epsilon
                 # δ ∈ ΣN
                 _E.add(newstate)
-            elif i < n and tokens[i].matches(self._terminals[prod[dot]]):
+            elif _E.matches(self._terminals[prod[dot]]):
                 # Terminal matching the current token
                 _Q.append(newstate)
 
@@ -327,7 +351,7 @@ class Parser:
 
         n = len(tokens)
         # Initialize the Earley columns
-        E = [ Parser.EarleyColumn() for _ in range(n + 1) ]
+        E = [ Parser.EarleyColumn(tokens[i] if i < n else None) for i in range(n + 1) ]
         E0 = E[0]
         Q0 = [ ]
 
@@ -336,7 +360,7 @@ class Parser:
             # Go through root productions
             newstate = (self._root, 0, root_p, 0, None)
             # add (S ::= ·α, 0, null) to E0 and Q0
-            _push(newstate, 0, E0, Q0)
+            _push(newstate, E0, Q0)
 
         # Step through the Earley columns
         for i, Ei in enumerate(E):
@@ -365,13 +389,13 @@ class Parser:
                     for p in self._nt_dict[nt_C]:
                         # if δ ∈ ΣN and (C ::= ·δ, i, null) !∈ Ei:
                         newstate = (nt_C, 0, p, i, None)
-                        _push(newstate, i, Ei, Q)
+                        _push(newstate, Ei, Q)
                     # if ((C, v) ∈ H):
                     for v in H.get(nt_C, []):
                         # y = MAKE_NODE(B ::= αC · β, h, i, w, v, V)
                         y = _make_node(nt_B, dot + 1, prod, h, i, w, v, V)
                         newstate = (nt_B, dot + 1, prod, h, y)
-                        _push(newstate, i, Ei, Q)
+                        _push(newstate, Ei, Q)
                 # if Λ = (D ::= α·, h, w):
                 elif dot >= len_prod:
                     # Earley completer
@@ -390,7 +414,7 @@ class Parser:
                         nt_A, dot0, prod0, k, z = st0
                         y = _make_node(nt_A, dot0 + 1, prod0, k, i, z, w, V)
                         newstate = (nt_A, dot0 + 1, prod0, k, y)
-                        _push(newstate, i, Ei, Q)
+                        _push(newstate, Ei, Q)
 
             V = { }
             if Q:
@@ -406,7 +430,7 @@ class Parser:
                 # y = MAKE_NODE(B ::= αai+1 · β, h, i + 1, w, v, V)
                 y = _make_node(nt_B, dot + 1, prod, h, i + 1, w, v, V)
                 newstate = (nt_B, dot + 1, prod, h, y)
-                _push(newstate, i + 1, E[i + 1], Q0)
+                _push(newstate, E[i + 1], Q0)
 
         # if (S ::= τ ·, 0, w) ∈ En: return w
         for nt, dot, prod, k, w in E[n]:

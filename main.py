@@ -164,6 +164,10 @@ def analyze():
 
     # Count sentences
     num_sent = 0
+    num_long_sent = 0
+    num_parsed_sent = 0
+    total_ambig = 0.0
+
     sent_begin = 0
     bp = BIN_Parser()
 
@@ -175,6 +179,9 @@ def analyze():
             sent = []
             sent_begin = ix
         elif t[0] == TOK.S_END:
+            # Count 'long' sentences (ones longer than one token)
+            if len(sent) > 1:
+                num_long_sent += 1
             # Parse the accumulated sentence
             try:
                 forest = bp.go(sent)
@@ -183,6 +190,11 @@ def analyze():
             num = 0 if forest is None else Parser.num_combinations(forest)
             print("Parsed sentence of length {0} with {1} combinations{2}".format(len(sent), num,
                 "\n" + " ".join(s[1] for s in sent) if num >= 100 else ""))
+            if num > 0:
+                num_parsed_sent += 1
+                # Calculate the 'ambiguity factor'
+                ambig_factor = num ** (1 / len(sent))
+                total_ambig += ambig_factor
             # Mark the sentence beginning with the number of parses
             toklist[sent_begin] = TOK.Begin_Sentence(num_parses = num)
         elif t[0] == TOK.P_BEGIN:
@@ -198,8 +210,11 @@ def analyze():
         tokens = toklist,
         tok_time = tok_time,
         tok_num = len(toklist),
-        tok_sent = num_sent,
-        parse_time = parse_time
+        parse_time = parse_time,
+        num_sent = num_sent,
+        num_long_sent = num_long_sent,
+        num_parsed_sent = num_parsed_sent,
+        avg_ambig_factor = total_ambig / num_parsed_sent
     )
 
     # Dump the tokens to a text file for inspection

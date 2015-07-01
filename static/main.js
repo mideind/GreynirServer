@@ -271,8 +271,12 @@ function populateResult(json) {
    $("#tok-time").text(json.result.tok_time.toFixed(2));
    $("#parse-time").text(json.result.parse_time.toFixed(2));
    $("#tok-num").text(json.result.tok_num);
-   $("#tok-sent").text(json.result.tok_sent);
-   $("#tok-info").css("visibility", "visible");
+   $("#num-sent").text(json.result.num_sent);
+   $("#num-long-sent").text(json.result.num_long_sent);
+   $("#num-parsed-sent").text(json.result.num_parsed_sent);
+   $("#num-parsed-ratio").text((json.result.num_parsed_sent / json.result.num_long_sent * 100).toFixed(1));
+   $("#avg-ambig-factor").text(json.result.avg_ambig_factor.toFixed(2));
+   $("p.tok-info").css("visibility", "visible");
    var out = $("div#result");
    var tokens = json.result.tokens;
    out.data("tokens", tokens);
@@ -406,7 +410,7 @@ function analyzeUrl() {
    // Display progress indicator
    $("div#wait").css("display", "block");
    // Hide the statistics
-   $("#tok-info").css("visibility", "hidden");
+   $("p.tok-info").css("visibility", "hidden");
    // Launch the query
    serverQuery('/analyze',
       { url: $("#url").val().trim() },

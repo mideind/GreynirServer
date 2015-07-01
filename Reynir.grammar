@@ -48,13 +48,13 @@
 S0 → VenjulegSetning | Tilvitnun | Spurning
 
 VenjulegSetning →
-    Yfirsetning StLiður* '.'?
+    Samtenging? Yfirsetning StLiður* '.'?
 
 Spurning →
-    Yfirsetning StLiður* '?'
+    Samtenging? Yfirsetning StLiður* '?'
 
 Tilvitnun →
-    '„' Yfirsetning StLiður* TilvitnunarEnding
+    '„' Samtenging? Yfirsetning StLiður* TilvitnunarEnding
 
 TilvitnunarEnding →
     '.'? '“' | '“' '.'?
@@ -64,12 +64,13 @@ StLiður → ','? Samtenging Yfirsetning
 Samtenging →
     st
     | 'þar' 'sem'
-    | 'þannig' 'að'
     | 'svo' 'sem'
+    | 'þannig' 'að'
     | 'og' 'að'
 
 Yfirsetning →
-    SetningAlm | SetningAukafall
+    SetningAlm
+    | SetningAukafall
 
 # Setningar með frumlagi
 
@@ -79,13 +80,15 @@ SetningAlm → Setning/tala/pers/kyn
 # 'Anna tók bílinn, keyrði í bæinn [,] og keypti í matinn'
 
 SagnRuna/tala/pers/kyn →
-    Sagnliður/tala/pers Sagnfylling/tala/kyn SagnFramhald/tala/pers/kyn?
+    Sagnliður/tala/pers Innskot/tala/kyn? Sagnfylling/tala/kyn SagnFramhald/tala/pers/kyn?
 
 SagnFramhald/tala/pers/kyn →
-    SagnKomma/tala/pers/kyn* ','? OgEða Sagnliður/tala/pers Sagnfylling/tala/kyn
+    SagnKomma/tala/pers/kyn* ','? OgEða Sagnliður/tala/pers Innskot/tala/kyn? Sagnfylling/tala/kyn
 
 SagnKomma/tala/pers/kyn →
-    ',' Sagnliður/tala/pers Sagnfylling/tala/kyn
+    ',' Sagnliður/tala/pers Innskot/tala/kyn? Sagnfylling/tala/kyn
+
+Innskot/tala/kyn → ',' Sagnfylling/tala/kyn ','
 
 Setning/tala/pers/kyn →
     # Venjuleg setningarskipan með frumlagi fremst:
@@ -97,12 +100,12 @@ Setning/tala/pers/kyn →
     # Frumlag fyrir aftan sögn:
     # 'Bersýnilega fór Jón sterki í bága við reglurnar með þessu'
     # 'Gengu þau galvösk á Esjuna þrátt fyrir veðurútlitið'
-    | Atviksliður? Sagnliður/tala/pers Frumlag/tala/pers/kyn Sagnfylling/tala/kyn
+    | Atviksliður? Sagnliður/tala/pers Frumlag/tala/pers/kyn Innskot/tala/kyn? Sagnfylling/tala/kyn
 
     # Forsetningarliður, sögn, frumlag:
     # 'Undir húsinu voru illa farnar skolpleiðslur'
     # 'Í skólann fór Gunna aldrei eftir þetta'
-    | Atviksliður? FsFylling Sagnliður/tala/pers Frumlag/tala/pers/kyn Sagnfylling/tala/kyn
+    | Atviksliður? FsFylling Sagnliður/tala/pers Frumlag/tala/pers/kyn Innskot/tala/kyn? Sagnfylling/tala/kyn
 
     # Ekkert frumlag í nefnifalli, sögn í lýsingarhætti þátíðar:
     # 'Hannesi var í fyrra falið að stýra rannsóknarverkefni'
@@ -162,8 +165,11 @@ FsFylling → FsMeðFallstjórn FsLiður*
 
 # Sagnliðir
 
-Sagnliður/tala/pers → Sögn_0/tala/pers | Sögn_1/tala/pers | Sögn_2/tala/pers
-    | so/tala/pers Lýsingarliður/tala? NhLiður
+Sagnliður/tala/pers →
+    Sögn_0/tala/pers    # Sögn með engu viðfangi: (veðrið) skánaði
+    | Sögn_1/tala/pers  # Sögn með einu viðfangi: (Jón) sá köttinn
+    | Sögn_2/tala/pers  # Sögn með tveimur viðföngum: (Kata) skrifaði Önnu bréf
+    | so/tala/pers Lýsingarliður/tala? NhLiður # (Barnið) fór fljótlega að tala
 
 ÖfugurSagnliður/tala → ÖfugurSagnliður/tala/pers
 
@@ -195,7 +201,7 @@ Sögn_0/tala/pers →
     | HjSögnNh/tala/pers Atviksliður? so_0_nh           # Mennirnir sem munu [ekki] lenda
     | so_0_nh HjSögnNh/tala/pers                        # Mennirnir sem lenda munu
 
-    | so_0_lhþt/tala HjSögnLhÞt/tala/pers               # Mennirnir sem lentir eru
+    | so_0_lhþt/tala HjSögnLhÞt/tala/pers               # Mennirnir sem lentir eru !!! ATH kyn!
     | HjSögnLhÞt/tala/pers Atviksliður? so_0_lhþt/tala  # Mennirnir sem eru [ekki] lentir
 
 # Sögn með einu viðfangi ('borðaði matinn')
@@ -558,16 +564,21 @@ KommuSamtenging/fall → ',' NlAlm/fall
 
 # Lýsingarorðaliður
 
-LoLiður/tala/kyn → Atviksliður? lo/tala/kyn
-    | LoLiður/tala/kyn OgEða Atviksliður? lo/tala/kyn
+# "(allir eru) frjálsir skoðana sinna og sannfæringar"
 
-LoLiður/tala/fall/kyn → Atviksliður? lo/tala/fall/kyn
-    | LoLiður/tala/fall/kyn OgEða Atviksliður? lo/tala/fall/kyn
+Lo/tala/kyn → Atviksliður? lo/tala/kyn EfLiður?
+Lo/tala/fall/kyn → Atviksliður? lo/tala/fall/kyn EfLiður?
+
+LoLiður/tala/kyn → Lo/tala/kyn
+    | LoLiður/tala/kyn OgEða Lo/tala/kyn
+
+LoLiður/tala/fall/kyn → Lo/tala/fall/kyn
+    | LoLiður/tala/fall/kyn OgEða Lo/tala/fall/kyn
 
 # Blandað kyn (aðeins ef fleirtala)
 
-LoLiður_ft → Atviksliður? lo_ft_hk
-    | LoLiður_ft OgEða Atviksliður? lo_ft_hk
+LoLiður_ft → Atviksliður? lo_ft_hk EfLiður?
+    | LoLiður_ft OgEða Atviksliður? lo_ft_hk EfLiður?
 
 # Forsetningarliðir
 
