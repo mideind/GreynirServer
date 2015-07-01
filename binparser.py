@@ -130,7 +130,7 @@ class BIN_Token(Token):
             # Can't use singular verb if plural terminal
             return False
         # Check that person (1st, 2nd, 3rd) and other variant requirements match
-        for v in [ "p1", "p2", "p3", "nh", "sagnb", "lhþt", "lh", "nt" ]:
+        for v in [ "p1", "p2", "p3", "nh", "sagnb", "lhþt", "lh", "nt", "kk", "kvk", "hk" ]:
             if terminal.has_variant(v) and not BIN_Token._VARIANT[v] in form:
                 if v != "sagnb" or "SB" not in form:
                     return False
