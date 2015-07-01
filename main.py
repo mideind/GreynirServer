@@ -214,7 +214,7 @@ def analyze():
         num_sent = num_sent,
         num_long_sent = num_long_sent,
         num_parsed_sent = num_parsed_sent,
-        avg_ambig_factor = total_ambig / num_parsed_sent
+        avg_ambig_factor = (total_ambig / num_parsed_sent) if num_parsed_sent > 0 else 1.0
     )
 
     # Dump the tokens to a text file for inspection
