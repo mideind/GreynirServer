@@ -49,14 +49,20 @@ class ParseError(Exception):
 
     """ Exception class for parser errors """
 
-    def __init__(self, txt, info = None):
+    def __init__(self, txt, token_index = None, info = None):
         """ Store an information object with the exception,
             containing the parser state immediately before the error """
         self._info = info
+        self._token_index = token_index
         Exception.__init__(self, txt)
 
     def info(self):
+        """ Return the parser state information object """
         return self._info
+
+    def token_index(self):
+        """ Return the 0-based index of the token where the parser ran out of options """
+        return self._token_index
 
 
 class Parser:
@@ -100,9 +106,10 @@ class Parser:
                 self._states.append(newstate)
                 self._set.add(newstate)
                 _, dot, prod, _, _ = newstate
-                if dot < len(prod) and prod[dot] < 0:
+                # prod is a tuple of terminal (>0) and nonterminal (<0) indexes
+                nt = 0 if dot >= len(prod) else prod[dot]
+                if nt < 0:
                     # The state is at a nonterminal: add its index to our dict
-                    nt = prod[dot]
                     # defaultdict automatically creates empty list if no entry for nt
                     self._nt_dict[nt].append(self._numstates)
                 self._numstates += 1
@@ -126,6 +133,12 @@ class Parser:
                 for ix in self._nt_dict[nt]:
                     yield self._states[ix]
 
+        def cleanup(self):
+            """ Get rid of temporary data once the parser has moved past this column """
+            self._set = None
+            self._matches = None
+            # Keep the states for diagnostics and debugging
+
         def __len__(self):
             """ Return the number of states in the column """
             return self._numstates
@@ -147,7 +160,7 @@ class Parser:
                 nt, dot, prod, i, w = s
                 return (parser._lookup(nt), dot, [parser._lookup(t) for t in prod], i)
 
-            return [readable(s) for s in self._states]
+            return [readable(s) for s in self._states if s[1] > 0] # Skip states with the dot at the beginning
 
 
     class Node:
@@ -338,11 +351,12 @@ class Parser:
             # newstate = (N, dot, prod, h, y)
 
             dot, prod = newstate[1], newstate[2]
-            if dot >= len(prod) or prod[dot] < 0:
+            item = 0 if dot >= len(prod) else prod[dot]
+            if item <= 0:
                 # Nonterminal or epsilon
                 # δ ∈ ΣN
                 _E.add(newstate)
-            elif _E.matches(self._terminals[prod[dot]]):
+            elif _E.matches(self._terminals[item]):
                 # Terminal matching the current token
                 _Q.append(newstate)
 
@@ -368,7 +382,7 @@ class Parser:
             if not Ei:
                 # Parse options exhausted, nothing to do
                 raise ParseError("No parse available at token {0} ({1})"
-                    .format(i, tokens[i-1]), E[i-1].info(self)) # Token index is 1-based
+                    .format(i, tokens[i-1]), i-1, E[i-1].info(self)) # Token index is 1-based
             j = 0
             H = defaultdict(list)
             Q = Q0
@@ -432,6 +446,9 @@ class Parser:
                 newstate = (nt_B, dot + 1, prod, h, y)
                 _push(newstate, E[i + 1], Q0)
 
+            # Discard unnecessary cache stuff from memory
+            Ei.cleanup()
+
         # if (S ::= τ ·, 0, w) ∈ En: return w
         for nt, dot, prod, k, w in E[n]:
             if nt == self._root and dot >= len(prod) and k == 0:
@@ -440,7 +457,7 @@ class Parser:
 
         # No parse at last token
         raise ParseError("No parse available at token {0} ({1})"
-            .format(n, tokens[n-1]), E[n].info(self)) # Token index is 1-based
+            .format(n, tokens[n-1]), n - 1, E[n].info(self)) # Token index is 1-based
 
 
     def go_no_exc(self, tokens):

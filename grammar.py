@@ -290,6 +290,10 @@ class Production:
         """ Return the Terminal or Nonterminal at the given index position """
         return self._rhs[index]
 
+    def __setitem__(self, index, val):
+        """ Set the Terminal or Nonterminal at the given index position """
+        self._rhs[index] = val
+
     def __len__(self):
         """ Return the length of this production """
         return self._len
@@ -727,4 +731,28 @@ class Grammar:
         if unreachable:
             raise GrammarError("Nonterminals {0} are unreachable from the root"
                 .format(", ".join([str(nt) for nt in unreachable])), fname, 0)
+
+        # Short-circuit non-terminals that point directly and uniquely to other nonterminals
+        for nt, plist in grammar.items():
+            for p in plist:
+                for ix, s in enumerate(p):
+                    snt = s
+                    last_nt = None
+                    while isinstance(snt, Nonterminal) and snt != nt:
+                        nt_prod = grammar[snt]
+                        if len(nt_prod) != 1:
+                            # More than one production for this nonterminal
+                            break
+                        if len(nt_prod[0]) != 1:
+                            # The single production has more than one item in it
+                            break
+                        # OK, this qualifies: note it and try another iteration
+                        last_nt = snt
+                        snt = nt_prod[0][0]
+                    if last_nt is not None and last_nt != s:
+                        # Replace the nonterminal in the production
+                        print("Production of {2}: Replaced {0} with {1}"
+                            .format(s, last_nt, nt))
+                        assert p[ix] == s
+                        p[ix] = last_nt
 

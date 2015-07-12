@@ -167,6 +167,7 @@ def analyze():
     num_long_sent = 0
     num_parsed_sent = 0
     total_ambig = 0.0
+    total_tokens = 0
 
     sent_begin = 0
     bp = BIN_Parser()
@@ -180,23 +181,30 @@ def analyze():
             sent_begin = ix
         elif t[0] == TOK.S_END:
             # Count 'long' sentences (ones longer than one token)
-            if len(sent) > 1:
+            slen = len(sent)
+            if slen > 1:
                 num_long_sent += 1
             # Parse the accumulated sentence
+            err_index = None
             try:
                 forest = bp.go(sent)
             except ParseError as e:
                 forest = None
+                # Obtain the index of the offending token
+                err_index = e.token_index()
             num = 0 if forest is None else Parser.num_combinations(forest)
-            print("Parsed sentence of length {0} with {1} combinations{2}".format(len(sent), num,
+            print("Parsed sentence of length {0} with {1} combinations{2}".format(slen, num,
                 "\n" + " ".join(s[1] for s in sent) if num >= 100 else ""))
             if num > 0:
                 num_parsed_sent += 1
                 # Calculate the 'ambiguity factor'
-                ambig_factor = num ** (1 / len(sent))
-                total_ambig += ambig_factor
+                ambig_factor = num ** (1 / slen)
+                # Do a weighted average on sentence length
+                total_ambig += ambig_factor * slen
+                total_tokens += slen
             # Mark the sentence beginning with the number of parses
-            toklist[sent_begin] = TOK.Begin_Sentence(num_parses = num)
+            # and the index of the offending token, if an error occurred
+            toklist[sent_begin] = TOK.Begin_Sentence(num_parses = num, err_index = err_index)
         elif t[0] == TOK.P_BEGIN:
             pass
         elif t[0] == TOK.P_END:
@@ -214,7 +222,7 @@ def analyze():
         num_sent = num_sent,
         num_long_sent = num_long_sent,
         num_parsed_sent = num_parsed_sent,
-        avg_ambig_factor = (total_ambig / num_parsed_sent) if num_parsed_sent > 0 else 1.0
+        avg_ambig_factor = (total_ambig / total_tokens) if total_tokens > 0 else 1.0
     )
 
     # Dump the tokens to a text file for inspection

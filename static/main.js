@@ -35,6 +35,8 @@ var TOK_P_END = 10002; // Block end
 var TOK_S_BEGIN = 11001; // Sentence begin
 var TOK_S_END = 11002; // Sentence end
 
+var TOK_ERROR_FLAG = 0x10000; // Bit flag to indicate error token
+
 // Punctuation types
 
 var TP_LEFT = 1;
@@ -237,12 +239,11 @@ function hoverIn() {
    else
    if (wl[0] == TOK_PERSON) {
       $("div.info").html("<p><b>" + wl[1] + "</b></p>");
-      // Show name and gender
-      $("div.info").append("<p>" + wl[2][0] + " " + wl[2][1] + "</p>");
-      // Show cases, if available
-      if (wl[2][2] !== null)
-         for (i = 0; i < wl[2][2].length; i++)
-            $("div.info").append("<p>" + wl[2][2][i] + "</p>");
+      for (i = 0; i < wl[2].length; i++) {
+         // Show name, gender and case
+         var p = wl[2][i];
+         $("div.info").append("<p>" + p[0] + " " + p[1] + " " + p[2] + "</p>");
+      }
    }
    else
    if (wl[0] == TOK_TIMESTAMP) {
@@ -285,7 +286,18 @@ function populateResult(json) {
    var wsp = ""; // Pending whitespace
    for (i = 0; i < tokens.length; i++) {
       var wl = tokens[i];
-      if (wl[0] == TOK_PUNCTUATION) {
+      var wl0 = wl[0];
+      if (wl0 & TOK_ERROR_FLAG) {
+         // The token has earlier been marked as an error token:
+         // enclose it within a span identifying it as such
+         wl0 &= ~TOK_ERROR_FLAG;
+         if (wl0 == TOK_WORD || wl0 == TOK_PERSON || wl0 == TOK_DATE || wl0 == TOK_NUMBER) {
+            s += wsp;
+            wsp = "";
+         }
+         s += "<span class='errtok'>";
+      }
+      if (wl0 == TOK_PUNCTUATION) {
          if (wl[2] == TP_LEFT) {
             // Left associative punctuation
             s += wsp + wl[1];
@@ -309,7 +321,7 @@ function populateResult(json) {
          }
       }
       else
-      if (wl[0] == TOK_WORD) {
+      if (wl0 == TOK_WORD) {
          if (wl[2] === null || wl[2].length == 0)
             // Word not recognized
             s += wsp + "<i class='nf'>" + wl[1] + "</i>";
@@ -318,82 +330,92 @@ function populateResult(json) {
          wsp = " ";
       }
       else
-      if (wl[0] == TOK_P_BEGIN) {
+      if (wl0 == TOK_P_BEGIN) {
          s += "<p>";
          wsp = "";
       }
       else
-      if (wl[0] == TOK_P_END) {
+      if (wl0 == TOK_P_END) {
          s += "</p>";
          wsp = "";
       }
       else
-      if (wl[0] == TOK_S_BEGIN) {
+      if (wl0 == TOK_S_BEGIN) {
          var c = "sent";
-         if (wl[2] > 0)
+         var nump = wl[2][0];
+         var errIndex = wl[2][1]; // Index of error token if nump == 0
+         if (nump === 0 && errIndex !== null)
+            // Mark the error token with an error flag
+            tokens[i + 1 + errIndex][0] |= TOK_ERROR_FLAG;
+         if (nump > 0)
             // This sentence has at least one parse tree: mark it
             c += " parsed";
-         if (wl[2] > 100)
+         if (nump > 100)
             // This sentence has a lot of parses: mark it
             c += " very-ambig";
          s += "<span class='" + c + "'>";
          wsp = "";
       }
       else
-      if (wl[0] == TOK_S_END) {
+      if (wl0 == TOK_S_END) {
          s += "</span>";
          // Keep pending whitespace unchanged
       }
       else
-      if (wl[0] == TOK_NUMBER) {
+      if (wl0 == TOK_NUMBER) {
          s += wsp + "<i class='number' id='w" + i + "'>" + wl[1] + "</i>";
          wsp = " ";
       }
       else
-      if (wl[0] == TOK_PERCENT) {
+      if (wl0 == TOK_PERCENT) {
          s += wsp + "<i class='percent' id='w" + i + "'>" + wl[1] + "</i>";
          wsp = " ";
       }
       else
-      if (wl[0] == TOK_ORDINAL) {
+      if (wl0 == TOK_ORDINAL) {
          s += wsp + "<i class='ordinal' id='w" + i + "'>" + wl[1] + ".</i>";
          wsp = " ";
       }
       else
-      if (wl[0] == TOK_DATE) {
+      if (wl0 == TOK_DATE) {
          s += wsp + "<i class='date' id='w" + i + "'>" + wl[1] + "</i>";
          wsp = " ";
       }
       else
-      if (wl[0] == TOK_TIMESTAMP) {
+      if (wl0 == TOK_TIMESTAMP) {
          s += wsp + "<i class='timestamp' id='w" + i + "'>" + wl[1] + "</i>";
          wsp = " ";
       }
       else
-      if (wl[0] == TOK_CURRENCY) {
+      if (wl0 == TOK_CURRENCY) {
          s += wsp + "<i class='currency' id='w" + i + "'>" + wl[1] + "</i>";
          wsp = " ";
       }
       else
-      if (wl[0] == TOK_AMOUNT) {
+      if (wl0 == TOK_AMOUNT) {
          s += wsp + "<i class='amount' id='w" + i + "'>" + wl[1] + "</i>";
          wsp = " ";
       }
       else
-      if (wl[0] == TOK_PERSON) {
+      if (wl0 == TOK_PERSON) {
          s += wsp + "<i class='person' id='w" + i + "'>" + wl[1] + "</i>";
          wsp = " ";
       }
       else
-      if (wl[0] == TOK_YEAR || wl[0] == TOK_TELNO || wl[0] == TOK_TIME) {
+      if (wl0 == TOK_YEAR || wl0 == TOK_TELNO || wl0 == TOK_TIME) {
          s += wsp + "<b>" + wl[1] + "</b>";
          wsp = " ";
       }
       else
-      if (wl[0] == TOK_UNKNOWN) {
+      if (wl0 == TOK_UNKNOWN) {
          // Token not recognized
          s += wsp + "<i class='nf'>" + wl[1] + "</i>";
          wsp = " ";
+      }
+      if (wl[0] & TOK_ERROR_FLAG) {
+         s += "</span>";
+         // Remove the flag when we're done with it
+         wl[0] &= ~TOK_ERROR_FLAG;
       }
    }
    out.html(s);

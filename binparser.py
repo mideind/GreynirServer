@@ -87,6 +87,9 @@ class BIN_Token(Token):
         "p2" : "2P", # Önnur persóna / second person
         "p3" : "3P", # Þriðja persóna / third person
         "op" : "OP", # Ópersónuleg sögn
+        "gm" : "GM", # Germynd
+        "mm" : "MM", # Miðmynd
+        "sb" : "SB", # Sterk beyging
         "nh" : "NH", # Nafnháttur
         "lh" : "LH", # Lýsingarháttur (nútíðar)
         "nt" : "NT", # Nútíð
@@ -130,15 +133,17 @@ class BIN_Token(Token):
             # Can't use singular verb if plural terminal
             return False
         # Check that person (1st, 2nd, 3rd) and other variant requirements match
-        for v in [ "p1", "p2", "p3", "nh", "sagnb", "lhþt", "lh", "nt", "kk", "kvk", "hk" ]:
+        for v in [ "p1", "p2", "p3", "nh", "sagnb", "lhþt", "lh", "nt", "kk", "kvk", "hk", "sb", "gm", "mm" ]:
             if terminal.has_variant(v) and not BIN_Token._VARIANT[v] in form:
-                if v != "sagnb" or "SB" not in form:
-                    return False
+                return False
         # Check restrictive variants, i.e. we don't accept meanings
         # that have those unless they are explicitly present in the terminal
-        for v in [ "sagnb", "lhþt" ]: # Be careful with "lh" here
+        for v in [ "sagnb", "lhþt" ]: # Be careful with "lh" here - !!! add mm?
             if BIN_Token._VARIANT[v] in form and not terminal.has_variant(v):
                 return False
+        if terminal.has_variant("lhþt") and "VB" in form:
+            # We want only the strong declinations ("SB") of lhþt, not the weak ones
+            return False
         # Check whether the verb token can potentially match the argument number
         # of the terminal in question. If the verb is known to take fewer
         # arguments than the terminal wants, this is not a match.
@@ -192,12 +197,13 @@ class BIN_Token(Token):
             # Handle a person name, matching it with a singular noun
             if not terminal.startswith("person"):
                 return False
-            # Check the gender
-            if terminal.variant(1) != t2[1]:
-                return False
-            # The case must also be correct
-            # For a TOK.PERSON, t[2][2] contains a list of possible cases
-            return terminal.variant(0) in t2[2]
+            # Check each PersonName tuple in the t2 list
+            for p in t2:
+                if terminal.variant(1) == p.gender and terminal.variant(0) == p.case:
+                    # Case and gender matches: we're good
+                    return True
+            # No match found
+            return False
 
         if t0 == TOK.PUNCTUATION:
             return terminal.matches("punctuation", t1)

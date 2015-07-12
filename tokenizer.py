@@ -26,6 +26,7 @@
 
 from contextlib import closing
 from functools import lru_cache
+from collections import namedtuple
 
 import re
 import codecs
@@ -70,6 +71,10 @@ DIGITS = "0123456789"
 # Set of all cases
 
 ALL_CASES = { "nf", "þf", "þgf", "ef" }
+
+# Named tuple for person names, including case and gender
+
+PersonName = namedtuple('PersonName', ['name', 'gender', 'case'])
 
 # Token types
 
@@ -174,14 +179,15 @@ class TOK:
         return (TOK.URL, w)
 
     def Word(w, m):
+        """ m is a list of meanings from BÍN """
         return (TOK.WORD, w, m)
 
     def Unknown(w):
         return (TOK.UNKNOWN, w)
 
-    def Person(w, name, gender, cases):
-        """ cases is a list of possible cases for this name """
-        return (TOK.PERSON, w, (name, gender, cases))
+    def Person(w, m):
+        """ m is a list of PersonName tuples: (name, gender, case) """
+        return (TOK.PERSON, w, m)
 
     def Begin_Paragraph():
         return (TOK.P_BEGIN, None)
@@ -189,8 +195,8 @@ class TOK:
     def End_Paragraph():
         return (TOK.P_END, None)
 
-    def Begin_Sentence(num_parses = 0):
-        return (TOK.S_BEGIN, None, num_parses)
+    def Begin_Sentence(num_parses = 0, err_index = None):
+        return (TOK.S_BEGIN, None, (num_parses, err_index))
 
     def End_Sentence():
         return (TOK.S_END, None)
@@ -767,8 +773,8 @@ def match_stem_list(token, stems, filter_func=None):
     return None
 
 
-def add_cases(cases, bin_spec, default="nf"):
-    """ Add the case specified in the bin_spec string, if any, to the cases set """
+def case(bin_spec, default="nf"):
+    """ Return the case specified in the bin_spec string """
     c = default
     if "NF" in bin_spec:
         c = "nf"
@@ -778,6 +784,12 @@ def add_cases(cases, bin_spec, default="nf"):
         c = "þgf"
     elif "EF" in bin_spec:
         c = "ef"
+    return c
+
+
+def add_cases(cases, bin_spec, default="nf"):
+    """ Add the case specified in the bin_spec string, if any, to the cases set """
+    c = case(bin_spec, default)
     if c:
         cases.add(c)
 
@@ -971,11 +983,8 @@ def parse_phrases_2(token_stream):
         # Maintain a one-token lookahead
         token = next(token_stream)
 
-        # Maintain a dict of full person names and genders encountered
-        names = dict()
-
-        # Maintain a dict of the last full person name of each gender encountered
-        genders = dict()
+        # Maintain a set of full person names encountered
+        names = set()
 
         at_sentence_start = False
 
@@ -1006,27 +1015,21 @@ def parse_phrases_2(token_stream):
 
             # Logic for human names
 
-            def in_category(token, category):
-                """ If the token denotes a given name, return its stem and gender """
+            def stems(token, category):
+                """ If the token denotes a given name, return its possible
+                    interpretations, as a list of PersonName tuples (name, case, gender) """
                 if token[0] != TOK.WORD or not token[2]:
                     return None
                 # Look through the token meanings
-                gender = None
-                stem = None
-                cases = set()
+                result = []
                 for m in token[2]:
                     # print("In_category checking {0}".format(m))
                     if m[3] == category:
-                        # Note the stem ('stofn') and the word type ('ordfl')
-                        stem = m[0]
-                        if gender is None:
-                            gender = m[2]
-                        elif gender != m[2]:
-                            gender = "" # Multiple genders
-                        add_cases(cases, m[5])
-                return None if stem is None else (stem, gender, cases)
+                        # Note the stem ('stofn') and the gender from the word type ('ordfl')
+                        result.append(PersonName(name = m[0], gender = m[2], case = case(m[5])))
+                return result if result else None
 
-            def not_in_category(token, category):
+            def has_other_meaning(token, category):
                 """ Return True if the token can denote something besides a given name """
                 if token[0] != TOK.WORD or not token[2]:
                     return True
@@ -1038,16 +1041,24 @@ def parse_phrases_2(token_stream):
                 return False
 
             # Check for human names
-            def given_name(token):
+            def given_names(token):
                 """ Check for Icelandic person name (category 'ism') """
                 if token[0] != TOK.WORD or not token[1][0].isupper():
                     # Must be a word starting with an uppercase character
                     return None
-                return in_category(token, "ism")
+                return stems(token, "ism")
 
-            def given_name_or_middle_abbrev(token):
+            # Check for surnames
+            def surnames(token):
+                """ Check for Icelandic patronym (category 'föð) """
+                if token[0] != TOK.WORD or not token[1][0].isupper():
+                    # Must be a word starting with an uppercase character
+                    return None
+                return stems(token, "föð")
+
+            def given_names_or_middle_abbrev(token):
                 """ Check for given name or middle abbreviation """
-                gn = given_name(token)
+                gn = given_names(token)
                 if gn is not None:
                     return gn
                 if token[0] != TOK.WORD:
@@ -1058,85 +1069,88 @@ def parse_phrases_2(token_stream):
                     w = w[1:-2]
                 if len(w) > 2 or not w[0].isupper():
                     return None
-                # One or two letters, capitalized: accept as middle name abbrev
-                # (no gender) - all cases possible
-                return (w, "", ALL_CASES)
+                # One or two letters, capitalized: accept as middle name abbrev,
+                # all genders and cases possible
+                return [PersonName(name = w, gender = None, case = None)]
 
-            # Check for surnames
-            def surname(token):
-                """ Check for Icelandic patronym (category 'föð) """
-                if token[0] != TOK.WORD or not token[1][0].isupper():
-                    # Must be a word starting with an uppercase character
-                    return None
-                return in_category(token, "föð")
+            def compatible(p, np):
+                """ Return True if the next PersonName (np) is compatible with the one we have (p) """
+                if np.gender and (np.gender != p.gender):
+                    return False
+                if np.case and (np.case != p.case):
+                    return False
+                return True
 
-            gn = given_name(token)
-            if gn is not None:
-                # Found a given name: look for a sequence of given names
-                # of the same gender
+            gn = given_names(token)
+
+            if gn:
+                # Found at least one given name: look for a sequence of given names
+                # having compatible genders and cases
                 w = token[1]
-                name, gender, cases = gn
                 patronym = False
-                gnames = [ name ] # Accumulate list of given names
                 while True:
-                    gn = given_name_or_middle_abbrev(next_token)
-                    if gn is None:
+                    ngn = given_names_or_middle_abbrev(next_token)
+                    if not ngn:
                         break
-                    if gender and gn[1] and gn[1] != gender:
-                        # We already had a definitive gender and this name
-                        # doesn't match it: break
+                    # Look through the stuff we got and see what is compatible
+                    r = []
+                    for p in gn:
+                        for np in ngn:
+                            if compatible(p, np):
+                                # Compatible: add to result
+                                r.append(PersonName(name = p.name + " " + np.name, gender = p.gender, case = p.case))
+                    if not r:
+                        # This next name is not compatible with what we already
+                        # have: break
                         break
-                    if gn[1] and not gender:
-                        gender = gn[1]
-                    # Narrow the choice of cases
-                    cases &= gn[2]
-                    # Found a directly following given name of the same gender:
-                    # append it to the accumulated name and continue
-                    w += " " + (gn[0] if next_token[1][0] == '[' else next_token[1])
-                    name += " " + gn[0]
-                    gnames.append(gn[0])
+                    # Success: switch to new given name list
+                    gn = r
+                    w += " " + (ngn[0].name if next_token[1][0] == '[' else next_token[1])
                     next_token = next(token_stream)
+
                 # Check whether the sequence of given names is followed
                 # by a surname (patronym) of the same gender
-                sn = surname(next_token)
-                if sn is not None and (not gender or sn[1] == gender):
-                    # Found surname: append it to the accumulated name
-                    name += " " + sn[0]
-                    w += " " + next_token[1]
-                    if not gender:
-                        # We did not learn the gender from the first names:
-                        # use the surname gender if available
-                        gender = sn[1]
-                    # Narrow the choice of cases still further
-                    cases &= sn[2]
-                    patronym = True
-                    next_token = next(token_stream)
+                sn = surnames(next_token)
+                if sn:
+                    r = []
+                    # Found surname: append it to the accumulated name, if compatible
+                    for p in gn:
+                        for np in sn:
+                            if compatible(p, np):
+                                r.append(PersonName(name = p.name + " " + np.name, gender = p.gender, case = p.case))
+                    if r:
+                        # Compatible: include it and advance to the next token
+                        gn = r
+                        w += " " + next_token[1]
+                        patronym = True
+                        next_token = next(token_stream)
 
-                found_name = None
+                # Must have at least one possible name
+                assert len(gn) >= 1
+
+                found_name = False
                 # If we have a full name with patronym, store it
                 if patronym:
-                    names[name] = (gender, gnames)
-                    genders[gender] = name
+                    names |= set(gn)
                 else:
                     # Look through earlier full names and see whether this one matches
-                    for key, val in names.items():
-                        ge, gn_list = val
-                        match = gender and (ge == gender)
-                        if match:
-                            for gn in gnames:
-                                if gn not in gn_list:
-                                    # We have a given name that does not match the person
-                                    match = False
-                                    break
-                        if match:
-                            # !!! TODO: Handle case where more than one name matches
-                            found_name = key
-                            if not gender:
-                                gender = ge
-                    if found_name is not None:
-                        name = found_name
-                        # Reset gender reference to this newly found name
-                        genders[gender] = name
+                    for ix, p in enumerate(gn):
+                        gnames = p.name.split(' ') # Given names
+                        for lp in names:
+                            match = (not p.gender) or (p.gender == lp.gender)
+                            if match:
+                                # The gender matches
+                                lnames = set(lp.name.split(' ')[0:-1]) # Leave the patronym off
+                                for n in gnames:
+                                    if n not in lnames:
+                                        # We have a given name that does not match the person
+                                        match = False
+                                        break
+                            if match:
+                                # All given names match: assign the previously seen full name
+                                gn[ix] = PersonName(name = lp.name, gender = lp.gender, case = p.case)
+                                found_name = True
+                                break
 
                 # If this is not a "strong" name, backtrack from recognizing it.
                 # A "weak" name is (1) at the start of a sentence; (2) only one
@@ -1147,13 +1161,13 @@ def parse_phrases_2(token_stream):
                 #    print("Checking name '{4}': at_sentence_start {0}, patronym {1}, found_name {2}, not_in_category {3}"
                 #        .format(at_sentence_start, patronym, found_name, not_in_category(token, "ism"), w))
 
-                weak = at_sentence_start and len(gnames) == 1 and not patronym and \
-                    found_name is None and not_in_category(token, "ism")
+                weak = at_sentence_start and (' ' not in w) and not patronym and \
+                    not found_name and has_other_meaning(token, "ism")
 
                 if not weak:
                     # Return a person token with the accumulated name
                     # and the intersected set of possible cases
-                    token = TOK.Person(w, name, gender, list(cases))
+                    token = TOK.Person(w, gn)
 
             # Yield the current token and advance to the lookahead
             yield token

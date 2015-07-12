@@ -224,6 +224,12 @@ td.t span.tok {
    font-weight: bold;
 }
 
+span.errtok {
+   background-color: #ffd8d8;
+   padding-left: 2px;
+   padding-right: 2px;
+}
+
 span.sent {
    margin-right: 8px;
    cursor: pointer;
