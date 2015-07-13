@@ -45,10 +45,10 @@
 
 # Setningargerðir
 
-S0 → VenjulegSetning | Tilvitnun | Spurning | Fyrirsögn
+S0 → VenjulegSetning | Tilvitnun | Spurning | Grein | Fyrirsögn
 
 VenjulegSetning →
-    Samtenging? Yfirsetning StLiður* '.'?
+    Samtenging? Yfirsetning StLiður* '.'? '“'?
 
 Spurning →
     Samtenging? Yfirsetning StLiður* '?'
@@ -56,11 +56,14 @@ Spurning →
 Fyrirsögn →
     Nl_nf '.'?
 
+Grein →
+    raðnr 'grein' Fyrirsögn? # 17. gr. Störf Alþingis
+
 Tilvitnun →
     '„' Samtenging? Yfirsetning StLiður* TilvitnunarEnding
 
 TilvitnunarEnding →
-    '.'? '“' | '“' '.'?
+    '.'? '“' | '“' '.'? | '.' # Í síðasta tilvikinu er tilvitnun ekki lokað!
 
 StLiður → ','? Samtenging Yfirsetning
 
@@ -72,12 +75,14 @@ Samtenging →
     | 'og' 'að'
 
 Yfirsetning →
-    SetningAlm
+    Setning
     | SetningAukafall
+    | SetningLo
+    | SetningSo
 
 # Setningar með frumlagi
 
-SetningAlm → Setning/tala/pers/kyn
+Setning → Setning/tala/pers/kyn
 
 # Tilvik þar sem einu frumlagi fylgja nokkrir sagnliðir:
 # 'Anna tók bílinn, keyrði hann galvösk í bæinn [,] og keypti í matinn'
@@ -108,17 +113,30 @@ Setning/tala/pers/kyn →
     # 'Gengu þau galvösk á Esjuna þrátt fyrir veðurútlitið'
     # 'Undir húsinu voru illa farnar skolpleiðslur'
     # 'Í skólanum borðaði Gunna aldrei matinn eftir þetta'
-    # !!! ATH: Röng regla - frumlag kemur inn í sagnlið í þessu tilviki
+    # !!! ATH: Röng regla - frumlag kemur inn í sagnlið í þessu tilviki:
+    # !!! 'Í grein sinni opinberaði Hannes niðurstöðu sína'
     | FsAtv Sagnliður/tala/pers/kyn SagnInnskot? Nl_nf/tala/pers/kyn FrumlagsInnskot/tala/pers/kyn? FsAtv?
 
-    # Ekkert frumlag í nefnifalli, sögn í lýsingarhætti þátíðar:
-    # 'Hannesi var í fyrra falið að stýra rannsóknarverkefni'
-    #| Nl_þgf HjSögnSkuluMunu so_1_þgf_þf_sagnb Atviksliður? Andlag
-    # !!! TBD
+# Setning sem byrjar á lýsingarorði í stað "það":
+# 'Óheimilt er að fangelsa mann fyrir engar sakir'
+# (í stað 'Það er óheimilt að fangelsa mann...')
 
-    # Ekkert frumlag í nefnifalli, sögn í miðmynd:
-    # 'Búist er við vondu veðri í dag'
-    # !!! TBD
+SetningLo →
+    LoLiður_nf_et_hk HjSögnLhÞt_et_p3 FsAtv? NhLiður
+    | LoLiður_nf_et_hk HjSögnSkuluMunu_et_p3 FsAtv? NhLiður
+
+# Ekkert frumlag í nefnifalli, sögn í sagnbeygingu (oft í miðmynd):
+# 'Í dag er búist við vondu veðri eftir hádegi'
+# (í stað 'Það er búist við vondu veðri eftir hádegi í dag')
+# 'Á morgun verður lent á neyðarbrautinni'
+# 'Fylgst verður með kosningunum á RÚV næstu daga'
+# (í stað 'Það verður fylgst með kosningunum á RÚV næstu daga')
+
+SetningSo →
+    FsAtv? HjSögnLhÞt_et_p3 FsAtv? so_0_sagnb FsAtv? # [Á morgun] verður [líklega] lent á brautinni [eftir hádegi]
+    | FsAtv? HjSögnSkuluMunu_et_p3 FsAtv? so_0_sagnb FsAtv? # [Á morgun] mun [væntanlega] rigna á brautinni [undan vindi]
+    | so_0_sagnb HjSögnLhÞt_et_p3 FsAtv?        # Leitað verður til sérfræðinga
+    | so_0_sagnb HjSögnSkuluMunu_et_p3 FsAtv?   # Barist mun til síðasta blóðdropa
 
 # Setning þar sem frumlag (aðalnafnliður) er í aukafalli
 # vegna þess að sögnin tekur viðfang (subject) í aukafalli,
@@ -127,12 +145,21 @@ Setning/tala/pers/kyn →
 # 'Helmingi ungmenna finnst skólinn skemmtilegur'
 
 SetningAukafall →
-    Nl/fall Atviksliður? so_subj/fall AukafallsBotn
-    | Nl_þgf so_subj_mm MiðmyndarBotn  # Miðmynd sagna: Mér áskotnaðist, mér fyrirgefst, mér gremst...
+    Nl/fall Atviksliður? so_subj/tala/fall AukafallsBotn/tala
+    | Nl_þgf so_subj_mm FsAtv? MiðmyndarBotn  # Miðmynd sagna: Mér áskotnaðist, mér fyrirgefst, mér gremst...
+    | Nl_þgf HjSögnLhÞt_et_p3 FsAtv? LoLiður_nf_et_hk FsAtv? NhLiður # Öllum er frjálst að flytja úr landi
+    | Nl_þgf HjSögnLhÞt_p3/tala FsAtv? so_2_þgf_þf_lhþt/tala/kyn FsAtv? Nl_nf/tala/pers/kyn FsAtv? # Öllum hefur verið tryggð heilbrigðisþjónusta
+    | Nl_þgf HjSögnSkuluMunu_p3/tala FsAtv? so_2_þgf_þf_lhþt/tala/kyn FsAtv? Nl_nf/tala/pers/kyn FsAtv? # Öllum skulu tryggðar lágmarkstekjur
+    | Nl_þgf HjSögnLhÞt_et_p3 FsAtv? so_1_þgf_lhþt FsAtv? # Stóru skipunum hefur verið stýrt í land
+    | Nl_þgf HjSögnSkuluMunu_et_p3 FsAtv? so_1_þgf_lhþt FsAtv? # Erfiðu spurningunum skal svarað strax
+
+AukafallsBotn/tala →
+    FsAtv?                             # (Mér hlýnaði) um hjartarætur
+    | Atviksliður? Nl_nf_þf/tala FsAtv?  # (Mér blöskraði) mjög vitleysan í Páli, (Mig þraut) örendið
 
 AukafallsBotn →
     FsAtv?                             # (Mér hlýnaði) um hjartarætur
-    | Atviksliður? Nl_nf_þf FsAtv?  # (Mér blöskraði) mjög vitleysan í Páli, (Mig þraut) örendið
+    | Atviksliður? Nl_nf_þf/tala FsAtv?  # (Mér blöskraði) mjög vitleysan í Páli, (Mig þraut) örendið
 
 MiðmyndarBotn →
     Nl_et_nf/kyn FsAtv? NhSögn FsAtv?   # (Mér sýndist) kötturinn [ekki] lepja mjólkina í gær
@@ -140,7 +167,7 @@ MiðmyndarBotn →
     | Nl/fall FsAtv? so_subj_nh/fall AukafallsBotn # (Mér virtist) ykkur [ekki] blöskra undir ræðunni
     | Nl_þgf FsAtv? so_subj_nh_mm MiðmyndarBotn # (Mér virtist) þeim [ekki] sýnast börnin vera falleg
 
-Nl_nf_þf → Nl_nf | Nl_þf
+Nl_nf_þf/tala → Nl_nf/tala | Nl_þf/tala
 
 #Andlag →
 #    SagnliðurNh Sagnfylling?    # 'að stjórna skipinu í land'
@@ -161,26 +188,25 @@ Sagnliður/tala/pers/kyn →
     Sögn_0/tala/pers/kyn    # Sögn með engu viðfangi: (veðrið) skánaði
     | Sögn_1/tala/pers/kyn  # Sögn með einu viðfangi: (Jón) sá köttinn
     | Sögn_2/tala/pers/kyn  # Sögn með tveimur viðföngum: (Kata) skrifaði Önnu bréf
-    | SagnliðurNh/tala/pers # (Barnið) fór fljótlega að borða matinn
 
 ÖfugurSagnliður/tala/pers/kyn →
     ÖfugSögn_0/tala/pers/kyn
     | ÖfugSögn_1/tala/pers/kyn
     | ÖfugSögn_2/tala/pers/kyn
-    | SagnliðurNh/tala/pers
 
-SagnliðurNh/tala/pers →
-    so/tala/pers FsAtv? nhm NhSögn
+OgSögn_0/tala/pers →
+    OgEða FsAtv? so_0/tala/pers
+    | ',' OgEða FsAtv? so_0/tala/pers FsAtv? ','?
 
 # Sögn með engu viðfangi ('lenti')
 # ('Maðurinn lenti')
 Sögn_0/tala/pers/kyn →
 
-    so_0/tala/pers                                      # Mennirnir lenda
+    so_0/tala/pers OgSögn_0/tala/pers* NhFylling/tala/kyn?               # Mennirnir lenda og fara [galvaskir að þvo bílinn]
 
-    | HjSögn/tala/pers FsAtv? so_0_sagnb                # Mennirnir hafa [ekki/eftir seinkun gærdagsins] lent
-    | HjSögnNh/tala/pers FsAtv? so_0_nh                 # Mennirnir munu [ekki/innan tíðar] lenda
-    | HjSögnLhÞt/tala/pers FsAtv? so_0_lhþt/tala/kyn    # Mennirnir eru [ekki/í millitíðinni] lentir
+    | HjSögn/tala/pers FsAtv? so_0_sagnb NhFylling/tala/kyn?             # Mennirnir hafa [ekki/eftir seinkun gærdagsins] lent
+    | HjSögnNh/tala/pers FsAtv? so_0_nh NhFylling/tala/kyn?              # Mennirnir munu [ekki/innan tíðar] lenda
+    | HjSögnLhÞt/tala/pers FsAtv? so_0_lhþt/tala/kyn NhFylling/tala/kyn? # Mennirnir eru [ekki/í millitíðinni] lentir
 
 #    | HjSögnLhÞt/tala/pers FsLiður* LoLiður_nf/tala/kyn   # Kettirnir eru [auk þess] mjög sætir og gífurlega krúttlegir
 
@@ -188,29 +214,33 @@ Sögn_0/tala/pers/kyn →
 # ('Maðurinn sem lenti')
 ÖfugSögn_0/tala/pers/kyn →
 
-    so_0/tala/pers                                      # Mennirnir sem lenda
+    so_0/tala/pers OgSögn_0/tala/pers* NhFylling/tala/kyn?               # (Mennirnir sem) lenda og fara galvaskir að þvo bílinn
 
-    | HjSögn/tala/pers FsAtv? so_0_sagnb                # Mennirnir sem hafa [ekki] lent
-    | so_0_sagnb HjSögn/tala/pers                       # Mennirnir sem lent hafa
+    | HjSögn/tala/pers FsAtv? so_0_sagnb NhFylling/tala/kyn?             # Mennirnir sem hafa [ekki] lent
+    | so_0_sagnb HjSögn/tala/pers NhFylling/tala/kyn?                    # Mennirnir sem nennt hafa [að þvo bílinn]
 
-    | HjSögnNh/tala/pers FsAtv? so_0_nh                 # Mennirnir sem munu [ekki] lenda
-    | so_0_nh HjSögnNh/tala/pers                        # Mennirnir sem lenda munu
+    | HjSögnNh/tala/pers FsAtv? so_0_nh NhFylling/tala/kyn?              # Mennirnir sem munu [ekki] lenda
+    | so_0_nh HjSögnNh/tala/pers NhFylling/tala/kyn?                     # Mennirnir sem lenda munu
 
-    | so_0_lhþt/tala/kyn HjSögnLhÞt/tala/pers           # Mennirnir sem lentir eru
-    | HjSögnLhÞt/tala/pers FsAtv? so_0_lhþt/tala/kyn    # Mennirnir sem eru [ekki] lentir
+    | so_0_lhþt/tala/kyn HjSögnLhÞt/tala/pers NhFylling/tala/kyn?        # Mennirnir sem lentir eru
+    | HjSögnLhÞt/tala/pers FsAtv? so_0_lhþt/tala/kyn NhFylling/tala/kyn? # Mennirnir sem eru [ekki] lentir
 
 #    | HjSögnLhÞt/tala/pers FsLiður* LoLiður_nf/tala/kyn   # Kettirnir sem eru [auk þess] [ekki] sætir
 #    | LoLiður_nf/tala/kyn FsAtv? HjSögnLhÞt/tala/pers          # Kettirnir sem sætir [ekki] eru
 
+OgSögn_1/fall/tala/pers →
+    OgEða FsAtv? so_1/fall/tala/pers
+    | ',' OgEða FsAtv? so_1/fall/tala/pers FsAtv? ','?
+
 # Sögn með einu viðfangi ('borðaði matinn')
 Sögn_1/tala/pers/kyn →
 
-    # (þf:)  Konurnar borðuðu [ekki] matinn
-    # (þgf:) Konurnar höfnuðu [ekki] Páli
+    # (þf:)  Konurnar borðuðu og meltu [ekki] matinn
+    # (þgf:) Konurnar afneituðu, og beinlínis höfnuðu, [ekki] Páli
     # (ef:)  Konurnar nutu [ekki] matarins
     # (nf:)  Konurnar voru [ekki] leikarar
 
-    so_1/fall/tala/pers FsAtv? Nl/fall
+    so_1/fall/tala/pers OgSögn_1/fall/tala/pers* FsAtv? Nl/fall
 
     | HjSögn/tala/pers FsAtv? so_1_þf_sagnb FsAtv? Nl_þf      # Konurnar hafa [ekki] borðað matinn
     | HjSögnNh/tala/pers FsAtv? so_1_þf_nh FsAtv? Nl_þf       # Konurnar munu [ekki] borða matinn
@@ -357,9 +387,26 @@ HjSögnLhÞt/tala/pers →
     | 'munu'/tala/pers FsAtv? 'hafa'_nh 'verða'_sagnb  # munu [ekki] hafa orðið farnar
     | 'skulu'/tala/pers FsAtv? 'hafa'_nh 'verða'_sagnb # skulu [ekki] hafa orðið farnar
 
+HjSögnLhÞt_p3_et →
+    HjSögnLhÞt_et_p3
+
+HjSögnLhÞt_p3_ft →
+    HjSögnLhÞt_ft_p3
+
 # 'Konan skal/mun gefin Páli'
 HjSögnSkuluMunu/tala/pers →
     'skulu'/tala/pers | 'munu'/tala/pers
+
+HjSögnSkuluMunu_p3_et →
+    HjSögnSkuluMunu_et_p3
+
+HjSögnSkuluMunu_p3_ft →
+    HjSögnSkuluMunu_ft_p3
+
+# Nafnháttafylling
+# 'galvaskir að þvo bílinn í gær'
+NhFylling/tala/kyn →
+    LoLiður_nf/tala/kyn? NhLiður
 
 # Nafnháttarliður
 # 'að lenda á flugvellinum'
@@ -368,13 +415,28 @@ NhLiður →
     nhm NhSögn FsFylling?
 
 NhSögn →
-    so_0_nh so_0_gm?                     # að kjósa þurfi
-    | so_1_þf_nh so_0_gm? FsAtv? Nl_þf   # að selja skyldi hestinn
-    | so_1_þgf_nh so_0_gm? FsAtv? Nl_þgf # að hætta eigi baráttunni
-    | so_1_ef_nh so_0_gm? FsAtv? Nl_ef   # að freistað geti gæfunnar
-    | so_1_nf_nh so_0_gm? FsAtv? Nl_nf   # að hrjósa muni hugur
-    | so_2_þgf_þf_nh so_0_gm? FsAtv? Nl_þgf Nl_þf
-    | so_2_þf_ef_nh so_0_gm? FsAtv? Nl_þf Nl_ef
+    so_0_nh so_0_gm_vh? OgNhSögn*           # að kjósa þurfi og telja
+    | so_1_þf_nh so_0_gm_vh? OgNhSögn_þf* FsAtv? Nl_þf   # að selja skyldi hestinn
+    | so_1_þgf_nh so_0_gm_vh? OgNhSögn_þgf* FsAtv? Nl_þgf # að hætta eigi baráttunni
+    | so_1_ef_nh so_0_gm_vh? OgNhSögn_ef* FsAtv? Nl_ef   # að freistað geti gæfunnar
+    | so_1_nf_nh so_0_gm_vh? OgNhSögn_nf* FsAtv? Nl_nf   # að hrjósa muni hugur
+    | so_2_þgf_þf_nh so_0_gm_vh? OgNhSögn_þgf_þf* FsAtv? Nl_þgf Nl_þf # að skrifa skuli og senda Karólínu bréfið
+    | so_2_þf_ef_nh so_0_gm_vh? OgNhSögn_þf_ef* FsAtv? Nl_þf Nl_ef # að spyrja og krefja Pál svars
+
+OgNhSögn →
+    OgEða so_0_nh so_0_gm_vh?
+OgNhSögn_þf →
+    OgEða so_1_þf_nh so_0_gm_vh?
+OgNhSögn_þgf →
+    OgEða so_1_þgf_nh so_0_gm_vh?
+OgNhSögn_ef →
+    OgEða so_1_ef_nh so_0_gm_vh?
+OgNhSögn_nf →
+    OgEða so_1_nf_nh so_0_gm_vh?
+OgNhSögn_þgf_þf →
+    OgEða so_2_þgf_þf_nh so_0_gm_vh?
+OgNhSögn_þf_ef →
+    OgEða so_2_þf_ef_nh so_0_gm_vh?
 
 # Nafnliðir og frumlög (nafnliðir í nefnifalli)
 
@@ -406,12 +468,19 @@ Nl/fall → Nl/fall/kyn
 
 Nl/fall/kyn → Nl/pers/fall/kyn
 
+Nl/pers/fall/kyn → Nl/tala/pers/fall/kyn
+
+#Nl/fall/tala → Nl/tala/pers/fall/kyn
+
+Nl_nf_et → Nl_nf_et/pers/kyn
+Nl_nf_ft → Nl_nf_ft/pers/kyn
+Nl_þf_et → Nl_þf_et/pers/kyn
+Nl_þf_ft → Nl_þf_ft/pers/kyn
+
 Nl_et_ef/kyn → Nl_ef_et/pers/kyn
 Nl_ft_ef/kyn → Nl_ef_ft/pers/kyn
 Nl_et_nf/kyn → Nl_nf_et/pers/kyn
 Nl_ft_nf/kyn → Nl_nf_ft/pers/kyn
-
-Nl/pers/fall/kyn → Nl/tala/pers/fall/kyn
 
 Nl_nf_et_p1/kyn → Nl_et_p1_nf/kyn
 Nl_nf_et_p2/kyn → Nl_et_p2_nf/kyn
@@ -419,6 +488,12 @@ Nl_nf_et_p3/kyn → Nl_et_p3_nf/kyn
 Nl_nf_ft_p1/kyn → Nl_ft_p1_nf/kyn
 Nl_nf_ft_p2/kyn → Nl_ft_p2_nf/kyn
 Nl_nf_ft_p3/kyn → Nl_ft_p3_nf/kyn
+Nl_þf_et_p1/kyn → Nl_et_p1_þf/kyn
+Nl_þf_et_p2/kyn → Nl_et_p2_þf/kyn
+Nl_þf_et_p3/kyn → Nl_et_p3_þf/kyn
+Nl_þf_ft_p1/kyn → Nl_ft_p1_þf/kyn
+Nl_þf_ft_p2/kyn → Nl_ft_p2_þf/kyn
+Nl_þf_ft_p3/kyn → Nl_ft_p3_þf/kyn
 Nl_ef_et_p1/kyn → Nl_et_p1_ef/kyn
 Nl_ef_et_p2/kyn → Nl_et_p2_ef/kyn
 Nl_ef_et_p3/kyn → Nl_et_p3_ef/kyn

@@ -24,7 +24,8 @@
       <p>Sláðu inn texta eða vefslóð til að greina, eða <a href="{{ url_for('test') }}">smelltu hér til keyra próf</a>:</p>
 
       <input type="text" name="url" id="url" tabindex="1"
-         maxlength=512 autofocus required class="text" value="{{ default_url }}"></input>
+         maxlength=512 autofocus required class="text" value="{{ default_url }}"
+         onClick="this.setSelectionRange(0, this.value.length)"></input>
 
       <div class="btn" id="url-ok" title="Greina" tabindex="2"
          onclick="analyzeUrl()"
@@ -42,8 +43,7 @@
          <span id="num-sent"></span> málsgreinum.
          Eindagreining tók <span id="tok-time"></span> sekúndur en
          málfræðigreining <span id="parse-time"></span> sekúndur.
-         Af <span id="num-long-sent"></span> málsgreinum með fleiri en
-         einni eind tókst að greina <span id="num-parsed-sent"></span> málsgreinar eða
+         Það tókst að greina <span id="num-parsed-sent"></span> málsgreinar eða
          <span id="num-parsed-ratio"></span>%. Margræðnistuðull var
          <span id="avg-ambig-factor"></span>.</p>
 
@@ -68,6 +68,12 @@
 
    function initMain(jQuery) {
       // Initialization
+      $("#url").keydown(function(ev) {
+         if (ev.which == 13) {
+            analyzeUrl();
+            ev.preventDefault();
+         }
+      });
    }
 
    $(document).ready(initMain);

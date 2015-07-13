@@ -164,7 +164,6 @@ def analyze():
 
     # Count sentences
     num_sent = 0
-    num_long_sent = 0
     num_parsed_sent = 0
     total_ambig = 0.0
     total_tokens = 0
@@ -180,10 +179,7 @@ def analyze():
             sent = []
             sent_begin = ix
         elif t[0] == TOK.S_END:
-            # Count 'long' sentences (ones longer than one token)
             slen = len(sent)
-            if slen > 1:
-                num_long_sent += 1
             # Parse the accumulated sentence
             err_index = None
             try:
@@ -220,7 +216,6 @@ def analyze():
         tok_num = len(toklist),
         parse_time = parse_time,
         num_sent = num_sent,
-        num_long_sent = num_long_sent,
         num_parsed_sent = num_parsed_sent,
         avg_ambig_factor = (total_ambig / total_tokens) if total_tokens > 0 else 1.0
     )

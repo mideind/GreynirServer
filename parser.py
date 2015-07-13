@@ -121,6 +121,7 @@ class Parser:
             if m is None:
                 # Not found in cache: do the actual match and cache it
                 self._matches[terminal] = m = self._token.matches(terminal)
+                # print("EarleyColumn.matches: terminal {0}, token {1}, value {2}".format(terminal, self._token, m))
             return m
 
         def matches_none(self, terminal):
@@ -379,7 +380,7 @@ class Parser:
         # Step through the Earley columns
         for i, Ei in enumerate(E):
             # The agenda set R is Ei[j..len(Ei)]
-            if not Ei:
+            if not Ei and not Q0:
                 # Parse options exhausted, nothing to do
                 raise ParseError("No parse available at token {0} ({1})"
                     .format(i, tokens[i-1]), i-1, E[i-1].info(self)) # Token index is 1-based

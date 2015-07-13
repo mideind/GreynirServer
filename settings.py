@@ -333,6 +333,16 @@ class Settings:
             raise ConfigError("Preposition should have a single case argument")
         Prepositions.add(a[0], a[1])
 
+    @staticmethod
+    def _handle_ambiguities(s):
+        """ Handle ambiguity hints in the settings section """
+        # Format: word worse1 worse2... < better
+        a = s.lower().split("<", maxsplit = 1)
+        if len(a) != 2:
+            raise ConfigError("Ambiguity hint missing less-than sign '<'")
+        # !!! TODO
+        # Ambiguities.add(...)
+
 
     def read(fname):
         """ Read configuration file """
@@ -343,7 +353,8 @@ class Settings:
             "abbreviations" : Settings._handle_abbreviations,
             "verb_objects" : Settings._handle_verb_objects,
             "verb_subjects" : Settings._handle_verb_subjects,
-            "prepositions" : Settings._handle_prepositions
+            "prepositions" : Settings._handle_prepositions,
+            "ambiguities" : Settings._handle_ambiguities
         }
         handler = None # Current section handler
 

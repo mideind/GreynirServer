@@ -181,7 +181,7 @@ class LiteralTerminal(Terminal):
 
     def matches_first(self, t_kind, t_val):
         """ A literal terminal matches a token if the token text is identical to the literal """
-        #print("LiteralTerminal.matches: parts[0] is '{0}', t_val is '{1}'"
+        #print("LiteralTerminal.matches_first: parts[0] is '{0}', t_val is '{1}'"
         #    .format(self._parts[0], t_val))
         return self._parts[0] == t_val
 

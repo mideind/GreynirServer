@@ -92,6 +92,7 @@ class BIN_Token(Token):
         "sb" : "SB", # Sterk beyging
         "nh" : "NH", # Nafnháttur
         "lh" : "LH", # Lýsingarháttur (nútíðar)
+        "vh" : "VH", # Viðtengingarháttur
         "nt" : "NT", # Nútíð
         "þt" : "ÞT", # Nútíð
         "sagnb" : "SAGNB", # Sagnbeyging ('vera' -> 'verið')
@@ -117,23 +118,29 @@ class BIN_Token(Token):
                 if "NH" not in form:
                     # Nominative mode (nafnháttur)
                     return False
-            elif "OP" not in form:
-                # !!! BIN seems to be not 100% consistent in the OP annotation
-                return False
+            #elif "OP" not in form:
+            #    # !!! BIN seems to be not 100% consistent in the OP annotation
+            #    return False
             if terminal.has_variant("mm"):
                 # Central form of verb ('miðmynd')
                 return "MM" in form
+            if terminal.has_variant("et") and not "ET" in form:
+                # Require singular
+                return False
+            if terminal.has_variant("ft") and not "FT" in form:
+                # Require plural
+                return False
             # Make sure that the subject case (last variant) matches the terminal
             return VerbSubjects.VERBS.get(verb, "") == terminal.variant(-1)
-        # print("verb_matches {0} terminal {1} form {2}".format(verb, terminal, form))
         if terminal.has_variant("et") and "FT" in form:
             # Can't use plural verb if singular terminal
             return False
         if terminal.has_variant("ft") and "ET" in form:
             # Can't use singular verb if plural terminal
             return False
+        # print("verb_matches {0} terminal {1} form {2}".format(verb, terminal, form))
         # Check that person (1st, 2nd, 3rd) and other variant requirements match
-        for v in [ "p1", "p2", "p3", "nh", "sagnb", "lhþt", "lh", "nt", "kk", "kvk", "hk", "sb", "gm", "mm" ]:
+        for v in [ "p1", "p2", "p3", "nh", "vh", "lh", "sagnb", "lhþt", "nt", "kk", "kvk", "hk", "sb", "gm", "mm" ]:
             if terminal.has_variant(v) and not BIN_Token._VARIANT[v] in form:
                 return False
         # Check restrictive variants, i.e. we don't accept meanings
@@ -302,6 +309,9 @@ class BIN_Token(Token):
         if t0 == TOK.DATE:
             return terminal.startswith("dags")
 
+        if t0 == TOK.ORDINAL:
+            return terminal.startswith("raðnr")
+
         def meaning_match(m):
             """ Check for a match between a terminal and a single potential meaning
                 of the word """
@@ -316,7 +326,8 @@ class BIN_Token(Token):
                 # match more than one argument number category.
                 return self.verb_matches(m[0], terminal, m[5])
             if terminal.startswith("fs") and terminal.num_variants() > 0:
-                return self.prep_matches(m[0], terminal.variant(0))
+                return self.prep_matches(t1, terminal.variant(0))
+                # return self.prep_matches(m[0], terminal.variant(0))
             if terminal.startswith("no"):
                 # Check noun
                 if BIN_Token._KIND[m[2]] != "no":
@@ -370,7 +381,8 @@ class BIN_Parser(Parser):
 
     # The token types that the parser currently knows how to handle
     _UNDERSTOOD = { TOK.WORD, TOK.PERSON, TOK.DATE,
-        TOK.CURRENCY, TOK.AMOUNT, TOK.NUMBER, TOK.PERCENT }
+        TOK.CURRENCY, TOK.AMOUNT, TOK.NUMBER, TOK.PERCENT,
+        TOK.ORDINAL }
 
     def __init__(self):
         """ Load the shared BIN grammar if not already there, then initialize
@@ -394,14 +406,12 @@ class BIN_Parser(Parser):
                 return True
             if t[0] == TOK.PUNCTUATION:
                 # A limited number of punctuation symbols is currently understood
-                return t[1] in ".?," # „“
+                return t[1] in ".?,„“"
             return False
 
         bt = [BIN_Token(t) for t in tokens if is_understood(t)]
         # Count the tokens, excluding punctuation
         cw = sum(1 if t.t[0] != TOK.PUNCTUATION else 0 for t in bt)
-        if cw <= 1:
-            raise ParseError("A valid sentence must have at least two words")
         # After wrapping, call the parent class go()
         return Parser.go(self, bt)
 

@@ -273,9 +273,8 @@ function populateResult(json) {
    $("#parse-time").text(json.result.parse_time.toFixed(2));
    $("#tok-num").text(json.result.tok_num);
    $("#num-sent").text(json.result.num_sent);
-   $("#num-long-sent").text(json.result.num_long_sent);
    $("#num-parsed-sent").text(json.result.num_parsed_sent);
-   $("#num-parsed-ratio").text((json.result.num_parsed_sent / json.result.num_long_sent * 100).toFixed(1));
+   $("#num-parsed-ratio").text((json.result.num_parsed_sent / json.result.num_sent * 100).toFixed(1));
    $("#avg-ambig-factor").text(json.result.avg_ambig_factor.toFixed(2));
    $("p.tok-info").css("visibility", "visible");
    var out = $("div#result");
