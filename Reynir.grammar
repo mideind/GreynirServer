@@ -146,25 +146,24 @@ SetningSo →
 # 'Helmingi ungmenna finnst skólinn skemmtilegur'
 
 SetningAukafall →
-    Nl/fall Atviksliður? so_subj/tala/fall AukafallsBotn/tala
+    Nl/fall Atviksliður? so_subj/tala/fall AukafallsBotn/tala? FsAtv?
     | Nl_þgf so_subj_mm FsAtv? MiðmyndarBotn  # Miðmynd sagna: Mér áskotnaðist, mér fyrirgefst, mér gremst...
-    | Nl_þgf HjSögnLhÞt_et_p3 FsAtv? LoLiður_nf_et_hk FsAtv? NhLiður # Öllum er frjálst að flytja úr landi
+    | Nl_þgf HjSögnLhÞt_et_p3 FsAtv? LoLiður_nf_et_hk FsAtv? NhLiður? # Öllum er frjálst að flytja úr landi
     | Nl_þgf HjSögnLhÞtSM_p3/tala FsAtv? so_2_þgf_þf_lhþt/tala/kyn FsAtv? Nl_nf/tala/pers/kyn FsAtv? # Öllum hefur verið/skal/mun tryggð heilbrigðisþjónusta
-    | Nl_þgf HjSögnLhÞtSM_et_p3 FsAtv? so_1_þgf_lhþt FsAtv? # Stóru skipunum hefur verið/skal/mun stýrt í land
+    | Nl_þgf HjSögnLhÞtSM_et_p3 FsAtv? so_1_þgf_sagnb FsAtv? # Stóru skipunum hefur verið/skal/mun stýrt í land
 
 AukafallsBotn/tala →
-    FsAtv?                               # (Mér hlýnaði) um hjartarætur
-    | Atviksliður? Nl_nf_þf/tala FsAtv?  # (Mér blöskraði) mjög vitleysan í Páli, (Mig þraut) örendið
+    Atviksliður? Nl_nf_þf/tala  # (Mér blöskraði) mjög vitleysan (í Páli), (Mig þraut) örendið
 
 AukafallsBotn →
-    FsAtv?                               # (Mér hlýnaði) um hjartarætur
-    | Atviksliður? Nl_nf_þf/tala FsAtv?  # (Mér blöskraði) mjög vitleysan í Páli, (Mig þraut) örendið
+    Atviksliður? Nl_nf_þf/tala  # (Mér blöskraði) mjög vitleysan (í Páli), (Mig þraut) örendið
 
 MiðmyndarBotn →
-    Nl_et_nf/kyn FsAtv? NhSögn FsAtv?    # (Mér sýndist) kötturinn [ekki] lepja mjólkina í gær
-    | Nl_ft_nf/kyn FsAtv? NhSögn FsAtv?  # (Mér fannst) börnin [ekki] vera falleg í sólinni
-    | Nl/fall FsAtv? so_subj_nh/fall AukafallsBotn # (Mér virtist) ykkur [ekki] blöskra undir ræðunni
+    Nl_nf FsAtv? NhSögn FsAtv?    # (Mér sýndist) kötturinn [ekki] lepja mjólkina í gær
+    | Nl_nf/tala/kyn HjSögnLhÞt_et_p3 LoLiður_nf/tala/kyn FsAtv? # (Mér virtist) kettirnir vera fallegir
+    | Nl/fall FsAtv? so_subj_nh/fall AukafallsBotn? FsAtv? # (Mér virtist) ykkur [ekki] blöskra undir ræðunni
     | Nl_þgf FsAtv? so_subj_nh_mm MiðmyndarBotn # (Mér virtist) þeim [ekki] sýnast börnin vera falleg
+    | NhLiður FsAtv? # (Mér fyrirgefst) að fara út
 
 Nl_nf_þf/tala → Nl_nf/tala | Nl_þf/tala
 
@@ -199,8 +198,8 @@ Sagnliður/tala/pers/kyn →
 
 SagnliðurMeðF/tala/pers/kyn →
     SögnMeðF_0/tala/pers/kyn    # Sögn með engu viðfangi: (Í dag) skánaði veðrið
-    #| SögnMeðF_1/tala/pers/kyn  # Sögn með einu viðfangi: (Í dag) sá Jón köttinn
-    #| SögnMeðF_2/tala/pers/kyn  # Sögn með tveimur viðföngum: (Í dag) skrifaði Kata Önnu bréf
+    | SögnMeðF_1/tala/pers/kyn  # Sögn með einu viðfangi: (Í dag) sá Jón köttinn
+    | SögnMeðF_2/tala/pers/kyn  # Sögn með tveimur viðföngum: (Í dag) skrifaði Kata Önnu bréf
 
 OgSögn_0/tala/pers →
     OgEða FsAtv? so_0/tala/pers
@@ -314,6 +313,32 @@ Sögn_1/tala/pers/kyn →
     | HjSögnLhÞtSM/tala/pers FsAtv? so_2_þf_ef_lhþt/tala/kyn FsAtv? Nl_ef   # Konan sem hafði verið/skal/mun spurð álits
     | Nl_ef HjSögnLhÞtSM/tala/pers FsAtv? so_2_þf_ef_lhþt/tala/kyn          # Konan sem álits hafði verið/skal/mun spurð (?)
 
+SögnMeðF_1/tala/pers/kyn →
+
+    # (þf:)  (Í dag) borðuðu konurnar [ekki] matinn
+    # (þgf:) (Í dag) afneituðu og höfnuðu konurnar [ekki] Páli
+    # (ef:)  (Í gærkvöldi) nutu konurnar [ekki] matarins
+    # (nf:)  (Í fyrra) voru konurnar [ekki] leikarar
+
+    so_1/fall/tala/pers OgSögn_1/fall/tala/pers* Nl_nf/tala/pers/kyn FsAtv? Nl/fall
+
+    | HjSögn/tala/pers Nl_nf/tala/pers/kyn FsAtv? so_1_þf_sagnb FsAtv? Nl_þf      # (Í dag) hafa konurnar [ekki] borðað matinn
+    | HjSögnNh/tala/pers Nl_nf/tala/pers/kyn FsAtv? so_1_þf_nh FsAtv? Nl_þf       # (Í dag) munu konurnar [ekki] borða matinn
+
+    | HjSögn/tala/pers Nl_nf/tala/pers/kyn FsAtv? so_1_þgf_sagnb FsAtv? Nl_þgf    # (Í dag) hafa konurnar [ekki] hafnað Páli
+    | HjSögnNh/tala/pers Nl_nf/tala/pers/kyn FsAtv? so_1_þgf_nh FsAtv? Nl_þgf     # (Í dag) munu konurnar [ekki] hafna Páli
+
+    | HjSögn/tala/pers Nl_nf/tala/pers/kyn FsAtv? so_1_ef_sagnb FsAtv? Nl_ef      # (Í dag) hafa konurnar [ekki] notið matarins
+    | HjSögnNh/tala/pers Nl_nf/tala/pers/kyn FsAtv? so_1_ef_nh FsAtv? Nl_ef       # (Í dag) munu konurnar [ekki] njóta matarins
+
+    | HjSögn/tala/pers Nl_nf/tala/pers/kyn FsAtv? so_1_nf_sagnb FsAtv? Nl_nf      # (Í fyrra) höfðu konurnar [ekki] verið leikarar
+    | HjSögnNh/tala/pers Nl_nf/tala/pers/kyn FsAtv? so_1_nf_nh FsAtv? Nl_nf       # (Í dag) munu konurnar [ekki] vera leikarar
+
+    | HjSögnLhÞtSM/tala/pers Nl_nf/tala/pers/kyn FsAtv? so_2_þgf_þf_lhþt/tala/kyn FsAtv? Nl_þgf # !!! (Í dag) hefur konan verið/skal/mun gefin Páli
+    | HjSögnLhÞtSM/tala/pers Nl_nf/tala/pers/kyn FsAtv? so_2_þf_ef_lhþt/tala/kyn FsAtv? Nl_ef   # !!! (Í dag) hefur konan verið/skal/mun spurð álits
+
+    | so_mm FsAtv? Nl_þgf                         # takist [ekki] Seðlabankanum
+
 # Sögn með tveimur viðföngum ('gaf Páli gjöfina')
 Sögn_2/tala/pers/kyn →
 
@@ -356,6 +381,20 @@ Sögn_2/tala/pers/kyn →
         Nl_þf FsAtv? Nl_ef                           # Konurnar sem munu [ekki] spyrja Pál spurningarinnar
     | so_2_þf_ef_nh HjSögnNh/tala/pers 
         Nl_þf FsAtv? Nl_ef                           # Konurnar sem spyrja munu Pál spurningarinnar
+
+SögnMeðF_2/tala/pers/kyn →
+
+    # Þágufall + þolfall ('að gefa einhverjum kött')
+
+    so_2_þgf_þf/tala/pers Nl_nf/tala/pers/kyn FsAtv? Nl_þgf FsAtv? Nl_þf    # (Í dag) gáfu konurnar [bersýnilega] Páli [ekki] gjöfina
+    | HjSögn/tala/pers Nl_nf/tala/pers/kyn FsAtv? so_2_þgf_þf_sagnb Nl_þgf FsAtv? Nl_þf  # (Í dag) höfðu konurnar [ekki] gefið Páli gjöfina
+    | HjSögnNh/tala/pers Nl_nf/tala/pers/kyn FsAtv? so_2_þgf_þf_nh Nl_þgf FsAtv? Nl_þf  # (Á morgun) munu konurnar [ekki] gefa Páli gjöfina
+
+    # Þolfall + eignarfall ('að spyrja einhvern einhvers')
+
+    | so_2_þf_ef/tala/pers Nl_nf/tala/pers/kyn FsAtv? Nl_þf FsAtv? Nl_ef    # (Í gær) kröfðu konurnar Pál [ekki] svars
+    | HjSögn/tala/pers Nl_nf/tala/pers/kyn FsAtv? so_2_þf_ef_sagnb Nl_þf FsAtv? Nl_ef  # (Í morgun) höfðu konurnar [ekki] krafið Pál svara
+    | HjSögnNh/tala/pers Nl_nf/tala/pers/kyn FsAtv? so_2_þf_ef_nh Nl_þf FsAtv? Nl_ef  # (Á morgun) munu konurnar [ekki] krefja Pál svara
 
 # Hjálparsagnasambönd: vera, hafa, geta, skulu, munu...
 # Sögnin stendur í sagnbeygingu (farið/gert/viljað/borðað...)
@@ -483,10 +522,13 @@ Nl_nf_ft → Nl_nf_ft/pers/kyn
 Nl_þf_et → Nl_þf_et/pers/kyn
 Nl_þf_ft → Nl_þf_ft/pers/kyn
 
+Nl_nf_et/kyn → Nl_nf_et/pers/kyn
+Nl_nf_ft/kyn → Nl_nf_ft/pers/kyn
+
 Nl_et_ef/kyn → Nl_ef_et/pers/kyn
 Nl_ft_ef/kyn → Nl_ef_ft/pers/kyn
-Nl_et_nf/kyn → Nl_nf_et/pers/kyn
-Nl_ft_nf/kyn → Nl_nf_ft/pers/kyn
+#Nl_et_nf/kyn → Nl_nf_et/pers/kyn
+#Nl_ft_nf/kyn → Nl_nf_ft/pers/kyn
 
 Nl_nf_et_p1/kyn → Nl_et_p1_nf/kyn
 Nl_nf_et_p2/kyn → Nl_et_p2_nf/kyn

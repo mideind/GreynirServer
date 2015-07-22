@@ -326,7 +326,7 @@ class BIN_Token(Token):
                 # match more than one argument number category.
                 return self.verb_matches(m[0], terminal, m[5])
             if terminal.startswith("fs") and terminal.num_variants() > 0:
-                return self.prep_matches(t1, terminal.variant(0))
+                return self.prep_matches(t1.lower(), terminal.variant(0))
                 # return self.prep_matches(m[0], terminal.variant(0))
             if terminal.startswith("no"):
                 # Check noun

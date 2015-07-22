@@ -4,8 +4,8 @@
 
 *Reynir* is an experimental project that aims to extract processable information from
 Icelandic text on the web. It scrapes chunks of text from web pages, tokenizes them,
-parses them and analyzes the resulting parse trees to obtain statements of fact
-and relations between stated facts.
+parses them according to a context-free grammar and analyzes the resulting parse
+trees to obtain statements of fact and relations between stated facts.
 
 Reynir will be most effective for text that is highly factual, i.e. has a relatively high
 ratio of concrete concepts such as numbers, amounts, dates, person and entity names,
@@ -13,9 +13,14 @@ etc.
 
 Reynir is innovative in its support for the complex grammar of Icelandic - using
 cases, genders and number (singular/plural) applied respectively to nouns,
-verbs, adjectives and prepositions to disambiguate parses. Its Earley parser
+verbs, adjectives and prepositions to guide and disambiguate parses. Its Earley parser
 is fast and compact enough to make real-time while-you-wait analysis of
 web pages, as well as bulk processing, feasible.
+
+Reynir's goal is to "understand" text to a usable extent by parsing it into
+coherent, structured trees, so that the result can be further acted upon.
+Detailed Part-Of-Speech (POS) tagging is thus not a primary goal of the project,
+although a successful parse depends on adequate POS attribution.
 
 If successful in its initial stages, Reynir may in due course be expanded, for instance:
 
@@ -31,7 +36,7 @@ front-end which has small amounts of JavaScript.
 Reynir works in stages, roughly as follows:
 
 1. *Web scraper*, built on [BeautifulSoup](http://www.crummy.com/software/BeautifulSoup/)
-2. *Tokenizer*, relying on the BÍN database of Icelandic word forms
+2. *Tokenizer*, relying on the BÍN database of Icelandic word forms for initial POS tagging
 3. *Parser*, using an [Earley algorithm](http://en.wikipedia.org/wiki/Earley_parser) to
   parse text according to an unconstrained context-free grammar that may be ambiguous
 4. *Parse forest analyzer* and information extractor
@@ -40,9 +45,10 @@ Reynir contains a small web server that allows the user to type in any URL
 and have Reynir scrape it, tokenize it and display the result as a web page. The server runs
 on the [Flask](http://flask.pocoo.org/) framework.
 
-Reynir uses the official BÍN ([Beygingarlýsing íslensks nútímamáls](http://bin.arnastofnun.is)) database of
-Icelandic word forms to identify and tokenize words, and find their grammatical roots and forms. The database
-has been downloaded from the official BÍN website and stored in PostgreSQL.
+Reynir uses the official BÍN ([Beygingarlýsing íslensks nútímamáls](http://bin.arnastofnun.is))
+database of Icelandic word forms to identify and tokenize words, and find their grammatical
+roots and forms. The database has been downloaded from the official BÍN website and stored
+in PostgreSQL.
 
 The tokenizer divides text chunks into sentences and recognizes entities such as dates, numbers,
 amounts and person names, as well as common abbreviations and punctuation.
@@ -65,13 +71,14 @@ fails, it identifies the token at which no parse was available.
 ## File details
 
 * `main.py` : Web server
-* `settings.py` : Management of global settings and configuration data
+* `settings.py` : Management of global settings and configuration data, obtained from `Reynir.conf`
 * `tokenizer.py` : Tokenizer, designed as a pipeline of Python generators
 * `grammar.py` : Parsing of `.grammar` files, grammar constructs
 * `parser.py` : Earley parser generic base classes
 * `binparser.py` : Parser related subclasses for BIN (Icelandic word) tokens
 * `ptest.py` : Parser test module
 * `Reynir.conf` : Editable configuration file for the tokenizer and parser
+* `Verbs.conf` : Editable lexicon of verbs, included in `Reynir.conf`
 * `Reynir.grammar` : A context-free grammar specification for Icelandic
   written in BNF with extensions
   for repeating constructs (`*`, `+`) and optional constructs (`?`)
@@ -80,4 +87,4 @@ fails, it identifies the token at which no parse was available.
 
 The intent is to release Reynir under a GNU GPL license once the code stabilizes. However, while
 Reynir is still in early stages of development the code is *copyright (C) 2015 by Vilhjalmur
-Thorsteinsson*, all rights reserved.
+Thorsteinsson*, all rights reserved. Please contact the author for further information.
