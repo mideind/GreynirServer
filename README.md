@@ -18,7 +18,7 @@ is fast and compact enough to make real-time while-you-wait analysis of
 web pages, as well as bulk processing, feasible.
 
 Reynir's goal is to "understand" text to a usable extent by parsing it into
-coherent, structured trees, so that the result can be further acted upon.
+structured and regular trees, so that the result can be further acted upon.
 Detailed Part-Of-Speech (POS) tagging is thus not a primary goal of the project,
 although a successful parse depends on adequate POS attribution.
 

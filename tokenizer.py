@@ -13,8 +13,8 @@
 
     This module is written in Python 3 for Python 3.4
 
-    The function parse_text() consumes a text string and
-    yields a generator of tokens. Each token is a tuple,
+    The function tokenize() consumes a text string and
+    returns a generator of tokens. Each token is a tuple,
     typically having the form (type, word, meaning),
     where type is one of the constants specified in the
     TOK class, word is the original word found in the
@@ -59,16 +59,16 @@ CLOCK_ABBREV = "kl"
 
 # Punctuation types: left, center or right of word
 
-TP_LEFT = 1
-TP_CENTER = 2
-TP_RIGHT = 3
-TP_NONE = 4 # No whitespace
+TP_LEFT = 1   # Whitespace to the left
+TP_CENTER = 2 # Whitespace to the left and right
+TP_RIGHT = 3  # Whitespace to the right
+TP_NONE = 4   # No whitespace
 
 # Numeric digits
 
 DIGITS = "0123456789"
 
-# Set of all cases
+# Set of all cases (nominative, accusative, dative, possessive)
 
 ALL_CASES = { "nf", "þf", "þgf", "ef" }
 

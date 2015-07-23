@@ -22,8 +22,24 @@
 # with corresponding substitutions being made in the right-hand-side
 # productions.
 #
-# A syntax highlighting specification for .grammar files has been
-# written for the Sublime Text editor. Its use is highly recommended.
+# Terminal names take the form category_variant1_variant2...,
+# where the category is:
+# * no for nouns (nafnorð)
+# * so for verbs (sagnorð)
+# * lo for adjectives (lýsingarorð)
+# * fs for prepositions (forsetningar)
+# * st for connecting words (samtengingar)
+# * fn for pronouns (fornöfn)
+# * ao for adverbs (atviksorð)
+# * töl for number words (töluorð)
+#
+# The terminal names are matched against POS tags from the BIN
+# database in the module binparser.py.
+#
+# A syntax highlighting specification for .grammar files,
+# grammar.YAML-tmLanguage, has been written for the Sublime Text
+# editor. It can be found under the resources folder and its
+# use is highly recommended.
 
 
 # VARIANT DEFINITIONS
@@ -31,7 +47,7 @@
 # Gender (m, f, n) variant
 /kyn = kk kvk hk
 
-# Case (nom, dat, acc, poss) variant
+# Case (nom, acc, dat, poss) variant
 /fall = nf þf þgf ef
 
 # Number (singular/plural) variant
@@ -73,6 +89,8 @@ Samtenging →
     | 'svo' 'sem'
     | 'þannig' 'að'
     | 'og' 'að'
+    | 'það' 'er'
+    | 'hvað'
 
 Yfirsetning →
     Setning
@@ -147,7 +165,7 @@ SetningSo →
 
 SetningAukafall →
     Nl/fall Atviksliður? so_subj/tala/fall AukafallsBotn/tala? FsAtv?
-    | Nl_þgf so_subj_mm FsAtv? MiðmyndarBotn  # Miðmynd sagna: Mér áskotnaðist, mér fyrirgefst, mér gremst...
+    | Nl_þgf so_0_mm FsAtv? MiðmyndarBotn  # Miðmynd sagna: Mér áskotnaðist, mér fyrirgefst, mér gremst...
     | Nl_þgf HjSögnLhÞt_et_p3 FsAtv? LoLiður_nf_et_hk FsAtv? NhLiður? # Öllum er frjálst að flytja úr landi
     | Nl_þgf HjSögnLhÞtSM_p3/tala FsAtv? so_2_þgf_þf_lhþt/tala/kyn FsAtv? Nl_nf/tala/pers/kyn FsAtv? # Öllum hefur verið/skal/mun tryggð heilbrigðisþjónusta
     | Nl_þgf HjSögnLhÞtSM_et_p3 FsAtv? so_1_þgf_sagnb FsAtv? # Stóru skipunum hefur verið/skal/mun stýrt í land
@@ -160,16 +178,13 @@ AukafallsBotn →
 
 MiðmyndarBotn →
     Nl_nf FsAtv? NhSögn FsAtv?    # (Mér sýndist) kötturinn [ekki] lepja mjólkina í gær
-    | Nl_nf/tala/kyn HjSögnLhÞt_et_p3 LoLiður_nf/tala/kyn FsAtv? # (Mér virtist) kettirnir vera fallegir
+    | Nl_nf/tala/pers/kyn HjSögnVera LoLiður_nf/tala/kyn FsAtv? # (Mér virtist) kettirnir vera fallegir
     | Nl/fall FsAtv? so_subj_nh/fall AukafallsBotn? FsAtv? # (Mér virtist) ykkur [ekki] blöskra undir ræðunni
     | Nl_þgf FsAtv? so_subj_nh_mm MiðmyndarBotn # (Mér virtist) þeim [ekki] sýnast börnin vera falleg
     | NhLiður FsAtv? # (Mér fyrirgefst) að fara út
+    | 'að' Yfirsetning # (Mér virðist) að allt sé að fara fjandans til
 
 Nl_nf_þf/tala → Nl_nf/tala | Nl_þf/tala
-
-#Andlag →
-#    SagnliðurNh Sagnfylling?    # 'að stjórna skipinu í land'
-#    | Nl_nf                  # 'stuttur frestur'
 
 # Setningar án frumlags (notaðar t.d. í tengisetningum eftir 'sem').
 # Í setningum án frumlags getur sagnliðurinn verið "öfugur",
@@ -412,6 +427,19 @@ HjSögnNh/tala/pers →
     | 'skulu'/tala/pers     # skulu fara
     | 'munu'/tala/pers      # munu fara
 
+# Vera/verða í nafnhætti ('(Mér sýndist kötturinn) vera (gulbrúnn)')
+HjSögnVera →
+    'vera'_nh
+    | 'vilja'_nh 'vera'_nh              # (Mér sýndist Anna) vilja vera (ein)
+    | 'hafa'_nh 'vera'_sagnb            # (Mér sýndist Anna) hafa verið (valin)
+    | 'geta'_nh 'hafa'_nh? 'vera'_sagnb # (Mér sýndist Anna) geta [hafa] verið (farin)
+    | 'vilja'_nh 'hafa'_nh 'vera'_sagnb # (Mér sýndist Anna) vilja hafa verið (ein)
+    | 'verða'_nh
+    | 'vilja'_nh 'verða'_nh
+    | 'hafa'_nh 'verða'_sagnb
+    | 'geta'_nh 'hafa'_nh? 'verða'_sagnb
+    | 'vilja'_nh 'hafa'_nh 'verða'_sagnb
+
 # Lýsingarháttur þátíðar: vera farinn, hafa verið farinn, skal vera farinn, mun vera farinn
 HjSögnLhÞt/tala/pers →
     'vera'/tala/pers                            # eru farnar
@@ -492,6 +520,8 @@ Einkunn/tala/fall/kyn →
     | so_lhþt_sb/tala/fall/kyn  # bókfært (virði)
     | LoLiður/tala/fall/kyn     # glæsileg (kona)
 
+# Eintala
+
 NlKjarni_et/fall/kyn →
 
     # 'fullorðni sprúðlandi sonur Íslands'
@@ -505,6 +535,8 @@ NlKjarni_et/fall/kyn →
     # Eignarfallsliður á undan: 'Íslands fullorðni sprúðlandi sonurinn sterki'
     | EfLiður Einkunn_et/fall/kyn* Skst? Fyrirbæri/fall/kyn LoLiður_et/fall/kyn* 
 
+# Fleirtala
+
 NlKjarni_ft/fall/kyn →
     Einkunn_ft/fall/kyn* Skst? no_ft/fall/kyn LoLiður_ft/fall/kyn* EfLiður?
     | EfLiður Einkunn_ft/fall/kyn* Skst? no_ft/fall/kyn LoLiður_ft/fall/kyn* 
@@ -515,20 +547,15 @@ Nl/fall/kyn → Nl/pers/fall/kyn
 
 Nl/pers/fall/kyn → Nl/tala/pers/fall/kyn
 
-#Nl/fall/tala → Nl/tala/pers/fall/kyn
+# Umraðanir
 
 Nl_nf_et → Nl_nf_et/pers/kyn
 Nl_nf_ft → Nl_nf_ft/pers/kyn
 Nl_þf_et → Nl_þf_et/pers/kyn
 Nl_þf_ft → Nl_þf_ft/pers/kyn
 
-Nl_nf_et/kyn → Nl_nf_et/pers/kyn
-Nl_nf_ft/kyn → Nl_nf_ft/pers/kyn
-
 Nl_et_ef/kyn → Nl_ef_et/pers/kyn
 Nl_ft_ef/kyn → Nl_ef_ft/pers/kyn
-#Nl_et_nf/kyn → Nl_nf_et/pers/kyn
-#Nl_ft_nf/kyn → Nl_nf_ft/pers/kyn
 
 Nl_nf_et_p1/kyn → Nl_et_p1_nf/kyn
 Nl_nf_et_p2/kyn → Nl_et_p2_nf/kyn
@@ -605,8 +632,10 @@ Fyrirbæri/fall/kyn → no_et/fall/kyn | Manneskja/fall/kyn
 # [stórvesírinn] Davíð Oddsson [, seðlabankastjóra]
 Manneskja/fall/kyn → no_et/fall? person/fall/kyn Titill/fall?
 
-# 'Már Guðmundsson, seðlabankastjóri'
-Titill/fall → ','? no_et/fall
+# 'Már Guðmundsson, bankastjóri [Seðlabanka Íslands]'
+Titill/fall →
+    ','? no_et/fall                              # [Jón], formaður [félagsins]
+    | ',' no_et/fall EfLiður? FsRuna? ','  # [Jón], formaður námsmannafélagsins í Árósum,
 
 Nl_ft_p3/fall/kyn →
 
@@ -618,15 +647,15 @@ Nl_ft_p3/fall/kyn →
     | Undirsetning_ft_p3/fall/kyn
 
 # Fleirtölumyndir 3. persónu eru í BÍN undir 'sá'
-#Nl_ft_p3_nf_kk → 'hann'_ft_nf
-#Nl_ft_p3_þf_kk → 'hann'_ft_þf
-#Nl_ft_p3_þgf_kk → 'hann'_ft_þgf
-#Nl_ft_p3_ef_kk → 'hann'_ft_ef
+# Nl_ft_p3_nf_kk → 'hann'_ft_nf
+# Nl_ft_p3_þf_kk → 'hann'_ft_þf
+# Nl_ft_p3_þgf_kk → 'hann'_ft_þgf
+# Nl_ft_p3_ef_kk → 'hann'_ft_ef
 
-#Nl_ft_p3_nf_kvk → 'hún'_ft_nf
-#Nl_ft_p3_þf_kvk → 'hún'_ft_þf
-#Nl_ft_p3_þgf_kvk → 'hún'_ft_þgf
-#Nl_ft_p3_ef_kvk → 'hún'_ft_ef
+# Nl_ft_p3_nf_kvk → 'hún'_ft_nf
+# Nl_ft_p3_þf_kvk → 'hún'_ft_þf
+# Nl_ft_p3_þgf_kvk → 'hún'_ft_þgf
+# Nl_ft_p3_ef_kvk → 'hún'_ft_ef
 
 Nl_ft_p3_nf_hk →
     Nl_nf SamtengingNl_nf+ # Blandað kyn verður að hvorugkyni fleirtölu
@@ -650,14 +679,24 @@ Tengisetning/tala/pers/kyn →
     | SetningÁnF/tala/pers/kyn  # (Maðurinn sem) kyssti konuna í gær / (Maðurinn sem) var fallegur
 
 # Eignarfallsliður á eftir nafnlið
-# ('formaður félags eldri borgara')
-EfLiður → EfLiður/kyn
-
+# ('formaður Gimlis, félags eldri borgara')
+# ('amma Jóns, föður Bjarna')
 # karlsins langa, konunnar löngu, barnsins langa
+# stóra karlsins, stóru konunnar, stóra barnsins
 # karlanna löngu, kvennanna löngu, barnanna löngu
-EfLiður/kyn →
-    Nl_et_ef/kyn LoLiður_et_ef/kyn*
-    | Nl_ft_ef/kyn LoLiður_ft_ef/kyn*
+
+EfLiður →
+    EfLiðurStakur
+    | EfLiðurStakur KommaEfLiður+ ','?                # Jóns, föður Bjarna sterka
+
+EfLiðurStakur →
+    Nl_et_ef/kyn LoLiður_et_ef/kyn*         # Karlsins langa
+    | LoLiður_et_ef/kyn* Nl_et_ef/kyn       # Stóru konunnar
+    | Nl_ft_ef/kyn LoLiður_ft_ef/kyn*       # Karlanna löngu
+    | LoLiður_ft_ef/kyn* Nl_ft_ef/kyn       # Stóru kvennanna
+
+KommaEfLiður →
+    ',' EfLiðurStakur
 
 # Væri unnt að skipta í óákveðin og ákveðin fornöfn ef þarf
 Fornöfn/tala/fall/kyn → fn/tala/fall/kyn fn/tala/fall/kyn?
@@ -719,20 +758,23 @@ LoKomma_nf/tala/kyn →
 # Forsetningarliðir
 
 FsMeðFallstjórn →
-    fs_þf Nl_þf
-    | fs_þgf Nl_þgf
-    | fs_ef Nl_ef
-    | fs_nf Nl_nf
+    fs/fall Nl/fall # FsOg/fall*
     | fs NhLiður # 'um að...', 'í að...', 'eftir að...'
     | fs_þf 'það'_þf_et NhLiður # 'kringum það að...'
     | fs_þgf 'það'_þgf_et NhLiður # 'frá því að...'
     | fs_ef 'það'_ef_et NhLiður # 'til þess að...'
 
+# FsOg/fall → OgEðaEn Nl/fall
+
 FsLiður → Atviksliður? FsMeðFallstjórn
 
 FsFylling → FsMeðFallstjórn FsLiður*
 
-FsAtv → Atviksliður | FsLiður+
+FsAtv →
+    Atviksliður
+    | ',' Atviksliður ','
+    | FsLiður+
+    | ',' FsLiður+ ','
 
 # Taka sérstaklega á runu forsetningarliða sem er afmörkuð milli komma;
 # það minnkar tvíræðni
