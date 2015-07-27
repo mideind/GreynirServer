@@ -87,7 +87,7 @@ class Parser:
             self._token = token
             if token is None:
                 # If no token associated with this column
-                # (because it's the last one), call
+                # (because it's the last column), call
                 # self.matches_none() instead of self.matches()
                 # to avoid a check for this (rare) condition
                 # on every call to self.matches()

@@ -260,7 +260,7 @@ def test3():
 
     print("\n\n------ Test 3 ---------")
 
-    p = BIN_Parser()
+    p = BIN_Parser(strict = False) # Don't do strict grammar checking
     g = p.grammar()
 
     print("Reynir.grammar has {0} nonterminals, {1} terminals, {2} productions"
@@ -346,4 +346,4 @@ if __name__ == "__main__":
     # Sort the statistics by the total time spent in the function itself
     stats.sort_stats('tottime')
 
-    stats.print_stats()
+    stats.print_stats(100) # Print 100 most significant lines

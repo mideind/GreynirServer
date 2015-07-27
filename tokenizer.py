@@ -55,6 +55,7 @@ PUNCTUATION = LEFT_PUNCTUATION + CENTER_PUNCTUATION + RIGHT_PUNCTUATION + NONE_P
 # Punctuation symbols that may occur at the end of a sentence, after the period
 SENTENCE_FINISHERS = ")]“»”’"
 
+CLOCK_WORD = "klukkan"
 CLOCK_ABBREV = "kl"
 
 # Punctuation types: left, center or right of word
@@ -383,14 +384,16 @@ def parse_particles(token_stream):
                     token = TOK.Word("[" + token[1] + ".]", None)
                     next_token = next(token_stream)
 
-            # Coalesce [kl.] + time or number into a time
-            if clock and (next_token[0] == TOK.TIME or next_token[0] == TOK.NUMBER):
-                if next_token[0] == TOK.NUMBER:
-                    token = TOK.Time(CLOCK_ABBREV + " " + next_token[1], next_token[2][0], 0, 0)
-                else:
-                    token = TOK.Time(CLOCK_ABBREV + " " + next_token[1],
-                        next_token[2][0], next_token[2][1], next_token[2][2])
-                next_token = next(token_stream)
+            # Coalesce 'klukkan'/[kl.] + time or number into a time
+            if (next_token[0] == TOK.TIME or next_token[0] == TOK.NUMBER):
+                if clock or (token[0] == TOK.WORD and token[1].lower() == CLOCK_WORD):
+                    # Match: coalesce and step to next token
+                    if next_token[0] == TOK.NUMBER:
+                        token = TOK.Time(CLOCK_ABBREV + ". " + next_token[1], next_token[2][0], 0, 0)
+                    else:
+                        token = TOK.Time(CLOCK_ABBREV + ". " + next_token[1],
+                            next_token[2][0], next_token[2][1], next_token[2][2])
+                    next_token = next(token_stream)
 
             # Coalesce percentages into a single token
             if next_token[0] == TOK.PUNCTUATION and next_token[1] == '%':

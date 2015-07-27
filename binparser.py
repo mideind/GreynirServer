@@ -42,7 +42,7 @@ class BIN_Token(Token):
 
         t[0] Token type (TOK.WORD, etc.)
         t[1] Token text
-        t[2] Meaning list, where each item is a tuple:
+        t[2] For TOK.WORD: Meaning list, where each item is a tuple:
             m[0] Word stem
             m[1] BIN index (integer)
             m[2] Word type (kk/kvk/hk (=noun), so, lo, ao, fs, etc.)
@@ -105,8 +105,12 @@ class BIN_Token(Token):
     def __init__(self, t):
 
         Token.__init__(self, TOK.descr[t[0]], t[1])
-        self.t = t
-        self._hash = None
+        self.t0 = t[0] # Token type (TOK.WORD, etc.)
+        self.t1 = t[1] # Token text
+        self.t1_lower = t[1].lower() # Token text, lower case
+        self.t2 = t[2] # Token information, such as part-of-speech annotation, numbers, etc.
+        self._hash = None # Cached hash
+        self._can_be_fs = None # Cached check of whether this can be a preposition
 
     def verb_matches(self, verb, terminal, form):
         """ Return True if the verb in question matches the verb category,
@@ -131,7 +135,7 @@ class BIN_Token(Token):
                 # Require plural
                 return False
             # Make sure that the subject case (last variant) matches the terminal
-            return VerbSubjects.VERBS.get(verb, "") == terminal.variant(-1)
+            return terminal.variant(-1) in VerbSubjects.VERBS.get(verb, set())
         if terminal.has_variant("et") and "FT" in form:
             # Can't use plural verb if singular terminal
             return False
@@ -195,128 +199,170 @@ class BIN_Token(Token):
         # Fine if the case matches
         return case in Prepositions.PP[prep]
 
-    def matches(self, terminal):
-        """ Return True if this token matches the given terminal """
-
-        t0, t1, t2 = self.t
-
-        if t0 == TOK.PERSON:
-            # Handle a person name, matching it with a singular noun
-            if not terminal.startswith("person"):
-                return False
-            # Check each PersonName tuple in the t2 list
-            for p in t2:
-                if terminal.variant(1) == p.gender and terminal.variant(0) == p.case:
-                    # Case and gender matches: we're good
-                    return True
-            # No match found
+    def matches_PERSON(self, terminal):
+        """ Handle a person name token, matching it with a person_[case]_[gender] terminal """
+        if not terminal.startswith("person"):
             return False
-
-        if t0 == TOK.PUNCTUATION:
-            return terminal.matches("punctuation", t1)
-
-        if t0 == TOK.CURRENCY:
-            # A currency name matches a noun
-            if not terminal.startswith("no"):
-                return False
-            if terminal.has_variant("abbrev"):
-                # A currency does not match an abbreviation
-                return False
-            if t2[1] is None:
-                # No associated case: match all cases
+        # Check each PersonName tuple in the t2 list
+        for p in self.t2:
+            if terminal.variant(1) == p.gender and terminal.variant(0) == p.case:
+                # Case and gender matches: we're good
                 return True
-            # See whether any of the allowed cases match the terminal
-            return terminal.num_variants() >= 2 and terminal.variant(1) in t2[1]
+        # No match found
+        return False
 
-        if t0 == TOK.AMOUNT:
-            # An amount matches a noun
-            if not terminal.startswith("no"):
-                return False
-            if terminal.has_variant("abbrev"):
-                # An amount does not match an abbreviation
-                return False
-            if terminal.has_variant("et") and float(t2[1]) != 1.0:
-                # Singular only matches an amount of one
-                return False
-            if terminal.has_variant("ft") and float(t2[1]) == 1.0:
-                # Plural does not match an amount of one
-                return False
-            if t2[3] is not None:
-                # Associated gender
-                for g in BIN_Token._GENDERS:
-                    if terminal.has_variant(g) and t2[3] != g:
-                        return False
-            if t2[2] is None:
-                # No associated case: match all cases
-                return True
-            # See whether any of the allowed cases match the terminal
-            return terminal.num_variants() >= 2 and terminal.variant(1) in t2[2]
+    def matches_PUNCTUATION(self, terminal):
+        """ Match a literal terminal with the same content as the punctuation token """
+        return terminal.matches("punctuation", self.t1, self.t1)
 
-        if t0 == TOK.NUMBER:
-            if terminal.startswith("töl"):
-                # Match number words if gender matches
-                if t2[2] is not None:
-                    # Associated gender
-                    for g in BIN_Token._GENDERS:
-                        if terminal.has_variant(g) and t2[2] != g:
-                            return False
-                return True
-            if not terminal.startswith("no"):
-                # Not noun: no match
-                return False
-            if terminal.has_variant("abbrev"):
-                # A number does not match an abbreviation
-                return False
-            if terminal.has_variant("et") and float(t2[0]) != 1.0:
-                # Singular only matches an amount of one
-                return False
-            if terminal.has_variant("ft") and float(t2[0]) == 1.0:
-                # Plural does not match an amount of one
-                return False
-            if t2[2] is not None:
-                # Associated gender
-                for g in BIN_Token._GENDERS:
-                    if terminal.has_variant(g) and t2[2] != g:
-                        return False
-            if t2[1] is None:
-                # No associated case: match all cases
-                return True
-            # See whether any of the allowed cases match the terminal
-            return terminal.num_variants() >= 2 and terminal.variant(1) in t2[1]
-
-        if t0 == TOK.PERCENT:
-            if terminal.startswith("töl"):
-                # Match number words without further ado
-                return True
-            if not terminal.startswith("no"):
-                # Not noun: no match
-                return False
-            if terminal.has_variant("abbrev"):
-                # A percentage does not match an abbreviation
-                return False
-            if terminal.has_variant("et") and float(t2) != 1.0:
-                # Singular only matches an percentage of one
-                return False
-            if terminal.has_variant("ft") and float(t2) == 1.0:
-                # Plural does not match an percentage of one
-                return False
-            if terminal.has_variant("kk") or terminal.has_variant("kvk"):
-                # Percentages only match the neutral gender
-                return False
-            # No case associated with percentages: match all
+    def matches_CURRENCY(self, terminal):
+        """ A currency name token matches a noun terminal """
+        if not terminal.startswith("no"):
+            return False
+        if terminal.has_variant("abbrev"):
+            # A currency does not match an abbreviation
+            return False
+        if not self.t2[1]:
+            # No associated case: match all cases
             return True
+        # See whether any of the allowed cases match the terminal
+        return terminal.num_variants() >= 2 and terminal.variant(1) in self.t2[1]
 
-        if t0 == TOK.DATE:
-            return terminal.startswith("dags")
+    def matches_AMOUNT(self, terminal):
+        """ An amount token matches a noun terminal """
+        if not terminal.startswith("no"):
+            return False
+        if terminal.has_variant("abbrev"):
+            # An amount does not match an abbreviation
+            return False
+        if terminal.has_variant("et") and float(self.t2[1]) != 1.0:
+            # Singular only matches an amount of one
+            return False
+        if terminal.has_variant("ft") and float(self.t2[1]) == 1.0:
+            # Plural does not match an amount of one
+            return False
+        if self.t2[3] is None:
+            # No gender: match neutral gender only
+            if terminal.has_variant("kk") or terminal.has_variant("kvk"):
+                return False
+        else:
+            # Associated gender
+            for g in BIN_Token._GENDERS:
+                if terminal.has_variant(g) and self.t2[3] != g:
+                    return False
+        if not self.t2[2]:
+            # No associated case: match all cases
+            return True
+        # See whether any of the allowed cases match the terminal
+        return terminal.num_variants() >= 2 and terminal.variant(1) in self.t2[2]
 
-        if t0 == TOK.ORDINAL:
-            return terminal.startswith("raðnr")
+    def matches_NUMBER(self, terminal):
+        """ A number token matches a number (töl) or noun terminal """
+        if terminal.startswith("töl"):
+            # Match number words if gender matches
+            if self.t2[2] is not None:
+                # Associated gender
+                for g in BIN_Token._GENDERS:
+                    if terminal.has_variant(g) and self.t2[2] != g:
+                        return False
+            return True
+        if not terminal.startswith("no"):
+            # Not noun: no match
+            return False
+        if terminal.has_variant("abbrev"):
+            # A number does not match an abbreviation
+            return False
+        if terminal.has_variant("et") and float(self.t2[0]) != 1.0:
+            # Singular only matches an amount of one
+            return False
+        if terminal.has_variant("ft") and float(self.t2[0]) == 1.0:
+            # Plural does not match an amount of one
+            return False
+        if self.t2[2] is None:
+            # No associated gender: match neutral gender only
+            if terminal.has_variant("kk") or terminal.has_variant("kvk"):
+                return False
+        else:
+            # Associated gender
+            for g in BIN_Token._GENDERS:
+                if terminal.has_variant(g) and self.t2[2] != g:
+                    return False
+        if not self.t2[1]:
+            # No associated case: match all cases
+            return True
+        # See whether any of the allowed cases match the terminal
+        return terminal.num_variants() >= 2 and terminal.variant(1) in self.t2[1]
+
+    def matches_PERCENT(self, terminal):
+        """ A percent token matches a number (töl) or noun terminal """
+        if terminal.startswith("töl"):
+            # Match number words without further ado
+            return True
+        if not terminal.startswith("no"):
+            # Not noun: no match
+            return False
+        if terminal.has_variant("abbrev"):
+            # A percentage does not match an abbreviation
+            return False
+        if terminal.has_variant("et") and float(self.t2) != 1.0:
+            # Singular only matches an percentage of one
+            return False
+        if terminal.has_variant("ft") and float(self.t2) == 1.0:
+            # Plural does not match an percentage of one
+            return False
+        if terminal.has_variant("kk") or terminal.has_variant("kvk"):
+            # Percentages only match the neutral gender
+            return False
+        # No case associated with percentages: match all
+        return True
+
+    def matches_YEAR(self, terminal):
+        """ A year token matches a number (töl), year (ártal) or noun terminal """
+        if terminal.startswith("töl") or terminal.startswith("ártal"):
+            # Match number words and years without further ado
+            return True
+        if not terminal.startswith("no"):
+            # Not noun: no match
+            return False
+        if terminal.has_variant("abbrev"):
+            # A year does not match an abbreviation
+            return False
+        if not terminal.has_variant("et"):
+            # Only singular match ('2014 var gott ár', not '2014 voru góð ár')
+            return False
+        if terminal.has_variant("kk") or terminal.has_variant("kvk"):
+            # Years only match the neutral gender
+            return False
+        # No case associated with year numbers: match all
+        return True
+
+    def matches_DATE(self, terminal):
+        """ A date token matches a date (dags) terminal """
+        return terminal.startswith("dags")
+
+    def matches_TIME(self, terminal):
+        """ A time token matches a time (tími) terminal """
+        return terminal.startswith("tími")
+
+    def matches_TIMESTAMP(self, terminal):
+        """ A timestamp token matches a timestamp (tímapunktur) terminal """
+        return terminal.startswith("tímapunktur")
+
+    def matches_ORDINAL(self, terminal):
+        """ An ordinal token matches an ordinal (raðnr) terminal """
+        return terminal.startswith("raðnr")
+
+    def matches_WORD(self, terminal):
+        """ Match a word token, having the potential part-of-speech meanings
+            from the BIN database, with the terminal """
 
         def meaning_match(m):
             """ Check for a match between a terminal and a single potential meaning
                 of the word """
             # print("meaning_match: kind {0}, val {1}".format(BIN_Token.kind[m[2]], m[4]))
+
             if terminal.startswith("so"):
+                # Check verb
                 if m[2] != "so":
                     return False
                 # Special case for verbs: match only the appropriate
@@ -325,9 +371,7 @@ class BIN_Token(Token):
                 # so_2 for verbs with two noun arguments. A verb may
                 # match more than one argument number category.
                 return self.verb_matches(m[0], terminal, m[5])
-            if terminal.startswith("fs") and terminal.num_variants() > 0:
-                return self.prep_matches(t1.lower(), terminal.variant(0))
-                # return self.prep_matches(m[0], terminal.variant(0))
+
             if terminal.startswith("no"):
                 # Check noun
                 if BIN_Token._KIND[m[2]] != "no":
@@ -344,27 +388,69 @@ class BIN_Token(Token):
                         # Case or number not matching
                         return False
                 return True
+
+            if terminal.startswith("eo"):
+                # 'Einkunnarorð': adverb (atviksorð) that is not the same
+                # as a preposition (forsetning)
+                if m[2] != "ao":
+                    return False
+                # This token can match an adverb:
+                # Cache whether it can also match a preposition
+                if self._can_be_fs is None:
+                    self._can_be_fs = any(mm[2] == "fs" for mm in self.t2)
+                # Only return True if this token cannot also match a preposition
+                return not self._can_be_fs
+
+            if terminal.startswith("fs") and terminal.num_variants() > 0:
+                # Check preposition
+                return self.prep_matches(self.t1_lower, terminal.variant(0))
+
             # Check other word categories
             if m[5] != "-": # Tokens without a form specifier are assumed to be universally matching
                 for v in terminal.variants():
                     if BIN_Token._VARIANT[v] not in m[5]:
                         # Not matching
                         return False
-            return terminal.matches_first(BIN_Token._KIND[m[2]], m[0])
+            return terminal.matches_first(BIN_Token._KIND[m[2]], m[0], self.t1_lower)
 
-        # We have a match if any of the possible meanings
+        # We have a match if any of the possible part-of-speech meanings
         # of this token match the terminal
-        return any(meaning_match(m) for m in t2) if t2 else False
+        return any(meaning_match(m) for m in self.t2) if self.t2 else False
+
+    # Dispatch table for the token matching functions
+    _MATCHING_FUNC = {
+        TOK.PERSON: matches_PERSON,
+        TOK.PUNCTUATION: matches_PUNCTUATION,
+        TOK.CURRENCY: matches_CURRENCY,
+        TOK.AMOUNT: matches_AMOUNT,
+        TOK.NUMBER: matches_NUMBER,
+        TOK.PERCENT: matches_PERCENT,
+        TOK.YEAR: matches_YEAR,
+        TOK.DATE: matches_DATE,
+        TOK.TIME: matches_TIME,
+        TOK.TIMESTAMP: matches_TIMESTAMP,
+        TOK.WORD: matches_WORD
+    }
+
+    @classmethod
+    def is_understood(cls, t):
+        """ Return True if the token type is understood by the BIN Parser """
+        return t in cls._MATCHING_FUNC
+
+    def matches(self, terminal):
+        """ Return True if this token matches the given terminal """
+        # Dispatch the token matching according to the dispatch table in _MATCHING_FUNC
+        return BIN_Token._MATCHING_FUNC[self.t0](self, terminal)
 
     def __repr__(self):
-        return "[" + TOK.descr[self.t[0]] + ": " + self.t[1] + "]"
+        return "[" + TOK.descr[self.t0] + ": " + self.t1 + "]"
 
     def __str__(self):
-        return "\'" + self.t[1] + "\'"
+        return "\'" + self.t1 + "\'"
 
     def __hash__(self):
         if self._hash is None:
-            self._hash = hash((self.t[0], self.t[1]))
+            self._hash = hash((self.t0, self.t1))
         return self._hash
 
 
@@ -379,18 +465,13 @@ class BIN_Parser(Parser):
     # A singleton instance of the parsed Reynir.grammar
     _grammar = None
 
-    # The token types that the parser currently knows how to handle
-    _UNDERSTOOD = { TOK.WORD, TOK.PERSON, TOK.DATE,
-        TOK.CURRENCY, TOK.AMOUNT, TOK.NUMBER, TOK.PERCENT,
-        TOK.ORDINAL }
-
-    def __init__(self):
+    def __init__(self, strict = False):
         """ Load the shared BIN grammar if not already there, then initialize
             the Parser parent class """
         g = BIN_Parser._grammar
         if g is None:
             g = Grammar()
-            g.read("Reynir.grammar")
+            g.read("Reynir.grammar", strict = strict)
             BIN_Parser._grammar = g
         Parser.__init__(self, g)
 
@@ -402,16 +483,14 @@ class BIN_Parser(Parser):
         """ Parse the token list after wrapping each understood token in the BIN_Token class """
 
         def is_understood(t):
-            if t[0] in BIN_Parser._UNDERSTOOD:
-                return True
             if t[0] == TOK.PUNCTUATION:
                 # A limited number of punctuation symbols is currently understood
-                return t[1] in ".?,„“"
-            return False
+                return t[1] in ".?,:–"
+            return BIN_Token.is_understood(t[0])
 
         bt = [BIN_Token(t) for t in tokens if is_understood(t)]
         # Count the tokens, excluding punctuation
-        cw = sum(1 if t.t[0] != TOK.PUNCTUATION else 0 for t in bt)
+        # cw = sum(1 if t.t0 != TOK.PUNCTUATION else 0 for t in bt)
         # After wrapping, call the parent class go()
         return Parser.go(self, bt)
 

@@ -50,3 +50,11 @@ repository:
       endCaptures:
         '0': {name: punctuation.definition.string.end.grammar}
 
+    - comment: Literal terminals within double quotes
+      name: string.quoted.double.grammar
+      begin: "\""
+      beginCaptures:
+        '0': {name: punctuation.definition.string.begin.grammar}
+      end: "\""
+      endCaptures:
+        '0': {name: punctuation.definition.string.end.grammar}

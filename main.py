@@ -169,7 +169,7 @@ def analyze():
     total_tokens = 0
 
     sent_begin = 0
-    bp = BIN_Parser()
+    bp = BIN_Parser(strict = False) # Don't do strict grammar checking
 
     t0 = time.time()
 
@@ -238,7 +238,7 @@ def parse_grid():
     # Tokenize the text
     tokens = list(tokenize(txt))
     # Parse the text
-    bp = BIN_Parser()
+    bp = BIN_Parser(strict = False) # Don't do strict grammar checking
     err = dict()
 
     try:
@@ -374,7 +374,7 @@ def test():
     """ Handler for a page of sentences for testing """
 
     # Run test and show the result
-    bp = BIN_Parser()
+    bp = BIN_Parser(strict = False) # Don't do strict grammar checking
 
     return render_template("test.html", result = run_test(bp))
 

@@ -155,34 +155,57 @@ class Terminal:
         """ Returns True if the terminal name starts with the given string """
         return self._parts[0] == part
 
-    def matches(self, t_kind, t_val):
+    def matches(self, t_kind, t_val, t_lit):
         # print("Terminal.matches: self.name is {0}, t_kind is {1}".format(self.name, t_kind))
         return self._name == t_kind
 
-    def matches_first(self, t_kind, t_val):
+    def matches_first(self, t_kind, t_val, t_lit):
         return self._parts[0] == t_kind
 
 
 class LiteralTerminal(Terminal):
 
-    """ A literal (constant string) terminal within a right-hand-side production """
+    """ A literal (constant string) terminal within a right-hand-side production.
+        A literal within single quotes 'x' is matched canonically, i.e. with
+        the corresponding word stem, if available.
+        A literal within double quotes "x" is matched absolutely, i.e. with
+        the exact source text (except for a conversion to lowercase). """
 
     def __init__(self, lit):
+        # Replace any underscores within the literal with spaces, allowing literals
+        # to match tokens with spaces in them
+        q = lit[0]
+        assert q in "\'\""
+        ix = lit[1:].index(q) + 1 # Find closing quote
+        # Replace underscores within the literal, keeping the rest (variants, etc.) intact
+        lit = lit[0:ix + 1].replace("_", " ") + lit[ix + 1:]
         Terminal.__init__(self, lit)
         # Peel off the quotes from the first part
         assert len(self._parts[0]) >= 3
-        assert self._parts[0][0] in "\'\""
         assert self._parts[0][0] == self._parts[0][-1]
         self._parts[0] = self._parts[0][1:-1]
+        # If a double quote was used, this is a 'strong' literal
+        # that matches an exact terminal string as it appeared in the source
+        # - no stemming or other canonization should be applied,
+        # although the string will be converted to lowercase
+        self._strong = (q == '\"')
 
-    def matches(self, t_kind, t_val):
-        """ A literal terminal matches a token if the token text is identical to the literal """
+    def matches(self, t_kind, t_val, t_lit):
+        """ A literal terminal matches a token if the token text is
+            canonically or absolutely identical to the literal """
+        if self._strong:
+            # Absolute literal match
+            return self._parts[0] == t_lit
+        # Canonical match of stems or prototypes
         return self._parts[0] == t_val
 
-    def matches_first(self, t_kind, t_val):
+    def matches_first(self, t_kind, t_val, t_lit):
         """ A literal terminal matches a token if the token text is identical to the literal """
         #print("LiteralTerminal.matches_first: parts[0] is '{0}', t_val is '{1}'"
         #    .format(self._parts[0], t_val))
+        if self._strong:
+            # Absolute literal match
+            return self._parts[0] == t_lit
         return self._parts[0] == t_val
 
 
@@ -190,10 +213,12 @@ class Token:
 
     """ A token from the input stream tokenizer """
 
-    def __init__(self, kind, val):
-        """ A basic token has a kind and a value, both strings """
+    def __init__(self, kind, val, lit = None):
+        """ A basic token has a kind, a canonical value and an optional literal value,
+            all strings """
         self._kind = kind
         self._val = val
+        self._lit = lit or val
 
     def __repr__(self):
         """ Return a simple string representation of this token """
@@ -201,14 +226,24 @@ class Token:
             return '{0}'.format(self._kind)
         return '{0}:{1}'.format(self._kind, self._val)
 
+    def kind(self):
+        """ Return the token kind """
+        return self._kind
+
     def text(self):
-        """ Return the token text, as it was in the source """
+        """ Return the 'canonical' token text, which may be a stem or
+            prototype of the literal, original token text as it appeared
+            in the source """
         return self._val
+
+    def literal(self):
+        """ Return the literal, original token text as it appeared in the source """
+        return self._lit
 
     def matches(self, terminal):
         """ Does this token match the given terminal? """
         # By default, ask the terminal
-        return terminal.matches(self._kind, self._val)
+        return terminal.matches(self._kind, self._val, self._lit)
 
 
 class Production:
@@ -344,9 +379,11 @@ class Grammar:
         return self._root
 
     def terminals(self):
+        """ Return a dictionary of terminals in the grammar """
         return self._terminals
 
     def nonterminals(self):
+        """ Return a dictionary of nonterminals in the grammar """
         return self._nonterminals
 
     def num_nonterminals(self):
@@ -369,8 +406,10 @@ class Grammar:
 
         return "".join([str(nt) + " → " + to_str(plist) + "\n" for nt, plist in self._nt_dict.items()])
 
-    def read(self, fname):
-        """ Read grammar from a text file """
+    def read(self, fname, strict = False):
+        """ Read grammar from a text file. Set strict = True to get strict grammar checking,
+            raising GrammarError if the grammar contains unused nonterminals or if there
+            are any nonterminals that are unreachable from the root. """
 
         # Shortcuts
         terminals = self._terminals
@@ -684,7 +723,7 @@ class Grammar:
 
         # Check all nonterminals to verify that they have productions and are referenced
         for nt in nonterminals.values():
-            if not nt.has_ref():
+            if strict and not nt.has_ref():
                 raise GrammarError("Nonterminal {0} is never referenced in a production".format(nt), nt.fname(), nt.line())
             if nt not in grammar:
                 raise GrammarError("Nonterminal {0} is referenced but not defined".format(nt), nt.fname(), nt.line())
@@ -715,22 +754,23 @@ class Grammar:
             raise GrammarError("Nonterminals {0} do not derive terminal strings"
                 .format(", ".join([str(nt) for nt in agenda])), fname, 0)
 
-        # Check that all nonterminals are reachable from the root
-        unreachable = { nt for nt in nonterminals.values() }
+        if strict:
+            # Check that all nonterminals are reachable from the root
+            unreachable = { nt for nt in nonterminals.values() }
 
-        def _remove(nt):
-            """ Recursively remove all nonterminals that are reachable from nt """
-            unreachable.remove(nt)
-            for p in grammar[nt]:
-                for s in p:
-                    if isinstance(s, Nonterminal) and s in unreachable:
-                        _remove(s)
+            def _remove(nt):
+                """ Recursively remove all nonterminals that are reachable from nt """
+                unreachable.remove(nt)
+                for p in grammar[nt]:
+                    for s in p:
+                        if isinstance(s, Nonterminal) and s in unreachable:
+                            _remove(s)
 
-        _remove(self._root)
+            _remove(self._root)
 
-        if unreachable:
-            raise GrammarError("Nonterminals {0} are unreachable from the root"
-                .format(", ".join([str(nt) for nt in unreachable])), fname, 0)
+            if unreachable:
+                raise GrammarError("Nonterminals {0} are unreachable from the root"
+                    .format(", ".join([str(nt) for nt in unreachable])), fname, 0)
 
         # Short-circuit non-terminals that point directly and uniquely to other nonterminals
         for nt, plist in grammar.items():

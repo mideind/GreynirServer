@@ -140,21 +140,21 @@ class VerbSubjects:
     """ Wrapper around dictionary of verbs and their subjects,
         initialized from the config file """
 
-    # Dictionary of verbs and their associated subject case
-    VERBS = { }
+    # Dictionary of verbs and their associated set of subject cases
+    VERBS = defaultdict(set)
     _CASE = "þgf" # Default subject case
 
     @staticmethod
     def set_case(case):
         """ Set the case of the subject for the following verbs """
-        if case not in { "þf", "þgf", "ef" }:
+        if case not in { "þf", "þgf", "ef", "none" }:
             raise ConfigError("Unknown verb subject case '{0}' in verb_subjects".format(case))
         VerbSubjects._CASE = case
 
     @staticmethod
     def add (verb):
         """ Add a verb and its arguments. Called from the config file handler. """
-        VerbSubjects.VERBS[verb] = VerbSubjects._CASE
+        VerbSubjects.VERBS[verb].add(VerbSubjects._CASE)
 
 
 class Prepositions:
