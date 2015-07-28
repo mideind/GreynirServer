@@ -67,7 +67,7 @@ TP_NONE = 4   # No whitespace
 
 # Numeric digits
 
-DIGITS = "0123456789"
+DIGITS = { d for d in "0123456789" } # Set of digit characters
 
 # Set of all cases (nominative, accusative, dative, possessive)
 
@@ -206,21 +206,27 @@ class TOK:
 def parse_digits(w):
     """ Parse a raw token starting with a digit """
 
-    if re.match(r'\d{1,2}:\d\d$', w):
-        # Looks like a 24-hour clock
-        p = w.split(':')
-        h = int(p[0])
-        m = int(p[1])
-        return TOK.Time(w, h, m, 0), len(w)
-    if re.match(r'\d{1,2}:\d\d:\d\d$', w):
-        # Looks like a 24-hour clock
+    s = re.match(r'\d{1,2}:\d\d:\d\d', w)
+    if s:
+        # Looks like a 24-hour clock, H:M:S
+        w = s.group()
         p = w.split(':')
         h = int(p[0])
         m = int(p[1])
         s = int(p[2])
-        return TOK.Time(w, h, m, s), len(w)
-    if re.match(r'\d{1,2}/\d{1,2}/\d{2,4}$', w) or re.match(r'\d{1,2}\.\d{1,2}\.\d{2,4}$', w):
+        return TOK.Time(w, h, m, s), s.end()
+    s = re.match(r'\d{1,2}:\d\d', w)
+    if s:
+        # Looks like a 24-hour clock, H:M
+        w = s.group()
+        p = w.split(':')
+        h = int(p[0])
+        m = int(p[1])
+        return TOK.Time(w, h, m, 0), s.end()
+    s = re.match(r'\d{1,2}\.\d{1,2}\.\d{2,4}', w) or re.match(r'\d{1,2}/\d{1,2}/\d{2,4}', w)
+    if s:
         # Looks like a date
+        w = s.group()
         if '/' in w:
             p = w.split('/')
         else:
@@ -233,9 +239,11 @@ def parse_digits(w):
         if m > 12 and d <= 12:
             # Probably wrong way around
             m, d = d, m
-        return TOK.Date(w, y, m, d), len(w)
-    if re.match(r'\d{1,2}/\d{1,2}$', w) or re.match(r'\d{1,2}\.\d{1,2}$', w):
+        return TOK.Date(w, y, m, d), s.end()
+    s = re.match(r'\d{1,2}/\d{1,2}', w) or re.match(r'\d{1,2}\.\d{1,2}', w)
+    if s:
         # Looks like a date
+        w = s.group()
         if '/' in w:
             p = w.split('/')
         else:
@@ -245,41 +253,42 @@ def parse_digits(w):
         if m > 12 and d <= 12:
             # Probably wrong way around
             m, d = d, m
-        return TOK.Date(w, 0, m, d), len(w)
-    m = re.match(r'\d\d\d\d$', w) or re.match(r'\d\d\d\d[^\d]', w)
-    if m:
+        return TOK.Date(w, 0, m, d), s.end()
+    s = re.match(r'\d\d\d\d$', w) or re.match(r'\d\d\d\d[^\d]', w)
+    if s:
         n = int(w[0:4])
         if 1776 <= n <= 2100:
             # Looks like a year
             return TOK.Year(w[0:4], n), 4
-    if re.match(r'\d\d\d-\d\d\d\d$', w):
+    s = re.match(r'\d\d\d-\d\d\d\d', w)
+    if s:
         # Looks like a telephone number
-        return TOK.Telno(w), len(w)
-    m = re.match(r'\d+(\.\d\d\d)*,\d+', w)
-    if m:
+        return TOK.Telno(s.group()), s.end()
+    s = re.match(r'\d+(\.\d\d\d)*,\d+', w)
+    if s:
         # Real number formatted with decimal comma and possibly thousands separator
-        w = w[0:m.end()]
+        w = s.group()
         n = re.sub(r'\.', '', w) # Eliminate thousands separators
         n = re.sub(r',', '.', n) # Convert decimal comma to point
-        return TOK.Number(w, float(n)), m.end()
-    m = re.match(r'\d+(\.\d\d\d)*', w)
-    if m:
+        return TOK.Number(w, float(n)), s.end()
+    s = re.match(r'\d+(\.\d\d\d)*', w)
+    if s:
         # Integer, possibly with a '.' thousands separator
-        w = w[0:m.end()]
+        w = s.group()
         n = re.sub(r'\.', '', w) # Eliminate thousands separators
-        return TOK.Number(w, int(n)), m.end()
-    m = re.match(r'\d+(,\d\d\d)*\.\d+', w)
-    if m:
+        return TOK.Number(w, int(n)), s.end()
+    s = re.match(r'\d+(,\d\d\d)*\.\d+', w)
+    if s:
         # Real number, possibly with a thousands separator and decimal comma/point
-        w = w[0:m.end()]
+        w = s.group()
         n = re.sub(r',', '', w) # Eliminate thousands separators
-        return TOK.Number(w, float(n)), m.end()
-    m = re.match(r'\d+(,\d\d\d)*', w)
-    if m:
+        return TOK.Number(w, float(n)), s.end()
+    s = re.match(r'\d+(,\d\d\d)*', w)
+    if s:
         # Integer, possibly with a ',' thousands separator
-        w = w[0:m.end()]
+        w = s.group()
         n = re.sub(r',', '', w) # Eliminate thousands separators
-        return TOK.Number(w, int(n)), m.end()
+        return TOK.Number(w, int(n)), s.end()
     # Strange thing
     return TOK.Unknown(w), len(w)
 
@@ -525,8 +534,10 @@ def lookup_abbreviation(w):
 
 def lookup_word(db, w, at_sentence_start):
     """ Lookup simple or compound word in database and return its meanings """
+
     # Start with a simple lookup
     m = db.meanings(w)
+
     if at_sentence_start or not m:
         # No meanings found in database, or at sentence start
         # Try a lowercase version of the word, if different
@@ -559,6 +570,7 @@ def lookup_word(db, w, at_sentence_start):
                 m = db.meanings(cw[-1])
                 m = [ (prefix + "-" + stem, ix, wtype, wcat, prefix + "-" + wform, gform)
                     for stem, ix, wtype, wcat, wform, gform in m]
+    
     return (w, m)
 
 

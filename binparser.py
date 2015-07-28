@@ -83,6 +83,7 @@ class BIN_Token(Token):
         "hk" : "HK", # Hvorugkyn / neutral
         "et" : "ET", # Eintala / singular
         "ft" : "FT", # Fleirtala / plural
+        "mst" : "MST", # Miðstig / comparative
         "p1" : "1P", # Fyrsta persóna / first person
         "p2" : "2P", # Önnur persóna / second person
         "p3" : "3P", # Þriðja persóna / third person

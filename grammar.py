@@ -189,6 +189,10 @@ class LiteralTerminal(Terminal):
         # - no stemming or other canonization should be applied,
         # although the string will be converted to lowercase
         self._strong = (q == '\"')
+        if self._strong and self.num_variants() > 0:
+            # It doesn't make sense to have variants on exact literals
+            # since they are constant and cannot vary
+            raise GrammarError('An exact literal terminal with double quotes cannot have variants')
 
     def matches(self, t_kind, t_val, t_lit):
         """ A literal terminal matches a token if the token text is
