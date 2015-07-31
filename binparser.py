@@ -101,7 +101,16 @@ class BIN_Token(Token):
     }
 
     _GENDERS = [ "kk", "kvk", "hk" ]
+    _GENDERS_SET = set(_GENDERS)
 
+    # Variants to be checked for verbs
+    _VERB_VARIANTS = [ "p1", "p2", "p3", "nh", "vh", "lh",
+        "sagnb", "lhþt", "nt", "kk", "kvk", "hk", "sb", "gm", "mm" ]
+    # Pre-calculate a dictionary of associated BIN forms
+    _VERB_FORMS = None # Initialized later
+
+    # Set of adverbs that cannot be an "eo" (prepositions are already excluded)
+    _NOT_EO = { "og", "eða" }
 
     def __init__(self, t):
 
@@ -111,7 +120,11 @@ class BIN_Token(Token):
         self.t1_lower = t[1].lower() # Token text, lower case
         self.t2 = t[2] # Token information, such as part-of-speech annotation, numbers, etc.
         self._hash = None # Cached hash
-        self._can_be_fs = None # Cached check of whether this can be a preposition
+
+        # We store a cached check of whether this is an "eo". An "eo" is an adverb (atviksorð)
+        # that cannot also be a preposition ("fs") and is therefore a possible non-ambiguous
+        # prefix to a noun ("einkunn")
+        self._is_eo = None
 
     def verb_matches(self, verb, terminal, form):
         """ Return True if the verb in question matches the verb category,
@@ -145,8 +158,12 @@ class BIN_Token(Token):
             return False
         # print("verb_matches {0} terminal {1} form {2}".format(verb, terminal, form))
         # Check that person (1st, 2nd, 3rd) and other variant requirements match
-        for v in [ "p1", "p2", "p3", "nh", "vh", "lh", "sagnb", "lhþt", "nt", "kk", "kvk", "hk", "sb", "gm", "mm" ]:
-            if terminal.has_variant(v) and not BIN_Token._VARIANT[v] in form:
+        for v in terminal.variants():
+            # Lookup variant to see if it is one of the required ones for verbs
+            rq = BIN_Token._VERB_FORMS.get(v)
+            if rq is not None and not rq in form:
+                # If this is required variant that is not found in the form we have,
+                # return False
                 return False
         # Check restrictive variants, i.e. we don't accept meanings
         # that have those unless they are explicitly present in the terminal
@@ -173,6 +190,15 @@ class BIN_Token(Token):
             if terminal.num_variants() < 2:
                 # No: we don't need to check further
                 return True
+            # The following is not consistent as some verbs take
+            # legitimate arguments in 'miðmynd', such as 'krefjast', 'ábyrgjast'
+            # 'undirgangast', 'minnast'. They are also not consistently
+            # annotated in BIN; some of them are marked as MM and some not.
+            #if BIN_Token._VARIANT["mm"] in form:
+            #    # Don't accept verbs in 'miðmynd' if taking arguments
+            #    # (unless the root form of the verb is in VerbObjects, to
+            #    # compensate for errors in BÍN, cf. 'ábyrgjast')
+            #    return False
             # Check whether the parameters of this verb
             # match up with the requirements of the terminal
             # as specified in its variants at indices 1 and onward
@@ -381,7 +407,7 @@ class BIN_Token(Token):
                     # Only match abbreviations; gender, case and number do not matter
                     return m[5] == "-"
                 for v in terminal.variants():
-                    if v in { "kk", "kvk", "hk"}:
+                    if v in BIN_Token._GENDERS_SET:
                         if m[2] != v:
                             # Mismatched gender
                             return False
@@ -397,10 +423,13 @@ class BIN_Token(Token):
                     return False
                 # This token can match an adverb:
                 # Cache whether it can also match a preposition
-                if self._can_be_fs is None:
-                    self._can_be_fs = any(mm[2] == "fs" for mm in self.t2)
-                # Only return True if this token cannot also match a preposition
-                return not self._can_be_fs
+                if self._is_eo is None:
+                    if self.t1_lower in BIN_Token._NOT_EO:
+                        self._is_eo = False
+                    else:
+                        self._is_eo = not any(mm[2] == "fs" for mm in self.t2)
+                # Return True if this token cannot also match a preposition
+                return self._is_eo
 
             if terminal.startswith("fs") and terminal.num_variants() > 0:
                 # Check preposition
@@ -453,6 +482,12 @@ class BIN_Token(Token):
         if self._hash is None:
             self._hash = hash((self.t0, self.t1))
         return self._hash
+
+    @classmethod
+    def init(cls):
+        cls._VERB_FORMS = { v : cls._VARIANT[v] for v in cls._VERB_VARIANTS }
+
+BIN_Token.init()
 
 
 class BIN_Parser(Parser):

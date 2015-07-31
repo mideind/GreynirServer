@@ -101,14 +101,14 @@ Yfirsetning →
 Upphrópun →
     uh+ ','     # Jú jú, ég fór út í dag / Nei, hann kemur ekki.
 
-EfÞegar → "ef" | "þegar"
+EfÞegar → "ef" | "þegar" | "þótt" | "þó" | "jafnvel_þótt"
 
 HreinYfirsetning →
     Setning
     | SetningAukafall
     | SetningLo
     | SetningSo
-    | EfÞegar Skilyrði Afleiðing
+    | Atviksliður? EfÞegar Skilyrði Afleiðing
 
 Skilyrði → HreinYfirsetning
 
@@ -171,7 +171,7 @@ Setning/tala/pers/kyn →
 # (í stað 'Það er óheimilt að fangelsa mann...')
 
 SetningLo →
-    LoTengtSögn_nf_et_hk HjSögnLhÞtSM_et_p3 FsAtv? NhLiður
+    LoTengtSögn_nf_et_hk HjSögnLhÞtSM_et_p3 NhFylling
 
 # Ekkert frumlag í nefnifalli, sögn í sagnbeygingu (oft í miðmynd):
 # 'Í dag er búist við vondu veðri eftir hádegi'
@@ -181,9 +181,10 @@ SetningLo →
 # (í stað 'Það verður fylgst með kosningunum á RÚV næstu daga')
 
 SetningSo →
-    FsAtv? HjSögnLhÞtSM_et_p3 FsAtv? so_0_sagnb FsAtv? # [Á morgun] verður/skal/mun [líklega] lent á brautinni [eftir hádegi]
-    | so_0_sagnb HjSögnLhÞtSM_et_p3 FsAtv?        # Leitað verður/skal/mun til sérfræðinga
-    | FsAtv? SagnliðurÁnF                         # [Í dag] þyrfti að vökva grasið
+    FsAtv? HjSögnLhÞtSM_et_p3 FsAtv? so_0_sagnb FsAtv?        # [Á morgun] verður/skal/mun [líklega] lent á brautinni [eftir hádegi]
+    | so_0_sagnb HjSögnLhÞtSM_et_p3 FsAtv?                    # Leitað verður/skal/mun til sérfræðinga
+    | FsAtv? SagnliðurÁnF FsAtv?                              # [Í dag] þyrfti að vökva grasið snarlega
+    | So_1_nh/fall HjSögnMegiSkuliÞurfi_et_p3 Nl/fall FsAtv?  # Endurnýja þarf/skal/má leigusamninginn í ár
 
 # Setning þar sem aðalnafnliður er í aukafalli
 # en frumlag í 3p. et. ('það') er falið.
@@ -195,26 +196,29 @@ SetningSo →
 SetningAukafall →
 
     Nl/fall so_subj/fall FsAtv? NhLiður? # Manninn langaði mjög í ferðina / að fara til útlanda strax
-    | Nl/fall Atviksliður? so_subj/fall/tala FsRuna? Nl_nf_þf/tala FsAtv?  # Mér blöskraði mjög vitleysan (í Páli), (Mig þraut) örendið
+    | Nl/fall Atviksliður? so_subj/tala/fall FsRuna? Nl_nf_þf/tala FsAtv?  # Mér blöskraði mjög vitleysan (í Páli), (Mig þraut) örendið
 
-    | Nl_þgf so_0_mm FsAtv? MiðmyndarBotn  # Miðmynd sagna: Mér áskotnaðist, mér fyrirgefst, mér gremst...
+    | Nl_þgf so_0_mm MiðmyndarBotn  # Miðmynd sagna: Mér áskotnaðist, mér fyrirgefst, mér gremst...
 
     | Nl_þgf HjSögnLhÞt_et_p3 FsAtv? LoTengtSögn_nf_et_hk FsAtv? NhLiður? # Öllum er frjálst að flytja úr landi
     | Nl_þgf HjSögnLhÞtSM_p3/tala FsAtv? so_2_þgf_þf_lhþt/tala/kyn FsRuna? Nl_nf/tala/pers/kyn FsAtv? # Öllum hefur verið/skal/mun tryggð heilbrigðisþjónusta
+    | Nl_þgf HjSögnLhÞtSM_et_p3 FsAtv? so_2_þgf_ef_sagnb FsRuna? Nl_ef FsAtv? # Öllum hefur verið/skal/mun óskað góðs bata
     | Nl_þgf HjSögnLhÞtSM_et_p3 FsAtv? so_1_þgf_sagnb FsAtv? # Stóru skipunum hefur verið/skal/mun stýrt í land
+
+    | Nl/fall HjSögnMegiSkuli_et_p3 FsAtv? So_1_nh/fall FsAtv? # Þá ályktun má strax draga í dag (að Páll sé ekki með öllum mjalla)
 
 AukafallsBotn →
     FsAtv                    # (Mér virtist ykkur ekki hungra) mjög undir ræðunni
     | FsRuna? Nl_nf FsAtv?   # (Mér virtist ykkur ekki falla) í geð ræðan í kvöld
-    | FsAtv? NhLiður         # (Mér sýndist ykkur langa) gríðarlega að fara til útlanda strax
+    | NhFylling              # (Mér sýndist ykkur langa) gríðarlega að fara til útlanda strax
 
 MiðmyndarBotn →
     Nl_nf FsAtv? NhSögn FsAtv? # (Mér sýndist) kötturinn [ekki] lepja mjólkina í gær
-    | Nl_nf/tala/pers/kyn HjSögnVera LoTengtSögn_nf/tala/kyn FsAtv? # (Mér virtist) kettirnir vera fallegir
+    | Nl_nf/tala/pers/kyn FsAtv? HjSögnVera LoTengtSögn_nf/tala/kyn FsAtv? # (Mér virtist) kettirnir vera fallegir
     | Nl/fall FsAtv? so_subj_nh/fall AukafallsBotn? # (Mér virtist) ykkur [ekki] blöskra undir ræðunni
-    | Nl_þgf FsAtv? so_subj_nh_mm MiðmyndarBotn # (Mér virtist) þeim [ekki] sýnast börnin vera falleg
-    | NhLiður               # (Mér fyrirgefst) að fara út
-    | nhm Yfirsetning       # (Mér virðist) að allt sé að fara fjandans til
+    | Nl_þgf FsAtv? so_nh_mm MiðmyndarBotn # (Mér virtist) þeim [ekki] sýnast börnin vera falleg
+    | NhFylling              # (Mér fyrirgefst) örugglega að fara út
+    | FsAtv? nhm Yfirsetning        # (Mér virðist) ljóst að allt sé að fara fjandans til
 
 Nl_nf_þf/tala → Nl_nf/tala | Nl_þf/tala
 
@@ -244,8 +248,8 @@ Sagnliður/tala/pers/kyn →
 # Sagnliður án sýnilegs frumlags: Í dag þarf að vökva grasið (=Það þarf að vökva grasið í dag)
 
 SagnliðurÁnF →
-    so_subj_gm_none FsAtv? NhFylling                 # (Í dag) þarf [sannarlega] (að vökva grasið)
-    | so_mm FsAtv? NhFylling                           # (Í dag) dregst [sennilega] (að vökva grasið)
+    so_subj_gm_none NhFylling                          # (Í dag) þarf [sannarlega] (að vökva grasið)
+    | so_mm NhFylling                                  # (Í dag) dregst [sennilega] (að vökva grasið)
     | HjSögn_et_p3 FsAtv? so_subj_sagnb_none NhFylling # (Í ár) hefur [í sumarhitanum] þurft (að vökva grasið)
     | HjSögn_et_p3 FsAtv? so_mm_sagnb NhFylling        # (Í ár) hefur [vegna leti] dregist (að vökva grasið)
     | HjSögnNh_et_p3 FsAtv? so_subj_nh_none NhFylling  # (Í ár) mun [í sumarhitanum] þurfa (að vökva grasið)
@@ -260,15 +264,18 @@ SagnliðurMeðF/tala/pers/kyn →
 
 OgSögn_0/tala/pers →
     OgEða FsAtv? so_0/tala/pers
-    | ',' OgEða FsAtv? so_0/tala/pers FsAtv? ','?
+    | ',' OgEða FsAtv? so_0/tala/pers FsAtvKomma?
 
 OgSögn_mm/tala/pers →
     OgEða FsAtv? so_mm/tala/pers
-    | ',' OgEða FsAtv? so_mm/tala/pers FsAtv? ','?
+    | ',' OgEða FsAtv? so_mm/tala/pers FsAtvKomma?
 
 OgSögn_mm_sagnb →
     OgEða FsAtv? so_mm_sagnb
-    | ',' OgEða FsAtv? so_mm_sagnb FsAtv? ','?
+    | ',' OgEða FsAtv? so_mm_sagnb FsAtvKomma?
+
+# Ekki enda á FsAtv nema innan kommu
+FsAtvKomma → FsAtv? ','
 
 # Sögn með engu viðfangi ('lenti')
 # ('Maðurinn lenti')
@@ -311,9 +318,13 @@ SögnMeðF_0/tala/pers/kyn →
     | HjSögnNh_et_p3 Nl/fall/tala/pers/kyn FsAtv? so_subj_nh/fall NhFylling/tala/kyn?    # (Í ár) mun krönunum [í borginni] fjölga
     | HjSögnLhÞt_et_p3 Nl/fall/tala/pers/kyn FsAtv? so_subj_sagnb/fall NhFylling/tala/kyn? # (Í dag) er þingmönnunum [í flokknum] fjölgað
 
+    | 'hafa'/tala/pers Nl_nf/tala/pers/kyn FsAtv? 'vera'_sagnb FsAtv? so_lhþt/tala/kyn NhFylling/tala/kyn? # (Í dag) hafa fjöllin verið klifin
+    | 'hafa'_et_p3 Nl_þgf/tala/pers/kyn FsAtv? 'vera'_sagnb FsAtv? so_1_þgf_sagnb NhFylling/tala/kyn?      # (Í dag) hefur flugvélinni verið lent
+    | 'hafa'_et_p3 Nl_ef/tala/pers/kyn FsAtv? 'vera'_sagnb FsAtv? so_1_ef_sagnb NhFylling/tala/kyn?        # (Í dag) hefur konunnar verið gætt
+
 OgSögn_1/fall/tala/pers →
     OgEða FsAtv? so_1/fall/tala/pers
-    | ',' OgEða FsAtv? so_1/fall/tala/pers FsAtv? ','?
+    | ',' OgEða FsAtv? so_1/fall/tala/pers FsAtvKomma?
 
 # Umraðanir
 
@@ -356,8 +367,8 @@ Sögn_1/tala/pers/kyn →
     | HjSögnLhÞtSM/tala/pers FsAtv? so_2_þgf_þf_lhþt/tala/kyn Nl_þgf # Konan hefur verið/skal/mun gefin Páli
     | HjSögnLhÞtSM/tala/pers FsAtv? so_2_þf_ef_lhþt/tala/kyn Nl_ef   # Konan hefur verið/skal/mun spurð álits
 
-    | HjSögnLhÞt/tala/pers FsAtv? Nl_ef NhFylling/tala/kyn? # (Hún) er [ekki] þeirrar náttúru að elska ketti
-    | HjSögnLhÞt/tala/pers FsAtv? Nl_þgf # (Hún) er [ekki] köttum (góð)
+    | HjSögnLhÞt/tala/pers Nl_ef NhFylling/tala/kyn? # (Hún) er [ekki] þeirrar náttúru að elska ketti
+    | HjSögnLhÞt/tala/pers Nl_þgf # (Hún) er [ekki] köttum (góð)
 
 # Sögn með einu viðfangi sem stendur í undirsetningu
 # ('Konurnar sem borðuðu matinn')
@@ -386,7 +397,11 @@ Sögn_1/tala/pers/kyn →
     | HjSögnLhÞtSM/tala/pers FsAtv? so_2_þf_ef_lhþt/tala/kyn Nl_ef   # Konan sem hafði verið/skal/mun spurð álits
     | Nl_ef HjSögnLhÞtSM/tala/pers FsAtv? so_2_þf_ef_lhþt/tala/kyn   # Konan sem álits hafði verið/skal/mun spurð (?)
 
-    | HjSögnLhÞt/tala/pers FsAtv? Nl_ef NhFylling/tala/kyn? # (Konan sem) er [ekki] þeirrar náttúru að elska ketti galvösk
+    | so_2_þgf_ef_lhþt/tala/kyn HjSögnLhÞtSM/tala/pers Nl_ef          # Konan sem óskað hafði verið/skal/mun bata
+    | HjSögnLhÞtSM/tala/pers FsAtv? so_2_þgf_ef_lhþt/tala/kyn Nl_ef   # Konan sem hafði verið/skal/mun óskað bata
+    | Nl_ef HjSögnLhÞtSM/tala/pers FsAtv? so_2_þgf_ef_lhþt/tala/kyn   # Konan sem bata hafði verið/skal/mun óskað (?)
+
+    | HjSögnLhÞt/tala/pers Nl_ef NhFylling/tala/kyn? # (Konan sem) er [ekki] þeirrar náttúru að elska ketti galvösk
 
 SögnMeðF_1/tala/pers/kyn →
 
@@ -402,19 +417,20 @@ SögnMeðF_1/tala/pers/kyn →
 
     | HjSögnLhÞtSM/tala/pers Nl_nf/tala/pers/kyn FsAtv? so_2_þgf_þf_lhþt/tala/kyn Nl_þgf # !!! (Í dag) hefur konan verið/skal/mun gefin Páli
     | HjSögnLhÞtSM/tala/pers Nl_nf/tala/pers/kyn FsAtv? so_2_þf_ef_lhþt/tala/kyn Nl_ef   # !!! (Í dag) hefur konan verið/skal/mun spurð álits
+    | HjSögnLhÞtSM/tala/pers Nl_þgf/tala/pers/kyn FsAtv? so_2_þgf_ef_lhþt/tala/kyn Nl_ef   # !!! (Í dag) hefur konunni verið/skal/mun óskað bata
 
 # Sögn með tveimur viðföngum ('gaf Páli gjöfina')
 Sögn_2/tala/pers/kyn →
 
     # Þágufall + þolfall ('að gefa einhverjum kött')
 
-    so_2_þgf_þf/tala/pers FsAtv? Nl_þgf Nl_þf    # Konurnar gáfu Páli [ekki] gjöfina
+    so_2_þgf_þf/tala/pers Nl_þgf Nl_þf    # Konurnar gáfu Páli gjöfina
     | HjSögn/tala/pers FsAtv? so_2_þgf_þf_sagnb Nl_þgf Nl_þf  # Konurnar höfðu [ekki] gefið Páli gjöfina
     | HjSögnNh/tala/pers FsAtv? so_2_þgf_þf_nh Nl_þgf Nl_þf  # Konurnar munu [ekki] gefa Páli gjöfina
 
     # Þolfall + eignarfall ('að spyrja einhvern einhvers')
 
-    | so_2_þf_ef/tala/pers FsAtv? Nl_þf Nl_ef    # Konurnar kröfðu Pál [ekki] svars
+    | so_2_þf_ef/tala/pers Nl_þf Nl_ef    # Konurnar kröfðu Pál [ekki] svars
     | HjSögn/tala/pers FsAtv? so_2_þf_ef_sagnb Nl_þf Nl_ef  # Konurnar höfðu [ekki] krafið Pál svara
     | HjSögnNh/tala/pers FsAtv? so_2_þf_ef_nh Nl_þf Nl_ef  # Konurnar munu [ekki] krefja Pál svara
 
@@ -424,7 +440,7 @@ Sögn_2/tala/pers/kyn →
 
     # Þágufall + þolfall ('að gefa einhverjum kött')
 
-    so_2_þgf_þf/tala/pers FsAtv? Nl_þgf Nl_þf # Konan sem gaf Páli [ekki] gjöfina
+    so_2_þgf_þf/tala/pers Nl_þgf Nl_þf # Konan sem gaf Páli [ekki] gjöfina
     | HjSögn/tala/pers FsAtv? so_2_þgf_þf_sagnb
         Nl_þgf Nl_þf                          # Konurnar sem hafa [ekki] gefið Páli gjöfina
     | so_2_þgf_þf_sagnb HjSögn/tala/pers 
@@ -436,7 +452,7 @@ Sögn_2/tala/pers/kyn →
 
     # Þolfall + eignarfall ('að spyrja einhvern einhvers')
 
-    | so_2_þf_ef/tala/pers FsAtv? Nl_þf FsAtv? Nl_ef # Konan sem spurði Pál [ekki] spurningarinnar
+    | so_2_þf_ef/tala/pers Nl_þf Nl_ef # Konan sem spurði Pál [ekki] spurningarinnar
     | HjSögn/tala/pers FsAtv? so_2_þf_ef_sagnb
         Nl_þf Nl_ef                           # Konurnar sem hafa [ekki] spurt Pál spurningarinnar
     | so_2_þf_ef_sagnb HjSögn/tala/pers 
@@ -482,6 +498,18 @@ HjSögnNh/tala/pers →
     | 'hafa'/tala/pers FsAtv? 'mega'_sagnb # hafa [ekki] mátt fara
     | 'hafa'/tala/pers FsAtv? 'vilja'_sagnb # hafa [ekki] viljað fara
 
+HjSögnMegiSkuli_et_p3 →
+    'mega'_et_p3                    # (Þann lærdóm) megi/mætti/má (draga)
+    | 'skulu'_et_p3                 # (Þann lærdóm) skuli/skyldi/skal (draga)
+    | 'hafa'_et_p3 'mega'_sagnb     # (Þann lærdóm) hefur/hefði mátt (draga)
+
+HjSögnMegiSkuliÞurfi_et_p3 →
+    'mega'_et_p3                    # (Endurnýja) megi/mætti/má (leigusamninginn)
+    | 'þurfa'_et_p3                 # (Endurnýja) þyrfti/þarf/þurfti (leigusamninginn)
+    | 'skulu'_et_p3                 # (Endurnýja) skuli/skyldi/skal (leigusamninginn)
+    | 'hafa'_et_p3 'mega'_sagnb     # (Endurnýja) hefur/hefði mátt (leigusamninginn)
+    | 'hafa'_et_p3 'þurfa'_sagnb    # (Endurnýja) hefur/hefði þurft (leigusamninginn)
+
 # Vera/verða í nafnhætti ('(Mér sýndist kötturinn) vera (gulbrúnn)')
 HjSögnVera →
     'vera'_nh
@@ -514,21 +542,21 @@ HjSögnLhÞt/tala/pers →
     | 'vilja'/tala/pers FsAtv? 'hafa'_nh 'vera'_sagnb # vildu [ekki] hafa verið farnar
     | 'þykja'/tala/pers FsAtv? 'hafa'_nh 'vera'_sagnb # þóttu [ekki] hafa verið farnar
     | 'mega'/tala/pers FsAtv? 'hafa'_nh 'vera'_sagnb # máttu [ekki] hafa verið farnar
-    | 'munu'/tala/pers FsAtv? 'hafa'_nh 'vera'_sagnb  # munu [ekki] hafa verið farnar
     | 'skulu'/tala/pers FsAtv? 'hafa'_nh 'vera'_sagnb # skulu [ekki] hafa verið farnar
+    | 'munu'/tala/pers FsAtv? 'hafa'_nh 'vera'_sagnb  # munu [ekki] hafa verið farnar
     | 'verða'/tala/pers                          # verða farnar
     | 'vilja'/tala/pers FsAtv? 'verða'_nh        # vildu [ekki] verða farnar
+    | 'þykja'/tala/pers FsAtv? 'verða'_nh        # þóttu [ekki] verða farnar
     | 'mega'/tala/pers FsAtv? 'verða'_nh         # máttu [ekki] verða farnar
     | 'skulu'/tala/pers FsAtv? 'verða'_nh        # skulu [ekki] verða farnar
     | 'munu'/tala/pers FsAtv? 'verða'_nh         # munu [ekki] verða farnar
     | 'hafa'/tala/pers FsAtv? 'verða'_sagnb      # hafa [ekki] orðið farnar
     | 'geta'/tala/pers FsAtv? 'hafa'_nh? 'verða'_sagnb # geta [ekki] orðið farnar / geta hafa orðið farnar
     | 'vilja'/tala/pers FsAtv? 'hafa'_nh 'verða'_sagnb # vildu [ekki] hafa orðið farnar
-    | 'mega'/tala/pers FsAtv? 'hafa'_nh 'verða'_sagnb  # máttu [ekki] hafa orðið farnar
     | 'þykja'/tala/pers FsAtv? 'hafa'_nh 'verða'_sagnb # þóttu [ekki] hafa orðið farnar
-    | 'þykja'/tala/pers FsAtv? 'hafa'_nh 'verða'_sagnb # skulu [ekki] hafa orðið farnar
-    | 'munu'/tala/pers FsAtv? 'hafa'_nh 'verða'_sagnb  # munu [ekki] hafa orðið farnar
+    | 'mega'/tala/pers FsAtv? 'hafa'_nh 'verða'_sagnb  # máttu [ekki] hafa orðið farnar
     | 'skulu'/tala/pers FsAtv? 'hafa'_nh 'verða'_sagnb # skulu [ekki] hafa orðið farnar
+    | 'munu'/tala/pers FsAtv? 'hafa'_nh 'verða'_sagnb  # munu [ekki] hafa orðið farnar
 
 # 'Konan skal/mun gefin Páli'
 HjSögnSkuluMunu/tala/pers →
@@ -563,16 +591,16 @@ NhFylling →
 # 'að lenda snarlega á flugvellinum'
 # 'að sigla skipinu í land strax'
 NhLiður →
-    nhm NhSögn FsAtv?
+    nhm NhSögn
 
 NhSögn →
-    so_0_nh so_0_gm_vh? OgNhSögn*           # að kjósa þurfi og telja
-    | so_1_þf_nh so_0_gm_vh? OgNhSögn_þf* Nl_þf   # að selja skyldi hestinn
+    so_0_nh so_0_gm_vh? OgNhSögn*                  # að kjósa þurfi og telja
+    | so_1_þf_nh so_0_gm_vh? OgNhSögn_þf* Nl_þf    # að selja skyldi hestinn
     | so_1_þgf_nh so_0_gm_vh? OgNhSögn_þgf* Nl_þgf # að hætta eigi baráttunni
-    | so_1_ef_nh so_0_gm_vh? OgNhSögn_ef* Nl_ef   # að freista eigi gæfunnar
-    | so_1_nf_nh so_0_gm_vh? OgNhSögn_nf* Nl_nf   # að hrjósa muni hugur
+    | so_1_ef_nh so_0_gm_vh? OgNhSögn_ef* Nl_ef    # að freista eigi gæfunnar
+    | so_1_nf_nh so_0_gm_vh? OgNhSögn_nf* Nl_nf    # að hrjósa muni hugur
     | so_2_þgf_þf_nh so_0_gm_vh? OgNhSögn_þgf_þf* Nl_þgf Nl_þf # að skrifa skuli og senda Karólínu bréfið
-    | so_2_þf_ef_nh so_0_gm_vh? OgNhSögn_þf_ef* Nl_þf Nl_ef # að spyrja og krefja Pál svars
+    | so_2_þf_ef_nh so_0_gm_vh? OgNhSögn_þf_ef* Nl_þf Nl_ef    # að spyrja og krefja Pál svars
 
     # að reistar yrðu og byggðar íbúðir / að barinn skyldi og flakaður fiskurinn
     # !!! Ath: sennilega geta aðeins hjálparsagnir staðið í viðtengingarhætti hér,
@@ -678,7 +706,7 @@ Nl_et_p3/fall/kyn →
         Fornöfn_et/fall/kyn?    # (stjórnarframkvæmdum) öllum
         FsRuna?                 # (fulltrúi bankans) í nefndinni
 
-    | fn_et/fall/kyn LoLiður_et/fall/kyn* # ekkert/einhver/það/það/því/þess vondur/vond/vont/vonda
+    | AtviksliðurEinkunn? fn_et/fall/kyn LoLiður_et/fall/kyn* # augljóslega ekkert/einhver/það/það/því/þess vondur/vond/vont/vonda
     | Undirsetning_et_p3/fall/kyn
     | 'hver'_et/fall/kyn "og" 'einn'_et/fall/kyn # 'hver og einn ber ábyrgð'
 
@@ -770,13 +798,11 @@ Tengisetning/tala/pers/kyn →
 
 EfLiður →
     EfLiðurStakur
-    | EfLiðurStakur KommaEfLiður+ ','?                # Jóns, föður Bjarna sterka
+    | EfLiðurStakur KommaEfLiður+ ','? # Jóns, föður Bjarna sterka
 
 EfLiðurStakur →
-    Nl_et_ef/kyn # LoLiður_et_ef/kyn*         # Karlsins langa
-#    | LoLiður_et_ef/kyn+ Nl_et_ef/kyn       # Stóru konunnar # !!! Innifalið í einkunn í NlKjarna
-    | Nl_ft_ef/kyn # LoLiður_ft_ef/kyn*       # Karlanna löngu
-#    | LoLiður_ft_ef/kyn+ Nl_ft_ef/kyn       # Stóru kvennanna # !!! Innifalið í einkunn í NlKjarna
+    Nl_et_ef/kyn
+    | Nl_ft_ef/kyn
 
 KommaEfLiður →
     ',' EfLiðurStakur
@@ -789,8 +815,6 @@ Töluorð/kyn → to/kyn | töl/kyn
 OgEða → "og" | "eða" | "ellegar" | "eður" | "svo" "og" | "sem" "og" | "né"
     | "þar" "á" "meðal" | "meðal" "annars" | "það" "er" | "það_er"
     | "eins_og"
-
-# KommaSt → ','? Samtenging # !!! Of vítt - veldur mikilli margræðni
 
 KommaOgEða → ','? OgEða
 
@@ -898,7 +922,9 @@ FsRuna → ',' FsLiðurMeðKommu Atviksliður? ','
 
 # Atviksliður
 
-Atviksliður → ao ao? # Var ao+ - prófun á því hvort tveir atviksliðir séu nóg
+Atviksliður → ao
+    | "ekkert"          # Jafnvel þótt þeir hefðu ekkert reynt að svindla á okkur
+    | ao OgEðaEn? ao    # Hratt en örugglega, strax í dag
     | Dagsetning
     | Tímasetning
 
