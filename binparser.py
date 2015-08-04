@@ -92,6 +92,7 @@ class BIN_Token(Token):
         "mm" : "MM", # Miðmynd
         "sb" : "SB", # Sterk beyging
         "nh" : "NH", # Nafnháttur
+        "bh" : "BH", # Boðháttur
         "lh" : "LH", # Lýsingarháttur (nútíðar)
         "vh" : "VH", # Viðtengingarháttur
         "nt" : "NT", # Nútíð
@@ -104,13 +105,15 @@ class BIN_Token(Token):
     _GENDERS_SET = set(_GENDERS)
 
     # Variants to be checked for verbs
-    _VERB_VARIANTS = [ "p1", "p2", "p3", "nh", "vh", "lh",
+    _VERB_VARIANTS = [ "p1", "p2", "p3", "nh", "vh", "lh", "bh",
         "sagnb", "lhþt", "nt", "kk", "kvk", "hk", "sb", "gm", "mm" ]
     # Pre-calculate a dictionary of associated BIN forms
     _VERB_FORMS = None # Initialized later
 
     # Set of adverbs that cannot be an "eo" (prepositions are already excluded)
-    _NOT_EO = { "og", "eða" }
+    _NOT_EO = { "og", "eða", "sem" }
+    # Prepositions that nevertheless must be allowed as adverbs
+    _NOT_NOT_EO = { "inn" } # 'Fyrirtækið hefur skilað inn ársreikningi'
 
     def __init__(self, t):
 
@@ -425,8 +428,13 @@ class BIN_Token(Token):
                 # Cache whether it can also match a preposition
                 if self._is_eo is None:
                     if self.t1_lower in BIN_Token._NOT_EO:
+                        # Explicitly forbidden, no need to check further
                         self._is_eo = False
+                    elif self.t1_lower in BIN_Token._NOT_NOT_EO:
+                        # Explicitly allowed, no need to check further
+                        self._is_eo = True
                     else:
+                        # Check whether also a preposition and return False in that case
                         self._is_eo = not any(mm[2] == "fs" for mm in self.t2)
                 # Return True if this token cannot also match a preposition
                 return self._is_eo
@@ -445,7 +453,12 @@ class BIN_Token(Token):
 
         # We have a match if any of the possible part-of-speech meanings
         # of this token match the terminal
-        return any(meaning_match(m) for m in self.t2) if self.t2 else False
+        if self.t2:
+            return any(meaning_match(m) for m in self.t2)
+
+        # Unknown word: allow it to match a singular, neutral noun in all cases
+        return terminal.startswith("no") and terminal.has_variant("et") and \
+            terminal.has_variant("hk")
 
     # Dispatch table for the token matching functions
     _MATCHING_FUNC = {
@@ -465,7 +478,10 @@ class BIN_Token(Token):
     @classmethod
     def is_understood(cls, t):
         """ Return True if the token type is understood by the BIN Parser """
-        return t in cls._MATCHING_FUNC
+        if t[0] == TOK.PUNCTUATION:
+            # A limited number of punctuation symbols is currently understood
+            return t[1] in ".?,:–"
+        return t[0] in cls._MATCHING_FUNC
 
     def matches(self, terminal):
         """ Return True if this token matches the given terminal """
@@ -485,6 +501,7 @@ class BIN_Token(Token):
 
     @classmethod
     def init(cls):
+        # Initialize cached dictionary of verb variant forms in BIN
         cls._VERB_FORMS = { v : cls._VARIANT[v] for v in cls._VERB_VARIANTS }
 
 BIN_Token.init()
@@ -518,15 +535,49 @@ class BIN_Parser(Parser):
     def go(self, tokens):
         """ Parse the token list after wrapping each understood token in the BIN_Token class """
 
-        def is_understood(t):
-            if t[0] == TOK.PUNCTUATION:
-                # A limited number of punctuation symbols is currently understood
-                return t[1] in ".?,:–"
-            return BIN_Token.is_understood(t[0])
+        # Remove stuff that won't be understood in any case
+        # Start with runs of unknown words inside parentheses
+        tlist = list(tokens)
+        tlen = len(tlist)
 
-        bt = [BIN_Token(t) for t in tokens if is_understood(t)]
-        # Count the tokens, excluding punctuation
-        # cw = sum(1 if t.t0 != TOK.PUNCTUATION else 0 for t in bt)
+        def scan_par(left):
+            """ Scan tokens inside parentheses and remove'em all
+                if they are only unknown words - perhaps starting with
+                an abbreviation """
+            right = left + 1
+            while right < tlen:
+                tok = tlist[right]
+                if tok[0] == TOK.PUNCTUATION and tok[1] == ')':
+                    # Check the contents of the token list from left+1 to right-1
+
+                    def is_unknown(t):
+                        """ A token is unknown if it is a TOK.UNKNOWN or if it is a
+                            TOK.WORD with no meanings """
+                        UNKNOWN = { "e.", "t.d.", "þ.e.", "m.a." } # Abbreviations and stuff that we ignore inside parentheses
+                        return t[0] == TOK.UNKNOWN or (t[0] == TOK.WORD and not t[2]) or t[1] in UNKNOWN
+
+                    if all(is_unknown(t) for t in tlist[left+1:right]):
+                        # Only unknown tokens: erase'em, including the parentheses
+                        for ix in range(left, right + 1):
+                            tlist[ix] = None
+
+                    return right + 1
+
+                right += 1
+            # No match: we're done
+            return right
+
+        ix = 0
+        while ix < tlen:
+            tok = tlist[ix]
+            if tok[0] == TOK.PUNCTUATION and tok[1] == '(':
+                ix = scan_par(ix) # Jumps to the right parenthesis, if found
+            else:
+                ix += 1
+
+        # Wrap the sanitized token list in BIN_Token()
+        bt = [ BIN_Token(t) for t in tlist if t is not None and BIN_Token.is_understood(t) ]
+
         # After wrapping, call the parent class go()
         return Parser.go(self, bt)
 

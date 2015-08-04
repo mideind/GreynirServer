@@ -17,13 +17,22 @@ import codecs
 import time
 from contextlib import closing
 
-import psycopg2
-import psycopg2.extensions
+try:
+    import psycopg2 # For CPython
+    import psycopg2.extensions
 
-# Make Psycopg2 and PostgreSQL happy with UTF-8
+    # Make Psycopg2 and PostgreSQL happy with UTF-8
 
-psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
-psycopg2.extensions.register_type(psycopg2.extensions.UNICODEARRAY)
+    psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
+    psycopg2.extensions.register_type(psycopg2.extensions.UNICODEARRAY)
+
+except ImportError:
+    import psycopg2cffi as psycopg2 # For PyPy
+    import psycopg2cffi.extensions
+
+    psycopg2cffi.extensions.register_type(psycopg2cffi.extensions.UNICODE)
+    psycopg2cffi.extensions.register_type(psycopg2cffi.extensions.UNICODEARRAY)
+
 
 from tokenizer import TOK, tokenize
 from grammar import Nonterminal, Terminal, Token, Production, Grammar, GrammarError

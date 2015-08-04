@@ -11,6 +11,7 @@ __pycache__/
 # Various resource files
 resources/*.txt
 resources/*.csv
+resources/*.tmLanguage
 
 # Minified JavaScript
 static/*.min.js
@@ -42,6 +43,7 @@ var/
 log/
 console/
 venv/
+pp/
 node_modules/
 
 # Installer logs

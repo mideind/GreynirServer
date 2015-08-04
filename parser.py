@@ -12,7 +12,7 @@
 
     This module uses an Earley-Scott parser to transform token sequences
     (sentences) into forests of parse trees, with each tree representing a
-    possible parse of a sentence.
+    possible parse of a sentence, according to a given context-free grammar.
 
     An Earley parser handles all valid context-free grammars,
     irrespective of ambiguity, recursion (left/middle/right), nullability, etc.
@@ -69,12 +69,14 @@ class Parser:
 
     """ Parses a sequence of tokens according to a given grammar and
         a root nonterminal within that grammar, returning a forest of
-        possible parses. The parses uses an Earley algorithm.
+        possible parses. The parses uses an optimized Earley algorithm.
     """
 
     class EarleyColumn:
 
         """ Container for the (unique) states in a single Earley column.
+            Each token in the input sentence has an associated column,
+            and a final column corresponds to the end-of-sentence marker.
             This class stores the states both in a list for easy indexed
             access, and in a set to enable a quick check for whether
             a state is already present. It also stores a dictionary
@@ -121,7 +123,6 @@ class Parser:
             if m is None:
                 # Not found in cache: do the actual match and cache it
                 self._matches[terminal] = m = self._token.matches(terminal)
-                # print("EarleyColumn.matches: terminal {0}, token {1}, value {2}".format(terminal, self._token, m))
             return m
 
         def matches_none(self, terminal):
@@ -138,7 +139,7 @@ class Parser:
             """ Get rid of temporary data once the parser has moved past this column """
             self._set = None
             self._matches = None
-            # Keep the states for diagnostics and debugging
+            # Keep the states themselves for diagnostics and debugging
 
         def __len__(self):
             """ Return the number of states in the column """
@@ -271,7 +272,7 @@ class Parser:
 
     def __init__(self, g):
 
-        """ Initialize a parser for a grammar """
+        """ Initialize a parser for a given grammar """
 
         nt_d = g.nt_dict()
         r = g.root()
