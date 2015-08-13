@@ -275,6 +275,9 @@ def test3():
     print("Reynir.grammar has {0} nonterminals, {1} terminals, {2} productions"
         .format(g.num_nonterminals(), g.num_terminals(), g.num_productions()))
 
+    # Dump the grammar
+    # print("\n" + str(g))
+
     def create_sentence_table():
         """ Only used to create a test fresh sentence table if one doesn't exist """
         with closing(Test_DB.open_db()) as db:

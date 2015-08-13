@@ -366,7 +366,10 @@ def add_sentence():
 def main():
     """ Handler for the main (index) page """
 
-    return render_template("main.html", default_url = DEFAULT_URL)
+    # Instantiate a dummy parser to access grammar info
+    # (this does not cause repeated parsing of the grammar as it is cached in memory)
+    bp = BIN_Parser(strict = False)
+    return render_template("main.html", default_url = DEFAULT_URL, grammar = bp.grammar())
 
 
 @app.route("/test")

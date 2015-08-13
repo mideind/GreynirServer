@@ -25,7 +25,8 @@
 """
 
 import codecs
-
+import os
+from datetime import datetime
 
 class GrammarError(Exception):
 
@@ -131,7 +132,7 @@ class Terminal:
         return '{0}'.format(self._name)
 
     def index(self):
-        """ Return the (negative) sequence number of this nonterminal """
+        """ Return the (positive) sequence number of this terminal """
         return self._index
 
     def has_variant(self, v):
@@ -215,7 +216,7 @@ class LiteralTerminal(Terminal):
 
 class Token:
 
-    """ A token from the input stream tokenizer """
+    """ A single input token as seen by the parser """
 
     def __init__(self, kind, val, lit = None):
         """ A basic token has a kind, a canonical value and an optional literal value,
@@ -373,6 +374,9 @@ class Grammar:
         self._terminals = { }
         self._nt_dict = { }
         self._root = None
+        # Information about the grammar file
+        self._file_name = None
+        self._file_time = None
 
     def nt_dict(self):
         """ Return the raw grammar dictionary, Nonterminal -> [ Productions ] """
@@ -403,6 +407,14 @@ class Grammar:
             were each right hand side option is counted as one """
         return sum(len(nt_p) for nt_p in self._nt_dict.values())
 
+    def file_name(self):
+        """ Return the name of the grammar file, or None """
+        return self._file_name
+
+    def file_time(self):
+        """ Return the timestamp of the grammar file, or None """
+        return self._file_time
+
     def __str__(self):
 
         def to_str(plist):
@@ -415,6 +427,8 @@ class Grammar:
             raising GrammarError if the grammar contains unused nonterminals or if there
             are any nonterminals that are unreachable from the root. """
 
+        # Clear previous file info, if any
+        self._file_time = self._file_name = None
         # Shortcuts
         terminals = self._terminals
         nonterminals = self._nonterminals
@@ -466,10 +480,10 @@ class Grammar:
                 # (id, repeat, variants)
                 rhs = []
 
-                # vfree is a list of 'free variants', i.e. variants that
+                # vfree is a set of 'free variants', i.e. variants that
                 # occur in the right hand side of the production but not in
                 # the nonterminal (those are in vts)
-                vfree = []
+                vfree = set()
 
                 for r in tokens:
 
@@ -503,8 +517,8 @@ class Grammar:
                                 # raise GrammarError("Variant '{0}' not specified for nonterminal '{1}'".format(vspec, nt_id), fname, line)
                                 raise GrammarError("Unknown variant '{0}'".format(vspec), fname, line)
                             if vspec not in vts:
-                                # Free variant
-                                vfree.append(vspec)
+                                # Free variant: add to set
+                                vfree.add(vspec)
 
                     if r[0] in "\"'":
                         # Literal terminal symbol
@@ -537,7 +551,7 @@ class Grammar:
 
                 # Make a list of all variants that occur in the
                 # nonterminal or on the right hand side
-                vall = vts + vfree
+                vall = vts + list(vfree)
 
                 for vval in variant_values(vall):
                     # Generate a production for every variant combination
@@ -599,10 +613,13 @@ class Grammar:
                             if new_nt_id not in nonterminals:
                                 new_nt = nonterminals[new_nt_id] = Nonterminal(new_nt_id, fname, line)
                                 new_nt.add_ref()
-                                # First production: C_new_x C
+                                # Note that the Earley algorithm is more efficient on left recursion
+                                # than middle or right recursion. Therefore it is better to generate
+                                # Cx -> Cx C than Cx -> C Cx.
+                                # First production: Cx C
                                 new_p = Production(fname, line)
                                 if repeat != '?':
-                                    new_p.append(new_nt) # C_new_x
+                                    new_p.append(new_nt) # C* / C+
                                 new_p.append(n) # C
                                 _add_rhs(new_nt_id, new_p)
                                 # Second production: epsilon(*, ?) or C(+)
@@ -610,7 +627,7 @@ class Grammar:
                                 if repeat == '+':
                                     new_p.append(n)
                                 _add_rhs(new_nt_id, new_p)
-                            # Substitute the C_new_x in the original production
+                            # Substitute the Cx in the original production
                             n = nonterminals[new_nt_id]
 
                         if n is not None:
@@ -728,7 +745,9 @@ class Grammar:
         # Check all nonterminals to verify that they have productions and are referenced
         for nt in nonterminals.values():
             if strict and not nt.has_ref():
-                raise GrammarError("Nonterminal {0} is never referenced in a production".format(nt), nt.fname(), nt.line())
+                # Emit a warning message if strict=True
+                print ("Nonterminal {0} is never referenced in a production".format(nt))
+                # raise GrammarError("Nonterminal {0} is never referenced in a production".format(nt), nt.fname(), nt.line())
             if nt not in grammar:
                 raise GrammarError("Nonterminal {0} is referenced but not defined".format(nt), nt.fname(), nt.line())
         for nt, plist in grammar.items():
@@ -758,45 +777,60 @@ class Grammar:
             raise GrammarError("Nonterminals {0} do not derive terminal strings"
                 .format(", ".join([str(nt) for nt in agenda])), fname, 0)
 
-        if strict:
-            # Check that all nonterminals are reachable from the root
-            unreachable = { nt for nt in nonterminals.values() }
+        # Short-circuit nonterminals that point directly and uniquely to other nonterminals.
+        # Becausee this creates a gap between the original grammar
+        # and the resulting trees, we only do this for nonterminals with variants
+        shortcuts = { } # Dictionary of shortcuts
+        for nt, plist in grammar.items():
+            if not "_" in nt.name():
+                # 'Pure' nonterminal with no variants: don't shortcut
+                continue
+            if len(plist) == 1 and len(plist[0]) == 1 and isinstance(plist[0][0], Nonterminal):
+                # This nonterminal has only one production, with only one nonterminal item
+                target = plist[0][0]
+                assert target != nt
+                while target in shortcuts:
+                    # Find ultimate destination of shortcut
+                    assert target != shortcuts[target]
+                    target = shortcuts[target]
+                shortcuts[nt] = target
 
-            def _remove(nt):
-                """ Recursively remove all nonterminals that are reachable from nt """
-                unreachable.remove(nt)
-                for p in grammar[nt]:
-                    for s in p:
-                        if isinstance(s, Nonterminal) and s in unreachable:
-                            _remove(s)
-
-            _remove(self._root)
-
-            if unreachable:
-                raise GrammarError("Nonterminals {0} are unreachable from the root"
-                    .format(", ".join([str(nt) for nt in unreachable])), fname, 0)
-
-        # Short-circuit non-terminals that point directly and uniquely to other nonterminals
+        # Go through all productions and replace the shortcuts with their targets
         for nt, plist in grammar.items():
             for p in plist:
                 for ix, s in enumerate(p):
-                    snt = s
-                    last_nt = None
-                    while isinstance(snt, Nonterminal) and snt != nt:
-                        nt_prod = grammar[snt]
-                        if len(nt_prod) != 1:
-                            # More than one production for this nonterminal
-                            break
-                        if len(nt_prod[0]) != 1:
-                            # The single production has more than one item in it
-                            break
-                        # OK, this qualifies: note it and try another iteration
-                        last_nt = snt
-                        snt = nt_prod[0][0]
-                    if last_nt is not None and last_nt != s:
+                    if isinstance(s, Nonterminal) and s in shortcuts:
                         # Replace the nonterminal in the production
-                        print("Production of {2}: Replaced {0} with {1}"
-                            .format(s, last_nt, nt))
-                        assert p[ix] == s
-                        p[ix] = last_nt
+                        target = shortcuts[s]
+                        if strict:
+                            # Print informational message in strict mode
+                            print("Production of {2}: Replaced {0} with {1}"
+                                .format(s, target, nt))
+                        p[ix] = target
 
+        # Now, after applying shortcuts, check that all nonterminals are reachable from the root
+        unreachable = { nt for nt in nonterminals.values() }
+
+        def _remove(nt):
+            """ Recursively remove all nonterminals that are reachable from nt """
+            unreachable.remove(nt)
+            for p in grammar[nt]:
+                for s in p:
+                    if isinstance(s, Nonterminal) and s in unreachable:
+                        _remove(s)
+
+        _remove(self._root)
+
+        if unreachable:
+            if strict:
+                # Emit a warning message if strict=True
+                print ("Nonterminals {0} are unreachable from the root"
+                    .format(", ".join([str(nt) for nt in unreachable])))
+            # Simplify the grammar dictionary by removing unreachable nonterminals
+            for nt in unreachable:
+                del grammar[nt]
+                del nonterminals[nt.name()]
+
+        # Grammar successfully read: note the file name and timestamp
+        self._file_name = fname
+        self._file_time = datetime.fromtimestamp(os.path.getmtime(fname))

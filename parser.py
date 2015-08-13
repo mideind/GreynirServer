@@ -490,9 +490,9 @@ class Parser:
                 p = parent[index]
                 assert isinstance(p, Terminal)
                 if detailed:
-                    print("{0} [{1}] {2}: {3}".format(indent, index, p, w))
+                    print(indent + "[{0}] {1}: {2}".format(index, p, w))
                 else:
-                    print("{0} {1}: {2}".format(indent, p, w))
+                    print(indent + "{0}: {1}".format(p, w))
                 return
             # Interior nodes are not printed
             # and do not increment the indentation level

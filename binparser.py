@@ -176,6 +176,10 @@ class BIN_Token(Token):
         if terminal.has_variant("lhþt") and "VB" in form:
             # We want only the strong declinations ("SB") of lhþt, not the weak ones
             return False
+        if terminal.has_variant("bh") and "ST" in form:
+            # We only want the explicit request forms (boðháttur), i.e. "bónaðu"/"bónið",
+            # not "bóna" which causes ambiguity vs. the nominal mode (nafnháttur)
+            return False
         # Check whether the verb token can potentially match the argument number
         # of the terminal in question. If the verb is known to take fewer
         # arguments than the terminal wants, this is not a match.

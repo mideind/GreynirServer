@@ -115,6 +115,14 @@ p.author {
    padding-top: 0;
 }
 
+p.stats {
+   font-size: 12px;
+   font-style: italic;
+   text-align: right;
+   margin-top: 3px;
+   margin-bottom: 3px;
+}
+
 p.tok-info {
    font-style: italic;
    margin-top: 0px;
