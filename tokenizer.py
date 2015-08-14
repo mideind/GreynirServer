@@ -32,24 +32,21 @@ import re
 import codecs
 import datetime
 
+# Import the Psycopg2 connector for PostgreSQL
 try:
-    import psycopg2 # For CPython
-    import psycopg2.extensions
-
-    # Make Psycopg2 and PostgreSQL happy with UTF-8
-
-    psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
-    psycopg2.extensions.register_type(psycopg2.extensions.UNICODEARRAY)
-
+    # For CPython
+    import psycopg2.extensions as psycopg2ext
+    import psycopg2
 except ImportError:
-    import psycopg2cffi as psycopg2 # For PyPy
-    import psycopg2cffi.extensions
+    # For PyPy
+    import psycopg2cffi.extensions as psycopg2ext
+    import psycopg2cffi as psycopg2
 
-    psycopg2cffi.extensions.register_type(psycopg2cffi.extensions.UNICODE)
-    psycopg2cffi.extensions.register_type(psycopg2cffi.extensions.UNICODEARRAY)
+# Make Psycopg2 and PostgreSQL happy with UTF-8
+psycopg2ext.register_type(psycopg2ext.UNICODE)
+psycopg2ext.register_type(psycopg2ext.UNICODEARRAY)
 
-
-from settings import Settings, StaticPhrases, Abbreviations
+from settings import Settings, StaticPhrases, Abbreviations, Meanings
 from dawgdictionary import Wordbase
 
 
@@ -85,6 +82,14 @@ ALL_CASES = { "nf", "þf", "þgf", "ef" }
 # Named tuple for person names, including case and gender
 
 PersonName = namedtuple('PersonName', ['name', 'gender', 'case'])
+
+# Named tuple for tokens
+
+Tok = namedtuple('Tok', ['kind', 'txt', 'val'])
+
+# Named tuple for word meanings fetched from the BÍN database (lexicon)
+
+BIN_Meaning = namedtuple('BIN_Meaning', ['stofn', 'utg', 'ordfl', 'fl', 'ordmynd', 'beyging'])
 
 # Token types
 
@@ -147,69 +152,69 @@ class TOK:
                 tp = TP_RIGHT
             elif w[0] in NONE_PUNCTUATION:
                 tp = TP_NONE
-        return (TOK.PUNCTUATION, w, tp)
+        return Tok(TOK.PUNCTUATION, w, tp)
 
     def Time(w, h, m, s):
-        return (TOK.TIME, w, (h, m, s))
+        return Tok(TOK.TIME, w, (h, m, s))
 
     def Date(w, y, m, d):
-        return (TOK.DATE, w, (y, m, d))
+        return Tok(TOK.DATE, w, (y, m, d))
 
     def Timestamp(w, y, mo, d, h, m, s):
-        return (TOK.TIMESTAMP, w, (y, mo, d, h, m, s))
+        return Tok(TOK.TIMESTAMP, w, (y, mo, d, h, m, s))
 
     def Year(w, n):
-        return (TOK.YEAR, w, n)
+        return Tok(TOK.YEAR, w, n)
 
     def Telno(w):
-        return (TOK.TELNO, w)
+        return Tok(TOK.TELNO, w, None)
 
     def Number(w, n, cases=None, gender=None):
         """ cases is a list of possible cases for this number
             (if it was originally stated in words) """
-        return (TOK.NUMBER, w, (n, cases, gender))
+        return Tok(TOK.NUMBER, w, (n, cases, gender))
 
     def Currency(w, iso, cases=None, gender=None):
         """ cases is a list of possible cases for this currency name
             (if it was originally stated in words, i.e. not abbreviated) """
-        return (TOK.CURRENCY, w, (iso, cases, gender))
+        return Tok(TOK.CURRENCY, w, (iso, cases, gender))
 
     def Amount(w, iso, n, cases=None, gender=None):
         """ cases is a list of possible cases for this amount
             (if it was originally stated in words) """
-        return (TOK.AMOUNT, w, (iso, n, cases, gender))
+        return Tok(TOK.AMOUNT, w, (iso, n, cases, gender))
 
     def Percent(w, n):
-        return (TOK.PERCENT, w, n)
+        return Tok(TOK.PERCENT, w, n)
 
     def Ordinal(w, n):
-        return (TOK.ORDINAL, w, n)
+        return Tok(TOK.ORDINAL, w, n)
 
     def Url(w):
-        return (TOK.URL, w)
+        return Tok(TOK.URL, w, None)
 
     def Word(w, m):
-        """ m is a list of meanings from BÍN """
-        return (TOK.WORD, w, m)
+        """ m is a list of BIN_Meaning tuples fetched from the BÍN database """
+        return Tok(TOK.WORD, w, m)
 
     def Unknown(w):
-        return (TOK.UNKNOWN, w)
+        return Tok(TOK.UNKNOWN, w, None)
 
     def Person(w, m):
         """ m is a list of PersonName tuples: (name, gender, case) """
-        return (TOK.PERSON, w, m)
+        return Tok(TOK.PERSON, w, m)
 
     def Begin_Paragraph():
-        return (TOK.P_BEGIN, None)
+        return Tok(TOK.P_BEGIN, None, None)
 
     def End_Paragraph():
-        return (TOK.P_END, None)
+        return Tok(TOK.P_END, None, None)
 
     def Begin_Sentence(num_parses = 0, err_index = None):
-        return (TOK.S_BEGIN, None, (num_parses, err_index))
+        return Tok(TOK.S_BEGIN, None, (num_parses, err_index))
 
     def End_Sentence():
-        return (TOK.S_END, None)
+        return Tok(TOK.S_END, None, None)
 
 
 def parse_digits(w):
@@ -378,55 +383,55 @@ def parse_particles(token_stream):
             clock = False
 
             # Check for $[number]
-            if token[0] == TOK.PUNCTUATION and token[1] == '$' and \
-                next_token[0] == TOK.NUMBER:
+            if token.kind == TOK.PUNCTUATION and token.txt == '$' and \
+                next_token.kind == TOK.NUMBER:
 
-                token = TOK.Amount(token[1] + next_token[1], "USD", next_token[2][0]) # Unknown gender
+                token = TOK.Amount(token.txt + next_token.txt, "USD", next_token.val[0]) # Unknown gender
                 next_token = next(token_stream)
 
             # Check for €[number]
-            if token[0] == TOK.PUNCTUATION and token[1] == '€' and \
-                next_token[0] == TOK.NUMBER:
+            if token.kind == TOK.PUNCTUATION and token.txt == '€' and \
+                next_token.kind == TOK.NUMBER:
 
-                token = TOK.Amount(token[1] + next_token[1], "EUR", next_token[2][0]) # Unknown gender
+                token = TOK.Amount(token.txt + next_token.txt, "EUR", next_token.val[0]) # Unknown gender
                 next_token = next(token_stream)
 
             # Coalesce abbreviations ending with a period into a single
             # abbreviation token
-            if next_token[0] == TOK.PUNCTUATION and next_token[1] == '.':
-                if token[0] == TOK.WORD and ('.' in token[1] or
-                    token[1].lower() in Abbreviations.SINGLES or token[1] in Abbreviations.SINGLES):
+            if next_token.kind == TOK.PUNCTUATION and next_token.txt == '.':
+                if token.kind == TOK.WORD and ('.' in token.txt or
+                    token.txt.lower() in Abbreviations.SINGLES or token.txt in Abbreviations.SINGLES):
                     # Abbreviation: make a special token for it
                     # and advance the input stream
-                    clock = token[1].lower() == CLOCK_ABBREV
-                    token = TOK.Word("[" + token[1] + ".]", None)
+                    clock = token.txt.lower() == CLOCK_ABBREV
+                    token = TOK.Word("[" + token.txt + ".]", None)
                     next_token = next(token_stream)
 
             # Coalesce 'klukkan'/[kl.] + time or number into a time
-            if (next_token[0] == TOK.TIME or next_token[0] == TOK.NUMBER):
-                if clock or (token[0] == TOK.WORD and token[1].lower() == CLOCK_WORD):
+            if (next_token.kind == TOK.TIME or next_token.kind == TOK.NUMBER):
+                if clock or (token.kind == TOK.WORD and token.txt.lower() == CLOCK_WORD):
                     # Match: coalesce and step to next token
-                    if next_token[0] == TOK.NUMBER:
-                        token = TOK.Time(CLOCK_ABBREV + ". " + next_token[1], next_token[2][0], 0, 0)
+                    if next_token.kind == TOK.NUMBER:
+                        token = TOK.Time(CLOCK_ABBREV + ". " + next_token.txt, next_token.val[0], 0, 0)
                     else:
-                        token = TOK.Time(CLOCK_ABBREV + ". " + next_token[1],
-                            next_token[2][0], next_token[2][1], next_token[2][2])
+                        token = TOK.Time(CLOCK_ABBREV + ". " + next_token.txt,
+                            next_token.val[0], next_token.val[1], next_token.val[2])
                     next_token = next(token_stream)
 
             # Coalesce percentages into a single token
-            if next_token[0] == TOK.PUNCTUATION and next_token[1] == '%':
-                if token[0] == TOK.NUMBER:
+            if next_token.kind == TOK.PUNCTUATION and next_token.txt == '%':
+                if token.kind == TOK.NUMBER:
                     # Percentage: convert to a percentage token
-                    token = TOK.Percent(token[1] + '%', token[2][0])
+                    token = TOK.Percent(token.txt + '%', token.val[0])
                     next_token = next(token_stream)
 
             # Coalesce ordinals (1. = first, 2. = second...) into a single token
             # !!! TBD: look at one more token to see whether the period might
             # mean the end of a sentence rather than an ordinal
-            if next_token[0] == TOK.PUNCTUATION and next_token[1] == '.':
-                if token[0] == TOK.NUMBER and not ('.' in token[1] or ',' in token[1]):
+            if next_token.kind == TOK.PUNCTUATION and next_token.txt == '.':
+                if token.kind == TOK.NUMBER and not ('.' in token.txt or ',' in token.txt):
                     # Ordinal, i.e. whole number followed by period: convert to an ordinal token
-                    token = TOK.Ordinal(token[1], token[2][0])
+                    token = TOK.Ordinal(token.txt, token.val[0])
                     next_token = next(token_stream)
 
             # Yield the current token and advance to the lookahead
@@ -452,15 +457,15 @@ def parse_sentences(token_stream):
         while True:
             next_token = next(token_stream)
 
-            if token[0] == TOK.P_BEGIN or token[0] == TOK.P_END:
+            if token.kind == TOK.P_BEGIN or token.kind == TOK.P_END:
                 # Block start or end: finish the current sentence, if any
                 if in_sentence:
                     yield TOK.End_Sentence()
                     in_sentence = False
-            elif token[0] == TOK.PUNCTUATION and (token[1] == '.' or token[1] == '?'):
+            elif token.kind == TOK.PUNCTUATION and (token.txt == '.' or token.txt == '?'):
                 # We may be finishing a sentence with not only a period but also
                 # right parenthesis and quotation marks
-                while next_token[0] == TOK.PUNCTUATION and next_token[1] in SENTENCE_FINISHERS:
+                while next_token.kind == TOK.PUNCTUATION and next_token.txt in SENTENCE_FINISHERS:
                     yield token
                     token = next_token
                     next_token = next(token_stream)
@@ -492,7 +497,7 @@ def parse_sentences(token_stream):
 
 class Bin_DB:
 
-    """ Encapsulates the database of word forms """
+    """ Encapsulates the BÍN database of word forms """
 
     def __init__(self):
         """ Initialize DB connection instance """
@@ -524,11 +529,18 @@ class Bin_DB:
         assert self._c is not None
         m = None
         try:
-            self._c.execute("select * from ord where ordmynd=(%s);", [ w ])
-            m = self._c.fetchall()
+            self._c.execute("select stofn, utg, ordfl, fl, ordmynd, beyging " +
+                "from ord where ordmynd=(%s);", [ w ])
+            # Map the returned data from fetchall() to a list of instances
+            # of the BIN_Meaning namedtuple
+            m = list(map(BIN_Meaning._make, self._c.fetchall()))
+            if w in Meanings.DICT:
+                # There is an additional word meaning in the Meanings dictionary,
+                # coming from the settings file: append it
+                m.append(BIN_Meaning._make(Meanings.DICT[w]))
         except psycopg2.DataError as e:
-            print(" Word {0} causing DB exception".format(w))
-            # Fall through with m set to None
+            print("Word {0} causing DB exception".format(w))
+            m = None
         return m
 
 
@@ -538,7 +550,7 @@ def lookup_abbreviation(w):
     clean_w = w[1:-1] if w[0] == '[' else w
     # Return a single-entity list with one meaning
     m = Abbreviations.DICT.get(clean_w, None)
-    return None if m is None else [ m ]
+    return None if m is None else [ BIN_Meaning._make(m) ]
 
 
 def lookup_word(db, w, at_sentence_start):
@@ -577,38 +589,40 @@ def lookup_word(db, w, at_sentence_start):
                 # use the meaning of its last part
                 prefix = "-".join(cw[0:-1])
                 m = db.meanings(cw[-1])
-                m = [ (prefix + "-" + stem, ix, wtype, wcat, prefix + "-" + wform, gform)
-                    for stem, ix, wtype, wcat, wform, gform in m]
+                m = [ BIN_Meaning(prefix + "-" + r.stofn, r.utg, r.ordfl, r.fl,
+                    prefix + "-" + r.ordmynd, r.beyging)
+                    for r in m]
     
     return (w, m)
 
+# Singleton instance of the BIN database used for lookups
+bin_db = Bin_DB()
 
 def annotate(token_stream):
     """ Look up word forms in the BIN word database """
 
     # Open the word database
-    with closing(Bin_DB().open(Settings.DB_HOSTNAME)) as db:
+    with closing(bin_db.open(Settings.DB_HOSTNAME)) as db:
 
         at_sentence_start = False
 
         # Consume the iterable source in wlist (which may be a generator)
         for t in token_stream:
-            if t[0] != TOK.WORD:
+            if t.kind != TOK.WORD:
                 # Not a word: relay the token unchanged
                 yield t
-                if t[0] == TOK.S_BEGIN or (t[0] == TOK.PUNCTUATION and t[1] == ':'):
+                if t.kind == TOK.S_BEGIN or (t.kind == TOK.PUNCTUATION and t.txt == ':'):
                     at_sentence_start = True
-                elif t[0] != TOK.PUNCTUATION and t[0] != TOK.ORDINAL:
+                elif t.kind != TOK.PUNCTUATION and t.kind != TOK.ORDINAL:
                     at_sentence_start = False
                 continue
-            if t[2] != None:
+            if t.val != None:
                 # Already have a meaning
                 yield t
                 at_sentence_start = False
                 continue
             # Look up word in BIN database
-            w = t[1]
-            w, m = lookup_word(db, w, at_sentence_start)
+            w, m = lookup_word(db, t.txt, at_sentence_start)
             # Yield a word tuple with meanings
             yield TOK.Word(w, m)
             # No longer at sentence start
@@ -779,18 +793,18 @@ NUMBER_CATEGORIES = frozenset(["töl", "to", "kk", "kvk", "hk", "lo"])
 
 def match_stem_list(token, stems, filter_func=None):
     """ Find the stem of a word token in given dict, or return None if not found """
-    if token[0] != TOK.WORD:
+    if token.kind != TOK.WORD:
         return None
-    if not token[2]:
+    if not token.val:
         # No meanings: this might be a foreign or unknown word
         # However, if it is still in the stems list we return True
-        return stems.get(token[1], None)
+        return stems.get(token.txt, None)
     # Go through the meanings with their stems
-    for m in token[2]:
+    for m in token.val:
         # If a filter function is given, pass candidates to it
         try:
-            if m[0] in stems and (filter_func is None or filter_func(m)):
-                return stems[m[0]]
+            if m.stofn in stems and (filter_func is None or filter_func(m)):
+                return stems[m.stofn]
         except Exception as e:
             print("Exception {0} in match_stem_list\nToken: {1}\nStems: {2}".format(e, token, stems))
             raise e
@@ -821,11 +835,11 @@ def add_cases(cases, bin_spec, default="nf"):
 def all_cases(token):
     """ Return a list of all cases that the token can be in """
     cases = set()
-    if token[0] == TOK.WORD:
+    if token.kind == TOK.WORD:
         # Roll through the potential meanings and extract the cases therefrom
-        if token[2]:
-            for m in token[2]:
-                add_cases(cases, m[5], None)
+        if token.val:
+            for m in token.val:
+                add_cases(cases, m.beyging, None)
     return list(cases)
 
 
@@ -834,18 +848,18 @@ _GENDER_DICT = { "KK": "kk", "KVK": "kvk", "HK": "hk" }
 
 def gender(token):
     """ Return the gender of the word in the token, if any """
-    if token[0] != TOK.WORD:
+    if token.kind != TOK.WORD:
         return None
     g = None
-    if token[2]:
-        for m in token[2]:
+    if token.val:
+        for m in token.val:
 
             def find_gender(m):
-                if m[2] in _GENDER_SET:
-                    return m[2] # Plain noun
+                if m.ordfl in _GENDER_SET:
+                    return m.ordfl # Plain noun
                 # Probably number word ('töl' or 'to'): look at its spec
                 for k, v in _GENDER_DICT.items():
-                    if k in m[5]:
+                    if k in m.beyging:
                         return v
                 return None
 
@@ -878,7 +892,7 @@ def parse_phrases_1(token_stream):
                 # Check that the word is a number word, marked with ordfl='töl' or 'to',
                 # or a subject ('nafnorð' of any gender) - or adjective ('lo') in the
                 # case of fractions such as half ('hálfur')
-                return meaning[2] in NUMBER_CATEGORIES
+                return meaning.ordfl in NUMBER_CATEGORIES
 
             def number(token):
                 """ If the token denotes a number, return that number - or None """
@@ -888,99 +902,99 @@ def parse_phrases_1(token_stream):
                 """ If the token denotes a fraction, return a corresponding number - or None """
                 return match_stem_list(token, FRACTIONS)
 
-            if token[0] == TOK.WORD:
+            if token.kind == TOK.WORD:
                 num = number(token)
                 if num is not None:
                     if num == 1:
                         # Only replace number 'one' if the next word is also
                         # a number word
-                        if next_token[0] == TOK.WORD:
+                        if next_token.kind == TOK.WORD:
                             if number(next_token) is not None:
-                                token = TOK.Number(token[1], num, all_cases(token), gender(token))
+                                token = TOK.Number(token.txt, num, all_cases(token), gender(token))
                             else:
                                 # Check for fractions ('einn þriðji')
                                 frac = fraction(next_token)
                                 if frac is not None:
                                     # We have a fraction: eat it and return it,
                                     # but use the case of the first word in the fraction
-                                    token = TOK.Number(token[1] + " " + next_token[1], frac,
-                                        all_cases(token), token[2][2])
+                                    token = TOK.Number(token.txt + " " + next_token.txt, frac,
+                                        all_cases(token), token.val[2])
                                     next_token = next(token_stream)
                     else:
                         # Replace number word with number token,
                         # preserving its case
-                        token = TOK.Number(token[1], num, all_cases(token), gender(token))
+                        token = TOK.Number(token.txt, num, all_cases(token), gender(token))
 
             # Check for [number] 'hundred|thousand|million|billion'
-            while token[0] == TOK.NUMBER and next_token[0] == TOK.WORD:
+            while token.kind == TOK.NUMBER and next_token.kind == TOK.WORD:
 
                 multiplier = number(next_token)
                 if multiplier is not None:
                     # Retain the case of the last multiplier
-                    token = TOK.Number(token[1] + " " + next_token[1],
-                        token[2][0] * multiplier,
+                    token = TOK.Number(token.txt + " " + next_token.txt,
+                        token.val[0] * multiplier,
                         all_cases(next_token), gender(next_token))
                     # Eat the multiplier token
                     next_token = next(token_stream)
-                elif next_token[1] in AMOUNT_ABBREV:
+                elif next_token.txt in AMOUNT_ABBREV:
                     # Abbreviations for ISK amounts
                     # For abbreviations, we do not know the case,
                     # but we try to retain the previous case information if any
-                    token = TOK.Amount(token[1] + " " + next_token[1], "ISK",
-                        token[2][0] * AMOUNT_ABBREV[next_token[1]], # Number
-                        token[2][1], token[2][2]) # Cases and gender
+                    token = TOK.Amount(token.txt + " " + next_token.txt, "ISK",
+                        token.val[0] * AMOUNT_ABBREV[next_token.txt], # Number
+                        token.val[1], token.val[2]) # Cases and gender
                     next_token = next(token_stream)
                 else:
                     # Check for [number] 'percent'
                     percentage = match_stem_list(next_token, PERCENTAGES)
                     if percentage is not None:
-                        token = TOK.Percent(token[1] + " " + next_token[1], token[2][0])
+                        token = TOK.Percent(token.txt + " " + next_token.txt, token.val[0])
                         # Eat the percentage token
                         next_token = next(token_stream)
                     else:
                         break
 
             # Check for [number | ordinal] [month name]
-            if (token[0] == TOK.ORDINAL or token[0] == TOK.NUMBER) and next_token[0] == TOK.WORD:
+            if (token.kind == TOK.ORDINAL or token.kind == TOK.NUMBER) and next_token.kind == TOK.WORD:
 
                 month = match_stem_list(next_token, MONTHS)
                 if month is not None:
-                    token = TOK.Date(token[1] + " " + next_token[1], y=0, m=month,
-                        d=token[2] if token[0] == TOK.ORDINAL else token[2][0])
+                    token = TOK.Date(token.txt + " " + next_token.txt, y = 0, m = month,
+                        d = token.val if token.kind == TOK.ORDINAL else token.val[0])
                     # Eat the month name token
                     next_token = next(token_stream)
 
             # Check for [date] [year]
-            if token[0] == TOK.DATE and next_token[0] == TOK.YEAR:
+            if token.kind == TOK.DATE and next_token.kind == TOK.YEAR:
 
-                if not token[2][0]:
+                if not token.val[0]:
                     # No year yet: add it
-                    token = TOK.Date(token[1] + " " + next_token[1],
-                        y=next_token[2], m=token[2][1], d=token[2][2])
+                    token = TOK.Date(token.txt + " " + next_token.txt,
+                        y = next_token.val, m = token.val[1], d = token.val[2])
                     # Eat the year token
                     next_token = next(token_stream)
 
             # Check for [date] [time]
-            if token[0] == TOK.DATE and next_token[0] == TOK.TIME:
+            if token.kind == TOK.DATE and next_token.kind == TOK.TIME:
 
                 # Create a time stamp
-                y, mo, d = token[2]
-                h, m, s = next_token[2]
-                token = TOK.Timestamp(token[1] + " " + next_token[1],
-                    y=y, mo=mo, d=d, h=h, m=m, s=s)
+                y, mo, d = token.val
+                h, m, s = next_token.val
+                token = TOK.Timestamp(token.txt + " " + next_token.txt,
+                    y = y, mo = mo, d = d, h = h, m = m, s = s)
                 # Eat the time token
                 next_token = next(token_stream)
 
             # Check for currency name doublets, for example
             # 'danish krona' or 'british pound'
-            if token[0] == TOK.WORD and next_token[0] == TOK.WORD:
+            if token.kind == TOK.WORD and next_token.kind == TOK.WORD:
                 nat = match_stem_list(token, NATIONALITIES)
                 if nat is not None:
                     cur = match_stem_list(next_token, CURRENCIES)
                     if cur is not None:
                         if (nat, cur) in ISO_CURRENCIES:
                             # Match: accumulate the possible cases
-                            token = TOK.Currency(token[1] + " "  + next_token[1],
+                            token = TOK.Currency(token.txt + " "  + next_token.txt,
                                 ISO_CURRENCIES[(nat, cur)], all_cases(token))
                             next_token = next(token_stream)
 
@@ -1017,23 +1031,23 @@ def parse_phrases_2(token_stream):
             # Make the lookahead checks we're interested in
 
             # Check for [number] [currency] and convert to [amount]
-            if token[0] == TOK.NUMBER and (next_token[0] == TOK.WORD or
-                next_token[0] == TOK.CURRENCY):
+            if token.kind == TOK.NUMBER and (next_token.kind == TOK.WORD or
+                next_token.kind == TOK.CURRENCY):
 
                 # Preserve the case of the currency name, if available
                 # (krónur, krónum, króna)
-                if next_token[0] == TOK.WORD:
+                if next_token.kind == TOK.WORD:
                     # Try to find a currency name
                     cur = match_stem_list(next_token, CURRENCIES)
                 else:
                     # Already have an ISO identifier for a currency
-                    cur = next_token[2][0]
+                    cur = next_token.val[0]
 
                 if cur is not None:
                     # Create an amount
                     # Use the case and gender information from the number, if any
-                    token = TOK.Amount(token[1] + " " + next_token[1],
-                        cur, token[2][0], token[2][1], token[2][2])
+                    token = TOK.Amount(token.txt + " " + next_token.txt,
+                        cur, token.val[0], token.val[1], token.val[2])
                     # Eat the currency token
                     next_token = next(token_stream)
 
@@ -1042,24 +1056,24 @@ def parse_phrases_2(token_stream):
             def stems(token, category):
                 """ If the token denotes a given name, return its possible
                     interpretations, as a list of PersonName tuples (name, case, gender) """
-                if token[0] != TOK.WORD or not token[2]:
+                if token.kind != TOK.WORD or not token.val:
                     return None
                 # Look through the token meanings
                 result = []
-                for m in token[2]:
+                for m in token.val:
                     # print("In_category checking {0}".format(m))
-                    if m[3] == category:
+                    if m.fl == category:
                         # Note the stem ('stofn') and the gender from the word type ('ordfl')
-                        result.append(PersonName(name = m[0], gender = m[2], case = case(m[5])))
+                        result.append(PersonName(name = m.stofn, gender = m.ordfl, case = case(m.beyging)))
                 return result if result else None
 
             def has_other_meaning(token, category):
                 """ Return True if the token can denote something besides a given name """
-                if token[0] != TOK.WORD or not token[2]:
+                if token.kind != TOK.WORD or not token.val:
                     return True
                 # Look through the token meanings
-                for m in token[2]:
-                    if m[3] != category:
+                for m in token.val:
+                    if m.fl != category:
                         # Here is a different meaning, not a given name: return True
                         return True
                 return False
@@ -1067,7 +1081,7 @@ def parse_phrases_2(token_stream):
             # Check for human names
             def given_names(token):
                 """ Check for Icelandic person name (category 'ism') """
-                if token[0] != TOK.WORD or not token[1][0].isupper():
+                if token.kind != TOK.WORD or not token.txt[0].isupper():
                     # Must be a word starting with an uppercase character
                     return None
                 return stems(token, "ism")
@@ -1075,7 +1089,7 @@ def parse_phrases_2(token_stream):
             # Check for surnames
             def surnames(token):
                 """ Check for Icelandic patronym (category 'föð) """
-                if token[0] != TOK.WORD or not token[1][0].isupper():
+                if token.kind != TOK.WORD or not token.txt[0].isupper():
                     # Must be a word starting with an uppercase character
                     return None
                 return stems(token, "föð")
@@ -1085,9 +1099,9 @@ def parse_phrases_2(token_stream):
                 gn = given_names(token)
                 if gn is not None:
                     return gn
-                if token[0] != TOK.WORD:
+                if token.kind != TOK.WORD:
                     return None
-                w = token[1]
+                w = token.txt
                 if w.startswith('['):
                     # Abbreviation: Cut off the brackets & trailing period
                     w = w[1:-2]
@@ -1110,7 +1124,7 @@ def parse_phrases_2(token_stream):
             if gn:
                 # Found at least one given name: look for a sequence of given names
                 # having compatible genders and cases
-                w = token[1]
+                w = token.txt
                 patronym = False
                 while True:
                     ngn = given_names_or_middle_abbrev(next_token)
@@ -1129,7 +1143,7 @@ def parse_phrases_2(token_stream):
                         break
                     # Success: switch to new given name list
                     gn = r
-                    w += " " + (ngn[0].name if next_token[1][0] == '[' else next_token[1])
+                    w += " " + (ngn[0].name if next_token.txt[0] == '[' else next_token.txt)
                     next_token = next(token_stream)
 
                 # Check whether the sequence of given names is followed
@@ -1145,7 +1159,7 @@ def parse_phrases_2(token_stream):
                     if r:
                         # Compatible: include it and advance to the next token
                         gn = r
-                        w += " " + next_token[1]
+                        w += " " + next_token.txt
                         patronym = True
                         next_token = next(token_stream)
 
@@ -1196,9 +1210,9 @@ def parse_phrases_2(token_stream):
             # Yield the current token and advance to the lookahead
             yield token
 
-            if token[0] == TOK.S_BEGIN or (token[0] == TOK.PUNCTUATION and token[1] == ':'):
+            if token.kind == TOK.S_BEGIN or (token.kind == TOK.PUNCTUATION and token.txt == ':'):
                 at_sentence_start = True
-            elif token[0] != TOK.PUNCTUATION and token[0] != TOK.ORDINAL:
+            elif token.kind != TOK.PUNCTUATION and token.kind != TOK.ORDINAL:
                 at_sentence_start = False
             token = next_token
 
@@ -1228,7 +1242,7 @@ def parse_static_phrases(token_stream):
             token = next(token_stream)
             tq.append(token) # Add to lookahead token queue
 
-            if token[0] != TOK.WORD:
+            if token.kind != TOK.WORD:
                 # Not a word: no match; discard state
                 for t in tq: yield t
                 tq = []
@@ -1238,7 +1252,7 @@ def parse_static_phrases(token_stream):
             # Look for matches in the current state and
             # build a new state
             newstate = { }
-            w = token[1].lower()
+            w = token.txt.lower()
 
             def add_to_state(state, sl, ix):
                 """ Add the list of subsequent words to the new parser state """
@@ -1255,9 +1269,9 @@ def parse_static_phrases(token_stream):
                     if not sl:
                         # No subsequent word: this is a complete match
                         # Reconstruct original text behind phrase
-                        w = " ".join([t[1] for t in tq])
+                        w = " ".join([t.txt for t in tq])
                         # Add the entire phrase as one 'word' to the token queue
-                        tq = [ TOK.Word(w, StaticPhrases.get_meaning(ix)) ]
+                        tq = [ TOK.Word(w, [BIN_Meaning._make(r) for r in StaticPhrases.get_meaning(ix)]) ]
                         # Discard the state and start afresh
                         newstate = { }
                         # Note that it is possible to match even longer phrases
@@ -1272,8 +1286,8 @@ def parse_static_phrases(token_stream):
                 for sl, ix in pdict[w]:
                     if not sl:
                         # Simple replace of a single word
-                        w = " ".join([t[1] for t in tq])
-                        tq = [ TOK.Word(w, StaticPhrases.get_meaning(ix)) ]
+                        w = " ".join([t.txt for t in tq])
+                        tq = [ TOK.Word(w, [BIN_Meaning._make(r) for r in StaticPhrases.get_meaning(ix)]) ]
                         newstate = { }
                         break
                     add_to_state(newstate, sl, ix)
@@ -1319,8 +1333,8 @@ def dump_tokens_to_file(fname, tokens):
     with codecs.open(fname, "w", "utf-8") as out:
 
         for token in tokens:
-            t = token[0]
-            w = token[1]
+            t = token.kind
+            w = token.txt
             if t == TOK.P_BEGIN or t == TOK.P_END:
                 print("[{0}]".format(TOK.descr[t]), file=out)
             elif t == TOK.S_BEGIN or t == TOK.S_END:

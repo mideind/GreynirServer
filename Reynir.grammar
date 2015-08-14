@@ -1224,16 +1224,15 @@ FsRuna → ',' FsLiðurMeðKommu Atviksliður? ','
 # Atviksliður
 
 Al →
-    ao ao?               # Strax í dag
-    | "ekkert"           # (Jafnvel þótt þeir hefðu) ekkert (reynt að svindla á okkur)
-    | Dagsetning
-    | Tímasetning
+    ao+                  # Strax tvöfalt til baka
+    | ao? Dagsetning     # (Ég tilkynnti þetta) strax 3. september
+    | ao? Tímasetning
 
 Atviksliður →
     Al OgAtviksliður*
 
 OgAtviksliður →
-    OgEðaEn Al        # Hratt en örugglega og fumlaust
+    OgEðaEn Al          # Hratt en örugglega og fumlaust
 
 AtviksliðurEinkunn →
     eo+                 # Einkunnarorð = atviksorð sem geta ekki jafnframt verið forsetningar

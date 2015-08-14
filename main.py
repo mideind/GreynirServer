@@ -169,7 +169,7 @@ def analyze():
     total_tokens = 0
 
     sent_begin = 0
-    bp = BIN_Parser(strict = False) # Don't do strict grammar checking
+    bp = BIN_Parser(verbose = False) # Don't emit diagnostic messages
 
     t0 = time.time()
 
@@ -187,7 +187,7 @@ def analyze():
             except ParseError as e:
                 forest = None
                 # Obtain the index of the offending token
-                err_index = e.token_index()
+                err_index = e.token_index
             num = 0 if forest is None else Parser.num_combinations(forest)
             print("Parsed sentence of length {0} with {1} combinations{2}".format(slen, num,
                 "\n" + " ".join(s[1] for s in sent) if num >= 100 else ""))
@@ -238,7 +238,7 @@ def parse_grid():
     # Tokenize the text
     tokens = list(tokenize(txt))
     # Parse the text
-    bp = BIN_Parser(strict = False) # Don't do strict grammar checking
+    bp = BIN_Parser(verbose = False) # Don't emit diagnostic messages
     err = dict()
 
     try:
@@ -246,7 +246,7 @@ def parse_grid():
     except ParseError as e:
         err["msg"] = str(e)
         # Relay information about the parser state at the time of the error
-        err["info"] = e.info()
+        err["info"] = e.info
         forest = None
 
     # Find the number of parse combinations
@@ -315,7 +315,7 @@ def parse_grid():
                 cls = { "nonterminal" }
                 # Get the 'pure' name of the nonterminal in question
                 assert isinstance(info, Nonterminal)
-                info = info.name()
+                info = info.name
             if endcol - startcol == 1:
                 cls |= { "vertical" }
             tbl[gix].append((endcol-startcol, rowspan, info, cls))
@@ -368,8 +368,8 @@ def main():
 
     # Instantiate a dummy parser to access grammar info
     # (this does not cause repeated parsing of the grammar as it is cached in memory)
-    bp = BIN_Parser(strict = False)
-    return render_template("main.html", default_url = DEFAULT_URL, grammar = bp.grammar())
+    bp = BIN_Parser(verbose = False)
+    return render_template("main.html", default_url = DEFAULT_URL, grammar = bp.grammar)
 
 
 @app.route("/test")
@@ -377,7 +377,7 @@ def test():
     """ Handler for a page of sentences for testing """
 
     # Run test and show the result
-    bp = BIN_Parser(strict = False) # Don't do strict grammar checking
+    bp = BIN_Parser(verbose = False) # Don't emit diagnostic messages
 
     return render_template("test.html", result = run_test(bp))
 

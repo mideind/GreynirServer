@@ -23,7 +23,7 @@
     For further information see J. Earley, "An efficient context-free parsing algorithm",
     Communications of the Association for Computing Machinery, 13:2:94-102, 1970.
 
-    The Earley parser used here is the improved version described by Scott et al,
+    The Earley parser used here is the improved version described by Scott & Johnstone,
     referencing Tomita. This allows worst-case cubic (O(n^3)) order, where n is the
     length of the input sentence, while still returning all possible parse trees
     for an ambiguous grammar.
@@ -56,10 +56,12 @@ class ParseError(Exception):
         self._token_index = token_index
         Exception.__init__(self, txt)
 
+    @property
     def info(self):
         """ Return the parser state information object """
         return self._info
 
+    @property
     def token_index(self):
         """ Return the 0-based index of the token where the parser ran out of options """
         return self._token_index
@@ -187,13 +189,12 @@ class Parser:
                 label = (parser._nonterminals[label[0]], label[1], label[2])
             self._label = label
             self._families = None # Families of children
+            self._parser = parser
 
-        def add_family(self, parser, prod, children):
+        def add_family(self, prod, children):
             """ Add a family of children to this node, in parallel with other families """
             # Note which production is responsible for this subtree,
             # to help navigate the tree in case of ambiguity
-
-            prod = [parser._lookup(ix) for ix in prod]
             pc_tuple = (prod, children)
             if self._families is None:
                 self._families = [ pc_tuple ]
@@ -201,42 +202,52 @@ class Parser:
             if pc_tuple not in self._families:
                 self._families.append(pc_tuple)
 
+        @property
         def label(self):
             """ Return the node label """
             return self._label
 
+        @property
         def start(self):
             """ Return the start token index """
             return self._label[1]
 
+        @property
         def end(self):
             """ Return the end token index """
             return self._label[2]
 
+        @property
         def head(self):
             """ Return the 'head' of this node, i.e. a top-level readable name for it """
             return self._label[0]
 
+        @property
         def is_ambiguous(self):
             """ Return True if this node has more than one family of children """
             return self._families and len(self._families) >= 2
 
+        @property
         def is_interior(self):
             """ Returns True if this is an interior node (partially parsed production) """
             return isinstance(self._label[0], tuple)
 
+        @property
         def is_completed(self):
             """ Returns True if this is a node corresponding to a completed nonterminal """
             return isinstance(self._label[0], Nonterminal)
 
+        @property
         def is_token(self):
             """ Returns True if this is a token node """
             return isinstance(self._label[0], Token)
 
+        @property
         def has_children(self):
             """ Return True if there are any families of children of this node """
             return bool(self._families)
 
+        @property
         def is_empty(self):
             """ Return True if there is only a single empty family of this node """
             if not self._families:
@@ -247,7 +258,14 @@ class Parser:
             """ Enumerate families of children """
             if self._families:
                 for prod, c in self._families:
+                    prod = [self._parser._lookup(ix) for ix in prod]
                     yield (prod, c)
+
+        def __eq__(self, other):
+            """ Nodes are considered equal if their labels are equal """
+            if not isinstance(other, Parser.Node):
+                return False
+            return self._label == other._label
 
         def __hash__(self):
             """ Make this node hashable """
@@ -267,36 +285,36 @@ class Parser:
 
         def __str__(self):
             """ Return a string representation of this node """
-            return str(self.head())
+            return str(self.head)
 
 
     def __init__(self, g):
 
         """ Initialize a parser for a given grammar """
 
-        nt_d = g.nt_dict()
-        r = g.root()
+        nt_d = g.nt_dict
+        r = g.root
         assert nt_d is not None
         assert r is not None
         assert r in nt_d
         # Convert the grammar to integer index representation for speed
-        self._root = r.index()
+        self._root = r.index
         # Make new grammar dictionary keyed by nonterminal index
         self._nt_dict = { }
         for nt, plist in nt_d.items():
-            self._nt_dict[nt.index()] = None if plist is None else [ p.prod() for p in plist ]
+            self._nt_dict[nt.index] = None if plist is None else [ p.prod for p in plist ]
         # Make a dictionary of nonterminals from the grammar
         # keyed by the nonterminal index instead of its name
         self._nonterminals = { }
-        for nt in g.nonterminals().values():
-            assert nt.index() not in self._nonterminals
-            self._nonterminals[nt.index()] = nt
+        for nt in g.nonterminals.values():
+            assert nt.index not in self._nonterminals
+            self._nonterminals[nt.index] = nt
         # Make a dictionary of terminals from the grammar
         # keyed by the terminal index instead of its name
         self._terminals = { }
-        for t in g.terminals().values():
-            assert t.index() not in self._terminals
-            self._terminals[t.index()] = t
+        for t in g.terminals.values():
+            assert t.index not in self._terminals
+            self._terminals[t.index] = t
 
 
     @classmethod
@@ -340,11 +358,11 @@ class Parser:
                 V[label] = y = Parser.Node(self, label)
             # assert v is not None
             if w is None:
-                y.add_family(self, prod, v)
+                y.add_family(prod, v)
             else:
                 # w is an already built subtree that we're putting a new
                 # node on top of
-                y.add_family(self, prod, (w, v)) # The code breaks if this is modified!
+                y.add_family(prod, (w, v)) # The code breaks if this is modified!
             return y
 
         def _push(newstate, _E, _Q):
@@ -421,7 +439,7 @@ class Parser:
                             w = v = V[label]
                         else:
                             w = v = V[label] = Parser.Node(self, label)
-                        w.add_family(self, prod, None) # Add e (empty production) as a family
+                        w.add_family(prod, None) # Add e (empty production) as a family
                     if h == i:
                         # Empty production satisfied
                         H[nt_B].append(w) # defaultdict automatically creates an empty list
@@ -476,7 +494,7 @@ class Parser:
 
 
     @staticmethod
-    def print_parse_forest(w, detailed = False):
+    def print_parse_forest(w, detailed = False, file = None):
         """ Print an Earley-Scott-Tomita SPPF parse forest in a nice indented format """
 
         def _print_helper(w, level, index, parent):
@@ -484,33 +502,33 @@ class Parser:
             indent = "  " * level # Two spaces per indent level
             if w is None:
                 # Epsilon node
-                print(indent + "(empty)")
+                print(indent + "(empty)", file = file)
                 return
-            if w.is_token():
+            if w.is_token:
                 p = parent[index]
                 assert isinstance(p, Terminal)
                 if detailed:
-                    print(indent + "[{0}] {1}: {2}".format(index, p, w))
+                    print(indent + "[{0}] {1}: {2}".format(index, p, w), file = file)
                 else:
-                    print(indent + "{0}: {1}".format(p, w))
+                    print(indent + "{0}: {1}".format(p, w), file = file)
                 return
             # Interior nodes are not printed
             # and do not increment the indentation level
-            if detailed or not w.is_interior():
+            if detailed or not w.is_interior:
                 h = str(w)
-                if (h.endswith("?") or h.endswith("*")) and w.is_empty():
+                if (h.endswith("?") or h.endswith("*")) and w.is_empty:
                     # Skip printing optional nodes that don't contain anything
                     return
-                print(indent + h)
-                if not w.is_interior():
+                print(indent + h, file = file)
+                if not w.is_interior:
                     level += 1
-            ambig = w.is_ambiguous()
+            ambig = w.is_ambiguous
             for ix, pc in enumerate(w.enum_children()):
                 prod, f = pc
                 if ambig:
                     # Identify the available parse options
-                    print(indent + "Option " + str(ix + 1) + ":")
-                if w.is_completed():
+                    print(indent + "Option " + str(ix + 1) + ":", file = file)
+                if w.is_completed:
                     # Completed nonterminal: start counting children from zero
                     child_ix = -1
                     # parent = w
@@ -533,7 +551,7 @@ class Parser:
     def num_combinations(w):
         """ Count the number of possible parse trees in the given forest """
 
-        if w is None or w.is_token():
+        if w is None or w.is_token:
             # Empty (epsilon) node or token node
             return 1
         comb = 0
@@ -586,17 +604,17 @@ class Parser:
             if w is None:
                 # Epsilon node: return empty list
                 return None
-            if w.is_token():
+            if w.is_token:
                 p = parent[index]
                 assert isinstance(p, Terminal)
-                return ([ level ] + suffix, w.start(), w.end(), None, (p, w.head().text()))
+                return ([ level ] + suffix, w.start, w.end, None, (p, w.head.text))
             # Interior nodes are not returned
             # and do not increment the indentation level
-            if not w.is_interior():
+            if not w.is_interior:
                 level += 1
             # Accumulate the resulting parts
             plist = [ ]
-            ambig = w.is_ambiguous()
+            ambig = w.is_ambiguous
             add_suffix = [ ]
 
             for ix, pc in enumerate(w.enum_children()):
@@ -604,7 +622,7 @@ class Parser:
                 if ambig:
                     # Uniquely identify the available parse options with a coordinate
                     add_suffix = [ ix ]
-                if w.is_completed():
+                if w.is_completed:
                     # Completed nonterminal: start counting children from the last one
                     child_ix = -1
                     # parent = w
@@ -630,13 +648,13 @@ class Parser:
                 else:
                     add_part(_part(f, level, child_ix, prod, suffix + add_suffix))
 
-            if w.is_interior():
+            if w.is_interior:
                 # Interior node: relay plist up the tree
                 return (None, 0, 0, plist, None)
             # Completed nonterminal
-            assert w.is_completed()
-            assert isinstance(w.head(), Nonterminal)
-            return ([ level - 1] + suffix, w.start(), w.end(), plist, w.head())
+            assert w.is_completed
+            assert isinstance(w.head, Nonterminal)
+            return ([level - 1] + suffix, w.start, w.end, plist, w.head)
 
         if w is None:
             return None

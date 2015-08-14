@@ -102,7 +102,7 @@ class Abbreviations:
 
     @staticmethod
     def add (abbrev, meaning, gender, fl = None):
-        """ Add a static phrase to the dictionary. Called from the config file handler. """
+        """ Add an abbreviation to the dictionary. Called from the config file handler. """
 
         # print("Adding abbrev {0} meaning {1} gender {2} fl {3}".format(abbrev, meaning, gender, fl))
         # Append the abbreviation and its meaning in tuple form
@@ -110,6 +110,23 @@ class Abbreviations:
         if abbrev[-1] == '.' and '.' not in abbrev[0:-1]:
             # Only one dot, at the end
             Abbreviations.SINGLES.add(abbrev[0:-1]) # Lookup is without the dot
+
+
+class Meanings:
+
+    """ Wrapper around list of additional word meanings, initialized from the config file """
+
+    # Dictionary of additional words and their meanings
+    DICT = { }
+
+    @staticmethod
+    def add (ordmynd, ordfl, fl, beyging):
+        """ Add word meaning to the dictionary. Called from the config file handler. """
+
+        # Append the word and its meaning in tuple form
+        assert ordmynd is not None
+        assert ordfl is not None
+        Meanings.DICT[ordmynd] = (ordmynd, 0, ordfl, fl or "ob", ordmynd, beyging or "-")
 
 
 class VerbObjects:
@@ -299,6 +316,19 @@ class Settings:
         Abbreviations.add(abbrev, m[1], gender, fl)
 
     @staticmethod
+    def _handle_meanings(s):
+        """ Handle additional word meanings in the settings section """
+        # Format: ordmynd ordfl fl (default ob) beyging (default -)
+        a = s.split(' ')
+        if len(a) < 2 or len(a) > 4:
+            raise ConfigError("Meaning should have two to four arguments")
+        ordmynd = a[0]
+        ordfl = a[1]
+        fl = a[2] if len(a) >= 3 else None
+        beyging = a[3] if len(a) >= 4 else None
+        Meanings.add(ordmynd, ordfl, fl, beyging)
+
+    @staticmethod
     def _handle_verb_objects(s):
         """ Handle verb object specifications in the settings section """
         # Format: verb [arg1] [arg2]
@@ -354,7 +384,8 @@ class Settings:
             "verb_objects" : Settings._handle_verb_objects,
             "verb_subjects" : Settings._handle_verb_subjects,
             "prepositions" : Settings._handle_prepositions,
-            "ambiguities" : Settings._handle_ambiguities
+            "ambiguities" : Settings._handle_ambiguities,
+            "meanings" : Settings._handle_meanings
         }
         handler = None # Current section handler
 

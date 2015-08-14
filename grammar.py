@@ -75,6 +75,7 @@ class Nonterminal:
     def __ne__(self, other):
         return id(self) != id(other)
 
+    @property
     def index(self):
         """ Return the (negative) sequence number of this nonterminal """
         return self._index
@@ -83,17 +84,21 @@ class Nonterminal:
         """ Mark this as being referenced """
         self._ref = True
 
+    @property
     def has_ref(self):
         """ Return True if the nonterminal has been referenced in a production """
         return self._ref
 
+    @property
     def name(self):
         return self._name
 
+    @property
     def fname(self):
         """ Return the name of the grammar file where this nonterminal was defined """
         return self._fname
 
+    @property
     def line(self):
         """ Return the number of the line within the grammar file where this nt was defined """
         return self._line
@@ -131,6 +136,7 @@ class Terminal:
     def __str__(self):
         return '{0}'.format(self._name)
 
+    @property
     def index(self):
         """ Return the (positive) sequence number of this terminal """
         return self._index
@@ -139,10 +145,12 @@ class Terminal:
         """ Returns True if the terminal name has the given variant """
         return v in self._vset
 
+    @property
     def num_variants(self):
         """ Return the number of variants in the terminal name """
         return len(self._parts) - 1
 
+    @property
     def variants(self):
         """ Returns the variants contained in this terminal name as a list """
         return self._parts[1:]
@@ -190,7 +198,7 @@ class LiteralTerminal(Terminal):
         # - no stemming or other canonization should be applied,
         # although the string will be converted to lowercase
         self._strong = (q == '\"')
-        if self._strong and self.num_variants() > 0:
+        if self._strong and self.num_variants > 0:
             # It doesn't make sense to have variants on exact literals
             # since they are constant and cannot vary
             raise GrammarError('An exact literal terminal with double quotes cannot have variants')
@@ -231,16 +239,19 @@ class Token:
             return '{0}'.format(self._kind)
         return '{0}:{1}'.format(self._kind, self._val)
 
+    @property
     def kind(self):
         """ Return the token kind """
         return self._kind
 
+    @property
     def text(self):
         """ Return the 'canonical' token text, which may be a stem or
             prototype of the literal, original token text as it appeared
             in the source """
         return self._val
 
+    @property
     def literal(self):
         """ Return the literal, original token text as it appeared in the source """
         return self._lit
@@ -301,25 +312,30 @@ class Production:
         # Destroy the cached tuple, if any
         self._tuple = None
 
+    @property
     def length(self):
         """ Return the length of this production """
         return self._len
 
+    @property
     def is_empty(self):
         """ Return True if this is an empty (epsilon) production """
         return self._len == 0
 
+    @property
     def fname(self):
         return self._fname
 
+    @property
     def line(self):
         return self._line
 
+    @property
     def prod(self):
         """ Return this production in tuple form """
         if self._tuple is None:
             # Nonterminals have negative indices and terminals have positive ones
-            self._tuple = tuple(t.index() for t in self._rhs) if self._rhs else tuple()
+            self._tuple = tuple(t.index for t in self._rhs) if self._rhs else tuple()
         return self._tuple
 
     def nonterminal_at(self, dot):
@@ -378,39 +394,48 @@ class Grammar:
         self._file_name = None
         self._file_time = None
 
+    @property
     def nt_dict(self):
         """ Return the raw grammar dictionary, Nonterminal -> [ Productions ] """
         return self._nt_dict
 
+    @property
     def root(self):
         """ Return the root nonterminal for this grammar """
         return self._root
 
+    @property
     def terminals(self):
         """ Return a dictionary of terminals in the grammar """
         return self._terminals
 
+    @property
     def nonterminals(self):
         """ Return a dictionary of nonterminals in the grammar """
         return self._nonterminals
 
+    @property
     def num_nonterminals(self):
         """ Return the number of nonterminals in the grammar """
         return len(self._nonterminals)
 
+    @property
     def num_terminals(self):
         """ Return the number of terminals in the grammar """
         return len(self._terminals)
 
+    @property
     def num_productions(self):
         """ Return the total number of productions in the grammar,
             were each right hand side option is counted as one """
         return sum(len(nt_p) for nt_p in self._nt_dict.values())
 
+    @property
     def file_name(self):
         """ Return the name of the grammar file, or None """
         return self._file_name
 
+    @property
     def file_time(self):
         """ Return the timestamp of the grammar file, or None """
         return self._file_time
@@ -422,10 +447,9 @@ class Grammar:
 
         return "".join([str(nt) + " → " + to_str(plist) + "\n" for nt, plist in self._nt_dict.items()])
 
-    def read(self, fname, strict = False):
-        """ Read grammar from a text file. Set strict = True to get strict grammar checking,
-            raising GrammarError if the grammar contains unused nonterminals or if there
-            are any nonterminals that are unreachable from the root. """
+    def read(self, fname, verbose = False):
+        """ Read grammar from a text file. Set verbose = True to get diagnostic messages
+            about unused nonterminals and nonterminals that are unreachable from the root. """
 
         # Clear previous file info, if any
         self._file_time = self._file_name = None
@@ -461,9 +485,9 @@ class Grammar:
                     return
                 if rhs is None:
                     return
-                if rhs.is_empty():
+                if rhs.is_empty:
                     # Adding epsilon production: avoid multiple ones
-                    if any(p.is_empty() for p in grammar[nt]):
+                    if any(p.is_empty for p in grammar[nt]):
                         return
                 # Append to the list of productions of this nonterminal
                 grammar[nt].append(rhs)
@@ -744,19 +768,19 @@ class Grammar:
 
         # Check all nonterminals to verify that they have productions and are referenced
         for nt in nonterminals.values():
-            if strict and not nt.has_ref():
-                # Emit a warning message if strict=True
+            if verbose and not nt.has_ref:
+                # Emit a warning message if verbose=True
                 print ("Nonterminal {0} is never referenced in a production".format(nt))
                 # raise GrammarError("Nonterminal {0} is never referenced in a production".format(nt), nt.fname(), nt.line())
             if nt not in grammar:
-                raise GrammarError("Nonterminal {0} is referenced but not defined".format(nt), nt.fname(), nt.line())
+                raise GrammarError("Nonterminal {0} is referenced but not defined".format(nt), nt.fname, nt.line)
         for nt, plist in grammar.items():
             if len(plist) == 0:
-                raise GrammarError("Nonterminal {0} has no productions".format(nt), nt.fname(), nt.line())
+                raise GrammarError("Nonterminal {0} has no productions".format(nt), nt.fname, nt.line)
             else:
                 for p in plist:
                     if len(p) == 1 and plist[0] == nt:
-                        raise GrammarError("Nonterminal {0} produces itself".format(nt), p.fname(), p.line())
+                        raise GrammarError("Nonterminal {0} produces itself".format(nt), p.fname, p.line)
 
         # Check that all nonterminals derive terminal strings
         agenda = [ nt for nt in nonterminals.values() ]
@@ -782,7 +806,7 @@ class Grammar:
         # and the resulting trees, we only do this for nonterminals with variants
         shortcuts = { } # Dictionary of shortcuts
         for nt, plist in grammar.items():
-            if not "_" in nt.name():
+            if not "_" in nt.name:
                 # 'Pure' nonterminal with no variants: don't shortcut
                 continue
             if len(plist) == 1 and len(plist[0]) == 1 and isinstance(plist[0][0], Nonterminal):
@@ -802,8 +826,8 @@ class Grammar:
                     if isinstance(s, Nonterminal) and s in shortcuts:
                         # Replace the nonterminal in the production
                         target = shortcuts[s]
-                        if strict:
-                            # Print informational message in strict mode
+                        if verbose:
+                            # Print informational message in verbose mode
                             print("Production of {2}: Replaced {0} with {1}"
                                 .format(s, target, nt))
                         p[ix] = target
@@ -822,14 +846,14 @@ class Grammar:
         _remove(self._root)
 
         if unreachable:
-            if strict:
-                # Emit a warning message if strict=True
+            if verbose:
+                # Emit a warning message if verbose=True
                 print ("Nonterminals {0} are unreachable from the root"
                     .format(", ".join([str(nt) for nt in unreachable])))
             # Simplify the grammar dictionary by removing unreachable nonterminals
             for nt in unreachable:
                 del grammar[nt]
-                del nonterminals[nt.name()]
+                del nonterminals[nt.name]
 
         # Grammar successfully read: note the file name and timestamp
         self._file_name = fname

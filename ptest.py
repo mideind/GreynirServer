@@ -269,11 +269,11 @@ def test3():
 
     print("\n\n------ Test 3 ---------")
 
-    p = BIN_Parser(strict = False) # Don't do strict grammar checking
-    g = p.grammar()
+    p = BIN_Parser(verbose = False) # Don't emit diagnostic messages
+    g = p.grammar
 
     print("Reynir.grammar has {0} nonterminals, {1} terminals, {2} productions"
-        .format(g.num_nonterminals(), g.num_terminals(), g.num_productions()))
+        .format(g.num_nonterminals, g.num_terminals, g.num_productions))
 
     # Dump the grammar
     # print("\n" + str(g))

@@ -161,7 +161,7 @@ class BIN_Token(Token):
             return False
         # print("verb_matches {0} terminal {1} form {2}".format(verb, terminal, form))
         # Check that person (1st, 2nd, 3rd) and other variant requirements match
-        for v in terminal.variants():
+        for v in terminal.variants:
             # Lookup variant to see if it is one of the required ones for verbs
             rq = BIN_Token._VERB_FORMS.get(v)
             if rq is not None and not rq in form:
@@ -194,7 +194,7 @@ class BIN_Token(Token):
                 # Zero arguments: that's simple
                 return True
             # Does this terminal require argument cases?
-            if terminal.num_variants() < 2:
+            if terminal.num_variants < 2:
                 # No: we don't need to check further
                 return True
             # The following is not consistent as some verbs take
@@ -260,7 +260,7 @@ class BIN_Token(Token):
             # No associated case: match all cases
             return True
         # See whether any of the allowed cases match the terminal
-        return terminal.num_variants() >= 2 and terminal.variant(1) in self.t2[1]
+        return terminal.num_variants >= 2 and terminal.variant(1) in self.t2[1]
 
     def matches_AMOUNT(self, terminal):
         """ An amount token matches a noun terminal """
@@ -288,7 +288,7 @@ class BIN_Token(Token):
             # No associated case: match all cases
             return True
         # See whether any of the allowed cases match the terminal
-        return terminal.num_variants() >= 2 and terminal.variant(1) in self.t2[2]
+        return terminal.num_variants >= 2 and terminal.variant(1) in self.t2[2]
 
     def matches_NUMBER(self, terminal):
         """ A number token matches a number (töl) or noun terminal """
@@ -325,7 +325,7 @@ class BIN_Token(Token):
             # No associated case: match all cases
             return True
         # See whether any of the allowed cases match the terminal
-        return terminal.num_variants() >= 2 and terminal.variant(1) in self.t2[1]
+        return terminal.num_variants >= 2 and terminal.variant(1) in self.t2[1]
 
     def matches_PERCENT(self, terminal):
         """ A percent token matches a number (töl) or noun terminal """
@@ -413,7 +413,7 @@ class BIN_Token(Token):
                 if terminal.has_variant("abbrev"):
                     # Only match abbreviations; gender, case and number do not matter
                     return m[5] == "-"
-                for v in terminal.variants():
+                for v in terminal.variants:
                     if v in BIN_Token._GENDERS_SET:
                         if m[2] != v:
                             # Mismatched gender
@@ -443,13 +443,13 @@ class BIN_Token(Token):
                 # Return True if this token cannot also match a preposition
                 return self._is_eo
 
-            if terminal.startswith("fs") and terminal.num_variants() > 0:
+            if terminal.startswith("fs") and terminal.num_variants > 0:
                 # Check preposition
                 return self.prep_matches(self.t1_lower, terminal.variant(0))
 
             # Check other word categories
             if m[5] != "-": # Tokens without a form specifier are assumed to be universally matching
-                for v in terminal.variants():
+                for v in terminal.variants:
                     if BIN_Token._VARIANT[v] not in m[5]:
                         # Not matching
                         return False
@@ -522,16 +522,17 @@ class BIN_Parser(Parser):
     # A singleton instance of the parsed Reynir.grammar
     _grammar = None
 
-    def __init__(self, strict = False):
+    def __init__(self, verbose = False):
         """ Load the shared BIN grammar if not already there, then initialize
             the Parser parent class """
         g = BIN_Parser._grammar
         if g is None:
             g = Grammar()
-            g.read("Reynir.grammar", strict = strict)
+            g.read("Reynir.grammar", verbose = verbose)
             BIN_Parser._grammar = g
         Parser.__init__(self, g)
 
+    @property
     def grammar(self):
         """ Return the grammar loaded from Reynir.grammar """
         return BIN_Parser._grammar
