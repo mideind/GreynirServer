@@ -54,8 +54,8 @@ from dawgdictionary import Wordbase
 
 LEFT_PUNCTUATION = "([„«#$€<"
 RIGHT_PUNCTUATION = ".,:;)]!%?“»”’…°>"
-CENTER_PUNCTUATION = "\"*&+=@©|—–"
-NONE_PUNCTUATION = "/-\\'~"
+CENTER_PUNCTUATION = "\"*&+=@©|—–-"
+NONE_PUNCTUATION = "/\\'~"
 PUNCTUATION = LEFT_PUNCTUATION + CENTER_PUNCTUATION + RIGHT_PUNCTUATION + NONE_PUNCTUATION
 
 # Punctuation symbols that may occur at the end of a sentence, after the period

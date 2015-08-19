@@ -107,6 +107,7 @@ StLiður →
     | ':' SagnRuna    # 'Það eru bara tveir kostir í boði: Selja bankann eða láta hann fara í þrot'
     | ',' Yfirsetning
     | '–' Yfirsetning
+    | '-' Yfirsetning
 
 SamtengingStök →
     # Ein samtenging, sem þó getur verið samsett, sbr. skilgreiningar í Reynir.conf
@@ -258,6 +259,9 @@ SetningAukafall →
 
     # Stóru skipunum hefur verið/skal/mun stýrt í land
     | Nl_þgf HjSögnLhÞtSM_et_p3 FsAtv? so_1_þgf_sagnb FsAtv?
+
+    # Ákvörðunar var/er/verður/hefur verið/mun að vænta strax í dag
+    | Nl_ef HjSögnLhÞtSM_et_p3 nhm so_1_ef_nh FsAtv?
 
     # Þá ályktun má strax draga í dag (að Páll sé ekki með öllum mjalla)
     | Nl/fall HjSögnMegiSkuli_et_p3 FsAtv? So_1_nh/fall FsAtv?
@@ -525,6 +529,7 @@ Sögn_2_sagnb →
     so_2_þgf_þf_sagnb Nl_þgf Nl_þf     # Konurnar höfðu [ekki] gefið Páli gjöfina
     | so_2_þf_ef_sagnb Nl_þf Nl_ef     # Konurnar höfðu [ekki] krafið Pál svara
     | so_2_þf_þf_sagnb Nl_þf Nl_þf     # Konurnar höfðu [ekki] kostað Pál skildinginn
+    | so_2_þf_þgf_sagnb Nl_þf Nl_þgf   # Konurnar höfðu [ekki] kallað Pál öllum illum nöfnum
     | so_2_þgf_þgf_sagnb Nl_þgf Nl_þgf # Konurnar höfðu [ekki] skilað Páli bílnum
     | so_2_þgf_ef_sagnb Nl_þgf Nl_ef   # Konurnar höfðu [ekki] óskað Páli alls hins besta
     | so_2_þgf_nf_sagnb Nl_þgf Nl_nf   # Kristín hafði [ekki] verið Páli stoð og stytta
@@ -535,6 +540,7 @@ Sögn_2_nh →
     so_2_þgf_þf_nh Nl_þgf Nl_þf        # Konurnar munu [ekki] gefa Páli gjöfina
     | so_2_þf_ef_nh Nl_þf Nl_ef        # Konurnar munu [ekki] krefja Pál svara
     | so_2_þf_þf_nh Nl_þf Nl_þf        # Konurnar munu [ekki] kosta Pál skildinginn
+    | so_2_þf_þgf_nh Nl_þf Nl_þgf      # Konurnar munu [ekki] kalla Pál öllum illum nöfnum
     | so_2_þgf_þgf_nh Nl_þgf Nl_þgf    # Konurnar munu [ekki] skila Páli bílnum
     | so_2_þgf_ef_nh Nl_þgf Nl_ef      # Konurnar munu [ekki] óska Páli alls hins besta
     | so_2_þgf_nf_nh Nl_þgf Nl_nf      # Kristín mun [ekki] vera Páli stoð og stytta
@@ -545,6 +551,7 @@ Sögn_2_bh →
     so_2_þgf_þf_bh Nl_þgf Nl_þf        # Gefðu Páli gjöfina
     | so_2_þf_ef_bh Nl_þf Nl_ef        # Krefðu Pál svars
     | so_2_þf_þf_bh Nl_þf Nl_þf        # Kostaðu Pál skildinginn
+    | so_2_þf_þgf_bh Nl_þf Nl_þgf      # Kallaðu Pál öllum illum nöfnum
     | so_2_þgf_þgf_bh Nl_þgf Nl_þgf    # Skilaðu Páli bílnum
     | so_2_þgf_ef_bh Nl_þgf Nl_ef      # Óskaðu Páli alls hins besta
     | so_2_þgf_nf_bh Nl_þgf Nl_nf      # Vertu Páli stoð og stytta
@@ -566,6 +573,7 @@ Sögn_1/tala/pers/kyn →
 
     | HjSögnLhÞtSM/tala/pers FsAtv? so_2_þgf_þf_lhþt/tala/kyn Nl_þgf # Konan hefur verið/skal/mun gefin Páli
     | HjSögnLhÞtSM/tala/pers FsAtv? so_2_þf_ef_lhþt/tala/kyn Nl_ef   # Konan hefur verið/skal/mun spurð álits
+    | HjSögnLhÞtSM/tala/pers FsAtv? so_2_þf_þgf_lhþt/tala/kyn Nl_þgf # Konan hefur verið/skal/mun kölluð öllum illum nöfnum
     # HjSögnLhÞtSM/tala/pers FsAtv? so_2_þgf_ef_lhþt/tala/kyn Nl_ef  # Konan hefur verið/skal/mun óska alls hins besta
     # HjSögnLhÞtSM/tala/pers FsAtv? so_2_þf_þf_lhþt/tala/kyn Nl_þf   # Konan hefur verið/skal/mun kosta skildinginn
 
@@ -586,8 +594,11 @@ Sögn_1/tala/pers/kyn →
     | so_2_þgf_þf_lhþt/tala/kyn HjSögnLhÞtSM/tala/pers Nl_þgf        # Konan sem gefin hafði verið/skal/mun Páli
     | Nl_þgf HjSögnLhÞtSM/tala/pers FsAtv? so_2_þgf_þf_lhþt/tala/kyn # Konan sem Páli hafði verið/skal/mun gefin
 
+    | so_2_þf_þgf_lhþt/tala/kyn HjSögnLhÞtSM/tala/pers Nl_þgf        # Konan sem kölluð hafði verið/skal/mun illum nöfnum
+    | Nl_þgf HjSögnLhÞtSM/tala/pers FsAtv? so_2_þf_þgf_lhþt/tala/kyn # Konan sem illum nöfnum hafði verið/skal/mun kölluð
+
     | so_2_þf_ef_lhþt/tala/kyn HjSögnLhÞtSM/tala/pers Nl_ef          # Konan sem spurð hafði verið/skal/mun álits
-    | Nl_ef HjSögnLhÞtSM/tala/pers FsAtv? so_2_þf_ef_lhþt/tala/kyn   # Konan sem álits hafði verið/skal/mun spurð (?)
+    | Nl_ef HjSögnLhÞtSM/tala/pers FsAtv? so_2_þf_ef_lhþt/tala/kyn   # Konan sem álits hafði verið/skal/mun spurð
 
     # so_2_þgf_ef, so_2_þgf_þgf og so_2_þf_þf virðast ekki geta staðið
     # í lhþt heldur aðeins í sagnb
@@ -605,6 +616,7 @@ SögnMeðF_1/tala/pers/kyn →
     | HjSögnNh/tala/pers Nl_nf/tala/pers/kyn FsAtv? Sögn_1_nh
 
     | HjSögnLhÞtSM/tala/pers Nl_nf/tala/pers/kyn FsAtv? so_2_þgf_þf_lhþt/tala/kyn Nl_þgf # !!! (Í dag) hefur konan verið/skal/mun gefin Páli
+    | HjSögnLhÞtSM/tala/pers Nl_nf/tala/pers/kyn FsAtv? so_2_þf_þgf_lhþt/tala/kyn Nl_þgf # !!! (Í dag) hefur konan verið/skal/mun kölluð illum nöfnum
     | HjSögnLhÞtSM/tala/pers Nl_nf/tala/pers/kyn FsAtv? so_2_þf_ef_lhþt/tala/kyn Nl_ef   # !!! (Í dag) hefur konan verið/skal/mun spurð álits
     | HjSögn/tala/pers Nl_þgf/tala/pers/kyn FsAtv? so_2_þgf_ef_sagnb Nl_ef   # !!! (Í dag) hefur konunni verið óskað bata
     | HjSögn/tala/pers Nl_þgf/tala/pers/kyn FsAtv? so_2_þgf_þgf_sagnb Nl_þgf   # !!! (Í dag) hefur konunni verið skilað bílnum
@@ -630,6 +642,9 @@ Sögn_2/tala/pers/kyn →
 
     # Þolfall + þolfall ('að kosta einhvern eitthvað')
     | so_2_þf_þf/tala/pers Nl_þf Nl_þf     # Konurnar kostuðu Pál skildinginn
+
+    # Þolfall + þágufall ('að kalla einhvern illum nöfnum')
+    | so_2_þf_þgf/tala/pers Nl_þf Nl_þgf   # Konurnar kölluðu Pál illum nöfnum
 
 # Sögn með tveimur viðföngum sem stendur í undirsetningu
 # ('Konan sem gaf Páli gjöfina')
@@ -665,6 +680,11 @@ Sögn_2/tala/pers/kyn →
     | so_2_þf_þf_nh HjSögnNh/tala/pers 
         Nl_þf Nl_þf                           # Konurnar sem kosta munu Pál skildinginn
 
+    | so_2_þf_þgf_sagnb HjSögn/tala/pers 
+        Nl_þf Nl_þgf                          # Konurnar sem kallað hafa Pál illum nöfnum
+    | so_2_þf_þgf_nh HjSögnNh/tala/pers 
+        Nl_þf Nl_þgf                          # Konurnar sem kalla munu Pál illum nöfnum
+
 SögnMeðF_2/tala/pers/kyn →
 
     # Þágufall + þolfall ('að gefa einhverjum kött')
@@ -684,6 +704,9 @@ SögnMeðF_2/tala/pers/kyn →
 
     # Þágufall + þágufall ('að skila einhverjum einhverju')
     | so_2_þgf_þgf/tala/pers Nl_nf/tala/pers/kyn Nl_þgf Nl_þgf  # (Í gær) skiluðu konurnar Páli [ekki] bílnum
+
+    # Þolfall + þágufall ('að kalla einhvern illum nöfnum')
+    | so_2_þf_þgf/tala/pers Nl_nf/tala/pers/kyn Nl_þf Nl_þgf    # (Í gær) kölluðu konurnar Pál [ekki] illum nöfnum
 
     # Sagnbeyging og nafnháttur    
     | HjSögn/tala/pers Nl_nf/tala/pers/kyn FsAtv? Sögn_2_sagnb  # (Í morgun) höfðu konurnar [ekki] krafið Pál svara
@@ -815,15 +838,16 @@ OgNhLiður →
     FsAtv? KommaOgEða NhSögn # (að selja skyldi hestinn) snarlega, eða hætta baráttunni (ella)
 
 NhSögn →
-    so_0_nh so_0_gm_vh? OgNhSögn*                  # að kjósa þurfi og telja
-    | so_1_þf_nh so_0_gm_vh? OgNhSögn_þf* Nl_þf    # að selja skyldi hestinn
-    | so_1_þgf_nh so_0_gm_vh? OgNhSögn_þgf* Nl_þgf # að hætta eigi baráttunni
-    | so_1_ef_nh so_0_gm_vh? OgNhSögn_ef* Nl_ef    # að freista eigi gæfunnar
-    | so_1_nf_nh so_0_gm_vh? OgNhSögn_nf* Nl_nf    # að hrjósa muni hugur
-    | so_2_þgf_þf_nh so_0_gm_vh? OgNhSögn_þgf_þf* Nl_þgf Nl_þf # að skrifa skuli og senda Karólínu bréfið
+    so_0_nh so_0_gm_vh? OgNhSögn*                  # að kjósa [þurfi] og telja (upp á nýtt)
+    | so_1_þf_nh so_0_gm_vh? OgNhSögn_þf* Nl_þf    # að selja [skyldi] hestinn
+    | so_1_þgf_nh so_0_gm_vh? OgNhSögn_þgf* Nl_þgf # að hætta [ætti] baráttunni
+    | so_1_ef_nh so_0_gm_vh? OgNhSögn_ef* Nl_ef    # að freista [eigi] gæfunnar
+    | so_1_nf_nh so_0_gm_vh? OgNhSögn_nf* Nl_nf    # að hrjósa [muni] hugur
+    | so_2_þgf_þf_nh so_0_gm_vh? OgNhSögn_þgf_þf* Nl_þgf Nl_þf # að skrifa [skuli] og senda Karólínu bréfið
     | so_2_þf_ef_nh so_0_gm_vh? OgNhSögn_þf_ef* Nl_þf Nl_ef    # að spyrja og krefja Pál svars
-    | so_2_þgf_ef_nh so_0_gm_vh? OgNhSögn_þgf_ef* Nl_þgf Nl_ef # að óska eigi og óska Páli góðs bata
-    | so_2_þgf_nf_nh so_0_gm_vh? OgNhSögn_þgf_nf* Nl_þgf Nl_nf # að vera eigi og vera Páli stoð og stytta
+    | so_2_þf_þgf_nh so_0_gm_vh? OgNhSögn_þf_þgf* Nl_þf Nl_þgf # að kalla [ætti] Pál illum nöfnum
+    | so_2_þgf_ef_nh so_0_gm_vh? OgNhSögn_þgf_ef* Nl_þgf Nl_ef # að óska [eigi] og óska Páli góðs bata
+    | so_2_þgf_nf_nh so_0_gm_vh? OgNhSögn_þgf_nf* Nl_þgf Nl_nf # að vera [eigi] og vera Páli stoð og stytta
     #| so_2_þf_þf_nh so_0_gm_vh? OgNhSögn_þf_þf* Nl_þf Nl_þf    # !!! þarf?
     #| so_2_þgf_þgf_nh so_0_gm_vh? OgNhSögn_þgf_þgf* Nl_þgf Nl_þgf    # !!! þarf?
 
@@ -848,6 +872,8 @@ OgNhSögn_þgf_þf →
     OgEða so_2_þgf_þf_nh so_0_gm_vh?
 OgNhSögn_þf_ef →
     OgEða so_2_þf_ef_nh so_0_gm_vh?
+OgNhSögn_þf_þgf →
+    OgEða so_2_þf_þgf_nh so_0_gm_vh?
 OgNhSögn_þgf_ef →
     OgEða so_2_þgf_ef_nh so_0_gm_vh?
 OgNhSögn_þgf_nf →
@@ -932,13 +958,13 @@ Nl_et_p2/fall/kyn →
 
 Nl_ft_p1/fall/kyn →
     'ég'_ft/fall | 'vér'_ft/fall
-    | 'ég'_et/fall SamtengingNl/fall/kyn+
-    | Nl/fall KommaOgEða 'ég'_et/fall SamtengingNl/fall/kyn*
+    | 'ég'_et/fall NlRuna/fall/kyn+
+    | Nl/fall KommaOgEða 'ég'_et/fall NlRuna/fall/kyn*
 
 Nl_ft_p2/fall/kyn →
     'þú'_ft/fall | 'þér'_ft/fall
-    | 'þú'_et/fall SamtengingNl/fall/kyn+
-    | Nl/fall KommaOgEða 'þú'_et/fall SamtengingNl/fall/kyn*
+    | 'þú'_et/fall NlRuna/fall/kyn+
+    | Nl/fall KommaOgEða 'þú'_et/fall NlRuna/fall/kyn*
 
 # Sameiginlegar reglur fyrir 3p. eintölu og fleirtölu
 
@@ -975,7 +1001,7 @@ Nl_et_p3/fall/kyn →
 Nl_ft_p3/fall/kyn →
 
     Nl_p3_ft/fall/kyn FsRuna?             # fulltrúar bankans í nefndinni
-    | Nl/fall/kyn SamtengingNl/fall/kyn+  # Allir liðir af sama kyni
+    | Nl/fall/kyn NlRuna/fall/kyn+  # Allir liðir af sama kyni
 
 # Ein regla fyrir undirsetningar:
 # 1p: 'ég sem alltaf elda matinn samviskusamlega (nenni þessu ekki)'
@@ -1009,7 +1035,7 @@ Nl_ft_p3_ef/kyn → abfn_ef    # sín
 
 # Skammstöfun: 'FIH bankinn', 'FIH-bankinn'
 
-Skst → no_abbrev
+Skst → no_abbrev '-'?
 
 # !!! ATH: Ráða við "Bernhöfts bakaríið"
 Fyrirbæri/fall/kyn → no_et/fall/kyn | Manneskja/fall/kyn
@@ -1034,16 +1060,16 @@ Titill/fall →
 # Nl_ft_p3_ef_kvk → 'hún'_ft_ef
 
 Nl_ft_p3_nf_hk →
-    Nl_nf SamtengingNl_nf+   # Blandað kyn verður að hvorugkyni fleirtölu
+    Nl_nf NlRuna_nf+   # Blandað kyn verður að hvorugkyni fleirtölu
 
 Nl_ft_p3_þf_hk →
-    Nl_þf SamtengingNl_þf+   # Blandað kyn verður að hvorugkyni fleirtölu
+    Nl_þf NlRuna_þf+   # Blandað kyn verður að hvorugkyni fleirtölu
 
 Nl_ft_p3_þgf_hk →
-    Nl_þgf SamtengingNl_þgf+ # Blandað kyn verður að hvorugkyni fleirtölu
+    Nl_þgf NlRuna_þgf+ # Blandað kyn verður að hvorugkyni fleirtölu
 
 Nl_ft_p3_ef_hk →
-    Nl_ef SamtengingNl_ef+   # Blandað kyn verður að hvorugkyni fleirtölu
+    Nl_ef NlRuna_ef+   # Blandað kyn verður að hvorugkyni fleirtölu
 
 Undirsetning/tala/pers/fall/kyn →
     Nl/tala/pers/fall/kyn ','? Tengiorð Tengisetning/tala/pers/kyn ','?
@@ -1111,7 +1137,7 @@ KommaOgEðaEn → ',' | ','? OgEðaEn
 
 # Allir liðir af sama kyni
 
-SamtengingNl/fall/kyn →
+NlRuna/fall/kyn →
     KommuSamtenging/fall/kyn* KommaOgEða FsRuna? Nl/fall/kyn ','?
     | ',' FsRuna? Nl/fall/kyn ','?        # Konurnar, sérstaklega Anna, voru óánægðar
 
@@ -1119,7 +1145,7 @@ KommuSamtenging/fall/kyn → ',' FsRuna? Nl/fall/kyn
 
 # Blandað kyn
 
-SamtengingNl/fall →
+NlRuna/fall →
     KommuSamtenging/fall* KommaOgEða FsRuna? Nl/fall ','?
     | ',' FsRuna? Nl/fall ','?        # Þingmenn, sérstaklega Páll, voru óánægðir
 

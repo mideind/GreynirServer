@@ -288,6 +288,11 @@ span#add-invalid-sent {
    border-color: #dd2233;
 }
 
+span#edit-sent {
+   background-color: #2233dd;
+   border-color: #2233dd;
+}
+
 span#add-valid-sent.disabled {
    background-color: #dddddd;
    border-color: #dddddd;

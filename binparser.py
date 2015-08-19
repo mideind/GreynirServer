@@ -133,6 +133,11 @@ class BIN_Token(Token):
         """ Return True if the verb in question matches the verb category,
             where the category is one of so_0, so_1, so_2 depending on
             the allowable number of noun phrase arguments """
+        # If this is an unknown but potentially composite verb,
+        # it will contain one or more hyphens. In this case, use only
+        # the last part in lookups in the internal verb lexicons.
+        if "-" in verb:
+            verb = verb.split("-")[-1]
         if terminal.has_variant("subj"):
             # Verb subject in non-nominative case
             if terminal.has_variant("nh"):
@@ -222,7 +227,18 @@ class BIN_Token(Token):
                 # Prevent verb from matching a terminal if it
                 # doesn't have all the arguments that the terminal requires
                 return False
+        if terminal.has_variant("mm"):
+            # Verbs in 'miðmynd' match terminals with one or two arguments
+            return nargs == 0 or nargs == 1
+        # !!! DEBUG
+        unknown = True
+        for i in range(nargs + 1, 3):
+            if verb in VerbObjects.VERBS[i]:
+                # The verb is known but takes more arguments than this
+                unknown = False
         # Unknown verb or arguments not too many: consider this a match
+        if unknown:
+            print("Matched terminal {1} with unknown verb {0}".format(verb, terminal))
         return True
 
     def prep_matches(self, prep, case):
@@ -484,7 +500,7 @@ class BIN_Token(Token):
         """ Return True if the token type is understood by the BIN Parser """
         if t[0] == TOK.PUNCTUATION:
             # A limited number of punctuation symbols is currently understood
-            return t[1] in ".?,:–"
+            return t[1] in ".?,:–-"
         return t[0] in cls._MATCHING_FUNC
 
     def matches(self, terminal):
@@ -522,6 +538,10 @@ class BIN_Parser(Parser):
     # A singleton instance of the parsed Reynir.grammar
     _grammar = None
 
+    # BIN_Parser version - change when logic is modified so that it
+    # affects the parse tree
+    _VERSION = "1.0"
+
     def __init__(self, verbose = False):
         """ Load the shared BIN grammar if not already there, then initialize
             the Parser parent class """
@@ -536,6 +556,11 @@ class BIN_Parser(Parser):
     def grammar(self):
         """ Return the grammar loaded from Reynir.grammar """
         return BIN_Parser._grammar
+
+    @property
+    def version(self):
+        """ Return a composite version string from BIN_Parser and Parser """
+        return self.grammar.file_time + "/" + BIN_Parser._VERSION + "/" + super()._VERSION
 
     def go(self, tokens):
         """ Parse the token list after wrapping each understood token in the BIN_Token class """

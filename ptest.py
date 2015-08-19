@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
     Reynir: Natural language processing for Icelandic
 
@@ -17,21 +18,20 @@ import codecs
 import time
 from contextlib import closing
 
+
+# Import the Psycopg2 connector for PostgreSQL
 try:
-    import psycopg2 # For CPython
-    import psycopg2.extensions
-
-    # Make Psycopg2 and PostgreSQL happy with UTF-8
-
-    psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
-    psycopg2.extensions.register_type(psycopg2.extensions.UNICODEARRAY)
-
+    # For CPython
+    import psycopg2.extensions as psycopg2ext
+    import psycopg2
 except ImportError:
-    import psycopg2cffi as psycopg2 # For PyPy
-    import psycopg2cffi.extensions
+    # For PyPy
+    import psycopg2cffi.extensions as psycopg2ext
+    import psycopg2cffi as psycopg2
 
-    psycopg2cffi.extensions.register_type(psycopg2cffi.extensions.UNICODE)
-    psycopg2cffi.extensions.register_type(psycopg2cffi.extensions.UNICODEARRAY)
+# Make Psycopg2 and PostgreSQL happy with UTF-8
+psycopg2ext.register_type(psycopg2ext.UNICODE)
+psycopg2ext.register_type(psycopg2ext.UNICODEARRAY)
 
 
 from tokenizer import TOK, tokenize

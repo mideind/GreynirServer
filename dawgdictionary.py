@@ -29,6 +29,8 @@ import threading
 import logging
 import time
 import pickle
+import platform
+import codecs
 
 
 class _Node:
@@ -50,6 +52,67 @@ class DawgDictionary:
         self._index = 1
         # Lock to ensure that only one thread loads the dictionary
         self._lock = threading.Lock()
+
+    def load(self, fname):
+        """ Load a DAWG from a text file """
+
+        def _parse_and_add(line):
+            """ Parse a single line of a DAWG text file and add to the graph structure """
+            # The first line is the root (by convention nodeid 0)
+            # The first non-root node is in line 2 and has nodeid 2
+            assert self._nodes is not None
+            nodeid = self._index if self._index > 1 else 0
+            self._index += 1
+            edgedata = line.split(u'_')
+            final = False
+            firstedge = 0
+            if len(edgedata) >= 1 and edgedata[0] == u'|':
+                # Vertical bar denotes final node
+                final = True
+                firstedge = 1
+            if nodeid in self._nodes:
+                # We have already seen this node id: use the previously created instance
+                newnode = self._nodes[nodeid]
+            else:
+                # The id is appearing for the first time: add it
+                newnode = _Node()
+                self._nodes[nodeid] = newnode
+            newnode.final = final
+            # Process the edges
+            for edge in edgedata[firstedge:]:
+                e = edge.split(u':')
+                prefix = e[0]
+                edgeid = int(e[1])
+                if edgeid == 0:
+                    # Edge leads to null/zero, i.e. is final
+                    newnode.edges[prefix] = None
+                elif edgeid in self._nodes:
+                    # Edge leads to a node we've already seen
+                    newnode.edges[prefix] = self._nodes[edgeid]
+                else:
+                    # Edge leads to a new, previously unseen node: Create it
+                    newterminal = _Node()
+                    newnode.edges[prefix] = newterminal
+                    self._nodes[edgeid] = newterminal
+
+        # Reset the graph contents
+        with self._lock:
+            # Ensure that we don't have multiple threads trying to load simultaneously
+            if self._nodes is not None:
+                # Already loaded
+                return
+            self._nodes = dict()
+            self._index = 1
+            with codecs.open(fname, mode='r', encoding='utf-8') as fin:
+                for line in fin:
+                    if line.endswith(u'\r\n'):
+                        # Cut off trailing CRLF (Windows-style)
+                        line = line[0:-2]
+                    elif line.endswith(u'\n'):
+                        # Cut off trailing LF (Unix-style)
+                        line = line[0:-1]
+                    if line:
+                        _parse_and_add(line)
 
     def load_pickle(self, fname):
         """ Load a DAWG from a Python pickle file """
@@ -151,7 +214,11 @@ class Wordbase:
     def _load_resource(resource):
         """ Load a DawgDictionary, from either a text file or a pickle file """
         # Assumes that the appropriate lock has been acquired
-        pname = os.path.abspath(os.path.join("resources", resource + ".dawg.pickle"))
+        # When running under PyPy, we prefer to parse the text representation
+        # of the DAWG since reading .pickle files is quite slow
+        is_pypy = platform.python_implementation() == "PyPy"
+        pname = os.path.abspath(os.path.join("resources",
+            resource + (".text.dawg" if is_pypy else ".dawg.pickle")))
         try:
             pname_t = os.path.getmtime(pname)
         except os.error:
@@ -160,7 +227,13 @@ class Wordbase:
         dawg = DawgDictionary()
 
         t0 = time.time()
-        dawg.load_pickle(pname)
+        if is_pypy:
+            # Running under PyPy: Parse from text file
+            print("PyPy detected - loading text file {0}".format(pname))
+            dawg.load(pname)
+        else:
+            # Running under CPython or other Python platform: Load from pickle
+            dawg.load_pickle(pname)
         t1 = time.time()
         logging.info(u"Loaded {0} graph nodes in {1:.2f} seconds".format(dawg.num_nodes(), t1 - t0))
 

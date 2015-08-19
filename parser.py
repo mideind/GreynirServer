@@ -74,6 +74,9 @@ class Parser:
         possible parses. The parses uses an optimized Earley algorithm.
     """
 
+    # Parser version - change when logic changes so that output is affected
+    _VERSION = "1.0"
+
     class EarleyColumn:
 
         """ Container for the (unique) states in a single Earley column.
@@ -261,6 +264,25 @@ class Parser:
                     prod = [self._parser._lookup(ix) for ix in prod]
                     yield (prod, c)
 
+        def reduce_by_priority(self, priority_dict):
+            """ Cut down families of children depending on the given dict of
+                completed nonterminals and their priority order (0 is highest priority) """
+            if not self._families:
+                return
+            prio = [ ]
+            for prod, c in self._families:
+                if c and c.is_completed:
+                    nt_id = c._label[0].name
+                    if nt_id in priority_dict:
+                        prio.append((priority_dict[nt_id], prod, c))
+            if len(prio) < len(self._families):
+                # All children cannot be prioritized
+                return
+            prio.sort(key = lambda x: x[0]) # Sort in increasting order by priority
+            # Leave all those children in the families list whose priority is
+            # identical to the max (lowest valued) priority
+            self._families = [(p[1], p[2]) for p in prio if p[0] == prio[0][0]]
+
         def __eq__(self, other):
             """ Nodes are considered equal if their labels are equal """
             if not isinstance(other, Parser.Node):
@@ -385,7 +407,8 @@ class Parser:
 
         n = len(tokens)
         # Initialize the Earley columns
-        E = [ Parser.EarleyColumn(tokens[i] if i < n else None) for i in range(n + 1) ]
+        # We create one for each token, plus a final (sentinel) column
+        E = [ Parser.EarleyColumn(t) for t in tokens ] + [ Parser.EarleyColumn(None) ]
         E0 = E[0]
         Q0 = [ ]
 
@@ -396,7 +419,7 @@ class Parser:
             # add (S ::= ·α, 0, null) to E0 and Q0
             _push(newstate, E0, Q0)
 
-        # Step through the Earley columns
+        # Step through the columns
         for i, Ei in enumerate(E):
             # The agenda set R is Ei[j..len(Ei)]
             if not Ei and not Q0:

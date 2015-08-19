@@ -120,15 +120,20 @@ class Terminal:
         self._name = name
         # Do a bit of pre-calculation to speed up various
         # checks against this terminal
-        self._parts = name.split("_")
+        parts = name.split("_")
+        self._first = parts[0]
         # The variant set for this terminal, i.e.
         # tname_var1_var2_var3 -> { 'var1', 'var2', 'var3' }
-        self._vset = set(self._parts[1:])
+        self._vparts = parts[1:]
+        self._vcount = len(self._vparts)
+        self._vset = set(self._vparts)
         self._index = Terminal._INDEX
+        # The hash is used quite often so it is worth caching
+        self._hash = self._index.__hash__()
         Terminal._INDEX += 1
 
     def __hash__(self):
-        return self._index.__hash__()
+        return self._hash
 
     def __repr__(self):
         return '{0}'.format(self._name)
@@ -148,28 +153,27 @@ class Terminal:
     @property
     def num_variants(self):
         """ Return the number of variants in the terminal name """
-        return len(self._parts) - 1
+        return self._vcount
 
     @property
     def variants(self):
         """ Returns the variants contained in this terminal name as a list """
-        return self._parts[1:]
+        return self._vparts
 
     def variant(self, index):
         """ Return the variant with the given index """
-        # Allows negative indices, starting from the end
-        return self._parts[1 + index if index >= 0 else index]
+        return self._vparts[index]
 
     def startswith(self, part):
         """ Returns True if the terminal name starts with the given string """
-        return self._parts[0] == part
+        return self._first == part
 
     def matches(self, t_kind, t_val, t_lit):
         # print("Terminal.matches: self.name is {0}, t_kind is {1}".format(self.name, t_kind))
         return self._name == t_kind
 
     def matches_first(self, t_kind, t_val, t_lit):
-        return self._parts[0] == t_kind
+        return self._first == t_kind
 
 
 class LiteralTerminal(Terminal):
@@ -190,9 +194,9 @@ class LiteralTerminal(Terminal):
         lit = lit[0:ix + 1].replace("_", " ") + lit[ix + 1:]
         Terminal.__init__(self, lit)
         # Peel off the quotes from the first part
-        assert len(self._parts[0]) >= 3
-        assert self._parts[0][0] == self._parts[0][-1]
-        self._parts[0] = self._parts[0][1:-1]
+        assert len(self._first) >= 3
+        assert self._first[0] == self._first[-1]
+        self._first = self._first[1:-1]
         # If a double quote was used, this is a 'strong' literal
         # that matches an exact terminal string as it appeared in the source
         # - no stemming or other canonization should be applied,
@@ -208,9 +212,9 @@ class LiteralTerminal(Terminal):
             canonically or absolutely identical to the literal """
         if self._strong:
             # Absolute literal match
-            return self._parts[0] == t_lit
+            return self._first == t_lit
         # Canonical match of stems or prototypes
-        return self._parts[0] == t_val
+        return self._first == t_val
 
     def matches_first(self, t_kind, t_val, t_lit):
         """ A literal terminal matches a token if the token text is identical to the literal """
@@ -218,8 +222,8 @@ class LiteralTerminal(Terminal):
         #    .format(self._parts[0], t_val))
         if self._strong:
             # Absolute literal match
-            return self._parts[0] == t_lit
-        return self._parts[0] == t_val
+            return self._first == t_lit
+        return self._first == t_val
 
 
 class Token:

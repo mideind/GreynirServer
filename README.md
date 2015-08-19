@@ -59,11 +59,11 @@ augmented with repeat specifiers for right-hand-side tokens (`*` for 0..n instan
 `+` for 1..n instances, or `?` for 0..1 instances). Also, the grammar allows for
 compact specification of rules with variants, for instance due to cases, numbers and genders.
 Thus, a single rule (e.g. `NounPhrase/case/gender -> Adjective/case noun/case/gender`)
-is automatically expanded into multiple rules (8 in this case, 4 cases x 2 genders) with
+is automatically expanded into multiple rules (12 in this case, 4 cases x 3 genders) with
 appropriate substitutions for right-hand-side tokens depending on their local variants.
 
 The parser is an Earley parser as enhanced by
-[Scott et al](http://www.sciencedirect.com/science/article/pii/S0167642309000951) referencing Tomita.
+[Scott and Johnstone](http://www.sciencedirect.com/science/article/pii/S0167642309000951) referencing Tomita.
 It parses ambiguous grammars without restriction and
 returns a compact Shared Packed Parse Forest (SPPF) of parse trees. If a parse
 fails, it identifies the token at which no parse was available.
@@ -85,6 +85,6 @@ fails, it identifies the token at which no parse was available.
 
 ## Copyright and licensing
 
-The intent is to release Reynir under a GNU GPL license once the code stabilizes. However, while
+The intent is to release Reynir under an open license once the code stabilizes. However, while
 Reynir is still in early stages of development the code is *copyright (C) 2015 by Vilhjalmur
 Thorsteinsson*, all rights reserved. Please contact the author for further information.

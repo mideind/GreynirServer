@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
     Reynir: Natural language processing for Icelandic
 
@@ -32,6 +33,7 @@ from tokenizer import tokenize, dump_tokens_to_file, StaticPhrases, Abbreviation
 from grammar import Nonterminal
 from parser import Parser, ParseError
 from binparser import BIN_Parser
+from reducer import Reducer
 from ptest import run_test, Test_DB
 
 # Initialize Flask framework
@@ -170,6 +172,7 @@ def analyze():
 
     sent_begin = 0
     bp = BIN_Parser(verbose = False) # Don't emit diagnostic messages
+    rdc = Reducer()
 
     t0 = time.time()
 
@@ -183,7 +186,10 @@ def analyze():
             # Parse the accumulated sentence
             err_index = None
             try:
+                # Parse the sentence
                 forest = bp.go(sent)
+                # Reduce the resulting forest
+                forest = rdc.go(forest)
             except ParseError as e:
                 forest = None
                 # Obtain the index of the offending token
@@ -248,6 +254,10 @@ def parse_grid():
         # Relay information about the parser state at the time of the error
         err["info"] = e.info
         forest = None
+
+    # Reduce the parse forest
+    r = Reducer()
+    forest = r.go(forest)
 
     # Find the number of parse combinations
     combinations = Parser.num_combinations(forest) if forest else 0
@@ -369,7 +379,10 @@ def main():
     # Instantiate a dummy parser to access grammar info
     # (this does not cause repeated parsing of the grammar as it is cached in memory)
     bp = BIN_Parser(verbose = False)
-    return render_template("main.html", default_url = DEFAULT_URL, grammar = bp.grammar)
+    txt = request.args.get("txt", None)
+    if not txt:
+        txt = DEFAULT_URL
+    return render_template("main.html", default_text = txt, grammar = bp.grammar)
 
 
 @app.route("/test")
