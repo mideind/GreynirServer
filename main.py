@@ -29,7 +29,7 @@ from flask import render_template, redirect, jsonify
 from flask import request, session, url_for
 
 from settings import Settings, ConfigError
-from tokenizer import tokenize, dump_tokens_to_file, StaticPhrases, Abbreviations, TOK
+from tokenizer import tokenize, StaticPhrases, Abbreviations, TOK
 from grammar import Nonterminal
 from parser import Parser, ParseError
 from binparser import BIN_Parser
@@ -225,9 +225,6 @@ def analyze():
         num_parsed_sent = num_parsed_sent,
         avg_ambig_factor = (total_ambig / total_tokens) if total_tokens > 0 else 1.0
     )
-
-    # Dump the tokens to a text file for inspection
-    # dump_tokens_to_file("txt", toklist)
 
     # Return the tokens as a JSON structure to the client
     return jsonify(result = result)

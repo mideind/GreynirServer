@@ -229,7 +229,7 @@ class Wordbase:
         t0 = time.time()
         if is_pypy:
             # Running under PyPy: Parse from text file
-            print("PyPy detected - loading text file {0}".format(pname))
+            # print("PyPy detected - loading text file {0}".format(pname))
             dawg.load(pname)
         else:
             # Running under CPython or other Python platform: Load from pickle

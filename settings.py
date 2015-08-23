@@ -239,6 +239,34 @@ class StaticPhrases:
         return [ StaticPhrases.LIST[ix][1] ]
 
 
+class AmbigPhrases:
+
+    """ Wrapper around dictionary of potentially ambiguous phrases, initialized from the config file """
+
+    # List of tuples of ambiguous phrases and their word category lists
+    LIST = []
+    # Parsing dictionary keyed by first word of phrase
+    DICT = defaultdict(list)
+
+    @staticmethod
+    def add (words, cats):
+        """ Add an ambiguous phrase to the dictionary. Called from the config file handler. """
+
+        # First add to phrase list
+        ix = len(AmbigPhrases.LIST)
+
+        # Append the phrase as well as its meaning in tuple form
+        AmbigPhrases.LIST.append((words, cats))
+
+        # Dictionary structure: dict { firstword: [ (restword_list, phrase_index) ] }
+        AmbigPhrases.DICT[words[0]].append((words[1:], ix))
+
+    @staticmethod
+    def get_cats(ix):
+        """ Return the word categories for the phrase with index ix """
+        return AmbigPhrases.LIST[ix][1]
+
+
 # Global settings
 
 class Settings:
@@ -364,14 +392,34 @@ class Settings:
         Prepositions.add(a[0], a[1])
 
     @staticmethod
-    def _handle_ambiguities(s):
-        """ Handle ambiguity hints in the settings section """
+    def _handle_preferences(s):
+        """ Handle ambiguity preference hints in the settings section """
         # Format: word worse1 worse2... < better
         a = s.lower().split("<", maxsplit = 1)
         if len(a) != 2:
-            raise ConfigError("Ambiguity hint missing less-than sign '<'")
+            raise ConfigError("Ambiguity preference missing less-than sign '<'")
         # !!! TODO
         # Ambiguities.add(...)
+
+    @staticmethod
+    def _handle_ambiguous_phrases(s):
+        """ Handle ambiguous phrase guidance in the settings section """
+        # Format: "word1 word2..." cat1 cat2...
+        if s[0] != '"':
+            raise ConfigError("Ambiguous phrase must be enclosed in double quotes")
+        q = s.rfind('"')
+        if q <= 0:
+            raise ConfigError("Ambiguous phrase must be enclosed in double quotes")
+        # Obtain a list of the words in the phrase
+        words = s[1:q].strip().lower().split()
+        # Obtain a list of the corresponding word categories
+        cats = s[q + 1:].strip().lower().split()
+        if len(words) != len(cats):
+            raise ConfigError("Ambiguous phrase has {0} words but {1} categories"
+                .format(len(words), len(cats)))
+        if len(words) < 2:
+            raise ConfigError("Ambiguous phrase must contain at least two words")
+        AmbigPhrases.add(words, cats)
 
 
     def read(fname):
@@ -384,7 +432,8 @@ class Settings:
             "verb_objects" : Settings._handle_verb_objects,
             "verb_subjects" : Settings._handle_verb_subjects,
             "prepositions" : Settings._handle_prepositions,
-            "ambiguities" : Settings._handle_ambiguities,
+            "preferences" : Settings._handle_preferences,
+            "ambiguous_phrases" : Settings._handle_ambiguous_phrases,
             "meanings" : Settings._handle_meanings
         }
         handler = None # Current section handler

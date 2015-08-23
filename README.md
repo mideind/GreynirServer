@@ -13,8 +13,8 @@ etc.
 
 Reynir is innovative in its support for the complex grammar of Icelandic - using
 cases, genders and number (singular/plural) applied respectively to nouns,
-verbs, adjectives and prepositions to guide and disambiguate parses. Its Earley parser
-is fast and compact enough to make real-time while-you-wait analysis of
+verbs, adjectives and prepositions to guide and disambiguate parses. Its optimized
+Earley parser is fast and compact enough to make real-time while-you-wait analysis of
 web pages, as well as bulk processing, feasible.
 
 Reynir's goal is to "understand" text to a usable extent by parsing it into
@@ -31,24 +31,28 @@ If successful in its initial stages, Reynir may in due course be expanded, for i
 ## Implementation
 
 Reynir is written in [Python 3.4](https://www.python.org/), apart from the web
-front-end which has small amounts of JavaScript.
+front-end which has small amounts of JavaScript. It runs on CPython and
+[PyPy](http://pypy.org/).
 
 Reynir works in stages, roughly as follows:
 
 1. *Web scraper*, built on [BeautifulSoup](http://www.crummy.com/software/BeautifulSoup/)
+  and [SQLAlchemy](http://www.sqlalchemy.org/) storing data
+  in [PostgreSQL](http://www.postgresql.org/).
 2. *Tokenizer*, relying on the BÍN database of Icelandic word forms for initial POS tagging
 3. *Parser*, using an [Earley algorithm](http://en.wikipedia.org/wiki/Earley_parser) to
-  parse text according to an unconstrained context-free grammar that may be ambiguous
-4. *Parse forest analyzer* and information extractor
+  parse text according to an unconstrained context-free grammar for Icelandic that may yield
+  multiple parse trees in case of ambiguity.
+4. *Parse forest analyzer*, disambiguator and information extractor
 
 Reynir contains a small web server that allows the user to type in any URL
 and have Reynir scrape it, tokenize it and display the result as a web page. The server runs
 on the [Flask](http://flask.pocoo.org/) framework.
 
 Reynir uses the official BÍN ([Beygingarlýsing íslensks nútímamáls](http://bin.arnastofnun.is))
-database of Icelandic word forms to identify and tokenize words, and find their grammatical
-roots and forms. The database has been downloaded from the official BÍN website and stored
-in PostgreSQL.
+lexicon and database of Icelandic word forms to identify and tokenize words, and find their
+grammatical roots and forms. The database has been downloaded from the official BÍN website and
+stored in PostgreSQL.
 
 The tokenizer divides text chunks into sentences and recognizes entities such as dates, numbers,
 amounts and person names, as well as common abbreviations and punctuation.
@@ -62,9 +66,9 @@ Thus, a single rule (e.g. `NounPhrase/case/gender -> Adjective/case noun/case/ge
 is automatically expanded into multiple rules (12 in this case, 4 cases x 3 genders) with
 appropriate substitutions for right-hand-side tokens depending on their local variants.
 
-The parser is an Earley parser as enhanced by
-[Scott and Johnstone](http://www.sciencedirect.com/science/article/pii/S0167642309000951) referencing Tomita.
-It parses ambiguous grammars without restriction and
+The parser is an optimized Python implementation of an Earley parser as enhanced by
+[Scott and Johnstone](http://www.sciencedirect.com/science/article/pii/S0167642309000951),
+referencing Tomita. It parses ambiguous grammars without restriction and
 returns a compact Shared Packed Parse Forest (SPPF) of parse trees. If a parse
 fails, it identifies the token at which no parse was available.
 
@@ -72,10 +76,12 @@ fails, it identifies the token at which no parse was available.
 
 * `main.py` : Web server
 * `settings.py` : Management of global settings and configuration data, obtained from `Reynir.conf`
+* `scraper.py` : Web scraper, collecting articles from a set of pre-selected websites (roots)
 * `tokenizer.py` : Tokenizer, designed as a pipeline of Python generators
 * `grammar.py` : Parsing of `.grammar` files, grammar constructs
 * `parser.py` : Earley parser generic base classes
 * `binparser.py` : Parser related subclasses for BIN (Icelandic word) tokens
+* `reducer.py` : Parse forest ambiguity resolver
 * `ptest.py` : Parser test module
 * `Reynir.conf` : Editable configuration file for the tokenizer and parser
 * `Verbs.conf` : Editable lexicon of verbs, included in `Reynir.conf`

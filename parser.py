@@ -402,6 +402,9 @@ class Parser:
                 # Terminal matching the current token
                 _Q.append(newstate)
 
+        if not tokens:
+            raise ParseError("No tokens to parse")
+
         # V = ∅
         V = { }
 

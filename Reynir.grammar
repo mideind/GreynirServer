@@ -140,7 +140,7 @@ SetningSkilyrði →
     Atviksliður? EfÞegar Skilyrði Afleiðing
 
 EfÞegar →
-    "ef" | "þegar" | "þótt" | "þó" | "jafnvel_þótt"
+    "ef" | "þegar" | "þótt" | "þó" | "jafnvel_þótt" | "þar" "sem"
 
 Skilyrði → HreinYfirsetning
 
@@ -163,11 +163,11 @@ SagnRuna → SagnRuna/tala/pers/kyn
 
 SagnRuna/tala/pers/kyn →
     Sagnliður/tala/pers/kyn LoTengtSögn_nf/tala/kyn? SagnInnskot?
-    SagnFramhald/tala/pers/kyn?
+        SagnFramhald/tala/pers/kyn?
 
 SagnFramhald/tala/pers/kyn →
     SagnKomma/tala/pers/kyn* KommaOgEðaEn Sagnliður/tala/pers/kyn
-    LoTengtSögn_nf/tala/kyn? SagnInnskot?
+        LoTengtSögn_nf/tala/kyn? SagnInnskot?
 
 SagnKomma/tala/pers/kyn →
     ',' Sagnliður/tala/pers/kyn LoTengtSögn_nf/tala/kyn? SagnInnskot?
@@ -182,7 +182,7 @@ SagnViðhengi/tala/pers/kyn →
 # Setningarhluti sem byrjar á sögn
 
 SagnHluti/tala/pers/kyn →
-    SagnliðurMeðF/tala/pers/kyn FsAtv? SagnViðhengi/tala/pers/kyn?
+    SagnliðurMeðF/tala/pers/kyn SagnInnskot? SagnViðhengi/tala/pers/kyn?
 
 FrumlagsInnskot/tala/pers/kyn → ',' SetningÁnF/tala/pers/kyn ','
 
@@ -362,6 +362,10 @@ OgSögn_0/tala/pers →
 OgSögn_mm/tala/pers →
     FsAtv? OgEða FsAtv? so_mm/tala/pers
     | FsAtv? ',' OgEða FsAtv? so_mm/tala/pers FsAtvKomma?
+
+OgSögn_mm_nh →
+    FsAtv? OgEða FsAtv? so_mm_nh
+    | FsAtv? ',' OgEða FsAtv? so_mm_nh FsAtvKomma?
 
 OgSögn_mm_sagnb →
     FsAtv? OgEða FsAtv? so_mm_sagnb
@@ -814,12 +818,17 @@ HjSögnLhÞtSM_p3_ft →
 # Nafnháttafylling
 # - tengd frumlagi
 # 'sannarlega galvaskir að þvo bílinn í gær'
+# '(Þar hættir landið) að vera jarðneskt'
 NhFylling/tala/kyn →
     NhFylling_nf/tala/kyn    # Nefnifall sjálfgefið
 
 # Aðeins nefnifall og þágufall eru nokkurn tíma notuð
 NhFylling/fall/tala/kyn →
     FsAtv? LoTengtSögn/tala/fall/kyn? NhLiður
+    # 'að þykja og vera fallegt'
+    | FsAtv? nhm so_1_nf_nh OgNhSögn_nf* LoTengtSögn/tala/fall/kyn
+    # 'að sýnast og þykjast fallegt'
+    | FsAtv? nhm so_mm_nh OgSögn_mm_nh* LoTengtSögn/tala/fall/kyn
 
 # - ótengd frumlagi: lýsingarliður ekki mögulegur
 # (nema þá hugsanlega í 3p. et.?)
@@ -971,7 +980,7 @@ Nl_ft_p2/fall/kyn →
 Nl_p3/tala/fall/kyn →
 
     Fornöfn/tala/fall/kyn?        # Sá (stóri maður), allt þetta (víkjandi lán)
-        Töluorð/kyn*              # þrjá (gangandi menn)
+        Töluorð/tala/fall/kyn*    # þrjá (gangandi menn)
         NlKjarni/tala/fall/kyn
         Fornöfn/tala/fall/kyn?    # (stjórnarframkvæmdum) öllum
 
@@ -995,6 +1004,7 @@ Nl_et_p3/fall/kyn →
 
     Nl_p3_et/fall/kyn FsRuna?             # fulltrúi bankans í nefndinni
     | 'hver'_et/fall/kyn "og" 'einn'_et/fall/kyn FsRuna? # 'hver og einn [í sinni sveit] (ber ábyrgð)'
+    | Töluorð_et/fall/kyn
 
 # 3p. fleirtala
 
@@ -1002,6 +1012,7 @@ Nl_ft_p3/fall/kyn →
 
     Nl_p3_ft/fall/kyn FsRuna?             # fulltrúar bankans í nefndinni
     | Nl/fall/kyn NlRuna/fall/kyn+  # Allir liðir af sama kyni
+    | Töluorð_ft/fall/kyn
 
 # Ein regla fyrir undirsetningar:
 # 1p: 'ég sem alltaf elda matinn samviskusamlega (nenni þessu ekki)'
@@ -1116,7 +1127,7 @@ Fornöfn/tala/fall/kyn → fn/tala/fall/kyn fn/tala/fall/kyn?
 Fornöfn_nf/tala/kyn → fn_nf/tala/kyn fn_nf/tala/kyn?
 Fornöfn_ef/tala/kyn → fn_ef/tala/kyn fn_ef/tala/kyn?
 
-Töluorð/kyn → to/kyn | töl
+Töluorð/tala/fall/kyn → to/tala/fall/kyn | töl/tala/fall/kyn
 
 OgEða → "og" | "eða" | "ellegar" | "eður" | "svo" "og" | "sem" "og" | "né"
     | "þar" "á" "meðal" | "meðal" "annars" | "það" "er" | "það_er"

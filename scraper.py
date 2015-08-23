@@ -21,6 +21,7 @@
 
 """
 
+import re
 import sys
 import platform
 import getopt
@@ -44,7 +45,6 @@ from sqlalchemy import Column, Integer, String, Float, DateTime, Sequence, \
 from bs4 import BeautifulSoup, NavigableString
 
 from tokenizer import TOK, tokenize
-from grammar import Nonterminal, Terminal, Token, Production, Grammar, GrammarError
 from parser import Parser, ParseError
 from reducer import Reducer
 from binparser import BIN_Parser
@@ -56,8 +56,12 @@ Base = declarative_base()
 
 class Scraper_DB:
 
+    """ Wrapper around the SQLAlchemy connection, engine and session """
+
     def __init__(self):
+
         """ Initialize the SQLAlchemy connection with the scraper database """
+
         # Assemble the right connection string for CPython/psycopg2 vs.
         # PyPy/psycopg2cffi, respectively
         is_pypy = platform.python_implementation() == "PyPy"
@@ -78,6 +82,7 @@ class Scraper_DB:
 
 
 class Root(Base):
+    
     """ Represents a scraper root, i.e. a base domain and root URL """
 
     __tablename__ = 'roots'
@@ -112,6 +117,7 @@ class Root(Base):
 
 
 class Article(Base):
+
     """ Represents an article from one of the roots, to be scraped or having already been scraped """
 
     __tablename__ = 'articles'
@@ -155,6 +161,7 @@ class Article(Base):
     # The parse tree obtained in the last parse
     tree = Column(String)
 
+    # The back-reference to the Root parent of this Article
     root = relationship("Root", backref=backref('articles', order_by=url))
 
     def __repr__(self):
@@ -164,10 +171,96 @@ class Article(Base):
 
 class Scraper:
 
+    """ The worker class that scrapes the known roots """
+
+    # HTML tags that we explicitly don't want to look at
+    _EXCLUDE_TAGS = frozenset(["script", "audio", "video", "style"])
+
+    # HTML tags that typically denote blocks (DIV-like), not inline constructs (SPAN-like)
+    _BLOCK_TAGS = frozenset(["p", "h1", "h2", "h3", "h4", "div",
+        "main", "article", "header", "section",
+        "table", "thead", "tbody", "tr", "td", "ul", "li",
+        "form", "option", "input", "label",
+        "figure", "figcaption", "footer"])
+
+    _WHITESPACE_TAGS = frozenset(["br", "img"])
+
+
     def __init__(self, db, parser):
 
         self._db = db
         self._parser = parser
+
+
+    class _TextList:
+
+        """ Accumulates raw text blocks and eliminates unnecessary nesting indicators """
+
+        def __init__(self):
+            self._result = []
+            self._nesting = 0
+
+        def append(self, w):
+            if self._nesting > 0:
+                self._result.append(" [[ " * self._nesting)
+                self._nesting = 0
+            self._result.append(w)
+
+        def append_whitespace(self):
+            if self._nesting == 0:
+                # No need to append whitespace if we're just inside a begin-block
+                self._result.append(" ")
+
+        def begin(self):
+            self._nesting += 1
+
+        def end(self):
+            if self._nesting > 0:
+                self._nesting -= 1
+            else:
+                self._result.append(" ]] ")
+
+        def result(self):
+            return "".join(self._result)
+
+    @staticmethod
+    def _extract_text(soup, result):
+        """ Append the human-readable text found in an HTML soup to the result TextList """
+        for t in soup.children:
+            if type(t) == NavigableString:
+                # Text content node
+                result.append(t)
+            elif isinstance(t, NavigableString):
+                # Comment, CDATA or other text data: ignore
+                pass
+            elif t.name in Scraper._WHITESPACE_TAGS:
+                # Tags that we interpret as whitespace, such as <br> and <img>
+                result.append_whitespace()
+            elif t.name in Scraper._BLOCK_TAGS:
+                # Nested block tag
+                result.begin() # Begin block
+                Scraper._extract_text(t, result)
+                result.end() # End block
+            elif t.name not in Scraper._EXCLUDE_TAGS:
+                # Non-block tag
+                Scraper._extract_text(t, result)
+
+    @staticmethod
+    def _to_tokens(soup):
+        """ Convert an HTML soup root into a parsable token stream """
+
+        # Extract the text content of the HTML into a list
+        tlist = Scraper._TextList()
+        Scraper._extract_text(soup, tlist)
+        text = tlist.result()
+        tlist = None # Free memory
+
+        # Eliminate consecutive whitespace
+        text = re.sub(r'\s+', ' ', text)
+
+        # Tokenize the resulting text, returning a generator
+        return tokenize(text)
+
 
     def children(self, root, soup):
         """ Return a set of child URLs within a HTML soup, relative to the given root """
@@ -197,6 +290,9 @@ class Scraper:
             if not newpath and not s.query:
                 # No meaningful path info present
                 continue
+            # Make sure the newpath is properly urlencoded
+            if newpath:
+               newpath = urlparse.quote(newpath)
             # Fill in missing stuff from the root URL base parameters
             newurl = (s.scheme or root_s.scheme,
                 s.netloc or root_s.netloc, newpath, s.query, '')
@@ -209,6 +305,7 @@ class Scraper:
             fetch.add(url)
         return fetch
 
+
     def scrape_root(self, root):
         """ Scrape a root URL """
 
@@ -219,7 +316,11 @@ class Scraper:
 
         # Read the HTML document at the root URL
         with closing(urllib.request.urlopen(root.url)) as response:
-            html_doc = response.read()
+            try:
+                html_doc = response.read()
+            except Exception as e:
+                print("Exception {0} when reading root {1}".format(e, root.url))
+                return
 
         # Parse the document
         soup = BeautifulSoup(html_doc, "html.parser") # or 'html5lib'
@@ -246,6 +347,7 @@ class Scraper:
 
         print("Processing completed in {0:.2f} seconds".format(t1 - t0))
 
+
     def scrape_article(self, url, helper):
         """ Scrape a single article, retrieving its HTML and metadata """
 
@@ -254,14 +356,15 @@ class Scraper:
         # to the same domain suffix and we haven't seen before
         print("Processing article {0}".format(url))
 
-        encoding = 'utf-8'
+        encoding = 'utf-8' # Assumed default encoding (should strictly speaking be ISO-8859-1)
 
         # Read the HTML document at the article URL
         try:
             with closing(urllib.request.urlopen(url)) as response:
                 if not response:
-                    print("No response")
                     return
+                # Decode the HTML Content-type header to obtain the
+                # document type and the charset (content encoding), if specified
                 ctype = response.getheader("Content-type", "")
                 if ';' in ctype:
                     s = ctype.split(';')
@@ -270,13 +373,15 @@ class Scraper:
                     s = enc.split('=')
                     if s[0] == "charset" and len(s) == 2:
                         encoding = s[1]
-                        print("Set encoding to {0}".format(encoding))
                 if ctype != "text/html":
-                    print("Not a HTML document: {0}".format(ctype))
+                    # Not an HTML document
                     return
                 html_doc = response.read() # html_doc is a bytes object
         except HTTPError as e:
             print("HTTPError returned: {0}".format(e))
+            return
+        except UnicodeEncodeError as e:
+            print("Exception when opening URL {0}: {1}".format(url, e))
             return
 
         # Parse the document
@@ -301,6 +406,8 @@ class Scraper:
         article.scr_module = helper.scr_module
         article.scr_class = helper.scr_class
         article.scr_version = helper.scr_version
+
+        # Obtain the article HTML by decoding the content bytes using the given charset encoding
         try:
             article.html = html_doc.decode(encoding)
         except UnicodeDecodeError as e:
@@ -318,14 +425,30 @@ class Scraper:
 
         print("Processing completed in {0:.2f} seconds".format(t1 - t0))
 
+
     def parse_article(self, url, helper):
         """ Parse a single article """
 
-        # Scrape the URL, tokenize the text content and return the token list
+        print("Parsing article {0}".format(url))
 
-        t0 = time.time()
-        toklist = list(process_url(url))
-        tok_time = time.time() - t0
+        # Load the article
+        session = self._db.session
+
+        article = session.query(Article).filter_by(url = url).one()
+
+        # Make an HTML soup out of it
+        soup = BeautifulSoup(article.html, "html.parser") # or 'html5lib'
+
+        # Ask the helper to find the actual content to be parsed
+        content = helper.find_content(soup)
+
+        if not content:
+            # Nothing to do
+            session.rollback()
+            return
+
+        # Convert the content soup to a token iterable (generator)
+        toklist = Scraper._to_tokens(content)
 
         # Count sentences
         num_sent = 0
@@ -371,7 +494,7 @@ class Scraper:
                 # and the index of the offending token, if an error occurred
                 #toklist[sent_begin] = TOK.Begin_Sentence(num_parses = num, err_index = err_index)
 
-                # Store the parse result in the database
+                # !!! Accumulate the parse result
 
             elif t[0] == TOK.P_BEGIN:
                 pass
@@ -382,15 +505,16 @@ class Scraper:
 
         parse_time = time.time() - t0
 
-        # Return the scrape result
-        return dict(
-            tok_time = tok_time,
-            tok_num = len(toklist),
-            parse_time = parse_time,
-            num_sent = num_sent,
-            num_parsed_sent = num_parsed_sent,
-            avg_ambig_factor = (total_ambig / total_tokens) if total_tokens > 0 else 1.0
-        )
+        article.parsed = datetime.now()
+        article.parser_version = bp.version
+        article.num_sentences = num_sent
+        article.num_parsed = num_parsed_sent
+        article.ambiguity = (total_ambig / total_tokens) if total_tokens > 0 else 1.0
+
+        session.commit()
+
+        print("Parsing completed in {0:.2f} seconds".format(parse_time))
+
 
     @classmethod
     def go(cls, db, parser):
@@ -410,31 +534,54 @@ class Scraper:
             # parsing child URLs that have not been seen before
             result = scraper.scrape_root(r)
 
+        # Initialize a cache of instantiated scrape helpers
         helpers = dict()
 
-        # Go through any unscraped articles and scrape them
-        for a in session.query(Article) \
-            .filter(Article.scraped == None).filter(Article.root_id != None):
-
+        def _get_helper(root):
+            """ Return a scrape helper instance for the given root """
             # Obtain an instance of a scraper helper class for this root
-            helper_id = a.root.scr_module + "." + a.root.scr_class
-            print("Preparing to scrape article {0}, helper is {1}".format(a.url, helper_id))
+            helper_id = root.scr_module + "." + root.scr_class
             if helper_id in helpers:
                 # Already instantiated a helper: get it
                 helper = helpers[helper_id]
             else:
                 # Dynamically instantiate a new helper class instance
-                mod = importlib.import_module(a.root.scr_module)
-                print("import_module({0}) yielded {1}".format(a.root.scr_module, mod))
-                helper_Class = getattr(mod, a.root.scr_class, None) if mod else None
-                helper = helper_Class(a.root) if helper_Class else None
+                mod = importlib.import_module(root.scr_module)
+                helper_Class = getattr(mod, root.scr_class, None) if mod else None
+                helper = helper_Class(root) if helper_Class else None
                 helpers[helper_id] = helper
                 if not helper:
                     print("Unable to instantiate helper {0}".format(helper_id))
+            return helper
+
+        # Go through any unscraped articles and scrape them
+        for a in session.query(Article) \
+            .filter(Article.scraped == None).filter(Article.root_id != None):
+
+            helper = _get_helper(a.root)
             if not helper:
                 continue
+
             # The helper is ready: Go ahead and scrape the article
             scraper.scrape_article(a.url, helper)
+
+        count = 0
+        # Go through any unparsed articles and parse them
+        for a in session.query(Article) \
+            .filter(Article.scraped != None).filter(Article.parsed == None) \
+            .filter(Article.root_id != None):
+
+            helper = _get_helper(a.root)
+            if not helper:
+                continue
+
+            # The helper is ready: Go ahead and parse the article
+            scraper.parse_article(a.url, helper)
+
+            # !!! DEBUG
+            count += 1
+            if count >= 4:
+                break
 
 
 def run():

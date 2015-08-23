@@ -142,6 +142,10 @@ class Terminal:
         return '{0}'.format(self._name)
 
     @property
+    def name(self):
+        return self._name
+    
+    @property
     def index(self):
         """ Return the (positive) sequence number of this terminal """
         return self._index

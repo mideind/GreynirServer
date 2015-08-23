@@ -46,7 +46,7 @@ except ImportError:
 psycopg2ext.register_type(psycopg2ext.UNICODE)
 psycopg2ext.register_type(psycopg2ext.UNICODEARRAY)
 
-from settings import Settings, StaticPhrases, Abbreviations, Meanings
+from settings import Settings, StaticPhrases, Abbreviations, Meanings, AmbigPhrases
 from dawgdictionary import Wordbase
 
 
@@ -169,20 +169,20 @@ class TOK:
     def Telno(w):
         return Tok(TOK.TELNO, w, None)
 
-    def Number(w, n, cases=None, gender=None):
+    def Number(w, n, cases=None, genders=None):
         """ cases is a list of possible cases for this number
             (if it was originally stated in words) """
-        return Tok(TOK.NUMBER, w, (n, cases, gender))
+        return Tok(TOK.NUMBER, w, (n, cases, genders))
 
-    def Currency(w, iso, cases=None, gender=None):
+    def Currency(w, iso, cases=None, genders=None):
         """ cases is a list of possible cases for this currency name
             (if it was originally stated in words, i.e. not abbreviated) """
-        return Tok(TOK.CURRENCY, w, (iso, cases, gender))
+        return Tok(TOK.CURRENCY, w, (iso, cases, genders))
 
-    def Amount(w, iso, n, cases=None, gender=None):
+    def Amount(w, iso, n, cases=None, genders=None):
         """ cases is a list of possible cases for this amount
             (if it was originally stated in words) """
-        return Tok(TOK.AMOUNT, w, (iso, n, cases, gender))
+        return Tok(TOK.AMOUNT, w, (iso, n, cases, genders))
 
     def Percent(w, n):
         return Tok(TOK.PERCENT, w, n)
@@ -846,11 +846,11 @@ def all_cases(token):
 _GENDER_SET = { "kk", "kvk", "hk" }
 _GENDER_DICT = { "KK": "kk", "KVK": "kvk", "HK": "hk" }
 
-def gender(token):
-    """ Return the gender of the word in the token, if any """
+def all_genders(token):
+    """ Return a list of the possible genders of the word in the token, if any """
     if token.kind != TOK.WORD:
         return None
-    g = None
+    g = set()
     if token.val:
         for m in token.val:
 
@@ -864,10 +864,9 @@ def gender(token):
                 return None
 
             gn = find_gender(m)
-            if gn is not None and g is None:
-                g = gn
-                break # We choose the first gender and ignore conflicts
-    return g
+            if gn is not None:
+               g.add(gn)
+    return list(g)
 
 
 def parse_phrases_1(token_stream):
@@ -910,7 +909,7 @@ def parse_phrases_1(token_stream):
                         # a number word
                         if next_token.kind == TOK.WORD:
                             if number(next_token) is not None:
-                                token = TOK.Number(token.txt, num, all_cases(token), gender(token))
+                                token = TOK.Number(token.txt, num, all_cases(token), all_genders(token))
                             else:
                                 # Check for fractions ('einn þriðji')
                                 frac = fraction(next_token)
@@ -918,12 +917,12 @@ def parse_phrases_1(token_stream):
                                     # We have a fraction: eat it and return it,
                                     # but use the case of the first word in the fraction
                                     token = TOK.Number(token.txt + " " + next_token.txt, frac,
-                                        all_cases(token), token.val[2])
+                                        all_cases(token), all_genders(token))
                                     next_token = next(token_stream)
                     else:
                         # Replace number word with number token,
                         # preserving its case
-                        token = TOK.Number(token.txt, num, all_cases(token), gender(token))
+                        token = TOK.Number(token.txt, num, all_cases(token), all_genders(token))
 
             # Check for [number] 'hundred|thousand|million|billion'
             while token.kind == TOK.NUMBER and next_token.kind == TOK.WORD:
@@ -933,7 +932,7 @@ def parse_phrases_1(token_stream):
                     # Retain the case of the last multiplier
                     token = TOK.Number(token.txt + " " + next_token.txt,
                         token.val[0] * multiplier,
-                        all_cases(next_token), gender(next_token))
+                        all_cases(next_token), all_genders(next_token))
                     # Eat the multiplier token
                     next_token = next(token_stream)
                 elif next_token.txt in AMOUNT_ABBREV:
@@ -995,7 +994,8 @@ def parse_phrases_1(token_stream):
                         if (nat, cur) in ISO_CURRENCIES:
                             # Match: accumulate the possible cases
                             token = TOK.Currency(token.txt + " "  + next_token.txt,
-                                ISO_CURRENCIES[(nat, cur)], all_cases(token))
+                                ISO_CURRENCIES[(nat, cur)], all_cases(token),
+                                all_genders(next_token))
                             next_token = next(token_stream)
 
             # Yield the current token and advance to the lookahead
@@ -1307,8 +1307,94 @@ def parse_static_phrases(token_stream):
     for t in tq: yield t
 
 
+def disambiguate_phrases(token_stream):
+    """ Parse a stream of tokens looking for common ambiguous multiword phrases
+        (i.e. phrases that have a well known very likely interpretation but
+        other extremely uncommon ones are also grammatically correct).
+        The algorithm implements N-token lookahead where N is the
+        length of the longest phrase.
+    """
+
+    tq = [] # Token queue
+    state = { } # Phrases we're considering
+    pdict = AmbigPhrases.DICT # The phrase dictionary
+
+    try:
+
+        while True:
+
+            token = next(token_stream)
+            tq.append(token) # Add to lookahead token queue
+
+            if token.kind != TOK.WORD:
+                # Not a word: no match; discard state
+                for t in tq: yield t
+                tq = []
+                state = { }
+                continue
+
+            # Look for matches in the current state and
+            # build a new state
+            newstate = { }
+            w = token.txt.lower()
+
+            def add_to_state(state, sl, ix):
+                """ Add the list of subsequent words to the new parser state """
+                w = sl[0]
+                if w in state:
+                    state[w].append((sl[1:], ix))
+                else:
+                    state[w] = [ (sl[1:], ix) ]
+
+            if w in state:
+                # This matches an expected token:
+                # go through potential continuations
+                for sl, ix in state[w]:
+                    if not sl:
+                        # No subsequent word: this is a complete match
+                        # Discard meanings of words in the token queue that are not
+                        # compatible with the category list specified
+                        for t, cat in zip(tq, AmbigPhrases.get_cats(ix)):
+                            assert t.kind == TOK.WORD
+                            # Yield a new token with fewer meanings for each original token in the queue
+                            yield Tok(t.kind, t.txt, [m for m in t.val if m.ordfl == cat])
+                        tq = []
+
+                        # Discard the state and start afresh
+                        newstate = { }
+                        # Note that it is possible to match even longer phrases
+                        # by including a starting phrase in its entirety in
+                        # the static phrase dictionary
+                        break
+                    add_to_state(newstate, sl, ix)
+
+            # Add all possible new states for phrases that could be starting
+            if w in pdict:
+                # This word potentially starts a phrase
+                for sl, ix in pdict[w]:
+                    assert sl
+                    add_to_state(newstate, sl, ix)
+
+            # Transition to the new state
+            state = newstate
+            if not state:
+                # No possible phrases: yield the token queue before continuing
+                for t in tq: yield t
+                tq = []
+
+    except StopIteration:
+        # Token stream is exhausted
+        pass
+
+    # Yield any tokens remaining in queue
+    for t in tq: yield t
+
+
 def tokenize(text):
-    """ Tokenize text into a generator (iterable sequence) of tokens """
+    """ Tokenize text in several phases, returning a generator (iterable sequence) of tokens
+        that processes tokens on-demand """
+
+    # Thank you Python for enabling this programming pattern ;-)
 
     token_stream = parse_tokens(text)
 
@@ -1324,27 +1410,7 @@ def tokenize(text):
 
     token_stream = parse_phrases_2(token_stream) # Second phrase pass
 
+    token_stream = disambiguate_phrases(token_stream) # Eliminate very uncommon meanings
+
     return token_stream
-
-
-def dump_tokens_to_file(fname, tokens):
-    """ Dump a token list to a text file """
-
-    with codecs.open(fname, "w", "utf-8") as out:
-
-        for token in tokens:
-            t = token.kind
-            w = token.txt
-            if t == TOK.P_BEGIN or t == TOK.P_END:
-                print("[{0}]".format(TOK.descr[t]), file=out)
-            elif t == TOK.S_BEGIN or t == TOK.S_END:
-                print("[{0}]".format(TOK.descr[t]), file=out)
-            else:
-                print("[{0}] '{1}'".format(TOK.descr[t], w or ""), file=out)
-    #            if forms:
-    #                for f in forms:
-    #                    stofn = "" + f[0]
-    #                    ordfl = "" + f[2]
-    #                    beyging = "" + f[5]
-    #                    print("   {0} '{1}' {2}".format(ordfl, stofn, beyging))
 
