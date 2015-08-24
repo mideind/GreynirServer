@@ -23,6 +23,7 @@ profile.bin
 *.bak
 *.profile
 txt
+UnknownVerbs.txt
 
 # Distribution / packaging
 .Python

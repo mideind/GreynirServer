@@ -22,8 +22,9 @@
 from bs4 import BeautifulSoup, NavigableString
 from datetime import datetime
 from collections import namedtuple
+import urllib.parse as urlparse
 
-# The metadata returned by the helper.analyze() function
+# The metadata returned by the helper.get_metadata() function
 Metadata = namedtuple('Metadata', ['heading', 'author', 'timestamp', 'authority'])
 
 MODULE_NAME = __name__
@@ -36,15 +37,27 @@ class ScrapeHelper:
     def __init__(self, root):
         self._root = root
 
-    def analyze(self, soup):
+    def skip_url(self, url):
+        """ Return True if this URL should not be scraped """
+        return False # Scrape all URLs by default
+
+    def get_metadata(self, soup):
         """ Analyze the article HTML soup and return metadata """
-        return Metadata(heading = "", author = self._root.author,
+        return Metadata(heading = None, author = self._root.author,
             timestamp = datetime.now(), authority = self._root.authority)
 
-    def find_content(self, soup):
+    def get_content(self, soup):
         """ Find the actual article content within an HTML soup and return its parent node """
+        if not soup or not soup.html or not soup.html.body:
+            # No body in HTML: something is wrong, return None
+            return None
+        try:
+            # Call the helper subclass
+            content = self._get_content(soup.html.body)
+        except Exception as e:
+            content = None
         # By default, return the entire body
-        return soup.body
+        return content or soup.html.body
 
     @property
     def authority(self):
@@ -76,37 +89,40 @@ class KjarninnScraper(ScrapeHelper):
     def __init(self, root):
         super().__init__(root)
 
-    def analyze(self, soup):
+    def get_metadata(self, soup):
         """ Analyze the article soup and return metadata """
         # Extract the heading from the OpenGraph (Facebook) og:title meta property
         try:
             heading = soup.html.head.select_one('meta[property="og:title"]')
             if heading:
-                heading = heading['content']
+                heading = str(heading['content'])
         except Exception as e:
-            print("Unable to obtain heading for article")
             heading = None
         if not heading:
-            heading = "[Óþekkt fyrirsögn]" # Unknown heading
+            heading = "" # Unknown heading
         # Extract the publication time from the article:published_time meta property
         try:
             timestamp = soup.html.head.select_one('meta[property="article:published_time"]')
             if timestamp:
-                timestamp = timestamp['content']
+                timestamp = str(timestamp['content'])
         except Exception as e:
-            print("Unable to obtain timestamp for article")
             timestamp = None
         if not timestamp:
             timestamp = datetime.now()
         # Exctract the author name
         try:
-            author = soup.select_one('a[itemprop="author"]').string
+            author = str(soup.html.body.select_one('a[itemprop="author"]').string)
         except Exception as e:
             author = None
         if not author:
             author = "Ritstjórn Kjarnans"
         return Metadata(heading = heading, author = author,
             timestamp = timestamp, authority = self.authority)
+
+    def _get_content(self, soup_body):
+        """ Find the article content (main text) in the soup """
+        # soup_body has already been sanitized in the ScrapeHelper base class
+        return soup_body.select_one("div.entry-content")
 
 
 class RuvScraper(ScrapeHelper):
@@ -116,6 +132,52 @@ class RuvScraper(ScrapeHelper):
     def __init(self, root):
         super().__init__(root)
 
+    def skip_url(self, url):
+        """ Return True if this URL should not be scraped """
+        s = urlparse.urlsplit(url)
+        if s.path and s.path.startswith("/frontpage/"):
+            # Skip the www.ruv.is/frontpage/... URLs
+            return True
+        if s.path and s.path.startswith("/sarpurinn/"):
+            # Skip the www.ruv.is/sarpurinn/... URLs
+            return True
+        return False # Scrape all URLs by default
+        
+    def get_metadata(self, soup):
+        """ Analyze the article soup and return metadata """
+        # Extract the heading from the OpenGraph (Facebook) og:title meta property
+        try:
+            heading = soup.html.head.select_one('meta[property="og:title"]')
+            if heading:
+                heading = str(heading['content'])
+        except Exception as e:
+            heading = None
+        if not heading:
+            heading = "" # Unknown heading
+        # Extract the publication time from the article:published_time meta property
+        try:
+            timestamp = soup.html.head.select_one('meta[property="article:published_time"]')
+            if timestamp:
+                timestamp = str(timestamp['content'])
+        except Exception as e:
+            timestamp = None
+        if not timestamp: 
+            timestamp = datetime.now()
+        # Exctract the author name
+        try:
+            author = str(soup.html.body.select_one('div.view-id-author').select_one('div.clip').string)
+        except Exception as e:
+            author = None
+        if not author:
+            author = "Fréttastofa RÚV"
+        return Metadata(heading = heading, author = author,
+            timestamp = timestamp, authority = self.authority)
+
+    def _get_content(self, soup_body):
+        """ Find the article content (main text) in the soup """
+        rg = soup_body.select_one('div.region.region-two-66-33-first')
+        return rg.select_one('div.region-inner') if rg else None
+
 
 class MblScraper(ScrapeHelper):
 
@@ -123,6 +185,57 @@ class MblScraper(ScrapeHelper):
 
     def __init(self, root):
         super().__init__(root)
+
+    def skip_url(self, url):
+        """ Return True if this URL should not be scraped """
+        s = urlparse.urlsplit(url)
+        if s.path and s.path.startswith("/fasteignir/"):
+            # Skip the www.mbl.is/fasteignir/... URLs
+            return True
+        if s.path and s.path.startswith("/english/"):
+            # Skip the www.mbl.is/english/... URLs
+            return True
+        return False # Scrape all URLs by default
+        
+    def get_metadata(self, soup):
+        """ Analyze the article soup and return metadata """
+        # Extract the heading from the OpenGraph (Facebook) og:title meta property
+        try:
+            heading = soup.html.head.select_one('meta[property="og:title"]')
+            if heading:
+                heading = str(heading['content'])
+        except Exception as e:
+            heading = None
+        if not heading:
+            heading = "" # Unknown heading
+        # Extract the publication time from the article:published_time meta property
+        try:
+            # A dateline from mbl.is looks like this: Viðskipti | mbl | 24.8.2015 | 10:48
+            dateline = ''.join(soup.html.body.select_one('div.frett-container') \
+                .select_one('div.dateline').stripped_strings).split('|')
+            # Create a timestamp from dateline[-2] and dateline[-1]
+            date = [ int(x) for x in dateline[-2].split('.') ]
+            time = [ int(x) for x in dateline[-1].split(':') ]
+            timestamp = datetime(year = date[2], month = date[1], day = date[0],
+                hour = time[0], minute = time[1])
+        except Exception as e:
+            timestamp = None
+        if not timestamp:
+            timestamp = datetime.now()
+        # Exctract the author name
+        try:
+            author = str(soup.html.body.select_one('div.view-id-author').select_one('div.clip').string)
+        except Exception as e:
+            author = None
+        if not author:
+            author = "Ritstjórn Mbl.is"
+        return Metadata(heading = heading, author = author,
+            timestamp = timestamp, authority = self.authority)
+
+    def _get_content(self, soup_body):
+        """ Find the article content (main text) in the soup """
+        fm = soup.html.body.select_one('div.frett-main')
+        return fm.select_one('div.maintext') if fm else None
 
 
 class VisirScraper(ScrapeHelper):

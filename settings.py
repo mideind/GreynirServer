@@ -16,7 +16,9 @@
 """
 
 import codecs
+import locale
 
+from contextlib import contextmanager
 from collections import defaultdict
 
 
@@ -265,6 +267,67 @@ class AmbigPhrases:
     def get_cats(ix):
         """ Return the word categories for the phrase with index ix """
         return AmbigPhrases.LIST[ix][1]
+
+# Magic stuff to change locale context temporarily
+
+@contextmanager
+def changedlocale(newone):
+    """ Change locale for collation temporarily within a context (with-statement) """
+    # The newone locale parameter should be a tuple: ('is_IS', 'UTF-8')
+    old_locale = locale.getlocale(locale.LC_COLLATE)
+    try:
+        locale.setlocale(locale.LC_COLLATE, newone)
+        yield locale.strxfrm
+    finally:
+        locale.setlocale(locale.LC_COLLATE, old_locale)
+
+def sort_strings(strings, locale_ = None):
+    """ Sort a list of strings using the specified locale's collation order """
+    if locale_ is None:
+        # Normal sort
+        return sorted(strings)
+    # Change locale temporarily for the sort
+    with changedlocale(locale_) as strxfrm:
+        return sorted(strings, key = strxfrm)
+
+
+class UnknownVerbs:
+
+    """ Singleton class that wraps a set of unknown verbs encountered during parsing """
+
+    _FILE = "UnknownVerbs.txt"
+    _unknown = None
+
+    @classmethod
+    def add(cls, verb):
+        """ Add a single verb to the unknown set """
+        if cls._unknown is None:
+            cls.read()
+        cls._unknown.add(verb)
+
+    @classmethod
+    def read(cls):
+        """ Read the unknown set from a file """
+        cls._unknown = set()
+        try:
+            with codecs.open(cls._FILE, "r", "utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        cls._unknown.add(line)
+        except (IOError, OSError):
+            pass
+
+    @classmethod
+    def write(cls):
+        """ Write the unknown set to a file """
+        if not cls._unknown:
+            return
+        vl = sort_strings(list(cls._unknown), ('is_IS', 'UTF-8'))
+        with codecs.open(cls._FILE, "w", "utf-8") as f:
+            for line in vl:
+                if line:
+                    print(line, file = f)
 
 
 # Global settings

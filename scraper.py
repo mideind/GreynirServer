@@ -48,11 +48,13 @@ from tokenizer import TOK, tokenize
 from parser import Parser, ParseError
 from reducer import Reducer
 from binparser import BIN_Parser
-from settings import Settings, ConfigError
+from settings import Settings, ConfigError, UnknownVerbs
 
 # Create the SQLAlchemy ORM Base class
 Base = declarative_base()
 
+# The HTML parser to use with BeautifulSoup
+_HTML_PARSER = "html5lib"
 
 class Scraper_DB:
 
@@ -306,7 +308,7 @@ class Scraper:
         return fetch
 
 
-    def scrape_root(self, root):
+    def scrape_root(self, root, helper):
         """ Scrape a root URL """
 
         t0 = time.time()
@@ -323,7 +325,7 @@ class Scraper:
                 return
 
         # Parse the document
-        soup = BeautifulSoup(html_doc, "html.parser") # or 'html5lib'
+        soup = BeautifulSoup(html_doc, _HTML_PARSER)
 
         # Obtain the set of child URLs to fetch
         fetch_set = self.children(root, soup)
@@ -332,6 +334,10 @@ class Scraper:
         # scraper articles table
         session = self._db.session
         for url in fetch_set:
+
+            if helper and helper.skip_url(url):
+                # The helper doesn't want this URL
+                continue
 
             try:
                 article = Article(url = url, root_id = root.id)
@@ -357,63 +363,67 @@ class Scraper:
         print("Processing article {0}".format(url))
 
         encoding = 'utf-8' # Assumed default encoding (should strictly speaking be ISO-8859-1)
+        html_doc = None
 
         # Read the HTML document at the article URL
-        try:
-            with closing(urllib.request.urlopen(url)) as response:
-                if not response:
-                    return
-                # Decode the HTML Content-type header to obtain the
-                # document type and the charset (content encoding), if specified
-                ctype = response.getheader("Content-type", "")
-                if ';' in ctype:
-                    s = ctype.split(';')
-                    ctype = s[0]
-                    enc = s[1].strip()
-                    s = enc.split('=')
-                    if s[0] == "charset" and len(s) == 2:
-                        encoding = s[1]
-                if ctype != "text/html":
-                    # Not an HTML document
-                    return
-                html_doc = response.read() # html_doc is a bytes object
-        except HTTPError as e:
-            print("HTTPError returned: {0}".format(e))
-            return
-        except UnicodeEncodeError as e:
-            print("Exception when opening URL {0}: {1}".format(url, e))
-            return
+        if not helper.skip_url(url):
+
+            try:
+                with closing(urllib.request.urlopen(url)) as response:
+                    if response:
+                        # Decode the HTML Content-type header to obtain the
+                        # document type and the charset (content encoding), if specified
+                        ctype = response.getheader("Content-type", "")
+                        if ';' in ctype:
+                            s = ctype.split(';')
+                            ctype = s[0]
+                            enc = s[1].strip()
+                            s = enc.split('=')
+                            if s[0] == "charset" and len(s) == 2:
+                                encoding = s[1]
+                        if ctype == "text/html":
+                            html_doc = response.read() # html_doc is a bytes object
+            except HTTPError as e:
+                print("HTTPError returned: {0}".format(e))
+            except UnicodeEncodeError as e:
+                print("Exception when opening URL {0}: {1}".format(url, e))
 
         # Parse the document
-        soup = BeautifulSoup(html_doc, "html.parser") # or 'html5lib'
+        soup = BeautifulSoup(html_doc, _HTML_PARSER) if html_doc else None
 
         # Obtain the set of child URLs to fetch
         #fetch_set = self.children(root, soup)
 
         # Use the scrape helper to analyze the soup and return
         # metadata
-        metadata = helper.analyze(soup)
+        metadata = helper.get_metadata(soup) if soup else None
 
         # Upate the article info
         session = self._db.session
 
         article = session.query(Article).filter_by(url = url).one()
-        article.heading = metadata.heading
-        article.author = metadata.author
-        article.timestamp = metadata.timestamp
-        article.authority = metadata.authority
         article.scraped = datetime.now()
-        article.scr_module = helper.scr_module
-        article.scr_class = helper.scr_class
-        article.scr_version = helper.scr_version
 
-        # Obtain the article HTML by decoding the content bytes using the given charset encoding
-        try:
-            article.html = html_doc.decode(encoding)
-        except UnicodeDecodeError as e:
-            print("UnicodeDecodeError returned: {0}".format(e))
-            session.rollback()
-            return
+        if metadata:
+
+            article.heading = metadata.heading
+            article.author = metadata.author
+            article.timestamp = metadata.timestamp
+            article.authority = metadata.authority
+            article.scr_module = helper.scr_module
+            article.scr_class = helper.scr_class
+            article.scr_version = helper.scr_version
+
+            # Obtain the article HTML by decoding the content bytes using the given charset encoding
+            try:
+                article.html = html_doc.decode(encoding)
+            except UnicodeDecodeError as e:
+                print("UnicodeDecodeError returned: {0}".format(e))
+                article.html = None
+
+        else:
+            # No metadata: mark the article as scraped with no HTML
+            article.html = None
 
         try:
             session.commit()
@@ -437,18 +447,13 @@ class Scraper:
         article = session.query(Article).filter_by(url = url).one()
 
         # Make an HTML soup out of it
-        soup = BeautifulSoup(article.html, "html.parser") # or 'html5lib'
+        soup = BeautifulSoup(article.html, _HTML_PARSER) if article.html else None
 
         # Ask the helper to find the actual content to be parsed
-        content = helper.find_content(soup)
-
-        if not content:
-            # Nothing to do
-            session.rollback()
-            return
+        content = helper.get_content(soup) if soup else None
 
         # Convert the content soup to a token iterable (generator)
-        toklist = Scraper._to_tokens(content)
+        toklist = Scraper._to_tokens(content) if content else None
 
         # Count sentences
         num_sent = 0
@@ -456,52 +461,54 @@ class Scraper:
         total_ambig = 0.0
         total_tokens = 0
 
-        sent_begin = 0
-        bp = self._parser
-        rdc = Reducer() # !!! This will be included in the parser
-
         t0 = time.time()
+        bp = self._parser
 
-        for ix, t in enumerate(toklist):
-            if t[0] == TOK.S_BEGIN:
-                num_sent += 1
-                sent = []
-                sent_begin = ix
-            elif t[0] == TOK.S_END:
-                slen = len(sent)
-                # Parse the accumulated sentence
-                err_index = None
-                try:
-                    # Parse the sentence
-                    forest = bp.go(sent)
-                    # Reduce the resulting forest
-                    forest = rdc.go(forest)
-                except ParseError as e:
-                    forest = None
-                    # Obtain the index of the offending token
-                    err_index = e.token_index
-                num = 0 if forest is None else Parser.num_combinations(forest)
-                #print("Parsed sentence of length {0} with {1} combinations{2}".format(slen, num,
-                #    "\n" + " ".join(s[1] for s in sent) if num >= 100 else ""))
-                if num > 0:
-                    num_parsed_sent += 1
-                    # Calculate the 'ambiguity factor'
-                    ambig_factor = num ** (1 / slen)
-                    # Do a weighted average on sentence length
-                    total_ambig += ambig_factor * slen
-                    total_tokens += slen
-                # Mark the sentence beginning with the number of parses
-                # and the index of the offending token, if an error occurred
-                #toklist[sent_begin] = TOK.Begin_Sentence(num_parses = num, err_index = err_index)
+        if toklist:
 
-                # !!! Accumulate the parse result
+            sent_begin = 0
+            rdc = Reducer() # !!! This will be included in the parser
 
-            elif t[0] == TOK.P_BEGIN:
-                pass
-            elif t[0] == TOK.P_END:
-                pass
-            else:
-                sent.append(t)
+            for ix, t in enumerate(toklist):
+                if t[0] == TOK.S_BEGIN:
+                    num_sent += 1
+                    sent = []
+                    sent_begin = ix
+                elif t[0] == TOK.S_END:
+                    slen = len(sent)
+                    # Parse the accumulated sentence
+                    err_index = None
+                    try:
+                        # Parse the sentence
+                        forest = bp.go(sent)
+                        # Reduce the resulting forest
+                        forest = rdc.go(forest)
+                    except ParseError as e:
+                        forest = None
+                        # Obtain the index of the offending token
+                        err_index = e.token_index
+                    num = 0 if forest is None else Parser.num_combinations(forest)
+                    #print("Parsed sentence of length {0} with {1} combinations{2}".format(slen, num,
+                    #    "\n" + " ".join(s[1] for s in sent) if num >= 100 else ""))
+                    if num > 0:
+                        num_parsed_sent += 1
+                        # Calculate the 'ambiguity factor'
+                        ambig_factor = num ** (1 / slen)
+                        # Do a weighted average on sentence length
+                        total_ambig += ambig_factor * slen
+                        total_tokens += slen
+                    # Mark the sentence beginning with the number of parses
+                    # and the index of the offending token, if an error occurred
+                    #toklist[sent_begin] = TOK.Begin_Sentence(num_parses = num, err_index = err_index)
+
+                    # !!! Accumulate the parse result
+
+                elif t[0] == TOK.P_BEGIN:
+                    pass
+                elif t[0] == TOK.P_END:
+                    pass
+                else:
+                    sent.append(t)
 
         parse_time = time.time() - t0
 
@@ -513,7 +520,7 @@ class Scraper:
 
         session.commit()
 
-        print("Parsing completed in {0:.2f} seconds".format(parse_time))
+        print("Parsing of {2}/{1} sentences completed in {0:.2f} seconds".format(parse_time, num_sent, num_parsed_sent))
 
 
     @classmethod
@@ -524,15 +531,6 @@ class Scraper:
         scraper = cls(db, parser)
 
         session = db.session
-
-        # Go through the roots and scrape them, inserting into the articles table
-        for r in session.query(Root).all():
-
-            print("Scraping root of {0} at {1}...".format(r.description, r.url))
-
-            # Process a single top-level domain and root URL,
-            # parsing child URLs that have not been seen before
-            result = scraper.scrape_root(r)
 
         # Initialize a cache of instantiated scrape helpers
         helpers = dict()
@@ -553,6 +551,16 @@ class Scraper:
                 if not helper:
                     print("Unable to instantiate helper {0}".format(helper_id))
             return helper
+
+        # Go through the roots and scrape them, inserting into the articles table
+        for r in session.query(Root).all():
+
+            print("Scraping root of {0} at {1}...".format(r.description, r.url))
+
+            # Process a single top-level domain and root URL,
+            # parsing child URLs that have not been seen before
+            helper = _get_helper(r)
+            result = scraper.scrape_root(r, helper)
 
         # Go through any unscraped articles and scrape them
         for a in session.query(Article) \
@@ -580,7 +588,7 @@ class Scraper:
 
             # !!! DEBUG
             count += 1
-            if count >= 4:
+            if count >= 10:
                 break
 
 
@@ -686,6 +694,10 @@ def main(argv = None):
 
             # Run the scraper
             run()
+
+            # Save the unknown verbs accumulated during parsing, if any
+            UnknownVerbs.write()
+
 
     except Usage as err:
         print(err.msg, file = sys.stderr)

@@ -23,7 +23,7 @@
 from tokenizer import TOK
 from grammar import Terminal, Token, Grammar
 from parser import Parser, ParseError
-from settings import VerbObjects, VerbSubjects, Prepositions
+from settings import VerbObjects, VerbSubjects, UnknownVerbs, Prepositions
 
 from flask import current_app
 
@@ -239,7 +239,8 @@ class BIN_Token(Token):
                 unknown = False
         # Unknown verb or arguments not too many: consider this a match
         if unknown:
-            print("Matched terminal {1} with unknown verb {0}".format(verb, terminal))
+            # Note the unknown verb
+            UnknownVerbs.add(verb)
         return True
 
     def prep_matches(self, prep, case):
