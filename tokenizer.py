@@ -1061,7 +1061,6 @@ def parse_phrases_2(token_stream):
                 # Look through the token meanings
                 result = []
                 for m in token.val:
-                    # print("In_category checking {0}".format(m))
                     if m.fl == category:
                         # Note the stem ('stofn') and the gender from the word type ('ordfl')
                         result.append(PersonName(name = m.stofn, gender = m.ordfl, case = case(m.beyging)))
@@ -1240,45 +1239,52 @@ def parse_static_phrases(token_stream):
         while True:
 
             token = next(token_stream)
-            tq.append(token) # Add to lookahead token queue
 
             if token.kind != TOK.WORD:
                 # Not a word: no match; discard state
                 for t in tq: yield t
                 tq = []
                 state = { }
+                yield token
                 continue
 
-            # Look for matches in the current state and
-            # build a new state
+            # Look for matches in the current state and build a new state
             newstate = { }
             w = token.txt.lower()
 
             def add_to_state(state, sl, ix):
                 """ Add the list of subsequent words to the new parser state """
                 w = sl[0]
+                rest = sl[1:]
                 if w in state:
-                    state[w].append((sl[1:], ix))
+                    state[w].append((rest, ix))
                 else:
-                    state[w] = [ (sl[1:], ix) ]
+                    state[w] = [ (rest, ix) ]
 
             if w in state:
                 # This matches an expected token:
                 # go through potential continuations
+                tq.append(token) # Add to lookahead token queue
+                token = None
                 for sl, ix in state[w]:
                     if not sl:
                         # No subsequent word: this is a complete match
                         # Reconstruct original text behind phrase
                         w = " ".join([t.txt for t in tq])
                         # Add the entire phrase as one 'word' to the token queue
-                        tq = [ TOK.Word(w, [BIN_Meaning._make(r) for r in StaticPhrases.get_meaning(ix)]) ]
+                        yield TOK.Word(w, [BIN_Meaning._make(r) for r in StaticPhrases.get_meaning(ix)])
                         # Discard the state and start afresh
                         newstate = { }
+                        w = ""
+                        tq = []
                         # Note that it is possible to match even longer phrases
                         # by including a starting phrase in its entirety in
                         # the static phrase dictionary
                         break
                     add_to_state(newstate, sl, ix)
+            elif tq:
+                for t in tq: yield t
+                tq = []
 
             # Add all possible new states for phrases that could be starting
             if w in pdict:
@@ -1286,18 +1292,21 @@ def parse_static_phrases(token_stream):
                 for sl, ix in pdict[w]:
                     if not sl:
                         # Simple replace of a single word
-                        w = " ".join([t.txt for t in tq])
-                        tq = [ TOK.Word(w, [BIN_Meaning._make(r) for r in StaticPhrases.get_meaning(ix)]) ]
+                        for t in tq: yield tq
+                        tq = []
+                        # Yield the replacement token
+                        yield TOK.Word(token.txt, [BIN_Meaning._make(r) for r in StaticPhrases.get_meaning(ix)])
                         newstate = { }
+                        token = None
                         break
                     add_to_state(newstate, sl, ix)
+                if token:
+                    tq.append(token)
+            elif token:
+                yield token
 
             # Transition to the new state
             state = newstate
-            if not state:
-                # No possible phrases: yield the token queue before continuing
-                for t in tq: yield t
-                tq = []
 
     except StopIteration:
         # Token stream is exhausted
@@ -1324,13 +1333,14 @@ def disambiguate_phrases(token_stream):
         while True:
 
             token = next(token_stream)
-            tq.append(token) # Add to lookahead token queue
 
             if token.kind != TOK.WORD:
                 # Not a word: no match; discard state
-                for t in tq: yield t
-                tq = []
+                if tq:
+                    for t in tq: yield t
+                    tq = []
                 state = { }
+                yield token
                 continue
 
             # Look for matches in the current state and
@@ -1341,46 +1351,57 @@ def disambiguate_phrases(token_stream):
             def add_to_state(state, sl, ix):
                 """ Add the list of subsequent words to the new parser state """
                 w = sl[0]
+                rest = sl[1:]
                 if w in state:
-                    state[w].append((sl[1:], ix))
+                    state[w].append((rest, ix))
                 else:
-                    state[w] = [ (sl[1:], ix) ]
+                    state[w] = [ (rest, ix) ]
 
             if w in state:
                 # This matches an expected token:
                 # go through potential continuations
+                tq.append(token) # Add to lookahead token queue
+                token = None
                 for sl, ix in state[w]:
                     if not sl:
                         # No subsequent word: this is a complete match
                         # Discard meanings of words in the token queue that are not
                         # compatible with the category list specified
-                        for t, cat in zip(tq, AmbigPhrases.get_cats(ix)):
+                        cats = AmbigPhrases.get_cats(ix)
+                        assert len(cats) == len(tq)
+                        for t, cat in zip(tq, cats):
                             assert t.kind == TOK.WORD
                             # Yield a new token with fewer meanings for each original token in the queue
-                            yield Tok(t.kind, t.txt, [m for m in t.val if m.ordfl == cat])
-                        tq = []
+                            yield TOK.Word(t.txt, [m for m in t.val if m.ordfl == cat])
 
                         # Discard the state and start afresh
                         newstate = { }
+                        w = ""
+                        tq = []
                         # Note that it is possible to match even longer phrases
                         # by including a starting phrase in its entirety in
                         # the static phrase dictionary
                         break
                     add_to_state(newstate, sl, ix)
+            elif tq:
+                # This does not continue a started phrase:
+                # yield the accumulated token queue
+                for t in tq: yield t
+                tq = []
 
-            # Add all possible new states for phrases that could be starting
             if w in pdict:
-                # This word potentially starts a phrase
+                # This word potentially starts a new phrase
                 for sl, ix in pdict[w]:
                     assert sl
                     add_to_state(newstate, sl, ix)
+                if token:
+                    tq.append(token) # Start a lookahead queue with this token
+            elif token:
+                # Not starting a new phrase: pass the token through
+                yield token
 
             # Transition to the new state
             state = newstate
-            if not state:
-                # No possible phrases: yield the token queue before continuing
-                for t in tq: yield t
-                tq = []
 
     except StopIteration:
         # Token stream is exhausted

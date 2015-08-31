@@ -12,7 +12,7 @@ patterns:
 
 - comment: Punctuation within productions
   name: keyword.other.grammar
-  match: →|\||=|->
+  match: →|\||=|->|>
 
 - comment: Token repetition specifiers
   name: variable.parameter.function.keyword.grammar

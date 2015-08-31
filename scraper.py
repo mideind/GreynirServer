@@ -54,7 +54,9 @@ from settings import Settings, ConfigError, UnknownVerbs
 Base = declarative_base()
 
 # The HTML parser to use with BeautifulSoup
-_HTML_PARSER = "html5lib"
+#_HTML_PARSER = "html5lib"
+_HTML_PARSER = "html.parser"
+
 
 class Scraper_DB:
 
@@ -93,8 +95,8 @@ class Root(Base):
     id = Column(Integer, Sequence('roots_id_seq'), primary_key=True)
 
     # Domain suffix, root URL, human-readable description
-    domain = Column(String)
-    url = Column(String)
+    domain = Column(String, nullable = False)
+    url = Column(String, nullable = False)
     description = Column(String)
 
     # Default author
@@ -187,6 +189,9 @@ class Scraper:
 
     _WHITESPACE_TAGS = frozenset(["br", "img"])
 
+    # Cache of instantiated scrape helpers
+    _helpers = dict()
+
 
     def __init__(self, db, parser):
 
@@ -264,6 +269,59 @@ class Scraper:
         return tokenize(text)
 
 
+    @classmethod
+    def _fetch_url(cls, url):
+        """ Low-level fetch of an URL, returning a decoded string """
+        encoding = 'utf-8' # Assumed default encoding (should strictly speaking be ISO-8859-1)
+        html_doc = None
+        try:
+            with closing(urllib.request.urlopen(url)) as response:
+                if response:
+                    # Decode the HTML Content-type header to obtain the
+                    # document type and the charset (content encoding), if specified
+                    ctype = response.getheader("Content-type", "")
+                    if ';' in ctype:
+                        s = ctype.split(';')
+                        ctype = s[0]
+                        enc = s[1].strip()
+                        s = enc.split('=')
+                        if s[0] == "charset" and len(s) == 2:
+                            encoding = s[1]
+                    if ctype == "text/html":
+                        html_doc = response.read() # html_doc is a bytes object
+                        if html_doc:
+                            html_doc = html_doc.decode(encoding)
+        except HTTPError as e:
+            print("HTTPError returned: {0}".format(e))
+            html_doc = None
+        except UnicodeEncodeError as e:
+            print("Exception when opening URL {0}: {1}".format(url, e))
+            html_doc = None
+        except UnicodeDecodeError as e:
+            print("Exception when decoding HTML of {0}: {1}".format(url, e))
+            html_doc = None
+        return html_doc
+
+
+    @classmethod
+    def _get_helper(cls, root):
+        """ Return a scrape helper instance for the given root """
+        # Obtain an instance of a scraper helper class for this root
+        helper_id = root.scr_module + "." + root.scr_class
+        if helper_id in Scraper._helpers:
+            # Already instantiated a helper: get it
+            helper = Scraper._helpers[helper_id]
+        else:
+            # Dynamically instantiate a new helper class instance
+            mod = importlib.import_module(root.scr_module)
+            helper_Class = getattr(mod, root.scr_class, None) if mod else None
+            helper = helper_Class(root) if helper_Class else None
+            Scraper._helpers[helper_id] = helper
+            if not helper:
+                print("Unable to instantiate helper {0}".format(helper_id))
+        return helper
+
+
     def children(self, root, soup):
         """ Return a set of child URLs within a HTML soup, relative to the given root """
         # Establish the root URL base parameters
@@ -317,14 +375,12 @@ class Scraper:
         print("Processing root {0}".format(root.url))
 
         # Read the HTML document at the root URL
-        with closing(urllib.request.urlopen(root.url)) as response:
-            try:
-                html_doc = response.read()
-            except Exception as e:
-                print("Exception {0} when reading root {1}".format(e, root.url))
-                return
+        html_doc = Scraper._fetch_url(root.url)
+        if not html_doc:
+            print("Unable to fetch root {0}".format(root.url))
+            return
 
-        # Parse the document
+        # Parse the HTML document
         soup = BeautifulSoup(html_doc, _HTML_PARSER)
 
         # Obtain the set of child URLs to fetch
@@ -362,33 +418,10 @@ class Scraper:
         # to the same domain suffix and we haven't seen before
         print("Processing article {0}".format(url))
 
-        encoding = 'utf-8' # Assumed default encoding (should strictly speaking be ISO-8859-1)
-        html_doc = None
-
         # Read the HTML document at the article URL
-        if not helper.skip_url(url):
+        html_doc = None if helper.skip_url(url) else Scraper._fetch_url(url)
 
-            try:
-                with closing(urllib.request.urlopen(url)) as response:
-                    if response:
-                        # Decode the HTML Content-type header to obtain the
-                        # document type and the charset (content encoding), if specified
-                        ctype = response.getheader("Content-type", "")
-                        if ';' in ctype:
-                            s = ctype.split(';')
-                            ctype = s[0]
-                            enc = s[1].strip()
-                            s = enc.split('=')
-                            if s[0] == "charset" and len(s) == 2:
-                                encoding = s[1]
-                        if ctype == "text/html":
-                            html_doc = response.read() # html_doc is a bytes object
-            except HTTPError as e:
-                print("HTTPError returned: {0}".format(e))
-            except UnicodeEncodeError as e:
-                print("Exception when opening URL {0}: {1}".format(url, e))
-
-        # Parse the document
+        # Parse the HTML document
         soup = BeautifulSoup(html_doc, _HTML_PARSER) if html_doc else None
 
         # Obtain the set of child URLs to fetch
@@ -402,7 +435,7 @@ class Scraper:
         session = self._db.session
 
         article = session.query(Article).filter_by(url = url).one()
-        article.scraped = datetime.now()
+        article.scraped = datetime.utcnow()
 
         if metadata:
 
@@ -413,13 +446,7 @@ class Scraper:
             article.scr_module = helper.scr_module
             article.scr_class = helper.scr_class
             article.scr_version = helper.scr_version
-
-            # Obtain the article HTML by decoding the content bytes using the given charset encoding
-            try:
-                article.html = html_doc.decode(encoding)
-            except UnicodeDecodeError as e:
-                print("UnicodeDecodeError returned: {0}".format(e))
-                article.html = None
+            article.html = html_doc
 
         else:
             # No metadata: mark the article as scraped with no HTML
@@ -512,7 +539,7 @@ class Scraper:
 
         parse_time = time.time() - t0
 
-        article.parsed = datetime.now()
+        article.parsed = datetime.utcnow()
         article.parser_version = bp.version
         article.num_sentences = num_sent
         article.num_parsed = num_parsed_sent
@@ -524,33 +551,51 @@ class Scraper:
 
 
     @classmethod
+    def fetch_url(cls, url, session = None):
+        """ Fetch a URL using the scraping mechanism, returning
+            a tuple (metadata, content) or None if error """
+        html_doc = cls._fetch_url(url)
+        if not html_doc:
+            return None
+
+        if not session:
+            db = Scraper_DB()
+            session = db.session
+
+        s = urlparse.urlsplit(url)
+        root = None
+
+        # Find which root this URL belongs to, if any
+        for r in session.query(Root).all():
+            root_s = urlparse.urlsplit(r.url)
+            # This URL belongs to a root if the domain (netloc) part
+            # ends with the root domain (netloc)
+            if s.netloc.endswith(root_s.netloc):
+                root = r
+                break
+
+        # Obtain a scrape helper for the root, if any
+        helper = cls._get_helper(root) if root else None
+
+        # Parse the HTML
+        soup = BeautifulSoup(html_doc, _HTML_PARSER)
+        if not soup or not soup.html:
+            print("Scraper.fetch_url(): No soup or no soup.html")
+            return None
+
+        # Obtain the metadata and the content from the resulting soup
+        metadata = helper.get_metadata(soup) if helper else None
+        content = helper.get_content(soup) if helper else soup.html.body
+        return (metadata, content)
+
+
+    @classmethod
     def go(cls, db, parser):
         """ Run a scraping pass from all roots in the scraping database """
 
         # Create a scraper instance that uses the opened database and the given parser
         scraper = cls(db, parser)
-
         session = db.session
-
-        # Initialize a cache of instantiated scrape helpers
-        helpers = dict()
-
-        def _get_helper(root):
-            """ Return a scrape helper instance for the given root """
-            # Obtain an instance of a scraper helper class for this root
-            helper_id = root.scr_module + "." + root.scr_class
-            if helper_id in helpers:
-                # Already instantiated a helper: get it
-                helper = helpers[helper_id]
-            else:
-                # Dynamically instantiate a new helper class instance
-                mod = importlib.import_module(root.scr_module)
-                helper_Class = getattr(mod, root.scr_class, None) if mod else None
-                helper = helper_Class(root) if helper_Class else None
-                helpers[helper_id] = helper
-                if not helper:
-                    print("Unable to instantiate helper {0}".format(helper_id))
-            return helper
 
         # Go through the roots and scrape them, inserting into the articles table
         for r in session.query(Root).all():
@@ -559,14 +604,14 @@ class Scraper:
 
             # Process a single top-level domain and root URL,
             # parsing child URLs that have not been seen before
-            helper = _get_helper(r)
+            helper = cls._get_helper(r)
             result = scraper.scrape_root(r, helper)
 
         # Go through any unscraped articles and scrape them
         for a in session.query(Article) \
             .filter(Article.scraped == None).filter(Article.root_id != None):
 
-            helper = _get_helper(a.root)
+            helper = cls._get_helper(a.root)
             if not helper:
                 continue
 
@@ -579,7 +624,7 @@ class Scraper:
             .filter(Article.scraped != None).filter(Article.parsed == None) \
             .filter(Article.root_id != None):
 
-            helper = _get_helper(a.root)
+            helper = cls._get_helper(a.root)
             if not helper:
                 continue
 
@@ -602,7 +647,7 @@ def run():
 
     print("{3} dated {4} has {0} nonterminals, {1} terminals, {2} productions"
         .format(g.num_nonterminals, g.num_terminals, g.num_productions,
-            g.file_name, g.file_time))
+            g.file_name, str(g.file_time)[0:19]))
 
     Scraper.go(db, parser)
 

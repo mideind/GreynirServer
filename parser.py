@@ -324,7 +324,7 @@ class Parser:
         # Make new grammar dictionary keyed by nonterminal index
         self._nt_dict = { }
         for nt, plist in nt_d.items():
-            self._nt_dict[nt.index] = None if plist is None else [ p.prod for p in plist ]
+            self._nt_dict[nt.index] = None if plist is None else [ p.prod for _, p in plist ]
         # Make a dictionary of nonterminals from the grammar
         # keyed by the nonterminal index instead of its name
         self._nonterminals = { }

@@ -141,6 +141,30 @@ div.output {
    margin-top: 32px;
 }
 
+p#meta-heading {
+   font-weight: bold;
+   font-size: 20px;
+}
+
+p#meta-author {
+   font-style: italic;
+   text-align: right;
+   margin-bottom: 2px;
+}
+
+p#meta-timestamp {
+   margin-top: 0px;
+   font-style: italic;
+   text-align: right;
+   margin-bottom: 2px;
+}
+
+p#meta-authority {
+   margin-top: 0px;
+   font-style: italic;
+   text-align: right;
+}
+
 div#result i {
    font-style: normal;
 }

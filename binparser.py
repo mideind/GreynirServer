@@ -20,8 +20,10 @@
 
 """
 
+from functools import reduce
+
 from tokenizer import TOK
-from grammar import Terminal, Token, Grammar
+from grammar import Terminal, LiteralTerminal, Token, Grammar
 from parser import Parser, ParseError
 from settings import VerbObjects, VerbSubjects, UnknownVerbs, Prepositions
 
@@ -92,21 +94,33 @@ class BIN_Token(Token):
         "mm" : "MM", # Miðmynd
         "sb" : "SB", # Sterk beyging
         "nh" : "NH", # Nafnháttur
+        "fh" : "FH", # Framsöguháttur
         "bh" : "BH", # Boðháttur
         "lh" : "LH", # Lýsingarháttur (nútíðar)
         "vh" : "VH", # Viðtengingarháttur
         "nt" : "NT", # Nútíð
         "þt" : "ÞT", # Nútíð
         "sagnb" : "SAGNB", # Sagnbeyging ('vera' -> 'verið')
-        "lhþt" : "LHÞT" # Lýsingarháttur þátíðar ('var lentur')
+        "lhþt" : "LHÞT", # Lýsingarháttur þátíðar ('var lentur')
+        "abbrev" : None
     }
+
+    _VBIT = { key : 1 << i for i, key in enumerate(_VARIANT.keys()) }
+    _FBIT = { key : 1 << i for i, key in enumerate(_VARIANT.values()) if key }
+
+    _VBIT_ET = _VBIT["et"]
+    _VBIT_FT = _VBIT["ft"]
+    _VBIT_KK = _VBIT["kk"]
+    _VBIT_KVK = _VBIT["kvk"]
+    _VBIT_HK = _VBIT["hk"]
+    _VBIT_ABBREV = _VBIT["abbrev"]
 
     _CASES = [ "nf", "þf", "þgf", "ef" ]
     _GENDERS = [ "kk", "kvk", "hk" ]
     _GENDERS_SET = set(_GENDERS)
 
     # Variants to be checked for verbs
-    _VERB_VARIANTS = [ "p1", "p2", "p3", "nh", "vh", "lh", "bh",
+    _VERB_VARIANTS = [ "p1", "p2", "p3", "nh", "vh", "lh", "bh", "fh",
         "sagnb", "lhþt", "nt", "kk", "kvk", "hk", "sb", "gm", "mm" ]
     # Pre-calculate a dictionary of associated BIN forms
     _VERB_FORMS = None # Initialized later
@@ -114,7 +128,8 @@ class BIN_Token(Token):
     # Set of adverbs that cannot be an "eo" (prepositions are already excluded)
     _NOT_EO = { "og", "eða", "sem" }
     # Prepositions that nevertheless must be allowed as adverbs
-    _NOT_NOT_EO = { "inn" } # 'Fyrirtækið hefur skilað inn ársreikningi'
+    # 'Fyrirtækið hefur skilað inn ársreikningi', 'Þá er kannski eftir klukkutími'
+    _NOT_NOT_EO = { "inn", "eftir" }
 
     def __init__(self, t):
 
@@ -141,28 +156,35 @@ class BIN_Token(Token):
             verb = verb.split("-")[-1]
         if terminal.has_variant("subj"):
             # Verb subject in non-nominative case
+            # Examples:
+            # 'Mig langar að fara til Frakklands'
+            # 'Páli þykir þetta vera tóm vitleysa'
             if terminal.has_variant("nh"):
                 if "NH" not in form:
                     # Nominative mode (nafnháttur)
                     return False
+            if "SAGNB" in form or "LHÞT" in form:
+                # For subj, we don't allow SAGNB or LHÞT forms
+                # ('langað', 'þótt')
+                return False
             #elif "OP" not in form:
             #    # !!! BIN seems to be not 100% consistent in the OP annotation
             #    return False
             if terminal.has_variant("mm"):
                 # Central form of verb ('miðmynd')
                 return "MM" in form
-            if terminal.has_variant("et") and not "ET" in form:
+            if terminal.has_vbit_et() and not "ET" in form:
                 # Require singular
                 return False
-            if terminal.has_variant("ft") and not "FT" in form:
+            if terminal.has_vbit_ft() and not "FT" in form:
                 # Require plural
                 return False
             # Make sure that the subject case (last variant) matches the terminal
             return terminal.variant(-1) in VerbSubjects.VERBS.get(verb, set())
-        if terminal.has_variant("et") and "FT" in form:
+        if terminal.has_vbit_et() and "FT" in form:
             # Can't use plural verb if singular terminal
             return False
-        if terminal.has_variant("ft") and "ET" in form:
+        if terminal.has_vbit_ft() and "ET" in form:
             # Can't use singular verb if plural terminal
             return False
         # print("verb_matches {0} terminal {1} form {2}".format(verb, terminal, form))
@@ -231,7 +253,7 @@ class BIN_Token(Token):
         if terminal.has_variant("mm"):
             # Verbs in 'miðmynd' match terminals with one or two arguments
             return nargs == 0 or nargs == 1
-        # !!! DEBUG
+        # !!! TEMPORARY code while the verb lexicon is being built
         unknown = True
         for i in range(nargs + 1, 3):
             if verb in VerbObjects.VERBS[i]:
@@ -245,6 +267,10 @@ class BIN_Token(Token):
 
     def prep_matches(self, prep, case):
         """ Check whether a preposition matches this terminal """
+        # !!! Note that this will match a word and return True even if the
+        # meanings of the token (the list in self.t2) do not include
+        # the fs category. This effectively makes the propositions
+        # exempt from the ambiguous_phrases optimization.
         if prep not in Prepositions.PP:
             # Not recognized as a preposition
             return False
@@ -271,7 +297,7 @@ class BIN_Token(Token):
         """ A currency name token matches a noun terminal """
         if not terminal.startswith("no"):
             return False
-        if terminal.has_variant("abbrev"):
+        if terminal.has_vbit_abbrev():
             # A currency does not match an abbreviation
             return False
         if self.t2[1]:
@@ -286,25 +312,27 @@ class BIN_Token(Token):
                     return False
         else:
             # Match only the neutral gender if no gender given
-            return not (terminal.has_variant("kk") or terminal.has_variant("kvk"))
+            # return not (terminal.has_variant("kk") or terminal.has_variant("kvk"))
+            return not terminal.has_any_vbits(BIN_Token._VBIT_KK | BIN_Token._VBIT_KVK)
         return True
 
     def matches_AMOUNT(self, terminal):
         """ An amount token matches a noun terminal """
         if not terminal.startswith("no"):
             return False
-        if terminal.has_variant("abbrev"):
+        if terminal.has_vbit_abbrev():
             # An amount does not match an abbreviation
             return False
-        if terminal.has_variant("et") and float(self.t2[1]) != 1.0:
+        if terminal.has_vbit_et() and float(self.t2[1]) != 1.0:
             # Singular only matches an amount of one
             return False
-        if terminal.has_variant("ft") and float(self.t2[1]) == 1.0:
+        if terminal.has_vbit_ft() and float(self.t2[1]) == 1.0:
             # Plural does not match an amount of one
             return False
         if self.t2[3] is None:
             # No gender: match neutral gender only
-            if terminal.has_variant("kk") or terminal.has_variant("kvk"):
+            if terminal.has_any_vbits(BIN_Token._VBIT_KK | BIN_Token._VBIT_KVK):
+            # if terminal.has_variant("kk") or terminal.has_variant("kvk"):
                 return False
         else:
             # Associated gender
@@ -320,23 +348,49 @@ class BIN_Token(Token):
 
     def matches_NUMBER(self, terminal):
         """ A number token matches a number (töl) or noun terminal """
+
+        def matches_number(terminal):
+            """ Match a number with a singular or plural noun (terminal).
+                In Icelandic, all integers whose modulo 100 ends in 1 are
+                singular, except 11. """
+            singular = False
+            i = int(self.t2[0])
+            if float(i) == float(self.t2[0]):
+                # Whole number (integer): may be singular
+                i = abs(i) % 100
+                singular = (i != 11) and (i % 10) == 1
+            if terminal.has_vbit_et() and not singular:
+                # Terminal is singular but number is plural
+                return False
+            if terminal.has_vbit_ft() and singular:
+                # Terminal is plural but number is singular
+                return False
+            return True
+
+        if terminal.startswith("tala"):
+            # Plain number with no case or gender info
+            return matches_number(terminal)
+
+        if not self.t2[1] and not self.t2[2]:
+            # If no case and gender info, we only match "tala",
+            # not nouns or "töl" terminals
+            return False
+
         if not terminal.startswith("töl"):
             if not terminal.startswith("no"):
                 return False
-            if terminal.has_variant("abbrev"):
+            # This is a noun ("no") terminal
+            if terminal.has_vbit_abbrev():
                 return False
             # Allow this to act as a noun if we have case and gender info
             if not self.t2[1] or not self.t2[2]:
                 return False
-        if terminal.has_variant("et") and float(self.t2[0]) != 1.0:
-            # Singular only matches an amount of one
-            return False
-        if terminal.has_variant("ft") and float(self.t2[0]) == 1.0:
-            # Plural does not match an amount of one
+        if not matches_number(terminal):
             return False
         if self.t2[2] is None:
             # No associated gender: match neutral gender only
-            if terminal.has_variant("kk") or terminal.has_variant("kvk"):
+            if terminal.has_any_vbits(BIN_Token._VBIT_KK | BIN_Token._VBIT_KVK):
+            # if terminal.has_variant("kk") or terminal.has_variant("kvk"):
                 return False
         else:
             # Associated gender
@@ -356,14 +410,15 @@ class BIN_Token(Token):
             # Matches number and percentage terminals only
             if not terminal.startswith("no"):
                 return False
-            if terminal.has_variant("abbrev"):
+            if terminal.has_vbit_abbrev():
                 return False
             # If we are recognizing this as a noun, do so only with neutral gender
             if not terminal.has_variant("hk"):
                 return False
         # We do not check singular or plural here since phrases such as
         # '35% skattur' and '1% allra blóma' are valid
-        if terminal.has_variant("kk") or terminal.has_variant("kvk"):
+        # if terminal.has_variant("kk") or terminal.has_variant("kvk"):
+        if terminal.has_any_vbits(BIN_Token._VBIT_KK | BIN_Token._VBIT_KVK):
             # Percentages only match the neutral gender
             return False
         # No case associated with percentages: match all
@@ -373,11 +428,9 @@ class BIN_Token(Token):
         """ A year token matches a number (töl) or year (ártal) terminal """
         if not terminal.startswith("töl") and not terminal.startswith("ártal"):
             return False
-        if terminal.has_variant("ft"):
-            # Only singular match ('2014 var gott ár', not '2014 voru góð ár')
-            return False
-        if terminal.has_variant("kk") or terminal.has_variant("kvk"):
-            # Years only match the neutral gender
+        # Only singular match ('2014 var gott ár', not '2014 voru góð ár')
+        # Years only match the neutral gender
+        if terminal.has_any_vbits(BIN_Token._VBIT_FT | BIN_Token._VBIT_KK | BIN_Token._VBIT_KVK):
             return False
         # No case associated with year numbers: match all
         return True
@@ -422,7 +475,7 @@ class BIN_Token(Token):
                 # Check noun
                 if BIN_Token._KIND[m[2]] != "no":
                     return False
-                if terminal.has_variant("abbrev"):
+                if terminal.has_vbit_abbrev():
                     # Only match abbreviations; gender, case and number do not matter
                     return m[5] == "-"
                 for v in terminal.variants:
@@ -430,8 +483,13 @@ class BIN_Token(Token):
                         if m[2] != v:
                             # Mismatched gender
                             return False
-                    elif BIN_Token._VARIANT[v] not in m[5] and m[5] != "-":
-                        # Case or number not matching
+                    elif m[5] == "-":
+                        # No case and number info: probably a foreign word
+                        # Match all cases, but singular only, not plural
+                        if v == "ft":
+                            return False
+                    elif BIN_Token._VARIANT[v] not in m[5]:
+                        # Required case or number not found: no match
                         return False
                 return True
 
@@ -473,8 +531,7 @@ class BIN_Token(Token):
             return any(meaning_match(m) for m in self.t2)
 
         # Unknown word: allow it to match a singular, neutral noun in all cases
-        return terminal.startswith("no") and terminal.has_variant("et") and \
-            terminal.has_variant("hk")
+        return terminal.startswith("no") and terminal.has_vbits(BIN_Token._VBIT_ET | BIN_Token._VBIT_HK)
 
     # Dispatch table for the token matching functions
     _MATCHING_FUNC = {
@@ -523,6 +580,70 @@ class BIN_Token(Token):
 BIN_Token.init()
 
 
+class BitVariants:
+
+    """ Mix-in class to add mapping of terminal variants to bit arrays for speed """
+
+    def __init__(self, name):
+        super().__init__(name)
+        # Map variant names to bits in self._vbits
+        bit = BIN_Token._VBIT
+        self._vbits = reduce(lambda x, y: x | y,
+            (bit[v] for v in self._vset if v in bit), 0)
+
+    def has_vbits(self, vbits):
+        """ Return True if this terminal has all the variant(s) corresponding to the given bit(s) """
+        return (self._vbits & vbits) == vbits
+
+    def has_any_vbits(self, vbits):
+        """ Return True if this terminal has any of the variant(s) corresponding to the given bit(s) """
+        return (self._vbits & vbits) != 0
+
+    def has_vbit_et(self):
+        """ Return True if this terminal has the _et (singular) variant """
+        return (self._vbits & BIN_Token._VBIT_ET) != 0
+
+    def has_vbit_ft(self):
+        """ Return True if this terminal has the _ft (plural) variant """
+        return (self._vbits & BIN_Token._VBIT_FT) != 0
+
+    def has_vbit_abbrev(self):
+        """ Return True if this terminal has the _abbrev variant """
+        return (self._vbits & BIN_Token._VBIT_ABBREV) != 0
+
+
+class BIN_Terminal(BitVariants, Terminal):
+
+    """ Subclass of Terminal that adds a BIN-specific optimization
+        to variants, mapping them to bit arrays for speed """
+
+    def __init__(self, name):
+        super().__init__(name)
+
+
+class BIN_LiteralTerminal(BitVariants, LiteralTerminal):
+
+    """ Subclass of LiteralTerminal that adds a BIN-specific optimization
+        to variants, mapping them to bit arrays for speed """
+
+    def __init__(self, name):
+        super().__init__(name)
+
+
+class BIN_Grammar(Grammar):
+
+    def __init__(self):
+        super().__init__()
+
+    def _make_terminal(self, name):
+        """ Make BIN_Terminal instances instead of plain-vanilla Terminals """
+        return BIN_Terminal(name)
+
+    def _make_literal_terminal(self, name):
+        """ Make BIN_LiteralTerminal instances instead of plain-vanilla LiteralTerminals """
+        return BIN_LiteralTerminal(name)
+
+
 class BIN_Parser(Parser):
 
     """ BIN_Parser parses sentences according to the Icelandic
@@ -543,7 +664,7 @@ class BIN_Parser(Parser):
             the Parser parent class """
         g = BIN_Parser._grammar
         if g is None:
-            g = Grammar()
+            g = BIN_Grammar()
             g.read("Reynir.grammar", verbose = verbose)
             BIN_Parser._grammar = g
         Parser.__init__(self, g)

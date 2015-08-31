@@ -34,6 +34,7 @@ from grammar import Nonterminal
 from parser import Parser, ParseError
 from binparser import BIN_Parser
 from reducer import Reducer
+from scraper import Scraper
 from ptest import run_test, Test_DB
 
 # Initialize Flask framework
@@ -100,35 +101,43 @@ class TextList:
 
 def extract_text(soup, result):
     """ Append the human-readable text found in an HTML soup to the result TextList """
-    for t in soup.children:
-        if type(t) == NavigableString:
-            # Text content node
-            result.append(t)
-        elif isinstance(t, NavigableString):
-            # Comment, CDATA or other text data: ignore
-            pass
-        elif t.name in whitespace_tags:
-            # Tags that we interpret as whitespace, such as <br> and <img>
-            result.append_whitespace()
-        elif t.name in block_tags:
-            # Nested block tag
-            result.begin() # Begin block
-            extract_text(t, result)
-            result.end() # End block
-        elif t.name not in exclude_tags:
-            # Non-block tag
-            extract_text(t, result)
+    if soup:
+        for t in soup.children:
+            if type(t) == NavigableString:
+                # Text content node
+                result.append(t)
+            elif isinstance(t, NavigableString):
+                # Comment, CDATA or other text data: ignore
+                pass
+            elif t.name in whitespace_tags:
+                # Tags that we interpret as whitespace, such as <br> and <img>
+                result.append_whitespace()
+            elif t.name in block_tags:
+                # Nested block tag
+                result.begin() # Begin block
+                extract_text(t, result)
+                result.end() # End block
+            elif t.name not in exclude_tags:
+                # Non-block tag
+                extract_text(t, result)
 
 
 def process_url(url):
     """ Open a URL and process the returned response """
 
-    with closing(urllib.request.urlopen(url)) as response:
-        html_doc = response.read()
+    metadata = None
+    body = None
 
-    soup = BeautifulSoup(html_doc, "html.parser")
-    # soup = BeautifulSoup(html_doc, 'html5lib') # Use alternative parser
-    body = soup.body
+    # Fetch the URL, returning a (metadata, content) tuple or None if error
+    info = Scraper.fetch_url(url)
+
+    if info:
+        metadata, body = info
+        print("Metadata: heading '{0}'".format(metadata.heading))
+        print("Metadata: author '{0}'".format(metadata.author))
+        print("Metadata: timestamp {0}".format(metadata.timestamp))
+        print("Metadata: authority {0:.2f}".format(metadata.authority))
+        metadata = vars(metadata) # Convert namedtuple to dict
 
     # Extract the text content of the HTML into a list
     tlist = TextList()
@@ -140,7 +149,7 @@ def process_url(url):
     text = re.sub(r'\s+', ' ', text)
 
     # Tokenize the resulting text, returning a generator
-    return tokenize(text)
+    return (metadata, tokenize(text))
 
 
 def run():
@@ -154,12 +163,15 @@ def analyze():
 
     url = request.form.get("url", "").strip()
     t0 = time.time()
+    metadata = None
 
     if url.startswith("http:") or url.startswith("https:"):
         # Scrape the URL, tokenize the text content and return the token list
-        toklist = list(process_url(url))
+        metadata, generator = process_url(url)
+        toklist = list(generator)
     else:
         # Tokenize the text entered as-is and return the token list
+        # In this case, there's not metadata
         toklist = list(tokenize(url))
 
     tok_time = time.time() - t0
@@ -218,6 +230,7 @@ def analyze():
 
     result = dict(
         tokens = toklist,
+        metadata = metadata,
         tok_time = tok_time,
         tok_num = len(toklist),
         parse_time = parse_time,

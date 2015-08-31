@@ -28,6 +28,7 @@ import codecs
 import os
 from datetime import datetime
 
+
 class GrammarError(Exception):
 
     """ Exception class for errors in a grammar """
@@ -131,6 +132,12 @@ class Terminal:
         # The hash is used quite often so it is worth caching
         self._hash = self._index.__hash__()
         Terminal._INDEX += 1
+        # Allow for additional initialization in derived classes
+        self._post_init()
+
+    def _post_init(self):
+        """ Hook for any post-initialization in derived classes """
+        pass
 
     def __hash__(self):
         return self._hash
@@ -391,6 +398,12 @@ class Grammar:
 
         0 means an empty (epsilon) production.
 
+        As an alternative to the '|' symbol, productions may also
+        be separated by '>'. This indicates a priority ordering
+        between the alternatives, so that the result tree is
+        automatically reduced to the highest-priority alternative
+        in case of ambiguity.
+
     """
 
     def __init__(self):
@@ -436,7 +449,7 @@ class Grammar:
     def num_productions(self):
         """ Return the total number of productions in the grammar,
             were each right hand side option is counted as one """
-        return sum(len(nt_p) for nt_p in self._nt_dict.values())
+        return sum(len(pp) for pp in self._nt_dict.values())
 
     @property
     def file_name(self):
@@ -453,7 +466,22 @@ class Grammar:
         def to_str(plist):
             return " | ".join([str(p) for p in plist])
 
-        return "".join([str(nt) + " → " + to_str(plist) + "\n" for nt, plist in self._nt_dict.items()])
+        return "".join([str(nt) + " → " + to_str(pp[1]) + "\n" for nt, pp in self._nt_dict.items()])
+
+    def _make_terminal(self, name):
+        """ Create a new Terminal instance within the grammar """
+        # Override this to create custom terminals or add optimizations
+        return Terminal(name)
+
+    def _make_literal_terminal(self, name):
+        """ Create a new LiteralTerminal instance within the grammar """
+        # Override this to create custom terminals or add optimizations
+        return LiteralTerminal(name)
+
+    def _make_nonterminal(self, name, fname, line):
+        """ Create a new Nonterminal instance within the grammar """
+        # Override this to create custom nonterminals or add optimizations
+        return Nonterminal(name, fname, line)
 
     def read(self, fname, verbose = False):
         """ Read grammar from a text file. Set verbose = True to get diagnostic messages
@@ -484,24 +512,26 @@ class Grammar:
                 # Blank line: ignore
                 return
 
-            def _add_rhs(nt_id, rhs):
-                """ Add a fully expanded right-hand-side production to a nonterminal rule """
-                nt = nonterminals[nt_id]
-                if nt not in grammar:
-                    # First production of this nonterminal
-                    grammar[nt] = [ ] if rhs is None else [ rhs ]
-                    return
-                if rhs is None:
-                    return
-                if rhs.is_empty:
-                    # Adding epsilon production: avoid multiple ones
-                    if any(p.is_empty for p in grammar[nt]):
-                        return
-                # Append to the list of productions of this nonterminal
-                grammar[nt].append(rhs)
+            def _parse_rhs(nt_id, vts, s, priority):
+                """ Parse a right-hand side sequence, eventually with relative priority
+                    within the nonterminal """
 
-            def _parse_rhs(nt_id, vts, s):
-                """ Parse a right-hand side sequence """
+                def _add_rhs(nt_id, rhs, priority = 0):
+                    """ Add a fully expanded right-hand-side production to a nonterminal rule """
+                    nt = nonterminals[nt_id]
+                    if nt not in grammar:
+                        # First production of this nonterminal
+                        grammar[nt] = [ ] if rhs is None else [ (priority, rhs) ]
+                        return
+                    if rhs is None:
+                        return
+                    if rhs.is_empty:
+                        # Adding epsilon production: avoid multiple ones
+                        if any(p.is_empty for _, p in grammar[nt]):
+                            return
+                    # Append to the list of productions of this nonterminal
+                    grammar[nt].append((priority, rhs))
+
                 s = s.strip()
                 if not s:
                     raise GrammarError("Invalid syntax for production", fname, line)
@@ -579,15 +609,12 @@ class Grammar:
                         for vopt in variants[vlist[0]]:
                             yield [ vopt ] + v
 
-                # print("Variants are: {0}".format(vts))
-
                 # Make a list of all variants that occur in the
                 # nonterminal or on the right hand side
                 vall = vts + list(vfree)
 
                 for vval in variant_values(vall):
                     # Generate a production for every variant combination
-                    # print("Processing combination {0}".format(vval))
 
                     # Calculate the nonterminal suffix for this variant
                     # combination
@@ -611,20 +638,20 @@ class Grammar:
                             # Literal token
                             sym = r + suffix
                             if sym not in terminals:
-                                terminals[sym] = LiteralTerminal(r + suffix)
+                                terminals[sym] = self._make_literal_terminal(r + suffix)
                             n = terminals[sym]
                         else:
                             # Identifier for terminal or nonterminal
                             if r[0].isupper():
                                 # Reference to nonterminal
                                 if r + suffix not in nonterminals:
-                                    nonterminals[r + suffix] = Nonterminal(r + suffix, fname, line)
+                                    nonterminals[r + suffix] = self._make_nonterminal(r + suffix, fname, line)
                                 nonterminals[r + suffix].add_ref() # Note that the nonterminal has been referenced
                                 n = nonterminals[r + suffix]
                             else:
                                 # Identifier of terminal
                                 if r + suffix not in terminals:
-                                    terminals[r + suffix] = Terminal(r + suffix)
+                                    terminals[r + suffix] = self._make_terminal(r + suffix)
                                 n = terminals[r + suffix]
 
                         # If the production item can be repeated,
@@ -643,7 +670,7 @@ class Grammar:
                             new_nt_id = r + suffix + repeat
                             # Make the new nonterminal and production if not already there
                             if new_nt_id not in nonterminals:
-                                new_nt = nonterminals[new_nt_id] = Nonterminal(new_nt_id, fname, line)
+                                new_nt = nonterminals[new_nt_id] = self._make_nonterminal(new_nt_id, fname, line)
                                 new_nt.add_ref()
                                 # Note that the Earley algorithm is more efficient on left recursion
                                 # than middle or right recursion. Therefore it is better to generate
@@ -653,12 +680,12 @@ class Grammar:
                                 if repeat != '?':
                                     new_p.append(new_nt) # C* / C+
                                 new_p.append(n) # C
-                                _add_rhs(new_nt_id, new_p)
+                                _add_rhs(new_nt_id, new_p) # Default priority 0
                                 # Second production: epsilon(*, ?) or C(+)
                                 new_p = Production(fname, line)
                                 if repeat == '+':
                                     new_p.append(n)
-                                _add_rhs(new_nt_id, new_p)
+                                _add_rhs(new_nt_id, new_p) # Default priority 0
                             # Substitute the Cx in the original production
                             n = nonterminals[new_nt_id]
 
@@ -672,8 +699,7 @@ class Grammar:
                     if len(result) == 1 and result[0] == nonterminals[nt_id_full]:
                         # Nonterminal derives itself
                         raise GrammarError("Nonterminal {0} deriving itself".format(nt_id_full), fname, line)
-                    # print("Adding nonterminal {0}".format(nt_id_full))
-                    _add_rhs(nt_id_full, result)
+                    _add_rhs(nt_id_full, result, priority)
 
             def variant_names(nt, vts):
                 """ Returns a list of names with all applicable variant options appended """
@@ -729,7 +755,7 @@ class Grammar:
                     if nt_var in nonterminals:
                         cnt = nonterminals[nt_var]
                     else:
-                        cnt = Nonterminal(nt_var, fname, line)
+                        cnt = self._make_nonterminal(nt_var, fname, line)
                         nonterminals[nt_var] = cnt
                         if self._root is None:
                             # Remember first nonterminal as the root
@@ -738,9 +764,15 @@ class Grammar:
                     if cnt not in grammar:
                         grammar[cnt] = [ ]
 
-                for prod in rule[1].split("|"):
-                    # Add the productions on the right hand side, delimited by vertical bars
-                    _parse_rhs(current_NT, current_variants, prod)
+                sep = '|' # Default production separator
+                if '>' in rule[1]:
+                    # Looks like a priority specification between productions
+                    if '|' in rule[1]:
+                        raise GrammarError("Cannot mix '|' and '>' between productions", fname, line)
+                    sep = '>'
+                for priority, prod in enumerate(rule[1].split(sep)):
+                    # Add the productions on the right hand side, delimited by '|' or '>'
+                    _parse_rhs(current_NT, current_variants, prod, priority if sep == '>' else 0)
 
         # Main parse loop
 
@@ -786,8 +818,8 @@ class Grammar:
             if len(plist) == 0:
                 raise GrammarError("Nonterminal {0} has no productions".format(nt), nt.fname, nt.line)
             else:
-                for p in plist:
-                    if len(p) == 1 and plist[0] == nt:
+                for _, p in plist:
+                    if len(p) == 1 and p[0] == nt:
                         raise GrammarError("Nonterminal {0} produces itself".format(nt), p.fname, p.line)
 
         # Check that all nonterminals derive terminal strings
@@ -796,7 +828,7 @@ class Grammar:
         while agenda:
             reduced = False
             for nt in agenda:
-                for p in grammar[nt]:
+                for _, p in grammar[nt]:
                     if all([True if isinstance(s, Terminal) else s in der_t for s in p]):
                         der_t.add(nt)
                         break
@@ -817,9 +849,9 @@ class Grammar:
             if not "_" in nt.name:
                 # 'Pure' nonterminal with no variants: don't shortcut
                 continue
-            if len(plist) == 1 and len(plist[0]) == 1 and isinstance(plist[0][0], Nonterminal):
+            if len(plist) == 1 and len(plist[0][1]) == 1 and isinstance(plist[0][1][0], Nonterminal):
                 # This nonterminal has only one production, with only one nonterminal item
-                target = plist[0][0]
+                target = plist[0][1][0]
                 assert target != nt
                 while target in shortcuts:
                     # Find ultimate destination of shortcut
@@ -829,7 +861,7 @@ class Grammar:
 
         # Go through all productions and replace the shortcuts with their targets
         for nt, plist in grammar.items():
-            for p in plist:
+            for _, p in plist:
                 for ix, s in enumerate(p):
                     if isinstance(s, Nonterminal) and s in shortcuts:
                         # Replace the nonterminal in the production
@@ -846,7 +878,7 @@ class Grammar:
         def _remove(nt):
             """ Recursively remove all nonterminals that are reachable from nt """
             unreachable.remove(nt)
-            for p in grammar[nt]:
+            for _, p in grammar[nt]:
                 for s in p:
                     if isinstance(s, Nonterminal) and s in unreachable:
                         _remove(s)

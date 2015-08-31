@@ -263,6 +263,20 @@ function hoverOut() {
    $(this).removeClass("highlight");
 }
 
+function populateMetadata(m) {
+   // Display the article metadata, if any
+   if (m === null) {
+      // No metadata: hide it
+      $("#metadata").css("display", "none");
+      return;
+   }
+   $("#meta-heading").text(m.heading);
+   $("#meta-author").text(m.author);
+   $("#meta-timestamp").text(m.timestamp);
+   $("#meta-authority").text(m.authority.toFixed(1));
+   $("#metadata").css("display", "block");
+}
+
 function populateResult(json) {
    // Display the results of analysis by the server
    // Hide progress indicator
@@ -276,6 +290,9 @@ function populateResult(json) {
    $("#num-parsed-sent").text(json.result.num_parsed_sent);
    $("#num-parsed-ratio").text((json.result.num_parsed_sent / json.result.num_sent * 100).toFixed(1));
    $("#avg-ambig-factor").text(json.result.avg_ambig_factor.toFixed(2));
+
+   populateMetadata(json.result.metadata);
+
    $("p.tok-info").css("visibility", "visible");
    var out = $("div#result");
    var tokens = json.result.tokens;
@@ -432,6 +449,8 @@ function analyzeUrl() {
    $("div#wait").css("display", "block");
    // Hide the statistics
    $("p.tok-info").css("visibility", "hidden");
+   // Hide the metadata
+   $("#metadata").css("display", "none");
    // Launch the query
    serverQuery('/analyze',
       { url: $("#url").val().trim() },

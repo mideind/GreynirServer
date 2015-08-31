@@ -44,18 +44,20 @@ class ScrapeHelper:
     def get_metadata(self, soup):
         """ Analyze the article HTML soup and return metadata """
         return Metadata(heading = None, author = self._root.author,
-            timestamp = datetime.now(), authority = self._root.authority)
+            timestamp = datetime.utcnow(), authority = self._root.authority)
 
     def get_content(self, soup):
         """ Find the actual article content within an HTML soup and return its parent node """
         if not soup or not soup.html or not soup.html.body:
             # No body in HTML: something is wrong, return None
+            print("get_content returning None")
             return None
-        try:
+        #try:
             # Call the helper subclass
-            content = self._get_content(soup.html.body)
-        except Exception as e:
-            content = None
+        content = self._get_content(soup.html.body)
+        #except Exception as e:
+        #    content = None
+        #    print("get_content exception in self._get_content: {0}".format(e))
         # By default, return the entire body
         return content or soup.html.body
 
@@ -81,6 +83,61 @@ class ScrapeHelper:
         # If no _VERSION attribute in the class, return a default '1.0'
         return "1.0"
 
+    @staticmethod
+    def general_filter(tag, name, attr, attr_val):
+        """ General filter function to use with BeautifulSoup.find().
+            Looks for tag['attr'] == attr_val or attr_val in tag['attr'].
+            attr_val can also be iterable, in which case all the given
+            attribute values must be present on the tag for the match to
+            be made. """
+        if tag.name != name or not tag.has_attr(attr):
+            return False
+        a = tag[attr]
+        assert a
+        # Handle both potentially multi-valued attrs (for instance multiple classes on a div),
+        # and multi-valued attr_vals (for instance more than one class that should be present)
+        if isinstance(a, str):
+            check = lambda x: x == a
+        else:
+            check = lambda x: x in a
+        if isinstance(attr_val, str):
+            return check(attr_val)
+        return all(check(v) for v in attr_val)
+
+    @staticmethod
+    def meta_property_filter(tag, prop_val):
+        """ Filter function for meta properties in HTML documents """
+        return ScrapeHelper.general_filter(tag, "meta", "property", prop_val)
+
+    @staticmethod
+    def div_class_filter(tag, cls):
+        """ Filter function for divs in HTML documents, selected by class """
+        return ScrapeHelper.general_filter(tag, "div", "class", cls)
+
+    @staticmethod
+    def meta_property(soup, property_name):
+        try:
+            f = lambda tag: ScrapeHelper.meta_property_filter(tag, property_name)
+            mp = soup.html.head.find(f)
+            if not mp:
+                print("meta property {0} not found in soup.html.head".format(property_name))
+            return str(mp["content"]) if mp else None
+        except Exception as e:
+            print("Exception in meta_property('{0}'): {1}".format(property_name, e))
+            return None
+
+    @staticmethod
+    def div_class(soup, *argv):
+        """ Find a div with a particular class/set of classes within the
+            HTML soup, recursively within its parent if more than one
+            div spec is given """
+        for cls in argv:
+            if not soup:
+                return None
+            f = lambda tag: ScrapeHelper.div_class_filter(tag, cls)
+            soup = soup.find(f)
+        return soup
+
 
 class KjarninnScraper(ScrapeHelper):
 
@@ -92,37 +149,30 @@ class KjarninnScraper(ScrapeHelper):
     def get_metadata(self, soup):
         """ Analyze the article soup and return metadata """
         # Extract the heading from the OpenGraph (Facebook) og:title meta property
-        try:
-            heading = soup.html.head.select_one('meta[property="og:title"]')
-            if heading:
-                heading = str(heading['content'])
-        except Exception as e:
-            heading = None
-        if not heading:
-            heading = "" # Unknown heading
+        # heading = soup.html.head.select_one('meta[property="og:title"]')
+        heading = ScrapeHelper.meta_property(soup, "og:title") or ""
         # Extract the publication time from the article:published_time meta property
-        try:
-            timestamp = soup.html.head.select_one('meta[property="article:published_time"]')
-            if timestamp:
-                timestamp = str(timestamp['content'])
-        except Exception as e:
-            timestamp = None
-        if not timestamp:
-            timestamp = datetime.now()
+        timestamp = ScrapeHelper.meta_property(soup, "article:published_time") or \
+            str(datetime.utcnow())[0:19]
         # Exctract the author name
-        try:
-            author = str(soup.html.body.select_one('a[itemprop="author"]').string)
-        except Exception as e:
-            author = None
-        if not author:
-            author = "Ritstjórn Kjarnans"
+        f = lambda tag: ScrapeHelper.general_filter(tag, "a", "itemprop", "author")
+        tag = soup.html.body.find(f)
+        if not tag:
+            print("a.itemprop.author tag not found in soup.html.body")
+        author = str(tag.string) if tag else "Ritstjórn Kjarnans"
         return Metadata(heading = heading, author = author,
             timestamp = timestamp, authority = self.authority)
 
     def _get_content(self, soup_body):
         """ Find the article content (main text) in the soup """
         # soup_body has already been sanitized in the ScrapeHelper base class
-        return soup_body.select_one("div.entry-content")
+        if soup_body.article is None:
+            print("_get_content: soup_body.article is None")
+        return ScrapeHelper.div_class(soup_body.article, "entry-content")
+        # !!! There is something wrong with BeautifulSoup4 and html5lib that
+        # !!! prevents the following from working:
+        # return soup_body.article.find("div", "entry-content clearfix")
+        # return soup_body.select_one("article.post").select_one("div.entry-content")
 
 
 class RuvScraper(ScrapeHelper):
@@ -146,37 +196,21 @@ class RuvScraper(ScrapeHelper):
     def get_metadata(self, soup):
         """ Analyze the article soup and return metadata """
         # Extract the heading from the OpenGraph (Facebook) og:title meta property
-        try:
-            heading = soup.html.head.select_one('meta[property="og:title"]')
-            if heading:
-                heading = str(heading['content'])
-        except Exception as e:
-            heading = None
-        if not heading:
-            heading = "" # Unknown heading
+        heading = ScrapeHelper.meta_property(soup, "og:title") or ""
         # Extract the publication time from the article:published_time meta property
-        try:
-            timestamp = soup.html.head.select_one('meta[property="article:published_time"]')
-            if timestamp:
-                timestamp = str(timestamp['content'])
-        except Exception as e:
-            timestamp = None
-        if not timestamp: 
-            timestamp = datetime.now()
+        timestamp = ScrapeHelper.meta_property(soup, "article:published_time") or \
+            str(datetime.utcnow())[0:19]
         # Exctract the author name
-        try:
-            author = str(soup.html.body.select_one('div.view-id-author').select_one('div.clip').string)
-        except Exception as e:
-            author = None
-        if not author:
-            author = "Fréttastofa RÚV"
+        # Look for div[class == 'view-id-author'] > div[class == 'clip']
+        clip = ScrapeHelper.div_class(soup.html.body, "view-id-author", "clip")
+        author = clip.string if clip else "Fréttastofa RÚV"
         return Metadata(heading = heading, author = author,
             timestamp = timestamp, authority = self.authority)
 
     def _get_content(self, soup_body):
         """ Find the article content (main text) in the soup """
-        rg = soup_body.select_one('div.region.region-two-66-33-first')
-        return rg.select_one('div.region-inner') if rg else None
+        return ScrapeHelper.div_class(soup_body,
+            ("region", "region-two-66-33-first"), "region-inner")
 
 
 class MblScraper(ScrapeHelper):
@@ -200,42 +234,30 @@ class MblScraper(ScrapeHelper):
     def get_metadata(self, soup):
         """ Analyze the article soup and return metadata """
         # Extract the heading from the OpenGraph (Facebook) og:title meta property
-        try:
-            heading = soup.html.head.select_one('meta[property="og:title"]')
-            if heading:
-                heading = str(heading['content'])
-        except Exception as e:
-            heading = None
-        if not heading:
-            heading = "" # Unknown heading
+        heading = ScrapeHelper.meta_property(soup, "og:title") or ""
         # Extract the publication time from the article:published_time meta property
-        try:
-            # A dateline from mbl.is looks like this: Viðskipti | mbl | 24.8.2015 | 10:48
-            dateline = ''.join(soup.html.body.select_one('div.frett-container') \
-                .select_one('div.dateline').stripped_strings).split('|')
+        # A dateline from mbl.is looks like this: Viðskipti | mbl | 24.8.2015 | 10:48
+        dateline = ScrapeHelper.div_class(soup.html.body, "frett-container", "dateline")
+        dateline = ''.join(dateline.stripped_strings).split('|') if dateline else None
+        if not dateline:
+            timestamp = datetime.utcnow()
+        else:
             # Create a timestamp from dateline[-2] and dateline[-1]
             date = [ int(x) for x in dateline[-2].split('.') ]
             time = [ int(x) for x in dateline[-1].split(':') ]
             timestamp = datetime(year = date[2], month = date[1], day = date[0],
                 hour = time[0], minute = time[1])
-        except Exception as e:
-            timestamp = None
-        if not timestamp:
-            timestamp = datetime.now()
-        # Exctract the author name
-        try:
-            author = str(soup.html.body.select_one('div.view-id-author').select_one('div.clip').string)
-        except Exception as e:
-            author = None
-        if not author:
-            author = "Ritstjórn Mbl.is"
+        # Extract the author name
+        rp = ScrapeHelper.div_class(soup.html.body, "frett-main", "reporter-profile")
+        f = lambda tag: ScrapeHelper.general_filter(tag, "a", "class", "name")
+        rname = rp.find(f) if rp else None
+        author = rname.string if rname else "Ritstjórn mbl.is"
         return Metadata(heading = heading, author = author,
             timestamp = timestamp, authority = self.authority)
 
     def _get_content(self, soup_body):
         """ Find the article content (main text) in the soup """
-        fm = soup.html.body.select_one('div.frett-main')
-        return fm.select_one('div.maintext') if fm else None
+        return ScrapeHelper.div_class(soup_body, "frett-main", "maintext")
 
 
 class VisirScraper(ScrapeHelper):

@@ -53,6 +53,12 @@
 # The terminal names are matched against POS tags from the BIN
 # database in the module binparser.py.
 #
+# Alternative productions are separated with the '|' (vertical bar) sign.
+# If there is a priority ordering between the alternatives, so that
+# a single highest priority alternative should be automatically
+# selected, use the '>' (greater than) sign between the productions
+# instead.
+#
 # A syntax highlighting specification for .grammar files,
 # grammar.YAML-tmLanguage, has been written for the Sublime Text
 # editor. It can be found under the resources folder and its
@@ -78,14 +84,19 @@
 
 # Setningargerðir
 
-S0 → VenjulegSetning | Spurning | Grein | Fyrirsögn
+# Merkið > gefur til kynna forgangsröðun.
+# Ef báðar koma til greina er VenjulegSetning tekin fram yfir Spurningu o.s.frv.
+S0 → VenjulegSetning > Spurning > Grein > Fyrirsögn
+
+Forskeyti →
+    Samtenging '-'? # 'En - þegar allt er skoðað, var þetta fínt.'
 
 VenjulegSetning →
-    Samtenging? Yfirsetning StLiður* '.'?
+    Forskeyti? Yfirsetning StLiður* '.'?
 
 Spurning →
     # Eins og venjuleg setning, en endar á spurningarmerki
-    Samtenging? Yfirsetning StLiður* '?'
+    Forskeyti? Yfirsetning StLiður* '?'
 
 Fyrirsögn →
     # Nafnliður í nefnifalli
@@ -193,7 +204,7 @@ Setning/tala/pers/kyn →
     # 'Rúmlega helmingur tvítugra karlmanna vill flugvöll í Vatnsmýri'
     # 'Ég bara spyr'
     # Nl_nf/tala/pers/kyn FrumlagsInnskot/tala/pers/kyn? FsAtv? SagnRuna/tala/pers/kyn
-    Nl_nf/tala/pers/kyn FrumlagsInnskot/tala/pers/kyn? AtviksliðurEinkunn? SagnRuna/tala/pers/kyn
+    Nl_nf/tala/pers/kyn FrumlagsInnskot/tala/pers/kyn? AtviksliðurEinkunn* SagnRuna/tala/pers/kyn
 
     # Frumlag fyrir aftan sögn:
     # 'Gengu þau galvösk á Esjuna þrátt fyrir veðurútlitið'
@@ -205,13 +216,24 @@ Setning/tala/pers/kyn →
     # (? Það virtist mér í dag kettinum líða betur)
     # 'Í dag virtist mér kettinum líða betur'
     | FsAtv? SagnHluti/tala/pers/kyn
+    | "það" SagnHluti/tala/pers/kyn # 'Það fara 40 mínútur í pappírsvinnuna'
 
-# Setning sem byrjar á lýsingarorði í stað "það":
-# 'Óheimilt er/skal/mun að fangelsa mann fyrir engar sakir'
-# (í stað 'Það er óheimilt að fangelsa mann...')
-
+# Setning sem byrjar á lýsingarorði í stað "það"
 SetningLo →
-    LoTengtSögn_nf_et_hk HjSögnLhÞtSM_et_p3 NhFylling
+    LoTengtSögn_nf_et_hk SetningLoSögn SetningLoBotn
+
+SetningLoSögn →
+    HjSögnLhÞtSM_et_p3 so_0_lhþt_et_hk? # er/skal/mun/hefur verið...
+    | HjSögnMegiSkuli_et_p3? so_0_mm_p3_et # sýnist/virðist/telst, má teljast
+    | HjSögnMegiSkuli_et_p3 so_0_nh # má telja, skal ætla
+    | 'þykja'_et_p3 # '(öruggt) þykir (að Jón vinni mótið)'
+
+SetningLoBotn →
+    # '(Óheimilt er/skal/mun) að fangelsa mann fyrir engar sakir'
+    # (í stað 'Það er óheimilt að fangelsa mann...')
+    NhFylling
+    # '(Ljóst er) að Brandur er fallegastur'
+    | "að" Yfirsetning
 
 # Ekkert frumlag í nefnifalli, sögn í sagnbeygingu (oft í miðmynd):
 # 'Í dag er búist við vondu veðri eftir hádegi'
@@ -223,6 +245,8 @@ SetningLo →
 SetningSo →
     FsAtv? HjSögnLhÞtSM_et_p3 FsAtv? so_0_sagnb FsAtv?        # [Á morgun] verður/skal/mun [líklega] lent á brautinni [eftir hádegi]
     | so_0_sagnb HjSögnLhÞtSM_et_p3 FsAtv?                    # Leitað verður/skal/mun til sérfræðinga
+    | so_0_mm_p3_et HjSögnLhÞtSM_et_p3 FsAtv                  # Búist er við töfum á veginum
+    | so_0_mm_nh HjSögnMegiSkuliÞurfi_et_p3 FsAtv             # Búast má/skal/þarf/hefur mátt við töfum á veginum
     | FsAtv? SagnliðurÁnF FsAtv?                              # [Í dag] þyrfti að vökva grasið snarlega
     | So_1_nh/fall HjSögnMegiSkuliÞurfi_et_p3 Nl/fall FsAtv?  # Endurnýja þarf/skal/má leigusamninginn í ár
     | Sögn_bh FsAtv?                                          # Farðu galvaskur að sækja kaffi strax
@@ -323,7 +347,7 @@ Sagnliður/tala/pers/kyn →
     | Sögn_2/tala/pers/kyn     # Sögn með tveimur viðföngum: (Kata) skrifaði Önnu bréf
 
     | Sögn_sagnb/tala/pers/kyn # Sagnir í sagnbeygingu (Jón) hefur borðað matinn og farið að bóna bílinn
-    | Sögn_nh/tala/pers/kyn    # Sagnir í nafnhætti: (Jón) mun bóna bílinn og fara að kaupa inn
+    | Sögn_nh/tala/pers/kyn    # Sagnir í nafnhætti: (Jón) mun/hyggst bóna bílinn og fara að kaupa inn
     | Sögn_lhþt/tala/pers/kyn  # Sagnir í lh. þt.: (Kata) er vöknuð og farin að sækja Pál
 
 # Sagnliður með venjulegri eða 'öfugri' orðaröð: (Konan sem) matinn borðaði
@@ -359,9 +383,9 @@ OgSögn_0/tala/pers →
     FsAtv? OgEða FsAtv? so_0/tala/pers
     | FsAtv? ',' OgEða FsAtv? so_0/tala/pers FsAtvKomma?
 
-OgSögn_mm/tala/pers →
-    FsAtv? OgEða FsAtv? so_mm/tala/pers
-    | FsAtv? ',' OgEða FsAtv? so_mm/tala/pers FsAtvKomma?
+OgSögn_mm_fh/tala/pers →
+    FsAtv? OgEða FsAtv? so_mm_fh/tala/pers
+    | FsAtv? ',' OgEða FsAtv? so_mm_fh/tala/pers FsAtvKomma?
 
 OgSögn_mm_nh →
     FsAtv? OgEða FsAtv? so_mm_nh
@@ -424,6 +448,7 @@ HreinSögn_nh/tala/kyn →
 
 Sögn_nh/tala/pers/kyn →
     HjSögnNh/tala/pers HreinSögn_nh/tala/kyn
+    | so_mm_fh/tala/pers OgSögn_mm_fh/tala/pers* HreinSögn_nh/tala/kyn # Páll hyggst/þykist/telst fara að...
 
 Sögn_bh →
     # Farðu út að þvo bílinn
@@ -458,6 +483,9 @@ Sögn_0/tala/pers/kyn →
     # Mennirnir sem lentir eru
     | so_0_lhþt/tala/kyn HjSögnLhÞt/tala/pers NhFylling/tala/kyn?
 
+    # (Páll gerði allt sem) í hans valdi stóð
+    | FsAtv so_0_p3_et
+
 # Sögn með inniföldu frumlagi en engu viðfangi ('lenti')
 # ('Í dag lenti maðurinn')
 SögnMeðF_0/tala/pers/kyn →
@@ -466,13 +494,13 @@ SögnMeðF_0/tala/pers/kyn →
     so_0/tala/pers OgSögn_0/tala/pers* Nl_nf/tala/pers/kyn NhFylling/tala/kyn?
 
     # (Í dag) tókst og heppnaðist Seðlabankanum [galvöskum að lækka vexti]
-    | so_mm/tala/pers OgSögn_mm/tala/pers* Nl_þgf/tala/pers/kyn NhFylling_þgf/tala/kyn?
-
-    # (Í dag) hafa mennirnir [ekki/eftir seinkun gærdagsins] lent
-    | HjSögn/tala/pers Nl_nf/tala/pers/kyn HreinSögn_sagnb/tala/kyn
+    | so_mm/tala/pers OgSögn_mm_fh/tala/pers* Nl_þgf/tala/pers/kyn NhFylling_þgf/tala/kyn?
 
     # (Í dag) hefur [ekki] gerst það sama
     | HjSögn/tala/pers FsAtv? so_0_sagnb Nl_nf/tala/pers/kyn NhFylling/tala/kyn?
+
+    # (Í dag) hafa mennirnir [ekki/eftir seinkun gærdagsins] lent
+    | HjSögn/tala/pers Nl_nf/tala/pers/kyn HreinSögn_sagnb/tala/kyn
 
     # (Í dag) munu mennirnir [ekki/innan tíðar] lenda    
     | HjSögnNh/tala/pers Nl_nf/tala/pers/kyn HreinSögn_nh/tala/kyn
@@ -570,9 +598,9 @@ Sögn_1/tala/pers/kyn →
 
     so_1/fall/tala/pers OgSögn_1/fall/tala/pers* Nl/fall
 
-    | so_mm/tala/pers OgSögn_mm/tala/pers* FsAtv? Sögn_1_nh          # (Bankinn) virðist og sýnist [alfarið] eiga mig
+    # | so_mm/tala/pers OgSögn_mm_fh/tala/pers* FsAtv? Sögn_1_nh       # (Bankinn) virðist og sýnist [alfarið] eiga mig
 
-    | so_mm/tala/pers OgSögn_mm/tala/pers* Nl_þgf                    # (Bankar) reynast og gagnast mér (vel)
+    | so_mm/tala/pers OgSögn_mm_fh/tala/pers* Nl_þgf                 # (Bankar) reynast og gagnast mér (vel)
     | HjSögn/tala/pers FsAtv? so_mm_sagnb OgSögn_mm_sagnb* Nl_þgf    # (Bankar) hafa reynst og gagnast mér (vel)
 
     | HjSögnLhÞtSM/tala/pers FsAtv? so_2_þgf_þf_lhþt/tala/kyn Nl_þgf # Konan hefur verið/skal/mun gefin Páli
@@ -616,8 +644,9 @@ SögnMeðF_1/tala/pers/kyn →
 
     so_1/fall/tala/pers OgSögn_1/fall/tala/pers* Nl_nf/tala/pers/kyn Nl/fall
 
-    | HjSögn/tala/pers Nl_nf/tala/pers/kyn FsAtv? Sögn_1_sagnb
-    | HjSögnNh/tala/pers Nl_nf/tala/pers/kyn FsAtv? Sögn_1_nh
+    # !!! Margræðni vs. SögnMeðF_0?
+    # | HjSögn/tala/pers Nl_nf/tala/pers/kyn FsAtv? Sögn_1_sagnb
+    # | HjSögnNh/tala/pers Nl_nf/tala/pers/kyn FsAtv? Sögn_1_nh
 
     | HjSögnLhÞtSM/tala/pers Nl_nf/tala/pers/kyn FsAtv? so_2_þgf_þf_lhþt/tala/kyn Nl_þgf # !!! (Í dag) hefur konan verið/skal/mun gefin Páli
     | HjSögnLhÞtSM/tala/pers Nl_nf/tala/pers/kyn FsAtv? so_2_þf_þgf_lhþt/tala/kyn Nl_þgf # !!! (Í dag) hefur konan verið/skal/mun kölluð illum nöfnum
@@ -901,14 +930,12 @@ Einkunn/tala/fall/kyn →
     # AtviksliðurEinkunn undanskilur atviksorð sem geta líka verið forsetningar;
     # það dregur verulega úr margræðni
     | AtviksliðurEinkunn        # rúmlega (helmingur)
+    | Fornafn/tala/fall/kyn     # Sá (stóri maður), allt þetta (víkjandi lán)
+    | Töluorð/tala/fall/kyn     # þrjá (gangandi menn)
+    | tala/tala                 # 26
 
-Einkunn_ef/tala/kyn →
-    so_lh_nt                    # leiðandi (fyrirtækis)
-    | so_lhþt_sb_ef/tala/kyn    # bókfærðs (virðis)
-    | LoLiður_ef/tala/kyn       # glæsilegrar (konu)
-    # AtviksliðurEinkunn undanskilur atviksorð sem geta líka verið forsetningar;
-    # það dregur verulega úr margræðni
-    | AtviksliðurEinkunn        # rúmlega (helmingur)
+Einkunn/fall/tala/kyn →
+    Einkunn/tala/fall/kyn
 
 # Eintala
 
@@ -979,13 +1006,11 @@ Nl_ft_p2/fall/kyn →
 
 Nl_p3/tala/fall/kyn →
 
-    Fornöfn/tala/fall/kyn?        # Sá (stóri maður), allt þetta (víkjandi lán)
-        Töluorð/tala/fall/kyn*    # þrjá (gangandi menn)
         NlKjarni/tala/fall/kyn
-        Fornöfn/tala/fall/kyn?    # (stjórnarframkvæmdum) öllum
+        Fornafn/tala/fall/kyn*    # (stjórnarframkvæmdum) þessum öllum
 
     # augljóslega sá vondi / einhver góður / ekkert uppbyggilegt
-    | AtviksliðurEinkunn? fn/tala/fall/kyn LoLiður/tala/fall/kyn*
+    | AtviksliðurEinkunn* fn/tala/fall/kyn LoLiður/tala/fall/kyn*
 
 # !!! ATH lýsingarorð sem stendur sem nafnliður:
 # 'Margir/fjölmargir/allmargir/heilmargir komu og aðstoðuðu Pál'
@@ -1055,9 +1080,21 @@ Fyrirbæri/fall/kyn → no_et/fall/kyn | Manneskja/fall/kyn
 Manneskja/fall/kyn → no_et/fall? person/fall/kyn Titill/fall?
 
 # 'Már Guðmundsson, bankastjóri [Seðlabanka Íslands]'
+# Reynt er að láta titil ekki enda á FsRuna/FsAtv eða á EfLiður
+# því það skapar margræðni við nafnliðinn sjálfan
 Titill/fall →
-    ','? no_et/fall                       # [Jón], formaður [félagsins]
-    | ',' no_et/fall EfLiður? FsRuna? ',' # [Jón], formaður námsmannafélagsins í Árósum,
+    ','? NlTitill/fall                       # [Jón], formaður [félagsins]
+    | ',' EinnTitill/fall OgTitill/fall* ',' # [Jón], formaður námsmannafélagsins í Árósum og talsmaður þess,
+    | EinnTitill/fall OgTitill/fall* "og" NlTitill/fall # Gunnlaugur H Jónsson eðlisfræðingur og fyrrverandi starfsmaður Orkustofnunar
+
+NlTitill/fall →
+    Einkunn_et/fall/kyn? no_et/fall/kyn      # (Jón) glæsilegur fulltrúi (félagsins)
+
+EinnTitill/fall →
+    NlTitill/fall EfLiður? FsRuna?
+
+OgTitill/fall →
+    "og" EinnTitill/fall
 
 # Fleirtölumyndir 3. persónu eru í BÍN undir 'sá'
 # Nl_ft_p3_nf_kk → 'hann'_ft_nf
@@ -1089,7 +1126,7 @@ Tengiorð → "sem"    # | 'er'  # 'er' er vandmeðfarið!!!
 
 Tengisetning/tala/pers/kyn →
     Yfirsetning    # (Maðurinn sem) konan kyssti í gær / konurnar kysstu í gær
-    | SetningÁnF/tala/pers/kyn  # (Maðurinn sem) kyssti konuna í gær / (Maðurinn sem) var fallegur
+    > SetningÁnF/tala/pers/kyn  # (Maðurinn sem) kyssti konuna í gær / (Maðurinn sem) var fallegur
 
 # Eignarfallsliður á eftir nafnlið
 # ('formaður Gimlis, félags eldri borgara')
@@ -1115,25 +1152,35 @@ KommaEfLiður →
 # minnka margræðni; leyfir til dæmis ekki einkunn
 # (?'Litla Íslands fullorðnu synir'), né að
 # lýsingarorð sé notað sem nafnorð
+
+EfLiðurForskeytiTala/tala/kyn →
+    eo* Töluorð_ef/tala/kyn       # (vel rúmlega) þriggja (klukkutíma bið)
+    | eo* tala/tala               # (nákvæmlega) 30 (daga frestur)
+
 EfLiðurForskeyti →
-    Fornöfn_ef/tala/kyn? EfLiðurForskeytiKjarni/tala/kyn
-    | Fornöfn_ef/tala/kyn
+    Fornafn_ef/tala/kyn* EfLiðurForskeytiTala/tala/kyn? EfLiðurForskeytiKjarni/tala/kyn
+    | Fornafn_ef/tala/kyn+ EfLiðurForskeytiTala/tala/kyn?
 
 EfLiðurForskeytiKjarni_et/kyn → Fyrirbæri_ef/kyn
 EfLiðurForskeytiKjarni_ft/kyn → no_ef_ft/kyn
 
-# Fornöfnum væri unnt að skipta í óákveðin og ákveðin fornöfn ef þarf
-Fornöfn/tala/fall/kyn → fn/tala/fall/kyn fn/tala/fall/kyn?
-Fornöfn_nf/tala/kyn → fn_nf/tala/kyn fn_nf/tala/kyn?
-Fornöfn_ef/tala/kyn → fn_ef/tala/kyn fn_ef/tala/kyn?
+Fornafn/tala/fall/kyn → fn/tala/fall/kyn
+Fornafn_nf/tala/kyn → fn_nf/tala/kyn
+Fornafn_ef/tala/kyn → fn_ef/tala/kyn
+
+# Persónufornöfnin (pfn) "hans" og "hennar" eru án kyns í BÍN
+Fornafn_ef_et_kk → "hans"
+Fornafn_ef_et_kvk → "hennar"
 
 Töluorð/tala/fall/kyn → to/tala/fall/kyn | töl/tala/fall/kyn
+Töluorð/fall/tala/kyn → Töluorð/tala/fall/kyn
 
 OgEða → "og" | "eða" | "ellegar" | "eður" | "svo" "og" | "sem" "og" | "né"
     | "þar" "á" "meðal" | "meðal" "annars" | "það" "er" | "það_er"
     | "eins_og"
 
 KommaOgEða → ','? OgEða
+    | '-' # 'Ég tók tvö tonn af eldsneyti - tvö þúsund lítra'
 
 # (Í fyrra barði Hannes Guðmund) og (særði Pál í dag)
 # (Í fyrra barði Hannes Guðmund), (særði Pál), og (neitaði sök)
@@ -1166,21 +1213,21 @@ KommuSamtenging/fall → ',' FsRuna? Nl/fall
 
 # "(allir eru) [algerlega] frjálsir skoðana sinna og sannfæringar"
 
-Lo/tala/fall/kyn → AtviksliðurEinkunn? lo/tala/fall/kyn
-Lo_nf/tala/kyn → AtviksliðurEinkunn? lo_nf/tala/kyn
-Lo_ef/tala/kyn → AtviksliðurEinkunn? lo_ef/tala/kyn
+Lo/tala/fall/kyn → AtviksliðurEinkunn* lo/tala/fall/kyn
+Lo_nf/tala/kyn → AtviksliðurEinkunn* lo_nf/tala/kyn
+Lo_ef/tala/kyn → AtviksliðurEinkunn* lo_ef/tala/kyn
 #Lo/tala/fall/kyn → AtviksliðurEinkunn? lo/tala/fall/kyn EfLiður?
 #Lo_nf/tala/kyn → AtviksliðurEinkunn? lo_nf/tala/kyn EfLiður?
 #Lo_ef/tala/kyn → AtviksliðurEinkunn? lo_ef/tala/kyn EfLiður?
 
 # Lýsingarorð í sterkri beygingu
 # ('Hún fór frjáls skoðana sinna í útlegð')
-Lo_sb/tala/fall/kyn → AtviksliðurEinkunn? lo_sb/tala/fall/kyn EfLiður?
-Lo_sb_nf/tala/kyn → AtviksliðurEinkunn? lo_sb_nf/tala/kyn EfLiður?
+Lo_sb/tala/fall/kyn → AtviksliðurEinkunn* lo_sb/tala/fall/kyn EfLiður?
+Lo_sb_nf/tala/kyn → AtviksliðurEinkunn* lo_sb_nf/tala/kyn EfLiður?
 
 # Miðstig
-Lo_mst/tala/fall/kyn → AtviksliðurEinkunn? lo_mst/tala/fall/kyn EfLiður? # Miðstig
-Lo_mst_nf/tala/kyn → AtviksliðurEinkunn? lo_mst_nf/tala/kyn EfLiður? # Miðstig
+Lo_mst/tala/fall/kyn → AtviksliðurEinkunn* lo_mst/tala/fall/kyn EfLiður? # Miðstig
+Lo_mst_nf/tala/kyn → AtviksliðurEinkunn* lo_mst_nf/tala/kyn EfLiður? # Miðstig
 
 # Lýsingarorð sem einkunn með nafnlið
 
@@ -1213,7 +1260,7 @@ LoSamanb_nf/tala/kyn →
 
 LoTengtSögn/tala/fall/kyn →
     LoSamanb/tala/fall/kyn
-    | Fornöfn/tala/fall/kyn # (Hann komst) sjálfur (út úr flakinu)
+    | Fornafn/tala/fall/kyn # (Hann komst) sjálfur (út úr flakinu)
     | LoTengtSögn/tala/fall/kyn LoKommaTengdSögn/tala/fall/kyn* KommaOgEða LoSamanb/tala/fall/kyn
 
 LoKommaTengdSögn/tala/fall/kyn →
@@ -1221,7 +1268,7 @@ LoKommaTengdSögn/tala/fall/kyn →
 
 LoTengtSögn_nf/tala/kyn →
     LoSamanb_nf/tala/kyn
-    | Fornöfn_nf/tala/kyn # (Hann komst) sjálfur (út úr flakinu)
+    | Fornafn_nf/tala/kyn # (Hann komst) sjálfur (út úr flakinu)
     | LoTengtSögn_nf/tala/kyn LoKommaTengdSögn_nf/tala/kyn* KommaOgEða LoSamanb_nf/tala/kyn
 
 LoKommaTengdSögn_nf/tala/kyn →
@@ -1234,8 +1281,9 @@ FsMeðFallstjórn →
     # !!! ATH: Geta eftirfarandi form staðið með nafnlið, eða aðeins með sögn?
     | fs NhLiður # 'um að...', 'í að...', 'eftir að...'
     | fs_þf 'það'_þf_et NhLiður # 'kringum það að...'
-    | fs_þgf 'það'_þgf_et NhLiður # 'frá því að...'
+    | fs_þgf 'það'_þgf_et NhLiður # 'frá því að...', 'með því að...'
     | fs_ef 'það'_ef_et NhLiður # 'til þess að...'
+    | "miðað" "við" Nl_þf
 
 FsLiður → Atviksliður? FsMeðFallstjórn # snarlega í bæinn
 
@@ -1260,10 +1308,12 @@ FsRuna → ',' FsLiðurMeðKommu Atviksliður? ','
 
 # Atviksliður
 
-Al →
-    ao+                  # Strax tvöfalt til baka
-    | ao? Dagsetning     # (Ég tilkynnti þetta) strax 3. september
-    | ao? Tímasetning
+Al → EinnAl+
+
+EinnAl →
+    ao                  # Strax tvöfalt til baka
+    | Dagsetning        # (Ég tilkynnti þetta) strax 3. september
+    | Tímasetning
 
 Atviksliður →
     Al OgAtviksliður*
@@ -1272,9 +1322,9 @@ OgAtviksliður →
     OgEðaEn Al          # Hratt en örugglega og fumlaust
 
 AtviksliðurEinkunn →
-    eo+                 # Einkunnarorð = atviksorð sem geta ekki jafnframt verið forsetningar
-    | eo? Dagsetning    # (hagnaðurinn var) strax árið 2012 (175 milljarðar króna)
-    | eo? Tímasetning
+    eo                  # Einkunnarorð = atviksorð sem geta ekki jafnframt verið forsetningar
+    | Dagsetning        # (hagnaðurinn var strax) árið 2012 (175 milljarðar króna)
+    | Tímasetning
 
 # Dagsetning og tími
 
@@ -1294,30 +1344,67 @@ Dagsetning →
     | DagsFs_þgf tímapunktur # 'frá 3. júlí 2007 kl. 13:00'
     | DagsFs_ef tímapunktur # 'til 3. júlí 2007 kl. 14:15'
 
-    | DagsFs_þf? Tímasetning Vikudagur_þf dags # '[fyrir] kl. 13 sunnudaginn 1. janúar 2012'
+    | DagsFs_þf? Tímasetning Vikudagur_þf_et dags # '[fyrir] kl. 13 sunnudaginn 1. janúar 2012'
 
-    | DagsFs_þgf Tímasetning Vikudagur_þf dags # 'frá kl. 13 sunnudaginn 1. janúar 2012'
+    | DagsFs_þgf Tímasetning Vikudagur_þf_et dags # 'frá kl. 13 sunnudaginn 1. janúar 2012'
 
-    | DagsFs_ef Tímasetning Vikudagur_þf dags # 'til kl. 13 sunnudaginn 1. janúar 2012'
+    | DagsFs_ef Tímasetning Vikudagur_þf_et dags # 'til kl. 13 sunnudaginn 1. janúar 2012'
 
-    | Árstíð_þf ártal # 'haustið 2012'
+    | Árstíð_þf_et ártal # 'haustið 2012'
     | "árið" ártal
 
-Vikudagur/fall →
-    # !!! Do the following in the tokenizer instead?
-    'sunnudagur'/fall
-    | 'mánudagur'/fall
-    | 'þriðjudagur'/fall
-    | 'miðvikudagur'/fall
-    | 'fimmtudagur'/fall
-    | 'föstudagur'/fall
-    | 'laugardagur'/fall
+    # 'Undanfarið' er atviksorð í BÍN, en 'undanfarnar vikur' o.s.frv. virkar einnig
+    # eins og atviksliður (eða forsetningarliður), sbr. 'ég hef undanfarnar vikur verið að velta því fyrir mér'...
+    | 'undanfarinn'_þf/tala/kyn Nl_þf/tala/kyn # undanfarnar sex vikur, undanfarin ár, undanfarinn mánuð
+    | 'undangenginn'_þf/tala/kyn Nl_þf/tala/kyn # undangengnar sex vikur
+    | gr_þf/tala/kyn? 'síðari'_þf/tala/kyn Nl_þf/tala/kyn # síðustu sex vikur, hin síðari ár, síðasta mánuð
+    | TímabilsEinkunn/tala/kyn Tímabil/kyn/tala # (Hann kom hér) alla daga, suma vikudaga, nokkur ár, eina vikuna
 
-Árstíð/fall →
-    'haust'/fall
-    | 'vor'/fall
-    | 'sumar'/fall
-    | 'vetur'/fall
+TímabilsEinkunn/tala/kyn →
+    fn_þf/tala/kyn          # alla/suma/nokkra
+    | Töluorð_þf/tala/kyn   # fjóra
+    | tala/tala             # 4
+
+Tímabil_hk/tala →
+    'ár'_þf/tala
+    | 'misseri'_þf/tala
+    | 'sumar'_þf/tala
+    | 'vor'_þf/tala
+    | 'haust'_þf/tala
+    | 'kvöld'_þf/tala
+    | 'hádegi'_þf/tala
+
+Tímabil_kvk/tala →
+    'vika'_þf/tala
+    | 'nótt'_þf/tala
+    
+Tímabil_kk/tala →
+    'mánuður'_þf/tala
+    | 'ársfjórðungur'_þf/tala
+    | 'dagur'_þf/tala
+    | 'vikudagur'_þf/tala
+    | 'helgidagur'_þf/tala
+    | 'virkur'_þf/tala 'dagur'_þf/tala
+    | 'vetur'_þf/tala
+    | 'morgunn'_þf/tala
+    | 'eftirmiðdagur'_þf/tala
+    | Vikudagur_þf/tala
+
+Vikudagur_þf/tala →
+    # !!! Do the following in the tokenizer instead?
+    'sunnudagur'_þf/tala
+    | 'mánudagur'_þf/tala
+    | 'þriðjudagur'_þf/tala
+    | 'miðvikudagur'_þf/tala
+    | 'fimmtudagur'_þf/tala
+    | 'föstudagur'_þf/tala
+    | 'laugardagur'_þf/tala
+
+Árstíð_þf/tala →
+    'haust'_þf/tala
+    | 'vor'_þf/tala
+    | 'sumar'_þf/tala
+    | 'vetur'_þf/tala
 
 # Forsetningar sem hægt er að nota með dagsetningum
 DagsFs_þf →

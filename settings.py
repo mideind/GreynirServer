@@ -268,26 +268,27 @@ class AmbigPhrases:
         """ Return the word categories for the phrase with index ix """
         return AmbigPhrases.LIST[ix][1]
 
+
 # Magic stuff to change locale context temporarily
 
 @contextmanager
-def changedlocale(newone):
+def changedlocale(new_locale):
     """ Change locale for collation temporarily within a context (with-statement) """
     # The newone locale parameter should be a tuple: ('is_IS', 'UTF-8')
     old_locale = locale.getlocale(locale.LC_COLLATE)
     try:
-        locale.setlocale(locale.LC_COLLATE, newone)
-        yield locale.strxfrm
+        locale.setlocale(locale.LC_COLLATE, new_locale)
+        yield locale.strxfrm # Function to transform string for sorting
     finally:
         locale.setlocale(locale.LC_COLLATE, old_locale)
 
-def sort_strings(strings, locale_ = None):
+def sort_strings(strings, loc = None):
     """ Sort a list of strings using the specified locale's collation order """
-    if locale_ is None:
+    if loc is None:
         # Normal sort
         return sorted(strings)
     # Change locale temporarily for the sort
-    with changedlocale(locale_) as strxfrm:
+    with changedlocale(loc) as strxfrm:
         return sorted(strings, key = strxfrm)
 
 
@@ -530,6 +531,4 @@ class Settings:
             if rdr:
                 e.set_pos(rdr.fname(), rdr.line())
             raise e
-
-
 
