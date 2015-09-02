@@ -119,25 +119,10 @@ class Terminal:
 
     def __init__(self, name):
         self._name = name
-        # Do a bit of pre-calculation to speed up various
-        # checks against this terminal
-        parts = name.split("_")
-        self._first = parts[0]
-        # The variant set for this terminal, i.e.
-        # tname_var1_var2_var3 -> { 'var1', 'var2', 'var3' }
-        self._vparts = parts[1:]
-        self._vcount = len(self._vparts)
-        self._vset = set(self._vparts)
         self._index = Terminal._INDEX
         # The hash is used quite often so it is worth caching
         self._hash = self._index.__hash__()
         Terminal._INDEX += 1
-        # Allow for additional initialization in derived classes
-        self._post_init()
-
-    def _post_init(self):
-        """ Hook for any post-initialization in derived classes """
-        pass
 
     def __hash__(self):
         return self._hash
@@ -157,34 +142,9 @@ class Terminal:
         """ Return the (positive) sequence number of this terminal """
         return self._index
 
-    def has_variant(self, v):
-        """ Returns True if the terminal name has the given variant """
-        return v in self._vset
-
-    @property
-    def num_variants(self):
-        """ Return the number of variants in the terminal name """
-        return self._vcount
-
-    @property
-    def variants(self):
-        """ Returns the variants contained in this terminal name as a list """
-        return self._vparts
-
-    def variant(self, index):
-        """ Return the variant with the given index """
-        return self._vparts[index]
-
-    def startswith(self, part):
-        """ Returns True if the terminal name starts with the given string """
-        return self._first == part
-
     def matches(self, t_kind, t_val, t_lit):
         # print("Terminal.matches: self.name is {0}, t_kind is {1}".format(self.name, t_kind))
         return self._name == t_kind
-
-    def matches_first(self, t_kind, t_val, t_lit):
-        return self._first == t_kind
 
 
 class LiteralTerminal(Terminal):
@@ -201,40 +161,23 @@ class LiteralTerminal(Terminal):
         q = lit[0]
         assert q in "\'\""
         ix = lit[1:].index(q) + 1 # Find closing quote
-        # Replace underscores within the literal, keeping the rest (variants, etc.) intact
+        # Replace underscores within the literal with spaces
         lit = lit[0:ix + 1].replace("_", " ") + lit[ix + 1:]
-        Terminal.__init__(self, lit)
-        # Peel off the quotes from the first part
-        assert len(self._first) >= 3
-        assert self._first[0] == self._first[-1]
-        self._first = self._first[1:-1]
+        super().__init__(lit)
         # If a double quote was used, this is a 'strong' literal
         # that matches an exact terminal string as it appeared in the source
         # - no stemming or other canonization should be applied,
         # although the string will be converted to lowercase
         self._strong = (q == '\"')
-        if self._strong and self.num_variants > 0:
-            # It doesn't make sense to have variants on exact literals
-            # since they are constant and cannot vary
-            raise GrammarError('An exact literal terminal with double quotes cannot have variants')
 
     def matches(self, t_kind, t_val, t_lit):
         """ A literal terminal matches a token if the token text is
             canonically or absolutely identical to the literal """
         if self._strong:
             # Absolute literal match
-            return self._first == t_lit
+            return self._name == t_lit
         # Canonical match of stems or prototypes
-        return self._first == t_val
-
-    def matches_first(self, t_kind, t_val, t_lit):
-        """ A literal terminal matches a token if the token text is identical to the literal """
-        #print("LiteralTerminal.matches_first: parts[0] is '{0}', t_val is '{1}'"
-        #    .format(self._parts[0], t_val))
-        if self._strong:
-            # Absolute literal match
-            return self._first == t_lit
-        return self._first == t_val
+        return self._name == t_val
 
 
 class Token:

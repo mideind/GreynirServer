@@ -283,6 +283,14 @@ class Parser:
             # identical to the max (lowest valued) priority
             self._families = [(p[1], p[2]) for p in prio if p[0] == prio[0][0]]
 
+        def reduce_to(self, child_ix):
+            """ Eliminate all child families except the given one """
+            if not self._families or child_ix >= len(self._families):
+                raise IndexError("Child index out of range")
+            f = self._families[child_ix] # The survivor
+            # Collapse the list to one option
+            self._families = [ f ]
+
         def __eq__(self, other):
             """ Nodes are considered equal if their labels are equal """
             if not isinstance(other, Parser.Node):
@@ -307,7 +315,13 @@ class Parser:
 
         def __str__(self):
             """ Return a string representation of this node """
-            return str(self.head)
+            h = self.head
+            if isinstance(h, tuple):
+                # Interior node: return a readable rep of the associated nonterminal
+                assert isinstance(h[0], int)
+                assert h[0] < 0
+                h = self._parser._nonterminals[h[0]]
+            return str(h)
 
 
     def __init__(self, g):

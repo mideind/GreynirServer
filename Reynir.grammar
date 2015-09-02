@@ -85,17 +85,17 @@
 # Setningargerðir
 
 # Merkið > gefur til kynna forgangsröðun.
-# Ef báðar koma til greina er VenjulegSetning tekin fram yfir Spurningu o.s.frv.
-S0 → VenjulegSetning > Spurning > Grein > Fyrirsögn
+# Ef báðar koma til greina er Málsgrein tekin fram yfir Spurningu o.s.frv.
+S0 → Málsgrein > Spurning > Grein > Fyrirsögn
 
 Forskeyti →
     Samtenging '-'? # 'En - þegar allt er skoðað, var þetta fínt.'
 
-VenjulegSetning →
+Málsgrein →
     Forskeyti? Yfirsetning StLiður* '.'?
 
 Spurning →
-    # Eins og venjuleg setning, en endar á spurningarmerki
+    # Eins og venjuleg málsgrein, en endar á spurningarmerki
     Forskeyti? Yfirsetning StLiður* '?'
 
 Fyrirsögn →
@@ -244,7 +244,7 @@ SetningLoBotn →
 
 SetningSo →
     FsAtv? HjSögnLhÞtSM_et_p3 FsAtv? so_0_sagnb FsAtv?        # [Á morgun] verður/skal/mun [líklega] lent á brautinni [eftir hádegi]
-    | so_0_sagnb HjSögnLhÞtSM_et_p3 FsAtv?                    # Leitað verður/skal/mun til sérfræðinga
+    | so_0_sagnb HjSögnLhÞtSM_et_p3 FsAtv? NhFylling?         # Leitað verður/skal/mun til sérfræðinga / Verið er í snatri að ráða hæfasta umsækjandann
     | so_0_mm_p3_et HjSögnLhÞtSM_et_p3 FsAtv                  # Búist er við töfum á veginum
     | so_0_mm_nh HjSögnMegiSkuliÞurfi_et_p3 FsAtv             # Búast má/skal/þarf/hefur mátt við töfum á veginum
     | FsAtv? SagnliðurÁnF FsAtv?                              # [Í dag] þyrfti að vökva grasið snarlega
@@ -852,12 +852,17 @@ NhFylling/tala/kyn →
     NhFylling_nf/tala/kyn    # Nefnifall sjálfgefið
 
 # Aðeins nefnifall og þágufall eru nokkurn tíma notuð
-NhFylling/fall/tala/kyn →
+NhFylling/fall/tala/kyn → EinNhFylling/fall/tala/kyn OgNhFylling/fall/tala/kyn*
+
+EinNhFylling/fall/tala/kyn →
     FsAtv? LoTengtSögn/tala/fall/kyn? NhLiður
     # 'að þykja og vera fallegt'
     | FsAtv? nhm so_1_nf_nh OgNhSögn_nf* LoTengtSögn/tala/fall/kyn
     # 'að sýnast og þykjast fallegt'
     | FsAtv? nhm so_mm_nh OgSögn_mm_nh* LoTengtSögn/tala/fall/kyn
+
+OgNhFylling/fall/tala/kyn →
+    OgEða EinNhFylling/fall/tala/kyn
 
 # - ótengd frumlagi: lýsingarliður ekki mögulegur
 # (nema þá hugsanlega í 3p. et.?)
@@ -1165,12 +1170,11 @@ EfLiðurForskeytiKjarni_et/kyn → Fyrirbæri_ef/kyn
 EfLiðurForskeytiKjarni_ft/kyn → no_ef_ft/kyn
 
 Fornafn/tala/fall/kyn → fn/tala/fall/kyn
-Fornafn_nf/tala/kyn → fn_nf/tala/kyn
-Fornafn_ef/tala/kyn → fn_ef/tala/kyn
+Fornafn/fall/tala/kyn → Fornafn/tala/fall/kyn
 
 # Persónufornöfnin (pfn) "hans" og "hennar" eru án kyns í BÍN
-Fornafn_ef_et_kk → "hans"
-Fornafn_ef_et_kvk → "hennar"
+Fornafn_et_ef_kk → "hans"
+Fornafn_et_ef_kvk → "hennar"
 
 Töluorð/tala/fall/kyn → to/tala/fall/kyn | töl/tala/fall/kyn
 Töluorð/fall/tala/kyn → Töluorð/tala/fall/kyn

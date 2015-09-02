@@ -145,6 +145,11 @@ class BIN_Token(Token):
         # prefix to a noun ("einkunn")
         self._is_eo = None
 
+    @property
+    def lower(self):
+        """ Return the text for this property, in lower case """
+        return self.t1_lower
+
     def verb_matches(self, verb, terminal, form):
         """ Return True if the verb in question matches the verb category,
             where the category is one of so_0, so_1, so_2 depending on
@@ -462,33 +467,33 @@ class BIN_Token(Token):
 
             if terminal.startswith("so"):
                 # Check verb
-                if m[2] != "so":
+                if m.ordfl != "so":
                     return False
                 # Special case for verbs: match only the appropriate
                 # argument number, i.e. so_0 for verbs having no noun argument,
                 # so_1 for verbs having a single noun argument, and
                 # so_2 for verbs with two noun arguments. A verb may
                 # match more than one argument number category.
-                return self.verb_matches(m[0], terminal, m[5])
+                return self.verb_matches(m.stofn, terminal, m.beyging)
 
             if terminal.startswith("no"):
                 # Check noun
-                if BIN_Token._KIND[m[2]] != "no":
+                if BIN_Token._KIND[m.ordfl] != "no":
                     return False
                 if terminal.has_vbit_abbrev():
                     # Only match abbreviations; gender, case and number do not matter
-                    return m[5] == "-"
+                    return m.beyging == "-"
                 for v in terminal.variants:
                     if v in BIN_Token._GENDERS_SET:
-                        if m[2] != v:
+                        if m.ordfl != v:
                             # Mismatched gender
                             return False
-                    elif m[5] == "-":
+                    elif m.beyging == "-":
                         # No case and number info: probably a foreign word
                         # Match all cases, but singular only, not plural
                         if v == "ft":
                             return False
-                    elif BIN_Token._VARIANT[v] not in m[5]:
+                    elif BIN_Token._VARIANT[v] not in m.beyging:
                         # Required case or number not found: no match
                         return False
                 return True
@@ -496,7 +501,7 @@ class BIN_Token(Token):
             if terminal.startswith("eo"):
                 # 'Einkunnarorð': adverb (atviksorð) that is not the same
                 # as a preposition (forsetning)
-                if m[2] != "ao":
+                if m.ordfl != "ao":
                     return False
                 # This token can match an adverb:
                 # Cache whether it can also match a preposition
@@ -509,7 +514,7 @@ class BIN_Token(Token):
                         self._is_eo = True
                     else:
                         # Check whether also a preposition and return False in that case
-                        self._is_eo = not any(mm[2] == "fs" for mm in self.t2)
+                        self._is_eo = not any(mm.ordfl == "fs" for mm in self.t2)
                 # Return True if this token cannot also match a preposition
                 return self._is_eo
 
@@ -518,12 +523,12 @@ class BIN_Token(Token):
                 return self.prep_matches(self.t1_lower, terminal.variant(0))
 
             # Check other word categories
-            if m[5] != "-": # Tokens without a form specifier are assumed to be universally matching
+            if m.beyging != "-": # Tokens without a form specifier are assumed to be universally matching
                 for v in terminal.variants:
-                    if BIN_Token._VARIANT[v] not in m[5]:
+                    if BIN_Token._VARIANT[v] not in m.beyging:
                         # Not matching
                         return False
-            return terminal.matches_first(BIN_Token._KIND[m[2]], m[0], self.t1_lower)
+            return terminal.matches_first(BIN_Token._KIND[m.ordfl], m.stofn, self.t1_lower)
 
         # We have a match if any of the possible part-of-speech meanings
         # of this token match the terminal
@@ -580,19 +585,60 @@ class BIN_Token(Token):
 BIN_Token.init()
 
 
-class BitVariants:
+class VariantHandler:
 
-    """ Mix-in class to add mapping of terminal variants to bit arrays for speed """
+    """ Mix-in class used in BIN_Terminal and BIN_LiteralTerminal to add
+        querying of terminal variants as well as mapping of variants to
+        bit arrays for speed """
 
     def __init__(self, name):
         super().__init__(name)
-        # Map variant names to bits in self._vbits
+        # Do a bit of pre-calculation to speed up various
+        # checks against this terminal
+        parts = self._name.split("_")
+        self._first = parts[0]
+        # The variant set for this terminal, i.e.
+        # tname_var1_var2_var3 -> { 'var1', 'var2', 'var3' }
+        self._vparts = parts[1:]
+        self._vcount = len(self._vparts)
+        self._vset = set(self._vparts)
+        # Also map variant names to bits in self._vbits
         bit = BIN_Token._VBIT
         self._vbits = reduce(lambda x, y: x | y,
             (bit[v] for v in self._vset if v in bit), 0)
 
+    def startswith(self, part):
+        """ Returns True if the terminal name starts with the given string """
+        return self._first == part
+
+    def matches_first(self, t_kind, t_val, t_lit):
+        return self._first == t_kind
+
+    @property
+    def first(self):
+        """ Return the first part of the terminal name (without variants) """
+        return self._first
+
+    @property
+    def num_variants(self):
+        """ Return the number of variants in the terminal name """
+        return self._vcount
+
+    @property
+    def variants(self):
+        """ Returns the variants contained in this terminal name as a list """
+        return self._vparts
+
+    def variant(self, index):
+        """ Return the variant with the given index """
+        return self._vparts[index]
+
+    def has_variant(self, v):
+        """ Returns True if the terminal name has the given variant """
+        return v in self._vset
+
     def has_vbits(self, vbits):
-        """ Return True if this terminal has all the variant(s) corresponding to the given bit(s) """
+        """ Return True if this terminal has (all) the variant(s) corresponding to the given bit(s) """
         return (self._vbits & vbits) == vbits
 
     def has_any_vbits(self, vbits):
@@ -612,25 +658,56 @@ class BitVariants:
         return (self._vbits & BIN_Token._VBIT_ABBREV) != 0
 
 
-class BIN_Terminal(BitVariants, Terminal):
+class BIN_Terminal(VariantHandler, Terminal):
 
-    """ Subclass of Terminal that adds a BIN-specific optimization
-        to variants, mapping them to bit arrays for speed """
-
-    def __init__(self, name):
-        super().__init__(name)
-
-
-class BIN_LiteralTerminal(BitVariants, LiteralTerminal):
-
-    """ Subclass of LiteralTerminal that adds a BIN-specific optimization
-        to variants, mapping them to bit arrays for speed """
+    """ Subclass of Terminal that mixes in support from VariantHandler
+        for variants in terminal names, including optimizations of variant
+        checks and lookups """
 
     def __init__(self, name):
         super().__init__(name)
+
+
+class BIN_LiteralTerminal(VariantHandler, LiteralTerminal):
+
+    """ Subclass of LiteralTerminal that mixes in support from VariantHandler
+        for variants in terminal names """
+
+    def __init__(self, name):
+        super().__init__(name)
+        # Peel off the quotes from the first part
+        assert len(self._first) >= 3
+        assert self._first[0] == self._first[-1]
+        self._first = self._first[1:-1]
+        # Check whether we have variants on an exact literal
+        if self._strong and self.num_variants > 0:
+            # It doesn't make sense to have variants on exact literals
+            # since they are constant and cannot vary
+            raise GrammarError('An exact literal terminal with double quotes cannot have variants')
+
+    def matches_first(self, t_kind, t_val, t_lit):
+        """ A literal terminal matches a token if the token text is identical to the literal """
+        #print("LiteralTerminal.matches_first: parts[0] is '{0}', t_val is '{1}'"
+        #    .format(self._parts[0], t_val))
+        if self._strong:
+            # Absolute literal match
+            return self._first == t_lit
+        return self._first == t_val
+
+    def matches(self, t_kind, t_val, t_lit):
+        """ A literal terminal matches a token if the token text is
+            canonically or absolutely identical to the literal """
+        if self._strong:
+            # Absolute literal match
+            return self._first == t_lit
+        # Canonical match of stems or prototypes
+        return self._first == t_val
 
 
 class BIN_Grammar(Grammar):
+
+    """ Subclass of Grammar that creates BIN-specific Terminals and LiteralTerminals
+        when parsing a grammar, with support for variants in terminal names """
 
     def __init__(self):
         super().__init__()

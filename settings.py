@@ -331,6 +331,25 @@ class UnknownVerbs:
                     print(line, file = f)
 
 
+class Preferences:
+
+    """ Wrapper around disambiguation hints, initialized from the config file """
+
+    # Dictionary keyed by word containing a list of tuples (worse, better)
+    # where each is a list of terminal prefixes
+    DICT = defaultdict(list)
+
+    @staticmethod
+    def add (word, worse, better):
+        """ Add a preference to the dictionary. Called from the config file handler. """
+        Preferences.DICT[word].append((worse, better))
+
+    @staticmethod
+    def get(word):
+        """ Return a list of (worse, better) tuples for the given word """
+        return Preferences.DICT.get(word, None)
+
+
 # Global settings
 
 class Settings:
@@ -462,8 +481,13 @@ class Settings:
         a = s.lower().split("<", maxsplit = 1)
         if len(a) != 2:
             raise ConfigError("Ambiguity preference missing less-than sign '<'")
-        # !!! TODO
-        # Ambiguities.add(...)
+        w = a[0].split()
+        if len(w) < 2:
+            raise ConfigError("Ambiguity preference must have at least one 'worse' category")
+        b = a[1].split()
+        if len(b) < 1:
+            raise ConfigError("Ambiguity preference must have at least one 'better' category")
+        Preferences.add(w[0], w[1:], b)
 
     @staticmethod
     def _handle_ambiguous_phrases(s):
