@@ -168,7 +168,7 @@ Setning → Setning/tala/pers/kyn
 
 
 # Tilvik þar sem einu frumlagi fylgja nokkrir sagnliðir:
-# 'Anna tók bílinn, keyrði hann galvösk/sjálf í bæinn [,] og keypti í matinn'
+# 'Anna tók bílinn, keyrði hann sjálf í bæinn [,] og keypti í matinn'
 
 SagnRuna → SagnRuna/tala/pers/kyn
 
@@ -183,9 +183,9 @@ SagnFramhald/tala/pers/kyn →
 SagnKomma/tala/pers/kyn →
     ',' Sagnliður/tala/pers/kyn LoTengtSögn_nf/tala/kyn? SagnInnskot?
 
-SagnInnskot → ',' FsAtv ',' FsAtv?
-    | FsAtv ',' FsAtv
-    | ','? FsAtv
+SagnInnskot → KommaOgEðaEn FsAtv ',' FsAtv?
+    | FsAtv KommaOgEðaEn FsAtv
+    | KommaOgEðaEn? FsAtv
 
 SagnViðhengi/tala/pers/kyn →
     KommaOgEðaEn SagnRuna/tala/pers/kyn
@@ -245,13 +245,19 @@ SetningLoBotn →
 SetningSo →
     FsAtv? HjSögnLhÞtSM_et_p3 FsAtv? so_0_sagnb FsAtv?        # [Á morgun] verður/skal/mun [líklega] lent á brautinni [eftir hádegi]
     | so_0_sagnb HjSögnLhÞtSM_et_p3 FsAtv? NhFylling?         # Leitað verður/skal/mun til sérfræðinga / Verið er í snatri að ráða hæfasta umsækjandann
+
     | so_0_mm_p3_et HjSögnLhÞtSM_et_p3 FsAtv                  # Búist er við töfum á veginum
     | so_0_mm_nh HjSögnMegiSkuliÞurfi_et_p3 FsAtv             # Búast má/skal/þarf/hefur mátt við töfum á veginum
-    | FsAtv? SagnliðurÁnF FsAtv?                              # [Í dag] þyrfti að vökva grasið snarlega
-    | So_1_nh/fall HjSögnMegiSkuliÞurfi_et_p3 Nl/fall FsAtv?  # Endurnýja þarf/skal/má leigusamninginn í ár
-    | Sögn_bh FsAtv?                                          # Farðu galvaskur að sækja kaffi strax
     | FsAtv so_0_mm_p3_et FsAtv? "að" Yfirsetning             # Í því felst [einnig] að félagið hefji nýbyggingu
-    
+
+    | FsAtv? SagnliðurÁnF FsAtv?                              # [Í dag] þyrfti að vökva grasið snarlega
+
+    | So_1_nh/fall HjSögnMegiSkuliÞurfi_et_p3 Nl/fall FsAtv?  # Endurnýja þarf/skal/má leigusamninginn í ár
+
+    | Sögn_bh FsAtv?                                          # Farðu galvaskur að sækja kaffi strax
+
+    | SagnliðurVh FsAtv?                                      # Haldi þessi þróun áfram er voðinn vís
+
 # Setning þar sem aðalnafnliður er í aukafalli
 # en frumlag í 3p. et. ('það') er falið.
 # Sögnin tekur viðfang (subject) í aukafalli eða er í miðmynd
@@ -372,7 +378,30 @@ SagnliðurÁnF →
     | HjSögnNh_et_p3 FsAtv? so_subj_nh_none NhFylling  # (Í ár) mun [í sumarhitanum] þurfa (að vökva grasið)
     | HjSögnNh_et_p3 FsAtv? so_mm_nh NhFylling         # (Í ár) mun [í sumarhitanum] dragast (að vökva grasið)
 
-# Sagnliður með inniföldu frumlagi: Í dag borðaði Jón matinn
+# Sagnliður sem hefst á viðtengingarhætti:
+# 'Haldi þessi þróun áfram er voðinn vís / þarf að grípa til aðgerða'
+
+SagnliðurVh →
+    so_0_vh/pers Nl_nf/pers VhInnskot? SagnliðurVhBotn                     # Haldir þú áfram er voðinn vís
+    | So_1_vh/fall/pers Nl_nf/pers FsAtv? Nl/fall FsAtv? SagnliðurVhBotn   # Borði börnin matinn getum við farið í sund
+    # Verði þessi tillaga felld geng ég úr flokknum
+    # Verði karlarnir byrjaðir að grilla sæki ég sósuna
+    | VeraVerðaVh/pers Nl_nf/tala/pers/kyn HreinSögn_lhþt/tala/kyn FsAtv? SagnliðurVhBotn
+
+# (Haldir þú) áfram að borða (er voðinn vís)
+VhInnskot →
+    FsAtv | NhFylling FsAtv?
+
+VeraVerðaVh/pers →
+    'vera'_vh/pers | 'verða'_vh/pers
+
+SagnliðurVhBotn →
+    SagnliðurÁnF | SagnHluti/tala/pers/kyn
+
+# Sagnliður með inniföldu frumlagi:
+# '(Í dag) borðaði Jón matinn'
+# '(Með því) var svæðinu stefnt í hættu'
+# '(Í kjölfar þess) varð ég ósáttur'
 
 SagnliðurMeðF/tala/pers/kyn →
     SögnMeðF_0/tala/pers/kyn   # Sögn með engu viðfangi: (Í dag) skánaði veðrið
@@ -494,7 +523,7 @@ SögnMeðF_0/tala/pers/kyn →
     so_0/tala/pers OgSögn_0/tala/pers* Nl_nf/tala/pers/kyn NhFylling/tala/kyn?
 
     # (Í dag) tókst og heppnaðist Seðlabankanum [galvöskum að lækka vexti]
-    | so_mm/tala/pers OgSögn_mm_fh/tala/pers* Nl_þgf/tala/pers/kyn NhFylling_þgf/tala/kyn?
+    | so_mm_fh/tala/pers OgSögn_mm_fh/tala/pers* Nl_þgf/tala/pers/kyn NhFylling_þgf/tala/kyn?
 
     # (Í dag) hefur [ekki] gerst það sama
     | HjSögn/tala/pers FsAtv? so_0_sagnb Nl_nf/tala/pers/kyn NhFylling/tala/kyn?
@@ -504,16 +533,21 @@ SögnMeðF_0/tala/pers/kyn →
 
     # (Í dag) munu mennirnir [ekki/innan tíðar] lenda    
     | HjSögnNh/tala/pers Nl_nf/tala/pers/kyn HreinSögn_nh/tala/kyn
+    # (Í dag) hyggjast mennirnir [ekki/innan tíðar] lenda
+    | so_mm_fh/tala/pers Nl_nf/tala/pers/kyn HreinSögn_nh/tala/kyn
 
     # (Í dag) eru mennirnir [ekki/í millitíðinni] lentir
     | HjSögnLhÞt/tala/pers Nl_nf/tala/pers/kyn HreinSögn_lhþt/tala/kyn
 
     # (Í ár) hefur krönunum [í borginni] fjölgað
     | HjSögn_et_p3 Nl/fall/tala/pers/kyn FsAtv? so_subj_sagnb/fall NhFylling/tala/kyn?
+    # (Í dag) er þingmönnunum [í flokknum] stefnt (til þings)
+    | HjSögnLhÞt_et_p3 Nl_þgf/tala/pers/kyn FsAtv? so_1_þgf_sagnb NhFylling/tala/kyn?
+    # (Í kvöld) er viðurgjörningsins notið (í skíðaskálanum)
+    | HjSögnLhÞt_et_p3 Nl_ef/tala/pers/kyn FsAtv? so_1_ef_sagnb NhFylling/tala/kyn?
+
     # (Í ár) mun krönunum [í borginni] fjölga
     | HjSögnNh_et_p3 Nl/fall/tala/pers/kyn FsAtv? so_subj_nh/fall NhFylling/tala/kyn?
-    # (Í dag) er þingmönnunum [í flokknum] fjölgað
-    | HjSögnLhÞt_et_p3 Nl/fall/tala/pers/kyn FsAtv? so_subj_sagnb/fall NhFylling/tala/kyn?
 
     # (Í dag) hafa fjöllin verið klifin og sigruð
     | 'hafa'/tala/pers Nl_nf/tala/pers/kyn FsAtv? 'vera'_sagnb HreinSögn_lhþt/tala/kyn
@@ -542,6 +576,11 @@ So_1_bh_nf → so_1_nf_bh         # Vertu leikari
 So_1_bh_þf → so_1_þf_bh         # Borðaðu matinn
 So_1_bh_þgf → so_1_þgf_bh       # Hafnaðu Páli
 So_1_bh_ef → so_1_ef_bh         # Njóttu matarins
+
+So_1_vh_nf/pers → so_1_nf_vh/pers         # Væri hann leikari
+So_1_vh_þf/pers → so_1_þf_vh/pers         # Borðir þú matinn
+So_1_vh_þgf/pers → so_1_þgf_vh/pers       # Hafni ég Páli
+So_1_vh_ef/pers → so_1_ef_vh/pers         # Nyti hann matarins
 
 # Sögn í sagnbeygingu með einu viðfangi
 
@@ -596,7 +635,7 @@ Sögn_1/tala/pers/kyn →
     # (ef:)  Konurnar nutu [ekki] matarins
     # (nf:)  Konurnar voru [ekki] leikarar
 
-    so_1/fall/tala/pers OgSögn_1/fall/tala/pers* Nl/fall
+    so_1/fall/tala/pers OgSögn_1/fall/tala/pers* SagnarBotn/fall
 
     # | so_mm/tala/pers OgSögn_mm_fh/tala/pers* FsAtv? Sögn_1_nh       # (Bankinn) virðist og sýnist [alfarið] eiga mig
 
@@ -608,6 +647,15 @@ Sögn_1/tala/pers/kyn →
     | HjSögnLhÞtSM/tala/pers FsAtv? so_2_þf_þgf_lhþt/tala/kyn Nl_þgf # Konan hefur verið/skal/mun kölluð öllum illum nöfnum
     # HjSögnLhÞtSM/tala/pers FsAtv? so_2_þgf_ef_lhþt/tala/kyn Nl_ef  # Konan hefur verið/skal/mun óska alls hins besta
     # HjSögnLhÞtSM/tala/pers FsAtv? so_2_þf_þf_lhþt/tala/kyn Nl_þf   # Konan hefur verið/skal/mun kosta skildinginn
+
+SagnarBotn/fall →
+    # '(Páll klappaði og strauk) kettinum'
+    Nl/fall
+    # (Páll segir) mistökin strax valda vanda
+    | Nl/fall FsAtv? NhRuna
+    # (Páll segir) mistökin hafa verið gerð (á vakt Jóns)
+    # (Páll segir) mistökin hafa verið (í uppleggi Friðgeirs)
+    | Nl/fall/tala/kyn FsAtv? HjSögnVera so_lhþt/tala/kyn?
 
 # Sögn með einu viðfangi sem stendur í undirsetningu
 # ('Konurnar sem borðuðu matinn')
@@ -851,7 +899,7 @@ HjSögnLhÞtSM_p3_ft →
 NhFylling/tala/kyn →
     NhFylling_nf/tala/kyn    # Nefnifall sjálfgefið
 
-# Aðeins nefnifall og þágufall eru nokkurn tíma notuð
+# Aðeins nefnifall og þágufall eru notuð
 NhFylling/fall/tala/kyn → EinNhFylling/fall/tala/kyn OgNhFylling/fall/tala/kyn*
 
 EinNhFylling/fall/tala/kyn →
@@ -878,7 +926,7 @@ NhLiður →
 NhRuna → NhSögn OgNhLiður*
 
 OgNhLiður →
-    FsAtv? KommaOgEða NhSögn # (að selja skyldi hestinn) snarlega, eða hætta baráttunni (ella)
+    FsAtv? KommaOgEðaEn FsAtv? NhSögn # (að selja skyldi hestinn) snarlega, en ekki hætta baráttunni
 
 NhSögn →
     so_0_nh so_0_gm_vh? OgNhSögn*                  # að kjósa [þurfi] og telja (upp á nýtt)
@@ -974,6 +1022,8 @@ NlKjarni_ft/fall/kyn →
 Nl/fall → Nl/fall/kyn
 
 Nl/fall/kyn → Nl/pers/fall/kyn
+
+Nl/fall/pers → Nl/pers/fall/kyn
 
 Nl/pers/fall/kyn → Nl/tala/pers/fall/kyn
 

@@ -128,8 +128,10 @@ class BIN_Token(Token):
     # Set of adverbs that cannot be an "eo" (prepositions are already excluded)
     _NOT_EO = { "og", "eða", "sem" }
     # Prepositions that nevertheless must be allowed as adverbs
-    # 'Fyrirtækið hefur skilað inn ársreikningi', 'Þá er kannski eftir klukkutími'
-    _NOT_NOT_EO = { "inn", "eftir" }
+    # 'Fyrirtækið hefur skilað inn ársreikningi', 'Þá er kannski eftir klukkutími',
+    # 'Það hafi opnað fyrir of ágenga nýtingu þeirra'
+    # '...verður ekki til nægur jarðvarmi'
+    _NOT_NOT_EO = { "inn", "eftir", "of", "til" }
 
     def __init__(self, t):
 

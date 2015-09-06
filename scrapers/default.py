@@ -146,6 +146,13 @@ class KjarninnScraper(ScrapeHelper):
     def __init(self, root):
         super().__init__(root)
 
+    def skip_url(self, url):
+        """ Return True if this URL should not be scraped """
+        s = urlparse.urlsplit(url)
+        if s.path and s.path.startswith("/tag/"):
+            return True
+        return False # Scrape all other URLs by default
+        
     def get_metadata(self, soup):
         """ Analyze the article soup and return metadata """
         # Extract the heading from the OpenGraph (Facebook) og:title meta property
@@ -191,6 +198,8 @@ class RuvScraper(ScrapeHelper):
         if s.path and s.path.startswith("/sarpurinn/"):
             # Skip the www.ruv.is/sarpurinn/... URLs
             return True
+        if s.path and s.path.startswith("/tag/"):
+            return True
         return False # Scrape all URLs by default
         
     def get_metadata(self, soup):
@@ -229,6 +238,12 @@ class MblScraper(ScrapeHelper):
         if s.path and s.path.startswith("/english/"):
             # Skip the www.mbl.is/english/... URLs
             return True
+        if s.path and s.path.startswith("/frettir/bladamenn/"):
+            return True
+        if s.path and s.path.startswith("/frettir/sjonvarp/"):
+            return True
+        if s.path and s.path.startswith("/frettir/knippi/"):
+            return True
         return False # Scrape all URLs by default
         
     def get_metadata(self, soup):
@@ -239,14 +254,25 @@ class MblScraper(ScrapeHelper):
         # A dateline from mbl.is looks like this: Viðskipti | mbl | 24.8.2015 | 10:48
         dateline = ScrapeHelper.div_class(soup.html.body, "frett-container", "dateline")
         dateline = ''.join(dateline.stripped_strings).split('|') if dateline else None
-        if not dateline:
+        timestamp = None
+        if dateline:
+            ix = 0
+            while ix < len(dateline) - 2:
+                if dateline[ix] == "mbl":
+                    # The two slots following "mbl" contain the date and the time
+                    # Create a timestamp from dateline[ix+1] and dateline[ix+2]
+                    try:
+                        date = [ int(x) for x in dateline[ix + 1].split('.') ]
+                        time = [ int(x) for x in dateline[ix + 2].split(':') ]
+                        timestamp = datetime(year = date[2], month = date[1], day = date[0],
+                            hour = time[0], minute = time[1])
+                    except Exception as e:
+                        print("Exception when obtaining date of mbl.is article: {0}".format(e))
+                        timestamp = None
+                    break
+                ix += 1
+        if timestamp is None:
             timestamp = datetime.utcnow()
-        else:
-            # Create a timestamp from dateline[-2] and dateline[-1]
-            date = [ int(x) for x in dateline[-2].split('.') ]
-            time = [ int(x) for x in dateline[-1].split(':') ]
-            timestamp = datetime(year = date[2], month = date[1], day = date[0],
-                hour = time[0], minute = time[1])
         # Extract the author name
         rp = ScrapeHelper.div_class(soup.html.body, "frett-main", "reporter-profile")
         f = lambda tag: ScrapeHelper.general_filter(tag, "a", "class", "name")

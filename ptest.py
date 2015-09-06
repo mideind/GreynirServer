@@ -36,7 +36,7 @@ psycopg2ext.register_type(psycopg2ext.UNICODEARRAY)
 
 from tokenizer import TOK, tokenize
 from grammar import Nonterminal, Terminal, Token, Production, Grammar, GrammarError
-from parser import Parser, ParseError
+from parser import Parser, ParseError, ParseForestPrinter
 from binparser import BIN_Parser
 from settings import Settings, ConfigError
 
@@ -162,7 +162,7 @@ def test1():
 
     print("Parse combinations: {0}".format(Parser.num_combinations(forest)))
 
-    Parser.print_parse_forest(forest)
+    ParseForestPrinter.print_forest(forest)
 
 
 def test2():
@@ -214,7 +214,7 @@ def test2():
 
     print("Parse combinations: {0}".format(Parser.num_combinations(forest)))
 
-    Parser.print_parse_forest(forest)
+    ParseForestPrinter.print_forest(forest)
 
 
 def run_test(p):
@@ -321,7 +321,7 @@ def test3():
             .format(test["sentence"], test["numtrees"], test["parse_time"]))
 
         if test["numtrees"] > 0:
-            Parser.print_parse_forest(test["forest"])
+            ParseForestPrinter.print_forest(test["forest"])
             # print("{0}".format(Parser.make_schema(test["forest"])))
         elif test["err"]:
             print("Error: {0}".format(test["err"]))

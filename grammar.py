@@ -404,6 +404,10 @@ class Grammar:
         """ Return the timestamp of the grammar file, or None """
         return self._file_time
 
+    def __getitem__(self, nt):
+        """ Look up a nonterminal, yielding a list of (priority, production) tuples """
+        return self._nt_dict[nt]
+
     def __str__(self):
 
         def to_str(plist):

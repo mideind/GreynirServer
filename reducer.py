@@ -16,19 +16,15 @@
 """
 
 from collections import defaultdict
-from grammar import Terminal
-from settings import Preferences
 
-#from flask import current_app
-#
-#def debug():
-#   # Call this to trigger the Flask debugger on purpose
-#   assert current_app.debug == False, "Don't panic! You're here by request of debug()"
+from grammar import Terminal, Nonterminal
+from settings import Preferences
+from parser import ParseForestNavigator
 
 
 class Reducer:
 
-    """ Reduces a parse tree to a single most likely parse """
+    """ Reduces a parse forest to a single most likely parse tree """
 
     def __init__(self):
 
@@ -36,18 +32,11 @@ class Reducer:
 
     def go(self, forest):
 
-        """ Return a single most likely parse within a forest of potential parses """
+        """ Returns the argument forest after pruning it down to a single tree """
 
-        if not forest:
+        if forest is None:
             return None
         w = forest
-        # Check that we have the expected forest root node
-        assert w.is_completed and str(w) == "S0"
-        assert w.start == 0
-        # Give the child trees priority in the given order (lowest number means highest priority),
-        # with VenjulegSetning on top
-        # self._reduce(w) # !!! DEBUG
-        w.reduce_by_priority( { "VenjulegSetning" : 0, "Spurning" : 1, "Grein" : 2, "Fyrirsögn" : 3 })
 
         print("\nReducer.go assuming {0} final terminals".format(w.end))
 
@@ -59,7 +48,8 @@ class Reducer:
 
         # Second pass: find a (partial) ordering by scoring the terminal alternatives for each token
         scores = dict()
-        for i in range(w.end):
+        # Loop through the indices of the tokens spanned by this tree
+        for i in range(w.start, w.end):
             s = finals[i]
             # Initially, each alternative has a score of 0
             scores[i] = { terminal: 0 for terminal in s }
@@ -81,7 +71,7 @@ class Reducer:
                                 for bt in s:
                                     if wt is not bt and bt.first in better:
                                         print("Preference: increasing score of {1}, decreasing score of {0}".format(wt, bt))
-                                        sc[wt] -= 2
+                                        sc[wt] -= 1
                                         sc[bt] += 4
                                         found_pref = True
                 if not found_pref:
@@ -94,13 +84,21 @@ class Reducer:
                         elif t.first == "no" and t.has_vbit_et():
                             # Add to singular nouns relative to plural ones
                             sc[t] += 1
-                        elif t.first == "so" and t.variant(0) in "012":
-                            # Give a bonus for verb arguments: the more matched, the better
-                            sc[t] += int(t.variant(0))
+                        elif t.first == "so":
+                            if t.variant(0) in "012":
+                                # Give a bonus for verb arguments: the more matched, the better
+                                sc[t] += int(t.variant(0))
+                            if t.has_variant("nh") and (i > 0) and any(pt.first == 'nhm' for pt in finals[i - 1]):
+                                # Give a bonus for adjacent nhm + so_nh terminals
+                                print("Giving bonus for nhm + so_nh, verb {0}".format(txt))
+                                sc[t] += 2 # Prop up the verb terminal with the nh variant
+                                for pt in scores[i - 1].keys():
+                                    if pt.first == 'nhm':
+                                        # Prop up the nhm terminal
+                                        scores[i - 1][pt] += 2
                         elif t.name[0] in "\"'":
                             # Give a bonus for exact or semi-exact matches
                             sc[t] += 1
-                    # !!! Add a heuristic to promote adjacent nhm + so_nh
 
         # Third pass: navigate the tree bottom-up, eliminating lower-rated
         # options (subtrees) in favor of higher rated ones
@@ -112,91 +110,102 @@ class Reducer:
     def _find_options(self, w, finals, tokens):
         """ Find token-terminal match options in a parse forest with a root in w """
 
-        visited = set()
+        class OptionFinder(ParseForestNavigator):
 
-        def _opt_helper(w, index, parent):
-            """ Find options from w """
-            if w is None:
-                # Epsilon node
-                return
-            if w.is_token:
-                p = parent[index]
-                assert isinstance(p, Terminal)
-                finals[w.start].add(p)
-                tokens[w.start] = w.head
-                return
-            if w.label in visited:
-                return
-            visited.add(w.label)
-            for ix, pc in enumerate(w.enum_children()):
-                prod, f = pc
-                if w.is_completed:
-                    # Completed nonterminal: start counting children from zero
-                    child_ix = -1
-                    # parent = w
-                else:
-                    child_ix = index
-                if isinstance(f, tuple):
-                    child_ix -= 1
-                    _opt_helper(f[0], child_ix, prod)
-                    _opt_helper(f[1], child_ix + 1, prod)
-                else:
-                    _opt_helper(f, child_ix, prod)
+            """ Subclass to navigate a parse forest and find the set of terminals
+                that match each token """
 
-        _opt_helper(w, 0, None)
+            def _visit_token(self, level, node, terminal):
+                """ At token node """
+                finals[node.start].add(terminal)
+                tokens[node.start] = node.head
+                return None
+
+        OptionFinder().go(w)
 
     def _reduce(self, w, scores):
         """ Reduce a forest with a root in w based on subtree scores """
 
-        visited = dict()
+        class ParseForestReducer(ParseForestNavigator):
 
-        def _reduce_helper(w, index, parent):
-            """ Reduce from w """
-            if w is None:
-                # Epsilon node
-                return 0
-            if w.is_token:
-                p = parent[index]
-                assert isinstance(p, Terminal)
-                # Return the score of this terminal option
-                return scores[w.start][p]
-            if w.label in visited:
-                # Already seen: return the previously calculated score
-                return visited[w.label]
-            # List of child scores
-            csc = []
-            for ix, pc in enumerate(w.enum_children()):
-                prod, f = pc
-                if w.is_completed:
-                    # Completed nonterminal: start counting children from zero
-                    child_ix = -1
-                    # parent = w
+            """ Subclass to navigate a parse forest and reduce it
+                so that the highest-scoring family of children survives
+                at each place of ambiguity """
+
+            def __init__(self, scores):
+                super().__init__()
+                self._scores = scores
+
+            def _visit_epsilon(self, level):
+                """ At Epsilon node """
+                return 0 # Score 0
+
+            def _visit_token(self, level, node, terminal):
+                """ At token node """
+                # Return the score of this token/terminal match
+                return self._scores[node.start][terminal]
+
+            def _visit_nonterminal(self, level, node):
+                """ At nonterminal node """
+                # Return a fresh object to collect results
+                class ReductionInfo:
+                    def __init__(self):
+                        self.sc = defaultdict(int) # Child tree scores
+                        # We are only interested in completed nonterminals
+                        self.nt = node.head if node.is_completed else None
+                        assert self.nt is None or isinstance(self.nt, Nonterminal)
+                        self.last_prio = None
+                        self.highest_prio = None # The priority of the highest-priority child, if any
+                        self.highest_ix = None # List of children with that priority
+                    def add_child_score(self, ix, sc):
+                        """ Add a child node's score to the parent's score """
+                        self.sc[ix] += sc
+                    def add_child_production(self, ix, prod):
+                        """ Add a family of children to the priority pool """
+                        if self.nt is None:
+                            # Not a completed nonterminal; priorities don't apply
+                            return
+                        prio = prod.priority
+                        if self.last_prio is not None:
+                            if prio == self.last_prio:
+                                if prio == self.highest_prio:
+                                    # Another child with the same (highest) priority
+                                    self.highest_ix.add(ix)
+                            elif self.highest_prio is None or prio < self.highest_prio:
+                                # Different priorities between children: note this
+                                # Note: lower value means higher priority!
+                                self.highest_prio = prio
+                                self.highest_ix = { ix }
+                        self.last_prio = prio
+                return ReductionInfo()
+
+            def _visit_family(self, results, level, w, ix, prod):
+                results.add_child_production(ix, prod)
+
+            def _add_result(self, results, ix, sc):
+                """ Append a single result object r to the result object """
+                # Add up scores for each family of children
+                results.add_child_score(ix, sc)
+
+            def _process_results(self, results, node):
+                """ Sort scores after visiting children """
+                csc = results.sc
+                if results.highest_ix is not None:
+                    # There is a priority ordering between the productions
+                    # of this nonterminal: remove those child trees from
+                    # consideration that do not have the highest priority
+                    print("Reducing set of child nodes by production priority")
+                    csc = { ix: sc for ix, sc in csc.items() if ix in results.highest_ix }
+                assert csc
+                if len(csc) == 1:
+                    # Not ambiguous: only one result
+                    [ sc ] = csc.values() # Will raise an exception if not exactly one value
                 else:
-                    child_ix = index
-                sc = 0
-                if isinstance(f, tuple):
-                    child_ix -= 1
-                    sc += _reduce_helper(f[0], child_ix, prod)
-                    sc += _reduce_helper(f[1], child_ix + 1, prod)
-                else:
-                    sc += _reduce_helper(f, child_ix, prod)
-                csc.append((ix, sc))
+                    # Eliminate all families except the best scoring one
+                    # Sort in decreasing order by score
+                    s = sorted(csc.items(), key = lambda x: x[1], reverse = True)
+                    ix, sc = s[0] # This is the best scoring family
+                    node.reduce_to(ix)
+                return sc
 
-            assert csc
-            if len(csc) == 1:
-                # Not ambiguous: only one result
-                assert csc[0][0] == 0
-                sc = csc[0][1]
-            else:
-                # Eliminate all families except the best scoring one
-                csc.sort(key = lambda x: x[1], reverse = True) # Sort in decreasing order by score
-                # print("Reduce_to: at {0}, comparing scores {1}".format(str(w), csc))
-                sc = csc[0][1]
-                w.reduce_to(csc[0][0])
-
-            visited[w.label] = sc
-            return sc
-
-        _reduce_helper(w, 0, None)
-
-
+        ParseForestReducer(scores).go(w)

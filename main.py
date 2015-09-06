@@ -23,6 +23,7 @@ import codecs
 import re
 import time
 from contextlib import closing
+from datetime import datetime
 
 from flask import Flask
 from flask import render_template, redirect, jsonify
@@ -133,11 +134,18 @@ def process_url(url):
 
     if info:
         metadata, body = info
-        print("Metadata: heading '{0}'".format(metadata.heading))
-        print("Metadata: author '{0}'".format(metadata.author))
-        print("Metadata: timestamp {0}".format(metadata.timestamp))
-        print("Metadata: authority {0:.2f}".format(metadata.authority))
-        metadata = vars(metadata) # Convert namedtuple to dict
+        if metadata is None:
+            print("No metadata")
+            metadata = dict(heading = "",
+                author = "",
+                timestamp = datetime.utcnow(),
+                authority = 0.0)
+        else:
+            print("Metadata: heading '{0}'".format(metadata.heading))
+            print("Metadata: author '{0}'".format(metadata.author))
+            print("Metadata: timestamp {0}".format(metadata.timestamp))
+            print("Metadata: authority {0:.2f}".format(metadata.authority))
+            metadata = vars(metadata) # Convert namedtuple to dict
 
     # Extract the text content of the HTML into a list
     tlist = TextList()

@@ -597,36 +597,43 @@ def lookup_word(db, w, at_sentence_start):
 
 # Singleton instance of the BIN database used for lookups
 bin_db = Bin_DB()
+bin_connection = None
 
 def annotate(token_stream):
     """ Look up word forms in the BIN word database """
 
     # Open the word database
-    with closing(bin_db.open(Settings.DB_HOSTNAME)) as db:
+    global bin_connection
+    if bin_connection is None:
+        bin_connection = bin_db.open(Settings.DB_HOSTNAME)
+        if bin_connection is None:
+            raise Exception("Could not open BIN database on host {0}".format(Settings.DB_HOSTNAME))
 
-        at_sentence_start = False
+    db = bin_connection
 
-        # Consume the iterable source in wlist (which may be a generator)
-        for t in token_stream:
-            if t.kind != TOK.WORD:
-                # Not a word: relay the token unchanged
-                yield t
-                if t.kind == TOK.S_BEGIN or (t.kind == TOK.PUNCTUATION and t.txt == ':'):
-                    at_sentence_start = True
-                elif t.kind != TOK.PUNCTUATION and t.kind != TOK.ORDINAL:
-                    at_sentence_start = False
-                continue
-            if t.val != None:
-                # Already have a meaning
-                yield t
+    at_sentence_start = False
+
+    # Consume the iterable source in wlist (which may be a generator)
+    for t in token_stream:
+        if t.kind != TOK.WORD:
+            # Not a word: relay the token unchanged
+            yield t
+            if t.kind == TOK.S_BEGIN or (t.kind == TOK.PUNCTUATION and t.txt == ':'):
+                at_sentence_start = True
+            elif t.kind != TOK.PUNCTUATION and t.kind != TOK.ORDINAL:
                 at_sentence_start = False
-                continue
-            # Look up word in BIN database
-            w, m = lookup_word(db, t.txt, at_sentence_start)
-            # Yield a word tuple with meanings
-            yield TOK.Word(w, m)
-            # No longer at sentence start
+            continue
+        if t.val != None:
+            # Already have a meaning
+            yield t
             at_sentence_start = False
+            continue
+        # Look up word in BIN database
+        w, m = lookup_word(db, t.txt, at_sentence_start)
+        # Yield a word tuple with meanings
+        yield TOK.Word(w, m)
+        # No longer at sentence start
+        at_sentence_start = False
 
         # print(Bin_DB.meanings.cache_info())
 

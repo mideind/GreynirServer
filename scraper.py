@@ -494,7 +494,7 @@ class Scraper:
         if toklist:
 
             sent_begin = 0
-            rdc = Reducer() # !!! This will be included in the parser
+            rdc = Reducer()
 
             for ix, t in enumerate(toklist):
                 if t[0] == TOK.S_BEGIN:

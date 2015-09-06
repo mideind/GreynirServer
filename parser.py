@@ -67,6 +67,95 @@ class ParseError(Exception):
         return self._token_index
 
 
+class ParseForestNavigator(object):
+
+    """ Base class for navigating parse forests """
+
+    def __init__(self, visit_all = False):
+        """ If visit_all is False, we only visit each packed node once.
+            If True, we visit the entire tree in order. """
+        self._visit_all = visit_all
+
+    def _visit_epsilon(self, level):
+        """ At Epsilon node """
+        return None
+
+    def _visit_token(self, level, node, terminal):
+        """ At token node """
+        return None
+
+    def _visit_nonterminal(self, level, node):
+        """ At nonterminal node """
+        # Return object to collect results
+        return None
+
+    def _visit_family(self, results, level, node, ix, prod):
+        """ At a family of children """
+        return
+
+    def _add_result(self, results, ix, r):
+        """ Append a single result object r to the result object """
+        return
+
+    def _process_results(self, results, node):
+        """ Process results after visiting children.
+            The results list typically contains tuples (ix, r) where ix is
+            the family index and r is the child result """
+        return None
+
+    def go(self, root_node):
+        """ Navigate the forest from the root node """
+
+        visited = dict()
+
+        def _nav_helper(w, index, level, parent):
+            """ Navigate from w """
+            if w is None:
+                # Epsilon node
+                return self._visit_epsilon(level)
+            if w.is_token:
+                p = parent.production[index] # Note that index may be (and often is) negative
+                assert isinstance(p, Terminal)
+                # Return the score of this terminal option
+                return self._visit_token(level, w, p)
+            if not self._visit_all and w.label in visited:
+                # Already seen: return the previously calculated result
+                return visited[w.label]
+            # Init container for child results
+            results = self._visit_nonterminal(level, w)
+            if results is NotImplemented:
+                # If _visit_nonterminal() returns NotImplemented,
+                # don't bother visiting children or processing
+                # results; instead _nav_helper() return NotImplemented
+                v = results
+            else:
+                if w.is_interior:
+                    child_level = level
+                else:
+                    child_level = level + 1
+                for ix, pc in enumerate(w.enum_children()):
+                    prod, f = pc
+                    self._visit_family(results, level, w, ix, prod)
+                    if w.is_completed:
+                        # Completed nonterminal: restart children index
+                        child_ix = -1
+                    else:
+                        child_ix = index
+                    if isinstance(f, tuple):
+                        child_ix -= 1
+                        self._add_result(results, ix, _nav_helper(f[0], child_ix, child_level, prod))
+                        self._add_result(results, ix, _nav_helper(f[1], child_ix + 1, child_level, prod))
+                    else:
+                        self._add_result(results, ix, _nav_helper(f, child_ix, child_level, prod))
+                v = self._process_results(results, w)
+            if not self._visit_all:
+                # Mark the node as visited and store its result
+                visited[w.label] = v
+            return v
+
+        return _nav_helper(root_node, 0, 0, None)
+
+
 class Parser:
 
     """ Parses a sequence of tokens according to a given grammar and
@@ -181,6 +270,9 @@ class Parser:
 
             j and i are the start and end token indices, respectively.
 
+            A forest of Nodes can be navigated using a subclass of
+            ParseForestNavigator.
+
         """
 
         def __init__(self, parser, label):
@@ -261,7 +353,6 @@ class Parser:
             """ Enumerate families of children """
             if self._families:
                 for prod, c in self._families:
-                    prod = [self._parser._lookup(ix) for ix in prod]
                     yield (prod, c)
 
         def reduce_by_priority(self, priority_dict):
@@ -324,6 +415,44 @@ class Parser:
             return str(h)
 
 
+    class PackedProduction:
+
+        """ A container for a packed production, i.e. a grammar Production
+            where the component terminals and nonterminals have been packed
+            into a list of integer indices """
+
+        def __init__(self, priority, production):
+            self._priority = priority
+            # Keep a reference to the original production
+            self._production = production
+            # Store the packed list of indices
+            self._ix_list = production.prod
+            # Cache the length
+            self._len = len(self._ix_list)
+            # Cache the hash
+            self._hash = production.__hash__()
+
+        @property
+        def production(self):
+            return self._production
+
+        @property
+        def priority(self):
+            return self._priority
+
+        def __hash__(self):
+            return self._hash
+
+        def __getitem__(self, index):
+            return self._ix_list[index]
+
+        def __len__(self):
+            return self._len
+
+        def __eq__(self, other):
+            return id(self) == id(other)
+
+
     def __init__(self, g):
 
         """ Initialize a parser for a given grammar """
@@ -335,10 +464,12 @@ class Parser:
         assert r in nt_d
         # Convert the grammar to integer index representation for speed
         self._root = r.index
-        # Make new grammar dictionary keyed by nonterminal index
+        # Make new grammar dictionary, keyed by nonterminal index and
+        # containing packed productions with integer indices
         self._nt_dict = { }
         for nt, plist in nt_d.items():
-            self._nt_dict[nt.index] = None if plist is None else [ p.prod for _, p in plist ]
+            self._nt_dict[nt.index] = None if plist is None else \
+                [ Parser.PackedProduction(prio, p) for prio, p in plist ]
         # Make a dictionary of nonterminals from the grammar
         # keyed by the nonterminal index instead of its name
         self._nonterminals = { }
@@ -534,60 +665,6 @@ class Parser:
 
 
     @staticmethod
-    def print_parse_forest(w, detailed = False, file = None):
-        """ Print an Earley-Scott-Tomita SPPF parse forest in a nice indented format """
-
-        def _print_helper(w, level, index, parent):
-            """ Print the node w at the given indentation level """
-            indent = "  " * level # Two spaces per indent level
-            if w is None:
-                # Epsilon node
-                print(indent + "(empty)", file = file)
-                return
-            if w.is_token:
-                p = parent[index]
-                assert isinstance(p, Terminal)
-                if detailed:
-                    print(indent + "[{0}] {1}: {2}".format(index, p, w), file = file)
-                else:
-                    print(indent + "{0}: {1}".format(p, w), file = file)
-                return
-            # Interior nodes are not printed
-            # and do not increment the indentation level
-            if detailed or not w.is_interior:
-                h = str(w)
-                if (h.endswith("?") or h.endswith("*")) and w.is_empty:
-                    # Skip printing optional nodes that don't contain anything
-                    return
-                print(indent + h, file = file)
-                if not w.is_interior:
-                    level += 1
-            ambig = w.is_ambiguous
-            for ix, pc in enumerate(w.enum_children()):
-                prod, f = pc
-                if ambig:
-                    # Identify the available parse options
-                    print(indent + "Option " + str(ix + 1) + ":", file = file)
-                if w.is_completed:
-                    # Completed nonterminal: start counting children from zero
-                    child_ix = -1
-                    # parent = w
-                else:
-                    child_ix = index
-                if isinstance(f, tuple):
-                    # assert len(f) == 2
-                    child_ix -= 1
-                    #print("{0}Tuple element 0:".format(indent))
-                    _print_helper(f[0], level, child_ix, prod)
-                    #print("{0}Tuple element 1:".format(indent))
-                    _print_helper(f[1], level, child_ix + 1, prod)
-                else:
-                    _print_helper(f, level, child_ix, prod)
-
-        _print_helper(w, 0, 0, None)
-
-
-    @staticmethod
     def num_combinations(w):
         """ Count the number of possible parse trees in the given forest """
 
@@ -645,7 +722,7 @@ class Parser:
                 # Epsilon node: return empty list
                 return None
             if w.is_token:
-                p = parent[index]
+                p = parent.production[index]
                 assert isinstance(p, Terminal)
                 return ([ level ] + suffix, w.start, w.end, None, (p, w.head.text))
             # Interior nodes are not returned
@@ -698,8 +775,6 @@ class Parser:
 
         if w is None:
             return None
-        # !!! DEBUG
-        #Parser.print_parse_forest(w, True)
         return _part(w, 0, 0, None, [ ])
 
 
@@ -749,4 +824,46 @@ class Parser:
         _traverse(schema)
         # Return a tuple with the grid and the number of tokens
         return (cols, schema[2])
+
+
+class ParseForestPrinter(ParseForestNavigator):
+
+    """ Print a parse forest to stdout or a file """
+
+    def __init__(self, detailed = False, file = None):
+        super().__init__(visit_all = True) # Visit all nodes
+        self._detailed = detailed
+        self._file = file
+
+    def _visit_epsilon(self, level):
+        indent = "  " * level # Two spaces per indent level
+        print(indent + "(empty)", file = self._file)
+        return None
+
+    def _visit_token(self, level, w, terminal):
+        indent = "  " * level # Two spaces per indent level
+        print(indent + "{0}: {1}".format(terminal, w), file = self._file)
+        return None
+
+    def _visit_nonterminal(self, level, w):
+        # Interior nodes are not printed
+        # and do not increment the indentation level
+        if self._detailed or not w.is_interior:
+            h = str(w)
+            if (h.endswith("?") or h.endswith("*")) and w.is_empty:
+                # Skip printing optional nodes that don't contain anything
+                return NotImplemented # Don't visit child nodes
+            indent = "  " * level # Two spaces per indent level
+            print(indent + h, file = self._file)
+        return None # No results required, but visit children
+
+    def _visit_family(self, results, level, w, ix, prod):
+        if w.is_ambiguous:
+            indent = "  " * level # Two spaces per indent level
+            print(indent + "Option " + str(ix + 1) + ":", file = self._file)
+
+    @classmethod
+    def print_forest(cls, root_node, detailed = False, file = None):
+        """ Print a parse forest to the given file, or stdout if none """
+        cls(detailed, file).go(root_node)
 
