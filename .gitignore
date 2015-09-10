@@ -12,6 +12,8 @@ __pycache__/
 resources/*.txt
 resources/*.csv
 resources/*.tmLanguage
+mim/
+gold/
 
 # Minified JavaScript
 static/*.min.js

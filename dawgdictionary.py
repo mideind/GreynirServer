@@ -554,7 +554,17 @@ class CompoundNavigator:
                 nav = CompoundNavigator(self._dawg, self._word[self._index:])
                 self._dawg.navigate(nav)
                 result = nav.result()
-                self._parts.extend( [ [ matched ] + tail for tail in result ] )
+                if result:
+                    self._parts.extend( [ [ matched ] + tail for tail in result ] )
+                elif self._word[self._index] == 's' and self._index + 1 < self._len:
+                    # No match found for the rest with "normal" composition:
+                    # try applying an intermediate 's', as in 'samkeppnislagabrot'
+                    # and 'sanngirnisbætur'
+                    nav = CompoundNavigator(self._dawg, self._word[self._index + 1:])
+                    self._dawg.navigate(nav)
+                    result = nav.result()
+                    if result:
+                        self._parts.extend( [ [ matched + "s" ] + tail for tail in result ] )
 
     def pop_edge(self):
         """ Called when leaving an edge that has been navigated """

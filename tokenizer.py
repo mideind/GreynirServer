@@ -182,10 +182,10 @@ class TOK:
     def Amount(w, iso, n, cases=None, genders=None):
         """ cases is a list of possible cases for this amount
             (if it was originally stated in words) """
-        return Tok(TOK.AMOUNT, w, (iso, n, cases, genders))
+        return Tok(TOK.AMOUNT, w, (n, iso, cases, genders))
 
-    def Percent(w, n):
-        return Tok(TOK.PERCENT, w, n)
+    def Percent(w, n, cases=None, genders=None):
+        return Tok(TOK.PERCENT, w, (n, cases, genders))
 
     def Ordinal(w, n):
         return Tok(TOK.ORDINAL, w, n)
@@ -422,6 +422,7 @@ def parse_particles(token_stream):
             if next_token.kind == TOK.PUNCTUATION and next_token.txt == '%':
                 if token.kind == TOK.NUMBER:
                     # Percentage: convert to a percentage token
+                    # In this case, there are no cases and no gender
                     token = TOK.Percent(token.txt + '%', token.val[0])
                     next_token = next(token_stream)
 
@@ -846,6 +847,10 @@ def all_cases(token):
         # Roll through the potential meanings and extract the cases therefrom
         if token.val:
             for m in token.val:
+                if m.fl == "ob":
+                    # One of the meanings is an undeclined word: all cases apply
+                    cases = ALL_CASES
+                    break
                 add_cases(cases, m.beyging, None)
     return list(cases)
 
@@ -954,7 +959,8 @@ def parse_phrases_1(token_stream):
                     # Check for [number] 'percent'
                     percentage = match_stem_list(next_token, PERCENTAGES)
                     if percentage is not None:
-                        token = TOK.Percent(token.txt + " " + next_token.txt, token.val[0])
+                        token = TOK.Percent(token.txt + " " + next_token.txt, token.val[0],
+                            all_cases(next_token), all_genders(next_token))
                         # Eat the percentage token
                         next_token = next(token_stream)
                     else:
@@ -1043,18 +1049,30 @@ def parse_phrases_2(token_stream):
 
                 # Preserve the case of the currency name, if available
                 # (krónur, krónum, króna)
+                cases = None
+                genders = None
                 if next_token.kind == TOK.WORD:
                     # Try to find a currency name
                     cur = match_stem_list(next_token, CURRENCIES)
+                    if cur is not None:
+                        # Use the case and gender information from the currency name
+                        cases = all_cases(next_token)
+                        genders = all_genders(next_token)
                 else:
                     # Already have an ISO identifier for a currency
                     cur = next_token.val[0]
+
+                # Use the case/gender information from the number, if any, rather than nothing
+                if not cases:
+                    cases = token.val[1]
+                if not genders:
+                    genders = token.val[2]
 
                 if cur is not None:
                     # Create an amount
                     # Use the case and gender information from the number, if any
                     token = TOK.Amount(token.txt + " " + next_token.txt,
-                        cur, token.val[0], token.val[1], token.val[2])
+                        cur, token.val[0], genders, cases)
                     # Eat the currency token
                     next_token = next(token_stream)
 

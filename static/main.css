@@ -17,6 +17,11 @@ body {
    background-color: white;
 }
 
+::selection {
+   background: #10069F; /* Greynir blue */
+   color: white;
+}
+
 div.container {
    margin: 0 12px;
 }
@@ -33,7 +38,7 @@ div.test-container {
 
 .over {
    outline-style: solid;
-   outline-color: yellow;
+   outline-color: #FFCC00;
    outline-width: 2px;
 }
 
@@ -50,7 +55,7 @@ input.text {
    font-weight: normal;
    height: 28px;
    border-style: solid;
-   border-color: #666666;
+   border-color: #10069F; /* Greynir blue */
    border-width: 1px;
    border-radius: 3px;
    margin-bottom: 4px;
@@ -61,7 +66,7 @@ input.text {
 }
 
 input.text:focus {
-   background-color: #f4f4ff;
+   background-color: #FFEEA9; /* Pale Greynir yellow */
    outline-style: none;
 }
 
@@ -96,7 +101,12 @@ div.btn:focus {
 div#url-ok {
    width: 82px;
    height: 24px;
-   background-color: #660066;
+   background-color: #CB333B; /* Greynir red */
+}
+
+div#url-ok:hover {
+   /* background-color: #FFCC00; /* Greynir yellow */
+   background-color: #00B74F; /* Greynir green */
 }
 
 p.header {
@@ -143,7 +153,8 @@ div.output {
 
 p#meta-heading {
    font-weight: bold;
-   font-size: 20px;
+   font-size: 24px;
+   color: #10069F; /* Greynir blue */
 }
 
 p#meta-author {
@@ -171,53 +182,55 @@ div#result i {
 
 div#result i.nf {
    /* Word not found */
-   color: red;
+   font-weight: 600;
+   color: #CB333B; /* Greynir red */
 }
 
 div#result i.number {
    font-weight: 600;
-   color: green;
+   color: #007F33;
 }
 
 div#result i.percent {
    font-weight: 600;
-   color: blue;
+   color: #10069F;
 }
 
 div#result i.ordinal {
    font-weight: 600;
-   color: orange;
+   color: #CCA500;
 }
 
 div#result i.date {
    font-weight: 600;
-   color: orange;
+   color: #CCA500;
 }
 
 div#result i.timestamp {
    font-weight: 600;
-   color: orange;
+   color: #CCA500;
 }
 
 div#result i.currency {
    font-weight: 600;
-   color: green;
+   color: #007F33;
 }
 
 div#result i.amount {
    font-weight: 600;
-   color: green;
+   color: #007F33;
 }
 
 div#result i.person {
    font-weight: 600;
-   font-style: italic;
-   color: blue;
+   /* font-style: italic; */
+   color: #10069F;
 }
 
 p.txt {
    font-weight: bold;
    font-style: italic;
+   font-size: 18px;
 }
 
 div.grid {
@@ -229,7 +242,7 @@ div.grid table {
 }
 
 div.grid table tr td {
-   background-color: #e8ffe8;
+   background-color: #D7FFE7; /* Pale Greynir green */ /* Was #e8ffe8; */
    border-style: solid;
    border-width: 3px;
    border-color: #ffffff;
@@ -242,7 +255,7 @@ div.grid table tr td {
 
 div.grid table tr td.t {
    font-style: italic;
-   background-color: #fbe6b3;
+   background-color: #FFEEA9; /* Pale Greynir yellow */
    vertical-align: bottom;
 }
 
@@ -257,7 +270,8 @@ td.t span.tok {
 }
 
 span.errtok {
-   background-color: #ffd8d8;
+   background-color: #CB333B;
+   color: white;
    padding-left: 2px;
    padding-right: 2px;
 }
@@ -272,23 +286,23 @@ span.sent:hover {
 }
 
 span.sent.parsed {
-   background-color: #e8ffe8;
+   background-color: #D7FFE7;
 }
 
 span.sent.parsed:hover {
-   background-color: #d8ffd8;
+   background-color: #B3FFD2; /* #d8ffd8; */
 }
 
 span.sent.parsed.very-ambig {
-   background-color: #fcf0c8;
+   background-color: #FFE888; /* #fcf0c8; */
 }
 
 span.sent.parsed.very-ambig:hover {
-   background-color: #fbe6b3;
+   background-color: #FFCC00; /* #fbe6b3; */
 }
 
 p.buttons {
-   margin-top: 12px;
+   margin-top: 18px;
    margin-bottom: 12px;
 }
 
@@ -303,18 +317,18 @@ span.btn {
 }
 
 span#add-valid-sent {
-   background-color: #22dd33;
-   border-color: #22dd33;
+   background-color: #00B74F; /* Greynir green */
+   border-color: #00B74F;
 }
 
 span#add-invalid-sent {
-   background-color: #dd2233;
-   border-color: #dd2233;
+   background-color: #CB333B; /* Greynir red */
+   border-color: #CB333B;
 }
 
 span#edit-sent {
-   background-color: #2233dd;
-   border-color: #2233dd;
+   background-color: #10069F; /* Greynir blue */
+   border-color: #10069F;
 }
 
 span#add-valid-sent.disabled {
@@ -365,7 +379,7 @@ div.info p {
 }
 
 .highlight {
-   background-color: #FFD080;
+   background-color: #FFCC00; /* Greynir yellow */
 }
 
 div.result table {
@@ -404,7 +418,7 @@ td.result-sent {
 }
 
 td.result-sent:hover {
-   background-color: #d8ffd8;
+   background-color: #94F7BC; /* Pale Greynir green */
 }
 
 th.result-sent {
@@ -432,7 +446,7 @@ td.result-time, th.result-time {
 }
 
 td.result-err {
-   color: red;
+   color: #CB333B;
    text-align: left;
 }
 
@@ -458,11 +472,11 @@ span.choice {
 }
 
 span.choice:hover {
-   background-color: #d8ffd8;
+   background-color: #94F7BC; /* Pale Greynir green */
 }
 
 p.err {
-   color: red;
+   color: #CB333B;
 }
 
 table.parser-state {
@@ -470,7 +484,7 @@ table.parser-state {
 }
 
 table.parser-state thead tr th {
-   background-color: #d8ffd8;
+   background-color: #94F7BC; /* Pale Greynir green */
    font-weight: bold;
    text-align: left;
 }

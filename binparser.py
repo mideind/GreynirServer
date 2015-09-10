@@ -113,6 +113,7 @@ class BIN_Token(Token):
     _VBIT_KK = _VBIT["kk"]
     _VBIT_KVK = _VBIT["kvk"]
     _VBIT_HK = _VBIT["hk"]
+    _VBIT_NH = _VBIT["nh"]
     _VBIT_ABBREV = _VBIT["abbrev"]
 
     _CASES = [ "nf", "þf", "þgf", "ef" ]
@@ -132,6 +133,8 @@ class BIN_Token(Token):
     # 'Það hafi opnað fyrir of ágenga nýtingu þeirra'
     # '...verður ekki til nægur jarðvarmi'
     _NOT_NOT_EO = { "inn", "eftir", "of", "til" }
+
+    _UNDERSTOOD_PUNCTUATION = ".?,:–-()"
 
     def __init__(self, t):
 
@@ -166,7 +169,7 @@ class BIN_Token(Token):
             # Examples:
             # 'Mig langar að fara til Frakklands'
             # 'Páli þykir þetta vera tóm vitleysa'
-            if terminal.has_variant("nh"):
+            if terminal.is_nh:
                 if "NH" not in form:
                     # Nominative mode (nafnháttur)
                     return False
@@ -180,18 +183,18 @@ class BIN_Token(Token):
             if terminal.has_variant("mm"):
                 # Central form of verb ('miðmynd')
                 return "MM" in form
-            if terminal.has_vbit_et() and not "ET" in form:
+            if terminal.is_singular and not "ET" in form:
                 # Require singular
                 return False
-            if terminal.has_vbit_ft() and not "FT" in form:
+            if terminal.is_plural and not "FT" in form:
                 # Require plural
                 return False
             # Make sure that the subject case (last variant) matches the terminal
             return terminal.variant(-1) in VerbSubjects.VERBS.get(verb, set())
-        if terminal.has_vbit_et() and "FT" in form:
+        if terminal.is_singular and "FT" in form:
             # Can't use plural verb if singular terminal
             return False
-        if terminal.has_vbit_ft() and "ET" in form:
+        if terminal.is_plural and "ET" in form:
             # Can't use singular verb if plural terminal
             return False
         # print("verb_matches {0} terminal {1} form {2}".format(verb, terminal, form))
@@ -304,7 +307,7 @@ class BIN_Token(Token):
         """ A currency name token matches a noun terminal """
         if not terminal.startswith("no"):
             return False
-        if terminal.has_vbit_abbrev():
+        if terminal.is_abbrev:
             # A currency does not match an abbreviation
             return False
         if self.t2[1]:
@@ -323,60 +326,30 @@ class BIN_Token(Token):
             return not terminal.has_any_vbits(BIN_Token._VBIT_KK | BIN_Token._VBIT_KVK)
         return True
 
-    def matches_AMOUNT(self, terminal):
-        """ An amount token matches a noun terminal """
-        if not terminal.startswith("no"):
+    def is_correct_singular_or_plural(self, terminal):
+        """ Match a number with a singular or plural noun (terminal).
+            In Icelandic, all integers whose modulo 100 ends in 1 are
+            singular, except 11. """
+        singular = False
+        i = int(self.t2[0])
+        if float(i) == float(self.t2[0]):
+            # Whole number (integer): may be singular
+            i = abs(i) % 100
+            singular = (i != 11) and (i % 10) == 1
+        if terminal.is_singular and not singular:
+            # Terminal is singular but number is plural
             return False
-        if terminal.has_vbit_abbrev():
-            # An amount does not match an abbreviation
+        if terminal.is_plural and singular:
+            # Terminal is plural but number is singular
             return False
-        if terminal.has_vbit_et() and float(self.t2[1]) != 1.0:
-            # Singular only matches an amount of one
-            return False
-        if terminal.has_vbit_ft() and float(self.t2[1]) == 1.0:
-            # Plural does not match an amount of one
-            return False
-        if self.t2[3] is None:
-            # No gender: match neutral gender only
-            if terminal.has_any_vbits(BIN_Token._VBIT_KK | BIN_Token._VBIT_KVK):
-            # if terminal.has_variant("kk") or terminal.has_variant("kvk"):
-                return False
-        else:
-            # Associated gender
-            for g in BIN_Token._GENDERS:
-                if terminal.has_variant(g) and g not in self.t2[3]:
-                    return False
-        if self.t2[2]:
-            # See whether any of the allowed cases match the terminal
-            for c in BIN_Token._CASES:
-                if terminal.has_variant(c) and c not in self.t2[2]:
-                    return False
         return True
 
     def matches_NUMBER(self, terminal):
         """ A number token matches a number (töl) or noun terminal """
 
-        def matches_number(terminal):
-            """ Match a number with a singular or plural noun (terminal).
-                In Icelandic, all integers whose modulo 100 ends in 1 are
-                singular, except 11. """
-            singular = False
-            i = int(self.t2[0])
-            if float(i) == float(self.t2[0]):
-                # Whole number (integer): may be singular
-                i = abs(i) % 100
-                singular = (i != 11) and (i % 10) == 1
-            if terminal.has_vbit_et() and not singular:
-                # Terminal is singular but number is plural
-                return False
-            if terminal.has_vbit_ft() and singular:
-                # Terminal is plural but number is singular
-                return False
-            return True
-
         if terminal.startswith("tala"):
             # Plain number with no case or gender info
-            return matches_number(terminal)
+            return self.is_correct_singular_or_plural(terminal)
 
         if not self.t2[1] and not self.t2[2]:
             # If no case and gender info, we only match "tala",
@@ -387,12 +360,12 @@ class BIN_Token(Token):
             if not terminal.startswith("no"):
                 return False
             # This is a noun ("no") terminal
-            if terminal.has_vbit_abbrev():
+            if terminal.is_abbrev:
                 return False
             # Allow this to act as a noun if we have case and gender info
             if not self.t2[1] or not self.t2[2]:
                 return False
-        if not matches_number(terminal):
+        if not self.is_correct_singular_or_plural(terminal):
             return False
         if self.t2[2] is None:
             # No associated gender: match neutral gender only
@@ -411,24 +384,59 @@ class BIN_Token(Token):
                     return False
         return True
 
+    def matches_AMOUNT(self, terminal):
+        """ An amount token matches a noun terminal """
+        if not terminal.startswith("no"):
+            return False
+        if terminal.is_abbrev:
+            # An amount does not match an abbreviation
+            return False
+        if not self.is_correct_singular_or_plural(terminal):
+            return False
+        if self.t2[2] is None:
+            # No gender: match neutral gender only
+            if terminal.has_any_vbits(BIN_Token._VBIT_KK | BIN_Token._VBIT_KVK):
+                return False
+        else:
+            # Associated gender
+            for g in BIN_Token._GENDERS:
+                if terminal.has_variant(g) and g not in self.t2[2]:
+                    return False
+        if self.t2[3]:
+            # See whether any of the allowed cases match the terminal
+            for c in BIN_Token._CASES:
+                if terminal.has_variant(c) and c not in self.t2[3]:
+                    return False
+        return True
+
     def matches_PERCENT(self, terminal):
         """ A percent token matches a number (töl) or noun terminal """
         if not terminal.startswith("töl"):
             # Matches number and percentage terminals only
             if not terminal.startswith("no"):
                 return False
-            if terminal.has_vbit_abbrev():
+            if terminal.is_abbrev:
                 return False
             # If we are recognizing this as a noun, do so only with neutral gender
-            if not terminal.has_variant("hk"):
+            if self.t2[2] is None and not terminal.has_variant("hk"):
                 return False
         # We do not check singular or plural here since phrases such as
         # '35% skattur' and '1% allra blóma' are valid
-        # if terminal.has_variant("kk") or terminal.has_variant("kvk"):
-        if terminal.has_any_vbits(BIN_Token._VBIT_KK | BIN_Token._VBIT_KVK):
-            # Percentages only match the neutral gender
-            return False
-        # No case associated with percentages: match all
+        if self.t2[2] is None:
+            # No associated gender: match neutral gender only
+            if terminal.has_any_vbits(BIN_Token._VBIT_KK | BIN_Token._VBIT_KVK):
+                # Percentages only match the neutral gender
+                return False
+        else:
+            # Associated gender
+            for g in BIN_Token._GENDERS:
+                if terminal.has_variant(g) and g not in self.t2[2]:
+                    return False
+        if self.t2[1]:
+            # See whether any of the allowed cases match the terminal
+            for c in BIN_Token._CASES:
+                if terminal.has_variant(c) and c not in self.t2[1]:
+                    return False
         return True
 
     def matches_YEAR(self, terminal):
@@ -482,7 +490,7 @@ class BIN_Token(Token):
                 # Check noun
                 if BIN_Token._KIND[m.ordfl] != "no":
                     return False
-                if terminal.has_vbit_abbrev():
+                if terminal.is_abbrev:
                     # Only match abbreviations; gender, case and number do not matter
                     return m.beyging == "-"
                 for v in terminal.variants:
@@ -560,7 +568,7 @@ class BIN_Token(Token):
         """ Return True if the token type is understood by the BIN Parser """
         if t[0] == TOK.PUNCTUATION:
             # A limited number of punctuation symbols is currently understood
-            return t[1] in ".?,:–-"
+            return t[1] in cls._UNDERSTOOD_PUNCTUATION
         return t[0] in cls._MATCHING_FUNC
 
     def matches(self, terminal):
@@ -647,17 +655,22 @@ class VariantHandler:
         """ Return True if this terminal has any of the variant(s) corresponding to the given bit(s) """
         return (self._vbits & vbits) != 0
 
-    def has_vbit_et(self):
-        """ Return True if this terminal has the _et (singular) variant """
+    @property
+    def is_singular(self):
         return (self._vbits & BIN_Token._VBIT_ET) != 0
-
-    def has_vbit_ft(self):
-        """ Return True if this terminal has the _ft (plural) variant """
+    
+    @property
+    def is_plural(self):
         return (self._vbits & BIN_Token._VBIT_FT) != 0
-
-    def has_vbit_abbrev(self):
-        """ Return True if this terminal has the _abbrev variant """
+    
+    @property
+    def is_abbrev(self):
         return (self._vbits & BIN_Token._VBIT_ABBREV) != 0
+    
+    @property
+    def is_nh(self):
+        return (self._vbits & BIN_Token._VBIT_NH) != 0
+    
 
 
 class BIN_Terminal(VariantHandler, Terminal):

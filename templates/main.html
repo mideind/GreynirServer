@@ -17,7 +17,7 @@
 
    <div class="input">
 
-      <p class="header"><a href="{{ url_for('main') }}">Greynir</a></p>
+      <p class="header"><a href="{{ url_for('main') }}"><img src="{{ url_for('static', filename='GreynirLogo436x180.png') }}" width=218 height=90></a></p>
 
       <p class="author">málgreinir fyrir íslensku<br>eftir Vilhjálm Þorsteinsson</p>
 
@@ -32,9 +32,7 @@
          onClick="this.setSelectionRange(0, this.value.length)"></input>
 
       <div class="btn" id="url-ok" title="Greina" tabindex="2"
-         onclick="analyzeUrl()"
-         onmouseover="buttonOver(this)"
-         onmouseout="buttonOut(this)">Greina</div>
+         onclick="analyzeUrl()">Greina</div>
 
    </div>
 

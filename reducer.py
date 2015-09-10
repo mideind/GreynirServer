@@ -70,32 +70,48 @@ class Reducer:
                             if wt.first in worse:
                                 for bt in s:
                                     if wt is not bt and bt.first in better:
-                                        print("Preference: increasing score of {1}, decreasing score of {0}".format(wt, bt))
+                                        # print("Preference: increasing score of {1}, decreasing score of {0}".format(wt, bt))
                                         sc[wt] -= 1
                                         sc[bt] += 4
                                         found_pref = True
                 if not found_pref:
-                    print("Found no preference that applies to token '{0}'; applying heuristics".format(txt))
+                    # print("Found no preference that applies to token '{0}'; applying heuristics".format(txt))
                     # Apply heuristics
                     for t in s:
                         if t.first == "ao" or t.first == "eo":
                             # Subtract from the score of all ao and eo
                             sc[t] -= 1
-                        elif t.first == "no" and t.has_vbit_et():
-                            # Add to singular nouns relative to plural ones
-                            sc[t] += 1
+                        elif t.first == "no":
+                            if t.is_singular:
+                                # Add to singular nouns relative to plural ones
+                                sc[t] += 1
+                            elif t.is_abbrev:
+                                # Punish abbreviations in favor of other more specific terminals
+                                sc[t] -= 1
+                        elif t.first == "tala":
+                            # A complete 'töl' or 'no' is better (has more info) than a rough 'tala'
+                            sc[t] -= 1
+                        elif t.first == "fs":
+                            if t.has_variant("nf"):
+                                # Reduce the weight of the 'artificial' nominative prepositions
+                                # 'næstum', 'sem', 'um'
+                                sc[t] -= 2
                         elif t.first == "so":
                             if t.variant(0) in "012":
                                 # Give a bonus for verb arguments: the more matched, the better
                                 sc[t] += int(t.variant(0))
-                            if t.has_variant("nh") and (i > 0) and any(pt.first == 'nhm' for pt in finals[i - 1]):
-                                # Give a bonus for adjacent nhm + so_nh terminals
-                                print("Giving bonus for nhm + so_nh, verb {0}".format(txt))
-                                sc[t] += 2 # Prop up the verb terminal with the nh variant
-                                for pt in scores[i - 1].keys():
-                                    if pt.first == 'nhm':
-                                        # Prop up the nhm terminal
-                                        scores[i - 1][pt] += 2
+                            if t.is_nh:
+                                if (i > 0) and any(pt.first == 'nhm' for pt in finals[i - 1]):
+                                    # Give a bonus for adjacent nhm + so_nh terminals
+                                    sc[t] += 2 # Prop up the verb terminal with the nh variant
+                                    for pt in scores[i - 1].keys():
+                                        if pt.first == 'nhm':
+                                            # Prop up the nhm terminal
+                                            scores[i - 1][pt] += 2
+                                if any(pt.first == "no" and pt.has_variant("ef") and pt.is_plural for pt in s):
+                                    # If this is a so_nh and an alternative no_ef_ft exists, choose this one
+                                    # (for example, 'hafa', 'vera', 'gera', 'fara', 'mynda', 'berja', 'borða')
+                                    sc[t] += 2
                         elif t.name[0] in "\"'":
                             # Give a bonus for exact or semi-exact matches
                             sc[t] += 1
@@ -112,8 +128,8 @@ class Reducer:
 
         class OptionFinder(ParseForestNavigator):
 
-            """ Subclass to navigate a parse forest and find the set of terminals
-                that match each token """
+            """ Subclass to navigate a parse forest and populate the set
+                of terminals that match each token """
 
             def _visit_token(self, level, node, terminal):
                 """ At token node """
@@ -154,8 +170,8 @@ class Reducer:
                         # We are only interested in completed nonterminals
                         self.nt = node.head if node.is_completed else None
                         assert self.nt is None or isinstance(self.nt, Nonterminal)
-                        self.last_prio = None
                         self.highest_prio = None # The priority of the highest-priority child, if any
+                        self.use_prio = False
                         self.highest_ix = None # List of children with that priority
                     def add_child_score(self, ix, sc):
                         """ Add a child node's score to the parent's score """
@@ -166,38 +182,42 @@ class Reducer:
                             # Not a completed nonterminal; priorities don't apply
                             return
                         prio = prod.priority
-                        if self.last_prio is not None:
-                            if prio == self.last_prio:
-                                if prio == self.highest_prio:
-                                    # Another child with the same (highest) priority
-                                    self.highest_ix.add(ix)
-                            elif self.highest_prio is None or prio < self.highest_prio:
-                                # Different priorities between children: note this
-                                # Note: lower value means higher priority!
-                                self.highest_prio = prio
-                                self.highest_ix = { ix }
-                        self.last_prio = prio
+                        if self.highest_prio is not None and prio != self.highest_prio:
+                            # Note that there are different priorities
+                            self.use_prio = True
+                        if self.highest_prio is None or prio < self.highest_prio:
+                            # Note: lower number means higher priority ;-)
+                            self.highest_prio = prio
+                            self.highest_ix = { ix }
+                        elif prio == self.highest_prio:
+                            # Another child with the same (highest) priority
+                            self.highest_ix.add(ix)
                 return ReductionInfo()
 
             def _visit_family(self, results, level, w, ix, prod):
+                """ Add information about a family of children to the result object """
                 results.add_child_production(ix, prod)
 
             def _add_result(self, results, ix, sc):
-                """ Append a single result object r to the result object """
+                """ Append a single result to the result object """
                 # Add up scores for each family of children
                 results.add_child_score(ix, sc)
 
             def _process_results(self, results, node):
                 """ Sort scores after visiting children """
                 csc = results.sc
-                if results.highest_ix is not None:
+                if results.use_prio:
                     # There is a priority ordering between the productions
                     # of this nonterminal: remove those child trees from
                     # consideration that do not have the highest priority
                     print("Reducing set of child nodes by production priority")
+                    for ix, sc in csc.items():
+                        prod, prio = node._families[ix]
+                        print("Family {0}: prod {1} priority {2} highest {3}"
+                            .format(ix, prod.production, prod.priority, ix in results.highest_ix))
                     csc = { ix: sc for ix, sc in csc.items() if ix in results.highest_ix }
                 assert csc
-                if len(csc) == 1:
+                if len(csc) == 1 and not results.use_prio:
                     # Not ambiguous: only one result
                     [ sc ] = csc.values() # Will raise an exception if not exactly one value
                 else:

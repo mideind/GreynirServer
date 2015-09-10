@@ -201,7 +201,12 @@ function hoverIn() {
    if (wl[0] == TOK_PERCENT) {
       $("div.info").html("<p><b>" + wl[1] + "</b></p>");
       // Show the parsed floating-point number to 1 decimal place
-      $("div.info").append("<p>" + wl[2].toFixed(1) + "%</p>");
+      gender = (wl[2][2] !== null) ? (" " + wl[2][2]) : "";
+      $("div.info").append("<p>" + wl[2][0].toFixed(1) + "% " + gender + "</p>");
+      // Show cases, if available
+      if (wl[2][1] !== null)
+         for (i = 0; i < wl[2][1].length; i++)
+            $("div.info").append("<p>" + wl[2][1][i] + "</p>");
    }
    else
    if (wl[0] == TOK_ORDINAL) {
@@ -230,7 +235,7 @@ function hoverIn() {
       $("div.info").html("<p><b>" + wl[1] + "</b></p>");
       // Show the amount as well as the ISO code for its currency
       gender = (wl[2][3] !== null) ? (" " + wl[2][3]) : "";
-      $("div.info").append("<p>" + wl[2][0] + " " + wl[2][1].toFixed(2) + gender + "</p>");
+      $("div.info").append("<p>" + wl[2][1] + " " + wl[2][0].toFixed(2) + gender + "</p>");
       // Show cases, if available
       if (wl[2][2] !== null)
          for (i = 0; i < wl[2][2].length; i++)
@@ -275,6 +280,11 @@ function populateMetadata(m) {
    $("#meta-timestamp").text(m.timestamp);
    $("#meta-authority").text(m.authority.toFixed(1));
    $("#metadata").css("display", "block");
+}
+
+function add_w(wsp, cls, i, wrd) {
+   // Add HTML for a single word to s
+   return wsp + "<i class='" + cls + "' id='w" + i + "'>" + wrd + "</i>";
 }
 
 function populateResult(json) {
@@ -379,42 +389,42 @@ function populateResult(json) {
       }
       else
       if (wl0 == TOK_NUMBER) {
-         s += wsp + "<i class='number' id='w" + i + "'>" + wl[1] + "</i>";
+         s += add_w(wsp, "number", i, wl[1]);
          wsp = " ";
       }
       else
       if (wl0 == TOK_PERCENT) {
-         s += wsp + "<i class='percent' id='w" + i + "'>" + wl[1] + "</i>";
+         s += add_w(wsp, "percent", i, wl[1]);
          wsp = " ";
       }
       else
       if (wl0 == TOK_ORDINAL) {
-         s += wsp + "<i class='ordinal' id='w" + i + "'>" + wl[1] + ".</i>";
+         s += add_w(wsp, "ordinal", i, wl[1] + ".");
          wsp = " ";
       }
       else
       if (wl0 == TOK_DATE) {
-         s += wsp + "<i class='date' id='w" + i + "'>" + wl[1] + "</i>";
+         s += add_w(wsp, "date", i, wl[1]);
          wsp = " ";
       }
       else
       if (wl0 == TOK_TIMESTAMP) {
-         s += wsp + "<i class='timestamp' id='w" + i + "'>" + wl[1] + "</i>";
+         s += add_w(wsp, "timestamp", i, wl[1]);
          wsp = " ";
       }
       else
       if (wl0 == TOK_CURRENCY) {
-         s += wsp + "<i class='currency' id='w" + i + "'>" + wl[1] + "</i>";
+         s += add_w(wsp, "currency", i, wl[1]);
          wsp = " ";
       }
       else
       if (wl0 == TOK_AMOUNT) {
-         s += wsp + "<i class='amount' id='w" + i + "'>" + wl[1] + "</i>";
+         s += add_w(wsp, "amount", i, wl[1]);
          wsp = " ";
       }
       else
       if (wl0 == TOK_PERSON) {
-         s += wsp + "<i class='person' id='w" + i + "'>" + wl[1] + "</i>";
+         s += add_w(wsp, "person", i, wl[1]);
          wsp = " ";
       }
       else

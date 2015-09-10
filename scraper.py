@@ -388,22 +388,25 @@ class Scraper:
 
         # Add the children whose URLs we don't already have to the
         # scraper articles table
-        session = self._db.session
-        for url in fetch_set:
+        with closing (self._db.session) as session:
 
-            if helper and helper.skip_url(url):
-                # The helper doesn't want this URL
-                continue
+            for url in fetch_set:
 
-            try:
-                article = Article(url = url, root_id = root.id)
-                # Leave article.scraped as NULL for later retrieval
-                session.add(article)
-                session.commit()
-            except IntegrityError as e:
-                # Article URL already exists in database:
-                # roll back and continue
-                session.rollback()
+                if helper and helper.skip_url(url):
+                    # The helper doesn't want this URL
+                    continue
+
+                try:
+                    article = Article(url = url, root_id = root.id)
+                    # Leave article.scraped as NULL for later retrieval
+                    session.add(article)
+                    session.commit()
+                except IntegrityError as e:
+                    # Article URL already exists in database:
+                    # roll back and continue
+                    session.rollback()
+                except Exception as e:
+                    session.rollback()
 
         t1 = time.time()
 
@@ -432,31 +435,33 @@ class Scraper:
         metadata = helper.get_metadata(soup) if soup else None
 
         # Upate the article info
-        session = self._db.session
+        with closing(self._db.session) as session:
 
-        article = session.query(Article).filter_by(url = url).one()
-        article.scraped = datetime.utcnow()
+            article = session.query(Article).filter_by(url = url).one()
+            article.scraped = datetime.utcnow()
 
-        if metadata:
+            if metadata:
 
-            article.heading = metadata.heading
-            article.author = metadata.author
-            article.timestamp = metadata.timestamp
-            article.authority = metadata.authority
-            article.scr_module = helper.scr_module
-            article.scr_class = helper.scr_class
-            article.scr_version = helper.scr_version
-            article.html = html_doc
+                article.heading = metadata.heading
+                article.author = metadata.author
+                article.timestamp = metadata.timestamp
+                article.authority = metadata.authority
+                article.scr_module = helper.scr_module
+                article.scr_class = helper.scr_class
+                article.scr_version = helper.scr_version
+                article.html = html_doc
 
-        else:
-            # No metadata: mark the article as scraped with no HTML
-            article.html = None
+            else:
+                # No metadata: mark the article as scraped with no HTML
+                article.html = None
 
-        try:
-            session.commit()
-        except IntegrityError as e:
-            # Roll back and continue
-            session.rollback()
+            try:
+                session.commit()
+            except IntegrityError as e:
+                # Roll back and continue
+                session.rollback()
+            except Exception as e:
+                session.rollback()
 
         t1 = time.time()
 
@@ -469,83 +474,83 @@ class Scraper:
         print("Parsing article {0}".format(url))
 
         # Load the article
-        session = self._db.session
+        with closing(self._db.session) as session:
 
-        article = session.query(Article).filter_by(url = url).one()
+            article = session.query(Article).filter_by(url = url).one()
 
-        # Make an HTML soup out of it
-        soup = BeautifulSoup(article.html, _HTML_PARSER) if article.html else None
+            # Make an HTML soup out of it
+            soup = BeautifulSoup(article.html, _HTML_PARSER) if article.html else None
 
-        # Ask the helper to find the actual content to be parsed
-        content = helper.get_content(soup) if soup else None
+            # Ask the helper to find the actual content to be parsed
+            content = helper.get_content(soup) if soup else None
 
-        # Convert the content soup to a token iterable (generator)
-        toklist = Scraper._to_tokens(content) if content else None
+            # Convert the content soup to a token iterable (generator)
+            toklist = Scraper._to_tokens(content) if content else None
 
-        # Count sentences
-        num_sent = 0
-        num_parsed_sent = 0
-        total_ambig = 0.0
-        total_tokens = 0
+            # Count sentences
+            num_sent = 0
+            num_parsed_sent = 0
+            total_ambig = 0.0
+            total_tokens = 0
 
-        t0 = time.time()
-        bp = self._parser
+            t0 = time.time()
+            bp = self._parser
 
-        if toklist:
+            if toklist:
 
-            sent_begin = 0
-            rdc = Reducer()
+                sent_begin = 0
+                rdc = Reducer()
 
-            for ix, t in enumerate(toklist):
-                if t[0] == TOK.S_BEGIN:
-                    num_sent += 1
-                    sent = []
-                    sent_begin = ix
-                elif t[0] == TOK.S_END:
-                    slen = len(sent)
-                    # Parse the accumulated sentence
-                    err_index = None
-                    try:
-                        # Parse the sentence
-                        forest = bp.go(sent)
-                        # Reduce the resulting forest
-                        forest = rdc.go(forest)
-                    except ParseError as e:
-                        forest = None
-                        # Obtain the index of the offending token
-                        err_index = e.token_index
-                    num = 0 if forest is None else Parser.num_combinations(forest)
-                    #print("Parsed sentence of length {0} with {1} combinations{2}".format(slen, num,
-                    #    "\n" + " ".join(s[1] for s in sent) if num >= 100 else ""))
-                    if num > 0:
-                        num_parsed_sent += 1
-                        # Calculate the 'ambiguity factor'
-                        ambig_factor = num ** (1 / slen)
-                        # Do a weighted average on sentence length
-                        total_ambig += ambig_factor * slen
-                        total_tokens += slen
-                    # Mark the sentence beginning with the number of parses
-                    # and the index of the offending token, if an error occurred
-                    #toklist[sent_begin] = TOK.Begin_Sentence(num_parses = num, err_index = err_index)
+                for ix, t in enumerate(toklist):
+                    if t[0] == TOK.S_BEGIN:
+                        num_sent += 1
+                        sent = []
+                        sent_begin = ix
+                    elif t[0] == TOK.S_END:
+                        slen = len(sent)
+                        # Parse the accumulated sentence
+                        err_index = None
+                        try:
+                            # Parse the sentence
+                            forest = bp.go(sent)
+                            # Reduce the resulting forest
+                            forest = rdc.go(forest)
+                        except ParseError as e:
+                            forest = None
+                            # Obtain the index of the offending token
+                            err_index = e.token_index
+                        num = 0 if forest is None else Parser.num_combinations(forest)
+                        #print("Parsed sentence of length {0} with {1} combinations{2}".format(slen, num,
+                        #    "\n" + " ".join(s[1] for s in sent) if num >= 100 else ""))
+                        if num > 0:
+                            num_parsed_sent += 1
+                            # Calculate the 'ambiguity factor'
+                            ambig_factor = num ** (1 / slen)
+                            # Do a weighted average on sentence length
+                            total_ambig += ambig_factor * slen
+                            total_tokens += slen
+                        # Mark the sentence beginning with the number of parses
+                        # and the index of the offending token, if an error occurred
+                        #toklist[sent_begin] = TOK.Begin_Sentence(num_parses = num, err_index = err_index)
 
-                    # !!! Accumulate the parse result
+                        # !!! Accumulate the parse result
 
-                elif t[0] == TOK.P_BEGIN:
-                    pass
-                elif t[0] == TOK.P_END:
-                    pass
-                else:
-                    sent.append(t)
+                    elif t[0] == TOK.P_BEGIN:
+                        pass
+                    elif t[0] == TOK.P_END:
+                        pass
+                    else:
+                        sent.append(t)
 
-        parse_time = time.time() - t0
+            parse_time = time.time() - t0
 
-        article.parsed = datetime.utcnow()
-        article.parser_version = bp.version
-        article.num_sentences = num_sent
-        article.num_parsed = num_parsed_sent
-        article.ambiguity = (total_ambig / total_tokens) if total_tokens > 0 else 1.0
+            article.parsed = datetime.utcnow()
+            article.parser_version = bp.version
+            article.num_sentences = num_sent
+            article.num_parsed = num_parsed_sent
+            article.ambiguity = (total_ambig / total_tokens) if total_tokens > 0 else 1.0
 
-        session.commit()
+            session.commit()
 
         print("Parsing of {2}/{1} sentences completed in {0:.2f} seconds".format(parse_time, num_sent, num_parsed_sent))
 
@@ -558,35 +563,43 @@ class Scraper:
         if not html_doc:
             return None
 
+        new_session = False
         if not session:
             db = Scraper_DB()
             session = db.session
+            new_session = True
 
-        s = urlparse.urlsplit(url)
-        root = None
+        try:
+            s = urlparse.urlsplit(url)
+            root = None
 
-        # Find which root this URL belongs to, if any
-        for r in session.query(Root).all():
-            root_s = urlparse.urlsplit(r.url)
-            # This URL belongs to a root if the domain (netloc) part
-            # ends with the root domain (netloc)
-            if s.netloc.endswith(root_s.netloc):
-                root = r
-                break
+            # Find which root this URL belongs to, if any
+            for r in session.query(Root).all():
+                root_s = urlparse.urlsplit(r.url)
+                # This URL belongs to a root if the domain (netloc) part
+                # ends with the root domain (netloc)
+                if s.netloc.endswith(root_s.netloc):
+                    root = r
+                    break
 
-        # Obtain a scrape helper for the root, if any
-        helper = cls._get_helper(root) if root else None
+            # Obtain a scrape helper for the root, if any
+            helper = cls._get_helper(root) if root else None
 
-        # Parse the HTML
-        soup = BeautifulSoup(html_doc, _HTML_PARSER)
-        if not soup or not soup.html:
-            print("Scraper.fetch_url(): No soup or no soup.html")
-            return None
+            # Parse the HTML
+            soup = BeautifulSoup(html_doc, _HTML_PARSER)
+            if not soup or not soup.html:
+                print("Scraper.fetch_url(): No soup or no soup.html")
+                return None
 
-        # Obtain the metadata and the content from the resulting soup
-        metadata = helper.get_metadata(soup) if helper else None
-        content = helper.get_content(soup) if helper else soup.html.body
-        return (metadata, content)
+            # Obtain the metadata and the content from the resulting soup
+            metadata = helper.get_metadata(soup) if helper else None
+            content = helper.get_content(soup) if helper else soup.html.body
+            return (metadata, content)
+
+        finally:
+
+            if new_session:
+                session.close()
 
 
     @classmethod
@@ -595,46 +608,58 @@ class Scraper:
 
         # Create a scraper instance that uses the opened database and the given parser
         scraper = cls(db, parser)
-        session = db.session
 
         # Go through the roots and scrape them, inserting into the articles table
-        for r in session.query(Root).all():
+        with closing(db.session) as session:
 
-            print("Scraping root of {0} at {1}...".format(r.description, r.url))
+            for r in session.query(Root).all():
+                try:
 
-            # Process a single top-level domain and root URL,
-            # parsing child URLs that have not been seen before
-            helper = cls._get_helper(r)
-            result = scraper.scrape_root(r, helper)
+                    print("Scraping root of {0} at {1}...".format(r.description, r.url))
 
-        # Go through any unscraped articles and scrape them
-        for a in session.query(Article) \
-            .filter(Article.scraped == None).filter(Article.root_id != None):
+                    # Process a single top-level domain and root URL,
+                    # parsing child URLs that have not been seen before
+                    helper = cls._get_helper(r)
+                    result = scraper.scrape_root(r, helper)
+                except Exception as e:
+                    print("Exception when scraping root at {0}: {1}".format(r.url, e))
 
-            helper = cls._get_helper(a.root)
-            if not helper:
-                continue
+            # Go through any unscraped articles and scrape them
+            for a in session.query(Article) \
+                .filter(Article.scraped == None).filter(Article.root_id != None):
+                try:
 
-            # The helper is ready: Go ahead and scrape the article
-            scraper.scrape_article(a.url, helper)
+                    helper = cls._get_helper(a.root)
+                    if not helper:
+                        continue
 
-        count = 0
-        # Go through any unparsed articles and parse them
-        for a in session.query(Article) \
-            .filter(Article.scraped != None).filter(Article.parsed == None) \
-            .filter(Article.root_id != None):
+                    # The helper is ready: Go ahead and scrape the article
+                    scraper.scrape_article(a.url, helper)
+                except Exception as e:
+                    print("Exception when scraping article at {0}".format(a.url))
 
-            helper = cls._get_helper(a.root)
-            if not helper:
-                continue
+            count = 0
+            # Go through any unparsed articles and parse them
+            for a in session.query(Article) \
+                .filter(Article.scraped != None).filter(Article.parsed == None) \
+                .filter(Article.root_id != None):
 
-            # The helper is ready: Go ahead and parse the article
-            scraper.parse_article(a.url, helper)
+                try:
 
-            # !!! DEBUG
-            count += 1
-            if count >= 10:
-                break
+                    helper = cls._get_helper(a.root)
+                    if not helper:
+                        continue
+
+                    # The helper is ready: Go ahead and parse the article
+                    scraper.parse_article(a.url, helper)
+
+                    # !!! DEBUG
+                    count += 1
+                    if count >= 10:
+                        break
+
+                except Exception as e:
+                    print("Exception when parsing article at {0}".format(a.url))
 
 
 def run():
@@ -662,33 +687,34 @@ def init_roots():
     try:
 
         db.create_tables()
-        session = db.session
 
-        ROOTS = [
-            # Root URL, top-level domain, description, authority
-            ("http://kjarninn.is", "kjarninn.is", "Kjarninn", 1.0, "scrapers.default", "KjarninnScraper"),
-            ("http://www.ruv.is", "ruv.is", "RÚV", 1.0, "scrapers.default", "RuvScraper"),
-            # ("http://www.visir.is", "visir.is", "Vísir", 0.8, "scrapers.default", "VisirScraper"),
-            ("http://www.mbl.is/frettir/", "mbl.is", "Morgunblaðið", 0.6, "scrapers.default", "MblScraper"),
-            ("http://eyjan.pressan.is", "eyjan.pressan.is", "Eyjan", 0.4, "scrapers.default", "EyjanScraper")
-        ]
+        with closing(db.session) as session:
 
-        for url, domain, description, authority, scr_module, scr_class in ROOTS:
-            r = Root(url = url, domain = domain, description = description, authority = authority,
-                scr_module = scr_module, scr_class = scr_class)
-            session.add(r)
+            ROOTS = [
+                # Root URL, top-level domain, description, authority
+                ("http://kjarninn.is", "kjarninn.is", "Kjarninn", 1.0, "scrapers.default", "KjarninnScraper"),
+                ("http://www.ruv.is", "ruv.is", "RÚV", 1.0, "scrapers.default", "RuvScraper"),
+                # ("http://www.visir.is", "visir.is", "Vísir", 0.8, "scrapers.default", "VisirScraper"),
+                ("http://www.mbl.is/frettir/", "mbl.is", "Morgunblaðið", 0.6, "scrapers.default", "MblScraper"),
+                ("http://eyjan.pressan.is", "eyjan.pressan.is", "Eyjan", 0.4, "scrapers.default", "EyjanScraper")
+            ]
 
-        try:
-            # Commit the inserts
-            session.commit()
-        except IntegrityError as e:
-            # The roots already exist: roll back and continue
-            session.rollback()
+            for url, domain, description, authority, scr_module, scr_class in ROOTS:
+                r = Root(url = url, domain = domain, description = description, authority = authority,
+                    scr_module = scr_module, scr_class = scr_class)
+                session.add(r)
 
-        rlist = session.query(Root).all()
-        print("Roots initialized as follows:")
-        for r in rlist:
-            print("{0}".format(r))
+            try:
+                # Commit the inserts
+                session.commit()
+            except IntegrityError as e:
+                # The roots already exist: roll back and continue
+                session.rollback()
+
+            rlist = session.query(Root).all()
+            print("Roots initialized as follows:")
+            for r in rlist:
+                print("{0}".format(r))
 
     except Exception as e:
         print("{0}".format(e))
