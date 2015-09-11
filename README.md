@@ -4,7 +4,7 @@
 
 *Reynir* is an experimental project that aims to extract processable information from
 Icelandic text on the web. It scrapes chunks of text from web pages, tokenizes them,
-parses them according to a context-free grammar and analyzes the resulting parse
+parses them according to a context-free grammar, disambiguates and analyzes the resulting parse
 trees to obtain statements of fact and relations between stated facts.
 
 Reynir will be most effective for text that is highly factual, i.e. has a relatively high
@@ -18,9 +18,9 @@ Earley parser is fast and compact enough to make real-time while-you-wait analys
 web pages, as well as bulk processing, feasible.
 
 Reynir's goal is to "understand" text to a usable extent by parsing it into
-structured and regular trees, so that the result can be further acted upon.
-Detailed Part-Of-Speech (POS) tagging is thus not a primary goal of the project,
-although a successful parse depends on adequate POS attribution.
+structured and regular trees that directly correspond to the original grammar.
+These trees can then be further processed and acted upon, for instance by Python
+functions associated with grammar nonterminals.
 
 If successful in its initial stages, Reynir may in due course be expanded, for instance:
 
@@ -30,7 +30,7 @@ If successful in its initial stages, Reynir may in due course be expanded, for i
 
 ## Implementation
 
-Reynir is written in [Python 3.4](https://www.python.org/), apart from the web
+Reynir is written in [Python 3](https://www.python.org/), apart from the web
 front-end which has small amounts of JavaScript. It runs on CPython and
 [PyPy](http://pypy.org/).
 
@@ -39,11 +39,13 @@ Reynir works in stages, roughly as follows:
 1. *Web scraper*, built on [BeautifulSoup](http://www.crummy.com/software/BeautifulSoup/)
   and [SQLAlchemy](http://www.sqlalchemy.org/) storing data
   in [PostgreSQL](http://www.postgresql.org/).
-2. *Tokenizer*, relying on the BÍN database of Icelandic word forms for initial POS tagging
+2. *Tokenizer*, relying on the BÍN database of Icelandic word forms for initial POS tagging.
 3. *Parser*, using an [Earley algorithm](http://en.wikipedia.org/wiki/Earley_parser) to
   parse text according to an unconstrained context-free grammar for Icelandic that may yield
-  multiple parse trees in case of ambiguity.
-4. *Parse forest analyzer*, disambiguator and information extractor
+  multiple parse trees (a parse forest) in case of ambiguity.
+4. *Parse forest reducer* using heuristics to find the best parse tree.
+5. *Information extractor* that maps a parse tree via its grammar constituents to plug-in
+  Python functions.
 
 Reynir contains a small web server that allows the user to type in any URL
 and have Reynir scrape it, tokenize it and display the result as a web page. The server runs
@@ -92,5 +94,6 @@ fails, it identifies the token at which no parse was available.
 ## Copyright and licensing
 
 The intent is to release Reynir under an open license once the code stabilizes. However, while
-Reynir is still in early stages of development the code is *copyright (C) 2015 by Vilhjalmur
-Thorsteinsson*, all rights reserved. Please contact the author for further information.
+Reynir is still in early stages of development the code and associated files are
+*copyright (C) 2015 by Vilhjalmur Thorsteinsson*, all rights reserved.
+Please contact the author for further information.
