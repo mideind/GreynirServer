@@ -3,22 +3,24 @@
 ## Natural language processing for Icelandic
 
 *Reynir* is an experimental project that aims to extract processable information from
-Icelandic text on the web. It scrapes chunks of text from web pages, tokenizes them,
-parses them according to a context-free grammar, disambiguates and analyzes the resulting parse
-trees to obtain statements of fact and relations between stated facts.
+Icelandic text on the web. It scrapes and tokenizes chunks of text from web pages
+and parses the token streams according to a hand-written context-free grammar. The resulting
+parse trees are disambiguated and finally analyzed to obtain statements of fact and relations
+between stated facts.
 
-Reynir will be most effective for text that is highly factual, i.e. has a relatively high
+Reynir is most effective for text that is objective and factual, i.e. has a relatively high
 ratio of concrete concepts such as numbers, amounts, dates, person and entity names,
 etc.
 
-Reynir is innovative in its support for the complex grammar of Icelandic - using
-cases, genders and number (singular/plural) applied respectively to nouns,
-verbs, adjectives and prepositions to guide and disambiguate parses. Its optimized
-Earley parser is fast and compact enough to make real-time while-you-wait analysis of
-web pages, as well as bulk processing, feasible.
+Reynir is innovative in its ability to parse and disambiguate text written in a grammatically
+complex language, such as Icelandic, which does not lend itself easily to statistical
+parsing methods. Reynir uses cases, genders, persons (1st, 2nd, 3rd), number (singular/plural)
+and various verb modes applied appropriately to nouns, verbs, adjectives and prepositions to guide and
+disambiguate parses. Its optimized Earley parser is fast and compact enough to make real-time
+while-you-wait analysis of web pages, as well as bulk processing, feasible.
 
 Reynir's goal is to "understand" text to a usable extent by parsing it into
-structured and regular trees that directly correspond to the original grammar.
+structured trees that directly correspond to the original grammar.
 These trees can then be further processed and acted upon, for instance by Python
 functions associated with grammar nonterminals.
 
@@ -39,10 +41,11 @@ Reynir works in stages, roughly as follows:
 1. *Web scraper*, built on [BeautifulSoup](http://www.crummy.com/software/BeautifulSoup/)
   and [SQLAlchemy](http://www.sqlalchemy.org/) storing data
   in [PostgreSQL](http://www.postgresql.org/).
-2. *Tokenizer*, relying on the BÍN database of Icelandic word forms for initial POS tagging.
+2. *Tokenizer*, relying on the BÍN database of Icelandic word forms for lemmatization and
+  initial POS tagging.
 3. *Parser*, using an [Earley algorithm](http://en.wikipedia.org/wiki/Earley_parser) to
-  parse text according to an unconstrained context-free grammar for Icelandic that may yield
-  multiple parse trees (a parse forest) in case of ambiguity.
+  parse text according to an unconstrained hand-written context-free grammar for Icelandic
+  that may yield multiple parse trees (a parse forest) in case of ambiguity.
 4. *Parse forest reducer* using heuristics to find the best parse tree.
 5. *Information extractor* that maps a parse tree via its grammar constituents to plug-in
   Python functions.
