@@ -20,6 +20,8 @@
 
 """
 
+import os
+
 from functools import reduce
 
 from tokenizer import TOK
@@ -102,7 +104,8 @@ class BIN_Token(Token):
         "þt" : "ÞT", # Nútíð
         "sagnb" : "SAGNB", # Sagnbeyging ('vera' -> 'verið')
         "lhþt" : "LHÞT", # Lýsingarháttur þátíðar ('var lentur')
-        "abbrev" : None
+        "abbrev" : None,
+        "subj" : None
     }
 
     _VBIT = { key : 1 << i for i, key in enumerate(_VARIANT.keys()) }
@@ -114,6 +117,11 @@ class BIN_Token(Token):
     _VBIT_KVK = _VBIT["kvk"]
     _VBIT_HK = _VBIT["hk"]
     _VBIT_NH = _VBIT["nh"]
+    _VBIT_MM = _VBIT["mm"]
+    _VBIT_GM = _VBIT["gm"]
+    _VBIT_LH = _VBIT["lhþt"]
+    _VBIT_SUBJ = _VBIT["subj"]
+    _VBIT_SAGNB = _VBIT["sagnb"]
     _VBIT_ABBREV = _VBIT["abbrev"]
 
     _CASES = [ "nf", "þf", "þgf", "ef" ]
@@ -159,12 +167,14 @@ class BIN_Token(Token):
         """ Return True if the verb in question matches the verb category,
             where the category is one of so_0, so_1, so_2 depending on
             the allowable number of noun phrase arguments """
+
         # If this is an unknown but potentially composite verb,
         # it will contain one or more hyphens. In this case, use only
         # the last part in lookups in the internal verb lexicons.
         if "-" in verb:
             verb = verb.split("-")[-1]
-        if terminal.has_variant("subj"):
+
+        if terminal.is_subj:
             # Verb subject in non-nominative case
             # Examples:
             # 'Mig langar að fara til Frakklands'
@@ -173,24 +183,47 @@ class BIN_Token(Token):
                 if "NH" not in form:
                     # Nominative mode (nafnháttur)
                     return False
-            if "SAGNB" in form or "LHÞT" in form:
-                # For subj, we don't allow SAGNB or LHÞT forms
-                # ('langað', 'þótt')
-                return False
-            #elif "OP" not in form:
-            #    # !!! BIN seems to be not 100% consistent in the OP annotation
-            #    return False
-            if terminal.has_variant("mm"):
+            if terminal.is_mm:
                 # Central form of verb ('miðmynd')
+                # For subj_mm, we don't care about anything but MM
                 return "MM" in form
+            if terminal.is_gm:
+                # Central form of verb ('miðmynd')
+                if "GM" not in form:
+                    return False
             if terminal.is_singular and not "ET" in form:
                 # Require singular
                 return False
             if terminal.is_plural and not "FT" in form:
                 # Require plural
                 return False
+
+            def subject_matches(subj):
+                """ Look up the verb in the subjects list loaded from Verbs.conf """
+                return subj in VerbSubjects.VERBS.get(verb, set())
+
+            form_lh = "LHÞT" in form
+            if terminal.is_lh:
+                return form_lh and subject_matches("lhþt")
+            # Don't allow lhþt unless explicitly requested in terminal
+            if form_lh:
+                return False
+            form_sagnb = "SAGNB" in form
+            if terminal.has_variant("none"):
+                # subj_none: Check that the verb is listed in the 'none'
+                # subject list in Verbs.conf
+                if terminal.is_sagnb != form_sagnb:
+                    return False
+                return subject_matches("none")
+            if form_sagnb:
+                # For regular subj, we don't allow SAGNB form
+                # ('langað', 'þótt')
+                return False
+            if terminal.has_variant("op") and not "OP" in form:
+                return False
             # Make sure that the subject case (last variant) matches the terminal
-            return terminal.variant(-1) in VerbSubjects.VERBS.get(verb, set())
+            return subject_matches(terminal.variant(-1))
+
         if terminal.is_singular and "FT" in form:
             # Can't use plural verb if singular terminal
             return False
@@ -208,10 +241,10 @@ class BIN_Token(Token):
                 return False
         # Check restrictive variants, i.e. we don't accept meanings
         # that have those unless they are explicitly present in the terminal
-        for v in [ "sagnb", "lhþt" ]: # Be careful with "lh" here - !!! add mm?
+        for v in [ "sagnb", "lhþt", "bh" ]: # Be careful with "lh" here - !!! add mm?
             if BIN_Token._VARIANT[v] in form and not terminal.has_variant(v):
                 return False
-        if terminal.has_variant("lhþt") and "VB" in form:
+        if terminal.is_lh and "VB" in form:
             # We want only the strong declinations ("SB") of lhþt, not the weak ones
             return False
         if terminal.has_variant("bh") and "ST" in form:
@@ -260,7 +293,7 @@ class BIN_Token(Token):
                 # Prevent verb from matching a terminal if it
                 # doesn't have all the arguments that the terminal requires
                 return False
-        if terminal.has_variant("mm"):
+        if terminal.is_mm:
             # Verbs in 'miðmynd' match terminals with one or two arguments
             return nargs == 0 or nargs == 1
         # !!! TEMPORARY code while the verb lexicon is being built
@@ -470,69 +503,72 @@ class BIN_Token(Token):
         """ Match a word token, having the potential part-of-speech meanings
             from the BIN database, with the terminal """
 
-        def meaning_match(m):
-            """ Check for a match between a terminal and a single potential meaning
-                of the word """
-            # print("meaning_match: kind {0}, val {1}".format(BIN_Token.kind[m[2]], m[4]))
+        def matcher_so(m):
+            """ Check verb """
+            if m.ordfl != "so":
+                return False
+            # Special case for verbs: match only the appropriate
+            # argument number, i.e. so_0 for verbs having no noun argument,
+            # so_1 for verbs having a single noun argument, and
+            # so_2 for verbs with two noun arguments. A verb may
+            # match more than one argument number category.
+            #return self.verb_matches(m.stofn, terminal, m.beyging)
+            r = self.verb_matches(m.stofn, terminal, m.beyging)
+            if m.stofn == "læra" or m.stofn == "leika":
+                print("Verb_matches '{0}' for terminal {1} returns {2} for {3}"
+                    .format(m.stofn, terminal, r, m.beyging))
+            return r
 
-            if terminal.startswith("so"):
-                # Check verb
-                if m.ordfl != "so":
-                    return False
-                # Special case for verbs: match only the appropriate
-                # argument number, i.e. so_0 for verbs having no noun argument,
-                # so_1 for verbs having a single noun argument, and
-                # so_2 for verbs with two noun arguments. A verb may
-                # match more than one argument number category.
-                return self.verb_matches(m.stofn, terminal, m.beyging)
-
-            if terminal.startswith("no"):
-                # Check noun
-                if BIN_Token._KIND[m.ordfl] != "no":
-                    return False
-                if terminal.is_abbrev:
-                    # Only match abbreviations; gender, case and number do not matter
-                    return m.beyging == "-"
-                for v in terminal.variants:
-                    if v in BIN_Token._GENDERS_SET:
-                        if m.ordfl != v:
-                            # Mismatched gender
-                            return False
-                    elif m.beyging == "-":
-                        # No case and number info: probably a foreign word
-                        # Match all cases, but singular only, not plural
-                        if v == "ft":
-                            return False
-                    elif BIN_Token._VARIANT[v] not in m.beyging:
-                        # Required case or number not found: no match
+        def matcher_no(m):
+            """ Check noun"""
+            if BIN_Token._KIND[m.ordfl] != "no":
+                return False
+            if terminal.is_abbrev:
+                # Only match abbreviations; gender, case and number do not matter
+                return m.beyging == "-"
+            for v in terminal.variants:
+                if v in BIN_Token._GENDERS_SET:
+                    if m.ordfl != v:
+                        # Mismatched gender
                         return False
-                return True
-
-            if terminal.startswith("eo"):
-                # 'Einkunnarorð': adverb (atviksorð) that is not the same
-                # as a preposition (forsetning)
-                if m.ordfl != "ao":
+                elif m.beyging == "-":
+                    # No case and number info: probably a foreign word
+                    # Match all cases, but singular only, not plural
+                    if v == "ft":
+                        return False
+                elif BIN_Token._VARIANT[v] not in m.beyging:
+                    # Required case or number not found: no match
                     return False
-                # This token can match an adverb:
-                # Cache whether it can also match a preposition
-                if self._is_eo is None:
-                    if self.t1_lower in BIN_Token._NOT_EO:
-                        # Explicitly forbidden, no need to check further
-                        self._is_eo = False
-                    elif self.t1_lower in BIN_Token._NOT_NOT_EO:
-                        # Explicitly allowed, no need to check further
-                        self._is_eo = True
-                    else:
-                        # Check whether also a preposition and return False in that case
-                        self._is_eo = not any(mm.ordfl == "fs" for mm in self.t2)
-                # Return True if this token cannot also match a preposition
-                return self._is_eo
+            return True
 
-            if terminal.startswith("fs") and terminal.num_variants > 0:
-                # Check preposition
+        def matcher_eo(m):
+            """ 'Einkunnarorð': adverb (atviksorð) that is not the same
+                as a preposition (forsetning) """
+            if m.ordfl != "ao":
+                return False
+            # This token can match an adverb:
+            # Cache whether it can also match a preposition
+            if self._is_eo is None:
+                if self.t1_lower in BIN_Token._NOT_EO:
+                    # Explicitly forbidden, no need to check further
+                    self._is_eo = False
+                elif self.t1_lower in BIN_Token._NOT_NOT_EO:
+                    # Explicitly allowed, no need to check further
+                    self._is_eo = True
+                else:
+                    # Check whether also a preposition and return False in that case
+                    self._is_eo = not any(mm.ordfl == "fs" for mm in self.t2)
+            # Return True if this token cannot also match a preposition
+            return self._is_eo
+
+        def matcher_fs(m):
+            """ Check preposition """
+            if terminal.num_variants > 0:
                 return self.prep_matches(self.t1_lower, terminal.variant(0))
+            return False
 
-            # Check other word categories
+        def matcher_default(m):
+            """ Check other word categories """
             if m.beyging != "-": # Tokens without a form specifier are assumed to be universally matching
                 for v in terminal.variants:
                     if BIN_Token._VARIANT[v] not in m.beyging:
@@ -543,7 +579,14 @@ class BIN_Token(Token):
         # We have a match if any of the possible part-of-speech meanings
         # of this token match the terminal
         if self.t2:
-            return any(meaning_match(m) for m in self.t2)
+            _MATCHERS = {
+                "so" : matcher_so,
+                "no" : matcher_no,
+                "eo" : matcher_eo,
+                "fs" : matcher_fs
+            }
+            matcher = _MATCHERS.get(terminal.first, matcher_default)
+            return any(matcher(m) for m in self.t2)
 
         # Unknown word: allow it to match a singular, neutral noun in all cases
         return terminal.startswith("no") and terminal.has_vbits(BIN_Token._VBIT_ET | BIN_Token._VBIT_HK)
@@ -658,19 +701,38 @@ class VariantHandler:
     @property
     def is_singular(self):
         return (self._vbits & BIN_Token._VBIT_ET) != 0
-    
+
     @property
     def is_plural(self):
         return (self._vbits & BIN_Token._VBIT_FT) != 0
-    
+
     @property
     def is_abbrev(self):
         return (self._vbits & BIN_Token._VBIT_ABBREV) != 0
-    
+
     @property
     def is_nh(self):
         return (self._vbits & BIN_Token._VBIT_NH) != 0
-    
+
+    @property
+    def is_mm(self):
+        return (self._vbits & BIN_Token._VBIT_MM) != 0
+
+    @property
+    def is_gm(self):
+        return (self._vbits & BIN_Token._VBIT_GM) != 0
+
+    @property
+    def is_subj(self):
+        return (self._vbits & BIN_Token._VBIT_SUBJ) != 0
+
+    @property
+    def is_sagnb(self):
+        return (self._vbits & BIN_Token._VBIT_SAGNB) != 0
+
+    @property
+    def is_lh(self):
+        return (self._vbits & BIN_Token._VBIT_LH) != 0
 
 
 class BIN_Terminal(VariantHandler, Terminal):
@@ -746,19 +808,25 @@ class BIN_Parser(Parser):
 
     # A singleton instance of the parsed Reynir.grammar
     _grammar = None
+    _grammar_timestamp = None
 
     # BIN_Parser version - change when logic is modified so that it
     # affects the parse tree
     _VERSION = "1.0"
+    _GRAMMAR_FILE = "Reynir.grammar"
 
     def __init__(self, verbose = False):
         """ Load the shared BIN grammar if not already there, then initialize
             the Parser parent class """
         g = BIN_Parser._grammar
-        if g is None:
+        ts = os.path.getmtime(BIN_Parser._GRAMMAR_FILE)
+        if g is None or BIN_Parser._grammar_timestamp != ts:
+            # Grammar not loaded, or its timestamp has changed: load it
             g = BIN_Grammar()
-            g.read("Reynir.grammar", verbose = verbose)
+            print("Loading grammar file {0} with timestamp {1}".format(BIN_Parser._GRAMMAR_FILE, ts))
+            g.read(BIN_Parser._GRAMMAR_FILE, verbose = verbose)
             BIN_Parser._grammar = g
+            BIN_Parser._grammar_timestamp = ts
         Parser.__init__(self, g)
 
     @property

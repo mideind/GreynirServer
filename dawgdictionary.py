@@ -219,10 +219,6 @@ class Wordbase:
         is_pypy = platform.python_implementation() == "PyPy"
         pname = os.path.abspath(os.path.join("resources",
             resource + (".text.dawg" if is_pypy else ".dawg.pickle")))
-        try:
-            pname_t = os.path.getmtime(pname)
-        except os.error:
-            pname_t = None
 
         dawg = DawgDictionary()
 
@@ -516,6 +512,9 @@ class CompoundNavigator:
         together form a long (compound) word.
     """
 
+    # Stuff not in BÍN that may occur within compound words
+    _JOINERS = ["", "s"] # "u", "sam"
+
     def __init__(self, dawg, word):
         self._dawg = dawg
         self._word = word
@@ -551,20 +550,17 @@ class CompoundNavigator:
                 self._parts = [ [ matched ] ]
             else:
                 # So far so good: try to match the rest
-                nav = CompoundNavigator(self._dawg, self._word[self._index:])
-                self._dawg.navigate(nav)
-                result = nav.result()
-                if result:
-                    self._parts.extend( [ [ matched ] + tail for tail in result ] )
-                elif self._word[self._index] == 's' and self._index + 1 < self._len:
-                    # No match found for the rest with "normal" composition:
-                    # try applying an intermediate 's', as in 'samkeppnislagabrot'
-                    # and 'sanngirnisbætur'
-                    nav = CompoundNavigator(self._dawg, self._word[self._index + 1:])
-                    self._dawg.navigate(nav)
-                    result = nav.result()
-                    if result:
-                        self._parts.extend( [ [ matched + "s" ] + tail for tail in result ] )
+                for j in CompoundNavigator._JOINERS:
+                    lenj = len(j)
+                    if (lenj == 0) or \
+                        (self._index + lenj < self._len and self._word[self._index:self._index + lenj] == j):
+                        nav = CompoundNavigator(self._dawg, self._word[self._index + lenj:])
+                        self._dawg.navigate(nav)
+                        result = nav.result()
+                        if result:
+                            self._parts.extend( [ [ matched + j ] + tail for tail in result ] )
+                            break
+                        # Else, try next joiner
 
     def pop_edge(self):
         """ Called when leaving an edge that has been navigated """

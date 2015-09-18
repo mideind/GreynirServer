@@ -32,7 +32,7 @@ from flask import request, session, url_for
 from settings import Settings, ConfigError
 from tokenizer import tokenize, StaticPhrases, Abbreviations, TOK
 from grammar import Nonterminal
-from parser import Parser, ParseError
+from parser import Parser, ParseError, ParseForestPrinter
 from binparser import BIN_Parser
 from reducer import Reducer
 from scraper import Scraper
@@ -170,6 +170,8 @@ def analyze():
     """ Analyze text from a given URL """
 
     url = request.form.get("url", "").strip()
+    use_reducer = not ("noreduce" in request.form)
+
     t0 = time.time()
     metadata = None
 
@@ -179,7 +181,7 @@ def analyze():
         toklist = list(generator)
     else:
         # Tokenize the text entered as-is and return the token list
-        # In this case, there's not metadata
+        # In this case, there's no metadata
         toklist = list(tokenize(url))
 
     tok_time = time.time() - t0
@@ -190,6 +192,7 @@ def analyze():
     total_ambig = 0.0
     total_tokens = 0
 
+    sent = []
     sent_begin = 0
     bp = BIN_Parser(verbose = False) # Don't emit diagnostic messages
     rdc = Reducer()
@@ -205,18 +208,21 @@ def analyze():
             slen = len(sent)
             # Parse the accumulated sentence
             err_index = None
+            num = 0 # Number of tree combinations in forest
             try:
                 # Parse the sentence
                 forest = bp.go(sent)
-                # Reduce the resulting forest
-                forest = rdc.go(forest)
+                if forest:
+                    num = Parser.num_combinations(forest)
+                if use_reducer:
+                    # Reduce the resulting forest
+                    forest = rdc.go(forest)
             except ParseError as e:
                 forest = None
                 # Obtain the index of the offending token
                 err_index = e.token_index
-            num = 0 if forest is None else Parser.num_combinations(forest)
             print("Parsed sentence of length {0} with {1} combinations{2}".format(slen, num,
-                "\n" + " ".join(s[1] for s in sent) if num >= 100 else ""))
+                "\n" + (" ".join(s[1] for s in sent) if num >= 100 else "")))
             if num > 0:
                 num_parsed_sent += 1
                 # Calculate the 'ambiguity factor'
@@ -258,6 +264,7 @@ def parse_grid():
     MAX_LEVEL = 32 # Maximum level of option depth we can handle
     txt = request.form.get('txt', "")
     parse_path = request.form.get('option', "")
+    use_reducer = not ("noreduce" in request.form)
 
     # Tokenize the text
     tokens = list(tokenize(txt))
@@ -273,12 +280,22 @@ def parse_grid():
         err["info"] = e.info
         forest = None
 
-    # Reduce the parse forest
-    r = Reducer()
-    forest = r.go(forest)
-
     # Find the number of parse combinations
     combinations = Parser.num_combinations(forest) if forest else 0
+
+    # Dump the parse tree to parse.txt
+    with open("parse.txt", mode = "w", encoding= "utf-8") as f:
+        if forest is not None:
+            print("Reynir parse tree for sentence '{0}'".format(txt), file = f)
+            print("{0} combinations\n".format(combinations), file = f)
+            ParseForestPrinter.print_forest(forest, file = f)
+        else:
+            print("No parse available for sentence '{0}'".format(txt), file = f)
+
+    if use_reducer:
+        # Reduce the parse forest
+        forest = Reducer().go(forest)
+
     # Make the parse grid with all options
     grid, ncols = Parser.make_grid(forest) if forest else ([], 0)
     # The grid is columnar; convert it to row-major
@@ -440,7 +457,8 @@ if __name__ == "__main__":
         .format(Settings.DEBUG, Settings.HOST, Settings.DB_HOSTNAME))
 
     # Additional files that should cause a reload of the web server application
-    extra_files = ['Reynir.grammar', 'Reynir.conf', 'Verbs.conf']
+    # Note: Reynir.grammar is automatically reloaded if its timestamp changes
+    extra_files = ['Reynir.conf', 'Verbs.conf']
 
     # Run the Flask web server application
     app.run(debug=Settings.DEBUG, host=Settings.HOST, use_reloader=True,

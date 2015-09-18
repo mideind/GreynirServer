@@ -28,6 +28,9 @@ import getopt
 import codecs
 import time
 import importlib
+
+from multiprocessing import Pool
+
 import urllib.request
 import urllib.parse as urlparse
 from urllib.error import HTTPError
@@ -58,6 +61,13 @@ Base = declarative_base()
 _HTML_PARSER = "html.parser"
 
 
+class ArticleDescr:
+    """ Unit of work descriptor that is shipped between processes """
+    def __init__(self, root, url):
+        self.root = root
+        self.url = url
+
+
 class Scraper_DB:
 
     """ Wrapper around the SQLAlchemy connection, engine and session """
@@ -78,6 +88,10 @@ class Scraper_DB:
     def create_tables(self):
         """ Create all missing tables in the database """
         Base.metadata.create_all(self._engine)
+
+    def execute(self, sql):
+        """ Execute raw SQL directly on the engine """
+        return self._engine.execute(sql)
 
     @property
     def session(self):
@@ -192,12 +206,25 @@ class Scraper:
     # Cache of instantiated scrape helpers
     _helpers = dict()
 
+    _parser = None
+    _db = None
 
-    def __init__(self, db, parser):
+    @classmethod
+    def _init_class(cls):
+        """ Initialize class attributes """
+        if cls._parser is None:
+            cls._parser = BIN_Parser(verbose = False) # Don't emit diagnostic messages
+            cls._db = Scraper_DB()
 
-        self._db = db
-        self._parser = parser
+    def __init__(self):
 
+        Scraper._init_class()
+
+        print("Initializing scraper instance")
+        g = Scraper._parser.grammar
+        print("{3} dated {4} has {0} nonterminals, {1} terminals, {2} productions"
+            .format(g.num_nonterminals, g.num_terminals, g.num_productions,
+                g.file_name, str(g.file_time)[0:19]))
 
     class _TextList:
 
@@ -494,7 +521,7 @@ class Scraper:
             total_tokens = 0
 
             t0 = time.time()
-            bp = self._parser
+            bp = Scraper._parser
 
             if toklist:
 
@@ -601,80 +628,146 @@ class Scraper:
             if new_session:
                 session.close()
 
+    def _scrape_single_root(self, r):
+        """ Single root scraper that will be called by a process within a
+            multiprocessing pool """
+        try:
+            print("Scraping root of {0} at {1}...".format(r.description, r.url))
+            # Process a single top-level domain and root URL,
+            # parsing child URLs that have not been seen before
+            helper = Scraper._get_helper(r)
+            if helper:
+                self.scrape_root(r, helper)
+        except Exception as e:
+            print("Exception when scraping root at {0}: {1}".format(r.url, e))
 
-    @classmethod
-    def go(cls, db, parser):
+    def _scrape_single_article(self, d):
+        """ Single article scraper that will be called by a process within a
+            multiprocessing pool """
+        try:
+            helper = Scraper._get_helper(d.root)
+            if helper:
+                self.scrape_article(d.url, helper)
+        except Exception as e:
+            print("Exception when scraping article at {0}: {1}".format(d.url, e))
+
+    def _parse_single_article(self, d):
+        """ Single article parser that will be called by a process within a
+            multiprocessing pool """
+        try:
+            helper = Scraper._get_helper(d.root)
+            if helper:
+                self.parse_article(d.url, helper)
+        except Exception as e:
+            print("Exception when parsing article at {0}: {1}".format(d.url, e))
+            raise e from e
+
+
+    def go(self, limit = 0):
         """ Run a scraping pass from all roots in the scraping database """
 
-        # Create a scraper instance that uses the opened database and the given parser
-        scraper = cls(db, parser)
+        db = Scraper._db
+        parser = Scraper._parser
 
         # Go through the roots and scrape them, inserting into the articles table
         with closing(db.session) as session:
 
-            for r in session.query(Root).all():
-                try:
+            def iter_roots():
+                """ Iterate the roots """
+                for r in session.query(Root).all():
+                    yield r
 
-                    print("Scraping root of {0} at {1}...".format(r.description, r.url))
+            # Use a multiprocessing pool to scrape the roots
 
-                    # Process a single top-level domain and root URL,
-                    # parsing child URLs that have not been seen before
-                    helper = cls._get_helper(r)
-                    result = scraper.scrape_root(r, helper)
-                except Exception as e:
-                    print("Exception when scraping root at {0}: {1}".format(r.url, e))
+            pool = Pool(4)
+            pool.map(self._scrape_single_root, iter_roots())
+            pool.close()
+            pool.join()
 
-            # Go through any unscraped articles and scrape them
-            for a in session.query(Article) \
-                .filter(Article.scraped == None).filter(Article.root_id != None):
-                try:
+            def iter_unscraped_articles():
+                """ Go through any unscraped articles and scrape them """
+                for a in session.query(Article) \
+                    .filter(Article.scraped == None).filter(Article.root_id != None):
+                    yield ArticleDescr(a.root, a.url)
 
-                    helper = cls._get_helper(a.root)
-                    if not helper:
-                        continue
+            # Use a multiprocessing pool to scrape the articles
 
-                    # The helper is ready: Go ahead and scrape the article
-                    scraper.scrape_article(a.url, helper)
-                except Exception as e:
-                    print("Exception when scraping article at {0}".format(a.url))
+            pool = Pool(8)
+            pool.map(self._scrape_single_article, iter_unscraped_articles())
+            pool.close()
+            pool.join()
 
-            count = 0
-            # Go through any unparsed articles and parse them
-            for a in session.query(Article) \
-                .filter(Article.scraped != None).filter(Article.parsed == None) \
-                .filter(Article.root_id != None):
-
-                try:
-
-                    helper = cls._get_helper(a.root)
-                    if not helper:
-                        continue
-
-                    # The helper is ready: Go ahead and parse the article
-                    scraper.parse_article(a.url, helper)
-
-                    # !!! DEBUG
+            def iter_unparsed_articles(limit):
+                """ Go through any unparsed articles and parse them """
+                count = 0
+                for a in session.query(Article) \
+                    .filter(Article.scraped != None).filter(Article.parsed == None) \
+                    .filter(Article.root_id != None):
+                    yield ArticleDescr(a.root, a.url)
                     count += 1
-                    if count >= 10:
+                    if limit > 0 and count >= limit: # !!! DEBUG
                         break
 
-                except Exception as e:
-                    print("Exception when parsing article at {0}".format(a.url))
+            # Use a multiprocessing pool to parse the articles
+
+            pool = Pool() # Defaults to using as many processes as there are CPUs
+            pool.map(self._parse_single_article, iter_unparsed_articles(limit))
+            pool.close()
+            pool.join()
 
 
-def run():
+    def stats(self):
+        """ Return statistics from the scraping database """
+
+        db = Scraper._db
+
+        q = "select count(*) from articles;"
+
+        result = db.execute(q).fetchall()[0]
+
+        num_articles = result[0]
+
+        q = "select count(*) from articles where scraped is not null;"
+
+        result = db.execute(q).fetchall()[0]
+
+        num_scraped = result[0]
+
+        q = "select count(*) from articles where parsed is not null;"
+
+        result = db.execute(q).fetchall()[0]
+
+        num_parsed = result[0]
+        
+        q = "select count(*) from articles where parsed is not null and num_sentences > 1;"
+
+        result = db.execute(q).fetchall()[0]
+
+        num_parsed_over_1 = result[0]
+        
+        print ("Num_articles is {0}, scraped {1}, parsed {2}, parsed with >1 sentence {3}"
+            .format(num_articles, num_scraped, num_parsed, num_parsed_over_1))
+
+        q = "select sum(num_sentences) as sent, sum(num_parsed) as parsed " \
+            "from articles where parsed is not null and num_sentences > 1;"
+
+        result = db.execute(q).fetchall()[0]
+
+        num_sentences = result[0]
+        num_sent_parsed = result[1]
+
+        print ("Num_sentences is {0}, num_sent_parsed is {1}, ratio is {2:.1f}%"
+            .format(num_sentences, num_sent_parsed, 100.0 * num_sent_parsed / num_sentences))
+
+
+def run(limit = 0):
 
     print("\n\n------ Reynir starting scrape -------\n")
 
-    parser = BIN_Parser(verbose = False) # Don't emit diagnostic messages
-    g = parser.grammar
-    db = Scraper_DB()
+    sc = Scraper()
+    sc.go(limit = limit)
 
-    print("{3} dated {4} has {0} nonterminals, {1} terminals, {2} productions"
-        .format(g.num_nonterminals, g.num_terminals, g.num_productions,
-            g.file_name, str(g.file_time)[0:19]))
-
-    Scraper.go(db, parser)
+    sc.stats()
 
     print("\n------ Scrape completed -------\n")
 
@@ -733,10 +826,11 @@ def main(argv = None):
         argv = sys.argv
     try:
         try:
-            opts, args = getopt.getopt(argv[1:], "hi", ["help", "init"])
+            opts, args = getopt.getopt(argv[1:], "hil:", ["help", "init", "limit="])
         except getopt.error as msg:
              raise Usage(msg)
         init = False
+        limit = 10 # !!! DEBUG default limit on number of articles to parse, unless otherwise specified
         # Process options
         for o, a in opts:
             if o in ("-h", "--help"):
@@ -744,6 +838,12 @@ def main(argv = None):
                 sys.exit(0)
             elif o in ("-i", "--init"):
                 init = True
+            elif o in ("-l", "--limit"):
+                # Maximum number of articles to parse
+                try:
+                    limit = int(a)
+                except Exception as e:
+                    pass
         # Process arguments
         for arg in args:
             pass
@@ -764,7 +864,7 @@ def main(argv = None):
                 return 2
 
             # Run the scraper
-            run()
+            run(limit = limit)
 
             # Save the unknown verbs accumulated during parsing, if any
             UnknownVerbs.write()

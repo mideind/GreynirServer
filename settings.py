@@ -119,16 +119,17 @@ class Meanings:
     """ Wrapper around list of additional word meanings, initialized from the config file """
 
     # Dictionary of additional words and their meanings
-    DICT = { }
+    DICT = defaultdict(list)
 
     @staticmethod
-    def add (ordmynd, ordfl, fl, beyging):
+    def add (stofn, ordmynd, ordfl, fl, beyging):
         """ Add word meaning to the dictionary. Called from the config file handler. """
 
         # Append the word and its meaning in tuple form
         assert ordmynd is not None
         assert ordfl is not None
-        Meanings.DICT[ordmynd] = (ordmynd, 0, ordfl, fl or "ob", ordmynd, beyging or "-")
+        Meanings.DICT[ordmynd].append(
+            (stofn or ordmynd, 0, ordfl, fl or "ob", ordmynd, beyging or "-"))
 
 
 class VerbObjects:
@@ -166,7 +167,7 @@ class VerbSubjects:
     @staticmethod
     def set_case(case):
         """ Set the case of the subject for the following verbs """
-        if case not in { "þf", "þgf", "ef", "none" }:
+        if case not in { "þf", "þgf", "ef", "none", "lhþt" }:
             raise ConfigError("Unknown verb subject case '{0}' in verb_subjects".format(case))
         VerbSubjects._CASE = case
 
@@ -219,7 +220,7 @@ class StaticPhrases:
         # Dictionary structure: dict { firstword: [ (restword_list, phrase_index) ] }
 
         # Split phrase into words
-        wlist = phrase.split(" ")
+        wlist = phrase.split()
         # Dictionary is keyed by first word
         w = wlist[0]
         d = StaticPhrases.DICT
@@ -397,7 +398,7 @@ class Settings:
         par = a[0].strip()
         val = a[1].strip()
         if par == 'meaning':
-            m = val.split(" ")
+            m = val.split()
             if len(m) == 3:
                 StaticPhrases.set_meaning(m)
             else:
@@ -419,7 +420,7 @@ class Settings:
         gender = "hk" # Default gender is neutral
         fl = None # Default word category is None
         if par:
-            p = par.split(' ')
+            p = par.split()
             if len(p) >= 1:
                 gender = p[0].strip()
             if len(p) >= 2:
@@ -429,15 +430,27 @@ class Settings:
     @staticmethod
     def _handle_meanings(s):
         """ Handle additional word meanings in the settings section """
-        # Format: ordmynd ordfl fl (default ob) beyging (default -)
-        a = s.split(' ')
-        if len(a) < 2 or len(a) > 4:
-            raise ConfigError("Meaning should have two to four arguments")
-        ordmynd = a[0]
-        ordfl = a[1]
-        fl = a[2] if len(a) >= 3 else None
-        beyging = a[3] if len(a) >= 4 else None
-        Meanings.add(ordmynd, ordfl, fl, beyging)
+        # Format: stofn ordmynd ordfl fl (default ob) beyging (default -)
+        a = s.split()
+        if len(a) < 2 or len(a) > 5:
+            print("{0}".format(s))
+            print("{0}".format(a))
+            raise ConfigError("Meaning should have two to five arguments, {0} given".format(len(a)))
+        stofn = None
+        fl = None
+        beyging = None
+        if len(a) == 2:
+            # Short format: only ordmynd and ordfl
+            ordmynd = a[0]
+            ordfl = a[1]
+        else:
+            # Full format: at least three arguments, stofn ordmynd ordfl
+            stofn = a[0]
+            ordmynd = a[1]
+            ordfl = a[2]
+            fl = a[3] if len(a) >= 4 else None
+            beyging = a[4] if len(a) >= 5 else None
+        Meanings.add(stofn, ordmynd, ordfl, fl, beyging)
 
     @staticmethod
     def _handle_verb_objects(s):

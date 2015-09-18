@@ -14,7 +14,6 @@
 
 """
 
-import codecs
 import time
 from contextlib import closing
 

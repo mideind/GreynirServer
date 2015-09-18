@@ -52,9 +52,9 @@ class ParseError(Exception):
     def __init__(self, txt, token_index = None, info = None):
         """ Store an information object with the exception,
             containing the parser state immediately before the error """
+        Exception.__init__(self, txt)
         self._info = info
         self._token_index = token_index
-        Exception.__init__(self, txt)
 
     @property
     def info(self):
@@ -69,7 +69,8 @@ class ParseError(Exception):
 
 class ParseForestNavigator(object):
 
-    """ Base class for navigating parse forests """
+    """ Base class for navigating parse forests. Override the underscored
+        methods to perform actions at the corresponding points of navigation. """
 
     def __init__(self, visit_all = False):
         """ If visit_all is False, we only visit each packed node once.
@@ -143,8 +144,9 @@ class ParseForestNavigator(object):
                         child_ix = index
                     if isinstance(f, tuple):
                         child_ix -= 1
-                        self._add_result(results, ix, _nav_helper(f[0], child_ix, child_level, prod))
-                        self._add_result(results, ix, _nav_helper(f[1], child_ix + 1, child_level, prod))
+                        for child in range(2):
+                            self._add_result(results, ix,
+                                _nav_helper(f[child], child_ix + child, child_level, prod))
                     else:
                         self._add_result(results, ix, _nav_helper(f, child_ix, child_level, prod))
                 v = self._process_results(results, w)
@@ -225,8 +227,9 @@ class Parser:
 
         def enum_nt(self, nt):
             """ Enumerate all states where prod[dot] is nt """
-            if nt in self._nt_dict:
-                for ix in self._nt_dict[nt]:
+            st_list = self._nt_dict.get(nt)
+            if st_list:
+                for ix in st_list:
                     yield self._states[ix]
 
         def cleanup(self):
@@ -355,25 +358,6 @@ class Parser:
                 for prod, c in self._families:
                     yield (prod, c)
 
-        def reduce_by_priority(self, priority_dict):
-            """ Cut down families of children depending on the given dict of
-                completed nonterminals and their priority order (0 is highest priority) """
-            if not self._families:
-                return
-            prio = [ ]
-            for prod, c in self._families:
-                if c and c.is_completed:
-                    nt_id = c._label[0].name
-                    if nt_id in priority_dict:
-                        prio.append((priority_dict[nt_id], prod, c))
-            if len(prio) < len(self._families):
-                # All children cannot be prioritized
-                return
-            prio.sort(key = lambda x: x[0]) # Sort in increasting order by priority
-            # Leave all those children in the families list whose priority is
-            # identical to the max (lowest valued) priority
-            self._families = [(p[1], p[2]) for p in prio if p[0] == prio[0][0]]
-
         def reduce_to(self, child_ix):
             """ Eliminate all child families except the given one """
             if not self._families or child_ix >= len(self._families):
@@ -422,6 +406,7 @@ class Parser:
             into a list of integer indices """
 
         def __init__(self, priority, production):
+            # Store the relative priority of this production within its nonterminal
             self._priority = priority
             # Keep a reference to the original production
             self._production = production

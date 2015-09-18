@@ -54,7 +54,10 @@ class ScrapeHelper:
             return None
         #try:
             # Call the helper subclass
-        content = self._get_content(soup.html.body)
+        if hasattr(self, "_get_content"):
+            content = self._get_content(soup.html.body)
+        else:
+            content = None
         #except Exception as e:
         #    content = None
         #    print("get_content exception in self._get_content: {0}".format(e))
@@ -200,6 +203,8 @@ class RuvScraper(ScrapeHelper):
             return True
         if s.path and s.path.startswith("/tag/"):
             return True
+        if s.path and s.path.startswith("/frettalisti/"):
+            return True
         return False # Scrape all URLs by default
         
     def get_metadata(self, soup):
@@ -243,6 +248,14 @@ class MblScraper(ScrapeHelper):
         if s.path and s.path.startswith("/frettir/sjonvarp/"):
             return True
         if s.path and s.path.startswith("/frettir/knippi/"):
+            return True
+        if s.path and s.path.startswith("/frettir/colorbox/"):
+            return True
+        if s.path and s.path.startswith("/frettir/lina_snippet/"):
+            return True
+        if s.path and s.path.startswith("/myndasafn/"):
+            return True
+        if s.path and s.path.startswith("/atvinna/"):
             return True
         return False # Scrape all URLs by default
         

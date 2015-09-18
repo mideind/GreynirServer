@@ -10,8 +10,20 @@
     Copyright (c) 2015 Vilhjalmur Thorsteinsson
     All rights reserved
 
-    The classes within this module attempt to reduce a parse forest containing
-    multiple possible parses of a sentence to a single most likely parse tree.
+    The classes within this module reduce a parse forest containing
+    multiple possible parses of a sentence to a single most likely
+    parse tree.
+
+    The reduction uses three methods:
+
+  * First, a dictionary of preferred
+    token interpretations (fetched from Reynir.conf), where words
+    like 'ekki' are classified as being more likely to be from one
+    category than another (in this case adverb rather than noun);
+  * Second, a set of general heuristics (adverbs being by default less
+    preferred than other categories, etc.);
+  * Third, production priorities within nonterminals, as specified
+    using > signs between productions in Reynir.grammar.
 
 """
 
@@ -38,8 +50,6 @@ class Reducer:
             return None
         w = forest
 
-        print("\nReducer.go assuming {0} final terminals".format(w.end))
-
         # First pass: for each token, find the possible terminals that
         # can correspond to that token
         finals = defaultdict(set)
@@ -59,7 +69,6 @@ class Reducer:
                 # Find out whether the first part of all the terminals are the same
                 same_first = len(set(x.first for x in s)) == 1
                 txt = tokens[i].lower
-                print("Token '{0}' has {1} possible terminal matches: {2}".format(txt, len(s), s))
                 # No need to check preferences if the first parts of all possible terminals are equal
                 prefs = None if same_first else Preferences.get(txt)
                 found_pref = False
@@ -70,11 +79,19 @@ class Reducer:
                             if wt.first in worse:
                                 for bt in s:
                                     if wt is not bt and bt.first in better:
-                                        # print("Preference: increasing score of {1}, decreasing score of {0}".format(wt, bt))
-                                        sc[wt] -= 1
-                                        sc[bt] += 4
+                                        #print("Preference: increasing score of {1}, decreasing score of {0}".format(wt, bt))
+                                        if bt.name[0] in "\"'":
+                                            # Literal terminal: be even more aggressive in promoting it
+                                            sc[wt] -= 2
+                                            sc[bt] += 6
+                                        else:
+                                            sc[wt] -= 1
+                                            sc[bt] += 4
                                         found_pref = True
-                if not found_pref:
+                if not same_first and not found_pref:
+                    # Only display cases where there might be a missing pref
+                    print("Token '{0}' has {1} possible terminal matches: {2}".format(txt, len(s), s))
+                if True: # not found_pref:
                     # print("Found no preference that applies to token '{0}'; applying heuristics".format(txt))
                     # Apply heuristics
                     for t in s:
@@ -88,9 +105,14 @@ class Reducer:
                             elif t.is_abbrev:
                                 # Punish abbreviations in favor of other more specific terminals
                                 sc[t] -= 1
-                        elif t.first == "tala":
+                        elif t.first == "tala" or t.first == "töl":
                             # A complete 'töl' or 'no' is better (has more info) than a rough 'tala'
-                            sc[t] -= 1
+                            if t.first == "tala":
+                                sc[t] -= 1
+                            # Discourage possessive ('ef') meanings for numbers
+                            for pt in s:
+                                if (pt.first == "no" or pt.first == "töl") and pt.has_variant("ef"):
+                                    sc[pt] -= 1
                         elif t.first == "fs":
                             if t.has_variant("nf"):
                                 # Reduce the weight of the 'artificial' nominative prepositions
@@ -100,6 +122,21 @@ class Reducer:
                             if t.variant(0) in "012":
                                 # Give a bonus for verb arguments: the more matched, the better
                                 sc[t] += int(t.variant(0))
+                            if t.is_sagnb:
+                                # We like sagnb and lh, it means that more
+                                # than one piece clicks into place
+                                print("Giving bonus for sagnb, token '{0}', terminal {1}".format(txt, t))
+                                sc[t] += 2
+                            elif t.is_lh:
+                                # sagnb is preferred to lh
+                                sc[t] += 1
+                            if t.is_subj:
+                                # Give a small bonus for subject matches
+                                if t.has_variant("none"):
+                                    # ... but a punishment for subj_none
+                                    sc[t] -= 1
+                                else:
+                                    sc[t] += 1
                             if t.is_nh:
                                 if (i > 0) and any(pt.first == 'nhm' for pt in finals[i - 1]):
                                     # Give a bonus for adjacent nhm + so_nh terminals
@@ -114,6 +151,7 @@ class Reducer:
                                     sc[t] += 2
                         elif t.name[0] in "\"'":
                             # Give a bonus for exact or semi-exact matches
+                            #print("Giving bonus for exact match of {0}".format(t.name))
                             sc[t] += 1
 
         # Third pass: navigate the tree bottom-up, eliminating lower-rated
@@ -210,11 +248,11 @@ class Reducer:
                     # There is a priority ordering between the productions
                     # of this nonterminal: remove those child trees from
                     # consideration that do not have the highest priority
-                    print("Reducing set of child nodes by production priority")
-                    for ix, sc in csc.items():
-                        prod, prio = node._families[ix]
-                        print("Family {0}: prod {1} priority {2} highest {3}"
-                            .format(ix, prod.production, prod.priority, ix in results.highest_ix))
+                    #print("Reducing set of child nodes by production priority")
+                    #for ix, sc in csc.items():
+                    #    prod, prio = node._families[ix]
+                    #    print("Family {0}: prod {1} priority {2} highest {3}"
+                    #        .format(ix, prod.production, prod.priority, ix in results.highest_ix))
                     csc = { ix: sc for ix, sc in csc.items() if ix in results.highest_ix }
                 assert csc
                 if len(csc) == 1 and not results.use_prio:

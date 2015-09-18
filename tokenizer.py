@@ -31,6 +31,10 @@ from collections import namedtuple
 import re
 import codecs
 import datetime
+import threading
+
+# Thread local storage - used for database connections
+tls = threading.local()
 
 # Import the Psycopg2 connector for PostgreSQL
 try:
@@ -227,8 +231,8 @@ def parse_digits(w):
         p = w.split(':')
         h = int(p[0])
         m = int(p[1])
-        s = int(p[2])
-        return TOK.Time(w, h, m, s), s.end()
+        sec = int(p[2])
+        return TOK.Time(w, h, m, sec), s.end()
     s = re.match(r'\d{1,2}:\d\d', w)
     if s:
         # Looks like a 24-hour clock, H:M
@@ -264,8 +268,13 @@ def parse_digits(w):
             p = w.split('.')
         m = int(p[1])
         d = int(p[0])
+        if p[0][0] != '0' and p[1][0] != '0' and ((d <= 5 and m <= 6) or (d == 1 and m <= 10)):
+            # This is probably a fraction, not a date
+            # (1/2, 1/3, 1/4, 1/5, 1/6, 2/3, 2/5, 5/6 etc.)
+            # Return a number
+            return TOK.Number(w, float(d) / m), s.end()
         if m > 12 and d <= 12:
-            # Probably wrong way around
+            # Date is probably wrong way around
             m, d = d, m
         return TOK.Date(w, 0, m, d), s.end()
     s = re.match(r'\d\d\d\d$', w) or re.match(r'\d\d\d\d[^\d]', w)
@@ -534,13 +543,17 @@ class Bin_DB:
                 "from ord where ordmynd=(%s);", [ w ])
             # Map the returned data from fetchall() to a list of instances
             # of the BIN_Meaning namedtuple
-            m = list(map(BIN_Meaning._make, self._c.fetchall()))
-            if w in Meanings.DICT:
-                # There is an additional word meaning in the Meanings dictionary,
-                # coming from the settings file: append it
-                m.append(BIN_Meaning._make(Meanings.DICT[w]))
-        except psycopg2.DataError as e:
-            print("Word {0} causing DB exception".format(w))
+            g = self._c.fetchall()
+            if g is not None:
+                m = list(map(BIN_Meaning._make, g))
+                if w in Meanings.DICT:
+                    # There are additional word meanings in the Meanings dictionary,
+                    # coming from the settings file: append them
+                    for add_m in Meanings.DICT[w]:
+                        print("Adding additional meaning: {0}".format(add_m))
+                        m.append(BIN_Meaning._make(add_m))
+        except (psycopg2.DataError, psycopg2.ProgrammingError) as e:
+            print("Word {0} causing DB exception {1}".format(w, e))
             m = None
         return m
 
@@ -596,21 +609,19 @@ def lookup_word(db, w, at_sentence_start):
     
     return (w, m)
 
-# Singleton instance of the BIN database used for lookups
-bin_db = Bin_DB()
-bin_connection = None
-
 def annotate(token_stream):
     """ Look up word forms in the BIN word database """
 
-    # Open the word database
-    global bin_connection
-    if bin_connection is None:
-        bin_connection = bin_db.open(Settings.DB_HOSTNAME)
-        if bin_connection is None:
-            raise Exception("Could not open BIN database on host {0}".format(Settings.DB_HOSTNAME))
+    # Open the word database. We have one DB connection and cursor per thread.
+    if hasattr(tls, "bin_db"):
+        # Connection already established in this thread: re-use it
+        db = tls.bin_db
+    else:
+        # New connection in this thread
+        db = tls.bin_db = Bin_DB().open(Settings.DB_HOSTNAME)
 
-    db = bin_connection
+    if db is None:
+        raise Exception("Could not open BIN database on host {0}".format(Settings.DB_HOSTNAME))
 
     at_sentence_start = False
 
