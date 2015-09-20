@@ -140,9 +140,10 @@ class BIN_Token(Token):
     # 'Fyrirtækið hefur skilað inn ársreikningi', 'Þá er kannski eftir klukkutími',
     # 'Það hafi opnað fyrir of ágenga nýtingu þeirra'
     # '...verður ekki til nægur jarðvarmi'
-    _NOT_NOT_EO = { "inn", "eftir", "of", "til" }
+    # '...til að koma upp veggspjöldum'
+    _NOT_NOT_EO = { "inn", "eftir", "of", "til", "upp" }
 
-    _UNDERSTOOD_PUNCTUATION = ".?,:–-()"
+    _UNDERSTOOD_PUNCTUATION = ".?,:;–-()"
 
     def __init__(self, t):
 
@@ -599,6 +600,7 @@ class BIN_Token(Token):
         TOK.AMOUNT: matches_AMOUNT,
         TOK.NUMBER: matches_NUMBER,
         TOK.PERCENT: matches_PERCENT,
+        TOK.ORDINAL: matches_ORDINAL,
         TOK.YEAR: matches_YEAR,
         TOK.DATE: matches_DATE,
         TOK.TIME: matches_TIME,

@@ -87,17 +87,16 @@
 
 # Merkið > gefur til kynna forgangsröðun.
 # Ef báðar koma til greina er Málsgrein tekin fram yfir Spurningu o.s.frv.
-S0 → Málsgrein > Spurning > Grein > Fyrirsögn
+S0 → Málsgrein > Grein > Fyrirsögn
 
 Forskeyti →
     Samtenging '-'? # 'En - þegar allt er skoðað, var þetta fínt.'
+    | raðnr
 
 Málsgrein →
-    Forskeyti? Yfirsetning StLiður* '.'?
+    Forskeyti? Yfirsetning StLiður* Lokatákn?
 
-Spurning →
-    # Eins og venjuleg málsgrein, en endar á spurningarmerki
-    Forskeyti? Yfirsetning StLiður* '?'
+Lokatákn → '.' | '?' | ':'
 
 Fyrirsögn →
     # Nafnliður í nefnifalli
@@ -116,7 +115,7 @@ SetningÁnF →
 
 Grein →
     # Greinarnúmer, e.t.v. skammstafað, og e.t.v. með fyrirsögn
-    raðnr "grein" Fyrirsögn? # 17. gr. Störf Alþingis
+    raðnr 'grein' Fyrirsögn? '.'? # 17. gr. Störf Alþingis
 
 SpurnarorðAtv →
     "hve" | "hversu"
@@ -124,14 +123,14 @@ SpurnarorðAtv →
 StLiður →
     # Samtengingar yfirsetninga
     ','? Samtenging Yfirsetning
-    | ':' Yfirsetning
-    | ',' Yfirsetning
-    | '–' Yfirsetning
-    | '-' Yfirsetning
+    | Tengimerki Yfirsetning
     # 'Það eru bara tveir kostir í boði: Selja bankann eða láta hann fara í þrot'
     | ':' SagnRuna
     # '(Ég spurði) hversu hrikalega stór (hann væri orðinn)'
     | SpurnarorðAtv Lo_nf/tala/kyn Setning/tala/pers/kyn
+
+Tengimerki →
+    ':' | ';' | ',' | '–' | '-'
 
 SamtengingStök →
     # Ein samtenging, sem þó getur verið samsett, sbr. skilgreiningar í Reynir.conf
@@ -338,6 +337,8 @@ SetningAukafall →
 
     # Öllum hefur verið/skal/mun tryggð heilbrigðisþjónusta
     | Nl_þgf HjSögnLhÞtSM_p3/tala FsAtv? so_2_þgf_þf_lhþt/tala/kyn FsRuna? AukafallLhÞtAndlag/tala/pers/kyn FsAtv?
+    # ESB eru þröngar skorður settar í málinu
+    | Nl_þgf HjSögnLhÞtSM_p3/tala FsAtv? AukafallLhÞtAndlag/tala/pers/kyn FsRuna? so_2_þgf_þf_lhþt/tala/kyn FsAtv?
 
     # Öllum hefur verið/skal/mun óskað góðs bata
     | Nl_þgf HjSögnLhÞtSM_et_p3 FsAtv? so_2_þgf_ef_sagnb FsRuna? Nl_ef FsAtv?
@@ -592,8 +593,9 @@ EinSögn_sagnb/tala/kyn →
     | Sögn_2_sagnb
 
 EinSögn_nh/tala/kyn →
-    so_0_nh NhFylling/tala/kyn?    # Konurnar munu fara að grilla
-    | Sögn_1_nh                    # Konurnar munu [ekki] borða matinn
+    so_0_nh NhFylling/tala/kyn?                    # Konurnar munu fara að grilla
+    | 'vera'_nh 'sá'/tala/kyn NhFylling/tala/kyn   # '(Eini valkosturinn virðist) vera sá að fara út að grilla'
+    | Sögn_1_nh                                    # Konurnar munu [ekki] borða matinn
     | Sögn_2_nh
 
 HreinSögn_nh/tala/kyn →
