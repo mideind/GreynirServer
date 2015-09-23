@@ -1,6 +1,8 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+*.o
+*.exe
 
 # Compressed DAWG trees
 *.dawg
@@ -26,6 +28,7 @@ profile.bin
 *.profile
 txt
 UnknownVerbs.txt
+parse.txt
 
 # Distribution / packaging
 .Python
@@ -48,6 +51,7 @@ console/
 venv/
 pp/
 node_modules/
+cffi_test/
 
 # Installer logs
 pip-log.txt

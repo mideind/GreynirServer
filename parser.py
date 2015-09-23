@@ -592,9 +592,11 @@ class Parser:
                     if not w:
                         label = (nt_B, i, i)
                         if label in V:
-                            w = v = V[label]
+                            # w = v = V[label]
+                            w = V[label]
                         else:
-                            w = v = V[label] = Parser.Node(self, label)
+                            # w = v = V[label] = Parser.Node(self, label)
+                            w = V[label] = Parser.Node(self, label)
                         w.add_family(prod, None) # Add e (empty production) as a family
                     if h == i:
                         # Empty production satisfied

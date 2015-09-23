@@ -299,13 +299,15 @@ SetningSo →
 
     | FsAtv SagnliðurÁnF FsAtv?                               # Í dag þarf að vökva grasið snarlega
 
-    | FsAtv VeraSkulu_et_p3 HreinSögn_sagnb_et_hk          # Með lögum er/verður/skal/mun skipað rétti útlendinga
+    | FsAtv VeraSkulu_et_p3 HreinSögn_sagnb_et_hk             # Með lögum er/verður/skal/mun skipað rétti útlendinga
 
     | So_1_nh/fall HjSögnMegiSkuliÞurfi_et_p3 FsRuna? Nl/fall FsAtv?  # Endurnýja þarf/skal/má leigusamninginn í ár
 
     | EinSögn_lhþt/tala/kyn OgSögn_lhþt/tala/kyn* HjSögnLhÞt_p3/tala Nl_nf/tala/kyn FsAtv? # Teknar og skráðar hafa verið ákvarðanir í málinu
 
     | Sögn_bh FsAtv?                                          # Farðu galvaskur að sækja kaffi strax
+
+    | HjSögnMegiSkuli_et_p3 FsAtv? EinSögn_nh_et_hk FsAtv?    # Má með sanni segja (að þeir hafi sloppið með skrekkinn)
 
     | SagnliðurVh FsAtv?                                      # Haldi þessi þróun áfram er voðinn vís
 
@@ -1448,7 +1450,7 @@ Töluorð/fall/tala/kyn → Töluorð/tala/fall/kyn
 
 OgEða → "og" | "eða" | "ellegar" | "eður" | "svo" "og" | "sem" "og" | "né"
     | "þar" "á" "meðal" | "meðal" "annars" | "það" "er" | "það_er" | "þ.e."
-    | "eins_og"
+    | "eins_og" | "en"
 
 KommaOgEða → ','? OgEða
     | '-' # 'Ég tók tvö tonn af eldsneyti - tvö þúsund lítra'
@@ -1648,13 +1650,18 @@ Dagsetning →
     | 'undangenginn'_þf/tala/kyn Nl_þf/tala/kyn # undangengnar sex vikur
     | gr_þf/tala/kyn? 'síðari'_þf/tala/kyn Nl_þf/tala/kyn # síðustu sex vikur, hin síðari ár, síðasta mánuð
     | TímabilsEinkunn_þf/tala/kyn Tímabil_þf/kyn/tala # (Hann kom hér) alla daga, suma vikudaga, nokkur ár, eina vikuna
-    | TímabilsEinkunn_þgf/tala/kyn Tímabil_þgf/kyn/tala TímaAfstæði? # (Námsönnin hefst) þremur mánuðum fyrir fyrsta sumardag
-    | Tímabil_þgf/kyn/tala TímaAfstæði # Klukkutíma fyrr kom ég á staðinn
+    | TímabilsEinkunn_þgf/tala/kyn Tímabil_þgf/kyn/tala TímaAfstæði_þgf? # (Námsönnin hefst) þremur mánuðum áður en jólafríið byrjar
+    | Tímabil_þgf/kyn/tala TímaAfstæði_þgf # Klukkutíma fyrr kom ég á staðinn
+    | Tímabil_þf/kyn/tala TímaAfstæði_þf # Vikuna áður / Daginn eftir
 
-TímaAfstæði → "síðar" | "seinna" | "fyrr" TímaEn? | "áður" TímaEn?
+TímaAfstæði_þgf → "síðar" | "seinna" | "fyrr" TímaEn? | "áður" TímaEn?
+TímaAfstæði_þf → "áður" TímaEn? | "eftir" TímaAð?
 
 TímaEn →
-    "en" Yfirsetning
+    "en" HreinYfirsetning
+
+TímaAð →
+    "að" HreinYfirsetning
 
 TímabilsEinkunn/fall/tala/kyn →
     fn/fall/tala/kyn          # alla/suma/nokkra

@@ -258,6 +258,13 @@ def parse_digits(w):
             # Probably wrong way around
             m, d = d, m
         return TOK.Date(w, y, m, d), s.end()
+    s = re.match(r'\d+(\.\d\d\d)+', w)
+    if s:
+        # Integer with a '.' thousands separator
+        # (we need to check this before checking dd.mm dates)
+        w = s.group()
+        n = re.sub(r'\.', '', w) # Eliminate thousands separators
+        return TOK.Number(w, int(n)), s.end()
     s = re.match(r'\d{1,2}/\d{1,2}', w) or re.match(r'\d{1,2}\.\d{1,2}', w)
     if s:
         # Looks like a date
@@ -268,15 +275,18 @@ def parse_digits(w):
             p = w.split('.')
         m = int(p[1])
         d = int(p[0])
-        if p[0][0] != '0' and p[1][0] != '0' and ((d <= 5 and m <= 6) or (d == 1 and m <= 10)):
-            # This is probably a fraction, not a date
-            # (1/2, 1/3, 1/4, 1/5, 1/6, 2/3, 2/5, 5/6 etc.)
-            # Return a number
-            return TOK.Number(w, float(d) / m), s.end()
+        if '/' in w:
+            if p[0][0] != '0' and p[1][0] != '0' and ((d <= 5 and m <= 6) or (d == 1 and m <= 10)):
+                # This is probably a fraction, not a date
+                # (1/2, 1/3, 1/4, 1/5, 1/6, 2/3, 2/5, 5/6 etc.)
+                # Return a number
+                return TOK.Number(w, float(d) / m), s.end()
         if m > 12 and d <= 12:
             # Date is probably wrong way around
             m, d = d, m
-        return TOK.Date(w, 0, m, d), s.end()
+        if d >= 1 and d <= 31 and m >= 1 and m <= 12:
+            # Looks like a (roughly) valid date
+            return TOK.Date(w, 0, m, d), s.end()
     s = re.match(r'\d\d\d\d$', w) or re.match(r'\d\d\d\d[^\d]', w)
     if s:
         n = int(w[0:4])
