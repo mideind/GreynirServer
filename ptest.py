@@ -37,6 +37,7 @@ from tokenizer import TOK, tokenize
 from grammar import Nonterminal, Terminal, Token, Production, Grammar, GrammarError
 from parser import Parser, ParseError, ParseForestPrinter
 from binparser import BIN_Parser
+from fastparser import Fast_Parser
 from settings import Settings, ConfigError
 
 
@@ -216,7 +217,7 @@ def test2():
     ParseForestPrinter.print_forest(forest)
 
 
-def run_test(p):
+def run_test(p, fast_p):
     """ Run a test parse on all sentences in the test table """
 
     with closing(Test_DB.open_db()) as db:
@@ -230,19 +231,37 @@ def run_test(p):
 
             tokens = tokenize(txt)
 
+            tlist = list(tokens)
+
+            # Run the all-Python parser
             err = ""
             try:
                 t0 = time.time()
-                forest = p.go(tokens)
+                forest = p.go(tlist)
             except ParseError as e:
                 err = "{0}".format(e)
                 forest = None
             finally:
                 t1 = time.time()
 
-            num = 0 if forest is None else Parser.num_combinations(forest)
+            # Run the C++ parser
+            try:
+                tf0 = time.time()
+                forest2 = fast_p.go(tlist)
+            except ParseError as e:
+                err = "{0}".format(e)
+                forest2 = None
+            finally:
+                tf1 = time.time()
 
-            # print("Parsed in {0:.4f} seconds, {1} combinations".format(t1 - t0, num))
+            num = 0 if forest is None else Parser.num_combinations(forest)
+            num2 = Fast_Parser.num_combinations(forest2)
+
+            print("Python: Parsed in {0:.4f} seconds, {1} combinations".format(t1 - t0, num))
+            print("C++:    Parsed in {0:.4f} seconds, {1} combinations".format(tf1 - tf0, num2))
+
+            # Clean up the returned forest from Fast_Parser
+            Fast_Parser.delete_forest(forest2)
 
             best = s["best"]
             if best <= 0 or abs(target - num) < abs(target - best):
@@ -263,67 +282,77 @@ def run_test(p):
                 forest = forest
             )
 
+            # break # !!! DEBUG: only do one loop
+
 
 def test3():
 
     print("\n\n------ Test 3 ---------")
 
     p = BIN_Parser(verbose = False) # Don't emit diagnostic messages
-    g = p.grammar
+    fast_p = Fast_Parser(verbose = False)
 
-    print("Reynir.grammar has {0} nonterminals, {1} terminals, {2} productions"
-        .format(g.num_nonterminals, g.num_terminals, g.num_productions))
+    try:
+        g = p.grammar
 
-    # Dump the grammar
-    # print("\n" + str(g))
+        print("Reynir.grammar has {0} nonterminals, {1} terminals, {2} productions"
+            .format(g.num_nonterminals, g.num_terminals, g.num_productions))
 
-    def create_sentence_table():
-        """ Only used to create a test fresh sentence table if one doesn't exist """
-        with closing(Test_DB.open_db()) as db:
+        # Dump the grammar
+        # print("\n" + str(g))
 
-            try:
-                db.create_sentence_table()
+        def create_sentence_table():
+            """ Only used to create a test fresh sentence table if one doesn't exist """
+            with closing(Test_DB.open_db()) as db:
 
-                TEXTS = [
-                    "Páll fór út með stóran kött og Jón keypti heitan graut.",
-                    "Unga fallega konan frá Garðabæ elti ljóta og feita karlinn rösklega og fumlaust í svörtu myrkrinu",
-                    "Kötturinn sem strákurinn átti veiddi feitu músina",
-                    "Gamla bláa kommóðan var máluð fjólublá með olíumálningu",
-                    "Landsframleiðslan hefur aukist frá því í fyrra",
-                    "Guðmundur og Guðrún kusu Framsóknarflokkinn",
-                    "Þú skalt fara til Danmerkur.",
-                    "Ég og þú fórum til Frakklands í utanlandsferð",
-                    "Stóru bláu könnunni mun hafa verið fleygt í ruslið",
-                    "Már Guðmundsson segir margskonar misskilnings gæta hjá Hannesi Hólmsteini",
-                    "Már Guðmundsson seðlabankastjóri Íslands segir þetta við Morgunblaðið í dag.",
-                    "Það er náttúrlega einungis í samfélögum sem eiga við býsna stór vandamál að stríða að ný stjórnmálaöfl geta snögglega sveiflast upp í þriðjungs fylgi.",
-                    "Áætlaður kostnaður verkefnisins var tíu milljónir króna og áætluð verklok eru í byrjun september næstkomandi.",
-                    "Pakkinn snerist um að ábyrgjast innlán og skuldabréfaútgáfu danskra fjármálafyrirtækja.",
-                    "Kynningarfundurinn sem ég hélt í dag fjallaði um lausnina á þessum vanda.",
-                    "Kynningarfundurinn sem haldinn var í dag fjallaði um lausnina á þessum vanda.",
-                    "Það sakamál sé til meðferðar við Héraðsdóm Suðurlands."
-                ]
+                try:
+                    db.create_sentence_table()
 
-                for t in TEXTS:
-                    db.add_sentence(t)
+                    TEXTS = [
+                        "Páll fór út með stóran kött og Jón keypti heitan graut.",
+                        "Unga fallega konan frá Garðabæ elti ljóta og feita karlinn rösklega og fumlaust í svörtu myrkrinu",
+                        "Kötturinn sem strákurinn átti veiddi feitu músina",
+                        "Gamla bláa kommóðan var máluð fjólublá með olíumálningu",
+                        "Landsframleiðslan hefur aukist frá því í fyrra",
+                        "Guðmundur og Guðrún kusu Framsóknarflokkinn",
+                        "Þú skalt fara til Danmerkur.",
+                        "Ég og þú fórum til Frakklands í utanlandsferð",
+                        "Stóru bláu könnunni mun hafa verið fleygt í ruslið",
+                        "Már Guðmundsson segir margskonar misskilnings gæta hjá Hannesi Hólmsteini",
+                        "Már Guðmundsson seðlabankastjóri Íslands segir þetta við Morgunblaðið í dag.",
+                        "Það er náttúrlega einungis í samfélögum sem eiga við býsna stór vandamál að stríða að ný stjórnmálaöfl geta snögglega sveiflast upp í þriðjungs fylgi.",
+                        "Áætlaður kostnaður verkefnisins var tíu milljónir króna og áætluð verklok eru í byrjun september næstkomandi.",
+                        "Pakkinn snerist um að ábyrgjast innlán og skuldabréfaútgáfu danskra fjármálafyrirtækja.",
+                        "Kynningarfundurinn sem ég hélt í dag fjallaði um lausnina á þessum vanda.",
+                        "Kynningarfundurinn sem haldinn var í dag fjallaði um lausnina á þessum vanda.",
+                        "Það sakamál sé til meðferðar við Héraðsdóm Suðurlands."
+                    ]
 
-                slist = db.sentences()
-                for s in slist:
-                    print("{0}".format(s))
+                    for t in TEXTS:
+                        db.add_sentence(t)
 
-            except Exception as e:
-                print("{0}".format(e))
+                    slist = db.sentences()
+                    for s in slist:
+                        print("{0}".format(s))
 
-    for test in run_test(p):
+                except Exception as e:
+                    print("{0}".format(e))
 
-        print("\n'{0}'\n{1} parse trees found in {2:.3f} seconds\n"
-            .format(test["sentence"], test["numtrees"], test["parse_time"]))
+        for test in run_test(p, fast_p):
 
-        if test["numtrees"] > 0:
-            ParseForestPrinter.print_forest(test["forest"])
-            # print("{0}".format(Parser.make_schema(test["forest"])))
-        elif test["err"]:
-            print("Error: {0}".format(test["err"]))
+            print("\n'{0}'\n{1} parse trees found in {2:.3f} seconds\n"
+                .format(test["sentence"], test["numtrees"], test["parse_time"]))
+
+            if test["numtrees"] > 0:
+                # ParseForestPrinter.print_forest(test["forest"])
+                # print("{0}".format(Parser.make_schema(test["forest"])))
+                pass
+            elif test["err"]:
+                print("Error: {0}".format(test["err"]))
+
+    finally:
+        # Clean up the Fast_Parser to avoid C++ memory leaks
+        fast_p.cleanup()
 
 
 if __name__ == "__main__":

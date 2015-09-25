@@ -22,7 +22,9 @@
 
 import os
 
+from datetime import datetime
 from functools import reduce
+from collections import defaultdict
 
 from tokenizer import TOK
 from grammar import Terminal, LiteralTerminal, Token, Grammar
@@ -514,11 +516,7 @@ class BIN_Token(Token):
             # so_2 for verbs with two noun arguments. A verb may
             # match more than one argument number category.
             #return self.verb_matches(m.stofn, terminal, m.beyging)
-            r = self.verb_matches(m.stofn, terminal, m.beyging)
-            if m.stofn == "læra" or m.stofn == "leika":
-                print("Verb_matches '{0}' for terminal {1} returns {2} for {3}"
-                    .format(m.stofn, terminal, r, m.beyging))
-            return r
+            return self.verb_matches(m.stofn, terminal, m.beyging)
 
         def matcher_no(m):
             """ Check noun"""
@@ -571,22 +569,24 @@ class BIN_Token(Token):
         def matcher_default(m):
             """ Check other word categories """
             if m.beyging != "-": # Tokens without a form specifier are assumed to be universally matching
+                # Attempts to cache the following lookup did not make the code faster
                 for v in terminal.variants:
                     if BIN_Token._VARIANT[v] not in m.beyging:
-                        # Not matching
                         return False
             return terminal.matches_first(BIN_Token._KIND[m.ordfl], m.stofn, self.t1_lower)
 
         # We have a match if any of the possible part-of-speech meanings
         # of this token match the terminal
         if self.t2:
-            _MATCHERS = {
+            # The dispatch table has to be constructed each time because
+            # the calls will have a wrong self pointer otherwise
+            matchers = {
                 "so" : matcher_so,
                 "no" : matcher_no,
                 "eo" : matcher_eo,
                 "fs" : matcher_fs
             }
-            matcher = _MATCHERS.get(terminal.first, matcher_default)
+            matcher = matchers.get(terminal.first, matcher_default)
             return any(matcher(m) for m in self.t2)
 
         # Unknown word: allow it to match a singular, neutral noun in all cases
@@ -821,7 +821,7 @@ class BIN_Parser(Parser):
         """ Load the shared BIN grammar if not already there, then initialize
             the Parser parent class """
         g = BIN_Parser._grammar
-        ts = os.path.getmtime(BIN_Parser._GRAMMAR_FILE)
+        ts = datetime.fromtimestamp(os.path.getmtime(BIN_Parser._GRAMMAR_FILE))
         if g is None or BIN_Parser._grammar_timestamp != ts:
             # Grammar not loaded, or its timestamp has changed: load it
             g = BIN_Grammar()
@@ -829,7 +829,7 @@ class BIN_Parser(Parser):
             g.read(BIN_Parser._GRAMMAR_FILE, verbose = verbose)
             BIN_Parser._grammar = g
             BIN_Parser._grammar_timestamp = ts
-        Parser.__init__(self, g)
+        super().__init__(g)
 
     @property
     def grammar(self):
@@ -842,8 +842,8 @@ class BIN_Parser(Parser):
         ftime = str(self.grammar.file_time)[0:19] # YYYY-MM-DD HH:MM:SS
         return ftime + "/" + BIN_Parser._VERSION + "/" + super()._VERSION
 
-    def go(self, tokens):
-        """ Parse the token list after wrapping each understood token in the BIN_Token class """
+    def _wrap(self, tokens):
+        """ Sanitize the 'raw' tokens and wrap them in BIN_Token() wrappers """
 
         # Remove stuff that won't be understood in any case
         # Start with runs of unknown words inside parentheses
@@ -886,7 +886,12 @@ class BIN_Parser(Parser):
                 ix += 1
 
         # Wrap the sanitized token list in BIN_Token()
-        bt = [ BIN_Token(t) for t in tlist if t is not None and BIN_Token.is_understood(t) ]
+        return [ BIN_Token(t) for t in tlist if t is not None and BIN_Token.is_understood(t) ]
+
+    def go(self, tokens):
+        """ Parse the token list after wrapping each understood token in the BIN_Token class """
+
+        bt = self._wrap(tokens)
 
         # After wrapping, call the parent class go()
         return Parser.go(self, bt)

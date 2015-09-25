@@ -24,8 +24,8 @@
 
 """
 
-import codecs
 import os
+import struct
 from datetime import datetime
 
 
@@ -67,8 +67,10 @@ class Nonterminal:
         Nonterminal._INDEX -= 1
 
     def __hash__(self):
-        """ Use the index of this nonterminal as a basis for the hash """
-        return self._index.__hash__()
+        """ Use the id of this nonterminal as a basis for the hash """
+        # The index may change after the entire grammar has been
+        # read and processed; therefore it is not suitable for hashing
+        return id(self).__hash__()
 
     def __eq__(self, other):
         return id(self) == id(other)
@@ -80,6 +82,11 @@ class Nonterminal:
     def index(self):
         """ Return the (negative) sequence number of this nonterminal """
         return self._index
+
+    def set_index(self, ix):
+        """ Set a new sequence number for this nonterminal """
+        assert ix < 0
+        self._index = ix
 
     def add_ref(self):
         """ Mark this as being referenced """
@@ -430,9 +437,43 @@ class Grammar:
         # Override this to create custom nonterminals or add optimizations
         return Nonterminal(name, fname, line)
 
-    def read(self, fname, verbose = False):
+    def _write_binary(self, fname):
+        """ Write grammar to binary file. Called after reading a grammar text file
+            that is newer than the corresponding binary file, unless write_binary is False. """
+        max_nt = 0
+        with open(fname, "wb") as f:
+            print("Writing binary grammar file {0}".format(fname))
+            # Version header
+            f.write("Reynir 00.00.00\n".encode('ascii')) # 16 bytes total
+            # Make a dictionary of nonterminals from the grammar
+            # keyed by the nonterminal index instead of its name
+            nonterminals = { nt.index : nt for nt in self.nonterminals.values() }
+            num_nt = self.num_nonterminals
+            # Number of terminals and nonterminals in grammar
+            f.write(struct.pack("2I", self.num_terminals, num_nt))
+            # Root nonterminal
+            print("Root index is {0}".format(self.root.index))
+            f.write(struct.pack("i", self.root.index))
+            # Write nonterminals in numeric order, -1 first downto -N
+            for ix in range(num_nt):
+                nt = nonterminals[-1 - ix]
+                plist = self[nt]
+                f.write(struct.pack("I", len(plist)))
+                # Write productions along with their priorities
+                for prio, p in plist:
+                    f.write(struct.pack("I", prio));
+                    lenp = len(p)
+                    f.write(struct.pack("I", lenp))
+                    if lenp:
+                        f.write(struct.pack(str(lenp)+"i", *p.prod))
+        print("Writing of binary grammar file completed")
+        print("num_terminals was {0}, num_nonterminals {1}".format(self.num_terminals, num_nt))
+
+    def read(self, fname, verbose = False, write_binary = True):
         """ Read grammar from a text file. Set verbose = True to get diagnostic messages
-            about unused nonterminals and nonterminals that are unreachable from the root. """
+            about unused nonterminals and nonterminals that are unreachable from the root.
+            Set write_binary = False to avoid writing a fresh binary file if the
+            grammar text file is newer than the existing binary file. """
 
         # Clear previous file info, if any
         self._file_time = self._file_name = None
@@ -724,7 +765,7 @@ class Grammar:
         # Main parse loop
 
         try:
-            with codecs.open(fname, "r", "utf-8") as inp:
+            with open(fname, "r", encoding="utf-8") as inp:
                 # Read grammar file line-by-line
 
                 for s in inp:
@@ -842,6 +883,30 @@ class Grammar:
                 del grammar[nt]
                 del nonterminals[nt.name]
 
+        # Reassign indices for nonterminals to avoid gaps in the
+        # number sequence - but keep the ordering intact as far as possible.
+        # (Python is deliberately designed so that the order of dict
+        # enumeration is not predictable; a straight numbering based
+        # on nonterminals.values() will change with each run.)
+        nt_by_ix = { nt.index : nt for nt in nonterminals.values() }
+        max_ix = max(-index for index in nt_by_ix.keys())
+        ctr = 1
+        for ix in range(1, max_ix + 1):
+            if -ix in nt_by_ix:
+                nt_by_ix[-ix].set_index(-ctr)
+                ctr += 1
+
         # Grammar successfully read: note the file name and timestamp
         self._file_name = fname
         self._file_time = datetime.fromtimestamp(os.path.getmtime(fname))
+
+        if write_binary:
+            # Check whether to write a fresh binary file
+            fname = fname + ".bin" # By default Reynir.grammar.bin
+            try:
+                binary_file_time = datetime.fromtimestamp(os.path.getmtime(fname))
+            except os.error:
+                binary_file_time = None
+            if binary_file_time is None or binary_file_time < self._file_time:
+                # No binary file or older than text file: write a fresh one
+                self._write_binary(fname)

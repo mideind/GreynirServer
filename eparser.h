@@ -26,6 +26,8 @@
 typedef unsigned int UINT;
 typedef int INT;
 typedef wchar_t WCHAR;
+typedef char CHAR;
+typedef unsigned char BYTE;
 typedef bool BOOL;
 
 
@@ -37,22 +39,13 @@ class NodeDict;
 class Label;
 
 
-class AllocReporter {
-
-   // A debugging aid to diagnose memory leaks
-
-private:
-protected:
-public:
-
-   AllocReporter(void);
-   ~AllocReporter(void);
-
-   void report(void) const;
-
-};
-
 class AllocCounter {
+
+   // A utility class to count allocated instances
+   // of an instrumented class. Add this as a static
+   // member (named e.g. 'ac') of the class to be watched
+   // and call ac++ and ac-- in the constructor and destructor,
+   // respectively.
 
 private:
 
@@ -82,6 +75,7 @@ public:
       { return (INT)(this->m_nAllocs - this->m_nFrees); }
 
 };
+
 
 class Nonterminal {
 
@@ -127,6 +121,7 @@ friend class AllocReporter;
 
 private:
 
+   UINT m_nPriority;       // Relative priority of this production
    UINT m_n;               // Number of items in production
    INT* m_pList;           // List of items in production
    Production* m_pNext;    // Next production of same nonterminal
@@ -137,7 +132,7 @@ protected:
 
 public:
 
-   Production(UINT n, const INT* pList);
+   Production(UINT nPriority, UINT n, const INT* pList);
 
    ~Production(void);
 
@@ -149,6 +144,8 @@ public:
       { return this->m_n; }
    BOOL isEpsilon(void) const
       { return this->m_n == 0; }
+   UINT getPriority(void) const
+      { return this->m_nPriority; }
 
    // Get the item at the dot position within the production
    INT operator[] (UINT nDot) const;
@@ -158,12 +155,16 @@ public:
 
 class Grammar {
 
+   // A Grammar is a collection of Nonterminals
+   // with their Productions.
+
 friend class AllocReporter;
 
 private:
 
    UINT m_nNonterminals;   // Number of nonterminals
    UINT m_nTerminals;      // Number of terminals (indexed from 1)
+   INT m_iRoot;            // Index of root nonterminal (negative)
    Nonterminal** m_nts;    // Array of Nonterminal pointers, owned by the Grammar class
 
    static AllocCounter ac;
@@ -172,11 +173,20 @@ protected:
 
 public:
 
-   Grammar(UINT nNonterminals, UINT nTerminals);
+   Grammar(UINT nNonterminals, UINT nTerminals, INT iRoot = -1);
+   Grammar(void);
    ~Grammar(void);
+
+   void reset(void);
+
+   BOOL read_binary(const CHAR* pszFilename);
 
    UINT getNumNonterminals(void) const
       { return this->m_nNonterminals; }
+   UINT getNumTerminals(void) const
+      { return this->m_nTerminals; }
+   INT getRoot(void) const
+      { return this->m_iRoot; }
 
    void setNonterminal(INT iIndex, Nonterminal*);
 
@@ -188,6 +198,8 @@ public:
 
 
 class Label {
+
+   // A Label is associated with a Node.
 
 friend class Node;
 
@@ -222,6 +234,7 @@ private:
       Node* p2;
       FamilyEntry* pNext;
    };
+
    Label m_label;
    FamilyEntry* m_pHead;
    UINT m_nRefCount;
@@ -248,17 +261,31 @@ public:
 
    void dump(Grammar*);
 
+   static UINT numCombinations(Node*);
+
 };
 
 
+// Token-terminal matching function
+typedef BOOL (*MatchingFunc)(UINT, UINT);
+
+// Default matching function that simply
+// compares the token value with the terminal number
+BOOL defaultMatcher(UINT nToken, UINT nTerminal);
+
 class Parser {
+
+   // Earley-Scott parser for a given Grammar
+
+friend class AllocReporter;
 
 private:
 
    // Grammar pointer, not owned by the Parser
    Grammar* m_pGrammar;
+   MatchingFunc m_pMatchingFunc;
 
-   void _push(State*, Column*, State*&);
+   BOOL _push(State*, Column*, State*&);
 
    Node* _make_node(State* pState, UINT nEnd, Node* pV, NodeDict& ndV);
 
@@ -266,13 +293,38 @@ protected:
 
 public:
 
-   Parser(Grammar*);
+   Parser(Grammar*, MatchingFunc = defaultMatcher);
    ~Parser(void);
 
+   UINT getNumTerminals(void) const
+      { return this->m_pGrammar->getNumTerminals(); }
    UINT getNumNonterminals(void) const
       { return this->m_pGrammar->getNumNonterminals(); }
+   MatchingFunc getMatchingFunc(void) const
+      { return this->m_pMatchingFunc; }
+   Grammar* getGrammar(void) const
+      { return this->m_pGrammar; }
 
-   Node* parse(INT iStartNt, UINT nTokens, const UINT pnToklist[]);
+   // If pnToklist is NULL, a sequence of integers 0..nTokens-1 will be used
+   Node* parse(INT iStartNt, UINT nTokens, const UINT pnToklist[] = NULL);
 
 };
+
+// Print a report on memory allocation
+extern "C" void printAllocationReport(void);
+
+// Parse a token stream
+extern "C" Node* earleyParse(Parser*, UINT nTokens);
+
+extern "C" Grammar* newGrammar(const CHAR* pszGrammarFile);
+
+extern "C" void deleteGrammar(Grammar*);
+
+extern "C" Parser* newParser(Grammar*, MatchingFunc fpMatcher = defaultMatcher);
+
+extern "C" void deleteParser(Parser*);
+
+extern "C" void deleteForest(Node*);
+
+extern "C" UINT numCombinations(Node*);
 

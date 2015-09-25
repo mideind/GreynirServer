@@ -1,17 +1,11 @@
 
-all: test.exe eparser.o etest.exe
+all: libeparser.so etest.exe
 
-eparser.o: eparser.h eparser.cpp
-	g++ -o eparser.o -c -g -Wall -std=c++11 eparser.cpp
+libeparser.so: eparser.h eparser.cpp
+	g++ -shared -o libeparser.so -Wall -fPIC -O3 -std=c++11 eparser.cpp
 
-etest.exe: etest.cpp eparser.o
-	g++ -o etest.exe -g -Wall -std=c++11 etest.cpp eparser.o
+etest.exe: etest.cpp libeparser.so
+	g++ -o etest.exe -g -Wall -std=c++11 etest.cpp -l :libeparser.so
 
-test.exe: test.o
-	gcc -o test.exe test.o
-
-test.o: test.c
-	gcc -c test.c
-    
 clean:
-	rm test.o test.exe eparser.o etest.exe
+	rm libeparser.so etest.exe

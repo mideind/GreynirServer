@@ -21,11 +21,36 @@
 #define DEBUG
 
 #include <stdio.h>
+#include <stdint.h>
 #include <assert.h>
 
 #include "eparser.h"
 
+
 //  Local implementation classes
+
+
+class AllocReporter {
+
+   // A debugging aid to diagnose and report memory leaks
+
+private:
+protected:
+public:
+
+   AllocReporter(void);
+   ~AllocReporter(void);
+
+   void report(void) const;
+
+};
+
+void printAllocationReport(void)
+{
+   AllocReporter reporter;
+   reporter.report();
+}
+
 
 class State {
 
@@ -61,7 +86,22 @@ public:
    State* getNtNext(void) const
       { return this->m_pNtNext; }
 
-   BOOL operator==(const State&) const;
+   UINT getHash(void) const
+      {
+         return ((UINT)this->m_iNt) ^
+            ((UINT)((uintptr_t)this->m_pProd) & 0xFFFFFFFF) ^
+            (this->m_nDot << 7) ^ (this->m_nStart << 9) ^
+            (((UINT)((uintptr_t)this->m_pw) & 0xFFFFFFFF) << 1);
+      }
+   BOOL operator==(const State& other) const
+      {
+         const State& t = *this;
+         return t.m_iNt == other.m_iNt &&
+            t.m_pProd == other.m_pProd &&
+            t.m_nDot == other.m_nDot &&
+            t.m_nStart == other.m_nStart &&
+            t.m_pw == other.m_pw;
+      }
 
    INT prodDot(void) const
       { return (*this->m_pProd)[this->m_nDot]; }
@@ -87,10 +127,20 @@ friend class AllocReporter;
 
 private:
 
+   static const UINT HASH_BINS = 499; // Prime number
+
+   struct HashBin {
+      State* m_pHead; // The first state in this hash bin
+      State* m_pTail; // The last state in this hash bin
+      State* m_pEnum; // The last enumerated state in this hash bin
+   };
+
    UINT m_nToken;
-   State* m_pStates;    // Head of states list
-   State* m_pTail;      // Tail of states list
    State** m_pNtStates;
+   MatchingFunc m_pMatchingFunc;
+   BYTE* m_abCache;
+   HashBin m_aHash[HASH_BINS]; // The hash array
+   UINT m_nEnumBin; // Round robin used during enumeration
 
    static AllocCounter ac;
 
@@ -101,17 +151,19 @@ public:
    Column(Parser*, UINT nToken);
    ~Column(void);
 
+   UINT getToken(void) const
+      { return this->m_nToken; }
    // Add a state to the column, at the end of the state list
-   void addState(State* p);
+   BOOL addState(State* p);
 
-   State* getHead(void) const
-      { return this->m_pStates; }
+   State* nextState(void);
+   void resetEnum(void);
+
    State* getNtHead(INT iNt) const;
 
    BOOL matches(UINT nTerminal) const;
 
 };
-
 
 class HNode {
 
@@ -153,6 +205,7 @@ public:
 
 AllocCounter HNode::ac;
 
+
 class NodeDict {
 
    // Dictionary to map labels to node pointers
@@ -178,6 +231,7 @@ public:
    void reset(void);
 
 };
+
 
 AllocCounter Nonterminal::ac;
 
@@ -212,8 +266,8 @@ void Nonterminal::addProduction(Production* p)
 
 AllocCounter Production::ac;
 
-Production::Production(UINT n, const INT* pList)
-   : m_n(n), m_pList(NULL), m_pNext(NULL)
+Production::Production(UINT nPriority, UINT n, const INT* pList)
+   : m_nPriority(nPriority), m_n(n), m_pList(NULL), m_pNext(NULL)
 {
    Production::ac++;
    if (n > 0) {
@@ -242,6 +296,63 @@ INT Production::operator[] (UINT nDot) const
 }
 
 
+// States are allocated in chunks, rather than individually
+static const UINT CHUNK_SIZE = 2048 * sizeof(State);
+
+struct StateChunk {
+
+   StateChunk* m_pNext;
+   UINT m_nIndex;
+   BYTE m_ast[CHUNK_SIZE];
+
+   StateChunk(StateChunk* pNext)
+      : m_pNext(pNext), m_nIndex(0)
+      { memset(this->m_ast, 0, CHUNK_SIZE); }
+
+};
+
+static AllocCounter acChunks;
+
+void* operator new(size_t nBytes, StateChunk*& pChunkHead)
+{
+   assert(nBytes == sizeof(State));
+   // Allocate a new place for a state in a state chunk
+   StateChunk* p = pChunkHead;
+   if (!p || (p->m_nIndex + nBytes >= CHUNK_SIZE)) {
+      StateChunk* pNew = new StateChunk(p);
+      acChunks++;
+      pChunkHead = p = pNew;
+   }
+   void* pPlace = (void*)(p->m_ast + p->m_nIndex);
+   p->m_nIndex += nBytes;
+   assert(p->m_nIndex <= CHUNK_SIZE);
+   return pPlace;
+}
+
+static void freeStates(StateChunk*& pChunkHead)
+{
+   StateChunk* pChunk = pChunkHead;
+   while (pChunk) {
+      StateChunk* pNext = pChunk->m_pNext;
+      delete pChunk;
+      acChunks--;
+      pChunk = pNext;
+   }
+   pChunkHead = NULL;
+}
+
+static UINT nDiscardedStates = 0;
+
+static void discardState(StateChunk* pChunkHead, State* pState)
+{
+   assert(pChunkHead->m_nIndex >= sizeof(State));
+   assert(pChunkHead->m_ast + pChunkHead->m_nIndex - sizeof(State) == (BYTE*)pState);
+   pState->~State();
+   // Go back one location in the chunk
+   pChunkHead->m_nIndex -= sizeof(State);
+   nDiscardedStates++;
+}
+
 AllocCounter State::ac;
 
 State::State(INT iNt, UINT nDot, Production* pProd, UINT nStart, Node* pw)
@@ -265,8 +376,10 @@ State::State(State* ps, Node* pw)
 
 State::~State(void)
 {
-   if (this->m_pw)
+   if (this->m_pw) {
       this->m_pw->delRef();
+      this->m_pw = NULL;
+   }
    State::ac--;
 }
 
@@ -282,15 +395,6 @@ void State::increment(Node* pwNew)
    if (this->m_pw)
       this->m_pw->delRef();
    this->m_pw = pwNew;
-}
-
-BOOL State::operator==(const State& other) const
-{
-   const State& t = *this;
-   return t.m_iNt == other.m_iNt &&
-      t.m_pProd == other.m_pProd &&
-      t.m_nDot == other.m_nDot &&
-      t.m_nStart == other.m_nStart;
 }
 
 void State::setNext(State* p)
@@ -315,56 +419,74 @@ Node* State::getResult(INT iStartNt) const
 AllocCounter Column::ac;
 
 Column::Column(Parser* pParser, UINT nToken)
-   : m_nToken(nToken), m_pStates(NULL), m_pTail(NULL), m_pNtStates(NULL)
+   : m_nToken(nToken),
+      m_pNtStates(NULL),
+      m_pMatchingFunc(pParser->getMatchingFunc()),
+      m_abCache(NULL),
+      m_nEnumBin(0)
 {
-   // Initialize array of linked lists by nonterminal at prod[dot]
    Column::ac++;
+   assert(this->m_pMatchingFunc != NULL);
    UINT nNonterminals = pParser->getNumNonterminals();
+   UINT nTerminals = pParser->getNumTerminals();
+   // Initialize array of linked lists by nonterminal at prod[dot]
    this->m_pNtStates = new State* [nNonterminals];
-   ::memset((void*)this->m_pNtStates, 0, nNonterminals * sizeof(State*));
+   memset(this->m_pNtStates, 0, nNonterminals * sizeof(State*));
+   // Initialize the matching cache to zero
+   this->m_abCache = new BYTE[nTerminals + 1];
+   memset(this->m_abCache, 0, (nTerminals + 1) * sizeof(BYTE));
+   // Initialize the hash bins to zero
+   memset(this->m_aHash, 0, sizeof(HashBin) * HASH_BINS);
 }
 
 Column::~Column(void)
 {
-   // Delete the states still owned by the column
-   State* q = this->m_pStates;
-   while (q) {
-      State* pNext = q->getNext();
-      assert(pNext != NULL || q == this->m_pTail);
-      delete q;
-      q = pNext;
+   // Destroy the states still owned by the column
+   for (UINT i = 0; i < HASH_BINS; i++) {
+      // Clean up each hash bin in turn
+      HashBin* ph = &this->m_aHash[i];
+      State* q = ph->m_pHead;
+      while (q) {
+         State* pNext = q->getNext();
+         assert(pNext != NULL || q == ph->m_pTail);
+         // The states are allocated via placement new, so
+         // they are not deleted ordinarily - we just run their destructor
+         q->~State();
+         q = pNext;
+      }
+      ph->m_pHead = NULL;
+      ph->m_pTail = NULL;
    }
-   this->m_pStates = NULL;
-   this->m_pTail = NULL;
    // Delete array of linked lists by nonterminal at prod[dot]
    delete [] this->m_pNtStates;
+   // Delete matching cache
+   delete [] this->m_abCache;
    Column::ac--;
 }
 
-void Column::addState(State* p)
+BOOL Column::addState(State* p)
 {
    // Check to see whether an identical state is
-   // already present in the list
-   State* q = this->m_pStates;
-   // !!! O(n^2) lookup - add a hash table if this becomes a bottleneck
+   // already present in the hash bin
+   UINT nBin = p->getHash() % HASH_BINS;
+   HashBin* ph = &this->m_aHash[nBin];
+   State* q = ph->m_pHead;
    while (q) {
-      if ((*q) == (*p)) {
+      if ((*q) == (*p))
          // Identical state: we're done
-         delete p;
-         return;
-      }
+         return false;
       q = q->getNext();
    }
-   // Not already found: link into place
+   // Not already found: link into place within the hash bin
    p->setNext(NULL);
-   if (!this->m_pStates) {
+   if (!ph->m_pHead) {
       // Establish linked list with one item
-      this->m_pStates = this->m_pTail = p;
+      ph->m_pHead = ph->m_pTail = p;
    }
    else {
-      // Link the new element at the end
-      this->m_pTail->setNext(p);
-      this->m_pTail = p;
+      // Link the new element at the tail
+      ph->m_pTail->setNext(p);
+      ph->m_pTail = p;
    }
    // Get the item at prod[dot]
    INT iItem = p->prodDot();
@@ -375,6 +497,43 @@ void Column::addState(State* p)
       p->setNtNext(psHead);
       psHead = p;
    }
+   return true;
+}
+
+State* Column::nextState(void)
+{
+   // Start our enumeration attempt from the last bin we looked at
+   UINT n = this->m_nEnumBin;
+   do {
+      HashBin* ph = &this->m_aHash[n];
+      if (!ph->m_pEnum && ph->m_pHead) {
+         // Haven't enumerated from this one before,
+         // but it has an entry: return it
+         ph->m_pEnum = ph->m_pHead;
+         this->m_nEnumBin = n;
+         return ph->m_pEnum;
+      }
+      // Try the next item after the one we last returned
+      State* pNext = ph->m_pEnum ? ph->m_pEnum->getNext() : NULL;
+      if (pNext) {
+         // There is such an item: return it
+         ph->m_pEnum = pNext;
+         this->m_nEnumBin = n;
+         return pNext;
+      }
+      // Can't enumerate any more from this bin: go to the next one
+      n = (n + 1) % HASH_BINS;
+   } while (n != this->m_nEnumBin);
+   // Gone full circle: Nothing more to enumerate
+   return NULL;
+}
+
+void Column::resetEnum(void)
+{
+   // Start a fresh enumeration
+   for (UINT i = 0; i < HASH_BINS; i++)
+      this->m_aHash[i].m_pEnum = NULL;
+   this->m_nEnumBin = 0;
 }
 
 State* Column::getNtHead(INT iNt) const
@@ -388,29 +547,185 @@ BOOL Column::matches(UINT nTerminal) const
    if (this->m_nToken == (UINT)-1)
       // Sentinel token in last column: never matches
       return false;
-   // !!! Logic to match terminals and tokens goes here
-   printf("Column::matches: terminal %u, token %u\n",
-      nTerminal, this->m_nToken);
-   return this->m_nToken == nTerminal;
+   if (this->m_abCache[nTerminal] & 0x80)
+      // We already have a cached result for this terminal
+      return (BOOL)(this->m_abCache[nTerminal] & 0x01);
+   // Not cached: obtain a result and store it in the cache
+   BOOL b = this->m_pMatchingFunc(this->m_nToken, nTerminal) != 0;
+   // Mark our cache
+   this->m_abCache[nTerminal] = b ? (BYTE)0x81 : (BYTE)0x80;
+   return b;
 }
+
+
+class File {
+
+   // Safe wrapper for FILE*
+
+private:
+
+   FILE* m_f;
+
+public:
+
+   File(const CHAR* pszFilename, const CHAR* pszMode)
+      { this->m_f = fopen(pszFilename, pszMode); }
+   ~File(void)
+      { if (this->m_f) fclose(this->m_f); }
+
+   operator FILE*() const
+      { return this->m_f; }
+   operator BOOL() const
+      { return this->m_f != NULL; }
+
+   UINT read(void* pb, UINT nLen)
+      { return this->m_f ? fread(pb, 1, nLen, this->m_f) : 0; }
+   UINT write(void* pb, UINT nLen)
+      { return this->m_f ? fwrite(pb, 1, nLen, this->m_f) : 0; }
+
+   BOOL read_UINT(UINT& n)
+      { return this->read(&n, sizeof(UINT)) == sizeof(UINT); }
+   BOOL read_INT(INT& i)
+      { return this->read(&i, sizeof(INT)) == sizeof(INT); }
+
+};
+
 
 AllocCounter Grammar::ac;
 
-Grammar::Grammar(UINT nNonterminals, UINT nTerminals)
-   : m_nNonterminals(nNonterminals), m_nTerminals(nTerminals), m_nts(NULL)
+Grammar::Grammar(UINT nNonterminals, UINT nTerminals, INT iRoot)
+   : m_nNonterminals(nNonterminals), m_nTerminals(nTerminals), m_iRoot(iRoot), m_nts(NULL)
 {
    Grammar::ac++;
    this->m_nts = new Nonterminal*[nNonterminals];
-   ::memset((void*)this->m_nts, 0, nNonterminals * sizeof(Nonterminal*));
+   memset(this->m_nts, 0, nNonterminals * sizeof(Nonterminal*));
+}
+
+Grammar::Grammar(void)
+   : m_nNonterminals(0), m_nTerminals(0), m_iRoot(0), m_nts(NULL)
+{
+   Grammar::ac++;
 }
 
 Grammar::~Grammar(void)
 {
+   this->reset();
+   Grammar::ac--;
+}
+
+void Grammar::reset(void)
+{
    for (UINT i = 0; i < this->m_nNonterminals; i++)
       if (this->m_nts[i])
          delete this->m_nts[i];
-   delete [] this->m_nts;
-   Grammar::ac--;
+   if (this->m_nts) {
+      delete [] this->m_nts;
+      this->m_nts = NULL;
+   }
+   this->m_nNonterminals = 0;
+   this->m_nTerminals = 0;
+   this->m_iRoot = 0;
+}
+
+class GrammarResetter {
+
+   // Resets a grammar to a known zero state unless
+   // explicitly disarmed
+
+private:
+
+   Grammar* m_pGrammar;
+
+public:
+
+   GrammarResetter(Grammar* pGrammar)
+      : m_pGrammar(pGrammar)
+      { }
+   ~GrammarResetter(void)
+      { if (this->m_pGrammar) this->m_pGrammar->reset(); }
+
+   void disarm(void)
+      { this->m_pGrammar = NULL; }
+
+};
+
+BOOL Grammar::read_binary(const CHAR* pszFilename)
+{
+   // Attempt to read grammar from binary file.
+   // Returns true if successful, otherwise false.
+   printf("Reading binary grammar file %s\n", pszFilename);
+   this->reset();
+   File f(pszFilename, "rb");
+   if (!f)
+      return false;
+   const UINT SIGNATURE_LENGTH = 16;
+   BYTE abSignature[SIGNATURE_LENGTH];
+   UINT n = f.read(abSignature, sizeof(abSignature));
+   if (n < sizeof(abSignature))
+      return false;
+   // Check the signature - should start with 'Reynir '
+   if (memcmp(abSignature, "Reynir ", 7) != 0) {
+      printf("Signature mismatch\n");
+      return false;
+   }
+   UINT nNonterminals, nTerminals;
+   if (!f.read_UINT(nTerminals))
+      return false;
+   if (!f.read_UINT(nNonterminals))
+      return false;
+   printf("Reading %u terminals and %u nonterminals\n", nTerminals, nNonterminals);
+   if (!nNonterminals)
+      // No nonterminals to read: we're done
+      return true;
+   INT iRoot;
+   if (!f.read_INT(iRoot))
+      return false;
+   printf("Root nonterminal index is %d\n", iRoot);
+   // Initialize the nonterminals array
+   Nonterminal** ppnts = new Nonterminal*[nNonterminals];
+   memset(ppnts, 0, nNonterminals * sizeof(Nonterminal*));
+   this->m_nts = ppnts;
+   this->m_nNonterminals = nNonterminals;
+   this->m_nTerminals = nTerminals;
+   this->m_iRoot = iRoot;
+   // Ensure we clean up properly in case of exit with error
+   GrammarResetter resetter(this);
+   // Loop through the nonterminals
+   for (n = 0; n < nNonterminals; n++) {
+      // How many productions?
+      UINT nLenPlist;
+      if (!f.read_UINT(nLenPlist))
+         return false;
+      Nonterminal* pnt = new Nonterminal(L"");
+      // Loop through the productions
+      for (UINT j = 0; j < nLenPlist; j++) {
+         UINT nPriority;
+         if (!f.read_UINT(nPriority))
+            return false;
+         UINT nLenProd;
+         if (!f.read_UINT(nLenProd))
+            return false;
+         const UINT MAX_LEN_PROD = 256;
+         if (nLenProd > MAX_LEN_PROD) {
+            // Production too long
+            printf("Production too long\n");
+            return false;
+         }
+         // Read the production
+         INT aiProd[MAX_LEN_PROD];
+         f.read(aiProd, nLenProd * sizeof(INT));
+         // Create a fresh production object
+         Production* pprod = new Production(nPriority, nLenProd, aiProd);
+         // Add it to the nonterminal
+         pnt->addProduction(pprod);
+      }
+      // Add the nonterminal to the grammar
+      this->setNonterminal(-1 -(INT)n, pnt);
+   }
+   printf("Reading completed\n");
+   // No error: we disarm the resetter
+   resetter.disarm();
+   return true;
 }
 
 void Grammar::setNonterminal(INT iIndex, Nonterminal* pnt)
@@ -436,6 +751,7 @@ const WCHAR* Grammar::nameOfNt(INT iNt) const
    Nonterminal* pnt = (*this)[iNt];
    return pnt ? pnt->getName() : L"[None]";
 }
+
 
 AllocCounter Node::ac;
 
@@ -513,7 +829,7 @@ void Node::_dump(Grammar* pGrammar, UINT nIndent)
       this->m_label.m_nJ);
    FamilyEntry* p = this->m_pHead;
    UINT nOption = 0;
-   while(p) {
+   while (p) {
       if (nOption || p->pNext) {
          // Don't print 'Option 1' if there is only one option
          for (UINT i = 0; i < nIndent; i++)
@@ -533,6 +849,22 @@ void Node::dump(Grammar* pGrammar)
 {
    this->_dump(pGrammar, 0);
 }
+
+UINT Node::numCombinations(Node* pNode)
+{
+   if (!pNode || pNode->m_label.m_iNt >= 0)
+      return 1;
+   UINT nComb = 0;
+   FamilyEntry* p = pNode->m_pHead;
+   while (p) {
+      UINT n1 = p->p1 ? Node::numCombinations(p->p1) : 1;
+      UINT n2 = p->p2 ? Node::numCombinations(p->p2) : 1;
+      nComb += n1 * n2;
+      p = p->pNext;
+   }
+   return nComb == 0 ? 1 : nComb;
+}
+
 
 NodeDict::NodeDict(void)
    : m_pHead(NULL)
@@ -576,31 +908,12 @@ void NodeDict::reset(void)
    this->m_pHead = NULL;
 }
 
-AllocReporter::AllocReporter(void)
-{
-}
 
-AllocReporter::~AllocReporter(void)
+Parser::Parser(Grammar* p, MatchingFunc pMatchingFunc)
+   : m_pGrammar(p), m_pMatchingFunc(pMatchingFunc)
 {
-}
-
-void AllocReporter::report(void) const
-{
-   printf("\nMemory allocation status\n");
-   printf("------------------------\n");
-   printf("Nonterminals  : %6d %6d\n", Nonterminal::ac.getBalance(), Nonterminal::ac.numAllocs());
-   printf("Productions   : %6d %6d\n", Production::ac.getBalance(), Production::ac.numAllocs());
-   printf("Grammars      : %6d %6d\n", Grammar::ac.getBalance(), Grammar::ac.numAllocs());
-   printf("Nodes         : %6d %6d\n", Node::ac.getBalance(), Node::ac.numAllocs());
-   printf("States        : %6d %6d\n", State::ac.getBalance(), State::ac.numAllocs());
-   printf("Columns       : %6d %6d\n", Column::ac.getBalance(), Column::ac.numAllocs());
-   printf("HNodes        : %6d %6d\n", HNode::ac.getBalance(), HNode::ac.numAllocs());
-}
-
-
-Parser::Parser(Grammar* p)
-   : m_pGrammar(p)
-{
+   assert(this->m_pGrammar != NULL);
+   assert(this->m_pMatchingFunc != NULL);
 }
 
 Parser::~Parser(void)
@@ -630,27 +943,27 @@ Node* Parser::_make_node(State* pState, UINT nEnd, Node* pV, NodeDict& ndV)
    return pY;
 }
 
-void Parser::_push(State* pState, Column* pE, State*& pQ)
+BOOL Parser::_push(State* pState, Column* pE, State*& pQ)
 {
    INT iItem = pState->prodDot();
    if (iItem <= 0)
       // Nonterminal or epsilon: add state to column
-      pE->addState(pState);
-   else
+      return pE->addState(pState);
    if (pE->matches((UINT)iItem)) {
       // Terminal matching the current token
       // Link into list whose head is pQ
       pState->setNext(pQ);
       pQ = pState;
+      return true;
    }
-   else
-      delete pState;
+   return false;
 }
 
 Node* Parser::parse(INT iStartNt, UINT nTokens, const UINT pnToklist[])
 {
+   // If pnToklist is NULL, a sequence of integers 0..nTokens-1 will be used
    // Sanity checks
-   if (!nTokens || !pnToklist)
+   if (!nTokens)
       return NULL;
    if (!this->m_pGrammar)
       return NULL;
@@ -663,17 +976,19 @@ Node* Parser::parse(INT iStartNt, UINT nTokens, const UINT pnToklist[])
    UINT i;
    Column** pCol = new Column* [nTokens + 1];
    for (i = 0; i < nTokens; i++)
-      pCol[i] = new Column(this, pnToklist[i]);
+      pCol[i] = new Column(this, pnToklist ? pnToklist[i] : i);
    pCol[i] = new Column(this, (UINT)-1); // Sentinel column
 
    // Initialize parser state
    State* pQ0 = NULL;
+   StateChunk* pChunkHead = NULL;
 
    // Prepare the initial state
    Production* p = pRootNt->getHead();
    while (p) {
-      State* ps = new State(iStartNt, 0, p, 0, NULL);
-      this->_push(ps, pCol[0], pQ0);
+      State* ps = new (pChunkHead) State(iStartNt, 0, p, 0, NULL);
+      if (!this->_push(ps, pCol[0], pQ0))
+         discardState(pChunkHead, ps);
       p = p->getNext();
    }
 
@@ -683,10 +998,10 @@ Node* Parser::parse(INT iStartNt, UINT nTokens, const UINT pnToklist[])
 
    for (i = 0; i < nTokens + 1; i++) {
 
-      printf("Column %u, token %u\n", i, (i < nTokens) ? pnToklist[i] : (UINT)-1);
-
       Column* pEi = pCol[i];
-      State* pState = pEi->getHead();
+      State* pState = pEi->nextState();
+
+      // printf("Column %u, token %u\n", i, pEi->getToken());
 
       if (!pState && !pQ0) {
          // No parse available at token i-1
@@ -708,8 +1023,9 @@ Node* Parser::parse(INT iStartNt, UINT nTokens, const UINT pnToklist[])
             // Push all right hand sides of this nonterminal
             p = (*this->m_pGrammar)[iItem]->getHead();
             while (p) {
-               State* psNew = new State(iItem, 0, p, i, NULL);
-               this->_push(psNew, pEi, pQ);
+               State* psNew = new (pChunkHead) State(iItem, 0, p, i, NULL);
+               if (!this->_push(psNew, pEi, pQ))
+                  discardState(pChunkHead, psNew);
                p = p->getNext();
             }
             // Add elements from the H set that refer to the
@@ -718,8 +1034,9 @@ Node* Parser::parse(INT iStartNt, UINT nTokens, const UINT pnToklist[])
             while (ph) {
                if (ph->getNt() == iItem) {
                   Node* pY = this->_make_node(pState, i, ph->getV(), ndV);
-                  State* psNew = new State(pState, pY);
-                  this->_push(psNew, pEi, pQ);
+                  State* psNew = new (pChunkHead) State(pState, pY);
+                  if (!this->_push(psNew, pEi, pQ))
+                     discardState(pChunkHead, psNew);
                }
                ph = ph->getNext();
             }
@@ -740,14 +1057,15 @@ Node* Parser::parse(INT iStartNt, UINT nTokens, const UINT pnToklist[])
             State* psNt = pCol[nStart]->getNtHead(iNtB);
             while (psNt) {
                Node* pY = this->_make_node(psNt, i, pW, ndV);
-               State* psNew = new State(psNt, pY);
-               this->_push(psNew, pEi, pQ);
+               State* psNew = new (pChunkHead) State(psNt, pY);
+               if (!this->_push(psNew, pEi, pQ))
+                  discardState(pChunkHead, psNew);
                psNt = psNt->getNtNext();
             }
          }
          // Move to the next item on the agenda
          // (which may have been enlarged by the previous code)
-         pState = pState->getNext();
+         pState = pEi->nextState();
       }
 
       // Clean up the H set
@@ -762,7 +1080,7 @@ Node* Parser::parse(INT iStartNt, UINT nTokens, const UINT pnToklist[])
       Node* pV = NULL;
 
       if (pQ) {
-         Label label(pnToklist[i], 0, NULL, i, i + 1);
+         Label label(pEi->getToken(), 0, NULL, i, i + 1);
          pV = new Node(label); // Reference is deleted below
       }
 
@@ -775,7 +1093,8 @@ Node* Parser::parse(INT iStartNt, UINT nTokens, const UINT pnToklist[])
          // 'incrementing' it by moving the dot one step to the right
          pQ->increment(pY);
          assert(i + 1 <= nTokens);
-         this->_push(pQ, pCol[i + 1], pQ0);
+         if (!this->_push(pQ, pCol[i + 1], pQ0))
+            pQ->~State();
          pQ = psNext;
       }
 
@@ -790,7 +1109,8 @@ Node* Parser::parse(INT iStartNt, UINT nTokens, const UINT pnToklist[])
    Node* pResult = NULL;
    if (i > nTokens) {
       // Completed the token loop
-      State* ps = pCol[nTokens]->getHead();
+      pCol[nTokens]->resetEnum();
+      State* ps = pCol[nTokens]->nextState();
       while (ps && !pResult) {
          // Look through the end states until we find one that spans the
          // entire parse tree and derives the starting nonterminal
@@ -799,7 +1119,7 @@ Node* Parser::parse(INT iStartNt, UINT nTokens, const UINT pnToklist[])
             // Save the result node from being deleted when the
             // column states are deleted
             pResult->addRef();
-         ps = ps->getNext();
+         ps = pCol[nTokens]->nextState();
       }
    }
 
@@ -808,7 +1128,107 @@ Node* Parser::parse(INT iStartNt, UINT nTokens, const UINT pnToklist[])
       delete pCol[i];
    delete [] pCol;
 
+   freeStates(pChunkHead);
+
    return pResult; // The caller should call delRef() on this after using it
+}
+
+
+AllocReporter::AllocReporter(void)
+{
+}
+
+AllocReporter::~AllocReporter(void)
+{
+}
+
+void AllocReporter::report(void) const
+{
+   printf("\nMemory allocation status\n");
+   printf("------------------------\n");
+   printf("Nonterminals : %6d %8d\n", Nonterminal::ac.getBalance(), Nonterminal::ac.numAllocs());
+   printf("Productions  : %6d %8d\n", Production::ac.getBalance(), Production::ac.numAllocs());
+   printf("Grammars     : %6d %8d\n", Grammar::ac.getBalance(), Grammar::ac.numAllocs());
+   printf("Nodes        : %6d %8d\n", Node::ac.getBalance(), Node::ac.numAllocs());
+   printf("States       : %6d %8d\n", State::ac.getBalance(), State::ac.numAllocs());
+   printf("...discarded : %6s %8d\n", "", nDiscardedStates);
+   printf("StateChunks  : %6d %8d\n", acChunks.getBalance(), acChunks.numAllocs());
+   printf("Columns      : %6d %8d\n", Column::ac.getBalance(), Column::ac.numAllocs());
+   printf("HNodes       : %6d %8d\n", HNode::ac.getBalance(), HNode::ac.numAllocs());
+   fflush(stdout); // !!! Debugging
+}
+
+
+// Stuff for function-based invocation of the parser (e.g. from CFFI)
+
+// Token-terminal matching function
+BOOL defaultMatcher(UINT nToken, UINT nTerminal)
+{
+   // printf("defaultMatcher(): token is %u, terminal is %u\n", nToken, nTerminal);
+   return nToken == nTerminal;
+}
+
+Grammar* newGrammar(const CHAR* pszGrammarFile)
+{
+   if (!pszGrammarFile)
+      return NULL;
+   // Read grammar from binary file
+   Grammar* pGrammar = new Grammar();
+   if (!pGrammar->read_binary(pszGrammarFile)) {
+      printf("Unable to read binary grammar file %s\n", pszGrammarFile);
+      delete pGrammar;
+      return NULL;
+   }
+   return pGrammar;
+}
+
+void deleteGrammar(Grammar* pGrammar)
+{
+   if (pGrammar)
+      delete pGrammar;
+}
+
+Parser* newParser(Grammar* pGrammar, MatchingFunc fpMatcher)
+{
+   if (!pGrammar || !fpMatcher)
+      return NULL;
+   return new Parser(pGrammar, fpMatcher);
+}
+
+void deleteParser(Parser* pParser)
+{
+   if (pParser)
+      delete pParser;
+}
+
+void deleteForest(Node* pNode)
+{
+   if (pNode)
+      pNode->delRef();
+}
+
+UINT numCombinations(Node* pNode)
+{
+   return pNode ? Node::numCombinations(pNode) : 0;
+}
+
+Node* earleyParse(Parser* pParser, UINT nTokens)
+{
+   // Sanity checks
+   if (!pParser)
+      return NULL;
+   if (!nTokens)
+      return NULL;
+
+   // printf("Calling parse(), root nonterminal is %d\n", pGrammar->getRoot());
+   Node* pNode = pParser->parse(pParser->getGrammar()->getRoot(), nTokens);
+
+   if (!pNode)
+      printf("No tree returned\n");
+
+   fflush(stdout); // !!! Debugging
+
+   return pNode;
 }
 
 

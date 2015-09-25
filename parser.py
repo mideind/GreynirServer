@@ -429,13 +429,16 @@ class Parser:
             return self._hash
 
         def __getitem__(self, index):
-            return self._ix_list[index]
+            return self._ix_list[index] if index < self._len else 0
 
         def __len__(self):
             return self._len
 
         def __eq__(self, other):
             return id(self) == id(other)
+
+        def __iter__(self):
+            return iter(self._ix_list)
 
 
     def __init__(self, g):
@@ -457,16 +460,10 @@ class Parser:
                 [ Parser.PackedProduction(prio, p) for prio, p in plist ]
         # Make a dictionary of nonterminals from the grammar
         # keyed by the nonterminal index instead of its name
-        self._nonterminals = { }
-        for nt in g.nonterminals.values():
-            assert nt.index not in self._nonterminals
-            self._nonterminals[nt.index] = nt
+        self._nonterminals = { nt.index : nt for nt in g.nonterminals.values() }
         # Make a dictionary of terminals from the grammar
         # keyed by the terminal index instead of its name
-        self._terminals = { }
-        for t in g.terminals.values():
-            assert t.index not in self._terminals
-            self._terminals[t.index] = t
+        self._terminals = { t.index : t for t in g.terminals.values() }
 
 
     @classmethod
@@ -523,7 +520,7 @@ class Parser:
             # newstate = (N, dot, prod, h, y)
 
             dot, prod = newstate[1], newstate[2]
-            item = 0 if dot >= len(prod) else prod[dot]
+            item = prod[dot] # Returns 0 if dot >= len(prod)
             if item <= 0:
                 # Nonterminal or epsilon
                 # δ ∈ ΣN
@@ -563,50 +560,55 @@ class Parser:
             H = defaultdict(list)
             Q = Q0
             Q0 = [ ]
-            while j < len(Ei):
-                # Remove an element, Λ say, from R
-                # Λ = state
-                state = Ei[j]
-                j += 1
-                nt_B, dot, prod, h, w = state
-                len_prod = len(prod)
-                # if Λ = (B ::= α · Cβ, h, w):
-                if dot < len_prod and prod[dot] < 0: # Nonterminal
-                    # Earley predictor
-                    # for all (C ::= δ) ∈ P:
+            try:
+            #while j < len(Ei):
+                while True:
+                    # Remove an element, Λ say, from R
+                    # Λ = state
+                    state = Ei[j]
+                    j += 1
+                    nt_B, dot, prod, h, w = state
                     nt_C = prod[dot]
-                    # Go through all right hand sides of non-terminal nt_C
-                    for p in self._nt_dict[nt_C]:
-                        # if δ ∈ ΣN and (C ::= ·δ, i, null) !∈ Ei:
-                        newstate = (nt_C, 0, p, i, None)
-                        _push(newstate, Ei, Q)
-                    # if ((C, v) ∈ H):
-                    for v in H.get(nt_C, []):
-                        # y = MAKE_NODE(B ::= αC · β, h, i, w, v, V)
-                        y = _make_node(nt_B, dot + 1, prod, h, i, w, v, V)
-                        newstate = (nt_B, dot + 1, prod, h, y)
-                        _push(newstate, Ei, Q)
-                # if Λ = (D ::= α·, h, w):
-                elif dot >= len_prod:
-                    # Earley completer
-                    if not w:
-                        label = (nt_B, i, i)
-                        if label in V:
-                            # w = v = V[label]
-                            w = V[label]
-                        else:
-                            # w = v = V[label] = Parser.Node(self, label)
-                            w = V[label] = Parser.Node(self, label)
-                        w.add_family(prod, None) # Add e (empty production) as a family
-                    if h == i:
-                        # Empty production satisfied
-                        H[nt_B].append(w) # defaultdict automatically creates an empty list
-                    # for all (A ::= τ · Dδ, k, z) in Eh:
-                    for st0 in E[h].enum_nt(nt_B):
-                        nt_A, dot0, prod0, k, z = st0
-                        y = _make_node(nt_A, dot0 + 1, prod0, k, i, z, w, V)
-                        newstate = (nt_A, dot0 + 1, prod0, k, y)
-                        _push(newstate, Ei, Q)
+                    # if Λ = (B ::= α · Cβ, h, w):
+                    if nt_C < 0: # Nonterminal
+                        # Earley predictor
+                        # for all (C ::= δ) ∈ P:
+                        # Go through all right hand sides of non-terminal nt_C
+                        for p in self._nt_dict[nt_C]:
+                            # if δ ∈ ΣN and (C ::= ·δ, i, null) !∈ Ei:
+                            newstate = (nt_C, 0, p, i, None)
+                            _push(newstate, Ei, Q)
+                        # if ((C, v) ∈ H):
+                        for v in H.get(nt_C, []):
+                            # y = MAKE_NODE(B ::= αC · β, h, i, w, v, V)
+                            y = _make_node(nt_B, dot + 1, prod, h, i, w, v, V)
+                            newstate = (nt_B, dot + 1, prod, h, y)
+                            _push(newstate, Ei, Q)
+                    # if Λ = (D ::= α·, h, w):
+                    elif nt_C == 0: # dot >= len(prod)
+                        # Earley completer
+                        if not w:
+                            label = (nt_B, i, i)
+                            if label in V:
+                                # w = v = V[label]
+                                w = V[label]
+                            else:
+                                # w = v = V[label] = Parser.Node(self, label)
+                                w = V[label] = Parser.Node(self, label)
+                            w.add_family(prod, None) # Add e (empty production) as a family
+                        if h == i:
+                            # Empty production satisfied
+                            H[nt_B].append(w) # defaultdict automatically creates an empty list
+                        # for all (A ::= τ · Dδ, k, z) in Eh:
+                        for st0 in E[h].enum_nt(nt_B):
+                            nt_A, dot0, prod0, k, z = st0
+                            y = _make_node(nt_A, dot0 + 1, prod0, k, i, z, w, V)
+                            newstate = (nt_A, dot0 + 1, prod0, k, y)
+                            _push(newstate, Ei, Q)
+            except IndexError:
+                # The loop terminates naturally on an IndexError
+                # when j becomes >= len(Ei)
+                assert j >= len(Ei)
 
             V = { }
             if Q:
@@ -648,6 +650,7 @@ class Parser:
 
     def _lookup(self, ix):
         """ Convert a production item from an index to an object reference """
+        assert ix != 0
         return self._nonterminals[ix] if ix < 0 else self._terminals[ix]
 
 

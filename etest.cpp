@@ -24,7 +24,7 @@
 
 #include "eparser.h"
 
-void runTest(void)
+void runTest_1(void)
 {
    /*
       S0 -> Setning
@@ -50,19 +50,19 @@ void runTest(void)
    Nonterminal* nt3 = new Nonterminal(L"OgSetning");
    Nonterminal* nt5 = new Nonterminal(L"Atviksorð");
 
-   Production* p0_1 = new Production(1, p0);
+   Production* p0_1 = new Production(0, 1, p0);
    nt4->addProduction(p0_1);
-   Production* p1_1 = new Production(1, p1);
+   Production* p1_1 = new Production(0, 1, p1);
    nt1->addProduction(p1_1);
-   Production* p1_2 = new Production(2, p2);
+   Production* p1_2 = new Production(0, 2, p2);
    nt1->addProduction(p1_2);
-   Production* p2_1 = new Production(3, p3);
+   Production* p2_1 = new Production(0, 3, p3);
    nt2->addProduction(p2_1);
-   Production* p3_1 = new Production(2, p4);
+   Production* p3_1 = new Production(0, 2, p4);
    nt3->addProduction(p3_1);
-   Production* p5_1 = new Production(1, p5);
+   Production* p5_1 = new Production(0, 1, p5);
    nt5->addProduction(p5_1);
-   Production* p5_2 = new Production(0, NULL); // Epsilon
+   Production* p5_2 = new Production(0, 0, NULL); // Epsilon
    nt5->addProduction(p5_2);
 
    pGrammar->setNonterminal(-1, nt1);
@@ -83,16 +83,47 @@ void runTest(void)
       pNode = NULL;
    }
 
+   delete pParser;
    delete pGrammar;
 
    // Report memory allocation
-   AllocReporter reporter;
-   reporter.report();
+   printAllocationReport();
+}
+
+void runTest_2(void)
+{
+   // Read grammar from binary file
+   Grammar* pGrammar = new Grammar();
+   if (!pGrammar->read_binary("Reynir.grammar.bin")) {
+      printf("Unable to read binary grammar\n");
+      return;
+   }
+   Parser* pParser = new Parser(pGrammar);
+
+   const UINT tokens[] = {946, 948, 75, 947, 1126, 18, 1055, 20, 9};
+
+   Node* pNode = pParser->parse(pGrammar->getRoot(), 9, tokens);
+
+   if (!pNode)
+      printf("No tree returned\n");
+   else {
+      pNode->dump(pGrammar);
+      // Delete the final reference to the result node
+      pNode->delRef();
+      pNode = NULL;
+   }
+
+   delete pParser;
+   delete pGrammar;
+
+   // Report memory allocation
+   printAllocationReport();
 }
 
 int main(int argc, char* argv[]) {
    printf("Eparser test starting\n");
    setlocale(LC_ALL, "is_IS.UTF-8");
-   runTest();
+   runTest_1();
+   runTest_2();
    printf("Eparser test done\n");
 }

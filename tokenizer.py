@@ -560,7 +560,7 @@ class Bin_DB:
                     # There are additional word meanings in the Meanings dictionary,
                     # coming from the settings file: append them
                     for add_m in Meanings.DICT[w]:
-                        print("Adding additional meaning: {0}".format(add_m))
+                        # print("Adding additional meaning: {0}".format(add_m))
                         m.append(BIN_Meaning._make(add_m))
         except (psycopg2.DataError, psycopg2.ProgrammingError) as e:
             print("Word {0} causing DB exception {1}".format(w, e))
