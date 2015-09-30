@@ -244,6 +244,8 @@ def run_test(p, fast_p):
             finally:
                 t1 = time.time()
 
+            # ParseForestPrinter.print_forest(p.grammar, forest, detailed = True)
+
             # Run the C++ parser
             try:
                 tf0 = time.time()
@@ -255,13 +257,10 @@ def run_test(p, fast_p):
                 tf1 = time.time()
 
             num = 0 if forest is None else Parser.num_combinations(forest)
-            num2 = Fast_Parser.num_combinations(forest2)
+            num2 = 0 if forest2 is None else Fast_Parser.num_combinations(forest2)
 
             print("Python: Parsed in {0:.4f} seconds, {1} combinations".format(t1 - t0, num))
             print("C++:    Parsed in {0:.4f} seconds, {1} combinations".format(tf1 - tf0, num2))
-
-            # Clean up the returned forest from Fast_Parser
-            Fast_Parser.delete_forest(forest2)
 
             best = s["best"]
             if best <= 0 or abs(target - num) < abs(target - best):
@@ -282,7 +281,7 @@ def run_test(p, fast_p):
                 forest = forest
             )
 
-            # break # !!! DEBUG: only do one loop
+            #break # !!! DEBUG: only do one loop
 
 
 def test3():
@@ -290,9 +289,9 @@ def test3():
     print("\n\n------ Test 3 ---------")
 
     p = BIN_Parser(verbose = False) # Don't emit diagnostic messages
-    fast_p = Fast_Parser(verbose = False)
 
-    try:
+    with Fast_Parser(verbose = False) as fast_p:
+
         g = p.grammar
 
         print("Reynir.grammar has {0} nonterminals, {1} terminals, {2} productions"
@@ -349,10 +348,7 @@ def test3():
                 pass
             elif test["err"]:
                 print("Error: {0}".format(test["err"]))
-
-    finally:
-        # Clean up the Fast_Parser to avoid C++ memory leaks
-        fast_p.cleanup()
+    # fast_p is automatically cleaned up via the context manager protocol
 
 
 if __name__ == "__main__":

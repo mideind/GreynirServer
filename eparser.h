@@ -230,6 +230,7 @@ friend class AllocReporter;
 private:
 
    struct FamilyEntry {
+      Production* pProd;
       Node* p1;
       Node* p2;
       FamilyEntry* pNext;
@@ -254,7 +255,7 @@ public:
       { this->m_nRefCount++; }
    void delRef(void);
 
-   void addFamily(Node* pW, Node* pV);
+   void addFamily(Production*, Node* pW, Node* pV);
 
    BOOL hasLabel(const Label& label) const
       { return this->m_label == label; }
@@ -267,11 +268,12 @@ public:
 
 
 // Token-terminal matching function
-typedef BOOL (*MatchingFunc)(UINT, UINT);
+typedef BOOL (*MatchingFunc)(UINT nHandle, UINT nToken, UINT nTerminal);
 
 // Default matching function that simply
 // compares the token value with the terminal number
-BOOL defaultMatcher(UINT nToken, UINT nTerminal);
+BOOL defaultMatcher(UINT nHandle, UINT nToken, UINT nTerminal);
+
 
 class Parser {
 
@@ -285,7 +287,7 @@ private:
    Grammar* m_pGrammar;
    MatchingFunc m_pMatchingFunc;
 
-   BOOL _push(State*, Column*, State*&);
+   BOOL _push(UINT nHandle, State*, Column*, State*&);
 
    Node* _make_node(State* pState, UINT nEnd, Node* pV, NodeDict& ndV);
 
@@ -306,7 +308,8 @@ public:
       { return this->m_pGrammar; }
 
    // If pnToklist is NULL, a sequence of integers 0..nTokens-1 will be used
-   Node* parse(INT iStartNt, UINT nTokens, const UINT pnToklist[] = NULL);
+   Node* parse(UINT nHandle, INT iStartNt, UINT* pnErrorToken,
+      UINT nTokens, const UINT pnToklist[] = NULL);
 
 };
 
@@ -314,7 +317,7 @@ public:
 extern "C" void printAllocationReport(void);
 
 // Parse a token stream
-extern "C" Node* earleyParse(Parser*, UINT nTokens);
+extern "C" Node* earleyParse(Parser*, UINT nTokens, UINT nHandle, UINT* pnErrorToken);
 
 extern "C" Grammar* newGrammar(const CHAR* pszGrammarFile);
 
@@ -325,6 +328,8 @@ extern "C" Parser* newParser(Grammar*, MatchingFunc fpMatcher = defaultMatcher);
 extern "C" void deleteParser(Parser*);
 
 extern "C" void deleteForest(Node*);
+
+extern "C" void dumpForest(Node*, Grammar*);
 
 extern "C" UINT numCombinations(Node*);
 

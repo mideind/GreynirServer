@@ -139,6 +139,7 @@ private:
    State** m_pNtStates;
    MatchingFunc m_pMatchingFunc;
    BYTE* m_abCache;
+   BYTE* m_abSeen;
    HashBin m_aHash[HASH_BINS]; // The hash array
    UINT m_nEnumBin; // Round robin used during enumeration
 
@@ -160,8 +161,9 @@ public:
    void resetEnum(void);
 
    State* getNtHead(INT iNt) const;
+   BOOL markSeen(INT iNt);
 
-   BOOL matches(UINT nTerminal) const;
+   BOOL matches(UINT nHandle, UINT nTerminal) const;
 
 };
 
@@ -423,6 +425,7 @@ Column::Column(Parser* pParser, UINT nToken)
       m_pNtStates(NULL),
       m_pMatchingFunc(pParser->getMatchingFunc()),
       m_abCache(NULL),
+      m_abSeen(NULL),
       m_nEnumBin(0)
 {
    Column::ac++;
@@ -435,6 +438,9 @@ Column::Column(Parser* pParser, UINT nToken)
    // Initialize the matching cache to zero
    this->m_abCache = new BYTE[nTerminals + 1];
    memset(this->m_abCache, 0, (nTerminals + 1) * sizeof(BYTE));
+   // Initialize the seen array to zero
+   this->m_abSeen = new BYTE[nNonterminals];
+   memset(this->m_abSeen, 0, nNonterminals * sizeof(BYTE));
    // Initialize the hash bins to zero
    memset(this->m_aHash, 0, sizeof(HashBin) * HASH_BINS);
 }
@@ -461,6 +467,8 @@ Column::~Column(void)
    delete [] this->m_pNtStates;
    // Delete matching cache
    delete [] this->m_abCache;
+   // Delete seen array
+   delete [] this->m_abSeen;
    Column::ac--;
 }
 
@@ -542,7 +550,7 @@ State* Column::getNtHead(INT iNt) const
    return this->m_pNtStates[nIndex];
 }
 
-BOOL Column::matches(UINT nTerminal) const
+BOOL Column::matches(UINT nHandle, UINT nTerminal) const
 {
    if (this->m_nToken == (UINT)-1)
       // Sentinel token in last column: never matches
@@ -551,9 +559,19 @@ BOOL Column::matches(UINT nTerminal) const
       // We already have a cached result for this terminal
       return (BOOL)(this->m_abCache[nTerminal] & 0x01);
    // Not cached: obtain a result and store it in the cache
-   BOOL b = this->m_pMatchingFunc(this->m_nToken, nTerminal) != 0;
+   BOOL b = this->m_pMatchingFunc(nHandle, this->m_nToken, nTerminal) != 0;
    // Mark our cache
    this->m_abCache[nTerminal] = b ? (BYTE)0x81 : (BYTE)0x80;
+   return b;
+}
+
+BOOL Column::markSeen(INT iNt)
+{
+   // Guard to ensure that each nonterminal is only added once to the column
+   assert(iNt < 0);
+   UINT nIndex = ~((UINT)iNt);
+   BOOL b = this->m_abSeen[nIndex] == 0;
+   this->m_abSeen[nIndex] = 1;
    return b;
 }
 
@@ -725,6 +743,7 @@ BOOL Grammar::read_binary(const CHAR* pszFilename)
    printf("Reading completed\n");
    // No error: we disarm the resetter
    resetter.disarm();
+   fflush(stdout);
    return true;
 }
 
@@ -783,18 +802,19 @@ void Node::delRef(void)
       delete this;
 }
 
-void Node::addFamily(Node* pW, Node* pV)
+void Node::addFamily(Production* pProd, Node* pW, Node* pV)
 {
    // pW may be NULL, or both may be NULL if epsilon
    FamilyEntry* p = this->m_pHead;
    while (p) {
-      if (p->p1 == pW && p->p2 == pV)
+      if (p->pProd == pProd && p->p1 == pW && p->p2 == pV)
          // We already have the same family entry
          return;
       p = p->pNext;
    }
    // Not already there: create a new entry
    p = new FamilyEntry();
+   p->pProd = pProd;
    p->p1 = pW;
    p->p2 = pV;
    if (pW)
@@ -815,9 +835,16 @@ void Node::_dump(Grammar* pGrammar, UINT nIndent)
    INT iNt = this->m_label.m_iNt;
    const WCHAR* pwzName;
    WCHAR wchBuf[16];
-   if (iNt < 0)
+   if (iNt < 0) {
+      // Nonterminal
       pwzName = pGrammar->nameOfNt(iNt);
+      if (!pwzName || wcslen(pwzName) == 0) {
+         swprintf(wchBuf, 16, L"[Nt %d]", iNt);
+         pwzName = wchBuf;
+      }
+   }
    else {
+      // Token
       swprintf(wchBuf, 16, L"[Token %u]", (UINT)iNt);
       pwzName = wchBuf;
    }
@@ -843,6 +870,7 @@ void Node::_dump(Grammar* pGrammar, UINT nIndent)
       p = p->pNext;
       nOption++;
    }
+   fflush(stdout);
 }
 
 void Node::dump(Grammar* pGrammar)
@@ -939,33 +967,40 @@ Node* Parser::_make_node(State* pState, UINT nEnd, Node* pV, NodeDict& ndV)
    }
    Label label(iNtB, nDot, pProdLabel, nStart, nEnd);
    Node* pY = ndV.lookupOrAdd(label);
-   pY->addFamily(pW, pV); // pW may be NULL
+   pY->addFamily(pProd, pW, pV); // pW may be NULL
    return pY;
 }
 
-BOOL Parser::_push(State* pState, Column* pE, State*& pQ)
+BOOL Parser::_push(UINT nHandle, State* pState, Column* pE, State*& pQ)
 {
    INT iItem = pState->prodDot();
    if (iItem <= 0)
       // Nonterminal or epsilon: add state to column
       return pE->addState(pState);
-   if (pE->matches((UINT)iItem)) {
+   if (pE->matches(nHandle, (UINT)iItem)) {
       // Terminal matching the current token
       // Link into list whose head is pQ
       pState->setNext(pQ);
       pQ = pState;
       return true;
    }
+   // Return false to indicate that we did not take ownership of the State
    return false;
 }
 
-Node* Parser::parse(INT iStartNt, UINT nTokens, const UINT pnToklist[])
+Node* Parser::parse(UINT nHandle, INT iStartNt, UINT* pnErrorToken,
+   UINT nTokens, const UINT pnToklist[])
 {
    // If pnToklist is NULL, a sequence of integers 0..nTokens-1 will be used
    // Sanity checks
+   if (pnErrorToken)
+      *pnErrorToken = 0;
    if (!nTokens)
       return NULL;
    if (!this->m_pGrammar)
+      return NULL;
+   if (iStartNt >= 0)
+      // Root must be nonterminal (index < 0)
       return NULL;
    Nonterminal* pRootNt = (*this->m_pGrammar)[iStartNt];
    if (!pRootNt)
@@ -987,7 +1022,7 @@ Node* Parser::parse(INT iStartNt, UINT nTokens, const UINT pnToklist[])
    Production* p = pRootNt->getHead();
    while (p) {
       State* ps = new (pChunkHead) State(iStartNt, 0, p, 0, NULL);
-      if (!this->_push(ps, pCol[0], pQ0))
+      if (!this->_push(nHandle, ps, pCol[0], pQ0))
          discardState(pChunkHead, ps);
       p = p->getNext();
    }
@@ -1005,7 +1040,8 @@ Node* Parser::parse(INT iStartNt, UINT nTokens, const UINT pnToklist[])
 
       if (!pState && !pQ0) {
          // No parse available at token i-1
-         printf("No parse available at token %u\n", i-1);
+         if (pnErrorToken)
+            *pnErrorToken = i;
          break;
       }
 
@@ -1019,14 +1055,17 @@ Node* Parser::parse(INT iStartNt, UINT nTokens, const UINT pnToklist[])
          UINT nStart = pState->getStart();
          Node* pW = pState->getNode();
          if (iItem < 0) {
-            // Earley predictor
-            // Push all right hand sides of this nonterminal
-            p = (*this->m_pGrammar)[iItem]->getHead();
-            while (p) {
-               State* psNew = new (pChunkHead) State(iItem, 0, p, i, NULL);
-               if (!this->_push(psNew, pEi, pQ))
-                  discardState(pChunkHead, psNew);
-               p = p->getNext();
+            // Don't push the same nonterminal more than once to the same column
+            if (pEi->markSeen(iItem)) {
+               // Earley predictor
+               // Push all right hand sides of this nonterminal
+               p = (*this->m_pGrammar)[iItem]->getHead();
+               while (p) {
+                  State* psNew = new (pChunkHead) State(iItem, 0, p, i, NULL);
+                  if (!this->_push(nHandle, psNew, pEi, pQ))
+                     discardState(pChunkHead, psNew);
+                  p = p->getNext();
+               }
             }
             // Add elements from the H set that refer to the
             // nonterminal iItem (nt_C)
@@ -1035,7 +1074,7 @@ Node* Parser::parse(INT iStartNt, UINT nTokens, const UINT pnToklist[])
                if (ph->getNt() == iItem) {
                   Node* pY = this->_make_node(pState, i, ph->getV(), ndV);
                   State* psNew = new (pChunkHead) State(pState, pY);
-                  if (!this->_push(psNew, pEi, pQ))
+                  if (!this->_push(nHandle, psNew, pEi, pQ))
                      discardState(pChunkHead, psNew);
                }
                ph = ph->getNext();
@@ -1047,7 +1086,7 @@ Node* Parser::parse(INT iStartNt, UINT nTokens, const UINT pnToklist[])
             if (!pW) {
                Label label(iNtB, 0, NULL, i, i);
                pW = ndV.lookupOrAdd(label);
-               pW->addFamily(NULL, NULL); // Epsilon production
+               pW->addFamily(pState->getProd(), NULL, NULL); // Epsilon production
             }
             if (nStart == i) {
                HNode* ph = new HNode(iNtB, pW);
@@ -1058,7 +1097,7 @@ Node* Parser::parse(INT iStartNt, UINT nTokens, const UINT pnToklist[])
             while (psNt) {
                Node* pY = this->_make_node(psNt, i, pW, ndV);
                State* psNew = new (pChunkHead) State(psNt, pY);
-               if (!this->_push(psNew, pEi, pQ))
+               if (!this->_push(nHandle, psNew, pEi, pQ))
                   discardState(pChunkHead, psNew);
                psNt = psNt->getNtNext();
             }
@@ -1093,7 +1132,7 @@ Node* Parser::parse(INT iStartNt, UINT nTokens, const UINT pnToklist[])
          // 'incrementing' it by moving the dot one step to the right
          pQ->increment(pY);
          assert(i + 1 <= nTokens);
-         if (!this->_push(pQ, pCol[i + 1], pQ0))
+         if (!this->_push(nHandle, pQ, pCol[i + 1], pQ0))
             pQ->~State();
          pQ = psNext;
       }
@@ -1121,6 +1160,9 @@ Node* Parser::parse(INT iStartNt, UINT nTokens, const UINT pnToklist[])
             pResult->addRef();
          ps = pCol[nTokens]->nextState();
       }
+      if (!pResult && pnErrorToken)
+         // No parse available at the last column
+         *pnErrorToken = nTokens;
    }
 
    // Cleanup
@@ -1159,10 +1201,11 @@ void AllocReporter::report(void) const
 }
 
 
-// Stuff for function-based invocation of the parser (e.g. from CFFI)
+// The functions below are declared extern "C" for external invocation
+// of the parser (e.g. from CFFI)
 
 // Token-terminal matching function
-BOOL defaultMatcher(UINT nToken, UINT nTerminal)
+BOOL defaultMatcher(UINT nHandle, UINT nToken, UINT nTerminal)
 {
    // printf("defaultMatcher(): token is %u, terminal is %u\n", nToken, nTerminal);
    return nToken == nTerminal;
@@ -1207,26 +1250,34 @@ void deleteForest(Node* pNode)
       pNode->delRef();
 }
 
+void dumpForest(Node* pNode, Grammar* pGrammar)
+{
+   if (pNode && pGrammar)
+      pNode->dump(pGrammar);
+}
+
 UINT numCombinations(Node* pNode)
 {
    return pNode ? Node::numCombinations(pNode) : 0;
 }
 
-Node* earleyParse(Parser* pParser, UINT nTokens)
+Node* earleyParse(Parser* pParser, UINT nTokens, UINT nHandle, UINT* pnErrorToken)
 {
-   // Sanity checks
+   // Preparation and sanity checks
+   if (pnErrorToken)
+      *pnErrorToken = 0;
    if (!pParser)
       return NULL;
    if (!nTokens)
       return NULL;
+   if (!pParser->getGrammar())
+      return NULL;
 
-   // printf("Calling parse(), root nonterminal is %d\n", pGrammar->getRoot());
-   Node* pNode = pParser->parse(pParser->getGrammar()->getRoot(), nTokens);
+   // Run parser from the default root
+   INT iRoot = pParser->getGrammar()->getRoot();
+   assert(iRoot < 0); // Must be a nonterminal
 
-   if (!pNode)
-      printf("No tree returned\n");
-
-   fflush(stdout); // !!! Debugging
+   Node* pNode = pParser->parse(nHandle, iRoot, pnErrorToken, nTokens);
 
    return pNode;
 }

@@ -38,9 +38,8 @@ class Reducer:
 
     """ Reduces a parse forest to a single most likely parse tree """
 
-    def __init__(self):
-
-        pass
+    def __init__(self, grammar):
+        self._grammar = grammar
 
     def go(self, forest):
 
@@ -175,7 +174,7 @@ class Reducer:
                 tokens[node.start] = node.head
                 return None
 
-        OptionFinder().go(w)
+        OptionFinder(self._grammar).go(w)
 
     def _reduce(self, w, scores):
         """ Reduce a forest with a root in w based on subtree scores """
@@ -186,8 +185,8 @@ class Reducer:
                 so that the highest-scoring family of children survives
                 at each place of ambiguity """
 
-            def __init__(self, scores):
-                super().__init__()
+            def __init__(self, grammar, scores):
+                super().__init__(grammar)
                 self._scores = scores
 
             def _visit_epsilon(self, level):
@@ -266,4 +265,4 @@ class Reducer:
                     node.reduce_to(ix)
                 return sc
 
-        ParseForestReducer(scores).go(w)
+        ParseForestReducer(self._grammar, scores).go(w)

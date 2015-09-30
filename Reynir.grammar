@@ -185,13 +185,9 @@ Yfirsetning →
 Upphrópun →
     uh+ ',' # Jú jú, ég fór út í dag / Nei, hann kemur ekki.
 
-# SetningAukafall er ekki valin sem lausn nema aðrar lausnir finnist ekki
-
 HreinYfirsetning →
-    ForgangsSetning > SetningAukafall
-
-ForgangsSetning →
     Setning
+    | SetningAukafall
     | SetningLo
     | SetningSo
     | SetningSkilyrði
@@ -1106,7 +1102,7 @@ NhLiður →
     nhm NhRuna
 
 NhLiðurFrh →
-    Atviksliður? NhLiður
+    FsAtv? NhLiður
 
 # 'að fara strax að athuga málið'
 NhLiðir →

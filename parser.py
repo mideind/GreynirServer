@@ -45,26 +45,140 @@ from grammar import Nonterminal, Terminal, Token
 #   assert current_app.debug == False, "Don't panic! You're here by request of debug()"
 
 
-class ParseError(Exception):
+class Node:
 
-    """ Exception class for parser errors """
+    """ Shared Packed Parse Forest (SPPF) node representation.
 
-    def __init__(self, txt, token_index = None, info = None):
-        """ Store an information object with the exception,
-            containing the parser state immediately before the error """
-        Exception.__init__(self, txt)
-        self._info = info
-        self._token_index = token_index
+        A node label is a tuple (s, j, i) where s can be
+        (a) a nonterminal, for completed productions;
+        (b) a token corresponding to a terminal;
+        (c) a (nonterminal, dot, prod) tuple, for partially parsed productions.
+
+        j and i are the start and end token indices, respectively.
+
+        A forest of Nodes can be navigated using a subclass of
+        ParseForestNavigator.
+
+    """
+
+    def __init__(self, parser, label):
+        """ Initialize a SPPF node with a given label tuple """
+        # assert isinstance(label, tuple)
+        if isinstance(label[0], int):
+            # Convert the label from (nt-index, i, j) to (nt, i, j)
+            assert label[0] < 0 # Nonterminal indices are negative
+            label = (parser._nonterminals[label[0]], label[1], label[2])
+        self._label = label
+        self._families = None # Families of children
+
+    def add_family(self, prod, children):
+        """ Add a family of children to this node, in parallel with other families """
+        # Note which production is responsible for this subtree,
+        # to help navigate the tree in case of ambiguity
+        pc_tuple = (prod, children)
+        if self._families is None:
+            self._families = [ pc_tuple ]
+            return
+        if pc_tuple not in self._families:
+            self._families.append(pc_tuple)
 
     @property
-    def info(self):
-        """ Return the parser state information object """
-        return self._info
+    def label(self):
+        """ Return the node label """
+        return self._label
 
     @property
-    def token_index(self):
-        """ Return the 0-based index of the token where the parser ran out of options """
-        return self._token_index
+    def start(self):
+        """ Return the start token index """
+        return self._label[1]
+
+    @property
+    def end(self):
+        """ Return the end token index """
+        return self._label[2]
+
+    @property
+    def head(self):
+        """ Return the 'head' of this node, i.e. a top-level readable name for it """
+        return self._label[0]
+
+    @property
+    def is_ambiguous(self):
+        """ Return True if this node has more than one family of children """
+        return self._families and len(self._families) >= 2
+
+    @property
+    def is_interior(self):
+        """ Returns True if this is an interior node (partially parsed production) """
+        return isinstance(self._label[0], tuple)
+
+    @property
+    def is_completed(self):
+        """ Returns True if this is a node corresponding to a completed nonterminal """
+        return isinstance(self._label[0], Nonterminal)
+
+    @property
+    def is_token(self):
+        """ Returns True if this is a token node """
+        return isinstance(self._label[0], Token)
+
+    @property
+    def has_children(self):
+        """ Return True if there are any families of children of this node """
+        return bool(self._families)
+
+    @property
+    def is_empty(self):
+        """ Return True if there is only a single empty family of this node """
+        if not self._families:
+            return True
+        return len(self._families) == 1 and self._families[0][1] == None
+
+    def enum_children(self):
+        """ Enumerate families of children """
+        if self._families:
+            for prod, c in self._families:
+                yield (prod, c)
+
+    def reduce_to(self, child_ix):
+        """ Eliminate all child families except the given one """
+        if not self._families or child_ix >= len(self._families):
+            raise IndexError("Child index out of range")
+        f = self._families[child_ix] # The survivor
+        # Collapse the list to one option
+        self._families = [ f ]
+
+    def __eq__(self, other):
+        """ Nodes are considered equal if their labels are equal """
+        if not isinstance(other, Node):
+            return False
+        return self._label == other._label
+
+    def __hash__(self):
+        """ Make this node hashable """
+        return id(self).__hash__()
+
+    def __repr__(self):
+        """ Create a reasonably nice text representation of this node
+            and its families of children, if any """
+        label_rep = self._label.__repr__()
+        families_rep = ""
+        if self._families:
+            if len(self._families) == 1:
+                families_rep = self._families[0].__repr__()
+            else:
+                families_rep = "<" + self._families.__repr__() + ">"
+        return label_rep + ((": " + families_rep + "\n") if families_rep else "")
+
+    def to_str(self, grammar):
+        """ Return a string representation of this node """
+        h = self.head
+        if isinstance(h, tuple):
+            # Interior node: return a readable rep of the associated nonterminal
+            assert isinstance(h[0], int)
+            assert h[0] < 0
+            h = grammar.nonterminals_by_ix[h[0]]
+        return str(h)
 
 
 class ParseForestNavigator(object):
@@ -72,9 +186,10 @@ class ParseForestNavigator(object):
     """ Base class for navigating parse forests. Override the underscored
         methods to perform actions at the corresponding points of navigation. """
 
-    def __init__(self, visit_all = False):
+    def __init__(self, grammar, visit_all = False):
         """ If visit_all is False, we only visit each packed node once.
             If True, we visit the entire tree in order. """
+        self._grammar = grammar
         self._visit_all = visit_all
 
     def _visit_epsilon(self, level):
@@ -158,6 +273,28 @@ class ParseForestNavigator(object):
         return _nav_helper(root_node, 0, 0, None)
 
 
+class ParseError(Exception):
+
+    """ Exception class for parser errors """
+
+    def __init__(self, txt, token_index = None, info = None):
+        """ Store an information object with the exception,
+            containing the parser state immediately before the error """
+        Exception.__init__(self, txt)
+        self._info = info
+        self._token_index = token_index
+
+    @property
+    def info(self):
+        """ Return the parser state information object """
+        return self._info
+
+    @property
+    def token_index(self):
+        """ Return the 0-based index of the token where the parser ran out of options """
+        return self._token_index
+
+
 class Parser:
 
     """ Parses a sequence of tokens according to a given grammar and
@@ -193,6 +330,8 @@ class Parser:
             self._states = []
             self._numstates = 0
             self._set = set()
+            # Set of nonterminals already added to this column
+            self._nt_set = set ()
             # Dictionary of states keyed by nonterminal at prod[dot]
             self._nt_dict = defaultdict(list)
             # Cache of terminal matches
@@ -223,6 +362,14 @@ class Parser:
 
         def matches_none(self, terminal):
             """ Shadow function for matches() that is called if there is no token in this column """
+            return False
+
+        def already_has(self, nt):
+            """ Return False if this nonterminal has already been added to the column.
+                Otherwise, add it and return True. """
+            if nt in self._nt_set:
+                return True
+            self._nt_set.add(nt)
             return False
 
         def enum_nt(self, nt):
@@ -260,143 +407,6 @@ class Parser:
                 return (parser._lookup(nt), dot, [parser._lookup(t) for t in prod], i)
 
             return [readable(s) for s in self._states if s[1] > 0] # Skip states with the dot at the beginning
-
-
-    class Node:
-
-        """ Shared Packed Parse Forest (SPPF) node representation.
-
-            A node label is a tuple (s, j, i) where s can be
-            (a) a nonterminal, for completed productions;
-            (b) a token corresponding to a terminal;
-            (c) a (nonterminal, dot, prod) tuple, for partially parsed productions.
-
-            j and i are the start and end token indices, respectively.
-
-            A forest of Nodes can be navigated using a subclass of
-            ParseForestNavigator.
-
-        """
-
-        def __init__(self, parser, label):
-            """ Initialize a SPPF node with a given label tuple """
-            # assert isinstance(label, tuple)
-            if isinstance(label[0], int):
-                # Convert the label from (nt-index, i, j) to (nt, i, j)
-                assert label[0] < 0 # Nonterminal indices are negative
-                label = (parser._nonterminals[label[0]], label[1], label[2])
-            self._label = label
-            self._families = None # Families of children
-            self._parser = parser
-
-        def add_family(self, prod, children):
-            """ Add a family of children to this node, in parallel with other families """
-            # Note which production is responsible for this subtree,
-            # to help navigate the tree in case of ambiguity
-            pc_tuple = (prod, children)
-            if self._families is None:
-                self._families = [ pc_tuple ]
-                return
-            if pc_tuple not in self._families:
-                self._families.append(pc_tuple)
-
-        @property
-        def label(self):
-            """ Return the node label """
-            return self._label
-
-        @property
-        def start(self):
-            """ Return the start token index """
-            return self._label[1]
-
-        @property
-        def end(self):
-            """ Return the end token index """
-            return self._label[2]
-
-        @property
-        def head(self):
-            """ Return the 'head' of this node, i.e. a top-level readable name for it """
-            return self._label[0]
-
-        @property
-        def is_ambiguous(self):
-            """ Return True if this node has more than one family of children """
-            return self._families and len(self._families) >= 2
-
-        @property
-        def is_interior(self):
-            """ Returns True if this is an interior node (partially parsed production) """
-            return isinstance(self._label[0], tuple)
-
-        @property
-        def is_completed(self):
-            """ Returns True if this is a node corresponding to a completed nonterminal """
-            return isinstance(self._label[0], Nonterminal)
-
-        @property
-        def is_token(self):
-            """ Returns True if this is a token node """
-            return isinstance(self._label[0], Token)
-
-        @property
-        def has_children(self):
-            """ Return True if there are any families of children of this node """
-            return bool(self._families)
-
-        @property
-        def is_empty(self):
-            """ Return True if there is only a single empty family of this node """
-            if not self._families:
-                return True
-            return len(self._families) == 1 and self._families[0][1] == None
-
-        def enum_children(self):
-            """ Enumerate families of children """
-            if self._families:
-                for prod, c in self._families:
-                    yield (prod, c)
-
-        def reduce_to(self, child_ix):
-            """ Eliminate all child families except the given one """
-            if not self._families or child_ix >= len(self._families):
-                raise IndexError("Child index out of range")
-            f = self._families[child_ix] # The survivor
-            # Collapse the list to one option
-            self._families = [ f ]
-
-        def __eq__(self, other):
-            """ Nodes are considered equal if their labels are equal """
-            if not isinstance(other, Parser.Node):
-                return False
-            return self._label == other._label
-
-        def __hash__(self):
-            """ Make this node hashable """
-            return id(self).__hash__()
-
-        def __repr__(self):
-            """ Create a reasonably nice text representation of this node
-                and its families of children, if any """
-            label_rep = self._label.__repr__()
-            families_rep = ""
-            if self._families:
-                if len(self._families) == 1:
-                    families_rep = self._families[0].__repr__()
-                else:
-                    families_rep = "<" + self._families.__repr__() + ">"
-            return label_rep + ((": " + families_rep + "\n") if families_rep else "")
-
-        def __str__(self):
-            """ Return a string representation of this node """
-            h = self.head
-            if isinstance(h, tuple):
-                # Interior node: return a readable rep of the associated nonterminal
-                assert isinstance(h[0], int)
-                assert h[0] < 0
-                h = self._parser._nonterminals[h[0]]
-            return str(h)
 
 
     class PackedProduction:
@@ -458,12 +468,8 @@ class Parser:
         for nt, plist in nt_d.items():
             self._nt_dict[nt.index] = None if plist is None else \
                 [ Parser.PackedProduction(prio, p) for prio, p in plist ]
-        # Make a dictionary of nonterminals from the grammar
-        # keyed by the nonterminal index instead of its name
-        self._nonterminals = { nt.index : nt for nt in g.nonterminals.values() }
-        # Make a dictionary of terminals from the grammar
-        # keyed by the terminal index instead of its name
-        self._terminals = { t.index : t for t in g.terminals.values() }
+        self._nonterminals = g.nonterminals_by_ix
+        self._terminals = g.terminals_by_ix
 
 
     @classmethod
@@ -504,7 +510,7 @@ class Parser:
             if label in V:
                 y = V[label]
             else:
-                V[label] = y = Parser.Node(self, label)
+                V[label] = y = Node(self, label)
             # assert v is not None
             if w is None:
                 y.add_family(prod, v)
@@ -574,10 +580,11 @@ class Parser:
                         # Earley predictor
                         # for all (C ::= δ) ∈ P:
                         # Go through all right hand sides of non-terminal nt_C
-                        for p in self._nt_dict[nt_C]:
-                            # if δ ∈ ΣN and (C ::= ·δ, i, null) !∈ Ei:
-                            newstate = (nt_C, 0, p, i, None)
-                            _push(newstate, Ei, Q)
+                        if not Ei.already_has(nt_C):
+                            for p in self._nt_dict[nt_C]:
+                                # if δ ∈ ΣN and (C ::= ·δ, i, null) !∈ Ei:
+                                newstate = (nt_C, 0, p, i, None)
+                                _push(newstate, Ei, Q)
                         # if ((C, v) ∈ H):
                         for v in H.get(nt_C, []):
                             # y = MAKE_NODE(B ::= αC · β, h, i, w, v, V)
@@ -590,11 +597,9 @@ class Parser:
                         if not w:
                             label = (nt_B, i, i)
                             if label in V:
-                                # w = v = V[label]
                                 w = V[label]
                             else:
-                                # w = v = V[label] = Parser.Node(self, label)
-                                w = V[label] = Parser.Node(self, label)
+                                w = V[label] = Node(self, label)
                             w.add_family(prod, None) # Add e (empty production) as a family
                         if h == i:
                             # Empty production satisfied
@@ -613,7 +618,7 @@ class Parser:
             V = { }
             if Q:
                 label = (tokens[i], i, i + 1)
-                v = Parser.Node(self, label)
+                v = Node(self, label)
             while Q:
                 # Earley scanner
                 # Remove an element, Λ = (B ::= α · ai+1β, h, w) say, from Q
@@ -820,8 +825,8 @@ class ParseForestPrinter(ParseForestNavigator):
 
     """ Print a parse forest to stdout or a file """
 
-    def __init__(self, detailed = False, file = None):
-        super().__init__(visit_all = True) # Visit all nodes
+    def __init__(self, grammar, detailed = False, file = None):
+        super().__init__(grammar, visit_all = True) # Visit all nodes
         self._detailed = detailed
         self._file = file
 
@@ -839,10 +844,11 @@ class ParseForestPrinter(ParseForestNavigator):
         # Interior nodes are not printed
         # and do not increment the indentation level
         if self._detailed or not w.is_interior:
-            h = str(w)
-            if (h.endswith("?") or h.endswith("*")) and w.is_empty:
-                # Skip printing optional nodes that don't contain anything
-                return NotImplemented # Don't visit child nodes
+            h = w.to_str(self._grammar)
+            if not self._detailed:
+                if (h.endswith("?") or h.endswith("*")) and w.is_empty:
+                    # Skip printing optional nodes that don't contain anything
+                    return NotImplemented # Don't visit child nodes
             indent = "  " * level # Two spaces per indent level
             print(indent + h, file = self._file)
         return None # No results required, but visit children
@@ -853,7 +859,7 @@ class ParseForestPrinter(ParseForestNavigator):
             print(indent + "Option " + str(ix + 1) + ":", file = self._file)
 
     @classmethod
-    def print_forest(cls, root_node, detailed = False, file = None):
+    def print_forest(cls, grammar, root_node, detailed = False, file = None):
         """ Print a parse forest to the given file, or stdout if none """
-        cls(detailed, file).go(root_node)
+        cls(grammar, detailed, file).go(root_node)
 

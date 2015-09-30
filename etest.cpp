@@ -72,7 +72,9 @@ void runTest_1(void)
    pGrammar->setNonterminal(-5, nt5);
    Parser* pParser = new Parser(pGrammar);
 
-   Node* pNode = pParser->parse(-4, 9, tokens);
+   UINT nErrorToken = 0;
+
+   Node* pNode = pParser->parse(0, -4, &nErrorToken, 9, tokens);
 
    if (!pNode)
       printf("No tree returned\n");
@@ -102,7 +104,9 @@ void runTest_2(void)
 
    const UINT tokens[] = {946, 948, 75, 947, 1126, 18, 1055, 20, 9};
 
-   Node* pNode = pParser->parse(pGrammar->getRoot(), 9, tokens);
+   UINT nErrorToken = 0;
+
+   Node* pNode = pParser->parse(0, pGrammar->getRoot(), &nErrorToken, 9, tokens);
 
    if (!pNode)
       printf("No tree returned\n");

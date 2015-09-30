@@ -128,7 +128,7 @@ class Terminal:
         self._name = name
         self._index = Terminal._INDEX
         # The hash is used quite often so it is worth caching
-        self._hash = self._index.__hash__()
+        self._hash = id(self).__hash__()
         Terminal._INDEX += 1
 
     def __hash__(self):
@@ -148,6 +148,11 @@ class Terminal:
     def index(self):
         """ Return the (positive) sequence number of this terminal """
         return self._index
+
+    def set_index(self, ix):
+        """ Set a new sequence number for this nonterminal """
+        assert ix > 0
+        self._index = ix
 
     def matches(self, t_kind, t_val, t_lit):
         # print("Terminal.matches: self.name is {0}, t_kind is {1}".format(self.name, t_kind))
@@ -357,8 +362,15 @@ class Grammar:
     """
 
     def __init__(self):
+
         self._nonterminals = { }
         self._terminals = { }
+
+        # Dictionary of nonterminals indexed by integers < 0
+        self._nonterminals_by_ix = { }
+        # Dictionary of terminals indexed by integers > 0
+        self._terminals_by_ix = { }
+
         self._nt_dict = { }
         self._root = None
         # Information about the grammar file
@@ -384,6 +396,24 @@ class Grammar:
     def nonterminals(self):
         """ Return a dictionary of nonterminals in the grammar """
         return self._nonterminals
+
+    @property
+    def nonterminals_by_ix(self):
+        """ Return a dictionary of nonterminals in the grammar indexed by integer < 0 """
+        return self._nonterminals_by_ix
+
+    @property
+    def terminals_by_ix(self):
+        """ Return a dictionary of terminals in the grammar indexed by integer > 0 """
+        return self._terminals_by_ix
+
+    def lookup(self, index):
+        """ Look up a nonterminal or terminal by integer index """
+        if index < 0:
+            return self._nonterminals_by_ix.get(index, None)
+        if index > 0:
+            return self._terminals_by_ix.get(index, None)
+        return None
 
     @property
     def num_nonterminals(self):
@@ -445,9 +475,6 @@ class Grammar:
             print("Writing binary grammar file {0}".format(fname))
             # Version header
             f.write("Reynir 00.00.00\n".encode('ascii')) # 16 bytes total
-            # Make a dictionary of nonterminals from the grammar
-            # keyed by the nonterminal index instead of its name
-            nonterminals = { nt.index : nt for nt in self.nonterminals.values() }
             num_nt = self.num_nonterminals
             # Number of terminals and nonterminals in grammar
             f.write(struct.pack("2I", self.num_terminals, num_nt))
@@ -456,7 +483,7 @@ class Grammar:
             f.write(struct.pack("i", self.root.index))
             # Write nonterminals in numeric order, -1 first downto -N
             for ix in range(num_nt):
-                nt = nonterminals[-1 - ix]
+                nt = self.lookup(-1 - ix)
                 plist = self[nt]
                 f.write(struct.pack("I", len(plist)))
                 # Write productions along with their priorities
@@ -599,8 +626,11 @@ class Grammar:
 
                 # Make a list of all variants that occur in the
                 # nonterminal or on the right hand side
+                # Note: the list needs to be sorted for index predictability
+                # between parses of the same grammar
                 vall = vts + list(vfree)
 
+                #for vval in variant_values(vall):
                 for vval in variant_values(vall):
                     # Generate a production for every variant combination
 
@@ -884,17 +914,34 @@ class Grammar:
                 del nonterminals[nt.name]
 
         # Reassign indices for nonterminals to avoid gaps in the
-        # number sequence - but keep the ordering intact as far as possible.
+        # number sequence.
         # (Python is deliberately designed so that the order of dict
         # enumeration is not predictable; a straight numbering based
         # on nonterminals.values() will change with each run.)
-        nt_by_ix = { nt.index : nt for nt in nonterminals.values() }
-        max_ix = max(-index for index in nt_by_ix.keys())
-        ctr = 1
-        for ix in range(1, max_ix + 1):
-            if -ix in nt_by_ix:
-                nt_by_ix[-ix].set_index(-ctr)
-                ctr += 1
+        nt_keys_sorted = sorted(nonterminals.keys())
+        self._nonterminals_by_ix = { -1 - ix : nonterminals[key] for ix, key in enumerate(nt_keys_sorted) }
+        for key, nt in self._nonterminals_by_ix.items():
+            nt.set_index(key)
+
+        t_keys_sorted = sorted(terminals.keys())
+        self._terminals_by_ix = { ix + 1 : terminals[key] for ix, key in enumerate(t_keys_sorted) }
+        for key, t in self._terminals_by_ix.items():
+            t.set_index(key)
+
+#        for ix in range(len(nt_keys_sorted)):
+#        nt_by_ix = { nt.index : nt for nt in nonterminals.values() }
+#        max_ix = max(-index for index in nt_by_ix.keys())
+#        ctr = 1
+#        for ix in range(1, max_ix + 1):
+#            if -ix in nt_by_ix:
+#                nt_by_ix[-ix].set_index(-ctr)
+#                ctr += 1
+#
+#        # Make a dictionary of nonterminals from the grammar
+#        # keyed by the nonterminal index instead of its name
+#        self._nonterminals_by_ix = { nt.index : nt for nt in nonterminals.values() }
+#        # Same for terminals
+#        self._terminals_by_ix = { t.index : t for t in terminals.values() }
 
         # Grammar successfully read: note the file name and timestamp
         self._file_name = fname

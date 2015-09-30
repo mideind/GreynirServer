@@ -24,7 +24,6 @@ import os
 
 from datetime import datetime
 from functools import reduce
-from collections import defaultdict
 
 from tokenizer import TOK
 from grammar import Terminal, LiteralTerminal, Token, Grammar
@@ -103,14 +102,18 @@ class BIN_Token(Token):
         "lh" : "LH", # Lýsingarháttur (nútíðar)
         "vh" : "VH", # Viðtengingarháttur
         "nt" : "NT", # Nútíð
-        "þt" : "ÞT", # Nútíð
-        "sagnb" : "SAGNB", # Sagnbeyging ('vera' -> 'verið')
+        # "þt" : "ÞT", # Þátíð # !!! Conflict with LHÞT
+        "sagnb" : "SAGNB", # Sagnbót ('vera' -> 'hefur verið')
         "lhþt" : "LHÞT", # Lýsingarháttur þátíðar ('var lentur')
+
+        # Variants that do not have a corresponding BIN meaning
         "abbrev" : None,
         "subj" : None
     }
 
+    # Bit mapping for all known variants
     _VBIT = { key : 1 << i for i, key in enumerate(_VARIANT.keys()) }
+    # Bit mapping for all variants that have a corresponding BIN meaning
     _FBIT = { key : 1 << i for i, key in enumerate(_VARIANT.values()) if key }
 
     _VBIT_ET = _VBIT["et"]
@@ -125,6 +128,9 @@ class BIN_Token(Token):
     _VBIT_SUBJ = _VBIT["subj"]
     _VBIT_SAGNB = _VBIT["sagnb"]
     _VBIT_ABBREV = _VBIT["abbrev"]
+
+    # Mask the following bits off a VBIT set to get an FBIT set
+    _FBIT_MASK = _VBIT_ABBREV | _VBIT_SUBJ
 
     _CASES = [ "nf", "þf", "þgf", "ef" ]
     _GENDERS = [ "kk", "kvk", "hk" ]
@@ -147,6 +153,8 @@ class BIN_Token(Token):
 
     _UNDERSTOOD_PUNCTUATION = ".?,:;–-()"
 
+    _MEANING_CACHE = { }
+
     def __init__(self, t):
 
         Token.__init__(self, TOK.descr[t[0]], t[1])
@@ -165,6 +173,15 @@ class BIN_Token(Token):
     def lower(self):
         """ Return the text for this property, in lower case """
         return self.t1_lower
+
+    def __str__(self):
+        return self.lower
+
+    @classmethod
+    def fbits(cls, beyging):
+        """ Convert a 'beyging' field from BIN to a set of fbits """
+        bit = cls._FBIT
+        return reduce(lambda x, y: x | y, (b for key, b in bit.items() if key in beyging), 0)
 
     def verb_matches(self, verb, terminal, form):
         """ Return True if the verb in question matches the verb category,
@@ -569,10 +586,19 @@ class BIN_Token(Token):
         def matcher_default(m):
             """ Check other word categories """
             if m.beyging != "-": # Tokens without a form specifier are assumed to be universally matching
-                # Attempts to cache the following lookup did not make the code faster
-                for v in terminal.variants:
-                    if BIN_Token._VARIANT[v] not in m.beyging:
-                        return False
+                fbits = BIN_Token._MEANING_CACHE.get(m.beyging)
+                if fbits is None:
+                    # Calculate a set of bits that represent the variants
+                    # present in m.beyging
+                    fbits = BIN_Token.fbits(m.beyging)
+                    BIN_Token._MEANING_CACHE[m.beyging] = fbits
+                # Check whether variants required by the terminal are present
+                # in the meaning string
+                if not terminal.fbits_match(fbits):
+                    return False
+#                for v in terminal.variants:
+#                    if BIN_Token._VARIANT[v] not in m.beyging:
+#                        return False
             return terminal.matches_first(BIN_Token._KIND[m.ordfl], m.stofn, self.t1_lower)
 
         # We have a match if any of the possible part-of-speech meanings
@@ -661,6 +687,8 @@ class VariantHandler:
         bit = BIN_Token._VBIT
         self._vbits = reduce(lambda x, y: x | y,
             (bit[v] for v in self._vset if v in bit), 0)
+        # fbits are like vbits but leave out variants that have no BIN meaning
+        self._fbits = self._vbits & (~BIN_Token._FBIT_MASK)
 
     def startswith(self, part):
         """ Returns True if the terminal name starts with the given string """
@@ -699,6 +727,13 @@ class VariantHandler:
     def has_any_vbits(self, vbits):
         """ Return True if this terminal has any of the variant(s) corresponding to the given bit(s) """
         return (self._vbits & vbits) != 0
+
+    def fbits_match(self, fbits):
+        """ Return True if the given fbits meet all variant criteria """
+        # That is: for every bit in self._fbits, there must be a corresponding bit
+        # in the given fbits. We test this by turning off all the bits given in the
+        # parameter fbits and checking whether there are any bits left.
+        return (self._fbits & ~fbits) == 0
 
     @property
     def is_singular(self):
