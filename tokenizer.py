@@ -65,6 +65,10 @@ PUNCTUATION = LEFT_PUNCTUATION + CENTER_PUNCTUATION + RIGHT_PUNCTUATION + NONE_P
 # Punctuation symbols that may occur at the end of a sentence, after the period
 SENTENCE_FINISHERS = ")]“»”’"
 
+# Hyphens that can indicate composite words
+# ('stjórnskipunar- og eftirlitsnefnd')
+COMPOSITE_HYPHENS = "—–-"
+
 CLOCK_WORD = "klukkan"
 CLOCK_ABBREV = "kl"
 
@@ -827,13 +831,14 @@ def match_stem_list(token, stems, filter_func=None):
     if not token.val:
         # No meanings: this might be a foreign or unknown word
         # However, if it is still in the stems list we return True
-        return stems.get(token.txt, None)
+        return stems.get(token.txt.lower(), None)
     # Go through the meanings with their stems
     for m in token.val:
         # If a filter function is given, pass candidates to it
         try:
-            if m.stofn in stems and (filter_func is None or filter_func(m)):
-                return stems[m.stofn]
+            lower_stofn = m.stofn.lower()
+            if lower_stofn in stems and (filter_func is None or filter_func(m)):
+                return stems[lower_stofn]
         except Exception as e:
             print("Exception {0} in match_stem_list\nToken: {1}\nStems: {2}".format(e, token, stems))
             raise e
@@ -1031,6 +1036,38 @@ def parse_phrases_1(token_stream):
                                 ISO_CURRENCIES[(nat, cur)], all_cases(token),
                                 all_genders(next_token))
                             next_token = next(token_stream)
+
+            # Check for composites:
+            # 'stjórnskipunar- og eftirlitsnefnd'
+            # 'viðskipta- og iðnaðarráðherra'
+            if token.kind == TOK.WORD and next_token.kind == TOK.PUNCTUATION and \
+                len(next_token.txt) == 1 and next_token.txt in COMPOSITE_HYPHENS:
+
+                og_token = next(token_stream)
+                if og_token.kind != TOK.WORD or og_token.txt != "og":
+                    # Incorrect prediction: make amends and continue
+                    yield token
+                    token = next_token
+                    next_token = og_token
+                else:
+                    # We have 'viðskipta- og'
+                    final_token = next(token_stream)
+                    if final_token.kind != TOK.WORD:
+                        # Incorrect: unwind
+                        yield token
+                        yield next_token
+                        token = og_token
+                        next_token = final_token
+                    else:
+                        # We have 'viðskipta- og iðnaðarráðherra'
+                        # Return a single token with the meanings of
+                        # the last word, but an amalgamated token text.
+                        # Note: there is no meaning check for the first
+                        # part of the composition, so it can be an unknown word.
+                        txt = token.txt + next_token.txt + " " + og_token.txt + \
+                            " " + final_token.txt
+                        token = TOK.Word(txt, final_token.val)
+                        next_token = next(token_stream)
 
             # Yield the current token and advance to the lookahead
             yield token

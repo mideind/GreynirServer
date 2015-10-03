@@ -121,6 +121,7 @@ friend class AllocReporter;
 
 private:
 
+   UINT m_nId;             // Unique integer id (0-based) of this production
    UINT m_nPriority;       // Relative priority of this production
    UINT m_n;               // Number of items in production
    INT* m_pList;           // List of items in production
@@ -132,7 +133,7 @@ protected:
 
 public:
 
-   Production(UINT nPriority, UINT n, const INT* pList);
+   Production(UINT nId, UINT nPriority, UINT n, const INT* pList);
 
    ~Production(void);
 
@@ -140,6 +141,8 @@ public:
    Production* getNext(void) const
       { return this->m_pNext; }
 
+   UINT getId(void) const
+      { return this->m_nId; }
    UINT getLength(void) const
       { return this->m_n; }
    BOOL isEpsilon(void) const

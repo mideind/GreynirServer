@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *.o
+*.so
 *.exe
 
 # Compressed DAWG trees
@@ -21,7 +22,7 @@ gold/
 static/*.min.js
 
 # Scratch work files
-profile.bin
+*.bin
 *.sublime-project
 *.sublime-workspace
 *.bak

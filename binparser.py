@@ -596,9 +596,6 @@ class BIN_Token(Token):
                 # in the meaning string
                 if not terminal.fbits_match(fbits):
                     return False
-#                for v in terminal.variants:
-#                    if BIN_Token._VARIANT[v] not in m.beyging:
-#                        return False
             return terminal.matches_first(BIN_Token._KIND[m.ordfl], m.stofn, self.t1_lower)
 
         # We have a match if any of the possible part-of-speech meanings
@@ -845,7 +842,7 @@ class BIN_Parser(Parser):
 
     # A singleton instance of the parsed Reynir.grammar
     _grammar = None
-    _grammar_timestamp = None
+    _grammar_ts = None
 
     # BIN_Parser version - change when logic is modified so that it
     # affects the parse tree
@@ -856,14 +853,14 @@ class BIN_Parser(Parser):
         """ Load the shared BIN grammar if not already there, then initialize
             the Parser parent class """
         g = BIN_Parser._grammar
-        ts = datetime.fromtimestamp(os.path.getmtime(BIN_Parser._GRAMMAR_FILE))
-        if g is None or BIN_Parser._grammar_timestamp != ts:
+        ts = os.path.getmtime(BIN_Parser._GRAMMAR_FILE)
+        if g is None or BIN_Parser._grammar_ts != ts:
             # Grammar not loaded, or its timestamp has changed: load it
             g = BIN_Grammar()
-            print("Loading grammar file {0} with timestamp {1}".format(BIN_Parser._GRAMMAR_FILE, ts))
+            print("Loading grammar file {0} with timestamp {1}".format(BIN_Parser._GRAMMAR_FILE, datetime.fromtimestamp(ts)))
             g.read(BIN_Parser._GRAMMAR_FILE, verbose = verbose)
             BIN_Parser._grammar = g
-            BIN_Parser._grammar_timestamp = ts
+            BIN_Parser._grammar_ts = ts
         super().__init__(g)
 
     @property

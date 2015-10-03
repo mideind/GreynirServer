@@ -35,8 +35,7 @@ psycopg2ext.register_type(psycopg2ext.UNICODEARRAY)
 
 from tokenizer import TOK, tokenize
 from grammar import Nonterminal, Terminal, Token, Production, Grammar, GrammarError
-from parser import Parser, ParseError, ParseForestPrinter
-from binparser import BIN_Parser
+from parser import ParseError
 from fastparser import Fast_Parser
 from settings import Settings, ConfigError
 
@@ -217,7 +216,7 @@ def test2():
     ParseForestPrinter.print_forest(forest)
 
 
-def run_test(p, fast_p):
+def run_test(fast_p):
     """ Run a test parse on all sentences in the test table """
 
     with closing(Test_DB.open_db()) as db:
@@ -232,17 +231,17 @@ def run_test(p, fast_p):
             tokens = tokenize(txt)
 
             tlist = list(tokens)
+            err = ""
 
             # Run the all-Python parser
-            err = ""
-            try:
-                t0 = time.time()
-                forest = p.go(tlist)
-            except ParseError as e:
-                err = "{0}".format(e)
-                forest = None
-            finally:
-                t1 = time.time()
+            #try:
+            #    t0 = time.time()
+            #    forest = p.go(tlist)
+            #except ParseError as e:
+            #    err = "{0}".format(e)
+            #    forest = None
+            #finally:
+            #    t1 = time.time()
 
             # ParseForestPrinter.print_forest(p.grammar, forest, detailed = True)
 
@@ -256,29 +255,29 @@ def run_test(p, fast_p):
             finally:
                 tf1 = time.time()
 
-            num = 0 if forest is None else Parser.num_combinations(forest)
+            # num = 0 if forest is None else Parser.num_combinations(forest)
             num2 = 0 if forest2 is None else Fast_Parser.num_combinations(forest2)
 
-            print("Python: Parsed in {0:.4f} seconds, {1} combinations".format(t1 - t0, num))
+            #print("Python: Parsed in {0:.4f} seconds, {1} combinations".format(t1 - t0, num))
             print("C++:    Parsed in {0:.4f} seconds, {1} combinations".format(tf1 - tf0, num2))
 
             best = s["best"]
-            if best <= 0 or abs(target - num) < abs(target - best):
+            if best <= 0 or abs(target - num2) < abs(target - best):
                 # We are closer to the ideal number of parse trees (target) than
                 # the best parse so far: change the best one
-                best = num
+                best = num2
 
-            db.update_sentence(s["identity"], s["sentence"], num, best, target)
+            db.update_sentence(s["identity"], s["sentence"], num2, best, target)
 
             yield dict(
                 identity = s["identity"],
                 sentence = txt,
-                numtrees = num,
+                numtrees = num2,
                 best = best,
                 target = target,
-                parse_time = t1 - t0,
+                parse_time = tf1 - tf0,
                 err = "" if target == 0 else err, # Don't bother showing errors that are expected
-                forest = forest
+                forest = forest2
             )
 
             #break # !!! DEBUG: only do one loop
@@ -288,11 +287,11 @@ def test3():
 
     print("\n\n------ Test 3 ---------")
 
-    p = BIN_Parser(verbose = False) # Don't emit diagnostic messages
+    # p = BIN_Parser(verbose = False) # Don't emit diagnostic messages
 
     with Fast_Parser(verbose = False) as fast_p:
 
-        g = p.grammar
+        g = fast_p.grammar
 
         print("Reynir.grammar has {0} nonterminals, {1} terminals, {2} productions"
             .format(g.num_nonterminals, g.num_terminals, g.num_productions))
@@ -337,7 +336,7 @@ def test3():
                 except Exception as e:
                     print("{0}".format(e))
 
-        for test in run_test(p, fast_p):
+        for test in run_test(fast_p):
 
             print("\n'{0}'\n{1} parse trees found in {2:.3f} seconds\n"
                 .format(test["sentence"], test["numtrees"], test["parse_time"]))

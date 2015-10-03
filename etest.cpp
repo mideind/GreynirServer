@@ -50,19 +50,19 @@ void runTest_1(void)
    Nonterminal* nt3 = new Nonterminal(L"OgSetning");
    Nonterminal* nt5 = new Nonterminal(L"Atviksorð");
 
-   Production* p0_1 = new Production(0, 1, p0);
+   Production* p0_1 = new Production(0, 0, 1, p0);
    nt4->addProduction(p0_1);
-   Production* p1_1 = new Production(0, 1, p1);
+   Production* p1_1 = new Production(1, 0, 1, p1);
    nt1->addProduction(p1_1);
-   Production* p1_2 = new Production(0, 2, p2);
+   Production* p1_2 = new Production(2, 0, 2, p2);
    nt1->addProduction(p1_2);
-   Production* p2_1 = new Production(0, 3, p3);
+   Production* p2_1 = new Production(3, 0, 3, p3);
    nt2->addProduction(p2_1);
-   Production* p3_1 = new Production(0, 2, p4);
+   Production* p3_1 = new Production(4, 0, 2, p4);
    nt3->addProduction(p3_1);
-   Production* p5_1 = new Production(0, 1, p5);
+   Production* p5_1 = new Production(5, 0, 1, p5);
    nt5->addProduction(p5_1);
-   Production* p5_2 = new Production(0, 0, NULL); // Epsilon
+   Production* p5_2 = new Production(6, 0, 0, NULL); // Epsilon
    nt5->addProduction(p5_2);
 
    pGrammar->setNonterminal(-1, nt1);

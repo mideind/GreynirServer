@@ -31,15 +31,15 @@ from collections import defaultdict
 
 from grammar import Terminal, Nonterminal
 from settings import Preferences
-from parser import ParseForestNavigator
+from fastparser import ParseForestNavigator
 
 
 class Reducer:
 
     """ Reduces a parse forest to a single most likely parse tree """
 
-    def __init__(self, grammar):
-        self._grammar = grammar
+    def __init__(self):
+        pass
 
     def go(self, forest):
 
@@ -117,6 +117,9 @@ class Reducer:
                                 # Reduce the weight of the 'artificial' nominative prepositions
                                 # 'næstum', 'sem', 'um'
                                 sc[t] -= 2
+                            else:
+                                # Else, give a bonus for each matched preposition
+                                sc[t] += 1
                         elif t.first == "so":
                             if t.variant(0) in "012":
                                 # Give a bonus for verb arguments: the more matched, the better
@@ -168,13 +171,15 @@ class Reducer:
             """ Subclass to navigate a parse forest and populate the set
                 of terminals that match each token """
 
-            def _visit_token(self, level, node, terminal):
+            def _visit_token(self, level, node):
                 """ At token node """
-                finals[node.start].add(terminal)
-                tokens[node.start] = node.head
+                assert node.terminal is not None
+                assert isinstance(node.terminal, Terminal)
+                finals[node.start].add(node.terminal)
+                tokens[node.start] = node.token
                 return None
 
-        OptionFinder(self._grammar).go(w)
+        OptionFinder().go(w)
 
     def _reduce(self, w, scores):
         """ Reduce a forest with a root in w based on subtree scores """
@@ -185,18 +190,18 @@ class Reducer:
                 so that the highest-scoring family of children survives
                 at each place of ambiguity """
 
-            def __init__(self, grammar, scores):
-                super().__init__(grammar)
+            def __init__(self, scores):
+                super().__init__()
                 self._scores = scores
 
             def _visit_epsilon(self, level):
                 """ At Epsilon node """
                 return 0 # Score 0
 
-            def _visit_token(self, level, node, terminal):
+            def _visit_token(self, level, node):
                 """ At token node """
                 # Return the score of this token/terminal match
-                return self._scores[node.start][terminal]
+                return self._scores[node.start][node.terminal]
 
             def _visit_nonterminal(self, level, node):
                 """ At nonterminal node """
@@ -205,7 +210,7 @@ class Reducer:
                     def __init__(self):
                         self.sc = defaultdict(int) # Child tree scores
                         # We are only interested in completed nonterminals
-                        self.nt = node.head if node.is_completed else None
+                        self.nt = node.nonterminal if node.is_completed else None
                         assert self.nt is None or isinstance(self.nt, Nonterminal)
                         self.highest_prio = None # The priority of the highest-priority child, if any
                         self.use_prio = False
@@ -265,4 +270,4 @@ class Reducer:
                     node.reduce_to(ix)
                 return sc
 
-        ParseForestReducer(self._grammar, scores).go(w)
+        ParseForestReducer(scores).go(w)

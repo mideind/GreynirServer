@@ -238,7 +238,7 @@ class Production:
 
     _INDEX = 0 # Running sequence number of all productions
 
-    def __init__(self, fname = None, line = 0, rhs = None):
+    def __init__(self, fname = None, line = 0, rhs = None, priority = 0):
 
         """ Initialize a production from a list of
             right-hand-side nonterminals and terminals """
@@ -248,6 +248,7 @@ class Production:
         # in the file
         self._fname = fname
         self._line = line
+        self._priority = priority
         # Cache the length of the production as it is used A LOT
         self._len = len(self._rhs)
         # Give all productions a unique sequence number for hashing purposes
@@ -258,7 +259,7 @@ class Production:
 
     def __hash__(self):
         """ Use the index of this production as a basis for the hash """
-        return self._index.__hash__()
+        return id(self).__hash__()
 
     def __eq__(self, other):
         #return isinstance(other, Production) and self._index == other._index
@@ -283,6 +284,10 @@ class Production:
         self._tuple = None
 
     @property
+    def index(self):
+        return self._index
+    
+    @property
     def length(self):
         """ Return the length of this production """
         return self._len
@@ -300,6 +305,10 @@ class Production:
     def line(self):
         return self._line
 
+    @property
+    def priority(self):
+        return self._priority
+    
     @property
     def prod(self):
         """ Return this production in tuple form """
@@ -370,6 +379,8 @@ class Grammar:
         self._nonterminals_by_ix = { }
         # Dictionary of terminals indexed by integers > 0
         self._terminals_by_ix = { }
+        # Dictionary of productions indexed by integers >= 0
+        self._productions_by_ix = { }
 
         self._nt_dict = { }
         self._root = None
@@ -406,6 +417,11 @@ class Grammar:
     def terminals_by_ix(self):
         """ Return a dictionary of terminals in the grammar indexed by integer > 0 """
         return self._terminals_by_ix
+
+    @property
+    def productions_by_ix(self):
+        """ Return a dictionary of productions in the grammar indexed by integer >= 0 """
+        return self._productions_by_ix
 
     def lookup(self, index):
         """ Look up a nonterminal or terminal by integer index """
@@ -474,7 +490,7 @@ class Grammar:
         with open(fname, "wb") as f:
             print("Writing binary grammar file {0}".format(fname))
             # Version header
-            f.write("Reynir 00.00.00\n".encode('ascii')) # 16 bytes total
+            f.write("Reynir 00.00.01\n".encode('ascii')) # 16 bytes total
             num_nt = self.num_nonterminals
             # Number of terminals and nonterminals in grammar
             f.write(struct.pack("2I", self.num_terminals, num_nt))
@@ -486,9 +502,10 @@ class Grammar:
                 nt = self.lookup(-1 - ix)
                 plist = self[nt]
                 f.write(struct.pack("I", len(plist)))
-                # Write productions along with their priorities
+                # Write productions along with their indices and priorities
                 for prio, p in plist:
-                    f.write(struct.pack("I", prio));
+                    f.write(struct.pack("I", p.index))
+                    f.write(struct.pack("I", prio))
                     lenp = len(p)
                     f.write(struct.pack("I", lenp))
                     if lenp:
@@ -626,12 +643,14 @@ class Grammar:
 
                 # Make a list of all variants that occur in the
                 # nonterminal or on the right hand side
-                # Note: the list needs to be sorted for index predictability
-                # between parses of the same grammar
                 vall = vts + list(vfree)
 
-                #for vval in variant_values(vall):
-                for vval in variant_values(vall):
+                # To make the variant sequence order - and therefore the production
+                # index order - predictable between runs, we sort the variant value
+                # combinations before iterating over them
+                vv_all = sorted(list(variant_values(vall)))
+
+                for vval in vv_all:
                     # Generate a production for every variant combination
 
                     # Calculate the nonterminal suffix for this variant
@@ -640,7 +659,7 @@ class Grammar:
                     if nt_suffix:
                         nt_suffix = "_" + nt_suffix
 
-                    result = Production(fname, line)
+                    result = Production(fname, line, priority = priority)
                     for r, repeat, v in rhs:
                         # Calculate the token suffix, if any
                         # This may be different from the nonterminal suffix as
@@ -928,6 +947,11 @@ class Grammar:
         for key, t in self._terminals_by_ix.items():
             t.set_index(key)
 
+        # Make a dictionary of productions by integer index >= 0
+        for plist in self._nt_dict.values():
+            for _, p in plist:
+                self._productions_by_ix[p.index] = p
+
 #        for ix in range(len(nt_keys_sorted)):
 #        nt_by_ix = { nt.index : nt for nt in nonterminals.values() }
 #        max_ix = max(-index for index in nt_by_ix.keys())
@@ -954,6 +978,6 @@ class Grammar:
                 binary_file_time = datetime.fromtimestamp(os.path.getmtime(fname))
             except os.error:
                 binary_file_time = None
-            if binary_file_time is None or binary_file_time < self._file_time:
+            # if binary_file_time is None or binary_file_time < self._file_time:
                 # No binary file or older than text file: write a fresh one
-                self._write_binary(fname)
+            self._write_binary(fname)

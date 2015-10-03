@@ -32,10 +32,8 @@ from flask import request, session, url_for
 from settings import Settings, ConfigError
 from tokenizer import tokenize, StaticPhrases, Abbreviations, TOK
 from grammar import Nonterminal
-from parser import Parser, ParseError, ParseForestPrinter
-from binparser import BIN_Parser
-from fastparser import Fast_Parser
-from fastparser import ParseForestPrinter as Fast_ParseForestPrinter
+from parser import ParseError
+from fastparser import Fast_Parser, ParseForestPrinter
 from reducer import Reducer
 from scraper import Scraper
 from ptest import run_test, Test_DB
@@ -162,17 +160,13 @@ def process_url(url):
     return (metadata, tokenize(text))
 
 
-def run():
-    """ Main test routine """
-    process_url('http://www.ruv.is//frett/flottamennirnir-matarlausir-i-einni-kos')
-
-
 @app.route("/analyze", methods=['POST'])
 def analyze():
     """ Analyze text from a given URL """
 
     url = request.form.get("url", "").strip()
     use_reducer = not ("noreduce" in request.form)
+    dump_forest = "dump" in request.form
 
     t0 = time.time()
     metadata = None
@@ -198,10 +192,11 @@ def analyze():
     sent = []
     sent_begin = 0
 
-    #bp = BIN_Parser(verbose = False) # Don't emit diagnostic messages
+    use_reducer = False # !!! DEBUG
+
     with Fast_Parser(verbose = False) as bp: # Don't emit diagnostic messages
-        use_reducer = False # !!! DEBUG
-        rdc = Reducer(bp.grammar)
+
+        rdc = Reducer()
 
         t0 = time.time()
 
@@ -219,15 +214,17 @@ def analyze():
                     # Parse the sentence
                     forest = bp.go(sent)
                     if forest:
-                        #num = Parser.num_combinations(forest)
                         num = Fast_Parser.num_combinations(forest)
 
-                        if single:
+                        if single and dump_forest:
                             # Dump the parse tree to parse.txt
                             with open("parse.txt", mode = "w", encoding= "utf-8") as f:
                                 print("Reynir parse tree for sentence '{0}'".format(url), file = f)
                                 print("{0} combinations\n".format(num), file = f)
-                                Fast_ParseForestPrinter.print_forest(forest, file = f)
+                                if num < 10000:
+                                    ParseForestPrinter.print_forest(forest, file = f)
+                                else:
+                                    print("Too many combinations to dump", file = f)
 
                     if use_reducer:
                         # Reduce the resulting forest
@@ -272,6 +269,113 @@ def analyze():
     return jsonify(result = result)
 
 
+def make_grid(w):
+    """ Make a 2d grid from a flattened parse schema """
+
+    def make_schema(w):
+        """ Create a flattened parse schema from the forest w """
+
+        def _part(w, level, suffix):
+            """ Return a tuple (colheading + options, start_token, end_token, partlist, info)
+                where the partlist is again a list of the component schemas - or a terminal
+                matching a single token - or None if empty """
+            if w is None:
+                # Epsilon node: return empty list
+                return None
+            if w.is_token:
+                return ([ level ] + suffix, w.start, w.end, None, (w.terminal, w.token.text))
+            # Interior nodes are not returned
+            # and do not increment the indentation level
+            if not w.is_interior:
+                level += 1
+            # Accumulate the resulting parts
+            plist = [ ]
+            ambig = w.is_ambiguous
+            add_suffix = [ ]
+
+            for ix, pc in enumerate(w.enum_children()):
+                prod, f = pc
+                if ambig:
+                    # Uniquely identify the available parse options with a coordinate
+                    add_suffix = [ ix ]
+
+                def add_part(p):
+                    """ Add a subtuple p to the part list plist """
+                    if p:
+                        if p[0] is None:
+                            # p describes an interior node
+                            plist.extend(p[3])
+                        elif p[2] > p[1]:
+                            # Only include subtrees that actually contain terminals
+                            plist.append(p)
+
+                if isinstance(f, tuple):
+                    add_part(_part(f[0], level, suffix + add_suffix))
+                    add_part(_part(f[1], level, suffix + add_suffix))
+                else:
+                    add_part(_part(f, level, suffix + add_suffix))
+
+            if w.is_interior:
+                # Interior node: relay plist up the tree
+                return (None, 0, 0, plist, None)
+            # Completed nonterminal
+            assert w.is_completed
+            assert w.nonterminal is not None
+            return ([level - 1] + suffix, w.start, w.end, plist, w.nonterminal)
+
+        # Start of make_schema
+
+        if w is None:
+            return None
+        return _part(w, 0, [ ])
+
+    # Start of make_grid
+
+    if w is None:
+        return None
+    schema = make_schema(w)
+    assert schema[1] == 0
+    cols = [] # The columns to be populated
+    NULL_TUPLE = tuple()
+
+    def _traverse(p):
+        """ Traverse a schema subtree and insert the nodes into their
+            respective grid columns """
+        # p[0] is the coordinate of this subtree (level + suffix)
+        # p[1] is the start column of this subtree
+        # p[2] is the end column of this subtree
+        # p[3] is the subpart list
+        # p[4] is the nonterminal or terminal/token at the head of this subtree
+        col, option = p[0][0], p[0][1:] # Level of this subtree and option
+
+        if not option:
+            # No option: use a 'clean key' of NULL_TUPLE
+            option = NULL_TUPLE
+        else:
+            # Convert list to a frozen (hashable) tuple
+            option = tuple(option)
+
+        while len(cols) <= col:
+            # Add empty columns as required to reach this level
+            cols.append(dict())
+
+        # Add a tuple describing the rows spanned and the node info
+        assert isinstance(p[4], Nonterminal) or isinstance(p[4], tuple)
+        if option not in cols[col]:
+            # Put in a dictionary entry for this option
+            cols[col][option] = []
+        cols[col][option].append((p[1], p[2], p[4]))
+
+        # Navigate into subparts, if any
+        if p[3]:
+            for subpart in p[3]:
+                _traverse(subpart)
+
+    _traverse(schema)
+    # Return a tuple with the grid and the number of tokens
+    return (cols, schema[2])
+
+
 @app.route("/parsegrid", methods=['POST'])
 def parse_grid():
     """ Show the parse grid for a particular parse tree of a sentence """
@@ -283,36 +387,39 @@ def parse_grid():
 
     # Tokenize the text
     tokens = list(tokenize(txt))
-    # Parse the text
-    bp = BIN_Parser(verbose = False) # Don't emit diagnostic messages
-    err = dict()
 
-    try:
-        forest = bp.go(tokens)
-    except ParseError as e:
-        err["msg"] = str(e)
-        # Relay information about the parser state at the time of the error
-        err["info"] = e.info
-        forest = None
+    # Parse the text
+    with Fast_Parser(verbose = False) as bp: # Don't emit diagnostic messages
+        err = dict()
+        try:
+            forest = bp.go(tokens)
+        except ParseError as e:
+            err["msg"] = str(e)
+            # Relay information about the parser state at the time of the error
+            err["info"] = None # e.info
+            forest = None
 
     # Find the number of parse combinations
-    combinations = Parser.num_combinations(forest) if forest else 0
+    combinations = 0 if forest is None else Fast_Parser.num_combinations(forest)
 
     # Dump the parse tree to parse.txt
     with open("parse.txt", mode = "w", encoding= "utf-8") as f:
         if forest is not None:
             print("Reynir parse tree for sentence '{0}'".format(txt), file = f)
             print("{0} combinations\n".format(combinations), file = f)
-            ParseForestPrinter.print_forest(bp.grammar, forest, file = f)
+            if combinations < 10000:
+                ParseForestPrinter.print_forest(forest, file = f)
+            else:
+                print("Too many combinations to dump", file = f)
         else:
             print("No parse available for sentence '{0}'".format(txt), file = f)
 
     if use_reducer:
         # Reduce the parse forest
-        forest = Reducer(bp.grammar).go(forest)
+        forest = Reducer().go(forest)
 
     # Make the parse grid with all options
-    grid, ncols = Parser.make_grid(forest) if forest else ([], 0)
+    grid, ncols = make_grid(forest) if forest else ([], 0)
     # The grid is columnar; convert it to row-major
     # form for convenient translation into HTML
     # There will be as many columns as there are tokens
@@ -428,7 +535,7 @@ def main():
 
     # Instantiate a dummy parser to access grammar info
     # (this does not cause repeated parsing of the grammar as it is cached in memory)
-    bp = BIN_Parser(verbose = False)
+    bp = Fast_Parser(verbose = False)
     txt = request.args.get("txt", None)
     if not txt:
         txt = DEFAULT_URL
@@ -440,7 +547,7 @@ def test():
     """ Handler for a page of sentences for testing """
 
     # Run test and show the result
-    bp = BIN_Parser(verbose = False) # Don't emit diagnostic messages
+    bp = Fast_Parser(verbose = False) # Don't emit diagnostic messages
 
     return render_template("test.html", result = run_test(bp))
 

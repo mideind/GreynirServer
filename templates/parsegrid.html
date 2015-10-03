@@ -30,6 +30,7 @@
 {% if combinations == 0 %}
       <p class="options">Engin greining fannst.</p>
       <p class="err">{{ err.msg }}</p>
+{% if err.info %}
       <p>Síðasta staða málgreinis:</p>
 <table class="parser-state">
 <thead>
@@ -54,6 +55,7 @@
 {% endfor %}
 </tbody>
 </table>
+{% endif %}
 {% elif combinations == 1 %}
       <p class="options">Ein trjágreining fannst:</p>
 {% else %}

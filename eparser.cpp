@@ -54,6 +54,8 @@ void printAllocationReport(void)
 
 class State {
 
+   // Parser state, contained within a Column
+
 friend class AllocReporter;
 
 private:
@@ -103,6 +105,7 @@ public:
             t.m_pw == other.m_pw;
       }
 
+   // Get the terminal or nonterminal at the dot
    INT prodDot(void) const
       { return (*this->m_pProd)[this->m_nDot]; }
 
@@ -123,9 +126,14 @@ public:
 
 class Column {
 
+   // An Earley column
+   // A Parser cointains one Column for each token in the input, plus a sentinel
+
 friend class AllocReporter;
 
 private:
+
+   // The contained States are stored an array of hash bins
 
    static const UINT HASH_BINS = 499; // Prime number
 
@@ -135,13 +143,13 @@ private:
       State* m_pEnum; // The last enumerated state in this hash bin
    };
 
-   UINT m_nToken;
-   State** m_pNtStates;
-   MatchingFunc m_pMatchingFunc;
-   BYTE* m_abCache;
-   BYTE* m_abSeen;
-   HashBin m_aHash[HASH_BINS]; // The hash array
-   UINT m_nEnumBin; // Round robin used during enumeration
+   UINT m_nToken; // The input token associated with this column
+   State** m_pNtStates; // States linked by the nonterminal at their prod[dot]
+   MatchingFunc m_pMatchingFunc; // Pointer to the token/terminal matching function
+   BYTE* m_abCache; // Matching cache, a true/false flag for every terminal in the grammar
+   BYTE* m_abSeen; // Flag whether each nonterminal's productions have already been added
+   HashBin m_aHash[HASH_BINS]; // The hash bin array
+   UINT m_nEnumBin; // Round robin used during enumeration of states
 
    static AllocCounter ac;
 
@@ -268,8 +276,8 @@ void Nonterminal::addProduction(Production* p)
 
 AllocCounter Production::ac;
 
-Production::Production(UINT nPriority, UINT n, const INT* pList)
-   : m_nPriority(nPriority), m_n(n), m_pList(NULL), m_pNext(NULL)
+Production::Production(UINT nId, UINT nPriority, UINT n, const INT* pList)
+   : m_nId(nId), m_nPriority(nPriority), m_n(n), m_pList(NULL), m_pNext(NULL)
 {
    Production::ac++;
    if (n > 0) {
@@ -354,6 +362,7 @@ static void discardState(StateChunk* pChunkHead, State* pState)
    pChunkHead->m_nIndex -= sizeof(State);
    nDiscardedStates++;
 }
+
 
 AllocCounter State::ac;
 
@@ -717,6 +726,9 @@ BOOL Grammar::read_binary(const CHAR* pszFilename)
       Nonterminal* pnt = new Nonterminal(L"");
       // Loop through the productions
       for (UINT j = 0; j < nLenPlist; j++) {
+         UINT nId;
+         if (!f.read_UINT(nId))
+            return false;
          UINT nPriority;
          if (!f.read_UINT(nPriority))
             return false;
@@ -733,7 +745,7 @@ BOOL Grammar::read_binary(const CHAR* pszFilename)
          INT aiProd[MAX_LEN_PROD];
          f.read(aiProd, nLenProd * sizeof(INT));
          // Create a fresh production object
-         Production* pprod = new Production(nPriority, nLenProd, aiProd);
+         Production* pprod = new Production(nId, nPriority, nLenProd, aiProd);
          // Add it to the nonterminal
          pnt->addProduction(pprod);
       }

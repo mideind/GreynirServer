@@ -71,6 +71,7 @@ declarations = """
     };
 
     struct Production {
+        UINT nId;
         UINT nPriority;
         UINT n;
         INT* pList;
@@ -211,6 +212,8 @@ class Node:
         if lb.iNt < 0:
             # Nonterminal node, completed or not
             self._nonterminal = grammar.lookup(lb.iNt)
+            assert isinstance(self._nonterminal, Nonterminal), \
+                "nonterminal {0} is a {1}, i.e. {2}".format(lb.iNt, type(self._nonterminal), self._nonterminal)
             self._completed = (lb.pProd == ffi.NULL) or lb.nDot >= lb.pProd.n
             self._terminal = None
             self._token = None
@@ -219,7 +222,10 @@ class Node:
             # Token node: find the corresponding terminal
             assert parent is not None
             assert parent != ffi.NULL
-            self._terminal = grammar.lookup(parent.pList[index + parent.n] if index < 0 else parent.pList[index])
+            tix = parent.pList[index + parent.n] if index < 0 else parent.pList[index]
+            self._terminal = grammar.lookup(tix)
+            assert isinstance(self._terminal, Terminal), \
+                "index is {0}, parent.n is {1}, tix is {2}, production {3}".format(index, parent.n, tix, grammar.productions_by_ix[parent.nId])
             self._token = tokens[lb.iNt]
             self._nonterminal = None
             self._completed = True
@@ -242,6 +248,7 @@ class Node:
             n1 = c_dict[ch1]
         else:
             n1 = Node(grammar, tokens, c_dict, ch1, prod, child_ix)
+        if n1 is not None:
             child_ix += 1
         if ch2 == ffi.NULL:
             n2 = None
@@ -249,7 +256,6 @@ class Node:
             n2 = c_dict[ch2]
         else:
             n2 = Node(grammar, tokens, c_dict, ch2, prod, child_ix)
-            child_ix += 1
         if n1 is not None and n2 is not None:
             children = (n1, n2)
         elif n2 is not None:
@@ -257,10 +263,12 @@ class Node:
         else:
             # n1 may be None if this is an epsilon node
             children = n1
+        # Recreate the pc tuple from the production index
+        pc = (grammar.productions_by_ix[prod.nId], children)
         if self._families is None:
-            self._families = [ children ]
+            self._families = [ pc ]
             return
-        self._families.append(children)
+        self._families.append(pc)
 
     @property
     def start(self):
@@ -274,7 +282,7 @@ class Node:
 
     @property
     def nonterminal(self):
-        """ Return the 'head' of this node, i.e. the first element of the label """
+        """ Return the nonterminal associated with this node """
         return self._nonterminal
 
     @property
@@ -317,13 +325,13 @@ class Node:
         """ Return True if there is only a single empty family of this node """
         if not self._families:
             return True
-        return len(self._families) == 1 and self._families[0] == None
+        return len(self._families) == 1 and self._families[0][1] == None
 
     def enum_children(self):
         """ Enumerate families of children """
         if self._families:
-            for child in self._families:
-                yield child # May be a tuple
+            for prod, children in self._families:
+                yield (prod, children) # May be a tuple
 
     def reduce_to(self, child_ix):
         """ Eliminate all child families except the given one """
@@ -377,7 +385,7 @@ class ParseForestNavigator(object):
         # Return object to collect results
         return None
 
-    def _visit_family(self, results, level, node, ix):
+    def _visit_family(self, results, level, node, ix, prod):
         """ At a family of children """
         return
 
@@ -421,8 +429,9 @@ class ParseForestNavigator(object):
                     child_level = level + 1
                 if w.is_ambiguous:
                     child_level += 1
-                for ix, f in enumerate(w.enum_children()):
-                    self._visit_family(results, level, w, ix)
+                for ix, pc in enumerate(w.enum_children()):
+                    prod, f = pc
+                    self._visit_family(results, level, w, ix, prod)
                     if w.is_completed:
                         # Completed nonterminal: restart children index
                         child_ix = -1
@@ -482,6 +491,8 @@ class Fast_Parser(BIN_Parser):
             except os.error:
                 raise GrammarError("Binary grammar file {0} not found"
                     .format(cls.GRAMMAR_BINARY_FILE))
+            print("_load_binary_grammar: c_grammar_ts is {0}, ts is {1}"
+                .format(cls._c_grammar_ts, ts))
             if cls._c_grammar is None or cls._c_grammar_ts != ts:
                 # Need to load or reload the grammar
                 ep = cls.eparser
@@ -557,7 +568,7 @@ class Fast_Parser(BIN_Parser):
             # Empty (epsilon) node or token node
             return 1
         comb = 0
-        for f in w.enum_children():
+        for _, f in w.enum_children():
             if isinstance(f, tuple):
                 cnt = 1
                 for c in f:
@@ -600,7 +611,7 @@ class ParseForestPrinter(ParseForestNavigator):
             print(indent + h, file = self._file)
         return None # No results required, but visit children
 
-    def _visit_family(self, results, level, w, ix):
+    def _visit_family(self, results, level, w, ix, prod):
         if w.is_ambiguous:
             indent = "  " * level # Two spaces per indent level
             print(indent + "Option " + str(ix + 1) + ":", file = self._file)
@@ -609,4 +620,5 @@ class ParseForestPrinter(ParseForestNavigator):
     def print_forest(cls, root_node, detailed = False, file = None):
         """ Print a parse forest to the given file, or stdout if none """
         cls(detailed, file).go(root_node)
+
 
