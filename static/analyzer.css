@@ -1,0 +1,376 @@
+/*
+
+   Analyzer.css
+
+   CSS file for Reynir word category analyzer
+
+   Author: Vilhjalmur Thorsteinsson
+   Copyright (C) 2015
+   All rights reserved
+
+*/
+
+body {
+   font-family: 'Open Sans', sans-serif;
+   padding: 12px;
+   margin: 0;
+   background-color: white;
+}
+
+::selection {
+   background: #10069F; /* Greynir blue */
+   color: white;
+}
+
+div.container {
+   width: 760px;
+   min-width: 760px;
+   margin: auto;
+}
+
+div.text-container {
+   text-align: center;
+}
+
+div.input {
+   text-align: center;
+}
+
+.over {
+   outline-style: solid;
+   outline-color: #FFCC00;
+   outline-width: 2px;
+}
+
+.header a,
+.header a:visited,
+.header a:link {
+   text-decoration: none;
+   color: #660066;
+}
+
+input.text {
+   font-family: 'Open Sans', sans-serif;
+   font-size: 20px;
+   font-weight: normal;
+   height: 32px;
+   border-style: solid;
+   border-color: #10069F; /* Greynir blue */
+   border-width: 1px;
+   border-radius: 4px;
+   margin-bottom: 4px;
+   padding-top: 2px;
+   padding-bottom: 4px;
+   padding-left: 8px;
+   padding-right: 8px;
+}
+
+input.text:focus {
+   background-color: #FFEEA9; /* Pale Greynir yellow */
+   outline-style: none;
+}
+
+input#txt {
+   width: 740px;
+}
+
+div.btn {
+   display: block;
+   text-align: center;
+   font-size: 20px;
+   font-weight: normal;
+   color: white;
+   margin: auto;
+   padding: 5px;
+   padding-bottom: 7px;
+   border-radius: 4px;
+   vertical-align: middle;
+   cursor: pointer;
+   -webkit-user-select: none;
+   -khtml-user-select: none;
+   -moz-user-select: none;
+   -ms-user-select: none;
+   user-select: none;
+   margin-top: 24px;
+   margin-bottom: 24px;
+}
+
+div.btn:focus {
+   outline-style: none;
+}
+
+div#txt-ok {
+   width: 82px;
+   min-width: 82px;
+   height: 28px;
+   background-color: #00B74F; /* Greynir green */
+}
+
+div#txt-ok:hover {
+   /* background-color: #FFCC00; /* Greynir yellow */
+   background-color: #CB333B; /* Greynir red */
+}
+
+p.header {
+   font-size: 28px;
+   font-weight: bold;
+   text-align: center;
+   margin-bottom: 0;
+   padding-bottom: 0;
+}
+
+p.author {
+   position: relative;
+   top: 6px;
+   right: 0px;
+   font-size: 16px;
+   font-style: italic;
+   text-align: right;
+   margin-top: 0;
+   padding-top: 0;
+}
+
+div.output {
+   position: relative;
+   text-align: center;
+   cursor: default;
+   margin-top: 32px;
+}
+
+div#result i {
+   display: inline-block;
+   font-size: 20px;
+   font-style: normal;
+   color: white;
+   background-color: #cccccc; /* Neutral grey */
+   padding-bottom: 6px;
+   padding-top: 2px;
+   padding-left: 8px;
+   padding-right: 8px;
+   margin-right: 4px;
+   margin-bottom: 8px;
+   border-style: solid;
+   border-width: 0;
+   border-radius: 8px;
+}
+
+div#result i.p
+{
+   /* Punctuation */
+   background-color: black;
+   font-style: bold;
+}
+
+div#result i.no,
+div#result i.margur
+{
+   background-color: #10069F; /* Blue */
+}
+
+div#result i.fn,
+div#result i.pfn,
+div#result i.ég,
+div#result i.þú,
+div#result i.hans,
+div#result i.hennar,
+div#result i.abfn,
+div#result i.hann,
+div#result i.hún,
+div#result i.það,
+div#result i.sá,
+div#result i.hvor
+{
+   background-color: #8066DF; /* Light blue */
+}
+
+div#result i.so,
+div#result i.vera,
+div#result i.vilja,
+div#result i.geta,
+div#result i.munu,
+div#result i.skulu,
+div#result i.mega,
+div#result i.hafa {
+   background-color: #CB333B; /* Red */
+}
+
+div#result i.nhm {
+   background-color: #78333B; /* Dark red */
+}
+
+div#result i.ao,
+div#result i.eo {
+   background-color: #888888; /* Grey */
+}
+
+div#result i.lo {
+   background-color: #00B74F; /* Green */
+}
+
+div#result i.fs {
+   background-color: #00873F; /* Dark green */
+}
+
+div#result i.st,
+div#result i.sem,
+div#result i.og,
+div#result i.eða,
+div#result i.en,
+div#result i.þótt,
+div#result i.hver,
+div#result i.hvor,
+div#result i.hvaða,
+div#result i.hvers,
+div#result i.vegna,
+div#result i.hvar,
+div#result i.hvernig,
+div#result i.hvort,
+div#result i.hvenær,
+div#result i.þannig,
+div#result i.þegar,
+div#result i.þá {
+   background-color: #FFCC00; /* Yellow */
+}
+
+div#result i.nf {
+   /* Word not found */
+   top: -3px;
+   border-width: 3px;
+   border-color: #CB333B;
+   margin-bottom: 5px;
+   background-color: #10069F; /* Blue */
+}
+
+div#result i.number {
+   background-color: #007F33;
+}
+
+div#result i.percent {
+   background-color: #10069F;
+}
+
+div#result i.ordinal {
+   background-color: #CCA500;
+}
+
+div#result i.date {
+   background-color: #CCA500;
+}
+
+div#result i.timestamp {
+   background-color: #CCA500;
+}
+
+div#result i.currency {
+   background-color: #007F33;
+}
+
+div#result i.amount {
+   background-color: #007F33;
+}
+
+div#result i.person {
+   background-color: #10069F;
+}
+
+p.txt {
+   font-weight: bold;
+   font-style: italic;
+   font-size: 18px;
+}
+
+span.errtok {
+   display: inline-block;
+   position: relative;
+   background-color: #CB333B;
+   color: white;
+   padding-top: 4px;
+   padding-left: 4px;
+   padding-bottom: 0px;
+   padding-right: 0px;
+   margin-right: 4px;
+   margin-bottom: 8px;
+   border-style: solid;
+   border-width: 0px;
+   border-radius: 4px;
+}
+
+span.sent {
+   margin-right: 8px;
+   cursor: pointer;
+}
+
+span.sent:hover {
+}
+
+span.sent.parsed {
+}
+
+span.sent.parsed:hover {
+}
+
+div#wait {
+   display: none;
+   position: absolute;
+   top: 160px;
+   left: 320px;
+   width: 48px;
+   height: 48px;
+   z-index: 10;
+   background-image: url("wait.gif");
+   background-repeat: no-repeat;
+}
+
+div.info {
+   visibility: hidden;
+   position: absolute;
+   background-color: #f0f0f0;
+   border-radius: 5px;
+   box-shadow: 2px 2px 4px 2px #333333;
+   z-index: 10;
+   min-width: 150px;
+   margin-top: 48px;
+   padding-top: 6px;
+   padding-bottom: 6px;
+   padding-left: 12px;
+   padding-right: 12px;
+}
+
+div.info p {
+   text-align: left;
+   font-size: 16px;
+   line-height: 20px;
+   margin-top: 0px;
+   margin-bottom: 4px;
+   padding: 0;
+}
+
+.highlight {
+   background-color: #FFCC00; /* Greynir yellow */
+}
+
+p.options {
+   padding-top: 6px;
+   padding-bottom: 6px;
+}
+
+p.options span {
+   margin-left: 12px;
+}
+
+span.shown {
+   font-weight: bold;
+}
+
+span.choice {
+   cursor: pointer;
+}
+
+span.choice:hover {
+   background-color: #94F7BC; /* Pale Greynir green */
+}
+
+p.err {
+   color: #CB333B;
+}
+

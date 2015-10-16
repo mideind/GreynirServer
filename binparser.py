@@ -96,6 +96,7 @@ class BIN_Token(Token):
         "gm" : "GM", # Germynd
         "mm" : "MM", # Miðmynd
         "sb" : "SB", # Sterk beyging
+        "vb" : "VB", # Veik beyging
         "nh" : "NH", # Nafnháttur
         "fh" : "FH", # Framsöguháttur
         "bh" : "BH", # Boðháttur
@@ -138,7 +139,7 @@ class BIN_Token(Token):
 
     # Variants to be checked for verbs
     _VERB_VARIANTS = [ "p1", "p2", "p3", "nh", "vh", "lh", "bh", "fh",
-        "sagnb", "lhþt", "nt", "kk", "kvk", "hk", "sb", "gm", "mm" ]
+        "sagnb", "lhþt", "nt", "kk", "kvk", "hk", "sb", "vb", "gm", "mm" ]
     # Pre-calculate a dictionary of associated BIN forms
     _VERB_FORMS = None # Initialized later
 
@@ -149,9 +150,10 @@ class BIN_Token(Token):
     # 'Það hafi opnað fyrir of ágenga nýtingu þeirra'
     # '...verður ekki til nægur jarðvarmi'
     # '...til að koma upp veggspjöldum'
-    _NOT_NOT_EO = { "inn", "eftir", "of", "til", "upp" }
+    # '...séu um 20 kaupendur'
+    _NOT_NOT_EO = { "inn", "eftir", "of", "til", "upp", "um" }
 
-    _UNDERSTOOD_PUNCTUATION = ".?,:;–-()"
+    _UNDERSTOOD_PUNCTUATION = ".?!,:;–-()"
 
     _MEANING_CACHE = { }
 
@@ -264,8 +266,9 @@ class BIN_Token(Token):
         for v in [ "sagnb", "lhþt", "bh" ]: # Be careful with "lh" here - !!! add mm?
             if BIN_Token._VARIANT[v] in form and not terminal.has_variant(v):
                 return False
-        if terminal.is_lh and "VB" in form:
-            # We want only the strong declinations ("SB") of lhþt, not the weak ones
+        if terminal.is_lh and "VB" in form and not terminal.has_variant("vb"):
+            # We want only the strong declinations ("SB") of lhþt, not the weak ones,
+            # unless explicitly requested
             return False
         if terminal.has_variant("bh") and "ST" in form:
             # We only want the explicit request forms (boðháttur), i.e. "bónaðu"/"bónið",
@@ -400,33 +403,25 @@ class BIN_Token(Token):
     def matches_NUMBER(self, terminal):
         """ A number token matches a number (töl) or noun terminal """
 
-        if terminal.startswith("tala"):
-            # Plain number with no case or gender info
-            return self.is_correct_singular_or_plural(terminal)
+        no_info = not self.t2[1] and not self.t2[2]
 
-        if not self.t2[1] and not self.t2[2]:
+        if no_info:
+            if terminal.startswith("tala"):
+                # Plain number with no case or gender info
+                return self.is_correct_singular_or_plural(terminal)
             # If no case and gender info, we only match "tala",
             # not nouns or "töl" terminals
             return False
 
-        if not terminal.startswith("töl"):
-            if not terminal.startswith("no"):
-                return False
-            # This is a noun ("no") terminal
-            if terminal.is_abbrev:
-                return False
-            # Allow this to act as a noun if we have case and gender info
-            if not self.t2[1] or not self.t2[2]:
-                return False
+        if not terminal.startswith("töl") and not terminal.startswith("to"):
+            return False
         if not self.is_correct_singular_or_plural(terminal):
             return False
-        if self.t2[2] is None:
-            # No associated gender: match neutral gender only
-            if terminal.has_any_vbits(BIN_Token._VBIT_KK | BIN_Token._VBIT_KVK):
-            # if terminal.has_variant("kk") or terminal.has_variant("kvk"):
+        if terminal.startswith("to"):
+            # Allow a match with "to" if we have both case and gender info
+            if not self.t2[1] or not self.t2[2]:
                 return False
-        else:
-            # Associated gender
+            # Only check gender for "to", not "töl"
             for g in BIN_Token._GENDERS:
                 if terminal.has_variant(g) and g not in self.t2[2]:
                     return False
@@ -465,31 +460,21 @@ class BIN_Token(Token):
     def matches_PERCENT(self, terminal):
         """ A percent token matches a number (töl) or noun terminal """
         if not terminal.startswith("töl"):
-            # Matches number and percentage terminals only
+            # Matches number and noun terminals only
             if not terminal.startswith("no"):
                 return False
             if terminal.is_abbrev:
                 return False
             # If we are recognizing this as a noun, do so only with neutral gender
-            if self.t2[2] is None and not terminal.has_variant("hk"):
+            if not terminal.has_variant("hk"):
                 return False
+            if self.t2[1]:
+                # See whether any of the allowed cases match the terminal
+                for c in BIN_Token._CASES:
+                    if terminal.has_variant(c) and c not in self.t2[1]:
+                        return False
         # We do not check singular or plural here since phrases such as
         # '35% skattur' and '1% allra blóma' are valid
-        if self.t2[2] is None:
-            # No associated gender: match neutral gender only
-            if terminal.has_any_vbits(BIN_Token._VBIT_KK | BIN_Token._VBIT_KVK):
-                # Percentages only match the neutral gender
-                return False
-        else:
-            # Associated gender
-            for g in BIN_Token._GENDERS:
-                if terminal.has_variant(g) and g not in self.t2[2]:
-                    return False
-        if self.t2[1]:
-            # See whether any of the allowed cases match the terminal
-            for c in BIN_Token._CASES:
-                if terminal.has_variant(c) and c not in self.t2[1]:
-                    return False
         return True
 
     def matches_YEAR(self, terminal):

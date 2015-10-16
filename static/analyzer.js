@@ -1,9 +1,9 @@
 
 /*
 
-   Main.js
+   Analyzer.js
 
-   Reynir main front-end script
+   Reynir word category analyzer client script
 
    Author: Vilhjalmur Thorsteinsson
    Copyright (C) 2015
@@ -123,14 +123,6 @@ function serverPost(url, parameters) {
    // to allow submission, at least in some browsers
    $(document.body).append(form);
    form.submit();
-}
-
-function showParse(ev) {
-   /* A sentence has been clicked: show its parse grid */
-   var sentText = $(ev.delegateTarget).text();
-   // Do an HTML POST to the parsegrid URL, passing
-   // the sentence text within a synthetic form
-   serverPost("/parsegrid", { txt: sentText })
 }
 
 function buttonOver(elem) {
@@ -268,48 +260,24 @@ function hoverOut() {
    $(this).removeClass("highlight");
 }
 
-function populateMetadata(m) {
-   // Display the article metadata, if any
-   if (m === null) {
-      // No metadata: hide it
-      $("#metadata").css("display", "none");
-      return;
-   }
-   $("#meta-heading").text(m.heading);
-   $("#meta-author").text(m.author);
-   $("#meta-timestamp").text(m.timestamp);
-   $("#meta-authority").text(m.authority.toFixed(1));
-   $("#metadata").css("display", "block");
-}
-
-function add_w(wsp, cls, i, wrd) {
+function add_w(cls, i, wrd) {
    // Add HTML for a single word to s
-   return wsp + "<i class='" + cls + "' id='w" + i + "'>" + wrd + "</i>";
+   return "<i class='" + cls + "' id='w" + i + "'>" + wrd + "</i>";
 }
 
 function populateResult(json) {
    // Display the results of analysis by the server
    // Hide progress indicator
    $("div#wait").css("display", "none");
+
    // Clear the previous result, if any, and associate the
    // incoming token list with the result DIV
-   $("#tok-time").text(json.result.tok_time.toFixed(2));
-   $("#parse-time").text(json.result.parse_time.toFixed(2));
-   $("#tok-num").text(json.result.tok_num);
-   $("#num-sent").text(json.result.num_sent);
-   $("#num-parsed-sent").text(json.result.num_parsed_sent);
-   $("#num-parsed-ratio").text((json.result.num_parsed_sent / json.result.num_sent * 100).toFixed(1));
-   $("#avg-ambig-factor").text(json.result.avg_ambig_factor.toFixed(2));
 
-   populateMetadata(json.result.metadata);
-
-   $("p.tok-info").css("visibility", "visible");
    var out = $("div#result");
    var tokens = json.result.tokens;
    out.data("tokens", tokens);
    var i;
    var s = "";
-   var wsp = ""; // Pending whitespace
    for (i = 0; i < tokens.length; i++) {
       var wl = tokens[i];
       var wl0 = wl[0];
@@ -317,53 +285,26 @@ function populateResult(json) {
          // The token has earlier been marked as an error token:
          // enclose it within a span identifying it as such
          wl0 &= ~TOK_ERROR_FLAG;
-         if (wl0 == TOK_WORD || wl0 == TOK_PERSON || wl0 == TOK_DATE || wl0 == TOK_NUMBER) {
-            s += wsp;
-            wsp = "";
-         }
          s += "<span class='errtok'>";
       }
       if (wl0 == TOK_PUNCTUATION) {
-         if (wl[2] == TP_LEFT) {
-            // Left associative punctuation
-            s += wsp + wl[1];
-            wsp = "";
-         }
-         else
-         if (wl[2] == TP_RIGHT) {
-            s += wl[1]; // Keep pending whitespace unchanged
-         }
-         else
-         if (wl[2] == TP_CENTER) {
-            // Whitespace on both sides
-            s += wsp + wl[1];
-            wsp = " ";
-         }
-         else
-         if (wl[2] == TP_NONE) {
-            // Tight: no whitespace
-            s += wl[1];
-            wsp = "";
-         }
+         s += "<i class='p'>" + wl[1] + "</i>";
       }
       else
       if (wl0 == TOK_WORD) {
          if (wl[2] === null || wl[2].length == 0)
             // Word not recognized
-            s += wsp + "<i class='nf'>" + wl[1] + "</i>";
+            s += "<i class='nf'>" + wl[1] + "</i>";
          else
-            s += wsp + "<i id='w" + i + "'>" + wl[1] + "</i>";
-         wsp = " ";
+            s += "<i class='" + wl[3] + "' id='w" + i + "'>" + wl[1] + "</i>";
       }
       else
       if (wl0 == TOK_P_BEGIN) {
          s += "<p>";
-         wsp = "";
       }
       else
       if (wl0 == TOK_P_END) {
          s += "</p>";
-         wsp = "";
       }
       else
       if (wl0 == TOK_S_BEGIN) {
@@ -376,11 +317,7 @@ function populateResult(json) {
          if (nump > 0)
             // This sentence has at least one parse tree: mark it
             c += " parsed";
-         if (nump > 100)
-            // This sentence has a lot of parses: mark it
-            c += " very-ambig";
          s += "<span class='" + c + "'>";
-         wsp = "";
       }
       else
       if (wl0 == TOK_S_END) {
@@ -389,54 +326,44 @@ function populateResult(json) {
       }
       else
       if (wl0 == TOK_NUMBER) {
-         s += add_w(wsp, "number", i, wl[1]);
-         wsp = " ";
+         s += add_w("number", i, wl[1]);
       }
       else
       if (wl0 == TOK_PERCENT) {
-         s += add_w(wsp, "percent", i, wl[1]);
-         wsp = " ";
+         s += add_w("percent", i, wl[1]);
       }
       else
       if (wl0 == TOK_ORDINAL) {
-         s += add_w(wsp, "ordinal", i, wl[1] + ".");
-         wsp = " ";
+         s += add_w("ordinal", i, wl[1] + ".");
       }
       else
       if (wl0 == TOK_DATE) {
-         s += add_w(wsp, "date", i, wl[1]);
-         wsp = " ";
+         s += add_w("date", i, wl[1]);
       }
       else
       if (wl0 == TOK_TIMESTAMP) {
-         s += add_w(wsp, "timestamp", i, wl[1]);
-         wsp = " ";
+         s += add_w("timestamp", i, wl[1]);
       }
       else
       if (wl0 == TOK_CURRENCY) {
-         s += add_w(wsp, "currency", i, wl[1]);
-         wsp = " ";
+         s += add_w("currency", i, wl[1]);
       }
       else
       if (wl0 == TOK_AMOUNT) {
-         s += add_w(wsp, "amount", i, wl[1]);
-         wsp = " ";
+         s += add_w("amount", i, wl[1]);
       }
       else
       if (wl0 == TOK_PERSON) {
-         s += add_w(wsp, "person", i, wl[1]);
-         wsp = " ";
+         s += add_w("person", i, wl[1]);
       }
       else
       if (wl0 == TOK_YEAR || wl0 == TOK_TELNO || wl0 == TOK_TIME) {
-         s += wsp + "<b>" + wl[1] + "</b>";
-         wsp = " ";
+         s += "<i class='year'>" + wl[1] + "</i>";
       }
       else
       if (wl0 == TOK_UNKNOWN) {
          // Token not recognized
-         s += wsp + "<i class='nf'>" + wl[1] + "</i>";
-         wsp = " ";
+         s += "<i class='nf'>" + wl[1] + "</i>";
       }
       if (wl[0] & TOK_ERROR_FLAG) {
          s += "</span>";
@@ -447,26 +374,17 @@ function populateResult(json) {
    out.html(s);
    // Put a hover handler on each word
    $("div#result i").hover(hoverIn, hoverOut);
-   // Put a click handler on each sentence
-   $("span.sent").click(showParse);
 }
 
-function analyzeUrl() {
+function analyzeTxt() {
    // Ajax query to the server
    // Clear previous result
    $("div#result").html("");
    // Display progress indicator
    $("div#wait").css("display", "block");
-   // Hide the statistics
-   $("p.tok-info").css("visibility", "hidden");
-   // Hide the metadata
-   $("#metadata").css("display", "none");
    // Launch the query
    serverQuery('/analyze',
-      {
-         url : $("#url").val().trim(),
-         noreduce : true
-      },
+      { txt: $("#txt").val().trim() },
       populateResult
    );
 }

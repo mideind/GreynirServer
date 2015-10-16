@@ -195,7 +195,7 @@ class RuvScraper(ScrapeHelper):
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
         s = urlparse.urlsplit(url)
-        if s.path and s.path.startswith("/frontpage/"):
+        if s.path and (s.path.startswith("/frontpage/") or s.path.startswith("/frontpage?")):
             # Skip the www.ruv.is/frontpage/... URLs
             return True
         if s.path and s.path.startswith("/sarpurinn/"):

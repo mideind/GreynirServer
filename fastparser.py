@@ -208,6 +208,7 @@ class Node:
         lb = c_node.label
         self._start = lb.nI
         self._end = lb.nJ
+        self._hash = id(self).__hash__()
         self._families = None # Families of children
         if lb.iNt < 0:
             # Nonterminal node, completed or not
@@ -343,7 +344,7 @@ class Node:
 
     def __hash__(self):
         """ Make this node hashable """
-        return id(self).__hash__()
+        return self._hash
 
     def __repr__(self):
         """ Create a reasonably nice text representation of this node
@@ -438,12 +439,13 @@ class ParseForestNavigator(object):
                     else:
                         child_ix = index
                     if isinstance(f, tuple):
-                        child_ix -= 1
-                        for child in range(2):
-                            self._add_result(results, ix,
-                                _nav_helper(f[child], child_ix + child, child_level))
+                        self._add_result(results, ix,
+                            _nav_helper(f[0], child_ix - 1, child_level))
+                        self._add_result(results, ix,
+                            _nav_helper(f[1], child_ix, child_level))
                     else:
-                        self._add_result(results, ix, _nav_helper(f, child_ix, child_level))
+                        self._add_result(results, ix,
+                            _nav_helper(f, child_ix, child_level))
                 v = self._process_results(results, w)
             if not self._visit_all:
                 # Mark the node as visited and store its result
@@ -491,8 +493,6 @@ class Fast_Parser(BIN_Parser):
             except os.error:
                 raise GrammarError("Binary grammar file {0} not found"
                     .format(cls.GRAMMAR_BINARY_FILE))
-            print("_load_binary_grammar: c_grammar_ts is {0}, ts is {1}"
-                .format(cls._c_grammar_ts, ts))
             if cls._c_grammar is None or cls._c_grammar_ts != ts:
                 # Need to load or reload the grammar
                 ep = cls.eparser
@@ -535,10 +535,14 @@ class Fast_Parser(BIN_Parser):
         with ParseJob.make(wrapped_tokens, self._terminals) as job:
             node = ep.earleyParse(self._c_parser, len(wrapped_tokens), job.handle, err)
         if node == ffi.NULL:
-            ix = err[0] # Token index: always >= 1
-            assert ix >= 1
-            raise ParseError("No parse available at token {0} ({1})"
-                .format(ix, wrapped_tokens[ix-1]), ix-1)
+            ix = err[0] # Token index
+            if ix >= 1:
+                raise ParseError("No parse available at token {0} ({1})"
+                    .format(ix, wrapped_tokens[ix-1]), ix-1)
+            else:
+                # Not a normal parse error, but report it anyway
+                raise ParseError("No parse available at token {0} ({1} tokens in input)"
+                    .format(ix, len(wrapped_tokens)), 0)
         err = None
         c_dict = dict() # Node pointer conversion dictionary
         # Create a new Python-side node forest corresponding to the C++ one
@@ -551,7 +555,8 @@ class Fast_Parser(BIN_Parser):
 
     def cleanup(self):
         """ Delete C++ objects. Must call after last use of Fast_Parser
-            to avoid memory leaks. """
+            to avoid memory leaks. Using the context manager protocol is recommended
+            to guarantee cleanup. """
         ep = Fast_Parser.eparser
         ep.deleteParser(self._c_parser)
         self._c_parser = None
@@ -562,21 +567,30 @@ class Fast_Parser(BIN_Parser):
 
     @classmethod
     def num_combinations(cls, w):
-        """ Count the number of possible parse trees in the given forest """
+        """ Count the number of possible parse tree combinations in the given forest """
 
-        if w is None or w.is_token:
-            # Empty (epsilon) node or token node
-            return 1
-        comb = 0
-        for _, f in w.enum_children():
-            if isinstance(f, tuple):
-                cnt = 1
-                for c in f:
-                    cnt *= cls.num_combinations(c)
-                comb += cnt
-            else:
-                comb += cls.num_combinations(f)
-        return comb if comb > 0 else 1
+        nd = dict()
+
+        def _num_comb(w):
+            if w is None or w.is_token:
+                # Empty (epsilon) node or token node
+                return 1
+            # If a subtree has already been counted, re-use that count
+            # (this is less efficient for small trees but much more efficient
+            # for extremely ambiguous trees, with combinations in the
+            # hundreds of billions)
+            if w in nd:
+                return nd[w]
+            comb = 0
+            for _, f in w.enum_children():
+                if isinstance(f, tuple):
+                    comb += _num_comb(f[0]) * _num_comb(f[1])
+                else:
+                    comb += _num_comb(f)
+            result = nd[w] = comb if comb > 0 else 1
+            return result
+
+        return _num_comb(w)
 
 
 class ParseForestPrinter(ParseForestNavigator):

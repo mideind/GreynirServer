@@ -26,7 +26,9 @@
 
 import os
 import struct
+
 from datetime import datetime
+from collections import defaultdict
 
 
 class GrammarError(Exception):
@@ -333,6 +335,9 @@ class Production:
         """ Return the length of this production """
         return self._len
 
+    def __iter__(self):
+        return iter(self._rhs)
+
     def __repr__(self):
         """ Return a representation of this production """
         return "<P: " + repr(self._rhs) + ">"
@@ -382,7 +387,11 @@ class Grammar:
         # Dictionary of productions indexed by integers >= 0
         self._productions_by_ix = { }
 
+        # Mapping of nonterminals to a list of their productions
         self._nt_dict = { }
+        # Nonterminal score adjustment as specified by $score(n)
+        self._nt_scores = { }
+
         self._root = None
         # Information about the grammar file
         self._file_name = None
@@ -392,6 +401,10 @@ class Grammar:
     def nt_dict(self):
         """ Return the raw grammar dictionary, Nonterminal -> [ Productions ] """
         return self._nt_dict
+
+    def nt_score(self, nt):
+        """ Return the score adjustment for the given nonterminal """
+        return self._nt_scores.get(nt, 0)
 
     @property
     def root(self):
@@ -765,6 +778,34 @@ class Grammar:
                         # Variant options must be valid identifiers without underscores
                         raise GrammarError("Invalid option '{0}' in variant '{1}'".format(vopt, vname), fname, line)
                 variants[vname] = v
+            elif s.startswith('$'):
+                # Pragma
+                s = s.strip()
+                PRAGMA_SCORE = "$score("
+                if s.startswith(PRAGMA_SCORE):
+                    # Pragma $score(int) Nonterminal/var1/var2 ...
+                    s = s[len(PRAGMA_SCORE):]
+                    ix = s.find(')')
+                    if ix < 0:
+                        raise GrammarError("Expected right parenthesis in $score() pragma", fname, line)
+                    score = int(s[0:ix])
+                    s = s[ix+1:]
+                    nts = s.split()
+                    for nt_name in nts:
+                        ntv = nt_name.split('/')
+                        if not ntv[0].isidentifier():
+                            raise GrammarError("Invalid nonterminal name '{0}'".format(ntv[0]), fname, line)
+                        for vname in ntv[1:]:
+                            if vname not in variants:
+                                raise GrammarError("Unknown variant '{0}' for nonterminal '{1}'".format(vname, ntv[0]), fname, line)
+                        var_names = variant_names(ntv[0], ntv[1:])
+                        for vname in var_names:
+                            if vname not in self._nonterminals:
+                                raise GrammarError("Unknown nonterminal '{0}'".format(vname))
+                            self._nt_scores[self._nonterminals[vname]] = score
+
+                else:
+                    raise GrammarError("Unknown pragma '{0}'".format(s), fname, line)
             else:
                 # New nonterminal
                 if "→" in s:
@@ -825,6 +866,7 @@ class Grammar:
                     if ix >= 0:
                         s = s[0:ix]
 
+                    s = s.rstrip()
                     if not s:
                         continue
 
@@ -866,7 +908,7 @@ class Grammar:
             reduced = False
             for nt in agenda:
                 for _, p in grammar[nt]:
-                    if all([True if isinstance(s, Terminal) else s in der_t for s in p]):
+                    if all(True if isinstance(s, Terminal) else s in der_t for s in p):
                         der_t.add(nt)
                         break
                 if nt in der_t:
@@ -881,10 +923,14 @@ class Grammar:
         # Short-circuit nonterminals that point directly and uniquely to other nonterminals.
         # Becausee this creates a gap between the original grammar
         # and the resulting trees, we only do this for nonterminals with variants
+        # that do not have a $score pragma
         shortcuts = { } # Dictionary of shortcuts
         for nt, plist in grammar.items():
             if not "_" in nt.name:
                 # 'Pure' nonterminal with no variants: don't shortcut
+                continue
+            if self.nt_score(nt) != 0:
+                # Nonterminal has a score adjustment: don't shortcut
                 continue
             if len(plist) == 1 and len(plist[0][1]) == 1 and isinstance(plist[0][1][0], Nonterminal):
                 # This nonterminal has only one production, with only one nonterminal item
@@ -952,21 +998,6 @@ class Grammar:
             for _, p in plist:
                 self._productions_by_ix[p.index] = p
 
-#        for ix in range(len(nt_keys_sorted)):
-#        nt_by_ix = { nt.index : nt for nt in nonterminals.values() }
-#        max_ix = max(-index for index in nt_by_ix.keys())
-#        ctr = 1
-#        for ix in range(1, max_ix + 1):
-#            if -ix in nt_by_ix:
-#                nt_by_ix[-ix].set_index(-ctr)
-#                ctr += 1
-#
-#        # Make a dictionary of nonterminals from the grammar
-#        # keyed by the nonterminal index instead of its name
-#        self._nonterminals_by_ix = { nt.index : nt for nt in nonterminals.values() }
-#        # Same for terminals
-#        self._terminals_by_ix = { t.index : t for t in terminals.values() }
-
         # Grammar successfully read: note the file name and timestamp
         self._file_name = fname
         self._file_time = datetime.fromtimestamp(os.path.getmtime(fname))
@@ -981,3 +1012,53 @@ class Grammar:
             # if binary_file_time is None or binary_file_time < self._file_time:
                 # No binary file or older than text file: write a fresh one
             self._write_binary(fname)
+
+
+    def follow_set(self, nonterminal):
+
+        nullable = set()
+
+        def is_nullable(nt):
+
+            def is_nullable_prod(p):
+                return p.is_empty or all(s in nullable for s in p)
+
+            plist = self._nt_dict[nt]
+            return any(is_nullable_prod(p) for _, p in plist)
+
+        changed = True
+        while changed:
+            changed = False
+            for nt in self._nonterminals.values():
+                if nt not in nullable and is_nullable(nt):
+                    nullable.add(nt)
+                    changed = True
+
+        plist = self._nt_dict[nt]
+        follow = defaultdict(list)
+
+        seen = set()
+
+        def add_follow(nt, prod_seq):
+            plist = self._nt_dict[nt]
+            for _, p in plist:
+                for s in p:
+                    if isinstance(s, Terminal):
+                        follow[s].append(prod_seq + [ p ])
+                        break
+                    if s not in seen:
+                        seen.add(s)
+                        add_follow(s, prod_seq + [ p ])
+                    if s not in nullable:
+                        break
+
+        seen.add(nonterminal)
+        add_follow(nonterminal, [])
+
+        for terminal, pseq in follow.items():
+            print("Terminal {0} can follow by these productions:".format(terminal))
+            for p in pseq:
+                print("   {0}".format(p))
+            print()
+
+

@@ -29,6 +29,7 @@ import codecs
 import time
 import importlib
 
+#from multiprocessing.dummy import Pool
 from multiprocessing import Pool
 
 import urllib.request
@@ -48,9 +49,9 @@ from sqlalchemy import Column, Integer, String, Float, DateTime, Sequence, \
 from bs4 import BeautifulSoup, NavigableString
 
 from tokenizer import TOK, tokenize
-from parser import Parser, ParseError
+from parser import ParseError
 from reducer import Reducer
-from binparser import BIN_Parser
+from fastparser import Fast_Parser
 from settings import Settings, ConfigError, UnknownVerbs
 
 # Create the SQLAlchemy ORM Base class
@@ -213,8 +214,14 @@ class Scraper:
     def _init_class(cls):
         """ Initialize class attributes """
         if cls._parser is None:
-            cls._parser = BIN_Parser(verbose = False) # Don't emit diagnostic messages
+            cls._parser = Fast_Parser(verbose = False) # Don't emit diagnostic messages
             cls._db = Scraper_DB()
+
+    @classmethod
+    def cleanup(cls):
+        if cls._parser is not None:
+            cls._parser.cleanup()
+            cls._parser = None
 
     def __init__(self):
 
@@ -526,7 +533,7 @@ class Scraper:
             if toklist:
 
                 sent_begin = 0
-                rdc = Reducer()
+                rdc = Reducer(bp.grammar)
 
                 for ix, t in enumerate(toklist):
                     if t[0] == TOK.S_BEGIN:
@@ -546,7 +553,7 @@ class Scraper:
                             forest = None
                             # Obtain the index of the offending token
                             err_index = e.token_index
-                        num = 0 if forest is None else Parser.num_combinations(forest)
+                        num = 0 if forest is None else Fast_Parser.num_combinations(forest)
                         #print("Parsed sentence of length {0} with {1} combinations{2}".format(slen, num,
                         #    "\n" + " ".join(s[1] for s in sent) if num >= 100 else ""))
                         if num > 0:
@@ -764,10 +771,17 @@ def run(limit = 0):
 
     print("\n\n------ Reynir starting scrape -------\n")
 
-    sc = Scraper()
-    sc.go(limit = limit)
-
-    sc.stats()
+    try:
+        try:
+            sc = Scraper()
+            sc.go(limit = limit)
+        except Exception as e:
+            print("Scraper terminated with exception {0}".format(e))
+        finally:
+            sc.stats()
+    finally:
+        sc = None
+        Scraper.cleanup()
 
     print("\n------ Scrape completed -------\n")
 

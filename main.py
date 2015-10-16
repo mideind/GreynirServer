@@ -33,7 +33,7 @@ from settings import Settings, ConfigError
 from tokenizer import tokenize, StaticPhrases, Abbreviations, TOK
 from grammar import Nonterminal
 from parser import ParseError
-from fastparser import Fast_Parser, ParseForestPrinter
+from fastparser import Fast_Parser, ParseForestNavigator, ParseForestPrinter
 from reducer import Reducer
 from scraper import Scraper
 from ptest import run_test, Test_DB
@@ -192,11 +192,9 @@ def analyze():
     sent = []
     sent_begin = 0
 
-    use_reducer = False # !!! DEBUG
-
     with Fast_Parser(verbose = False) as bp: # Don't emit diagnostic messages
 
-        rdc = Reducer()
+        rdc = Reducer(bp.grammar)
 
         t0 = time.time()
 
@@ -207,44 +205,48 @@ def analyze():
                 sent_begin = ix
             elif t[0] == TOK.S_END:
                 slen = len(sent)
-                # Parse the accumulated sentence
-                err_index = None
-                num = 0 # Number of tree combinations in forest
-                try:
-                    # Parse the sentence
-                    forest = bp.go(sent)
-                    if forest:
-                        num = Fast_Parser.num_combinations(forest)
+                if slen:
+                    # Parse the accumulated sentence
+                    err_index = None
+                    num = 0 # Number of tree combinations in forest
+                    try:
+                        # Parse the sentence
+                        forest = bp.go(sent)
+                        if forest:
+                            num = Fast_Parser.num_combinations(forest)
 
-                        if single and dump_forest:
-                            # Dump the parse tree to parse.txt
-                            with open("parse.txt", mode = "w", encoding= "utf-8") as f:
-                                print("Reynir parse tree for sentence '{0}'".format(url), file = f)
-                                print("{0} combinations\n".format(num), file = f)
-                                if num < 10000:
-                                    ParseForestPrinter.print_forest(forest, file = f)
-                                else:
-                                    print("Too many combinations to dump", file = f)
+                            if single and dump_forest:
+                                # Dump the parse tree to parse.txt
+                                with open("parse.txt", mode = "w", encoding= "utf-8") as f:
+                                    print("Reynir parse tree for sentence '{0}'".format(url), file = f)
+                                    print("{0} combinations\n".format(num), file = f)
+                                    if num < 10000:
+                                        ParseForestPrinter.print_forest(forest, file = f)
+                                    else:
+                                        print("Too many combinations to dump", file = f)
 
-                    if use_reducer:
-                        # Reduce the resulting forest
-                        forest = rdc.go(forest)
-                except ParseError as e:
-                    forest = None
-                    # Obtain the index of the offending token
-                    err_index = e.token_index
-                print("Parsed sentence of length {0} with {1} combinations{2}".format(slen, num,
-                    "\n" + (" ".join(s[1] for s in sent) if num >= 100 else "")))
-                if num > 0:
-                    num_parsed_sent += 1
-                    # Calculate the 'ambiguity factor'
-                    ambig_factor = num ** (1 / slen)
-                    # Do a weighted average on sentence length
-                    total_ambig += ambig_factor * slen
-                    total_tokens += slen
-                # Mark the sentence beginning with the number of parses
-                # and the index of the offending token, if an error occurred
-                toklist[sent_begin] = TOK.Begin_Sentence(num_parses = num, err_index = err_index)
+                        if use_reducer and num > 1:
+                            # Reduce the resulting forest
+                            forest = rdc.go(forest)
+                            assert Fast_Parser.num_combinations(forest) == 1
+                            num = 1
+
+                    except ParseError as e:
+                        forest = None
+                        # Obtain the index of the offending token
+                        err_index = e.token_index
+                    print("Parsed sentence of length {0} with {1} combinations{2}".format(slen, num,
+                        "\n" + (" ".join(s[1] for s in sent) if num >= 100 else "")))
+                    if num > 0:
+                        num_parsed_sent += 1
+                        # Calculate the 'ambiguity factor'
+                        ambig_factor = num ** (1 / slen)
+                        # Do a weighted average on sentence length
+                        total_ambig += ambig_factor * slen
+                        total_tokens += slen
+                    # Mark the sentence beginning with the number of parses
+                    # and the index of the offending token, if an error occurred
+                    toklist[sent_begin] = TOK.Begin_Sentence(num_parses = num, err_index = err_index)
             elif t[0] == TOK.P_BEGIN:
                 pass
             elif t[0] == TOK.P_END:
@@ -388,9 +390,12 @@ def parse_grid():
     # Tokenize the text
     tokens = list(tokenize(txt))
 
+    grammar = None
+
     # Parse the text
     with Fast_Parser(verbose = False) as bp: # Don't emit diagnostic messages
         err = dict()
+        grammar = bp.grammar
         try:
             forest = bp.go(tokens)
         except ParseError as e:
@@ -414,9 +419,9 @@ def parse_grid():
         else:
             print("No parse available for sentence '{0}'".format(txt), file = f)
 
-    if use_reducer:
+    if forest is not None and use_reducer:
         # Reduce the parse forest
-        forest = Reducer().go(forest)
+        forest = Reducer(grammar).go(forest)
 
     # Make the parse grid with all options
     grid, ncols = make_grid(forest) if forest else ([], 0)

@@ -164,58 +164,6 @@ def test1():
     ParseForestPrinter.print_forest(forest)
 
 
-def test2():
-
-    print("\n\n------ Test 2 ---------")
-
-    # Test grammar 2 - read from file
-
-    g = Grammar()
-    g.read("Reynir.test.grammar")
-
-    #print("Grammar:")
-    #print(str(g))
-    #print()
-
-    # s = "Villi leit út eða Anna og köttur komu beint heim og kona eða maður fóru snemma inn"
-    s = "kona með kött myrti mann með hálsbindi með hund og Páll fór út"
-    # s = "kona með kött myrti mann með hund og Villi fór út"
-    # s = "Villi leit út"
-
-    class NameToken(Token):
-
-        NÖFN_NF = ["Villi", "Anna", "Hlín", "Páll"]
-        NÖFN_ÞF = ["Villa", "Önnu", "Hlín", "Pál"]
-        NÖFN_ÞGF = ["Villa", "Önnu", "Hlín", "Páli"]
-
-        def matches(self, terminal):
-            """ Does this token match the given terminal? """
-            if not terminal.name().startswith("nafn_"):
-                return False
-            if terminal.name().endswith("_nf"):
-                return self._val in NameToken.NÖFN_NF
-            if terminal.name().endswith("_þf"):
-                return self._val in NameToken.NÖFN_ÞF
-            if terminal.name().endswith("_þgf"):
-                return self._val in NameToken.NÖFN_ÞGF
-            return False
-
-    def make_token(w):
-        if w[0].isupper():
-            return NameToken('nafn', w)
-        return Token('orð', w)
-
-    toklist = [make_token(w) for w in s.split()]
-
-    p = Parser.for_grammar(g)
-
-    forest = p.go(toklist)
-
-    print("Parse combinations: {0}".format(Parser.num_combinations(forest)))
-
-    ParseForestPrinter.print_forest(forest)
-
-
 def run_test(fast_p):
     """ Run a test parse on all sentences in the test table """
 
@@ -295,6 +243,9 @@ def test3():
 
         print("Reynir.grammar has {0} nonterminals, {1} terminals, {2} productions"
             .format(g.num_nonterminals, g.num_terminals, g.num_productions))
+
+        g.follow_set(g.root)
+        return
 
         # Dump the grammar
         # print("\n" + str(g))

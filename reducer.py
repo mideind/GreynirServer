@@ -38,8 +38,8 @@ class Reducer:
 
     """ Reduces a parse forest to a single most likely parse tree """
 
-    def __init__(self):
-        pass
+    def __init__(self, grammar):
+        self._grammar = grammar
 
     def go(self, forest):
 
@@ -57,8 +57,10 @@ class Reducer:
 
         # Second pass: find a (partial) ordering by scoring the terminal alternatives for each token
         scores = dict()
+
         # Loop through the indices of the tokens spanned by this tree
         for i in range(w.start, w.end):
+
             s = finals[i]
             # Initially, each alternative has a score of 0
             scores[i] = { terminal: 0 for terminal in s }
@@ -78,83 +80,82 @@ class Reducer:
                             if wt.first in worse:
                                 for bt in s:
                                     if wt is not bt and bt.first in better:
-                                        #print("Preference: increasing score of {1}, decreasing score of {0}".format(wt, bt))
                                         if bt.name[0] in "\"'":
                                             # Literal terminal: be even more aggressive in promoting it
                                             sc[wt] -= 2
                                             sc[bt] += 6
                                         else:
-                                            sc[wt] -= 1
+                                            sc[wt] -= 2
                                             sc[bt] += 4
                                         found_pref = True
                 if not same_first and not found_pref:
                     # Only display cases where there might be a missing pref
                     print("Token '{0}' has {1} possible terminal matches: {2}".format(txt, len(s), s))
-                if True: # not found_pref:
-                    # print("Found no preference that applies to token '{0}'; applying heuristics".format(txt))
-                    # Apply heuristics
-                    for t in s:
-                        if t.first == "ao" or t.first == "eo":
-                            # Subtract from the score of all ao and eo
+
+                # Apply heuristics
+                for t in s:
+                    if t.first == "ao" or t.first == "eo":
+                        # Subtract from the score of all ao and eo
+                        sc[t] -= 1
+                    elif t.first == "no":
+                        if t.is_singular:
+                            # Add to singular nouns relative to plural ones
+                            sc[t] += 1
+                        elif t.is_abbrev:
+                            # Punish abbreviations in favor of other more specific terminals
                             sc[t] -= 1
-                        elif t.first == "no":
-                            if t.is_singular:
-                                # Add to singular nouns relative to plural ones
-                                sc[t] += 1
-                            elif t.is_abbrev:
-                                # Punish abbreviations in favor of other more specific terminals
-                                sc[t] -= 1
-                        elif t.first == "tala" or t.first == "töl":
-                            # A complete 'töl' or 'no' is better (has more info) than a rough 'tala'
-                            if t.first == "tala":
-                                sc[t] -= 1
-                            # Discourage possessive ('ef') meanings for numbers
-                            for pt in s:
-                                if (pt.first == "no" or pt.first == "töl") and pt.has_variant("ef"):
-                                    sc[pt] -= 1
-                        elif t.first == "fs":
-                            if t.has_variant("nf"):
-                                # Reduce the weight of the 'artificial' nominative prepositions
-                                # 'næstum', 'sem', 'um'
+                    elif t.first == "tala" or t.first == "töl":
+                        # A complete 'töl' or 'no' is better (has more info) than a rough 'tala'
+                        if t.first == "tala":
+                            sc[t] -= 1
+                        # Discourage possessive ('ef') meanings for numbers
+                        for pt in s:
+                            if (pt.first == "no" or pt.first == "töl") and pt.has_variant("ef"):
+                                sc[pt] -= 1
+                    elif t.first == "fs":
+                        if t.has_variant("nf"):
+                            # Reduce the weight of the 'artificial' nominative prepositions
+                            # 'næstum', 'sem', 'um'
+                            sc[t] -= 2
+                        else:
+                            # Else, give a bonus for each matched preposition
+                            sc[t] += 1
+                    elif t.first == "so":
+                        if t.variant(0) in "012":
+                            # Give a bonus for verb arguments: the more matched, the better
+                            sc[t] += int(t.variant(0))
+                        if t.is_sagnb:
+                            # We like sagnb and lh, it means that more
+                            # than one piece clicks into place
+                            sc[t] += 2
+                        elif t.is_lh:
+                            # sagnb is preferred to lh, but vb (veik beyging) is discouraged
+                            if t.has_variant("vb"):
                                 sc[t] -= 2
                             else:
-                                # Else, give a bonus for each matched preposition
                                 sc[t] += 1
-                        elif t.first == "so":
-                            if t.variant(0) in "012":
-                                # Give a bonus for verb arguments: the more matched, the better
-                                sc[t] += int(t.variant(0))
-                            if t.is_sagnb:
-                                # We like sagnb and lh, it means that more
-                                # than one piece clicks into place
-                                print("Giving bonus for sagnb, token '{0}', terminal {1}".format(txt, t))
+                        if t.is_subj:
+                            # Give a small bonus for subject matches
+                            if t.has_variant("none"):
+                                # ... but a punishment for subj_none
+                                sc[t] -= 1
+                            else:
+                                sc[t] += 1
+                        if t.is_nh:
+                            if (i > 0) and any(pt.first == 'nhm' for pt in finals[i - 1]):
+                                # Give a bonus for adjacent nhm + so_nh terminals
+                                sc[t] += 2 # Prop up the verb terminal with the nh variant
+                                for pt in scores[i - 1].keys():
+                                    if pt.first == 'nhm':
+                                        # Prop up the nhm terminal
+                                        scores[i - 1][pt] += 2
+                            if any(pt.first == "no" and pt.has_variant("ef") and pt.is_plural for pt in s):
+                                # If this is a so_nh and an alternative no_ef_ft exists, choose this one
+                                # (for example, 'hafa', 'vera', 'gera', 'fara', 'mynda', 'berja', 'borða')
                                 sc[t] += 2
-                            elif t.is_lh:
-                                # sagnb is preferred to lh
-                                sc[t] += 1
-                            if t.is_subj:
-                                # Give a small bonus for subject matches
-                                if t.has_variant("none"):
-                                    # ... but a punishment for subj_none
-                                    sc[t] -= 1
-                                else:
-                                    sc[t] += 1
-                            if t.is_nh:
-                                if (i > 0) and any(pt.first == 'nhm' for pt in finals[i - 1]):
-                                    # Give a bonus for adjacent nhm + so_nh terminals
-                                    sc[t] += 2 # Prop up the verb terminal with the nh variant
-                                    for pt in scores[i - 1].keys():
-                                        if pt.first == 'nhm':
-                                            # Prop up the nhm terminal
-                                            scores[i - 1][pt] += 2
-                                if any(pt.first == "no" and pt.has_variant("ef") and pt.is_plural for pt in s):
-                                    # If this is a so_nh and an alternative no_ef_ft exists, choose this one
-                                    # (for example, 'hafa', 'vera', 'gera', 'fara', 'mynda', 'berja', 'borða')
-                                    sc[t] += 2
-                        elif t.name[0] in "\"'":
-                            # Give a bonus for exact or semi-exact matches
-                            #print("Giving bonus for exact match of {0}".format(t.name))
-                            sc[t] += 1
+                    elif t.name[0] in "\"'":
+                        # Give a bonus for exact or semi-exact matches
+                        sc[t] += 1
 
         # Third pass: navigate the tree bottom-up, eliminating lower-rated
         # options (subtrees) in favor of higher rated ones
@@ -190,9 +191,11 @@ class Reducer:
                 so that the highest-scoring family of children survives
                 at each place of ambiguity """
 
-            def __init__(self, scores):
+            def __init__(self, grammar, scores):
                 super().__init__()
                 self._scores = scores
+                self._grammar = grammar
+                self._score_adj = grammar._nt_scores
 
             def _visit_epsilon(self, level):
                 """ At Epsilon node """
@@ -211,7 +214,6 @@ class Reducer:
                         self.sc = defaultdict(int) # Child tree scores
                         # We are only interested in completed nonterminals
                         self.nt = node.nonterminal if node.is_completed else None
-                        assert self.nt is None or isinstance(self.nt, Nonterminal)
                         self.highest_prio = None # The priority of the highest-priority child, if any
                         self.use_prio = False
                         self.highest_ix = None # List of children with that priority
@@ -252,11 +254,6 @@ class Reducer:
                     # There is a priority ordering between the productions
                     # of this nonterminal: remove those child trees from
                     # consideration that do not have the highest priority
-                    #print("Reducing set of child nodes by production priority")
-                    #for ix, sc in csc.items():
-                    #    prod, prio = node._families[ix]
-                    #    print("Family {0}: prod {1} priority {2} highest {3}"
-                    #        .format(ix, prod.production, prod.priority, ix in results.highest_ix))
                     csc = { ix: sc for ix, sc in csc.items() if ix in results.highest_ix }
                 assert csc
                 if len(csc) == 1 and not results.use_prio:
@@ -268,6 +265,9 @@ class Reducer:
                     s = sorted(csc.items(), key = lambda x: x[1], reverse = True)
                     ix, sc = s[0] # This is the best scoring family
                     node.reduce_to(ix)
+                if results.nt is not None:
+                    # Get score adjustment for this nonterminal, if any
+                    sc += self._score_adj.get(results.nt, 0)
                 return sc
 
-        ParseForestReducer(scores).go(w)
+        ParseForestReducer(self._grammar, scores).go(w)

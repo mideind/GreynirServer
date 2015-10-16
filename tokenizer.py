@@ -72,6 +72,9 @@ COMPOSITE_HYPHENS = "—–-"
 CLOCK_WORD = "klukkan"
 CLOCK_ABBREV = "kl"
 
+# Prefixes that can be applied to adjectives with an intervening hyphen
+ADJECTIVE_PREFIXES = { "hálf", "marg", "semí" }
+
 # Punctuation types: left, center or right of word
 
 TP_LEFT = 1   # Whitespace to the left
@@ -957,9 +960,11 @@ def parse_phrases_1(token_stream):
                                     token = TOK.Number(token.txt + " " + next_token.txt, frac,
                                         all_cases(token), all_genders(token))
                                     next_token = next(token_stream)
-                    else:
+                    elif not any(m.ordfl == "so" for m in token.val):
                         # Replace number word with number token,
-                        # preserving its case
+                        # preserving its case.
+                        # Take care not to convert word forms that could also be verbs,
+                        # such as 'áttu'.
                         token = TOK.Number(token.txt, num, all_cases(token), all_genders(token))
 
             # Check for [number] 'hundred|thousand|million|billion'
@@ -1044,11 +1049,17 @@ def parse_phrases_1(token_stream):
                 len(next_token.txt) == 1 and next_token.txt in COMPOSITE_HYPHENS:
 
                 og_token = next(token_stream)
-                if og_token.kind != TOK.WORD or og_token.txt != "og":
+                if og_token.kind != TOK.WORD or (og_token.txt != "og" and og_token.txt != "eða"):
                     # Incorrect prediction: make amends and continue
-                    yield token
-                    token = next_token
-                    next_token = og_token
+                    if og_token.kind == TOK.WORD and token.txt in ADJECTIVE_PREFIXES:
+                        # hálf-opinberri, marg-ítrekaðri
+                        token = TOK.Word(token.txt + "-" + og_token.txt,
+                            [m for m in og_token.val if m.ordfl == "lo" or m.ordfl == "ao"])
+                        next_token = next(token_stream)
+                    else:
+                        yield token
+                        token = next_token
+                        next_token = og_token
                 else:
                     # We have 'viðskipta- og'
                     final_token = next(token_stream)

@@ -23,6 +23,14 @@
 #include <wchar.h>
 
 
+// Assert macro
+#ifdef DEBUG
+   #define ASSERT(x) assert(x)
+#else
+   #define ASSERT(x)
+#endif
+
+
 typedef unsigned int UINT;
 typedef int INT;
 typedef wchar_t WCHAR;
@@ -64,7 +72,7 @@ public:
       { this->m_nAllocs++; }
    void operator--(int)
       {
-         assert(this->m_nAllocs > this->m_nFrees);
+         ASSERT(this->m_nAllocs > this->m_nFrees);
          this->m_nFrees++;
       }
    UINT numAllocs(void) const
@@ -182,7 +190,7 @@ public:
 
    void reset(void);
 
-   BOOL read_binary(const CHAR* pszFilename);
+   BOOL readBinary(const CHAR* pszFilename);
 
    UINT getNumNonterminals(void) const
       { return this->m_nNonterminals; }
@@ -290,9 +298,9 @@ private:
    Grammar* m_pGrammar;
    MatchingFunc m_pMatchingFunc;
 
-   BOOL _push(UINT nHandle, State*, Column*, State*&);
+   BOOL push(UINT nHandle, State*, Column*, State*&);
 
-   Node* _make_node(State* pState, UINT nEnd, Node* pV, NodeDict& ndV);
+   Node* makeNode(State* pState, UINT nEnd, Node* pV, NodeDict& ndV);
 
 protected:
 

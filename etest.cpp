@@ -96,7 +96,7 @@ void runTest_2(void)
 {
    // Read grammar from binary file
    Grammar* pGrammar = new Grammar();
-   if (!pGrammar->read_binary("Reynir.grammar.bin")) {
+   if (!pGrammar->readBinary("Reynir.grammar.bin")) {
       printf("Unable to read binary grammar\n");
       return;
    }
