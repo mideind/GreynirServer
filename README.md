@@ -3,7 +3,7 @@
 ## Natural language processing for Icelandic
 
 *Reynir* is an experimental project that aims to extract processable information from
-Icelandic text on the web. It scrapes and tokenizes chunks of text from web pages
+Icelandic text. It scrapes and tokenizes chunks of text from web pages
 and parses the token streams according to a hand-written context-free grammar. The resulting
 parse trees are disambiguated and finally analyzed to obtain statements of fact and relations
 between stated facts.
@@ -32,9 +32,9 @@ If successful in its initial stages, Reynir may in due course be expanded, for i
 
 ## Implementation
 
-Reynir is written in [Python 3](https://www.python.org/), apart from the web
-front-end which has small amounts of JavaScript. It runs on CPython and
-[PyPy](http://pypy.org/).
+Reynir is written in [Python 3](https://www.python.org/) except for its core
+parser module which is written in C++ and called via [CFFI](https://cffi.readthedocs.org/en/latest/index.html).
+Reynir runs on CPython and [PyPy](http://pypy.org/).
 
 Reynir works in stages, roughly as follows:
 
@@ -46,7 +46,7 @@ Reynir works in stages, roughly as follows:
 3. *Parser*, using an [Earley algorithm](http://en.wikipedia.org/wiki/Earley_parser) to
   parse text according to an unconstrained hand-written context-free grammar for Icelandic
   that may yield multiple parse trees (a parse forest) in case of ambiguity.
-4. *Parse forest reducer* using heuristics to find the best parse tree.
+4. *Parse forest reducer* with heuristics to find the best parse tree.
 5. *Information extractor* that maps a parse tree via its grammar constituents to plug-in
   Python functions.
 
@@ -71,7 +71,7 @@ Thus, a single rule (e.g. `NounPhrase/case/gender -> Adjective/case noun/case/ge
 is automatically expanded into multiple rules (12 in this case, 4 cases x 3 genders) with
 appropriate substitutions for right-hand-side tokens depending on their local variants.
 
-The parser is an optimized Python implementation of an Earley parser as enhanced by
+The parser is an optimized C++ implementation of an Earley parser as enhanced by
 [Scott and Johnstone](http://www.sciencedirect.com/science/article/pii/S0167642309000951),
 referencing Tomita. It parses ambiguous grammars without restriction and
 returns a compact Shared Packed Parse Forest (SPPF) of parse trees. If a parse
@@ -84,7 +84,8 @@ fails, it identifies the token at which no parse was available.
 * `scraper.py` : Web scraper, collecting articles from a set of pre-selected websites (roots)
 * `tokenizer.py` : Tokenizer, designed as a pipeline of Python generators
 * `grammar.py` : Parsing of `.grammar` files, grammar constructs
-* `parser.py` : Earley parser generic base classes
+* `eparser.cpp` : Earley parser C++ module (header in `eparser.h`)
+* `fastparser.py` : Python wrapper for `eparser.cpp` using CFFI
 * `binparser.py` : Parser related subclasses for BIN (Icelandic word) tokens
 * `reducer.py` : Parse forest ambiguity resolver
 * `ptest.py` : Parser test module
@@ -93,10 +94,10 @@ fails, it identifies the token at which no parse was available.
 * `Reynir.grammar` : A context-free grammar specification for Icelandic
   written in BNF with extensions
   for repeating constructs (`*`, `+`) and optional constructs (`?`)
+* `parser.py` : Older, pure-Python implementation of an Earley parser
 
 ## Copyright and licensing
 
-The intent is to release Reynir under an open license once the code stabilizes. However, while
-Reynir is still in early stages of development the code and associated files are
+At this stage the Reynir source code and associated files are
 *copyright (C) 2015 by Vilhjalmur Thorsteinsson*, all rights reserved.
 Please contact the author for further information.
