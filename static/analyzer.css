@@ -12,9 +12,10 @@
 
 body {
    font-family: 'Open Sans', sans-serif;
-   padding: 12px;
+   padding: 0;
    margin: 0;
    background-color: white;
+   overflow-y: scroll;
 }
 
 ::selection {
@@ -23,16 +24,24 @@ body {
 }
 
 div.container {
-   width: 760px;
-   min-width: 760px;
-   margin: auto;
+   position: relative;
+   margin: 0;
+   padding: 0;
 }
 
 div.text-container {
+   position: relative;
+   margin-top: 24px;
+   width: 760px;
+   min-width: 760px;
+   margin-left: auto;
+   margin-right: auto;
    text-align: center;
 }
 
 div.input {
+   position: relative;
+   margin-top: 8px;
    text-align: center;
 }
 
@@ -58,6 +67,7 @@ input.text {
    border-color: #10069F; /* Greynir blue */
    border-width: 1px;
    border-radius: 4px;
+   margin-top: 16px;
    margin-bottom: 4px;
    padding-top: 2px;
    padding-bottom: 4px;
@@ -114,14 +124,16 @@ div#txt-ok:hover {
 p.header {
    font-size: 28px;
    font-weight: bold;
-   text-align: center;
+   text-align: left;
+   margin-top: 8px;
    margin-bottom: 0;
    padding-bottom: 0;
 }
 
 p.author {
-   position: relative;
-   top: 6px;
+   display: block;
+   position: absolute;
+   top: 32px;
    right: 0px;
    font-size: 16px;
    font-style: italic;
@@ -161,36 +173,18 @@ div#result i.p
    font-style: bold;
 }
 
-div#result i.no,
-div#result i.margur
+div#result i.no
 {
    background-color: #10069F; /* Blue */
 }
 
 div#result i.fn,
-div#result i.pfn,
-div#result i.ég,
-div#result i.þú,
-div#result i.hans,
-div#result i.hennar,
-div#result i.abfn,
-div#result i.hann,
-div#result i.hún,
-div#result i.það,
-div#result i.sá,
-div#result i.hvor
+div#result i.pfn
 {
    background-color: #8066DF; /* Light blue */
 }
 
-div#result i.so,
-div#result i.vera,
-div#result i.vilja,
-div#result i.geta,
-div#result i.munu,
-div#result i.skulu,
-div#result i.mega,
-div#result i.hafa {
+div#result i.so {
    background-color: #CB333B; /* Red */
 }
 
@@ -211,24 +205,7 @@ div#result i.fs {
    background-color: #00873F; /* Dark green */
 }
 
-div#result i.st,
-div#result i.sem,
-div#result i.og,
-div#result i.eða,
-div#result i.en,
-div#result i.þótt,
-div#result i.hver,
-div#result i.hvor,
-div#result i.hvaða,
-div#result i.hvers,
-div#result i.vegna,
-div#result i.hvar,
-div#result i.hvernig,
-div#result i.hvort,
-div#result i.hvenær,
-div#result i.þannig,
-div#result i.þegar,
-div#result i.þá {
+div#result i.st {
    background-color: #FFCC00; /* Yellow */
 }
 
@@ -324,12 +301,12 @@ div#wait {
 div.info {
    visibility: hidden;
    position: absolute;
-   background-color: #f0f0f0;
-   border-radius: 5px;
-   box-shadow: 2px 2px 4px 2px #333333;
+   background-color: #f8f8f8;
+   border-radius: 6px;
+   box-shadow: 2px 2px 4px 2px #444444;
    z-index: 10;
    min-width: 150px;
-   margin-top: 48px;
+   margin-top: 16px;
    padding-top: 6px;
    padding-bottom: 6px;
    padding-left: 12px;
@@ -343,6 +320,12 @@ div.info p {
    margin-top: 0px;
    margin-bottom: 4px;
    padding: 0;
+}
+
+div.info p.stem {
+   font-size: 22px;
+   line-height: 26px;
+   font-weight: bold;
 }
 
 .highlight {

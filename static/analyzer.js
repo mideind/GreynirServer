@@ -151,6 +151,74 @@ function iso_timestamp(d) {
       lzero(d[3], 2) + ":" + lzero(d[4], 2) + ":" + lzero(d[5], 2);
 }
 
+var ordfl = {
+   "no" : "nafnorð",
+   "so" : "sagnorð",
+   "lo" : "lýsingarorð",
+   "ao" : "atviksorð",
+   "eo" : "atviksorð",
+   "fs" : "forsetning",
+   "fn" : "fornafn",
+   "pfn" : "persónufornafn",
+   "abfn" : "afturbeygt fornafn",
+   "to" : "töluorð",
+   "töl" : "töluorð",
+   "st" : "samtenging",
+   "nhm" : "nafnháttarmerki"
+};
+
+var descr = {
+   "nf" : "nefnifall",
+   "þf" : "þolfall",
+   "þgf" : "þágufall",
+   "ef" : "eignarfall",
+   "et" : "eintala",
+   "ft" : "fleirtala",
+   "p1" : "fyrsta persóna",
+   "p2" : "önnur persóna",
+   "p3" : "þriðja persóna",
+   "kk" : "karlkyn",
+   "kvk" : "kvenkyn",
+   "hk" : "hvorugkyn",
+   "nh" : "nafnháttur",
+   "bh" : "boðháttur",
+   "vh" : "viðtengingarháttur",
+   "fh" : "framsöguháttur",
+   "lhþt" : "lýsingarháttur þátíðar",
+   "sagnb" : "sagnbót",
+   "gm" : "germynd",
+   "mm" : "miðmynd",
+   "mst" : "miðstig"
+}
+
+function wordMeaning(wl) {
+   // Create the HTML that is displayed in a pop-up balloon for a word
+   // Dissect the terminal name
+   var tname = wl[3];
+   var meanings = wl[2];
+   var parts = tname.split("_");
+   var category = wl[4];
+   var stem = (meanings.length > 0) ? meanings[0][0] : wl[1];
+   var str = "<p class='stem'>" + stem + "</p>";
+   str += "<p><b>" + ordfl[category] + "</b></p>";
+   var i;
+   var d = "";
+   for (i = 1; i < parts.length; i++) {
+      var s = descr[parts[i]];
+      if (s !== undefined)
+         d += d.length ? ", " + s : s;
+   }
+   str += "<p>" + d + "</p>";
+   if (parts.length > 1)
+      str += "<p>" + parts.slice(1).join(" ") + "</p>";
+   // Word: list its potential meanings
+   for (i = 0; i < meanings.length; i++) {
+      var form = meanings[i];
+      str += "<p>" + form[2] + " <b>" + form[0] + "</b> <i>" + form[5] + "</i></p>";
+   }
+   return str;
+}
+
 function hoverIn() {
    // Hovering over a token
    var wId = $(this).attr("id");
@@ -162,8 +230,7 @@ function hoverIn() {
    var out = $("div#result");
    var tokens = out.data("tokens");
    var wl = tokens[ix];
-   var offset = $(this).position();
-   var left = Math.min(offset.left, 600);
+   var offset = $(this).offset();
    var i;
    var gender;
 
@@ -171,12 +238,7 @@ function hoverIn() {
    $(this).addClass("highlight");
 
    if (wl[0] == TOK_WORD) {
-      $("div.info").html("<p><b>" + wl[1] + "</b></p>");
-      // Word: list its potential meanings
-      for (i = 0; i < wl[2].length; i++) {
-         var form = wl[2][i];
-         $("div.info").append("<p>" + form[2] + " <b>" + form[0] + "</b> <i>" + form[5] + "</i></p>");
-      }
+      $("div.info").html(wordMeaning(wl));
    }
    else
    if (wl[0] == TOK_NUMBER) {
@@ -250,7 +312,7 @@ function hoverIn() {
    }
    $("div.info")
       .css("top", offset.top.toString() + "px")
-      .css("left", left.toString() + "px")
+      .css("left", offset.left.toString() + "px")
       .css("visibility", "visible");
 }
 
@@ -295,8 +357,9 @@ function populateResult(json) {
          if (wl[2] === null || wl[2].length == 0)
             // Word not recognized
             s += "<i class='nf'>" + wl[1] + "</i>";
-         else
-            s += "<i class='" + wl[3] + "' id='w" + i + "'>" + wl[1] + "</i>";
+         else {
+            s += "<i class='" + wl[4] + "' id='w" + i + "'>" + wl[1] + "</i>";
+         }
       }
       else
       if (wl0 == TOK_P_BEGIN) {

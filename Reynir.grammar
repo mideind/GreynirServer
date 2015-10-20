@@ -1255,8 +1255,7 @@ Einkunn/tala/fall/kyn →
     # það dregur verulega úr margræðni
     | AtviksliðurEinkunn        # rúmlega (helmingur)
     | Fornafn/tala/fall/kyn     # Sá (stóri maður), allt þetta (víkjandi lán)
-    | Töluorð/tala/fall/kyn     # þrjá (gangandi menn)
-    | tala/tala                 # 26
+    | Töluorð/tala/fall/kyn     # þrjá (gangandi menn) / 26
 
 Einkunn/fall/tala/kyn →
     Einkunn/tala/fall/kyn
@@ -1380,9 +1379,9 @@ NlStak_p3/tala/fall/kyn →
     | NlFornafn/tala/fall/kyn
 
 NlFornafn/tala/fall/kyn →
-    # Stakt fornafn, e.t.v. með einkunn
-    # 'augljóslega sá vondi' / 'einhver góður' / 'ekkert uppbyggilegt'
-    AtviksliðurEinkunn* fn/tala/fall/kyn LoLiður/tala/fall/kyn*
+    # Stakt fornafn, e.t.v. með einkunn og töluorði
+    # 'augljóslega sá vondi' / 'einhverjir tveir góðir' / 'ekkert uppbyggilegt' / 'fjórir aðrir'
+    AtviksliðurEinkunn* Töluorð/tala/fall/kyn? fn/tala/fall/kyn LoLiður/tala/fall/kyn*
 
 # Gefa stökum fornöfnum mínusstig - við viljum frekar sjá þau sem hluta af stærri nafnlið
 $score(-4) NlFornafn/tala/fall/kyn
@@ -1403,21 +1402,15 @@ $score(-6) LoSemNafnliður/tala/fall/kyn
 
 NlStak_p3/tala/fall/kyn →
     'hver'/tala/fall/kyn 'sá'/tala/fall/kyn # Hver sá, hver sú, hvert það, hverjir þeir, hverjar þær, hver þau
-#    | 'hvor'/tala/fall/kyn 'tveggja'_ef_ft/kyn  # !!! 'tveggja' er breytt í TOK.Number
+    | 'hvor'/tala/fall/kyn 'tveir'_ef_ft/kyn  # (eða) hvor/hvort tveggja
     # '(Sýslumenn sinna) sama hlutverki og prestar'
     # '(Ríkissaksóknari) nýtur sömu verndar í starfi og dómarar'
     | 'sami'/tala/fall/kyn Nl/fall/tala/kyn "og" Nl_nf
 
-# 3p. eintala
+# Töluorð sem sjálfstæðir nafnliðir
 
-NlStak_p3_et/fall → NlStak_p3_et/fall/kyn    # Samtenging tveggja eintöluliða með 'eða' krefst ekki sama kyns báðum megin
-
-NlStak_et_p3/fall/kyn →
-
-    NlStak_p3_et/fall/kyn FsRuna?                         # fulltrúi bankans í nefndinni
-    | NlStak_et_p3/fall/kyn "eða" NlStak_p3_et/fall       # Þingnefnd eða hluti Alþingismanna getur lagt fram frumvarp
-    | 'hver'_et/fall/kyn "og" 'einn'_et/fall/kyn FsRuna?  # 'hver og einn [í sinni sveit] (ber ábyrgð)'
-    | NlTöluorð_et/fall/kyn
+NlStak_p3/tala/fall/kyn →
+    NlTöluorð/tala/fall/kyn
 
 NlTöluorð/tala/fall/kyn →
     Töluorð/tala/fall/kyn
@@ -1425,13 +1418,22 @@ NlTöluorð/tala/fall/kyn →
 # Gefa mínusstig fyrir stök töluorð - viljum helst sjá þau sem einkunn í stærri nafnlið
 $score(-6) NlTöluorð/tala/fall/kyn
 
+
+# 3p. eintala
+
+NlStak_et_p3/fall/kyn →
+
+    NlStak_p3_et/fall/kyn FsRuna?                         # fulltrúi bankans í nefndinni
+    | NlStak_et_p3/fall/kyn "eða" NlStak_p3_et/fall       # Þingnefnd eða hluti Alþingismanna getur lagt fram frumvarp
+    | 'hver'_et/fall/kyn "og" 'einn'_et/fall/kyn FsRuna?  # 'hver og einn [í sinni sveit] (ber ábyrgð)'
+
+NlStak_p3_et/fall → NlStak_p3_et/fall/kyn    # Samtenging tveggja eintöluliða með 'eða' krefst ekki sama kyns báðum megin
+
 # 3p. fleirtala
 
 NlStak_ft_p3/fall/kyn →
 
     NlStak_p3_ft/fall/kyn FsRuna?          # fulltrúar bankans í nefndinni
-    # | NlStak/fall/kyn NlRuna/fall/kyn+   # Allir liðir af sama kyni
-    | NlTöluorð_ft/fall/kyn
     | 'allur'_ft/fall/kyn 'sá'_ft/fall/kyn # Allir þeir, allar þær, öll þau
 
 # Regla sem leyfir útskýringu í sviga á eftir nafnlið
@@ -1501,8 +1503,7 @@ KommaEfLiður →
 # lýsingarorð sé notað sem nafnorð
 
 EfLiðurForskeytiTala/tala/kyn →
-    eo* Töluorð_ef/tala/kyn       # (vel rúmlega) þriggja (klukkutíma bið)
-    | eo* tala/tala               # (nákvæmlega) 30 (daga frestur)
+    eo* Töluorð_ef/tala/kyn       # (vel rúmlega) þriggja (klukkutíma bið) / 30 (daga frestur)
 
 EfLiðurForskeyti →
     Fornafn_ef/tala/kyn* EfLiðurForskeytiTala/tala/kyn? EfLiðurForskeytiKjarni/tala/kyn
@@ -1518,7 +1519,11 @@ Fornafn/fall/tala/kyn → Fornafn/tala/fall/kyn
 Fornafn_et_ef_kk → "hans"
 Fornafn_et_ef_kvk → "hennar"
 
-Töluorð/tala/fall/kyn → to/tala/fall/kyn | töl/tala/fall/kyn
+Töluorð/tala/fall/kyn → to/tala/fall/kyn | tala/tala
+
+# Öll töluorð (merkt 'töl' í BÍN) tákna fleirtölu
+Töluorð_ft/fall/kyn → töl
+
 Töluorð/fall/tala/kyn → Töluorð/tala/fall/kyn
 
 # Undirsetningar
@@ -1777,7 +1782,7 @@ FsMeðFallstjórn →
     | "miðað" "við" Nl_þf
     | 'miðað_við' Nl_þf
     | "þrátt" "fyrir" Nl_þf
-    | "um" 'það'_þf_et? FsSamtenging HreinYfirsetning # 'um [það] hvort Friðgeir sé fallegastur'
+    | "um" 'það'_þf_et? FsSamtenging HreinYfirsetning # 'um [það] hvort Brandur sé fallegastur'
 
 FsSamtenging →
     SpurnarSamtenging
@@ -1803,8 +1808,7 @@ EinFsAtv → "nema"? FsMeðFallstjórn | EinnAl
 
 FsLiðurMeðKommu →
     FsLiður
-    | FsLiður FsLiðurMeðKommu
-    | FsLiður ',' FsLiðurMeðKommu
+    | FsLiður KommaOgEðaEn? Atviksliður? FsLiðurMeðKommu
 
 # FsRuna getur ekki endað á atvikslið, nema innan kommu
 FsRuna → ',' FsLiðurMeðKommu Atviksliður? ','
@@ -1842,6 +1846,8 @@ AtviksliðurEinkunn →
 
 Tímasetning →
     "klukkan"? tími
+    | "klukkan" töl
+    | "klukkan" to_nf_hk
 
 Dagsetning →
     DagsFs_þf? Tímasetning 'sá'_et_kk_þf? dags # '[eftir] kl. 14 [þann] 3. júlí 2007'
@@ -1883,7 +1889,7 @@ Dagsetning →
 $score(+4) Dagsetning Tímasetning
 
 TímaAfstæði_þgf → "síðar" | "seinna" | "fyrr" TímaEn? | "áður" TímaEn?
-TímaAfstæði_þf → "áður" TímaEn? | "eftir" TímaAð?
+TímaAfstæði_þf → "áður" TímaEn? | "eftir" TímaAð? | "fyrir" Nl_þf
 TímaForskeyti → "löngu" | "stuttu" | "töluverðu" | "örstuttu"
 TímaAfstæði → "áður" TímaEn | "eftir" TímaAð
 
@@ -1895,8 +1901,7 @@ TímaAð →
 
 TímabilsEinkunn/fall/tala/kyn →
     fn/fall/tala/kyn          # alla/suma/nokkra
-    | Töluorð/fall/tala/kyn   # fjóra
-    | tala/tala               # 4
+    | Töluorð/fall/tala/kyn   # fjóra/4
 
 Tímabil/fall/kyn/tala → Tímabil/kyn/fall/tala
 

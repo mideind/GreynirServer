@@ -30,6 +30,10 @@ patterns:
   name: entity.name.function.decorator.grammar
   match: /([[:lower:]]+)
 
+- comment: Pragma directives
+  name: keyword.other.grammar
+  match: \$([[:lower:]][[:word:]]*)
+
 repository:
 
   comments:

@@ -26,6 +26,7 @@ from settings import Settings, ConfigError
 from tokenizer import tokenize, TOK
 from parser import ParseError
 from fastparser import Fast_Parser, ParseForestNavigator
+from binparser import BIN_Token
 from reducer import Reducer
 
 # Initialize Flask framework
@@ -38,6 +39,86 @@ def debug():
     # Call this to trigger the Flask debugger on purpose
     assert current_app.debug == False, "Don't panic! You're here by request of debug()"
 
+_GENDERS_SET = BIN_Token._GENDERS_SET
+_CASES_SET = set(BIN_Token._CASES)
+_ORDFL_SET = { "no", "so", "lo", "fs", "ao", "eo", "st", "fn", "pfn", "abfn", "nhm", "to", "töl" }
+_CHECK_SET = {
+    "no" : _CASES_SET | { "et", "ft" },
+    "so" : set(BIN_Token._VERB_VARIANTS) | { "et", "ft" },
+    "fs" : set(),
+    "lo" : _GENDERS_SET | _CASES_SET | { "et", "ft", "mst", "sb", "vb" },
+    "fn" : _GENDERS_SET | _CASES_SET | { "p1", "p2", "p3", "et", "ft" }
+}
+_CHECK_SET["pfn"] = _CHECK_SET["fn"]
+_CATEGORY_MAP = {
+    "margur" : "no",
+    "ég" : "pfn",
+    "þú" : "pfn",
+    "hans" : "pfn",
+    "hennar" : "pfn",
+    "hann" : "pfn",
+    "hún" : "pfn",
+    "það" : "pfn",
+    "sá" : "fn",
+    "hvor" : "fn",
+    "vera" : "so",
+    "verða" : "so",
+    "vilja" : "so",
+    "telja" : "so",
+    "geta" : "so",
+    "munu" : "so",
+    "skulu" : "so",
+    "mega" : "so",
+    "hafa" : "so",
+    "eiga" : "so",
+    "sem" : "st",
+    "og" : "st",
+    "eða" : "st",
+    "en" : "st",
+    "þótt" : "st",
+    "hver" : "st",
+    "hvor" : "st",
+    "hvaða" : "st",
+    "hvers" : "st",
+    "vegna" : "st",
+    "hvar" : "st",
+    "hvernig" : "st",
+    "hvort" : "st",
+    "hvenær" : "st",
+    "þannig" : "st",
+    "þegar" : "st",
+    "þá" : "st",
+    "nema" : "st"
+}
+
+def compatible(meaning, terminal, category):
+    """ Return True if the word meaning is compatible with the terminal """
+    is_no = False
+    if category == "no":
+        if meaning.ordfl not in _GENDERS_SET:
+            return False
+        is_no = True
+    elif category in { "eo", "ao" }:
+        if meaning.ordfl != "ao":
+            return False
+    elif category in _ORDFL_SET and category != meaning.ordfl:
+        return False
+    beyging = meaning.beyging
+    check_set = _CHECK_SET.get(category, {})
+    for v in terminal.variants:
+        if is_no and v in _GENDERS_SET:
+            # Special check for noun genders
+            if meaning.ordfl != v:
+                return False
+        elif v in check_set and BIN_Token._VARIANT[v] not in beyging:
+            return False
+    # Additional checks for forms that we don't accept
+    # unless they're explicitly permitted by the terminal
+    if category == "so":
+        for v in [ "sagnb", "lhþt", "bh" ]:
+            if BIN_Token._VARIANT[v] in beyging and not terminal.has_variant(v):
+                return False
+    return True
 
 def mark_categories(forest, toklist, ix):
 
@@ -51,15 +132,22 @@ def mark_categories(forest, toklist, ix):
         def _visit_token(self, level, node):
             """ At token node """
             category = node.terminal.first
+            if category in _CATEGORY_MAP:
+                category = _CATEGORY_MAP[category]
             ix = self._ix
             toklist = self._toklist
             while toklist[ix][0] in { TOK.P_BEGIN, TOK.P_END }:
                 ix += 1
             if toklist[ix][0] == TOK.WORD:
                 # Replace the original word token with an augmented 4-tuple
-                # containing the word category
+                # containing the word category and the name of the
+                # terminal that was matched
                 t = toklist[ix]
-                toklist[ix] = (t.kind, t.txt, t.val, category)
+                if t.val is None:
+                    meanings = None
+                else:
+                    meanings = [ m for m in t.val if compatible(m, node.terminal, category) ]
+                toklist[ix] = (t.kind, t.txt, meanings, node.terminal.name, category)
                 print("Assigning category {0} to word '{1}'".format(category, t.txt))
             ix += 1
             self._ix = ix

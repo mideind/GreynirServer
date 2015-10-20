@@ -489,7 +489,7 @@ def parse_sentences(token_stream):
                 if in_sentence:
                     yield TOK.End_Sentence()
                     in_sentence = False
-            elif token.kind == TOK.PUNCTUATION and (token.txt == '.' or token.txt == '?'):
+            elif token.kind == TOK.PUNCTUATION and token.txt in {'.', '?', '!'}:
                 # We may be finishing a sentence with not only a period but also
                 # right parenthesis and quotation marks
                 while next_token.kind == TOK.PUNCTUATION and next_token.txt in SENTENCE_FINISHERS:
@@ -942,30 +942,30 @@ def parse_phrases_1(token_stream):
                 """ If the token denotes a fraction, return a corresponding number - or None """
                 return match_stem_list(token, FRACTIONS)
 
-            if token.kind == TOK.WORD:
-                num = number(token)
-                if num is not None:
-                    if num == 1:
-                        # Only replace number 'one' if the next word is also
-                        # a number word
-                        if next_token.kind == TOK.WORD:
-                            if number(next_token) is not None:
-                                token = TOK.Number(token.txt, num, all_cases(token), all_genders(token))
-                            else:
-                                # Check for fractions ('einn þriðji')
-                                frac = fraction(next_token)
-                                if frac is not None:
-                                    # We have a fraction: eat it and return it,
-                                    # but use the case of the first word in the fraction
-                                    token = TOK.Number(token.txt + " " + next_token.txt, frac,
-                                        all_cases(token), all_genders(token))
-                                    next_token = next(token_stream)
-                    elif not any(m.ordfl == "so" for m in token.val):
-                        # Replace number word with number token,
-                        # preserving its case.
-                        # Take care not to convert word forms that could also be verbs,
-                        # such as 'áttu'.
-                        token = TOK.Number(token.txt, num, all_cases(token), all_genders(token))
+            #if token.kind == TOK.WORD:
+            #    num = number(token)
+            #    if num == 1:
+            #        # Only replace number 'one' if the next word is also
+            #        # a number word
+            #        if next_token.kind == TOK.WORD:
+            #            if number(next_token) is not None:
+            #                token = TOK.Number(token.txt, num, all_cases(token), all_genders(token))
+            #            else:
+            #                # Check for fractions ('einn þriðji')
+            #                frac = fraction(next_token)
+            #                if frac is not None:
+            #                    # We have a fraction: eat it and return it,
+            #                    # but use the case of the first word in the fraction
+            #                    token = TOK.Number(token.txt + " " + next_token.txt, frac,
+            #                        all_cases(token), all_genders(token))
+            #                    next_token = next(token_stream)
+
+            #        elif not any(m.ordfl == "so" for m in token.val):
+            #            # Replace number word with number token,
+            #            # preserving its case.
+            #            # Take care not to convert word forms that could also be verbs,
+            #            # such as 'áttu'.
+            #            token = TOK.Number(token.txt, num, all_cases(token), all_genders(token))
 
             # Check for [number] 'hundred|thousand|million|billion'
             while token.kind == TOK.NUMBER and next_token.kind == TOK.WORD:
@@ -1045,6 +1045,7 @@ def parse_phrases_1(token_stream):
             # Check for composites:
             # 'stjórnskipunar- og eftirlitsnefnd'
             # 'viðskipta- og iðnaðarráðherra'
+            # 'marg-ítrekaðri'
             if token.kind == TOK.WORD and next_token.kind == TOK.PUNCTUATION and \
                 len(next_token.txt) == 1 and next_token.txt in COMPOSITE_HYPHENS:
 
@@ -1171,7 +1172,7 @@ def parse_phrases_2(token_stream):
                         return True
                 return False
 
-            # Check for human names
+            # Check for person names
             def given_names(token):
                 """ Check for Icelandic person name (category 'ism') """
                 if token.kind != TOK.WORD or not token.txt[0].isupper():
