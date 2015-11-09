@@ -30,7 +30,7 @@
 from collections import defaultdict
 
 from grammar import Terminal, Nonterminal
-from settings import Preferences
+from settings import Preferences, VerbObjects
 from fastparser import ParseForestNavigator
 
 
@@ -92,7 +92,7 @@ class Reducer:
                     # Only display cases where there might be a missing pref
                     print("Token '{0}' has {1} possible terminal matches: {2}".format(txt, len(s), s))
 
-                # Apply heuristics
+                # Apply heuristics to each terminal that potentially matches this token
                 for t in s:
                     if t.first == "ao" or t.first == "eo":
                         # Subtract from the score of all ao and eo
@@ -123,7 +123,16 @@ class Reducer:
                     elif t.first == "so":
                         if t.variant(0) in "012":
                             # Give a bonus for verb arguments: the more matched, the better
-                            sc[t] += int(t.variant(0))
+                            adj = int(t.variant(0))
+                            if adj == 0:
+                                for m in tokens[i].t2:
+                                    if m.ordfl == "so" and m.stofn not in VerbObjects.VERBS[0]:
+                                        # We're using a verb with zero arguments but that form is not
+                                        # explicitly listed in Verbs.conf: discourage this
+                                        print("Discouraging zero-arg use of verb '{0}' (stem '{1}')".format(txt, m.stofn))
+                                        adj = -1
+                                        break
+                            sc[t] += adj
                         if t.is_sagnb:
                             # We like sagnb and lh, it means that more
                             # than one piece clicks into place

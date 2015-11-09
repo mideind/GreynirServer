@@ -164,19 +164,21 @@ var ordfl = {
    "to" : "töluorð",
    "töl" : "töluorð",
    "st" : "samtenging",
-   "nhm" : "nafnháttarmerki"
+   "nhm" : "nafnháttarmerki",
+   "tala" : "tala",
+   "ártal" : "ártal"
 };
 
 var descr = {
+   "p1" : "fyrsta persóna",
+   "p2" : "önnur persóna",
+   "p3" : "þriðja persóna",
    "nf" : "nefnifall",
    "þf" : "þolfall",
    "þgf" : "þágufall",
    "ef" : "eignarfall",
    "et" : "eintala",
    "ft" : "fleirtala",
-   "p1" : "fyrsta persóna",
-   "p2" : "önnur persóna",
-   "p3" : "þriðja persóna",
    "kk" : "karlkyn",
    "kvk" : "kvenkyn",
    "hk" : "hvorugkyn",
@@ -189,32 +191,136 @@ var descr = {
    "gm" : "germynd",
    "mm" : "miðmynd",
    "mst" : "miðstig"
-}
+};
+
+var nounDescr = {
+   "kk" : "karlkyn",
+   "kvk" : "kvenkyn",
+   "hk" : "hvorugkyn"
+};
+
+var caseDescr = {
+   "nf" : "nefnifalli",
+   "þf" : "þolfalli",
+   "þgf" : "þágufalli",
+   "ef" : "eignarfalli"
+};
+
+var addDescr = {
+   "no" : { "gr" : "með greini" },
+   "so" : {
+      "NT" : "nútíð",
+      "ÞT" : "þátíð",
+      "MM" : "miðmynd",
+      "GM" : "germynd",
+      "VH" : "viðtengingarháttur",
+      "FH" : "framsöguháttur",
+      "BH" : "boðháttur"
+   }
+};
 
 function wordMeaning(wl) {
    // Create the HTML that is displayed in a pop-up balloon for a word
    // Dissect the terminal name
    var tname = wl[3];
    var meanings = wl[2];
-   var parts = tname.split("_");
+   var parts = (tname === undefined) ? [] : tname.split("_");
    var category = wl[4];
    var stem = (meanings.length > 0) ? meanings[0][0] : wl[1];
    var str = "<p class='stem'>" + stem + "</p>";
-   str += "<p><b>" + ordfl[category] + "</b></p>";
+   var comment = "";
    var i;
+   if (category == "no") {
+      // For nouns, add the gender to the stem
+      for (var gender in nounDescr)
+         if (nounDescr.hasOwnProperty(gender) && parts.indexOf(gender) != -1) {
+            comment = ", " + nounDescr[gender];
+            // Remove the gender from the parts list to avoid duplication
+            parts[parts.indexOf(gender)] = null;
+            break;
+         }
+   }
+   str += "<p><b>" + ordfl[category] + comment + "</b></p>";
+   if (category == "fs") {
+      // For pronouns, add the controlled case separately
+      var control = "";
+      for (var cs in caseDescr)
+         if (caseDescr.hasOwnProperty(cs) && parts.indexOf(cs) != -1) {
+            control = "stýrir " + caseDescr[cs];
+            // Remove the case from the parts list to avoid duplication
+            parts[parts.indexOf(cs)] = null;
+            break;
+         }
+      str += "<p class='control'>" + control + "</p>";
+   }
+   else
+   if (category == "so") {
+      // For verbs that control case(s), add them separately
+      var ix = parts.indexOf("1");
+      if (ix == -1)
+         ix = parts.indexOf("2");
+      if (ix != -1) {
+         var control = "";
+         for (i = ix + 1; i < parts.length; i++) {
+            var cs = parts[i];
+            if (cs !== null && caseDescr[cs] !== undefined) {
+               // This is a case controlled by a verb
+               if (!control.length)
+                  control = "stýrir " + caseDescr[cs];
+               else
+                  control += " og " + caseDescr[cs];
+               // Remove the case from the parts list to avoid duplication
+               parts[i] = null;
+            }
+         }
+         str += "<p class='control'>" + control + "</p>";
+      }
+   }
    var d = "";
-   for (i = 1; i < parts.length; i++) {
-      var s = descr[parts[i]];
-      if (s !== undefined)
-         d += d.length ? ", " + s : s;
+   for (i = 1; i < parts.length; i++)
+      if (parts[i] !== null) {
+         var s = descr[parts[i]];
+         if (s !== undefined)
+            d += d.length ? ", " + s : s;
+      }
+   // Look up potential additional features from the BIN meanings
+   var addLookup = addDescr[category];
+   if (addLookup !== undefined) {
+      var allMeaningsContain = function(f) {
+         var found = true;
+         for (var i = 0; i < meanings.length; i++) {
+            var form = meanings[i];
+            if (form[5].indexOf(f) == -1) {
+               found = false;
+               break;
+            }
+         }
+         return found;
+      };
+      for (var f in addLookup) {
+         // Loop through all relevant features for this category
+         if (allMeaningsContain(f)) {
+            // The feature is present in all possible meanings
+            if (f != "ÞT" || !allMeaningsContain("LHÞT")) {
+               // Take care not to add ÞT if LHÞT is already there
+               var s = addLookup[f];
+               d += d.length ? ", " + s : s;
+            }
+         }
+      }
    }
    str += "<p>" + d + "</p>";
-   if (parts.length > 1)
-      str += "<p>" + parts.slice(1).join(" ") + "</p>";
-   // Word: list its potential meanings
-   for (i = 0; i < meanings.length; i++) {
-      var form = meanings[i];
-      str += "<p>" + form[2] + " <b>" + form[0] + "</b> <i>" + form[5] + "</i></p>";
+   if (category != "no" && category != "lo" && category != "fs" &&
+      category != "ao" && category != "eo" && category != "st" &&
+      category != "töl" && category != "to" &&
+      category != "fn" && category != "pfn" && category != "nhm") {
+      if (parts.length > 1)
+         str += "<p>" + parts.slice(1).join(" ") + "</p>";
+      // Word: list its potential meanings
+      for (i = 0; i < meanings.length; i++) {
+         var form = meanings[i];
+         str += "<p>" + form[2] + " <b>" + form[0] + "</b> <i>" + form[5] + "</i></p>";
+      }
    }
    return str;
 }

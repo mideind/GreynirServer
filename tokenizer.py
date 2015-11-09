@@ -1188,6 +1188,11 @@ def parse_phrases_2(token_stream):
                     return None
                 return stems(token, "föð")
 
+            # Check for unknown surnames
+            def unknown_surname(token):
+                """ Check for unknown (non-Icelandic) surnames """
+                return token.kind == TOK.WORD and token.txt[0].isupper()
+
             def given_names_or_middle_abbrev(token):
                 """ Check for given name or middle abbreviation """
                 gn = given_names(token)
@@ -1259,6 +1264,16 @@ def parse_phrases_2(token_stream):
 
                 # Must have at least one possible name
                 assert len(gn) >= 1
+
+                # Check whether we have an unknown uppercase word next;
+                # if so, add it to the person names we've already found
+                while unknown_surname(next_token):
+                    for ix, p in enumerate(gn):
+                        gn[ix] = PersonName(name = p.name + " " + next_token.txt, gender = p.gender, case = p.case)
+                    w += " " + next_token.txt
+                    next_token = next(token_stream)
+                    # Assume we now have a patronym
+                    patronym = True
 
                 found_name = False
                 # If we have a full name with patronym, store it

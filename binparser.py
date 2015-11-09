@@ -151,7 +151,9 @@ class BIN_Token(Token):
     # '...verður ekki til nægur jarðvarmi'
     # '...til að koma upp veggspjöldum'
     # '...séu um 20 kaupendur'
-    _NOT_NOT_EO = { "inn", "eftir", "of", "til", "upp", "um" }
+    # '...keyptu síðan félagið'
+    # '...varpaði fram þeirri spurningu'
+    _NOT_NOT_EO = { "inn", "eftir", "of", "til", "upp", "um", "síðan", "fram" }
 
     _UNDERSTOOD_PUNCTUATION = ".?!,:;–-()"
 
@@ -164,6 +166,7 @@ class BIN_Token(Token):
         self.t1 = t[1] # Token text
         self.t1_lower = t[1].lower() # Token text, lower case
         self.t2 = t[2] # Token information, such as part-of-speech annotation, numbers, etc.
+        self.is_upper = self.t1[0] != self.t1_lower[0] # True if starts with upper case
         self._hash = None # Cached hash
 
         # We store a cached check of whether this is an "eo". An "eo" is an adverb (atviksorð)
@@ -479,7 +482,8 @@ class BIN_Token(Token):
 
     def matches_YEAR(self, terminal):
         """ A year token matches a number (töl) or year (ártal) terminal """
-        if not terminal.startswith("töl") and not terminal.startswith("ártal"):
+        if not terminal.startswith("töl") and not terminal.startswith("ártal") \
+            and not terminal.startswith("tala"):
             return False
         # Only singular match ('2014 var gott ár', not '2014 voru góð ár')
         # Years only match the neutral gender
@@ -592,13 +596,18 @@ class BIN_Token(Token):
                 "so" : matcher_so,
                 "no" : matcher_no,
                 "eo" : matcher_eo,
-                "fs" : matcher_fs
+                "fs" : matcher_fs,
+                "sérnafn" : None
             }
             matcher = matchers.get(terminal.first, matcher_default)
-            return any(matcher(m) for m in self.t2)
+            return any(matcher(m) for m in self.t2) if matcher else self.is_upper
 
-        # Unknown word: allow it to match a singular, neutral noun in all cases
-        return terminal.startswith("no") and terminal.has_vbits(BIN_Token._VBIT_ET | BIN_Token._VBIT_HK)
+        # Unknown word
+        if self.is_upper:
+            # Starts in upper case: We guess that this is a named entity
+            return terminal.startswith("sérnafn")
+        # Not named entity: allow it to match a singular, neutral noun in all cases
+        return (terminal.startswith("no") and terminal.has_vbits(BIN_Token._VBIT_ET | BIN_Token._VBIT_HK))
 
     # Dispatch table for the token matching functions
     _MATCHING_FUNC = {

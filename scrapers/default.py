@@ -159,16 +159,17 @@ class KjarninnScraper(ScrapeHelper):
     def get_metadata(self, soup):
         """ Analyze the article soup and return metadata """
         # Extract the heading from the OpenGraph (Facebook) og:title meta property
-        # heading = soup.html.head.select_one('meta[property="og:title"]')
         heading = ScrapeHelper.meta_property(soup, "og:title") or ""
+        if "|" in heading:
+            heading = heading[0:heading.index("|")].rstrip()
         # Extract the publication time from the article:published_time meta property
         timestamp = ScrapeHelper.meta_property(soup, "article:published_time") or \
             str(datetime.utcnow())[0:19]
         # Exctract the author name
-        f = lambda tag: ScrapeHelper.general_filter(tag, "a", "itemprop", "author")
+        f = lambda tag: ScrapeHelper.general_filter(tag, "span", "class", "author")
         tag = soup.html.body.find(f)
         if not tag:
-            print("a.itemprop.author tag not found in soup.html.body")
+            print("span.class.author tag not found in soup.html.body")
         author = str(tag.string) if tag else "Ritstjórn Kjarnans"
         return Metadata(heading = heading, author = author,
             timestamp = timestamp, authority = self.authority)
@@ -178,7 +179,7 @@ class KjarninnScraper(ScrapeHelper):
         # soup_body has already been sanitized in the ScrapeHelper base class
         if soup_body.article is None:
             print("_get_content: soup_body.article is None")
-        return ScrapeHelper.div_class(soup_body.article, "entry-content")
+        return ScrapeHelper.div_class(soup_body.article, "article-body")
         # !!! There is something wrong with BeautifulSoup4 and html5lib that
         # !!! prevents the following from working:
         # return soup_body.article.find("div", "entry-content clearfix")

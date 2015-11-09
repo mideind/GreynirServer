@@ -41,17 +41,22 @@ def debug():
 
 _GENDERS_SET = BIN_Token._GENDERS_SET
 _CASES_SET = set(BIN_Token._CASES)
-_ORDFL_SET = { "no", "so", "lo", "fs", "ao", "eo", "st", "fn", "pfn", "abfn", "nhm", "to", "töl" }
+_NUMBER_SET = { "et", "ft" }
+_CATEGORY_SET = { "no", "so", "lo", "fs", "ao", "eo", "st", "fn", "pfn", "abfn", "nhm", "to", "töl", "ártal" }
 _CHECK_SET = {
-    "no" : _CASES_SET | { "et", "ft" },
-    "so" : set(BIN_Token._VERB_VARIANTS) | { "et", "ft" },
+    "no" : _CASES_SET | _NUMBER_SET,
+    "so" : set(BIN_Token._VERB_VARIANTS) | _NUMBER_SET | { "op" },
     "fs" : set(),
-    "lo" : _GENDERS_SET | _CASES_SET | { "et", "ft", "mst", "sb", "vb" },
-    "fn" : _GENDERS_SET | _CASES_SET | { "p1", "p2", "p3", "et", "ft" }
+    "lo" : _GENDERS_SET | _CASES_SET | _NUMBER_SET | { "mst", "sb", "vb" },
+    "fn" : _GENDERS_SET | _CASES_SET | _NUMBER_SET | { "p1", "p2", "p3" }
 }
 _CHECK_SET["pfn"] = _CHECK_SET["fn"]
+
+# Mapping of literal terminal names to corresponding word categories
+
 _CATEGORY_MAP = {
     "margur" : "no",
+    "árið" : "no",
     "ég" : "pfn",
     "þú" : "pfn",
     "hans" : "pfn",
@@ -88,7 +93,9 @@ _CATEGORY_MAP = {
     "þannig" : "st",
     "þegar" : "st",
     "þá" : "st",
-    "nema" : "st"
+    "þar" : "st",
+    "nema" : "st",
+    "svo" : "st"
 }
 
 def compatible(meaning, terminal, category):
@@ -101,7 +108,7 @@ def compatible(meaning, terminal, category):
     elif category in { "eo", "ao" }:
         if meaning.ordfl != "ao":
             return False
-    elif category in _ORDFL_SET and category != meaning.ordfl:
+    elif category in _CATEGORY_SET and category != meaning.ordfl:
         return False
     beyging = meaning.beyging
     check_set = _CHECK_SET.get(category, {})
@@ -122,6 +129,8 @@ def compatible(meaning, terminal, category):
 
 def mark_categories(forest, toklist, ix):
 
+    """ Annotate the token list with word category information """
+
     class TokenCategorizer(ParseForestNavigator):
 
         def __init__(self, toklist, ix):
@@ -133,6 +142,7 @@ def mark_categories(forest, toklist, ix):
             """ At token node """
             category = node.terminal.first
             if category in _CATEGORY_MAP:
+                # Convert from literal first part to corresponding word category
                 category = _CATEGORY_MAP[category]
             ix = self._ix
             toklist = self._toklist
@@ -158,10 +168,9 @@ def mark_categories(forest, toklist, ix):
 
 @app.route("/analyze", methods=['POST'])
 def analyze():
-    """ Analyze text from a given URL """
+    """ Find word categories in the submitted text """
 
     txt = request.form.get("txt", "").strip()
-    use_reducer = not ("noreduce" in request.form)
 
     # Tokenize the text entered as-is and return the token list
     toklist = list(tokenize(txt))
@@ -242,13 +251,8 @@ def analyze():
 def main():
     """ Handler for the main (index) page """
 
-    # Instantiate a dummy parser to access grammar info
-    # (this does not cause repeated parsing of the grammar as it is cached in memory)
-    bp = Fast_Parser(verbose = False)
-    txt = request.args.get("txt", None)
-    if not txt:
-        txt = ""
-    return render_template("analyzer.html", default_text = txt, grammar = bp.grammar)
+    txt = request.args.get("txt", "")
+    return render_template("analyzer.html", default_text = txt)
 
 
 # Flask handlers
