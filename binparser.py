@@ -135,7 +135,7 @@ class BIN_Token(Token):
 
     _CASES = [ "nf", "þf", "þgf", "ef" ]
     _GENDERS = [ "kk", "kvk", "hk" ]
-    _GENDERS_SET = set(_GENDERS)
+    _GENDERS_SET = frozenset(_GENDERS)
 
     # Variants to be checked for verbs
     _VERB_VARIANTS = [ "p1", "p2", "p3", "nh", "vh", "lh", "bh", "fh",
@@ -153,9 +153,14 @@ class BIN_Token(Token):
     # '...séu um 20 kaupendur'
     # '...keyptu síðan félagið'
     # '...varpaði fram þeirri spurningu'
-    _NOT_NOT_EO = { "inn", "eftir", "of", "til", "upp", "um", "síðan", "fram" }
+    _NOT_NOT_EO = frozenset(["inn", "eftir", "of", "til", "upp", "um", "síðan", "fram" ])
 
-    _UNDERSTOOD_PUNCTUATION = ".?!,:;–-()"
+    # Numbers that can be used in the singular even if they are nominally plural.
+    # This applies to the media company 365, where it is OK to say "365 skuldaði 389 milljónir",
+    # as it would be incorrect to say "365 skulduðu 389 milljónir".
+    _SINGULAR_SPECIAL_CASES = frozenset([ 365 ])
+
+    _UNDERSTOOD_PUNCTUATION = ".?!,:;–-()[]"
 
     _MEANING_CACHE = { }
 
@@ -390,14 +395,14 @@ class BIN_Token(Token):
             In Icelandic, all integers whose modulo 100 ends in 1 are
             singular, except 11. """
         singular = False
-        i = int(self.t2[0])
+        orig_i = i = int(self.t2[0])
         if float(i) == float(self.t2[0]):
             # Whole number (integer): may be singular
             i = abs(i) % 100
             singular = (i != 11) and (i % 10) == 1
         if terminal.is_singular and not singular:
             # Terminal is singular but number is plural
-            return False
+            return True if orig_i in BIN_Token._SINGULAR_SPECIAL_CASES else False
         if terminal.is_plural and singular:
             # Terminal is plural but number is singular
             return False
@@ -911,14 +916,31 @@ class BIN_Parser(Parser):
             else:
                 ix += 1
 
-        # Wrap the sanitized token list in BIN_Token()
-        return [ BIN_Token(t) for t in tlist if t is not None and BIN_Token.is_understood(t) ]
+        # Wrap the sanitized token list in BIN_Token() and
+        # create a mapping of token indices from the wrapped list to the original list
+        wrapped_tokens = [ ]
+        wrap_map = { }
+        wrap_ix = 0
+        for ix, t in enumerate(tlist):
+            if t is not None and BIN_Token.is_understood(t):
+                wrapped_tokens.append(BIN_Token(t))
+                wrap_map[wrap_ix] = ix
+                wrap_ix += 1
+        return wrapped_tokens, wrap_map
 
     def go(self, tokens):
         """ Parse the token list after wrapping each understood token in the BIN_Token class """
 
-        bt = self._wrap(tokens)
+        bt, wrap_map = self._wrap(tokens)
 
         # After wrapping, call the parent class go()
-        return Parser.go(self, bt)
+        try:
+            result = Parser.go(self, bt)
+        except ParseError as e:
+            # Convert the wrapped token index to an original token index
+            if e.token_index in wrap_map:
+                e.token_index = wrap_map[e.token_index]
+            raise e
+
+        return result
 

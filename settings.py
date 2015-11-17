@@ -195,6 +195,19 @@ class Prepositions:
             Prepositions.PP[prep] = { case }
 
 
+class AdjectiveTemplate:
+
+    """ Wrapper around template list of adjective endings """
+
+    # List of tuples: (ending, form_spec)
+    ENDINGS = [ ]
+
+    @classmethod
+    def add (cls, ending, form):
+        """ Add an adjective ending and its associated form. """
+        cls.ENDINGS.append((ending, form))
+
+
 class StaticPhrases:
 
     """ Wrapper around dictionary of static phrases, initialized from the config file """
@@ -522,6 +535,15 @@ class Settings:
             raise ConfigError("Ambiguous phrase must contain at least two words")
         AmbigPhrases.add(words, cats)
 
+    @staticmethod
+    def _handle_adjective_template(s):
+        """ Handle the template for new adjectives in the settings section """
+        # Format: adjective-ending bin-meaning
+        a = s.split()
+        if len(a) != 2:
+            raise ConfigError("Adjective template should have an ending and a form specifier")
+        AdjectiveTemplate.add(a[0], a[1])
+
 
     def read(fname):
         """ Read configuration file """
@@ -535,7 +557,8 @@ class Settings:
             "prepositions" : Settings._handle_prepositions,
             "preferences" : Settings._handle_preferences,
             "ambiguous_phrases" : Settings._handle_ambiguous_phrases,
-            "meanings" : Settings._handle_meanings
+            "meanings" : Settings._handle_meanings,
+            "adjective_template" : Settings._handle_adjective_template
         }
         handler = None # Current section handler
 

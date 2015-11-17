@@ -149,6 +149,7 @@ div.output {
    text-align: left;
    cursor: default;
    margin-top: 32px;
+   margin-bottom: 240px; /* Make room for info pop-up at the bottom */
 }
 
 p#meta-heading {

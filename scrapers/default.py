@@ -96,6 +96,8 @@ class ScrapeHelper:
         if tag.name != name or not tag.has_attr(attr):
             return False
         a = tag[attr]
+        if tag.name == "div" and attr == "class":
+            print("general_filter for div.class: a is {0}\nattr_val is {1}".format(a, attr_val))
         assert a
         # Handle both potentially multi-valued attrs (for instance multiple classes on a div),
         # and multi-valued attr_vals (for instance more than one class that should be present)
@@ -179,16 +181,38 @@ class KjarninnScraper(ScrapeHelper):
         # soup_body has already been sanitized in the ScrapeHelper base class
         if soup_body.article is None:
             print("_get_content: soup_body.article is None")
-        return ScrapeHelper.div_class(soup_body.article, "article-body")
-        # !!! There is something wrong with BeautifulSoup4 and html5lib that
-        # !!! prevents the following from working:
-        # return soup_body.article.find("div", "entry-content clearfix")
-        # return soup_body.select_one("article.post").select_one("div.entry-content")
+            return None
+        # Delete div.container.title-container tags from the content
+        soup = ScrapeHelper.div_class(soup_body.article, ["container", "title-container"])
+        if soup is not None:
+            soup.decompose()
+        # Delete div.container.quote-container tags from the content
+        soup = ScrapeHelper.div_class(soup_body.article, ["container", "quote-container"])
+        if soup is not None:
+            soup.decompose()
+        # Delete div.container-fluid tags from the content
+        soup = ScrapeHelper.div_class(soup_body.article, "container-fluid")
+        if soup is not None:
+            soup.decompose()
+        # Get the content itself
+        content = ScrapeHelper.div_class(soup_body.article, "article-body")
+        if content is None:
+            # No div.article-body present
+            content = soup_body.article
+        return content
 
 
 class RuvScraper(ScrapeHelper):
 
     """ Scraping helper for RUV.is """
+
+    _SKIP_PREFIXES = [
+        "/frontpage/",
+        "/frontpage?",
+        "/sarpurinn/",
+        "/tag/",
+        "/frettalisti/"
+    ]
 
     def __init(self, root):
         super().__init__(root)
@@ -196,18 +220,12 @@ class RuvScraper(ScrapeHelper):
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
         s = urlparse.urlsplit(url)
-        if s.path and (s.path.startswith("/frontpage/") or s.path.startswith("/frontpage?")):
-            # Skip the www.ruv.is/frontpage/... URLs
-            return True
-        if s.path and s.path.startswith("/sarpurinn/"):
-            # Skip the www.ruv.is/sarpurinn/... URLs
-            return True
-        if s.path and s.path.startswith("/tag/"):
-            return True
-        if s.path and s.path.startswith("/frettalisti/"):
-            return True
-        return False # Scrape all URLs by default
-        
+        if s.path:
+            for prefix in RuvScraper._SKIP_PREFIXES:
+                if s.path.startswith(prefix):
+                    return True
+        return False # Scrape all other URLs by default
+
     def get_metadata(self, soup):
         """ Analyze the article soup and return metadata """
         # Extract the heading from the OpenGraph (Facebook) og:title meta property
@@ -232,34 +250,30 @@ class MblScraper(ScrapeHelper):
 
     """ Scraping helper for Mbl.is """
 
+    _SKIP_PREFIXES = [
+        "/fasteignir/",
+        "/english/",
+        "/frettir/bladamenn/",
+        "/frettir/sjonvarp/",
+        "/frettir/knippi/",
+        "/frettir/colorbox/",
+        "/frettir/lina_snippet/",
+        "/myndasafn/",
+        "/atvinna/"
+    ]
+
     def __init(self, root):
         super().__init__(root)
 
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
         s = urlparse.urlsplit(url)
-        if s.path and s.path.startswith("/fasteignir/"):
-            # Skip the www.mbl.is/fasteignir/... URLs
-            return True
-        if s.path and s.path.startswith("/english/"):
-            # Skip the www.mbl.is/english/... URLs
-            return True
-        if s.path and s.path.startswith("/frettir/bladamenn/"):
-            return True
-        if s.path and s.path.startswith("/frettir/sjonvarp/"):
-            return True
-        if s.path and s.path.startswith("/frettir/knippi/"):
-            return True
-        if s.path and s.path.startswith("/frettir/colorbox/"):
-            return True
-        if s.path and s.path.startswith("/frettir/lina_snippet/"):
-            return True
-        if s.path and s.path.startswith("/myndasafn/"):
-            return True
-        if s.path and s.path.startswith("/atvinna/"):
-            return True
+        if s.path:
+            for prefix in MblScraper._SKIP_PREFIXES:
+                if s.path.startswith(prefix):
+                    return True
         return False # Scrape all URLs by default
-        
+
     def get_metadata(self, soup):
         """ Analyze the article soup and return metadata """
         # Extract the heading from the OpenGraph (Facebook) og:title meta property

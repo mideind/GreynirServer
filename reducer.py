@@ -136,13 +136,13 @@ class Reducer:
                         if t.is_sagnb:
                             # We like sagnb and lh, it means that more
                             # than one piece clicks into place
-                            sc[t] += 2
+                            sc[t] += 4
                         elif t.is_lh:
                             # sagnb is preferred to lh, but vb (veik beyging) is discouraged
                             if t.has_variant("vb"):
                                 sc[t] -= 2
                             else:
-                                sc[t] += 1
+                                sc[t] += 3
                         if t.is_subj:
                             # Give a small bonus for subject matches
                             if t.has_variant("none"):

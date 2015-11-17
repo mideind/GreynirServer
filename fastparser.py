@@ -526,7 +526,7 @@ class Fast_Parser(BIN_Parser):
     def go(self, tokens):
         """ Call the C++ parser module to parse the tokens """
 
-        wrapped_tokens = self._wrap(tokens) # Inherited from BIN_Parser
+        wrapped_tokens, wrap_map = self._wrap(tokens) # Inherited from BIN_Parser
         ep = Fast_Parser.eparser
         node = None
         # Use the context manager protocol to guarantee that the parse job
@@ -537,8 +537,10 @@ class Fast_Parser(BIN_Parser):
         if node == ffi.NULL:
             ix = err[0] # Token index
             if ix >= 1:
+                # Find the error token index in the original (unwrapped) token list
+                orig_ix = wrap_map[ix] if ix in wrap_map else ix
                 raise ParseError("No parse available at token {0} ({1})"
-                    .format(ix, wrapped_tokens[ix-1]), ix-1)
+                    .format(orig_ix, wrapped_tokens[ix-1]), orig_ix - 1)
             else:
                 # Not a normal parse error, but report it anyway
                 raise ParseError("No parse available at token {0} ({1} tokens in input)"
@@ -547,8 +549,6 @@ class Fast_Parser(BIN_Parser):
         c_dict = dict() # Node pointer conversion dictionary
         # Create a new Python-side node forest corresponding to the C++ one
         result = Node(self.grammar, wrapped_tokens, c_dict, node)
-        # !!! DEBUG: dump the resulting parse forest
-        # ep.dumpForest(node, self._c_grammar)
         # Delete the C++ nodes
         ep.deleteForest(node)
         return result

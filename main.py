@@ -170,6 +170,7 @@ def analyze():
 
     t0 = time.time()
     metadata = None
+    # Single sentence (True) or contiguous text from URL (False)?
     single = False
 
     if url.startswith("http:") or url.startswith("https:"):
@@ -209,6 +210,7 @@ def analyze():
                     # Parse the accumulated sentence
                     err_index = None
                     num = 0 # Number of tree combinations in forest
+
                     try:
                         # Parse the sentence
                         forest = bp.go(sent)
@@ -235,6 +237,7 @@ def analyze():
                         forest = None
                         # Obtain the index of the offending token
                         err_index = e.token_index
+
                     print("Parsed sentence of length {0} with {1} combinations{2}".format(slen, num,
                         "\n" + (" ".join(s[1] for s in sent) if num >= 100 else "")))
                     if num > 0:
