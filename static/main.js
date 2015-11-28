@@ -376,6 +376,8 @@ function populateResult(json) {
          if (nump > 0)
             // This sentence has at least one parse tree: mark it
             c += " parsed";
+         else
+            c += " err";
          if (nump > 100)
             // This sentence has a lot of parses: mark it
             c += " very-ambig";

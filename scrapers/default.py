@@ -96,8 +96,6 @@ class ScrapeHelper:
         if tag.name != name or not tag.has_attr(attr):
             return False
         a = tag[attr]
-        if tag.name == "div" and attr == "class":
-            print("general_filter for div.class: a is {0}\nattr_val is {1}".format(a, attr_val))
         assert a
         # Handle both potentially multi-valued attrs (for instance multiple classes on a div),
         # and multi-valued attr_vals (for instance more than one class that should be present)

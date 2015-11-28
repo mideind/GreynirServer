@@ -177,6 +177,11 @@ p#meta-authority {
    text-align: right;
 }
 
+span.sent {
+   font-size: 16px;
+   line-height: 24px;
+}
+
 div#result i {
    font-style: normal;
 }
@@ -271,7 +276,7 @@ td.t span.tok {
 }
 
 span.errtok {
-   background-color: #CB333B;
+   background-color: #f46681; /* #CB333B; */
    color: white;
    padding-left: 2px;
    padding-right: 2px;
@@ -282,24 +287,28 @@ span.sent {
    cursor: pointer;
 }
 
-span.sent:hover {
-   background-color: #f0f0f0;
+span.sent.err {
+   background-color: #ffd7e3;
+}
+
+span.sent.err:hover {
+   background-color: #ffbbcf;
 }
 
 span.sent.parsed {
-   background-color: #D7FFE7;
+   background-color: #e4ffd4;
 }
 
 span.sent.parsed:hover {
-   background-color: #B3FFD2; /* #d8ffd8; */
+   background-color: #b8e99a;
 }
 
 span.sent.parsed.very-ambig {
-   background-color: #FFE888; /* #fcf0c8; */
+   background-color: #e4ffd4;
 }
 
 span.sent.parsed.very-ambig:hover {
-   background-color: #FFCC00; /* #fbe6b3; */
+   background-color: #b8e99a;
 }
 
 p.buttons {

@@ -659,6 +659,17 @@ def lookup_word(db, w, at_sentence_start):
                         prefix + "-" + r.ordmynd, r.beyging)
                         for r in m]
 
+        if not m and lower_w[0] == 'ó':
+            # Check whether an adjective without the 'ó' prefix is found in BÍN
+            # (i.e. create 'óhefðbundinn' from 'hefðbundinn')
+            suffix = lower_w[1:]
+            if suffix:
+                om = db.meanings(suffix)
+                if om:
+                    m = [ BIN_Meaning("ó" + r.stofn, r.utg, r.ordfl, r.fl,
+                            "ó" + r.ordmynd, r.beyging)
+                            for r in om if r.ordfl == "lo" ]
+
     return (w, m)
 
 def annotate(token_stream):

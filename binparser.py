@@ -106,6 +106,7 @@ class BIN_Token(Token):
         # "þt" : "ÞT", # Þátíð # !!! Conflict with LHÞT
         "sagnb" : "SAGNB", # Sagnbót ('vera' -> 'hefur verið')
         "lhþt" : "LHÞT", # Lýsingarháttur þátíðar ('var lentur')
+        "gr" : "gr", # Greinir
 
         # Variants that do not have a corresponding BIN meaning
         "abbrev" : None,
@@ -126,6 +127,7 @@ class BIN_Token(Token):
     _VBIT_MM = _VBIT["mm"]
     _VBIT_GM = _VBIT["gm"]
     _VBIT_LH = _VBIT["lhþt"]
+    _VBIT_GR = _VBIT["gr"]
     _VBIT_SUBJ = _VBIT["subj"]
     _VBIT_SAGNB = _VBIT["sagnb"]
     _VBIT_ABBREV = _VBIT["abbrev"]
@@ -192,6 +194,17 @@ class BIN_Token(Token):
         """ Convert a 'beyging' field from BIN to a set of fbits """
         bit = cls._FBIT
         return reduce(lambda x, y: x | y, (b for key, b in bit.items() if key in beyging), 0)
+
+    @classmethod
+    def get_fbits(cls, beyging):
+        """ Get the (cached) fbits for a BIN 'beyging' field """
+        fbits = cls._MEANING_CACHE.get(beyging)
+        if fbits is None:
+            # Calculate a set of bits that represent the variants
+            # present in m.beyging
+            fbits = cls.fbits(beyging)
+            cls._MEANING_CACHE[beyging] = fbits
+        return fbits
 
     def verb_matches(self, verb, terminal, form):
         """ Return True if the verb in question matches the verb category,
@@ -533,15 +546,16 @@ class BIN_Token(Token):
             """ Check noun"""
             if BIN_Token._KIND[m.ordfl] != "no":
                 return False
+            no_info = m.beyging == "-"
             if terminal.is_abbrev:
                 # Only match abbreviations; gender, case and number do not matter
-                return m.beyging == "-"
+                return no_info
             for v in terminal.variants:
                 if v in BIN_Token._GENDERS_SET:
                     if m.ordfl != v:
                         # Mismatched gender
                         return False
-                elif m.beyging == "-":
+                elif no_info:
                     # No case and number info: probably a foreign word
                     # Match all cases, but singular only, not plural
                     if v == "ft":
@@ -580,12 +594,7 @@ class BIN_Token(Token):
         def matcher_default(m):
             """ Check other word categories """
             if m.beyging != "-": # Tokens without a form specifier are assumed to be universally matching
-                fbits = BIN_Token._MEANING_CACHE.get(m.beyging)
-                if fbits is None:
-                    # Calculate a set of bits that represent the variants
-                    # present in m.beyging
-                    fbits = BIN_Token.fbits(m.beyging)
-                    BIN_Token._MEANING_CACHE[m.beyging] = fbits
+                fbits = BIN_Token.get_fbits(m.beyging)
                 # Check whether variants required by the terminal are present
                 # in the meaning string
                 if not terminal.fbits_match(fbits):

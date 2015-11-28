@@ -94,25 +94,18 @@ class Reducer:
 
                 # Apply heuristics to each terminal that potentially matches this token
                 for t in s:
-                    if t.first == "ao" or t.first == "eo":
+                    tfirst = t.first
+                    if tfirst == "ao" or tfirst == "eo":
                         # Subtract from the score of all ao and eo
                         sc[t] -= 1
-                    elif t.first == "no":
+                    elif tfirst == "no":
                         if t.is_singular:
                             # Add to singular nouns relative to plural ones
                             sc[t] += 1
                         elif t.is_abbrev:
                             # Punish abbreviations in favor of other more specific terminals
                             sc[t] -= 1
-                    elif t.first == "tala" or t.first == "töl":
-                        # A complete 'töl' or 'no' is better (has more info) than a rough 'tala'
-                        if t.first == "tala":
-                            sc[t] -= 1
-                        # Discourage possessive ('ef') meanings for numbers
-                        for pt in s:
-                            if (pt.first == "no" or pt.first == "töl") and pt.has_variant("ef"):
-                                sc[pt] -= 1
-                    elif t.first == "fs":
+                    elif tfirst == "fs":
                         if t.has_variant("nf"):
                             # Reduce the weight of the 'artificial' nominative prepositions
                             # 'næstum', 'sem', 'um'
@@ -120,16 +113,19 @@ class Reducer:
                         else:
                             # Else, give a bonus for each matched preposition
                             sc[t] += 1
-                    elif t.first == "so":
+                    elif tfirst == "so":
                         if t.variant(0) in "012":
-                            # Give a bonus for verb arguments: the more matched, the better
+                            # Consider verb arguments
+                            # Normally, we give a bonus for verb arguments: the more matched, the better
                             adj = int(t.variant(0))
+                            # !!! Logic should be added here to encourage zero arguments for verbs in 'miðmynd'
                             if adj == 0:
+                                # Zero arguments: we might not like this
                                 for m in tokens[i].t2:
                                     if m.ordfl == "so" and m.stofn not in VerbObjects.VERBS[0]:
                                         # We're using a verb with zero arguments but that form is not
                                         # explicitly listed in Verbs.conf: discourage this
-                                        print("Discouraging zero-arg use of verb '{0}' (stem '{1}')".format(txt, m.stofn))
+                                        # print("Discouraging zero-arg use of verb '{0}' (stem '{1}')".format(txt, m.stofn))
                                         adj = -1
                                         break
                             sc[t] += adj
@@ -147,7 +143,7 @@ class Reducer:
                             # Give a small bonus for subject matches
                             if t.has_variant("none"):
                                 # ... but a punishment for subj_none
-                                sc[t] -= 1
+                                sc[t] -= 3
                             else:
                                 sc[t] += 1
                         if t.is_nh:
@@ -162,6 +158,14 @@ class Reducer:
                                 # If this is a so_nh and an alternative no_ef_ft exists, choose this one
                                 # (for example, 'hafa', 'vera', 'gera', 'fara', 'mynda', 'berja', 'borða')
                                 sc[t] += 2
+                    elif tfirst == "tala" or tfirst == "töl":
+                        # A complete 'töl' or 'no' is better (has more info) than a rough 'tala'
+                        if tfirst == "tala":
+                            sc[t] -= 1
+                        # Discourage possessive ('ef') meanings for numbers
+                        for pt in s:
+                            if (pt.first == "no" or pt.first == "töl") and pt.has_variant("ef"):
+                                sc[pt] -= 1
                     elif t.name[0] in "\"'":
                         # Give a bonus for exact or semi-exact matches
                         sc[t] += 1
