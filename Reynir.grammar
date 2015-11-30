@@ -279,6 +279,18 @@ Skýring →
     | "það" "er" | 'það_er'
     | "með" "öðrum" "orðum" | 'með_öðrum_orðum'
 
+Frumlag/pers/tala/kyn →
+    Nl_nf/tala/pers/kyn
+
+# Hakk til að láta 1.p. og 2.p. virka með fornafninu "allur",
+# sem annars er aðeins brúklegt í 3.p.
+
+Frumlag_p1/tala/kyn →
+    'allur'_nf/tala/kyn # Öll erum við jöfn fyrir lögum
+
+Frumlag_p2/tala/kyn →
+    'allur'_nf/tala/kyn # Allar eruð þið jafnar fyrir lögum
+
 Setning/tala/pers/kyn →
     # Venjuleg setningarskipan með frumlagi (í nafnhætti) fremst:
     # 'Jón sterki fór bersýnilega í bága við reglurnar með þessu'
@@ -286,7 +298,7 @@ Setning/tala/pers/kyn →
     # 'Rúmlega helmingur tvítugra karlmanna vill flugvöll í Vatnsmýri'
     # 'Ég bara spyr'
     # 'Allir mega koma til landsins sem það vilja'
-    Nl_nf/tala/pers/kyn FrumlagsInnskot/tala/pers/kyn? AtviksliðurEinkunn*
+    Frumlag/pers/tala/kyn FrumlagsInnskot/tala/pers/kyn? AtviksliðurEinkunn*
         SagnRuna/tala/pers/kyn Tengiliður/tala/pers/kyn?
 
     # Frumlag fyrir aftan sögn:
@@ -1465,7 +1477,7 @@ NlStak_ft_ef/kyn → NlStak_ef_ft/pers/kyn
 # Nafnliðir
 
 NlStak_et_p1/fall/kyn →
-    'ég'_et/fall FsRuna?
+    'ég'_et/fall FsRuna? # Ég í öllu mínu veldi
 
 NlStak_et_p2/fall/kyn →
     'þú'_et/fall FsRuna?
@@ -1801,14 +1813,17 @@ NlEind/pers/fall/kyn →
     NlEind/tala/pers/fall/kyn
 
 NlEind/tala/pers/fall/kyn →
-    NlStak/tala/pers/fall/kyn SemSlíkra/tala/fall/kyn? TengiliðurMeðKommu/tala/pers/kyn? Þó/tala/pers/kyn? NlSkýring/tala/pers/fall/kyn?
+    NlStak/tala/pers/fall/kyn Sem/tala/fall/kyn? TengiliðurMeðKommu/tala/pers/kyn? Þó/tala/pers/kyn? NlSkýring/tala/pers/fall/kyn?
 
 # (vegna nauðasamninganna) sem slíkra
-# (endurskapa sig) sem þjóðhetju
-SemSlíkra/tala/fall/kyn →
+Sem/tala/fall/kyn →
     ',' "sem" 'slíkur'/tala/fall/kyn ','
     | "sem" 'slíkur'/tala/fall/kyn
-    | "sem" Nl/fall/tala
+
+# (að endurskapa sig) sem þjóðhetju
+# 'sem' með nefnifalli er talið vera forsetning
+Sem/tala/aukafall/kyn →
+    "sem" Nl/aukafall/tala
 
 NlEind_et_p3_nf_hk →
     # Það hvernig kerfið virkar (er óskiljanlegt flestum)
@@ -1878,15 +1893,15 @@ KommaOgEðaEn → ',' | ','? OgEðaEn
 
 NlRuna/fall/kyn →
     KommuSamtenging/fall/kyn* Atviksliður? KommaOgEða FsRuna? NlEind/fall/kyn AtvKomma?
-    | ',' FsRuna? NlEind/fall/kyn AtvKomma?        # Konurnar, sérstaklega Anna, voru óánægðar
+    | ',' FsRuna? NlEind/fall/kyn AtvKomma        # Konurnar, sérstaklega Anna, voru óánægðar
 
 KommuSamtenging/fall/kyn → ',' FsRuna? NlEind/fall/kyn
 
 # Blandað kyn
 
 NlRuna/fall →
-    KommuSamtenging/fall* KommaOgEða FsRuna? NlEind/fall ','?
-    | ',' FsRuna? NlEind/fall ','?        # Þingmenn, sérstaklega Jóhanna, voru óánægðir
+    KommuSamtenging/fall* Atviksliður? KommaOgEða FsRuna? NlEind/fall AtvKomma?
+    | ',' FsRuna? NlEind/fall AtvKomma        # Þingmenn, sérstaklega Jóhanna, voru óánægðir
 
 KommuSamtenging/fall → ',' FsRuna? NlEind/fall
 
@@ -1947,6 +1962,7 @@ Nl_ft_p3_ef_hk →
 Lo/fall/tala/kyn →
     AtviksliðurEinkunn* lo/fall/tala/kyn # LoViðhengi? # (Þingmenn) kosnir leynilegri kosningu
     | "mun" lo_mst/fall/tala/kyn # LoViðhengi? # (Schengen rekur) mun öflugri gagnagrunn / (þau voru) mun frjálsari skoðana sinna
+    | "sem" lo_esb/fall/tala/kyn # (hvernig skuli stuðla að) sem jöfnustu hlutfalli
 
 # Leyfa sagnorðum að standa í stað lýsingarorða ef þau
 # eru í lýsingarhætti þátíðar, sterkri eða veikri beygingu
@@ -1974,9 +1990,13 @@ LoViðhengi →
 # Lýsingarorð sem einkunn með nafnlið
 
 # '(Jón), sultuslakur eftir gufubaðið, (lék á als oddi)'
+# '(Maður) alvarlega háður eiturlyfjum (bað mig um peninga)'
+# '(Stjórnmálamaður) tengdur Framsóknarflokknum (hringdi í mig)'
+# '(Ég ræddi við) konu tengda verkefninu'
 LoEftirNl/tala/fall/kyn →
     LoLiður/tala/fall/kyn
     | ',' LoLiður/tala/fall/kyn FsAtv? ','
+    | AtviksliðurEinkunn* lo_sb/fall/tala/kyn Nl_þgf
 
 # '(Ég drakk) hvítu, volgu og feitu mjólkina' / '(Ég sá) hvíta, volga og feita mjólk'
 # '(Íslendingar fluttu fé til annarra) og í sumum tilvikum öruggari landa'
@@ -2001,18 +2021,18 @@ LoFornafn/fall/tala/kyn →
 # '(Ég var) reiður' / '(Ég var) reiðari en þú' / '(Mér var verr við þetta) en þér'
 # '(Ég var) reiðastur allra' / '(Ég talaði við þann) reiðasta þeirra allra'
 
+# Ath.: miðstig lýsingarorða er merkt MST í BÍN og passar því ekki við lo_sb
+# (en frumstig sterkrar beygingar er FSB og efsta stig er ESB)
 LoSamanb/tala/fall/kyn →
     Lo_sb/tala/fall/kyn
-    | Lo_mst/tala/fall/kyn EnSamanb/fall # Miðstig: (Ég varðveitti laxinn) betur en bleikjuna
-    | "mun" Lo_mst/tala/fall/kyn EnSamanb/fall? # Miðstig: (Ég varðveitti laxinn) mun betur [en bleikjuna]
+    | "mun"? Lo_mst/tala/fall/kyn EnSamanb/fall? # Miðstig: (Ég varðveitti laxinn) [mun] betur [en bleikjuna]
 
 EnSamanb/fall →
     "en" Nl/fall
 
 LoSamanb_nf/tala/kyn →
     Lo_sb_nf/tala/kyn
-    | Lo_mst_nf/tala/kyn EnSamanb_nf # Miðstig: (Ég var) reiðari en Páll
-    | "mun" Lo_mst_nf/tala/kyn EnSamanb_nf? # Miðstig: (Ég var) mun reiðari [en þú]
+    | "mun"? Lo_mst_nf/tala/kyn EnSamanb_nf? # Miðstig: (Ég var) [mun] reiðari [en Páll]
 
 LoTengtSögn/tala/fall/kyn →
     LoSamanb/tala/fall/kyn
@@ -2046,6 +2066,7 @@ FsMeðFallstjórn →
     | "miðað" "við" Nl_þf
     | 'miðað_við' Nl_þf
     | "þrátt" "fyrir" Nl_þf
+    | "þegar" "kemur" "að" Nl_þgf
     | "um" 'það'_þf_et? FsSamtenging HreinYfirsetning # 'um [það] hvort Brandur sé fallegastur'
 
 FsSamtenging →
@@ -2083,7 +2104,7 @@ FsRuna → ',' FsLiðurMeðKommu Atviksliður? ','
 Al → EinnAl+
 
 EinnAl →
-    ao                  # Strax tvöfalt til baka
+    ','? ao                  # Strax tvöfalt til baka
     | Dagsetning        # (Ég tilkynnti þetta) strax 3. september
     | Tímasetning
     | EkkiNeitt

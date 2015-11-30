@@ -89,6 +89,7 @@ class BIN_Token(Token):
         "et" : "ET", # Eintala / singular
         "ft" : "FT", # Fleirtala / plural
         "mst" : "MST", # Miðstig / comparative
+        "esb" : "ESB", # Efsta stig, sterk beyging / superlative
         "p1" : "1P", # Fyrsta persóna / first person
         "p2" : "2P", # Önnur persóna / second person
         "p3" : "3P", # Þriðja persóna / third person
@@ -156,6 +157,10 @@ class BIN_Token(Token):
     # '...keyptu síðan félagið'
     # '...varpaði fram þeirri spurningu'
     _NOT_NOT_EO = frozenset(["inn", "eftir", "of", "til", "upp", "um", "síðan", "fram" ])
+
+    # Words that are not eligible for interpretation as proper names, even if they are capitalized
+    _NOT_PROPER_NAME = frozenset(["ég", "þú", "hann", "hún", "það", "við", "þið", "þau",
+        "þeir", "þær", "í", "á", "af", "um", "að", "með", "til", "frá"])
 
     # Numbers that can be used in the singular even if they are nominally plural.
     # This applies to the media company 365, where it is OK to say "365 skuldaði 389 milljónir",
@@ -614,7 +619,8 @@ class BIN_Token(Token):
                 "sérnafn" : None
             }
             matcher = matchers.get(terminal.first, matcher_default)
-            return any(matcher(m) for m in self.t2) if matcher else self.is_upper
+            return any(matcher(m) for m in self.t2) if matcher else \
+                (self.is_upper and self.t1_lower not in BIN_Token._NOT_PROPER_NAME) # Proper name?
 
         # Unknown word
         if self.is_upper:

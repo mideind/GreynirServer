@@ -166,6 +166,12 @@ class Reducer:
                         for pt in s:
                             if (pt.first == "no" or pt.first == "töl") and pt.has_variant("ef"):
                                 sc[pt] -= 1
+                    elif tfirst == "sérnafn":
+                        if tokens[i].t2 is not None:
+                            for m in tokens[i].t2:
+                                sc[t] -= 1 # Subtract one for each BÍN meaning available
+                                if m.stofn[0].isupper():
+                                    sc[t] -= 10 # Heavily discourage 'sérnafn' if an uppercase BÍN meaning is available
                     elif t.name[0] in "\"'":
                         # Give a bonus for exact or semi-exact matches
                         sc[t] += 1
