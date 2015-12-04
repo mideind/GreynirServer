@@ -160,30 +160,23 @@ def process_url(url):
     return (metadata, tokenize(text))
 
 
-@app.route("/analyze", methods=['POST'])
-def analyze():
-    """ Analyze text from a given URL """
+def profile(func, *args, **kwargs):
+    """ Profile the processing of text or URL """
 
-    url = request.form.get("url", "").strip()
-    use_reducer = not ("noreduce" in request.form)
-    dump_forest = "dump" in request.form
+    import cProfile as profile
+    import pstats
 
-    t0 = time.time()
-    metadata = None
-    # Single sentence (True) or contiguous text from URL (False)?
-    single = False
+    filename = 'Reynir.profile'
 
-    if url.startswith("http:") or url.startswith("https:"):
-        # Scrape the URL, tokenize the text content and return the token list
-        metadata, generator = process_url(url)
-        toklist = list(generator)
-    else:
-        # Tokenize the text entered as-is and return the token list
-        # In this case, there's no metadata
-        toklist = list(tokenize(url))
-        single = True
+    pr = profile.Profile()
+    result = pr.runcall(func, *args, **kwargs)
+    pr.dump_stats(filename)
 
-    tok_time = time.time() - t0
+    return result
+
+
+def parse(toklist, single, use_reducer, dump_forest = False):
+    """ Parse the given token list and return a result dict """
 
     # Count sentences
     num_sent = 0
@@ -196,8 +189,6 @@ def analyze():
     with Fast_Parser(verbose = False) as bp: # Don't emit diagnostic messages
 
         rdc = Reducer(bp.grammar)
-
-        t0 = time.time()
 
         for ix, t in enumerate(toklist):
             if t[0] == TOK.S_BEGIN:
@@ -257,18 +248,50 @@ def analyze():
             else:
                 sent.append(t)
 
-    parse_time = time.time() - t0
-
-    result = dict(
+    return dict(
         tokens = toklist,
-        metadata = metadata,
-        tok_time = tok_time,
         tok_num = len(toklist),
-        parse_time = parse_time,
         num_sent = num_sent,
         num_parsed_sent = num_parsed_sent,
         avg_ambig_factor = (total_ambig / total_tokens) if total_tokens > 0 else 1.0
     )
+
+
+@app.route("/analyze", methods=['POST'])
+def analyze():
+    """ Analyze text from a given URL """
+
+    url = request.form.get("url", "").strip()
+    use_reducer = not ("noreduce" in request.form)
+    dump_forest = "dump" in request.form
+    metadata = None
+    # Single sentence (True) or contiguous text from URL (False)?
+    single = False
+
+    t0 = time.time()
+
+    if url.startswith("http:") or url.startswith("https:"):
+        # Scrape the URL, tokenize the text content and return the token list
+        metadata, generator = process_url(url)
+        toklist = list(generator)
+    else:
+        # Tokenize the text entered as-is and return the token list
+        # In this case, there's no metadata
+        toklist = list(tokenize(url))
+        single = True
+
+    tok_time = time.time() - t0
+
+    t0 = time.time()
+
+    # result = profile(parse, toklist, single, use_reducer, dump_forest)
+    result = parse(toklist, single, use_reducer, dump_forest)
+
+    parse_time = time.time() - t0
+
+    result["metadata"] = metadata
+    result["tok_time"] = tok_time
+    result["parse_time"] = parse_time
 
     # Return the tokens as a JSON structure to the client
     return jsonify(result = result)
@@ -572,19 +595,21 @@ def server_error(e):
     """ Return a custom 500 error """
     return 'Eftirfarandi villa kom upp: {}'.format(e), 500
 
+# Initialize the main module
+
+try:
+    # Read configuration file
+    Settings.read("Reynir.conf")
+except ConfigError as e:
+    print("Configuration error: {0}".format(e))
+    quit()
+
+print("Running Reynir with debug={0}, host={1}, db_hostname={2}"
+    .format(Settings.DEBUG, Settings.HOST, Settings.DB_HOSTNAME))
+
 # Run a default Flask web server for testing if invoked directly as a main program
 
 if __name__ == "__main__":
-
-    try:
-        # Read configuration file
-        Settings.read("Reynir.conf")
-    except ConfigError as e:
-        print("Configuration error: {0}".format(e))
-        quit()
-
-    print("Running Reynir with debug={0}, host={1}, db_hostname={2}"
-        .format(Settings.DEBUG, Settings.HOST, Settings.DB_HOSTNAME))
 
     # Additional files that should cause a reload of the web server application
     # Note: Reynir.grammar is automatically reloaded if its timestamp changes

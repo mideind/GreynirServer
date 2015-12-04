@@ -109,15 +109,15 @@ class Reducer:
                         if t.has_variant("nf"):
                             # Reduce the weight of the 'artificial' nominative prepositions
                             # 'næstum', 'sem', 'um'
-                            sc[t] -= 2
+                            sc[t] -= 3 # Make other cases outweigh the Nl_nf bonus of +4 (-2 -3 = -5)
                         else:
                             # Else, give a bonus for each matched preposition
-                            sc[t] += 1
+                            sc[t] += 2
                     elif tfirst == "so":
                         if t.variant(0) in "012":
                             # Consider verb arguments
                             # Normally, we give a bonus for verb arguments: the more matched, the better
-                            adj = int(t.variant(0))
+                            adj = 2 * int(t.variant(0))
                             # !!! Logic should be added here to encourage zero arguments for verbs in 'miðmynd'
                             if adj == 0:
                                 # Zero arguments: we might not like this

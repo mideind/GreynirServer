@@ -529,11 +529,14 @@ class Fast_Parser(BIN_Parser):
         wrapped_tokens, wrap_map = self._wrap(tokens) # Inherited from BIN_Parser
         ep = Fast_Parser.eparser
         node = None
+        err = ffi.new("unsigned int*")
+
         # Use the context manager protocol to guarantee that the parse job
         # handle will be properly deleted even if an exception is thrown
-        err = ffi.new("unsigned int*")
+
         with ParseJob.make(wrapped_tokens, self._terminals) as job:
             node = ep.earleyParse(self._c_parser, len(wrapped_tokens), job.handle, err)
+
         if node == ffi.NULL:
             ix = err[0] # Token index
             if ix >= 1:
@@ -545,17 +548,19 @@ class Fast_Parser(BIN_Parser):
                 # Not a normal parse error, but report it anyway
                 raise ParseError("No parse available at token {0} ({1} tokens in input)"
                     .format(ix, len(wrapped_tokens)), 0)
+
         err = None
         c_dict = dict() # Node pointer conversion dictionary
         # Create a new Python-side node forest corresponding to the C++ one
         result = Node(self.grammar, wrapped_tokens, c_dict, node)
+
         # Delete the C++ nodes
         ep.deleteForest(node)
         return result
 
     def cleanup(self):
         """ Delete C++ objects. Must call after last use of Fast_Parser
-            to avoid memory leaks. Using the context manager protocol is recommended
+            to avoid memory leaks. The context manager protocol is recommended
             to guarantee cleanup. """
         ep = Fast_Parser.eparser
         ep.deleteParser(self._c_parser)

@@ -619,8 +619,10 @@ class BIN_Token(Token):
                 "sérnafn" : None
             }
             matcher = matchers.get(terminal.first, matcher_default)
-            return any(matcher(m) for m in self.t2) if matcher else \
-                (self.is_upper and self.t1_lower not in BIN_Token._NOT_PROPER_NAME) # Proper name?
+            if matcher:
+                return any(matcher(m) for m in self.t2)
+            # Proper name?
+            return self.is_upper and self.t1_lower not in BIN_Token._NOT_PROPER_NAME
 
         # Unknown word
         if self.is_upper:

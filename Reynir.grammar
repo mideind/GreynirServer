@@ -104,6 +104,7 @@ Forskeyti →
     | '-'   # Þankastrik á undan setningu (allar gerðir strika varpast í '-')
 
 Lokatákn → '.' | '?' | ':' | '!' | '(' '!' ')'
+LokatáknEðaKomma → Lokatákn | ','
 
 Fyrirsögn →
     # Nafnliður í nefnifalli
@@ -154,6 +155,7 @@ Samtenging →
     | "fyrr" "en" "að"?
     | "á_meðan" "að"?
     | "þangað" "til" "að"?
+    | "þar" "á" "meðal" | 'þar_á_meðal'
     | SpurnarSamtenging
 
 SpurnarSamtenging →
@@ -205,8 +207,8 @@ HreinYfirsetning →
 
 $score(-2) SetningAukafall
 $score(-2) SetningLo
-$score(+1) Setning
-$score(+2) SetningSkilyrði
+$score(+2) Setning
+$score(+3) SetningSkilyrði
 
 # Skilyrði: EfÞegar eitthvað þá eitthvað
 
@@ -637,7 +639,7 @@ OgEðaEnÞrátt →
 
 OgSögn_lhþt/tala/kyn →
     FsAtv? OgEðaEn FsAtv? EinSögnFrh_lhþt/tala/kyn
-    | FsAtv? ',' OgEðaEn FsAtv? EinSögnFrh_lhþt/tala/kyn FsAtvKomma?
+    | FsAtv? ',' OgEðaEn? FsAtv? EinSögnFrh_lhþt/tala/kyn FsAtvKomma?
 
 OgSögn_lhnt →
     FsAtv? OgEðaEn FsAtv? so_0_lh_nt
@@ -669,6 +671,15 @@ EinSögn_lhþt/tala/kyn →
 EinSögnFrh_lhþt/tala/kyn →
     EinSögn_lhþt/tala/kyn                   # (Mennirnir) eru lentir og byrjaðir að grilla
     | EinSögnFrh_lhþt
+    | Pfn_þgf/kyn/tala so_1_þgf_sagnb       # honum/henni/því/þeim breytt
+
+# !!! Hér mætti bæta við möguleika á pfn í nefnifalli með so_lhþt,
+# !!! sbr. 'Starfsemi slíkra stofnana verður ekki lögð niður, henni breytt að verulegu leyti
+# !!! eða *hún* fengin öðrum stofnunum nema með samþykki Alþingis'
+
+Pfn_þgf_kk/tala → 'hann'_þgf/tala
+Pfn_þgf_kvk/tala → 'hún'_þgf/tala
+Pfn_þgf_hk/tala → 'það'_þgf/tala
 
 EinSögnFrh_lhþt →
     Nl_nf/tala/pers/kyn so_0_lhþt/tala/kyn  # (og) veð tekið
@@ -1484,17 +1495,19 @@ NlStak_et_p2/fall/kyn →
 
 NlStak_p1_ft/fall/kyn →
     'ég'_ft/fall NlStak_ft_p3/fall/kyn? | 'vér'_ft/fall NlStak_ft_p3/fall/kyn? # Við gömlu hjónin, vér fóstbræður
-    #| 'ég'_et/fall NlRuna/fall/kyn+
-    | NlEind/fall KommaOgEða 'ég'_et/fall # NlRuna/fall/kyn*
+    | NlEind/fall KommaOgEða 'ég'_et/fall # Þú og ég fórum, Jón og ég fórum, stelpurnar og ég fórum
+    | 'ég'_et/fall KommaOgEða NlEind/fall # Ég og þú fórum, ég og Jón fórum, ég og stelpurnar fórum
 
 NlStak_ft_p1/fall/kyn → NlStak_p1_ft/fall/kyn FsRuna?
 
 NlStak_p2_ft/fall/kyn →
     'þú'_ft/fall NlStak_ft_p3/fall/kyn? | 'þér'_ft/fall NlStak_ft_p3/fall/kyn? # Þið duglegu strákarnir, þér eplin
-    #| 'þú'_et/fall NlRuna/fall/kyn+
-    | NlEind/fall KommaOgEða 'þú'_et/fall # NlRuna/fall/kyn*
+    | NlEind/fall KommaOgEða 'þú'_et/fall # Jón og þú fóruð, stelpurnar og þú fóruð
+    | 'þú'_et/fall KommaOgEða NlEind/fall # Þú og Jón fóruð, þú og stelpurnar fóruð
 
 NlStak_ft_p2/fall/kyn → NlStak_p2_ft/fall/kyn FsRuna?
+
+# !!! ATH: reglurnar hér fyrir ofan leyfa 'ég og þú fóruð til Frakklands'
 
 # Sameiginlegar reglur fyrir 3p. eintölu og fleirtölu
 
@@ -1797,7 +1810,13 @@ TengiliðurMeðKommu/tala/pers/kyn →
 Tengiliður/tala/pers/kyn →
     Tengiorð Tengisetning/tala/pers/kyn
 
-Tengiorð → "sem"    # 'er'  # 'er' er vandmeðfarið!!!
+Tengiorð →
+    TengiorðSem | TengiorðEr
+
+TengiorðSem → "sem"
+TengiorðEr → "er"
+
+$score(-5) TengiorðEr # Sjaldgæft - ekki velja nema það þurfi
 
 Tengisetning/tala/pers/kyn →
     HreinYfirsetning            # (Maðurinn sem) konan kyssti í gær / konurnar kysstu í gær
@@ -1934,6 +1953,9 @@ Nl/fall/tala/pers/kyn →
 Nl/tala/pers/fall/kyn →
     NlEind/tala/pers/fall/kyn
 
+# Gefa nefnifalli forskot ef mismunandi föll eru í boði
+$score(+4) Nl_nf
+
 # Fleirtölu-nafnliður í 3p sem leyfir runu í sama falli og kyni
 Nl_ft_p3/fall/kyn →
     NlEind_p3/fall/kyn NlRuna/fall/kyn+ TengiliðurMeðKommu_ft_p3/kyn?
@@ -1971,10 +1993,14 @@ Lo/fall/tala/kyn →
 Lo/fall/tala/kyn → AtviksliðurEinkunn* so_lhþt/fall/tala/kyn
 Lo/fall/tala/kyn → AtviksliðurEinkunn* so_lh_nt
 
+# 'honum er og heimilt að merkja við fleiri en einn frambjóðanda'
+LoAtviksliður → AtviksliðurEinkunn* | "og"
+
 # Lýsingarorð í sterkri beygingu
 # ('Hún fór frjáls skoðana sinna í útlegð')
-Lo_sb/tala/fall/kyn → AtviksliðurEinkunn* lo_sb/tala/fall/kyn LoViðhengi?
-Lo_sb_nf/tala/kyn → AtviksliðurEinkunn* lo_sb_nf/tala/kyn LoViðhengi?
+
+Lo_sb/tala/fall/kyn → LoAtviksliður lo_sb/tala/fall/kyn LoViðhengi?
+Lo_sb_nf/tala/kyn → LoAtviksliður lo_sb_nf/tala/kyn LoViðhengi?
 
 # Miðstig
 Lo_mst/tala/fall/kyn → AtviksliðurEinkunn* lo_mst/tala/fall/kyn LoViðhengi? # Miðstig
@@ -1994,9 +2020,16 @@ LoViðhengi →
 # '(Stjórnmálamaður) tengdur Framsóknarflokknum (hringdi í mig)'
 # '(Ég ræddi við) konu tengda verkefninu'
 LoEftirNl/tala/fall/kyn →
-    LoLiður/tala/fall/kyn
+    ','? LoLiður/tala/fall/kyn
     | ',' LoLiður/tala/fall/kyn FsAtv? ','
-    | AtviksliðurEinkunn* lo_sb/fall/tala/kyn Nl_þgf
+    | AtviksliðurEinkunn* LoEftirNlMeðÞgf/fall/tala/kyn Nl_þgf
+    | ',' AtviksliðurEinkunn* LoEftirNlMeðÞgf/fall/tala/kyn Nl_þgf LokatáknEðaKomma
+
+# 'tengdur Framsóknarflokknum'
+LoEftirNlMeðÞgf/fall/tala/kyn →
+    lo_sb/fall/tala/kyn # | so_lhþt/fall/tala/kyn
+
+$score(+6) LoEftirNlMeðÞgf/fall/tala/kyn
 
 # '(Ég drakk) hvítu, volgu og feitu mjólkina' / '(Ég sá) hvíta, volga og feita mjólk'
 # '(Íslendingar fluttu fé til annarra) og í sumum tilvikum öruggari landa'

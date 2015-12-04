@@ -94,6 +94,22 @@ DIGITS = frozenset([d for d in "0123456789"]) # Set of digit characters
 
 ALL_CASES = frozenset(["nf", "þf", "þgf", "ef"])
 
+# Month names and numbers
+MONTHS = {
+    "janúar": 1,
+    "febrúar": 2,
+    "mars": 3,
+    "apríl": 4,
+    "maí": 5,
+    "júní": 6,
+    "júlí": 7,
+    "ágúst": 8,
+    "september": 9,
+    "október": 10,
+    "nóvember": 11,
+    "desember": 12
+}
+
 # Named tuple for person names, including case and gender
 
 PersonName = namedtuple('PersonName', ['name', 'gender', 'case'])
@@ -473,9 +489,9 @@ def parse_particles(token_stream):
                 if token.kind == TOK.NUMBER and not ('.' in token.txt or ',' in token.txt):
                     # Ordinal, i.e. whole number followed by period: convert to an ordinal token
                     follow_token = next(token_stream)
-                    if follow_token.kind == TOK.WORD and follow_token.txt[0].isupper():
-                        # Next token is an uppercase word: fall back from assuming that
-                        # this is an ordinal
+                    if follow_token.kind == TOK.WORD and follow_token.txt[0].isupper() and not follow_token.txt.lower() in MONTHS:
+                        # Next token is an uppercase word (and not a month name misspelled in upper case):
+                        # fall back from assuming that this is an ordinal
                         yield token # Yield the number
                         token = next_token # The period
                         next_token = follow_token # The following (uppercase) word
@@ -783,22 +799,6 @@ PERCENTAGES = {
     "prósenta": 1,
     "hundraðshluti": 1,
     "prósentustig": 1
-}
-
-# Recognize month names
-MONTHS = {
-    "janúar": 1,
-    "febrúar": 2,
-    "mars": 3,
-    "apríl": 4,
-    "maí": 5,
-    "júní": 6,
-    "júlí": 7,
-    "ágúst": 8,
-    "september": 9,
-    "október": 10,
-    "nóvember": 11,
-    "desember": 12
 }
 
 # Recognize words for nationalities (used for currencies)
