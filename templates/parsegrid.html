@@ -57,9 +57,9 @@
 </table>
 {% endif %}
 {% elif combinations == 1 %}
-      <p class="options">Ein trjágreining fannst:</p>
+      <p class="options">Ein trjágreining fannst, með einkunn <b>{{ score }}</b>:</p>
 {% else %}
-      <p class="options">{{ combinations }} trjágreiningar fundust:
+      <p class="options">{{ combinations }} trjágreiningar fundust, besta einkunn <b>{{ score }}</b>:
 {% if choice_list | length < 20 %}
 {% for c in choice_list %}
 <span class='choice{{ " shown" if c == parse_path else "" }}'>{{ c }}</span>

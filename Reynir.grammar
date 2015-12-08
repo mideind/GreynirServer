@@ -248,6 +248,9 @@ SagnFramhald/tala/pers/kyn →
 SagnKomma/tala/pers/kyn →
     ',' Sagnliður/tala/pers/kyn LoTengtSögn_nf/tala/kyn? SagnInnskot?
 
+# Hvetja til framhalds sömu sagnrunu, fremur en að skipta niður í fleiri setningar
+$score(+2) SagnKomma/tala/pers/kyn
+
 SagnInnskot →
     FsAtv
 
@@ -426,6 +429,9 @@ SetningAukafall →
     # Nauðungarvinnu skal engum gert að leysa af hendi
     | Nl/aukafall HjSögnMegiSkuli_et_p3 FsAtv? AukafallÖfugSögn nhm So_1_nh/aukafall FsAtv?
 
+    # Engan þarf/ætti að undra (að mig langi í ís)
+    | Nl/aukafall HjSögnÞurfaEiga_et_p3 FsAtv? nhm So_1_nh/aukafall NhFyllingEðaAtv
+
     # Engan má svipta íslenskum ríkisborgararétti að ósekju
     | Nl_þf HjSögnMegiSkuli_et_p3 FsAtv? So_2_nh_þf/fall Nl/fall FsAtv?
 
@@ -565,27 +571,27 @@ HreinSögnAtv_nh →
 
 SagnliðurVh →
 
-    # Haldir þú [áfram að borða] er voðinn vís
-    # Aki hann ölvaður skal sekta hann um tíu þúsund krónur
+    # Haldir þú [áfram að borða] (er voðinn vís)
+    # Aki hann ölvaður (skal sekta hann um tíu þúsund krónur)
     so_0_vh/pers Nl_nf/tala/pers/kyn LoTengtSögn_nf/tala/kyn? NhFyllingEðaAtv? Afleiðing
 
-    # Borði börnin matinn getum við farið í sund    
+    # Borði börnin matinn (getum við farið í sund)
     | So_1_vh/fall/pers Nl_nf/pers FsRuna? Nl/fall FsAtv? Afleiðing
 
-    # Verði þessi tillaga felld geng ég úr flokknum
-    # Verði karlarnir byrjaðir að grilla sæki ég sósuna
+    # Verði þessi tillaga felld (geng ég úr flokknum)
+    # Verði karlarnir byrjaðir að grilla (sæki ég sósuna)
     | VeraVerða_vh/tala/pers Nl_nf/tala/pers/kyn HreinSögn_lhþt/tala/kyn FsAtv? Afleiðing
 
-    # Hafi maður verið sviptur frelsi að ósekju skal hann eiga rétt til skaðabóta
+    # Hafi maður verið sviptur frelsi að ósekju (skal hann eiga rétt til skaðabóta)
     | 'hafa'_vh/tala/pers Nl_nf/tala/pers/kyn FsAtv? 'vera'_sagnb HreinSögn_lhþt/tala/kyn FsAtv? Afleiðing
 
-    # Hafi manni verið hallmælt í útvarpi skal hann fá kaffi og kleinu
+    # Hafi manni verið hallmælt í útvarpi (skal hann fá kaffi og kleinu)
     | 'hafa'_vh_et_p3 Nl_þgf FsAtv? 'vera'_sagnb so_1_þgf_sagnb FsAtv? Afleiðing
 
-    # Hafi manni verið tekið blóð að óþörfu skal hann liggja á bekk í stundarfjórðung
+    # Hafi manni verið tekið blóð að óþörfu (skal hann liggja á bekk í stundarfjórðung)
     | 'hafa'_vh_et_p3 Nl_þgf FsAtv? 'vera'_sagnb so_2_þgf_þf_lhþt/tala/kyn Nl_nf/tala/kyn FsAtv? Afleiðing
 
-    # Hafi manns verið leitað að óþörfu skal hann fá axlarnudd
+    # Hafi manns verið leitað að óþörfu (skal hann fá axlarnudd)
     | 'hafa'_vh_et_p3 Nl_ef FsAtv? 'vera'_sagnb so_2_þgf_ef_sagnb FsAtv? Afleiðing
 
     # (Því) hafi þurft að senda alla farþegana (á hótel)
@@ -1186,6 +1192,14 @@ HjSögnNh/tala/pers →
 HjSögnNh_p3_et → HjSögnNh_et_p3
 HjSögnNh_p3_ft → HjSögnNh_ft_p3
 
+HjSögnÞurfaEiga_et_p3 →
+    'þurfa'_et_p3                   # Engan þarf að undra
+    | 'eiga'_et_p3                  # Engan ætti að undra
+    | 'hafa'_et_p3 'þurfa'_sagnb    # Engan hefur þurft að undra
+    | 'hafa'_et_p3 'eiga'_sagnb     # Engan hefði átt að undra
+    | 'munu'_et_p3 'þurfa'_nh       # Engan mun þurfa að undra
+    | 'skulu'_et_p3 'þurfa'_nh      # Engan skal þurfa að undra
+
 HjSögnMegiSkuli_et_p3 →
     'mega'_et_p3                    # (Þann lærdóm) megi/mætti/má (draga)
     | 'skulu'_et_p3                 # (Þann lærdóm) skuli/skyldi/skal (draga)
@@ -1657,7 +1671,7 @@ Sérnafn →
     sérnafn | LangtSérnafn
 
 LangtSérnafn →
-    sérnafn sérnafn+
+    sérnafn "-"? sérnafn+   # Glass-Steagall lögin
 
 $score(-6) Sérnafn
 $score(+6) LangtSérnafn
@@ -1816,7 +1830,7 @@ Tengiorð →
 TengiorðSem → "sem"
 TengiorðEr → "er"
 
-$score(-5) TengiorðEr # Sjaldgæft - ekki velja nema það þurfi
+$score(-6) TengiorðEr # Sjaldgæft - ekki velja nema það þurfi
 
 Tengisetning/tala/pers/kyn →
     HreinYfirsetning            # (Maðurinn sem) konan kyssti í gær / konurnar kysstu í gær
@@ -1881,7 +1895,7 @@ NlSkýring/tala/pers/fall/kyn →
     | ',' SvigaInnihald/tala/pers/fall/kyn ','
 
 # Gefa aukastig fyrir skýringar á nafnliðum
-$score(+4) NlSkýring/tala/pers/fall/kyn
+$score(+2) NlSkýring/tala/pers/fall/kyn
 
 SvigaInnihald/tala/pers/fall/kyn →
     Tengiliður/tala/pers/kyn
@@ -1916,6 +1930,9 @@ NlRuna/fall/kyn →
 
 KommuSamtenging/fall/kyn → ',' FsRuna? NlEind/fall/kyn
 
+# Hvetja til eins langra lista og mögulegt er
+$score(+3) KommuSamtenging/fall/kyn
+
 # Blandað kyn
 
 NlRuna/fall →
@@ -1923,6 +1940,9 @@ NlRuna/fall →
     | ',' FsRuna? NlEind/fall AtvKomma        # Þingmenn, sérstaklega Jóhanna, voru óánægðir
 
 KommuSamtenging/fall → ',' FsRuna? NlEind/fall
+
+# Hvetja til eins langra lista og mögulegt er
+$score(+3) KommuSamtenging/fall
 
 # Nafnliðir sem geta verið stakar eindir eða runur einda
 

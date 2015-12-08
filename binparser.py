@@ -562,9 +562,10 @@ class BIN_Token(Token):
                         return False
                 elif no_info:
                     # No case and number info: probably a foreign word
-                    # Match all cases, but singular only, not plural
-                    if v == "ft":
-                        return False
+                    # Match all cases and numbers
+                    #if v == "ft":
+                    #    return False
+                    pass
                 elif BIN_Token._VARIANT[v] not in m.beyging:
                     # Required case or number not found: no match
                     return False
@@ -622,7 +623,12 @@ class BIN_Token(Token):
             if matcher:
                 return any(matcher(m) for m in self.t2)
             # Proper name?
-            return self.is_upper and self.t1_lower not in BIN_Token._NOT_PROPER_NAME
+            # Only allow a potential interpretation as a proper name if
+            # the token is uppercase but there is no uppercase meaning of
+            # the word in BÍN. This excludes for instance "Ísland" which
+            # should be treated purely as a noun, not as a proper name.
+            return self.is_upper and (not any(m.ordmynd[0].isupper() and m.beyging != "-" for m in self.t2)) \
+                and (self.t1_lower not in BIN_Token._NOT_PROPER_NAME)
 
         # Unknown word
         if self.is_upper:

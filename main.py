@@ -201,6 +201,7 @@ def parse(toklist, single, use_reducer, dump_forest = False):
                     # Parse the accumulated sentence
                     err_index = None
                     num = 0 # Number of tree combinations in forest
+                    score = 0 # Reducer score of the best parse tree
 
                     try:
                         # Parse the sentence
@@ -220,7 +221,7 @@ def parse(toklist, single, use_reducer, dump_forest = False):
 
                         if use_reducer and num > 1:
                             # Reduce the resulting forest
-                            forest = rdc.go(forest)
+                            forest, score = rdc.go(forest)
                             assert Fast_Parser.num_combinations(forest) == 1
                             num = 1
 
@@ -229,8 +230,9 @@ def parse(toklist, single, use_reducer, dump_forest = False):
                         # Obtain the index of the offending token
                         err_index = e.token_index
 
-                    print("Parsed sentence of length {0} with {1} combinations{2}".format(slen, num,
-                        "\n" + (" ".join(s[1] for s in sent) if num >= 100 else "")))
+                    print("Parsed sentence of length {0} with {1} combinations, score {2}{3}"
+                        .format(slen, num, score,
+                            "\n" + (" ".join(s[1] for s in sent) if num >= 100 else "")))
                     if num > 0:
                         num_parsed_sent += 1
                         # Calculate the 'ambiguity factor'
@@ -432,6 +434,7 @@ def parse_grid():
 
     # Find the number of parse combinations
     combinations = 0 if forest is None else Fast_Parser.num_combinations(forest)
+    score = 0
 
     # Dump the parse tree to parse.txt
     with open("parse.txt", mode = "w", encoding= "utf-8") as f:
@@ -447,7 +450,7 @@ def parse_grid():
 
     if forest is not None and use_reducer:
         # Reduce the parse forest
-        forest = Reducer(grammar).go(forest)
+        forest, score = Reducer(grammar).go(forest)
 
     # Make the parse grid with all options
     grid, ncols = make_grid(forest) if forest else ([], 0)
@@ -539,8 +542,8 @@ def parse_grid():
     #debug()
 
     return render_template("parsegrid.html", txt = txt, err = err, tbl = tbl,
-        combinations = combinations, choice_list = uc_list,
-        parse_path = parse_path)
+        combinations = combinations, score = score,
+        choice_list = uc_list, parse_path = parse_path)
 
 
 @app.route("/addsentence", methods=['POST'])

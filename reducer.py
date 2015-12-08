@@ -179,9 +179,9 @@ class Reducer:
         # Third pass: navigate the tree bottom-up, eliminating lower-rated
         # options (subtrees) in favor of higher rated ones
 
-        self._reduce(w, scores)
+        score = self._reduce(w, scores)
 
-        return w
+        return (w, score)
 
     def _find_options(self, w, finals, tokens):
         """ Find token-terminal match options in a parse forest with a root in w """
@@ -289,4 +289,4 @@ class Reducer:
                     sc += self._score_adj.get(results.nt, 0)
                 return sc
 
-        ParseForestReducer(self._grammar, scores).go(w)
+        return ParseForestReducer(self._grammar, scores).go(w)

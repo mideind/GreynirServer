@@ -548,7 +548,7 @@ class Scraper:
                             # Parse the sentence
                             forest = bp.go(sent)
                             # Reduce the resulting forest
-                            forest = rdc.go(forest)
+                            forest, score = rdc.go(forest)
                         except ParseError as e:
                             forest = None
                             # Obtain the index of the offending token
@@ -803,7 +803,8 @@ def init_roots():
                 ("http://www.ruv.is", "ruv.is", "RÚV", 1.0, "scrapers.default", "RuvScraper"),
                 # ("http://www.visir.is", "visir.is", "Vísir", 0.8, "scrapers.default", "VisirScraper"),
                 ("http://www.mbl.is/frettir/", "mbl.is", "Morgunblaðið", 0.6, "scrapers.default", "MblScraper"),
-                ("http://eyjan.pressan.is", "eyjan.pressan.is", "Eyjan", 0.4, "scrapers.default", "EyjanScraper")
+                ("http://eyjan.pressan.is", "eyjan.pressan.is", "Eyjan", 0.4, "scrapers.default", "EyjanScraper"),
+                ("http://stjornlagarad.is", "stjornlagarad.is", "Stjórnlagaráð", 1.0, "scrapers.default", "StjornlagaradScraper")
             ]
 
             for url, domain, description, authority, scr_module, scr_class in ROOTS:

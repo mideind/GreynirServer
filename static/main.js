@@ -27,7 +27,8 @@ var TOK_TIMESTAMP = 11;
 var TOK_CURRENCY = 12;
 var TOK_AMOUNT = 13;
 var TOK_PERSON = 14;
-var TOK_UNKNOWN = 15;
+var TOK_EMAIL = 15;
+var TOK_UNKNOWN = 16;
 
 var TOK_P_BEGIN = 10001; // Block begin
 var TOK_P_END = 10002; // Block end
@@ -430,7 +431,7 @@ function populateResult(json) {
          wsp = " ";
       }
       else
-      if (wl0 == TOK_YEAR || wl0 == TOK_TELNO || wl0 == TOK_TIME) {
+      if (wl0 == TOK_YEAR || wl0 == TOK_TELNO || wl0 == TOK_EMAIL || wl0 == TOK_TIME) {
          s += wsp + "<b>" + wl[1] + "</b>";
          wsp = " ";
       }

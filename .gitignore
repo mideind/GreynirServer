@@ -52,6 +52,7 @@ log/
 console/
 venv/
 pp/
+p3/
 node_modules/
 cffi_test/
 

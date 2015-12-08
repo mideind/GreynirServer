@@ -118,6 +118,11 @@ class ScrapeHelper:
         return ScrapeHelper.general_filter(tag, "div", "class", cls)
 
     @staticmethod
+    def div_id_filter(tag, div_id):
+        """ Filter function for divs in HTML documents, selected by id """
+        return ScrapeHelper.general_filter(tag, "div", "id", div_id)
+
+    @staticmethod
     def meta_property(soup, property_name):
         try:
             f = lambda tag: ScrapeHelper.meta_property_filter(tag, property_name)
@@ -140,6 +145,14 @@ class ScrapeHelper:
             f = lambda tag: ScrapeHelper.div_class_filter(tag, cls)
             soup = soup.find(f)
         return soup
+
+    @staticmethod
+    def div_id(soup, div_id):
+        """ Find a div with a particular id """
+        if not soup or not div_id:
+            return None
+        f = lambda tag: ScrapeHelper.div_id_filter(tag, div_id)
+        return soup.find(f)
 
 
 class KjarninnScraper(ScrapeHelper):
@@ -326,4 +339,40 @@ class EyjanScraper(ScrapeHelper):
 
     def __init(self, root):
         super().__init__(root)
+
+
+class StjornlagaradScraper(ScrapeHelper):
+
+    """ Scraping helper for stjornlagarad.is """
+
+    def __init(self, root):
+        super().__init__(root)
+
+    def skip_url(self, url):
+        """ Return True if this URL should not be scraped """
+        s = urlparse.urlsplit(url)
+        if not s.path:
+            return True
+        # Only parse stjornlagarad.is/starfid/frumvarp/
+        return not s.path.startswith("/starfid/frumvarp/")
+
+    def get_metadata(self, soup):
+        return Metadata(heading = "Frumvarp Stjórnlagaráðs", author = "Stjórnlagaráð",
+            timestamp = datetime.utcnow(), authority = self.authority)
+
+    def _get_content(self, soup_body):
+        """ Find the article content (main text) in the soup """
+        # Delete div#header
+        soup = ScrapeHelper.div_id(soup_body, "header")
+        if soup is not None:
+            soup.decompose()
+        # Delete div#samskiptasattmali
+        soup = ScrapeHelper.div_id(soup_body, "samskiptasattmali")
+        if soup is not None:
+            soup.decompose()
+        # Delete div#mjog-stor-footer
+        soup = ScrapeHelper.div_id(soup_body, "mjog-stor-footer")
+        if soup is not None:
+            soup.decompose()
+        return soup_body
 

@@ -126,6 +126,8 @@ BIN_Meaning = namedtuple('BIN_Meaning', ['stofn', 'utg', 'ordfl', 'fl', 'ordmynd
 
 class TOK:
 
+    # Note: Keep the following in sync with token identifiers in main.js
+
     PUNCTUATION = 1
     TIME = 2
     DATE = 3
@@ -140,7 +142,8 @@ class TOK:
     CURRENCY = 12
     AMOUNT = 13
     PERSON = 14
-    UNKNOWN = 15
+    EMAIL = 15
+    UNKNOWN = 16
 
     P_BEGIN = 10001 # Paragraph begin
     P_END = 10002 # Paragraph end
@@ -165,6 +168,7 @@ class TOK:
         TELNO: "TELNO",
         PERCENT: "PERCENT",
         URL: "URL",
+        EMAIL: "EMAIL",
         ORDINAL: "ORDINAL",
         P_BEGIN: "BEGIN PARA",
         P_END: "END PARA",
@@ -199,6 +203,9 @@ class TOK:
 
     def Telno(w):
         return Tok(TOK.TELNO, w, None)
+
+    def Email(w):
+        return Tok(TOK.EMAIL, w, None)
 
     def Number(w, n, cases=None, genders=None):
         """ cases is a list of possible cases for this number
@@ -259,7 +266,8 @@ def parse_digits(w):
         h = int(p[0])
         m = int(p[1])
         sec = int(p[2])
-        return TOK.Time(w, h, m, sec), s.end()
+        if (0 <= h < 24) and (0 <= m < 60) and (0 <= sec < 60):
+            return TOK.Time(w, h, m, sec), s.end()
     s = re.match(r'\d{1,2}:\d\d', w)
     if s:
         # Looks like a 24-hour clock, H:M
@@ -267,7 +275,8 @@ def parse_digits(w):
         p = w.split(':')
         h = int(p[0])
         m = int(p[1])
-        return TOK.Time(w, h, m, 0), s.end()
+        if (0 <= h < 24) and (0 <= m < 60):
+            return TOK.Time(w, h, m, 0), s.end()
     s = re.match(r'\d{1,2}\.\d{1,2}\.\d{2,4}', w) or re.match(r'\d{1,2}/\d{1,2}/\d{2,4}', w)
     if s:
         # Looks like a date
@@ -284,7 +293,8 @@ def parse_digits(w):
         if m > 12 and d <= 12:
             # Probably wrong way around
             m, d = d, m
-        return TOK.Date(w, y, m, d), s.end()
+        if (1776 <= y <= 2100) and (1 <= m <= 12) and (1 <= d <= 31):
+            return TOK.Date(w, y, m, d), s.end()
     s = re.match(r'\d+(\.\d\d\d)+', w)
     if s:
         # Integer with a '.' thousands separator
@@ -311,7 +321,7 @@ def parse_digits(w):
         if m > 12 and d <= 12:
             # Date is probably wrong way around
             m, d = d, m
-        if d >= 1 and d <= 31 and m >= 1 and m <= 12:
+        if (1 <= d <= 31) and (1 <= m <= 12):
             # Looks like a (roughly) valid date
             return TOK.Date(w, 0, m, d), s.end()
     s = re.match(r'\d\d\d\d$', w) or re.match(r'\d\d\d\d[^\d]', w)
@@ -320,7 +330,7 @@ def parse_digits(w):
         if 1776 <= n <= 2100:
             # Looks like a year
             return TOK.Year(w[0:4], n), 4
-    s = re.match(r'\d\d\d-\d\d\d\d', w)
+    s = re.match(r'\d\d\d-\d\d\d\d', w) or re.match(r'\d\d\d\d\d\d\d', w)
     if s:
         # Looks like a telephone number
         return TOK.Telno(s.group()), s.end()
@@ -396,6 +406,13 @@ def parse_tokens(txt):
                 else:
                     yield TOK.Punctuation(w[0])
                     w = w[1:]
+            if w and '@' in w:
+                # Check for valid e-mail
+                s = re.match(r"[^@\s]+@[^@\s]+(\.[^@\s\.,/:;]+)+", w)
+                if s:
+                    ate = True
+                    yield TOK.Email(s.group())
+                    w = w[s.end():]
             # Numbers or other stuff starting with a digit
             if w and w[0] in DIGITS:
                 ate = True

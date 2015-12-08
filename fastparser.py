@@ -421,7 +421,7 @@ class ParseForestNavigator(object):
             if results is NotImplemented:
                 # If _visit_nonterminal() returns NotImplemented,
                 # don't bother visiting children or processing
-                # results; instead _nav_helper() return NotImplemented
+                # results; instead _nav_helper() returns NotImplemented
                 v = results
             else:
                 if w.is_interior:
