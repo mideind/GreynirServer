@@ -88,9 +88,9 @@ class Reducer:
                                             sc[wt] -= 2
                                             sc[bt] += 4
                                         found_pref = True
-                if not same_first and not found_pref:
-                    # Only display cases where there might be a missing pref
-                    print("Token '{0}' has {1} possible terminal matches: {2}".format(txt, len(s), s))
+                #if not same_first and not found_pref:
+                #    # Only display cases where there might be a missing pref
+                #    print("Token '{0}' has {1} possible terminal matches: {2}".format(txt, len(s), s))
 
                 # Apply heuristics to each terminal that potentially matches this token
                 for t in s:

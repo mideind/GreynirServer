@@ -108,8 +108,8 @@ LokatáknEðaKomma → Lokatákn | ','
 
 Fyrirsögn →
     # Nafnliður í nefnifalli
-    Nl_nf Atviksliður? Eignun? '.'?
-    | SetningÁnF
+    Nl_nf Atviksliður? Eignun? Lokatákn?
+    | SetningÁnF Lokatákn?
 
 Eignun →
     # Mynd: Jón Stefánsson
