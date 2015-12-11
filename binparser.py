@@ -89,6 +89,7 @@ class BIN_Token(Token):
         "et" : "ET", # Eintala / singular
         "ft" : "FT", # Fleirtala / plural
         "mst" : "MST", # Miðstig / comparative
+        "esb" : "ESB", # Efsta stig, sterk beyging / superlative
         "p1" : "1P", # Fyrsta persóna / first person
         "p2" : "2P", # Önnur persóna / second person
         "p3" : "3P", # Þriðja persóna / third person
@@ -106,6 +107,7 @@ class BIN_Token(Token):
         # "þt" : "ÞT", # Þátíð # !!! Conflict with LHÞT
         "sagnb" : "SAGNB", # Sagnbót ('vera' -> 'hefur verið')
         "lhþt" : "LHÞT", # Lýsingarháttur þátíðar ('var lentur')
+        "gr" : "gr", # Greinir
 
         # Variants that do not have a corresponding BIN meaning
         "abbrev" : None,
@@ -126,6 +128,7 @@ class BIN_Token(Token):
     _VBIT_MM = _VBIT["mm"]
     _VBIT_GM = _VBIT["gm"]
     _VBIT_LH = _VBIT["lhþt"]
+    _VBIT_GR = _VBIT["gr"]
     _VBIT_SUBJ = _VBIT["subj"]
     _VBIT_SAGNB = _VBIT["sagnb"]
     _VBIT_ABBREV = _VBIT["abbrev"]
@@ -135,7 +138,7 @@ class BIN_Token(Token):
 
     _CASES = [ "nf", "þf", "þgf", "ef" ]
     _GENDERS = [ "kk", "kvk", "hk" ]
-    _GENDERS_SET = set(_GENDERS)
+    _GENDERS_SET = frozenset(_GENDERS)
 
     # Variants to be checked for verbs
     _VERB_VARIANTS = [ "p1", "p2", "p3", "nh", "vh", "lh", "bh", "fh",
@@ -151,9 +154,20 @@ class BIN_Token(Token):
     # '...verður ekki til nægur jarðvarmi'
     # '...til að koma upp veggspjöldum'
     # '...séu um 20 kaupendur'
-    _NOT_NOT_EO = { "inn", "eftir", "of", "til", "upp", "um" }
+    # '...keyptu síðan félagið'
+    # '...varpaði fram þeirri spurningu'
+    _NOT_NOT_EO = frozenset(["inn", "eftir", "of", "til", "upp", "um", "síðan", "fram" ])
 
-    _UNDERSTOOD_PUNCTUATION = ".?!,:;–-()"
+    # Words that are not eligible for interpretation as proper names, even if they are capitalized
+    _NOT_PROPER_NAME = frozenset(["ég", "þú", "hann", "hún", "það", "við", "þið", "þau",
+        "þeir", "þær", "í", "á", "af", "um", "að", "með", "til", "frá"])
+
+    # Numbers that can be used in the singular even if they are nominally plural.
+    # This applies to the media company 365, where it is OK to say "365 skuldaði 389 milljónir",
+    # as it would be incorrect to say "365 skulduðu 389 milljónir".
+    _SINGULAR_SPECIAL_CASES = frozenset([ 365 ])
+
+    _UNDERSTOOD_PUNCTUATION = ".?!,:;–-()[]"
 
     _MEANING_CACHE = { }
 
@@ -164,6 +178,7 @@ class BIN_Token(Token):
         self.t1 = t[1] # Token text
         self.t1_lower = t[1].lower() # Token text, lower case
         self.t2 = t[2] # Token information, such as part-of-speech annotation, numbers, etc.
+        self.is_upper = self.t1[0] != self.t1_lower[0] # True if starts with upper case
         self._hash = None # Cached hash
 
         # We store a cached check of whether this is an "eo". An "eo" is an adverb (atviksorð)
@@ -184,6 +199,17 @@ class BIN_Token(Token):
         """ Convert a 'beyging' field from BIN to a set of fbits """
         bit = cls._FBIT
         return reduce(lambda x, y: x | y, (b for key, b in bit.items() if key in beyging), 0)
+
+    @classmethod
+    def get_fbits(cls, beyging):
+        """ Get the (cached) fbits for a BIN 'beyging' field """
+        fbits = cls._MEANING_CACHE.get(beyging)
+        if fbits is None:
+            # Calculate a set of bits that represent the variants
+            # present in m.beyging
+            fbits = cls.fbits(beyging)
+            cls._MEANING_CACHE[beyging] = fbits
+        return fbits
 
     def verb_matches(self, verb, terminal, form):
         """ Return True if the verb in question matches the verb category,
@@ -387,14 +413,14 @@ class BIN_Token(Token):
             In Icelandic, all integers whose modulo 100 ends in 1 are
             singular, except 11. """
         singular = False
-        i = int(self.t2[0])
+        orig_i = i = int(self.t2[0])
         if float(i) == float(self.t2[0]):
             # Whole number (integer): may be singular
             i = abs(i) % 100
             singular = (i != 11) and (i % 10) == 1
         if terminal.is_singular and not singular:
             # Terminal is singular but number is plural
-            return False
+            return True if orig_i in BIN_Token._SINGULAR_SPECIAL_CASES else False
         if terminal.is_plural and singular:
             # Terminal is plural but number is singular
             return False
@@ -479,7 +505,8 @@ class BIN_Token(Token):
 
     def matches_YEAR(self, terminal):
         """ A year token matches a number (töl) or year (ártal) terminal """
-        if not terminal.startswith("töl") and not terminal.startswith("ártal"):
+        if not terminal.startswith("töl") and not terminal.startswith("ártal") \
+            and not terminal.startswith("tala"):
             return False
         # Only singular match ('2014 var gott ár', not '2014 voru góð ár')
         # Years only match the neutral gender
@@ -524,19 +551,21 @@ class BIN_Token(Token):
             """ Check noun"""
             if BIN_Token._KIND[m.ordfl] != "no":
                 return False
+            no_info = m.beyging == "-"
             if terminal.is_abbrev:
                 # Only match abbreviations; gender, case and number do not matter
-                return m.beyging == "-"
+                return no_info
             for v in terminal.variants:
                 if v in BIN_Token._GENDERS_SET:
                     if m.ordfl != v:
                         # Mismatched gender
                         return False
-                elif m.beyging == "-":
+                elif no_info:
                     # No case and number info: probably a foreign word
-                    # Match all cases, but singular only, not plural
-                    if v == "ft":
-                        return False
+                    # Match all cases and numbers
+                    #if v == "ft":
+                    #    return False
+                    pass
                 elif BIN_Token._VARIANT[v] not in m.beyging:
                     # Required case or number not found: no match
                     return False
@@ -571,12 +600,7 @@ class BIN_Token(Token):
         def matcher_default(m):
             """ Check other word categories """
             if m.beyging != "-": # Tokens without a form specifier are assumed to be universally matching
-                fbits = BIN_Token._MEANING_CACHE.get(m.beyging)
-                if fbits is None:
-                    # Calculate a set of bits that represent the variants
-                    # present in m.beyging
-                    fbits = BIN_Token.fbits(m.beyging)
-                    BIN_Token._MEANING_CACHE[m.beyging] = fbits
+                fbits = BIN_Token.get_fbits(m.beyging)
                 # Check whether variants required by the terminal are present
                 # in the meaning string
                 if not terminal.fbits_match(fbits):
@@ -592,13 +616,26 @@ class BIN_Token(Token):
                 "so" : matcher_so,
                 "no" : matcher_no,
                 "eo" : matcher_eo,
-                "fs" : matcher_fs
+                "fs" : matcher_fs,
+                "sérnafn" : None
             }
             matcher = matchers.get(terminal.first, matcher_default)
-            return any(matcher(m) for m in self.t2)
+            if matcher:
+                return any(matcher(m) for m in self.t2)
+            # Proper name?
+            # Only allow a potential interpretation as a proper name if
+            # the token is uppercase but there is no uppercase meaning of
+            # the word in BÍN. This excludes for instance "Ísland" which
+            # should be treated purely as a noun, not as a proper name.
+            return self.is_upper and (not any(m.ordmynd[0].isupper() and m.beyging != "-" for m in self.t2)) \
+                and (self.t1_lower not in BIN_Token._NOT_PROPER_NAME)
 
-        # Unknown word: allow it to match a singular, neutral noun in all cases
-        return terminal.startswith("no") and terminal.has_vbits(BIN_Token._VBIT_ET | BIN_Token._VBIT_HK)
+        # Unknown word
+        if self.is_upper:
+            # Starts in upper case: We guess that this is a named entity
+            return terminal.startswith("sérnafn")
+        # Not named entity: allow it to match a singular, neutral noun in all cases
+        return (terminal.startswith("no") and terminal.has_vbits(BIN_Token._VBIT_ET | BIN_Token._VBIT_HK))
 
     # Dispatch table for the token matching functions
     _MATCHING_FUNC = {
@@ -902,14 +939,31 @@ class BIN_Parser(Parser):
             else:
                 ix += 1
 
-        # Wrap the sanitized token list in BIN_Token()
-        return [ BIN_Token(t) for t in tlist if t is not None and BIN_Token.is_understood(t) ]
+        # Wrap the sanitized token list in BIN_Token() and
+        # create a mapping of token indices from the wrapped list to the original list
+        wrapped_tokens = [ ]
+        wrap_map = { }
+        wrap_ix = 0
+        for ix, t in enumerate(tlist):
+            if t is not None and BIN_Token.is_understood(t):
+                wrapped_tokens.append(BIN_Token(t))
+                wrap_map[wrap_ix] = ix
+                wrap_ix += 1
+        return wrapped_tokens, wrap_map
 
     def go(self, tokens):
         """ Parse the token list after wrapping each understood token in the BIN_Token class """
 
-        bt = self._wrap(tokens)
+        bt, wrap_map = self._wrap(tokens)
 
         # After wrapping, call the parent class go()
-        return Parser.go(self, bt)
+        try:
+            result = Parser.go(self, bt)
+        except ParseError as e:
+            # Convert the wrapped token index to an original token index
+            if e.token_index in wrap_map:
+                e.token_index = wrap_map[e.token_index]
+            raise e
+
+        return result
 

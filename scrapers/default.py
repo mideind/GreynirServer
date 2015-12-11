@@ -118,6 +118,11 @@ class ScrapeHelper:
         return ScrapeHelper.general_filter(tag, "div", "class", cls)
 
     @staticmethod
+    def div_id_filter(tag, div_id):
+        """ Filter function for divs in HTML documents, selected by id """
+        return ScrapeHelper.general_filter(tag, "div", "id", div_id)
+
+    @staticmethod
     def meta_property(soup, property_name):
         try:
             f = lambda tag: ScrapeHelper.meta_property_filter(tag, property_name)
@@ -141,6 +146,14 @@ class ScrapeHelper:
             soup = soup.find(f)
         return soup
 
+    @staticmethod
+    def div_id(soup, div_id):
+        """ Find a div with a particular id """
+        if not soup or not div_id:
+            return None
+        f = lambda tag: ScrapeHelper.div_id_filter(tag, div_id)
+        return soup.find(f)
+
 
 class KjarninnScraper(ScrapeHelper):
 
@@ -159,16 +172,17 @@ class KjarninnScraper(ScrapeHelper):
     def get_metadata(self, soup):
         """ Analyze the article soup and return metadata """
         # Extract the heading from the OpenGraph (Facebook) og:title meta property
-        # heading = soup.html.head.select_one('meta[property="og:title"]')
         heading = ScrapeHelper.meta_property(soup, "og:title") or ""
+        if "|" in heading:
+            heading = heading[0:heading.index("|")].rstrip()
         # Extract the publication time from the article:published_time meta property
         timestamp = ScrapeHelper.meta_property(soup, "article:published_time") or \
             str(datetime.utcnow())[0:19]
         # Exctract the author name
-        f = lambda tag: ScrapeHelper.general_filter(tag, "a", "itemprop", "author")
+        f = lambda tag: ScrapeHelper.general_filter(tag, "span", "class", "author")
         tag = soup.html.body.find(f)
         if not tag:
-            print("a.itemprop.author tag not found in soup.html.body")
+            print("span.class.author tag not found in soup.html.body")
         author = str(tag.string) if tag else "Ritstjórn Kjarnans"
         return Metadata(heading = heading, author = author,
             timestamp = timestamp, authority = self.authority)
@@ -178,16 +192,38 @@ class KjarninnScraper(ScrapeHelper):
         # soup_body has already been sanitized in the ScrapeHelper base class
         if soup_body.article is None:
             print("_get_content: soup_body.article is None")
-        return ScrapeHelper.div_class(soup_body.article, "entry-content")
-        # !!! There is something wrong with BeautifulSoup4 and html5lib that
-        # !!! prevents the following from working:
-        # return soup_body.article.find("div", "entry-content clearfix")
-        # return soup_body.select_one("article.post").select_one("div.entry-content")
+            return None
+        # Delete div.container.title-container tags from the content
+        soup = ScrapeHelper.div_class(soup_body.article, ["container", "title-container"])
+        if soup is not None:
+            soup.decompose()
+        # Delete div.container.quote-container tags from the content
+        soup = ScrapeHelper.div_class(soup_body.article, ["container", "quote-container"])
+        if soup is not None:
+            soup.decompose()
+        # Delete div.container-fluid tags from the content
+        soup = ScrapeHelper.div_class(soup_body.article, "container-fluid")
+        if soup is not None:
+            soup.decompose()
+        # Get the content itself
+        content = ScrapeHelper.div_class(soup_body.article, "article-body")
+        if content is None:
+            # No div.article-body present
+            content = soup_body.article
+        return content
 
 
 class RuvScraper(ScrapeHelper):
 
     """ Scraping helper for RUV.is """
+
+    _SKIP_PREFIXES = [
+        "/frontpage/",
+        "/frontpage?",
+        "/sarpurinn/",
+        "/tag/",
+        "/frettalisti/"
+    ]
 
     def __init(self, root):
         super().__init__(root)
@@ -195,18 +231,12 @@ class RuvScraper(ScrapeHelper):
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
         s = urlparse.urlsplit(url)
-        if s.path and (s.path.startswith("/frontpage/") or s.path.startswith("/frontpage?")):
-            # Skip the www.ruv.is/frontpage/... URLs
-            return True
-        if s.path and s.path.startswith("/sarpurinn/"):
-            # Skip the www.ruv.is/sarpurinn/... URLs
-            return True
-        if s.path and s.path.startswith("/tag/"):
-            return True
-        if s.path and s.path.startswith("/frettalisti/"):
-            return True
-        return False # Scrape all URLs by default
-        
+        if s.path:
+            for prefix in RuvScraper._SKIP_PREFIXES:
+                if s.path.startswith(prefix):
+                    return True
+        return False # Scrape all other URLs by default
+
     def get_metadata(self, soup):
         """ Analyze the article soup and return metadata """
         # Extract the heading from the OpenGraph (Facebook) og:title meta property
@@ -231,34 +261,30 @@ class MblScraper(ScrapeHelper):
 
     """ Scraping helper for Mbl.is """
 
+    _SKIP_PREFIXES = [
+        "/fasteignir/",
+        "/english/",
+        "/frettir/bladamenn/",
+        "/frettir/sjonvarp/",
+        "/frettir/knippi/",
+        "/frettir/colorbox/",
+        "/frettir/lina_snippet/",
+        "/myndasafn/",
+        "/atvinna/"
+    ]
+
     def __init(self, root):
         super().__init__(root)
 
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
         s = urlparse.urlsplit(url)
-        if s.path and s.path.startswith("/fasteignir/"):
-            # Skip the www.mbl.is/fasteignir/... URLs
-            return True
-        if s.path and s.path.startswith("/english/"):
-            # Skip the www.mbl.is/english/... URLs
-            return True
-        if s.path and s.path.startswith("/frettir/bladamenn/"):
-            return True
-        if s.path and s.path.startswith("/frettir/sjonvarp/"):
-            return True
-        if s.path and s.path.startswith("/frettir/knippi/"):
-            return True
-        if s.path and s.path.startswith("/frettir/colorbox/"):
-            return True
-        if s.path and s.path.startswith("/frettir/lina_snippet/"):
-            return True
-        if s.path and s.path.startswith("/myndasafn/"):
-            return True
-        if s.path and s.path.startswith("/atvinna/"):
-            return True
+        if s.path:
+            for prefix in MblScraper._SKIP_PREFIXES:
+                if s.path.startswith(prefix):
+                    return True
         return False # Scrape all URLs by default
-        
+
     def get_metadata(self, soup):
         """ Analyze the article soup and return metadata """
         # Extract the heading from the OpenGraph (Facebook) og:title meta property
@@ -313,4 +339,40 @@ class EyjanScraper(ScrapeHelper):
 
     def __init(self, root):
         super().__init__(root)
+
+
+class StjornlagaradScraper(ScrapeHelper):
+
+    """ Scraping helper for stjornlagarad.is """
+
+    def __init(self, root):
+        super().__init__(root)
+
+    def skip_url(self, url):
+        """ Return True if this URL should not be scraped """
+        s = urlparse.urlsplit(url)
+        if not s.path:
+            return True
+        # Only parse stjornlagarad.is/starfid/frumvarp/
+        return not s.path.startswith("/starfid/frumvarp/")
+
+    def get_metadata(self, soup):
+        return Metadata(heading = "Frumvarp Stjórnlagaráðs", author = "Stjórnlagaráð",
+            timestamp = datetime.utcnow(), authority = self.authority)
+
+    def _get_content(self, soup_body):
+        """ Find the article content (main text) in the soup """
+        # Delete div#header
+        soup = ScrapeHelper.div_id(soup_body, "header")
+        if soup is not None:
+            soup.decompose()
+        # Delete div#samskiptasattmali
+        soup = ScrapeHelper.div_id(soup_body, "samskiptasattmali")
+        if soup is not None:
+            soup.decompose()
+        # Delete div#mjog-stor-footer
+        soup = ScrapeHelper.div_id(soup_body, "mjog-stor-footer")
+        if soup is not None:
+            soup.decompose()
+        return soup_body
 

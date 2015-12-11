@@ -788,8 +788,8 @@ class Grammar:
                     ix = s.find(')')
                     if ix < 0:
                         raise GrammarError("Expected right parenthesis in $score() pragma", fname, line)
-                    score = int(s[0:ix])
-                    s = s[ix+1:]
+                    score = int(s[0 : ix])
+                    s = s[ix + 1:]
                     nts = s.split()
                     for nt_name in nts:
                         ntv = nt_name.split('/')

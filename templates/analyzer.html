@@ -13,6 +13,9 @@
 
 {% block content %}
 
+<!-- Popup with info about the word being hovered over -->
+<div class="info"></div>
+
 <div class="text-container">
 
    <div class="input">
@@ -27,14 +30,11 @@
          onClick="this.setSelectionRange(0, this.value.length)"></input>
 
       <div class="btn" id="txt-ok" title="Greina" tabindex="2"
-         onclick="analyzeTxt()">Greina</div>
+         onclick="analyzeTxt()">Greina &#x25BC;</div>
 
    </div>
 
    <div class="output">
-
-      <!-- Popup with info about the word being hovered over -->
-      <div class="info"></div>
 
       <div id="result">
       <!-- Result of analysis goes here -->

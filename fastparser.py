@@ -421,7 +421,7 @@ class ParseForestNavigator(object):
             if results is NotImplemented:
                 # If _visit_nonterminal() returns NotImplemented,
                 # don't bother visiting children or processing
-                # results; instead _nav_helper() return NotImplemented
+                # results; instead _nav_helper() returns NotImplemented
                 v = results
             else:
                 if w.is_interior:
@@ -526,36 +526,41 @@ class Fast_Parser(BIN_Parser):
     def go(self, tokens):
         """ Call the C++ parser module to parse the tokens """
 
-        wrapped_tokens = self._wrap(tokens) # Inherited from BIN_Parser
+        wrapped_tokens, wrap_map = self._wrap(tokens) # Inherited from BIN_Parser
         ep = Fast_Parser.eparser
         node = None
+        err = ffi.new("unsigned int*")
+
         # Use the context manager protocol to guarantee that the parse job
         # handle will be properly deleted even if an exception is thrown
-        err = ffi.new("unsigned int*")
+
         with ParseJob.make(wrapped_tokens, self._terminals) as job:
             node = ep.earleyParse(self._c_parser, len(wrapped_tokens), job.handle, err)
+
         if node == ffi.NULL:
             ix = err[0] # Token index
             if ix >= 1:
+                # Find the error token index in the original (unwrapped) token list
+                orig_ix = wrap_map[ix] if ix in wrap_map else ix
                 raise ParseError("No parse available at token {0} ({1})"
-                    .format(ix, wrapped_tokens[ix-1]), ix-1)
+                    .format(orig_ix, wrapped_tokens[ix-1]), orig_ix - 1)
             else:
                 # Not a normal parse error, but report it anyway
                 raise ParseError("No parse available at token {0} ({1} tokens in input)"
                     .format(ix, len(wrapped_tokens)), 0)
+
         err = None
         c_dict = dict() # Node pointer conversion dictionary
         # Create a new Python-side node forest corresponding to the C++ one
         result = Node(self.grammar, wrapped_tokens, c_dict, node)
-        # !!! DEBUG: dump the resulting parse forest
-        # ep.dumpForest(node, self._c_grammar)
+
         # Delete the C++ nodes
         ep.deleteForest(node)
         return result
 
     def cleanup(self):
         """ Delete C++ objects. Must call after last use of Fast_Parser
-            to avoid memory leaks. Using the context manager protocol is recommended
+            to avoid memory leaks. The context manager protocol is recommended
             to guarantee cleanup. """
         ep = Fast_Parser.eparser
         ep.deleteParser(self._c_parser)

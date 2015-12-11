@@ -50,7 +50,7 @@ except ImportError:
 psycopg2ext.register_type(psycopg2ext.UNICODE)
 psycopg2ext.register_type(psycopg2ext.UNICODEARRAY)
 
-from settings import Settings, StaticPhrases, Abbreviations, Meanings, AmbigPhrases
+from settings import Settings, StaticPhrases, Abbreviations, Meanings, AmbigPhrases, AdjectiveTemplate
 from dawgdictionary import Wordbase
 
 
@@ -62,8 +62,10 @@ CENTER_PUNCTUATION = "\"*&+=@©|—–-"
 NONE_PUNCTUATION = "/\\'~"
 PUNCTUATION = LEFT_PUNCTUATION + CENTER_PUNCTUATION + RIGHT_PUNCTUATION + NONE_PUNCTUATION
 
-# Punctuation symbols that may occur at the end of a sentence, after the period
-SENTENCE_FINISHERS = ")]“»”’"
+# Punctuation that ends a sentence
+END_OF_SENTENCE = frozenset(['.', '?', '!', '[…]'])
+# Punctuation symbols that may additionally occur at the end of a sentence
+SENTENCE_FINISHERS = frozenset([')', ']', '“', '»', '”', '’', '[…]'])
 
 # Hyphens that can indicate composite words
 # ('stjórnskipunar- og eftirlitsnefnd')
@@ -73,7 +75,9 @@ CLOCK_WORD = "klukkan"
 CLOCK_ABBREV = "kl"
 
 # Prefixes that can be applied to adjectives with an intervening hyphen
-ADJECTIVE_PREFIXES = { "hálf", "marg", "semí" }
+ADJECTIVE_PREFIXES = frozenset(["hálf", "marg", "semí"])
+# Adjective endings
+ADJECTIVE_TEST = "leg" # Check for adjective if word contains 'leg'
 
 # Punctuation types: left, center or right of word
 
@@ -84,11 +88,27 @@ TP_NONE = 4   # No whitespace
 
 # Numeric digits
 
-DIGITS = { d for d in "0123456789" } # Set of digit characters
+DIGITS = frozenset([d for d in "0123456789"]) # Set of digit characters
 
 # Set of all cases (nominative, accusative, dative, possessive)
 
-ALL_CASES = { "nf", "þf", "þgf", "ef" }
+ALL_CASES = frozenset(["nf", "þf", "þgf", "ef"])
+
+# Month names and numbers
+MONTHS = {
+    "janúar": 1,
+    "febrúar": 2,
+    "mars": 3,
+    "apríl": 4,
+    "maí": 5,
+    "júní": 6,
+    "júlí": 7,
+    "ágúst": 8,
+    "september": 9,
+    "október": 10,
+    "nóvember": 11,
+    "desember": 12
+}
 
 # Named tuple for person names, including case and gender
 
@@ -106,6 +126,8 @@ BIN_Meaning = namedtuple('BIN_Meaning', ['stofn', 'utg', 'ordfl', 'fl', 'ordmynd
 
 class TOK:
 
+    # Note: Keep the following in sync with token identifiers in main.js
+
     PUNCTUATION = 1
     TIME = 2
     DATE = 3
@@ -120,7 +142,8 @@ class TOK:
     CURRENCY = 12
     AMOUNT = 13
     PERSON = 14
-    UNKNOWN = 15
+    EMAIL = 15
+    UNKNOWN = 16
 
     P_BEGIN = 10001 # Paragraph begin
     P_END = 10002 # Paragraph end
@@ -145,6 +168,7 @@ class TOK:
         TELNO: "TELNO",
         PERCENT: "PERCENT",
         URL: "URL",
+        EMAIL: "EMAIL",
         ORDINAL: "ORDINAL",
         P_BEGIN: "BEGIN PARA",
         P_END: "END PARA",
@@ -179,6 +203,9 @@ class TOK:
 
     def Telno(w):
         return Tok(TOK.TELNO, w, None)
+
+    def Email(w):
+        return Tok(TOK.EMAIL, w, None)
 
     def Number(w, n, cases=None, genders=None):
         """ cases is a list of possible cases for this number
@@ -239,7 +266,8 @@ def parse_digits(w):
         h = int(p[0])
         m = int(p[1])
         sec = int(p[2])
-        return TOK.Time(w, h, m, sec), s.end()
+        if (0 <= h < 24) and (0 <= m < 60) and (0 <= sec < 60):
+            return TOK.Time(w, h, m, sec), s.end()
     s = re.match(r'\d{1,2}:\d\d', w)
     if s:
         # Looks like a 24-hour clock, H:M
@@ -247,7 +275,8 @@ def parse_digits(w):
         p = w.split(':')
         h = int(p[0])
         m = int(p[1])
-        return TOK.Time(w, h, m, 0), s.end()
+        if (0 <= h < 24) and (0 <= m < 60):
+            return TOK.Time(w, h, m, 0), s.end()
     s = re.match(r'\d{1,2}\.\d{1,2}\.\d{2,4}', w) or re.match(r'\d{1,2}/\d{1,2}/\d{2,4}', w)
     if s:
         # Looks like a date
@@ -264,7 +293,8 @@ def parse_digits(w):
         if m > 12 and d <= 12:
             # Probably wrong way around
             m, d = d, m
-        return TOK.Date(w, y, m, d), s.end()
+        if (1776 <= y <= 2100) and (1 <= m <= 12) and (1 <= d <= 31):
+            return TOK.Date(w, y, m, d), s.end()
     s = re.match(r'\d+(\.\d\d\d)+', w)
     if s:
         # Integer with a '.' thousands separator
@@ -291,7 +321,7 @@ def parse_digits(w):
         if m > 12 and d <= 12:
             # Date is probably wrong way around
             m, d = d, m
-        if d >= 1 and d <= 31 and m >= 1 and m <= 12:
+        if (1 <= d <= 31) and (1 <= m <= 12):
             # Looks like a (roughly) valid date
             return TOK.Date(w, 0, m, d), s.end()
     s = re.match(r'\d\d\d\d$', w) or re.match(r'\d\d\d\d[^\d]', w)
@@ -300,7 +330,7 @@ def parse_digits(w):
         if 1776 <= n <= 2100:
             # Looks like a year
             return TOK.Year(w[0:4], n), 4
-    s = re.match(r'\d\d\d-\d\d\d\d', w)
+    s = re.match(r'\d\d\d-\d\d\d\d', w) or re.match(r'\d\d\d\d\d\d\d', w)
     if s:
         # Looks like a telephone number
         return TOK.Telno(s.group()), s.end()
@@ -352,7 +382,13 @@ def parse_tokens(txt):
             ate = False
             while w and w[0] in PUNCTUATION:
                 ate = True
-                if len(w) >= 3 and w[0:3] == "...":
+                if w.startswith("[...]"):
+                    yield TOK.Punctuation("[…]")
+                    w = w[5:]
+                elif w.startswith("[…]"):
+                    yield TOK.Punctuation("[…]")
+                    w = w[3:]
+                elif w.startswith("..."):
                     # Treat ellipsis as one piece of punctuation
                     yield TOK.Punctuation("…")
                     w = w[3:]
@@ -363,9 +399,20 @@ def parse_tokens(txt):
                     else:
                         yield TOK.End_Paragraph()
                     w = w[2:]
+                elif w[0] in COMPOSITE_HYPHENS:
+                    # Represent all hyphens the same way
+                    yield TOK.Punctuation('-')
+                    w = w[1:]
                 else:
                     yield TOK.Punctuation(w[0])
                     w = w[1:]
+            if w and '@' in w:
+                # Check for valid e-mail
+                s = re.match(r"[^@\s]+@[^@\s]+(\.[^@\s\.,/:;]+)+", w)
+                if s:
+                    ate = True
+                    yield TOK.Email(s.group())
+                    w = w[s.end():]
             # Numbers or other stuff starting with a digit
             if w and w[0] in DIGITS:
                 ate = True
@@ -458,8 +505,18 @@ def parse_particles(token_stream):
             if next_token.kind == TOK.PUNCTUATION and next_token.txt == '.':
                 if token.kind == TOK.NUMBER and not ('.' in token.txt or ',' in token.txt):
                     # Ordinal, i.e. whole number followed by period: convert to an ordinal token
-                    token = TOK.Ordinal(token.txt, token.val[0])
-                    next_token = next(token_stream)
+                    follow_token = next(token_stream)
+                    if follow_token.kind == TOK.WORD and follow_token.txt[0].isupper() and not follow_token.txt.lower() in MONTHS:
+                        # Next token is an uppercase word (and not a month name misspelled in upper case):
+                        # fall back from assuming that this is an ordinal
+                        yield token # Yield the number
+                        token = next_token # The period
+                        next_token = follow_token # The following (uppercase) word
+                    else:
+                        # OK: replace the number and the period with an ordinal token
+                        token = TOK.Ordinal(token.txt, token.val[0])
+                        # Continue with the following word
+                        next_token = follow_token
 
             # Yield the current token and advance to the lookahead
             yield token
@@ -473,7 +530,8 @@ def parse_particles(token_stream):
 
 def parse_sentences(token_stream):
     """ Parse a stream of tokens looking for sentences, i.e. substreams within
-        blocks delimited by periods. """
+        blocks delimited by sentence finishers (periods, question marks,
+        exclamation marks, etc.) """
 
     in_sentence = False
     token = None
@@ -489,7 +547,7 @@ def parse_sentences(token_stream):
                 if in_sentence:
                     yield TOK.End_Sentence()
                     in_sentence = False
-            elif token.kind == TOK.PUNCTUATION and (token.txt == '.' or token.txt == '?'):
+            elif token.kind == TOK.PUNCTUATION and token.txt in END_OF_SENTENCE:
                 # We may be finishing a sentence with not only a period but also
                 # right parenthesis and quotation marks
                 while next_token.kind == TOK.PUNCTUATION and next_token.txt in SENTENCE_FINISHERS:
@@ -567,7 +625,6 @@ class Bin_DB:
                     # There are additional word meanings in the Meanings dictionary,
                     # coming from the settings file: append them
                     for add_m in Meanings.DICT[w]:
-                        # print("Adding additional meaning: {0}".format(add_m))
                         m.append(BIN_Meaning._make(add_m))
         except (psycopg2.DataError, psycopg2.ProgrammingError) as e:
             print("Word {0} causing DB exception {1}".format(w, e))
@@ -585,7 +642,7 @@ def lookup_abbreviation(w):
 
 
 def lookup_word(db, w, at_sentence_start):
-    """ Lookup simple or compound word in database and return its meanings """
+    """ Lookup a simple or compound word in the database and return its meaning(s) """
 
     # Start with a simple lookup
     m = db.meanings(w)
@@ -612,6 +669,17 @@ def lookup_word(db, w, at_sentence_start):
                 # Remove brackets from known abbreviations
                 w = w[1:-1]
 
+        if not m and ADJECTIVE_TEST in lower_w:
+            # Not found: Check whether this might be an adjective
+            # ending in 'legur'/'leg'/'legt'/'legir'/'legar' etc.
+            for aend, beyging in AdjectiveTemplate.ENDINGS:
+                if lower_w.endswith(aend) and len(lower_w) > len(aend):
+                    prefix = lower_w[0 : len(lower_w) - len(aend)]
+                    # Construct an adjective descriptor
+                    if m is None:
+                        m = []
+                    m.append(BIN_Meaning(prefix + "legur", 0, "lo", "alm", lower_w, beyging))
+
         if not m:
             # Still nothing: check compound words
             cw = Wordbase.dawg().slice_compound_word(lower_w)
@@ -621,9 +689,20 @@ def lookup_word(db, w, at_sentence_start):
                 prefix = "-".join(cw[0:-1])
                 m = db.meanings(cw[-1])
                 m = [ BIN_Meaning(prefix + "-" + r.stofn, r.utg, r.ordfl, r.fl,
-                    prefix + "-" + r.ordmynd, r.beyging)
-                    for r in m]
-    
+                        prefix + "-" + r.ordmynd, r.beyging)
+                        for r in m]
+
+        if not m and lower_w[0] == 'ó':
+            # Check whether an adjective without the 'ó' prefix is found in BÍN
+            # (i.e. create 'óhefðbundinn' from 'hefðbundinn')
+            suffix = lower_w[1:]
+            if suffix:
+                om = db.meanings(suffix)
+                if om:
+                    m = [ BIN_Meaning("ó" + r.stofn, r.utg, r.ordfl, r.fl,
+                            "ó" + r.ordmynd, r.beyging)
+                            for r in om if r.ordfl == "lo" ]
+
     return (w, m)
 
 def annotate(token_stream):
@@ -737,22 +816,6 @@ PERCENTAGES = {
     "prósenta": 1,
     "hundraðshluti": 1,
     "prósentustig": 1
-}
-
-# Recognize month names
-MONTHS = {
-    "janúar": 1,
-    "febrúar": 2,
-    "mars": 3,
-    "apríl": 4,
-    "maí": 5,
-    "júní": 6,
-    "júlí": 7,
-    "ágúst": 8,
-    "september": 9,
-    "október": 10,
-    "nóvember": 11,
-    "desember": 12
 }
 
 # Recognize words for nationalities (used for currencies)
@@ -942,31 +1005,6 @@ def parse_phrases_1(token_stream):
                 """ If the token denotes a fraction, return a corresponding number - or None """
                 return match_stem_list(token, FRACTIONS)
 
-            if token.kind == TOK.WORD:
-                num = number(token)
-                if num is not None:
-                    if num == 1:
-                        # Only replace number 'one' if the next word is also
-                        # a number word
-                        if next_token.kind == TOK.WORD:
-                            if number(next_token) is not None:
-                                token = TOK.Number(token.txt, num, all_cases(token), all_genders(token))
-                            else:
-                                # Check for fractions ('einn þriðji')
-                                frac = fraction(next_token)
-                                if frac is not None:
-                                    # We have a fraction: eat it and return it,
-                                    # but use the case of the first word in the fraction
-                                    token = TOK.Number(token.txt + " " + next_token.txt, frac,
-                                        all_cases(token), all_genders(token))
-                                    next_token = next(token_stream)
-                    elif not any(m.ordfl == "so" for m in token.val):
-                        # Replace number word with number token,
-                        # preserving its case.
-                        # Take care not to convert word forms that could also be verbs,
-                        # such as 'áttu'.
-                        token = TOK.Number(token.txt, num, all_cases(token), all_genders(token))
-
             # Check for [number] 'hundred|thousand|million|billion'
             while token.kind == TOK.NUMBER and next_token.kind == TOK.WORD:
 
@@ -1045,6 +1083,7 @@ def parse_phrases_1(token_stream):
             # Check for composites:
             # 'stjórnskipunar- og eftirlitsnefnd'
             # 'viðskipta- og iðnaðarráðherra'
+            # 'marg-ítrekaðri'
             if token.kind == TOK.WORD and next_token.kind == TOK.PUNCTUATION and \
                 len(next_token.txt) == 1 and next_token.txt in COMPOSITE_HYPHENS:
 
@@ -1171,7 +1210,7 @@ def parse_phrases_2(token_stream):
                         return True
                 return False
 
-            # Check for human names
+            # Check for person names
             def given_names(token):
                 """ Check for Icelandic person name (category 'ism') """
                 if token.kind != TOK.WORD or not token.txt[0].isupper():
@@ -1186,6 +1225,11 @@ def parse_phrases_2(token_stream):
                     # Must be a word starting with an uppercase character
                     return None
                 return stems(token, "föð")
+
+            # Check for unknown surnames
+            def unknown_surname(token):
+                """ Check for unknown (non-Icelandic) surnames """
+                return token.kind == TOK.WORD and token.txt[0].isupper()
 
             def given_names_or_middle_abbrev(token):
                 """ Check for given name or middle abbreviation """
@@ -1259,6 +1303,16 @@ def parse_phrases_2(token_stream):
                 # Must have at least one possible name
                 assert len(gn) >= 1
 
+                # Check whether we have an unknown uppercase word next;
+                # if so, add it to the person names we've already found
+                while unknown_surname(next_token):
+                    for ix, p in enumerate(gn):
+                        gn[ix] = PersonName(name = p.name + " " + next_token.txt, gender = p.gender, case = p.case)
+                    w += " " + next_token.txt
+                    next_token = next(token_stream)
+                    # Assume we now have a patronym
+                    patronym = True
+
                 found_name = False
                 # If we have a full name with patronym, store it
                 if patronym:
@@ -1287,10 +1341,6 @@ def parse_phrases_2(token_stream):
                 # A "weak" name is (1) at the start of a sentence; (2) only one
                 # word; (3) that word has a meaning that is not a name;
                 # (4) the name has not been seen in a full form before.
-
-                #if len(gnames) == 1:
-                #    print("Checking name '{4}': at_sentence_start {0}, patronym {1}, found_name {2}, not_in_category {3}"
-                #        .format(at_sentence_start, patronym, found_name, not_in_category(token, "ism"), w))
 
                 weak = at_sentence_start and (' ' not in w) and not patronym and \
                     not found_name and has_other_meaning(token, "ism")

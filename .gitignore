@@ -30,6 +30,7 @@ static/*.min.js
 txt
 UnknownVerbs.txt
 parse.txt
+input.txt
 
 # Distribution / packaging
 .Python
@@ -51,6 +52,7 @@ log/
 console/
 venv/
 pp/
+p3/
 node_modules/
 cffi_test/
 

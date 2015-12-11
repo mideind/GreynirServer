@@ -160,29 +160,23 @@ def process_url(url):
     return (metadata, tokenize(text))
 
 
-@app.route("/analyze", methods=['POST'])
-def analyze():
-    """ Analyze text from a given URL """
+def profile(func, *args, **kwargs):
+    """ Profile the processing of text or URL """
 
-    url = request.form.get("url", "").strip()
-    use_reducer = not ("noreduce" in request.form)
-    dump_forest = "dump" in request.form
+    import cProfile as profile
+    import pstats
 
-    t0 = time.time()
-    metadata = None
-    single = False
+    filename = 'Reynir.profile'
 
-    if url.startswith("http:") or url.startswith("https:"):
-        # Scrape the URL, tokenize the text content and return the token list
-        metadata, generator = process_url(url)
-        toklist = list(generator)
-    else:
-        # Tokenize the text entered as-is and return the token list
-        # In this case, there's no metadata
-        toklist = list(tokenize(url))
-        single = True
+    pr = profile.Profile()
+    result = pr.runcall(func, *args, **kwargs)
+    pr.dump_stats(filename)
 
-    tok_time = time.time() - t0
+    return result
+
+
+def parse(toklist, single, use_reducer, dump_forest = False):
+    """ Parse the given token list and return a result dict """
 
     # Count sentences
     num_sent = 0
@@ -196,8 +190,6 @@ def analyze():
 
         rdc = Reducer(bp.grammar)
 
-        t0 = time.time()
-
         for ix, t in enumerate(toklist):
             if t[0] == TOK.S_BEGIN:
                 num_sent += 1
@@ -209,6 +201,8 @@ def analyze():
                     # Parse the accumulated sentence
                     err_index = None
                     num = 0 # Number of tree combinations in forest
+                    score = 0 # Reducer score of the best parse tree
+
                     try:
                         # Parse the sentence
                         forest = bp.go(sent)
@@ -227,7 +221,7 @@ def analyze():
 
                         if use_reducer and num > 1:
                             # Reduce the resulting forest
-                            forest = rdc.go(forest)
+                            forest, score = rdc.go(forest)
                             assert Fast_Parser.num_combinations(forest) == 1
                             num = 1
 
@@ -235,8 +229,10 @@ def analyze():
                         forest = None
                         # Obtain the index of the offending token
                         err_index = e.token_index
-                    print("Parsed sentence of length {0} with {1} combinations{2}".format(slen, num,
-                        "\n" + (" ".join(s[1] for s in sent) if num >= 100 else "")))
+
+                    print("Parsed sentence of length {0} with {1} combinations, score {2}{3}"
+                        .format(slen, num, score,
+                            "\n" + (" ".join(s[1] for s in sent) if num >= 100 else "")))
                     if num > 0:
                         num_parsed_sent += 1
                         # Calculate the 'ambiguity factor'
@@ -254,18 +250,50 @@ def analyze():
             else:
                 sent.append(t)
 
-    parse_time = time.time() - t0
-
-    result = dict(
+    return dict(
         tokens = toklist,
-        metadata = metadata,
-        tok_time = tok_time,
         tok_num = len(toklist),
-        parse_time = parse_time,
         num_sent = num_sent,
         num_parsed_sent = num_parsed_sent,
         avg_ambig_factor = (total_ambig / total_tokens) if total_tokens > 0 else 1.0
     )
+
+
+@app.route("/analyze", methods=['POST'])
+def analyze():
+    """ Analyze text from a given URL """
+
+    url = request.form.get("url", "").strip()
+    use_reducer = not ("noreduce" in request.form)
+    dump_forest = "dump" in request.form
+    metadata = None
+    # Single sentence (True) or contiguous text from URL (False)?
+    single = False
+
+    t0 = time.time()
+
+    if url.startswith("http:") or url.startswith("https:"):
+        # Scrape the URL, tokenize the text content and return the token list
+        metadata, generator = process_url(url)
+        toklist = list(generator)
+    else:
+        # Tokenize the text entered as-is and return the token list
+        # In this case, there's no metadata
+        toklist = list(tokenize(url))
+        single = True
+
+    tok_time = time.time() - t0
+
+    t0 = time.time()
+
+    # result = profile(parse, toklist, single, use_reducer, dump_forest)
+    result = parse(toklist, single, use_reducer, dump_forest)
+
+    parse_time = time.time() - t0
+
+    result["metadata"] = metadata
+    result["tok_time"] = tok_time
+    result["parse_time"] = parse_time
 
     # Return the tokens as a JSON structure to the client
     return jsonify(result = result)
@@ -406,6 +434,7 @@ def parse_grid():
 
     # Find the number of parse combinations
     combinations = 0 if forest is None else Fast_Parser.num_combinations(forest)
+    score = 0
 
     # Dump the parse tree to parse.txt
     with open("parse.txt", mode = "w", encoding= "utf-8") as f:
@@ -421,7 +450,7 @@ def parse_grid():
 
     if forest is not None and use_reducer:
         # Reduce the parse forest
-        forest = Reducer(grammar).go(forest)
+        forest, score = Reducer(grammar).go(forest)
 
     # Make the parse grid with all options
     grid, ncols = make_grid(forest) if forest else ([], 0)
@@ -513,8 +542,8 @@ def parse_grid():
     #debug()
 
     return render_template("parsegrid.html", txt = txt, err = err, tbl = tbl,
-        combinations = combinations, choice_list = uc_list,
-        parse_path = parse_path)
+        combinations = combinations, score = score,
+        choice_list = uc_list, parse_path = parse_path)
 
 
 @app.route("/addsentence", methods=['POST'])
@@ -569,19 +598,21 @@ def server_error(e):
     """ Return a custom 500 error """
     return 'Eftirfarandi villa kom upp: {}'.format(e), 500
 
+# Initialize the main module
+
+try:
+    # Read configuration file
+    Settings.read("Reynir.conf")
+except ConfigError as e:
+    print("Configuration error: {0}".format(e))
+    quit()
+
+print("Running Reynir with debug={0}, host={1}, db_hostname={2}"
+    .format(Settings.DEBUG, Settings.HOST, Settings.DB_HOSTNAME))
+
 # Run a default Flask web server for testing if invoked directly as a main program
 
 if __name__ == "__main__":
-
-    try:
-        # Read configuration file
-        Settings.read("Reynir.conf")
-    except ConfigError as e:
-        print("Configuration error: {0}".format(e))
-        quit()
-
-    print("Running Reynir with debug={0}, host={1}, db_hostname={2}"
-        .format(Settings.DEBUG, Settings.HOST, Settings.DB_HOSTNAME))
 
     # Additional files that should cause a reload of the web server application
     # Note: Reynir.grammar is automatically reloaded if its timestamp changes
