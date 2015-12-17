@@ -38,7 +38,8 @@ def lossFun(inputs, targets, hprev):
     for t in range(len(inputs)):
         xs[t] = np.zeros((vocab_size, 1)) # encode in 1-of-k representation
         xs[t][inputs[t]] = 1
-        hs[t] = np.tanh(np.dot(Wxh, xs[t]) + np.dot(Whh, hs[t-1]) + bh) # hidden state
+        # hs[t] = np.tanh(np.dot(Wxh, xs[t]) + np.dot(Whh, hs[t-1]) + bh) # hidden state
+        hs[t] = np.maximum(0, np.dot(Wxh, xs[t]) + np.dot(Whh, hs[t-1]) + bh) # hidden state
         ys[t] = np.dot(Why, hs[t]) + by # unnormalized log probabilities for next chars
         ps[t] = np.exp(ys[t]) / np.sum(np.exp(ys[t])) # probabilities for next chars
         loss += -np.log(ps[t][targets[t], 0]) # softmax (cross-entropy loss)
@@ -52,13 +53,20 @@ def lossFun(inputs, targets, hprev):
         dWhy += np.dot(dy, hs[t].T)
         dby += dy
         dh = np.dot(Why.T, dy) + dhnext # backprop into h
-        dhraw = (1 - hs[t] * hs[t]) * dh # backprop through tanh nonlinearity
+        # hs = features
+        # dh = gradients
+        # dhraw = (1 - hs[t] * hs[t]) * dh # backprop through tanh nonlinearity
+
+        # Backprop through RelU
+        dhraw = hs[t] * dh
+        dhraw[hs[t] <= 0.0] = 0.0 # Zero where the features were <= 0.0
+
         dbh += dhraw
         dWxh += np.dot(dhraw, xs[t].T)
         dWhh += np.dot(dhraw, hs[t-1].T)
         dhnext = np.dot(Whh.T, dhraw)
-    for dparam in [dWxh, dWhh, dWhy, dbh, dby]:
-        np.clip(dparam, -1, 1, out=dparam) # clip to mitigate exploding gradients
+    #for dparam in [dWxh, dWhh, dWhy, dbh, dby]:
+    #    np.clip(dparam, -1, 1, out=dparam) # clip to mitigate exploding gradients
     return loss, dWxh, dWhh, dWhy, dbh, dby, hs[len(inputs)-1]
 
 def sample(h, seed_ix, n):
@@ -70,7 +78,8 @@ def sample(h, seed_ix, n):
     x[seed_ix] = 1
     ixes = []
     for t in range(n):
-        h = np.tanh(np.dot(Wxh, x) + np.dot(Whh, h) + bh)
+        # h = np.tanh(np.dot(Wxh, x) + np.dot(Whh, h) + bh)
+        h = np.maximum(0, np.dot(Wxh, x) + np.dot(Whh, h) + bh)
         y = np.dot(Why, h) + by
         p = np.exp(y) / np.sum(np.exp(y))
         ix = np.random.choice(range(vocab_size), p=p.ravel())
@@ -83,6 +92,7 @@ n, p = 0, 0
 mWxh, mWhh, mWhy = np.zeros_like(Wxh), np.zeros_like(Whh), np.zeros_like(Why)
 mbh, mby = np.zeros_like(bh), np.zeros_like(by) # memory variables for Adagrad
 smooth_loss = -np.log(1.0/vocab_size)*seq_length # loss at iteration 0
+epoch = 0
 
 while True:
 
@@ -90,6 +100,8 @@ while True:
     if p + seq_length + 1 >= len(data) or n == 0: 
         hprev = np.zeros((hidden_size, 1)) # reset RNN memory
         p = 0 # go from start of data
+        print(u'\n\n*** EPOCH {0} ***\n\n'.format(epoch))
+        epoch += 1
     inputs = [char_to_ix[ch] for ch in data[p : p + seq_length]]
     targets = [char_to_ix[ch] for ch in data[p + 1 : p + seq_length + 1]]
 

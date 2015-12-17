@@ -213,8 +213,8 @@ class Node:
         if lb.iNt < 0:
             # Nonterminal node, completed or not
             self._nonterminal = grammar.lookup(lb.iNt)
-            assert isinstance(self._nonterminal, Nonterminal), \
-                "nonterminal {0} is a {1}, i.e. {2}".format(lb.iNt, type(self._nonterminal), self._nonterminal)
+            #assert isinstance(self._nonterminal, Nonterminal), \
+            #    "nonterminal {0} is a {1}, i.e. {2}".format(lb.iNt, type(self._nonterminal), self._nonterminal)
             self._completed = (lb.pProd == ffi.NULL) or lb.nDot >= lb.pProd.n
             self._terminal = None
             self._token = None
@@ -225,8 +225,8 @@ class Node:
             assert parent != ffi.NULL
             tix = parent.pList[index + parent.n] if index < 0 else parent.pList[index]
             self._terminal = grammar.lookup(tix)
-            assert isinstance(self._terminal, Terminal), \
-                "index is {0}, parent.n is {1}, tix is {2}, production {3}".format(index, parent.n, tix, grammar.productions_by_ix[parent.nId])
+            #assert isinstance(self._terminal, Terminal), \
+            #    "index is {0}, parent.n is {1}, tix is {2}, production {3}".format(index, parent.n, tix, grammar.productions_by_ix[parent.nId])
             self._token = tokens[lb.iNt]
             self._nonterminal = None
             self._completed = True
@@ -332,7 +332,7 @@ class Node:
         """ Enumerate families of children """
         if self._families:
             for prod, children in self._families:
-                yield (prod, children) # May be a tuple
+                yield (prod, children)
 
     def reduce_to(self, child_ix):
         """ Eliminate all child families except the given one """
@@ -639,5 +639,51 @@ class ParseForestPrinter(ParseForestNavigator):
     def print_forest(cls, root_node, detailed = False, file = None):
         """ Print a parse forest to the given file, or stdout if none """
         cls(detailed, file).go(root_node)
+
+
+class ParseForestDumper(ParseForestNavigator):
+
+    """ Dump a parse forest into a string """
+
+    VERSION = "Reynir/1.00"
+
+    def __init__(self):
+        super().__init__(visit_all = True) # Visit all nodes
+        self._result = ["R1"] # Start indicator and version number
+
+    def _visit_epsilon(self, level):
+        # Identify this as an epsilon (null) node
+        self._result.append("E{0}".format(level))
+        return None
+
+    def _visit_token(self, level, w):
+        # Identify this as a terminal/token
+        self._result.append("T{0} {1} {2}".format(level, w.terminal, w.token))
+        return None
+
+    def _visit_nonterminal(self, level, w):
+        # Interior nodes are not dumped
+        # and do not increment the indentation level
+        if not w.is_interior:
+            n = w.nonterminal.name
+            if (n.endswith("?") or n.endswith("*")) and w.is_empty:
+                # Skip printing optional nodes that don't contain anything
+                return NotImplemented # Don't visit child nodes
+            # Identify this as a nonterminal
+            self._result.append("N{0} {1}".format(level, n))
+        return None # No results required, but visit children
+
+    def _visit_family(self, results, level, w, ix, prod):
+        if w.is_ambiguous:
+            # Identify this as an option
+            self._result.append("O{0} {1}".format(level, ix))
+
+    @classmethod
+    def dump_forest(cls, root_node):
+        """ Print a parse forest to the given file, or stdout if none """
+        dumper = cls()
+        dumper.go(root_node)
+        dumper._result.append("Q0") # End marker
+        return "\n".join(dumper._result)
 
 

@@ -101,7 +101,7 @@ def parse_tokens(toklist, mim_tags, fast_p):
 
                     if num > 1:
                         # Reduce the resulting forest
-                        forest, _ = rdc.go(forest)
+                        forest = rdc.go(forest)
 
                 except ParseError as e:
                     forest = None

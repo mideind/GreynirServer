@@ -38,6 +38,7 @@ from urllib.error import HTTPError
 
 from contextlib import closing
 from datetime import datetime
+from collections import OrderedDict
 
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
@@ -51,7 +52,7 @@ from bs4 import BeautifulSoup, NavigableString
 from tokenizer import TOK, tokenize
 from parser import ParseError
 from reducer import Reducer
-from fastparser import Fast_Parser
+from fastparser import Fast_Parser, ParseForestDumper
 from settings import Settings, ConfigError, UnknownVerbs
 
 # Create the SQLAlchemy ORM Base class
@@ -527,6 +528,10 @@ class Scraper:
             total_ambig = 0.0
             total_tokens = 0
 
+            # Dict of parse trees in string dump format,
+            # stored by sentence index (1-based)
+            trees = OrderedDict()
+
             t0 = time.time()
             bp = Scraper._parser
 
@@ -544,18 +549,19 @@ class Scraper:
                         slen = len(sent)
                         # Parse the accumulated sentence
                         err_index = None
+                        num = 0
                         try:
                             # Parse the sentence
                             forest = bp.go(sent)
-                            # Reduce the resulting forest
-                            forest, score = rdc.go(forest)
+                            if forest is not None:
+                                num = Fast_Parser.num_combinations(forest)
+                                if num > 0:
+                                    # Reduce the resulting forest
+                                    forest = rdc.go(forest)
                         except ParseError as e:
                             forest = None
                             # Obtain the index of the offending token
                             err_index = e.token_index
-                        num = 0 if forest is None else Fast_Parser.num_combinations(forest)
-                        #print("Parsed sentence of length {0} with {1} combinations{2}".format(slen, num,
-                        #    "\n" + " ".join(s[1] for s in sent) if num >= 100 else ""))
                         if num > 0:
                             num_parsed_sent += 1
                             # Calculate the 'ambiguity factor'
@@ -563,11 +569,8 @@ class Scraper:
                             # Do a weighted average on sentence length
                             total_ambig += ambig_factor * slen
                             total_tokens += slen
-                        # Mark the sentence beginning with the number of parses
-                        # and the index of the offending token, if an error occurred
-                        #toklist[sent_begin] = TOK.Begin_Sentence(num_parses = num, err_index = err_index)
-
-                        # !!! Accumulate the parse result
+                            # Obtain a text representation of the parse tree
+                            trees[num_sent] = ParseForestDumper.dump_forest(forest)
 
                     elif t[0] == TOK.P_BEGIN:
                         pass
@@ -583,6 +586,9 @@ class Scraper:
             article.num_sentences = num_sent
             article.num_parsed = num_parsed_sent
             article.ambiguity = (total_ambig / total_tokens) if total_tokens > 0 else 1.0
+
+            # Create a tree representation string out of all the accumulated parse trees
+            article.tree = "".join("S{0}\n{1}\n".format(key, val) for key, val in trees.items())
 
             session.commit()
 
@@ -674,7 +680,6 @@ class Scraper:
         """ Run a scraping pass from all roots in the scraping database """
 
         db = Scraper._db
-        parser = Scraper._parser
 
         # Go through the roots and scrape them, inserting into the articles table
         with closing(db.session) as session:
@@ -708,7 +713,7 @@ class Scraper:
                 """ Go through any unparsed articles and parse them """
                 count = 0
                 for a in session.query(Article) \
-                    .filter(Article.scraped != None).filter(Article.parsed == None) \
+                    .filter(Article.scraped != None).filter(Article.tree == None) \
                     .filter(Article.root_id != None):
                     yield ArticleDescr(a.root, a.url)
                     count += 1
@@ -740,13 +745,13 @@ class Scraper:
 
         num_scraped = result[0]
 
-        q = "select count(*) from articles where parsed is not null;"
+        q = "select count(*) from articles where tree is not null;"
 
         result = db.execute(q).fetchall()[0]
 
         num_parsed = result[0]
         
-        q = "select count(*) from articles where parsed is not null and num_sentences > 1;"
+        q = "select count(*) from articles where tree is not null and num_sentences > 1;"
 
         result = db.execute(q).fetchall()[0]
 
@@ -756,7 +761,7 @@ class Scraper:
             .format(num_articles, num_scraped, num_parsed, num_parsed_over_1))
 
         q = "select sum(num_sentences) as sent, sum(num_parsed) as parsed " \
-            "from articles where parsed is not null and num_sentences > 1;"
+            "from articles where tree is not null and num_sentences > 1;"
 
         result = db.execute(q).fetchall()[0]
 

@@ -33,7 +33,7 @@ from settings import Settings, ConfigError
 from tokenizer import tokenize, StaticPhrases, Abbreviations, TOK
 from grammar import Nonterminal
 from parser import ParseError
-from fastparser import Fast_Parser, ParseForestNavigator, ParseForestPrinter
+from fastparser import Fast_Parser, ParseForestNavigator, ParseForestPrinter, ParseForestDumper
 from reducer import Reducer
 from scraper import Scraper
 from ptest import run_test, Test_DB
@@ -221,8 +221,11 @@ def parse(toklist, single, use_reducer, dump_forest = False):
 
                         if use_reducer and num > 1:
                             # Reduce the resulting forest
-                            forest, score = rdc.go(forest)
+                            forest, score = rdc.go_with_score(forest)
                             assert Fast_Parser.num_combinations(forest) == 1
+
+                            print(ParseForestDumper.dump_forest(forest)) # !!! DEBUG
+
                             num = 1
 
                     except ParseError as e:
@@ -450,7 +453,8 @@ def parse_grid():
 
     if forest is not None and use_reducer:
         # Reduce the parse forest
-        forest, score = Reducer(grammar).go(forest)
+        forest, score = Reducer(grammar).go_with_score(forest)
+        print(ParseForestDumper.dump_forest(forest)) # !!! DEBUG
 
     # Make the parse grid with all options
     grid, ncols = make_grid(forest) if forest else ([], 0)
