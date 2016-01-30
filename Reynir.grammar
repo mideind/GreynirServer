@@ -108,8 +108,8 @@ LokatáknEðaKomma → Lokatákn | ','
 
 Fyrirsögn →
     # Nafnliður í nefnifalli
-    Nl_nf Atviksliður? Eignun? '.'?
-    | SetningÁnF
+    Nl_nf Atviksliður? Eignun? Lokatákn?
+    | SetningÁnF Lokatákn?
 
 Eignun →
     # Mynd: Jón Stefánsson
@@ -130,7 +130,7 @@ SpurnarorðAtv →
 
 StLiður →
     # Samtengingar yfirsetninga
-    ','? Samtenging HreinYfirsetning
+    Tengimerki? Samtenging HreinYfirsetning
     | Tengimerki Yfirsetning
     # 'Það eru bara tveir kostir í boði: Selja bankann eða láta hann fara í þrot'
     | ':' SagnRuna
@@ -1726,7 +1726,12 @@ Fyrirbæri/fall/kyn →
     | no_gr_et/fall/kyn Nl/fall    # (Ég hef áhuga á) hugtakinu 'þjóðmenningu'
 
 Fyrirbæri/aukafall/kyn →
+    FyrirbæriMeðGreini/aukafall/kyn
+
+FyrirbæriMeðGreini/aukafall/kyn →
     no_gr_et/aukafall/kyn Nl_nf    # (Ég hef áhuga á) hugtakinu 'þjóðmenning'
+
+$score(-4) FyrirbæriMeðGreini/aukafall/kyn
 
 # [stórvesírinn] Davíð Oddsson [, seðlabankastjóra]
 Manneskja/fall/kyn → no_et/fall? person/fall/kyn Titill/fall?
@@ -1889,9 +1894,9 @@ NlEind_et_p3_ef_hk →
     FsRuna? LoLiður_nf/tala/kyn VeraVerða_vh/tala/pers
 
 NlSkýring/tala/pers/fall/kyn →
-    '(' SvigaInnihald/tala/pers/fall/kyn ')'
-    | '[' SvigaInnihald/tala/pers/fall/kyn ']'
-    | '-' SvigaInnihald/tala/pers/fall/kyn '-'
+    '(' SvigaForskeyti? SvigaInnihald/tala/pers/fall/kyn ')'
+    | '[' SvigaForskeyti? SvigaInnihald/tala/pers/fall/kyn ']'
+    | '-' SvigaForskeyti? SvigaInnihald/tala/pers/fall/kyn '-'
     | ',' SvigaInnihald/tala/pers/fall/kyn ','
 
 # Gefa aukastig fyrir skýringar á nafnliðum
@@ -1902,6 +1907,10 @@ SvigaInnihald/tala/pers/fall/kyn →
     > Nl/fall/tala      # 'Ég spurði forsætisráðherra, Sigmund Davíð, um málið'
     > Nl                # Ef ekki finnst sama fall og tala, prófa almennan nafnlið
     > HreinYfirsetning
+
+SvigaForskeyti →
+    "dæmi" ':'    # Ráðamenn (dæmi: forsetinn) hafa tjáð sig fjálglega
+    | "les" ':'   # Hann sagði að óþjóðalýður (les: kommúnistar) hefði ráðist á húsið
 
 # Runur nafnliða
 
@@ -2121,6 +2130,8 @@ FsMeðFallstjórn →
     | "þrátt" "fyrir" Nl_þf
     | "þegar" "kemur" "að" Nl_þgf
     | "um" 'það'_þf_et? FsSamtenging HreinYfirsetning # 'um [það] hvort Brandur sé fallegastur'
+
+    | '(' FsMeðFallstjórn ')'
 
 FsSamtenging →
     SpurnarSamtenging

@@ -41,12 +41,12 @@ class Reducer:
     def __init__(self, grammar):
         self._grammar = grammar
 
-    def go(self, forest):
+    def go_with_score(self, forest):
 
         """ Returns the argument forest after pruning it down to a single tree """
 
         if forest is None:
-            return None
+            return (None, 0)
         w = forest
 
         # First pass: for each token, find the possible terminals that
@@ -71,6 +71,7 @@ class Reducer:
                 same_first = len(set(x.first for x in s)) == 1
                 txt = tokens[i].lower
                 # No need to check preferences if the first parts of all possible terminals are equal
+                # Look up the preference ordering from Reynir.conf, if any
                 prefs = None if same_first else Preferences.get(txt)
                 found_pref = False
                 sc = scores[i]
@@ -88,9 +89,9 @@ class Reducer:
                                             sc[wt] -= 2
                                             sc[bt] += 4
                                         found_pref = True
-                if not same_first and not found_pref:
-                    # Only display cases where there might be a missing pref
-                    print("Token '{0}' has {1} possible terminal matches: {2}".format(txt, len(s), s))
+                #if not same_first and not found_pref:
+                #    # Only display cases where there might be a missing pref
+                #    print("Token '{0}' has {1} possible terminal matches: {2}".format(txt, len(s), s))
 
                 # Apply heuristics to each terminal that potentially matches this token
                 for t in s:
@@ -182,6 +183,11 @@ class Reducer:
         score = self._reduce(w, scores)
 
         return (w, score)
+
+    def go(self, forest):
+        """ Return only the reduced forest, without its score """
+        w, _ = self.go_with_score(forest)
+        return w
 
     def _find_options(self, w, finals, tokens):
         """ Find token-terminal match options in a parse forest with a root in w """

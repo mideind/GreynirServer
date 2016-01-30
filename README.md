@@ -98,6 +98,8 @@ fails, it identifies the token at which no parse was available.
 
 ## Copyright and licensing
 
-At this stage the Reynir source code and associated files are
-*copyright (C) 2015 by Vilhjalmur Thorsteinsson*, all rights reserved.
-Please contact the author for further information.
+The Reynir source code and associated files are
+*copyright (C) 2015 by Vilhjálmur Þorsteinsson*,
+all rights reserved.
+
+Please contact the author via GitHub for further information.

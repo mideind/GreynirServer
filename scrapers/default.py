@@ -135,6 +135,13 @@ class ScrapeHelper:
             return None
 
     @staticmethod
+    def tag_class(soup, tag, cls):
+        """ Find a tag of a given type with a particular class """
+        if not soup:
+            return None
+        return soup.find(lambda t: ScrapeHelper.general_filter(t, tag, "class", cls))
+
+    @staticmethod
     def div_class(soup, *argv):
         """ Find a div with a particular class/set of classes within the
             HTML soup, recursively within its parent if more than one
@@ -339,6 +346,50 @@ class EyjanScraper(ScrapeHelper):
 
     def __init(self, root):
         super().__init__(root)
+
+    def get_metadata(self, soup):
+        """ Analyze the article soup and return metadata """
+        # Extract the heading from the OpenGraph (Facebook) og:title meta property
+        heading = ScrapeHelper.meta_property(soup, "og:title") or ""
+        # Extract the publication time from the <span class='date'></span> contents
+        dateline = ScrapeHelper.div_class(soup, "article-full")
+        dateline = ScrapeHelper.tag_class(dateline, "span", "date")
+        dateline = ''.join(dateline.stripped_strings).split() if dateline else None
+        timestamp = None
+        if dateline:
+            # Example: Þriðjudagur 15.12.2015 - 14:14
+            try:
+                date = [ int(x) for x in dateline[1].split('.') ]
+                time = [ int(x) for x in dateline[3].split(':') ]
+                timestamp = datetime(year = date[2], month = date[1], day = date[0],
+                    hour = time[0], minute = time[1])
+            except Exception as e:
+                print("Exception when obtaining date of eyjan.is article: {0}".format(e))
+                timestamp = None
+        if timestamp is None:
+            timestamp = datetime.utcnow()
+        # Extract the author name
+        author = "Ritstjórn eyjan.is"
+        return Metadata(heading = heading, author = author,
+            timestamp = timestamp, authority = self.authority)
+
+    def _get_content(self, soup_body):
+        """ Find the article content (main text) in the soup """
+        # Delete div.container-fluid tags from the content
+        article = ScrapeHelper.div_class(soup_body, "article-full")
+        # Remove the dateline from the content
+        soup = ScrapeHelper.tag_class(article, "span", "date")
+        if soup is not None:
+            soup.decompose()
+        # Remove the heading
+        soup = ScrapeHelper.tag_class(article, "h2", "headline_article")
+        if soup is not None:
+            soup.decompose()
+        # Remove picture caption, if any
+        soup = ScrapeHelper.div_class(article, "wp-caption")
+        if soup is not None:
+            soup.decompose()
+        return article
 
 
 class StjornlagaradScraper(ScrapeHelper):

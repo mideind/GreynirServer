@@ -118,4 +118,3 @@ while True:
 
     p += seq_length # move data pointer
     n += 1 # iteration counter 
-
