@@ -27,6 +27,7 @@ static/*.min.js
 *.sublime-workspace
 *.bak
 *.profile
+*.log
 txt
 UnknownVerbs.txt
 parse.txt
@@ -60,9 +61,6 @@ cffi_test/
 pip-log.txt
 pip-delete-this-directory.txt
 deploy_done.py
-
-# Secret session key
-resources/secret_key.bin
 
 # Windows image file caches
 Thumbs.db

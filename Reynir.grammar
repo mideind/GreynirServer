@@ -2049,10 +2049,17 @@ LoViðhengi →
 # '(Stjórnmálamaður) tengdur Framsóknarflokknum (hringdi í mig)'
 # '(Ég ræddi við) konu tengda verkefninu'
 LoEftirNl/tala/fall/kyn →
-    ','? LoLiður/tala/fall/kyn
+    ',' LoLiður/tala/fall/kyn
+    | StaktLoEftirNl/tala/fall/kyn
     | ',' LoLiður/tala/fall/kyn FsAtv? ','
     | AtviksliðurEinkunn* LoEftirNlMeðÞgf/fall/tala/kyn Nl_þgf
     | ',' AtviksliðurEinkunn* LoEftirNlMeðÞgf/fall/tala/kyn Nl_þgf LokatáknEðaKomma
+
+StaktLoEftirNl/tala/fall/kyn →
+    LoLiður/tala/fall/kyn
+
+# Stakt lýsingarorð eftir nafnorði gæti líklega tilheyrt næsta nafnorði
+$score(-2) StaktLoEftirNl/tala/fall/kyn
 
 # 'tengdur Framsóknarflokknum'
 LoEftirNlMeðÞgf/fall/tala/kyn →
@@ -2260,6 +2267,9 @@ TímaAð →
 TímabilsEinkunn/fall/tala/kyn →
     fn/fall/tala/kyn          # alla/suma/nokkra
     | Töluorð/fall/tala/kyn   # fjóra/4
+
+TímabilsEinkunn_þf/tala/kyn →
+    'næstur'/tala/kyn            # næsta vetur, næstu daga
 
 Tímabil/fall/kyn/tala → Tímabil/kyn/fall/tala
 
