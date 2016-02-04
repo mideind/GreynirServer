@@ -3,10 +3,6 @@
 
     Settings module
 
-    Author: Vilhjalmur Thorsteinsson
-
-    This software is at a very early development stage.
-    While that is the case, it is:
     Copyright (c) 2015 Vilhjalmur Thorsteinsson
     All rights reserved
     See the accompanying README.md file for further licensing and copyright information.
@@ -354,13 +350,13 @@ class Preferences:
     DICT = defaultdict(list)
 
     @staticmethod
-    def add (word, worse, better):
+    def add (word, worse, better, factor):
         """ Add a preference to the dictionary. Called from the config file handler. """
-        Preferences.DICT[word].append((worse, better))
+        Preferences.DICT[word].append((worse, better, factor))
 
     @staticmethod
     def get(word):
-        """ Return a list of (worse, better) tuples for the given word """
+        """ Return a list of (worse, better, factor) tuples for the given word """
         return Preferences.DICT.get(word, None)
 
 
@@ -504,7 +500,13 @@ class Settings:
     def _handle_preferences(s):
         """ Handle ambiguity preference hints in the settings section """
         # Format: word worse1 worse2... < better
-        a = s.lower().split("<", maxsplit = 1)
+        # If two less-than signs are used, the preference is even stronger (doubled)
+        factor = 2
+        a = s.lower().split("<<", maxsplit = 1)
+        if len(a) != 2:
+            # Not doubled preference: try a normal one
+            a = s.lower().split("<", maxsplit = 1)
+            factor = 1
         if len(a) != 2:
             raise ConfigError("Ambiguity preference missing less-than sign '<'")
         w = a[0].split()
@@ -513,7 +515,7 @@ class Settings:
         b = a[1].split()
         if len(b) < 1:
             raise ConfigError("Ambiguity preference must have at least one 'better' category")
-        Preferences.add(w[0], w[1:], b)
+        Preferences.add(w[0], w[1:], b, factor)
 
     @staticmethod
     def _handle_ambiguous_phrases(s):

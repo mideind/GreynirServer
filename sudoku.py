@@ -1,21 +1,29 @@
 """
 
-Sudoku.py
+    Sudoku.py
 
-Sudoku puzzle solver
+    Sudoku puzzle solver
 
-Copyright (C) 2016 Vilhjalmur Thorsteinsson
+    Copyright (C) 2016 Vilhjalmur Thorsteinsson
+
+    This program is able to solve large (for instance 25x25) Sudoku puzzles
+    in a reasonable amount of time.
+
+    Standard-size (9x9) puzzles are typically solved in 0.01-0.10 seconds.
+
+    The algorithm uses preemptive sets to simplify puzzles as far as possible
+    before resorting to iteration through possible digits. See J.F. Crook:
+    "A Pencil-and-Paper Algorithm for Solving Sudoku Puzzles",
+    Notices of the AMS, Vol. 56 number 4, pg. 460
+    (http://www.ams.org/notices/200904/tx090400460p.pdf)
 
 """
 
 
 import time
-from itertools import permutations
+from itertools import permutations, chain, combinations
 from collections import deque, defaultdict
 
-class Conflict(Exception):
-
-    pass
 
 class Puzzle:
 
@@ -32,6 +40,11 @@ class Puzzle:
     _STATUS_INTERVAL = 500
 
     
+    class Conflict(Exception):
+
+        pass
+
+
     class Axis:
 
         """ Abstract class for the three exclusive axes of a
@@ -69,6 +82,7 @@ class Puzzle:
 
             puzzle = self._puzzle
             SIZE = puzzle.size
+            improved = False
 
             # Loop through each component of the axis (each row, column, subsquare)
             for index in range(SIZE):
@@ -81,36 +95,42 @@ class Puzzle:
                     if d is None:
                         # Empty square
                         poss = puzzle._poss[row][col]
+                        possible |= poss
                         lp = len(poss)
                         if lp >= 2:
                             # Store the coordinate by possibility set by cardinality
-                            poss_dict[lp][frozenset(poss)].add((row, col))
-                        possible |= poss
+                            fp = frozenset(poss)
+                            poss_dict[lp][fp].add((row, col))
                     else:
                         possible.add(d)
 
                 if len(possible) < SIZE:
                     # Not all digits are possible: cop out
-                    raise Conflict()
+                    raise Puzzle.Conflict("Not all digits possible in {0} {1}: possible set is {2}"
+                        .format(self, index, possible))
 
                 # Now, for each cardinality, check whether we have the
                 # same number of squares with an identical possibility set
                 # (for example, do we have two squares with the set {2, 5},
                 # or three with {1, 7, 8}?)
-                # Proceed in order of increasing cardinality
-                pd = sorted(poss_dict.items(), key = lambda x: x[0])
-                for card, sets in pd:
+                for card, sets in poss_dict.items():
                     for s, rcset in sets.items():
-                        # Add any lower-cardinality sets to this one if
-                        # they are contained within this one
-                        #for c in range(2, card):
-                        #    for c_s, c_rcset in poss_dict[c].items():
-                        #        if s >= c_s:
-                        #            rcset |= c_rcset
-                        if len(rcset) > card:
+                        lrc = len(rcset)
+                        if False: # lrc > 2:
+                            # For cardinality 3 or above, include any proper subsets
+                            rcset = set(rcset)
+                            for subcard in range(2, lrc):
+                                if subcard in poss_dict:
+                                    for subs, subrc in poss_dict[subcard].items():
+                                        if s > subs:
+                                            # Proper subset: add this set of squares
+                                            rcset |= subrc
+                            lrc = len(rcset)
+                        if lrc > card:
                             # More squares than there are digits to fill'em with
-                            raise Conflict()
-                        if len(rcset) == card:
+                            raise Puzzle.Conflict("More squares ({0}) than digits to fill ({1}) in {2} {3}"
+                                .format(lrc, card, self, index))
+                        if lrc == card:
                             # Exactly as many digits as we need to
                             # fill the squares: eliminate the possibility
                             # of these digits from other squares
@@ -122,9 +142,15 @@ class Puzzle:
                                         poss -= s
                                         if not poss:
                                             # All possibilities gone
-                                            raise Conflict()
+                                            raise Puzzle.Conflict("All possibilities gone in {0} {1}"
+                                                .format(self, index))
                                         if len(poss) == 1:
                                             singles.append((row, col, None))
+                                        improved = True
+
+            # If we return True, the possibility set has been reduced (improved),
+            # so we might gain from another pass through the axes
+            return improved
 
         def find_singles(self, singles):
             """ Check for digits that only occur in one possibility set along the axis """
@@ -404,19 +430,20 @@ class Puzzle:
     def _simplify(self):
         """ Simplify the puzzle by finding the set of possible digits
             for each empty square and fixing the ones that have
-            only one place to be. Returns None if the puzzle is
-            not consistent, True if it has been solved, or False otherwise. """
+            only one place to be. Returns True if the puzzle is
+            solved during simplification, or False if not. Raises
+            Puzzle.Conflict if a conflict is found. """
 
         def eliminate_singles(singles):
             """ Fill squares that have only one possible digit """
             fixed = False
             for row, col, d in singles:
-                if self._poss[row][col] is not None:
-                    possible = tuple(self._poss[row][col])
-                    # assert (len(possible) == 1) or (d is not None and d in possible)
-                    if not self._try_add(row, col, d or possible[0]):
+                poss = self._poss[row][col]
+                if poss is not None:
+                    if not self._try_add(row, col, d or next(iter(poss))):
                         # Conflict between the singles: no solution
-                        raise Conflict
+                        raise Puzzle.Conflict("Singles conflict in row {0} col {1} when adding digit {2}"
+                            .format(row, col, d))
                     self._poss[row][col] = None # No need to keep this
                     # Since we now have at least one new fixed digit,
                     # do another loop of simplification
@@ -442,7 +469,8 @@ class Puzzle:
                         lp = len(possible)
                         if lp == 0:
                             # Something wrong here: not consistent
-                            raise Conflict
+                            raise Puzzle.Conflict("Empty possibility set in row {0} col {1}"
+                                .format(row, col))
                         self._poss[row][col] = possible
                         if lp == 1:
                             # Only one possibility in this square: mark it
@@ -453,8 +481,16 @@ class Puzzle:
             if not solved and not fixed:
                 # Further checks on the possibility sets within each axis
                 singles = []
-                for axis in self._axes:
-                    axis.simplify(singles)
+                improved = True
+                while improved:
+                    improved = False
+                    for axis in self._axes:
+                        improved |= axis.simplify(singles)
+                    if singles:
+                        # We have discovered new singletons: break out of the loop
+                        break
+                    # Otherwise, continue while we are still reducing the
+                    # possibility sets (improved = True)
                 if not singles:
                     # The possibility sets have been reduced as far as possble:
                     # check for singles, i.e. digits that occur in only one
@@ -468,14 +504,16 @@ class Puzzle:
     def _solve(self, depth):
         """ Attempt to solve a puzzle """
 
-        # Start by simplifying the puzzle as far as possible
         state = self._state()
 
         try:
 
+            # Start by simplifying the puzzle as far as possible
             if self._simplify():
                 # Solved
                 return True
+
+            # Simplification is not enough; must resort to iteration
 
             # Find the axis with the fewest remaining unfilled squares
 
@@ -511,13 +549,14 @@ class Puzzle:
                     if self._solve(depth + 1):
                         # Solution found
                         return True
-                except Conflict:
+                except Puzzle.Conflict:
                     pass
                 # This doesn't work: take back the last added digit and
                 # try the next possibility, if any
                 self._pop()
 
-        except Conflict:
+        except Puzzle.Conflict as c:
+            # print("Conflict in solve() at depth {0}:\nException {1}".format(depth, c))
             pass
 
         # If not solved, go back to the original state
@@ -633,11 +672,6 @@ def test():
         '.....6....59.....82....8....45........3........6..3.54...325..6..................'
     )
 
-    # The puzzle below seems to have no solution
-    #do_puzzle(dimension = 3, content =
-    #    '.....5.8....6.1.43..........1.5........1.6...3.......553.....61........4.........'
-    #)
-
     # Mepham 'diabolical'
     do_puzzle(dimension = 3, content =
         " 9 7  86 "
@@ -664,7 +698,20 @@ def test():
         "     1  8"
     )
 
-    #_ = """
+    # Snyder 2007
+    do_puzzle(dimension = 3, content =
+        " 5  2  3 "
+        "2    17 8"
+        "4 76     "
+        "     5   "
+        "52     47"
+        "   7     "
+        "     35 4"
+        "3 65    1"
+        " 9  7  6 "
+    )
+
+    _ = """
 
     do_puzzle(dimension = 5, content =
         "R   I  EDCM  AH  NX    W "
@@ -693,7 +740,8 @@ def test():
         "      I NLAQYVB  R T  CD "
         "  M O   EQT   WK  N FG P "
     )
-    #"""
+
+    """
 
     print("Total time: {0:.2f} seconds".format(Timer.total_time))
 

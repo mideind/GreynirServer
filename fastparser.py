@@ -3,10 +3,6 @@
 
     Python wrapper for C++ Earley/Scott parser
 
-    Author: Vilhjalmur Thorsteinsson
-
-    This software is at a very early development stage.
-    While that is the case, it is:
     Copyright (c) 2015 Vilhjalmur Thorsteinsson
     All rights reserved
 
@@ -363,7 +359,7 @@ class Node:
         return str(self._nonterminal or self._token)
 
 
-class ParseForestNavigator(object):
+class ParseForestNavigator:
 
     """ Base class for navigating parse forests. Override the underscored
         methods to perform actions at the corresponding points of navigation. """

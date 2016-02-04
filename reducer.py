@@ -3,10 +3,6 @@
 
     Reducer module
 
-    Author: Vilhjalmur Thorsteinsson
-
-    This software is at a very early development stage.
-    While that is the case, it is:
     Copyright (c) 2015 Vilhjalmur Thorsteinsson
     All rights reserved
 
@@ -76,18 +72,18 @@ class Reducer:
                 found_pref = False
                 sc = scores[i]
                 if prefs:
-                    for worse, better in prefs:
+                    for worse, better, factor in prefs:
                         for wt in s:
                             if wt.first in worse:
                                 for bt in s:
                                     if wt is not bt and bt.first in better:
                                         if bt.name[0] in "\"'":
                                             # Literal terminal: be even more aggressive in promoting it
-                                            sc[wt] -= 2
-                                            sc[bt] += 6
+                                            sc[wt] -= 2 * factor
+                                            sc[bt] += 6 * factor
                                         else:
-                                            sc[wt] -= 2
-                                            sc[bt] += 4
+                                            sc[wt] -= 2 * factor
+                                            sc[bt] += 4 * factor
                                         found_pref = True
                 #if not same_first and not found_pref:
                 #    # Only display cases where there might be a missing pref

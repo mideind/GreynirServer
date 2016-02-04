@@ -3,12 +3,15 @@
 
     Parser module
 
-    Author: Vilhjalmur Thorsteinsson
-
-    This software is at a very early development stage.
-    While that is the case, it is:
     Copyright (c) 2015 Vilhjalmur Thorsteinsson
     All rights reserved
+
+    ***
+
+    NOTE: A faster version of the Earley parser, written in C++,
+    is available in fastparser.py/eparser.cpp.
+
+    ***
 
     This module uses an Earley-Scott parser to transform token sequences
     (sentences) into forests of parse trees, with each tree representing a
@@ -488,6 +491,13 @@ class Parser:
 
             Comments refer to the EARLEY_PARSER pseudocode given in the
             Scott/Johnstone paper, cf. the reference at the top of this module.
+
+            ***
+
+            NOTE that this function is overridden in fastparser.py. It is no longer
+            used for parsing within Reynir.
+
+            ***
 
         """
 

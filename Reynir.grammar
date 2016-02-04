@@ -153,7 +153,7 @@ Samtenging →
     | "það" "er" | 'það_er'
     | "áður" "en" "að"?
     | "fyrr" "en" "að"?
-    | "á_meðan" "að"?
+    | 'á_meðan' "að"?
     | "þangað" "til" "að"?
     | "þar" "á" "meðal" | 'þar_á_meðal'
     | SpurnarSamtenging
@@ -265,7 +265,14 @@ SagnHluti/tala/pers/kyn →
 FrumlagsInnskot/tala/pers/kyn →
     ',' SetningÁnF/tala/pers/kyn ','
     | ',' Samtenging HreinYfirsetning ','  # Lögheimili á Íslandi, þegar kosning fer fram, er skilyrði
+    | InnskotsSamtenging HreinYfirsetning # Lögheimili á Íslandi þegar kosning fer fram er skilyrði
     | FrumlagsSkýring # Tálmanir, til dæmis ritskoðun, má aldrei í lög leiða
+
+# Þröngt mengi samtenginga sem nota má án kommu í frumlagsinnskoti
+# (sé mengið of vítt eykst margræðni verulega)
+InnskotsSamtenging →
+    "þegar"
+    | "meðan" | 'á_meðan'
 
 FrumlagsSkýring →
     ',' Skýring Skýringarliður ','
@@ -304,7 +311,7 @@ Setning/tala/pers/kyn →
     # 'Ég bara spyr'
     # 'Allir mega koma til landsins sem það vilja'
     Frumlag/pers/tala/kyn FrumlagsInnskot/tala/pers/kyn? AtviksliðurEinkunn*
-        SagnRuna/tala/pers/kyn Tengiliður/tala/pers/kyn?
+        SagnRuna/tala/pers/kyn KommaTengiliður/tala/pers/kyn?
 
     # Frumlag fyrir aftan sögn:
     # 'Gengu þau galvösk á Esjuna þrátt fyrir veðurútlitið'
@@ -320,8 +327,11 @@ Setning/tala/pers/kyn →
     # 'Það fara 40 mínútur í pappírsvinnuna'
     | "það" SagnHluti/tala/pers/kyn
 
-    # '[Það] að raða frímerkjum er góð skemmtun'
-    | "það"? NhLiður FsAtv? SagnRuna_et_p3_hk
+Setning_et_p3_hk →
+    # 'Að raða frímerkjum er góð skemmtun'
+    NhLiður FsAtv? SagnRuna_et_p3_hk
+    # 'Það hefði kostað Pál vinnuna að kvarta yfir verkstjóranum'
+    | "það" SagnRuna_et_p3_hk NhFylling FsAtv?
 
 # Setning sem byrjar á lýsingarorði í stað "það"
 # 'Óheimilt er (að fangelsa mann fyrir engar sakir)'
@@ -386,6 +396,7 @@ VeraSkulu_et_p3 →
 SetningAukafall →
 
     # Manninn langaði mjög í ferðina / að fara til útlanda strax
+    # Köttum í landinu fjölgar
     Nl/aukafall so_subj_op/aukafall MiðmyndarBotn?
     # Mér blöskraði mjög vitleysan (í Páli), Mig þraut örendið
     | Nl/aukafall Atviksliður? so_subj_op/tala/aukafall FsRuna? Nl_nf_þf/tala FsAtv?
@@ -394,7 +405,11 @@ SetningAukafall →
     | Nl/aukafall so_1/aukafall/tala FsRuna? Nl_nf/tala FsAtv?
 
     # Þessar skuldir hefur 365 ekki greitt
+    # Þessa bók hef ég aldrei skilið
     | Nl/aukafall HjSögn/tala/pers Nl_nf/tala/pers/kyn FsAtv? So_1_sagnb/aukafall FsAtv?
+
+    # Köttum hefur [ekki] fjölgað á árinu
+    | Nl/aukafall HjSögn_et_p3 FsAtv? So_1_sagnb/aukafall FsAtv?
 
     # Miðmynd sagna: Mér áskotnaðist, mér fyrirgefst, mér gremst...
     | Nl_þgf so_0_mm MiðmyndarBotn?
@@ -421,6 +436,9 @@ SetningAukafall →
 
     # Ákvörðunar var/er/verður/hefur verið/mun að vænta strax í dag
     | Nl_ef HjSögnLhÞtSM_et_p3 nhm so_1_ef_nh FsAtv?
+
+    # Köttum í landinu mun [ekki/enn] fjölga á árinu
+    | Nl/aukafall HjSögnNh_et_p3 FsAtv? So_1_nh/aukafall FsAtv?
 
     # Þá ályktun má strax draga í dag (að Páll sé ekki með öllum mjalla)
     # Engan má skylda til að láta eign sína af hendi
@@ -1826,13 +1844,16 @@ TengiliðurMeðKommu/tala/pers/kyn →
     >     Tengiliður/tala/pers/kyn ','
     > ',' Tengiliður/tala/pers/kyn
 
+KommaTengiliður/tala/pers/kyn →
+    ','? Tengiliður/tala/pers/kyn
+
 Tengiliður/tala/pers/kyn →
     Tengiorð Tengisetning/tala/pers/kyn
 
 Tengiorð →
     TengiorðSem | TengiorðEr
 
-TengiorðSem → "sem"
+TengiorðSem → "eða"? "sem"
 TengiorðEr → "er"
 
 $score(-6) TengiorðEr # Sjaldgæft - ekki velja nema það þurfi
@@ -1918,10 +1939,11 @@ OgEða → "og" | "eða" | "ellegar" | "eður" | "svo" "og" | "sem" "og" | "né"
     | "þar" "á" "meðal" | 'þar_á_meðal' | "meðal" "annars" | 'meðal_annars'
     | "það" "er" | 'það_er'
     | 'eins_og' | "en"
-    | "þar" "með" | "svo" "sem" | 'svo_sem'
+    | "þar" "með" "talið"? | "svo" "sem" | 'svo_sem'
 
 KommaOgEða → ','? OgEða
     | '-' # 'Ég tók tvö tonn af eldsneyti - tvö þúsund lítra'
+    | ',' "ekki" # Við vildum gin, ekki viskí
 
 # (Í fyrra barði Hannes Guðmund) og (særði Pál í dag)
 # (Í fyrra barði Hannes Guðmund), (særði Pál), og (neitaði sök)
@@ -2124,10 +2146,10 @@ LoKommaTengdSögn_nf/tala/kyn →
 FsMeðFallstjórn →
     fs/fall Nl/fall
     # !!! ATH: Geta eftirfarandi form staðið með nafnlið, eða aðeins með sögn?
-    | fs NhLiðir # 'um að...', 'í að...', 'eftir að...'
-    | fs_þf 'það'_þf_et NhLiðir # 'kringum það að...'
-    | fs_þgf 'það'_þgf_et NhLiðir # 'frá því að...', 'með því að...'
-    | fs_ef 'það'_ef_et? NhLiðir # 'til [þess] að...'
+    | fs/fall NhLiðir # 'um að...', 'í að...', 'eftir að...'
+    # | fs_þf 'það'_þf_et NhLiðir # 'kringum það að...'
+    # | fs_þgf 'það'_þgf_et NhLiðir # 'frá því að...', 'með því að...'
+    # | fs_ef 'það'_ef_et? NhLiðir # 'til [þess] að...'
     | "að" "baki" Nl_þgf # 'að baki hverju bundnu sæti'
     | "á" "hendur" Nl_þgf # 'að höfða sakamál á hendur Páli'
     | "nær" 'draga'_et_p3 Nl_þgf # 'þegar nær dró/dregur jólum'
@@ -2137,8 +2159,15 @@ FsMeðFallstjórn →
     | "þrátt" "fyrir" Nl_þf
     | "þegar" "kemur" "að" Nl_þgf
     | "um" 'það'_þf_et? FsSamtenging HreinYfirsetning # 'um [það] hvort Brandur sé fallegastur'
+    | FsÍGegnUm
 
     | '(' FsMeðFallstjórn ')'
+
+FsÍGegnUm →
+    "í" "gegn" "um" Nl_þf
+    | "í" "gegnum" Nl_þf
+
+$score(+6) FsÍGegnUm
 
 FsSamtenging →
     SpurnarSamtenging

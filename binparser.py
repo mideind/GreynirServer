@@ -3,15 +3,12 @@
 
     BIN parser module
 
-    Author: Vilhjalmur Thorsteinsson
-
-    This software is at a very early development stage.
-    While that is the case, it is:
     Copyright (c) 2015 Vilhjalmur Thorsteinsson
     All rights reserved
     See the accompanying README.md file for further licensing and copyright information.
 
-    This module implements the BIN_Parser class, deriving from Parser.
+    This module implements the BIN_Token class, deriving from Token,
+    and BIN_Parser class, deriving from Parser.
     BIN_Parser parses sentences in Icelandic according to the grammar
     in the file Reynir.grammar.
 
@@ -156,7 +153,8 @@ class BIN_Token(Token):
     # '...séu um 20 kaupendur'
     # '...keyptu síðan félagið'
     # '...varpaði fram þeirri spurningu'
-    _NOT_NOT_EO = frozenset(["inn", "eftir", "of", "til", "upp", "um", "síðan", "fram" ])
+    # '...samið við nær öll félögin'
+    _NOT_NOT_EO = frozenset(["inn", "eftir", "of", "til", "upp", "um", "síðan", "fram", "nær", "nærri" ])
 
     # Words that are not eligible for interpretation as proper names, even if they are capitalized
     _NOT_PROPER_NAME = frozenset(["ég", "þú", "hann", "hún", "það", "við", "þið", "þau",
