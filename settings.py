@@ -16,6 +16,7 @@ import locale
 
 from contextlib import contextmanager
 from collections import defaultdict
+from threading import Lock
 
 
 class ConfigError(Exception):
@@ -308,16 +309,23 @@ class UnknownVerbs:
 
     _FILE = "UnknownVerbs.txt"
     _unknown = None
+    _lock = Lock()
 
     @classmethod
     def add(cls, verb):
         """ Add a single verb to the unknown set """
-        if cls._unknown is None:
-            cls.read()
-        cls._unknown.add(verb)
+        with cls._lock:
+            if cls._unknown is None:
+                cls._read_with_lock()
+            cls._unknown.add(verb)
 
     @classmethod
     def read(cls):
+        with cls._lock():
+            cls._read_with_lock()
+
+    @classmethod
+    def _read_with_lock(cls):
         """ Read the unknown set from a file """
         cls._unknown = set()
         try:
@@ -332,13 +340,16 @@ class UnknownVerbs:
     @classmethod
     def write(cls):
         """ Write the unknown set to a file """
-        if not cls._unknown:
-            return
-        vl = sort_strings(list(cls._unknown), ('is_IS', 'UTF-8'))
-        with codecs.open(cls._FILE, "w", "utf-8") as f:
-            for line in vl:
-                if line:
-                    print(line, file = f)
+        with cls._lock:
+            if not cls._unknown:
+                return
+            vl = sort_strings(list(cls._unknown), ('is_IS', 'UTF-8'))
+            with codecs.open(cls._FILE, "w", "utf-8") as f:
+                for line in vl:
+                    if line:
+                        print(line, file = f)
+            # Clear the unknown set so we don't add duplicate verbs to the file
+            cls._unknown = None
 
 
 class Preferences:
