@@ -168,6 +168,8 @@ class Scraper:
         text = tlist.result()
         tlist = None # Free memory
 
+        # Eliminate soft hyphen and zero width space characters
+        text = re.sub('\u00AD|\u200B', '', text)
         # Eliminate consecutive whitespace
         text = re.sub(r'\s+', ' ', text)
 
@@ -647,9 +649,9 @@ class Scraper:
 
 def scrape_articles(limit = 0):
 
-    print("\n\n------ Reynir starting scrape -------")
-    timestamp = "{0}".format(datetime.utcnow())[0:19]
-    print("Time: {0}\n".format(timestamp))
+    print("------ Reynir starting scrape -------")
+    ts = "{0}".format(datetime.utcnow())[0:19]
+    print("Time: {0}, limit: {1}\n".format(ts, limit))
 
     try:
         try:
@@ -663,7 +665,10 @@ def scrape_articles(limit = 0):
         sc = None
         Scraper.cleanup()
 
-    print("\n------ Scrape completed -------\n")
+    ts = "{0}".format(datetime.utcnow())[0:19]
+    print("\nTime: {0}".format(ts))
+
+    print("------ Scrape completed -------")
 
 
 def init_roots():
@@ -716,8 +721,6 @@ class Usage(Exception):
 
 def main(argv = None):
     """ Guido van Rossum's pattern for a Python main function """
-
-    print("Welcome to the Reynir Scraper\n")
 
     if argv is None:
         argv = sys.argv

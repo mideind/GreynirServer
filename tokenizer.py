@@ -3,11 +3,9 @@
 
     Tokenizer module
 
-    Copyright (c) 2015 Vilhjalmur Thorsteinsson
+    Copyright (c) 2016 Vilhjalmur Thorsteinsson
     All rights reserved
     See the accompanying README.md file for further licensing and copyright information.
-
-    This module is written in Python 3 for Python 3.4
 
     The function tokenize() consumes a text string and
     returns a generator of tokens. Each token is a tuple,
@@ -21,33 +19,14 @@
 """
 
 from contextlib import closing
-from functools import lru_cache
 from collections import namedtuple
 
 import re
 import codecs
 import datetime
-import threading
 
-# Thread local storage - used for database connections
-tls = threading.local()
-
-# Import the Psycopg2 connector for PostgreSQL
-try:
-    # For CPython
-    import psycopg2.extensions as psycopg2ext
-    import psycopg2
-except ImportError:
-    # For PyPy
-    import psycopg2cffi.extensions as psycopg2ext
-    import psycopg2cffi as psycopg2
-
-# Make Psycopg2 and PostgreSQL happy with UTF-8
-psycopg2ext.register_type(psycopg2ext.UNICODE)
-psycopg2ext.register_type(psycopg2ext.UNICODEARRAY)
-
-from settings import Settings, StaticPhrases, Abbreviations, Meanings, AmbigPhrases, AdjectiveTemplate
-from dawgdictionary import Wordbase
+from settings import Settings, StaticPhrases, Abbreviations, AmbigPhrases
+from bindb import BIN_Db, BIN_Meaning
 
 
 # Recognized punctuation
@@ -72,8 +51,6 @@ CLOCK_ABBREV = "kl"
 
 # Prefixes that can be applied to adjectives with an intervening hyphen
 ADJECTIVE_PREFIXES = frozenset(["hálf", "marg", "semí"])
-# Adjective endings
-ADJECTIVE_TEST = "leg" # Check for adjective if word contains 'leg'
 
 # Punctuation types: left, center or right of word
 
@@ -113,10 +90,6 @@ PersonName = namedtuple('PersonName', ['name', 'gender', 'case'])
 # Named tuple for tokens
 
 Tok = namedtuple('Tok', ['kind', 'txt', 'val'])
-
-# Named tuple for word meanings fetched from the BÍN database (lexicon)
-
-BIN_Meaning = namedtuple('BIN_Meaning', ['stofn', 'utg', 'ordfl', 'fl', 'ordmynd', 'beyging'])
 
 # Token types
 
@@ -576,170 +549,34 @@ def parse_sentences(token_stream):
         yield TOK.End_Sentence()
 
 
-class Bin_DB:
-
-    """ Encapsulates the BÍN database of word forms """
-
-    def __init__(self):
-        """ Initialize DB connection instance """
-        self._conn = None # Connection
-        self._c = None # Cursor
-
-    def open(self, host):
-        """ Open and initialize a database connection """
-        self._conn = psycopg2.connect(dbname="bin", user="reynir", password="reynir",
-            host=host, client_encoding="utf8")
-        if not self._conn:
-            print("Unable to open connection to database")
-            return None
-        # Ask for automatic commit after all operations
-        # We're doing only reads, so this is fine and makes things less complicated
-        self._conn.autocommit = True
-        self._c = self._conn.cursor()
-        return None if self._c is None else self
-
-    def close(self):
-        """ Close the DB connection and the associated cursor """
-        self._c.close()
-        self._conn.close()
-        self._c = self._conn = None
-
-    @lru_cache(maxsize = 512)
-    def meanings(self, w):
-        """ Return a list of all possible grammatical meanings of the given word """
-        assert self._c is not None
-        m = None
-        try:
-            self._c.execute("select stofn, utg, ordfl, fl, ordmynd, beyging " +
-                "from ord where ordmynd=(%s);", [ w ])
-            # Map the returned data from fetchall() to a list of instances
-            # of the BIN_Meaning namedtuple
-            g = self._c.fetchall()
-            if g is not None:
-                m = list(map(BIN_Meaning._make, g))
-                if w in Meanings.DICT:
-                    # There are additional word meanings in the Meanings dictionary,
-                    # coming from the settings file: append them
-                    for add_m in Meanings.DICT[w]:
-                        m.append(BIN_Meaning._make(add_m))
-        except (psycopg2.DataError, psycopg2.ProgrammingError) as e:
-            print("Word {0} causing DB exception {1}".format(w, e))
-            m = None
-        return m
-
-
-def lookup_abbreviation(w):
-    """ Lookup abbreviation from abbreviation list """
-    # Remove brackets, if any, before lookup
-    clean_w = w[1:-1] if w[0] == '[' else w
-    # Return a single-entity list with one meaning
-    m = Abbreviations.DICT.get(clean_w, None)
-    return None if m is None else [ BIN_Meaning._make(m) ]
-
-
-def lookup_word(db, w, at_sentence_start):
-    """ Lookup a simple or compound word in the database and return its meaning(s) """
-
-    # Start with a simple lookup
-    m = db.meanings(w)
-
-    if at_sentence_start or not m:
-        # No meanings found in database, or at sentence start
-        # Try a lowercase version of the word, if different
-        lower_w = w.lower()
-        if lower_w != w:
-            # Do another lookup, this time for lowercase only
-            if not m:
-                m = db.meanings(lower_w)
-            else:
-                m.extend(db.meanings(lower_w))
-
-        if not m and (lower_w != w or w[0] == '['):
-            # Still nothing: check abbreviations
-            m = lookup_abbreviation(w)
-            if not m and w[0] == '[':
-                # Could be an abbreviation with periods at the start of a sentence:
-                # Lookup a lowercase version
-                m = lookup_abbreviation(lower_w)
-            if m and w[0] == '[':
-                # Remove brackets from known abbreviations
-                w = w[1:-1]
-
-        if not m and ADJECTIVE_TEST in lower_w:
-            # Not found: Check whether this might be an adjective
-            # ending in 'legur'/'leg'/'legt'/'legir'/'legar' etc.
-            for aend, beyging in AdjectiveTemplate.ENDINGS:
-                if lower_w.endswith(aend) and len(lower_w) > len(aend):
-                    prefix = lower_w[0 : len(lower_w) - len(aend)]
-                    # Construct an adjective descriptor
-                    if m is None:
-                        m = []
-                    m.append(BIN_Meaning(prefix + "legur", 0, "lo", "alm", lower_w, beyging))
-
-        if not m:
-            # Still nothing: check compound words
-            cw = Wordbase.dawg().slice_compound_word(lower_w)
-            if cw:
-                # This looks like a compound word:
-                # use the meaning of its last part
-                prefix = "-".join(cw[0:-1])
-                m = db.meanings(cw[-1])
-                m = [ BIN_Meaning(prefix + "-" + r.stofn, r.utg, r.ordfl, r.fl,
-                        prefix + "-" + r.ordmynd, r.beyging)
-                        for r in m]
-
-        if not m and lower_w[0] == 'ó':
-            # Check whether an adjective without the 'ó' prefix is found in BÍN
-            # (i.e. create 'óhefðbundinn' from 'hefðbundinn')
-            suffix = lower_w[1:]
-            if suffix:
-                om = db.meanings(suffix)
-                if om:
-                    m = [ BIN_Meaning("ó" + r.stofn, r.utg, r.ordfl, r.fl,
-                            "ó" + r.ordmynd, r.beyging)
-                            for r in om if r.ordfl == "lo" ]
-
-    return (w, m)
-
 def annotate(token_stream):
     """ Look up word forms in the BIN word database """
 
-    # Open the word database. We have one DB connection and cursor per thread.
-    if hasattr(tls, "bin_db"):
-        # Connection already established in this thread: re-use it
-        db = tls.bin_db
-    else:
-        # New connection in this thread
-        db = tls.bin_db = Bin_DB().open(Settings.DB_HOSTNAME)
-
-    if db is None:
-        raise Exception("Could not open BIN database on host {0}".format(Settings.DB_HOSTNAME))
-
     at_sentence_start = False
 
-    # Consume the iterable source in wlist (which may be a generator)
-    for t in token_stream:
-        if t.kind != TOK.WORD:
-            # Not a word: relay the token unchanged
-            yield t
-            if t.kind == TOK.S_BEGIN or (t.kind == TOK.PUNCTUATION and t.txt == ':'):
-                at_sentence_start = True
-            elif t.kind != TOK.PUNCTUATION and t.kind != TOK.ORDINAL:
+    with closing(BIN_Db.get_db()) as db:
+        # Consume the iterable source in wlist (which may be a generator)
+        for t in token_stream:
+            if t.kind != TOK.WORD:
+                # Not a word: relay the token unchanged
+                yield t
+                if t.kind == TOK.S_BEGIN or (t.kind == TOK.PUNCTUATION and t.txt == ':'):
+                    at_sentence_start = True
+                elif t.kind != TOK.PUNCTUATION and t.kind != TOK.ORDINAL:
+                    at_sentence_start = False
+                continue
+            if t.val != None:
+                # Already have a meaning
+                yield t
                 at_sentence_start = False
-            continue
-        if t.val != None:
-            # Already have a meaning
-            yield t
+                continue
+            # Look up word in BIN database
+            w, m = db.lookup_word(t.txt, at_sentence_start)
+            # Yield a word tuple with meanings
+            yield TOK.Word(w, m)
+            # No longer at sentence start
             at_sentence_start = False
-            continue
-        # Look up word in BIN database
-        w, m = lookup_word(db, t.txt, at_sentence_start)
-        # Yield a word tuple with meanings
-        yield TOK.Word(w, m)
-        # No longer at sentence start
-        at_sentence_start = False
 
-        # print(Bin_DB.meanings.cache_info())
 
 # Recognize words that multiply numbers
 MULTIPLIERS = {

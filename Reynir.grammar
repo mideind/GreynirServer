@@ -156,6 +156,7 @@ Samtenging →
     | 'á_meðan' "að"?
     | "þangað" "til" "að"?
     | "þar" "á" "meðal" | 'þar_á_meðal'
+    | "þar" "sem"
     | SpurnarSamtenging
 
 SpurnarSamtenging →
@@ -208,15 +209,20 @@ HreinYfirsetning →
 $score(-2) SetningAukafall
 $score(-2) SetningLo
 $score(+2) Setning
-$score(+3) SetningSkilyrði
 
 # Skilyrði: EfÞegar eitthvað þá eitthvað
 
 SetningSkilyrði →
-    AtviksliðurKomma? EfÞegar Skilyrði "þá"? Afleiðing FsAtv?
+    AtviksliðurKomma? EfÞegar OgEfÞegar? Skilyrði "þá"? Afleiðing FsAtv?
+
+$score(+5) SetningSkilyrði
 
 EfÞegar →
-    "ef" | "þegar" | "þótt" | "þó" | 'jafnvel_þótt' | "þar" "sem" | "eftir" "að" | 'eins_og' | 'líkt_og' | 'á_meðan'
+    "ef" | "þegar" | "þótt" | "þó" | 'jafnvel_þótt' | "þar" "sem" | "eftir" "að" | 'eins_og' | 'líkt_og'
+    | 'á_meðan' | "þangað" "til"
+
+OgEfÞegar →
+    "og" EfÞegar              # 'Ef og þegar eitthvað gerist læt ég þig vita'
 
 Skilyrði →
     HreinYfirsetning StLiður* # (Ef) Jón fer með hundinn til dýralæknis og allt er í lagi
@@ -816,6 +822,9 @@ SögnMeðF_0/tala/pers/kyn →
     # (Í dag) hafa mennirnir [ekki/eftir seinkun gærdagsins] lent
     | HjSögn/tala/pers Nl_nf/tala/pers/kyn HreinSögn_sagnb/tala/kyn
 
+    # (Í dag) eiga mennirnir [ekki/eftir seinkun gærdagsins] að hafa/geta lent
+    | HjSögnNhMeðSagnb/tala/pers Nl_nf/tala/pers/kyn nhm HafaGetaFá_nh HreinSögn_sagnb/tala/kyn
+
     # (Í dag) munu mennirnir [ekki/innan tíðar] lenda    
     | HjSögnNh/tala/pers Nl_nf/tala/pers/kyn HreinSögn_nh/tala/kyn
     # (Í dag) hyggjast mennirnir [ekki/innan tíðar] lenda
@@ -1190,6 +1199,11 @@ HjSögnNhMeðSo/tala/pers →
     | 'eiga'/tala/pers      # gæta eiga þeir
     | 'þurfa'/tala/pers     # gæta þurfa þeir / þurfið þið
 
+HjSögnNhMeðSagnb/tala/pers →
+    'verða'/tala/pers       # verða mennirnir að hafa/geta... lent
+    | 'eiga'/tala/pers      # eiga mennirnir að hafa/geta... lent
+    | 'þurfa'/tala/pers     # þurfa mennirnir að hafa/geta... lent
+
 # Sögnin stendur í nafnhætti
 HjSögnNh/tala/pers →
     'vilja'/tala/pers       # vilja fara
@@ -1429,6 +1443,9 @@ NlViðbót/tala/fall/kyn →
 
 # Eintala
 
+NlKjarni_et/fall →
+    NlKjarni_et/fall/kyn
+
 NlKjarni_et/fall/kyn →
 
     # 'fullorðni sprúðlandi sonur Íslands'
@@ -1575,6 +1592,11 @@ $score(-4) NlFornafn/tala/fall/kyn
 
 NlStak_p3/tala/fall/kyn →
     AtviksliðurEinkunn* LoSemNafnliður/tala/fall/kyn
+
+# 'Fleiri komu í veisluna en ég bjóst við'
+# 'Fleirum fannst kvikmyndin leiðinleg'
+NlStak_p3_ft/fall/kyn →
+    'margur'_mst_ft/fall/kyn
 
 # Unnt er að hafa nafnlið í þágufalli á undan lýsingarorðinu:
 # 'sem varðar hagsmuni hans eða honum nákominna'
@@ -1758,12 +1780,18 @@ Manneskja/fall/kyn → no_et/fall? person/fall/kyn Titill/fall?
 # Reynt er að láta titil ekki enda á FsRuna/FsAtv eða á EfLiður
 # því það skapar margræðni við nafnliðinn sjálfan
 Titill/fall →
-    ','? NlTitill/fall                      # [Jón], formaður [félagsins]
-    | ',' Nl/fall ','                       # [Jón], formaður námsmannafélagsins í Árósum og talsmaður þess,
+    ','? NlTitill/fall            # [Jón], formaður [félagsins]
+    | KommuTitill/fall            # [Jón], formaður námsmannafélagsins í Árósum og talsmaður þess,
     | EinnTitill/fall OgTitill/fall* ','? "og" NlTitill/fall # Gunnlaugur H Jónsson eðlisfræðingur og fyrrverandi starfsmaður Orkustofnunar
 
 NlTitill/fall →
-    Einkunn_et/fall/kyn? no_et/fall/kyn      # (Jón) glæsilegur fulltrúi (félagsins)
+    TitilEinkunn/fall/kyn? no_et/fall/kyn      # (Jón) glæsilegur fulltrúi (félagsins)
+
+TitilEinkunn/fall/kyn →
+    Einkunn_et/fall/kyn
+
+# Titileinkunn er frekar fátíð
+$score(-2) TitilEinkunn/fall/kyn
 
 EinnTitill/fall →
     NlTitill/fall EfLiður? FsRuna?
@@ -1771,8 +1799,14 @@ EinnTitill/fall →
 OgTitill/fall →
     ','? "og" EinnTitill/fall
 
+KommuTitill/fall →
+    ',' EinnTitill/fall OgTitill/fall* ','
+
 # Gefa plús fyrir titla
-$score(+4) Titill/fall
+$score(+5) Titill/fall
+
+# Gefa enn meiri plús fyrir heila titla innan kommu
+$score(+2) KommuTitill/fall
 
 # Eignarfallsliður á eftir nafnlið
 # ('formaður Gimlis, félags eldri borgara')
@@ -1957,7 +1991,7 @@ KommaOgEðaEn → ',' | ','? OgEðaEn
 
 NlRuna/fall/kyn →
     KommuSamtenging/fall/kyn* Atviksliður? KommaOgEða FsRuna? NlEind/fall/kyn AtvKomma?
-    | ',' FsRuna? NlEind/fall/kyn AtvKomma        # Konurnar, sérstaklega Anna, voru óánægðar
+    | ',' FsRuna? NlEind/fall/kyn AtvKomma    # Konurnar, sérstaklega Anna, voru óánægðar
 
 KommuSamtenging/fall/kyn → ',' FsRuna? NlEind/fall/kyn
 
@@ -2008,8 +2042,15 @@ Nl/tala/pers/fall/kyn →
 $score(+4) Nl_nf
 
 # Fleirtölu-nafnliður í 3p sem leyfir runu í sama falli og kyni
+# Leyfir einnig 'þeir Jón og Gunnar [sendu bréfið]' eða 'þær Elísabet og mamma hennar [byggðu húsið]'
 Nl_ft_p3/fall/kyn →
-    NlEind_p3/fall/kyn NlRuna/fall/kyn+ TengiliðurMeðKommu_ft_p3/kyn?
+    NlSamaKyn/fall/kyn
+
+NlSamaKyn/fall/kyn →
+    'sá'_ft/fall/kyn? NlEind_p3/fall/kyn NlRuna/fall/kyn+ TengiliðurMeðKommu_ft_p3/kyn?
+
+# Fleirtölunafnliðir af sama kyni eru betri en blandaðir
+$score(+2) NlSamaKyn/fall/kyn
 
 # Blandaðir fleirtölu-nafnliðir eru í hvorugkyni
 

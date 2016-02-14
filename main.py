@@ -149,6 +149,9 @@ def process_url(url):
     text = tlist.result()
     tlist = None # Free memory
 
+    # Eliminate soft hyphen and zero-width space characters
+    text = re.sub('\u00AD|\u200B', '', text)
+
     # Eliminate consecutive whitespace
     text = re.sub(r'\s+', ' ', text)
 

@@ -48,15 +48,10 @@ class ScrapeHelper:
             # No body in HTML: something is wrong, return None
             print("get_content returning None")
             return None
-        #try:
-            # Call the helper subclass
         if hasattr(self, "_get_content"):
             content = self._get_content(soup.html.body)
         else:
             content = None
-        #except Exception as e:
-        #    content = None
-        #    print("get_content exception in self._get_content: {0}".format(e))
         # By default, return the entire body
         return content or soup.html.body
 
@@ -157,6 +152,15 @@ class ScrapeHelper:
         f = lambda tag: ScrapeHelper.div_id_filter(tag, div_id)
         return soup.find(f)
 
+    @staticmethod
+    def del_div_class(soup, *argv):
+        """ Delete all occurrences of the specified div.class """
+        while True:
+            s = ScrapeHelper.div_class(soup, *argv)
+            if s is None:
+                break
+            s.decompose()
+
 
 class KjarninnScraper(ScrapeHelper):
 
@@ -197,17 +201,13 @@ class KjarninnScraper(ScrapeHelper):
             print("_get_content: soup_body.article is None")
             return None
         # Delete div.container.title-container tags from the content
-        soup = ScrapeHelper.div_class(soup_body.article, ["container", "title-container"])
+        soup = ScrapeHelper.div_class(soup_body.article, ("container", "title-container"))
         if soup is not None:
             soup.decompose()
         # Delete div.container.quote-container tags from the content
-        soup = ScrapeHelper.div_class(soup_body.article, ["container", "quote-container"])
-        if soup is not None:
-            soup.decompose()
+        ScrapeHelper.del_div_class(soup_body.article, ("container", "quote-container"))
         # Delete div.container-fluid tags from the content
-        soup = ScrapeHelper.div_class(soup_body.article, "container-fluid")
-        if soup is not None:
-            soup.decompose()
+        ScrapeHelper.del_div_class(soup_body.article, "container-fluid")
         # Get the content itself
         content = ScrapeHelper.div_class(soup_body.article, "article-body")
         if content is None:
@@ -319,13 +319,39 @@ class MblScraper(ScrapeHelper):
         rp = ScrapeHelper.div_class(soup.html.body, "frett-main", "reporter-profile")
         f = lambda tag: ScrapeHelper.general_filter(tag, "a", "class", "name")
         rname = rp.find(f) if rp else None
-        author = rname.string if rname else "Ritstjórn mbl.is"
+        if rname:
+            rname = rname.string
+        else:
+            # Probably a blog post
+            rp = ScrapeHelper.div_class(soup.html.body, "pistlar-author-profile-box")
+            if rp and rp.h4:
+                rname = rp.h4.string
+        author = rname if rname else "Ritstjórn mbl.is"
         return Metadata(heading = heading, author = author,
             timestamp = timestamp, authority = self.authority)
 
     def _get_content(self, soup_body):
         """ Find the article content (main text) in the soup """
-        return ScrapeHelper.div_class(soup_body, "frett-main", "maintext")
+        soup = ScrapeHelper.div_class(soup_body, "frett-main")
+        if soup is None:
+            # Could be a blog post
+            soup = ScrapeHelper.div_class(soup_body, "pistill-entry-body")
+        if soup is None:
+            print("_get_content: soup_body.div.frett-main/pistill-entry-body is None")
+        if soup:
+            # Delete h1 tags from the content
+            s = soup.h1
+            if s is not None:
+                s.decompose()
+            # Delete div.reporter-profile from the content
+            s = ScrapeHelper.div_class(soup, "reporter-profile")
+            if s is not None:
+                s.decompose()
+            # Delete all image instances from the content
+            ScrapeHelper.del_div_class(soup, "mainimg-big")
+            ScrapeHelper.del_div_class(soup, "extraimg-big-w-txt")
+            ScrapeHelper.del_div_class(soup, "extraimg-big")
+        return soup
 
 
 class VisirScraper(ScrapeHelper):
