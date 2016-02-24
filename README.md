@@ -5,7 +5,7 @@
 *Reynir* is an experimental project that aims to extract processable information from
 Icelandic text. It scrapes and tokenizes chunks of text from web pages
 and parses the token streams according to a hand-written context-free grammar. The resulting
-parse trees are disambiguated and finally analyzed to obtain statements of fact and relations
+parse trees are disambiguated and finally processed to obtain statements of fact and relations
 between stated facts.
 
 Reynir is most effective for text that is objective and factual, i.e. has a relatively high
@@ -21,10 +21,14 @@ while-you-wait analysis of web pages, as well as bulk processing, feasible.
 
 Reynir's goal is to "understand" text to a usable extent by parsing it into
 structured trees that directly correspond to the original grammar.
-These trees can then be further processed and acted upon, for instance by Python
+These trees can then be further processed and acted upon by Python
 functions associated with grammar nonterminals.
 
-If successful in its initial stages, Reynir may in due course be expanded, for instance:
+Reynir is currently able to parse about *85%* of sentences in a typical news article from the web,
+and many well-written articles can be parsed completely. It has about 9.000 parsed articles
+in its database, containing 350.000 parsed sentences.
+
+Reynir may in due course be expanded, for instance:
 
 * to make logical inferences from statements in its database;
 * to find statements supporting or refuting a thesis; and/or
@@ -33,8 +37,9 @@ If successful in its initial stages, Reynir may in due course be expanded, for i
 ## Implementation
 
 Reynir is written in [Python 3](https://www.python.org/) except for its core
-parser module which is written in C++ and called via [CFFI](https://cffi.readthedocs.org/en/latest/index.html).
-Reynir runs on CPython and [PyPy](http://pypy.org/).
+Earley parser module which is written in C++ and called
+via [CFFI](https://cffi.readthedocs.org/en/latest/index.html).
+Reynir runs on CPython and [PyPy](http://pypy.org/) with the latter being recommended.
 
 Reynir works in stages, roughly as follows:
 
@@ -43,8 +48,8 @@ Reynir works in stages, roughly as follows:
   in [PostgreSQL](http://www.postgresql.org/).
 2. *Tokenizer*, relying on the BÍN database of Icelandic word forms for lemmatization and
   initial POS tagging.
-3. *Parser*, using an [Earley algorithm](http://en.wikipedia.org/wiki/Earley_parser) to
-  parse text according to an unconstrained hand-written context-free grammar for Icelandic
+3. *Parser*, using an improved version of the [Earley algorithm](http://en.wikipedia.org/wiki/Earley_parser)
+  to parse text according to an unconstrained hand-written context-free grammar for Icelandic
   that may yield multiple parse trees (a parse forest) in case of ambiguity.
 4. *Parse forest reducer* with heuristics to find the best parse tree.
 5. *Information extractor* that maps a parse tree via its grammar constituents to plug-in
@@ -77,17 +82,32 @@ referencing Tomita. It parses ambiguous grammars without restriction and
 returns a compact Shared Packed Parse Forest (SPPF) of parse trees. If a parse
 fails, it identifies the token at which no parse was available.
 
+The Reynir scraper is typically run in a cron job once every 24 hours to extract articles automatically
+from the web, parse them and store the resulting trees in a PostgreSQL database for further processing.
+
+Scraper modules for new websites are plugged in by adding Python code to the `scrapers/` directory.
+Currently, the `scrapers/default.py` module supports four popular Icelandic news sites as well
+as the site of the Constitutional Council.
+
+Processor modules can be plugged in to Reynir by adding Python code to the `processors/` directory.
+The demo in `processors/default.py` extracts person names and titles form the processed text for
+storage in a database table.
+
 ## File details
 
 * `main.py` : Web server
 * `settings.py` : Management of global settings and configuration data, obtained from `Reynir.conf`
 * `scraper.py` : Web scraper, collecting articles from a set of pre-selected websites (roots)
+* `scraperdb.py`: Wrapper for the scraper database via SQLAlchemy
 * `tokenizer.py` : Tokenizer, designed as a pipeline of Python generators
+* `dawgdictionary.py`: Handler for composite words using a compressed word form database
 * `grammar.py` : Parsing of `.grammar` files, grammar constructs
 * `eparser.cpp` : Earley parser C++ module (header in `eparser.h`)
 * `fastparser.py` : Python wrapper for `eparser.cpp` using CFFI
-* `binparser.py` : Parser related subclasses for BIN (Icelandic word) tokens
+* `bindb.py`: Interface to the BÍN database of Icelandic word forms
+* `binparser.py` : Parser related subclasses for BÍN (Icelandic word) tokens
 * `reducer.py` : Parse forest ambiguity resolver
+* `processor.py`: Information extraction from parse trees
 * `ptest.py` : Parser test module
 * `Reynir.conf` : Editable configuration file for the tokenizer and parser
 * `Verbs.conf` : Editable lexicon of verbs, included in `Reynir.conf`
@@ -99,7 +119,7 @@ fails, it identifies the token at which no parse was available.
 ## Copyright and licensing
 
 The Reynir source code and associated files are
-*copyright (C) 2015 by Vilhjálmur Þorsteinsson*,
+*copyright (C) 2015-2016 by Vilhjálmur Þorsteinsson*,
 all rights reserved.
 
 Please contact the author via GitHub for further information.
