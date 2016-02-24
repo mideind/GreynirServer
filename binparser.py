@@ -24,10 +24,11 @@ from functools import reduce
 
 from tokenizer import TOK
 from grammar import Terminal, LiteralTerminal, Token, Grammar
-from parser import Parser, ParseError
+from baseparser import Base_Parser
 from settings import VerbObjects, VerbSubjects, UnknownVerbs, Prepositions
 
 from flask import current_app
+
 
 def debug():
     # Call this to trigger the Flask debugger on purpose
@@ -154,7 +155,8 @@ class BIN_Token(Token):
     # '...keyptu síðan félagið'
     # '...varpaði fram þeirri spurningu'
     # '...samið við nær öll félögin'
-    _NOT_NOT_EO = frozenset(["inn", "eftir", "of", "til", "upp", "um", "síðan", "fram", "nær", "nærri" ])
+    # '...kom út skýrsla'
+    _NOT_NOT_EO = frozenset(["inn", "eftir", "of", "til", "upp", "um", "síðan", "fram", "nær", "nærri", "út" ])
 
     # Words that are not eligible for interpretation as proper names, even if they are capitalized
     _NOT_PROPER_NAME = frozenset(["ég", "þú", "hann", "hún", "það", "við", "þið", "þau",
@@ -563,7 +565,9 @@ class BIN_Token(Token):
                     # Match all cases and numbers
                     #if v == "ft":
                     #    return False
-                    pass
+                    if v == "gr":
+                        # Do not match a demand for the definitive article ('greinir')
+                        return False
                 elif BIN_Token._VARIANT[v] not in m.beyging:
                     # Required case or number not found: no match
                     return False
@@ -632,8 +636,10 @@ class BIN_Token(Token):
         if self.is_upper:
             # Starts in upper case: We guess that this is a named entity
             return terminal.startswith("sérnafn")
-        # Not named entity: allow it to match a singular, neutral noun in all cases
-        return (terminal.startswith("no") and terminal.has_vbits(BIN_Token._VBIT_ET | BIN_Token._VBIT_HK))
+        # Not named entity: allow it to match a singular, neutral noun in all cases,
+        # but without the definite article ('greinir')
+        return terminal.startswith("no") and terminal.has_vbits(BIN_Token._VBIT_ET | BIN_Token._VBIT_HK) and \
+            not terminal.has_vbits(BIN_Token._VBIT_GR)
 
     # Dispatch table for the token matching functions
     _MATCHING_FUNC = {
@@ -852,7 +858,7 @@ class BIN_Grammar(Grammar):
         return BIN_LiteralTerminal(name)
 
 
-class BIN_Parser(Parser):
+class BIN_Parser(Base_Parser):
 
     """ BIN_Parser parses sentences according to the Icelandic
         grammar in the Reynir.grammar file. It subclasses Parser
@@ -951,17 +957,4 @@ class BIN_Parser(Parser):
 
     def go(self, tokens):
         """ Parse the token list after wrapping each understood token in the BIN_Token class """
-
-        bt, wrap_map = self._wrap(tokens)
-
-        # After wrapping, call the parent class go()
-        try:
-            result = Parser.go(self, bt)
-        except ParseError as e:
-            # Convert the wrapped token index to an original token index
-            if e.token_index in wrap_map:
-                e.token_index = wrap_map[e.token_index]
-            raise e
-
-        return result
-
+        assert False # This should never be called - is overwritten in Fast_Parser

@@ -41,7 +41,6 @@ from cffi import FFI
 from threading import Lock
 
 from grammar import GrammarError, Terminal, Nonterminal, Token
-from parser import ParseError
 from binparser import BIN_Parser
 
 
@@ -451,6 +450,28 @@ class ParseForestNavigator:
         return _nav_helper(root_node, 0, 0)
 
 
+class ParseError(Exception):
+
+    """ Exception class for parser errors """
+
+    def __init__(self, txt, token_index = None, info = None):
+        """ Store an information object with the exception,
+            containing the parser state immediately before the error """
+        Exception.__init__(self, txt)
+        self._info = info
+        self._token_index = token_index
+
+    @property
+    def info(self):
+        """ Return the parser state information object """
+        return self._info
+
+    @property
+    def token_index(self):
+        """ Return the 0-based index of the token where the parser ran out of options """
+        return self._token_index
+
+
 class Fast_Parser(BIN_Parser):
 
     """ This class wraps an Earley-Scott parser written in C++.
@@ -553,6 +574,13 @@ class Fast_Parser(BIN_Parser):
         # Delete the C++ nodes
         ep.deleteForest(node)
         return result
+
+    def go_no_exc(self, tokens):
+        """ Simple version of go() that returns None instead of throwing ParseError """
+        try:
+            return self.go(tokens)
+        except ParseError:
+            return None
 
     def cleanup(self):
         """ Delete C++ objects. Must call after last use of Fast_Parser

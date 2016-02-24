@@ -31,8 +31,7 @@ psycopg2ext.register_type(psycopg2ext.UNICODEARRAY)
 
 from tokenizer import TOK, tokenize
 from grammar import Nonterminal, Terminal, Token, Production, Grammar, GrammarError
-from parser import ParseError
-from fastparser import Fast_Parser
+from fastparser import Fast_Parser, ParseError
 from settings import Settings, ConfigError
 
 

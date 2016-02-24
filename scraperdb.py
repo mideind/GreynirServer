@@ -19,7 +19,7 @@ import platform
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, backref
-from sqlalchemy import Column, Integer, String, Float, DateTime, Sequence, \
+from sqlalchemy import Table, Column, Integer, String, Float, DateTime, Sequence, \
     UniqueConstraint, ForeignKey
 from sqlalchemy.exc import IntegrityError as SqlIntegrityError
 
@@ -151,4 +151,40 @@ class Article(Base):
         return "Article(url='{0}', heading='{1}', scraped={2})" \
             .format(self.url, self.heading, self.scraped)
 
+
+class Person(Base):
+
+    """ Represents a person """
+
+    __tablename__ = 'persons'
+
+    # Primary key
+    id = Column(Integer, Sequence('persons_id_seq'), primary_key=True)
+
+    # Foreign key to an article
+    article_url = Column(String,
+        # We don't delete associated persons if the article is deleted
+        ForeignKey('articles.url', onupdate="CASCADE", ondelete="SET NULL"), nullable = True)
+
+    # Name
+    name = Column(String, index = True)
+    # Title
+    title = Column(String, index = True)
+
+    # Authority of this fact, 1.0 = most authoritative, 0.0 = least authoritative
+    authority = Column(Float)
+
+    # Timestamp of this entry
+    timestamp = Column(DateTime)
+
+    # The back-reference to the Root parent of this Article
+    article = relationship("Article", backref=backref('persons', order_by=name))
+
+    def __repr__(self):
+        return "Person(id='{0}', name='{1}', title={2})" \
+            .format(self.id, self.name, self.title)
+
+    @classmethod
+    def table(cls):
+        return Table(cls.__tablename__, Base.metadata)
 

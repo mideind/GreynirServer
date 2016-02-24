@@ -23,8 +23,7 @@ from os.path import isfile, isdir, join
 import xml.etree.ElementTree as ET
 
 from tokenizer import TOK, tokenize
-from parser import ParseError
-from fastparser import Fast_Parser, ParseForestNavigator
+from fastparser import Fast_Parser, ParseError, ParseForestNavigator
 from reducer import Reducer
 from settings import Settings, ConfigError
 

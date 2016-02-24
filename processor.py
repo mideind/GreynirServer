@@ -29,6 +29,7 @@ from settings import Settings, ConfigError
 from scraperdb import Scraper_DB, Article
 from bindb import BIN_Db, BIN_Meaning
 
+
 _PROFILING = False
 
 BIN_ORDFL = {
@@ -57,8 +58,9 @@ class Result:
         characters in them.)
 
         Additionally, the class implements lazy evaluation of the r._root
-        attribute so that it is only calculated when and if required, and
-        then cached. This is an optimization to save database reads.
+        and r._nominative attributes so that they are only calculated when and
+        if required, and then cached. This is an optimization to save database
+        reads.
 
     """
 
@@ -75,6 +77,7 @@ class Result:
             self.dict[key] = val
 
     def __getattr__(self, key):
+        """ Fancy attribute getter with special cases for _root and _nominative """
         if key == "dict" or key == "__dict__":
             return super().__getattr__(key)
         d = self.dict
@@ -82,6 +85,12 @@ class Result:
             # Lazy evaluation of the _root attribute
             # (Note that it can be overridden by setting it directly)
             d[key] = self._node.root(self._state, self._params)
+            # At this point we can safely release the params
+            del d["_params"]
+        elif key == "_nominative" and not "_nominative" in d:
+            # Lazy evaluation of the _root attribute
+            # (Note that it can be overridden by setting it directly)
+            d[key] = self._node.nominative(self._state, self._params)
             # At this point we can safely release the params
             del d["_params"]
         if key in d:
@@ -130,11 +139,24 @@ class Result:
         for key, val in p.user_attribs():
             # Pass all named parameters whose names do not start with an underscore
             # up to the parent, by default
-            # We do not overwrite already assigned named parameters
-            # This means that we have left-to-right priority, i.e.
-            # the leftmost entity wins in case of conflict
+            # Generally we have left-to-right priority, i.e.
+            # the leftmost entity wins in case of conflict.
+            # However, lists, sets and dictionaries with the same
+            # member name are combined.
             if key not in d:
                 d[key] = val
+            else:
+                # Combine lists and dictionaries
+                left = d[key]
+                if isinstance(left, list) and isinstance(val, list):
+                    # Extend lists
+                    left.extend(val)
+                elif isinstance(left, set) and isinstance(val, set):
+                    # Return union of sets
+                    left |= val
+                elif isinstance(left, dict) and isinstance(val, dict):
+                    # Keep the left entries but add any new/additional val entries
+                    d[key] = dict(val, **left)
 
     def del_attribs(self, alist):
         """ Delete the attribs in alist from the result object """
@@ -202,6 +224,11 @@ class TerminalNode(Node):
 
     """ A Node corresponding to a terminal """
 
+    _CASES = { "nf", "þf", "þgf", "ef" }
+    _GENDERS = { "kk", "kvk", "hk" }
+    _NUMBER = { "et", "ft" }
+    _PERSONS = { "p1", "p2", "p3" }
+
     def __init__(self, terminal, token, at_start):
         super().__init__()
         self.terminal = terminal
@@ -214,25 +241,127 @@ class TerminalNode(Node):
         # Cache the root form of this word so that it is only looked up
         # once, even if multiple processors scan this tree
         self.root_cache = None
+        self.nominative_cache = None
+
+        # BIN category set
+        self.bin_cat = BIN_ORDFL[self.cat] if self.cat in BIN_ORDFL else set()
+
+        # Gender of terminal
+        self.gender = None
+        gender = self.variants & TerminalNode._GENDERS
+        assert 0 <= len(gender) <= 1
+        if gender:
+            self.gender = next(iter(gender))
+
+        # Case of terminal
+        self.case = None
+        if self.cat != "so":
+            # We do not check cases for verbs, except so_lhþt ones
+            case = self.variants & TerminalNode._CASES
+            if len(case) > 1:
+                print("Many cases detected for terminal {0}, variants {1}".format(terminal, self.variants))
+            assert 0 <= len(case) <= 1
+            if case:
+                self.case = next(iter(case))
+
+        # Person of terminal
+        self.person = None
+        person = self.variants & TerminalNode._PERSONS
+        assert 0 <= len(person) <= 1
+        if person:
+            self.person = next(iter(person))
+
+        # Number of terminal
+        self.number = None
+        number = self.variants & TerminalNode._NUMBER
+        assert 0 <= len(number) <= 1
+        if number:
+            self.number = next(iter(number))
+
+    def _bin_filter(self, m, case_override = None):
+        """ Return True if the BIN meaning in m matches the variants for this terminal """
+        #print("_bin_filter checking meaning {0}".format(m))
+        if m.ordfl not in self.bin_cat:
+            return False
+        if self.gender:
+            # Check gender match
+            if self.cat == "no":
+                if m.ordfl != self.gender:
+                    return False
+            else:
+                if self.gender.upper() not in m.beyging:
+                    return False
+        if self.case:
+            # Check case match
+            if case_override:
+                # Case override: we don't want other cases beside the given one
+                for c in TerminalNode._CASES:
+                    if c != case_override:
+                        if c.upper() in m.beyging:
+                            return False
+            elif self.case.upper() not in m.beyging:
+                return False
+        # Check person match
+        if self.person:
+            person = self.person.upper()
+            person = person[1] + person[0] # Turn p3 into 3P
+            if person not in m.beyging:
+                return False
+        # Check number match
+        if self.number:
+            if self.number.upper() not in m.beyging:
+                return False
+        # Check lhþt
+        if "lhþt" in self.variants:
+            if "LHÞT" not in m.beyging:
+                return False
+        #print("_bin_filter returns True")
+        return True
 
     def _root(self, bin_db):
         """ Look up the root of the word associated with this terminal """
         # Lookup the token in the BIN database
         w, m = bin_db.lookup_word(self.text, self.at_start)
         if m:
-            bin_cat = BIN_ORDFL[self.cat] if self.cat in BIN_ORDFL else set()
-            m = [x for x in m if x.ordfl in bin_cat]
-        # !!! Add more sophisticated pruning of meanings here
+            m = [ x for x in m if self._bin_filter(x) ]
         if m:
             w = m[0].stofn
+        return w.replace("-", "")
+
+    def _nominative(self, bin_db):
+        """ Look up the nominative form of the word associated with this terminal """
+        # Lookup the token in the BIN database
+        if self.case == "nf":
+            # Already a nominative word: return it as-is
+            return self.text
+        w, m = bin_db.lookup_word(self.text, self.at_start)
+        if m:
+            m = [ x for x in m if self._bin_filter(x) ]
+        if m:
+            # Look up the root of the word and find its forms
+            stofn = m[0].stofn.replace("-", "")
+            root, m = bin_db.lookup_form(stofn, self.at_start)
+            # Select the most similar word form, but in nominative case
+            m = [ x for x in m if self._bin_filter(x, case_override = "nf") ]
+            if m:
+                w = m[0].ordmynd
         return w.replace("-", "")
 
     def root(self, state, params):
         """ Calculate the root (canonical) form of this node's text """
         if self.root_cache is None:
+            # Not already cached: look up in database
             bin_db = state["bin_db"]
             self.root_cache = self._root(bin_db)
         return self.root_cache
+
+    def nominative(self, state, params):
+        """ Calculate the nominative form of this node's text """
+        if self.nominative_cache is None:
+            # Not already cached: look up in database
+            bin_db = state["bin_db"]
+            self.nominative_cache = self._nominative(bin_db)
+        return self.nominative_cache
 
     def string_self(self):
         return self.terminal + " <" + self.token + ">"
@@ -251,18 +380,10 @@ class PersonNode(TerminalNode):
 
     """ Specialized TerminalNode for person terminals """
 
-    _CASES = { "nf", "þf", "þgf", "ef" }
-
     def _root(self, bin_db):
         """ Calculate the root (canonical) form of this person name """
         # Lookup the token in the BIN database
-        gender = "kk" if "kk" in self.variants else "kvk"
-        case = "nf"
-        for c in PersonNode._CASES:
-            if c in self.variants:
-                case = c
-                break
-        case = case.upper()
+        case = self.case.upper()
         # Look up each part of the name
         at_start = self.at_start
         name = []
@@ -270,11 +391,15 @@ class PersonNode(TerminalNode):
             w, m = bin_db.lookup_word(part, at_start)
             at_start = False
             if m:
-                m = [ x for x in m if x.ordfl == gender and case in x.beyging and "ET" in x.beyging ]
+                m = [ x for x in m if x.ordfl == self.gender and case in x.beyging and "ET" in x.beyging ]
             if m:
                 w = m[0].stofn
             name.append(w.replace("-", ""))
         return " ".join(name)
+
+    def _nominative(self, bin_db):
+        """ The nominative is identical to the root """
+        return self._root(bin_db)
 
 
 class NonterminalNode(Node):
@@ -292,7 +417,11 @@ class NonterminalNode(Node):
 
     def root(self, state, params):
         """ The root form of a nonterminal is a sequence of the root forms of its children (parameters) """
-        return " ".join(p._root for p in params)
+        return " ".join(p._root for p in params if p._root)
+
+    def nominative(self, state, params):
+        """ The nominative form of a nonterminal is a sequence of the nominative forms of its children (parameters) """
+        return " ".join(p._nominative for p in params if p._nominative)
 
     def process(self, state, params):
         """ Apply any requested processing to this node """
@@ -322,11 +451,12 @@ class Tree:
         "person" : PersonNode
     }
 
-    def __init__(self):
+    def __init__(self, url):
         self.s = OrderedDict() # Sentence dictionary
         self.stack = None
         self.n = None # Index of current sentence
         self.at_start = False # First token of sentence?
+        self.url = url
 
     def push(self, n, node):
         """ Add a node into the tree at the right level """
@@ -401,19 +531,19 @@ class Tree:
 
     def visit_children(self, state, node):
         """ Visit the children of node, obtain results from them and pass them to the node """
-        return node.process(state, [self.visit_children(state, child) for child in node.children()])
+        return node.process(state, [ self.visit_children(state, child) for child in node.children() ])
 
     def process_sentence(self, state, index, tree):
         """ Process a sentence tree """
         assert tree.nxt is None
         result = self.visit_children(state, tree)
         # Sentence processing completed:
-        # Invoke a function called 'sentence(result)',
+        # Invoke a function called 'sentence(state, result)',
         # if present in the processor
         processor = state["processor"]
         func = getattr(processor, "sentence", None) if processor else None
         if func:
-            func(result)
+            func(state, result)
 
     def process(self, session, processor):
         """ Process a tree for an entire article """
@@ -421,11 +551,22 @@ class Tree:
         # visiting each parent node after visiting its children
         # Initialize the running state that we keep between sentences
 
+        article_begin = getattr(processor, "article_begin", None) if processor else None
+        article_end = getattr(processor, "article_end", None) if processor else None
+
         with closing(BIN_Db.get_db()) as bin_db:
 
-            state = { "session": session, "processor": processor, "bin_db": bin_db }
+            state = { "session": session, "processor": processor,
+                "bin_db": bin_db, "url": self.url }
+            # Call the article_begin(state) function, if it exists
+            if article_begin:
+                article_begin(state)
+            # Process the (parsed) sentences in the article
             for index, tree in self.s.items():
                 self.process_sentence(state, index, tree)
+            # Call the article_end(state) function, if it exists
+            if article_end:
+                article_end(state)
 
 
 class Processor:
@@ -445,16 +586,32 @@ class Processor:
         """ Perform any cleanup """
         pass # Not presently needed
 
-    def __init__(self, module_name):
+    def __init__(self, processor_directory):
 
         Processor._init_class()
 
-        # Dynamically load a processor module
-        self.processor = importlib.import_module(module_name)
-        if not self.processor:
-            print("Unable to load processor module {0}".format(module_name))
+        # Dynamically load all processor modules
+        # (i.e. .py files found in the processor directory, except those
+        # with names starting with an underscore)
+        self.processors = []
+        import os
+        for fname in os.listdir(processor_directory):
+            if not fname.endswith(".py"):
+                continue
+            if fname.startswith("_"):
+                continue
+            try:
+                modname = processor_directory + "." + fname[:-3] # Cut off .py
+                m = importlib.import_module(modname)
+                print("Imported processor module {0}".format(modname))
+                self.processors.append(m)
+            except Exception as e:
+                print("Error importing processor module {0}: {1}".format(modname, e))
 
-    def _process_article(self, url):
+        if not self.processors:
+            print("No processing modules found in directory {0}".format(processor_directory))
+
+    def go_single(self, url):
         """ Single article processor that will be called by a process within a
             multiprocessing pool """
 
@@ -464,24 +621,32 @@ class Processor:
         # Load the article
         with closing(self._db.session) as session:
 
-            article = session.query(Article).filter_by(url = url).one()
+            try:
 
-            if article.tree:
-                tree = Tree()
-                tree.load(article.tree)
-                tree.process(session, self.processor)
+                article = session.query(Article).filter_by(url = url).one()
 
-            session.commit()
+                if article.tree:
+                    tree = Tree(url)
+                    tree.load(article.tree)
+                    # Run all processors in turn
+                    for p in self.processors:
+                        tree.process(session, p)
+
+                # So far, so good: commit to the database
+                session.commit()
+
+            except Exception as e:
+                # If an exception occurred, roll back the transaction
+                session.rollback()
+                print("Exception caught, transaction rolled back: {0}".format(e))
 
         t1 = time.time()
         sys.stdout.flush()
-
 
     def go(self, from_date = None, limit = 0):
         """ Process already parsed articles from the database """
 
         db = Processor._db
-
         with closing(db.session) as session:
 
             def iter_parsed_articles(limit):
@@ -497,15 +662,14 @@ class Processor:
                 for a in q:
                     yield a.url
 
-
             if _PROFILING:
                 # If profiling, just do a simple map within a single thread and process
                 for url in iter_parsed_articles(limit):
-                    self._process_article(url)
+                    self.go_single(url)
             else:
                 # Use a multiprocessing pool to process the articles
                 pool = Pool() # Defaults to using as many processes as there are CPUs
-                pool.map(self._process_article, iter_parsed_articles(limit))
+                pool.map(self.go_single, iter_parsed_articles(limit))
                 pool.close()
                 pool.join()
 
@@ -519,14 +683,9 @@ def process_articles(from_date = None, limit = 0):
     t0 = time.time()
 
     try:
-        try:
-            proc = Processor("processors.default")
-            proc.go(from_date, limit = limit)
-        #except Exception as e:
-        #    print("Processor terminated with exception {0}".format(e))
-        #    sys.stdout.flush()
-        finally:
-            pass # proc.stats()
+        # Run all processors in the processors directory
+        proc = Processor("processors")
+        proc.go(from_date, limit = limit)
     finally:
         proc = None
         Processor.cleanup()
@@ -539,10 +698,30 @@ def process_articles(from_date = None, limit = 0):
     print("Time: {0}\n".format(ts))
 
 
+def process_article(url):
+
+    try:
+        proc = Processor("processors")
+        proc.go_single(url)
+    finally:
+        proc = None
+        Processor.cleanup()
+
+
 class Usage(Exception):
 
     def __init__(self, msg):
         self.msg = msg
+
+
+def init_db():
+    """ Initialize the database, to the extent required """
+
+    db = Scraper_DB()
+    try:
+        db.create_tables()
+    except Exception as e:
+        print("{0}".format(e))
 
 
 def _main(argv = None):
@@ -552,36 +731,52 @@ def _main(argv = None):
         argv = sys.argv
     try:
         try:
-            opts, args = getopt.getopt(argv[1:], "hl:", ["help", "limit="])
+            opts, args = getopt.getopt(argv[1:], "hil:u:", ["help", "init", "limit=", "url="])
         except getopt.error as msg:
              raise Usage(msg)
         limit = 10 # !!! DEBUG default limit on number of articles to parse, unless otherwise specified
+        init = False
+        url = None
         # Process options
         for o, a in opts:
             if o in ("-h", "--help"):
                 print(__doc__)
                 sys.exit(0)
+            elif o in ("-i", "--init"):
+                init = True
             elif o in ("-l", "--limit"):
                 # Maximum number of articles to parse
                 try:
                     limit = int(a)
                 except Exception as e:
                     pass
+            elif o in ("-u", "--url"):
+                # Single URL to process
+                url = a
+
         # Process arguments
         for arg in args:
             pass
 
-        # Read the configuration settings file
+        if init:
+            # Initialize the scraper database
+            init_db()
+        else:
 
-        try:
-            Settings.read("Reynir.conf")
-        except ConfigError as e:
-            print("Configuration error: {0}".format(e), file = sys.stderr)
-            return 2
+            # Read the configuration settings file
 
-        # Process already parsed trees, starting on February 10, 2016
-        process_articles(from_date = datetime(year = 2016, month = 1, day = 1), limit = limit)
+            try:
+                Settings.read("Reynir.conf")
+            except ConfigError as e:
+                print("Configuration error: {0}".format(e), file = sys.stderr)
+                return 2
 
+            if url:
+                # Process a single URL
+                process_article(url)
+            else:
+                # Process already parsed trees, starting on February 10, 2016
+                process_articles(from_date = datetime(year = 2016, month = 1, day = 1), limit = limit)
 
     except Usage as err:
         print(err.msg, file = sys.stderr)

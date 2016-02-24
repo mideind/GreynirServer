@@ -76,6 +76,9 @@ class BIN_Db:
         """ Initialize DB connection instance """
         self._conn = None # Connection
         self._c = None # Cursor
+        # Cache descriptors for the lookup functions
+        self._meanings = getattr(self, "meanings")
+        self._forms = getattr(self, "forms")
 
     def open(self, host):
         """ Open and initialize a database connection """
@@ -124,7 +127,38 @@ class BIN_Db:
             m = None
         return m
 
+    @lru_cache(maxsize = CACHE_SIZE)
+    def forms(self, w):
+        """ Return a list of all possible forms of a particular root (stem) """
+        assert self._c is not None
+        m = None
+        try:
+            self._c.execute("select stofn, utg, ordfl, fl, ordmynd, beyging " +
+                "from ord where stofn=(%s);", [ w ])
+            # Map the returned data from fetchall() to a list of instances
+            # of the BIN_Meaning namedtuple
+            g = self._c.fetchall()
+            if g is not None:
+                m = list(map(BIN_Meaning._make, g))
+                if w in Meanings.ROOT:
+                    # There are additional word meanings in the Meanings dictionary,
+                    # coming from the settings file: append them
+                    for add_m in Meanings.ROOT[w]:
+                        m.append(BIN_Meaning._make(add_m))
+        except (psycopg2.DataError, psycopg2.ProgrammingError) as e:
+            print("Word {0} causing DB exception {1}".format(w, e))
+            m = None
+        return m
+
     def lookup_word(self, w, at_sentence_start):
+        """ Given a word form, look up all its possible meanings """
+        return self._lookup(w, at_sentence_start, self._meanings)
+
+    def lookup_form(self, w, at_sentence_start):
+        """ Given a word root (stem), look up all its forms """
+        return self._lookup(w, at_sentence_start, self._forms)
+
+    def _lookup(self, w, at_sentence_start, lookup):
         """ Lookup a simple or compound word in the database and return its meaning(s) """
 
         def lookup_abbreviation(w):
@@ -136,7 +170,7 @@ class BIN_Db:
             return None if m is None else [ BIN_Meaning._make(m) ]
 
         # Start with a simple lookup
-        m = self.meanings(w)
+        m = lookup(w)
 
         if at_sentence_start or not m:
             # No meanings found in database, or at sentence start
@@ -145,9 +179,9 @@ class BIN_Db:
             if lower_w != w:
                 # Do another lookup, this time for lowercase only
                 if not m:
-                    m = self.meanings(lower_w)
+                    m = lookup(lower_w)
                 else:
-                    m.extend(self.meanings(lower_w))
+                    m.extend(lookup(lower_w))
 
             if not m and (lower_w != w or w[0] == '['):
                 # Still nothing: check abbreviations
@@ -178,7 +212,7 @@ class BIN_Db:
                     # This looks like a compound word:
                     # use the meaning of its last part
                     prefix = "-".join(cw[0:-1])
-                    m = self.meanings(cw[-1])
+                    m = lookup(cw[-1])
                     m = [ BIN_Meaning(prefix + "-" + r.stofn, r.utg, r.ordfl, r.fl,
                             prefix + "-" + r.ordmynd, r.beyging)
                             for r in m]
@@ -188,7 +222,7 @@ class BIN_Db:
                 # (i.e. create 'óhefðbundinn' from 'hefðbundinn')
                 suffix = lower_w[1:]
                 if suffix:
-                    om = self.meanings(suffix)
+                    om = lookup(suffix)
                     if om:
                         m = [ BIN_Meaning("ó" + r.stofn, r.utg, r.ordfl, r.fl,
                                 "ó" + r.ordmynd, r.beyging)

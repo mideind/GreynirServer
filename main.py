@@ -20,6 +20,7 @@ import re
 import time
 from contextlib import closing
 from datetime import datetime
+from collections import OrderedDict
 
 from flask import Flask
 from flask import render_template, redirect, jsonify
@@ -28,10 +29,10 @@ from flask import request, session, url_for
 from settings import Settings, ConfigError
 from tokenizer import tokenize, StaticPhrases, Abbreviations, TOK
 from grammar import Nonterminal
-from parser import ParseError
-from fastparser import Fast_Parser, ParseForestNavigator, ParseForestPrinter, ParseForestDumper
+from fastparser import Fast_Parser, ParseError, ParseForestNavigator, ParseForestPrinter, ParseForestDumper
 from reducer import Reducer
 from scraper import Scraper
+from scraperdb import Scraper_DB, Person
 from ptest import run_test, Test_DB
 
 # Initialize Flask framework
@@ -174,7 +175,7 @@ def profile(func, *args, **kwargs):
     return result
 
 
-def parse(toklist, single, use_reducer, dump_forest = False):
+def parse(toklist, single, use_reducer, dump_forest = False, keep_trees = False):
     """ Parse the given token list and return a result dict """
 
     # Count sentences
@@ -185,8 +186,12 @@ def parse(toklist, single, use_reducer, dump_forest = False):
     sent = []
     sent_begin = 0
 
+    # Accumulate parsed sentences in a text dump format
+    trees = OrderedDict()
+
     with Fast_Parser(verbose = False) as bp: # Don't emit diagnostic messages
 
+        version = bp.version
         rdc = Reducer(bp.grammar)
 
         for ix, t in enumerate(toklist):
@@ -242,6 +247,14 @@ def parse(toklist, single, use_reducer, dump_forest = False):
                         # Do a weighted average on sentence length
                         total_ambig += ambig_factor * slen
                         total_tokens += slen
+                        if keep_trees:
+                            # We want to keep the trees for further processing down the line:
+                            # reduce and dump the best tree to text
+                            if num > 1:
+                                # Reduce the resulting forest before dumping it to text format
+                                forest = rdc.go(forest)
+                            trees[num_sent] = ParseForestDumper.dump_forest(forest)
+
                     # Mark the sentence beginning with the number of parses
                     # and the index of the offending token, if an error occurred
                     toklist[sent_begin] = TOK.Begin_Sentence(num_parses = num, err_index = err_index)
@@ -252,13 +265,41 @@ def parse(toklist, single, use_reducer, dump_forest = False):
             else:
                 sent.append(t)
 
-    return dict(
+    result = dict(
+        version = version,
         tokens = toklist,
         tok_num = len(toklist),
         num_sent = num_sent,
         num_parsed_sent = num_parsed_sent,
         avg_ambig_factor = (total_ambig / total_tokens) if total_tokens > 0 else 1.0
     )
+
+    return (result, trees)
+
+
+def create_name_register(result):
+    """ Assemble a register of names and titles from the token list """
+    tokens = result["tokens"]
+    register = { }
+    db = Scraper_DB()
+    with closing(db.session) as session:
+        for t in tokens:
+            if t.kind == TOK.PERSON:
+                gn = t.val
+                for pn in gn:
+                    # Attempt to look up the name pn.name
+                    q = session.query(Person).filter_by(name = pn.name).all()
+                    title = None
+                    for p in q:
+                        # Use the longest title
+                        if not title or len(p.title) > len(title):
+                            title = p.title
+                    if title:
+                        # Found a usable title: add it to the register
+                        register[pn.name] = title
+        session.commit()
+    result["register"] = register
+    print("Register is: {0}".format(register))
 
 
 @app.route("/analyze", methods=['POST'])
@@ -271,6 +312,7 @@ def analyze():
     metadata = None
     # Single sentence (True) or contiguous text from URL (False)?
     single = False
+    keep_trees = False
 
     t0 = time.time()
 
@@ -278,6 +320,9 @@ def analyze():
         # Scrape the URL, tokenize the text content and return the token list
         metadata, generator = process_url(url)
         toklist = list(generator)
+        # If this is an already scraped URL, keep the parse trees and update
+        # the database with the new parse
+        keep_trees = Scraper.is_known_url(url)
     else:
         # Tokenize the text entered as-is and return the token list
         # In this case, there's no metadata
@@ -289,9 +334,17 @@ def analyze():
     t0 = time.time()
 
     # result = profile(parse, toklist, single, use_reducer, dump_forest)
-    result = parse(toklist, single, use_reducer, dump_forest)
+    result, trees = parse(toklist, single, use_reducer, dump_forest, keep_trees)
+
+    # Add a name register to the result
+    create_name_register(result)
 
     parse_time = time.time() - t0
+
+    if keep_trees:
+        # Save a new parse result
+        print("Storing a new parse tree for url {0}".format(url))
+        Scraper.store_parse(url, result, trees)
 
     result["metadata"] = metadata
     result["tok_time"] = tok_time
@@ -610,12 +663,12 @@ except ConfigError as e:
     print("Configuration error: {0}".format(e))
     quit()
 
-print("Running Reynir with debug={0}, host={1}, db_hostname={2}"
-    .format(Settings.DEBUG, Settings.HOST, Settings.DB_HOSTNAME))
-
 # Run a default Flask web server for testing if invoked directly as a main program
 
 if __name__ == "__main__":
+
+    print("Running Reynir with debug={0}, host={1}, db_hostname={2}"
+        .format(Settings.DEBUG, Settings.HOST, Settings.DB_HOSTNAME))
 
     # Additional files that should cause a reload of the web server application
     # Note: Reynir.grammar is automatically reloaded if its timestamp changes

@@ -351,6 +351,7 @@ class MblScraper(ScrapeHelper):
             ScrapeHelper.del_div_class(soup, "mainimg-big")
             ScrapeHelper.del_div_class(soup, "extraimg-big-w-txt")
             ScrapeHelper.del_div_class(soup, "extraimg-big")
+            ScrapeHelper.del_div_class(soup, "newsimg-left")
         return soup
 
 

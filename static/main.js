@@ -170,6 +170,7 @@ function hoverIn() {
    var ix = parseInt(wId.slice(1));
    var out = $("div#result");
    var tokens = out.data("tokens");
+   var register = out.data("register");
    var wl = tokens[ix];
    var offset = $(this).position();
    var left = Math.min(offset.left, 600);
@@ -244,11 +245,14 @@ function hoverIn() {
    }
    else
    if (wl[0] == TOK_PERSON) {
-      $("div.info").html("<p><b>" + wl[1] + "</b></p>");
-      for (i = 0; i < wl[2].length; i++) {
-         // Show name, gender and case
-         var p = wl[2][i];
-         $("div.info").append("<p>" + p[0] + " " + p[1] + " " + p[2] + "</p>");
+      if (!wl[2].length)
+         $("div.info").html("<p><b>" + wl[1] + "</b></p>");
+      else {
+         var p = wl[2][0];
+         // Show name and title
+         var name = p[0];
+         var title = register[name] || "";
+         $("div.info").html("<p><b>" + name + "</b> " + title + "</p>");
       }
    }
    else
@@ -307,7 +311,9 @@ function populateResult(json) {
    $("p.tok-info").css("visibility", "visible");
    var out = $("div#result");
    var tokens = json.result.tokens;
+   var register = json.result.register; // Name register
    out.data("tokens", tokens);
+   out.data("register", register);
    var i;
    var s = "";
    var wsp = ""; // Pending whitespace

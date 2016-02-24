@@ -38,9 +38,8 @@ from collections import OrderedDict
 from bs4 import BeautifulSoup, NavigableString
 
 from tokenizer import TOK, tokenize
-from parser import ParseError
 from reducer import Reducer
-from fastparser import Fast_Parser, ParseForestDumper
+from fastparser import Fast_Parser, ParseError, ParseForestDumper
 from settings import Settings, ConfigError, UnknownVerbs
 
 from scraperdb import Scraper_DB, Root, Article, IntegrityError
@@ -335,9 +334,6 @@ class Scraper:
         # Parse the HTML document
         soup = BeautifulSoup(html_doc, _HTML_PARSER) if html_doc else None
 
-        # Obtain the set of child URLs to fetch
-        #fetch_set = self.children(root, soup)
-
         # Use the scrape helper to analyze the soup and return
         # metadata
         metadata = helper.get_metadata(soup) if soup else None
@@ -345,29 +341,33 @@ class Scraper:
         # Upate the article info
         with closing(self._db.session) as session:
 
-            article = session.query(Article).filter_by(url = url).one()
-            article.scraped = datetime.utcnow()
-
-            if metadata:
-
-                article.heading = metadata.heading
-                article.author = metadata.author
-                article.timestamp = metadata.timestamp
-                article.authority = metadata.authority
-                article.scr_module = helper.scr_module
-                article.scr_class = helper.scr_class
-                article.scr_version = helper.scr_version
-                article.html = html_doc
-
-            else:
-                # No metadata: mark the article as scraped with no HTML
-                article.html = None
-
             try:
+
+                article = session.query(Article).filter_by(url = url).one_or_none()
+
+                if article:
+
+                    article.scraped = datetime.utcnow()
+
+                    if metadata:
+                        article.heading = metadata.heading
+                        article.author = metadata.author
+                        article.timestamp = metadata.timestamp
+                        article.authority = metadata.authority
+                        article.scr_module = helper.scr_module
+                        article.scr_class = helper.scr_class
+                        article.scr_version = helper.scr_version
+                        article.html = html_doc
+                    else:
+                        # No metadata: mark the article as scraped with no HTML
+                        article.html = None
+
                 session.commit()
+
             except IntegrityError as e:
                 # Roll back and continue
                 session.rollback()
+
             except Exception as e:
                 session.rollback()
 
@@ -467,6 +467,81 @@ class Scraper:
 
         print("Parsing of {2}/{1} sentences completed in {0:.2f} seconds".format(parse_time, num_sent, num_parsed_sent))
 
+    @classmethod
+    def helper_for(cls, session, url):
+        """ Return a scrape helper for the root of the given url """
+        s = urlparse.urlsplit(url)
+        root = None
+        # Find which root this URL belongs to, if any
+        for r in session.query(Root).all():
+            root_s = urlparse.urlsplit(r.url)
+            # This URL belongs to a root if the domain (netloc) part
+            # ends with the root domain (netloc)
+            if s.netloc.endswith(root_s.netloc):
+                root = r
+                break
+        # Obtain a scrape helper for the root, if any
+        return cls._get_helper(root) if root else None
+
+    @classmethod
+    def is_known_url(cls, url):
+        """ Return True if the URL has already been scraped """
+
+        found = False
+        with closing(Scraper_DB().session) as session:
+
+            try:
+                article = session.query(Article).filter_by(url = url) \
+                    .filter(Article.scraped != None).one_or_none()
+                if article:
+                    found = True
+            except Exception:
+                pass
+
+            session.commit()
+
+        return found
+
+    @classmethod
+    def store_parse(cls, url, result, trees, session = None):
+        """ Store a new parse of an article """
+
+        success = True
+        new_session = False
+        if not session:
+            db = Scraper_DB()
+            session = db.session
+            new_session = True
+
+        try:
+
+            article = session.query(Article).filter_by(url = url) \
+                .filter(Article.scraped != None).one_or_none()
+
+            if article:
+                article.parsed = datetime.utcnow()
+                article.parser_version = result["version"]
+                article.num_sentences = result["num_sent"]
+                article.num_parsed = result["num_parsed_sent"]
+                article.ambiguity = result["avg_ambig_factor"]
+
+                # Create a tree representation string out of all the accumulated parse trees
+                article.tree = "".join("S{0}\n{1}\n".format(key, val) for key, val in trees.items())
+            else:
+                success = False
+                print("Unable to store new parse of url {0}".format(url))
+
+            session.commit()
+
+        except Exception as e:
+            success = False
+            print("Unable to store new parse of url {0}, exception {1}".format(url, e))
+
+        finally:
+            if new_session:
+                session.close()
+
+        return success
 
     @classmethod
     def fetch_url(cls, url, session = None):
@@ -483,21 +558,7 @@ class Scraper:
             new_session = True
 
         try:
-            s = urlparse.urlsplit(url)
-            root = None
-
-            # Find which root this URL belongs to, if any
-            for r in session.query(Root).all():
-                root_s = urlparse.urlsplit(r.url)
-                # This URL belongs to a root if the domain (netloc) part
-                # ends with the root domain (netloc)
-                if s.netloc.endswith(root_s.netloc):
-                    root = r
-                    break
-
-            # Obtain a scrape helper for the root, if any
-            helper = cls._get_helper(root) if root else None
-
+            helper = cls.helper_for(session, url)
             # Parse the HTML
             soup = BeautifulSoup(html_doc, _HTML_PARSER)
             if not soup or not soup.html:
@@ -510,7 +571,6 @@ class Scraper:
             return (metadata, content)
 
         finally:
-
             if new_session:
                 session.close()
 

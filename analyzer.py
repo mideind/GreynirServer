@@ -20,8 +20,7 @@ from flask import request, session, url_for
 
 from settings import Settings, ConfigError
 from tokenizer import tokenize, TOK
-from parser import ParseError
-from fastparser import Fast_Parser, ParseForestNavigator
+from fastparser import Fast_Parser, ParseError, ParseForestNavigator
 from binparser import BIN_Token
 from reducer import Reducer
 

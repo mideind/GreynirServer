@@ -116,7 +116,8 @@ class Meanings:
     """ Wrapper around list of additional word meanings, initialized from the config file """
 
     # Dictionary of additional words and their meanings
-    DICT = defaultdict(list)
+    DICT = defaultdict(list) # Keyed by word form
+    ROOT = defaultdict(list) # Keyed by word root (stem)
 
     @staticmethod
     def add (stofn, ordmynd, ordfl, fl, beyging):
@@ -125,8 +126,12 @@ class Meanings:
         # Append the word and its meaning in tuple form
         assert ordmynd is not None
         assert ordfl is not None
+        if not stofn:
+            stofn = ordmynd
         Meanings.DICT[ordmynd].append(
-            (stofn or ordmynd, 0, ordfl, fl or "ob", ordmynd, beyging or "-"))
+            (stofn, 0, ordfl, fl or "ob", ordmynd, beyging or "-"))
+        Meanings.ROOT[stofn].append(
+            (stofn, 0, ordfl, fl or "ob", ordmynd, beyging or "-"))
 
 
 class VerbObjects:
