@@ -186,5 +186,5 @@ class Person(Base):
 
     @classmethod
     def table(cls):
-        return Table(cls.__tablename__, Base.metadata)
+        return cls.__table__
 

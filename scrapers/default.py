@@ -225,7 +225,9 @@ class RuvScraper(ScrapeHelper):
         "/frontpage?",
         "/sarpurinn/",
         "/tag/",
-        "/frettalisti/"
+        "/frettalisti/",
+        "/nyjast/",
+        "/dagskra"
     ]
 
     def __init(self, root):
@@ -273,7 +275,8 @@ class MblScraper(ScrapeHelper):
         "/frettir/colorbox/",
         "/frettir/lina_snippet/",
         "/myndasafn/",
-        "/atvinna/"
+        "/atvinna/",
+        "/vidburdir/"
     ]
 
     def __init(self, root):
@@ -336,6 +339,9 @@ class MblScraper(ScrapeHelper):
         if soup is None:
             # Could be a blog post
             soup = ScrapeHelper.div_class(soup_body, "pistill-entry-body")
+        if soup is None:
+            # Could be a picture collection - look for div#non-galleria
+            soup = ScrapeHelper.div_id(soup_body, "non-galleria")
         if soup is None:
             print("_get_content: soup_body.div.frett-main/pistill-entry-body is None")
         if soup:

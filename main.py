@@ -20,14 +20,14 @@ import re
 import time
 from contextlib import closing
 from datetime import datetime
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 
 from flask import Flask
 from flask import render_template, redirect, jsonify
 from flask import request, session, url_for
 
 from settings import Settings, ConfigError
-from tokenizer import tokenize, StaticPhrases, Abbreviations, TOK
+from tokenizer import tokenize, TOK
 from grammar import Nonterminal
 from fastparser import Fast_Parser, ParseError, ParseForestNavigator, ParseForestPrinter, ParseForestDumper
 from reducer import Reducer
@@ -289,13 +289,18 @@ def create_name_register(result):
                 for pn in gn:
                     # Attempt to look up the name pn.name
                     q = session.query(Person).filter_by(name = pn.name).all()
-                    title = None
+                    titles = defaultdict(int)
                     for p in q:
-                        # Use the longest title
-                        if not title or len(p.title) > len(title):
-                            title = p.title
-                    if title:
-                        # Found a usable title: add it to the register
+                        # Collect and count the titles
+                        titles[p.title] += 1
+                    if sum(cnt >= 4 for cnt in titles.values()) >= 2:
+                        # More than one title with four or more instances:
+                        # reduce the choices to just those and decide based on length
+                        titles = { key: 0 for key, val in titles.items() if val >= 4 }
+                    if titles:
+                        # Pick the most popular title, or the longer one if two are equally popular
+                        title = sorted([(cnt, len(t), t) for t, cnt in titles.items()])[-1][2]
+                        # Add it to the register
                         register[pn.name] = title
         session.commit()
     result["register"] = register

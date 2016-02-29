@@ -4,7 +4,7 @@
 
     Default tree processor module
 
-    Copyright (c) 2015 Vilhjalmur Thorsteinsson
+    Copyright (c) 2016 Vilhjalmur Thorsteinsson
     All rights reserved
     See the accompanying README.md file for further licensing and copyright information.
 
@@ -17,16 +17,42 @@
 
     * node, which is the tree node corresponding to the function name. node.nt is
       the original nonterminal name being matched, with variants.
+
     * params, which is a list of positional parameters, where each is a dictionary
       of results from child nodes in the tree
-    * result, which is a dictionary of result values from this nonterminal node.
-      The dictionary comes with the attribute/key "_text" that contains
-      a string with the combined text of the child nodes, and the attribute/key
-      "_root" that yields a string with the lemmas (canonical word forms)
-      of that text.
 
-    This particular processor collects information about persons and their titles,
-    and abbreviations and their meanings.
+    * result, which is a dictionary of result values from this nonterminal node.
+      The dictionary comes pre-assigned with the following attributes/keys:
+
+      _text: a string with the combined text of the child nodes
+      _root: a string with the lemmas (word roots) of _text
+      _nominative: a string with the words of _text in nominative case
+
+      Additionally, the result dictionary contains an amalgamation of
+      attributes/keys that were set by child nodes.
+
+    A function can add attributes/keys to the result dictionary, passing them on to
+    upper levels in the tree. If multiple children assign to the same attribute/key,
+    the parent will receive the leftmost value - except in the case of lists,
+    dictionaries and sets, which will be combined into one merged/extended value
+    (again with left precedence in the case of dictionaries).
+
+    --------------
+
+    This particular processor collects information about persons and their titles.
+    It handles structures such as:
+
+    'Már Guðmundsson seðlabankastjóri segir að krónan sé sterk um þessar mundir.'
+    --> name 'Már Guðmundsson', title 'seðlabankastjóri'
+
+    'Jóhanna Dalberg, sölustjóri félagsins, telur ekki ástæðu til að örvænta.'
+    --> name 'Jóhanna Dalberg', title 'sölustjóri félagsins'
+
+    'Rætt var við Pál Eiríksson, sem leikur Gunnar á Hlíðarenda.'
+    --> name 'Páll Eiríksson', title 'leikur Gunnar á Hlíðarenda'
+
+    'Hetja dagsins var Guðrún Gunnarsdóttir (markvörður norska liðsins Brann) en hún átti stórleik.'
+    --> name 'Guðrún Gunnarsdóttir', title 'markvörður norska liðsins Brann'
 
     TODO:
 
@@ -109,6 +135,62 @@ def FsLiður(node, params, result):
     # Leyfa forsetningarlið að standa óbreyttum í titli
     result._nominative = result._text
 
+def Setning(node, params, result):
+    """ Undirsetning: láta standa óbreytta """
+    result._nominative = result._text
+
+# Textar sem ekki eru teknir gildir sem skýringar
+ekki_skýring = { "myndskeið" }
+
+def NlSkýring(node, params, result):
+    """ Skýring nafnliðar (innan sviga eða komma) """
+
+    def cut(s):
+        if s.startswith(", ") or s.startswith("( "):
+            s = s[2:]
+        if s.endswith(" ,") or s.endswith(" )"):
+            s = s[:-2]
+        return s
+
+    s = cut(result._text)
+    if s.startswith("sem "):
+        # Jón, sem er heimsmethafi í hástökki,
+        s = s[4:]
+        if s.startswith("er "):
+            s = s[3:]
+        elif s.startswith("nú er "):
+            s = s[6:]
+        elif s.startswith("einnig er "):
+            s = s[10:]
+        elif s.startswith("ekki er "):
+            s = "ekki " + s[8:]
+        elif s.startswith("ekki var "):
+            s = "var ekki " + s[9:]
+        elif s.startswith("verið hefur "):
+            s = "hefur verið " + s[12:]
+    else:
+        # Ég talaði við Jón (heimsmethafa í hástökki)
+        s = cut(result._nominative)
+        if s.lower() in ekki_skýring:
+            s = None
+
+    if s:
+        result.skýring = s
+    # Ekki senda mannsnafn innan úr skýringunni upp tréð
+    result.del_attribs("mannsnafn")
+
+def NlEind(node, params, result):
+    """ Nafnliðareind """
+    mannsnafn = result.get("mannsnafn")
+    skýring = result.get("skýring")
+    if mannsnafn and skýring:
+        if " " in mannsnafn:
+            # Fullt nafn með skýringu: bæta því við gagnagrunninn
+            if "nöfn" not in result:
+                result.nöfn = []
+            result.nöfn.append((mannsnafn, skýring))
+        result.del_attribs("skýring")
+
 def NlKjarni(node, params, result):
     """ Skoða mannsnöfn með titlum sem kunna að þurfa viðbót úr eignarfallslið """
     if "_et" in node.nt:
@@ -146,6 +228,10 @@ def NlKjarni(node, params, result):
                     result.nöfn = []
                 #print("Appending mannsnafn '{0}' titill '{1}'".format(mannsnafn, titill))
                 result.nöfn.append((mannsnafn, titill))
+                # Búið að afgreiða þetta nafn með titli
+                result.del_attribs("mannsnafn")
 
-    result.del_attribs(("mannsnafn", "titill", "ávarp", "efliður"))
+    # Leyfa mannsnafni að ferðast áfram upp tréð ef við
+    # fundum ekki titil á það hér
+    result.del_attribs(("titill", "ávarp", "efliður"))
 

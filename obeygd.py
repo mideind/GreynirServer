@@ -9,7 +9,7 @@ Author: Vilhjalmur Thorsteinsson 2015
 Copy the result into PostgreSQL with the following statement:
 
 \c bin
-COPY ord FROM '/home/pi/ord/obeygd.csv' WITH (FORMAT CSV, DELIMITER ';', ENCODING 'utf8');
+COPY ord FROM '/home/user/github/Reynir/resources/obeygd.csv' WITH (FORMAT CSV, DELIMITER ';', ENCODING 'utf8');
 
 """
 
@@ -18,10 +18,11 @@ import codecs
 def run(infile, outfile):
     """ Read input file and output CSV """
     out = codecs.open(outfile, "w", "utf-8")
-    with codecs.open(infile, "r", "latin-1") as inp:
+    with codecs.open(infile, "r", "utf-8") as inp:
         for li in inp:
             if li:
                 li = li.strip()
+            if li:
                 if not li.startswith("#"):
                     forms = li.split(u" ")
                     if forms:
@@ -33,4 +34,4 @@ def run(infile, outfile):
                             out.write(s)
     out.close()
 
-run("resources/obeyg.smaord.txt", "resources/obeygd.csv")
+run("resources/obeygd.txt", "resources/obeygd.csv")

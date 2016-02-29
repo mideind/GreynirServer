@@ -21,6 +21,7 @@ import os
 
 from datetime import datetime
 from functools import reduce
+import json
 
 from tokenizer import TOK
 from grammar import Terminal, LiteralTerminal, Token, Grammar
@@ -193,6 +194,16 @@ class BIN_Token(Token):
 
     def __str__(self):
         return self.lower
+
+    @property
+    def dump(self):
+        """ Serialize the token as required for text dumping of trees """
+        if self.t0 == TOK.WORD:
+            # Simple case; no auxiliary information dumped
+            return "'" + self.t1 + "'"
+        # For non-word token types, dump the auxiliary information as well, if any
+        j = (" " + json.dumps(self.t2, ensure_ascii = False)) if self.t2 else ""
+        return "'{0}' {1}{2}".format(self.t1, self._kind, j)
 
     @classmethod
     def fbits(cls, beyging):
@@ -596,7 +607,13 @@ class BIN_Token(Token):
         def matcher_fs(m):
             """ Check preposition """
             if terminal.num_variants > 0:
-                return self.prep_matches(self.t1_lower, terminal.variant(0))
+                # Note that in the case of abbreviated prepositions,
+                # such as 'skv.' for 'samkvæmt', the full expanded form
+                # is found in m.stofn - not self.t1_lower or m.ordmynd
+                fs = self.t1_lower
+                if '.' in fs:
+                    fs = m.stofn
+                return self.prep_matches(fs, terminal.variant(0))
             return False
 
         def matcher_default(m):
@@ -918,13 +935,16 @@ class BIN_Parser(Base_Parser):
                 if tok[0] == TOK.PUNCTUATION and tok[1] == ')':
                     # Check the contents of the token list from left+1 to right-1
 
+                    # Skip parentheses starting with "e." (English)
+                    english = right > left + 1 and tlist[left + 1][1] == "e."
+
                     def is_unknown(t):
                         """ A token is unknown if it is a TOK.UNKNOWN or if it is a
                             TOK.WORD with no meanings """
                         UNKNOWN = { "e.", "t.d.", "þ.e.", "m.a." } # Abbreviations and stuff that we ignore inside parentheses
                         return t[0] == TOK.UNKNOWN or (t[0] == TOK.WORD and not t[2]) or t[1] in UNKNOWN
 
-                    if all(is_unknown(t) for t in tlist[left+1:right]):
+                    if english or all(is_unknown(t) for t in tlist[left+1:right]):
                         # Only unknown tokens: erase'em, including the parentheses
                         for ix in range(left, right + 1):
                             tlist[ix] = None

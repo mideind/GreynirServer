@@ -495,8 +495,8 @@ MiðmyndarBotn →
     # (Mér þykir) Hannes [ekki] hafa verið kurteis
     #| Nl_nf/tala/pers/kyn FsAtv? Sögn_sagnb/tala/pers/kyn
 
-    # (Mér virtist) kettirnir vera fallegir
-    | Nl_nf/tala/pers/kyn AtvFs? HjSögnVera LoTengtSögn_nf/tala/kyn FsAtv?
+    # (Mér finnst) kettirnir [ekki] [vera] fallegir
+    | Nl_nf/tala/pers/kyn AtvFs? HjSögnVera? LoTengtSögn_nf/tala/kyn FsAtv?
 
     # (Mér virtist) ykkur [ekki] blöskra undir ræðunni
     | Nl/aukafall AtvFs? so_subj_nh/aukafall AukafallsBotn?
@@ -1518,12 +1518,11 @@ NlKjarni_et_ef_kvk → 'hún'_et_ef
 
 # Afturbeygt fornafn, eins í tölum og kynjum, aðeins til í aukaföllum 3p.
 
-NlKjarni_et_þf/kyn → abfn_þf    # sig
-NlKjarni_et_þgf/kyn → abfn_þgf  # sér
-NlKjarni_et_ef/kyn → abfn_ef    # sín
-NlKjarni_ft_þf/kyn → abfn_þf    # sig
-NlKjarni_ft_þgf/kyn → abfn_þgf  # sér
-NlKjarni_ft_ef/kyn → abfn_ef    # sín
+# sjálfan sig / sjálfa sig
+# sjálfum sér / sjálfum sér
+# sjálfs sín  / sjálfra sín
+
+NlKjarni/tala/aukafall/kyn → 'sjálfur'/aukafall/tala/kyn? abfn/aukafall
 
 # Umraðanir
 
@@ -1586,7 +1585,8 @@ EignarFornafn/tala/fall/kyn →
 NlFornafn/tala/fall/kyn →
     # Stakt fornafn, e.t.v. með einkunn og töluorði
     # 'augljóslega sá vondi' / 'einhverjir tveir góðir' / 'ekkert uppbyggilegt' / 'fjórir aðrir'
-    AtviksliðurEinkunn* Töluorð/tala/fall/kyn? Fornafn/tala/fall/kyn LoLiður/tala/fall/kyn*
+    # 'þeir báðir' / 'hún öll' / 'þær sjálfar'
+    AtviksliðurEinkunn* Töluorð/tala/fall/kyn? Fornafn/tala/fall/kyn LoFornafn/fall/tala/kyn? LoLiður/tala/fall/kyn*
     # 'okkar besta' / 'óumdeilanlega ykkar versta'
     | AtviksliðurEinkunn* OkkarYkkar LoLiður/tala/fall/kyn
 
@@ -1648,7 +1648,8 @@ NlStak_p3/tala/fall/kyn →
     NlTöluorð/tala/fall/kyn
 
 NlTöluorð/tala/fall/kyn →
-    Töluorð/tala/fall/kyn
+    # '(Ég talaði við) tvær þeirra', 'fjórum þeirra (var kalt)'
+    Töluorð/tala/fall/kyn 'sá'_ft_ef/kyn?
 
 # Gefa mínusstig fyrir stök töluorð - viljum helst sjá þau sem einkunn í stærri nafnlið
 $score(-8) NlTöluorð/tala/fall/kyn
@@ -1821,10 +1822,14 @@ EinnTitill/fall →
     NlTitill/fall EfLiður? FsRuna?
 
 OgTitill/fall →
-    ','? "og" EinnTitill/fall
+    KommaEðaOg EinnTitill/fall
+
+KommaEðaOg →
+    ',' | "og" | ',' "og"
 
 KommuTitill/fall →
-    ',' EinnTitill/fall OgTitill/fall* ','
+    ',' EinnTitill/fall ','
+    | ',' EinnTitill/fall OgTitill/fall* ','? "og" EinnTitill/fall ','
 
 # Gefa plús fyrir titla
 $score(+5) Titill/fall
@@ -2129,6 +2134,8 @@ Lo_mst_nf/tala/kyn → AtviksliðurEinkunn* lo_mst_nf/tala/kyn LoViðhengi? # Mi
 LoViðhengi →
     EfLiður | Nl_þgf
 
+$score(-4) LoViðhengi
+
 # Lýsingarorð sem einkunn með nafnlið
 
 # '(Jón), sultuslakur eftir gufubaðið, (lék á als oddi)'
@@ -2166,10 +2173,11 @@ LoKomma/tala/fall/kyn →
     ',' Lo/fall/tala/kyn
 
 # Fornöfn sem geta hegðað sér eins og lýsingarorð:
-# 'Hann komst sjálfur út úr flakinu', 'Hún fór öll inn um gluggann'
+# 'Hann komst sjálfur út úr flakinu', 'Hún fór öll inn um gluggann',
+# 'Þau eru bæði viðskiptafræðingar'
 
 LoFornafn/fall/tala/kyn →
-    'allur'/fall/tala/kyn | 'sjálfur'/fall/tala/kyn
+    'allur'/fall/tala/kyn | 'sjálfur'/fall/tala/kyn | 'báðir'/fall/tala/kyn
 
 # Lýsingarorð sem andlag sagnar
 # Þar kemur til greina miðstig + 'en' + nafnliður
@@ -2212,19 +2220,18 @@ FsMeðFallstjórn →
     fs/fall Nl/fall
     # !!! ATH: Geta eftirfarandi form staðið með nafnlið, eða aðeins með sögn?
     | fs/fall NhLiðir # 'um að...', 'í að...', 'eftir að...'
-    # | fs_þf 'það'_þf_et NhLiðir # 'kringum það að...'
-    # | fs_þgf 'það'_þgf_et NhLiðir # 'frá því að...', 'með því að...'
-    # | fs_ef 'það'_ef_et? NhLiðir # 'til [þess] að...'
-    | "að" "baki" Nl_þgf # 'að baki hverju bundnu sæti'
+    # | "að" "baki" Nl_þgf # 'að baki hverju bundnu sæti'
     | "á" "hendur" Nl_þgf # 'að höfða sakamál á hendur Páli'
     | "nær" 'draga'_et_p3 Nl_þgf # 'þegar nær dró/dregur jólum'
-    | "það" "sem" "af" "er" Nl_þgf # 'það sem af er þessu þingi'
+    | 'það_sem_af_er' Nl_þgf # 'það sem af er þessu þingi'
     | "miðað" "við" Nl_þf
     | 'miðað_við' Nl_þf
-    | "þrátt" "fyrir" Nl_þf
     | "þegar" "kemur" "að" Nl_þgf
+    | 'til_og_frá' Nl_þgf
+    | "fyrir" "utan" Nl_þf
     | "hvað" FsHvaðVarðar
     | "um" 'það'_þf_et? FsSamtenging HreinYfirsetning # 'um [það] hvort Brandur sé fallegastur'
+    | "um" "að" HreinYfirsetning ','? # 'um að lög um endurupptökunefnd standist ekki stjórnarskrá'
     | FsÍGegnUm
 
     | '(' FsMeðFallstjórn ')'
@@ -2296,6 +2303,7 @@ EinnAl →
     | Tímasetning
     | EkkiNeitt
     | UndirEins
+    | "eina" "ferðina" "enn"
 
 EkkiNeitt →
     "ekki" "neitt"      # (Ég þekki þetta) ekki neitt

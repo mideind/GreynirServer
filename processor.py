@@ -18,6 +18,7 @@ import sys
 import getopt
 import time
 import importlib
+import json
 
 #from multiprocessing.dummy import Pool
 from multiprocessing import Pool
@@ -229,7 +230,7 @@ class TerminalNode(Node):
     _NUMBER = { "et", "ft" }
     _PERSONS = { "p1", "p2", "p3" }
 
-    def __init__(self, terminal, token, at_start):
+    def __init__(self, terminal, token, tokentype, aux, at_start):
         super().__init__()
         self.terminal = terminal
         self.token = token
@@ -238,6 +239,8 @@ class TerminalNode(Node):
         elems = terminal.split("_")
         self.cat = elems[0]
         self.variants = set(elems[1:])
+        self.tokentype = tokentype
+        self.aux = aux # Auxiliary information, originally from token.t2
         # Cache the root form of this word so that it is only looked up
         # once, even if multiple processors scan this tree
         self.root_cache = None
@@ -380,8 +383,18 @@ class PersonNode(TerminalNode):
 
     """ Specialized TerminalNode for person terminals """
 
+    def __init__(self, terminal, token, tokentype, aux, at_start):
+        super().__init__(terminal, token, tokentype, aux, at_start)
+        # Load the full names from the auxiliary JSON information
+        fullnames = json.loads(aux) if aux else None # List of tuples
+        firstname = fullnames[0] if fullnames else None # Tuple: name, gender, case
+        self.fullname = firstname[0] if firstname else ""
+
     def _root(self, bin_db):
         """ Calculate the root (canonical) form of this person name """
+        # If we already have a full name coming from the tokenizer, use it
+        if self.fullname:
+            return self.fullname
         # Lookup the token in the BIN database
         case = self.case.upper()
         # Look up each part of the name
@@ -491,13 +504,23 @@ class Tree:
         self.stack = None
         #print("Tree [{0}] is: {1}".format(self.n, self.s[self.n]))
 
-    def handle_T(self, n, terminal, token):
+    def handle_T(self, n, s):
         """ Terminal """
+        # The string s contains:
+        # terminal 'token' [TOKENTYPE] [auxiliary-json]
+        a = s.split(' ', maxsplit = 1)
+        terminal = a[0]
+        s = re.match(r'\'[^\']*\'', a[1])
+        token = s.group() if s else ""
+        s = a[1][s.end() + 1:] if s else ""
+        a = s.split(' ', maxsplit = 1) if s else ["WORD"] # Default token type
+        tokentype = a[0]
+        aux = a[1] if len(a) > 1 else "" # Auxiliary info (originally token.t2)
         # Select a terminal constructor based on the first part of the
         # terminal name
         cat = terminal.split("_", maxsplit = 1)[0]
         constructor = Tree._TC.get(cat, TerminalNode)
-        self.push(n, constructor(terminal, token, self.at_start))
+        self.push(n, constructor(terminal, token, tokentype, aux, self.at_start))
         self.at_start = False
 
     def handle_N(self, n, nonterminal):
@@ -518,12 +541,12 @@ class Tree:
             f = getattr(self, "handle_" + code[0], None)
             if f:
                 # Split the line up into identifiers that can be of three forms:
-                # 1) straight Python identifiers (alphabetic+digits+underscore)
-                # 2) 'literal'_some_variants where the variants are Python identifiers
+                # 1) straight Python identifiers (alphabetic+digits+underscore),
+                # 2) 'literal'_some_variants where the variants are Python identifiers,
                 # 3) "literal"
-                m = re.findall(r"(?:\w+[\?\+\*]?)|(?:'[^']*'\w*[\?\+\*]?)|(?:\"[^\"]*\")", a[1]) if len(a) > 1 else None
-                if m:
-                    f(n, *m)
+                # All of the above can be optionally followed by ?, + or *
+                if len(a) >= 2:
+                    f(n, a[1])
                 else:
                     f(n)
             else:
@@ -623,9 +646,11 @@ class Processor:
 
             try:
 
-                article = session.query(Article).filter_by(url = url).one()
+                article = session.query(Article).filter_by(url = url).first()
 
-                if article.tree:
+                if not article:
+                    print("Article not found in scraper database")
+                elif article.tree:
                     tree = Tree(url)
                     tree.load(article.tree)
                     # Run all processors in turn
@@ -775,7 +800,7 @@ def _main(argv = None):
                 # Process a single URL
                 process_article(url)
             else:
-                # Process already parsed trees, starting on February 10, 2016
+                # Process already parsed trees, starting on January 1, 2016
                 process_articles(from_date = datetime(year = 2016, month = 1, day = 1), limit = limit)
 
     except Usage as err:

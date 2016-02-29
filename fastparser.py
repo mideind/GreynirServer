@@ -667,7 +667,17 @@ class ParseForestPrinter(ParseForestNavigator):
 
 class ParseForestDumper(ParseForestNavigator):
 
-    """ Dump a parse forest into a string """
+    """ Dump a parse forest into a compact string """
+
+    # The result is a string consisting of lines separated by newline characters.
+    # The format is as follows:
+    # (n indicates a nesting level, >= 0)
+    # R1 -- start indicator and version number
+    # En -- Epsilon node
+    # Tn terminal token -- Token/terminal node
+    # Nn nonterminal -- Nonterminal node
+    # On index -- Option with index >= 0
+    # Q0 -- end indicator (not followed by newline)
 
     VERSION = "Reynir/1.00"
 
@@ -682,7 +692,7 @@ class ParseForestDumper(ParseForestNavigator):
 
     def _visit_token(self, level, w):
         # Identify this as a terminal/token
-        self._result.append("T{0} {1} {2}".format(level, w.terminal, w.token))
+        self._result.append("T{0} {1} {2}".format(level, w.terminal, w.token.dump))
         return None
 
     def _visit_nonterminal(self, level, w):

@@ -37,11 +37,9 @@ psycopg2ext.register_type(psycopg2ext.UNICODEARRAY)
 from settings import Settings, Abbreviations, AdjectiveTemplate, Meanings
 from dawgdictionary import Wordbase
 
+
 # Size of LRU cache for word lookups
 CACHE_SIZE = 512
-
-# Adjective endings
-ADJECTIVE_TEST = "leg" # Check for adjective if word contains 'leg'
 
 # Named tuple for word meanings fetched from the BÍN database (lexicon)
 BIN_Meaning = namedtuple('BIN_Meaning', ['stofn', 'utg', 'ordfl', 'fl', 'ordmynd', 'beyging'])
@@ -53,6 +51,21 @@ class BIN_Db:
 
     # Thread local storage - used for database connections
     tls = threading.local()
+
+    # Database connection parameters
+    _DB_NAME = "bin"
+    _DB_USER = "reynir" # This user typically has only SELECT privileges on the database
+    _DB_PWD = "reynir"
+    _DB_TABLE = "ord2"
+
+    # Query strings
+    _DB_Q_MEANINGS = "select stofn, utg, ordfl, fl, ordmynd, beyging " \
+        "from " + _DB_TABLE + " where ordmynd=(%s);"
+    _DB_Q_FORMS = "select stofn, utg, ordfl, fl, ordmynd, beyging " \
+        "from " + _DB_TABLE + " where stofn=(%s);"
+
+    # Adjective endings
+    _ADJECTIVE_TEST = "leg" # Check for adjective if word contains 'leg'
 
     @classmethod
     def get_db(cls):
@@ -82,8 +95,8 @@ class BIN_Db:
 
     def open(self, host):
         """ Open and initialize a database connection """
-        self._conn = psycopg2.connect(dbname="bin",
-            user="reynir", password="reynir",
+        self._conn = psycopg2.connect(dbname=BIN_Db._DB_NAME,
+            user=BIN_Db._DB_USER, password=BIN_Db._DB_PWD,
             host=host, client_encoding="utf8")
 
         if not self._conn:
@@ -110,8 +123,7 @@ class BIN_Db:
         assert self._c is not None
         m = None
         try:
-            self._c.execute("select stofn, utg, ordfl, fl, ordmynd, beyging " +
-                "from ord where ordmynd=(%s);", [ w ])
+            self._c.execute(BIN_Db._DB_Q_MEANINGS, [ w ])
             # Map the returned data from fetchall() to a list of instances
             # of the BIN_Meaning namedtuple
             g = self._c.fetchall()
@@ -133,8 +145,7 @@ class BIN_Db:
         assert self._c is not None
         m = None
         try:
-            self._c.execute("select stofn, utg, ordfl, fl, ordmynd, beyging " +
-                "from ord where stofn=(%s);", [ w ])
+            self._c.execute(BIN_Db._DB_Q_FORMS, [ w ])
             # Map the returned data from fetchall() to a list of instances
             # of the BIN_Meaning namedtuple
             g = self._c.fetchall()
@@ -194,7 +205,7 @@ class BIN_Db:
                     # Remove brackets from known abbreviations
                     w = w[1:-1]
 
-            if not m and ADJECTIVE_TEST in lower_w:
+            if not m and BIN_Db._ADJECTIVE_TEST in lower_w:
                 # Not found: Check whether this might be an adjective
                 # ending in 'legur'/'leg'/'legt'/'legir'/'legar' etc.
                 for aend, beyging in AdjectiveTemplate.ENDINGS:
@@ -207,7 +218,10 @@ class BIN_Db:
 
             if not m:
                 # Still nothing: check compound words
-                cw = Wordbase.dawg().slice_compound_word(lower_w)
+                cw = Wordbase.dawg().slice_compound_word(w)
+                if not cw and lower_w != w:
+                    # If not able to slice in original case, try lower case
+                    cw = Wordbase.dawg().slice_compound_word(lower_w)
                 if cw:
                     # This looks like a compound word:
                     # use the meaning of its last part

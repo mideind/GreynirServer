@@ -634,7 +634,7 @@ class Scraper:
             def iter_unscraped_articles():
                 """ Go through any unscraped articles and scrape them """
                 for a in session.query(Article) \
-                    .filter(Article.scraped == None).filter(Article.root_id != None):
+                    .filter(Article.scraped == None).filter(Article.root_id != None).all():
                     yield ArticleDescr(a.root, a.url)
 
             # Use a multiprocessing pool to scrape the articles
@@ -646,14 +646,15 @@ class Scraper:
 
             def iter_unparsed_articles(limit):
                 """ Go through any unparsed articles and parse them """
-                count = 0
-                for a in session.query(Article) \
+                # Fetch 100 rows at a time
+                q = session.query(Article) \
                     .filter(Article.scraped != None).filter(Article.tree == None) \
-                    .filter(Article.root_id != None):
+                    .filter(Article.root_id != None).yield_per(100)
+                if limit > 0:
+                    # Impose a limit on the query, if given
+                    q = q.limit(limit)
+                for a in q:
                     yield ArticleDescr(a.root, a.url)
-                    count += 1
-                    if limit > 0 and count >= limit: # !!! DEBUG
-                        break
 
             # Use a multiprocessing pool to parse the articles
 
@@ -703,7 +704,7 @@ class Scraper:
         num_sentences = result[0]
         num_sent_parsed = result[1]
 
-        print ("Num_sentences is {0}, num_sent_parsed is {1}, ratio is {2:.1f}%"
+        print ("\nNum_sentences is {0}, num_sent_parsed is {1}, ratio is {2:.1f}%"
             .format(num_sentences, num_sent_parsed, 100.0 * num_sent_parsed / num_sentences))
 
 

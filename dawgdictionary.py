@@ -110,6 +110,11 @@ class DawgDictionary:
                     if line:
                         _parse_and_add(line)
 
+    def store_pickle(self, fname):
+        """ Store a DAWG in a Python pickle file """
+        with open(fname, "wb") as pf:
+            pickle.dump(self._nodes, pf, pickle.HIGHEST_PROTOCOL)
+
     def load_pickle(self, fname):
         """ Load a DAWG from a Python pickle file """
         with self._lock:
@@ -196,15 +201,11 @@ class DawgDictionary:
 
 class Wordbase:
 
-    """ Container for two singleton instances of the word database,
-        one for the main dictionary and the other for common words
-    """
+    """ Container for a singleton instance of the word database """
 
     _dawg = None
-    _dawg_common = None
 
     _lock = threading.Lock()
-    _lock_common = threading.Lock()
 
     @staticmethod
     def _load_resource(resource):
