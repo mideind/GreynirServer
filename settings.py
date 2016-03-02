@@ -562,7 +562,7 @@ class Settings:
             raise ConfigError("Adjective template should have an ending and a form specifier")
         AdjectiveTemplate.add(a[0], a[1])
 
-
+    @staticmethod
     def read(fname):
         """ Read configuration file """
 

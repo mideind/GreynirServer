@@ -146,7 +146,7 @@ class TOK:
     }
 
     # Token constructors
-
+    @staticmethod
     def Punctuation(w):
         tp = TP_CENTER # Default punctuation type
         if w:
@@ -158,68 +158,87 @@ class TOK:
                 tp = TP_NONE
         return Tok(TOK.PUNCTUATION, w, tp)
 
+    @staticmethod
     def Time(w, h, m, s):
         return Tok(TOK.TIME, w, (h, m, s))
 
+    @staticmethod
     def Date(w, y, m, d):
         return Tok(TOK.DATE, w, (y, m, d))
 
+    @staticmethod
     def Timestamp(w, y, mo, d, h, m, s):
         return Tok(TOK.TIMESTAMP, w, (y, mo, d, h, m, s))
 
+    @staticmethod
     def Year(w, n):
         return Tok(TOK.YEAR, w, n)
 
+    @staticmethod
     def Telno(w):
         return Tok(TOK.TELNO, w, None)
 
+    @staticmethod
     def Email(w):
         return Tok(TOK.EMAIL, w, None)
 
+    @staticmethod
     def Number(w, n, cases=None, genders=None):
         """ cases is a list of possible cases for this number
             (if it was originally stated in words) """
         return Tok(TOK.NUMBER, w, (n, cases, genders))
 
+    @staticmethod
     def Currency(w, iso, cases=None, genders=None):
         """ cases is a list of possible cases for this currency name
             (if it was originally stated in words, i.e. not abbreviated) """
         return Tok(TOK.CURRENCY, w, (iso, cases, genders))
 
+    @staticmethod
     def Amount(w, iso, n, cases=None, genders=None):
         """ cases is a list of possible cases for this amount
             (if it was originally stated in words) """
         return Tok(TOK.AMOUNT, w, (n, iso, cases, genders))
 
+    @staticmethod
     def Percent(w, n, cases=None, genders=None):
         return Tok(TOK.PERCENT, w, (n, cases, genders))
 
+    @staticmethod
     def Ordinal(w, n):
         return Tok(TOK.ORDINAL, w, n)
 
+    @staticmethod
     def Url(w):
         return Tok(TOK.URL, w, None)
 
+    @staticmethod
     def Word(w, m):
         """ m is a list of BIN_Meaning tuples fetched from the BÍN database """
         return Tok(TOK.WORD, w, m)
 
+    @staticmethod
     def Unknown(w):
         return Tok(TOK.UNKNOWN, w, None)
 
+    @staticmethod
     def Person(w, m):
         """ m is a list of PersonName tuples: (name, gender, case) """
         return Tok(TOK.PERSON, w, m)
 
+    @staticmethod
     def Begin_Paragraph():
         return Tok(TOK.P_BEGIN, None, None)
 
+    @staticmethod
     def End_Paragraph():
         return Tok(TOK.P_END, None, None)
 
+    @staticmethod
     def Begin_Sentence(num_parses = 0, err_index = None):
         return Tok(TOK.S_BEGIN, None, (num_parses, err_index))
 
+    @staticmethod
     def End_Sentence():
         return Tok(TOK.S_END, None, None)
 
@@ -255,11 +274,12 @@ def parse_digits(w):
         else:
             p = w.split('.')
         y = int(p[2])
+        # noinspection PyAugmentAssignment
         if y <= 99:
             y = 2000 + y
         m = int(p[1])
         d = int(p[0])
-        if m > 12 and d <= 12:
+        if m > 12 >= d:
             # Probably wrong way around
             m, d = d, m
         if (1776 <= y <= 2100) and (1 <= m <= 12) and (1 <= d <= 31):
@@ -565,7 +585,7 @@ def annotate(token_stream):
                 elif t.kind != TOK.PUNCTUATION and t.kind != TOK.ORDINAL:
                     at_sentence_start = False
                 continue
-            if t.val != None:
+            if t.val is not None:
                 # Already have a meaning
                 yield t
                 at_sentence_start = False

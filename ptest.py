@@ -96,7 +96,7 @@ class Test_DB:
     def sentences(self):
         """ Return a list of all test sentences in the database """
         assert self._c is not None
-        m = None
+        m = [ ]
         try:
             self._c.execute("SELECT id, sentence, numtrees, best, target FROM sentences ORDER BY id;")
             t = self._c.fetchall()
@@ -108,7 +108,7 @@ class Test_DB:
                     target = r[4])
                 for r in t]
         except psycopg2.DataError as e:
-            # Fall through with m set to None
+            # Fall through with empty m
             pass
         return m
 

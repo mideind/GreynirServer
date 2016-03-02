@@ -135,7 +135,7 @@ class Node:
         """ Return True if there is only a single empty family of this node """
         if not self._families:
             return True
-        return len(self._families) == 1 and self._families[0][1] == None
+        return len(self._families) == 1 and self._families[0][1] is None
 
     def enum_children(self):
         """ Enumerate families of children """

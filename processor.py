@@ -40,7 +40,6 @@ BIN_ORDFL = {
     "fs" : { "fs" },
     "ao" : { "ao" },
     "eo" : { "ao" },
-    "eo" : { "ao" },
     "töl" : { "töl", "to" },
     "to" : { "töl", "to" },
     "fn" : { "fn" },
@@ -674,6 +673,7 @@ class Processor:
         db = Processor._db
         with closing(db.session) as session:
 
+            # noinspection PyComparisonWithNone
             def iter_parsed_articles(limit):
                 """ Go through parsed articles and process them """
                 if from_date is None:

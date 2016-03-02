@@ -207,6 +207,9 @@ class Puzzle:
 
     class RowAxis(Axis):
 
+        def __init__(self, puzzle):
+            super().__init__(puzzle)
+
         def has(self, row, col, digit):
             return digit not in self._set[row]
 
@@ -233,6 +236,9 @@ class Puzzle:
 
 
     class ColAxis(Axis):
+
+        def __init__(self, puzzle):
+            super().__init__(puzzle)
 
         def has(self, row, col, digit):
             return digit not in self._set[col]
@@ -269,7 +275,7 @@ class Puzzle:
             # Create map from (row, col) coordinates to subsquares
             subsq = list()
             ix = 0
-            for _ in range(dimension):
+            for i in range(dimension):
                 row = list()
                 for _ in range(dimension):
                     row.extend([ ix ] * dimension)
