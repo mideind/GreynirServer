@@ -138,12 +138,12 @@ class DawgDictionary:
         """ Enable simple lookup syntax: "word" in dawgdict """
         return self.find(word)
 
-    def find_matches(self, pattern, sort=True):
+    def find_matches(self, pattern):
         """ Returns a list of words matching a pattern.
             The pattern contains characters and '?'-signs denoting wildcards.
             Characters are matched exactly, while the wildcards match any character.
         """
-        nav = MatchNavigator(pattern, sort)
+        nav = MatchNavigator(pattern)
         self.navigate(nav)
         return nav.result()
 

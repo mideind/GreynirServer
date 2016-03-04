@@ -30,12 +30,12 @@ except ImportError:
     import psycopg2cffi.extensions as psycopg2ext
     import psycopg2cffi as psycopg2
 
+from settings import Settings, Abbreviations, AdjectiveTemplate, Meanings
+from dawgdictionary import Wordbase
+
 # Make Psycopg2 and PostgreSQL happy with UTF-8
 psycopg2ext.register_type(psycopg2ext.UNICODE)
 psycopg2ext.register_type(psycopg2ext.UNICODEARRAY)
-
-from settings import Settings, Abbreviations, AdjectiveTemplate, Meanings
-from dawgdictionary import Wordbase
 
 
 # Size of LRU cache for word lookups

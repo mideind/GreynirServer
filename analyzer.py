@@ -77,7 +77,7 @@ _CATEGORY_MAP = {
     "en" : "st",
     "þótt" : "st",
     "hver" : "st",
-    "hvor" : "st",
+    # "hvor" : "st",
     "hvaða" : "st",
     "hvers" : "st",
     "vegna" : "st",
@@ -252,6 +252,7 @@ def main():
 
 # Flask handlers
 
+# noinspection PyUnusedLocal
 @app.errorhandler(404)
 def page_not_found(e):
     """ Return a custom 404 error """

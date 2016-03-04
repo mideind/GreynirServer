@@ -438,6 +438,7 @@ class Grammar:
             return self._nonterminals_by_ix.get(index, None)
         if index > 0:
             return self._terminals_by_ix.get(index, None)
+        # index == 0
         return None
 
     @property

@@ -317,7 +317,7 @@ class _Dawg:
         for ch, nx in d.items():
             s = u' ' * level + ch
             if nx and nx.final:
-                s = s + u'|'
+                s += u'|'
             s += u' ' * (50 - len(s))
             s += nx.__str__()
             print(s)

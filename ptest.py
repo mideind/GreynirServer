@@ -13,7 +13,6 @@
 import time
 from contextlib import closing
 
-
 # Import the Psycopg2 connector for PostgreSQL
 try:
     # For CPython
@@ -24,15 +23,14 @@ except ImportError:
     import psycopg2cffi.extensions as psycopg2ext
     import psycopg2cffi as psycopg2
 
+from tokenizer import TOK, tokenize
+from grammar import Nonterminal, Terminal, Token, Production
+from fastparser import Fast_Parser, ParseError, ParseForestPrinter
+from settings import Settings, ConfigError
+
 # Make Psycopg2 and PostgreSQL happy with UTF-8
 psycopg2ext.register_type(psycopg2ext.UNICODE)
 psycopg2ext.register_type(psycopg2ext.UNICODEARRAY)
-
-
-from tokenizer import TOK, tokenize
-from grammar import Nonterminal, Terminal, Token, Production, Grammar, GrammarError
-from fastparser import Fast_Parser, ParseError
-from settings import Settings, ConfigError
 
 
 class Test_DB:
@@ -96,7 +94,7 @@ class Test_DB:
     def sentences(self):
         """ Return a list of all test sentences in the database """
         assert self._c is not None
-        m = None
+        m = [ ]
         try:
             self._c.execute("SELECT id, sentence, numtrees, best, target FROM sentences ORDER BY id;")
             t = self._c.fetchall()
@@ -108,7 +106,7 @@ class Test_DB:
                     target = r[4])
                 for r in t]
         except psycopg2.DataError as e:
-            # Fall through with m set to None
+            # Fall through with empty m
             pass
         return m
 
@@ -239,8 +237,8 @@ def test3():
         print("Reynir.grammar has {0} nonterminals, {1} terminals, {2} productions"
             .format(g.num_nonterminals, g.num_terminals, g.num_productions))
 
-        g.follow_set(g.root)
-        return
+        # g.follow_set(g.root)
+        # return
 
         # Dump the grammar
         # print("\n" + str(g))
@@ -264,7 +262,8 @@ def test3():
                         "Stóru bláu könnunni mun hafa verið fleygt í ruslið",
                         "Már Guðmundsson segir margskonar misskilnings gæta hjá Hannesi Hólmsteini",
                         "Már Guðmundsson seðlabankastjóri Íslands segir þetta við Morgunblaðið í dag.",
-                        "Það er náttúrlega einungis í samfélögum sem eiga við býsna stór vandamál að stríða að ný stjórnmálaöfl geta snögglega sveiflast upp í þriðjungs fylgi.",
+                        "Það er náttúrlega einungis í samfélögum sem eiga við býsna stór vandamál að stríða " + \
+                            "að ný stjórnmálaöfl geta snögglega sveiflast upp í þriðjungs fylgi.",
                         "Áætlaður kostnaður verkefnisins var tíu milljónir króna og áætluð verklok eru í byrjun september næstkomandi.",
                         "Pakkinn snerist um að ábyrgjast innlán og skuldabréfaútgáfu danskra fjármálafyrirtækja.",
                         "Kynningarfundurinn sem ég hélt í dag fjallaði um lausnina á þessum vanda.",

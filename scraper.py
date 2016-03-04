@@ -483,6 +483,7 @@ class Scraper:
         # Obtain a scrape helper for the root, if any
         return cls._get_helper(root) if root else None
 
+    # noinspection PyComparisonWithNone
     @classmethod
     def is_known_url(cls, url):
         """ Return True if the URL has already been scraped """
@@ -502,6 +503,7 @@ class Scraper:
 
         return found
 
+    # noinspection PyComparisonWithNone
     @classmethod
     def store_parse(cls, url, result, trees, session = None):
         """ Store a new parse of an article """
@@ -631,6 +633,7 @@ class Scraper:
             pool.close()
             pool.join()
 
+            # noinspection PyComparisonWithNone
             def iter_unscraped_articles():
                 """ Go through any unscraped articles and scrape them """
                 for a in session.query(Article) \
@@ -644,6 +647,7 @@ class Scraper:
             pool.close()
             pool.join()
 
+            # noinspection PyComparisonWithNone
             def iter_unparsed_articles(limit):
                 """ Go through any unparsed articles and parse them """
                 # Fetch 100 rows at a time
