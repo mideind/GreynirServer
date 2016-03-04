@@ -108,6 +108,14 @@ def sentence(state, result):
 # They will be called during processing (depth-first) of a complete parsed
 # tree for a sentence.
 
+def _add_name(result, mannsnafn, titill):
+    """ Add a name to the resulting name list """
+    if (" " in mannsnafn) and titill:
+        if "nöfn" not in result:
+            result.nöfn = []
+        result.nöfn.append((mannsnafn, titill))
+        return True
+    return False
 
 def Manneskja(node, params, result):
     """ Mannsnafn, e.t.v. með titli """
@@ -138,6 +146,7 @@ def FsLiður(node, params, result):
 def Setning(node, params, result):
     """ Undirsetning: láta standa óbreytta """
     result._nominative = result._text
+    result.del_attribs("skýring_nafn")
 
 # Textar sem ekki eru teknir gildir sem skýringar
 ekki_skýring = { "myndskeið" }
@@ -176,6 +185,10 @@ def NlSkýring(node, params, result):
 
     if s:
         result.skýring = s
+        mannsnafn = result.get("mannsnafn")
+        if s == mannsnafn:
+            # Mannsnafn sem skýring á nafnlið: gæti verið gagnlegt
+            result.skýring_nafn = mannsnafn
     # Ekki senda mannsnafn innan úr skýringunni upp tréð
     result.del_attribs("mannsnafn")
 
@@ -184,17 +197,28 @@ def NlEind(node, params, result):
     mannsnafn = result.get("mannsnafn")
     skýring = result.get("skýring")
     if mannsnafn and skýring:
-        if " " in mannsnafn:
-            # Fullt nafn með skýringu: bæta því við gagnagrunninn
-            if "nöfn" not in result:
-                result.nöfn = []
-            result.nöfn.append((mannsnafn, skýring))
+        # Fullt nafn með skýringu: bæta því við gagnagrunninn
+        _add_name(result, mannsnafn, skýring)
         result.del_attribs("skýring")
+
+#def Nl(node, params, result):
+#    """ Fiska upp mannsnöfn úr svigaskýringum """
+#    mannsnafn = result.get("skýring_nafn")
+#    if mannsnafn:
+#        print("Nl: mannsnafn úr skýringu er '{0}', allur texti er '{1}'".format(mannsnafn, result._nominative))
+#        titill = result._nominative
+#        # Skera tákn (sviga/hornklofa/bandstrik/kommur) aftan af
+#        # bil + tákn + bil + nafn + bil + tákn
+#        titill = titill[:- (3 + 2 + len(mannsnafn))]
+#        print("Nl: nafn '{0}', titill '{1}'".format(mannsnafn, titill))
+#        result.del_attribs("skýring_nafn")
 
 def NlKjarni(node, params, result):
     """ Skoða mannsnöfn með titlum sem kunna að þurfa viðbót úr eignarfallslið """
+
     if "_et" in node.nt:
-        # Eintala
+        # Höfum aðeins áhuga á eintölu
+
         mannsnafn = result.get("mannsnafn")
         if mannsnafn:
             ávarp = result.get("ávarp")
@@ -222,14 +246,30 @@ def NlKjarni(node, params, result):
 
             #print("In check, mannsnafn is '{0}' and titill is '{1}'".format(mannsnafn, titill))
 
-            if (" " in mannsnafn) and titill:
-                # Bæta nafni og titli við nafnalista
-                if "nöfn" not in result:
-                    result.nöfn = []
-                #print("Appending mannsnafn '{0}' titill '{1}'".format(mannsnafn, titill))
-                result.nöfn.append((mannsnafn, titill))
-                # Búið að afgreiða þetta nafn með titli
+            if _add_name(result, mannsnafn, titill):
+                # Búið að afgreiða þetta nafn
                 result.del_attribs("mannsnafn")
+
+        else:
+            mannsnafn = result.get("skýring_nafn")
+            if mannsnafn:
+                #print("NlKjarni: mannsnafn úr skýringu er '{0}', allur texti er '{1}'".format(mannsnafn, result._nominative))
+                titill = result._nominative
+                # Skera nafnið og tákn (sviga/hornklofa/bandstrik/kommur) aftan af
+                rdelim = titill[-2:]
+                titill = titill[:-2]
+                delims = {
+                    " )" : " ( ",
+                    " ]" : " [ ",
+                    " -" : " - ",
+                    " ," : " , "
+                }
+                ldelim = delims[rdelim]
+                titill = titill[0:titill.rfind(ldelim)]
+                # print("NlKjarni: nafn '{0}', titill '{1}'".format(mannsnafn, titill))
+                _add_name(result, mannsnafn, titill)
+                result.del_attribs("skýring_nafn")
+                result.del_attribs(("mannsnafn", "skýring"))
 
     # Leyfa mannsnafni að ferðast áfram upp tréð ef við
     # fundum ekki titil á það hér

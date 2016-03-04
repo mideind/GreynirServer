@@ -240,6 +240,7 @@ class TerminalNode(Node):
         self.cat = elems[0]
         self.variants = set(elems[1:])
         self.tokentype = tokentype
+        self.is_word = tokentype == "WORD"
         self.aux = aux # Auxiliary information, originally from token.t2
         # Cache the root form of this word so that it is only looked up
         # once, even if multiple processors scan this tree
@@ -324,6 +325,8 @@ class TerminalNode(Node):
     def _root(self, bin_db):
         """ Look up the root of the word associated with this terminal """
         # Lookup the token in the BIN database
+        if not self.is_word:
+            return self.text
         w, m = bin_db.lookup_word(self.text, self.at_start)
         if m:
             m = [ x for x in m if self._bin_filter(x) ]
@@ -334,8 +337,8 @@ class TerminalNode(Node):
     def _nominative(self, bin_db):
         """ Look up the nominative form of the word associated with this terminal """
         # Lookup the token in the BIN database
-        if self.case == "nf":
-            # Already a nominative word: return it as-is
+        if (not self.is_word) or (self.case == "nf"):
+            # Not a word or already nominative: return it as-is
             return self.text
         w, m = bin_db.lookup_word(self.text, self.at_start)
         if m:
