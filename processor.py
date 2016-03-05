@@ -12,14 +12,13 @@
 
 """
 
-
-import re
-import sys
 import getopt
-import time
 import importlib
 import json
+import sys
+import time
 
+import re
 #from multiprocessing.dummy import Pool
 from multiprocessing import Pool
 from contextlib import closing
@@ -28,8 +27,7 @@ from collections import OrderedDict
 
 from settings import Settings, ConfigError
 from scraperdb import Scraper_DB, Article
-from bindb import BIN_Db, BIN_Meaning
-
+from bindb import BIN_Db
 
 _PROFILING = False
 
@@ -202,7 +200,6 @@ class Node:
     def string_self(self):
         """ String representation of the name of this node """
         assert False # Should be overridden
-        return ""
 
     def string_rep(self, indent):
         """ Indented representation of this node """
@@ -622,8 +619,8 @@ class Processor:
                 continue
             if fname.startswith("_"):
                 continue
+            modname = processor_directory + "." + fname[:-3] # Cut off .py
             try:
-                modname = processor_directory + "." + fname[:-3] # Cut off .py
                 m = importlib.import_module(modname)
                 print("Imported processor module {0}".format(modname))
                 self.processors.append(m)

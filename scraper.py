@@ -104,7 +104,7 @@ class Scraper:
             .format(g.num_nonterminals, g.num_terminals, g.num_productions,
                 g.file_name, str(g.file_time)[0:19]))
 
-    class _TextList:
+    class TextList:
 
         """ Accumulates raw text blocks and eliminates unnecessary nesting indicators """
 
@@ -162,7 +162,7 @@ class Scraper:
         """ Convert an HTML soup root into a parsable token stream """
 
         # Extract the text content of the HTML into a list
-        tlist = Scraper._TextList()
+        tlist = Scraper.TextList()
         Scraper._extract_text(soup, tlist)
         text = tlist.result()
         tlist = None # Free memory
@@ -719,8 +719,8 @@ def scrape_articles(limit = 0):
     print("Time: {0}, limit: {1}\n".format(ts, limit))
 
     try:
+        sc = Scraper()
         try:
-            sc = Scraper()
             sc.go(limit = limit)
         except Exception as e:
             print("Scraper terminated with exception {0}".format(e))

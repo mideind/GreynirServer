@@ -369,11 +369,13 @@ class FindNavigator:
             assert matched == self._word
             self._found = True
 
+    # noinspection PyMethodMayBeStatic
     def pop_edge(self):
         """ Called when leaving an edge that has been navigated """
         # We only need to visit one outgoing edge, so short-circuit the edge loop
         return False
 
+    # noinspection PyMethodMayBeStatic
     def done(self):
         """ Called when the whole navigation is done """
         pass
@@ -433,6 +435,7 @@ class PermutationNavigator:
         # We need to visit all outgoing edges, so return True
         return True
 
+    # noinspection PyMethodMayBeStatic
     def done(self):
         """ Called when the whole navigation is done """
         pass
@@ -494,6 +497,7 @@ class MatchNavigator:
         # We need to continue visiting edges only if this is a wildcard position
         return self._wildcard
 
+    # noinspection PyMethodMayBeStatic
     def done(self):
         """ Called when the whole navigation is done """
         pass
@@ -559,10 +563,12 @@ class CompoundNavigator:
                             break
                         # Else, try next joiner
 
+    # noinspection PyMethodMayBeStatic
     def pop_edge(self):
         """ Called when leaving an edge that has been navigated """
         return False
 
+    # noinspection PyMethodMayBeStatic
     def done(self):
         """ Called when the whole navigation is done """
         pass

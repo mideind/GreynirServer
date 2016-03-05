@@ -25,9 +25,9 @@
 
 from collections import defaultdict
 
-from grammar import Terminal, Nonterminal
-from settings import Preferences, VerbObjects
 from fastparser import ParseForestNavigator
+from grammar import Terminal
+from settings import Preferences, VerbObjects
 
 
 class Reducer:

@@ -307,7 +307,7 @@ def parse_digits(w):
                 # (1/2, 1/3, 1/4, 1/5, 1/6, 2/3, 2/5, 5/6 etc.)
                 # Return a number
                 return TOK.Number(w, float(d) / m), s.end()
-        if m > 12 and d <= 12:
+        if m > 12 >= d:
             # Date is probably wrong way around
             m, d = d, m
         if (1 <= d <= 31) and (1 <= m <= 12):
@@ -470,7 +470,7 @@ def parse_particles(token_stream):
                     next_token = next(token_stream)
 
             # Coalesce 'klukkan'/[kl.] + time or number into a time
-            if (next_token.kind == TOK.TIME or next_token.kind == TOK.NUMBER):
+            if next_token.kind == TOK.TIME or next_token.kind == TOK.NUMBER:
                 if clock or (token.kind == TOK.WORD and token.txt.lower() == CLOCK_WORD):
                     # Match: coalesce and step to next token
                     if next_token.kind == TOK.NUMBER:
@@ -809,7 +809,7 @@ def all_genders(token):
         return None
     g = set()
     if token.val:
-        for m in token.val:
+        for meaning in token.val:
 
             def find_gender(m):
                 if m.ordfl in _GENDER_SET:
@@ -820,7 +820,7 @@ def all_genders(token):
                         return v
                 return None
 
-            gn = find_gender(m)
+            gn = find_gender(meaning)
             if gn is not None:
                g.add(gn)
     return list(g)
@@ -1123,6 +1123,7 @@ def parse_phrases_2(token_stream):
                     # Look through the stuff we got and see what is compatible
                     r = []
                     for p in gn:
+                        # noinspection PyTypeChecker
                         for np in ngn:
                             if compatible(p, np):
                                 # Compatible: add to result

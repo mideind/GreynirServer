@@ -38,7 +38,7 @@ def merge(*iterables):
         yield element.obj
 
 
-def batch_sort(input, output, buffer_size=32000, tempdirs=None):
+def batch_sort(infile, output, buffer_size=32000, tempdirs=None):
     if tempdirs is None:
         tempdirs = []
     if not tempdirs:
@@ -46,8 +46,8 @@ def batch_sort(input, output, buffer_size=32000, tempdirs=None):
 
     chunks = []
     try:
-        with io.open(input,mode='r',buffering=64*1024, encoding='utf8') as input_file:
-            print(u"Opened input {0}".format(input))
+        with io.open(infile, mode='r', buffering=64*1024, encoding='utf8') as input_file:
+            print(u"Opened input {0}".format(infile))
             input_iterator = iter(input_file)
             for tempdir in cycle(tempdirs):
                 current_chunk = list(islice(input_iterator,buffer_size))

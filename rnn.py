@@ -87,11 +87,12 @@ n, p = 0, 0
 mWxh, mWhh, mWhy = np.zeros_like(Wxh), np.zeros_like(Whh), np.zeros_like(Why)
 mbh, mby = np.zeros_like(bh), np.zeros_like(by) # memory variables for Adagrad
 smooth_loss = -np.log(1.0/vocab_size)*seq_length # loss at iteration 0
+hprev = np.zeros((hidden_size, 1)) # reset RNN memory
 
 while True:
 
     # prepare inputs (we're sweeping from left to right in steps seq_length long)
-    if p + seq_length + 1 >= len(data) or n == 0: 
+    if p + seq_length + 1 >= len(data):
         hprev = np.zeros((hidden_size, 1)) # reset RNN memory
         p = 0 # go from start of data
     inputs = [char_to_ix[ch] for ch in data[p : p + seq_length]]
