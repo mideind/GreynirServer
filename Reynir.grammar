@@ -663,8 +663,9 @@ OgSögn_mm_sagnb →
     | FsAtv? ',' OgEða FsAtv? so_mm_sagnb FsAtvKomma?
 
 OgSögn_sagnb/tala/kyn →
-    FsAtv? OgEðaEn FsAtv? EinSögn_sagnb/tala/kyn
-    | FsAtv? ',' OgEðaEn FsAtv? EinSögn_sagnb/tala/kyn FsAtvKomma?
+    # (hefur staðið) keikur í brúnni og mótmælt yfirgangi Rússa
+    LoTengtSögn_nf/tala/kyn? FsAtv? OgEðaEn FsAtv? EinSögn_sagnb/tala/kyn
+    | LoTengtSögn_nf/tala/kyn? FsAtv? ',' OgEðaEn FsAtv? EinSögn_sagnb/tala/kyn FsAtvKomma?
 
 OgSögn_nh/tala/kyn →
     FsAtv? OgEðaEnÞrátt FsAtv? EinSögn_nh/tala/kyn
@@ -1403,6 +1404,9 @@ NhSögn →
     # telja verkefnið verða óviðráðanlegt
     # sjá drenginn fara í hundana
     | So_1_þf_nh Nl_þf NhSögn
+
+    # betur megi fara / strax skuli tilkynna
+    | FsAtv? HjSögnMegiSkuli_et_p3 NhSögn
 
 # Samtengingar sagna
 
