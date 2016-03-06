@@ -773,7 +773,7 @@ def _main(argv = None):
                 # Maximum number of articles to parse
                 try:
                     limit = int(a)
-                except Exception as e:
+                except ValueError as e:
                     pass
             elif o in ("-u", "--url"):
                 # Single URL to process

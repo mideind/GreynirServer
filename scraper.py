@@ -303,6 +303,7 @@ class Scraper:
                     # The helper doesn't want this URL
                     continue
 
+                # noinspection PyBroadException
                 try:
                     article = Article(url = url, root_id = root.id)
                     # Leave article.scraped as NULL for later retrieval
@@ -312,7 +313,7 @@ class Scraper:
                     # Article URL already exists in database:
                     # roll back and continue
                     session.rollback()
-                except Exception as e:
+                except:
                     session.rollback()
 
         t1 = time.time()
@@ -341,6 +342,7 @@ class Scraper:
         # Upate the article info
         with closing(self._db.session) as session:
 
+            # noinspection PyBroadException
             try:
 
                 article = session.query(Article).filter_by(url = url).one_or_none()
@@ -368,7 +370,7 @@ class Scraper:
                 # Roll back and continue
                 session.rollback()
 
-            except Exception as e:
+            except:
                 session.rollback()
 
         t1 = time.time()
@@ -491,12 +493,13 @@ class Scraper:
         found = False
         with closing(Scraper_DB().session) as session:
 
+            # noinspection PyBroadException
             try:
                 article = session.query(Article).filter_by(url = url) \
                     .filter(Article.scraped != None).one_or_none()
                 if article:
                     found = True
-            except Exception:
+            except:
                 pass
 
             session.commit()
@@ -807,7 +810,7 @@ def main(argv = None):
                 # Maximum number of articles to parse
                 try:
                     limit = int(a)
-                except Exception as e:
+                except ValueError:
                     pass
         # Process arguments
         for arg in args:

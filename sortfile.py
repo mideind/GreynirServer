@@ -66,10 +66,11 @@ def batch_sort(infile, output, buffer_size=32000, tempdirs=None):
             output_file.writelines(merge(*chunks))
     finally:
         for chunk in chunks:
+            # noinspection PyBroadException
             try:
                 chunk.close()
                 os.remove(chunk.name)
-            except Exception:
+            except:
                 print(u"Exception when closing chunk")
                 pass
 
