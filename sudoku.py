@@ -457,8 +457,8 @@ class Puzzle:
             return fixed
 
         fixed = True
+        solved = False
         while fixed:
-            fixed = False
             solved = True
             singles = [ ]
             for row in range(self._size):

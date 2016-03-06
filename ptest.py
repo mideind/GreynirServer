@@ -23,7 +23,7 @@ except ImportError:
     import psycopg2cffi.extensions as psycopg2ext
     import psycopg2cffi as psycopg2
 
-from tokenizer import TOK, tokenize
+from tokenizer import tokenize
 from grammar import Nonterminal, Terminal, Token, Production
 from fastparser import Fast_Parser, ParseError, ParseForestPrinter
 from settings import Settings, ConfigError

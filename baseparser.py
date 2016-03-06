@@ -12,9 +12,7 @@
 
 """
 
-from collections import defaultdict
-
-from grammar import Nonterminal, Terminal, Token
+from grammar import Nonterminal, Terminal
 
 
 class Base_Parser:
@@ -143,6 +141,7 @@ class Base_Parser:
             if w.is_token:
                 p = parent.production[index]
                 assert isinstance(p, Terminal)
+                # noinspection PyRedundantParentheses
                 return ([ level ] + suffix, w.start, w.end, None, (p, w.head.text))
             # Interior nodes are not returned
             # and do not increment the indentation level
@@ -186,10 +185,12 @@ class Base_Parser:
 
             if w.is_interior:
                 # Interior node: relay plist up the tree
+                # noinspection PyRedundantParentheses
                 return (None, 0, 0, plist, None)
             # Completed nonterminal
             assert w.is_completed
             assert isinstance(w.head, Nonterminal)
+            # noinspection PyRedundantParentheses
             return ([level - 1] + suffix, w.start, w.end, plist, w.head)
 
         if w is None:
@@ -242,6 +243,7 @@ class Base_Parser:
 
         _traverse(schema)
         # Return a tuple with the grid and the number of tokens
+        # noinspection PyRedundantParentheses
         return (cols, schema[2])
 
 

@@ -212,10 +212,12 @@ class ParseForestNavigator(object):
         """ At a family of children """
         return
 
+    # noinspection PyMethodMayBeStatic
     def _add_result(self, results, ix, r):
         """ Append a single result object r to the result object """
         return
 
+    # noinspection PyMethodMayBeStatic
     def _process_results(self, results, node):
         """ Process results after visiting children.
             The results list typically contains tuples (ix, r) where ix is
@@ -242,6 +244,7 @@ class ParseForestNavigator(object):
                 return visited[w.label]
             # Init container for child results
             results = self._visit_nonterminal(level, w)
+            # noinspection PyNoneFunctionAssignment
             if results is NotImplemented:
                 # If _visit_nonterminal() returns NotImplemented,
                 # don't bother visiting children or processing
@@ -363,6 +366,7 @@ class Parser:
                 self._matches[terminal] = m = self._token.matches(terminal)
             return m
 
+        # noinspection PyMethodMayBeStatic
         def matches_none(self, terminal):
             """ Shadow function for matches() that is called if there is no token in this column """
             return False
@@ -637,6 +641,7 @@ class Parser:
                 # assert isinstance(prod[dot], Terminal)
                 # assert tokens[i].matches(prod[dot])
                 # y = MAKE_NODE(B ::= αai+1 · β, h, i + 1, w, v, V)
+                # noinspection PyUnboundLocalVariable
                 y = _make_node(nt_B, dot + 1, prod, h, i + 1, w, v, V)
                 newstate = (nt_B, dot + 1, prod, h, y)
                 _push(newstate, E[i + 1], Q0)
@@ -772,6 +777,7 @@ class Parser:
 
             if w.is_interior:
                 # Interior node: relay plist up the tree
+                # noinspection PyRedundantParentheses
                 return (None, 0, 0, plist, None)
             # Completed nonterminal
             assert w.is_completed

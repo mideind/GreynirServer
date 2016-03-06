@@ -12,28 +12,25 @@
 
 """
 
-from bs4 import BeautifulSoup, NavigableString
-
-import urllib.request
-import codecs
-import re
 import time
 from contextlib import closing
 from datetime import datetime
+
+import re
+from bs4 import NavigableString
 from collections import OrderedDict, defaultdict
-
 from flask import Flask
-from flask import render_template, redirect, jsonify
-from flask import request, session, url_for
+from flask import render_template, jsonify
+from flask import request
 
-from settings import Settings, ConfigError
-from tokenizer import tokenize, TOK
+from fastparser import Fast_Parser, ParseError, ParseForestPrinter, ParseForestDumper
 from grammar import Nonterminal
-from fastparser import Fast_Parser, ParseError, ParseForestNavigator, ParseForestPrinter, ParseForestDumper
+from ptest import run_test, Test_DB
 from reducer import Reducer
 from scraper import Scraper
 from scraperdb import Scraper_DB, Person
-from ptest import run_test, Test_DB
+from settings import Settings, ConfigError
+from tokenizer import tokenize, TOK
 
 # Initialize Flask framework
 
@@ -148,7 +145,6 @@ def process_url(url):
     tlist = TextList()
     extract_text(body, tlist)
     text = tlist.result()
-    tlist = None # Free memory
 
     # Eliminate soft hyphen and zero-width space characters
     text = re.sub('\u00AD|\u200B', '', text)
@@ -157,6 +153,7 @@ def process_url(url):
     text = re.sub(r'\s+', ' ', text)
 
     # Tokenize the resulting text, returning a generator
+    # noinspection PyRedundantParentheses
     return (metadata, tokenize(text))
 
 
@@ -164,7 +161,6 @@ def profile(func, *args, **kwargs):
     """ Profile the processing of text or URL """
 
     import cProfile as profile
-    import pstats
 
     filename = 'Reynir.profile'
 
@@ -216,7 +212,7 @@ def parse(toklist, single, use_reducer, dump_forest = False, keep_trees = False)
                             if single and dump_forest:
                                 # Dump the parse tree to parse.txt
                                 with open("parse.txt", mode = "w", encoding= "utf-8") as f:
-                                    print("Reynir parse tree for sentence '{0}'".format(url), file = f)
+                                    print("Reynir parse tree for sentence '{0}'".format(" ".join(sent)), file = f)
                                     print("{0} combinations\n".format(num), file = f)
                                     if num < 10000:
                                         ParseForestPrinter.print_forest(forest, file = f)
@@ -274,6 +270,7 @@ def parse(toklist, single, use_reducer, dump_forest = False, keep_trees = False)
         avg_ambig_factor = (total_ambig / total_tokens) if total_tokens > 0 else 1.0
     )
 
+    # noinspection PyRedundantParentheses
     return (result, trees)
 
 
@@ -478,8 +475,6 @@ def parse_grid():
     # Tokenize the text
     tokens = list(tokenize(txt))
 
-    grammar = None
-
     # Parse the text
     with Fast_Parser(verbose = False) as bp: # Don't emit diagnostic messages
         err = dict()
@@ -649,6 +644,7 @@ def test():
 
 # Flask handlers
 
+# noinspection PyUnusedLocal
 @app.errorhandler(404)
 def page_not_found(e):
     """ Return a custom 404 error """

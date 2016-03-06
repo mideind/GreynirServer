@@ -35,13 +35,13 @@
 
 """
 
-import os
-
-from cffi import FFI
 from threading import Lock
 
-from grammar import GrammarError, Terminal, Nonterminal, Token
+import os
+from cffi import FFI
+
 from binparser import BIN_Parser
+from grammar import GrammarError
 
 
 ffi = FFI()
@@ -140,6 +140,7 @@ class ParseJob:
         """ Python context manager protocol """
         return self
 
+    # noinspection PyUnusedLocal
     def __exit__(self, exc_type, exc_value, traceback):
         """ Python context manager protocol """
         self.__class__.delete(self._handle)
@@ -535,6 +536,7 @@ class Fast_Parser(BIN_Parser):
         """ Python context manager protocol """
         return self
 
+    # noinspection PyUnusedLocal
     def __exit__(self, exc_type, exc_value, traceback):
         """ Python context manager protocol """
         self.cleanup()
@@ -545,7 +547,6 @@ class Fast_Parser(BIN_Parser):
 
         wrapped_tokens, wrap_map = self._wrap(tokens) # Inherited from BIN_Parser
         ep = Fast_Parser.eparser
-        node = None
         err = ffi.new("unsigned int*")
 
         # Use the context manager protocol to guarantee that the parse job
@@ -566,7 +567,6 @@ class Fast_Parser(BIN_Parser):
                 raise ParseError("No parse available at token {0} ({1} tokens in input)"
                     .format(ix, len(wrapped_tokens)), 0)
 
-        err = None
         c_dict = dict() # Node pointer conversion dictionary
         # Create a new Python-side node forest corresponding to the C++ one
         result = Node(self.grammar, wrapped_tokens, c_dict, node)

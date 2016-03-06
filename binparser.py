@@ -24,7 +24,7 @@ from functools import reduce
 import json
 
 from tokenizer import TOK
-from grammar import Terminal, LiteralTerminal, Token, Grammar
+from grammar import Terminal, LiteralTerminal, Token, Grammar, GrammarError
 from baseparser import Base_Parser
 from settings import VerbObjects, VerbSubjects, UnknownVerbs, Prepositions
 
@@ -77,7 +77,7 @@ class BIN_Token(Token):
     }
 
     # Strings that must be present in the grammatical form for variants
-    _VARIANT = {
+    VARIANT = {
         "nf" : "NF", # Nefnifall / nominative
         "þf" : "ÞF", # Þolfall / accusative
         "þgf" : "ÞGF", # Þágufall / dative
@@ -114,34 +114,34 @@ class BIN_Token(Token):
     }
 
     # Bit mapping for all known variants
-    _VBIT = { key : 1 << i for i, key in enumerate(_VARIANT.keys()) }
+    VBIT = { key : 1 << i for i, key in enumerate(VARIANT.keys()) }
     # Bit mapping for all variants that have a corresponding BIN meaning
-    _FBIT = { key : 1 << i for i, key in enumerate(_VARIANT.values()) if key }
+    FBIT = { key : 1 << i for i, key in enumerate(VARIANT.values()) if key }
 
-    _VBIT_ET = _VBIT["et"]
-    _VBIT_FT = _VBIT["ft"]
-    _VBIT_KK = _VBIT["kk"]
-    _VBIT_KVK = _VBIT["kvk"]
-    _VBIT_HK = _VBIT["hk"]
-    _VBIT_NH = _VBIT["nh"]
-    _VBIT_MM = _VBIT["mm"]
-    _VBIT_GM = _VBIT["gm"]
-    _VBIT_LH = _VBIT["lhþt"]
-    _VBIT_GR = _VBIT["gr"]
-    _VBIT_SUBJ = _VBIT["subj"]
-    _VBIT_SAGNB = _VBIT["sagnb"]
-    _VBIT_ABBREV = _VBIT["abbrev"]
+    VBIT_ET = VBIT["et"]
+    VBIT_FT = VBIT["ft"]
+    VBIT_KK = VBIT["kk"]
+    VBIT_KVK = VBIT["kvk"]
+    VBIT_HK = VBIT["hk"]
+    VBIT_NH = VBIT["nh"]
+    VBIT_MM = VBIT["mm"]
+    VBIT_GM = VBIT["gm"]
+    VBIT_LH = VBIT["lhþt"]
+    VBIT_GR = VBIT["gr"]
+    VBIT_SUBJ = VBIT["subj"]
+    VBIT_SAGNB = VBIT["sagnb"]
+    VBIT_ABBREV = VBIT["abbrev"]
 
     # Mask the following bits off a VBIT set to get an FBIT set
-    _FBIT_MASK = _VBIT_ABBREV | _VBIT_SUBJ
+    FBIT_MASK = VBIT_ABBREV | VBIT_SUBJ
 
-    _CASES = [ "nf", "þf", "þgf", "ef" ]
-    _GENDERS = [ "kk", "kvk", "hk" ]
-    _GENDERS_SET = frozenset(_GENDERS)
+    CASES = ["nf", "þf", "þgf", "ef"]
+    GENDERS = ["kk", "kvk", "hk"]
+    GENDERS_SET = frozenset(GENDERS)
 
     # Variants to be checked for verbs
-    _VERB_VARIANTS = [ "p1", "p2", "p3", "nh", "vh", "lh", "bh", "fh",
-        "sagnb", "lhþt", "nt", "kk", "kvk", "hk", "sb", "vb", "gm", "mm" ]
+    VERB_VARIANTS = ["p1", "p2", "p3", "nh", "vh", "lh", "bh", "fh",
+        "sagnb", "lhþt", "nt", "kk", "kvk", "hk", "sb", "vb", "gm", "mm"]
     # Pre-calculate a dictionary of associated BIN forms
     _VERB_FORMS = None # Initialized later
 
@@ -192,9 +192,6 @@ class BIN_Token(Token):
         """ Return the text for this property, in lower case """
         return self.t1_lower
 
-    def __str__(self):
-        return self.lower
-
     @property
     def dump(self):
         """ Serialize the token as required for text dumping of trees """
@@ -208,7 +205,7 @@ class BIN_Token(Token):
     @classmethod
     def fbits(cls, beyging):
         """ Convert a 'beyging' field from BIN to a set of fbits """
-        bit = cls._FBIT
+        bit = cls.FBIT
         return reduce(lambda x, y: x | y, (b for key, b in bit.items() if key in beyging), 0)
 
     @classmethod
@@ -222,7 +219,8 @@ class BIN_Token(Token):
             cls._MEANING_CACHE[beyging] = fbits
         return fbits
 
-    def verb_matches(self, verb, terminal, form):
+    @staticmethod
+    def verb_matches(verb, terminal, form):
         """ Return True if the verb in question matches the verb category,
             where the category is one of so_0, so_1, so_2 depending on
             the allowable number of noun phrase arguments """
@@ -301,7 +299,7 @@ class BIN_Token(Token):
         # Check restrictive variants, i.e. we don't accept meanings
         # that have those unless they are explicitly present in the terminal
         for v in [ "sagnb", "lhþt", "bh" ]: # Be careful with "lh" here - !!! add mm?
-            if BIN_Token._VARIANT[v] in form and not terminal.has_variant(v):
+            if BIN_Token.VARIANT[v] in form and not terminal.has_variant(v):
                 return False
         if terminal.is_lh and "VB" in form and not terminal.has_variant("vb"):
             # We want only the strong declinations ("SB") of lhþt, not the weak ones,
@@ -368,7 +366,8 @@ class BIN_Token(Token):
             UnknownVerbs.add(verb)
         return True
 
-    def prep_matches(self, prep, case):
+    @staticmethod
+    def prep_matches(prep, case):
         """ Check whether a preposition matches this terminal """
         # !!! Note that this will match a word and return True even if the
         # meanings of the token (the list in self.t2) do not include
@@ -405,18 +404,18 @@ class BIN_Token(Token):
             return False
         if self.t2[1]:
             # See whether any of the allowed cases match the terminal
-            for c in BIN_Token._CASES:
+            for c in BIN_Token.CASES:
                 if terminal.has_variant(c) and c not in self.t2[1]:
                     return False
         if self.t2[2]:
             # See whether any of the allowed genders match the terminal
-            for g in BIN_Token._GENDERS:
+            for g in BIN_Token.GENDERS:
                 if terminal.has_variant(g) and g not in self.t2[2]:
                     return False
         else:
             # Match only the neutral gender if no gender given
             # return not (terminal.has_variant("kk") or terminal.has_variant("kvk"))
-            return not terminal.has_any_vbits(BIN_Token._VBIT_KK | BIN_Token._VBIT_KVK)
+            return not terminal.has_any_vbits(BIN_Token.VBIT_KK | BIN_Token.VBIT_KVK)
         return True
 
     def is_correct_singular_or_plural(self, terminal):
@@ -459,12 +458,12 @@ class BIN_Token(Token):
             if not self.t2[1] or not self.t2[2]:
                 return False
             # Only check gender for "to", not "töl"
-            for g in BIN_Token._GENDERS:
+            for g in BIN_Token.GENDERS:
                 if terminal.has_variant(g) and g not in self.t2[2]:
                     return False
         if self.t2[1]:
             # See whether any of the allowed cases match the terminal
-            for c in BIN_Token._CASES:
+            for c in BIN_Token.CASES:
                 if terminal.has_variant(c) and c not in self.t2[1]:
                     return False
         return True
@@ -480,16 +479,16 @@ class BIN_Token(Token):
             return False
         if self.t2[2] is None:
             # No gender: match neutral gender only
-            if terminal.has_any_vbits(BIN_Token._VBIT_KK | BIN_Token._VBIT_KVK):
+            if terminal.has_any_vbits(BIN_Token.VBIT_KK | BIN_Token.VBIT_KVK):
                 return False
         else:
             # Associated gender
-            for g in BIN_Token._GENDERS:
+            for g in BIN_Token.GENDERS:
                 if terminal.has_variant(g) and g not in self.t2[2]:
                     return False
         if self.t2[3]:
             # See whether any of the allowed cases match the terminal
-            for c in BIN_Token._CASES:
+            for c in BIN_Token.CASES:
                 if terminal.has_variant(c) and c not in self.t2[3]:
                     return False
         return True
@@ -507,38 +506,43 @@ class BIN_Token(Token):
                 return False
             if self.t2[1]:
                 # See whether any of the allowed cases match the terminal
-                for c in BIN_Token._CASES:
+                for c in BIN_Token.CASES:
                     if terminal.has_variant(c) and c not in self.t2[1]:
                         return False
         # We do not check singular or plural here since phrases such as
         # '35% skattur' and '1% allra blóma' are valid
         return True
 
-    def matches_YEAR(self, terminal):
+    @staticmethod
+    def matches_YEAR(terminal):
         """ A year token matches a number (töl) or year (ártal) terminal """
         if not terminal.startswith("töl") and not terminal.startswith("ártal") \
             and not terminal.startswith("tala"):
             return False
         # Only singular match ('2014 var gott ár', not '2014 voru góð ár')
         # Years only match the neutral gender
-        if terminal.has_any_vbits(BIN_Token._VBIT_FT | BIN_Token._VBIT_KK | BIN_Token._VBIT_KVK):
+        if terminal.has_any_vbits(BIN_Token.VBIT_FT | BIN_Token.VBIT_KK | BIN_Token.VBIT_KVK):
             return False
         # No case associated with year numbers: match all
         return True
 
-    def matches_DATE(self, terminal):
+    @staticmethod
+    def matches_DATE(terminal):
         """ A date token matches a date (dags) terminal """
         return terminal.startswith("dags")
 
-    def matches_TIME(self, terminal):
+    @staticmethod
+    def matches_TIME(terminal):
         """ A time token matches a time (tími) terminal """
         return terminal.startswith("tími")
 
-    def matches_TIMESTAMP(self, terminal):
+    @staticmethod
+    def matches_TIMESTAMP(terminal):
         """ A timestamp token matches a timestamp (tímapunktur) terminal """
         return terminal.startswith("tímapunktur")
 
-    def matches_ORDINAL(self, terminal):
+    @staticmethod
+    def matches_ORDINAL(terminal):
         """ An ordinal token matches an ordinal (raðnr) terminal """
         return terminal.startswith("raðnr")
 
@@ -567,7 +571,7 @@ class BIN_Token(Token):
                 # Only match abbreviations; gender, case and number do not matter
                 return no_info
             for v in terminal.variants:
-                if v in BIN_Token._GENDERS_SET:
+                if v in BIN_Token.GENDERS_SET:
                     if m.ordfl != v:
                         # Mismatched gender
                         return False
@@ -579,7 +583,7 @@ class BIN_Token(Token):
                     if v == "gr":
                         # Do not match a demand for the definitive article ('greinir')
                         return False
-                elif BIN_Token._VARIANT[v] not in m.beyging:
+                elif BIN_Token.VARIANT[v] not in m.beyging:
                     # Required case or number not found: no match
                     return False
             return True
@@ -655,8 +659,8 @@ class BIN_Token(Token):
             return terminal.startswith("sérnafn")
         # Not named entity: allow it to match a singular, neutral noun in all cases,
         # but without the definite article ('greinir')
-        return terminal.startswith("no") and terminal.has_vbits(BIN_Token._VBIT_ET | BIN_Token._VBIT_HK) and \
-            not terminal.has_vbits(BIN_Token._VBIT_GR)
+        return terminal.startswith("no") and terminal.has_vbits(BIN_Token.VBIT_ET | BIN_Token.VBIT_HK) and \
+               not terminal.has_vbits(BIN_Token.VBIT_GR)
 
     # Dispatch table for the token matching functions
     _MATCHING_FUNC = {
@@ -701,7 +705,7 @@ class BIN_Token(Token):
     @classmethod
     def init(cls):
         # Initialize cached dictionary of verb variant forms in BIN
-        cls._VERB_FORMS = { v : cls._VARIANT[v] for v in cls._VERB_VARIANTS }
+        cls._VERB_FORMS = { v : cls.VARIANT[v] for v in cls.VERB_VARIANTS }
 
 BIN_Token.init()
 
@@ -724,11 +728,11 @@ class VariantHandler:
         self._vcount = len(self._vparts)
         self._vset = set(self._vparts)
         # Also map variant names to bits in self._vbits
-        bit = BIN_Token._VBIT
+        bit = BIN_Token.VBIT
         self._vbits = reduce(lambda x, y: x | y,
             (bit[v] for v in self._vset if v in bit), 0)
         # fbits are like vbits but leave out variants that have no BIN meaning
-        self._fbits = self._vbits & (~BIN_Token._FBIT_MASK)
+        self._fbits = self._vbits & (~BIN_Token.FBIT_MASK)
 
     def startswith(self, part):
         """ Returns True if the terminal name starts with the given string """
@@ -777,39 +781,39 @@ class VariantHandler:
 
     @property
     def is_singular(self):
-        return (self._vbits & BIN_Token._VBIT_ET) != 0
+        return (self._vbits & BIN_Token.VBIT_ET) != 0
 
     @property
     def is_plural(self):
-        return (self._vbits & BIN_Token._VBIT_FT) != 0
+        return (self._vbits & BIN_Token.VBIT_FT) != 0
 
     @property
     def is_abbrev(self):
-        return (self._vbits & BIN_Token._VBIT_ABBREV) != 0
+        return (self._vbits & BIN_Token.VBIT_ABBREV) != 0
 
     @property
     def is_nh(self):
-        return (self._vbits & BIN_Token._VBIT_NH) != 0
+        return (self._vbits & BIN_Token.VBIT_NH) != 0
 
     @property
     def is_mm(self):
-        return (self._vbits & BIN_Token._VBIT_MM) != 0
+        return (self._vbits & BIN_Token.VBIT_MM) != 0
 
     @property
     def is_gm(self):
-        return (self._vbits & BIN_Token._VBIT_GM) != 0
+        return (self._vbits & BIN_Token.VBIT_GM) != 0
 
     @property
     def is_subj(self):
-        return (self._vbits & BIN_Token._VBIT_SUBJ) != 0
+        return (self._vbits & BIN_Token.VBIT_SUBJ) != 0
 
     @property
     def is_sagnb(self):
-        return (self._vbits & BIN_Token._VBIT_SAGNB) != 0
+        return (self._vbits & BIN_Token.VBIT_SAGNB) != 0
 
     @property
     def is_lh(self):
-        return (self._vbits & BIN_Token._VBIT_LH) != 0
+        return (self._vbits & BIN_Token.VBIT_LH) != 0
 
 
 class BIN_Terminal(VariantHandler, Terminal):
@@ -917,7 +921,8 @@ class BIN_Parser(Base_Parser):
         ftime = str(self.grammar.file_time)[0:19] # YYYY-MM-DD HH:MM:SS
         return ftime + "/" + BIN_Parser._VERSION + "/" + super()._VERSION
 
-    def _wrap(self, tokens):
+    @staticmethod
+    def _wrap(tokens):
         """ Sanitize the 'raw' tokens and wrap them in BIN_Token() wrappers """
 
         # Remove stuff that won't be understood in any case

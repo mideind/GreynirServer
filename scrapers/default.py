@@ -15,10 +15,10 @@
 
 """
 
-from bs4 import BeautifulSoup, NavigableString
-from datetime import datetime
-from collections import namedtuple
 import urllib.parse as urlparse
+from datetime import datetime
+
+from collections import namedtuple
 
 # The metadata returned by the helper.get_metadata() function
 Metadata = namedtuple('Metadata', ['heading', 'author', 'timestamp', 'authority'])
@@ -72,9 +72,9 @@ class ScrapeHelper:
     @property
     def scr_version(self):
         """ Return the version of this scraping helper class """
-        if hasattr(self.__class__, "_VERSION"):
-            return self.__class__._VERSION
-        # If no _VERSION attribute in the class, return a default '1.0'
+        if hasattr(self.__class__, "VERSION"):
+            return self.__class__.VERSION
+        # If no VERSION attribute in the class, return a default '1.0'
         return "1.0"
 
     @staticmethod
@@ -166,7 +166,7 @@ class KjarninnScraper(ScrapeHelper):
 
     """ Scraping helper for Kjarninn.is """
 
-    def __init(self, root):
+    def __init__(self, root):
         super().__init__(root)
 
     def skip_url(self, url):
@@ -186,7 +186,7 @@ class KjarninnScraper(ScrapeHelper):
         timestamp = ScrapeHelper.meta_property(soup, "article:published_time") or \
             str(datetime.utcnow())[0:19]
         # Exctract the author name
-        f = lambda tag: ScrapeHelper.general_filter(tag, "span", "class", "author")
+        f = lambda xtag: ScrapeHelper.general_filter(xtag, "span", "class", "author")
         tag = soup.html.body.find(f)
         if not tag:
             print("span.class.author tag not found in soup.html.body")
@@ -194,6 +194,7 @@ class KjarninnScraper(ScrapeHelper):
         return Metadata(heading = heading, author = author,
             timestamp = timestamp, authority = self.authority)
 
+    # noinspection PyMethodMayBeStatic
     def _get_content(self, soup_body):
         """ Find the article content (main text) in the soup """
         # soup_body has already been sanitized in the ScrapeHelper base class
@@ -230,7 +231,7 @@ class RuvScraper(ScrapeHelper):
         "/dagskra"
     ]
 
-    def __init(self, root):
+    def __init__(self, root):
         super().__init__(root)
 
     def skip_url(self, url):
@@ -256,6 +257,7 @@ class RuvScraper(ScrapeHelper):
         return Metadata(heading = heading, author = author,
             timestamp = timestamp, authority = self.authority)
 
+    # noinspection PyMethodMayBeStatic
     def _get_content(self, soup_body):
         """ Find the article content (main text) in the soup """
         return ScrapeHelper.div_class(soup_body,
@@ -279,7 +281,7 @@ class MblScraper(ScrapeHelper):
         "/vidburdir/"
     ]
 
-    def __init(self, root):
+    def __init__(self, root):
         super().__init__(root)
 
     def skip_url(self, url):
@@ -365,7 +367,7 @@ class VisirScraper(ScrapeHelper):
 
     """ Scraping helper for Visir.is """
 
-    def __init(self, root):
+    def __init__(self, root):
         super().__init__(root)
 
 
@@ -373,7 +375,7 @@ class EyjanScraper(ScrapeHelper):
 
     """ Scraping helper for Eyjan.pressan.is """
 
-    def __init(self, root):
+    def __init__(self, root):
         super().__init__(root)
 
     def get_metadata(self, soup):
@@ -425,7 +427,7 @@ class StjornlagaradScraper(ScrapeHelper):
 
     """ Scraping helper for stjornlagarad.is """
 
-    def __init(self, root):
+    def __init__(self, root):
         super().__init__(root)
 
     def skip_url(self, url):

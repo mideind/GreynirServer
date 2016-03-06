@@ -12,17 +12,15 @@
 
 """
 
-from contextlib import closing
-
 from flask import Flask
-from flask import render_template, redirect, jsonify
-from flask import request, session, url_for
+from flask import render_template, jsonify
+from flask import request
 
+from binparser import BIN_Token
+from fastparser import Fast_Parser, ParseError, ParseForestNavigator
+from reducer import Reducer
 from settings import Settings, ConfigError
 from tokenizer import tokenize, TOK
-from fastparser import Fast_Parser, ParseError, ParseForestNavigator
-from binparser import BIN_Token
-from reducer import Reducer
 
 # Initialize Flask framework
 
@@ -34,13 +32,13 @@ def debug():
     # Call this to trigger the Flask debugger on purpose
     assert current_app.debug == False, "Don't panic! You're here by request of debug()"
 
-_GENDERS_SET = BIN_Token._GENDERS_SET
-_CASES_SET = set(BIN_Token._CASES)
+_GENDERS_SET = BIN_Token.GENDERS_SET
+_CASES_SET = set(BIN_Token.CASES)
 _NUMBER_SET = { "et", "ft" }
 _CATEGORY_SET = { "no", "so", "lo", "fs", "ao", "eo", "st", "fn", "pfn", "abfn", "nhm", "to", "töl", "ártal" }
 _CHECK_SET = {
     "no" : _CASES_SET | _NUMBER_SET,
-    "so" : set(BIN_Token._VERB_VARIANTS) | _NUMBER_SET | { "op" },
+    "so" : set(BIN_Token.VERB_VARIANTS) | _NUMBER_SET | { "op" },
     "fs" : set(),
     "lo" : _GENDERS_SET | _CASES_SET | _NUMBER_SET | { "mst", "sb", "vb" },
     "fn" : _GENDERS_SET | _CASES_SET | _NUMBER_SET | { "p1", "p2", "p3" }
@@ -112,13 +110,13 @@ def compatible(meaning, terminal, category):
             # Special check for noun genders
             if meaning.ordfl != v:
                 return False
-        elif v in check_set and BIN_Token._VARIANT[v] not in beyging:
+        elif v in check_set and BIN_Token.VARIANT[v] not in beyging:
             return False
     # Additional checks for forms that we don't accept
     # unless they're explicitly permitted by the terminal
     if category == "so":
         for v in [ "sagnb", "lhþt", "bh" ]:
-            if BIN_Token._VARIANT[v] in beyging and not terminal.has_variant(v):
+            if BIN_Token.VARIANT[v] in beyging and not terminal.has_variant(v):
                 return False
     return True
 
@@ -208,7 +206,6 @@ def analyze():
                         mark_categories(forest, toklist, sent_begin + 1)
 
                     except ParseError as e:
-                        forest = None
                         # Obtain the index of the offending token
                         err_index = e.token_index
                     print("Parsed sentence of length {0} with {1} combinations{2}".format(slen, num,

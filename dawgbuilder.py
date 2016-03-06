@@ -250,6 +250,7 @@ class _Dawg:
         j = self._lastlen
         while j > divergence:
             if self._dicts[j]:
+                # noinspection PyTypeChecker
                 self._collapse(self._dicts[j])
                 self._dicts[j] = None
             j -= 1
@@ -486,7 +487,7 @@ class DawgBuilder:
             """ Close the associated file, if it is still open """
             pass
 
-    def _load(self, relpath, inputs, removals, filter):
+    def _load(self, relpath, inputs, removals, filter_func):
         """ Load word lists into the DAWG from one or more static text files,
             assumed to be located in the relpath subdirectory.
             The text files should contain one word per line,
@@ -559,7 +560,7 @@ class DawgBuilder:
                 else:
                     # Identical to previous word
                     duplicates += 1
-            elif filter is None or filter(word):
+            elif filter_func is None or filter_func(word):
                 # This word passes the filter: check the removal list, if any
                 while remove_key is not None and remove_key < key:
                     # Skip past words in the removal file as needed
@@ -586,7 +587,6 @@ class DawgBuilder:
         for f in infiles:
             assert not f.has_word()
             f.close()
-            f = None
         # Complete and clean up
         self._dawg.finish()
         print("Finished loading {0} words, output {1} words, {2} duplicates skipped, {3} removed"
@@ -599,7 +599,7 @@ class DawgBuilder:
         with codecs.open(fname, mode='w', encoding='utf-8') as fout:
             self._dawg.write_text(fout)
 
-    def build(self, inputs, output, relpath="resources", filter=None, removals=None):
+    def build(self, inputs, output, relpath="resources", filter_func=None, removals=None):
         """ Build a DAWG from input file(s) and write it to the output file(s) (potentially in multiple formats).
             The input files are assumed to be individually sorted in correct ascending alphabetical
             order. They will be merged in parallel into a single sorted stream and added to the DAWG.
@@ -613,7 +613,7 @@ class DawgBuilder:
             # Nothing to do
             print("No inputs or no output: Nothing to do")
             return
-        self._load(relpath, inputs, removals, filter)
+        self._load(relpath, inputs, removals, filter_func)
         print("Outputting...")
         self._output_text(relpath, output)
         print("DawgBuilder done")
@@ -623,6 +623,7 @@ class DawgBuilder:
 # The resulting DAWG will include all words for which filter() returns True, and exclude others.
 # Useful for excluding long words or words containing "foreign" characters.
 
+# noinspection PyUnusedLocal
 def nofilter(word):
     """ No filtering - include all input words in output graph """
     return True

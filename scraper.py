@@ -104,7 +104,7 @@ class Scraper:
             .format(g.num_nonterminals, g.num_terminals, g.num_productions,
                 g.file_name, str(g.file_time)[0:19]))
 
-    class _TextList:
+    class TextList:
 
         """ Accumulates raw text blocks and eliminates unnecessary nesting indicators """
 
@@ -162,7 +162,7 @@ class Scraper:
         """ Convert an HTML soup root into a parsable token stream """
 
         # Extract the text content of the HTML into a list
-        tlist = Scraper._TextList()
+        tlist = Scraper.TextList()
         Scraper._extract_text(soup, tlist)
         text = tlist.result()
         tlist = None # Free memory
@@ -229,7 +229,8 @@ class Scraper:
         return helper
 
 
-    def children(self, root, soup):
+    @staticmethod
+    def children(root, soup):
         """ Return a set of child URLs within a HTML soup, relative to the given root """
         # Establish the root URL base parameters
         root_s = urlparse.urlsplit(root.url)
@@ -303,6 +304,7 @@ class Scraper:
                     # The helper doesn't want this URL
                     continue
 
+                # noinspection PyBroadException
                 try:
                     article = Article(url = url, root_id = root.id)
                     # Leave article.scraped as NULL for later retrieval
@@ -312,7 +314,7 @@ class Scraper:
                     # Article URL already exists in database:
                     # roll back and continue
                     session.rollback()
-                except Exception as e:
+                except:
                     session.rollback()
 
         t1 = time.time()
@@ -341,6 +343,7 @@ class Scraper:
         # Upate the article info
         with closing(self._db.session) as session:
 
+            # noinspection PyBroadException
             try:
 
                 article = session.query(Article).filter_by(url = url).one_or_none()
@@ -368,7 +371,7 @@ class Scraper:
                 # Roll back and continue
                 session.rollback()
 
-            except Exception as e:
+            except:
                 session.rollback()
 
         t1 = time.time()
@@ -491,12 +494,13 @@ class Scraper:
         found = False
         with closing(Scraper_DB().session) as session:
 
+            # noinspection PyBroadException
             try:
                 article = session.query(Article).filter_by(url = url) \
                     .filter(Article.scraped != None).one_or_none()
                 if article:
                     found = True
-            except Exception:
+            except:
                 pass
 
             session.commit()
@@ -668,7 +672,8 @@ class Scraper:
             pool.join()
 
 
-    def stats(self):
+    @staticmethod
+    def stats():
         """ Return statistics from the scraping database """
 
         db = Scraper._db
@@ -719,8 +724,8 @@ def scrape_articles(limit = 0):
     print("Time: {0}, limit: {1}\n".format(ts, limit))
 
     try:
+        sc = Scraper()
         try:
-            sc = Scraper()
             sc.go(limit = limit)
         except Exception as e:
             print("Scraper terminated with exception {0}".format(e))
@@ -807,7 +812,7 @@ def main(argv = None):
                 # Maximum number of articles to parse
                 try:
                     limit = int(a)
-                except Exception as e:
+                except ValueError:
                     pass
         # Process arguments
         for arg in args:

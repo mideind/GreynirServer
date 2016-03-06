@@ -17,6 +17,7 @@ resources/*.csv
 resources/*.tmLanguage
 mim/
 gold/
+.idea/
 
 # Minified JavaScript
 static/*.min.js

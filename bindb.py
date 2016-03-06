@@ -167,7 +167,8 @@ class BIN_Db:
         """ Given a word root (stem), look up all its forms """
         return self._lookup(w, at_sentence_start, self._forms)
 
-    def _lookup(self, w, at_sentence_start, lookup):
+    @staticmethod
+    def _lookup(w, at_sentence_start, lookup):
         """ Lookup a simple or compound word in the database and return its meaning(s) """
 
         def lookup_abbreviation(w):
@@ -240,6 +241,7 @@ class BIN_Db:
                                 "ó" + r.ordmynd, r.beyging)
                                 for r in om if r.ordfl == "lo" ]
 
+        # noinspection PyRedundantParentheses
         return (w, m)
 
 

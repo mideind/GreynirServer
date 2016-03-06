@@ -488,7 +488,8 @@ class Grammar:
         # Override this to create custom terminals or add optimizations
         return LiteralTerminal(name)
 
-    def _make_nonterminal(self, name, fname, line):
+    @staticmethod
+    def _make_nonterminal(name, fname, line):
         """ Create a new Nonterminal instance within the grammar """
         # Override this to create custom nonterminals or add optimizations
         return Nonterminal(name, fname, line)
@@ -496,7 +497,6 @@ class Grammar:
     def _write_binary(self, fname):
         """ Write grammar to binary file. Called after reading a grammar text file
             that is newer than the corresponding binary file, unless write_binary is False. """
-        max_nt = 0
         with open(fname, "wb") as f:
             print("Writing binary grammar file {0}".format(fname))
             # Version header
@@ -510,7 +510,7 @@ class Grammar:
             # Write nonterminals in numeric order, -1 first downto -N
             for ix in range(num_nt):
                 nt = self.lookup(-1 - ix)
-                plist = self[nt]
+                plist = self[nt] if nt else []
                 f.write(struct.pack("I", len(plist)))
                 # Write productions along with their indices and priorities
                 for prio, p in plist:
@@ -538,10 +538,6 @@ class Grammar:
         # The number of the current line in the grammar file
         line = 0
 
-        # The nonterminal for which productions are being specified
-        current_NT = None
-        # The variants of the current nonterminal
-        current_variants = []
         # Dictionary of variants, keyed by variant name
         # where the values are lists of variant options (strings)
         variants = { }
@@ -1001,7 +997,7 @@ class Grammar:
 
         if write_binary:
             # Check whether to write a fresh binary file
-            fname = fname + ".bin" # By default Reynir.grammar.bin
+            fname += ".bin"  # By default Reynir.grammar.bin
             try:
                 binary_file_time = datetime.fromtimestamp(os.path.getmtime(fname))
             except os.error:
@@ -1031,9 +1027,7 @@ class Grammar:
                     nullable.add(nt)
                     changed = True
 
-        plist = self._nt_dict[nt]
         follow = defaultdict(list)
-
         seen = set()
 
         def add_follow(nt, prod_seq):

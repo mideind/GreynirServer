@@ -80,17 +80,17 @@
 {% for c in r %}
 {% if 'terminal' in c[3] %}
 <td
-   class='t{{ ' vert' if 'vertical' in c[3] else '' }}'
-   colspan={{ c[0] }}
-   rowspan={{ c[1] }}>
+   class="t{{ ' vert' if 'vertical' in c[3] else '' }}"
+   colspan="{{ c[0] }}"
+   rowspan="{{ c[1] }}">
 {%- if c[2][0] | string | first != "'" and c[2][0] | string | first != '"' -%}
    {{ c[2][0] }}<br>
 {%- endif -%}
    <span class='tok'>{{ c[2][1] }}</span></td>
 {% elif c[2] == '' %}
-<td colspan={{ c[0] }}>&nbsp;</td>
+<td colspan="{{ c[0] }}">&nbsp;</td>
 {% else %}
-<td class='nt{{ ' vert' if 'vertical' in c[3] else '' }}' colspan={{ c[0] }}>{{ c[2] }}</td>
+<td class="nt{{ ' vert' if 'vertical' in c[3] else '' }}" colspan="{{ c[0] }}">{{ c[2] }}</td>
 {% endif %}
 {% endfor %}
          </tr>
