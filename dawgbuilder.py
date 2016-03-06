@@ -250,6 +250,7 @@ class _Dawg:
         j = self._lastlen
         while j > divergence:
             if self._dicts[j]:
+                # noinspection PyTypeChecker
                 self._collapse(self._dicts[j])
                 self._dicts[j] = None
             j -= 1
