@@ -5,7 +5,7 @@
 # a natural language processor for Icelandic
 #
 # Author: Vilhjalmur Thorsteinsson
-# Copyright (C) 2015
+# Copyright (C) 2016
 # All rights reserved
 # See the accompanying README.md file for further licensing and copyright information.
 #
@@ -31,10 +31,10 @@
 # Nonterminal identifiers start with uppercase letters.
 # Terminals start with lowercase letters.
 #
-# Literals within single quotes 'x' are matched with the stem
+# Literals within single quotes 'xyz' are matched with the stem
 # of a word token, plus eventual variants.
 #
-# Literals within double quotes "x" are matched with the
+# Literals within double quotes "xyz" are matched with the
 # text of a word token as it appeared in the source, albeit after
 # conversion to lowercase. Variants cannot be applied to double-quoted
 # literals.
@@ -417,6 +417,9 @@ SetningAukafall →
 
     # Köttum hefur [ekki] fjölgað á árinu
     | Nl/aukafall HjSögn_et_p3 FsAtv? So_1_sagnb/aukafall FsAtv?
+
+    # Hælisleitendum fer/hefur farið fækkandi
+    | Nl_þgf HjSögnLhNt so_1_þgf_lh_nt FsAtv?
 
     # Miðmynd sagna: Mér áskotnaðist, mér fyrirgefst, mér gremst...
     | Nl_þgf so_0_mm MiðmyndarBotn?
@@ -1327,6 +1330,13 @@ HjSögnLhÞtSM_p3_et →
 
 HjSögnLhÞtSM_p3_ft →
     HjSögnLhÞt_ft_p3 | HjSögnSkuluMunu_ft_p3
+
+# 'Hælisleitendum fer/fór/færi/hefur farið/mun fara fækkandi'
+
+HjSögnLhNt →
+    'fara'_gm_p3_et
+    | 'hafa'_gm_p3_et 'fara'_sagnb
+    | 'munu'_gm_p3_et 'fara'_nh
 
 # Nafnháttafylling
 # - tengd frumlagi

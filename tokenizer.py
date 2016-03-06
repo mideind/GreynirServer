@@ -414,9 +414,10 @@ def parse_tokens(txt):
                 ate = True
                 i = 1
                 lw = len(w)
-                while i < lw and (w[i].isalpha() or w[i] == '.'):
+                while i < lw and (w[i].isalpha() or (w[i] in ("'", '.'))):
                     # We allow dots to occur inside words in the case of
-                    # abbreviations
+                    # abbreviations; also apostrophes are allowed within words
+                    # (O'Malley, Mary's, it's, childrens')
                     i += 1
                 if w[i-1] == '.':
                     # Don't eat periods at the end of words
@@ -1082,6 +1083,7 @@ def parse_phrases_2(token_stream):
             # Check for unknown surnames
             def unknown_surname(token):
                 """ Check for unknown (non-Icelandic) surnames """
+                # Accept any upper case word as a surname
                 return token.kind == TOK.WORD and token.txt[0].isupper()
 
             def given_names_or_middle_abbrev(token):
@@ -1096,7 +1098,9 @@ def parse_phrases_2(token_stream):
                     # Abbreviation: Cut off the brackets & trailing period
                     w = w[1:-2]
                 if len(w) > 2 or not w[0].isupper():
-                    return None
+                    if w not in { "van", "de", "of" }:
+                        # Accept "Thomas de Broglie", "Ruud van Nistelroy", "Mary of Canterbury"
+                        return None
                 # One or two letters, capitalized: accept as middle name abbrev,
                 # all genders and cases possible
                 return [PersonName(name = w, gender = None, case = None)]

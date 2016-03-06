@@ -110,12 +110,22 @@ def sentence(state, result):
 
 def _add_name(result, mannsnafn, titill):
     """ Add a name to the resulting name list """
-    if (" " in mannsnafn) and titill:
-        if "nöfn" not in result:
-            result.nöfn = []
-        result.nöfn.append((mannsnafn, titill))
-        return True
-    return False
+    if not titill:
+        return False
+    if " " not in mannsnafn:
+        return False
+    if "..." in titill or "[" in titill:
+        return False
+    # Cut off common endings that don't belong in a title
+    for s in ("í tilkynningu", "í fjölmiðlum", "í samtali", "í Kastljósi"):
+        if titill.endswith(s):
+            titill = titill[:-1 -len(s)]
+    if not titill:
+        return False
+    if "nöfn" not in result:
+        result.nöfn = []
+    result.nöfn.append((mannsnafn, titill))
+    return True
 
 def Manneskja(node, params, result):
     """ Mannsnafn, e.t.v. með titli """

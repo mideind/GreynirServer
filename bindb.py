@@ -132,8 +132,7 @@ class BIN_Db:
                 if w in Meanings.DICT:
                     # There are additional word meanings in the Meanings dictionary,
                     # coming from the settings file: append them
-                    for add_m in Meanings.DICT[w]:
-                        m.append(BIN_Meaning._make(add_m))
+                    m.extend([ BIN_Meaning._make(add_m) for add_m in Meanings.DICT[w] ])
         except (psycopg2.DataError, psycopg2.ProgrammingError) as e:
             print("Word {0} causing DB exception {1}".format(w, e))
             m = None
@@ -154,8 +153,7 @@ class BIN_Db:
                 if w in Meanings.ROOT:
                     # There are additional word meanings in the Meanings dictionary,
                     # coming from the settings file: append them
-                    for add_m in Meanings.ROOT[w]:
-                        m.append(BIN_Meaning._make(add_m))
+                    m.extend([ BIN_Meaning._make(add_m) for add_m in Meanings.ROOT[w] ])
         except (psycopg2.DataError, psycopg2.ProgrammingError) as e:
             print("Word {0} causing DB exception {1}".format(w, e))
             m = None
