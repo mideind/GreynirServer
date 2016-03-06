@@ -673,7 +673,7 @@ class Processor:
         db = Processor._db
         with closing(db.session) as session:
 
-            # noinspection PyComparisonWithNone
+            # noinspection PyComparisonWithNone,PyShadowingNames
             def iter_parsed_articles(limit):
                 """ Go through parsed articles and process them """
                 if from_date is None:

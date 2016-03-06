@@ -229,7 +229,8 @@ class Scraper:
         return helper
 
 
-    def children(self, root, soup):
+    @staticmethod
+    def children(root, soup):
         """ Return a set of child URLs within a HTML soup, relative to the given root """
         # Establish the root URL base parameters
         root_s = urlparse.urlsplit(root.url)
@@ -671,7 +672,8 @@ class Scraper:
             pool.join()
 
 
-    def stats(self):
+    @staticmethod
+    def stats():
         """ Return statistics from the scraping database """
 
         db = Scraper._db

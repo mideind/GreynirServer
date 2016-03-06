@@ -850,13 +850,13 @@ def parse_phrases_1(token_stream):
                 # case of fractions such as half ('hálfur')
                 return meaning.ordfl in NUMBER_CATEGORIES
 
-            def number(token):
+            def number(tok):
                 """ If the token denotes a number, return that number - or None """
-                return match_stem_list(token, MULTIPLIERS, filter_func = number_filter)
+                return match_stem_list(tok, MULTIPLIERS, filter_func = number_filter)
 
-            def fraction(token):
+            def fraction(tok):
                 """ If the token denotes a fraction, return a corresponding number - or None """
-                return match_stem_list(token, FRACTIONS)
+                return match_stem_list(tok, FRACTIONS)
 
             # Check for [number] 'hundred|thousand|million|billion'
             while token.kind == TOK.NUMBER and next_token.kind == TOK.WORD:
@@ -1039,73 +1039,73 @@ def parse_phrases_2(token_stream):
 
             # Logic for human names
 
-            def stems(token, category):
+            def stems(tok, category):
                 """ If the token denotes a given name, return its possible
                     interpretations, as a list of PersonName tuples (name, case, gender) """
-                if token.kind != TOK.WORD or not token.val:
+                if tok.kind != TOK.WORD or not tok.val:
                     return None
                 # Look through the token meanings
                 result = []
-                for m in token.val:
+                for m in tok.val:
                     if m.fl == category:
                         # Note the stem ('stofn') and the gender from the word type ('ordfl')
                         result.append(PersonName(name = m.stofn, gender = m.ordfl, case = case(m.beyging)))
                 return result if result else None
 
-            def has_other_meaning(token, category):
+            def has_other_meaning(tok, category):
                 """ Return True if the token can denote something besides a given name """
-                if token.kind != TOK.WORD or not token.val:
+                if tok.kind != TOK.WORD or not tok.val:
                     return True
                 # Look through the token meanings
-                for m in token.val:
+                for m in tok.val:
                     if m.fl != category:
                         # Here is a different meaning, not a given name: return True
                         return True
                 return False
 
             # Check for person names
-            def given_names(token):
+            def given_names(tok):
                 """ Check for Icelandic person name (category 'ism') """
-                if token.kind != TOK.WORD or not token.txt[0].isupper():
+                if tok.kind != TOK.WORD or not tok.txt[0].isupper():
                     # Must be a word starting with an uppercase character
                     return None
-                return stems(token, "ism")
+                return stems(tok, "ism")
 
             # Check for surnames
-            def surnames(token):
+            def surnames(tok):
                 """ Check for Icelandic patronym (category 'föð) """
-                if token.kind != TOK.WORD or not token.txt[0].isupper():
+                if tok.kind != TOK.WORD or not tok.txt[0].isupper():
                     # Must be a word starting with an uppercase character
                     return None
-                return stems(token, "föð")
+                return stems(tok, "föð")
 
             # Check for unknown surnames
-            def unknown_surname(token):
+            def unknown_surname(tok):
                 """ Check for unknown (non-Icelandic) surnames """
-                return token.kind == TOK.WORD and token.txt[0].isupper()
+                return tok.kind == TOK.WORD and tok.txt[0].isupper()
 
-            def given_names_or_middle_abbrev(token):
+            def given_names_or_middle_abbrev(tok):
                 """ Check for given name or middle abbreviation """
-                gn = given_names(token)
-                if gn is not None:
-                    return gn
-                if token.kind != TOK.WORD:
+                gnames = given_names(tok)
+                if gnames is not None:
+                    return gnames
+                if tok.kind != TOK.WORD:
                     return None
-                w = token.txt
-                if w.startswith('['):
+                wrd = tok.txt
+                if wrd.startswith('['):
                     # Abbreviation: Cut off the brackets & trailing period
-                    w = w[1:-2]
-                if len(w) > 2 or not w[0].isupper():
+                    wrd = wrd[1:-2]
+                if len(wrd) > 2 or not wrd[0].isupper():
                     return None
                 # One or two letters, capitalized: accept as middle name abbrev,
                 # all genders and cases possible
-                return [PersonName(name = w, gender = None, case = None)]
+                return [PersonName(name = wrd, gender = None, case = None)]
 
-            def compatible(p, np):
+            def compatible(pn, npn):
                 """ Return True if the next PersonName (np) is compatible with the one we have (p) """
-                if np.gender and (np.gender != p.gender):
+                if npn.gender and (npn.gender != pn.gender):
                     return False
-                if np.case and (np.case != p.case):
+                if npn.case and (npn.case != pn.case):
                     return False
                 return True
 
@@ -1250,14 +1250,14 @@ def parse_static_phrases(token_stream):
             newstate = { }
             w = token.txt.lower()
 
-            def add_to_state(state, sl, ix):
+            def add_to_state(st, slist, index):
                 """ Add the list of subsequent words to the new parser state """
-                w = sl[0]
-                rest = sl[1:]
-                if w in state:
-                    state[w].append((rest, ix))
+                wrd = slist[0]
+                rest = slist[1:]
+                if wrd in st:
+                    st[wrd].append((rest, index))
                 else:
-                    state[w] = [ (rest, ix) ]
+                    st[wrd] = [(rest, index)]
 
             if w in state:
                 # This matches an expected token:
@@ -1346,14 +1346,14 @@ def disambiguate_phrases(token_stream):
             newstate = { }
             w = token.txt.lower()
 
-            def add_to_state(state, sl, ix):
+            def add_to_state(st, slist, index):
                 """ Add the list of subsequent words to the new parser state """
-                w = sl[0]
-                rest = sl[1:]
-                if w in state:
-                    state[w].append((rest, ix))
+                wrd = slist[0]
+                rest = slist[1:]
+                if wrd in st:
+                    st[wrd].append((rest, index))
                 else:
-                    state[w] = [ (rest, ix) ]
+                    st[wrd] = [(rest, index)]
 
             if w in state:
                 # This matches an expected token:

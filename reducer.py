@@ -186,7 +186,8 @@ class Reducer:
         w, _ = self.go_with_score(forest)
         return w
 
-    def _find_options(self, w, finals, tokens):
+    @staticmethod
+    def _find_options(w, finals, tokens):
         """ Find token-terminal match options in a parse forest with a root in w """
 
         class OptionFinder(ParseForestNavigator):
