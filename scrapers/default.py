@@ -166,8 +166,7 @@ class KjarninnScraper(ScrapeHelper):
 
     """ Scraping helper for Kjarninn.is """
 
-    # noinspection PyMethodMayBeStatic
-    def __init(self, root):
+    def __init__(self, root):
         super().__init__(root)
 
     def skip_url(self, url):
@@ -232,8 +231,7 @@ class RuvScraper(ScrapeHelper):
         "/dagskra"
     ]
 
-    # noinspection PyMethodMayBeStatic
-    def __init(self, root):
+    def __init__(self, root):
         super().__init__(root)
 
     def skip_url(self, url):
@@ -283,7 +281,7 @@ class MblScraper(ScrapeHelper):
         "/vidburdir/"
     ]
 
-    def __init(self, root):
+    def __init__(self, root):
         super().__init__(root)
 
     def skip_url(self, url):
@@ -369,7 +367,7 @@ class VisirScraper(ScrapeHelper):
 
     """ Scraping helper for Visir.is """
 
-    def __init(self, root):
+    def __init__(self, root):
         super().__init__(root)
 
 
@@ -377,7 +375,7 @@ class EyjanScraper(ScrapeHelper):
 
     """ Scraping helper for Eyjan.pressan.is """
 
-    def __init(self, root):
+    def __init__(self, root):
         super().__init__(root)
 
     def get_metadata(self, soup):
@@ -429,7 +427,7 @@ class StjornlagaradScraper(ScrapeHelper):
 
     """ Scraping helper for stjornlagarad.is """
 
-    def __init(self, root):
+    def __init__(self, root):
         super().__init__(root)
 
     def skip_url(self, url):
