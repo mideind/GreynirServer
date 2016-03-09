@@ -884,7 +884,7 @@ class BIN_Parser(Base_Parser):
 
     def __init__(self, verbose = False):
         """ Load the shared BIN grammar if not already there, then initialize
-            the Parser parent class """
+            the Base_Parser parent class """
         g = BIN_Parser._grammar
         ts = os.path.getmtime(BIN_Parser._GRAMMAR_FILE)
         if g is None or BIN_Parser._grammar_ts != ts:

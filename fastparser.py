@@ -43,6 +43,7 @@ from cffi import FFI
 from binparser import BIN_Parser
 from grammar import GrammarError
 from settings import Settings
+from lock import GlobalLock
 
 ffi = FFI()
 
@@ -499,38 +500,41 @@ class Fast_Parser(BIN_Parser):
 
     _c_grammar = None
     _c_grammar_ts = None
-    _lock = Lock()
 
     @classmethod
     def _load_binary_grammar(cls):
         """ Load the binary grammar file into memory, if required """
-        with cls._lock:
-            fname = cls.GRAMMAR_BINARY_FILE_BYTES
-            try:
-                ts = os.path.getmtime(fname)
-            except os.error:
-                raise GrammarError("Binary grammar file {0} not found"
-                    .format(cls.GRAMMAR_BINARY_FILE))
-            if cls._c_grammar is None or cls._c_grammar_ts != ts:
-                # Need to load or reload the grammar
-                ep = cls.eparser
-                if cls._c_grammar is not None:
-                    # Delete previous grammar instance, if any
-                    ep.deleteGrammar(cls._c_grammar)
-                    cls._c_grammar = None
-                cls._c_grammar = ep.newGrammar(fname)
-                cls._c_grammar_ts = ts
-                if cls._c_grammar is None or cls._c_grammar == ffi.NULL:
-                    raise GrammarError("Unable to load binary grammar file " +
-                        cls.GRAMMAR_BINARY_FILE)
+        fname = cls.GRAMMAR_BINARY_FILE_BYTES
+        try:
+            ts = os.path.getmtime(fname)
+        except os.error:
+            raise GrammarError("Binary grammar file {0} not found"
+                .format(cls.GRAMMAR_BINARY_FILE))
+        if cls._c_grammar is None or cls._c_grammar_ts != ts:
+            # Need to load or reload the grammar
+            ep = cls.eparser
+            if cls._c_grammar is not None:
+                # Delete previous grammar instance, if any
+                ep.deleteGrammar(cls._c_grammar)
+                cls._c_grammar = None
+            cls._c_grammar = ep.newGrammar(fname)
+            cls._c_grammar_ts = ts
+            if cls._c_grammar is None or cls._c_grammar == ffi.NULL:
+                raise GrammarError("Unable to load binary grammar file " +
+                    cls.GRAMMAR_BINARY_FILE)
         return cls._c_grammar
 
     def __init__(self, verbose = False):
-        super().__init__(verbose)
-        # Create instances of the C++ Grammar and Parser classes
-        c_grammar = Fast_Parser._load_binary_grammar()
-        # Create a C++ parser object for the grammar
-        self._c_parser = Fast_Parser.eparser.newParser(c_grammar, matching_func)
+
+        # Only one initialization at a time, since we don't want a race
+        # condition between threads with regards to reading and parsing the grammar file
+        # vs. writing the binary grammar
+        with GlobalLock('grammar'):
+            super().__init__(verbose) # Reads and parses the grammar text file
+            # Create instances of the C++ Grammar and Parser classes
+            c_grammar = Fast_Parser._load_binary_grammar()
+            # Create a C++ parser object for the grammar
+            self._c_parser = Fast_Parser.eparser.newParser(c_grammar, matching_func)
 
     def __enter__(self):
         """ Python context manager protocol """
