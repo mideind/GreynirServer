@@ -4,11 +4,7 @@
 
    C++ Earley parser test program
 
-   Author: Vilhjalmur Thorsteinsson
-
-   This software is at a very early development stage.
-   While that is the case, it is:
-   Copyright (c) 2015 Vilhjalmur Thorsteinsson
+   Copyright (c) 2016 Vilhjalmur Thorsteinsson
    All rights reserved
    See the accompanying README.md file for further licensing and copyright information.
 

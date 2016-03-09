@@ -129,16 +129,18 @@ def process_url(url):
     if info:
         metadata, body = info
         if metadata is None:
-            print("No metadata")
+            if Settings.DEBUG:
+                print("No metadata")
             metadata = dict(heading = "",
                 author = "",
                 timestamp = datetime.utcnow(),
                 authority = 0.0)
         else:
-            print("Metadata: heading '{0}'".format(metadata.heading))
-            print("Metadata: author '{0}'".format(metadata.author))
-            print("Metadata: timestamp {0}".format(metadata.timestamp))
-            print("Metadata: authority {0:.2f}".format(metadata.authority))
+            if Settings.DEBUG:
+                print("Metadata: heading '{0}'".format(metadata.heading))
+                print("Metadata: author '{0}'".format(metadata.author))
+                print("Metadata: timestamp {0}".format(metadata.timestamp))
+                print("Metadata: authority {0:.2f}".format(metadata.authority))
             metadata = vars(metadata) # Convert namedtuple to dict
 
     # Extract the text content of the HTML into a list
@@ -224,7 +226,8 @@ def parse(toklist, single, use_reducer, dump_forest = False, keep_trees = False)
                             forest, score = rdc.go_with_score(forest)
                             assert Fast_Parser.num_combinations(forest) == 1
 
-                            print(ParseForestDumper.dump_forest(forest)) # !!! DEBUG
+                            if Settings.DEBUG:
+                                print(ParseForestDumper.dump_forest(forest))
 
                             num = 1
 
@@ -233,9 +236,10 @@ def parse(toklist, single, use_reducer, dump_forest = False, keep_trees = False)
                         # Obtain the index of the offending token
                         err_index = e.token_index
 
-                    print("Parsed sentence of length {0} with {1} combinations, score {2}{3}"
-                        .format(slen, num, score,
-                            "\n" + (" ".join(s[1] for s in sent) if num >= 100 else "")))
+                    if Settings.DEBUG:
+                        print("Parsed sentence of length {0} with {1} combinations, score {2}{3}"
+                            .format(slen, num, score,
+                                "\n" + (" ".join(s[1] for s in sent) if num >= 100 else "")))
                     if num > 0:
                         num_parsed_sent += 1
                         # Calculate the 'ambiguity factor'
@@ -301,7 +305,8 @@ def create_name_register(result):
                         register[pn.name] = title
         session.commit()
     result["register"] = register
-    print("Register is: {0}".format(register))
+    if Settings.DEBUG:
+        print("Register is: {0}".format(register))
 
 
 @app.route("/analyze", methods=['POST'])
@@ -345,7 +350,8 @@ def analyze():
 
     if keep_trees:
         # Save a new parse result
-        print("Storing a new parse tree for url {0}".format(url))
+        if Settings.DEBUG:
+            print("Storing a new parse tree for url {0}".format(url))
         Scraper.store_parse(url, result, trees)
 
     result["metadata"] = metadata
@@ -491,22 +497,24 @@ def parse_grid():
     combinations = 0 if forest is None else Fast_Parser.num_combinations(forest)
     score = 0
 
-    # Dump the parse tree to parse.txt
-    with open("parse.txt", mode = "w", encoding= "utf-8") as f:
-        if forest is not None:
-            print("Reynir parse tree for sentence '{0}'".format(txt), file = f)
-            print("{0} combinations\n".format(combinations), file = f)
-            if combinations < 10000:
-                ParseForestPrinter.print_forest(forest, file = f)
+    if Settings.DEBUG:
+        # Dump the parse tree to parse.txt
+        with open("parse.txt", mode = "w", encoding= "utf-8") as f:
+            if forest is not None:
+                print("Reynir parse tree for sentence '{0}'".format(txt), file = f)
+                print("{0} combinations\n".format(combinations), file = f)
+                if combinations < 10000:
+                    ParseForestPrinter.print_forest(forest, file = f)
+                else:
+                    print("Too many combinations to dump", file = f)
             else:
-                print("Too many combinations to dump", file = f)
-        else:
-            print("No parse available for sentence '{0}'".format(txt), file = f)
+                print("No parse available for sentence '{0}'".format(txt), file = f)
 
     if forest is not None and use_reducer:
         # Reduce the parse forest
         forest, score = Reducer(grammar).go_with_score(forest)
-        print(ParseForestDumper.dump_forest(forest)) # !!! DEBUG
+        if Settings.DEBUG:
+            print(ParseForestDumper.dump_forest(forest))
 
     # Make the parse grid with all options
     grid, ncols = make_grid(forest) if forest else ([], 0)
@@ -655,6 +663,7 @@ def server_error(e):
     """ Return a custom 500 error """
     return 'Eftirfarandi villa kom upp: {}'.format(e), 500
 
+
 # Initialize the main module
 
 try:
@@ -664,18 +673,26 @@ except ConfigError as e:
     print("Configuration error: {0}".format(e))
     quit()
 
-# Run a default Flask web server for testing if invoked directly as a main program
-
-if __name__ == "__main__":
-
+if Settings.DEBUG:
     print("Running Reynir with debug={0}, host={1}, db_hostname={2}"
         .format(Settings.DEBUG, Settings.HOST, Settings.DB_HOSTNAME))
 
+
+if __name__ == "__main__":
+
+    # Run a default Flask web server for testing if invoked directly as a main program
+
     # Additional files that should cause a reload of the web server application
     # Note: Reynir.grammar is automatically reloaded if its timestamp changes
-    extra_files = ['Reynir.conf', 'Verbs.conf']
+    extra_files = [ 'Reynir.conf', 'Verbs.conf', 'Main.conf' ]
 
     # Run the Flask web server application
     app.run(debug=Settings.DEBUG, host=Settings.HOST, use_reloader=True,
         extra_files = extra_files)
+
+else:
+
+    # Running as a server module: force the grammar to be pre-loaded in to memory
+    with Fast_Parser() as fp:
+        pass
 

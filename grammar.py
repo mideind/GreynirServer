@@ -25,6 +25,7 @@ import struct
 
 from datetime import datetime
 from collections import defaultdict
+from settings import Settings
 
 
 class GrammarError(Exception):
@@ -498,14 +499,16 @@ class Grammar:
         """ Write grammar to binary file. Called after reading a grammar text file
             that is newer than the corresponding binary file, unless write_binary is False. """
         with open(fname, "wb") as f:
-            print("Writing binary grammar file {0}".format(fname))
+            if Settings.DEBUG:
+                print("Writing binary grammar file {0}".format(fname))
             # Version header
             f.write("Reynir 00.00.01\n".encode('ascii')) # 16 bytes total
             num_nt = self.num_nonterminals
             # Number of terminals and nonterminals in grammar
             f.write(struct.pack("2I", self.num_terminals, num_nt))
             # Root nonterminal
-            print("Root index is {0}".format(self.root.index))
+            if Settings.DEBUG:
+                print("Root index is {0}".format(self.root.index))
             f.write(struct.pack("i", self.root.index))
             # Write nonterminals in numeric order, -1 first downto -N
             for ix in range(num_nt):
@@ -520,8 +523,9 @@ class Grammar:
                     f.write(struct.pack("I", lenp))
                     if lenp:
                         f.write(struct.pack(str(lenp)+"i", *p.prod))
-        print("Writing of binary grammar file completed")
-        print("num_terminals was {0}, num_nonterminals {1}".format(self.num_terminals, num_nt))
+        if Settings.DEBUG:
+            print("Writing of binary grammar file completed")
+            print("num_terminals was {0}, num_nonterminals {1}".format(self.num_terminals, num_nt))
 
     def read(self, fname, verbose = False, write_binary = True):
         """ Read grammar from a text file. Set verbose = True to get diagnostic messages
@@ -1002,9 +1006,10 @@ class Grammar:
                 binary_file_time = datetime.fromtimestamp(os.path.getmtime(fname))
             except os.error:
                 binary_file_time = None
-            # if binary_file_time is None or binary_file_time < self._file_time:
+            # if Settings.DEBUG or binary_file_time is None or binary_file_time < self._file_time:
+            if binary_file_time is None or binary_file_time < self._file_time:
                 # No binary file or older than text file: write a fresh one
-            self._write_binary(fname)
+                self._write_binary(fname)
 
 
     def follow_set(self, nonterminal):

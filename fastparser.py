@@ -42,7 +42,7 @@ from cffi import FFI
 
 from binparser import BIN_Parser
 from grammar import GrammarError
-
+from settings import Settings
 
 ffi = FFI()
 
@@ -589,10 +589,8 @@ class Fast_Parser(BIN_Parser):
         ep = Fast_Parser.eparser
         ep.deleteParser(self._c_parser)
         self._c_parser = None
-        #ep.deleteGrammar(self._c_grammar)
-        #self._c_grammar = None
-        # !!! DEBUG
-        ep.printAllocationReport()
+        if Settings.DEBUG:
+            ep.printAllocationReport()
 
     @classmethod
     def num_combinations(cls, w):

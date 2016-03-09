@@ -767,10 +767,10 @@ BOOL Grammar::readBinary(const CHAR* pszFilename)
    }
 #ifdef DEBUG   
    printf("Reading completed\n");
+   fflush(stdout);
 #endif
    // No error: we disarm the resetter
    resetter.disarm();
-   fflush(stdout);
    return true;
 }
 

@@ -423,6 +423,8 @@ SetningAukafall →
 
     # Miðmynd sagna: Mér áskotnaðist, mér fyrirgefst, mér gremst...
     | Nl_þgf so_0_mm MiðmyndarBotn?
+    # Íslandsbanka hefur/hafði/hefði tekist að halda í horfinu
+    | Nl_þgf HjSögnMM so_0_mm_sagnb MiðmyndarBotn?
 
     # Öllum er frjálst/fyrir bestu að ákveða snarlega að flytja úr landi
     | Nl_þgf HjSögnLhÞt_et_p3 FsRuna? LhÞtÞgfEinkunn NhFyllingEðaAtv
@@ -430,13 +432,14 @@ SetningAukafall →
     # Öllum hefur verið/skal/mun tryggð heilbrigðisþjónusta / réttur til að lifa með reisn
     | Nl_þgf HjSögnLhÞtSM_p3/tala FsAtv? so_2_þgf_þf_lhþt/tala/kyn FsRuna? AukafallLhÞtAndlag/tala/pers/kyn NhFyllingEðaAtv
     # ESB eru þröngar skorður settar í málinu
-    | Nl_þgf HjSögnLhÞtSM_p3/tala FsAtv? AukafallLhÞtAndlag/tala/pers/kyn FsRuna? so_2_þgf_þf_lhþt/tala/kyn FsAtv?
+    | Nl_þgf HjSögnLhÞtSM_p3/tala FsAtv? AukafallLhÞtAndlag/tala/pers/kyn FsRuna? so_2_þgf_þf_lhþt/tala/kyn NhFyllingEðaAtv
 
     # Stóru skipunum hefur verið/skal/mun stýrt í land
-    | Nl_þgf HjSögnLhÞtSM_et_p3 FsAtv? so_1_þgf_sagnb FsAtv?
+    # Hannesi var í fyrra falið að stýra rannsóknaverkefni
+    | Nl_þgf HjSögnLhÞtSM_et_p3 FsAtv? so_1_þgf_sagnb NhFyllingEðaAtv
 
-    # Þess skal gætt
-    | Nl_ef HjSögnLhÞtSM_et_p3 FsAtv? so_1_ef_sagnb FsAtv?
+    # Þess skal gætt að fara varlega með sprengiefnið
+    | Nl_ef HjSögnLhÞtSM_et_p3 FsAtv? so_1_ef_sagnb NhFyllingEðaAtv
 
     # Þátttakendum er veitt of mikið svigrúm
     | Nl_þgf HjSögnLhÞtSM_et_p3 FsAtv? so_2_þgf_þf_sagnb FsRuna? Nl_þf AtvFs?
@@ -445,7 +448,7 @@ SetningAukafall →
     | Nl_þgf HjSögnLhÞtSM_et_p3 FsAtv? so_2_þgf_ef_sagnb FsRuna? Nl_ef AtvFs?
 
     # Öllum hefur verið/skal/mun skilað bílunum
-    | Nl_þgf HjSögnLhÞtSM_et_p3 FsAtv? so_2_þgf_þgf_sagnb FsRuna? Nl_þgf FsAtv?
+    | Nl_þgf HjSögnLhÞtSM_et_p3 FsAtv? so_2_þgf_þgf_sagnb FsRuna? Nl_þgf AtvFs?
 
     # Ákvörðunar var/er/verður/hefur verið/mun að vænta strax í dag
     | Nl_ef HjSögnLhÞtSM_et_p3 nhm so_1_ef_nh FsAtv?
@@ -492,14 +495,11 @@ AukafallsBotn →
 
 MiðmyndarBotn →
 
-    # (Mér sýndist) kötturinn [ekki] lepja mjólkina og borða matinn í gær
-    Nl_nf AtvFs? NhRuna FsAtv?
-
-    # (Mér þykir) Hannes [ekki] hafa verið kurteis
-    #| Nl_nf/tala/pers/kyn FsAtv? Sögn_sagnb/tala/pers/kyn
+    # (Mér sýndist) kötturinn [ekki] [vera að] lepja mjólkina og borða matinn í gær
+    Nl_nf AtvFs? VeraInnskot? NhRuna FsAtv?
 
     # (Mér finnst) kettirnir [ekki] [vera] fallegir
-    | Nl_nf/tala/pers/kyn AtvFs? HjSögnVera? LoTengtSögn_nf/tala/kyn FsAtv?
+    | MiðmyndarBotnLo
 
     # (Mér virtist) ykkur [ekki] blöskra undir ræðunni
     | Nl/aukafall AtvFs? so_subj_nh/aukafall AukafallsBotn?
@@ -510,11 +510,16 @@ MiðmyndarBotn →
     # (Mér leyfist) vonandi að fara út
     | NhFyllingAtv
 
-    # (Mér virðist) ljóst að allt sé að fara fjandans til
-    | FsAtv? "að" HreinYfirsetning # !!! Margræðni við samtengingu yfirsetninga, a.m.k. ef ekki FsAtv?
-
     # (Páli fyrirgefst) örugglega á morgun
     | FsAtv
+
+MiðmyndarBotnLo →
+    Nl_nf/tala/pers/kyn AtvFs? HjSögnVera? LoTengtSögn_nf/tala/kyn FsAtv?
+
+$score(+4) MiðmyndarBotnLo # Gefa plús fyrir heildstætt samhengi lýsingarorðs
+
+VeraInnskot →
+    HjSögnVera nhm    # vera að / geta hafa verið að / verðir að / hafa orðið að...
 
 Nl_nf_þf/tala → Nl_nf/tala | Nl_þf/tala
 
@@ -763,8 +768,16 @@ EinSögn_sagnb/tala/kyn →
 # Nafnháttur
 
 Sögn_nh/tala/pers/kyn →
-    HjSögnNh/tala/pers HreinSögn_nh/tala/kyn
-    | so_mm/tala/pers OgSögn_mm/tala/pers* HreinSögn_nh/tala/kyn # Páll hyggst/þykist/telst fara að...
+    HjSögnNh/tala/pers HreinSögn_nh/tala/kyn # Páll mun/skal skrifa bréfið
+    | Sögn_nh_mm/tala/pers/kyn
+
+# Miðmynd + nafnháttur
+
+Sögn_nh_mm/tala/pers/kyn →
+    so_mm/tala/pers OgSögn_mm/tala/pers* HreinSögn_nh/tala/kyn # Páll hyggst/þykist/telst fara að...
+
+# Hvetja til samhengis með miðmynd: (hún) segist ekki ætla (að fara í framboð)
+$score(+2) Sögn_nh_mm/tala/pers/kyn
 
 HreinSögn_nh/tala/kyn →
     FsAtv? EinSögn_nh/tala/kyn OgSögn_nh/tala/kyn*
@@ -1335,8 +1348,22 @@ HjSögnLhÞtSM_p3_ft →
 
 HjSögnLhNt →
     'fara'_gm_p3_et
-    | 'hafa'_gm_p3_et 'fara'_sagnb
-    | 'munu'_gm_p3_et 'fara'_nh
+    | 'hafa'_gm_p3_et FsAtv? 'geta'_sagnb? 'fara'_sagnb # hefur/hafði/hefði [ekki] [getað] farið (fækkandi)
+    | 'geta'_gm_p3_et FsAtv? 'hafa'_nh? 'fara'_sagnb    # getur/gat/gæti [hafa] farið (fækkandi)
+    | 'munu'_gm_p3_et FsAtv? 'fara'_nh                  # mun/myndi [ekki] fara (fækkandi)
+    | 'þykja'_gm_p3_et FsAtv? 'fara'_nh                 # þykir/þótti/þætti [ekki] fara (fækkandi)
+    | 'munu'_gm_p3_et FsAtv? 'hafa'_nh 'fara'_sagnb     # mun/myndi [ekki] hafa farið (fækkandi)
+    | 'þykja'_gm_p3_et FsAtv? 'hafa'_nh 'fara'_sagnb    # þykir/þótti/þætti [ekki] hafa farið (fækkandi)
+
+# 'Íslandsbanka hefur tekist að halda í horfinu'
+
+HjSögnMM →
+    'hafa'_gm_p3_et FsAtv?               # hefur [ekki] tekist
+    | 'geta'_gm_p3_et FsAtv? 'hafa'_nh?  # getur [ekki] [hafa] tekist
+    | 'munu'_gm_p3_et FsAtv? 'hafa'_nh   # mun [ekki] hafa tekist
+    | 'skulu'_gm_p3_et FsAtv? 'hafa'_nh  # skal [ekki] hafa tekist
+    | 'þykja'_gm_p3_et FsAtv? 'hafa'_nh  # þykir [ekki] hafa tekist
+    | 'mega'_gm_p3_et FsAtv? 'hafa'_nh   # má [ekki] hafa tekist
 
 # Nafnháttafylling
 # - tengd frumlagi
@@ -1846,10 +1873,10 @@ KommuTitill/fall →
     | ',' EinnTitill/fall OgTitill/fall* ','? "og" EinnTitill/fall ','
 
 # Gefa plús fyrir titla
-$score(+5) Titill/fall
+$score(+6) Titill/fall
 
 # Gefa enn meiri plús fyrir heila titla innan kommu
-$score(+2) KommuTitill/fall
+$score(+4) KommuTitill/fall
 
 # Eignarfallsliður á eftir nafnlið
 # ('formaður Gimlis, félags eldri borgara')
@@ -2234,7 +2261,7 @@ FsMeðFallstjórn →
     fs/fall Nl/fall
     # !!! ATH: Geta eftirfarandi form staðið með nafnlið, eða aðeins með sögn?
     | fs/fall NhLiðir # 'um að...', 'í að...', 'eftir að...'
-    # | "að" "baki" Nl_þgf # 'að baki hverju bundnu sæti'
+    | "að" "baki" Nl_þgf # 'að baki hverju bundnu sæti'
     | "á" "hendur" Nl_þgf # 'að höfða sakamál á hendur Páli'
     | "nær" 'draga'_et_p3 Nl_þgf # 'þegar nær dró/dregur jólum'
     | 'það_sem_af_er' Nl_þgf # 'það sem af er þessu þingi'

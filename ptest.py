@@ -199,8 +199,9 @@ def run_test(fast_p):
             # num = 0 if forest is None else Parser.num_combinations(forest)
             num2 = 0 if forest2 is None else Fast_Parser.num_combinations(forest2)
 
-            #print("Python: Parsed in {0:.4f} seconds, {1} combinations".format(t1 - t0, num))
-            print("C++:    Parsed in {0:.4f} seconds, {1} combinations".format(tf1 - tf0, num2))
+            if Settings.DEBUG:
+                #print("Python: Parsed in {0:.4f} seconds, {1} combinations".format(t1 - t0, num))
+                print("C++:    Parsed in {0:.4f} seconds, {1} combinations".format(tf1 - tf0, num2))
 
             best = s["best"]
             if best <= 0 or abs(target - num2) < abs(target - best):

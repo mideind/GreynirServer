@@ -26,7 +26,7 @@ import json
 from tokenizer import TOK
 from grammar import Terminal, LiteralTerminal, Token, Grammar, GrammarError
 from baseparser import Base_Parser
-from settings import VerbObjects, VerbSubjects, UnknownVerbs, Prepositions
+from settings import Settings, VerbObjects, VerbSubjects, UnknownVerbs, Prepositions
 
 from flask import current_app
 
@@ -366,19 +366,6 @@ class BIN_Token(Token):
             UnknownVerbs.add(verb)
         return True
 
-    @staticmethod
-    def prep_matches(prep, case):
-        """ Check whether a preposition matches this terminal """
-        # !!! Note that this will match a word and return True even if the
-        # meanings of the token (the list in self.t2) do not include
-        # the fs category. This effectively makes the propositions
-        # exempt from the ambiguous_phrases optimization.
-        if prep not in Prepositions.PP:
-            # Not recognized as a preposition
-            return False
-        # Fine if the case matches
-        return case in Prepositions.PP[prep]
-
     def matches_PERSON(self, terminal):
         """ Handle a person name token, matching it with a person_[case]_[gender] terminal """
         if not terminal.startswith("person"):
@@ -513,8 +500,7 @@ class BIN_Token(Token):
         # '35% skattur' and '1% allra blóma' are valid
         return True
 
-    @staticmethod
-    def matches_YEAR(terminal):
+    def matches_YEAR(self, terminal):
         """ A year token matches a number (töl) or year (ártal) terminal """
         if not terminal.startswith("töl") and not terminal.startswith("ártal") \
             and not terminal.startswith("tala"):
@@ -526,23 +512,19 @@ class BIN_Token(Token):
         # No case associated with year numbers: match all
         return True
 
-    @staticmethod
-    def matches_DATE(terminal):
+    def matches_DATE(self, terminal):
         """ A date token matches a date (dags) terminal """
         return terminal.startswith("dags")
 
-    @staticmethod
-    def matches_TIME(terminal):
+    def matches_TIME(self, terminal):
         """ A time token matches a time (tími) terminal """
         return terminal.startswith("tími")
 
-    @staticmethod
-    def matches_TIMESTAMP(terminal):
+    def matches_TIMESTAMP(self, terminal):
         """ A timestamp token matches a timestamp (tímapunktur) terminal """
         return terminal.startswith("tímapunktur")
 
-    @staticmethod
-    def matches_ORDINAL(terminal):
+    def matches_ORDINAL(self, terminal):
         """ An ordinal token matches an ordinal (raðnr) terminal """
         return terminal.startswith("raðnr")
 
@@ -610,15 +592,19 @@ class BIN_Token(Token):
 
         def matcher_fs(m):
             """ Check preposition """
-            if terminal.num_variants > 0:
-                # Note that in the case of abbreviated prepositions,
-                # such as 'skv.' for 'samkvæmt', the full expanded form
-                # is found in m.stofn - not self.t1_lower or m.ordmynd
-                fs = self.t1_lower
-                if '.' in fs:
-                    fs = m.stofn
-                return self.prep_matches(fs, terminal.variant(0))
-            return False
+            if not terminal.num_variants:
+                return False
+            # Note that in the case of abbreviated prepositions,
+            # such as 'skv.' for 'samkvæmt', the full expanded form
+            # is found in m.stofn - not self.t1_lower or m.ordmynd
+            fs = self.t1_lower
+            if '.' in fs:
+                fs = m.stofn
+            # !!! Note that this will match a word and return True even if the
+            # meanings of the token (the list in self.t2) do not include
+            # the fs category. This effectively makes the propositions
+            # exempt from the ambiguous_phrases optimization.
+            return fs in Prepositions.PP and terminal.variant(0) in Prepositions.PP[fs]
 
         def matcher_default(m):
             """ Check other word categories """
@@ -904,7 +890,8 @@ class BIN_Parser(Base_Parser):
         if g is None or BIN_Parser._grammar_ts != ts:
             # Grammar not loaded, or its timestamp has changed: load it
             g = BIN_Grammar()
-            print("Loading grammar file {0} with timestamp {1}".format(BIN_Parser._GRAMMAR_FILE, datetime.fromtimestamp(ts)))
+            if Settings.DEBUG:
+                print("Loading grammar file {0} with timestamp {1}".format(BIN_Parser._GRAMMAR_FILE, datetime.fromtimestamp(ts)))
             g.read(BIN_Parser._GRAMMAR_FILE, verbose = verbose)
             BIN_Parser._grammar = g
             BIN_Parser._grammar_ts = ts

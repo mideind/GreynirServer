@@ -801,7 +801,8 @@ def _main(argv = None):
                 process_article(url)
             else:
                 # Process already parsed trees, starting on January 1, 2016
-                process_articles(from_date = datetime(year = 2016, month = 1, day = 1), limit = limit)
+                #process_articles(from_date = datetime(year = 2016, month = 1, day = 1), limit = limit)
+                process_articles(limit = limit)
 
     except Usage as err:
         print(err.msg, file = sys.stderr)
