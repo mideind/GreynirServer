@@ -303,12 +303,18 @@ function populateResult(json) {
    $("#tok-num").text(json.result.tok_num);
    $("#num-sent").text(json.result.num_sent);
    $("#num-parsed-sent").text(json.result.num_parsed_sent);
-   $("#num-parsed-ratio").text((json.result.num_parsed_sent / json.result.num_sent * 100).toFixed(1));
+   var ratio = 0.0;
+   if (json.result.num_sent)
+      ratio = json.result.num_parsed_sent / json.result.num_sent * 100;
+   $("#num-parsed-ratio").text(ratio.toFixed(1));
    $("#avg-ambig-factor").text(json.result.avg_ambig_factor.toFixed(2));
 
    populateMetadata(json.result.metadata);
 
    $("p.tok-info").css("visibility", "visible");
+   // Show the guide
+   $("div#guide").css("visibility", "visible");
+
    var out = $("div#result");
    var tokens = json.result.tokens;
    var register = json.result.register; // Name register
@@ -468,6 +474,8 @@ function analyzeUrl() {
    $("div#wait").css("display", "block");
    // Hide the statistics
    $("p.tok-info").css("visibility", "hidden");
+   // Hide the guide
+   $("div#guide").css("visibility", "hidden");
    // Hide the metadata
    $("#metadata").css("display", "none");
    // Launch the query

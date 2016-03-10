@@ -36,6 +36,10 @@ div.test-container {
    margin: 0 12px;
 }
 
+div#guide {
+   visibility: hidden;
+}
+
 .over {
    outline-style: solid;
    outline-color: #FFCC00;

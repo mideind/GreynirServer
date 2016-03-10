@@ -2261,7 +2261,6 @@ FsMeðFallstjórn →
     fs/fall Nl/fall
     # !!! ATH: Geta eftirfarandi form staðið með nafnlið, eða aðeins með sögn?
     | fs/fall NhLiðir # 'um að...', 'í að...', 'eftir að...'
-    | "að" "baki" Nl_þgf # 'að baki hverju bundnu sæti'
     | "á" "hendur" Nl_þgf # 'að höfða sakamál á hendur Páli'
     | "nær" 'draga'_et_p3 Nl_þgf # 'þegar nær dró/dregur jólum'
     | 'það_sem_af_er' Nl_þgf # 'það sem af er þessu þingi'
@@ -2274,6 +2273,7 @@ FsMeðFallstjórn →
     | "um" 'það'_þf_et? FsSamtenging HreinYfirsetning # 'um [það] hvort Brandur sé fallegastur'
     | "um" "að" HreinYfirsetning ','? # 'um að lög um endurupptökunefnd standist ekki stjórnarskrá'
     | FsÍGegnUm
+    | FsAðBaki
 
     | '(' FsMeðFallstjórn ')'
 
@@ -2282,6 +2282,11 @@ FsÍGegnUm →
     | "í" "gegnum" Nl_þf
 
 $score(+6) FsÍGegnUm
+
+FsAðBaki →
+    "að" "baki" Nl_þgf # 'að baki hverju bundnu sæti'
+
+$score(+4) FsAðBaki
 
 FsSamtenging →
     SpurnarSamtenging
@@ -2380,13 +2385,14 @@ AtviksliðurEinkunn →
 Tímasetning →
     "klukkan"? tími
     | "klukkan" töl
-    | "klukkan" to_nf_hk
+    | "klukkan" "hálf"? to_nf_hk
 
 Dagsetning →
     DagsFs_þf? Tímasetning 'sá'_et_kk_þf? dags # '[eftir] kl. 14 [þann] 3. júlí 2007'
     | DagsFs_ef Tímasetning 'sá'_et_kk_þf? dags # 'til kl. 14 [þann] 3. júlí 2007'
     | DagsFs_þgf Tímasetning 'sá'_et_kk_þf? dags # 'frá kl. 14 [þann] 3. júlí 2007'
 
+    | "dags." dags # dags. 30. desember 1965
     | DagsFs_þf? 'sá'_et_kk_þf? dags 'síðastliðinn'_et_kk_þf? # '[eftir] [þann] 3. júlí 2007 [síðastliðinn]'
     | DagsFs_þgf dags # 'frá 3. júlí 2007'
     | DagsFs_ef dags # 'til 3. júlí 2007'

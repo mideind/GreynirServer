@@ -207,13 +207,19 @@ class BIN_Db:
             if not m and BIN_Db._ADJECTIVE_TEST in lower_w:
                 # Not found: Check whether this might be an adjective
                 # ending in 'legur'/'leg'/'legt'/'legir'/'legar' etc.
+                llw = len(lower_w)
                 for aend, beyging in AdjectiveTemplate.ENDINGS:
-                    if lower_w.endswith(aend) and len(lower_w) > len(aend):
-                        prefix = lower_w[0 : len(lower_w) - len(aend)]
+                    if lower_w.endswith(aend) and llw > len(aend):
+                        prefix = lower_w[0 : llw - len(aend)]
                         # Construct an adjective descriptor
                         if m is None:
                             m = []
                         m.append(BIN_Meaning(prefix + "legur", 0, "lo", "alm", lower_w, beyging))
+                if lower_w.endswith("lega") and llw > 4:
+                    # For words ending with "lega", add a possible adverb meaning
+                    if m is None:
+                        m = []
+                    m.append(BIN_Meaning(lower_w, 0, "ao", "ob", lower_w, "-"))
 
             if not m:
                 # Still nothing: check compound words

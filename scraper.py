@@ -179,7 +179,7 @@ class Scraper:
     @classmethod
     def _fetch_url(cls, url):
         """ Low-level fetch of an URL, returning a decoded string """
-        encoding = 'utf-8' # Assumed default encoding (should strictly speaking be ISO-8859-1)
+        encoding = 'ISO-8859-1'
         html_doc = None
         try:
             with closing(urllib.request.urlopen(url)) as response:

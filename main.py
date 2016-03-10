@@ -692,7 +692,7 @@ if __name__ == "__main__":
 
 else:
 
-    # Running as a server module: force the grammar to be pre-loaded in to memory
+    # Running as a server module: pre-load the grammar into memory
     with Fast_Parser() as fp:
         pass
 

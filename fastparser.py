@@ -43,7 +43,7 @@ from cffi import FFI
 from binparser import BIN_Parser
 from grammar import GrammarError
 from settings import Settings
-from lock import GlobalLock
+from glock import GlobalLock
 
 ffi = FFI()
 
