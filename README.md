@@ -1,6 +1,11 @@
+
+![Greynir](https://raw.githubusercontent.com/vthorsteinsson/Reynir/master/static/GreynirLogo242x100.png)
+
 # Reynir
 
 ## Natural language processing for Icelandic
+
+Try Reynir (in Icelandic) at [http://greynir.is](http://greynir.is)
 
 *Reynir* is an experimental project that aims to extract processable information from
 Icelandic text. It scrapes and tokenizes chunks of text from web pages
@@ -24,9 +29,9 @@ structured trees that directly correspond to the original grammar.
 These trees can then be further processed and acted upon by Python
 functions associated with grammar nonterminals.
 
-Reynir is currently able to parse about *85%* of sentences in a typical news article from the web,
-and many well-written articles can be parsed completely. It has about 9.000 parsed articles
-in its database, containing 350.000 parsed sentences.
+**Reynir is currently able to parse about *85%* of sentences** in a typical news article from the web,
+and many well-written articles can be parsed completely. It has about 16.000 parsed articles
+in its database, containing 500.000 parsed sentences.
 
 Reynir may in due course be expanded, for instance:
 
@@ -55,9 +60,10 @@ Reynir works in stages, roughly as follows:
 5. *Information extractor* that maps a parse tree via its grammar constituents to plug-in
   Python functions.
 
-Reynir contains a small web server that allows the user to type in any URL
+Reynir has an embedded web server that allows the user to type in any URL
 and have Reynir scrape it, tokenize it and display the result as a web page. The server runs
-on the [Flask](http://flask.pocoo.org/) framework.
+on the [Flask](http://flask.pocoo.org/) framework, implements WSGi and can for instance be
+plugged into Gunicorn and Nginx.
 
 Reynir uses the official BÍN ([Beygingarlýsing íslensks nútímamáls](http://bin.arnastofnun.is))
 lexicon and database of Icelandic word forms to identify and tokenize words, and find their
@@ -95,21 +101,24 @@ storage in a database table.
 
 ## File details
 
-* `main.py` : Web server
+* `main.py` : WSGi application and main module for command-line invocation
 * `settings.py` : Management of global settings and configuration data, obtained from `Reynir.conf`
 * `scraper.py` : Web scraper, collecting articles from a set of pre-selected websites (roots)
 * `scraperdb.py`: Wrapper for the scraper database via SQLAlchemy
 * `tokenizer.py` : Tokenizer, designed as a pipeline of Python generators
 * `dawgdictionary.py`: Handler for composite words using a compressed word form database
 * `grammar.py` : Parsing of `.grammar` files, grammar constructs
-* `eparser.cpp` : Earley parser C++ module (header in `eparser.h`)
-* `fastparser.py` : Python wrapper for `eparser.cpp` using CFFI
+* `baseparser.py` : Base class for parsers
 * `bindb.py`: Interface to the BÍN database of Icelandic word forms
 * `binparser.py` : Parser related subclasses for BÍN (Icelandic word) tokens
+* `eparser.cpp` : Earley parser C++ module (header in `eparser.h`)
+* `fastparser.py` : Python wrapper for `eparser.cpp` using CFFI
 * `reducer.py` : Parse forest ambiguity resolver
 * `processor.py`: Information extraction from parse trees
+* `glock.py` : Utility class for global inter-process locking
 * `ptest.py` : Parser test module
 * `Reynir.conf` : Editable configuration file for the tokenizer and parser
+* `Main.conf` : Various configuration data and preferences, included in `Reynir.conf`
 * `Verbs.conf` : Editable lexicon of verbs, included in `Reynir.conf`
 * `Reynir.grammar` : A context-free grammar specification for Icelandic
   written in BNF with extensions
