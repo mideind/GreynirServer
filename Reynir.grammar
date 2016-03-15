@@ -937,6 +937,9 @@ Sögn_2_sagnb →
     | so_2_þgf_ef_sagnb Nl_þgf Nl_ef   # Konurnar höfðu [ekki] óskað Páli alls hins besta
     | so_2_þgf_nf_sagnb Nl_þgf Nl_nf   # Kristín hafði [ekki] verið Páli stoð og stytta
 
+# Það er gott að ná tveimur viðföngum með sögn í sagnbeygingu
+$score(+6) Sögn_2_sagnb
+
 # Sögn í nafnhætti með tveimur viðföngum
 
 Sögn_2_nh →
@@ -1435,6 +1438,8 @@ NhSögn →
     # !!! Ath: sennilega geta aðeins hjálparsagnir staðið í viðtengingarhætti hér,
     # !!! ekki allar sagnir
     | so_0_lhþt/tala/kyn so_0_gm_vh/tala OgNhSögn_lhþt/tala/kyn* Nl_nf/tala/kyn OgNhSögn_lhþt/tala/kyn*
+
+    | HafaGetaFá_nh HreinSögn_sagnb_et_hk # (Páll fór inn eftir að) hafa fært bílinn / (fyrir að) geta lyft grettistaki
 
     # láta sjúklinginn ná eðlilegum líkamshita
     # segja Pál fara með rangt mál
@@ -2274,6 +2279,7 @@ FsMeðFallstjórn →
     | "um" "að" HreinYfirsetning ','? # 'um að lög um endurupptökunefnd standist ekki stjórnarskrá'
     | FsÍGegnUm
     | FsAðBaki
+    | FsTilÞgf
 
     | '(' FsMeðFallstjórn ')'
 
@@ -2287,6 +2293,12 @@ FsAðBaki →
     "að" "baki" Nl_þgf # 'að baki hverju bundnu sæti'
 
 $score(+4) FsAðBaki
+
+FsTilÞgf →
+    "til" FsTilÞgfOrð Nl_þgf # 'til stuðnings/heiðurs Páli'
+
+FsTilÞgfOrð →
+    "stuðnings" | "heiðurs"
 
 FsSamtenging →
     SpurnarSamtenging

@@ -187,7 +187,7 @@ class KjarninnScraper(ScrapeHelper):
             str(datetime.utcnow())[0:19]
         # Exctract the author name
         f = lambda xtag: ScrapeHelper.general_filter(xtag, "span", "class", "author")
-        tag = soup.html.body.find(f)
+        tag = soup.html.body.find(f) if soup.html.body else None
         if not tag:
             print("span.class.author tag not found in soup.html.body")
         author = str(tag.string) if tag else "Ritstjórn Kjarnans"

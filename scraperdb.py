@@ -126,6 +126,8 @@ class Article(Base):
     scraped = Column(DateTime, index = True, nullable = True)
     # Time of the last parse of this article
     parsed = Column(DateTime, index = True, nullable = True)
+    # Time of the last processing of this article
+    processed = Column(DateTime, index = True, nullable = True)
     # Module used for scraping
     scr_module = Column(String(80))
     # Class within module used for scraping

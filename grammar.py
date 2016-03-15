@@ -256,6 +256,11 @@ class Production:
         # Cached tuple representation of this production
         self._tuple = None
 
+    @classmethod
+    def reset(cls):
+        """ Reset the production index sequence to zero """
+        cls._INDEX = 0
+
     def __hash__(self):
         """ Use the index of this production as a basis for the hash """
         return id(self).__hash__()
@@ -541,6 +546,8 @@ class Grammar:
         grammar = self._nt_dict
         # The number of the current line in the grammar file
         line = 0
+        # Reset the sequence of production indices
+        Production.reset()
 
         # Dictionary of variants, keyed by variant name
         # where the values are lists of variant options (strings)

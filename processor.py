@@ -655,6 +655,8 @@ class Processor:
                     # Run all processors in turn
                     for p in self.processors:
                         tree.process(session, p)
+                    # Mark the article as being processed
+                    article.processed = datetime.utcnow()
 
                 # So far, so good: commit to the database
                 session.commit()
@@ -667,21 +669,23 @@ class Processor:
         t1 = time.time()
         sys.stdout.flush()
 
-    def go(self, from_date = None, limit = 0):
+    def go(self, from_date = None, limit = 0, force = False):
         """ Process already parsed articles from the database """
 
         db = Processor._db
         with closing(db.session) as session:
 
             # noinspection PyComparisonWithNone,PyShadowingNames
-            def iter_parsed_articles(limit):
+            def iter_parsed_articles():
                 """ Go through parsed articles and process them """
-                if from_date is None:
-                    q = session.query(Article.url) \
-                        .filter(Article.parsed != None).filter(Article.tree != None)
-                else:
-                    q = session.query(Article.url) \
-                        .filter(Article.parsed >= from_date).filter(Article.tree != None)
+                q = session.query(Article.url).filter(Article.tree != None)
+                if not force:
+                    # If force = True, re-process articles even if
+                    # they have been processed before
+                    q = q.filter(Article.processed == None)
+                if from_date is not None:
+                    # Only go through articles parsed since the given date
+                    q = q.filter(Article.parsed >= from_date)
                 if limit > 0:
                     q = q[0:limit]
                 for a in q:
@@ -689,19 +693,25 @@ class Processor:
 
             if _PROFILING:
                 # If profiling, just do a simple map within a single thread and process
-                for url in iter_parsed_articles(limit):
+                for url in iter_parsed_articles():
                     self.go_single(url)
             else:
                 # Use a multiprocessing pool to process the articles
                 pool = Pool() # Defaults to using as many processes as there are CPUs
-                pool.map(self.go_single, iter_parsed_articles(limit))
+                pool.map(self.go_single, iter_parsed_articles())
                 pool.close()
                 pool.join()
 
 
-def process_articles(from_date = None, limit = 0):
+def process_articles(from_date = None, limit = 0, force = False):
 
     print("------ Reynir starting processing -------")
+    if from_date:
+        print("From date: {0}".format(from_date))
+    if limit:
+        print("Limit: {0} articles".format(limit))
+    if force:
+        print("Force re-processing: Yes")
     ts = "{0}".format(datetime.utcnow())[0:19]
     print("Time: {0}\n".format(ts))
 
@@ -710,7 +720,7 @@ def process_articles(from_date = None, limit = 0):
     try:
         # Run all processors in the processors directory
         proc = Processor("processors")
-        proc.go(from_date, limit = limit)
+        proc.go(from_date, limit = limit, force = force)
     finally:
         proc = None
         Processor.cleanup()
@@ -748,6 +758,23 @@ def init_db():
     except Exception as e:
         print("{0}".format(e))
 
+__doc__ = """
+
+    Reynir - Natural language processing for Icelandic
+
+    Processor module
+
+    Usage:
+        python processor.py [options]
+
+    Options:
+        -h, --help: Show this help text
+        -i, --init: Initialize the processor database, if required
+        -f, --force: Force re-processing of already processed articles
+        -l=N, --limit=N: Limit processing session to N articles
+        -u=U, --url=U: Specify a single URL to process
+
+"""
 
 def _main(argv = None):
     """ Guido van Rossum's pattern for a Python main function """
@@ -756,12 +783,13 @@ def _main(argv = None):
         argv = sys.argv
     try:
         try:
-            opts, args = getopt.getopt(argv[1:], "hil:u:", ["help", "init", "limit=", "url="])
+            opts, args = getopt.getopt(argv[1:], "hifl:u:", ["help", "init", "force", "limit=", "url="])
         except getopt.error as msg:
              raise Usage(msg)
         limit = 10 # !!! DEBUG default limit on number of articles to parse, unless otherwise specified
         init = False
         url = None
+        force = False
         # Process options
         for o, a in opts:
             if o in ("-h", "--help"):
@@ -769,6 +797,8 @@ def _main(argv = None):
                 sys.exit(0)
             elif o in ("-i", "--init"):
                 init = True
+            elif o in ("-f", "--force"):
+                force = True
             elif o in ("-l", "--limit"):
                 # Maximum number of articles to parse
                 try:
@@ -800,9 +830,10 @@ def _main(argv = None):
                 # Process a single URL
                 process_article(url)
             else:
-                # Process already parsed trees, starting on January 1, 2016
-                #process_articles(from_date = datetime(year = 2016, month = 1, day = 1), limit = limit)
-                process_articles(limit = limit)
+                # Process already parsed trees, starting on March 1, 2016
+                process_articles(from_date = datetime(year = 2016, month = 3, day = 1),
+                    limit = limit, force = force)
+                # process_articles(limit = limit)
 
     except Usage as err:
         print(err.msg, file = sys.stderr)

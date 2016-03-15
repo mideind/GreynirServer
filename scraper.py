@@ -710,8 +710,8 @@ class Scraper:
 
         result = db.execute(q).fetchall()[0]
 
-        num_sentences = result[0]
-        num_sent_parsed = result[1]
+        num_sentences = result[0] or 0 # Result of query can be None
+        num_sent_parsed = result[1] or 0
 
         print ("\nNum_sentences is {0}, num_sent_parsed is {1}, ratio is {2:.1f}%"
             .format(num_sentences, num_sent_parsed, 100.0 * num_sent_parsed / num_sentences))

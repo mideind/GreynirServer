@@ -1040,7 +1040,7 @@ def parse_phrases_2(token_stream):
 
             # Logic for human names
 
-            def stems(tok, category):
+            def stems(tok, categories):
                 """ If the token denotes a given name, return its possible
                     interpretations, as a list of PersonName tuples (name, case, gender) """
                 if tok.kind != TOK.WORD or not tok.val:
@@ -1048,7 +1048,7 @@ def parse_phrases_2(token_stream):
                 # Look through the token meanings
                 result = []
                 for m in tok.val:
-                    if m.fl == category:
+                    if m.fl in categories:
                         # Note the stem ('stofn') and the gender from the word type ('ordfl')
                         result.append(PersonName(name = m.stofn, gender = m.ordfl, case = case(m.beyging)))
                 return result if result else None
@@ -1070,21 +1070,28 @@ def parse_phrases_2(token_stream):
                 if tok.kind != TOK.WORD or not tok.txt[0].isupper():
                     # Must be a word starting with an uppercase character
                     return None
-                return stems(tok, "ism")
+                return stems(tok, {"ism"})
 
             # Check for surnames
             def surnames(tok):
-                """ Check for Icelandic patronym (category 'föð) """
+                """ Check for Icelandic patronym (category 'föð') or matronym (category 'móð') """
                 if tok.kind != TOK.WORD or not tok.txt[0].isupper():
                     # Must be a word starting with an uppercase character
                     return None
-                return stems(tok, "föð")
+                return stems(tok, {"föð", "móð"})
 
             # Check for unknown surnames
             def unknown_surname(tok):
                 """ Check for unknown (non-Icelandic) surnames """
-                # Accept any upper case word as a surname
-                return tok.kind == TOK.WORD and tok.txt[0].isupper()
+                # Accept (most) upper case words as a surnames
+                if tok.kind != TOK.WORD:
+                    return False
+                if not tok.txt[0].isupper():
+                    # Must start with capital letter
+                    return False
+                # Allow single-letter abbreviations, but not multi-letter
+                # all-caps words (those are probably acronyms)
+                return len(tok.txt) == 1 or not tok.txt.isupper()
 
             def given_names_or_middle_abbrev(tok):
                 """ Check for given name or middle abbreviation """
@@ -1142,34 +1149,41 @@ def parse_phrases_2(token_stream):
                     next_token = next(token_stream)
 
                 # Check whether the sequence of given names is followed
-                # by a surname (patronym) of the same gender
-                sn = surnames(next_token)
-                if sn:
+                # by one or more surnames (patronym/matronym) of the same gender,
+                # for instance 'Dagur Bergþóruson Eggertsson'
+                while True:
+                    sn = surnames(next_token)
+                    if not sn:
+                        break
                     r = []
                     # Found surname: append it to the accumulated name, if compatible
                     for p in gn:
                         for np in sn:
                             if compatible(p, np):
                                 r.append(PersonName(name = p.name + " " + np.name, gender = p.gender, case = p.case))
-                    if r:
-                        # Compatible: include it and advance to the next token
-                        gn = r
-                        w += " " + next_token.txt
-                        patronym = True
-                        next_token = next(token_stream)
+                    if not r:
+                        break
+                    # Compatible: include it and advance to the next token
+                    gn = r
+                    w += " " + next_token.txt
+                    patronym = True
+                    next_token = next(token_stream)
 
                 # Must have at least one possible name
                 assert len(gn) >= 1
 
-                # Check whether we have an unknown uppercase word next;
-                # if so, add it to the person names we've already found
-                while unknown_surname(next_token):
-                    for ix, p in enumerate(gn):
-                        gn[ix] = PersonName(name = p.name + " " + next_token.txt, gender = p.gender, case = p.case)
-                    w += " " + next_token.txt
-                    next_token = next(token_stream)
-                    # Assume we now have a patronym
-                    patronym = True
+                if not patronym:
+                    # We stop name parsing after we find one or more Icelandic
+                    # patronyms/matronyms. Otherwise, check whether we have an
+                    # unknown uppercase word next;
+                    # if so, add it to the person names we've already found
+                    while unknown_surname(next_token):
+                        for ix, p in enumerate(gn):
+                            gn[ix] = PersonName(name = p.name + " " + next_token.txt, gender = p.gender, case = p.case)
+                        w += " " + next_token.txt
+                        next_token = next(token_stream)
+                        # Assume we now have a patronym
+                        patronym = True
 
                 found_name = False
                 # If we have a full name with patronym, store it
