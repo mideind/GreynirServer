@@ -20,7 +20,8 @@
 """
 
 import os
-import errno
+import tempfile
+
 from settings import Settings
 
 
@@ -46,18 +47,26 @@ except ImportError:
 
         # Windows
         def _lock_file(file, block):
-            # Lock just the first byte
-            try:
-                msvcrt.locking(file.fileno(), msvcrt.LK_LK_LOCK if block else msvcrt.NBLCK, 1)
-            except IOError:
-                raise LockError("Couldn't lock {0}".format(file.name))
+            # Lock just the first byte of the file
+            retry = True
+            while retry:
+                retry = False
+                try:
+                    msvcrt.locking(file.fileno(), msvcrt.LK_LOCK if block else msvcrt.NBLCK, 1)
+                except OSError as e:
+                    if block and e.errno == 36:
+                        # Windows says 'resource deadlock avoided', but we truly want a longer
+                        # blocking wait: try again
+                        retry = True
+                    else:
+                        raise LockError("Couldn't lock {0}, errno is {1}".format(file.name, e.errno))
 
         def _unlock_file(file):
             try:
                 file.seek(0)
                 msvcrt.locking(file.fileno(), msvcrt.LK_UNLCK, 1)
-            except IOError:
-                raise LockError("Couldn't unlock {0}".format(file.name))
+            except OSError as e:
+                raise LockError("Couldn't unlock {0}, errno is {1}".format(file.name, e.errno))
 
 else:
     # Unix/POSIX
@@ -75,12 +84,14 @@ else:
 
 class GlobalLock:
 
+    _TMP_DIR = tempfile.gettempdir()
+
     def __init__(self, lockname):
         """ Initialize a global lock with the given name """
         assert lockname and isinstance(lockname, str)
-        # Locate global locks in the /tmp/ directory
-        # !!! Note: this may not work in Windows
-        self._path = '/tmp/greynir-' + lockname
+        # Locate global locks in the system temporary directory
+        # (should work on both Windows and Unix/POSIX)
+        self._path = os.path.join(self._TMP_DIR, 'greynir-' + lockname)
         self._fp = None
 
     def acquire(self, block = True):
