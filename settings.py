@@ -169,8 +169,8 @@ class VerbSubjects:
     @staticmethod
     def set_case(case):
         """ Set the case of the subject for the following verbs """
-        if case not in { "þf", "þgf", "ef", "none", "lhþt" }:
-            raise ConfigError("Unknown verb subject case '{0}' in verb_subjects".format(case))
+        #if case not in { "þf", "þgf", "ef", "none", "lhþt" }:
+        #    raise ConfigError("Unknown verb subject case '{0}' in verb_subjects".format(case))
         VerbSubjects._CASE = case
 
     @staticmethod
@@ -419,10 +419,10 @@ class Settings:
             StaticPhrases.add(s[1:-1])
             return
         # Check for a meaning spec
-        a = s.lower().split('=', maxsplit=1)
+        a = s.split('=', maxsplit=1)
         par = a[0].strip()
         val = a[1].strip()
-        if par == 'meaning':
+        if par.lower() == 'meaning':
             m = val.split()
             if len(m) == 3:
                 StaticPhrases.set_meaning(m)

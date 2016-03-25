@@ -17,8 +17,8 @@ import importlib
 import json
 import sys
 import time
-
 import re
+
 #from multiprocessing.dummy import Pool
 from multiprocessing import Pool
 from contextlib import closing
@@ -41,7 +41,8 @@ BIN_ORDFL = {
     "töl" : { "töl", "to" },
     "to" : { "töl", "to" },
     "fn" : { "fn" },
-    "pfn" : { "pfn" }
+    "pfn" : { "pfn" },
+    "st" : { "st" }
 }
 
 
@@ -51,7 +52,7 @@ class Result:
         This class is instrumented so that it is equivalent to use attribute
         or indexing notation, i.e. r.efliður is the same as r["efliður"].
 
-        (This also sidesteps a bug in the PyPy 2.6.0 which doesn't fully
+        (This also sidesteps a bug in PyPy 2.6.0 which doesn't fully
         support custom handling of attribute identifiers with non-ASCII
         characters in them.)
 
@@ -69,14 +70,14 @@ class Result:
         self._params = params
 
     def __setattr__(self, key, val):
-        if key == "dict" or key == "__dict__":
+        if key == "__dict__" or key == "dict" or key in self.__dict__:
             super().__setattr__(key, val)
         else:
             self.dict[key] = val
 
     def __getattr__(self, key):
         """ Fancy attribute getter with special cases for _root and _nominative """
-        if key == "dict" or key == "__dict__":
+        if key == "__dict__" or key == "dict" or key in self.__dict__:
             return super().__getattr__(key)
         d = self.dict
         if key == "_root" and not "_root" in d:
@@ -84,13 +85,13 @@ class Result:
             # (Note that it can be overridden by setting it directly)
             d[key] = self._node.root(self._state, self._params)
             # At this point we can safely release the params
-            del d["_params"]
+            #del d["_params"]
         elif key == "_nominative" and not "_nominative" in d:
             # Lazy evaluation of the _root attribute
             # (Note that it can be overridden by setting it directly)
             d[key] = self._node.nominative(self._state, self._params)
             # At this point we can safely release the params
-            del d["_params"]
+            #del d["_params"]
         if key in d:
             return d[key]
         # Not found in our custom dict:
@@ -165,6 +166,72 @@ class Result:
             if a in d:
                 del d[a]
 
+    def enum_children(self, test_f = None):
+        """ Enumerate the child parameters of this node, yielding (child_node, result)
+            where the child node meets the given test, if any """
+        if self._params:
+            child_nodes = self._node.children()
+            for p in self._params:
+                c = next(child_nodes)
+                if test_f is None or test_f(c):
+                    yield (c, p)
+
+    def enum_descendants(self, test_f = None):
+        """ Enumerate the descendant parameters of this node, yielding (child_node, result)
+            where the child node meets the given test, if any """
+        if self._params:
+            child_nodes = self._node.children()
+            for p in self._params:
+                c = next(child_nodes)
+                for d_c, d_p in p.enum_descendants(test_f):
+                    yield (d_c, d_p)
+                if test_f is None or test_f(c):
+                    yield (c, p)
+
+    def find_child(self, **kwargs):
+        """ Find a child parameter meeting the criteria given in kwargs """
+
+        def test_f(c):
+            for key, val in kwargs.items():
+                f = getattr(c, "has_" + key, None)
+                if f is None or not f(val):
+                    return False
+            return True
+
+        for c, p in self.enum_children(test_f):
+            # Found a child node meeting the criteria: return its associated param
+            return p
+        # No child node found: return None
+        return None
+
+    def all_children(self, **kwargs):
+        """ Return all child parameters meeting the criteria given in kwargs """
+
+        def test_f(c):
+            for key, val in kwargs.items():
+                f = getattr(c, "has_" + key, None)
+                if f is None or not f(val):
+                    return False
+            return True
+
+        return [p for _, p in self.enum_children(test_f)]
+
+    def find_descendant(self, **kwargs):
+        """ Find a descendant parameter meeting the criteria given in kwargs """
+
+        def test_f(c):
+            for key, val in kwargs.items():
+                f = getattr(c, "has_" + key, None)
+                if f is None or not f(val):
+                    return False
+            return True
+
+        for c, p in self.enum_descendants(test_f):
+            # Found a child node meeting the criteria: return its associated param
+            return p
+        # No child node found: return None
+        return None
+
 
 class Node:
 
@@ -181,25 +248,50 @@ class Node:
     def set_child(self, n):
         self.child = n
 
-    def children(self):
-        """ Yield all children of this node """
+    def has_nt_base(self, s):
+        """ Does the node have the given nonterminal base name? """
+        return False
+
+    def has_t_base(self, s):
+        """ Does the node have the given terminal base name? """
+        return False
+
+    def has_variant(self, s):
+        """ Does the node have the given variant? """
+        return False
+
+    def children(self, test_f = None):
+        """ Yield all children of this node (that pass a test function, if given) """
         c = self.child
         while c:
-            yield c
+            if test_f is None or test_f(c):
+                yield c
             c = c.nxt
 
-    def descendants(self):
-        """ Do a depth-first traversal of all children of this node """
+    def first_child(self, test_f):
+        """ Return the first child of this node that matches a test function, or None """
         c = self.child
         while c:
-            for cc in c.children():
-                yield cc
-            yield c
+            if test_f(c):
+                return c
+            c = c.nxt
+        return None
+
+    def descendants(self, test_f = None):
+        """ Do a depth-first traversal of all children of this node,
+            returning those that pass a test function, if given """
+        c = self.child
+        while c:
+            for cc in c.descendants():
+                if test_f is None or test_f(cc):
+                    yield cc
+            if test_f is None or test_f(c):
+                yield c
             c = c.nxt
 
     def string_self(self):
         """ String representation of the name of this node """
-        assert False # Should be overridden
+        raise NotImplementedError # Should be overridden
 
     def string_rep(self, indent):
         """ Indented representation of this node """
@@ -234,6 +326,7 @@ class TerminalNode(Node):
         self.at_start = at_start
         elems = terminal.split("_")
         self.cat = elems[0]
+        self.is_literal = self.cat[0] == '"' # Literal terminal, i.e. "sem", "og"
         self.variants = set(elems[1:])
         self.tokentype = tokentype
         self.is_word = tokentype == "WORD"
@@ -244,7 +337,7 @@ class TerminalNode(Node):
         self.nominative_cache = None
 
         # BIN category set
-        self.bin_cat = BIN_ORDFL[self.cat] if self.cat in BIN_ORDFL else set()
+        self.bin_cat = BIN_ORDFL.get(self.cat, None)
 
         # Gender of terminal
         self.gender = None
@@ -278,19 +371,26 @@ class TerminalNode(Node):
         if number:
             self.number = next(iter(number))
 
+    def has_t_base(self, s):
+        """ Does the node have the given terminal base name? """
+        return self.cat == s
+
+    def has_variant(self, s):
+        """ Does the node have the given variant? """
+        return s in self.variants
+
     def _bin_filter(self, m, case_override = None):
         """ Return True if the BIN meaning in m matches the variants for this terminal """
         #print("_bin_filter checking meaning {0}".format(m))
-        if m.ordfl not in self.bin_cat:
+        if self.bin_cat is not None and m.ordfl not in self.bin_cat:
             return False
         if self.gender:
             # Check gender match
             if self.cat == "no":
                 if m.ordfl != self.gender:
                     return False
-            else:
-                if self.gender.upper() not in m.beyging:
-                    return False
+            elif self.gender.upper() not in m.beyging:
+                return False
         if self.case:
             # Check case match
             if case_override:
@@ -315,13 +415,26 @@ class TerminalNode(Node):
         if "lhþt" in self.variants:
             if "LHÞT" not in m.beyging:
                 return False
+        # Check VB/SB/MST for adjectives
+        if "esb" in self.variants:
+            if "ESB" not in m.beyging:
+                return False
+        if "mst" in self.variants:
+            if "MST" not in m.beyging:
+                return False
+        if "vb" in self.variants:
+            if "VB" not in m.beyging:
+                return False
+        if "sb" in self.variants:
+            if "SB" not in m.beyging:
+                return False
         #print("_bin_filter returns True")
         return True
 
     def _root(self, bin_db):
         """ Look up the root of the word associated with this terminal """
         # Lookup the token in the BIN database
-        if not self.is_word:
+        if (not self.is_word) or self.is_literal:
             return self.text
         w, m = bin_db.lookup_word(self.text, self.at_start)
         if m:
@@ -333,21 +446,54 @@ class TerminalNode(Node):
     def _nominative(self, bin_db):
         """ Look up the nominative form of the word associated with this terminal """
         # Lookup the token in the BIN database
-        if (not self.is_word) or (self.case == "nf"):
-            # Not a word or already nominative: return it as-is
+        if (not self.is_word) or (self.case == "nf") or self.is_literal or self.cat in { "ao", "eo", "fs", "st", "nhm" }:
+            # Not a word, already nominative or not declinable: return it as-is
             return self.text
+        if not self.text:
+            print("self.text is empty, token is {0}, terminal is {1}".format(self.token, self.terminal))
+            assert False
+        #print("_nominative looking up {0}, cat is {1}".format(self.text, self.cat))
         w, m = bin_db.lookup_word(self.text, self.at_start)
         if m:
+            # Narrow the meanings down to those that are compatible with the terminal
             m = [ x for x in m if self._bin_filter(x) ]
         if m:
-            # Look up the root of the word and find its forms
-            stofn = m[0].stofn.replace("-", "")
-            root, m = bin_db.lookup_form(stofn, self.at_start)
-            # Select the most similar word form, but in nominative case
-            m = [ x for x in m if self._bin_filter(x, case_override = "nf") ]
-            if m:
-                w = m[0].ordmynd
-        return w.replace("-", "")
+            #print("Meanings from lookup_word are {0}".format(m))
+            # Look up the distinct roots of the word
+            result = []
+            for x in m:
+
+                def replace_beyging(b, by_case = "NF"):
+                    for case in ("NF", "ÞF", "ÞGF", "EF"):
+                        if case != by_case and case in b:
+                            return b.replace(case, by_case)
+                    return b
+
+                # Calculate a new beyging string with the nominative case
+                beyging_nf = replace_beyging(x.beyging)
+
+                if beyging_nf is x.beyging:
+                    # No replacement made: word form is identical in the nominative case
+                    result.append(x)
+                else:
+                    # Lookup the same word (identified by 'utg') but a different declination
+                    prefix = "".join(x.ordmynd.split("-")[0:-1])
+                    nom_x = bin_db.lookup_utg(x.utg, beyging = beyging_nf)
+                    if nom_x:
+                        result += bin_db.prefix_meanings(nom_x, prefix)
+
+            if result:
+                #print("Meaning list is {0}".format(result))
+                w = result[0].ordmynd
+        w = w.replace("-", "")
+        if self.text.isupper():
+            # Original word was all upper case: convert result to upper case
+            w = w.upper()
+        elif self.text[0].isupper():
+            # First letter was upper case: convert result accordingly
+            w = w[0].upper() + w[1:]
+        #print("_nominative returning {0}".format(w))
+        return w
 
     def root(self, state, params):
         """ Calculate the root (canonical) form of this node's text """
@@ -421,8 +567,18 @@ class NonterminalNode(Node):
     def __init__(self, nonterminal):
         super().__init__()
         self.nt = nonterminal
+        elems = nonterminal.split("_")
         # Calculate the base name of this nonterminal (without variants)
-        self.nt_base = nonterminal.split("_", maxsplit = 1)[0]
+        self.nt_base = elems[0]
+        self.variants = set(elems[1:])
+
+    def has_nt_base(self, s):
+        """ Does the node have the given nonterminal base name? """
+        return self.nt_base == s
+
+    def has_variant(self, s):
+        """ Does the node have the given variant? """
+        return s in self.variants
 
     def string_self(self):
         return self.nt
@@ -439,7 +595,7 @@ class NonterminalNode(Node):
         """ Apply any requested processing to this node """
         result = Result(self, state, params)
         result._nonterminal = self.nt
-        # Calculate the combined text rep of the children
+        # Calculate the combined text rep of the results of the children
         result._text = " ".join(p._text for p in params)
         for p in params:
             # Copy all user variables (attributes not starting with an underscore _)
@@ -507,14 +663,22 @@ class Tree:
         """ Terminal """
         # The string s contains:
         # terminal 'token' [TOKENTYPE] [auxiliary-json]
-        a = s.split(' ', maxsplit = 1)
-        terminal = a[0]
-        s = re.match(r'\'[^\']*\'', a[1])
-        token = s.group() if s else ""
-        s = a[1][s.end() + 1:] if s else ""
+        # The terminal may itself be a single-quoted string
+        if s[0] == "'":
+            r = re.match(r'\'[^\']*\'\w*', s)
+            terminal = r.group() if r else ""
+            s = s[r.end() + 1:] if r else ""
+        else:
+            a = s.split(' ', maxsplit = 1)
+            terminal = a[0]
+            s = a[1]
+        r = re.match(r'\'[^\']*\'', s)
+        token = r.group() if r else ""
+        s = s[r.end() + 1:] if r else ""
         a = s.split(' ', maxsplit = 1) if s else ["WORD"] # Default token type
         tokentype = a[0]
         aux = a[1] if len(a) > 1 else "" # Auxiliary info (originally token.t2)
+        # print("terminal {0} token {1} tokentype {2} aux {3}".format(terminal, token, tokentype, aux))
         # Select a terminal constructor based on the first part of the
         # terminal name
         cat = terminal.split("_", maxsplit = 1)[0]
@@ -539,11 +703,6 @@ class Tree:
             n = int(code[1:])
             f = getattr(self, "handle_" + code[0], None)
             if f:
-                # Split the line up into identifiers that can be of three forms:
-                # 1) straight Python identifiers (alphabetic+digits+underscore),
-                # 2) 'literal'_some_variants where the variants are Python identifiers,
-                # 3) "literal"
-                # All of the above can be optionally followed by ?, + or *
                 if len(a) >= 2:
                     f(n, a[1])
                 else:
@@ -649,12 +808,14 @@ class Processor:
 
                 if not article:
                     print("Article not found in scraper database")
-                elif article.tree:
-                    tree = Tree(url)
-                    tree.load(article.tree)
-                    # Run all processors in turn
-                    for p in self.processors:
-                        tree.process(session, p)
+                else:
+                    if article.tree:
+                        tree = Tree(url)
+                        # print("Tree:\n{0}\n".format(article.tree))
+                        tree.load(article.tree)
+                        # Run all processors in turn
+                        for p in self.processors:
+                            tree.process(session, p)
                     # Mark the article as being processed
                     article.processed = datetime.utcnow()
 
@@ -664,7 +825,7 @@ class Processor:
             except Exception as e:
                 # If an exception occurred, roll back the transaction
                 session.rollback()
-                print("Exception caught, transaction rolled back: {0}".format(e))
+                print("Exception caught in article {0}, transaction rolled back\nException: {1}".format(url, e))
 
         t1 = time.time()
         sys.stdout.flush()

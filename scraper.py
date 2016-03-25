@@ -179,13 +179,13 @@ class Scraper:
     @classmethod
     def _fetch_url(cls, url):
         """ Low-level fetch of an URL, returning a decoded string """
-        encoding = 'ISO-8859-1'
         html_doc = None
         try:
             with closing(urllib.request.urlopen(url)) as response:
                 if response:
                     # Decode the HTML Content-type header to obtain the
                     # document type and the charset (content encoding), if specified
+                    encoding = 'ISO-8859-1'
                     ctype = response.getheader("Content-type", "")
                     if ';' in ctype:
                         s = ctype.split(';')
@@ -478,9 +478,11 @@ class Scraper:
         # Find which root this URL belongs to, if any
         for r in session.query(Root).all():
             root_s = urlparse.urlsplit(r.url)
+            # Find the root of the domain, i.e. www.ruv.is -> ruv.is
+            root_domain = '.'.join(root_s.netloc.split('.')[-2:])
             # This URL belongs to a root if the domain (netloc) part
-            # ends with the root domain (netloc)
-            if s.netloc.endswith(root_s.netloc):
+            # ends with the root domain
+            if s.netloc == root_domain or s.netloc.endswith('.' + root_domain):
                 root = r
                 break
         # Obtain a scrape helper for the root, if any

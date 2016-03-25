@@ -12,6 +12,9 @@
    It is designed to be called from Python code with
    already parsed and packed grammar structures.
 
+   2016-03-19 11:56
+   Reference article: 12.57 sec
+
 */
 
 // #define DEBUG
@@ -132,7 +135,7 @@ private:
 
    // The contained States are stored an array of hash bins
 
-   static const UINT HASH_BINS = 499; // Prime number
+   static const UINT HASH_BINS = 997; /* 499; */ // Prime number
 
    struct HashBin {
       State* m_pHead; // The first state in this hash bin
@@ -140,15 +143,16 @@ private:
       State* m_pEnum; // The last enumerated state in this hash bin
    };
 
+   Parser* m_pParser; // The associated parser
    UINT m_nToken; // The input token associated with this column
    State** m_pNtStates; // States linked by the nonterminal at their prod[dot]
    MatchingFunc m_pMatchingFunc; // Pointer to the token/terminal matching function
    BYTE* m_abCache; // Matching cache, a true/false flag for every terminal in the grammar
-   BYTE* m_abSeen; // Flag whether each nonterminal's productions have already been added
    HashBin m_aHash[HASH_BINS]; // The hash bin array
    UINT m_nEnumBin; // Round robin used during enumeration of states
 
    static AllocCounter ac;
+   static AllocCounter acMatches;
 
 protected:
 
@@ -159,14 +163,17 @@ public:
 
    UINT getToken(void) const
       { return this->m_nToken; }
+
+   void startParse(void);
+   void stopParse(void);
+
    // Add a state to the column, at the end of the state list
    BOOL addState(State* p);
 
-   State* nextState(void);
    void resetEnum(void);
+   State* nextState(void);
 
    State* getNtHead(INT iNt) const;
-   BOOL markSeen(INT iNt);
 
    BOOL matches(UINT nHandle, UINT nTerminal) const;
 
@@ -431,28 +438,22 @@ Node* State::getResult(INT iStartNt) const
 
 
 AllocCounter Column::ac;
+AllocCounter Column::acMatches;
 
 Column::Column(Parser* pParser, UINT nToken)
-   : m_nToken(nToken),
+   : m_pParser(pParser),
+      m_nToken(nToken),
       m_pNtStates(NULL),
       m_pMatchingFunc(pParser->getMatchingFunc()),
       m_abCache(NULL),
-      m_abSeen(NULL),
       m_nEnumBin(0)
 {
    Column::ac++;
    ASSERT(this->m_pMatchingFunc != NULL);
    UINT nNonterminals = pParser->getNumNonterminals();
-   UINT nTerminals = pParser->getNumTerminals();
    // Initialize array of linked lists by nonterminal at prod[dot]
    this->m_pNtStates = new State* [nNonterminals];
    memset(this->m_pNtStates, 0, nNonterminals * sizeof(State*));
-   // Initialize the matching cache to zero
-   this->m_abCache = new BYTE[nTerminals + 1];
-   memset(this->m_abCache, 0, (nTerminals + 1) * sizeof(BYTE));
-   // Initialize the seen array to zero
-   this->m_abSeen = new BYTE[nNonterminals];
-   memset(this->m_abSeen, 0, nNonterminals * sizeof(BYTE));
    // Initialize the hash bins to zero
    memset(this->m_aHash, 0, sizeof(HashBin) * HASH_BINS);
 }
@@ -477,11 +478,28 @@ Column::~Column(void)
    }
    // Delete array of linked lists by nonterminal at prod[dot]
    delete [] this->m_pNtStates;
-   // Delete matching cache
-   delete [] this->m_abCache;
-   // Delete seen array
-   delete [] this->m_abSeen;
+   // Delete matching cache and seen array, if still allocated
+   this->stopParse();
    Column::ac--;
+}
+
+void Column::startParse(void)
+{
+   // Called when the parser starts processing this column
+   ASSERT(this->m_abCache == NULL);
+   UINT nTerminals = m_pParser->getNumTerminals();
+   // Initialize the matching cache to zero
+   this->m_abCache = new BYTE[nTerminals + 1];
+   memset(this->m_abCache, 0, (nTerminals + 1) * sizeof(BYTE));
+}
+
+void Column::stopParse(void)
+{
+   // Called when the parser is finished processing this column
+   if (this->m_abCache)
+      // Delete matching cache
+      delete [] this->m_abCache;
+   this->m_abCache = NULL;
 }
 
 BOOL Column::addState(State* p)
@@ -564,26 +582,19 @@ State* Column::getNtHead(INT iNt) const
 
 BOOL Column::matches(UINT nHandle, UINT nTerminal) const
 {
-   if (this->m_nToken == (UINT)-1)
-      // Sentinel token in last column: never matches
-      return false;
+   ASSERT(this->m_abCache != NULL);
    if (this->m_abCache[nTerminal] & 0x80)
       // We already have a cached result for this terminal
       return (BOOL)(this->m_abCache[nTerminal] & 0x01);
    // Not cached: obtain a result and store it in the cache
-   BOOL b = this->m_pMatchingFunc(nHandle, this->m_nToken, nTerminal) != 0;
+   BOOL b = false;
+   if (this->m_nToken != (UINT)-1) {
+      // Sentinel token in last column never matches
+      b = this->m_pMatchingFunc(nHandle, this->m_nToken, nTerminal) != 0;
+      Column::acMatches++; // Count calls to the matching function
+   }
    // Mark our cache
    this->m_abCache[nTerminal] = b ? (BYTE)0x81 : (BYTE)0x80;
-   return b;
-}
-
-BOOL Column::markSeen(INT iNt)
-{
-   // Guard to ensure that each nonterminal is only added once to the column
-   ASSERT(iNt < 0);
-   UINT nIndex = ~((UINT)iNt);
-   BOOL b = this->m_abSeen[nIndex] == 0;
-   this->m_abSeen[nIndex] = 1;
    return b;
 }
 
@@ -1046,6 +1057,9 @@ Node* Parser::parse(UINT nHandle, INT iStartNt, UINT* pnErrorToken,
    State* pQ0 = NULL;
    StateChunk* pChunkHead = NULL;
 
+   // Prepare the the first column
+   pCol[0]->startParse();
+
    // Prepare the initial state
    Production* p = pRootNt->getHead();
    while (p) {
@@ -1058,6 +1072,7 @@ Node* Parser::parse(UINT nHandle, INT iStartNt, UINT* pnErrorToken,
    // Main parse loop
    State* pQ = NULL;
    NodeDict ndV; // Node dictionary
+   BYTE* pbSeen = new BYTE[this->getNumNonterminals()];
 
 /*
    clock_t clockStart = clock();
@@ -1082,16 +1097,20 @@ Node* Parser::parse(UINT nHandle, INT iStartNt, UINT* pnErrorToken,
       pQ0 = NULL;
       HNode* pH = NULL;
 
+      // No nonterminals seen yet
+      memset(pbSeen, 0, this->getNumNonterminals() * sizeof(BYTE));
+
       while (pState) {
+
          INT iItem = pState->prodDot();
-         INT iNtB = pState->getNt();
-         UINT nStart = pState->getStart();
-         Node* pW = pState->getNode();
+
          if (iItem < 0) {
+            // Nonterminal at the dot: Earley predictor
             // Don't push the same nonterminal more than once to the same column
-            if (pEi->markSeen(iItem)) {
+            if (!pbSeen[~((UINT)iItem)]) {
                // Earley predictor
                // Push all right hand sides of this nonterminal
+               pbSeen[~((UINT)iItem)] = 1;
                p = (*this->m_pGrammar)[iItem]->getHead();
                while (p) {
                   State* psNew = new (pChunkHead) State(iItem, 0, p, i, NULL);
@@ -1102,6 +1121,7 @@ Node* Parser::parse(UINT nHandle, INT iStartNt, UINT* pnErrorToken,
             }
             // Add elements from the H set that refer to the
             // nonterminal iItem (nt_C)
+            // !!! Note: this code should NOT be within the above if(markSeen)
             HNode* ph = pH;
             while (ph) {
                if (ph->getNt() == iItem) {
@@ -1115,7 +1135,10 @@ Node* Parser::parse(UINT nHandle, INT iStartNt, UINT* pnErrorToken,
          }
          else
          if (iItem == 0) {
-            // Earley completer
+            // Production completed: Earley completer
+            INT iNtB = pState->getNt();
+            UINT nStart = pState->getStart();
+            Node* pW = pState->getNode();
             if (!pW) {
                Label label(iNtB, 0, NULL, i, i);
                pW = ndV.lookupOrAdd(label);
@@ -1135,9 +1158,11 @@ Node* Parser::parse(UINT nHandle, INT iStartNt, UINT* pnErrorToken,
                psNt = psNt->getNtNext();
             }
          }
+
          // Move to the next item on the agenda
          // (which may have been enlarged by the previous code)
          pState = pEi->nextState();
+
       }
 
       // Clean up the H set
@@ -1151,9 +1176,14 @@ Node* Parser::parse(UINT nHandle, INT iStartNt, UINT* pnErrorToken,
       ndV.reset();
       Node* pV = NULL;
 
+      // Done processing this column: let it clean up
+      pEi->stopParse();
+
       if (pQ) {
          Label label(pEi->getToken(), 0, NULL, i, i + 1);
          pV = new Node(label); // Reference is deleted below
+         // Open up the next column
+         pCol[i + 1]->startParse();
       }
 
       while (pQ) {
@@ -1221,6 +1251,7 @@ Node* Parser::parse(UINT nHandle, INT iStartNt, UINT* pnErrorToken,
 */
 
    // Cleanup
+   delete[] pbSeen;
    for (i = 0; i < nTokens + 1; i++)
       delete pCol[i];
    delete [] pCol;
@@ -1259,6 +1290,7 @@ void AllocReporter::report(void) const
    printf("Columns         : %6d %8d\n", Column::ac.getBalance(), Column::ac.numAllocs());
    printf("HNodes          : %6d %8d\n", HNode::ac.getBalance(), HNode::ac.numAllocs());
    printf("NodeDict lookups: %6s %8d\n", "", NodeDict::acLookups.numAllocs());
+   printf("Matching calls  : %6s %8d\n", "", Column::acMatches.numAllocs());
    fflush(stdout); // !!! Debugging
 }
 
@@ -1341,7 +1373,13 @@ Node* earleyParse(Parser* pParser, UINT nTokens, UINT nHandle, UINT* pnErrorToke
    INT iRoot = pParser->getGrammar()->getRoot();
    ASSERT(iRoot < 0); // Must be a nonterminal
 
+#ifdef DEBUG
+   printf("Calling pParser->parse()\n"); fflush(stdout);
+#endif
    Node* pNode = pParser->parse(nHandle, iRoot, pnErrorToken, nTokens);
+#ifdef DEBUG
+   printf("Back from pParser->parse()\n"); fflush(stdout);
+#endif
 
    return pNode;
 }

@@ -37,6 +37,8 @@ class Test_DB:
 
     """ Encapsulates a database of test sentences and results """
 
+    MAXINT = 2 ** 31 - 1 # Maximum for PostgreSQL integer type
+
     def __init__(self):
         """ Initialize DB connection instance """
         self._conn = None # Connection
@@ -75,14 +77,14 @@ class Test_DB:
         """ Add a sentence to the test sentence table """
         assert self._c is not None
         self._c.execute("INSERT INTO sentences (sentence, numtrees, best, target) VALUES (%s, %s, %s, %s);",
-            [ sentence, numtrees, best, target ])
+            [ sentence, min(numtrees, self.MAXINT), min(best, self.MAXINT), target ])
         return True
 
     def update_sentence(self, identity, sentence, numtrees = 0, best = -1, target = 1):
         """ Update a sentence and its statistics in the table """
         assert self._c is not None
         self._c.execute("UPDATE sentences SET (sentence, numtrees, best, target) = (%s, %s, %s, %s) WHERE id = %s;",
-            [ sentence, numtrees, best, target, identity ])
+            [ sentence, min(numtrees, self.MAXINT), min(best, self.MAXINT), target, identity ])
         return True
 
     def delete_sentence(self, identity):

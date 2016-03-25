@@ -63,6 +63,7 @@
 
 """
 
+import re
 from datetime import datetime
 from scraperdb import Person
 
@@ -108,6 +109,10 @@ def sentence(state, result):
 # They will be called during processing (depth-first) of a complete parsed
 # tree for a sentence.
 
+INVALID_TITLES = {
+    "sig", "væri", "orðið", "ávísun", "hér heima"
+}
+
 def _add_name(result, mannsnafn, titill):
     """ Add a name to the resulting name list """
     if not titill:
@@ -116,11 +121,19 @@ def _add_name(result, mannsnafn, titill):
         return False
     if "..." in titill or "[" in titill:
         return False
+    # Cut off ending punctuation
+    while any(titill.endswith(p) for p in (" .", " :", " !", " ?")):
+        titill = titill[:-2]
     # Cut off common endings that don't belong in a title
     for s in ("í tilkynningu", "í fjölmiðlum", "í samtali", "í Kastljósi"):
         if titill.endswith(s):
             titill = titill[:-1 -len(s)]
     if not titill:
+        return False
+    # Eliminate consecutive whitespace
+    titill = re.sub(r'\s+', ' ', titill)
+    if titill in INVALID_TITLES:
+        # Last security check
         return False
     if "nöfn" not in result:
         result.nöfn = []
@@ -167,7 +180,7 @@ def NlSkýring(node, params, result):
     def cut(s):
         if s.startswith(", ") or s.startswith("( "):
             s = s[2:]
-        if s.endswith(" ,") or s.endswith(" )"):
+        while s.endswith(" ,") or s.endswith(" )") or s.endswith(" ."):
             s = s[:-2]
         return s
 
@@ -251,7 +264,7 @@ def NlKjarni(node, params, result):
                     titill += " " + efliður
                 if titill.startswith(", "):
                     titill = titill[2:]
-                if titill.endswith(" ,"):
+                if titill.endswith(" ,") or titill.endswith(" ."):
                     titill = titill[0:-2]
 
             #print("In check, mannsnafn is '{0}' and titill is '{1}'".format(mannsnafn, titill))
@@ -272,10 +285,12 @@ def NlKjarni(node, params, result):
                     " )" : " ( ",
                     " ]" : " [ ",
                     " -" : " - ",
-                    " ," : " , "
+                    " ," : " , ",
+                    " ." : " , "
                 }
-                ldelim = delims[rdelim]
-                titill = titill[0:titill.rfind(ldelim)]
+                ldelim = delims.get(rdelim)
+                if ldelim:
+                    titill = titill[0:titill.rfind(ldelim)]
                 # print("NlKjarni: nafn '{0}', titill '{1}'".format(mannsnafn, titill))
                 _add_name(result, mannsnafn, titill)
                 result.del_attribs("skýring_nafn")

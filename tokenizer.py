@@ -694,6 +694,7 @@ CURRENCIES = {
     "króna": "ISK",
     "ISK": "ISK",
     "[kr.]": "ISK",
+    "kr.": "ISK",
     "kr": "ISK",
     "pund": "GBP",
     "sterlingspund": "GBP",
@@ -748,21 +749,20 @@ def match_stem_list(token, stems, filter_func=None):
     """ Find the stem of a word token in given dict, or return None if not found """
     if token.kind != TOK.WORD:
         return None
-    if not token.val:
-        # No meanings: this might be a foreign or unknown word
-        # However, if it is still in the stems list we return True
-        return stems.get(token.txt.lower(), None)
     # Go through the meanings with their stems
-    for m in token.val:
-        # If a filter function is given, pass candidates to it
-        try:
-            lower_stofn = m.stofn.lower()
-            if lower_stofn in stems and (filter_func is None or filter_func(m)):
-                return stems[lower_stofn]
-        except Exception as e:
-            print("Exception {0} in match_stem_list\nToken: {1}\nStems: {2}".format(e, token, stems))
-            raise e
-    return None
+    if token.val:
+        for m in token.val:
+            # If a filter function is given, pass candidates to it
+            try:
+                lower_stofn = m.stofn.lower()
+                if lower_stofn in stems and (filter_func is None or filter_func(m)):
+                    return stems[lower_stofn]
+            except Exception as e:
+                print("Exception {0} in match_stem_list\nToken: {1}\nStems: {2}".format(e, token, stems))
+                raise e
+    # No meanings found: this might be a foreign or unknown word
+    # However, if it is still in the stems list we return True
+    return stems.get(token.txt.lower(), None)
 
 
 def case(bin_spec, default="nf"):
@@ -1009,26 +1009,23 @@ def parse_phrases_2(token_stream):
             if token.kind == TOK.NUMBER and (next_token.kind == TOK.WORD or
                 next_token.kind == TOK.CURRENCY):
 
-                # Preserve the case of the currency name, if available
-                # (krónur, krónum, króna)
-                cases = None
-                genders = None
+                # Preserve the case of the number, if available
+                # (milljónir, milljóna, milljónum)
+                cases = token.val[1]
+                genders = token.val[2]
+
                 if next_token.kind == TOK.WORD:
                     # Try to find a currency name
                     cur = match_stem_list(next_token, CURRENCIES)
                     if cur is not None:
                         # Use the case and gender information from the currency name
-                        cases = all_cases(next_token)
-                        genders = all_genders(next_token)
+                        if not cases:
+                            cases = all_cases(next_token)
+                        if not genders:
+                            genders = all_genders(next_token)
                 else:
                     # Already have an ISO identifier for a currency
                     cur = next_token.val[0]
-
-                # Use the case/gender information from the number, if any, rather than nothing
-                if not cases:
-                    cases = token.val[1]
-                if not genders:
-                    genders = token.val[2]
 
                 if cur is not None:
                     # Create an amount
@@ -1256,7 +1253,7 @@ def parse_static_phrases(token_stream):
 
             token = next(token_stream)
 
-            if token.kind != TOK.WORD:
+            if token.txt is None: # token.kind != TOK.WORD:
                 # Not a word: no match; discard state
                 for t in tq: yield t
                 tq = []
@@ -1266,7 +1263,10 @@ def parse_static_phrases(token_stream):
 
             # Look for matches in the current state and build a new state
             newstate = { }
-            w = token.txt.lower()
+            wo = token.txt # Original word
+            w = wo.lower() # Lower case
+            if wo == w:
+                wo = w
 
             def add_to_state(st, slist, index):
                 """ Add the list of subsequent words to the new parser state """
@@ -1277,12 +1277,20 @@ def parse_static_phrases(token_stream):
                 else:
                     st[wrd] = [(rest, index)]
 
-            if w in state:
+            # First check for original (uppercase) word in the state, if any;
+            # if that doesn't match, check the lower case
+            wm = None
+            if wo is not w and wo in state:
+                wm = wo
+            elif w in state:
+                wm = w
+
+            if wm:
                 # This matches an expected token:
                 # go through potential continuations
                 tq.append(token) # Add to lookahead token queue
                 token = None
-                for sl, ix in state[w]:
+                for sl, ix in state[wm]:
                     if not sl:
                         # No subsequent word: this is a complete match
                         # Reconstruct original text behind phrase
@@ -1291,7 +1299,7 @@ def parse_static_phrases(token_stream):
                         yield TOK.Word(w, [BIN_Meaning._make(r) for r in StaticPhrases.get_meaning(ix)])
                         # Discard the state and start afresh
                         newstate = { }
-                        w = ""
+                        w = wo = ""
                         tq = []
                         # Note that it is possible to match even longer phrases
                         # by including a starting phrase in its entirety in
@@ -1302,10 +1310,16 @@ def parse_static_phrases(token_stream):
                 for t in tq: yield t
                 tq = []
 
+            wm = None
+            if wo is not w and wo in pdict:
+                wm = wo
+            elif w in pdict:
+                wm = w
+
             # Add all possible new states for phrases that could be starting
-            if w in pdict:
+            if wm:
                 # This word potentially starts a phrase
-                for sl, ix in pdict[w]:
+                for sl, ix in pdict[wm]:
                     if not sl:
                         # Simple replace of a single word
                         for t in tq: yield tq

@@ -600,7 +600,7 @@ class Fast_Parser(BIN_Parser):
     def num_combinations(cls, w):
         """ Count the number of possible parse tree combinations in the given forest """
 
-        nd = dict()
+        nc = dict()
 
         def _num_comb(w):
             if w is None or w.is_token:
@@ -610,15 +610,19 @@ class Fast_Parser(BIN_Parser):
             # (this is less efficient for small trees but much more efficient
             # for extremely ambiguous trees, with combinations in the
             # hundreds of billions)
-            if w in nd:
-                return nd[w]
+            if w in nc:
+                if nc[w] is None:
+                    print("Loop in node tree at {0}".format(str(w)))
+                    assert False
+                return nc[w]
+            nc[w] = None
             comb = 0
             for _, f in w.enum_children():
                 if isinstance(f, tuple):
                     comb += _num_comb(f[0]) * _num_comb(f[1])
                 else:
                     comb += _num_comb(f)
-            result = nd[w] = comb if comb > 0 else 1
+            result = nc[w] = comb if comb > 0 else 1
             return result
 
         return _num_comb(w)

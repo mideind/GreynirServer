@@ -63,6 +63,10 @@ class BIN_Db:
         "from " + _DB_TABLE + " where ordmynd=(%s);"
     _DB_Q_FORMS = "select stofn, utg, ordfl, fl, ordmynd, beyging " \
         "from " + _DB_TABLE + " where stofn=(%s);"
+    _DB_Q_UTG = "select stofn, utg, ordfl, fl, ordmynd, beyging " \
+        "from " + _DB_TABLE + " where utg=(%s);"
+    _DB_Q_UTG_BEYGING = "select stofn, utg, ordfl, fl, ordmynd, beyging " \
+        "from " + _DB_TABLE + " where utg=(%s) and beyging=(%s);"
 
     # Adjective endings
     _ADJECTIVE_TEST = "leg" # Check for adjective if word contains 'leg'
@@ -159,6 +163,26 @@ class BIN_Db:
             m = None
         return m
 
+    @lru_cache(maxsize = CACHE_SIZE)
+    def lookup_utg(self, utg, beyging = None):
+        """ Return a list of meanings with the given integer id ('utg' column) """
+        assert self._c is not None
+        m = None
+        try:
+            if beyging:
+                self._c.execute(BIN_Db._DB_Q_UTG_BEYGING, [ utg, beyging ])
+            else:
+                self._c.execute(BIN_Db._DB_Q_UTG, [ utg ])
+            # Map the returned data from fetchall() to a list of instances
+            # of the BIN_Meaning namedtuple
+            g = self._c.fetchall()
+            if g is not None:
+                m = list(map(BIN_Meaning._make, g))
+        except (psycopg2.DataError, psycopg2.ProgrammingError) as e:
+            print("Query for utg {0} causing DB exception {1}".format(utg, e))
+            m = None
+        return m
+
     def lookup_word(self, w, at_sentence_start):
         """ Given a word form, look up all its possible meanings """
         return self._lookup(w, at_sentence_start, self._meanings)
@@ -166,6 +190,15 @@ class BIN_Db:
     def lookup_form(self, w, at_sentence_start):
         """ Given a word root (stem), look up all its forms """
         return self._lookup(w, at_sentence_start, self._forms)
+
+    @staticmethod
+    def prefix_meanings(mlist, prefix):
+        """ Return a meaning list with a prefix added to the stofn and ordmynd attributes """
+        return [
+            BIN_Meaning(prefix + "-" + r.stofn, r.utg, r.ordfl, r.fl,
+            prefix + "-" + r.ordmynd, r.beyging)
+            for r in mlist
+        ] if prefix else mlist
 
     @staticmethod
     def _lookup(w, at_sentence_start, lookup):
@@ -178,6 +211,8 @@ class BIN_Db:
             # Return a single-entity list with one meaning
             m = Abbreviations.DICT.get(clean_w, None)
             return None if m is None else [ BIN_Meaning._make(m) ]
+
+        assert w
 
         # Start with a simple lookup
         m = lookup(w)
@@ -232,9 +267,7 @@ class BIN_Db:
                     # use the meaning of its last part
                     prefix = "-".join(cw[0:-1])
                     m = lookup(cw[-1])
-                    m = [ BIN_Meaning(prefix + "-" + r.stofn, r.utg, r.ordfl, r.fl,
-                            prefix + "-" + r.ordmynd, r.beyging)
-                            for r in m]
+                    m = BIN_Db.prefix_meanings(m, prefix)
 
             if not m and lower_w.startswith('ó'):
                 # Check whether an adjective without the 'ó' prefix is found in BÍN

@@ -145,8 +145,9 @@ class BIN_Token(Token):
     # Pre-calculate a dictionary of associated BIN forms
     _VERB_FORMS = None # Initialized later
 
-    # Set of adverbs that cannot be an "eo" (prepositions are already excluded)
-    _NOT_EO = { "og", "eða", "sem" }
+    # Set of adverbs that cannot be an "eo" (prepositions and pronouns are already excluded)
+    _NOT_EO = { "og", "eða", "sem", "ekkert" }
+
     # Prepositions that nevertheless must be allowed as adverbs
     # 'Fyrirtækið hefur skilað inn ársreikningi', 'Þá er kannski eftir klukkutími',
     # 'Það hafi opnað fyrir of ágenga nýtingu þeirra'
@@ -158,7 +159,8 @@ class BIN_Token(Token):
     # '...samið við nær öll félögin'
     # '...kom út skýrsla'
     # '...að meðal hitastig'
-    _NOT_NOT_EO = frozenset(["inn", "eftir", "of", "til", "upp", "um", "síðan", "fram", "nær", "nærri", "út", "meðal" ])
+    # '...haldið hefur úti bloggsíðu'
+    _NOT_NOT_EO = frozenset(["inn", "eftir", "of", "til", "upp", "um", "síðan", "fram", "nær", "nærri", "út", "meðal", "úti" ])
 
     # Words that are not eligible for interpretation as proper names, even if they are capitalized
     _NOT_PROPER_NAME = frozenset(["ég", "þú", "hann", "hún", "það", "við", "þið", "þau",
@@ -372,8 +374,10 @@ class BIN_Token(Token):
         if not terminal.startswith("person"):
             return False
         # Check each PersonName tuple in the t2 list
+        case = terminal.variant(0)
+        gender = terminal.variant(1) if terminal.num_variants >= 2 else None
         for p in self.t2:
-            if terminal.variant(1) == p.gender and terminal.variant(0) == p.case:
+            if case == p.case and (gender is None or gender == p.gender):
                 # Case and gender matches: we're good
                 return True
         # No match found
@@ -586,8 +590,8 @@ class BIN_Token(Token):
                     # Explicitly allowed, no need to check further
                     self._is_eo = True
                 else:
-                    # Check whether also a preposition and return False in that case
-                    self._is_eo = not any(mm.ordfl == "fs" for mm in self.t2)
+                    # Check whether also a preposition or pronoun and return False in that case
+                    self._is_eo = not any(mm.ordfl in {"fs", "fn"} for mm in self.t2)
             # Return True if this token cannot also match a preposition
             return self._is_eo
 
@@ -606,6 +610,16 @@ class BIN_Token(Token):
             # the fs category. This effectively makes the propositions
             # exempt from the ambiguous_phrases optimization.
             return fs in Prepositions.PP and terminal.variant(0) in Prepositions.PP[fs]
+
+        def matcher_person(m):
+            """ Check name from static phrases, coming from the Reynir.conf file """
+            if m.fl != "nafn":
+                return False
+            if terminal.has_vbits(BIN_Token.VBIT_KK) and m.ordfl != "kk":
+                return False
+            if terminal.has_vbits(BIN_Token.VBIT_KVK) and m.ordfl != "kvk":
+                return False
+            return not terminal.has_vbits(BIN_Token.VBIT_HK)
 
         def matcher_default(m):
             """ Check other word categories """
@@ -627,6 +641,7 @@ class BIN_Token(Token):
                 "no" : matcher_no,
                 "eo" : matcher_eo,
                 "fs" : matcher_fs,
+                "person" : matcher_person,
                 "sérnafn" : None
             }
             matcher = matchers.get(terminal.first, matcher_default)
@@ -638,7 +653,7 @@ class BIN_Token(Token):
             # the word in BÍN. This excludes for instance "Ísland" which
             # should be treated purely as a noun, not as a proper name.
             return self.is_upper and (not any(m.ordmynd[0].isupper() and m.beyging != "-" for m in self.t2)) \
-                and (self.t1_lower not in BIN_Token._NOT_PROPER_NAME)
+                and (self.t1_lower not in BIN_Token._NOT_PROPER_NAME) and (" " not in self.t1_lower)
 
         # Unknown word
         if self.is_upper:
@@ -970,4 +985,4 @@ class BIN_Parser(Base_Parser):
 
     def go(self, tokens):
         """ Parse the token list after wrapping each understood token in the BIN_Token class """
-        assert False # This should never be called - is overwritten in Fast_Parser
+        raise NotImplementedError # This should never be called - is overridden in Fast_Parser

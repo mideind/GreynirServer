@@ -12,6 +12,7 @@
 
 """
 
+import sys
 import time
 from contextlib import closing
 from datetime import datetime
@@ -41,6 +42,9 @@ from flask import current_app
 def debug():
     # Call this to trigger the Flask debugger on purpose
     assert current_app.debug == False, "Don't panic! You're here by request of debug()"
+
+# Run with profiling?
+_PROFILE = False
 
 # Current default URL for testing
 
@@ -340,8 +344,10 @@ def analyze():
 
     t0 = time.time()
 
-    # result = profile(parse, toklist, single, use_reducer, dump_forest)
-    result, trees = parse(toklist, single, use_reducer, dump_forest, keep_trees)
+    if _PROFILE:
+        result, trees = profile(parse, toklist, single, use_reducer, dump_forest)
+    else:
+        result, trees = parse(toklist, single, use_reducer, dump_forest, keep_trees)
 
     # Add a name register to the result
     create_name_register(result)
@@ -681,6 +687,11 @@ if Settings.DEBUG:
 if __name__ == "__main__":
 
     # Run a default Flask web server for testing if invoked directly as a main program
+
+    args = sys.argv
+    if len(args) == 2 and args[1] in ("--profile", "-p"):
+        _PROFILE = True
+        print("Profiling enabled")
 
     # Additional files that should cause a reload of the web server application
     # Note: Reynir.grammar is automatically reloaded if its timestamp changes
