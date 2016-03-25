@@ -10,8 +10,8 @@ Try Reynir (in Icelandic) at [http://greynir.is](http://greynir.is)
 *Reynir* is an experimental project that aims to extract processable information from
 Icelandic text. It scrapes and tokenizes chunks of text from web pages
 and parses the token streams according to a hand-written context-free grammar. The resulting
-parse trees are disambiguated and finally processed to obtain statements of fact and relations
-between stated facts.
+parse trees are disambiguated and stored, and finally processed to obtain statements of fact
+and relations between stated facts.
 
 Reynir is most effective for text that is objective and factual, i.e. has a relatively high
 ratio of concrete concepts such as numbers, amounts, dates, person and entity names,
@@ -19,19 +19,20 @@ etc.
 
 Reynir is innovative in its ability to parse and disambiguate text written in a grammatically
 complex language, such as Icelandic, which does not lend itself easily to statistical
-parsing methods. Reynir uses cases, genders, persons (1st, 2nd, 3rd), number (singular/plural)
-and various verb modes applied appropriately to nouns, verbs, adjectives and prepositions to guide and
-disambiguate parses. Its optimized Earley parser is fast and compact enough to make real-time
-while-you-wait analysis of web pages, as well as bulk processing, feasible.
+parsing methods. Reynir uses grammatical features, i.e. cases, genders, persons (1st, 2nd, 3rd),
+number (singular/plural) and various verb modes applied appropriately to nouns, verbs, adjectives
+and prepositions to guide and disambiguate parses. Its optimized Earley-based parser is fast and
+compact enough to make real-time while-you-wait analysis of web pages, as well as bulk processing,
+feasible.
 
 Reynir's goal is to "understand" text to a usable extent by parsing it into
-structured trees that directly correspond to the original grammar.
-These trees can then be further processed and acted upon by Python
-functions associated with grammar nonterminals.
+structured, recursive trees that directly correspond to the original grammar.
+These trees can then be further processed and acted upon by sets of Python
+functions that are linked to grammar nonterminals.
 
 **Reynir is currently able to parse about *85%* of sentences** in a typical news article from the web,
-and many well-written articles can be parsed completely. It has about 16.000 parsed articles
-in its database, containing 500.000 parsed sentences.
+and many well-written articles can be parsed completely. It presently has about 16,000 parsed articles
+in its database, containing 500,000 parsed sentences.
 
 Reynir may in due course be expanded, for instance:
 
@@ -42,7 +43,7 @@ Reynir may in due course be expanded, for instance:
 ## Implementation
 
 Reynir is written in [Python 3](https://www.python.org/) except for its core
-Earley parser module which is written in C++ and called
+Earley-based parser module which is written in C++ and called
 via [CFFI](https://cffi.readthedocs.org/en/latest/index.html).
 Reynir runs on CPython and [PyPy](http://pypy.org/) with the latter being recommended.
 
@@ -78,7 +79,7 @@ Grammar rules are laid out in a separate text file, `Reynir.grammar`. The standa
 augmented with repeat specifiers for right-hand-side tokens (`*` for 0..n instances,
 `+` for 1..n instances, or `?` for 0..1 instances). Also, the grammar allows for
 compact specification of rules with variants, for instance due to cases, numbers and genders.
-Thus, a single rule (e.g. `NounPhrase/case/gender -> Adjective/case noun/case/gender`)
+Thus, a single rule (e.g. `NounPhrase/case/gender → Adjective/case noun/case/gender`)
 is automatically expanded into multiple rules (12 in this case, 4 cases x 3 genders) with
 appropriate substitutions for right-hand-side tokens depending on their local variants.
 
@@ -88,7 +89,7 @@ referencing Tomita. It parses ambiguous grammars without restriction and
 returns a compact Shared Packed Parse Forest (SPPF) of parse trees. If a parse
 fails, it identifies the token at which no parse was available.
 
-The Reynir scraper is typically run in a cron job once every 24 hours to extract articles automatically
+The Reynir scraper is typically run in a `cron` job once every 24 hours to extract articles automatically
 from the web, parse them and store the resulting trees in a PostgreSQL database for further processing.
 
 Scraper modules for new websites are plugged in by adding Python code to the `scrapers/` directory.
@@ -96,7 +97,7 @@ Currently, the `scrapers/default.py` module supports four popular Icelandic news
 as the site of the Constitutional Council.
 
 Processor modules can be plugged in to Reynir by adding Python code to the `processors/` directory.
-The demo in `processors/default.py` extracts person names and titles form the processed text for
+The demo in `processors/default.py` extracts person names and titles from parse trees for
 storage in a database table.
 
 ## File details
