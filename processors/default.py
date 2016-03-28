@@ -110,7 +110,7 @@ def sentence(state, result):
 # tree for a sentence.
 
 INVALID_TITLES = {
-    "sig", "væri", "orðið", "ávísun", "hér heima"
+    "sig", "væri", "orðið", "ávísun", "hér heima", "þá"
 }
 
 def _add_name(result, mannsnafn, titill):

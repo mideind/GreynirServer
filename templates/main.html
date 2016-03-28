@@ -19,13 +19,17 @@
 
       <p class="header"><a href="{{ url_for('main') }}"><img src="{{ url_for('static', filename='GreynirLogo404x180.png') }}" width=202 height=90></a></p>
 
-      <p class="author">málgreinir fyrir íslensku<br>eftir Vilhjálm Þorsteinsson</p>
+      <p class="author">málgreinir fyrir íslensku<br>
+      <b>alfa-prófunarútgáfa</b><br>
+      eftir Vilhjálm Þorsteinsson<br>
+      (sjá <a href="https://github.com/vthorsteinsson/Reynir" target="_blank">nánar á GitHub</a>)</p>
 
       <p class="stats">Nota málfræðiskrá {{ grammar.file_name }} frá {{ "%0.19s" | format(grammar.file_time) }}</p>
       <p class="stats">{{ grammar.num_nonterminals }} nonterminals, {{ grammar.num_terminals }} terminals,
       {{ grammar.num_productions }} productions</p>
 
-      <p>Sláðu inn texta eða vefslóð til að greina, eða <a href="{{ url_for('test') }}">smelltu hér til keyra próf</a>:</p>
+      <p>Sláðu inn texta eða vefslóð til að greina, eða
+      <a href="{{ url_for('test') }}">smelltu hér til keyra próf</a>:</p>
 
       <input type="text" name="url" id="url" tabindex="1"
          maxlength=512 autofocus required class="text" value="{{ default_text }}"

@@ -744,7 +744,10 @@ HreinSögn_lhþt/tala/kyn →
     FsAtv? EinSögn_lhþt/tala/kyn OgSögn_lhþt/tala/kyn*
 
 Sögn_lhþt/tala/pers/kyn →
-    HjSögnLhÞtSM/tala/pers HreinSögn_lhþt/tala/kyn  # er farið, hefur verið farin, hafa verið farnar, skal farin
+    # er farið, hefur verið farin, hafa verið farnar, skal farin
+    HjSögnLhÞtSM/tala/pers HreinSögn_lhþt/tala/kyn
+    # talin er/hefur verið [liggja undir grun]
+    | so_0_lhþt/tala/kyn HjSögnLhÞtSM/tala/pers LhÞtBotn/tala/kyn?
 
 LhÞtÞgfBotn → "fyrir" "bestu"               # Það sem er börnum fyrir bestu
 
@@ -1011,6 +1014,10 @@ Sögn_1/tala/pers/kyn →
     | HjSögnLhÞtSM/tala/pers FsAtv? so_2_þf_þgf_lhþt/tala/kyn Nl_þgf # Konan hefur verið/skal/mun kölluð öllum illum nöfnum
     # HjSögnLhÞtSM/tala/pers FsAtv? so_2_þgf_ef_lhþt/tala/kyn Nl_ef  # Konan hefur verið/skal/mun óska alls hins besta
     # HjSögnLhÞtSM/tala/pers FsAtv? so_2_þf_þf_lhþt/tala/kyn Nl_þf   # Konan hefur verið/skal/mun kosta skildinginn
+
+# Býli í landinu eru/geta verið/verða/munu vera um 3.000 [talsins]
+Sögn_1_ft/pers/kyn →
+    HjSögnLhÞt_ft/pers FsAtv? tala
 
 # Sagnir sem geta staðið með þf + nh
 # '(Ég) álít (Pál vera dagfarsprúðan mann)'
@@ -1511,6 +1518,7 @@ Einkunn/tala/fall/kyn →
     | AtviksliðurEinkunn        # rúmlega (helmingur)
     | Fornafn/tala/fall/kyn     # Sá (stóri maður), allt þetta (víkjandi lán)
     | Töluorð/tala/fall/kyn     # þrjá (gangandi menn) / 26
+    | OkkarYkkar                # 'okkar skoðanir', 'ykkar félag' (okkar og ykkar eru pfn, ekki fn)
 
 Einkunn/fall/tala/kyn →
     Einkunn/tala/fall/kyn
@@ -1671,6 +1679,8 @@ NlFornafn/tala/fall/kyn →
     AtviksliðurEinkunn* Töluorð/tala/fall/kyn? Fornafn/tala/fall/kyn LoFornafn/fall/tala/kyn? LoLiður/tala/fall/kyn*
     # 'okkar besta' / 'óumdeilanlega ykkar versta'
     | AtviksliðurEinkunn* OkkarYkkar LoLiður/tala/fall/kyn
+    # 'öllu því' / 'ýmsum þeim'
+    | Fornafn/tala/fall/kyn 'sá'/tala/fall/kyn
 
 NlFornafn_et/fall/kyn →
     # 'hvern þeirra' / 'hverja þeirra' / 'hvert þeirra'
@@ -2293,6 +2303,7 @@ LoSamanb/tala/fall/kyn →
 EnSamanb/fall →
     "en" Nl/fall
 
+# Hann er reiður / [!!! ATH:] Hann er Önnu mun reiðari en Páli
 LoSamanb_nf/tala/kyn →
     Lo_sb_nf/tala/kyn
     | "mun"? Lo_mst_nf/tala/kyn EnSamanb_nf? # Miðstig: (Ég var) [mun] reiðari [en Páll]

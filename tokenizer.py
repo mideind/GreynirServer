@@ -462,7 +462,7 @@ def parse_particles(token_stream):
             # Coalesce abbreviations ending with a period into a single
             # abbreviation token
             if next_token.kind == TOK.PUNCTUATION and next_token.txt == '.':
-                if token.kind == TOK.WORD and ('.' in token.txt or
+                if token.kind == TOK.WORD and token.txt[-1] != '.' and ('.' in token.txt or
                     token.txt.lower() in Abbreviations.SINGLES or token.txt in Abbreviations.SINGLES):
                     # Abbreviation: make a special token for it
                     # and advance the input stream

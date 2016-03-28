@@ -82,6 +82,9 @@ def sentence(state, result):
 def FsLiður(node, params, result):
     """ Ekki breyta forsetningarliðum í nefnifall """
     result._nominative = result._text
+    # Ekki leyfa eignarfallsliðum að lifa í gegn um forsetningarliði á
+    # leið upp tréð
+    result.del_attribs(('ef_nom', 'ef_text'))
 
 def EfLiður(node, params, result):
     """ Eignarfallsliður eftir nafnlið """
@@ -121,7 +124,7 @@ def Setning(node, params, result):
 
     #print("Sagnorð er {0}".format(sagnorð._text))
 
-    if sagnorð._text not in { "er", "eru", "var", "voru", "sé", "séu" }:
+    if not sagnorð or sagnorð._text not in { "er", "eru", "var", "voru", "sé", "séu" }:
         return
 
     andlag = sögn.find_child(nt_base = "Nl", variant = "nf")
@@ -133,6 +136,7 @@ def Setning(node, params, result):
 
     # Reikna út endanlegt frumlag
     frumlag_text = frumlag._text
+    print("Frumlag_text er '{0}', frumlag.ef_text er '{1}'".format(frumlag_text, frumlag.ef_text))
     frumlag_text = frumlag_text[:-1 -len(frumlag.ef_text)]
 
     # Halda forsetningarliðum til haga

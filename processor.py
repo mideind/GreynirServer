@@ -70,30 +70,33 @@ class Result:
         self._params = params
 
     def __setattr__(self, key, val):
+        """ Fancy attribute setter using our own dict for instance attributes """
         if key == "__dict__" or key == "dict" or key in self.__dict__:
+            # Relay to Python's default attribute resolution mechanism
             super().__setattr__(key, val)
         else:
+            # Set attribute in our own dict
             self.dict[key] = val
 
     def __getattr__(self, key):
         """ Fancy attribute getter with special cases for _root and _nominative """
         if key == "__dict__" or key == "dict" or key in self.__dict__:
+            # Relay to Python's default attribute resolution mechanism
             return super().__getattr__(key)
         d = self.dict
-        if key == "_root" and not "_root" in d:
-            # Lazy evaluation of the _root attribute
-            # (Note that it can be overridden by setting it directly)
-            d[key] = self._node.root(self._state, self._params)
-            # At this point we can safely release the params
-            #del d["_params"]
-        elif key == "_nominative" and not "_nominative" in d:
-            # Lazy evaluation of the _root attribute
-            # (Note that it can be overridden by setting it directly)
-            d[key] = self._node.nominative(self._state, self._params)
-            # At this point we can safely release the params
-            #del d["_params"]
         if key in d:
             return d[key]
+        # Key not found: try lazy evaluation
+        if key == "_root":
+            # Lazy evaluation of the _root attribute
+            # (Note that it can be overridden by setting it directly)
+            d[key] = val = self._node.root(self._state, self._params)
+            return val
+        if key == "_nominative":
+            # Lazy evaluation of the _nominative attribute
+            # (Note that it can be overridden by setting it directly)
+            d[key] = val = self._node.nominative(self._state, self._params)
+            return val
         # Not found in our custom dict:
         # hand off to Python's default attribute resolution mechanism
         return super().__getattr__(key)
@@ -826,6 +829,7 @@ class Processor:
                 # If an exception occurred, roll back the transaction
                 session.rollback()
                 print("Exception caught in article {0}, transaction rolled back\nException: {1}".format(url, e))
+                #raise
 
         t1 = time.time()
         sys.stdout.flush()

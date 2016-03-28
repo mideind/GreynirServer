@@ -17,14 +17,17 @@
 
       <p class="header"><a href="{{ url_for('main') }}"><img src="{{ url_for('static', filename='GreynirLogo404x180.png') }}" width=202 height=90></a></p>
 
-      <p class="author">málgreinir fyrir íslensku<br>eftir Vilhjálm Þorsteinsson</p>
+      <p class="author">málgreinir fyrir íslensku<br>
+      <b>alfa-prófunarútgáfa</b><br>
+      eftir Vilhjálm Þorsteinsson<br>
+      (sjá <a href="https://github.com/vthorsteinsson/Reynir" target="_blank">nánar á GitHub</a>)</p>
 
       <p class="txt">{{ txt }}</p>
 
       <p class="buttons">
+         <span class="btn" id="edit-sent">Breyta</span>
          <span class="btn" id="add-valid-sent">Bæta við prófanir sem gildri setningu</span>
          <span class="btn" id="add-invalid-sent">Bæta við prófanir sem ógildri setningu</span>
-         <span class="btn" id="edit-sent">Breyta</span>
       </p>
 
 {% if combinations == 0 %}

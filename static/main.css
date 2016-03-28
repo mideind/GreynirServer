@@ -114,6 +114,7 @@ div#url-ok:hover {
 }
 
 p.header {
+   position: absolute;
    font-size: 28px;
    font-weight: bold;
    text-align: left;
@@ -123,10 +124,11 @@ p.header {
 
 p.author {
    font-size: 16px;
+   line-height: 23px;
    font-style: italic;
    text-align: right;
    margin-top: 0;
-   padding-top: 0;
+   padding-top: 36px;
 }
 
 p.stats {
@@ -241,6 +243,7 @@ p.txt {
    font-weight: bold;
    font-style: italic;
    font-size: 18px;
+   padding-top: 30px;
 }
 
 div.grid {
