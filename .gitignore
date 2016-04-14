@@ -11,10 +11,17 @@ __pycache__/
 # Pickled DAWG trees
 *.pickle
 
+# Experimental Python stuff
+rnn.py
+sudoku.py
+locktest.py
+ssltest.py
+
 # Various resource files
 resources/*.txt
 resources/*.csv
 resources/*.tmLanguage
+resources/visir/
 mim/
 gold/
 .idea/

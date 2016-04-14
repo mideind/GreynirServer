@@ -550,7 +550,7 @@ class BIN_Token(Token):
             return self.verb_matches(m.stofn, terminal, m.beyging)
 
         def matcher_no(m):
-            """ Check noun"""
+            """ Check noun """
             if BIN_Token._KIND[m.ordfl] != "no":
                 return False
             no_info = m.beyging == "-"
@@ -569,6 +569,22 @@ class BIN_Token(Token):
                     #    return False
                     if v == "gr":
                         # Do not match a demand for the definitive article ('greinir')
+                        return False
+                elif BIN_Token.VARIANT[v] not in m.beyging:
+                    # Required case or number not found: no match
+                    return False
+            return True
+
+        def matcher_gata(m):
+            """ Check street name """
+            if m.fl != "göt": # Götuheiti
+                return False
+            if BIN_Token._KIND[m.ordfl] != "no":
+                return False
+            for v in terminal.variants:
+                if v in BIN_Token.GENDERS_SET:
+                    if m.ordfl != v:
+                        # Mismatched gender
                         return False
                 elif BIN_Token.VARIANT[v] not in m.beyging:
                     # Required case or number not found: no match
@@ -642,6 +658,7 @@ class BIN_Token(Token):
                 "eo" : matcher_eo,
                 "fs" : matcher_fs,
                 "person" : matcher_person,
+                "gata" : matcher_gata, # Götuheiti = Street name
                 "sérnafn" : None
             }
             matcher = matchers.get(terminal.first, matcher_default)
