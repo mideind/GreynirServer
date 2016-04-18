@@ -110,7 +110,9 @@ def sentence(state, result):
 # tree for a sentence.
 
 INVALID_TITLES = {
-    "sig", "væri", "orðið", "ávísun", "hér heima", "þá"
+    "sig", "væri", "orðið", "ávísun", "hér heima", "þá", "lán", "úr láni", "bar", "ver",
+    "bætir", "býr", "get", "vera", "eiga", "var", "búa", "setur", "heggur", "á", "átt",
+    "keppa"
 }
 
 def _add_name(result, mannsnafn, titill):
@@ -125,7 +127,7 @@ def _add_name(result, mannsnafn, titill):
     while any(titill.endswith(p) for p in (" .", " :", " !", " ?")):
         titill = titill[:-2]
     # Cut off common endings that don't belong in a title
-    for s in ("í tilkynningu", "í fjölmiðlum", "í samtali", "í Kastljósi"):
+    for s in ("í tilkynningu", "í fjölmiðlum", "í samtali", "í Kastljósi", "í þættinum"):
         if titill.endswith(s):
             titill = titill[:-1 -len(s)]
     if not titill:

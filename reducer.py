@@ -118,13 +118,18 @@ class Reducer:
                             # !!! Logic should be added here to encourage zero arguments for verbs in 'miðmynd'
                             if adj == 0:
                                 # Zero arguments: we might not like this
-                                for m in tokens[i].t2:
-                                    if m.ordfl == "so" and m.stofn not in VerbObjects.VERBS[0]:
-                                        # We're using a verb with zero arguments but that form is not
-                                        # explicitly listed in Verbs.conf: discourage this
-                                        # print("Discouraging zero-arg use of verb '{0}' (stem '{1}')".format(txt, m.stofn))
-                                        adj = -1
-                                        break
+                                if all((m.stofn not in VerbObjects.VERBS[0]) and ("MM" not in m.beyging)
+                                    for m in tokens[i].t2 if m.ordfl == "so"):
+                                    # No meaning where the verb has zero arguments
+                                    adj = -4
+                                #for m in tokens[i].t2:
+                                #    if m.ordfl == "so" and m.stofn not in VerbObjects.VERBS[0]:
+                                #        # We're using a verb with zero arguments but that form is not
+                                #        # explicitly listed in Verbs.conf: discourage this
+                                #        # print("Discouraging zero-arg use of verb '{0}' (stem '{1}')"
+                                #        #    .format(txt, m.stofn))
+                                #        adj = -2
+                                #        break
                             sc[t] += adj
                         if t.is_sagnb:
                             # We like sagnb and lh, it means that more

@@ -391,9 +391,11 @@ function populateResult(json) {
             c += " parsed";
          else
             c += " err";
+         /*
          if (nump > 100)
             // This sentence has a lot of parses: mark it
             c += " very-ambig";
+         */
          s += "<span class='" + c + "'>";
          wsp = "";
       }

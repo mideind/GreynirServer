@@ -697,9 +697,17 @@ if __name__ == "__main__":
     # Note: Reynir.grammar is automatically reloaded if its timestamp changes
     extra_files = [ 'Reynir.conf', 'Verbs.conf', 'Main.conf' ]
 
-    # Run the Flask web server application
-    app.run(debug=Settings.DEBUG, host=Settings.HOST, use_reloader=True,
-        extra_files = extra_files)
+    from socket import error as socket_error
+    import errno
+    try:
+        # Run the Flask web server application
+        app.run(debug=Settings.DEBUG, host=Settings.HOST, use_reloader=True,
+            extra_files = extra_files)
+    except socket_error as e:
+        if e.errno == errno.EADDRINUSE: # Address already in use
+            print("Reynir is already running at host {0}".format(Settings.HOST))
+        else:
+            raise
 
 else:
 

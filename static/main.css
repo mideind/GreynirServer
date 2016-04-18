@@ -11,7 +11,8 @@
 */
 
 body {
-   font-family: 'Open Sans', sans-serif;
+   /* font-family: 'Open Sans', sans-serif; */
+   font-family: 'Lora', sans-serif;
    padding: 12px;
    margin: 0;
    background-color: white;
@@ -23,17 +24,17 @@ body {
 }
 
 div.container {
-   margin: 0 12px;
+   margin: 0 auto;
 }
 
 div.text-container {
-   width: 640px;
-   margin: 0 12px;
+   width: 800px;
+   margin: 0 auto;
 }
 
 div.test-container {
    width: 1024px;
-   margin: 0 12px;
+   margin: 0 auto;
 }
 
 div#guide {
@@ -75,7 +76,7 @@ input.text:focus {
 }
 
 input#url {
-   width: 516px;
+   width: 676px;
 }
 
 div.btn {
@@ -122,9 +123,14 @@ p.header {
    padding-bottom: 0;
 }
 
+p.guide {
+   font-size: 17px;
+   line-height: 24px;
+}
+
 p.author {
-   font-size: 16px;
-   line-height: 23px;
+   font-size: 17px;
+   line-height: 24px;
    font-style: italic;
    text-align: right;
    margin-top: 0;
@@ -154,13 +160,15 @@ div.output {
    position: relative;
    text-align: left;
    cursor: default;
-   margin-top: 32px;
-   margin-bottom: 240px; /* Make room for info pop-up at the bottom */
+   margin-top: 24px;
+   margin-bottom: 280px; /* Make room for info pop-up at the bottom */
 }
 
 p#meta-heading {
+   font-family: 'Playfair Display', serif;
    font-weight: bold;
-   font-size: 24px;
+   font-size: 30px;
+   line-height: 42px;
    color: #10069F; /* Greynir blue */
 }
 
@@ -184,8 +192,8 @@ p#meta-authority {
 }
 
 span.sent {
-   font-size: 16px;
-   line-height: 24px;
+   font-size: 17px;
+   line-height: 26px;
 }
 
 div#result i {
@@ -242,11 +250,15 @@ div#result i.person {
 p.txt {
    font-weight: bold;
    font-style: italic;
-   font-size: 18px;
-   padding-top: 30px;
+   font-size: 20px;
+   line-height: 28px;
+   padding-top: 24px;
+   padding-bottom: 12px;
 }
 
 div.grid {
+   font-family: 'Open Sans', sans-serif;
+   font-size: 15px;
    text-align: left;
 }
 
@@ -278,6 +290,9 @@ div.grid table tr td.nt.vert {
 }
 
 td.t span.tok {
+   font-family: 'Lora', serif;
+   font-size: 17px;
+   line-height: 26px;
    font-style: normal;
    font-weight: bold;
 }
@@ -303,19 +318,21 @@ span.sent.err:hover {
 }
 
 span.sent.parsed {
-   background-color: #e4ffd4;
+   /* background-color: #e4ffd4; */
 }
 
 span.sent.parsed:hover {
-   background-color: #b8e99a;
-}
-
-span.sent.parsed.very-ambig {
+   /* background-color: #b8e99a; */
    background-color: #e4ffd4;
 }
 
+span.sent.parsed.very-ambig {
+   /* background-color: #e4ffd4; */
+}
+
 span.sent.parsed.very-ambig:hover {
-   background-color: #b8e99a;
+   /* background-color: #b8e99a; */
+   background-color: #e4ffd4;
 }
 
 p.buttons {
@@ -363,8 +380,8 @@ span#add-invalid-sent.disabled {
 div#wait {
    display: none;
    position: absolute;
-   top: 160px;
-   left: 320px;
+   top: 180px;
+   left: 376px;
    width: 48px;
    height: 48px;
    z-index: 10;
@@ -388,8 +405,8 @@ div.info {
 }
 
 div.info p {
-   font-size: 16px;
-   line-height: 20px;
+   font-size: 17px;
+   line-height: 22px;
    margin-top: 0px;
    margin-bottom: 4px;
    padding: 0;
@@ -424,7 +441,12 @@ div.result table thead tr th {
    padding-bottom: 4px;
 }
 
-td.result-id, th.result_id {
+th.result_id {
+   text-align: right;
+}
+
+td.result-id {
+   font-family: 'Open Sans', sans-serif;
    text-align: right;
 }
 
@@ -442,22 +464,24 @@ th.result-sent {
    text-align: left;
 }
 
-td.result-num, th.result-num {
+th.result-num, th.result-best, th.result-target {
    text-align: right;
    width: 32px;
 }
 
-td.result-best, th.result-best {
+td.result-num, td.result-best, td.result-target {
+   font-family: 'Open Sans', sans-serif;
    text-align: right;
    width: 32px;
 }
 
-td.result-target, th.result-target {
+th.result-time {
    text-align: right;
-   width: 32px;
+   width: 40px;
 }
 
-td.result-time, th.result-time {
+td.result-time {
+   font-family: 'Open Sans', sans-serif;
    text-align: right;
    width: 40px;
 }

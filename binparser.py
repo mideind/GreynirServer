@@ -160,11 +160,14 @@ class BIN_Token(Token):
     # '...kom út skýrsla'
     # '...að meðal hitastig'
     # '...haldið hefur úti bloggsíðu'
-    _NOT_NOT_EO = frozenset(["inn", "eftir", "of", "til", "upp", "um", "síðan", "fram", "nær", "nærri", "út", "meðal", "úti" ])
+    # '...tóku saman gögn'
+    # '...það á jafnframt dótturfélag'
+    _NOT_NOT_EO = frozenset(["inn", "eftir", "of", "til", "upp", "um", "síðan", "fram", "nær", "nærri",
+        "út", "meðal", "úti", "saman", "jafnframt" ])
 
     # Words that are not eligible for interpretation as proper names, even if they are capitalized
     _NOT_PROPER_NAME = frozenset(["ég", "þú", "hann", "hún", "það", "við", "þið", "þau",
-        "þeir", "þær", "í", "á", "af", "um", "að", "með", "til", "frá"])
+        "þeir", "þær", "í", "á", "af", "um", "að", "með", "til", "frá", "búist"])
 
     # Numbers that can be used in the singular even if they are nominally plural.
     # This applies to the media company 365, where it is OK to say "365 skuldaði 389 milljónir",

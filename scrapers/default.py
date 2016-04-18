@@ -253,7 +253,9 @@ class RuvScraper(ScrapeHelper):
         # Exctract the author name
         # Look for div[class == 'view-id-author'] > div[class == 'clip']
         clip = ScrapeHelper.div_class(soup.html.body, "view-id-author", "clip")
-        author = clip.string if clip else "Fréttastofa RÚV"
+        if not clip:
+            clip = ScrapeHelper.div_class(soup.html.body, "view-content", "clip")
+        author = clip.text if clip else "Fréttastofa RÚV"
         return Metadata(heading = heading, author = author,
             timestamp = timestamp, authority = self.authority)
 

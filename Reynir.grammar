@@ -371,6 +371,8 @@ SetningLoSögn →
 SetningSo →
     so_0_sagnb HjSögnLhÞtSM_et_p3 NhFyllingEðaAtv             # Leitað verður/skal/mun til sérfræðinga / Verið er í snatri að ráða hæfasta umsækjandann
 
+    | so_0_mm_sagnb HjSögnLhÞtSM_et_p3 NhFyllingEðaAtv        # Búist er við (að Sigmundur Davíð segi af sér)
+
     | so_0_mm_nh HjSögnMegiSkuliÞurfi_et_p3 FsAtv             # Búast má/skal/þarf/hefur mátt við töfum á veginum
 
     | FsAtv? SagnliðurÁnF NhFyllingEðaAtv                      # [Með lögum] skal tryggja rétt almennings til að fara um landið
@@ -1824,7 +1826,7 @@ Sérnafn →
 LangtSérnafn →
     sérnafn "-"? sérnafn+   # Glass-Steagall lögin
 
-$score(-6) Sérnafn
+$score(-8) Sérnafn
 $score(+6) LangtSérnafn
 
 # Heimilisfang (götuheiti + tala)
@@ -1942,10 +1944,10 @@ KommuTitill/fall →
     | ',' EinnTitill/fall OgTitill/fall* ','? "og" EinnTitill/fall LokatáknEðaKomma
 
 # Gefa plús fyrir titla
-$score(+6) Titill/fall
+$score(+5) Titill/fall
 
 # Gefa enn meiri plús fyrir heila titla innan kommu
-$score(+4) KommuTitill/fall
+$score(+5) KommuTitill/fall
 
 # Eignarfallsliður á eftir nafnlið
 # ('formaður Gimlis, félags eldri borgara')
@@ -2100,7 +2102,7 @@ NlSkýring/tala/pers/fall/kyn →
 $score(+2) NlSkýring/tala/pers/fall/kyn
 
 SvigaInnihald/tala/pers/fall/kyn →
-    Tengiliður/tala/pers/kyn
+    Tengiliður/tala/pers/kyn # (og sem ég er almennt fylgjandi)
     > Nl/fall/tala      # 'Ég spurði forsætisráðherra, Sigmund Davíð, um málið'
     > Nl                # Ef ekki finnst sama fall og tala, prófa almennan nafnlið
     > HreinYfirsetning
