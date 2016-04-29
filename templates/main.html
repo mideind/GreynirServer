@@ -28,8 +28,11 @@
       <p class="stats">{{ grammar.num_nonterminals }} nonterminals, {{ grammar.num_terminals }} terminals,
       {{ grammar.num_productions }} productions</p>
 
-      <p class="guide"><b>Sláðu inn texta eða vefslóð til að greina</b>, eða
-      <a href="{{ url_for('test') }}">smelltu hér til keyra próf</a>:</p>
+      <p class="guide"><b>Sláðu inn texta eða vefslóð til að greina</b>
+{%- if debug_mode -%}
+      , eða <a href="{{ url_for('test') }}">smelltu hér til keyra próf</a>
+{%- endif -%}
+      :</p>
 
       <input type="text" name="url" id="url" tabindex="1"
          maxlength=512 autofocus required class="text" value="{{ default_text }}"
@@ -92,6 +95,14 @@
             ev.preventDefault();
          }
       });
+   }
+
+   function debugMode() {
+{% if debug_mode %}
+      return true;
+{% else %}
+      return false;
+{% endif %}
    }
 
    $(document).ready(initMain);

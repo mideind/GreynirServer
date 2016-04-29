@@ -161,7 +161,8 @@ div.output {
    text-align: left;
    cursor: default;
    margin-top: 24px;
-   margin-bottom: 280px; /* Make room for info pop-up at the bottom */
+   margin-bottom: 24px;
+   padding-bottom: 400px; /* Make room for info pop-up at the bottom */
 }
 
 p#meta-heading {
@@ -252,8 +253,8 @@ p.txt {
    font-style: italic;
    font-size: 20px;
    line-height: 28px;
-   padding-top: 24px;
-   padding-bottom: 12px;
+   padding-top: 12px;
+   padding-bottom: 9px;
 }
 
 div.grid {

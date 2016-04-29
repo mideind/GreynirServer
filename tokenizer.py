@@ -25,7 +25,7 @@ import re
 import codecs
 import datetime
 
-from settings import Settings, StaticPhrases, Abbreviations, AmbigPhrases
+from settings import Settings, StaticPhrases, Abbreviations, AmbigPhrases, DisallowedNames
 from bindb import BIN_Db, BIN_Meaning
 
 
@@ -1037,17 +1037,26 @@ def parse_phrases_2(token_stream):
 
             # Logic for human names
 
-            def stems(tok, categories):
+            def stems(tok, categories, first_name = False):
                 """ If the token denotes a given name, return its possible
-                    interpretations, as a list of PersonName tuples (name, case, gender) """
+                    interpretations, as a list of PersonName tuples (name, case, gender).
+                    If first_name is True, we omit from the list all name forms that
+                    occur in the disallowed_names section in the configuration file. """
                 if tok.kind != TOK.WORD or not tok.val:
                     return None
+                # Set up the names we're not going to allow
+                dstems = DisallowedNames.STEMS if first_name else { }
                 # Look through the token meanings
                 result = []
                 for m in tok.val:
                     if m.fl in categories:
-                        # Note the stem ('stofn') and the gender from the word type ('ordfl')
-                        result.append(PersonName(name = m.stofn, gender = m.ordfl, case = case(m.beyging)))
+                        # If this is a first name in a sequence, we cut out name forms
+                        # that are frequently ambiguous and wrong, i.e. "Frá" as accusative
+                        # of the name "Frár", and "Sigurð" in the nominative.
+                        c = case(m.beyging)
+                        if m.stofn not in dstems or c not in dstems[m.stofn]:
+                            # Note the stem ('stofn') and the gender from the word type ('ordfl')
+                            result.append(PersonName(name = m.stofn, gender = m.ordfl, case = c))
                 return result if result else None
 
             def has_other_meaning(tok, category):
@@ -1062,12 +1071,12 @@ def parse_phrases_2(token_stream):
                 return False
 
             # Check for person names
-            def given_names(tok):
+            def given_names(tok, first_name = False):
                 """ Check for Icelandic person name (category 'ism') """
                 if tok.kind != TOK.WORD or not tok.txt[0].isupper():
                     # Must be a word starting with an uppercase character
                     return None
-                return stems(tok, {"ism"})
+                return stems(tok, {"ism"}, first_name)
 
             # Check for surnames
             def surnames(tok):
@@ -1117,7 +1126,7 @@ def parse_phrases_2(token_stream):
                     return False
                 return True
 
-            gn = given_names(token)
+            gn = given_names(token, first_name = True)
 
             if gn:
                 # Found at least one given name: look for a sequence of given names

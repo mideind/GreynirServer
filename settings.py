@@ -210,6 +210,19 @@ class AdjectiveTemplate:
         cls.ENDINGS.append((ending, form))
 
 
+class DisallowedNames:
+
+    """ Wrapper around list of disallowed person name forms """
+
+    # Dictionary of name stems : sets of cases
+    STEMS = { }
+
+    @classmethod
+    def add (cls, name, cases):
+        """ Add an adjective ending and its associated form. """
+        cls.STEMS[name] = set(cases)
+
+
 class StaticPhrases:
 
     """ Wrapper around dictionary of static phrases, initialized from the config file """
@@ -563,6 +576,15 @@ class Settings:
         AdjectiveTemplate.add(a[0], a[1])
 
     @staticmethod
+    def _handle_disallowed_names(s):
+        """ Handle disallowed person name forms from the settings section """
+        # Format: Name-stem case1 case2...
+        a = s.split()
+        if len(a) < 2:
+            raise ConfigError("Disallowed names must specify a name and at least one case")
+        DisallowedNames.add(a[0], a[1:])
+
+    @staticmethod
     def read(fname):
         """ Read configuration file """
 
@@ -576,7 +598,8 @@ class Settings:
             "preferences" : Settings._handle_preferences,
             "ambiguous_phrases" : Settings._handle_ambiguous_phrases,
             "meanings" : Settings._handle_meanings,
-            "adjective_template" : Settings._handle_adjective_template
+            "adjective_template" : Settings._handle_adjective_template,
+            "disallowed_names" : Settings._handle_disallowed_names,
         }
         handler = None # Current section handler
 

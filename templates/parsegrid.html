@@ -26,8 +26,10 @@
 
       <p class="buttons">
          <span class="btn" id="edit-sent">Breyta</span>
+{% if debug_mode %}         
          <span class="btn" id="add-valid-sent">Bæta við prófanir sem gildri setningu</span>
          <span class="btn" id="add-invalid-sent">Bæta við prófanir sem ógildri setningu</span>
+{% endif %}
       </p>
 
 {% if combinations == 0 %}

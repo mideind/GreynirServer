@@ -17,6 +17,7 @@
 
 import urllib.parse as urlparse
 from datetime import datetime
+import re
 
 from collections import namedtuple
 
@@ -36,6 +37,14 @@ class ScrapeHelper:
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
         return False # Scrape all URLs by default
+
+    @staticmethod
+    def unescape(s):
+        """ Unescape headings that may contain Unicode characters """
+        def replacer(matchobj):
+            m = matchobj.group(0)
+            return chr(int(m[2:], 16)) # Hex
+        return re.sub(r'\\u[0-9]{4}', replacer, s) if s else "" # Example: \u0084 -> chr(132)
 
     def get_metadata(self, soup):
         """ Analyze the article HTML soup and return metadata """
@@ -182,9 +191,14 @@ class KjarninnScraper(ScrapeHelper):
         heading = ScrapeHelper.meta_property(soup, "og:title") or ""
         if "|" in heading:
             heading = heading[0:heading.index("|")].rstrip()
+        heading = self.unescape(heading)
         # Extract the publication time from the article:published_time meta property
-        timestamp = ScrapeHelper.meta_property(soup, "article:published_time") or \
-            str(datetime.utcnow())[0:19]
+        ts = ScrapeHelper.meta_property(soup, "article:published_time")
+        if ts:
+            timestamp = datetime(year=int(ts[0:4]), month=int(ts[5:7]), day=int(ts[8:10]),
+                hour=int(ts[11:13]), minute=int(ts[14:16]), second=int(ts[17:19]))
+        else:
+            timestamp = datetime.utcnow()
         # Exctract the author name
         f = lambda xtag: ScrapeHelper.general_filter(xtag, "span", "class", "author")
         tag = soup.html.body.find(f) if soup.html.body else None
@@ -247,9 +261,14 @@ class RuvScraper(ScrapeHelper):
         """ Analyze the article soup and return metadata """
         # Extract the heading from the OpenGraph (Facebook) og:title meta property
         heading = ScrapeHelper.meta_property(soup, "og:title") or ""
+        heading = self.unescape(heading)
         # Extract the publication time from the article:published_time meta property
-        timestamp = ScrapeHelper.meta_property(soup, "article:published_time") or \
-            str(datetime.utcnow())[0:19]
+        ts = ScrapeHelper.meta_property(soup, "article:published_time")
+        if ts:
+            timestamp = datetime(year=int(ts[0:4]), month=int(ts[5:7]), day=int(ts[8:10]),
+                hour=int(ts[11:13]), minute=int(ts[14:16]), second=int(ts[17:19]))
+        else:
+            timestamp = datetime.utcnow()
         # Exctract the author name
         # Look for div[class == 'view-id-author'] > div[class == 'clip']
         clip = ScrapeHelper.div_class(soup.html.body, "view-id-author", "clip")
@@ -299,6 +318,7 @@ class MblScraper(ScrapeHelper):
         """ Analyze the article soup and return metadata """
         # Extract the heading from the OpenGraph (Facebook) og:title meta property
         heading = ScrapeHelper.meta_property(soup, "og:title") or ""
+        heading = self.unescape(heading)
         # Extract the publication time from the article:published_time meta property
         # A dateline from mbl.is looks like this: Viðskipti | mbl | 24.8.2015 | 10:48
         dateline = ScrapeHelper.div_class(soup.html.body, "frett-container", "dateline")
@@ -384,6 +404,7 @@ class EyjanScraper(ScrapeHelper):
         """ Analyze the article soup and return metadata """
         # Extract the heading from the OpenGraph (Facebook) og:title meta property
         heading = ScrapeHelper.meta_property(soup, "og:title") or ""
+        heading = self.unescape(heading)
         # Extract the publication time from the <span class='date'></span> contents
         dateline = ScrapeHelper.div_class(soup, "article-full")
         dateline = ScrapeHelper.tag_class(dateline, "span", "date")

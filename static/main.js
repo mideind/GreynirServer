@@ -131,7 +131,7 @@ function showParse(ev) {
    var sentText = $(ev.delegateTarget).text();
    // Do an HTML POST to the parsegrid URL, passing
    // the sentence text within a synthetic form
-   serverPost("/parsegrid", { txt: sentText })
+   serverPost("/parsegrid", { txt: sentText, debug: debugMode() })
 }
 
 function buttonOver(elem) {
@@ -173,7 +173,7 @@ function hoverIn() {
    var register = out.data("register");
    var wl = tokens[ix];
    var offset = $(this).position();
-   var left = Math.min(offset.left, 600);
+   var left = Math.min(offset.left, 560);
    var i;
    var gender;
 

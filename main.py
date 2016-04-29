@@ -482,6 +482,8 @@ def parse_grid():
     MAX_LEVEL = 32 # Maximum level of option depth we can handle
     txt = request.form.get('txt', "")
     parse_path = request.form.get('option', "")
+    debug_mode = request.form.get('debug', False)
+    debug_mode = debug_mode == 'true'
     use_reducer = not ("noreduce" in request.form)
 
     # Tokenize the text
@@ -612,7 +614,7 @@ def parse_grid():
     #debug()
 
     return render_template("parsegrid.html", txt = txt, err = err, tbl = tbl,
-        combinations = combinations, score = score,
+        combinations = combinations, score = score, debug_mode = debug_mode,
         choice_list = uc_list, parse_path = parse_path)
 
 
@@ -640,10 +642,13 @@ def main():
     # Instantiate a dummy parser to access grammar info
     # (this does not cause repeated parsing of the grammar as it is cached in memory)
     bp = Fast_Parser(verbose = False)
+    debug_mode = request.args.get("debug", "")
+    if debug_mode == "0" or debug_mode.lower() == "false":
+        debug_mode = False
     txt = request.args.get("txt", None)
     if not txt:
         txt = DEFAULT_URL
-    return render_template("main.html", default_text = txt, grammar = bp.grammar)
+    return render_template("main.html", default_text = txt, grammar = bp.grammar, debug_mode = debug_mode)
 
 
 @app.route("/test")
