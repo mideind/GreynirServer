@@ -113,7 +113,7 @@ function serverPost(url, parameters) {
    /* Post to the provided URL with the specified parameters */
    var form = $('<form method="post"></form>');
    form.attr("action", url);
-   form.attr("target", "_blank"); // Display in new window
+   form.attr("target", "_self"); // Display in same window
    $.each(parameters, function(key, value) {
       var field = $('<input type="hidden"></input>');
       field.attr("name", key);
@@ -283,13 +283,34 @@ function populateMetadata(m) {
    $("#meta-heading").text(m.heading);
    $("#meta-author").text(m.author);
    $("#meta-timestamp").text(m.timestamp);
-   $("#meta-authority").text(m.authority.toFixed(1));
+   var ref = $("<a></a>").attr("href", m.url).attr("target", "_blank").text("Upphafleg grein");
+   $("#meta-url").html(ref);
+   // $("#meta-authority").text(m.authority.toFixed(1));
    $("#metadata").css("display", "block");
 }
 
 function add_w(wsp, cls, i, wrd) {
    // Add HTML for a single word to s
    return wsp + "<i class='" + cls + "' id='w" + i + "'>" + wrd + "</i>";
+}
+
+function populateRegister(register) {
+   // Populate the name register display
+   var count = 0;
+   $.each(register,
+      function (key, value) {
+         var item = $("<li></li>");
+         var name = $("<span></span>").addClass("name").text(key);
+         var title = $("<span></span>").addClass("title").text(value);
+         item.append(name);
+         item.append(title);
+         $("#namelist").append(item);
+         count++;
+      }
+   );
+   // Display the register
+   if (count)
+      $("#register").css("display", "block");
 }
 
 function populateResult(json) {
@@ -466,27 +487,55 @@ function populateResult(json) {
    $("div#result i").hover(hoverIn, hoverOut);
    // Put a click handler on each sentence
    $("span.sent").click(showParse);
+   populateRegister(register);
 }
 
-function analyzeUrl() {
+function _analyzeUrl(url) {
    // Ajax query to the server
    // Clear previous result
    $("div#result").html("");
+   // Make top news list disappear
+   $("div#topnews").css("display", "none");
    // Display progress indicator
    $("div#wait").css("display", "block");
-   // Hide the statistics
-   $("p.tok-info").css("visibility", "hidden");
+   // Make the statistics appear but hidden until processing is complete
+   $("p.tok-info").css("display", "block").css("visibility", "hidden");
    // Hide the guide
-   $("div#guide").css("visibility", "hidden");
+   $("div#guide").css("display", "block").css("visibility", "hidden");
    // Hide the metadata
    $("#metadata").css("display", "none");
+   // Hide the register
+   $("#namelist").html("");
+   $("#register").css("display", "none");
    // Launch the query
    serverQuery('/analyze',
       {
-         url : $("#url").val().trim(),
+         url : url,
          noreduce : true
       },
       populateResult
    );
+}
+
+function analyzeUrl() {
+   // Analyze the URL in the input field
+   _analyzeUrl($("#url").val().trim());
+}
+
+function initMain(jQuery) {
+   // Initialization
+   $("#url").keydown(function(ev) {
+      if (ev.which == 13) {
+         analyzeUrl();
+         ev.preventDefault();
+      }
+   });
+   $("#toplist span.heading").click(function(ev) {
+      // A top news article has been clicked:
+      // post a form to the main page with its URL
+      var url = $(this).attr("url");
+      $("#url").val(url);
+      analyzeUrl();
+   });
 }
 

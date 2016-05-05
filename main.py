@@ -2,7 +2,7 @@
 """
     Reynir: Natural language processing for Icelandic
 
-    Main module, URL scraper and web server
+    Web server main module
 
     Copyright (c) 2015 Vilhjalmur Thorsteinsson
     All rights reserved
@@ -29,7 +29,7 @@ from grammar import Nonterminal
 from ptest import run_test, Test_DB
 from reducer import Reducer
 from scraper import Scraper
-from scraperdb import Scraper_DB, Person
+from scraperdb import Scraper_DB, Person, Article, desc
 from settings import Settings, ConfigError
 from tokenizer import tokenize, TOK
 
@@ -49,7 +49,6 @@ _PROFILE = False
 # Current default URL for testing
 
 DEFAULT_URL = 'http://kjarninn.is/2015/04/mar-gudmundsson-segir-margskonar-misskilnings-gaeta-hja-hannesi-holmsteini/'
-# 'http://www.ruv.is//frett/flottamennirnir-matarlausir-i-einni-kos'
 
 # HTML tags that we explicitly don't want to look at
 
@@ -146,6 +145,7 @@ def process_url(url):
                 print("Metadata: timestamp {0}".format(metadata.timestamp))
                 print("Metadata: authority {0:.2f}".format(metadata.authority))
             metadata = vars(metadata) # Convert namedtuple to dict
+        metadata["url"] = url
 
     # Extract the text content of the HTML into a list
     tlist = TextList()
@@ -282,7 +282,7 @@ def parse(toklist, single, use_reducer, dump_forest = False, keep_trees = False)
     return (result, trees)
 
 
-def create_name_register(result):
+def add_name_register(result):
     """ Assemble a register of names and titles from the token list """
     tokens = result["tokens"]
     register = { }
@@ -311,6 +311,26 @@ def create_name_register(result):
     result["register"] = register
     if Settings.DEBUG:
         print("Register is: {0}".format(register))
+
+
+def top_news(limit = 15):
+    """ Return a list of top recent news """
+    toplist = []
+    db = Scraper_DB()
+    with closing(db.session) as session:
+        # Attempt to look up the name pn.name
+        q = session.query(Article) \
+            .filter(Article.tree != None) \
+            .filter(Article.timestamp != None) \
+            .filter(Article.heading > "") \
+            .order_by(desc(Article.timestamp))[0:limit]
+        for a in q:
+            # Collect and count the titles
+            icon = a.root.domain + ".ico"
+            toplist.append(dict(heading = a.heading, timestamp = str(a.timestamp)[0:19],
+                url = a.url, num_sentences = a.num_sentences, num_parsed = a.num_parsed, icon = icon))
+        session.commit()
+    return toplist
 
 
 @app.route("/analyze", methods=['POST'])
@@ -350,19 +370,19 @@ def analyze():
         result, trees = parse(toklist, single, use_reducer, dump_forest, keep_trees)
 
     # Add a name register to the result
-    create_name_register(result)
+    add_name_register(result)
 
     parse_time = time.time() - t0
+
+    result["metadata"] = metadata
+    result["tok_time"] = tok_time
+    result["parse_time"] = parse_time
 
     if keep_trees:
         # Save a new parse result
         if Settings.DEBUG:
             print("Storing a new parse tree for url {0}".format(url))
         Scraper.store_parse(url, result, trees)
-
-    result["metadata"] = metadata
-    result["tok_time"] = tok_time
-    result["parse_time"] = parse_time
 
     # Return the tokens as a JSON structure to the client
     return jsonify(result = result)
@@ -635,7 +655,7 @@ def add_sentence():
     return jsonify(result = result)
 
 
-@app.route("/")
+@app.route("/", methods=['GET', 'POST'])
 def main():
     """ Handler for the main (index) page """
 
@@ -645,10 +665,10 @@ def main():
     debug_mode = request.args.get("debug", "")
     if debug_mode == "0" or debug_mode.lower() == "false":
         debug_mode = False
-    txt = request.args.get("txt", None)
-    if not txt:
-        txt = DEFAULT_URL
-    return render_template("main.html", default_text = txt, grammar = bp.grammar, debug_mode = debug_mode)
+    txt = request.args.get("txt", None) or request.form.get("url", None) or DEFAULT_URL
+    return render_template("main.html",
+        default_text = txt, grammar = bp.grammar, debug_mode = debug_mode,
+        articles = top_news())
 
 
 @app.route("/test")

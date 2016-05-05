@@ -207,7 +207,14 @@ class BIN_Db:
         def lookup_abbreviation(w):
             """ Lookup abbreviation from abbreviation list """
             # Remove brackets, if any, before lookup
-            clean_w = w[1:-1] if w[0] == '[' else w
+            if w[0] == '[':
+                clean_w = w[1:-1]
+                # Check for abbreviation that also ended a sentence and
+                # therefore had its end period cut off
+                if not clean_w.endswith('.'):
+                    clean_w += '.'
+            else:
+                clean_w = w
             # Return a single-entity list with one meaning
             m = Abbreviations.DICT.get(clean_w, None)
             return None if m is None else [ BIN_Meaning._make(m) ]

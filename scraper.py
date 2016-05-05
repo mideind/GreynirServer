@@ -280,7 +280,7 @@ class Scraper:
         t0 = time.time()
         # Fetch the root URL and scrape all child URLs that refer
         # to the same domain suffix and we haven't seen before
-        print("Processing root {0}".format(root.url))
+        print("Fetching root {0}".format(root.url))
 
         # Read the HTML document at the root URL
         html_doc = Scraper._fetch_url(root.url)
@@ -319,7 +319,7 @@ class Scraper:
 
         t1 = time.time()
 
-        print("Processing completed in {0:.2f} seconds".format(t1 - t0))
+        print("Root scrape completed in {0:.2f} seconds".format(t1 - t0))
 
 
     def scrape_article(self, url, helper):
@@ -328,7 +328,7 @@ class Scraper:
         t0 = time.time()
         # Fetch the root URL and scrape all child URLs that refer
         # to the same domain suffix and we haven't seen before
-        print("Processing article {0}".format(url))
+        print("Scraping article {0}".format(url))
 
         # Read the HTML document at the article URL
         html_doc = None if helper.skip_url(url) else Scraper._fetch_url(url)
@@ -376,7 +376,7 @@ class Scraper:
 
         t1 = time.time()
 
-        print("Processing completed in {0:.2f} seconds".format(t1 - t0))
+        print("Scraping completed in {0:.2f} seconds".format(t1 - t0))
 
 
     def parse_article(self, url, helper):
@@ -528,6 +528,7 @@ class Scraper:
 
             if article:
                 article.parsed = datetime.utcnow()
+                article.timestamp = result["metadata"]["timestamp"]
                 article.parser_version = result["version"]
                 article.num_sentences = result["num_sent"]
                 article.num_parsed = result["num_parsed_sent"]
@@ -619,7 +620,7 @@ class Scraper:
             raise e from e
 
 
-    def go(self, limit = 0):
+    def go(self, reparse = False, limit = 0):
         """ Run a scraping pass from all roots in the scraping database """
 
         db = Scraper._db
@@ -627,39 +628,47 @@ class Scraper:
         # Go through the roots and scrape them, inserting into the articles table
         with closing(db.session) as session:
 
-            def iter_roots():
-                """ Iterate the roots """
-                for r in session.query(Root).all():
-                    yield r
+            if not reparse:
 
-            # Use a multiprocessing pool to scrape the roots
+                def iter_roots():
+                    """ Iterate the roots """
+                    for r in session.query(Root).all():
+                        yield r
 
-            pool = Pool(4)
-            pool.map(self._scrape_single_root, iter_roots())
-            pool.close()
-            pool.join()
+                # Use a multiprocessing pool to scrape the roots
+
+                pool = Pool(4)
+                pool.map(self._scrape_single_root, iter_roots())
+                pool.close()
+                pool.join()
+
+                # noinspection PyComparisonWithNone
+                def iter_unscraped_articles():
+                    """ Go through any unscraped articles and scrape them """
+                    for a in session.query(Article) \
+                        .filter(Article.scraped == None).filter(Article.root_id != None).all():
+                        yield ArticleDescr(a.root, a.url)
+
+                # Use a multiprocessing pool to scrape the articles
+
+                pool = Pool(8)
+                pool.map(self._scrape_single_article, iter_unscraped_articles())
+                pool.close()
+                pool.join()
 
             # noinspection PyComparisonWithNone
-            def iter_unscraped_articles():
-                """ Go through any unscraped articles and scrape them """
-                for a in session.query(Article) \
-                    .filter(Article.scraped == None).filter(Article.root_id != None).all():
-                    yield ArticleDescr(a.root, a.url)
-
-            # Use a multiprocessing pool to scrape the articles
-
-            pool = Pool(8)
-            pool.map(self._scrape_single_article, iter_unscraped_articles())
-            pool.close()
-            pool.join()
-
-            # noinspection PyComparisonWithNone
-            def iter_unparsed_articles(limit):
-                """ Go through any unparsed articles and parse them """
+            def iter_unparsed_articles(reparse, limit):
+                """ Go through articles to be parsed """
                 # Fetch 100 rows at a time
-                q = session.query(Article) \
-                    .filter(Article.scraped != None).filter(Article.tree == None) \
-                    .filter(Article.root_id != None).yield_per(100)
+                q = session.query(Article)
+                if reparse:
+                    # Reparse articles scraped after a given start date
+                    from_date = datetime(year = 2016, month = 3, day = 1)
+                    q = q.filter(Article.scraped >= from_date).order_by(Article.scraped)
+                else:
+                    # Only parse articles that have no parse tree
+                    q = q.filter(Article.scraped != None).filter(Article.tree == None)
+                q = q.filter(Article.root_id != None).yield_per(100)
                 if limit > 0:
                     # Impose a limit on the query, if given
                     q = q.limit(limit)
@@ -669,7 +678,7 @@ class Scraper:
             # Use a multiprocessing pool to parse the articles
 
             pool = Pool() # Defaults to using as many processes as there are CPUs
-            pool.map(self._parse_single_article, iter_unparsed_articles(limit))
+            pool.map(self._parse_single_article, iter_unparsed_articles(reparse, limit))
             pool.close()
             pool.join()
 
@@ -719,16 +728,16 @@ class Scraper:
             .format(num_sentences, num_sent_parsed, 100.0 * num_sent_parsed / num_sentences))
 
 
-def scrape_articles(limit = 0):
+def scrape_articles(reparse = False, limit = 0):
 
     print("------ Reynir starting scrape -------")
     ts = "{0}".format(datetime.utcnow())[0:19]
-    print("Time: {0}, limit: {1}\n".format(ts, limit))
+    print("Time: {0}, limit: {1}, reparse: {2}\n".format(ts, limit, reparse))
 
     try:
         sc = Scraper()
         try:
-            sc.go(limit = limit)
+            sc.go(reparse = reparse, limit = limit)
         except Exception as e:
             print("Scraper terminated with exception {0}".format(e))
         finally:
@@ -798,11 +807,12 @@ def main(argv = None):
         argv = sys.argv
     try:
         try:
-            opts, args = getopt.getopt(argv[1:], "hil:", ["help", "init", "limit="])
+            opts, args = getopt.getopt(argv[1:], "hirl:", ["help", "init", "reparse", "limit="])
         except getopt.error as msg:
              raise Usage(msg)
         init = False
         limit = 10 # !!! DEBUG default limit on number of articles to parse, unless otherwise specified
+        reparse = False
         # Process options
         for o, a in opts:
             if o in ("-h", "--help"):
@@ -810,6 +820,8 @@ def main(argv = None):
                 sys.exit(0)
             elif o in ("-i", "--init"):
                 init = True
+            elif o in ("-r", "--reparse"):
+                reparse = True
             elif o in ("-l", "--limit"):
                 # Maximum number of articles to parse
                 try:
@@ -836,7 +848,7 @@ def main(argv = None):
                 return 2
 
             # Run the scraper
-            scrape_articles(limit = limit)
+            scrape_articles(reparse = reparse, limit = limit)
 
     except Usage as err:
         print(err.msg, file = sys.stderr)

@@ -1688,6 +1688,12 @@ NlFornafn_et/fall/kyn →
     # 'hvern þeirra' / 'hverja þeirra' / 'hvert þeirra'
     'hver'_et/fall/kyn 'sá'_ft_ef/kyn
 
+# allt annar | allt aðrir
+# allt önnur | allt aðrar
+# allt annað | allt önnur
+NlFornafn/tala/fall/kyn →
+    "allt" 'annar'/tala/fall/kyn
+
 OkkarYkkar → "okkar" | "ykkar"
 
 # Gefa stökum fornöfnum mínusstig - við viljum frekar sjá þau sem hluta af stærri nafnlið
@@ -1747,7 +1753,7 @@ NlStak_p3/tala/fall/kyn →
 
 NlTöluorð/tala/fall/kyn →
     # '(Ég talaði við) tvær þeirra', 'fjórum þeirra (var kalt)'
-    Töluorð/tala/fall/kyn 'sá'_ft_ef/kyn?
+    'að_minnsta_kosti'? Töluorð/tala/fall/kyn 'sá'_ft_ef/kyn?
 
 # Gefa mínusstig fyrir stök töluorð - viljum helst sjá þau sem einkunn í stærri nafnlið
 $score(-8) NlTöluorð/tala/fall/kyn
@@ -1768,9 +1774,9 @@ Manns →
 
 NlStak_et_p3/fall/kyn →
 
-    NlStak_p3_et/fall/kyn VeikSögnLhÞt_et/fall/kyn? FsRunaEftirNl?                         # fulltrúi bankans í nefndinni
-    | NlStak_et_p3/fall/kyn "eða" NlStak_p3_et/fall       # Þingnefnd eða hluti Alþingismanna getur lagt fram frumvarp
-    | 'hver'_et/fall/kyn "og" 'einn'_et/fall/kyn FsRuna?  # 'hver og einn [í sinni sveit] (ber ábyrgð)'
+    NlStak_p3_et/fall/kyn VeikSögnLhÞt_et/fall/kyn? FsRunaEftirNl?  # fulltrúi bankans í nefndinni
+    | NlStak_et_p3/fall/kyn "eða" NlStak_p3_et/fall                 # Þingnefnd eða hluti Alþingismanna getur lagt fram frumvarp
+    | 'hver'_et/fall/kyn "og" 'einn'_et/fall/kyn FsRuna?            # 'hver og einn [í sinni sveit] (ber ábyrgð)'
 
 # '(svör við bréfi sínu) dagsettu (13. mars sl.)'
 VeikSögnLhÞt/tala/fall/kyn →
@@ -1843,8 +1849,8 @@ NlStak_p3_et/fall → NlStak_p3_et/fall/kyn   # Samtenging tveggja eintöluliða
 
 NlStak_ft_p3/fall/kyn →
 
-    NlStak_p3_ft/fall/kyn VeikSögnLhÞt_ft/fall/kyn? FsRunaEftirNl?           # fulltrúar bankans í nefndinni
-    | 'allur'_ft/fall/kyn 'sá'_ft/fall/kyn  # Allir þeir, allar þær, öll þau
+    NlStak_p3_ft/fall/kyn VeikSögnLhÞt_ft/fall/kyn? FsRunaEftirNl?  # fulltrúar bankans í nefndinni
+    | 'allur'_ft/fall/kyn 'sá'_ft/fall/kyn                          # Allir þeir, allar þær, öll þau
 
 # Hvorki X né Y
 # Bæði X og Y
@@ -1883,18 +1889,48 @@ Skst → no_abbrev '-'?
 Fyrirbæri/fall/kyn →
     no_et/fall/kyn
     | raðnr no_et/fall/kyn
-    | no_gr_et/fall/kyn Nl/fall    # (Ég hef áhuga á) hugtakinu 'þjóðmenningu'
+    | FyrirbæriMeðGreini/fall/kyn
 
+# nkyn = náttúrulegt kyn (karlkyn eða kvenkyn)
 Fyrirbæri/fall/nkyn →
     Manneskja/fall/nkyn
 
-Fyrirbæri/aukafall/kyn →
-    FyrirbæriMeðGreini/aukafall/kyn
+# Fyrirtækisnöfn - hvorugkyn
+
+Fyrirbæri_nf_hk →
+    Fyrirtæki_nf
+Fyrirbæri_þf_hk →
+    Fyrirtæki_þf
+Fyrirbæri_þgf_hk →
+    Fyrirtæki_þgf
+Fyrirbæri_ef_hk →
+    Fyrirtæki_ef
+
+Fyrirtæki/fall →
+    Sérnafn fyrirtæki # hf., ehf., Inc., Corporation, SA o.s.frv.
+
+# Gefa nógu hátt skor til að yfirvinna sérnöfn sem eru eitt beygjanlegt orð
+# (sem venjulega fá stóran mínus)
+$score(+32) Fyrirtæki/fall
+
+# '(Danska) byggingavörukeðjan Bygma'
+# '(Jón vann hjá) verkfræðistofunni Afli'
+# 'Tryggingafélagið Vörður (hagnaðist um 300 milljónir)'
+
+FyrirbæriMeðGreini/fall/kyn →
+    SamstættFall/fall/kyn
 
 FyrirbæriMeðGreini/aukafall/kyn →
-    no_gr_et/aukafall/kyn Nl_nf    # (Ég hef áhuga á) hugtakinu 'þjóðmenning'
+    ÓsamstættFall/aukafall/kyn
 
-$score(-4) FyrirbæriMeðGreini/aukafall/kyn
+SamstættFall/fall/kyn →
+    no_gr_et/fall/kyn Nl/fall      # (Ég versla við) herrafataverslunina Smekkmann
+
+ÓsamstættFall/aukafall/kyn →
+    no_gr_et/aukafall/kyn Nl_nf    # (Ég versla við) herrafataverslunina Smekkmaður
+
+$score(+2) SamstættFall/fall/kyn
+$score(-4) ÓsamstættFall/aukafall/kyn
 
 # [séra] Jóns Dalbú Hróbjartssonar [, dómkirkjuprests]
 # [frú] Vigdís Finnbogadóttir [fyrrverandi forseti]
@@ -1908,8 +1944,8 @@ Manneskja/fall → Manneskja/fall/nkyn
 
 $score(-6) Ávarp/nkyn/fall
 
-ÞekktÁvarp_kk/fall → 'herra'/fall | 'séra'/fall | 'hann'/fall
-ÞekktÁvarp_kvk/fall → 'frú'/fall | 'séra'/fall | 'hún'/fall
+ÞekktÁvarp_kk/fall → 'herra'_et/fall | 'séra'_et/fall | 'hann'_et/fall
+ÞekktÁvarp_kvk/fall → 'frú'_et/fall | 'séra'_et/fall | 'hún'_et/fall
 
 $score(+10) ÞekktÁvarp/nkyn/fall
 
@@ -2337,9 +2373,14 @@ LoKommaTengdSögn_nf/tala/kyn →
 # Forsetningarliðir
 
 FsMeðFallstjórn →
+
     fs/fall Nl/fall
+
     # !!! ATH: Geta eftirfarandi form staðið með nafnlið, eða aðeins með sögn?
-    | fs/fall NhLiðir # 'um að...', 'í að...', 'eftir að...'
+    # 'um að...', 'í að...', 'eftir að...', 'fyrir að...', 'gegnum að...', 'kringum að...',
+    # 'með að...', 'til að...', 'við að...'
+    | fs/fall NhLiðir
+
     | "á" "hendur" Nl_þgf # 'að höfða sakamál á hendur Páli'
     | "á" "fætur" Nl_þgf # '(Hann borðaði hverja tertusneiðina) á fætur annarri'
     | "nær" 'draga'_et_p3 Nl_þgf # 'þegar nær dró/dregur jólum'
@@ -2487,6 +2528,7 @@ Dagsetning →
 
     | "dags." dags # dags. 30. desember 1965
     | DagsFs_þf? 'sá'_et_kk_þf? dags 'síðastliðinn'_et_kk_þf? # '[eftir] [þann] 3. júlí 2007 [síðastliðinn]'
+    | "hinn" dags 'síðastliðinn'_et_kk_þf? # 'hinn 3. júlí [síðastliðinn]'
     | DagsFs_þgf dags # 'frá 3. júlí 2007'
     | DagsFs_ef dags # 'til 3. júlí 2007'
 

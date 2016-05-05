@@ -374,7 +374,7 @@ class BIN_Token(Token):
 
     def matches_PERSON(self, terminal):
         """ Handle a person name token, matching it with a person_[case]_[gender] terminal """
-        if not terminal.startswith("person"):
+        if terminal.first != "person":
             return False
         # Check each PersonName tuple in the t2 list
         case = terminal.variant(0)
@@ -392,7 +392,7 @@ class BIN_Token(Token):
 
     def matches_CURRENCY(self, terminal):
         """ A currency name token matches a noun terminal """
-        if not terminal.startswith("no"):
+        if terminal.first != "no":
             return False
         if terminal.is_abbrev:
             # A currency does not match an abbreviation
@@ -437,18 +437,18 @@ class BIN_Token(Token):
         no_info = not self.t2[1] and not self.t2[2]
 
         if no_info:
-            if terminal.startswith("tala"):
+            if terminal.first == "tala":
                 # Plain number with no case or gender info
                 return self.is_correct_singular_or_plural(terminal)
             # If no case and gender info, we only match "tala",
             # not nouns or "töl" terminals
             return False
 
-        if not terminal.startswith("töl") and not terminal.startswith("to"):
+        if terminal.first not in {"töl", "to"}:
             return False
         if not self.is_correct_singular_or_plural(terminal):
             return False
-        if terminal.startswith("to"):
+        if terminal.first == "to":
             # Allow a match with "to" if we have both case and gender info
             if not self.t2[1] or not self.t2[2]:
                 return False
@@ -465,7 +465,7 @@ class BIN_Token(Token):
 
     def matches_AMOUNT(self, terminal):
         """ An amount token matches a noun terminal """
-        if not terminal.startswith("no"):
+        if terminal.first != "no":
             return False
         if terminal.is_abbrev:
             # An amount does not match an abbreviation
@@ -490,14 +490,16 @@ class BIN_Token(Token):
 
     def matches_PERCENT(self, terminal):
         """ A percent token matches a number (töl) or noun terminal """
-        if not terminal.startswith("töl"):
+        if terminal.first != "töl":
             # Matches number and noun terminals only
-            if not terminal.startswith("no"):
+            if terminal.first != "no":
                 return False
             if terminal.is_abbrev:
                 return False
             # If we are recognizing this as a noun, do so only with neutral gender
             if not terminal.has_variant("hk"):
+                return False
+            if terminal.has_variant("gr"):
                 return False
             if self.t2[1]:
                 # See whether any of the allowed cases match the terminal
@@ -510,8 +512,7 @@ class BIN_Token(Token):
 
     def matches_YEAR(self, terminal):
         """ A year token matches a number (töl) or year (ártal) terminal """
-        if not terminal.startswith("töl") and not terminal.startswith("ártal") \
-            and not terminal.startswith("tala"):
+        if terminal.first not in {"töl", "ártal", "tala"}:
             return False
         # Only singular match ('2014 var gott ár', not '2014 voru góð ár')
         # Years only match the neutral gender
@@ -522,19 +523,19 @@ class BIN_Token(Token):
 
     def matches_DATE(self, terminal):
         """ A date token matches a date (dags) terminal """
-        return terminal.startswith("dags")
+        return terminal.first == "dags"
 
     def matches_TIME(self, terminal):
         """ A time token matches a time (tími) terminal """
-        return terminal.startswith("tími")
+        return terminal.first == "tími"
 
     def matches_TIMESTAMP(self, terminal):
         """ A timestamp token matches a timestamp (tímapunktur) terminal """
-        return terminal.startswith("tímapunktur")
+        return terminal.first == "tímapunktur"
 
     def matches_ORDINAL(self, terminal):
         """ An ordinal token matches an ordinal (raðnr) terminal """
-        return terminal.startswith("raðnr")
+        return terminal.first == "raðnr"
 
     def matches_WORD(self, terminal):
         """ Match a word token, having the potential part-of-speech meanings
@@ -560,6 +561,9 @@ class BIN_Token(Token):
             if terminal.is_abbrev:
                 # Only match abbreviations; gender, case and number do not matter
                 return no_info
+            if m.fl == "nafn":
+                # Names are only matched by person terminals
+                return False
             for v in terminal.variants:
                 if v in BIN_Token.GENDERS_SET:
                     if m.ordfl != v:
@@ -634,11 +638,32 @@ class BIN_Token(Token):
             """ Check name from static phrases, coming from the Reynir.conf file """
             if m.fl != "nafn":
                 return False
+            # Check case, if present
+            if m.beyging != "-":
+                if any(BIN_Token.VARIANT[c] in m.beyging and not terminal.has_variant(c) for c in BIN_Token.CASES):
+                    # The name has an associated case, but this is not it: quit
+                    return False
             if terminal.has_vbits(BIN_Token.VBIT_KK) and m.ordfl != "kk":
                 return False
             if terminal.has_vbits(BIN_Token.VBIT_KVK) and m.ordfl != "kvk":
                 return False
             return not terminal.has_vbits(BIN_Token.VBIT_HK)
+
+        def matcher_corporation(m):
+            """ Check whether the token text matches a set of corporation identfiers """
+            # Note: these must have a meaning for this to work, so specifying them
+            # as abbreviations to Main.conf is recommended
+            return self.t1 in {
+                "ehf.", "ehf", "hf.", "hf",
+                "Inc.", "Incorporated",
+                "Corp.", "Corporation",
+                "Ltd.", "Limited",
+                "Co.", "Company",
+                "AS", "ASA",
+                "SA", "S.A.",
+                "GmbH", "AG",
+                "SARL", "S.à.r.l."
+            }
 
         def matcher_default(m):
             """ Check other word categories """
@@ -662,6 +687,7 @@ class BIN_Token(Token):
                 "fs" : matcher_fs,
                 "person" : matcher_person,
                 "gata" : matcher_gata, # Götuheiti = Street name
+                "fyrirtæki" : matcher_corporation,
                 "sérnafn" : None
             }
             matcher = matchers.get(terminal.first, matcher_default)
@@ -678,7 +704,7 @@ class BIN_Token(Token):
         # Unknown word
         if self.is_upper:
             # Starts in upper case: We guess that this is a named entity
-            return terminal.startswith("sérnafn")
+            return terminal.first == "sérnafn"
         # Not named entity: allow it to match a singular, neutral noun in all cases,
         # but without the definite article ('greinir')
         return terminal.startswith("no") and terminal.has_vbits(BIN_Token.VBIT_ET | BIN_Token.VBIT_HK) and \

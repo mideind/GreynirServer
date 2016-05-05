@@ -111,7 +111,7 @@ def sentence(state, result):
 
 INVALID_TITLES = {
     "sig", "væri", "orðið", "ávísun", "hér heima", "þá", "lán", "úr láni", "bar", "ver",
-    "bætir", "býr", "get", "vera", "eiga", "var", "búa", "setur", "heggur", "á", "átt",
+    "bætir", "býr", "get", "vera", "eiga", "var", "búa", "setur", "heggur", "á", "átt", "at",
     "keppa"
 }
 

@@ -22,6 +22,7 @@ from sqlalchemy.orm import sessionmaker, relationship, backref
 from sqlalchemy import Table, Column, Integer, String, Float, DateTime, Sequence, \
     UniqueConstraint, ForeignKey
 from sqlalchemy.exc import IntegrityError as SqlIntegrityError
+from sqlalchemy import desc as SqlDesc
 
 from settings import Settings
 
@@ -31,6 +32,8 @@ Base = declarative_base()
 
 # Allow client use of IntegrityError exception without importing it from sqlalchemy
 IntegrityError = SqlIntegrityError
+# Same for the desc() function
+desc = SqlDesc
 
 
 class Scraper_DB:
@@ -147,7 +150,8 @@ class Article(Base):
     tree = Column(String)
 
     # The back-reference to the Root parent of this Article
-    root = relationship("Root", backref=backref('articles', order_by=url))
+    root = relationship("Root", foreign_keys="Article.root_id",
+        backref=backref('articles', order_by=url))
 
     def __repr__(self):
         return "Article(url='{0}', heading='{1}', scraped={2})" \
@@ -185,6 +189,45 @@ class Person(Base):
     def __repr__(self):
         return "Person(id='{0}', name='{1}', title={2})" \
             .format(self.id, self.name, self.title)
+
+    @classmethod
+    def table(cls):
+        return cls.__table__
+
+
+class Entity(Base):
+
+    """ Represents an entity """
+
+    __tablename__ = 'entities'
+
+    # Primary key
+    id = Column(Integer, Sequence('entities_id_seq'), primary_key=True)
+
+    # Foreign key to an article
+    article_url = Column(String,
+        # We don't delete associated persons if the article is deleted
+        ForeignKey('articles.url', onupdate="CASCADE", ondelete="SET NULL"), nullable = True)
+
+    # Name
+    name = Column(String, index = True)
+    # Verb ('er', 'var', 'sé')
+    verb = Column(String, index = True)
+    # Entity definition
+    definition = Column(String, index = True)
+
+    # Authority of this fact, 1.0 = most authoritative, 0.0 = least authoritative
+    authority = Column(Float)
+
+    # Timestamp of this entry
+    timestamp = Column(DateTime)
+
+    # The back-reference to the Root parent of this Article
+    article = relationship("Article", backref=backref('entities', order_by=name))
+
+    def __repr__(self):
+        return "Entity(id='{0}', name='{1}', verb='{2}', definition='{3}')" \
+            .format(self.id, self.name, self.verb, self.definition)
 
     @classmethod
     def table(cls):

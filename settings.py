@@ -98,17 +98,29 @@ class Abbreviations:
     DICT = { }
     # Single-word abbreviations, i.e. those with only one dot at the end
     SINGLES = set()
+    # Potential sentence finishers, i.e. those with a dot at the end, marked with an asterisk
+    # in the config file
+    FINISHERS = set()
 
     @staticmethod
     def add (abbrev, meaning, gender, fl = None):
         """ Add an abbreviation to the dictionary. Called from the config file handler. """
-
         # print("Adding abbrev {0} meaning {1} gender {2} fl {3}".format(abbrev, meaning, gender, fl))
+        # Check for sentence finishers
+        if abbrev.endswith("*"):
+            finisher = True
+            abbrev = abbrev[0:-1]
+            if not abbrev.endswith("."):
+                raise ConfigError("Only abbreviations ending with periods can be sentence finishers")
+        else:
+            finisher = False
         # Append the abbreviation and its meaning in tuple form
         Abbreviations.DICT[abbrev] = (meaning, 0, gender, "skst" if fl is None else fl, abbrev, "-")
         if abbrev[-1] == '.' and '.' not in abbrev[0:-1]:
             # Only one dot, at the end
             Abbreviations.SINGLES.add(abbrev[0:-1]) # Lookup is without the dot
+        if finisher:
+            Abbreviations.FINISHERS.add(abbrev)
 
 
 class Meanings:
@@ -447,7 +459,9 @@ class Settings:
     @staticmethod
     def _handle_abbreviations(s):
         """ Handle abbreviations in the settings section """
-        # Format: abbrev = "meaning" gender (kk|kvk|hk)
+        # Format: abbrev[*] = "meaning" gender (kk|kvk|hk)
+        # An asterisk after an abbreviation ending with a period
+        # indicates that the abbreviation may finish a sentence
         a = s.split('=', maxsplit=1)
         abbrev = a[0].strip()
         m = a[1].strip().split('\"')

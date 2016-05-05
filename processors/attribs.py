@@ -59,7 +59,7 @@ def sentence(state, result):
     if "attribs" in result:
         # Attributes where found
         for a in result.attribs:
-            print("Attribute: '{0}'".format(attrib))
+            #print("Attribute: '{0}'".format(attrib))
             _ = """
             attrib = Attribute(
                 article_url = url,
@@ -93,6 +93,8 @@ def EfLiður(node, params, result):
 
 def Setning(node, params, result):
     """ Meðhöndla setningar á forminu 'eitthvað einhvers fsliðir* er-sögn eitthvað' """
+
+    return # !!! TODO - DEBUG
 
     frumlag = result.find_child(nt_base = "Nl", variant = "nf")
     if not frumlag:
@@ -136,7 +138,7 @@ def Setning(node, params, result):
 
     # Reikna út endanlegt frumlag
     frumlag_text = frumlag._text
-    print("Frumlag_text er '{0}', frumlag.ef_text er '{1}'".format(frumlag_text, frumlag.ef_text))
+    #print("Frumlag_text er '{0}', frumlag.ef_text er '{1}'".format(frumlag_text, frumlag.ef_text))
     frumlag_text = frumlag_text[:-1 -len(frumlag.ef_text)]
 
     # Halda forsetningarliðum til haga
@@ -144,5 +146,5 @@ def Setning(node, params, result):
     if fsliðir:
         qual = " (" + ", ".join(f._text for f in fsliðir) + ")"
 
-    print("'{0}'->'{1}'{2} {4} '{3}'".format(einhvers, frumlag_text, qual, andlag._text, sagnorð._text))
+    #print("'{0}'->'{1}'{2} {4} '{3}'".format(einhvers, frumlag_text, qual, andlag._text, sagnorð._text))
 

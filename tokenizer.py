@@ -466,9 +466,27 @@ def parse_particles(token_stream):
                     token.txt.lower() in Abbreviations.SINGLES or token.txt in Abbreviations.SINGLES):
                     # Abbreviation: make a special token for it
                     # and advance the input stream
+
+                    # Check whether the following token is uppercase
+                    # (and not a month name misspelled in upper case).
+                    # If so, and this abbreviation is a common sentence finisher,
+                    # yield it as well as an extra period
+                    follow_token = next(token_stream)
+                    finish = follow_token.kind == TOK.WORD and follow_token.txt[0].isupper() and \
+                        not follow_token.txt.lower() in MONTHS and \
+                        (token.txt + ".") in Abbreviations.FINISHERS
+
                     clock = token.txt.lower() == CLOCK_ABBREV
-                    token = TOK.Word("[" + token.txt + ".]", None)
-                    next_token = next(token_stream)
+
+                    if finish:
+                        # Yield the abbreviation and then the period token
+                        token = TOK.Word("[" + token.txt + "]", None)
+                        yield token
+                        token = next_token
+                    else:
+                        token = TOK.Word("[" + token.txt + ".]", None)
+
+                    next_token = follow_token
 
             # Coalesce 'klukkan'/[kl.] + time or number into a time
             if next_token.kind == TOK.TIME or next_token.kind == TOK.NUMBER:

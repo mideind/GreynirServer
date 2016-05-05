@@ -97,6 +97,11 @@ class Result:
             # (Note that it can be overridden by setting it directly)
             d[key] = val = self._node.nominative(self._state, self._params)
             return val
+        if key == "_indefinite":
+            # Lazy evaluation of the _indefinite attribute
+            # (Note that it can be overridden by setting it directly)
+            d[key] = val = self._node.indefinite(self._state, self._params)
+            return val
         # Not found in our custom dict:
         # hand off to Python's default attribute resolution mechanism
         return super().__getattr__(key)
@@ -338,6 +343,7 @@ class TerminalNode(Node):
         # once, even if multiple processors scan this tree
         self.root_cache = None
         self.nominative_cache = None
+        self.indefinite_cache = None
 
         # BIN category set
         self.bin_cat = BIN_ORDFL.get(self.cat, None)
@@ -431,6 +437,10 @@ class TerminalNode(Node):
         if "sb" in self.variants:
             if "SB" not in m.beyging:
                 return False
+        # Definite article
+        if "gr" in self.variants:
+            if "gr" not in m.beyging:
+                return False
         #print("_bin_filter returns True")
         return True
 
@@ -446,15 +456,9 @@ class TerminalNode(Node):
             w = m[0].stofn
         return w.replace("-", "")
 
-    def _nominative(self, bin_db):
-        """ Look up the nominative form of the word associated with this terminal """
-        # Lookup the token in the BIN database
-        if (not self.is_word) or (self.case == "nf") or self.is_literal or self.cat in { "ao", "eo", "fs", "st", "nhm" }:
-            # Not a word, already nominative or not declinable: return it as-is
-            return self.text
-        if not self.text:
-            print("self.text is empty, token is {0}, terminal is {1}".format(self.token, self.terminal))
-            assert False
+    def lookup_alternative(self, bin_db, replace_func):
+        """ Return a different word form, if available, by altering the beyging
+            spec via the given replace_func function """
         #print("_nominative looking up {0}, cat is {1}".format(self.text, self.cat))
         w, m = bin_db.lookup_word(self.text, self.at_start)
         if m:
@@ -466,29 +470,46 @@ class TerminalNode(Node):
             result = []
             for x in m:
 
-                def replace_beyging(b, by_case = "NF"):
-                    for case in ("NF", "ÞF", "ÞGF", "EF"):
-                        if case != by_case and case in b:
-                            return b.replace(case, by_case)
-                    return b
-
                 # Calculate a new beyging string with the nominative case
-                beyging_nf = replace_beyging(x.beyging)
+                beyging = replace_func(x.beyging)
 
-                if beyging_nf is x.beyging:
+                if beyging is x.beyging:
                     # No replacement made: word form is identical in the nominative case
                     result.append(x)
                 else:
                     # Lookup the same word (identified by 'utg') but a different declination
                     prefix = "".join(x.ordmynd.split("-")[0:-1])
-                    nom_x = bin_db.lookup_utg(x.utg, beyging = beyging_nf)
-                    if nom_x:
-                        result += bin_db.prefix_meanings(nom_x, prefix)
+                    wordform = bin_db.lookup_utg(x.utg, beyging = beyging)
+                    if wordform:
+                        result += bin_db.prefix_meanings(wordform, prefix)
 
             if result:
                 #print("Meaning list is {0}".format(result))
+                # There can be more than one word form that matches our spec.
+                # We can't choose between them so we simply return the first one.
                 w = result[0].ordmynd
-        w = w.replace("-", "")
+        return w.replace("-", "")
+
+    def _nominative(self, bin_db):
+        """ Look up the nominative form of the word associated with this terminal """
+        # Lookup the token in the BIN database
+        if (not self.is_word) or (self.case == "nf") or self.is_literal or self.cat in { "ao", "eo", "fs", "st", "nhm" }:
+            # Not a word, already nominative or not declinable: return it as-is
+            return self.text
+        if not self.text:
+            print("self.text is empty, token is {0}, terminal is {1}".format(self.token, self.terminal))
+            assert False
+
+        def replace_beyging(b, by_case = "NF"):
+            """ Change a beyging string to specify a different case """
+            for case in ("NF", "ÞF", "ÞGF", "EF"):
+                if case != by_case and case in b:
+                    return b.replace(case, by_case)
+            return b
+
+        # Lookup the same word stem but in the nominative case
+        w = self.lookup_alternative(bin_db, replace_beyging)
+
         if self.text.isupper():
             # Original word was all upper case: convert result to upper case
             w = w.upper()
@@ -496,6 +517,30 @@ class TerminalNode(Node):
             # First letter was upper case: convert result accordingly
             w = w[0].upper() + w[1:]
         #print("_nominative returning {0}".format(w))
+        return w
+
+    def _indefinite(self, bin_db):
+        """ Look up the indefinite nominative form of a noun associated with this terminal """
+        # Lookup the token in the BIN database
+        if (not self.is_word) or self.is_literal or self.cat != "no" or "gr" not in self.variants:
+            # Not a word, not a noun or already indefinite: return it as-is
+            return self.text
+        if not self.text:
+            print("self.text is empty, token is {0}, terminal is {1}".format(self.token, self.terminal))
+            assert False
+
+        def replace_beyging(b, by_case = "NF"):
+            """ Change a beyging string to specify a different case, without the definitive article """
+            for case in ("NF", "ÞF", "ÞGF", "EF"):
+                if case != by_case and case in b:
+                    return b.replace(case, by_case).replace("gr", "")
+            # No case found: shouldn't really happen, but whatever
+            return b.replace("gr", "")
+
+        # Lookup the same word stem but in the nominative case
+        w = self.lookup_alternative(bin_db, replace_beyging)
+
+        #print("_indefinite returning {0}".format(w))
         return w
 
     def root(self, state, params):
@@ -513,6 +558,14 @@ class TerminalNode(Node):
             bin_db = state["bin_db"]
             self.nominative_cache = self._nominative(bin_db)
         return self.nominative_cache
+
+    def indefinite(self, state, params):
+        """ Calculate the nominative form of this node's text """
+        if self.indefinite_cache is None:
+            # Not already cached: look up in database
+            bin_db = state["bin_db"]
+            self.indefinite_cache = self._indefinite(bin_db)
+        return self.indefinite_cache
 
     def string_self(self):
         return self.terminal + " <" + self.token + ">"
@@ -562,6 +615,10 @@ class PersonNode(TerminalNode):
         """ The nominative is identical to the root """
         return self._root(bin_db)
 
+    def _indefinite(self, bin_db):
+        """ The indefinite is identical to the nominative """
+        return self._nominative(bin_db)
+
 
 class NonterminalNode(Node):
 
@@ -594,12 +651,16 @@ class NonterminalNode(Node):
         """ The nominative form of a nonterminal is a sequence of the nominative forms of its children (parameters) """
         return " ".join(p._nominative for p in params if p._nominative)
 
+    def indefinite(self, state, params):
+        """ The indefinite form of a nonterminal is a sequence of the indefinite forms of its children (parameters) """
+        return " ".join(p._indefinite for p in params if p._indefinite)
+
     def process(self, state, params):
         """ Apply any requested processing to this node """
         result = Result(self, state, params)
         result._nonterminal = self.nt
         # Calculate the combined text rep of the results of the children
-        result._text = " ".join(p._text for p in params)
+        result._text = " ".join(p._text for p in params if p._text)
         for p in params:
             # Copy all user variables (attributes not starting with an underscore _)
             # coming from the children into the result
@@ -622,12 +683,13 @@ class Tree:
         "person" : PersonNode
     }
 
-    def __init__(self, url):
+    def __init__(self, url, authority):
         self.s = OrderedDict() # Sentence dictionary
         self.stack = None
         self.n = None # Index of current sentence
         self.at_start = False # First token of sentence?
         self.url = url
+        self.authority = authority
 
     def push(self, n, node):
         """ Add a node into the tree at the right level """
@@ -741,7 +803,7 @@ class Tree:
         with closing(BIN_Db.get_db()) as bin_db:
 
             state = { "session": session, "processor": processor,
-                "bin_db": bin_db, "url": self.url }
+                "bin_db": bin_db, "url": self.url, "authority": self.authority }
             # Call the article_begin(state) function, if it exists
             if article_begin:
                 article_begin(state)
@@ -770,7 +832,7 @@ class Processor:
         """ Perform any cleanup """
         pass # Not presently needed
 
-    def __init__(self, processor_directory):
+    def __init__(self, processor_directory, single_processor = None):
 
         Processor._init_class()
 
@@ -779,7 +841,10 @@ class Processor:
         # with names starting with an underscore)
         self.processors = []
         import os
-        for fname in os.listdir(processor_directory):
+        files = [ single_processor + ".py" ] if single_processor else os.listdir(processor_directory)
+        for fname in files:
+            if not isinstance(fname, str):
+                continue
             if not fname.endswith(".py"):
                 continue
             if fname.startswith("_"):
@@ -793,7 +858,10 @@ class Processor:
                 print("Error importing processor module {0}: {1}".format(modname, e))
 
         if not self.processors:
-            print("No processing modules found in directory {0}".format(processor_directory))
+            if single_processor:
+                print("Processor {1} not found in directory {0}".format(processor_directory, single_processor))
+            else:
+                print("No processing modules found in directory {0}".format(processor_directory))
 
     def go_single(self, url):
         """ Single article processor that will be called by a process within a
@@ -813,7 +881,7 @@ class Processor:
                     print("Article not found in scraper database")
                 else:
                     if article.tree:
-                        tree = Tree(url)
+                        tree = Tree(url, article.authority)
                         # print("Tree:\n{0}\n".format(article.tree))
                         tree.load(article.tree)
                         # Run all processors in turn
@@ -850,7 +918,7 @@ class Processor:
                     q = q.filter(Article.processed == None)
                 if from_date is not None:
                     # Only go through articles parsed since the given date
-                    q = q.filter(Article.parsed >= from_date)
+                    q = q.filter(Article.parsed >= from_date).order_by(Article.parsed)
                 if limit > 0:
                     q = q[0:limit]
                 for a in q:
@@ -868,7 +936,7 @@ class Processor:
                 pool.join()
 
 
-def process_articles(from_date = None, limit = 0, force = False):
+def process_articles(from_date = None, limit = 0, force = False, processor = None):
 
     print("------ Reynir starting processing -------")
     if from_date:
@@ -877,14 +945,16 @@ def process_articles(from_date = None, limit = 0, force = False):
         print("Limit: {0} articles".format(limit))
     if force:
         print("Force re-processing: Yes")
+    if processor:
+        print("Invoke single processor: {0}".format(processor))
     ts = "{0}".format(datetime.utcnow())[0:19]
     print("Time: {0}\n".format(ts))
 
     t0 = time.time()
 
     try:
-        # Run all processors in the processors directory
-        proc = Processor("processors")
+        # Run all processors in the processors directory, or the single processor given
+        proc = Processor(processor_directory = "processors", single_processor = processor)
         proc.go(from_date, limit = limit, force = force)
     finally:
         proc = None
@@ -938,6 +1008,7 @@ __doc__ = """
         -f, --force: Force re-processing of already processed articles
         -l=N, --limit=N: Limit processing session to N articles
         -u=U, --url=U: Specify a single URL to process
+        -p=P, --processor=P: Specify a single processor to invoke
 
 """
 
@@ -948,13 +1019,14 @@ def _main(argv = None):
         argv = sys.argv
     try:
         try:
-            opts, args = getopt.getopt(argv[1:], "hifl:u:", ["help", "init", "force", "limit=", "url="])
+            opts, args = getopt.getopt(argv[1:], "hifl:u:p:", ["help", "init", "force", "limit=", "url=", "processor="])
         except getopt.error as msg:
              raise Usage(msg)
         limit = 10 # !!! DEBUG default limit on number of articles to parse, unless otherwise specified
         init = False
         url = None
         force = False
+        proc = None # Single processor to invoke
         # Process options
         for o, a in opts:
             if o in ("-h", "--help"):
@@ -973,6 +1045,12 @@ def _main(argv = None):
             elif o in ("-u", "--url"):
                 # Single URL to process
                 url = a
+            elif o in ("-p", "--processor"):
+                # Single processor to invoke
+                proc = a
+                # In the case of a single processor, we force processing
+                # of already processed articles instead of processing new ones
+                force = True
 
         # Process arguments
         for arg in args:
@@ -997,7 +1075,7 @@ def _main(argv = None):
             else:
                 # Process already parsed trees, starting on March 1, 2016
                 process_articles(from_date = datetime(year = 2016, month = 3, day = 1),
-                    limit = limit, force = force)
+                    limit = limit, force = force, processor = proc)
                 # process_articles(limit = limit)
 
     except Usage as err:

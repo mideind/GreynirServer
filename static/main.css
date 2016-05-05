@@ -38,7 +38,7 @@ div.test-container {
 }
 
 div#guide {
-   visibility: hidden;
+   display: none;
 }
 
 .over {
@@ -150,6 +150,7 @@ p.tok-info {
    margin-top: 0px;
    margin-bottom: 24px;
    visibility: hidden;
+   display: none;
 }
 
 p.tok-info span {
@@ -187,6 +188,12 @@ p#meta-timestamp {
 }
 
 p#meta-authority {
+   margin-top: 0px;
+   font-style: italic;
+   text-align: right;
+}
+
+p#meta-url {
    margin-top: 0px;
    font-style: italic;
    text-align: right;
@@ -533,4 +540,86 @@ table.parser-state thead tr th {
 
 td.parser-start, th.parser-start {
    text-align: right;
+}
+
+div#register {
+   display: none;
+   margin-top: 12px;
+}
+
+div.reghdr {
+   font-family: 'Playfair Display', serif;
+   font-weight: bold;
+   font-size: 22px;
+   color: #10069F; /* Greynir blue */
+   margin-bottom: 6px;
+}
+
+#namelist li {
+   margin-top: 3px;
+   margin-bottom: 3px;
+}
+
+#namelist span.name {
+   font-weight: bold;
+}
+
+#namelist span.title {
+   padding-left: 6px;
+   font-style: italic;
+}
+
+div#topnews {
+   display: block;
+   margin-top: 12px;
+}
+
+div.tophdr {
+   font-family: 'Playfair Display', serif;
+   font-weight: bold;
+   font-size: 22px;
+   color: #10069F; /* Greynir blue */
+   margin-bottom: 18px;
+}
+
+div#toplist {
+   margin-top: 6px;
+   margin-bottom: 6px;
+}
+
+div.topitem {
+   margin-top: 1px;
+   padding-top: 1px;
+   margin-bottom: 1px;
+}
+
+div.topitem:hover {
+   background-color: #FFEEA9; /* Pale Greynir yellow */
+}
+
+div.topitem img {
+   vertical-align: top;
+   margin: 2px;
+}
+
+#toplist span.heading {
+   display: inline-block;
+   font-weight: bold;
+   width: 606px;
+   white-space: nowrap;
+   overflow-x: hidden;
+   cursor: pointer;
+   padding-left: 8px;
+}
+
+#toplist span.heading:hover {
+   color: #10069F; /* Greynir blue */
+}
+
+#toplist span.timestamp {
+   display: inline-block;
+   padding-left: 8px;
+   font-style: italic;
+   width: 158px;
+   overflow: hidden;
 }

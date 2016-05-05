@@ -312,6 +312,9 @@ class MblScraper(ScrapeHelper):
             for prefix in MblScraper._SKIP_PREFIXES:
                 if s.path.startswith(prefix):
                     return True
+            if "/breytingar_i_islenska_fotboltanum/" in s.path:
+                # Avoid lots of details about soccer players
+                return False
         return False # Scrape all URLs by default
 
     def get_metadata(self, soup):
@@ -326,20 +329,31 @@ class MblScraper(ScrapeHelper):
         timestamp = None
         if dateline:
             ix = 0
-            while ix < len(dateline) - 2:
-                if dateline[ix] == "mbl":
-                    # The two slots following "mbl" contain the date and the time
-                    # Create a timestamp from dateline[ix+1] and dateline[ix+2]
+            date = None
+            time = None
+            while ix < len(dateline):
+                if '.' in dateline[ix]:
+                    # Might be date
                     try:
-                        date = [ int(x) for x in dateline[ix + 1].split('.') ]
-                        time = [ int(x) for x in dateline[ix + 2].split(':') ]
-                        timestamp = datetime(year = date[2], month = date[1], day = date[0],
-                            hour = time[0], minute = time[1])
-                    except Exception as e:
-                        print("Exception when obtaining date of mbl.is article: {0}".format(e))
-                        timestamp = None
+                        date = [ int(x) for x in dateline[ix].split('.') ]
+                    except:
+                        date = None
+                elif ':' in dateline[ix]:
+                    # Might be time
+                    try:
+                        time = [ int(x) for x in dateline[ix].split(':') ]
+                    except:
+                        time = None
+                if time and date:
+                    # Seems we're done
                     break
                 ix += 1
+            if time and date:
+                try:
+                    timestamp = datetime(year = date[2], month = date[1], day = date[0],
+                        hour = time[0], minute = time[1])
+                except:
+                    timestamp = None
         if timestamp is None:
             timestamp = datetime.utcnow()
         # Extract the author name
@@ -373,6 +387,10 @@ class MblScraper(ScrapeHelper):
             s = soup.h1
             if s is not None:
                 s.decompose()
+            # Delete p/strong/a paragraphs from the content (intermediate links)
+            for p in soup.findAll('p'):
+                if p.strong and p.strong.a:
+                    p.decompose()
             # Delete div.reporter-profile from the content
             s = ScrapeHelper.div_class(soup, "reporter-profile")
             if s is not None:
@@ -382,6 +400,7 @@ class MblScraper(ScrapeHelper):
             ScrapeHelper.del_div_class(soup, "extraimg-big-w-txt")
             ScrapeHelper.del_div_class(soup, "extraimg-big")
             ScrapeHelper.del_div_class(soup, "newsimg-left")
+            ScrapeHelper.del_div_class(soup, "newsimg-right")
         return soup
 
 
