@@ -484,7 +484,8 @@ class TerminalNode(Node):
                         result += bin_db.prefix_meanings(wordform, prefix)
 
             if result:
-                #print("Meaning list is {0}".format(result))
+                #if len(result) > 1:
+                #    print("Choosing first item from meaning list:\n{0}".format(result))
                 # There can be more than one word form that matches our spec.
                 # We can't choose between them so we simply return the first one.
                 w = result[0].ordmynd

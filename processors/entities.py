@@ -141,51 +141,57 @@ def ÓsamstættFall(node, params, result):
 def Setning(node, params, result):
     """ Meðhöndla setningar á forminu 'sérnafn fsliðir* er-sögn eitthvað' """
 
-    frumlag = result.find_child(nt_base = "Nl", variant = "nf")
-    if not frumlag:
-        return
+    try:
 
-    #print("Frumlag er {0}".format(frumlag._text))
+        frumlag = result.find_child(nt_base = "Nl", variant = "nf")
+        if not frumlag:
+            return
 
-    entity = frumlag.get("sérnafn")
+        #print("Frumlag er {0}".format(frumlag._text))
 
-    if not entity:
-        return
+        entity = frumlag.get("sérnafn")
 
-    # print("Entity er {0}".format(entity))
+        if not entity:
+            return
 
-    fsliðir = result.all_children(nt_base = "FsAtv")
-    sagnruna = result.find_child(nt_base = "SagnRuna")
+        # print("Entity er {0}".format(entity))
 
-    if not sagnruna:
-        return
+        fsliðir = result.all_children(nt_base = "FsAtv")
+        sagnruna = result.find_child(nt_base = "SagnRuna")
 
-    # print("Sagnruna er {0}".format(sagnruna._text))
+        if not sagnruna:
+            return
 
-    sögn = sagnruna.find_descendant(nt_base = "Sögn", variant = "1")
+        # print("Sagnruna er {0}".format(sagnruna._text))
 
-    if not sögn:
-        return
+        sögn = sagnruna.find_descendant(nt_base = "Sögn", variant = "1")
 
-    sagnorð = sögn.find_descendant(t_base = "so")
+        if not sögn:
+            return
 
-    #print("Sagnorð er {0}".format(sagnorð._text))
+        sagnorð = sögn.find_descendant(t_base = "so")
 
-    if not sagnorð or sagnorð._text not in { "er", "var", "sé" }:
-        return
+        #print("Sagnorð er {0}".format(sagnorð._text))
 
-    andlag = sögn.find_child(nt_base = "Nl", variant = "nf")
+        if not sagnorð or sagnorð._text not in { "er", "var", "sé" }:
+            return
 
-    if not andlag:
-        return
+        andlag = sögn.find_child(nt_base = "Nl", variant = "nf")
 
-    #print("Andlag er {0}".format(andlag._text))
+        if not andlag:
+            return
 
-    print("Statement: '{0}' {2} '{1}'".format(entity, andlag._text, sagnorð._text))
+        #print("Andlag er {0}".format(andlag._text))
 
-    # Append to result list
-    if "entities" not in result:
-        result.entities = []
+        print("Statement: '{0}' {2} '{1}'".format(entity, andlag._text, sagnorð._text))
 
-    result.entities.append((entity, sagnorð._text, andlag._text))
+        # Append to result list
+        if "entities" not in result:
+            result.entities = []
+
+        result.entities.append((entity, sagnorð._text, andlag._text))
+
+    finally:
+        # Ekki senda sérnöfn upp í tréð ef þau hafa ekki verið höndluð nú þegar
+        result.del_attribs(('sérnafn', 'sérnafn_nom'))
 

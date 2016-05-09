@@ -194,9 +194,18 @@ p#meta-authority {
 }
 
 p#meta-url {
-   margin-top: 0px;
+   margin-top: 1px;
    font-style: italic;
    text-align: right;
+}
+
+p#meta-url a {
+   vertical-align: top;
+}
+
+p#meta-url img {
+   margin-top: 3px;
+   margin-left: 4px;
 }
 
 span.sent {

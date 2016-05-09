@@ -23,6 +23,7 @@ import sys
 import getopt
 import time
 import importlib
+#import traceback
 
 #from multiprocessing.dummy import Pool
 from multiprocessing import Pool
@@ -37,10 +38,10 @@ from collections import OrderedDict
 
 from bs4 import BeautifulSoup, NavigableString
 
-from tokenizer import TOK, tokenize
-from reducer import Reducer
-from fastparser import Fast_Parser, ParseError, ParseForestDumper
 from settings import Settings, ConfigError, UnknownVerbs
+from tokenizer import TOK, tokenize
+from fastparser import Fast_Parser, ParseError, ParseForestDumper
+from reducer import Reducer
 
 from scraperdb import Scraper_DB, Root, Article, IntegrityError
 
@@ -93,6 +94,12 @@ class Scraper:
         if cls._parser is not None:
             cls._parser.cleanup()
             cls._parser = None
+
+    @classmethod
+    def parser_version(cls):
+        """ Return the current grammar timestamp + parser version """
+        cls._init_class()
+        return cls._parser.version
 
     def __init__(self):
 
@@ -617,13 +624,15 @@ class Scraper:
                 UnknownVerbs.write()
         except Exception as e:
             print("Exception when parsing article at {0}: {1}".format(d.url, e))
-            raise e from e
+            #traceback.print_exc()
+            #raise e from e
 
 
     def go(self, reparse = False, limit = 0):
         """ Run a scraping pass from all roots in the scraping database """
 
         db = Scraper._db
+        version = Scraper.parser_version()
 
         # Go through the roots and scrape them, inserting into the articles table
         with closing(db.session) as session:
@@ -646,7 +655,8 @@ class Scraper:
                 def iter_unscraped_articles():
                     """ Go through any unscraped articles and scrape them """
                     for a in session.query(Article) \
-                        .filter(Article.scraped == None).filter(Article.root_id != None).all():
+                        .filter(Article.scraped == None).filter(Article.root_id != None) \
+                        .yield_per(100):
                         yield ArticleDescr(a.root, a.url)
 
                 # Use a multiprocessing pool to scrape the articles
@@ -660,14 +670,14 @@ class Scraper:
             def iter_unparsed_articles(reparse, limit):
                 """ Go through articles to be parsed """
                 # Fetch 100 rows at a time
-                q = session.query(Article)
+                q = session.query(Article).filter(Article.scraped != None)
                 if reparse:
-                    # Reparse articles scraped after a given start date
-                    from_date = datetime(year = 2016, month = 3, day = 1)
-                    q = q.filter(Article.scraped >= from_date).order_by(Article.scraped)
+                    # Reparse articles that were originally parsed with an older
+                    # grammar and/or parser version
+                    q = q.filter(Article.parser_version < version).order_by(Article.scraped)
                 else:
                     # Only parse articles that have no parse tree
-                    q = q.filter(Article.scraped != None).filter(Article.tree == None)
+                    q = q.filter(Article.tree == None)
                 q = q.filter(Article.root_id != None).yield_per(100)
                 if limit > 0:
                     # Impose a limit on the query, if given
@@ -675,12 +685,34 @@ class Scraper:
                 for a in q:
                     yield ArticleDescr(a.root, a.url)
 
-            # Use a multiprocessing pool to parse the articles
+            # Use a multiprocessing pool to parse the articles.
+            # Let the pool work on chunks of articles, recycling the
+            # processes after each chunk to contain memory creep.
 
-            pool = Pool() # Defaults to using as many processes as there are CPUs
-            pool.map(self._parse_single_article, iter_unparsed_articles(reparse, limit))
-            pool.close()
-            pool.join()
+            CHUNK_SIZE = 100
+            cnt = 0
+            while True:
+                adlist = []
+                lcnt = 0
+                for ad in iter_unparsed_articles(reparse, limit):
+                    adlist.append(ad)
+                    lcnt += 1
+                    if lcnt == CHUNK_SIZE or cnt + lcnt >= limit:
+                        break
+                if lcnt:
+                    # Run garbage collection to minimize common memory footprint
+                    import gc
+                    gc.collect()
+                    print("Parser processes forking, chunk of {0} articles".format(lcnt))
+                    pool = Pool() # Defaults to using as many processes as there are CPUs
+                    #pool.map(self._parse_single_article, iter_unparsed_articles(reparse, limit))
+                    pool.map(self._parse_single_article, adlist)
+                    pool.close()
+                    pool.join()
+                    print("Parser processes joined, chunk of {0} articles parsed".format(lcnt))
+                    cnt += lcnt
+                if lcnt < CHUNK_SIZE:
+                    break
 
 
     @staticmethod

@@ -666,6 +666,9 @@ SögnMeðF/tala/pers/kyn →
     | SögnMeðF_1/tala/pers/kyn # Sögn með einu viðfangi: (Í dag) sá Jón köttinn
     | SögnMeðF_2/tala/pers/kyn # Sögn með tveimur viðföngum: (Í dag) skrifaði Kata Önnu bréf
 
+$score(+2) SögnMeðF_1/tala/pers/kyn
+$score(+4) SögnMeðF_2/tala/pers/kyn
+
 OgSögn_0/tala/pers →
     FsAtv? OgEða FsAtv? so_0/tala/pers
     | FsAtv? ',' OgEða FsAtv? so_0/tala/pers FsAtvKomma?
@@ -1727,7 +1730,7 @@ LoSemNafnliður/tala/fall/kyn →
     lo_sb/tala/fall/kyn | lo_mst/tala/fall/kyn # Efsta stig (ESB) er innifalið í _sb
 
 # Gefa lýsingarorðum sem nafnliðum mínusstig
-$score(-6) LoSemNafnliður/tala/fall/kyn
+$score(-8) LoSemNafnliður/tala/fall/kyn
 
 NlStak_p3/tala/fall/kyn →
     'hver'/tala/fall/kyn 'sá'/tala/fall/kyn # Hver sá, hver sú, hvert það, hverjir þeir, hverjar þær, hver þau
@@ -1819,21 +1822,32 @@ $score(+8) Árin/fall
 # sem nafnliði 3p. eintölu hvorugkyns, í öllum föllum
 # Orka Energy, OG Capital
 
-NlStak_et_p3_nf_hk → Sérnafn
-NlStak_et_p3_þf_hk → Sérnafn
-NlStak_et_p3_þgf_hk → Sérnafn
-NlStak_et_p3_ef_hk → Sérnafn
+NlStak_et_p3_nf_hk → NlSérnafn
+NlStak_et_p3_þf_hk → NlSérnafn
+NlStak_et_p3_þgf_hk → NlSérnafn
+NlStak_et_p3_ef_hk → NlSérnafn
 
-# Hvetja til skilnings á löngum sérnöfnum en ekki endilega stökum orðum
+NlSérnafn → eo* Sérnafn # ekki Nakamoto, örugglega Nelson Mandela
+
+# Forðast að nota sérnöfn sem nafnliði, ef aðrir kostir eru í boði
+$score(-200) NlSérnafn
 
 Sérnafn →
     sérnafn | LangtSérnafn
 
 LangtSérnafn →
-    sérnafn "-"? sérnafn+   # Glass-Steagall lögin
+    sérnafn "-"? sérnafn+           # Glass-Steagall lögin
 
-$score(-8) Sérnafn
-$score(+6) LangtSérnafn
+Sérnafn/fall →
+    sérnafn/fall | LangtSérnafn/fall
+
+LangtSérnafn/fall →
+    sérnafn/fall "-"? sérnafn/fall+ # Stóra-Felli
+
+# Löng sérnöfn, þ.e. runur orða með upphafsstöfum, eru mjög líklega rétt greind
+
+$score(+2) LangtSérnafn
+$score(+4) LangtSérnafn/fall
 
 # Heimilisfang (götuheiti + tala)
 
@@ -1882,8 +1896,14 @@ NlStak_ft_p1/fall/kyn →
     | "bæði" Nl_p2/fall/kyn "og" Nl_p1/fall/kyn   # bæði þér og mér þykir þetta óásættanlegt
     | "hvorki" Nl_p2/fall/kyn "né" Nl_p1/fall/kyn # hvorki þú né ég erum fallegar/falleg/fallegir
 
-Skst → no_abbrev '-'?
-    | sérnafn '-'
+Skst →
+    Skst_abbrev
+    | sérnafn '-'      # Barclays-bankann
+
+Skst_abbrev → no_abbrev '-'?  # FIH bankann
+
+$score(+4) Skst
+$score(+2) Skst_abbrev
 
 # !!! ATH: Ráða við "Bernhöfts bakaríið"
 Fyrirbæri/fall/kyn →
@@ -1909,9 +1929,8 @@ Fyrirbæri_ef_hk →
 Fyrirtæki/fall →
     Sérnafn fyrirtæki # hf., ehf., Inc., Corporation, SA o.s.frv.
 
-# Gefa nógu hátt skor til að yfirvinna sérnöfn sem eru eitt beygjanlegt orð
-# (sem venjulega fá stóran mínus)
-$score(+32) Fyrirtæki/fall
+# Fyrirtæki eru næstum örugglega rétt greind
+$score(+4) Fyrirtæki/fall
 
 # '(Danska) byggingavörukeðjan Bygma'
 # '(Jón vann hjá) verkfræðistofunni Afli'
@@ -1924,13 +1943,13 @@ FyrirbæriMeðGreini/aukafall/kyn →
     ÓsamstættFall/aukafall/kyn
 
 SamstættFall/fall/kyn →
-    no_gr_et/fall/kyn Nl/fall      # (Ég versla við) herrafataverslunina Smekkmann
+    no_gr_et/fall/kyn Sérnafn/fall  # (Ég versla við) herrafataverslunina Smekkmann
 
 ÓsamstættFall/aukafall/kyn →
-    no_gr_et/aukafall/kyn Nl_nf    # (Ég versla við) herrafataverslunina Smekkmaður
+    no_gr_et/aukafall/kyn Sérnafn # (Ég versla við) herrafataverslunina Smekkmaður
 
-$score(+2) SamstættFall/fall/kyn
-$score(-4) ÓsamstættFall/aukafall/kyn
+$score(+4) SamstættFall/fall/kyn
+$score(-1) ÓsamstættFall/aukafall/kyn
 
 # [séra] Jóns Dalbú Hróbjartssonar [, dómkirkjuprests]
 # [frú] Vigdís Finnbogadóttir [fyrrverandi forseti]
@@ -2071,8 +2090,14 @@ TengiorðEr → "er"
 $score(-6) TengiorðEr # Sjaldgæft - ekki velja nema það þurfi
 
 Tengisetning/tala/pers/kyn →
-    HreinYfirsetning            # (Maðurinn sem) konan kyssti í gær / konurnar kysstu í gær
+    TengiYfirsetning            # (Maðurinn sem) konan kyssti í gær / konurnar kysstu í gær
     | SetningÁnF/tala/pers/kyn  # (Maðurinn sem) kyssti konuna í gær / (Maðurinn sem) var fallegur
+
+TengiYfirsetning →
+    HreinYfirsetning
+
+# Nota frekar SetningÁnF heldur en HreinYfirsetning, ef völ er á hvoru tveggja
+$score(-1) TengiYfirsetning
 
 NlEind/fall →
     NlEind/tala/pers/fall/kyn
@@ -2135,13 +2160,19 @@ NlSkýring/tala/pers/fall/kyn →
     | ',' SvigaInnihald/tala/pers/fall/kyn LokatáknEðaKomma
 
 # Gefa aukastig fyrir skýringar á nafnliðum
-$score(+2) NlSkýring/tala/pers/fall/kyn
+$score(+6) NlSkýring/tala/pers/fall/kyn
 
 SvigaInnihald/tala/pers/fall/kyn →
     Tengiliður/tala/pers/kyn # (og sem ég er almennt fylgjandi)
     > Nl/fall/tala      # 'Ég spurði forsætisráðherra, Sigmund Davíð, um málið'
-    > Nl                # Ef ekki finnst sama fall og tala, prófa almennan nafnlið
+    > SvigaInnihaldNl   # Ef ekki finnst sama fall og tala, prófa almennan nafnlið
     > HreinYfirsetning
+
+SvigaInnihaldNl →
+    Nl
+
+# Nafnliður í öðru falli en það sem verið er að skýra er ekki spennandi kostur
+$score(-8) SvigaInnihaldNl
 
 SvigaForskeyti →
     "dæmi" ':'    # Ráðamenn (dæmi: forsetinn) hafa tjáð sig fjálglega
@@ -2517,9 +2548,13 @@ AtviksliðurEinkunn →
 # Dagsetning og tími
 
 Tímasetning →
-    "klukkan"? tími
-    | "klukkan" töl
-    | "klukkan" "hálf"? to_nf_hk
+    "klukkan"? tími Degis?
+    | "klukkan" töl Degis?
+    | "klukkan" "hálf"? to_nf_hk Degis?
+
+Degis → "árdegis" | "síðdegis" | "miðdegis"
+
+OgMeð → "og" "með"
 
 Dagsetning →
     DagsFs_þf? Tímasetning 'sá'_et_kk_þf? dags # '[eftir] kl. 14 [þann] 3. júlí 2007'
@@ -2551,12 +2586,14 @@ Dagsetning →
     | Árin_þf # 'árin 2010-12'
     | ártal "til" tala # '2009 til 2013'
     | ártal "-" tala # '2009-13'
+    | "frá" OgMeð? "árinu"? ártal # 'frá árinu 2009', 'frá og með 2012'
+    | "til" "ársins"? ártal # 'til ársins 1997'
 
     # 'Undanfarið' er atviksorð í BÍN, en 'undanfarnar vikur' o.s.frv. virkar einnig
     # eins og atviksliður (eða forsetningarliður), sbr. 'ég hef undanfarnar vikur verið að velta því fyrir mér'...
-    | 'undanfarinn'_þf/tala/kyn NlStak_þf/tala/kyn # undanfarnar sex vikur, undanfarin ár, undanfarinn mánuð
-    | 'undangenginn'_þf/tala/kyn NlStak_þf/tala/kyn # undangengnar sex vikur
-    | 'allur'_þf/tala/kyn? gr_þf/tala/kyn? 'síðari'_þf/tala/kyn NlStak_þf/tala/kyn # síðustu sex vikur, hin síðari ár, allan síðasta mánuð
+    | 'undanfarinn'_þf/tala/kyn TalaTímabil_þf/tala/kyn # undanfarnar sex vikur, undanfarin ár, undanfarinn mánuð
+    | 'undangenginn'_þf/tala/kyn TalaTímabil_þf/tala/kyn # undangengnar sex vikur
+    | 'allur'_þf/tala/kyn? gr_þf/tala/kyn? 'síðari'_þf/tala/kyn TalaTímabil_þf/tala/kyn # síðustu sex vikur, hin síðari ár, allan síðasta mánuð
     | Tímabil_þf # (Hann kom hér) alla daga, suma vikudaga, nokkur ár, eina vikuna, síðustu fimm vetur
     | TímabilsEinkunn_þgf/tala/kyn Tímabil_þgf/kyn/tala TímaAfstæði_þgf? # (Námsönnin hefst) þremur mánuðum áður en jólafríið byrjar
     | Tímabil_þgf/kyn/tala TímaAfstæði_þgf # Klukkutíma fyrr kom ég á staðinn
@@ -2581,6 +2618,9 @@ TímaAð →
 TímabilsEinkunn/fall/tala/kyn →
     fn/fall/tala/kyn          # alla/suma/nokkra
     | Töluorð/fall/tala/kyn   # fjóra/4
+
+TalaTímabil_þf/tala/kyn →
+    Töluorð_þf/tala/kyn? Tímabil_þf/kyn/tala # sex vikur, mánuð, tvö ár
 
 Tímabil_þf →
     TímabilsEinkunn_þf/tala/kyn Tímabil_þf/kyn/tala # (Hann kom hér) alla daga, suma vikudaga, nokkur ár, eina vikuna

@@ -116,7 +116,7 @@ class BIN_Token(Token):
     # Bit mapping for all known variants
     VBIT = { key : 1 << i for i, key in enumerate(VARIANT.keys()) }
     # Bit mapping for all variants that have a corresponding BIN meaning
-    FBIT = { key : 1 << i for i, key in enumerate(VARIANT.values()) if key }
+    FBIT = { val : 1 << i for i, val in enumerate(VARIANT.values()) if val }
 
     VBIT_ET = VBIT["et"]
     VBIT_FT = VBIT["ft"]
@@ -138,6 +138,8 @@ class BIN_Token(Token):
     CASES = ["nf", "þf", "þgf", "ef"]
     GENDERS = ["kk", "kvk", "hk"]
     GENDERS_SET = frozenset(GENDERS)
+
+    VBIT_CASES = VBIT["nf"] | VBIT["þf"] | VBIT["þgf"] | VBIT["ef"]
 
     # Variants to be checked for verbs
     VERB_VARIANTS = ["p1", "p2", "p3", "nh", "vh", "lh", "bh", "fh",
@@ -550,37 +552,43 @@ class BIN_Token(Token):
             # so_1 for verbs having a single noun argument, and
             # so_2 for verbs with two noun arguments. A verb may
             # match more than one argument number category.
-            #return self.verb_matches(m.stofn, terminal, m.beyging)
             return self.verb_matches(m.stofn, terminal, m.beyging)
 
         def matcher_no(m):
             """ Check noun """
-            if BIN_Token._KIND[m.ordfl] != "no":
-                return False
-            no_info = m.beyging == "-"
-            if terminal.is_abbrev:
-                # Only match abbreviations; gender, case and number do not matter
-                return no_info
-            if m.fl == "nafn":
-                # Names are only matched by person terminals
-                return False
-            for v in terminal.variants:
-                if v in BIN_Token.GENDERS_SET:
-                    if m.ordfl != v:
-                        # Mismatched gender
-                        return False
-                elif no_info:
-                    # No case and number info: probably a foreign word
-                    # Match all cases and numbers
-                    #if v == "ft":
-                    #    return False
-                    if v == "gr":
-                        # Do not match a demand for the definitive article ('greinir')
-                        return False
-                elif BIN_Token.VARIANT[v] not in m.beyging:
-                    # Required case or number not found: no match
+
+            def _matcher_no(m):
+                if BIN_Token._KIND[m.ordfl] != "no":
                     return False
-            return True
+                no_info = m.beyging == "-"
+                if terminal.is_abbrev:
+                    # Only match abbreviations; gender, case and number do not matter
+                    return no_info
+                if m.fl == "nafn":
+                    # Names are only matched by person terminals
+                    return False
+                for v in terminal.variants:
+                    if v in BIN_Token.GENDERS_SET:
+                        if m.ordfl != v:
+                            # Mismatched gender
+                            return False
+                    elif no_info:
+                        # No case and number info: probably a foreign word
+                        # Match all cases and numbers
+                        #if v == "ft":
+                        #    return False
+                        if v == "gr":
+                            # Do not match a demand for the definitive article ('greinir')
+                            return False
+                    elif BIN_Token.VARIANT[v] not in m.beyging:
+                        # Required case or number not found: no match
+                        return False
+                return True
+
+            result = _matcher_no(m)
+            if self.t1[0].isupper():
+                print("matcher_no for {0} and {2} returns {1}".format(self.t1, result, terminal.name))
+            return result
 
         def matcher_gata(m):
             """ Check street name """
@@ -675,6 +683,28 @@ class BIN_Token(Token):
                     return False
             return terminal.matches_first(BIN_Token._KIND[m.ordfl], m.stofn, self.t1_lower)
 
+        def matches_proper_name():
+            # Proper name?
+            # Only allow a potential interpretation as a proper name if
+            # the token is uppercase but there is no uppercase meaning of
+            # the word in BÍN. This excludes for instance "Ísland" which
+            # should be treated purely as a noun, not as a proper name.
+            #if any(m.ordmynd[0].isupper() and m.beyging != "-" for m in self.t2):
+            #    return False
+            if self.t1_lower in BIN_Token._NOT_PROPER_NAME:
+                return False
+            if " " in self.t1_lower:
+                return False
+            if not terminal.num_variants:
+                return True
+            # The terminal is sérnafn_case: We only accept nouns or adjectives
+            # that match the given case
+            for m in self.t2:
+                fbits = BIN_Token.get_fbits(m.beyging) & BIN_Token.VBIT_CASES
+                if BIN_Token._KIND[m.ordfl] in {"no", "lo"} and terminal.fbits_match(fbits):
+                    return True
+            return False
+
         # We have a match if any of the possible part-of-speech meanings
         # of this token match the terminal
         if self.t2:
@@ -687,28 +717,24 @@ class BIN_Token(Token):
                 "fs" : matcher_fs,
                 "person" : matcher_person,
                 "gata" : matcher_gata, # Götuheiti = Street name
-                "fyrirtæki" : matcher_corporation,
+                "fyrirtæki" : matcher_corporation, # Company identifier, i.e. hf., ehf., Inc., Corp. etc.
                 "sérnafn" : None
             }
             matcher = matchers.get(terminal.first, matcher_default)
             if matcher:
                 return any(matcher(m) for m in self.t2)
-            # Proper name?
-            # Only allow a potential interpretation as a proper name if
-            # the token is uppercase but there is no uppercase meaning of
-            # the word in BÍN. This excludes for instance "Ísland" which
-            # should be treated purely as a noun, not as a proper name.
-            return self.is_upper and (not any(m.ordmynd[0].isupper() and m.beyging != "-" for m in self.t2)) \
-                and (self.t1_lower not in BIN_Token._NOT_PROPER_NAME) and (" " not in self.t1_lower)
+            # Terminal is a proper name ('sérnafn')
+            return self.is_upper and matches_proper_name()
 
-        # Unknown word
+        # Unknown word, i.e. no meanings in BÍN (might be foreign, unknown name, etc.)
         if self.is_upper:
-            # Starts in upper case: We guess that this is a named entity
-            return terminal.first == "sérnafn"
-        # Not named entity: allow it to match a singular, neutral noun in all cases,
+            # Starts in upper case: We allow this to match a named entity terminal ('sérnafn')
+            return terminal.first == "sérnafn" and terminal.num_variants == 0
+
+        # Not upper case: allow it to match a singular, neutral noun in all cases,
         # but without the definite article ('greinir')
         return terminal.startswith("no") and terminal.has_vbits(BIN_Token.VBIT_ET | BIN_Token.VBIT_HK) and \
-               not terminal.has_vbits(BIN_Token.VBIT_GR)
+            not terminal.has_vbits(BIN_Token.VBIT_GR)
 
     # Dispatch table for the token matching functions
     _MATCHING_FUNC = {
@@ -781,6 +807,15 @@ class VariantHandler:
             (bit[v] for v in self._vset if v in bit), 0)
         # fbits are like vbits but leave out variants that have no BIN meaning
         self._fbits = self._vbits & (~BIN_Token.FBIT_MASK)
+        # For speed, store the cases associated with a verb
+        # so_0 -> self._cases = ""
+        # so_1_þgf -> self._cases = "þgf"
+        # so_2_þf_þgf -> self._cases = "þf_þgf"
+        cases = ""
+        if self._vcount >= 1 and self._vparts[0] in "012":
+            ncases = int(self._vparts[0])
+            cases = "".join("_" + self._vparts[1 + i] for i in range(ncases))
+        self._cases = cases
 
     def startswith(self, part):
         """ Returns True if the terminal name starts with the given string """
@@ -808,6 +843,11 @@ class VariantHandler:
         """ Return the variant with the given index """
         return self._vparts[index]
 
+    @property
+    def verb_cases(self):
+        """ Return the verb cases associated with a so_ terminal, or empty string """
+        return self._cases
+    
     def has_variant(self, v):
         """ Returns True if the terminal name has the given variant """
         return v in self._vset

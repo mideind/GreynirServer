@@ -110,8 +110,8 @@ def sentence(state, result):
 # tree for a sentence.
 
 INVALID_TITLES = {
-    "sig", "væri", "orðið", "ávísun", "hér heima", "þá", "lán", "úr láni", "bar", "ver",
-    "bætir", "býr", "get", "vera", "eiga", "var", "búa", "setur", "heggur", "á", "átt", "at",
+    "sig", "væri", "orðið", "ávísun", "hér heima", "lán", "úr láni", "bar", "ver",
+    "bætir", "býr", "get", "vera", "eiga", "var", "búa", "setur", "heggur", "átt",
     "keppa"
 }
 
@@ -134,7 +134,7 @@ def _add_name(result, mannsnafn, titill):
         return False
     # Eliminate consecutive whitespace
     titill = re.sub(r'\s+', ' ', titill)
-    if titill in INVALID_TITLES:
+    if len(titill) <= 2 or titill in INVALID_TITLES:
         # Last security check
         return False
     if "nöfn" not in result:
@@ -162,6 +162,8 @@ def EfLiður(node, params, result):
     result.efliður = result._text
     # Leyfa eignarfallslið að standa óbreyttum í titli
     result._nominative = result._text
+    # Ekki senda skýringu og nafn í gegn um eignarfallslið
+    result.del_attribs(("skýring", "skýring_nafn"))
 
 def FsLiður(node, params, result):
     """ Forsetningarliður """
@@ -172,6 +174,12 @@ def Setning(node, params, result):
     """ Undirsetning: láta standa óbreytta """
     result._nominative = result._text
     result.del_attribs("skýring_nafn")
+
+def SvigaInnihaldNl(node, params, result):
+    """ Svigainnihald eða skýring sem er ekki í sama falli og foreldri: eyða út """
+    result._text = ""
+    result._nominative = ""
+    result.del_attribs(("skýring", "skýring_nafn"))
 
 # Textar sem ekki eru teknir gildir sem skýringar
 ekki_skýring = { "myndskeið" }

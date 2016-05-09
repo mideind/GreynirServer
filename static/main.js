@@ -109,11 +109,11 @@ function serverQuery(requestUrl, jsonData, successFunc, completeFunc, errorFunc)
    });
 }
 
-function serverPost(url, parameters) {
+function serverPost(url, parameters, new_window) {
    /* Post to the provided URL with the specified parameters */
    var form = $('<form method="post"></form>');
    form.attr("action", url);
-   form.attr("target", "_self"); // Display in same window
+   form.attr("target", new_window ? "_blank" : "_self"); // Display in same or new window
    $.each(parameters, function(key, value) {
       var field = $('<input type="hidden"></input>');
       field.attr("name", key);
@@ -131,7 +131,7 @@ function showParse(ev) {
    var sentText = $(ev.delegateTarget).text();
    // Do an HTML POST to the parsegrid URL, passing
    // the sentence text within a synthetic form
-   serverPost("/parsegrid", { txt: sentText, debug: debugMode() })
+   serverPost("/parsegrid", { txt: sentText, debug: debugMode() }, true)
 }
 
 function buttonOver(elem) {
@@ -283,7 +283,8 @@ function populateMetadata(m) {
    $("#meta-heading").text(m.heading);
    $("#meta-author").text(m.author);
    $("#meta-timestamp").text(m.timestamp);
-   var ref = $("<a></a>").attr("href", m.url).attr("target", "_blank").text("Upphafleg grein");
+   var ref = $("<a></a>").attr("href", m.url).attr("target", "_blank").text("Upphafleg grein")
+      .append($("<img></img>").attr("src", "/static/" + m.icon).attr("width", 16).attr("height", 16));
    $("#meta-url").html(ref);
    // $("#meta-authority").text(m.authority.toFixed(1));
    $("#metadata").css("display", "block");

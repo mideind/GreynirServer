@@ -1075,6 +1075,8 @@ def parse_phrases_2(token_stream):
                         if m.stofn not in dstems or c not in dstems[m.stofn]:
                             # Note the stem ('stofn') and the gender from the word type ('ordfl')
                             result.append(PersonName(name = m.stofn, gender = m.ordfl, case = c))
+                #if len(result) > 1:
+                #    print("stems: result is\n{0}".format("\n".join(str(x) for x in result)))
                 return result if result else None
 
             def has_other_meaning(tok, category):

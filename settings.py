@@ -14,10 +14,9 @@
 import codecs
 import locale
 
-from contextlib import contextmanager
+from contextlib import contextmanager, closing
 from collections import defaultdict
 from threading import Lock
-
 
 class ConfigError(Exception):
 
@@ -145,6 +144,29 @@ class Meanings:
         Meanings.ROOT[stofn].append(
             (stofn, 0, ordfl, fl or "ob", ordmynd, beyging or "-"))
 
+    @staticmethod
+    def add_composite (stofn, ordfl):
+        """ Add composite word forms by putting a prefix on existing BIN word forms.
+            Called from the config file handler. """
+
+        from bindb import BIN_Db
+
+        assert stofn is not None
+        assert ordfl is not None
+        a = stofn.split("-")
+        if len(a) != 2:
+            raise ConfigError("Composite word meaning must contain a single hyphen")
+        with closing(BIN_Db.get_db()) as db:
+            prefix = a[0]
+            stem = a[1]
+            m = db.forms(stem)
+            if m:
+                for w in m:
+                    if w.ordfl == ordfl:
+                        t = (prefix + w.stofn, 0, ordfl, w.fl, prefix + w.ordmynd, w.beyging)
+                        Meanings.DICT[prefix + w.ordmynd].append(t)
+                        Meanings.ROOT[prefix + w.stofn].append(t)
+
 
 class VerbObjects:
 
@@ -155,13 +177,37 @@ class VerbObjects:
     # Verbs can control zero, one or two arguments (noun phrases),
     # where each argument must have a particular case
     VERBS = [ set(), defaultdict(list), defaultdict(list) ]
+    # Dictionary of verb forms with associated scores
+    # The key is the normal form of the verb + the associated cases,
+    # separated by underscores, e.g. "vera_þgf_ef"
+    SCORES = dict()
 
     @staticmethod
     def add (verb, args):
         """ Add a verb and its objects (arguments). Called from the config file handler. """
         la = len(args)
-        assert 0 <= la < 3
+        assert 0 <= la < 4
+        score = 0
+        if la > 0 and args[-1].startswith("$score(") and args[-1].endswith(")"):
+            # There is an associated score with this verb form, to be taken
+            # into consideration by the reducer
+            s = args[-1][7:]
+            s = s[0:-1]
+            try:
+                score = int(s)
+            except ValueError:
+                raise ConfigError("Invalid score for verb form")
+            # Cut the score off the end
+            args = args[0:-1]
+            la -= 1
+            # Store the score, if nonzero
+            if score != 0:
+                VerbObjects.SCORES["_".join([ verb ] + args)] = score
+                # print("Set score of verb form '{0}' to {1}".format("_".join([verb] + args), score))
         if la:
+            for case in args:
+                if case not in { "nf", "þf", "þgf", "ef" }:
+                    raise ConfigError("Invalid case for verb object: '{0}'".format(case))
             # Append a possible argument list
             VerbObjects.VERBS[la][verb].append(args)
         else:
@@ -485,8 +531,6 @@ class Settings:
         # Format: stofn ordmynd ordfl fl (default ob) beyging (default -)
         a = s.split()
         if len(a) < 2 or len(a) > 5:
-            print("{0}".format(s))
-            print("{0}".format(a))
             raise ConfigError("Meaning should have two to five arguments, {0} given".format(len(a)))
         stofn = None
         fl = None
@@ -502,16 +546,23 @@ class Settings:
             ordfl = a[2]
             fl = a[3] if len(a) >= 4 else None
             beyging = a[4] if len(a) >= 5 else None
-        Meanings.add(stofn, ordmynd, ordfl, fl, beyging)
+
+        if len(a) == 2 and "-" in ordmynd:
+            # Creating new meanings by prefixing existing ones
+            Meanings.add_composite(ordmynd, ordfl)
+        else:
+            Meanings.add(stofn, ordmynd, ordfl, fl, beyging)
 
     @staticmethod
     def _handle_verb_objects(s):
         """ Handle verb object specifications in the settings section """
         # Format: verb [arg1] [arg2]
         a = s.split()
-        if len(a) < 1 or len(a) > 3:
-            raise ConfigError("Verb should have zero, one or two arguments")
+        if len(a) < 1 or len(a) > 4:
+            raise ConfigError("Verb should have zero, one or two arguments and an optional score")
         verb = a[0]
+        if not verb.isidentifier():
+            raise ConfigError("Verb '{0}' is not a valid word".format(verb))
         VerbObjects.add(verb, a[1:])
 
     @staticmethod

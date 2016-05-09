@@ -114,9 +114,10 @@ class Reducer:
                         if t.variant(0) in "012":
                             # Consider verb arguments
                             # Normally, we give a bonus for verb arguments: the more matched, the better
-                            adj = 2 * int(t.variant(0))
+                            numcases = int(t.variant(0))
+                            adj = 2 * numcases
                             # !!! Logic should be added here to encourage zero arguments for verbs in 'miðmynd'
-                            if adj == 0:
+                            if numcases == 0:
                                 # Zero arguments: we might not like this
                                 if all((m.stofn not in VerbObjects.VERBS[0]) and ("MM" not in m.beyging)
                                     for m in tokens[i].t2 if m.ordfl == "so"):
@@ -130,6 +131,16 @@ class Reducer:
                                 #        #    .format(txt, m.stofn))
                                 #        adj = -2
                                 #        break
+                            # Apply score adjustments for verbs with particular object cases,
+                            # as specified by $score(n) pragmas in Verbs.conf
+                            for m in tokens[i].t2:
+                                if m.ordfl == "so":
+                                    key = m.stofn + t.verb_cases
+                                    score = VerbObjects.SCORES.get(key)
+                                    if score is not None:
+                                        #print("Applying verb score adjustment of {1} to {0}".format(key, score))
+                                        adj += score
+                                        break
                             sc[t] += adj
                         if t.is_sagnb:
                             # We like sagnb and lh, it means that more
@@ -151,15 +162,17 @@ class Reducer:
                         if t.is_nh:
                             if (i > 0) and any(pt.first == 'nhm' for pt in finals[i - 1]):
                                 # Give a bonus for adjacent nhm + so_nh terminals
-                                sc[t] += 2 # Prop up the verb terminal with the nh variant
+                                sc[t] += 4 # Prop up the verb terminal with the nh variant
                                 for pt in scores[i - 1].keys():
                                     if pt.first == 'nhm':
                                         # Prop up the nhm terminal
-                                        scores[i - 1][pt] += 2
+                                        scores[i - 1][pt] += 4
+                                        print("Propping up nhm for verb {1}, score is now {0}".format(scores[i-1][pt], tokens[i].t1))
+                                        break
                             if any(pt.first == "no" and pt.has_variant("ef") and pt.is_plural for pt in s):
                                 # If this is a so_nh and an alternative no_ef_ft exists, choose this one
                                 # (for example, 'hafa', 'vera', 'gera', 'fara', 'mynda', 'berja', 'borða')
-                                sc[t] += 2
+                                sc[t] += 4
                     elif tfirst == "tala" or tfirst == "töl":
                         # A complete 'töl' or 'no' is better (has more info) than a rough 'tala'
                         if tfirst == "tala":
@@ -169,12 +182,18 @@ class Reducer:
                             if (pt.first == "no" or pt.first == "töl") and pt.has_variant("ef"):
                                 sc[pt] -= 1
                     elif tfirst == "sérnafn":
-                        if tokens[i].t2:
-                            sc[t] -= 20 # Base penalty is -20
+                        if not tokens[i].t2:
+                            # If there are no BÍN meanings, we had no choice but to use sérnafn,
+                            # so alleviate some of the penalty given by the grammar
+                            print("No meanings for sérnafn {0}".format(tokens[i].t1))
+                            sc[t] += 4
+                        else:
+                            print("Meanings for sérnafn {0}:".format(tokens[i].t1))
                             for m in tokens[i].t2:
-                                sc[t] -= 1 # Subtract one for each BÍN meaning available
-                                if m.stofn[0].isupper():
-                                    sc[t] -= 8 # Heavily discourage 'sérnafn' if an uppercase BÍN meaning is available
+                                print("{0}".format(m))
+                        #        if m.stofn[0].isupper():
+                        #            sc[t] -= 4 # Discourage 'sérnafn' if an uppercase BÍN meaning is available
+                        #            break
                     elif t.name[0] in "\"'":
                         # Give a bonus for exact or semi-exact matches
                         sc[t] += 1

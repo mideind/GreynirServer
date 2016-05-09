@@ -21,10 +21,19 @@ import re
 
 from collections import namedtuple
 
-# The metadata returned by the helper.get_metadata() function
-Metadata = namedtuple('Metadata', ['heading', 'author', 'timestamp', 'authority'])
-
 MODULE_NAME = __name__
+
+
+# The metadata returned by the helper.get_metadata() function
+
+class Metadata:
+
+    def __init__(self, heading, author, timestamp, authority, icon):
+        self.heading = heading
+        self.author = author
+        self.timestamp = timestamp
+        self.authority = authority
+        self.icon = icon
 
 
 class ScrapeHelper:
@@ -48,8 +57,9 @@ class ScrapeHelper:
 
     def get_metadata(self, soup):
         """ Analyze the article HTML soup and return metadata """
-        return Metadata(heading = None, author = self._root.author,
-            timestamp = datetime.utcnow(), authority = self._root.authority)
+        return Metadata(heading = None, author = self.author,
+            timestamp = datetime.utcnow(), authority = self.authority,
+            icon = self.icon)
 
     def get_content(self, soup):
         """ Find the actual article content within an HTML soup and return its parent node """
@@ -65,8 +75,17 @@ class ScrapeHelper:
         return content or soup.html.body
 
     @property
+    def icon(self):
+        """ Return the name of an icon file for this root """
+        return self._root.domain + ".ico"
+
+    @property
     def authority(self):
         return self._root.authority
+
+    @property
+    def author(self):
+        return self._root.author
 
     @property
     def scr_module(self):
@@ -187,6 +206,7 @@ class KjarninnScraper(ScrapeHelper):
         
     def get_metadata(self, soup):
         """ Analyze the article soup and return metadata """
+        metadata = super().get_metadata(soup)
         # Extract the heading from the OpenGraph (Facebook) og:title meta property
         heading = ScrapeHelper.meta_property(soup, "og:title") or ""
         if "|" in heading:
@@ -205,8 +225,10 @@ class KjarninnScraper(ScrapeHelper):
         if not tag:
             print("span.class.author tag not found in soup.html.body")
         author = str(tag.string) if tag else "Ritstjórn Kjarnans"
-        return Metadata(heading = heading, author = author,
-            timestamp = timestamp, authority = self.authority)
+        metadata.heading = heading
+        metadata.author = author
+        metadata.timestamp = timestamp
+        return metadata
 
     # noinspection PyMethodMayBeStatic
     def _get_content(self, soup_body):
@@ -236,8 +258,7 @@ class RuvScraper(ScrapeHelper):
     """ Scraping helper for RUV.is """
 
     _SKIP_PREFIXES = [
-        "/frontpage/",
-        "/frontpage?",
+        "/frontpage",
         "/sarpurinn/",
         "/tag/",
         "/frettalisti/",
@@ -259,6 +280,7 @@ class RuvScraper(ScrapeHelper):
 
     def get_metadata(self, soup):
         """ Analyze the article soup and return metadata """
+        metadata = super().get_metadata(soup)
         # Extract the heading from the OpenGraph (Facebook) og:title meta property
         heading = ScrapeHelper.meta_property(soup, "og:title") or ""
         heading = self.unescape(heading)
@@ -275,8 +297,10 @@ class RuvScraper(ScrapeHelper):
         if not clip:
             clip = ScrapeHelper.div_class(soup.html.body, "view-content", "clip")
         author = clip.text if clip else "Fréttastofa RÚV"
-        return Metadata(heading = heading, author = author,
-            timestamp = timestamp, authority = self.authority)
+        metadata.heading = heading
+        metadata.author = author
+        metadata.timestamp = timestamp
+        return metadata
 
     # noinspection PyMethodMayBeStatic
     def _get_content(self, soup_body):
@@ -314,11 +338,12 @@ class MblScraper(ScrapeHelper):
                     return True
             if "/breytingar_i_islenska_fotboltanum/" in s.path:
                 # Avoid lots of details about soccer players
-                return False
+                return True
         return False # Scrape all URLs by default
 
     def get_metadata(self, soup):
         """ Analyze the article soup and return metadata """
+        metadata = super().get_metadata(soup)
         # Extract the heading from the OpenGraph (Facebook) og:title meta property
         heading = ScrapeHelper.meta_property(soup, "og:title") or ""
         heading = self.unescape(heading)
@@ -368,8 +393,10 @@ class MblScraper(ScrapeHelper):
             if rp and rp.h4:
                 rname = rp.h4.string
         author = rname if rname else "Ritstjórn mbl.is"
-        return Metadata(heading = heading, author = author,
-            timestamp = timestamp, authority = self.authority)
+        metadata.heading = heading
+        metadata.author = author
+        metadata.timestamp = timestamp
+        return metadata
 
     def _get_content(self, soup_body):
         """ Find the article content (main text) in the soup """
@@ -421,6 +448,7 @@ class EyjanScraper(ScrapeHelper):
 
     def get_metadata(self, soup):
         """ Analyze the article soup and return metadata """
+        metadata = super().get_metadata(soup)
         # Extract the heading from the OpenGraph (Facebook) og:title meta property
         heading = ScrapeHelper.meta_property(soup, "og:title") or ""
         heading = self.unescape(heading)
@@ -443,8 +471,10 @@ class EyjanScraper(ScrapeHelper):
             timestamp = datetime.utcnow()
         # Extract the author name
         author = "Ritstjórn eyjan.is"
-        return Metadata(heading = heading, author = author,
-            timestamp = timestamp, authority = self.authority)
+        metadata.heading = heading
+        metadata.author = author
+        metadata.timestamp = timestamp
+        return metadata
 
     def _get_content(self, soup_body):
         """ Find the article content (main text) in the soup """
@@ -481,8 +511,10 @@ class StjornlagaradScraper(ScrapeHelper):
         return not s.path.startswith("/starfid/frumvarp/")
 
     def get_metadata(self, soup):
-        return Metadata(heading = "Frumvarp Stjórnlagaráðs", author = "Stjórnlagaráð",
-            timestamp = datetime.utcnow(), authority = self.authority)
+        metadata = super().get_metadata(soup)
+        metadata.heading = "Frumvarp Stjórnlagaráðs"
+        metadata.author = "Stjórnlagaráð"
+        return metadata
 
     def _get_content(self, soup_body):
         """ Find the article content (main text) in the soup """
