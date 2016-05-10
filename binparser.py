@@ -556,39 +556,32 @@ class BIN_Token(Token):
 
         def matcher_no(m):
             """ Check noun """
-
-            def _matcher_no(m):
-                if BIN_Token._KIND[m.ordfl] != "no":
-                    return False
-                no_info = m.beyging == "-"
-                if terminal.is_abbrev:
-                    # Only match abbreviations; gender, case and number do not matter
-                    return no_info
-                if m.fl == "nafn":
-                    # Names are only matched by person terminals
-                    return False
-                for v in terminal.variants:
-                    if v in BIN_Token.GENDERS_SET:
-                        if m.ordfl != v:
-                            # Mismatched gender
-                            return False
-                    elif no_info:
-                        # No case and number info: probably a foreign word
-                        # Match all cases and numbers
-                        #if v == "ft":
-                        #    return False
-                        if v == "gr":
-                            # Do not match a demand for the definitive article ('greinir')
-                            return False
-                    elif BIN_Token.VARIANT[v] not in m.beyging:
-                        # Required case or number not found: no match
+            if BIN_Token._KIND[m.ordfl] != "no":
+                return False
+            no_info = m.beyging == "-"
+            if terminal.is_abbrev:
+                # Only match abbreviations; gender, case and number do not matter
+                return no_info
+            if m.fl == "nafn":
+                # Names are only matched by person terminals
+                return False
+            for v in terminal.variants:
+                if v in BIN_Token.GENDERS_SET:
+                    if m.ordfl != v:
+                        # Mismatched gender
                         return False
-                return True
-
-            result = _matcher_no(m)
-            if self.t1[0].isupper():
-                print("matcher_no for {0} and {2} returns {1}".format(self.t1, result, terminal.name))
-            return result
+                elif no_info:
+                    # No case and number info: probably a foreign word
+                    # Match all cases and numbers
+                    #if v == "ft":
+                    #    return False
+                    if v == "gr":
+                        # Do not match a demand for the definitive article ('greinir')
+                        return False
+                elif BIN_Token.VARIANT[v] not in m.beyging:
+                    # Required case or number not found: no match
+                    return False
+            return True
 
         def matcher_gata(m):
             """ Check street name """

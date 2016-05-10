@@ -529,7 +529,7 @@ def parse_grid():
         # Dump the parse tree to parse.txt
         with open("parse.txt", mode = "w", encoding= "utf-8") as f:
             if forest is not None:
-                print("Reynir parse tree for sentence '{0}'".format(txt), file = f)
+                print("Reynir parse forest for sentence '{0}'".format(txt), file = f)
                 print("{0} combinations\n".format(combinations), file = f)
                 if combinations < 10000:
                     ParseForestPrinter.print_forest(forest, file = f)
@@ -542,7 +542,12 @@ def parse_grid():
         # Reduce the parse forest
         forest, score = Reducer(grammar).go_with_score(forest)
         if Settings.DEBUG:
-            print(ParseForestDumper.dump_forest(forest))
+            # Dump the reduced tree along with node scores
+            with open("reduce.txt", mode = "w", encoding= "utf-8") as f:
+                print("Reynir parse tree for sentence '{0}' after reduction".format(txt), file = f)
+                ParseForestPrinter.print_forest(forest, file = f, show_scores = True)
+
+            #print(ParseForestDumper.dump_forest(forest))
 
     # Make the parse grid with all options
     grid, ncols = make_grid(forest) if forest else ([], 0)

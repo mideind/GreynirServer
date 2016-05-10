@@ -632,10 +632,14 @@ class ParseForestPrinter(ParseForestNavigator):
 
     """ Print a parse forest to stdout or a file """
 
-    def __init__(self, detailed = False, file = None):
+    def __init__(self, detailed = False, file = None, show_scores = False):
         super().__init__(visit_all = True) # Visit all nodes
         self._detailed = detailed
         self._file = file
+        self._show_scores = show_scores
+
+    def _score(self, w):
+        return " [{0}]".format(w.score) if self._show_scores else ""
 
     def _visit_epsilon(self, level):
         indent = "  " * level # Two spaces per indent level
@@ -644,7 +648,8 @@ class ParseForestPrinter(ParseForestNavigator):
 
     def _visit_token(self, level, w):
         indent = "  " * level # Two spaces per indent level
-        print(indent + "{0}: {1}".format(w.terminal, w.token), file = self._file)
+        print(indent + "{0}: {1}{2}".format(w.terminal, w.token, self._score(w)),
+            file = self._file)
         return None
 
     def _visit_nonterminal(self, level, w):
@@ -657,7 +662,7 @@ class ParseForestPrinter(ParseForestNavigator):
                     # Skip printing optional nodes that don't contain anything
                     return NotImplemented # Don't visit child nodes
             indent = "  " * level # Two spaces per indent level
-            print(indent + h, file = self._file)
+            print(indent + h + self._score(w), file = self._file)
         return None # No results required, but visit children
 
     def _visit_family(self, results, level, w, ix, prod):
@@ -666,9 +671,9 @@ class ParseForestPrinter(ParseForestNavigator):
             print(indent + "Option " + str(ix + 1) + ":", file = self._file)
 
     @classmethod
-    def print_forest(cls, root_node, detailed = False, file = None):
+    def print_forest(cls, root_node, detailed = False, file = None, show_scores = False):
         """ Print a parse forest to the given file, or stdout if none """
-        cls(detailed, file).go(root_node)
+        cls(detailed, file, show_scores).go(root_node)
 
 
 class ParseForestDumper(ParseForestNavigator):

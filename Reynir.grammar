@@ -1095,9 +1095,12 @@ SagnarBotn →
     | so_2_þf_ef_lhþt/tala/kyn HjSögnLhÞtSM/tala/pers Nl_ef          # Konan sem spurð hafði verið/skal/mun álits
     | Nl_ef HjSögnLhÞtSM/tala/pers FsAtv? so_2_þf_ef_lhþt/tala/kyn   # Konan sem álits hafði verið/skal/mun spurð
 
-    | Nl_nf So_1_þf_nh/tala/pers FsAtv? NhRuna        # Orðin sem Páll lét [ekki] falla
+    | SoFrumlag_1_þf_nh FsAtv? NhRuna        # Orðin sem Páll lét [ekki] falla
     # so_2_þgf_ef, so_2_þgf_þgf og so_2_þf_þf virðast ekki geta staðið
     # í lhþt heldur aðeins sem sagnbót
+
+SoFrumlag_1_þf_nh →
+    Nl_nf/tala/pers So_1_þf_nh/tala/pers  # (Orðin sem) Páll lét (falla) / (Orðin sem) þú lést (falla)
 
 SögnMeðF_1/tala/pers/kyn →
 
@@ -1830,7 +1833,7 @@ NlStak_et_p3_ef_hk → NlSérnafn
 NlSérnafn → eo* Sérnafn # ekki Nakamoto, örugglega Nelson Mandela
 
 # Forðast að nota sérnöfn sem nafnliði, ef aðrir kostir eru í boði
-$score(-200) NlSérnafn
+$score(-20) NlSérnafn
 
 Sérnafn →
     sérnafn | LangtSérnafn
@@ -2037,11 +2040,11 @@ EfLiðurForskeyti →
     | Fornafn_ef/tala/kyn+ EfLiðurForskeytiTala/tala/kyn?
     | EfLiðurForskeytiTala/tala/kyn "prósent" # 'rúmlega sjö prósent (hækkun frá fyrra ári)'
 
-# EfLiðurForskeyti er ólíklegri en aðrar samsetningar
-$score(-4) EfLiðurForskeyti
-
 EfLiðurForskeytiKjarni_et/kyn → Fyrirbæri_ef/kyn
 EfLiðurForskeytiKjarni_ft/kyn → no_ef_ft/kyn
+
+# Eignarfalls-forskeyti sem eru ekki tölur eða fornöfn eru sjaldgæf
+$score(-6) EfLiðurForskeytiKjarni/tala/kyn
 
 # Leyfa 'okkar'/'ykkar' í eignarfallsforskeyti (er aðeins kynlaust pfn í BÍN)
 Fornafn_ft_ef/kyn → OkkarYkkar
@@ -2515,6 +2518,7 @@ EinnAl →
     | EkkiNeitt
     | UndirEins
     | "eina" "ferðina" "enn"
+    | "heima" "fyrir"
 
 EkkiNeitt →
     "ekki" "neitt"      # (Ég þekki þetta) ekki neitt
@@ -2606,8 +2610,10 @@ $score(+4) Dagsetning Tímasetning
 
 TímaAfstæði_þgf → "síðar" | "seinna" | "fyrr" TímaEn? | "áður" TímaEn?
 TímaAfstæði_þf → "áður" TímaEn? | "eftir" TímaAð? | "fyrir" Nl_þf
-TímaForskeyti → "löngu" | "stuttu" | "töluverðu" | "örstuttu"
+TímaForskeyti → "löngu" | "stuttu" | "töluverðu" | "örstuttu" | "rétt" | "örskömmu"
 TímaAfstæði → "áður" TímaEn | "eftir" TímaAð
+
+$score(+2) TímaForskeyti
 
 TímaEn →
     "en" "að"? HreinYfirsetning

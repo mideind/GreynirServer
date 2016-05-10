@@ -39,6 +39,7 @@ static/*.min.js
 txt
 UnknownVerbs.txt
 parse.txt
+reduce.txt
 input.txt
 
 # Distribution / packaging

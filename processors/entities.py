@@ -39,6 +39,15 @@ def article_end(state):
     """ Called at the end of article processing """
     pass
 
+# Avoid chaff
+NOT_DEFINITIONS = {
+    "við", "ári", "sæti", "stig", "færi", "var", "varð"
+    "fæddur", "fætt", "fædd",
+    "spurður", "spurt", "spurð",
+    "búinn", "búið", "búin",
+    "sá", "sú", "það"
+}
+
 def sentence(state, result):
     """ Called at the end of sentence processing """
 
@@ -58,17 +67,19 @@ def sentence(state, result):
             while any(definition.endswith(p) for p in (" ,", " .", " :", " !", " ?")):
                 definition = definition[:-2]
 
-            print("Entity '{0}' {1} '{2}'".format(entity, verb, definition))
+            if definition not in NOT_DEFINITIONS:
 
-            e = Entity(
-                article_url = url,
-                name = entity,
-                verb = verb,
-                definition = definition,
-                authority = authority,
-                timestamp = datetime.utcnow()
-            )
-            session.add(e)
+                print("Entity '{0}' {1} '{2}'".format(entity, verb, definition))
+
+                e = Entity(
+                    article_url = url,
+                    name = entity,
+                    verb = verb,
+                    definition = definition,
+                    authority = authority,
+                    timestamp = datetime.utcnow()
+                )
+                session.add(e)
 
 
 # Below are functions that have names corresponding to grammar nonterminals.

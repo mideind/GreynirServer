@@ -60,6 +60,9 @@ class Reducer:
             s = finals[i]
             # Initially, each alternative has a score of 0
             scores[i] = { terminal: 0 for terminal in s }
+
+            #print("Reducing token '{0}'; scores dict initialized to:\n{1}".format(tokens[i].t1, scores[i]))
+
             if len(s) > 1:
                 # More than one terminal in the option set
                 # Calculate the relative scores
@@ -72,6 +75,8 @@ class Reducer:
                 found_pref = False
                 sc = scores[i]
                 if prefs:
+                    adj_worse = defaultdict(int)
+                    adj_better = defaultdict(int)
                     for worse, better, factor in prefs:
                         for wt in s:
                             if wt.first in worse:
@@ -79,12 +84,18 @@ class Reducer:
                                     if wt is not bt and bt.first in better:
                                         if bt.name[0] in "\"'":
                                             # Literal terminal: be even more aggressive in promoting it
-                                            sc[wt] -= 2 * factor
-                                            sc[bt] += 6 * factor
+                                            adj_w = -2 * factor
+                                            adj_b = +6 * factor
                                         else:
-                                            sc[wt] -= 2 * factor
-                                            sc[bt] += 4 * factor
+                                            adj_w = -2 * factor
+                                            adj_b = +4 * factor
+                                        adj_worse[wt] = min(adj_worse[wt], adj_w)
+                                        adj_better[bt] = max(adj_better[bt], adj_b)
                                         found_pref = True
+                    for wt, adj in adj_worse.items():
+                        sc[wt] += adj
+                    for bt, adj in adj_better.items():
+                        sc[bt] += adj
                 #if not same_first and not found_pref:
                 #    # Only display cases where there might be a missing pref
                 #    print("Token '{0}' has {1} possible terminal matches: {2}".format(txt, len(s), s))
@@ -106,7 +117,7 @@ class Reducer:
                         if t.has_variant("nf"):
                             # Reduce the weight of the 'artificial' nominative prepositions
                             # 'næstum', 'sem', 'um'
-                            sc[t] -= 3 # Make other cases outweigh the Nl_nf bonus of +4 (-2 -3 = -5)
+                            sc[t] -= 4 # Make other cases outweigh the Nl_nf bonus of +4 (-2 -3 = -5)
                         else:
                             # Else, give a bonus for each matched preposition
                             sc[t] += 2
@@ -166,8 +177,8 @@ class Reducer:
                                 for pt in scores[i - 1].keys():
                                     if pt.first == 'nhm':
                                         # Prop up the nhm terminal
-                                        scores[i - 1][pt] += 4
-                                        print("Propping up nhm for verb {1}, score is now {0}".format(scores[i-1][pt], tokens[i].t1))
+                                        scores[i - 1][pt] += 2
+                                        # print("Propping up nhm for verb {1}, score is now {0}".format(scores[i-1][pt], tokens[i].t1))
                                         break
                             if any(pt.first == "no" and pt.has_variant("ef") and pt.is_plural for pt in s):
                                 # If this is a so_nh and an alternative no_ef_ft exists, choose this one
@@ -185,12 +196,12 @@ class Reducer:
                         if not tokens[i].t2:
                             # If there are no BÍN meanings, we had no choice but to use sérnafn,
                             # so alleviate some of the penalty given by the grammar
-                            print("No meanings for sérnafn {0}".format(tokens[i].t1))
                             sc[t] += 4
                         else:
-                            print("Meanings for sérnafn {0}:".format(tokens[i].t1))
-                            for m in tokens[i].t2:
-                                print("{0}".format(m))
+                            pass
+                            #print("Meanings for sérnafn {0}:".format(tokens[i].t1))
+                            #for m in tokens[i].t2:
+                            #    print("{0}".format(m))
                         #        if m.stofn[0].isupper():
                         #            sc[t] -= 4 # Discourage 'sérnafn' if an uppercase BÍN meaning is available
                         #            break
@@ -200,6 +211,10 @@ class Reducer:
 
         # Third pass: navigate the tree bottom-up, eliminating lower-rated
         # options (subtrees) in favor of higher rated ones
+
+        # Loop through the indices of the tokens spanned by this tree
+        #for i in range(w.start, w.end):
+        #    print("At token '{0}' scores dict is:\n{1}".format(tokens[i].t1, scores[i]))
 
         score = self._reduce(w, scores)
 
@@ -251,7 +266,10 @@ class Reducer:
             def _visit_token(self, level, node):
                 """ At token node """
                 # Return the score of this token/terminal match
-                return self._scores[node.start][node.terminal]
+                # !!! DEBUG
+                node.score = self._scores[node.start][node.terminal]
+                return node.score
+                # return self._scores[node.start][node.terminal]
 
             def _visit_nonterminal(self, level, node):
                 """ At nonterminal node """
@@ -265,7 +283,7 @@ class Reducer:
                         self.use_prio = False
                         self.highest_ix = None # List of children with that priority
                     def add_child_score(self, ix, sc):
-                        """ Add a child node's score to the parent's score """
+                        """ Add a child node's score to the parent family's score """
                         self.sc[ix] += sc
                     def add_child_production(self, ix, prod):
                         """ Add a family of children to the priority pool """
@@ -315,6 +333,8 @@ class Reducer:
                 if results.nt is not None:
                     # Get score adjustment for this nonterminal, if any
                     sc += self._score_adj.get(results.nt, 0)
+                # !!! DEBUG
+                node.score = sc
                 return sc
 
         return ParseForestReducer(self._grammar, scores).go(w)
