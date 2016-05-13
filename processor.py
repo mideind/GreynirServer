@@ -689,11 +689,27 @@ class Tree:
         self.stack = None
         self.n = None # Index of current sentence
         self.at_start = False # First token of sentence?
+        # Dictionary of error token indices for sentences that weren't successfully parsed
+        self._err_index = dict()
+        self._gist = False
         self.url = url
         self.authority = authority
 
+    def __getitem__(self, n):
+        """ Allow indexing to get sentence roots from the tree """
+        return self.s[n]
+
+    def __contains__(self, n):
+        """ Allow query of sentence indices """
+        return n in self.s
+
+    def err_index(self, n):
+        """ Return the error token index for an unparsed sentence, if any, or None """
+        return self._err_index.get(n)
+
     def push(self, n, node):
         """ Add a node into the tree at the right level """
+        assert not self._gist
         if n == len(self.stack):
             # First child of parent
             if n:
@@ -721,15 +737,25 @@ class Tree:
         """ End of sentence """
         # Store the root of the sentence tree at the appropriate index
         # in the dictionary
-        self.s[self.n] = self.stack[0]
+        self.s[self.n] = None if self._gist else self.stack[0]
         self.stack = None
         #print("Tree [{0}] is: {1}".format(self.n, self.s[self.n]))
+
+    def handle_E(self, n):
+        """ End of sentence with error """
+        # Store the root of the sentence tree at the appropriate index
+        # in the dictionary
+        assert self.n not in self.s
+        self._err_index[self.n] = n # Note the index of the error token
+        self.stack = None
 
     def handle_T(self, n, s):
         """ Terminal """
         # The string s contains:
-        # terminal 'token' [TOKENTYPE] [auxiliary-json]
+        # terminal "token" [TOKENTYPE] [auxiliary-json]
         # The terminal may itself be a single-quoted string
+        if self._gist:
+            return
         if s[0] == "'":
             r = re.match(r'\'[^\']*\'\w*', s)
             terminal = r.group() if r else ""
@@ -738,7 +764,10 @@ class Tree:
             a = s.split(' ', maxsplit = 1)
             terminal = a[0]
             s = a[1]
-        r = re.match(r'\'[^\']*\'', s)
+        r = re.match(r'\"[^\"]*\"', s)
+        if r is None:
+            # Compatibility: older versions used single quotes
+            r = re.match(r'\'[^\']*\'', s)
         token = r.group() if r else ""
         s = s[r.end() + 1:] if r else ""
         a = s.split(' ', maxsplit = 1) if s else ["WORD"] # Default token type
@@ -754,11 +783,14 @@ class Tree:
 
     def handle_N(self, n, nonterminal):
         """ Nonterminal """
+        if self._gist:
+            return
         self.push(n, NonterminalNode(nonterminal))
 
-    def load(self, txt):
+    def _load(self, txt, gist = False):
         """ Loads a tree from the text format stored by the scraper """
 
+        self._gist = gist
         for line in txt.split("\n"):
             if not line:
                 continue
@@ -775,6 +807,14 @@ class Tree:
                     f(n)
             else:
                 print("*** No handler for {0}".format(line))
+
+    def load(self, txt):
+        """ Load a tree entirely into memory, creating all nodes """
+        self._load(txt, gist = False)
+
+    def load_gist(self, txt):
+        """ Only load the sentence dictionary in gist form into memory """
+        self._load(txt, gist = True)
 
     def visit_children(self, state, node):
         """ Visit the children of node, obtain results from them and pass them to the node """
@@ -797,6 +837,8 @@ class Tree:
         # For each sentence in turn, do a depth-first traversal,
         # visiting each parent node after visiting its children
         # Initialize the running state that we keep between sentences
+
+        assert not self._gist # Not applicable to trees that are loaded as gists only
 
         article_begin = getattr(processor, "article_begin", None) if processor else None
         article_end = getattr(processor, "article_end", None) if processor else None

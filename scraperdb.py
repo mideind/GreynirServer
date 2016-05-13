@@ -67,6 +67,60 @@ class Scraper_DB:
         return self._Session()
 
 
+class classproperty:
+    def __init__(self, f):
+        self.f = f
+    def __get__(self, obj, owner):
+        return self.f(owner)
+
+
+class SessionContext:
+
+    """ Context manager for database sessions """
+
+    _db = None # Singleton instance of Scraper_DB
+
+    @classproperty
+    def db(cls):
+        if cls._db is None:
+            cls._db = Scraper_DB()
+        return cls._db
+
+    def __init__(self, session = None, commit = False):
+
+        if session is None:
+            # Create a new session that will be automatically committed
+            # (if commit == True) and closed upon exit from the context
+            if self._db is None:
+                self._db = Scraper_DB()
+            self._new_session = True
+            self._session = self._db.session
+            self._commit = commit
+        else:
+            self._new_session = False
+            self._session = session
+            self._commit = False
+
+    def __enter__(self):
+        """ Python context manager protocol """
+        # Return the wrapped database session
+        return self._session
+
+    # noinspection PyUnusedLocal
+    def __exit__(self, exc_type, exc_value, traceback):
+        """ Python context manager protocol """
+        if self._new_session:
+            if self._commit:
+                if exc_type is None:
+                    # No exception: commit if requested
+                    self._session.commit()
+                else:
+                    self._session.rollback()
+            self._session.close()
+        # Return False to re-throw exception from the context, if any
+        return False
+
+
 class Root(Base):
     
     """ Represents a scraper root, i.e. a base domain and root URL """

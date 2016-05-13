@@ -41,7 +41,9 @@ class ScrapeHelper:
     """ Generic scraping helper base class """
 
     def __init__(self, root):
-        self._root = root
+        self._domain = root.domain
+        self._authority = root.authority
+        self._author = root.author
 
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
@@ -77,15 +79,15 @@ class ScrapeHelper:
     @property
     def icon(self):
         """ Return the name of an icon file for this root """
-        return self._root.domain + ".ico"
+        return self._domain + ".ico"
 
     @property
     def authority(self):
-        return self._root.authority
+        return self._authority
 
     @property
     def author(self):
-        return self._root.author
+        return self._author
 
     @property
     def scr_module(self):

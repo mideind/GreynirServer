@@ -880,6 +880,11 @@ SögnMeðF_0/tala/pers/kyn →
     # (Í dag) skulu mennirnir látnir lausir
     | HjSögnLhÞtSM/tala/pers Nl_nf/tala/pers/kyn HreinSögn_lhþt/tala/kyn
 
+    # (Hér) væri [ennfremur] komin mikil framleiðsluspenna
+    # Ath: Hjálparsögnin er í 3p þó frumlagið sé það ekki, sbr.
+    # 'Hér er ennfremur kominn þú' (ekki 'ert')
+    | HjSögnLhÞtSM_p3/tala FsAtv? so_0_lhþt/tala/kyn Nl_nf/tala/kyn
+
     # (Í ár) hefur krönunum [í borginni] fjölgað
     | HjSögn_et_p3 Nl/fall/tala/pers/kyn AtvFs? so_subj_sagnb/fall NhFylling/tala/kyn?
     # (Í dag) er þingmönnunum [í flokknum] stefnt (til þings)
@@ -1673,6 +1678,12 @@ Fjölskylda_ft_hk/fall → Skyldleiki_hk/fall Manneskja/fall FsRuna? "og" Mannes
 
 NlStak_ft_p3/fall/kyn → Fjölskylda_ft/kyn/fall FsRunaEftirNl?
 
+# 'hvorugt okkar systkinanna', 'enginn okkar', 'einhver okkar bræðranna'
+NlStak_et_p3/fall/kyn → OkkarFornafn/fall/kyn 'ég'_ft_ef Nl_ef_ft/kyn?
+
+OkkarFornafn/fall/kyn → 'hvorugur'_et/fall/kyn | 'enginn'_et/fall/kyn | 'einhver'_et/fall/kyn
+    | 'annar'_et/fall/kyn 'hvor'_et/fall/kyn?
+
 # Eignarfornöfn standa með nafnlið í sama falli og hann,
 # þannig að gera þarf undantekningu fyrir þau þegar þau
 # tengjast eignarfallslið ('Ég seldi ekki íbúðina þína, heldur frænda þíns')
@@ -2024,6 +2035,8 @@ EfLiðurFramhald → KommaEfLiður+ ','?
 
 KommaEfLiður →
     ',' EfLiðurStakur
+
+$score(+3) EfLiður
 
 # Eignarfallsliður sem stendur á undan nafnlið
 # ('Íslands fullorðnu synir', 'allra uppáhald')
@@ -2638,7 +2651,7 @@ TímabilsEinkunn_þf/tala/kyn →
 
 NæsturSíðastur_þf/tala/kyn →
     'næstur'_þf/tala/kyn      # næsta vetur, næstu daga
-    | 'síðastur'_þf/tala/kyn  # síðasta vetur, síðustu daga
+    | 'síðari'_þf/tala/kyn  # síðasta vetur, síðustu daga
     | 'fyrstur'_þf/tala/kyn  # síðasta vetur, síðustu daga
 
 Tímabil/fall/kyn/tala → Tímabil/kyn/fall/tala

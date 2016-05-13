@@ -112,7 +112,7 @@ def sentence(state, result):
 INVALID_TITLES = {
     "sig", "væri", "orðið", "ávísun", "hér heima", "lán", "úr láni", "bar", "ver",
     "bætir", "býr", "get", "vera", "eiga", "var", "búa", "setur", "heggur", "átt",
-    "keppa"
+    "keppa", "rétt", "ráðning", "sætti", "hlaut"
 }
 
 def _add_name(result, mannsnafn, titill):
@@ -123,17 +123,20 @@ def _add_name(result, mannsnafn, titill):
         return False
     if "..." in titill or "[" in titill:
         return False
-    # Cut off ending punctuation
-    while any(titill.endswith(p) for p in (" .", " :", " !", " ?")):
-        titill = titill[:-2]
-    # Cut off common endings that don't belong in a title
-    for s in ("í tilkynningu", "í fjölmiðlum", "í samtali", "í Kastljósi", "í þættinum"):
-        if titill.endswith(s):
-            titill = titill[:-1 -len(s)]
-    if not titill:
-        return False
     # Eliminate consecutive whitespace
-    titill = re.sub(r'\s+', ' ', titill)
+    titill = re.sub(r'\s+', ' ', titill.strip())
+    # Cut off ending punctuation
+    cut = True
+    while titill and cut:
+        cut = False
+        while any(titill.endswith(p) for p in (" .", "..", " ,", " :", " !", " ?")):
+            titill = titill[:-2]
+            cut = True
+        # Cut off common endings that don't belong in a title
+        for s in ("í tilkynningu", "í fjölmiðlum", "í samtali", "í Kastljósi", "í þættinum"):
+            if titill.endswith(s):
+                titill = titill[:-1 -len(s)]
+                cut = True
     if len(titill) <= 2 or titill in INVALID_TITLES:
         # Last security check
         return False
@@ -175,6 +178,12 @@ def Setning(node, params, result):
     result._nominative = result._text
     result.del_attribs("skýring_nafn")
 
+def SetningSo(node, params, result):
+    """ Setning sem byrjar á sögn: eyða út """
+    result._text = ""
+    result._nominative = ""
+    result.del_attribs(("skýring", "skýring_nafn"))
+
 def SvigaInnihaldNl(node, params, result):
     """ Svigainnihald eða skýring sem er ekki í sama falli og foreldri: eyða út """
     result._text = ""
@@ -213,8 +222,9 @@ def NlSkýring(node, params, result):
     else:
         # Ég talaði við Jón (heimsmethafa í hástökki)
         s = cut(result._nominative)
-        if s.lower() in ekki_skýring:
-            s = None
+
+    if s.lower() in ekki_skýring:
+        s = None
 
     if s:
         result.skýring = s

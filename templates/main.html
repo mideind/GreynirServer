@@ -34,6 +34,8 @@
       <p class="guide"><b>Sláðu inn texta eða vefslóð til að greina</b>
 {%- if debug_mode -%}
       , eða <a href="{{ url_for('test') }}">smelltu hér til keyra próf</a>
+{%- else -%}
+      , eða veldu nafn eða frétt úr listunum fyrir neðan
 {%- endif -%}
       :</p>
 
@@ -81,22 +83,35 @@
          <ul id="namelist"></ul>
       </div>
 
-      <div id="topnews">
+      <div id="toppeople" class="front">
+         <!-- List of people in the news goes here -->
+         <div class="tophdr">Fólk í fréttum</div>
+         <div id="plist">
+{% for person in persons %}
+<div class="topitem"><!--
+--><span class="name" url="{{ person.url }}">{{ person.name }}</span><!--
+--><span class="title">{{ person.title }}</span><!--
+--></div>
+{% endfor %}
+         </div>
+      </div>
+
+      <div id="topnews" class="front">
          <!-- List of recent top news goes here -->
-         <div class="tophdr">Nýlegar fréttir</div>
+         <div class="tophdr">Nýjustu fréttir</div>
          <div id="toplist">
 {% for article in articles %}
 <div class="topitem"><!--
+--><span class="timestamp">{{ article.timestamp }}</span><!--
 --><img src="/static/{{ article.icon }}" width="16" height="16"/><!--
 --><span class="heading" url="{{ article.url }}">{{ article.heading }}</span><!--
---><span class="timestamp">{{ article.timestamp }}</span><!--
 --></div>
 {% endfor %}
          </div>
       </div>
 
       <!-- Spinner that appears while the analysis is in progress -->
-      <div id="wait"></div>
+      <div id="wait">Málgreining<br>í gangi...<br><br><img src="/static/wait.gif" width="48" height="48" /></div>
 
    </div>
 

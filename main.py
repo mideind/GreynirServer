@@ -21,7 +21,7 @@ import re
 from bs4 import NavigableString
 from collections import OrderedDict, defaultdict
 from flask import Flask
-from flask import render_template, jsonify
+from flask import render_template, make_response, jsonify
 from flask import request
 
 from fastparser import Fast_Parser, ParseError, ParseForestPrinter, ParseForestDumper
@@ -29,8 +29,9 @@ from grammar import Nonterminal
 from ptest import run_test, Test_DB
 from reducer import Reducer
 from scraper import Scraper
-from scraperdb import Scraper_DB, Person, Article, desc
-from settings import Settings, ConfigError
+from processor import Tree
+from scraperdb import Scraper_DB, SessionContext, Person, Article, desc
+from settings import Settings, ConfigError, changedlocale
 from tokenizer import tokenize, TOK
 
 # Initialize Flask framework
@@ -46,9 +47,9 @@ def debug():
 # Run with profiling?
 _PROFILE = False
 
-# Current default URL for testing
+# Default text shown in the URL/text box
 
-DEFAULT_URL = 'http://kjarninn.is/2015/04/mar-gudmundsson-segir-margskonar-misskilnings-gaeta-hja-hannesi-holmsteini/'
+DEFAULT_URL = 'Litla gula hænan fann fræ. Það var hveitifræ.'
 
 # HTML tags that we explicitly don't want to look at
 
@@ -120,7 +121,7 @@ def extract_text(soup, result):
                 extract_text(t, result)
 
 
-def process_url(url):
+def tokenize_url(url, info):
     """ Open a URL and process the returned response """
 
     metadata = None
@@ -258,6 +259,10 @@ def parse(toklist, single, use_reducer, dump_forest = False, keep_trees = False)
                                 # Reduce the resulting forest before dumping it to text format
                                 forest = rdc.go(forest)
                             trees[num_sent] = ParseForestDumper.dump_forest(forest)
+                    else:
+                        # Error: store the error token index in the parse tree
+                        if keep_trees:
+                            trees[num_sent] = "E{0}".format(slen - 1 if err_index is None else err_index)
 
                     # Mark the sentence beginning with the number of parses
                     # and the index of the offending token, if an error occurred
@@ -282,42 +287,89 @@ def parse(toklist, single, use_reducer, dump_forest = False, keep_trees = False)
     return (result, trees)
 
 
-def add_name_register(result):
+def prepare(toklist, article):
+    """ Prepare the given token list for display and return a result dict """
+
+    # Count sentences
+    num_sent = 0
+    num_parsed_sent = 0
+    total_tokens = 0
+    sent = []
+    sent_begin = 0
+
+    tree = Tree(article.url, article.authority)
+    tree.load_gist(article.tree) # Only load a gist of the tree
+
+    for ix, t in enumerate(toklist):
+        if t[0] == TOK.S_BEGIN:
+            num_sent += 1
+            sent = []
+            sent_begin = ix
+        elif t[0] == TOK.S_END:
+            slen = len(sent)
+            # Parse the accumulated sentence
+            err_index = None # Index of offending token within sentence, if any
+            num = 1 if num_sent in tree else 0
+            if num > 0:
+                num_parsed_sent += 1
+                total_tokens += slen
+            else:
+                # If no parse, ask the tree for the error token index
+                err_index = tree.err_index(num_sent)
+            # Mark the sentence beginning with the number of parses
+            # and the index of the offending token, if an error occurred
+            toklist[sent_begin] = TOK.Begin_Sentence(num_parses = num, err_index = err_index)
+        elif t[0] == TOK.P_BEGIN:
+            pass
+        elif t[0] == TOK.P_END:
+            pass
+        else:
+            sent.append(t)
+
+    result = dict(
+        version = "N/A",
+        tokens = toklist,
+        tok_num = len(toklist),
+        num_sent = num_sent,
+        num_parsed_sent = num_parsed_sent,
+        avg_ambig_factor = article.ambiguity
+    )
+
+    return result
+
+
+def add_name_register(result, session):
     """ Assemble a register of names and titles from the token list """
     tokens = result["tokens"]
     register = { }
-    db = Scraper_DB()
-    with closing(db.session) as session:
-        for t in tokens:
-            if t.kind == TOK.PERSON:
-                gn = t.val
-                for pn in gn:
-                    # Attempt to look up the name pn.name
-                    q = session.query(Person).filter_by(name = pn.name).all()
-                    titles = defaultdict(int)
-                    for p in q:
-                        # Collect and count the titles
-                        titles[p.title] += 1
-                    if sum(cnt >= 4 for cnt in titles.values()) >= 2:
-                        # More than one title with four or more instances:
-                        # reduce the choices to just those and decide based on length
-                        titles = { key: 0 for key, val in titles.items() if val >= 4 }
-                    if titles:
-                        # Pick the most popular title, or the longer one if two are equally popular
-                        title = sorted([(cnt, len(t), t) for t, cnt in titles.items()])[-1][2]
-                        # Add it to the register
-                        register[pn.name] = title
-        session.commit()
+    for t in tokens:
+        if t.kind == TOK.PERSON:
+            gn = t.val
+            for pn in gn:
+                # Attempt to look up the name pn.name
+                q = session.query(Person).filter_by(name = pn.name).all()
+                titles = defaultdict(int)
+                for p in q:
+                    # Collect and count the titles
+                    titles[p.title] += 1
+                if sum(cnt >= 4 for cnt in titles.values()) >= 2:
+                    # More than one title with four or more instances:
+                    # reduce the choices to just those and decide based on length
+                    titles = { key: 0 for key, val in titles.items() if val >= 4 }
+                if titles:
+                    # Pick the most popular title, or the longer one if two are equally popular
+                    title = sorted([(cnt, len(t), t) for t, cnt in titles.items()])[-1][2]
+                    # Add it to the register
+                    register[pn.name] = title
     result["register"] = register
     if Settings.DEBUG:
         print("Register is: {0}".format(register))
 
 
-def top_news(limit = 15):
+def top_news(limit = 20):
     """ Return a list of top recent news """
     toplist = []
-    db = Scraper_DB()
-    with closing(db.session) as session:
+    with SessionContext() as session:
         # Attempt to look up the name pn.name
         q = session.query(Article) \
             .filter(Article.tree != None) \
@@ -327,10 +379,33 @@ def top_news(limit = 15):
         for a in q:
             # Collect and count the titles
             icon = a.root.domain + ".ico"
-            toplist.append(dict(heading = a.heading, timestamp = str(a.timestamp)[0:19],
+            toplist.append(dict(heading = a.heading, timestamp = str(a.timestamp)[11:16],
                 url = a.url, num_sentences = a.num_sentences, num_parsed = a.num_parsed, icon = icon))
         session.commit()
     return toplist
+
+
+def top_persons(limit = 20):
+    """ Return a list of names and titles appearing recently in the news """
+    toplist = dict()
+    with SessionContext() as session:
+        q = session.query(Person.name, Person.title, Person.article_url) \
+        .join(Article) \
+        .order_by(desc(Article.timestamp))[0:limit]
+
+        for p in q:
+            # Insert the name into the ordered list if it's not already there,
+            # or if the new title is longer than the previous one
+            if p.name not in toplist or len(p.title) > len(toplist[p.name][0]):
+                toplist[p.name] = (p.title, p.article_url)
+
+        session.commit()
+    with changedlocale(('is_IS', 'UTF-8')) as strxfrm:
+        # Convert the dictionary to a sorted list of dicts
+        return sorted(
+            [ dict(name = name, title = tu[0], url = tu[1]) for name, tu in toplist.items() ],
+            key = lambda x: strxfrm(x["name"])
+        )
 
 
 @app.route("/analyze", methods=['POST'])
@@ -349,7 +424,7 @@ def analyze():
 
     if url.startswith("http:") or url.startswith("https:"):
         # Scrape the URL, tokenize the text content and return the token list
-        metadata, generator = process_url(url)
+        metadata, generator = tokenize_url(url, Scraper.fetch_url(url))
         toklist = list(generator)
         # If this is an already scraped URL, keep the parse trees and update
         # the database with the new parse
@@ -369,23 +444,75 @@ def analyze():
     else:
         result, trees = parse(toklist, single, use_reducer, dump_forest, keep_trees)
 
-    # Add a name register to the result
-    add_name_register(result)
+    with SessionContext(commit = True) as session:
 
-    parse_time = time.time() - t0
+        # Add a name register to the result
+        add_name_register(result, session)
 
-    result["metadata"] = metadata
-    result["tok_time"] = tok_time
-    result["parse_time"] = parse_time
+        parse_time = time.time() - t0
 
-    if keep_trees:
-        # Save a new parse result
-        if Settings.DEBUG:
-            print("Storing a new parse tree for url {0}".format(url))
-        Scraper.store_parse(url, result, trees)
+        result["metadata"] = metadata
+        result["tok_time"] = tok_time
+        result["parse_time"] = parse_time
+
+        if keep_trees:
+            # Save a new parse result
+            if Settings.DEBUG:
+                print("Storing a new parse tree for url {0}".format(url))
+            Scraper.store_parse(url, result, trees, enclosing_session = session)
 
     # Return the tokens as a JSON structure to the client
     return jsonify(result = result)
+
+
+@app.route("/display", methods=['POST'])
+def display():
+    """ Display already parsed text from a given URL """
+
+    url = request.form.get("url", "").strip()
+    metadata = None
+
+    if not url.startswith("http:") and not url.startswith("https:"):
+        # Not a valid URL
+        return jsonify(result = None, error = "Invalid URL")
+
+    with SessionContext(commit = True) as session:
+
+        t0 = time.time()
+
+        # Find the HTML in the scraper database, tokenize the text content and return the token list
+        article, metadata, content = Scraper.fetch_article(url, session)
+
+        if article is None:
+            # Unable to find the URL in the scraper database: re-fetch it
+            metadata, content = Scraper.fetch_url(url)
+
+        metadata, generator = tokenize_url(url, (metadata, content))
+
+        toklist = list(generator)
+
+        tok_time = time.time() - t0
+
+        t0 = time.time()
+
+        if article is None or not article.tree:
+            # We must do a full parse of the toklist
+            result, _ = parse(toklist, False, False, False, False)
+        else:
+            # Re-use a previous parse
+            result = prepare(toklist, article)
+
+        parse_time = time.time() - t0
+
+        # Add a name register to the result
+        add_name_register(result, session)
+
+        result["metadata"] = metadata
+        result["tok_time"] = tok_time
+        result["parse_time"] = parse_time
+
+        # Return the tokens as a JSON structure to the client
+        return jsonify(result = result)
 
 
 def make_grid(w):
@@ -671,10 +798,12 @@ def main():
     if debug_mode == "0" or debug_mode.lower() == "false":
         debug_mode = False
     txt = request.args.get("txt", None) or request.form.get("url", None) or DEFAULT_URL
-    return render_template("main.html",
+    resp = make_response(render_template("main.html",
         default_text = txt, grammar = bp.grammar, debug_mode = debug_mode,
-        articles = top_news())
-
+        articles = top_news(), persons = top_persons()))
+    # Make the returned result cacheable for 60 seconds
+    resp.cache_control.max_age = 60
+    return resp
 
 @app.route("/test")
 def test():

@@ -491,12 +491,11 @@ function populateResult(json) {
    populateRegister(register);
 }
 
-function _analyzeUrl(url) {
-   // Ajax query to the server
+function clearResult() {
    // Clear previous result
    $("div#result").html("");
-   // Make top news list disappear
-   $("div#topnews").css("display", "none");
+   // Make top lists disappear
+   $("div.front").css("display", "none");
    // Display progress indicator
    $("div#wait").css("display", "block");
    // Make the statistics appear but hidden until processing is complete
@@ -508,6 +507,11 @@ function _analyzeUrl(url) {
    // Hide the register
    $("#namelist").html("");
    $("#register").css("display", "none");
+}
+
+function _analyzeUrl(url) {
+   // Ajax query to the server
+   clearResult();
    // Launch the query
    serverQuery('/analyze',
       {
@@ -523,6 +527,19 @@ function analyzeUrl() {
    _analyzeUrl($("#url").val().trim());
 }
 
+function displayUrl(url) {
+   // Ajax query to the server
+   $("#url").val(url); // Show URL in the input field
+   clearResult();
+   // Launch the query
+   serverQuery('/display',
+      {
+         url : url
+      },
+      populateResult
+   );
+}
+
 function initMain(jQuery) {
    // Initialization
    $("#url").keydown(function(ev) {
@@ -535,8 +552,13 @@ function initMain(jQuery) {
       // A top news article has been clicked:
       // post a form to the main page with its URL
       var url = $(this).attr("url");
-      $("#url").val(url);
-      analyzeUrl();
+      displayUrl(url);
+   });
+   $("#plist span.name").click(function(ev) {
+      // A person name has been clicked:
+      // post a form to the main page with the associated article URL
+      var url = $(this).attr("url");
+      displayUrl(url);
    });
 }
 

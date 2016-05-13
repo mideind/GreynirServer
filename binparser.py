@@ -164,8 +164,9 @@ class BIN_Token(Token):
     # '...haldið hefur úti bloggsíðu'
     # '...tóku saman gögn'
     # '...það á jafnframt dótturfélag'
+    # '...næstum tvo áratugi'
     _NOT_NOT_EO = frozenset(["inn", "eftir", "of", "til", "upp", "um", "síðan", "fram", "nær", "nærri",
-        "út", "meðal", "úti", "saman", "jafnframt" ])
+        "út", "meðal", "úti", "saman", "jafnframt", "næstum" ])
 
     # Words that are not eligible for interpretation as proper names, even if they are capitalized
     _NOT_PROPER_NAME = frozenset(["ég", "þú", "hann", "hún", "það", "við", "þið", "þau",
@@ -205,10 +206,10 @@ class BIN_Token(Token):
         """ Serialize the token as required for text dumping of trees """
         if self.t0 == TOK.WORD:
             # Simple case; no auxiliary information dumped
-            return "'" + self.t1 + "'"
+            return '"' + self.t1 + '"'
         # For non-word token types, dump the auxiliary information as well, if any
         j = (" " + json.dumps(self.t2, ensure_ascii = False)) if self.t2 else ""
-        return "'{0}' {1}{2}".format(self.t1, self._kind, j)
+        return '"{0}" {1}{2}'.format(self.t1, self._kind, j)
 
     @classmethod
     def fbits(cls, beyging):

@@ -43,7 +43,7 @@ from tokenizer import TOK, tokenize
 from fastparser import Fast_Parser, ParseError, ParseForestDumper
 from reducer import Reducer
 
-from scraperdb import Scraper_DB, Root, Article, IntegrityError
+from scraperdb import Scraper_DB, SessionContext, Root, Article, IntegrityError
 
 
 # The HTML parser to use with BeautifulSoup
@@ -80,14 +80,12 @@ class Scraper:
     _helpers = dict()
 
     _parser = None
-    _db = None
 
     @classmethod
     def _init_class(cls):
         """ Initialize class attributes """
         if cls._parser is None:
             cls._parser = Fast_Parser(verbose = False) # Don't emit diagnostic messages
-            cls._db = Scraper_DB()
 
     @classmethod
     def cleanup(cls):
@@ -303,7 +301,7 @@ class Scraper:
 
         # Add the children whose URLs we don't already have to the
         # scraper articles table
-        with closing (self._db.session) as session:
+        with SessionContext() as session:
 
             for url in fetch_set:
 
@@ -348,38 +346,28 @@ class Scraper:
         metadata = helper.get_metadata(soup) if soup else None
 
         # Upate the article info
-        with closing(self._db.session) as session:
+        with SessionContext(commit = True) as session:
 
-            # noinspection PyBroadException
-            try:
+            article = session.query(Article).filter_by(url = url).one_or_none()
 
-                article = session.query(Article).filter_by(url = url).one_or_none()
+            if article:
 
-                if article:
+                article.scraped = datetime.utcnow()
 
-                    article.scraped = datetime.utcnow()
+                if metadata:
+                    article.heading = metadata.heading
+                    article.author = metadata.author
+                    article.timestamp = metadata.timestamp
+                    article.authority = metadata.authority
+                    article.scr_module = helper.scr_module
+                    article.scr_class = helper.scr_class
+                    article.scr_version = helper.scr_version
+                    article.html = html_doc
+                else:
+                    # No metadata: mark the article as scraped with no HTML
+                    article.html = None
 
-                    if metadata:
-                        article.heading = metadata.heading
-                        article.author = metadata.author
-                        article.timestamp = metadata.timestamp
-                        article.authority = metadata.authority
-                        article.scr_module = helper.scr_module
-                        article.scr_class = helper.scr_class
-                        article.scr_version = helper.scr_version
-                        article.html = html_doc
-                    else:
-                        # No metadata: mark the article as scraped with no HTML
-                        article.html = None
-
-                session.commit()
-
-            except IntegrityError as e:
-                # Roll back and continue
-                session.rollback()
-
-            except:
-                session.rollback()
+            # The session context automatically commits or rolls back the transaction
 
         t1 = time.time()
 
@@ -392,7 +380,7 @@ class Scraper:
         print("Parsing article {0}".format(url))
 
         # Load the article
-        with closing(self._db.session) as session:
+        with SessionContext() as session:
 
             article = session.query(Article).filter_by(url = url).one()
 
@@ -454,6 +442,9 @@ class Scraper:
                             total_tokens += slen
                             # Obtain a text representation of the parse tree
                             trees[num_sent] = ParseForestDumper.dump_forest(forest)
+                        else:
+                            # Error or no parse: add an error index entry for this sentence
+                            trees[num_sent] = "E{0}".format(slen - 1 if err_index is None else err_index)
 
                     elif t[0] == TOK.P_BEGIN:
                         pass
@@ -497,38 +488,29 @@ class Scraper:
 
     # noinspection PyComparisonWithNone
     @classmethod
-    def is_known_url(cls, url):
-        """ Return True if the URL has already been scraped """
-
-        found = False
-        with closing(Scraper_DB().session) as session:
-
+    def find_article(cls, url, enclosing_session = None):
+        """ Return a scraped article object, if found, else None """
+        article = None
+        with SessionContext(enclosing_session, commit = True) as session:
             # noinspection PyBroadException
-            try:
-                article = session.query(Article).filter_by(url = url) \
-                    .filter(Article.scraped != None).one_or_none()
-                if article:
-                    found = True
-            except:
-                pass
-
-            session.commit()
-
-        return found
+            article = session.query(Article).filter_by(url = url) \
+                .filter(Article.scraped != None).one_or_none()
+        return article
 
     # noinspection PyComparisonWithNone
     @classmethod
-    def store_parse(cls, url, result, trees, session = None):
+    def is_known_url(cls, url, session = None):
+        """ Return True if the URL has already been scraped """
+        return cls.find_article(url, session) is not None
+
+    # noinspection PyComparisonWithNone
+    @classmethod
+    def store_parse(cls, url, result, trees, enclosing_session = None):
         """ Store a new parse of an article """
 
         success = True
-        new_session = False
-        if not session:
-            db = Scraper_DB()
-            session = db.session
-            new_session = True
 
-        try:
+        with SessionContext(enclosing_session, commit = True) as session:
 
             article = session.query(Article).filter_by(url = url) \
                 .filter(Article.scraped != None).one_or_none()
@@ -547,33 +529,20 @@ class Scraper:
                 success = False
                 print("Unable to store new parse of url {0}".format(url))
 
-            session.commit()
-
-        except Exception as e:
-            success = False
-            print("Unable to store new parse of url {0}, exception {1}".format(url, e))
-
-        finally:
-            if new_session:
-                session.close()
-
         return success
 
     @classmethod
-    def fetch_url(cls, url, session = None):
+    def fetch_url(cls, url, enclosing_session = None):
         """ Fetch a URL using the scraping mechanism, returning
             a tuple (metadata, content) or None if error """
+
+        # Do a straight HTTP fetch
         html_doc = cls._fetch_url(url)
         if not html_doc:
             return None
 
-        new_session = False
-        if not session:
-            db = Scraper_DB()
-            session = db.session
-            new_session = True
+        with SessionContext(enclosing_session) as session:
 
-        try:
             helper = cls.helper_for(session, url)
             # Parse the HTML
             soup = BeautifulSoup(html_doc, _HTML_PARSER)
@@ -586,9 +555,32 @@ class Scraper:
             content = helper.get_content(soup) if helper else soup.html.body
             return (metadata, content)
 
-        finally:
-            if new_session:
-                session.close()
+    @classmethod
+    def fetch_article(cls, url, enclosing_session = None):
+        """ Fetch a previously scraped article, returning
+            a tuple (article, metadata, content) or None if error """
+
+        with SessionContext(enclosing_session) as session:
+
+            article = cls.find_article(url, session)
+            if article is None:
+                return (None, None, None)
+
+            html_doc = article.html
+            if not html_doc:
+                return (None, None, None)
+
+            helper = cls.helper_for(session, url)
+            # Parse the HTML
+            soup = BeautifulSoup(html_doc, _HTML_PARSER)
+            if not soup or not soup.html:
+                print("Scraper.fetch_article(): No soup or no soup.html")
+                return (None, None, None)
+
+            # Obtain the metadata and the content from the resulting soup
+            metadata = helper.get_metadata(soup) if helper else None
+            content = helper.get_content(soup) if helper else soup.html.body
+            return (article, metadata, content)
 
     def _scrape_single_root(self, r):
         """ Single root scraper that will be called by a process within a
@@ -631,11 +623,10 @@ class Scraper:
     def go(self, reparse = False, limit = 0):
         """ Run a scraping pass from all roots in the scraping database """
 
-        db = Scraper._db
         version = Scraper.parser_version()
 
         # Go through the roots and scrape them, inserting into the articles table
-        with closing(db.session) as session:
+        with SessionContext() as session:
 
             if not reparse:
 
@@ -719,7 +710,7 @@ class Scraper:
     def stats():
         """ Return statistics from the scraping database """
 
-        db = Scraper._db
+        db = SessionContext.db
 
         q = "select count(*) from articles;"
 
@@ -787,13 +778,13 @@ def scrape_articles(reparse = False, limit = 0):
 def init_roots():
     """ Create tables and initialize the scraping roots, if not already present """
 
-    db = Scraper_DB()
+    db = SessionContext.db
 
     try:
 
         db.create_tables()
 
-        with closing(db.session) as session:
+        with SessionContext() as session:
 
             ROOTS = [
                 # Root URL, top-level domain, description, authority
