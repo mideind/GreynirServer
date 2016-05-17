@@ -4,7 +4,7 @@
 
     Processor module
 
-    Copyright (c) 2015 Vilhjalmur Thorsteinsson
+    Copyright (c) 2016 Vilhjalmur Thorsteinsson
     All rights reserved
     See the accompanying README.md file for further licensing and copyright information.
 
@@ -25,7 +25,7 @@ from contextlib import closing
 from datetime import datetime
 from collections import OrderedDict
 
-from settings import Settings, ConfigError
+from settings import Settings, ConfigError, DisallowedNames
 from scraperdb import Scraper_DB, Article
 from bindb import BIN_Db
 
@@ -267,6 +267,17 @@ class Node:
     def has_variant(self, s):
         """ Does the node have the given variant? """
         return False
+
+    def child_has_nt_base(self, s):
+        """ Does the node have a single child with the given nonterminal base name? """
+        ch = self.child
+        if ch is None:
+            # No child
+            return False
+        if ch.nxt is not None:
+            # More than one child
+            return False
+        return ch.has_nt_base(s)
 
     def children(self, test_f = None):
         """ Yield all children of this node (that pass a test function, if given) """
@@ -595,7 +606,12 @@ class PersonNode(TerminalNode):
     def _root(self, bin_db):
         """ Calculate the root (canonical) form of this person name """
         # If we already have a full name coming from the tokenizer, use it
+        # (full name meaning that it includes the patronym/matronym even
+        # if it was not present in the original token)
         if self.fullname:
+            # print("PersonNode._root: found full name '{0}'".format(self.fullname))
+            # !!! TBD: The full name here is constructed by the tokenizer without
+            # !!! knowledge of the case of the name - so it may be wrong
             return self.fullname
         # Lookup the token in the BIN database
         case = self.case.upper()
@@ -606,10 +622,17 @@ class PersonNode(TerminalNode):
             w, m = bin_db.lookup_word(part, at_start)
             at_start = False
             if m:
-                m = [ x for x in m if x.ordfl == self.gender and case in x.beyging and "ET" in x.beyging ]
+                m = [ x for x in m
+                        if x.ordfl == self.gender and case in x.beyging and "ET" in x.beyging
+                        # Do not accept 'Sigmund' as a valid stem for word forms that
+                        # are identical with the stem 'Sigmundur'
+                        and (x.stofn not in DisallowedNames.STEMS
+                        or self.case not in DisallowedNames.STEMS[x.stofn])
+                    ]
             if m:
                 w = m[0].stofn
             name.append(w.replace("-", ""))
+        # print("PersonNode._root: returning '{0}'".format(" ".join(name)))
         return " ".join(name)
 
     def _nominative(self, bin_db):
@@ -787,10 +810,8 @@ class Tree:
             return
         self.push(n, NonterminalNode(nonterminal))
 
-    def _load(self, txt, gist = False):
+    def _load(self, txt):
         """ Loads a tree from the text format stored by the scraper """
-
-        self._gist = gist
         for line in txt.split("\n"):
             if not line:
                 continue
@@ -810,11 +831,13 @@ class Tree:
 
     def load(self, txt):
         """ Load a tree entirely into memory, creating all nodes """
-        self._load(txt, gist = False)
+        self._gist = False
+        self._load(txt)
 
     def load_gist(self, txt):
         """ Only load the sentence dictionary in gist form into memory """
-        self._load(txt, gist = True)
+        self._gist = True
+        self._load(txt)
 
     def visit_children(self, state, node):
         """ Visit the children of node, obtain results from them and pass them to the node """

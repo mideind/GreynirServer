@@ -103,6 +103,9 @@ Forskeyti →
     Samtenging '-'? # 'En - þegar allt er skoðað, var þetta fínt.'
     | raðnr # Raðnúmer málsgreinar
     | '-'   # Þankastrik á undan setningu (allar gerðir strika varpast í '-')
+    | "mynd" tala AfTala? ':'? # Mynd 2 af 10
+
+AfTala → "af" tala
 
 Lokatákn → '.' | '?' | ':' | '!' | '(' '!' ')'
 LokatáknEðaKomma → Lokatákn | ','
@@ -210,19 +213,19 @@ HreinYfirsetning →
     | SetningSkilyrði
 
 $score(-2) SetningAukafall
-$score(-2) SetningLo
+$score(+2) SetningLo
 $score(-2) SetningSo
-$score(+3) Setning
+$score(+4) Setning
 
 # Skilyrði: EfÞegar eitthvað þá eitthvað
 
 SetningSkilyrði →
     AtviksliðurKomma? EfÞegar OgEfÞegar? Skilyrði "þá"? Afleiðing FsAtv?
 
-$score(+5) SetningSkilyrði
+$score(+12) SetningSkilyrði
 
 EfÞegar →
-    "ef" | "þegar" | "þótt" | "þó" | 'jafnvel_þótt' | "þar" "sem" | "eftir" "að"
+    "ef" | "þegar" | "þótt" | "þó" "að"? | 'jafnvel_þótt' | "þar" "sem" | "eftir" "að"
     | 'eins_og' | 'líkt_og' | 'á_meðan' | "þangað" "til"
 
 OgEfÞegar →
@@ -235,8 +238,8 @@ Skilyrði →
 # Afleiðing í "ef"-setningu byrjar alltaf á sögn
 
 Afleiðing →
-    SagnHluti/tala/pers/kyn   # (Ef hann gæti) opinberaði Hannes niðurstöðu sína (í dag)
-    | SagnliðurÁnF            # [Ef góða veðrið helst] þyrfti að vökva grasið (fyrir myrkur)
+    ","? SagnHluti/tala/pers/kyn   # (Ef hann gæti) [,] opinberaði Hannes niðurstöðu sína (í dag)
+    | ","? SagnliðurÁnF            # [Ef góða veðrið helst] [,] þyrfti að vökva grasið (fyrir myrkur)
 
 # Setningar með frumlagi
 
@@ -249,7 +252,7 @@ SagnRuna → SagnRuna/tala/pers/kyn
 
 SagnRuna/tala/pers/kyn →
     Sagnliður/tala/pers/kyn LoTengtSögn_nf/tala/kyn? SagnInnskot?
-        SagnFramhald/tala/pers/kyn?
+        SagnFramhald/tala/pers/kyn*
 
 SagnFramhald/tala/pers/kyn →
     SagnKomma/tala/pers/kyn* KommaOgEðaEn Sagnliður/tala/pers/kyn
@@ -312,6 +315,13 @@ Frumlag_p1/tala/kyn →
 Frumlag_p2/tala/kyn →
     'allur'_nf/tala/kyn # Allar eruð þið jafnar fyrir lögum
 
+Samanburður →
+    SamanburðarTenging Nl_nf
+
+SamanburðarTenging →
+    "heldur" "en"       # 'Forseti á ekki að gera meiri breytingu á sér heldur en forsætisráðherra'
+    | 'eins_og'         # 'Hann á ekki andstæðinga eins og aðrir kjörnir fulltrúar'
+
 Setning/tala/pers/kyn →
     # Venjuleg setningarskipan með frumlagi (í nafnhætti) fremst:
     # 'Jón sterki fór bersýnilega í bága við reglurnar með þessu'
@@ -320,7 +330,7 @@ Setning/tala/pers/kyn →
     # 'Ég bara spyr'
     # 'Allir mega koma til landsins sem það vilja'
     Frumlag/pers/tala/kyn FrumlagsInnskot/tala/pers/kyn? AtviksliðurEinkunn*
-        SagnRuna/tala/pers/kyn KommaTengiliður/tala/pers/kyn?
+        SagnRuna/tala/pers/kyn KommaTengiliður/tala/pers/kyn? Samanburður?
 
     # Frumlag fyrir aftan sögn:
     # 'Gengu þau galvösk á Esjuna þrátt fyrir veðurútlitið'
@@ -352,6 +362,9 @@ SetningLo →
     LoTengtSögn_nf_et_hk SetningLoSögn NhFyllingEðaAtv
     # Kjörgengur við Alþingiskosningar skal vera hver sá ríkisborgari (sem dvalið hefur 5 ár í landinu)
     | LoTengtSögn_nf/tala/kyn FsRuna? HjSögnLhÞtSM/tala/pers Nl_nf/tala/pers/kyn AtvFs?
+    # Aðspurður sagði Jón framburð Gunnu vera uppspuna frá rótum
+    # Örvingluð eftir atburði næturinnar leitaði Anna til lögreglunnar
+    | LoTengtSögn_nf/tala/kyn FsAtv? SagnHluti/tala/pers/kyn
 
 SetningLoSögn →
     HjSögnLhÞtSM_et_p3 so_0_lhþt_et_hk? # er/skal/mun/hefur verið talið/þótt...
@@ -464,7 +477,7 @@ SetningAukafall →
     | Nl_þgf HjSögnMegiSkuli_et_p3 FsAtv? So_2_nh_þgf/fall Nl/fall AtvFs?
 
     # Mér er/var [ekki] sama [um málið] / bumbult [í gær] / misboðið
-    # | Nl_þgf 'vera'_gm_fh_3p_et FsAtv? lo_sb_hk_nf_et FsAtv?
+    # | Nl_þgf 'vera'_gm_fh_p3_et FsAtv? lo_sb_hk_nf_et FsAtv?
 
 AukafallÞgfAndlag →
     # (Stóru skipunum hefur verið/skal/mun) stýrt í land
@@ -751,6 +764,8 @@ HreinSögn_lhþt/tala/kyn →
 Sögn_lhþt/tala/pers/kyn →
     # er farið, hefur verið farin, hafa verið farnar, skal farin
     HjSögnLhÞtSM/tala/pers HreinSögn_lhþt/tala/kyn
+    # er leiðinlegur, hefur verið frábær, munu vera einstök
+    | HjSögnLhÞt/tala/pers LoTengtSögn_nf/tala/kyn
     # talin er/hefur verið [liggja undir grun]
     | so_0_lhþt/tala/kyn HjSögnLhÞtSM/tala/pers LhÞtBotn/tala/kyn?
 
@@ -792,7 +807,11 @@ Sögn_nh/tala/pers/kyn →
 # Miðmynd + nafnháttur
 
 Sögn_nh_mm/tala/pers/kyn →
-    so_mm/tala/pers OgSögn_mm/tala/pers* HreinSögn_nh/tala/kyn # Páll hyggst/þykist/telst fara að...
+    so_mm/tala/pers OgSögn_mm/tala/pers* Botn_nh_mm/tala/kyn
+
+Botn_nh_mm/tala/kyn →
+     HreinSögn_nh/tala/kyn # Páll hyggst/þykist/telst fara að...
+     | HreinSögn_lhþt/tala/kyn # Kvennalistakonur virðast [ekki] taldar sigurstranglegar
 
 # Hvetja til samhengis með miðmynd: (hún) segist ekki ætla (að fara í framboð)
 $score(+2) Sögn_nh_mm/tala/pers/kyn
@@ -1551,6 +1570,7 @@ NlKjarni_et/fall/kyn →
 
     # 'fullorðni sprúðlandi sonur Íslands'
 
+    EfLiðurForskeyti?           # 1. deildar (lið Vals)
     Einkunn_et/fall/kyn*        # leiðandi (fyrirtæki) / bókfært (virði)
     Skst?                       # FIH (bankinn)
     Fyrirbæri/fall/kyn          # Már Guðmundsson seðlabankastjóri
@@ -1558,7 +1578,7 @@ NlKjarni_et/fall/kyn →
     Númer?                      # (ákvæði laga) nr. 33
 
     # Eignarfallsliður á undan: 'Íslands fullorðni sprúðlandi sonurinn sterki'
-    | EfLiðurForskeyti Einkunn_et/fall/kyn* Skst? Fyrirbæri/fall/kyn LoEftirNl_et/fall/kyn?
+    # | EfLiðurForskeyti Einkunn_et/fall/kyn* Skst? Fyrirbæri/fall/kyn LoEftirNl_et/fall/kyn?
 
 NlKjarni_et_kk/fall →
     tala 'hluti'_et/fall EfLiður? # 1/3 hluti Alþingismanna (getur krafist atkvæðagreiðslu)
@@ -1572,13 +1592,14 @@ NlKjarni_et_ef_kk → NlKjarni_et_kk_ef
 
 NlKjarni_ft/fall/kyn →
 
+    EfLiðurForskeyti?
     Einkunn_ft/fall/kyn*
     Skst?
     Fyrirbæri_ft/fall/kyn
     NlViðbót_ft/fall/kyn?
     Númer?
 
-    | EfLiðurForskeyti Einkunn_ft/fall/kyn* Skst? Fyrirbæri_ft/fall/kyn LoEftirNl_ft/fall/kyn?
+    # | EfLiðurForskeyti Einkunn_ft/fall/kyn* Skst? Fyrirbæri_ft/fall/kyn LoEftirNl_ft/fall/kyn?
 
 Fyrirbæri_ft/fall/kyn →
     no_ft/fall/kyn
@@ -1744,7 +1765,7 @@ LoSemNafnliður/tala/fall/kyn →
     lo_sb/tala/fall/kyn | lo_mst/tala/fall/kyn # Efsta stig (ESB) er innifalið í _sb
 
 # Gefa lýsingarorðum sem nafnliðum mínusstig
-$score(-8) LoSemNafnliður/tala/fall/kyn
+$score(-10) LoSemNafnliður/tala/fall/kyn
 
 NlStak_p3/tala/fall/kyn →
     'hver'/tala/fall/kyn 'sá'/tala/fall/kyn # Hver sá, hver sú, hvert það, hverjir þeir, hverjar þær, hver þau
@@ -1770,7 +1791,12 @@ NlStak_p3/tala/fall/kyn →
 
 NlTöluorð/tala/fall/kyn →
     # '(Ég talaði við) tvær þeirra', 'fjórum þeirra (var kalt)'
-    'að_minnsta_kosti'? Töluorð/tala/fall/kyn 'sá'_ft_ef/kyn?
+    # 'Að minnsta kosti fjórir létust'
+    # 'Um þrír af hverjum fjórum landsmönnum telja...'
+    TöluorðForskeyti? Töluorð/tala/fall/kyn 'sá'_ft_ef/kyn?
+
+TöluorðForskeyti →
+    'að_minnsta_kosti' | "um"
 
 # Gefa mínusstig fyrir stök töluorð - viljum helst sjá þau sem einkunn í stærri nafnlið
 $score(-8) NlTöluorð/tala/fall/kyn
@@ -1860,8 +1886,8 @@ LangtSérnafn/fall →
 
 # Löng sérnöfn, þ.e. runur orða með upphafsstöfum, eru mjög líklega rétt greind
 
-$score(+2) LangtSérnafn
-$score(+4) LangtSérnafn/fall
+$score(+6) LangtSérnafn
+$score(+10) LangtSérnafn/fall
 
 # Heimilisfang (götuheiti + tala)
 
@@ -1924,6 +1950,14 @@ Fyrirbæri/fall/kyn →
     no_et/fall/kyn
     | raðnr no_et/fall/kyn
     | FyrirbæriMeðGreini/fall/kyn
+    | Úrslit/fall/kyn
+
+# Úrslit í leikjum (32:27 sigur, 0:2 tap, 8:0 burst)
+
+Úrslit/fall/kyn →
+    tala ':' tala no_et/fall/kyn
+
+$score(+2) Úrslit/fall/kyn
 
 # nkyn = náttúrulegt kyn (karlkyn eða kvenkyn)
 Fyrirbæri/fall/nkyn →
@@ -2046,7 +2080,7 @@ $score(+3) EfLiður
 # lýsingarorð sé notað sem nafnorð
 
 EfLiðurForskeytiTala/tala/kyn →
-    eo* Töluorð_ef/tala/kyn       # (vel rúmlega) þriggja (klukkutíma bið) / 30 (daga frestur)
+    eo* Töluorð_ef/tala/kyn+       # (vel rúmlega) þriggja (klukkutíma bið) / 30 þúsund (króna tjón)
 
 EfLiðurForskeyti →
     Fornafn_ef/tala/kyn* EfLiðurForskeytiTala/tala/kyn? EfLiðurForskeytiKjarni/tala/kyn
@@ -2057,7 +2091,7 @@ EfLiðurForskeytiKjarni_et/kyn → Fyrirbæri_ef/kyn
 EfLiðurForskeytiKjarni_ft/kyn → no_ef_ft/kyn
 
 # Eignarfalls-forskeyti sem eru ekki tölur eða fornöfn eru sjaldgæf
-$score(-6) EfLiðurForskeytiKjarni/tala/kyn
+$score(-4) EfLiðurForskeytiKjarni/tala/kyn
 
 # Leyfa 'okkar'/'ykkar' í eignarfallsforskeyti (er aðeins kynlaust pfn í BÍN)
 Fornafn_ft_ef/kyn → OkkarYkkar
@@ -2101,6 +2135,8 @@ Tengiorð →
     TengiorðSem | TengiorðEr
 
 TengiorðSem → "eða"? "sem"
+    | "þar" "sem"
+
 TengiorðEr → "er"
 
 $score(-6) TengiorðEr # Sjaldgæft - ekki velja nema það þurfi
@@ -2218,24 +2254,36 @@ KommaOgEðaEn → ',' | ','? OgEðaEn
 # Allir liðir af sama kyni
 
 NlRuna/fall/kyn →
-    KommuSamtenging/fall/kyn* Atviksliður? KommaOgEða FsRuna? NlEind/fall/kyn AtvKomma?
+    KommuSamtenging/fall/kyn* KommuEndir/fall/kyn
     | ',' FsRuna? NlEind/fall/kyn AtvKomma    # Konurnar, sérstaklega Anna, voru óánægðar
 
 KommuSamtenging/fall/kyn → ',' FsRuna? NlEind/fall/kyn
 
+KommuEndir/fall/kyn →
+    Atviksliður? KommaOgEða FsRuna? NlEind/fall/kyn AtvKomma?
+    | 'og_fleira' ','?
+    | 'og_margt_fleira' ','?
+    | 'og_svo_framvegis' ','?
+
 # Hvetja til eins langra lista og mögulegt er
-$score(+3) KommuSamtenging/fall/kyn
+$score(+6) KommuSamtenging/fall/kyn
 
 # Blandað kyn
 
 NlRuna/fall →
-    KommuSamtenging/fall* Atviksliður? KommaOgEða FsRuna? NlEind/fall AtvKomma?
+    KommuSamtenging/fall* KommuEndir/fall
     | ',' FsRuna? NlEind/fall AtvKomma        # Þingmenn, sérstaklega Jóhanna, voru óánægðir
 
 KommuSamtenging/fall → ',' FsRuna? NlEind/fall
 
+KommuEndir/fall →
+    Atviksliður? KommaOgEða FsRuna? NlEind/fall AtvKomma?
+    | 'og_fleira' ','?
+    | 'og_margt_fleira' ','?
+    | 'og_svo_framvegis' ','?
+
 # Hvetja til eins langra lista og mögulegt er
-$score(+3) KommuSamtenging/fall
+$score(+6) KommuSamtenging/fall
 
 # Nafnliðir sem geta verið stakar eindir eða runur einda
 
@@ -2289,16 +2337,16 @@ $score(+2) NlSamaKyn/fall/kyn
 # og einnig 'sumir, þar á meðal Jón,'
 
 Nl_ft_p3_nf_hk →
-    NlEind_nf NlRuna_nf+ TengiliðurMeðKommu_ft_p3_hk? # Blandað kyn verður að hvorugkyni fleirtölu
+    'sá'_ft_nf_hk? NlEind_nf NlRuna_nf+ TengiliðurMeðKommu_ft_p3_hk? # Blandað kyn verður að hvorugkyni fleirtölu
 
 Nl_ft_p3_þf_hk →
-    NlEind_þf NlRuna_þf+ TengiliðurMeðKommu_ft_p3_hk? # Blandað kyn verður að hvorugkyni fleirtölu
+    'sá'_ft_þf_hk? NlEind_þf NlRuna_þf+ TengiliðurMeðKommu_ft_p3_hk? # Blandað kyn verður að hvorugkyni fleirtölu
 
 Nl_ft_p3_þgf_hk →
-    NlEind_þgf NlRuna_þgf+ TengiliðurMeðKommu_ft_p3_hk? # Blandað kyn verður að hvorugkyni fleirtölu
+    'sá'_ft_þgf_hk? NlEind_þgf NlRuna_þgf+ TengiliðurMeðKommu_ft_p3_hk? # Blandað kyn verður að hvorugkyni fleirtölu
 
 Nl_ft_p3_ef_hk →
-    NlEind_ef NlRuna_ef+ TengiliðurMeðKommu_ft_p3_hk? # Blandað kyn verður að hvorugkyni fleirtölu
+    'sá'_ft_ef_hk? NlEind_ef NlRuna_ef+ TengiliðurMeðKommu_ft_p3_hk? # Blandað kyn verður að hvorugkyni fleirtölu
 
 # Lýsingarorðaliður
 
@@ -2440,6 +2488,7 @@ FsMeðFallstjórn →
     | "hvað" FsHvaðVarðar
     | "um" 'það'_þf_et? FsSamtenging HreinYfirsetning # 'um [það] hvort Brandur sé fallegastur'
     | "um" "að" HreinYfirsetning ','? # 'um að lög um endurupptökunefnd standist ekki stjórnarskrá'
+    | "á" "að" HreinYfirsetning ','? # 'er bjartsýnn á að Alfreð komi aftur í liðið'
     | "að" "nafni" person_nf    # Ég ræddi við konu að nafni Aðalbjörg Jónsdóttir
     | FsÍGegnUm
     | FsAðBaki
@@ -2561,6 +2610,7 @@ AtviksliðurEinkunn →
     eo                  # Einkunnarorð = atviksorð sem geta ekki jafnframt verið forsetningar
     | Dagsetning        # (hagnaðurinn var strax) árið 2012 (175 milljarðar króna)
     | Tímasetning
+    | Aldur
 
 # Dagsetning og tími
 
@@ -2605,11 +2655,9 @@ Dagsetning →
     | ártal "-" tala # '2009-13'
     | "frá" OgMeð? "árinu"? ártal # 'frá árinu 2009', 'frá og með 2012'
     | "til" "ársins"? ártal # 'til ársins 1997'
+    | "síðan" ártal # síðan 2012
 
-    # 'Undanfarið' er atviksorð í BÍN, en 'undanfarnar vikur' o.s.frv. virkar einnig
-    # eins og atviksliður (eða forsetningarliður), sbr. 'ég hef undanfarnar vikur verið að velta því fyrir mér'...
-    | 'undanfarinn'_þf/tala/kyn TalaTímabil_þf/tala/kyn # undanfarnar sex vikur, undanfarin ár, undanfarinn mánuð
-    | 'undangenginn'_þf/tala/kyn TalaTímabil_þf/tala/kyn # undangengnar sex vikur
+    | Undanfarið
     | 'allur'_þf/tala/kyn? gr_þf/tala/kyn? 'síðari'_þf/tala/kyn TalaTímabil_þf/tala/kyn # síðustu sex vikur, hin síðari ár, allan síðasta mánuð
     | Tímabil_þf # (Hann kom hér) alla daga, suma vikudaga, nokkur ár, eina vikuna, síðustu fimm vetur
     | TímabilsEinkunn_þgf/tala/kyn Tímabil_þgf/kyn/tala TímaAfstæði_þgf? # (Námsönnin hefst) þremur mánuðum áður en jólafríið byrjar
@@ -2618,8 +2666,21 @@ Dagsetning →
     | Tímabil_þf/kyn/tala TímaAfstæði_þf # Vikuna áður / Daginn eftir
     | TímaForskeyti? TímaAfstæði # áður en krónan féll / eftir að landið öðlaðist sjálfstæði
 
-# Gefa plús fyrir dagsetningar og tímasetningar
-$score(+4) Dagsetning Tímasetning
+Undanfarið →
+    # 'Undanfarið' er atviksorð í BÍN, en 'undanfarnar vikur' o.s.frv. virkar einnig
+    # eins og atviksliður (eða forsetningarliður), sbr. 'ég hef undanfarnar vikur verið að velta því fyrir mér'...
+    'undanfarinn'_þf/tala/kyn TalaTímabil_þf/tala/kyn # undanfarnar sex vikur, undanfarin ár, undanfarinn mánuð
+    | 'undangenginn'_þf/tala/kyn TalaTímabil_þf/tala/kyn # undangengnar sex vikur
+
+$score(+10) Undanfarið
+
+# 29 ára, eins árs, tveggja vikna
+
+Aldur →
+    Töluorð_ef/tala/kyn Tímabil_ef/kyn/tala
+
+# Gefa plús fyrir dagsetningar, tímasetningar og aldur
+$score(+4) Dagsetning Tímasetning Aldur
 
 TímaAfstæði_þgf → "síðar" | "seinna" | "fyrr" TímaEn? | "áður" TímaEn?
 TímaAfstæði_þf → "áður" TímaEn? | "eftir" TímaAð? | "fyrir" Nl_þf
@@ -2652,7 +2713,8 @@ TímabilsEinkunn_þf/tala/kyn →
 NæsturSíðastur_þf/tala/kyn →
     'næstur'_þf/tala/kyn      # næsta vetur, næstu daga
     | 'síðari'_þf/tala/kyn  # síðasta vetur, síðustu daga
-    | 'fyrstur'_þf/tala/kyn  # síðasta vetur, síðustu daga
+    | 'seinn'_þf/tala/kyn  # seinasta vetur, seinustu daga
+    | 'fyrstur'_þf/tala/kyn  # fyrstu þrjá vetur, fyrstu 10 daga
 
 Tímabil/fall/kyn/tala → Tímabil/kyn/fall/tala
 
@@ -2661,22 +2723,23 @@ Tímabil_ft_þgf_kvk → Tímabil_kvk_þgf_ft
 Tímabil_ft_þgf_hk → Tímabil_hk_þgf_ft
 
 Tímabil_hk/fall/tala →
-    'ár'/fall/tala
-    | 'misseri'/fall/tala
-    | 'sumar'/fall/tala
-    | 'vor'/fall/tala
-    | 'haust'/fall/tala
-    | 'kvöld'/fall/tala
-    | 'hádegi'/fall/tala
-    | 'kjörtímabil'/fall/tala
-    | 'leikár'/fall/tala
+    'ár'_hk/fall/tala
+    | 'misseri'_hk/fall/tala
+    | 'sumar'_hk/fall/tala
+    | 'vor'_hk/fall/tala
+    | 'haust'_hk/fall/tala
+    | 'kvöld'_hk/fall/tala
+    | 'hádegi'_hk/fall/tala
+    | 'kjörtímabil'_hk/fall/tala
+    | 'leikár'_hk/fall/tala
 
 Tímabil_kvk/fall/tala →
-    'vika'/fall/tala
-    | 'nótt'/fall/tala
+    'vika'_kvk/fall/tala
+    | 'nótt'_kvk/fall/tala
     | 'mínúta'/fall/tala
     | 'sekúnda'/fall/tala
     | 'leiktíð'/fall/tala
+    | 'öld'_kvk/fall/tala
 
 Tímabil_kk/fall/tala →
     'mánuður'/fall/tala
@@ -2684,13 +2747,14 @@ Tímabil_kk/fall/tala →
     | 'dagur'/fall/tala
     | 'vikudagur'/fall/tala
     | 'helgidagur'/fall/tala
-    | 'virkur'/fall/tala 'dagur'/fall/tala
-    | 'vetur'/fall/tala
+    | 'virkur'_kk/fall/tala 'dagur'/fall/tala
+    | 'vetur'_kk/fall/tala
     | 'morgunn'/fall/tala
     | 'eftirmiðdagur'/fall/tala
     | Vikudagur/fall/tala
     | 'klukkutími'/fall/tala
-    | 'tími'/fall/tala
+    | 'tími'_kk/fall/tala
+    | 'áratugur'/fall/tala
 
 Vikudagur/fall/tala →
     # !!! Do the following in the tokenizer instead?
@@ -2703,10 +2767,10 @@ Vikudagur/fall/tala →
     | 'laugardagur'/fall/tala
 
 Árstíð_þf/tala →
-    'haust'_þf/tala
-    | 'vor'_þf/tala
-    | 'sumar'_þf/tala
-    | 'vetur'_þf/tala
+    'haust'_hk_þf/tala
+    | 'vor'_hk_þf/tala
+    | 'sumar'_hk_þf/tala
+    | 'vetur'_kk_þf/tala
 
 # Forsetningar sem hægt er að nota með dagsetningum
 DagsFs_þf →

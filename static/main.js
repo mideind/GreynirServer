@@ -548,15 +548,9 @@ function initMain(jQuery) {
          ev.preventDefault();
       }
    });
-   $("#toplist span.heading").click(function(ev) {
+   $("div.topitem").click(function(ev) {
       // A top news article has been clicked:
       // post a form to the main page with its URL
-      var url = $(this).attr("url");
-      displayUrl(url);
-   });
-   $("#plist span.name").click(function(ev) {
-      // A person name has been clicked:
-      // post a form to the main page with the associated article URL
       var url = $(this).attr("url");
       displayUrl(url);
    });

@@ -40,7 +40,7 @@ PUNCTUATION = LEFT_PUNCTUATION + CENTER_PUNCTUATION + RIGHT_PUNCTUATION + NONE_P
 # Punctuation that ends a sentence
 END_OF_SENTENCE = frozenset(['.', '?', '!', '[…]'])
 # Punctuation symbols that may additionally occur at the end of a sentence
-SENTENCE_FINISHERS = frozenset([')', ']', '“', '»', '”', '’', '[…]'])
+SENTENCE_FINISHERS = frozenset([')', ']', '“', '»', '”', '’', '"', '[…]'])
 
 # Hyphens that can indicate composite words
 # ('stjórnskipunar- og eftirlitsnefnd')
@@ -381,6 +381,10 @@ def parse_tokens(txt):
                     # Treat ellipsis as one piece of punctuation
                     yield TOK.Punctuation("…")
                     w = w[3:]
+                elif w.startswith(",,"):
+                    # Probably an idiot trying to type opening double quotes with commas
+                    yield TOK.Punctuation('„')
+                    w = w[2:]
                 elif len(w) == 2 and (w == "[[" or w == "]]"):
                     # Begin or end paragraph marker
                     if w == "[[":

@@ -265,6 +265,7 @@ class RuvScraper(ScrapeHelper):
         "/tag/",
         "/frettalisti/",
         "/nyjast/",
+        "/thaettir/",
         "/dagskra"
     ]
 
@@ -421,15 +422,15 @@ class MblScraper(ScrapeHelper):
                 if p.strong and p.strong.a:
                     p.decompose()
             # Delete div.reporter-profile from the content
-            s = ScrapeHelper.div_class(soup, "reporter-profile")
-            if s is not None:
-                s.decompose()
+            ScrapeHelper.del_div_class(soup, "reporter-profile")
             # Delete all image instances from the content
             ScrapeHelper.del_div_class(soup, "mainimg-big")
             ScrapeHelper.del_div_class(soup, "extraimg-big-w-txt")
             ScrapeHelper.del_div_class(soup, "extraimg-big")
             ScrapeHelper.del_div_class(soup, "newsimg-left")
             ScrapeHelper.del_div_class(soup, "newsimg-right")
+            # Embedded media such as Twitter and Facebook posts
+            ScrapeHelper.del_div_class(soup, "embedded-media")
         return soup
 
 

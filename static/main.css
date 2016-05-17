@@ -612,6 +612,7 @@ div.topitem {
    margin-top: 2px;
    padding-top: 1px;
    margin-bottom: 2px;
+   cursor: pointer;
 }
 
 div.topitem:hover {
@@ -626,10 +627,10 @@ div.topitem img {
 #toplist span.heading {
    display: inline-block;
    font-weight: bold;
-   width: 718px;
+   width: 664px;
    white-space: nowrap;
    overflow-x: hidden;
-   cursor: pointer;
+   text-overflow: ellipsis;
    padding-left: 8px;
 }
 
@@ -642,8 +643,26 @@ div.topitem img {
    font-family: 'Open Sans', sans-serif;
    font-size: 14px;
    font-style: normal;
-   width: 54px;
+   width: 46px;
    overflow: hidden;
+}
+
+#toplist span.ratio {
+   display: inline-block;
+   font-family: 'Open Sans', sans-serif;
+   font-size: 14px;
+   font-style: normal;
+   width: 50px;
+   height: 19px;
+   background-color: #F5BFC2; /* Greynir red, faded down */
+   margin-right: 12px;
+}
+
+span.ratio div.ratio-num {
+   display: inline-block;
+   white-space: nowrap;
+   overflow-x: hidden;
+   background-color: #00B74F; /* Greynir green */
 }
 
 #plist span.name {
@@ -652,7 +671,7 @@ div.topitem img {
    width: 250px;
    white-space: nowrap;
    overflow-x: hidden;
-   cursor: pointer;
+   text-overflow: ellipsis;
 }
 
 #plist span.name:hover {
@@ -666,4 +685,5 @@ div.topitem img {
    width: 542px;
    white-space: nowrap;
    overflow-x: hidden;
+   text-overflow: ellipsis;
 }

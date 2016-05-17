@@ -138,6 +138,7 @@ class BIN_Token(Token):
     CASES = ["nf", "þf", "þgf", "ef"]
     GENDERS = ["kk", "kvk", "hk"]
     GENDERS_SET = frozenset(GENDERS)
+    GENDERS_MAP = { "kk" : "KK", "kvk" : "KVK", "hk" : "HK" }
 
     VBIT_CASES = VBIT["nf"] | VBIT["þf"] | VBIT["þgf"] | VBIT["ef"]
 
@@ -170,7 +171,8 @@ class BIN_Token(Token):
 
     # Words that are not eligible for interpretation as proper names, even if they are capitalized
     _NOT_PROPER_NAME = frozenset(["ég", "þú", "hann", "hún", "það", "við", "þið", "þau",
-        "þeir", "þær", "í", "á", "af", "um", "að", "með", "til", "frá", "búist"])
+        "þeir", "þær", "mér", "mig", "mín", "þig", "þér", "þín", "þeim", "þeirra",
+        "í", "á", "af", "um", "að", "með", "til", "frá", "búist", "annars"])
 
     # Numbers that can be used in the singular even if they are nominally plural.
     # This applies to the media company 365, where it is OK to say "365 skuldaði 389 milljónir",
@@ -670,7 +672,11 @@ class BIN_Token(Token):
         def matcher_default(m):
             """ Check other word categories """
             if m.beyging != "-": # Tokens without a form specifier are assumed to be universally matching
-                fbits = BIN_Token.get_fbits(m.beyging)
+                # If the meaning is a noun, its gender is coded in the ordfl attribute
+                # In that case, add it to the beyging field so that the relevant fbits
+                # are included and can be matched against the terminal if it requires
+                # a gender
+                fbits = BIN_Token.get_fbits(m.beyging + BIN_Token.GENDERS_MAP.get(m.ordfl, ""))
                 # Check whether variants required by the terminal are present
                 # in the meaning string
                 if not terminal.fbits_match(fbits):
@@ -805,11 +811,11 @@ class VariantHandler:
         # so_0 -> self._cases = ""
         # so_1_þgf -> self._cases = "þgf"
         # so_2_þf_þgf -> self._cases = "þf_þgf"
-        cases = ""
         if self._vcount >= 1 and self._vparts[0] in "012":
             ncases = int(self._vparts[0])
-            cases = "".join("_" + self._vparts[1 + i] for i in range(ncases))
-        self._cases = cases
+            self._cases = "".join("_" + self._vparts[1 + i] for i in range(ncases))
+        else:
+            self._cases = ""
 
     def startswith(self, part):
         """ Returns True if the terminal name starts with the given string """

@@ -639,14 +639,19 @@ class ParseForestPrinter(ParseForestNavigator):
         self._show_scores = show_scores
 
     def _score(self, w):
+        """ Return a string showing the node's score """
+        # !!! To enable this, assignment of the .score attribute
+        # !!! needs to be uncommented in reducer.py
         return " [{0}]".format(w.score) if self._show_scores else ""
 
     def _visit_epsilon(self, level):
+        """ Epsilon (null) node """
         indent = "  " * level # Two spaces per indent level
         print(indent + "(empty)", file = self._file)
         return None
 
     def _visit_token(self, level, w):
+        """ Token matching a terminal """
         indent = "  " * level # Two spaces per indent level
         print(indent + "{0}: {1}{2}".format(w.terminal, w.token, self._score(w)),
             file = self._file)
@@ -666,6 +671,7 @@ class ParseForestPrinter(ParseForestNavigator):
         return None # No results required, but visit children
 
     def _visit_family(self, results, level, w, ix, prod):
+        """ Show trees for different options, if ambiguous """
         if w.is_ambiguous:
             indent = "  " * level # Two spaces per indent level
             print(indent + "Option " + str(ix + 1) + ":", file = self._file)

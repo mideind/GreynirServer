@@ -88,8 +88,8 @@
          <div class="tophdr">Fólk í fréttum</div>
          <div id="plist">
 {% for person in persons %}
-<div class="topitem"><!--
---><span class="name" url="{{ person.url }}">{{ person.name }}</span><!--
+<div class="topitem" url="{{ person.url }}"><!--
+--><span class="name">{{ person.name }}</span><!--
 --><span class="title">{{ person.title }}</span><!--
 --></div>
 {% endfor %}
@@ -101,10 +101,11 @@
          <div class="tophdr">Nýjustu fréttir</div>
          <div id="toplist">
 {% for article in articles %}
-<div class="topitem"><!--
+<div class="topitem" url="{{ article.url }}"><!--
 --><span class="timestamp">{{ article.timestamp }}</span><!--
+--><span class="ratio" title="{{ article.width }} trjágreind"><div class="ratio-num" style="width:{{ article.width }}">&nbsp;</div></span><!--
 --><img src="/static/{{ article.icon }}" width="16" height="16"/><!--
---><span class="heading" url="{{ article.url }}">{{ article.heading }}</span><!--
+--><span class="heading">{{ article.heading }}</span><!--
 --></div>
 {% endfor %}
          </div>

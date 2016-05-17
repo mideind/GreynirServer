@@ -159,14 +159,15 @@ def Titill(node, params, result):
 def Ávarp(node, params, result):
     """ Ávarp á undan nafni (herra, frú, séra...) """
     result.ávarp = result._nominative
+    result._nominative = result._text = ""
 
 def EfLiður(node, params, result):
     """ Eignarfallsliður eftir nafnlið """
     result.efliður = result._text
     # Leyfa eignarfallslið að standa óbreyttum í titli
     result._nominative = result._text
-    # Ekki senda skýringu og nafn í gegn um eignarfallslið
-    result.del_attribs(("skýring", "skýring_nafn"))
+    # Ekki senda skýringu eða mannsnafn í gegn um eignarfallslið
+    result.del_attribs(("skýring", "skýring_nafn", "mannsnafn", "ávarp"))
 
 def FsLiður(node, params, result):
     """ Forsetningarliður """
@@ -176,7 +177,7 @@ def FsLiður(node, params, result):
 def Setning(node, params, result):
     """ Undirsetning: láta standa óbreytta """
     result._nominative = result._text
-    result.del_attribs("skýring_nafn")
+    result.del_attribs(("skýring", "skýring_nafn"))
 
 def SetningSo(node, params, result):
     """ Setning sem byrjar á sögn: eyða út """
@@ -184,11 +185,23 @@ def SetningSo(node, params, result):
     result._nominative = ""
     result.del_attribs(("skýring", "skýring_nafn"))
 
+def SetningÁnF(node, params, result):
+    """ Ekki fara með skýringu upp úr setningu án frumlags """
+    result._nominative = result._text
+    result.del_attribs(("skýring", "skýring_nafn"))
+
 def SvigaInnihaldNl(node, params, result):
     """ Svigainnihald eða skýring sem er ekki í sama falli og foreldri: eyða út """
     result._text = ""
     result._nominative = ""
     result.del_attribs(("skýring", "skýring_nafn"))
+
+def SvigaInnihald(node, params, result):
+    """ Ef innihald sviga er hrein yfirsetning, þá er það líklega ekki titill: eyða út """
+    if node.child_has_nt_base("HreinYfirsetning"):
+        result._text = ""
+        result._nominative = ""
+        result.del_attribs(("skýring", "skýring_nafn"))
 
 # Textar sem ekki eru teknir gildir sem skýringar
 ekki_skýring = { "myndskeið" }
@@ -233,7 +246,7 @@ def NlSkýring(node, params, result):
             # Mannsnafn sem skýring á nafnlið: gæti verið gagnlegt
             result.skýring_nafn = mannsnafn
     # Ekki senda mannsnafn innan úr skýringunni upp tréð
-    result.del_attribs("mannsnafn")
+    result.del_attribs(("mannsnafn", "ávarp"))
 
 def NlEind(node, params, result):
     """ Nafnliðareind """
@@ -265,9 +278,9 @@ def NlKjarni(node, params, result):
         mannsnafn = result.get("mannsnafn")
         if mannsnafn:
             ávarp = result.get("ávarp")
-            if ávarp:
-                # Skera ávarpið framan af mannsnafninu
-                mannsnafn = mannsnafn[len(ávarp) + 1:]
+            #if ávarp:
+            #    # Skera ávarpið framan af mannsnafninu
+            #    mannsnafn = mannsnafn[len(ávarp) + 1:]
             titill = result.get("titill")
             #print("Looking at mannsnafn '{0}' titill '{1}'".format(mannsnafn, titill))
             if titill is None:
@@ -291,7 +304,7 @@ def NlKjarni(node, params, result):
 
             if _add_name(result, mannsnafn, titill):
                 # Búið að afgreiða þetta nafn
-                result.del_attribs("mannsnafn")
+                result.del_attribs(("mannsnafn", "ávarp", "titill"))
 
         else:
             mannsnafn = result.get("skýring_nafn")
@@ -314,7 +327,7 @@ def NlKjarni(node, params, result):
                 # print("NlKjarni: nafn '{0}', titill '{1}'".format(mannsnafn, titill))
                 _add_name(result, mannsnafn, titill)
                 result.del_attribs("skýring_nafn")
-                result.del_attribs(("mannsnafn", "skýring"))
+                result.del_attribs(("mannsnafn", "ávarp", "skýring"))
 
     # Leyfa mannsnafni að ferðast áfram upp tréð ef við
     # fundum ekki titil á það hér

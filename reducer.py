@@ -267,9 +267,9 @@ class Reducer:
                 """ At token node """
                 # Return the score of this token/terminal match
                 # !!! DEBUG
-                node.score = self._scores[node.start][node.terminal]
-                return node.score
-                # return self._scores[node.start][node.terminal]
+                #node.score = self._scores[node.start][node.terminal]
+                #return node.score
+                return self._scores[node.start][node.terminal]
 
             def _visit_nonterminal(self, level, node):
                 """ At nonterminal node """
@@ -334,7 +334,7 @@ class Reducer:
                     # Get score adjustment for this nonterminal, if any
                     sc += self._score_adj.get(results.nt, 0)
                 # !!! DEBUG
-                node.score = sc
+                #node.score = sc
                 return sc
 
         return ParseForestReducer(self._grammar, scores).go(w)

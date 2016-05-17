@@ -369,6 +369,7 @@ def add_name_register(result, session):
 def top_news(limit = 20):
     """ Return a list of top recent news """
     toplist = []
+    topdict = dict()
     with SessionContext() as session:
         # Attempt to look up the name pn.name
         q = session.query(Article) \
@@ -379,8 +380,44 @@ def top_news(limit = 20):
         for a in q:
             # Collect and count the titles
             icon = a.root.domain + ".ico"
-            toplist.append(dict(heading = a.heading, timestamp = str(a.timestamp)[11:16],
-                url = a.url, num_sentences = a.num_sentences, num_parsed = a.num_parsed, icon = icon))
+
+            class ArticleDisplay:
+
+                """ Utility class to carry information about an article to the web template """
+
+                def __init__(self, heading, original_ts, timestamp, url, num_sentences, num_parsed, icon):
+                    self.heading = heading
+                    self.original_ts = original_ts
+                    self.timestamp = timestamp
+                    self.url = url
+                    self.num_sentences = num_sentences
+                    self.num_parsed = num_parsed
+                    self.icon = icon
+
+                @property
+                def width(self):
+                    """ The ratio of parsed sentences to the total number of sentences,
+                        expressed as a percentage string """
+                    if self.num_sentences == 0:
+                        return "0%"
+                    return "{0}%".format((100 * self.num_parsed) // self.num_sentences)
+
+            d = ArticleDisplay(heading = a.heading, original_ts = a.timestamp, timestamp = str(a.timestamp)[11:16],
+                url = a.url, num_sentences = a.num_sentences, num_parsed = a.num_parsed, icon = icon)
+
+            # Have we seen the same heading on the same domain?
+            t = (a.root.domain, a.heading)
+            if t in topdict:
+                # Same domain+heading already in the list
+                i = topdict[t]
+                if d.original_ts > toplist[i].original_ts:
+                    # The new entry is newer: replace the old one
+                    toplist[i] = d
+                # Otherwise, ignore the new entry and continue
+            else:
+                # New heading: note its index in the list
+                topdict[t] = len(toplist)
+                toplist.append(d)
         session.commit()
     return toplist
 
@@ -455,7 +492,7 @@ def analyze():
         result["tok_time"] = tok_time
         result["parse_time"] = parse_time
 
-        if keep_trees:
+        if keep_trees and metadata is not None:
             # Save a new parse result
             if Settings.DEBUG:
                 print("Storing a new parse tree for url {0}".format(url))
@@ -668,13 +705,11 @@ def parse_grid():
     if forest is not None and use_reducer:
         # Reduce the parse forest
         forest, score = Reducer(grammar).go_with_score(forest)
-        if Settings.DEBUG:
+        #if Settings.DEBUG:
             # Dump the reduced tree along with node scores
-            with open("reduce.txt", mode = "w", encoding= "utf-8") as f:
-                print("Reynir parse tree for sentence '{0}' after reduction".format(txt), file = f)
-                ParseForestPrinter.print_forest(forest, file = f, show_scores = True)
-
-            #print(ParseForestDumper.dump_forest(forest))
+            #with open("reduce.txt", mode = "w", encoding= "utf-8") as f:
+            #    print("Reynir parse tree for sentence '{0}' after reduction".format(txt), file = f)
+            #    ParseForestPrinter.print_forest(forest, file = f, show_scores = True)
 
     # Make the parse grid with all options
     grid, ncols = make_grid(forest) if forest else ([], 0)
@@ -854,7 +889,7 @@ if __name__ == "__main__":
 
     # Additional files that should cause a reload of the web server application
     # Note: Reynir.grammar is automatically reloaded if its timestamp changes
-    extra_files = [ 'Reynir.conf', 'Verbs.conf', 'Main.conf' ]
+    extra_files = [ 'Reynir.conf', 'Verbs.conf', 'Main.conf', 'Prefs.conf' ]
 
     from socket import error as socket_error
     import errno

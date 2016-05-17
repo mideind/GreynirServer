@@ -190,12 +190,16 @@ function serverPost(url, parameters) {
    form.submit();
 }
 
+// Hold the text to be displayed
+
+var theText = {{ txt | tojson }};
+
 function showOption(ev) {
    /* A parse option has been clicked: show its parse grid */
    var parsePath = $(ev.delegateTarget).text();
    // Do an HTML POST to the parsegrid URL, passing
    // the sentence text within a synthetic form
-   serverPost("/parsegrid", { txt: "{{ txt | safe }}", option: parsePath })
+   serverPost("/parsegrid", { txt: theText, option: parsePath })
 }
 
 function addSentence(sentence, shouldParse) {
@@ -207,7 +211,7 @@ function addSentence(sentence, shouldParse) {
 
 function addValidSentence() {
    if (!$("#add-valid-sent").prop("disabled"))
-      addSentence("{{ txt | safe }}", true);
+      addSentence(theText, true);
    // Prevent adding multiple instances
    $(".btn").prop("disabled", true);
    $(".btn").addClass("disabled");
@@ -215,7 +219,7 @@ function addValidSentence() {
 
 function addInvalidSentence() {
    if (!$("#add-invalid-sent").prop("disabled"))
-      addSentence("{{ txt | safe }}", false);
+      addSentence(theText, false);
    // Prevent adding multiple instances
    $(".btn").prop("disabled", true);
    $(".btn").addClass("disabled");
@@ -223,7 +227,7 @@ function addInvalidSentence() {
 
 function editSentence() {
    // Navigate to the main screen with the text pre-set
-   window.location.href = "/?txt=" + encodeURIComponent("{{ txt | safe }}");
+   window.location.href = "/?txt=" + encodeURIComponent(theText);
 }
 
 function initMain(jQuery) {

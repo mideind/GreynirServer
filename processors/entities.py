@@ -90,6 +90,13 @@ def EfLiður(node, params, result):
     """ Ekki láta sérnafn lifa í gegn um eignarfallslið """
     result.del_attribs(('sérnafn', 'sérnafn_nom'))
 
+def SetningÁnF(node, params, result):
+    """ Ekki láta sérnafn lifa í gegn um setningu án frumlags """
+    result.del_attribs(('sérnafn', 'sérnafn_nom'))
+
+def SetningSo(node, params, result):
+    """ Ekki láta sérnafn lifa í gegn um setningu sem hefst á sögn """
+    result.del_attribs(('sérnafn', 'sérnafn_nom'))
 
 def Sérnafn(node, params, result):
     """ Sérnafn, stutt eða langt """
