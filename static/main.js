@@ -28,7 +28,8 @@ var TOK_CURRENCY = 12;
 var TOK_AMOUNT = 13;
 var TOK_PERSON = 14;
 var TOK_EMAIL = 15;
-var TOK_UNKNOWN = 16;
+var TOK_ENTITY = 16;
+var TOK_UNKNOWN = 17;
 
 var TOK_P_BEGIN = 10001; // Block begin
 var TOK_P_END = 10002; // Block end
@@ -176,92 +177,104 @@ function hoverIn() {
    var left = Math.min(offset.left, 560);
    var i;
    var gender;
+   var info = $("div.info");
 
    // Highlight the token
    $(this).addClass("highlight");
 
    if (wl[0] == TOK_WORD) {
-      $("div.info").html("<p><b>" + wl[1] + "</b></p>");
+      info.html("<p><b>" + wl[1] + "</b></p>");
       // Word: list its potential meanings
       for (i = 0; i < wl[2].length; i++) {
          var form = wl[2][i];
-         $("div.info").append("<p>" + form[2] + " <b>" + form[0] + "</b> <i>" + form[5] + "</i></p>");
+         info.append("<p>" + form[2] + " <b>" + form[0] + "</b> <i>" + form[5] + "</i></p>");
       }
    }
    else
    if (wl[0] == TOK_NUMBER) {
-      $("div.info").html("<p><b>" + wl[1] + "</b></p>");
+      info.html("<p><b>" + wl[1] + "</b></p>");
       // Show the parsed floating-point number to 2 decimal places
       gender = (wl[2][2] !== null) ? (" " + wl[2][2]) : "";
-      $("div.info").append("<p>" + wl[2][0].toFixed(2) + gender + "</p>");
+      info.append("<p>" + wl[2][0].toFixed(2) + gender + "</p>");
       // Show cases, if available
       if (wl[2][1] !== null)
          for (i = 0; i < wl[2][1].length; i++)
-            $("div.info").append("<p>" + wl[2][1][i] + "</p>");
+            info.append("<p>" + wl[2][1][i] + "</p>");
    }
    else
    if (wl[0] == TOK_PERCENT) {
-      $("div.info").html("<p><b>" + wl[1] + "</b></p>");
+      info.html("<p><b>" + wl[1] + "</b></p>");
       // Show the parsed floating-point number to 1 decimal place
       gender = (wl[2][2] !== null) ? (" " + wl[2][2]) : "";
-      $("div.info").append("<p>" + wl[2][0].toFixed(1) + "% " + gender + "</p>");
+      info.append("<p>" + wl[2][0].toFixed(1) + "% " + gender + "</p>");
       // Show cases, if available
       if (wl[2][1] !== null)
          for (i = 0; i < wl[2][1].length; i++)
-            $("div.info").append("<p>" + wl[2][1][i] + "</p>");
+            info.append("<p>" + wl[2][1][i] + "</p>");
    }
    else
    if (wl[0] == TOK_ORDINAL) {
-      $("div.info").html("<p><b>" + wl[1] + ".</b></p>");
+      info.html("<p><b>" + wl[1] + ".</b></p>");
       // Show the parsed number
-      $("div.info").append("<p>" + wl[2] + "</p>");
+      info.append("<p>" + wl[2] + "</p>");
    }
    else
    if (wl[0] == TOK_DATE) {
-      $("div.info").html("<p><b>" + wl[1] + "</b></p>");
+      info.html("<p><b>" + wl[1] + "</b></p>");
       // Show the date in ISO format
-      $("div.info").append("<p>" + iso_date(wl[2]) + "</p>");
+      info.append("<p>" + iso_date(wl[2]) + "</p>");
    }
    else
    if (wl[0] == TOK_CURRENCY) {
-      $("div.info").html("<p><b>" + wl[1] + "</b></p>");
+      info.html("<p><b>" + wl[1] + "</b></p>");
       // Show the ISO code for the currency
-      $("div.info").append("<p>" + wl[2][0] + "</p>");
+      info.append("<p>" + wl[2][0] + "</p>");
       // Show cases, if available
       if (wl[2][1] !== null)
          for (i = 0; i < wl[2][1].length; i++)
-            $("div.info").append("<p>" + wl[2][1][i] + "</p>");
+            info.append("<p>" + wl[2][1][i] + "</p>");
    }
    else
    if (wl[0] == TOK_AMOUNT) {
-      $("div.info").html("<p><b>" + wl[1] + "</b></p>");
+      info.html("<p><b>" + wl[1] + "</b></p>");
       // Show the amount as well as the ISO code for its currency
       gender = (wl[2][3] !== null) ? (" " + wl[2][3]) : "";
-      $("div.info").append("<p>" + wl[2][1] + " " + wl[2][0].toFixed(2) + gender + "</p>");
+      info.append("<p>" + wl[2][1] + " " + wl[2][0].toFixed(2) + gender + "</p>");
       // Show cases, if available
       if (wl[2][2] !== null)
          for (i = 0; i < wl[2][2].length; i++)
-            $("div.info").append("<p>" + wl[2][2][i] + "</p>");
+            info.append("<p>" + wl[2][2][i] + "</p>");
    }
    else
    if (wl[0] == TOK_PERSON) {
       if (!wl[2].length)
-         $("div.info").html("<p><b>" + wl[1] + "</b></p>");
+         info.html("<p><b>" + wl[1] + "</b></p>");
       else {
          var p = wl[2][0];
          // Show name and title
          var name = p[0];
          var title = register[name] || "";
-         $("div.info").html("<p><b>" + name + "</b> " + title + "</p>");
+         info.html("<p><b>" + name + "</b> " + title + "</p>");
+      }
+   }
+   else
+   if (wl[0] == TOK_ENTITY) {
+      info.html("<p><b>" + wl[1] + "</b></p>");
+      // Show definitions, if any
+      if (wl[2][0].length) {
+         info.append("<ul>");
+         for (i = 0; i < wl[2][0].length; i++)
+            info.append("<li>" + wl[2][0][i] + "</li>");
+         info.append("</ul>");
       }
    }
    else
    if (wl[0] == TOK_TIMESTAMP) {
-      $("div.info").html("<p><b>" + wl[1] + "</b></p>");
+      info.html("<p><b>" + wl[1] + "</b></p>");
       // Show the timestamp in ISO format
-      $("div.info").append("<p>" + iso_timestamp(wl[2]) + "</p>");
+      info.append("<p>" + iso_timestamp(wl[2]) + "</p>");
    }
-   $("div.info")
+   info
       .css("top", offset.top.toString() + "px")
       .css("left", left.toString() + "px")
       .css("visibility", "visible");
@@ -314,6 +327,13 @@ function populateRegister(register) {
       $("#register").css("display", "block");
 }
 
+function handleError(xhr, status, errorThrown) {
+   /* An error occurred on the server or in the communications */
+   // Hide progress indicator
+   $("div#wait").css("display", "none");
+   $("div#result").html("<div class='guide-empty'><p><b>Villa kom upp</b> í samskiptum við netþjón Greynis</p></div>");
+}
+
 function populateResult(json) {
    // Display the results of analysis by the server
    // Hide progress indicator
@@ -352,7 +372,7 @@ function populateResult(json) {
          // The token has earlier been marked as an error token:
          // enclose it within a span identifying it as such
          wl0 &= ~TOK_ERROR_FLAG;
-         if (wl0 == TOK_WORD || wl0 == TOK_PERSON || wl0 == TOK_DATE || wl0 == TOK_NUMBER) {
+         if (wl0 == TOK_WORD || wl0 == TOK_PERSON || wl0 == TOK_ENTITY || wl0 == TOK_DATE || wl0 == TOK_NUMBER) {
             s += wsp;
             wsp = "";
          }
@@ -467,6 +487,11 @@ function populateResult(json) {
          wsp = " ";
       }
       else
+      if (wl0 == TOK_ENTITY) {
+         s += add_w(wsp, "entity", i, wl[1]);
+         wsp = " ";
+      }
+      else
       if (wl0 == TOK_YEAR || wl0 == TOK_TELNO || wl0 == TOK_EMAIL || wl0 == TOK_TIME) {
          s += wsp + "<b>" + wl[1] + "</b>";
          wsp = " ";
@@ -494,8 +519,11 @@ function populateResult(json) {
 function clearResult() {
    // Clear previous result
    $("div#result").html("");
-   // Make top lists disappear
-   $("div.front").css("display", "none");
+   // Switch to the output tab
+   $("div.main-tab").css("display", "none");
+   $("div#output").css("display", "block");
+   $("div.tab-header span.tab").removeClass("selected");
+   $("span#hdr-output").addClass("selected");
    // Display progress indicator
    $("div#wait").css("display", "block");
    // Make the statistics appear but hidden until processing is complete
@@ -518,7 +546,9 @@ function _analyzeUrl(url) {
          url : url,
          noreduce : true
       },
-      populateResult
+      populateResult,
+      null,
+      handleError
    );
 }
 
@@ -536,7 +566,9 @@ function displayUrl(url) {
       {
          url : url
       },
-      populateResult
+      populateResult, // successFunc
+      null, // completeFunc
+      handleError // errorFunc
    );
 }
 
@@ -553,6 +585,14 @@ function initMain(jQuery) {
       // post a form to the main page with its URL
       var url = $(this).attr("url");
       displayUrl(url);
+   });
+   $("div.tab-header span.tab").click(function(ev) {
+      // A top level tab has been clicked
+      var tabId = $(this).attr("id").slice(4);
+      $("div.main-tab").css("display", "none");
+      $("div#" + tabId).css("display", "block");
+      $("div.tab-header span.tab").removeClass("selected");
+      $(this).addClass("selected");
    });
 }
 

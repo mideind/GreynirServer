@@ -32,7 +32,7 @@ from scraper import Scraper
 from processor import Tree
 from scraperdb import Scraper_DB, SessionContext, Person, Article, desc
 from settings import Settings, ConfigError, changedlocale
-from tokenizer import tokenize, TOK
+from tokenizer import tokenize, TOK, correct_spaces
 
 # Initialize Flask framework
 
@@ -359,8 +359,8 @@ def add_name_register(result, session):
                 if titles:
                     # Pick the most popular title, or the longer one if two are equally popular
                     title = sorted([(cnt, len(t), t) for t, cnt in titles.items()])[-1][2]
-                    # Add it to the register
-                    register[pn.name] = title
+                    # Add it to the register, after correcting spacing
+                    register[pn.name] = correct_spaces(title)
     result["register"] = register
     if Settings.DEBUG:
         print("Register is: {0}".format(register))
@@ -434,7 +434,7 @@ def top_persons(limit = 20):
             # Insert the name into the ordered list if it's not already there,
             # or if the new title is longer than the previous one
             if p.name not in toplist or len(p.title) > len(toplist[p.name][0]):
-                toplist[p.name] = (p.title, p.article_url)
+                toplist[p.name] = (correct_spaces(p.title), p.article_url)
 
         session.commit()
     with changedlocale(('is_IS', 'UTF-8')) as strxfrm:

@@ -166,8 +166,9 @@ class BIN_Token(Token):
     # '...tóku saman gögn'
     # '...það á jafnframt dótturfélag'
     # '...næstum tvo áratugi'
+    # '...afsalaði sér samt launum'
     _NOT_NOT_EO = frozenset(["inn", "eftir", "of", "til", "upp", "um", "síðan", "fram", "nær", "nærri",
-        "út", "meðal", "úti", "saman", "jafnframt", "næstum" ])
+        "út", "meðal", "úti", "saman", "jafnframt", "næstum", "samt" ])
 
     # Words that are not eligible for interpretation as proper names, even if they are capitalized
     _NOT_PROPER_NAME = frozenset(["ég", "þú", "hann", "hún", "það", "við", "þið", "þau",
@@ -390,6 +391,10 @@ class BIN_Token(Token):
                 return True
         # No match found
         return False
+
+    def matches_ENTITY(self, terminal):
+        """ Handle an entity name token, matching it with an entity terminal """
+        return terminal.first == "entity"
 
     def matches_PUNCTUATION(self, terminal):
         """ Match a literal terminal with the same content as the punctuation token """
@@ -739,6 +744,7 @@ class BIN_Token(Token):
     # Dispatch table for the token matching functions
     _MATCHING_FUNC = {
         TOK.PERSON: matches_PERSON,
+        TOK.ENTITY: matches_ENTITY,
         TOK.PUNCTUATION: matches_PUNCTUATION,
         TOK.CURRENCY: matches_CURRENCY,
         TOK.AMOUNT: matches_AMOUNT,

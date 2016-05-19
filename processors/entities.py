@@ -89,6 +89,8 @@ def sentence(state, result):
 def EfLiður(node, params, result):
     """ Ekki láta sérnafn lifa í gegn um eignarfallslið """
     result.del_attribs(('sérnafn', 'sérnafn_nom'))
+    # Ekki breyta eignarfallsliðum í nefnifall
+    result._nominative = result._text
 
 def SetningÁnF(node, params, result):
     """ Ekki láta sérnafn lifa í gegn um setningu án frumlags """
@@ -102,27 +104,52 @@ def Sérnafn(node, params, result):
     """ Sérnafn, stutt eða langt """
     result.sérnafn = result._text
     result.sérnafn_nom = result._nominative
-
+    result.sérnafn_eind_nom = result._nominative
 
 def Fyrirtæki(node, params, result):
     """ Fyrirtækisnafn, þ.e. sérnafn + ehf./hf./Inc. o.s.frv. """
     result.sérnafn = result._text
     result.sérnafn_nom = result._nominative
 
+def SvigaInnihald(node, params, result):
+    if node.has_variant("et"):
+        result.sviga_innihald = result._nominative
+
+def NlKjarni(node, params, result):
+    result.del_attribs("sérnafn_eind_nom")
+
+def NlEind(node, params, result):
+    """ Ef sérnafn og sviga_innihald eru rétt undir NlEind þá er það skilgreining """
+
+    if "sérnafn_eind_nom" in result and "sviga_innihald" in result:
+
+        entity = result.sérnafn_eind_nom
+        definition = result.sviga_innihald
+
+        print("SvigaInnihald: '{0}' er '{1}'".format(entity, definition))
+
+        # Append to result list
+        if "entities" not in result:
+            result.entities = []
+
+        result.entities.append((entity, "er", definition))
+
+    result.del_attribs(("sviga_innihald", "sérnafn_eind_nom"))
+
 
 def SamstættFall(node, params, result):
     """ 'Danska byggingavörukeðjan Bygma' """
 
-    assert len(params) == 2
+    assert len(params) >= 2
 
-    if "sérnafn" in params[1]:
-        sérnafn = params[1].sérnafn
-        sérnafn_nom = params[1].sérnafn_nom
+    if "sérnafn" in params[-1]:
+        sérnafn = params[-1].sérnafn
+        sérnafn_nom = params[-1].sérnafn_nom
     else:
 
         # Gæti verið venjulegur nafnliður með upphafsstaf
-        sérnafn = params[1]._text
-        sérnafn_nom = params[1]._nominative
+        sérnafn = params[-1]._text
+        sérnafn_nom = params[-1]._nominative
 
         # Athuga hvort allir hlutar nafnsins séu með upphafsstaf
         # Ef ekki, hætta við
@@ -130,7 +157,7 @@ def SamstættFall(node, params, result):
             if not part or not part[0].isupper():
                 return
 
-    definition = params[0]._indefinite # byggingavörukeðja
+    definition = " ".join(p._indefinite for p in params[0:-1]) # dönsk byggingavörukeðja
 
     if node.has_variant("nf"):
         # Nafnliðurinn er í nefnifalli: nota sérnafnið eins og það stendur

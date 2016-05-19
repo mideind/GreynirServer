@@ -483,6 +483,7 @@ class TerminalNode(Node):
 
                 # Calculate a new beyging string with the nominative case
                 beyging = replace_func(x.beyging)
+                #print("Replaced beyging {0} by {1}".format(x.beyging, beyging))
 
                 if beyging is x.beyging:
                     # No replacement made: word form is identical in the nominative case
@@ -505,7 +506,8 @@ class TerminalNode(Node):
     def _nominative(self, bin_db):
         """ Look up the nominative form of the word associated with this terminal """
         # Lookup the token in the BIN database
-        if (not self.is_word) or (self.case == "nf") or self.is_literal or self.cat in { "ao", "eo", "fs", "st", "nhm" }:
+        if (not self.is_word) or (self.case == "nf") or self.is_literal \
+            or self.cat in { "ao", "eo", "fs", "st", "nhm" }:
             # Not a word, already nominative or not declinable: return it as-is
             return self.text
         if not self.text:
@@ -532,11 +534,14 @@ class TerminalNode(Node):
         return w
 
     def _indefinite(self, bin_db):
-        """ Look up the indefinite nominative form of a noun associated with this terminal """
+        """ Look up the indefinite nominative form of a noun or adjective associated with this terminal """
         # Lookup the token in the BIN database
-        if (not self.is_word) or self.is_literal or self.cat != "no" or "gr" not in self.variants:
+        if (not self.is_word) or self.is_literal:
             # Not a word, not a noun or already indefinite: return it as-is
             return self.text
+        if (self.cat != "no" or "gr" not in self.variants) and (self.cat != "lo"):
+            return self.text
+
         if not self.text:
             print("self.text is empty, token is {0}, terminal is {1}".format(self.token, self.terminal))
             assert False
@@ -545,9 +550,9 @@ class TerminalNode(Node):
             """ Change a beyging string to specify a different case, without the definitive article """
             for case in ("NF", "ÞF", "ÞGF", "EF"):
                 if case != by_case and case in b:
-                    return b.replace(case, by_case).replace("gr", "")
+                    return b.replace(case, by_case).replace("gr", "").replace("VB", "SB")
             # No case found: shouldn't really happen, but whatever
-            return b.replace("gr", "")
+            return b.replace("gr", "").replace("VB", "SB")
 
         # Lookup the same word stem but in the nominative case
         w = self.lookup_alternative(bin_db, replace_beyging)
@@ -572,7 +577,7 @@ class TerminalNode(Node):
         return self.nominative_cache
 
     def indefinite(self, state, params):
-        """ Calculate the nominative form of this node's text """
+        """ Calculate the nominative, indefinite form of this node's text """
         if self.indefinite_cache is None:
             # Not already cached: look up in database
             bin_db = state["bin_db"]

@@ -183,8 +183,8 @@ SpurnarSamtenging →
     | SpurnarorðAtv SpurnarBotn FsRuna?         # '(Ég spurði) hversu miklu bensíni af þessari tegund (hann ætlaði að skila)'
 
     # hvort og hvenær eru samtengingar í BÍN og því þarf ekki reglu fyrir þær einar og sér
-    # heldur aðeins með forsetningarrunu (hvort )
-    | "hvort" FsRuna
+    # heldur aðeins með forsetningarrunu (hvenær í ósköpunum hann ætlaði að koma)
+    # | "hvort" FsRuna # ?hvort í ósköpunum hann ætlaði að hætta
     | "hvenær" FsRuna
 
 HverHvor/kyn →
@@ -319,8 +319,11 @@ Samanburður →
     SamanburðarTenging Nl_nf
 
 SamanburðarTenging →
-    "heldur" "en"       # 'Forseti á ekki að gera meiri breytingu á sér heldur en forsætisráðherra'
-    | 'eins_og'         # 'Hann á ekki andstæðinga eins og aðrir kjörnir fulltrúar'
+    "heldur" "en"        # 'Forseti á ekki að gera meiri breytingu á sér heldur en forsætisráðherra'
+    | ','? 'eins_og'     # 'Hann á ekki andstæðinga eins og aðrir kjörnir fulltrúar'
+    | ','? "þar" "af"    # 'Fjöldi barna var í vélinni, þar af tvö kornabörn'
+    | ','? 'þar_á_meðal'
+    | ','? "þar" "á" "meðal"
 
 Setning/tala/pers/kyn →
     # Venjuleg setningarskipan með frumlagi (í nafnhætti) fremst:
@@ -1877,12 +1880,17 @@ Sérnafn →
 
 LangtSérnafn →
     sérnafn "-"? sérnafn+           # Glass-Steagall lögin
+    | entity+                       # Eining með nafni sem þekkt er úr gagnagrunni eða runu slíkra
 
 Sérnafn/fall →
     sérnafn/fall | LangtSérnafn/fall
 
 LangtSérnafn/fall →
     sérnafn/fall "-"? sérnafn/fall+ # Stóra-Felli
+
+# Leyfa löngu sérnafni í nefnifalli að passa við langt sérnafn án falls
+LangtSérnafn_nf →
+    LangtSérnafn
 
 # Löng sérnöfn, þ.e. runur orða með upphafsstöfum, eru mjög líklega rétt greind
 
@@ -1991,10 +1999,16 @@ FyrirbæriMeðGreini/aukafall/kyn →
     ÓsamstættFall/aukafall/kyn
 
 SamstættFall/fall/kyn →
-    no_gr_et/fall/kyn Sérnafn/fall  # (Ég versla við) herrafataverslunina Smekkmann
+    VeiktLo/fall/kyn* no_gr_et/fall/kyn Sérnafn/fall  # (Ég versla við) norsku herrafataverslunina Smekkmann
 
 ÓsamstættFall/aukafall/kyn →
-    no_gr_et/aukafall/kyn Sérnafn # (Ég versla við) herrafataverslunina Smekkmaður
+    VeiktLo/aukafall/kyn* no_gr_et/aukafall/kyn Sérnafn # (Ég versla við) herrafataverslunina Smekkmaður
+
+VeiktLo/fall/kyn →
+    lo_vb_et/fall/kyn
+
+# Hvetja til runa af lýsingarorðum í veikri beygingu með skilgreiningu sérnafna
+$score(+8) VeiktLo/fall/kyn
 
 $score(+4) SamstættFall/fall/kyn
 $score(-1) ÓsamstættFall/aukafall/kyn
@@ -2171,7 +2185,12 @@ Sem/tala/fall/kyn →
 # (að endurskapa sig) sem þjóðhetju
 # 'sem' með nefnifalli er talið vera forsetning
 Sem/tala/aukafall/kyn →
+    SemAukafall/aukafall/tala
+
+SemAukafall/aukafall/tala →
     "sem" Nl/aukafall/tala
+
+$score(-4) SemAukafall/aukafall/tala
 
 NlEind_et_p3_nf_hk →
     # Það hvernig kerfið virkar (er óskiljanlegt flestum)
@@ -2481,7 +2500,8 @@ FsMeðFallstjórn →
     | "nær" 'draga'_et_p3 Nl_þgf # 'þegar nær dró/dregur jólum'
     | 'það_sem_af_er' Nl_þgf # 'það sem af er þessu þingi'
     | "miðað" "við" Nl_þf
-    | 'miðað_við' Nl_þf
+    | 'miðað_við' Nl_þf # Skammstöfunin m.v.
+    | "samanborið" "við" Nl_þf
     | "þegar" "kemur" "að" Nl_þgf
     | 'til_og_frá' Nl_þgf
     | "fyrir" "utan" Nl_þf

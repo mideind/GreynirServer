@@ -19,7 +19,7 @@
 """
 
 from contextlib import closing
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 
 import re
 import codecs
@@ -27,6 +27,7 @@ import datetime
 
 from settings import Settings, StaticPhrases, Abbreviations, AmbigPhrases, DisallowedNames
 from bindb import BIN_Db, BIN_Meaning
+from scraperdb import SessionContext, Entity
 
 
 # Recognized punctuation
@@ -58,6 +59,24 @@ TP_LEFT = 1   # Whitespace to the left
 TP_CENTER = 2 # Whitespace to the left and right
 TP_RIGHT = 3  # Whitespace to the right
 TP_NONE = 4   # No whitespace
+TP_WORD = 5   # Flexible whitespace depending on surroundings
+
+# Matrix indicating correct spacing between tokens
+
+TP_SPACE = (
+    # Next token is:
+    # LEFT    CENTER  RIGHT   NONE    WORD
+    # Last token was TP_LEFT:
+    ( False,  True,   False,  False,  False),
+    # Last token was TP_CENTER:
+    ( True,   True,   True,   True,   True),
+    # Last token was TP_RIGHT:
+    ( True,   True,   False,  False,  True),
+    # Last token was TP_NONE:
+    ( False,  True,   False,  False,  False),
+    # Last token was TP_WORD:
+    ( True,   True,   False,  False,  True)
+)
 
 # Numeric digits
 
@@ -91,6 +110,32 @@ PersonName = namedtuple('PersonName', ['name', 'gender', 'case'])
 
 Tok = namedtuple('Tok', ['kind', 'txt', 'val'])
 
+
+def correct_spaces(s):
+    """ Split and re-compose a string with correct spacing between tokens"""
+    r = []
+    last = TP_NONE
+    for w in s.split():
+        if len(w) > 1:
+            this = TP_WORD
+        elif w in LEFT_PUNCTUATION:
+            this = TP_LEFT
+        elif w in RIGHT_PUNCTUATION:
+            this = TP_RIGHT
+        elif w in NONE_PUNCTUATION:
+            this = TP_NONE
+        elif w in CENTER_PUNCTUATION:
+            this = TP_CENTER
+        else:
+            this = TP_WORD
+        if TP_SPACE[last - 1][this - 1] and r:
+            r.append(" " + w)
+        else:
+            r.append(w)
+        last = this
+    return "".join(r)
+
+
 # Token types
 
 class TOK:
@@ -112,7 +157,8 @@ class TOK:
     AMOUNT = 13
     PERSON = 14
     EMAIL = 15
-    UNKNOWN = 16
+    ENTITY = 16
+    UNKNOWN = 17
 
     P_BEGIN = 10001 # Paragraph begin
     P_END = 10002 # Paragraph end
@@ -139,6 +185,7 @@ class TOK:
         URL: "URL",
         EMAIL: "EMAIL",
         ORDINAL: "ORDINAL",
+        ENTITY: "ENTITY",
         P_BEGIN: "BEGIN PARA",
         P_END: "END PARA",
         S_BEGIN: "BEGIN SENT",
@@ -225,6 +272,10 @@ class TOK:
     def Person(w, m):
         """ m is a list of PersonName tuples: (name, gender, case) """
         return Tok(TOK.PERSON, w, m)
+
+    @staticmethod
+    def Entity(w, definitions, cases=None, genders=None):
+        return Tok(TOK.ENTITY, w, (definitions, cases, genders))
 
     @staticmethod
     def Begin_Paragraph():
@@ -850,6 +901,7 @@ def all_genders(token):
 
 
 def parse_phrases_1(token_stream):
+
     """ Parse a stream of tokens looking for phrases and making substitutions.
         First pass
     """
@@ -1008,6 +1060,7 @@ def parse_phrases_1(token_stream):
 
 
 def parse_phrases_2(token_stream):
+
     """ Parse a stream of tokens looking for phrases and making substitutions.
         Second pass
     """
@@ -1270,6 +1323,7 @@ def parse_phrases_2(token_stream):
 
 
 def parse_static_phrases(token_stream):
+
     """ Parse a stream of tokens looking for static multiword phrases
         (i.e. phrases that are not affected by inflection).
         The algorithm implements N-token lookahead where N is the
@@ -1277,7 +1331,7 @@ def parse_static_phrases(token_stream):
     """
 
     tq = [] # Token queue
-    state = { } # Phrases we're considering
+    state = defaultdict(list) # Phrases we're considering
     pdict = StaticPhrases.DICT # The phrase dictionary
 
     try:
@@ -1288,27 +1342,26 @@ def parse_static_phrases(token_stream):
 
             if token.txt is None: # token.kind != TOK.WORD:
                 # Not a word: no match; discard state
-                for t in tq: yield t
-                tq = []
-                state = { }
+                if tq:
+                    for t in tq: yield t
+                    tq = []
+                if state:
+                    state = defaultdict(list)
                 yield token
                 continue
 
             # Look for matches in the current state and build a new state
-            newstate = { }
+            newstate = defaultdict(list)
             wo = token.txt # Original word
             w = wo.lower() # Lower case
             if wo == w:
                 wo = w
 
-            def add_to_state(st, slist, index):
+            def add_to_state(slist, index):
                 """ Add the list of subsequent words to the new parser state """
                 wrd = slist[0]
                 rest = slist[1:]
-                if wrd in st:
-                    st[wrd].append((rest, index))
-                else:
-                    st[wrd] = [(rest, index)]
+                newstate[wrd].append((rest, index))
 
             # First check for original (uppercase) word in the state, if any;
             # if that doesn't match, check the lower case
@@ -1331,14 +1384,14 @@ def parse_static_phrases(token_stream):
                         # Add the entire phrase as one 'word' to the token queue
                         yield TOK.Word(w, [BIN_Meaning._make(r) for r in StaticPhrases.get_meaning(ix)])
                         # Discard the state and start afresh
-                        newstate = { }
+                        newstate = defaultdict(list)
                         w = wo = ""
                         tq = []
                         # Note that it is possible to match even longer phrases
                         # by including a starting phrase in its entirety in
                         # the static phrase dictionary
                         break
-                    add_to_state(newstate, sl, ix)
+                    add_to_state(sl, ix)
             elif tq:
                 for t in tq: yield t
                 tq = []
@@ -1355,14 +1408,15 @@ def parse_static_phrases(token_stream):
                 for sl, ix in pdict[wm]:
                     if not sl:
                         # Simple replace of a single word
-                        for t in tq: yield tq
-                        tq = []
+                        if tq:
+                            for t in tq: yield tq
+                            tq = []
                         # Yield the replacement token
                         yield TOK.Word(token.txt, [BIN_Meaning._make(r) for r in StaticPhrases.get_meaning(ix)])
-                        newstate = { }
+                        newstate = defaultdict(list)
                         token = None
                         break
-                    add_to_state(newstate, sl, ix)
+                    add_to_state(sl, ix)
                 if token:
                     tq.append(token)
             elif token:
@@ -1380,6 +1434,7 @@ def parse_static_phrases(token_stream):
 
 
 def disambiguate_phrases(token_stream):
+
     """ Parse a stream of tokens looking for common ambiguous multiword phrases
         (i.e. phrases that have a well known very likely interpretation but
         other extremely uncommon ones are also grammatically correct).
@@ -1388,7 +1443,7 @@ def disambiguate_phrases(token_stream):
     """
 
     tq = [] # Token queue
-    state = { } # Phrases we're considering
+    state = defaultdict(list) # Phrases we're considering
     pdict = AmbigPhrases.DICT # The phrase dictionary
 
     try:
@@ -1398,27 +1453,26 @@ def disambiguate_phrases(token_stream):
             token = next(token_stream)
 
             if token.kind != TOK.WORD:
-                # Not a word: no match; discard state
+                # Not a word: no match; yield the token queue
                 if tq:
                     for t in tq: yield t
                     tq = []
-                state = { }
+                # Discard the previous state, if any
+                if state:
+                    state = defaultdict(list)
+                # ...and yield the non-matching token
                 yield token
                 continue
 
-            # Look for matches in the current state and
-            # build a new state
-            newstate = { }
+            # Look for matches in the current state and build a new state
+            newstate = defaultdict(list)
             w = token.txt.lower()
 
-            def add_to_state(st, slist, index):
+            def add_to_state(slist, index):
                 """ Add the list of subsequent words to the new parser state """
                 wrd = slist[0]
                 rest = slist[1:]
-                if wrd in st:
-                    st[wrd].append((rest, index))
-                else:
-                    st[wrd] = [(rest, index)]
+                newstate[wrd].append((rest, index))
 
             if w in state:
                 # This matches an expected token:
@@ -1431,21 +1485,22 @@ def disambiguate_phrases(token_stream):
                         # Discard meanings of words in the token queue that are not
                         # compatible with the category list specified
                         cats = AmbigPhrases.get_cats(ix)
-                        assert len(cats) == len(tq)
+                        # assert len(cats) == len(tq)
                         for t, cat in zip(tq, cats):
-                            assert t.kind == TOK.WORD
+                            # assert t.kind == TOK.WORD
                             # Yield a new token with fewer meanings for each original token in the queue
                             yield TOK.Word(t.txt, [m for m in t.val if m.ordfl == cat])
 
                         # Discard the state and start afresh
-                        newstate = { }
+                        if newstate:
+                            newstate = defaultdict(list)
                         w = ""
                         tq = []
                         # Note that it is possible to match even longer phrases
                         # by including a starting phrase in its entirety in
                         # the static phrase dictionary
                         break
-                    add_to_state(newstate, sl, ix)
+                    add_to_state(sl, ix)
             elif tq:
                 # This does not continue a started phrase:
                 # yield the accumulated token queue
@@ -1455,8 +1510,8 @@ def disambiguate_phrases(token_stream):
             if w in pdict:
                 # This word potentially starts a new phrase
                 for sl, ix in pdict[w]:
-                    assert sl
-                    add_to_state(newstate, sl, ix)
+                    # assert sl
+                    add_to_state(sl, ix)
                 if token:
                     tq.append(token) # Start a lookahead queue with this token
             elif token:
@@ -1472,6 +1527,106 @@ def disambiguate_phrases(token_stream):
 
     # Yield any tokens remaining in queue
     for t in tq: yield t
+
+
+def recognize_entities(token_stream):
+
+    """ Parse a stream of tokens looking for (capitalized) entity names
+        The algorithm implements N-token lookahead where N is the
+        length of the longest entity name having a particular initial word.
+    """
+
+    tq = [] # Token queue
+    state = defaultdict(list) # Phrases we're considering
+
+    with SessionContext(commit = True) as session:
+
+        def query_entities(w):
+            """ Return a list of entities matching the initial word given """
+            return session.query(Entity).filter(Entity.name.like(w + " %") | (Entity.name == w)).all()
+
+        def flush_match():
+            """ Flush a match that has been accumulated in the token queue """
+            # Reconstruct original text behind phrase
+            ename = " ".join([t.txt for t in tq])
+            # Assemble the information we want to return about the matched entity
+            assert None in state
+            definitions = list({ e.definition for _, e in state[None] })
+            # print("flush_match() returning ename '{0}', defs {1}".format(ename, definitions))
+            return TOK.Entity(ename, definitions)
+
+        try:
+
+            while True:
+
+                token = next(token_stream)
+
+                if not token.txt: # token.kind != TOK.WORD:
+                    if state:
+                        if None in state:
+                            yield flush_match()
+                        tq = []
+                        state = defaultdict(list)
+                    yield token
+                    continue
+
+                # Look for matches in the current state and build a new state
+                newstate = defaultdict(list)
+                w = token.txt # Original word
+
+                def add_to_state(slist, entity):
+                    """ Add the list of subsequent words to the new parser state """
+                    wrd = slist[0] if slist else None
+                    rest = slist[1:]
+                    newstate[wrd].append((rest, entity))
+
+                if w in state:
+                    # This matches an expected token
+                    tq.append(token) # Add to lookahead token queue
+                    # Add the matching tails to the new state
+                    for sl, entity in state[w]:
+                        add_to_state(sl, entity)
+                else:
+                    # Not a match for an expected token
+                    if state:
+                        if None in state:
+                            # Flush the already accumulated match
+                            yield flush_match()
+                        tq = []
+
+                    # Add all possible new states for entity names that could be starting
+                    if token.kind == TOK.WORD and not token.val and w and w[0].isupper() and " " not in w:
+                        # elist is a list of Entity instances
+                        elist = query_entities(w)
+                    else:
+                        elist = []
+
+                    if elist:
+                        # This word starts an entity reference
+                        for e in elist:
+                            sl = e.name.split()[1:] # List of subsequent words in entity name
+                            add_to_state(sl, e)
+                        # Add the initial token to the token queue
+                        tq.append(token)
+                    else:
+                        # Not a start of an entity reference: simply yield the token
+                        yield token
+                        assert not tq
+
+                # Transition to the new state
+                state = newstate
+
+        except StopIteration:
+            # Token stream is exhausted
+            pass
+
+        # Yield an accumulated match if present
+        if state:
+            if None in state:
+                yield flush_match()
+            tq = []
+
+    assert not tq
 
 
 def tokenize(text):
@@ -1493,6 +1648,8 @@ def tokenize(text):
     token_stream = parse_phrases_1(token_stream) # First phrase pass
 
     token_stream = parse_phrases_2(token_stream) # Second phrase pass
+
+    token_stream = recognize_entities(token_stream) # Recognize named entities from database
 
     token_stream = disambiguate_phrases(token_stream) # Eliminate very uncommon meanings
 

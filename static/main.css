@@ -10,6 +10,45 @@
 
 */
 
+@font-face {
+   font-family: 'Glyphicons Regular';
+   src: url('glyphicons-regular.eot');
+   src: url('glyphicons-regular.eot?#iefix') format('embedded-opentype'),
+      url('glyphicons-regular.woff') format('woff'),
+      url('glyphicons-regular.ttf') format('truetype'),
+      url('glyphicons-regular.svg#glyphiconsregular') format('svg');
+}
+
+.glyphicon {
+   position: relative;
+   top: 2px;
+   display: inline-block;
+   font-family: 'Glyphicons Regular';
+   font-style: normal;
+   font-weight: normal;
+   line-height: 1;
+   /* vertical-align: top; */
+   -webkit-font-smoothing: antialiased;
+   -moz-osx-font-smoothing: grayscale;
+}
+
+.glyphicon-user:before {
+   content: "\E004";
+}
+.glyphicon-eye-open:before {
+   content: "\E052";
+}
+.glyphicon-time:before {
+   content: "\E055";
+}
+.glyphicon-play:before {
+   content: "\E174";
+}
+
+html {
+   overflow-y: scroll; /* Avoid jumping when long content is displayed */
+}
+
 body {
    /* font-family: 'Open Sans', sans-serif; */
    font-family: 'Lora', sans-serif;
@@ -114,6 +153,10 @@ div#url-ok:hover {
    background-color: #00B74F; /* Greynir green */
 }
 
+span.green {
+   color: #00B74F; /* Greynir green */
+}
+
 p.header {
    position: absolute;
    font-size: 28px;
@@ -157,13 +200,69 @@ p.tok-info span {
    font-weight: bold;
 }
 
-div.output {
+div.tab-header {
    position: relative;
-   text-align: left;
-   cursor: default;
+   width: 100%;
+   height: 36px;
    margin-top: 24px;
+   overflow: hidden;
+}
+
+span.tab {
+   display: inline-block;
+   width: 240px;
+   height: 40px;
+   font-family: 'Playfair Display', serif;
+   font-weight: bold;
+   font-size: 20px;
+   line-height: 28px;
+   color: #10069F; /* Greynir blue */
+   background-color: #e0e0e0;
+   padding: 4px;
+   padding-left: 10px;
+   border-radius: 4px;
+   border-style: solid;
+   border-width: 1px;
+   border-color: black;
+   cursor: pointer;
+   margin-right: 10px;
+}
+
+span.tab#hdr-output {
+   margin-right: 0px;
+}
+
+span.tab:hover {
+   background-color: #FFEEA9; /* Greynir pale yellow */
+}
+
+span.tab.selected {
+   background-color: white;
+}
+
+span.tab.selected:hover {
+   background-color: white;
+}
+
+div.tab-area {
+   position: relative;
+   margin-top: 0px;
+   padding-top: 24px;
    margin-bottom: 24px;
    padding-bottom: 400px; /* Make room for info pop-up at the bottom */
+   cursor: default;
+   text-align: left;
+   border-style: solid;
+   border-color: black;
+   border-width: 0px;
+   border-top-width: 1px;
+}
+
+div.main-tab {
+   position: absolute;
+   top: 0px;
+   left: 0px;
+   margin-top: 24px;
 }
 
 p#meta-heading {
@@ -261,6 +360,12 @@ div#result i.amount {
 div#result i.person {
    font-weight: 600;
    /* font-style: italic; */
+   color: #10069F;
+}
+
+div#result i.entity {
+   font-weight: 600;
+   font-style: italic;
    color: #10069F;
 }
 
@@ -398,13 +503,15 @@ div#wait {
    display: none;
    position: absolute;
    font-style: italic;
-   top: 160px;
+   top: 120px;
    left: 356px;
    width: 88px;
    height: 88px;
    z-index: 10;
    /* background-image: url("wait.gif");
    background-repeat: no-repeat; */
+   font-size: 17px;
+   line-height: 24px;
    text-align: center;
 }
 
@@ -569,6 +676,7 @@ div.reghdr {
 #namelist li {
    margin-top: 3px;
    margin-bottom: 3px;
+   line-height: 20px;
 }
 
 #namelist span.name {
@@ -582,20 +690,21 @@ div.reghdr {
 
 div#topnews {
    display: block;
-   margin-top: 12px;
+}
+
+div#output {
+   display:none;
 }
 
 div#toppeople {
-   display: block;
-   margin-top: 12px;
+   display: none;
 }
 
-div.tophdr {
-   font-family: 'Playfair Display', serif;
-   font-weight: bold;
-   font-size: 22px;
-   color: #10069F; /* Greynir blue */
-   margin-bottom: 18px;
+div.guide-empty {
+   width: 800px;
+   font-size: 17px;
+   line-height: 24px;
+   text-align: center;
 }
 
 div#toplist {
@@ -661,8 +770,9 @@ div.topitem img {
 span.ratio div.ratio-num {
    display: inline-block;
    white-space: nowrap;
-   overflow-x: hidden;
+   overflow: hidden;
    background-color: #00B74F; /* Greynir green */
+   height: 19px;
 }
 
 #plist span.name {

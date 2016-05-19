@@ -198,7 +198,10 @@ class Reducer:
                             # so alleviate some of the penalty given by the grammar
                             sc[t] += 4
                         else:
-                            pass
+                            if i == w.start:
+                                # First token in sentence, and we have BÍN meanings:
+                                # further discourage this
+                                sc[t] -= 4
                             #print("Meanings for sérnafn {0}:".format(tokens[i].t1))
                             #for m in tokens[i].t2:
                             #    print("{0}".format(m))

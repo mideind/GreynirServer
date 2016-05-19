@@ -35,7 +35,7 @@
 {%- if debug_mode -%}
       , eða <a href="{{ url_for('test') }}">smelltu hér til keyra próf</a>
 {%- else -%}
-      , eða veldu nafn eða frétt úr listunum fyrir neðan
+      , eða veldu frétt eða nafn úr listunum fyrir neðan
 {%- endif -%}
       :</p>
 
@@ -48,73 +48,98 @@
 
    </div>
 
-   <div class="output">
+   <div class="tab-header">
+      <span id="hdr-topnews" class="tab selected">
+         <span class="glyphicon glyphicon-time"></span>
+         &nbsp;Nýjustu fréttir
+      </span>
+      <span id="hdr-toppeople" class="tab">
+         <span class="glyphicon glyphicon-user"></span>
+         &nbsp;Fólk í fréttum
+      </span>
+      <span id="hdr-output" class="tab">
+         <span class="glyphicon glyphicon-eye-open"></span>
+         &nbsp;Málgreining
+      </span>
+   </div>
 
-      <!-- Popup with info about the word being hovered over -->
-      <div class="info"></div>
+   <div class="tab-area">
 
-      <p class="tok-info">Textinn inniheldur <span id="tok-num"></span> eindir í
-         <span id="num-sent"></span> málsgreinum.
-         Eindagreining tók <span id="tok-time"></span> sekúndur en
-         málfræðigreining <span id="parse-time"></span> sekúndur.
-         Það tókst að greina <span id="num-parsed-sent"></span> málsgreinar eða
-         <span id="num-parsed-ratio"></span>%. Margræðnistuðull var
-         <span id="avg-ambig-factor"></span>.</p>
+      <div id="output" class="main-tab">
 
-      <div id="guide">
-         <p><b>Smelltu á málsgrein</b> til að sjá trjágreiningu hennar.</p>
+         <!-- Popup with info about the word being hovered over -->
+         <div class="info"></div>
+
+         <p class="tok-info">Textinn inniheldur <span id="tok-num"></span> eindir í
+            <span id="num-sent"></span> málsgreinum.
+            Eindagreining tók <span id="tok-time"></span> sekúndur en
+            málfræðigreining <span id="parse-time"></span> sekúndur.
+            Það tókst að greina <span id="num-parsed-sent"></span> málsgreinar eða
+            <span id="num-parsed-ratio"></span>%. Margræðnistuðull var
+            <span id="avg-ambig-factor"></span>.</p>
+
+         <div id="guide">
+            <p><span class="green glyphicon glyphicon-play"></span>
+            <b>Smelltu á málsgrein</b> til að sjá trjágreiningu hennar.</p>
+         </div>
+
+         <div id="metadata">
+         <!-- Article metadata goes here, if any -->
+            <p id="meta-heading"></p>
+            <p id="meta-author"></p>
+            <p id="meta-timestamp"></p>
+            <p id="meta-url"></p>
+         </div>
+
+         <div id="result">
+         <!-- Result of analysis goes here -->
+
+            <div class="guide-empty">
+            <p><span class="green glyphicon glyphicon-play"></span>
+            <b>Sláðu inn texta eða vefslóð</b> hér að ofan til að málgreina,
+            <br/>eða veldu frétt eða nafn úr listunum.</p>
+            </div>
+
+         </div>
+
+         <div id="register">
+            <!-- Name register goes here -->
+            <div class="reghdr">Nafnalisti</div>
+            <ul id="namelist"></ul>
+         </div>
+
+         <!-- Spinner that appears while the analysis is in progress -->
+         <div id="wait">Málgreining<br>í gangi...<br><br><img src="/static/wait.gif" width="48" height="48" /></div>
+
       </div>
 
-      <div id="metadata">
-      <!-- Article metadata goes here, if any -->
-         <p id="meta-heading"></p>
-         <p id="meta-author"></p>
-         <p id="meta-timestamp"></p>
-         <p id="meta-url"></p>
-      </div>
-
-      <div id="result">
-      <!-- Result of analysis goes here -->
-      </div>
-
-      <div id="register">
-         <!-- Name register goes here -->
-         <div class="reghdr">Nafnalisti</div>
-         <ul id="namelist"></ul>
-      </div>
-
-      <div id="toppeople" class="front">
+      <div id="toppeople" class="main-tab">
          <!-- List of people in the news goes here -->
-         <div class="tophdr">Fólk í fréttum</div>
          <div id="plist">
 {% for person in persons %}
-<div class="topitem" url="{{ person.url }}"><!--
---><span class="name">{{ person.name }}</span><!--
---><span class="title">{{ person.title }}</span><!--
---></div>
+   <div class="topitem" url="{{ person.url }}"><!--
+   --><span class="name">{{ person.name }}</span><!--
+   --><span class="title">{{ person.title }}</span><!--
+   --></div>
 {% endfor %}
          </div>
       </div>
 
-      <div id="topnews" class="front">
+      <div id="topnews" class="main-tab">
          <!-- List of recent top news goes here -->
-         <div class="tophdr">Nýjustu fréttir</div>
          <div id="toplist">
 {% for article in articles %}
-<div class="topitem" url="{{ article.url }}"><!--
---><span class="timestamp">{{ article.timestamp }}</span><!--
---><span class="ratio" title="{{ article.width }} trjágreind"><div class="ratio-num" style="width:{{ article.width }}">&nbsp;</div></span><!--
---><img src="/static/{{ article.icon }}" width="16" height="16"/><!--
---><span class="heading">{{ article.heading }}</span><!--
---></div>
+   <div class="topitem" url="{{ article.url }}"><!--
+   --><span class="timestamp">{{ article.timestamp }}</span><!--
+   --><span class="ratio" title="{{ article.width }} trjágreind"><div class="ratio-num" style="width:{{ article.width }}">&nbsp;</div></span><!--
+   --><img src="/static/{{ article.icon }}" width="16" height="16"/><!--
+   --><span class="heading">{{ article.heading }}</span><!--
+   --></div>
 {% endfor %}
          </div>
       </div>
 
-      <!-- Spinner that appears while the analysis is in progress -->
-      <div id="wait">Málgreining<br>í gangi...<br><br><img src="/static/wait.gif" width="48" height="48" /></div>
-
-   </div>
+   </div> <!-- tab-area -->
 
 </div>
 
