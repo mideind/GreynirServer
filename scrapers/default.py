@@ -204,6 +204,8 @@ class KjarninnScraper(ScrapeHelper):
         s = urlparse.urlsplit(url)
         if s.path and s.path.startswith("/tag/"):
             return True
+        if s.path and s.path.startswith("/hladvarp/"):
+            return True
         return False # Scrape all other URLs by default
         
     def get_metadata(self, soup):
@@ -403,7 +405,11 @@ class MblScraper(ScrapeHelper):
 
     def _get_content(self, soup_body):
         """ Find the article content (main text) in the soup """
-        soup = ScrapeHelper.div_class(soup_body, "frett-main")
+        # 'New style' as of May 23, 2016
+        soup = ScrapeHelper.div_class(soup_body, "main-layout")
+        if soup is None:
+            # Rever to 'old style'
+            soup = ScrapeHelper.div_class(soup_body, "frett-main")
         if soup is None:
             # Could be a blog post
             soup = ScrapeHelper.div_class(soup_body, "pistill-entry-body")
@@ -411,7 +417,7 @@ class MblScraper(ScrapeHelper):
             # Could be a picture collection - look for div#non-galleria
             soup = ScrapeHelper.div_id(soup_body, "non-galleria")
         if soup is None:
-            print("_get_content: soup_body.div.frett-main/pistill-entry-body is None")
+            print("_get_content: soup_body.div.main-layout/frett-main/pistill-entry-body is None")
         if soup:
             # Delete h1 tags from the content
             s = soup.h1
@@ -429,6 +435,9 @@ class MblScraper(ScrapeHelper):
             ScrapeHelper.del_div_class(soup, "extraimg-big")
             ScrapeHelper.del_div_class(soup, "newsimg-left")
             ScrapeHelper.del_div_class(soup, "newsimg-right")
+            # Toolbar
+            ScrapeHelper.del_div_class(soup, "newsitem-bottom-toolbar")
+            ScrapeHelper.del_div_class(soup, "sidebar-mobile")
             # Embedded media such as Twitter and Facebook posts
             ScrapeHelper.del_div_class(soup, "embedded-media")
         return soup

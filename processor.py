@@ -901,7 +901,7 @@ class Processor:
     @classmethod
     def cleanup(cls):
         """ Perform any cleanup """
-        pass # Not presently needed
+        cls._db = None
 
     def __init__(self, processor_directory, single_processor = None):
 
@@ -967,17 +967,15 @@ class Processor:
             except Exception as e:
                 # If an exception occurred, roll back the transaction
                 session.rollback()
-                print("Exception caught in article {0}, transaction rolled back\nException: {1}".format(url, e))
+                print("Exception in article {0}, transaction rolled back\nException: {1}".format(url, e))
                 #raise
 
-        t1 = time.time()
         sys.stdout.flush()
 
     def go(self, from_date = None, limit = 0, force = False):
         """ Process already parsed articles from the database """
 
-        db = Processor._db
-        with closing(db.session) as session:
+        with closing(self._db.session) as session:
 
             # noinspection PyComparisonWithNone,PyShadowingNames
             def iter_parsed_articles():
@@ -1063,6 +1061,7 @@ def init_db():
         db.create_tables()
     except Exception as e:
         print("{0}".format(e))
+
 
 __doc__ = """
 

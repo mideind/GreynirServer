@@ -359,12 +359,12 @@ class AmbigPhrases:
 # Magic stuff to change locale context temporarily
 
 @contextmanager
-def changedlocale(new_locale):
+def changedlocale(new_locale = None):
     """ Change locale for collation temporarily within a context (with-statement) """
     # The newone locale parameter should be a tuple: ('is_IS', 'UTF-8')
     old_locale = locale.getlocale(locale.LC_COLLATE)
     try:
-        locale.setlocale(locale.LC_COLLATE, new_locale)
+        locale.setlocale(locale.LC_COLLATE, new_locale or ('IS_is', 'UTF-8'))
         yield locale.strxfrm # Function to transform string for sorting
     finally:
         locale.setlocale(locale.LC_COLLATE, old_locale)

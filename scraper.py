@@ -878,6 +878,9 @@ def main(argv = None):
         print("For help use --help", file = sys.stderr)
         return 2
 
+    finally:
+        SessionContext.cleanup()
+
     # Completed with no error
     return 0
 

@@ -264,7 +264,7 @@ function hoverIn() {
       if (wl[2][0].length) {
          info.append("<ul>");
          for (i = 0; i < wl[2][0].length; i++)
-            info.append("<li>" + wl[2][0][i] + "</li>");
+            info.append("<li>" + wl[2][0][i][0] + " " + wl[2][0][i][1] + "</li>");
          info.append("</ul>");
       }
    }
@@ -541,7 +541,7 @@ function _analyzeUrl(url) {
    // Ajax query to the server
    clearResult();
    // Launch the query
-   serverQuery('/analyze',
+   serverQuery('/analyze.api', // Endpoint with .api suffix are not cached
       {
          url : url,
          noreduce : true
@@ -562,7 +562,7 @@ function displayUrl(url) {
    $("#url").val(url); // Show URL in the input field
    clearResult();
    // Launch the query
-   serverQuery('/display',
+   serverQuery('/display.api',
       {
          url : url
       },

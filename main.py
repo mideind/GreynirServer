@@ -30,7 +30,7 @@ from ptest import run_test, Test_DB
 from reducer import Reducer
 from scraper import Scraper
 from processor import Tree
-from scraperdb import Scraper_DB, SessionContext, Person, Article, desc
+from scraperdb import SessionContext, Person, Article, desc
 from settings import Settings, ConfigError, changedlocale
 from tokenizer import tokenize, TOK, correct_spaces
 
@@ -444,8 +444,8 @@ def top_persons(limit = 20):
             key = lambda x: strxfrm(x["name"])
         )
 
-
-@app.route("/analyze", methods=['POST'])
+# Note: Endpoints ending with .api are configured not to be cached by nginx
+@app.route("/analyze.api", methods=['POST'])
 def analyze():
     """ Analyze text from a given URL """
 
@@ -459,29 +459,29 @@ def analyze():
 
     t0 = time.time()
 
-    if url.startswith("http:") or url.startswith("https:"):
-        # Scrape the URL, tokenize the text content and return the token list
-        metadata, generator = tokenize_url(url, Scraper.fetch_url(url))
-        toklist = list(generator)
-        # If this is an already scraped URL, keep the parse trees and update
-        # the database with the new parse
-        keep_trees = Scraper.is_known_url(url)
-    else:
-        # Tokenize the text entered as-is and return the token list
-        # In this case, there's no metadata
-        toklist = list(tokenize(url))
-        single = True
-
-    tok_time = time.time() - t0
-
-    t0 = time.time()
-
-    if _PROFILE:
-        result, trees = profile(parse, toklist, single, use_reducer, dump_forest)
-    else:
-        result, trees = parse(toklist, single, use_reducer, dump_forest, keep_trees)
-
     with SessionContext(commit = True) as session:
+
+        if url.startswith("http:") or url.startswith("https:"):
+            # Scrape the URL, tokenize the text content and return the token list
+            metadata, generator = tokenize_url(url, Scraper.fetch_url(url))
+            toklist = list(generator)
+            # If this is an already scraped URL, keep the parse trees and update
+            # the database with the new parse
+            keep_trees = Scraper.is_known_url(url, session)
+        else:
+            # Tokenize the text entered as-is and return the token list
+            # In this case, there's no metadata
+            toklist = list(tokenize(url))
+            single = True
+
+        tok_time = time.time() - t0
+
+        t0 = time.time()
+
+        if _PROFILE:
+            result, trees = profile(parse, toklist, single, use_reducer, dump_forest)
+        else:
+            result, trees = parse(toklist, single, use_reducer, dump_forest, keep_trees)
 
         # Add a name register to the result
         add_name_register(result, session)
@@ -502,7 +502,8 @@ def analyze():
     return jsonify(result = result)
 
 
-@app.route("/display", methods=['POST'])
+# Note: Endpoints ending with .api are configured not to be cached by nginx
+@app.route("/display.api", methods=['POST'])
 def display():
     """ Display already parsed text from a given URL """
 
@@ -804,8 +805,8 @@ def parse_grid():
         combinations = combinations, score = score, debug_mode = debug_mode,
         choice_list = uc_list, parse_path = parse_path)
 
-
-@app.route("/addsentence", methods=['POST'])
+# Note: Endpoints ending with .api are configured not to be cached by nginx
+@app.route("/addsentence.api", methods=['POST'])
 def add_sentence():
     """ Add a sentence to the test database """
     sentence = request.form.get('sentence', "")
@@ -866,6 +867,7 @@ def server_error(e):
 
 # Initialize the main module
 
+t0 = time.time()
 try:
     # Read configuration file
     Settings.read("Reynir.conf")
@@ -874,6 +876,7 @@ except ConfigError as e:
     quit()
 
 if Settings.DEBUG:
+    print("Settings loaded in {0:.2f} seconds".format(time.time() - t0))
     print("Running Reynir with debug={0}, host={1}, db_hostname={2}"
         .format(Settings.DEBUG, Settings.HOST, Settings.DB_HOSTNAME))
 

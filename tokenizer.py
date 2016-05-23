@@ -26,6 +26,7 @@ import codecs
 import datetime
 
 from settings import Settings, StaticPhrases, Abbreviations, AmbigPhrases, DisallowedNames
+from settings import changedlocale
 from bindb import BIN_Db, BIN_Meaning
 from scraperdb import SessionContext, Entity
 
@@ -335,6 +336,14 @@ def parse_digits(w):
             m, d = d, m
         if (1776 <= y <= 2100) and (1 <= m <= 12) and (1 <= d <= 31):
             return TOK.Date(w, y, m, d), s.end()
+    s = re.match(r'\d+(\.\d\d\d)*,\d+', w)
+    if s:
+        # Real number formatted with decimal comma and possibly thousands separator
+        # (we need to check this before checking integers)
+        w = s.group()
+        n = re.sub(r'\.', '', w) # Eliminate thousands separators
+        n = re.sub(r',', '.', n) # Convert decimal comma to point
+        return TOK.Number(w, float(n)), s.end()
     s = re.match(r'\d+(\.\d\d\d)+', w)
     if s:
         # Integer with a '.' thousands separator
@@ -374,19 +383,6 @@ def parse_digits(w):
     if s:
         # Looks like a telephone number
         return TOK.Telno(s.group()), s.end()
-    s = re.match(r'\d+(\.\d\d\d)*,\d+', w)
-    if s:
-        # Real number formatted with decimal comma and possibly thousands separator
-        w = s.group()
-        n = re.sub(r'\.', '', w) # Eliminate thousands separators
-        n = re.sub(r',', '.', n) # Convert decimal comma to point
-        return TOK.Number(w, float(n)), s.end()
-    s = re.match(r'\d+(\.\d\d\d)*', w)
-    if s:
-        # Integer, possibly with a '.' thousands separator
-        w = s.group()
-        n = re.sub(r'\.', '', w) # Eliminate thousands separators
-        return TOK.Number(w, int(n)), s.end()
     s = re.match(r'\d+(,\d\d\d)*\.\d+', w)
     if s:
         # Real number, possibly with a thousands separator and decimal comma/point
@@ -1188,7 +1184,7 @@ def parse_phrases_2(token_stream):
                     # Abbreviation: Cut off the brackets & trailing period
                     wrd = wrd[1:-2]
                 if len(wrd) > 2 or not wrd[0].isupper():
-                    if wrd not in { "van", "de", "of" }:
+                    if wrd not in { "van", "de", "den", "of" }:
                         # Accept "Thomas de Broglie", "Ruud van Nistelroy", "Mary of Canterbury"
                         return None
                 # One or two letters, capitalized: accept as middle name abbrev,
@@ -1550,8 +1546,19 @@ def recognize_entities(token_stream):
             # Reconstruct original text behind phrase
             ename = " ".join([t.txt for t in tq])
             # Assemble the information we want to return about the matched entity
+            # We return a tuple (verb, definition)
             assert None in state
-            definitions = list({ e.definition for _, e in state[None] })
+            definitions = list({ (e.verb, correct_spaces(e.definition)) for _, e in state[None] })
+            # Sort the definition list in ascending alphabetical order by definition
+            with changedlocale() as strxfrm:
+                definitions.sort(key = lambda x: strxfrm(x[1]))
+            # Coalesce definitions that are prefixes of other definitions
+            i = 0
+            while i < len(definitions) - 1:
+                if definitions[i+1][1].lower().startswith(definitions[i][1].lower()):
+                    del definitions[i]
+                else:
+                    i += 1
             # print("flush_match() returning ename '{0}', defs {1}".format(ename, definitions))
             return TOK.Entity(ename, definitions)
 
@@ -1565,6 +1572,9 @@ def recognize_entities(token_stream):
                     if state:
                         if None in state:
                             yield flush_match()
+                        else:
+                            for t in tq:
+                                yield t
                         tq = []
                         state = defaultdict(list)
                     yield token
@@ -1592,26 +1602,49 @@ def recognize_entities(token_stream):
                         if None in state:
                             # Flush the already accumulated match
                             yield flush_match()
+                        else:
+                            for t in tq:
+                                yield t
                         tq = []
 
                     # Add all possible new states for entity names that could be starting
-                    if token.kind == TOK.WORD and not token.val and w and w[0].isupper() and " " not in w:
+                    weak = True
+                    cnt = 1
+                    if token.kind == TOK.WORD and w and w[0].isupper():
+                        if " " in w:
+                            # w may be a person name with more than one embedded word
+                            cnt = len(w.split())
+                        elif not token.val:
+                            # No BÍN meaning for this token
+                            weak = False # Accept single-word entity references
                         # elist is a list of Entity instances
                         elist = query_entities(w)
                     else:
                         elist = []
 
                     if elist:
-                        # This word starts an entity reference
+                        # This word might be a candidate to start an entity reference
+                        candidate = False
                         for e in elist:
-                            sl = e.name.split()[1:] # List of subsequent words in entity name
-                            add_to_state(sl, e)
-                        # Add the initial token to the token queue
-                        tq.append(token)
+                            sl = e.name.split()[cnt:] # List of subsequent words in entity name
+                            if sl:
+                                # Here's a candidate for a longer entity reference than we already have
+                                candidate = True
+                            if sl or not weak:
+                                add_to_state(sl, e)
+                        if weak and not candidate:
+                            # Found no potential entity reference longer than this token
+                            # already is - and we have a BÍN meaning for it: Abandon the effort
+                            assert not newstate
+                            assert not tq
+                            yield token
+                        else:
+                            # Go for it: Initialize the token queue
+                            tq = [ token ]
                     else:
                         # Not a start of an entity reference: simply yield the token
-                        yield token
                         assert not tq
+                        yield token
 
                 # Transition to the new state
                 state = newstate
@@ -1624,6 +1657,9 @@ def recognize_entities(token_stream):
         if state:
             if None in state:
                 yield flush_match()
+            else:
+                for t in tq:
+                    yield t
             tq = []
 
     assert not tq

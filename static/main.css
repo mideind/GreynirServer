@@ -249,7 +249,6 @@ div.tab-area {
    margin-top: 0px;
    padding-top: 24px;
    margin-bottom: 24px;
-   padding-bottom: 400px; /* Make room for info pop-up at the bottom */
    cursor: default;
    text-align: left;
    border-style: solid;
@@ -310,6 +309,9 @@ p#meta-url img {
 span.sent {
    font-size: 17px;
    line-height: 26px;
+}
+
+div#result {
 }
 
 div#result i {
@@ -676,7 +678,7 @@ div.reghdr {
 #namelist li {
    margin-top: 3px;
    margin-bottom: 3px;
-   line-height: 20px;
+   line-height: 22px;
 }
 
 #namelist span.name {
@@ -694,6 +696,7 @@ div#topnews {
 
 div#output {
    display:none;
+   padding-bottom: 400px; /* Make room for info pop-up at the bottom */
 }
 
 div#toppeople {

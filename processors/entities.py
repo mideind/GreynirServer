@@ -92,6 +92,16 @@ def EfLiður(node, params, result):
     # Ekki breyta eignarfallsliðum í nefnifall
     result._nominative = result._text
 
+def FsMeðFallstjórn(node, params, result):
+    """ Ekki láta sérnafn lifa í gegn um forsetningarlið """
+    result.del_attribs(('sérnafn', 'sérnafn_nom'))
+    # Ekki breyta forsetningarliðum í nefnifall
+    result._nominative = result._text
+
+def TengiliðurMeðKommu(node, params, result):
+    """ '...sem Jón í Múla taldi gott fé' - ekki breyta í nefnifall """
+    result._nominative = result._text
+
 def SetningÁnF(node, params, result):
     """ Ekki láta sérnafn lifa í gegn um setningu án frumlags """
     result.del_attribs(('sérnafn', 'sérnafn_nom'))
@@ -106,6 +116,12 @@ def Sérnafn(node, params, result):
     result.sérnafn_nom = result._nominative
     result.sérnafn_eind_nom = result._nominative
 
+def SérnafnEðaManneskja(node, params, result):
+    """ Sérnafn eða mannsnafn """
+    result.sérnafn = result._text
+    result.sérnafn_nom = result._nominative
+    result.sérnafn_eind_nom = result._nominative
+
 def Fyrirtæki(node, params, result):
     """ Fyrirtækisnafn, þ.e. sérnafn + ehf./hf./Inc. o.s.frv. """
     result.sérnafn = result._text
@@ -113,7 +129,34 @@ def Fyrirtæki(node, params, result):
 
 def SvigaInnihald(node, params, result):
     if node.has_variant("et"):
-        result.sviga_innihald = result._nominative
+        tengiliður = result.find_child(nt_base = "Tengiliður")
+        if tengiliður:
+            # '...sem framleiðir álumgjörina fyrir iPhone'
+            tengisetning = tengiliður.find_child(nt_base = "Tengisetning")
+            if tengisetning:
+                setning_án_f = tengisetning.find_child(nt_base = "SetningÁnF")
+                if setning_án_f:
+                    skilgr = setning_án_f._text
+                    sögn = None
+                    for s in ("er", "var", "sé", "hefur verið", "væri", "hefði orðið", "verður"):
+                        if skilgr.startswith(s + " "):
+                            # Skera framan af
+                            sögn = s
+                            skilgr = skilgr[len(s) + 1:]
+                            break
+                    if skilgr:
+                        result.sviga_innihald = skilgr
+                        if sögn:
+                            result.sviga_sögn = sögn
+        elif result.find_child(nt_base = "HreinYfirsetning") is not None:
+            # Hrein yfirsetning: sleppa því að nota hana
+            pass
+        elif result.find_child(nt_base = "FsRuna") is not None:
+            # Forsetningaruna: sleppa því að nota hana
+            pass
+        else:
+            # Nl/fall/tala eða SvigaInnihaldNl
+            result.sviga_innihald = result._nominative
 
 def NlKjarni(node, params, result):
     result.del_attribs("sérnafn_eind_nom")
@@ -125,6 +168,7 @@ def NlEind(node, params, result):
 
         entity = result.sérnafn_eind_nom
         definition = result.sviga_innihald
+        verb = result.sviga_sögn if "sviga_sögn" in result else "er"
 
         print("SvigaInnihald: '{0}' er '{1}'".format(entity, definition))
 
@@ -132,7 +176,7 @@ def NlEind(node, params, result):
         if "entities" not in result:
             result.entities = []
 
-        result.entities.append((entity, "er", definition))
+        result.entities.append((entity, verb, definition))
 
     result.del_attribs(("sviga_innihald", "sérnafn_eind_nom"))
 

@@ -18,6 +18,7 @@
 """
 
 import os
+import time
 
 from datetime import datetime
 from functools import reduce
@@ -167,8 +168,9 @@ class BIN_Token(Token):
     # '...það á jafnframt dótturfélag'
     # '...næstum tvo áratugi'
     # '...afsalaði sér samt launum'
+    # '...og færði því Markúsi Erni tómatsósu'
     _NOT_NOT_EO = frozenset(["inn", "eftir", "of", "til", "upp", "um", "síðan", "fram", "nær", "nærri",
-        "út", "meðal", "úti", "saman", "jafnframt", "næstum", "samt" ])
+        "út", "meðal", "úti", "saman", "jafnframt", "næstum", "samt", "samtals", "því" ])
 
     # Words that are not eligible for interpretation as proper names, even if they are capitalized
     _NOT_PROPER_NAME = frozenset(["ég", "þú", "hann", "hún", "það", "við", "þið", "þau",
@@ -380,6 +382,20 @@ class BIN_Token(Token):
 
     def matches_PERSON(self, terminal):
         """ Handle a person name token, matching it with a person_[case]_[gender] terminal """
+        if terminal.first == "sérnafn":
+            # We allow a simple person name to match an entity name (sérnafn)
+            if not self.is_upper or " " in self.lower:
+                # Must be capitalized and a single name
+                return False
+            if not terminal.num_variants:
+                #print("Matched token {0} with terminal {1}".format(self, terminal))
+                return True
+            case = terminal.variant(0)
+            for p in self.t2:
+                if p.case == case:
+                    #print("Matched token {0} with terminal {1}".format(self, terminal))
+                    return True
+            return False
         if terminal.first != "person":
             return False
         # Check each PersonName tuple in the t2 list
@@ -997,12 +1013,15 @@ class BIN_Parser(Base_Parser):
         ts = os.path.getmtime(BIN_Parser._GRAMMAR_FILE)
         if g is None or BIN_Parser._grammar_ts != ts:
             # Grammar not loaded, or its timestamp has changed: load it
+            t0 = time.time()
             g = BIN_Grammar()
             if Settings.DEBUG:
                 print("Loading grammar file {0} with timestamp {1}".format(BIN_Parser._GRAMMAR_FILE, datetime.fromtimestamp(ts)))
             g.read(BIN_Parser._GRAMMAR_FILE, verbose = verbose)
             BIN_Parser._grammar = g
             BIN_Parser._grammar_ts = ts
+            if Settings.DEBUG:
+                print("Grammar parsed and loaded in {0:.2f} seconds".format(time.time() - t0))
         super().__init__(g)
 
     @property

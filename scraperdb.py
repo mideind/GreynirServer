@@ -86,15 +86,19 @@ class SessionContext:
             cls._db = Scraper_DB()
         return cls._db
 
+    @classmethod
+    def cleanup(cls):
+        """ Clean up the reference to the singleton Scraper_DB instance """
+        cls._db = None
+
     def __init__(self, session = None, commit = False):
 
         if session is None:
             # Create a new session that will be automatically committed
             # (if commit == True) and closed upon exit from the context
-            if self._db is None:
-                self._db = Scraper_DB()
+            db = self.db # Creates a new Scraper_DB instance if needed
             self._new_session = True
-            self._session = self._db.session
+            self._session = db.session
             self._commit = commit
         else:
             self._new_session = False

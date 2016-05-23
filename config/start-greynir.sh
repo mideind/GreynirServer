@@ -1,0 +1,1 @@
+/usr/share/nginx/greynir.is/start-greynir.sh

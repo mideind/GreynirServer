@@ -204,7 +204,7 @@ function showOption(ev) {
 
 function addSentence(sentence, shouldParse) {
    // Add a sentence to the test database
-   serverQuery('/addsentence',
+   serverQuery('/addsentence.api', // Endpoint with .api extension is not cached
       { sentence: sentence, shouldparse: shouldParse }
    );
 }
