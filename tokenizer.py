@@ -1184,7 +1184,7 @@ def parse_phrases_2(token_stream):
                     # Abbreviation: Cut off the brackets & trailing period
                     wrd = wrd[1:-2]
                 if len(wrd) > 2 or not wrd[0].isupper():
-                    if wrd not in { "van", "de", "den", "of" }:
+                    if wrd not in { "van", "de", "den", "der", "of" }:
                         # Accept "Thomas de Broglie", "Ruud van Nistelroy", "Mary of Canterbury"
                         return None
                 # One or two letters, capitalized: accept as middle name abbrev,
