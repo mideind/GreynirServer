@@ -972,7 +972,7 @@ class Processor:
 
         sys.stdout.flush()
 
-    def go(self, from_date = None, limit = 0, force = False):
+    def go(self, from_date = None, limit = 0, force = False, update = False):
         """ Process already parsed articles from the database """
 
         with closing(self._db.session) as session:
@@ -984,7 +984,12 @@ class Processor:
                 if not force:
                     # If force = True, re-process articles even if
                     # they have been processed before
-                    q = q.filter(Article.processed == None)
+                    if update:
+                        # If update, we re-process articles that have been parsed
+                        # again in the meantime
+                        q = q.filter(Article.processed < Article.parsed).order_by(Article.processed)
+                    else:
+                        q = q.filter(Article.processed == None)
                 if from_date is not None:
                     # Only go through articles parsed since the given date
                     q = q.filter(Article.parsed >= from_date).order_by(Article.parsed)
@@ -1005,7 +1010,7 @@ class Processor:
                 pool.join()
 
 
-def process_articles(from_date = None, limit = 0, force = False, processor = None):
+def process_articles(from_date = None, limit = 0, force = False, update = False, processor = None):
 
     print("------ Reynir starting processing -------")
     if from_date:
@@ -1014,6 +1019,8 @@ def process_articles(from_date = None, limit = 0, force = False, processor = Non
         print("Limit: {0} articles".format(limit))
     if force:
         print("Force re-processing: Yes")
+    elif update:
+        print("Update: Yes")
     if processor:
         print("Invoke single processor: {0}".format(processor))
     ts = "{0}".format(datetime.utcnow())[0:19]
@@ -1024,7 +1031,7 @@ def process_articles(from_date = None, limit = 0, force = False, processor = Non
     try:
         # Run all processors in the processors directory, or the single processor given
         proc = Processor(processor_directory = "processors", single_processor = processor)
-        proc.go(from_date, limit = limit, force = force)
+        proc.go(from_date, limit = limit, force = force, update = update)
     finally:
         proc = None
         Processor.cleanup()
@@ -1079,6 +1086,7 @@ __doc__ = """
         -l=N, --limit=N: Limit processing session to N articles
         -u=U, --url=U: Specify a single URL to process
         -p=P, --processor=P: Specify a single processor to invoke
+        --update: Process files that have been reparsed but not reprocessed
 
 """
 
@@ -1089,13 +1097,15 @@ def _main(argv = None):
         argv = sys.argv
     try:
         try:
-            opts, args = getopt.getopt(argv[1:], "hifl:u:p:", ["help", "init", "force", "limit=", "url=", "processor="])
+            opts, args = getopt.getopt(argv[1:], "hifl:u:p:",
+                ["help", "init", "force", "update", "limit=", "url=", "processor="])
         except getopt.error as msg:
              raise Usage(msg)
         limit = 10 # !!! DEBUG default limit on number of articles to parse, unless otherwise specified
         init = False
         url = None
         force = False
+        update = False
         proc = None # Single processor to invoke
         # Process options
         for o, a in opts:
@@ -1106,6 +1116,8 @@ def _main(argv = None):
                 init = True
             elif o in ("-f", "--force"):
                 force = True
+            elif o == "--update":
+                update = True
             elif o in ("-l", "--limit"):
                 # Maximum number of articles to parse
                 try:
@@ -1144,8 +1156,12 @@ def _main(argv = None):
                 process_article(url)
             else:
                 # Process already parsed trees, starting on March 1, 2016
-                process_articles(from_date = datetime(year = 2016, month = 3, day = 1),
-                    limit = limit, force = force, processor = proc)
+                if force:
+                    # --force overrides --update
+                    update = False
+                from_date = None if update else datetime(year = 2016, month = 3, day = 1)
+                process_articles(from_date = from_date,
+                    limit = limit, force = force, update = update, processor = proc)
                 # process_articles(limit = limit)
 
     except Usage as err:

@@ -56,8 +56,8 @@ def find_pos_tags(forest):
 
     TerminalFinder().go(forest)
 
-    for key, val in sorted(pos_tags.items()):
-        print("{0}: {1} -> {2}".format(key, val[0], val[1]))
+    #for key, val in sorted(pos_tags.items()):
+    #    print("{0}: {1} -> {2}".format(key, val[0], val[1]))
 
     return pos_tags
 
@@ -129,15 +129,15 @@ def parse_tokens(toklist, mim_tags, fast_p):
             sent.append(t)
             # Check whether the token streams are in sync
             if tag_ix < ntags and t[1] != mim_tags[tag_ix][1]:
-                print("Warning: mismatch between MIM token '{0}' and Reynir token '{1}'".format(mim_tags[tag_ix][1], t[1]))
+                #print("Warning: mismatch between MIM token '{0}' and Reynir token '{1}'".format(mim_tags[tag_ix][1], t[1]))
                 # Attempt to sync again by finding the Reynir token in the MIM tag stream
                 gap = 1
-                MAX_LOOKAHEAD = 3
+                MAX_LOOKAHEAD = 4
                 while gap < MAX_LOOKAHEAD and (tag_ix + gap) < ntags and mim_tags[tag_ix + gap][1] != t[1]:
                     gap += 1
                 if gap < MAX_LOOKAHEAD:
                     # Found the Reynir token ahead
-                    print("Re-synced by skipping ahead by {0} tokens".format(gap))
+                    #print("Re-synced by skipping ahead by {0} tokens".format(gap))
                     tag_ix += gap
             if tag_ix < ntags:
                 tag_ix += 1
@@ -225,6 +225,9 @@ def parse_xml_file(fpath, fast_p):
 
 def parse_directory(dirpath, fast_p):
     """ Parses all XML files in a directory """
+    print("*** Parsing directory {0}".format(dirpath))
+    if dirpath != 'mim/raduneyti':
+        return
     for f in listdir(dirpath):
         fpath = join(dirpath, f)
         if isfile(fpath) and fpath.endswith(".xml"):

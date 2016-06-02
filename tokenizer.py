@@ -367,6 +367,12 @@ def parse_digits(w):
                 # (1/2, 1/3, 1/4, 1/5, 1/6, 2/3, 2/5, 5/6 etc.)
                 # Return a number
                 return TOK.Number(w, float(d) / m), s.end()
+        else:
+            # We have what looks like DD.MM (or MM.DD)
+            # However, this might just as well be a time.
+            # If it is a valid time, assume so.
+            if 0 <= d <= 23 and 0 <= m <= 59:
+                return TOK.Time(w, d, m, 0), s.end()
         if m > 12 >= d:
             # Date is probably wrong way around
             m, d = d, m
@@ -559,21 +565,21 @@ def parse_particles(token_stream):
                     next_token = next(token_stream)
 
             # Coalesce ordinals (1. = first, 2. = second...) into a single token
-            # !!! TBD: look at one more token to see whether the period might
-            # mean the end of a sentence rather than an ordinal
             if next_token.kind == TOK.PUNCTUATION and next_token.txt == '.':
                 if token.kind == TOK.NUMBER and not ('.' in token.txt or ',' in token.txt):
                     # Ordinal, i.e. whole number followed by period: convert to an ordinal token
                     follow_token = next(token_stream)
-                    if follow_token.kind == TOK.WORD and follow_token.txt[0].isupper() and not follow_token.txt.lower() in MONTHS:
-                        # Next token is an uppercase word (and not a month name misspelled in upper case):
+                    if follow_token.kind in (TOK.S_END, TOK.P_END) \
+                        or (follow_token.kind == TOK.WORD and follow_token.txt[0].isupper() and not follow_token.txt.lower() in MONTHS):
+                        # Next token is a sentence or paragraph end,
+                        # or an uppercase word (and not a month name misspelled in upper case):
                         # fall back from assuming that this is an ordinal
                         yield token # Yield the number
                         token = next_token # The period
-                        next_token = follow_token # The following (uppercase) word
+                        next_token = follow_token # The following (uppercase) word or sentence end
                     else:
                         # OK: replace the number and the period with an ordinal token
-                        token = TOK.Ordinal(token.txt, token.val[0])
+                        token = TOK.Ordinal(token.txt + '.', token.val[0])
                         # Continue with the following word
                         next_token = follow_token
 
@@ -1184,7 +1190,7 @@ def parse_phrases_2(token_stream):
                     # Abbreviation: Cut off the brackets & trailing period
                     wrd = wrd[1:-2]
                 if len(wrd) > 2 or not wrd[0].isupper():
-                    if wrd not in { "van", "de", "den", "der", "of" }:
+                    if wrd not in { "van", "de", "den", "der", "of", "el", "al" }:
                         # Accept "Thomas de Broglie", "Ruud van Nistelroy", "Mary of Canterbury"
                         return None
                 # One or two letters, capitalized: accept as middle name abbrev,

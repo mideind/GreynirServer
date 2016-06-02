@@ -254,6 +254,8 @@ class KjarninnScraper(ScrapeHelper):
         if content is None:
             # No div.article-body present
             content = soup_body.article
+        # Delete div.category-snippet tags from the content
+        ScrapeHelper.del_div_class(content, "category_snippet")
         return content
 
 

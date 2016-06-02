@@ -398,6 +398,9 @@ class BIN_Token(Token):
             return False
         if terminal.first != "person":
             return False
+        if not terminal.num_variants:
+            # No variant specified on terminal: we're done
+            return True
         # Check each PersonName tuple in the t2 list
         case = terminal.variant(0)
         gender = terminal.variant(1) if terminal.num_variants >= 2 else None

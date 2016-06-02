@@ -179,7 +179,7 @@ class Article(Base):
     # Article author, if known
     author = Column(String)
     # Article time stamp, if known
-    timestamp = Column(DateTime)
+    timestamp = Column(DateTime, index = True, nullable = True)
 
     # Authority of this article, 1.0 = most authoritative, 0.0 = least authoritative
     authority = Column(Float)
@@ -228,7 +228,8 @@ class Person(Base):
     # Foreign key to an article
     article_url = Column(String,
         # We don't delete associated persons if the article is deleted
-        ForeignKey('articles.url', onupdate="CASCADE", ondelete="SET NULL"), nullable = True)
+        ForeignKey('articles.url', onupdate="CASCADE", ondelete="SET NULL"),
+        index = True, nullable = True)
 
     # Name
     name = Column(String, index = True)
@@ -241,7 +242,7 @@ class Person(Base):
     # Timestamp of this entry
     timestamp = Column(DateTime)
 
-    # The back-reference to the Root parent of this Article
+    # The back-reference to the Article parent of this Person
     article = relationship("Article", backref=backref('persons', order_by=name))
 
     def __repr__(self):
@@ -265,7 +266,8 @@ class Entity(Base):
     # Foreign key to an article
     article_url = Column(String,
         # We don't delete associated persons if the article is deleted
-        ForeignKey('articles.url', onupdate="CASCADE", ondelete="SET NULL"), nullable = True)
+        ForeignKey('articles.url', onupdate="CASCADE", ondelete="SET NULL"),
+        index = True, nullable = True)
 
     # Name
     name = Column(String, index = True)
@@ -280,12 +282,51 @@ class Entity(Base):
     # Timestamp of this entry
     timestamp = Column(DateTime)
 
-    # The back-reference to the Root parent of this Article
+    # The back-reference to the Article parent of this Entity
     article = relationship("Article", backref=backref('entities', order_by=name))
 
     def __repr__(self):
         return "Entity(id='{0}', name='{1}', verb='{2}', definition='{3}')" \
             .format(self.id, self.name, self.verb, self.definition)
+
+    @classmethod
+    def table(cls):
+        return cls.__table__
+
+
+class Failure(Base):
+
+    """ Represents a sentence that fails to parse """
+
+    __tablename__ = 'failures'
+
+    # Primary key
+    id = Column(Integer, Sequence('failures_id_seq'), primary_key=True)
+
+    # Foreign key to an article
+    article_url = Column(String,
+        # We don't delete associated failures if the article is deleted
+        ForeignKey('articles.url', onupdate="CASCADE", ondelete="SET NULL"),
+        index = True, nullable = True)
+
+    # Sentence text
+    sentence = Column(String, nullable = False)
+
+    # Cause of failure: NULL = unknown, 'grammar', 'error'...
+    cause = Column(String(16), nullable = True, index = True)
+
+    # Comment
+    comment = Column(String, nullable = True)
+
+    # Timestamp of this entry
+    timestamp = Column(DateTime, nullable = False, index = True)
+
+    # The back-reference to the Article parent of this Failure
+    article = relationship("Article", backref=backref('failures'))
+
+    def __repr__(self):
+        return "Failure(id='{0}', sentence='{1}', cause='{2}', comment='{3}')" \
+            .format(self.id, self.sentence, self.cause, self.comment)
 
     @classmethod
     def table(cls):

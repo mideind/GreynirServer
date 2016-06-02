@@ -191,6 +191,8 @@ def parse(toklist, single, use_reducer, dump_forest = False, keep_trees = False)
 
     # Accumulate parsed sentences in a text dump format
     trees = OrderedDict()
+    # Accumulate sentences that fail to parse
+    failures = []
 
     with Fast_Parser(verbose = False) as bp: # Don't emit diagnostic messages
 
@@ -263,6 +265,7 @@ def parse(toklist, single, use_reducer, dump_forest = False, keep_trees = False)
                         # Error: store the error token index in the parse tree
                         if keep_trees:
                             trees[num_sent] = "E{0}".format(slen - 1 if err_index is None else err_index)
+                        failures.append(" ".join(t.txt for t in sent))
 
                     # Mark the sentence beginning with the number of parses
                     # and the index of the offending token, if an error occurred
@@ -284,7 +287,7 @@ def parse(toklist, single, use_reducer, dump_forest = False, keep_trees = False)
     )
 
     # noinspection PyRedundantParentheses
-    return (result, trees)
+    return (result, trees, failures)
 
 
 def prepare(toklist, article):
@@ -479,9 +482,9 @@ def analyze():
         t0 = time.time()
 
         if _PROFILE:
-            result, trees = profile(parse, toklist, single, use_reducer, dump_forest)
+            result, trees, failures = profile(parse, toklist, single, use_reducer, dump_forest, keep_trees)
         else:
-            result, trees = parse(toklist, single, use_reducer, dump_forest, keep_trees)
+            result, trees, failures = parse(toklist, single, use_reducer, dump_forest, keep_trees)
 
         # Add a name register to the result
         add_name_register(result, session)
@@ -496,7 +499,7 @@ def analyze():
             # Save a new parse result
             if Settings.DEBUG:
                 print("Storing a new parse tree for url {0}".format(url))
-            Scraper.store_parse(url, result, trees, enclosing_session = session)
+            Scraper.store_parse(url, result, trees, failures, enclosing_session = session)
 
     # Return the tokens as a JSON structure to the client
     return jsonify(result = result)
@@ -535,7 +538,7 @@ def display():
 
         if article is None or not article.tree:
             # We must do a full parse of the toklist
-            result, _ = parse(toklist, False, False, False, False)
+            result, _, _ = parse(toklist, False, False, False, False)
         else:
             # Re-use a previous parse
             result = prepare(toklist, article)

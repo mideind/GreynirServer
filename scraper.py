@@ -43,7 +43,7 @@ from tokenizer import TOK, tokenize
 from fastparser import Fast_Parser, ParseError, ParseForestDumper
 from reducer import Reducer
 
-from scraperdb import Scraper_DB, SessionContext, Root, Article, IntegrityError
+from scraperdb import Scraper_DB, SessionContext, Root, Article, Failure, IntegrityError
 
 
 # The HTML parser to use with BeautifulSoup
@@ -403,6 +403,9 @@ class Scraper:
             # stored by sentence index (1-based)
             trees = OrderedDict()
 
+            # List of sentences that fail to parse
+            failures = []
+
             t0 = time.time()
             bp = Scraper._parser
 
@@ -445,6 +448,8 @@ class Scraper:
                         else:
                             # Error or no parse: add an error index entry for this sentence
                             trees[num_sent] = "E{0}".format(slen - 1 if err_index is None else err_index)
+                            # Add the failing sentence to the list of failures
+                            failures.append(" ".join(t.txt for t in sent))
 
                     elif t[0] == TOK.P_BEGIN:
                         pass
@@ -463,6 +468,8 @@ class Scraper:
 
             # Create a tree representation string out of all the accumulated parse trees
             article.tree = "".join("S{0}\n{1}\n".format(key, val) for key, val in trees.items())
+
+            Scraper.store_failures(session, url, failures)
 
             session.commit()
 
@@ -503,9 +510,25 @@ class Scraper:
         """ Return True if the URL has already been scraped """
         return cls.find_article(url, session) is not None
 
+    @classmethod
+    def store_failures(cls, session, url, failures):
+        """ Store sentences that fail to parse """
+        assert session is not None
+        # Delete previously stored failures for this article
+        session.execute(Failure.table().delete().where(Failure.article_url == url))
+        # Add the failed sentences to the failure table
+        for sentence in failures:
+            f = Failure(
+                article_url = url,
+                sentence = sentence,
+                cause = None, # Unknown cause so far
+                comment = None, # No comment so far
+                timestamp = datetime.utcnow())
+            session.add(f)
+
     # noinspection PyComparisonWithNone
     @classmethod
-    def store_parse(cls, url, result, trees, enclosing_session = None):
+    def store_parse(cls, url, result, trees, failures, enclosing_session = None):
         """ Store a new parse of an article """
 
         success = True
@@ -525,6 +548,10 @@ class Scraper:
 
                 # Create a tree representation string out of all the accumulated parse trees
                 article.tree = "".join("S{0}\n{1}\n".format(key, val) for key, val in trees.items())
+
+                # Add failures, if any
+                Scraper.store_failures(session, url, failures)
+
             else:
                 success = False
                 print("Unable to store new parse of url {0}".format(url))
@@ -665,7 +692,7 @@ class Scraper:
                 if reparse:
                     # Reparse articles that were originally parsed with an older
                     # grammar and/or parser version
-                    q = q.filter(Article.parser_version < version).order_by(Article.scraped)
+                    q = q.filter(Article.parser_version < version).order_by(Article.parsed)
                 else:
                     # Only parse articles that have no parse tree
                     q = q.filter(Article.tree == None)
@@ -815,6 +842,28 @@ def init_roots():
 
     except Exception as e:
         print("{0}".format(e))
+
+
+__doc__ = """
+
+    Reynir - Natural language processing for Icelandic
+
+    Scraper module
+
+    Usage:
+        python scraper.py [options]
+
+    Options:
+        -h, --help: Show this help text
+        -i, --init: Initialize the scraper database, if required
+        -r, --reparse: Reparse the oldest previously parsed articles
+        -l=N, --limit=N: Limit parsing session to N articles (default 10)
+
+    If --reparse is not specified, the scraper will read all previously
+    unseen articles from the root domains and then proceed to parse any
+    unparsed articles (up to a limit, if given).
+
+"""
 
 
 class Usage(Exception):
