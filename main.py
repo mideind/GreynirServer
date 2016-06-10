@@ -16,23 +16,21 @@ import sys
 import time
 from contextlib import closing
 from datetime import datetime
-
-import re
-from bs4 import NavigableString
 from collections import OrderedDict, defaultdict
+
 from flask import Flask
 from flask import render_template, make_response, jsonify
 from flask import request
 
 from fastparser import Fast_Parser, ParseError, ParseForestPrinter, ParseForestDumper
-from grammar import Nonterminal
 from ptest import run_test, Test_DB
 from reducer import Reducer
 from scraper import Scraper
-from processor import Tree
+from tree import Tree
 from scraperdb import SessionContext, Person, Article, desc
 from settings import Settings, ConfigError, changedlocale
 from tokenizer import tokenize, TOK, correct_spaces
+from query import Query
 
 # Initialize Flask framework
 
@@ -48,77 +46,13 @@ def debug():
 _PROFILE = False
 
 # Default text shown in the URL/text box
+_DEFAULT_TEXT = 'Litla gula hænan fann fræ. Það var hveitifræ.'
 
-DEFAULT_URL = 'Litla gula hænan fann fræ. Það var hveitifræ.'
+# Default number of top news items to show in front page list
+_TOP_NEWS_LENGTH = 20
 
-# HTML tags that we explicitly don't want to look at
-
-exclude_tags = frozenset(["script", "audio", "video", "style"])
-
-# HTML tags that typically denote blocks (DIV-like), not inline constructs (SPAN-like)
-
-block_tags = frozenset(["p", "h1", "h2", "h3", "h4", "div",
-    "main", "article", "header", "section",
-    "table", "thead", "tbody", "tr", "td", "ul", "li",
-    "form", "option", "input", "label",
-    "figure", "figcaption", "footer"])
-
-whitespace_tags = frozenset(["br", "img"])
-
-
-class TextList:
-
-    """ Accumulates raw text blocks and eliminates unnecessary nesting indicators """
-
-    def __init__(self):
-        self._result = []
-        self._nesting = 0
-
-    def append(self, w):
-        if self._nesting > 0:
-            self._result.append(" [[ " * self._nesting)
-            self._nesting = 0
-        self._result.append(w)
-
-    def append_whitespace(self):
-        if self._nesting == 0:
-            # No need to append whitespace if we're just inside a begin-block
-            self._result.append(" ")
-
-    def begin(self):
-        self._nesting += 1
-
-    def end(self):
-        if self._nesting > 0:
-            self._nesting -= 1
-        else:
-            self._result.append(" ]] ")
-
-    def result(self):
-        return "".join(self._result)
-
-
-def extract_text(soup, result):
-    """ Append the human-readable text found in an HTML soup to the result TextList """
-    if soup:
-        for t in soup.children:
-            if type(t) == NavigableString:
-                # Text content node
-                result.append(t)
-            elif isinstance(t, NavigableString):
-                # Comment, CDATA or other text data: ignore
-                pass
-            elif t.name in whitespace_tags:
-                # Tags that we interpret as whitespace, such as <br> and <img>
-                result.append_whitespace()
-            elif t.name in block_tags:
-                # Nested block tag
-                result.begin() # Begin block
-                extract_text(t, result)
-                result.end() # End block
-            elif t.name not in exclude_tags:
-                # Non-block tag
-                extract_text(t, result)
+# Default number of top persons to show in front page list
+_TOP_PERSONS_LENGTH = 20
 
 
 def tokenize_url(url, info):
@@ -148,20 +82,9 @@ def tokenize_url(url, info):
             metadata = vars(metadata) # Convert namedtuple to dict
         metadata["url"] = url
 
-    # Extract the text content of the HTML into a list
-    tlist = TextList()
-    extract_text(body, tlist)
-    text = tlist.result()
-
-    # Eliminate soft hyphen and zero-width space characters
-    text = re.sub('\u00AD|\u200B', '', text)
-
-    # Eliminate consecutive whitespace
-    text = re.sub(r'\s+', ' ', text)
-
     # Tokenize the resulting text, returning a generator
     # noinspection PyRedundantParentheses
-    return (metadata, tokenize(text))
+    return (metadata, Scraper.to_tokens(body))
 
 
 def profile(func, *args, **kwargs):
@@ -178,7 +101,7 @@ def profile(func, *args, **kwargs):
     return result
 
 
-def parse(toklist, single, use_reducer, dump_forest = False, keep_trees = False):
+def parse(toklist, single, use_reducer, dump_forest = False, keep_trees = False, root = None):
     """ Parse the given token list and return a result dict """
 
     # Count sentences
@@ -194,7 +117,7 @@ def parse(toklist, single, use_reducer, dump_forest = False, keep_trees = False)
     # Accumulate sentences that fail to parse
     failures = []
 
-    with Fast_Parser(verbose = False) as bp: # Don't emit diagnostic messages
+    with Fast_Parser(verbose = False, root = root) as bp: # Don't emit diagnostic messages
 
         version = bp.version
         rdc = Reducer(bp.grammar)
@@ -216,7 +139,12 @@ def parse(toklist, single, use_reducer, dump_forest = False, keep_trees = False)
                         # Parse the sentence
                         forest = bp.go(sent)
                         if forest:
-                            num = Fast_Parser.num_combinations(forest)
+                            if use_reducer or (single and dump_forest):
+                                # Don't bother counting the combinations if
+                                # we don't use the result
+                                num = Fast_Parser.num_combinations(forest)
+                            else:
+                                num = 1
 
                             if single and dump_forest:
                                 # Dump the parse tree to parse.txt
@@ -231,7 +159,7 @@ def parse(toklist, single, use_reducer, dump_forest = False, keep_trees = False)
                         if use_reducer and num > 1:
                             # Reduce the resulting forest
                             forest, score = rdc.go_with_score(forest)
-                            assert Fast_Parser.num_combinations(forest) == 1
+                            # assert Fast_Parser.num_combinations(forest) == 1
 
                             if Settings.DEBUG:
                                 print(ParseForestDumper.dump_forest(forest))
@@ -369,7 +297,7 @@ def add_name_register(result, session):
         print("Register is: {0}".format(register))
 
 
-def top_news(limit = 20):
+def top_news(limit = _TOP_NEWS_LENGTH):
     """ Return a list of top recent news """
     toplist = []
     topdict = dict()
@@ -425,27 +353,64 @@ def top_news(limit = 20):
     return toplist
 
 
-def top_persons(limit = 20):
+def top_persons(limit = _TOP_PERSONS_LENGTH):
     """ Return a list of names and titles appearing recently in the news """
     toplist = dict()
-    with SessionContext() as session:
+    with SessionContext(commit = True) as session:
+
         q = session.query(Person.name, Person.title, Person.article_url) \
-        .join(Article) \
-        .order_by(desc(Article.timestamp))[0:limit]
+            .join(Article) \
+            .order_by(desc(Article.timestamp))[0:limit * 2] # Go through up to 2 * N records
 
         for p in q:
-            # Insert the name into the ordered list if it's not already there,
+            # Insert the name into the list if it's not already there,
             # or if the new title is longer than the previous one
             if p.name not in toplist or len(p.title) > len(toplist[p.name][0]):
                 toplist[p.name] = (correct_spaces(p.title), p.article_url)
+                if len(toplist) >= limit:
+                    # We now have as many names as we initially wanted: terminate the loop
+                    break
 
-        session.commit()
-    with changedlocale(('is_IS', 'UTF-8')) as strxfrm:
+    with changedlocale() as strxfrm:
         # Convert the dictionary to a sorted list of dicts
         return sorted(
             [ dict(name = name, title = tu[0], url = tu[1]) for name, tu in toplist.items() ],
             key = lambda x: strxfrm(x["name"])
         )
+
+
+def process_query(session, toklist, result):
+    """ Check whether the parse tree is describes a query, and if so, execute the query,
+        store the query answer in the result dictionary and return True """
+
+    parse_result, trees, _ = parse(toklist, single = True, use_reducer = True, keep_trees = True)
+
+    if not trees:
+        # No parse at all
+        result["error"] = "E_NO_TREES"
+        return False
+    result.update(parse_result)
+    if result["num_sent"] != 1:
+        # Queries must be one sentence
+        result["error"] = "E_MULTIPLE_SENTENCES"
+        return False
+    if result["num_parsed_sent"] != 1:
+        # Unable to parse the single sentence
+        result["error"] = "E_NO_PARSE"
+        return False
+    if 1 not in trees:
+        # No sentence number 1
+        result["error"] = "E_NO_FIRST_SENTENCE"
+        return False
+    tree = "S1\n" + trees[1] # First and only sentence
+    q = Query(session)
+    if not q.execute(tree):
+        result["error"] = q.error()
+        return False
+    # Successful query: return the answer in response
+    result["response"] = q.answer()
+    return True
+
 
 # Note: Endpoints ending with .api are configured not to be cached by nginx
 @app.route("/analyze.api", methods=['POST'])
@@ -459,6 +424,7 @@ def analyze():
     # Single sentence (True) or contiguous text from URL (False)?
     single = False
     keep_trees = False
+    is_query = False
 
     t0 = time.time()
 
@@ -472,31 +438,43 @@ def analyze():
             # the database with the new parse
             keep_trees = Scraper.is_known_url(url, session)
         else:
+            single = True
             # Tokenize the text entered as-is and return the token list
             # In this case, there's no metadata
             toklist = list(tokenize(url))
-            single = True
+            result = dict()
+            is_query = process_query(session, toklist, result)
 
-        tok_time = time.time() - t0
+        if is_query:
 
-        t0 = time.time()
+            result["q"] = url # The original query string
 
-        if _PROFILE:
-            result, trees, failures = profile(parse, toklist, single, use_reducer, dump_forest, keep_trees)
         else:
-            result, trees, failures = parse(toklist, single, use_reducer, dump_forest, keep_trees)
 
-        # Add a name register to the result
-        add_name_register(result, session)
+            # Not a query: parse normally
 
-        parse_time = time.time() - t0
+            tok_time = time.time() - t0
 
-        result["metadata"] = metadata
-        result["tok_time"] = tok_time
-        result["parse_time"] = parse_time
+            t0 = time.time()
 
-        if keep_trees and metadata is not None:
-            # Save a new parse result
+            if _PROFILE:
+                result, trees, failures = profile(parse, toklist, single, use_reducer, dump_forest, keep_trees)
+            else:
+                result, trees, failures = parse(toklist, single, use_reducer, dump_forest, keep_trees)
+
+            parse_time = time.time() - t0
+
+            # Add a name register to the result
+            add_name_register(result, session)
+            # Add information from parser
+            result["metadata"] = metadata
+            result["tok_time"] = tok_time
+            result["parse_time"] = parse_time
+
+        result["is_query"] = is_query # True if we are returning a query result, not tokenized (and parsed) text
+
+        if keep_trees and not single and metadata is not None:
+            # Save a new parse result for an article
             if Settings.DEBUG:
                 print("Storing a new parse tree for url {0}".format(url))
             Scraper.store_parse(url, result, trees, failures, enclosing_session = session)
@@ -508,7 +486,7 @@ def analyze():
 # Note: Endpoints ending with .api are configured not to be cached by nginx
 @app.route("/display.api", methods=['POST'])
 def display():
-    """ Display already parsed text from a given URL """
+    """ Display an already parsed article with a given URL """
 
     url = request.form.get("url", "").strip()
     metadata = None
@@ -538,7 +516,7 @@ def display():
 
         if article is None or not article.tree:
             # We must do a full parse of the toklist
-            result, _, _ = parse(toklist, False, False, False, False)
+            result, _, _ = parse(toklist, single = False, use_reducer = False)
         else:
             # Re-use a previous parse
             result = prepare(toklist, article)
@@ -554,6 +532,26 @@ def display():
 
         # Return the tokens as a JSON structure to the client
         return jsonify(result = result)
+
+
+# Note: Endpoints ending with .api are configured not to be cached by nginx
+@app.route("/query.api", methods=['POST'])
+def query():
+    """ Respond to a query string """
+
+    q = request.form.get("q", "").strip()
+
+    toklist = list(tokenize(q))
+    result = dict()
+
+    with SessionContext(commit = True) as session:
+        # Check whether this is a query
+        is_query = process_query(session, toklist, result)
+
+    result["is_query"] = is_query
+    result["q"] = q
+
+    return jsonify(result = result)
 
 
 def make_grid(w):
@@ -647,7 +645,6 @@ def make_grid(w):
             cols.append(dict())
 
         # Add a tuple describing the rows spanned and the node info
-        assert isinstance(p[4], Nonterminal) or isinstance(p[4], tuple)
         if option not in cols[col]:
             # Put in a dictionary entry for this option
             cols[col][option] = []
@@ -762,7 +759,7 @@ def parse_grid():
         cols.sort(key = lambda x: x[0])
         col = 0
         for startcol, endcol, info in cols:
-            assert isinstance(info, Nonterminal) or isinstance(info, tuple)
+            #assert isinstance(info, Nonterminal) or isinstance(info, tuple)
             if col < startcol:
                 gap = startcol - col
                 gap -= sum(1 for c in rs[gix] if c < startcol)
@@ -778,7 +775,7 @@ def parse_grid():
             else:
                 cls = { "nonterminal" }
                 # Get the 'pure' name of the nonterminal in question
-                assert isinstance(info, Nonterminal)
+                #assert isinstance(info, Nonterminal)
                 info = info.name
             if endcol - startcol == 1:
                 cls |= { "vertical" }
@@ -836,7 +833,7 @@ def main():
     debug_mode = request.args.get("debug", "")
     if debug_mode == "0" or debug_mode.lower() == "false":
         debug_mode = False
-    txt = request.args.get("txt", None) or request.form.get("url", None) or DEFAULT_URL
+    txt = request.args.get("txt", None) or request.form.get("url", None) or _DEFAULT_TEXT
     resp = make_response(render_template("main.html",
         default_text = txt, grammar = bp.grammar, debug_mode = debug_mode,
         articles = top_news(), persons = top_persons()))
@@ -850,7 +847,6 @@ def test():
 
     # Run test and show the result
     bp = Fast_Parser(verbose = False) # Don't emit diagnostic messages
-
     return render_template("test.html", result = run_test(bp))
 
 
@@ -895,7 +891,7 @@ if __name__ == "__main__":
 
     # Additional files that should cause a reload of the web server application
     # Note: Reynir.grammar is automatically reloaded if its timestamp changes
-    extra_files = [ 'Reynir.conf', 'Verbs.conf', 'Main.conf', 'Prefs.conf' ]
+    extra_files = [ 'Reynir.conf', 'Verbs.conf', 'Main.conf', 'Prefs.conf', 'Abbrev.conf' ]
 
     from socket import error as socket_error
     import errno

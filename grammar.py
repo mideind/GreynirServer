@@ -3,9 +3,12 @@
 
     Grammar module
 
-    Copyright (c) 2015 Vilhjalmur Thorsteinsson
+    Copyright (c) 2016 Vilhjalmur Thorsteinsson
     All rights reserved
     See the accompanying README.md file for further licensing and copyright information.
+
+    This module parses a text file containing the description of
+    a context-free grammar.
 
     A grammar is specified as a set of rules. Each rule has a single
     left-hand-side nonterminal, associated with 1..n right-hand-side
@@ -18,6 +21,23 @@
     literals enclosed within single or double quotes. Epsilon (empty)
     productions are allowed and denoted by 0.
 
+    Examples:
+
+    # Sequence (where terminal_X is optional at the start)
+    Nonterminal_A -> terminal_X? Nonterminal_B terminal_Y
+
+    # Alternatives (where terminal_W may occur one or more times sequentially)
+    Nonterminal_B ->
+        terminal_Z | terminal_W+ | Nonterminal_C
+
+    # Literal terminals; 'x' matches words with stem 'x'; "y" matches the token 'y' exactly
+    Nonterminal_C ->
+        Nonterminal_D | 'literal_1'* | "exact_literal_2"+
+
+    # Epsilon
+    Nonterminal_D ->
+        'literal_2' | 0     # 0 means epsilon (in this case equivalent to 'literal_2'?)
+
 """
 
 import os
@@ -25,7 +45,7 @@ import struct
 
 from datetime import datetime
 from collections import defaultdict
-from settings import Settings
+from settings import Settings, changedlocale
 
 
 class GrammarError(Exception):
@@ -395,6 +415,8 @@ class Grammar:
         self._nt_scores = { }
 
         self._root = None
+        self._secondary_roots = [] # Additional, secondary roots, if any
+
         # Information about the grammar file
         self._file_name = None
         self._file_time = None
@@ -786,6 +808,7 @@ class Grammar:
                 # Pragma
                 s = s.strip()
                 PRAGMA_SCORE = "$score("
+                PRAGMA_ROOT = "$root("
                 if s.startswith(PRAGMA_SCORE):
                     # Pragma $score(int) Nonterminal/var1/var2 ...
                     s = s[len(PRAGMA_SCORE):]
@@ -804,10 +827,23 @@ class Grammar:
                                 raise GrammarError("Unknown variant '{0}' for nonterminal '{1}'".format(vname, ntv[0]), fname, line)
                         var_names = variant_names(ntv[0], ntv[1:])
                         for vname in var_names:
-                            if vname not in self._nonterminals:
+                            if vname not in nonterminals:
                                 raise GrammarError("Unknown nonterminal '{0}'".format(vname))
-                            self._nt_scores[self._nonterminals[vname]] = score
+                            self._nt_scores[nonterminals[vname]] = score
 
+                elif s.startswith(PRAGMA_ROOT):
+                    # Pragma $root(Nonterminal)
+                    # Identify a nonterminal as a secondary parse root
+                    if s[-1] != ')':
+                        raise GrammarError("Expected right parenthesis in $root() pragma", fname, line)
+                    root_nt = s[len(PRAGMA_ROOT):-1].strip()
+                    if not root_nt.isidentifier():
+                        raise GrammarError("Invalid nonterminal name '{0}'".format(root_nt), fname, line)
+                    if root_nt not in nonterminals:
+                        raise GrammarError("Unknown nonterminal '{0}'".format(root_nt))
+                    # Add an implicit reference to the root
+                    nonterminals[root_nt].add_ref()
+                    self._secondary_roots.append(nonterminals[root_nt])
                 else:
                     raise GrammarError("Unknown pragma '{0}'".format(s), fname, line)
             else:
@@ -953,10 +989,10 @@ class Grammar:
                     if isinstance(s, Nonterminal) and s in shortcuts:
                         # Replace the nonterminal in the production
                         target = shortcuts[s]
-                        if verbose:
-                            # Print informational message in verbose mode
-                            print("Production of {2}: Replaced {0} with {1}"
-                                .format(s, target, nt))
+                        #if verbose:
+                        #    # Print informational message in verbose mode
+                        #    print("Production of {2}: Replaced {0} with {1}"
+                        #        .format(s, target, nt))
                         p[ix] = target
 
         # Now, after applying shortcuts, check that all nonterminals are reachable from the root
@@ -970,13 +1006,18 @@ class Grammar:
                     if isinstance(s, Nonterminal) and s in unreachable:
                         _remove(s)
 
+        # Remove the main root and any secondary roots
         _remove(self._root)
+        for r in self._secondary_roots:
+            _remove(r)
 
         if unreachable:
             if verbose:
                 # Emit a warning message if verbose=True
-                print ("Nonterminals {0} are unreachable from the root"
-                    .format(", ".join([str(nt) for nt in unreachable])))
+                print("The following nonterminals are unreachable from the root\nand will be removed from the grammar:")
+                with changedlocale() as strxfrm:
+                    for nt in sorted([ str(nt) for nt in unreachable ], key = strxfrm):
+                        print("* {0}".format(str(nt)))
             # Simplify the grammar dictionary by removing unreachable nonterminals
             for nt in unreachable:
                 del grammar[nt]
@@ -1064,4 +1105,29 @@ class Grammar:
                 print("   {0}".format(p))
             print()
 
+
+if __name__ == "__main__":
+
+    # If run as a main program, do a verbose grammar check
+
+    import sys
+
+    fname = "Reynir.grammar"
+    args = sys.argv
+    if len(args) == 2:
+        fname = args[1]
+
+    ts = os.path.getmtime(fname)
+    if ts is None:
+        print("Unable to read grammar file {0}".format(fname))
+    else:
+        print("Reading grammar file {0} with timestamp {1:%Y-%m-%d %H:%M:%S}\n".format(fname, datetime.fromtimestamp(ts)))
+        import time
+        t0 = time.time()
+        g = Grammar()
+        try:
+            g.read(fname, verbose = True)
+            print("Grammar parsed and loaded in {0:.2f} seconds".format(time.time() - t0))
+        except GrammarError as err:
+            print(str(err))
 

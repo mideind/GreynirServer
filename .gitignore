@@ -41,6 +41,7 @@ UnknownVerbs.txt
 parse.txt
 reduce.txt
 input.txt
+nohup.out
 
 # Distribution / packaging
 .Python

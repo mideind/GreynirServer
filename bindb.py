@@ -94,8 +94,8 @@ class BIN_Db:
         self._conn = None # Connection
         self._c = None # Cursor
         # Cache descriptors for the lookup functions
-        self._meanings = getattr(self, "meanings")
-        self._forms = getattr(self, "forms")
+        self._meanings_func = getattr(self, "_meanings")
+        self._forms_func = getattr(self, "_forms")
 
     def open(self, host):
         """ Open and initialize a database connection """
@@ -121,8 +121,7 @@ class BIN_Db:
         if BIN_Db.tls.bin_db is self:
             BIN_Db.tls.bin_db = None
 
-    @lru_cache(maxsize = CACHE_SIZE)
-    def meanings(self, w):
+    def _meanings(self, w):
         """ Return a list of all possible grammatical meanings of the given word """
         assert self._c is not None
         m = None
@@ -142,8 +141,7 @@ class BIN_Db:
             m = None
         return m
 
-    @lru_cache(maxsize = CACHE_SIZE)
-    def forms(self, w):
+    def _forms(self, w):
         """ Return a list of all possible forms of a particular root (stem) """
         assert self._c is not None
         m = None
@@ -183,13 +181,15 @@ class BIN_Db:
             m = None
         return m
 
+    @lru_cache(maxsize = CACHE_SIZE)
     def lookup_word(self, w, at_sentence_start):
         """ Given a word form, look up all its possible meanings """
-        return self._lookup(w, at_sentence_start, self._meanings)
+        return self._lookup(w, at_sentence_start, self._meanings_func)
 
+    @lru_cache(maxsize = CACHE_SIZE)
     def lookup_form(self, w, at_sentence_start):
         """ Given a word root (stem), look up all its forms """
-        return self._lookup(w, at_sentence_start, self._forms)
+        return self._lookup(w, at_sentence_start, self._forms_func)
 
     @staticmethod
     def prefix_meanings(mlist, prefix):

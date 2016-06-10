@@ -96,7 +96,7 @@ declarations = """
 
     typedef BOOL (*MatchingFunc)(UINT nHandle, UINT nToken, UINT nTerminal);
 
-    struct Node* earleyParse(struct Parser*, UINT nTokens, UINT nHandle, UINT* pnErrorToken);
+    struct Node* earleyParse(struct Parser*, UINT nTokens, INT iRoot, UINT nHandle, UINT* pnErrorToken);
     struct Grammar* newGrammar(const CHAR* pszGrammarFile);
     void deleteGrammar(struct Grammar*);
     struct Parser* newParser(struct Grammar*, MatchingFunc fpMatcher);
@@ -229,10 +229,7 @@ class Node:
             self._completed = True
         fe = c_node.pHead
         while fe != ffi.NULL:
-            if self._completed:
-                child_ix = -1
-            else:
-                child_ix = index
+            child_ix = -1 if self._completed else index
             self._add_family(grammar, tokens, c_dict, fe.pProd, fe.p1, fe.p2, child_ix)
             fe = fe.pNext
 
@@ -242,18 +239,14 @@ class Node:
             child_ix -= 1
         if ch1 == ffi.NULL:
             n1 = None
-        elif ch1 in c_dict:
-            n1 = c_dict[ch1]
         else:
-            n1 = Node(grammar, tokens, c_dict, ch1, prod, child_ix)
+            n1 = c_dict.get(ch1) or Node(grammar, tokens, c_dict, ch1, prod, child_ix)
         if n1 is not None:
             child_ix += 1
         if ch2 == ffi.NULL:
             n2 = None
-        elif ch2 in c_dict:
-            n2 = c_dict[ch2]
         else:
-            n2 = Node(grammar, tokens, c_dict, ch2, prod, child_ix)
+            n2 = c_dict.get(ch2) or Node(grammar, tokens, c_dict, ch2, prod, child_ix)
         if n1 is not None and n2 is not None:
             children = (n1, n2)
         elif n2 is not None:
@@ -524,7 +517,7 @@ class Fast_Parser(BIN_Parser):
                     cls.GRAMMAR_BINARY_FILE)
         return cls._c_grammar
 
-    def __init__(self, verbose = False):
+    def __init__(self, verbose = False, root = None):
 
         # Only one initialization at a time, since we don't want a race
         # condition between threads with regards to reading and parsing the grammar file
@@ -557,7 +550,7 @@ class Fast_Parser(BIN_Parser):
         # handle will be properly deleted even if an exception is thrown
 
         with ParseJob.make(wrapped_tokens, self._terminals) as job:
-            node = ep.earleyParse(self._c_parser, len(wrapped_tokens), job.handle, err)
+            node = ep.earleyParse(self._c_parser, len(wrapped_tokens), 0, job.handle, err)
 
         if node == ffi.NULL:
             ix = err[0] # Token index

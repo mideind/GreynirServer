@@ -141,8 +141,10 @@ class Scraper:
             return "".join(self._result)
 
     @staticmethod
-    def _extract_text(soup, result):
+    def extract_text(soup, result):
         """ Append the human-readable text found in an HTML soup to the result TextList """
+        if soup is None:
+            return
         for t in soup.children:
             if type(t) == NavigableString:
                 # Text content node
@@ -156,19 +158,19 @@ class Scraper:
             elif t.name in Scraper._BLOCK_TAGS:
                 # Nested block tag
                 result.begin() # Begin block
-                Scraper._extract_text(t, result)
+                Scraper.extract_text(t, result)
                 result.end() # End block
             elif t.name not in Scraper._EXCLUDE_TAGS:
                 # Non-block tag
-                Scraper._extract_text(t, result)
+                Scraper.extract_text(t, result)
 
     @staticmethod
-    def _to_tokens(soup):
+    def to_tokens(soup):
         """ Convert an HTML soup root into a parsable token stream """
 
         # Extract the text content of the HTML into a list
         tlist = Scraper.TextList()
-        Scraper._extract_text(soup, tlist)
+        Scraper.extract_text(soup, tlist)
         text = tlist.result()
         tlist = None # Free memory
 
@@ -391,7 +393,7 @@ class Scraper:
             content = helper.get_content(soup) if soup else None
 
             # Convert the content soup to a token iterable (generator)
-            toklist = Scraper._to_tokens(content) if content else None
+            toklist = Scraper.to_tokens(content) if content else None
 
             # Count sentences
             num_sent = 0

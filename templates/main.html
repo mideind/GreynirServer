@@ -39,12 +39,14 @@
 {%- endif -%}
       :</p>
 
-      <input type="text" name="url" id="url" tabindex="1"
-         maxlength=512 autofocus required class="text" value="{{ default_text }}"
-         onClick="this.setSelectionRange(0, this.value.length)"/>
-
-      <div class="btn" id="url-ok" title="Greina" tabindex="2"
-         onclick="analyzeUrl()">Greina</div>
+      <div class="input-overlay">
+         <span class="text-input" id="url-shadow"></span>
+         <input class="text-input" type="text" name="url" id="url" tabindex="1"
+            maxlength=512 autofocus required value="{{ default_text }}"
+            onClick="this.setSelectionRange(0, this.value.length)"/>
+         <div class="btn" id="url-ok" title="Greina" tabindex="2"
+            onclick="analyzeUrl()">Greina</div>
+      </div>
 
    </div>
 
@@ -56,6 +58,10 @@
       <span id="hdr-toppeople" class="tab">
          <span class="glyphicon glyphicon-user"></span>
          &nbsp;Fólk í fréttum
+      </span>
+      <span id="hdr-entity" class="tab">
+         <span class="glyphicon glyphicon-info"></span>
+         &nbsp;Upplýsingar
       </span>
       <span id="hdr-output" class="tab">
          <span class="glyphicon glyphicon-eye-open"></span>
@@ -109,7 +115,7 @@
          </div>
 
          <!-- Spinner that appears while the analysis is in progress -->
-         <div id="wait">Málgreining<br>í gangi...<br><br><img src="/static/wait.gif" width="48" height="48" /></div>
+         <div id="result-wait" class="wait">Málgreining<br>í gangi...<br><br><img src="/static/wait.gif" width="48" height="48" /></div>
 
       </div>
 
@@ -137,6 +143,19 @@
    --></div>
 {% endfor %}
          </div>
+      </div>
+
+      <div id="entity" class="main-tab">
+         <!-- Information about an entity goes here -->
+         <div id="entity-header"></div>
+         <div id="entity-body">
+            <div class="guide-empty">
+               <p><span class="green glyphicon glyphicon-play"></span>
+               <b>Sláðu inn mannsnafn eða annað sérnafn</b> hér að ofan<br/>
+               til að fá nánari upplýsingar, eða smelltu á nafn í frétt.</p>
+            </div>
+         </div>
+         <div id="entity-wait" class="wait">Fyrirspurn í vinnslu...<br><br><img src="/static/wait.gif" width="48" height="48" /></div>
       </div>
 
    </div> <!-- tab-area -->

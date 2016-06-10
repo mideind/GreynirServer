@@ -65,6 +65,7 @@
 
 import re
 from datetime import datetime
+
 from scraperdb import Person
 
 
@@ -154,7 +155,14 @@ def Manneskja(node, params, result):
 def Titill(node, params, result):
     """ Titill á eftir nafni """
     #print("Titill: {0}".format(result["_text"]))
-    result.titill = result._nominative
+    if "ekki_titill" not in result:
+        result.titill = result._nominative
+
+def NlTitill(node, params, result):
+    """ Nafnliður titils """
+    # Fyrirbyggja að prósenta sé skilin sem titill
+    if len(params) == 1 and "_tokentype" in params[0] and params[0]._tokentype == "PERCENT":
+        result.ekki_titill = True
 
 def Ávarp(node, params, result):
     """ Ávarp á undan nafni (herra, frú, séra...) """
@@ -173,6 +181,13 @@ def FsLiður(node, params, result):
     """ Forsetningarliður """
     # Leyfa forsetningarlið að standa óbreyttum í titli
     result._nominative = result._text
+    # Ekki leyfa skýringu eða mannsnafni að fara í gegn um forsetningarlið
+    result.del_attribs(("skýring", "skýring_nafn", "mannsnafn", "ávarp"))
+
+def Tengiliður(node, params, result):
+    """ Tengiliður ("sem" setning) """
+    # Ekki leyfa mannsnafni að fara í gegn um tengilið
+    result.del_attribs(("mannsnafn", "ávarp"))
 
 def Setning(node, params, result):
     """ Undirsetning: láta standa óbreytta """
@@ -222,6 +237,8 @@ def NlSkýring(node, params, result):
         s = s[4:]
         if s.startswith("er "):
             s = s[3:]
+        elif s.startswith("væri "):
+            s = s[5:]
         elif s.startswith("nú er "):
             s = s[6:]
         elif s.startswith("einnig er "):
@@ -230,6 +247,8 @@ def NlSkýring(node, params, result):
             s = "ekki " + s[8:]
         elif s.startswith("ekki var "):
             s = "var ekki " + s[9:]
+        elif s.startswith("ekki væri "):
+            s = "ekki " + s[10:]
         elif s.startswith("verið hefur "):
             s = "hefur verið " + s[12:]
     else:

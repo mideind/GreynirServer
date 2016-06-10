@@ -171,7 +171,7 @@ function hoverIn() {
    var ix = parseInt(wId.slice(1));
    var out = $("div#result");
    var tokens = out.data("tokens");
-   var register = out.data("register");
+   var register = out.data("register"); // Can be null
    var wl = tokens[ix];
    var offset = $(this).position();
    var left = Math.min(offset.left, 560);
@@ -214,7 +214,7 @@ function hoverIn() {
    }
    else
    if (wl[0] == TOK_ORDINAL) {
-      info.html("<p><b>" + wl[1] + ".</b></p>");
+      info.html("<p><b>" + wl[1] + "</b></p>");
       // Show the parsed number
       info.append("<p>" + wl[2] + "</p>");
    }
@@ -253,7 +253,7 @@ function hoverIn() {
          var p = wl[2][0];
          // Show name and title
          var name = p[0];
-         var title = register[name] || "";
+         var title = register ? (register[name] || "") : "";
          info.html("<p><b>" + name + "</b> " + title + "</p>");
       }
    }
@@ -311,33 +311,52 @@ function add_w(wsp, cls, i, wrd) {
 function populateRegister(register) {
    // Populate the name register display
    var count = 0;
-   $.each(register,
-      function (key, value) {
-         var item = $("<li></li>");
-         var name = $("<span></span>").addClass("name").text(key);
-         var title = $("<span></span>").addClass("title").text(value);
-         item.append(name);
-         item.append(title);
-         $("#namelist").append(item);
-         count++;
-      }
-   );
+   if (register)
+      $.each(register,
+         function (key, value) {
+            var item = $("<li></li>");
+            var name = $("<span></span>").addClass("name").text(key);
+            var title = $("<span></span>").addClass("title").text(value);
+            item.append(name);
+            item.append(title);
+            $("#namelist").append(item);
+            count++;
+         }
+      );
    // Display the register
-   if (count)
+   if (count) {
       $("#register").css("display", "block");
+      $("#namelist span.name").click(function(ev) {
+         // Send a query to the server
+         submitQuery($(this).text())
+      });
+   }
 }
 
 function handleError(xhr, status, errorThrown) {
    /* An error occurred on the server or in the communications */
    // Hide progress indicator
-   $("div#wait").css("display", "none");
+   $("div#result-wait").css("display", "none");
    $("div#result").html("<div class='guide-empty'><p><b>Villa kom upp</b> í samskiptum við netþjón Greynis</p></div>");
+}
+
+function handleQueryError(xhr, status, errorThrown) {
+   /* An error occurred on the server or in the communications */
+   // Hide progress indicator
+   $("div#entity-wait").css("display", "none");
+   $("div#entity-body").html("<div class='guide-empty'><p><b>Villa kom upp</b> í samskiptum við netþjón Greynis</p></div>");
 }
 
 function populateResult(json) {
    // Display the results of analysis by the server
    // Hide progress indicator
-   $("div#wait").css("display", "none");
+   $("div#result-wait").css("display", "none");
+   if (json.result.is_query) {
+      // What we're getting back is actually a query result, not tokenized (and parsed) text
+      clearQueryResult(); // Prepare the query result tab and switch to it
+      populateQueryResult(json); // Display this as a query result
+      return;
+   }
    // Clear the previous result, if any, and associate the
    // incoming token list with the result DIV
    $("#tok-time").text(json.result.tok_time.toFixed(2));
@@ -359,7 +378,7 @@ function populateResult(json) {
 
    var out = $("div#result");
    var tokens = json.result.tokens;
-   var register = json.result.register; // Name register
+   var register = json.result.register || null; // Name register
    out.data("tokens", tokens);
    out.data("register", register);
    var i;
@@ -458,7 +477,7 @@ function populateResult(json) {
       }
       else
       if (wl0 == TOK_ORDINAL) {
-         s += add_w(wsp, "ordinal", i, wl[1] + ".");
+         s += add_w(wsp, "ordinal", i, wl[1]);
          wsp = " ";
       }
       else
@@ -525,7 +544,7 @@ function clearResult() {
    $("div.tab-header span.tab").removeClass("selected");
    $("span#hdr-output").addClass("selected");
    // Display progress indicator
-   $("div#wait").css("display", "block");
+   $("div#result-wait").css("display", "block");
    // Make the statistics appear but hidden until processing is complete
    $("p.tok-info").css("display", "block").css("visibility", "hidden");
    // Hide the guide
@@ -535,6 +554,34 @@ function clearResult() {
    // Hide the register
    $("#namelist").html("");
    $("#register").css("display", "none");
+}
+
+function populateQueryResult(json) {
+   // Display the result of a query sent to the server
+   // Hide progress indicator
+   $("div#entity-wait").css("display", "none");
+   var r = json.result;
+   var q = $("<p></p>").text(r.q);
+   var answer;
+   if (r.is_query)
+      // This is a valid query response
+      answer = $("<p></p>").text(r.response);
+   else
+      // An error occurred
+      answer = $("<p></p>").text(r.error);
+   $("#entity-body").html("<p>Result of " + (r.is_query ? "valid" : "invalid") + " query:</p>").append(q).append(answer);
+}
+
+function clearQueryResult() {
+   // Clear previous result
+   $("div#entity-body").html("");
+   // Switch to the entity info tab
+   $("div.main-tab").css("display", "none");
+   $("div#entity").css("display", "block");
+   $("div.tab-header span.tab").removeClass("selected");
+   $("span#hdr-entity").addClass("selected");
+   // Display progress indicator
+   $("div#entity-wait").css("display", "block");
 }
 
 function _analyzeUrl(url) {
@@ -560,6 +607,7 @@ function analyzeUrl() {
 function displayUrl(url) {
    // Ajax query to the server
    $("#url").val(url); // Show URL in the input field
+   updateUrlShadow();
    clearResult();
    // Launch the query
    serverQuery('/display.api',
@@ -572,27 +620,78 @@ function displayUrl(url) {
    );
 }
 
+function submitQuery(q) {
+   // Submit a query to the server
+   $("#url").val(q); // Show the query in the input field
+   updateUrlShadow();
+   clearQueryResult();
+   // Launch the query
+   serverQuery('/query.api',
+      { q : q }, // Query string
+      populateQueryResult, // successFunc
+      null, // completeFunc
+      handleQueryError // error Func
+   );
+}
+
+function updateUrlShadow() {
+   // Update the URL shadow field, behind the URL input,
+   // to reflect the input field
+   var s = $("#url").val().replace(/ /g, "\xA0"); // Replace normal spaces with nonbreaking ones
+   $("#url-shadow")
+      .html("<b>" + s + "</b>" + "\xA0\u25C0") // Unicode left triangle
+      .scrollLeft($("#url").scrollLeft());
+}
+
+function scrollUrlShadow() {
+   // Keep the scroll positions of the URL input and the shadow in sync
+   $("#url-shadow")
+      .scrollLeft($("#url").scrollLeft());
+}
+
 function initMain(jQuery) {
    // Initialization
-   $("#url").keydown(function(ev) {
-      if (ev.which == 13) {
-         analyzeUrl();
-         ev.preventDefault();
-      }
-   });
-   $("div.topitem").click(function(ev) {
-      // A top news article has been clicked:
-      // post a form to the main page with its URL
-      var url = $(this).attr("url");
-      displayUrl(url);
-   });
-   $("div.tab-header span.tab").click(function(ev) {
-      // A top level tab has been clicked
-      var tabId = $(this).attr("id").slice(4);
-      $("div.main-tab").css("display", "none");
-      $("div#" + tabId).css("display", "block");
-      $("div.tab-header span.tab").removeClass("selected");
-      $(this).addClass("selected");
-   });
+   // Set up event handlers
+   updateUrlShadow();
+   $("#url")
+      .keydown(function(ev) {
+         if (ev.which == 13) {
+            analyzeUrl();
+            ev.preventDefault();
+         }
+      })
+      .keyup(function(ev) {
+         scrollUrlShadow();
+      })
+      .focus(function(ev) {
+         $("#url-shadow").removeClass("no-focus");
+         scrollUrlShadow();
+      })
+      .blur(function(ev) {
+         $("#url-shadow").addClass("no-focus");
+         scrollUrlShadow();
+      })
+      .on('input', function(ev) {
+         updateUrlShadow();
+      })
+      .on('scroll', function(ev) {
+         scrollUrlShadow();
+      });
+   $("div.topitem")
+      .click(function(ev) {
+         // A top news article has been clicked:
+         // post a form to the main page with its URL
+         var url = $(this).attr("url");
+         displayUrl(url);
+      });
+   $("div.tab-header span.tab")
+      .click(function(ev) {
+         // A top level tab has been clicked
+         var tabId = $(this).attr("id").slice(4);
+         $("div.main-tab").css("display", "none");
+         $("div#" + tabId).css("display", "block");
+         $("div.tab-header span.tab").removeClass("selected");
+         $(this).addClass("selected");
+      });
 }
 

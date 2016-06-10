@@ -168,8 +168,11 @@ class DawgDictionary:
         # where each combination is a list of word parts. We return
         # the combination with the longest last part and the shortest overall
         # number of parts.
-        w.sort(key = lambda x : (len(x[-1]), -len(x)))
-        return w[-1] if w else None
+        w.sort(key = lambda x : (len(x[-1]), -len(x)), reverse = True)
+        # Cut out interpretations that end with closed word categories,
+        # i.e. conjunctions and prepositions
+        # gr, st, abfn, nhm, fs?
+        return w[0] if w else None
 
     def navigate(self, nav):
         """ A generic function to navigate through the DAWG under

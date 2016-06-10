@@ -44,6 +44,9 @@
 .glyphicon-play:before {
    content: "\E174";
 }
+.glyphicon-info:before {
+   content: "\E196";
+}
 
 html {
    overflow-y: scroll; /* Avoid jumping when long content is displayed */
@@ -93,33 +96,67 @@ div#guide {
    color: #660066;
 }
 
-input.text {
+div.input-overlay {
+   display: inline-block;
+   position: relative;
+   height: 34px;
+   width: 800px;
+   margin-bottom: 4px;
+}
+
+.text-input {
+   display: inline-block;
+   position: absolute;
+   top: 0; left: 0;
    font-family: 'Open Sans', sans-serif;
    font-size: 16px;
    font-weight: normal;
    height: 28px;
    border-style: solid;
-   border-color: #10069F; /* Greynir blue */
    border-width: 1px;
    border-radius: 3px;
-   margin-bottom: 4px;
    padding-top: 2px;
    padding-bottom: 2px;
    padding-left: 8px;
    padding-right: 8px;
+   width: 676px;
 }
 
-input.text:focus {
+span#url-shadow {
+   /* Span behind URL/text input */
+   border-color: transparent;
    background-color: #FFEEA9; /* Pale Greynir yellow */
-   outline-style: none;
+   padding-top: 5px;
+   padding-bottom: 0px;
+   color: #00B74F; /* #909090; */
+   white-space: nowrap;
+   overflow-x: hidden;
+}
+
+span#url-shadow.no-focus {
+   background-color: #f0f0f0;
+}
+
+span#url-shadow b {
+   font-weight: normal;
+   color: transparent;
 }
 
 input#url {
-   width: 676px;
+   background-color: transparent;
+   border-color: #10069F; /* Greynir blue */
+   padding-right: 22px;
+   width: 662px;
+}
+
+input#url:focus {
+   outline-style: none;
 }
 
 div.btn {
    display: inline-block;
+   position: absolute;
+   top: 0; left: 708px;
    text-align: center;
    font-size: 16px;
    font-weight: 700;
@@ -134,8 +171,6 @@ div.btn {
    -moz-user-select: none;
    -ms-user-select: none;
    user-select: none;
-   margin-bottom: 3px;
-   margin-left: 4px;
 }
 
 div.btn:focus {
@@ -210,7 +245,7 @@ div.tab-header {
 
 span.tab {
    display: inline-block;
-   width: 240px;
+   width: 173px;
    height: 40px;
    font-family: 'Playfair Display', serif;
    font-weight: bold;
@@ -304,11 +339,6 @@ p#meta-url a {
 p#meta-url img {
    margin-top: 3px;
    margin-left: 4px;
-}
-
-span.sent {
-   font-size: 17px;
-   line-height: 26px;
 }
 
 div#result {
@@ -429,6 +459,8 @@ span.errtok {
 }
 
 span.sent {
+   font-size: 17px;
+   line-height: 26px;
    margin-right: 8px;
    cursor: pointer;
 }
@@ -501,7 +533,7 @@ span#add-invalid-sent.disabled {
    cursor: default;
 }
 
-div#wait {
+div.wait {
    display: none;
    position: absolute;
    font-style: italic;
@@ -510,8 +542,6 @@ div#wait {
    width: 88px;
    height: 88px;
    z-index: 10;
-   /* background-image: url("wait.gif");
-   background-repeat: no-repeat; */
    font-size: 17px;
    line-height: 24px;
    text-align: center;
@@ -683,6 +713,12 @@ div.reghdr {
 
 #namelist span.name {
    font-weight: bold;
+   color: #10069F; /* Greynir blue */
+   cursor: pointer;
+}
+
+#namelist span.name:hover {
+   background-color: #FFEEA9; /* Greynir pale yellow */
 }
 
 #namelist span.title {
@@ -692,6 +728,7 @@ div.reghdr {
 
 div#topnews {
    display: block;
+   margin-bottom: 32px;
 }
 
 div#output {
@@ -701,10 +738,12 @@ div#output {
 
 div#toppeople {
    display: none;
+   margin-bottom: 32px;
 }
 
 div.guide-empty {
    width: 800px;
+   margin-top: 48px;
    font-size: 17px;
    line-height: 24px;
    text-align: center;
@@ -799,4 +838,9 @@ span.ratio div.ratio-num {
    white-space: nowrap;
    overflow-x: hidden;
    text-overflow: ellipsis;
+}
+
+div#entity {
+   display: none;
+   margin-bottom: 32px;
 }

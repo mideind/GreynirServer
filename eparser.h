@@ -324,7 +324,7 @@ public:
 extern "C" void printAllocationReport(void);
 
 // Parse a token stream
-extern "C" Node* earleyParse(Parser*, UINT nTokens, UINT nHandle, UINT* pnErrorToken);
+extern "C" Node* earleyParse(Parser*, UINT nTokens, INT iRoot, UINT nHandle, UINT* pnErrorToken);
 
 extern "C" Grammar* newGrammar(const CHAR* pszGrammarFile);
 

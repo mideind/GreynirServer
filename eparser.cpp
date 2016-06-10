@@ -1357,7 +1357,7 @@ UINT numCombinations(Node* pNode)
    return pNode ? Node::numCombinations(pNode) : 0;
 }
 
-Node* earleyParse(Parser* pParser, UINT nTokens, UINT nHandle, UINT* pnErrorToken)
+Node* earleyParse(Parser* pParser, UINT nTokens, INT iRoot, UINT nHandle, UINT* pnErrorToken)
 {
    // Preparation and sanity checks
    if (pnErrorToken)
@@ -1369,8 +1369,9 @@ Node* earleyParse(Parser* pParser, UINT nTokens, UINT nHandle, UINT* pnErrorToke
    if (!pParser->getGrammar())
       return NULL;
 
-   // Run parser from the default root
-   INT iRoot = pParser->getGrammar()->getRoot();
+   if (iRoot == 0)
+      // Root not specified: Run parser from the default root
+      iRoot = pParser->getGrammar()->getRoot();
    ASSERT(iRoot < 0); // Must be a nonterminal
 
 #ifdef DEBUG

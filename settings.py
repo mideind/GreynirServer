@@ -18,6 +18,11 @@ from contextlib import contextmanager, closing
 from collections import defaultdict
 from threading import Lock
 
+
+# The sorting locale used by default in the changedlocale function
+_DEFAULT_SORT_LOCALE = ('IS_is', 'UTF-8')
+
+
 class ConfigError(Exception):
 
     """ Exception class for configuration errors """
@@ -159,7 +164,7 @@ class Meanings:
         with closing(BIN_Db.get_db()) as db:
             prefix = a[0]
             stem = a[1]
-            m = db.forms(stem)
+            m = db._forms(stem)
             if m:
                 for w in m:
                     if w.ordfl == ordfl:
@@ -364,7 +369,7 @@ def changedlocale(new_locale = None):
     # The newone locale parameter should be a tuple: ('is_IS', 'UTF-8')
     old_locale = locale.getlocale(locale.LC_COLLATE)
     try:
-        locale.setlocale(locale.LC_COLLATE, new_locale or ('IS_is', 'UTF-8'))
+        locale.setlocale(locale.LC_COLLATE, new_locale or _DEFAULT_SORT_LOCALE)
         yield locale.strxfrm # Function to transform string for sorting
     finally:
         locale.setlocale(locale.LC_COLLATE, old_locale)

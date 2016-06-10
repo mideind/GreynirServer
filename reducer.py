@@ -156,7 +156,7 @@ class Reducer:
                         if t.is_sagnb:
                             # We like sagnb and lh, it means that more
                             # than one piece clicks into place
-                            sc[t] += 5
+                            sc[t] += 6
                         elif t.is_lh:
                             # sagnb is preferred to lh, but vb (veik beyging) is discouraged
                             if t.has_variant("vb"):
