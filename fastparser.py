@@ -528,6 +528,8 @@ class Fast_Parser(BIN_Parser):
             c_grammar = Fast_Parser._load_binary_grammar()
             # Create a C++ parser object for the grammar
             self._c_parser = Fast_Parser.eparser.newParser(c_grammar, matching_func)
+            # Find the index of the root nonterminal for this parser instance
+            self._root_index = 0 if root is None else self.grammar.nonterminals[root].index
 
     def __enter__(self):
         """ Python context manager protocol """
@@ -550,7 +552,8 @@ class Fast_Parser(BIN_Parser):
         # handle will be properly deleted even if an exception is thrown
 
         with ParseJob.make(wrapped_tokens, self._terminals) as job:
-            node = ep.earleyParse(self._c_parser, len(wrapped_tokens), 0, job.handle, err)
+            node = ep.earleyParse(self._c_parser, len(wrapped_tokens),
+                self._root_index, job.handle, err)
 
         if node == ffi.NULL:
             ix = err[0] # Token index

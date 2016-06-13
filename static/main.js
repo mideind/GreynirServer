@@ -328,7 +328,7 @@ function populateRegister(register) {
       $("#register").css("display", "block");
       $("#namelist span.name").click(function(ev) {
          // Send a query to the server
-         submitQuery($(this).text())
+         submitQuery("Hver er " + $(this).text() + "?")
       });
    }
 }
@@ -561,15 +561,38 @@ function populateQueryResult(json) {
    // Hide progress indicator
    $("div#entity-wait").css("display", "none");
    var r = json.result;
-   var q = $("<p></p>").text(r.q);
+   var q = $("<p class='query'></p>")
+      .html("<span class='green glyphicon glyphicon-play'></span>&nbsp;")
+      .append($("<span></span>").text(r.q));
    var answer;
-   if (r.is_query)
-      // This is a valid query response
-      answer = $("<p></p>").text(r.response);
+   if (r.is_query) {
+      // This is a valid query response: present the response items in a bulleted list
+      answer = $("<ul></ul>");
+      if (!r.response || !r.response.length)
+         answer = $("<p class='query-empty'></p>")
+            .html("<span class='red glyphicon glyphicon-play'></span>&nbsp;Ekkert svar fannst.");
+      else {
+         $.each(r.response, function(i, obj) {
+            if (r.qtype == "Title")
+               // For person names, generate a 'name' span
+               answer.append($("<li></li>").html($("<span class='name'></span>").text(obj[0])));
+            else
+               answer.append($("<li></li>").text(obj[0]));
+         });
+      }
+   }
    else
       // An error occurred
-      answer = $("<p></p>").text(r.error);
-   $("#entity-body").html("<p>Result of " + (r.is_query ? "valid" : "invalid") + " query:</p>").append(q).append(answer);
+      answer = $("<p class='query-error'></p>")
+         .html("<span class='red glyphicon glyphicon-play'></span>&nbsp;")
+         .append($("<span></span>").text(r.error));
+   $("#entity-body").html(q).append(answer);
+   // A title query yields a list of names
+   // Clicking on a name submits a query on it
+   $("#entity-body span.name").click(function(ev) {
+      // Send a query to the server
+      submitQuery("Hver er " + $(this).text() + "?")
+   });
 }
 
 function clearQueryResult() {

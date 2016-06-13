@@ -683,10 +683,10 @@ class BIN_Token(Token):
             # as abbreviations to Main.conf is recommended
             return self.t1 in {
                 "ehf.", "ehf", "hf.", "hf",
-                "Inc.", "Incorporated",
-                "Corp.", "Corporation",
-                "Ltd.", "Limited",
-                "Co.", "Company",
+                "Inc", "Inc.", "Incorporated",
+                "Corp", "Corp.", "Corporation",
+                "Ltd", "Ltd.", "Limited",
+                "Co", "Co.", "Company",
                 "AS", "ASA",
                 "SA", "S.A.",
                 "GmbH", "AG",

@@ -798,7 +798,7 @@ SögnErLo/tala/pers/kyn →
     HjSögnLhÞt/tala/pers LoTengtSögn_nf/tala/kyn
 
 # Hvetja til 'er/var/hefur verið...' + lýsingarorð í nefnifalli og sterkri beygingu
-$score(+6) SögnErLo/tala/pers/kyn
+$score(+8) SögnErLo/tala/pers/kyn
 
 LhÞtÞgfBotn → "fyrir" "bestu"               # Það sem er börnum fyrir bestu
 
@@ -2722,6 +2722,7 @@ EinFsAtv →
     "nema"? FsMeðFallstjórn
     | EinnAl
     | "hvorki" EinEinföldFsAtv+ "né" EinEinföldFsAtv+ # 'hvorki í Frakklandi né annars staðar í Evrópusambandinu'
+    | "annað" "hvort" EinEinföldFsAtv+ "eða" EinEinföldFsAtv+ # 'annað hvort í Breiðholti eða við World Class'
 
 EinEinföldFsAtv → FsMeðFallstjórn | EinnAl
 
@@ -2845,6 +2846,7 @@ Dagsetning →
     | "til" "ársins"? ártal # 'til ársins 1997'
     | "síðan" ártal # síðan 2012
     | "dagana" Dagana # dagana 1. til 10. júlí
+    | 'sá'_kk_et_þf? raðnr "þessa" "mánaðar" # [þann] 23. þessa mánaðar
 
     | Undanfarið
     | 'allur'_þf/tala/kyn? gr_þf/tala/kyn? 'síðari'_þf/tala/kyn TalaTímabil_þf/tala/kyn # síðustu sex vikur, hin síðari ár, allan síðasta mánuð
@@ -2983,26 +2985,29 @@ DagsFs_þgf →
 #
 # ----------------------------------------------
 
-Query →
+QueryRoot →
 
-    QPerson | QCompany | QEntity
+    QPerson > QCompany > QEntity > QTitle
 
-# Mark the Query nonterminal as a root in the grammar
-$root(Query)
+# Mark the QueryRoot nonterminal as a root in the grammar
+$root(QueryRoot)
 
 QPerson →
     QPersonPrefix_nf? Manneskja_nf '?'?
     | QPersonPrefix_þf Manneskja_þf '?'?
-    | QPersonPrefix_þgf Manneskja_þgf '?'?
+    | QPersonPrefix_þgf Manneskja_þgf # '?'?
     | QPersonPrefix_ef Manneskja_ef '?'?
 
 QPersonPrefix_nf →
     "hver" "er"
     | "hvað" "gerir"
+    | "hvað" "starfar"
+    | "hvaða" "titil" "hefur"
+    | "hvaða" "starfi" "gegnir"
 
 QPersonPrefix_þf →
     "hvað" "veistu" "um"
-    | "hvað" "geturðu" "sagt" "um"
+    | "hvað" "geturðu" "sagt" "mér"? "um"
 
 QPersonPrefix_ef →
     "hver" "er" "titill"
@@ -3015,14 +3020,14 @@ QPersonPrefix_þgf →
 QCompany →
     QCompanyPrefix_nf? Fyrirtæki_nf '?'?
     | QCompanyPrefix_þf Fyrirtæki_þf '?'?
-    | QCompanyPrefix_þgf Fyrirtæki_þgf '?'?
+    | QCompanyPrefix_þgf Fyrirtæki_þgf # '?'?
 
 QCompanyPrefix_nf →
     "hvað" "er"
 
 QCompanyPrefix_þf →
     "hvað" "veistu" "um"
-    | "hvað" "geturðu" "sagt" "um"
+    | "hvað" "geturðu" "sagt" "mér"? "um"
 
 QCompanyPrefix_þgf →
     "segðu" "mér"? "frá"
@@ -3033,11 +3038,12 @@ QEntity →
 
 QEntityPrefix_nf →
     "hvað" "er"
+    | "hvað" "eru"
     | 0
 
 QEntityPrefix_þf →
     "hvað" "veistu" "um"
-    | "hvað" "geturðu" "sagt" "um"
+    | "hvað" "geturðu" "sagt" "mér"? "um"
 
 QEntityPrefix_þgf →
     "segðu" "mér"? "frá"
@@ -3045,6 +3051,23 @@ QEntityPrefix_þgf →
 QEntityPrefix_ef →
     0
 
+QTitle →
+    QTitlePrefix_nf? QTitleKey_nf '?'?
+    | QTitlePrefix_ef QTitleKey_ef '?'?
 
+QTitlePrefix_nf →
+    "hver" "er"
+    | "hver" "var"
+    | "hver" "hefur" "verið"
 
+QTitlePrefix_ef →
+    "hver" "gegnir" "starfi"
+
+QTitleKey_nf → Nl_nf_et
+
+$score(+1) QTitleKey_nf # Hack to prevent optimization
+
+QTitleKey_ef → Nl_ef_et
+
+$score(+1) QTitleKey_ef # Hack to prevent optimization
 

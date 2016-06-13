@@ -192,6 +192,10 @@ span.green {
    color: #00B74F; /* Greynir green */
 }
 
+span.red {
+   color: #CB333B; /* Greynir red */
+}
+
 p.header {
    position: absolute;
    font-size: 28px;
@@ -844,3 +848,45 @@ div#entity {
    display: none;
    margin-bottom: 32px;
 }
+
+p.query {
+   font-size: 17px;
+   font-style: italic;
+   font-weight: bold;
+   line-height: 24px;
+}
+
+p.query-error {
+   font-size: 17px;
+   line-height: 24px;
+   /* color: #CB333B; */
+}
+
+p.query-empty {
+   font-size: 17px;
+   line-height: 24px;
+}
+
+div#entity-body ul {
+   font-size: 17px;
+   font-style: normal;
+   line-height: 24px;
+}
+
+div#entity-body ul li {
+   margin-top: 3px;
+   margin-bottom: 3px;
+   line-height: 22px;
+}
+
+#entity-body span.name {
+   font-weight: bold;
+   color: #10069F; /* Greynir blue */
+   cursor: pointer;
+}
+
+#entity-body span.name:hover {
+   background-color: #FFEEA9; /* Greynir pale yellow */
+}
+
+

@@ -139,12 +139,7 @@ def parse(toklist, single, use_reducer, dump_forest = False, keep_trees = False,
                         # Parse the sentence
                         forest = bp.go(sent)
                         if forest:
-                            if use_reducer or (single and dump_forest):
-                                # Don't bother counting the combinations if
-                                # we don't use the result
-                                num = Fast_Parser.num_combinations(forest)
-                            else:
-                                num = 1
+                            num = Fast_Parser.num_combinations(forest)
 
                             if single and dump_forest:
                                 # Dump the parse tree to parse.txt
@@ -161,7 +156,7 @@ def parse(toklist, single, use_reducer, dump_forest = False, keep_trees = False,
                             forest, score = rdc.go_with_score(forest)
                             # assert Fast_Parser.num_combinations(forest) == 1
 
-                            if Settings.DEBUG:
+                            if single and Settings.DEBUG:
                                 print(ParseForestDumper.dump_forest(forest))
 
                             num = 1
@@ -382,33 +377,18 @@ def top_persons(limit = _TOP_PERSONS_LENGTH):
 def process_query(session, toklist, result):
     """ Check whether the parse tree is describes a query, and if so, execute the query,
         store the query answer in the result dictionary and return True """
-
-    parse_result, trees, _ = parse(toklist, single = True, use_reducer = True, keep_trees = True)
-
-    if not trees:
-        # No parse at all
-        result["error"] = "E_NO_TREES"
-        return False
-    result.update(parse_result)
-    if result["num_sent"] != 1:
-        # Queries must be one sentence
-        result["error"] = "E_MULTIPLE_SENTENCES"
-        return False
-    if result["num_parsed_sent"] != 1:
-        # Unable to parse the single sentence
-        result["error"] = "E_NO_PARSE"
-        return False
-    if 1 not in trees:
-        # No sentence number 1
-        result["error"] = "E_NO_FIRST_SENTENCE"
-        return False
-    tree = "S1\n" + trees[1] # First and only sentence
     q = Query(session)
-    if not q.execute(tree):
-        result["error"] = q.error()
+    if not q.parse(toklist, result):
+        # Not able to parse this as a query
         return False
+    if not q.execute():
+        # This is a query, but its execution failed for some reason: return the error
+        result["error"] = q.error()
+        return True
     # Successful query: return the answer in response
     result["response"] = q.answer()
+    # ...and the query type, as a string ('Person', 'Entity', 'Title' etc.)
+    result["qtype"] = q.qtype()
     return True
 
 
