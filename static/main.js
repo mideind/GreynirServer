@@ -127,6 +127,48 @@ function serverPost(url, parameters, new_window) {
    form.submit();
 }
 
+var SpeechRecognition = null;
+var recognizer = null;
+
+function initializeSpeech() {
+   // Attempt to detect and initialize HTML5 speech recognition, if available in the browser
+   if (recognizer !== null)
+      // Already initialized
+      return true;
+   SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+   if (SpeechRecognition === null)
+      return false;
+   recognizer = new SpeechRecognition();
+   // Recognizer stops listening when the user pauses
+   recognizer.continuous = false;
+   recognizer.interimResults = false;
+   recognizer.lang = "is-IS";
+   // Results of speech recognition
+   recognizer.onresult = function(event) {
+      var txt = "";
+      for (var i = event.resultIndex; i < event.results.length; i++) {
+         if (event.results[i].isFinal)
+            txt = event.results[i][0].transcript; // + ' (Confidence: ' + event.results[i][0].confidence + ')';
+         else
+            txt += event.results[i][0].transcript;
+      }
+      $("#url").val(txt);
+      updateUrlShadow();
+      $("#microphone").removeClass("active");
+      // Send the query to the server
+      analyzeUrl();
+   };
+   // Listen for errors
+   recognizer.onerror = function(event) {
+      var txt = "[Error: " + event.message + "]";
+      $("#url").val(txt);
+      updateUrlShadow();
+      $("#microphone").removeClass("active");
+   };
+   // Successfully initialized
+   return true;
+}
+
 function showParse(ev) {
    /* A sentence has been clicked: show its parse grid */
    var sentText = $(ev.delegateTarget).text();
@@ -716,5 +758,18 @@ function initMain(jQuery) {
          $("div.tab-header span.tab").removeClass("selected");
          $(this).addClass("selected");
       });
+   if (initializeSpeech()) {
+      // Speech input seems to be available
+      $("#url").addClass("with-speech"); // Shrink the input field
+      $("#url-shadow").addClass("with-speech"); // Shrink the input field
+      // Display the microphone icon and enable it to start the speech recognizer
+      $("#microphone").css("display", "inline-block")
+         .click(function(ev) {
+            $("#url").val("");
+            $("#url-shadow").html("Talaðu í hljóðnemann! Til dæmis: <i>Hver er seðlabankastjóri?</i>");
+            $(this).addClass("active");
+            recognizer.start();
+         });
+   }
 }
 

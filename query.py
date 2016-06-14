@@ -26,9 +26,11 @@ from tokenizer import TOK, correct_spaces
 from fastparser import Fast_Parser, ParseForestDumper, ParseError
 from reducer import Reducer
 
-_THIS_MODULE = sys.modules[__name__] # The module object for this module
 
+_THIS_MODULE = sys.modules[__name__] # The module object for this module
+_QUERY_ROOT = 'QueryRoot' # The grammar root nonterminal for queries; see Reynir.grammar
 _MAXLEN_ANSWER = 25 # Maximum number of top answers to send in response to queries
+
 
 def response_list(q, prop_func):
     """ Create a response list from the result of a query q """
@@ -90,12 +92,12 @@ def query_person(session, name):
 def query_title(session, title):
     """ A query for a person by title """
     # !!! Consider doing a LIKE '%title%', not just LIKE 'title%'
-    q = session.query(Person.name).filter(Person.title.like(title + '%')).all()
+    q = session.query(Person.name) \
+        .filter(Person.title.like(title + ' %') | (Person.title == title)).all()
     return response_list_names(q, lambda x: x.name)
 
 def query_entity(session, name):
     """ A query for an entity by name """
-    print("query_entity: name is '{0}'".format(name))
     q = session.query(Entity.verb, Entity.definition).filter_by(name = name).all()
     return response_list(q, lambda x: x.definition)
 
@@ -103,13 +105,18 @@ def query_company(session, name):
     """ A query for an company in the entities table """
     # Create a query name by cutting off periods at the end
     # (hf. -> hf) and adding a percent pattern match at the end
-    qname = name
-    while qname.endswith('.'):
+    qname = name.strip()
+    use_like = False
+    while qname and qname[-1] == '.':
         qname = qname[:-1]
-    qname += '%'
-    print("query_company: qname is '{0}'".format(qname))
-    q = session.query(Entity.verb, Entity.definition).filter(Entity.name.like(qname)).all()
+        use_like = True
+    q = session.query(Entity.verb, Entity.definition)
+    if use_like:
+        q = q.filter(Entity.name.like(qname + '%')).all()
+    else:
+        q = q.filter(Entity.name == qname).all()
     return response_list(q, lambda x: x.definition)
+
 
 def sentence(state, result):
     """ Called when sentence processing is complete """
@@ -119,18 +126,25 @@ def sentence(state, result):
         q.set_qtype(result.qtype)
         session = state["session"]
         if result.qtype == "Person":
+            # A person was given; his/her titles are returned
             q.set_answer(query_person(session, result.qkey)[0:_MAXLEN_ANSWER])
         elif result.qtype == "Entity":
+            # An entity name was given; its definitions are returned
             q.set_answer(query_entity(session, result.qkey)[0:_MAXLEN_ANSWER])
         elif result.qtype == "Company":
+            # A company name was given; its definitions (descriptions) are returned
             q.set_answer(query_company(session, result.qkey)[0:_MAXLEN_ANSWER])
         elif result.qtype == "Title":
+            # A title was given; persons having that title are returned
             q.set_answer(query_title(session, result.qkey)[0:_MAXLEN_ANSWER])
         else:
             q.set_answer(result.qtype + ": " + result.qkey)
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
 
+
+# The following functions correspond to grammar nonterminals (see Reynir.grammar)
+# and are called during tree processing (depth-first, i.e. bottom-up navigation)
 
 def QPerson(node, params, result):
     """ Person query """
@@ -158,23 +172,28 @@ def Fyrirtæki(node, params, result):
     result.fyrirtæki = result._nominative
 
 def Mannsnafn(node, params, result):
-    """ Hreint mannsnafn """
-    #print("Mannsnafn: {0}".format(result["_text"]))
+    """ Hreint mannsnafn, þ.e. án ávarps og titils """
     result.mannsnafn = result._nominative
 
 def EfLiður(node, params, result):
+    """ Eignarfallsliðir haldast óbreyttir, þ.e. þeim á ekki að breyta í nefnifall """
     result._nominative = result._text
 
 def FsMeðFallstjórn(node, params, result):
+    """ Forsetningarliðir haldast óbreyttir, þ.e. þeim á ekki að breyta í nefnifall """
     result._nominative = result._text
 
 def QTitleKey(node, params, result):
     """ Titill """
     result.titill = result._nominative
-    print("QTitleKey: set result.titill to {0}".format(result.titill))
 
 
 class Query:
+
+    """ A Query is initialized by parsing a query string using QueryRoot as the
+        grammar root nonterminal. The Query can then be executed by processing
+        the best parse tree using the nonterminal handlers given above, returning a
+        result object if successful. """
 
     def __init__(self, session):
         self._session = session
@@ -183,11 +202,13 @@ class Query:
         self._tree = None
         self._qtype = None
 
+    
     @staticmethod
     def _parse(toklist):
         """ Parse a token list as a query """
 
-        with Fast_Parser(verbose = False, root = 'QueryRoot') as bp: # Don't emit diagnostic messages
+        # Parse with the nonterminal 'QueryRoot' as the grammar root
+        with Fast_Parser(verbose = False, root = _QUERY_ROOT) as bp:
 
             sent_begin = 0
             num_sent = 0
@@ -236,28 +257,28 @@ class Query:
 
         self._tree = None # Erase previous tree, if any
         self._error = None # Erase previous error, if any
-        self._qtype = None
+        self._qtype = None # Erase previous query type, if any
 
         parse_result, trees = Query._parse(toklist)
 
         if not trees:
             # No parse at all
-            self._error = "E_NO_TREES"
+            self.set_error("E_NO_TREES")
             return False
 
         result.update(parse_result)
 
         if result["num_sent"] != 1:
             # Queries must be one sentence
-            self._error = "E_MULTIPLE_SENTENCES"
+            self.set_error("E_MULTIPLE_SENTENCES")
             return False
         if result["num_parsed_sent"] != 1:
             # Unable to parse the single sentence
-            self._error = "E_NO_PARSE"
+            self.set_error("E_NO_PARSE")
             return False
         if 1 not in trees:
             # No sentence number 1
-            self._error = "E_NO_FIRST_SENTENCE"
+            self.set_error("E_NO_FIRST_SENTENCE")
             return False
         # Looks good
         # Store the resulting parsed query as a tree
@@ -268,9 +289,9 @@ class Query:
 
 
     def execute(self):
-        """ Execute the query in the given parsed tree and return True if successful """
+        """ Execute the query contained in the previously parsed tree; return True if successful """
         if self._tree is None:
-            self._error = "E_QUERY_NOT_PARSED"
+            self.set_error("E_QUERY_NOT_PARSED")
             return False
 
         self._error = None
@@ -284,12 +305,15 @@ class Query:
         return self._error is None
 
     def set_qtype(self, qtype):
+        """ Set the query type ('Person', 'Title', 'Company', 'Entity'...) """
         self._qtype = qtype
 
     def set_answer(self, answer):
+        """ Set the answer to the query """
         self._answer = answer
 
     def set_error(self, error):
+        """ Set an error result """
         self._error = error
 
     def qtype(self):

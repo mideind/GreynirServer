@@ -47,6 +47,9 @@
 .glyphicon-info:before {
    content: "\E196";
 }
+.glyphicon-microphone:before {
+   content: "\E301";
+}
 
 html {
    overflow-y: scroll; /* Avoid jumping when long content is displayed */
@@ -142,11 +145,19 @@ span#url-shadow b {
    color: transparent;
 }
 
+span#url-shadow.with-speech {
+   width: 628px;
+}
+
 input#url {
    background-color: transparent;
    border-color: #10069F; /* Greynir blue */
    padding-right: 22px;
    width: 662px;
+}
+
+input#url.with-speech {
+   width: 614px;
 }
 
 input#url:focus {
@@ -175,6 +186,52 @@ div.btn {
 
 div.btn:focus {
    outline-style: none;
+}
+
+div#microphone {
+   display: none;
+   left: 654px;
+   width: 32px;
+   height: 20px;
+   color: #00B74F; /* Greynir green */;
+   background-color: white;
+   border-width: 2px;
+   border-style: solid;
+   border-color: #00B74F; /* Greynir green */
+}
+
+@keyframes selBlink {
+   0% { color: white; background-color: #00B74F; }
+   45% { color: white; background-color: #00B74F; }
+   50% { color: #00B74F; background-color: white; }
+   95% { color: #00B74F; background-color: white; }
+   100% { color: white; background-color: #00B74F; }
+}
+
+@-webkit-keyframes selBlink {
+   0% { color: white; background-color: #00B74F; }
+   45% { color: white; background-color: #00B74F; }
+   50% { color: #00B74F; background-color: white; }
+   95% { color: #00B74F; background-color: white; }
+   100% { color: white; background-color: #00B74F; }
+}
+
+div#microphone.active {
+   background-color: #00B74F; /* Greynir green */
+   color: white;
+   animation: selBlink 1.2s infinite;
+   -webkit-animation: selBlink 1.2s infinite;
+}
+
+div#microphone:hover {
+   background-color: #FFCC00; /* Greynir yellow */
+   border-color: #FFCC00; /* Greynir yellow */
+   color: white;
+}
+
+div#microphone.active:hover {
+   background-color: #00B74F; /* Greynir green */
+   border-color: #00B74F; /* Greynir green */
 }
 
 div#url-ok {

@@ -31,7 +31,7 @@
       {{ grammar.num_terminals }} terminals,
       {{ grammar.num_productions }} productions</p>
 
-      <p class="guide"><b>Sláðu inn texta eða vefslóð til að greina</b>
+      <p class="guide"><b>Sláðu inn fyrirspurn, texta eða vefslóð</b> til að greina
 {%- if debug_mode -%}
       , eða <a href="{{ url_for('test') }}">smelltu hér til keyra próf</a>
 {%- else -%}
@@ -44,7 +44,11 @@
          <input class="text-input" type="text" name="url" id="url" tabindex="1"
             maxlength=512 autofocus required value="{{ default_text }}"
             onClick="this.setSelectionRange(0, this.value.length)"/>
-         <div class="btn" id="url-ok" title="Greina" tabindex="2"
+
+         <div class="btn" id="microphone" title="Nota hljóðnema" tabindex="2">
+            <span class="glyphicon glyphicon-microphone"></span></div>
+
+         <div class="btn" id="url-ok" title="Greina" tabindex="3"
             onclick="analyzeUrl()">Greina</div>
       </div>
 
@@ -61,7 +65,7 @@
       </span>
       <span id="hdr-entity" class="tab">
          <span class="glyphicon glyphicon-info"></span>
-         &nbsp;Upplýsingar
+         &nbsp;Svör
       </span>
       <span id="hdr-output" class="tab">
          <span class="glyphicon glyphicon-eye-open"></span>
@@ -151,8 +155,10 @@
          <div id="entity-body">
             <div class="guide-empty">
                <p><span class="green glyphicon glyphicon-play"></span>
-               <b>Sláðu inn mannsnafn eða annað sérnafn</b> hér að ofan<br/>
+               <b>Sláðu inn spurningu um mannanöfn, titla eða sérnöfn</b> hér að ofan<br/>
                til að fá nánari upplýsingar, eða smelltu á nafn í frétt.</p>
+               <p>Dæmi: <i>Hver er seðlabankastjóri?</i>, <i>Hver er Birgitta Jónsdóttir?</i>,
+               <i>Hvað er HeForShe?</i></p>
             </div>
          </div>
          <div id="entity-wait" class="wait">Fyrirspurn í vinnslu...<br><br><img src="/static/wait.gif" width="48" height="48" /></div>

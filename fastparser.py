@@ -686,7 +686,7 @@ class ParseForestDumper(ParseForestNavigator):
     # The format is as follows:
     # (n indicates a nesting level, >= 0)
     # R1 -- start indicator and version number
-    # En -- Epsilon node
+    # Pn -- Epsilon node
     # Tn terminal token -- Token/terminal node
     # Nn nonterminal -- Nonterminal node
     # On index -- Option with index >= 0
@@ -700,7 +700,7 @@ class ParseForestDumper(ParseForestNavigator):
 
     def _visit_epsilon(self, level):
         # Identify this as an epsilon (null) node
-        self._result.append("E{0}".format(level))
+        self._result.append("P{0}".format(level))
         return None
 
     def _visit_token(self, level, w):

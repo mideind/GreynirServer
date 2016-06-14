@@ -697,10 +697,12 @@ class NonterminalNode(Node):
             result.copy_from(p)
         # Invoke a processor function for this nonterminal, if
         # present in the given processor module
-        processor = state["processor"]
-        func = getattr(processor, self.nt_base, None) if processor else None
-        if func:
-            func(self, params, result)
+        if params:
+            # Don't invoke if this is an epsilon nonterminal (i.e. has no children)
+            processor = state["processor"]
+            func = getattr(processor, self.nt_base, None) if processor else None
+            if func:
+                func(self, params, result)
         return result
 
 
@@ -777,6 +779,10 @@ class Tree:
         assert self.n not in self.s
         self._err_index[self.n] = n # Note the index of the error token
         self.stack = None
+
+    def handle_P(self, n):
+        """ Epsilon node: leave the parent nonterminal childless """
+        pass
 
     def handle_T(self, n, s):
         """ Terminal """

@@ -3055,13 +3055,21 @@ QTitle →
     QTitlePrefix_nf? QTitleKey_nf '?'?
     | QTitlePrefix_ef QTitleKey_ef '?'?
 
+QSegðuMér →
+    "segðu" "mér"
+    | "mig" "langar" "að" "vita"
+    | "ég" "vil" "gjarnan"? "vita"
+
 QTitlePrefix_nf →
+    QSegðuMér? QTitlePrefixFrh_nf
+
+QTitlePrefixFrh_nf →
     "hver" "er"
     | "hver" "var"
     | "hver" "hefur" "verið"
 
 QTitlePrefix_ef →
-    "hver" "gegnir" "starfi"
+    QSegðuMér? "hver" "gegnir" "starfi"
 
 QTitleKey_nf → Nl_nf_et
 
