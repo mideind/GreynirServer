@@ -100,6 +100,7 @@ def sentence(state, result):
                 article_url = url,
                 name = nafn,
                 title = titill,
+                title_lc = titill.lower(),
                 authority = 1.0,
                 timestamp = datetime.utcnow()
             )
@@ -149,8 +150,15 @@ def _add_name(result, mannsnafn, titill):
 def Manneskja(node, params, result):
     """ Mannsnafn, e.t.v. með titli """
     #print("Mannsnafn: {0}".format(result["_text"]))
-    result.mannsnafn = result._nominative
     result.del_attribs("efliður")
+    if "mannsnafn" in result and "titlar" in result and "kommu_titill" in result:
+        # Margir titlar innan kommu með 'og' á milli: bæta þeim við hverjum fyrir sig
+        for titill in result.titlar:
+            _add_name(result, result.mannsnafn, titill)
+        result.del_attribs(("mannsnafn", "titlar", "titill", "ekki_titill", "kommu_titill"))
+
+def Mannsnafn(node, params, result):
+    result.mannsnafn = result._nominative
 
 def Titill(node, params, result):
     """ Titill á eftir nafni """
@@ -158,16 +166,20 @@ def Titill(node, params, result):
     if "ekki_titill" not in result:
         result.titill = result._nominative
 
+def KommuTitill(node, params, result):
+    """ Ef titill er afmarkaður með kommum bætum við ekki eignarfallslið aftan á hann """
+    result.kommu_titill = True
+
 def NlTitill(node, params, result):
     """ Nafnliður titils """
     # Fyrirbyggja að prósenta sé skilin sem titill
     if len(params) == 1 and "_tokentype" in params[0] and params[0]._tokentype == "PERCENT":
         result.ekki_titill = True
 
-def Ávarp(node, params, result):
-    """ Ávarp á undan nafni (herra, frú, séra...) """
-    result.ávarp = result._nominative
-    result._nominative = result._text = ""
+def EinnTitill(node, params, result):
+    """ Einn titill af hugsanlega fleirum í lista """
+    if "ekki_titill" not in result:
+        result.titlar = [ result._nominative ]
 
 def EfLiður(node, params, result):
     """ Eignarfallsliður eftir nafnlið """
@@ -175,19 +187,19 @@ def EfLiður(node, params, result):
     # Leyfa eignarfallslið að standa óbreyttum í titli
     result._nominative = result._text
     # Ekki senda skýringu eða mannsnafn í gegn um eignarfallslið
-    result.del_attribs(("skýring", "skýring_nafn", "mannsnafn", "ávarp"))
+    result.del_attribs(("skýring", "skýring_nafn", "mannsnafn"))
 
 def FsLiður(node, params, result):
     """ Forsetningarliður """
     # Leyfa forsetningarlið að standa óbreyttum í titli
     result._nominative = result._text
     # Ekki leyfa skýringu eða mannsnafni að fara í gegn um forsetningarlið
-    result.del_attribs(("skýring", "skýring_nafn", "mannsnafn", "ávarp"))
+    result.del_attribs(("skýring", "skýring_nafn", "mannsnafn"))
 
 def Tengiliður(node, params, result):
     """ Tengiliður ("sem" setning) """
     # Ekki leyfa mannsnafni að fara í gegn um tengilið
-    result.del_attribs(("mannsnafn", "ávarp"))
+    result.del_attribs(("mannsnafn"))
 
 def Setning(node, params, result):
     """ Undirsetning: láta standa óbreytta """
@@ -265,7 +277,7 @@ def NlSkýring(node, params, result):
             # Mannsnafn sem skýring á nafnlið: gæti verið gagnlegt
             result.skýring_nafn = mannsnafn
     # Ekki senda mannsnafn innan úr skýringunni upp tréð
-    result.del_attribs(("mannsnafn", "ávarp"))
+    result.del_attribs(("mannsnafn"))
 
 def NlEind(node, params, result):
     """ Nafnliðareind """
@@ -276,18 +288,6 @@ def NlEind(node, params, result):
         _add_name(result, mannsnafn, skýring)
         result.del_attribs("skýring")
 
-#def Nl(node, params, result):
-#    """ Fiska upp mannsnöfn úr svigaskýringum """
-#    mannsnafn = result.get("skýring_nafn")
-#    if mannsnafn:
-#        print("Nl: mannsnafn úr skýringu er '{0}', allur texti er '{1}'".format(mannsnafn, result._nominative))
-#        titill = result._nominative
-#        # Skera tákn (sviga/hornklofa/bandstrik/kommur) aftan af
-#        # bil + tákn + bil + nafn + bil + tákn
-#        titill = titill[:- (3 + 2 + len(mannsnafn))]
-#        print("Nl: nafn '{0}', titill '{1}'".format(mannsnafn, titill))
-#        result.del_attribs("skýring_nafn")
-
 def NlKjarni(node, params, result):
     """ Skoða mannsnöfn með titlum sem kunna að þurfa viðbót úr eignarfallslið """
 
@@ -296,24 +296,19 @@ def NlKjarni(node, params, result):
 
         mannsnafn = result.get("mannsnafn")
         if mannsnafn:
-            ávarp = result.get("ávarp")
-            #if ávarp:
-            #    # Skera ávarpið framan af mannsnafninu
-            #    mannsnafn = mannsnafn[len(ávarp) + 1:]
             titill = result.get("titill")
             #print("Looking at mannsnafn '{0}' titill '{1}'".format(mannsnafn, titill))
             if titill is None:
                 # Enginn titill aftan við nafnið
                 titill = ""
             else:
-                # Skera titilinn (og eitt stafabil) aftan af mannsnafninu
-                mannsnafn = mannsnafn[0 : - 1 - len(titill)]
-                # Bæta eignarfallslið aftan á titilinn:
-                # 'bankastjóri Seðlabanka Íslands'
-                efliður = result.get("efliður")
-                #print("After cut, mannsnafn is '{0}' and efliður is '{1}'".format(mannsnafn, efliður))
-                if efliður:
-                    titill += " " + efliður
+                if "kommu_titill" not in result:
+                    # Bæta eignarfallslið aftan á titilinn:
+                    # 'bankastjóri Seðlabanka Íslands'
+                    efliður = result.get("efliður")
+                    #print("After cut, mannsnafn is '{0}' and efliður is '{1}'".format(mannsnafn, efliður))
+                    if efliður:
+                        titill += " " + efliður
                 if titill.startswith(", "):
                     titill = titill[2:]
                 if titill.endswith(" ,") or titill.endswith(" ."):
@@ -323,7 +318,7 @@ def NlKjarni(node, params, result):
 
             if _add_name(result, mannsnafn, titill):
                 # Búið að afgreiða þetta nafn
-                result.del_attribs(("mannsnafn", "ávarp", "titill"))
+                result.del_attribs(("mannsnafn", "titill", "kommu_titill"))
 
         else:
             mannsnafn = result.get("skýring_nafn")
@@ -346,9 +341,9 @@ def NlKjarni(node, params, result):
                 # print("NlKjarni: nafn '{0}', titill '{1}'".format(mannsnafn, titill))
                 _add_name(result, mannsnafn, titill)
                 result.del_attribs("skýring_nafn")
-                result.del_attribs(("mannsnafn", "ávarp", "skýring"))
+                result.del_attribs(("mannsnafn", "skýring"))
 
     # Leyfa mannsnafni að ferðast áfram upp tréð ef við
     # fundum ekki titil á það hér
-    result.del_attribs(("titill", "ávarp", "efliður"))
+    result.del_attribs(("titill", "efliður", "kommu_titill"))
 

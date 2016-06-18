@@ -27,6 +27,7 @@ from scraperdb import Entity
 
 MODULE_NAME = __name__
 
+
 def article_begin(state):
     """ Called at the beginning of article processing """
 
@@ -86,11 +87,13 @@ def sentence(state, result):
 # They will be called during processing (depth-first) of a complete parsed
 # tree for a sentence.
 
+
 def EfLiður(node, params, result):
     """ Ekki láta sérnafn lifa í gegn um eignarfallslið """
     result.del_attribs(('sérnafn', 'sérnafn_nom'))
     # Ekki breyta eignarfallsliðum í nefnifall
     result._nominative = result._text
+
 
 def FsMeðFallstjórn(node, params, result):
     """ Ekki láta sérnafn lifa í gegn um forsetningarlið """
@@ -98,17 +101,21 @@ def FsMeðFallstjórn(node, params, result):
     # Ekki breyta forsetningarliðum í nefnifall
     result._nominative = result._text
 
+
 def TengiliðurMeðKommu(node, params, result):
     """ '...sem Jón í Múla taldi gott fé' - ekki breyta í nefnifall """
     result._nominative = result._text
+
 
 def SetningÁnF(node, params, result):
     """ Ekki láta sérnafn lifa í gegn um setningu án frumlags """
     result.del_attribs(('sérnafn', 'sérnafn_nom'))
 
+
 def SetningSo(node, params, result):
     """ Ekki láta sérnafn lifa í gegn um setningu sem hefst á sögn """
     result.del_attribs(('sérnafn', 'sérnafn_nom'))
+
 
 def Sérnafn(node, params, result):
     """ Sérnafn, stutt eða langt """
@@ -116,16 +123,20 @@ def Sérnafn(node, params, result):
     result.sérnafn_nom = result._nominative
     result.sérnafn_eind_nom = result._nominative
 
+
 def SérnafnEðaManneskja(node, params, result):
     """ Sérnafn eða mannsnafn """
     result.sérnafn = result._text
     result.sérnafn_nom = result._nominative
     result.sérnafn_eind_nom = result._nominative
+    result.eindir = [ result._nominative ] # Listar eru sameinaðir
+
 
 def Fyrirtæki(node, params, result):
     """ Fyrirtækisnafn, þ.e. sérnafn + ehf./hf./Inc. o.s.frv. """
     result.sérnafn = result._text
     result.sérnafn_nom = result._nominative
+
 
 def SvigaInnihald(node, params, result):
     if node.has_variant("et"):
@@ -158,8 +169,10 @@ def SvigaInnihald(node, params, result):
             # Nl/fall/tala eða SvigaInnihaldNl
             result.sviga_innihald = result._nominative
 
+
 def NlKjarni(node, params, result):
     result.del_attribs("sérnafn_eind_nom")
+
 
 def NlEind(node, params, result):
     """ Ef sérnafn og sviga_innihald eru rétt undir NlEind þá er það skilgreining """
@@ -223,8 +236,23 @@ def SamstættFall(node, params, result):
 
 def ÓsamstættFall(node, params, result):
     """ '(Ég versla við) herrafataverslunina Smekkmaður' """
-
     SamstættFall(node, params, result)
+
+
+def Skilgreining(node, params, result):
+    """ 'bandarísku sjóðirnir' """
+    result.skilgreining = result._canonical # bandarískur sjóður
+
+
+def FyrirbæriMeðGreini(node, params, result):
+    if node.has_variant("ft"):
+        # Listi af fyrirbærum: 'bandarísku sjóðirnir Autonomy og Eaton Vance'
+        if "skilgreining" in result and "eindir" in result:
+            if "entities" not in result:
+                result.entities = []
+            for eind in result.eindir:
+                result.entities.append((eind, "er", result.skilgreining))
+    result.del_attribs(("skilgreining", "eindir"))
 
 
 def Setning(node, params, result):

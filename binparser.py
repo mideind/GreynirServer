@@ -753,7 +753,7 @@ class BIN_Token(Token):
         # Unknown word, i.e. no meanings in BÍN (might be foreign, unknown name, etc.)
         if self.is_upper:
             # Starts in upper case: We allow this to match a named entity terminal ('sérnafn')
-            return terminal.first == "sérnafn" and terminal.num_variants == 0
+            return terminal.first == "sérnafn"
 
         # Not upper case: allow it to match a singular, neutral noun in all cases,
         # but without the definite article ('greinir')

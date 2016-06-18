@@ -704,31 +704,30 @@ class Grammar:
                         # This may be different from the nonterminal suffix as
                         # the token may have fewer variants than the nonterminal,
                         # and/or free ones that don't appear in the nonterminal.
-                        suffix = "_".join(vval[vall.index(vx)] for vx in v) if v else ""
-                        if suffix:
-                            suffix = "_" + suffix
                         if r is None:
                             # Epsilon
                             n = None
-                        elif r[0] in "'\"":
-                            # Literal token
-                            sym = r + suffix
-                            if sym not in terminals:
-                                terminals[sym] = self._make_literal_terminal(r + suffix)
-                            n = terminals[sym]
                         else:
-                            # Identifier for terminal or nonterminal
-                            if r[0].isupper():
-                                # Reference to nonterminal
-                                if r + suffix not in nonterminals:
-                                    nonterminals[r + suffix] = self._make_nonterminal(r + suffix, fname, line)
-                                nonterminals[r + suffix].add_ref() # Note that the nonterminal has been referenced
-                                n = nonterminals[r + suffix]
+                            suffix = "_".join(vval[vall.index(vx)] for vx in v) if v else ""
+                            if suffix:
+                                suffix = "_" + suffix
+                            sym = r + suffix
+                            if r[0] in "'\"":
+                                # Literal terminal
+                                if sym not in terminals:
+                                    terminals[sym] = self._make_literal_terminal(sym)
+                                n = terminals[sym]
+                            elif r[0].isupper():
+                                # Identifier of nonterminal
+                                if sym not in nonterminals:
+                                    nonterminals[sym] = self._make_nonterminal(sym, fname, line)
+                                n = nonterminals[sym]
+                                n.add_ref() # Note that the nonterminal has been referenced
                             else:
                                 # Identifier of terminal
-                                if r + suffix not in terminals:
-                                    terminals[r + suffix] = self._make_terminal(r + suffix)
-                                n = terminals[r + suffix]
+                                if sym not in terminals:
+                                    terminals[sym] = self._make_terminal(sym)
+                                n = terminals[sym]
 
                         # If the production item can be repeated,
                         # create a new production and substitute.
@@ -743,7 +742,9 @@ class Grammar:
                         # C_new_? -> C | 0
 
                         if repeat is not None:
-                            new_nt_id = r + suffix + repeat
+                            if n is None:
+                                raise GrammarError("Epsilon (0) cannot be repeated with * or +", fname, line)
+                            new_nt_id = sym + repeat
                             # Make the new nonterminal and production if not already there
                             if new_nt_id not in nonterminals:
                                 new_nt = nonterminals[new_nt_id] = self._make_nonterminal(new_nt_id, fname, line)
@@ -1102,8 +1103,10 @@ class Grammar:
         for terminal, pseq in follow.items():
             print("Terminal {0} can follow by these productions:".format(terminal))
             for p in pseq:
-                print("   {0}".format(p))
+                print("   {0}".format(str(p)))
             print()
+
+        return follow
 
 
 if __name__ == "__main__":

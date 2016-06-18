@@ -478,7 +478,11 @@ function populateResult(json) {
       }
       else
       if (wl0 == TOK_P_END) {
-         s += "</p>";
+         if (s.slice(-3) == "<p>")
+            // Avoid empty <p></p>
+            s = s.slice(0, -3);
+         else
+            s += "</p>";
          wsp = "";
       }
       else
@@ -719,6 +723,9 @@ function initMain(jQuery) {
    // Set up event handlers
    updateUrlShadow();
    $("#url")
+      .click(function(ev) {
+         this.setSelectionRange(0, this.value.length);
+      })
       .keydown(function(ev) {
          if (ev.which == 13) {
             analyzeUrl();
@@ -741,7 +748,9 @@ function initMain(jQuery) {
       })
       .on('scroll', function(ev) {
          scrollUrlShadow();
-      });
+      })
+      // Select all text in the url input field
+      .get(0).setSelectionRange(0, $("#url").val().length);
    $("div.topitem")
       .click(function(ev) {
          // A top news article has been clicked:

@@ -612,22 +612,27 @@ def parse_sentences(token_stream):
                 if in_sentence:
                     yield TOK.End_Sentence()
                     in_sentence = False
-            elif token.kind == TOK.PUNCTUATION and token.txt in END_OF_SENTENCE:
-                # We may be finishing a sentence with not only a period but also
-                # right parenthesis and quotation marks
-                while next_token.kind == TOK.PUNCTUATION and next_token.txt in SENTENCE_FINISHERS:
-                    yield token
-                    token = next_token
-                    next_token = next(token_stream)
-                # The sentence is definitely finished now
-                if in_sentence:
+                if token.kind == TOK.P_BEGIN and next_token.kind == TOK.P_END:
+                    # P_BEGIN immediately followed by P_END:
+                    # skip both and continue
+                    token = next(token_stream)
+                    continue
+            else:
+                if not in_sentence:
+                    # This token starts a new sentence
+                    yield TOK.Begin_Sentence()
+                    in_sentence = True
+                if token.kind == TOK.PUNCTUATION and token.txt in END_OF_SENTENCE:
+                    # We may be finishing a sentence with not only a period but also
+                    # right parenthesis and quotation marks
+                    while next_token.kind == TOK.PUNCTUATION and next_token.txt in SENTENCE_FINISHERS:
+                        yield token
+                        token = next_token
+                        next_token = next(token_stream)
+                    # The sentence is definitely finished now
                     yield token
                     token = TOK.End_Sentence()
                     in_sentence = False
-            elif not in_sentence:
-                # This token starts a new sentence
-                yield TOK.Begin_Sentence()
-                in_sentence = True
 
             yield token
             token = next_token
@@ -636,7 +641,7 @@ def parse_sentences(token_stream):
         pass
 
     # Final token (previous lookahead)
-    if token:
+    if token is not None:
         if not in_sentence:
             yield TOK.Begin_Sentence()
             in_sentence = True
@@ -648,8 +653,10 @@ def parse_sentences(token_stream):
         yield TOK.End_Sentence()
 
 
-def annotate(token_stream):
-    """ Look up word forms in the BIN word database """
+def annotate(token_stream, auto_uppercase):
+    """ Look up word forms in the BIN word database. If auto_uppercase
+        is True, change lower case words to uppercase if it looks likely
+        that they should be uppercase. """
 
     at_sentence_start = False
 
@@ -670,7 +677,7 @@ def annotate(token_stream):
                 at_sentence_start = False
                 continue
             # Look up word in BIN database
-            w, m = db.lookup_word(t.txt, at_sentence_start)
+            w, m = db.lookup_word(t.txt, at_sentence_start, auto_uppercase)
             # Yield a word tuple with meanings
             yield TOK.Word(w, m)
             # No longer at sentence start
@@ -1327,7 +1334,7 @@ def parse_phrases_2(token_stream):
         yield token
 
 
-def parse_static_phrases(token_stream):
+def parse_static_phrases(token_stream, auto_uppercase):
 
     """ Parse a stream of tokens looking for static multiword phrases
         (i.e. phrases that are not affected by inflection).
@@ -1402,7 +1409,11 @@ def parse_static_phrases(token_stream):
                 tq = []
 
             wm = None
-            if wo is not w and wo in pdict:
+            if auto_uppercase and len(wo) == 1 and w is wo:
+                # If we are auto-uppercasing, leave single-letter lowercase
+                # phrases alone, i.e. 'g' for 'gram' and 'm' for 'meter'
+                pass
+            elif wo is not w and wo in pdict:
                 wm = wo
             elif w in pdict:
                 wm = w
@@ -1674,9 +1685,10 @@ def recognize_entities(token_stream):
     assert not tq
 
 
-def tokenize(text):
+def tokenize(text, auto_uppercase = False):
     """ Tokenize text in several phases, returning a generator (iterable sequence) of tokens
-        that processes tokens on-demand """
+        that processes tokens on-demand. If auto_uppercase is True, the tokenizer
+        attempts to correct lowercase words that probably should be uppercase. """
 
     # Thank you Python for enabling this programming pattern ;-)
 
@@ -1686,9 +1698,9 @@ def tokenize(text):
 
     token_stream = parse_sentences(token_stream)
 
-    token_stream = parse_static_phrases(token_stream) # Static multiword phrases
+    token_stream = parse_static_phrases(token_stream, auto_uppercase) # Static multiword phrases
 
-    token_stream = annotate(token_stream) # Lookup meanings from dictionary
+    token_stream = annotate(token_stream, auto_uppercase) # Lookup meanings from dictionary
 
     token_stream = parse_phrases_1(token_stream) # First phrase pass
 

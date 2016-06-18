@@ -119,6 +119,9 @@ class Scraper:
 
         def append(self, w):
             if self._nesting > 0:
+                if w.isspace():
+                    # Whitespace is not reason to emit nesting markers
+                    return
                 self._result.append(" [[ " * self._nesting)
                 self._nesting = 0
             self._result.append(w)
@@ -138,6 +141,7 @@ class Scraper:
                 self._result.append(" ]] ")
 
         def result(self):
+            assert self._nesting == 0
             return "".join(self._result)
 
     @staticmethod
@@ -400,6 +404,7 @@ class Scraper:
             num_parsed_sent = 0
             total_ambig = 0.0
             total_tokens = 0
+            sent = []
 
             # Dict of parse trees in string dump format,
             # stored by sentence index (1-based)
@@ -408,7 +413,7 @@ class Scraper:
             # List of sentences that fail to parse
             failures = []
 
-            t0 = time.time()
+            start_time = time.time()
             bp = Scraper._parser
 
             if toklist:
@@ -417,13 +422,17 @@ class Scraper:
                 rdc = Reducer(bp.grammar)
 
                 for ix, t in enumerate(toklist):
-                    if t[0] == TOK.S_BEGIN:
-                        num_sent += 1
+                    t0 = t[0]
+                    if t0 == TOK.S_BEGIN:
                         sent = []
                         sent_begin = ix
-                    elif t[0] == TOK.S_END:
+                    elif t0 == TOK.S_END:
                         slen = len(sent)
+                        if slen == 0:
+                            # Do not include or count zero-length sentences
+                            continue
                         # Parse the accumulated sentence
+                        num_sent += 1
                         err_index = None
                         num = 0
                         try:
@@ -453,14 +462,14 @@ class Scraper:
                             # Add the failing sentence to the list of failures
                             failures.append(" ".join(t.txt for t in sent))
 
-                    elif t[0] == TOK.P_BEGIN:
+                    elif t0 == TOK.P_BEGIN:
                         pass
-                    elif t[0] == TOK.P_END:
+                    elif t0 == TOK.P_END:
                         pass
                     else:
                         sent.append(t)
 
-            parse_time = time.time() - t0
+            parse_time = time.time() - start_time
 
             article.parsed = datetime.utcnow()
             article.parser_version = bp.version

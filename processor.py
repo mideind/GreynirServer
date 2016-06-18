@@ -113,7 +113,7 @@ class Processor:
                 # If an exception occurred, roll back the transaction
                 session.rollback()
                 print("Exception in article {0}, transaction rolled back\nException: {1}".format(url, e))
-                #raise
+                raise
 
         sys.stdout.flush()
 

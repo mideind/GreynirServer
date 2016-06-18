@@ -98,6 +98,11 @@ class Result:
             # (Note that it can be overridden by setting it directly)
             d[key] = val = self._node.indefinite(self._state, self._params)
             return val
+        if key == "_canonical":
+            # Lazy evaluation of the _canonical attribute
+            # (Note that it can be overridden by setting it directly)
+            d[key] = val = self._node.canonical(self._state, self._params)
+            return val
         # Not found in our custom dict:
         # hand off to Python's default attribute resolution mechanism
         return super().__getattr__(key)
@@ -351,6 +356,7 @@ class TerminalNode(Node):
         self.root_cache = None
         self.nominative_cache = None
         self.indefinite_cache = None
+        self.canonical_cache = None
 
         # BIN category set
         self.bin_cat = BIN_ORDFL.get(self.cat, None)
@@ -539,7 +545,10 @@ class TerminalNode(Node):
         if (not self.is_word) or self.is_literal:
             # Not a word, not a noun or already indefinite: return it as-is
             return self.text
-        if (self.cat != "no" or "gr" not in self.variants) and (self.cat != "lo"):
+        if self.cat not in { "no", "lo" }:
+            return self.text
+        if self.case == "nf" and (self.cat != "no" or "gr" not in self.variants):
+            # Already in nominative case, and indefinite in the case of a noun
             return self.text
 
         if not self.text:
@@ -553,6 +562,37 @@ class TerminalNode(Node):
                     return b.replace(case, by_case).replace("gr", "").replace("VB", "SB")
             # No case found: shouldn't really happen, but whatever
             return b.replace("gr", "").replace("VB", "SB")
+
+        # Lookup the same word stem but in the nominative case
+        w = self.lookup_alternative(bin_db, replace_beyging)
+
+        #print("_indefinite returning {0}".format(w))
+        return w
+
+    def _canonical(self, bin_db):
+        """ Look up the singular indefinite nominative form of a noun or adjective associated with this terminal """
+        # Lookup the token in the BIN database
+        #print("indefinite: {0} cat {1} variants {2}".format(self.text, self.cat, self.variants))
+        if (not self.is_word) or self.is_literal:
+            # Not a word, not a noun or already indefinite: return it as-is
+            return self.text
+        if self.cat not in { "no", "lo" }:
+            return self.text
+        if self.case == "nf" and self.number == "et" and (self.cat != "no" or "gr" not in self.variants):
+            # Already singular, nominative, indefinite (if noun)
+            return self.text
+
+        if not self.text:
+            print("self.text is empty, token is {0}, terminal is {1}".format(self.token, self.terminal))
+            assert False
+
+        def replace_beyging(b, by_case = "NF"):
+            """ Change a beyging string to specify a different case, without the definitive article """
+            for case in ("NF", "ÞF", "ÞGF", "EF"):
+                if case != by_case and case in b:
+                    return b.replace(case, by_case).replace("FT", "ET").replace("gr", "").replace("VB", "SB")
+            # No case found: shouldn't really happen, but whatever
+            return b.replace("FT", "ET").replace("gr", "").replace("VB", "SB")
 
         # Lookup the same word stem but in the nominative case
         w = self.lookup_alternative(bin_db, replace_beyging)
@@ -583,6 +623,14 @@ class TerminalNode(Node):
             bin_db = state["bin_db"]
             self.indefinite_cache = self._indefinite(bin_db)
         return self.indefinite_cache
+
+    def canonical(self, state, params):
+        """ Calculate the singular, nominative, indefinite form of this node's text """
+        if self.canonical_cache is None:
+            # Not already cached: look up in database
+            bin_db = state["bin_db"]
+            self.canonical_cache = self._canonical(bin_db)
+        return self.canonical_cache
 
     def string_self(self):
         return self.terminal + " <" + self.token + ">"
@@ -649,6 +697,10 @@ class PersonNode(TerminalNode):
         """ The indefinite is identical to the nominative """
         return self._nominative(bin_db)
 
+    def _canonical(self, bin_db):
+        """ The canonical is identical to the nominative """
+        return self._nominative(bin_db)
+
 
 class NonterminalNode(Node):
 
@@ -685,6 +737,10 @@ class NonterminalNode(Node):
         """ The indefinite form of a nonterminal is a sequence of the indefinite forms of its children (parameters) """
         return " ".join(p._indefinite for p in params if p._indefinite)
 
+    def canonical(self, state, params):
+        """ The canonical form of a nonterminal is a sequence of the canonical forms of its children (parameters) """
+        return " ".join(p._canonical for p in params if p._canonical)
+
     def process(self, state, params):
         """ Apply any requested processing to this node """
         result = Result(self, state, params)
@@ -702,7 +758,12 @@ class NonterminalNode(Node):
             processor = state["processor"]
             func = getattr(processor, self.nt_base, None) if processor else None
             if func:
-                func(self, params, result)
+                try:
+                    func(self, params, result)
+                except TypeError as ex:
+                    print("Attempt to call {0}() in processor raised exception {1}"
+                        .format(self.nt_base, ex))
+                    raise
         return result
 
 

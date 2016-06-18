@@ -182,14 +182,14 @@ class BIN_Db:
         return m
 
     @lru_cache(maxsize = CACHE_SIZE)
-    def lookup_word(self, w, at_sentence_start):
+    def lookup_word(self, w, at_sentence_start, auto_uppercase = False):
         """ Given a word form, look up all its possible meanings """
-        return self._lookup(w, at_sentence_start, self._meanings_func)
+        return self._lookup(w, at_sentence_start, auto_uppercase, self._meanings_func)
 
     @lru_cache(maxsize = CACHE_SIZE)
     def lookup_form(self, w, at_sentence_start):
         """ Given a word root (stem), look up all its forms """
-        return self._lookup(w, at_sentence_start, self._forms_func)
+        return self._lookup(w, at_sentence_start, False, self._forms_func)
 
     @staticmethod
     def prefix_meanings(mlist, prefix):
@@ -201,7 +201,7 @@ class BIN_Db:
         ] if prefix else mlist
 
     @staticmethod
-    def _lookup(w, at_sentence_start, lookup):
+    def _lookup(w, at_sentence_start, auto_uppercase, lookup):
         """ Lookup a simple or compound word in the database and return its meaning(s) """
 
         def lookup_abbreviation(w):
@@ -219,10 +219,30 @@ class BIN_Db:
             m = Abbreviations.DICT.get(clean_w, None)
             return None if m is None else [ BIN_Meaning._make(m) ]
 
-        assert w
+        # Start with a straightforward lookup of the word
 
-        # Start with a simple lookup
-        m = lookup(w)
+        if auto_uppercase and w.islower():
+            if len(w) == 1:
+                # Special case for single letter words:
+                # if they exist in BÍN, don't convert them
+                m = lookup(w)
+                if not m:
+                    # If they don't exist in BÍN, treat them as uppercase
+                    # abbreviations (probably middle names)
+                    w = w.upper() + '.'
+            else:
+                # Check whether this word has an uppercase form in the database
+                w_upper = w.capitalize()
+                m = lookup(w_upper)
+                if m:
+                    # Yes: assume it should be uppercase
+                    w = w_upper
+                    at_sentence_start = False # No need for special case here
+                else:
+                    # No: go for the regular lookup
+                    m = lookup(w)
+        else:
+            m = lookup(w)
 
         if at_sentence_start or not m:
             # No meanings found in database, or at sentence start
@@ -235,57 +255,67 @@ class BIN_Db:
                 else:
                     m.extend(lookup(lower_w))
 
-            if not m and (lower_w != w or w[0] == '['):
-                # Still nothing: check abbreviations
-                m = lookup_abbreviation(w)
-                if not m and w[0] == '[':
-                    # Could be an abbreviation with periods at the start of a sentence:
-                    # Lookup a lowercase version
-                    m = lookup_abbreviation(lower_w)
-                if m and w[0] == '[':
-                    # Remove brackets from known abbreviations
-                    w = w[1:-1]
+        if m:
+            # Most common path out of this function
+            return (w, m)
 
-            if not m and BIN_Db._ADJECTIVE_TEST in lower_w:
-                # Not found: Check whether this might be an adjective
-                # ending in 'legur'/'leg'/'legt'/'legir'/'legar' etc.
-                llw = len(lower_w)
-                for aend, beyging in AdjectiveTemplate.ENDINGS:
-                    if lower_w.endswith(aend) and llw > len(aend):
-                        prefix = lower_w[0 : llw - len(aend)]
-                        # Construct an adjective descriptor
-                        if m is None:
-                            m = []
-                        m.append(BIN_Meaning(prefix + "legur", 0, "lo", "alm", lower_w, beyging))
-                if lower_w.endswith("lega") and llw > 4:
-                    # For words ending with "lega", add a possible adverb meaning
+        if (lower_w != w or w[0] == '['):
+            # Still nothing: check abbreviations
+            m = lookup_abbreviation(w)
+            if not m and w[0] == '[':
+                # Could be an abbreviation with periods at the start of a sentence:
+                # Lookup a lowercase version
+                m = lookup_abbreviation(lower_w)
+            if m and w[0] == '[':
+                # Remove brackets from known abbreviations
+                w = w[1:-1]
+
+        if not m and BIN_Db._ADJECTIVE_TEST in lower_w:
+            # Not found: Check whether this might be an adjective
+            # ending in 'legur'/'leg'/'legt'/'legir'/'legar' etc.
+            llw = len(lower_w)
+            for aend, beyging in AdjectiveTemplate.ENDINGS:
+                if lower_w.endswith(aend) and llw > len(aend):
+                    prefix = lower_w[0 : llw - len(aend)]
+                    # Construct an adjective descriptor
                     if m is None:
                         m = []
-                    m.append(BIN_Meaning(lower_w, 0, "ao", "ob", lower_w, "-"))
+                    m.append(BIN_Meaning(prefix + "legur", 0, "lo", "alm", lower_w, beyging))
+            if lower_w.endswith("lega") and llw > 4:
+                # For words ending with "lega", add a possible adverb meaning
+                if m is None:
+                    m = []
+                m.append(BIN_Meaning(lower_w, 0, "ao", "ob", lower_w, "-"))
 
-            if not m:
-                # Still nothing: check compound words
-                cw = Wordbase.dawg().slice_compound_word(w)
-                if not cw and lower_w != w:
-                    # If not able to slice in original case, try lower case
-                    cw = Wordbase.dawg().slice_compound_word(lower_w)
-                if cw:
-                    # This looks like a compound word:
-                    # use the meaning of its last part
-                    prefix = "-".join(cw[0:-1])
-                    m = lookup(cw[-1])
-                    m = BIN_Db.prefix_meanings(m, prefix)
+        if not m:
+            # Still nothing: check compound words
+            cw = Wordbase.dawg().slice_compound_word(w)
+            if not cw and lower_w != w:
+                # If not able to slice in original case, try lower case
+                cw = Wordbase.dawg().slice_compound_word(lower_w)
+            if cw:
+                # This looks like a compound word:
+                # use the meaning of its last part
+                prefix = "-".join(cw[0:-1])
+                m = lookup(cw[-1])
+                m = BIN_Db.prefix_meanings(m, prefix)
 
-            if not m and lower_w.startswith('ó'):
-                # Check whether an adjective without the 'ó' prefix is found in BÍN
-                # (i.e. create 'óhefðbundinn' from 'hefðbundinn')
-                suffix = lower_w[1:]
-                if suffix:
-                    om = lookup(suffix)
-                    if om:
-                        m = [ BIN_Meaning("ó" + r.stofn, r.utg, r.ordfl, r.fl,
-                                "ó" + r.ordmynd, r.beyging)
-                                for r in om if r.ordfl == "lo" ]
+        if not m and lower_w.startswith('ó'):
+            # Check whether an adjective without the 'ó' prefix is found in BÍN
+            # (i.e. create 'óhefðbundinn' from 'hefðbundinn')
+            suffix = lower_w[1:]
+            if suffix:
+                om = lookup(suffix)
+                if om:
+                    m = [ BIN_Meaning("ó" + r.stofn, r.utg, r.ordfl, r.fl,
+                            "ó" + r.ordmynd, r.beyging)
+                            for r in om if r.ordfl == "lo" ]
+
+        if not m and auto_uppercase and w.islower():
+            # If no meaning found and we're auto-uppercasing,
+            # convert this to upper case (could very well be a name
+            # of a person or entity)
+            w = w.capitalize()
 
         # noinspection PyRedundantParentheses
         return (w, m)

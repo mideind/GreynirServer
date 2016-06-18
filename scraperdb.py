@@ -233,8 +233,11 @@ class Person(Base):
 
     # Name
     name = Column(String, index = True)
+    
     # Title
     title = Column(String, index = True)
+    # Title in all lowercase
+    title_lc = Column(String, index = True, nullable = True)
 
     # Authority of this fact, 1.0 = most authoritative, 0.0 = least authoritative
     authority = Column(Float)

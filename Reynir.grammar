@@ -227,7 +227,7 @@ $score(+12) SetningSkilyrði
 
 EfÞegar →
     "ef" | "þegar" | "þótt" | "þó" "að"? | 'jafnvel_þótt' | "þar" "sem" | "eftir" "að"
-    | 'eins_og' | 'líkt_og' | 'á_meðan' | "þangað" "til"
+    | "eins" "og" | 'líkt_og' | 'á_meðan' | "þangað" "til"
 
 OgEfÞegar →
     "og" EfÞegar              # 'Ef og þegar eitthvað gerist læt ég þig vita'
@@ -304,7 +304,7 @@ Samanburður →
 
 SamanburðarTenging →
     "heldur" "en"        # 'Forseti á ekki að gera meiri breytingu á sér heldur en forsætisráðherra'
-    | ','? 'eins_og'     # 'Hann á ekki andstæðinga eins og aðrir kjörnir fulltrúar'
+    | ','? "eins" "og"     # 'Hann á ekki andstæðinga eins og aðrir kjörnir fulltrúar'
     | ','? "þar" "af"    # 'Fjöldi barna var í vélinni, þar af tvö kornabörn'
     | ','? 'þar_á_meðal'
     | ','? "þar" "á" "meðal"
@@ -488,6 +488,11 @@ SetningAukafall →
     # Mér/okkur/ykkur/börnunum finnst/þykir [ekki] skemmtilegt [að borða góðan mat / hérna í kvöld]
     | Nl_þgf HjSögnFinnst FinnstAndlag NhFyllingEðaAtv
 
+    # Þann auð eigum við [ekki] að nýta (í þágu lands og þjóðar)
+    | Nl/aukafall so_0/tala/pers Nl_nf/tala/pers AtvFs? nhm So_1_nh/aukafall FsAtv?
+
+    # Þann auð munum/skulum við [ekki] nýta (í þágu lands og þjóðar)
+    | Nl/aukafall HjSögnNh/tala/pers Nl_nf/tala/pers AtvFs? So_1_nh/aukafall FsAtv?
     # Mér er/var [ekki] sama [um málið] / bumbult [í gær] / misboðið
     # | Nl_þgf 'vera'_gm_fh_p3_et FsAtv? lo_sb_hk_nf_et FsAtv?
 
@@ -834,6 +839,9 @@ EinSögn_sagnb/tala/kyn →
 Sögn_nh/tala/pers/kyn →
     HjSögnNh/tala/pers HreinSögn_nh/tala/kyn # Páll mun/skal skrifa bréfið
     | Sögn_nh_mm/tala/pers/kyn
+
+# Gefa auka stig hér (enda er oft tvíræðni milli sagna í nafnhætti og nafnorða)
+$score(+2) Sögn_nh/tala/pers/kyn
 
 # Miðmynd + nafnháttur
 
@@ -1184,6 +1192,9 @@ SögnMeðF_1/tala/pers/kyn →
 
     # (Í dag) segir hann (köttinn vera svangan)
     | So_1_þf_nh/tala/pers OgSögn_1_þf_nh/tala/pers* Nl_nf/tala/pers/kyn SagnarBotn
+
+    # (Í dag) barst lögreglunni ábending
+    | so_mm_op/tala Nl_þgf Nl_nf/tala
 
 SagnarBotnLhÞt/tala/kyn →
     # (Í dag) verður konan gefin Páli [sjálf]
@@ -1701,6 +1712,7 @@ NlKjarni_ft/fall/kyn →
 Fyrirbæri_ft/fall/kyn →
     no_ft/fall/kyn
     | no_ft_gr/fall/kyn Fjöldi_ft/fall/kyn  # Mennina tíu / félögin tvö
+    | FyrirbæriMeðGreini_ft/fall/kyn
     | raðnr OgRaðnr+ no/tala/fall/kyn       # 2. og 3. grein laganna (eru fallnar úr gildi)
 
 OgRaðnr → "og" raðnr
@@ -1965,10 +1977,10 @@ $score(+8) Árin/fall
 # sem nafnliði 3p. eintölu hvorugkyns, í öllum föllum
 # Orka Energy, OG Capital
 
-NlStak_et_p3_nf_hk → NlSérnafn
-NlStak_et_p3_þf_hk → NlSérnafn
-NlStak_et_p3_þgf_hk → NlSérnafn
-NlStak_et_p3_ef_hk → NlSérnafn
+NlStak_p3_et_nf_hk → NlSérnafn
+NlStak_p3_et_þf_hk → NlSérnafn
+NlStak_p3_et_þgf_hk → NlSérnafn
+NlStak_p3_et_ef_hk → NlSérnafn
 
 NlSérnafn → eo* Sérnafn # ekki Nakamoto, örugglega Nelson Mandela
 
@@ -1987,6 +1999,7 @@ Sérnafn/fall →
 
 LangtSérnafn/fall →
     sérnafn/fall "-"? sérnafn/fall+ # Stóra-Felli
+    | sérnafn/fall* entity+ sérnafn/fall*     # Eining með nafni sem þekkt er úr gagnagrunni eða runu slíkra
 
 # Leyfa löngu sérnafni í nefnifalli að passa við langt sérnafn án falls
 LangtSérnafn_nf →
@@ -2047,6 +2060,7 @@ NlStak_ft_p1/fall/kyn →
 Skst →
     Skst_abbrev
     | sérnafn '-'      # Barclays-bankann
+    | entity '-'
 
 Skst_abbrev → no_abbrev '-'?  # FIH bankann
 
@@ -2083,7 +2097,7 @@ Fyrirbæri_ef_hk →
     Fyrirtæki_ef
 
 Fyrirtæki/fall →
-    Sérnafn no/fall* fyrirtæki # hf., ehf., Inc., Corporation, SA o.s.frv.
+    Sérnafn/fall no/fall* fyrirtæki # hf., ehf., Inc., Corporation, SA o.s.frv.
 
 # Fyrirtæki eru næstum örugglega rétt greind
 $score(+12) Fyrirtæki/fall
@@ -2099,25 +2113,52 @@ FyrirbæriMeðGreini/aukafall/kyn →
     ÓsamstættFall/aukafall/kyn
 
 SamstættFall/fall/kyn →
-    VeiktLo/fall/kyn* no_gr_et/fall/kyn SérnafnEðaManneskja/fall  # (Ég versla við) norsku herrafataverslunina Smekkmann
+    VeiktLo_et/fall/kyn* no_gr_et/fall/kyn SérnafnEðaManneskja/fall  # (Ég versla við) norsku herrafataverslunina Smekkmann
 
 ÓsamstættFall/aukafall/kyn →
-    VeiktLo/aukafall/kyn* no_gr_et/aukafall/kyn SérnafnEðaManneskja # (Ég versla við) herrafataverslunina Smekkmaður
+    VeiktLo_et/aukafall/kyn* no_gr_et/aukafall/kyn SérnafnEðaManneskja # (Ég versla við) herrafataverslunina Smekkmaður
 
 SérnafnEðaManneskja/fall →
-    Sérnafn/fall | person/fall    # (danska húsgagnahönnuðinn) Arne Jacobsen
+    Sérnafn/fall | Persóna/fall | Fyrirtæki/fall # (danska húsgagnahönnuðinn) Arne Jacobsen
+
+Persóna/fall →
+    person/fall
+
+$score(+8) Persóna/fall # Velja Persónu frekar en Sérnafn
 
 SérnafnEðaManneskja →
-    Sérnafn | person
+    Sérnafn | Persóna | Fyrirtæki/fall
 
-VeiktLo/fall/kyn →
-    lo_vb_et/fall/kyn
+Persóna →
+    person
+
+$score(+8) Persóna
+
+VeiktLo/tala/fall/kyn →
+    lo_vb/tala/fall/kyn
 
 # Hvetja til runa af lýsingarorðum í veikri beygingu með skilgreiningu sérnafna
-$score(+8) VeiktLo/fall/kyn
+$score(+8) VeiktLo/tala/fall/kyn
 
 $score(+6) SamstættFall/fall/kyn
 $score(-1) ÓsamstættFall/aukafall/kyn
+
+# 'Frumkvöðlarnir Jón og Guðrún'
+# 'bandarísku sjóðirnir Eaton Vance Corp. og Autonomy Capital LP'
+
+FyrirbæriMeðGreini_ft/fall/kyn →
+    Skilgreining/fall/kyn Eindalisti/fall
+
+Skilgreining/fall/kyn →
+    VeiktLo_ft/fall/kyn* no_gr_ft/fall/kyn
+
+Eindalisti/fall →
+    SérnafnEðaManneskja/fall KommaSérnafnEðaManneskja/fall* "og" SérnafnEðaManneskja/fall
+
+KommaSérnafnEðaManneskja/fall →
+    "," SérnafnEðaManneskja/fall
+
+$score(+8) FyrirbæriMeðGreini_ft/fall/kyn
 
 # [séra] Jóns Dalbú Hróbjartssonar [, dómkirkjuprests]
 # [frú] Vigdís Finnbogadóttir [fyrrverandi forseti]
@@ -2133,8 +2174,14 @@ Manneskja/fall → Manneskja/fall/nkyn
 
 $score(-6) Ávarp/nkyn/fall
 
-ÞekktÁvarp_kk/fall → 'herra'_et/fall | 'séra'_et/fall | 'hann'_et/fall
-ÞekktÁvarp_kvk/fall → 'frú'_et/fall | 'séra'_et/fall | 'hún'_et/fall
+ÞekktÁvarp_kk/fall →
+    'herra'_et/fall | 'séra'_et/fall | 'hann'_et/fall
+    | 'doktor'_et/fall
+    | 'prófessor'_et/fall
+ÞekktÁvarp_kvk/fall →
+    'frú'_et/fall | 'séra'_et/fall | 'hún'_et/fall
+    | 'doktor'_et/fall
+    | 'prófessor'_et/fall
 
 $score(+10) ÞekktÁvarp/nkyn/fall
 
@@ -2209,12 +2256,22 @@ $score(+3) EfLiður
 # lýsingarorð sé notað sem nafnorð
 
 EfLiðurForskeytiTala/tala/kyn →
-    Töluorð_ef/tala/kyn+       # (vel rúmlega) þriggja (klukkutíma bið) / 30 þúsund (króna tjón)
+    Töluorð_ef/tala/kyn+ TilTölu/tala/kyn?  # (vel rúmlega) þriggja (klukkutíma bið) / 30 þúsund (króna tjón)
+
+TilTölu/tala/kyn →
+    "til" Töluorð_ef/tala/kyn+    # (á) tveggja til þriggja metra dýpi
 
 EfLiðurForskeyti →
     Fornafn_ef/tala/kyn* eo* EfLiðurForskeytiTala/tala/kyn? EfLiðurForskeytiKjarni/tala/kyn
     | Fornafn_ef/tala/kyn+ eo* EfLiðurForskeytiTala/tala/kyn?
-    | eo* EfLiðurForskeytiTala/tala/kyn "prósent" # 'rúmlega sjö prósent (hækkun frá fyrra ári)'
+    | eo* EfLiðurForskeytiTala/tala/kyn Prósent/tala # 'rúmlega sjö prósent (hækkun frá fyrra ári)'
+
+Prósent/tala →
+    "prósent"
+    | 'prósentustig'_ef/tala
+
+Prósent_ft →
+    'prósent'_ef_ft
 
 EfLiðurForskeytiKjarni_et/kyn → Fyrirbæri_ef/kyn
 EfLiðurForskeytiKjarni_ft/kyn → no_ef_ft/kyn
@@ -2312,11 +2369,11 @@ NlEind_et_p3_nf_hk →
     'það'_nf_et ÞaðTenging
 
 NlEind_et_p3_þf_hk →
-    # (Gunnar lagði áherslu á) það að vægi atkvæða hafi aldrei verið jafnt
+    # (Gunnar lagði áherslu á) það [í dag] að vægi atkvæða hafi aldrei verið jafnt
     'það'_þf_et ÞaðTenging
 
 NlEind_et_p3_þgf_hk →
-    # (Ekkert var gert í) því að Jón hefur áreitt Önnu lengi (eða því að hún vildi segja upp)
+    # (Ekkert var gert í) því [strax] að Jón hefur áreitt Önnu lengi (eða því að hún vildi segja upp)
     'það'_þgf_et ÞaðTenging
 
 NlEind_et_p3_ef_hk →
@@ -2324,7 +2381,7 @@ NlEind_et_p3_ef_hk →
     'það'_ef_et ÞaðTenging
 
 ÞaðTenging →
-    "að" HreinYfirsetning
+    FsAtv? "að" HreinYfirsetning
     | SpurnarSamtenging HreinYfirsetning
     | NhLiðir  # Það að fara til tannlæknis (reynist mörgum þyrnir í augum)
 
@@ -2394,7 +2451,7 @@ Skýringarliður →
 OgEða → "og" | "eða" | "ellegar" | "eður" | "svo" "og" | "sem" "og" | "né"
     | "þar" "á" "meðal" | 'þar_á_meðal' | "meðal" "annars" | 'meðal_annars'
     | "það" "er" | 'það_er'
-    | 'eins_og'
+    | "eins" "og"
     | "en"
     | "þar" "með" "talið"? | "svo" "sem" | 'svo_sem'
 
@@ -2413,7 +2470,7 @@ KommaOgEða → ','? OgEða
 # (Í fyrra barði Hannes Guðmund), (særði Pál), og (neitaði sök)
 # (Í gær börðu strákarnir ekki Guðmund), heldur (stríddu Páli)
 
-OgEðaEn → "og" | "svo" "og" | "eða" | "ellegar" | "en" | "heldur" | 'eins_og'
+OgEðaEn → "og" | "svo" "og" | "eða" | "ellegar" | "en" | "heldur" | "eins" "og"
 
 KommaOgEðaEn → ',' | ','? OgEðaEn
 
@@ -2751,6 +2808,7 @@ FsRunaEftirNl →
     # !!! Setja í conf?
     | "hérlendis"
     | "erlendis"
+    | 'í_ár'
 
 # Hvetja létt til þess að forsetningar séu tengdar nafnlið
 $score(+1) FsRunaEftirNl
@@ -2822,6 +2880,7 @@ Dagsetning →
     | "hinn" dags 'síðastliðinn'_et_kk_þf? # 'hinn 3. júlí [síðastliðinn]'
     | DagsFs_þgf dags # 'frá 3. júlí 2007'
     | DagsFs_ef dags # 'til 3. júlí 2007'
+    | "aðfaranótt" dags 'síðastliðinn'_et_kk_ef?
 
     | Vikudagur_þf_et dags 'næstkomandi'_et_kk_þf? # 'föstudaginn 29. júlí [næstkomandi]'
     | 'næstkomandi'_et_kk_þf Vikudagur_þf_et # 'næstkomandi fimmtudag'
@@ -3071,11 +3130,10 @@ QTitlePrefixFrh_nf →
 QTitlePrefix_ef →
     QSegðuMér? "hver" "gegnir" "starfi"
 
-QTitleKey_nf → Nl_nf_et
+QTitleKey_nf →
+    EinnTitill_nf OgTitill_nf*
 
-$score(+1) QTitleKey_nf # Hack to prevent optimization
+QTitleKey_ef →
+    EinnTitill_ef OgTitill_ef*
 
-QTitleKey_ef → Nl_ef_et
-
-$score(+1) QTitleKey_ef # Hack to prevent optimization
 

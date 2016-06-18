@@ -14,6 +14,7 @@
 
 import sys
 import time
+import random
 from contextlib import closing
 from datetime import datetime
 from collections import OrderedDict, defaultdict
@@ -46,7 +47,24 @@ def debug():
 _PROFILE = False
 
 # Default text shown in the URL/text box
-_DEFAULT_TEXT = 'Litla gula hænan fann fræ. Það var hveitifræ.'
+_DEFAULT_TEXTS = [
+    'Litla gula hænan fann fræ. Það var hveitifræ.',
+    'Hver gegnir starfi seðlabankastjóra?',
+    'Hvað er HeForShe?',
+    'Hver er Birgitta Jónsdóttir?',
+    'Hver er borgarstjóri?',
+    'Hver er formaður Öryrkjabandalagsins?',
+    'Hvað er Wintris?',
+    'Hver er Vigdís Finnbogadóttir?',
+    'Hver er Kristján Eldjárn?',
+    'Hvað er Dominos?',
+    'Segðu mér frá Sigríði Ingibjörgu Ingadóttur',
+    'Hver er forstjóri Landsvirkjunar?',
+    'Hver gegnir starfi forstjóra Orkuveitu Reykjavíkur?',
+    'Hver er Þjóðleikhússtjóri?',
+    'Hver er fyrirliði íslenska landsliðsins?',
+    'Hver er forsetaframbjóðandi?'
+]
 
 # Default number of top news items to show in front page list
 _TOP_NEWS_LENGTH = 20
@@ -123,79 +141,81 @@ def parse(toklist, single, use_reducer, dump_forest = False, keep_trees = False,
         rdc = Reducer(bp.grammar)
 
         for ix, t in enumerate(toklist):
-            if t[0] == TOK.S_BEGIN:
-                num_sent += 1
+            t0 = t[0]
+            if t0 == TOK.S_BEGIN:
                 sent = []
                 sent_begin = ix
-            elif t[0] == TOK.S_END:
+            elif t0 == TOK.S_END:
                 slen = len(sent)
-                if slen:
-                    # Parse the accumulated sentence
-                    err_index = None
-                    num = 0 # Number of tree combinations in forest
-                    score = 0 # Reducer score of the best parse tree
+                if not slen:
+                    continue
+                # Parse the accumulated sentence
+                num_sent += 1
+                err_index = None
+                num = 0 # Number of tree combinations in forest
+                score = 0 # Reducer score of the best parse tree
 
-                    try:
-                        # Parse the sentence
-                        forest = bp.go(sent)
-                        if forest:
-                            num = Fast_Parser.num_combinations(forest)
+                try:
+                    # Parse the sentence
+                    forest = bp.go(sent)
+                    if forest:
+                        num = Fast_Parser.num_combinations(forest)
 
-                            if single and dump_forest:
-                                # Dump the parse tree to parse.txt
-                                with open("parse.txt", mode = "w", encoding= "utf-8") as f:
-                                    print("Reynir parse tree for sentence '{0}'".format(" ".join(sent)), file = f)
-                                    print("{0} combinations\n".format(num), file = f)
-                                    if num < 10000:
-                                        ParseForestPrinter.print_forest(forest, file = f)
-                                    else:
-                                        print("Too many combinations to dump", file = f)
+                        if single and dump_forest:
+                            # Dump the parse tree to parse.txt
+                            with open("parse.txt", mode = "w", encoding= "utf-8") as f:
+                                print("Reynir parse tree for sentence '{0}'".format(" ".join(sent)), file = f)
+                                print("{0} combinations\n".format(num), file = f)
+                                if num < 10000:
+                                    ParseForestPrinter.print_forest(forest, file = f)
+                                else:
+                                    print("Too many combinations to dump", file = f)
 
-                        if use_reducer and num > 1:
-                            # Reduce the resulting forest
-                            forest, score = rdc.go_with_score(forest)
-                            # assert Fast_Parser.num_combinations(forest) == 1
+                    if use_reducer and num > 1:
+                        # Reduce the resulting forest
+                        forest, score = rdc.go_with_score(forest)
+                        # assert Fast_Parser.num_combinations(forest) == 1
 
-                            if single and Settings.DEBUG:
-                                print(ParseForestDumper.dump_forest(forest))
+                        if single and Settings.DEBUG:
+                            print(ParseForestDumper.dump_forest(forest))
 
-                            num = 1
+                        num = 1
 
-                    except ParseError as e:
-                        forest = None
-                        # Obtain the index of the offending token
-                        err_index = e.token_index
+                except ParseError as e:
+                    forest = None
+                    # Obtain the index of the offending token
+                    err_index = e.token_index
 
-                    if Settings.DEBUG:
-                        print("Parsed sentence of length {0} with {1} combinations, score {2}{3}"
-                            .format(slen, num, score,
-                                "\n" + (" ".join(s[1] for s in sent) if num >= 100 else "")))
-                    if num > 0:
-                        num_parsed_sent += 1
-                        # Calculate the 'ambiguity factor'
-                        ambig_factor = num ** (1 / slen)
-                        # Do a weighted average on sentence length
-                        total_ambig += ambig_factor * slen
-                        total_tokens += slen
-                        if keep_trees:
-                            # We want to keep the trees for further processing down the line:
-                            # reduce and dump the best tree to text
-                            if num > 1:
-                                # Reduce the resulting forest before dumping it to text format
-                                forest = rdc.go(forest)
-                            trees[num_sent] = ParseForestDumper.dump_forest(forest)
-                    else:
-                        # Error: store the error token index in the parse tree
-                        if keep_trees:
-                            trees[num_sent] = "E{0}".format(slen - 1 if err_index is None else err_index)
-                        failures.append(" ".join(t.txt for t in sent))
+                if Settings.DEBUG:
+                    print("Parsed sentence of length {0} with {1} combinations, score {2}{3}"
+                        .format(slen, num, score,
+                            "\n" + (" ".join(s[1] for s in sent) if num >= 100 else "")))
+                if num > 0:
+                    num_parsed_sent += 1
+                    # Calculate the 'ambiguity factor'
+                    ambig_factor = num ** (1 / slen)
+                    # Do a weighted average on sentence length
+                    total_ambig += ambig_factor * slen
+                    total_tokens += slen
+                    if keep_trees:
+                        # We want to keep the trees for further processing down the line:
+                        # reduce and dump the best tree to text
+                        if num > 1:
+                            # Reduce the resulting forest before dumping it to text format
+                            forest = rdc.go(forest)
+                        trees[num_sent] = ParseForestDumper.dump_forest(forest)
+                else:
+                    # Error: store the error token index in the parse tree
+                    if keep_trees:
+                        trees[num_sent] = "E{0}".format(slen - 1 if err_index is None else err_index)
+                    failures.append(" ".join(t.txt for t in sent))
 
-                    # Mark the sentence beginning with the number of parses
-                    # and the index of the offending token, if an error occurred
-                    toklist[sent_begin] = TOK.Begin_Sentence(num_parses = num, err_index = err_index)
-            elif t[0] == TOK.P_BEGIN:
+                # Mark the sentence beginning with the number of parses
+                # and the index of the offending token, if an error occurred
+                toklist[sent_begin] = TOK.Begin_Sentence(num_parses = num, err_index = err_index)
+            elif t0 == TOK.P_BEGIN:
                 pass
-            elif t[0] == TOK.P_END:
+            elif t0 == TOK.P_END:
                 pass
             else:
                 sent.append(t)
@@ -228,11 +248,13 @@ def prepare(toklist, article):
 
     for ix, t in enumerate(toklist):
         if t[0] == TOK.S_BEGIN:
-            num_sent += 1
             sent = []
             sent_begin = ix
         elif t[0] == TOK.S_END:
             slen = len(sent)
+            if not slen:
+                continue
+            num_sent += 1
             # Parse the accumulated sentence
             err_index = None # Index of offending token within sentence, if any
             num = 1 if num_sent in tree else 0
@@ -419,15 +441,23 @@ def analyze():
             keep_trees = Scraper.is_known_url(url, session)
         else:
             single = True
-            # Tokenize the text entered as-is and return the token list
-            # In this case, there's no metadata
-            toklist = list(tokenize(url))
+            # Tokenize the text entered as-is and return the token list.
+            # In this case, there's no metadata.
+            # We specify auto_uppercase to convert lower case words to upper case
+            # if the text is all lower case. The text may for instance
+            # be coming from a speech recognizer.
+            toklist = list(tokenize(url, auto_uppercase = url.islower()))
             result = dict()
             is_query = process_query(session, toklist, result)
 
         if is_query:
 
-            result["q"] = url # The original query string
+            if Settings.DEBUG:
+                # The query string as seen by the parser
+                actual_q = correct_spaces(" ".join(t.txt or "" for t in toklist))
+                print("Query is: '{0}'".format(actual_q))
+
+            result["q"] = url
 
         else:
 
@@ -813,7 +843,10 @@ def main():
     debug_mode = request.args.get("debug", "")
     if debug_mode == "0" or debug_mode.lower() == "false":
         debug_mode = False
-    txt = request.args.get("txt", None) or request.form.get("url", None) or _DEFAULT_TEXT
+    txt = request.args.get("txt", None) or request.form.get("url", None)
+    if not txt:
+        # Select a random default text
+        txt = _DEFAULT_TEXTS[random.randint(0, len(_DEFAULT_TEXTS) - 1)]
     resp = make_response(render_template("main.html",
         default_text = txt, grammar = bp.grammar, debug_mode = debug_mode,
         articles = top_news(), persons = top_persons()))

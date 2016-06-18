@@ -23,7 +23,7 @@ from scraperdb import Person, Entity
 from bindb import BIN_Db
 from tree import Tree
 from tokenizer import TOK, correct_spaces
-from fastparser import Fast_Parser, ParseForestDumper, ParseError
+from fastparser import Fast_Parser, ParseForestDumper, ParseForestPrinter, ParseError
 from reducer import Reducer
 
 
@@ -92,8 +92,9 @@ def query_person(session, name):
 def query_title(session, title):
     """ A query for a person by title """
     # !!! Consider doing a LIKE '%title%', not just LIKE 'title%'
+    title_lc = title.lower() # Query by lowercase title
     q = session.query(Person.name) \
-        .filter(Person.title.like(title + ' %') | (Person.title == title)).all()
+        .filter(Person.title_lc.like(title_lc + ' %') | (Person.title_lc == title_lc)).all()
     return response_list_names(q, lambda x: x.name)
 
 def query_entity(session, name):
@@ -219,11 +220,13 @@ class Query:
 
             for ix, t in enumerate(toklist):
                 if t[0] == TOK.S_BEGIN:
-                    num_sent += 1
                     sent = []
                     sent_begin = ix
                 elif t[0] == TOK.S_END:
                     slen = len(sent)
+                    if not slen:
+                        continue
+                    num_sent += 1
                     # Parse the accumulated sentence
                     num = 0
                     try:
@@ -231,7 +234,7 @@ class Query:
                         forest = bp.go(sent)
                         if forest is not None:
                             num = Fast_Parser.num_combinations(forest)
-                            if num > 0:
+                            if num > 1:
                                 # Reduce the resulting forest
                                 forest = rdc.go(forest)
                     except ParseError as e:
@@ -240,6 +243,7 @@ class Query:
                         num_parsed_sent += 1
                         # Obtain a text representation of the parse tree
                         trees[num_sent] = ParseForestDumper.dump_forest(forest)
+                        #ParseForestPrinter.print_forest(forest)
 
                 elif t[0] == TOK.P_BEGIN:
                     pass
@@ -283,6 +287,7 @@ class Query:
         # Looks good
         # Store the resulting parsed query as a tree
         tree_string = "S1\n" + trees[1]
+        #print("Query tree:\n{0}".format(tree_string))
         self._tree = Tree()
         self._tree.load(tree_string)
         return True

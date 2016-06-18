@@ -122,16 +122,18 @@ class ParseJob:
     _jobs = dict()
     _lock = Lock()
 
-    def __init__(self, handle, tokens, terminals):
+    def __init__(self, handle, grammar, tokens, terminals):
         self._handle = handle
-        self._tokens = tokens
-        self._terminals = terminals
+        self.tokens = tokens
+        self.terminals = terminals
+        self.grammar = grammar
+        self.c_dict = dict() # Node pointer conversion dictionary
 
     def matches(self, token, terminal):
         """ Convert the token reference from a 0-based token index
             to the token object itself; convert the terminal from a
             1-based terminal index to a terminal object. """
-        return self._tokens[token].matches(self._terminals[terminal])
+        return self.tokens[token].matches(self.terminals[terminal])
 
     @property
     def handle(self):
@@ -149,14 +151,14 @@ class ParseJob:
         return False
 
     @classmethod
-    def make(cls, tokens, terminals):
+    def make(cls, grammar, tokens, terminals):
         """ Create a new parse job with for a given token sequence and set of terminals """
         with cls._lock:
             h = cls._seq
             cls._seq += 1
             if cls._seq >= cls._MAX_JOBS:
                 cls._seq = 0
-            j = cls._jobs[h] = ParseJob(h, tokens, terminals)
+            j = cls._jobs[h] = ParseJob(h, grammar, tokens, terminals)
         return j
 
     @classmethod
@@ -200,7 +202,7 @@ class Node:
 
     """
 
-    def __init__(self, grammar, tokens, c_dict, c_node, parent = None, index = 0):
+    def __init__(self, job, c_node, parent = None, index = 0):
         """ Initialize a Python SPPF node from a C++ node structure """
         lb = c_node.label
         self._start = lb.nI
@@ -209,44 +211,44 @@ class Node:
         self._families = None # Families of children
         if lb.iNt < 0:
             # Nonterminal node, completed or not
-            self._nonterminal = grammar.lookup(lb.iNt)
+            self._nonterminal = job.grammar.lookup(lb.iNt)
             #assert isinstance(self._nonterminal, Nonterminal), \
             #    "nonterminal {0} is a {1}, i.e. {2}".format(lb.iNt, type(self._nonterminal), self._nonterminal)
             self._completed = (lb.pProd == ffi.NULL) or lb.nDot >= lb.pProd.n
             self._terminal = None
             self._token = None
-            c_dict[c_node] = self # Re-use nonterminal nodes if identical
+            job.c_dict[c_node] = self # Re-use nonterminal nodes if identical
         else:
             # Token node: find the corresponding terminal
             assert parent is not None
             assert parent != ffi.NULL
             tix = parent.pList[index + parent.n] if index < 0 else parent.pList[index]
-            self._terminal = grammar.lookup(tix)
+            self._terminal = job.grammar.lookup(tix)
             #assert isinstance(self._terminal, Terminal), \
             #    "index is {0}, parent.n is {1}, tix is {2}, production {3}".format(index, parent.n, tix, grammar.productions_by_ix[parent.nId])
-            self._token = tokens[lb.iNt]
+            self._token = job.tokens[lb.iNt]
             self._nonterminal = None
             self._completed = True
         fe = c_node.pHead
         while fe != ffi.NULL:
             child_ix = -1 if self._completed else index
-            self._add_family(grammar, tokens, c_dict, fe.pProd, fe.p1, fe.p2, child_ix)
+            self._add_family(job, fe.pProd, fe.p1, fe.p2, child_ix)
             fe = fe.pNext
 
-    def _add_family(self, grammar, tokens, c_dict, prod, ch1, ch2, child_ix):
+    def _add_family(self, job, prod, ch1, ch2, child_ix):
         """ Add a family of children to this node, in parallel with other families """
         if ch1 != ffi.NULL and ch2 != ffi.NULL:
             child_ix -= 1
         if ch1 == ffi.NULL:
             n1 = None
         else:
-            n1 = c_dict.get(ch1) or Node(grammar, tokens, c_dict, ch1, prod, child_ix)
+            n1 = job.c_dict.get(ch1) or Node(job, ch1, prod, child_ix)
         if n1 is not None:
             child_ix += 1
         if ch2 == ffi.NULL:
             n2 = None
         else:
-            n2 = c_dict.get(ch2) or Node(grammar, tokens, c_dict, ch2, prod, child_ix)
+            n2 = job.c_dict.get(ch2) or Node(job, ch2, prod, child_ix)
         if n1 is not None and n2 is not None:
             children = (n1, n2)
         elif n2 is not None:
@@ -255,7 +257,7 @@ class Node:
             # n1 may be None if this is an epsilon node
             children = n1
         # Recreate the pc tuple from the production index
-        pc = (grammar.productions_by_ix[prod.nId], children)
+        pc = (job.grammar.productions_by_ix[prod.nId], children)
         if self._families is None:
             self._families = [ pc ]
             return
@@ -551,25 +553,25 @@ class Fast_Parser(BIN_Parser):
         # Use the context manager protocol to guarantee that the parse job
         # handle will be properly deleted even if an exception is thrown
 
-        with ParseJob.make(wrapped_tokens, self._terminals) as job:
+        with ParseJob.make(self.grammar, wrapped_tokens, self._terminals) as job:
+
             node = ep.earleyParse(self._c_parser, len(wrapped_tokens),
                 self._root_index, job.handle, err)
 
-        if node == ffi.NULL:
-            ix = err[0] # Token index
-            if ix >= 1:
-                # Find the error token index in the original (unwrapped) token list
-                orig_ix = wrap_map[ix] if ix in wrap_map else ix
-                raise ParseError("No parse available at token {0} ({1})"
-                    .format(orig_ix, wrapped_tokens[ix-1]), orig_ix - 1)
-            else:
-                # Not a normal parse error, but report it anyway
-                raise ParseError("No parse available at token {0} ({1} tokens in input)"
-                    .format(ix, len(wrapped_tokens)), 0)
+            if node == ffi.NULL:
+                ix = err[0] # Token index
+                if ix >= 1:
+                    # Find the error token index in the original (unwrapped) token list
+                    orig_ix = wrap_map[ix] if ix in wrap_map else ix
+                    raise ParseError("No parse available at token {0} ({1})"
+                        .format(orig_ix, wrapped_tokens[ix-1]), orig_ix - 1)
+                else:
+                    # Not a normal parse error, but report it anyway
+                    raise ParseError("No parse available at token {0} ({1} tokens in input)"
+                        .format(ix, len(wrapped_tokens)), 0)
 
-        c_dict = dict() # Node pointer conversion dictionary
-        # Create a new Python-side node forest corresponding to the C++ one
-        result = Node(self.grammar, wrapped_tokens, c_dict, node)
+            # Create a new Python-side node forest corresponding to the C++ one
+            result = Node(job, node)
 
         # Delete the C++ nodes
         ep.deleteForest(node)

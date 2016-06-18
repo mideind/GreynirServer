@@ -1032,8 +1032,6 @@ Node* Parser::parse(UINT nHandle, INT iStartNt, UINT* pnErrorToken,
 {
    // If pnToklist is NULL, a sequence of integers 0..nTokens-1 will be used
    // Sanity checks
-   if (pnErrorToken)
-      *pnErrorToken = 0;
    if (!nTokens)
       return NULL;
    if (!this->m_pGrammar)
@@ -1045,6 +1043,8 @@ Node* Parser::parse(UINT nHandle, INT iStartNt, UINT* pnErrorToken,
    if (!pRootNt)
       // No or invalid root nonterminal
       return NULL;
+   if (pnErrorToken)
+      *pnErrorToken = 0;
 
    // Initialize the Earley columns
    UINT i;
@@ -1072,7 +1072,8 @@ Node* Parser::parse(UINT nHandle, INT iStartNt, UINT* pnErrorToken,
    // Main parse loop
    State* pQ = NULL;
    NodeDict ndV; // Node dictionary
-   BYTE* pbSeen = new BYTE[this->getNumNonterminals()];
+   UINT nNumNonterminals = this->getNumNonterminals();
+   BYTE* pbSeen = new BYTE[nNumNonterminals];
 
 /*
    clock_t clockStart = clock();
@@ -1098,7 +1099,7 @@ Node* Parser::parse(UINT nHandle, INT iStartNt, UINT* pnErrorToken,
       HNode* pH = NULL;
 
       // No nonterminals seen yet
-      memset(pbSeen, 0, this->getNumNonterminals() * sizeof(BYTE));
+      memset(pbSeen, 0, nNumNonterminals * sizeof(BYTE));
 
       while (pState) {
 
@@ -1121,7 +1122,7 @@ Node* Parser::parse(UINT nHandle, INT iStartNt, UINT* pnErrorToken,
             }
             // Add elements from the H set that refer to the
             // nonterminal iItem (nt_C)
-            // !!! Note: this code should NOT be within the above if(markSeen)
+            // NOTE: this code should NOT be within the above if(!pbSeen[...])
             HNode* ph = pH;
             while (ph) {
                if (ph->getNt() == iItem) {
@@ -1360,19 +1361,20 @@ UINT numCombinations(Node* pNode)
 Node* earleyParse(Parser* pParser, UINT nTokens, INT iRoot, UINT nHandle, UINT* pnErrorToken)
 {
    // Preparation and sanity checks
-   if (pnErrorToken)
-      *pnErrorToken = 0;
-   if (!pParser)
-      return NULL;
    if (!nTokens)
       return NULL;
-   if (!pParser->getGrammar())
+   if (!pParser)
       return NULL;
-
+   Grammar* pGrammar = pParser->getGrammar();
+   if (!pGrammar)
+      return NULL;
    if (iRoot == 0)
       // Root not specified: Run parser from the default root
-      iRoot = pParser->getGrammar()->getRoot();
-   ASSERT(iRoot < 0); // Must be a nonterminal
+      iRoot = pGrammar->getRoot();
+   if (iRoot >= 0)
+      return NULL; // Root must be a nonterminal (i.e. have a negative index)
+   if (pnErrorToken)
+      *pnErrorToken = 0;
 
 #ifdef DEBUG
    printf("Calling pParser->parse()\n"); fflush(stdout);

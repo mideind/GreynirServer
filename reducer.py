@@ -63,161 +63,163 @@ class Reducer:
 
             #print("Reducing token '{0}'; scores dict initialized to:\n{1}".format(tokens[i].t1, scores[i]))
 
-            if len(s) > 1:
-                # More than one terminal in the option set
-                # Calculate the relative scores
-                # Find out whether the first part of all the terminals are the same
-                same_first = len(set(x.first for x in s)) == 1
-                txt = tokens[i].lower
-                # No need to check preferences if the first parts of all possible terminals are equal
-                # Look up the preference ordering from Reynir.conf, if any
-                prefs = None if same_first else Preferences.get(txt)
-                found_pref = False
-                sc = scores[i]
-                if prefs:
-                    adj_worse = defaultdict(int)
-                    adj_better = defaultdict(int)
-                    for worse, better, factor in prefs:
-                        for wt in s:
-                            if wt.first in worse:
-                                for bt in s:
-                                    if wt is not bt and bt.first in better:
-                                        if bt.name[0] in "\"'":
-                                            # Literal terminal: be even more aggressive in promoting it
-                                            adj_w = -2 * factor
-                                            adj_b = +6 * factor
-                                        else:
-                                            adj_w = -2 * factor
-                                            adj_b = +4 * factor
-                                        adj_worse[wt] = min(adj_worse[wt], adj_w)
-                                        adj_better[bt] = max(adj_better[bt], adj_b)
-                                        found_pref = True
-                    for wt, adj in adj_worse.items():
-                        sc[wt] += adj
-                    for bt, adj in adj_better.items():
-                        sc[bt] += adj
-                #if not same_first and not found_pref:
-                #    # Only display cases where there might be a missing pref
-                #    print("Token '{0}' has {1} possible terminal matches: {2}".format(txt, len(s), s))
+            if len(s) <= 1:
+                # No ambiguity to resolve here
+                continue
 
-                # Apply heuristics to each terminal that potentially matches this token
-                for t in s:
-                    tfirst = t.first
-                    if tfirst == "ao" or tfirst == "eo":
-                        # Subtract from the score of all ao and eo
-                        sc[t] -= 1
-                    elif tfirst == "no":
-                        if t.is_singular:
-                            # Add to singular nouns relative to plural ones
-                            sc[t] += 1
-                        elif t.is_abbrev:
-                            # Punish abbreviations in favor of other more specific terminals
-                            sc[t] -= 1
-                    elif tfirst == "fs":
-                        if t.has_variant("nf"):
-                            # Reduce the weight of the 'artificial' nominative prepositions
-                            # 'næstum', 'sem', 'um'
-                            sc[t] -= 4 # Make other cases outweigh the Nl_nf bonus of +4 (-2 -3 = -5)
-                        else:
-                            # Else, give a bonus for each matched preposition
-                            sc[t] += 2
-                    elif tfirst == "so":
-                        if t.variant(0) in "012":
-                            # Consider verb arguments
-                            # Normally, we give a bonus for verb arguments: the more matched, the better
-                            numcases = int(t.variant(0))
-                            adj = 2 * numcases
-                            # !!! Logic should be added here to encourage zero arguments for verbs in 'miðmynd'
-                            if numcases == 0:
-                                # Zero arguments: we might not like this
-                                if all((m.stofn not in VerbObjects.VERBS[0]) and ("MM" not in m.beyging)
-                                    for m in tokens[i].t2 if m.ordfl == "so"):
-                                    # No meaning where the verb has zero arguments
-                                    adj = -4
-                                #for m in tokens[i].t2:
-                                #    if m.ordfl == "so" and m.stofn not in VerbObjects.VERBS[0]:
-                                #        # We're using a verb with zero arguments but that form is not
-                                #        # explicitly listed in Verbs.conf: discourage this
-                                #        # print("Discouraging zero-arg use of verb '{0}' (stem '{1}')"
-                                #        #    .format(txt, m.stofn))
-                                #        adj = -2
-                                #        break
-                            # Apply score adjustments for verbs with particular object cases,
-                            # as specified by $score(n) pragmas in Verbs.conf
-                            for m in tokens[i].t2:
-                                if m.ordfl == "so":
-                                    key = m.stofn + t.verb_cases
-                                    score = VerbObjects.SCORES.get(key)
-                                    if score is not None:
-                                        #print("Applying verb score adjustment of {1} to {0}".format(key, score))
-                                        adj += score
-                                        break
-                            sc[t] += adj
-                        if t.is_sagnb:
-                            # We like sagnb and lh, it means that more
-                            # than one piece clicks into place
-                            sc[t] += 6
-                        elif t.is_lh:
-                            # sagnb is preferred to lh, but vb (veik beyging) is discouraged
-                            if t.has_variant("vb"):
-                                sc[t] -= 2
-                            else:
-                                sc[t] += 3
-                        if t.is_subj:
-                            # Give a small bonus for subject matches
-                            if t.has_variant("none"):
-                                # ... but a punishment for subj_none
-                                sc[t] -= 3
-                            else:
-                                sc[t] += 1
-                        if t.is_nh:
-                            if (i > 0) and any(pt.first == 'nhm' for pt in finals[i - 1]):
-                                # Give a bonus for adjacent nhm + so_nh terminals
-                                sc[t] += 4 # Prop up the verb terminal with the nh variant
-                                for pt in scores[i - 1].keys():
-                                    if pt.first == 'nhm':
-                                        # Prop up the nhm terminal
-                                        scores[i - 1][pt] += 2
-                                        # print("Propping up nhm for verb {1}, score is now {0}".format(scores[i-1][pt], tokens[i].t1))
-                                        break
-                            if any(pt.first == "no" and pt.has_variant("ef") and pt.is_plural for pt in s):
-                                # If this is a so_nh and an alternative no_ef_ft exists, choose this one
-                                # (for example, 'hafa', 'vera', 'gera', 'fara', 'mynda', 'berja', 'borða')
-                                sc[t] += 4
-                    elif tfirst == "tala" or tfirst == "töl":
-                        # A complete 'töl' or 'no' is better (has more info) than a rough 'tala'
-                        if tfirst == "tala":
-                            sc[t] -= 1
-                        # Discourage possessive ('ef') meanings for numbers
-                        for pt in s:
-                            if (pt.first == "no" or pt.first == "töl") and pt.has_variant("ef"):
-                                sc[pt] -= 1
-                    elif tfirst == "sérnafn":
-                        if not tokens[i].t2:
-                            # If there are no BÍN meanings, we had no choice but to use sérnafn,
-                            # so alleviate some of the penalty given by the grammar
-                            sc[t] += 4
-                        else:
-                            if i == w.start:
-                                # First token in sentence, and we have BÍN meanings:
-                                # further discourage this
-                                sc[t] -= 4
-                            #print("Meanings for sérnafn {0}:".format(tokens[i].t1))
-                            #for m in tokens[i].t2:
-                            #    print("{0}".format(m))
-                        #        if m.stofn[0].isupper():
-                        #            sc[t] -= 4 # Discourage 'sérnafn' if an uppercase BÍN meaning is available
-                        #            break
-                    elif t.name[0] in "\"'":
-                        # Give a bonus for exact or semi-exact matches
+            # More than one terminal in the option set
+            # Calculate the relative scores
+            # Find out whether the first part of all the terminals are the same
+            same_first = len(set(x.first for x in s)) == 1
+            txt = tokens[i].lower
+            # No need to check preferences if the first parts of all possible terminals are equal
+            # Look up the preference ordering from Reynir.conf, if any
+            prefs = None if same_first else Preferences.get(txt)
+            found_pref = False
+            sc = scores[i]
+            if prefs:
+                adj_worse = defaultdict(int)
+                adj_better = defaultdict(int)
+                for worse, better, factor in prefs:
+                    for wt in s:
+                        if wt.first in worse:
+                            for bt in s:
+                                if wt is not bt and bt.first in better:
+                                    if bt.name[0] in "\"'":
+                                        # Literal terminal: be even more aggressive in promoting it
+                                        adj_w = -2 * factor
+                                        adj_b = +6 * factor
+                                    else:
+                                        adj_w = -2 * factor
+                                        adj_b = +4 * factor
+                                    adj_worse[wt] = min(adj_worse[wt], adj_w)
+                                    adj_better[bt] = max(adj_better[bt], adj_b)
+                                    found_pref = True
+                for wt, adj in adj_worse.items():
+                    sc[wt] += adj
+                for bt, adj in adj_better.items():
+                    sc[bt] += adj
+            #if not same_first and not found_pref:
+            #    # Only display cases where there might be a missing pref
+            #    print("Token '{0}' has {1} possible terminal matches: {2}".format(txt, len(s), s))
+
+            # Apply heuristics to each terminal that potentially matches this token
+            for t in s:
+                tfirst = t.first
+                if tfirst == "ao" or tfirst == "eo":
+                    # Subtract from the score of all ao and eo
+                    sc[t] -= 1
+                elif tfirst == "no":
+                    if t.is_singular:
+                        # Add to singular nouns relative to plural ones
                         sc[t] += 1
+                    elif t.is_abbrev:
+                        # Punish abbreviations in favor of other more specific terminals
+                        sc[t] -= 1
+                elif tfirst == "fs":
+                    if t.has_variant("nf"):
+                        # Reduce the weight of the 'artificial' nominative prepositions
+                        # 'næstum', 'sem', 'um'
+                        sc[t] -= 4 # Make other cases outweigh the Nl_nf bonus of +4 (-2 -3 = -5)
+                    else:
+                        # Else, give a bonus for each matched preposition
+                        sc[t] += 2
+                elif tfirst == "so":
+                    if t.variant(0) in "012":
+                        # Consider verb arguments
+                        # Normally, we give a bonus for verb arguments: the more matched, the better
+                        numcases = int(t.variant(0))
+                        adj = 2 * numcases
+                        # !!! Logic should be added here to encourage zero arguments for verbs in 'miðmynd'
+                        if numcases == 0:
+                            # Zero arguments: we might not like this
+                            if all((m.stofn not in VerbObjects.VERBS[0]) and ("MM" not in m.beyging)
+                                for m in tokens[i].t2 if m.ordfl == "so"):
+                                # No meaning where the verb has zero arguments
+                                adj = -4
+                            #for m in tokens[i].t2:
+                            #    if m.ordfl == "so" and m.stofn not in VerbObjects.VERBS[0]:
+                            #        # We're using a verb with zero arguments but that form is not
+                            #        # explicitly listed in Verbs.conf: discourage this
+                            #        # print("Discouraging zero-arg use of verb '{0}' (stem '{1}')"
+                            #        #    .format(txt, m.stofn))
+                            #        adj = -2
+                            #        break
+                        # Apply score adjustments for verbs with particular object cases,
+                        # as specified by $score(n) pragmas in Verbs.conf
+                        for m in tokens[i].t2:
+                            if m.ordfl == "so":
+                                key = m.stofn + t.verb_cases
+                                score = VerbObjects.SCORES.get(key)
+                                if score is not None:
+                                    #print("Applying verb score adjustment of {1} to {0}".format(key, score))
+                                    adj += score
+                                    break
+                        sc[t] += adj
+                    if t.is_sagnb:
+                        # We like sagnb and lh, it means that more
+                        # than one piece clicks into place
+                        sc[t] += 6
+                    elif t.is_lh:
+                        # sagnb is preferred to lh, but vb (veik beyging) is discouraged
+                        if t.has_variant("vb"):
+                            sc[t] -= 2
+                        else:
+                            sc[t] += 3
+                    if t.is_subj:
+                        # Give a small bonus for subject matches
+                        if t.has_variant("none"):
+                            # ... but a punishment for subj_none
+                            sc[t] -= 3
+                        else:
+                            sc[t] += 1
+                    if t.is_nh:
+                        if (i > 0) and any(pt.first == 'nhm' for pt in finals[i - 1]):
+                            # Give a bonus for adjacent nhm + so_nh terminals
+                            sc[t] += 4 # Prop up the verb terminal with the nh variant
+                            for pt in scores[i - 1].keys():
+                                if pt.first == 'nhm':
+                                    # Prop up the nhm terminal
+                                    scores[i - 1][pt] += 2
+                                    # print("Propping up nhm for verb {1}, score is now {0}".format(scores[i-1][pt], tokens[i].t1))
+                                    break
+                        if any(pt.first == "no" and pt.has_variant("ef") and pt.is_plural for pt in s):
+                            # If this is a so_nh and an alternative no_ef_ft exists, choose this one
+                            # (for example, 'hafa', 'vera', 'gera', 'fara', 'mynda', 'berja', 'borða')
+                            sc[t] += 4
+                elif tfirst == "tala" or tfirst == "töl":
+                    # A complete 'töl' or 'no' is better (has more info) than a rough 'tala'
+                    if tfirst == "tala":
+                        sc[t] -= 1
+                    # Discourage possessive ('ef') meanings for numbers
+                    for pt in s:
+                        if (pt.first == "no" or pt.first == "töl") and pt.has_variant("ef"):
+                            sc[pt] -= 1
+                elif tfirst == "sérnafn":
+                    if not tokens[i].t2:
+                        # If there are no BÍN meanings, we had no choice but to use sérnafn,
+                        # so alleviate some of the penalty given by the grammar
+                        sc[t] += 4
+                    else:
+                        if i == w.start:
+                            # First token in sentence, and we have BÍN meanings:
+                            # further discourage this
+                            sc[t] -= 4
+                        #print("Meanings for sérnafn {0}:".format(tokens[i].t1))
+                        #for m in tokens[i].t2:
+                        #    print("{0}".format(m))
+                    #        if m.stofn[0].isupper():
+                    #            sc[t] -= 4 # Discourage 'sérnafn' if an uppercase BÍN meaning is available
+                    #            break
+                elif t.name[0] in "\"'":
+                    # Give a bonus for exact or semi-exact matches
+                    sc[t] += 1
+
+        #for i in range(w.start, w.end):
+        #    print("At token '{0}' scores dict is:\n{1}".format(tokens[i].t1, scores[i]))
 
         # Third pass: navigate the tree bottom-up, eliminating lower-rated
         # options (subtrees) in favor of higher rated ones
-
-        # Loop through the indices of the tokens spanned by this tree
-        #for i in range(w.start, w.end):
-        #    print("At token '{0}' scores dict is:\n{1}".format(tokens[i].t1, scores[i]))
 
         score = self._reduce(w, scores)
 
