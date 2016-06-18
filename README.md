@@ -5,23 +5,25 @@
 
 ## Natural language processing for Icelandic
 
-Try Reynir (in Icelandic) at [http://greynir.is](http://greynir.is)
+Try Reynir (in Icelandic) at [https://greynir.is](https://greynir.is)
 
-*Reynir* is a proof-of-concept project that aims to extract processable information from
-Icelandic text and allow natural language querying of that information.
+*Reynir* is a proof-of-concept project that aims to
+**extract processable information from Icelandic text** and allow
+**natural language querying** of that information.
 
 Reynir scrapes and tokenizes chunks of text from web pages
-and parses the token streams according to a hand-written context-free grammar. The resulting
-parse forests are disambiguated using scoring heuristics to find the best parse trees.
-The trees are then stored in a database and processed by grammatical pattern matching modules
-to obtain statements of fact and relations between stated facts.
+and parses the token streams according to a **hand-written context-free grammar**
+for the Icelandic language. The resulting parse forests are disambiguated using
+scoring heuristics to find the best parse trees. The trees are then stored in a
+database and processed by grammatical pattern matching modules to obtain statements
+of fact and relations between stated facts.
 
 Reynir is most effective for text that is objective and factual, i.e. has a relatively high
 ratio of concrete concepts such as numbers, amounts, dates, person and entity names,
 etc.
 
-Reynir is innovative in its ability to parse and disambiguate text written in a grammatically
-complex language, such as Icelandic, which does not lend itself easily to statistical
+Reynir is innovative in its ability to parse and disambiguate text written in a
+**grammatically complex language**, such as Icelandic, which does not lend itself easily to statistical
 parsing methods. Reynir uses grammatical features, i.e. cases, genders, persons (1st, 2nd, 3rd),
 number (singular/plural) and various verb modes applied appropriately to nouns, verbs, adjectives
 and prepositions to guide and disambiguate parses. Its optimized Earley-based parser is fast and
@@ -39,7 +41,7 @@ in its database, containing 650,000 parsed sentences.
 
 Reynir supports natural language querying of its databases. Users can ask about person names, titles and
 entity definitions and get appropriate replies. The HTML5 Web Speech API is supported to allow
-queries to be recognized from speech in enabled browsers, such as recent versions of Chrome.
+queries to be **recognized from speech** in enabled browsers, such as recent versions of Chrome.
 
 Reynir may in due course be expanded, for instance:
 
@@ -112,7 +114,7 @@ storage in a database table.
 
 ## File details
 
-* `main.py` : WSGi application and main module for command-line invocation
+* `main.py` : WSGi web server application and main module for command-line invocation
 * `settings.py` : Management of global settings and configuration data, obtained from `Reynir.conf`
 * `scraper.py` : Web scraper, collecting articles from a set of pre-selected websites (roots)
 * `scraperdb.py`: Wrapper for the scraper database via SQLAlchemy
@@ -127,14 +129,14 @@ storage in a database table.
 * `reducer.py` : Parse forest ambiguity resolver
 * `processor.py`: Information extraction from parse trees
 * `query.py`: Natural language query processor
-* `glock.py` : Utility class for global inter-process locking
-* `ptest.py` : Parser test module
 * `Reynir.conf` : Editable configuration file for the tokenizer and parser
 * `Main.conf` : Various configuration data and preferences, included in `Reynir.conf`
 * `Verbs.conf` : Editable lexicon of verbs, included in `Reynir.conf`
 * `Reynir.grammar` : A context-free grammar specification for Icelandic
   written in BNF with extensions
   for repeating constructs (`*`, `+`) and optional constructs (`?`)
+* `glock.py` : Utility class for global inter-process locking
+* `ptest.py` : Parser test module
 * `parser.py` : Older, pure-Python implementation of an Earley parser
 
 ## Copyright and licensing
