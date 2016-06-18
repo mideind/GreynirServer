@@ -7,11 +7,14 @@
 
 Try Reynir (in Icelandic) at [http://greynir.is](http://greynir.is)
 
-*Reynir* is an experimental project that aims to extract processable information from
-Icelandic text. It scrapes and tokenizes chunks of text from web pages
+*Reynir* is a proof-of-concept project that aims to extract processable information from
+Icelandic text and allow natural language querying of that information.
+
+Reynir scrapes and tokenizes chunks of text from web pages
 and parses the token streams according to a hand-written context-free grammar. The resulting
-parse trees are disambiguated and stored, and finally processed to obtain statements of fact
-and relations between stated facts.
+parse forests are disambiguated using scoring heuristics to find the best parse trees.
+The trees are then stored in a database and processed by grammatical pattern matching modules
+to obtain statements of fact and relations between stated facts.
 
 Reynir is most effective for text that is objective and factual, i.e. has a relatively high
 ratio of concrete concepts such as numbers, amounts, dates, person and entity names,
@@ -31,8 +34,12 @@ These trees can then be further processed and acted upon by sets of Python
 functions that are linked to grammar nonterminals.
 
 **Reynir is currently able to parse about *85%* of sentences** in a typical news article from the web,
-and many well-written articles can be parsed completely. It presently has about 16,000 parsed articles
-in its database, containing 500,000 parsed sentences.
+and many well-written articles can be parsed completely. It presently has about 33,000 parsed articles
+in its database, containing 650,000 parsed sentences.
+
+Reynir supports natural language querying of its databases. Users can ask about person names, titles and
+entity definitions and get appropriate replies. The HTML5 Web Speech API is supported to allow
+queries to be recognized from speech in enabled browsers, such as recent versions of Chrome.
 
 Reynir may in due course be expanded, for instance:
 
@@ -60,11 +67,14 @@ Reynir works in stages, roughly as follows:
 4. *Parse forest reducer* with heuristics to find the best parse tree.
 5. *Information extractor* that maps a parse tree via its grammar constituents to plug-in
   Python functions.
+6. *Query processor* that allows natural language queries for entites in Reynir's database.
 
-Reynir has an embedded web server that allows the user to type in any URL
-and have Reynir scrape it, tokenize it and display the result as a web page. The server runs
-on the [Flask](http://flask.pocoo.org/) framework, implements WSGi and can for instance be
-plugged into Gunicorn and Nginx.
+Reynir has an embedded web server that displays news articles recently scraped into its
+databsae, as well as names of people extracted from those articles along with their titles. The web
+UI enables the user to type in any URL and have Reynir scrape it, tokenize it and display the
+result as a web page. Queries can also be entered via the keyboard or using voice input.
+The server runs on the [Flask](http://flask.pocoo.org/) framework, implements WSGi and can
+for instance be plugged into Gunicorn and Nginx.
 
 Reynir uses the official BÍN ([Beygingarlýsing íslensks nútímamáls](http://bin.arnastofnun.is))
 lexicon and database of Icelandic word forms to identify and tokenize words, and find their
@@ -89,7 +99,7 @@ referencing Tomita. It parses ambiguous grammars without restriction and
 returns a compact Shared Packed Parse Forest (SPPF) of parse trees. If a parse
 fails, it identifies the token at which no parse was available.
 
-The Reynir scraper is typically run in a `cron` job once every 24 hours to extract articles automatically
+The Reynir scraper is typically run in a `cron` job every 30 minutes to extract articles automatically
 from the web, parse them and store the resulting trees in a PostgreSQL database for further processing.
 
 Scraper modules for new websites are plugged in by adding Python code to the `scrapers/` directory.
@@ -116,6 +126,7 @@ storage in a database table.
 * `fastparser.py` : Python wrapper for `eparser.cpp` using CFFI
 * `reducer.py` : Parse forest ambiguity resolver
 * `processor.py`: Information extraction from parse trees
+* `query.py`: Natural language query processor
 * `glock.py` : Utility class for global inter-process locking
 * `ptest.py` : Parser test module
 * `Reynir.conf` : Editable configuration file for the tokenizer and parser
