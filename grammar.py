@@ -44,7 +44,7 @@ import os
 import struct
 
 from datetime import datetime
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from settings import Settings, changedlocale
 
 
@@ -399,8 +399,8 @@ class Grammar:
 
     def __init__(self):
 
-        self._nonterminals = { }
-        self._terminals = { }
+        self._nonterminals = OrderedDict()
+        self._terminals = OrderedDict()
 
         # Dictionary of nonterminals indexed by integers < 0
         self._nonterminals_by_ix = { }
@@ -410,7 +410,7 @@ class Grammar:
         self._productions_by_ix = { }
 
         # Mapping of nonterminals to a list of their productions
-        self._nt_dict = { }
+        self._nt_dict = OrderedDict()
         # Nonterminal score adjustment as specified by $score(n)
         self._nt_scores = { }
 
@@ -573,7 +573,7 @@ class Grammar:
 
         # Dictionary of variants, keyed by variant name
         # where the values are lists of variant options (strings)
-        variants = { }
+        variants = OrderedDict()
         current_line = ""
 
         def parse_line(s):
@@ -647,7 +647,6 @@ class Grammar:
                         for vspec in v:
                             # if vspec not in vts:
                             if vspec not in variants:
-                                # raise GrammarError("Variant '{0}' not specified for nonterminal '{1}'".format(vspec, nt_id), fname, line)
                                 raise GrammarError("Unknown variant '{0}'".format(vspec), fname, line)
                             if vspec not in vts:
                                 # Free variant: add to set
@@ -684,12 +683,7 @@ class Grammar:
                 # nonterminal or on the right hand side
                 vall = vts + list(vfree)
 
-                # To make the variant sequence order - and therefore the production
-                # index order - predictable between runs, we sort the variant value
-                # combinations before iterating over them
-                vv_all = sorted(list(variant_values(vall)))
-
-                for vval in vv_all:
+                for vval in variant_values(vall):
                     # Generate a production for every variant combination
 
                     # Calculate the nonterminal suffix for this variant
@@ -1024,23 +1018,20 @@ class Grammar:
                 del grammar[nt]
                 del nonterminals[nt.name]
 
-        # Reassign indices for nonterminals to avoid gaps in the
-        # number sequence.
-        # (Python is deliberately designed so that the order of dict
-        # enumeration is not predictable; a straight numbering based
-        # on nonterminals.values() will change with each run.)
-        nt_keys_sorted = sorted(nonterminals.keys())
-        self._nonterminals_by_ix = { -1 - ix : nonterminals[key] for ix, key in enumerate(nt_keys_sorted) }
+        # Reassign indices for nonterminals to avoid gaps in the number sequence
+        # Nonterminals are indexed downwards from -1
+        self._nonterminals_by_ix = { -1 - ix : nonterminals[key] for ix, key in enumerate(nonterminals.keys()) }
         for key, nt in self._nonterminals_by_ix.items():
             nt.set_index(key)
 
-        t_keys_sorted = sorted(terminals.keys())
-        self._terminals_by_ix = { ix + 1 : terminals[key] for ix, key in enumerate(t_keys_sorted) }
+        # Reassign indices for terminals
+        # Terminals are indexed upwards from 1
+        self._terminals_by_ix = { ix + 1 : terminals[key] for ix, key in enumerate(terminals.keys()) }
         for key, t in self._terminals_by_ix.items():
             t.set_index(key)
 
         # Make a dictionary of productions by integer index >= 0
-        for plist in self._nt_dict.values():
+        for plist in grammar.values():
             for _, p in plist:
                 self._productions_by_ix[p.index] = p
 

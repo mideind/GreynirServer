@@ -213,10 +213,10 @@ class Scraper:
             print("HTTPError returned: {0}".format(e))
             html_doc = None
         except UnicodeEncodeError as e:
-            print("Exception when opening URL {0}: {1}".format(url, e))
+            print("Exception when opening URL {0}: {1!r}".format(url, e))
             html_doc = None
         except UnicodeDecodeError as e:
-            print("Exception when decoding HTML of {0}: {1}".format(url, e))
+            print("Exception when decoding HTML of {0}: {1!r}".format(url, e))
             html_doc = None
         return html_doc
 
@@ -631,7 +631,7 @@ class Scraper:
             if helper:
                 self.scrape_root(r, helper)
         except Exception as e:
-            print("Exception when scraping root at {0}: {1}".format(r.url, e))
+            print("Exception when scraping root at {0}: {1!r}".format(r.url, e))
 
     def _scrape_single_article(self, d):
         """ Single article scraper that will be called by a process within a
@@ -641,7 +641,7 @@ class Scraper:
             if helper:
                 self.scrape_article(d.url, helper)
         except Exception as e:
-            print("Exception when scraping article at {0}: {1}".format(d.url, e))
+            print("Exception when scraping article at {0}: {1!r}".format(d.url, e))
 
     def _parse_single_article(self, d):
         """ Single article parser that will be called by a process within a
@@ -653,7 +653,7 @@ class Scraper:
                 # Save the unknown verbs accumulated during parsing, if any
                 UnknownVerbs.write()
         except Exception as e:
-            print("Exception when parsing article at {0}: {1}".format(d.url, e))
+            print("Exception when parsing article at {0}: {1!r}".format(d.url, e))
             #traceback.print_exc()
             #raise e from e
 
