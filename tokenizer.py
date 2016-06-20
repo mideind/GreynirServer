@@ -1148,6 +1148,12 @@ def parse_phrases_2(token_stream):
                 #    print("stems: result is\n{0}".format("\n".join(str(x) for x in result)))
                 return result if result else None
 
+            def has_category(tok, categories):
+                """ Return True if the token matches a meaning with any of the given categories """
+                if tok.kind != TOK.WORD or not tok.val:
+                    return False
+                return any(m.fl in categories for m in tok.val)
+
             def has_other_meaning(tok, category):
                 """ Return True if the token can denote something besides a given name """
                 if tok.kind != TOK.WORD or not tok.val:
@@ -1183,6 +1189,9 @@ def parse_phrases_2(token_stream):
                     return False
                 if not tok.txt[0].isupper():
                     # Must start with capital letter
+                    return False
+                if has_category(tok, {"föð", "móð"}):
+                    # This is a known surname, not an unknown one
                     return False
                 # Allow single-letter abbreviations, but not multi-letter
                 # all-caps words (those are probably acronyms)
@@ -1246,23 +1255,30 @@ def parse_phrases_2(token_stream):
                 # Check whether the sequence of given names is followed
                 # by one or more surnames (patronym/matronym) of the same gender,
                 # for instance 'Dagur Bergþóruson Eggertsson'
-                while True:
-                    sn = surnames(next_token)
-                    if not sn:
-                        break
-                    r = []
-                    # Found surname: append it to the accumulated name, if compatible
-                    for p in gn:
-                        for np in sn:
-                            if compatible(p, np):
-                                r.append(PersonName(name = p.name + " " + np.name, gender = p.gender, case = p.case))
-                    if not r:
-                        break
-                    # Compatible: include it and advance to the next token
-                    gn = r
-                    w += " " + next_token.txt
-                    patronym = True
-                    next_token = next(token_stream)
+
+                def eat_surnames(gn, w, patronym, next_token):
+                    """ Process contiguous known surnames, typically "*dóttir/*son", while they are
+                        compatible with the given name we already have """
+                    while True:
+                        sn = surnames(next_token)
+                        if not sn:
+                            break
+                        r = []
+                        # Found surname: append it to the accumulated name, if compatible
+                        for p in gn:
+                            for np in sn:
+                                if compatible(p, np):
+                                    r.append(PersonName(name = p.name + " " + np.name, gender = p.gender, case = p.case))
+                        if not r:
+                            break
+                        # Compatible: include it and advance to the next token
+                        gn = r
+                        w += " " + next_token.txt
+                        patronym = True
+                        next_token = next(token_stream)
+                    return gn, w, patronym, next_token
+
+                gn, w, patronym, next_token = eat_surnames(gn, w, patronym, next_token)
 
                 # Must have at least one possible name
                 assert len(gn) >= 1
@@ -1279,6 +1295,10 @@ def parse_phrases_2(token_stream):
                         next_token = next(token_stream)
                         # Assume we now have a patronym
                         patronym = True
+
+                    if patronym:
+                        # We still might have surnames coming up: eat them too, if present
+                        gn, w, _, next_token = eat_surnames(gn, w, patronym, next_token)
 
                 found_name = False
                 # If we have a full name with patronym, store it

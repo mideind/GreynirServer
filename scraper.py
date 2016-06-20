@@ -213,10 +213,10 @@ class Scraper:
             print("HTTPError returned: {0}".format(e))
             html_doc = None
         except UnicodeEncodeError as e:
-            print("Exception when opening URL {0}: {1!r}".format(url, e))
+            print("Exception when opening URL {0}: {1}".format(url, e)) # Don't use repr(e) here
             html_doc = None
         except UnicodeDecodeError as e:
-            print("Exception when decoding HTML of {0}: {1!r}".format(url, e))
+            print("Exception when decoding HTML of {0}: {1}".format(url, e)) # Don't use repr(e) here
             html_doc = None
         return html_doc
 

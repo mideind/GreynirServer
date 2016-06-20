@@ -9,7 +9,10 @@
     See the accompanying README.md file for further licensing and copyright information.
 
     This module implements a data structure for parsed sentence trees that can
-    be loaded from text strings and processed by plug-in processing functions
+    be loaded from text strings and processed by plug-in processing functions.
+
+    A set of provided utility functions allow the extraction of nominative, indefinite
+    and canonical (nominative + indefinite + singular) forms of the text within any subtree.
 
 """
 
@@ -49,9 +52,9 @@ class Result:
         support custom handling of attribute identifiers with non-ASCII
         characters in them.)
 
-        Additionally, the class implements lazy evaluation of the r._root
-        and r._nominative attributes so that they are only calculated when and
-        if required, and then cached. This is an optimization to save database
+        Additionally, the class implements lazy evaluation of the r._root,
+        r._nominative and similar built-in attributes so that they are only calculated when
+        and if required, and then cached. This is an optimization to save database
         reads.
 
     """
@@ -547,8 +550,10 @@ class TerminalNode(Node):
             return self.text
         if self.cat not in { "no", "lo" }:
             return self.text
-        if self.case == "nf" and (self.cat != "no" or "gr" not in self.variants):
+        if self.case == "nf" and ((self.cat == "no" and "gr" not in self.variants)
+            or (self.cat == "lo" and "vb" not in self.variants)):
             # Already in nominative case, and indefinite in the case of a noun
+            # or strong declination in the case of an adjective
             return self.text
 
         if not self.text:
@@ -578,7 +583,8 @@ class TerminalNode(Node):
             return self.text
         if self.cat not in { "no", "lo" }:
             return self.text
-        if self.case == "nf" and self.number == "et" and (self.cat != "no" or "gr" not in self.variants):
+        if self.case == "nf" and self.number == "et" and ((self.cat == "no" and "gr" not in self.variants)
+            or (self.cat == "lo" and "vb" not in self.variants)):
             # Already singular, nominative, indefinite (if noun)
             return self.text
 
@@ -601,7 +607,7 @@ class TerminalNode(Node):
         return w
 
     def root(self, state, params):
-        """ Calculate the root (canonical) form of this node's text """
+        """ Calculate the root form (stem) of this node's text """
         if self.root_cache is None:
             # Not already cached: look up in database
             bin_db = state["bin_db"]

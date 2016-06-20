@@ -493,6 +493,10 @@ SetningAukafall →
 
     # Þann auð munum/skulum við [ekki] nýta (í þágu lands og þjóðar)
     | Nl/aukafall HjSögnNh/tala/pers Nl_nf/tala/pers AtvFs? So_1_nh/aukafall FsAtv?
+
+    # Þann auð ber okkur að nýta (til góðra verka)
+    | Nl/aukafall so_subj_op/fall Nl/fall AtvFs? nhm So_1_nh/aukafall FsAtv?
+
     # Mér er/var [ekki] sama [um málið] / bumbult [í gær] / misboðið
     # | Nl_þgf 'vera'_gm_fh_p3_et FsAtv? lo_sb_hk_nf_et FsAtv?
 
@@ -2076,7 +2080,7 @@ Fyrirbæri/fall/kyn →
 # Úrslit í leikjum (32:27 sigur, 0:2 tap, 8:0 burst)
 
 Úrslit/fall/kyn →
-    tala ':' tala no_et/fall/kyn
+    tala ':' tala '-'? no_et/fall/kyn
 
 $score(+2) Úrslit/fall/kyn
 
