@@ -16,10 +16,10 @@
 import sys
 from datetime import datetime
 from contextlib import closing
-from collections import defaultdict
+from collections import namedtuple, defaultdict
 
-from settings import Settings
-from scraperdb import Person, Entity
+from settings import Settings, changedlocale
+from scraperdb import Root, Article, Person, Entity, desc
 from bindb import BIN_Db
 from tree import Tree
 from tokenizer import TOK, correct_spaces
@@ -30,16 +30,22 @@ from reducer import Reducer
 _THIS_MODULE = sys.modules[__name__] # The module object for this module
 _QUERY_ROOT = 'QueryRoot' # The grammar root nonterminal for queries; see Reynir.grammar
 _MAXLEN_ANSWER = 25 # Maximum number of top answers to send in response to queries
+# If we have 5 or more titles/definitions with more than one associated URL,
+# cut off those that have only one source URL
+_CUTOFF_AFTER = 4
+_MAX_URLS = 5 # Maximum number of URL sources so provide for each top answer
 
+ArticleInfo = namedtuple('ArticleInfo', ['domain', 'url', 'heading', 'ts'])
 
 def response_list(q, prop_func):
     """ Create a response list from the result of a query q """
-    rd = defaultdict(int)
+    rd = defaultdict(dict)
     for p in q:
         s = correct_spaces(prop_func(p))
-        rd[s] += 1
+        ai = ArticleInfo(domain = p.domain, url = p.article_url, heading = p.heading, ts = p.timestamp)
+        rd[s][ai.url] = ai # Add to a dict of URLs
 
-    # Now we have a dictionary of distinct results, along with their count
+    # Now we have a dictionary of distinct results, along with their URLs
 
     # Go through the results and delete later ones
     # that are contained within earlier ones
@@ -51,7 +57,7 @@ def response_list(q, prop_func):
                 rj = rl[j]
                 if rj is not None:
                     if rj in ri:
-                        rd[ri] += rd[rj]
+                        rd[ri].update(rd[rj])
                         del rd[rj]
                         rl[j] = None
 
@@ -63,44 +69,73 @@ def response_list(q, prop_func):
         for j in range(i + 1, len(rl)):
             rj = rl[j]
             if ri in rj:
-                rd[rj] += rd[ri]
+                rd[rj].update(rd[ri])
                 del rd[ri]
                 break
 
-    rl = sorted([(s, cnt) for s, cnt in rd.items()], key = lambda x: -x[1])
+    with changedlocale() as strxfrm:
 
-    # If we have 4 or more titles/definitions with more than one occurrence,
-    # cut off those that have only one instance
-    CUTOFF_AFTER = 3
-    if len(rl) > CUTOFF_AFTER and rl[CUTOFF_AFTER][1] > 1:
-        rl = [ x for x in rl if x[1] > 1]
+        def sort_articles(articles):
+            """ Sort the individual article URLs so that the newest one appears first """
+            return sorted(articles.values(), key = lambda x: x.ts, reverse = True)
+
+        rl = sorted([(s, sort_articles(articles)) for s, articles in rd.items()],
+            key = lambda x: (-len(x[1]), strxfrm(x[0]))) # Sort by number of URLs in article dict
+
+    # If we have 5 or more titles/definitions with more than one associated URL,
+    # cut off those that have only one source URL
+    if len(rl) > _CUTOFF_AFTER and len(rl[_CUTOFF_AFTER][1]) > 1:
+        rl = [ val for val in rl if len(val[1]) > 1 ]
+
+    # Crop the article url lists down to _MAX_URLS
+    for i, val in enumerate(rl):
+        if len(val[1]) > _MAX_URLS:
+            rl[i] = (val[0], val[1][0:_MAX_URLS])
     return rl
 
 def response_list_names(q, prop_func):
     """ Create a name list from the result of a query q """
-    rd = defaultdict(int)
+    rd = defaultdict(dict)
     for p in q:
         s = correct_spaces(prop_func(p))
-        rd[s] += 1
-    return sorted([(s, cnt) for s, cnt in rd.items()], key = lambda x: (-x[1], x[0]))
+        ai = ArticleInfo(domain = p.domain, url = p.article_url, heading = p.heading, ts = p.timestamp)
+        rd[s][ai.url] = ai # Add to a dict of URLs
+
+    with changedlocale() as strxfrm:
+
+        def sort_articles(articles):
+            """ Sort the individual article URLs so that the newest one appears first """
+            return sorted(articles.values(), key = lambda x: x.ts, reverse = True)
+
+        return sorted([(s, sort_articles(articles)) for s, articles in rd.items()],
+            key = lambda x: (-len(x[1]), strxfrm(x[0])))
 
 def query_person(session, name):
     """ A query for a person by name """
-    q = session.query(Person.title).filter_by(name = name).all()
-    return response_list(q, lambda x: x.title)
+    q = session.query(Person.title, Person.article_url, Article.timestamp, Article.heading, Root.domain) \
+        .filter(Person.name == name) \
+        .join(Article).join(Root) \
+        .all()
+    return response_list(q, prop_func = lambda x: x.title)
 
 def query_title(session, title):
     """ A query for a person by title """
     # !!! Consider doing a LIKE '%title%', not just LIKE 'title%'
     title_lc = title.lower() # Query by lowercase title
-    q = session.query(Person.name) \
-        .filter(Person.title_lc.like(title_lc + ' %') | (Person.title_lc == title_lc)).all()
-    return response_list_names(q, lambda x: x.name)
+    q = session.query(Person.name, Person.article_url, Article.timestamp, Article.heading, Root.domain) \
+        .filter(Person.title_lc.like(title_lc + ' %') | (Person.title_lc == title_lc)) \
+        .join(Article).join(Root) \
+        .all()
+#    return response_list_names(q, prop_func = lambda x: x.name)
+    return response_list(q, prop_func = lambda x: x.name)
 
 def query_entity(session, name):
     """ A query for an entity by name """
-    q = session.query(Entity.verb, Entity.definition).filter_by(name = name).all()
-    return response_list(q, lambda x: x.definition)
+    q = session.query(Entity.verb, Entity.definition, Entity.article_url, Article.timestamp, Article.heading, Root.domain) \
+        .filter(Entity.name == name) \
+        .join(Article).join(Root) \
+        .all()
+    return response_list(q, prop_func = lambda x: x.definition)
 
 def query_company(session, name):
     """ A query for an company in the entities table """
@@ -111,12 +146,14 @@ def query_company(session, name):
     while qname and qname[-1] == '.':
         qname = qname[:-1]
         use_like = True
-    q = session.query(Entity.verb, Entity.definition)
+    q = session.query(Entity.verb, Entity.definition, Entity.article_url, Article.timestamp, Article.heading, Root.domain) \
+        .join(Article).join(Root)
     if use_like:
-        q = q.filter(Entity.name.like(qname + '%')).all()
+        q = q.filter(Entity.name.like(qname + '%'))
     else:
-        q = q.filter(Entity.name == qname).all()
-    return response_list(q, lambda x: x.definition)
+        q = q.filter(Entity.name == qname)
+    q = q.all()
+    return response_list(q, prop_func = lambda x: x.definition)
 
 
 def sentence(state, result):

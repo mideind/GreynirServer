@@ -599,8 +599,8 @@ class Settings:
     def _handle_preferences(s):
         """ Handle ambiguity preference hints in the settings section """
         # Format: word worse1 worse2... < better
-        # If two less-than signs are used, the preference is even stronger (doubled)
-        factor = 2
+        # If two less-than signs are used, the preference is even stronger (tripled)
+        factor = 3
         a = s.lower().split("<<", maxsplit = 1)
         if len(a) != 2:
             # Not doubled preference: try a normal one

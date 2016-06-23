@@ -50,6 +50,9 @@
 .glyphicon-microphone:before {
    content: "\E301";
 }
+.glyphicon-file:before {
+   content: "\E037";
+}
 
 html {
    overflow-y: scroll; /* Avoid jumping when long content is displayed */
@@ -899,6 +902,25 @@ span.ratio div.ratio-num {
    white-space: nowrap;
    overflow-x: hidden;
    text-overflow: ellipsis;
+}
+
+span.art-list {
+   margin-left: 4px;
+}
+
+span.art-link {
+   margin-left: 8px;
+   color: #d0d0d0;
+   cursor: pointer;
+}
+
+span.art-link:hover {
+   outline: #10069F solid 1px; /* Greynir blue */
+}
+
+span.art-link img {
+   margin: 2px;
+   vertical-align: text-bottom;
 }
 
 div#entity {

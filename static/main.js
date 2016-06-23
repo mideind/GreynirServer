@@ -433,11 +433,17 @@ function populateResult(json) {
          // The token has earlier been marked as an error token:
          // enclose it within a span identifying it as such
          wl0 &= ~TOK_ERROR_FLAG;
-         if (wl0 == TOK_WORD || wl0 == TOK_PERSON || wl0 == TOK_ENTITY || wl0 == TOK_DATE || wl0 == TOK_NUMBER) {
-            s += wsp;
-            wsp = "";
+         if (wl0 == TOK_S_BEGIN || wl0 == TOK_P_BEGIN || wl0 == TOK_S_END || wl0 == TOK_P_END) {
+            // Can't mark this token as an error token as it starts or ends a <span> or <p>
+            wl[0] &= ~TOK_ERROR_FLAG;
          }
-         s += "<span class='errtok'>";
+         else {
+            if (wl0 != TOK_PUNCTUATION) {
+               s += wsp;
+               wsp = "";
+            }
+            s += "<span class='errtok'>";
+         }
       }
       if (wl0 == TOK_PUNCTUATION) {
          if (wl[2] == TP_LEFT) {
@@ -619,11 +625,23 @@ function populateQueryResult(json) {
             .html("<span class='red glyphicon glyphicon-play'></span>&nbsp;Ekkert svar fannst.");
       else {
          $.each(r.response, function(i, obj) {
+            var li;
             if (r.qtype == "Title")
                // For person names, generate a 'name' span
-               answer.append($("<li></li>").html($("<span class='name'></span>").text(obj[0])));
+               li = $("<li></li>").html($("<span class='name'></span>").text(obj[0]));
             else
-               answer.append($("<li></li>").text(obj[0]));
+               li = $("<li></li>").text(obj[0]);
+            var urlList = obj[1];
+            var artList = li.append($("<span class='art-list'></span>")).children().last();
+            for (var i = 0; i < urlList.length; i++) {
+               var u = urlList[i];
+               artList.append($("<span class='art-link'></span>")
+                  .attr("title", u[2])
+                  .attr("url", u[1])
+                  .html($("<img width='16' height='16'></img>").attr("src", "/static/" + u[0] + ".ico"))
+               );
+            }
+            answer.append(li);
          });
       }
    }
@@ -637,7 +655,11 @@ function populateQueryResult(json) {
    // Clicking on a name submits a query on it
    $("#entity-body span.name").click(function(ev) {
       // Send a query to the server
-      submitQuery("Hver er " + $(this).text() + "?")
+      submitQuery("Hver er " + $(this).text() + "?");
+   });
+   $("span.art-link").click(function(ev) {
+      // Show a source article
+      displayUrl($(this).attr("url"));
    });
 }
 

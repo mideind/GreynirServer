@@ -286,7 +286,7 @@ class BIN_Token(Token):
                 if terminal.is_sagnb != form_sagnb:
                     return False
                 return subject_matches("none")
-            if form_sagnb:
+            if form_sagnb and not terminal.is_sagnb:
                 # For regular subj, we don't allow SAGNB form
                 # ('langað', 'þótt')
                 return False
@@ -683,6 +683,7 @@ class BIN_Token(Token):
             # as abbreviations to Main.conf is recommended
             return self.t1 in {
                 "ehf.", "ehf", "hf.", "hf",
+                "bs.", "bs", "sf.", "sf", "slhf.", "slhf", "slf.", "slf",
                 "Inc", "Inc.", "Incorporated",
                 "Corp", "Corp.", "Corporation",
                 "Ltd", "Ltd.", "Limited",

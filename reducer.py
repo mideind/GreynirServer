@@ -96,8 +96,10 @@ class Reducer:
                                     adj_better[bt] = max(adj_better[bt], adj_b)
                                     found_pref = True
                 for wt, adj in adj_worse.items():
+                    #print("Token '{2}': Adjusting score of terminal '{0}' by {1}".format(wt, adj, txt))
                     sc[wt] += adj
                 for bt, adj in adj_better.items():
+                    #print("Token '{2}': Adjusting score of terminal '{0}' by {1}".format(bt, adj, txt))
                     sc[bt] += adj
             #if not same_first and not found_pref:
             #    # Only display cases where there might be a missing pref
@@ -199,8 +201,11 @@ class Reducer:
                     if not tokens[i].t2:
                         # If there are no BÍN meanings, we had no choice but to use sérnafn,
                         # so alleviate some of the penalty given by the grammar
-                        sc[t] += 4
+                        sc[t] += 2
                     else:
+                        # BÍN meanings are available: discourage this a bit
+                        print("sérnafn '{0}': BÍN meanings available, discouraging".format(tokens[i].t1))
+                        sc[t] -= 6
                         if i == w.start:
                             # First token in sentence, and we have BÍN meanings:
                             # further discourage this

@@ -66,6 +66,7 @@ pp/
 p3/
 node_modules/
 cffi_test/
+backup/
 
 # Installer logs
 pip-log.txt
