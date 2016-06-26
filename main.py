@@ -27,7 +27,7 @@ from fastparser import Fast_Parser, ParseError, ParseForestPrinter, ParseForestD
 from ptest import run_test, Test_DB
 from reducer import Reducer
 from scraper import Scraper
-from tree import Tree
+from tree import TreeGist
 from scraperdb import SessionContext, Person, Article, desc
 from settings import Settings, ConfigError, changedlocale
 from tokenizer import tokenize, TOK, correct_spaces
@@ -243,8 +243,8 @@ def prepare(toklist, article):
     sent = []
     sent_begin = 0
 
-    tree = Tree(article.url, article.authority)
-    tree.load_gist(article.tree) # Only load a gist of the tree
+    tree = TreeGist() # We only need a gist of the tree
+    tree.load(article.tree)
 
     for ix, t in enumerate(toklist):
         if t[0] == TOK.S_BEGIN:
@@ -488,6 +488,15 @@ def analyze():
             if Settings.DEBUG:
                 print("Storing a new parse tree for url {0}".format(url))
             Scraper.store_parse(url, result, trees, failures, enclosing_session = session)
+
+    # with open("tokens.log", mode = "w", encoding="utf-8") as f:
+    #     indent = 0
+    #     for t in result["tokens"]:
+    #         if t.kind in { TOK.P_END, TOK.S_END }:
+    #             indent -= 1
+    #         print("{2}{0} {1}".format(TOK.descr[t.kind], "" if t.txt is None else t.txt, "  " * indent), file = f)
+    #         if t.kind in { TOK.P_BEGIN, TOK.S_BEGIN }:
+    #             indent += 1
 
     # Return the tokens as a JSON structure to the client
     return jsonify(result = result)

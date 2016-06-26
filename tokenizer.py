@@ -642,7 +642,8 @@ def parse_sentences(token_stream):
 
     # Final token (previous lookahead)
     if token is not None:
-        if not in_sentence:
+        if not in_sentence and token.kind != TOK.P_END and token.kind != TOK.S_END:
+            # Starting something here
             yield TOK.Begin_Sentence()
             in_sentence = True
         yield token

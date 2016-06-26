@@ -37,6 +37,7 @@ _MAX_URLS = 5 # Maximum number of URL sources so provide for each top answer
 
 ArticleInfo = namedtuple('ArticleInfo', ['domain', 'url', 'heading', 'ts'])
 
+
 def response_list(q, prop_func):
     """ Create a response list from the result of a query q """
     rd = defaultdict(dict)
@@ -93,23 +94,6 @@ def response_list(q, prop_func):
             rl[i] = (val[0], val[1][0:_MAX_URLS])
     return rl
 
-def response_list_names(q, prop_func):
-    """ Create a name list from the result of a query q """
-    rd = defaultdict(dict)
-    for p in q:
-        s = correct_spaces(prop_func(p))
-        ai = ArticleInfo(domain = p.domain, url = p.article_url, heading = p.heading, ts = p.timestamp)
-        rd[s][ai.url] = ai # Add to a dict of URLs
-
-    with changedlocale() as strxfrm:
-
-        def sort_articles(articles):
-            """ Sort the individual article URLs so that the newest one appears first """
-            return sorted(articles.values(), key = lambda x: x.ts, reverse = True)
-
-        return sorted([(s, sort_articles(articles)) for s, articles in rd.items()],
-            key = lambda x: (-len(x[1]), strxfrm(x[0])))
-
 def query_person(session, name):
     """ A query for a person by name """
     q = session.query(Person.title, Person.article_url, Article.timestamp, Article.heading, Root.domain) \
@@ -126,7 +110,6 @@ def query_title(session, title):
         .filter(Person.title_lc.like(title_lc + ' %') | (Person.title_lc == title_lc)) \
         .join(Article).join(Root) \
         .all()
-#    return response_list_names(q, prop_func = lambda x: x.name)
     return response_list(q, prop_func = lambda x: x.name)
 
 def query_entity(session, name):

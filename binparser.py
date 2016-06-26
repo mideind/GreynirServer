@@ -391,11 +391,7 @@ class BIN_Token(Token):
                 #print("Matched token {0} with terminal {1}".format(self, terminal))
                 return True
             case = terminal.variant(0)
-            for p in self.t2:
-                if p.case == case:
-                    #print("Matched token {0} with terminal {1}".format(self, terminal))
-                    return True
-            return False
+            return any(m.case == case for m in self.t2)
         if terminal.first != "person":
             return False
         if not terminal.num_variants:
@@ -403,13 +399,8 @@ class BIN_Token(Token):
             return True
         # Check each PersonName tuple in the t2 list
         case = terminal.variant(0)
-        gender = terminal.variant(1) if terminal.num_variants >= 2 else None
-        for p in self.t2:
-            if case == p.case and (gender is None or gender == p.gender):
-                # Case and gender matches: we're good
-                return True
-        # No match found
-        return False
+        gender = terminal.variant(1) if terminal.num_variants > 1 else None
+        return any(case == m.case and (gender is None or gender == m.gender) for m in self.t2)
 
     def matches_ENTITY(self, terminal):
         """ Handle an entity name token, matching it with an entity terminal """
@@ -666,16 +657,21 @@ class BIN_Token(Token):
             """ Check name from static phrases, coming from the Reynir.conf file """
             if m.fl != "nafn":
                 return False
+            if terminal.has_vbits(BIN_Token.VBIT_HK):
+                # Never match neutral terminals
+                return False
             # Check case, if present
             if m.beyging != "-":
                 if any(BIN_Token.VARIANT[c] in m.beyging and not terminal.has_variant(c) for c in BIN_Token.CASES):
                     # The name has an associated case, but this is not it: quit
                     return False
             if terminal.has_vbits(BIN_Token.VBIT_KK) and m.ordfl != "kk":
+                # Masculine specified but the name is feminine: no match
                 return False
             if terminal.has_vbits(BIN_Token.VBIT_KVK) and m.ordfl != "kvk":
+                # Feminine specified but the name is masculine: no match
                 return False
-            return not terminal.has_vbits(BIN_Token.VBIT_HK)
+            return True
 
         def matcher_corporation(m):
             """ Check whether the token text matches a set of corporation identfiers """

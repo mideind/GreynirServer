@@ -20,7 +20,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, backref
 from sqlalchemy import Table, Column, Integer, String, Float, DateTime, Sequence, \
-    UniqueConstraint, ForeignKey
+    UniqueConstraint, ForeignKey, PrimaryKeyConstraint
+from sqlalchemy.exc import SQLAlchemyError as SqlError
 from sqlalchemy.exc import IntegrityError as SqlIntegrityError
 from sqlalchemy import desc as SqlDesc
 
@@ -32,6 +33,7 @@ Base = declarative_base()
 
 # Allow client use of IntegrityError exception without importing it from sqlalchemy
 IntegrityError = SqlIntegrityError
+DatabaseError = SqlError
 # Same for the desc() function
 desc = SqlDesc
 
@@ -57,9 +59,9 @@ class Scraper_DB:
         """ Create all missing tables in the database """
         Base.metadata.create_all(self._engine)
 
-    def execute(self, sql):
+    def execute(self, sql, **kwargs):
         """ Execute raw SQL directly on the engine """
-        return self._engine.execute(sql)
+        return self._engine.execute(sql, **kwargs)
 
     @property
     def session(self):
@@ -330,6 +332,68 @@ class Failure(Base):
     def __repr__(self):
         return "Failure(id='{0}', sentence='{1}', cause='{2}', comment='{3}')" \
             .format(self.id, self.sentence, self.cause, self.comment)
+
+    @classmethod
+    def table(cls):
+        return cls.__table__
+
+
+class Trigram(Base):
+
+    """ Represents a trigram of tokens from a parsed sentence """
+
+    __tablename__ = 'trigrams'
+
+    MAX_WORD_LEN = 64
+
+    # Token 1
+    t1 = Column(String(MAX_WORD_LEN), nullable = False)
+
+    # Token 2
+    t2 = Column(String(MAX_WORD_LEN), nullable = False)
+
+    # Token 3
+    t3 = Column(String(MAX_WORD_LEN), nullable = False)
+
+    # Frequency
+    frequency = Column(Integer, default = 0, nullable = False)
+
+    __table_args__ = (
+        PrimaryKeyConstraint('t1', 't2', 't3', name='trigrams_pkey'),
+    )
+
+    @staticmethod
+    def upsert(session, t1, t2, t3):
+        """ Insert a trigram, or increment the frequency count if already present """
+        # The following code uses "upsert" functionality (INSERT...ON CONFLICT...DO UPDATE)
+        # that was introduced in PostgreSQL 9.5. This means that the upsert runs on the
+        # server side and is atomic, either an insert of a new trigram or an update of
+        # the frequency count of an existing identical trigram.
+        mwl = Trigram.MAX_WORD_LEN
+        if len(t1) > mwl:
+            t1 = t1[0:mwl]
+        if len(t2) > mwl:
+            t2 = t2[0:mwl]
+        if len(t3) > mwl:
+            t3 = t3[0:mwl]
+        session.execute(
+            """
+            insert into trigrams as tg (t1, t2, t3, frequency) values(:t1, :t2, :t3, 1)
+            on conflict (t1, t2, t3)
+            do update set frequency = tg.frequency + 1
+            where tg.t1 = :t1 and tg.t2 = :t2 and tg.t3 = :t3;
+            """,
+            dict(t1 = t1, t2 = t2, t3 = t3)
+        )
+
+    @staticmethod
+    def delete_all(session):
+        """ Delete all trigrams """
+        session.execute("delete from trigrams;")
+
+    def __repr__(self):
+        return "Trigram(t1='{0}', t2='{1}', t3='{2}')" \
+            .format(self.t1, self.t2, self.t3)
 
     @classmethod
     def table(cls):

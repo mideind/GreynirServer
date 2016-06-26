@@ -203,8 +203,8 @@ class Reducer:
                         # so alleviate some of the penalty given by the grammar
                         sc[t] += 2
                     else:
-                        # BÍN meanings are available: discourage this a bit
-                        print("sérnafn '{0}': BÍN meanings available, discouraging".format(tokens[i].t1))
+                        # BÍN meanings are available: discourage this
+                        #print("sérnafn '{0}': BÍN meanings available, discouraging".format(tokens[i].t1))
                         sc[t] -= 6
                         if i == w.start:
                             # First token in sentence, and we have BÍN meanings:

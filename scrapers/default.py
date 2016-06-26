@@ -312,8 +312,10 @@ class RuvScraper(ScrapeHelper):
     # noinspection PyMethodMayBeStatic
     def _get_content(self, soup_body):
         """ Find the article content (main text) in the soup """
-        return ScrapeHelper.div_class(soup_body,
+        content = ScrapeHelper.div_class(soup_body,
             ("region", "region-two-66-33-first"), "region-inner")
+        ScrapeHelper.del_div_class(content, "pane-custom") # Sharing stuff at bottom of page
+        return content
 
 
 class MblScraper(ScrapeHelper):

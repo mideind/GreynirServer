@@ -20,7 +20,7 @@ import json
 import re
 
 from contextlib import closing
-from collections import OrderedDict
+from collections import OrderedDict, namedtuple
 
 from settings import DisallowedNames
 from bindb import BIN_Db
@@ -332,66 +332,60 @@ class Node:
         return str(self)
 
 
-class TerminalNode(Node):
+class TerminalDescriptor:
 
-    """ A Node corresponding to a terminal """
+    """ Wraps a terminal specification and is able to select a token meaning
+        that matches that specification """
 
     _CASES = { "nf", "þf", "þgf", "ef" }
     _GENDERS = { "kk", "kvk", "hk" }
-    _NUMBER = { "et", "ft" }
+    _NUMBERS = { "et", "ft" }
     _PERSONS = { "p1", "p2", "p3" }
 
-    def __init__(self, terminal, token, tokentype, aux, at_start):
-        super().__init__()
+    def __init__(self, terminal):
         self.terminal = terminal
-        self.token = token
-        self.text = token[1:-1] # Cut off quotes
-        self.at_start = at_start
         elems = terminal.split("_")
         self.cat = elems[0]
         self.is_literal = self.cat[0] == '"' # Literal terminal, i.e. "sem", "og"
+        self.is_stem = self.cat[0] == "'" # Stem terminal, i.e. 'vera'_et_p3
         self.variants = set(elems[1:])
-        self.tokentype = tokentype
-        self.is_word = tokentype in { "WORD", "PERSON" }
-        self.aux = aux # Auxiliary information, originally from token.t2
-        # Cache the root form of this word so that it is only looked up
-        # once, even if multiple processors scan this tree
-        self.root_cache = None
-        self.nominative_cache = None
-        self.indefinite_cache = None
-        self.canonical_cache = None
+
+        self.variant_vb = "vb" in self.variants
+        self.variant_gr = "gr" in self.variants
 
         # BIN category set
         self.bin_cat = BIN_ORDFL.get(self.cat, None)
 
         # Gender of terminal
         self.gender = None
-        gender = self.variants & TerminalNode._GENDERS
+        gender = self.variants & self._GENDERS
         assert 0 <= len(gender) <= 1
         if gender:
             self.gender = next(iter(gender))
 
         # Case of terminal
         self.case = None
-        if self.cat != "so":
+        if self.cat not in { "so", "fs" }:
             # We do not check cases for verbs, except so_lhþt ones
-            case = self.variants & TerminalNode._CASES
+            case = self.variants & self._CASES
             if len(case) > 1:
                 print("Many cases detected for terminal {0}, variants {1}".format(terminal, self.variants))
             assert 0 <= len(case) <= 1
             if case:
                 self.case = next(iter(case))
 
+        self.case_nf = self.case == "nf"
+
         # Person of terminal
         self.person = None
-        person = self.variants & TerminalNode._PERSONS
+        person = self.variants & self._PERSONS
         assert 0 <= len(person) <= 1
         if person:
             self.person = next(iter(person))
 
         # Number of terminal
         self.number = None
-        number = self.variants & TerminalNode._NUMBER
+        number = self.variants & self._NUMBERS
         assert 0 <= len(number) <= 1
         if number:
             self.number = next(iter(number))
@@ -409,16 +403,16 @@ class TerminalNode(Node):
         #print("_bin_filter checking meaning {0}".format(m))
         if self.bin_cat is not None and m.ordfl not in self.bin_cat:
             return False
-        if self.gender:
+        if self.gender is not None:
             # Check gender match
             if self.cat == "no":
                 if m.ordfl != self.gender:
                     return False
             elif self.gender.upper() not in m.beyging:
                 return False
-        if self.case:
+        if self.case is not None:
             # Check case match
-            if case_override:
+            if case_override is not None:
                 # Case override: we don't want other cases beside the given one
                 for c in TerminalNode._CASES:
                     if c != case_override:
@@ -427,13 +421,13 @@ class TerminalNode(Node):
             elif self.case.upper() not in m.beyging:
                 return False
         # Check person match
-        if self.person:
+        if self.person is not None:
             person = self.person.upper()
             person = person[1] + person[0] # Turn p3 into 3P
             if person not in m.beyging:
                 return False
         # Check number match
-        if self.number:
+        if self.number is not None:
             if self.number.upper() not in m.beyging:
                 return False
         # Check lhþt
@@ -447,18 +441,72 @@ class TerminalNode(Node):
         if "mst" in self.variants:
             if "MST" not in m.beyging:
                 return False
-        if "vb" in self.variants:
+        if self.variant_vb:
             if "VB" not in m.beyging:
                 return False
         if "sb" in self.variants:
             if "SB" not in m.beyging:
                 return False
         # Definite article
-        if "gr" in self.variants:
+        if self.variant_gr:
             if "gr" not in m.beyging:
                 return False
         #print("_bin_filter returns True")
         return True
+
+    def stem(self, bindb, word, at_start = False):
+        """ Returns the stem of a word matching this terminal """
+        if self.is_literal or self.is_stem:
+            # A literal or stem terminal only matches a word if it has the given stem
+            return self.cat[1:-1]
+        if ' ' in word:
+            # Multi-word phrase: we return it unchanged
+            return word
+        _, meanings = bindb.lookup_word(word, at_start)
+        if meanings:
+            for m in meanings:
+                if self._bin_filter(m):
+                    # Found a matching meaning: return the stem
+                    return m.stofn
+        # No meanings found in BÍN: return the word itself as its own stem
+        return word
+
+
+class TerminalNode(Node):
+
+    """ A Node corresponding to a terminal """
+
+    _TD = dict() # Cache of terminal descriptors
+
+    def __init__(self, terminal, token, tokentype, aux, at_start):
+        super().__init__()
+        td = self._TD.get(terminal)
+        if td is None:
+            # Not found in cache: make a new one
+            td = TerminalDescriptor(terminal)
+            self._TD[terminal] = td
+        self.td = td
+        self.token = token
+        self.text = token[1:-1] # Cut off quotes
+        self.at_start = at_start
+        self.tokentype = tokentype
+        self.is_word = tokentype in { "WORD", "PERSON" }
+        self.is_literal = td.is_literal
+        self.aux = aux # Auxiliary information, originally from token.t2
+        # Cache the root form of this word so that it is only looked up
+        # once, even if multiple processors scan this tree
+        self.root_cache = None
+        self.nominative_cache = None
+        self.indefinite_cache = None
+        self.canonical_cache = None
+
+    def has_t_base(self, s):
+        """ Does the node have the given terminal base name? """
+        return self.td.has_t_base(s)
+
+    def has_variant(self, s):
+        """ Does the node have the given variant? """
+        return self.td.has_variant(s)
 
     def _root(self, bin_db):
         """ Look up the root of the word associated with this terminal """
@@ -467,9 +515,10 @@ class TerminalNode(Node):
             return self.text
         w, m = bin_db.lookup_word(self.text, self.at_start)
         if m:
-            m = [ x for x in m if self._bin_filter(x) ]
+            # Find the meaning that matches the terminal
+            m = next((x for x in m if self.td._bin_filter(x)), None)
         if m:
-            w = m[0].stofn
+            w = m.stofn
         return w.replace("-", "")
 
     def lookup_alternative(self, bin_db, replace_func):
@@ -480,7 +529,7 @@ class TerminalNode(Node):
         if m:
             #print("lookup_alternative: meanings are {0}".format(m))
             # Narrow the meanings down to those that are compatible with the terminal
-            m = [ x for x in m if self._bin_filter(x) ]
+            m = [ x for x in m if self.td._bin_filter(x) ]
         if m:
             #print("Meanings from lookup_word are {0}".format(m))
             # Look up the distinct roots of the word
@@ -514,12 +563,12 @@ class TerminalNode(Node):
         """ Look up the nominative form of the word associated with this terminal """
         # Lookup the token in the BIN database
         #print("_nominative of {0}, token {1}, terminal {2}".format(self.text, self.token, self.terminal))
-        if (not self.is_word) or (self.case == "nf") or self.is_literal \
-            or self.cat in { "ao", "eo", "fs", "st", "nhm" }:
+        if (not self.is_word) or self.td.case_nf or self.is_literal \
+            or self.td.cat in { "ao", "eo", "fs", "st", "nhm" }:
             # Not a word, already nominative or not declinable: return it as-is
             return self.text
         if not self.text:
-            print("self.text is empty, token is {0}, terminal is {1}".format(self.token, self.terminal))
+            print("self.text is empty, token is {0}, terminal is {1}".format(self.token, self.td.terminal))
             assert False
 
         def replace_beyging(b, by_case = "NF"):
@@ -548,16 +597,16 @@ class TerminalNode(Node):
         if (not self.is_word) or self.is_literal:
             # Not a word, not a noun or already indefinite: return it as-is
             return self.text
-        if self.cat not in { "no", "lo" }:
+        if self.td.cat not in { "no", "lo" }:
             return self.text
-        if self.case == "nf" and ((self.cat == "no" and "gr" not in self.variants)
-            or (self.cat == "lo" and "vb" not in self.variants)):
+        if self.td.case_nf and ((self.td.cat == "no" and not self.td.variant_gr)
+            or (self.td.cat == "lo" and not self.td.variant_vb)):
             # Already in nominative case, and indefinite in the case of a noun
             # or strong declination in the case of an adjective
             return self.text
 
         if not self.text:
-            print("self.text is empty, token is {0}, terminal is {1}".format(self.token, self.terminal))
+            print("self.text is empty, token is {0}, terminal is {1}".format(self.token, self.td.terminal))
             assert False
 
         def replace_beyging(b, by_case = "NF"):
@@ -581,10 +630,10 @@ class TerminalNode(Node):
         if (not self.is_word) or self.is_literal:
             # Not a word, not a noun or already indefinite: return it as-is
             return self.text
-        if self.cat not in { "no", "lo" }:
+        if self.td.cat not in { "no", "lo" }:
             return self.text
-        if self.case == "nf" and self.number == "et" and ((self.cat == "no" and "gr" not in self.variants)
-            or (self.cat == "lo" and "vb" not in self.variants)):
+        if self.td.case_nf and self.td.number == "et" and ((self.td.cat == "no" and not self.td.variant_gr)
+            or (self.td.cat == "lo" and not self.td.variant_vb)):
             # Already singular, nominative, indefinite (if noun)
             return self.text
 
@@ -639,13 +688,13 @@ class TerminalNode(Node):
         return self.canonical_cache
 
     def string_self(self):
-        return self.terminal + " <" + self.token + ">"
+        return self.td.terminal + " <" + self.token + ">"
 
     def process(self, state, params):
         """ Prepare a result object to be passed up to enclosing nonterminals """
         assert not params # A terminal node should not have parameters
         result = Result(self, state, None) # No params
-        result._terminal = self.terminal
+        result._terminal = self.td.terminal
         result._text = self.text
         result._token = self.token
         result._tokentype = self.tokentype
@@ -674,7 +723,7 @@ class PersonNode(TerminalNode):
             # !!! knowledge of the case of the name - so it may be wrong
             return self.fullname
         # Lookup the token in the BIN database
-        case = self.case.upper()
+        case = self.td.case.upper()
         # Look up each part of the name
         at_start = self.at_start
         name = []
@@ -683,11 +732,11 @@ class PersonNode(TerminalNode):
             at_start = False
             if m:
                 m = [ x for x in m
-                        if x.ordfl == self.gender and case in x.beyging and "ET" in x.beyging
+                        if x.ordfl == self.td.gender and case in x.beyging and "ET" in x.beyging
                         # Do not accept 'Sigmund' as a valid stem for word forms that
                         # are identical with the stem 'Sigmundur'
                         and (x.stofn not in DisallowedNames.STEMS
-                        or self.case not in DisallowedNames.STEMS[x.stofn])
+                        or self.td.case not in DisallowedNames.STEMS[x.stofn])
                     ]
             if m:
                 w = m[0].stofn
@@ -773,7 +822,7 @@ class NonterminalNode(Node):
         return result
 
 
-class Tree:
+class TreeBase:
 
     """ A tree corresponding to a single parsed article """
 
@@ -782,16 +831,11 @@ class Tree:
         "person" : PersonNode
     }
 
-    def __init__(self, url = "", authority = 1.0):
+    def __init__(self):
         self.s = OrderedDict() # Sentence dictionary
         self.stack = None
         self.n = None # Index of current sentence
         self.at_start = False # First token of sentence?
-        # Dictionary of error token indices for sentences that weren't successfully parsed
-        self._err_index = dict()
-        self._gist = False
-        self.url = url
-        self.authority = authority
 
     def __getitem__(self, n):
         """ Allow indexing to get sentence roots from the tree """
@@ -801,13 +845,13 @@ class Tree:
         """ Allow query of sentence indices """
         return n in self.s
 
-    def err_index(self, n):
-        """ Return the error token index for an unparsed sentence, if any, or None """
-        return self._err_index.get(n)
+    def sentences(self):
+        """ Enumerate the sentences in this tree """
+        for ix, sent in self.s.items():
+            yield ix, sent
 
     def push(self, n, node):
         """ Add a node into the tree at the right level """
-        assert not self._gist
         if n == len(self.stack):
             # First child of parent
             if n:
@@ -835,29 +879,26 @@ class Tree:
         """ End of sentence """
         # Store the root of the sentence tree at the appropriate index
         # in the dictionary
-        self.s[self.n] = None if self._gist else self.stack[0]
+        self.s[self.n] = self.stack[0]
         self.stack = None
         #print("Tree [{0}] is: {1}".format(self.n, self.s[self.n]))
 
     def handle_E(self, n):
         """ End of sentence with error """
-        # Store the root of the sentence tree at the appropriate index
-        # in the dictionary
+        # Nothing stored
         assert self.n not in self.s
-        self._err_index[self.n] = n # Note the index of the error token
         self.stack = None
 
     def handle_P(self, n):
         """ Epsilon node: leave the parent nonterminal childless """
         pass
 
-    def handle_T(self, n, s):
-        """ Terminal """
+    @staticmethod
+    def _parse_T(s):
+        """ Parse a T (Terminal) descriptor """
         # The string s contains:
         # terminal "token" [TOKENTYPE] [auxiliary-json]
         # The terminal may itself be a single-quoted string
-        if self._gist:
-            return
         if s[0] == "'":
             r = re.match(r'\'[^\']*\'\w*', s)
             terminal = r.group() if r else ""
@@ -879,17 +920,20 @@ class Tree:
         # Select a terminal constructor based on the first part of the
         # terminal name
         cat = terminal.split("_", maxsplit = 1)[0]
-        constructor = Tree._TC.get(cat, TerminalNode)
+        return (terminal, token, tokentype, aux, cat)
+
+    def handle_T(self, n, s):
+        """ Terminal """
+        terminal, token, tokentype, aux, cat = self._parse_T(s)
+        constructor = self._TC.get(cat, TerminalNode)
         self.push(n, constructor(terminal, token, tokentype, aux, self.at_start))
         self.at_start = False
 
     def handle_N(self, n, nonterminal):
         """ Nonterminal """
-        if self._gist:
-            return
         self.push(n, NonterminalNode(nonterminal))
 
-    def _load(self, txt):
+    def load(self, txt):
         """ Loads a tree from the text format stored by the scraper """
         for line in txt.split("\n"):
             if not line:
@@ -908,15 +952,15 @@ class Tree:
             else:
                 print("*** No handler for {0}".format(line))
 
-    def load(self, txt):
-        """ Load a tree entirely into memory, creating all nodes """
-        self._gist = False
-        self._load(txt)
 
-    def load_gist(self, txt):
-        """ Only load the sentence dictionary in gist form into memory """
-        self._gist = True
-        self._load(txt)
+class Tree(TreeBase):
+
+    """ A processable tree corresponding to a single parsed article """
+
+    def __init__(self, url = "", authority = 1.0):
+        super().__init__()
+        self.url = url
+        self.authority = authority
 
     def visit_children(self, state, node):
         """ Visit the children of node, obtain results from them and pass them to the node """
@@ -940,8 +984,6 @@ class Tree:
         # visiting each parent node after visiting its children
         # Initialize the running state that we keep between sentences
 
-        assert not self._gist # Not applicable to trees that are loaded as gists only
-
         article_begin = getattr(processor, "article_begin", None) if processor else None
         article_end = getattr(processor, "article_end", None) if processor else None
 
@@ -958,4 +1000,71 @@ class Tree:
             # Call the article_end(state) function, if it exists
             if article_end:
                 article_end(state)
+
+
+class TreeGist(TreeBase):
+
+    """ A gist of a tree corresponding to a single parsed article.
+        A gist simply knows which sentences are present in the tree
+        and what the error token index is for sentences that are not present. """
+
+    def __init__(self):
+        super().__init__()
+        # Dictionary of error token indices for sentences that weren't successfully parsed
+        self._err_index = dict()
+
+    def err_index(self, n):
+        """ Return the error token index for an unparsed sentence, if any, or None """
+        return self._err_index.get(n)
+
+    def push(self, n, node):
+        """ This should not be invoked for a gist """
+        assert False
+
+    def handle_Q(self, n):
+        """ End of sentence """
+        self.s[self.n] = None # Simply note that the sentence is present without storing it
+        self.stack = None
+
+    def handle_E(self, n):
+        """ End of sentence with error """
+        super().handle_E(n)
+        self._err_index[self.n] = n # Note the index of the error token
+
+    def handle_T(self, n, s):
+        """ Terminal """
+        # No need to store anything for gists
+        pass
+
+    def handle_N(self, n, nonterminal):
+        """ Nonterminal """
+        # No need to store anything for gists
+        pass
+
+
+TreeToken = namedtuple('TreeToken', [ 'terminal', 'token', 'tokentype', 'aux', 'cat' ])
+
+class TreeTokenList(TreeBase):
+
+    """ A tree that allows easy iteration of its token/terminal matches """
+
+    def __init__(self):
+        super().__init__()
+
+    def handle_Q(self, n):
+        """ End of sentence """
+        self.s[self.n] = self.stack
+        self.stack = None
+
+    def handle_T(self, n, s):
+        """ Terminal """
+        terminal, token, tokentype, aux, cat = self._parse_T(s)
+        # Append to token list for current sentence
+        assert self.stack is not None
+        self.stack.append(TreeToken(terminal = terminal, token = token, tokentype = tokentype, aux = aux, cat = cat))
+
+    def handle_N(self, n, nonterminal):
+        """ Nonterminal """
+        # No action required for token lists
+        pass
 

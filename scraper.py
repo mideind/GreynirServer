@@ -31,6 +31,8 @@ from multiprocessing import Pool
 import urllib.request
 import urllib.parse as urlparse
 from urllib.error import HTTPError
+#from http.client import HTTPSConnection
+#from ssl import SSLContext, PROTOCOL_SSLv23, CERT_OPTIONAL
 
 from contextlib import closing
 from datetime import datetime
@@ -192,7 +194,20 @@ class Scraper:
         """ Low-level fetch of an URL, returning a decoded string """
         html_doc = None
         try:
-            with closing(urllib.request.urlopen(url)) as response:
+
+            def open_url(url):
+                """ Open an HTTP or HTTPS URL and return a response object """
+                u = urlparse.urlsplit(url)
+                if u.scheme not in { "http", "https" }:
+                    raise HTTPError("Unsupported protocol: " + u.scheme)
+                if u.scheme == "https":
+                    #context = SSLContext(PROTOCOL_SSLv23)
+                    #context.set_default_verify_paths()
+                    #context.verify_mode = CERT_OPTIONAL
+                    return urllib.request.urlopen(url)
+                return urllib.request.urlopen(url)
+
+            with closing(open_url(url)) as response:
                 if response:
                     # Decode the HTML Content-type header to obtain the
                     # document type and the charset (content encoding), if specified
