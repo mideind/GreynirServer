@@ -24,6 +24,8 @@ resources/*.tmLanguage
 resources/visir/
 mim/
 gold/
+p33/
+fonts/
 .idea/
 
 # Minified JavaScript

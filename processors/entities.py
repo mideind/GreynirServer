@@ -138,6 +138,12 @@ def Fyrirtæki(node, params, result):
     result.sérnafn_nom = result._nominative
 
 
+def SvigaInnihaldFsRuna(node, params, result):
+    """ Svigainnihald sem er bara forsetningarruna er ekki brúklegt sem skilgreining """
+    result._text = ""
+    result._nominative = ""
+
+
 def SvigaInnihald(node, params, result):
     if node.has_variant("et"):
         tengiliður = result.find_child(nt_base = "Tengiliður")
@@ -183,13 +189,14 @@ def NlEind(node, params, result):
         definition = result.sviga_innihald
         verb = result.sviga_sögn if "sviga_sögn" in result else "er"
 
-        print("SvigaInnihald: '{0}' er '{1}'".format(entity, definition))
+        if definition:
 
-        # Append to result list
-        if "entities" not in result:
-            result.entities = []
+            print("SvigaInnihald: '{0}' er '{1}'".format(entity, definition))
+            # Append to result list
+            if "entities" not in result:
+                result.entities = []
 
-        result.entities.append((entity, verb, definition))
+            result.entities.append((entity, verb, definition))
 
     result.del_attribs(("sviga_innihald", "sérnafn_eind_nom"))
 

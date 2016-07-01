@@ -38,14 +38,16 @@ _MAX_URLS = 5 # Maximum number of URL sources so provide for each top answer
 ArticleInfo = namedtuple('ArticleInfo', ['domain', 'url', 'heading', 'ts'])
 
 
-def response_list(q, prop_func):
-    """ Create a response list from the result of a query q """
-    rd = defaultdict(dict)
+def append_answers(rd, q, prop_func):
+    """ Iterate over query results and add them to the result dictionary rd """
     for p in q:
         s = correct_spaces(prop_func(p))
         ai = ArticleInfo(domain = p.domain, url = p.article_url, heading = p.heading, ts = p.timestamp)
         rd[s][ai.url] = ai # Add to a dict of URLs
 
+
+def make_response_list(rd):
+    """ Create a response list from the result dictionary rd """
     # Now we have a dictionary of distinct results, along with their URLs
 
     # Go through the results and delete later ones
@@ -94,23 +96,51 @@ def response_list(q, prop_func):
             rl[i] = (val[0], val[1][0:_MAX_URLS])
     return rl
 
+
+def prepare_response(q, prop_func):
+    """ Prepare and return a simple (one-query) response """
+    rd = defaultdict(dict)
+    append_answers(rd, q, prop_func)
+    return make_response_list(rd)
+
+
 def query_person(session, name):
     """ A query for a person by name """
+    rd = defaultdict(dict)
     q = session.query(Person.title, Person.article_url, Article.timestamp, Article.heading, Root.domain) \
         .filter(Person.name == name) \
         .join(Article).join(Root) \
         .all()
-    return response_list(q, prop_func = lambda x: x.title)
+    # Append titles from the persons table
+    append_answers(rd, q, prop_func = lambda x: x.title)
+    # Also append definitions from the entities table, if any
+    q = session.query(Entity.definition, Entity.article_url, Article.timestamp, Article.heading, Root.domain) \
+        .filter(Entity.name == name) \
+        .join(Article).join(Root) \
+        .all()
+    append_answers(rd, q, prop_func = lambda x: x.definition)
+    return make_response_list(rd)
+
 
 def query_title(session, title):
     """ A query for a person by title """
     # !!! Consider doing a LIKE '%title%', not just LIKE 'title%'
+    rd = defaultdict(dict)
     title_lc = title.lower() # Query by lowercase title
     q = session.query(Person.name, Person.article_url, Article.timestamp, Article.heading, Root.domain) \
         .filter(Person.title_lc.like(title_lc + ' %') | (Person.title_lc == title_lc)) \
         .join(Article).join(Root) \
         .all()
-    return response_list(q, prop_func = lambda x: x.name)
+    # Append names from the persons table
+    append_answers(rd, q, prop_func = lambda x: x.name)
+    # Also append definitions from the entities table, if any
+    q = session.query(Entity.name, Entity.article_url, Article.timestamp, Article.heading, Root.domain) \
+        .filter(Entity.definition == title) \
+        .join(Article).join(Root) \
+        .all()
+    append_answers(rd, q, prop_func = lambda x: x.name)
+    return make_response_list(rd)
+
 
 def query_entity(session, name):
     """ A query for an entity by name """
@@ -118,7 +148,8 @@ def query_entity(session, name):
         .filter(Entity.name == name) \
         .join(Article).join(Root) \
         .all()
-    return response_list(q, prop_func = lambda x: x.definition)
+    return prepare_response(q, prop_func = lambda x: x.definition)
+
 
 def query_company(session, name):
     """ A query for an company in the entities table """
@@ -136,7 +167,7 @@ def query_company(session, name):
     else:
         q = q.filter(Entity.name == qname)
     q = q.all()
-    return response_list(q, prop_func = lambda x: x.definition)
+    return prepare_response(q, prop_func = lambda x: x.definition)
 
 
 def sentence(state, result):
@@ -145,6 +176,7 @@ def sentence(state, result):
     if "qtype" in result:
         # Successfully matched a query type
         q.set_qtype(result.qtype)
+        q.set_key(result.qkey)
         session = state["session"]
         if result.qtype == "Person":
             # A person was given; his/her titles are returned
@@ -170,7 +202,12 @@ def sentence(state, result):
 def QPerson(node, params, result):
     """ Person query """
     result.qtype = "Person"
-    result.qkey = result.mannsnafn
+    if "mannsnafn" in result:
+        result.qkey = result.mannsnafn
+    elif "sérnafn" in result:
+        result.qkey = result.sérnafn
+    else:
+        assert False
 
 def QCompany(node, params, result):
     result.qtype = "Company"
@@ -222,6 +259,7 @@ class Query:
         self._answer = None
         self._tree = None
         self._qtype = None
+        self._key = None
 
     
     @staticmethod
@@ -282,6 +320,7 @@ class Query:
         self._tree = None # Erase previous tree, if any
         self._error = None # Erase previous error, if any
         self._qtype = None # Erase previous query type, if any
+        self._key = None
 
         parse_result, trees = Query._parse(toklist)
 
@@ -337,6 +376,11 @@ class Query:
         """ Set the answer to the query """
         self._answer = answer
 
+    def set_key(self, key):
+        """ Set the query key, i.e. the term or string used to execute the query """
+        # This is for instance a person name in nominative case
+        self._key = key
+
     def set_error(self, error):
         """ Set an error result """
         self._error = error
@@ -348,6 +392,10 @@ class Query:
     def answer(self):
         """ Return the query answer """
         return self._answer
+
+    def key(self):
+        """ Return the query key """
+        return self._key
 
     def error(self):
         """ Return the query error, if any """

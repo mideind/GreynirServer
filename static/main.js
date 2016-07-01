@@ -46,6 +46,9 @@ var TP_CENTER = 2;
 var TP_RIGHT = 3;
 var TP_NONE = 4; // Tight - no whitespace around
 
+// Query history
+var qHistory = [];
+
 // HTML transcoding entities
 
 var entityMap = {
@@ -389,6 +392,33 @@ function handleQueryError(xhr, status, errorThrown) {
    $("div#entity-body").html("<div class='guide-empty'><p><b>Villa kom upp</b> í samskiptum við netþjón Greynis</p></div>");
 }
 
+function showPerson(ev) {
+   // Send a query to the server
+   var wId = $(this).attr("id"); // Check for token id
+   var name;
+   if (wId === undefined)
+      name = $(this).text(); // No associated token: use the contained text
+   else {
+      // Obtain the name in nominative case from the token
+      var ix = parseInt(wId.slice(1));
+      var out = $("div#result");
+      var tokens = out.data("tokens");
+      var wl = tokens[ix];
+      if (!wl[2].length)
+         name = wl[1];
+      else
+         name = wl[2][0][0];
+   }
+   submitQuery("Hver er " + name + "?");
+   ev.stopPropagation();
+}
+
+function showEntity(ev) {
+   // Send a query to the server
+   submitQuery("Hvað er " + $(this).text() + "?");
+   ev.stopPropagation();
+}
+
 function populateResult(json) {
    // Display the results of analysis by the server
    // Hide progress indicator
@@ -414,9 +444,11 @@ function populateResult(json) {
 
    populateMetadata(json.result.metadata);
 
-   $("p.tok-info").css("visibility", "visible");
    // Show the guide
    $("div#guide").css("visibility", "visible");
+
+   // Show the statistics
+   $("div#statistics").css("display", "block");
 
    var out = $("div#result");
    var tokens = json.result.tokens;
@@ -584,6 +616,10 @@ function populateResult(json) {
    $("div#result i").hover(hoverIn, hoverOut);
    // Put a click handler on each sentence
    $("span.sent").click(showParse);
+   // Separate click handler on entity names
+   $("i.entity").click(showEntity);
+   // Separate click handler on person names
+   $("i.person").click(showPerson);
    populateRegister(register);
 }
 
@@ -598,14 +634,14 @@ function clearResult() {
    // Display progress indicator
    $("div#result-wait").css("display", "block");
    // Make the statistics appear but hidden until processing is complete
-   $("p.tok-info").css("display", "block").css("visibility", "hidden");
+   $("div#statistics").css("display", "none");
    // Hide the guide
    $("div#guide").css("display", "block").css("visibility", "hidden");
    // Hide the metadata
    $("#metadata").css("display", "none");
    // Hide the register
    $("#namelist").html("");
-   $("#register").css("display", "none");
+   $("div#register").css("display", "none");
 }
 
 function populateQueryResult(json) {
@@ -619,6 +655,21 @@ function populateQueryResult(json) {
    var answer;
    if (r.is_query) {
       // This is a valid query response: present the response items in a bulleted list
+      if (r.image !== undefined) {
+         // The response contains an image: append it
+         q.append(
+            $("<p class='image'></p>")
+               .html(
+                  $("<a></a>").attr("href", r.image.link).html(
+                     $("<img></img>")
+                        .attr("src", r.image.src)
+                        .attr("width", r.image.width)
+                        .attr("height", r.image.height)
+                        .attr("title", r.image.origin)
+                  )
+               )
+         );
+      }
       answer = $("<ul></ul>");
       if (!r.response || !r.response.length)
          answer = $("<p class='query-empty'></p>")
@@ -653,10 +704,7 @@ function populateQueryResult(json) {
    $("#entity-body").html(q).append(answer);
    // A title query yields a list of names
    // Clicking on a name submits a query on it
-   $("#entity-body span.name").click(function(ev) {
-      // Send a query to the server
-      submitQuery("Hver er " + $(this).text() + "?");
-   });
+   $("#entity-body span.name").click(showPerson);
    $("span.art-link").click(function(ev) {
       // Show a source article
       displayUrl($(this).attr("url"));
@@ -675,8 +723,71 @@ function clearQueryResult() {
    $("div#entity-wait").css("display", "block");
 }
 
+function updateBackButton() {
+   // Update the state of the back button after modifying the history
+   $("#back").toggleClass("disabled", qHistory.length < 2);
+   if (qHistory.length >= 2)
+      // Show the query that we would go back to
+      $("#back").attr("title", qHistory[qHistory.length - 2].q);
+   else
+      $("#back").attr("title", "");
+}
+
+// Actions encoded in URLs
+var urlToFunc = {
+   "a" : _analyzeUrl,
+   "q" : _submitQuery,
+   "d" : _displayUrl
+};
+
+var funcToUrl = {
+   _analyzeUrl : "a",
+   _submitQuery : "q",
+   _displayUrl : "d"
+};
+
+function addHistory(func, q) {
+   // Add an item to the query qHistory
+   if (qHistory.length && qHistory[qHistory.length - 1].q == q)
+      // Same query as we have already: don't push again
+      return;
+   var state = { f: funcToUrl[func], q : q };
+   qHistory.push(state);
+   history.pushState(state, "",
+      "?f=" + state.f + "&q=" + encodeURIComponent(state.q));
+   updateBackButton();
+}
+
+function backHistory() {
+   // Go back one step in the query qHistory
+   if (qHistory.length < 2)
+      // Nothing to go back to
+      return;
+   qHistory.pop(); // Pop off the state where we already are
+   var h = qHistory[qHistory.length - 1]; // Get the previous state
+   $("#url").val(h.q); // Go back to original query string
+   history.replaceState(h, "", "?f=" + h.f + "&q=" + encodeURIComponent(h.q));
+   updateUrlShadow();
+   updateBackButton();
+   // Execute the original query function again
+   urlToFunc[h.f](h.q);
+}
+
+function navToHistory(func, q) {
+   if (urlToFunc[func] === undefined)
+      // Invalid function
+      return;
+   // Navigate to a previous state encoded in a URL
+   $("#url").val(q); // Go back to original query string
+   updateUrlShadow();
+   var state = { f: func, q : q };
+   qHistory.push(state);
+   // Execute the original query function again
+   urlToFunc[func](q);
+}
+
 function _analyzeUrl(url) {
-   // Ajax query to the server
+   // Ask the server to scrape, tokenize and parse a fresh URL
    clearResult();
    // Launch the query
    serverQuery('/analyze.api', // Endpoint with .api suffix are not cached
@@ -692,13 +803,12 @@ function _analyzeUrl(url) {
 
 function analyzeUrl() {
    // Analyze the URL in the input field
-   _analyzeUrl($("#url").val().trim());
+   var q = $("#url").val().trim();
+   addHistory("_analyzeUrl", q);
+   _analyzeUrl(q);
 }
 
-function displayUrl(url) {
-   // Ajax query to the server
-   $("#url").val(url); // Show URL in the input field
-   updateUrlShadow();
+function _displayUrl(url) {
    clearResult();
    // Launch the query
    serverQuery('/display.api',
@@ -711,10 +821,15 @@ function displayUrl(url) {
    );
 }
 
-function submitQuery(q) {
-   // Submit a query to the server
-   $("#url").val(q); // Show the query in the input field
+function displayUrl(url) {
+   // Ask the server to display an already scraped, tokenized and parsed article
+   $("#url").val(url); // Show URL in the input field
    updateUrlShadow();
+   addHistory("_displayUrl", url);
+   _displayUrl(url);
+}
+
+function _submitQuery(q) {
    clearQueryResult();
    // Launch the query
    serverQuery('/query.api',
@@ -723,6 +838,14 @@ function submitQuery(q) {
       null, // completeFunc
       handleQueryError // error Func
    );
+}
+
+function submitQuery(q) {
+   // Submit a query to the server
+   $("#url").val(q); // Show the query in the input field
+   updateUrlShadow();
+   addHistory("_submitQuery", q);
+   _submitQuery(q);
 }
 
 function updateUrlShadow() {
@@ -738,6 +861,26 @@ function scrollUrlShadow() {
    // Keep the scroll positions of the URL input and the shadow in sync
    $("#url-shadow")
       .scrollLeft($("#url").scrollLeft());
+}
+
+function urldecode(s) {
+   return decodeURIComponent(s.replace(/\+/g, '%20'));
+}
+
+function getUrlVars() {
+   // Obtain query parameters from the URL
+   var vars = [];
+   var ix = window.location.href.indexOf('?');
+   if (ix >= 0) {
+      var hash;
+      var hashes = window.location.href.slice(ix + 1).split('&');
+      for (var i = 0; i < hashes.length; i++) {
+         hash = hashes[i].split('=');
+         vars.push(hash[0]);
+         vars[hash[0]] = urldecode(hash[1]);
+      }
+   }
+   return vars;
 }
 
 function initMain(jQuery) {
@@ -770,9 +913,12 @@ function initMain(jQuery) {
       })
       .on('scroll', function(ev) {
          scrollUrlShadow();
-      })
-      // Select all text in the url input field
-      .get(0).setSelectionRange(0, $("#url").val().length);
+      });
+
+   // Initialize the back button
+   $("#back").click(function(ev) { backHistory(); });
+   updateBackButton();
+
    $("div.topitem")
       .click(function(ev) {
          // A top news article has been clicked:
@@ -802,5 +948,14 @@ function initMain(jQuery) {
             recognizer.start();
          });
    }
+
+   // Check whether a query was encoded in the URL
+   var rqVars = getUrlVars();
+   if (rqVars.f !== undefined && rqVars.q !== undefined)
+      // We seem to have a legit query URL
+      navToHistory(rqVars.f, rqVars.q);
+
+   // Select all text in the url input field
+   $("#url").get(0).setSelectionRange(0, $("#url").val().length);
 }
 

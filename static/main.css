@@ -12,11 +12,11 @@
 
 @font-face {
    font-family: 'Glyphicons Regular';
-   src: url('glyphicons-regular.eot');
-   src: url('glyphicons-regular.eot?#iefix') format('embedded-opentype'),
-      url('glyphicons-regular.woff') format('woff'),
-      url('glyphicons-regular.ttf') format('truetype'),
-      url('glyphicons-regular.svg#glyphiconsregular') format('svg');
+   src: url('/fonts/glyphicons-regular.eot');
+   src: url('/fonts/glyphicons-regular.eot?#iefix') format('embedded-opentype'),
+      url('/fonts/glyphicons-regular.woff') format('woff'),
+      url('/fonts/glyphicons-regular.ttf') format('truetype'),
+      url('/fonts/glyphicons-regular.svg#glyphiconsregular') format('svg');
 }
 
 .glyphicon {
@@ -52,6 +52,9 @@
 }
 .glyphicon-file:before {
    content: "\E037";
+}
+.glyphicon-chevron-left:before {
+   content: "\E225";
 }
 
 html {
@@ -89,6 +92,11 @@ div#guide {
    display: none;
 }
 
+span.blue {
+   font-weight: bold;
+   color: #10069F; /* Greynir blue */
+}
+
 .over {
    outline-style: solid;
    outline-color: #FFCC00;
@@ -112,8 +120,6 @@ div.input-overlay {
 
 .text-input {
    display: inline-block;
-   position: absolute;
-   top: 0; left: 0;
    font-family: 'Open Sans', sans-serif;
    font-size: 16px;
    font-weight: normal;
@@ -125,11 +131,14 @@ div.input-overlay {
    padding-bottom: 2px;
    padding-left: 8px;
    padding-right: 8px;
-   width: 676px;
+   width: 632px;
 }
 
 span#url-shadow {
    /* Span behind URL/text input */
+   position: absolute;
+   top: 0;
+   left: 48px;
    border-color: transparent;
    background-color: #FFEEA9; /* Pale Greynir yellow */
    padding-top: 5px;
@@ -149,18 +158,21 @@ span#url-shadow b {
 }
 
 span#url-shadow.with-speech {
-   width: 628px;
+   width: 584px;
 }
 
 input#url {
+   position: absolute;
+   top: 0;
+   left: 48px;
    background-color: transparent;
    border-color: #10069F; /* Greynir blue */
    padding-right: 22px;
-   width: 662px;
+   width: 618px;
 }
 
 input#url.with-speech {
-   width: 614px;
+   width: 570px;
 }
 
 input#url:focus {
@@ -170,7 +182,7 @@ input#url:focus {
 div.btn {
    display: inline-block;
    position: absolute;
-   top: 0; left: 708px;
+   top: 0;
    text-align: center;
    font-size: 16px;
    font-weight: 700;
@@ -191,10 +203,40 @@ div.btn:focus {
    outline-style: none;
 }
 
+div#back {
+   left: 0;
+   width: 24px;
+   height: 20px;
+   color: black;
+   background-color: #e0e0e0;
+   border-width: 2px;
+   border-style: solid;
+   border-color: #e0e0e0;
+}
+
+div#back:hover {
+   background-color: #FFCC00; /* Greynir yellow */
+   color: white;
+   border-color: #FFCC00; /* Greynir yellow */
+}
+
+div.disabled#back {
+   color: #c0c0c0;
+   background-color: #f0f0f0;
+   border-color: #f0f0f0;
+   cursor: default;
+}
+
+div.disabled#back:hover {
+   color: #c0c0c0;
+   background-color: #f0f0f0;
+   border-color: #f0f0f0;
+}
+
 div#microphone {
    display: none;
-   left: 654px;
-   width: 32px;
+   left: 658px;
+   width: 28px;
    height: 20px;
    color: #00B74F; /* Greynir green */;
    background-color: white;
@@ -238,6 +280,7 @@ div#microphone.active:hover {
 }
 
 div#url-ok {
+   left: 708px;
    width: 82px;
    height: 24px;
    background-color: #CB333B; /* Greynir red */
@@ -285,18 +328,6 @@ p.stats {
    text-align: right;
    margin-top: 3px;
    margin-bottom: 3px;
-}
-
-p.tok-info {
-   font-style: italic;
-   margin-top: 0px;
-   margin-bottom: 24px;
-   visibility: hidden;
-   display: none;
-}
-
-p.tok-info span {
-   font-weight: bold;
 }
 
 div.tab-header {
@@ -406,6 +437,7 @@ p#meta-url img {
 }
 
 div#result {
+   margin-bottom: 36px;
 }
 
 div#result i {
@@ -756,6 +788,11 @@ td.parser-start, th.parser-start {
    text-align: right;
 }
 
+div#statistics {
+   display: none;
+   margin-top: 12px;
+}
+
 div#register {
    display: none;
    margin-top: 12px;
@@ -769,10 +806,19 @@ div.reghdr {
    margin-bottom: 6px;
 }
 
-#namelist li {
+#namelist li,
+#statistics ul li {
    margin-top: 3px;
    margin-bottom: 3px;
    line-height: 22px;
+}
+
+#statistics ul li {
+   font-style: italic;
+}
+
+#statistics ul li span {
+   font-weight: bold;
 }
 
 #namelist span.name {
@@ -946,16 +992,24 @@ p.query-empty {
    line-height: 24px;
 }
 
+p.image {
+   margin-top: 24px;
+   margin-bottom: 0px;
+   padding-left: 40px;
+   padding-top: 0;
+   padding-bottom: 0;
+}
+
 div#entity-body ul {
    font-size: 17px;
    font-style: normal;
-   line-height: 24px;
+   line-height: 26px;
 }
 
 div#entity-body ul li {
    margin-top: 3px;
    margin-bottom: 3px;
-   line-height: 22px;
+   line-height: 24px;
 }
 
 #entity-body span.name {

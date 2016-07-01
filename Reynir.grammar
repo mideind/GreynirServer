@@ -746,6 +746,8 @@ OgSögn_sagnb/tala/kyn →
     LoTengtSögn_nf/tala/kyn? FsAtv? OgEðaEn FsAtv? EinSögn_sagnb/tala/kyn
     | LoTengtSögn_nf/tala/kyn? FsAtv? ',' OgEðaEn FsAtv? EinSögn_sagnb/tala/kyn FsAtvKomma?
 
+$score(+6) OgSögn_sagnb/tala/kyn # Enn sterkari plús fyrir runu sagnb
+
 OgSögn_nh/tala/kyn →
     FsAtv? OgEðaEnÞrátt FsAtv? EinSögn_nh/tala/kyn
     | FsAtv? ',' OgEðaEnÞrátt FsAtv? EinSögn_nh/tala/kyn FsAtvKomma?
@@ -841,11 +843,12 @@ HreinSögn_sagnb/tala/kyn →
 
 EinSögn_sagnb/tala/kyn →
     so_0_sagnb NhFylling/tala/kyn?      # Konurnar hafa farið að grilla
+    | So_1_þf_nh_sagnb SagnarBotn       # Konurnar hafa [ekki] látið Pál borða matinn / sagt niðurstöðuna vera ranga
     | Sögn_1_sagnb NhFylling/tala/kyn?  # Konurnar hafa [ekki] lofað Páli [að fara út]
     | Sögn_2_sagnb
 
 # Gefa auka stig hér enda smella þá fleiri en eitt púsl saman
-$score(+4) EinSögn_sagnb/tala/kyn
+$score(+6) EinSögn_sagnb/tala/kyn
 
 # Nafnháttur
 
@@ -1129,6 +1132,16 @@ So_1_þf_nh →
     | 'sjá'_nh
     | 'kveða'_nh
 
+So_1_þf_nh_sagnb →
+    'segja'_gm_sagnb
+    | 'telja'_gm_sagnb
+    | 'láta'_gm_sagnb
+    | 'álíta'_gm_sagnb
+    | 'sjá'_gm_sagnb
+    | 'kveða'_gm_sagnb
+
+$score(+2) So_1_þf_nh_sagnb
+
 SagnarBotn →
     # (Páll segir) mistökin strax valda vanda
     Nl_þf AtvFs? NhRuna
@@ -1208,6 +1221,9 @@ SögnMeðF_1/tala/pers/kyn →
 
     # (Í dag) barst lögreglunni ábending
     | so_mm_op/tala Nl_þgf Nl_nf/tala
+
+    # (Áður) hafði KR látið Jón og Gunnar fara / sagt niðurstöðuna vera ranga
+    | HjSögn/tala/pers Nl_nf/tala/pers So_1_þf_nh_sagnb SagnarBotn
 
 SagnarBotnLhÞt/tala/kyn →
     # (Í dag) verður konan gefin Páli [sjálf]
@@ -1778,14 +1794,20 @@ NlStak_et_p2/fall/kyn →
     'þú'_et/fall FsRunaEftirNl?
 
 NlStak_p1_ft/fall/kyn →
-    'ég'_ft/fall NlStak_p3/fall/kyn? | 'vér'_ft/fall NlStak_ft_p3/fall/kyn? # Við gömlu hjónin, við Sigmundur, vér fóstbræður
+    'ég'_ft/fall NlStakViðbót/fall/kyn? # Við gömlu hjónin, við Sigmundur
+    | 'vér'_ft/fall NlStak_ft_p3/fall/kyn? # Vér fóstbræður
     | NlEind/fall KommaOgEða 'ég'_et/fall # Þú og ég fórum, Jón og ég fórum, stelpurnar og ég fórum
     | 'ég'_et/fall KommaOgEða NlEind/fall # Ég og þú fórum, ég og Jón fórum, ég og stelpurnar fórum
+
+NlStakViðbót/fall/kyn → NlStak_p3/fall/kyn
+
+$score(-6) NlStakViðbót/fall/kyn # Draga af stig fyrir "við fóstbræður" vegna hættu á ruglingi við forsetninguna 'við'
 
 NlStak_ft_p1/fall/kyn → NlStak_p1_ft/fall/kyn FsRunaEftirNl?
 
 NlStak_p2_ft/fall/kyn →
-    'þú'_ft/fall NlStak_ft_p3/fall/kyn? | 'þér'_ft/fall NlStak_ft_p3/fall/kyn? # Þið duglegu strákarnir, þér eplin
+    'þú'_ft/fall NlStak_ft_p3/fall/kyn?
+    | 'þér'_ft/fall NlStak_ft_p3/fall/kyn? # Þið duglegu strákarnir, þér eplin
     | NlEind/fall KommaOgEða 'þú'_et/fall # Jón og þú fóruð, stelpurnar og þú fóruð
     | 'þú'_et/fall KommaOgEða NlEind/fall # Þú og Jón fóruð, þú og stelpurnar fóruð
 
@@ -2007,7 +2029,7 @@ NlStak_p3_et_ef_hk → NlSérnafn
 NlSérnafn → eo* Sérnafn # ekki Nakamoto, örugglega Nelson Mandela
 
 # Forðast að nota sérnöfn sem nafnliði, ef aðrir kostir eru í boði
-$score(-20) NlSérnafn
+$score(-16) NlSérnafn
 
 Sérnafn →
     sérnafn | LangtSérnafn
@@ -2673,10 +2695,10 @@ LoKomma/tala/fall/kyn →
 
 # Fornöfn sem geta hegðað sér eins og lýsingarorð:
 # 'Hann komst sjálfur út úr flakinu', 'Hún fór öll inn um gluggann',
-# 'Þau eru bæði viðskiptafræðingar'
+# 'Þau eru bæði viðskiptafræðingar',  'Það reyndist vera sú sama'
 
 LoFornafn/fall/tala/kyn →
-    'allur'/fall/tala/kyn | 'sjálfur'/fall/tala/kyn | 'báðir'/fall/tala/kyn
+    'allur'/fall/tala/kyn | 'sjálfur'/fall/tala/kyn | 'báðir'/fall/tala/kyn | 'sami'/fall/tala/kyn
 
 # Lýsingarorð sem andlag sagnar
 # Þar kemur til greina miðstig + 'en' + nafnliður
@@ -2910,6 +2932,7 @@ Dagsetning →
     | Vikudagur_þf_et dags 'næstkomandi'_et_kk_þf? # 'föstudaginn 29. júlí [næstkomandi]'
     | 'næstkomandi'_et_kk_þf Vikudagur_þf_et # 'næstkomandi fimmtudag'
     | 'síðastliðinn'_et_kk_þf Vikudagur_þf_et # 'síðastliðinn fimmtudag'
+    | 'á_morgun' ','? Vikudagur_þf_et # á morgun, miðvikudag
 
     | DagsFs_þf? 'sá'_et_kk_þf? tímapunktur # '[eftir] [þann] 3. júlí 2007 kl. 13:00'
     | DagsFs_þgf tímapunktur # 'frá 3. júlí 2007 kl. 13:00'
@@ -3094,6 +3117,12 @@ QPerson →
     | QPersonPrefix_þf Manneskja_þf '?'?
     | QPersonPrefix_þgf Manneskja_þgf # '?'?
     | QPersonPrefix_ef Manneskja_ef '?'?
+    | QPersonPrefixAny Sérnafn '?'?
+
+QPersonPrefixAny →
+    QPersonPrefix/fall
+
+$score(-2) QPersonPrefixAny # Discourage entity names if person names are available
 
 QPersonPrefix_nf →
     "hver" "er"

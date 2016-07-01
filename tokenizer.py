@@ -476,7 +476,7 @@ def parse_tokens(txt):
                     # abbreviations; also apostrophes are allowed within words
                     # (O'Malley, Mary's, it's, childrens')
                     i += 1
-                if w[i-1] == '.':
+                while w[i-1] == '.':
                     # Don't eat periods at the end of words
                     i -= 1
                 yield TOK.Word(w[0:i], None)

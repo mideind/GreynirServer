@@ -21,7 +21,7 @@ from collections import OrderedDict, defaultdict
 
 from flask import Flask
 from flask import render_template, make_response, jsonify
-from flask import request
+from flask import request, send_from_directory
 
 from fastparser import Fast_Parser, ParseError, ParseForestPrinter, ParseForestDumper
 from ptest import run_test, Test_DB
@@ -32,6 +32,7 @@ from scraperdb import SessionContext, Person, Article, desc
 from settings import Settings, ConfigError, changedlocale
 from tokenizer import tokenize, TOK, correct_spaces
 from query import Query
+from getimage import get_image_url
 
 # Initialize Flask framework
 
@@ -61,9 +62,11 @@ _DEFAULT_TEXTS = [
     'Segðu mér frá Sigríði Ingibjörgu Ingadóttur',
     'Hver er forstjóri Landsvirkjunar?',
     'Hver gegnir starfi forstjóra Orkuveitu Reykjavíkur?',
-    'Hver er Þjóðleikhússtjóri?',
+    'Hver er þjóðleikhússtjóri?',
     'Hver er fyrirliði íslenska landsliðsins?',
-    'Hver er forsetaframbjóðandi?'
+    'Hver er forsetaframbjóðandi?',
+    'Hver er Trayvon Martin?',
+    'Hver er forstjóri Google?'
 ]
 
 # Default number of top news items to show in front page list
@@ -410,7 +413,14 @@ def process_query(session, toklist, result):
     # Successful query: return the answer in response
     result["response"] = q.answer()
     # ...and the query type, as a string ('Person', 'Entity', 'Title' etc.)
-    result["qtype"] = q.qtype()
+    result["qtype"] = qt = q.qtype()
+    if qt == "Person":
+        # For a person query, add an image (if available)
+        img = get_image_url(q.key())
+        if img is not None:
+            result["image"] = dict(src = img.src,
+                width = img.width, height = img.height,
+                link = img.link, origin = img.origin)
     return True
 
 
@@ -863,6 +873,16 @@ def main():
     resp.cache_control.max_age = 60
     return resp
 
+@app.route("/bs", methods=['GET', 'POST'])
+def main_bootstrap():
+    """ Handler for the main (index) page """
+
+    txt = request.args.get("txt", None) or request.form.get("url", None)
+    if not txt:
+        # Select a random default text
+        txt = _DEFAULT_TEXTS[random.randint(0, len(_DEFAULT_TEXTS) - 1)]
+    return render_template("main-bootstrap.html", default_text = txt)
+
 @app.route("/test")
 def test():
     """ Handler for a page of sentences for testing """
@@ -873,6 +893,10 @@ def test():
 
 
 # Flask handlers
+
+@app.route('/fonts/<path:path>')
+def send_font(path):
+    return send_from_directory('fonts', path)
 
 # noinspection PyUnusedLocal
 @app.errorhandler(404)

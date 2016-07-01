@@ -174,7 +174,7 @@ class BIN_Token(Token):
 
     # Words that are not eligible for interpretation as proper names, even if they are capitalized
     _NOT_PROPER_NAME = frozenset(["ég", "þú", "hann", "hún", "það", "við", "þið", "þau",
-        "þeir", "þær", "mér", "mig", "mín", "þig", "þér", "þín", "þeim", "þeirra",
+        "þeir", "þær", "mér", "mig", "mín", "þig", "þér", "þín", "þeim", "þeirra", "þetta", "þessi",
         "í", "á", "af", "um", "að", "með", "til", "frá", "búist", "annars"])
 
     # Numbers that can be used in the singular even if they are nominally plural.
@@ -679,7 +679,7 @@ class BIN_Token(Token):
             # as abbreviations to Main.conf is recommended
             return self.t1 in {
                 "ehf.", "ehf", "hf.", "hf",
-                "bs.", "bs", "sf.", "sf", "slhf.", "slhf", "slf.", "slf",
+                "bs.", "bs", "sf.", "sf", "slhf.", "slhf", "slf.", "slf", "ohf.", "ohf",
                 "Inc", "Inc.", "Incorporated",
                 "Corp", "Corp.", "Corporation",
                 "Ltd", "Ltd.", "Limited",
@@ -957,19 +957,12 @@ class BIN_LiteralTerminal(VariantHandler, LiteralTerminal):
         """ A literal terminal matches a token if the token text is identical to the literal """
         #print("LiteralTerminal.matches_first: parts[0] is '{0}', t_val is '{1}'"
         #    .format(self._parts[0], t_val))
-        if self._strong:
-            # Absolute literal match
-            return self._first == t_lit
-        return self._first == t_val
+        return (self._first == t_lit) if self._strong else (self._first == t_val)
 
     def matches(self, t_kind, t_val, t_lit):
         """ A literal terminal matches a token if the token text is
             canonically or absolutely identical to the literal """
-        if self._strong:
-            # Absolute literal match
-            return self._first == t_lit
-        # Canonical match of stems or prototypes
-        return self._first == t_val
+        return (self._first == t_lit) if self._strong else (self._first == t_val)
 
 
 class BIN_Grammar(Grammar):
@@ -1054,16 +1047,16 @@ class BIN_Parser(Base_Parser):
                 if tok[0] == TOK.PUNCTUATION and tok[1] == ')':
                     # Check the contents of the token list from left+1 to right-1
 
-                    # Skip parentheses starting with "e." (English)
-                    english = right > left + 1 and tlist[left + 1][1] == "e."
+                    # Skip parentheses starting with "e." (English), "þ." (German) or "d." (Danish)
+                    foreign = right > left + 1 and tlist[left + 1][1] in { "e.", "d.", "þ." }
 
                     def is_unknown(t):
                         """ A token is unknown if it is a TOK.UNKNOWN or if it is a
                             TOK.WORD with no meanings """
-                        UNKNOWN = { "e.", "t.d.", "þ.e.", "m.a." } # Abbreviations and stuff that we ignore inside parentheses
+                        UNKNOWN = { "e.", "d.", "þ.", "t.d.", "þ.e.", "m.a." } # Abbreviations and stuff that we ignore inside parentheses
                         return t[0] == TOK.UNKNOWN or (t[0] == TOK.WORD and not t[2]) or t[1] in UNKNOWN
 
-                    if english or all(is_unknown(t) for t in tlist[left+1:right]):
+                    if foreign or all(is_unknown(t) for t in tlist[left+1:right]):
                         # Only unknown tokens: erase'em, including the parentheses
                         for ix in range(left, right + 1):
                             tlist[ix] = None
