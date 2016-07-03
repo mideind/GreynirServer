@@ -182,9 +182,7 @@ class Result:
         """ Enumerate the child parameters of this node, yielding (child_node, result)
             where the child node meets the given test, if any """
         if self._params:
-            child_nodes = self._node.children()
-            for p in self._params:
-                c = next(child_nodes)
+            for p, c in zip(self._params, self._node.children()):
                 if test_f is None or test_f(c):
                     yield (c, p)
 
@@ -192,9 +190,7 @@ class Result:
         """ Enumerate the descendant parameters of this node, yielding (child_node, result)
             where the child node meets the given test, if any """
         if self._params:
-            child_nodes = self._node.children()
-            for p in self._params:
-                c = next(child_nodes)
+            for p, c in zip(self._params, self._node.children()):
                 for d_c, d_p in p.enum_descendants(test_f):
                     yield (d_c, d_p)
                 if test_f is None or test_f(c):

@@ -114,7 +114,7 @@ def sentence(state, result):
 INVALID_TITLES = {
     "sig", "væri", "orðið", "ávísun", "hér heima", "lán", "úr láni", "bar", "ver",
     "bætir", "býr", "get", "vera", "eiga", "var", "búa", "setur", "heggur", "átt",
-    "keppa", "rétt", "ráðning", "sætti", "hlaut"
+    "keppa", "rétt", "ráðning", "sætti", "hlaut", "mynd", "myndband"
 }
 
 def _add_name(result, mannsnafn, titill):
@@ -135,11 +135,12 @@ def _add_name(result, mannsnafn, titill):
             titill = titill[:-2]
             cut = True
         # Cut off common endings that don't belong in a title
-        for s in ("í tilkynningu", "í fjölmiðlum", "í samtali", "í Kastljósi", "í þættinum"):
+        for s in ("í tilkynningu", "í fjölmiðlum", "í samtali", "í viðtali",
+            "í Kastljósi", "í þættinum"):
             if titill.endswith(s):
                 titill = titill[:-1 -len(s)]
                 cut = True
-    if len(titill) <= 2 or titill in INVALID_TITLES:
+    if len(titill) <= 2 or titill.lower() in INVALID_TITLES:
         # Last security check
         return False
     if "nöfn" not in result:

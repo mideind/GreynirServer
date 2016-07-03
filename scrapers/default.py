@@ -63,6 +63,11 @@ class ScrapeHelper:
             timestamp = datetime.utcnow(), authority = self.authority,
             icon = self.icon)
 
+    @staticmethod
+    def _get_body(soup):
+        """ Can be overridden in subclasses in special situations """
+        return soup.html.body
+
     def get_content(self, soup):
         """ Find the actual article content within an HTML soup and return its parent node """
         if not soup or not soup.html or not soup.html.body:
@@ -70,11 +75,11 @@ class ScrapeHelper:
             print("get_content returning None")
             return None
         if hasattr(self, "_get_content"):
-            content = self._get_content(soup.html.body)
+            content = self._get_content(self._get_body(soup))
         else:
             content = None
         # By default, return the entire body
-        return content or soup.html.body
+        return content or self._get_body(soup)
 
     @property
     def icon(self):
@@ -121,17 +126,16 @@ class ScrapeHelper:
         # Handle both potentially multi-valued attrs (for instance multiple classes on a div),
         # and multi-valued attr_vals (for instance more than one class that should be present)
         if isinstance(a, str):
-            check = lambda x: x == a
-        else:
-            check = lambda x: x in a
+            a = set(a.split())
         if isinstance(attr_val, str):
-            return check(attr_val)
-        return all(check(v) for v in attr_val)
+            return attr_val in a
+        return all(v in a for v in attr_val)
 
     @staticmethod
-    def meta_property_filter(tag, prop_val):
+    def meta_property_filter(tag, prop_val, prop_attr = "property"):
         """ Filter function for meta properties in HTML documents """
-        return ScrapeHelper.general_filter(tag, "meta", "property", prop_val)
+        # By default, catch <meta property='prop_val' content='X'>
+        return ScrapeHelper.general_filter(tag, "meta", prop_attr, prop_val)
 
     @staticmethod
     def div_class_filter(tag, cls):
@@ -144,9 +148,9 @@ class ScrapeHelper:
         return ScrapeHelper.general_filter(tag, "div", "id", div_id)
 
     @staticmethod
-    def meta_property(soup, property_name):
+    def meta_property(soup, property_name, prop_attr = "property"):
         try:
-            f = lambda tag: ScrapeHelper.meta_property_filter(tag, property_name)
+            f = lambda tag: ScrapeHelper.meta_property_filter(tag, property_name, prop_attr)
             mp = soup.html.head.find(f)
             if not mp:
                 print("meta property {0} not found in soup.html.head".format(property_name))
@@ -156,11 +160,16 @@ class ScrapeHelper:
             return None
 
     @staticmethod
-    def tag_class(soup, tag, cls):
-        """ Find a tag of a given type with a particular class """
+    def tag_prop_val(soup, tag, prop, val):
+        """ Find a tag of a given type with an attribute having the specified value """
         if not soup:
             return None
-        return soup.find(lambda t: ScrapeHelper.general_filter(t, tag, "class", cls))
+        return soup.find(lambda t: ScrapeHelper.general_filter(t, tag, prop, val))
+
+    @staticmethod
+    def tag_class(soup, tag, cls):
+        """ Find a tag of a given type with a particular class """
+        return ScrapeHelper.tag_prop_val(soup, tag, "class", cls)
 
     @staticmethod
     def div_class(soup, *argv):
@@ -451,8 +460,60 @@ class VisirScraper(ScrapeHelper):
 
     """ Scraping helper for Visir.is """
 
+    _SKIP_PREFIXES = [
+        "/english/",
+        "/section/RAD/",
+        "/section/MEDIA"
+    ]
+
     def __init__(self, root):
         super().__init__(root)
+
+    def skip_url(self, url):
+        """ Return True if this URL should not be scraped """
+        s = urlparse.urlsplit(url)
+        if s.path:
+            for prefix in self._SKIP_PREFIXES:
+                if s.path.startswith(prefix):
+                    return True
+        return False # Scrape all URLs by default
+
+    def get_metadata(self, soup):
+        """ Analyze the article soup and return metadata """
+        metadata = super().get_metadata(soup)
+        # Extract the heading from the OpenGraph (Facebook) og:title meta property
+        heading = ScrapeHelper.meta_property(soup, "og:title") or ""
+        heading = self.unescape(heading)
+        if heading.startswith("Vísir - "):
+            heading = heading[8:]
+        timestamp = ScrapeHelper.tag_prop_val(soup, "meta", "itemprop", "datePublished")
+        timestamp = timestamp["content"] if timestamp else None
+        timestamp = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S") if timestamp else None
+        if timestamp is None:
+            timestamp = datetime.utcnow()
+        author = ScrapeHelper.tag_prop_val(soup, "a", "itemprop", "author")
+        author = author.string if author else "Ritstjórn visir.is"
+        metadata.heading = heading
+        metadata.author = author
+        metadata.timestamp = timestamp
+        return metadata
+
+    @staticmethod
+    def _get_body(soup):
+        """ Hack to fix bug in visir.is HTML: must search entire
+            document, not just the html body """
+        return soup
+
+    def _get_content(self, soup_body):
+        """ Find the article content (main text) in the soup """
+        soup = ScrapeHelper.div_class(soup_body, "articlewrapper")
+        if soup:
+            # Delete div.media from the content
+            ScrapeHelper.del_div_class(soup, "media")
+        if soup:
+            # Delete div.meta from the content
+            ScrapeHelper.del_div_class(soup, "meta")
+        return soup
 
 
 class EyjanScraper(ScrapeHelper):
@@ -547,4 +608,53 @@ class StjornlagaradScraper(ScrapeHelper):
         if soup is not None:
             soup.decompose()
         return soup_body
+
+
+class StjornarradScraper(ScrapeHelper):
+
+    """ Scraping helper for the webs of Icelandic ministries """
+
+    def __init__(self, root):
+        super().__init__(root)
+
+    def skip_url(self, url):
+        """ Return True if this URL should not be scraped """
+        s = urlparse.urlsplit(url)
+        if not s.path:
+            return True
+        if s.path.startswith("/bitar/"):
+            return True
+        return False
+
+    def get_metadata(self, soup):
+        metadata = super().get_metadata(soup)
+        body = ScrapeHelper.div_class(soup, "pgmain", "article", "boxbody")
+        metadata.heading = body.h1.string if body and body.h1 else ""
+        date = ScrapeHelper.tag_prop_val(body, "span", "class", "date")
+        if date is not None:
+            metadata.timestamp = datetime.strptime(date.string, "%d.%m.%Y")
+        metadata.author = "Stjórnarráð Íslands"
+        return metadata
+
+    def _get_content(self, soup_body):
+        """ Find the article content (main text) in the soup """
+        soup = ScrapeHelper.div_class(soup_body, "pgmain", "article", "boxbody")
+        if not soup:
+            return soup_body
+        # Delete h1
+        if soup.h1:
+            soup.h1.decompose()
+        # Delete date
+        date = ScrapeHelper.tag_prop_val(soup, "span", "class", "date")
+        if date is not None:
+            date.decompose()
+        # Delete div.imgbox
+        imgbox = ScrapeHelper.div_class(soup, "imgbox")
+        if imgbox is not None:
+            imgbox.decompose()
+        # Delete div.buttons
+        buttons = ScrapeHelper.div_class(soup, "buttons")
+        if buttons is not None:
+            buttons.decompose()
+        return soup
 

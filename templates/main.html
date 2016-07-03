@@ -17,7 +17,9 @@
 
    <div class="input">
 
-      <p class="header"><a href="{{ url_for('main') }}"><img src="{{ url_for('static', filename='GreynirLogo404x180.png') }}" width=202 height=90></a></p>
+      <p class="header"><a href="{{ url_for('main') }}"><img
+         src="{{ url_for('static', filename='GreynirLogo404x180.png') }}"
+         width=202 height=90 alt="Greynir"></a></p>
 
       <p class="author">málgreinir fyrir íslensku<br>
       <b>alfa-prófunarútgáfa</b><br>
@@ -130,7 +132,7 @@
          </div>
 
          <!-- Spinner that appears while the analysis is in progress -->
-         <div id="result-wait" class="wait">Málgreining<br>í gangi...<br><br><img src="/static/wait.gif" width="48" height="48" /></div>
+         <div id="result-wait" class="wait">Málgreining<br>í gangi...<br><br><img src="/static/wait.gif" width="48" height="48" alt="Bíðið..." /></div>
 
       </div>
 
@@ -138,7 +140,7 @@
          <!-- List of people in the news goes here -->
          <div id="plist">
 {% for person in persons %}
-   <div class="topitem" url="{{ person.url }}"><!--
+   <div class="topitem" data-url="{{ person.url }}"><!--
    --><span class="name">{{ person.name }}</span><!--
    --><span class="title">{{ person.title }}</span><!--
    --></div>
@@ -150,10 +152,10 @@
          <!-- List of recent top news goes here -->
          <div id="toplist">
 {% for article in articles %}
-   <div class="topitem" url="{{ article.url }}"><!--
+   <div class="topitem" data-url="{{ article.url }}"><!--
    --><span class="timestamp">{{ article.timestamp }}</span><!--
-   --><span class="ratio" title="{{ article.width }} trjágreind"><div class="ratio-num" style="width:{{ article.width }}">&nbsp;</div></span><!--
-   --><img src="/static/{{ article.icon }}" width="16" height="16"/><!--
+   --><span class="ratio" title="{{ article.width }} trjágreind"><span class="ratio-num" style="width:{{ article.width }}">&nbsp;</span></span><!--
+   --><img src="/static/{{ article.icon }}" width="16" height="16" alt="{{ article.icon }}"/><!--
    --><span class="heading">{{ article.heading }}</span><!--
    --></div>
 {% endfor %}
@@ -172,7 +174,7 @@
                <i>Hvað er HeForShe?</i></p>
             </div>
          </div>
-         <div id="entity-wait" class="wait">Fyrirspurn í vinnslu...<br><br><img src="/static/wait.gif" width="48" height="48" /></div>
+         <div id="entity-wait" class="wait">Fyrirspurn í vinnslu...<br><br><img src="/static/wait.gif" width="48" height="48" alt="Bíðið..." /></div>
       </div>
 
    </div> <!-- tab-area -->

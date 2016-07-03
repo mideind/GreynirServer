@@ -688,7 +688,7 @@ function populateQueryResult(json) {
                var u = urlList[i];
                artList.append($("<span class='art-link'></span>")
                   .attr("title", u[2])
-                  .attr("url", u[1])
+                  .attr("data-url", u[1])
                   .html($("<img width='16' height='16'></img>").attr("src", "/static/" + u[0] + ".ico"))
                );
             }
@@ -707,7 +707,7 @@ function populateQueryResult(json) {
    $("#entity-body span.name").click(showPerson);
    $("span.art-link").click(function(ev) {
       // Show a source article
-      displayUrl($(this).attr("url"));
+      displayUrl($(this).attr("data-url"));
    });
 }
 
@@ -923,7 +923,7 @@ function initMain(jQuery) {
       .click(function(ev) {
          // A top news article has been clicked:
          // post a form to the main page with its URL
-         var url = $(this).attr("url");
+         var url = $(this).attr("data-url");
          displayUrl(url);
       });
    $("div.tab-header span.tab")

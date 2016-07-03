@@ -7,7 +7,18 @@
     All rights reserved
     See the accompanying README.md file for further licensing and copyright information.
 
-    This module is written in Python 3 for Python 3.4
+    This module is written in Python 3
+
+    This module reads and interprets the Reynir.conf configuration file.
+    The file can include other files using the $include directive,
+    making it easier to arrange configuration sections into logical
+    and manageable pieces.
+
+    Sections are identified like so: [ SectionName ]
+
+    Comments start with # signs.
+
+    Sections are interpreted by section handlers.
 
 """
 
@@ -196,8 +207,7 @@ class VerbObjects:
         if la > 0 and args[-1].startswith("$score(") and args[-1].endswith(")"):
             # There is an associated score with this verb form, to be taken
             # into consideration by the reducer
-            s = args[-1][7:]
-            s = s[0:-1]
+            s = args[-1][7:-1]
             try:
                 score = int(s)
             except ValueError:
@@ -424,7 +434,7 @@ class UnknownVerbs:
         with cls._lock:
             if not cls._unknown:
                 return
-            vl = sort_strings(list(cls._unknown), ('is_IS', 'UTF-8'))
+            vl = sort_strings(list(cls._unknown))
             with codecs.open(cls._FILE, "w", "utf-8") as f:
                 for line in vl:
                     if line:

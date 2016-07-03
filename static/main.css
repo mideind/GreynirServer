@@ -919,7 +919,7 @@ div.topitem img {
    margin-right: 12px;
 }
 
-span.ratio div.ratio-num {
+span.ratio span.ratio-num {
    display: inline-block;
    white-space: nowrap;
    overflow: hidden;

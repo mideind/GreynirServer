@@ -108,6 +108,8 @@ Forskeyti →
 
 AfTala → "af" tala
 
+$score(-6) Forskeyti # Ekki freistast í forskeyti ef annað er í boði
+
 Lokatákn → '.' | '?' | ':' | '!' | '(' '!' ')'
 LokatáknEðaKomma → Lokatákn | ','
 
@@ -269,6 +271,8 @@ $score(+2) SagnKomma/tala/pers/kyn
 
 SagnInnskot →
     FsAtv
+
+$score(+2) SagnInnskot
 
 SagnViðhengi/tala/pers/kyn →
     KommaOgEðaEn SagnRuna/tala/pers/kyn
@@ -1617,6 +1621,8 @@ NhFyllingEðaAtv →
 # 'að sigla skipinu í land strax'
 NhLiður →
     nhm NhRuna
+
+$score(+1) NhLiður
 
 NhLiðurFrh →
     FsAtv? NhLiður

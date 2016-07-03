@@ -91,10 +91,19 @@ def EfLiður(node, params, result):
     result.ef_nom = result._nominative
     result.ef_text = result._text
 
+def Tengiliður(node, params, result):
+    """ Tengiliður ("sem" setning) """
+    result.del_attribs(("ef_nom", "ef_text"))
+
+def SvigaInnihald(node, params, result):
+    """ Tengiliður ("sem" setning) """
+    result.del_attribs(("ef_nom", "ef_text"))
+
+
 def Setning(node, params, result):
     """ Meðhöndla setningar á forminu 'eitthvað einhvers fsliðir* er-sögn eitthvað' """
 
-    return # !!! TODO - DEBUG
+    #return # !!! TODO - DEBUG
 
     frumlag = result.find_child(nt_base = "Nl", variant = "nf")
     if not frumlag:
@@ -107,7 +116,6 @@ def Setning(node, params, result):
     if not einhvers:
         return
 
-    #print("Einhvers er {0}".format(einhvers))
 
     fsliðir = result.all_children(nt_base = "FsAtv")
     sagnruna = result.find_child(nt_base = "SagnRuna")
@@ -115,7 +123,8 @@ def Setning(node, params, result):
     if not sagnruna:
         return
 
-    #print("Sagnruna er {0}".format(sagnruna._text))
+    print("Frumlag er '{0}', einhvers er '{1}'".format(frumlag._text, einhvers))
+    print("Sagnruna er '{0}'".format(sagnruna._text))
 
     sögn = sagnruna.find_descendant(nt_base = "Sögn", variant = "1")
 
@@ -124,7 +133,7 @@ def Setning(node, params, result):
 
     sagnorð = sögn.find_descendant(t_base = "so")
 
-    #print("Sagnorð er {0}".format(sagnorð._text))
+    print("Sagnorð er '{0}'".format(sagnorð._text))
 
     if not sagnorð or sagnorð._text not in { "er", "eru", "var", "voru", "sé", "séu" }:
         return
@@ -134,11 +143,11 @@ def Setning(node, params, result):
     if not andlag:
         return
 
-    #print("Andlag er {0}".format(andlag._text))
+    print("Andlag er '{0}'".format(andlag._text))
 
     # Reikna út endanlegt frumlag
     frumlag_text = frumlag._text
-    #print("Frumlag_text er '{0}', frumlag.ef_text er '{1}'".format(frumlag_text, frumlag.ef_text))
+    print("Frumlag_text er '{0}', frumlag.ef_text er '{1}'".format(frumlag_text, frumlag.ef_text))
     frumlag_text = frumlag_text[:-1 -len(frumlag.ef_text)]
 
     # Halda forsetningarliðum til haga
@@ -146,5 +155,5 @@ def Setning(node, params, result):
     if fsliðir:
         qual = " (" + ", ".join(f._text for f in fsliðir) + ")"
 
-    #print("'{0}'->'{1}'{2} {4} '{3}'".format(einhvers, frumlag_text, qual, andlag._text, sagnorð._text))
+    print("'{0}'->'{1}'{2} {4} '{3}'".format(einhvers, frumlag_text, qual, andlag._text, sagnorð._text))
 

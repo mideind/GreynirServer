@@ -4,7 +4,7 @@
 
     Scraper module
 
-    Copyright (c) 2015 Vilhjalmur Thorsteinsson
+    Copyright (c) 2016 Vilhjalmur Thorsteinsson
     All rights reserved
     See the accompanying README.md file for further licensing and copyright information.
 
@@ -17,7 +17,6 @@
 
 """
 
-
 import re
 import sys
 import getopt
@@ -28,7 +27,8 @@ import importlib
 #from multiprocessing.dummy import Pool
 from multiprocessing import Pool
 
-import urllib.request
+#import urllib.request
+import requests
 import urllib.parse as urlparse
 from urllib.error import HTTPError
 #from http.client import HTTPSConnection
@@ -76,7 +76,7 @@ class Scraper:
         "form", "option", "input", "label",
         "figure", "figcaption", "footer"])
 
-    _WHITESPACE_TAGS = frozenset(["br", "img"])
+    _WHITESPACE_TAGS = frozenset(["img"]) # <br> was here but now handled separately
 
     # Cache of instantiated scrape helpers
     _helpers = dict()
@@ -142,6 +142,11 @@ class Scraper:
             else:
                 self._result.append(" ]] ")
 
+        def insert_break(self):
+            """ Used to cut paragraphs at <br> tags """
+            if self._nesting == 0:
+                self._result.append(" ]] [[ ")
+
         def result(self):
             assert self._nesting == 0
             return "".join(self._result)
@@ -158,8 +163,10 @@ class Scraper:
             elif isinstance(t, NavigableString):
                 # Comment, CDATA or other text data: ignore
                 pass
+            elif t.name == "br":
+                result.insert_break()
             elif t.name in Scraper._WHITESPACE_TAGS:
-                # Tags that we interpret as whitespace, such as <br> and <img>
+                # Tags that we interpret as whitespace, such as <img>
                 result.append_whitespace()
             elif t.name in Scraper._BLOCK_TAGS:
                 # Nested block tag
@@ -195,35 +202,45 @@ class Scraper:
         html_doc = None
         try:
 
-            def open_url(url):
-                """ Open an HTTP or HTTPS URL and return a response object """
-                u = urlparse.urlsplit(url)
-                if u.scheme not in { "http", "https" }:
-                    raise HTTPError("Unsupported protocol: " + u.scheme)
-                if u.scheme == "https":
-                    #context = SSLContext(PROTOCOL_SSLv23)
-                    #context.set_default_verify_paths()
-                    #context.verify_mode = CERT_OPTIONAL
-                    return urllib.request.urlopen(url)
-                return urllib.request.urlopen(url)
+            r = requests.get(url)
+            if r.status_code == requests.codes.ok:
+                html_doc = r.text
+            else:
+                print("HTTP status {0} for URL {1}".format(r.status_code, url))
 
-            with closing(open_url(url)) as response:
-                if response:
-                    # Decode the HTML Content-type header to obtain the
-                    # document type and the charset (content encoding), if specified
-                    encoding = 'ISO-8859-1'
-                    ctype = response.getheader("Content-type", "")
-                    if ';' in ctype:
-                        s = ctype.split(';')
-                        ctype = s[0]
-                        enc = s[1].strip()
-                        s = enc.split('=')
-                        if s[0] == "charset" and len(s) == 2:
-                            encoding = s[1]
-                    if ctype == "text/html":
-                        html_doc = response.read() # html_doc is a bytes object
-                        if html_doc:
-                            html_doc = html_doc.decode(encoding)
+            #def open_url(url):
+            #    """ Open an HTTP or HTTPS URL and return a response object """
+            #    u = urlparse.urlsplit(url)
+            #    if u.scheme not in { "http", "https" }:
+            #        raise HTTPError("Unsupported protocol: " + u.scheme)
+            #    if u.scheme == "https":
+            #        #context = SSLContext(PROTOCOL_SSLv23)
+            #        #context.set_default_verify_paths()
+            #        #context.verify_mode = CERT_OPTIONAL
+            #        return urllib.request.urlopen(url)
+            #    return urllib.request.urlopen(url)
+
+            #with closing(open_url(url)) as response:
+            #    if response:
+            #        # Decode the HTML Content-type header to obtain the
+            #        # document type and the charset (content encoding), if specified
+            #        encoding = 'ISO-8859-1'
+            #        ctype = response.getheader("Content-type", "")
+            #        if ';' in ctype:
+            #            s = ctype.split(';')
+            #            ctype = s[0]
+            #            enc = s[1].strip()
+            #            s = enc.split('=')
+            #            if s[0] == "charset" and len(s) == 2:
+            #                encoding = s[1]
+            #        if ctype == "text/html":
+            #            html_doc = response.read() # html_doc is a bytes object
+            #            if html_doc:
+            #                html_doc = html_doc.decode(encoding)
+
+        except requests.exceptions.ConnectionError as e:
+            print("{0}".format(e))
+            html_doc = None
         except HTTPError as e:
             print("HTTPError returned: {0}".format(e))
             html_doc = None
@@ -270,7 +287,7 @@ class Scraper:
                 continue
             # Split the href into its components
             s = urlparse.urlsplit(href)
-            if s.scheme and s.scheme not in ['http', 'https']:
+            if s.scheme and s.scheme not in { 'http', 'https' }:
                 # Not HTTP
                 continue
             if s.netloc and not s.netloc.startswith(root.domain):
@@ -292,7 +309,7 @@ class Scraper:
                 s.netloc or root_s.netloc, newpath, s.query, '')
             # Make a complete new URL to fetch
             url = urlparse.urlunsplit(newurl)
-            if url in [root_url, root_url_slash]:
+            if url in { root_url, root_url_slash }:
                 # Exclude the root URL
                 continue
             # Looks legit: add to the fetch set
@@ -401,7 +418,7 @@ class Scraper:
         print("Parsing article {0}".format(url))
 
         # Load the article
-        with SessionContext() as session:
+        with SessionContext(commit = True) as session:
 
             article = session.query(Article).filter_by(url = url).one()
 
@@ -497,7 +514,7 @@ class Scraper:
 
             Scraper.store_failures(session, url, failures)
 
-            session.commit()
+            # Session is automatically committed
 
         print("Parsing of {2}/{1} sentences completed in {0:.2f} seconds".format(parse_time, num_sent, num_parsed_sent))
 
@@ -525,7 +542,6 @@ class Scraper:
         """ Return a scraped article object, if found, else None """
         article = None
         with SessionContext(enclosing_session, commit = True) as session:
-            # noinspection PyBroadException
             article = session.query(Article).filter_by(url = url) \
                 .filter(Article.scraped != None).one_or_none()
         return article
@@ -679,7 +695,7 @@ class Scraper:
         version = Scraper.parser_version()
 
         # Go through the roots and scrape them, inserting into the articles table
-        with SessionContext() as session:
+        with SessionContext(commit = True) as session:
 
             if not reparse:
 
@@ -837,29 +853,28 @@ def init_roots():
 
         db.create_tables()
 
+        ROOTS = [
+            # Root URL, top-level domain, description, authority
+            ("http://kjarninn.is", "kjarninn.is", "Kjarninn", 1.0, "scrapers.default", "KjarninnScraper"),
+            ("http://www.ruv.is", "ruv.is", "RÚV", 1.0, "scrapers.default", "RuvScraper"),
+            ("http://www.visir.is", "visir.is", "Vísir", 0.8, "scrapers.default", "VisirScraper"),
+            ("http://www.mbl.is/frettir/", "mbl.is", "Morgunblaðið", 0.6, "scrapers.default", "MblScraper"),
+            ("http://eyjan.pressan.is", "eyjan.pressan.is", "Eyjan", 0.4, "scrapers.default", "EyjanScraper"),
+            ("http://stjornlagarad.is", "stjornlagarad.is", "Stjórnlagaráð", 1.0, "scrapers.default", "StjornlagaradScraper"),
+            ("https://www.forsaetisraduneyti.is", "forsaetisraduneyti.is", "Forsætisráðuneyti", 1.0, "scrapers.default", "StjornarradScraper")
+        ]
+
         with SessionContext() as session:
-
-            ROOTS = [
-                # Root URL, top-level domain, description, authority
-                ("http://kjarninn.is", "kjarninn.is", "Kjarninn", 1.0, "scrapers.default", "KjarninnScraper"),
-                ("http://www.ruv.is", "ruv.is", "RÚV", 1.0, "scrapers.default", "RuvScraper"),
-                # ("http://www.visir.is", "visir.is", "Vísir", 0.8, "scrapers.default", "VisirScraper"),
-                ("http://www.mbl.is/frettir/", "mbl.is", "Morgunblaðið", 0.6, "scrapers.default", "MblScraper"),
-                ("http://eyjan.pressan.is", "eyjan.pressan.is", "Eyjan", 0.4, "scrapers.default", "EyjanScraper"),
-                ("http://stjornlagarad.is", "stjornlagarad.is", "Stjórnlagaráð", 1.0, "scrapers.default", "StjornlagaradScraper")
-            ]
-
             for url, domain, description, authority, scr_module, scr_class in ROOTS:
                 r = Root(url = url, domain = domain, description = description, authority = authority,
                     scr_module = scr_module, scr_class = scr_class)
                 session.add(r)
-
-            try:
-                # Commit the inserts
-                session.commit()
-            except IntegrityError as e:
-                # The roots already exist: roll back and continue
-                session.rollback()
+                try:
+                    # Commit the insert
+                    session.commit()
+                except IntegrityError as e:
+                    # The root already exist: roll back and continue
+                    session.rollback()
 
             rlist = session.query(Root).all()
             print("Roots initialized as follows:")
