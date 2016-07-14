@@ -974,7 +974,7 @@ div#entity {
    margin-bottom: 32px;
 }
 
-p.query {
+h3.query {
    font-size: 17px;
    font-style: italic;
    font-weight: bold;

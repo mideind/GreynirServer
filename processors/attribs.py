@@ -133,7 +133,8 @@ def Setning(node, params, result):
 
     sagnorð = sögn.find_descendant(t_base = "so")
 
-    print("Sagnorð er '{0}'".format(sagnorð._text))
+    if sagnorð:
+        print("Sagnorð er '{0}'".format(sagnorð._text))
 
     if not sagnorð or sagnorð._text not in { "er", "eru", "var", "voru", "sé", "séu" }:
         return

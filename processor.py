@@ -8,7 +8,14 @@
     All rights reserved
     See the accompanying README.md file for further licensing and copyright information.
 
-    This module implements a processing module for parsed articles.
+    This module controls the processing of parsed articles.
+
+    Processing is extensible and modular. All Python modules found in the processors/
+    directory (except those whose names start with an underscore) are imported and their
+    processing functions invoked in turn on the sentence trees of each parsed article.
+
+    A multiprocessing pool is employed to process articles in parallel on all available
+    CPUs.
 
 """
 

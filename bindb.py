@@ -30,7 +30,7 @@ except ImportError:
     import psycopg2cffi.extensions as psycopg2ext
     import psycopg2cffi as psycopg2
 
-from settings import Settings, Abbreviations, AdjectiveTemplate, Meanings
+from settings import Settings, Abbreviations, AdjectiveTemplate, Meanings, StaticPhrases
 from dawgdictionary import Wordbase
 
 # Make Psycopg2 and PostgreSQL happy with UTF-8
@@ -67,6 +67,8 @@ class BIN_Db:
         "from " + _DB_TABLE + " where utg=(%s);"
     _DB_Q_UTG_BEYGING = "select stofn, utg, ordfl, fl, ordmynd, beyging " \
         "from " + _DB_TABLE + " where utg=(%s) and beyging=(%s);"
+    _DB_Q_NAMES = "select stofn, utg, ordfl, fl, ordmynd, beyging " \
+        "from " + _DB_TABLE + " where stofn=(%s) and fl='ism';"
 
     # Adjective endings
     _ADJECTIVE_TEST = "leg" # Check for adjective if word contains 'leg'
@@ -190,6 +192,42 @@ class BIN_Db:
     def lookup_form(self, w, at_sentence_start):
         """ Given a word root (stem), look up all its forms """
         return self._lookup(w, at_sentence_start, False, self._forms_func)
+
+    @lru_cache(maxsize = CACHE_SIZE)
+    def lookup_name_gender(self, name):
+        """ Given a person name, lookup its gender """
+        assert self._c is not None
+        if not name:
+            return "hk" # Unknown gender
+        w = name.split(maxsplit = 1)[0] # First name
+        try:
+            # Query the database for the first name
+            self._c.execute(BIN_Db._DB_Q_NAMES, [ w ])
+            g = self._c.fetchall()
+            if g is not None:
+                # Appear to have found some ism entries where stofn=w
+                m = next(map(BIN_Meaning._make, g), None)
+                if m:
+                    # Return the ordfl of the first one
+                    return m.ordfl
+            # Not found in the database: try the manual additions from Main.conf
+            if w in Meanings.ROOT:
+                # First name found?
+                g = (BIN_Meaning._make(add_m) for add_m in Meanings.ROOT[w])
+                m = next((x for x in g if x.fl in { "ism", "nafn" }), None)
+                if m:
+                    # Found a meaning with fl='ism' or fl='nafn'
+                    return m.ordfl
+            # The first name was not found: check whether the full name is
+            # in the static phrases
+            m = StaticPhrases.lookup(name)
+            if m is not None:
+                m = BIN_Meaning._make(m)
+                if m.fl in { "ism", "nafn" }:
+                    return m.ordfl
+        except (psycopg2.DataError, psycopg2.ProgrammingError) as e:
+            print("Word {0} causing DB exception {1}".format(w, e))
+        return "hk" # Unknown gender
 
     @staticmethod
     def prefix_meanings(mlist, prefix):

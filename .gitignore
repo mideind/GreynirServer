@@ -17,6 +17,9 @@ sudoku.py
 locktest.py
 ssltest.py
 
+# Utility stuff
+diskuse.sh
+
 # Various resource files
 resources/*.txt
 resources/*.csv

@@ -241,6 +241,9 @@ class Scraper:
         except requests.exceptions.ConnectionError as e:
             print("{0}".format(e))
             html_doc = None
+        except requests.exceptions.ChunkedEncodingError as e:
+            print("{0}".format(e))
+            html_doc = None
         except HTTPError as e:
             print("HTTPError returned: {0}".format(e))
             html_doc = None
@@ -357,7 +360,8 @@ class Scraper:
                     # Article URL already exists in database:
                     # roll back and continue
                     session.rollback()
-                except:
+                except Exception as e:
+                    print("Roll back due to exception in scrape_root: {0}".format(e))
                     session.rollback()
 
         t1 = time.time()
@@ -714,6 +718,8 @@ class Scraper:
                 # noinspection PyComparisonWithNone
                 def iter_unscraped_articles():
                     """ Go through any unscraped articles and scrape them """
+                    # Note that the query(Article) below cannot be directly changed
+                    # to query(Article.root, Article.url) since Article.root is a joined subrecord
                     for a in session.query(Article) \
                         .filter(Article.scraped == None).filter(Article.root_id != None) \
                         .yield_per(100):
@@ -730,6 +736,8 @@ class Scraper:
             def iter_unparsed_articles(reparse, limit):
                 """ Go through articles to be parsed """
                 # Fetch 100 rows at a time
+                # Note that the query(Article) below cannot be directly changed
+                # to query(Article.root, Article.url) since Article.root is a joined subrecord
                 q = session.query(Article).filter(Article.scraped != None)
                 if reparse:
                     # Reparse articles that were originally parsed with an older
@@ -861,7 +869,9 @@ def init_roots():
             ("http://www.mbl.is/frettir/", "mbl.is", "Morgunblaðið", 0.6, "scrapers.default", "MblScraper"),
             ("http://eyjan.pressan.is", "eyjan.pressan.is", "Eyjan", 0.4, "scrapers.default", "EyjanScraper"),
             ("http://stjornlagarad.is", "stjornlagarad.is", "Stjórnlagaráð", 1.0, "scrapers.default", "StjornlagaradScraper"),
-            ("https://www.forsaetisraduneyti.is", "forsaetisraduneyti.is", "Forsætisráðuneyti", 1.0, "scrapers.default", "StjornarradScraper")
+            ("https://www.forsaetisraduneyti.is", "forsaetisraduneyti.is", "Forsætisráðuneyti", 1.0, "scrapers.default", "StjornarradScraper"),
+            ("https://www.innanrikisraduneyti.is", "innanrikisraduneyti.is", "Innanríkisráðuneyti", 1.0, "scrapers.default", "StjornarradScraper"),
+            ("https://www.fjarmalaraduneyti.is", "fjarmalaraduneyti.is", "Fjármálaráðuneyti", 1.0, "scrapers.default", "StjornarradScraper")
         ]
 
         with SessionContext() as session:

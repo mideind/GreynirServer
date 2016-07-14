@@ -22,8 +22,9 @@ import re
 from contextlib import closing
 from collections import OrderedDict, namedtuple
 
-from settings import DisallowedNames
+from settings import DisallowedNames, VerbObjects
 from bindb import BIN_Db
+from binparser import BIN_Token
 
 
 BIN_ORDFL = {
@@ -344,7 +345,9 @@ class TerminalDescriptor:
         self.cat = elems[0]
         self.is_literal = self.cat[0] == '"' # Literal terminal, i.e. "sem", "og"
         self.is_stem = self.cat[0] == "'" # Stem terminal, i.e. 'vera'_et_p3
-        self.variants = set(elems[1:])
+        self.is_verb = self.cat == "so"
+        self.varlist = elems[1:]
+        self.variants = set(self.varlist)
 
         self.variant_vb = "vb" in self.variants
         self.variant_gr = "gr" in self.variants
@@ -416,23 +419,57 @@ class TerminalDescriptor:
                             return False
             elif self.case.upper() not in m.beyging:
                 return False
+        # Check number match
+        if self.number is not None:
+            if self.number.upper() not in m.beyging:
+                return False
+
+        if self.is_verb:
+            # The following code is parallel to BIN_Token.verb_matches()
+            for v in self.varlist:
+                # Lookup variant to see if it is one of the required ones for verbs
+                rq = BIN_Token._VERB_FORMS.get(v)
+                if rq and rq not in m.beyging:
+                    # If this is required variant that is not found in the form we have,
+                    # return False
+                    return False
+            for v in [ "sagnb", "lhþt", "bh" ]:
+                if BIN_Token.VARIANT[v] in m.beyging and v not in self.variants:
+                    return False
+            if self.varlist[0] not in "012":
+                # No need for argument check: we're done
+                return True
+            nargs = int(self.varlist[0])
+            if m.stofn in VerbObjects.VERBS[nargs]:
+                if nargs == 0 or len(self.varlist) < 2:
+                    # No arguments: we're done
+                    return True
+                for argspec in VerbObjects.VERBS[nargs][m.stofn]:
+                    if all(self.varlist[1 + ix] == c for ix, c in enumerate(argspec)):
+                        # This verb takes arguments that match the terminal
+                        return True
+                return False
+            for i in range(0, nargs):
+                if m.stofn in VerbObjects.VERBS[i]:
+                    # This verb takes fewer arguments than the terminal requires, so no match
+                    return False
+            if "mm" in self.variants:
+                return 0 <= nargs <= 1
+            # Unknown verb: allow it to match
+            return True
+
         # Check person match
         if self.person is not None:
             person = self.person.upper()
             person = person[1] + person[0] # Turn p3 into 3P
             if person not in m.beyging:
                 return False
-        # Check number match
-        if self.number is not None:
-            if self.number.upper() not in m.beyging:
-                return False
-        # Check lhþt
-        if "lhþt" in self.variants:
-            if "LHÞT" not in m.beyging:
-                return False
         # Check VB/SB/MST for adjectives
         if "esb" in self.variants:
             if "ESB" not in m.beyging:
+                return False
+        if "evb" in self.variants:
+            if "EVB" not in m.beyging:
                 return False
         if "mst" in self.variants:
             if "MST" not in m.beyging:

@@ -44,6 +44,7 @@ class ScrapeHelper:
         self._domain = root.domain
         self._authority = root.authority
         self._author = root.author
+        self._description = root.description
 
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
@@ -277,6 +278,7 @@ class RuvScraper(ScrapeHelper):
         "/sarpurinn/",
         "/tag/",
         "/frettalisti/",
+        "/ibrennidepli/",
         "/nyjast/",
         "/thaettir/",
         "/dagskra"
@@ -312,7 +314,7 @@ class RuvScraper(ScrapeHelper):
         clip = ScrapeHelper.div_class(soup.html.body, "view-id-author", "clip")
         if not clip:
             clip = ScrapeHelper.div_class(soup.html.body, "view-content", "clip")
-        author = clip.text if clip else "Fréttastofa RÚV"
+        author = clip.text.strip() if clip else "Fréttastofa RÚV"
         metadata.heading = heading
         metadata.author = author
         metadata.timestamp = timestamp
@@ -323,6 +325,9 @@ class RuvScraper(ScrapeHelper):
         """ Find the article content (main text) in the soup """
         content = ScrapeHelper.div_class(soup_body,
             ("region", "region-two-66-33-first"), "region-inner")
+        if content is None:
+            # Try alternative layout
+            content = ScrapeHelper.div_class(soup_body, "view-content", "second")
         ScrapeHelper.del_div_class(content, "pane-custom") # Sharing stuff at bottom of page
         return content
 
@@ -486,6 +491,8 @@ class VisirScraper(ScrapeHelper):
         heading = self.unescape(heading)
         if heading.startswith("Vísir - "):
             heading = heading[8:]
+        if heading.endswith(" - Glamour"):
+            heading = heading[:-10]
         timestamp = ScrapeHelper.tag_prop_val(soup, "meta", "itemprop", "datePublished")
         timestamp = timestamp["content"] if timestamp else None
         timestamp = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S") if timestamp else None
@@ -506,7 +513,11 @@ class VisirScraper(ScrapeHelper):
 
     def _get_content(self, soup_body):
         """ Find the article content (main text) in the soup """
-        soup = ScrapeHelper.div_class(soup_body, "articlewrapper")
+        # Check for "Glamour" layout first
+        soup = ScrapeHelper.div_class(soup_body, "article", "articletext")
+        if not soup:
+            # Check for normal Visir layout
+            soup = ScrapeHelper.div_class(soup_body, "articlewrapper")
         if soup:
             # Delete div.media from the content
             ScrapeHelper.del_div_class(soup, "media")
@@ -633,7 +644,7 @@ class StjornarradScraper(ScrapeHelper):
         date = ScrapeHelper.tag_prop_val(body, "span", "class", "date")
         if date is not None:
             metadata.timestamp = datetime.strptime(date.string, "%d.%m.%Y")
-        metadata.author = "Stjórnarráð Íslands"
+        metadata.author = self._description or "Stjórnarráð Íslands" # Name of the ministry in question
         return metadata
 
     def _get_content(self, soup_body):

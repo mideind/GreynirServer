@@ -30,7 +30,7 @@ def dump_tokens(limit):
 
     dtd = dict()
     with closing(BIN_Db.get_db()) as db:
-        with SessionContext() as session:
+        with SessionContext(commit = True) as session:
             # Iterate through the articles
             q = session.query(Article) \
                 .filter(Article.tree != None) \
@@ -110,6 +110,7 @@ def make_trigrams(limit):
                 except DatabaseError as ex:
                     print("*** Exception {0} on trigram {1}, skipped".format(ex, tg))
 
+
 def spin_trigrams(num):
     """ Spin random sentences out of trigrams """
 
@@ -167,7 +168,7 @@ if __name__ == "__main__":
         quit()
 
     #make_trigrams(limit = None)
-    #dump_tokens(limit = 100)
+    dump_tokens(limit = 10)
 
-    spin_trigrams(25)
+    #spin_trigrams(25)
 

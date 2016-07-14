@@ -615,6 +615,7 @@ def parse_sentences(token_stream):
                 if token.kind == TOK.P_BEGIN and next_token.kind == TOK.P_END:
                     # P_BEGIN immediately followed by P_END:
                     # skip both and continue
+                    token = None # Make sure we have correct status if next() raises StopIteration
                     token = next(token_stream)
                     continue
             else:
@@ -647,6 +648,8 @@ def parse_sentences(token_stream):
             yield TOK.Begin_Sentence()
             in_sentence = True
         yield token
+        if in_sentence and (token.kind == TOK.P_END or token.kind == TOK.S_END):
+            in_sentence = False
 
     # Done with the input stream
     # If still inside a sentence, finish it

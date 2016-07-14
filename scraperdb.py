@@ -16,7 +16,7 @@
 import sys
 import platform
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, backref
 from sqlalchemy import Table, Column, Integer, String, Float, DateTime, Sequence, \
@@ -24,6 +24,7 @@ from sqlalchemy import Table, Column, Integer, String, Float, DateTime, Sequence
 from sqlalchemy.exc import SQLAlchemyError as SqlError
 from sqlalchemy.exc import IntegrityError as SqlIntegrityError
 from sqlalchemy import desc as SqlDesc
+from sqlalchemy.dialects.postgresql import UUID as psql_UUID
 
 from settings import Settings
 
@@ -146,7 +147,7 @@ class Root(Base):
     # Default authority of this source, 1.0 = most authoritative, 0.0 = least authoritative
     authority = Column(Float)
     # Finish time of last scrape of this root
-    scraped = Column(DateTime, index = True, nullable = True)
+    scraped = Column(DateTime, index = True)
     # Module to use for scraping
     scr_module = Column(String(80))
     # Class within module to use for scraping
@@ -168,29 +169,33 @@ class Article(Base):
 
     __tablename__ = 'articles'
 
-    # Primary key
-    url = Column(String, primary_key=True)
+    # The article URL is the primary key
+    url = Column(String, primary_key = True)
+
+    # UUID
+    id = Column(psql_UUID(as_uuid = False), index = True, nullable = False,
+        server_default = text("uuid_generate_v1()"))
 
     # Foreign key to a root
     root_id = Column(Integer,
         # We don't delete associated articles if the root is deleted
-        ForeignKey('roots.id', onupdate="CASCADE", ondelete="SET NULL"), nullable = True)
+        ForeignKey('roots.id', onupdate="CASCADE", ondelete="SET NULL"))
 
     # Article heading, if known
     heading = Column(String)
     # Article author, if known
     author = Column(String)
     # Article time stamp, if known
-    timestamp = Column(DateTime, index = True, nullable = True)
+    timestamp = Column(DateTime, index = True)
 
     # Authority of this article, 1.0 = most authoritative, 0.0 = least authoritative
     authority = Column(Float)
     # Time of the last scrape of this article
-    scraped = Column(DateTime, index = True, nullable = True)
+    scraped = Column(DateTime, index = True)
     # Time of the last parse of this article
-    parsed = Column(DateTime, index = True, nullable = True)
+    parsed = Column(DateTime, index = True)
     # Time of the last processing of this article
-    processed = Column(DateTime, index = True, nullable = True)
+    processed = Column(DateTime, index = True)
     # Module used for scraping
     scr_module = Column(String(80))
     # Class within module used for scraping
@@ -239,7 +244,7 @@ class Person(Base):
     # Title
     title = Column(String, index = True)
     # Title in all lowercase
-    title_lc = Column(String, index = True, nullable = True)
+    title_lc = Column(String, index = True)
 
     # Authority of this fact, 1.0 = most authoritative, 0.0 = least authoritative
     authority = Column(Float)
@@ -318,10 +323,10 @@ class Failure(Base):
     sentence = Column(String, nullable = False)
 
     # Cause of failure: NULL = unknown, 'grammar', 'error'...
-    cause = Column(String(16), nullable = True, index = True)
+    cause = Column(String(16), index = True)
 
     # Comment
-    comment = Column(String, nullable = True)
+    comment = Column(String)
 
     # Timestamp of this entry
     timestamp = Column(DateTime, nullable = False, index = True)

@@ -8,7 +8,7 @@
     All rights reserved
     See the accompanying README.md file for further licensing and copyright information.
 
-    This module is written in Python 3 for Python 3.4
+    This module is written in Python 3
 
 """
 
@@ -33,6 +33,7 @@ from settings import Settings, ConfigError, changedlocale
 from tokenizer import tokenize, TOK, correct_spaces
 from query import Query
 from getimage import get_image_url
+from bindb import BIN_Db
 
 # Initialize Flask framework
 
@@ -312,46 +313,55 @@ def add_name_register(result, session):
                     title = sorted([(cnt, len(t), t) for t, cnt in titles.items()])[-1][2]
                     # Add it to the register, after correcting spacing
                     register[pn.name] = correct_spaces(title)
-    result["register"] = register
+    with changedlocale() as strxfrm:
+        result["register"] = sorted(
+            [ dict(name = key, title = val) for key, val in register.items() ],
+            key = lambda x: strxfrm(x["name"])
+        )
     if Settings.DEBUG:
-        print("Register is: {0}".format(register))
+        print("Register is: {0}".format(result["register"]))
 
 
 def top_news(limit = _TOP_NEWS_LENGTH):
     """ Return a list of top recent news """
     toplist = []
     topdict = dict()
-    with SessionContext() as session:
-        # Attempt to look up the name pn.name
+    now = datetime.utcnow()
+    MARGIN = 10 # Get more articles than requested in case there are duplicates
+
+    with SessionContext(commit = True) as session:
+
         q = session.query(Article) \
             .filter(Article.tree != None) \
             .filter(Article.timestamp != None) \
+            .filter(Article.timestamp < now) \
             .filter(Article.heading > "") \
-            .order_by(desc(Article.timestamp))[0:limit]
+            .order_by(desc(Article.timestamp))[0:limit + MARGIN]
+
+        class ArticleDisplay:
+
+            """ Utility class to carry information about an article to the web template """
+
+            def __init__(self, heading, original_ts, timestamp, url, num_sentences, num_parsed, icon):
+                self.heading = heading
+                self.original_ts = original_ts
+                self.timestamp = timestamp
+                self.url = url
+                self.num_sentences = num_sentences
+                self.num_parsed = num_parsed
+                self.icon = icon
+
+            @property
+            def width(self):
+                """ The ratio of parsed sentences to the total number of sentences,
+                    expressed as a percentage string """
+                if self.num_sentences == 0:
+                    return "0%"
+                return "{0}%".format((100 * self.num_parsed) // self.num_sentences)
+
         for a in q:
             # Collect and count the titles
             icon = a.root.domain + ".ico"
-
-            class ArticleDisplay:
-
-                """ Utility class to carry information about an article to the web template """
-
-                def __init__(self, heading, original_ts, timestamp, url, num_sentences, num_parsed, icon):
-                    self.heading = heading
-                    self.original_ts = original_ts
-                    self.timestamp = timestamp
-                    self.url = url
-                    self.num_sentences = num_sentences
-                    self.num_parsed = num_parsed
-                    self.icon = icon
-
-                @property
-                def width(self):
-                    """ The ratio of parsed sentences to the total number of sentences,
-                        expressed as a percentage string """
-                    if self.num_sentences == 0:
-                        return "0%"
-                    return "{0}%".format((100 * self.num_parsed) // self.num_sentences)
 
             d = ArticleDisplay(heading = a.heading, original_ts = a.timestamp, timestamp = str(a.timestamp)[11:16],
                 url = a.url, num_sentences = a.num_sentences, num_parsed = a.num_parsed, icon = icon)
@@ -367,15 +377,20 @@ def top_news(limit = _TOP_NEWS_LENGTH):
                 # Otherwise, ignore the new entry and continue
             else:
                 # New heading: note its index in the list
-                topdict[t] = len(toplist)
+                llist = len(toplist)
+                topdict[t] = llist
                 toplist.append(d)
-        session.commit()
+                if llist + 1 >= limit:
+                    break
+
     return toplist
 
 
 def top_persons(limit = _TOP_PERSONS_LENGTH):
     """ Return a list of names and titles appearing recently in the news """
     toplist = dict()
+    bindb = BIN_Db.get_db()
+
     with SessionContext(commit = True) as session:
 
         q = session.query(Person.name, Person.title, Person.article_url) \
@@ -386,7 +401,7 @@ def top_persons(limit = _TOP_PERSONS_LENGTH):
             # Insert the name into the list if it's not already there,
             # or if the new title is longer than the previous one
             if p.name not in toplist or len(p.title) > len(toplist[p.name][0]):
-                toplist[p.name] = (correct_spaces(p.title), p.article_url)
+                toplist[p.name] = (correct_spaces(p.title), p.article_url, bindb.lookup_name_gender(p.name))
                 if len(toplist) >= limit:
                     # We now have as many names as we initially wanted: terminate the loop
                     break
@@ -394,7 +409,7 @@ def top_persons(limit = _TOP_PERSONS_LENGTH):
     with changedlocale() as strxfrm:
         # Convert the dictionary to a sorted list of dicts
         return sorted(
-            [ dict(name = name, title = tu[0], url = tu[1]) for name, tu in toplist.items() ],
+            [ dict(name = name, title = tu[0], gender = tu[2], url = tu[1]) for name, tu in toplist.items() ],
             key = lambda x: strxfrm(x["name"])
         )
 
@@ -459,6 +474,8 @@ def analyze():
             toklist = list(tokenize(url, auto_uppercase = url.islower()))
             result = dict()
             is_query = process_query(session, toklist, result)
+            if not is_query:
+                use_reducer = True
 
         if is_query:
 
@@ -834,6 +851,7 @@ def parse_grid():
         combinations = combinations, score = score, debug_mode = debug_mode,
         choice_list = uc_list, parse_path = parse_path)
 
+
 # Note: Endpoints ending with .api are configured not to be cached by nginx
 @app.route("/addsentence.api", methods=['POST'])
 def add_sentence():
@@ -873,6 +891,7 @@ def main():
     resp.cache_control.max_age = 60
     return resp
 
+
 @app.route("/bs", methods=['GET', 'POST'])
 def main_bootstrap():
     """ Handler for the main (index) page """
@@ -881,7 +900,9 @@ def main_bootstrap():
     if not txt:
         # Select a random default text
         txt = _DEFAULT_TEXTS[random.randint(0, len(_DEFAULT_TEXTS) - 1)]
-    return render_template("main-bootstrap.html", default_text = txt)
+    return render_template("main-bootstrap.html", default_text = txt,
+        articles = top_news(), persons = top_persons())
+
 
 @app.route("/test")
 def test():

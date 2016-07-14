@@ -90,6 +90,7 @@ class BIN_Token(Token):
         "ft" : "FT", # Fleirtala / plural
         "mst" : "MST", # Miðstig / comparative
         "esb" : "ESB", # Efsta stig, sterk beyging / superlative
+        "evb" : "EVB", # Efsta stig, veik beyging / superlative
         "p1" : "1P", # Fyrsta persóna / first person
         "p2" : "2P", # Önnur persóna / second person
         "p3" : "3P", # Þriðja persóna / third person
@@ -150,7 +151,7 @@ class BIN_Token(Token):
     _VERB_FORMS = None # Initialized later
 
     # Set of adverbs that cannot be an "eo" (prepositions and pronouns are already excluded)
-    _NOT_EO = { "og", "eða", "sem", "ekkert" }
+    _NOT_EO = frozenset(["og", "eða", "sem", "ekkert"])
 
     # Prepositions that nevertheless must be allowed as adverbs
     # 'Fyrirtækið hefur skilað inn ársreikningi', 'Þá er kannski eftir klukkutími',
@@ -346,7 +347,6 @@ class BIN_Token(Token):
             # annotated in BIN; some of them are marked as MM and some not.
             #if BIN_Token._VARIANT["mm"] in form:
             #    # Don't accept verbs in 'miðmynd' if taking arguments
-            #    # (unless the root form of the verb is in VerbObjects, to
             #    # compensate for errors in BÍN, cf. 'ábyrgjast')
             #    return False
             # Check whether the parameters of this verb

@@ -105,6 +105,7 @@ Forskeyti →
     | '-'   # Þankastrik á undan setningu (allar gerðir strika varpast í '-')
     | "mynd" tala AfTala? ':'? # Mynd 2 af 10
     | "dæmi" tala? ':'
+    | "sjá" "einnig"? ':'
 
 AfTala → "af" tala
 
@@ -165,6 +166,7 @@ Samtenging →
     | "allt" "frá" "því" "að"?
     | "þar" "á" "meðal" | 'þar_á_meðal'
     | "þar" "sem"
+    | 'auk_þess' "sem"
     | "eins" "og"
     | "vegna" "þess"
     | SpurnarSamtenging
@@ -177,6 +179,7 @@ SpurnarSamtenging →
     | fs/fall 'hver'/fall/tala/kyn FsRuna?      # '(Ég vildi vita) af hverju í ósköpunum (Jón hætti við)'
 
     | "hvers" "vegna" FsRuna?                   # '(Ég spurði) hvers vegna í veröldinni (hann tók ekki símtalið)'
+    | "hví" FsRuna?
     | "hvar" FsRuna?                            # '(Ég spurði) hvar (matarstellið væri)'
     | "hvernig" FsRuna?                         # '(Ég spurði) hvernig (Páll ætlaði að fara að þessu)'
     | "hvort" "og" "hvernig" FsRuna?            # '(Tekjustofnar voru til umræðu og) hvort og hvernig (þeir skyldu nýttir)'
@@ -305,14 +308,21 @@ Frumlag_p2/tala/kyn →
     'allur'_nf/tala/kyn # Allar eruð þið jafnar fyrir lögum
 
 Samanburður →
-    SamanburðarTenging Nl_nf
+    SamanburðarTenging Nl_nf AtvFs? # þar af einn alvarlega
 
 SamanburðarTenging →
-    "heldur" "en"        # 'Forseti á ekki að gera meiri breytingu á sér heldur en forsætisráðherra'
-    | ','? "eins" "og"     # 'Hann á ekki andstæðinga eins og aðrir kjörnir fulltrúar'
-    | ','? "þar" "af"    # 'Fjöldi barna var í vélinni, þar af tvö kornabörn'
+    "heldur" "en"           # 'Forseti á ekki að gera meiri breytingu á sér heldur en forsætisráðherra'
+    | ','? "eins" "og"      # 'Hann á ekki andstæðinga eins og aðrir kjörnir fulltrúar'
+    | ','? "þar" "af"       # 'Fjöldi barna var í vélinni, þar af tvö kornabörn'
     | ','? 'þar_á_meðal'
     | ','? "þar" "á" "meðal"
+    | ','? "enda"           # 'Réttindi í almennum sjóðum breyttust, enda lægri fjárhæð en áður'
+    | SamanburðarTengingOg
+
+SamanburðarTengingOg →
+    ','? "og"               # Erfitt fjarskiptasamband er á staðnum og mikil snjóþyngsli
+
+$score(-4) SamanburðarTengingOg
 
 Setning/tala/pers/kyn →
     # Venjuleg setningarskipan með frumlagi (í nafnhætti) fremst:
@@ -858,6 +868,7 @@ $score(+6) EinSögn_sagnb/tala/kyn
 
 Sögn_nh/tala/pers/kyn →
     HjSögnNh/tala/pers HreinSögn_nh/tala/kyn # Páll mun/skal skrifa bréfið
+    | HjSögnNhMeðSagnb/tala/pers FsAtv? nhm HreinSögn_nh/tala/kyn # Páll á/ætti/verður/þarf [ekki] að skrifa bréfið
     | Sögn_nh_mm/tala/pers/kyn
 
 # Gefa auka stig hér (enda er oft tvíræðni milli sagna í nafnhætti og nafnorða)
@@ -1634,7 +1645,9 @@ NhLiðir →
 NhRuna → NhSögn OgNhLiður*
 
 OgNhLiður →
-    FsAtv? KommaOgEðaEn FsAtv? NhSögn # (að selja skyldi hestinn) snarlega, en ekki hætta baráttunni
+    # (að selja skyldi hestinn) snarlega, en ekki hætta baráttunni
+    # (er ekki unnt að fara) nema nota allt fé ríkisins
+    FsAtv? KommaOgEðaEnNema FsAtv? NhSögn
 
 NhSögn →
     so_0_nh so_0_gm_vh? OgNhSögn*                          # að kjósa [þurfi] og telja (upp á nýtt)
@@ -1952,10 +1965,15 @@ NlTöluorð/tala/fall/kyn →
     # '(Ég talaði við) tvær þeirra', 'fjórum þeirra (var kalt)'
     # 'Að minnsta kosti fjórir létust'
     # 'Um þrír af hverjum fjórum landsmönnum telja...'
-    TöluorðForskeyti? Töluorð/tala/fall/kyn 'sá'_ft_ef/kyn?
+    TöluorðForskeyti? TöluorðLo/tala? Töluorð/tala/fall/kyn 'sá'_ft_ef/kyn?
+    | TöluorðForskeyti? Töluorð/tala/fall/kyn TöluorðLo/tala # (önnur af) þremur hröðustu (sem eftir standa)
 
 TöluorðForskeyti →
-    'að_minnsta_kosti' | "um" | "minnst" | "einungis" | "aðeins" | "ekki"
+    'að_minnsta_kosti' | "um" | "minnst" | "einungis" | "aðeins" | "ekki" | "svo" "sem"
+
+TöluorðLo/tala →
+    lo_evb_nf_hk/tala # efstu tvo / efstu tvö / efstu tvær
+    | lo_mst_nf_hk/tala # lægri tvo / lægri tvö / lægri tvær
 
 # Gefa mínusstig fyrir stök töluorð - viljum helst sjá þau sem einkunn í stærri nafnlið
 $score(-10) NlTöluorð/tala/fall/kyn
@@ -2340,6 +2358,9 @@ Fornafn/fall/tala/kyn → Fornafn/tala/fall/kyn
 Fornafn_et_ef_kk → "hans"
 Fornafn_et_ef_kvk → "hennar"
 
+# Einn og sami veiðimaðurinn, eitt og sama fyrirbæri
+Fornafn_et/fall/kyn → 'einn'_et/fall/kyn "og" 'sami'_et/fall/kyn
+
 Töluorð/tala/fall/kyn → to/tala/fall/kyn | tala/tala
 
 # Öll töluorð (merkt 'töl' í BÍN) tákna fleirtölu
@@ -2503,8 +2524,13 @@ OgEða → "og" | "eða" | "ellegar" | "eður" | "svo" "og" | "sem" "og" | "né"
     | "þar" "á" "meðal" | 'þar_á_meðal' | "meðal" "annars" | 'meðal_annars'
     | "það" "er" | 'það_er'
     | "eins" "og"
-    | "en"
     | "þar" "með" "talið"? | "svo" "sem" | 'svo_sem'
+    | EnÍOgEða
+
+EnÍOgEða →
+    "en"
+
+$score(-4) EnÍOgEða # Frekar að líta á 'en' sem samtengingu ef það er hægt
 
 KommaOgEða → ','? OgEða
     | '-' # 'Ég tók tvö tonn af eldsneyti - tvö þúsund lítra'
@@ -2522,8 +2548,10 @@ KommaOgEða → ','? OgEða
 # (Í gær börðu strákarnir ekki Guðmund), heldur (stríddu Páli)
 
 OgEðaEn → "og" | "svo" "og" | "eða" | "ellegar" | "en" | "heldur" | "eins" "og"
+OgEðaEnNema → OgEðaEn | "nema"
 
 KommaOgEðaEn → ',' | ','? OgEðaEn
+KommaOgEðaEnNema → ',' | ','? OgEðaEnNema
 
 # Allir liðir af sama kyni
 
@@ -2641,18 +2669,22 @@ Lo/fall/tala/kyn →
 Lo/fall/tala/kyn → AtviksliðurEinkunn* so_lhþt/fall/tala/kyn
 Lo/fall/tala/kyn → AtviksliðurEinkunn* so_lh_nt
 
-# 'honum er og heimilt að merkja við fleiri en einn frambjóðanda'
-LoAtviksliður → AtviksliðurEinkunn* | "og"
+LoAtviksliðir →
+    LoAtviksliður+ | "og" # 'honum er og heimilt að merkja við fleiri en einn frambjóðanda'
+
+# 'Ég vaknaði ekkert alltof fersk'
+LoAtviksliður →
+    AtviksliðurEinkunn | "ekkert"
 
 # Lýsingarorð í sterkri beygingu
 # ('Hún fór frjáls skoðana sinna í útlegð')
 
-Lo_sb/tala/fall/kyn → LoAtviksliður lo_sb/tala/fall/kyn LoViðhengi?
-Lo_sb_nf/tala/kyn → LoAtviksliður lo_sb_nf/tala/kyn LoViðhengi?
+Lo_sb/tala/fall/kyn → LoAtviksliðir? lo_sb/tala/fall/kyn LoViðhengi?
+Lo_sb_nf/tala/kyn → LoAtviksliðir? lo_sb_nf/tala/kyn LoViðhengi?
 
 # Miðstig
-Lo_mst/tala/fall/kyn → AtviksliðurEinkunn* lo_mst/tala/fall/kyn LoViðhengi? # Miðstig
-Lo_mst_nf/tala/kyn → AtviksliðurEinkunn* lo_mst_nf/tala/kyn LoViðhengi? # Miðstig
+Lo_mst/tala/fall/kyn → LoAtviksliðir? lo_mst/tala/fall/kyn LoViðhengi? # Miðstig
+Lo_mst_nf/tala/kyn → LoAtviksliðir? lo_mst_nf/tala/kyn LoViðhengi? # Miðstig
 
 # Lýsingarorð sem stendur með sögn getur haft eignarfalls- eða
 # þágufalls-viðhengi, sbr.:
@@ -2681,6 +2713,9 @@ StaktLoEftirNl/tala/fall/kyn →
 
 # Stakt lýsingarorð eftir nafnorði gæti líklega tilheyrt næsta nafnorði
 $score(-4) StaktLoEftirNl/tala/fall/kyn
+
+# Lýsingarorð sem getur tekið með sér þágufall
+# !!! ATH: Til eru listar yfir slík orð
 
 # 'tengdur Framsóknarflokknum'
 LoEftirNlMeðÞgf/fall/tala/kyn →
@@ -2763,6 +2798,7 @@ FsMeðFallstjórn →
     | "þegar" "kemur" "að" Nl_þgf
     | 'til_og_frá' Nl_þgf
     | "fyrir" "utan" Nl_þf
+    | "innan" "við" Nl_þf
     | "hvað" FsHvaðVarðar
     | "um" 'það'_þf_et? FsSamtenging HreinYfirsetning # 'um [það] hvort Brandur sé fallegastur'
     | "um" "að" HreinYfirsetning ','? # 'um að lög um endurupptökunefnd standist ekki stjórnarskrá'
@@ -2876,6 +2912,7 @@ EinnAl →
     | UndirEins
     | "eina" "ferðina" "enn"
     | "heima" "fyrir"
+    | "sem" "stendur"
     | töl "sinnum"          # tvisvar, þrisvar og fjórum sinnum er skilgreint í Main.conf
 
 EkkiNeitt →

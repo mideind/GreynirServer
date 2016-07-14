@@ -302,6 +302,8 @@ class StaticPhrases:
 
     # Default meaning for static phrases
     MEANING = ("ao", "frasi", "-")
+    # Dictionary of the static phrases with their meanings
+    MAP = { }
     # List of all static phrases and their meanings
     LIST = []
     # Parsing dictionary keyed by first word of phrase
@@ -315,8 +317,13 @@ class StaticPhrases:
         ix = len(StaticPhrases.LIST)
         m = StaticPhrases.MEANING
 
+        mtuple = (phrase, 0, m[0], m[1], phrase, m[2])
+
         # Append the phrase as well as its meaning in tuple form
-        StaticPhrases.LIST.append((phrase, (phrase, 0, m[0], m[1], phrase, m[2])))
+        StaticPhrases.LIST.append((phrase, mtuple))
+
+        # Add to the main phrase dictionary
+        StaticPhrases.MAP[phrase] = mtuple
 
         # Dictionary structure: dict { firstword: [ (restword_list, phrase_index) ] }
 
@@ -341,6 +348,11 @@ class StaticPhrases:
     def get_meaning(ix):
         """ Return the meaning of the phrase with index ix """
         return [ StaticPhrases.LIST[ix][1] ]
+
+    @staticmethod
+    def lookup(phrase):
+        """ Lookup an entire phrase """
+        return StaticPhrases.MAP.get(phrase)
 
 
 class AmbigPhrases:
