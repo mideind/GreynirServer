@@ -177,7 +177,7 @@ function initializeSpeech() {
    };
    // Listen for errors
    recognizer.onerror = function(event) {
-      var txt = "[Villa: " + event.message + "]";
+      var txt = "Hljóðnemi virkar ekki" + (event.message.length ? (" (" + event.message + ")") : "");
       $("#url").val(txt);
       if (usingBootstrap) {
          // Bootstrap

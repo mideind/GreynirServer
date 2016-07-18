@@ -246,6 +246,9 @@ class Person(Base):
     # Title in all lowercase
     title_lc = Column(String, index = True)
 
+    # Gender
+    gender = Column(String(3), index = True)
+
     # Authority of this fact, 1.0 = most authoritative, 0.0 = least authoritative
     authority = Column(Float)
 
@@ -363,6 +366,14 @@ class Trigram(Base):
     # Frequency
     frequency = Column(Integer, default = 0, nullable = False)
 
+    # The "upsert" query (see explanation below)
+    _Q = """
+        insert into trigrams as tg (t1, t2, t3, frequency) values(:t1, :t2, :t3, 1)
+            on conflict (t1, t2, t3)
+            do update set frequency = tg.frequency + 1
+            where tg.t1 = :t1 and tg.t2 = :t2 and tg.t3 = :t3;
+        """
+
     __table_args__ = (
         PrimaryKeyConstraint('t1', 't2', 't3', name='trigrams_pkey'),
     )
@@ -381,15 +392,7 @@ class Trigram(Base):
             t2 = t2[0:mwl]
         if len(t3) > mwl:
             t3 = t3[0:mwl]
-        session.execute(
-            """
-            insert into trigrams as tg (t1, t2, t3, frequency) values(:t1, :t2, :t3, 1)
-            on conflict (t1, t2, t3)
-            do update set frequency = tg.frequency + 1
-            where tg.t1 = :t1 and tg.t2 = :t2 and tg.t3 = :t3;
-            """,
-            dict(t1 = t1, t2 = t2, t3 = t3)
-        )
+        session.execute(self._Q, dict(t1 = t1, t2 = t2, t3 = t3))
 
     @staticmethod
     def delete_all(session):
@@ -403,4 +406,32 @@ class Trigram(Base):
     @classmethod
     def table(cls):
         return cls.__table__
+
+
+class GenderQuery:
+
+    """ A query for gender representation in the persons table """
+
+    _Q = """
+        select domain,
+            sum(case when gender = 'kk' then cnt else 0 end) as kk,
+            sum(case when gender = 'kvk' then cnt else 0 end) as kvk,
+            sum(case when gender = 'hk' then cnt else 0 end) as hk,
+            sum(cnt) as total
+            from (
+                select r.domain, p.gender, sum(1) as cnt
+                    from persons as p, articles as a, roots as r
+                    where p.article_url = a.url and a.root_id = r.id
+                    group by r.domain, p.gender
+            ) as q
+            group by domain
+            order by domain;
+        """
+
+    def __init__(self):
+        pass
+
+    def execute(self, session):
+        """ Execute the query and return the result from fetchall() """
+        return session.execute(self._Q).fetchall()
 

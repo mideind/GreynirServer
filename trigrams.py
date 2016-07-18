@@ -168,7 +168,7 @@ if __name__ == "__main__":
         quit()
 
     #make_trigrams(limit = None)
-    dump_tokens(limit = 10)
+    #dump_tokens(limit = 10)
 
-    #spin_trigrams(25)
+    spin_trigrams(25)
 

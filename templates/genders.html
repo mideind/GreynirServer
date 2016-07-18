@@ -1,0 +1,95 @@
+
+{% extends "container-bootstrap.html" %}
+
+{% block styles %}
+
+<link href="{{ url_for('static', filename='main-bootstrap.css') }}" rel='stylesheet' type='text/css'>
+
+{% endblock %}
+
+{% block content %}
+
+ <!-- Fixed navbar -->
+<nav class="navbar navbar-default navbar-fixed-top">
+   <div class="container">
+      <div class="navbar-header">
+         <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+         </button>
+         <a class="navbar-brand" href="{{ url_for('main') }}">
+            <img src="{{ url_for('static', filename='GreynirLogo180x80.png') }}" width=90 height=40>
+         </a>
+      </div>
+      <div id="navbar" class="navbar-collapse collapse">
+         <ul class="nav navbar-nav">
+            <li><a href="{{ url_for('main') }}">Heim</a></li>
+            <li><a href="#people">Fólk í fréttum</a></li>
+            <li class="active"><a href="{{ url_for('genders') }}">Kynjagreining</a></li>
+            <li><a href="#analysis">Málgreining</a></li>
+            <li><a href="{{ url_for('about') }}">Um Greyni</a></li>
+         </ul>
+      </div><!--/.nav-collapse -->
+   </div>
+</nav>
+
+<div class="container text-container" role="main">
+
+   <table class="table table-condensed table-hover" id="dtable">
+      <caption><b>Nöfn karla og kvenna</b> í gagnagrunni Greynis þar sem
+         titill eða starfsheiti kemur fram.<br>
+         Nafn er aðeins talið einu sinni í hverri frétt eða grein.</caption>
+      <thead>
+         <th>Vefur</th>
+         <th class="count female">Konur</th>
+         <th class="count female">%</th>
+         <th class="count male">Karlar</th>
+         <th class="count male">%</th>
+         <th class="count neutral">Óþekkt</th>
+         <th class="count total">Samtals</th>
+      </thead>
+      <tbody>
+{% for r in result %}
+         <tr>
+            <td class="domain">{{ r.domain }}</td>
+            <td class="count female">{{ r.kvk }}</td>
+            <td class="count female">{{ (r.kvk / (r.kvk + r.kk) * 100) | float | round(1) }}%</td>
+            <td class="count male">{{ r.kk }}</td>
+            <td class="count male">{{ (r.kk / (r.kvk + r.kk) * 100) | float | round(1) }}%</td>
+            <td class="count neutral">{{ r.hk }}</td>
+            <td class="count total">{{ r.total }}</td>
+         </tr>
+{% endfor %}
+      </tbody>
+      <tfoot>
+         <tr>
+            <td class="domain">Samtals</td>
+            <td class="count female">{{ total.kvk }}</td>
+            <td class="count female">{{ (total.kvk / (total.kvk + total.kk) * 100) | float | round(1) }}%</td>
+            <td class="count male">{{ total.kk }}</td>
+            <td class="count male">{{ (total.kk / (total.kvk + total.kk) * 100) | float | round(1) }}%</td>
+            <td class="count neutral">{{ total.hk }}</td>
+            <td class="count total">{{ total.total }}</td>
+         </tr>
+      </tfoot>
+   </table>
+
+</div>
+
+{% endblock %}
+
+{% block endscripts %}
+
+<script>
+
+   function init() {
+   }
+
+   $(document).ready(init);
+
+</script>
+
+{% endblock %}
+

@@ -36,13 +36,15 @@ from scraperdb import SessionContext, Entity
 LEFT_PUNCTUATION = "([„«#$€<"
 RIGHT_PUNCTUATION = ".,:;)]!%?“»”’…°>"
 CENTER_PUNCTUATION = "\"*&+=@©|—–-"
-NONE_PUNCTUATION = "/\\'~"
+NONE_PUNCTUATION = "/\\'~‘"
 PUNCTUATION = LEFT_PUNCTUATION + CENTER_PUNCTUATION + RIGHT_PUNCTUATION + NONE_PUNCTUATION
 
 # Punctuation that ends a sentence
 END_OF_SENTENCE = frozenset(['.', '?', '!', '[…]'])
 # Punctuation symbols that may additionally occur at the end of a sentence
 SENTENCE_FINISHERS = frozenset([')', ']', '“', '»', '”', '’', '"', '[…]'])
+# Punctuation symbols that may occur inside words
+PUNCT_INSIDE_WORD = frozenset(["'", '.', '‘'])
 
 # Hyphens that can indicate composite words
 # ('stjórnskipunar- og eftirlitsnefnd')
@@ -471,10 +473,10 @@ def parse_tokens(txt):
                 ate = True
                 i = 1
                 lw = len(w)
-                while i < lw and (w[i].isalpha() or (w[i] in ("'", '.'))):
+                while i < lw and (w[i].isalpha() or w[i] in PUNCT_INSIDE_WORD):
                     # We allow dots to occur inside words in the case of
                     # abbreviations; also apostrophes are allowed within words
-                    # (O'Malley, Mary's, it's, childrens')
+                    # (O'Malley, Mary's, it's, childrens', O‘Donnell)
                     i += 1
                 while w[i-1] == '.':
                     # Don't eat periods at the end of words

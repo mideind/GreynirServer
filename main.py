@@ -17,18 +17,20 @@ import time
 import random
 from contextlib import closing
 from datetime import datetime
+from functools import wraps
 from collections import OrderedDict, defaultdict
 
 from flask import Flask
 from flask import render_template, make_response, jsonify
 from flask import request, send_from_directory
+from flask.wrappers import Response
 
 from fastparser import Fast_Parser, ParseError, ParseForestPrinter, ParseForestDumper
 from ptest import run_test, Test_DB
 from reducer import Reducer
 from scraper import Scraper
 from tree import TreeGist
-from scraperdb import SessionContext, Person, Article, desc
+from scraperdb import SessionContext, desc, Person, Article, GenderQuery
 from settings import Settings, ConfigError, changedlocale
 from tokenizer import tokenize, TOK, correct_spaces
 from query import Query
@@ -437,6 +439,20 @@ def process_query(session, toklist, result):
                 width = img.width, height = img.height,
                 link = img.link, origin = img.origin)
     return True
+
+
+def max_age(seconds):
+    """ Caching decorator for Flask - augments response with a max-age cache header """
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            resp = f(*args, **kwargs)
+            if not isinstance(resp, Response):
+                resp = make_response(resp)
+            resp.cache_control.max_age = seconds
+            return resp
+        return decorated_function
+    return decorator
 
 
 # Note: Endpoints ending with .api are configured not to be cached by nginx
@@ -853,7 +869,7 @@ def parse_grid():
 
 
 # Note: Endpoints ending with .api are configured not to be cached by nginx
-@app.route("/addsentence.api", methods=['POST'])
+# @app.route("/addsentence.api", methods=['POST'])
 def add_sentence():
     """ Add a sentence to the test database """
     sentence = request.form.get('sentence', "")
@@ -870,38 +886,48 @@ def add_sentence():
     return jsonify(result = result)
 
 
-@app.route("/", methods=['GET', 'POST'])
+@app.route("/genders", methods=['GET'])
+@max_age(seconds = 5 * 60)
+def genders():
+    """ Render a page with gender statistics """
+
+    with SessionContext(commit = True) as session:
+
+        gq = GenderQuery()
+        result = gq.execute(session)
+
+        from decimal import Decimal
+
+        total = dict(kvk = Decimal(), kk = Decimal(), hk = Decimal(), total = Decimal())
+        for r in result:
+            total["kvk"] += r.kvk
+            total["kk"] += r.kk
+            total["hk"] += r.hk
+            total["total"] += r.kvk + r.kk + r.hk
+
+        return render_template("genders.html", result = result, total = total)
+
+
+@app.route("/")
+@max_age(seconds = 60)
 def main():
     """ Handler for the main (index) page """
-
-    # Instantiate a dummy parser to access grammar info
-    # (this does not cause repeated parsing of the grammar as it is cached in memory)
-    bp = Fast_Parser(verbose = False)
-    debug_mode = request.args.get("debug", "")
-    if debug_mode == "0" or debug_mode.lower() == "false":
-        debug_mode = False
-    txt = request.args.get("txt", None) or request.form.get("url", None)
+    txt = request.args.get("txt", None)
+    if txt:
+        txt = txt.strip()
     if not txt:
         # Select a random default text
         txt = _DEFAULT_TEXTS[random.randint(0, len(_DEFAULT_TEXTS) - 1)]
-    resp = make_response(render_template("main.html",
-        default_text = txt, grammar = bp.grammar, debug_mode = debug_mode,
-        articles = top_news(), persons = top_persons()))
-    # Make the returned result cacheable for 60 seconds
-    resp.cache_control.max_age = 60
-    return resp
-
-
-@app.route("/bs", methods=['GET', 'POST'])
-def main_bootstrap():
-    """ Handler for the main (index) page """
-
-    txt = request.args.get("txt", None) or request.form.get("url", None)
-    if not txt:
-        # Select a random default text
-        txt = _DEFAULT_TEXTS[random.randint(0, len(_DEFAULT_TEXTS) - 1)]
-    return render_template("main-bootstrap.html", default_text = txt,
+    return render_template("main-bootstrap.html",
+        default_text = txt,
         articles = top_news(), persons = top_persons())
+
+
+@app.route("/about")
+@max_age(seconds = 10 * 60)
+def about():
+    """ Handler for an 'About' page """
+    return render_template("about.html")
 
 
 @app.route("/test")

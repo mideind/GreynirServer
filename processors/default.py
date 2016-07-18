@@ -94,13 +94,14 @@ def sentence(state, result):
 
     if "nöfn" in result:
         # Nöfn og titlar fundust í málsgreininni
-        for nafn, titill in result.nöfn:
-            print("Nafn: '{0}' Titill: '{1}'".format(nafn, titill))
+        for nafn, titill, kyn in result.nöfn:
+            print("Nafn: '{0}' Kyn: '{2}' Titill: '{1}'".format(nafn, titill, kyn))
             person = Person(
                 article_url = url,
                 name = nafn,
                 title = titill,
                 title_lc = titill.lower(),
+                gender = kyn,
                 authority = 1.0,
                 timestamp = datetime.utcnow()
             )
@@ -117,7 +118,7 @@ INVALID_TITLES = {
     "keppa", "rétt", "ráðning", "sætti", "hlaut", "mynd", "myndband"
 }
 
-def _add_name(result, mannsnafn, titill):
+def _add_name(result, mannsnafn, titill, kyn):
     """ Add a name to the resulting name list """
     if not titill:
         return False
@@ -145,21 +146,28 @@ def _add_name(result, mannsnafn, titill):
         return False
     if "nöfn" not in result:
         result.nöfn = []
-    result.nöfn.append((mannsnafn, titill))
+    result.nöfn.append((mannsnafn, titill, kyn))
     return True
 
 def Manneskja(node, params, result):
     """ Mannsnafn, e.t.v. með titli """
     #print("Mannsnafn: {0}".format(result["_text"]))
     result.del_attribs("efliður")
-    if "mannsnafn" in result and "titlar" in result and "kommu_titill" in result:
+    if "mannsnafn" in result and "titlar" in result and "kommu_titill" in result and "kyn" in result:
         # Margir titlar innan kommu með 'og' á milli: bæta þeim við hverjum fyrir sig
         for titill in result.titlar:
-            _add_name(result, result.mannsnafn, titill)
-        result.del_attribs(("mannsnafn", "titlar", "titill", "ekki_titill", "kommu_titill"))
+            _add_name(result, result.mannsnafn, titill, result.kyn)
+        result.del_attribs(("mannsnafn", "titlar", "titill", "ekki_titill", "kommu_titill", "kyn"))
 
 def Mannsnafn(node, params, result):
     result.mannsnafn = result._nominative
+    if node.has_variant("kk"):
+        result.kyn = "kk"
+    elif node.has_variant("kvk"):
+        result.kyn = "kvk"
+    else:
+        print("No gender for name {0}".format(result.mannsnafn))
+        result.kyn = "hk"
 
 def Titill(node, params, result):
     """ Titill á eftir nafni """
@@ -188,48 +196,48 @@ def EfLiður(node, params, result):
     # Leyfa eignarfallslið að standa óbreyttum í titli
     result._nominative = result._text
     # Ekki senda skýringu eða mannsnafn í gegn um eignarfallslið
-    result.del_attribs(("skýring", "skýring_nafn", "mannsnafn"))
+    result.del_attribs(("skýring", "skýring_nafn", "mannsnafn", "kyn"))
 
 def FsLiður(node, params, result):
     """ Forsetningarliður """
     # Leyfa forsetningarlið að standa óbreyttum í titli
     result._nominative = result._text
     # Ekki leyfa skýringu eða mannsnafni að fara í gegn um forsetningarlið
-    result.del_attribs(("skýring", "skýring_nafn", "mannsnafn"))
+    result.del_attribs(("skýring", "skýring_nafn", "skýring_kyn", "mannsnafn", "kyn"))
 
 def Tengiliður(node, params, result):
     """ Tengiliður ("sem" setning) """
     # Ekki leyfa mannsnafni að fara í gegn um tengilið
-    result.del_attribs(("mannsnafn"))
+    result.del_attribs(("mannsnafn", "kyn"))
 
 def Setning(node, params, result):
     """ Undirsetning: láta standa óbreytta """
     result._nominative = result._text
-    result.del_attribs(("skýring", "skýring_nafn"))
+    result.del_attribs(("skýring", "skýring_nafn", "skýring_kyn"))
 
 def SetningSo(node, params, result):
     """ Setning sem byrjar á sögn: eyða út """
     result._text = ""
     result._nominative = ""
-    result.del_attribs(("skýring", "skýring_nafn"))
+    result.del_attribs(("skýring", "skýring_nafn", "skýring_kyn"))
 
 def SetningÁnF(node, params, result):
     """ Ekki fara með skýringu upp úr setningu án frumlags """
     result._nominative = result._text
-    result.del_attribs(("skýring", "skýring_nafn"))
+    result.del_attribs(("skýring", "skýring_nafn", "skýring_kyn"))
 
 def SvigaInnihaldNl(node, params, result):
     """ Svigainnihald eða skýring sem er ekki í sama falli og foreldri: eyða út """
     result._text = ""
     result._nominative = ""
-    result.del_attribs(("skýring", "skýring_nafn"))
+    result.del_attribs(("skýring", "skýring_nafn", "skýring_kyn"))
 
 def SvigaInnihald(node, params, result):
     """ Ef innihald sviga er hrein yfirsetning, þá er það líklega ekki titill: eyða út """
     if node.child_has_nt_base("HreinYfirsetning"):
         result._text = ""
         result._nominative = ""
-        result.del_attribs(("skýring", "skýring_nafn"))
+        result.del_attribs(("skýring", "skýring_nafn", "skýring_kyn"))
 
 # Textar sem ekki eru teknir gildir sem skýringar
 ekki_skýring = { "myndskeið" }
@@ -277,17 +285,19 @@ def NlSkýring(node, params, result):
         if s == mannsnafn:
             # Mannsnafn sem skýring á nafnlið: gæti verið gagnlegt
             result.skýring_nafn = mannsnafn
+            result.skýring_kyn = result.get("kyn")
     # Ekki senda mannsnafn innan úr skýringunni upp tréð
-    result.del_attribs(("mannsnafn"))
+    result.del_attribs(("mannsnafn", "kyn"))
 
 def NlEind(node, params, result):
     """ Nafnliðareind """
     mannsnafn = result.get("mannsnafn")
+    kyn = result.get("kyn")
     skýring = result.get("skýring")
-    if mannsnafn and skýring:
+    if mannsnafn and skýring and kyn:
         # Fullt nafn með skýringu: bæta því við gagnagrunninn
-        _add_name(result, mannsnafn, skýring)
-        result.del_attribs("skýring")
+        _add_name(result, mannsnafn, skýring, kyn)
+        result.del_attribs(("skýring", "mannsnafn", "kyn"))
 
 def NlKjarni(node, params, result):
     """ Skoða mannsnöfn með titlum sem kunna að þurfa viðbót úr eignarfallslið """
@@ -297,6 +307,7 @@ def NlKjarni(node, params, result):
 
         mannsnafn = result.get("mannsnafn")
         if mannsnafn:
+            kyn = result.get("kyn")
             titill = result.get("titill")
             #print("Looking at mannsnafn '{0}' titill '{1}'".format(mannsnafn, titill))
             if titill is None:
@@ -317,13 +328,14 @@ def NlKjarni(node, params, result):
 
             #print("In check, mannsnafn is '{0}' and titill is '{1}'".format(mannsnafn, titill))
 
-            if _add_name(result, mannsnafn, titill):
+            if _add_name(result, mannsnafn, titill, kyn):
                 # Búið að afgreiða þetta nafn
-                result.del_attribs(("mannsnafn", "titill", "kommu_titill"))
+                result.del_attribs(("mannsnafn", "titill", "kommu_titill", "kyn"))
 
         else:
             mannsnafn = result.get("skýring_nafn")
-            if mannsnafn:
+            kyn = result.get("skýring_kyn")
+            if mannsnafn and kyn:
                 #print("NlKjarni: mannsnafn úr skýringu er '{0}', allur texti er '{1}'".format(mannsnafn, result._nominative))
                 titill = result._nominative
                 # Skera nafnið og tákn (sviga/hornklofa/bandstrik/kommur) aftan af
@@ -340,9 +352,8 @@ def NlKjarni(node, params, result):
                 if ldelim:
                     titill = titill[0:titill.rfind(ldelim)]
                 # print("NlKjarni: nafn '{0}', titill '{1}'".format(mannsnafn, titill))
-                _add_name(result, mannsnafn, titill)
-                result.del_attribs("skýring_nafn")
-                result.del_attribs(("mannsnafn", "skýring"))
+                _add_name(result, mannsnafn, titill, kyn)
+                result.del_attribs(("skýring_nafn", "skýring_kyn", "skýring"))
 
     # Leyfa mannsnafni að ferðast áfram upp tréð ef við
     # fundum ekki titil á það hér
