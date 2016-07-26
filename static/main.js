@@ -60,9 +60,6 @@ var entityMap = {
 // Query history
 var qHistory = [];
 
-// Using Bootstrap?
-var usingBootstrap = false;
-
 // Waiting for query result?
 var queryInProgress = false;
 
@@ -71,6 +68,16 @@ function escapeHtml(string) {
    /* Utility function to properly encode a string into HTML */
    return String(string).replace(/[&<>"'\/]/g, function (s) {
       return entityMap[s];
+   });
+}
+
+function format_is(n, decimals) {
+   /* Utility function to format a number according to is_IS */
+   if (decimals === undefined || decimals <= 0)
+      return "" + n;
+   var s = n.toFixed(decimals);
+   return s.replace(/[,.]/g, function (s) {
+      return {"," : ".", "." : ","}[s];
    });
 }
 
@@ -163,31 +170,17 @@ function initializeSpeech() {
             txt += event.results[i][0].transcript;
       }
       $("#url").val(txt);
-      if (usingBootstrap) {
-         // Bootstrap
-         $("#url").attr("placeholder", "");
-         $("#microphone").removeClass("btn-danger").addClass("btn-info");
-      }
-      else {
-         updateUrlShadow();
-         $("#microphone").removeClass("active");
-      }
+      $("#url").attr("placeholder", "");
+      $("#microphone").removeClass("btn-danger").addClass("btn-info");
       // Send the query to the server
-      analyzeUrl();
+      analyzeQuery();
    };
    // Listen for errors
    recognizer.onerror = function(event) {
       var txt = "Hljóðnemi virkar ekki" + (event.message.length ? (" (" + event.message + ")") : "");
       $("#url").val(txt);
-      if (usingBootstrap) {
-         // Bootstrap
-         $("#url").attr("placeholder", "");
-         $("#microphone").removeClass("btn-danger").addClass("btn-info");
-      }
-      else {
-         updateUrlShadow();
-         $("#microphone").removeClass("active");
-      }
+      $("#url").attr("placeholder", "");
+      $("#microphone").removeClass("btn-danger").addClass("btn-info");
    };
    // Successfully initialized
    return true;
@@ -240,7 +233,7 @@ function hoverIn() {
    var nameDict = out.data("nameDict"); // Can be null
    var wl = tokens[ix];
    var offset = $(this).position();
-   var left = usingBootstrap ? offset.left : Math.min(offset.left, 560);
+   var left = offset.left;
    var i;
    var gender;
    var info = $("div.info");
@@ -378,6 +371,7 @@ function populateRegister(register) {
    // Populate the name register display
    var count = 0;
    var i, item, name, title;
+   $("#namelist").html("");
    if (register !== null && register.length > 0) {
       for (i = 0; i < register.length; i++) {
          item = $("<li></li>");
@@ -394,59 +388,22 @@ function populateRegister(register) {
       $("#register").css("display", "block");
       $("#namelist span.name").click(function(ev) {
          // Send a query to the server
-         submitQuery("Hver er " + $(this).text() + "?")
+         queryPerson($(this).text());
       });
    }
-}
-
-function wait(state, elemid) {
-   // Start or stop a wait spinner
-   queryInProgress = state;
-   if (state) {
-      $("#url-ok").attr("disabled", "disabled");
-      $("#microphone").attr("disabled", "disabled");
-   }
-   else {
-      $("#url-ok").removeAttr("disabled");
-      $("#microphone").removeAttr("disabled");
-   }
-   updateBackButton();
-   if (usingBootstrap) {
-      if (elemid == "result")
-         if (state)
-            $("#result-wait")
-               .removeClass("glyphicon-eye-open")
-               .addClass("glyphicon-restart").addClass("glyphicon-spin");
-         else
-            $("#result-wait")
-               .removeClass("glyphicon-restart").removeClass("glyphicon-spin")
-               .addClass("glyphicon-eye-open");
-      else
-      if (elemid == "entity")
-         if (state)
-            $("#entity-wait")
-               .removeClass("glyphicon-info")
-               .addClass("glyphicon-restart").addClass("glyphicon-spin");
-         else
-            $("#entity-wait")
-               .removeClass("glyphicon-restart").removeClass("glyphicon-spin")
-               .addClass("glyphicon-info");
-   }
-   else
-      $("div#" + elemid + "-wait").css("display", state ? "block" : "none");
 }
 
 function handleError(xhr, status, errorThrown) {
    /* An error occurred on the server or in the communications */
    // Hide progress indicator
-   wait(false, "result");
+   wait(false);
    $("div#result").html("<div class='guide-empty'><p><b>Villa kom upp</b> í samskiptum við netþjón Greynis</p></div>");
 }
 
 function handleQueryError(xhr, status, errorThrown) {
    /* An error occurred on the server or in the communications */
    // Hide progress indicator
-   wait(false, "entity");
+   wait(false);
    $("div#entity-body").html("<div class='guide-empty'><p><b>Villa kom upp</b> í samskiptum við netþjón Greynis</p></div>");
 }
 
@@ -467,13 +424,13 @@ function showPerson(ev) {
       else
          name = wl[2][0][0];
    }
-   submitQuery("Hver er " + name + "?");
+   queryPerson(name);
    ev.stopPropagation();
 }
 
 function showEntity(ev) {
    // Send a query to the server
-   submitQuery("Hvað er " + $(this).text() + "?");
+   queryEntity($(this).text());
    ev.stopPropagation();
 }
 
@@ -486,46 +443,43 @@ function makeNameDict(register) {
    return nameDict;
 }
 
-function populateResult(json) {
-   // Display the results of analysis by the server
+function populateDisplayResult(json) {
+   // Show the result of a display request for an existing article
    // Hide progress indicator
-   wait(false, "result");
-   if (json.result.is_query) {
-      // What we're getting back is actually a query result, not tokenized (and parsed) text
-      clearQueryResult(); // Prepare the query result tab and switch to it
-      populateQueryResult(json); // Display this as a query result
-      return;
-   }
+   wait(false);
+   populateMetadata(json.result.metadata);
+   // Show the statistics
+   $("div#statistics").css("display", "block");
+   populateRawResult(json);
+}
 
-   // Switch (again) to the output tab
-   selectOutputTab();
+function populateTextResult(json) {
+   // Display the results of analysis by the server
+   wait(false);
+   // Show the output
+   $("div#output").css("display", "block");
+   // Show the statistics
+   $("div#statistics").css("display", "block");
+   populateRawResult(json);
+}
 
-   // Clear the previous result, if any, and associate the
-   // incoming token list with the result DIV
-   $("#tok-time").text(json.result.tok_time.toFixed(2));
-   $("#parse-time").text(json.result.parse_time.toFixed(2));
+function populateRawResult(json) {
+   // Populate the result div with token info
+   var out = $("div#result");
+   var tokens = json.result.tokens;
+   var register = json.result.register || null; // Name register
+   out.data("tokens", tokens);
+   out.data("nameDict", makeNameDict(register));
+   // Update key statistics
    $("#tok-num").text(json.result.tok_num);
    $("#num-sent").text(json.result.num_sent);
    $("#num-parsed-sent").text(json.result.num_parsed_sent);
    var ratio = 0.0;
    if (json.result.num_sent)
       ratio = json.result.num_parsed_sent / json.result.num_sent * 100;
-   $("#num-parsed-ratio").text(ratio.toFixed(1));
-   $("#avg-ambig-factor").text(json.result.avg_ambig_factor.toFixed(2));
-
-   populateMetadata(json.result.metadata);
-
-   // Show the guide
-   $("div#guide").css("visibility", "visible");
-
-   // Show the statistics
-   $("div#statistics").css("display", "block");
-
-   var out = $("div#result");
-   var tokens = json.result.tokens;
-   var register = json.result.register || null; // Name register
-   out.data("tokens", tokens);
-   out.data("nameDict", makeNameDict(register));
+   $("#num-parsed-ratio").text(format_is(ratio, 1));
+   $("#avg-ambig-factor").text(format_is(json.result.avg_ambig_factor, 2));
+   // Process token list
    var i;
    var s = "";
    var wsp = ""; // Pending whitespace
@@ -698,45 +652,26 @@ function populateResult(json) {
    populateRegister(register);
 }
 
-function selectOutputTab() {
-   // Switch to the output tab
-   if (usingBootstrap)
-      $("#hdr-output-btn").tab("show"); // Bootstrap
-   else {
-      $("div.main-tab").css("display", "none");
-      $("div#output").css("display", "block");
-      $("div.tab-header span.tab").removeClass("selected");
-      $("span#hdr-output").addClass("selected");
-   }
-}
-
 function clearResult() {
    // Clear previous result
    $("div#result").html("");
-
-   selectOutputTab();
-
    // Display progress indicator
-   wait(true, "result");
+   wait(true);
    // Make the statistics appear but hidden until processing is complete
    $("div#statistics").css("display", "none");
-   // Hide the guide
-   $("div#guide").css("display", "block").css("visibility", "hidden");
    // Hide the metadata
    $("#metadata").css("display", "none");
    // Hide the register
-   $("#namelist").html("");
    $("div#register").css("display", "none");
 }
 
 function populateQueryResult(json) {
    // Display the result of a query sent to the server
    // Hide progress indicator
-   wait(false, "entity");
+   wait(false);
    var r = json.result;
-   var q = $("<h3 class='query'></h3>")
-      .html(usingBootstrap ? "" : "<span class='green glyphicon glyphicon-play'></span>&nbsp;")
-      .append($("<span></span>").text(r.q));
+   var q = $("<h3 class='query'></h3>");
+   q.text(r.q);
    var image = $("<p class='image'></p>");
    var answer;
    if (r.is_query) {
@@ -771,7 +706,7 @@ function populateQueryResult(json) {
                var u = urlList[i];
                artList.append($("<span class='art-link'></span>")
                   .attr("title", u[2])
-                  .attr("data-url", u[1])
+                  .attr("data-uuid", u[1])
                   .html($("<img width='16' height='16'></img>").attr("src", "/static/" + u[0] + ".ico"))
                );
             }
@@ -779,51 +714,41 @@ function populateQueryResult(json) {
          });
       }
    }
-   else
+   else {
       // An error occurred
-      answer = $("<p class='query-error'></p>")
-         .html("<span class='red glyphicon glyphicon-play'></span>&nbsp;")
-         .append($("<span></span>").text(r.error));
+      answer = $("<p class='query-error'></p>");
+      if (r.error === undefined)
+         answer.html("<span class='red glyphicon glyphicon-play'></span>&nbsp;")
+            .append("Þetta er ekki fyrirspurn sem Greynir skilur. ")
+            .append($("<a></a>").attr("href", "/analysis?txt=" + r.q).text("Smelltu hér til að málgreina."));
+      else
+         answer.html("<span class='red glyphicon glyphicon-play'></span>&nbsp;")
+            .text(r.error);
+   }
    $("#entity-body").html(q).append(image).append(answer);
    // A title query yields a list of names
    // Clicking on a name submits a query on it
    $("#entity-body span.name").click(showPerson);
    $("span.art-link").click(function(ev) {
       // Show a source article
-      displayUrl($(this).attr("data-url"));
+      window.location.href = "/article?id=" + $(this).attr("data-uuid");
    });
-}
-
-function selectEntityTab() {
-   // Switch to the entity info tab
-   if (usingBootstrap)
-      $("#hdr-entity-btn").tab("show"); // Bootstrap
-   else {
-      $("div.main-tab").css("display", "none");
-      $("div#entity").css("display", "block");
-      $("div.tab-header span.tab").removeClass("selected");
-      $("span#hdr-entity").addClass("selected");
-   }
 }
 
 function clearQueryResult() {
    // Clear previous result
    $("div#entity-body").html("");
-   selectEntityTab();
    // Display progress indicator
-   wait(true, "entity");
+   wait(true);
 }
 
 function updateBackButton() {
    // Update the state of the back button after modifying the history
    var disable = (qHistory.length < 2) || queryInProgress;
-   if (usingBootstrap)
-      if (disable)
-         $("#back").attr("disabled", "disabled");
-      else
-         $("#back").removeAttr("disabled");
+   if (disable)
+      $("#back").attr("disabled", "disabled");
    else
-      $("#back").toggleClass("disabled", disable);
+      $("#back").removeAttr("disabled");
    if (disable)
       $("#back").attr("title", "");
    else
@@ -833,13 +758,11 @@ function updateBackButton() {
 
 // Actions encoded in URLs
 var urlToFunc = {
-   "a" : _analyzeUrl,
    "q" : _submitQuery,
    "d" : _displayUrl
 };
 
 var funcToUrl = {
-   _analyzeUrl : "a",
    _submitQuery : "q",
    _displayUrl : "d"
 };
@@ -865,7 +788,6 @@ function backHistory() {
    var h = qHistory[qHistory.length - 1]; // Get the previous state
    $("#url").val(h.q); // Go back to original query string
    history.replaceState(h, "", "?f=" + h.f + "&q=" + encodeURIComponent(h.q));
-   updateUrlShadow();
    updateBackButton();
    // Execute the original query function again
    urlToFunc[h.f](h.q);
@@ -877,36 +799,26 @@ function navToHistory(func, q) {
       return;
    // Navigate to a previous state encoded in a URL
    $("#url").val(q); // Go back to original query string
-   updateUrlShadow();
    var state = { f: func, q : q };
    qHistory.push(state);
    // Execute the original query function again
    urlToFunc[func](q);
 }
 
-function _analyzeUrl(url) {
-   // Ask the server to scrape, tokenize and parse a fresh URL
+function analyzeText(txt) {
+   // Ask the server to tokenize and parse the given text
    clearResult();
    // Launch the query
    serverQuery('/analyze.api', // Endpoint with .api suffix are not cached
       {
-         url : url,
-         noreduce : true
+         url : txt,
+         noreduce : true,
+         autouppercase : false
       },
-      populateResult,
+      populateTextResult,
       null,
       handleError
    );
-}
-
-function analyzeUrl() {
-   if (queryInProgress)
-      // Already waiting on a query
-      return;
-   // Analyze the URL in the input field
-   var q = $("#url").val().trim();
-   addHistory("_analyzeUrl", q);
-   _analyzeUrl(q);
 }
 
 function _displayUrl(url) {
@@ -916,7 +828,7 @@ function _displayUrl(url) {
       {
          url : url
       },
-      populateResult, // successFunc
+      populateDisplayResult, // successFunc
       null, // completeFunc
       handleError // errorFunc
    );
@@ -928,7 +840,6 @@ function displayUrl(url) {
       return;
    // Ask the server to display an already scraped, tokenized and parsed article
    $("#url").val(url); // Show URL in the input field
-   updateUrlShadow();
    addHistory("_displayUrl", url);
    _displayUrl(url);
 }
@@ -944,34 +855,38 @@ function _submitQuery(q) {
    );
 }
 
-function submitQuery(q) {
+function analyzeQuery() {
+   // Submit the query in the url input field to the server
    if (queryInProgress)
       // Already waiting on a query
       return;
-   // Submit a query to the server
-   $("#url").val(q); // Show the query in the input field
-   updateUrlShadow();
+   var q = $("#url").val().trim();
+   if (q.startsWith("http://") || q.startsWith("https://")) {
+      window.location.href = "/page?url=" + encodeURIComponent(q);
+      return;
+   }
    addHistory("_submitQuery", q);
    _submitQuery(q);
 }
 
-function updateUrlShadow() {
-   // Update the URL shadow field, behind the URL input,
-   // to reflect the input field
-   if (usingBootstrap)
+function submitQuery(q) {
+   // Submit the given query to the server
+   if (queryInProgress)
+      // Already waiting on a query
       return;
-   var s = $("#url").val().replace(/ /g, "\xA0"); // Replace normal spaces with nonbreaking ones
-   $("#url-shadow")
-      .html("<b>" + s + "</b>" + "\xA0\u25C0") // Unicode left triangle
-      .scrollLeft($("#url").scrollLeft());
+   $("#url").val(q); // Show the query in the input field
+   addHistory("_submitQuery", q);
+   _submitQuery(q);
 }
 
-function scrollUrlShadow() {
-   // Keep the scroll positions of the URL input and the shadow in sync
-   if (usingBootstrap)
-      return;
-   $("#url-shadow")
-      .scrollLeft($("#url").scrollLeft());
+function queryPerson(name) {
+   // Navigate to the main page with a person query
+   window.location.href = "/?f=q&q=" + encodeURIComponent("Hver er " + name + "?");
+}
+
+function queryEntity(name) {
+   // Navigate to the main page with an entity query
+   window.location.href = "/?f=q&q=" + encodeURIComponent("Hvað er " + name + "?");
 }
 
 function urldecode(s) {
@@ -994,52 +909,19 @@ function getUrlVars() {
    return vars;
 }
 
-function initTabs() {
-   // Initialize the tab UI
-   $("div.tab-header span.tab")
-      .click(function(ev) {
-         // A top level tab has been clicked
-         var tabId = $(this).attr("id").slice(4);
-         $("div.main-tab").css("display", "none");
-         $("div#" + tabId).css("display", "block");
-         $("div.tab-header span.tab").removeClass("selected");
-         $(this).addClass("selected");
-      });
-}
-
 function initMain(jQuery) {
    // Initialization
    // Set up event handlers
-   updateUrlShadow();
    $("#url")
       .click(function(ev) {
          this.setSelectionRange(0, this.value.length);
       })
       .keydown(function(ev) {
          if (ev.which == 13) {
-            analyzeUrl();
+            analyzeQuery();
             ev.preventDefault();
          }
       });
-   if (!usingBootstrap)
-      $("#url")
-         .keyup(function(ev) {
-            scrollUrlShadow();
-         })
-         .focus(function(ev) {
-            $("#url-shadow").removeClass("no-focus");
-            scrollUrlShadow();
-         })
-         .blur(function(ev) {
-            $("#url-shadow").addClass("no-focus");
-            scrollUrlShadow();
-         })
-         .on('input', function(ev) {
-            updateUrlShadow();
-         })
-         .on('scroll', function(ev) {
-            scrollUrlShadow();
-         });
 
    // Initialize the back button
    $("#back").click(function(ev) { backHistory(); });
@@ -1047,32 +929,19 @@ function initMain(jQuery) {
 
    if (initializeSpeech()) {
       // Speech input seems to be available
-      if (usingBootstrap) {
-         $("#microphone-div").css("display", "block");
-         // Make the URL input box smaller to accommodate the microphone
-         $("#url-div")
-            .removeClass("col-xs-7").removeClass("col-sm-9")
-            .addClass("col-xs-5").addClass("col-sm-8");
-      }
-      else {
-         $("#url").addClass("with-speech"); // Shrink the input field
-         $("#url-shadow").addClass("with-speech"); // Shrink the input field
-         $("#microphone").css("display", "inline-block");
-      }
+      $("#microphone-div").css("display", "block");
+      // Make the URL input box smaller to accommodate the microphone
+      $("#url-div")
+         .removeClass("col-xs-7").removeClass("col-sm-9")
+         .addClass("col-xs-5").addClass("col-sm-8");
       // Enable the microphone button to start the speech recognizer
       $("#microphone").click(function(ev) {
          $("#url").val("");
-         if (usingBootstrap) {
-            $("#url")
-               .attr("placeholder", "Talaðu í hljóðnemann! Til dæmis: Hver er seðlabankastjóri?");
-            $(this)
-               .removeClass("btn-info")
-               .addClass("btn-danger");
-         }
-         else {
-            $(this).addClass("active");
-            $("#url-shadow").html("Talaðu í hljóðnemann! Til dæmis: <i>Hver er seðlabankastjóri?</i>");
-         }
+         $("#url")
+            .attr("placeholder", "Talaðu í hljóðnemann! Til dæmis: Hver er seðlabankastjóri?");
+         $(this)
+            .removeClass("btn-info")
+            .addClass("btn-danger");
          recognizer.start();
       });
    }
@@ -1086,20 +955,12 @@ function initMain(jQuery) {
    // Select all text in the url input field
    $("#url").get(0).setSelectionRange(0, $("#url").val().length);
 
-   // Enable clicking on a list item
-   var items;
-   if (usingBootstrap)
-      items = $("tr.topitem");
-   else
-      items = $("div.topitem");
-   items.click(function(ev) {
-      // A top news article has been clicked:
-      // post a form to the main page with its URL
-      var url = $(this).attr("data-url");
-      displayUrl(url);
+   // Clicking in italic words in the guide
+   $("div.guide-empty i").click(function(ev) {
+      window.location.href = "/?f=q&q=" + encodeURIComponent($(this).text());
    });
 
-   if (!usingBootstrap)
-      initTabs();
+   // Activate the top navbar
+   $("#navid-main").addClass("active");
 }
 

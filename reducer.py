@@ -3,7 +3,7 @@
 
     Reducer module
 
-    Copyright (c) 2015 Vilhjalmur Thorsteinsson
+    Copyright (c) 2016 Vilhjalmur Thorsteinsson
     All rights reserved
 
     The classes within this module reduce a parse forest containing
@@ -32,18 +32,34 @@ from settings import Preferences, VerbObjects
 
 class Reducer:
 
-    """ Reduces a parse forest to a single most likely parse tree """
+    """ Reduces parse forests to a single most likely parse tree """
 
     def __init__(self, grammar):
         self._grammar = grammar
 
-    def go_with_score(self, forest):
 
-        """ Returns the argument forest after pruning it down to a single tree """
+    @staticmethod
+    def _find_options(forest, finals, tokens):
+        """ Find token-terminal match options in a parse forest with a root in w """
 
-        if forest is None:
-            return (None, 0)
-        w = forest
+        class OptionFinder(ParseForestNavigator):
+
+            """ Subclass to navigate a parse forest and populate the set
+                of terminals that match each token """
+
+            def _visit_token(self, level, node):
+                """ At token node """
+                # assert node.terminal is not None
+                # assert isinstance(node.terminal, Terminal)
+                finals[node.start].add(node.terminal)
+                tokens[node.start] = node.token
+                return None
+
+        OptionFinder().go(forest)
+
+
+    def _calc_terminal_scores(self, w):
+        """ Calculate the score for each possible terminal/token match """
 
         # First pass: for each token, find the possible terminals that
         # can correspond to that token
@@ -67,10 +83,10 @@ class Reducer:
                 # No ambiguity to resolve here
                 continue
 
-            # More than one terminal in the option set
+            # More than one terminal in the option set for the token at index i
             # Calculate the relative scores
             # Find out whether the first part of all the terminals are the same
-            same_first = len(set(x.first for x in s)) == 1
+            same_first = len(set(terminal.first for terminal in s)) == 1
             txt = tokens[i].lower
             # No need to check preferences if the first parts of all possible terminals are equal
             # Look up the preference ordering from Reynir.conf, if any
@@ -139,14 +155,6 @@ class Reducer:
                                 for m in tokens[i].t2 if m.ordfl == "so"):
                                 # No meaning where the verb has zero arguments
                                 adj = -4
-                            #for m in tokens[i].t2:
-                            #    if m.ordfl == "so" and m.stofn not in VerbObjects.VERBS[0]:
-                            #        # We're using a verb with zero arguments but that form is not
-                            #        # explicitly listed in Verbs.conf: discourage this
-                            #        # print("Discouraging zero-arg use of verb '{0}' (stem '{1}')"
-                            #        #    .format(txt, m.stofn))
-                            #        adj = -2
-                            #        break
                         # Apply score adjustments for verbs with particular object cases,
                         # as specified by $score(n) pragmas in Verbs.conf
                         for m in tokens[i].t2:
@@ -222,37 +230,8 @@ class Reducer:
 
         #for i in range(w.start, w.end):
         #    print("At token '{0}' scores dict is:\n{1}".format(tokens[i].t1, scores[i]))
+        return scores
 
-        # Third pass: navigate the tree bottom-up, eliminating lower-rated
-        # options (subtrees) in favor of higher rated ones
-
-        score = self._reduce(w, scores)
-
-        return (w, score)
-
-    def go(self, forest):
-        """ Return only the reduced forest, without its score """
-        w, _ = self.go_with_score(forest)
-        return w
-
-    @staticmethod
-    def _find_options(w, finals, tokens):
-        """ Find token-terminal match options in a parse forest with a root in w """
-
-        class OptionFinder(ParseForestNavigator):
-
-            """ Subclass to navigate a parse forest and populate the set
-                of terminals that match each token """
-
-            def _visit_token(self, level, node):
-                """ At token node """
-                assert node.terminal is not None
-                assert isinstance(node.terminal, Terminal)
-                finals[node.start].add(node.terminal)
-                tokens[node.start] = node.token
-                return None
-
-        OptionFinder().go(w)
 
     def _reduce(self, w, scores):
         """ Reduce a forest with a root in w based on subtree scores """
@@ -342,9 +321,28 @@ class Reducer:
                     node.reduce_to(ix)
                 if results.nt is not None:
                     # Get score adjustment for this nonterminal, if any
+                    # (This is the $score(+/-N) pragma from Reynir.grammar)
                     sc += self._score_adj.get(results.nt, 0)
                 # !!! DEBUG
                 #node.score = sc
                 return sc
 
         return ParseForestReducer(self._grammar, scores).go(w)
+
+
+    def go_with_score(self, forest):
+        """ Returns the argument forest after pruning it down to a single tree """
+        if forest is None:
+            return (None, 0)
+        scores = self._calc_terminal_scores(forest)
+        # Third pass: navigate the tree bottom-up, eliminating lower-rated
+        # options (subtrees) in favor of higher rated ones
+        score = self._reduce(forest, scores)
+        return (forest, score)
+
+
+    def go(self, forest):
+        """ Return only the reduced forest, without its score """
+        w, _ = self.go_with_score(forest)
+        return w
+

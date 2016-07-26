@@ -18,6 +18,11 @@
 
 */
 
+/* Firefox fix for responsive tables - see Bootstrap documentation */
+@-moz-document url-prefix() {
+   fieldset { display: table-cell; }
+}
+
 @font-face {
    font-family: 'Glyphicons Regular';
    src: url('/fonts/glyphicons-regular.eot');
@@ -79,6 +84,12 @@
     color: #f0ad4e;
 }
 
+.glyphicon-spin-white {
+    -webkit-animation: spin 2000ms infinite linear;
+    animation: spin 2000ms infinite linear;
+    color: white;
+}
+
 @-webkit-keyframes spin {
     0% {
         -webkit-transform: rotate(0deg);
@@ -101,6 +112,10 @@
     }
 }
 
+.red {
+   color: #d9534f;
+}
+
 html {
    overflow-y: scroll; /* Avoid jumping when long content is displayed */
 }
@@ -112,6 +127,13 @@ body {
 
 .container {
    max-width: 970px;
+   padding-left: 0;
+   padding-right: 0;
+}
+
+.row {
+   margin-left: 0;
+   margin-right: 0;
 }
 
 a.navbar-brand {
@@ -141,6 +163,11 @@ div.input .col-xs-4, div.input .col-xs-5, div.input .col-xs-6, div.input .col-xs
 {
    padding-left: 6px;
    padding-right: 6px;
+}
+
+div.input-analysis {
+   padding-top: 18px;
+   padding-bottom: 0px;
 }
 
 div.tab-pane {
@@ -481,6 +508,16 @@ div.guide-empty {
    font-size: 0.94em;
 }
 
+div.guide-empty i {
+   color: #337ab7;
+}
+
+div.guide-empty i:hover {
+   color: #23527c;
+   text-decoration: underline;
+   cursor: pointer;
+}
+
 th.count, td.count {
    text-align: right;
 }
@@ -501,7 +538,48 @@ tfoot tr td {
    font-weight: bold;
 }
 
-table#dtable caption {
-   padding-top: 16px;
-   padding-bottom: 24px;
+table.table thead th {
+   padding-top: 18px;
+   padding-bottom: 8px;
 }
+
+table.table tfoot tr td {
+   padding-top: 8px;
+   padding-bottom: 8px;
+}
+
+img.villi {
+   margin-left: 8px;
+   margin-bottom: 8px;
+}
+
+h5#meta-url {
+   vertical-align: middle;
+   font-size: 16px;
+   line-height: 1.3;
+}
+
+h5#meta-url button {
+   margin-left: 8px;
+}
+
+textarea#txt {
+   margin-bottom: 1em;
+}
+
+div.panel-heading span.glyphicon {
+   padding-right: 6px;
+}
+
+div#entity-body div.guide-empty {
+   margin-top: 36px;
+}
+
+p.author {
+   text-align: right;
+}
+
+div#output h3 {
+   color: #337ab7;
+}
+

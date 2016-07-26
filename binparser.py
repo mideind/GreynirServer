@@ -170,8 +170,9 @@ class BIN_Token(Token):
     # '...næstum tvo áratugi'
     # '...afsalaði sér samt launum'
     # '...og færði því Markúsi Erni tómatsósu'
+    # '...lifði af nútímalega meðferð'
     _NOT_NOT_EO = frozenset(["inn", "eftir", "of", "til", "upp", "um", "síðan", "fram", "nær", "nærri",
-        "út", "meðal", "úti", "saman", "jafnframt", "næstum", "samt", "samtals", "því", "nokkuð" ])
+        "út", "meðal", "úti", "saman", "jafnframt", "næstum", "samt", "samtals", "því", "nokkuð", "af" ])
 
     # Words that are not eligible for interpretation as proper names, even if they are capitalized
     _NOT_PROPER_NAME = frozenset(["ég", "þú", "hann", "hún", "það", "við", "þið", "þau",
@@ -316,10 +317,11 @@ class BIN_Token(Token):
         for v in [ "sagnb", "lhþt", "bh" ]: # Be careful with "lh" here - !!! add mm?
             if BIN_Token.VARIANT[v] in form and not terminal.has_variant(v):
                 return False
-        if terminal.is_lh and "VB" in form and not terminal.has_variant("vb"):
-            # We want only the strong declinations ("SB") of lhþt, not the weak ones,
-            # unless explicitly requested
-            return False
+        if terminal.is_lh:
+            if "VB" in form and not terminal.has_variant("vb"):
+                # We want only the strong declinations ("SB") of lhþt, not the weak ones,
+                # unless explicitly requested
+                return False
         if terminal.has_variant("bh") and "ST" in form:
             # We only want the explicit request forms (boðháttur), i.e. "bónaðu"/"bónið",
             # not "bóna" which causes ambiguity vs. the nominal mode (nafnháttur)
@@ -328,7 +330,13 @@ class BIN_Token(Token):
         # of the terminal in question. If the verb is known to take fewer
         # arguments than the terminal wants, this is not a match.
         if terminal.variant(0) not in "012":
-            # No argument number: all verbs match
+            # No argument number: all verbs match, except...
+            if terminal.is_lh:
+                # Special check for lhþt: may specify a case without it being an argument case
+                if any(terminal.has_variant(c) and BIN_Token.VARIANT[c] not in form for c in BIN_Token.CASES):
+                    # Terminal specified a non-argument case but the token doesn't have it:
+                    # no match
+                    return False
             return True
         nargs = int(terminal.variant(0))
         if verb in VerbObjects.VERBS[nargs]:

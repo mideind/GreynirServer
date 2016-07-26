@@ -328,6 +328,10 @@ class RuvScraper(ScrapeHelper):
         if content is None:
             # Try alternative layout
             content = ScrapeHelper.div_class(soup_body, "view-content", "second")
+        if content is None:
+            # Fallback to outermost block
+            content = ScrapeHelper.div_class(soup_body,
+                ("block", "block-system"))
         ScrapeHelper.del_div_class(content, "pane-custom") # Sharing stuff at bottom of page
         return content
 
@@ -426,11 +430,14 @@ class MblScraper(ScrapeHelper):
         # 'New style' as of May 23, 2016
         soup = ScrapeHelper.div_class(soup_body, "main-layout")
         if soup is None:
-            # Rever to 'old style'
+            # Revert to 'old style'
             soup = ScrapeHelper.div_class(soup_body, "frett-main")
         if soup is None:
             # Could be a blog post
             soup = ScrapeHelper.div_class(soup_body, "pistill-entry-body")
+        if soup is None:
+            # Subsection front page?
+            soup = ScrapeHelper.tag_prop_val(soup_body, "main", "role", "main")
         if soup is None:
             # Could be a picture collection - look for div#non-galleria
             soup = ScrapeHelper.div_id(soup_body, "non-galleria")
@@ -668,4 +675,55 @@ class StjornarradScraper(ScrapeHelper):
         if buttons is not None:
             buttons.decompose()
         return soup
+
+
+class KvennabladidScraper(ScrapeHelper):
+
+    """ Scraping helper for Kvennabladid.is """
+
+    def __init__(self, root):
+        super().__init__(root)
+
+    def get_metadata(self, soup):
+        """ Analyze the article soup and return metadata """
+        metadata = super().get_metadata(soup)
+        # Extract the heading from the OpenGraph (Facebook) og:title meta property
+        heading = ScrapeHelper.meta_property(soup, "og:title") or ""
+        heading = self.unescape(heading)
+        # Extract the publication time from the 
+        dateline = ScrapeHelper.div_class(soup, "blog-info-wrapper", "blog-date")
+        dateline = dateline.a.text if dateline and dateline.a else None
+        timestamp = None
+        if dateline:
+            try:
+                dateline = dateline.split() # 18 jún 2016
+                day = int(dateline[0])
+                month = ["jan", "feb", "mar", "apr", "maí", "jún", "júl", "ágú", "sep", "okt", "nóv", "des"].index(dateline[1]) + 1
+                year = int(dateline[2])
+                # Use current H:M:S as there is no time of day in the document itself
+                now = datetime.utcnow()
+                timestamp = datetime(year = year, month = month, day = day,
+                    hour = now.hour, minute = now.minute, second = now.second)
+            except Exception as e:
+                print("Exception when obtaining date of kvennabladid.is article: {0}".format(e))
+                timestamp = None
+        if timestamp is None:
+            timestamp = datetime.utcnow()
+        # Extract the author name
+        author = ScrapeHelper.div_class(soup, "blog-info-wrapper", "blog-author")
+        author = author.a.text if author and author.a else "Ritstjórn Kvennablaðsins"
+        metadata.heading = heading
+        metadata.author = author
+        metadata.timestamp = timestamp
+        return metadata
+
+    def _get_content(self, soup_body):
+        """ Find the article content (main text) in the soup """
+        article = ScrapeHelper.div_class(soup_body, "blog-content")
+        # Delete div.wp-caption
+        caption = ScrapeHelper.div_class(article, "wp-caption")
+        if caption is not None:
+            caption.decompose()
+        return article
+
 

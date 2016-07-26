@@ -221,7 +221,16 @@ def SamstættFall(node, params, result):
             if not part or not part[0].isupper():
                 return
 
-    definition = " ".join(p._indefinite for p in params[0:-1]) # dönsk byggingavörukeðja
+    # Find the noun terminal parameter
+    p_no = result.find_child(t_base = "no")
+
+    if len(params) >= 3 and p_no is params[-3]:
+        # An adjective follows the noun ('Lagahöfundurinn góðkunni Jónas Friðrik')
+        pp = params[:]
+        pp[-2], pp[-3] = pp[-3], pp[-2] # Swap word order
+        definition = " ".join(p._indefinite for p in pp[0:-1]) # góðkunnur lagahöfundur
+    else:
+        definition = " ".join(p._indefinite for p in params[0:-1]) # dönsk byggingavörukeðja
 
     if node.has_variant("nf"):
         # Nafnliðurinn er í nefnifalli: nota sérnafnið eins og það stendur

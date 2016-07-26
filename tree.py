@@ -511,6 +511,9 @@ class TerminalNode(Node):
 
     _TD = dict() # Cache of terminal descriptors
 
+    # Undeclinable word categories
+    _NOT_DECLINABLE = frozenset([ "ao", "eo", "fs", "st", "nhm" ])
+
     def __init__(self, terminal, token, tokentype, aux, at_start):
         super().__init__()
         td = self._TD.get(terminal)
@@ -525,6 +528,7 @@ class TerminalNode(Node):
         self.tokentype = tokentype
         self.is_word = tokentype in { "WORD", "PERSON" }
         self.is_literal = td.is_literal
+        self.is_declinable = False if self.is_literal else (td.cat not in self._NOT_DECLINABLE)
         self.aux = aux # Auxiliary information, originally from token.t2
         # Cache the root form of this word so that it is only looked up
         # once, even if multiple processors scan this tree
@@ -554,13 +558,12 @@ class TerminalNode(Node):
             w = m.stofn
         return w.replace("-", "")
 
-    def lookup_alternative(self, bin_db, replace_func):
+    def lookup_alternative(self, bin_db, replace_func, sort_func = None):
         """ Return a different word form, if available, by altering the beyging
             spec via the given replace_func function """
         #print("_lookup_alternative looking up {0}, cat is {1}".format(self.text, self.cat))
         w, m = bin_db.lookup_word(self.text, self.at_start)
         if m:
-            #print("lookup_alternative: meanings are {0}".format(m))
             # Narrow the meanings down to those that are compatible with the terminal
             m = [ x for x in m if self.td._bin_filter(x) ]
         if m:
@@ -585,8 +588,11 @@ class TerminalNode(Node):
                         result += bin_db.prefix_meanings(wordform, prefix)
 
             if result:
-                #if len(result) > 1:
-                #    print("Choosing first item from meaning list:\n{0}".format(result))
+                if len(result) > 1:
+                    if sort_func is not None:
+                        # Sort the result before choosing the matching meaning
+                        result.sort(key = sort_func)
+                    # print("Choosing first item from meaning list:\n{0}".format(result))
                 # There can be more than one word form that matches our spec.
                 # We can't choose between them so we simply return the first one.
                 w = result[0].ordmynd
@@ -596,8 +602,7 @@ class TerminalNode(Node):
         """ Look up the nominative form of the word associated with this terminal """
         # Lookup the token in the BIN database
         #print("_nominative of {0}, token {1}, terminal {2}".format(self.text, self.token, self.terminal))
-        if (not self.is_word) or self.td.case_nf or self.is_literal \
-            or self.td.cat in { "ao", "eo", "fs", "st", "nhm" }:
+        if (not self.is_word) or self.td.case_nf or not self.is_declinable:
             # Not a word, already nominative or not declinable: return it as-is
             return self.text
         if not self.text:
@@ -611,8 +616,16 @@ class TerminalNode(Node):
                     return b.replace(case, by_case)
             return b
 
+        def sort_by_gr(m):
+            """ Sort meanings having a definite article (greinir) after those that do not """
+            return 1 if "gr" in m.beyging else 0
+
+        # If this terminal doesn't have a 'gr' variant, prefer meanings in nominative
+        # case that do not include 'gr'
+        sort_func = None if self.has_variant("gr") else sort_by_gr
+
         # Lookup the same word stem but in the nominative case
-        w = self.lookup_alternative(bin_db, replace_beyging)
+        w = self.lookup_alternative(bin_db, replace_beyging, sort_func = sort_func)
 
         if self.text.isupper():
             # Original word was all upper case: convert result to upper case

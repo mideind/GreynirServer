@@ -31,7 +31,7 @@ from datetime import datetime
 from collections import OrderedDict
 
 from settings import Settings, ConfigError
-from scraperdb import Scraper_DB, Article
+from scraperdb import Scraper_DB, Article, Person
 from bindb import BIN_Db
 from tree import Tree
 
@@ -124,7 +124,7 @@ class Processor:
 
         sys.stdout.flush()
 
-    def go(self, from_date = None, limit = 0, force = False, update = False):
+    def go(self, from_date = None, limit = 0, force = False, update = False, title = None):
         """ Process already parsed articles from the database """
 
         with closing(self._db.session) as session:
@@ -132,23 +132,33 @@ class Processor:
             # noinspection PyComparisonWithNone,PyShadowingNames
             def iter_parsed_articles():
                 """ Go through parsed articles and process them """
-                q = session.query(Article.url).filter(Article.tree != None)
-                if not force:
-                    # If force = True, re-process articles even if
-                    # they have been processed before
-                    if update:
-                        # If update, we re-process articles that have been parsed
-                        # again in the meantime
-                        q = q.filter(Article.processed < Article.parsed).order_by(Article.processed)
-                    else:
-                        q = q.filter(Article.processed == None)
-                if from_date is not None:
-                    # Only go through articles parsed since the given date
-                    q = q.filter(Article.parsed >= from_date).order_by(Article.parsed)
+                if title is not None:
+                    # Use a title query on Person to find the URLs to process
+                    qtitle = title.lower()
+                    if '%' not in qtitle:
+                        # Match start of title by default
+                        qtitle += '%'
+                    q = session.query(Person.article_url).filter(Person.title_lc.like(qtitle))
+                    field = lambda x: x.article_url
+                else:
+                    q = session.query(Article.url).filter(Article.tree != None)
+                    field = lambda x: x.url
+                    if not force:
+                        # If force = True, re-process articles even if
+                        # they have been processed before
+                        if update:
+                            # If update, we re-process articles that have been parsed
+                            # again in the meantime
+                            q = q.filter(Article.processed < Article.parsed).order_by(Article.processed)
+                        else:
+                            q = q.filter(Article.processed == None)
+                    if from_date is not None:
+                        # Only go through articles parsed since the given date
+                        q = q.filter(Article.parsed >= from_date).order_by(Article.parsed)
                 if limit > 0:
                     q = q[0:limit]
                 for a in q:
-                    yield a.url
+                    yield field(a)
 
             if _PROFILING:
                 # If profiling, just do a simple map within a single thread and process
@@ -162,14 +172,16 @@ class Processor:
                 pool.join()
 
 
-def process_articles(from_date = None, limit = 0, force = False, update = False, processor = None):
+def process_articles(from_date = None, limit = 0, force = False, update = False, title = None, processor = None):
 
     print("------ Reynir starting processing -------")
     if from_date:
         print("From date: {0}".format(from_date))
     if limit:
         print("Limit: {0} articles".format(limit))
-    if force:
+    if title is not None:
+        print("Title LIKE: '{0}'".format(title))
+    elif force:
         print("Force re-processing: Yes")
     elif update:
         print("Update: Yes")
@@ -183,7 +195,7 @@ def process_articles(from_date = None, limit = 0, force = False, update = False,
     try:
         # Run all processors in the processors directory, or the single processor given
         proc = Processor(processor_directory = "processors", single_processor = processor)
-        proc.go(from_date, limit = limit, force = force, update = update)
+        proc.go(from_date, limit = limit, force = force, update = update, title = title)
     finally:
         proc = None
         Processor.cleanup()
@@ -238,6 +250,8 @@ __doc__ = """
         -l=N, --limit=N: Limit processing session to N articles
         -u=U, --url=U: Specify a single URL to process
         -p=P, --processor=P: Specify a single processor to invoke
+        -t=T, --title=T: Specify a title pattern in the persons table
+                            to select articles to reprocess
         --update: Process files that have been reparsed but not reprocessed
 
 """
@@ -249,8 +263,8 @@ def _main(argv = None):
         argv = sys.argv
     try:
         try:
-            opts, args = getopt.getopt(argv[1:], "hifl:u:p:",
-                ["help", "init", "force", "update", "limit=", "url=", "processor="])
+            opts, args = getopt.getopt(argv[1:], "hifl:u:p:t:",
+                ["help", "init", "force", "update", "limit=", "url=", "processor=", "title="])
         except getopt.error as msg:
              raise Usage(msg)
         limit = 10 # !!! DEBUG default limit on number of articles to parse, unless otherwise specified
@@ -258,6 +272,7 @@ def _main(argv = None):
         url = None
         force = False
         update = False
+        title = None # Title pattern
         proc = None # Single processor to invoke
         # Process options
         for o, a in opts:
@@ -279,6 +294,9 @@ def _main(argv = None):
             elif o in ("-u", "--url"):
                 # Single URL to process
                 url = a
+            elif o in ("-t", "--title"):
+                # Title pattern to match
+                title = a
             elif o in ("-p", "--processor"):
                 # Single processor to invoke
                 proc = a
@@ -311,9 +329,13 @@ def _main(argv = None):
                 if force:
                     # --force overrides --update
                     update = False
+                if title:
+                    # --title overrides both --force and --update
+                    force = False
+                    update = False
                 from_date = None if update else datetime(year = 2016, month = 3, day = 1)
                 process_articles(from_date = from_date,
-                    limit = limit, force = force, update = update, processor = proc)
+                    limit = limit, force = force, update = update, title = title, processor = proc)
                 # process_articles(limit = limit)
 
     except Usage as err:

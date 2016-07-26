@@ -9,225 +9,50 @@
 
 {% block content %}
 
- <!-- Fixed navbar -->
-<nav class="navbar navbar-default navbar-fixed-top">
-   <div class="container">
-      <div class="navbar-header">
-         <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-            <span class="sr-only">Toggle navigation</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-         </button>
-         <a class="navbar-brand" href="{{ url_for('main') }}">
-            <img src="{{ url_for('static', filename='GreynirLogo180x80.png') }}" width=90 height=40>
-         </a>
+<div class="input">
+
+   <div class="row">
+
+      <div class="col-xs-2 col-sm-1" style="max-width: 4.2em">
+         <button class="btn btn-default btn-lg btn-block" id="back" title="Til baka" tabindex="4">
+            <span class="glyphicon glyphicon-chevron-left"></span></button>
       </div>
-      <div id="navbar" class="navbar-collapse collapse">
-         <ul class="nav navbar-nav">
-            <li class="active"><a href="{{ url_for('main') }}">Heim</a></li>
-            <li><a href="#people">Fólk í fréttum</a></li>
-            <li><a href="{{ url_for('genders') }}">Kynjagreining</a></li>
-            <li><a href="#analysis">Málgreining</a></li>
-            <li><a href="{{ url_for('about') }}">Um Greyni</a></li>
-         </ul>
-      </div><!--/.nav-collapse -->
-   </div>
-</nav>
 
-<div class="container text-container" role="main">
+      <div class="col-xs-7 col-sm-9" id="url-div">
 
-   <div class="input">
+         <input class="text-input form-control input-lg" type="text" name="url" id="url" tabindex="1"
+            maxlength=512 autofocus required value="{{ default_text }}">
 
-      <!--
-      <div class="row">
-         <div class="col-xs-12">
-            <p class="header"><a href="{{ url_for('main') }}"><img src="{{ url_for('static', filename='GreynirLogo404x180.png') }}" width=202 height=90></a></p>
-         </div>
       </div>
-      -->
 
-      <div class="row">
+      <!-- The microphone div is not displayed by default.
+         It is enabled if the microphone is supported. -->
+      <div class="col-xs-2 col-sm-1" style="max-width: 4.2em" id="microphone-div">
+         <button class="btn btn-info btn-lg btn-block" id="microphone"
+            title="Nota hljóðnema" tabindex="2"><!--
+         --><span class="glyphicon glyphicon-microphone"></span> </button>
+      </div>
 
-         <div class="col-xs-2 col-sm-1" style="max-width: 4.2em">
-            <button class="btn btn-default btn-lg btn-block" id="back" title="Til baka" tabindex="4">
-               <span class="glyphicon glyphicon-chevron-left"></span></button>
-         </div>
-
-         <div class="col-xs-7 col-sm-9" id="url-div">
-
-            <input class="text-input form-control input-lg" type="text" name="url" id="url" tabindex="1"
-               maxlength=512 autofocus required value="{{ default_text }}">
-
-         </div>
-
-         <!-- The microphone div is not displayed by default.
-            It is enabled if the microphone is supported. -->
-         <div class="col-xs-2 col-sm-1" style="max-width: 4.2em" id="microphone-div">
-            <button class="btn btn-info btn-lg btn-block" id="microphone"
-               title="Nota hljóðnema" tabindex="2"><!--
-            --><span class="glyphicon glyphicon-microphone"></span> </button>
-         </div>
-
-         <div class="col-xs-3 col-sm-2">
-            <button class="btn btn-success btn-lg btn-block" id="url-ok" title="Greina" tabindex="3"
-               onclick="analyzeUrl()">Greina</button>
-         </div>
-
+      <div class="col-xs-3 col-sm-2">
+         <button class="btn btn-success btn-lg btn-block" id="url-ok" title="Greina" tabindex="3"
+            onclick="analyzeQuery()">Greina</button>
       </div>
 
    </div>
 
-   <div class="output">
+</div>
 
-      <ul class="nav nav-tabs">
-         <li class="active"><a data-toggle="tab" href="#hdr-topnews"><span class="glyphicon glyphicon-time"></span>Nýjustu fréttir</a></li>
-         <li><a data-toggle="tab" href="#hdr-toppeople"><span class="glyphicon glyphicon-user"></span>Fólk í fréttum</a></li>
-         <li><a data-toggle="tab" href="#hdr-entity" id="hdr-entity-btn"><span class="glyphicon glyphicon-info" id="entity-wait"></span>Svör</a></li>
-         <li><a data-toggle="tab" href="#hdr-output" id="hdr-output-btn"><span class="glyphicon glyphicon-eye-open" id="result-wait"></span>Málgreining</a></li>
-      </ul>
+<div id="entity-body">
 
-      <!--<div class="row">
-      <div class="col-xs-12">-->
-
-      <div class="tab-content">
-
-         <div id="hdr-topnews" class="tab-pane fade in active">
-            <!-- List of recent top news goes here -->
-            <table class="table table-condensed table-hover" id="toplist">
-               <thead>
-                  <th>Tími</th>
-                  <th>%</th>
-                  <th>Fyrirsögn</th>
-               </thead>
-               <tbody>
-{% for article in articles %}
-               <tr class="topitem" data-url="{{ article.url }}">
-                  <td class="timestamp text-muted">{{ article.timestamp }}</td>
-                  <td class="ratio">
-                     <div class="progress" title="{{ article.width }} málsgreina trjágreind">
-                        <div class="progress-bar progress-bar-success" role="progressbar"
-                           style="min-width:2em; width:{{ article.width }}">{{ article.width }}</div>
-                     </div>
-                  </td>
-                  <td class="heading"><img src="/static/{{ article.icon }}" width="16" height="16" alt="{{ article.icon }}"/> {{ article.heading }}</td>
-               </tr>
-{% endfor %}
-               </tbody>
-            </table>
-         </div>
-
-         <div id="hdr-toppeople" class="tab-pane fade">
-            <!-- List of people in the news goes here -->
-            <table class="table table-condensed table-hover" id="plist">
-               <thead>
-                  <th class="gender">Kyn</th>
-                  <th>Nafn</th>
-                  <th>Titill</th>
-               </thead>
-               <tbody>
-{% for person in persons %}
-                  <tr class="topitem" data-url="{{ person.url }}">
-{% if person.gender == 'kk' %}
-                     <td class="gender" title="Karl"><span class="glyphicon glyphicon-gender-male"></span></td>
-                     <td class="name"><span class="text-info">{{ person.name }}</span></td>
-{% elif person.gender == 'kvk' %}
-                     <td class="gender" title="Kona"><span class="glyphicon glyphicon-gender-female"></span></td>
-                     <td class="name"><span class="text-danger">{{ person.name }}</span></td>
-{% else %}
-                     <td class="gender"></td>
-                     <td class="name">{{ person.name }}</td>
-{% endif %}
-                     <td class="title">{{ person.title }}</td>
-                  </tr>
-{% endfor %}
-               </tbody>
-            </table>
-         </div>
-
-         <div id="hdr-entity" class="tab-pane fade">
-            <!-- Information about an entity goes here -->
-            <div id="entity-body">
-
-               <div class="panel panel-info guide-empty">
-                  <div class="panel-heading"><span class="glyphicon glyphicon-info"></span></div>
-                  <div class="panel-body">
-                     <p><b>Sláðu inn spurningu um mannanöfn, titla eða sérnöfn</b> hér að ofan
-                     til að fá nánari upplýsingar, eða smelltu á nafn í frétt.</p>
-                     <p>Dæmi: <i>Hver er seðlabankastjóri?</i>, <i>Hver er Birgitta Jónsdóttir?</i>,
-                     <i>Hvað er HeForShe?</i></p>
-                  </div>
-               </div>
-
-            </div>
-            <div id="entity-wait" class="wait">Fyrirspurn í vinnslu...<br><br><img src="/static/wait.gif" width="48" height="48" alt="Bíðið..." /></div>
-         </div>
-
-         <div id="hdr-output" class="tab-pane fade">
-
-            <div id="output" class="main-tab">
-
-               <!-- Popup with info about the word being hovered over -->
-               <div class="info"></div>
-
-               <!--
-               <div id="guide">
-                  <p><span class="green glyphicon glyphicon-play"></span>
-                  <b>Smelltu á málsgrein</b> til að sjá trjágreiningu hennar eða á
-                  <span class="blue">blálitað</span> orð til að sjá skilgreiningu þess.</p>
-               </div>
-               -->
-
-               <div id="metadata">
-               <!-- Article metadata goes here, if any -->
-                  <h1 id="meta-heading"></h1>
-                  <h3 id="meta-author" class="text-muted"></h3>
-                  <h4 id="meta-timestamp" class="text-muted"></h4>
-                  <h5 id="meta-url"></h5>
-               </div>
-
-               <div id="result">
-               <!-- Result of analysis goes here -->
-
-                  <div class="panel panel-info guide-empty">
-                     <div class="panel-heading"><span class="glyphicon glyphicon-info"></span></div>
-                     <div class="panel-body">
-                        <p><b>Sláðu inn texta eða vefslóð</b> hér að ofan til að málgreina,
-                        eða veldu frétt eða nafn úr listunum.</p>
-                     </div>
-                  </div>
-
-               </div>
-
-               <div id="register">
-                  <!-- Name register goes here -->
-                  <h3>Nafnalisti</h3>
-                  <ul id="namelist"></ul>
-               </div>
-
-               <div id="statistics">
-                  <!-- Statistics go here -->
-                  <h3>Tölfræði</h3>
-                  <ul>
-                     <li>Textinn inniheldur <span id="tok-num"></span> eindir í
-                        <span id="num-sent"></span> málsgreinum.</li>
-                     <li>Eindagreining tók <span id="tok-time"></span> sekúndur en
-                        málfræðigreining <span id="parse-time"></span> sekúndur.</li>
-                     <li>Það tókst að greina <span id="num-parsed-sent"></span> málsgreinar eða
-                        <span id="num-parsed-ratio"></span>%.</li>
-                     <li>Margræðnistuðull var
-                        <span id="avg-ambig-factor"></span>.</li>
-                  </ul>
-               </div>
-
-            </div>
-
-         </div>
-
+   <div class="panel panel-info guide-empty">
+      <div class="panel-heading"><span class="glyphicon glyphicon-info"></span>
+         Sláðu inn spurningu um <b>mannanöfn, titla, starfsheiti</b> eða <b>sérnöfn</b> hér að ofan.
       </div>
-
-   <!--</div>
-   </div>-->
+      <div class="panel-body">
+         <p><b>Dæmi:</b> <i>Hver er seðlabankastjóri?</i>, <i>Hver er Birgitta Jónsdóttir?</i>,
+         <i>Hvað er HeForShe?</i></p>
+         <p>Einnig má slá inn <b>vefslóð</b> til að málgreina texta af vefnum.</p>
+      </div>
    </div>
 
 </div>
@@ -244,7 +69,20 @@
       return false;
    }
 
-   usingBootstrap = true;
+   function wait(state) {
+      // Start or stop a wait spinner
+      queryInProgress = state;
+      if (state) {
+         $("#url-ok").attr("disabled", "disabled")
+            .html("<span class='glyphicon glyphicon-restart glyphicon-spin-white'></span>");
+         $("#microphone").attr("disabled", "disabled");
+      }
+      else {
+         $("#url-ok").removeAttr("disabled")
+            .text("Greina");
+         $("#microphone").removeAttr("disabled");
+      }
+   }
 
    $(document).ready(initMain);
 

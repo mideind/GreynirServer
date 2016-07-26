@@ -435,3 +435,26 @@ class GenderQuery:
         """ Execute the query and return the result from fetchall() """
         return session.execute(self._Q).fetchall()
 
+
+class StatsQuery:
+
+    """ A query for statistics on articles """
+
+    _Q = """
+        select r.domain,
+            sum(1) as art,
+            sum(a.num_sentences) as sent,
+            sum(a.num_parsed) as parsed
+            from articles as a, roots as r
+            where a.root_id = r.id
+            group by r.domain
+            order by r.domain;
+        """
+
+    def __init__(self):
+        pass
+
+    def execute(self, session):
+        """ Execute the query and return the result from fetchall() """
+        return session.execute(self._Q).fetchall()
+

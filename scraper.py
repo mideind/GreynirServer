@@ -868,6 +868,7 @@ def init_roots():
             ("http://www.visir.is", "visir.is", "Vísir", 0.8, "scrapers.default", "VisirScraper"),
             ("http://www.mbl.is/frettir/", "mbl.is", "Morgunblaðið", 0.6, "scrapers.default", "MblScraper"),
             ("http://eyjan.pressan.is", "eyjan.pressan.is", "Eyjan", 0.4, "scrapers.default", "EyjanScraper"),
+            ("http://kvennabladid.is", "kvennabladid.is", "Kvennablaðið", 0.4, "scrapers.default", "KvennabladidScraper"),
             ("http://stjornlagarad.is", "stjornlagarad.is", "Stjórnlagaráð", 1.0, "scrapers.default", "StjornlagaradScraper"),
             ("https://www.forsaetisraduneyti.is", "forsaetisraduneyti.is", "Forsætisráðuneyti", 1.0, "scrapers.default", "StjornarradScraper"),
             ("https://www.innanrikisraduneyti.is", "innanrikisraduneyti.is", "Innanríkisráðuneyti", 1.0, "scrapers.default", "StjornarradScraper"),

@@ -177,6 +177,7 @@ SpurnarSamtenging →
 
     # af hverju, í hverju, í hvern, í hverja, til hvers, frá hverjum...
     | fs/fall 'hver'/fall/tala/kyn FsRuna?      # '(Ég vildi vita) af hverju í ósköpunum (Jón hætti við)'
+    | "afhverju" FsRuna?
 
     | "hvers" "vegna" FsRuna?                   # '(Ég spurði) hvers vegna í veröldinni (hann tók ekki símtalið)'
     | "hví" FsRuna?
@@ -233,7 +234,7 @@ $score(+12) SetningSkilyrði
 
 EfÞegar →
     "ef" | "þegar" | "þótt" | "þó" "að"? | 'jafnvel_þótt' | "þar" "sem" | "eftir" "að"
-    | "eins" "og" | 'líkt_og' | 'á_meðan' | "þangað" "til"
+    | "eins" "og" | 'líkt_og' | 'á_meðan' | "þangað" "til" | 'um_leið' "og"
 
 OgEfÞegar →
     "og" EfÞegar              # 'Ef og þegar eitthvað gerist læt ég þig vita'
@@ -324,15 +325,17 @@ SamanburðarTengingOg →
 
 $score(-4) SamanburðarTengingOg
 
+Sjálfur/tala/kyn → 'sjálfur'/tala/kyn
+
 Setning/tala/pers/kyn →
     # Venjuleg setningarskipan með frumlagi (í nafnhætti) fremst:
     # 'Jón sterki fór bersýnilega í bága við reglurnar með þessu'
     # 'Katrín formaður félagsins hefur augljóslega verið alveg hnífskörp í gær'
     # 'Rúmlega helmingur tvítugra karlmanna vill flugvöll í Vatnsmýri'
-    # 'Ég bara spyr'
-    # 'Allir mega koma til landsins sem það vilja'
+    # 'Ég bara spyr [sjálf]'
+    # 'Allir mega koma til landsins [sjálfir] sem það vilja'
     Frumlag/pers/tala/kyn FrumlagsInnskot/tala/pers/kyn? AtviksliðurEinkunn*
-        SagnRuna/tala/pers/kyn KommaTengiliður/tala/pers/kyn? Samanburður?
+        SagnRuna/tala/pers/kyn Sjálfur/tala/kyn? KommaTengiliður/tala/pers/kyn? Samanburður?
 
     # Frumlag fyrir aftan sögn:
     # 'Gengu þau galvösk á Esjuna þrátt fyrir veðurútlitið'
@@ -497,6 +500,7 @@ SetningAukafall →
     | Nl/aukafall HjSögnMegiSkuli_et_p3 FsAtv? AukafallÖfugSögn nhm So_1_nh/aukafall FsAtv?
 
     # Engan þarf/ætti að undra (að mig langi í ís)
+    # Greinarmun verður [ekki] að gera (á Jóni og séra Jóni)
     | Nl/aukafall HjSögnÞurfaEiga_et_p3 FsAtv? nhm So_1_nh/aukafall NhFyllingEðaAtv
 
     # Engan má svipta íslenskum ríkisborgararétti að ósekju
@@ -860,6 +864,7 @@ EinSögn_sagnb/tala/kyn →
     | So_1_þf_nh_sagnb SagnarBotn       # Konurnar hafa [ekki] látið Pál borða matinn / sagt niðurstöðuna vera ranga
     | Sögn_1_sagnb NhFylling/tala/kyn?  # Konurnar hafa [ekki] lofað Páli [að fara út]
     | Sögn_2_sagnb
+    | so_0_mm_sagnb LhÞtBotn/tala/kyn   # Konurnar hafa reynst vera bíræfnir þjófar / þóst ritfærar / sagst fara að drífa sig
 
 # Gefa auka stig hér enda smella þá fleiri en eitt púsl saman
 $score(+6) EinSögn_sagnb/tala/kyn
@@ -909,6 +914,8 @@ Sögn_bh →
     | Sögn_1_bh NhFylling?
     # Skrifaðu jólasveininum bréf
     | Sögn_2_bh
+    # Láttu/látið það ekki slá ykkur (út af laginu) og fara (með ykkur í gönur)
+    | 'láta'_bh Nl_þf AtvFs? EinSögn_nh/tala/kyn OgSögn_nh/tala/kyn*
 
 # Boðháttur er sjaldgæfur - viljum aðra kosti frekar
 $score(-4) Sögn_bh
@@ -1107,7 +1114,7 @@ Sögn_1/tala/pers/kyn →
     # (Kjósandi) velur með persónkjöri frambjóðendur sem hann kýs
     # (Við) einsetjum okkur að vinna með öðrum þjóðum
     # (Sveitarfélögin) ráða sjálf málefnum sínum
-    # (Hún) sagði lafmóð söguna
+    # (Hún) sagði lafmóð/sjálf söguna
     so_1/fall/tala/pers OgSögn_1/fall/tala/pers* FsRuna? LoTengtSögn_nf/tala/kyn? Nl/fall NhFylling?
 
     # (Ég tel/segi/álít) Pál vera dagfarsprúðan mann
@@ -1385,7 +1392,7 @@ HjSögnVh →
     | 'munu'_et_p3_vh FsAtv? 'hafa'_nh      # myndi [ekki] hafa þurft
 
 # Sögnin stendur í nafnhætti með annarri nafnháttarsögn,
-# sbr. 'Gæta verða/skulu/eiga þeir þingskapa'
+# sbr. 'Gæta verða/skulu/eiga/vilja þeir þingskapa'
 HjSögnNhMeðSo/tala/pers →
     'verða'/tala/pers       # gæta verða þeir / verður þú
     | 'skulu'/tala/pers     # gæta skulu þeir / skal ég
@@ -1393,6 +1400,7 @@ HjSögnNhMeðSo/tala/pers →
     | 'mega'/tala/pers      # gæta mega þeir
     | 'eiga'/tala/pers      # gæta eiga þeir
     | 'þurfa'/tala/pers     # gæta þurfa þeir / þurfið þið
+    | 'vilja'/tala/pers     # gæta vilja þeir / viljið þið
 
 HjSögnNhMeðSagnb/tala/pers →
     'verða'/tala/pers       # verða mennirnir að hafa/geta... lent
@@ -1431,12 +1439,18 @@ HjSögnNh_p3_et → HjSögnNh_et_p3
 HjSögnNh_p3_ft → HjSögnNh_ft_p3
 
 HjSögnÞurfaEiga_et_p3 →
-    'þurfa'_et_p3                   # Engan þarf að undra
-    | 'eiga'_et_p3                  # Engan ætti að undra
+    'þurfa'_et_p3                   # Greinarmun þarf/þyrfti að gera
+    | 'eiga'_et_p3                  # Greinarmun á/ætti að gera
+    | 'verða'_et_p3                 # Greinarmun verður/varð/yrði að gera
     | 'hafa'_et_p3 'þurfa'_sagnb    # Engan hefur þurft að undra
     | 'hafa'_et_p3 'eiga'_sagnb     # Engan hefði átt að undra
+    | 'hafa'_et_p3 'verða'_sagnb    # Greinarmun hefði orðið að gera
     | 'munu'_et_p3 'þurfa'_nh       # Engan mun þurfa að undra
     | 'skulu'_et_p3 'þurfa'_nh      # Engan skal þurfa að undra
+    | 'munu'_et_p3 'eiga'_nh        # Greinarmun mun eiga að gera
+    | 'skulu'_et_p3 'eiga'_nh       # Greinarmun skal eiga að gera
+    | 'munu'_et_p3 'verða'_nh       # Greinarmun mun verða að gera
+    | 'skulu'_et_p3 'verða'_nh      # Greinarmun skal verða að gera
 
 HjSögnMegiSkuli_et_p3 →
     'mega'_et_p3                    # (Þann lærdóm) megi/mætti/má (draga)
@@ -1937,7 +1951,7 @@ LoSemNafnliður/tala/fall/kyn →
     lo_sb/tala/fall/kyn | lo_mst/tala/fall/kyn # Efsta stig (ESB) er innifalið í _sb
 
 # Gefa lýsingarorðum sem nafnliðum mínusstig
-$score(-10) LoSemNafnliður/tala/fall/kyn
+$score(-14) LoSemNafnliður/tala/fall/kyn
 
 NlStak_p3/tala/fall/kyn →
     'hver'/tala/fall/kyn 'sá'/tala/fall/kyn # Hver sá, hver sú, hvert það, hverjir þeir, hverjar þær, hver þau
@@ -1969,7 +1983,8 @@ NlTöluorð/tala/fall/kyn →
     | TöluorðForskeyti? Töluorð/tala/fall/kyn TöluorðLo/tala # (önnur af) þremur hröðustu (sem eftir standa)
 
 TöluorðForskeyti →
-    'að_minnsta_kosti' | "um" | "minnst" | "einungis" | "aðeins" | "ekki" | "svo" "sem"
+    'að_minnsta_kosti' | "um" | "minnst" | "einungis" | "aðeins" | "ekki"
+    | "svo" "sem" | "tæplega" | "rúmlega"
 
 TöluorðLo/tala →
     lo_evb_nf_hk/tala # efstu tvo / efstu tvö / efstu tvær
@@ -2181,11 +2196,15 @@ FyrirbæriMeðGreini/fall/kyn →
 FyrirbæriMeðGreini/aukafall/kyn →
     ÓsamstættFall/aukafall/kyn
 
+# !!! ATH: Ef þessu er breytt gæti þurft að breyta processors/entities.py
 SamstættFall/fall/kyn →
-    VeiktLo_et/fall/kyn* no_gr_et/fall/kyn SérnafnEðaManneskja/fall  # (Ég versla við) norsku herrafataverslunina Smekkmann
+    # (Ég versla við) norsku herrafataverslunina Smekkmann
+    # Lagahöfundurinn góðkunni Jónas Friðrik (hefur glatt marga)
+    VeiktLo_et/fall/kyn* no_gr_et/fall/kyn VeiktLo_et/fall/kyn? SérnafnEðaManneskja/fall
 
+# !!! ATH: Ef þessu er breytt gæti þurft að breyta processors/entities.py
 ÓsamstættFall/aukafall/kyn →
-    VeiktLo_et/aukafall/kyn* no_gr_et/aukafall/kyn SérnafnEðaManneskja # (Ég versla við) herrafataverslunina Smekkmaður
+    VeiktLo_et/aukafall/kyn* no_gr_et/aukafall/kyn VeiktLo_et/aukafall/kyn? SérnafnEðaManneskja # (Ég versla við) herrafataverslunina Smekkmaður
 
 SérnafnEðaManneskja/fall →
     Sérnafn/fall | Persóna/fall | Fyrirtæki/fall # (danska húsgagnahönnuðinn) Arne Jacobsen
@@ -2383,8 +2402,11 @@ TengiliðurMeðKommu/tala/pers/kyn →
     >     Tengiliður/tala/pers/kyn ','
     > ',' Tengiliður/tala/pers/kyn
 
+# KommaTengiliður er einungis notað í lok venjulegrar
+# setningar með frumlagi í nefnifalli, sbr.
+# Allir mega koma með okkur sem eru fullklæddir
 KommaTengiliður/tala/pers/kyn →
-    ','? Tengiliður/tala/pers/kyn
+    ','? "sem" SetningÁnF/tala/pers/kyn
 
 Tengiliður/tala/pers/kyn →
     Tengiorð Tengisetning/tala/pers/kyn
@@ -2557,12 +2579,16 @@ KommaOgEðaEnNema → ',' | ','? OgEðaEnNema
 
 NlRuna/fall/kyn →
     KommuSamtenging/fall/kyn* KommuEndir/fall/kyn
-    | ',' FsRuna? NlEind/fall/kyn AtvKomma    # Konurnar, sérstaklega Anna, voru óánægðar
+    | ',' KommuStForskeyti? NlEind/fall/kyn AtvKomma    # Konurnar, sérstaklega Anna, voru óánægðar
 
-KommuSamtenging/fall/kyn → ',' FsRuna? NlEind/fall/kyn
+KommuStForskeyti →
+    FsRuna
+    | "þar" "af"    # fjórir þingmenn, þar af einn nýútskrifaður, 
+
+KommuSamtenging/fall/kyn → ',' KommuStForskeyti? NlEind/fall/kyn
 
 KommuEndir/fall/kyn →
-    Atviksliður? KommaOgEða FsRuna? NlEind/fall/kyn AtvKomma?
+    Atviksliður? KommaOgEða KommuStForskeyti? NlEind/fall/kyn AtvKomma?
     | 'og_fleira' ','?
     | 'og_margt_fleira' ','?
     | 'og_svo_framvegis' ','?
@@ -2574,12 +2600,12 @@ $score(+6) KommuSamtenging/fall/kyn
 
 NlRuna/fall →
     KommuSamtenging/fall* KommuEndir/fall
-    | ',' FsRuna? NlEind/fall AtvKomma        # Þingmenn, sérstaklega Jóhanna, voru óánægðir
+    | ',' KommuStForskeyti? NlEind/fall AtvKomma        # Þingmenn, sérstaklega Jóhanna, voru óánægðir
 
-KommuSamtenging/fall → ',' FsRuna? NlEind/fall
+KommuSamtenging/fall → ',' KommuStForskeyti? NlEind/fall
 
 KommuEndir/fall →
-    Atviksliður? KommaOgEða FsRuna? NlEind/fall AtvKomma?
+    Atviksliður? KommaOgEða KommuStForskeyti? NlEind/fall AtvKomma?
     | 'og_fleira' ','?
     | 'og_margt_fleira' ','?
     | 'og_svo_framvegis' ','?
@@ -2737,6 +2763,7 @@ LoKomma/tala/fall/kyn →
 # Fornöfn sem geta hegðað sér eins og lýsingarorð:
 # 'Hann komst sjálfur út úr flakinu', 'Hún fór öll inn um gluggann',
 # 'Þau eru bæði viðskiptafræðingar',  'Það reyndist vera sú sama'
+# ('báðir' er aðeins til í fleirtölu en það veldur ekki vandræðum hér)
 
 LoFornafn/fall/tala/kyn →
     'allur'/fall/tala/kyn | 'sjálfur'/fall/tala/kyn | 'báðir'/fall/tala/kyn | 'sami'/fall/tala/kyn
@@ -2792,12 +2819,13 @@ FsMeðFallstjórn →
     | "á" "fætur" Nl_þgf # '(Hann borðaði hverja tertusneiðina) á fætur annarri'
     | "nær" 'draga'_et_p3 Nl_þgf # 'þegar nær dró/dregur jólum'
     | 'það_sem_af_er' Nl_þgf # 'það sem af er þessu þingi'
+    | 'fyrir_hönd' Nl_ef
     | "miðað" "við" Nl_þf
     | 'miðað_við' Nl_þf # Skammstöfunin m.v.
     | "samanborið" "við" Nl_þf
     | "þegar" "kemur" "að" Nl_þgf
     | 'til_og_frá' Nl_þgf
-    | "fyrir" "utan" Nl_þf
+    | "fyrir" "nú"? "utan" Nl_þf
     | "innan" "við" Nl_þf
     | "hvað" FsHvaðVarðar
     | "um" 'það'_þf_et? FsSamtenging HreinYfirsetning # 'um [það] hvort Brandur sé fallegastur'
@@ -3051,7 +3079,7 @@ TalaTímabil_þf/tala/kyn →
 Tímabil_þf →
     TímabilsEinkunn_þf/tala/kyn Tímabil_þf/kyn/tala # (Hann kom hér) alla daga, suma vikudaga, nokkur ár, eina vikuna
 
-$score(+8) Tímabil_þf
+# $score(+8) Tímabil_þf
 
 TímabilsEinkunn_þf_ft/kyn →
     NæsturSíðastur_þf_ft/kyn Töluorð_þf_ft/kyn?  # Næstu fimm daga, síðustu þrjú sumur

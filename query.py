@@ -35,15 +35,15 @@ _MAXLEN_ANSWER = 25 # Maximum number of top answers to send in response to queri
 _CUTOFF_AFTER = 4
 _MAX_URLS = 5 # Maximum number of URL sources so provide for each top answer
 
-ArticleInfo = namedtuple('ArticleInfo', ['domain', 'url', 'heading', 'ts'])
+ArticleInfo = namedtuple('ArticleInfo', ['domain', 'uuid', 'heading', 'ts'])
 
 
 def append_answers(rd, q, prop_func):
     """ Iterate over query results and add them to the result dictionary rd """
     for p in q:
         s = correct_spaces(prop_func(p))
-        ai = ArticleInfo(domain = p.domain, url = p.article_url, heading = p.heading, ts = p.timestamp)
-        rd[s][ai.url] = ai # Add to a dict of URLs
+        ai = ArticleInfo(domain = p.domain, uuid = p.id, heading = p.heading, ts = p.timestamp)
+        rd[s][ai.uuid] = ai # Add to a dict of UUIDs
 
 
 def make_response_list(rd):
@@ -107,14 +107,14 @@ def prepare_response(q, prop_func):
 def query_person(session, name):
     """ A query for a person by name """
     rd = defaultdict(dict)
-    q = session.query(Person.title, Person.article_url, Article.timestamp, Article.heading, Root.domain) \
+    q = session.query(Person.title, Article.id, Article.timestamp, Article.heading, Root.domain) \
         .filter(Person.name == name) \
         .join(Article).join(Root) \
         .all()
     # Append titles from the persons table
     append_answers(rd, q, prop_func = lambda x: x.title)
     # Also append definitions from the entities table, if any
-    q = session.query(Entity.definition, Entity.article_url, Article.timestamp, Article.heading, Root.domain) \
+    q = session.query(Entity.definition, Article.id, Article.timestamp, Article.heading, Root.domain) \
         .filter(Entity.name == name) \
         .join(Article).join(Root) \
         .all()
@@ -127,14 +127,14 @@ def query_title(session, title):
     # !!! Consider doing a LIKE '%title%', not just LIKE 'title%'
     rd = defaultdict(dict)
     title_lc = title.lower() # Query by lowercase title
-    q = session.query(Person.name, Person.article_url, Article.timestamp, Article.heading, Root.domain) \
+    q = session.query(Person.name, Article.id, Article.timestamp, Article.heading, Root.domain) \
         .filter(Person.title_lc.like(title_lc + ' %') | (Person.title_lc == title_lc)) \
         .join(Article).join(Root) \
         .all()
     # Append names from the persons table
     append_answers(rd, q, prop_func = lambda x: x.name)
     # Also append definitions from the entities table, if any
-    q = session.query(Entity.name, Entity.article_url, Article.timestamp, Article.heading, Root.domain) \
+    q = session.query(Entity.name, Article.id, Article.timestamp, Article.heading, Root.domain) \
         .filter(Entity.definition == title) \
         .join(Article).join(Root) \
         .all()
@@ -144,7 +144,7 @@ def query_title(session, title):
 
 def query_entity(session, name):
     """ A query for an entity by name """
-    q = session.query(Entity.verb, Entity.definition, Entity.article_url, Article.timestamp, Article.heading, Root.domain) \
+    q = session.query(Entity.verb, Entity.definition, Article.id, Article.timestamp, Article.heading, Root.domain) \
         .filter(Entity.name == name) \
         .join(Article).join(Root) \
         .all()
@@ -160,7 +160,7 @@ def query_company(session, name):
     while qname and qname[-1] == '.':
         qname = qname[:-1]
         use_like = True
-    q = session.query(Entity.verb, Entity.definition, Entity.article_url, Article.timestamp, Article.heading, Root.domain) \
+    q = session.query(Entity.verb, Entity.definition, Article.id, Article.timestamp, Article.heading, Root.domain) \
         .join(Article).join(Root)
     if use_like:
         q = q.filter(Entity.name.like(qname + '%'))

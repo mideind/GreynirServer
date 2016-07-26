@@ -15,13 +15,15 @@
 import sys
 import time
 import random
+import re
 from contextlib import closing
 from datetime import datetime
 from functools import wraps
 from collections import OrderedDict, defaultdict
+from decimal import Decimal
 
 from flask import Flask
-from flask import render_template, make_response, jsonify
+from flask import render_template, make_response, jsonify, redirect, url_for
 from flask import request, send_from_directory
 from flask.wrappers import Response
 
@@ -30,7 +32,7 @@ from ptest import run_test, Test_DB
 from reducer import Reducer
 from scraper import Scraper
 from tree import TreeGist
-from scraperdb import SessionContext, desc, Person, Article, GenderQuery
+from scraperdb import SessionContext, desc, Person, Article, GenderQuery, StatsQuery
 from settings import Settings, ConfigError, changedlocale
 from tokenizer import tokenize, TOK, correct_spaces
 from query import Query
@@ -46,6 +48,39 @@ from flask import current_app
 def debug():
     # Call this to trigger the Flask debugger on purpose
     assert current_app.debug == False, "Don't panic! You're here by request of debug()"
+
+# Utilities for Flask/Jinja2 formatting of numbers using the Icelandic locale
+
+def make_pattern(rep_dict):
+    return re.compile("|".join([re.escape(k) for k in rep_dict.keys()]), re.M)
+
+def multiple_replace(string, rep_dict, pattern = None):
+    """ Perform multiple simultaneous replacements within string """
+    if pattern is None:
+        pattern = make_pattern(rep_dict)
+    return pattern.sub(lambda x: rep_dict[x.group(0)], string)
+
+_REP_DICT_IS = { ',' : '.', '.' : ',' }
+_PATTERN_IS = make_pattern(_REP_DICT_IS)
+
+@app.template_filter('format_is')
+def format_is(r, decimals = 0):
+    """ Flask/Jinja2 template filter to format a number for the Icelandic locale """
+    fmt = "{0:,." + str(decimals) + "f}"
+    return multiple_replace(fmt.format(float(r)), _REP_DICT_IS, _PATTERN_IS)
+
+@app.template_filter('format_ts')
+def format_ts(ts):
+    """ Flask/Jinja2 template filter to format a timestamp """
+    return str(ts)[0:19]
+
+def get_json_bool(rq, name, default = False):
+    """ Get a boolean from JSON encoded in a request form """
+    b = rq.form.get(name)
+    if b is None:
+        # Not present in the form: return the default
+        return default
+    return isinstance(b, str) and b == "true"
 
 # Run with profiling?
 _PROFILE = False
@@ -344,11 +379,12 @@ def top_news(limit = _TOP_NEWS_LENGTH):
 
             """ Utility class to carry information about an article to the web template """
 
-            def __init__(self, heading, original_ts, timestamp, url, num_sentences, num_parsed, icon):
+            def __init__(self, heading, original_ts, timestamp, url, uuid, num_sentences, num_parsed, icon):
                 self.heading = heading
                 self.original_ts = original_ts
                 self.timestamp = timestamp
                 self.url = url
+                self.uuid = uuid
                 self.num_sentences = num_sentences
                 self.num_parsed = num_parsed
                 self.icon = icon
@@ -366,7 +402,7 @@ def top_news(limit = _TOP_NEWS_LENGTH):
             icon = a.root.domain + ".ico"
 
             d = ArticleDisplay(heading = a.heading, original_ts = a.timestamp, timestamp = str(a.timestamp)[11:16],
-                url = a.url, num_sentences = a.num_sentences, num_parsed = a.num_parsed, icon = icon)
+                url = a.url, uuid = a.id, num_sentences = a.num_sentences, num_parsed = a.num_parsed, icon = icon)
 
             # Have we seen the same heading on the same domain?
             t = (a.root.domain, a.heading)
@@ -395,7 +431,7 @@ def top_persons(limit = _TOP_PERSONS_LENGTH):
 
     with SessionContext(commit = True) as session:
 
-        q = session.query(Person.name, Person.title, Person.article_url) \
+        q = session.query(Person.name, Person.title, Person.article_url, Article.id) \
             .join(Article) \
             .order_by(desc(Article.timestamp))[0:limit * 2] # Go through up to 2 * N records
 
@@ -403,7 +439,7 @@ def top_persons(limit = _TOP_PERSONS_LENGTH):
             # Insert the name into the list if it's not already there,
             # or if the new title is longer than the previous one
             if p.name not in toplist or len(p.title) > len(toplist[p.name][0]):
-                toplist[p.name] = (correct_spaces(p.title), p.article_url, bindb.lookup_name_gender(p.name))
+                toplist[p.name] = (correct_spaces(p.title), p.article_url, p.id, bindb.lookup_name_gender(p.name))
                 if len(toplist) >= limit:
                     # We now have as many names as we initially wanted: terminate the loop
                     break
@@ -411,7 +447,7 @@ def top_persons(limit = _TOP_PERSONS_LENGTH):
     with changedlocale() as strxfrm:
         # Convert the dictionary to a sorted list of dicts
         return sorted(
-            [ dict(name = name, title = tu[0], gender = tu[2], url = tu[1]) for name, tu in toplist.items() ],
+            [ dict(name = name, title = tu[0], gender = tu[3], url = tu[1], uuid = tu[2]) for name, tu in toplist.items() ],
             key = lambda x: strxfrm(x["name"])
         )
 
@@ -461,7 +497,9 @@ def analyze():
     """ Analyze text from a given URL """
 
     url = request.form.get("url", "").strip()
-    use_reducer = not ("noreduce" in request.form)
+    use_reducer = not get_json_bool(request, "noreduce")
+    auto_uppercase = get_json_bool(request, "autouppercase", True)
+    print("auto_uppercase is '{0}', type {1}".format(auto_uppercase, auto_uppercase.__class__))
     dump_forest = "dump" in request.form
     metadata = None
     # Single sentence (True) or contiguous text from URL (False)?
@@ -487,7 +525,7 @@ def analyze():
             # We specify auto_uppercase to convert lower case words to upper case
             # if the text is all lower case. The text may for instance
             # be coming from a speech recognizer.
-            toklist = list(tokenize(url, auto_uppercase = url.islower()))
+            toklist = list(tokenize(url, auto_uppercase = url.islower() if auto_uppercase else False))
             result = dict()
             is_query = process_query(session, toklist, result)
             if not is_query:
@@ -588,10 +626,10 @@ def display():
         # Add a name register to the result
         add_name_register(result, session)
 
-        result["metadata"] = metadata
         result["tok_time"] = tok_time
         result["parse_time"] = parse_time
 
+        result["metadata"] = metadata
         # Return the tokens as a JSON structure to the client
         return jsonify(result = result)
 
@@ -602,13 +640,22 @@ def query():
     """ Respond to a query string """
 
     q = request.form.get("q", "").strip()
+    # Auto-uppercasing can be turned off by sending autouppercase: false in the query JSON
+    auto_uppercase = get_json_bool(request, "autouppercase", True)
 
-    toklist = list(tokenize(q))
+    toklist = list(tokenize(q, auto_uppercase = q.islower() if auto_uppercase else False))
     result = dict()
 
     with SessionContext(commit = True) as session:
-        # Check whether this is a query
+
+        if Settings.DEBUG:
+            # Log the query string as seen by the parser
+            actual_q = correct_spaces(" ".join(t.txt or "" for t in toklist))
+            print("Query is: '{0}'".format(actual_q))
+
+        # Try to parse and process as a query
         is_query = process_query(session, toklist, result)
+
 
     result["is_query"] = is_query
     result["q"] = q
@@ -729,8 +776,7 @@ def parse_grid():
     MAX_LEVEL = 32 # Maximum level of option depth we can handle
     txt = request.form.get('txt', "")
     parse_path = request.form.get('option', "")
-    debug_mode = request.form.get('debug', False)
-    debug_mode = debug_mode == 'true'
+    debug_mode = get_json_bool(request, 'debug')
     use_reducer = not ("noreduce" in request.form)
 
     # Tokenize the text
@@ -861,8 +907,6 @@ def parse_grid():
             i += 1
         parse_path = "_".join(["0"] * i)
 
-    #debug()
-
     return render_template("parsegrid.html", txt = txt, err = err, tbl = tbl,
         combinations = combinations, score = score, debug_mode = debug_mode,
         choice_list = uc_list, parse_path = parse_path)
@@ -875,7 +919,7 @@ def add_sentence():
     sentence = request.form.get('sentence', "")
     # The sentence may be one that should parse and give us ideally one result tree,
     # or one that is wrong and should not parse, giving 0 result trees.
-    should_parse = request.form.get('shouldparse', 'true') == 'true'
+    should_parse = get_json_bool(request, 'shouldparse', True)
     result = False
     if sentence:
         try:
@@ -896,8 +940,6 @@ def genders():
         gq = GenderQuery()
         result = gq.execute(session)
 
-        from decimal import Decimal
-
         total = dict(kvk = Decimal(), kk = Decimal(), hk = Decimal(), total = Decimal())
         for r in result:
             total["kvk"] += r.kvk
@@ -906,6 +948,100 @@ def genders():
             total["total"] += r.kvk + r.kk + r.hk
 
         return render_template("genders.html", result = result, total = total)
+
+
+@app.route("/stats", methods=['GET'])
+@max_age(seconds = 5 * 60)
+def stats():
+    """ Render a page with article statistics """
+
+    with SessionContext(commit = True) as session:
+
+        sq = StatsQuery()
+        result = sq.execute(session)
+
+        total = dict(art = Decimal(), sent = Decimal(), parsed = Decimal())
+        for r in result:
+            total["art"] += r.art
+            total["sent"] += r.sent
+            total["parsed"] += r.parsed
+
+        return render_template("stats.html", result = result, total = total)
+
+
+@app.route("/about")
+@max_age(seconds = 10 * 60)
+def about():
+    """ Handler for an 'About' page """
+    return render_template("about.html")
+
+
+@app.route("/news")
+@max_age(seconds = 60)
+def news():
+    """ Handler for a page with a top news list """
+    return render_template("news.html", articles = top_news())
+
+
+@app.route("/people")
+@max_age(seconds = 60)
+def people():
+    """ Handler for a page with a list of people recently appearing in news """
+    return render_template("people.html", persons = top_persons())
+
+
+@app.route("/analysis")
+def analysis():
+    """ Handler for a page with grammatical analysis of user-entered text """
+    txt = request.args.get("txt", "")[0:2048] # Don't allow more than 2K of text to be passed via the URL
+    return render_template("analysis.html", default_text = txt)
+
+
+@app.route("/article")
+def article():
+    """ Handler for a page displaying a single article """
+    uuid = request.args.get("id", None)
+    if uuid:
+        uuid = uuid.strip()
+    article = None
+    # Load the article
+    with SessionContext(commit = True) as session:
+        if uuid:
+            uuid = uuid[0:36] # Don't send junk into database query
+            article = session.query(Article).filter(Article.id == uuid).one_or_none()
+        if article is None:
+            return redirect(url_for('main'))
+        return render_template("article.html", article = article)
+
+
+@app.route("/page")
+def page():
+    """ Handler for a page displaying the parse of an arbitrary web page by URL """
+    url = request.args.get("url", None)
+    if url:
+        url = url.strip()
+    if not url or (not url.startswith("http:") and not url.startswith("https:")):
+        return redirect(url_for('main'))
+
+    class ArticleProxy:
+        def __init__(self, url):
+            self.url = url
+            self.heading = ""
+            self.author = ""
+            self.timestamp = datetime.utcnow()
+            self.root = None
+            self.num_sentences = 0
+
+    article = ArticleProxy(url)
+    return render_template("article.html", article = article)
+
+
+@app.route("/test")
+def test():
+    """ Handler for a page of sentences for testing """
+    # Run test and show the result
+    fp = Fast_Parser(verbose = False) # Don't emit diagnostic messages
+    return render_template("test.html", result = run_test(fp))
 
 
 @app.route("/")
@@ -918,25 +1054,7 @@ def main():
     if not txt:
         # Select a random default text
         txt = _DEFAULT_TEXTS[random.randint(0, len(_DEFAULT_TEXTS) - 1)]
-    return render_template("main-bootstrap.html",
-        default_text = txt,
-        articles = top_news(), persons = top_persons())
-
-
-@app.route("/about")
-@max_age(seconds = 10 * 60)
-def about():
-    """ Handler for an 'About' page """
-    return render_template("about.html")
-
-
-@app.route("/test")
-def test():
-    """ Handler for a page of sentences for testing """
-
-    # Run test and show the result
-    bp = Fast_Parser(verbose = False) # Don't emit diagnostic messages
-    return render_template("test.html", result = run_test(bp))
+    return render_template("main-bootstrap.html", default_text = txt)
 
 
 # Flask handlers

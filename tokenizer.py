@@ -44,7 +44,7 @@ END_OF_SENTENCE = frozenset(['.', '?', '!', '[…]'])
 # Punctuation symbols that may additionally occur at the end of a sentence
 SENTENCE_FINISHERS = frozenset([')', ']', '“', '»', '”', '’', '"', '[…]'])
 # Punctuation symbols that may occur inside words
-PUNCT_INSIDE_WORD = frozenset(["'", '.', '‘'])
+PUNCT_INSIDE_WORD = frozenset(["'", '.', '‘', "´"])
 
 # Hyphens that can indicate composite words
 # ('stjórnskipunar- og eftirlitsnefnd')
@@ -571,9 +571,12 @@ def parse_particles(token_stream):
                 if token.kind == TOK.NUMBER and not ('.' in token.txt or ',' in token.txt):
                     # Ordinal, i.e. whole number followed by period: convert to an ordinal token
                     follow_token = next(token_stream)
-                    if follow_token.kind in (TOK.S_END, TOK.P_END) \
-                        or (follow_token.kind == TOK.WORD and follow_token.txt[0].isupper() and not follow_token.txt.lower() in MONTHS):
+                    if follow_token.kind in (TOK.S_END, TOK.P_END) or \
+                        (follow_token.kind == TOK.PUNCTUATION and follow_token.txt in {'„', '"'}) or \
+                        (follow_token.kind == TOK.WORD and follow_token.txt[0].isupper() and
+                        follow_token.txt.lower() not in MONTHS):
                         # Next token is a sentence or paragraph end,
+                        # or opening quotes,
                         # or an uppercase word (and not a month name misspelled in upper case):
                         # fall back from assuming that this is an ordinal
                         yield token # Yield the number
@@ -1130,7 +1133,7 @@ def parse_phrases_2(token_stream):
 
             # Logic for human names
 
-            def stems(tok, categories, first_name = False):
+            def stems(tok, categories, given_name = False):
                 """ If the token denotes a given name, return its possible
                     interpretations, as a list of PersonName tuples (name, case, gender).
                     If first_name is True, we omit from the list all name forms that
@@ -1138,12 +1141,12 @@ def parse_phrases_2(token_stream):
                 if tok.kind != TOK.WORD or not tok.val:
                     return None
                 # Set up the names we're not going to allow
-                dstems = DisallowedNames.STEMS if first_name else { }
+                dstems = DisallowedNames.STEMS if given_name else { }
                 # Look through the token meanings
                 result = []
                 for m in tok.val:
                     if m.fl in categories:
-                        # If this is a first name in a sequence, we cut out name forms
+                        # If this is a given name, we cut out name forms
                         # that are frequently ambiguous and wrong, i.e. "Frá" as accusative
                         # of the name "Frár", and "Sigurð" in the nominative.
                         c = case(m.beyging)
@@ -1172,12 +1175,12 @@ def parse_phrases_2(token_stream):
                 return False
 
             # Check for person names
-            def given_names(tok, first_name = False):
+            def given_names(tok):
                 """ Check for Icelandic person name (category 'ism') """
                 if tok.kind != TOK.WORD or not tok.txt[0].isupper():
                     # Must be a word starting with an uppercase character
                     return None
-                return stems(tok, {"ism"}, first_name)
+                return stems(tok, {"ism"}, given_name = True)
 
             # Check for surnames
             def surnames(tok):
@@ -1230,7 +1233,7 @@ def parse_phrases_2(token_stream):
                     return False
                 return True
 
-            gn = given_names(token, first_name = True)
+            gn = given_names(token)
 
             if gn:
                 # Found at least one given name: look for a sequence of given names

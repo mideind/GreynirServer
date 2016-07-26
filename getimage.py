@@ -64,7 +64,7 @@ def get_image_url(name, size = "medium"):
     if _API_KEY is None:
         try:
             # Read the Google API key from a server file
-            # You need to obtain your own key if you want tu use this code
+            # You need to obtain your own key if you want to use this code
             with open("resources/GoogleServerKey.txt") as f:
                 _API_KEY = f.read()
         except FileNotFoundError as ex:
@@ -76,7 +76,7 @@ def get_image_url(name, size = "medium"):
 
     # Assemble the query parameters
     q = dict(
-        q = name,
+        q = '"' + name + '"', # Try for an exact match
         num = 1,
         start = 1,
         imgSize = size,
@@ -97,7 +97,9 @@ def get_image_url(name, size = "medium"):
         return Img(img["link"],
             image["width"], image["height"], image["contextLink"],
             img["displayLink"])
+    # No answer that makes sense
     return None
+
 
 if __name__ == "__main__":
 
