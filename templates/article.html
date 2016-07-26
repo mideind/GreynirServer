@@ -1,0 +1,138 @@
+
+{% extends "container-bootstrap.html" %}
+
+{% block styles %}
+
+<link href="{{ url_for('static', filename='main-bootstrap.css') }}" rel='stylesheet' type='text/css'>
+
+{% endblock %}
+
+{% block content %}
+
+<div id="output">
+
+   <!-- Popup with info about the word being hovered over -->
+   <div class="info"></div>
+
+   <!--
+   <div id="guide">
+      <p><span class="green glyphicon glyphicon-play"></span>
+      <b>Smelltu á málsgrein</b> til að sjá trjágreiningu hennar eða á
+      <span class="blue">blálitað</span> orð til að sjá skilgreiningu þess.</p>
+   </div>
+   -->
+
+   <div id="metadata">
+      <!-- Article metadata -->
+      <h1 id="meta-heading">{{ article.heading }}</h1>
+      <h3 id="meta-author" class="text-muted">{{ article.author }}</h3>
+      <h4 id="meta-timestamp" class="text-muted">{{ article.timestamp | format_ts }}</h4>
+      <h5 id="meta-url">
+         <a href="{{ article.url }}" target="_blank">Upphafleg grein
+{%- if article.root -%}
+            <img src="{{ url_for('static', filename = article.root.domain + '.ico') }}" width="16" height="16">
+{%- endif -%}
+         </a>
+         <button type="button" class="btn btn-warning refresh" title="Endurgreina"><span class="glyphicon glyphicon-restart"></span></button>
+      </h5>
+   </div>
+
+   <div id="result">
+      <!-- Result of analysis goes here -->
+      <p>Sæki grein... <span class="glyphicon glyphicon-restart glyphicon-spin"></span></p>
+   </div>
+
+   <div id="register">
+      <!-- Name register goes here -->
+      <h3>Nafnalisti</h3>
+      <ul id="namelist"></ul>
+   </div>
+
+   <div id="statistics">
+      <!-- Statistics go here -->
+      <h3>Tölfræði</h3>
+      <ul>
+         <li>Textinn inniheldur <span id="tok-num">0</span> eindir í
+            <span id="num-sent">{{ article.num_sentences }}</span> málsgreinum.</li>
+{% if article.num_sentences > 0 %}
+         <li>Það tókst að greina <span id="num-parsed-sent">{{ article.num_parsed }}</span> málsgreinar eða
+            <span id="num-parsed-ratio">{{ (100.0 * (article.num_parsed | float) /
+               (article.num_sentences | float)) | format_is(1) }}</span>%.</li>
+         <li>Margræðnistuðull var
+            <span id="avg-ambig-factor">{{ article.ambiguity | format_is(2) }}</span>.</li>
+{% else %}
+         <li>Það tókst að greina <span id="num-parsed-sent">0</span> málsgreinar eða
+            <span id="num-parsed-ratio">0,0</span>%.</li>
+         <li>Margræðnistuðull var
+            <span id="avg-ambig-factor">1,00</span>.</li>
+{% endif %}
+      </ul>
+   </div>
+
+</div>
+
+{% endblock %}
+
+{% block endscripts %}
+
+<script src="{{ url_for('static', filename='main.js') }}"></script>
+
+<script>
+
+   function debugMode() {
+      return false;
+   }
+
+   function reparseArticle(url) {
+      // Ask the server to scrape, tokenize and parse a fresh URL
+      // Launch the query
+      $("div#result").html("<p>Málgreining stendur yfir... " +
+         "<span class='glyphicon glyphicon-restart glyphicon-spin'></span>" +
+         "</p>");
+      $("button.refresh").attr("disabled", "disabled");
+      serverQuery('/analyze.api', // Endpoints with .api suffix are not cached
+         {
+            url : url,
+            noreduce : true
+         },
+         populateArticle,
+         null,
+         handleError
+      );
+   }
+
+   function populateArticle(json) {
+      populateRawResult(json);
+      $("button.refresh").removeAttr("disabled");
+   }
+
+   function fetchArticle(url) {
+      // Ask the server to scrape, tokenize and parse a fresh URL
+      // Launch the query
+      serverQuery("{{ '/display.api' if article.root else '/analyze.api' }}",
+         {
+            url : url,
+            noreduce : true
+         },
+         populateArticle,
+         null,
+         handleError
+      );
+   }
+
+   function init() {
+      $("div#statistics").css("display", "block");
+      $("button.refresh")
+         .click(function(ev) {
+            reparseArticle("{{ article.url | safe }}");
+         })
+         .attr("disabled", "disabled");
+      fetchArticle("{{ article.url | safe }}");
+   }
+
+   $(document).ready(init);
+
+</script>
+
+{% endblock %}
+

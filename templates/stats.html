@@ -1,0 +1,62 @@
+
+{% extends "container-bootstrap.html" %}
+
+{% block styles %}
+
+<link href="{{ url_for('static', filename='main-bootstrap.css') }}" rel='stylesheet' type='text/css'>
+
+{% endblock %}
+
+{% block content %}
+
+<div class="panel panel-default table-responsive">
+<div class="panel-heading">Fjöldi frétta og málsgreina í gagnagrunni Greynis eftir vefjum</div>
+<table class="table table-condensed table-hover" id="stable">
+   <thead>
+      <th>Vefur</th>
+      <th class="count">Fréttir</th>
+      <th class="count">Málsgreinar</th>
+      <th class="count">Þar af trjágreindar</th>
+      <th class="count">%</th>
+   </thead>
+   <tbody>
+{% for r in result %}
+      <tr>
+         <td class="domain"><img src="{{ url_for('static', filename = r.domain + '.ico') }}"
+            width="16" height="16">&nbsp;&nbsp;{{ r.domain }}</td>
+         <td class="count">{{ r.art | format_is }}</td>
+         <td class="count">{{ r.sent | format_is }}</td>
+         <td class="count">{{ r.parsed | format_is }}</td>
+         <td class="count">{{ (r.parsed / r.sent * 100) | format_is(1) }}%</td>
+      </tr>
+{% endfor %}
+   </tbody>
+   <tfoot>
+      <tr>
+         <td class="domain">Samtals</td>
+         <td class="count">{{ total.art | format_is }}</td>
+         <td class="count">{{ total.sent | format_is }}</td>
+         <td class="count">{{ total.parsed | format_is }}</td>
+         <td class="count">{{ (total.parsed / total.sent * 100) | format_is(1) }}%</td>
+      </tr>
+   </tfoot>
+</table>
+</div>
+
+{% endblock %}
+
+{% block endscripts %}
+
+<script>
+
+   function init() {
+      // Activate the top navbar
+      $("#navid-stats").addClass("active");
+   }
+
+   $(document).ready(init);
+
+</script>
+
+{% endblock %}
+

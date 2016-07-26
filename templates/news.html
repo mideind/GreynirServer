@@ -1,0 +1,60 @@
+
+{% extends "container-bootstrap.html" %}
+
+{% block styles %}
+
+<link href="{{ url_for('static', filename='main-bootstrap.css') }}" rel='stylesheet' type='text/css'>
+
+{% endblock %}
+
+{% block content %}
+
+<!-- List of recent top news goes here -->
+<div class="panel panel-default table-responsive">
+<div class="panel-heading">Nýjustu fréttir af helstu vefmiðlum</div>
+<table class="table table-condensed table-hover" id="toplist">
+   <thead>
+      <th>Tími</th>
+      <th>%</th>
+      <th>Fyrirsögn</th>
+   </thead>
+   <tbody>
+{% for article in articles %}
+   <tr class="topitem" data-uuid="{{ article.uuid }}">
+      <td class="timestamp text-muted">{{ article.timestamp }}</td>
+      <td class="ratio">
+         <div class="progress" title="{{ article.width }} málsgreina trjágreind">
+            <div class="progress-bar progress-bar-success" role="progressbar"
+               style="min-width:2em; width:{{ article.width }}">{{ article.width }}</div>
+         </div>
+      </td>
+      <td class="heading"><img src="/static/{{ article.icon }}" width="16" height="16" alt="{{ article.icon }}"/> {{ article.heading }}</td>
+   </tr>
+{% endfor %}
+   </tbody>
+</table>
+</div>
+
+{% endblock %}
+
+{% block endscripts %}
+
+<script>
+
+   function init() {
+      // Activate the top navbar
+      $("#navid-news").addClass("active");
+      // Enable clicking on a list item
+      $("tr.topitem").click(function(ev) {
+         // A top news article has been clicked: show it
+         var uuid = $(this).attr("data-uuid");
+         window.location.href = "{{ url_for('article') }}?id=" + uuid;
+      });
+   }
+
+   $(document).ready(init);
+
+</script>
+
+{% endblock %}
+

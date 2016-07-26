@@ -1,0 +1,112 @@
+
+{% extends "container-bootstrap.html" %}
+
+{% block styles %}
+
+<link href="{{ url_for('static', filename='main-bootstrap.css') }}" rel='stylesheet' type='text/css'>
+
+{% endblock %}
+
+{% block content %}
+
+<div class="input-analysis">
+
+   <div class="row">
+
+      <div class="col-xs-12" id="txt-div">
+
+         <textarea rows="8" class="form-control input-lg"
+            id="txt" tabindex="1" maxlength="4096" autofocus required placeholder="Sláðu inn texta til að málgreina">
+            {{- default_text -}}
+         </textarea>
+
+      </div>
+
+   </div>
+
+   <div class="row">
+      <div class="col-xs-4 col-sm-3 col-md-2 pull-right">
+         <button class="btn btn-success btn-lg btn-block" id="txt-ok" title="Greina" tabindex="3"
+            onclick="analyze()">Greina</button>
+      </div>
+   </div>
+
+</div>
+
+<div id="output">
+
+   <h3>Málgreining</h3>
+
+   <!-- Popup with info about the word being hovered over -->
+   <div class="info"></div>
+
+   <div id="result">
+   </div>
+
+   <div id="register">
+      <!-- Name register goes here -->
+      <h3>Nafnalisti</h3>
+      <ul id="namelist"></ul>
+   </div>
+
+   <div id="statistics">
+      <!-- Statistics go here -->
+      <h3>Tölfræði</h3>
+      <ul>
+         <li>Textinn inniheldur <span id="tok-num">0</span> eindir í
+            <span id="num-sent"></span> málsgreinum.</li>
+         <li>Það tókst að greina <span id="num-parsed-sent"></span> málsgreinar eða
+            <span id="num-parsed-ratio"></span>%.</li>
+         <li>Margræðnistuðull var
+            <span id="avg-ambig-factor"></span>.</li>
+      </ul>
+   </div>
+
+</div>
+
+{% endblock %}
+
+{% block endscripts %}
+
+<script src="{{ url_for('static', filename='main.js') }}"></script>
+
+<script>
+
+   function debugMode() {
+      return false;
+   }
+
+   function wait(state) {
+      // Start or stop a wait spinner
+      queryInProgress = state;
+      if (state) {
+         $("#txt-ok").attr("disabled", "disabled")
+            .html("<span class='glyphicon glyphicon-restart glyphicon-spin-white'></span>");
+         $("div#output").css("display", "none");
+      }
+      else {
+         $("#txt-ok").removeAttr("disabled")
+            .text("Greina");
+         $("div#output").css("display", "block");
+      }
+   }
+
+   function analyze() {
+      // Submit the contents of the textarea to the server
+      // for tokenization and parsing
+      analyzeText($("#txt").val().trim());
+   }
+
+   function init() {
+      // Activate the top navbar
+      $("#navid-analysis").addClass("active");
+      // Hide the output div until we have something to show
+      $("div#output").css("display", "none");
+   }
+
+   $(document).ready(init);
+
+</script>
+
+{% endblock %}
+
