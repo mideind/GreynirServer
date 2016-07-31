@@ -234,7 +234,7 @@ $score(+12) SetningSkilyrði
 
 EfÞegar →
     "ef" | "þegar" | "þótt" | "þó" "að"? | 'jafnvel_þótt' | "þar" "sem" | "eftir" "að"
-    | "eins" "og" | 'líkt_og' | 'á_meðan' | "þangað" "til" | 'um_leið' "og"
+    | "eins" "og" | 'líkt_og' | 'á_meðan' | "þangað" "til" | 'um_leið' "og" | "síðan"
 
 OgEfÞegar →
     "og" EfÞegar              # 'Ef og þegar eitthvað gerist læt ég þig vita'
@@ -1231,9 +1231,12 @@ SögnMeðF_1/tala/pers/kyn →
     # (ef:)  (Í gærkvöldi) óskuðu konurnar [ekki] leyfis [allar/galvaskar] [að höfða mál]
     # (nf:)  (Í fyrra) voru konurnar [ekki] leikarar [sjálfar/galvaskar]
 
-    so_1/fall/tala/pers OgSögn_1/fall/tala/pers* Nl_nf/tala/pers/kyn FsRuna? Nl/fall LoTengtSögn_nf/tala/kyn? NhFylling?
+    so_1/fall/tala/pers OgSögn_1/fall/tala/pers* Nl_nf/tala/pers/kyn AtvFs? Nl/fall LoTengtSögn_nf/tala/kyn? NhFylling?
 
     | HjSögnLhÞtSM/tala/pers Nl_nf/tala/pers/kyn AtvFs? SagnarBotnLhÞt/tala/kyn
+
+    # (Þegar gögnin hafa verið lesin) eru eimaðar upp úr þeim upplýsingar [á borð við nöfn]
+    | HjSögnLhÞt/tala/pers FsAtv? so_lhþt_nf/tala/kyn FsAtv? Nl_nf/tala/pers/kyn
 
     # '(og) var Ástþór mjög ósáttur (við útvarpsstjóra)'
     | HjSögnLoMeðF/tala/kyn LoTengtSögn_nf/tala/kyn
@@ -3083,6 +3086,12 @@ Tímabil_þf →
 
 TímabilsEinkunn_þf_ft/kyn →
     NæsturSíðastur_þf_ft/kyn Töluorð_þf_ft/kyn?  # Næstu fimm daga, síðustu þrjú sumur
+
+TímabilsEinkunn_þgf/tala/kyn →
+    "rúmlega" Töluorð_þgf/tala/kyn # rúmlega sex vikum síðar
+    | "tæplega" Töluorð_þgf/tala/kyn # tæplega þremur árum síðar
+    | 'tæpur'_þgf/tala/kyn Töluorð_þgf/tala/kyn # tæpum þremur mánuðum fyrr
+    | 'rúmur'_þgf/tala/kyn Töluorð_þgf/tala/kyn # rúmum fjórum vikum fyrr
 
 NæsturSíðastur_þf/tala/kyn →
     'næstur'_vb_þf/tala/kyn      # næsta vetur, næstu daga

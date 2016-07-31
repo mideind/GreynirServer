@@ -65,6 +65,9 @@
 .glyphicon-file:before {
    content: "\E037";
 }
+.glyphicon-edit:before {
+   content: "\E151";
+}
 .glyphicon-chevron-left:before {
    content: "\E225";
 }
@@ -168,6 +171,11 @@ div.input .col-xs-4, div.input .col-xs-5, div.input .col-xs-6, div.input .col-xs
 div.input-analysis {
    padding-top: 18px;
    padding-bottom: 0px;
+}
+
+div.input-parsegrid {
+   padding-top: 0px;
+   padding-bottom: 6px;
 }
 
 div.tab-pane {
@@ -505,7 +513,7 @@ div#register {
 }
 
 div.guide-empty {
-   font-size: 0.94em;
+   /* font-size: 0.94em; */
 }
 
 div.guide-empty i {
@@ -583,3 +591,63 @@ div#output h3 {
    color: #337ab7;
 }
 
+/* Parse grid stuff */
+
+div.grid {
+   font-size: 14px;
+   margin-bottom: 16px;
+}
+
+div.grid table {
+   border-collapse: collapse;
+   margin-bottom: 16px;
+   margin-left: 8px;
+   margin-right: 8px;
+}
+
+div.grid table tr td {
+   background-color: #D7FFE7; /* Pale Greynir green */ /* Was #e8ffe8; */
+   border-style: solid;
+   border-width: 3px;
+   border-color: #ffffff;
+   text-align: center;
+   padding-left: 3px;
+   padding-right: 3px;
+   padding-top: 1px;
+   padding-bottom: 1px;
+}
+
+div.grid table tr td.t {
+   font-style: italic;
+   background-color: #FFEEA9; /* Pale Greynir yellow */
+   vertical-align: bottom;
+   padding-top: 3px;
+   padding-bottom: 3px;
+}
+
+td.t span.tok {
+   font-size: 16px;
+   line-height: 24px;
+   font-style: normal;
+   font-weight: bold;
+}
+
+h4.txt {
+   margin-top: 0px;
+   margin-bottom: 15px;
+   line-height: 1.4;
+}
+
+h4.txt span.glyphicon {
+   color: #337ab7;
+   padding-right: 8px;
+}
+
+h4.txt span.glyphicon:hover {
+   color: #23527c;
+   cursor: pointer;
+}
+
+div#metadata h1 {
+   line-height: 1.25;
+}

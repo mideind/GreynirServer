@@ -13,7 +13,7 @@
     The scraper works from a set of root URLs to periodically scrape child
     URLs from the same parent domain. The root URLs and the
     scraping output are stored in tables in a PostgreSQL database
-    called 'scraper', and accessed via SQLAlchemy.
+    and accessed via SQLAlchemy.
 
 """
 
@@ -27,12 +27,9 @@ import importlib
 #from multiprocessing.dummy import Pool
 from multiprocessing import Pool
 
-#import urllib.request
 import requests
 import urllib.parse as urlparse
 from urllib.error import HTTPError
-#from http.client import HTTPSConnection
-#from ssl import SSLContext, PROTOCOL_SSLv23, CERT_OPTIONAL
 
 from contextlib import closing
 from datetime import datetime
@@ -148,8 +145,20 @@ class Scraper:
                 self._result.append(" ]] [[ ")
 
         def result(self):
+            """ Return the accumulated result as a string """
             assert self._nesting == 0
-            return "".join(self._result)
+            text = "".join(self._result)
+            # Eliminate soft hyphen and zero width space characters
+            text = re.sub('\u00AD|\u200B', '', text)
+            # Eliminate consecutive whitespace
+            return re.sub(r'\s+', ' ', text)
+
+
+    @staticmethod
+    def mark_paragraphs(txt):
+        """ Insert paragraph markers into plaintext, by newlines """
+        return "[[ " + " ]] [[ ".join(txt.split('\n')) + " ]]"
+
 
     @staticmethod
     def extract_text(soup, result):
@@ -177,6 +186,7 @@ class Scraper:
                 # Non-block tag
                 Scraper.extract_text(t, result)
 
+
     @staticmethod
     def to_tokens(soup):
         """ Convert an HTML soup root into a parsable token stream """
@@ -187,13 +197,42 @@ class Scraper:
         text = tlist.result()
         tlist = None # Free memory
 
-        # Eliminate soft hyphen and zero width space characters
-        text = re.sub('\u00AD|\u200B', '', text)
-        # Eliminate consecutive whitespace
-        text = re.sub(r'\s+', ' ', text)
-
         # Tokenize the resulting text, returning a generator
         return tokenize(text)
+
+
+    @staticmethod
+    def tokenize_url(url, info = None):
+        """ Open a URL and process the returned response """
+
+        metadata = None
+        soup = None
+
+        # Fetch the URL, returning a (metadata, content) tuple or None if error
+        if info is None:
+            info = Scraper.fetch_url(url)
+
+        if info is not None:
+            metadata, soup = info
+            if metadata is None:
+                if Settings.DEBUG:
+                    print("No metadata")
+                metadata = dict(heading = "",
+                    author = "",
+                    timestamp = datetime.utcnow(),
+                    authority = 0.0)
+            else:
+                if Settings.DEBUG:
+                    print("Metadata: heading '{0}'".format(metadata.heading))
+                    print("Metadata: author '{0}'".format(metadata.author))
+                    print("Metadata: timestamp {0}".format(metadata.timestamp))
+                    print("Metadata: authority {0:.2f}".format(metadata.authority))
+                metadata = vars(metadata) # Convert namedtuple to dict
+            metadata["url"] = url
+
+        # Tokenize the resulting text, returning a generator
+        # noinspection PyRedundantParentheses
+        return (metadata, Scraper.to_tokens(soup))
 
 
     @classmethod
@@ -207,36 +246,6 @@ class Scraper:
                 html_doc = r.text
             else:
                 print("HTTP status {0} for URL {1}".format(r.status_code, url))
-
-            #def open_url(url):
-            #    """ Open an HTTP or HTTPS URL and return a response object """
-            #    u = urlparse.urlsplit(url)
-            #    if u.scheme not in { "http", "https" }:
-            #        raise HTTPError("Unsupported protocol: " + u.scheme)
-            #    if u.scheme == "https":
-            #        #context = SSLContext(PROTOCOL_SSLv23)
-            #        #context.set_default_verify_paths()
-            #        #context.verify_mode = CERT_OPTIONAL
-            #        return urllib.request.urlopen(url)
-            #    return urllib.request.urlopen(url)
-
-            #with closing(open_url(url)) as response:
-            #    if response:
-            #        # Decode the HTML Content-type header to obtain the
-            #        # document type and the charset (content encoding), if specified
-            #        encoding = 'ISO-8859-1'
-            #        ctype = response.getheader("Content-type", "")
-            #        if ';' in ctype:
-            #            s = ctype.split(';')
-            #            ctype = s[0]
-            #            enc = s[1].strip()
-            #            s = enc.split('=')
-            #            if s[0] == "charset" and len(s) == 2:
-            #                encoding = s[1]
-            #        if ctype == "text/html":
-            #            html_doc = response.read() # html_doc is a bytes object
-            #            if html_doc:
-            #                html_doc = html_doc.decode(encoding)
 
         except requests.exceptions.ConnectionError as e:
             print("{0}".format(e))
@@ -693,7 +702,7 @@ class Scraper:
             #raise e from e
 
 
-    def go(self, reparse = False, limit = 0):
+    def go(self, reparse = False, limit = 0, urls = None):
         """ Run a scraping pass from all roots in the scraping database """
 
         version = Scraper.parser_version()
@@ -701,7 +710,7 @@ class Scraper:
         # Go through the roots and scrape them, inserting into the articles table
         with SessionContext(commit = True) as session:
 
-            if not reparse:
+            if urls is None and not reparse:
 
                 def iter_roots():
                     """ Iterate the roots """
@@ -753,19 +762,35 @@ class Scraper:
                 for a in q:
                     yield ArticleDescr(a.root, a.url)
 
+            def iter_urls(urls):
+                """ Iterate through the text file whose name is given in urls """
+                with open(urls, "r") as f:
+                    for url in f:
+                        url = url.strip()
+                        if url:
+                            a = session.query(Article).filter(Article.url == url).one_or_none()
+                            if a is not None:
+                                # Found the article: yield it
+                                yield ArticleDescr(a.root, a.url)
+
             # Use a multiprocessing pool to parse the articles.
             # Let the pool work on chunks of articles, recycling the
             # processes after each chunk to contain memory creep.
 
             CHUNK_SIZE = 100
+            if urls is None:
+                g = iter_unparsed_articles(reparse, limit)
+            else:
+                g = iter_urls(urls)
+                limit = 0
             cnt = 0
             while True:
                 adlist = []
                 lcnt = 0
-                for ad in iter_unparsed_articles(reparse, limit):
+                for ad in g:
                     adlist.append(ad)
                     lcnt += 1
-                    if lcnt == CHUNK_SIZE or cnt + lcnt >= limit:
+                    if lcnt == CHUNK_SIZE or (limit > 0 and cnt + lcnt >= limit):
                         break
                 if lcnt:
                     # Run garbage collection to minimize common memory footprint
@@ -773,10 +798,10 @@ class Scraper:
                     gc.collect()
                     print("Parser processes forking, chunk of {0} articles".format(lcnt))
                     pool = Pool() # Defaults to using as many processes as there are CPUs
-                    #pool.map(self._parse_single_article, iter_unparsed_articles(reparse, limit))
                     pool.map(self._parse_single_article, adlist)
                     pool.close()
                     pool.join()
+                    session.commit()
                     print("Parser processes joined, chunk of {0} articles parsed".format(lcnt))
                     cnt += lcnt
                 if lcnt < CHUNK_SIZE:
@@ -828,16 +853,19 @@ class Scraper:
             .format(num_sentences, num_sent_parsed, 100.0 * num_sent_parsed / num_sentences))
 
 
-def scrape_articles(reparse = False, limit = 0):
+def scrape_articles(reparse = False, limit = 0, urls = None):
 
     print("------ Reynir starting scrape -------")
     ts = "{0}".format(datetime.utcnow())[0:19]
-    print("Time: {0}, limit: {1}, reparse: {2}\n".format(ts, limit, reparse))
+    if urls is None:
+        print("Time: {0}, limit: {1}, reparse: {2}\n".format(ts, limit, reparse))
+    else:
+        print("Time: {0}, URLs read from: {1}\n".format(ts, urls))
 
     try:
         sc = Scraper()
         try:
-            sc.go(reparse = reparse, limit = limit)
+            sc.go(reparse = reparse, limit = limit, urls = urls)
         except Exception as e:
             print("Scraper terminated with exception {0}".format(e))
         finally:
@@ -909,7 +937,8 @@ __doc__ = """
         -h, --help: Show this help text
         -i, --init: Initialize the scraper database, if required
         -r, --reparse: Reparse the oldest previously parsed articles
-        -l=N, --limit=N: Limit parsing session to N articles (default 10)
+        -u filename, --urls=filename: Reparse the URLs listed in the given file
+        -l N, --limit=N: Limit parsing session to N articles (default 10)
 
     If --reparse is not specified, the scraper will read all previously
     unseen articles from the root domains and then proceed to parse any
@@ -931,12 +960,15 @@ def main(argv = None):
         argv = sys.argv
     try:
         try:
-            opts, args = getopt.getopt(argv[1:], "hirl:", ["help", "init", "reparse", "limit="])
+            opts, args = getopt.getopt(argv[1:], "hirl:u:",
+                ["help", "init", "reparse", "limit=", "urls="])
         except getopt.error as msg:
              raise Usage(msg)
         init = False
         limit = 10 # !!! DEBUG default limit on number of articles to parse, unless otherwise specified
         reparse = False
+        urls = None
+
         # Process options
         for o, a in opts:
             if o in ("-h", "--help"):
@@ -952,6 +984,9 @@ def main(argv = None):
                     limit = int(a)
                 except ValueError:
                     pass
+            elif o in ('-u', "--urls"):
+                urls = a # Text file with list of URLs
+
         # Process arguments
         for arg in args:
             pass
@@ -972,7 +1007,7 @@ def main(argv = None):
                 return 2
 
             # Run the scraper
-            scrape_articles(reparse = reparse, limit = limit)
+            scrape_articles(reparse = reparse, limit = limit, urls = urls)
 
     except Usage as err:
         print(err.msg, file = sys.stderr)

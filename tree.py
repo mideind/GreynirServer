@@ -436,8 +436,16 @@ class TerminalDescriptor:
             for v in [ "sagnb", "lhþt", "bh" ]:
                 if BIN_Token.VARIANT[v] in m.beyging and v not in self.variants:
                     return False
+            if "bh" in self.variants and "ST" in m.beyging:
+                return False
             if self.varlist[0] not in "012":
-                # No need for argument check: we're done
+                # No need for argument check: we're done, unless...
+                if "lhþt" in self.variants:
+                    # Special check for lhþt: may specify a case without it being an argument case
+                    if any(c in self.variants and BIN_Token.VARIANT[c] not in m.beyging for c in BIN_Token.CASES):
+                        # Terminal specified a non-argument case but the token doesn't have it:
+                        # no match
+                        return False
                 return True
             nargs = int(self.varlist[0])
             if m.stofn in VerbObjects.VERBS[nargs]:

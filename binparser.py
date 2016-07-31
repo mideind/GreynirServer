@@ -194,7 +194,12 @@ class BIN_Token(Token):
         self.t0 = t[0] # Token type (TOK.WORD, etc.)
         self.t1 = t[1] # Token text
         self.t1_lower = t[1].lower() # Token text, lower case
-        self.t2 = t[2] # Token information, such as part-of-speech annotation, numbers, etc.
+        # t2 contains auxiliary token information, such as part-of-speech annotation, numbers, etc.
+        if self.t0 == TOK.ENTITY:
+            # Cut off the entity definitions (not used during parse or stored with the tree)
+            self.t2 = (None, t[2][1], t[2][2])
+        else:
+            self.t2 = t[2]
         self.is_upper = self.t1[0] != self.t1_lower[0] # True if starts with upper case
         self._hash = None # Cached hash
 
@@ -212,11 +217,12 @@ class BIN_Token(Token):
     def dump(self):
         """ Serialize the token as required for text dumping of trees """
         if self.t0 == TOK.WORD:
-            # Simple case; no auxiliary information dumped
+            # Simple case; no token kind or auxiliary information dumped
             return '"' + self.t1 + '"'
-        # For non-word token types, dump the auxiliary information as well, if any
-        j = (" " + json.dumps(self.t2, ensure_ascii = False)) if self.t2 else ""
-        return '"{0}" {1}{2}'.format(self.t1, self._kind, j)
+        if self.t2 is None:
+            return '"{0}" {1}'.format(self.t1, self._kind)
+        return '"{0}" {1} {2}'.format(self.t1, self._kind,
+            json.dumps(self.t2, ensure_ascii = False))
 
     @classmethod
     def fbits(cls, beyging):

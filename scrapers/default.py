@@ -475,7 +475,8 @@ class VisirScraper(ScrapeHelper):
     _SKIP_PREFIXES = [
         "/english/",
         "/section/RAD/",
-        "/section/MEDIA"
+        "/section/MEDIA",
+        "/section/VEFMIDLAR/"
     ]
 
     def __init__(self, root):

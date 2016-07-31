@@ -114,38 +114,6 @@ _TOP_NEWS_LENGTH = 20
 _TOP_PERSONS_LENGTH = 20
 
 
-def tokenize_url(url, info):
-    """ Open a URL and process the returned response """
-
-    metadata = None
-    body = None
-
-    # Fetch the URL, returning a (metadata, content) tuple or None if error
-    info = Scraper.fetch_url(url)
-
-    if info:
-        metadata, body = info
-        if metadata is None:
-            if Settings.DEBUG:
-                print("No metadata")
-            metadata = dict(heading = "",
-                author = "",
-                timestamp = datetime.utcnow(),
-                authority = 0.0)
-        else:
-            if Settings.DEBUG:
-                print("Metadata: heading '{0}'".format(metadata.heading))
-                print("Metadata: author '{0}'".format(metadata.author))
-                print("Metadata: timestamp {0}".format(metadata.timestamp))
-                print("Metadata: authority {0:.2f}".format(metadata.authority))
-            metadata = vars(metadata) # Convert namedtuple to dict
-        metadata["url"] = url
-
-    # Tokenize the resulting text, returning a generator
-    # noinspection PyRedundantParentheses
-    return (metadata, Scraper.to_tokens(body))
-
-
 def profile(func, *args, **kwargs):
     """ Profile the processing of text or URL """
 
@@ -499,7 +467,6 @@ def analyze():
     url = request.form.get("url", "").strip()
     use_reducer = not get_json_bool(request, "noreduce")
     auto_uppercase = get_json_bool(request, "autouppercase", True)
-    print("auto_uppercase is '{0}', type {1}".format(auto_uppercase, auto_uppercase.__class__))
     dump_forest = "dump" in request.form
     metadata = None
     # Single sentence (True) or contiguous text from URL (False)?
@@ -513,7 +480,7 @@ def analyze():
 
         if url.startswith("http:") or url.startswith("https:"):
             # Scrape the URL, tokenize the text content and return the token list
-            metadata, generator = tokenize_url(url, Scraper.fetch_url(url))
+            metadata, generator = Scraper.tokenize_url(url)
             toklist = list(generator)
             # If this is an already scraped URL, keep the parse trees and update
             # the database with the new parse
@@ -525,7 +492,10 @@ def analyze():
             # We specify auto_uppercase to convert lower case words to upper case
             # if the text is all lower case. The text may for instance
             # be coming from a speech recognizer.
-            toklist = list(tokenize(url, auto_uppercase = url.islower() if auto_uppercase else False))
+
+            # Demarcate paragraphs in the input
+            txt = Scraper.mark_paragraphs(url)
+            toklist = list(tokenize(txt, auto_uppercase = txt.islower() if auto_uppercase else False))
             result = dict()
             is_query = process_query(session, toklist, result)
             if not is_query:
@@ -589,7 +559,6 @@ def display():
     """ Display an already parsed article with a given URL """
 
     url = request.form.get("url", "").strip()
-    metadata = None
 
     if not url.startswith("http:") and not url.startswith("https:"):
         # Not a valid URL
@@ -602,11 +571,7 @@ def display():
         # Find the HTML in the scraper database, tokenize the text content and return the token list
         article, metadata, content = Scraper.fetch_article(url, session)
 
-        if article is None:
-            # Unable to find the URL in the scraper database: re-fetch it
-            metadata, content = Scraper.fetch_url(url)
-
-        metadata, generator = tokenize_url(url, (metadata, content))
+        metadata, generator = Scraper.tokenize_url(url, None if article is None else (metadata, content))
 
         toklist = list(generator)
 

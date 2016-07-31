@@ -20,6 +20,7 @@
 
 from contextlib import closing
 from collections import namedtuple, defaultdict
+from functools import lru_cache
 
 import re
 import codecs
@@ -35,8 +36,8 @@ from scraperdb import SessionContext, Entity
 
 LEFT_PUNCTUATION = "([„«#$€<"
 RIGHT_PUNCTUATION = ".,:;)]!%?“»”’…°>"
-CENTER_PUNCTUATION = "\"*&+=@©|—–-"
-NONE_PUNCTUATION = "/\\'~‘"
+CENTER_PUNCTUATION = '"*&+=@©|—–-'
+NONE_PUNCTUATION = "/'~‘\\"
 PUNCTUATION = LEFT_PUNCTUATION + CENTER_PUNCTUATION + RIGHT_PUNCTUATION + NONE_PUNCTUATION
 
 # Punctuation that ends a sentence
@@ -1586,9 +1587,10 @@ def recognize_entities(token_stream):
 
     with SessionContext(commit = True) as session:
 
+        @lru_cache(maxsize = 20)
         def query_entities(w):
             """ Return a list of entities matching the initial word given """
-            return session.query(Entity).filter(Entity.name.like(w + " %") | (Entity.name == w)).all()
+            return session.query(Entity.name, Entity.verb, Entity.definition).filter(Entity.name.like(w + " %") | (Entity.name == w)).all()
 
         def flush_match():
             """ Flush a match that has been accumulated in the token queue """

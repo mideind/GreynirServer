@@ -1,37 +1,25 @@
 
-{% extends "container.html" %}
+{% extends "container-fluid.html" %}
 
 {% block styles %}
 
-<link href="{{ url_for('static', filename='main.css') }}" rel='stylesheet' type='text/css'>
-
-{% endblock %}
-
-{% block scripts %}
+<link href="{{ url_for('static', filename='main-bootstrap.css') }}" rel='stylesheet' type='text/css'>
 
 {% endblock %}
 
 {% block content %}
 
-   <div class="input">
+<div class="input-parsegrid">
 
-      <p class="header"><a href="{{ url_for('main') }}"><img src="{{ url_for('static', filename='GreynirLogo404x180.png') }}" width=202 height=90></a></p>
+   <div class="row">
 
-      <p class="author">málgreinir fyrir íslensku<br>
-      <b>alfa-prófunarútgáfa</b><br>
-      eftir Vilhjálm Þorsteinsson<br>
-      (sjá <a href="https://github.com/vthorsteinsson/Reynir" target="_blank">nánar á GitHub</a>)</p>
+      <h4 class="txt"><span class="glyphicon glyphicon-edit" id="edit-sent" title="Breyta málsgrein"></span> {{ txt }}</h4>
 
-      <p class="txt">{{ txt }}</p>
+   </div>
 
-      <p class="buttons">
-         <span class="btn" id="edit-sent">Breyta</span>
-{% if debug_mode %}         
-         <span class="btn" id="add-valid-sent">Bæta við prófanir sem gildri setningu</span>
-         <span class="btn" id="add-invalid-sent">Bæta við prófanir sem ógildri setningu</span>
-{% endif %}
-      </p>
+   </div>
 
+   <div class="row">
 {% if combinations == 0 %}
       <p class="options">Engin greining fannst.</p>
       <p class="err">{{ err.msg }}</p>
@@ -62,9 +50,9 @@
 </table>
 {% endif %}
 {% elif combinations == 1 %}
-      <p class="options">Ein trjágreining fannst, með einkunn <b>{{ score }}</b>:</p>
+      <p class="text-info">Ein trjágreining fannst, með einkunn <b>{{ score }}</b></p>
 {% else %}
-      <p class="options">{{ combinations }} trjágreiningar fundust, besta einkunn <b>{{ score }}</b>:
+      <p class="text-info">{{ combinations | format_is }} trjágreiningar fundust, besta einkunn <b>{{ score }}</b>
 {% if choice_list | length < 20 %}
 {% for c in choice_list %}
 <span class='choice{{ " shown" if c == parse_path else "" }}'>{{ c }}</span>
@@ -72,22 +60,20 @@
 {% endif %}
       </p>
 {% endif %}
-
    </div>
+
+</div>
 
 {% if tbl %}
    <div class="grid">
-
+   <div class="table-responsive">
       <table>
 
 {% for r in tbl %}
          <tr>
 {% for c in r %}
 {% if 'terminal' in c[3] %}
-<td
-   class="t{{ ' vert' if 'vertical' in c[3] else '' }}"
-   colspan="{{ c[0] }}"
-   rowspan="{{ c[1] }}">
+<td class="t" colspan="{{ c[0] }}" rowspan="{{ c[1] }}">
 {%- if c[2][0] | string | first != "'" and c[2][0] | string | first != '"' -%}
    {{ c[2][0] }}<br>
 {%- endif -%}
@@ -95,12 +81,13 @@
 {% elif c[2] == '' %}
 <td colspan="{{ c[0] }}">&nbsp;</td>
 {% else %}
-<td class="nt{{ ' vert' if 'vertical' in c[3] else '' }}" colspan="{{ c[0] }}">{{ c[2] }}</td>
+<td class="nt" colspan="{{ c[0] }}">{{ c[2] }}</td>
 {% endif %}
 {% endfor %}
          </tr>
 {% endfor %}
       </table>
+   </div>
    </div>
 {% endif %}
 

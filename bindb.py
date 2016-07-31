@@ -18,6 +18,8 @@
 
 from functools import lru_cache
 from collections import namedtuple
+from heapq import nsmallest
+from operator import itemgetter
 import threading
 
 # Import the Psycopg2 connector for PostgreSQL
@@ -40,9 +42,52 @@ psycopg2ext.register_type(psycopg2ext.UNICODEARRAY)
 
 # Size of LRU cache for word lookups
 CACHE_SIZE = 512
+CACHE_SIZE_MEANINGS = 1024 # Most common lookup function (meanings of a particular word form)
 
 # Named tuple for word meanings fetched from the BÍN database (lexicon)
 BIN_Meaning = namedtuple('BIN_Meaning', ['stofn', 'utg', 'ordfl', 'fl', 'ordmynd', 'beyging'])
+
+
+class LFU_Cache:
+
+    """ Least-frequently-used (LFU) cache for word lookups.
+        Based on a pattern by Raymond Hettinger:
+        http://code.activestate.com/recipes/498245-lru-and-lfu-cache-decorators/
+    """
+
+    class Counter(dict):
+        """ Mapping where default values are zero """
+        def __missing__(self, key):
+            return 0
+
+    def __init__(self, maxsize = CACHE_SIZE):
+        self.cache = {}                     # Mapping of keys to results
+        self.use_count = self.Counter()     # Times each key has been accessed
+        self.maxsize = maxsize
+        self.hits = self.misses = 0
+        self.lock = threading.Lock()        # The cache may be accessed in parallel by multiple threads
+
+    def lookup(self, key, func):
+        """ Lookup a key in the cache, calling func(key) to obtain the data if not already there """
+        with self.lock:
+            self.use_count[key] += 1
+            # Get cache entry or compute if not found
+            try:
+                result = self.cache[key]
+                self.hits += 1
+            except KeyError:
+                result = func(key)
+                self.cache[key] = result
+                self.misses += 1
+
+                # Purge the 10% least frequently used cache entries
+                if len(self.cache) > self.maxsize:
+                    for key, _ in nsmallest(self.maxsize // 10,
+                        self.use_count.items(), key = itemgetter(1)):
+
+                        del self.cache[key], self.use_count[key]
+
+            return result
 
 
 class BIN_Db:
@@ -73,6 +118,10 @@ class BIN_Db:
     # Adjective endings
     _ADJECTIVE_TEST = "leg" # Check for adjective if word contains 'leg'
 
+    # Singleton LFU caches for word meaning and form lookups
+    _meanings_cache = LFU_Cache(maxsize = CACHE_SIZE_MEANINGS)
+    _forms_cache = LFU_Cache()
+
     @classmethod
     def get_db(cls):
         """ Obtain a database connection instance """
@@ -96,8 +145,8 @@ class BIN_Db:
         self._conn = None # Connection
         self._c = None # Cursor
         # Cache descriptors for the lookup functions
-        self._meanings_func = getattr(self, "_meanings")
-        self._forms_func = getattr(self, "_forms")
+        self._meanings_func = lambda key: self._meanings_cache.lookup(key, getattr(self, "_meanings"))
+        self._forms_func = lambda key: self._forms_cache.lookup(key, getattr(self, "_forms"))
 
     def open(self, host):
         """ Open and initialize a database connection """
@@ -183,12 +232,10 @@ class BIN_Db:
             m = None
         return m
 
-    @lru_cache(maxsize = CACHE_SIZE)
     def lookup_word(self, w, at_sentence_start, auto_uppercase = False):
         """ Given a word form, look up all its possible meanings """
         return self._lookup(w, at_sentence_start, auto_uppercase, self._meanings_func)
 
-    @lru_cache(maxsize = CACHE_SIZE)
     def lookup_form(self, w, at_sentence_start):
         """ Given a word root (stem), look up all its forms """
         return self._lookup(w, at_sentence_start, False, self._forms_func)

@@ -191,7 +191,7 @@ function showParse(ev) {
    var sentText = $(ev.delegateTarget).text();
    // Do an HTML POST to the parsegrid URL, passing
    // the sentence text within a synthetic form
-   serverPost("/parsegrid", { txt: sentText, debug: debugMode() }, true)
+   serverPost("/parsegrid", { txt: sentText, debug: debugMode() }, false)
 }
 
 function buttonOver(elem) {
