@@ -138,7 +138,7 @@ class Reducer:
                     if t.has_variant("nf"):
                         # Reduce the weight of the 'artificial' nominative prepositions
                         # 'næstum', 'sem', 'um'
-                        sc[t] -= 4 # Make other cases outweigh the Nl_nf bonus of +4 (-2 -3 = -5)
+                        sc[t] -= 5 # Make other cases outweigh the Nl_nf bonus of +4 (-2 -3 = -5)
                     else:
                         # Else, give a bonus for each matched preposition
                         sc[t] += 2
@@ -154,18 +154,20 @@ class Reducer:
                             if all((m.stofn not in VerbObjects.VERBS[0]) and ("MM" not in m.beyging)
                                 for m in tokens[i].t2 if m.ordfl == "so"):
                                 # No meaning where the verb has zero arguments
-                                adj = -4
+                                adj = -5
                         # Apply score adjustments for verbs with particular object cases,
                         # as specified by $score(n) pragmas in Verbs.conf
+                        # In the (rare) cases where there are conflicting scores,
+                        # apply the most positive adjustment
+                        adjmax = 0
                         for m in tokens[i].t2:
                             if m.ordfl == "so":
                                 key = m.stofn + t.verb_cases
                                 score = VerbObjects.SCORES.get(key)
                                 if score is not None:
-                                    #print("Applying verb score adjustment of {1} to {0}".format(key, score))
-                                    adj += score
+                                    adjmax = score
                                     break
-                        sc[t] += adj
+                        sc[t] += adj + adjmax
                     if t.is_sagnb:
                         # We like sagnb and lh, it means that more
                         # than one piece clicks into place

@@ -8,7 +8,7 @@
     All rights reserved
     See the accompanying README.md file for further licensing and copyright information.
 
-    This module is written in Python 3
+    This module is written in Python 3.2 for compatibility with PyPy3
 
 """
 
@@ -30,12 +30,13 @@ from flask.wrappers import Response
 from fastparser import Fast_Parser, ParseError, ParseForestPrinter, ParseForestDumper
 from ptest import run_test, Test_DB
 from reducer import Reducer
-from scraper import Scraper
+from fetcher import Fetcher
+from article import Article as ArticleProxy
 from tree import TreeGist
 from scraperdb import SessionContext, desc, Person, Article, GenderQuery, StatsQuery
 from settings import Settings, ConfigError, changedlocale
 from tokenizer import tokenize, TOK, correct_spaces
-from query import Query
+from query import Query, query_person, query_entity
 from getimage import get_image_url
 from bindb import BIN_Db
 
@@ -48,6 +49,7 @@ from flask import current_app
 def debug():
     # Call this to trigger the Flask debugger on purpose
     assert current_app.debug == False, "Don't panic! You're here by request of debug()"
+
 
 # Utilities for Flask/Jinja2 formatting of numbers using the Icelandic locale
 
@@ -74,6 +76,22 @@ def format_ts(ts):
     """ Flask/Jinja2 template filter to format a timestamp """
     return str(ts)[0:19]
 
+
+# Miscellaneous utility stuff
+
+def max_age(seconds):
+    """ Caching decorator for Flask - augments response with a max-age cache header """
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            resp = f(*args, **kwargs)
+            if not isinstance(resp, Response):
+                resp = make_response(resp)
+            resp.cache_control.max_age = seconds
+            return resp
+        return decorated_function
+    return decorator
+
 def get_json_bool(rq, name, default = False):
     """ Get a boolean from JSON encoded in a request form """
     b = rq.form.get(name)
@@ -81,6 +99,7 @@ def get_json_bool(rq, name, default = False):
         # Not present in the form: return the default
         return default
     return isinstance(b, str) and b == "true"
+
 
 # Run with profiling?
 _PROFILE = False
@@ -112,6 +131,10 @@ _TOP_NEWS_LENGTH = 20
 
 # Default number of top persons to show in front page list
 _TOP_PERSONS_LENGTH = 20
+
+# Maximum length of incoming GET/POST parameters
+_MAX_URL_LENGTH = 512
+_MAX_UUID_LENGTH = 36
 
 
 def profile(func, *args, **kwargs):
@@ -295,36 +318,74 @@ def prepare(toklist, article):
     return result
 
 
-def add_name_register(result, session):
+def add_entity_to_register(name, register, session):
+    """ Add the entity name and the 'best' definition to the given name register dictionary """
+    if name in register:
+        # Already have a title for this name
+        return
+    # Use the query module to return definitions for an entity
+    rl = query_entity(session, name)
+    if rl:
+        register[name] = correct_spaces(rl[0][0])
+
+    # Older code to extract definitions directly from database query
+    # titles = defaultdict(int)
+    # for p in rl:
+    #     # Collect and count the titles
+    #     titles[p[0]] += 1
+    # if sum(cnt >= 4 for cnt in titles.values()) >= 2:
+    #     # More than one title with four or more instances:
+    #     # reduce the choices to just those and decide based on length
+    #     titles = { key: 0 for key, val in titles.items() if val >= 4 }
+    # if titles:
+    #     # Pick the most popular title, or the longer one if two are equally popular
+    #     title = sorted([(cnt, len(t), t) for t, cnt in titles.items()])[-1][2]
+    #     # Add it to the register, after correcting spacing
+    #     register[name] = correct_spaces(title)
+
+
+def add_name_to_register(name, register, session):
+    """ Add the name and the 'best' title to the given name register dictionary """
+    if name in register:
+        # Already have a title for this name
+        return
+    # Use the query module to return titles for a person
+    rl = query_person(session, name)
+    if rl:
+        register[name] = correct_spaces(rl[0][0])
+
+    # Older code to extract titles directly from database query results        
+    # titles = defaultdict(int)
+    # for p in rl:
+    #     # Collect and count the titles
+    #     titles[p[0]] += 1
+    # if sum(cnt >= 4 for cnt in titles.values()) >= 2:
+    #     # More than one title with four or more instances:
+    #     # reduce the choices to just those and decide based on length
+    #     titles = { key: 0 for key, val in titles.items() if val >= 4 }
+    # if titles:
+    #     # Pick the most popular title, or the longer one if two are equally popular
+    #     title = sorted([(cnt, len(t), t) for t, cnt in titles.items()])[-1][2]
+    #     # Add it to the register, after correcting spacing
+    #     register[name] = correct_spaces(title)
+
+
+def create_name_register(tokens, session):
     """ Assemble a register of names and titles from the token list """
-    tokens = result["tokens"]
     register = { }
     for t in tokens:
         if t.kind == TOK.PERSON:
             gn = t.val
             for pn in gn:
-                # Attempt to look up the name pn.name
-                q = session.query(Person).filter_by(name = pn.name).all()
-                titles = defaultdict(int)
-                for p in q:
-                    # Collect and count the titles
-                    titles[p.title] += 1
-                if sum(cnt >= 4 for cnt in titles.values()) >= 2:
-                    # More than one title with four or more instances:
-                    # reduce the choices to just those and decide based on length
-                    titles = { key: 0 for key, val in titles.items() if val >= 4 }
-                if titles:
-                    # Pick the most popular title, or the longer one if two are equally popular
-                    title = sorted([(cnt, len(t), t) for t, cnt in titles.items()])[-1][2]
-                    # Add it to the register, after correcting spacing
-                    register[pn.name] = correct_spaces(title)
+                add_name_to_register(pn.name, register, session)
     with changedlocale() as strxfrm:
-        result["register"] = sorted(
+        reglist = sorted(
             [ dict(name = key, title = val) for key, val in register.items() ],
             key = lambda x: strxfrm(x["name"])
         )
     if Settings.DEBUG:
-        print("Register is: {0}".format(result["register"]))
+        print("Register is: {0}".format(reglist))
+    return reglist
 
 
 def top_news(limit = _TOP_NEWS_LENGTH):
@@ -445,20 +506,6 @@ def process_query(session, toklist, result):
     return True
 
 
-def max_age(seconds):
-    """ Caching decorator for Flask - augments response with a max-age cache header """
-    def decorator(f):
-        @wraps(f)
-        def decorated_function(*args, **kwargs):
-            resp = f(*args, **kwargs)
-            if not isinstance(resp, Response):
-                resp = make_response(resp)
-            resp.cache_control.max_age = seconds
-            return resp
-        return decorated_function
-    return decorator
-
-
 # Note: Endpoints ending with .api are configured not to be cached by nginx
 @app.route("/analyze.api", methods=['POST'])
 def analyze():
@@ -480,11 +527,11 @@ def analyze():
 
         if url.startswith("http:") or url.startswith("https:"):
             # Scrape the URL, tokenize the text content and return the token list
-            metadata, generator = Scraper.tokenize_url(url)
+            metadata, generator = Fetcher.tokenize_url(url)
             toklist = list(generator)
             # If this is an already scraped URL, keep the parse trees and update
             # the database with the new parse
-            keep_trees = Scraper.is_known_url(url, session)
+            keep_trees = Fetcher.is_known_url(url, session)
         else:
             single = True
             # Tokenize the text entered as-is and return the token list.
@@ -494,7 +541,7 @@ def analyze():
             # be coming from a speech recognizer.
 
             # Demarcate paragraphs in the input
-            txt = Scraper.mark_paragraphs(url)
+            txt = Fetcher.mark_paragraphs(url)
             toklist = list(tokenize(txt, auto_uppercase = txt.islower() if auto_uppercase else False))
             result = dict()
             is_query = process_query(session, toklist, result)
@@ -526,7 +573,7 @@ def analyze():
             parse_time = time.time() - t0
 
             # Add a name register to the result
-            add_name_register(result, session)
+            result["register"] = create_name_register(result["tokens"], session)
             # Add information from parser
             result["metadata"] = metadata
             result["tok_time"] = tok_time
@@ -534,11 +581,11 @@ def analyze():
 
         result["is_query"] = is_query # True if we are returning a query result, not tokenized (and parsed) text
 
-        if keep_trees and not single and metadata is not None:
-            # Save a new parse result for an article
-            if Settings.DEBUG:
-                print("Storing a new parse tree for url {0}".format(url))
-            Scraper.store_parse(url, result, trees, failures, enclosing_session = session)
+        #if keep_trees and not single and metadata is not None:
+        #    # Save a new parse result for an article
+        #    if Settings.DEBUG:
+        #        print("Storing a new parse tree for url {0}".format(url))
+        #    Scraper.store_parse(url, result, trees, failures, enclosing_session = session)
 
     # with open("tokens.log", mode = "w", encoding="utf-8") as f:
     #     indent = 0
@@ -569,9 +616,9 @@ def display():
         t0 = time.time()
 
         # Find the HTML in the scraper database, tokenize the text content and return the token list
-        article, metadata, content = Scraper.fetch_article(url, session)
+        article, metadata, content = Fetcher.fetch_article(url, session)
 
-        metadata, generator = Scraper.tokenize_url(url, None if article is None else (metadata, content))
+        metadata, generator = Fetcher.tokenize_url(url, None if article is None else (metadata, content))
 
         toklist = list(generator)
 
@@ -589,7 +636,7 @@ def display():
         parse_time = time.time() - t0
 
         # Add a name register to the result
-        add_name_register(result, session)
+        result["register"] = create_name_register(result["tokens"], session)
 
         result["tok_time"] = tok_time
         result["parse_time"] = parse_time
@@ -597,6 +644,41 @@ def display():
         result["metadata"] = metadata
         # Return the tokens as a JSON structure to the client
         return jsonify(result = result)
+
+
+# Note: Endpoints ending with .api are configured not to be cached by nginx
+@app.route("/reparse.api", methods=['POST'])
+def reparse():
+    """ Reparse an article with a given UUID """
+
+    uuid = request.form.get("id", "").strip()[0:_MAX_UUID_LENGTH]
+    tokens = None
+    register = { }
+    stats = { }
+
+    with SessionContext(commit = True) as session:
+        # Load the article
+        a = ArticleProxy.load_from_uuid(uuid, session)
+        if a is not None:
+            # Found: parse it and store the updated version
+            a.parse(session)
+            # Save the tokens
+            tokens = a.tokens
+            # Build register of person names
+            for name in a.person_names():
+                add_name_to_register(name, register, session)
+            # Add register of entity names
+            for name in a.entity_names():
+                add_entity_to_register(name, register, session)
+            stats = dict(
+                num_tokens = a.num_tokens,
+                num_sentences = a.num_sentences,
+                num_parsed = a.num_parsed,
+                ambiguity = a.ambiguity)
+
+    # Return the tokens as a JSON structure to the client,
+    # along with a name register and article statistics
+    return jsonify(result = tokens, register = register, stats = stats)
 
 
 # Note: Endpoints ending with .api are configured not to be cached by nginx
@@ -967,12 +1049,11 @@ def article():
     """ Handler for a page displaying a single article """
     uuid = request.args.get("id", None)
     if uuid:
-        uuid = uuid.strip()
+        uuid = uuid.strip()[0:_MAX_UUID_LENGTH]
     article = None
     # Load the article
     with SessionContext(commit = True) as session:
         if uuid:
-            uuid = uuid[0:36] # Don't send junk into database query
             article = session.query(Article).filter(Article.id == uuid).one_or_none()
         if article is None:
             return redirect(url_for('main'))
@@ -981,24 +1062,46 @@ def article():
 
 @app.route("/page")
 def page():
-    """ Handler for a page displaying the parse of an arbitrary web page by URL """
+    """ Handler for a page displaying the parse of an arbitrary web page by URL
+        or an already scraped article by UUID """
     url = request.args.get("url", None)
+    uuid = request.args.get("id", None)
     if url:
-        url = url.strip()
-    if not url or (not url.startswith("http:") and not url.startswith("https:")):
+        url = url.strip()[0:_MAX_URL_LENGTH]
+    if uuid:
+        uuid = uuid.strip()[0:_MAX_UUID_LENGTH]
+    if url:
+        # URL has priority, if both are specified
+        uuid = None
+    if not url and not uuid:
+        # !!! TODO: Separate error page
         return redirect(url_for('main'))
 
-    class ArticleProxy:
-        def __init__(self, url):
-            self.url = url
-            self.heading = ""
-            self.author = ""
-            self.timestamp = datetime.utcnow()
-            self.root = None
-            self.num_sentences = 0
+    register = []
+    with SessionContext(commit = True) as session:
 
-    article = ArticleProxy(url)
-    return render_template("article.html", article = article)
+        if uuid:
+            a = ArticleProxy.load_from_uuid(uuid, session)
+        elif url.startswith("http:") or url.startswith("https:"):
+            a = ArticleProxy.load_from_url(url, session)
+        else:
+            a = None
+
+        if a is None:
+            # !!! TODO: Separate error page
+            return redirect(url_for('main'))
+
+        # Prepare the article for display (may cause it to be parsed and stored)
+        a.prepare(session)
+        register = { }
+        # Build register of person names
+        for name in a.person_names():
+            add_name_to_register(name, register, session)
+        # Add register of entity names
+        for name in a.entity_names():
+            add_entity_to_register(name, register, session)
+
+        return render_template("page.html", article = a, register = register)
 
 
 @app.route("/test")
@@ -1025,6 +1128,7 @@ def main():
 # Flask handlers
 
 @app.route('/fonts/<path:path>')
+@max_age(seconds = 24 * 60 * 60) # Cache font for 24 hours
 def send_font(path):
     return send_from_directory('fonts', path)
 
@@ -1080,6 +1184,9 @@ if __name__ == "__main__":
             print("Reynir is already running at host {0}".format(Settings.HOST))
         else:
             raise
+    finally:
+        # Scraper.cleanup()
+        pass
 
 else:
 

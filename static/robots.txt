@@ -1,0 +1,4 @@
+User-agent: *
+Disallow: /query.api
+Disallow: /display.api
+Disallow: /analyze.api

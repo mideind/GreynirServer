@@ -521,7 +521,10 @@ function populateRawResult(json) {
          else
          if (wl[2] == TP_NONE) {
             // Tight: no whitespace
-            s += wl[1];
+            if (wl[1] == "-")
+               s += "–"; // Replace hyphen with En dash
+            else
+               s += wl[1];
             wsp = "";
          }
       }
@@ -731,7 +734,7 @@ function populateQueryResult(json) {
    $("#entity-body span.name").click(showPerson);
    $("span.art-link").click(function(ev) {
       // Show a source article
-      window.location.href = "/article?id=" + $(this).attr("data-uuid");
+      window.location.href = "/page?id=" + $(this).attr("data-uuid");
    });
 }
 
@@ -862,6 +865,7 @@ function analyzeQuery() {
       return;
    var q = $("#url").val().trim();
    if (q.startsWith("http://") || q.startsWith("https://")) {
+      wait(true); // Show spinner while loading page
       window.location.href = "/page?url=" + encodeURIComponent(q);
       return;
    }

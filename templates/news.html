@@ -28,7 +28,8 @@
                style="min-width:2em; width:{{ article.width }}">{{ article.width }}</div>
          </div>
       </td>
-      <td class="heading"><img src="/static/{{ article.icon }}" width="16" height="16" alt="{{ article.icon }}"/> {{ article.heading }}</td>
+      <td class="heading"><img src="/static/{{ article.icon }}" width="16" height="16" alt="{{ article.icon }}"/>
+      {{ article.heading }}</td>
    </tr>
 {% endfor %}
    </tbody>
@@ -48,7 +49,7 @@
       $("tr.topitem").click(function(ev) {
          // A top news article has been clicked: show it
          var uuid = $(this).attr("data-uuid");
-         window.location.href = "{{ url_for('article') }}?id=" + uuid;
+         window.location.href = "{{ url_for('page') }}?id=" + uuid;
       });
    }
 

@@ -45,6 +45,7 @@ class ScrapeHelper:
         self._authority = root.authority
         self._author = root.author
         self._description = root.description
+        self._root_id = root.id
 
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
@@ -81,6 +82,15 @@ class ScrapeHelper:
             content = None
         # By default, return the entire body
         return content or self._get_body(soup)
+
+    @property
+    def root_id(self):
+        """ Return the root id corresponding to this domain """
+        return self._root_id
+
+    @property
+    def domain(self):
+        return self._domain
 
     @property
     def icon(self):

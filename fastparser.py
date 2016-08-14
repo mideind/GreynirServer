@@ -546,7 +546,8 @@ class Fast_Parser(BIN_Parser):
     def go(self, tokens):
         """ Call the C++ parser module to parse the tokens """
 
-        wrapped_tokens, wrap_map = self._wrap(tokens) # Inherited from BIN_Parser
+        wrapped_tokens = self._wrap(tokens) # Inherited from BIN_Parser
+        lw = len(wrapped_tokens)
         ep = Fast_Parser.eparser
         err = ffi.new("unsigned int*")
 
@@ -555,14 +556,13 @@ class Fast_Parser(BIN_Parser):
 
         with ParseJob.make(self.grammar, wrapped_tokens, self._terminals) as job:
 
-            node = ep.earleyParse(self._c_parser, len(wrapped_tokens),
-                self._root_index, job.handle, err)
+            node = ep.earleyParse(self._c_parser, lw, self._root_index, job.handle, err)
 
             if node == ffi.NULL:
                 ix = err[0] # Token index
                 if ix >= 1:
                     # Find the error token index in the original (unwrapped) token list
-                    orig_ix = wrap_map[ix] if ix in wrap_map else ix
+                    orig_ix = wrapped_tokens[ix].index if ix < lw else ix
                     raise ParseError("No parse available at token {0} ({1})"
                         .format(orig_ix, wrapped_tokens[ix-1]), orig_ix - 1)
                 else:

@@ -182,7 +182,20 @@ class BIN_Db:
             # of the BIN_Meaning namedtuple
             g = self._c.fetchall()
             if g is not None:
-                m = list(map(BIN_Meaning._make, g))
+                # Order the meanings by priority, so that the most
+                # common/likely ones are first in the list and thus
+                # matched more readily than the less common ones
+                def priority(m):
+                    # Order "VH" verbs (viðtengingarháttur) after other forms
+                    # Also order past tense ("ÞT") after present tense
+                    # and plural after singular
+                    if m.ordfl != "so":
+                        return 0
+                    prio = 4 if "VH" in m.beyging else 0
+                    prio += 2 if "ÞT" in m.beyging else 0
+                    prio += 1 if "FT" in m.beyging else 0
+                    return prio
+                m = sorted(map(BIN_Meaning._make, g), key = priority)
                 if w in Meanings.DICT:
                     # There are additional word meanings in the Meanings dictionary,
                     # coming from the settings file: append them

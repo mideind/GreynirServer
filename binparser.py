@@ -126,9 +126,10 @@ class BIN_Token(Token):
     VBIT_KVK = VBIT["kvk"]
     VBIT_HK = VBIT["hk"]
     VBIT_NH = VBIT["nh"]
+    VBIT_VH = VBIT["vh"]
+    VBIT_LH = VBIT["lhþt"]
     VBIT_MM = VBIT["mm"]
     VBIT_GM = VBIT["gm"]
-    VBIT_LH = VBIT["lhþt"]
     VBIT_GR = VBIT["gr"]
     VBIT_SUBJ = VBIT["subj"]
     VBIT_SAGNB = VBIT["sagnb"]
@@ -171,8 +172,10 @@ class BIN_Token(Token):
     # '...afsalaði sér samt launum'
     # '...og færði því Markúsi Erni tómatsósu'
     # '...lifði af nútímalega meðferð'
+    # '...varð fyrir neðan Pál'
     _NOT_NOT_EO = frozenset(["inn", "eftir", "of", "til", "upp", "um", "síðan", "fram", "nær", "nærri",
-        "út", "meðal", "úti", "saman", "jafnframt", "næstum", "samt", "samtals", "því", "nokkuð", "af" ])
+        "út", "meðal", "úti", "saman", "jafnframt", "næstum", "samt", "samtals", "því", "nokkuð", "af",
+        "neðan" ])
 
     # Words that are not eligible for interpretation as proper names, even if they are capitalized
     _NOT_PROPER_NAME = frozenset(["ég", "þú", "hann", "hún", "það", "við", "þið", "þau",
@@ -188,7 +191,7 @@ class BIN_Token(Token):
 
     _MEANING_CACHE = { }
 
-    def __init__(self, t):
+    def __init__(self, t, original_index):
 
         Token.__init__(self, TOK.descr[t[0]], t[1])
         self.t0 = t[0] # Token type (TOK.WORD, etc.)
@@ -202,6 +205,7 @@ class BIN_Token(Token):
             self.t2 = t[2]
         self.is_upper = self.t1[0] != self.t1_lower[0] # True if starts with upper case
         self._hash = None # Cached hash
+        self._index = original_index # Index of original token within sentence
 
         # We store a cached check of whether this is an "eo". An "eo" is an adverb (atviksorð)
         # that cannot also be a preposition ("fs") and is therefore a possible non-ambiguous
@@ -212,6 +216,11 @@ class BIN_Token(Token):
     def lower(self):
         """ Return the text for this property, in lower case """
         return self.t1_lower
+
+    @property
+    def index(self):
+        """ Return the original index of the corresponding token within the sentence """
+        return self._index
 
     @property
     def dump(self):
@@ -663,7 +672,7 @@ class BIN_Token(Token):
                 fs = m.stofn
             # !!! Note that this will match a word and return True even if the
             # meanings of the token (the list in self.t2) do not include
-            # the fs category. This effectively makes the propositions
+            # the fs category. This effectively makes the prepositions
             # exempt from the ambiguous_phrases optimization.
             return fs in Prepositions.PP and terminal.variant(0) in Prepositions.PP[fs]
 
@@ -731,13 +740,13 @@ class BIN_Token(Token):
             if " " in self.t1_lower:
                 return False
             if not terminal.num_variants:
-                return True
+                return self.t2[0] if self.t2 else True # Return first meaning, or just plain True if no meanings
             # The terminal is sérnafn_case: We only accept nouns or adjectives
             # that match the given case
             for m in self.t2:
                 fbits = BIN_Token.get_fbits(m.beyging) & BIN_Token.VBIT_CASES
                 if BIN_Token._KIND[m.ordfl] in {"no", "lo"} and terminal.fbits_match(fbits):
-                    return True
+                    return m # Return the matching meaning
             return False
 
         # We have a match if any of the possible part-of-speech meanings
@@ -757,7 +766,13 @@ class BIN_Token(Token):
             }
             matcher = matchers.get(terminal.first, matcher_default)
             if matcher:
-                return any(matcher(m) for m in self.t2)
+                # Return the first matching meaning, or False if none
+                # !!! TODO: Prioritize matching meanings, if more than one
+                # !!! Example: don't select a VH meaning for a verb if the
+                # !!! terminal doesn't specify VH; apply a priority between
+                # !!! different nouns that have the same spelling (incl. names)
+                return next((m for m in self.t2 if matcher(m)), False)
+                # return any(matcher(m) for m in self.t2)
             # Terminal is a proper name ('sérnafn')
             return self.is_upper and matches_proper_name()
 
@@ -768,7 +783,8 @@ class BIN_Token(Token):
 
         # Not upper case: allow it to match a singular, neutral noun in all cases,
         # but without the definite article ('greinir')
-        return terminal.startswith("no") and terminal.has_vbits(BIN_Token.VBIT_ET | BIN_Token.VBIT_HK) and \
+        return terminal.startswith("no") and \
+            terminal.has_vbits(BIN_Token.VBIT_ET | BIN_Token.VBIT_HK) and \
             not terminal.has_vbits(BIN_Token.VBIT_GR)
 
     # Dispatch table for the token matching functions
@@ -798,6 +814,12 @@ class BIN_Token(Token):
 
     def matches(self, terminal):
         """ Return True if this token matches the given terminal """
+        # Dispatch the token matching according to the dispatch table in _MATCHING_FUNC
+        return BIN_Token._MATCHING_FUNC[self.t0](self, terminal) is not False
+
+    def match_with_meaning(self, terminal):
+        """ Return False if this token does not match the given terminal;
+            otherwise True or the actual meaning tuple that matched """
         # Dispatch the token matching according to the dispatch table in _MATCHING_FUNC
         return BIN_Token._MATCHING_FUNC[self.t0](self, terminal)
 
@@ -938,6 +960,10 @@ class VariantHandler:
     @property
     def is_lh(self):
         return (self._vbits & BIN_Token.VBIT_LH) != 0
+
+    @property
+    def is_vh(self):
+        return (self._vbits & BIN_Token.VBIT_VH) != 0
 
 
 class BIN_Terminal(VariantHandler, Terminal):
@@ -1089,17 +1115,13 @@ class BIN_Parser(Base_Parser):
             else:
                 ix += 1
 
-        # Wrap the sanitized token list in BIN_Token() and
-        # create a mapping of token indices from the wrapped list to the original list
+        # Wrap the sanitized token list in BIN_Token()
+        # while keeping a back index to the original token
         wrapped_tokens = [ ]
-        wrap_map = { }
-        wrap_ix = 0
         for ix, t in enumerate(tlist):
             if t is not None and BIN_Token.is_understood(t):
-                wrapped_tokens.append(BIN_Token(t))
-                wrap_map[wrap_ix] = ix
-                wrap_ix += 1
-        return wrapped_tokens, wrap_map
+                wrapped_tokens.append(BIN_Token(t, ix))
+        return wrapped_tokens
 
     def go(self, tokens):
         """ Parse the token list after wrapping each understood token in the BIN_Token class """

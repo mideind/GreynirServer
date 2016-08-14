@@ -967,12 +967,14 @@ class TreeBase:
             r = re.match(r'\'[^\']*\'', s)
         token = r.group() if r else ""
         s = s[r.end() + 1:] if r else ""
-        a = s.split(' ', maxsplit = 1) if s else ["WORD"] # Default token type
-        tokentype = a[0]
-        aux = a[1] if len(a) > 1 else "" # Auxiliary info (originally token.t2)
-        # print("terminal {0} token {1} tokentype {2} aux {3}".format(terminal, token, tokentype, aux))
-        # Select a terminal constructor based on the first part of the
-        # terminal name
+        if s:
+            a = s.split(' ', maxsplit = 1)
+            tokentype = a[0]
+            aux = a[1] if len(a) > 1 else "" # Auxiliary info (originally token.t2)
+        else:
+            # Default token type
+            tokentype = "WORD"
+            aux = ""
         cat = terminal.split("_", maxsplit = 1)[0]
         return (terminal, token, tokentype, aux, cat)
 

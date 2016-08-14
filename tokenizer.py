@@ -36,8 +36,8 @@ from scraperdb import SessionContext, Entity
 
 LEFT_PUNCTUATION = "([„«#$€<"
 RIGHT_PUNCTUATION = ".,:;)]!%?“»”’…°>"
-CENTER_PUNCTUATION = '"*&+=@©|—–-'
-NONE_PUNCTUATION = "/'~‘\\"
+CENTER_PUNCTUATION = '"*&+=@©|'
+NONE_PUNCTUATION = "—–-/'~‘\\"
 PUNCTUATION = LEFT_PUNCTUATION + CENTER_PUNCTUATION + RIGHT_PUNCTUATION + NONE_PUNCTUATION
 
 # Punctuation that ends a sentence
@@ -56,6 +56,9 @@ CLOCK_ABBREV = "kl"
 
 # Prefixes that can be applied to adjectives with an intervening hyphen
 ADJECTIVE_PREFIXES = frozenset(["hálf", "marg", "semí"])
+
+# Person names that are not recognized at the start of sentences
+NOT_NAME_AT_SENTENCE_START = { "Annar" }
 
 # Punctuation types: left, center or right of word
 
@@ -422,6 +425,11 @@ def parse_tokens(txt):
             continue
 
         # More complex case of mixed punctuation, letters and numbers
+        if len(w) > 1:
+            if w[0] == '"':
+                # Convert simple quotes to proper opening quotes
+                yield TOK.Punctuation('„')
+                w = w[1:]
         while w:
             # Punctuation
             ate = False
@@ -455,9 +463,14 @@ def parse_tokens(txt):
                 else:
                     yield TOK.Punctuation(w[0])
                     w = w[1:]
+                if w == '"':
+                    # We're left with a simple double quote: Convert to proper closing quote
+                    w = '”'
             if w and '@' in w:
                 # Check for valid e-mail
-                s = re.match(r"[^@\s]+@[^@\s]+(\.[^@\s\.,/:;]+)+", w)
+                # Note: we don't allow double quotes (simple or closing ones) in e-mails here
+                # even though they're technically allowed according to the RFCs
+                s = re.match(r"[^@\s]+@[^@\s]+(\.[^@\s\.,/:;\"”]+)+", w)
                 if s:
                     ate = True
                     yield TOK.Email(s.group())
@@ -474,9 +487,9 @@ def parse_tokens(txt):
                 ate = True
                 i = 1
                 lw = len(w)
-                while i < lw and (w[i].isalpha() or w[i] in PUNCT_INSIDE_WORD):
+                while i < lw and (w[i].isalpha() or (w[i] in PUNCT_INSIDE_WORD and (i+1 == lw or w[i+1].isalpha()))):
                     # We allow dots to occur inside words in the case of
-                    # abbreviations; also apostrophes are allowed within words
+                    # abbreviations; also apostrophes are allowed within words and at the end
                     # (O'Malley, Mary's, it's, childrens', O‘Donnell)
                     i += 1
                 while w[i-1] == '.':
@@ -488,6 +501,11 @@ def parse_tokens(txt):
                 # Ensure that we eat everything, even unknown stuff
                 yield TOK.Unknown(w[0])
                 w = w[1:]
+            # We have eaten something from the front of the raw token.
+            # Check whether we're left with a simple double quote,
+            # in which case we convert it to a proper closing double quote
+            if w and w[0] == '"':
+                w = '”' + w[1:]
 
 
 def parse_particles(token_stream):
@@ -781,7 +799,10 @@ NATIONALITIES = {
     "íslenskur": "is",
     "pólskur": "po",
     "kínverskur": "cn",
-    "ástralskur": "au"
+    "ástralskur": "au",
+    "rússneskur": "ru",
+    "indverskur": "in",
+    "indónesískur": "id"
 }
 
 # Recognize words for currencies
@@ -799,6 +820,11 @@ CURRENCIES = {
     "bandaríkjadalur": "USD",
     "USD": "USD",
     "franki": "CHF",
+    "rúbla": "RUB",
+    "RUB": "RUB",
+    "rúpía": "INR",
+    "INR": "INR",
+    "IDR": "IDR",
     "CHF": "CHF",
     "jen": "JPY",
     "yen": "JPY",
@@ -825,6 +851,9 @@ ISO_CURRENCIES = {
     ("ch", "CHF"): "CHF",
     ("jp", "JPY"): "JPY",
     ("po", "PLN"): "PLN",
+    ("ru", "RUB"): "RUB",
+    ("in", "INR"): "INR", # Indian rupee
+    ("id", "INR"): "IDR", # Indonesian rupiah
     ("cn", "CNY"): "CNY"
 }
 
@@ -1141,6 +1170,10 @@ def parse_phrases_2(token_stream):
                     occur in the disallowed_names section in the configuration file. """
                 if tok.kind != TOK.WORD or not tok.val:
                     return None
+                if at_sentence_start and tok.txt in NOT_NAME_AT_SENTENCE_START:
+                    # Disallow certain person names at the start of sentences,
+                    # such as 'Annar'
+                    return None
                 # Set up the names we're not going to allow
                 dstems = DisallowedNames.STEMS if given_name else { }
                 # Look through the token meanings
@@ -1219,8 +1252,8 @@ def parse_phrases_2(token_stream):
                     # Abbreviation: Cut off the brackets & trailing period
                     wrd = wrd[1:-2]
                 if len(wrd) > 2 or not wrd[0].isupper():
-                    if wrd not in { "van", "de", "den", "der", "of", "el", "al" }:
-                        # Accept "Thomas de Broglie", "Ruud van Nistelroy", "Mary of Canterbury"
+                    if wrd not in { "van", "de", "den", "der", "el", "al" }: # "of" was here
+                        # Accept "Thomas de Broglie", "Ruud van Nistelroy"
                         return None
                 # One or two letters, capitalized: accept as middle name abbrev,
                 # all genders and cases possible
@@ -1742,4 +1775,35 @@ def tokenize(text, auto_uppercase = False):
     token_stream = disambiguate_phrases(token_stream) # Eliminate very uncommon meanings
 
     return token_stream
+
+
+def paragraphs(toklist):
+    """ Generator yielding paragraphs from a token list. Each paragraph is a list
+        of sentence tuples. Sentence tuples consist of the index of the first token
+        of the sentence (the TOK.S_BEGIN token) and a list of the tokens within the
+        sentence, not including the terminating TOK.S_END token. """
+    if not toklist:
+        return
+    sent = [] # Current sentence
+    sent_begin = 0
+    current_p = [] # Current paragraph
+    for ix, t in enumerate(toklist):
+        t0 = t[0]
+        if t0 == TOK.S_BEGIN:
+            sent = []
+            sent_begin = ix
+        elif t0 == TOK.S_END:
+            if sent:
+                # Do not include or count zero-length sentences
+                current_p.append((sent_begin, sent))
+        elif t0 == TOK.P_BEGIN or t0 == TOK.P_END:
+            # New paragraph marker: Start a new paragraph if we didn't have one before
+            # or if we already had one with some content
+            if current_p != []:
+                yield current_p
+                current_p = []
+        else:
+            sent.append(t)
+    if current_p != []:
+        yield current_p
 

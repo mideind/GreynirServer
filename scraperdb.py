@@ -23,6 +23,7 @@ from sqlalchemy import Table, Column, Integer, String, Float, DateTime, Sequence
     UniqueConstraint, ForeignKey, PrimaryKeyConstraint
 from sqlalchemy.exc import SQLAlchemyError as SqlError
 from sqlalchemy.exc import IntegrityError as SqlIntegrityError
+from sqlalchemy.exc import DataError as SqlDataError
 from sqlalchemy import desc as SqlDesc
 from sqlalchemy.dialects.postgresql import UUID as psql_UUID
 
@@ -35,6 +36,7 @@ Base = declarative_base()
 # Allow client use of IntegrityError exception without importing it from sqlalchemy
 IntegrityError = SqlIntegrityError
 DatabaseError = SqlError
+DataError = SqlDataError
 # Same for the desc() function
 desc = SqlDesc
 
@@ -213,6 +215,8 @@ class Article(Base):
     html = Column(String)
     # The parse tree obtained in the last parse
     tree = Column(String)
+    # The tokens of the article in JSON string format
+    tokens = Column(String)
 
     # The back-reference to the Root parent of this Article
     root = relationship("Root", foreign_keys="Article.root_id",

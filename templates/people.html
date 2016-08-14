@@ -51,7 +51,7 @@
       $("tr.topitem").click(function(ev) {
          // A person name has been clicked: show the article where s/he appears
          var uuid = $(this).attr("data-uuid");
-         window.location.href = "{{ url_for('article') }}?id=" + uuid;
+         window.location.href = "{{ url_for('page') }}?id=" + uuid;
       });
    }
 

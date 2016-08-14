@@ -80,6 +80,9 @@
 .glyphicon-gender-male:before {
    content: "\E247";
 }
+.glyphicon-tag:before {
+   content: "\E066";
+}
 
 .glyphicon-spin {
     -webkit-animation: spin 2000ms infinite linear;
@@ -280,6 +283,7 @@ div#plist {
 
 div#output {
    padding-top: 16px;
+   margin-bottom: 24px;
 }
 
 tr.topitem {
@@ -383,11 +387,12 @@ p.image {
 div.info {
    visibility: hidden;
    position: absolute;
-   background-color: #f0f0f0;
+   background-color: #eeeeee;
    border-radius: 4px;
-   box-shadow: 2px 2px 4px 2px #333333;
+   box-shadow: 2px 2px 4px 2px #555555;
    z-index: 10;
-   min-width: 150px;
+   min-width: 160px;
+   max-width: 360px;
    margin-top: 48px;
    padding-top: 6px;
    padding-bottom: 6px;
@@ -395,12 +400,72 @@ div.info {
    padding-right: 12px;
 }
 
+div.info.kk,
+div.info.kvk,
+div.info.hk,
+div.info.fn,
+div.info.pfn,
+div.info.person.male {
+   background-color: #d9edf7;
+}
+
+div.info.lo {
+   background-color: #dff0d8;
+}
+
+div.info.so,
+div.info.nhm,
+div.info.person.female {
+   background-color: #f2dede;
+}
+
+div.info.st {
+   background-color: #fcf8e3;
+}
+
 div.info p {
-   /* font-size: 17px;
-   line-height: 22px; */
    margin-top: 0px;
    margin-bottom: 4px;
    padding: 0;
+}
+
+div.info #tag {
+   display: inline-block;
+   float: left;
+   padding-right: 6px;
+   padding-bottom: 2px;
+}
+
+div.info.fn #tag,
+div.info.pfn #tag,
+div.info.person.male #tag,
+div.info.kk #tag,
+div.info.kvk #tag,
+div.info.hk #tag {
+   color: #337ab7;
+}
+
+div.info.lo #tag {
+   color: #5cb85c;
+}
+
+div.info.nhm #tag,
+div.info.so #tag,
+div.info.person.female #tag {
+   color: #d9534f;
+}
+
+div.info.st #tag {
+   color: #f0ad4e;
+}
+
+div.info #lemma {
+   font-weight: bold;
+}
+
+div.info #details {
+   margin-top: 4px;
+   font-style: italic;
 }
 
 #meta-author, #meta-timestamp, #meta-url {
@@ -419,18 +484,19 @@ span.errtok {
 }
 
 span.sent {
-   /* font-size: 17px;
-   line-height: 26px; */
-   margin-right: 8px;
+   margin-right: 4px;
    cursor: pointer;
 }
 
 span.sent.err {
-   background-color: #ffd7e3;
+   /* background-color: #ffd7e3; */
+   color: #CB333B; /* Greynir red */
+   /* color: #d9534f; */
 }
 
 span.sent.err:hover {
-   background-color: #ffbbcf;
+   /* background-color: #ffbbcf; */
+   background-color: #ffd7e3;
 }
 
 span.sent.parsed {
@@ -464,7 +530,7 @@ div#result i.number {
 
 div#result i.percent {
    font-weight: 600;
-   color: #10069F;
+   color: #337ab7;
 }
 
 div#result i.ordinal {
@@ -472,11 +538,8 @@ div#result i.ordinal {
    color: #CCA500;
 }
 
-div#result i.date {
-   font-weight: 600;
-   color: #CCA500;
-}
-
+div#result i.date,
+div#result i.time,
 div#result i.timestamp {
    font-weight: 600;
    color: #CCA500;
@@ -495,13 +558,77 @@ div#result i.amount {
 div#result i.person {
    font-weight: 600;
    /* font-style: italic; */
-   color: #10069F;
+   color: #337ab7;
 }
 
 div#result i.entity {
    font-weight: 600;
    font-style: italic;
-   color: #10069F;
+   color: #337ab7;
+}
+
+div#result i.year,
+div#result i.telno,
+div#result i.email {
+   font-weight: 600;
+}
+
+/*
+div#result i.kk:hover,
+div#result i.kvk:hover,
+div#result i.hk:hover {
+   background-color: #f0f0ff;
+}
+
+div#result i.so:hover {
+   background-color: #fff0f0;
+}
+
+div#result i.lo:hover {
+   background-color: #f0fff0;
+}
+
+div#result i.fs:hover {
+   background-color: #fff0ff;
+}
+
+div#result i.st:hover {
+   background-color: #fffff0;
+}
+*/
+
+div#result i:hover {
+   outline-width: 1px;
+   outline-style: solid;
+   outline-color: #777777;
+   background-color: #777777;
+   color: white;
+}
+
+div#result i.kk:hover,
+div#result i.kvk:hover,
+div#result i.hk:hover,
+div#result i.fn:hover,
+div#result i.pfn:hover,
+div#result i.person:hover {
+   outline-color: #337ab7;
+   background-color: #337ab7;
+}
+
+div#result i.so:hover,
+div#result i.nhm:hover {
+   outline-color: #d9534f;
+   background-color: #d9534f;
+}
+
+div#result i.lo:hover {
+   outline-color: #5cb85c;
+   background-color: #5cb85c;
+}
+
+div#result i.st:hover {
+   outline-color: #f0ad4e;
+   background-color: #f0ad4e;
 }
 
 div#statistics {
