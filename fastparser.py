@@ -35,9 +35,10 @@
 
 """
 
-from threading import Lock
 
 import os
+from threading import Lock
+
 from cffi import FFI
 
 from binparser import BIN_Parser
@@ -734,5 +735,4 @@ class ParseForestDumper(ParseForestNavigator):
         dumper.go(root_node)
         dumper._result.append("Q0") # End marker
         return "\n".join(dumper._result)
-
 

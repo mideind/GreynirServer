@@ -11,7 +11,6 @@
 
 """
 
-import time
 import json
 from datetime import datetime
 from collections import OrderedDict
@@ -19,9 +18,9 @@ from collections import OrderedDict
 from settings import Settings
 from scraperdb import Article as ArticleRow, SessionContext, Failure, DataError
 from fetcher import Fetcher
-from tokenizer import TOK, paragraphs
+from tokenizer import TOK
 from fastparser import Fast_Parser, ParseError, ParseForestNavigator, ParseForestDumper
-from reducer import Reducer
+from incparser import IncrementalParser
 
 
 class Article:
@@ -190,7 +189,7 @@ class Article:
         return tmap
 
     @staticmethod
-    def _dump_tokens(sent, tree, error_index = None):
+    def _dump_tokens(tokens, tree, error_index = None):
         """ Generate a string (JSON) representation of the tokens in the sentence.
 
             The JSON token dict contents are as follows:
@@ -209,9 +208,10 @@ class Article:
         # Map tokens to associated terminals, if any
         tmap = Article._terminal_map(tree) # tmap is an empty dict if there's no parse tree
         dump = []
-        for ix, t in enumerate(sent):
+        for ix, t in enumerate(tokens):
             # We have already cut away paragraph and sentence markers (P_BEGIN/P_END/S_BEGIN/S_END)
             d = dict(x = t.txt)
+            terminal = None
             if t.kind != TOK.PUNCTUATION and ix in tmap:
                 # Annotate with terminal name and BÍN meaning (no need to do this for punctuation)
                 terminal, meaning = tmap[ix]
@@ -230,6 +230,11 @@ class Article:
                 # For tokens except words, entities and punctuation, include the val field
                 if t.kind == TOK.PERSON:
                     d["v"] = t.val[0][0] # Include only the name of the person in nominal form
+                    # Hack to make sure that the gender information is communicated in
+                    # the terminal name (in some cases the terminal only contains the case)
+                    gender = t.val[0][1]
+                    if terminal and not terminal.name.endswith("_" + gender):
+                        d["t"] = terminal.name + "_" + gender
                 else:
                     d["v"] = t.val
             if ix == error_index:
@@ -286,14 +291,6 @@ class Article:
             # Convert the content soup to a token iterable (generator)
             toklist = Fetcher.tokenize_html(self._url, self._html, session)
 
-            # Count sentences and paragraphs
-            num_sent = 0
-            num_parsed_sent = 0
-            num_paragraphs = 0
-            num_tokens = 0
-            total_ambig = 0.0
-            total_tokens = 0
-
             # Dict of parse trees in string dump format,
             # stored by sentence index (1-based)
             trees = OrderedDict()
@@ -305,64 +302,38 @@ class Article:
             # List of sentences that fail to parse
             failures = []
 
-            start_time = time.time()
             bp = self.get_parser()
-            rdc = Reducer(bp.grammar)
+            ip = IncrementalParser(bp, toklist)
+            num_sent = 0
 
-            for p in paragraphs(toklist):
+            for p in ip.paragraphs():
 
                 pgs.append([])
 
-                for _, sent in p:
+                for sent in p.sentences():
 
-                    slen = len(sent)
-                    # Parse the accumulated sentence
                     num_sent += 1
-                    num_tokens += slen
-                    err_index = None
-                    num = 0
-                    try:
-                        # Parse the sentence
-                        forest = bp.go(sent)
-                        if forest is not None:
-                            num = Fast_Parser.num_combinations(forest)
-                            if num > 0:
-                                # Reduce the resulting forest
-                                forest = rdc.go(forest)
-                    except ParseError as e:
-                        forest = None
-                        # Obtain the index of the offending token
-                        err_index = e.token_index
-                    if Settings.DEBUG:
-                        print("Parsed sentence of length {0} with {1} combinations{2}"
-                            .format(slen, num,
-                                ("\n   " + (" ".join(tok[1] for tok in sent)) if num >= 100 else "")))
-                    if num > 0:
-                        num_parsed_sent += 1
-                        # Calculate the 'ambiguity factor'
-                        ambig_factor = num ** (1 / slen)
-                        # Do a weighted average on sentence length
-                        total_ambig += ambig_factor * slen
-                        total_tokens += slen
+
+                    if sent.parse():
                         # Obtain a text representation of the parse tree
-                        trees[num_sent] = ParseForestDumper.dump_forest(forest)
-                        pgs[-1].append(Article._dump_tokens(sent, forest))
+                        trees[num_sent] = ParseForestDumper.dump_forest(sent.tree)
+                        pgs[-1].append(Article._dump_tokens(sent.tokens, sent.tree))
                     else:
                         # Error or no parse: add an error index entry for this sentence
-                        eix = slen - 1 if err_index is None else err_index
+                        eix = sent.err_index
                         trees[num_sent] = "E{0}".format(eix)
                         # Add the failing sentence to the list of failures
-                        failures.append(" ".join(t.txt for t in sent))
-                        pgs[-1].append(Article._dump_tokens(sent, None, eix))
+                        failures.append(sent.text)
+                        pgs[-1].append(Article._dump_tokens(sent.tokens, None, eix))
 
-            parse_time = time.time() - start_time
+            parse_time = ip.parse_time
 
             self._parsed = datetime.utcnow()
             self._parser_version = bp.version
-            self._num_tokens = num_tokens
-            self._num_sentences = num_sent
-            self._num_parsed = num_parsed_sent
-            self._ambiguity = (total_ambig / total_tokens) if total_tokens > 0 else 1.0
+            self._num_tokens = ip.num_tokens
+            self._num_sentences = ip.num_sentences
+            self._num_parsed = ip.num_parsed
+            self._ambiguity = ip.ambiguity
 
             # Make one big JSON string for the paragraphs, sentences and tokens
             self._raw_tokens = pgs

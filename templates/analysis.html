@@ -38,7 +38,17 @@
    <h3>Málgreining</h3>
 
    <!-- Popup with info about the word being hovered over -->
-   <div class="info"></div>
+   <div class="info">
+      <table>
+      <tr>
+      <td><span id="tag" class='glyphicon glyphicon-tag'></span></td>
+      <td id="lemma"></td>
+      </tr>
+      </table>
+      <p id="details"></p>
+      <p id="grammar"></p>
+   </div>
+
 
    <div id="result">
    </div>
@@ -54,11 +64,11 @@
       <h3>Tölfræði</h3>
       <ul>
          <li>Textinn inniheldur <span id="tok-num">0</span> eindir í
-            <span id="num-sent"></span> málsgreinum.</li>
-         <li>Það tókst að greina <span id="num-parsed-sent"></span> málsgreinar eða
-            <span id="num-parsed-ratio"></span>%.</li>
+            <span id="num-sent">0</span> málsgreinum.</li>
+         <li>Það tókst að greina <span id="num-parsed-sent">0</span> málsgreinar eða
+            <span id="num-parsed-ratio">0,0</span>%.</li>
          <li>Margræðnistuðull var
-            <span id="avg-ambig-factor"></span>.</li>
+            <span id="avg-ambig-factor">1,00</span>.</li>
       </ul>
    </div>
 
@@ -68,17 +78,12 @@
 
 {% block endscripts %}
 
-<script src="{{ url_for('static', filename='main.js') }}"></script>
+<script src="{{ url_for('static', filename='page.js') }}"></script>
 
 <script>
 
-   function debugMode() {
-      return false;
-   }
-
    function wait(state) {
       // Start or stop a wait spinner
-      queryInProgress = state;
       if (state) {
          $("#txt-ok").attr("disabled", "disabled")
             .html("<span class='glyphicon glyphicon-restart glyphicon-spin-white'></span>");
@@ -89,6 +94,43 @@
             .text("Greina");
          $("div#output").css("display", "block");
       }
+   }
+
+   function clearResult() {
+      // Clear previous result
+      $("div#result").html("");
+      $("div#statistics").css("display", "none");
+      $("div#register").css("display", "none");
+      // Display progress indicator
+      wait(true);
+   }
+
+   function handleError(xhr, status, errorThrown) {
+      /* An error occurred on the server or in the communications */
+      $("div#result").html("<p><b>Villa kom upp</b> í samskiptum við netþjón Greynis</p>"); 
+      wait(false);
+   }
+
+   function populateResult(json) {
+      wait(false);
+      displayTokens(json.result);
+      populateStats(json.stats);
+      nameDict = json.register;
+      populateRegister();
+   }
+
+   function analyzeText(txt) {
+      // Ask the server to tokenize and parse the given text
+      clearResult();
+      // Launch the query
+      serverQuery('/analyze.api', // Endpoint with .api suffix are not cached
+         {
+            text : txt
+         },
+         populateResult,
+         null,
+         handleError
+      );
    }
 
    function analyze() {

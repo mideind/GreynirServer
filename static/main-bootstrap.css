@@ -489,14 +489,12 @@ span.sent {
 }
 
 span.sent.err {
-   /* background-color: #ffd7e3; */
-   color: #CB333B; /* Greynir red */
-   /* color: #d9534f; */
+   background-color: #FFEDF3;
+   color: #9C3D59;
 }
 
 span.sent.err:hover {
-   /* background-color: #ffbbcf; */
-   background-color: #ffd7e3;
+   background-color: #FFE0EA;
 }
 
 span.sent.parsed {

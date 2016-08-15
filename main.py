@@ -28,6 +28,7 @@ from flask import request, send_from_directory
 from flask.wrappers import Response
 
 from fastparser import Fast_Parser, ParseError, ParseForestPrinter, ParseForestDumper
+from incparser import IncrementalParser
 from ptest import run_test, Test_DB
 from reducer import Reducer
 from fetcher import Fetcher
@@ -135,6 +136,7 @@ _TOP_PERSONS_LENGTH = 20
 # Maximum length of incoming GET/POST parameters
 _MAX_URL_LENGTH = 512
 _MAX_UUID_LENGTH = 36
+_MAX_TEXT_LENGTH = 8192
 
 
 def profile(func, *args, **kwargs):
@@ -371,13 +373,21 @@ def add_name_to_register(name, register, session):
 
 
 def create_name_register(tokens, session):
-    """ Assemble a register of names and titles from the token list """
+    """ Assemble a dictionary of person and entity names occurring in the token list """
     register = { }
     for t in tokens:
         if t.kind == TOK.PERSON:
             gn = t.val
             for pn in gn:
                 add_name_to_register(pn.name, register, session)
+        elif t.kind == TOK.ENTITY:
+            add_entity_to_register(t.txt, register, session)
+    return register
+
+
+def create_name_list(tokens, session):
+    """ Assemble a sorted list of names and titles from the token list """
+    register = create_name_register(tokens, session)
     with changedlocale() as strxfrm:
         reglist = sorted(
             [ dict(name = key, title = val) for key, val in register.items() ],
@@ -511,93 +521,42 @@ def process_query(session, toklist, result):
 def analyze():
     """ Analyze text from a given URL """
 
-    url = request.form.get("url", "").strip()
-    use_reducer = not get_json_bool(request, "noreduce")
-    auto_uppercase = get_json_bool(request, "autouppercase", True)
-    dump_forest = "dump" in request.form
-    metadata = None
-    # Single sentence (True) or contiguous text from URL (False)?
-    single = False
-    keep_trees = False
-    is_query = False
-
-    t0 = time.time()
+    text = request.form.get("text", "").strip()[0:_MAX_TEXT_LENGTH]
 
     with SessionContext(commit = True) as session:
 
-        if url.startswith("http:") or url.startswith("https:"):
-            # Scrape the URL, tokenize the text content and return the token list
-            metadata, generator = Fetcher.tokenize_url(url)
-            toklist = list(generator)
-            # If this is an already scraped URL, keep the parse trees and update
-            # the database with the new parse
-            keep_trees = Fetcher.is_known_url(url, session)
-        else:
-            single = True
-            # Tokenize the text entered as-is and return the token list.
-            # In this case, there's no metadata.
-            # We specify auto_uppercase to convert lower case words to upper case
-            # if the text is all lower case. The text may for instance
-            # be coming from a speech recognizer.
+        # Demarcate paragraphs in the input
+        text = Fetcher.mark_paragraphs(text)
+        # Tokenize the result
+        toklist = list(tokenize(text))
+        # Paragraph list, containing sentences, containing tokens
+        pgs = []
 
-            # Demarcate paragraphs in the input
-            txt = Fetcher.mark_paragraphs(url)
-            toklist = list(tokenize(txt, auto_uppercase = txt.islower() if auto_uppercase else False))
-            result = dict()
-            is_query = process_query(session, toklist, result)
-            if not is_query:
-                use_reducer = True
+        with Fast_Parser(verbose = False) as bp: # Don't emit diagnostic messages
 
-        if is_query:
+            ip = IncrementalParser(bp, toklist, verbose = True)
 
-            if Settings.DEBUG:
-                # The query string as seen by the parser
-                actual_q = correct_spaces(" ".join(t.txt or "" for t in toklist))
-                print("Query is: '{0}'".format(actual_q))
+            for p in ip.paragraphs():
+                pgs.append([])
+                for sent in p.sentences():
+                    if sent.parse():
+                        # Parsed successfully
+                        pgs[-1].append(ArticleProxy._dump_tokens(sent.tokens, sent.tree))
+                    else:
+                        # Errror in parse
+                        pgs[-1].append(ArticleProxy._dump_tokens(sent.tokens, None, sent.err_index))
 
-            result["q"] = url
-
-        else:
-
-            # Not a query: parse normally
-
-            tok_time = time.time() - t0
-
-            t0 = time.time()
-
-            if _PROFILE:
-                result, trees, failures = profile(parse, toklist, single, use_reducer, dump_forest, keep_trees)
-            else:
-                result, trees, failures = parse(toklist, single, use_reducer, dump_forest, keep_trees)
-
-            parse_time = time.time() - t0
-
+            stats = dict(
+                num_tokens = ip.num_tokens,
+                num_sentences = ip.num_sentences,
+                num_parsed = ip.num_parsed,
+                ambiguity = ip.ambiguity
+            )
             # Add a name register to the result
-            result["register"] = create_name_register(result["tokens"], session)
-            # Add information from parser
-            result["metadata"] = metadata
-            result["tok_time"] = tok_time
-            result["parse_time"] = parse_time
-
-        result["is_query"] = is_query # True if we are returning a query result, not tokenized (and parsed) text
-
-        #if keep_trees and not single and metadata is not None:
-        #    # Save a new parse result for an article
-        #    if Settings.DEBUG:
-        #        print("Storing a new parse tree for url {0}".format(url))
-        #    Scraper.store_parse(url, result, trees, failures, enclosing_session = session)
-
-    # with open("tokens.log", mode = "w", encoding="utf-8") as f:
-    #     indent = 0
-    #     for t in result["tokens"]:
-    #         if t.kind in { TOK.P_END, TOK.S_END }:
-    #             indent -= 1
-    #         print("{2}{0} {1}".format(TOK.descr[t.kind], "" if t.txt is None else t.txt, "  " * indent), file = f)
-    #         if t.kind in { TOK.P_BEGIN, TOK.S_BEGIN }:
-    #             indent += 1
+            register = create_name_register(toklist, session)
 
     # Return the tokens as a JSON structure to the client
-    return jsonify(result = result)
+    return jsonify(result = pgs, stats = stats, register = register)
 
 
 # Note: Endpoints ending with .api are configured not to be cached by nginx
@@ -636,7 +595,7 @@ def display():
         parse_time = time.time() - t0
 
         # Add a name register to the result
-        result["register"] = create_name_register(result["tokens"], session)
+        result["register"] = create_name_list(result["tokens"], session)
 
         result["tok_time"] = tok_time
         result["parse_time"] = parse_time

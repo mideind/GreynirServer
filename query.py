@@ -59,7 +59,7 @@ def make_response_list(rd):
             for j in range(i + 1, len(rl)):
                 rj = rl[j]
                 if rj is not None:
-                    if rj in ri:
+                    if rj.lower() in ri.lower():
                         rd[ri].update(rd[rj])
                         del rd[rj]
                         rl[j] = None
@@ -71,7 +71,7 @@ def make_response_list(rd):
         ri = rl[i]
         for j in range(i + 1, len(rl)):
             rj = rl[j]
-            if ri in rj:
+            if ri.lower() in rj.lower():
                 rd[rj].update(rd[ri])
                 del rd[ri]
                 break

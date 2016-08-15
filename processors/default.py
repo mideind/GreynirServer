@@ -115,7 +115,7 @@ def sentence(state, result):
 INVALID_TITLES = {
     "sig", "væri", "orðið", "ávísun", "hér heima", "lán", "úr láni", "bar", "ver",
     "bætir", "býr", "get", "vera", "eiga", "var", "búa", "setur", "heggur", "átt",
-    "keppa", "rétt", "ráðning", "sætti", "hlaut", "mynd", "myndband"
+    "keppa", "rétt", "ráðning", "sætti", "hlaut", "mynd", "myndband", "já", "nei"
 }
 
 def _add_name(result, mannsnafn, titill, kyn):

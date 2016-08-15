@@ -48,6 +48,8 @@ class Fetcher:
         "form", "option", "input", "label",
         "figure", "figcaption", "footer"])
 
+    _INLINE_BLOCK_TAGS = frozenset(["span"]) # Inserted with whitespace
+
     _WHITESPACE_TAGS = frozenset(["img"]) # <br> was here but now handled separately
 
     # Cache of instantiated scrape helpers
@@ -66,6 +68,7 @@ class Fetcher:
         def __init__(self):
             self._result = []
             self._nesting = 0
+            self._white = False
 
         def append(self, w):
             if self._nesting > 0:
@@ -75,11 +78,14 @@ class Fetcher:
                 self._result.append(" [[ " * self._nesting)
                 self._nesting = 0
             self._result.append(w)
+            self._white = False
 
         def append_whitespace(self):
             if self._nesting == 0:
                 # No need to append whitespace if we're just inside a begin-block
-                self._result.append(" ")
+                if not self._white:
+                    self._result.append(" ")
+                    self._white = True
 
         def begin(self):
             self._nesting += 1
@@ -89,11 +95,13 @@ class Fetcher:
                 self._nesting -= 1
             else:
                 self._result.append(" ]] ")
+                self._white = True
 
         def insert_break(self):
             """ Used to cut paragraphs at <br> tags """
             if self._nesting == 0:
                 self._result.append(" ]] [[ ")
+                self._white = True
 
         def result(self):
             """ Return the accumulated result as a string """
@@ -137,6 +145,12 @@ class Fetcher:
                 result.begin() # Begin block
                 Fetcher.extract_text(t, result)
                 result.end() # End block
+            elif t.name in Fetcher._INLINE_BLOCK_TAGS:
+                # Put whitespace around the inline block
+                # so that words don't run together
+                result.append_whitespace()
+                Fetcher.extract_text(t, result)
+                result.append_whitespace()
             elif t.name not in Fetcher._EXCLUDE_TAGS:
                 # Non-block tag
                 Fetcher.extract_text(t, result)

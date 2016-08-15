@@ -106,6 +106,8 @@ Forskeyti →
     | "mynd" tala AfTala? ':'? # Mynd 2 af 10
     | "dæmi" tala? ':'
     | "sjá" "einnig"? ':'
+    | "semsagt" ':'
+    | "sem" "sagt" ':'
 
 AfTala → "af" tala
 
@@ -487,8 +489,8 @@ SetningAukafall →
     # ESB eru þröngar skorður settar í málinu
     | Nl_þgf HjSögnLhÞtSM_p3/tala FsAtv? AukafallLhÞtAndlag/tala/pers/kyn FsRuna? so_2_þgf_þf_lhþt/tala/kyn NhFyllingEðaAtv
 
-    # Hannesi var í fyrra (falið að stýra rannsóknaverkefni)
-    | Nl_þgf HjSögnLhÞtSM_et_p3 FsAtv? AukafallÞgfAndlag
+    # Hjónunum var [í fyrra] [báðum] (falið að stýra rannsóknaverkefni)
+    | Nl_þgf/tala/kyn HjSögnLhÞtSM_et_p3 FsAtv? LoÞgf/tala/kyn? AukafallÞgfAndlag
 
     # Þess skal [ekki] gætt (að fara varlega með sprengiefnið)
     | Nl_ef HjSögnLhÞtSM_et_p3 FsAtv? AukafallEfAndlag
@@ -1857,9 +1859,10 @@ NlStak_ft_ef/kyn → NlStak_ft_p1_ef/kyn | NlStak_ft_p2_ef/kyn | NlStak_ft_p3_ef
 
 NlStak_et_p1/fall/kyn →
     'ég'_et/fall 'sjálfur'_et/fall/kyn? FsRunaEftirNl? # Ég í öllu mínu veldi / (Hvað) mig sjálfan (varðar)
+    | 'sjálfur'_et/fall/kyn 'ég'_et/fall FsRunaEftirNl? # Sjálfan mig hef ég aldrei þolað
 
 NlStak_et_p2/fall/kyn →
-    'þú'_et/fall FsRunaEftirNl?
+    'þú'_et/fall 'sjálfur'_et/fall/kyn? FsRunaEftirNl? # Þú [sjálfur] ert ekki sem verstur
 
 NlStak_p1_ft/fall/kyn →
     'ég'_ft/fall NlStakViðbót/fall/kyn? # Við gömlu hjónin, við Sigmundur
@@ -2395,6 +2398,8 @@ EfLiðurForskeyti →
     Fornafn_ef/tala/kyn* eo* EfLiðurForskeytiTala/tala/kyn? EfLiðurForskeytiKjarni/tala/kyn
     | Fornafn_ef/tala/kyn+ eo* EfLiðurForskeytiTala/tala/kyn?
     | eo* EfLiðurForskeytiTala/tala/kyn ÓbeygðEining # 'rúmlega sjö prósent (hækkun frá fyrra ári)'
+    | "meiri" "háttar"
+    | "minni" "háttar"
 
 ÓbeygðEining →
     "prósent"

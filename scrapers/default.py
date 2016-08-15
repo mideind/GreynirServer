@@ -376,6 +376,8 @@ class MblScraper(ScrapeHelper):
             if "/breytingar_i_islenska_fotboltanum/" in s.path:
                 # Avoid lots of details about soccer players
                 return True
+            if "/felagaskipti_i_enska_fotboltanum/" in s.path:
+                return True
         return False # Scrape all URLs by default
 
     def get_metadata(self, soup):
@@ -484,9 +486,7 @@ class VisirScraper(ScrapeHelper):
 
     _SKIP_PREFIXES = [
         "/english/",
-        "/section/RAD/",
-        "/section/MEDIA",
-        "/section/VEFMIDLAR/"
+        "/section/" # All /section/X URLs seem to be (extreeeemely long) summaries
     ]
 
     def __init__(self, root):
