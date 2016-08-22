@@ -46,6 +46,12 @@ class Article:
         return cls._parser
 
     @classmethod
+    def reload_parser(cls):
+        """ Force reload of a fresh parser instance """
+        cls._parser = None
+        cls._init_class()
+
+    @classmethod
     def parser_version(cls):
         """ Return the current grammar timestamp + parser version """
         cls._init_class()
@@ -233,8 +239,12 @@ class Article:
                     # Hack to make sure that the gender information is communicated in
                     # the terminal name (in some cases the terminal only contains the case)
                     gender = t.val[0][1]
-                    if terminal and not terminal.name.endswith("_" + gender):
-                        d["t"] = terminal.name + "_" + gender
+                    if terminal:
+                        if not terminal.name.endswith("_" + gender):
+                            d["t"] = terminal.name + "_" + gender
+                    else:
+                        # There is no terminal: cop out by adding a separate gender field
+                        d["g"] = gender
                 else:
                     d["v"] = t.val
             if ix == error_index:
@@ -284,7 +294,7 @@ class Article:
                 timestamp = datetime.utcnow())
             session.add(f)
 
-    def _parse(self, enclosing_session = None):
+    def _parse(self, enclosing_session = None, verbose = False):
         """ Parse the article content to yield parse trees and annotated token list """
         with SessionContext(enclosing_session) as session:
 
@@ -303,7 +313,7 @@ class Article:
             failures = []
 
             bp = self.get_parser()
-            ip = IncrementalParser(bp, toklist)
+            ip = IncrementalParser(bp, toklist, verbose = verbose)
             num_sent = 0
 
             for p in ip.paragraphs():
@@ -410,19 +420,19 @@ class Article:
                 self._store_failures(session)
             return True
 
-    def prepare(self, enclosing_session = None):
+    def prepare(self, enclosing_session = None, verbose = False):
         """ Prepare the article for display. If it's not already tokenized and parsed, do it now. """
         with SessionContext(enclosing_session, commit = True) as session:
             if self._tree is None or self._tokens is None:
-                self._parse(session)
+                self._parse(session, verbose = verbose)
                 if self._tree is not None or self._tokens is not None:
                     # Store the updated article in the database
                     self.store(session)
 
-    def parse(self, enclosing_session = None):
+    def parse(self, enclosing_session = None, verbose = False):
         """ Force a parse of the article """
         with SessionContext(enclosing_session, commit = True) as session:
-            self._parse(session)
+            self._parse(session, verbose = verbose)
             if self._tree is not None or self._tokens is not None:
                 # Store the updated article in the database
                 self.store(session)

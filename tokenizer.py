@@ -1565,9 +1565,12 @@ def disambiguate_phrases(token_stream):
                         # compatible with the category list specified
                         cats = AmbigPhrases.get_cats(ix)
                         # assert len(cats) == len(tq)
+                        # print("Matching ambiguous phrase")
                         for t, cat in zip(tq, cats):
                             # assert t.kind == TOK.WORD
                             # Yield a new token with fewer meanings for each original token in the queue
+                            # print("Ambig word {0}:\n   original meanings {1}\n   restricted meanings {2}"
+                            #    .format(t.txt, t.val, [m for m in t.val if m.ordfl == cat]))
                             yield TOK.Word(t.txt, [m for m in t.val if m.ordfl == cat])
 
                         # Discard the state and start afresh

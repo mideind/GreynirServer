@@ -412,7 +412,49 @@ class Trigram(Base):
         return cls.__table__
 
 
-class GenderQuery:
+class Link(Base):
+
+    """ Represents a (content-type, key) to URL mapping,
+        usable for instance to cache image searches """
+
+    __tablename__ = 'links'
+
+    __table_args__ = (
+        PrimaryKeyConstraint('ctype', 'key', name='links_pkey'),
+    )
+
+    # Content type, for instance 'image' or 'text'
+    ctype = Column(String(32), nullable = False, index = True)
+
+    # Key, for instance a person name
+    key = Column(String(256), nullable = False, index = True)
+
+    # Associated content, often JSON
+    content = Column(String)
+
+    # Timestamp of this entry
+    timestamp = Column(DateTime, nullable = False)
+
+    def __repr__(self):
+        return "Link(ctype='{0}', key='{1}', content='{2}')" \
+            .format(self.ctype, self.key, self.content)
+
+    @classmethod
+    def table(cls):
+        return cls.__table__
+
+
+class _BaseQuery:
+
+    def __init__(self):
+        pass
+
+    def execute(self, session):
+        """ Execute the query and return the result from fetchall() """
+        return session.execute(self._Q).fetchall()
+
+
+class GenderQuery(_BaseQuery):
 
     """ A query for gender representation in the persons table """
 
@@ -432,15 +474,8 @@ class GenderQuery:
             order by domain;
         """
 
-    def __init__(self):
-        pass
 
-    def execute(self, session):
-        """ Execute the query and return the result from fetchall() """
-        return session.execute(self._Q).fetchall()
-
-
-class StatsQuery:
+class StatsQuery(_BaseQuery):
 
     """ A query for statistics on articles """
 
@@ -455,10 +490,26 @@ class StatsQuery:
             order by r.domain;
         """
 
-    def __init__(self):
-        pass
 
-    def execute(self, session):
-        """ Execute the query and return the result from fetchall() """
-        return session.execute(self._Q).fetchall()
+class BestAuthorsQuery(_BaseQuery):
+
+    """ A query for statistics on authors with the best parse ratios.
+        The query only includes authors with at least 10 articles. """
+
+    _MIN_ARTICLE_COUNT = 10
+
+    _Q = """
+        select * from (
+            select trim(author) as auth,
+                sum(1) as cnt,
+                sum(num_parsed) as sum_parsed,
+                sum(num_sentences) as sum_sent,
+                (sum(100.0 * num_parsed) / sum(1.0 * num_sentences)) as ratio
+                from articles
+                where num_sentences > 0
+                group by auth
+            ) as q
+            where cnt >= {0}
+            order by ratio desc;
+        """.format(_MIN_ARTICLE_COUNT)
 

@@ -108,6 +108,7 @@ Forskeyti →
     | "sjá" "einnig"? ':'
     | "semsagt" ':'
     | "sem" "sagt" ':'
+    | "aðferð" ':'
 
 AfTala → "af" tala
 
@@ -352,14 +353,17 @@ Setning/tala/pers/kyn →
 
     # 'Það fara 40 mínútur í pappírsvinnuna'
     # (40 mínútur fara í pappírsvinnuna)
-    | "það" SagnHluti/tala/pers/kyn
+    | SetningÞað/tala/pers/kyn
 
 Setning_et_p3_hk →
     SetningAð
     # 'Það hefði kostað Pál vinnuna að kvarta yfir verkstjóranum í dag'
     | "það" SagnRuna_et_p3_hk NhFyllingAtv
-    # 'Það er/verður/getur hafa verið brýnt/mikilvægt/nauðsynlegt að bæta umgengni'
-    # | "það" HjSögnÞaðLo_et_p3 LoTengtSögn_nf_et_hk NhFylling?
+
+SetningÞað/tala/pers/kyn →
+    "það" SagnHluti/tala/pers/kyn
+
+$score(-2) SetningÞað/tala/pers/kyn # Gefa lægri forgang en setningum með "það" sem frumlag
 
 SetningAð →
     # 'Að raða frímerkjum er góð skemmtun'
@@ -707,6 +711,10 @@ SagnliðurVh →
     # Verði karlarnir byrjaðir að grilla (sæki ég sósuna)
     | VeraVerða_vh/tala/pers Nl_nf/tala/pers/kyn HreinSögn_lhþt/tala/kyn FsAtv? Afleiðing
 
+    # Verði þeim [ekki] vísað [úr landi] geta afleiðingarnar orðið hörmulegar
+    # Sé börnunum sagt [að fara í háttinn] grenja þau stanslaust
+    | VeraVerða_vh_et_p3 Nl_þgf AtvFs? so_1_þgf_sagnb NhFyllingEðaAtv? Afleiðing
+
     # Hafi maður verið sviptur frelsi að ósekju (skal hann eiga rétt til skaðabóta)
     | 'hafa'_vh/tala/pers Nl_nf/tala/pers/kyn AtvFs? 'vera'_sagnb HreinSögn_lhþt/tala/kyn FsAtv? Afleiðing
 
@@ -826,6 +834,9 @@ EinSögnFrh_lhþt_sagnb →
 
 HreinSögn_lhþt/tala/kyn →
     FsAtv? EinSögn_lhþt/tala/kyn OgSögn_lhþt/tala/kyn*
+
+# Hvetja til 'verði bókfærðar'
+$score(+12) HreinSögn_lhþt/tala/kyn
 
 Sögn_lhþt/tala/pers/kyn →
     # er farið, hefur verið farin, hafa verið farnar, skal farin
@@ -1150,6 +1161,7 @@ Sögn_1_ft/pers/kyn →
 # '(Guðrún) lét (soninn hafa bílinn)'
 # '(Við) sáum (strákinn vaxa úr grasi)'
 # '(Jón) kvað (stíginn vera öruggan)'
+# '(Myndbandið) sýndi (björgunarmenn bera hann inn í sjúkrabíl)'
 So_1_þf_nh/tala/pers →
     'segja'/tala/pers
     | 'telja'/tala/pers
@@ -1157,6 +1169,7 @@ So_1_þf_nh/tala/pers →
     | 'álíta'/tala/pers
     | 'sjá'/tala/pers
     | 'kveða'/tala/pers
+    | 'sýna'/tala/pers
 
 So_1_þf_nh →
     'segja'_nh
@@ -1165,6 +1178,7 @@ So_1_þf_nh →
     | 'álíta'_nh
     | 'sjá'_nh
     | 'kveða'_nh
+    | 'sýna'_nh
 
 So_1_þf_nh_sagnb →
     'segja'_gm_sagnb
@@ -1173,6 +1187,7 @@ So_1_þf_nh_sagnb →
     | 'álíta'_gm_sagnb
     | 'sjá'_gm_sagnb
     | 'kveða'_gm_sagnb
+    | 'sýna'_gm_sagnb
 
 $score(+2) So_1_þf_nh_sagnb
 
@@ -2103,17 +2118,20 @@ NlStak_p3_et_þf_hk → NlSérnafn
 NlStak_p3_et_þgf_hk → NlSérnafn
 NlStak_p3_et_ef_hk → NlSérnafn
 
-NlSérnafn → eo* Sérnafn # ekki Nakamoto, örugglega Nelson Mandela
+# !!! no_ef er notað í stað EfLiður til að minnka margræðni þegar
+# !!! mörg sérnöfn standa í röð
+NlSérnafn → eo* Sérnafn no_ef? # ekki Nakamoto, örugglega Nelson Mandela, Hong Kong norðursins
 
 # Forðast að nota sérnöfn sem nafnliði, ef aðrir kostir eru í boði
 $score(-16) NlSérnafn
 
 Sérnafn →
-    sérnafn | LangtSérnafn
+    sérnafn | entity | LangtSérnafn
 
 LangtSérnafn →
     sérnafn "-"? sérnafn+           # Glass-Steagall lögin
-    | sérnafn* entity+ sérnafn*     # Eining með nafni sem þekkt er úr gagnagrunni eða runu slíkra
+    | sérnafn+ entity+ sérnafn*     # Eining með nafni sem þekkt er úr gagnagrunni eða runu slíkra
+    | entity+ sérnafn+              # Eining með nafni sem þekkt er úr gagnagrunni eða runu slíkra
 
 Sérnafn/fall →
     sérnafn/fall | LangtSérnafn/fall
@@ -2580,7 +2598,7 @@ Skýring →
 SvigaForskeyti →
     Skýring
     | "dæmi" ':'    # Ráðamenn (dæmi: forsetinn) hafa tjáð sig fjálglega
-    | "les" ':'   # Hann sagði að óþjóðalýður (les: kommúnistar) hefði ráðist á húsið
+    | "les" ':'     # Hann sagði að óþjóðalýður (les: kommúnistar) hefði ráðist á húsið
 
 Skýringarliður →
     Nl | FsAtv      # , meðal annars Jón í Holti, / , oft snarlega,
@@ -2607,12 +2625,6 @@ KommaOgEða → ','? OgEða
     | '-' # 'Ég tók tvö tonn af eldsneyti - tvö þúsund lítra'
     | ',' "ekki" # Við vildum gin, ekki viskí
     | ',' "núna" "síðast" # Tóku á móti mörgum flóttamönnum, núna síðast þremur þúsundum
-
-#OgEðaSamanb →
-    #"ekki" "síður" "en"
-    #| "engu" "síður" "en"
-    #| "ekki"? "frekar" "en"
-    #| "miklu" "frekar" "en"
 
 # (Í fyrra barði Hannes Guðmund) og (særði Pál í dag)
 # (Í fyrra barði Hannes Guðmund), (særði Pál), og (neitaði sök)
@@ -2884,6 +2896,7 @@ FsMeðFallstjórn →
     | "miðað" "við" Nl_þf
     | 'miðað_við' Nl_þf # Skammstöfunin m.v.
     | "samanborið" "við" Nl_þf
+    | "borið" "saman" "við" Nl_þf
     | "þegar" "kemur" "að" Nl_þgf
     | 'til_og_frá' Nl_þgf
     | "fyrir" "nú"? "utan" Nl_þf
@@ -3032,6 +3045,7 @@ AtviksliðurEinkunn →
     | Dagsetning        # (hagnaðurinn var strax) árið 2012 (175 milljarðar króna)
     | Tímasetning
     | Aldur
+    | "allt" "að"       # 'fjárfesta fyrir allt að 100 milljónir króna'
 
 # Dagsetning og tími
 
@@ -3108,10 +3122,13 @@ Dagana →
     | raðnr "og" dags # dagana 1. og 2. júní
     | dags "til" dags # dagana 29. júní til 3. júlí
 
-# 29 ára, eins árs, tveggja vikna
+# 29 ára, eins árs, tveggja vikna, margra ára
 
 Aldur →
     Töluorð_ef/tala/kyn Tímabil_ef/kyn/tala
+    | 'margur'_ef_ft Tímabil_ef_ft
+    | 'allmargur'_ef_ft Tímabil_ef_ft
+    | 'fjölmargur'_ef_ft Tímabil_ef_ft
 
 # Gefa plús fyrir dagsetningar, tímasetningar og aldur
 $score(+4) Dagsetning Tímasetning Aldur
@@ -3137,9 +3154,36 @@ TalaTímabil_þf/tala/kyn →
     Töluorð_þf/tala/kyn? Tímabil_þf/kyn/tala # sex vikur, mánuð, tvö ár
 
 Tímabil_þf →
-    TímabilsEinkunn_þf/tala/kyn Tímabil_þf/kyn/tala # (Hann kom hér) alla daga, suma vikudaga, nokkur ár, eina vikuna
+    TímabilsEinkunn_þf/tala/kyn Tímabil_þf/kyn/tala Tímabil_ef? # (Hann kom hér) alla daga, suma vikudaga, nokkur ár, eina vikuna
+
+Tímabil_ef →
+    'ár'_hk_ef_et_gr            # ársins
+    | 'skólaár'_hk_ef_et_gr     # skólaársins
+    | 'misseri'_hk_ef_et_gr     # misserisins
+    | 'sumar'_hk_ef_et_gr
+    | 'vor'_hk_ef_et_gr
+    | 'haust'_hk_ef_et_gr
+    | 'kjörtímabil'_hk_ef_et_gr
+    | 'leikár'_hk_ef_et_gr
+    | 'vika'_kvk_ef_et_gr
+    | 'leiktíð'_ef_et_gr
+    | 'öld'_kvk_ef_et_gr
+    | 'mánuður'_ef_et_gr
+    | 'ársfjórðungur'_ef_et_gr
+    | 'dagur'_ef_et_gr
+    | 'sólarhringur'_ef_et_gr
+    | 'vetur'_kk_ef_et_gr
+    | 'morgunn'_ef_et_gr
+    | 'eftirmiðdagur'_ef_et_gr
+    | 'klukkutími'_ef_et_gr
+    | 'áratugur'_ef_et_gr
 
 # $score(+8) Tímabil_þf
+
+Tímabil_ef_ft →
+    Tímabil_hk_ef_ft
+    | Tímabil_kk_ef_ft
+    | Tímabil_kvk_ef_ft
 
 TímabilsEinkunn_þf_ft/kyn →
     NæsturSíðastur_þf_ft/kyn Töluorð_þf_ft/kyn?  # Næstu fimm daga, síðustu þrjú sumur

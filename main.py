@@ -16,10 +16,8 @@ import sys
 import time
 import random
 import re
-from contextlib import closing
 from datetime import datetime
 from functools import wraps
-from collections import OrderedDict, defaultdict
 from decimal import Decimal
 
 from flask import Flask
@@ -27,19 +25,17 @@ from flask import render_template, make_response, jsonify, redirect, url_for
 from flask import request, send_from_directory
 from flask.wrappers import Response
 
-from fastparser import Fast_Parser, ParseError, ParseForestPrinter, ParseForestDumper
-from incparser import IncrementalParser
-from ptest import run_test, Test_DB
-from reducer import Reducer
-from fetcher import Fetcher
-from article import Article as ArticleProxy
-from tree import TreeGist
-from scraperdb import SessionContext, desc, Person, Article, GenderQuery, StatsQuery
 from settings import Settings, ConfigError, changedlocale
+from bindb import BIN_Db
+from fetcher import Fetcher
 from tokenizer import tokenize, TOK, correct_spaces
+from fastparser import Fast_Parser, ParseError, ParseForestPrinter
+from incparser import IncrementalParser
+from reducer import Reducer
+from article import Article as ArticleProxy
+from scraperdb import SessionContext, desc, Person, Article, GenderQuery, StatsQuery
 from query import Query, query_person, query_entity
 from getimage import get_image_url
-from bindb import BIN_Db
 
 # Initialize Flask framework
 
@@ -137,6 +133,8 @@ _TOP_PERSONS_LENGTH = 20
 _MAX_URL_LENGTH = 512
 _MAX_UUID_LENGTH = 36
 _MAX_TEXT_LENGTH = 8192
+_MAX_TEXT_LENGTH_VIA_URL = 512
+_MAX_QUERY_LENGTH = 512
 
 
 def profile(func, *args, **kwargs):
@@ -153,173 +151,6 @@ def profile(func, *args, **kwargs):
     return result
 
 
-def parse(toklist, single, use_reducer, dump_forest = False, keep_trees = False, root = None):
-    """ Parse the given token list and return a result dict """
-
-    # Count sentences
-    num_sent = 0
-    num_parsed_sent = 0
-    total_ambig = 0.0
-    total_tokens = 0
-    sent = []
-    sent_begin = 0
-
-    # Accumulate parsed sentences in a text dump format
-    trees = OrderedDict()
-    # Accumulate sentences that fail to parse
-    failures = []
-
-    with Fast_Parser(verbose = False, root = root) as bp: # Don't emit diagnostic messages
-
-        version = bp.version
-        rdc = Reducer(bp.grammar)
-
-        for ix, t in enumerate(toklist):
-            t0 = t[0]
-            if t0 == TOK.S_BEGIN:
-                sent = []
-                sent_begin = ix
-            elif t0 == TOK.S_END:
-                slen = len(sent)
-                if not slen:
-                    continue
-                # Parse the accumulated sentence
-                num_sent += 1
-                err_index = None
-                num = 0 # Number of tree combinations in forest
-                score = 0 # Reducer score of the best parse tree
-
-                try:
-                    # Parse the sentence
-                    forest = bp.go(sent)
-                    if forest:
-                        num = Fast_Parser.num_combinations(forest)
-
-                        if single and dump_forest:
-                            # Dump the parse tree to parse.txt
-                            with open("parse.txt", mode = "w", encoding= "utf-8") as f:
-                                print("Reynir parse tree for sentence '{0}'".format(" ".join(sent)), file = f)
-                                print("{0} combinations\n".format(num), file = f)
-                                if num < 10000:
-                                    ParseForestPrinter.print_forest(forest, file = f)
-                                else:
-                                    print("Too many combinations to dump", file = f)
-
-                    if use_reducer and num > 1:
-                        # Reduce the resulting forest
-                        forest, score = rdc.go_with_score(forest)
-                        # assert Fast_Parser.num_combinations(forest) == 1
-
-                        if single and Settings.DEBUG:
-                            print(ParseForestDumper.dump_forest(forest))
-
-                        num = 1
-
-                except ParseError as e:
-                    forest = None
-                    # Obtain the index of the offending token
-                    err_index = e.token_index
-
-                if Settings.DEBUG:
-                    print("Parsed sentence of length {0} with {1} combinations, score {2}{3}"
-                        .format(slen, num, score,
-                            "\n" + (" ".join(s[1] for s in sent) if num >= 100 else "")))
-                if num > 0:
-                    num_parsed_sent += 1
-                    # Calculate the 'ambiguity factor'
-                    ambig_factor = num ** (1 / slen)
-                    # Do a weighted average on sentence length
-                    total_ambig += ambig_factor * slen
-                    total_tokens += slen
-                    if keep_trees:
-                        # We want to keep the trees for further processing down the line:
-                        # reduce and dump the best tree to text
-                        if num > 1:
-                            # Reduce the resulting forest before dumping it to text format
-                            forest = rdc.go(forest)
-                        trees[num_sent] = ParseForestDumper.dump_forest(forest)
-                else:
-                    # Error: store the error token index in the parse tree
-                    if keep_trees:
-                        trees[num_sent] = "E{0}".format(slen - 1 if err_index is None else err_index)
-                    failures.append(" ".join(t.txt for t in sent))
-
-                # Mark the sentence beginning with the number of parses
-                # and the index of the offending token, if an error occurred
-                toklist[sent_begin] = TOK.Begin_Sentence(num_parses = num, err_index = err_index)
-            elif t0 == TOK.P_BEGIN:
-                pass
-            elif t0 == TOK.P_END:
-                pass
-            else:
-                sent.append(t)
-
-    result = dict(
-        version = version,
-        tokens = toklist,
-        tok_num = len(toklist),
-        num_sent = num_sent,
-        num_parsed_sent = num_parsed_sent,
-        avg_ambig_factor = (total_ambig / total_tokens) if total_tokens > 0 else 1.0
-    )
-
-    # noinspection PyRedundantParentheses
-    return (result, trees, failures)
-
-
-def prepare(toklist, article):
-    """ Prepare the given token list for display and return a result dict """
-
-    # Count sentences
-    num_sent = 0
-    num_parsed_sent = 0
-    total_tokens = 0
-    sent = []
-    sent_begin = 0
-
-    tree = TreeGist() # We only need a gist of the tree
-    tree.load(article.tree)
-
-    for ix, t in enumerate(toklist):
-        if t[0] == TOK.S_BEGIN:
-            sent = []
-            sent_begin = ix
-        elif t[0] == TOK.S_END:
-            slen = len(sent)
-            if not slen:
-                continue
-            num_sent += 1
-            # Parse the accumulated sentence
-            err_index = None # Index of offending token within sentence, if any
-            num = 1 if num_sent in tree else 0
-            if num > 0:
-                num_parsed_sent += 1
-                total_tokens += slen
-            else:
-                # If no parse, ask the tree for the error token index
-                err_index = tree.err_index(num_sent)
-            # Mark the sentence beginning with the number of parses
-            # and the index of the offending token, if an error occurred
-            toklist[sent_begin] = TOK.Begin_Sentence(num_parses = num, err_index = err_index)
-        elif t[0] == TOK.P_BEGIN:
-            pass
-        elif t[0] == TOK.P_END:
-            pass
-        else:
-            sent.append(t)
-
-    result = dict(
-        version = "N/A",
-        tokens = toklist,
-        tok_num = len(toklist),
-        num_sent = num_sent,
-        num_parsed_sent = num_parsed_sent,
-        avg_ambig_factor = article.ambiguity
-    )
-
-    return result
-
-
 def add_entity_to_register(name, register, session):
     """ Add the entity name and the 'best' definition to the given name register dictionary """
     if name in register:
@@ -328,22 +159,7 @@ def add_entity_to_register(name, register, session):
     # Use the query module to return definitions for an entity
     rl = query_entity(session, name)
     if rl:
-        register[name] = correct_spaces(rl[0][0])
-
-    # Older code to extract definitions directly from database query
-    # titles = defaultdict(int)
-    # for p in rl:
-    #     # Collect and count the titles
-    #     titles[p[0]] += 1
-    # if sum(cnt >= 4 for cnt in titles.values()) >= 2:
-    #     # More than one title with four or more instances:
-    #     # reduce the choices to just those and decide based on length
-    #     titles = { key: 0 for key, val in titles.items() if val >= 4 }
-    # if titles:
-    #     # Pick the most popular title, or the longer one if two are equally popular
-    #     title = sorted([(cnt, len(t), t) for t, cnt in titles.items()])[-1][2]
-    #     # Add it to the register, after correcting spacing
-    #     register[name] = correct_spaces(title)
+        register[name] = dict(kind = "entity", title = correct_spaces(rl[0][0]))
 
 
 def add_name_to_register(name, register, session):
@@ -354,22 +170,7 @@ def add_name_to_register(name, register, session):
     # Use the query module to return titles for a person
     rl = query_person(session, name)
     if rl:
-        register[name] = correct_spaces(rl[0][0])
-
-    # Older code to extract titles directly from database query results        
-    # titles = defaultdict(int)
-    # for p in rl:
-    #     # Collect and count the titles
-    #     titles[p[0]] += 1
-    # if sum(cnt >= 4 for cnt in titles.values()) >= 2:
-    #     # More than one title with four or more instances:
-    #     # reduce the choices to just those and decide based on length
-    #     titles = { key: 0 for key, val in titles.items() if val >= 4 }
-    # if titles:
-    #     # Pick the most popular title, or the longer one if two are equally popular
-    #     title = sorted([(cnt, len(t), t) for t, cnt in titles.items()])[-1][2]
-    #     # Add it to the register, after correcting spacing
-    #     register[name] = correct_spaces(title)
+        register[name] = dict(kind = "name", title = correct_spaces(rl[0][0]))
 
 
 def create_name_register(tokens, session):
@@ -383,19 +184,6 @@ def create_name_register(tokens, session):
         elif t.kind == TOK.ENTITY:
             add_entity_to_register(t.txt, register, session)
     return register
-
-
-def create_name_list(tokens, session):
-    """ Assemble a sorted list of names and titles from the token list """
-    register = create_name_register(tokens, session)
-    with changedlocale() as strxfrm:
-        reglist = sorted(
-            [ dict(name = key, title = val) for key, val in register.items() ],
-            key = lambda x: strxfrm(x["name"])
-        )
-    if Settings.DEBUG:
-        print("Register is: {0}".format(reglist))
-    return reglist
 
 
 def top_news(limit = _TOP_NEWS_LENGTH):
@@ -508,7 +296,7 @@ def process_query(session, toklist, result):
     result["qtype"] = qt = q.qtype()
     if qt == "Person":
         # For a person query, add an image (if available)
-        img = get_image_url(q.key())
+        img = get_image_url(q.key(), enclosing_session = session)
         if img is not None:
             result["image"] = dict(src = img.src,
                 width = img.width, height = img.height,
@@ -519,7 +307,7 @@ def process_query(session, toklist, result):
 # Note: Endpoints ending with .api are configured not to be cached by nginx
 @app.route("/analyze.api", methods=['POST'])
 def analyze():
-    """ Analyze text from a given URL """
+    """ Analyze text manually entered by the user, i.e. not coming from an article """
 
     text = request.form.get("text", "").strip()[0:_MAX_TEXT_LENGTH]
 
@@ -560,55 +348,9 @@ def analyze():
 
 
 # Note: Endpoints ending with .api are configured not to be cached by nginx
-@app.route("/display.api", methods=['POST'])
-def display():
-    """ Display an already parsed article with a given URL """
-
-    url = request.form.get("url", "").strip()
-
-    if not url.startswith("http:") and not url.startswith("https:"):
-        # Not a valid URL
-        return jsonify(result = None, error = "Invalid URL")
-
-    with SessionContext(commit = True) as session:
-
-        t0 = time.time()
-
-        # Find the HTML in the scraper database, tokenize the text content and return the token list
-        article, metadata, content = Fetcher.fetch_article(url, session)
-
-        metadata, generator = Fetcher.tokenize_url(url, None if article is None else (metadata, content))
-
-        toklist = list(generator)
-
-        tok_time = time.time() - t0
-
-        t0 = time.time()
-
-        if article is None or not article.tree:
-            # We must do a full parse of the toklist
-            result, _, _ = parse(toklist, single = False, use_reducer = False)
-        else:
-            # Re-use a previous parse
-            result = prepare(toklist, article)
-
-        parse_time = time.time() - t0
-
-        # Add a name register to the result
-        result["register"] = create_name_list(result["tokens"], session)
-
-        result["tok_time"] = tok_time
-        result["parse_time"] = parse_time
-
-        result["metadata"] = metadata
-        # Return the tokens as a JSON structure to the client
-        return jsonify(result = result)
-
-
-# Note: Endpoints ending with .api are configured not to be cached by nginx
 @app.route("/reparse.api", methods=['POST'])
 def reparse():
-    """ Reparse an article with a given UUID """
+    """ Reparse an already parsed and stored article with a given UUID """
 
     uuid = request.form.get("id", "").strip()[0:_MAX_UUID_LENGTH]
     tokens = None
@@ -619,8 +361,10 @@ def reparse():
         # Load the article
         a = ArticleProxy.load_from_uuid(uuid, session)
         if a is not None:
-            # Found: parse it and store the updated version
-            a.parse(session)
+            # Found
+            ArticleProxy.reload_parser() # Make sure we're using the newest grammar
+            # Parse it and store the updated version
+            a.parse(session, verbose = True)
             # Save the tokens
             tokens = a.tokens
             # Build register of person names
@@ -645,18 +389,18 @@ def reparse():
 def query():
     """ Respond to a query string """
 
-    q = request.form.get("q", "").strip()
+    q = request.form.get("q", "").strip()[0:_MAX_QUERY_LENGTH]
     # Auto-uppercasing can be turned off by sending autouppercase: false in the query JSON
     auto_uppercase = get_json_bool(request, "autouppercase", True)
 
     toklist = list(tokenize(q, auto_uppercase = q.islower() if auto_uppercase else False))
     result = dict()
+    actual_q = correct_spaces(" ".join(t.txt or "" for t in toklist))
 
     with SessionContext(commit = True) as session:
 
         if Settings.DEBUG:
             # Log the query string as seen by the parser
-            actual_q = correct_spaces(" ".join(t.txt or "" for t in toklist))
             print("Query is: '{0}'".format(actual_q))
 
         # Try to parse and process as a query
@@ -664,7 +408,7 @@ def query():
 
 
     result["is_query"] = is_query
-    result["q"] = q
+    result["q"] = actual_q
 
     return jsonify(result = result)
 
@@ -918,24 +662,6 @@ def parse_grid():
         choice_list = uc_list, parse_path = parse_path)
 
 
-# Note: Endpoints ending with .api are configured not to be cached by nginx
-# @app.route("/addsentence.api", methods=['POST'])
-def add_sentence():
-    """ Add a sentence to the test database """
-    sentence = request.form.get('sentence', "")
-    # The sentence may be one that should parse and give us ideally one result tree,
-    # or one that is wrong and should not parse, giving 0 result trees.
-    should_parse = get_json_bool(request, 'shouldparse', True)
-    result = False
-    if sentence:
-        try:
-            with closing(Test_DB.open_db()) as db:
-                result = db.add_sentence(sentence, target = 1 if should_parse else 0)
-        except Exception as e:
-            return jsonify(result = False, err = str(e))
-    return jsonify(result = result)
-
-
 @app.route("/genders", methods=['GET'])
 @max_age(seconds = 5 * 60)
 def genders():
@@ -999,24 +725,8 @@ def people():
 @app.route("/analysis")
 def analysis():
     """ Handler for a page with grammatical analysis of user-entered text """
-    txt = request.args.get("txt", "")[0:2048] # Don't allow more than 2K of text to be passed via the URL
+    txt = request.args.get("txt", "")[0:_MAX_TEXT_LENGTH_VIA_URL]
     return render_template("analysis.html", default_text = txt)
-
-
-@app.route("/article")
-def article():
-    """ Handler for a page displaying a single article """
-    uuid = request.args.get("id", None)
-    if uuid:
-        uuid = uuid.strip()[0:_MAX_UUID_LENGTH]
-    article = None
-    # Load the article
-    with SessionContext(commit = True) as session:
-        if uuid:
-            article = session.query(Article).filter(Article.id == uuid).one_or_none()
-        if article is None:
-            return redirect(url_for('main'))
-        return render_template("article.html", article = article)
 
 
 @app.route("/page")
@@ -1036,7 +746,6 @@ def page():
         # !!! TODO: Separate error page
         return redirect(url_for('main'))
 
-    register = []
     with SessionContext(commit = True) as session:
 
         if uuid:
@@ -1051,7 +760,8 @@ def page():
             return redirect(url_for('main'))
 
         # Prepare the article for display (may cause it to be parsed and stored)
-        a.prepare(session)
+        ArticleProxy.reload_parser() # Make sure we're using the newest grammar
+        a.prepare(session, verbose = True)
         register = { }
         # Build register of person names
         for name in a.person_names():
@@ -1061,14 +771,6 @@ def page():
             add_entity_to_register(name, register, session)
 
         return render_template("page.html", article = a, register = register)
-
-
-@app.route("/test")
-def test():
-    """ Handler for a page of sentences for testing """
-    # Run test and show the result
-    fp = Fast_Parser(verbose = False) # Don't emit diagnostic messages
-    return render_template("test.html", result = run_test(fp))
 
 
 @app.route("/")
@@ -1144,7 +846,7 @@ if __name__ == "__main__":
         else:
             raise
     finally:
-        # Scraper.cleanup()
+        ArticleProxy.cleanup()
         pass
 
 else:

@@ -341,6 +341,9 @@ function hoverIn() {
    if (!t.k) {
       // TOK_WORD
       var wcat = t.m ? t.m[1] : (t.t ? t.t.split("_")[0] : undefined);
+      if (wcat === undefined)
+         // Nothing to show, so we cop out
+         return;
       var wcls = (wcat && wordClass[wcat]) ? wordClass[wcat] : "óþekkt";
       if (t.m) {
          info.addClass(t.m[1]);
@@ -387,6 +390,11 @@ function hoverIn() {
       $("#details").text("ártal");
    }
    else
+   if (t.k == TOK_EMAIL) {
+      $("#lemma").text(t.x);
+      $("#details").text("tölvupóstfang");
+   }
+   else
    if (t.k == TOK_CURRENCY) {
       $("#lemma").text(t.x);
       // Show the ISO code for the currency
@@ -402,12 +410,23 @@ function hoverIn() {
    if (t.k == TOK_PERSON) {
       info.addClass("person");
       var gender = "";
-      if (t.t)
+      if (t.t) {
+         // Obtain gender info from the associated terminal
          if (t.t.slice(-3) == "_kk")
             gender = "male";
          else
          if (t.t.slice(-4) == "_kvk")
             gender = "female";
+      }
+      else
+      if (t.g) {
+         // No associated terminal: There might be a g field with gender information
+         if (t.g == "kk")
+            gender = "male";
+         else
+         if (t.g == "kvk")
+            gender = "female";
+      }
       if (gender) {
          info.addClass(gender);
          $("div.info span#tag")
@@ -419,7 +438,7 @@ function hoverIn() {
       else {
          // Show full name and title
          var name = t.v;
-         var title = nameDict ? (nameDict[name] || "") : "";
+         var title = nameDict ? (nameDict[name].title || "") : "";
          if (!title.length)
             if (!gender)
                title = "mannsnafn";
@@ -432,7 +451,7 @@ function hoverIn() {
    else
    if (t.k == TOK_ENTITY) {
       $("#lemma").text(t.x);
-      var title = nameDict ? (nameDict[t.x] || "") : "";
+      var title = nameDict ? (nameDict[t.x].title || "") : "";
       if (!title.length)
          title = "sérnafn";
       $("#details").text(title);
@@ -575,16 +594,18 @@ function populateRegister() {
    var i, item, name, title;
    var register = [];
    $("#namelist").html("");
-   $.each(nameDict, function(name, title) {
-      register.push({ name: name, title: title });
+   $.each(nameDict, function(name, desc) {
+      // kind is either 'name' or 'entity'
+      register.push({ name: name, title: desc.title, kind: desc.kind });
    });
    register.sort(function(a, b) {
       return a.name.localeCompare(b.name);
    });
    for (i = 0; i < register.length; i++) {
+      var ri = register[i];
       item = $("<li></li>");
-      name = $("<span></span>").addClass("name").text(register[i].name);
-      title = $("<span></span>").addClass("title").text(register[i].title);
+      name = $("<span></span>").addClass(ri.kind).text(ri.name);
+      title = $("<span></span>").addClass("title").text(ri.title);
       item.append(name);
       item.append(title);
       $("#namelist").append(item);
@@ -593,8 +614,12 @@ function populateRegister() {
    if (register.length) {
       $("#register").css("display", "block");
       $("#namelist span.name").click(function(ev) {
-         // Send a query to the server
+         // Send a person query to the server
          queryPerson($(this).text());
+      });
+      $("#namelist span.entity").click(function(ev) {
+         // Send an entity query to the server
+         queryEntity($(this).text());
       });
    }
 }

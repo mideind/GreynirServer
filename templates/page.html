@@ -78,11 +78,7 @@
       ;
 
    // Name and title list
-   nameDict = {
-{% for name, title in register.items() %}
-      "{{ name | safe }}" : "{{ title | safe }}",
-{% endfor %}
-   };
+   nameDict = {{ register | tojson | safe }};
 
    // Article statistics
    var stats = {

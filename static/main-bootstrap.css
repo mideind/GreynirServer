@@ -319,12 +319,14 @@ tr.topitem span.title {
    text-overflow: ellipsis;
 }
 
-#namelist span.name {
+#namelist span.name,
+#namelist span.entity {
    color: #337ab7;
    cursor: pointer;
 }
 
-#namelist span.name:hover {
+#namelist span.name:hover,
+#namelist span.entity:hover {
    background-color: #FFEEA9; /* Greynir pale yellow */
 }
 

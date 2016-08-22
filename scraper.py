@@ -499,6 +499,7 @@ def main(argv = None):
 
     finally:
         SessionContext.cleanup()
+        Article.cleanup()
 
     # Completed with no error
     return 0

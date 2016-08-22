@@ -11,6 +11,8 @@
     This module contains a function that retrieves the URL of an image corresponding to
     a (person) name. It uses a Google API on top of the Google Custom Search feature.
 
+    Retrieved image information is cached in the database.
+
 """
 
 
@@ -18,8 +20,10 @@ import json
 import urllib.request
 import urllib.parse
 from urllib.error import HTTPError
+from datetime import datetime
 from collections import namedtuple
 from contextlib import closing
+from scraperdb import SessionContext, Link
 
 
 def _server_query(url, q):
@@ -54,42 +58,70 @@ def _server_query(url, q):
 _CX = "001858240983628375092:9aogptqla5e"
 # The Google API identifier (you must obtain your own key if you want to use this code)
 _API_KEY = None
+# The content type we're using in the links table
+_CTYPE = "image-search-"
 # The returned image descriptor tuple
 Img = namedtuple('Img', ['src', 'width', 'height', 'link', 'origin'])
 
 
-def get_image_url(name, size = "medium"):
+def get_image_url(name, size = "medium", enclosing_session = None):
     """ Use a Google custom search API to obtain an image corresponding to a (person) name """
-    global _API_KEY
-    if _API_KEY is None:
-        try:
-            # Read the Google API key from a server file
-            # You need to obtain your own key if you want to use this code
-            with open("resources/GoogleServerKey.txt") as f:
-                _API_KEY = f.read()
-        except FileNotFoundError as ex:
-            _API_KEY = ""
 
-    if not _API_KEY:
-        # No API key: can't ask for an image
-        return None
+    jdoc = None
+    ctype = _CTYPE + size
 
-    # Assemble the query parameters
-    q = dict(
-        q = '"' + name + '"', # Try for an exact match
-        num = 1,
-        start = 1,
-        imgSize = size,
-        searchType = "image",
-        cx = _CX,
-        key = _API_KEY
-    )
-    doc = _server_query("https://www.googleapis.com/customsearch/v1", q)
-    # Convert the returned JSON to a Python dict
-    #print("json is {0}".format(doc))
-    if doc is None:
+    with SessionContext(commit = True, session = enclosing_session) as session:
+
+        q = session.query(Link.content) \
+            .filter(Link.ctype == ctype) \
+            .filter(Link.key == name) \
+            .one_or_none()
+        if q is not None:
+            # Found in cache
+            jdoc = q.content
+            # !!! TODO: make the cache content expire if too old
+
+        if not jdoc:
+            # Not found in cache: prepare to ask Google
+            global _API_KEY
+            if _API_KEY is None:
+                try:
+                    # Read the Google API key from a server file
+                    # You need to obtain your own key if you want to use this code
+                    with open("resources/GoogleServerKey.txt") as f:
+                        _API_KEY = f.read()
+                except FileNotFoundError as ex:
+                    _API_KEY = ""
+
+            if not _API_KEY:
+                # No API key: can't ask for an image
+                return None
+
+            # Assemble the query parameters
+            q = dict(
+                q = '"' + name + '"', # Try for an exact match
+                num = 1,
+                start = 1,
+                imgSize = size,
+                searchType = "image",
+                cx = _CX,
+                key = _API_KEY
+            )
+            jdoc = _server_query("https://www.googleapis.com/customsearch/v1", q)
+            if jdoc:
+                # Store in the cache
+                l = Link(
+                    ctype = ctype,
+                    key = name,
+                    content = jdoc,
+                    timestamp = datetime.utcnow()
+                )
+                session.add(l)
+
+    if not jdoc:
         return None
-    answer = json.loads(doc)
+    answer = json.loads(jdoc)
+
     if answer and "items" in answer and answer["items"] and "link" in answer["items"][0]:
         # Answer looks legit
         img = answer["items"][0]
@@ -97,6 +129,7 @@ def get_image_url(name, size = "medium"):
         return Img(img["link"],
             image["width"], image["height"], image["contextLink"],
             img["displayLink"])
+
     # No answer that makes sense
     return None
 
