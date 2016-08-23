@@ -17,21 +17,22 @@ sudo systemctl stop greynir
 
 cp Abbrev.conf $DEST/Abbrev.conf
 cp Adjectives.conf $DEST/Adjectives.conf
+cp article.py $DEST/article.py
 cp baseparser.py $DEST/baseparser.py
 cp bindb.py $DEST/bindb.py
 cp binparser.py $DEST/binparser.py
 cp dawgdictionary.py $DEST/dawgdictionary.py
 cp fastparser.py $DEST/fastparser.py
-cp favicon.ico $DEST/favicon.ico
+cp fetcher.py $DEST/fetcher.py
 cp getimage.py $DEST/getimage.py
 cp glock.py $DEST/glock.py
 cp grammar.py $DEST/grammar.py
+cp incparser.py $DEST/incparser.py
 cp libeparser.so $DEST/libeparser.so
 cp Main.conf $DEST/Main.conf
 cp main.py $DEST/main.py
 cp Prefs.conf $DEST/Prefs.conf
 cp processor.py $DEST/processor.py
-cp ptest.py $DEST/ptest.py
 cp query.py $DEST/query.py
 cp reducer.py $DEST/reducer.py
 cp Reynir.grammar $DEST/Reynir.grammar

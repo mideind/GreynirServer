@@ -725,7 +725,7 @@ class BIN_Token(Token):
                 # in the meaning string
                 if not terminal.fbits_match(fbits):
                     return False
-            return terminal.matches_first(BIN_Token._KIND[m.ordfl], m.stofn, self.t1_lower)
+            return terminal.matches_first(m.ordfl, m.stofn, self.t1_lower)
 
         def matches_proper_name():
             # Proper name?
@@ -880,7 +880,10 @@ class VariantHandler:
         return self._first == part
 
     def matches_first(self, t_kind, t_val, t_lit):
-        return self._first == t_kind
+        """ Returns True if the first part of the terminal name matches the
+            given word category """
+        # Convert 'kk', 'kvk', 'hk' to 'no' before doing the compare
+        return self._first == BIN_Token._KIND[t_kind]
 
     @property
     def first(self):
@@ -987,16 +990,37 @@ class BIN_LiteralTerminal(VariantHandler, LiteralTerminal):
         assert len(self._first) >= 3
         assert self._first[0] == self._first[-1]
         self._first = self._first[1:-1]
+        self._cat = None
+        if len(self._first) > 1:
+            # Check for a word category specification,
+            # i.e. "sem:st", "að:fs", 'vera:so'_gm_nt
+            a = self._first.split(':')
+            if len(a) > 2:
+                raise GrammarError("A literal terminal can only have one word category specification")
+            elif len(a) == 2:
+                # We have a word category specification
+                self._first = a[0]
+                self._cat = a[1]
         # Check whether we have variants on an exact literal
         if self._strong and self.num_variants > 0:
             # It doesn't make sense to have variants on exact literals
             # since they are constant and cannot vary
             raise GrammarError('An exact literal terminal with double quotes cannot have variants')
 
+    @property
+    def cat(self):
+        return self._cat
+
     def matches_first(self, t_kind, t_val, t_lit):
         """ A literal terminal matches a token if the token text is identical to the literal """
         #print("LiteralTerminal.matches_first: parts[0] is '{0}', t_val is '{1}'"
         #    .format(self._parts[0], t_val))
+        if self._strong and self._first == "við" and t_lit == "við":
+            print("matches_first for 'við': self._cat is {0}, t_kind is {1}"
+                .format(self._cat, t_kind))
+        if self._cat is not None and t_kind != self._cat:
+            # Match only the word category that was specified
+            return False
         return (self._first == t_lit) if self._strong else (self._first == t_val)
 
     def matches(self, t_kind, t_val, t_lit):

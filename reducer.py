@@ -139,6 +139,10 @@ class Reducer:
                         # Reduce the weight of the 'artificial' nominative prepositions
                         # 'næstum', 'sem', 'um'
                         sc[t] -= 5 # Make other cases outweigh the Nl_nf bonus of +4 (-2 -3 = -5)
+                    elif txt == "við" and t.has_variant("þgf"):
+                        sc[t] += 1 # Smaller bonus for við + þgf (is rarer than við + þf)
+                    elif txt == "sem" and t.has_variant("þf"):
+                        sc[t] -= 6 # Even less attractive than sem_nf
                     else:
                         # Else, give a bonus for each matched preposition
                         sc[t] += 2
