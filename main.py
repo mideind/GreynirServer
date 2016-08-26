@@ -40,6 +40,7 @@ from getimage import get_image_url
 # Initialize Flask framework
 
 app = Flask(__name__)
+app.config["JSON_AS_ASCII"] = False # We're fine with using Unicode/UTF-8
 
 from flask import current_app
 
@@ -294,6 +295,7 @@ def process_query(session, toklist, result):
     result["response"] = q.answer()
     # ...and the query type, as a string ('Person', 'Entity', 'Title' etc.)
     result["qtype"] = qt = q.qtype()
+    result["key"] = q.key()
     if qt == "Person":
         # For a person query, add an image (if available)
         img = get_image_url(q.key(), enclosing_session = session)
@@ -329,10 +331,10 @@ def analyze():
                 for sent in p.sentences():
                     if sent.parse():
                         # Parsed successfully
-                        pgs[-1].append(ArticleProxy._dump_tokens(sent.tokens, sent.tree))
+                        pgs[-1].append(ArticleProxy._dump_tokens(sent.tokens, sent.tree, None))
                     else:
                         # Errror in parse
-                        pgs[-1].append(ArticleProxy._dump_tokens(sent.tokens, None, sent.err_index))
+                        pgs[-1].append(ArticleProxy._dump_tokens(sent.tokens, None, None, sent.err_index))
 
             stats = dict(
                 num_tokens = ip.num_tokens,

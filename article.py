@@ -12,16 +12,25 @@
 """
 
 import json
+import uuid
 from datetime import datetime
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict, namedtuple
 
-from settings import Settings
-from scraperdb import Article as ArticleRow, SessionContext, Failure, DataError
+from settings import Settings, NoIndexWords
+from scraperdb import Article as ArticleRow, SessionContext, Word, DataError
 from fetcher import Fetcher
 from tokenizer import TOK
 from fastparser import Fast_Parser, ParseError, ParseForestNavigator, ParseForestDumper
 from incparser import IncrementalParser
 
+
+WordTuple = namedtuple("WordTuple", ["stem", "cat"])
+
+# The word categories that are indexed in the words table
+_CATEGORIES_TO_INDEX = frozenset((
+    "kk", "kvk", "hk", "person_kk", "person_kvk", "entity",
+    "lo", "so"
+))
 
 class Article:
 
@@ -83,7 +92,7 @@ class Article:
         self._helper = None
         self._tokens = None # JSON string
         self._raw_tokens = None # The tokens themselves
-        self._failures = None
+        self._words = None # The individual word stems, in a dictionary
 
     @classmethod
     def _init_from_row(cls, ar):
@@ -195,7 +204,8 @@ class Article:
         return tmap
 
     @staticmethod
-    def _dump_tokens(tokens, tree, error_index = None):
+    def _dump_tokens(tokens, tree, words, error_index = None):
+
         """ Generate a string (JSON) representation of the tokens in the sentence.
 
             The JSON token dict contents are as follows:
@@ -210,7 +220,12 @@ class Article:
                     t.m[3] is the word meaning/declination (beyging)
                 t.v contains auxiliary information, depending on the token kind
                 t.err is 1 if the token is an error token
+
+            This function has the side effect of filling in the words dictionary
+            with (stem, cat) keys and occurrence counts.
+
         """
+
         # Map tokens to associated terminals, if any
         tmap = Article._terminal_map(tree) # tmap is an empty dict if there's no parse tree
         dump = []
@@ -218,17 +233,33 @@ class Article:
             # We have already cut away paragraph and sentence markers (P_BEGIN/P_END/S_BEGIN/S_END)
             d = dict(x = t.txt)
             terminal = None
-            if t.kind != TOK.PUNCTUATION and ix in tmap:
-                # Annotate with terminal name and BÍN meaning (no need to do this for punctuation)
-                terminal, meaning = tmap[ix]
-                d["t"] = terminal.name
-                if meaning is not None:
-                    if terminal.first == "fs":
-                        # Special case for prepositions since they're really
-                        # resolved from the preposition list in Main.conf, not from BÍN
-                        d["m"] = (meaning.ordmynd, "fs", "alm", terminal.variant(0).upper())
-                    else:
-                        d["m"] = (meaning.stofn, meaning.ordfl, meaning.fl, meaning.beyging)
+            wt = None
+            if ix in tmap:
+                # There is a token-terminal match
+                if t.kind == TOK.PUNCTUATION:
+                    if t.txt == "-":
+                        # Hyphen: check whether it is matching an em or en-dash terminal
+                        terminal, _ = tmap[ix]
+                        if terminal.cat == "em":
+                            d["x"] = "—" # Substitute em dash
+                        elif terminal.cat == "en":
+                            d["x"] = "–" # Substitute en dash
+                else:
+                    # Annotate with terminal name and BÍN meaning (no need to do this for punctuation)
+                    terminal, meaning = tmap[ix]
+                    d["t"] = terminal.name
+                    if meaning is not None:
+                        if terminal.first == "fs":
+                            # Special case for prepositions since they're really
+                            # resolved from the preposition list in Main.conf, not from BÍN
+                            m = (meaning.ordmynd, "fs", "alm", terminal.variant(0).upper())
+                        else:
+                            m = (meaning.stofn, meaning.ordfl, meaning.fl, meaning.beyging)
+                        d["m"] = m
+                        # Note the word stem and category
+                        wt = WordTuple(stem = m[0].replace("-", ""), cat = m[1])
+                    elif t.kind == TOK.ENTITY:
+                        wt = WordTuple(stem = t.txt, cat = "entity")
             if t.kind != TOK.WORD:
                 # Optimize by only storing the k field for non-word tokens
                 d["k"] = t.kind
@@ -245,12 +276,16 @@ class Article:
                     else:
                         # There is no terminal: cop out by adding a separate gender field
                         d["g"] = gender
+                    wt = WordTuple(stem = t.val[0][0], cat = "person_" + gender)
                 else:
                     d["v"] = t.val
             if ix == error_index:
                 # Mark the error token, if present
                 d["err"] = 1
             dump.append(d)
+            if words is not None and wt is not None:
+                # Add the (stem, cat) combination to the words dictionary
+                words[wt] += 1
         return dump
 
     def person_names(self):
@@ -279,20 +314,27 @@ class Article:
                             # The entity name
                             yield t["x"]
 
-    def _store_failures(self, session):
-        """ Store sentences that fail to parse """
+    def _store_words(self, session):
+        """ Store word stems """
         assert session is not None
-        # Delete previously stored failures for this article
-        session.execute(Failure.table().delete().where(Failure.article_url == self._url))
-        # Add the failed sentences to the failure table
-        for sentence in self._failures:
-            f = Failure(
-                article_url = self._url,
-                sentence = sentence,
-                cause = None, # Unknown cause so far
-                comment = None, # No comment so far
-                timestamp = datetime.utcnow())
-            session.add(f)
+        # Delete previously stored words for this article
+        session.execute(Word.table().delete().where(Word.article_id == self._uuid))
+        # Index the words by storing them in the words table
+        for word, cnt in self._words.items():
+            if word.cat not in _CATEGORIES_TO_INDEX:
+                # We do not index closed word categories and non-distinctive constructs
+                continue
+            if (word.stem, word.cat) in NoIndexWords.SET:
+                # Specifically excluded from indexing in Reynir.conf (Main.conf)
+                continue
+            # Interesting word: let's index it
+            w = Word(
+                article_id = self._uuid,
+                stem = word.stem,
+                cat = word.cat,
+                cnt = cnt
+            )
+            session.add(w)
 
     def _parse(self, enclosing_session = None, verbose = False):
         """ Parse the article content to yield parse trees and annotated token list """
@@ -309,8 +351,8 @@ class Article:
             # for sentences in string dump format (1-based paragraph and sentence indices)
             pgs = []
 
-            # List of sentences that fail to parse
-            failures = []
+            # Word stem dictionary, indexed by (stem, cat)
+            words = defaultdict(int)
 
             bp = self.get_parser()
             ip = IncrementalParser(bp, toklist, verbose = verbose)
@@ -327,14 +369,12 @@ class Article:
                     if sent.parse():
                         # Obtain a text representation of the parse tree
                         trees[num_sent] = ParseForestDumper.dump_forest(sent.tree)
-                        pgs[-1].append(Article._dump_tokens(sent.tokens, sent.tree))
+                        pgs[-1].append(Article._dump_tokens(sent.tokens, sent.tree, words))
                     else:
                         # Error or no parse: add an error index entry for this sentence
                         eix = sent.err_index
                         trees[num_sent] = "E{0}".format(eix)
-                        # Add the failing sentence to the list of failures
-                        failures.append(sent.text)
-                        pgs[-1].append(Article._dump_tokens(sent.tokens, None, eix))
+                        pgs[-1].append(Article._dump_tokens(sent.tokens, None, None, eix))
 
             parse_time = ip.parse_time
 
@@ -348,9 +388,8 @@ class Article:
             # Make one big JSON string for the paragraphs, sentences and tokens
             self._raw_tokens = pgs
             self._tokens = json.dumps(pgs, separators = (',', ':'), ensure_ascii = False)
+            self._words = words
             # self._tokens = "[" + ",\n".join("[" + ",\n".join(sent for sent in p) + "]" for p in pgs) + "]"
-            # Store the failing sentences
-            self._failures = failures
             # Create a tree representation string out of all the accumulated parse trees
             self._tree = "".join("S{0}\n{1}\n".format(key, val) for key, val in trees.items())
 
@@ -360,8 +399,9 @@ class Article:
         with SessionContext(enclosing_session, commit = True) as session:
             if self._uuid is None:
                 # Insert a new row
+                self._uuid = str(uuid.uuid1())
                 ar = ArticleRow(
-                    # UUID is auto-generated
+                    id = self._uuid,
                     url = self._url,
                     root_id = self._root_id,
                     heading = self._heading,
@@ -383,9 +423,9 @@ class Article:
                     tokens = self._tokens
                 )
                 session.add(ar)
-                if self._failures is not None:
-                    # After a parse without errors, self._failures is an empty list, not None
-                    self._store_failures(session)
+                if self._words:
+                    # Store the word stems occurring in the article
+                    self._store_words(session)
                 return True
 
             # Update an already existing row by UUID
@@ -415,9 +455,11 @@ class Article:
             ar.html = self._html
             ar.tree = self._tree
             ar.tokens = self._tokens
-            if self._failures is not None:
-                # If the article has been parsed, update the list of failures
-                self._store_failures(session)
+            if self._words is not None:
+                # If the article has been parsed, update the index of word stems
+                # (This may cause all stems for the article to be deleted, if
+                # there are no successfully parsed sentences in the article)
+                self._store_words(session)
             return True
 
     def prepare(self, enclosing_session = None, verbose = False):

@@ -175,7 +175,7 @@ class Article(Base):
     url = Column(String, primary_key = True)
 
     # UUID
-    id = Column(psql_UUID(as_uuid = False), index = True, nullable = False,
+    id = Column(psql_UUID(as_uuid = False), index = True, nullable = False, unique = True,
         server_default = text("uuid_generate_v1()"))
 
     # Foreign key to a root
@@ -311,39 +311,36 @@ class Entity(Base):
         return cls.__table__
 
 
-class Failure(Base):
+class Word(Base):
 
-    """ Represents a sentence that fails to parse """
+    """ Represents a word occurring in an article """
 
-    __tablename__ = 'failures'
-
-    # Primary key
-    id = Column(Integer, Sequence('failures_id_seq'), primary_key=True)
+    __tablename__ = 'words'
 
     # Foreign key to an article
-    article_url = Column(String,
-        # We don't delete associated failures if the article is deleted
-        ForeignKey('articles.url', onupdate="CASCADE", ondelete="SET NULL"),
-        index = True, nullable = True)
+    article_id = Column(psql_UUID(as_uuid = False),
+        ForeignKey('articles.id', onupdate="CASCADE", ondelete="CASCADE"),
+        nullable = False)
 
-    # Sentence text
-    sentence = Column(String, nullable = False)
+    # The word stem
+    stem = Column(String(64), index = True, nullable = False)
 
-    # Cause of failure: NULL = unknown, 'grammar', 'error'...
-    cause = Column(String(16), index = True)
+    # The word category
+    cat = Column(String(16), index = True, nullable = False)
 
-    # Comment
-    comment = Column(String)
+    # Count of occurrences
+    cnt = Column(Integer, nullable = False)
 
-    # Timestamp of this entry
-    timestamp = Column(DateTime, nullable = False, index = True)
+    # The back-reference to the Article parent of this Word
+    article = relationship("Article", backref=backref('words'))
 
-    # The back-reference to the Article parent of this Failure
-    article = relationship("Article", backref=backref('failures'))
+    __table_args__ = (
+        PrimaryKeyConstraint('article_id', 'stem', 'cat', name='words_pkey'),
+    )
 
     def __repr__(self):
-        return "Failure(id='{0}', sentence='{1}', cause='{2}', comment='{3}')" \
-            .format(self.id, self.sentence, self.cause, self.comment)
+        return "Word(stem='{0}', cat='{1}', cnt='{2}')" \
+            .format(self.stem, self.cat, self.cnt)
 
     @classmethod
     def table(cls):
@@ -449,9 +446,9 @@ class _BaseQuery:
     def __init__(self):
         pass
 
-    def execute(self, session):
+    def execute(self, session, **kwargs):
         """ Execute the query and return the result from fetchall() """
-        return session.execute(self._Q).fetchall()
+        return session.execute(self._Q, kwargs).fetchall()
 
 
 class GenderQuery(_BaseQuery):
@@ -513,3 +510,29 @@ class BestAuthorsQuery(_BaseQuery):
             order by ratio desc;
         """.format(_MIN_ARTICLE_COUNT)
 
+
+class RelatedWordsQuery(_BaseQuery):
+
+    """ A query for word stems commonly occurring in the same articles
+        as the given word stem """
+
+    _Q = """
+        select stem, cat, sum(cnt) as c
+            from (
+                select article_id as aid
+                    from words
+                    where stem=:root
+            ) as src
+            join words on src.aid = words.article_id
+            group by stem, cat
+            order by c desc
+            limit :limit;
+        """
+
+    @classmethod
+    def rel(cls, stem, limit = 20, enclosing_session = None):
+        """ Return a list of (stem, category, count) tuples describing
+            word stems that are related to the given stem, in descending
+            order of number of appearances. """
+        with SessionContext(session = enclosing_session, commit = True) as session:
+            return cls().execute(session, root=stem, limit=limit)

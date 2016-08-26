@@ -47,9 +47,14 @@ SENTENCE_FINISHERS = frozenset([')', ']', '“', '»', '”', '’', '"', '[…]
 # Punctuation symbols that may occur inside words
 PUNCT_INSIDE_WORD = frozenset(["'", '.', '‘', "´"])
 
-# Hyphens that can indicate composite words
-# ('stjórnskipunar- og eftirlitsnefnd')
-COMPOSITE_HYPHENS = "—–-"
+# Hyphens that are cast to '-' for parsing and then re-cast
+# to normal hyphens, en or em dashes in final rendering
+HYPHENS = "—–-"
+HYPHEN = '-' # Normal hyphen
+
+# Hyphens that may indicate composite words ('fjármála- og efnahagsráðuneyti')
+COMPOSITE_HYPHENS = "–-"
+COMPOSITE_HYPHEN = '–' # en dash
 
 CLOCK_WORD = "klukkan"
 CLOCK_ABBREV = "kl"
@@ -456,9 +461,9 @@ def parse_tokens(txt):
                     else:
                         yield TOK.End_Paragraph()
                     w = w[2:]
-                elif w[0] in COMPOSITE_HYPHENS:
+                elif w[0] in HYPHENS:
                     # Represent all hyphens the same way
-                    yield TOK.Punctuation('-')
+                    yield TOK.Punctuation(HYPHEN)
                     w = w[1:]
                 else:
                     yield TOK.Punctuation(w[0])
@@ -497,6 +502,12 @@ def parse_tokens(txt):
                     i -= 1
                 yield TOK.Word(w[0:i], None)
                 w = w[i:]
+                if w and w[0] in COMPOSITE_HYPHENS:
+                    # This is a hyphen or en dash directly appended to a word:
+                    # might be a continuation ('fjármála- og efnahagsráðuneyti')
+                    # Yield a special hyphen as a marker
+                    yield TOK.Punctuation(COMPOSITE_HYPHEN)
+                    w = w[1:]
             if not ate:
                 # Ensure that we eat everything, even unknown stuff
                 yield TOK.Unknown(w[0])
@@ -752,7 +763,7 @@ MULTIPLIERS = {
     #"tugur": 10,
     #"tylft": 12,
     "hundrað": 100,
-    #"þúsund": 1000, # !!! Bæði hk og kvk!
+    "þúsund": 1000, # !!! Bæði hk og kvk!
     "þús.": 1000,
     "milljón": 1e6,
     "milla": 1e6,
@@ -858,7 +869,9 @@ ISO_CURRENCIES = {
 }
 
 # Amount abbreviations including 'kr' for the ISK
+# Corresponding abbreviations are found in Abbrev.conf
 AMOUNT_ABBREV = {
+    "þ.kr.": 1e3,
     "þús.kr.": 1e3,
     "m.kr.": 1e6,
     "mkr.": 1e6,
@@ -968,30 +981,35 @@ def parse_phrases_1(token_stream):
             # Logic for numbers and fractions that are partially or entirely
             # written out in words
 
-            def number_filter(meaning):
-                """ Filter to apply to candidate number words before
-                    accepting them as such """
-                # Check that the word is a number word, marked with ordfl='töl' or 'to',
-                # or a subject ('nafnorð' of any gender) - or adjective ('lo') in the
-                # case of fractions such as half ('hálfur')
-                return meaning.ordfl in NUMBER_CATEGORIES
-
             def number(tok):
                 """ If the token denotes a number, return that number - or None """
-                return match_stem_list(tok, MULTIPLIERS, filter_func = number_filter)
+                return match_stem_list(tok, MULTIPLIERS,
+                    filter_func = lambda m: m.ordfl in NUMBER_CATEGORIES)
 
             def fraction(tok):
                 """ If the token denotes a fraction, return a corresponding number - or None """
                 return match_stem_list(tok, FRACTIONS)
 
-            # Check for [number] 'hundred|thousand|million|billion'
-            while token.kind == TOK.NUMBER and next_token.kind == TOK.WORD:
+            # Check whether we have an initial number word
+            multiplier = number(token) if token.kind == TOK.WORD else None
 
-                multiplier = number(next_token)
-                if multiplier is not None:
+            # Check for [number] 'hundred|thousand|million|billion'
+            while (token.kind == TOK.NUMBER or multiplier is not None) \
+                and next_token.kind == TOK.WORD:
+
+                multiplier_next = number(next_token)
+
+                def convert_to_num(token):
+                    if multiplier is not None:
+                        token = TOK.Number(token.txt, multiplier,
+                            all_cases(token), all_genders(token))
+                    return token
+
+                if multiplier_next is not None:
                     # Retain the case of the last multiplier
+                    token = convert_to_num(token)
                     token = TOK.Number(token.txt + " " + next_token.txt,
-                        token.val[0] * multiplier,
+                        token.val[0] * multiplier_next,
                         all_cases(next_token), all_genders(next_token))
                     # Eat the multiplier token
                     next_token = next(token_stream)
@@ -999,6 +1017,9 @@ def parse_phrases_1(token_stream):
                     # Abbreviations for ISK amounts
                     # For abbreviations, we do not know the case,
                     # but we try to retain the previous case information if any
+                    token = convert_to_num(token)
+                    print("Amount abbrev {0}, cases {1}, genders {2}"
+                        .format(next_token.txt, token.val[1], token.val[2]))
                     token = TOK.Amount(token.txt + " " + next_token.txt, "ISK",
                         token.val[0] * AMOUNT_ABBREV[next_token.txt], # Number
                         token.val[1], token.val[2]) # Cases and gender
@@ -1007,12 +1028,15 @@ def parse_phrases_1(token_stream):
                     # Check for [number] 'percent'
                     percentage = match_stem_list(next_token, PERCENTAGES)
                     if percentage is not None:
+                        token = convert_to_num(token)
                         token = TOK.Percent(token.txt + " " + next_token.txt, token.val[0],
                             all_cases(next_token), all_genders(next_token))
                         # Eat the percentage token
                         next_token = next(token_stream)
                     else:
                         break
+
+                multiplier = None
 
             # Check for [number | ordinal] [month name]
             if (token.kind == TOK.ORDINAL or token.kind == TOK.NUMBER) and next_token.kind == TOK.WORD:
@@ -1063,8 +1087,8 @@ def parse_phrases_1(token_stream):
             # 'stjórnskipunar- og eftirlitsnefnd'
             # 'viðskipta- og iðnaðarráðherra'
             # 'marg-ítrekaðri'
-            if token.kind == TOK.WORD and next_token.kind == TOK.PUNCTUATION and \
-                len(next_token.txt) == 1 and next_token.txt in COMPOSITE_HYPHENS:
+            if token.kind == TOK.WORD and \
+                next_token.kind == TOK.PUNCTUATION and next_token.txt == COMPOSITE_HYPHEN:
 
                 og_token = next(token_stream)
                 if og_token.kind != TOK.WORD or (og_token.txt != "og" and og_token.txt != "eða"):
@@ -1076,7 +1100,8 @@ def parse_phrases_1(token_stream):
                         next_token = next(token_stream)
                     else:
                         yield token
-                        token = next_token
+                        # Put a normal hyphen instead of the composite one
+                        token = TOK.Punctuation(HYPHEN)
                         next_token = og_token
                 else:
                     # We have 'viðskipta- og'
@@ -1084,7 +1109,7 @@ def parse_phrases_1(token_stream):
                     if final_token.kind != TOK.WORD:
                         # Incorrect: unwind
                         yield token
-                        yield next_token
+                        yield TOK.Punctuation(HYPHEN) # Normal hyphen
                         token = og_token
                         next_token = final_token
                     else:
@@ -1093,7 +1118,7 @@ def parse_phrases_1(token_stream):
                         # the last word, but an amalgamated token text.
                         # Note: there is no meaning check for the first
                         # part of the composition, so it can be an unknown word.
-                        txt = token.txt + next_token.txt + " " + og_token.txt + \
+                        txt = token.txt + "- " + og_token.txt + \
                             " " + final_token.txt
                         token = TOK.Word(txt, final_token.val)
                         next_token = next(token_stream)
@@ -1157,7 +1182,7 @@ def parse_phrases_2(token_stream):
                     # Create an amount
                     # Use the case and gender information from the number, if any
                     token = TOK.Amount(token.txt + " " + next_token.txt,
-                        cur, token.val[0], genders, cases)
+                        cur, token.val[0], cases, genders)
                     # Eat the currency token
                     next_token = next(token_stream)
 

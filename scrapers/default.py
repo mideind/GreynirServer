@@ -486,7 +486,8 @@ class VisirScraper(ScrapeHelper):
 
     _SKIP_PREFIXES = [
         "/english/",
-        "/section/" # All /section/X URLs seem to be (extreeeemely long) summaries
+        "/section/", # All /section/X URLs seem to be (extreeeemely long) summaries
+        "/soyouthinkyoucansnap"
     ]
 
     def __init__(self, root):

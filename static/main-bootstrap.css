@@ -346,17 +346,24 @@ td.gender, th.gender {
    text-align: center;
 }
 
-#entity-body span.name {
+#entity-body span.name,
+#entity-body span.entity
+ {
    color: #337ab7;
    cursor: pointer;
 }
 
-#entity-body span.name:hover {
+#entity-body span.name:hover,
+#entity-body span.entity:hover {
    background-color: #FFEEA9; /* Greynir pale yellow */
 }
 
 #entity-body ul {
    font-size: 1.05em;
+}
+
+#entity-body li small {
+   color: #aaaaaa;
 }
 
 span.art-list {

@@ -510,25 +510,28 @@ class BIN_Token(Token):
         """ An amount token matches a noun terminal """
         if terminal.first != "no":
             return False
-        if terminal.is_abbrev:
-            # An amount does not match an abbreviation
+        if terminal.has_any_vbits(BIN_Token.VBIT_ABBREV | BIN_Token.VBIT_GR):
+            # An amount does not match an abbreviation or
+            # a definite article
             return False
         if not self.is_correct_singular_or_plural(terminal):
             return False
-        if self.t2[2] is None:
+        #print("matches_AMOUNT terminal {0}, amt cases {1} genders {2}".format(terminal, self.t2[2], self.t2[3]))
+        if self.t2[2]:
+            # See whether any of the allowed cases match the terminal
+            for c in BIN_Token.CASES:
+                if terminal.has_variant(c) and c not in self.t2[2]:
+                    return False
+        if self.t2[3] is None:
             # No gender: match neutral gender only
             if terminal.has_any_vbits(BIN_Token.VBIT_KK | BIN_Token.VBIT_KVK):
                 return False
         else:
             # Associated gender
             for g in BIN_Token.GENDERS:
-                if terminal.has_variant(g) and g not in self.t2[2]:
+                if terminal.has_variant(g) and g not in self.t2[3]:
                     return False
-        if self.t2[3]:
-            # See whether any of the allowed cases match the terminal
-            for c in BIN_Token.CASES:
-                if terminal.has_variant(c) and c not in self.t2[3]:
-                    return False
+        #print("matches_AMOUNT returns True")
         return True
 
     def matches_PERCENT(self, terminal):
@@ -1015,9 +1018,6 @@ class BIN_LiteralTerminal(VariantHandler, LiteralTerminal):
         """ A literal terminal matches a token if the token text is identical to the literal """
         #print("LiteralTerminal.matches_first: parts[0] is '{0}', t_val is '{1}'"
         #    .format(self._parts[0], t_val))
-        if self._strong and self._first == "við" and t_lit == "við":
-            print("matches_first for 'við': self._cat is {0}, t_kind is {1}"
-                .format(self._cat, t_kind))
         if self._cat is not None and t_kind != self._cat:
             # Match only the word category that was specified
             return False

@@ -39,6 +39,13 @@
 # conversion to lowercase. Variants cannot be applied to double-quoted
 # literals.
 #
+# For disambiguation in POS tagging, literals may specify an optional
+# word category after a colon. Thus "og:st" means that this "og" is
+# a conjunction, not an adverb (which would be specified as "og:ao").
+#
+# This feature is occasionally used for typographic purposes, i.e.
+# to distinguish between em dashes ("-:em") and regular hyphens ("-").
+#
 # Terminal names generally take the form category_variant1_variant2...,
 # where the most common categories are:
 # * no for nouns (nafnorð)
@@ -59,9 +66,9 @@
 # selected from possible alternatives, use the '>' (greater than)
 # sign between the productions instead.
 #
-# A syntax highlighting specification for .grammar files,
-# grammar.YAML-tmLanguage, has been written for the Sublime Text
-# editor. It can be found under the resources folder and its
+# For the Sublime Text editor, a syntax highlighting specification
+# for .grammar files, grammar.YAML-tmLanguage, is available.
+# It can be found in the resources folder and its
 # use is highly recommended.
 
 
@@ -100,9 +107,9 @@ Málsgrein →
 MgrInnihald → Forskeyti? Yfirsetning StLiður* Lokatákn?
 
 Forskeyti →
-    Samtenging '-'? # 'En - þegar allt er skoðað, var þetta fínt.'
+    Samtenging "-:em"? # 'En - þegar allt er skoðað, var þetta fínt.'
     | raðnr # Raðnúmer málsgreinar
-    | '-'   # Þankastrik á undan setningu (allar gerðir strika varpast í '-')
+    | "-:em"   # Þankastrik á undan setningu (allar gerðir strika varpast í '-')
     | "mynd" tala AfTala? ':'? # Mynd 2 af 10
     | 'dæmi'_hk_et_nf tala? ':'
     | "sjá:so" "einnig"? ':'
@@ -149,9 +156,17 @@ StLiður →
     | ':' NhFylling
     # '(Ég spurði) hversu hrikalega stór (hann væri orðinn)'
     | SpurnarorðAtv Lo_nf/tala/kyn Setning/tala/pers/kyn
+    # '(Ekki er ljóst) hverjir [það voru sem] borðuðu kökuna og fóru í sund'
+    | StSpurn
+
+StSpurn →
+    'hver'_nf/tala/kyn ÞaðVarSem/tala? SagnRuna_p3/tala/kyn
+
+ÞaðVarSem/tala →
+    'sá'_hk_nf_et VeraVerða_gm_p3/tala "sem:st"
 
 Tengimerki →
-    ':' | ';' | ',' | '-'
+    ':' | ';' | ',' | "-:em"
 
 SamtengingStök →
     # Ein samtenging, sem þó getur verið samsett, sbr. skilgreiningar í Reynir.conf
@@ -260,6 +275,9 @@ Setning → Setning/tala/pers/kyn
 # 'Anna tók bílinn, keyrði hann sjálf í bæinn [,] og keypti í matinn'
 
 SagnRuna → SagnRuna/tala/pers/kyn
+
+SagnRuna_p3_et/kyn → SagnRuna_et_p3/kyn
+SagnRuna_p3_ft/kyn → SagnRuna_ft_p3/kyn
 
 SagnRuna/tala/pers/kyn →
     Sagnliður/tala/pers/kyn LoTengtSögn_nf/tala/kyn? SagnInnskot?
@@ -534,6 +552,9 @@ SetningAukafall →
     # Þann auð ber okkur að nýta (til góðra verka)
     | Nl/aukafall so_subj_op/fall Nl/fall AtvFs? nhm So_1_nh/aukafall FsAtv?
 
+    # Nöfn ráðherra var [ekki] að finna [í Panamaskjölunum]
+    | Nl_þf 'vera'_gm_p3_et FsAtv? nhm 'finna'_gm_nh FsAtv?
+
     # Mér er/var [ekki] sama [um málið] / bumbult [í gær] / misboðið
     # | Nl_þgf 'vera'_gm_fh_p3_et FsAtv? lo_sb_hk_nf_et FsAtv?
 
@@ -738,6 +759,9 @@ SagnliðurVh →
 
 VeraVerða_vh/tala/pers →
     'vera'_vh/tala/pers | 'verða'_vh/tala/pers
+
+VeraVerða_gm_p3/tala →
+    'vera'_gm_p3/tala | 'verða'_gm_p3/tala
 
 # Sagnliður með inniföldu frumlagi:
 # '(Í dag) borðaði Jón matinn'
@@ -1792,7 +1816,7 @@ Einkunn/tala/fall/kyn →
 
 NlViðbót/tala/fall/kyn →
     LoEftirNl/tala/fall/kyn     # (Jón) sterki / (Jón), sultuslakur eftir gufubaðið,
-    | EfLiður                   # (forstöðumaður) fræðaseturs (sunnlendinga)
+    | EfLiður LoEftirNlMeðÞgf/fall/tala/kyn? # (forstöðumenn) fræðaseturs [sunnlendinga] [tengdir flokknum]
 
 # Eintala
 
@@ -2106,7 +2130,7 @@ NlStak_ft_p3_ef_hk → Árin_ef
 Árin_ef → "áranna:hk" MörgÁr
 
 MörgÁr →
-    ártal '-' tala
+    ártal "-:en" tala
     | ártal "til:st" tala
     | ártal ÁraRuna* OgEða tala
 
@@ -2133,10 +2157,14 @@ $score(-16) NlSérnafn
 Sérnafn →
     sérnafn | entity | LangtSérnafn
 
+# ATH: eitt 'entity' getur verið fleiri en eitt samliggjandi orð.
+# Ekki ætti að hafa samliggjandi 'entity' í málfræðireglu.
+
 LangtSérnafn →
-    sérnafn "-"? sérnafn+           # Glass-Steagall lögin
+    sérnafn "-:en"? sérnafn+           # Glass-Steagall lögin
     | sérnafn+ entity+ sérnafn*     # Eining með nafni sem þekkt er úr gagnagrunni eða runu slíkra
     | entity+ sérnafn+              # Eining með nafni sem þekkt er úr gagnagrunni eða runu slíkra
+    | entity "-:en" entity          # Villeneuve-Loubet
 
 Sérnafn/fall →
     sérnafn/fall | LangtSérnafn/fall
@@ -2204,13 +2232,13 @@ NlStak_ft_p1/fall/kyn →
 
 Skst →
     Skst_abbrev
-    | sérnafn '-'      # Barclays-bankann
-    | entity '-'
+    | sérnafn "-"      # Barclays-bankann
+    | entity "-"
 
-Skst_abbrev → no_abbrev '-'?  # FIH bankann
+Skst_abbrev → no_abbrev "-"?  # FIH bankann
 
-$score(+4) Skst
-$score(+2) Skst_abbrev
+$score(+6) Skst
+$score(+4) Skst_abbrev
 
 Fyrirbæri/fall/kyn →
     no_et/fall/kyn
@@ -2222,13 +2250,13 @@ Fyrirbæri/fall/kyn →
 
 Raðnr →
     raðnr
-    | raðnr "-" raðnr               # 2.-3. sæti listans
+    | raðnr "-:en" raðnr               # 2.-3. sæti listans
     | raðnr "til:st" raðnr             # 2. til 3. sæti listans
 
 # Úrslit í leikjum (32:27 sigur, 0:2 tap, 8:0 burst)
 
 Úrslit/fall/kyn →
-    tala ':' tala '-'? no_et/fall/kyn
+    tala ':' tala "-:en"? no_et/fall/kyn
 
 $score(+2) Úrslit/fall/kyn
 
@@ -2565,7 +2593,7 @@ NlEind_et_p3_ef_hk →
 NlSkýring/tala/pers/fall/kyn →
     '(' SvigaForskeyti? SvigaInnihald/tala/pers/fall/kyn ')'
     | '[' SvigaForskeyti? SvigaInnihald/tala/pers/fall/kyn ']'
-    | '-' SvigaForskeyti? SvigaInnihald/tala/pers/fall/kyn '-'
+    | "-:em" SvigaForskeyti? SvigaInnihald/tala/pers/fall/kyn "-:em"
     | ',' SvigaInnihald/tala/pers/fall/kyn LokatáknEðaKomma
     | ',' Skýring Skýringarliður LokatáknEðaKomma
 
@@ -2573,11 +2601,16 @@ NlSkýring/tala/pers/fall/kyn →
 $score(+6) NlSkýring/tala/pers/fall/kyn
 
 SvigaInnihald/tala/pers/fall/kyn →
-    Tengiliður/tala/pers/kyn # (og sem ég er almennt fylgjandi)
+    Árabil
+    > Tengiliður/tala/pers/kyn # (og sem ég er almennt fylgjandi)
     > Nl/fall/tala      # 'Ég spurði forsætisráðherra, Sigmund Davíð, um málið'
     > SvigaInnihaldFsRuna
     > SvigaInnihaldNl   # Ef ekki finnst sama fall og tala, prófa almennan nafnlið
     > HreinYfirsetning
+
+Árabil →
+    ártal "-:en" ártal   # 1951-1983
+    > ártal "-:en" tala  # 2001-8
 
 SvigaInnihaldNl →
     Nl
@@ -2627,7 +2660,7 @@ EnÍOgEða →
 $score(-4) EnÍOgEða # Frekar að líta á 'en' sem samtengingu ef það er hægt
 
 KommaOgEða → ','? OgEða
-    | '-' # 'Ég tók tvö tonn af eldsneyti - tvö þúsund lítra'
+    | "-:em" "eða:st"? # 'Ég tók tvö tonn af eldsneyti - tvö þúsund lítra'
     | ',' "ekki:ao" # Við vildum gin, ekki viskí
     | ',' "núna" "síðast" # Tóku á móti mörgum flóttamönnum, núna síðast þremur þúsundum
 
@@ -2642,7 +2675,7 @@ OgEðaEn →
 OgEðaEnNema → OgEðaEn | "nema:st"
 
 KommaOgEðaEn → ',' | ','? OgEðaEn
-KommaOgEðaEnNema → ',' | ','? OgEðaEnNema
+KommaOgEðaEnNema → ',' | ';' | ','? OgEðaEnNema
 
 # Allir liðir af sama kyni
 
@@ -2804,8 +2837,8 @@ LoEftirNl/tala/fall/kyn →
     ',' LoLiður/tala/fall/kyn
     | StaktLoEftirNl/tala/fall/kyn
     | ',' LoLiður/tala/fall/kyn FsAtv? LokatáknEðaKomma
-    | AtviksliðurEinkunn* LoEftirNlMeðÞgf/fall/tala/kyn Nl_þgf
-    | ',' AtviksliðurEinkunn* LoEftirNlMeðÞgf/fall/tala/kyn Nl_þgf LokatáknEðaKomma
+    | LoEftirNlMeðÞgf/fall/tala/kyn
+    | ',' LoEftirNlMeðÞgf/fall/tala/kyn LokatáknEðaKomma
 
 StaktLoEftirNl/tala/fall/kyn →
     LoLiður/tala/fall/kyn
@@ -2816,9 +2849,9 @@ $score(-4) StaktLoEftirNl/tala/fall/kyn
 # Lýsingarorð sem getur tekið með sér þágufall
 # !!! ATH: Til eru listar yfir slík orð
 
-# 'tengdur Framsóknarflokknum'
+# '[sterklega] tengdur Framsóknarflokknum'
 LoEftirNlMeðÞgf/fall/tala/kyn →
-    lo_sb/fall/tala/kyn # | so_lhþt/fall/tala/kyn
+    AtviksliðurEinkunn* lo_sb/fall/tala/kyn Nl_þgf
 
 $score(+6) LoEftirNlMeðÞgf/fall/tala/kyn
 
@@ -2973,7 +3006,8 @@ EinFsAtv →
     "nema:st"? FsMeðFallstjórn
     | EinnAl
     | "hvorki" EinEinföldFsAtv+ "né" EinEinföldFsAtv+ # 'hvorki í Frakklandi né annars staðar í Evrópusambandinu'
-    | "annað" "hvort:st" EinEinföldFsAtv+ "eða:st" EinEinföldFsAtv+ # 'annað hvort í Breiðholti eða við World Class'
+    | "annað:fn" "hvort:st" EinEinföldFsAtv+ "eða:st" EinEinföldFsAtv+ # 'annað hvort í Breiðholti eða við World Class'
+    | "bæði:st" EinEinföldFsAtv+ ','? "og:st" EinEinföldFsAtv+
 
 EinEinföldFsAtv → FsMeðFallstjórn | EinnAl
 
@@ -3072,7 +3106,7 @@ Dagsetning →
     | DagsFs_þgf Tímasetning 'sá'_et_kk_þf? dags # 'frá kl. 14 [þann] 3. júlí 2007'
 
     | "dags." dags # dags. 30. desember 1965
-    | "dagana"? raðnr "-" dags # 1. - 10. júní
+    | "dagana"? raðnr "-:en" dags # 1. - 10. júní
     | DagsFs_þf? 'sá'_et_kk_þf? dags 'síðastliðinn'_et_kk_þf? # '[eftir] [þann] 3. júlí 2007 [síðastliðinn]'
     | "hinn" dags 'síðastliðinn'_et_kk_þf? # 'hinn 3. júlí [síðastliðinn]'
     | DagsFs_þgf dags # 'frá 3. júlí 2007'
@@ -3297,13 +3331,14 @@ DagsFs_þgf →
 
 QueryRoot →
 
-    QPerson > QCompany > QEntity > QTitle
+    QPerson > QCompany > QEntity > QTitle > QWord
 
 # Mark the QueryRoot nonterminal as a root in the grammar
 $root(QueryRoot)
 
 QPerson →
-    QPersonPrefix_nf? Manneskja_nf '?'?
+    Manneskja_nf
+    | QPersonPrefix_nf Manneskja_nf '?'?
     | QPersonPrefix_þf Manneskja_þf '?'?
     | QPersonPrefix_þgf Manneskja_þgf # '?'?
     | QPersonPrefix_ef Manneskja_ef '?'?
@@ -3334,7 +3369,7 @@ QPersonPrefix_þgf →
     "segðu" "mér"? "frá"
 
 QCompany →
-    QCompanyPrefix_nf? Fyrirtæki_nf '?'?
+    QCompanyPrefix_nf Fyrirtæki_nf '?'?
     | QCompanyPrefix_þf Fyrirtæki_þf '?'?
     | QCompanyPrefix_þgf Fyrirtæki_þgf # '?'?
 
@@ -3368,7 +3403,7 @@ QEntityPrefix_ef →
     0
 
 QTitle →
-    QTitlePrefix_nf? QTitleKey_nf '?'?
+    QTitlePrefix_nf QTitleKey_nf '?'?
     | QTitlePrefix_ef QTitleKey_ef '?'?
 
 QSegðuMér →
@@ -3393,4 +3428,85 @@ QTitleKey_nf →
 QTitleKey_ef →
     EinnTitill_ef OgTitill_ef*
 
+# Word relation query
+
+QWord →
+    QWordPerson
+    > QWordEntity
+    > QWordNoun
+    > QWordVerb
+
+QWordPrefix_þgf →
+    "hvað" "tengist"
+    | "hvað" "er" "tengt"
+    | "hvaða" "orð" "tengjast"
+    | "hvaða" "orð" "tengist"
+    | "hvaða" "orð" "eru" "tengd"
+
+QWordPrefix_nf →
+    "hverju" "tengist"
+    | "hvaða" "orðum" "tengist"
+
+# 'Hvað tengist [orðinu/nafnorðinu] útihátíð?'
+
+QWordNoun →
+    QWordNoun_nf
+    | QWordNoun_þgf
+
+QWordNoun_þgf →
+    QWordPrefix_þgf QWordNounKey_þgf '?'?
+
+QWordNoun_nf →
+    QWordNounKey_nf
+    | QWordPrefix_þgf "orðinu" QWordNounKey_nf '?'?
+    | QWordPrefix_þgf "nafnorðinu" QWordNounKey_nf '?'?
+    | QWordPrefix_nf "orðið" QWordNounKey_nf '?'?
+    | QWordPrefix_nf "nafnorðið" QWordNounKey_nf '?'?
+
+QWordNounKey/fall → no/fall
+
+# 'Hvaða orð tengjast Ragnheiði Ríkharðsdóttur?'
+# 'Hvaða orð eru tengd nafninu Elliði Vignisson?'
+
+QWordPerson →
+    QWordPerson_nf
+    | QWordPerson_þgf
+
+QWordPerson_þgf →
+    QWordPrefix_þgf QWordPersonKey_þgf '?'?
+
+QWordPerson_nf →
+    QWordPrefix_þgf "nafninu" QWordPersonKey_nf '?'?
+    | QWordPrefix_nf "nafnið" QWordPersonKey_nf '?'?
+
+QWordPersonKey/fall → person/fall
+
+# 'Hvaða orð tengjast sögninni að teikna?'
+
+QWordVerb →
+    nhm? QWordVerbKey
+    | QWordPrefix_þgf "orðinu" QWordVerbKey '?'?
+    | QWordPrefix_þgf "sögninni" nhm? QWordVerbKey '?'?
+    | QWordPrefix_þgf "sagnorðinu" nhm? QWordVerbKey '?'?
+    | QWordPrefix_nf "orðið" QWordVerbKey '?'?
+    | QWordPrefix_nf "sögnin" nhm? QWordVerbKey '?'?
+    | QWordPrefix_nf "sagnorðið" nhm? QWordVerbKey '?'?
+
+QWordVerbKey → so_nh
+
+# 'Hvaða orð tengjast Wintris?'
+
+QWordEntity →
+    QWordEntityKey_nf
+    | QWordPrefix_þgf QWordEntityKey_þgf '?'?
+    | QWordPrefix_þgf "orðinu" QWordEntityKey_nf '?'?
+    | QWordPrefix_þgf "nafninu" QWordEntityKey_nf '?'?
+    | QWordPrefix_þgf "sérnafninu" QWordEntityKey_nf '?'?
+    | QWordPrefix_þgf "heitinu" QWordEntityKey_nf '?'?
+    | QWordPrefix_nf "orðið" QWordEntityKey_nf '?'?
+    | QWordPrefix_nf "nafnið" QWordEntityKey_nf '?'?
+    | QWordPrefix_nf "sérnafnið" QWordEntityKey_nf '?'?
+    | QWordPrefix_nf "heitið" QWordEntityKey_nf '?'?
+
+QWordEntityKey/fall → Sérnafn | Sérnafn/fall
 

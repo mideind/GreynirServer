@@ -19,7 +19,7 @@ from contextlib import closing
 from collections import namedtuple, defaultdict
 
 from settings import Settings, changedlocale
-from scraperdb import Root, Article, Person, Entity, desc
+from scraperdb import Root, Article, Person, Entity, RelatedWordsQuery, desc
 from bindb import BIN_Db
 from tree import Tree
 from tokenizer import TOK, correct_spaces
@@ -170,6 +170,22 @@ def query_company(session, name):
     return prepare_response(q, prop_func = lambda x: x.definition)
 
 
+def query_word(session, stem):
+    """ A query for words related to the given stem """
+    rlist = RelatedWordsQuery.rel(stem, enclosing_session = session)
+    # Convert to an easily serializable dict
+    # Exclude the original search stem from the result
+    return [ dict(stem = rstem, cat = rcat) for rstem, rcat, rcnt in rlist if rstem != stem ]
+
+
+_QFUNC = {
+    "Person" : query_person,
+    "Title" : query_title,
+    "Entity" : query_entity,
+    "Company" : query_company,
+    "Word" : query_word
+}
+
 def sentence(state, result):
     """ Called when sentence processing is complete """
     q = state["query"]
@@ -178,20 +194,11 @@ def sentence(state, result):
         q.set_qtype(result.qtype)
         q.set_key(result.qkey)
         session = state["session"]
-        if result.qtype == "Person":
-            # A person was given; his/her titles are returned
-            q.set_answer(query_person(session, result.qkey)[0:_MAXLEN_ANSWER])
-        elif result.qtype == "Entity":
-            # An entity name was given; its definitions are returned
-            q.set_answer(query_entity(session, result.qkey)[0:_MAXLEN_ANSWER])
-        elif result.qtype == "Company":
-            # A company name was given; its definitions (descriptions) are returned
-            q.set_answer(query_company(session, result.qkey)[0:_MAXLEN_ANSWER])
-        elif result.qtype == "Title":
-            # A title was given; persons having that title are returned
-            q.set_answer(query_title(session, result.qkey)[0:_MAXLEN_ANSWER])
-        else:
+        qfunc = _QFUNC.get(result.qtype)
+        if qfunc is None:
             q.set_answer(result.qtype + ": " + result.qkey)
+        else:
+            q.set_answer(qfunc(session, result.qkey)[0:_MAXLEN_ANSWER])
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
 
@@ -221,6 +228,10 @@ def QTitle(node, params, result):
     result.qtype = "Title"
     result.qkey = result.titill
 
+def QWord(node, params, result):
+    result.qtype = "Word"
+    assert "qkey" in result
+
 def Sérnafn(node, params, result):
     """ Sérnafn, stutt eða langt """
     result.sérnafn = result._nominative
@@ -244,6 +255,23 @@ def FsMeðFallstjórn(node, params, result):
 def QTitleKey(node, params, result):
     """ Titill """
     result.titill = result._nominative
+
+def QWordNounKey(node, params, result):
+    result.qkey = result._canonical
+
+def QWordPersonKey(node, params, result):
+    if "mannsnafn" in result:
+        result.qkey = result.mannsnafn
+    elif "sérnafn" in result:
+        result.qkey = result.sérnafn
+    else:
+        result.qkey = result._nominative
+
+def QWordEntityKey(node, params, result):
+    result.qkey = result._nominative
+
+def QWordVerbKey(node, params, result):
+    result.qkey = result._root
 
 
 class Query:

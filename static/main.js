@@ -181,20 +181,31 @@ function populateQueryResult(json) {
       else {
          $.each(r.response, function(i, obj) {
             var li;
-            if (r.qtype == "Title")
-               // For person names, generate a 'name' span
-               li = $("<li></li>").html($("<span class='name'></span>").text(obj[0]));
-            else
-               li = $("<li></li>").text(obj[0]);
-            var urlList = obj[1];
-            var artList = li.append($("<span class='art-list'></span>")).children().last();
-            for (var i = 0; i < urlList.length; i++) {
-               var u = urlList[i];
-               artList.append($("<span class='art-link'></span>")
-                  .attr("title", u[2])
-                  .attr("data-uuid", u[1])
-                  .html($("<img width='16' height='16'></img>").attr("src", "/static/" + u[0] + ".ico"))
-               );
+            if (r.qtype == "Word") {
+               if (obj.cat.startsWith("person_"))
+                  li = $("<li></li>").html($("<span class='name'></span>").text(obj.stem));
+               else
+               if (obj.cat.startsWith("entity") || obj.cat.startsWith("sérnafn"))
+                  li = $("<li></li>").html($("<span class='entity'></span>").text(obj.stem));
+               else
+                  li = $("<li></li>").text(obj.stem + " ").append($("<small></small>").text(obj.cat));
+            }
+            else {
+               if (r.qtype == "Title")
+                  // For person names, generate a 'name' span
+                  li = $("<li></li>").html($("<span class='name'></span>").text(obj[0]));
+               else
+                  li = $("<li></li>").text(obj[0]);
+               var urlList = obj[1];
+               var artList = li.append($("<span class='art-list'></span>")).children().last();
+               for (var i = 0; i < urlList.length; i++) {
+                  var u = urlList[i];
+                  artList.append($("<span class='art-link'></span>")
+                     .attr("title", u[2])
+                     .attr("data-uuid", u[1])
+                     .html($("<img width='16' height='16'></img>").attr("src", "/static/" + u[0] + ".ico"))
+                  );
+               }
             }
             answer.append(li);
          });
@@ -215,9 +226,11 @@ function populateQueryResult(json) {
    // A title query yields a list of names
    // Clicking on a name submits a query on it
    $("#entity-body span.name").click(showPerson);
+   $("#entity-body span.entity").click(showEntity);
    $("span.art-link").click(function(ev) {
       // Show a source article
       wait(true); // This can take time, if a parse is required
+      $("#url").val("Málgreining í gangi...");
       window.location.href = "/page?id=" + $(this).attr("data-uuid");
    });
 }

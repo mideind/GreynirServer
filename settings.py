@@ -383,6 +383,26 @@ class AmbigPhrases:
         return AmbigPhrases.LIST[ix][1]
 
 
+class NoIndexWords:
+
+    """ Wrapper around set of word stems and categories that should
+        not be indexed """
+
+    # Set of verbs and their associated set of subject cases
+    SET = set() # Set of (stem, cat) tuples
+    _CAT = "so" # Default category
+
+    @staticmethod
+    def set_cat(cat):
+        """ Set the category for the following word stems """
+        NoIndexWords._CAT = cat
+
+    @staticmethod
+    def add (stem):
+        """ Add a word stem and its category. Called from the config file handler. """
+        NoIndexWords.SET.add((stem, NoIndexWords._CAT))
+
+
 # Magic stuff to change locale context temporarily
 
 @contextmanager
@@ -609,6 +629,22 @@ class Settings:
         VerbSubjects.add(par)
 
     @staticmethod
+    def _handle_noindex_words(s):
+        """ Handle no index instructions in the settings section """
+        # Format: category = [cat] followed by word stem list
+        a = s.lower().split("=", maxsplit = 1)
+        par = a[0].strip()
+        if len(a) == 2:
+            val = a[1].strip()
+            if par == 'category':
+                NoIndexWords.set_cat(val)
+            else:
+                raise ConfigError("Unknown setting '{0}' in noindex_words".format(par))
+            return
+        assert len(a) == 1
+        NoIndexWords.add(par)
+
+    @staticmethod
     def _handle_prepositions(s):
         """ Handle preposition specifications in the settings section """
         # Format: preposition case
@@ -692,6 +728,7 @@ class Settings:
             "meanings" : Settings._handle_meanings,
             "adjective_template" : Settings._handle_adjective_template,
             "disallowed_names" : Settings._handle_disallowed_names,
+            "noindex_words" : Settings._handle_noindex_words,
         }
         handler = None # Current section handler
 
