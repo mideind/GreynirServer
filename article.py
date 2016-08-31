@@ -241,7 +241,7 @@ class Article:
                         # Hyphen: check whether it is matching an em or en-dash terminal
                         terminal, _ = tmap[ix]
                         if terminal.cat == "em":
-                            d["x"] = "—" # Substitute em dash
+                            d["x"] = "—" # Substitute em dash (will be displayed with surrounding space)
                         elif terminal.cat == "en":
                             d["x"] = "–" # Substitute en dash
                 else:

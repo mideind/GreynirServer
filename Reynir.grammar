@@ -116,6 +116,7 @@ Forskeyti →
     | "semsagt" ':'
     | "sem:st" "sagt" ':'
     | "aðferð" ':'
+    | 'með_öðrum_orðum' ':' | "með" "öðrum" "orðum" ':'
 
 AfTala → "af:fs" tala
 
@@ -1688,10 +1689,10 @@ HjSögnFinnst_sagnb →
 
 # Nafnháttafylling
 # - tengd frumlagi
-# 'sannarlega galvaskir að þvo bílinn í gær'
-# '(Þar hættir landið) að vera jarðneskt'
+# '(Þeir ætluðu) [sannarlega galvaskir/sjálfir] að þvo bílinn í gær'
+# '(Þar hættir landið) [sjálft] að vera jarðneskt'
 NhFylling/tala/kyn →
-    NhFylling_nf/tala/kyn    # Nefnifall sjálfgefið
+    Sjálfur/tala/kyn? NhFylling_nf/tala/kyn    # Nefnifall sjálfgefið
 
 # Aðeins nefnifall og þágufall eru notuð
 NhFylling_nf/tala/kyn → EinNhFylling_nf/tala/kyn OgNhFylling_nf/tala/kyn*
@@ -2087,6 +2088,7 @@ NlStak_p3_ft_þgf_kk → Manns
 Manns →
     töl "manns"
     | tala_ft "manns"
+    | Talnabil "manns" # 50-100 manns
 
 # 3p. eintala
 
@@ -2255,8 +2257,11 @@ Raðnr →
 
 # Úrslit í leikjum (32:27 sigur, 0:2 tap, 8:0 burst)
 
+Úrslit →
+    tala ':' tala
+
 Úrslit/fall/kyn →
-    tala ':' tala "-:en"? no_et/fall/kyn
+    Úrslit "-:en"? no_et/fall/kyn
 
 $score(+2) Úrslit/fall/kyn
 
@@ -2483,7 +2488,11 @@ Fornafn_et/fall/kyn → 'einn'_et/fall/kyn "og:st" 'sami'_et/fall/kyn
 Töluorð/tala/fall/kyn → to/tala/fall/kyn | tala/tala
 
 # Öll töluorð (merkt 'töl' í BÍN) tákna fleirtölu
-Töluorð_ft/fall/kyn → töl
+# Talnabil eru líka alltaf í fleirtölu
+Töluorð_ft/fall/kyn → töl | Talnabil
+
+Talnabil → tala "-:en" tala
+$score(+4) Talnabil
 
 Töluorð/fall/tala/kyn → Töluorð/tala/fall/kyn
 
@@ -2632,6 +2641,7 @@ Skýring →
     | "meðal:ao" "annars" | 'meðal_annars'
     | "það" "er:st" | 'það_er'
     | "með" "öðrum" "orðum" | 'með_öðrum_orðum'
+    | "það"? "að:st"
 
 SvigaForskeyti →
     Skýring
@@ -3025,7 +3035,8 @@ FsLiðurMeðKommu →
     | FsLiður KommaOgEðaEn? Atviksliður? FsLiðurMeðKommu
 
 # FsRuna getur ekki endað á atvikslið, nema innan kommu
-FsRuna → ',' FsLiðurMeðKommu Atviksliður? LokatáknEðaKomma
+# 'var, líkt og í búsáhaldabyltingunni, byggð á óánægju'
+FsRuna → ',' FsForskeyti? FsLiðurMeðKommu Atviksliður? LokatáknEðaKomma
     | FsLiðurMeðKommu
 
 FsRunaEftirNl →
@@ -3038,6 +3049,10 @@ FsRunaEftirNl →
 
 # Hvetja létt til þess að forsetningar séu tengdar nafnlið
 $score(+1) FsRunaEftirNl
+
+# Forskeyti sem leyfileg eru á undan forsetningarlið innan kommu
+FsForskeyti →
+    'líkt_og' | "eins:ao" "og:st" | 'það_er' | "það" "er:so"
 
 # Atviksliður
 
@@ -3054,6 +3069,7 @@ EinnAl →
     | "sem:ao" "stendur:so"
     | "hingað" "til:ao"
     | töl "sinnum"          # tvisvar, þrisvar og fjórum sinnum er skilgreint í Main.conf
+    | Úrslit                # KR sigraði Val 6:0
 
 EkkiNeitt →
     "ekki:ao" "neitt:ao"          # (Ég þekki þetta) ekki neitt
@@ -3083,7 +3099,7 @@ AtviksliðurEinkunn →
     eo                  # Einkunnarorð = atviksorð sem geta ekki jafnframt verið forsetningar
     | Dagsetning        # (hagnaðurinn var strax) árið 2012 (175 milljarðar króna)
     | Tímasetning
-    | Aldur
+    | Aldur                # Hin 29 ára gamla fyrirsæta
     | "allt" "að:ao"       # 'fjárfesta fyrir allt að 100 milljónir króna'
 
 # Dagsetning og tími
@@ -3146,7 +3162,7 @@ Dagsetning →
     | TímabilsEinkunn_þgf/tala/kyn Tímabil_þgf/kyn/tala TímaAfstæði_þgf? # (Námsönnin hefst) þremur mánuðum áður en jólafríið byrjar
     | Tímabil_þgf/kyn/tala TímaAfstæði_þgf # Klukkutíma fyrr kom ég á staðinn
     | Tímabil_ft_þgf/kyn "saman" # Nefndin fundaði ekki mánuðum saman
-    | Tímabil_þf/kyn/tala TímaAfstæði_þf # Vikuna áður / Daginn eftir
+    | Tímabil_þf/kyn/tala TímaAfstæði_þf # Vikuna áður / Daginn eftir / áratugina á undan
     | TímaForskeyti? TímaAfstæði # áður en krónan féll / eftir að landið öðlaðist sjálfstæði
 
 Undanfarið →
@@ -3173,10 +3189,10 @@ Aldur →
 # Gefa plús fyrir dagsetningar, tímasetningar og aldur
 $score(+4) Dagsetning Tímasetning Aldur
 
-TímaAfstæði_þgf → "síðar" | "seinna" | "fyrr" TímaEn? | "áður" TímaEn?
-TímaAfstæði_þf → "áður" TímaEn? | "eftir" TímaAð? | "fyrir" Nl_þf
-TímaForskeyti → "löngu" | "stuttu" | "töluverðu" | "örstuttu" | "rétt" | "örskömmu"
-TímaAfstæði → "áður" TímaEn | "eftir" TímaAð
+TímaAfstæði_þgf → "síðar:ao" | "seinna:ao" | "fyrr:ao" TímaEn? | "áður:ao" TímaEn?
+TímaAfstæði_þf → "áður:ao" TímaEn? | "eftir:ao" TímaAð? | "fyrir:fs" Nl_þf | "á:ao" "undan:ao" | "á:ao" "eftir:ao"
+TímaForskeyti → "löngu:lo" | "stuttu:lo" | "töluverðu:lo" | "örstuttu:lo" | "rétt:ao" | "örskömmu:lo"
+TímaAfstæði → "áður:ao" TímaEn | "eftir:ao" TímaAð
 
 $score(+2) TímaForskeyti
 

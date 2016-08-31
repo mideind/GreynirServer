@@ -27,9 +27,20 @@ resources/*.tmLanguage
 resources/visir/
 mim/
 gold/
-p33/
 fonts/
 .idea/
+node_modules/
+cffi_test/
+backup/
+
+# Vectors directory
+vectors/bz2.py
+vectors/gensim-0.13.2/
+vectors/numpy-1.11.1/
+vectors/scraperdb.py
+vectors/settings.py
+vectors/t
+vectors/test.py
 
 # Minified JavaScript
 static/*.min.js
@@ -66,12 +77,12 @@ var/
 *.egg
 log/
 console/
+
+# Virtual environments
 venv/
 pp/
 p3/
-node_modules/
-cffi_test/
-backup/
+p33/
 
 # Installer logs
 pip-log.txt

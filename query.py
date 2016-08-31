@@ -19,7 +19,7 @@ from contextlib import closing
 from collections import namedtuple, defaultdict
 
 from settings import Settings, changedlocale
-from scraperdb import Root, Article, Person, Entity, RelatedWordsQuery, desc
+from scraperdb import Root, Article, Person, Entity, RelatedWordsQuery, ArticleCountQuery, desc
 from bindb import BIN_Db
 from tree import Tree
 from tokenizer import TOK, correct_spaces
@@ -94,7 +94,7 @@ def make_response_list(rd):
     for i, val in enumerate(rl):
         if len(val[1]) > _MAX_URLS:
             rl[i] = (val[0], val[1][0:_MAX_URLS])
-    return rl
+    return rl[0:_MAXLEN_ANSWER]
 
 
 def prepare_response(q, prop_func):
@@ -172,10 +172,15 @@ def query_company(session, name):
 
 def query_word(session, stem):
     """ A query for words related to the given stem """
-    rlist = RelatedWordsQuery.rel(stem, enclosing_session = session)
+    # Count the articles where the stem occurs
+    acnt = ArticleCountQuery.count(stem, enclosing_session = session)
+    rlist = RelatedWordsQuery.rel(stem, enclosing_session = session) if acnt else []
     # Convert to an easily serializable dict
     # Exclude the original search stem from the result
-    return [ dict(stem = rstem, cat = rcat) for rstem, rcat, rcnt in rlist if rstem != stem ]
+    return dict(
+        rlist = [ dict(stem = rstem, cat = rcat) for rstem, rcat, rcnt in rlist if rstem != stem ],
+        acnt = acnt
+    )
 
 
 _QFUNC = {
@@ -194,11 +199,15 @@ def sentence(state, result):
         q.set_qtype(result.qtype)
         q.set_key(result.qkey)
         session = state["session"]
+        # Select a query function and exceute it
         qfunc = _QFUNC.get(result.qtype)
         if qfunc is None:
             q.set_answer(result.qtype + ": " + result.qkey)
         else:
-            q.set_answer(qfunc(session, result.qkey)[0:_MAXLEN_ANSWER])
+            try:
+                q.set_answer(qfunc(session, result.qkey))
+            except Exception as e:
+                q.set_error("E_EXCEPTION: {0}".format(e))
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
 

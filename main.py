@@ -104,23 +104,22 @@ _PROFILE = False
 
 # Default text shown in the URL/text box
 _DEFAULT_TEXTS = [
-    'Litla gula hænan fann fræ. Það var hveitifræ.',
     'Hver gegnir starfi seðlabankastjóra?',
     'Hvað er HeForShe?',
-    'Hver er Birgitta Jónsdóttir?',
+    'Hver er Valgerður Bjarnadóttir?',
     'Hver er borgarstjóri?',
     'Hver er formaður Öryrkjabandalagsins?',
     'Hvað er Wintris?',
     'Hver er Vigdís Finnbogadóttir?',
     'Hver er Kristján Eldjárn?',
-    'Hvað er Dominos?',
-    'Segðu mér frá Sigríði Ingibjörgu Ingadóttur',
+    'Hvað tengist Bjarna Benediktssyni?',
+    'Hvaða orð tengjast orðinu nauðgun?',
     'Hver er forstjóri Landsvirkjunar?',
     'Hver gegnir starfi forstjóra Orkuveitu Reykjavíkur?',
     'Hver er þjóðleikhússtjóri?',
     'Hver er fyrirliði íslenska landsliðsins?',
     'Hver er forsetaframbjóðandi?',
-    'Hver er Trayvon Martin?',
+    'Hvað tengist sögninni að verðtryggja?',
     'Hver er forstjóri Google?'
 ]
 

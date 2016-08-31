@@ -533,7 +533,7 @@ function displayTokens(j) {
                   // Mark an error token
                   x += "<span class='errtok'>";
                if (t.k == TOK_PUNCTUATION)
-                  x += t.x;
+                  x += (t.x == "—") ? " — " : t.x; // Space around em-dash
                else {
                   var cls;
                   if (!t.k) {

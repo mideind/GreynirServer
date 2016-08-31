@@ -151,6 +151,17 @@ function showEntity(ev) {
    ev.stopPropagation();
 }
 
+function correctPlural(c, one, singular, plural) {
+   // Yield a correct plural/singular text corresponding to number c
+   if (c == 1)
+      return one + " " + singular; // einni grein
+   if ((c % 10 == 1) && (c != 11))
+      // 21 grein, 131 grein
+      return c.toString() + " " + singular;
+   // 11 greinum, 7 greinum
+   return c.toString() + " " + plural;
+}
+
 function populateQueryResult(json) {
    // Display the result of a query sent to the server
    // Hide progress indicator
@@ -175,11 +186,23 @@ function populateQueryResult(json) {
          );
       }
       answer = $("<ul></ul>");
-      if (!r.response || !r.response.length)
+      var rlist;
+      if (r.qtype == "Word") {
+         rlist = r.response.rlist;
+         if (rlist && rlist.length) {
+            var c = r.response.acnt;
+            var g = correctPlural(c, "einni", "grein", "greinum");
+            answer = $("<p></p>").text("'" + r.key + "' kemur fyrir í " + g + ", ásamt eftirtöldum orðum:")
+               .append($("<ul></ul>"));
+         }
+      }
+      else
+         rlist = r.response;
+      if (!rlist || !rlist.length)
          answer = $("<p class='query-empty'></p>")
             .html("<span class='red glyphicon glyphicon-play'></span>&nbsp;Ekkert svar fannst.");
       else {
-         $.each(r.response, function(i, obj) {
+         $.each(rlist, function(i, obj) {
             var li;
             if (r.qtype == "Word") {
                if (obj.cat.startsWith("person_"))

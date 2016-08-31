@@ -20,7 +20,6 @@
       <th class="count female">%</th>
       <th class="count male"><span class="glyphicon glyphicon-gender-male"></span> Karlar</th>
       <th class="count male">%</th>
-      <th class="count neutral">Óþekkt</th>
       <th class="count total">Samtals</th>
    </thead>
    <tbody>
@@ -32,7 +31,6 @@
          <td class="count female">{{ (r.kvk / (r.kvk + r.kk) * 100) | format_is(1) }}%</td>
          <td class="count male">{{ r.kk | format_is }}</td>
          <td class="count male">{{ (r.kk / (r.kvk + r.kk) * 100) | format_is(1) }}%</td>
-         <td class="count neutral">{{ r.hk | format_is }}</td>
          <td class="count total">{{ r.total | format_is }}</td>
       </tr>
 {% endfor %}
@@ -44,7 +42,6 @@
          <td class="count female">{{ (total.kvk / (total.kvk + total.kk) * 100) | format_is(1) }}%</td>
          <td class="count male">{{ total.kk | format_is }}</td>
          <td class="count male">{{ (total.kk / (total.kvk + total.kk) * 100) | format_is(1) }}%</td>
-         <td class="count neutral">{{ total.hk | format_is }}</td>
          <td class="count total">{{ total.total | format_is }}</td>
       </tr>
    </tfoot>

@@ -347,6 +347,64 @@ class Word(Base):
         return cls.__table__
 
 
+class Topic(Base):
+
+    """ Represents a topic for an article """
+
+    __tablename__ = 'topics'
+
+    id = Column(psql_UUID(as_uuid = False),
+        server_default = text("uuid_generate_v1()"), primary_key = True)
+
+    # The topic name
+    name = Column(String(128), nullable = False, index = True)
+
+    # The topic keywords, in the form word1/cat word2/cat...
+    keywords = Column(String, nullable = False)
+
+    # The associated vector, in JSON format
+    vector = Column(String) # Is initally NULL
+
+    def __repr__(self):
+        return "Topic(name='{0}')" \
+            .format(self.name)
+
+    @classmethod
+    def table(cls):
+        return cls.__table__
+
+
+class ArticleTopic(Base):
+
+    """ Represents an article having a topic, a 1:N relationship """
+
+    __tablename__ = 'atopics'
+
+    article_id = Column(psql_UUID(as_uuid = False),
+        ForeignKey('articles.id', onupdate="CASCADE", ondelete="CASCADE"),
+        nullable = False, index = True)
+
+    topic_id = Column(psql_UUID(as_uuid = False),
+        ForeignKey('topics.id', onupdate="CASCADE", ondelete="CASCADE"),
+        nullable = False, index = True)
+
+    # The back-reference to the Article parent of this ArticleTopic
+    article = relationship("Article", backref=backref('atopics'))
+    # The back-reference to the Topic parent of this ArticleTopic
+    topic = relationship("Topic", backref=backref('atopics'))
+
+    __table_args__ = (
+        PrimaryKeyConstraint('article_id', 'topic_id', name='atopics_pkey'),
+    )
+
+    def __repr__(self):
+        return "ArticleTopic()"
+
+    @classmethod
+    def table(cls):
+        return cls.__table__
+
+
 class Trigram(Base):
 
     """ Represents a trigram of tokens from a parsed sentence """
@@ -450,6 +508,10 @@ class _BaseQuery:
         """ Execute the query and return the result from fetchall() """
         return session.execute(self._Q, kwargs).fetchall()
 
+    def scalar(self, session, **kwargs):
+        """ Execute the query and return the result from scalar() """
+        return session.scalar(self._Q, kwargs)
+
 
 class GenderQuery(_BaseQuery):
 
@@ -536,3 +598,25 @@ class RelatedWordsQuery(_BaseQuery):
             order of number of appearances. """
         with SessionContext(session = enclosing_session, commit = True) as session:
             return cls().execute(session, root=stem, limit=limit)
+
+
+class ArticleCountQuery(_BaseQuery):
+
+    """ A query yielding the number of articles containing any of the given word stems """
+
+    _Q = """
+        select count(*)
+            from (
+                select distinct article_id
+                    from words
+                    where stem in :stems
+            ) as q;
+        """
+
+    @classmethod
+    def count(cls, stems, enclosing_session = None):
+        """ Return a count of articles containing any of the given word
+            stems. stems may be a single string or an iterable. """
+        with SessionContext(session = enclosing_session, commit = True) as session:
+            return cls().scalar(session,
+                stems = tuple((stems,)) if isinstance(stems, str) else tuple(stems))

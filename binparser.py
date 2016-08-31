@@ -173,9 +173,10 @@ class BIN_Token(Token):
     # '...og færði því Markúsi Erni tómatsósu'
     # '...lifði af nútímalega meðferð'
     # '...varð fyrir neðan Pál'
+    # '...og Snædís, þá laganemi, bauð sig fram'
     _NOT_NOT_EO = frozenset(["inn", "eftir", "of", "til", "upp", "um", "síðan", "fram", "nær", "nærri",
         "út", "meðal", "úti", "saman", "jafnframt", "næstum", "samt", "samtals", "því", "nokkuð", "af",
-        "neðan" ])
+        "neðan", "þá" ])
 
     # Words that are not eligible for interpretation as proper names, even if they are capitalized
     _NOT_PROPER_NAME = frozenset(["ég", "þú", "hann", "hún", "það", "við", "þið", "þau",
