@@ -330,16 +330,21 @@ Frumlag_p1/tala/kyn →
 Frumlag_p2/tala/kyn →
     'allur'_nf/tala/kyn # Allar eruð þið jafnar fyrir lögum
 
+Samanburðarmerki → ',' | ';' | "-:em"
+
 Samanburður →
     SamanburðarTenging Nl_nf AtvFs? # þar af einn alvarlega
+    | Samanburðarmerki? "þar" "með:fs" 'talinn'_nf/tala/kyn Nl_nf/tala/kyn AtvFs? # þar með talinn allur þingflokkur Framsóknar
+    | Samanburðarmerki "öðru:fn" "nær:ao"   # Viðskiptablaðið styður ekki jafnaðarstefnuna; öðru nær.
 
 SamanburðarTenging →
-    "heldur" "en:st"           # 'Forseti á ekki að gera meiri breytingu á sér heldur en forsætisráðherra'
-    | ','? "eins:ao" "og:st"      # 'Hann á ekki andstæðinga eins og aðrir kjörnir fulltrúar'
-    | ','? "þar" "af"       # 'Fjöldi barna var í vélinni, þar af tvö kornabörn'
-    | ','? 'þar_á_meðal'
-    | ','? "þar" "á:fs" "meðal"
-    | ','? "enda:st"           # 'Réttindi í almennum sjóðum breyttust, enda lægri fjárhæð en áður'
+    "heldur" "en:st"                # 'Forseti á ekki að gera meiri breytingu á sér heldur en forsætisráðherra'
+    | ','? "eins:ao" "og:st"        # 'Hann á ekki andstæðinga eins og aðrir kjörnir fulltrúar'
+    | Samanburðarmerki? "þar" "af"  # 'Fjöldi barna var í vélinni, þar af tvö kornabörn'
+    | Samanburðarmerki? 'þar_á_meðal'
+    | Samanburðarmerki? "þar" "á:fs" "meðal:ao"
+    | Samanburðarmerki? 'þar_með_talið' # Skammstöfunin 'þ.m.t.'
+    | ','? "enda:st"                # 'Réttindi í almennum sjóðum breyttust, enda lægri fjárhæð en áður'
     | SamanburðarTengingOg
 
 SamanburðarTengingOg →
@@ -349,6 +354,12 @@ $score(-4) SamanburðarTengingOg
 
 Sjálfur/tala/kyn → 'sjálfur'/tala/kyn
 
+# 'Þrír þingmenn greiddu atkvæði gegn tillögunni: Jón, Sigríður og Guðrún.'
+# 'Aðeins einn nemandi var með þetta rétt; strákurinn í rauðu skyrtunni.'
+Formerki → ':' | ';' | "-:em"
+
+Upptalning/tala → Formerki Nl_nf/tala
+
 Setning/tala/pers/kyn →
     # Venjuleg setningarskipan með frumlagi (í nafnhætti) fremst:
     # 'Jón sterki fór bersýnilega í bága við reglurnar með þessu'
@@ -357,7 +368,8 @@ Setning/tala/pers/kyn →
     # 'Ég bara spyr [sjálf]'
     # 'Allir mega koma til landsins [sjálfir] sem það vilja'
     Frumlag/pers/tala/kyn FrumlagsInnskot/tala/pers/kyn? AtviksliðurEinkunn*
-        SagnRuna/tala/pers/kyn Sjálfur/tala/kyn? KommaTengiliður/tala/pers/kyn? Samanburður?
+        SagnRuna/tala/pers/kyn Sjálfur/tala/kyn? KommaTengiliður/tala/pers/kyn?
+        Samanburður? Upptalning/tala?
 
     # Frumlag fyrir aftan sögn:
     # 'Gengu þau galvösk á Esjuna þrátt fyrir veðurútlitið'
@@ -501,6 +513,8 @@ SetningAukafall →
 
     # Miðmynd sagna: Mér áskotnaðist, mér fyrirgefst, mér gremst, okkur finnst [öllum]...
     | Nl_þgf/tala/kyn so_0_mm LoÞgf/tala/kyn? MiðmyndarBotn?
+    # Viðreisn hefur [ekki] borist/hlotnast/áskotnast öflugur liðsauki [í dag]
+    | Nl_þgf HjSögnMM FsAtv? so_0_mm_sagnb Nl_nf/tala/pers AtvFs?
     # Bönkunum hefur/hafði/hefði [flestum] tekist að halda í horfinu
     | Nl_þgf/tala/kyn HjSögnMM LoÞgf/tala/kyn? so_0_mm_sagnb MiðmyndarBotn?
 
@@ -1009,6 +1023,11 @@ SögnMeðF_0/tala/pers/kyn →
 
     # (Í dag) ber stjórnvöldum að taka hætturnar alvarlega
     | so_subj_gm_op_p3_et_þgfnh Nl_þgf/tala/pers/kyn NhFylling/tala/kyn
+
+    # (Í dag) líður mér [vel að hafa ekki farið þá leið]
+    # (Í gær) dreymdi mig [um að fara alsæll í sólarlandaferð]
+    # (Eftir matinn) svimaði mig
+    | so_subj_op/aukafall Nl/aukafall/tala/pers/kyn NhFylling/tala/kyn?
 
     # (Í dag) hefur [ekki] gerst það sama
     | HjSögn/tala/pers FsAtv? so_0_sagnb Nl_nf/tala/pers/kyn NhFylling/tala/kyn?

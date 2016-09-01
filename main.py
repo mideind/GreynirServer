@@ -33,7 +33,7 @@ from fastparser import Fast_Parser, ParseError, ParseForestPrinter
 from incparser import IncrementalParser
 from reducer import Reducer
 from article import Article as ArticleProxy
-from scraperdb import SessionContext, desc, Person, Article, GenderQuery, StatsQuery
+from scraperdb import SessionContext, desc, Person, Article, ArticleTopic, GenderQuery, StatsQuery
 from query import Query, query_person, query_entity
 from getimage import get_image_url
 
@@ -761,8 +761,7 @@ def page():
             return redirect(url_for('main'))
 
         # Prepare the article for display (may cause it to be parsed and stored)
-        ArticleProxy.reload_parser() # Make sure we're using the newest grammar
-        a.prepare(session, verbose = True)
+        a.prepare(session, verbose = True, reload_parser = True)
         register = { }
         # Build register of person names
         for name in a.person_names():
@@ -770,8 +769,13 @@ def page():
         # Add register of entity names
         for name in a.entity_names():
             add_entity_to_register(name, register, session)
+        # Fetch names of article topics, if any
+        topics = session.query(ArticleTopic) \
+            .filter(ArticleTopic.article_id == a.uuid).all()
+        topics = [ dict(name = t.topic.name, identifier = t.topic.identifier) for t in topics ]
+        print(topics)
 
-        return render_template("page.html", article = a, register = register)
+        return render_template("page.html", article = a, register = register, topics = topics)
 
 
 @app.route("/")

@@ -15,14 +15,19 @@
 
 """
 
+import sys
+import getopt
 import json
-import logging
-logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
+import time
+from datetime import datetime
+#import logging
+#logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
-from settings import Settings
+from settings import Settings, Topics
 from scraperdb import Article, Topic, ArticleTopic, Word, SessionContext
 
 from gensim import corpora, models, matutils
+
 
 class CorpusIterator:
 
@@ -37,19 +42,18 @@ class CorpusIterator:
         else:
             xform = lambda x: x
         with SessionContext(commit = True) as session:
-            # Fetch bags of words for grouped by articles
+            # Fetch bags of words sorted by articles
             q = session.execute(
                 """
-                    select article_id, heading, stem, cat, cnt
+                    select article_id, stem, cat, cnt
                         from words
-                        join articles on articles.id = words.article_id
                         order by article_id
                     ;
                 """
             )
             bag = []
             last_uuid = None
-            for uuid, heading, stem, cat, cnt in q:
+            for uuid, stem, cat, cnt in q:
                 if uuid != last_uuid:
                     if bag:
                         # Finishing the last article: yield its bag
@@ -58,7 +62,6 @@ class CorpusIterator:
                         bag = []
                     # Beginning a new article with an empty bag
                     last_uuid = uuid
-                    # print("{0}".format(heading))
                 # Convert stem to lowercase and replace spaces with underscores
                 w = stem.lower().replace(" ", "_") + "/" + cat
                 if cnt == 1:
@@ -73,12 +76,12 @@ class CorpusIterator:
 class ReynirCorpus:
 
     # Work file names
-    _DICTIONARY_FILE = '/tmp/reynir.dict'
-    _PLAIN_CORPUS_FILE = '/tmp/corpus.mm'
-    _TFIDF_CORPUS_FILE = '/tmp/corpus-tfidf.mm'
-    _TFIDF_MODEL_FILE = '/tmp/tfidf.model'
-    _LSI_MODEL_FILE = '/tmp/lsi-{0}.model'
-    _LDA_MODEL_FILE = '/tmp/lda-{0}.model'
+    _DICTIONARY_FILE = './models/reynir.dict'
+    _PLAIN_CORPUS_FILE = './models/corpus.mm'
+    _TFIDF_CORPUS_FILE = './models/corpus-tfidf.mm'
+    _TFIDF_MODEL_FILE = './models/tfidf.model'
+    _LSI_MODEL_FILE = './models/lsi-{0}.model'
+    _LDA_MODEL_FILE = './models/lda-{0}.model'
 
     def __init__(self, verbose = False):
         self._verbose = verbose
@@ -86,6 +89,7 @@ class ReynirCorpus:
         self._tfidf = None
         self._model = None
         self._model_name = None
+        self._topics = None
 
     def create_dictionary(self):
         """ Iterate through the article database
@@ -137,6 +141,7 @@ class ReynirCorpus:
         """ Create a TFIDF corpus from a plain vector corpus """
         if self._tfidf is None:
             self.load_tfidf_model()
+        corpus = self.load_plain_corpus()
         corpus_tfidf = self._tfidf[corpus]
         corpora.MmCorpus.serialize(self._TFIDF_CORPUS_FILE, corpus_tfidf)
 
@@ -188,242 +193,19 @@ class ReynirCorpus:
         if self._tfidf is None:
             self.load_tfidf_model()
         if self._model is None:
-            self.load_lda_model()
+            self.load_lsi_model()
         if self._verbose:
             print("Calculating topics")
-        TOPICS = {
-            "Íþróttir":
-                """
-íþrótt/kvk
-mark/hk
-skora/so
-lið/hk
-keppni/kvk
-keppa/so
-leikur/kk
-deild/kvk
-úrvalsdeild/kvk
-stig/hk
-hálfleikur/kk
-sigur/kk
-umferð/kvk
-knattspyrna/kvk
-pepsi/entity
-mæta/so
-mínúta/kvk
-sæti/hk
-leikmaður/kk
-leika/so
-bolti/kk
-heimsleikur/kk
-þraut/kvk
-karlaflokkur/kk
-kvennaflokkur/kk
-grein/kvk
-crossfit/entity
-einstaklingsflokkur/kk
-efri/lo
-lokagrein/kvk
-keppnisdagur/kk
-heimavöllur/kk
-fótbolti/kk
-handbolti/kk
-körfubolti/kk
-körfuknattleikur/kk
-mót/hk
-evrópumót/hk
-heimsmeistaramót/hk
-reykjavíkurmót/hk
-árangur/kk
-verðlaun/hk
-viðureign/kvk
-undanúrslit/hk
-úrslit/hk
-bikarúrslit/hk
-leikbann/hk
-rauður/lo
-spjald/hk
-varnarmaður/kk
-keppnistímabil/hk
-leikmannahópur/kk
-landsliðsmaður/kk
-englandsmeistari/kk
-íslandsmeistari/kk
-evrópumeistari/kk
-heimsmeistari/kk
-beinn/lo
-lýsing/kvk
-keppandi/kk
-sundkona/kvk
-bringusund/hk
-skriðsund/hk
-flugsund/hk
-baksund/hk
-íþróttaviðburður/kk
-fyrirliði/kk
-gullverðlaun/hk
-heimsmet/hk
-dauðafæri/hk
-                """,
-            "Viðskipti":
-                """
-fyrirtæki/hk
-sprotafyrirtæki/hk
-kaupa/so
-selja/so
-hlutabréf/hk
-skuldabréf/hk
-vísitala/kvk
-gengi/hk
-tilboð/hk
-bjóða/so
-undirbjóða/so
-félag/hk
-hlutafélag/hk
-móðurfélag/hk
-dótturfélag/hk
-samvinnufélag/hk
-samlagsfélag/hk
-samsteypa/kvk
-samstæða/kvk
-hækkun/kvk
-lækkun/kvk
-hækka/so
-lækka/so
-kauphöll/kvk
-velta/kvk
-hagnaður/kk
-viðskipti/hk
-fjárfesting/kvk
-fjárfesta/so
-tap/hk
-hagnast/so
-tapa/so
-afkoma/kvk
-hlutabréfamarkaður/kk
-banki/kk
-bankareikningur/kk
-hlaupareikningur/kk
-rekstur/kk
-sala/kvk
-eign/kvk
-skuld/kvk
-veltufé/hk
-peningur/kk
-mynt/kvk
-króna/kvk
-fjármunir/kk
-afkoma/kvk
-hlutafélagaskrá/kvk
-verð/hk
-markaðsverð/hk
-samningsverð/hk
-útboðsverð/hk
-eignarhald/hk
-arður/kk
-arðgreiðsla/kvk
-ávöxtun/kvk
-ávöxtunarkrafa/kvk
-kaupréttur/kk
-valréttur/kk
-samningur/kk
-kaupsamningur/kk
-samruni/kk
-söluferli/hk
-gjaldþrot/hk
-framkvæmdastjóri/kk
-framkvæmdastýra/kvk
-forstjóri/kk
-fjármálastjóri/kk
-stjórnandi/kk
-innherji/kk
-innherjaviðskipti/hk
-sjóður/kk
-fjárfestingarsjóður/kk
-verðbréfasjóður/kk
-sprotasjóður/kk
-lánasjóður/kk
-eftirspurn/kvk
-                """,
-            "Stjórnmál":
-                """
-flokkur/kk
-þingflokkur/kk
-ríkisstjórn/kvk
-alþingi/hk
-þing/hk
-stjórnmál/hk
-frumvarp/hk
-stjórnarfrumvarp/hk
-umsögn/kvk
-frambjóðandi/kk
-forsetaframbjóðandi/kk
-framboð/hk
-þingframboð/hk
-forsetaframboð/hk
-þingmaður/kk
-þingkona/kvk
-alþingismaður/kk
-alþingiskona/kvk
-ráðherra/kk
-forsætisráðherra/kk
-fjármálaráðherra/kk
-innanríkisráðherra/kk
-utanríkisráðherra/kk
-velferðarráðherra/kk
-atvinnuvegaráðherra/kk
-umhverfisráðherra/kk
-formaður/kk
-leiðtogi/kk
-atkvæði/hk
-greiða/so
-kjósa/so
-samþykkja/so
-hafna/so
-umræða/kvk
-stjórnarskrá/kvk
-atkvæðagreiðsla/kvk
-þjóðaratkvæðagreiðsla/kvk
-kosning/kvk
-kosningastjóri/kk
-kosningabarátta/kvk
-fylgi/hk
-þinglegur/lo
-skoðanakönnun/kvk
-könnun/kvk
-stjórnarandstaða/kvk
-þingkosning/kvk
-kjörtímabil/hk
-fundur/kk
-mótmæli/hk
-málþóf/hk
-málefni/hk
-prófkjör/hk
-borgarfulltrúi/kk
-varaborgarfulltrúi/kk
-bæjarfulltrúi/kk
-varabæjarfulltrúi/kk
-fulltrúaráð/hk
-atvinnuveganefnd/kvk
-forsætisnefnd/kvk
-utanríkismálanefnd/kvk
-fjárlaganefnd/kvk
-velferðarnefnd/kvk
-viðskiptanefnd/kvk
-eftirlitsnefnd/kvk
-flokksþing/hk
-landsfundur/kk
-                """
-        }
         with SessionContext(commit = True) as session:
             for topic in session.query(Topic).all():
                 if self._verbose:
                     print("Topic {0}".format(topic.name))
-                if topic.name in TOPICS:
+                if topic.name in Topics.DICT:
                     # Overwrite the existing keywords
-                    keywords = list(set(TOPICS[topic.name].split()))
+                    keywords = list(Topics.DICT[topic.name]) # Convert set to list
                     topic.keywords = " ".join(keywords)
                 else:
+                    # Use the ones that are already there
                     keywords = topic.keywords.split()
                 assert all('/' in kw for kw in keywords) # Must contain a slash
                 if self._verbose:
@@ -451,6 +233,16 @@ landsfundur/kk
                 d[self._model_name] = [(int(ix), float(f)) for ix, f in vec]
                 topic.vector = json.dumps(d)
 
+    def load_topics(self):
+        """ Load the topics into a dict of topic vectors by topic id """
+        self._topics = { }
+        with SessionContext(commit = True) as session:
+            for topic in session.query(Topic).all():
+                if topic.vector:
+                    topic_vector = json.loads(topic.vector)[self._model_name]
+                    if topic_vector:
+                        self._topics[topic.id] = (topic.name, topic_vector)
+
     def assign_article_topics(self, article_id, heading):
         """ Assign the appropriate topics to the given article in the database """
         SIMILARITY_THRESHOLD = 0.200
@@ -460,6 +252,8 @@ landsfundur/kk
             self.load_tfidf_model()
         if self._model is None:
             self.load_lda_model()
+        if self._topics is None:
+            self.load_topics()
         with SessionContext(commit = True) as session:
             q = session.query(Word.stem, Word.cat, Word.cnt).filter(Word.article_id == article_id).all()
             wlist = []
@@ -471,42 +265,172 @@ landsfundur/kk
                 else:
                     wlist.extend([w] * cnt)
             topics = []
-            if wlist:
+            if self._topics and wlist:
                 bag = self._dictionary.doc2bow(wlist)
                 tfidf = self._tfidf[bag]
-                article_lda = self._model[tfidf]
+                article_vector = self._model[tfidf]
+                topic_names = []
                 if self._verbose:
                     print("{0} : {1}".format(article_id, heading))
-                #print("Article LDA is {0}".format(article_lda))
-                for topic in session.query(Topic).all():
-                    topic_lda = json.loads(topic.vector)[self._model_name]
-                    similarity = matutils.cossim(article_lda, topic_lda)
+                for topic_id, topic_info in self._topics.items():
+                    topic_name, topic_vector = topic_info
+                    # Calculate the cosine similarity betwee the article and the topic
+                    similarity = matutils.cossim(article_vector, topic_vector)
                     if self._verbose:
-                        print("   Similarity to topic {0} is {1:.3f}".format(topic.name, similarity))
+                        print("   Similarity to topic {0} is {1:.3f}".format(topic_name, similarity))
                     if similarity >= SIMILARITY_THRESHOLD:
-                        # This is a topic of the article
-                        topics.append(topic.id)
+                        # Similar enough: this is a topic of the article
+                        topics.append(topic_id)
+                        topic_names.append(topic_name)
+                if topic_names:
+                    print("Article '{0}': topics {1}".format(heading, topic_names))
             # Topics found (if any): delete previous ones (if any)
             session.execute(ArticleTopic.table().delete().where(ArticleTopic.article_id == article_id))
             # ...and add the new ones
-            for topic in topics:
-                session.add(ArticleTopic(article_id = article_id, topic_id = topic))
+            for topic_id in topics:
+                session.add(ArticleTopic(article_id = article_id, topic_id = topic_id))
+            # Update the indexed timestamp
+            a = session.query(Article).filter(Article.id == article_id).one_or_none()
+            if a:
+                a.indexed = datetime.utcnow()
+
+    def assign_topics(self, limit = None):
+        """ Assign topics to all articles that have no such assignment yet """
+        with SessionContext(commit = True) as session:
+            # Fetch articles that haven't been indexed (or have been parsed since),
+            # and that have at least one associated Word in the words table.
+            q = session.query(Article.id, Article.heading) \
+                .filter((Article.indexed == None) | (Article.indexed < Article.parsed)) \
+                .join(Word) \
+                .group_by(Article.id, Article.heading)
+            if limit is None:
+                q = q.all()
+            else:
+                q = q[0:limit]
+        for article_id, heading in q:
+            self.assign_article_topics(article_id, heading)
+
+
+def calculate_topics(verbose = False):
+    """ Recalculate topic vectors from keywords """
+    print("------ Reynir recalculating topic vectors -------")
+    rc = ReynirCorpus(verbose = verbose)
+    rc.load_lsi_model()
+    rc.calculate_topics()
+    print("------ Reynir recalculation complete -------")
+
+
+def tag_articles(limit, verbose = False):
+    """ Tag all untagged articles or articles that
+        have been parsed since they were tagged """
+
+    print("------ Reynir starting tagging -------")
+    if limit:
+        print("Limit: {0} articles".format(limit))
+    ts = "{0}".format(datetime.utcnow())[0:19]
+    print("Time: {0}".format(ts))
+
+    t0 = time.time()
+
+    rc = ReynirCorpus(verbose = verbose)
+    #rc.create_dictionary()
+    #rc.create_plain_corpus()
+    #rc.create_tfidf_model()
+    #rc.create_tfidf_corpus()
+    #rc.create_lda_model(passes = 15)
+    #rc.create_lsi_model()
+    rc.load_lsi_model()
+    #rc.calculate_topics()
+    rc.assign_topics(limit)
+
+    t1 = time.time()
+
+    print("\n------ Tagging completed -------")
+    print("Total time: {0:.2f} seconds".format(t1 - t0))
+    ts = "{0}".format(datetime.utcnow())[0:19]
+    print("Time: {0}\n".format(ts))
+
+
+class Usage(Exception):
+
+    def __init__(self, msg):
+        self.msg = msg
+
+
+__doc__ = """
+
+    Reynir - Natural language processing for Icelandic
+
+    Index builder and tagger module
+
+    Usage:
+        python builder.py [options] command
+
+    Options:
+        -h, --help: Show this help text
+        -l N, --limit=N: Limit processing to N articles
+
+    Commands:
+        tag: tag any untagged articles
+        topics: recalculate topic vectors from keywords
+
+"""
+
+
+def _main(argv = None):
+
+    if argv is None:
+        argv = sys.argv
+    try:
+        try:
+            opts, args = getopt.getopt(argv[1:], "hl:v",
+                ["help", "limit=", "verbose"])
+        except getopt.error as msg:
+             raise Usage(msg)
+
+        limit = 10
+        verbose = False
+
+        # Process options
+        for o, a in opts:
+            if o in ("-h", "--help"):
+                print(__doc__)
+                return 0
+            elif o in ("-l", "--limit"):
+                # Maximum number of articles to parse
+                try:
+                    limit = int(a)
+                except ValueError as e:
+                    pass
+            elif o in ("-v", "--verbose"):
+                verbose = True
+
+        Settings.read("Vectors.conf")
+
+        # Process arguments
+        for arg in args:
+            if arg == "tag":
+                # Tag articles
+                tag_articles(limit = limit, verbose = verbose)
+                break
+            elif arg == "topics":
+                # Calculate topics
+                calculate_topics(verbose = verbose)
+                break
+        else:
+            # Nothing matched, no break in loop
+            raise Usage("No command specified")
+
+    except Usage as err:
+        print(err.msg, file = sys.stderr)
+        print("For help use --help", file = sys.stderr)
+        return 2
+
+    # Completed with no error
+    return 0
 
 
 if __name__ == "__main__":
 
-    Settings.read("Vectors.conf")
+    sys.exit(_main())
 
-    rc = ReynirCorpus(verbose = True)
-    #rc.create_dictionary()
-    #rc.create_plain_corpus()
-    #rc.create_tfidf_corpus()
-    #rc.create_tfidf_model()
-    #rc.create_lda_model(passes = 15)
-    #rc.create_lsi_model()
-    rc.load_lsi_model()
-    rc.calculate_topics()
-    with SessionContext(commit = True) as session:
-        q = session.query(Article.id, Article.heading).all()
-    for article_id, heading in q:
-        rc.assign_article_topics(article_id, heading)

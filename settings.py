@@ -388,7 +388,6 @@ class NoIndexWords:
     """ Wrapper around set of word stems and categories that should
         not be indexed """
 
-    # Set of verbs and their associated set of subject cases
     SET = set() # Set of (stem, cat) tuples
     _CAT = "so" # Default category
 
@@ -401,6 +400,32 @@ class NoIndexWords:
     def add (stem):
         """ Add a word stem and its category. Called from the config file handler. """
         NoIndexWords.SET.add((stem, NoIndexWords._CAT))
+
+
+class Topics:
+
+    """ Wrapper around topics, represented as a dict (name: set) """
+
+    DICT = defaultdict(set) # Dict of topic name: set
+    _name = None
+
+    @staticmethod
+    def set_name(name):
+        """ Set the topic name for the words that follow """
+        Topics._name = name
+
+    @staticmethod
+    def add (word):
+        """ Add a word stem and its category. Called from the config file handler. """
+        if Topics._name is None:
+            raise ConfigError("Must set topic name (topic = X) before specifying topic words")
+        if '/' not in word:
+            raise ConfigError("Topic words must include a slash '/' and a word category")
+        cat = word.split('/', maxsplit = 1)[1]
+        if cat not in { "kk", "kvk", "hk", "lo", "so", "entity", "person", "person_kk", "person_kvk" }:
+            raise ConfigError("Topic words must be nouns, verbs, adjectives, entities or persons")
+        # Add to topic set, after replacing spaces with underscores
+        Topics.DICT[Topics._name].add(word.replace(" ", "_"))
 
 
 # Magic stuff to change locale context temporarily
@@ -645,6 +670,22 @@ class Settings:
         NoIndexWords.add(par)
 
     @staticmethod
+    def _handle_topics(s):
+        """ Handle topic specifications """
+        # Format: name = [topic name] followed by word stem list in the form word/cat
+        a = s.lower().split("=", maxsplit = 1)
+        par = a[0].strip()
+        if len(a) == 2:
+            val = a[1].strip()
+            if par == 'topic':
+                Topics.set_name(val)
+            else:
+                raise ConfigError("Unknown setting '{0}' in topics".format(par))
+            return
+        assert len(a) == 1
+        Topics.add(par)
+
+    @staticmethod
     def _handle_prepositions(s):
         """ Handle preposition specifications in the settings section """
         # Format: preposition case
@@ -729,6 +770,7 @@ class Settings:
             "adjective_template" : Settings._handle_adjective_template,
             "disallowed_names" : Settings._handle_disallowed_names,
             "noindex_words" : Settings._handle_noindex_words,
+            "topics" : Settings._handle_topics
         }
         handler = None # Current section handler
 

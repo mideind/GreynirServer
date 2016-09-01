@@ -37,6 +37,7 @@ backup/
 vectors/bz2.py
 vectors/gensim-0.13.2/
 vectors/numpy-1.11.1/
+vectors/models/
 vectors/scraperdb.py
 vectors/settings.py
 vectors/t

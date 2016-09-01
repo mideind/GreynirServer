@@ -247,10 +247,10 @@ __doc__ = """
         -h, --help: Show this help text
         -i, --init: Initialize the processor database, if required
         -f, --force: Force re-processing of already processed articles
-        -l=N, --limit=N: Limit processing session to N articles
-        -u=U, --url=U: Specify a single URL to process
-        -p=P, --processor=P: Specify a single processor to invoke
-        -t=T, --title=T: Specify a title pattern in the persons table
+        -l N, --limit=N: Limit processing session to N articles
+        -u U, --url=U: Specify a single URL to process
+        -p P, --processor=P: Specify a single processor to invoke
+        -t T, --title=T: Specify a title pattern in the persons table
                             to select articles to reprocess
         --update: Process files that have been reparsed but not reprocessed
 

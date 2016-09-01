@@ -77,6 +77,7 @@ class Article:
         self._scraped = None
         self._parsed = None
         self._processed = None
+        self._indexed = None
         self._scr_module = None
         self._scr_class = None
         self._scr_version = None
@@ -106,6 +107,7 @@ class Article:
         a._scraped = ar.scraped
         a._parsed = ar.parsed
         a._processed = ar.processed
+        a._indexed = ar.indexed
         a._scr_module = ar.scr_module
         a._scr_class = ar.scr_class
         a._scr_version = ar.scr_version
@@ -411,6 +413,7 @@ class Article:
                     scraped = self._scraped,
                     parsed = self._parsed,
                     processed = self._processed,
+                    indexed = self._indexed,
                     scr_module = self._scr_module,
                     scr_class = self._scr_class,
                     scr_version = self._scr_version,
@@ -445,6 +448,7 @@ class Article:
             ar.scraped = self._scraped
             ar.parsed = self._parsed
             ar.processed = self._processed
+            ar.indexed = self._indexed
             ar.scr_module = self._scr_module
             ar.scr_class = self._scr_class
             ar.scr_version = self._scr_version
@@ -462,10 +466,13 @@ class Article:
                 self._store_words(session)
             return True
 
-    def prepare(self, enclosing_session = None, verbose = False):
+    def prepare(self, enclosing_session = None, verbose = False, reload_parser = False):
         """ Prepare the article for display. If it's not already tokenized and parsed, do it now. """
         with SessionContext(enclosing_session, commit = True) as session:
             if self._tree is None or self._tokens is None:
+                if reload_parser:
+                    # We need a parse: Make sure we're using the newest grammar
+                    self.reload_parser()
                 self._parse(session, verbose = verbose)
                 if self._tree is not None or self._tokens is not None:
                     # Store the updated article in the database

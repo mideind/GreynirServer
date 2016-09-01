@@ -25,6 +25,11 @@
 
    <div id="metadata">
       <!-- Article metadata -->
+      <div id="topics">
+{% for t in topics -%}
+         <span class="topic {{ t['identifier'] }}"><span class="glyphicon glyphicon-tag"></span>{{ t['name'] }}</span>
+{%- endfor -%}
+      </div>
       <h1 id="meta-heading">{{ article.heading }}</h1>
       <h3 id="meta-author" class="text-muted">{{ article.author }}</h3>
       <h4 id="meta-timestamp" class="text-muted">{{ article.timestamp | format_ts }}</h4>

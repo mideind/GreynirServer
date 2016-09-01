@@ -198,6 +198,8 @@ class Article(Base):
     parsed = Column(DateTime, index = True)
     # Time of the last processing of this article
     processed = Column(DateTime, index = True)
+    # Time of the last indexing of this article
+    indexed = Column(DateTime, index = True)
     # Module used for scraping
     scr_module = Column(String(80))
     # Class within module used for scraping
@@ -358,6 +360,10 @@ class Topic(Base):
 
     # The topic name
     name = Column(String(128), nullable = False, index = True)
+
+    # An identifier for the topic, such as 'sport', 'business'...
+    # The identifier must be usable as a CSS class name.
+    identifier = Column(String(32), nullable = False)
 
     # The topic keywords, in the form word1/cat word2/cat...
     keywords = Column(String, nullable = False)
