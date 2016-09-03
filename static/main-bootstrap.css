@@ -786,32 +786,27 @@ div#metadata h1 {
    line-height: 1.25;
 }
 
+/*
 div#topics {
    font-size: 0.9em;
 }
+*/
 
 span.topic {
-   padding-right: 12px;
+   margin-right: 12px;
 }
 
 span.topic span.glyphicon {
    padding-right: 4px;
 }
 
-span.topic.sport,
-span.topic.culture {
-   color: #f0ad4e;
+div#percent {
+   margin-top: 6px;
+   margin-bottom: 6px;
 }
 
-span.topic.business {
-   color: #337ab7;
+div.headline {
+   display: inline-block;
+   padding-top: 5px;
+   padding-bottom: 6px;
 }
-
-span.topic.politics {
-   color: #5cb85c;
-}
-
-span.topic.health {
-   color: #5bc0de;
-}
-

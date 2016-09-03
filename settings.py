@@ -673,11 +673,11 @@ class Settings:
     def _handle_topics(s):
         """ Handle topic specifications """
         # Format: name = [topic name] followed by word stem list in the form word/cat
-        a = s.lower().split("=", maxsplit = 1)
+        a = s.split("=", maxsplit = 1)
         par = a[0].strip()
         if len(a) == 2:
             val = a[1].strip()
-            if par == 'topic':
+            if par.lower() == 'topic':
                 Topics.set_name(val)
             else:
                 raise ConfigError("Unknown setting '{0}' in topics".format(par))

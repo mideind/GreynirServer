@@ -1274,8 +1274,12 @@ def parse_phrases_2(token_stream):
                     return None
                 wrd = tok.txt
                 if wrd.startswith('['):
-                    # Abbreviation: Cut off the brackets & trailing period
-                    wrd = wrd[1:-2]
+                    # Abbreviation: Cut off the brackets & trailing period, if present
+                    if wrd.endswith('.]'):
+                        wrd = wrd[1:-2]
+                    else:
+                        # This is probably a C. which had its period cut off as a sentence ending...
+                        wrd = wrd[1:-1]
                 if len(wrd) > 2 or not wrd[0].isupper():
                     if wrd not in { "van", "de", "den", "der", "el", "al" }: # "of" was here
                         # Accept "Thomas de Broglie", "Ruud van Nistelroy"

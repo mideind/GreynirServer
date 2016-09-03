@@ -181,7 +181,7 @@ Samtenging →
     | "áður" "en" "að:st"?
     | "fyrr" "en" "að:st"?
     | 'á_meðan' "að:st"?
-    | "þangað" "til" "að:st"?
+    | "þangað" "til:st" "að:st"?
     | "allt" "frá" "því" "að:st"?
     | "þar" "á:fs" "meðal" | 'þar_á_meðal'
     | "þar" "sem:st"
@@ -253,7 +253,7 @@ $score(+12) SetningSkilyrði
 
 EfÞegar →
     "ef" | "þegar" | "þótt" | "þó" "að:st"? | 'jafnvel_þótt' | "þar" "sem:st" | "eftir:st" "að:st"
-    | "eins:ao" "og:st" | 'líkt_og' | 'á_meðan' | "þangað" "til" | 'um_leið' "og:st" | "síðan:st"
+    | "eins:ao" "og:st" | 'líkt_og' | 'á_meðan' | "þangað" "til:st" | 'um_leið' "og:st" | "síðan:st"
 
 OgEfÞegar →
     "og" EfÞegar              # 'Ef og þegar eitthvað gerist læt ég þig vita'
@@ -797,20 +797,20 @@ $score(+2) SögnMeðF_1/tala/pers/kyn
 $score(+4) SögnMeðF_2/tala/pers/kyn
 
 OgSögn_0/tala/pers →
-    FsAtv? OgEða FsAtv? so_0/tala/pers
-    | FsAtv? ',' OgEða FsAtv? so_0/tala/pers FsAtvKomma?
+    FsAtv? OgEðaEn FsAtv? so_0/tala/pers
+    | FsAtv? ',' OgEðaEn FsAtv? so_0/tala/pers FsAtvKomma?
 
 OgSögn_mm/tala/pers →
-    FsAtv? OgEða FsAtv? so_mm/tala/pers
-    | FsAtv? ',' OgEða FsAtv? so_mm/tala/pers FsAtvKomma?
+    FsAtv? OgEðaEn FsAtv? so_mm/tala/pers
+    | FsAtv? ',' OgEðaEn FsAtv? so_mm/tala/pers FsAtvKomma?
 
 OgSögn_mm_nh →
-    FsAtv? OgEða FsAtv? so_mm_nh
-    | FsAtv? ',' OgEða FsAtv? so_mm_nh FsAtvKomma?
+    FsAtv? OgEðaEn FsAtv? so_mm_nh
+    | FsAtv? ',' OgEðaEn FsAtv? so_mm_nh FsAtvKomma?
 
 OgSögn_mm_sagnb →
-    FsAtv? OgEða FsAtv? so_mm_sagnb
-    | FsAtv? ',' OgEða FsAtv? so_mm_sagnb FsAtvKomma?
+    FsAtv? OgEðaEn FsAtv? so_mm_sagnb
+    | FsAtv? ',' OgEðaEn FsAtv? so_mm_sagnb FsAtvKomma?
 
 OgSögn_sagnb/tala/kyn →
     # (hefur staðið) keikur í brúnni og mótmælt yfirgangi Rússa
@@ -836,8 +836,8 @@ OgSögn_lhnt →
     | FsAtv? ',' OgEðaEn FsAtv? so_0_lh_nt FsAtvKomma?
 
 OgSögn_1_þf_nh/tala/pers →
-    FsAtv? OgEða FsAtv? So_1_þf_nh/tala/pers
-    | FsAtv? ',' OgEða FsAtv? So_1_þf_nh/tala/pers FsAtvKomma?
+    FsAtv? OgEðaEn FsAtv? So_1_þf_nh/tala/pers
+    | FsAtv? ',' OgEðaEn FsAtv? So_1_þf_nh/tala/pers FsAtvKomma?
 
 # Ekki enda á FsAtv nema innan kommu
 FsAtvKomma → FsAtv? ','
@@ -1081,8 +1081,8 @@ SögnMeðF_mm/tala/kyn →
     | FsAtv? HjSögn_mm_nh HreinSögn_sagnb/tala/kyn  # (Í dag segist Illugi) ekki hafa fengið laun
 
 OgSögn_1/fall/tala/pers →
-    OgEða FsAtv? so_1/fall/tala/pers
-    | ',' OgEða FsAtv? so_1/fall/tala/pers FsAtvKomma?
+    OgEðaEn FsAtv? so_1/fall/tala/pers
+    | ',' OgEðaEn FsAtv? so_1/fall/tala/pers FsAtvKomma?
 
 # Umraðanir
 
@@ -2133,10 +2133,9 @@ NlStak_et_p3_þf_hk → Árið_þf
 NlStak_et_p3_þgf_hk → Árið_þgf
 NlStak_et_p3_ef_hk → Árið_ef
 
-Árið_nf → "árið:hk" ártal
-Árið_þf → "árið:hk" ártal
-Árið_þgf → "árinu:hk" ártal
-Árið_ef → "ársins:hk" ártal
+Árið/fall →
+    'ár:hk'_gr_et/fall ártal
+    | 'rekstrarár:hk'_gr_et/fall ártal
 
 $score(+8) Árið/fall
 
@@ -2145,14 +2144,12 @@ NlStak_ft_p3_þf_hk → Árin_þf
 NlStak_ft_p3_þgf_hk → Árin_þgf
 NlStak_ft_p3_ef_hk → Árin_ef
 
-Árin_nf → "árin:hk" MörgÁr
-Árin_þf → "árin:hk" MörgÁr
-Árin_þgf → "árunum:hk" MörgÁr
-Árin_ef → "áranna:hk" MörgÁr
+Árin/fall →
+    'ár:hk'_gr_ft/fall MörgÁr
+    | 'rekstrarár:hk'_gr_ft/fall MörgÁr
 
 MörgÁr →
-    ártal "-:en" tala
-    | ártal "til:st" tala
+    ártal Til tala
     | ártal ÁraRuna* OgEða tala
 
 ÁraRuna → ',' tala
@@ -2271,8 +2268,7 @@ Fyrirbæri/fall/kyn →
 
 Raðnr →
     raðnr
-    | raðnr "-:en" raðnr               # 2.-3. sæti listans
-    | raðnr "til:st" raðnr             # 2. til 3. sæti listans
+    | raðnr Til raðnr               # 2.-3. sæti listans / 2. til 3. sæti listans
 
 # Úrslit í leikjum (32:27 sigur, 0:2 tap, 8:0 burst)
 
@@ -2655,7 +2651,7 @@ $score(-4) SvigaInnihaldFsRuna
 Skýring →
     "svo" "sem:st" | 'svo_sem'
     | "sem:st" "sagt" | 'sem_sagt'
-    | "til" "dæmis" | 'til_dæmis'
+    | "til:fs" "dæmis" | 'til_dæmis'
     | "þar" "á:fs" "meðal:ao" | 'þar_á_meðal'
     | "meðal:ao" "annars" | 'meðal_annars'
     | "það" "er:st" | 'það_er'
@@ -3135,13 +3131,15 @@ Degis → "árdegis" | "síðdegis" | "miðdegis"
 
 OgMeð → "og:st" "með:fs"
 
+Til → "-:en" | "til:st"
+
 Dagsetning →
     DagsFs_þf? Tímasetning 'sá'_et_kk_þf? dags # '[eftir] kl. 14 [þann] 3. júlí 2007'
     | DagsFs_ef Tímasetning 'sá'_et_kk_þf? dags # 'til kl. 14 [þann] 3. júlí 2007'
     | DagsFs_þgf Tímasetning 'sá'_et_kk_þf? dags # 'frá kl. 14 [þann] 3. júlí 2007'
 
     | "dags." dags # dags. 30. desember 1965
-    | "dagana"? raðnr "-:en" dags # 1. - 10. júní
+    | "dagana"? raðnr Til dags # 1. - 10. júní / 25. til 29. ágúst
     | DagsFs_þf? 'sá'_et_kk_þf? dags 'síðastliðinn'_et_kk_þf? # '[eftir] [þann] 3. júlí 2007 [síðastliðinn]'
     | "hinn" dags 'síðastliðinn'_et_kk_þf? # 'hinn 3. júlí [síðastliðinn]'
     | DagsFs_þgf dags # 'frá 3. júlí 2007'
@@ -3193,9 +3191,9 @@ Undanfarið →
 $score(+10) Undanfarið
 
 Dagana →
-    raðnr "til:fs" dags # dagana 1. til 10. júlí
+    raðnr Til dags # dagana 1. til 10. júlí / 9.-16. ágúst
     | raðnr "og:st" dags # dagana 1. og 2. júní
-    | dags "til:fs" dags # dagana 29. júní til 3. júlí
+    | dags Til dags # dagana 29. júní til 3. júlí
 
 # 29 ára, eins árs, tveggja vikna, margra ára
 
@@ -3240,6 +3238,8 @@ Tímabil_ef →
     | 'haust'_hk_ef_et_gr
     | 'kjörtímabil'_hk_ef_et_gr
     | 'leikár'_hk_ef_et_gr
+    | 'rekstrarár'_hk_ef_et_gr
+    | 'almanaksár'_hk_ef_et_gr
     | 'vika'_kvk_ef_et_gr
     | 'leiktíð'_ef_et_gr
     | 'öld'_kvk_ef_et_gr
@@ -3307,6 +3307,8 @@ Tímabil_hk/fall/tala →
     | 'hádegi'_hk/fall/tala
     | 'kjörtímabil'_hk/fall/tala
     | 'leikár'_hk/fall/tala
+    | 'rekstrarár'_hk/fall/tala
+    | 'almanaksár'_hk/fall/tala
 
 Tímabil_kvk/fall/tala →
     'vika'_kvk/fall/tala

@@ -349,7 +349,13 @@ class BIN_Db:
             if lower_w != w:
                 # Do another lookup, this time for lowercase only
                 if not m:
-                    m = lookup(lower_w)
+                    # This is a word that contains uppercase letters
+                    # and was not found in BÍN in its original form
+                    # Try an abbreviation before doing a lowercase lookup
+                    # (since some abbreviations are also words, i.e. LÍN)
+                    m = lookup_abbreviation(w)
+                    if not m:
+                        m = lookup(lower_w)
                 else:
                     m.extend(lookup(lower_w))
 

@@ -9,19 +9,48 @@
 
 {% block content %}
 
+{% set labelmap = {
+      "business" : "btn-primary",
+      "technology" : "btn-primary",
+      "sport" : "btn-warning",
+      "culture" : "btn-warning",
+      "politics" : "btn-success",
+      "economy" : "btn-success",
+      "health" : "btn-info",
+      "salmon" : "btn-info" } %}
+
 <!-- List of recent top news goes here -->
 <div class="panel panel-default table-responsive">
-<div class="panel-heading">Nýjustu fréttir af helstu vefmiðlum</div>
+<div class="panel-heading">
+   <div class="headline">Nýjustu fréttir af helstu vefmiðlum</div>
+   <div class="btn-group pull-right">
+      <button class="btn {{ labelmap.get(topics.identifier, 'btn-default') }} dropdown-toggle"
+         type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+       {{ topics.name if topics.name else "Allir efnisflokkar" }} <span class="caret"></span>
+      </button>
+      <ul class="dropdown-menu">
+         <li><a href="{{ url_for('news') }}">Allir efnisflokkar</a></li>
+         <li role="separator" class="divider"></li>
+{% for t in topics.topic_list %}
+         <li><a href="{{ url_for('news', topic=t[0]) | safe }}">{{ t[1] }}</a></li>
+{% endfor %}
+      </ul>
+   </div>
+</div>
 <table class="table table-condensed table-hover" id="toplist">
    <thead>
+{% if display_time %}
       <th>Tími</th>
+{% else %}
+      <th>Dags.</th>
+{% endif %}
       <th>%</th>
       <th>Fyrirsögn</th>
    </thead>
    <tbody>
 {% for article in articles %}
    <tr class="topitem" data-uuid="{{ article.uuid }}">
-      <td class="timestamp text-muted">{{ article.timestamp }}</td>
+      <td class="timestamp text-muted">{{ article.time if display_time else article.date }}</td>
       <td class="ratio">
          <div class="progress" title="{{ article.width }} málsgreina trjágreind">
             <div class="progress-bar progress-bar-success" role="progressbar"
@@ -34,6 +63,12 @@
 {% endfor %}
    </tbody>
 </table>
+<div class="panel-footer">
+   <div class="headline">&nbsp;</div>
+   <div class="btn-group pull-right">
+      <button id="next-page" class="btn btn-default" type="button">Næsta síða <span class="glyphicon glyphicon-play"></span></button>
+   </div>
+</div>
 </div>
 
 {% endblock %}
@@ -50,6 +85,10 @@
          // A top news article has been clicked: show it
          var uuid = $(this).attr("data-uuid");
          window.location.href = "{{ url_for('page') }}?id=" + uuid;
+      });
+      $("#next-page").click(function(ev) {
+         // Go to the next page, as determined by the timestamp of the last item shown
+         window.location.href = "{{ url_for('news', topic = topics.identifier, start = articles[-1].timestamp.isoformat()) | safe }}";
       });
    }
 

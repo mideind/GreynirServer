@@ -21,13 +21,30 @@
       </table>
       <p id="details"></p>
       <p id="grammar"></p>
+      <div id="percent" class="progress">
+         <div class="progress-bar progress-bar-info" role="progressbar"
+            aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%">
+            <span class="sr-only">0%</span>
+         </div>
+      </div>
    </div>
 
    <div id="metadata">
       <!-- Article metadata -->
       <div id="topics">
+
+{% set labelmap = {
+      "business" : "label-primary",
+      "technology" : "label-primary",
+      "sport" : "label-warning",
+      "culture" : "label-warning",
+      "politics" : "label-success",
+      "economy" : "label-success",
+      "health" : "label-info",
+      "salmon" : "label-info" } %}
+
 {% for t in topics -%}
-         <span class="topic {{ t['identifier'] }}"><span class="glyphicon glyphicon-tag"></span>{{ t['name'] }}</span>
+         <span class="topic label {{ labelmap[t.identifier] }}"><span class="glyphicon glyphicon-tag"></span>{{ t.name }}</span>
 {%- endfor -%}
       </div>
       <h1 id="meta-heading">{{ article.heading }}</h1>

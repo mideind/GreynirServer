@@ -33,7 +33,7 @@ from fastparser import Fast_Parser, ParseError, ParseForestPrinter
 from incparser import IncrementalParser
 from reducer import Reducer
 from article import Article as ArticleProxy
-from scraperdb import SessionContext, desc, Person, Article, ArticleTopic, GenderQuery, StatsQuery
+from scraperdb import SessionContext, desc, Person, Article, ArticleTopic, Topic, GenderQuery, StatsQuery
 from query import Query, query_person, query_entity
 from getimage import get_image_url
 
@@ -186,11 +186,13 @@ def create_name_register(tokens, session):
     return register
 
 
-def top_news(limit = _TOP_NEWS_LENGTH):
-    """ Return a list of top recent news """
+def top_news(topic = None, start = None, limit = _TOP_NEWS_LENGTH):
+    """ Return a list of top recent news, of a particular topic,
+        up to a particular start time, having a specified length """
     toplist = []
     topdict = dict()
-    now = datetime.utcnow()
+    if start is None:
+        start = datetime.utcnow()
     MARGIN = 10 # Get more articles than requested in case there are duplicates
 
     with SessionContext(commit = True) as session:
@@ -198,17 +200,21 @@ def top_news(limit = _TOP_NEWS_LENGTH):
         q = session.query(Article) \
             .filter(Article.tree != None) \
             .filter(Article.timestamp != None) \
-            .filter(Article.timestamp < now) \
-            .filter(Article.heading > "") \
-            .order_by(desc(Article.timestamp))[0:limit + MARGIN]
+            .filter(Article.timestamp < start) \
+            .filter(Article.heading > "")
+
+        if topic is not None:
+            # Filter by topic identifier
+            q = q.join(ArticleTopic).join(Topic).filter(Topic.identifier == topic)
+
+        q = q.order_by(desc(Article.timestamp))[0:limit + MARGIN]
 
         class ArticleDisplay:
 
             """ Utility class to carry information about an article to the web template """
 
-            def __init__(self, heading, original_ts, timestamp, url, uuid, num_sentences, num_parsed, icon):
+            def __init__(self, heading, timestamp, url, uuid, num_sentences, num_parsed, icon):
                 self.heading = heading
-                self.original_ts = original_ts
                 self.timestamp = timestamp
                 self.url = url
                 self.uuid = uuid
@@ -224,19 +230,27 @@ def top_news(limit = _TOP_NEWS_LENGTH):
                     return "0%"
                 return "{0}%".format((100 * self.num_parsed) // self.num_sentences)
 
+            @property
+            def time(self):
+                return self.timestamp.isoformat()[11:16]
+
+            @property
+            def date(self):
+                return self.timestamp.isoformat()[0:10]
+
         for a in q:
             # Collect and count the titles
             icon = a.root.domain + ".ico"
 
-            d = ArticleDisplay(heading = a.heading, original_ts = a.timestamp, timestamp = str(a.timestamp)[11:16],
-                url = a.url, uuid = a.id, num_sentences = a.num_sentences, num_parsed = a.num_parsed, icon = icon)
+            d = ArticleDisplay(heading = a.heading, timestamp = a.timestamp, url = a.url, uuid = a.id,
+                num_sentences = a.num_sentences, num_parsed = a.num_parsed, icon = icon)
 
             # Have we seen the same heading on the same domain?
             t = (a.root.domain, a.heading)
             if t in topdict:
                 # Same domain+heading already in the list
                 i = topdict[t]
-                if d.original_ts > toplist[i].original_ts:
+                if d.timestamp > toplist[i].timestamp:
                     # The new entry is newer: replace the old one
                     toplist[i] = d
                 # Otherwise, ignore the new entry and continue
@@ -248,7 +262,7 @@ def top_news(limit = _TOP_NEWS_LENGTH):
                 if llist + 1 >= limit:
                     break
 
-    return toplist
+    return toplist[0:limit]
 
 
 def top_persons(limit = _TOP_PERSONS_LENGTH):
@@ -713,7 +727,32 @@ def about():
 @max_age(seconds = 60)
 def news():
     """ Handler for a page with a top news list """
-    return render_template("news.html", articles = top_news())
+    topic = request.args.get("topic")
+    start = request.args.get("start")
+    if start is not None:
+        try:
+            if '.' in start:
+                # Assume full timestamp with microseconds
+                start = datetime.strptime(start, "%Y-%m-%dT%H:%M:%S.%f")
+            else:
+                # Compact timestamp
+                start = datetime.strptime(start, "%Y-%m-%dT%H:%M:%S")
+        except ValueError:
+            start = None
+    articles = top_news(topic = topic, start = start)
+    now = datetime.utcnow()
+    # If all articles in the list are timestamped within 24 hours of now,
+    # we display their times in HH:MM format. Otherwise, we display their
+    # dates in YYYY-MM-DD format.
+    display_time = True
+    if articles and (now - articles[-1].timestamp).days >= 1:
+        display_time = False
+    # Fetch the topics
+    with SessionContext(commit = True) as session:
+        q = session.query(Topic.identifier, Topic.name).order_by(Topic.name).all()
+        d = { t[0] : t[1] for t in q }
+        topics = dict(identifier = topic, name = d.get(topic, ""), topic_list = q)
+    return render_template("news.html", articles = articles, topics = topics, display_time = display_time)
 
 
 @app.route("/people")
@@ -773,7 +812,6 @@ def page():
         topics = session.query(ArticleTopic) \
             .filter(ArticleTopic.article_id == a.uuid).all()
         topics = [ dict(name = t.topic.name, identifier = t.topic.identifier) for t in topics ]
-        print(topics)
 
         return render_template("page.html", article = a, register = register, topics = topics)
 

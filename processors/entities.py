@@ -21,6 +21,7 @@
 
 """
 
+import re
 from datetime import datetime
 from scraperdb import Entity
 
@@ -68,7 +69,16 @@ def sentence(state, result):
             while any(definition.endswith(p) for p in (" ,", " .", " :", " !", " ?")):
                 definition = definition[:-2]
 
-            if definition not in NOT_DEFINITIONS:
+            def def_ok(definition):
+                """ Returns True if a definition meets basic sanity criteria """
+                if definition in NOT_DEFINITIONS:
+                    return False
+                # Check for a match with a number string, eventually followed by a % sign
+                if re.match(r'-?\d+(\.\d\d\d)*(,\d+)?%?$', definition):
+                    return False
+                return True
+
+            if def_ok(definition):
 
                 print("Entity '{0}' {1} '{2}'".format(entity, verb, definition))
 

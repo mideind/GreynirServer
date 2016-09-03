@@ -371,6 +371,9 @@ class Topic(Base):
     # The associated vector, in JSON format
     vector = Column(String) # Is initally NULL
 
+    # The cosine distance threshold to apply for this topic
+    threshold = Column(Float)
+
     def __repr__(self):
         return "Topic(name='{0}')" \
             .format(self.name)

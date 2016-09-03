@@ -321,6 +321,50 @@ function grammar(cat, m) {
    return g.join("<br>");
 }
 
+function makePercentGraph(percent) {
+   // Adjust progress bar
+   $("#percent").css("display", "block");
+   $("#percent .progress-bar")
+      .attr("aria-valuenow", Math.round(percent).toString())
+      .css("width", percent.toString() + "%");
+   $("#percent .progress-bar span.sr-only").text(percent.toString() + "%");
+/*
+   // Draw a simple bar graph using D3 with SVG
+   $("#grammar").html("<svg class='gpercent'></svg>");
+   var width = 134,
+      height = 16;
+
+   var x = d3.scale.linear()
+      .domain([0, 100])
+      .range([0, width])
+      .clamp(true);
+
+   var chart = d3.select(".gpercent")
+      .attr("width", width)
+      .attr("height", height);
+
+   var bar = chart.selectAll("g")
+      .data([ percent ])
+   .enter().append("g")
+      .attr("transform", "translate(0,0)");
+
+   bar.append("rect")
+      .attr("class", "gbackground")
+      .attr("width", width)
+      .attr("height", height);
+
+   bar.append("rect")
+      .attr("width", function(d) { return x(d); })
+      .attr("height", height);
+/*
+   bar.append("text")
+      .attr("x", 5)
+      .attr("y", height / 2)
+      .attr("dy", ".35em")
+      .text(function(d) { return format_is(d, 1) + "%"; });
+*/
+}
+
 function hoverIn() {
    // Hovering over a token
    var wId = $(this).attr("id");
@@ -337,6 +381,8 @@ function hoverIn() {
    // Highlight the token
    $(this).addClass("highlight");
    $("#grammar").html("");
+   // Hide the percentage bar
+   $("#percent").css("display", "none");
 
    if (!t.k) {
       // TOK_WORD
@@ -366,6 +412,7 @@ function hoverIn() {
    if (t.k == TOK_PERCENT) {
       $("#lemma").text(t.x);
       $("#details").text("hundraðshluti");
+      makePercentGraph(parseFloat(t.x.slice(0, -1).replace(",", ".")));
    }
    else
    if (t.k == TOK_ORDINAL) {
@@ -438,7 +485,7 @@ function hoverIn() {
       else {
          // Show full name and title
          var name = t.v;
-         var title = nameDict ? (nameDict[name].title || "") : "";
+         var title = (nameDict && nameDict[name]) ? (nameDict[name].title || "") : "";
          if (!title.length)
             if (!gender)
                title = "mannsnafn";
@@ -451,7 +498,7 @@ function hoverIn() {
    else
    if (t.k == TOK_ENTITY) {
       $("#lemma").text(t.x);
-      var title = nameDict ? (nameDict[t.x].title || "") : "";
+      var title = (nameDict && nameDict[t.x]) ? (nameDict[t.x].title || "") : "";
       if (!title.length)
          title = "sérnafn";
       $("#details").text(title);

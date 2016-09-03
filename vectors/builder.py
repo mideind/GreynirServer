@@ -241,11 +241,11 @@ class ReynirCorpus:
                 if topic.vector:
                     topic_vector = json.loads(topic.vector)[self._model_name]
                     if topic_vector:
-                        self._topics[topic.id] = (topic.name, topic_vector)
+                        self._topics[topic.id] = dict(name = topic.name,
+                            vector = topic_vector, threshold = topic.threshold)
 
     def assign_article_topics(self, article_id, heading):
         """ Assign the appropriate topics to the given article in the database """
-        SIMILARITY_THRESHOLD = 0.200
         if self._dictionary is None:
             self.load_dictionary()
         if self._tfidf is None:
@@ -273,15 +273,17 @@ class ReynirCorpus:
                 if self._verbose:
                     print("{0} : {1}".format(article_id, heading))
                 for topic_id, topic_info in self._topics.items():
-                    topic_name, topic_vector = topic_info
+                    topic_name = topic_info["name"]
+                    topic_vector = topic_info["vector"]
+                    topic_threshold = topic_info["threshold"]
                     # Calculate the cosine similarity betwee the article and the topic
                     similarity = matutils.cossim(article_vector, topic_vector)
                     if self._verbose:
                         print("   Similarity to topic {0} is {1:.3f}".format(topic_name, similarity))
-                    if similarity >= SIMILARITY_THRESHOLD:
+                    if similarity >= topic_threshold:
                         # Similar enough: this is a topic of the article
                         topics.append(topic_id)
-                        topic_names.append(topic_name)
+                        topic_names.append((topic_name, similarity))
                 if topic_names:
                     print("Article '{0}': topics {1}".format(heading, topic_names))
             # Topics found (if any): delete previous ones (if any)
@@ -294,16 +296,16 @@ class ReynirCorpus:
             if a:
                 a.indexed = datetime.utcnow()
 
-    def assign_topics(self, limit = None):
+    def assign_topics(self, limit = None, process_all = False):
         """ Assign topics to all articles that have no such assignment yet """
         with SessionContext(commit = True) as session:
             # Fetch articles that haven't been indexed (or have been parsed since),
             # and that have at least one associated Word in the words table.
-            q = session.query(Article.id, Article.heading) \
-                .filter((Article.indexed == None) | (Article.indexed < Article.parsed)) \
-                .join(Word) \
-                .group_by(Article.id, Article.heading)
-            if limit is None:
+            q = session.query(Article.id, Article.heading)
+            if not process_all:
+                q = q.filter((Article.indexed == None) | (Article.indexed < Article.parsed))
+            q = q.join(Word).group_by(Article.id, Article.heading)
+            if process_all or limit is None:
                 q = q.all()
             else:
                 q = q[0:limit]
@@ -311,8 +313,34 @@ class ReynirCorpus:
             self.assign_article_topics(article_id, heading)
 
 
+def build_model(verbose = False):
+    """ Build a new model from the words (and articles) table """
+
+    print("------ Reynir starting model build -------")
+    ts = "{0}".format(datetime.utcnow())[0:19]
+    print("Time: {0}".format(ts))
+
+    t0 = time.time()
+
+    rc = ReynirCorpus(verbose = verbose)
+    rc.create_dictionary()
+    rc.create_plain_corpus()
+    rc.create_tfidf_model()
+    rc.create_tfidf_corpus()
+    #rc.create_lda_model(passes = 15)
+    rc.create_lsi_model()
+
+    t1 = time.time()
+
+    print("\n------ Model build completed -------")
+    print("Total time: {0:.2f} seconds".format(t1 - t0))
+    ts = "{0}".format(datetime.utcnow())[0:19]
+    print("Time: {0}\n".format(ts))
+
+
 def calculate_topics(verbose = False):
     """ Recalculate topic vectors from keywords """
+
     print("------ Reynir recalculating topic vectors -------")
     rc = ReynirCorpus(verbose = verbose)
     rc.load_lsi_model()
@@ -320,7 +348,7 @@ def calculate_topics(verbose = False):
     print("------ Reynir recalculation complete -------")
 
 
-def tag_articles(limit, verbose = False):
+def tag_articles(limit, verbose = False, process_all = False):
     """ Tag all untagged articles or articles that
         have been parsed since they were tagged """
 
@@ -333,15 +361,8 @@ def tag_articles(limit, verbose = False):
     t0 = time.time()
 
     rc = ReynirCorpus(verbose = verbose)
-    #rc.create_dictionary()
-    #rc.create_plain_corpus()
-    #rc.create_tfidf_model()
-    #rc.create_tfidf_corpus()
-    #rc.create_lda_model(passes = 15)
-    #rc.create_lsi_model()
     rc.load_lsi_model()
-    #rc.calculate_topics()
-    rc.assign_topics(limit)
+    rc.assign_topics(limit, process_all)
 
     t1 = time.time()
 
@@ -371,8 +392,9 @@ __doc__ = """
         -l N, --limit=N: Limit processing to N articles
 
     Commands:
-        tag: tag any untagged articles
-        topics: recalculate topic vectors from keywords
+        tag     : tag any untagged articles
+        topics  : recalculate topic vectors from keywords
+        model   : rebuild dictionary and model from parsed articles
 
 """
 
@@ -383,13 +405,15 @@ def _main(argv = None):
         argv = sys.argv
     try:
         try:
-            opts, args = getopt.getopt(argv[1:], "hl:v",
-                ["help", "limit=", "verbose"])
+            opts, args = getopt.getopt(argv[1:], "hl:va",
+                ["help", "limit=", "verbose", "all"])
         except getopt.error as msg:
              raise Usage(msg)
 
+        limit_specified = False
         limit = 10
         verbose = False
+        process_all = False
 
         # Process options
         for o, a in opts:
@@ -400,10 +424,16 @@ def _main(argv = None):
                 # Maximum number of articles to parse
                 try:
                     limit = int(a)
+                    limit_specified = True
                 except ValueError as e:
                     pass
             elif o in ("-v", "--verbose"):
                 verbose = True
+            elif o in ("-a", "--all"):
+                process_all = True
+
+        if process_all and limit_specified:
+            raise Usage("--all and --limit cannot be used together")
 
         Settings.read("Vectors.conf")
 
@@ -411,11 +441,15 @@ def _main(argv = None):
         for arg in args:
             if arg == "tag":
                 # Tag articles
-                tag_articles(limit = limit, verbose = verbose)
+                tag_articles(limit = limit, verbose = verbose, process_all = process_all)
                 break
             elif arg == "topics":
                 # Calculate topics
                 calculate_topics(verbose = verbose)
+                break
+            elif arg == "model":
+                # Rebuild model
+                build_model(verbose = verbose)
                 break
         else:
             # Nothing matched, no break in loop
