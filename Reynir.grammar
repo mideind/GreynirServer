@@ -344,6 +344,7 @@ SamanburðarTenging →
     | Samanburðarmerki? 'þar_á_meðal'
     | Samanburðarmerki? "þar" "á:fs" "meðal:ao"
     | Samanburðarmerki? 'þar_með_talið' # Skammstöfunin 'þ.m.t.'
+    | Samanburðarmerki? "nema:st"   # Allir vita það, nema ég.
     | ','? "enda:st"                # 'Réttindi í almennum sjóðum breyttust, enda lægri fjárhæð en áður'
     | SamanburðarTengingOg
 

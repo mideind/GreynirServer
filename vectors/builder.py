@@ -1,7 +1,7 @@
 """
     Reynir: Natural language processing for Icelandic
 
-    Document index builder module
+    Document index builder & topic tagger module
 
     Copyright (c) 2016 Vilhjalmur Thorsteinsson
     All rights reserved
@@ -10,8 +10,36 @@
     This module is written in Python 3
 
     This module reads articles from the Reynir article database as bags-of-words
-    and indexes them with latent semantic indexes generated with the help of
-    the Gensim document processing module.
+    and indexes them using Latent Semantic Indexing (LSI, also called Latent Semantic
+    Analysis, LSA), with indexes generated with the help of the Gensim document
+    processing module.
+
+    The indexing proceeds in stages (cf. https://radimrehurek.com/gensim/tut2.html):
+
+    1) Conversion of article contents (taken from the words database table)
+        into a corpus stream, yielding each article as a bag-of-words
+        via the CorpusIterator class. Note that the words database table has
+        already been filtered so that it only contains significant verbs,
+        nouns, adjectives and person and entity names - all normalized
+        (i.e. verbs to 'nafnháttur', nouns to nominative singular, and
+        adjectives to normal nominative singular masculine).
+
+    2) Generation of a Gensim dictionary (vocabulary) across the corpus stream,
+        cutting out rare words, resulting in a word count vector
+
+    3) Calculation of word weights from the dictionary via the TFIDF algorithm,
+        generating a TFIDF vector (TFIDF=term frequency–inverse document frequency,
+        cf. http://www.tfidf.com/)
+
+    4) Generation of the LSI lower-dimensionality model (matrix) from the corpus
+        after transformation of each document through the TFIDF vector
+
+    After the LSI model has been generated, it can be used to calculate LSI
+    vectors for any set of words. We calculate such vectors for each topic
+    in the topics database table by using the topic keywords as input for each
+    LSI vector. Subsequently, the closeness of any article to a topic can be
+    estimated by calculating the cosine similarity between the article's LSI
+    vector and the topic's LSI vector.
 
 """
 
@@ -31,6 +59,9 @@ from gensim import corpora, models, matutils
 
 class CorpusIterator:
 
+    """ Iterate through the Reynir words database, yielding a bag-of-words
+        for each article """
+
     def __init__(self, dictionary = None):
         self._dictionary = dictionary
 
@@ -43,14 +74,8 @@ class CorpusIterator:
             xform = lambda x: x
         with SessionContext(commit = True) as session:
             # Fetch bags of words sorted by articles
-            q = session.execute(
-                """
-                    select article_id, stem, cat, cnt
-                        from words
-                        order by article_id
-                    ;
-                """
-            )
+            q = session.query(Words.article_id, Words.stem, Words.cat, Words.cnt) \
+                .order_by(Words.article_id).yield_per(2000)
             bag = []
             last_uuid = None
             for uuid, stem, cat, cnt in q:
@@ -74,6 +99,8 @@ class CorpusIterator:
 
 
 class ReynirCorpus:
+
+    """ Wraps the document indexing functionality """
 
     # Work file names
     _DICTIONARY_FILE = './models/reynir.dict'
@@ -255,7 +282,8 @@ class ReynirCorpus:
         if self._topics is None:
             self.load_topics()
         with SessionContext(commit = True) as session:
-            q = session.query(Word.stem, Word.cat, Word.cnt).filter(Word.article_id == article_id).all()
+            q = session.query(Word.stem, Word.cat, Word.cnt) \
+                .filter(Word.article_id == article_id).all()
             wlist = []
             for stem, cat, cnt in q:
                 # Convert stem to lowercase and replace spaces with underscores
@@ -353,7 +381,9 @@ def tag_articles(limit, verbose = False, process_all = False):
         have been parsed since they were tagged """
 
     print("------ Reynir starting tagging -------")
-    if limit:
+    if process_all:
+        print("Processing all articles")
+    elif limit:
         print("Limit: {0} articles".format(limit))
     ts = "{0}".format(datetime.utcnow())[0:19]
     print("Time: {0}".format(ts))
@@ -388,8 +418,9 @@ __doc__ = """
         python builder.py [options] command
 
     Options:
-        -h, --help: Show this help text
-        -l N, --limit=N: Limit processing to N articles
+        -h, --help       : Show this help text
+        -l N, --limit=N  : Limit processing to N articles
+        -a, --all        : Process all articles
 
     Commands:
         tag     : tag any untagged articles
@@ -451,6 +482,8 @@ def _main(argv = None):
                 # Rebuild model
                 build_model(verbose = verbose)
                 break
+            else:
+                raise Usage("Unknown command: '{0}'".format(arg))
         else:
             # Nothing matched, no break in loop
             raise Usage("No command specified")

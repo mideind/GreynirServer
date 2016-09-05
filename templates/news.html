@@ -17,12 +17,15 @@
       "politics" : "btn-success",
       "economy" : "btn-success",
       "health" : "btn-info",
-      "salmon" : "btn-info" } %}
+      "salmon" : "btn-info",
+      "weather" : "btn-danger" } %}
 
 <!-- List of recent top news goes here -->
 <div class="panel panel-default table-responsive">
 <div class="panel-heading">
-   <div class="headline">Nýjustu fréttir af helstu vefmiðlum</div>
+   <!-- Show full heading or shorter one depending on viewport width -->
+   <div class="headline hidden-xs">Nýjustu fréttir af helstu vefmiðlum</div>
+   <div class="headline visible-xs-inline-block">Nýjustu fréttir</div>
    <div class="btn-group pull-right">
       <button class="btn {{ labelmap.get(topics.identifier, 'btn-default') }} dropdown-toggle"
          type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -57,7 +60,7 @@
                style="min-width:2em; width:{{ article.width }}">{{ article.width }}</div>
          </div>
       </td>
-      <td class="heading"><img src="/static/{{ article.icon }}" width="16" height="16" alt="{{ article.icon }}"/>
+      <td class="heading"><img src="{{ url_for('static', filename = article.icon) }}" width="16" height="16" alt="{{ article.icon }}"/>
       {{ article.heading }}</td>
    </tr>
 {% endfor %}
@@ -65,9 +68,11 @@
 </table>
 <div class="panel-footer">
    <div class="headline">&nbsp;</div>
+{% if articles %}
    <div class="btn-group pull-right">
       <button id="next-page" class="btn btn-default" type="button">Næsta síða <span class="glyphicon glyphicon-play"></span></button>
    </div>
+{% endif %}
 </div>
 </div>
 
@@ -86,10 +91,12 @@
          var uuid = $(this).attr("data-uuid");
          window.location.href = "{{ url_for('page') }}?id=" + uuid;
       });
+{% if articles %}
       $("#next-page").click(function(ev) {
          // Go to the next page, as determined by the timestamp of the last item shown
          window.location.href = "{{ url_for('news', topic = topics.identifier, start = articles[-1].timestamp.isoformat()) | safe }}";
       });
+{% endif %}
    }
 
    $(document).ready(init);

@@ -13,6 +13,7 @@
 """
 
 import sys
+import os
 import time
 import random
 import re
@@ -73,6 +74,35 @@ def format_is(r, decimals = 0):
 def format_ts(ts):
     """ Flask/Jinja2 template filter to format a timestamp """
     return str(ts)[0:19]
+
+
+# Flask cache busting for static .css and .js files
+
+@app.url_defaults
+def hashed_url_for_static_file(endpoint, values):
+    """ Add a ?h=XXX parameter to URLs for static .js and .css files,
+        where XXX is calculated from the file timestamp """
+    if 'static' == endpoint or endpoint.endswith('.static'):
+        filename = values.get('filename')
+        if filename and (filename.endswith(".js") or filename.endswith(".css")):
+            if '.' in endpoint:  # has higher priority
+                blueprint = endpoint.rsplit('.', 1)[0]
+            else:
+                blueprint = request.blueprint  # can be None too
+
+            if blueprint:
+                static_folder = app.blueprints[blueprint].static_folder
+            else:
+                static_folder = app.static_folder
+
+            param_name = 'h'
+            while param_name in values:
+                param_name = '_' + param_name
+            values[param_name] = static_file_hash(os.path.join(static_folder, filename))
+
+def static_file_hash(filename):
+    """ Obtain a timestamp for the given file """
+    return int(os.stat(filename).st_mtime)
 
 
 # Miscellaneous utility stuff
@@ -331,7 +361,7 @@ def analyze():
         # Demarcate paragraphs in the input
         text = Fetcher.mark_paragraphs(text)
         # Tokenize the result
-        toklist = list(tokenize(text))
+        toklist = list(tokenize(text, enclosing_session = session))
         # Paragraph list, containing sentences, containing tokens
         pgs = []
 
@@ -407,12 +437,13 @@ def query():
     q = request.form.get("q", "").strip()[0:_MAX_QUERY_LENGTH]
     # Auto-uppercasing can be turned off by sending autouppercase: false in the query JSON
     auto_uppercase = get_json_bool(request, "autouppercase", True)
-
-    toklist = list(tokenize(q, auto_uppercase = q.islower() if auto_uppercase else False))
     result = dict()
-    actual_q = correct_spaces(" ".join(t.txt or "" for t in toklist))
 
     with SessionContext(commit = True) as session:
+
+        toklist = list(tokenize(q, enclosing_session = session,
+            auto_uppercase = q.islower() if auto_uppercase else False))
+        actual_q = correct_spaces(" ".join(t.txt or "" for t in toklist))
 
         if Settings.DEBUG:
             # Log the query string as seen by the parser

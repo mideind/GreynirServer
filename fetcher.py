@@ -157,7 +157,7 @@ class Fetcher:
 
 
     @staticmethod
-    def to_tokens(soup):
+    def to_tokens(soup, enclosing_session = None):
         """ Convert an HTML soup root into a parsable token stream """
 
         # Extract the text content of the HTML into a list
@@ -167,41 +167,7 @@ class Fetcher:
         tlist = None # Free memory
 
         # Tokenize the resulting text, returning a generator
-        return tokenize(text)
-
-
-    @staticmethod
-    def tokenize_url(url, info = None):
-        """ Open a URL and process the returned response """
-
-        metadata = None
-        soup = None
-
-        # Fetch the URL, returning a (metadata, content) tuple or None if error
-        if info is None:
-            info = Fetcher.fetch_url(url)
-
-        if info is not None:
-            metadata, soup = info
-            if metadata is None:
-                if Settings.DEBUG:
-                    print("No metadata")
-                metadata = dict(heading = "",
-                    author = "",
-                    timestamp = datetime.utcnow(),
-                    authority = 0.0)
-            else:
-                if Settings.DEBUG:
-                    print("Metadata: heading '{0}'".format(metadata.heading))
-                    print("Metadata: author '{0}'".format(metadata.author))
-                    print("Metadata: timestamp {0}".format(metadata.timestamp))
-                    print("Metadata: authority {0:.2f}".format(metadata.authority))
-                metadata = vars(metadata) # Convert namedtuple to dict
-            metadata["url"] = url
-
-        # Tokenize the resulting text, returning a generator
-        # noinspection PyRedundantParentheses
-        return (metadata, Fetcher.to_tokens(soup))
+        return tokenize(text, enclosing_session = enclosing_session)
 
 
     @classmethod
@@ -266,7 +232,7 @@ class Fetcher:
             else:
                 content = helper.get_content(soup)
             # Convert the content soup to a token iterable (generator)
-            return Fetcher.to_tokens(content) if content else None
+            return Fetcher.to_tokens(content, enclosing_session = session) if content else None
 
 
     @staticmethod

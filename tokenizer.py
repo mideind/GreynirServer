@@ -45,7 +45,7 @@ END_OF_SENTENCE = frozenset(['.', '?', '!', '[…]'])
 # Punctuation symbols that may additionally occur at the end of a sentence
 SENTENCE_FINISHERS = frozenset([')', ']', '“', '»', '”', '’', '"', '[…]'])
 # Punctuation symbols that may occur inside words
-PUNCT_INSIDE_WORD = frozenset(["'", '.', '‘', "´"])
+PUNCT_INSIDE_WORD = frozenset(['.', "'", '‘', "´"]) # Period and apostrophes
 
 # Hyphens that are cast to '-' for parsing and then re-cast
 # to normal hyphens, en or em dashes in final rendering
@@ -430,11 +430,11 @@ def parse_tokens(txt):
             continue
 
         # More complex case of mixed punctuation, letters and numbers
-        if len(w) > 1:
-            if w[0] == '"':
-                # Convert simple quotes to proper opening quotes
-                yield TOK.Punctuation('„')
-                w = w[1:]
+        if len(w) > 1 and w[0] == '"':
+            # Convert simple quotes to proper opening quotes
+            yield TOK.Punctuation('„')
+            w = w[1:]
+
         while w:
             # Punctuation
             ate = False
@@ -497,17 +497,27 @@ def parse_tokens(txt):
                     # abbreviations; also apostrophes are allowed within words and at the end
                     # (O'Malley, Mary's, it's, childrens', O‘Donnell)
                     i += 1
-                while w[i-1] == '.':
-                    # Don't eat periods at the end of words
-                    i -= 1
-                yield TOK.Word(w[0:i], None)
-                w = w[i:]
-                if w and w[0] in COMPOSITE_HYPHENS:
-                    # This is a hyphen or en dash directly appended to a word:
-                    # might be a continuation ('fjármála- og efnahagsráðuneyti')
-                    # Yield a special hyphen as a marker
-                    yield TOK.Punctuation(COMPOSITE_HYPHEN)
-                    w = w[1:]
+                # Make a special check for the occasional erroneous source text case where sentences
+                # run together over a period without a space: 'sjávarútvegi.Það'
+                a = w.split('.')
+                if len(a) == 2 and a[0] and a[0][0].islower() and a[1] and a[1][0].isupper():
+                    # We have a lowercase word immediately followed by a period and an uppercase word
+                    yield TOK.Word(a[0], None)
+                    yield TOK.Punctuation('.')
+                    yield TOK.Word(a[1], None)
+                    w = None
+                else:
+                    while w[i-1] == '.':
+                        # Don't eat periods at the end of words
+                        i -= 1
+                    yield TOK.Word(w[0:i], None)
+                    w = w[i:]
+                    if w and w[0] in COMPOSITE_HYPHENS:
+                        # This is a hyphen or en dash directly appended to a word:
+                        # might be a continuation ('fjármála- og efnahagsráðuneyti')
+                        # Yield a special hyphen as a marker
+                        yield TOK.Punctuation(COMPOSITE_HYPHEN)
+                        w = w[1:]
             if not ate:
                 # Ensure that we eat everything, even unknown stuff
                 yield TOK.Unknown(w[0])
@@ -1640,7 +1650,7 @@ def disambiguate_phrases(token_stream):
     for t in tq: yield t
 
 
-def recognize_entities(token_stream):
+def recognize_entities(token_stream, enclosing_session = None):
 
     """ Parse a stream of tokens looking for (capitalized) entity names
         The algorithm implements N-token lookahead where N is the
@@ -1650,12 +1660,13 @@ def recognize_entities(token_stream):
     tq = [] # Token queue
     state = defaultdict(list) # Phrases we're considering
 
-    with SessionContext(commit = True) as session:
+    with SessionContext(session = enclosing_session, commit = True) as session:
 
-        @lru_cache(maxsize = 20)
+        @lru_cache(maxsize = 40)
         def query_entities(w):
             """ Return a list of entities matching the initial word given """
-            return session.query(Entity.name, Entity.verb, Entity.definition).filter(Entity.name.like(w + " %") | (Entity.name == w)).all()
+            return session.query(Entity.name, Entity.verb, Entity.definition) \
+                .filter(Entity.name.like(w + " %") | (Entity.name == w)).all()
 
         def flush_match():
             """ Flush a match that has been accumulated in the token queue """
@@ -1781,7 +1792,7 @@ def recognize_entities(token_stream):
     assert not tq
 
 
-def tokenize(text, auto_uppercase = False):
+def tokenize(text, auto_uppercase = False, enclosing_session = None):
     """ Tokenize text in several phases, returning a generator (iterable sequence) of tokens
         that processes tokens on-demand. If auto_uppercase is True, the tokenizer
         attempts to correct lowercase words that probably should be uppercase. """
@@ -1802,7 +1813,7 @@ def tokenize(text, auto_uppercase = False):
 
     token_stream = parse_phrases_2(token_stream) # Second phrase pass
 
-    token_stream = recognize_entities(token_stream) # Recognize named entities from database
+    token_stream = recognize_entities(token_stream, enclosing_session) # Recognize named entities from database
 
     token_stream = disambiguate_phrases(token_stream) # Eliminate very uncommon meanings
 
