@@ -70,6 +70,9 @@ Reynir works in stages, roughly as follows:
 5. *Information extractor* that maps a parse tree via its grammar constituents to plug-in
   Python functions.
 6. *Query processor* that allows natural language queries for entites in Reynir's database.
+7. *Article indexer* that transforms articles from bags-of-words to fixed-dimensional
+  topic vectors using [Tf-Idf](http://www.tfidf.com/) and
+  [Latent Semantic Analysis](https://en.wikipedia.org/wiki/Latent_semantic_analysis).
 
 Reynir has an embedded web server that displays news articles recently scraped into its
 databsae, as well as names of people extracted from those articles along with their titles. The web
@@ -115,29 +118,35 @@ storage in a database table.
 ## File details
 
 * `main.py` : WSGi web server application and main module for command-line invocation
-* `settings.py` : Management of global settings and configuration data, obtained from `Reynir.conf`
+* `settings.py` : Management of global settings and configuration data, obtained from `config/Reynir.conf`
 * `scraper.py` : Web scraper, collecting articles from a set of pre-selected websites (roots)
 * `scraperdb.py`: Wrapper for the scraper database via SQLAlchemy
 * `tokenizer.py` : Tokenizer, designed as a pipeline of Python generators
 * `dawgdictionary.py`: Handler for composite words using a compressed word form database
 * `grammar.py` : Parsing of `.grammar` files, grammar constructs
 * `baseparser.py` : Base class for parsers
+* `incparser.py` : Incremental parsing of paragraphs and sentences from token streams
 * `bindb.py`: Interface to the BÍN database of Icelandic word forms
 * `binparser.py` : Parser related subclasses for BÍN (Icelandic word) tokens
-* `eparser.cpp` : Earley parser C++ module (header in `eparser.h`)
+* `eparser.cpp` : Earley parser core C++ module (header in `eparser.h`)
 * `fastparser.py` : Python wrapper for `eparser.cpp` using CFFI
 * `reducer.py` : Parse forest ambiguity resolver
 * `processor.py`: Information extraction from parse trees
-* `query.py`: Natural language query processor
-* `Reynir.conf` : Editable configuration file for the tokenizer and parser
-* `Main.conf` : Various configuration data and preferences, included in `Reynir.conf`
-* `Verbs.conf` : Editable lexicon of verbs, included in `Reynir.conf`
+* `article.py` : Representation of an article through its life cycle
+* `query.py` : Natural language query processor
+* `vectors/builder.py` : Article indexer and topic vector builder
+* `config/Reynir.conf` : Editable configuration file for the tokenizer and parser
+* `config/Main.conf` : Various configuration data and preferences, included in `Reynir.conf`
+* `config/Prefs.conf` : Word form preference scores, included in `Reynir.conf`
+* `config/Verbs.conf` : Lexicon of verbs, included in `Reynir.conf`
+* `config/Abbrev.conf` : Lexicon of abbreviations, included in `Reynir.conf`
 * `Reynir.grammar` : A context-free grammar specification for Icelandic
   written in BNF with extensions
   for repeating constructs (`*`, `+`) and optional constructs (`?`)
 * `glock.py` : Utility class for global inter-process locking
-* `ptest.py` : Parser test module
+* `fetcher.py` : Utility classes for fetching articles given their URLs
 * `parser.py` : Older, pure-Python implementation of an Earley parser
+* `utils/*.py` : Various utility programs
 
 ## Copyright and licensing
 
