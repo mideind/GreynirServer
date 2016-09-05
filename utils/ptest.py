@@ -303,7 +303,7 @@ if __name__ == "__main__":
     # Read the configuration settings file
 
     try:
-        Settings.read("Reynir.conf")
+        Settings.read("config/Reynir.conf")
     except ConfigError as e:
         print("Configuration error: {0}".format(e))
         quit()

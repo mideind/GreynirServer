@@ -18,7 +18,7 @@ from bindb import BIN_Db
 
 try:
     # Read configuration file
-    Settings.read("Reynir.conf")
+    Settings.read("config/Reynir.conf")
 except ConfigError as e:
     print("Configuration error: {0}".format(e))
     quit()

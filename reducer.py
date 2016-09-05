@@ -38,24 +38,28 @@ class Reducer:
         self._grammar = grammar
 
 
-    @staticmethod
-    def _find_options(forest, finals, tokens):
+    class OptionFinder(ParseForestNavigator):
+
+        """ Subclass to navigate a parse forest and populate the set
+            of terminals that match each token """
+
+        def _visit_token(self, level, node):
+            """ At token node """
+            # assert node.terminal is not None
+            # assert isinstance(node.terminal, Terminal)
+            self._finals[node.start].add(node.terminal)
+            self._tokens[node.start] = node.token
+            return None
+
+        def __init__(self, finals, tokens):
+            super().__init__()
+            self._finals = finals
+            self._tokens = tokens
+
+
+    def _find_options(self, forest, finals, tokens):
         """ Find token-terminal match options in a parse forest with a root in w """
-
-        class OptionFinder(ParseForestNavigator):
-
-            """ Subclass to navigate a parse forest and populate the set
-                of terminals that match each token """
-
-            def _visit_token(self, level, node):
-                """ At token node """
-                # assert node.terminal is not None
-                # assert isinstance(node.terminal, Terminal)
-                finals[node.start].add(node.terminal)
-                tokens[node.start] = node.token
-                return None
-
-        OptionFinder().go(forest)
+        self.OptionFinder(finals, tokens).go(forest)
 
 
     def _calc_terminal_scores(self, w):
@@ -239,101 +243,103 @@ class Reducer:
         return scores
 
 
+    class ParseForestReducer(ParseForestNavigator):
+
+        """ Subclass to navigate a parse forest and reduce it
+            so that the highest-scoring family of children survives
+            at each place of ambiguity """
+
+        class ReductionInfo:
+            """ Class to accumulate information during reduction """
+            def __init__(self, node):
+                self.sc = defaultdict(int) # Child tree scores
+                # We are only interested in completed nonterminals
+                self.nt = node.nonterminal if node.is_completed else None
+                self.highest_prio = None # The priority of the highest-priority child, if any
+                self.use_prio = False
+                self.highest_ix = None # List of children with that priority
+            def add_child_score(self, ix, sc):
+                """ Add a child node's score to the parent family's score """
+                self.sc[ix] += sc
+            def add_child_production(self, ix, prod):
+                """ Add a family of children to the priority pool """
+                if self.nt is None:
+                    # Not a completed nonterminal; priorities don't apply
+                    return
+                prio = prod.priority
+                if self.highest_prio is not None and prio != self.highest_prio:
+                    # Note that there are different priorities
+                    self.use_prio = True
+                if self.highest_prio is None or prio < self.highest_prio:
+                    # Note: lower number means higher priority ;-)
+                    self.highest_prio = prio
+                    self.highest_ix = { ix }
+                elif prio == self.highest_prio:
+                    # Another child with the same (highest) priority
+                    self.highest_ix.add(ix)
+
+        def __init__(self, grammar, scores):
+            super().__init__()
+            self._scores = scores
+            self._grammar = grammar
+            self._score_adj = grammar._nt_scores
+
+        def _visit_epsilon(self, level):
+            """ At Epsilon node """
+            return 0 # Score 0
+
+        def _visit_token(self, level, node):
+            """ At token node """
+            # Return the score of this token/terminal match
+            # !!! DEBUG
+            #node.score = self._scores[node.start][node.terminal]
+            #return node.score
+            return self._scores[node.start][node.terminal]
+
+        def _visit_nonterminal(self, level, node):
+            """ At nonterminal node """
+            # Return a fresh object to collect results
+            return self.ReductionInfo(node)
+
+        def _visit_family(self, results, level, w, ix, prod):
+            """ Add information about a family of children to the result object """
+            results.add_child_production(ix, prod)
+
+        def _add_result(self, results, ix, sc):
+            """ Append a single result to the result object """
+            # Add up scores for each family of children
+            results.add_child_score(ix, sc)
+
+        def _process_results(self, results, node):
+            """ Sort scores after visiting children """
+            csc = results.sc
+            if results.use_prio:
+                # There is a priority ordering between the productions
+                # of this nonterminal: remove those child trees from
+                # consideration that do not have the highest priority
+                csc = { ix: sc for ix, sc in csc.items() if ix in results.highest_ix }
+            # assert csc
+            if len(csc) == 1 and not results.use_prio:
+                # Not ambiguous: only one result
+                [ sc ] = csc.values() # Will raise an exception if not exactly one value
+            else:
+                # Eliminate all families except the best scoring one
+                # Sort in decreasing order by score
+                s = sorted(csc.items(), key = lambda x: x[1], reverse = True)
+                ix, sc = s[0] # This is the best scoring family
+                node.reduce_to(ix)
+            if results.nt is not None:
+                # Get score adjustment for this nonterminal, if any
+                # (This is the $score(+/-N) pragma from Reynir.grammar)
+                sc += self._score_adj.get(results.nt, 0)
+            # !!! DEBUG
+            #node.score = sc
+            return sc
+
+
     def _reduce(self, w, scores):
         """ Reduce a forest with a root in w based on subtree scores """
-
-        class ParseForestReducer(ParseForestNavigator):
-
-            """ Subclass to navigate a parse forest and reduce it
-                so that the highest-scoring family of children survives
-                at each place of ambiguity """
-
-            def __init__(self, grammar, scores):
-                super().__init__()
-                self._scores = scores
-                self._grammar = grammar
-                self._score_adj = grammar._nt_scores
-
-            def _visit_epsilon(self, level):
-                """ At Epsilon node """
-                return 0 # Score 0
-
-            def _visit_token(self, level, node):
-                """ At token node """
-                # Return the score of this token/terminal match
-                # !!! DEBUG
-                #node.score = self._scores[node.start][node.terminal]
-                #return node.score
-                return self._scores[node.start][node.terminal]
-
-            def _visit_nonterminal(self, level, node):
-                """ At nonterminal node """
-                # Return a fresh object to collect results
-                class ReductionInfo:
-                    def __init__(self):
-                        self.sc = defaultdict(int) # Child tree scores
-                        # We are only interested in completed nonterminals
-                        self.nt = node.nonterminal if node.is_completed else None
-                        self.highest_prio = None # The priority of the highest-priority child, if any
-                        self.use_prio = False
-                        self.highest_ix = None # List of children with that priority
-                    def add_child_score(self, ix, sc):
-                        """ Add a child node's score to the parent family's score """
-                        self.sc[ix] += sc
-                    def add_child_production(self, ix, prod):
-                        """ Add a family of children to the priority pool """
-                        if self.nt is None:
-                            # Not a completed nonterminal; priorities don't apply
-                            return
-                        prio = prod.priority
-                        if self.highest_prio is not None and prio != self.highest_prio:
-                            # Note that there are different priorities
-                            self.use_prio = True
-                        if self.highest_prio is None or prio < self.highest_prio:
-                            # Note: lower number means higher priority ;-)
-                            self.highest_prio = prio
-                            self.highest_ix = { ix }
-                        elif prio == self.highest_prio:
-                            # Another child with the same (highest) priority
-                            self.highest_ix.add(ix)
-                return ReductionInfo()
-
-            def _visit_family(self, results, level, w, ix, prod):
-                """ Add information about a family of children to the result object """
-                results.add_child_production(ix, prod)
-
-            def _add_result(self, results, ix, sc):
-                """ Append a single result to the result object """
-                # Add up scores for each family of children
-                results.add_child_score(ix, sc)
-
-            def _process_results(self, results, node):
-                """ Sort scores after visiting children """
-                csc = results.sc
-                if results.use_prio:
-                    # There is a priority ordering between the productions
-                    # of this nonterminal: remove those child trees from
-                    # consideration that do not have the highest priority
-                    csc = { ix: sc for ix, sc in csc.items() if ix in results.highest_ix }
-                assert csc
-                if len(csc) == 1 and not results.use_prio:
-                    # Not ambiguous: only one result
-                    [ sc ] = csc.values() # Will raise an exception if not exactly one value
-                else:
-                    # Eliminate all families except the best scoring one
-                    # Sort in decreasing order by score
-                    s = sorted(csc.items(), key = lambda x: x[1], reverse = True)
-                    ix, sc = s[0] # This is the best scoring family
-                    node.reduce_to(ix)
-                if results.nt is not None:
-                    # Get score adjustment for this nonterminal, if any
-                    # (This is the $score(+/-N) pragma from Reynir.grammar)
-                    sc += self._score_adj.get(results.nt, 0)
-                # !!! DEBUG
-                #node.score = sc
-                return sc
-
-        return ParseForestReducer(self._grammar, scores).go(w)
+        return self.ParseForestReducer(self._grammar, scores).go(w)
 
 
     def go_with_score(self, forest):

@@ -1659,14 +1659,17 @@ def recognize_entities(token_stream, enclosing_session = None):
 
     tq = [] # Token queue
     state = defaultdict(list) # Phrases we're considering
+    ecache = dict() # Entitiy definition cache
 
     with SessionContext(session = enclosing_session, commit = True) as session:
 
-        @lru_cache(maxsize = 40)
         def query_entities(w):
             """ Return a list of entities matching the initial word given """
-            return session.query(Entity.name, Entity.verb, Entity.definition) \
-                .filter(Entity.name.like(w + " %") | (Entity.name == w)).all()
+            e = ecache.get(w)
+            if e is None:
+                ecache[w] = e = session.query(Entity.name, Entity.verb, Entity.definition) \
+                    .filter(Entity.name.like(w + " %") | (Entity.name == w)).all()
+            return e
 
         def flush_match():
             """ Flush a match that has been accumulated in the token queue """

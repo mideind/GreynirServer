@@ -22,6 +22,7 @@
 
 """
 
+import os
 import codecs
 import locale
 
@@ -83,6 +84,11 @@ class LineReader:
                     # Check for include directive: $include filename.txt
                     if s.startswith("$") and s.lower().startswith("$include "):
                         iname = s.split(maxsplit = 1)[1].strip()
+                        # Do some path magic to allow the included path
+                        # to be relative to the current file path, or a
+                        # fresh (absolute) path by itself
+                        head, _ = os.path.split(self._fname)
+                        iname = os.path.join(head, iname)
                         rdr = LineReader(iname, self._fname, self._line)
                         # Successfully opened the include file: switch context to it
                         save = (self._line, self._fname)

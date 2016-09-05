@@ -266,7 +266,7 @@ if __name__ == "__main__":
 
     try:
         # Read configuration file
-        Settings.read("Reynir.conf")
+        Settings.read("config/Reynir.conf")
     except ConfigError as e:
         print("Configuration error: {0}".format(e))
         quit()
@@ -276,7 +276,7 @@ if __name__ == "__main__":
 
     # Additional files that should cause a reload of the web server application
     # Note: Reynir.grammar is automatically reloaded if its timestamp changes
-    extra_files = ['Reynir.conf', 'Verbs.conf']
+    extra_files = ['config/Reynir.conf', 'config/Verbs.conf']
 
     # Run the Flask web server application
     app.run(debug = Settings.DEBUG, host = Settings.HOST, port = 8080,

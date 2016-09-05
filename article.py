@@ -182,27 +182,29 @@ class Article:
                 ar = None
             return None if ar is None else cls._init_from_row(ar)
 
+    class _Annotator(ParseForestNavigator):
+
+        """ Local utility subclass to navigate a parse forest and annotate the
+            original token list with the corresponding terminal matches """
+
+        def __init__(self, tmap):
+            super().__init__()
+            self._tmap = tmap
+
+        def _visit_token(self, level, node):
+            """ At token node """
+            ix = node.token.index # Index into original sentence
+            assert ix not in self._tmap
+            meaning = node.token.match_with_meaning(node.terminal)
+            self._tmap[ix] = (node.terminal, None if isinstance(meaning, bool) else meaning) # Map from original token to matched terminal
+            return None
+
     @staticmethod
     def _terminal_map(tree):
         """ Return a dict containing a map from original token indices to matched terminals """
-        tmap = { }
-
-        class Annotator(ParseForestNavigator):
-
-            """ Subclass to navigate a parse forest and annotate the
-                original token list with the corresponding terminal
-                matches """
-
-            def _visit_token(self, level, node):
-                """ At token node """
-                ix = node.token.index # Index into original sentence
-                assert ix not in tmap
-                meaning = node.token.match_with_meaning(node.terminal)
-                tmap[ix] = (node.terminal, None if isinstance(meaning, bool) else meaning) # Map from original token to matched terminal
-                return None
-
+        tmap = dict()
         if tree is not None:
-            Annotator().go(tree)
+            Article._Annotator(tmap).go(tree)
         return tmap
 
     @staticmethod

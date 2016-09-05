@@ -129,9 +129,6 @@ def get_json_bool(rq, name, default = False):
     return isinstance(b, str) and b == "true"
 
 
-# Run with profiling?
-_PROFILE = False
-
 # Default text shown in the URL/text box
 _DEFAULT_TEXTS = [
     'Hver gegnir starfi seðlabankastjóra?',
@@ -165,20 +162,6 @@ _MAX_UUID_LENGTH = 36
 _MAX_TEXT_LENGTH = 8192
 _MAX_TEXT_LENGTH_VIA_URL = 512
 _MAX_QUERY_LENGTH = 512
-
-
-def profile(func, *args, **kwargs):
-    """ Profile the processing of text or URL """
-
-    import cProfile as profile
-
-    filename = 'Reynir.profile'
-
-    pr = profile.Profile()
-    result = pr.runcall(func, *args, **kwargs)
-    pr.dump_stats(filename)
-
-    return result
 
 
 def add_entity_to_register(name, register, session):
@@ -884,7 +867,7 @@ def server_error(e):
 t0 = time.time()
 try:
     # Read configuration file
-    Settings.read("Reynir.conf")
+    Settings.read("config/Reynir.conf")
 except ConfigError as e:
     print("Configuration error: {0}".format(e))
     quit()
@@ -899,11 +882,6 @@ if __name__ == "__main__":
 
     # Run a default Flask web server for testing if invoked directly as a main program
 
-    args = sys.argv
-    if len(args) == 2 and args[1] in ("--profile", "-p"):
-        _PROFILE = True
-        print("Profiling enabled")
-
     # Additional files that should cause a reload of the web server application
     # Note: Reynir.grammar is automatically reloaded if its timestamp changes
     extra_files = [ 'Reynir.conf', 'Verbs.conf', 'Main.conf', 'Prefs.conf', 'Abbrev.conf' ]
@@ -913,7 +891,7 @@ if __name__ == "__main__":
     try:
         # Run the Flask web server application
         app.run(debug=Settings.DEBUG, host=Settings.HOST, use_reloader=True,
-            extra_files = extra_files)
+            extra_files = [ "config/" + fname for fname in extra_files ])
     except socket_error as e:
         if e.errno == errno.EADDRINUSE: # Address already in use
             print("Reynir is already running at host {0}".format(Settings.HOST))

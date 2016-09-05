@@ -282,7 +282,7 @@ class Node:
     @property
     def is_ambiguous(self):
         """ Return True if this node has more than one family of children """
-        return self._families and len(self._families) >= 2
+        return self._families is not None and len(self._families) >= 2
 
     @property
     def is_interior(self):
@@ -329,8 +329,8 @@ class Node:
 
     def reduce_to(self, child_ix):
         """ Eliminate all child families except the given one """
-        if not self._families or child_ix >= len(self._families):
-            raise IndexError("Child index out of range")
+        #if not self._families or child_ix >= len(self._families):
+        #    raise IndexError("Child index out of range")
         f = self._families[child_ix] # The survivor
         # Collapse the list to one option
         self._families = [ f ]
