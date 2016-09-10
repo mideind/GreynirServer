@@ -34,7 +34,8 @@ from fastparser import Fast_Parser, ParseError, ParseForestPrinter
 from incparser import IncrementalParser
 from reducer import Reducer
 from article import Article as ArticleProxy
-from scraperdb import SessionContext, desc, Person, Article, ArticleTopic, Topic, GenderQuery, StatsQuery
+from scraperdb import SessionContext, desc, Root, Person, Article, ArticleTopic, Topic,\
+    GenderQuery, StatsQuery
 from query import Query, query_person, query_entity
 from getimage import get_image_url
 
@@ -210,11 +211,12 @@ def top_news(topic = None, start = None, limit = _TOP_NEWS_LENGTH):
 
     with SessionContext(commit = True) as session:
 
-        q = session.query(Article) \
+        q = session.query(Article).join(Root) \
             .filter(Article.tree != None) \
             .filter(Article.timestamp != None) \
             .filter(Article.timestamp < start) \
-            .filter(Article.heading > "")
+            .filter(Article.heading > "") \
+            .filter(Root.visible == True)
 
         if topic is not None:
             # Filter by topic identifier
@@ -286,7 +288,8 @@ def top_persons(limit = _TOP_PERSONS_LENGTH):
     with SessionContext(commit = True) as session:
 
         q = session.query(Person.name, Person.title, Person.article_url, Article.id) \
-            .join(Article) \
+            .join(Article).join(Root) \
+            .filter(Root.visible) \
             .order_by(desc(Article.timestamp))[0:limit * 2] # Go through up to 2 * N records
 
         for p in q:
@@ -389,10 +392,8 @@ def reparse():
         # Load the article
         a = ArticleProxy.load_from_uuid(uuid, session)
         if a is not None:
-            # Found
-            ArticleProxy.reload_parser() # Make sure we're using the newest grammar
-            # Parse it and store the updated version
-            a.parse(session, verbose = True)
+            # Found: Parse it (with a fresh parser) and store the updated version
+            a.parse(session, verbose = True, reload_parser = True)
             # Save the tokens
             tokens = a.tokens
             # Build register of person names
@@ -805,7 +806,8 @@ def page():
         if uuid:
             a = ArticleProxy.load_from_uuid(uuid, session)
         elif url.startswith("http:") or url.startswith("https:"):
-            a = ArticleProxy.load_from_url(url, session)
+            # a = ArticleProxy.load_from_url(url, session)
+            a = ArticleProxy.scrape_from_url(url, session) # Forces a new scrape
         else:
             a = None
 

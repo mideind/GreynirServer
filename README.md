@@ -69,10 +69,10 @@ Reynir works in stages, roughly as follows:
 4. *Parse forest reducer* with heuristics to find the best parse tree.
 5. *Information extractor* that maps a parse tree via its grammar constituents to plug-in
   Python functions.
-6. *Query processor* that allows natural language queries for entites in Reynir's database.
-7. *Article indexer* that transforms articles from bags-of-words to fixed-dimensional
+6. *Article indexer* that transforms articles from bags-of-words to fixed-dimensional
   topic vectors using [Tf-Idf](http://www.tfidf.com/) and
   [Latent Semantic Analysis](https://en.wikipedia.org/wiki/Latent_semantic_analysis).
+7. *Query processor* that allows natural language queries for entites in Reynir's database.
 
 Reynir has an embedded web server that displays news articles recently scraped into its
 databsae, as well as names of people extracted from those articles along with their titles. The web

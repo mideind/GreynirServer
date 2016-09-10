@@ -202,6 +202,8 @@ class BIN_Token(Token):
         if self.t0 == TOK.ENTITY:
             # Cut off the entity definitions (not used during parse or stored with the tree)
             self.t2 = (None, t[2][1], t[2][2])
+        elif isinstance(t[2], list):
+            self.t2 = tuple(t[2])
         else:
             self.t2 = t[2]
         self.is_upper = self.t1[0] != self.t1_lower[0] # True if starts with upper case
@@ -833,9 +835,25 @@ class BIN_Token(Token):
     def __str__(self):
         return "\'" + self.t1 + "\'"
 
+    @property
+    def key(self):
+        """ Return a hashable key that partitions tokens based on
+            effective identity, i.e. tokens with the same hash can be considered
+            equivalent for parsing purposes. This hash is inter alia used by the
+            alloc_cache() function in fastparser.py to optimize token/terminal
+            matching calls. """
+        if self.t0 == TOK.WORD:
+            # For words, the t2 tuple is significant because it may have been
+            # cut down by the tokenizer due to the word's context, cf. the
+            # [ambiguous_phrases] section in Main.conf
+            return (self.t0, self.t1, self.t2)
+        # Otherwise, the t0 and t1 fiels are enough
+        return (self.t0, self.t1)
+
     def __hash__(self):
+        """ Calculate and cache a hash for this token """
         if self._hash is None:
-            self._hash = hash((self.t0, self.t1))
+            self._hash = hash(self.key)
         return self._hash
 
     @classmethod

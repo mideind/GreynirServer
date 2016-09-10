@@ -20,7 +20,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, backref
 from sqlalchemy import Table, Column, Integer, String, Float, DateTime, Sequence, \
-    UniqueConstraint, ForeignKey, PrimaryKeyConstraint
+    Boolean, UniqueConstraint, ForeignKey, PrimaryKeyConstraint
 from sqlalchemy.exc import SQLAlchemyError as SqlError
 from sqlalchemy.exc import IntegrityError as SqlIntegrityError
 from sqlalchemy.exc import DataError as SqlDataError
@@ -154,6 +154,8 @@ class Root(Base):
     scr_module = Column(String(80))
     # Class within module to use for scraping
     scr_class = Column(String(80))
+    # Are articles of this root visible on the Greynir web?
+    visible = Column(Boolean, default = True)
 
     # The combination of domain + url must be unique
     __table_args__ = (
@@ -535,7 +537,7 @@ class GenderQuery(_BaseQuery):
             from (
                 select r.domain, p.gender, sum(1) as cnt
                     from persons as p, articles as a, roots as r
-                    where p.article_url = a.url and a.root_id = r.id
+                    where p.article_url = a.url and a.root_id = r.id and r.visible
                     group by r.domain, p.gender
             ) as q
             group by domain
@@ -553,7 +555,7 @@ class StatsQuery(_BaseQuery):
             sum(a.num_sentences) as sent,
             sum(a.num_parsed) as parsed
             from articles as a, roots as r
-            where a.root_id = r.id
+            where a.root_id = r.id and r.visible
             group by r.domain
             order by r.domain;
         """

@@ -25,6 +25,7 @@ resources/*.txt
 resources/*.csv
 resources/*.tmLanguage
 resources/visir/
+resources/reykjanes/
 mim/
 gold/
 fonts/

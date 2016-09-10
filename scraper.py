@@ -149,6 +149,9 @@ class Scraper:
     def _scrape_single_root(self, r):
         """ Single root scraper that will be called by a process within a
             multiprocessing pool """
+        if r.domain.endswith(".local"):
+            # We do not scrape .local roots
+            return
         try:
             print("Scraping root of {0} at {1}...".format(r.description, r.url))
             # Process a single top-level domain and root URL,
@@ -383,13 +386,15 @@ def init_roots():
             ("http://stjornlagarad.is", "stjornlagarad.is", "Stjórnlagaráð", 1.0, "scrapers.default", "StjornlagaradScraper"),
             ("https://www.forsaetisraduneyti.is", "forsaetisraduneyti.is", "Forsætisráðuneyti", 1.0, "scrapers.default", "StjornarradScraper"),
             ("https://www.innanrikisraduneyti.is", "innanrikisraduneyti.is", "Innanríkisráðuneyti", 1.0, "scrapers.default", "StjornarradScraper"),
-            ("https://www.fjarmalaraduneyti.is", "fjarmalaraduneyti.is", "Fjármálaráðuneyti", 1.0, "scrapers.default", "StjornarradScraper")
+            ("https://www.fjarmalaraduneyti.is", "fjarmalaraduneyti.is", "Fjármálaráðuneyti", 1.0, "scrapers.default", "StjornarradScraper"),
+            ("http://reykjanes.local", "reykjanes.local", "Reykjanesbær", 1.0, "scrapers.reykjanes", "ReykjanesScraper")
         ]
 
         with SessionContext() as session:
             for url, domain, description, authority, scr_module, scr_class in ROOTS:
                 r = Root(url = url, domain = domain, description = description, authority = authority,
-                    scr_module = scr_module, scr_class = scr_class)
+                    scr_module = scr_module, scr_class = scr_class,
+                    visible = not domain.endswith(".local"))
                 session.add(r)
                 try:
                     # Commit the insert

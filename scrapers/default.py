@@ -18,10 +18,16 @@
 import urllib.parse as urlparse
 from datetime import datetime
 import re
-
 from collections import namedtuple
 
+from bs4 import BeautifulSoup
+
 MODULE_NAME = __name__
+
+
+# The HTML parser to use with BeautifulSoup
+#_HTML_PARSER = "html5lib"
+_HTML_PARSER = "html.parser"
 
 
 # The metadata returned by the helper.get_metadata() function
@@ -46,6 +52,11 @@ class ScrapeHelper:
         self._author = root.author
         self._description = root.description
         self._root_id = root.id
+
+    def make_soup(self, doc):
+        """ Make a soup object from a document """
+        soup = BeautifulSoup(doc, _HTML_PARSER)
+        return None if (soup is None or soup.html is None) else soup
 
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
@@ -487,6 +498,7 @@ class VisirScraper(ScrapeHelper):
     _SKIP_PREFIXES = [
         "/english/",
         "/section/", # All /section/X URLs seem to be (extreeeemely long) summaries
+        "/property/", # Fasteignaauglýsingar
         "/soyouthinkyoucansnap"
     ]
 
@@ -518,7 +530,20 @@ class VisirScraper(ScrapeHelper):
         if timestamp is None:
             timestamp = datetime.utcnow()
         author = ScrapeHelper.tag_prop_val(soup, "a", "itemprop", "author")
-        author = author.string if author else "Ritstjórn visir.is"
+        if author:
+            author = author.string
+        else:
+            # Check for an author name at the start of the article
+            article = ScrapeHelper.div_class(soup, "articlewrapper")
+            if article:
+                writer = ScrapeHelper.div_class(article, "meta")
+                if writer:
+                    writer = writer.string
+                    if writer.endswith(" skrifar"):
+                        # 'Jón Jónsson skrifar'
+                        author = writer[0:-8]
+        if not author:
+            author = "Ritstjórn visir.is"
         metadata.heading = heading
         metadata.author = author
         metadata.timestamp = timestamp

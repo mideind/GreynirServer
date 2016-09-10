@@ -56,6 +56,7 @@ declarations = """
     typedef int INT;
     typedef int BOOL; // Different from C++
     typedef char CHAR;
+    typedef unsigned char BYTE;
 
     struct Grammar {
         UINT nNonterminals;   // Number of nonterminals
@@ -96,11 +97,12 @@ declarations = """
     } Node;
 
     typedef BOOL (*MatchingFunc)(UINT nHandle, UINT nToken, UINT nTerminal);
+    typedef BYTE* (*AllocFunc)(UINT nHandle, UINT nToken, UINT nSize);
 
     struct Node* earleyParse(struct Parser*, UINT nTokens, INT iRoot, UINT nHandle, UINT* pnErrorToken);
     struct Grammar* newGrammar(const CHAR* pszGrammarFile);
     void deleteGrammar(struct Grammar*);
-    struct Parser* newParser(struct Grammar*, MatchingFunc fpMatcher);
+    struct Parser* newParser(struct Grammar*, MatchingFunc fpMatcher, AllocFunc fpAlloc);
     void deleteParser(struct Parser*);
     void deleteForest(struct Node*);
     void dumpForest(struct Node*, struct Grammar*);
@@ -123,18 +125,33 @@ class ParseJob:
     _jobs = dict()
     _lock = Lock()
 
-    def __init__(self, handle, grammar, tokens, terminals):
+    def __init__(self, handle, grammar, tokens, terminals, matching_cache):
         self._handle = handle
         self.tokens = tokens
         self.terminals = terminals
         self.grammar = grammar
         self.c_dict = dict() # Node pointer conversion dictionary
+        self.matching_cache = matching_cache # Token/terminal matching buffers
 
     def matches(self, token, terminal):
         """ Convert the token reference from a 0-based token index
             to the token object itself; convert the terminal from a
             1-based terminal index to a terminal object. """
         return self.tokens[token].matches(self.terminals[terminal])
+
+    def alloc_cache(self, token, size):
+        """ Allocate a token/terminal matching cache buffer for the given token """
+        key = self.tokens[token].key # Obtain the (hashable) key of the BIN_Token
+        try:
+            # Do we already have a token/terminal cache match buffer for this key?
+            b = self.matching_cache.get(key)
+            if b is None:
+                # No: create a fresh one (assumed to be initialized to zero)
+                b = self.matching_cache[key] = ffi.new("BYTE[]", size)
+        except TypeError:
+            print("alloc_cache() unable to hash key: {0}".format(repr(key)))
+            b = ffi.NULL
+        return b
 
     @property
     def handle(self):
@@ -148,18 +165,19 @@ class ParseJob:
     def __exit__(self, exc_type, exc_value, traceback):
         """ Python context manager protocol """
         self.__class__.delete(self._handle)
+        #self.delete(self._handle)
         # Return False to re-throw exception from the context, if any
         return False
 
     @classmethod
-    def make(cls, grammar, tokens, terminals):
+    def make(cls, grammar, tokens, terminals, matching_cache):
         """ Create a new parse job with for a given token sequence and set of terminals """
         with cls._lock:
             h = cls._seq
             cls._seq += 1
             if cls._seq >= cls._MAX_JOBS:
                 cls._seq = 0
-            j = cls._jobs[h] = ParseJob(h, grammar, tokens, terminals)
+            j = cls._jobs[h] = ParseJob(h, grammar, tokens, terminals, matching_cache)
         return j
 
     @classmethod
@@ -173,8 +191,13 @@ class ParseJob:
         """ Dispatch a match request to the correct parse job """
         return cls._jobs[handle].matches(token, terminal)
 
+    @classmethod
+    def alloc(cls, handle, token, size):
+        """ Dispatch a cache buffer allocation request to the correct parse job """
+        return cls._jobs[handle].alloc_cache(token, size)
 
-# CFFI callback function
+
+# CFFI callback functions
 
 @ffi.callback("BOOL(UINT, UINT, UINT)")
 def matching_func(handle, token, terminal):
@@ -185,6 +208,14 @@ def matching_func(handle, token, terminal):
         earleyParse(). In this case, it is used to identify
         a ParseJob object that dispatches the match query. """
     return ParseJob.dispatch(handle, token, terminal)
+
+@ffi.callback("BYTE*(UINT, UINT, UINT)")
+def alloc_func(handle, token, size):
+    """ Allocate a token/terminal matching cache buffer, at least size bytes.
+        If the callback returns ffi.NULL, the parser will allocate its own buffer.
+        The point of this callback is to allow re-using buffers for identical tokens,
+        so we avoid making unnecessary matching calls. """
+    return ParseJob.alloc(handle, token, size)
 
 
 class Node:
@@ -530,9 +561,14 @@ class Fast_Parser(BIN_Parser):
             # Create instances of the C++ Grammar and Parser classes
             c_grammar = Fast_Parser._load_binary_grammar()
             # Create a C++ parser object for the grammar
-            self._c_parser = Fast_Parser.eparser.newParser(c_grammar, matching_func)
+            self._c_parser = Fast_Parser.eparser.newParser(c_grammar, matching_func, alloc_func)
             # Find the index of the root nonterminal for this parser instance
             self._root_index = 0 if root is None else self.grammar.nonterminals[root].index
+            # Maintain a token/terminal matching cache for the duration
+            # of this parser instance. Note that this cache will grow with use,
+            # as it includes an entry (about 2K bytes) for every distinct token that the parser
+            # encounters.
+            self._matching_cache = dict()
 
     def __enter__(self):
         """ Python context manager protocol """
@@ -555,7 +591,7 @@ class Fast_Parser(BIN_Parser):
         # Use the context manager protocol to guarantee that the parse job
         # handle will be properly deleted even if an exception is thrown
 
-        with ParseJob.make(self.grammar, wrapped_tokens, self._terminals) as job:
+        with ParseJob.make(self.grammar, wrapped_tokens, self._terminals, self._matching_cache) as job:
 
             node = ep.earleyParse(self._c_parser, lw, self._root_index, job.handle, err)
 

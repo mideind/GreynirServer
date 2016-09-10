@@ -45,7 +45,7 @@ END_OF_SENTENCE = frozenset(['.', '?', '!', '[…]'])
 # Punctuation symbols that may additionally occur at the end of a sentence
 SENTENCE_FINISHERS = frozenset([')', ']', '“', '»', '”', '’', '"', '[…]'])
 # Punctuation symbols that may occur inside words
-PUNCT_INSIDE_WORD = frozenset(['.', "'", '‘', "´"]) # Period and apostrophes
+PUNCT_INSIDE_WORD = frozenset(['.', "'", '‘', "´", "’"]) # Period and apostrophes
 
 # Hyphens that are cast to '-' for parsing and then re-cast
 # to normal hyphens, en or em dashes in final rendering
@@ -1608,7 +1608,7 @@ def disambiguate_phrases(token_stream):
                         for t, cat in zip(tq, cats):
                             # assert t.kind == TOK.WORD
                             # Yield a new token with fewer meanings for each original token in the queue
-                            # print("Ambig word {0}:\n   original meanings {1}\n   restricted meanings {2}"
+                            #print("Ambig word {0}:\n   original meanings {1}\n   restricted meanings {2}"
                             #    .format(t.txt, t.val, [m for m in t.val if m.ordfl == cat]))
                             yield TOK.Word(t.txt, [m for m in t.val if m.ordfl == cat])
 

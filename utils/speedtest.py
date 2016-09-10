@@ -42,7 +42,7 @@ Settings.read("config/Reynir.conf")
 with Fast_Parser() as fp:
     pass
 
-speed_test("dbc585e4-736c-11e6-a2bb-04014c605401")
-# profile(speed_test, "dbc585e4-736c-11e6-a2bb-04014c605401")
+#speed_test("dbc585e4-736c-11e6-a2bb-04014c605401")
+profile(speed_test, "dbc585e4-736c-11e6-a2bb-04014c605401")
 
 print("speedtest done")

@@ -14,8 +14,9 @@
 """
 
 import time
+from collections import defaultdict
 
-from tokenizer import paragraphs
+from tokenizer import TOK, paragraphs
 from fastparser import Fast_Parser, ParseError
 from reducer import Reducer
 from settings import Settings
@@ -107,7 +108,6 @@ class IncrementalParser:
     def __init__(self, parser, toklist, verbose = False):
         self._parser = parser
         self._reducer = Reducer(parser.grammar)
-        self._toklist = toklist
         self._num_sent = 0
         self._num_parsed_sent = 0
         self._num_tokens = 0
@@ -115,6 +115,17 @@ class IncrementalParser:
         self._total_tokens = 0
         self._start_time = time.time()
         self._verbose = verbose
+        self._toklist = toklist
+        
+        # Count distinct tokens
+        #self._toklist = list(toklist)
+        #print("Article has {0} tokens".format(len(self._toklist)))
+        #tokencount = defaultdict(int)
+        #for t in self._toklist:
+        #    tokencount[(t.kind, t.txt)] += 1
+        #print("Article has {0} distinct tokens".format(len(tokencount)))
+        #for t in sorted(tokencount.items(), key = lambda x : x[1], reverse = True)[0:20]:
+        #    print("Token '{0}' ({1}) occurs {2} times".format(t[0][1], TOK.descr[t[0][0]], t[1]))
 
     def _add_sentence(self, s, num):
         """ Add a processed sentence to the statistics """

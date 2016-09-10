@@ -7,16 +7,20 @@
 SRC=/home/villi/github/Reynir
 DEST=/usr/share/nginx/greynir.is
 
-echo Deploying $SRC to $DEST...
+echo "Deploying $SRC to $DEST..."
 
 cd $SRC
 
-echo Stopping greynir.is server...
+echo "Stopping greynir.is server..."
 
 sudo systemctl stop greynir
 
-cp Abbrev.conf $DEST/Abbrev.conf
-cp Adjectives.conf $DEST/Adjectives.conf
+cp config/Abbrev.conf $DEST/config/Abbrev.conf
+cp config/Adjectives.conf $DEST/config/Adjectives.conf
+cp config/Main.conf $DEST/config/Main.conf
+cp config/Prefs.conf $DEST/config/Prefs.conf
+cp config/Verbs.conf $DEST/config/Verbs.conf
+
 cp article.py $DEST/article.py
 cp baseparser.py $DEST/baseparser.py
 cp bindb.py $DEST/bindb.py
@@ -29,9 +33,7 @@ cp glock.py $DEST/glock.py
 cp grammar.py $DEST/grammar.py
 cp incparser.py $DEST/incparser.py
 cp libeparser.so $DEST/libeparser.so
-cp Main.conf $DEST/Main.conf
 cp main.py $DEST/main.py
-cp Prefs.conf $DEST/Prefs.conf
 cp processor.py $DEST/processor.py
 cp query.py $DEST/query.py
 cp reducer.py $DEST/reducer.py
@@ -41,7 +43,6 @@ cp scraper.py $DEST/scraper.py
 cp settings.py $DEST/settings.py
 cp tokenizer.py $DEST/tokenizer.py
 cp tree.py $DEST/tree.py
-cp Verbs.conf $DEST/Verbs.conf
 
 cp resources/ordalisti.dawg.pickle $DEST/resources/
 
@@ -50,7 +51,7 @@ cp templates/* $DEST/templates/
 cp static/* $DEST/static/
 cp fonts/* $DEST/fonts/
 
-echo Deployment done
-echo Starting greynir.is server...
+echo "Deployment done"
+echo "Starting greynir.is server..."
 
 sudo systemctl start greynir

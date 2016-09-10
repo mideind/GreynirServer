@@ -120,10 +120,6 @@ class Fetcher:
 
 
     @staticmethod
-    def make_soup(html):
-        return BeautifulSoup(html, _HTML_PARSER)
-
-    @staticmethod
     def extract_text(soup, result):
         """ Append the human-readable text found in an HTML soup to the result TextList """
         if soup is None:
@@ -176,7 +172,11 @@ class Fetcher:
         html_doc = None
         try:
 
+            # Normal external HTTP/HTTPS fetch
             r = requests.get(url)
+            if r is None:
+                print("No document returned for URL {0}".format(url))
+                return None
             if r.status_code == requests.codes.ok:
                 html_doc = r.text
             else:
@@ -219,13 +219,25 @@ class Fetcher:
         return helper
 
 
+    @staticmethod
+    def make_soup(doc, helper = None):
+        """ Convert a document to a soup, using the helper if available """
+        if helper is None:
+            soup = BeautifulSoup(doc, _HTML_PARSER) if doc else None
+            if soup is None or soup.html is None:
+                return None
+        else:
+            soup = helper.make_soup(doc)
+        return soup
+
+
     @classmethod
     def tokenize_html(cls, url, html, enclosing_session = None):
         """ Convert HTML into a token iterable (generator) """
         with SessionContext(enclosing_session) as session:
-            soup = BeautifulSoup(html, _HTML_PARSER) if html else None
             helper = cls.helper_for(session, url)
-            if soup is None or soup.html is None:
+            soup = Fetcher.make_soup(html, helper)
+            if soup is None:
                 content = None
             elif helper is None:
                 content = soup.html.body
@@ -253,7 +265,7 @@ class Fetcher:
             if s.scheme and s.scheme not in { 'http', 'https' }:
                 # Not HTTP
                 continue
-            if s.netloc and not s.netloc.startswith(root.domain):
+            if s.netloc and not (s.netloc == root.domain or s.netloc.endswith("." + root.domain)):
                 # External domain - we're not interested
                 continue
             # Seems to be a bug in urllib: fragments are put into the
@@ -334,9 +346,9 @@ class Fetcher:
 
             helper = cls.helper_for(session, url)
             # Parse the HTML
-            soup = BeautifulSoup(html_doc, _HTML_PARSER)
-            if not soup or not soup.html:
-                print("Scraper.fetch_article(): No soup or no soup.html")
+            soup = Fetcher.make_soup(html_doc, helper)
+            if soup is None:
+                print("Fetcher.fetch_article(): No soup")
                 return (None, None, None)
 
             # Obtain the metadata and the content from the resulting soup
@@ -350,17 +362,23 @@ class Fetcher:
         """ Fetch a URL using the scraping mechanism, returning
             a tuple (metadata, content) or None if error """
 
-        # Do a straight HTTP fetch
-        html_doc = cls._fetch_url(url)
-        if not html_doc:
-            return None
-
         with SessionContext(enclosing_session) as session:
 
             helper = cls.helper_for(session, url)
+
+            if helper is None or not hasattr(helper, "fetch_url"):
+                # Do a straight HTTP fetch
+                html_doc = cls._fetch_url(url)
+            else:
+                # Hand off to the helper
+                html_doc = helper.fetch_url(url)
+
+            if not html_doc:
+                return None
+
             # Parse the HTML
-            soup = BeautifulSoup(html_doc, _HTML_PARSER)
-            if not soup or not soup.html:
+            soup = Fetcher.make_soup(html_doc, helper)
+            if soup is None:
                 print("Fetcher.fetch_url(): No soup or no soup.html")
                 return None
 
@@ -375,18 +393,24 @@ class Fetcher:
         """ Fetch a URL using the scraping mechanism, returning
             a tuple (html, metadata, helper) or None if error """
 
-        # Do a straight HTTP fetch
-        html_doc = cls._fetch_url(url)
-        if not html_doc:
-            return (None, None, None)
-
         with SessionContext(enclosing_session) as session:
 
             helper = cls.helper_for(session, url)
+
+            if helper is None or not hasattr(helper, "fetch_url"):
+                # Do a straight HTTP fetch
+                html_doc = cls._fetch_url(url)
+            else:
+                # Hand off to the helper
+                html_doc = helper.fetch_url(url)
+
+            if not html_doc:
+                return (None, None, None)
+
             # Parse the HTML
-            soup = BeautifulSoup(html_doc, _HTML_PARSER)
-            if not soup or not soup.html:
-                print("Fetcher.fetch_url_html(): No soup or no soup.html")
+            soup = Fetcher.make_soup(html_doc, helper)
+            if soup is None:
+                print("Fetcher.fetch_url_html(): No soup")
                 return (None, None, None)
 
             # Obtain the metadata from the resulting soup

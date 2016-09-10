@@ -381,7 +381,7 @@ Setning/tala/pers/kyn →
     # Ath. að frumlag 3p. et. getur verið falið:
     # (? Það virtist mér í dag kettinum líða betur)
     # 'Í dag virtist mér kettinum líða betur'
-    | FsAtv? SagnHluti/tala/pers/kyn
+    | FsAtv? SagnHluti/tala/pers/kyn Upptalning/tala?
 
     # 'Það fara 40 mínútur í pappírsvinnuna'
     # (40 mínútur fara í pappírsvinnuna)
@@ -552,6 +552,9 @@ SetningAukafall →
 
     # Öllum má tryggja heilbrigðisþjónustu í dag
     | Nl_þgf HjSögnMegiSkuli_et_p3 FsAtv? So_2_nh_þgf/fall Nl/fall AtvFs?
+
+    # Öllum skal [ekki] standa [til boða] menntun (Menntun skal standa öllum til boða)
+    | Nl/aukafall HjSögnMegiSkuli_et_p3 FsAtv? So_1_nh/aukafall FsAtv? Nl_nf AtvFs?
 
     # Mér/okkur/ykkur/börnunum finnst/þykir [það] [ekki] skemmtilegt [að borða góðan mat / hérna í kvöld]
     | Nl_þgf HjSögnFinnst "það"? FinnstAndlag NhFyllingEðaAtv
@@ -2087,7 +2090,7 @@ NlTöluorð/tala/fall/kyn →
 
 TöluorðForskeyti →
     'að_minnsta_kosti' | "um:ao" | "minnst" | "einungis" | "aðeins" | "ekki:ao"
-    | "svo" "sem:st" | "tæplega" | "rúmlega"
+    | "svo" "sem:st" | "tæplega" | "rúmlega" | "einnig" | "samtals"
 
 TöluorðLo/tala →
     lo_evb_nf_hk/tala # efstu tvo / efstu tvö / efstu tvær
@@ -2251,12 +2254,12 @@ NlStak_ft_p1/fall/kyn →
 
 Skst →
     Skst_abbrev
-    | sérnafn "-"      # Barclays-bankann
+    | sérnafn+ "-"      # Barclays-bankann, Al Thani-málið
     | entity "-"
 
 Skst_abbrev → no_abbrev "-"?  # FIH bankann
 
-$score(+6) Skst
+$score(+8) Skst
 $score(+4) Skst_abbrev
 
 Fyrirbæri/fall/kyn →

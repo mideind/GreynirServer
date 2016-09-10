@@ -277,6 +277,9 @@ public:
 // Token-terminal matching function
 typedef BOOL (*MatchingFunc)(UINT nHandle, UINT nToken, UINT nTerminal);
 
+// Allocator for token/terminal matching cache
+typedef BYTE* (*AllocFunc)(UINT nHandle, UINT nToken, UINT nTerminals);
+
 // Default matching function that simply
 // compares the token value with the terminal number
 BOOL defaultMatcher(UINT nHandle, UINT nToken, UINT nTerminal);
@@ -287,22 +290,28 @@ class Parser {
    // Earley-Scott parser for a given Grammar
 
 friend class AllocReporter;
+friend class Column;
 
 private:
 
    // Grammar pointer, not owned by the Parser
    Grammar* m_pGrammar;
    MatchingFunc m_pMatchingFunc;
+   AllocFunc m_pAllocFunc;
 
    BOOL push(UINT nHandle, State*, Column*, State*&);
 
    Node* makeNode(State* pState, UINT nEnd, Node* pV, NodeDict& ndV);
 
+   // Internal token/terminal matching cache management
+   BYTE* allocCache(UINT nHandle, UINT nToken, BOOL* pbNeedsRelease);
+   void releaseCache(BYTE* abCache);
+
 protected:
 
 public:
 
-   Parser(Grammar*, MatchingFunc = defaultMatcher);
+   Parser(Grammar*, MatchingFunc = defaultMatcher, AllocFunc = NULL);
    ~Parser(void);
 
    UINT getNumTerminals(void) const
@@ -330,7 +339,7 @@ extern "C" Grammar* newGrammar(const CHAR* pszGrammarFile);
 
 extern "C" void deleteGrammar(Grammar*);
 
-extern "C" Parser* newParser(Grammar*, MatchingFunc fpMatcher = defaultMatcher);
+extern "C" Parser* newParser(Grammar*, MatchingFunc fpMatcher = defaultMatcher, AllocFunc fpAlloc = NULL);
 
 extern "C" void deleteParser(Parser*);
 

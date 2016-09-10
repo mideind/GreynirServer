@@ -12,9 +12,6 @@
 */
 
 
-// Query history
-var qHistory = [];
-
 // Waiting for query result?
 var queryInProgress = false;
 
@@ -265,20 +262,6 @@ function clearQueryResult() {
    wait(true);
 }
 
-function updateBackButton() {
-   // Update the state of the back button after modifying the history
-   var disable = (qHistory.length < 2) || queryInProgress;
-   if (disable)
-      $("#back").attr("disabled", "disabled");
-   else
-      $("#back").removeAttr("disabled");
-   if (disable)
-      $("#back").attr("title", "");
-   else
-      // Show the query that we would go back to
-      $("#back").attr("title", qHistory[qHistory.length - 2].q);
-}
-
 // Actions encoded in URLs
 var urlToFunc = {
    "q" : _submitQuery
@@ -288,40 +271,12 @@ var funcToUrl = {
    _submitQuery : "q"
 };
 
-function addHistory(func, q) {
-   // Add an item to the query qHistory
-   if (qHistory.length && qHistory[qHistory.length - 1].q == q)
-      // Same query as we have already: don't push again
-      return;
-   var state = { f: funcToUrl[func], q : q };
-   qHistory.push(state);
-   history.pushState(state, "",
-      "?f=" + state.f + "&q=" + encodeURIComponent(state.q));
-   updateBackButton();
-}
-
-function backHistory() {
-   // Go back one step in the query qHistory
-   if (qHistory.length < 2)
-      // Nothing to go back to
-      return;
-   qHistory.pop(); // Pop off the state where we already are
-   var h = qHistory[qHistory.length - 1]; // Get the previous state
-   $("#url").val(h.q); // Go back to original query string
-   history.replaceState(h, "", "?f=" + h.f + "&q=" + encodeURIComponent(h.q));
-   updateBackButton();
-   // Execute the original query function again
-   urlToFunc[h.f](h.q);
-}
-
 function navToHistory(func, q) {
    if (urlToFunc[func] === undefined)
       // Invalid function
       return;
    // Navigate to a previous state encoded in a URL
    $("#url").val(q); // Go back to original query string
-   var state = { f: func, q : q };
-   qHistory.push(state);
    // Execute the original query function again
    urlToFunc[func](q);
 }
@@ -348,7 +303,6 @@ function analyzeQuery() {
       window.location.href = "/page?url=" + encodeURIComponent(q);
       return;
    }
-   addHistory("_submitQuery", q);
    _submitQuery(q);
 }
 
@@ -386,17 +340,13 @@ function initMain(jQuery) {
          }
       });
 
-   // Initialize the back button
-   $("#back").click(function(ev) { backHistory(); });
-   updateBackButton();
-
    if (initializeSpeech()) {
       // Speech input seems to be available
       $("#microphone-div").css("display", "block");
       // Make the URL input box smaller to accommodate the microphone
       $("#url-div")
-         .removeClass("col-xs-7").removeClass("col-sm-9")
-         .addClass("col-xs-5").addClass("col-sm-8");
+         .removeClass("col-xs-9").removeClass("col-sm-10")
+         .addClass("col-xs-7").addClass("col-sm-9");
       // Enable the microphone button to start the speech recognizer
       $("#microphone").click(function(ev) {
          $("#url").val("");

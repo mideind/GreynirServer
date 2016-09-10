@@ -148,6 +148,7 @@ private:
    State** m_pNtStates; // States linked by the nonterminal at their prod[dot]
    MatchingFunc m_pMatchingFunc; // Pointer to the token/terminal matching function
    BYTE* m_abCache; // Matching cache, a true/false flag for every terminal in the grammar
+   BOOL m_bNeedsRelease; // Does the matching cache needs to be explicitly released?
    HashBin m_aHash[HASH_BINS]; // The hash bin array
    UINT m_nEnumBin; // Round robin used during enumeration of states
 
@@ -164,7 +165,7 @@ public:
    UINT getToken(void) const
       { return this->m_nToken; }
 
-   void startParse(void);
+   void startParse(UINT nHandle);
    void stopParse(void);
 
    // Add a state to the column, at the end of the state list
@@ -445,7 +446,7 @@ Column::Column(Parser* pParser, UINT nToken)
       m_nToken(nToken),
       m_pNtStates(NULL),
       m_pMatchingFunc(pParser->getMatchingFunc()),
-      m_abCache(NULL),
+      m_abCache(NULL), m_bNeedsRelease(false),
       m_nEnumBin(0)
 {
    Column::ac++;
@@ -483,22 +484,22 @@ Column::~Column(void)
    Column::ac--;
 }
 
-void Column::startParse(void)
+void Column::startParse(UINT nHandle)
 {
    // Called when the parser starts processing this column
    ASSERT(this->m_abCache == NULL);
-   UINT nTerminals = m_pParser->getNumTerminals();
-   // Initialize the matching cache to zero
-   this->m_abCache = new BYTE[nTerminals + 1];
-   memset(this->m_abCache, 0, (nTerminals + 1) * sizeof(BYTE));
+   // Ask the parser to create a matching cache for us
+   // (or eventually re-use a previous one)
+   if (this->m_nToken != (UINT)-1)
+      this->m_abCache = this->m_pParser->allocCache(nHandle, this->m_nToken, &this->m_bNeedsRelease);
 }
 
 void Column::stopParse(void)
 {
    // Called when the parser is finished processing this column
-   if (this->m_abCache)
-      // Delete matching cache
-      delete [] this->m_abCache;
+   if (this->m_abCache && this->m_bNeedsRelease)
+      // The matching cache needs to be released
+      this->m_pParser->releaseCache(this->m_abCache);
    this->m_abCache = NULL;
 }
 
@@ -582,22 +583,20 @@ State* Column::getNtHead(INT iNt) const
 
 BOOL Column::matches(UINT nHandle, UINT nTerminal) const
 {
+   if (this->m_nToken == (UINT)-1)
+      // Sentinel token in last column never matches
+      return false;
    ASSERT(this->m_abCache != NULL);
    if (this->m_abCache[nTerminal] & 0x80)
       // We already have a cached result for this terminal
       return (BOOL)(this->m_abCache[nTerminal] & 0x01);
    // Not cached: obtain a result and store it in the cache
-   BOOL b = false;
-   if (this->m_nToken != (UINT)-1) {
-      // Sentinel token in last column never matches
-      b = this->m_pMatchingFunc(nHandle, this->m_nToken, nTerminal) != 0;
-      Column::acMatches++; // Count calls to the matching function
-   }
+   BOOL b = this->m_pMatchingFunc(nHandle, this->m_nToken, nTerminal) != 0;
+   Column::acMatches++; // Count calls to the matching function
    // Mark our cache
    this->m_abCache[nTerminal] = b ? (BYTE)0x81 : (BYTE)0x80;
    return b;
 }
-
 
 class File {
 
@@ -976,8 +975,8 @@ void NodeDict::reset(void)
 }
 
 
-Parser::Parser(Grammar* p, MatchingFunc pMatchingFunc)
-   : m_pGrammar(p), m_pMatchingFunc(pMatchingFunc)
+Parser::Parser(Grammar* p, MatchingFunc pMatchingFunc, AllocFunc pAllocFunc)
+   : m_pGrammar(p), m_pMatchingFunc(pMatchingFunc), m_pAllocFunc(pAllocFunc)
 {
    ASSERT(this->m_pGrammar != NULL);
    ASSERT(this->m_pMatchingFunc != NULL);
@@ -985,6 +984,32 @@ Parser::Parser(Grammar* p, MatchingFunc pMatchingFunc)
 
 Parser::~Parser(void)
 {
+}
+
+BYTE* Parser::allocCache(UINT nHandle, UINT nToken, BOOL* pbNeedRelease)
+{
+   // Create a fresh token/terminal matching cache
+   UINT nTerminals = this->getNumTerminals();
+   BYTE* abCache = NULL;
+   *pbNeedRelease = false;
+   if (this->m_pAllocFunc)
+      // There is a cache allocation function: call it
+      abCache = this->m_pAllocFunc(nHandle, nToken, nTerminals + 1);
+   if (!abCache) {
+      // Either no cache allocation function, or it returned NULL
+      // Allocate our own buffer and initialize it to zero
+      abCache = new BYTE[nTerminals + 1];
+      memset(abCache, 0, (nTerminals + 1) * sizeof(BYTE));
+      *pbNeedRelease = true;
+   }
+   return abCache;
+}
+
+void Parser::releaseCache(BYTE* abCache)
+{
+   // Release a token/terminal matching cache
+   // (Only call if *pbNeedRelease was true after calling allocCache())
+   delete [] abCache;
 }
 
 Node* Parser::makeNode(State* pState, UINT nEnd, Node* pV, NodeDict& ndV)
@@ -1058,7 +1083,7 @@ Node* Parser::parse(UINT nHandle, INT iStartNt, UINT* pnErrorToken,
    StateChunk* pChunkHead = NULL;
 
    // Prepare the the first column
-   pCol[0]->startParse();
+   pCol[0]->startParse(nHandle);
 
    // Prepare the initial state
    Production* p = pRootNt->getHead();
@@ -1184,7 +1209,7 @@ Node* Parser::parse(UINT nHandle, INT iStartNt, UINT* pnErrorToken,
          Label label(pEi->getToken(), 0, NULL, i, i + 1);
          pV = new Node(label); // Reference is deleted below
          // Open up the next column
-         pCol[i + 1]->startParse();
+         pCol[i + 1]->startParse(nHandle);
       }
 
       while (pQ) {
@@ -1328,11 +1353,11 @@ void deleteGrammar(Grammar* pGrammar)
       delete pGrammar;
 }
 
-Parser* newParser(Grammar* pGrammar, MatchingFunc fpMatcher)
+Parser* newParser(Grammar* pGrammar, MatchingFunc fpMatcher, AllocFunc fpAlloc)
 {
    if (!pGrammar || !fpMatcher)
       return NULL;
-   return new Parser(pGrammar, fpMatcher);
+   return new Parser(pGrammar, fpMatcher, fpAlloc);
 }
 
 void deleteParser(Parser* pParser)

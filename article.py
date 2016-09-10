@@ -347,19 +347,19 @@ class Article:
             # Convert the content soup to a token iterable (generator)
             toklist = Fetcher.tokenize_html(self._url, self._html, session)
 
-            # Dict of parse trees in string dump format,
-            # stored by sentence index (1-based)
-            trees = OrderedDict()
+            bp = self.get_parser()
+            ip = IncrementalParser(bp, toklist, verbose = verbose)
 
             # List of paragraphs containing a list of sentences containing token lists
             # for sentences in string dump format (1-based paragraph and sentence indices)
             pgs = []
 
+            # Dict of parse trees in string dump format,
+            # stored by sentence index (1-based)
+            trees = OrderedDict()
+
             # Word stem dictionary, indexed by (stem, cat)
             words = defaultdict(int)
-
-            bp = self.get_parser()
-            ip = IncrementalParser(bp, toklist, verbose = verbose)
             num_sent = 0
 
             for p in ip.paragraphs():
@@ -480,9 +480,12 @@ class Article:
                     # Store the updated article in the database
                     self.store(session)
 
-    def parse(self, enclosing_session = None, verbose = False):
+    def parse(self, enclosing_session = None, verbose = False, reload_parser = False):
         """ Force a parse of the article """
         with SessionContext(enclosing_session, commit = True) as session:
+            if reload_parser:
+                # We need a parse: Make sure we're using the newest grammar
+                self.reload_parser()
             self._parse(session, verbose = verbose)
             if self._tree is not None or self._tokens is not None:
                 # Store the updated article in the database
