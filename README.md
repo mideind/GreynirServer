@@ -148,6 +148,12 @@ storage in a database table.
 * `parser.py` : Older, pure-Python implementation of an Earley parser
 * `utils/*.py` : Various utility programs
 
+## Installation and setup
+
+Limited installation and setup instructions can be
+[found here](https://docs.google.com/document/d/1ywywjoOj5yas5QKjxLJ9Gqh-iNkfPae9-EKuES74aPU/edit?usp=sharing)
+(in Icelandic).
+
 ## Copyright and licensing
 
 Reynir is *copyright (C) 2015-2016 by Vilhjálmur Þorsteinsson*.
