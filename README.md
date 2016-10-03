@@ -162,6 +162,7 @@ This set of programs is free software: you can redistribute it and/or modify it 
 
 This set of programs is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-The full text of the GNU General Public License is available here: http://www.gnu.org/licenses/gpl.html.
+The full text of the GNU General Public License v3 is [included here](https://github.com/vthorsteinsson/Reynir/blob/master/LICENSE.txt)
+and also available here: https://www.gnu.org/licenses/gpl-3.0.html.
 
 If you wish to use this set of programs in ways that are not covered under the GPL v3 license, please contact the author.
