@@ -68,6 +68,9 @@
 .glyphicon-edit:before {
    content: "\E151";
 }
+.glyphicon-show-lines:before {
+   content: "\E159";
+}
 .glyphicon-chevron-left:before {
    content: "\E225";
 }
@@ -695,6 +698,14 @@ tfoot tr td {
 table.table thead th {
    padding-top: 18px;
    padding-bottom: 8px;
+}
+
+#article-list thead th {
+   padding-left: 4px;
+}
+
+span#article-key {
+   font-style: italic;
 }
 
 table.table tfoot tr td {

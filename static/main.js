@@ -185,7 +185,7 @@ function populateQueryResult(json) {
       }
       answer = $("<ul></ul>");
       var rlist;
-      var articles = "";
+      var articles;
       if (r.qtype == "Word") {
          rlist = r.response.rlist;
          if (rlist && rlist.length) {
@@ -196,10 +196,10 @@ function populateQueryResult(json) {
          }
       }
       else
-      if (r.qtype == "Person") {
-         // Title list
+      if (r.qtype == "Person" || r.qtype == "Entity") {
+         // Title or definition list
          rlist = r.response.titles;
-         // List of articles where the person name appears
+         // List of articles where the person or entity name appears
          if (r.response.articles !== undefined && r.response.articles.length > 0) {
             var $table = $("<table class='table table-condensed table-hover'>")
                .append($("<thead>")
@@ -273,7 +273,20 @@ function populateQueryResult(json) {
    $("div#result-query").css("display", "block").html(q);
    $("div#result-tabs").css("display", "block");
    $("div#titles").html(image).append(answer);
-   $("div#articles").html(articles);
+   if (articles) {
+      $("#article-list").html(articles);
+      $("#article-key").text(r.key);
+      // Enable the articles tab
+      $("#tab-a-articles").attr("data-toggle", "tab");
+      $("#tab-li-articles").removeClass("disabled");
+   }
+   else {
+      $("#article-list").html("");
+      $("#article-key").text("");
+      // Disable the articles tab
+      $("#tab-a-articles").attr("data-toggle", "");
+      $("#tab-li-articles").addClass("disabled");
+   }
    $('#result-hdr a:first').tab('show');
    // A title query yields a list of names
    // Clicking on a name submits a query on it

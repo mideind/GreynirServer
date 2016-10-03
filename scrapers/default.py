@@ -397,6 +397,11 @@ class MblScraper(ScrapeHelper):
         metadata = super().get_metadata(soup)
         # Extract the heading from the OpenGraph (Facebook) og:title meta property
         heading = ScrapeHelper.meta_property(soup, "og:title") or ""
+        if not heading:
+            # Check for a h2 inside a div.pistill-entry
+            p_e = ScrapeHelper.div_class(soup.html.body, "pistill-entry")
+            if p_e and p_e.h2:
+                heading = p_e.h2.string
         heading = self.unescape(heading)
         # Extract the publication time from the article:published_time meta property
         # A dateline from mbl.is looks like this: Viðskipti | mbl | 24.8.2015 | 10:48

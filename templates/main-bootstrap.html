@@ -56,8 +56,16 @@
    <div id="result-tabs">
 
       <ul id="result-hdr" class="nav nav-tabs" role="tablist">
-         <li role="presentation" class="active"><a href="#titles" aria-controls="titles" role="tab" data-toggle="tab">Svör</a></li>
-         <li role="presentation"><a href="#articles" aria-controls="articles" role="tab" data-toggle="tab">Fréttir</a></li>
+         <li role="presentation" class="active">
+            <a href="#titles" aria-controls="titles" role="tab" data-toggle="tab">
+               <span class="glyphicon glyphicon-info"></span>&nbsp;Svör
+            </a>
+         </li>
+         <li role="presentation" id="tab-li-articles">
+            <a href="#articles" aria-controls="articles" role="tab" data-toggle="tab" id="tab-a-articles">
+               <span class="glyphicon glyphicon-show-lines"></span>&nbsp;Fréttir
+            </a>
+         </li>
       </ul>
 
       <!-- Tab panes -->
@@ -66,7 +74,15 @@
             <!-- Titles go here -->
          </div>
          <div role="tabpanel" class="tab-pane" id="articles">
-            <!-- Articles go here -->
+            <div class="panel panel-default table-responsive">
+               <div class="panel-heading">
+                  <!-- Show full heading or shorter one depending on viewport width -->
+                  <div class="headline">Nýlegar fréttir þar sem <span id="article-key"></span> kemur fyrir</div>
+               </div>
+               <div id="article-list">
+                  <!-- Articles go here -->
+               </div>
+            </div>
          </div>
       </div>
 

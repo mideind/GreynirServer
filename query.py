@@ -123,14 +123,20 @@ def _query_person_titles(session, name):
     return make_response_list(rd)
 
 
+def _query_article_list(session, name):
+    """ Return a list of dicts with information about articles where the given name appears """
+    articles = ArticleListQuery.articles(name, limit = _MAXLEN_ANSWER, enclosing_session = session)
+    # Each entry is uuid, heading, timestamp (as ISO format string), domain
+    # Collapse identical headings and remove empty ones
+    adict = { a[1] : dict(uuid = str(a[0]), heading = a[1],
+        timestamp = a[2].isoformat()[0:16], domain = a[3]) for a in articles if a[1] }
+    return sorted(adict.values(), key = lambda x: x["timestamp"], reverse = True)
+
 def query_person(session, name):
     """ A query for a person by name """
     titles = _query_person_titles(session, name)
     # Now, create a list of articles where this person name appears
-    articles = ArticleListQuery.articles(name, limit = _MAXLEN_ANSWER, enclosing_session = session)
-    # Each entry is uuid, heading, timestamp (as ISO format string), domain
-    articles = [ dict(uuid = str(a[0]), heading = a[1],
-        timestamp = a[2].isoformat()[0:16], domain = a[3]) for a in articles ]
+    articles = _query_article_list(session, name)
     return dict(titles = titles, articles = articles)
 
 
@@ -162,8 +168,8 @@ def query_title(session, title):
     return make_response_list(rd)
 
 
-def query_entity(session, name):
-    """ A query for an entity by name """
+def _query_entity_titles(session, name):
+    """ A query for definitions of an entity by name """
     q = session.query(Entity.verb, Entity.definition, Article.id, Article.timestamp, Article.heading, Root.domain) \
         .filter(Entity.name == name) \
         .filter(Root.visible == True) \
@@ -172,9 +178,16 @@ def query_entity(session, name):
     return prepare_response(q, prop_func = lambda x: x.definition)
 
 
+def query_entity(session, name):
+    """ A query for an entity by name """
+    titles = _query_entity_titles(session, name)
+    articles = _query_article_list(session, name)
+    return dict(titles = titles, articles = articles)
+
+
 def query_entity_def(session, name):
     """ Return a single (best) definition of an entity """
-    rl = query_entity(session, name)
+    rl = _query_entity_titles(session, name)
     return correct_spaces(rl[0][0]) if rl else ""
 
 
