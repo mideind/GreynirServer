@@ -613,6 +613,7 @@ function displayTokens(j) {
          // Finish paragraph
          x += "</p>\n";
       });
+   // Show the page text
    $("div#result").html(x);
    // Put a hover handler on each word
    $("div#result i").hover(hoverIn, hoverOut);

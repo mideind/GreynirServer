@@ -371,8 +371,10 @@ class BIN_Token(Token):
             # legitimate arguments in 'miðmynd', such as 'krefjast', 'ábyrgjast'
             # 'undirgangast', 'minnast'. They are also not consistently
             # annotated in BIN; some of them are marked as MM and some not.
-            #if BIN_Token._VARIANT["mm"] in form:
-            #    # Don't accept verbs in 'miðmynd' if taking arguments
+            if nargs > 1 and "MM" in form:
+                # Temporary compromise: Don't accept verbs in 'miðmynd'
+                # if taking >1 arguments
+                return False
             #    # compensate for errors in BÍN, cf. 'ábyrgjast')
             #    return False
             # Check whether the parameters of this verb
@@ -391,9 +393,6 @@ class BIN_Token(Token):
                 # Prevent verb from matching a terminal if it
                 # doesn't have all the arguments that the terminal requires
                 return False
-        if terminal.is_mm:
-            # Verbs in 'miðmynd' match terminals with one or two arguments
-            return nargs == 0 or nargs == 1
         # !!! TEMPORARY code while the verb lexicon is being built
         unknown = True
         for i in range(nargs + 1, 3):

@@ -159,6 +159,13 @@ StLiður →
     | SpurnarorðAtv Lo_nf/tala/kyn Setning/tala/pers/kyn
     # '(Ekki er ljóst) hverjir [það voru sem] borðuðu kökuna og fóru í sund'
     | StSpurn
+    # Flokkurinn stefnir á stjórnarþátttöku, fái hann til þess umboð
+    | StViðtenging
+
+StViðtenging →
+    TengimerkiVh? SagnliðurVh
+
+$score(+8) StViðtenging
 
 StSpurn →
     'hver'_nf/tala/kyn ÞaðVarSem/tala? SagnRuna_p3/tala/kyn
@@ -168,6 +175,9 @@ StSpurn →
 
 Tengimerki →
     ':' | ';' | ',' | "-:em"
+
+TengimerkiVh →
+    ';' | ',' | "-:em"
 
 SamtengingStök →
     # Ein samtenging, sem þó getur verið samsett, sbr. skilgreiningar í Reynir.conf
@@ -470,7 +480,12 @@ SetningSo →
 
     | 'þurfa'_et_p3 FsRuna? Nl_þf NhFyllingEðaAtv             # Þarf til þess lagafyrirmæli að svipta mann réttindum
 
-    | SagnliðurVh FsAtv?                                      # Haldi þessi þróun áfram er voðinn vís
+    | SagnliðurVh Afleiðing FsAtv?                            # Haldi þessi þróun áfram er voðinn vís
+
+    # (Því) hafi þurft að senda alla farþegana (á hótel)
+    # (Í dag) gæti hafa rignt
+    | FsAtv? HjSögnVh so_0_sagnb NhFylling?
+
 
 SagnliðurLhÞt →
     EinSögn_lhþt/tala/kyn OgSögn_lhþt/tala/kyn* HjSögnLhÞt_p3/tala Nl_nf/tala/kyn AtvFs? # Teknar og skráðar hafa verið ákvarðanir í málinu
@@ -518,6 +533,9 @@ SetningAukafall →
     | Nl_þgf HjSögnMM FsAtv? so_0_mm_sagnb Nl_nf/tala/pers AtvFs?
     # Bönkunum hefur/hafði/hefði [flestum] tekist að halda í horfinu
     | Nl_þgf/tala/kyn HjSögnMM LoÞgf/tala/kyn? so_0_mm_sagnb MiðmyndarBotn?
+    # Páli giftist ég [galvösk] [ekki] (þegar ég var tvítug)
+    # Málinu tengdumst við [saklausar] (enda vissum við ekki af því)
+    | AukafallMiðmynd
 
     # Öllum er frjálst/fyrir bestu að ákveða snarlega að flytja úr landi
     | Nl_þgf HjSögnLhÞt_et_p3 FsRuna? LhÞtÞgfEinkunn NhFyllingEðaAtv
@@ -617,6 +635,14 @@ AukafallLhÞtAndlag/tala/pers/kyn →
 
 AukafallLhÞtAndlag_et/pers/kyn →
     Nl_nf_ft/pers/kyn
+
+AukafallMiðmynd →
+    # Páli giftist ég [galvösk] [ekki] (þegar ég var tvítug)
+    # Málinu tengdumst við [saklausar] (enda vissum við ekki af því)
+    Nl_þgf so_mm/tala/pers Nl_nf/tala/pers/kyn LoTengtSögn_nf/tala/kyn? AtvFs?
+
+# Þgf + miðmynd með frumlagi í nf er betra en önnur föll + almennar sagnmyndir
+$score(+4) AukafallMiðmynd
 
 AukafallsBotn →
     FsAtv                    # (Mér virtist ykkur ekki hungra) mjög undir ræðunni
@@ -742,39 +768,38 @@ SagnliðurVh →
 
     # Haldir þú [áfram að borða] (er voðinn vís)
     # Aki hann ölvaður (skal sekta hann um tíu þúsund krónur)
-    so_0_vh/pers Nl_nf/tala/pers/kyn LoTengtSögn_nf/tala/kyn? NhFyllingEðaAtv Afleiðing
+    so_0_vh/tala/pers Nl_nf/tala/pers/kyn LoTengtSögn_nf/tala/kyn? NhFyllingEðaAtv
 
     # Borði börnin [ekki] matinn (getum við farið í sund)
-    | So_1_vh/fall/pers Nl_nf/pers AtvFs? Nl/fall AtvFs? Afleiðing
+    | So_1_vh/fall/tala/pers Nl_nf/tala/pers AtvFs? Nl/fall AtvFs?
 
     # Verði þessi tillaga felld (geng ég úr flokknum)
     # Verði karlarnir byrjaðir að grilla (sæki ég sósuna)
-    | VeraVerða_vh/tala/pers Nl_nf/tala/pers/kyn HreinSögn_lhþt/tala/kyn FsAtv? Afleiðing
+    | VeraVerða_vh/tala/pers Nl_nf/tala/pers/kyn HreinSögn_lhþt/tala/kyn FsAtv?
 
     # Verði þeim [ekki] vísað [úr landi] geta afleiðingarnar orðið hörmulegar
     # Sé börnunum sagt [að fara í háttinn] grenja þau stanslaust
-    | VeraVerða_vh_et_p3 Nl_þgf AtvFs? so_1_þgf_sagnb NhFyllingEðaAtv Afleiðing
+    | VeraVerða_vh_et_p3 Nl_þgf AtvFs? so_1_þgf_sagnb NhFyllingEðaAtv
 
     # Hafi maður verið sviptur frelsi að ósekju (skal hann eiga rétt til skaðabóta)
-    | 'hafa'_vh/tala/pers Nl_nf/tala/pers/kyn AtvFs? 'vera'_sagnb HreinSögn_lhþt/tala/kyn FsAtv? Afleiðing
+    | 'hafa'_vh/tala/pers Nl_nf/tala/pers/kyn AtvFs? 'vera'_sagnb HreinSögn_lhþt/tala/kyn FsAtv?
 
     # Hafi manni verið hallmælt í útvarpi (skal hann fá kaffi og kleinu)
-    | 'hafa'_vh_et_p3 Nl_þgf AtvFs? 'vera'_sagnb so_1_þgf_sagnb FsAtv? Afleiðing
+    | 'hafa'_vh_et_p3 Nl_þgf AtvFs? 'vera'_sagnb so_1_þgf_sagnb FsAtv?
 
     # Hafi manni verið tekið blóð að óþörfu (skal hann liggja á bekk í stundarfjórðung)
-    | 'hafa'_vh_et_p3 Nl_þgf AtvFs? 'vera'_sagnb so_2_þgf_þf_lhþt/tala/kyn Nl_nf/tala/kyn AtvFs? Afleiðing
+    | 'hafa'_vh_et_p3 Nl_þgf AtvFs? 'vera'_sagnb so_2_þgf_þf_lhþt/tala/kyn Nl_nf/tala/kyn AtvFs?
 
     # Hafi manni verið gert kleift að matast með reisn (skal hann liggja á bekk í stundarfjórðung)
-    | 'hafa'_vh_et_p3 Nl_þgf AtvFs? 'vera'_sagnb 'gera'_lhþt/tala/kyn LoTengtSögn_nf_et_hk NhFyllingAtv Afleiðing
+    | 'hafa'_vh_et_p3 Nl_þgf AtvFs? 'vera'_sagnb 'gera'_lhþt/tala/kyn LoTengtSögn_nf_et_hk NhFyllingAtv
 
     # Hafi manns verið leitað að óþörfu (skal hann fá axlarnudd)
-    | 'hafa'_vh_et_p3 Nl_ef AtvFs? 'vera'_sagnb so_2_þgf_ef_sagnb FsAtv? Afleiðing
-
-    # (Því) hafi þurft að senda alla farþegana (á hótel)
-    | HjSögnVh so_0_sagnb NhFylling?
+    | 'hafa'_vh_et_p3 Nl_ef AtvFs? 'vera'_sagnb so_2_þgf_ef_sagnb FsAtv?
 
     # Fari [það] svo/þannig að ég nái ekki kjöri til forseta [,] [þá] getið þið sótt fyrirlestur um þetta hjá mér
-    | 'fara'_vh_et_p3 "það"? FsAtv "að:st" HreinYfirsetning Afleiðing
+    | 'fara'_vh_et_p3 "það"? FsAtv "að:st" HreinYfirsetning
+
+$score(+4) SagnliðurVh
 
 VeraVerða_vh/tala/pers →
     'vera'_vh/tala/pers | 'verða'_vh/tala/pers
@@ -949,9 +974,13 @@ $score(+2) Sögn_nh/tala/pers/kyn
 
 Sögn_nh_mm/tala/pers/kyn →
     so_mm/tala/pers OgSögn_mm/tala/pers* Botn_nh_mm/tala/kyn
+    # Hann segist munu borða kökuna
+    # Ég telst vilja kjósa flokkinn
+    # Þau segjast geta látið henda Jóni út
+    | So_1_þf_mm HjSögnNh_ft_p3 HreinSögn_nh/tala/kyn
 
 Botn_nh_mm/tala/kyn →
-     HreinSögn_nh/tala/kyn # Páll hyggst/þykist/telst fara að...
+     HreinSögn_nh/tala/kyn # Páll hyggst/þykist/telst skrifa söguna
      | HreinSögn_lhþt/tala/kyn # Kvennalistakonur virðast [ekki] taldar sigurstranglegar
      # (Jón sagðist) þeirrar skoðunar [að múslimar væru óalandi og óferjandi]
      # (Maðurinn reyndist) þeirrar innréttingar að ekki var á hann treystandi
@@ -1105,10 +1134,10 @@ So_1_bh_þf → so_1_þf_bh | so_1_þf_gm_fh_p1_ft_nt # Borðaðu matinn / borð
 So_1_bh_þgf → so_1_þgf_bh | so_1_þgf_gm_fh_p1_ft_nt # Hafnaðu Páli / höfnum Páli
 So_1_bh_ef → so_1_ef_bh | so_1_ef_gm_fh_p1_ft_nt # Njóttu matarins / njótum matarins
 
-So_1_vh_nf/pers → so_1_nf_vh/pers         # Væri hann leikari
-So_1_vh_þf/pers → so_1_þf_vh/pers         # Borðir þú matinn
-So_1_vh_þgf/pers → so_1_þgf_vh/pers       # Hafni ég Páli
-So_1_vh_ef/pers → so_1_ef_vh/pers         # Nyti hann matarins
+So_1_vh_nf/tala/pers → so_1_nf_vh/tala/pers    # Væri hann leikari
+So_1_vh_þf/tala/pers → so_1_þf_vh/tala/pers    # Borðir þú matinn
+So_1_vh_þgf/tala/pers → so_1_þgf_vh/tala/pers  # Hafni ég Páli
+So_1_vh_ef/tala/pers → so_1_ef_vh/tala/pers    # Nyti hann matarins
 
 So_1_p3_nf/tala → so_1_nf_p3/tala
 So_1_p3_þf/tala → so_1_þf_p3/tala
@@ -1196,7 +1225,7 @@ Sögn_1/tala/pers/kyn →
     # (Ég tel/segi/álít) Pál vera dagfarsprúðan mann
     | So_1_þf_nh/tala/pers OgSögn_1_þf_nh/tala/pers* SagnarBotn
 
-    | so_mm/tala/pers OgSögn_mm/tala/pers* Nl_þgf                    # (Bankar) reynast og gagnast mér (vel)
+    | Sögn_1_mm/tala/pers/kyn
     | HjSögn/tala/pers FsAtv? so_mm_sagnb OgSögn_mm_sagnb* Nl_þgf    # (Bankar) hafa reynst og gagnast mér (vel)
 
     | HjSögnLhÞtSM/tala/pers FsAtv? so_2_þgf_þf_lhþt/tala/kyn Nl_þgf # Konan hefur verið/skal/mun gefin Páli
@@ -1204,6 +1233,12 @@ Sögn_1/tala/pers/kyn →
     | HjSögnLhÞtSM/tala/pers FsAtv? so_2_þf_þgf_lhþt/tala/kyn Nl_þgf # Konan hefur verið/skal/mun kölluð öllum illum nöfnum
     # HjSögnLhÞtSM/tala/pers FsAtv? so_2_þgf_ef_lhþt/tala/kyn Nl_ef  # Konan hefur verið/skal/mun óska alls hins besta
     # HjSögnLhÞtSM/tala/pers FsAtv? so_2_þf_þf_lhþt/tala/kyn Nl_þf   # Konan hefur verið/skal/mun kosta skildinginn
+
+Sögn_1_mm/tala/pers/kyn →
+    so_mm/tala/pers OgSögn_mm/tala/pers* Nl_þgf LoTengtSögn_nf/tala/kyn? # (Ég) giftist [og tengdist] Önnu [galvaskur]
+
+# Kjósa miðmyndarform + þgf fremur en almenn sagnform + önnur föll
+$score(+2) Sögn_1_mm/tala/pers/kyn
 
 # Býli í landinu eru/geta verið/verða/munu vera um 3.000 [talsins]
 Sögn_1_ft/pers/kyn →
@@ -1232,6 +1267,18 @@ So_1_þf_nh →
     | 'sjá'_nh
     | 'kveða'_nh
     | 'sýna'_nh
+
+# segist munu/vilja borða kökuna
+# telst munu/vilja kjósa flokkinn
+# læst munu/vilja virða meirihlutann
+# kveðst munu/vilja virða ákvörðun ráðherrans
+# sýnist munu/vilja slá metið
+So_1_þf_mm →
+    'segja'_mm
+    | 'telja'_mm
+    | 'láta'_mm
+    | 'kveða'_mm
+    | 'sýna'_mm
 
 So_1_þf_nh_sagnb →
     'segja'_gm_sagnb
@@ -1786,7 +1833,11 @@ NhSögn →
     # !!! ekki allar sagnir
     | so_0_lhþt/tala/kyn so_0_gm_vh/tala OgNhSögn_lhþt/tala/kyn* Nl_nf/tala/kyn OgNhSögn_lhþt/tala/kyn*
 
-    | HafaGetaFá_nh HreinSögn_sagnb_et_hk # (Páll fór inn eftir að) hafa fært bílinn / (fyrir að) geta lyft grettistaki
+    # 'giftast sér' / 'tengjast henni' !!! ATH: Þetta leyfir mun fleiri sagnir en raunverulega geta tekið þgf
+    | so_mm_nh Nl_þgf
+
+    # (Páll fór inn eftir að) hafa fært bílinn / (fyrir að) geta lyft grettistaki
+    | HafaGetaFá_nh HreinSögn_sagnb_et_hk
 
     # láta sjúklinginn ná eðlilegum líkamshita
     # segja Pál fara með rangt mál
@@ -1976,10 +2027,15 @@ NlStak_ft_p3/fall/kyn → Fjölskylda_ft/kyn/fall FsRunaEftirNl?
 
 $score(+8) Fjölskylda_ft/kyn/fall
 
-# 'hvorugt okkar systkinanna', 'enginn okkar', 'einhver okkar bræðranna'
-NlStak_et_p3/fall/kyn → OkkarFornafn/fall/kyn 'ég'_ft_ef Nl_ef_ft/kyn?
+# 'hvorugt okkar systkinanna', 'enginn okkar', 'einhver ykkar bræðranna', 'einn liðsmanna'
+NlStak_et_p3/fall/kyn → OkkarFornafn/fall/kyn OkkarFramhald/kyn
+
+OkkarFramhald/kyn →
+    'ég'_ft_ef Nl_ef_ft/kyn?
+    | Nl_ef_ft/kyn
 
 OkkarFornafn/fall/kyn → 'hvorugur'_et/fall/kyn | 'enginn'_et/fall/kyn | 'einhver'_et/fall/kyn
+    | 'einn'_et/fall/kyn | 'sérhver'_et/fall/kyn
     | 'annar'_et/fall/kyn 'hvor'_et/fall/kyn?
 
 # Eignarfornöfn standa með nafnlið í sama falli og hann,
@@ -2085,8 +2141,8 @@ NlTöluorð/tala/fall/kyn →
     # '(Ég talaði við) tvær þeirra', 'fjórum þeirra (var kalt)'
     # 'Að minnsta kosti fjórir létust'
     # 'Um þrír af hverjum fjórum landsmönnum telja...'
-    TöluorðForskeyti? TöluorðLo/tala? Töluorð/tala/fall/kyn 'sá'_ft_ef/kyn?
-    | TöluorðForskeyti? Töluorð/tala/fall/kyn TöluorðLo/tala # (önnur af) þremur hröðustu (sem eftir standa)
+    TöluorðForskeyti* TöluorðLo/tala? Töluorð/tala/fall/kyn 'sá'_ft_ef/kyn?
+    | TöluorðForskeyti* Töluorð/tala/fall/kyn TöluorðLo/tala # (önnur af) þremur hröðustu (sem eftir standa)
 
 TöluorðForskeyti →
     'að_minnsta_kosti' | "um:ao" | "minnst" | "einungis" | "aðeins" | "ekki:ao"
@@ -2183,10 +2239,11 @@ Sérnafn →
 # Ekki ætti að hafa samliggjandi 'entity' í málfræðireglu.
 
 LangtSérnafn →
-    sérnafn "-:en"? sérnafn+           # Glass-Steagall lögin
+    sérnafn "-:en"? sérnafn+        # Glass-Steagall lögin
     | sérnafn+ entity+ sérnafn*     # Eining með nafni sem þekkt er úr gagnagrunni eða runu slíkra
     | entity+ sérnafn+              # Eining með nafni sem þekkt er úr gagnagrunni eða runu slíkra
     | entity "-:en" entity          # Villeneuve-Loubet
+    | entity+ sérnafn* fyrirtæki    # Standard Oil Corp.
 
 Sérnafn/fall →
     sérnafn/fall | LangtSérnafn/fall
@@ -2703,7 +2760,7 @@ OgEðaEn →
 
 OgEðaEnNema → OgEðaEn | "nema:st"
 
-KommaOgEðaEn → ',' | ','? OgEðaEn
+KommaOgEðaEn → ',' | ','? OgEðaEn | "-:em" OgEðaEn
 KommaOgEðaEnNema → ',' | ';' | ','? OgEðaEnNema
 
 # Allir liðir af sama kyni
@@ -2955,6 +3012,9 @@ FsMeðFallstjórn →
     # 'með að...', '(Löngunin) til að...', '(Áhættan) við að...', '(Hættan) á að...'
     | fs/fall NhLiðir
 
+    # 'Fjöldi stúlkna hefur leitað til okkar þrátt fyrir að hafa farið í heilsueftirlit í skólum'
+    | 'þrátt_fyrir_að' NhRuna NhLiðurFrh*
+
     | "á:fs" "hendur" Nl_þgf # 'að höfða sakamál á hendur Páli'
     | "á:fs" "fætur" Nl_þgf # '(Hann borðaði hverja tertusneiðina) á fætur annarri'
     | "nær" 'draga'_et_p3 Nl_þgf # 'þegar nær dró/dregur jólum'
@@ -3085,7 +3145,7 @@ EinnAl →
     | UndirEins
     | "eina" "ferðina" "enn:ao"
     | "heima:ao" "fyrir:ao"
-    | "sem:ao" "stendur:so"
+    | SemStendur
     | "hingað" "til:ao"
     | töl "sinnum"          # tvisvar, þrisvar og fjórum sinnum er skilgreint í Main.conf
     | Úrslit                # KR sigraði Val 6:0
@@ -3094,6 +3154,12 @@ EkkiNeitt →
     "ekki:ao" "neitt:ao"          # (Ég þekki þetta) ekki neitt
 
 $score(-6) EkkiNeitt
+
+# Sem stendur er hann ekki viðlátinn
+SemStendur →
+    "sem:ao" "stendur:so"
+
+$score(-6) SemStendur
 
 UndirEins →
     "undir:ao" "eins:ao"          # 'Ég fór undir eins og kannaði málið'

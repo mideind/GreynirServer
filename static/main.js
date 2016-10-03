@@ -108,7 +108,8 @@ function handleQueryError(xhr, status, errorThrown) {
    /* An error occurred on the server or in the communications */
    // Hide progress indicator
    wait(false);
-   $("div#entity-body").html("<div class='guide-empty'><p><b>Villa kom upp</b> í samskiptum við netþjón Greynis</p></div>");
+   $("div.guide-empty").html("<p><b>Villa kom upp</b> í samskiptum við netþjón Greynis</p>")
+      .css("display", "block");
 }
 
 function queryPerson(name) {
@@ -184,6 +185,7 @@ function populateQueryResult(json) {
       }
       answer = $("<ul></ul>");
       var rlist;
+      var articles = "";
       if (r.qtype == "Word") {
          rlist = r.response.rlist;
          if (rlist && rlist.length) {
@@ -191,6 +193,31 @@ function populateQueryResult(json) {
             var g = correctPlural(c, "einni", "grein", "greinum");
             answer = $("<p></p>").text("'" + r.key + "' kemur fyrir í " + g + ", ásamt eftirtöldum orðum:")
                .append($("<ul></ul>"));
+         }
+      }
+      else
+      if (r.qtype == "Person") {
+         // Title list
+         rlist = r.response.titles;
+         // List of articles where the person name appears
+         if (r.response.articles !== undefined && r.response.articles.length > 0) {
+            var $table = $("<table class='table table-condensed table-hover'>")
+               .append($("<thead>")
+                  .append(
+                     $("<th>").text("Tími"),
+                     $("<th>").text("Fyrirsögn")
+                  )
+               );
+            var $tbody = $table.append($("<tbody>"));
+            $.each(r.response.articles, function(i, obj) {
+               var $tr = $("<tr class='article'>").attr("data-uuid", obj.uuid).append(
+                  $("<td>").text(obj.timestamp.replace("T", " ")),
+                  $("<td class='heading'>").text(obj.heading)
+                     .prepend($("<img>").attr("src", "/static/" + obj.domain + ".ico").attr("width", "16").attr("height", "16"))
+               );
+               $tbody.append($tr);
+            });
+            articles = $table;
          }
       }
       else
@@ -203,19 +230,19 @@ function populateQueryResult(json) {
             var li;
             if (r.qtype == "Word") {
                if (obj.cat.startsWith("person_"))
-                  li = $("<li></li>").html($("<span class='name'></span>").text(obj.stem));
+                  li = $("<li>").html($("<span class='name'></span>").text(obj.stem));
                else
                if (obj.cat.startsWith("entity") || obj.cat.startsWith("sérnafn"))
-                  li = $("<li></li>").html($("<span class='entity'></span>").text(obj.stem));
+                  li = $("<li>").html($("<span class='entity'></span>").text(obj.stem));
                else
-                  li = $("<li></li>").text(obj.stem + " ").append($("<small></small>").text(obj.cat));
+                  li = $("<li>").text(obj.stem + " ").append($("<small></small>").text(obj.cat));
             }
             else {
                if (r.qtype == "Title")
                   // For person names, generate a 'name' span
-                  li = $("<li></li>").html($("<span class='name'></span>").text(obj[0]));
+                  li = $("<li>").html($("<span class='name'></span>").text(obj[0]));
                else
-                  li = $("<li></li>").text(obj[0]);
+                  li = $("<li>").text(obj[0]);
                var urlList = obj[1];
                var artList = li.append($("<span class='art-list'></span>")).children().last();
                for (var i = 0; i < urlList.length; i++) {
@@ -242,12 +269,17 @@ function populateQueryResult(json) {
          answer.html("<span class='red glyphicon glyphicon-play'></span>&nbsp;")
             .text(r.error);
    }
-   $("#entity-body").html(q).append(image).append(answer);
+   $("div.guide-empty").css("display", "none");
+   $("div#result-query").css("display", "block").html(q);
+   $("div#result-tabs").css("display", "block");
+   $("div#titles").html(image).append(answer);
+   $("div#articles").html(articles);
+   $('#result-hdr a:first').tab('show');
    // A title query yields a list of names
    // Clicking on a name submits a query on it
    $("#entity-body span.name").click(showPerson);
    $("#entity-body span.entity").click(showEntity);
-   $("span.art-link").click(function(ev) {
+   $("span.art-link").add("tr.article").click(function(ev) {
       // Show a source article
       wait(true); // This can take time, if a parse is required
       $("#url").val("Málgreining í gangi...");
@@ -257,7 +289,8 @@ function populateQueryResult(json) {
 
 function clearQueryResult() {
    // Clear previous result
-   $("div#entity-body").html("");
+   $("div#result-query").css("display", "none");
+   $("div#result-tabs").css("display", "none");
    // Display progress indicator
    wait(true);
 }

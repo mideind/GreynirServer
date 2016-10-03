@@ -356,6 +356,9 @@ class BIN_Db:
                     m = lookup_abbreviation(w)
                     if not m:
                         m = lookup(lower_w)
+                    elif w[0] == '[':
+                        # Remove brackets from known abbreviations
+                        w = w[1:-1]
                 else:
                     m.extend(lookup(lower_w))
 

@@ -4,7 +4,7 @@
 
     Web server main module
 
-    Copyright (c) 2015 Vilhjalmur Thorsteinsson
+    Copyright (c) 2016 Vilhjalmur Thorsteinsson
     All rights reserved
     See the accompanying README.md file for further licensing and copyright information.
 
@@ -36,8 +36,9 @@ from reducer import Reducer
 from article import Article as ArticleProxy
 from scraperdb import SessionContext, desc, Root, Person, Article, ArticleTopic, Topic,\
     GenderQuery, StatsQuery
-from query import Query, query_person, query_entity
+from query import Query, query_person_title, query_entity_def
 from getimage import get_image_url
+
 
 # Initialize Flask framework
 
@@ -171,9 +172,9 @@ def add_entity_to_register(name, register, session):
         # Already have a title for this name
         return
     # Use the query module to return definitions for an entity
-    rl = query_entity(session, name)
-    if rl:
-        register[name] = dict(kind = "entity", title = correct_spaces(rl[0][0]))
+    definition = query_entity_def(session, name)
+    if definition:
+        register[name] = dict(kind = "entity", title = definition)
 
 
 def add_name_to_register(name, register, session):
@@ -182,9 +183,9 @@ def add_name_to_register(name, register, session):
         # Already have a title for this name
         return
     # Use the query module to return titles for a person
-    rl = query_person(session, name)
-    if rl:
-        register[name] = dict(kind = "name", title = correct_spaces(rl[0][0]))
+    title = query_person_title(session, name)
+    if title:
+        register[name] = dict(kind = "name", title = title)
 
 
 def create_name_register(tokens, session):

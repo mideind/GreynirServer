@@ -50,7 +50,9 @@ class Fetcher:
 
     _INLINE_BLOCK_TAGS = frozenset(["span"]) # Inserted with whitespace
 
-    _WHITESPACE_TAGS = frozenset(["img"]) # <br> was here but now handled separately
+    _WHITESPACE_TAGS = frozenset(["img"]) # Inserted as whitespace
+
+    _BREAK_TAGS = frozenset(["br", "hr"]) # Cause paragraph breaks at outermost level
 
     # Cache of instantiated scrape helpers
     _helpers = dict()
@@ -98,7 +100,7 @@ class Fetcher:
                 self._white = True
 
         def insert_break(self):
-            """ Used to cut paragraphs at <br> tags """
+            """ Used to cut paragraphs at <br> and <hr> tags """
             if self._nesting == 0:
                 self._result.append(" ]] [[ ")
                 self._white = True
@@ -131,11 +133,17 @@ class Fetcher:
             elif isinstance(t, NavigableString):
                 # Comment, CDATA or other text data: ignore
                 pass
-            elif t.name == "br":
+            elif t.name in Fetcher._BREAK_TAGS:
                 result.insert_break()
+                # html.parser (erroneously) nests content inside
+                # <br> and <hr> tags
+                Fetcher.extract_text(t, result)
             elif t.name in Fetcher._WHITESPACE_TAGS:
                 # Tags that we interpret as whitespace, such as <img>
                 result.append_whitespace()
+                # html.parser nests content inside <img> tags if
+                # they are not explicitly closed
+                Fetcher.extract_text(t, result)
             elif t.name in Fetcher._BLOCK_TAGS:
                 # Nested block tag
                 result.begin() # Begin block

@@ -286,7 +286,7 @@ div#output {
    margin-bottom: 24px;
 }
 
-tr.topitem {
+tr.topitem, tr.article {
    cursor: pointer;
 }
 
@@ -295,7 +295,11 @@ tr.topitem td.heading img {
    margin-right: 4px;
 }
 
-tr.topitem td.heading {
+tr.article td.heading img {
+   margin-right: 8px;
+}
+
+td.heading {
    white-space: nowrap;
    overflow-x: hidden;
    text-overflow: ellipsis;
@@ -386,7 +390,7 @@ span.art-link img {
 }
 
 p.image {
-   margin-top: 1.4em;
+   margin-top: 0.4em;
    margin-bottom: 1.2em;
    padding-left: 2.4em;
    padding-top: 0;
@@ -483,6 +487,14 @@ div.info #details {
 
 #meta-url img {
    margin-left: 6px;
+}
+
+div#help h3.help {
+   text-align: right;
+}
+
+h3.help small {
+   font-style: italic;
 }
 
 span.errtok {
@@ -699,6 +711,7 @@ h5#meta-url {
    vertical-align: middle;
    font-size: 16px;
    line-height: 1.3;
+   margin-bottom: 0;
 }
 
 h5#meta-url button {
@@ -784,6 +797,19 @@ h4.txt span.glyphicon:hover {
 
 div#metadata h1 {
    line-height: 1.25;
+}
+
+h3.query {
+   margin-top: 0px;
+   margin-bottom: 20px;
+}
+
+div#result-query {
+   display: none;
+}
+
+div#result-tabs {
+   display: none;
 }
 
 /*

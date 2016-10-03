@@ -371,7 +371,8 @@ class MblScraper(ScrapeHelper):
         "/frettir/lina_snippet/",
         "/myndasafn/",
         "/atvinna/",
-        "/vidburdir/"
+        "/vidburdir/",
+        "/sport/"
     ]
 
     def __init__(self, root):
@@ -499,6 +500,7 @@ class VisirScraper(ScrapeHelper):
         "/english/",
         "/section/", # All /section/X URLs seem to be (extreeeemely long) summaries
         "/property/", # Fasteignaauglýsingar
+        "/lifid/",
         "/soyouthinkyoucansnap"
     ]
 
@@ -761,6 +763,51 @@ class KvennabladidScraper(ScrapeHelper):
         caption = ScrapeHelper.div_class(article, "wp-caption")
         if caption is not None:
             caption.decompose()
+        return article
+
+
+class AlthingiScraper(ScrapeHelper):
+
+    """ Scraping helper for althingi.is """
+
+    def __init__(self, root):
+        super().__init__(root)
+
+    def get_metadata(self, soup):
+        """ Analyze the article soup and return metadata """
+        metadata = super().get_metadata(soup)
+        # Extract the heading from the OpenGraph (Facebook) og:title meta property
+        heading = ScrapeHelper.meta_property(soup, "og:title") or ""
+        heading = self.unescape(heading)
+        # Default timestamp
+        timestamp = datetime.utcnow()
+        # Check whether this heading starts with 'NN/YYYY:', and if so, extract the year
+        a = heading.split(':', maxsplit = 1)
+        if len(a) > 1:
+            a = a[0].split('/', maxsplit = 1)
+            if len(a) > 1:
+                try:
+                    timestamp = datetime(year = int(a[1].strip()), month = 1, day = 1)
+                except ValueError:
+                    # Something wrong with the year: back off
+                    timestamp = datetime.utcnow()
+        metadata.heading = heading
+        metadata.author = "Lagasafn Alþingis"
+        metadata.timestamp = timestamp
+        return metadata
+
+    def make_soup(self, doc):
+        """ Make a soup object from a document """
+        #if doc:
+            # The <hr> tag seems to be causing problems:
+            # cop out by replacing it with <br>
+        #    doc = doc.replace("<hr>", "<br>")
+        return super().make_soup(doc)
+
+    def _get_content(self, soup_body):
+        """ Find the article content (main text) in the soup """
+        article = ScrapeHelper.div_class(soup_body, "pgmain", "news", "boxbody")
+        print(article.prettify())
         return article
 
 

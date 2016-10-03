@@ -186,6 +186,14 @@ class Reducer:
                             sc[t] -= 2
                         else:
                             sc[t] += 3
+                    elif t.is_mm:
+                        # Encourage mm forms. The encouragement should be better than
+                        # the score for matching a single case, so we pick so_0_mm
+                        # rather than so_1_þgf, for instance.
+                        sc[t] += 3
+                    elif t.is_vh:
+                        # Encourage vh forms
+                        sc[t] += 2
                     if t.is_subj:
                         # Give a small bonus for subject matches
                         if t.has_variant("none"):

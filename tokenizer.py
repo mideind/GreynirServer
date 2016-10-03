@@ -35,9 +35,9 @@ from scraperdb import SessionContext, Entity
 # Recognized punctuation
 
 LEFT_PUNCTUATION = "([„«#$€<"
-RIGHT_PUNCTUATION = ".,:;)]!%?“»”’…°>"
-CENTER_PUNCTUATION = '"*&+=@©|'
-NONE_PUNCTUATION = "—–-/'~‘\\"
+RIGHT_PUNCTUATION = ".,:;)]!%?“»”’…°>–"
+CENTER_PUNCTUATION = '"*&+=@©|—'
+NONE_PUNCTUATION = "-/'~‘\\"
 PUNCTUATION = LEFT_PUNCTUATION + CENTER_PUNCTUATION + RIGHT_PUNCTUATION + NONE_PUNCTUATION
 
 # Punctuation that ends a sentence
@@ -1028,8 +1028,6 @@ def parse_phrases_1(token_stream):
                     # For abbreviations, we do not know the case,
                     # but we try to retain the previous case information if any
                     token = convert_to_num(token)
-                    print("Amount abbrev {0}, cases {1}, genders {2}"
-                        .format(next_token.txt, token.val[1], token.val[2]))
                     token = TOK.Amount(token.txt + " " + next_token.txt, "ISK",
                         token.val[0] * AMOUNT_ABBREV[next_token.txt], # Number
                         token.val[1], token.val[2]) # Cases and gender

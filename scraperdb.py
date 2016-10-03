@@ -156,6 +156,8 @@ class Root(Base):
     scr_class = Column(String(80))
     # Are articles of this root visible on the Greynir web?
     visible = Column(Boolean, default = True)
+    # Should articles of this root be scraped automatically?
+    scrape = Column(Boolean, default = True)
 
     # The combination of domain + url must be unique
     __table_args__ = (
@@ -608,7 +610,7 @@ class RelatedWordsQuery(_BaseQuery):
             word stems that are related to the given stem, in descending
             order of number of appearances. """
         with SessionContext(session = enclosing_session, commit = True) as session:
-            return cls().execute(session, root=stem, limit=limit)
+            return cls().execute(session, root = stem, limit = limit)
 
 
 class ArticleCountQuery(_BaseQuery):
@@ -631,3 +633,24 @@ class ArticleCountQuery(_BaseQuery):
         with SessionContext(session = enclosing_session, commit = True) as session:
             return cls().scalar(session,
                 stems = tuple((stems,)) if isinstance(stems, str) else tuple(stems))
+
+
+class ArticleListQuery(_BaseQuery):
+
+    """ A query returning a list of the newest articles that contain
+        a particular word stem """
+
+    _Q = """
+        select distinct a.id, a.heading, a.timestamp, r.domain
+            from words w, articles a, roots r
+            where w.stem = :stem and w.article_id = a.id and a.root_id = r.id and r.visible
+            order by a.timestamp desc
+            limit :limit;
+        """
+
+    @classmethod
+    def articles(cls, stem, limit = 20, enclosing_session = None):
+        """ Return a list of the newest articles containing the given stem. """
+        with SessionContext(session = enclosing_session, commit = True) as session:
+            return cls().execute(session, stem = stem, limit = limit)
+

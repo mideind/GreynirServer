@@ -50,6 +50,28 @@
       </div>
    </div>
 
+   <!-- The original query text -->
+   <div id="result-query"></div>
+
+   <div id="result-tabs">
+
+      <ul id="result-hdr" class="nav nav-tabs" role="tablist">
+         <li role="presentation" class="active"><a href="#titles" aria-controls="titles" role="tab" data-toggle="tab">Svör</a></li>
+         <li role="presentation"><a href="#articles" aria-controls="articles" role="tab" data-toggle="tab">Fréttir</a></li>
+      </ul>
+
+      <!-- Tab panes -->
+      <div class="tab-content">
+         <div role="tabpanel" class="tab-pane active" id="titles">
+            <!-- Titles go here -->
+         </div>
+         <div role="tabpanel" class="tab-pane" id="articles">
+            <!-- Articles go here -->
+         </div>
+      </div>
+
+   </div>
+
 </div>
 
 {% endblock %}
@@ -71,11 +93,10 @@
          $("#url-ok").attr("disabled", "disabled")
             .html("<span class='glyphicon glyphicon-restart glyphicon-spin-white'></span>");
          $("#microphone").attr("disabled", "disabled");
-         $("div#entity-body").html("");
+         $("div.guide-empty").css("display", "none");
       }
       else {
-         $("#url-ok").removeAttr("disabled")
-            .text("Greina");
+         $("#url-ok").removeAttr("disabled").text("Greina");
          $("#microphone").removeAttr("disabled");
       }
    }

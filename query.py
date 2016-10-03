@@ -19,7 +19,8 @@ from contextlib import closing
 from collections import namedtuple, defaultdict
 
 from settings import Settings, changedlocale
-from scraperdb import Root, Article, Person, Entity, RelatedWordsQuery, ArticleCountQuery, desc
+from scraperdb import desc, Root, Article, Person, Entity, \
+    RelatedWordsQuery, ArticleCountQuery, ArticleListQuery
 from bindb import BIN_Db
 from tree import Tree
 from tokenizer import TOK, correct_spaces
@@ -104,22 +105,39 @@ def prepare_response(q, prop_func):
     return make_response_list(rd)
 
 
-def query_person(session, name):
-    """ A query for a person by name """
+def _query_person_titles(session, name):
+    """ Return a list of all titles for a person """
     rd = defaultdict(dict)
     q = session.query(Person.title, Article.id, Article.timestamp, Article.heading, Root.domain) \
-        .filter(Person.name == name) \
+        .filter(Person.name == name).filter(Root.visible == True) \
         .join(Article).join(Root) \
         .all()
     # Append titles from the persons table
     append_answers(rd, q, prop_func = lambda x: x.title)
     # Also append definitions from the entities table, if any
     q = session.query(Entity.definition, Article.id, Article.timestamp, Article.heading, Root.domain) \
-        .filter(Entity.name == name) \
+        .filter(Entity.name == name).filter(Root.visible == True) \
         .join(Article).join(Root) \
         .all()
     append_answers(rd, q, prop_func = lambda x: x.definition)
     return make_response_list(rd)
+
+
+def query_person(session, name):
+    """ A query for a person by name """
+    titles = _query_person_titles(session, name)
+    # Now, create a list of articles where this person name appears
+    articles = ArticleListQuery.articles(name, limit = _MAXLEN_ANSWER, enclosing_session = session)
+    # Each entry is uuid, heading, timestamp (as ISO format string), domain
+    articles = [ dict(uuid = str(a[0]), heading = a[1],
+        timestamp = a[2].isoformat()[0:16], domain = a[3]) for a in articles ]
+    return dict(titles = titles, articles = articles)
+
+
+def query_person_title(session, name):
+    """ Return the most likely title for a person """
+    rl = _query_person_titles(session, name)
+    return correct_spaces(rl[0][0]) if rl else ""
 
 
 def query_title(session, title):
@@ -129,6 +147,7 @@ def query_title(session, title):
     title_lc = title.lower() # Query by lowercase title
     q = session.query(Person.name, Article.id, Article.timestamp, Article.heading, Root.domain) \
         .filter(Person.title_lc.like(title_lc + ' %') | (Person.title_lc == title_lc)) \
+        .filter(Root.visible == True) \
         .join(Article).join(Root) \
         .all()
     # Append names from the persons table
@@ -136,6 +155,7 @@ def query_title(session, title):
     # Also append definitions from the entities table, if any
     q = session.query(Entity.name, Article.id, Article.timestamp, Article.heading, Root.domain) \
         .filter(Entity.definition == title) \
+        .filter(Root.visible == True) \
         .join(Article).join(Root) \
         .all()
     append_answers(rd, q, prop_func = lambda x: x.name)
@@ -146,9 +166,16 @@ def query_entity(session, name):
     """ A query for an entity by name """
     q = session.query(Entity.verb, Entity.definition, Article.id, Article.timestamp, Article.heading, Root.domain) \
         .filter(Entity.name == name) \
+        .filter(Root.visible == True) \
         .join(Article).join(Root) \
         .all()
     return prepare_response(q, prop_func = lambda x: x.definition)
+
+
+def query_entity_def(session, name):
+    """ Return a single (best) definition of an entity """
+    rl = query_entity(session, name)
+    return correct_spaces(rl[0][0]) if rl else ""
 
 
 def query_company(session, name):
@@ -161,6 +188,7 @@ def query_company(session, name):
         qname = qname[:-1]
         use_like = True
     q = session.query(Entity.verb, Entity.definition, Article.id, Article.timestamp, Article.heading, Root.domain) \
+        .filter(Root.visible == True) \
         .join(Article).join(Root)
     if use_like:
         q = q.filter(Entity.name.like(qname + '%'))
@@ -405,34 +433,42 @@ class Query:
 
         return self._error is None
 
+
     def set_qtype(self, qtype):
         """ Set the query type ('Person', 'Title', 'Company', 'Entity'...) """
         self._qtype = qtype
 
+
     def set_answer(self, answer):
         """ Set the answer to the query """
         self._answer = answer
+
 
     def set_key(self, key):
         """ Set the query key, i.e. the term or string used to execute the query """
         # This is for instance a person name in nominative case
         self._key = key
 
+
     def set_error(self, error):
         """ Set an error result """
         self._error = error
+
 
     def qtype(self):
         """ Return the query type """
         return self._qtype
 
+
     def answer(self):
         """ Return the query answer """
         return self._answer
 
+
     def key(self):
         """ Return the query key """
         return self._key
+
 
     def error(self):
         """ Return the query error, if any """

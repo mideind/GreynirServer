@@ -123,7 +123,8 @@ def _add_name(result, mannsnafn, titill, kyn):
     """ Add a name to the resulting name list """
     if not titill:
         return False
-    if " " not in mannsnafn:
+    if ' ' not in mannsnafn:
+        # We do not store single names
         return False
     if "..." in titill or "[" in titill:
         return False
