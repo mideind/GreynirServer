@@ -4,16 +4,33 @@
 
    C++ Earley parser module
 
-   Copyright (c) 2015 Vilhjalmur Thorsteinsson
-   All rights reserved
-   See the accompanying README.md file for further licensing and copyright information.
+   Copyright (C) 2016 Vilhjálmur Þorsteinsson
+
+      This program is free software: you can redistribute it and/or modify
+      it under the terms of the GNU General Public License as published by
+      the Free Software Foundation, either version 3 of the License, or
+      (at your option) any later version.
+      This program is distributed in the hope that it will be useful,
+      but WITHOUT ANY WARRANTY; without even the implied warranty of
+      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+      GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see http://www.gnu.org/licenses/.
+
 
    This module implements an optimized Earley parser in C++.
-   It is designed to be called from Python code with
+   It is designed to be called from Python code via CFFI with
    already parsed and packed grammar structures.
 
-   2016-03-19 11:56
-   Reference article: 12.57 sec
+   The Earley parser used here is the improved version described by Scott & Johnstone,
+   referencing Tomita. This allows worst-case cubic (O(n^3)) order, where n is the
+   length of the input sentence, while still returning all possible parse trees
+   for an ambiguous grammar.
+
+   See Elizabeth Scott, Adrian Johnstone:
+   "Recognition is not parsing — SPPF-style parsing from cubic recognisers"
+   Science of Computer Programming, Volume 75, Issues 1–2, 1 January 2010, Pages 55–70
 
 */
 
@@ -598,6 +615,7 @@ BOOL Column::matches(UINT nHandle, UINT nTerminal) const
    return b;
 }
 
+
 class File {
 
    // Safe wrapper for FILE*
@@ -917,6 +935,12 @@ void Node::dump(Grammar* pGrammar)
 
 UINT Node::numCombinations(Node* pNode)
 {
+   // Be careful when calling this function: it may take a long
+   // time to execute since it visits nodes for every possible
+   // combination of nodes in the tree. In other words, it ignores
+   // the packing of the tree. The Python version keeps track of
+   // already visited nodes and is much more efficient for large
+   // trees.
    if (!pNode || pNode->m_label.m_iNt >= 0)
       return 1;
    UINT nComb = 0;

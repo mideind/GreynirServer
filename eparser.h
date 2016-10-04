@@ -4,13 +4,33 @@
 
    C++ Earley parser module
 
-   Copyright (c) 2015 Vilhjalmur Thorsteinsson
-   All rights reserved
-   See the accompanying README.md file for further licensing and copyright information.
+   Copyright (C) 2016 Vilhjálmur Þorsteinsson
+
+      This program is free software: you can redistribute it and/or modify
+      it under the terms of the GNU General Public License as published by
+      the Free Software Foundation, either version 3 of the License, or
+      (at your option) any later version.
+      This program is distributed in the hope that it will be useful,
+      but WITHOUT ANY WARRANTY; without even the implied warranty of
+      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+      GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see http://www.gnu.org/licenses/.
+
 
    This module implements an optimized Earley parser in C++.
    It is designed to be called from Python code with
    already parsed and packed grammar structures.
+
+   The Earley parser used here is the improved version described by Scott & Johnstone,
+   referencing Tomita. This allows worst-case cubic (O(n^3)) order, where n is the
+   length of the input sentence, while still returning all possible parse trees
+   for an ambiguous grammar.
+
+   See Elizabeth Scott, Adrian Johnstone:
+   "Recognition is not parsing — SPPF-style parsing from cubic recognisers"
+   Science of Computer Programming, Volume 75, Issues 1–2, 1 January 2010, Pages 55–70
 
 */
 
