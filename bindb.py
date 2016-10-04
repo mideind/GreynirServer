@@ -113,7 +113,7 @@ class BIN_Db:
     _DB_NAME = "bin"
     _DB_USER = "reynir" # This user typically has only SELECT privileges on the database
     _DB_PWD = "reynir"
-    _DB_TABLE = "ord2"
+    _DB_TABLE = "ord"
 
     # Query strings
     _DB_Q_MEANINGS = "select stofn, utg, ordfl, fl, ordmynd, beyging " \
