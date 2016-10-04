@@ -156,7 +156,9 @@ Limited installation and setup instructions can be
 
 ## Copyright and licensing
 
-Reynir is *copyright (C) 2015-2016 by Vilhjálmur Þorsteinsson*.
+Reynir/Greynir is *copyright (C) 2015-2016 by Vilhjálmur Þorsteinsson*.
+
+![GPLv3](https://raw.githubusercontent.com/vthorsteinsson/Reynir/master/static/GPLv3.png)
 
 This set of programs is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
