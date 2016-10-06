@@ -818,6 +818,10 @@ VeraVerða_vh/tala/pers →
 VeraVerða_gm_p3/tala →
     'vera'_gm_p3/tala | 'verða'_gm_p3/tala
 
+OgVeraVerða_gm_p3/tala →
+    FsAtv? OgEðaEn FsAtv? VeraVerða_gm_p3/tala
+    | FsAtv? ',' OgEðaEn FsAtv? VeraVerða_gm_p3/tala FsAtvKomma?
+
 # Sagnliður með inniföldu frumlagi:
 # '(Í dag) borðaði Jón matinn'
 # '(Með því) var svæðinu stefnt í hættu'
@@ -1369,7 +1373,7 @@ SögnMeðF_1/tala/pers/kyn →
     # (ef:)  (Í gærkvöldi) óskuðu konurnar [ekki] leyfis [allar/galvaskar] [að höfða mál]
     # (nf:)  (Í fyrra) voru konurnar [ekki] leikarar [sjálfar/galvaskar]
 
-    so_1/fall/tala/pers OgSögn_1/fall/tala/pers* Nl_nf/tala/pers/kyn AtvFs? Nl/fall LoTengtSögn_nf/tala/kyn? NhFylling?
+    so_1/fall/tala/pers OgSögn_1/fall/tala/pers* Nl_nf/tala/pers/kyn Nl/fall LoTengtSögn_nf/tala/kyn? NhFylling?
 
     | HjSögnLhÞtSM/tala/pers Nl_nf/tala/pers/kyn AtvFs? SagnarBotnLhÞt/tala/kyn
 
@@ -1387,6 +1391,10 @@ SögnMeðF_1/tala/pers/kyn →
 
     # (Áður) hafði KR látið Jón og Gunnar fara / sagt niðurstöðuna vera ranga
     | HjSögn/tala/pers Nl_nf/tala/pers So_1_þf_nh_sagnb SagnarBotn
+
+SögnMeðF_1_ft/pers/kyn →
+    # (Í dag) eru og verða þetta tvítugir strákar [galvaskir] [að hella sig fulla]
+    VeraVerða_gm_p3_ft OgVeraVerða_gm_p3_ft* 'þetta'_nf_et Nl_nf_ft/pers/kyn LoTengtSögn_nf_ft/kyn? NhFylling?
 
 SagnarBotnLhÞt/tala/kyn →
     # (Í dag) verður konan gefin Páli [sjálf]
@@ -3044,6 +3052,7 @@ FsMeðFallstjórn →
     | "um:fs" "að:st" HreinYfirsetning ','? # 'um að lög um endurupptökunefnd standist ekki stjórnarskrá'
     | "á:fs" "að:st" HreinYfirsetning ','? # 'er bjartsýnn á að Alfreð komi aftur í liðið'
     | "að:fs" "nafni:hk" person_nf    # Ég ræddi við konu að nafni Aðalbjörg Jónsdóttir
+    | "á:fs" Vikudagur_gr_þf_et "kemur:so" # á sunnudaginn kemur
     | FsÍGegnUm
     | FsAðBaki
     | FsTilÞgf
@@ -3228,7 +3237,7 @@ Dagsetning →
     | "aðfaranótt" dags 'síðastliðinn'_et_kk_ef?
     | "aðfaranótt" Vikudagur_ef_et # aðfaranótt sunnudags
 
-    | Vikudagur_þf_et dags 'næstkomandi'_et_kk_þf? # 'föstudaginn 29. júlí [næstkomandi]'
+    | Vikudagur_þf_et dags 'næstkomandi'_et_kk_þf? # 'föstudag[inn] 29. júlí [næstkomandi]'
     | 'næstkomandi'_et_kk_þf Vikudagur_þf_et # 'næstkomandi fimmtudag'
     | 'síðastliðinn'_et_kk_þf Vikudagur_þf_et # 'síðastliðinn fimmtudag'
     | 'á_morgun' ','? Vikudagur_þf_et # á morgun, miðvikudag
@@ -3237,11 +3246,11 @@ Dagsetning →
     | DagsFs_þgf tímapunktur # 'frá 3. júlí 2007 kl. 13:00'
     | DagsFs_ef tímapunktur # 'til 3. júlí 2007 kl. 14:15'
 
-    | DagsFs_þf? Tímasetning Vikudagur_þf_et dags # '[fyrir] kl. 13 sunnudaginn 1. janúar 2012'
+    | DagsFs_þf? Tímasetning Vikudagur_þf_et dags # '[fyrir] kl. 13 sunnudag[inn] 1. janúar 2012'
 
-    | DagsFs_þgf Tímasetning Vikudagur_þf_et dags # 'frá kl. 13 sunnudaginn 1. janúar 2012'
+    | DagsFs_þgf Tímasetning Vikudagur_þf_et dags # 'frá kl. 13 sunnudag[inn] 1. janúar 2012'
 
-    | DagsFs_ef Tímasetning Vikudagur_þf_et dags # 'til kl. 13 sunnudaginn 1. janúar 2012'
+    | DagsFs_ef Tímasetning Vikudagur_þf_et dags # 'til kl. 13 sunnudag[inn] 1. janúar 2012'
 
     | Árstíð_þf_et ártal # 'haustið 2012'
     | Árið_þf # 'árið 2012'
@@ -3424,6 +3433,15 @@ Vikudagur/fall/tala →
     | 'fimmtudagur'/fall/tala
     | 'föstudagur'/fall/tala
     | 'laugardagur'/fall/tala
+
+Vikudagur_gr/fall/tala →
+    'sunnudagur'_gr/fall/tala
+    | 'mánudagur'_gr/fall/tala
+    | 'þriðjudagur'_gr/fall/tala
+    | 'miðvikudagur'_gr/fall/tala
+    | 'fimmtudagur'_gr/fall/tala
+    | 'föstudagur'_gr/fall/tala
+    | 'laugardagur'_gr/fall/tala
 
 Árstíð_þf/tala →
     'haust'_hk_þf/tala

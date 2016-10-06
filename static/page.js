@@ -412,7 +412,12 @@ function hoverIn() {
    if (t.k == TOK_PERCENT) {
       $("#lemma").text(t.x);
       $("#details").text("hundraðshluti");
-      makePercentGraph(parseFloat(t.x.slice(0, -1).replace(",", ".")));
+      // Obtain the percentage from token val field (t.v[0]),
+      // or from the token text if no such field is available
+      var pc = t.v ? t.v[0] : parseFloat(t.x.slice(0, -1).replace(",", "."));
+      if (pc === NaN || pc === undefined)
+         pc = 0.0;
+      makePercentGraph(pc);
    }
    else
    if (t.k == TOK_ORDINAL) {

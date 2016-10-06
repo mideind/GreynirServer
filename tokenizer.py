@@ -1316,7 +1316,13 @@ def parse_phrases_2(token_stream):
                     return False
                 return True
 
-            gn = given_names(token)
+            if token.kind == TOK.WORD and token.val and token.val[0].fl == "nafn":
+                # Convert a WORD with fl="nafn" to a PERSON with the correct gender, in all cases
+                gender = token.val[0].ordfl
+                token = TOK.Person(token.txt, [ PersonName(token.txt, gender, case) for case in ALL_CASES ])
+                gn = None
+            else:
+                gn = given_names(token)
 
             if gn:
                 # Found at least one given name: look for a sequence of given names
@@ -1670,25 +1676,31 @@ def recognize_entities(token_stream, enclosing_session = None):
     tq = [] # Token queue
     state = defaultdict(list) # Phrases we're considering
     ecache = dict() # Entitiy definition cache
+    lastnames = dict() # Last name to full name mapping ('Clinton' -> 'Hillary Clinton')
 
     with SessionContext(session = enclosing_session, commit = True) as session:
+
+        def fetch_entities(w, fuzzy = True):
+            """ Return a list of entities matching the word(s) given,
+                exactly if fuzzy = False, otherwise also as a starting word(s) """
+            q = session.query(Entity.name, Entity.verb, Entity.definition)
+            if fuzzy:
+                q = q.filter(Entity.name.like(w + " %") | (Entity.name == w))
+            else:
+                q = q.filter(Entity.name == w)
+            return q.all()
 
         def query_entities(w):
             """ Return a list of entities matching the initial word given """
             e = ecache.get(w)
             if e is None:
-                ecache[w] = e = session.query(Entity.name, Entity.verb, Entity.definition) \
-                    .filter(Entity.name.like(w + " %") | (Entity.name == w)).all()
+                ecache[w] = e = fetch_entities(w)
             return e
 
-        def flush_match():
-            """ Flush a match that has been accumulated in the token queue """
-            # Reconstruct original text behind phrase
-            ename = " ".join([t.txt for t in tq])
-            # Assemble the information we want to return about the matched entity
-            # We return a tuple (verb, definition)
-            assert None in state
-            definitions = list({ (e.verb, correct_spaces(e.definition)) for _, e in state[None] })
+        def coalesce_definitions(entities):
+            """ From a list of raw definitions from the database, create a coalesced
+                and sanitized definition list for an entity token """
+            definitions = list({ (e.verb, correct_spaces(e.definition)) for e in entities })
             # Sort the definition list in ascending alphabetical order by definition
             with changedlocale() as strxfrm:
                 definitions.sort(key = lambda x: strxfrm(x[1]))
@@ -1699,8 +1711,40 @@ def recognize_entities(token_stream, enclosing_session = None):
                     del definitions[i]
                 else:
                     i += 1
+            return definitions
+
+        def flush_match():
+            """ Flush a match that has been accumulated in the token queue """
+            # Reconstruct original text behind phrase
+            ename = " ".join([t.txt for t in tq])
+            # Assemble the information we want to return about the matched entity
+            # We return a tuple (verb, definition)
+            assert None in state
+            definitions = coalesce_definitions((e for _, e in state[None]))
             # print("flush_match() returning ename '{0}', defs {1}".format(ename, definitions))
             return TOK.Entity(ename, definitions)
+
+        def token_or_entity(token):
+            """ Return a token as-is or, if it is a last name of a person that has already
+                been mentioned in the token stream by full name, refer to the full name """
+            assert token.txt[0].isupper()
+            if token.txt not in lastnames:
+                # Not a last name of a previously seen full name
+                return token
+            print("Found {0} in lastnames".format(token.txt))
+            tfull = lastnames[token.txt]
+            print("tfull is {0}".format(tfull))
+            if tfull.kind != TOK.PERSON:
+                # Fetch the definitions of the full name
+                entities = fetch_entities(tfull.txt, fuzzy = False)
+                print("Fetched entities {0}".format(entities))
+                definitions = coalesce_definitions(entities)
+                print("Definitions are {0}".format(definitions))
+                # Return an entity token with the full name definitions
+                return TOK.Entity(token.txt, definitions)
+            # Return the full name meanings
+            print("Returning person token")
+            return TOK.Person(token.txt, tfull.val)
 
         try:
 
@@ -1736,6 +1780,17 @@ def recognize_entities(token_stream, enclosing_session = None):
                     # Add the matching tails to the new state
                     for sl, entity in state[w]:
                         add_to_state(sl, entity)
+                    # Update the lastnames mapping
+                    fullname = " ".join([t.txt for t in tq])
+                    parts = fullname.split()
+                    # If we now have 'Hillary Rodham Clinton',
+                    # make sure we delete the previous 'Rodham' entry
+                    for p in parts[1:-1]:
+                        if p in lastnames:
+                            del lastnames[p]
+                    if parts[-1][0].isupper():
+                        # 'Clinton' -> 'Hillary Rodham Clinton'
+                        lastnames[parts[-1]] = TOK.Entity(fullname, None)
                 else:
                     # Not a match for an expected token
                     if state:
@@ -1750,10 +1805,29 @@ def recognize_entities(token_stream, enclosing_session = None):
                     # Add all possible new states for entity names that could be starting
                     weak = True
                     cnt = 1
-                    if token.kind == TOK.WORD and w and w[0].isupper():
+                    upper = w and w[0].isupper()
+                    parts = None
+
+                    if upper and " " in w:
+                        # For all uppercase phrases (words, entities, persons),
+                        # maintain a map of last names to full names
+                        parts = w.split()
+                        lastname = parts[-1]
+                        # Clinton -> Hillary [Rodham] Clinton
+                        if lastname[0].isupper():
+                            # Look for Icelandic patronyms/matronyms
+                            _, m = BIN_Db.get_db().lookup_word(lastname, False)
+                            if m and any(mm.fl in { "föð", "móð" } for mm in m):
+                                # We don't store Icelandic patronyms/matronyms as surnames
+                                pass
+                            else:
+                                lastnames[lastname] = token
+
+                    if token.kind == TOK.WORD and upper:
                         if " " in w:
                             # w may be a person name with more than one embedded word
-                            cnt = len(w.split())
+                            # parts is assigned in the if statement above
+                            cnt = len(parts)
                         elif not token.val:
                             # No BÍN meaning for this token
                             weak = False # Accept single-word entity references
@@ -1777,14 +1851,18 @@ def recognize_entities(token_stream, enclosing_session = None):
                             # already is - and we have a BÍN meaning for it: Abandon the effort
                             assert not newstate
                             assert not tq
-                            yield token
+                            yield token_or_entity(token)
                         else:
                             # Go for it: Initialize the token queue
                             tq = [ token ]
                     else:
                         # Not a start of an entity reference: simply yield the token
                         assert not tq
-                        yield token
+                        if upper:
+                            # Might be a last name referring to a full name
+                            yield token_or_entity(token)
+                        else:
+                            yield token
 
                 # Transition to the new state
                 state = newstate
@@ -1801,6 +1879,9 @@ def recognize_entities(token_stream, enclosing_session = None):
                 for t in tq:
                     yield t
             tq = []
+
+    print("\nEntity cache:\n{0}".format("\n".join("'{0}': {1}".format(k, v) for k, v in ecache.items())))
+    print("\nLast names:\n{0}".format("\n".join("{0}: {1}".format(k, v) for k, v in lastnames.items())))
 
     assert not tq
 
