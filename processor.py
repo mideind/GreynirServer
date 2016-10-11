@@ -110,9 +110,9 @@ class Processor:
 
             try:
 
-                article = session.query(Article).filter_by(url = url).first()
+                article = session.query(Article).filter_by(url = url).one_or_none()
 
-                if not article:
+                if article is None:
                     print("Article not found in scraper database")
                 else:
                     if article.tree:

@@ -1697,32 +1697,17 @@ def recognize_entities(token_stream, enclosing_session = None):
                 ecache[w] = e = fetch_entities(w)
             return e
 
-        def coalesce_definitions(entities):
-            """ From a list of raw definitions from the database, create a coalesced
-                and sanitized definition list for an entity token """
-            definitions = list({ (e.verb, correct_spaces(e.definition)) for e in entities })
-            # Sort the definition list in ascending alphabetical order by definition
-            with changedlocale() as strxfrm:
-                definitions.sort(key = lambda x: strxfrm(x[1]))
-            # Coalesce definitions that are prefixes of other definitions
-            i = 0
-            while i < len(definitions) - 1:
-                if definitions[i+1][1].lower().startswith(definitions[i][1].lower()):
-                    del definitions[i]
-                else:
-                    i += 1
-            return definitions
-
         def flush_match():
             """ Flush a match that has been accumulated in the token queue """
+            if len(tq) == 1 and tq[0].txt in lastnames:
+                # If single token, it may be the last name of a
+                # previously seen entity or person
+                return token_or_entity(tq[0])
             # Reconstruct original text behind phrase
             ename = " ".join([t.txt for t in tq])
-            # Assemble the information we want to return about the matched entity
-            # We return a tuple (verb, definition)
-            assert None in state
-            definitions = coalesce_definitions((e for _, e in state[None]))
-            # print("flush_match() returning ename '{0}', defs {1}".format(ename, definitions))
-            return TOK.Entity(ename, definitions)
+            # We don't include the definitions in the token - they should be looked up
+            # on the fly when processing or displaying the parsed article
+            return TOK.Entity(ename, None)
 
         def token_or_entity(token):
             """ Return a token as-is or, if it is a last name of a person that has already
@@ -1731,19 +1716,13 @@ def recognize_entities(token_stream, enclosing_session = None):
             if token.txt not in lastnames:
                 # Not a last name of a previously seen full name
                 return token
-            print("Found {0} in lastnames".format(token.txt))
             tfull = lastnames[token.txt]
-            print("tfull is {0}".format(tfull))
             if tfull.kind != TOK.PERSON:
-                # Fetch the definitions of the full name
-                entities = fetch_entities(tfull.txt, fuzzy = False)
-                print("Fetched entities {0}".format(entities))
-                definitions = coalesce_definitions(entities)
-                print("Definitions are {0}".format(definitions))
-                # Return an entity token with the full name definitions
-                return TOK.Entity(token.txt, definitions)
+                # Return an entity token with no definitions
+                # (this will eventually need to be looked up by full name when
+                # displaying or processing the article)
+                return TOK.Entity(token.txt, None)
             # Return the full name meanings
-            print("Returning person token")
             return TOK.Person(token.txt, tfull.val)
 
         try:
@@ -1880,8 +1859,8 @@ def recognize_entities(token_stream, enclosing_session = None):
                     yield t
             tq = []
 
-    print("\nEntity cache:\n{0}".format("\n".join("'{0}': {1}".format(k, v) for k, v in ecache.items())))
-    print("\nLast names:\n{0}".format("\n".join("{0}: {1}".format(k, v) for k, v in lastnames.items())))
+    # print("\nEntity cache:\n{0}".format("\n".join("'{0}': {1}".format(k, v) for k, v in ecache.items())))
+    # print("\nLast names:\n{0}".format("\n".join("{0}: {1}".format(k, v) for k, v in lastnames.items())))
 
     assert not tq
 

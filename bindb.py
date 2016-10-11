@@ -194,6 +194,11 @@ class BIN_Db:
             # of the BIN_Meaning namedtuple
             g = self._c.fetchall()
             if g is not None:
+                m = list(map(BIN_Meaning._make, g))
+                if w in Meanings.DICT:
+                    # There are additional word meanings in the Meanings dictionary,
+                    # coming from the settings file: append them
+                    m.extend([ BIN_Meaning._make(add_m) for add_m in Meanings.DICT[w] ])
                 # Order the meanings by priority, so that the most
                 # common/likely ones are first in the list and thus
                 # matched more readily than the less common ones
@@ -207,11 +212,7 @@ class BIN_Db:
                     prio += 2 if "ÞT" in m.beyging else 0
                     prio += 1 if "FT" in m.beyging else 0
                     return prio
-                m = sorted(map(BIN_Meaning._make, g), key = priority)
-                if w in Meanings.DICT:
-                    # There are additional word meanings in the Meanings dictionary,
-                    # coming from the settings file: append them
-                    m.extend([ BIN_Meaning._make(add_m) for add_m in Meanings.DICT[w] ])
+                m.sort(key = priority)
         except (psycopg2.DataError, psycopg2.ProgrammingError) as e:
             print("Word {0} causing DB exception {1}".format(w, e))
             m = None
@@ -417,6 +418,11 @@ class BIN_Db:
                 # use the meaning of its last part
                 prefix = "-".join(cw[0:-1])
                 m = lookup(cw[-1])
+                if lower_w != w and not at_sentence_start:
+                    # If this is an uppercase word in the middle of a
+                    # sentence, allow only nouns as possible interpretations
+                    # (it wouldn't be correct to capitalize verbs, adjectives, etc.)
+                    m = [ mm for mm in m if mm.ordfl in { "kk", "kvk", "hk" } ]
                 m = BIN_Db.prefix_meanings(m, prefix)
 
         if not m and lower_w.startswith('ó'):

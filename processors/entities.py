@@ -39,19 +39,6 @@ from scraperdb import Entity
 
 MODULE_NAME = __name__
 
-
-def article_begin(state):
-    """ Called at the beginning of article processing """
-
-    session = state["session"] # Database session
-    url = state["url"] # URL of the article being processed
-    # Delete all existing entities for this article
-    session.execute(Entity.table().delete().where(Entity.article_url == url))
-
-def article_end(state):
-    """ Called at the end of article processing """
-    pass
-
 # Avoid chaff
 NOT_DEFINITIONS = {
     "við", "ári", "sæti", "stig", "færi", "var", "varð"
@@ -61,12 +48,43 @@ NOT_DEFINITIONS = {
     "sá", "sú", "það"
 }
 
+
+def article_begin(state):
+    """ Called at the beginning of article processing """
+    session = state["session"] # Database session
+    url = state["url"] # URL of the article being processed
+    # Delete all existing entities for this article
+    session.execute(Entity.table().delete().where(Entity.article_url == url))
+    # Create a name mapping dict for the article
+    state["names"] = dict() # Last name -> full name
+
+
+def article_end(state):
+    """ Called at the end of article processing """
+    for k, v in state["names"].items():
+        print("Last name '{0}' -> full name '{1}'".format(k, v))
+    pass
+
+
 def sentence(state, result):
     """ Called at the end of sentence processing """
 
     session = state["session"] # Database session
     url = state["url"] # URL of the article being processed
     authority = state["authority"] # Authority of the article being processed
+    names = state["names"] # Mapping of last names to full names
+
+    if "names" in result:
+        # Names were found: add to name mapping dict
+        for n in result.names:
+            a = n.split()
+            if len(a) > 2 and a[-2] in names:
+                # Delete next-to-last name,
+                # i.e. if we now have "Hillary Rodham Clinton", delete "Rodham->Hillary Rodham"
+                del names[a[-2]]
+            if len(a) > 1:
+                # Map "Clinton->Hillary Rodham Clinton"
+                names[a[-1]] = n
 
     if "entities" in result:
         # Entities were found
@@ -90,6 +108,14 @@ def sentence(state, result):
                 return True
 
             if def_ok(definition):
+
+                if entity in names:
+                    # Probably the last name of a longer-named entity:
+                    # define the full name, not the last name
+                    # (i.e. 'Clinton er forsetaframbjóðandi' ->
+                    #   'Hillary Rodham Clinton er forsetaframbjóðandi')
+                    print("Mapping entity name '{0}' to full name '{1}'".format(entity, names[entity]))
+                    entity = names[entity]
 
                 print("Entity '{0}' {1} '{2}'".format(entity, verb, definition))
 
@@ -143,6 +169,7 @@ def Sérnafn(node, params, result):
     result.sérnafn = result._text
     result.sérnafn_nom = result._nominative
     result.sérnafn_eind_nom = result._nominative
+    result.names = { result._nominative }
 
 
 def SérnafnEðaManneskja(node, params, result):
@@ -151,6 +178,7 @@ def SérnafnEðaManneskja(node, params, result):
     result.sérnafn_nom = result._nominative
     result.sérnafn_eind_nom = result._nominative
     result.eindir = [ result._nominative ] # Listar eru sameinaðir
+    result.names = { result._nominative }
 
 
 def Fyrirtæki(node, params, result):
@@ -212,7 +240,6 @@ def NlEind(node, params, result):
 
         if definition:
 
-            print("SvigaInnihald: '{0}' er '{1}'".format(entity, definition))
             # Append to result list
             if "entities" not in result:
                 result.entities = []
@@ -242,6 +269,12 @@ def SamstættFall(node, params, result):
             if not part or not part[0].isupper():
                 return
 
+        # Bæta við nafnamengi
+        if "names" in result:
+            result.names.add(sérnafn_nom)
+        else:
+            result.names = { sérnafn_nom }
+
     # Find the noun terminal parameter
     p_no = result.find_child(t_base = "no")
 
@@ -262,7 +295,7 @@ def SamstættFall(node, params, result):
         # !!! sérnöfn, þ.e. nafnorð sem finnast í BÍN
         entity = sérnafn_nom
 
-    print("Definite: '{0}' er '{1}'".format(entity, definition))
+    # print("Definite: '{0}' er '{1}'".format(entity, definition))
 
     # Append to result list
     if "entities" not in result:
@@ -348,4 +381,5 @@ def Setning(node, params, result):
     finally:
         # Ekki senda sérnöfn upp í tréð ef þau hafa ekki verið höndluð nú þegar
         result.del_attribs(('sérnafn', 'sérnafn_nom'))
+        result.del_attribs(("skilgreining", "eindir"))
 

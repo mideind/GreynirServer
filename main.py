@@ -181,8 +181,19 @@ _MAX_QUERY_LENGTH = 512
 def add_entity_to_register(name, register, session):
     """ Add the entity name and the 'best' definition to the given name register dictionary """
     if name in register:
-        # Already have a title for this name
+        # Already have a definition for this name
         return
+    if not " " in name:
+        # Single name: this might be the last name of a person/entity
+        # that has already been mentioned by full name
+        for k in register.keys():
+            parts = k.split()
+            if len(parts) > 1 and parts[-1] == name:
+                # Reference to the last part of a previously defined
+                # multi-part person or entity name,
+                # for instance 'Clinton' -> 'Hillary Rodham Clinton'
+                register[name] = dict(kind = "ref", fullname = k)
+                return
     # Use the query module to return definitions for an entity
     definition = query_entity_def(session, name)
     if definition:
@@ -855,7 +866,7 @@ def main():
     if not txt:
         # Select a random default text
         txt = _DEFAULT_TEXTS[random.randint(0, len(_DEFAULT_TEXTS) - 1)]
-    return render_template("main-bootstrap.html", default_text = txt)
+    return render_template("main.html", default_text = txt)
 
 
 # Flask handlers

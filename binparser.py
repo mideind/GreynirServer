@@ -720,7 +720,7 @@ class BIN_Token(Token):
             # as abbreviations to Main.conf is recommended
             return self.t1 in {
                 "ehf.", "ehf", "hf.", "hf",
-                "bs.", "bs", "sf.", "sf", "slhf.", "slhf", "slf.", "slf", "ohf.", "ohf",
+                "bs.", "bs", "sf.", "sf", "slhf.", "slhf", "slf.", "slf", "svf.", "svf", "ohf.", "ohf",
                 "Inc", "Inc.", "Incorporated",
                 "Corp", "Corp.", "Corporation",
                 "Ltd", "Ltd.", "Limited",

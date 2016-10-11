@@ -357,10 +357,12 @@ Samanburður →
     SamanburðarTenging Nl_nf AtvFs? # þar af einn alvarlega
     | Samanburðarmerki? "þar" "með:fs" 'talinn'_nf/tala/kyn Nl_nf/tala/kyn AtvFs? # þar með talinn allur þingflokkur Framsóknar
     | Samanburðarmerki "öðru:fn" "nær:ao"   # Viðskiptablaðið styður ekki jafnaðarstefnuna; öðru nær.
+    | Samanburðarmerki 'allt'_nf_et_hk "frá:fs" Nl_þgf "til:fs" Nl_ef  # Verslunin þjónar fjölbreyttum markhópi, allt frá börnum til aldraðra
 
 SamanburðarTenging →
     "heldur" "en:st"                # 'Forseti á ekki að gera meiri breytingu á sér heldur en forsætisráðherra'
     | ','? "eins:ao" "og:st"        # 'Hann á ekki andstæðinga eins og aðrir kjörnir fulltrúar'
+    | ','? 'líkt_og'
     | Samanburðarmerki? "þar" "af"  # 'Fjöldi barna var í vélinni, þar af tvö kornabörn'
     | Samanburðarmerki? 'þar_á_meðal'
     | Samanburðarmerki? "þar" "á:fs" "meðal:ao"
@@ -402,7 +404,8 @@ Setning/tala/pers/kyn →
     # Ath. að frumlag 3p. et. getur verið falið:
     # (? Það virtist mér í dag kettinum líða betur)
     # 'Í dag virtist mér kettinum líða betur'
-    | FsAtv? SagnHluti/tala/pers/kyn Upptalning/tala?
+    # 'Eins og Páll er ég mjög ósáttur við þetta'
+    | SetningForskeyti? SagnHluti/tala/pers/kyn Upptalning/tala?
 
     # 'Það fara 40 mínútur í pappírsvinnuna'
     # (40 mínútur fara í pappírsvinnuna)
@@ -423,6 +426,11 @@ SetningAð →
     NhLiður FsAtv? SagnRuna_et_p3_hk
 
 $score(-2) SetningAð # Óalgengt form
+
+SetningForskeyti →
+    FsAtv
+    | "eins:ao" "og:st" Nl_nf  # 'Eins og Páll borða ég ekki smjör'
+    | 'líkt_og' Nl_nf          # 'Líkt og bakarar eru smiðir óhressir með þetta'
 
 # Setning sem byrjar á lýsingarorði í stað "það"
 # 'Óheimilt er (að fangelsa mann fyrir engar sakir)'
@@ -1266,22 +1274,22 @@ Sögn_1_ft/pers/kyn →
 # '(Jón) kvað (stíginn vera öruggan)'
 # '(Myndbandið) sýndi (björgunarmenn bera hann inn í sjúkrabíl)'
 So_1_þf_nh/tala/pers →
-    'segja'/tala/pers
-    | 'telja'/tala/pers
-    | 'láta'/tala/pers
-    | 'álíta'/tala/pers
-    | 'sjá'/tala/pers
-    | 'kveða'/tala/pers
-    | 'sýna'/tala/pers
+    'segja'_gm/tala/pers
+    | 'telja'_gm/tala/pers
+    | 'láta'_gm/tala/pers
+    | 'álíta'_gm/tala/pers
+    | 'sjá'_gm/tala/pers
+    | 'kveða'_gm/tala/pers
+    | 'sýna'_gm/tala/pers
 
 So_1_þf_nh →
-    'segja'_nh
-    | 'telja'_nh
-    | 'láta'_nh
-    | 'álíta'_nh
-    | 'sjá'_nh
-    | 'kveða'_nh
-    | 'sýna'_nh
+    'segja'_gm_nh
+    | 'telja'_gm_nh
+    | 'láta'_gm_nh
+    | 'álíta'_gm_nh
+    | 'sjá'_gm_nh
+    | 'kveða'_gm_nh
+    | 'sýna'_gm_nh
 
 # segist munu/vilja borða kökuna
 # telst munu/vilja kjósa flokkinn
@@ -2398,6 +2406,10 @@ SamstættFall/fall/kyn →
     # Lagahöfundurinn góðkunni Jónas Friðrik (hefur glatt marga)
     VeiktLo_et/fall/kyn* no_gr_et/fall/kyn VeiktLo_et/fall/kyn? SérnafnEðaManneskja/fall
 
+SamstættFall_nf/kyn →
+    # Enska dagblaðið The Mirror
+    VeiktLo_et_nf/kyn* no_gr_et_nf/kyn VeiktLo_et_nf/kyn? SérnafnEðaManneskja
+
 # !!! ATH: Ef þessu er breytt gæti þurft að breyta processors/entities.py
 ÓsamstættFall/aukafall/kyn →
     VeiktLo_et/aukafall/kyn* no_gr_et/aukafall/kyn VeiktLo_et/aukafall/kyn? SérnafnEðaManneskja # (Ég versla við) herrafataverslunina Smekkmaður
@@ -3041,6 +3053,7 @@ FsMeðFallstjórn →
     | 'fyrir_hönd' Nl_ef
     | "miðað" "við:fs" Nl_þf
     | 'miðað_við' Nl_þf # Skammstöfunin m.v.
+    | 'með_tilliti_til' Nl_ef # Skammstöfunin m.t.t.
     | "samanborið:so" "við:fs" Nl_þf
     | "borið:so" "saman" "við:fs" Nl_þf
     | "þegar" "kemur" "að:fs" Nl_þgf
@@ -3107,7 +3120,8 @@ FsLiður → Atviksliður? FsMeðFallstjórn # snarlega í bæinn
 # á undan og í lok - eða einungis atviksliðir.
 
 FsAtv →
-    ','? EinFsAtv+ FsAtvFramhald* ','?
+    # (Ég samþykkti þetta), en með semingi þó
+    ','? "en:st"? EinFsAtv+ FsAtvFramhald* ','?
 
 FsAtvFramhald → KommaOgEðaEn EinFsAtv+
 

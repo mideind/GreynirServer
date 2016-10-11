@@ -279,7 +279,15 @@ function showPerson(ev) {
 
 function showEntity(ev) {
    // Send a query to the server
-   queryEntity($(this).text());
+   var ename = $(this).text();
+   var nd = nameDict[ename];
+   if (nd && nd.kind == "ref")
+      // Last name reference to a full name entity
+      // ('Clinton' -> 'Hillary Rodham Clinton')
+      // In this case, we assume that we're asking about a person
+      queryPerson(nd.fullname);
+   else
+      queryEntity(ename);
    ev.stopPropagation();
 }
 
@@ -502,8 +510,16 @@ function hoverIn() {
    }
    else
    if (t.k == TOK_ENTITY) {
-      $("#lemma").text(t.x);
-      var title = (nameDict && nameDict[t.x]) ? (nameDict[t.x].title || "") : "";
+      var nd = nameDict[t.x];
+      if (nd && nd.kind == "ref") {
+         // Last name reference to a full name entity
+         // ('Clinton' -> 'Hillary Rodham Clinton')
+         $("#lemma").text(nd.fullname);
+         nd = nameDict[nd.fullname];
+      }
+      else
+         $("#lemma").text(t.x);
+      var title = nd ? (nd.title || "") : "";
       if (!title.length)
          title = "sérnafn";
       $("#details").text(title);
@@ -648,8 +664,10 @@ function populateRegister() {
    var register = [];
    $("#namelist").html("");
    $.each(nameDict, function(name, desc) {
-      // kind is either 'name' or 'entity'
-      register.push({ name: name, title: desc.title, kind: desc.kind });
+      // kind is 'ref', 'name' or 'entity'
+      if (desc.kind != "ref")
+         // We don't display references to full names
+         register.push({ name: name, title: desc.title, kind: desc.kind });
    });
    register.sort(function(a, b) {
       return a.name.localeCompare(b.name);

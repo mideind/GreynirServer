@@ -168,6 +168,7 @@ class Result:
                     left |= val
                 elif isinstance(left, dict) and isinstance(val, dict):
                     # Keep the left entries but add any new/additional val entries
+                    # (This gives left priority; left.update(val) would give right priority)
                     d[key] = dict(val, **left)
 
     def del_attribs(self, alist):
@@ -461,8 +462,6 @@ class TerminalDescriptor:
                 if m.stofn in VerbObjects.VERBS[i]:
                     # This verb takes fewer arguments than the terminal requires, so no match
                     return False
-            if "mm" in self.variants:
-                return 0 <= nargs <= 1
             # Unknown verb: allow it to match
             return True
 
@@ -866,7 +865,7 @@ class NonterminalNode(Node):
             # Don't invoke if this is an epsilon nonterminal (i.e. has no children)
             processor = state["processor"]
             func = getattr(processor, self.nt_base, None) if processor else None
-            if func:
+            if func is not None:
                 try:
                     func(self, params, result)
                 except TypeError as ex:
@@ -1031,7 +1030,7 @@ class Tree(TreeBase):
         # if present in the processor
         processor = state["processor"]
         func = getattr(processor, "sentence", None) if processor else None
-        if func:
+        if func is not None:
             func(state, result)
 
     def process(self, session, processor):
@@ -1048,13 +1047,13 @@ class Tree(TreeBase):
             state = { "session": session, "processor": processor,
                 "bin_db": bin_db, "url": self.url, "authority": self.authority }
             # Call the article_begin(state) function, if it exists
-            if article_begin:
+            if article_begin is not None:
                 article_begin(state)
             # Process the (parsed) sentences in the article
             for index, tree in self.s.items():
                 self.process_sentence(state, tree)
             # Call the article_end(state) function, if it exists
-            if article_end:
+            if article_end is not None:
                 article_end(state)
 
 
