@@ -3,6 +3,8 @@
 
 # Reynir
 
+[![Join the chat at https://gitter.im/Greynir/Lobby](https://badges.gitter.im/Greynir/Lobby.svg)](https://gitter.im/Greynir/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 ## Natural language processing for Icelandic
 
 Try Reynir (in Icelandic) at [https://greynir.is](https://greynir.is)
