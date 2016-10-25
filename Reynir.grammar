@@ -708,13 +708,13 @@ SetningÁnF/tala/pers/kyn →
     EinSetningÁnF/tala/pers/kyn FramhaldÁnF/tala/pers/kyn*
 
 EinSetningÁnF/tala/pers/kyn →
-    Atviksliður? ÖfugurSagnliður/tala/pers/kyn LoTengtSögn_nf/tala/kyn? FsAtv? ÖfugtFramhald/tala/pers/kyn*
+    Atviksliður? ÖfugurSagnliður/tala/pers/kyn LoTengtSögn_nf/tala/kyn? SagnInnskot? ÖfugtFramhald/tala/pers/kyn*
     # Lýsingarorð á undan sögn:
     # (Ráðherrar taka þær ákvarðanir sem) nauðsynlegar eru/þykja/teljast til rækslu starfa þeirra
     | LoTengtSögn_nf/tala/kyn Sögn_0/tala/pers/kyn NhFyllingEðaAtv
 
 ÖfugtFramhald/tala/pers/kyn →
-    KommaOgEðaEn ÖfugurSagnliður/tala/pers/kyn LoTengtSögn_nf/tala/kyn? FsAtv?
+    KommaOgEðaEn ÖfugurSagnliður/tala/pers/kyn LoTengtSögn_nf/tala/kyn? SagnInnskot?
 
 FramhaldÁnF/tala/pers/kyn →
     ','? Samtenging HreinYfirsetning                # (sem borðað höfðu matinn) þegar hann var framreiddur fyrr um kvöldið
@@ -934,6 +934,7 @@ Sögn_lhþt/tala/pers/kyn →
     HjSögnLhÞtSM/tala/pers HreinSögn_lhþt/tala/kyn
     # er leiðinlegur, hefur verið frábær, munu vera einstök
     | SögnErLo/tala/pers/kyn
+    | SögnErEinsOg/tala/pers
     # talin er/hefur verið [liggja undir grun]
     | so_0_lhþt/tala/kyn HjSögnLhÞtSM/tala/pers LhÞtBotn/tala/kyn?
 
@@ -941,8 +942,13 @@ SögnErLo/tala/pers/kyn →
     # var snögg [að svara fyrir sig]
     HjSögnLhÞt/tala/pers LoTengtSögn_nf/tala/kyn NhFylling?
 
+SögnErEinsOg/tala/pers →
+    # er [í laginu alveg] eins og krakki í sælgætisbúð
+    HjSögnLhÞt/tala/pers FsAtv? "eins:ao" "og:st" Nl_nf
+
 # Hvetja til 'er/var/hefur verið...' + lýsingarorð í nefnifalli og sterkri beygingu
 $score(+8) SögnErLo/tala/pers/kyn
+$score(+6) SögnErEinsOg/tala/pers
 
 LhÞtÞgfBotn → "fyrir" "bestu"               # Það sem er börnum fyrir bestu
 
@@ -2173,7 +2179,7 @@ NlTöluorð/tala/fall/kyn →
 
 TöluorðForskeyti →
     'að_minnsta_kosti' | "um:ao" | "minnst" | "einungis" | "aðeins" | "ekki:ao"
-    | "svo" "sem:st" | "tæplega" | "rúmlega" | "einnig" | "samtals"
+    | "svo" "sem:st" | "tæplega" | "rúmlega" | "einnig" | "samtals" | "yfir:ao"
 
 TöluorðLo/tala →
     lo_evb_nf_hk/tala # efstu tvo / efstu tvö / efstu tvær
@@ -3069,6 +3075,7 @@ FsMeðFallstjórn →
     | FsÍGegnUm
     | FsAðBaki
     | FsTilÞgf
+    | Átt ÁttFs? Nl_þf # vestur á firði, suður götuna, austur í flóa, norður að fjalli
     # 'hvorki við stjórn spítalans né ráðherrann'
     # 'hvorki til mín né stjórnarinnar'
     | "hvorki" fs/fall Nl/fall "né" Nl/fall
@@ -3076,10 +3083,16 @@ FsMeðFallstjórn →
 
     | '(' FsMeðFallstjórn ')'
 
+Átt → "vestur:fs" | "austur:fs" | "suður:fs" | "norður:fs"
+ÁttFs → "á:fs" | "í:fs" | "að:fs"
+
 $score(+1) FsMeðFallstjórn
 
 FsÞgfTilEf →
     Nl_þgf "til:fs" Nl_ef # máli sínu til stuðnings, barninu til hróss, henni til bjargar
+
+# Ekki velja þetta nema nauðsyn beri til
+$score(-4) FsÞgfTilEf
 
 FsÍGegnUm →
     "í:ao" "gegn:ao" "um:fs" Nl_þf
@@ -3215,11 +3228,17 @@ AtviksliðurKomma →
     Atviksliður ','?
 
 AtviksliðurEinkunn →
-    eo                  # Einkunnarorð = atviksorð sem geta ekki jafnframt verið forsetningar
-    | Dagsetning        # (hagnaðurinn var strax) árið 2012 (175 milljarðar króna)
+    eo                              # Einkunnarorð = atviksorð sem geta ekki jafnframt verið forsetningar
+    | Dagsetning                    # (hagnaðurinn var strax) árið 2012 (175 milljarðar króna)
     | Tímasetning
-    | Aldur                # Hin 29 ára gamla fyrirsæta
-    | "allt" "að:ao"       # 'fjárfesta fyrir allt að 100 milljónir króna'
+    | Aldur                         # Hin 29 ára gamla fyrirsæta
+    | "allt" "að:ao"                # 'fjárfesta fyrir allt að 100 milljónir króna'
+    | UmEðaYfir
+
+UmEðaYfir →
+    "um:ao" "eða:st" "yfir:ao"      # Um eða yfir 100 tyrkneskum eldflaugum rigndi yfir Aleppo
+
+$score(+8) UmEðaYfir
 
 # Dagsetning og tími
 

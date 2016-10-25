@@ -235,7 +235,7 @@ class Fetcher:
             if soup is None or soup.html is None:
                 return None
         else:
-            soup = helper.make_soup(doc)
+            soup = helper.make_soup(doc) if doc else None
         return soup
 
 
