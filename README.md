@@ -171,6 +171,9 @@ Limited installation and setup instructions can be
 `create table ord (stofn varchar(80), utg integer, ordfl varchar(16), fl varchar(16), ordmynd varchar(80), beyging varchar(24));`
 `copy ord from '/home/notandi/Reynir/resources/ord.csv' with (format csv, delimiter ';', encoding 'UTF8');`
 
+### Todo
+Write a seperator validator for obeyg.smaord.txt
+
 ## Copyright and licensing
 
 Reynir/Greynir is *copyright (C) 2015-2016 by Vilhjálmur Þorsteinsson*.
