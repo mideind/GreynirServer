@@ -169,6 +169,7 @@ Limited installation and setup instructions can be
 `create database bin with encoding 'UTF8' LC_COLLATE='is_IS.UTF-8' LC_CTYPE='is_IS.UTF-8' TEMPLATE=template0;`
 `\c bin` 
 `create table ord (stofn varchar(80), utg integer, ordfl varchar(16), fl varchar(16), ordmynd varchar(80), beyging varchar(24));`
+`copy ord from '/home/notandi/Reynir/resources/ord.csv' with (format csv, delimiter ';', encoding 'UTF8');`
 
 ## Copyright and licensing
 
