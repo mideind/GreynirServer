@@ -156,6 +156,14 @@ Limited installation and setup instructions can be
 [found here](https://docs.google.com/document/d/1ywywjoOj5yas5QKjxLJ9Gqh-iNkfPae9-EKuES74aPU/edit?usp=sharing)
 (in Icelandic).
 
+## Installation on OSx (Homebrew)
+* Download and extract pypy3.3 (http://pypy.org/download.html#installing)
+* `$ brew install postgresql (comes with contrib packages)`
+* `$ pip3 install virtualenv`
+* Clone this repo
+* cd into repo
+* `virtualenv -p /_your-pypy3-install-dir_/pypy3/bin/pypy3 venv`
+
 ## Copyright and licensing
 
 Reynir/Greynir is *copyright (C) 2015-2016 by Vilhjálmur Þorsteinsson*.
