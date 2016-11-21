@@ -164,6 +164,12 @@ Limited installation and setup instructions can be
 * cd into repo
 * `virtualenv -p /_your-pypy3-install-dir_/pypy3/bin/pypy3 venv`
 
+### Postgres database setup
+`$ psql`
+`create database bin with encoding 'UTF8' LC_COLLATE='is_IS.UTF-8' LC_CTYPE='is_IS.UTF-8' TEMPLATE=template0;`
+`\c bin` 
+`create table ord (stofn varchar(80), utg integer, ordfl varchar(16), fl varchar(16), ordmynd varchar(80), beyging varchar(24));`
+
 ## Copyright and licensing
 
 Reynir/Greynir is *copyright (C) 2015-2016 by Vilhjálmur Þorsteinsson*.
