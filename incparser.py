@@ -94,6 +94,10 @@ class IncrementalParser:
         def text(self):
             return " ".join(t.txt for t in self._s)
 
+        def __str__(self):
+            return self.text
+
+
     class _IncrementalParagraph:
 
         def __init__(self, ip, p):

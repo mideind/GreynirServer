@@ -197,8 +197,8 @@ class Scraper:
                 UnknownVerbs.write()
         except Exception as e:
             print("Exception when parsing article at {0}: {1!r}".format(d.url, e))
-            #traceback.print_exc()
-            #raise e from e
+            # traceback.print_exc()
+            # raise e from e
 
 
     def go(self, reparse = False, limit = 0, urls = None):
@@ -300,7 +300,6 @@ class Scraper:
                     pool.map(self._parse_single_article, adlist)
                     pool.close()
                     pool.join()
-                    # session.commit() # This seems to cause errors
                     print("Parser processes joined, chunk of {0} articles parsed".format(lcnt))
                     cnt += lcnt
                 if lcnt < CHUNK_SIZE:
@@ -503,6 +502,8 @@ def main(argv = None):
 
             try:
                 Settings.read("config/Reynir.conf")
+                # Don't run the scraper in debug mode
+                Settings.DEBUG = False
             except ConfigError as e:
                 print("Configuration error: {0}".format(e), file = sys.stderr)
                 return 2

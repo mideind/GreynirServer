@@ -329,6 +329,8 @@ def _main(argv = None):
 
             try:
                 Settings.read("config/Reynir.conf")
+                # Don't run the processor in debug mode
+                Settings.DEBUG = False
             except ConfigError as e:
                 print("Configuration error: {0}".format(e), file = sys.stderr)
                 return 2

@@ -165,7 +165,7 @@ private:
    State** m_pNtStates; // States linked by the nonterminal at their prod[dot]
    MatchingFunc m_pMatchingFunc; // Pointer to the token/terminal matching function
    BYTE* m_abCache; // Matching cache, a true/false flag for every terminal in the grammar
-   BOOL m_bNeedsRelease; // Does the matching cache needs to be explicitly released?
+   BOOL m_bNeedsRelease; // Does the matching cache need to be explicitly released?
    HashBin m_aHash[HASH_BINS]; // The hash bin array
    UINT m_nEnumBin; // Round robin used during enumeration of states
 

@@ -527,6 +527,9 @@ class VisirScraper(ScrapeHelper):
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
         s = urlparse.urlsplit(url)
+        if s.netloc.startswith("fasteignir."):
+            # Skip fasteignir.visir.is
+            return True
         if s.path:
             for prefix in self._SKIP_PREFIXES:
                 if s.path.startswith(prefix):
@@ -824,7 +827,8 @@ class AlthingiScraper(ScrapeHelper):
     def _get_content(self, soup_body):
         """ Find the article content (main text) in the soup """
         article = ScrapeHelper.div_class(soup_body, "pgmain", "news", "boxbody")
-        print(article.prettify())
+        # if article is not None:
+        #    print(article.prettify())
         return article
 
 

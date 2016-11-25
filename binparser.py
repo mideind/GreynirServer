@@ -36,10 +36,11 @@ from datetime import datetime
 from functools import reduce
 import json
 
+from settings import Settings, VerbObjects, VerbSubjects, Prepositions
 from tokenizer import TOK
+from bindb import BIN_Db
 from grammar import Terminal, LiteralTerminal, Token, Grammar, GrammarError
 from baseparser import Base_Parser
-from settings import Settings, VerbObjects, VerbSubjects, UnknownVerbs, Prepositions
 
 from flask import current_app
 
@@ -267,6 +268,18 @@ class BIN_Token(Token):
         return fbits
 
     @staticmethod
+    def mm_verb_stem(verb):
+        """ Lookup a verb stem for a 'miðmynd' verb,
+            i.e. "eignast" for "eiga" (which may have appeared
+            as "eignaðist" in the text) """
+        for fm in BIN_Db.get_db().lookup_forms_from_stem(verb):
+            if fm.beyging == "MM-NH":
+                # The MM-NH form is the canonical (nominal) form
+                return fm.ordmynd
+        # No MM canonical form found: return the original (normal) stem
+        return verb
+
+    @staticmethod
     def verb_matches(verb, terminal, form):
         """ Return True if the verb in question matches the verb category,
             where the category is one of so_0, so_1, so_2 depending on
@@ -334,7 +347,6 @@ class BIN_Token(Token):
         if terminal.is_plural and "ET" in form:
             # Can't use singular verb if plural terminal
             return False
-        # print("verb_matches {0} terminal {1} form {2}".format(verb, terminal, form))
         # Check that person (1st, 2nd, 3rd) and other variant requirements match
         for v in terminal.variants:
             # Lookup variant to see if it is one of the required ones for verbs
@@ -369,7 +381,15 @@ class BIN_Token(Token):
                     # no match
                     return False
             return True
+        is_mm = "MM" in form
         nargs = int(terminal.variant(0))
+        if is_mm:
+            # For MM forms, do not use the normal stem of the verb
+            # for lookup in the VerbObjects.VERBS collection;
+            # instead, use the MM-NH stem.
+            # This means that for instance "eignaðist hest" is not resolved
+            # to "eiga" but to "eignast"
+            verb = BIN_Token.mm_verb_stem(verb)
         if verb in VerbObjects.VERBS[nargs]:
             # Seems to take the correct number of arguments:
             # do a further check on the supported cases
@@ -384,12 +404,10 @@ class BIN_Token(Token):
             # legitimate arguments in 'miðmynd', such as 'krefjast', 'ábyrgjast'
             # 'undirgangast', 'minnast'. They are also not consistently
             # annotated in BIN; some of them are marked as MM and some not.
-            if nargs > 1 and "MM" in form:
+            if nargs > 1 and is_mm:
                 # Temporary compromise: Don't accept verbs in 'miðmynd'
                 # if taking >1 arguments
                 return False
-            #    # compensate for errors in BÍN, cf. 'ábyrgjast')
-            #    return False
             # Check whether the parameters of this verb
             # match up with the requirements of the terminal
             # as specified in its variants at indices 1 and onward
@@ -407,30 +425,29 @@ class BIN_Token(Token):
                 # doesn't have all the arguments that the terminal requires
                 return False
         # !!! TEMPORARY code while the verb lexicon is being built
-        unknown = True
-        for i in range(nargs + 1, 3):
-            if verb in VerbObjects.VERBS[i]:
-                # The verb is known but takes more arguments than this
-                unknown = False
-        # Unknown verb or arguments not too many: consider this a match
-        if unknown:
-            # Note the unknown verb
-            UnknownVerbs.add(verb)
+        # unknown = True
+        # for i in range(nargs + 1, 3):
+        #     if verb in VerbObjects.VERBS[i]:
+        #         # The verb is known but takes more arguments than this
+        #         unknown = False
+        # # Unknown verb or arguments not too many: consider this a match
+        # if unknown:
+        #     # Note the unknown verb
+        #     UnknownVerbs.add(verb)
         return True
 
     def matches_PERSON(self, terminal):
         """ Handle a person name token, matching it with a person_[case]_[gender] terminal """
-        if terminal.first == "sérnafn":
+        if terminal.startswith("sérnafn"):
             # We allow a simple person name to match an entity name (sérnafn)
             if not self.is_upper or " " in self.lower:
                 # Must be capitalized and a single name
                 return False
             if not terminal.num_variants:
-                #print("Matched token {0} with terminal {1}".format(self, terminal))
                 return True
             case = terminal.variant(0)
             return any(m.case == case for m in self.t2)
-        if terminal.first != "person":
+        if not terminal.startswith("person"):
             return False
         if not terminal.num_variants:
             # No variant specified on terminal: we're done
@@ -442,7 +459,7 @@ class BIN_Token(Token):
 
     def matches_ENTITY(self, terminal):
         """ Handle an entity name token, matching it with an entity terminal """
-        return terminal.first == "entity"
+        return terminal.startswith("entity")
 
     def matches_PUNCTUATION(self, terminal):
         """ Match a literal terminal with the same content as the punctuation token """
@@ -450,7 +467,7 @@ class BIN_Token(Token):
 
     def matches_CURRENCY(self, terminal):
         """ A currency name token matches a noun terminal """
-        if terminal.first != "no":
+        if not terminal.startswith("no"):
             return False
         if terminal.is_abbrev:
             # A currency does not match an abbreviation
@@ -495,7 +512,7 @@ class BIN_Token(Token):
         no_info = not self.t2[1] and not self.t2[2]
 
         if no_info:
-            if terminal.first == "tala":
+            if terminal.startswith("tala"):
                 # Plain number with no case or gender info
                 return self.is_correct_singular_or_plural(terminal)
             # If no case and gender info, we only match "tala",
@@ -506,7 +523,7 @@ class BIN_Token(Token):
             return False
         if not self.is_correct_singular_or_plural(terminal):
             return False
-        if terminal.first == "to":
+        if terminal.startswith("to"):
             # Allow a match with "to" if we have both case and gender info
             if not self.t2[1] or not self.t2[2]:
                 return False
@@ -523,7 +540,7 @@ class BIN_Token(Token):
 
     def matches_AMOUNT(self, terminal):
         """ An amount token matches a noun terminal """
-        if terminal.first != "no":
+        if not terminal.startswith("no"):
             return False
         if terminal.has_any_vbits(BIN_Token.VBIT_ABBREV | BIN_Token.VBIT_GR):
             # An amount does not match an abbreviation or
@@ -546,14 +563,13 @@ class BIN_Token(Token):
             for g in BIN_Token.GENDERS:
                 if terminal.has_variant(g) and g not in self.t2[3]:
                     return False
-        #print("matches_AMOUNT returns True")
         return True
 
     def matches_PERCENT(self, terminal):
         """ A percent token matches a number (töl) or noun terminal """
-        if terminal.first != "töl":
+        if not terminal.startswith("töl"):
             # Matches number and noun terminals only
-            if terminal.first != "no":
+            if not terminal.startswith("no"):
                 return False
             if terminal.is_abbrev:
                 return False
@@ -584,19 +600,19 @@ class BIN_Token(Token):
 
     def matches_DATE(self, terminal):
         """ A date token matches a date (dags) terminal """
-        return terminal.first == "dags"
+        return terminal.startswith("dags")
 
     def matches_TIME(self, terminal):
         """ A time token matches a time (tími) terminal """
-        return terminal.first == "tími"
+        return terminal.startswith("tími")
 
     def matches_TIMESTAMP(self, terminal):
         """ A timestamp token matches a timestamp (tímapunktur) terminal """
-        return terminal.first == "tímapunktur"
+        return terminal.startswith("tímapunktur")
 
     def matches_ORDINAL(self, terminal):
         """ An ordinal token matches an ordinal (raðnr) terminal """
-        return terminal.first == "raðnr"
+        return terminal.startswith("raðnr")
 
     def matches_WORD(self, terminal):
         """ Match a word token, having the potential part-of-speech meanings
@@ -790,14 +806,13 @@ class BIN_Token(Token):
                 # !!! terminal doesn't specify VH; apply a priority between
                 # !!! different nouns that have the same spelling (incl. names)
                 return next((m for m in self.t2 if matcher(m)), False)
-                # return any(matcher(m) for m in self.t2)
             # Terminal is a proper name ('sérnafn')
             return self.is_upper and matches_proper_name()
 
         # Unknown word, i.e. no meanings in BÍN (might be foreign, unknown name, etc.)
         if self.is_upper:
             # Starts in upper case: We allow this to match a named entity terminal ('sérnafn')
-            return terminal.first == "sérnafn"
+            return terminal.startswith("sérnafn")
 
         # Not upper case: allow it to match a singular, neutral noun in all cases,
         # but without the definite article ('greinir')
@@ -1047,8 +1062,6 @@ class BIN_LiteralTerminal(VariantHandler, LiteralTerminal):
 
     def matches_first(self, t_kind, t_val, t_lit):
         """ A literal terminal matches a token if the token text is identical to the literal """
-        #print("LiteralTerminal.matches_first: parts[0] is '{0}', t_val is '{1}'"
-        #    .format(self._parts[0], t_val))
         if self._cat is not None and t_kind != self._cat:
             # Match only the word category that was specified
             return False

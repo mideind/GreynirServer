@@ -29,6 +29,7 @@ resources/reykjanes/
 mim/
 gold/
 fonts/
+logs/
 .idea/
 node_modules/
 cffi_test/
@@ -58,6 +59,7 @@ txt
 UnknownVerbs.txt
 parse.txt
 reduce.txt
+reduce-dup.txt
 input.txt
 nohup.out
 

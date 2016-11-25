@@ -22,6 +22,12 @@
 
     This module is written in Python 3.2 for compatibility with PyPy3
 
+    This is the main module of the Greynir web server. It uses Flask
+    as its templating and web server engine. In production, this module is
+    typically run inside Gunicorn (using servlets) under nginx or a
+    compatible WSGi HTTP(S) server. For development, it can be run
+    directly from the command line and accessed through port 5000.
+
 """
 
 import sys
@@ -618,11 +624,11 @@ def parse_grid():
     if forest is not None and use_reducer:
         # Reduce the parse forest
         forest, score = Reducer(grammar).go_with_score(forest)
-        #if Settings.DEBUG:
+        if Settings.DEBUG:
             # Dump the reduced tree along with node scores
-            #with open("reduce.txt", mode = "w", encoding= "utf-8") as f:
-            #    print("Reynir parse tree for sentence '{0}' after reduction".format(txt), file = f)
-            #    ParseForestPrinter.print_forest(forest, file = f, show_scores = True)
+            with open("reduce.txt", mode = "w", encoding= "utf-8") as f:
+                print("Reynir parse tree for sentence '{0}' after reduction".format(txt), file = f)
+                ParseForestPrinter.print_forest(forest, file = f)
 
     # Make the parse grid with all options
     grid, ncols = make_grid(forest) if forest else ([], 0)
@@ -910,7 +916,10 @@ if __name__ == "__main__":
 
     # Additional files that should cause a reload of the web server application
     # Note: Reynir.grammar is automatically reloaded if its timestamp changes
-    extra_files = [ 'Reynir.conf', 'Verbs.conf', 'Main.conf', 'Prefs.conf', 'Abbrev.conf' ]
+    extra_files = [ 'Reynir.conf',
+        'Verbs.conf', 'VerbPrepositions.conf',
+        'Main.conf', 'Prefs.conf', 'Abbrev.conf'
+    ]
 
     from socket import error as socket_error
     import errno

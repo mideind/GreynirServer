@@ -178,7 +178,6 @@ class ParseJob:
     def __exit__(self, exc_type, exc_value, traceback):
         """ Python context manager protocol """
         self.__class__.delete(self._handle)
-        #self.delete(self._handle)
         # Return False to re-throw exception from the context, if any
         return False
 
@@ -247,38 +246,57 @@ class Node:
 
     """
 
-    def __init__(self, job, c_node, parent = None, index = 0):
-        """ Initialize a Python SPPF node from a C++ node structure """
-        lb = c_node.label
-        self._start = lb.nI
-        self._end = lb.nJ
+    def __init__(self):
         self._hash = id(self).__hash__()
-        self._families = None # Families of children
+
+    @classmethod
+    def from_c_node(cls, job, c_node, parent = None, index = 0):
+        """ Initialize a Python SPPF node from a C++ node structure """
+        node = cls()
+        lb = c_node.label
+        node._start = lb.nI
+        node._end = lb.nJ
+        node._families = None # Families of children
         if lb.iNt < 0:
             # Nonterminal node, completed or not
-            self._nonterminal = job.grammar.lookup(lb.iNt)
-            #assert isinstance(self._nonterminal, Nonterminal), \
-            #    "nonterminal {0} is a {1}, i.e. {2}".format(lb.iNt, type(self._nonterminal), self._nonterminal)
-            self._completed = (lb.pProd == ffi.NULL) or lb.nDot >= lb.pProd.n
-            self._terminal = None
-            self._token = None
-            job.c_dict[c_node] = self # Re-use nonterminal nodes if identical
+            node._nonterminal = job.grammar.lookup(lb.iNt)
+            node._completed = (lb.pProd == ffi.NULL) or lb.nDot >= lb.pProd.n
+            node._terminal = None
+            node._token = None
+            job.c_dict[c_node] = node # Re-use nonterminal nodes if identical
         else:
             # Token node: find the corresponding terminal
-            assert parent is not None
-            assert parent != ffi.NULL
+            #assert parent is not None
+            #assert parent != ffi.NULL
             tix = parent.pList[index + parent.n] if index < 0 else parent.pList[index]
-            self._terminal = job.grammar.lookup(tix)
-            #assert isinstance(self._terminal, Terminal), \
-            #    "index is {0}, parent.n is {1}, tix is {2}, production {3}".format(index, parent.n, tix, grammar.productions_by_ix[parent.nId])
-            self._token = job.tokens[lb.iNt]
-            self._nonterminal = None
-            self._completed = True
+            node._terminal = job.grammar.lookup(tix)
+            node._token = job.tokens[lb.iNt]
+            node._nonterminal = None
+            node._completed = True
         fe = c_node.pHead
         while fe != ffi.NULL:
-            child_ix = -1 if self._completed else index
-            self._add_family(job, fe.pProd, fe.p1, fe.p2, child_ix)
+            child_ix = -1 if node._completed else index
+            node._add_family(job, fe.pProd, fe.p1, fe.p2, child_ix)
             fe = fe.pNext
+        return node
+
+    @classmethod
+    def copy(cls, other):
+        """ Returns a copy of a Node instance """
+        node = cls()
+        node._start = other._start
+        node._end = other._end
+        node._nonterminal = other._nonterminal
+        node._terminal = other._terminal
+        node._token = other._token
+        node._completed = other._completed
+        if other._families is None:
+            node._families = None
+        else:
+            # Create a new list object having the
+            # same child nodes as the source node
+            node._families = [ pc for pc in other._families ]
+        return node
 
     def _add_family(self, job, prod, ch1, ch2, child_ix):
         """ Add a family of children to this node, in parallel with other families """
@@ -287,13 +305,13 @@ class Node:
         if ch1 == ffi.NULL:
             n1 = None
         else:
-            n1 = job.c_dict.get(ch1) or Node(job, ch1, prod, child_ix)
+            n1 = job.c_dict.get(ch1) or Node.from_c_node(job, ch1, prod, child_ix)
         if n1 is not None:
             child_ix += 1
         if ch2 == ffi.NULL:
             n2 = None
         else:
-            n2 = job.c_dict.get(ch2) or Node(job, ch2, prod, child_ix)
+            n2 = job.c_dict.get(ch2) or Node.from_c_node(job, ch2, prod, child_ix)
         if n1 is not None and n2 is not None:
             children = (n1, n2)
         elif n2 is not None:
@@ -307,6 +325,24 @@ class Node:
             self._families = [ pc ]
             return
         self._families.append(pc)
+
+    def transform_children(self, func):
+        """ Apply a given function to the children of this node,
+            replacing the children with the result.
+            Calls func(child, ix, offset) where child is the
+            original child node, ix is the family, and offset
+            is the tuple index (0 or 1) """
+        if not self._families:
+            return
+        for ix, pc in enumerate(self._families):
+            prod, f = pc
+            if f is None:
+                continue
+            if isinstance(f, tuple):
+                f = (func(f[0], ix, 0), func(f[1], ix, 1))
+            else:
+                f = func(f, ix, 0)
+            self._families[ix] = (prod, f)
 
     @property
     def start(self):
@@ -364,6 +400,10 @@ class Node:
         if not self._families:
             return True
         return len(self._families) == 1 and self._families[0][1] is None
+
+    @property
+    def num_families(self):
+        return len(self._families) if self._families is not None else 0
 
     def enum_children(self):
         """ Enumerate families of children """
@@ -437,6 +477,11 @@ class ParseForestNavigator:
             the family index and r is the child result """
         return None
 
+    def _force_visit(self, w, visited):
+        """ Override this and return True to visit a node, even if self._visit_all
+            is False and the node has been visited before """
+        return False
+
     def go(self, root_node):
         """ Navigate the forest from the root node """
 
@@ -444,46 +489,47 @@ class ParseForestNavigator:
 
         def _nav_helper(w, index, level):
             """ Navigate from w """
-            if w is None:
-                # Epsilon node
-                return self._visit_epsilon(level)
-            if w.is_token:
-                # Return the score of this terminal option
-                return self._visit_token(level, w)
-            if not self._visit_all and w in visited:
+            if not self._visit_all and w in visited and not self._force_visit(w, visited):
                 # Already seen: return the previously calculated result
                 return visited[w]
-            # Init container for child results
-            results = self._visit_nonterminal(level, w)
-            if results is NotImplemented:
-                # If _visit_nonterminal() returns NotImplemented,
-                # don't bother visiting children or processing
-                # results; instead _nav_helper() returns NotImplemented
-                v = results
+            if w is None:
+                # Epsilon node
+                v = self._visit_epsilon(level)
+            elif w.is_token:
+                # Return the score of this terminal option
+                v = self._visit_token(level, w)
             else:
-                if w.is_interior:
-                    child_level = level
+                # Init container for child results
+                results = self._visit_nonterminal(level, w)
+                if results is NotImplemented:
+                    # If _visit_nonterminal() returns NotImplemented,
+                    # don't bother visiting children or processing
+                    # results; instead _nav_helper() returns NotImplemented
+                    v = results
                 else:
-                    child_level = level + 1
-                if w.is_ambiguous:
-                    child_level += 1
-                for ix, pc in enumerate(w.enum_children()):
-                    prod, f = pc
-                    self._visit_family(results, level, w, ix, prod)
-                    if w.is_completed:
-                        # Completed nonterminal: restart children index
-                        child_ix = -1
+                    if w.is_interior:
+                        child_level = level
                     else:
-                        child_ix = index
-                    if isinstance(f, tuple):
-                        self._add_result(results, ix,
-                            _nav_helper(f[0], child_ix - 1, child_level))
-                        self._add_result(results, ix,
-                            _nav_helper(f[1], child_ix, child_level))
-                    else:
-                        self._add_result(results, ix,
-                            _nav_helper(f, child_ix, child_level))
-                v = self._process_results(results, w)
+                        child_level = level + 1
+                    if w.is_ambiguous:
+                        child_level += 1
+                    for ix, pc in enumerate(w._families):
+                        prod, f = pc
+                        self._visit_family(results, level, w, ix, prod)
+                        if w.is_completed:
+                            # Completed nonterminal: restart children index
+                            child_ix = -1
+                        else:
+                            child_ix = index
+                        if isinstance(f, tuple):
+                            self._add_result(results, ix,
+                                _nav_helper(f[0], child_ix - 1, child_level))
+                            self._add_result(results, ix,
+                                _nav_helper(f[1], child_ix, child_level))
+                        else:
+                            self._add_result(results, ix,
+                                _nav_helper(f, child_ix, child_level))
+                    v = self._process_results(results, w)
             if not self._visit_all:
                 # Mark the node as visited and store its result
                 visited[w] = v
@@ -621,7 +667,7 @@ class Fast_Parser(BIN_Parser):
                         .format(ix, len(wrapped_tokens)), 0)
 
             # Create a new Python-side node forest corresponding to the C++ one
-            result = Node(job, node)
+            result = Node.from_c_node(job, node)
 
         # Delete the C++ nodes
         ep.deleteForest(node)
@@ -680,11 +726,13 @@ class ParseForestPrinter(ParseForestNavigator):
 
     """ Print a parse forest to stdout or a file """
 
-    def __init__(self, detailed = False, file = None, show_scores = False):
-        super().__init__(visit_all = True) # Visit all nodes
+    def __init__(self, detailed = False, file = None,
+        show_scores = False, show_ids = False, visit_all = True):
+        super().__init__(visit_all = visit_all) # Normally, we visit all nodes
         self._detailed = detailed
         self._file = file
         self._show_scores = show_scores
+        self._show_ids = show_ids
 
     def _score(self, w):
         """ Return a string showing the node's score """
@@ -701,7 +749,10 @@ class ParseForestPrinter(ParseForestNavigator):
     def _visit_token(self, level, w):
         """ Token matching a terminal """
         indent = "  " * level # Two spaces per indent level
-        print(indent + "{0}: {1}{2}".format(w.terminal, w.token, self._score(w)),
+        h = str(w.token)
+        if self._show_ids:
+            h += " @ {0:x}".format(id(w))
+        print(indent + "{0}: {1}{2}".format(w.terminal, h, self._score(w)),
             file = self._file)
         return None
 
@@ -715,6 +766,8 @@ class ParseForestPrinter(ParseForestNavigator):
                     # Skip printing optional nodes that don't contain anything
                     return NotImplemented # Don't visit child nodes
             indent = "  " * level # Two spaces per indent level
+            if self._show_ids:
+                h += " @ {0:x}".format(id(w))
             print(indent + h + self._score(w), file = self._file)
         return None # No results required, but visit children
 
@@ -725,9 +778,10 @@ class ParseForestPrinter(ParseForestNavigator):
             print(indent + "Option " + str(ix + 1) + ":", file = self._file)
 
     @classmethod
-    def print_forest(cls, root_node, detailed = False, file = None, show_scores = False):
+    def print_forest(cls, root_node, detailed = False, file = None,
+        show_scores = False, show_ids = False, visit_all = True):
         """ Print a parse forest to the given file, or stdout if none """
-        cls(detailed, file, show_scores).go(root_node)
+        cls(detailed, file, show_scores, show_ids, visit_all).go(root_node)
 
 
 class ParseForestDumper(ParseForestNavigator):
