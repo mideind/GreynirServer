@@ -548,12 +548,14 @@ class Grammar:
 
         return "".join([str(nt) + " → " + to_str(pp[1]) + "\n" for nt, pp in self._nt_dict.items()])
 
-    def _make_terminal(self, name):
+    @staticmethod
+    def _make_terminal(name):
         """ Create a new Terminal instance within the grammar """
         # Override this to create custom terminals or add optimizations
         return Terminal(name)
 
-    def _make_literal_terminal(self, name):
+    @staticmethod
+    def _make_literal_terminal(name):
         """ Create a new LiteralTerminal instance within the grammar """
         # Override this to create custom terminals or add optimizations
         return LiteralTerminal(name)

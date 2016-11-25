@@ -39,7 +39,7 @@ import json
 from settings import Settings, VerbObjects, VerbSubjects, Prepositions
 from tokenizer import TOK
 from bindb import BIN_Db
-from grammar import Terminal, LiteralTerminal, Token, Grammar, GrammarError
+from grammar import Terminal, LiteralTerminal, Nonterminal, Token, Grammar, GrammarError
 from baseparser import Base_Parser
 
 from flask import current_app
@@ -1073,6 +1073,19 @@ class BIN_LiteralTerminal(VariantHandler, LiteralTerminal):
         return (self._first == t_lit) if self._strong else (self._first == t_val)
 
 
+class BIN_Nonterminal(Nonterminal):
+
+    def __init__(self, name, fname, line):
+        super().__init__(name, fname, line)
+        # Optimized check for whether this is a noun phrase nonterminal
+        self._is_noun_phrase = name.startswith("Nl_")
+
+    @property
+    def is_noun_phrase(self):
+        """ Return True if this nonterminal denotes a noun phrase """
+        return self._is_noun_phrase
+
+
 class BIN_Grammar(Grammar):
 
     """ Subclass of Grammar that creates BIN-specific Terminals and LiteralTerminals
@@ -1081,13 +1094,20 @@ class BIN_Grammar(Grammar):
     def __init__(self):
         super().__init__()
 
-    def _make_terminal(self, name):
+    @staticmethod
+    def _make_terminal(name):
         """ Make BIN_Terminal instances instead of plain-vanilla Terminals """
         return BIN_Terminal(name)
 
-    def _make_literal_terminal(self, name):
+    @staticmethod
+    def _make_literal_terminal(name):
         """ Make BIN_LiteralTerminal instances instead of plain-vanilla LiteralTerminals """
         return BIN_LiteralTerminal(name)
+
+    @staticmethod
+    def _make_nonterminal(name, fname, line):
+        """ Make BIN_Terminal instances instead of plain-vanilla Terminals """
+        return BIN_Nonterminal(name, fname, line)
 
 
 class BIN_Parser(Base_Parser):

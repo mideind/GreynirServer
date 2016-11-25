@@ -179,7 +179,7 @@ StLiður →
 StViðtenging →
     TengimerkiVh? SagnliðurVh
 
-$score(+6) StViðtenging
+$score(+4) StViðtenging
 
 StSpurn →
     'hver'_nf/tala/kyn ÞaðVarSem/tala? SagnRuna_p3/tala/kyn
@@ -2203,13 +2203,13 @@ NlStak_p3/tala/fall/kyn →
 
 # 'Sú útskýring, að Samfylkingin sé óalandi og óferjandi, (dugir ekki lengur)'
 NlStak_p3/tala/fall/kyn →
-    'sá'/tala/fall/kyn Nl/fall/tala/kyn Útskýring
+    'sá'/tala/fall/kyn Nl/fall/tala/kyn AtvFs? Útskýring
 
 Útskýring →
     ',' "að:st" HreinYfirsetning ','
     | "að:st" HreinYfirsetning
 
-$score(+2) Útskýring
+$score(+12) Útskýring
 
 # Töluorð sem sjálfstæðir nafnliðir
 
