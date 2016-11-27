@@ -12,7 +12,7 @@ Copy the result into PostgreSQL with the following statement:
 COPY ord FROM '/home/user/github/Reynir/resources/obeygd.csv' WITH (FORMAT CSV, DELIMITER ';', ENCODING 'utf8');
 
 """
-import os.path
+import os
 import codecs
 
 def run(infile, outfile):
