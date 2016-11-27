@@ -3,9 +3,20 @@
 
     Settings module
 
-    Copyright (c) 2015 Vilhjalmur Thorsteinsson
-    All rights reserved
-    See the accompanying README.md file for further licensing and copyright information.
+    Copyright (c) 2016 Vilhjalmur Thorsteinsson
+
+       This program is free software: you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published by
+       the Free Software Foundation, either version 3 of the License, or
+       (at your option) any later version.
+       This program is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+       GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see http://www.gnu.org/licenses/.
+
 
     This module is written in Python 3
 
@@ -33,6 +44,8 @@ from threading import Lock
 
 # The sorting locale used by default in the changedlocale function
 _DEFAULT_SORT_LOCALE = ('IS_is', 'UTF-8')
+# A set of all valid argument cases
+_ALL_CASES = { "nf", "þf", "þgf", "ef" }
 
 
 class ConfigError(Exception):
@@ -126,7 +139,6 @@ class Abbreviations:
     @staticmethod
     def add (abbrev, meaning, gender, fl = None):
         """ Add an abbreviation to the dictionary. Called from the config file handler. """
-        # print("Adding abbrev {0} meaning {1} gender {2} fl {3}".format(abbrev, meaning, gender, fl))
         # Check for sentence finishers
         if abbrev.endswith("*"):
             finisher = True
@@ -203,9 +215,12 @@ class VerbObjects:
     # The key is the normal form of the verb + the associated cases,
     # separated by underscores, e.g. "vera_þgf_ef"
     SCORES = dict()
+    # Dictionary of verbs where, for each verb + argument cases, we store a set of
+    # preposition_case keys, i.e. "frá_þgf"
+    PREPOSITIONS = defaultdict(set)
 
     @staticmethod
-    def add (verb, args):
+    def add (verb, args, pronouns):
         """ Add a verb and its objects (arguments). Called from the config file handler. """
         la = len(args)
         assert 0 <= la < 4
@@ -221,19 +236,34 @@ class VerbObjects:
             # Cut the score off the end
             args = args[0:-1]
             la -= 1
-            # Store the score, if nonzero
-            if score != 0:
-                VerbObjects.SCORES["_".join([ verb ] + args)] = score
-                # print("Set score of verb form '{0}' to {1}".format("_".join([verb] + args), score))
         if la:
             for case in args:
-                if case not in { "nf", "þf", "þgf", "ef" }:
+                if case not in _ALL_CASES:
                     raise ConfigError("Invalid case for verb object: '{0}'".format(case))
             # Append a possible argument list
             VerbObjects.VERBS[la][verb].append(args)
         else:
             # Note that the verb can be argument-free
             VerbObjects.VERBS[0].add(verb)
+        # Store the score, if nonzero
+        verb_with_cases = "_".join([ verb ] + args)
+        if score != 0:
+            VerbObjects.SCORES[verb_with_cases] = score
+        # pronouns is a list of tuples: (pronoun, case), e.g. ("í", "þgf")
+        for p, case in pronouns:
+            VerbObjects.PREPOSITIONS[verb_with_cases].add(p + "_" + case)
+
+    @staticmethod
+    def verb_matches_preposition(verb_with_cases, prep_with_case):
+        """ Does the given preposition with the given case fit the verb? """
+        if False: # Settings.DEBUG:
+            print("verb_matches_preposition: verb {0}, prep {1}, verb found {2}, prep found {3}"
+                .format(verb_with_cases, prep_with_case,
+                    verb_with_cases in VerbObjects.PREPOSITIONS,
+                    verb_with_cases in VerbObjects.PREPOSITIONS and
+                    prep_with_case in VerbObjects.PREPOSITIONS[verb_with_cases]))
+        return verb_with_cases in VerbObjects.PREPOSITIONS and \
+            prep_with_case in VerbObjects.PREPOSITIONS[verb_with_cases]
 
 
 class VerbSubjects:
@@ -449,9 +479,6 @@ def changedlocale(new_locale = None):
 
 def sort_strings(strings, loc = None):
     """ Sort a list of strings using the specified locale's collation order """
-    if loc is None:
-        # Normal sort
-        return sorted(strings)
     # Change locale temporarily for the sort
     with changedlocale(loc) as strxfrm:
         return sorted(strings, key = strxfrm)
@@ -634,14 +661,29 @@ class Settings:
     @staticmethod
     def _handle_verb_objects(s):
         """ Handle verb object specifications in the settings section """
-        # Format: verb [arg1] [arg2]
+        # Format: verb [arg1] [arg2] [/pronoun arg]...
+        pronouns = []
+        # Process pronoun arguments, if any
+        ap = s.split("/")
+        s = ap[0]
+        ix = 1
+        while len(ap) > ix:
+            # We expect something like 'af þgf'
+            p = ap[ix].strip()
+            parg = p.split()
+            if len(parg) != 2:
+                raise ConfigError("Pronoun should have exactly one argument")
+            if parg[1] not in _ALL_CASES:
+                raise ConfigError("Unknown argument case for pronoun")
+            pronouns.append((parg[0], parg[1]))
+            ix += 1
         a = s.split()
         if len(a) < 1 or len(a) > 4:
             raise ConfigError("Verb should have zero, one or two arguments and an optional score")
         verb = a[0]
         if not verb.isidentifier():
             raise ConfigError("Verb '{0}' is not a valid word".format(verb))
-        VerbObjects.add(verb, a[1:])
+        VerbObjects.add(verb, a[1:], pronouns)
 
     @staticmethod
     def _handle_verb_subjects(s):

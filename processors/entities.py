@@ -61,8 +61,8 @@ def article_begin(state):
 
 def article_end(state):
     """ Called at the end of article processing """
-    for k, v in state["names"].items():
-        print("Last name '{0}' -> full name '{1}'".format(k, v))
+    # for k, v in state["names"].items():
+    #    print("Last name '{0}' -> full name '{1}'".format(k, v))
     pass
 
 
@@ -114,7 +114,7 @@ def sentence(state, result):
                     # define the full name, not the last name
                     # (i.e. 'Clinton er forsetaframbjóðandi' ->
                     #   'Hillary Rodham Clinton er forsetaframbjóðandi')
-                    print("Mapping entity name '{0}' to full name '{1}'".format(entity, names[entity]))
+                    # print("Mapping entity name '{0}' to full name '{1}'".format(entity, names[entity]))
                     entity = names[entity]
 
                 print("Entity '{0}' {1} '{2}'".format(entity, verb, definition))

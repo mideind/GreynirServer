@@ -20,6 +20,7 @@ cp config/Adjectives.conf $DEST/config/Adjectives.conf
 cp config/Main.conf $DEST/config/Main.conf
 cp config/Prefs.conf $DEST/config/Prefs.conf
 cp config/Verbs.conf $DEST/config/Verbs.conf
+cp config/VerbPrepositions.conf $DEST/config/VerbPrepositions.conf
 
 cp article.py $DEST/article.py
 cp baseparser.py $DEST/baseparser.py

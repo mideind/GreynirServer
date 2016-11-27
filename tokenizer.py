@@ -1005,6 +1005,9 @@ def parse_phrases_1(token_stream):
 
             def number(tok):
                 """ If the token denotes a number, return that number - or None """
+                if tok.txt.lower() == "áttu":
+                    # Do not accept 'áttu' (stem='átta', no kvk) as a number
+                    return None
                 return match_stem_list(tok, MULTIPLIERS,
                     filter_func = lambda m: m.ordfl in NUMBER_CATEGORIES)
 

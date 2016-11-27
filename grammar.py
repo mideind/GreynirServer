@@ -91,23 +91,29 @@ class Nonterminal:
         # Place of initial definition in a grammar file
         self._fname = fname
         self._line = line
+        # Tags for this nonterminal
+        self._tags = None
         # Has this nonterminal been referenced in a production?
         self._ref = False
+        # Is this an optional nonterminal, i.e. one that is
+        # explicitly nullable?
+        self._optional = name.endswith("?") or name.endswith("*")
         # Give all nonterminals a unique, negative sequence number for hashing purposes
         self._index = Nonterminal._INDEX
         Nonterminal._INDEX -= 1
+        self._hash = id(self).__hash__()
 
     def __hash__(self):
         """ Use the id of this nonterminal as a basis for the hash """
         # The index may change after the entire grammar has been
         # read and processed; therefore it is not suitable for hashing
-        return id(self).__hash__()
+        return self._hash
 
     def __eq__(self, other):
-        return id(self) == id(other)
+        return self is other
 
     def __ne__(self, other):
-        return id(self) != id(other)
+        return self is not other
 
     @property
     def index(self):
@@ -129,6 +135,11 @@ class Nonterminal:
         return self._ref
 
     @property
+    def is_optional(self):
+        """ Return True if this nonterminal is explicitly nullable """
+        return self._optional
+
+    @property
     def name(self):
         return self._name
 
@@ -141,6 +152,25 @@ class Nonterminal:
     def line(self):
         """ Return the number of the line within the grammar file where this nt was defined """
         return self._line
+
+    @property
+    def has_tags(self):
+        return bool(self._tags)
+
+    def has_tag(self, tag):
+        """ Check whether this nonterminal has been tagged with the given tag """
+        return self._tags is not None and tag in self._tags
+
+    def has_any_tag(self, tagset):
+        """ Check whether this nonterminal has been tagged with any of the given tags """
+        return False if self._tags is None else not self._tags.isdisjoint(tagset)
+
+    def add_tag(self, tag):
+        """ Check whether this nonterminal has been tagged with the given tag """
+        if self._tags is None:
+            self._tags = set([tag])
+        else:
+            self._tags.add(tag)
 
     def __repr__(self):
         return '{0}'.format(self._name)
@@ -518,12 +548,14 @@ class Grammar:
 
         return "".join([str(nt) + " → " + to_str(pp[1]) + "\n" for nt, pp in self._nt_dict.items()])
 
-    def _make_terminal(self, name):
+    @staticmethod
+    def _make_terminal(name):
         """ Create a new Terminal instance within the grammar """
         # Override this to create custom terminals or add optimizations
         return Terminal(name)
 
-    def _make_literal_terminal(self, name):
+    @staticmethod
+    def _make_literal_terminal(name):
         """ Create a new LiteralTerminal instance within the grammar """
         # Override this to create custom terminals or add optimizations
         return LiteralTerminal(name)
@@ -795,6 +827,31 @@ class Grammar:
                     result = newresult
                 return result
 
+            def apply_to_nonterminals(s, func):
+                """ Parse a nonterminal/var list from string s, then apply func(nt, p) to
+                    all nonterminals, where p is the parameter of the pragma """
+                ix = s.find(')')
+                if ix < 0:
+                    raise GrammarError("Expected right parenthesis in pragma", fname, line)
+                param = s[0 : ix].strip()
+                s = s[ix + 1:]
+                nts = s.split()
+                for nt_name in nts:
+                    ntv = nt_name.split('/')
+                    #if not ntv[0].isidentifier():
+                    #    raise GrammarError("Invalid nonterminal name '{0}'".format(ntv[0]), fname, line)
+                    for vname in ntv[1:]:
+                        if vname not in variants:
+                            raise GrammarError("Unknown variant '{0}' for nonterminal '{1}'".format(vname, ntv[0]), fname, line)
+                    var_names = variant_names(ntv[0], ntv[1:])
+                    for vname in var_names:
+                        if vname not in nonterminals:
+                            raise GrammarError("Unknown nonterminal '{0}'".format(vname), fname, line)
+                        try:
+                            func(nonterminals[vname], param)
+                        except:
+                            raise GrammarError("Invalid pragma argument '{0}'".format(param), fname, line)
+
             if s.startswith('/'):
                 # Definition of variant
                 # A variant is specified as /varname = opt1 opt2 opt3...
@@ -816,27 +873,20 @@ class Grammar:
                 s = s.strip()
                 PRAGMA_SCORE = "$score("
                 PRAGMA_ROOT = "$root("
+                PRAGMA_TAG = "$tag("
                 if s.startswith(PRAGMA_SCORE):
                     # Pragma $score(int) Nonterminal/var1/var2 ...
                     s = s[len(PRAGMA_SCORE):]
-                    ix = s.find(')')
-                    if ix < 0:
-                        raise GrammarError("Expected right parenthesis in $score() pragma", fname, line)
-                    score = int(s[0 : ix])
-                    s = s[ix + 1:]
-                    nts = s.split()
-                    for nt_name in nts:
-                        ntv = nt_name.split('/')
-                        if not ntv[0].isidentifier():
-                            raise GrammarError("Invalid nonterminal name '{0}'".format(ntv[0]), fname, line)
-                        for vname in ntv[1:]:
-                            if vname not in variants:
-                                raise GrammarError("Unknown variant '{0}' for nonterminal '{1}'".format(vname, ntv[0]), fname, line)
-                        var_names = variant_names(ntv[0], ntv[1:])
-                        for vname in var_names:
-                            if vname not in nonterminals:
-                                raise GrammarError("Unknown nonterminal '{0}'".format(vname))
-                            self._nt_scores[nonterminals[vname]] = score
+
+                    def set_score(nt, score):
+                        self._nt_scores[nt] = int(score)
+
+                    apply_to_nonterminals(s, set_score)
+
+                elif s.startswith(PRAGMA_TAG):
+                    # Pragma $tag(tagstring) Nonterminal/var1/var2 ...
+                    s = s[len(PRAGMA_TAG):]
+                    apply_to_nonterminals(s, lambda nt, tag : nt.add_tag(tag))
 
                 elif s.startswith(PRAGMA_ROOT):
                     # Pragma $root(Nonterminal)
@@ -976,8 +1026,8 @@ class Grammar:
             if not "_" in nt.name:
                 # 'Pure' nonterminal with no variants: don't shortcut
                 continue
-            if self.nt_score(nt) != 0:
-                # Nonterminal has a score adjustment: don't shortcut
+            if self.nt_score(nt) != 0 or nt.has_tags:
+                # Nonterminal has a score adjustment or a tag: don't shortcut
                 continue
             if len(plist) == 1 and len(plist[0][1]) == 1 and isinstance(plist[0][1][0], Nonterminal):
                 # This nonterminal has only one production, with only one nonterminal item
