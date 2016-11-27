@@ -19,17 +19,14 @@ def run(infile, outfile):
     """ Read input file and output CSV """
     out = codecs.open(outfile, "w", "utf-8")
     with codecs.open(infile, "r", "iso-8859-1") as inp:
-        for li in inp:
-            
+        for li in inp:            
             if li:
                 li = li.strip()
             if li:
                 if not li.startswith("#"):
                     forms = li.split(u" ")
-                    if forms:
-                        print(forms)
+                    if forms:                        
                         word = forms[0]
-
                         for f in forms[1:]:
                             s = u"{0};{1};{2};{3};{4};{5}\n".format(
                                 word, 0, f, u"ob", word, u"-"
