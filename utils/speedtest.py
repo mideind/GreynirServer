@@ -2,6 +2,15 @@
 
 # Quick and dirty parser speed test
 
+import os
+import sys
+
+# Hack to make this Python program executable from the utils subdirectory
+basepath, _ = os.path.split(os.path.realpath(__file__))
+if basepath.endswith("/utils") or basepath.endswith("\\utils"):
+    basepath = basepath[0:-6]
+    sys.path.append(basepath)
+
 import time
 
 from settings import Settings
@@ -13,7 +22,7 @@ from fastparser import Fast_Parser
 def profile(func, *args, **kwargs):
     """ Profile a function call """
     import cProfile as profile
-    filename = 'Reynir.profile'
+    filename = os.path.join(basepath, 'Reynir.profile')
     pr = profile.Profile()
     result = pr.runcall(func, *args, **kwargs)
     pr.dump_stats(filename)
@@ -38,7 +47,7 @@ def speed_test(uuid):
 
 print("Welcome to speedtest")
 
-Settings.read("config/Reynir.conf")
+Settings.read(os.path.join(basepath, "config/Reynir.conf"))
 with Fast_Parser() as fp:
     pass
 

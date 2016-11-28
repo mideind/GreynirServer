@@ -157,6 +157,7 @@ class BIN_Token(Token):
     GENDERS_MAP = { "kk" : "KK", "kvk" : "KVK", "hk" : "HK" }
 
     VBIT_CASES = VBIT["nf"] | VBIT["þf"] | VBIT["þgf"] | VBIT["ef"]
+    VBIT_GENDERS = VBIT["kk"] | VBIT["kvk"] | VBIT["hk"]
 
     # Variants to be checked for verbs
     VERB_VARIANTS = ["p1", "p2", "p3", "nh", "vh", "lh", "bh", "fh",
@@ -451,6 +452,8 @@ class BIN_Token(Token):
             return False
         if not terminal.num_variants:
             # No variant specified on terminal: we're done
+            if Settings.DEBUG:
+                print("Matching person terminal, token.t2 is {0}".format(self.t2))
             return True
         # Check each PersonName tuple in the t2 list
         case = terminal.variant(0)
@@ -976,6 +979,17 @@ class VariantHandler:
         # in the given fbits. We test this by turning off all the bits given in the
         # parameter fbits and checking whether there are any bits left.
         return (self._fbits & ~fbits) == 0
+
+    @property
+    def gender(self):
+        """ Return a gender string corresponding to a variant of this terminal, if any """
+        if self._vbits & BIN_Token.VBIT_KK:
+            return "kk"
+        if self._vbits & BIN_Token.VBIT_KVK:
+            return "kvk"
+        if self._vbits & BIN_Token.VBIT_HK:
+            return "hk"
+        return None
 
     @property
     def is_singular(self):

@@ -451,9 +451,8 @@ class Query:
         self._qtype = None
         with closing(BIN_Db.get_db()) as bin_db:
 
-            state = { "session": self._session, "processor": _THIS_MODULE, "bin_db": bin_db, "query": self }
-            # Process the first and only sentence within the tree
-            self._tree.process_sentence(state, self._tree[1])
+            # Process the tree, which has only one sentence
+            self._tree.process(self._session, _THIS_MODULE, bin_db, query = self)
 
         return self._error is None
 

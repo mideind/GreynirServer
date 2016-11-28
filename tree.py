@@ -22,8 +22,7 @@ import re
 from contextlib import closing
 from collections import OrderedDict, namedtuple
 
-from settings import DisallowedNames, VerbObjects
-from bindb import BIN_Db
+from settings import Settings, DisallowedNames, VerbObjects
 from binparser import BIN_Token
 
 
@@ -835,30 +834,31 @@ class NonterminalNode(Node):
 
     def root(self, state, params):
         """ The root form of a nonterminal is a sequence of the root forms of its children (parameters) """
-        return " ".join(p._root for p in params if p._root)
+        return " ".join(p._root for p in params if p is not None and p._root)
 
     def nominative(self, state, params):
         """ The nominative form of a nonterminal is a sequence of the nominative forms of its children (parameters) """
-        return " ".join(p._nominative for p in params if p._nominative)
+        return " ".join(p._nominative for p in params if p is not None and p._nominative)
 
     def indefinite(self, state, params):
         """ The indefinite form of a nonterminal is a sequence of the indefinite forms of its children (parameters) """
-        return " ".join(p._indefinite for p in params if p._indefinite)
+        return " ".join(p._indefinite for p in params if p is not None and p._indefinite)
 
     def canonical(self, state, params):
         """ The canonical form of a nonterminal is a sequence of the canonical forms of its children (parameters) """
-        return " ".join(p._canonical for p in params if p._canonical)
+        return " ".join(p._canonical for p in params if p is not None and p._canonical)
 
     def process(self, state, params):
         """ Apply any requested processing to this node """
         result = Result(self, state, params)
         result._nonterminal = self.nt
         # Calculate the combined text rep of the results of the children
-        result._text = " ".join(p._text for p in params if p._text)
+        result._text = " ".join(p._text for p in params if p is not None and p._text)
         for p in params:
             # Copy all user variables (attributes not starting with an underscore _)
             # coming from the children into the result
-            result.copy_from(p)
+            if p is not None:
+                result.copy_from(p)
         # Invoke a processor function for this nonterminal, if
         # present in the given processor module
         if params:
@@ -1019,6 +1019,12 @@ class Tree(TreeBase):
 
     def visit_children(self, state, node):
         """ Visit the children of node, obtain results from them and pass them to the node """
+        # First check whether the processor has a visit() method
+        visit = state["_visit"]
+        if visit is not None and not visit(state, node):
+            # Call the visit() method and if it returns False, we do not visit this node
+            # or its children
+            return None
         return node.process(state, [ self.visit_children(state, child) for child in node.children() ])
 
     def process_sentence(self, state, tree):
@@ -1028,12 +1034,11 @@ class Tree(TreeBase):
         # Sentence processing completed:
         # Invoke a function called 'sentence(state, result)',
         # if present in the processor
-        processor = state["processor"]
-        func = getattr(processor, "sentence", None) if processor else None
-        if func is not None:
-            func(state, result)
+        sentence = state["_sentence"]
+        if sentence is not None:
+            sentence(state, result)
 
-    def process(self, session, processor):
+    def process(self, session, processor, bin_db, **kwargs):
         """ Process a tree for an entire article """
         # For each sentence in turn, do a depth-first traversal,
         # visiting each parent node after visiting its children
@@ -1041,20 +1046,24 @@ class Tree(TreeBase):
 
         article_begin = getattr(processor, "article_begin", None) if processor else None
         article_end = getattr(processor, "article_end", None) if processor else None
+        sentence = getattr(processor, "sentence", None) if processor else None
+        visit = getattr(processor, "visit", None) if processor else None
 
-        with closing(BIN_Db.get_db()) as bin_db:
+        state = { "session": session, "processor": processor,
+            "bin_db": bin_db, "url": self.url, "authority": self.authority,
+            "_sentence": sentence, "_visit": visit }
+        # Add state parameters passed via keyword arguments, if any
+        state.update(kwargs)
 
-            state = { "session": session, "processor": processor,
-                "bin_db": bin_db, "url": self.url, "authority": self.authority }
-            # Call the article_begin(state) function, if it exists
-            if article_begin is not None:
-                article_begin(state)
-            # Process the (parsed) sentences in the article
-            for index, tree in self.s.items():
-                self.process_sentence(state, tree)
-            # Call the article_end(state) function, if it exists
-            if article_end is not None:
-                article_end(state)
+        # Call the article_begin(state) function, if it exists
+        if article_begin is not None:
+            article_begin(state)
+        # Process the (parsed) sentences in the article
+        for index, tree in self.s.items():
+            self.process_sentence(state, tree)
+        # Call the article_end(state) function, if it exists
+        if article_end is not None:
+            article_end(state)
 
 
 class TreeGist(TreeBase):
