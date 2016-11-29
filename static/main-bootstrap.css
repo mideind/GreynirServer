@@ -86,6 +86,9 @@
 .glyphicon-tag:before {
    content: "\E066";
 }
+.glyphicon-warning-sign:before {
+   content: "\E079";
+}
 
 .glyphicon-spin {
     -webkit-animation: spin 2000ms infinite linear;

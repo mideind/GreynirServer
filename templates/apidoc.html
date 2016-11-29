@@ -1,0 +1,191 @@
+
+{% extends "container-normal.html" %}
+
+{% block styles %}
+
+<link href="{{ url_for('static', filename='main-bootstrap.css') }}" rel='stylesheet' type='text/css'>
+
+{% endblock %}
+
+{% block content %}
+
+<div class="panel panel-info">
+   <div class="panel-heading">
+      <h3 class="panel-title">
+         <span class="glyphicon glyphicon-info"></span> <strong>Forritaskil Greynis (API)</strong>
+      </h3>
+   </div>
+   <div class="panel-body">
+      <p>Forritaskil Greynis taka við beiðnum um að málgreina texta í UTF-8 sniði í gegn um HTTPS. Þau skila
+      niðurstöðum í JSON formi.</p>
+   </div>
+</div>
+
+<div class="panel panel-danger">
+   <div class="panel-heading">
+      <h3 class="panel-title">
+         <span class="glyphicon glyphicon-warning-sign"></span> <strong>Aðvörun!</strong>
+      </h3>
+   </div>
+   <div class="panel-body">
+      <p>Forritaskilin eru ennþá á prófunarstigi og geta breyst. Notendur eru hvattir
+      til að koma athugasemdum og ábendingum á framfæri.</p>
+   </div>
+</div>
+
+<div>
+
+<h2>Mörkun <small><i>POS tagging</i></small></h2>
+
+<p>Þjónustan <code>postag.api</code> skilar hverju orði textans með ítarlegri mörkun (<i>part-of-speech tag</i>),
+þ.e. upplýsingum um orðflokk, stofn, beygingu o.fl. Einnig fylgir með nafnalisti yfir fólk og
+fyrirbæri með sérnöfn.</p>
+
+<p>Stutta texta sem eru einungis ein málsgrein má málgreina með einföldu <code>HTTPS <b>GET</b></code>
+   þar sem textinn er sendur sem hluti af vefslóð (URL):</p>
+
+<pre><b>GET</b> https://greynir.is/postag.api?t=<i>Hér er dæmi um texta til að málgreina</i></pre>
+
+<p>Lengri texta má senda með <code>HTTP <b>POST</b></code> í <code>application/x-www-form-urlencoded</code> formi,
+   í svæði sem heitir <code>text</code>.</p>
+
+<p>Dæmi um hvernig nota má POST kallið frá <code>curl</code> í GNU/Linux:</p>
+
+<pre>$ curl -d "text=Í dag er ágætt veður en mikil hálka er á götum." https://greynir.is/postag.api</pre>
+
+<p>Enn lengri texta má senda með <code>HTTP <b>POST</b></code> í <code>text/plain</code> formi,
+kóðaða í UTF-8 og með línuskiptum (<i>newline</i>, <code>\n</code>) milli málsgreina. Dæmi:</p>
+
+<pre>$ curl -d @example.txt https://greynir.is/postag.api --header "Content-Type: text/plain"</pre>
+
+<p><code>postag.api</code> þjónustan skilar JSON skjali með eftirfarandi undirgreinum:</p>
+<ul>
+   <li><code>result</code> er listi af málsgreinum þar sem hver málsgrein er aftur listi
+      af eindum (<i>tokens</i>)</li>
+   <li><code>register</code> er nafnalisti</li>
+   <li><code>stats</code> er samantekt af tölfræði, m.a. fjölda málsgreina og einda í textanum</li>
+</ul>
+
+<p>Hver eind innifelur eftirfarandi upplýsingar:</p>
+<ul>
+   <li><code>k</code> er tegund eindar, þ.e. WORD, PERSON, PUNCTUATION, YEAR, AMOUNT o.s.frv.</li>
+   <li><code>x</code> er upphaflegur texti eindarinnar eins og hann var í innsendu skjali</li>
+   <li><code>s</code> er orðstofn. Hann getur innihaldið bandstrik '-' ef stofninn er ekki í 
+      BÍN og Greynir hefur notast við samsettan orðstofn.</li>
+   <li><code>c</code> er orðflokkur (<b>kk</b>/<b>kvk</b>/<b>hk</b>, <b>so</b>, <b>lo</b>, <b>ao</b>, <b>fs</b>,
+      <b>st</b> o.s.frv.)</li>
+   <li><code>b</code> er beygingarform orðsins eins og það birtist í BÍN. Getur verið bandstrik '-' ef
+      orðið er óbeygt.</li>
+   <li><code>t</code> er lauf (<i>terminal</i>) sem eindin tengist í
+      <a href="https://github.com/vthorsteinsson/Reynir/blob/master/Reynir.grammar" target="_blank">samhengisfrjálsri
+      málfræði Greynis</a></li>
+   <li><code>v</code> er gildi eindarinnar ef við á, til dæmis tala, upphæð, dagsetning eða nafn gjaldmiðils.</li>
+   <li><code>f</code> er flokkur í BÍN (<b>alm</b>, <b>ism</b>, <b>fyr</b>, <b>örn</b> o.s.frv.)</li>
+</ul>
+
+<p><button data-toggle="collapse" data-target="#postag-example"><span class="caret"></span> Dæmi</button> um mörkun málsgreinarinnar <i>Halldór Laxness fékk nóbelsverðlaunin í bókmenntum árið 1955.</i></p>
+
+<pre id="postag-example" class="collapse">
+{
+  "register": {
+    "Halldór Laxness": {
+      "kind": "name", 
+      "title": "rithöfundur"
+    }
+  }, 
+  "result": [
+    [
+      {
+        "k": "PERSON", 
+        "t": "person_nf_kk", 
+        "v": "Halldór Laxness", 
+        "x": "Halldór Laxness"
+      }, 
+      {
+        "b": "GM-FH-ÞT-3P-ET", 
+        "c": "so", 
+        "f": "alm", 
+        "k": "WORD", 
+        "s": "fá", 
+        "t": "so_1_þf_et_p3", 
+        "x": "fékk"
+      }, 
+      {
+        "b": "ÞFFTgr", 
+        "c": "hk", 
+        "f": "alm", 
+        "k": "WORD", 
+        "s": "nóbelsverðlaun", 
+        "t": "no_ft_þf_hk", 
+        "x": "nóbelsverðlaunin"
+      }, 
+      {
+        "b": "ÞGF", 
+        "c": "fs", 
+        "f": "alm", 
+        "k": "WORD", 
+        "s": "í", 
+        "t": "fs_þgf", 
+        "x": "í"
+      }, 
+      {
+        "b": "ÞGFFT", 
+        "c": "kvk", 
+        "f": "alm", 
+        "k": "WORD", 
+        "s": "bókmennt", 
+        "t": "no_ft_þgf_kvk", 
+        "x": "bókmenntum"
+      }, 
+      {
+        "b": "ÞFETgr", 
+        "c": "hk", 
+        "f": "alm", 
+        "k": "WORD", 
+        "s": "ár", 
+        "t": "no_gr_et_þf", 
+        "x": "árið"
+      }, 
+      {
+        "k": "YEAR", 
+        "t": "ártal", 
+        "v": 1955, 
+        "x": "1955"
+      }, 
+      {
+        "k": "PUNCTUATION", 
+        "x": "."
+      }
+    ]
+  ], 
+  "stats": {
+    "ambiguity": 1.0905077326652577, 
+    "num_parsed": 1, 
+    "num_sentences": 1, 
+    "num_tokens": 8, 
+    "parse_time": 0.18756818771362305, 
+    "tok_time": 0.019917011260986328, 
+    "total_time": 0.20748519897460938
+  }
+}
+</pre>
+
+</div>
+
+{% endblock %}
+
+{% block endscripts %}
+
+<script>
+
+   function init() {
+      // Activate the top navbar
+      $("#navid-apidoc").addClass("active");
+   }
+
+   $(document).ready(init);
+
+</script>
+
+{% endblock %}
+

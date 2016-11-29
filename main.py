@@ -54,7 +54,7 @@ from reducer import Reducer
 from article import Article as ArticleProxy
 from scraperdb import SessionContext, desc, Root, Person, Article, ArticleTopic, Topic,\
     GenderQuery, StatsQuery
-from query import Query, query_person_title, query_entity_def
+from query import Query
 from getimage import get_image_url
 
 
@@ -182,52 +182,6 @@ _MAX_UUID_LENGTH = 36
 _MAX_TEXT_LENGTH = 8192
 _MAX_TEXT_LENGTH_VIA_URL = 512
 _MAX_QUERY_LENGTH = 512
-
-
-def add_entity_to_register(name, register, session):
-    """ Add the entity name and the 'best' definition to the given name register dictionary """
-    if name in register:
-        # Already have a definition for this name
-        return
-    if not " " in name:
-        # Single name: this might be the last name of a person/entity
-        # that has already been mentioned by full name
-        for k in register.keys():
-            parts = k.split()
-            if len(parts) > 1 and parts[-1] == name:
-                # Reference to the last part of a previously defined
-                # multi-part person or entity name,
-                # for instance 'Clinton' -> 'Hillary Rodham Clinton'
-                register[name] = dict(kind = "ref", fullname = k)
-                return
-    # Use the query module to return definitions for an entity
-    definition = query_entity_def(session, name)
-    if definition:
-        register[name] = dict(kind = "entity", title = definition)
-
-
-def add_name_to_register(name, register, session):
-    """ Add the name and the 'best' title to the given name register dictionary """
-    if name in register:
-        # Already have a title for this name
-        return
-    # Use the query module to return titles for a person
-    title = query_person_title(session, name)
-    if title:
-        register[name] = dict(kind = "name", title = title)
-
-
-def create_name_register(tokens, session):
-    """ Assemble a dictionary of person and entity names occurring in the token list """
-    register = { }
-    for t in tokens:
-        if t.kind == TOK.PERSON:
-            gn = t.val
-            for pn in gn:
-                add_name_to_register(pn.name, register, session)
-        elif t.kind == TOK.ENTITY:
-            add_entity_to_register(t.txt, register, session)
-    return register
 
 
 def top_news(topic = None, start = None, limit = _TOP_NEWS_LENGTH):
@@ -368,7 +322,8 @@ def process_query(session, toklist, result):
 # Note: Endpoints ending with .api are configured not to be cached by nginx
 @app.route("/analyze.api", methods=['GET', 'POST'])
 def analyze():
-    """ Analyze text manually entered by the user, i.e. not coming from an article """
+    """ Analyze text manually entered by the user, i.e. not coming from an article.
+        This is a lower level API used by the Greynir web front-end. """
 
     if request.method == 'POST':
         text = request.form.get("text")
@@ -377,36 +332,85 @@ def analyze():
     text = text.strip()[0:_MAX_TEXT_LENGTH]
 
     with SessionContext(commit = True) as session:
+        pgs, stats, register = ArticleProxy.tag_text(session, text)
 
-        # Demarcate paragraphs in the input
-        text = Fetcher.mark_paragraphs(text)
-        # Tokenize the result
-        toklist = list(tokenize(text, enclosing_session = session))
-        # Paragraph list, containing sentences, containing tokens
-        pgs = []
+    # Return the tokens as a JSON structure to the client
+    return jsonify(result = pgs, stats = stats, register = register)
 
-        with Fast_Parser(verbose = False) as bp: # Don't emit diagnostic messages
 
-            ip = IncrementalParser(bp, toklist, verbose = True)
+# Note: Endpoints ending with .api are configured not to be cached by nginx
+@app.route("/postag.api", methods=['GET', 'POST'])
+def postag():
+    """ API to parse text and return POS tagged tokens in JSON format """
 
-            for p in ip.paragraphs():
-                pgs.append([])
-                for sent in p.sentences():
-                    if sent.parse():
-                        # Parsed successfully
-                        pgs[-1].append(ArticleProxy._dump_tokens(sent.tokens, sent.tree, None))
-                    else:
-                        # Errror in parse
-                        pgs[-1].append(ArticleProxy._dump_tokens(sent.tokens, None, None, sent.err_index))
+    try:
+        if request.method == 'POST':
+            if request.headers["Content-Type"] == "text/plain":
+                # This API accepts plain text POSTs, UTF-8 encoded.
+                # Example usage:
+                # curl -d @example.txt https://greynir.is/parse.api --header "Content-Type: text/plain"
+                text = request.data.decode("utf-8")
+            else:
+                # This API also accepts form/url-encoded requests:
+                # curl -d "text=Í dag er ágætt veður en mikil hálka er á götum." https://greynir.is/parse.api
+                text = request.form.get("text", "")
+        else:
+            text = request.args.get("t", "")
+        text = text.strip()[0:_MAX_TEXT_LENGTH]
+    except:
+        return "", 403 # Invalid request
 
-            stats = dict(
-                num_tokens = ip.num_tokens,
-                num_sentences = ip.num_sentences,
-                num_parsed = ip.num_parsed,
-                ambiguity = ip.ambiguity
-            )
-            # Add a name register to the result
-            register = create_name_register(toklist, session)
+    with SessionContext(commit = True) as session:
+        pgs, stats, register = ArticleProxy.tag_text(session, text)
+        # In this case, we should always get a single paragraph back
+        assert len(pgs) < 2
+        if pgs:
+            # Fetch the one and only paragraph
+            pgs = pgs[0]
+        for sent in pgs:
+            # Transform the token representation into a
+            # nice canonical form for outside consumption
+            for t in sent:
+                # Set the token kind to a readable string
+                kind = t.get("k", TOK.WORD)
+                t["k"] = TOK.descr[kind]
+                if "t" in t:
+                    terminal = t["t"]
+                    # Change "literal:category" to category,
+                    # or 'stem'_var1_var2 to category_var1_var2
+                    if terminal[0] in "\"'" and "m" in t:
+                        # Convert 'literal'_var1_var2 to cat_var1_var2
+                        a = terminal.split("_")
+                        a[0] = t["m"][1] # Token category
+                        if a[0] in { "kk", "kvk", "hk" }:
+                            a[0] = "no"
+                        t["t"] = "_".join(a)
+                if "m" in t:
+                    # Flatten the meaning from a tuple/list
+                    m = t["m"]
+                    del t["m"]
+                    # s = stofn (stem)
+                    # c = ordfl (category)
+                    # f = fl (class)
+                    # b = beyging (declination)
+                    t.update(dict(s = m[0], c = m[1], f = m[2], b = m[3]))
+                if "v" in t:
+                    # Flatten and simplify the val field, if present
+                    # (see tokenizer.py for the corresponding TOK structures)
+                    val = t["v"]
+                    if kind == TOK.AMOUNT:
+                        # Flatten and simplify amounts
+                        t["v"] = dict(amount = val[0], currency = val[1])
+                    elif kind in { TOK.NUMBER, TOK.CURRENCY, TOK.PERCENT }:
+                        # Number, ISO currency code, percentage
+                        t["v"] = val[0]
+                    elif kind == TOK.DATE:
+                        t["v"] = dict(y = val[0], mo = val[1], d = val[2])
+                    elif kind == TOK.TIME:
+                        t["v"] = dict(h = val[0], m = val[1], s = val[2])
+                    elif kind == TOK.TIMESTAMP:
+                        t["v"] = dict(y = val[0], mo = val[1], d = val[2],
+                            h = val[3], m = val[4], s = val[5])
 
     # Return the tokens as a JSON structure to the client
     return jsonify(result = pgs, stats = stats, register = register)
@@ -431,11 +435,7 @@ def reparse():
             # Save the tokens
             tokens = a.tokens
             # Build register of person names
-            for name in a.person_names():
-                add_name_to_register(name, register, session)
-            # Add register of entity names
-            for name in a.entity_names():
-                add_entity_to_register(name, register, session)
+            register = a.create_register(session)
             stats = dict(
                 num_tokens = a.num_tokens,
                 num_sentences = a.num_sentences,
@@ -772,6 +772,13 @@ def about():
     return render_template("about.html")
 
 
+@app.route("/apidoc")
+@max_age(seconds = 1) # 10 * 60)
+def apidoc():
+    """ Handler for an API documentation page """
+    return render_template("apidoc.html", t = datetime.utcnow())
+
+
 @app.route("/news")
 @max_age(seconds = 60)
 def news():
@@ -851,13 +858,7 @@ def page():
 
         # Prepare the article for display (may cause it to be parsed and stored)
         a.prepare(session, verbose = True, reload_parser = True)
-        register = { }
-        # Build register of person names
-        for name in a.person_names():
-            add_name_to_register(name, register, session)
-        # Add register of entity names
-        for name in a.entity_names():
-            add_entity_to_register(name, register, session)
+        register = a.create_register(session)
         # Fetch names of article topics, if any
         topics = session.query(ArticleTopic) \
             .filter(ArticleTopic.article_id == a.uuid).all()
