@@ -45,8 +45,8 @@ from threading import Lock
 # The sorting locale used by default in the changedlocale function
 _DEFAULT_SORT_LOCALE = ('IS_is', 'UTF-8')
 # A set of all valid argument cases
-_ALL_CASES = { "nf", "þf", "þgf", "ef" }
-
+_ALL_CASES = frozenset(("nf", "þf", "þgf", "ef"))
+_ALL_GENDERS = frozenset(("kk", "kvk", "hk"))
 
 class ConfigError(Exception):
 
@@ -241,7 +241,10 @@ class VerbObjects:
                 if case not in _ALL_CASES:
                     raise ConfigError("Invalid case for verb object: '{0}'".format(case))
             # Append a possible argument list
-            VerbObjects.VERBS[la][verb].append(args)
+            arglists = VerbObjects.VERBS[la][verb]
+            if args not in arglists:
+                # Avoid adding the same argument list twice
+                arglists.append(args)
         else:
             # Note that the verb can be argument-free
             VerbObjects.VERBS[0].add(verb)
@@ -552,6 +555,36 @@ class Preferences:
         return Preferences.DICT.get(word, None)
 
 
+class NounPreferences:
+
+    """ Wrapper for noun preferences, i.e. to assign priorities to different
+        noun stems that can have identical word forms. """
+
+    # This is a dict of noun word forms, giving the relative priorities
+    # of different genders
+    DICT = defaultdict(dict)
+
+    @staticmethod
+    def add (word, worse, better):
+        """ Add a preference to the dictionary. Called from the config file handler. """
+        if worse not in _ALL_GENDERS or better not in _ALL_GENDERS:
+            raise ConfigError("Noun priorities must specify genders (kk, kvk, hk)")
+        d = NounPreferences.DICT[word]
+        worse_score = d.get(worse)
+        better_score = d.get(better)
+        if worse_score is not None:
+            if better_score is not None:
+                raise ConfigError("Conflicting priorities for noun {0}".format(word))
+            better_score = worse_score + 2
+        elif better_score is not None:
+            worse_score = better_score - 2
+        else:
+            worse_score = -1
+            better_score = 1
+        d[worse] = worse_score
+        d[better] = better_score
+
+
 # Global settings
 
 class Settings:
@@ -764,6 +797,22 @@ class Settings:
         Preferences.add(w[0], w[1:], b, factor)
 
     @staticmethod
+    def _handle_noun_preferences(s):
+        """ Handle noun preference hints in the settings section """
+        # Format: noun worse1 worse2... < better
+        # The worse and better specifiers are gender names (kk, kvk, hk)
+        a = s.lower().split("<", maxsplit = 1)
+        if len(a) != 2:
+            raise ConfigError("Noun preference missing less-than sign '<'")
+        w = a[0].split()
+        if len(w) != 2:
+            raise ConfigError("Noun preference must have exactly one 'worse' gender")
+        b = a[1].split()
+        if len(b) != 1:
+            raise ConfigError("Noun preference must have exactly one 'better' gender")
+        NounPreferences.add(w[0], w[1], b[0])
+
+    @staticmethod
     def _handle_ambiguous_phrases(s):
         """ Handle ambiguous phrase guidance in the settings section """
         # Format: "word1 word2..." cat1 cat2...
@@ -813,6 +862,7 @@ class Settings:
             "verb_subjects" : Settings._handle_verb_subjects,
             "prepositions" : Settings._handle_prepositions,
             "preferences" : Settings._handle_preferences,
+            "noun_preferences" : Settings._handle_noun_preferences,
             "ambiguous_phrases" : Settings._handle_ambiguous_phrases,
             "meanings" : Settings._handle_meanings,
             "adjective_template" : Settings._handle_adjective_template,

@@ -16,6 +16,15 @@
 from itertools import islice, tee
 from contextlib import closing
 from random import randint
+import sys
+import os
+
+# Hack to make this Python program executable from the utils subdirectory
+if __name__ == "__main__":
+    basepath, _ = os.path.split(os.path.realpath(__file__))
+    if basepath.endswith("/utils") or basepath.endswith("\\utils"):
+        basepath = basepath[0:-6]
+        sys.path.append(basepath)
 
 from settings import Settings, ConfigError
 from tokenizer import correct_spaces
@@ -162,7 +171,7 @@ if __name__ == "__main__":
 
     try:
         # Read configuration file
-        Settings.read("Reynir.conf")
+        Settings.read(os.path.join(basepath, "config/Reynir.conf"))
     except ConfigError as e:
         print("Configuration error: {0}".format(e))
         quit()

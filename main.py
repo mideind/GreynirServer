@@ -366,11 +366,15 @@ def process_query(session, toklist, result):
 
 
 # Note: Endpoints ending with .api are configured not to be cached by nginx
-@app.route("/analyze.api", methods=['POST'])
+@app.route("/analyze.api", methods=['GET', 'POST'])
 def analyze():
     """ Analyze text manually entered by the user, i.e. not coming from an article """
 
-    text = request.form.get("text", "").strip()[0:_MAX_TEXT_LENGTH]
+    if request.method == 'POST':
+        text = request.form.get("text")
+    else:
+        text = request.args.get("t")
+    text = text.strip()[0:_MAX_TEXT_LENGTH]
 
     with SessionContext(commit = True) as session:
 

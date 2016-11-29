@@ -44,7 +44,8 @@ except ImportError:
     import psycopg2cffi.extensions as psycopg2ext
     import psycopg2cffi as psycopg2
 
-from settings import Settings, Abbreviations, AdjectiveTemplate, Meanings, StaticPhrases
+from settings import Settings, Abbreviations, AdjectiveTemplate, \
+    Meanings, StaticPhrases
 from dawgdictionary import Wordbase
 
 # Make Psycopg2 and PostgreSQL happy with UTF-8
@@ -186,7 +187,7 @@ class BIN_Db:
 
     def _meanings(self, w):
         """ Return a list of all possible grammatical meanings of the given word """
-        assert self._c is not None
+        # assert self._c is not None
         m = None
         try:
             self._c.execute(BIN_Db._DB_Q_MEANINGS, [ w ])

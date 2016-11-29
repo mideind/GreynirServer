@@ -1915,14 +1915,20 @@ def paragraphs(toklist):
             if sent:
                 # Do not include or count zero-length sentences
                 current_p.append((sent_begin, sent))
+                sent = []
         elif t0 == TOK.P_BEGIN or t0 == TOK.P_END:
             # New paragraph marker: Start a new paragraph if we didn't have one before
             # or if we already had one with some content
-            if current_p != []:
+            if sent:
+                current_p.append((sent_begin, sent))
+                sent = []
+            if current_p:
                 yield current_p
                 current_p = []
         else:
             sent.append(t)
-    if current_p != []:
+    if sent:
+        current_p.append((sent_begin, sent))
+    if current_p:
         yield current_p
 

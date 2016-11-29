@@ -119,9 +119,12 @@ class Processor:
                         tree = Tree(url, article.authority)
                         # print("Tree:\n{0}\n".format(article.tree))
                         tree.load(article.tree)
-                        # Run all processors in turn
-                        for p in self.processors:
-                            tree.process(session, p)
+
+                        with closing(BIN_Db.get_db()) as bin_db:
+                            # Run all processors in turn
+                            for p in self.processors:
+                                tree.process(session, p, bin_db)
+
                     # Mark the article as being processed
                     article.processed = datetime.utcnow()
 

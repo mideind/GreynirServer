@@ -74,7 +74,7 @@ from collections import defaultdict
 
 from fastparser import Node, ParseForestNavigator, ParseForestPrinter
 from grammar import Terminal
-from settings import Settings, Preferences, VerbObjects
+from settings import Settings, Preferences, NounPreferences, VerbObjects
 from binparser import BIN_Token
 
 
@@ -82,6 +82,10 @@ _PREP_SCOPE_SET = frozenset(("begin_prep_scope", "purge_prep"))
 _PREP_ALL_SET = frozenset(_PREP_SCOPE_SET | { "enable_prep_bonus" })
 _VERB_PREP_BONUS = 5 # Give 5 extra points for a verb/preposition match
 _VERB_PREP_PENALTY = -2 # Subtract 2 points for a non-match
+
+# Noun categories set
+_NOUN_SET = frozenset(("kk", "kvk", "hk"))
+
 
 class Reducer:
 
@@ -126,6 +130,7 @@ class Reducer:
 
         # Second pass: find a (partial) ordering by scoring the terminal alternatives for each token
         scores = dict()
+        noun_prefs = NounPreferences.DICT
 
         # Loop through the indices of the tokens spanned by this tree
         for i in range(w.start, w.end):
@@ -186,6 +191,15 @@ class Reducer:
                     elif t.is_abbrev:
                         # Punish abbreviations in favor of other more specific terminals
                         sc[t] -= 1
+
+                    # Noun priorities, i.e. between different genders
+                    # of the same word form
+                    # (for example "ára" which can refer to three stems with different genders)
+                    if txt in noun_prefs:
+                        np = noun_prefs[txt].get(t.gender, 0)
+                        print("Looking up ordmynd {0} and ordfl {1}, score {2}".format(txt, t.gender, np))
+                        sc[t] += np
+
                 elif tfirst == "fs":
                     if t.has_variant("nf"):
                         # Reduce the weight of the 'artificial' nominative prepositions
