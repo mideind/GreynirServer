@@ -156,6 +156,34 @@ Limited installation and setup instructions can be
 [found here](https://docs.google.com/document/d/1ywywjoOj5yas5QKjxLJ9Gqh-iNkfPae9-EKuES74aPU/edit?usp=sharing)
 (in Icelandic).
 
+## Installation on OSx (Homebrew)
+* Download and extract pypy3.3 (http://pypy.org/download.html#installing)
+* `$ brew install postgresql (comes with contrib packages)`
+* `$ pip3 install virtualenv`
+* Clone this repo
+* cd into repo
+* `virtualenv -p /_your-pypy3-install-dir_/pypy3/bin/pypy3 venv`
+
+### Postgres database setup
+* `$ psql`
+* `create database bin with encoding 'UTF8' LC_COLLATE='is_IS.UTF-8' LC_CTYPE='is_IS.UTF-8' TEMPLATE=template0;`
+* `\c bin` 
+* `create table ord (stofn varchar(80), utg integer, ordfl varchar(16), fl varchar(16), ordmynd varchar(80), beyging varchar(24));`
+* `copy ord from '/home/notandi/Reynir/resources/ord.csv' with (format csv, delimiter ';', encoding 'UTF8');`
+* `create index ffx on ord(fl);`
+* `create index ofx on ord(ordfl);`
+* `create index oix on ord(ordmynd);`
+* `create index sfx on ord(stofn);`
+
+### Import external text and csv data
+To import the BÍN database, Lexicon and the external text/csv data mentioned above you need to run the validation script. Make sure you add the downloaded data to the `reynir/resources` directory. During this commit the filenames of the downloaded files were:
+
+* obeyg.smaord.txt
+* plastur.feb2013.txt
+* SHsnid.csv
+
+If the filenames have been changed by their author, please rename them since the validation script looks for them.
+
 ## Copyright and licensing
 
 Reynir/Greynir is *copyright (C) 2015-2016 by Vilhjálmur Þorsteinsson*.
