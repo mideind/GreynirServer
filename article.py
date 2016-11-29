@@ -13,15 +13,17 @@
 
 import json
 import uuid
+import time
 from datetime import datetime
 from collections import OrderedDict, defaultdict, namedtuple
 
 from settings import Settings, NoIndexWords
 from scraperdb import Article as ArticleRow, SessionContext, Word, DataError
 from fetcher import Fetcher
-from tokenizer import TOK
+from tokenizer import TOK, tokenize
 from fastparser import Fast_Parser, ParseError, ParseForestNavigator, ParseForestDumper
 from incparser import IncrementalParser
+from query import Query, query_person_title, query_entity_def
 
 
 WordTuple = namedtuple("WordTuple", ["stem", "cat"])
@@ -31,6 +33,53 @@ _CATEGORIES_TO_INDEX = frozenset((
     "kk", "kvk", "hk", "person_kk", "person_kvk", "entity",
     "lo", "so"
 ))
+
+
+def add_entity_to_register(name, register, session):
+    """ Add the entity name and the 'best' definition to the given name register dictionary """
+    if name in register:
+        # Already have a definition for this name
+        return
+    if not " " in name:
+        # Single name: this might be the last name of a person/entity
+        # that has already been mentioned by full name
+        for k in register.keys():
+            parts = k.split()
+            if len(parts) > 1 and parts[-1] == name:
+                # Reference to the last part of a previously defined
+                # multi-part person or entity name,
+                # for instance 'Clinton' -> 'Hillary Rodham Clinton'
+                register[name] = dict(kind = "ref", fullname = k)
+                return
+    # Use the query module to return definitions for an entity
+    definition = query_entity_def(session, name)
+    if definition:
+        register[name] = dict(kind = "entity", title = definition)
+
+
+def add_name_to_register(name, register, session):
+    """ Add the name and the 'best' title to the given name register dictionary """
+    if name in register:
+        # Already have a title for this name
+        return
+    # Use the query module to return titles for a person
+    title = query_person_title(session, name)
+    if title:
+        register[name] = dict(kind = "name", title = title)
+
+
+def create_name_register(tokens, session):
+    """ Assemble a dictionary of person and entity names occurring in the token list """
+    register = { }
+    for t in tokens:
+        if t.kind == TOK.PERSON:
+            gn = t.val
+            for pn in gn:
+                add_name_to_register(pn.name, register, session)
+        elif t.kind == TOK.ENTITY:
+            add_entity_to_register(t.txt, register, session)
+    return register
+
 
 class Article:
 
@@ -292,6 +341,50 @@ class Article:
                 words[wt] += 1
         return dump
 
+    @staticmethod
+    def tag_text(session, text):
+        """ Parse plain text and return the parsed paragraphs as lists of sentences
+            where each sentence is a list of tagged tokens """
+
+        t0 = time.time()
+        # Demarcate paragraphs in the input
+        text = Fetcher.mark_paragraphs(text)
+        # Tokenize the result
+        toklist = list(tokenize(text, enclosing_session = session))
+        # Paragraph list, containing sentences, containing tokens
+        pgs = []
+        t1 = time.time()
+
+        with Fast_Parser(verbose = False) as bp: # Don't emit diagnostic messages
+
+            ip = IncrementalParser(bp, toklist, verbose = True)
+
+            for p in ip.paragraphs():
+                pgs.append([])
+                for sent in p.sentences():
+                    if sent.parse():
+                        # Parsed successfully
+                        pgs[-1].append(Article._dump_tokens(sent.tokens, sent.tree, None))
+                    else:
+                        # Errror in parse
+                        pgs[-1].append(Article._dump_tokens(sent.tokens, None, None, sent.err_index))
+
+            t2 = time.time()
+            stats = dict(
+                num_tokens = ip.num_tokens,
+                num_sentences = ip.num_sentences,
+                num_parsed = ip.num_parsed,
+                ambiguity = ip.ambiguity,
+                tok_time = t1 - t0,
+                parse_time = t2 - t1,
+                total_time = t2 - t0
+            )
+
+        # Add a name register to the result
+        register = create_name_register(toklist, session)
+
+        return (pgs, stats, register)
+
     def person_names(self):
         """ A generator yielding all person names in an article token stream """
         if self._raw_tokens is None and self._tokens:
@@ -317,6 +410,16 @@ class Article:
                         if t.get("k") == TOK.ENTITY:
                             # The entity name
                             yield t["x"]
+
+    def create_register(self, session):
+        """ Create a name register dictionary for this article """
+        register = { }
+        for name in self.person_names():
+            add_name_to_register(name, register, session)
+        # Add register of entity names
+        for name in self.entity_names():
+            add_entity_to_register(name, register, session)
+        return register
 
     def _store_words(self, session):
         """ Store word stems """

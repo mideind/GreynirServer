@@ -41,7 +41,7 @@ MODULE_NAME = __name__
 
 # Avoid chaff
 NOT_DEFINITIONS = {
-    "við", "ári", "sæti", "stig", "færi", "var", "varð"
+    "við", "ári", "ár", "sæti", "stig", "færi", "var", "varð"
     "fæddur", "fætt", "fædd",
     "spurður", "spurt", "spurð",
     "búinn", "búið", "búin",
@@ -128,6 +128,13 @@ def sentence(state, result):
                     timestamp = datetime.utcnow()
                 )
                 session.add(e)
+
+
+def visit(state, node):
+    """ Determine whether to visit a particular node """
+    # We don't visit SetningSkilyrði or any of its children
+    # because we know any assertions in there are conditional
+    return not node.has_nt_base("SetningSkilyrði")
 
 
 # Below are functions that have names corresponding to grammar nonterminals.

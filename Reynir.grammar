@@ -771,8 +771,8 @@ Sagnliður/tala/pers/kyn →
 # '(Ef hann hringir) má sækja tölvuna og byrja að vinna'
 
 SagnliðurÁnF →
-    so_subj_gm_none NhFylling?                          # (Í dag) þarf [sannarlega] (að vökva grasið)
-    | so_0_mm_p3_et NhFylling?                          # (Í dag) dregst [sennilega] (að vökva grasið)
+    so_subj_gm_none NhFyllingAtv?                          # (Í dag) þarf [sannarlega] (að vökva grasið)
+    | so_0_mm_p3_et NhFyllingAtv?                          # (Í dag) dregst [sennilega] (að vökva grasið)
 
     | HjSögn_et_p3 FsAtv? so_subj_sagnb_none NhFyllingAtv? # (Í ár) hefur [í sumarhitanum] þurft (að vökva grasið)
     | HjSögn_et_p3 FsAtv? so_mm_sagnb NhFyllingAtv?        # (Í ár) hefur [vegna leti] dregist (að vökva grasið)
@@ -925,6 +925,7 @@ LhÞtBotn/tala/kyn →
     so_0_nh? NhFylling/tala/kyn
     | NhRuna                                # (Mennirnir eru sagðir) fara sjaldan í bað, og raka sig aldrei
     | LoTengtSögn_nf/tala/kyn               # (Mennirnir eru taldir) ritfærir
+    | Aldur                                 # (Mennirnir eru orðnir) fimmtán ára
 
 EinSögn_lhþt/tala/kyn →
     so_0_lhþt/tala/kyn LhÞtBotn/tala/kyn?   # (Mennirnir eru) lentir
@@ -962,8 +963,12 @@ Sögn_lhþt/tala/pers/kyn →
     | so_0_lhþt/tala/kyn HjSögnLhÞtSM/tala/pers LhÞtBotn/tala/kyn?
 
 SögnErLo/tala/pers/kyn →
-    # var snögg [að svara fyrir sig]
-    HjSögnLhÞt/tala/pers LoTengtSögn_nf/tala/kyn NhFylling?
+    # (Jón er orðinn) duglegur / tólf ára
+    HjSögnLhÞt/tala/pers SögnErLoBotn/tala/kyn
+
+SögnErLoBotn/tala/kyn →
+    LoTengtSögn_nf/tala/kyn NhFylling?  # (Guðrún er) snögg [að svara fyrir sig]
+    | Aldur                             # (Páll var) tíu ára
 
 SögnErEinsOg/tala/pers →
     # er [í laginu alveg] eins og krakki í sælgætisbúð
@@ -2275,8 +2280,9 @@ NlStak_et_p3_ef_hk → Árið_ef
 Árið/fall →
     'ár:hk'_gr_et/fall ártal
     | 'rekstrarár:hk'_gr_et/fall ártal
+    | 'skólaár:hk'_gr_et/fall ártal
 
-$score(+8) Árið/fall
+$score(+16) Árið/fall
 
 NlStak_ft_p3_nf_hk → Árin_nf
 NlStak_ft_p3_þf_hk → Árin_þf
@@ -2286,6 +2292,7 @@ NlStak_ft_p3_ef_hk → Árin_ef
 Árin/fall →
     'ár:hk'_gr_ft/fall MörgÁr
     | 'rekstrarár:hk'_gr_ft/fall MörgÁr
+    | 'skólaár:hk'_gr_ft/fall MörgÁr
 
 MörgÁr →
     ártal Til tala
@@ -2293,7 +2300,7 @@ MörgÁr →
 
 ÁraRuna → ',' tala
 
-$score(+8) Árin/fall
+$score(+20) Árin/fall
 
 # Leyfa sérnöfn (skrifuð sem runa orða með stórum staf)
 # sem nafnliði 3p. eintölu hvorugkyns, í öllum föllum
@@ -2476,6 +2483,8 @@ $score(+8) Persóna/fall # Velja Persónu frekar en Sérnafn
 
 SérnafnEðaManneskja →
     Sérnafn | Persóna | Fyrirtæki/fall
+
+$score(-2) SérnafnEðaManneskja # Velja form með falli frekar en án falls
 
 Persóna →
     person

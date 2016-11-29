@@ -175,8 +175,14 @@ Limited installation and setup instructions can be
 * `create index oix on ord(ordmynd);`
 * `create index sfx on ord(stofn);`
 
-### Todo
-Write a seperator validator for obeyg.smaord.txt
+### Import external text and csv data
+To import the BÍN database, Lexicon and the external text/csv data mentioned above you need to run the validation script. Make sure you add the downloaded data to the `reynir/resources` directory. During this commit the filenames of the downloaded files were:
+
+* obeyg.smaord.txt
+* plastur.feb2013.txt
+* SHsnid.csv
+
+If the filenames have been changed by their author, please rename them since the validation script looks for them.
 
 ## Copyright and licensing
 
