@@ -1,0 +1,18 @@
+create user reynir;
+create user notandi;
+alter role notandi with superuser;
+create database bin with encoding 'UTF8' LC_COLLATE='is_IS.UTF-8' LC_CTYPE='is_IS.UTF-8' TEMPLATE=template0;
+\c bin;
+create table ord (stofn varchar(80), utg integer, ordfl varchar(16), fl varchar(16), ordmynd varchar(80), beyging varchar(24));
+copy ord from 'resources/ord.csv' with (format csv, delimiter ';', encoding 'UTF8');
+create index ffx on ord(fl);
+create index ofx on ord(ordfl);
+create index oix on ord(ordmynd);
+create index sfx on ord(stofn);
+grant select on ord to reynir;
+grant all on ord to notandi;
+create database scraper with encoding 'UTF8' LC_COLLATE='is_IS.utf8' LC_CTYPE='is_IS.utf8' TEMPLATE=template0;
+grant all on scraper to reynir;
+grant all on scraper to notandi;    
+\c scraper;
+create extension if not exists "uuid-ossp";
