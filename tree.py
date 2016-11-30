@@ -192,8 +192,9 @@ class Result:
             where the child node meets the given test, if any """
         if self._params:
             for p, c in zip(self._params, self._node.children()):
-                for d_c, d_p in p.enum_descendants(test_f):
-                    yield (d_c, d_p)
+                if p is not None:
+                    for d_c, d_p in p.enum_descendants(test_f):
+                        yield (d_c, d_p)
                 if test_f is None or test_f(c):
                     yield (c, p)
 

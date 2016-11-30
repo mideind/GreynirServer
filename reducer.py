@@ -197,7 +197,6 @@ class Reducer:
                     # (for example "ára" which can refer to three stems with different genders)
                     if txt in noun_prefs:
                         np = noun_prefs[txt].get(t.gender, 0)
-                        print("Looking up ordmynd {0} and ordfl {1}, score {2}".format(txt, t.gender, np))
                         sc[t] += np
 
                 elif tfirst == "fs":
