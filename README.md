@@ -166,6 +166,9 @@ Limited installation and setup instructions can be
 
 ### Postgres database setup
 * `$ psql`
+* create user reynir;
+* create user notandi;
+* alter role notandi with superuser;
 * `create database bin with encoding 'UTF8' LC_COLLATE='is_IS.UTF-8' LC_CTYPE='is_IS.UTF-8' TEMPLATE=template0;`
 * `\c bin` 
 * `create table ord (stofn varchar(80), utg integer, ordfl varchar(16), fl varchar(16), ordmynd varchar(80), beyging varchar(24));`
