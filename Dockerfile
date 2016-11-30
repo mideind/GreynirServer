@@ -8,4 +8,5 @@ RUN localedef -i is_IS -c -f UTF-8 -A /usr/share/locale/locale.alias is_IS.UTF-8
 
 ENV LANG is_IS.utf8
 
+ADD resources/ord.csv /srv/ord.csv
 ADD docker-scripts/init.sql /docker-entrypoint-initdb.d/init.sql
