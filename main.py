@@ -363,10 +363,16 @@ def postag():
     with SessionContext(commit = True) as session:
         pgs, stats, register = ArticleProxy.tag_text(session, text)
         # In this case, we should always get a single paragraph back
-        assert len(pgs) < 2
         if pgs:
-            # Fetch the one and only paragraph
-            pgs = pgs[0]
+            # Only process the first paragraph, if there are many of them
+            if len(pgs) == 1:
+                pgs = pgs[0]
+            else:
+                # More than one paragraph: concatenate 'em all
+                pa = []
+                for pg in pgs:
+                    pa.extend(pg)
+                pgs = pa
         for sent in pgs:
             # Transform the token representation into a
             # nice canonical form for outside consumption
@@ -413,7 +419,9 @@ def postag():
                             h = val[3], m = val[4], s = val[5])
 
     # Return the tokens as a JSON structure to the client
-    return jsonify(result = pgs, stats = stats, register = register)
+    resp = jsonify(result = pgs, stats = stats, register = register)
+    resp.headers["Content-Type"] = "application/json; charset=utf-8"
+    return resp
 
 
 # Note: Endpoints ending with .api are configured not to be cached by nginx
@@ -773,10 +781,10 @@ def about():
 
 
 @app.route("/apidoc")
-@max_age(seconds = 1) # 10 * 60)
+@max_age(seconds = 10 * 60)
 def apidoc():
     """ Handler for an API documentation page """
-    return render_template("apidoc.html", t = datetime.utcnow())
+    return render_template("apidoc.html")
 
 
 @app.route("/news")

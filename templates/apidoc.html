@@ -61,26 +61,54 @@ kóðaða í UTF-8 og með línuskiptum (<i>newline</i>, <code>\n</code>) milli 
 <p><code>postag.api</code> þjónustan skilar JSON skjali með eftirfarandi undirgreinum:</p>
 <ul>
    <li><code>result</code> er listi af málsgreinum þar sem hver málsgrein er aftur listi
-      af eindum (<i>tokens</i>)</li>
+      af eindum (<i>tokens</i>). Hver eind innifelur eftirfarandi upplýsingar:
+      <ul>
+         <li><code>k</code> er tegund eindar, þ.e. WORD, PERSON, PUNCTUATION, YEAR, AMOUNT o.s.frv.</li>
+         <li><code>x</code> er upphaflegur texti eindarinnar eins og hann var í innsendu skjali.</li>
+         <li><code>s</code> er orðstofn. Hann getur innihaldið bandstrik '-' ef stofninn er ekki í 
+            BÍN og Greynir hefur notast við samsettan orðstofn.</li>
+         <li><code>c</code> er orðflokkur (<b>kk</b>/<b>kvk</b>/<b>hk</b>, <b>so</b>, <b>lo</b>,
+            <b>ao</b>, <b>fs</b>, <b>st</b> o.s.frv.).</li>
+         <li><code>b</code> er beygingarform orðsins eins og það birtist í BÍN. Getur verið bandstrik '-' ef
+            orðið er óbeygt.</li>
+         <li><code>t</code> er lauf (<i>terminal</i>) sem eindin tengist í
+            <a href="https://github.com/vthorsteinsson/Reynir/blob/master/Reynir.grammar"
+            target="_blank">samhengisfrjálsri málfræði Greynis</a>.</li>
+         <li><code>v</code> er gildi eindarinnar ef við á, til dæmis tala, upphæð, dagsetning eða
+            nafn gjaldmiðils.</li>
+         <li><code>f</code> er flokkur í BÍN (<b>alm</b>, <b>ism</b>, <b>fyr</b>, <b>örn</b> o.s.frv.).</li>
+      </ul>
+      Ef ekki tekst að greina málsgrein eru aðeins svæði <code>k</code> og <code>x</code> fyrir hendi
+      í eindum hennar. Jafnframt er sú eind þar sem málgreinirinn gafst upp merkt með svæði
+      <code>err</code> sem hefur gildið 1. Þar fannst engin málfræðiregla sem leyfði viðkomandi
+      eind á þeim stað. Ástæðan er þá annað hvort sú að einhverju sé ábótavant í
+      málfræði eða stafsetningu málsgreinarinnar, eða að málfræðireglur Greynis séu ekki
+      nógu víðtækar.
+   </li>
    <li><code>register</code> er nafnalisti</li>
-   <li><code>stats</code> er samantekt af tölfræði, m.a. fjölda málsgreina og einda í textanum</li>
-</ul>
-
-<p>Hver eind innifelur eftirfarandi upplýsingar:</p>
-<ul>
-   <li><code>k</code> er tegund eindar, þ.e. WORD, PERSON, PUNCTUATION, YEAR, AMOUNT o.s.frv.</li>
-   <li><code>x</code> er upphaflegur texti eindarinnar eins og hann var í innsendu skjali</li>
-   <li><code>s</code> er orðstofn. Hann getur innihaldið bandstrik '-' ef stofninn er ekki í 
-      BÍN og Greynir hefur notast við samsettan orðstofn.</li>
-   <li><code>c</code> er orðflokkur (<b>kk</b>/<b>kvk</b>/<b>hk</b>, <b>so</b>, <b>lo</b>, <b>ao</b>, <b>fs</b>,
-      <b>st</b> o.s.frv.)</li>
-   <li><code>b</code> er beygingarform orðsins eins og það birtist í BÍN. Getur verið bandstrik '-' ef
-      orðið er óbeygt.</li>
-   <li><code>t</code> er lauf (<i>terminal</i>) sem eindin tengist í
-      <a href="https://github.com/vthorsteinsson/Reynir/blob/master/Reynir.grammar" target="_blank">samhengisfrjálsri
-      málfræði Greynis</a></li>
-   <li><code>v</code> er gildi eindarinnar ef við á, til dæmis tala, upphæð, dagsetning eða nafn gjaldmiðils.</li>
-   <li><code>f</code> er flokkur í BÍN (<b>alm</b>, <b>ism</b>, <b>fyr</b>, <b>örn</b> o.s.frv.)</li>
+   <li><code>stats</code> er samantekt af tölfræði, m.a. fjölda málsgreina og einda í textanum:
+      <ul>
+         <li><code>ambiguity</code> er margræðnistuðull, skilgreindur sem vegið meðaltal af
+            (fjölda trjágreininga)^(1/(fjölda einda)) fyrir allar málsgreinar í textanum. Stuðullinn
+            gefur m.ö.o. til kynna hvernig mögulegum trjágreiningum fjölgar við hverja viðbótar eind
+            í textanum.
+            Algengur stuðull er á bilinu 1,5 - 1,6. Ef hann er hærri er textinn óvenju margræður af
+            einhverjum orsökum, t.d. gætu verið margir mismunandi möguleikar á að tengja forsetningarliði við
+            nafnliði og sagnliði. Ef stuðullinn er 1 finnst aðeins ein möguleg trjágreining á textanum og
+            margræðni því engin.
+         </li>
+         <li><code>num_sentences</code> er fjöldi málsgreina í textanum.</li>
+         <li><code>num_parsed</code> er fjöldi málsgreina í textanum sem tókst að trjágreina.</li>
+         <li><code>num_tokens</code> er fjöldi einda í textanum. Allar eindir sem Greynir þekkir eru
+            taldar með. Greynir sleppir hins vegar ýmsum táknum sem hann þekkir ekki.</li>
+         <li><code>parse_time</code> er tími, í sekúndum, sem þáttun (<i>parsing</i>) tók. Hver
+            fyrirspurn er höndluð í einum þræði, en Greynir getur unnið að mörgum
+            fyrirspurnum samtímis.</li>
+         <li><code>tok_time</code> er tími, í sekúndum, sem eindagreining (<i>tokenization</i>) tók.</li>
+         <li><code>total_time</code> er heildartími, í sekúndum, sem úrvinnsla textans tók.
+            Summa af <code>tok_time</code> og <code>parse_time</code>.</li>
+      </ul>
+   </li>
 </ul>
 
 <p><button data-toggle="collapse" data-target="#postag-example"><span class="caret"></span> Dæmi</button> um mörkun málsgreinarinnar <i>Halldór Laxness fékk nóbelsverðlaunin í bókmenntum árið 1955.</i></p>
