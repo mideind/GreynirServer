@@ -752,16 +752,18 @@ class BIN_Token(Token):
 
         def matcher_default(m):
             """ Check other word categories """
-            if m.beyging != "-": # Tokens without a form specifier are assumed to be universally matching
+            if m.beyging == "-": # Tokens without a form specifier are assumed to be universally matching
+                fbits = 0
+            else:
                 # If the meaning is a noun, its gender is coded in the ordfl attribute
                 # In that case, add it to the beyging field so that the relevant fbits
                 # are included and can be matched against the terminal if it requires
                 # a gender
                 fbits = BIN_Token.get_fbits(m.beyging + BIN_Token.GENDERS_MAP.get(m.ordfl, ""))
-                # Check whether variants required by the terminal are present
-                # in the meaning string
-                if not terminal.fbits_match(fbits):
-                    return False
+            # Check whether variants required by the terminal are present
+            # in the meaning string
+            if not terminal.fbits_match(fbits):
+                return False
             return terminal.matches_first(m.ordfl, m.stofn, self.t1_lower)
 
         def matches_proper_name():
@@ -804,10 +806,6 @@ class BIN_Token(Token):
             matcher = matchers.get(terminal.first, matcher_default)
             if matcher:
                 # Return the first matching meaning, or False if none
-                # !!! TODO: Prioritize matching meanings, if more than one
-                # !!! Example: don't select a VH meaning for a verb if the
-                # !!! terminal doesn't specify VH; apply a priority between
-                # !!! different nouns that have the same spelling (incl. names)
                 return next((m for m in self.t2 if matcher(m)), False)
             # Terminal is a proper name ('sérnafn')
             return self.is_upper and matches_proper_name()
