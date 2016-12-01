@@ -242,6 +242,10 @@ class ReynirCorpus:
                     # Overwrite the existing keywords
                     keywords = list(Topics.DICT[topic.name]) # Convert set to list
                     topic.keywords = " ".join(keywords)
+                    # Set the identifier
+                    topic.identifier = Topics.ID[topic.name]
+                    # Set the threshold
+                    topic.threshold = Topics.THRESHOLD[topic.name]
                 else:
                     # Use the ones that are already there
                     keywords = topic.keywords.split()
@@ -324,7 +328,7 @@ class ReynirCorpus:
                         topics.append(topic_id)
                         topic_names.append((topic_name, similarity))
                 if topic_names:
-                    print("Article '{0}': topics {1}".format(heading, topic_names))
+                    print("Article '{0}':\n   topics {1}".format(heading, topic_names))
             # Topics found (if any): delete previous ones (if any)
             session.execute(ArticleTopic.table().delete().where(ArticleTopic.article_id == article_id))
             # ...and add the new ones
@@ -335,16 +339,18 @@ class ReynirCorpus:
             if a is not None:
                 a.indexed = datetime.utcnow()
 
-    def assign_topics(self, limit = None, process_all = False):
+    def assign_topics(self, limit = None, process_all = False, uuid = None):
         """ Assign topics to all articles that have no such assignment yet """
         with SessionContext(commit = True) as session:
             # Fetch articles that haven't been indexed (or have been parsed since),
             # and that have at least one associated Word in the words table.
             q = session.query(Article.id, Article.heading)
-            if not process_all:
+            if uuid:
+                q = q.filter(Article.id == uuid)
+            elif not process_all:
                 q = q.filter((Article.indexed == None) | (Article.indexed < Article.parsed))
             q = q.join(Word).group_by(Article.id, Article.heading)
-            if process_all or limit is None:
+            if uuid or limit is None:
                 q = q.all()
             else:
                 q = q[0:limit]
@@ -387,12 +393,14 @@ def calculate_topics(verbose = False):
     print("------ Reynir recalculation complete -------")
 
 
-def tag_articles(limit, verbose = False, process_all = False):
+def tag_articles(limit, verbose = False, process_all = False, uuid = None):
     """ Tag all untagged articles or articles that
         have been parsed since they were tagged """
 
     print("------ Reynir starting tagging -------")
-    if process_all:
+    if uuid:
+        print("Tagging article {0}".format(uuid))
+    elif process_all:
         print("Processing all articles")
     elif limit:
         print("Limit: {0} articles".format(limit))
@@ -403,7 +411,7 @@ def tag_articles(limit, verbose = False, process_all = False):
 
     rc = ReynirCorpus(verbose = verbose)
     rc.load_lsi_model()
-    rc.assign_topics(limit, process_all)
+    rc.assign_topics(limit, process_all, uuid)
 
     t1 = time.time()
 
@@ -426,17 +434,18 @@ __doc__ = """
     Index builder and tagger module
 
     Usage:
-        python builder.py [options] command
+        python builder.py [options] command [arguments]
 
     Options:
         -h, --help       : Show this help text
         -l N, --limit=N  : Limit processing to N articles
         -a, --all        : Process all articles
+        -v, --verbose    : Show diagnostics while processing
 
     Commands:
-        tag     : tag any untagged articles
-        topics  : recalculate topic vectors from keywords
-        model   : rebuild dictionary and model from parsed articles
+        tag [uuid] : tag any untagged articles (or the article with the given uuid)
+        topics     : recalculate topic vectors from keywords
+        model      : rebuild dictionary and model from parsed articles
 
 """
 
@@ -474,30 +483,42 @@ def _main(argv = None):
             elif o in ("-a", "--all"):
                 process_all = True
 
-        if process_all and limit_specified:
-            raise Usage("--all and --limit cannot be used together")
+        #if process_all and limit_specified:
+        #    raise Usage("--all and --limit cannot be used together")
 
         Settings.read("Vectors.conf")
 
         # Process arguments
-        for arg in args:
-            if arg == "tag":
-                # Tag articles
-                tag_articles(limit = limit, verbose = verbose, process_all = process_all)
-                break
-            elif arg == "topics":
-                # Calculate topics
-                calculate_topics(verbose = verbose)
-                break
-            elif arg == "model":
-                # Rebuild model
-                build_model(verbose = verbose)
-                break
-            else:
-                raise Usage("Unknown command: '{0}'".format(arg))
-        else:
-            # Nothing matched, no break in loop
+        if not args:
             raise Usage("No command specified")
+
+        la = len(args)
+        arg = args[0]
+        if arg == "tag":
+            # Tag articles
+            uuid = args[1] if la > 1 else None
+            if la > (1 if uuid is None else 2):
+                raise Usage("Too many arguments")
+            if uuid:
+                if process_all:
+                    raise Usage("Conflict between uuid argument and --all option")
+                if limit_specified:
+                    raise Usage("Conflict between uuid argument and --limit option")
+            if process_all and not limit_specified:
+                limit = None
+            tag_articles(limit = limit, verbose = verbose, process_all = process_all, uuid = uuid)
+        elif arg == "topics":
+            # Calculate topics
+            if la > 1:
+                raise Usage("Too many arguments")
+            calculate_topics(verbose = verbose)
+        elif arg == "model":
+            # Rebuild model
+            if la > 1:
+                raise Usage("Too many arguments")
+            build_model(verbose = verbose)
+        else:
+            raise Usage("Unknown command: '{0}'".format(arg))
 
     except Usage as err:
         print(err.msg, file = sys.stderr)

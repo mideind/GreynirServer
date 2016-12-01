@@ -446,12 +446,24 @@ class Topics:
     """ Wrapper around topics, represented as a dict (name: set) """
 
     DICT = defaultdict(set) # Dict of topic name: set
+    ID = dict() # Dict of identifier: topic name
+    THRESHOLD = dict() # Dict of identifier: threshold (as a float)
     _name = None
 
     @staticmethod
     def set_name(name):
         """ Set the topic name for the words that follow """
-        Topics._name = name
+        a = name.split('|')
+        Topics._name = tname = a[0].strip()
+        identifier = a[1].strip() if len(a) > 1 else None
+        if identifier is not None and not identifier.isidentifier():
+            raise ConfigError("Topic identifier must be a valid Python identifier")
+        try:
+            threshold = float(a[2].strip()) if len(a) > 2 else None
+        except ValueError:
+            raise ConfigError("Topic threshold must be a floating point number")
+        Topics.ID[tname] = identifier
+        Topics.THRESHOLD[tname] = threshold
 
     @staticmethod
     def add (word):
