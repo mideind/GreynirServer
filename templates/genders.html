@@ -24,7 +24,8 @@
    </thead>
    <tbody>
 {% for r in result %}
-   {% if r %}
+{% if r.total %}
+
       <tr>
          <td class="domain"><img src="{{ url_for('static', filename = r.domain + '.ico') }}"
             width="16" height="16">&nbsp;&nbsp;{{ r.domain }}</td>
@@ -34,9 +35,11 @@
          <td class="count male">{{ (r.kk / (r.kvk + r.kk) * 100) | format_is(1) }}%</td>
          <td class="count total">{{ r.total | format_is }}</td>
       </tr>
-   {% endif %}
+
+{% endif %}
 {% endfor %}
    </tbody>
+{% if total.total %}
    <tfoot>
       {% if total.total %}
       <tr>
@@ -49,6 +52,7 @@
       </tr>
       {% endif %}
    </tfoot>
+{% endif %}
 </table>
 </div>
 
