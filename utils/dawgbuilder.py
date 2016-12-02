@@ -99,6 +99,12 @@ import os
 import sys
 import codecs
 
+# Hack to make this Python program executable from the utils subdirectory
+basepath, _ = os.path.split(os.path.realpath(__file__))
+if basepath.endswith("/utils") or basepath.endswith("\\utils"):
+    basepath = basepath[0:-6]
+    sys.path.append(basepath)
+
 from dawgdictionary import DawgDictionary
 
 
@@ -631,7 +637,6 @@ def nofilter(word):
 
 import time
 
-
 def run_bin():
     """ Build a DAWG from the files listed """
     # This creates a DAWG from the full database of Icelandic words in
@@ -644,7 +649,7 @@ def run_bin():
     db.build(
         ["ordalisti.sorted.txt"], # Input files to be merged
         "ordalisti", # Output file - full name will be ordalisti.text.dawg
-        "resources", # Subfolder of input and output files
+        os.path.join(basepath, "resources"), # Subfolder of input and output files
         nofilter # Word filter function to apply
     )
     t1 = time.time()
@@ -652,7 +657,7 @@ def run_bin():
 
     # Test loading of DAWG
     dawg = DawgDictionary()
-    fpath = os.path.abspath(os.path.join("resources", "ordalisti.text.dawg"))
+    fpath = os.path.abspath(os.path.join(basepath, "resources", "ordalisti.text.dawg"))
     t0 = time.time()
     dawg.load(fpath)
     t1 = time.time()
@@ -661,7 +666,7 @@ def run_bin():
 
     # Store DAWG as a Python cPickle file
     t0 = time.time()
-    dawg.store_pickle(os.path.abspath(os.path.join("resources", "ordalisti.dawg.pickle")))
+    dawg.store_pickle(os.path.abspath(os.path.join(basepath, "resources", "ordalisti.dawg.pickle")))
     t1 = time.time()
 
     print("DAWG pickle file stored in {0:.2f} seconds".format(t1 - t0))

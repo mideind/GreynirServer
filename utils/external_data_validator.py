@@ -32,10 +32,10 @@ def run_csv_parser(file):
     out = codecs.open(file['outfile'], 'a', file['out-encoding'])
 
     with codecs.open(file['infile'], 'r', file['in-encoding']) as f:
-        lines = f.readlines()
-        for i, line in enumerate(lines):
-            if line.split() and i >= header_skip:
-                out.write(line)
+        for i, line in enumerate(f):
+            if i >= header_skip:
+                if line.strip():
+                    out.write(line)
 
 files = [
     {
