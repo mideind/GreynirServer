@@ -156,6 +156,12 @@ Limited installation and setup instructions can be
 [found here](https://docs.google.com/document/d/1ywywjoOj5yas5QKjxLJ9Gqh-iNkfPae9-EKuES74aPU/edit?usp=sharing)
 (in Icelandic).
 
+## One-click install with Docker
+
+Greynir can also be installed using Docker.
+
+[Greynir with Docker](https://github.com/busla/greynir-docker)
+
 ## Installation on OSx (Homebrew)
 * Download and extract pypy3.3 (http://pypy.org/download.html#installing)
 * `$ brew install postgresql (comes with contrib packages)`
