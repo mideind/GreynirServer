@@ -44,8 +44,8 @@ class Reykjanes_DB:
 
     """ Wrapper around the SQLAlchemy connection, engine and session """
 
-    DB_HOSTNAME = '127.0.0.1'
-    DB_PORT = '8001'
+    DB_HOSTNAME = 'localhost'
+    DB_PORT = os.environ.get('GREYNIR_DB_PORT', '5432')
 
     def __init__(self):
 

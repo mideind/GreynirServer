@@ -627,6 +627,8 @@ class Settings:
             val = False
         if par == 'db_hostname':
             Settings.DB_HOSTNAME = val
+        elif par == 'db_port':
+            Settings.DB_PORT = val
         elif par == 'host':
             Settings.HOST = val
         elif par == 'debug':

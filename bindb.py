@@ -146,10 +146,11 @@ class BIN_Db:
 
         if db is None:
             # New connection in this thread
-            db = cls.tls.bin_db = cls().open(Settings.DB_HOSTNAME, Settings.DB_PORT)
+            db = cls.tls.bin_db = cls().open(host = Settings.DB_HOSTNAME, port = Settings.DB_PORT)
 
         if db is None:
-            raise Exception("Could not open BIN database on host {0}".format(Settings.DB_HOSTNAME))
+            raise Exception("Could not open BIN database on host {0}:{1}"
+                .format(Settings.DB_HOSTNAME, Settings.DB_PORT or "5432"))
 
         return db
 
@@ -161,14 +162,21 @@ class BIN_Db:
         self._meanings_func = lambda key: self._meanings_cache.lookup(key, getattr(self, "_meanings"))
         self._forms_func = lambda key: self._forms_cache.lookup(key, getattr(self, "_forms"))
 
-    def open(self, host, port):
+    def open(self, host, port=None):
         """ Open and initialize a database connection """
-        self._conn = psycopg2.connect(dbname=BIN_Db._DB_NAME,
-            user=BIN_Db._DB_USER, password=BIN_Db._DB_PWD,
-            host=host, port=port, client_encoding="utf8")
+
+        try:
+            port_number = int(port) if port else 5432 # PostgreSQL default port
+        except ValueError:
+            print("Invalid database port number when opening BIN - using default: {0}".format(port))
+            port_number = 5432
+
+        self._conn = psycopg2.connect(dbname = BIN_Db._DB_NAME,
+            user = BIN_Db._DB_USER, password = BIN_Db._DB_PWD,
+            host = host, port = port_number, client_encoding = "utf8")
 
         if not self._conn:
-            print("Unable to open connection to database")
+            # print("Unable to open connection to BIN database")
             return None
 
         # Ask for automatic commit after all operations
