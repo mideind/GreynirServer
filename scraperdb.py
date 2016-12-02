@@ -42,6 +42,7 @@ from sqlalchemy.dialects.postgresql import UUID as psql_UUID
 from settings import Settings
 
 
+
 # Create the SQLAlchemy ORM Base class
 Base = declarative_base()
 
@@ -63,9 +64,10 @@ class Scraper_DB:
 
         # Assemble the right connection string for CPython/psycopg2 vs.
         # PyPy/psycopg2cffi, respectively
+
         is_pypy = platform.python_implementation() == "PyPy"
-        conn_str = 'postgresql+{0}://reynir:reynir@{1}/scraper' \
-            .format('psycopg2cffi' if is_pypy else 'psycopg2', Settings.DB_HOSTNAME)
+        conn_str = 'postgresql+{0}://reynir:reynir@{1}:{2}/scraper' \
+            .format('psycopg2cffi' if is_pypy else 'psycopg2', Settings.DB_HOSTNAME, Settings.DB_PORT)
         self._engine = create_engine(conn_str)
         # Create a Session class bound to this engine
         self._Session = sessionmaker(bind = self._engine)

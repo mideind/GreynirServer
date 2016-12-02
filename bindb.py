@@ -146,7 +146,7 @@ class BIN_Db:
 
         if db is None:
             # New connection in this thread
-            db = cls.tls.bin_db = cls().open(Settings.DB_HOSTNAME)
+            db = cls.tls.bin_db = cls().open(Settings.DB_HOSTNAME, Settings.DB_PORT)
 
         if db is None:
             raise Exception("Could not open BIN database on host {0}".format(Settings.DB_HOSTNAME))
@@ -161,11 +161,11 @@ class BIN_Db:
         self._meanings_func = lambda key: self._meanings_cache.lookup(key, getattr(self, "_meanings"))
         self._forms_func = lambda key: self._forms_cache.lookup(key, getattr(self, "_forms"))
 
-    def open(self, host):
+    def open(self, host, port):
         """ Open and initialize a database connection """
         self._conn = psycopg2.connect(dbname=BIN_Db._DB_NAME,
             user=BIN_Db._DB_USER, password=BIN_Db._DB_PWD,
-            host=host, client_encoding="utf8")
+            host=host, port=port, client_encoding="utf8")
 
         if not self._conn:
             print("Unable to open connection to database")

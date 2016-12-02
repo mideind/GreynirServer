@@ -45,6 +45,7 @@ class Reykjanes_DB:
     """ Wrapper around the SQLAlchemy connection, engine and session """
 
     DB_HOSTNAME = '127.0.0.1'
+    DB_PORT = '8001'
 
     def __init__(self):
 
@@ -53,8 +54,8 @@ class Reykjanes_DB:
         # Assemble the right connection string for CPython/psycopg2 vs.
         # PyPy/psycopg2cffi, respectively
         is_pypy = platform.python_implementation() == "PyPy"
-        conn_str = 'postgresql+{0}://reynir:reynir@{1}/reykjanes' \
-            .format('psycopg2cffi' if is_pypy else 'psycopg2', self.DB_HOSTNAME)
+        conn_str = 'postgresql+{0}://reynir:reynir@{1}:{2}/reykjanes' \
+            .format('psycopg2cffi' if is_pypy else 'psycopg2', self.DB_HOSTNAME, self.DB_PORT)
         self._engine = create_engine(conn_str)
         # Create a Session class bound to this engine
         self._Session = sessionmaker(bind = self._engine)

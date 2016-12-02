@@ -7,8 +7,12 @@ cwd = os.path.dirname(__file__)
 def run_txt_parser(file):
     """ Read input file and output CSV """
     out = codecs.open(file['outfile'], 'a', 'utf-8')
+    header_skip = file['start-line']
     with codecs.open(file['infile'], 'r', 'iso-8859-1') as inp:
-        for li in inp:            
+        for li in inp:
+            if header_skip:
+                header_skip -= 1
+                continue
             if li:
                 li = li.strip()
             if li:
@@ -24,12 +28,13 @@ def run_txt_parser(file):
 
 def run_csv_parser(file):
 
+    header_skip = file['start-line']
     out = codecs.open(file['outfile'], 'a', file['out-encoding'])
 
     with codecs.open(file['infile'], 'r', file['in-encoding']) as f:
         lines = f.readlines()
         for i, line in enumerate(lines):
-            if line.split() and i >= file['start-line']:                
+            if line.split() and i >= header_skip:
                 out.write(line)
 
 files = [
