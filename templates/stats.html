@@ -21,7 +21,7 @@
    </thead>
    <tbody>
 {% for r in result %}
-{% if r.parsed %}
+{% if r.sent %}
       <tr>
          <td class="domain"><img src="{{ url_for('static', filename = r.domain + '.ico') }}"
             width="16" height="16">&nbsp;&nbsp;{{ r.domain }}</td>
@@ -33,8 +33,8 @@
 {% endif %}
 {% endfor %}
    </tbody>
+{% if total.sent %}
    <tfoot>
-   {% if total.parsed %}
       <tr>
          <td class="domain">Samtals</td>
          <td class="count">{{ total.art | format_is }}</td>
@@ -42,8 +42,8 @@
          <td class="count">{{ total.parsed | format_is }}</td>
          <td class="count">{{ (total.parsed / total.sent * 100) | format_is(1) }}%</td>
       </tr>
-   {% endif %}
    </tfoot>
+{% endif %}
 </table>
 </div>
 

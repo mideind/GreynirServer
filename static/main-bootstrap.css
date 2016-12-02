@@ -312,8 +312,13 @@ td.heading {
 }
 
 td.ratio div.progress {
-   min-width: 2.4em;
+   min-width: 4em;
+   max-width: 4em;
    margin-bottom: 0;
+}
+
+div.progress div.progress-bar {
+   min-width: 3em;
 }
 
 tr.topitem span.name {
