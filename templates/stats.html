@@ -21,6 +21,7 @@
    </thead>
    <tbody>
 {% for r in result %}
+{% if r.parsed %}
       <tr>
          <td class="domain"><img src="{{ url_for('static', filename = r.domain + '.ico') }}"
             width="16" height="16">&nbsp;&nbsp;{{ r.domain }}</td>
@@ -29,6 +30,7 @@
          <td class="count">{{ r.parsed | format_is }}</td>
          <td class="count">{{ (r.parsed / r.sent * 100) | format_is(1) }}%</td>
       </tr>
+{% endif %}
 {% endfor %}
    </tbody>
    <tfoot>
