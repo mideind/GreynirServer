@@ -34,6 +34,7 @@
 {% endfor %}
    </tbody>
    <tfoot>
+   {% if total.parsed %}
       <tr>
          <td class="domain">Samtals</td>
          <td class="count">{{ total.art | format_is }}</td>
@@ -41,6 +42,7 @@
          <td class="count">{{ total.parsed | format_is }}</td>
          <td class="count">{{ (total.parsed / total.sent * 100) | format_is(1) }}%</td>
       </tr>
+   {% endif %}
    </tfoot>
 </table>
 </div>
