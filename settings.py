@@ -602,7 +602,7 @@ class NounPreferences:
 class Settings:
 
     # DNS name of host for word database
-    DB_HOSTNAME = "localhost"
+    DB_HOSTNAME = os.environ.get('GREYNIR_DB_HOST', 'localhost')
     DB_PORT = os.environ.get('GREYNIR_DB_PORT', '5432')
 
     # Flask server host
