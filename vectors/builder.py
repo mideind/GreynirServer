@@ -59,8 +59,6 @@ import getopt
 import json
 import time
 from datetime import datetime
-#import logging
-#logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
 from settings import Settings, Topics
 from scraperdb import Article, Topic, ArticleTopic, Word, SessionContext
@@ -85,8 +83,8 @@ class CorpusIterator:
             xform = lambda x: x
         with SessionContext(commit = True) as session:
             # Fetch bags of words sorted by articles
-            q = session.query(Words.article_id, Words.stem, Words.cat, Words.cnt) \
-                .order_by(Words.article_id).yield_per(2000)
+            q = session.query(Word.article_id, Word.stem, Word.cat, Word.cnt) \
+                .order_by(Word.article_id).yield_per(2000)
             bag = []
             last_uuid = None
             for uuid, stem, cat, cnt in q:
@@ -107,6 +105,7 @@ class CorpusIterator:
             if last_uuid is not None:
                 # print("Yielding bag of {0} words".format(len(bag)))
                 yield xform(bag)
+        print("Finished iteration through corpus from words table")
 
 
 class ReynirCorpus:
@@ -368,11 +367,16 @@ def build_model(verbose = False):
     t0 = time.time()
 
     rc = ReynirCorpus(verbose = verbose)
+    print("Creating dictionary")
     rc.create_dictionary()
+    print("Creating plain corpus")
     rc.create_plain_corpus()
+    print("Creating TF-IDF model")
     rc.create_tfidf_model()
+    print("Creating TF-IDF corpus")
     rc.create_tfidf_corpus()
     #rc.create_lda_model(passes = 15)
+    print("Creating LSI model")
     rc.create_lsi_model()
 
     t1 = time.time()
