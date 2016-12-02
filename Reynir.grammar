@@ -2044,6 +2044,12 @@ NlKjarni_et_ef_kvk → 'hún'_et_ef
 
 NlKjarni/tala/aukafall/kyn → 'sjálfur'/aukafall/tala/kyn? abfn/aukafall
 
+# Mörg þessara mála, sum þeirra sem lentu í slysinu
+NlKjarni_ft/fall/kyn →
+    'margur'_ft/fall/kyn EfLiður_ft/kyn
+    | 'fár:lo'_ft/fall/kyn EfLiður_ft/kyn
+    | 'sumur'_ft/fall/kyn EfLiður_ft/kyn
+
 # Umraðanir
 
 NlStak_p3/fall/kyn → NlStak_et_p3/fall/kyn | NlStak_ft_p3/fall/kyn
@@ -2593,6 +2599,7 @@ $score(+5) KommuTitill/fall
 # karlanna löngu, kvennanna löngu, barnanna löngu
 
 EfLiður → EfLiðurStakur EfLiðurFramhald? # Jóns, föður Bjarna sterka
+EfLiður_ft/kyn → Nl_ef_ft/kyn # margar þessara kvenna, suma þeirra sem lentu í slysinu
 
 # Eignarfallsliður getur verið í eintölu eða fleirtölu, og í
 # öllum kynjum, óháð nafnliðnum sem hann stendur með
@@ -2604,6 +2611,7 @@ KommaEfLiður →
     ',' EfLiðurStakur
 
 $score(+3) EfLiður
+$score(+3) EfLiður_ft/kyn
 
 # Eignarfallsliður sem stendur á undan nafnlið
 # ('Íslands fullorðnu synir', 'allra uppáhald')
