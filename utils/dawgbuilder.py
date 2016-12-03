@@ -637,7 +637,7 @@ def nofilter(word):
 
 import time
 
-def run_bin():
+def run_bin(with_pickle = False):
     """ Build a DAWG from the files listed """
     # This creates a DAWG from the full database of Icelandic words in
     # 'Beygingarlýsing íslensks nútímamáls' (BIN).
@@ -664,12 +664,13 @@ def run_bin():
 
     print("DAWG loaded in {0:.2f} seconds".format(t1 - t0))
 
-    # Store DAWG as a Python cPickle file
-    t0 = time.time()
-    dawg.store_pickle(os.path.abspath(os.path.join(basepath, "resources", "ordalisti.dawg.pickle")))
-    t1 = time.time()
+    if with_pickle:
+        # Store DAWG as a Python cPickle file
+        t0 = time.time()
+        dawg.store_pickle(os.path.abspath(os.path.join(basepath, "resources", "ordalisti.dawg.pickle")))
+        t1 = time.time()
 
-    print("DAWG pickle file stored in {0:.2f} seconds".format(t1 - t0))
+        print("DAWG pickle file stored in {0:.2f} seconds".format(t1 - t0))
 
     print("DAWG builder run complete")
 
@@ -677,5 +678,6 @@ def run_bin():
 if __name__ == '__main__':
 
     # Build the DAWG for the entire BIN wordlist
-    run_bin()
+    # !!! TODO: Allow specification of with_pickle using a command line argument
+    run_bin(with_pickle = False)
 
