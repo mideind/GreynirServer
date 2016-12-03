@@ -22,6 +22,7 @@ diskuse.sh
 
 # Various resource files
 resources/*.txt
+!resources/ordalisti.sorted.txt
 resources/*.csv
 resources/*.tmLanguage
 resources/visir/
