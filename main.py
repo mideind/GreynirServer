@@ -933,7 +933,7 @@ if __name__ == "__main__":
         'Verbs.conf', 'VerbPrepositions.conf',
         'Main.conf', 'Prefs.conf', 'Abbrev.conf'
     ]
-
+    scraperinit.init_roots()
     from socket import error as socket_error
     import errno
     try:
