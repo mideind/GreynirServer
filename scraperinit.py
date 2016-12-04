@@ -35,6 +35,14 @@ from scraperdb import SessionContext, Root, IntegrityError
 def init_roots():
     """ Create tables and initialize the scraping roots, if not already present """
 
+    try:
+        Settings.read("config/Reynir.conf")
+        # Don't run the scraper in debug mode
+        Settings.DEBUG = False
+    except ConfigError as e:
+        print("Configuration error: {0}".format(e), file = sys.stderr)
+        sys.exit(2)
+
     db = SessionContext.db
 
     try:
@@ -80,13 +88,5 @@ def init_roots():
 
 
 if __name__ == "__main__":
-
-    try:
-        Settings.read("config/Reynir.conf")
-        # Don't run the scraper in debug mode
-        Settings.DEBUG = False
-    except ConfigError as e:
-        print("Configuration error: {0}".format(e), file = sys.stderr)
-        sys.exit(2)
 
     init_roots()
