@@ -56,7 +56,7 @@ from scraperdb import SessionContext, desc, Root, Person, Article, ArticleTopic,
     GenderQuery, StatsQuery
 from query import Query
 from getimage import get_image_url
-
+import scraperinit
 
 # Initialize Flask framework
 
