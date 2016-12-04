@@ -28,7 +28,7 @@
 
 import sys
 
-from settings import Settings
+from settings import Settings, ConfigError
 from scraperdb import SessionContext, Root, IntegrityError
 
 
