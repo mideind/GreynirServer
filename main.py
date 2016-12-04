@@ -56,7 +56,7 @@ from scraperdb import SessionContext, desc, Root, Person, Article, ArticleTopic,
     GenderQuery, StatsQuery
 from query import Query
 from getimage import get_image_url
-
+import scraperinit
 
 # Initialize Flask framework
 
@@ -933,7 +933,7 @@ if __name__ == "__main__":
         'Verbs.conf', 'VerbPrepositions.conf',
         'Main.conf', 'Prefs.conf', 'Abbrev.conf'
     ]
-
+    scraperinit.init_roots()
     from socket import error as socket_error
     import errno
     try:
