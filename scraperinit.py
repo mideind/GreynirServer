@@ -73,7 +73,7 @@ def init_roots():
             rlist = session.query(Root).all()
             print("Roots initialized as follows:")
             for r in rlist:
-                print("{0}".format(r))
+                print("{0:24} {1:36} {2:24}".format(r.domain, r.url, r.scr_class))
 
     except Exception as e:
         print("{0}".format(e))
@@ -82,7 +82,8 @@ def init_roots():
 if __name__ == "__main__":
 
     try:
-        Settings.read("config/Reynir.conf")
+        # Load the simple Reynir configuration (we don't need the lexicon stuff)
+        Settings.read("config/ReynirSimple.conf")
         # Don't run the scraper in debug mode
         Settings.DEBUG = False
     except ConfigError as e:
