@@ -156,11 +156,9 @@ Limited installation and setup instructions can be
 [found here](https://docs.google.com/document/d/1ywywjoOj5yas5QKjxLJ9Gqh-iNkfPae9-EKuES74aPU/edit?usp=sharing)
 (in Icelandic).
 
-## One-click install with Docker
+## Install with Docker
 
-Greynir can also be installed using Docker.
-
-[Greynir with Docker](https://github.com/busla/greynir-docker)
+Greynir can also be [built and run in Docker containers](https://github.com/vthorsteinsson/greynir-docker)
 
 ## Installation on OSx (Homebrew)
 * Download and extract pypy3.3 (http://pypy.org/download.html#installing)
@@ -185,13 +183,16 @@ Greynir can also be installed using Docker.
 * `create index sfx on ord(stofn);`
 
 ### Import external text and csv data
-To import the BÍN database, Lexicon and the external text/csv data mentioned above you need to run the validation script. Make sure you add the downloaded data to the `reynir/resources` directory. During this commit the filenames of the downloaded files were:
+To load the BÍN lexicon and its supplemental text/csv files you need to run the import
+and validation script found in `utils/external_data_validator.py`. This creates the file `resources/ord.csv`
+which is copied into PostgreSQL as described above.
 
-* obeyg.smaord.txt
-* plastur.feb2013.txt
-* SHsnid.csv
+Put the downloaded BÍN files into the `Reynir/resources` directory. The names of these files
+are currently assumed to be the following:
 
-If the filenames have been changed by their author, please rename them since the validation script looks for them.
+* `SHsnid.csv`
+* `obeyg.smaord.txt`
+* `plastur.feb2013.txt`
 
 ## Copyright and licensing
 
