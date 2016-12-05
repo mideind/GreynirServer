@@ -34,7 +34,11 @@ from scraperdb import SessionContext, Root, IntegrityError
 
 
 def init_roots(wait = False):
-    """ Create tables and initialize the scraping roots, if not already present """
+    """ Create tables and initialize the scraping roots, if not already present.
+        If wait = True, repeated attempts are made to connect to the database
+        before returning an error code. This is useful for instance in a Docker
+        environment where the container may need to wait for a linked database
+        container to start serving. """
 
     ROOTS = [
         # Root URL, top-level domain, description, authority
@@ -52,7 +56,7 @@ def init_roots(wait = False):
         ("http://althingi.is", "althingi.is", "Alþingi", 1.0, "scrapers.default", "AlthingiScraper", False)
     ]
 
-    retries = 10 # Do no more than 10 retries
+    retries = 20 # Do no more than 20 retries before giving up and returning an error code
 
     while True:
 
