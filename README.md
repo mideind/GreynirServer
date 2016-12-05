@@ -158,7 +158,7 @@ Limited installation and setup instructions can be
 
 ## Install with Docker
 
-Greynir can also be [built and run in Docker containers](https://github.com/vthorsteinsson/greynir-docker)
+Greynir can also be [built and run in Docker containers](https://github.com/vthorsteinsson/greynir-docker).
 
 ## Installation on OSx (Homebrew)
 * Download and extract pypy3.3 (http://pypy.org/download.html#installing)
@@ -170,9 +170,9 @@ Greynir can also be [built and run in Docker containers](https://github.com/vtho
 
 ### Postgres database setup
 * `$ psql`
-* create user reynir;
-* create user notandi;
-* alter role notandi with superuser;
+* `create user reynir;`
+* `create user notandi;`
+* `alter role notandi with superuser;`
 * `create database bin with encoding 'UTF8' LC_COLLATE='is_IS.UTF-8' LC_CTYPE='is_IS.UTF-8' TEMPLATE=template0;`
 * `\c bin` 
 * `create table ord (stofn varchar(80), utg integer, ordfl varchar(16), fl varchar(16), ordmynd varchar(80), beyging varchar(24));`
