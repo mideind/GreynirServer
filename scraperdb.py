@@ -79,11 +79,12 @@ class Scraper_DB:
                 break
             except Exception as e:
                 print("Exception when connecting to database\nConnection string: {0}\nException: {1}"
-                    .format(conn_str, e))
+                    .format(conn_str, e), file = sys.stderr)
                 if wait:
                     # If we want to wait until the database responds, sleep and loop
                     if not retries:
                         raise
+                    print("Retrying connection in 5 seconds ({0} retries left)...".format(retries), file = sys.stderr)
                     sleep(5)
                     retries -= 1
                 else:

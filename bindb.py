@@ -32,6 +32,8 @@ from functools import lru_cache
 from collections import namedtuple
 from heapq import nsmallest
 from operator import itemgetter
+from time import sleep
+
 import threading
 
 # Import the Psycopg2 connector for PostgreSQL
@@ -110,6 +112,9 @@ class BIN_Db:
     # Thread local storage - used for database connections
     tls = threading.local()
 
+    # Wait for database to become availble?
+    wait = False
+
     # Database connection parameters
     _DB_NAME = "bin"
     _DB_USER = "reynir" # This user typically has only SELECT privileges on the database
@@ -146,7 +151,8 @@ class BIN_Db:
 
         if db is None:
             # New connection in this thread
-            db = cls.tls.bin_db = cls().open(host = Settings.DB_HOSTNAME, port = Settings.DB_PORT)
+            db = cls.tls.bin_db = cls().open(host = Settings.DB_HOSTNAME, port = Settings.DB_PORT,
+                wait = cls.wait)
 
         if db is None:
             raise Exception("Could not open BIN database on host {0}:{1}"
@@ -162,18 +168,35 @@ class BIN_Db:
         self._meanings_func = lambda key: self._meanings_cache.lookup(key, getattr(self, "_meanings"))
         self._forms_func = lambda key: self._forms_cache.lookup(key, getattr(self, "_forms"))
 
-    def open(self, host, port=None):
+    def open(self, host, port = None, wait = False):
         """ Open and initialize a database connection """
 
         try:
             port_number = int(port) if port else 5432 # PostgreSQL default port
         except ValueError:
-            print("Invalid database port number when opening BIN - using default: {0}".format(port))
+            print("Invalid database port number when opening BIN - using default: {0}".format(port),
+                file = sys.stderr)
             port_number = 5432
 
-        self._conn = psycopg2.connect(dbname = BIN_Db._DB_NAME,
-            user = BIN_Db._DB_USER, password = BIN_Db._DB_PWD,
-            host = host, port = port_number, client_encoding = "utf8")
+        retries = 10
+        self._conn = None
+        while True:
+            try:
+                self._conn = psycopg2.connect(dbname = BIN_Db._DB_NAME,
+                    user = BIN_Db._DB_USER, password = BIN_Db._DB_PWD,
+                    host = host, port = port_number, client_encoding = "utf8")
+                break
+            except Exception as e:
+                print("Exception when connecting to BIN database: {0}".format(e), file = sys.stderr)
+                if wait:
+                    if not retries:
+                        break
+                    print("Retrying connection in 5 seconds ({0} retries left)...".format(retries),
+                        file = sys.stderr)
+                    sleep(5)
+                    retries -= 1
+                else:
+                    break
 
         if not self._conn:
             # print("Unable to open connection to BIN database")

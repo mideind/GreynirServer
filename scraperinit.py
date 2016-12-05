@@ -79,6 +79,10 @@ def init_roots():
 
     except Exception as e:
         print("{0}".format(e))
+        return 2
+
+    # Finished without error
+    return 0
 
 
 if __name__ == "__main__":
@@ -92,4 +96,4 @@ if __name__ == "__main__":
         print("Configuration error: {0}".format(e), file = sys.stderr)
         sys.exit(2)
 
-    init_roots()
+    sys.exit(init_roots())
