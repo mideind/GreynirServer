@@ -56,7 +56,7 @@ def init_roots(wait = False):
         ("http://althingi.is", "althingi.is", "Alþingi", 1.0, "scrapers.default", "AlthingiScraper", False)
     ]
 
-    retries = 20 # Do no more than 20 retries before giving up and returning an error code
+    retries = 36 # Do no more than 36 retries (~3 minutes) before giving up and returning an error code
 
     while True:
 
@@ -90,11 +90,13 @@ def init_roots(wait = False):
         except Exception as e:
             print("Exception in scraperinit.init_roots(): {0}"
                 .format(e), file = sys.stderr)
+            sys.stderr.flush()
             if wait:
                 # If we want to wait until the database responds, sleep and loop
                 if not retries:
                     return 2 # No more retries: Return an error code
                 print("Retrying connection in 5 seconds ({0} retries left)...".format(retries), file = sys.stderr)
+                sys.stderr.flush()
                 sleep(5)
                 retries -= 1
                 SessionContext.cleanup()
