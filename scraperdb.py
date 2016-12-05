@@ -27,6 +27,7 @@
 
 import sys
 import platform
+from time import sleep
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
@@ -58,7 +59,7 @@ class Scraper_DB:
 
     """ Wrapper around the SQLAlchemy connection, engine and session """
 
-    def __init__(self):
+    def __init__(self, wait = False):
 
         """ Initialize the SQLAlchemy connection with the scraper database """
 
@@ -68,9 +69,26 @@ class Scraper_DB:
         is_pypy = platform.python_implementation() == "PyPy"
         conn_str = 'postgresql+{0}://reynir:reynir@{1}:{2}/scraper' \
             .format('psycopg2cffi' if is_pypy else 'psycopg2', Settings.DB_HOSTNAME, Settings.DB_PORT)
-        self._engine = create_engine(conn_str)
-        # Create a Session class bound to this engine
-        self._Session = sessionmaker(bind = self._engine)
+        retries = 10 # Do no more than 10 retries
+        while True:
+            try:
+                self._engine = create_engine(conn_str)
+                # Create a Session class bound to this engine
+                self._Session = sessionmaker(bind = self._engine)
+                # Break out of loop if no exception
+                break
+            except Exception as e:
+                print("Exception when connecting to database\nConnection string: {0}\nException: {1}"
+                    .format(conn_str, e))
+                if wait:
+                    # If we want to wait until the database responds, sleep and loop
+                    if not retries:
+                        raise
+                    sleep(5)
+                    retries -= 1
+                else:
+                    # Re-raise the exception
+                    raise
 
     def create_tables(self):
         """ Create all missing tables in the database """
@@ -98,11 +116,12 @@ class SessionContext:
     """ Context manager for database sessions """
 
     _db = None # Singleton instance of Scraper_DB
+    wait = False # Wait for Postgres to become available?
 
     @classproperty
     def db(cls):
         if cls._db is None:
-            cls._db = Scraper_DB()
+            cls._db = Scraper_DB(wait = cls.wait)
         return cls._db
 
     @classmethod

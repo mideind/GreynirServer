@@ -35,6 +35,8 @@ from scraperdb import SessionContext, Root, IntegrityError
 def init_roots():
     """ Create tables and initialize the scraping roots, if not already present """
 
+    SessionContext.wait = True # Wait until the database is available
+
     db = SessionContext.db
 
     try:
