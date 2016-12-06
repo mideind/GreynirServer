@@ -469,6 +469,7 @@ _SPECIAL_QUERIES = {
     "hver er flottastur?" : { "answer" : "Villi." },
     "er guð til?" : { "answer" : "Ég held ekki." },
     "hver skapaði guð?" : { "answer" : "Enginn sem ég þekki." },
+    "hver skapaði heiminn?" : { "answer" : "Enginn sem ég þekki." },
     "hver er tilgangur lífsins?" : { "answer" : "42." },
     "hvar endar alheimurinn?" : { "answer" : "Inni í þér." },
 }
