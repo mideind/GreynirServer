@@ -128,6 +128,10 @@
    color: #d9534f;
 }
 
+.green {
+   color: #53d94f;
+}
+
 html {
    overflow-y: scroll; /* Avoid jumping when long content is displayed */
 }

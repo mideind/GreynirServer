@@ -235,9 +235,16 @@ function populateQueryResult(r) {
       }
       else
          rlist = r.response;
-      if (!rlist || !rlist.length)
+      if (r.qtype == "Special") {
+         answer = $("<p class='query-empty'></p>")
+            .html("<span class='green glyphicon glyphicon-play'></span>&nbsp;")
+            .append(r.response.answer);
+      }
+      else
+      if (!rlist || !rlist.length) {
          answer = $("<p class='query-empty'></p>")
             .html("<span class='red glyphicon glyphicon-play'></span>&nbsp;Ekkert svar fannst.");
+      }
       else {
          $.each(rlist, function(i, obj) {
             var li;

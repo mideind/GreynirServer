@@ -455,6 +455,24 @@ def reparse():
     return jsonify(result = tokens, register = register, stats = stats)
 
 
+# Frivolous fun stuff
+
+_SPECIAL_QUERIES = {
+    "er þetta spurning?" : { "answer" : "Já." },
+    "er þetta svar?" : { "answer" : "Já." },
+    "hvað er svarið?" : { "answer" : "42." },
+    "veistu allt?" : { "answer" : "Nei." },
+    "hvað heitir þú?" : { "answer" : "Greynir." },
+    "hver bjó þig til?" : { "answer" : "Villi." },
+    "hver skapaði þig?" : { "answer" : "Villi." },
+    "hver er skapari þinn?" : { "answer" : "Villi." },
+    "hver er flottastur?" : { "answer" : "Villi." },
+    "er guð til?" : { "answer" : "Ég held ekki." },
+    "hver skapaði guð?" : { "answer" : "Enginn sem ég þekki." },
+    "hver er tilgangur lífsins?" : { "answer" : "42." },
+    "hvar endar alheimurinn?" : { "answer" : "Inni í þér." },
+}
+
 # Note: Endpoints ending with .api are configured not to be cached by nginx
 @app.route("/query.api", methods=['GET', 'POST'])
 def query():
@@ -470,21 +488,30 @@ def query():
     auto_uppercase = get_json_bool(request, "autouppercase", True)
     result = dict()
 
-    with SessionContext(commit = True) as session:
+    if q.lower() in _SPECIAL_QUERIES or (q.lower() + '?') in _SPECIAL_QUERIES:
+        result["valid"] = True
+        result["qtype"] = "Special"
+        result["q"] = q
+        if q.lower() in _SPECIAL_QUERIES:
+            result["response"] = _SPECIAL_QUERIES[q.lower()]
+        else:
+            result["response"] = _SPECIAL_QUERIES[q.lower() + '?']
+    else:
+        with SessionContext(commit = True) as session:
 
-        toklist = list(tokenize(q, enclosing_session = session,
-            auto_uppercase = q.islower() if auto_uppercase else False))
-        actual_q = correct_spaces(" ".join(t.txt or "" for t in toklist))
+            toklist = list(tokenize(q, enclosing_session = session,
+                auto_uppercase = q.islower() if auto_uppercase else False))
+            actual_q = correct_spaces(" ".join(t.txt or "" for t in toklist))
 
-        if Settings.DEBUG:
-            # Log the query string as seen by the parser
-            print("Query is: '{0}'".format(actual_q))
+            if Settings.DEBUG:
+                # Log the query string as seen by the parser
+                print("Query is: '{0}'".format(actual_q))
 
-        # Try to parse and process as a query
-        is_query = process_query(session, toklist, result)
+            # Try to parse and process as a query
+            is_query = process_query(session, toklist, result)
 
-    result["valid"] = is_query
-    result["q"] = actual_q
+        result["valid"] = is_query
+        result["q"] = actual_q
 
     return jsonify(result)
 
