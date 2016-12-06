@@ -64,7 +64,7 @@ _CTYPE = "image-search-"
 Img = namedtuple('Img', ['src', 'width', 'height', 'link', 'origin'])
 
 
-def get_image_url(name, size = "medium", enclosing_session = None):
+def get_image_url(name, size = "large", enclosing_session = None):
     """ Use a Google custom search API to obtain an image corresponding to a (person) name """
 
     jdoc = None
