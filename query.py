@@ -47,15 +47,14 @@ _MAXLEN_ANSWER = 25 # Maximum number of top answers to send in response to queri
 _CUTOFF_AFTER = 4
 _MAX_URLS = 5 # Maximum number of URL sources so provide for each top answer
 
-ArticleInfo = namedtuple('ArticleInfo', ['domain', 'uuid', 'heading', 'ts'])
-
 
 def append_answers(rd, q, prop_func):
     """ Iterate over query results and add them to the result dictionary rd """
     for p in q:
         s = correct_spaces(prop_func(p))
-        ai = ArticleInfo(domain = p.domain, uuid = p.id, heading = p.heading, ts = p.timestamp)
-        rd[s][ai.uuid] = ai # Add to a dict of UUIDs
+        ai = dict(domain = p.domain, uuid = p.id, heading = p.heading,
+            ts = p.timestamp.isoformat()[0:16], url = p.url)
+        rd[s][p.id] = ai # Add to a dict of UUIDs
 
 
 def make_response_list(rd):
@@ -92,7 +91,7 @@ def make_response_list(rd):
 
         def sort_articles(articles):
             """ Sort the individual article URLs so that the newest one appears first """
-            return sorted(articles.values(), key = lambda x: x.ts, reverse = True)
+            return sorted(articles.values(), key = lambda x: x["ts"], reverse = True)
 
         rl = sorted([(s, sort_articles(articles)) for s, articles in rd.items()],
             key = lambda x: (-len(x[1]), strxfrm(x[0]))) # Sort by number of URLs in article dict
@@ -103,10 +102,7 @@ def make_response_list(rd):
         rl = [ val for val in rl if len(val[1]) > 1 ]
 
     # Crop the article url lists down to _MAX_URLS
-    for i, val in enumerate(rl):
-        if len(val[1]) > _MAX_URLS:
-            rl[i] = (val[0], val[1][0:_MAX_URLS])
-    return rl[0:_MAXLEN_ANSWER]
+    return [ dict(answer = a[0], sources = a[1][0:_MAX_URLS]) for a in rl[0:_MAXLEN_ANSWER] ]
 
 
 def prepare_response(q, prop_func):
@@ -119,14 +115,14 @@ def prepare_response(q, prop_func):
 def _query_person_titles(session, name):
     """ Return a list of all titles for a person """
     rd = defaultdict(dict)
-    q = session.query(Person.title, Article.id, Article.timestamp, Article.heading, Root.domain) \
+    q = session.query(Person.title, Article.id, Article.timestamp, Article.heading, Root.domain, Article.url) \
         .filter(Person.name == name).filter(Root.visible == True) \
         .join(Article).join(Root) \
         .all()
     # Append titles from the persons table
     append_answers(rd, q, prop_func = lambda x: x.title)
     # Also append definitions from the entities table, if any
-    q = session.query(Entity.definition, Article.id, Article.timestamp, Article.heading, Root.domain) \
+    q = session.query(Entity.definition, Article.id, Article.timestamp, Article.heading, Root.domain, Article.url) \
         .filter(Entity.name == name).filter(Root.visible == True) \
         .join(Article).join(Root) \
         .all()
@@ -140,21 +136,22 @@ def _query_article_list(session, name):
     # Each entry is uuid, heading, timestamp (as ISO format string), domain
     # Collapse identical headings and remove empty ones
     adict = { a[1] : dict(uuid = str(a[0]), heading = a[1],
-        timestamp = a[2].isoformat()[0:16], domain = a[3]) for a in articles if a[1] }
-    return sorted(adict.values(), key = lambda x: x["timestamp"], reverse = True)
+        ts = a[2].isoformat()[0:16], domain = a[3], url = a[4]) for a in articles if a[1] }
+    return sorted(adict.values(), key = lambda x: x["ts"], reverse = True)
+
 
 def query_person(session, name):
     """ A query for a person by name """
     titles = _query_person_titles(session, name)
     # Now, create a list of articles where this person name appears
     articles = _query_article_list(session, name)
-    return dict(titles = titles, articles = articles)
+    return dict(answers = titles, sources = articles)
 
 
 def query_person_title(session, name):
     """ Return the most likely title for a person """
     rl = _query_person_titles(session, name)
-    return correct_spaces(rl[0][0]) if rl else ""
+    return correct_spaces(rl[0]["answer"]) if rl else ""
 
 
 def query_title(session, title):
@@ -162,7 +159,8 @@ def query_title(session, title):
     # !!! Consider doing a LIKE '%title%', not just LIKE 'title%'
     rd = defaultdict(dict)
     title_lc = title.lower() # Query by lowercase title
-    q = session.query(Person.name, Article.id, Article.timestamp, Article.heading, Root.domain) \
+    q = session.query(Person.name, Article.id, Article.timestamp, \
+        Article.heading, Root.domain, Article.url) \
         .filter(Person.title_lc.like(title_lc + ' %') | (Person.title_lc == title_lc)) \
         .filter(Root.visible == True) \
         .join(Article).join(Root) \
@@ -170,7 +168,8 @@ def query_title(session, title):
     # Append names from the persons table
     append_answers(rd, q, prop_func = lambda x: x.name)
     # Also append definitions from the entities table, if any
-    q = session.query(Entity.name, Article.id, Article.timestamp, Article.heading, Root.domain) \
+    q = session.query(Entity.name, Article.id, Article.timestamp, \
+        Article.heading, Root.domain, Article.url) \
         .filter(Entity.definition == title) \
         .filter(Root.visible == True) \
         .join(Article).join(Root) \
@@ -181,7 +180,8 @@ def query_title(session, title):
 
 def _query_entity_titles(session, name):
     """ A query for definitions of an entity by name """
-    q = session.query(Entity.verb, Entity.definition, Article.id, Article.timestamp, Article.heading, Root.domain) \
+    q = session.query(Entity.verb, Entity.definition, Article.id, Article.timestamp, \
+        Article.heading, Root.domain, Article.url) \
         .filter(Entity.name == name) \
         .filter(Root.visible == True) \
         .join(Article).join(Root) \
@@ -193,13 +193,13 @@ def query_entity(session, name):
     """ A query for an entity by name """
     titles = _query_entity_titles(session, name)
     articles = _query_article_list(session, name)
-    return dict(titles = titles, articles = articles)
+    return dict(answers = titles, sources = articles)
 
 
 def query_entity_def(session, name):
     """ Return a single (best) definition of an entity """
     rl = _query_entity_titles(session, name)
-    return correct_spaces(rl[0][0]) if rl else ""
+    return correct_spaces(rl[0]["answer"]) if rl else ""
 
 
 def query_company(session, name):
@@ -211,7 +211,8 @@ def query_company(session, name):
     while qname and qname[-1] == '.':
         qname = qname[:-1]
         use_like = True
-    q = session.query(Entity.verb, Entity.definition, Article.id, Article.timestamp, Article.heading, Root.domain) \
+    q = session.query(Entity.verb, Entity.definition, Article.id, Article.timestamp, \
+        Article.heading, Root.domain, Article.url) \
         .filter(Root.visible == True) \
         .join(Article).join(Root)
     if use_like:
@@ -230,8 +231,7 @@ def query_word(session, stem):
     # Convert to an easily serializable dict
     # Exclude the original search stem from the result
     return dict(
-        rlist = [ dict(stem = rstem, cat = rcat) for rstem, rcat, rcnt in rlist if rstem != stem ],
-        acnt = acnt
+        answers = [ dict(stem = rstem, cat = rcat) for rstem, rcat, rcnt in rlist if rstem != stem ]
     )
 
 
@@ -283,7 +283,7 @@ def QCompany(node, params, result):
 
 def QEntity(node, params, result):
     result.qtype = "Entity"
-    result.qkey = result.sérnafn
+    assert "qkey" in result
 
 def QTitle(node, params, result):
     result.qtype = "Title"
@@ -312,6 +312,12 @@ def EfLiður(node, params, result):
 def FsMeðFallstjórn(node, params, result):
     """ Forsetningarliðir haldast óbreyttir, þ.e. þeim á ekki að breyta í nefnifall """
     result._nominative = result._text
+
+def QEntityKey(node, params, result):
+    if "sérnafn" in result:
+        result.qkey = result.sérnafn
+    else:
+        result.qkey = result._nominative
 
 def QTitleKey(node, params, result):
     """ Titill """

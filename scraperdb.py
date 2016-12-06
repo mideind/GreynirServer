@@ -656,7 +656,7 @@ class ArticleListQuery(_BaseQuery):
         a particular word stem """
 
     _Q = """
-        select distinct a.id, a.heading, a.timestamp, r.domain
+        select distinct a.id, a.heading, a.timestamp, r.domain, a.url
             from words w, articles a, roots r
             where w.stem = :stem and w.article_id = a.id and a.root_id = r.id and r.visible
             order by a.timestamp desc

@@ -170,16 +170,38 @@ function correctPlural(c, one, singular, plural) {
    return c.toString() + " " + plural;
 }
 
-function populateQueryResult(json) {
-   // Display the result of a query sent to the server
+function makeSourceList(sources) {
+   // Return a HTML rendering of a list of articles where the person or entity name appears
+   if (!sources)
+      return undefined;
+   var $table = $("<table class='table table-condensed table-hover'>")
+      .append($("<thead>")
+         .append(
+            $("<th>").text("Tími"),
+            $("<th>").text("Fyrirsögn")
+         )
+      );
+   var $tbody = $table.append($("<tbody>"));
+   $.each(sources, function(i, obj) {
+      var $tr = $("<tr class='article'>").attr("data-uuid", obj.uuid).append(
+         $("<td>").text(obj.ts.replace("T", " ")),
+         $("<td class='heading'>").text(obj.heading)
+            .prepend($("<img>").attr("src", "/static/" + obj.domain + ".ico").attr("width", "16").attr("height", "16"))
+      );
+      $tbody.append($tr);
+   });
+   return $table;
+}
+
+function populateQueryResult(r) {
+   // Display the JSON result of a query sent to the server
    // Hide progress indicator
    wait(false);
-   var r = json.result;
    var q = $("<h3 class='query'></h3>");
    q.text(r.q);
    var image = $("<p class='image'></p>");
    var answer;
-   if (r.is_query) {
+   if (r.valid) {
       // This is a valid query response: present the response items in a bulleted list
       if (r.image !== undefined) {
          // The response contains an image: insert it
@@ -195,11 +217,11 @@ function populateQueryResult(json) {
       }
       answer = $("<ul></ul>");
       var rlist;
-      var articles;
+      var articles = undefined;
       if (r.qtype == "Word") {
-         rlist = r.response.rlist;
+         rlist = r.response.answers;
          if (rlist && rlist.length) {
-            var c = r.response.acnt;
+            var c = rlist.length;
             var g = correctPlural(c, "einni", "grein", "greinum");
             answer = $("<p></p>").text("'" + r.key + "' kemur fyrir í " + g + ", ásamt eftirtöldum orðum:")
                .append($("<ul></ul>"));
@@ -208,27 +230,8 @@ function populateQueryResult(json) {
       else
       if (r.qtype == "Person" || r.qtype == "Entity") {
          // Title or definition list
-         rlist = r.response.titles;
-         // List of articles where the person or entity name appears
-         if (r.response.articles !== undefined && r.response.articles.length > 0) {
-            var $table = $("<table class='table table-condensed table-hover'>")
-               .append($("<thead>")
-                  .append(
-                     $("<th>").text("Tími"),
-                     $("<th>").text("Fyrirsögn")
-                  )
-               );
-            var $tbody = $table.append($("<tbody>"));
-            $.each(r.response.articles, function(i, obj) {
-               var $tr = $("<tr class='article'>").attr("data-uuid", obj.uuid).append(
-                  $("<td>").text(obj.timestamp.replace("T", " ")),
-                  $("<td class='heading'>").text(obj.heading)
-                     .prepend($("<img>").attr("src", "/static/" + obj.domain + ".ico").attr("width", "16").attr("height", "16"))
-               );
-               $tbody.append($tr);
-            });
-            articles = $table;
-         }
+         rlist = r.response.answers;
+         articles = makeSourceList(r.response.sources);
       }
       else
          rlist = r.response;
@@ -250,17 +253,17 @@ function populateQueryResult(json) {
             else {
                if (r.qtype == "Title")
                   // For person names, generate a 'name' span
-                  li = $("<li>").html($("<span class='name'></span>").text(obj[0]));
+                  li = $("<li>").html($("<span class='name'></span>").text(obj.answer));
                else
-                  li = $("<li>").text(obj[0]);
-               var urlList = obj[1];
+                  li = $("<li>").text(obj.answer);
+               var urlList = obj.sources;
                var artList = li.append($("<span class='art-list'></span>")).children().last();
                for (var i = 0; i < urlList.length; i++) {
                   var u = urlList[i];
                   artList.append($("<span class='art-link'></span>")
-                     .attr("title", u[2])
-                     .attr("data-uuid", u[1])
-                     .html($("<img width='16' height='16'></img>").attr("src", "/static/" + u[0] + ".ico"))
+                     .attr("title", u.heading)
+                     .attr("data-uuid", u.uuid)
+                     .html($("<img width='16' height='16'></img>").attr("src", "/static/" + u.domain + ".ico"))
                   );
                }
             }

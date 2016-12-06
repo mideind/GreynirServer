@@ -456,11 +456,16 @@ def reparse():
 
 
 # Note: Endpoints ending with .api are configured not to be cached by nginx
-@app.route("/query.api", methods=['POST'])
+@app.route("/query.api", methods=['GET', 'POST'])
 def query():
     """ Respond to a query string """
 
-    q = request.form.get("q", "").strip()[0:_MAX_QUERY_LENGTH]
+    if request.method == 'GET':
+        q = request.args.get("q", "")
+    else:
+        q = request.form.get("q", "")
+    q = q.strip()[0:_MAX_QUERY_LENGTH]
+
     # Auto-uppercasing can be turned off by sending autouppercase: false in the query JSON
     auto_uppercase = get_json_bool(request, "autouppercase", True)
     result = dict()
@@ -478,11 +483,10 @@ def query():
         # Try to parse and process as a query
         is_query = process_query(session, toklist, result)
 
-
-    result["is_query"] = is_query
+    result["valid"] = is_query
     result["q"] = actual_q
 
-    return jsonify(result = result)
+    return jsonify(result)
 
 
 def make_grid(w):
@@ -781,7 +785,7 @@ def about():
 
 
 @app.route("/apidoc")
-@max_age(seconds = 10 * 60)
+# @max_age(seconds = 10 * 60)
 def apidoc():
     """ Handler for an API documentation page """
     return render_template("apidoc.html")

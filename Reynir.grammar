@@ -3634,9 +3634,10 @@ QCompanyPrefix_þf →
 QCompanyPrefix_þgf →
     "segðu" "mér"? "frá"
 
-QEntity →
-    QEntityPrefix/fall Sérnafn/fall '?'?
-    | QEntityPrefix/fall Sérnafn '?'?
+QEntity → QEntityPrefix/fall QEntityKey/fall '?'?
+
+QEntityKey/fall →
+    Sérnafn/fall > Sérnafn > no/fall > no
 
 QEntityPrefix_nf →
     "hvað" "er"
@@ -3759,5 +3760,5 @@ QWordEntity →
     | QWordPrefix_nf "sérnafnið" QWordEntityKey_nf '?'?
     | QWordPrefix_nf "heitið" QWordEntityKey_nf '?'?
 
-QWordEntityKey/fall → Sérnafn | Sérnafn/fall
+QWordEntityKey/fall → Sérnafn/fall > Sérnafn
 

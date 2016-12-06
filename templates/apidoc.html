@@ -35,9 +35,10 @@
 
 <div>
 
-<h2>Mörkun <small><i>POS tagging</i></small></h2>
+<h1 class="page-header">Mörkun <small><i>POS tagging</i></small></h1>
 
-<p>Þjónustan <code>postag.api</code> skilar hverju orði textans með ítarlegri mörkun (<i>part-of-speech tag</i>),
+<p class="lead">Þjónustan <code>postag.api</code> skilar hverju orði textans með
+ítarlegri mörkun (<i>part-of-speech tag</i>),
 þ.e. upplýsingum um orðflokk, stofn, beygingu o.fl. Einnig fylgir með nafnalisti yfir fólk og
 fyrirbæri með sérnöfn.</p>
 
@@ -195,6 +196,134 @@ kóðaða í UTF-8 og með línuskiptum (<i>newline</i>, <code>\n</code>) milli 
     "tok_time": 0.019917011260986328, 
     "total_time": 0.20748519897460938
   }
+}
+</pre>
+
+<h1 class="page-header">Fyrirspurnir</h1>
+
+<p class="lead">Þjónustan <code>query.api</code> svarar fyrirspurnum um fólk og titla og um skilgreiningar
+sérnafna. Einnig er unnt að spyrja um orð sem tengjast gefnum orðum.</p>
+
+<p>Nánar til tekið má spyrja um eftirfarandi:</p>
+
+<ul>
+   <li>Mannanöfn:
+      <a href="/query.api?q=Hver er Smári McCarthy?" target="_blank"><i>Hver er Smári McCarthy?</i></a>
+      / <a href="/query.api?q=Segðu mér frá Oddnýju G. Harðardóttur" target="_blank"><i>Segðu mér frá Oddnýju G. Harðardóttur</i></a>
+   </li>
+   <li>Titla:
+      <a href="/query.api?q=Hver er forstjóri Útlendingastofnunar?" target="_blank"><i>Hver er forstjóri Útlendingastofnunar?</i></a>
+      / <a href="/query.api?q=Hver gegnir starfi seðlabankastjóra?" target="_blank"><i>Hver gegnir starfi
+      Seðlabankastjóra?</i></a>
+   </li>
+   <li>Sérnöfn:
+      <a href="/query.api?q=Hvað er WHO?" target="_blank"><i>Hvað er WHO?</i></a></li>
+   <li>Tengsl orða:
+      <a href="/query.api?q=Hvað tengist orðinu gagnaver?" target="_blank"><i>Hvað tengist orðinu gagnaver?</i></a></li>
+</ul>
+
+<p>Einfaldast er að senda fyrirspurn með <code>HTTPS <b>GET</b></code>
+þar sem hún er hluti af vefslóð (URL):</p>
+
+<pre><b>GET</b> https://greynir.is/query.api?q=<i>Fyrirspurnin kemur hér</i></pre>
+
+<p>Fyrirspurn má einnig senda með <code>HTTP <b>POST</b></code> í <code>application/x-www-form-urlencoded</code>
+formi, í svæði sem heitir <code>q</code>.</p>
+
+<p>Dæmi um hvernig nota má POST kallið frá <code>curl</code> í GNU/Linux:</p>
+
+<pre>$ curl -d "q=Hver er bankastjóri Landsbankans?" https://greynir.is/postag.api</pre>
+
+<p><code>query.api</code> þjónustan skilar JSON skjali með eftirfarandi undirgreinum:</p>
+
+<ul>
+   <li><code>valid</code> er <code>true</code> ef fyrirspurnin er gild, annars <code>false</code>.</li>
+   <li><code>key</code> er lykillinn sem leitað var eftir í gagnagrunni Greynis.</li>
+   <li><code>q</code> er upphaflega fyrirspurnin.</li>
+   <li><code>qtype</code> er tegund fyrirspurnar, þ.e. <b>Title</b> (titill), <b>Person</b> (mannsnafn), <b>Entity</b> (sérnafn) eða <b>Word</b> (tengd orð).</li>
+   <li><code>response</code> er niðurstaða fyrirspurnarinnar. Hún er mismunandi eftir tegundum:
+      <ul>
+         <li><b>Title</b>: listi af nöfnum þeirra sem bera titilinn. Hvert stak í listanum inniheldur:
+            <ul>
+               <li><code>answer</code> er nafn</li>
+               <li><code>sources</code> er listi yfir heimildir, þar sem hvert stak inniheldur:
+                  <ul>
+                     <li><code>domain</code> er lén heimildarinnar, t.d. ruv.is</li>
+                     <li><code>heading</code> er fyrirsögn heimildarinnar</li>
+                     <li><code>ts</code> er tímastimpill heimildarinnar á ISO formi (YYYY-MM-DD<b>T</b>HH:MM)</li>
+                     <li><code>url</code> er vefslóð heimildarinnar</li>
+                     <li><code>uuid</code> er einkvæmt einkenni heimildarinnar (<i>UUID</i>) í grunni Greynis</li>
+                  </ul>
+               </li>
+            </ul>
+         </li>
+         <li><b>Person</b>: Tvö undirsvæði:
+            <ul>
+               <li><code>answers</code> er listi yfir titla fólks með því nafni sem spurt var um. Hvert stak inniheldur:
+                  <ul>
+                     <li><code>answer</code> er titill</li>
+                     <li><code>sources</code> er listi yfir heimildir, sbr. <b>Title</b> hér að ofan.</li>
+                  </ul>
+               </li>
+               <li><code>sources</code> er listi yfir greinar þar sem nafnið kemur fyrir,
+               sbr. <b>Title</b> hér að ofan.</li>
+            </ul>
+         </li>
+         <li><b>Entity</b>: Niðurstaða er eins og fyrir <b>Person</b>, nema hvað í stað titla koma
+            skilgreiningar á sérnafninu sem spurt var um.</li>
+         <li><b>Word</b>: Eitt undirsvæði:
+            <ul>
+               <li><code>answers</code> er listi yfir tengd orð, þar sem hvert stak inniheldur:
+                  <ul>
+                     <li><code>stem</code> er orðstofn tengds orðs</li>
+                     <li><code>cat</code> er orðflokkur tengds orðs</li>
+                  </ul>
+               </li>
+            </ul>
+         </li>
+      </ul>
+   </li>
+</ul>
+
+<p><button data-toggle="collapse" data-target="#query-example"><span class="caret"></span> Dæmi</button>
+um svar við fyrirspurninni <i>Hver er dómsmálaráðherra Bretlands?</i></p>
+
+<pre id="query-example" class="collapse">
+{
+   "valid": true, 
+   "key": "dómsmálaráðherra Bretlands", 
+   "num_parsed_sent": 1, 
+   "num_sent": 1, 
+   "q": "Hver er dómsmálaráðherra Bretlands?", 
+   "qtype": "Title", 
+   "response": [
+     {
+       "answer": "Michael Gove", 
+       "sources": [
+         {
+           "domain": "mbl.is", 
+           "heading": "Theresa May sigraði í fyrstu umferð", 
+           "ts": "2016-07-05T20:42", 
+           "url": "http://www.mbl.is/frettir/erlent/2016/07/05/theresa_may_sigradi_i_fyrstu_umferd/", 
+           "uuid": "2133214a-4533-11e6-8429-04014c605401"
+         }, 
+         {
+           "domain": "ruv.is", 
+           "heading": "Sækjast eftir að stýra Íhaldsflokknum", 
+           "ts": "2016-06-30T09:28", 
+           "url": "http://www.ruv.is/frett/saekjast-eftir-ad-styra-ihaldsflokknum", 
+           "uuid": "1f86a9f2-4533-11e6-8429-04014c605401"
+         }, 
+         {
+           "domain": "mbl.is", 
+           "heading": "Johnson, Gove og May bítast um formanninn", 
+           "ts": "2016-06-30T08:18", 
+           "url": "http://www.mbl.is/frettir/erlent/2016/06/30/johnson_gove_og_may_bitast_um_formanninn/", 
+           "uuid": "1ee101df-4533-11e6-8429-04014c605401"
+         }
+       ]
+     }
+   ]
 }
 </pre>
 
