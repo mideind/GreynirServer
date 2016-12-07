@@ -250,7 +250,7 @@ def NlSkýring(node, params, result):
     def cut(s):
         if s.startswith(", ") or s.startswith("( "):
             s = s[2:]
-        while s.endswith(" ,") or s.endswith(" )") or s.endswith(" ."):
+        while s.endswith(" ,") or s.endswith(" )") or s.endswith(" .") or s.endswith(" ("):
             s = s[:-2]
         return s
 

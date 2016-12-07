@@ -377,7 +377,7 @@ def postag_api(version = 1):
         return better_jsonify(valid = False, reason = "Invalid request")
 
     with SessionContext(commit = True) as session:
-        pgs, stats, register = ArticleProxy.tag_text(session, text)
+        pgs, stats, register = ArticleProxy.tag_text(session, text, all_names = True)
         # In this case, we should always get a single paragraph back
         if pgs:
             # Only process the first paragraph, if there are many of them
@@ -476,11 +476,11 @@ def article_api(version = 1):
 
         # Prepare the article for display
         a.prepare(session)
-        register = a.create_register(session)
+        register = a.create_register(session, all_names = True)
         # Fetch names of article topics, if any
         topics = session.query(ArticleTopic) \
             .filter(ArticleTopic.article_id == a.uuid).all()
-        topics = [ dict(name = t.topic.name, identifier = t.topic.identifier) for t in topics ]
+        topics = [ dict(name = t.topic.name, id = t.topic.identifier) for t in topics ]
 
     return better_jsonify(valid = True,
         url = a.url, id = a.uuid,
@@ -928,7 +928,7 @@ def news():
     with SessionContext(commit = True) as session:
         q = session.query(Topic.identifier, Topic.name).order_by(Topic.name).all()
         d = { t[0] : t[1] for t in q }
-        topics = dict(identifier = topic, name = d.get(topic, ""), topic_list = q)
+        topics = dict(id = topic, name = d.get(topic, ""), topic_list = q)
     return render_template("news.html", articles = articles, topics = topics, display_time = display_time)
 
 
@@ -983,7 +983,7 @@ def page():
         # Fetch names of article topics, if any
         topics = session.query(ArticleTopic) \
             .filter(ArticleTopic.article_id == a.uuid).all()
-        topics = [ dict(name = t.topic.name, identifier = t.topic.identifier) for t in topics ]
+        topics = [ dict(name = t.topic.name, id = t.topic.identifier) for t in topics ]
 
         return render_template("page.html", article = a, register = register, topics = topics)
 

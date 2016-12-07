@@ -29,7 +29,7 @@
    <div class="headline hidden-xs">Nýjustu fréttir af helstu vefmiðlum</div>
    <div class="headline visible-xs-inline-block">Nýjustu fréttir</div>
    <div class="btn-group pull-right">
-      <button class="btn {{ labelmap.get(topics.identifier, 'btn-default') }} dropdown-toggle"
+      <button class="btn {{ labelmap.get(topics.id, 'btn-default') }} dropdown-toggle"
          type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
        {{ topics.name if topics.name else "Allir efnisflokkar" }} <span class="caret"></span>
       </button>
@@ -96,7 +96,7 @@
 {% if articles %}
       $("#next-page").click(function(ev) {
          // Go to the next page, as determined by the timestamp of the last item shown
-         window.location.href = "{{ url_for('news', topic = topics.identifier, start = articles[-1].timestamp.isoformat()) | safe }}";
+         window.location.href = "{{ url_for('news', topic = topics.id, start = articles[-1].timestamp.isoformat()) | safe }}";
       });
 {% endif %}
    }

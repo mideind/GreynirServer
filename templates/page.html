@@ -47,7 +47,7 @@
 } %}
 
 {% for t in topics -%}
-         <span class="topic label {{ labelmap[t.identifier] }}"><span class="glyphicon glyphicon-tag"></span>{{ t.name }}</span>
+         <span class="topic label {{ labelmap[t.id] }}"><span class="glyphicon glyphicon-tag"></span>{{ t.name }}</span>
 {%- endfor -%}
       </div>
       <h1 id="meta-heading">{{ article.heading }}</h1>

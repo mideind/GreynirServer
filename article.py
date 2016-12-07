@@ -35,8 +35,9 @@ _CATEGORIES_TO_INDEX = frozenset((
 ))
 
 
-def add_entity_to_register(name, register, session):
-    """ Add the entity name and the 'best' definition to the given name register dictionary """
+def add_entity_to_register(name, register, session, all_names = False):
+    """ Add the entity name and the 'best' definition to the given name register dictionary.
+        If all_names is True, we add all names that occur even if no title is found. """
     if name in register:
         # Already have a definition for this name
         return
@@ -55,9 +56,11 @@ def add_entity_to_register(name, register, session):
     definition = query_entity_def(session, name)
     if definition:
         register[name] = dict(kind = "entity", title = definition)
+    elif all_names:
+        register[name] = dict(kind = "entity", title = None)
 
 
-def add_name_to_register(name, register, session):
+def add_name_to_register(name, register, session, all_names = False):
     """ Add the name and the 'best' title to the given name register dictionary """
     if name in register:
         # Already have a title for this name
@@ -66,18 +69,20 @@ def add_name_to_register(name, register, session):
     title = query_person_title(session, name)
     if title:
         register[name] = dict(kind = "name", title = title)
+    elif all_names:
+        register[name] = dict(kind = "name", title = None)
 
 
-def create_name_register(tokens, session):
+def create_name_register(tokens, session, all_names = False):
     """ Assemble a dictionary of person and entity names occurring in the token list """
     register = { }
     for t in tokens:
         if t.kind == TOK.PERSON:
             gn = t.val
             for pn in gn:
-                add_name_to_register(pn.name, register, session)
+                add_name_to_register(pn.name, register, session, all_names = all_names)
         elif t.kind == TOK.ENTITY:
-            add_entity_to_register(t.txt, register, session)
+            add_entity_to_register(t.txt, register, session, all_names = all_names)
     return register
 
 
@@ -342,7 +347,7 @@ class Article:
         return dump
 
     @staticmethod
-    def tag_text(session, text):
+    def tag_text(session, text, all_names = False):
         """ Parse plain text and return the parsed paragraphs as lists of sentences
             where each sentence is a list of tagged tokens """
 
@@ -381,7 +386,7 @@ class Article:
             )
 
         # Add a name register to the result
-        register = create_name_register(toklist, session)
+        register = create_name_register(toklist, session, all_names = all_names)
 
         return (pgs, stats, register)
 
@@ -411,14 +416,14 @@ class Article:
                             # The entity name
                             yield t["x"]
 
-    def create_register(self, session):
+    def create_register(self, session, all_names = False):
         """ Create a name register dictionary for this article """
         register = { }
         for name in self.person_names():
-            add_name_to_register(name, register, session)
+            add_name_to_register(name, register, session, all_names = all_names)
         # Add register of entity names
         for name in self.entity_names():
-            add_entity_to_register(name, register, session)
+            add_entity_to_register(name, register, session, all_names = all_names)
         return register
 
     def _store_words(self, session):
