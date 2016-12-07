@@ -149,6 +149,13 @@ def get_json_bool(rq, name, default = False):
     return isinstance(b, str) and b == "true"
 
 
+def better_jsonify(**kwargs):
+    """ Ensure that the Content-Type header includes 'charset=utf-8' """
+    resp = jsonify(**kwargs)
+    resp.headers["Content-Type"] = "application/json; charset=utf-8"
+    return resp
+
+
 # Default text shown in the URL/text box
 _DEFAULT_TEXTS = [
     'Hver gegnir starfi seðlabankastjóra?',
@@ -335,7 +342,7 @@ def analyze():
         pgs, stats, register = ArticleProxy.tag_text(session, text)
 
     # Return the tokens as a JSON structure to the client
-    return jsonify(result = pgs, stats = stats, register = register)
+    return better_jsonify(result = pgs, stats = stats, register = register)
 
 
 # Note: Endpoints ending with .api are configured not to be cached by nginx
@@ -419,9 +426,7 @@ def postag():
                             h = val[3], m = val[4], s = val[5])
 
     # Return the tokens as a JSON structure to the client
-    resp = jsonify(result = pgs, stats = stats, register = register)
-    resp.headers["Content-Type"] = "application/json; charset=utf-8"
-    return resp
+    return better_jsonify(result = pgs, stats = stats, register = register)
 
 
 # Note: Endpoints ending with .api are configured not to be cached by nginx
@@ -452,17 +457,21 @@ def reparse():
 
     # Return the tokens as a JSON structure to the client,
     # along with a name register and article statistics
-    return jsonify(result = tokens, register = register, stats = stats)
+    return better_jsonify(result = tokens, register = register, stats = stats)
 
 
 # Frivolous fun stuff
 
 _SPECIAL_QUERIES = {
-    "er þetta spurning?" : { "answer" : "Já." },
-    "er þetta svar?" : { "answer" : "Já." },
+    "er þetta spurning?" : { "answer" : "Er þetta svar?" },
+    "er þetta svar?" : { "answer" : "Er þetta spurning?" },
     "hvað er svarið?" : { "answer" : "42." },
+    "hvert er svarið?" : { "answer" : "42." },
     "veistu allt?" : { "answer" : "Nei." },
-    "hvað heitir þú?" : { "answer" : "Greynir." },
+    "hvað veistu?" : { "answer" : "Spurðu mig!" },
+    "veistu svarið?" : { "answer" : "Spurðu mig!" },
+    "hvað heitir þú?" : { "answer" : "Greynir. Ég er grey sem reynir að greina íslensku." },
+    "hver ert þú?" : { "answer" : "Ég er grey sem reynir að greina íslensku." },
     "hver bjó þig til?" : { "answer" : "Villi." },
     "hver skapaði þig?" : { "answer" : "Villi." },
     "hver er skapari þinn?" : { "answer" : "Villi." },
@@ -488,15 +497,16 @@ def query():
     # Auto-uppercasing can be turned off by sending autouppercase: false in the query JSON
     auto_uppercase = get_json_bool(request, "autouppercase", True)
     result = dict()
+    ql = q.lower()
 
-    if q.lower() in _SPECIAL_QUERIES or (q.lower() + '?') in _SPECIAL_QUERIES:
+    if ql in _SPECIAL_QUERIES or (ql + '?') in _SPECIAL_QUERIES:
         result["valid"] = True
         result["qtype"] = "Special"
         result["q"] = q
-        if q.lower() in _SPECIAL_QUERIES:
-            result["response"] = _SPECIAL_QUERIES[q.lower()]
+        if ql in _SPECIAL_QUERIES:
+            result["response"] = _SPECIAL_QUERIES[ql]
         else:
-            result["response"] = _SPECIAL_QUERIES[q.lower() + '?']
+            result["response"] = _SPECIAL_QUERIES[ql + '?']
     else:
         with SessionContext(commit = True) as session:
 
@@ -514,7 +524,7 @@ def query():
         result["valid"] = is_query
         result["q"] = actual_q
 
-    return jsonify(result)
+    return better_jsonify(**result)
 
 
 def make_grid(w):
@@ -813,7 +823,7 @@ def about():
 
 
 @app.route("/apidoc")
-# @max_age(seconds = 10 * 60)
+@max_age(seconds = 10 * 60)
 def apidoc():
     """ Handler for an API documentation page """
     return render_template("apidoc.html")
