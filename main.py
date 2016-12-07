@@ -328,9 +328,13 @@ def process_query(session, toklist, result):
 
 # Note: Endpoints ending with .api are configured not to be cached by nginx
 @app.route("/analyze.api", methods=['GET', 'POST'])
-def analyze():
+@app.route("/analyze.api/v<int:version>", methods=['GET', 'POST'])
+def analyze_api(version = 1):
     """ Analyze text manually entered by the user, i.e. not coming from an article.
         This is a lower level API used by the Greynir web front-end. """
+
+    if version != 1:
+        return better_jsonify(valid = False, reason = "Unsupported version")
 
     if request.method == 'POST':
         text = request.form.get("text")
@@ -342,13 +346,18 @@ def analyze():
         pgs, stats, register = ArticleProxy.tag_text(session, text)
 
     # Return the tokens as a JSON structure to the client
-    return better_jsonify(result = pgs, stats = stats, register = register)
+    return better_jsonify(valid = True, result = pgs, stats = stats, register = register)
 
 
 # Note: Endpoints ending with .api are configured not to be cached by nginx
 @app.route("/postag.api", methods=['GET', 'POST'])
-def postag():
+@app.route("/postag.api/v<int:version>", methods=['GET', 'POST'])
+def postag_api(version = 1):
     """ API to parse text and return POS tagged tokens in JSON format """
+
+    if version != 1:
+        # Unsupported version
+        return better_jsonify(valid = False, reason = "Unsupported version")
 
     try:
         if request.method == 'POST':
@@ -365,7 +374,7 @@ def postag():
             text = request.args.get("t", "")
         text = text.strip()[0:_MAX_TEXT_LENGTH]
     except:
-        return "", 403 # Invalid request
+        return better_jsonify(valid = False, reason = "Invalid request")
 
     with SessionContext(commit = True) as session:
         pgs, stats, register = ArticleProxy.tag_text(session, text)
@@ -426,13 +435,71 @@ def postag():
                             h = val[3], m = val[4], s = val[5])
 
     # Return the tokens as a JSON structure to the client
-    return better_jsonify(result = pgs, stats = stats, register = register)
+    return better_jsonify(valid = True, result = pgs, stats = stats, register = register)
+
+
+@app.route("/article.api", methods=['GET', 'POST'])
+@app.route("/article.api/v<int:version>", methods=['GET', 'POST'])
+def article_api(version = 1):
+    """ Obtain information about an article, given its URL or id """
+
+    if version != 1:
+        return better_jsonify(valid = False, reason = "Unsupported version")
+
+    if request.method == 'GET':
+        url = request.args.get("url")
+        uuid = request.args.get("id")
+    else:
+        url = request.form.get("url")
+        uuid = request.form.get("id")
+    if url:
+        url = url.strip()[0:_MAX_URL_LENGTH]
+    if uuid:
+        uuid = uuid.strip()[0:_MAX_UUID_LENGTH]
+    if url:
+        # URL has priority, if both are specified
+        uuid = None
+    if not url and not uuid:
+        return better_jsonify(valid = False, reason = "No url or id specified in query")
+
+    with SessionContext(commit = True) as session:
+
+        if uuid:
+            a = ArticleProxy.load_from_uuid(uuid, session)
+        elif url.startswith("http:") or url.startswith("https:"):
+            a = ArticleProxy.load_from_url(url, session)
+        else:
+            a = None
+
+        if a is None:
+            return better_jsonify(valid = False, reason = "Article not found")
+
+        # Prepare the article for display
+        a.prepare(session)
+        register = a.create_register(session)
+        # Fetch names of article topics, if any
+        topics = session.query(ArticleTopic) \
+            .filter(ArticleTopic.article_id == a.uuid).all()
+        topics = [ dict(name = t.topic.name, identifier = t.topic.identifier) for t in topics ]
+
+    return better_jsonify(valid = True,
+        url = a.url, id = a.uuid,
+        heading = a.heading, author = a.author,
+        ts = a.timestamp.isoformat()[0:19],
+        num_sentences = a.num_sentences,
+        num_parsed = a.num_parsed,
+        ambiguity = a.ambiguity,
+        register = register, topics = topics)
 
 
 # Note: Endpoints ending with .api are configured not to be cached by nginx
 @app.route("/reparse.api", methods=['POST'])
-def reparse():
+@app.route("/reparse.api/v<int:version>", methods=['POST'])
+def reparse_api(version = 1):
     """ Reparse an already parsed and stored article with a given UUID """
+
+    if version != 1:
+        return better_jsonify(valid = "False", reason = "Unsupported version")
 
     uuid = request.form.get("id", "").strip()[0:_MAX_UUID_LENGTH]
     tokens = None
@@ -457,7 +524,7 @@ def reparse():
 
     # Return the tokens as a JSON structure to the client,
     # along with a name register and article statistics
-    return better_jsonify(result = tokens, register = register, stats = stats)
+    return better_jsonify(valid = True, result = tokens, register = register, stats = stats)
 
 
 # Frivolous fun stuff
@@ -485,8 +552,12 @@ _SPECIAL_QUERIES = {
 
 # Note: Endpoints ending with .api are configured not to be cached by nginx
 @app.route("/query.api", methods=['GET', 'POST'])
-def query():
+@app.route("/query.api/v<int:version>", methods=['GET', 'POST'])
+def query_api(version = 1):
     """ Respond to a query string """
+
+    if version != 1:
+        return better_jsonify(valid = False, reason = "Unsupported version")
 
     if request.method == 'GET':
         q = request.args.get("q", "")
