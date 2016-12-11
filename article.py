@@ -20,7 +20,7 @@ from collections import OrderedDict, defaultdict, namedtuple
 from settings import Settings, NoIndexWords
 from scraperdb import Article as ArticleRow, SessionContext, Word, DataError
 from fetcher import Fetcher
-from tokenizer import TOK, tokenize
+from tokenizer import TOK, tokenize, canonicalize_token
 from fastparser import Fast_Parser, ParseError, ParseForestNavigator, ParseForestDumper
 from incparser import IncrementalParser
 from query import Query, query_person_title, query_entity_def
@@ -236,6 +236,57 @@ class Article:
                 ar = None
             return None if ar is None else cls._init_from_row(ar)
 
+    @staticmethod
+    def _describe_token(t, terminal, meaning):
+        """ Return a compact dictionary and a WordTuple describing the token t,
+            which matches the given terminal with the given meaning """
+        d = dict(x = t.txt)
+        wt = None
+        if terminal is not None:
+            # There is a token-terminal match
+            if t.kind == TOK.PUNCTUATION:
+                if t.txt == "-":
+                    # Hyphen: check whether it is matching an em or en-dash terminal
+                    if terminal.cat == "em":
+                        d["x"] = "—" # Substitute em dash (will be displayed with surrounding space)
+                    elif terminal.cat == "en":
+                        d["x"] = "–" # Substitute en dash
+            else:
+                # Annotate with terminal name and BÍN meaning (no need to do this for punctuation)
+                d["t"] = terminal.name
+                if meaning is not None:
+                    if terminal.first == "fs":
+                        # Special case for prepositions since they're really
+                        # resolved from the preposition list in Main.conf, not from BÍN
+                        m = (meaning.ordmynd, "fs", "alm", terminal.variant(0).upper())
+                    else:
+                        m = (meaning.stofn, meaning.ordfl, meaning.fl, meaning.beyging)
+                    d["m"] = m
+                    # Note the word stem and category
+                    wt = WordTuple(stem = m[0].replace("-", ""), cat = m[1])
+                elif t.kind == TOK.ENTITY:
+                    wt = WordTuple(stem = t.txt, cat = "entity")
+        if t.kind != TOK.WORD:
+            # Optimize by only storing the k field for non-word tokens
+            d["k"] = t.kind
+        if t.val is not None and t.kind not in { TOK.WORD, TOK.ENTITY, TOK.PUNCTUATION }:
+            # For tokens except words, entities and punctuation, include the val field
+            if t.kind == TOK.PERSON:
+                d["v"] = t.val[0][0] # Include only the name of the person in nominal form
+                # Hack to make sure that the gender information is communicated in
+                # the terminal name (in some cases the terminal only contains the case)
+                gender = t.val[0][1]
+                if terminal:
+                    if not terminal.name.endswith("_" + gender):
+                        d["t"] = terminal.name + "_" + gender
+                else:
+                    # There is no terminal: cop out by adding a separate gender field
+                    d["g"] = gender
+                wt = WordTuple(stem = t.val[0][0], cat = "person_" + gender)
+            else:
+                d["v"] = t.val
+        return d, wt
+
     class _Annotator(ParseForestNavigator):
 
         """ Local utility subclass to navigate a parse forest and annotate the
@@ -252,6 +303,93 @@ class Article:
             meaning = node.token.match_with_meaning(node.terminal)
             self._tmap[ix] = (node.terminal, None if isinstance(meaning, bool) else meaning) # Map from original token to matched terminal
             return None
+
+    class _Simplifier(ParseForestNavigator):
+
+        """ Local utility subclass to navigate a parse forest and return a
+            simplified, condensed representation of it in a nested dictionary
+            structure """
+
+        NT_MAP = {
+            "S0" : dict(name = "Málsgrein", id = "P"),
+            "HreinYfirsetning" : dict(name = "Setning", id = "S"),
+            "Setning" : dict(name = "Setning", id = "S"),
+            "SetningSo" : dict(name = "Sagnliður", id = "VP"),
+            "SetningLo" : dict(name = "Setning", id = "S"),
+            "SetningÁnF" : dict(name = "Setning", id = "S"),
+            "SetningAukafall" : dict(name = "Setning", id = "S"),
+            "SetningSkilyrði" : dict(name = "Setning", id = "S"),
+            "Nl" : dict(name = "Nafnliður", id = "NP"),
+            "EfLiður" : dict(name = "Eignarfallsliður", id = "NP-POSS", overrides = "NP"),
+            "EfLiðurForskeyti" : dict(name = "Eignarfallsliður", id = "NP-POSS", overrides = "NP"),
+            "FsMeðFallstjórn" : dict(name = "Forsetningarliður", id = "PP"),
+            "SagnRuna" : dict(name = "Sagnliður", id = "VP"),
+            "NhLiðir" : dict(name = "Sagnliður", id = "VP"),
+            "SagnliðurÁnF" : dict(name = "Sagnliður", id = "VP")
+        }
+
+        def __init__(self, tokens):
+            super().__init__(visit_all = True)
+            self._tokens = tokens
+            self._result = []
+            self._stack = [ self._result ]
+
+        def _visit_token(self, level, node):
+            """ At token node """
+            meaning = node.token.match_with_meaning(node.terminal)
+            d, _ = Article._describe_token(self._tokens[node.token.index], node.terminal,
+                None if isinstance(meaning, bool) else meaning)
+            # Convert from compact form to external (more verbose and descriptive) form
+            canonicalize_token(d)
+            # Add as a child of the current node in the condensed tree
+            self._stack[-1].append(d)
+            return None
+
+        def _visit_nonterminal(self, level, node):
+            """ Entering a nonterminal node """
+            if node.is_interior or node.nonterminal.is_optional:
+                return None
+            mapped_nt = self.NT_MAP.get(node.nonterminal.first)
+            if mapped_nt is not None:
+                # We want this nonterminal in the simplified tree:
+                # push it
+                children = []
+                self._stack[-1].append(dict(k = "NONTERMINAL",
+                    n = mapped_nt["name"], i = mapped_nt["id"], p = children))
+                self._stack.append(children)
+            return None
+
+        def _process_results(self, results, node):
+            """ Exiting a nonterminal node """
+            if not node.is_interior and not node.nonterminal.is_optional and node.nonterminal.first in self.NT_MAP:
+                # Pushed this nonterminal in _visit_nonterminal(): pop it
+                children = self._stack[-1]
+                self._stack.pop()
+                # Check whether this nonterminal has only one child, which is again
+                # the same nonterminal
+                if len(children) == 1:
+
+                    def collapse_child(ch0, nt):
+                        """ Determine whether to cut off a child and connect directly
+                            from this node to its children """
+                        d = self.NT_MAP[nt]
+                        if ch0["n"] == d["name"]:
+                            # Same nonterminal: do the cut
+                            return True
+                        # If the child is a nonterminal that this one 'overrides',
+                        # cut off the child
+                        override = d.get("overrides")
+                        return ch0["i"] == override
+
+                    ch0 = children[0]
+                    if ch0["k"] == "NONTERMINAL" and collapse_child(ch0, node.nonterminal.first):
+                        # If so, we eliminate one level and move the children of the child
+                        # up to be children of this node
+                        self._stack[-1][-1]["p"] = ch0["p"]
+
+        @property
+        def result(self):
+            return self._result[0]
 
     @staticmethod
     def _terminal_map(tree):
@@ -287,56 +425,10 @@ class Article:
         # Map tokens to associated terminals, if any
         tmap = Article._terminal_map(tree) # tmap is an empty dict if there's no parse tree
         dump = []
-        for ix, t in enumerate(tokens):
+        for ix, token in enumerate(tokens):
             # We have already cut away paragraph and sentence markers (P_BEGIN/P_END/S_BEGIN/S_END)
-            d = dict(x = t.txt)
-            terminal = None
-            wt = None
-            if ix in tmap:
-                # There is a token-terminal match
-                if t.kind == TOK.PUNCTUATION:
-                    if t.txt == "-":
-                        # Hyphen: check whether it is matching an em or en-dash terminal
-                        terminal, _ = tmap[ix]
-                        if terminal.cat == "em":
-                            d["x"] = "—" # Substitute em dash (will be displayed with surrounding space)
-                        elif terminal.cat == "en":
-                            d["x"] = "–" # Substitute en dash
-                else:
-                    # Annotate with terminal name and BÍN meaning (no need to do this for punctuation)
-                    terminal, meaning = tmap[ix]
-                    d["t"] = terminal.name
-                    if meaning is not None:
-                        if terminal.first == "fs":
-                            # Special case for prepositions since they're really
-                            # resolved from the preposition list in Main.conf, not from BÍN
-                            m = (meaning.ordmynd, "fs", "alm", terminal.variant(0).upper())
-                        else:
-                            m = (meaning.stofn, meaning.ordfl, meaning.fl, meaning.beyging)
-                        d["m"] = m
-                        # Note the word stem and category
-                        wt = WordTuple(stem = m[0].replace("-", ""), cat = m[1])
-                    elif t.kind == TOK.ENTITY:
-                        wt = WordTuple(stem = t.txt, cat = "entity")
-            if t.kind != TOK.WORD:
-                # Optimize by only storing the k field for non-word tokens
-                d["k"] = t.kind
-            if t.val is not None and t.kind not in { TOK.WORD, TOK.ENTITY, TOK.PUNCTUATION }:
-                # For tokens except words, entities and punctuation, include the val field
-                if t.kind == TOK.PERSON:
-                    d["v"] = t.val[0][0] # Include only the name of the person in nominal form
-                    # Hack to make sure that the gender information is communicated in
-                    # the terminal name (in some cases the terminal only contains the case)
-                    gender = t.val[0][1]
-                    if terminal:
-                        if not terminal.name.endswith("_" + gender):
-                            d["t"] = terminal.name + "_" + gender
-                    else:
-                        # There is no terminal: cop out by adding a separate gender field
-                        d["g"] = gender
-                    wt = WordTuple(stem = t.val[0][0], cat = "person_" + gender)
-                else:
-                    d["v"] = t.val
+            terminal, meaning = tmap.get(ix, (None, None))
+            d, wt = Article._describe_token(token, terminal, meaning)
             if ix == error_index:
                 # Mark the error token, if present
                 d["err"] = 1
@@ -347,9 +439,20 @@ class Article:
         return dump
 
     @staticmethod
-    def tag_text(session, text, all_names = False):
-        """ Parse plain text and return the parsed paragraphs as lists of sentences
-            where each sentence is a list of tagged tokens """
+    def _simplify_tree(tokens, tree):
+        """ Return a simplified parse tree for a sentence, including POS-tagged,
+            normalized terminal leaves """
+        """ Return a dict containing a map from original token indices to matched terminals """
+        if tree is None:
+            return None
+        s = Article._Simplifier(tokens)
+        s.go(tree)
+        return s.result
+
+    @staticmethod
+    def _process_text(session, text, all_names, xform):
+        """ Low-level utility function to parse text and return the result of
+            a transformation function (xform) for each sentence """
 
         t0 = time.time()
         # Demarcate paragraphs in the input
@@ -369,10 +472,10 @@ class Article:
                 for sent in p.sentences():
                     if sent.parse():
                         # Parsed successfully
-                        pgs[-1].append(Article._dump_tokens(sent.tokens, sent.tree, None))
+                        pgs[-1].append(xform(sent.tokens, sent.tree, None))
                     else:
                         # Errror in parse
-                        pgs[-1].append(Article._dump_tokens(sent.tokens, None, None, sent.err_index))
+                        pgs[-1].append(xform(sent.tokens, None, sent.err_index))
 
             t2 = time.time()
             stats = dict(
@@ -389,6 +492,32 @@ class Article:
         register = create_name_register(toklist, session, all_names = all_names)
 
         return (pgs, stats, register)
+
+    @staticmethod
+    def tag_text(session, text, all_names = False):
+        """ Parse plain text and return the parsed paragraphs as lists of sentences
+            where each sentence is a list of tagged tokens """
+
+        def xform(tokens, tree, err_index):
+            """ Transformation function that simply returns a list of POS-tagged,
+                normalized tokens for the sentence """
+            return Article._dump_tokens(tokens, tree, None, err_index)
+
+        return Article._process_text(session, text, all_names, xform)
+
+    @staticmethod
+    def parse_text(session, text, all_names = False):
+        """ Parse plain text and return the parsed paragraphs as simplified trees """
+
+        def xform(tokens, tree, err_index):
+            """ Transformation function that yields a simplified parse tree
+                with POS-tagged, normalized terminal leaves for the sentence """
+            if err_index is not None:
+                return Article._dump_tokens(tokens, tree, None, err_index)
+            # Successfully parsed: return a simplified tree for the sentence
+            return Article._simplify_tree(tokens, tree)
+
+        return Article._process_text(session, text, all_names, xform)
 
     def person_names(self):
         """ A generator yielding all person names in an article token stream """
@@ -500,8 +629,10 @@ class Article:
             # Make one big JSON string for the paragraphs, sentences and tokens
             self._raw_tokens = pgs
             self._tokens = json.dumps(pgs, separators = (',', ':'), ensure_ascii = False)
+
+            # Keep the bag of words (stem, category, count for each word)
             self._words = words
-            # self._tokens = "[" + ",\n".join("[" + ",\n".join(sent for sent in p) + "]" for p in pgs) + "]"
+
             # Create a tree representation string out of all the accumulated parse trees
             self._tree = "".join("S{0}\n{1}\n".format(key, val) for key, val in trees.items())
 

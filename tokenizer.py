@@ -1932,3 +1932,48 @@ def paragraphs(toklist):
     if current_p:
         yield current_p
 
+
+def canonicalize_token(t):
+    """ Convert a token in-situ from a compact dictionary representation
+        (typically created by Article._describe_token()) to a normalized,
+        verbose form that is appropriate for external consumption """
+
+    # Set the token kind to a readable string
+    kind = t.get("k", TOK.WORD)
+    t["k"] = TOK.descr[kind]
+    if "t" in t:
+        terminal = t["t"]
+        # Change "literal:category" to category,
+        # or 'stem'_var1_var2 to category_var1_var2
+        if terminal[0] in "\"'" and "m" in t:
+            # Convert 'literal'_var1_var2 to cat_var1_var2
+            a = terminal.split("_")
+            a[0] = t["m"][1] # Token category
+            if a[0] in { "kk", "kvk", "hk" }:
+                a[0] = "no"
+            t["t"] = "_".join(a)
+    if "m" in t:
+        # Flatten the meaning from a tuple/list
+        m = t["m"]
+        del t["m"]
+        # s = stofn (stem)
+        # c = ordfl (category)
+        # f = fl (class)
+        # b = beyging (declination)
+        t.update(dict(s = m[0], c = m[1], f = m[2], b = m[3]))
+    if "v" in t:
+        # Flatten and simplify the val field, if present
+        val = t["v"]
+        if kind == TOK.AMOUNT:
+            # Flatten and simplify amounts
+            t["v"] = dict(amount = val[0], currency = val[1])
+        elif kind in { TOK.NUMBER, TOK.CURRENCY, TOK.PERCENT }:
+            # Number, ISO currency code, percentage
+            t["v"] = val[0]
+        elif kind == TOK.DATE:
+            t["v"] = dict(y = val[0], mo = val[1], d = val[2])
+        elif kind == TOK.TIME:
+            t["v"] = dict(h = val[0], m = val[1], s = val[2])
+        elif kind == TOK.TIMESTAMP:
+            t["v"] = dict(y = val[0], mo = val[1], d = val[2],
+                h = val[3], m = val[4], s = val[5])

@@ -80,7 +80,7 @@ from binparser import BIN_Token
 
 _PREP_SCOPE_SET = frozenset(("begin_prep_scope", "purge_prep"))
 _PREP_ALL_SET = frozenset(_PREP_SCOPE_SET | { "enable_prep_bonus" })
-_VERB_PREP_BONUS = 5 # Give 5 extra points for a verb/preposition match
+_VERB_PREP_BONUS = 7 # Give 7 extra points for a verb/preposition match
 _VERB_PREP_PENALTY = -2 # Subtract 2 points for a non-match
 
 # Noun categories set
@@ -566,7 +566,12 @@ class Reducer:
                 # i.e. "eignast" instead of "eiga" for a verb such as "eignaðist"
                 verb = BIN_Token.mm_verb_stem(verb)
             verb_with_cases = verb + verb_terminal.verb_cases
-            prep_with_case = prep_token + "_" + prep_terminal.variant(0)
+            if prep_terminal.num_variants:
+                # Normal terminal, such as fs_ef
+                prep_with_case = prep_token + "_" + prep_terminal.variant(0)
+            else:
+                # Literal terminal, such as "á:fs" - match all cases
+                prep_with_case = prep_token
             # Do a lookup in the verb/preposition lexicon from the settings
             # (typically stored in VerbPrepositions.conf)
             if VerbObjects.verb_matches_preposition(verb_with_cases, prep_with_case):
@@ -581,8 +586,9 @@ class Reducer:
             # Return the score of this token/terminal match
             d = dict()
             sc = self._scores[node.start][node.terminal]
-            if node.terminal.startswith("fs"):
-                # Preposition terminal
+            if node.terminal.matches_category("fs"):
+                # Preposition terminal - this is either a normal fs_case terminal
+                # or a literal terminal such as "á:fs"
                 prep_bonus = self.get("prep_bonus")
                 if prep_bonus is not None:
                     # We are inside a preposition bonus zone:

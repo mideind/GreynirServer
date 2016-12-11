@@ -253,13 +253,17 @@ class VerbObjects:
         if score != 0:
             VerbObjects.SCORES[verb_with_cases] = score
         # pronouns is a list of tuples: (pronoun, case), e.g. ("í", "þgf")
+        d = VerbObjects.PREPOSITIONS[verb_with_cases]
         for p, case in pronouns:
-            VerbObjects.PREPOSITIONS[verb_with_cases].add(p + "_" + case)
+            # Add a generic 'case-less' forms of the preposition, such as "í"
+            d.add(p)
+            # Add a full form with case, such as "í_þgf"
+            d.add(p + "_" + case)
 
     @staticmethod
     def verb_matches_preposition(verb_with_cases, prep_with_case):
         """ Does the given preposition with the given case fit the verb? """
-        if False: # Settings.DEBUG:
+        if Settings.DEBUG:
             print("verb_matches_preposition: verb {0}, prep {1}, verb found {2}, prep found {3}"
                 .format(verb_with_cases, prep_with_case,
                     verb_with_cases in VerbObjects.PREPOSITIONS,
@@ -286,7 +290,7 @@ class VerbSubjects:
         VerbSubjects._CASE = case
 
     @staticmethod
-    def add (verb):
+    def add(verb):
         """ Add a verb and its arguments. Called from the config file handler. """
         VerbSubjects.VERBS[verb].add(VerbSubjects._CASE)
 
@@ -296,17 +300,15 @@ class Prepositions:
     """ Wrapper around dictionary of prepositions, initialized from the config file """
 
     # Dictionary of prepositions: preposition -> { set of cases that it controls }
-    PP = { }
+    PP = defaultdict(set)
+    PP_PLURAL = set()
 
     @staticmethod
-    def add (prep, case):
+    def add(prep, case, plural = False):
         """ Add a preposition and its case. Called from the config file handler. """
-        if prep in Prepositions.PP:
-            # Already there: add a case to the set of controlled cases
-            Prepositions.PP[prep].add(case)
-        else:
-            # Initialize the preposition with its controlled case
-            Prepositions.PP[prep] = { case }
+        Prepositions.PP[prep].add(case)
+        if plural:
+            Prepositions.PP_PLURAL.add(prep)
 
 
 class AdjectiveTemplate:
@@ -317,7 +319,7 @@ class AdjectiveTemplate:
     ENDINGS = [ ]
 
     @classmethod
-    def add (cls, ending, form):
+    def add(cls, ending, form):
         """ Add an adjective ending and its associated form. """
         cls.ENDINGS.append((ending, form))
 
@@ -330,7 +332,7 @@ class DisallowedNames:
     STEMS = { }
 
     @classmethod
-    def add (cls, name, cases):
+    def add(cls, name, cases):
         """ Add an adjective ending and its associated form. """
         cls.STEMS[name] = set(cases)
 
@@ -349,7 +351,7 @@ class StaticPhrases:
     DICT = { }
 
     @staticmethod
-    def add (phrase):
+    def add(phrase):
         """ Add a static phrase to the dictionary. Called from the config file handler. """
 
         # First add to phrase list
@@ -404,7 +406,7 @@ class AmbigPhrases:
     DICT = defaultdict(list)
 
     @staticmethod
-    def add (words, cats):
+    def add(words, cats):
         """ Add an ambiguous phrase to the dictionary. Called from the config file handler. """
 
         # First add to phrase list
@@ -436,7 +438,7 @@ class NoIndexWords:
         NoIndexWords._CAT = cat
 
     @staticmethod
-    def add (stem):
+    def add(stem):
         """ Add a word stem and its category. Called from the config file handler. """
         NoIndexWords.SET.add((stem, NoIndexWords._CAT))
 
@@ -466,7 +468,7 @@ class Topics:
         Topics.THRESHOLD[tname] = threshold
 
     @staticmethod
-    def add (word):
+    def add(word):
         """ Add a word stem and its category. Called from the config file handler. """
         if Topics._name is None:
             raise ConfigError("Must set topic name (topic = X) before specifying topic words")
@@ -786,9 +788,16 @@ class Settings:
         """ Handle preposition specifications in the settings section """
         # Format: preposition case
         a = s.split()
-        if len(a) != 2:
-            raise ConfigError("Preposition should have a single case argument")
-        Prepositions.add(a[0], a[1])
+        la = len(a)
+        plural = False
+        if la == 3:
+            if a[2] not in {"et", "ft"}:
+                raise ConfigError("Preposition can only be marked as singular ('et') or plural('ft')")
+            plural = a[2] == "ft"
+            la = 2
+        if la != 2:
+            raise ConfigError("Preposition should have a single case argument and an optional singular/plural indicator")
+        Prepositions.add(a[0], a[1], plural)
 
     @staticmethod
     def _handle_preferences(s):

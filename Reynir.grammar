@@ -151,9 +151,6 @@ SetningÁnF →
     SetningÁnF_et_p3/kyn
     | SetningÁnF_ft_p3/kyn
 
-$tag(begin_prep_scope) SetningÁnF_et_p3/kyn # Nýtt undirtré fyrir tengingu sagnar og forsetningar
-$tag(begin_prep_scope) SetningÁnF_ft_p3/kyn # Nýtt undirtré fyrir tengingu sagnar og forsetningar
-
 Grein →
     # Greinarnúmer, e.t.v. skammstafað, og e.t.v. með fyrirsögn
     raðnr 'grein:kvk' Fyrirsögn? '.'? # 17. gr. Störf Alþingis
@@ -498,13 +495,17 @@ SetningSo →
 
     So_1_p3/fall/tala Nl/fall Nl_nf/tala AtvFs?                # Fylgir honum mikil úrkoma [í nótt]
 
-    | so_0_sagnb HjSögnLhÞtSM_et_p3 NhFyllingEðaAtv            # Leitað verður/skal/mun til sérfræðinga / Verið er í snatri að ráða hæfasta umsækjandann
+    # Leitað verður/skal/mun til sérfræðinga
+    # Verið er í snatri að ráða hæfasta umsækjandann
+    # Komið hefur/hafi til átaka milli þeirra
+    # Farið hefur verið ofan í saumana á málinu
+    | so_0_sagnb HjSögnSagnb_et_p3 NhFyllingEðaAtv
 
     | So_1_sagnb/fall HjSögnLhÞtSM_et_p3 FsAtv? Nl/fall AtvFs? # Horft hefur verið [til hennar] lostafullum augum
 
     | so_0_mm_sagnb HjSögnLhÞtSM_et_p3 NhFyllingEðaAtv         # Búist er við (að Sigmundur Davíð segi af sér)
 
-    | so_0_mm_nh HjSögnMegiSkuliÞurfi_et_p3 FsAtv              # Búast má/skal/þarf/hefur mátt við töfum á veginum
+    | so_0_mm_nh HjSögnMegiSkuliÞurfi_et_p3 SagnInnskot        # Búast má/skal/þarf/hefur mátt við töfum á veginum
 
     | so_0_mm/pers/tala FsAtv? Nl_nf/tala/pers AtvFs?          # Fórust með honum átján menn
 
@@ -519,9 +520,9 @@ SetningSo →
 
     | SagnliðurLhÞt
 
-    | Sögn_bh FsAtv?                                          # Farðu galvaskur að sækja kaffi strax
+    | Sögn_bh SagnInnskot?                                    # Farðu galvaskur að sækja kaffi strax
 
-    | HjSögnMegiSkuli_et_p3 FsAtv? EinSögn_nh_et_hk FsAtv?    # Má með sanni segja (að þeir hafi sloppið með skrekkinn)
+    | HjSögnMegiSkuli_et_p3 FsAtv? EinSögn_nh_et_hk SagnInnskot? # Má með sanni segja (að þeir hafi sloppið með skrekkinn)
 
     | 'þurfa'_et_p3 FsRuna? Nl_þf NhFyllingEðaAtv             # Þarf til þess lagafyrirmæli að svipta mann réttindum
 
@@ -557,7 +558,7 @@ SetningAukafall →
 
     # Öfug orðaröð: 'Eignarrétti fylgja skyldur' (í stað 'Skyldur fylgja eignarrétti')
     # 'Þetta skrifar Bjarni á Facebook-síðu sinni og bendir [galvaskur] á frammistöðu stjórnarinnar'
-    | Nl/aukafall so_1/aukafall/tala/pers FsRuna? Nl_nf/tala/pers/kyn SagnInnskot? SagnFramhald/tala/pers/kyn*
+    | Nl/aukafall So_1/aukafall/tala/pers FsRuna? Nl_nf/tala/pers/kyn SagnInnskot? SagnFramhald/tala/pers/kyn*
 
     # Þessar skuldir hefur 365 ekki greitt
     # Þessa bók hef ég aldrei skilið
@@ -1075,7 +1076,7 @@ Sögn_bh →
     | 'láta'_bh Nl_þf AtvFs? EinSögn_nh/tala/kyn OgSögn_nh/tala/kyn*
 
 # Boðháttur er sjaldgæfur - viljum aðra kosti frekar
-$score(-4) Sögn_bh
+$score(-5) Sögn_bh
 
 # Sögn með engu viðfangi ('lenti')
 # ('Maðurinn lenti')
@@ -1175,6 +1176,9 @@ OgSögn_1/fall/tala/pers →
     | ',' OgEðaEn FsAtv? so_1/fall/tala/pers FsAtvKomma?
 
 # Umraðanir
+
+So_1/aukafall/tala/pers → so_1/aukafall/tala/pers
+$tag(pick_up_verb) So_1/aukafall/tala/pers
 
 So_1_sagnb_nf → so_1_nf_sagnb   # (Í fyrra höfðu konurnar [ekki]) verið leikarar
 So_1_sagnb_þf → so_1_þf_sagnb   # (Í dag hafa konurnar [ekki]) borðað matinn
@@ -1774,6 +1778,9 @@ HjSögnLhÞtSM_p3_et →
 
 HjSögnLhÞtSM_p3_ft →
     HjSögnLhÞt_ft_p3 | HjSögnSkuluMunu_ft_p3
+
+HjSögnSagnb_et_p3 →
+    HjSögnLhÞtSM_et_p3 | 'hafa'_et_p3
 
 # 'Hælisleitendum fer/fór/færi/hefur farið/mun fara fækkandi'
 
@@ -2766,6 +2773,8 @@ NlEind_et_p3_ef_hk →
     | SpurnarSamtenging HreinYfirsetning
     | NhLiðir  # Það að fara til tannlæknis (reynist mörgum þyrnir í augum)
 
+$score(+6) ÞaðTenging
+
 # Aðdróttanir, þó sannar séu, varða fangelsisvist
 
 Þó/tala/pers/kyn →
@@ -2836,7 +2845,7 @@ Skýringarliður →
 # !!! (hópurinn, þar á meðal ég, var... / Össur, ekki síður en þingflokkurinn, var...)
 
 OgEða → "og:st" | "eða:st" | "ellegar" | "eður" | "svo" "og:st" | "sem:st" "og:st" | "né"
-    | "þar" "á:fs" "meðal:ao" | 'þar_á_meðal' | "meðal:ao" "annars" | 'meðal_annars'
+    | ÞarÁMeðal | "meðal:ao" "annars" | 'meðal_annars'
     | "það" "er:st" | 'það_er'
     | "eins:ao" "og:st" | 'líkt_og'
     | "þar" "með" "talið:so"? | "svo" "sem:st" | 'svo_sem'
@@ -2846,6 +2855,10 @@ EnÍOgEða →
     "en:st"
 
 $score(-14) EnÍOgEða # Frekar að líta á 'en' sem samtengingu ef það er hægt
+
+ÞarÁMeðal → "þar" "á:fs" "meðal:ao"
+
+$score(+16) ÞarÁMeðal # Líta frekar á "þar á meðal" sem samtengingu en skýringu
 
 KommaOgEða → ','? OgEða
     | "-:em" "eða:st"? # 'Ég tók tvö tonn af eldsneyti - tvö þúsund lítra'
@@ -3113,6 +3126,8 @@ LoÞgf_ft/kyn →
 FsMeðFallstjórn →
 
     fs/fall Nl/fall
+
+    | fs_ef_ft Nl_ef_ft # 'milli' eða 'millum'
 
     # '(Beiðnin) um að...', '(Fíknin) í að...', '(Biðin) eftir að...', '(Þörfin) fyrir að...',
     # 'gegnum að...', 'kringum að...',

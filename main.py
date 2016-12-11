@@ -46,10 +46,8 @@ from flask.wrappers import Response
 
 from settings import Settings, ConfigError, changedlocale
 from bindb import BIN_Db
-from fetcher import Fetcher
-from tokenizer import tokenize, TOK, correct_spaces
+from tokenizer import tokenize, TOK, correct_spaces, canonicalize_token
 from fastparser import Fast_Parser, ParseError, ParseForestPrinter
-from incparser import IncrementalParser
 from reducer import Reducer
 from article import Article as ArticleProxy
 from scraperdb import SessionContext, desc, Root, Person, Article, ArticleTopic, Topic,\
@@ -384,7 +382,7 @@ def postag_api(version = 1):
             if len(pgs) == 1:
                 pgs = pgs[0]
             else:
-                # More than one paragraph: concatenate 'em all
+                # More than one paragraph: gotta concatenate 'em all
                 pa = []
                 for pg in pgs:
                     pa.extend(pg)
@@ -393,46 +391,57 @@ def postag_api(version = 1):
             # Transform the token representation into a
             # nice canonical form for outside consumption
             for t in sent:
-                # Set the token kind to a readable string
-                kind = t.get("k", TOK.WORD)
-                t["k"] = TOK.descr[kind]
-                if "t" in t:
-                    terminal = t["t"]
-                    # Change "literal:category" to category,
-                    # or 'stem'_var1_var2 to category_var1_var2
-                    if terminal[0] in "\"'" and "m" in t:
-                        # Convert 'literal'_var1_var2 to cat_var1_var2
-                        a = terminal.split("_")
-                        a[0] = t["m"][1] # Token category
-                        if a[0] in { "kk", "kvk", "hk" }:
-                            a[0] = "no"
-                        t["t"] = "_".join(a)
-                if "m" in t:
-                    # Flatten the meaning from a tuple/list
-                    m = t["m"]
-                    del t["m"]
-                    # s = stofn (stem)
-                    # c = ordfl (category)
-                    # f = fl (class)
-                    # b = beyging (declination)
-                    t.update(dict(s = m[0], c = m[1], f = m[2], b = m[3]))
-                if "v" in t:
-                    # Flatten and simplify the val field, if present
-                    # (see tokenizer.py for the corresponding TOK structures)
-                    val = t["v"]
-                    if kind == TOK.AMOUNT:
-                        # Flatten and simplify amounts
-                        t["v"] = dict(amount = val[0], currency = val[1])
-                    elif kind in { TOK.NUMBER, TOK.CURRENCY, TOK.PERCENT }:
-                        # Number, ISO currency code, percentage
-                        t["v"] = val[0]
-                    elif kind == TOK.DATE:
-                        t["v"] = dict(y = val[0], mo = val[1], d = val[2])
-                    elif kind == TOK.TIME:
-                        t["v"] = dict(h = val[0], m = val[1], s = val[2])
-                    elif kind == TOK.TIMESTAMP:
-                        t["v"] = dict(y = val[0], mo = val[1], d = val[2],
-                            h = val[3], m = val[4], s = val[5])
+                canonicalize_token(t)
+
+    # Return the tokens as a JSON structure to the client
+    return better_jsonify(valid = True, result = pgs, stats = stats, register = register)
+
+
+# Note: Endpoints ending with .api are configured not to be cached by nginx
+@app.route("/parse.api", methods=['GET', 'POST'])
+@app.route("/parse.api/v<int:version>", methods=['GET', 'POST'])
+def parse_api(version = 1):
+    """ API to parse text and return POS tagged tokens in JSON format """
+
+    if version != 1:
+        # Unsupported version
+        return better_jsonify(valid = False, reason = "Unsupported version")
+
+    try:
+        if request.method == 'POST':
+            if request.headers["Content-Type"] == "text/plain":
+                # This API accepts plain text POSTs, UTF-8 encoded.
+                # Example usage:
+                # curl -d @example.txt https://greynir.is/parse.api --header "Content-Type: text/plain"
+                text = request.data.decode("utf-8")
+            else:
+                # This API also accepts form/url-encoded requests:
+                # curl -d "text=Í dag er ágætt veður en mikil hálka er á götum." https://greynir.is/parse.api
+                text = request.form.get("text", "")
+        else:
+            text = request.args.get("t", "")
+        text = text.strip()[0:_MAX_TEXT_LENGTH]
+    except:
+        return better_jsonify(valid = False, reason = "Invalid request")
+
+    with SessionContext(commit = True) as session:
+        pgs, stats, register = ArticleProxy.parse_text(session, text, all_names = True)
+        # In this case, we should always get a single paragraph back
+        if pgs:
+            # Only process the first paragraph, if there are many of them
+            if len(pgs) == 1:
+                pgs = pgs[0]
+            else:
+                # More than one paragraph: gotta concatenate 'em all
+                pa = []
+                for pg in pgs:
+                    pa.extend(pg)
+                pgs = pa
+        #for sent in pgs:
+        #    # Transform the token representation into a
+        #    # nice canonical form for outside consumption
+        #    for t in sent:
+        #        canonicalize_token(t)
 
     # Return the tokens as a JSON structure to the client
     return better_jsonify(valid = True, result = pgs, stats = stats, register = register)
@@ -712,7 +721,7 @@ def parse_grid():
     txt = request.form.get('txt', "")
     parse_path = request.form.get('option', "")
     debug_mode = get_json_bool(request, 'debug')
-    use_reducer = not ("noreduce" in request.form)
+    use_reducer = "noreduce" not in request.form
 
     # Tokenize the text
     tokens = list(tokenize(txt))

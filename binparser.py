@@ -699,7 +699,8 @@ class BIN_Token(Token):
 
         def matcher_fs(m):
             """ Check preposition """
-            if not terminal.num_variants:
+            nv = terminal.num_variants
+            if not nv:
                 return False
             # Note that in the case of abbreviated prepositions,
             # such as 'skv.' for 'samkvæmt', the full expanded form
@@ -711,7 +712,15 @@ class BIN_Token(Token):
             # meanings of the token (the list in self.t2) do not include
             # the fs category. This effectively makes the prepositions
             # exempt from the ambiguous_phrases optimization.
-            return fs in Prepositions.PP and terminal.variant(0) in Prepositions.PP[fs]
+            if fs not in Prepositions.PP:
+                # Not a preposition
+                return False
+            if fs in Prepositions.PP_PLURAL:
+                # Plural-only preposition: check whether the terminal
+                # specifies a plural form
+                if nv != 2 or terminal.variant(1) != "ft":
+                    return False
+            return terminal.variant(0) in Prepositions.PP[fs]
 
         def matcher_person(m):
             """ Check name from static phrases, coming from the Reynir.conf file """
@@ -929,6 +938,11 @@ class VariantHandler:
         """ Returns True if the terminal name starts with the given string """
         return self._first == part
 
+    def matches_category(self, cat):
+        """ Returns True if the terminal matches a particular category
+            (overridden in BIN_LiteralTerminal) """
+        return self._first == cat
+
     def matches_first(self, t_kind, t_val, t_lit):
         """ Returns True if the first part of the terminal name matches the
             given word category """
@@ -1072,6 +1086,11 @@ class BIN_LiteralTerminal(VariantHandler, LiteralTerminal):
     def cat(self):
         return self._cat
 
+    def matches_category(self, cat):
+        """ Returns True if the terminal matches a particular category
+            (overrides VariantHandler) """
+        return self._cat == cat
+
     def matches_first(self, t_kind, t_val, t_lit):
         """ A literal terminal matches a token if the token text is identical to the literal """
         if self._cat is not None and t_kind != self._cat:
@@ -1096,6 +1115,14 @@ class BIN_Nonterminal(Nonterminal):
     def is_noun_phrase(self):
         """ Return True if this nonterminal denotes a noun phrase """
         return self._is_noun_phrase
+
+    @property
+    def first(self):
+        """ Return the initial part (before any underscores) of the nonterminal name """
+        # Do this on demand
+        if not hasattr(self, "_parts"):
+            self._parts = self.name.split("_")
+        return self._parts[0]
 
 
 class BIN_Grammar(Grammar):
