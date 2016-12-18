@@ -350,7 +350,7 @@ def Setning(node, params, result):
 
         # print("Entity er {0}".format(entity))
 
-        fsliðir = result.all_children(nt_base = "FsAtv")
+        # fsliðir = result.all_children(nt_base = "FsAtv")
         sagnruna = result.find_child(nt_base = "SagnRuna")
 
         if not sagnruna:

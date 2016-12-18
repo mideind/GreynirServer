@@ -494,7 +494,8 @@ function hoverIn() {
             .addClass("glyphicon-gender-" + gender);
       }
       if (!t.v.length)
-         $("#lemma").text(t.x);
+         // Cut whitespace around hyphens in person names
+         $("#lemma").text(t.x.replace(" - ", "-"));
       else {
          // Show full name and title
          var name = t.v;
@@ -504,7 +505,8 @@ function hoverIn() {
                title = "mannsnafn";
             else
                title = (gender == "male") ? "karl" : "kona";
-         $("#lemma").text(name);
+         // Cut whitespace around hyphens in person names
+         $("#lemma").text(name.replace(" - ", "-"));
          $("#details").text(title);
       }
    }
@@ -518,7 +520,8 @@ function hoverIn() {
          nd = nameDict[nd.fullname];
       }
       else
-         $("#lemma").text(t.x);
+         // Cut whitespace around hyphens in entity names
+         $("#lemma").text(t.x.replace(" - ", "-"));
       var title = nd ? (nd.title || "") : "";
       if (!title.length)
          title = "sérnafn";
@@ -604,6 +607,7 @@ function displayTokens(j) {
                   x += (t.x == "—") ? " — " : t.x; // Space around em-dash
                else {
                   var cls;
+                  var tx = t.x;
                   if (!t.k) {
                      // TOK_WORD
                      if (err)
@@ -613,15 +617,21 @@ function displayTokens(j) {
                         // Word class (noun, verb, adjective...)
                         cls = " class='" + t.m[1] + "'";
                      else
-                     if (t.t && t.t.split("_")[0] == "sérnafn")
+                     if (t.t && t.t.split("_")[0] == "sérnafn") {
+                        // Special case to display 'sérnafn' as 'entity'
                         cls = " class='entity'";
+                        tx = tx.replace(" - ", "-"); // Tight hyphen, no whitespace
+                     }
                      else
                         // Not found
                         cls = " class='nf'";
                   }
-                  else
+                  else {
                      cls = " class='" + tokClass[t.k] + "'";
-                  x += "<i id='w" + w.length + "'" + cls + ">" + t.x + "</i>";
+                     if (t.k == TOK_ENTITY)
+                        tx = tx.replace(" - ", "-"); // Tight hyphen, no whitespace
+                  }
+                  x += "<i id='w" + w.length + "'" + cls + ">" + tx + "</i>";
                   // Append to word/token list
                   w.push(t);
                }
@@ -667,7 +677,8 @@ function populateRegister() {
       // kind is 'ref', 'name' or 'entity'
       if (desc.kind != "ref")
          // We don't display references to full names
-         register.push({ name: name, title: desc.title, kind: desc.kind });
+         // Whitespace around hyphens is eliminated for display
+         register.push({ name: name.replace(" - ", "-"), title: desc.title, kind: desc.kind });
    });
    register.sort(function(a, b) {
       return a.name.localeCompare(b.name);

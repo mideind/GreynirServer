@@ -78,7 +78,7 @@ from settings import Settings, Preferences, NounPreferences, VerbObjects
 from binparser import BIN_Token
 
 
-_PREP_SCOPE_SET = frozenset(("begin_prep_scope", "purge_prep"))
+_PREP_SCOPE_SET = frozenset(("begin_prep_scope", "purge_prep", "no_prep"))
 _PREP_ALL_SET = frozenset(_PREP_SCOPE_SET | { "enable_prep_bonus" })
 _VERB_PREP_BONUS = 7 # Give 7 extra points for a verb/preposition match
 _VERB_PREP_PENALTY = -2 # Subtract 2 points for a non-match
@@ -330,35 +330,47 @@ class Reducer:
             def __init__(self):
                 super().__init__(visit_all = False)
                 self._stack = [ False ]
+                self._transformed = set()
 
             def copy_tree(self, root):
                 """ Copy the tree under the root, including the root itself.
                     Stop when coming to a nested preposition scope or to a
                     noun phrase (Nafnliður, Nl_*) """
-                def dup(node, ix, offset):
-                    """ Duplicate (copy) this node """
-                    if node is None:
-                        return None
-                    nt = node.nonterminal if node.is_completed else None
-                    if nt is not None:
-                        if nt.has_any_tag(_PREP_SCOPE_SET):
-                            # No copying from this point
-                            return node
-                        if nt.is_noun_phrase:
-                            # No need to copy Nl after we've been through the
-                            # preposition itself
-                            return node
-                        if nt.is_optional and node.is_empty:
-                            # Explicitly nullable nonterminal with no child: don't bother copying
-                            return node
-                    # Recurse to copy the child tree as well
-                    return self.copy_tree(node)
-                # First, copy the root itself
-                node = Node.copy(root)
-                # Then, copy the children as required by applying the dup() function
-                node.transform_children(dup)
-                # Return the fresh copy
-                return node
+
+                copied = set()
+
+                def copy_node(node):
+
+                    def dup(node, ix, offset):
+                        """ Duplicate (copy) this node """
+                        if node is None:
+                            return None
+                        nt = node.nonterminal if node.is_completed else None
+                        if nt is not None:
+                            if nt.has_any_tag(_PREP_SCOPE_SET):
+                                # No copying from this point
+                                return node
+                            if nt.is_noun_phrase:
+                                # No need to copy Nl after we've been through the
+                                # preposition itself
+                                return node
+                            if nt.is_optional and node.is_empty:
+                                # Explicitly nullable nonterminal with no child: don't bother copying
+                                return node
+                        # Recurse to copy the child tree as well
+                        return copy_node(node)
+
+                    # First, copy the root itself
+                    if node not in copied:
+                        # Do not copy nodes twice during the same subtree copy process
+                        copied.add(node)
+                        node = Node.copy(node)
+                        # Then, copy the children as required by applying the dup() function
+                        node.transform_children(dup)
+                        # Return the fresh copy
+                    return node
+
+                return copy_node(root)
 
             def _force_visit(self, node, visited):
                 """ Should we visit the given node even if it has already been visited? """
@@ -377,20 +389,29 @@ class Reducer:
 
             def _visit_nonterminal(self, level, node):
                 nt = node.nonterminal if node.is_completed else None
+                visit_children = True
                 if nt is not None:
                     if nt.has_any_tag(_PREP_SCOPE_SET) or nt.is_noun_phrase:
                         # Contained preposition scope (such as Setning or SetningÁnF),
-                        # or a scope associated with a noun (FsRunaEftirNl):
+                        # or a scope associated with a noun (FsRunaEftirNl),
+                        # or a scope that can't contain a preposition (EinnAl):
                         # Don't duplicate from here, just use the original subtree
                         self._stack.append(False)
                     elif nt.has_tag("enable_prep_bonus"):
                         # Starting scope for potential verb/preposition match
+                        # (Typically SagnInnskot)
                         self._stack.append(True)
                         # Duplicate the tree from this point
                         def dup(node, ix, offset):
                             return None if node is None else self.copy_tree(node)
-                        node.transform_children(dup)
-                super()._visit_nonterminal(level, node)
+                        if node not in self._transformed:
+                            # Avoid re-transforming the children of a node
+                            # whose children have already been transformed
+                            node.transform_children(dup)
+                            self._transformed.add(node)
+                        visit_children = False
+                if visit_children:
+                    super()._visit_nonterminal(level, node)
 
             def _process_results(self, results, node):
                 nt = node.nonterminal if node.is_completed else None

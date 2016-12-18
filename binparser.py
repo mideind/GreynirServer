@@ -715,10 +715,9 @@ class BIN_Token(Token):
             if fs not in Prepositions.PP:
                 # Not a preposition
                 return False
-            if fs in Prepositions.PP_PLURAL:
-                # Plural-only preposition: check whether the terminal
-                # specifies a plural form
-                if nv != 2 or terminal.variant(1) != "ft":
+            if nv == 2 and terminal.variant(1) == "ft":
+                if fs not in Prepositions.PP_PLURAL:
+                    # Only prepositions marked as plural can match
                     return False
             return terminal.variant(0) in Prepositions.PP[fs]
 

@@ -41,7 +41,7 @@ def add_entity_to_register(name, register, session, all_names = False):
     if name in register:
         # Already have a definition for this name
         return
-    if not " " in name:
+    if " " not in name:
         # Single name: this might be the last name of a person/entity
         # that has already been mentioned by full name
         for k in register.keys():
@@ -311,21 +311,38 @@ class Article:
             structure """
 
         NT_MAP = {
-            "S0" : dict(name = "Málsgrein", id = "P"),
-            "HreinYfirsetning" : dict(name = "Setning", id = "S"),
-            "Setning" : dict(name = "Setning", id = "S"),
-            "SetningSo" : dict(name = "Sagnliður", id = "VP"),
-            "SetningLo" : dict(name = "Setning", id = "S"),
-            "SetningÁnF" : dict(name = "Setning", id = "S"),
-            "SetningAukafall" : dict(name = "Setning", id = "S"),
-            "SetningSkilyrði" : dict(name = "Setning", id = "S"),
-            "Nl" : dict(name = "Nafnliður", id = "NP"),
-            "EfLiður" : dict(name = "Eignarfallsliður", id = "NP-POSS", overrides = "NP"),
-            "EfLiðurForskeyti" : dict(name = "Eignarfallsliður", id = "NP-POSS", overrides = "NP"),
-            "FsMeðFallstjórn" : dict(name = "Forsetningarliður", id = "PP"),
-            "SagnRuna" : dict(name = "Sagnliður", id = "VP"),
-            "NhLiðir" : dict(name = "Sagnliður", id = "VP"),
-            "SagnliðurÁnF" : dict(name = "Sagnliður", id = "VP")
+            "S0" : "P",
+            "HreinYfirsetning" : "S",
+            "Setning" : "S",
+            "SetningSo" : "VP",
+            "SetningLo" : "S",
+            "SetningÁnF" : "S",
+            "SetningAukafall" : "S",
+            "SetningSkilyrði" : "S",
+            "Skilyrði" : "S-COND",
+            "Afleiðing" : "S-CONS",
+            "Nl" : "NP",
+            "EfLiður" : "NP-POSS",
+            "EfLiðurForskeyti" : "NP-POSS",
+            "FsMeðFallstjórn" : "PP",
+            "SagnInnskot" : "ADVP",
+            "FsAtv" : "ADVP",
+            "AtvFs" : "ADVP",
+            "SagnRuna" : "VP",
+            "NhLiðir" : "VP",
+            "SagnliðurÁnF" : "VP"
+        }
+
+        ID_MAP = {
+            "P" : dict(name = "Málsgrein"),
+            "S" : dict(name = "Setning", subject_to = "S"),
+            "S-COND" : dict(name = "Forsenda", overrides = "S"), # Condition
+            "S-CONS" : dict(name = "Afleiðing", overrides = "S"), # Consequence
+            "VP" : dict(name = "Sagnliður"),
+            "NP" : dict(name = "Nafnliður"),
+            "NP-POSS" : dict(name = "Eignarfallsliður", overrides = "NP"),
+            "PP" : dict(name = "Forsetningarliður", overrides = "ADVP"),
+            "ADVP" : dict(name = "Atviksliður", subject_to = "ADVP")
         }
 
         def __init__(self, tokens):
@@ -333,6 +350,8 @@ class Article:
             self._tokens = tokens
             self._result = []
             self._stack = [ self._result ]
+            self._pushed = []
+            self._scope = [ NotImplemented ] # Sentinel value
 
         def _visit_token(self, level, node):
             """ At token node """
@@ -347,45 +366,67 @@ class Article:
 
         def _visit_nonterminal(self, level, node):
             """ Entering a nonterminal node """
+            self._pushed.append(False)
             if node.is_interior or node.nonterminal.is_optional:
                 return None
             mapped_nt = self.NT_MAP.get(node.nonterminal.first)
             if mapped_nt is not None:
                 # We want this nonterminal in the simplified tree:
-                # push it
+                # push it (unless it is subject to a scope we're already in)
+                mapped_id = self.ID_MAP[mapped_nt]
+                subject_to = mapped_id.get("subject_to")
+                if self._scope[-1] == subject_to:
+                    # We are already within a nonterminal to which this one is subject:
+                    # don't bother pushing it
+                    return None
                 children = []
                 self._stack[-1].append(dict(k = "NONTERMINAL",
-                    n = mapped_nt["name"], i = mapped_nt["id"], p = children))
+                    n = mapped_id["name"], i = mapped_nt, p = children))
                 self._stack.append(children)
+                self._scope.append(mapped_nt)
+                self._pushed[-1] = True
             return None
 
         def _process_results(self, results, node):
             """ Exiting a nonterminal node """
-            if not node.is_interior and not node.nonterminal.is_optional and node.nonterminal.first in self.NT_MAP:
-                # Pushed this nonterminal in _visit_nonterminal(): pop it
-                children = self._stack[-1]
-                self._stack.pop()
-                # Check whether this nonterminal has only one child, which is again
-                # the same nonterminal
-                if len(children) == 1:
+            if not self._pushed.pop():
+                return
+            # Pushed this nonterminal in _visit_nonterminal(): pop it
+            children = self._stack[-1]
+            self._stack.pop()
+            self._scope.pop()
+            # Check whether this nonterminal has only one child, which is again
+            # the same nonterminal - or a nonterminal which the parent overrides
+            if len(children) == 1:
 
-                    def collapse_child(ch0, nt):
-                        """ Determine whether to cut off a child and connect directly
-                            from this node to its children """
-                        d = self.NT_MAP[nt]
-                        if ch0["n"] == d["name"]:
-                            # Same nonterminal: do the cut
-                            return True
-                        # If the child is a nonterminal that this one 'overrides',
-                        # cut off the child
-                        override = d.get("overrides")
-                        return ch0["i"] == override
+                def collapse_child(ch0, nt):
+                    """ Determine whether to cut off a child and connect directly
+                        from this node to its children """
+                    d = self.NT_MAP[nt]
+                    if ch0["i"] == d:
+                        # Same nonterminal category: do the cut
+                        return True
+                    # If the child is a nonterminal that this one 'overrides',
+                    # cut off the child
+                    override = self.ID_MAP[d].get("overrides")
+                    return ch0["i"] == override
 
-                    ch0 = children[0]
-                    if ch0["k"] == "NONTERMINAL" and collapse_child(ch0, node.nonterminal.first):
+                def replace_parent(ch0, nt):
+                    d = self.NT_MAP[nt]
+                    # If the child overrides the parent, replace the parent
+                    override = self.ID_MAP[ch0["i"]].get("overrides")
+                    return d == override
+
+                ch0 = children[0]
+                if ch0["k"] == "NONTERMINAL":
+                    if collapse_child(ch0, node.nonterminal.first):
                         # If so, we eliminate one level and move the children of the child
                         # up to be children of this node
                         self._stack[-1][-1]["p"] = ch0["p"]
+                    elif replace_parent(ch0, node.nonterminal.first):
+                        # The child subsumes the parent: replace
+                        # the parent by the child
+                        self._stack[-1][-1] = ch0
 
         @property
         def result(self):
@@ -606,6 +647,9 @@ class Article:
                 for sent in p.sentences():
 
                     num_sent += 1
+
+                    #if Settings.DEBUG:
+                    #    print("Parsing: {0}".format(sent))
 
                     if sent.parse():
                         # Obtain a text representation of the parse tree

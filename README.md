@@ -25,21 +25,20 @@ ratio of concrete concepts such as numbers, amounts, dates, person and entity na
 etc.
 
 Reynir is innovative in its ability to parse and disambiguate text written in a
-**grammatically complex language**, such as Icelandic, which does not lend itself easily to statistical
-parsing methods. Reynir uses grammatical features, i.e. cases, genders, persons (1st, 2nd, 3rd),
-number (singular/plural) and various verb modes applied appropriately to nouns, verbs, adjectives
-and prepositions to guide and disambiguate parses. Its optimized Earley-based parser is fast and
-compact enough to make real-time while-you-wait analysis of web pages, as well as bulk processing,
-feasible.
+**grammatically complex language**, i.e. Icelandic, which does not lend itself easily to statistical
+parsing methods. Reynir uses grammatical feature agreement (cases, genders, persons,
+number (singular/plural), verb tenses, modes, etc.) to guide and disambiguate parses.
+Its optimized Earley-based parser is fast and compact enough to make real-time
+while-you-wait analysis of web pages, as well as bulk processing, feasible.
 
 Reynir's goal is to "understand" text to a usable extent by parsing it into
 structured, recursive trees that directly correspond to the original grammar.
 These trees can then be further processed and acted upon by sets of Python
 functions that are linked to grammar nonterminals.
 
-**Reynir is currently able to parse about *85%* of sentences** in a typical news article from the web,
-and many well-written articles can be parsed completely. It presently has about 33,000 parsed articles
-in its database, containing 650,000 parsed sentences.
+**Reynir is currently able to parse about *86%* of sentences** in a typical news article from the web,
+and many well-written articles can be parsed completely. It presently has over 100,000 parsed articles
+in its database, containing 1.8 million parsed sentences.
 
 Reynir supports natural language querying of its databases. Users can ask about person names, titles and
 entity definitions and get appropriate replies. The HTML5 Web Speech API is supported to allow
@@ -81,7 +80,7 @@ databsae, as well as names of people extracted from those articles along with th
 UI enables the user to type in any URL and have Reynir scrape it, tokenize it and display the
 result as a web page. Queries can also be entered via the keyboard or using voice input.
 The server runs on the [Flask](http://flask.pocoo.org/) framework, implements WSGi and can
-for instance be plugged into Gunicorn and Nginx.
+for instance be plugged into [Gunicorn](http://gunicorn.org/) and [nginx](https://www.nginx.com/).
 
 Reynir uses the official BÍN ([Beygingarlýsing íslensks nútímamáls](http://bin.arnastofnun.is))
 lexicon and database of Icelandic word forms to identify and tokenize words, and find their
@@ -135,8 +134,9 @@ storage in a database table.
 * `reducer.py` : Parse forest ambiguity resolver
 * `processor.py`: Information extraction from parse trees
 * `article.py` : Representation of an article through its life cycle
+* `tree.py` : Representation of parse trees for processing
 * `query.py` : Natural language query processor
-* `vectors/builder.py` : Article indexer and topic vector builder
+* `vectors/builder.py` : Article indexer and LSA topic vector builder
 * `config/Reynir.conf` : Editable configuration file for the tokenizer and parser
 * `config/Main.conf` : Various configuration data and preferences, included in `Reynir.conf`
 * `config/Prefs.conf` : Word form preference scores, included in `Reynir.conf`
@@ -196,7 +196,7 @@ are currently assumed to be the following:
 
 ## Copyright and licensing
 
-Reynir/Greynir is *copyright (C) 2015-2016 by Vilhjálmur Þorsteinsson*.
+Reynir/Greynir is *copyright (C) 2016 by Vilhjálmur Þorsteinsson*.
 
 ![GPLv3](https://raw.githubusercontent.com/vthorsteinsson/Reynir/master/static/GPLv3.png)
 

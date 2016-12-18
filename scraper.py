@@ -30,6 +30,7 @@
 """
 
 import sys
+import gc
 import getopt
 import time
 #import traceback
@@ -195,11 +196,15 @@ class Scraper:
             if helper:
                 self.parse_article(d.url, helper)
                 # Save the unknown verbs accumulated during parsing, if any
-                UnknownVerbs.write()
+                # UnknownVerbs.write()
+        except KeyboardInterrupt:
+            print("KeyboardInterrupt in _parse_single_article()")
+            sys.exit(1)
         except Exception as e:
             print("Exception when parsing article at {0}: {1!r}".format(d.url, e))
             # traceback.print_exc()
             # raise e from e
+        return True
 
 
     def go(self, reparse = False, limit = 0, urls = None):
@@ -294,7 +299,6 @@ class Scraper:
                         break
                 if lcnt:
                     # Run garbage collection to minimize common memory footprint
-                    import gc
                     gc.collect()
                     print("Parser processes forking, chunk of {0} articles".format(lcnt))
                     pool = Pool() # Defaults to using as many processes as there are CPUs
@@ -365,15 +369,19 @@ def scrape_articles(reparse = False, limit = 0, urls = None):
         sc = Scraper()
         try:
             sc.go(reparse = reparse, limit = limit, urls = urls)
+            # Successful finish: print stats
+            sc.stats()
+        except KeyboardInterrupt:
+            # Terminate process upon Ctrl+C
+            print("KeyboardInterrupt: exiting process")
+            # sys.exit(1)
         except Exception as e:
             print("Scraper terminated with exception {0}".format(e))
-        finally:
-            sc.stats()
     finally:
         sc = None
 
     ts = "{0}".format(datetime.utcnow())[0:19]
-    print("\nTime: {0}".format(ts))
+    print("\nTime: {0}".format(ts), flush = True)
 
     print("------ Scrape completed -------")
 

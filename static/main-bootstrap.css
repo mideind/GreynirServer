@@ -763,6 +763,14 @@ div#output h3 {
 
 /* Parse grid stuff */
 
+div.input-parsegrid h4 button {
+   font-size: 16px;
+   font-weight: normal;
+   padding-left: 8px;
+   padding-right: 8px;
+   margin-right: 8px;
+}
+
 div.grid {
    font-size: 14px;
    margin-bottom: 16px;

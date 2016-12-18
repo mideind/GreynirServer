@@ -662,9 +662,6 @@ def make_grid(w):
             return ([level - 1] + suffix, w.start, w.end, plist, w.nonterminal)
 
         # Start of make_schema
-
-        if w is None:
-            return None
         return _part(w, 0, [ ])
 
     # Start of make_grid
@@ -1060,6 +1057,7 @@ if __name__ == "__main__":
     import errno
     try:
         # Run the Flask web server application
+        app.config['TEMPLATES_AUTO_RELOAD'] = True
         app.run(debug=Settings.DEBUG, host=Settings.HOST, use_reloader=True,
             extra_files = [ "config/" + fname for fname in extra_files ])
     except socket_error as e:

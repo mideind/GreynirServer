@@ -295,7 +295,7 @@ class Node:
         else:
             # Create a new list object having the
             # same child nodes as the source node
-            node._families = [ pc for pc in other._families ]
+            node._families = other._families[:] # [ pc for pc in other._families ]
         return node
 
     def _add_family(self, job, prod, ch1, ch2, child_ix):
@@ -760,11 +760,11 @@ class ParseForestPrinter(ParseForestNavigator):
         # Interior nodes are not printed
         # and do not increment the indentation level
         if self._detailed or not w.is_interior:
-            h = str(w.nonterminal)
             if not self._detailed:
-                if (h.endswith("?") or h.endswith("*")) and w.is_empty:
+                if w.is_empty and w.nonterminal.is_optional:
                     # Skip printing optional nodes that don't contain anything
                     return NotImplemented # Don't visit child nodes
+            h = w.nonterminal.name
             indent = "  " * level # Two spaces per indent level
             if self._show_ids:
                 h += " @ {0:x}".format(id(w))
@@ -818,12 +818,11 @@ class ParseForestDumper(ParseForestNavigator):
         # Interior nodes are not dumped
         # and do not increment the indentation level
         if not w.is_interior:
-            n = w.nonterminal.name
-            if (n.endswith("?") or n.endswith("*")) and w.is_empty:
+            if w.is_empty and w.nonterminal.is_optional:
                 # Skip printing optional nodes that don't contain anything
                 return NotImplemented # Don't visit child nodes
             # Identify this as a nonterminal
-            self._result.append("N{0} {1}".format(level, n))
+            self._result.append("N{0} {1}".format(level, w.nonterminal.name))
         return None # No results required, but visit children
 
     def _visit_family(self, results, level, w, ix, prod):

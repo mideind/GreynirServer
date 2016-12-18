@@ -308,14 +308,14 @@ SagnRuna/tala/pers/kyn →
         SagnFramhald/tala/pers/kyn*
 
 SagnFramhald/tala/pers/kyn →
-    SagnKomma/tala/pers/kyn* KommaOgEðaEn Sagnliður/tala/pers/kyn
+    SagnKomma/tala/pers/kyn* KommaOgEðaEn FsAtv? Sagnliður/tala/pers/kyn
         LoTengtSögn_nf/tala/kyn? SagnInnskot?
 
 SagnKomma/tala/pers/kyn →
     ',' Sagnliður/tala/pers/kyn LoTengtSögn_nf/tala/kyn? SagnInnskot?
 
 # Hvetja til framhalds sömu sagnrunu, fremur en að skipta niður í fleiri setningar
-$score(+4) SagnFramhald/tala/pers/kyn
+$score(+5) SagnFramhald/tala/pers/kyn
 $score(+2) SagnKomma/tala/pers/kyn
 
 # Sagnir innan undirtrés geta ekki orsakað bónus á forsetningar utan þess
@@ -520,13 +520,13 @@ SetningSo →
 
     | SagnliðurLhÞt
 
-    | Sögn_bh SagnInnskot?                                    # Farðu galvaskur að sækja kaffi strax
+    | Sögn_bh SögnFrh_bh?                                       # Farðu galvaskur að sækja kaffi strax
 
     | HjSögnMegiSkuli_et_p3 FsAtv? EinSögn_nh_et_hk SagnInnskot? # Má með sanni segja (að þeir hafi sloppið með skrekkinn)
 
-    | 'þurfa'_et_p3 FsRuna? Nl_þf NhFyllingEðaAtv             # Þarf til þess lagafyrirmæli að svipta mann réttindum
+    | 'þurfa'_et_p3 FsRuna? Nl_þf NhFyllingEðaAtv               # Þarf til þess lagafyrirmæli að svipta mann réttindum
 
-    | SagnliðurVh Afleiðing FsAtv?                            # Haldi þessi þróun áfram er voðinn vís
+    | SagnliðurVh Afleiðing FsAtv?                              # Haldi þessi þróun áfram er voðinn vís
 
     # (Því) hafi þurft að senda alla farþegana (á hótel)
     # (Í dag) gæti hafa rignt
@@ -904,7 +904,8 @@ OgEðaEnÞrátt →
     OgEðaEn | 'þrátt_fyrir_að'
 
 OgSögn_lhþt/tala/kyn →
-    FsAtv? OgEðaEn FsAtv? EinSögnFrh_lhþt/tala/kyn
+    # Leyfa að 'og' sé sleppt, sbr. "Tveir menn voru stöðvaðir í morgun [sterklega] grunaðir um ölvun við akstur"
+    FsAtv? OgEðaEnAtv? EinSögnFrh_lhþt/tala/kyn
     | FsAtv? ',' OgEðaEn? FsAtv? EinSögnFrh_lhþt/tala/kyn FsAtvKomma?
 
 OgSögn_lhnt →
@@ -1065,18 +1066,32 @@ EinSögn_nh/tala/kyn →
 
 Sögn_bh →
     # Farðu út að þvo bílinn
-    so_0_bh NhFylling?
+    so_0_bh NhFylling? SagnInnskot?
     # Förum að þvo bílinn
-    | so_0_gm_fh_p1_ft_nt NhFylling?
+    | so_0_gm_fh_p1_ft_nt NhFylling? SagnInnskot?
     # Lofið barninu [að borða]
-    | Sögn_1_bh NhFylling?
+    | Sögn_1_bh NhFylling? SagnInnskot?
     # Skrifaðu jólasveininum bréf
-    | Sögn_2_bh
+    | Sögn_2_bh SagnInnskot?
     # Láttu/látið það ekki slá ykkur (út af laginu) og fara (með ykkur í gönur)
     | 'láta'_bh Nl_þf AtvFs? EinSögn_nh/tala/kyn OgSögn_nh/tala/kyn*
 
 # Boðháttur er sjaldgæfur - viljum aðra kosti frekar
 $score(-5) Sögn_bh
+$tag(begin_prep_scope) Sögn_bh
+
+SögnFrh_bh →
+    KommuSögn_bh* OgSögn_bh+
+
+KommuSögn_bh →
+    ',' FsAtv? Sögn_bh
+
+OgSögn_bh →
+    ','? OgEðaEn FsAtv? Sögn_bh
+
+# ...en þegar eru komnar tvær eða fleiri sagnir í röð þá er það líklegri lausn
+$score(+10) KommuSögn_bh
+$score(+10) OgSögn_bh
 
 # Sögn með engu viðfangi ('lenti')
 # ('Maðurinn lenti')
@@ -1121,7 +1136,8 @@ SögnMeðF_0/tala/pers/kyn →
     | so_subj_op/aukafall Nl/aukafall/tala/pers/kyn NhFylling/tala/kyn?
 
     # (Í dag) hefur [ekki] gerst það sama
-    | HjSögn/tala/pers FsAtv? so_0_sagnb Nl_nf/tala/pers/kyn NhFylling/tala/kyn?
+    # (Um árabil) hefur verið [í gildi] yfirlýsing
+    | HjSögn/tala/pers FsAtv? so_0_sagnb FsRuna? Nl_nf/tala/pers/kyn NhFylling/tala/kyn?
 
     # (Í dag) hafa mennirnir [ekki getað] lent
     | HjSögn/tala/pers Nl_nf/tala/pers/kyn GetaAtv_sagnb? HreinSögnAtv_sagnb/tala/kyn
@@ -1195,6 +1211,8 @@ So_1_bh_þf → so_1_þf_bh | so_1_þf_gm_fh_p1_ft_nt # Borðaðu matinn / borð
 So_1_bh_þgf → so_1_þgf_bh | so_1_þgf_gm_fh_p1_ft_nt # Hafnaðu Páli / höfnum Páli
 So_1_bh_ef → so_1_ef_bh | so_1_ef_gm_fh_p1_ft_nt # Njóttu matarins / njótum matarins
 
+$tag(pick_up_verb) So_1_bh/fall
+
 So_1_vh_nf/tala/pers → so_1_nf_vh/tala/pers    # Væri hann leikari
 So_1_vh_þf/tala/pers → so_1_þf_vh/tala/pers    # Borðir þú matinn
 So_1_vh_þgf/tala/pers → so_1_þgf_vh/tala/pers  # Hafni ég Páli
@@ -1213,7 +1231,10 @@ Sögn_1_sagnb →
 
 # Sögn í nafnhætti með einu viðfangi
 
-Sögn_1_nh → So_1_nh/fall FsRuna? Nl/fall
+Sögn_1_nh →
+    So_1_nh/fall FsRuna? Nl/fall
+    # sjá/láta Pál breyta sér í kött
+    | So_1_þf_nh Nl_þf So_1_nh/fall FsRuna? Nl/fall
 
 # Sögn í boðhætti með einu viðfangi
 
@@ -1985,7 +2006,6 @@ NlKjarni_et/fall/kyn →
 
     EfLiðurForskeyti?           # 1. deildar (lið Vals)
     Einkunn_et/fall/kyn*        # leiðandi (fyrirtæki) / bókfært (virði)
-    Skst?                       # FIH (bankinn)
     Fyrirbæri/fall/kyn          # Már Guðmundsson seðlabankastjóri
     NlViðbót_et/fall/kyn?       # (Jón) sterki / (Jón), sultuslakur eftir gufubaðið, / (sonur) skósmiðsins
     Númer?                      # (ákvæði laga) nr. 33
@@ -2007,7 +2027,6 @@ NlKjarni_ft/fall/kyn →
 
     EfLiðurForskeyti?
     Einkunn_ft/fall/kyn*
-    Skst?
     Fyrirbæri_ft/fall/kyn
     NlViðbót_ft/fall/kyn?
     Númer?
@@ -2015,8 +2034,8 @@ NlKjarni_ft/fall/kyn →
     # | EfLiðurForskeyti Einkunn_ft/fall/kyn* Skst? Fyrirbæri_ft/fall/kyn LoEftirNl_ft/fall/kyn?
 
 Fyrirbæri_ft/fall/kyn →
-    no_ft/fall/kyn
-    | no_ft_gr/fall/kyn Fjöldi_ft/fall/kyn  # Mennina tíu / félögin tvö
+    Skst? no_ft/fall/kyn                 # [Commodore PET] tölvur
+    | Skst? no_ft_gr/fall/kyn Fjöldi_ft/fall/kyn  # Mennina tíu / félögin tvö
     | FyrirbæriMeðGreini_ft/fall/kyn
     | raðnr OgRaðnr+ no/tala/fall/kyn       # 2. og 3. grein laganna (eru fallnar úr gildi)
 
@@ -2117,12 +2136,12 @@ NlStak_ft_p3/fall/kyn → Fjölskylda_ft/kyn/fall FsRunaEftirNl?
 
 $score(+8) Fjölskylda_ft/kyn/fall
 
-# Sértilvik fyrir "vinstri-grænn"
+# Sértilvik fyrir "vinstri-grænn" (ath: stutt bandstrik, ekki en- eða em-dash)
 
-NlStak_ft_p3_nf_hk → 'vinstri'_ft_nf_hk "-:en"? 'grænn'_ft_nf_hk
-NlStak_ft_p3_þf_hk → 'vinstri'_ft_þf_hk "-:en"? 'grænn'_ft_þf_hk
-NlStak_ft_p3_þgf_hk → 'vinstri'_ft_þgf_hk "-:en"? 'grænn'_ft_þgf_hk
-NlStak_ft_p3_ef_hk → 'vinstri'_ft_ef_hk "-:en"? 'grænn'_ft_ef_hk
+NlStak_ft_p3_nf_hk → 'vinstri'_ft_nf_hk "-"? 'grænn'_ft_nf_hk
+NlStak_ft_p3_þf_hk → 'vinstri'_ft_þf_hk "-"? 'grænn'_ft_þf_hk
+NlStak_ft_p3_þgf_hk → 'vinstri'_ft_þgf_hk "-"? 'grænn'_ft_þgf_hk
+NlStak_ft_p3_ef_hk → 'vinstri'_ft_ef_hk "-"? 'grænn'_ft_ef_hk
 
 # 'hvorugt okkar systkinanna', 'enginn okkar', 'einhver ykkar bræðranna', 'einn liðsmanna'
 NlStak_et_p3/fall/kyn → OkkarFornafn/fall/kyn OkkarFramhald/kyn
@@ -2315,7 +2334,7 @@ MörgÁr →
 
 $score(+20) Árin/fall
 
-# Leyfa sérnöfn (skrifuð sem runa orða með stórum staf)
+# Leyfa frístandandi sérnöfn (skrifuð sem runa orða með stórum staf)
 # sem nafnliði 3p. eintölu hvorugkyns, í öllum föllum
 # Orka Energy, OG Capital
 
@@ -2332,25 +2351,26 @@ NlSérnafn → eo* Sérnafn no_ef? # ekki Nakamoto, örugglega Nelson Mandela, H
 $score(-16) NlSérnafn
 
 Sérnafn →
-    sérnafn | entity | LangtSérnafn
+    sérnafn tala? | entity tala? | LangtSérnafn
 
 # ATH: eitt 'entity' getur verið fleiri en eitt samliggjandi orð.
 # Ekki ætti að hafa samliggjandi 'entity' í málfræðireglu.
+# Hér eru höfð stutt bandstrik milli nafna, ekki en- eða em-dash.
 
 LangtSérnafn →
-    sérnafn "-:en"? sérnafn+        # Glass-Steagall lögin
-    | sérnafn+ entity+ sérnafn*     # Eining með nafni sem þekkt er úr gagnagrunni eða runu slíkra
-    | entity+ sérnafn+              # Eining með nafni sem þekkt er úr gagnagrunni eða runu slíkra
-    | entity "-:en" entity          # Villeneuve-Loubet
-    | entity+ sérnafn* fyrirtæki    # Standard Oil Corp.
+    sérnafn "-"? sérnafn+ tala?             # Glass-Steagall lögin
+    | sérnafn+ "-"? entity+ sérnafn* tala?  # Eining með nafni sem þekkt er úr gagnagrunni eða runu slíkra
+    | entity+ "-"? sérnafn+ tala?           # Eining með nafni sem þekkt er úr gagnagrunni eða runu slíkra
+    | entity "-" entity tala?               # Villeneuve-Loubet
+    | entity+ "-"? sérnafn* tala? fyrirtæki # Standard Oil Corp.
 
 Sérnafn/fall →
-    sérnafn/fall | LangtSérnafn/fall
+    sérnafn/fall tala? | LangtSérnafn/fall tala?
 
 LangtSérnafn/fall →
-    sérnafn/fall "-"? sérnafn/fall+             # Stóra-Felli
-    | sérnafn/fall+ entity+ sérnafn/fall*       # Eining með nafni sem þekkt er úr gagnagrunni eða runu slíkra
-    | entity+ sérnafn/fall+                     # Eining með nafni sem þekkt er úr gagnagrunni eða runu slíkra
+    sérnafn/fall "-"? sérnafn/fall+ tala?               # Stóra-Felli
+    | sérnafn/fall+ "-"? entity+ sérnafn/fall* tala?    # Eining með nafni sem þekkt er úr gagnagrunni eða runu slíkra
+    | entity+ "-"? sérnafn/fall+ tala?                  # Eining með nafni sem þekkt er úr gagnagrunni eða runu slíkra
 
 # Leyfa löngu sérnafni í nefnifalli að passa við langt sérnafn án falls
 LangtSérnafn_nf →
@@ -2381,9 +2401,13 @@ NlStak_ft_p3/fall/kyn →
 # Hvorki X né Y
 # Bæði X og Y
 
-NlStak_ft_p3/fall/kyn →
+NlStak_ft_p3/fall/kyn → NlBæðiHvorki/fall/kyn
+
+NlBæðiHvorki/fall/kyn →
     "bæði" Nl/fall/kyn "og:st" Nl/fall/kyn     # (Við þurftum að lóga) bæði hestinum og kettinum
     | "hvorki" Nl/fall/kyn "né" Nl/fall/kyn # Hvorki hestinum né kettinum (var lógað)
+
+$score(+4) NlBæðiHvorki/fall/kyn
 
 NlStak_ft_p3_nf_hk → NlStak_ft_p3_hk_nf
 NlStak_ft_p3_þf_hk → NlStak_ft_p3_hk_þf
@@ -2392,7 +2416,9 @@ NlStak_ft_p3_ef_hk → NlStak_ft_p3_hk_ef
 
 Nl/kyn/fall → Nl/fall/kyn
 
-NlStak_ft_p3_hk/fall →
+NlStak_ft_p3_hk/fall → NlBæðiHvorki_p3_hk/fall
+
+NlBæðiHvorki_p3_hk/fall →
     "bæði" Nl_kk/fall "og:st" Nl_kvk/fall
     | "hvorki" Nl_kk/fall "né" Nl_kvk/fall
     | "bæði" Nl_kvk/fall "og:st" Nl_kk/fall
@@ -2402,24 +2428,31 @@ NlStak_ft_p3_hk/fall →
     | "bæði" Nl_hk/fall "og:st" Nl_kk/fall
     | "hvorki" Nl_hk/fall "né" Nl_kk/fall
 
-NlStak_ft_p1/fall/kyn →
-    "bæði" Nl_p1/fall/kyn "og:st" Nl_p2/fall/kyn     # bæði mér og þér þykir þetta óásættanlegt
-    | "hvorki" Nl_p1/fall/kyn "né" Nl_p2/fall/kyn # hvorki ég né þú höfum vit á þessu
-    | "bæði" Nl_p2/fall/kyn "og:st" Nl_p1/fall/kyn   # bæði þér og mér þykir þetta óásættanlegt
-    | "hvorki" Nl_p2/fall/kyn "né" Nl_p1/fall/kyn # hvorki þú né ég erum fallegar/falleg/fallegir
+$score(+4) NlBæðiHvorki_p3_hk/fall
+
+NlStak_ft_p1/fall/kyn → NlBæðiHvorki_p1_hk/fall
+
+NlBæðiHvorki_p1_hk/fall →
+    "bæði" Nl_p1/fall/kyn "og:st" Nl_p2/fall/kyn    # bæði mér og þér þykir þetta óásættanlegt
+    | "hvorki" Nl_p1/fall/kyn "né" Nl_p2/fall/kyn   # hvorki ég né þú höfum vit á þessu
+    | "bæði" Nl_p2/fall/kyn "og:st" Nl_p1/fall/kyn  # bæði þér og mér þykir þetta óásættanlegt
+    | "hvorki" Nl_p2/fall/kyn "né" Nl_p1/fall/kyn   # hvorki þú né ég erum fallegar/falleg/fallegir
+
+$score(+4) NlBæðiHvorki_p1_hk/fall
+
+# Skammstafanir með bandstriki nota stutt bandstrik, ekki en- eða em-dash
 
 Skst →
     Skst_abbrev
-    | sérnafn+ "-"      # Barclays-bankann, Al Thani-málið
-    | entity "-"
+    | Sérnafn "-"?              # Barclays-bankann, Al Thani-málið
 
-Skst_abbrev → no_abbrev "-"?  # FIH bankann
+Skst_abbrev → no_abbrev "-"?    # FIH bankann
 
 $score(+8) Skst
 $score(+4) Skst_abbrev
 
 Fyrirbæri/fall/kyn →
-    no_et/fall/kyn
+    Skst? no_et/fall/kyn     # Microsoft-hugbúnaðarrisinn, Nikon myndavél
     | Raðnr no_et/fall/kyn
     | FyrirbæriMeðGreini/fall/kyn
     | Úrslit/fall/kyn
@@ -2428,9 +2461,9 @@ Fyrirbæri/fall/kyn →
 
 Raðnr →
     raðnr
-    | raðnr Til raðnr               # 2.-3. sæti listans / 2. til 3. sæti listans
+    | raðnr Til raðnr           # 2.-3. sæti listans / 2. til 3. sæti listans
 
-# Úrslit í leikjum (32:27 sigur, 0:2 tap, 8:0 burst)
+# Úrslit í leikjum (32:27 sigur, 0:2-tap, 8:0 burst)
 
 Úrslit →
     tala ':' tala
@@ -2487,7 +2520,10 @@ SamstættFall_nf/kyn →
     VeiktLo_et/aukafall/kyn* no_gr_et/aukafall/kyn VeiktLo_et/aukafall/kyn? SérnafnEðaManneskja # (Ég versla við) herrafataverslunina Smekkmaður
 
 SérnafnEðaManneskja/fall →
-    Sérnafn/fall | Persóna/fall | Fyrirtæki/fall # (danska húsgagnahönnuðinn) Arne Jacobsen
+    # (danska húsgagnahönnuðinn) Arne Jacobsen
+    # (suður-kóreska símaframleiðandann) Samsung
+    # (kvikmyndina umtöluðu) 50 gráa skugga
+    Sérnafn/fall | Persóna/fall | Fyrirtæki/fall | Nafn/fall
 
 Persóna/fall →
     person/fall
@@ -2495,9 +2531,16 @@ Persóna/fall →
 $score(+8) Persóna/fall # Velja Persónu frekar en Sérnafn
 
 SérnafnEðaManneskja →
-    Sérnafn | Persóna | Fyrirtæki/fall
+    # (kvikmyndina umtöluðu) 50 gráir skuggar
+    Sérnafn | Persóna | Fyrirtæki/fall | Nafn_nf
 
 $score(-2) SérnafnEðaManneskja # Velja form með falli frekar en án falls
+
+Nafn/fall →
+    Nl_p3/fall/kyn
+
+# Ekki sækja í að nota nafnlið sem nafn í kjölfar annars nafnliðar með greini
+$score(-4) Nafn/fall
 
 Persóna →
     person
@@ -2505,10 +2548,18 @@ Persóna →
 $score(+8) Persóna
 
 VeiktLo/tala/fall/kyn →
-    lo_vb/tala/fall/kyn
+    SkstAtv? lo_vb/tala/fall/kyn
+
+# suður-kóreski farsímaframleiðandinn Samsung
+
+SkstAtv → SkstAtvOrð "-" # Stutt bandstrik
+
+SkstAtvOrð →
+    "norður:ao" | "suður:ao" | "vestur:ao" | "austur:ao"
 
 # Hvetja til runa af lýsingarorðum í veikri beygingu með skilgreiningu sérnafna
 $score(+8) VeiktLo/tala/fall/kyn
+$score(+2) SkstAtv
 
 $score(+5) SamstættFall/fall/kyn
 $score(-1) ÓsamstættFall/aukafall/kyn
@@ -2596,7 +2647,7 @@ $score(+5) Titill/fall
 $score(-6) KommulausTitill/fall
 
 # Gefa enn meiri plús fyrir heila titla innan kommu
-$score(+5) KommuTitill/fall
+$score(+8) KommuTitill/fall
 
 # Eignarfallsliður á eftir nafnlið
 # ('formaður Gimlis, félags eldri borgara')
@@ -2703,7 +2754,7 @@ KommaTengiliður/tala/pers/kyn →
 $score(-2) KommaTengiliður/tala/pers/kyn
 
 Tengiliður/tala/pers/kyn →
-    Tengiorð Tengisetning/tala/pers/kyn
+    Tengiorð Tengisetning/tala/pers/kyn OgTengisetning/tala/pers/kyn*
 
 Tengiorð →
     TengiorðSem | TengiorðEr
@@ -2724,6 +2775,12 @@ TengiYfirsetning →
 
 # Nota frekar SetningÁnF heldur en HreinYfirsetning, ef völ er á hvoru tveggja
 $score(-4) TengiYfirsetning
+
+# ...sem hætta gæti stafað af og eru kílómetri í þvermál
+OgTengisetning/tala/pers/kyn →
+    ","? OgSem Tengisetning/tala/pers/kyn
+
+$score(+2) OgTengisetning/tala/pers/kyn
 
 NlEind/fall →
     NlEind/tala/pers/fall/kyn
@@ -2804,6 +2861,8 @@ SvigaInnihald/tala/pers/fall/kyn →
     > SvigaInnihaldNl   # Ef ekki finnst sama fall og tala, prófa almennan nafnlið
     > HreinYfirsetning
 
+# Árabil nota en-dash
+
 Árabil →
     ártal "-:en" ártal   # 1951-1983
     > ártal "-:en" tala  # 2001-8
@@ -2856,6 +2915,8 @@ EnÍOgEða →
 
 $score(-14) EnÍOgEða # Frekar að líta á 'en' sem samtengingu ef það er hægt
 
+OgSem → "og:st" "sem:st"? | "eða:st" "sem:st"? | "ellegar" | "en:st" "sem:st"?
+
 ÞarÁMeðal → "þar" "á:fs" "meðal:ao"
 
 $score(+16) ÞarÁMeðal # Líta frekar á "þar á meðal" sem samtengingu en skýringu
@@ -2874,6 +2935,8 @@ OgEðaEn →
     | "eins:ao" "og:st"
 
 OgEðaEnNema → OgEðaEn | "nema:st"
+
+OgEðaEnAtv → OgEðaEn FsAtv?
 
 KommaOgEðaEn → ',' | ','? OgEðaEn | "-:em" OgEðaEn
 KommaOgEðaEnNema → ',' | ';' | ','? OgEðaEnNema
@@ -2991,9 +3054,19 @@ Nl_ft_p3_ef_hk →
 # nafnorðið er með greini eða án. (Sbr.: 'Fallega konan talaði við mig'
 # vs. 'Falleg kona talaði við mig'.)
 Lo/fall/tala/kyn →
-    AtviksliðurEinkunn* lo/fall/tala/kyn # LoViðhengi? # (Þingmenn) kosnir leynilegri kosningu
-    | "mun:kk" lo_mst/fall/tala/kyn # LoViðhengi? # (Schengen rekur) mun öflugri gagnagrunn / (þau voru) mun frjálsari skoðana sinna
-    | "sem:st" lo_esb/fall/tala/kyn # (hvernig skuli stuðla að) sem jöfnustu hlutfalli
+    AtviksliðurEinkunn* lo/fall/tala/kyn # (Þingmenn) kosnir leynilegri kosningu
+    | LoMun/fall/tala/kyn
+    | LoSem/fall/tala/kyn
+
+LoMun/fall/tala/kyn →
+    "mun:kk" lo_mst/fall/tala/kyn # (Schengen rekur) mun öflugri gagnagrunn / (þau voru) mun frjálsari skoðana sinna
+
+$score(+10) LoMun/fall/tala/kyn
+
+LoSem/fall/tala/kyn →
+    "sem:ao" lo_esb/fall/tala/kyn # (hvernig skuli stuðla að) sem jöfnustu hlutfalli
+
+$score(+4) LoSem/fall/tala/kyn
 
 # Leyfa sagnorðum að standa í stað lýsingarorða ef þau
 # eru í lýsingarhætti þátíðar, sterkri eða veikri beygingu
@@ -3059,7 +3132,8 @@ $score(+6) LoEftirNlMeðÞgf/fall/tala/kyn
 # '(Ég drakk) hvítu, volgu og feitu mjólkina' / '(Ég sá) hvíta, volga og feita mjólk'
 # '(Íslendingar fluttu fé til annarra) og í sumum tilvikum öruggari landa'
 
-LoLiður/tala/fall/kyn → Lo/fall/tala/kyn
+LoLiður/tala/fall/kyn →
+    Lo/fall/tala/kyn
     | LoLiður/tala/fall/kyn LoKomma/tala/fall/kyn* KommaOgEðaEn FsRuna? Lo/fall/tala/kyn ','?
 
 LoLiður_nf/tala/kyn → LoLiður_et_nf/kyn | LoLiður_ft_nf/kyn
@@ -3156,7 +3230,7 @@ FsMeðFallstjórn →
     | "um:fs" "að:st" HreinYfirsetning ','? # 'um að lög um endurupptökunefnd standist ekki stjórnarskrá'
     | "á:fs" "að:st" HreinYfirsetning ','? # 'er bjartsýnn á að Alfreð komi aftur í liðið'
     | "að:fs" "nafni:hk" person_nf    # Ég ræddi við konu að nafni Aðalbjörg Jónsdóttir
-    | "á:fs" Vikudagur_gr_þf_et "kemur:so" # á sunnudaginn kemur
+    | "á:fs" Vikudagur_gr_þf_et "kemur:so" # á sunnudaginn kemur / á laugardagskvöldið kemur
     | FsÍGegnUm
     | FsAðBaki
     | FsTilÞgf
@@ -3170,7 +3244,7 @@ FsMeðFallstjórn →
 
 $score(+1) FsMeðFallstjórn
 
-FsMeðNh → NhLiðir
+FsMeðNh → NhLiðir SagnInnskot?
 
 $tag(begin_prep_scope) FsMeðNh # Nýtt samhengi fyrir samtengingu sagna og forsetninga
 
@@ -3264,7 +3338,7 @@ FsRunaEftirNl →
 
 # Hvetja létt til þess að forsetningar séu tengdar nafnlið
 $score(+1) FsRunaEftirNl
-$tag(purge_prep) FsRunaEftirNl # Delete contained prepositions(fs) after processing
+$tag(purge_prep) FsRunaEftirNl # Ekki senda innifaldar forsetningar upp tréð
 
 # Forskeyti sem leyfileg eru á undan forsetningarlið innan kommu
 FsForskeyti →
@@ -3285,8 +3359,11 @@ EinnAl →
     | SemStendur
     | "hingað" "til:ao"
     | "til:ao" "að:nhm" "mynda:so"
+    | "sem:ao" "sagt"
     | töl "sinnum"          # tvisvar, þrisvar og fjórum sinnum er skilgreint í Main.conf
     | Úrslit                # KR sigraði Val 6:0
+
+$tag(no_prep) EinnAl        # Engar forsetningar hér inni - óþarfi að skoða dótturgreinar
 
 EkkiNeitt →
     "ekki:ao" "neitt:ao"          # (Ég þekki þetta) ekki neitt
@@ -3324,6 +3401,7 @@ AtviksliðurEinkunn →
     | Tímasetning
     | Aldur                         # Hin 29 ára gamla fyrirsæta
     | "allt" "að:ao"                # 'fjárfesta fyrir allt að 100 milljónir króna'
+    | "svo:ao" "sem:ao"             # 'enda kemur kynlíf þeirra svo sem engum við'
     | UmEðaYfir
 
 UmEðaYfir →
@@ -3346,6 +3424,8 @@ OgKlukkan → "og:st" tala | "og:st" töl
 Degis → "árdegis" | "síðdegis" | "miðdegis"
 
 OgMeð → "og:st" "með:fs"
+
+# Talnabil nota en-dash
 
 Til → "-:en" | "til:st"
 
@@ -3563,6 +3643,13 @@ Vikudagur/fall/tala →
     | 'fimmtudagur'/fall/tala
     | 'föstudagur'/fall/tala
     | 'laugardagur'/fall/tala
+    | 'sunnudagskvöld'/fall/tala
+    | 'mánudagskvöld'/fall/tala
+    | 'þriðjudagskvöld'/fall/tala
+    | 'miðvikudagskvöld'/fall/tala
+    | 'fimmtudagskvöld'/fall/tala
+    | 'föstudagskvöld'/fall/tala
+    | 'laugardagskvöld'/fall/tala
 
 Vikudagur_gr/fall/tala →
     'sunnudagur'_gr/fall/tala
@@ -3572,6 +3659,13 @@ Vikudagur_gr/fall/tala →
     | 'fimmtudagur'_gr/fall/tala
     | 'föstudagur'_gr/fall/tala
     | 'laugardagur'_gr/fall/tala
+    | 'sunnudagskvöld'_gr/fall/tala
+    | 'mánudagskvöld'_gr/fall/tala
+    | 'þriðjudagskvöld'_gr/fall/tala
+    | 'miðvikudagskvöld'_gr/fall/tala
+    | 'fimmtudagskvöld'_gr/fall/tala
+    | 'föstudagskvöld'_gr/fall/tala
+    | 'laugardagskvöld'_gr/fall/tala
 
 Árstíð_þf/tala →
     'haust'_hk_þf/tala

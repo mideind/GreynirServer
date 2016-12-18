@@ -193,6 +193,7 @@ class Result:
         if self._params:
             for p, c in zip(self._params, self._node.children()):
                 if p is not None:
+                    # yield from p.enum_descendants(test_f)
                     for d_c, d_p in p.enum_descendants(test_f):
                         yield (d_c, d_p)
                 if test_f is None or test_f(c):
