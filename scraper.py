@@ -282,7 +282,7 @@ class Scraper:
             # Let the pool work on chunks of articles, recycling the
             # processes after each chunk to contain memory creep.
 
-            CHUNK_SIZE = 100
+            CHUNK_SIZE = 150
             if urls is None:
                 g = iter_unparsed_articles(reparse, limit)
             else:
@@ -381,7 +381,7 @@ def scrape_articles(reparse = False, limit = 0, urls = None):
         sc = None
 
     ts = "{0}".format(datetime.utcnow())[0:19]
-    print("\nTime: {0}".format(ts), flush = True)
+    print("\nTime: {0}".format(ts))
 
     print("------ Scrape completed -------")
 

@@ -2100,7 +2100,7 @@ NlStak_p1_ft/fall/kyn →
 
 NlStakViðbót/fall/kyn → NlStak_p3/fall/kyn
 
-$score(-6) NlStakViðbót/fall/kyn # Draga af stig fyrir "við fóstbræður" vegna hættu á ruglingi við forsetninguna 'við'
+$score(-8) NlStakViðbót/fall/kyn # Draga af stig fyrir "við fóstbræður" vegna hættu á ruglingi við forsetninguna 'við'
 
 NlStak_ft_p1/fall/kyn → NlStak_p1_ft/fall/kyn FsRunaEftirNl?
 

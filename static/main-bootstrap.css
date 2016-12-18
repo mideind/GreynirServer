@@ -321,7 +321,7 @@ td.ratio div.progress {
    margin-bottom: 0;
 }
 
-div.progress div.progress-bar {
+td.ratio div.progress div.progress-bar {
    min-width: 3em;
 }
 

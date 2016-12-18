@@ -1,16 +1,16 @@
 #!/bin/bash
 # Scraper
-cd /home/villi/github/Reynir
+cd ~/github/Reynir
 source p33/bin/activate
 python scraper.py --limit=2000
 deactivate
 # Tagger
-cd /home/villi/github/Reynir/vectors
+cd ~/github/Reynir/vectors
 source venv/bin/activate
 python builder.py --limit=2000 tag
 deactivate
 # Processor
-cd /home/villi/github/Reynir
+cd ~/github/Reynir
 source p33/bin/activate
 python processor.py --limit=2000
 python processor.py --update --limit=2000

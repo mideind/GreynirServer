@@ -4,7 +4,7 @@
 
 # Deployment script for greynir.is
 
-SRC=/home/villi/github/Reynir
+SRC=~/github/Reynir
 DEST=/usr/share/nginx/greynir.is
 
 echo "Deploying $SRC to $DEST..."
