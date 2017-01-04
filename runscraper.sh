@@ -7,7 +7,7 @@ deactivate
 # Tagger
 cd ~/github/Reynir/vectors
 source venv/bin/activate
-python builder.py --limit=2000 tag
+python builder.py --limit=2000 --notify tag
 deactivate
 # Processor
 cd ~/github/Reynir

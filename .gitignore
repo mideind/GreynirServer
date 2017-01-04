@@ -28,6 +28,7 @@ resources/*.tmLanguage
 resources/visir/
 resources/reykjanes/
 mim/
+ifd/
 gold/
 fonts/
 logs/
@@ -37,12 +38,14 @@ cffi_test/
 backup/
 
 # Vectors directory
+vectors/resources/
 vectors/bz2.py
 vectors/gensim-0.13.2/
 vectors/numpy-1.11.1/
 vectors/models/
 vectors/scraperdb.py
 vectors/settings.py
+vectors/similar.py
 vectors/t
 vectors/test.py
 

@@ -150,9 +150,11 @@ class Reducer:
             # Find out whether the first part of all the terminals are the same
             same_first = len(set(terminal.first for terminal in s)) == 1
             txt = tokens[i].lower
+            # Get the last part of a composite word (e.g. 'jaðar-áhrifin' -> 'áhrifin')
+            txt_last = txt.rsplit('-', maxsplit = 1)[-1]
             # No need to check preferences if the first parts of all possible terminals are equal
             # Look up the preference ordering from Reynir.conf, if any
-            prefs = None if same_first else Preferences.get(txt)
+            prefs = None if same_first else Preferences.get(txt_last)
             found_pref = False
             sc = scores[i]
             if prefs:
@@ -195,8 +197,8 @@ class Reducer:
                     # Noun priorities, i.e. between different genders
                     # of the same word form
                     # (for example "ára" which can refer to three stems with different genders)
-                    if txt in noun_prefs:
-                        np = noun_prefs[txt].get(t.gender, 0)
+                    if txt_last in noun_prefs:
+                        np = noun_prefs[txt_last].get(t.gender, 0)
                         sc[t] += np
 
                 elif tfirst == "fs":

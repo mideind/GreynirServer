@@ -78,6 +78,21 @@
       <ul id="namelist"></ul>
    </div>
 
+   <div id="similar">
+      <!-- List of similar articles goes here -->
+      <h3>Svipaðar greinar</h3>
+      <ul id="similarlist">
+{% for sa in similar %}
+         <li>
+            <span class="timestamp">{{ sa.ts_text }}</span>
+            <img src="{{ url_for('static', filename = sa.domain + '.ico') }}" width="16" height="16">
+            <a href="{{ url_for('page', id = sa.uuid) }}"><span class="heading">{{ sa.heading }}</span></a>
+            <span class="similarity">{{ sa.similarity | format_is(1) }}%</span>
+         </li>
+{% endfor %}
+      </ul>
+   </div>
+
    <div id="statistics">
       <!-- Statistics go here -->
       <h3>Tölfræði</h3>
@@ -131,6 +146,8 @@
          jResult = $.parseJSON(json.result);
       j = jResult;
       displayTokens(jResult);
+      // Display similar articles
+      $("div#similar").css("display", "block");
       // Show help text
       $("div#help").css("display", "block");
       // Show statistics
@@ -151,6 +168,7 @@
       $("button.refresh").attr("disabled", "disabled");
       $("div#statistics").css("display", "none");
       $("div#register").css("display", "none");
+      $("div#similar").css("display", "none");
       serverQuery('/reparse.api', // Endpoints with .api suffix are not cached
          {
             id : uuid
@@ -166,6 +184,8 @@
       $("div#help").css("display", "block");
       // Show statistics
       $("div#statistics").css("display", "block");
+      // Show similar list
+      $("div#similar").css("display", "block");
       $("button.refresh")
          .click(function(ev) {
             reparseArticle("{{ article.uuid | safe }}");

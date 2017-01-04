@@ -193,7 +193,7 @@ class Meanings:
         with closing(BIN_Db.get_db()) as db:
             prefix = a[0]
             stem = a[1]
-            m = db._forms(stem)
+            m = db.forms(stem)
             if m:
                 for w in m:
                     if w.ordfl == ordfl:

@@ -111,7 +111,7 @@ class SessionContext:
         """ Clean up the reference to the singleton Scraper_DB instance """
         cls._db = None
 
-    def __init__(self, session = None, commit = False):
+    def __init__(self, session = None, commit = False, read_only = False):
 
         if session is None:
             # Create a new session that will be automatically committed
@@ -120,6 +120,9 @@ class SessionContext:
             self._new_session = True
             self._session = db.session
             self._commit = commit
+            if read_only:
+                # Set the transaction as read only, which can save resources
+                self._session.execute("SET TRANSACTION READ ONLY")
         else:
             self._new_session = False
             self._session = session
@@ -238,6 +241,8 @@ class Article(Base):
     tree = Column(String)
     # The tokens of the article in JSON string format
     tokens = Column(String)
+    # The article topic vector as an array of floats in JSON string format
+    topic_vector = Column(String)
 
     # The back-reference to the Root parent of this Article
     root = relationship("Root", foreign_keys="Article.root_id",

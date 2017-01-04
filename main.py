@@ -35,7 +35,7 @@ import os
 import time
 import random
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import wraps
 from decimal import Decimal
 
@@ -54,6 +54,7 @@ from scraperdb import SessionContext, desc, Root, Person, Article, ArticleTopic,
     GenderQuery, StatsQuery
 from query import Query
 from getimage import get_image_url
+from similar import SimilarityClient
 
 
 # Initialize Flask framework
@@ -187,6 +188,9 @@ _MAX_UUID_LENGTH = 36
 _MAX_TEXT_LENGTH = 8192
 _MAX_TEXT_LENGTH_VIA_URL = 512
 _MAX_QUERY_LENGTH = 512
+
+# Similarity query client
+similarity_client = SimilarityClient()
 
 
 def top_news(topic = None, start = None, limit = _TOP_NEWS_LENGTH):
@@ -986,12 +990,55 @@ def page():
         # Prepare the article for display (may cause it to be parsed and stored)
         a.prepare(session, verbose = True, reload_parser = True)
         register = a.create_register(session)
+
         # Fetch names of article topics, if any
         topics = session.query(ArticleTopic) \
             .filter(ArticleTopic.article_id == a.uuid).all()
         topics = [ dict(name = t.topic.name, id = t.topic.identifier) for t in topics ]
 
-        return render_template("page.html", article = a, register = register, topics = topics)
+        # Fetch similar (related) articles, if any
+        similar = []
+        if similarity_client:
+            REQUEST = 20 # Ask for 20 matches (including the original document)
+            DISPLAY = 10 # Display at most 10 matches
+            result = similarity_client.similar_articles(a.uuid, n = REQUEST)
+            # Returns a list of tuples: (article_id, similarity)
+            for sid, similarity in result:
+                if similarity > 0.9999:
+                    # The original article (or at least a verbatim copy of it)
+                    continue
+                q = session.query(Article).join(Root).filter(Article.id == sid)
+                sa = q.one_or_none()
+                if sa:
+                    spercent = 100.0 * similarity
+
+                    def is_probably_same_as(last):
+                        """ Return True if the current article is probably different from
+                            the one already described in the last object """
+                        if last["domain"] != sa.root.domain:
+                            # Another root domain: can't be the same content
+                            return False
+                        if (last["ts"] - sa.timestamp) > timedelta(minutes = 10):
+                            # More than 10 minutes timestamp difference
+                            return False
+                        # Quite similar: probably the same article
+                        return (spercent / last["similarity"]) > 0.995
+
+                    if not any(is_probably_same_as(p) for p in similar):
+                        # Don't add another article with practically the same similarity
+                        # as the previous one, as it is very probably a duplicate
+                        ts = sa.timestamp.isoformat()[0:10]
+                        similar.append(dict(heading = sa.heading, url = sa.url,
+                            uuid = sid, domain = sa.root.domain, ts = sa.timestamp, ts_text = ts,
+                            similarity = spercent))
+                        if len(similar) == DISPLAY:
+                            break
+                    else:
+                        print("Ignoring: {0} ({1:.2f})".format(sa.heading, spercent))
+            print("Similar list is:\n   {0}".format("\n   ".join(str(s) for s in similar)))
+
+        return render_template("page.html", article = a, register = register,
+            topics = topics, similar = similar)
 
 
 @app.route("/")
@@ -1041,6 +1088,12 @@ if Settings.DEBUG:
     print("Running Reynir with debug={0}, host={1}, db_hostname={2}"
         .format(Settings.DEBUG, Settings.HOST, Settings.DB_HOSTNAME))
 
+# Establish a connection to the similarity client, if available
+try:
+    similarity_client.connect()
+except:
+    print("Unable to connect to similarity client")
+    similarity_client = None
 
 if __name__ == "__main__":
 

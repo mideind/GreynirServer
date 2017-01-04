@@ -296,6 +296,10 @@ div#output {
    margin-bottom: 24px;
 }
 
+div#output li {
+   line-height: 1.5em;
+}
+
 tr.topitem, tr.article {
    cursor: pointer;
 }
@@ -339,18 +343,36 @@ tr.topitem span.title {
 }
 
 #namelist span.name,
-#namelist span.entity {
+#namelist span.entity,
+#similarlist span.heading {
    color: #337ab7;
    cursor: pointer;
 }
 
 #namelist span.name:hover,
-#namelist span.entity:hover {
+#namelist span.entity:hover,
+#similarlist span.heading:hover {
    background-color: #FFEEA9; /* Greynir pale yellow */
+}
+
+#similarlist a:hover {
+   text-decoration: none;
 }
 
 #namelist span.title {
    padding-left: 6px;
+}
+
+#similarlist li img {
+   margin-left: 10px;
+   margin-right: 8px;
+}
+
+#similarlist li span.similarity {
+   margin-left: 8px;
+   font-style: italic;
+   font-size: 0.9em;
+   color: #aaaaaa;
 }
 
 span.glyphicon-gender-male {

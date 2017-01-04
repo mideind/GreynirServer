@@ -1116,12 +1116,24 @@ def parse_phrases_1(token_stream):
                 og_token = next(token_stream)
                 if og_token.kind != TOK.WORD or (og_token.txt != "og" and og_token.txt != "eða"):
                     # Incorrect prediction: make amends and continue
-                    if og_token.kind == TOK.WORD and token.txt in ADJECTIVE_PREFIXES:
-                        # hálf-opinberri, marg-ítrekaðri
-                        token = TOK.Word(token.txt + "-" + og_token.txt,
-                            [m for m in og_token.val if m.ordfl == "lo" or m.ordfl == "ao"])
-                        next_token = next(token_stream)
-                    else:
+                    handled = False
+                    if og_token.kind == TOK.WORD:
+                        composite = token.txt + "-" + og_token.txt
+                        if token.txt.lower() in ADJECTIVE_PREFIXES:
+                            # hálf-opinberri, marg-ítrekaðri
+                            token = TOK.Word(composite,
+                                [m for m in og_token.val if m.ordfl == "lo" or m.ordfl == "ao"])
+                            next_token = next(token_stream)
+                            handled = True
+                        else:
+                            # Check for Vestur-Þýskaland, Suður-Múlasýsla (which are in BÍN in their entirety)
+                            m = BIN_Db.get_db().meanings(composite)
+                            if m:
+                                # Found composite in BÍN: return it as a single token
+                                token = TOK.Word(composite, m)
+                                next_token = next(token_stream)
+                                handled = True
+                    if not handled:
                         yield token
                         # Put a normal hyphen instead of the composite one
                         token = TOK.Punctuation(HYPHEN)

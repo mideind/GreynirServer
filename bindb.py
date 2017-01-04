@@ -112,7 +112,7 @@ class BIN_Db:
     # Thread local storage - used for database connections
     tls = threading.local()
 
-    # Wait for database to become availble?
+    # Wait for database to become available?
     wait = False
 
     # Database connection parameters
@@ -122,16 +122,16 @@ class BIN_Db:
     _DB_TABLE = "ord"
 
     # Query strings
-    _DB_Q_MEANINGS = "select stofn, utg, ordfl, fl, ordmynd, beyging " \
-        "from " + _DB_TABLE + " where ordmynd=(%s);"
-    _DB_Q_FORMS = "select stofn, utg, ordfl, fl, ordmynd, beyging " \
-        "from " + _DB_TABLE + " where stofn=(%s);"
-    _DB_Q_UTG = "select stofn, utg, ordfl, fl, ordmynd, beyging " \
-        "from " + _DB_TABLE + " where utg=(%s);"
-    _DB_Q_UTG_BEYGING = "select stofn, utg, ordfl, fl, ordmynd, beyging " \
-        "from " + _DB_TABLE + " where utg=(%s) and beyging=(%s);"
-    _DB_Q_NAMES = "select stofn, utg, ordfl, fl, ordmynd, beyging " \
-        "from " + _DB_TABLE + " where stofn=(%s) and fl='ism';"
+    _DB_Q_MEANINGS = "SELECT stofn, utg, ordfl, fl, ordmynd, beyging " \
+        "FROM " + _DB_TABLE + " WHERE ordmynd=(%s);"
+    _DB_Q_FORMS = "SELECT stofn, utg, ordfl, fl, ordmynd, beyging " \
+        "FROM " + _DB_TABLE + " WHERE stofn=(%s);"
+    _DB_Q_UTG = "SELECT stofn, utg, ordfl, fl, ordmynd, beyging " \
+        "FROM " + _DB_TABLE + " WHERE utg=(%s);"
+    _DB_Q_UTG_BEYGING = "SELECT stofn, utg, ordfl, fl, ordmynd, beyging " \
+        "FROM " + _DB_TABLE + " WHERE utg=(%s) AND beyging=(%s);"
+    _DB_Q_NAMES = "SELECT stofn, utg, ordfl, fl, ordmynd, beyging " \
+        "FROM " + _DB_TABLE + " WHERE stofn=(%s) AND fl='ism';"
 
     # Adjective endings
     _ADJECTIVE_TEST = "leg" # Check for adjective if word contains 'leg'
@@ -165,8 +165,8 @@ class BIN_Db:
         self._conn = None # Connection
         self._c = None # Cursor
         # Cache descriptors for the lookup functions
-        self._meanings_func = lambda key: self._meanings_cache.lookup(key, getattr(self, "_meanings"))
-        self._forms_func = lambda key: self._forms_cache.lookup(key, getattr(self, "_forms"))
+        self._meanings_func = lambda key: self._meanings_cache.lookup(key, getattr(self, "meanings"))
+        self._forms_func = lambda key: self._forms_cache.lookup(key, getattr(self, "forms"))
 
     def open(self, host, port = None, wait = False):
         """ Open and initialize a database connection """
@@ -216,9 +216,9 @@ class BIN_Db:
         if BIN_Db.tls.bin_db is self:
             BIN_Db.tls.bin_db = None
 
-    def _meanings(self, w):
+    def meanings(self, w):
         """ Return a list of all possible grammatical meanings of the given word """
-        # assert self._c is not None
+        assert self._c is not None
         m = None
         try:
             self._c.execute(BIN_Db._DB_Q_MEANINGS, [ w ])
@@ -230,7 +230,7 @@ class BIN_Db:
                 if w in Meanings.DICT:
                     # There are additional word meanings in the Meanings dictionary,
                     # coming from the settings file: append them
-                    m.extend([ BIN_Meaning._make(add_m) for add_m in Meanings.DICT[w] ])
+                    m.extend(map(BIN_Meaning._make, Meanings.DICT[w]))
                 # Order the meanings by priority, so that the most
                 # common/likely ones are first in the list and thus
                 # matched more readily than the less common ones
@@ -246,11 +246,11 @@ class BIN_Db:
                     return prio
                 m.sort(key = priority)
         except (psycopg2.DataError, psycopg2.ProgrammingError) as e:
-            print("Word {0} causing DB exception {1}".format(w, e))
+            print("Word '{0}' causing DB exception {1}".format(w, e))
             m = None
         return m
 
-    def _forms(self, w):
+    def forms(self, w):
         """ Return a list of all possible forms of a particular root (stem) """
         assert self._c is not None
         m = None
@@ -264,9 +264,9 @@ class BIN_Db:
                 if w in Meanings.ROOT:
                     # There are additional word meanings in the Meanings dictionary,
                     # coming from the settings file: append them
-                    m.extend([ BIN_Meaning._make(add_m) for add_m in Meanings.ROOT[w] ])
+                    m.extend(map(BIN_Meaning._make, Meanings.ROOT[w]))
         except (psycopg2.DataError, psycopg2.ProgrammingError) as e:
-            print("Word {0} causing DB exception {1}".format(w, e))
+            print("Word '{0}' causing DB exception {1}".format(w, e))
             m = None
         return m
 
@@ -335,7 +335,7 @@ class BIN_Db:
                 if m.fl in { "ism", "nafn" }:
                     return m.ordfl
         except (psycopg2.DataError, psycopg2.ProgrammingError) as e:
-            print("Word {0} causing DB exception {1}".format(w, e))
+            print("Name '{0}' causing DB exception {1}".format(name, e))
         return "hk" # Unknown gender
 
     @staticmethod

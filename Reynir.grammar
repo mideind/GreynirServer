@@ -119,6 +119,7 @@ MgrInnihald → Forskeyti? Yfirsetning StLiður* Lokatákn?
 
 Forskeyti →
     Samtenging "-:em"? # 'En - þegar allt er skoðað, var þetta fínt.'
+    | Samtenging? uh TengimerkiVh Samtenging? # Og já, þetta var ekki gott / Nei - en hann átti ekkert svar
     | raðnr # Raðnúmer málsgreinar
     | "-:em"   # Þankastrik á undan setningu (allar gerðir strika varpast í '-')
     | "mynd" tala AfTala? ':'? # Mynd 2 af 10
@@ -1022,8 +1023,8 @@ $score(+6) EinSögn_sagnb/tala/kyn
 # Nafnháttur
 
 Sögn_nh/tala/pers/kyn →
-    HjSögnNh/tala/pers HreinSögn_nh/tala/kyn # Páll mun/skal skrifa bréfið
-    | HjSögnNhMeðSagnb/tala/pers FsAtv? nhm HreinSögn_nh/tala/kyn # Páll á/ætti/verður/þarf [ekki] að skrifa bréfið
+    HjSögnNh/tala/pers LoTengtSögn_nf/tala/kyn? HreinSögn_nh/tala/kyn # Páll mun/skal [galvaskur/allur] skrifa bréfið
+    | HjSögnNhMeðSagnb/tala/pers FsAtv? LoTengtSögn_nf/tala/kyn? nhm HreinSögn_nh/tala/kyn # Páll á/ætti/verður/þarf [ekki] [galvaskur/allur] að skrifa bréfið
     | Sögn_nh_mm/tala/pers/kyn
 
 # Gefa auka stig hér (enda er oft tvíræðni milli sagna í nafnhætti og nafnorða)
@@ -1265,7 +1266,7 @@ Sögn_2_nh →
     | so_2_þgf_þgf_nh Nl_þgf Nl_þgf    # Konurnar munu [ekki] skila Páli bílnum
     | so_2_þgf_ef_nh Nl_þgf Nl_ef      # Konurnar munu [ekki] óska Páli alls hins besta
     | so_2_þgf_nf_nh Nl_þgf Nl_nf      # Kristín mun [ekki] vera Páli stoð og stytta
-    | 'gera'_nh Nl_þgf LoTengtSögn_nf_et_hk NhFyllingAtv # Konurnar munu [ekki] gera Páli kleift að klæða sig
+    | 'gera'_nh Nl_þgf LoTengtSögn_nf_et_hk NhFyllingAtv # Konurnar munu [ekki] gera Páli kleift/mögulegt að klæða sig
 
 So_2_nh_þf_nf → so_2_þf_nf_nh
 So_2_nh_þf_þf → so_2_þf_þf_nh
@@ -1287,7 +1288,7 @@ Sögn_2_bh →
     | so_2_þgf_þgf_bh Nl_þgf Nl_þgf    # Skilaðu Páli bílnum
     | so_2_þgf_ef_bh Nl_þgf Nl_ef      # Óskaðu Páli alls hins besta
     | so_2_þgf_nf_bh Nl_þgf Nl_nf      # Vertu Páli stoð og stytta
-    | 'gera'_bh Nl_þgf LoTengtSögn_nf_et_hk NhFyllingAtv # Gerðu Páli kleift að klæða sig í fötin
+    | 'gera'_bh Nl_þgf LoTengtSögn_nf_et_hk NhFyllingAtv # Gerðu Páli kleift/mögulegt að klæða sig í fötin
 
 # Sögn með einu viðfangi ('borðaði matinn')
 Sögn_1/tala/pers/kyn →
@@ -2263,6 +2264,7 @@ NlTöluorð/tala/fall/kyn →
 TöluorðForskeyti →
     'að_minnsta_kosti' | "um:ao" | "minnst" | "einungis" | "aðeins" | "ekki:ao"
     | "svo" "sem:st" | "tæplega" | "rúmlega" | "einnig" | "samtals" | "yfir:ao"
+    | "hátt:ao" "í:ao" | "allt" "að:ao" | "næstum:ao" | "nálægt:ao"
 
 TöluorðLo/tala →
     lo_evb_nf_hk/tala # efstu tvo / efstu tvö / efstu tvær
@@ -2281,8 +2283,8 @@ NlStak_p3_ft_þgf_kk → Manns
 
 # Hér ganga beygjanleg töluorð ekki (?'fjórir manns')
 Manns →
-    töl "manns"
-    | tala_ft "manns"
+    TöluorðForskeyti? töl "manns"
+    | TöluorðForskeyti? tala_ft "manns"
     | Talnabil "manns" # 50-100 manns
 
 # 3p. eintala
@@ -2363,6 +2365,7 @@ LangtSérnafn →
     | entity+ "-"? sérnafn+ tala?           # Eining með nafni sem þekkt er úr gagnagrunni eða runu slíkra
     | entity "-" entity tala?               # Villeneuve-Loubet
     | entity+ "-"? sérnafn* tala? fyrirtæki # Standard Oil Corp.
+    | entity entity+ tala?                  # !!! Til prófunar
 
 Sérnafn/fall →
     sérnafn/fall tala? | LangtSérnafn/fall tala?
@@ -3099,7 +3102,7 @@ Lo_mst_nf/tala/kyn → LoAtviksliðir? lo_mst_nf/tala/kyn LoViðhengi? # Miðsti
 LoViðhengi →
     EfLiður | Nl_þgf
 
-$score(-4) LoViðhengi
+$score(-6) LoViðhengi
 
 # Lýsingarorð sem einkunn með nafnlið
 

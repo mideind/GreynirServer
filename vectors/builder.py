@@ -62,6 +62,7 @@ from datetime import datetime
 
 from settings import Settings, Topics
 from scraperdb import Article, Topic, ArticleTopic, Word, SessionContext
+from similar import SimilarityClient
 
 from gensim import corpora, models, matutils
 
@@ -285,7 +286,7 @@ class ReynirCorpus:
                         self._topics[topic.id] = dict(name = topic.name,
                             vector = topic_vector, threshold = topic.threshold)
 
-    def assign_article_topics(self, article_id, heading):
+    def assign_article_topics(self, article_id, heading, process_all = False):
         """ Assign the appropriate topics to the given article in the database """
         if self._dictionary is None:
             self.load_dictionary()
@@ -307,6 +308,7 @@ class ReynirCorpus:
                 else:
                     wlist.extend([w] * cnt)
             topics = []
+            article_vector = []
             if self._topics and wlist:
                 bag = self._dictionary.doc2bow(wlist)
                 tfidf = self._tfidf[bag]
@@ -318,7 +320,7 @@ class ReynirCorpus:
                     topic_name = topic_info["name"]
                     topic_vector = topic_info["vector"]
                     topic_threshold = topic_info["threshold"]
-                    # Calculate the cosine similarity betwee the article and the topic
+                    # Calculate the cosine similarity between the article and the topic
                     similarity = matutils.cossim(article_vector, topic_vector)
                     if self._verbose:
                         print("   Similarity to topic {0} is {1:.3f}".format(topic_name, similarity))
@@ -326,17 +328,23 @@ class ReynirCorpus:
                         # Similar enough: this is a topic of the article
                         topics.append(topic_id)
                         topic_names.append((topic_name, similarity))
-                if topic_names:
+                if topic_names and not process_all:
                     print("Article '{0}':\n   topics {1}".format(heading, topic_names))
             # Topics found (if any): delete previous ones (if any)
             session.execute(ArticleTopic.table().delete().where(ArticleTopic.article_id == article_id))
             # ...and add the new ones
             for topic_id in topics:
                 session.add(ArticleTopic(article_id = article_id, topic_id = topic_id))
-            # Update the indexed timestamp
+            # Update the indexed timestamp and the article topic vector
             a = session.query(Article).filter(Article.id == article_id).one_or_none()
             if a is not None:
                 a.indexed = datetime.utcnow()
+                if article_vector:
+                    # Store a pure list of floats
+                    topic_vector = [ t[1] for t in article_vector ]
+                    a.topic_vector = json.dumps(topic_vector)
+                else:
+                    a.topic_vector = None
 
     def assign_topics(self, limit = None, process_all = False, uuid = None):
         """ Assign topics to all articles that have no such assignment yet """
@@ -349,12 +357,14 @@ class ReynirCorpus:
             elif not process_all:
                 q = q.filter((Article.indexed == None) | (Article.indexed < Article.parsed))
             q = q.join(Word).group_by(Article.id, Article.heading)
-            if uuid or limit is None:
+            if uuid:
                 q = q.all()
+            elif limit is None:
+                q = q.yield_per(2000)
             else:
                 q = q[0:limit]
         for article_id, heading in q:
-            self.assign_article_topics(article_id, heading)
+            self.assign_article_topics(article_id, heading, process_all = process_all)
 
 
 def build_model(verbose = False):
@@ -425,6 +435,17 @@ def tag_articles(limit, verbose = False, process_all = False, uuid = None):
     print("Time: {0}\n".format(ts))
 
 
+def notify_similarity_server():
+    """ Notify the similarity server - if running - that article tags have been updated """
+    try:
+        client = SimilarityClient()
+        client.connect()
+        client.refresh_topics()
+        client.close()
+    except Exception as e:
+        print("Exception in notify_similarity_server(): {0}".format(e))
+
+
 class Usage(Exception):
 
     def __init__(self, msg):
@@ -460,8 +481,8 @@ def _main(argv = None):
         argv = sys.argv
     try:
         try:
-            opts, args = getopt.getopt(argv[1:], "hl:va",
-                ["help", "limit=", "verbose", "all"])
+            opts, args = getopt.getopt(argv[1:], "hl:van",
+                ["help", "limit=", "verbose", "all", "notify"])
         except getopt.error as msg:
              raise Usage(msg)
 
@@ -469,6 +490,7 @@ def _main(argv = None):
         limit = 10
         verbose = False
         process_all = False
+        notify = False
 
         # Process options
         for o, a in opts:
@@ -486,6 +508,8 @@ def _main(argv = None):
                 verbose = True
             elif o in ("-a", "--all"):
                 process_all = True
+            elif o in ("-n", "--notify"):
+                notify = True
 
         #if process_all and limit_specified:
         #    raise Usage("--all and --limit cannot be used together")
@@ -511,6 +535,9 @@ def _main(argv = None):
             if process_all and not limit_specified:
                 limit = None
             tag_articles(limit = limit, verbose = verbose, process_all = process_all, uuid = uuid)
+            if notify:
+                # Inform the similarity server that we have new article tags
+                notify_similarity_server()
         elif arg == "topics":
             # Calculate topics
             if la > 1:
