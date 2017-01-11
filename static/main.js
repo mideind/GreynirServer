@@ -25,6 +25,10 @@
 // Waiting for query result?
 var queryInProgress = false;
 
+function formatReal(n, decimals) {
+   // Return the number n formatted correctly for the Icelandic locale
+   return n.toFixed(decimals).replace(".", ",");
+}
 
 function nullFunc(json) {
    /* Null placeholder function to use for Ajax queries that don't need a success func */
@@ -176,9 +180,11 @@ function makeSourceList(sources) {
       return undefined;
    var $table = $("<table class='table table-condensed table-hover'>")
       .append($("<thead>")
-         .append(
-            $("<th>").text("Tími"),
-            $("<th>").text("Fyrirsögn")
+         .append($("<tr>")
+            .append(
+               $("<th>").text("Tími"),
+               $("<th>").text("Fyrirsögn")
+            )
          )
       );
    var $tbody = $table.append($("<tbody>"));
@@ -193,6 +199,35 @@ function makeSourceList(sources) {
    return $table;
 }
 
+function makeSearchList(results) {
+   // Return a HTML rendering of a list of articles in a search result
+   if (!results)
+      return undefined;
+   var $table = $("<table class='table table-condensed table-hover'>")
+      .append($("<thead>")
+         .append($("<tr>")
+            .append(
+               $("<th>").text("Tími"),
+               $("<th>").text("Fyrirsögn"),
+               $("<th class='count'>").text("Líkindi")
+            )
+         )
+      );
+   var $tbody = $table.append($("<tbody>"));
+   $.each(results, function(i, obj) {
+      var $tr = $("<tr class='article'>").attr("data-uuid", obj.uuid)
+         .append(
+            $("<td class='ts'>").text(obj.ts_text),
+            $("<td class='heading'>").text(obj.heading)
+               .prepend($("<img>").attr("src", "/static/" + obj.domain + ".ico")
+                  .attr("width", "16").attr("height", "16")),
+            $("<td class='count'>").text(formatReal(obj.similarity, 1) + "%")
+         );
+      $tbody.append($tr);
+   });
+   return $table;
+}
+
 function populateQueryResult(r) {
    // Display the JSON result of a query sent to the server
    // Hide progress indicator
@@ -201,6 +236,8 @@ function populateQueryResult(r) {
    q.text(r.q);
    var image = $("<p class='image'></p>");
    var answer;
+   var searchResult;
+   var key = "";
    if (r.valid) {
       // This is a valid query response: present the response items in a bulleted list
       if (r.image !== undefined) {
@@ -232,9 +269,15 @@ function populateQueryResult(r) {
          // Title or definition list
          rlist = r.response.answers;
          articles = makeSourceList(r.response.sources);
+         key = r.key;
       }
       else
          rlist = r.response;
+      if (r.qtype == "Search") {
+         // Article search by terms
+         searchResult = makeSearchList(r.response);
+      }
+      else
       if (r.qtype == "Special") {
          answer = $("<p class='query-empty'></p>")
             .html("<span class='green glyphicon glyphicon-play'></span>&nbsp;")
@@ -290,28 +333,40 @@ function populateQueryResult(r) {
             .text(r.error);
    }
    $("div.guide-empty").css("display", "none");
+   // Show the original query
    $("div#result-query").css("display", "block").html(q);
-   $("div#result-tabs").css("display", "block");
-   $("div#titles").html(image).append(answer);
-   if (articles) {
-      $("#article-list").html(articles);
-      $("#article-key").text(r.key);
-      // Enable the articles tab
-      $("#tab-a-articles").attr("data-toggle", "tab");
-      $("#tab-li-articles").removeClass("disabled");
+   if (searchResult) {
+      // Display a search result; hide the person/entity tabs
+      $("div#result-tabs").css("display", "none");
+      // Display the search results
+      $("#search-result-list").html(searchResult);
+      $("div#search-result").css("display", "block");
    }
    else {
-      $("#article-list").html("");
-      $("#article-key").text("");
-      // Disable the articles tab
-      $("#tab-a-articles").attr("data-toggle", "");
-      $("#tab-li-articles").addClass("disabled");
+      // Display person/entity tabs; hide the search result div
+      $("div#result-tabs").css("display", "block");
+      $("div#search-result").css("display", "none");
+      $("div#titles").html(image).append(answer);
+      if (articles) {
+         $("#article-list").html(articles);
+         $("#article-key").text(key);
+         // Enable the articles tab
+         $("#tab-a-articles").attr("data-toggle", "tab");
+         $("#tab-li-articles").removeClass("disabled");
+      }
+      else {
+         $("#article-list").html("");
+         $("#article-key").text("");
+         // Disable the articles tab
+         $("#tab-a-articles").attr("data-toggle", "");
+         $("#tab-li-articles").addClass("disabled");
+      }
+      $('#result-hdr a:first').tab('show');
+      // A title query yields a list of names
+      // Clicking on a name submits a query on it
+      $("#entity-body span.name").click(showPerson);
+      $("#entity-body span.entity").click(showEntity);
    }
-   $('#result-hdr a:first').tab('show');
-   // A title query yields a list of names
-   // Clicking on a name submits a query on it
-   $("#entity-body span.name").click(showPerson);
-   $("#entity-body span.entity").click(showEntity);
    $("span.art-link").add("tr.article").click(function(ev) {
       // Show a source article
       wait(true); // This can take time, if a parse is required
@@ -324,6 +379,7 @@ function clearQueryResult() {
    // Clear previous result
    $("div#result-query").css("display", "none");
    $("div#result-tabs").css("display", "none");
+   $("div#search-result").css("display", "none");
    // Display progress indicator
    wait(true);
 }

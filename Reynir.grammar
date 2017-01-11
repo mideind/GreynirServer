@@ -997,10 +997,10 @@ Sögn_lhnt/tala/pers →
 HreinSögn_lhnt →
     FsAtv? so_0_lh_nt OgSögn_lhnt*
 
-# Sagnbót ('konurnar [segjast/þykjast/virðast] hafa borðað matinn')
+# Sagnbót ('konurnar [segjast/þykjast/virðast] [galvaskar/sumar/allar] hafa borðað matinn')
 
 Sögn_sagnb/tala/pers/kyn →
-    HjSögn/tala/pers HreinSögn_sagnb/tala/kyn
+    HjSögn/tala/pers LoTengtSögn_nf/tala/kyn? HreinSögn_sagnb/tala/kyn
 
 HreinSögn_sagnb/tala/kyn →
     FsAtv? EinSögn_sagnb/tala/kyn OgSögn_sagnb/tala/kyn*
@@ -2810,7 +2810,7 @@ Sem/tala/aukafall/kyn →
 SemAukafall/aukafall/tala →
     "sem:st" Nl/aukafall/tala
 
-$score(-6) SemAukafall/aukafall/tala
+$score(-8) SemAukafall/aukafall/tala
 
 NlEind_et_p3_nf_hk →
     # Það [eitt] hvernig kerfið virkar (er óskiljanlegt flestum)
@@ -3147,11 +3147,12 @@ LoKomma/tala/fall/kyn →
 # Fornöfn sem geta hegðað sér eins og lýsingarorð:
 # 'Hann komst sjálfur út úr flakinu', 'Hún fór öll inn um gluggann',
 # 'Þau eru bæði viðskiptafræðingar',  'Það reyndist vera sú sama'
+# 'Þeir fóru sumir hverjir með ferjunni'
 # ('báðir' er aðeins til í fleirtölu en það veldur ekki vandræðum hér)
 
 LoFornafn/fall/tala/kyn →
     'allur'/fall/tala/kyn | 'sjálfur'/fall/tala/kyn | 'báðir'/fall/tala/kyn
-    | 'sami'/fall/tala/kyn | 'sumur'/fall/tala/kyn
+    | 'sami'/fall/tala/kyn | 'sumur'/fall/tala/kyn 'hver:fn'/fall/tala/kyn?
 
 # Lýsingarorð sem andlag sagnar
 # Þar kemur til greina miðstig + 'en' + nafnliður
@@ -3471,6 +3472,7 @@ Dagsetning →
     | "síðan:ao" ártal # síðan 2012
     | "dagana" Dagana # dagana 1. til 10. júlí
     | 'sá'_kk_et_þf? raðnr "þessa" "mánaðar" # [þann] 23. þessa mánaðar
+    | ÞegarLíðaTekurÁ
 
     | Undanfarið
     | 'allur'_þf/tala/kyn? gr_þf/tala/kyn? 'síðari'_þf/tala/kyn TalaTímabil_þf/tala/kyn # síðustu sex vikur, hin síðari ár, allan síðasta mánuð
@@ -3490,6 +3492,11 @@ Undanfarið →
     | 'undangenginn'_þf/tala/kyn TalaTímabil_þf/tala/kyn # undangengnar sex vikur
 
 $score(+10) Undanfarið
+
+ÞegarLíðaTekurÁ →
+    "þegar:st" "líða" 'taka'_gm_p3_et "á:fs" Tímabil_þf/kyn/tala
+
+$score(+16) ÞegarLíðaTekurÁ
 
 Dagana →
     raðnr Til dags # dagana 1. til 10. júlí / 9.-16. ágúst

@@ -28,12 +28,6 @@ from query import Query, query_person_title, query_entity_def
 
 WordTuple = namedtuple("WordTuple", ["stem", "cat"])
 
-# The word categories that are indexed in the words table
-_CATEGORIES_TO_INDEX = frozenset((
-    "kk", "kvk", "hk", "person_kk", "person_kvk", "entity",
-    "lo", "so"
-))
-
 
 def add_entity_to_register(name, register, session, all_names = False):
     """ Add the entity name and the 'best' definition to the given name register dictionary.
@@ -272,17 +266,34 @@ class Article:
         if t.val is not None and t.kind not in { TOK.WORD, TOK.ENTITY, TOK.PUNCTUATION }:
             # For tokens except words, entities and punctuation, include the val field
             if t.kind == TOK.PERSON:
-                d["v"] = t.val[0][0] # Include only the name of the person in nominal form
+                case = None
+                gender = None
+                if terminal is not None and terminal.num_variants >= 1:
+                    print("terminal.variants are {0}".format(terminal.variants))
+                    gender = terminal.variant(-1)
+                    if gender in { "nf", "þf", "þgf", "ef" }:
+                        # Oops, mistaken identity
+                        case = gender
+                        gender = None
+                    if terminal.num_variants >= 2:
+                        case = terminal.variant(-2)
+                print("gender is {0}, case is {1}, t.val is {2}".format(gender, case, t.val))
+                fn_list = [ (fn, g, c) for fn, g, c in t.val if (gender is None or g == gender) and (case is None or c == case) ]
+                print("fn_list is {0}".format(fn_list))
+                # If there are many choices, select the nominative case, or the first element as a last resort
+                fn = next((fn for fn in fn_list if fn[2] == "nf"), fn_list[0])
+                d["v"] = fn[0] # Include only the name of the person in nominal form
                 # Hack to make sure that the gender information is communicated in
                 # the terminal name (in some cases the terminal only contains the case)
-                gender = t.val[0][1]
+                if gender is None:
+                    gender = fn[1]
                 if terminal:
                     if not terminal.name.endswith("_" + gender):
                         d["t"] = terminal.name + "_" + gender
                 else:
                     # There is no terminal: cop out by adding a separate gender field
                     d["g"] = gender
-                wt = WordTuple(stem = t.val[0][0], cat = "person_" + gender)
+                wt = WordTuple(stem = d["v"], cat = "person_" + gender)
             else:
                 d["v"] = t.val
         return d, wt
@@ -500,10 +511,19 @@ class Article:
         text = Fetcher.mark_paragraphs(text)
         # Tokenize the result
         toklist = list(tokenize(text, enclosing_session = session))
-        # Paragraph list, containing sentences, containing tokens
-        pgs = []
         t1 = time.time()
+        pgs, stats, register = Article._process_toklist(session, toklist, all_names, xform)
+        t2 = time.time()
+        stats["tok_time"] = t1 - t0
+        stats["parse_time"] = t2 - t1
+        stats["total_time"] = t2 - t0
+        return (pgs, stats, register)
 
+    @staticmethod
+    def _process_toklist(session, toklist, all_names, xform):
+        """ Low-level utility function to parse token lists and return
+            the result of a transformation function (xform) for each sentence """
+        pgs = [] # Paragraph list, containing sentences, containing tokens
         with Fast_Parser(verbose = False) as bp: # Don't emit diagnostic messages
 
             ip = IncrementalParser(bp, toklist, verbose = True)
@@ -518,20 +538,15 @@ class Article:
                         # Errror in parse
                         pgs[-1].append(xform(sent.tokens, None, sent.err_index))
 
-            t2 = time.time()
             stats = dict(
                 num_tokens = ip.num_tokens,
                 num_sentences = ip.num_sentences,
                 num_parsed = ip.num_parsed,
                 ambiguity = ip.ambiguity,
-                tok_time = t1 - t0,
-                parse_time = t2 - t1,
-                total_time = t2 - t0
             )
 
         # Add a name register to the result
         register = create_name_register(toklist, session, all_names = all_names)
-
         return (pgs, stats, register)
 
     @staticmethod
@@ -545,6 +560,18 @@ class Article:
             return Article._dump_tokens(tokens, tree, None, err_index)
 
         return Article._process_text(session, text, all_names, xform)
+
+    @staticmethod
+    def tag_toklist(session, toklist, all_names = False):
+        """ Parse plain text and return the parsed paragraphs as lists of sentences
+            where each sentence is a list of tagged tokens """
+
+        def xform(tokens, tree, err_index):
+            """ Transformation function that simply returns a list of POS-tagged,
+                normalized tokens for the sentence """
+            return Article._dump_tokens(tokens, tree, None, err_index)
+
+        return Article._process_toklist(session, toklist, all_names, xform)
 
     @staticmethod
     def parse_text(session, text, all_names = False):
@@ -603,7 +630,7 @@ class Article:
         session.execute(Word.table().delete().where(Word.article_id == self._uuid))
         # Index the words by storing them in the words table
         for word, cnt in self._words.items():
-            if word.cat not in _CATEGORIES_TO_INDEX:
+            if word.cat not in NoIndexWords.CATEGORIES_TO_INDEX:
                 # We do not index closed word categories and non-distinctive constructs
                 continue
             if (word.stem, word.cat) in NoIndexWords.SET:

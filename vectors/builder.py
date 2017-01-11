@@ -59,12 +59,19 @@ import getopt
 import json
 import time
 from datetime import datetime
+from collections import defaultdict
 
-from settings import Settings, Topics
-from scraperdb import Article, Topic, ArticleTopic, Word, SessionContext
+from settings import Settings, Topics, NoIndexWords
+from scraperdb import Article, Topic, ArticleTopic, Word, SessionContext, TermTopicsQuery
 from similar import SimilarityClient
 
+import numpy as np
 from gensim import corpora, models, matutils
+
+
+def w_from_stem(stem, cat):
+    """ Convert a (stem, cat) tuple to a bag-of-words key """
+    return stem.lower().replace('-', "").replace(' ', '_') + "/" + cat
 
 
 class CorpusIterator:
@@ -98,7 +105,7 @@ class CorpusIterator:
                     # Beginning a new article with an empty bag
                     last_uuid = uuid
                 # Convert stem to lowercase and replace spaces with underscores
-                w = stem.lower().replace(" ", "_") + "/" + cat
+                w = w_from_stem(stem, cat)
                 if cnt == 1:
                     bag.append(w)
                 else:
@@ -107,6 +114,19 @@ class CorpusIterator:
                 # print("Yielding bag of {0} words".format(len(bag)))
                 yield xform(bag)
         print("Finished iteration through corpus from words table")
+
+
+class ReynirDictionary(corpora.Dictionary):
+
+    """ Subclass of gensim.corpora.Dictionary that adds a __contains__
+        operator for easy membership check """
+
+    def __init__(self, iterator):
+        super().__init__(iterator)
+
+    def __contains__(self, word):
+        print("__contains__({0}) returns {1}".format(word, word in self.token2id))
+        return word in self.token2id
 
 
 class ReynirCorpus:
@@ -133,7 +153,7 @@ class ReynirCorpus:
         """ Iterate through the article database
             and create a fresh Gensim dictionary """
         ci = CorpusIterator()
-        dic = corpora.Dictionary(ci)
+        dic = ReynirDictionary(ci)
         if self._verbose:
             print("Dictionary before filtering:")
             print(dic)
@@ -147,7 +167,7 @@ class ReynirCorpus:
 
     def load_dictionary(self):
         """ Load a dictionary from a previously prepared file """
-        self._dictionary = corpora.Dictionary.load(self._DICTIONARY_FILE)
+        self._dictionary = ReynirDictionary.load(self._DICTIONARY_FILE)
 
     def create_plain_corpus(self):
         """ Create a plain vector corpus, where each vector represents a
@@ -286,6 +306,89 @@ class ReynirCorpus:
                         self._topics[topic.id] = dict(name = topic.name,
                             vector = topic_vector, threshold = topic.threshold)
 
+    def get_topic_vector(self, terms):
+        """ Calculate a topic vector corresponding to the given list
+            of search terms, which are assumed to have the form (stem, category). """
+        if self._dictionary is None:
+            self.load_dictionary()
+        if self._tfidf is None:
+            self.load_tfidf_model()
+        if self._model is None:
+            self.load_lsi_model()
+        # Convert the word list, assumed to contain items of the form 'stem/cat',
+        # to a bag of word indexes
+        wlist = [ w_from_stem(stem, cat) for stem, cat in terms ]
+        bag = self._dictionary.doc2bow(wlist)
+        print("Wlist is:\n   {0}\nBag is:\n   {1}".format(wlist, bag))
+        # Apply the term frequency - inverse document frequency transform
+        tfidf = self._tfidf[bag]
+        # Map the resulting vector to the LSI model space
+        topic_vector = np.array([ float(x) for _, x in self._model[tfidf] ])
+        # For words that do not appear in the base corpus, calculate a
+        # weighted average of the topic vectors of documents where those
+        # words appear
+        missing = np.zeros(len(topic_vector))
+        num_missing = 0
+        lb = len(bag)
+        if lb < len(wlist):
+            # We have missing words: look'em up
+            with SessionContext(commit = True, read_only = True) as session:
+                # The same (stem, cat) tuple may appear multiple times:
+                # coalesce into one counting dictionary
+                term_counter = defaultdict(int)
+                for stem, cat in terms:
+                    term_counter[(stem, cat)] += 1
+                for sc, num_sc in term_counter.items():
+                    stem, cat = sc
+                    w = w_from_stem(stem, cat)
+
+                    def in_dict(w):
+                        if isinstance(self._dictionary, ReynirDictionary):
+                            return w in self._dictionary
+                        return w in self._dictionary.token2id
+
+                    if in_dict(w):
+                        # The stem is found in the master bag of words
+                        continue
+                    # This stem is missing from the master bag of words
+                    print("Term {0} (weight {1}) is missing from dictionary bag"
+                        .format(w_from_stem(stem, cat), num_sc))
+                    if cat in NoIndexWords.CATEGORIES_TO_INDEX \
+                        and (stem, cat) not in NoIndexWords.SET:
+                        # We have a significant (potentially indexable)
+                        # person, entity, noun, adjective or verb. Give it
+                        # a weight in the final topic vector.
+                        q = TermTopicsQuery().execute(session, stem = stem, cat = cat)
+                        term_vector = np.zeros(len(topic_vector))
+                        total_cnt = 0
+                        # Sum up the topic vectors of the documents where the term
+                        # appears, weighted by the number of times it appears
+                        print("Found {0} documents in words table".format(len(q)))
+                        for tv_json, cnt in q:
+                            # Get the term vector of a single document where the term appears
+                            tv = np.array(json.loads(tv_json))
+                            # Multiply the vector by the number of times the term appears
+                            total_cnt += cnt
+                            term_vector += tv * cnt
+                        # Add the combined (weighted average) topic vector of the
+                        # term to the 'missing' topic vector
+                        if total_cnt > 0:
+                            print("Total number of occurrences: {0}".format(total_cnt))
+                            missing += (term_vector / total_cnt) * num_sc
+                            # Keep track of how many 'missing' terms have contributed
+                            # to the missing term vector
+                            num_missing += num_sc
+
+        if num_missing > 0:
+            # Adjust the weight of the returned topic vector so that the missing
+            # terms have a contribution that corresponds to their number
+            p_tv = lb / (lb + num_missing)
+            # Calculate the relative contribution of the missing terms
+            p_m = 1.0 - p_tv
+            # Amalgamate the resulting topic vector
+            topic_vector = topic_vector * p_tv + missing * p_m
+        return topic_vector
+
     def assign_article_topics(self, article_id, heading, process_all = False):
         """ Assign the appropriate topics to the given article in the database """
         if self._dictionary is None:
@@ -293,7 +396,7 @@ class ReynirCorpus:
         if self._tfidf is None:
             self.load_tfidf_model()
         if self._model is None:
-            self.load_lda_model()
+            self.load_lsi_model()
         if self._topics is None:
             self.load_topics()
         with SessionContext(commit = True) as session:
@@ -302,7 +405,7 @@ class ReynirCorpus:
             wlist = []
             for stem, cat, cnt in q:
                 # Convert stem to lowercase and replace spaces with underscores
-                w = stem.lower().replace(" ", "_") + "/" + cat
+                w = w_from_stem(stem, cat)
                 if cnt == 1:
                     wlist.append(w)
                 else:
@@ -439,7 +542,6 @@ def notify_similarity_server():
     """ Notify the similarity server - if running - that article tags have been updated """
     try:
         client = SimilarityClient()
-        client.connect()
         client.refresh_topics()
         client.close()
     except Exception as e:

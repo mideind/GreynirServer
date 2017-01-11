@@ -432,6 +432,13 @@ class NoIndexWords:
     SET = set() # Set of (stem, cat) tuples
     _CAT = "so" # Default category
 
+    # The word categories that are indexed in the words table
+    CATEGORIES_TO_INDEX = frozenset((
+        "kk", "kvk", "hk", "person_kk", "person_kvk", "entity",
+        "lo", "so"
+    ))
+
+
     @staticmethod
     def set_cat(cat):
         """ Set the category for the following word stems """
@@ -607,8 +614,9 @@ class Settings:
     DB_HOSTNAME = os.environ.get('GREYNIR_DB_HOST', 'localhost')
     DB_PORT = os.environ.get('GREYNIR_DB_PORT', '5432')
 
-    # Flask server host
+    # Flask server host and port
     HOST = "127.0.0.1"
+    PORT = 5000
 
     # Flask debug parameter
     DEBUG = False
@@ -619,24 +627,30 @@ class Settings:
     def _handle_settings(s):
         """ Handle config parameters in the settings section """
         a = s.lower().split('=', maxsplit=1)
-        par = a[0].strip()
+        par = a[0].strip().lower()
         val = a[1].strip()
-        if val == 'none':
+        if val.lower() == 'none':
             val = None
-        elif val == 'true':
+        elif val.lower() == 'true':
             val = True
-        elif val == 'false':
+        elif val.lower() == 'false':
             val = False
-        if par == 'db_hostname':
-            Settings.DB_HOSTNAME = val
-        elif par == 'db_port':
-            Settings.DB_PORT = val
-        elif par == 'host':
-            Settings.HOST = val
-        elif par == 'debug':
-            Settings.DEBUG = bool(val)
-        else:
-            raise ConfigError("Unknown configuration parameter '{0}'".format(par))
+        try:
+            if par == 'db_hostname':
+                Settings.DB_HOSTNAME = val
+            elif par == 'db_port':
+                Settings.DB_PORT = val
+            elif par == 'host':
+                Settings.HOST = val
+            elif par == 'port':
+                Settings.PORT = int(val)
+            elif par == 'debug':
+                Settings.DEBUG = bool(val)
+            else:
+                raise ConfigError("Unknown configuration parameter '{0}'".format(par))
+        except ValueError:
+            raise ConfigError("Illegal parameter value: {0} = {1}".format(par, val))
+
 
     @staticmethod
     def _handle_static_phrases(s):

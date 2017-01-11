@@ -1989,3 +1989,47 @@ def canonicalize_token(t):
         elif kind == TOK.TIMESTAMP:
             t["v"] = dict(y = val[0], mo = val[1], d = val[2],
                 h = val[3], m = val[4], s = val[5])
+
+
+def stems_of_token(t, name_emphasis = 1):
+    """ Return a list of word stem descriptors associated with the token t.
+        This is an empty list if the token is not a word or person or entity name.
+        The list can contain multiple stems, for instance in the case
+        of composite words ('sjómannadagur' -> ['sjómannadagur/kk', sjómaður/kk', 'dagur/kk']).
+        If name_emphasis is > 1, any person and entity names will be repeated correspondingly
+        in the list. """
+    kind = t.get("k", TOK.WORD)
+    if kind not in { TOK.WORD, TOK.PERSON, TOK.ENTITY }:
+        # No associated stem
+        return []
+    if kind == TOK.WORD:
+        if "m" in t:
+            # Obtain the stem and the word category from the 'm' (meaning) field
+            stem = t["m"][0]
+            cat = t["m"][1]
+            return [ (stem, cat) ]
+        else:
+            # Sérnafn
+            stem = t["x"]
+            # Apply name emphasis if upper case
+            n = name_emphasis if stem[0].isupper() else 1
+            return [ (stem, "entity") ] * n
+    elif kind == TOK.PERSON:
+        # The full person name, in nominative case, is stored in the 'v' field
+        stem = t["v"]
+        if "t" in t:
+            # The gender is at the end of the corresponding terminal name
+            gender = "_" + t["t"].split("_")[-1]
+        elif "g" in t:
+            # No terminal: there might be a dedicated gender ('g') field
+            gender = "_" + t["g"]
+        else:
+            # No known gender
+            gender = ""
+        return [ (stem, "person" + gender) ] * name_emphasis
+    else:
+        # TOK.ENTITY
+        stem = t["x"]
+        return [ (stem, "entity") ] * name_emphasis
+    return []
+

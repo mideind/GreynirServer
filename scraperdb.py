@@ -633,6 +633,23 @@ class RelatedWordsQuery(_BaseQuery):
             return cls().execute(session, root = stem, limit = limit)
 
 
+class TermTopicsQuery(_BaseQuery):
+
+    """ A query for topic vectors of documents where a given (stem, cat)
+        tuple appears """
+
+    _Q = """
+        select topic_vector, q.cnt
+            from (
+                select a.id as id, sum(w.cnt) as cnt
+                from articles a, words w
+                where a.id = w.article_id and w.stem = :stem and w.cat = :cat
+                group by a.id
+            ) as q
+            join articles on q.id = articles.id;
+        """
+
+
 class ArticleCountQuery(_BaseQuery):
 
     """ A query yielding the number of articles containing any of the given word stems """

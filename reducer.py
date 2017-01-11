@@ -286,6 +286,10 @@ class Reducer:
                     for pt in s:
                         if (pt.first == "no" or pt.first == "töl") and pt.has_variant("ef"):
                             sc[pt] -= 1
+                elif tfirst == "person":
+                    if t.has_variant("nf"):
+                        # Prefer person names in the nominative case
+                        sc[t] += 2
                 elif tfirst == "sérnafn":
                     if not tokens[i].t2:
                         # If there are no BÍN meanings, we had no choice but to use sérnafn,

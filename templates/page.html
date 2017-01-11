@@ -146,10 +146,10 @@
          jResult = $.parseJSON(json.result);
       j = jResult;
       displayTokens(jResult);
-      // Display similar articles
-      $("div#similar").css("display", "block");
       // Show help text
       $("div#help").css("display", "block");
+      // Display similar articles
+      $("div#similar").css("display", "block");
       // Show statistics
       populateStats(json.stats);
       $("div#statistics").css("display", "block");
@@ -182,16 +182,16 @@
    function init() {
       // Show help text
       $("div#help").css("display", "block");
-      // Show statistics
-      $("div#statistics").css("display", "block");
-      // Show similar list
-      $("div#similar").css("display", "block");
       $("button.refresh")
          .click(function(ev) {
             reparseArticle("{{ article.uuid | safe }}");
          });
       displayTokens(j);
+      // Show similar list
+      $("div#similar").css("display", "block");
       populateStats(stats);
+      // Show statistics
+      $("div#statistics").css("display", "block");
       populateRegister();
    }
 

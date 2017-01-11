@@ -43,11 +43,14 @@ vectors/bz2.py
 vectors/gensim-0.13.2/
 vectors/numpy-1.11.1/
 vectors/models/
+vectors/t
+vectors/test.py
+
+# Files that are symlinked into the vectors directory
 vectors/scraperdb.py
 vectors/settings.py
 vectors/similar.py
-vectors/t
-vectors/test.py
+vectors/Index.conf
 
 # Minified JavaScript
 static/*.min.js

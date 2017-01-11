@@ -316,7 +316,14 @@ tr.article td.heading img {
 td.heading {
    white-space: nowrap;
    overflow-x: hidden;
+   max-width: 782px;
    text-overflow: ellipsis;
+}
+
+td.ts {
+   white-space: nowrap;
+   overflow-x: hidden;
+   min-width: 100px;
 }
 
 td.ratio div.progress {
@@ -373,6 +380,12 @@ tr.topitem span.title {
    font-style: italic;
    font-size: 0.9em;
    color: #aaaaaa;
+}
+
+#similarlist span.timestamp {
+   display: inline-block;
+   min-width: 96px;
+   color: #888888;
 }
 
 span.glyphicon-gender-male {
@@ -695,6 +708,10 @@ div#register {
    display: none;
 }
 
+div#similar {
+   display: none;
+}
+
 div.guide-empty {
    /* font-size: 0.94em; */
 }
@@ -862,6 +879,10 @@ div#result-query {
 }
 
 div#result-tabs {
+   display: none;
+}
+
+div#search-result {
    display: none;
 }
 

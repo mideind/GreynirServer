@@ -762,22 +762,27 @@ class PersonNode(TerminalNode):
     def __init__(self, terminal, token, tokentype, aux, at_start):
         super().__init__(terminal, token, tokentype, aux, at_start)
         # Load the full names from the auxiliary JSON information
-        fullnames = json.loads(aux) if aux else None # List of tuples
-        firstname = fullnames[0] if fullnames else None # Tuple: name, gender, case
-        self.fullname = firstname[0] if firstname else ""
+        gender = self.td.gender or None
+        case = self.td.case or None
+        fn_list = json.loads(aux) if aux else [] # List of tuples: (name, gender, case)
+        # Collect the potential full names that are available in nominative
+        # case and match the gender of the terminal
+        self.fullnames = [ fn for fn, g, c in fn_list if (gender is None or g == gender) and (case is None or c == case) ]
 
     def _root(self, bin_db):
         """ Calculate the root (canonical) form of this person name """
         # If we already have a full name coming from the tokenizer, use it
         # (full name meaning that it includes the patronym/matronym even
         # if it was not present in the original token)
-        if self.fullname:
-            # print("PersonNode._root: found full name '{0}'".format(self.fullname))
-            # !!! TBD: The full name here is constructed by the tokenizer without
-            # !!! knowledge of the case of the name - so it may be wrong
-            return self.fullname
-        # Lookup the token in the BIN database
+        # Start by checking whether we already have a matching full name,
+        # i.e. one in nominative case and with the correct gender
+        if self.fullnames:
+            # We may have more than one matching full name, but we have no means
+            # of knowing which one is correct, so we simply return the first one
+            return self.fullnames[0]
+        gender = self.td.gender
         case = self.td.case.upper()
+        # Lookup the token in the BIN database
         # Look up each part of the name
         at_start = self.at_start
         name = []
@@ -786,7 +791,7 @@ class PersonNode(TerminalNode):
             at_start = False
             if m:
                 m = [ x for x in m
-                        if x.ordfl == self.td.gender and case in x.beyging and "ET" in x.beyging
+                        if x.ordfl == gender and case in x.beyging and "ET" in x.beyging
                         # Do not accept 'Sigmund' as a valid stem for word forms that
                         # are identical with the stem 'Sigmundur'
                         and (x.stofn not in DisallowedNames.STEMS

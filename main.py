@@ -35,7 +35,7 @@ import os
 import time
 import random
 import re
-from datetime import datetime, timedelta
+from datetime import datetime
 from functools import wraps
 from decimal import Decimal
 
@@ -53,14 +53,15 @@ from article import Article as ArticleProxy
 from scraperdb import SessionContext, desc, Root, Person, Article, ArticleTopic, Topic,\
     GenderQuery, StatsQuery
 from query import Query
+from search import Search
 from getimage import get_image_url
-from similar import SimilarityClient
 
 
 # Initialize Flask framework
 
 app = Flask(__name__)
 app.config["JSON_AS_ASCII"] = False # We're fine with using Unicode/UTF-8
+app.config['TEMPLATES_AUTO_RELOAD'] = True
 
 from flask import current_app
 
@@ -189,9 +190,6 @@ _MAX_TEXT_LENGTH = 8192
 _MAX_TEXT_LENGTH_VIA_URL = 512
 _MAX_QUERY_LENGTH = 512
 
-# Similarity query client
-similarity_client = SimilarityClient()
-
 
 def top_news(topic = None, start = None, limit = _TOP_NEWS_LENGTH):
     """ Return a list of top recent news, of a particular topic,
@@ -302,13 +300,28 @@ def top_persons(limit = _TOP_PERSONS_LENGTH):
         )
 
 
+def process_search(session, toklist, result):
+    """ Process the toklist as a search string and return a list of matching articles """
+    s = Search(session)
+    if not s.parse(toklist, result):
+        # Something wrong
+        return False
+    if not s.execute(n = 15): # Show 15 results
+        result["error"] = s.error()
+        return True
+    result["response"] = s.answer()
+    result["qtype"] = "Search"
+    return True
+
+
 def process_query(session, toklist, result):
     """ Check whether the parse tree is describes a query, and if so, execute the query,
         store the query answer in the result dictionary and return True """
     q = Query(session)
     if not q.parse(toklist, result):
-        # Not able to parse this as a query
-        return False
+        # Not able to parse this as a query:
+        # try it as a search
+        return process_search(session, toklist, result)
     if not q.execute():
         # This is a query, but its execution failed for some reason: return the error
         result["error"] = q.error()
@@ -380,7 +393,7 @@ def postag_api(version = 1):
 
     with SessionContext(commit = True) as session:
         pgs, stats, register = ArticleProxy.tag_text(session, text, all_names = True)
-        # In this case, we should always get a single paragraph back
+        # Amalgamate the result into a single list of sentences
         if pgs:
             # Only process the first paragraph, if there are many of them
             if len(pgs) == 1:
@@ -997,45 +1010,8 @@ def page():
         topics = [ dict(name = t.topic.name, id = t.topic.identifier) for t in topics ]
 
         # Fetch similar (related) articles, if any
-        similar = []
-        if similarity_client:
-            REQUEST = 20 # Ask for 20 matches (including the original document)
-            DISPLAY = 10 # Display at most 10 matches
-            result = similarity_client.similar_articles(a.uuid, n = REQUEST)
-            # Returns a list of tuples: (article_id, similarity)
-            for sid, similarity in result:
-                if similarity > 0.9999:
-                    # The original article (or at least a verbatim copy of it)
-                    continue
-                q = session.query(Article).join(Root).filter(Article.id == sid)
-                sa = q.one_or_none()
-                if sa:
-                    spercent = 100.0 * similarity
-
-                    def is_probably_same_as(last):
-                        """ Return True if the current article is probably different from
-                            the one already described in the last object """
-                        if last["domain"] != sa.root.domain:
-                            # Another root domain: can't be the same content
-                            return False
-                        if (last["ts"] - sa.timestamp) > timedelta(minutes = 10):
-                            # More than 10 minutes timestamp difference
-                            return False
-                        # Quite similar: probably the same article
-                        return (spercent / last["similarity"]) > 0.995
-
-                    if not any(is_probably_same_as(p) for p in similar):
-                        # Don't add another article with practically the same similarity
-                        # as the previous one, as it is very probably a duplicate
-                        ts = sa.timestamp.isoformat()[0:10]
-                        similar.append(dict(heading = sa.heading, url = sa.url,
-                            uuid = sid, domain = sa.root.domain, ts = sa.timestamp, ts_text = ts,
-                            similarity = spercent))
-                        if len(similar) == DISPLAY:
-                            break
-                    else:
-                        print("Ignoring: {0} ({1:.2f})".format(sa.heading, spercent))
-            print("Similar list is:\n   {0}".format("\n   ".join(str(s) for s in similar)))
+        DISPLAY = 10 # Display at most 10 matches
+        similar = Search.list_similar_to_article(session, a.uuid, n = DISPLAY)
 
         return render_template("page.html", article = a, register = register,
             topics = topics, similar = similar)
@@ -1085,15 +1061,8 @@ except ConfigError as e:
 
 if Settings.DEBUG:
     print("Settings loaded in {0:.2f} seconds".format(time.time() - t0))
-    print("Running Reynir with debug={0}, host={1}, db_hostname={2}"
-        .format(Settings.DEBUG, Settings.HOST, Settings.DB_HOSTNAME))
-
-# Establish a connection to the similarity client, if available
-try:
-    similarity_client.connect()
-except:
-    print("Unable to connect to similarity client")
-    similarity_client = None
+    print("Running Reynir with debug={0}, host={1}:{2}, db_hostname={3}"
+        .format(Settings.DEBUG, Settings.HOST, Settings.PORT, Settings.DB_HOSTNAME))
 
 if __name__ == "__main__":
 
@@ -1110,12 +1079,12 @@ if __name__ == "__main__":
     import errno
     try:
         # Run the Flask web server application
-        app.config['TEMPLATES_AUTO_RELOAD'] = True
-        app.run(debug=Settings.DEBUG, host=Settings.HOST, use_reloader=True,
+        app.run(host = Settings.HOST, port = Settings.PORT,
+            debug = Settings.DEBUG, use_reloader = True,
             extra_files = [ "config/" + fname for fname in extra_files ])
     except socket_error as e:
         if e.errno == errno.EADDRINUSE: # Address already in use
-            print("Reynir is already running at host {0}".format(Settings.HOST))
+            print("Reynir is already running at host {0}:{1}".format(Settings.HOST, Settings.PORT))
         else:
             raise
     finally:
