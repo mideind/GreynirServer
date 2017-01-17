@@ -133,6 +133,9 @@ class ReynirCorpus:
 
     """ Wraps the document indexing functionality """
 
+    # Default number of dimensions in topic vectors
+    _DEFAULT_DIMENSIONS = 200
+
     # Work file names
     _DICTIONARY_FILE = './models/reynir.dict'
     _PLAIN_CORPUS_FILE = './models/corpus.mm'
@@ -141,13 +144,14 @@ class ReynirCorpus:
     _LSI_MODEL_FILE = './models/lsi-{0}.model'
     _LDA_MODEL_FILE = './models/lda-{0}.model'
 
-    def __init__(self, verbose = False):
+    def __init__(self, verbose = False, dimensions = None):
         self._verbose = verbose
         self._dictionary = None
         self._tfidf = None
         self._model = None
         self._model_name = None
         self._topics = None
+        self._dimensions = dimensions or ReynirCorpus._DEFAULT_DIMENSIONS
 
     def create_dictionary(self):
         """ Iterate through the article database
@@ -207,41 +211,41 @@ class ReynirCorpus:
         """ Load a TFIDF corpus from file """
         return corpora.MmCorpus(self._TFIDF_CORPUS_FILE)
 
-    def create_lsi_model(self, num_topics = 200, **kwargs):
+    def create_lsi_model(self, **kwargs):
         """ Create an LSI model from the entire words database table """
         corpus_tfidf = self.load_tfidf_corpus()
         if self._dictionary is None:
             self.load_dictionary()
         # Initialize an LSI transformation
-        lsi = models.LsiModel(corpus_tfidf, id2word=self._dictionary,
-            num_topics=num_topics, **kwargs)
+        lsi = models.LsiModel(corpus_tfidf, id2word = self._dictionary,
+            num_topics = self._dimensions, **kwargs)
         if self._verbose:
-            lsi.print_topics(num_topics = num_topics)
+            lsi.print_topics(num_topics = self._dimensions)
         # Save the generated model
-        lsi.save(self._LSI_MODEL_FILE.format(num_topics))
+        lsi.save(self._LSI_MODEL_FILE.format(self._dimensions))
 
-    def load_lsi_model(self, num_topics = 200):
+    def load_lsi_model(self):
         """ Load a previously generated LSI model """
-        self._model = models.LsiModel.load(self._LSI_MODEL_FILE.format(num_topics), mmap='r')
+        self._model = models.LsiModel.load(self._LSI_MODEL_FILE.format(self._dimensions), mmap='r')
         self._model_name = "lsi"
 
-    def create_lda_model(self, num_topics = 200, **kwargs):
+    def create_lda_model(self, **kwargs):
         """ Create a Latent Dirichlet Allocation (LDA) model from the
             entire words database table """
         corpus_tfidf = self.load_tfidf_corpus()
         if self._dictionary is None:
             self.load_dictionary()
         # Initialize an LDA transformation
-        lda = models.LdaMulticore(corpus_tfidf, id2word=self._dictionary,
-            num_topics=num_topics, **kwargs)
+        lda = models.LdaMulticore(corpus_tfidf, id2word = self._dictionary,
+            num_topics = self._dimensions, **kwargs)
         if self._verbose:
-            lda.print_topics(num_topics = num_topics)
+            lda.print_topics(num_topics = self._dimensions)
         # Save the generated model
-        lda.save(self._LDA_MODEL_FILE.format(num_topics))
+        lda.save(self._LDA_MODEL_FILE.format(self._dimensions))
 
-    def load_lda_model(self, num_topics = 200):
+    def load_lda_model(self):
         """ Load a previously generated LDA model """
-        self._model = models.LdaMulticore.load(self._LDA_MODEL_FILE.format(num_topics), mmap='r')
+        self._model = models.LdaMulticore.load(self._LDA_MODEL_FILE.format(self._dimensions), mmap='r')
         self._model_name = "lda"
 
     def calculate_topics(self):
@@ -319,74 +323,108 @@ class ReynirCorpus:
         # to a bag of word indexes
         wlist = [ w_from_stem(stem, cat) for stem, cat in terms ]
         bag = self._dictionary.doc2bow(wlist)
-        print("Wlist is:\n   {0}\nBag is:\n   {1}".format(wlist, bag))
-        # Apply the term frequency - inverse document frequency transform
-        tfidf = self._tfidf[bag]
-        # Map the resulting vector to the LSI model space
-        topic_vector = np.array([ float(x) for _, x in self._model[tfidf] ])
-        # For words that do not appear in the base corpus, calculate a
+        print("Terms are:\n   {0}\nWlist is:\n   {1}\nBag is:\n   {2}".format(terms, wlist, bag))
+        if bag:
+            # We have some terms in the bag (i.e. they were in the dictionary)
+            # Apply the term frequency - inverse document frequency transform
+            tfidf = self._tfidf[bag]
+            # Map the resulting vector to the LSI model space
+            topic_vector = np.array([ float(x) for _, x in self._model[tfidf] ])
+        else:
+            # No bag, we're just going to use word occurrences
+            topic_vector = np.zeros(self._dimensions)
+        # For words that we want to look up from the words table, calculate a
         # weighted average of the topic vectors of documents where those
         # words appear
-        missing = np.zeros(len(topic_vector))
-        num_missing = 0
+        missing = np.zeros(self._dimensions)
+        weight_missing = 0.0
         lb = len(bag)
-        if lb < len(wlist):
-            # We have missing words: look'em up
-            with SessionContext(commit = True, read_only = True) as session:
-                # The same (stem, cat) tuple may appear multiple times:
-                # coalesce into one counting dictionary
-                term_counter = defaultdict(int)
-                for stem, cat in terms:
-                    term_counter[(stem, cat)] += 1
-                for sc, num_sc in term_counter.items():
-                    stem, cat = sc
+
+        # We have missing words: look'em up
+        with SessionContext(commit = True, read_only = True) as session:
+            # The same (stem, cat) tuple may appear multiple times:
+            # coalesce into one counting dictionary
+
+            for index, (stem, cat) in enumerate(terms):
+
+                def word_lookup_weight(stem, cat):
+                    """ Does this term call for a lookup in the words database table? """
+                    if cat == "entity" or cat.startswith("person"):
+                        # We look up all entity and person names
+                        # and give them a double weight
+                        return 2.0
+                    if cat in { "kk", "kvk", "hk" } and stem[0].isupper() and index > 0:
+                        # Noun starting with a capital letter, not the first word in a sentence:
+                        # assume it's a proper name and do a lookup with a weight of 1.6
+                        return 1.6
                     w = w_from_stem(stem, cat)
+                    if isinstance(self._dictionary, ReynirDictionary):
+                        in_dict = w in self._dictionary
+                    else:
+                        # !!! TODO: This else-branch can be removed once a new
+                        # !!! ReynirDictionary has been built and pickled
+                        in_dict = w in self._dictionary.token2id
+                    # Without further reason, we don't look up terms that already
+                    # exist in the LSI model dictionary. For other terms, they
+                    # appear to be rare and we give them a slight overweight if
+                    # they are found in the words table.
+                    return 0.0 if in_dict else 1.2
 
-                    def in_dict(w):
-                        if isinstance(self._dictionary, ReynirDictionary):
-                            return w in self._dictionary
-                        return w in self._dictionary.token2id
+                weight = word_lookup_weight(stem, cat)
 
-                    if in_dict(w):
-                        # The stem is found in the master bag of words
-                        continue
-                    # This stem is missing from the master bag of words
-                    print("Term {0} (weight {1}) is missing from dictionary bag"
-                        .format(w_from_stem(stem, cat), num_sc))
-                    if cat in NoIndexWords.CATEGORIES_TO_INDEX \
-                        and (stem, cat) not in NoIndexWords.SET:
-                        # We have a significant (potentially indexable)
-                        # person, entity, noun, adjective or verb. Give it
-                        # a weight in the final topic vector.
-                        q = TermTopicsQuery().execute(session, stem = stem, cat = cat)
-                        term_vector = np.zeros(len(topic_vector))
-                        total_cnt = 0
-                        # Sum up the topic vectors of the documents where the term
-                        # appears, weighted by the number of times it appears
-                        print("Found {0} documents in words table".format(len(q)))
-                        for tv_json, cnt in q:
-                            # Get the term vector of a single document where the term appears
-                            tv = np.array(json.loads(tv_json))
-                            # Multiply the vector by the number of times the term appears
-                            total_cnt += cnt
-                            term_vector += tv * cnt
-                        # Add the combined (weighted average) topic vector of the
-                        # term to the 'missing' topic vector
-                        if total_cnt > 0:
-                            print("Total number of occurrences: {0}".format(total_cnt))
-                            missing += (term_vector / total_cnt) * num_sc
-                            # Keep track of how many 'missing' terms have contributed
-                            # to the missing term vector
-                            num_missing += num_sc
+                if weight == 0.0:
+                    # If weight is 0, we don't need to bother
+                    continue
 
-        if num_missing > 0:
+                if cat in NoIndexWords.CATEGORIES_TO_INDEX \
+                    and (stem, cat) not in NoIndexWords.SET:
+                    # We have a significant (potentially indexable)
+                    # person, entity, noun, adjective or verb. Give it
+                    # a weight in the final topic vector.
+
+                    def clean(stem):
+                        """ Eliminate composite word hyphens from the stem """
+                        if "- og " in stem or "- eða " in stem:
+                            # Leave 'iðnaðar- og viðskiptaráðuneyti' alone
+                            return stem
+                        # We want to keep other types of hyphens (surrounded by spaces)
+                        # such as 'Vestur - Íslendingar'
+                        a = stem.split(" - ")
+                        return " - ".join(p.replace("-", "") for p in a)
+
+                    clean_stem = clean(stem)
+                    q = TermTopicsQuery().execute(session, stem = clean_stem, cat = cat, limit = 25)
+                    term_vector = np.zeros(self._dimensions)
+                    total_cnt = 0
+                    # Sum up the topic vectors of the documents where the term
+                    # appears, weighted by the number of times it appears
+                    print("Found stem/cat '{0}'/{1} in {2} documents via words table".format(clean_stem, cat, len(q)))
+                    for tv_json, cnt in q:
+                        # Get the term vector of a single document where the term appears
+                        tv = np.array(json.loads(tv_json))
+                        # Multiply the vector by the number of times the term appears
+                        total_cnt += cnt
+                        term_vector += tv * cnt
+                    # Add the combined (weighted average) topic vector of the
+                    # term to the 'missing' topic vector
+                    if total_cnt > 0:
+                        print("Total number of occurrences: {0}".format(total_cnt))
+                        missing += (term_vector / total_cnt) * weight
+                        # Keep track of how many 'missing' terms have contributed
+                        # to the missing term vector
+                        weight_missing += weight
+                else:
+                    print("Discarding term {0} (weight {1:.1f})".format(w_from_stem(stem, cat), weight))
+
+        if weight_missing > 0.0:
             # Adjust the weight of the returned topic vector so that the missing
             # terms have a contribution that corresponds to their number
-            p_tv = lb / (lb + num_missing)
+            p_tv = lb / (lb + weight_missing)
             # Calculate the relative contribution of the missing terms
             p_m = 1.0 - p_tv
             # Amalgamate the resulting topic vector
             topic_vector = topic_vector * p_tv + missing * p_m
+
         return topic_vector
 
     def assign_article_topics(self, article_id, heading, process_all = False):

@@ -34,14 +34,16 @@ from scraperdb import desc, Root, Article, Person, Entity, \
     RelatedWordsQuery, ArticleCountQuery, ArticleListQuery
 from bindb import BIN_Db
 from tree import Tree
-from tokenizer import TOK, correct_spaces
+from treeutil import TreeUtility
+from tokenizer import TOK, correct_spaces, stems_of_token
 from fastparser import Fast_Parser, ParseForestDumper, ParseForestPrinter, ParseError
 from reducer import Reducer
-
+from search import Search
 
 _THIS_MODULE = sys.modules[__name__] # The module object for this module
 _QUERY_ROOT = 'QueryRoot' # The grammar root nonterminal for queries; see Reynir.grammar
 _MAXLEN_ANSWER = 25 # Maximum number of top answers to send in response to queries
+_MAXLEN_SEARCH = 20 # Maximum number of article search responses
 # If we have 5 or more titles/definitions with more than one associated URL,
 # cut off those that have only one source URL
 _CUTOFF_AFTER = 4
@@ -112,6 +114,57 @@ def prepare_response(q, prop_func):
     return make_response_list(rd)
 
 
+def add_entity_to_register(name, register, session, all_names = False):
+    """ Add the entity name and the 'best' definition to the given name register dictionary.
+        If all_names is True, we add all names that occur even if no title is found. """
+    if name in register:
+        # Already have a definition for this name
+        return
+    if " " not in name:
+        # Single name: this might be the last name of a person/entity
+        # that has already been mentioned by full name
+        for k in register.keys():
+            parts = k.split()
+            if len(parts) > 1 and parts[-1] == name:
+                # Reference to the last part of a previously defined
+                # multi-part person or entity name,
+                # for instance 'Clinton' -> 'Hillary Rodham Clinton'
+                register[name] = dict(kind = "ref", fullname = k)
+                return
+    # Use the query module to return definitions for an entity
+    definition = query_entity_def(session, name)
+    if definition:
+        register[name] = dict(kind = "entity", title = definition)
+    elif all_names:
+        register[name] = dict(kind = "entity", title = None)
+
+
+def add_name_to_register(name, register, session, all_names = False):
+    """ Add the name and the 'best' title to the given name register dictionary """
+    if name in register:
+        # Already have a title for this name
+        return
+    # Use the query module to return titles for a person
+    title = query_person_title(session, name)
+    if title:
+        register[name] = dict(kind = "name", title = title)
+    elif all_names:
+        register[name] = dict(kind = "name", title = None)
+
+
+def create_name_register(tokens, session, all_names = False):
+    """ Assemble a dictionary of person and entity names occurring in the token list """
+    register = { }
+    for t in tokens:
+        if t.kind == TOK.PERSON:
+            gn = t.val
+            for pn in gn:
+                add_name_to_register(pn.name, register, session, all_names = all_names)
+        elif t.kind == TOK.ENTITY:
+            add_entity_to_register(t.txt, register, session, all_names = all_names)
+    return register
+
+
 def _query_person_titles(session, name):
     """ Return a list of all titles for a person """
     rd = defaultdict(dict)
@@ -140,7 +193,7 @@ def _query_article_list(session, name):
     return sorted(adict.values(), key = lambda x: x["ts"], reverse = True)
 
 
-def query_person(session, name):
+def query_person(query, session, name):
     """ A query for a person by name """
     titles = _query_person_titles(session, name)
     # Now, create a list of articles where this person name appears
@@ -154,7 +207,7 @@ def query_person_title(session, name):
     return correct_spaces(rl[0]["answer"]) if rl else ""
 
 
-def query_title(session, title):
+def query_title(query, session, title):
     """ A query for a person by title """
     # !!! Consider doing a LIKE '%title%', not just LIKE 'title%'
     rd = defaultdict(dict)
@@ -189,7 +242,7 @@ def _query_entity_titles(session, name):
     return prepare_response(q, prop_func = lambda x: x.definition)
 
 
-def query_entity(session, name):
+def query_entity(query, session, name):
     """ A query for an entity by name """
     titles = _query_entity_titles(session, name)
     articles = _query_article_list(session, name)
@@ -202,7 +255,7 @@ def query_entity_def(session, name):
     return correct_spaces(rl[0]["answer"]) if rl else ""
 
 
-def query_company(session, name):
+def query_company(query, session, name):
     """ A query for an company in the entities table """
     # Create a query name by cutting off periods at the end
     # (hf. -> hf) and adding a percent pattern match at the end
@@ -223,7 +276,7 @@ def query_company(session, name):
     return prepare_response(q, prop_func = lambda x: x.definition)
 
 
-def query_word(session, stem):
+def query_word(query, session, stem):
     """ A query for words related to the given stem """
     # Count the articles where the stem occurs
     acnt = ArticleCountQuery.count(stem, enclosing_session = session)
@@ -235,12 +288,32 @@ def query_word(session, stem):
     )
 
 
+def launch_search(query, session, qkey):
+    """ Launch a search with the given search terms """
+    pgs, stats = TreeUtility.raw_tag_toklist(session, query.token_list(), root = _QUERY_ROOT)
+
+    # Collect the list of search terms
+    terms = []
+    for pg in pgs:
+        for sent in pg:
+            for t in sent:
+                # Obtain search stems for the tokens.
+                # The terms are represented as (stem, category) tuples.
+                terms.extend(stems_of_token(t))
+    print("Terms are:\n   {0}".format(terms))
+
+    # Launch the search and return the answers
+    result = Search.list_similar_to_terms(session, terms, _MAXLEN_SEARCH)
+    return dict(answers = result)
+
+
 _QFUNC = {
     "Person" : query_person,
     "Title" : query_title,
     "Entity" : query_entity,
     "Company" : query_company,
-    "Word" : query_word
+    "Word" : query_word,
+    "Search" : launch_search
 }
 
 def sentence(state, result):
@@ -257,7 +330,7 @@ def sentence(state, result):
             q.set_answer(result.qtype + ": " + result.qkey)
         else:
             try:
-                q.set_answer(qfunc(session, result.qkey))
+                q.set_answer(qfunc(q, session, result.qkey))
             except Exception as e:
                 q.set_error("E_EXCEPTION: {0}".format(e))
     else:
@@ -292,6 +365,11 @@ def QTitle(node, params, result):
 def QWord(node, params, result):
     result.qtype = "Word"
     assert "qkey" in result
+
+def QSearch(node, params, result):
+    result.qtype = "Search"
+    # Return the entire query text as the search key
+    result.qkey = result._text
 
 def Sérnafn(node, params, result):
     """ Sérnafn, stutt eða langt """
@@ -355,6 +433,7 @@ class Query:
         self._tree = None
         self._qtype = None
         self._key = None
+        self._toklist = None
 
     
     @staticmethod
@@ -416,6 +495,7 @@ class Query:
         self._error = None # Erase previous error, if any
         self._qtype = None # Erase previous query type, if any
         self._key = None
+        self._toklist = None
 
         parse_result, trees = Query._parse(toklist)
 
@@ -444,6 +524,8 @@ class Query:
         #print("Query tree:\n{0}".format(tree_string))
         self._tree = Tree()
         self._tree.load(tree_string)
+        # Store the token list
+        self._toklist = toklist
         return True
 
 
@@ -497,6 +579,11 @@ class Query:
     def key(self):
         """ Return the query key """
         return self._key
+
+
+    def token_list(self):
+        """ Return the token list for the query """
+        return self._toklist
 
 
     def error(self):

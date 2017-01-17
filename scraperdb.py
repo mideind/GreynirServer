@@ -636,7 +636,8 @@ class RelatedWordsQuery(_BaseQuery):
 class TermTopicsQuery(_BaseQuery):
 
     """ A query for topic vectors of documents where a given (stem, cat)
-        tuple appears """
+        tuple appears. We return the newest articles first, in case the
+        query result is limited by a specified limit. """
 
     _Q = """
         select topic_vector, q.cnt
@@ -646,7 +647,9 @@ class TermTopicsQuery(_BaseQuery):
                 where a.id = w.article_id and w.stem = :stem and w.cat = :cat
                 group by a.id
             ) as q
-            join articles on q.id = articles.id;
+            join articles on q.id = articles.id
+            order by articles.timestamp desc
+            limit :limit;
         """
 
 

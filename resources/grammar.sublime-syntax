@@ -1,0 +1,57 @@
+%YAML 1.2
+---
+# http://www.sublimetext.com/docs/3/syntax.html
+name: Reynir grammar
+file_extensions:
+  - grammar
+scope: source.grammar
+contexts:
+  main:
+    - include: comments
+    - include: strings
+    - match: →|\||=|->|>
+      comment: Punctuation within productions
+      scope: keyword.other.grammar
+    - match: \?|\*|\+
+      comment: Token repetition specifiers
+      scope: variable.parameter.function.keyword.grammar
+    - match: '\b([[:lower:]][[:word:]]*)'
+      comment: Terminals starting with a lowercase letter
+      scope: storage.type.class.grammar
+    - match: "(_[[:alnum:]]+)*"
+      comment: Variant literals starting with underscores
+      scope: constant.numeric.integer.decimal.grammar
+    - match: "/([[:lower:]]+)"
+      comment: Variants starting with a forward slash
+      scope: entity.name.function.decorator.grammar
+    - match: '\$([[:lower:]][[:word:]]*)'
+      comment: Pragma directives
+      scope: keyword.other.grammar
+  comments:
+    - match: "#"
+      comment: Comment from hash sign to end of line
+      push:
+        - meta_scope: comment.line.double-slash.grammar
+        - match: $\n?
+          pop: true
+  strings:
+    - match: "'"
+      comment: Literal terminals within single quotes
+      captures:
+        0: punctuation.definition.string.begin.grammar
+      push:
+        - meta_scope: string.quoted.single.grammar
+        - match: "'"
+          captures:
+            0: punctuation.definition.string.end.grammar
+          pop: true
+    - match: '"'
+      comment: Literal terminals within double quotes
+      captures:
+        0: punctuation.definition.string.begin.grammar
+      push:
+        - meta_scope: string.quoted.double.grammar
+        - match: '"'
+          captures:
+            0: punctuation.definition.string.end.grammar
+          pop: true

@@ -93,8 +93,8 @@ class SimilarityServer:
         # Do an initial load of all article topic vectors
         self._lock = Lock()
         self._timestamp = None
-        self._load_topics()
-        self._corpus = ReynirCorpus()
+        self._atopics = {}
+        self._corpus = None
 
 
     def _load_topics(self):
@@ -151,7 +151,6 @@ class SimilarityServer:
 
     def _iter_similarities(self, vector):
         """ Generator of (id, similarity) tuples for all articles to the given vector """
-
         base = np.array(vector)
         norm_base = np.dot(base, base) # This is faster than linalg.norm()
         if norm_base < 1.0e-6:
@@ -171,7 +170,7 @@ class SimilarityServer:
     def find_similar(self, n, vector):
         """ Return the N articles with the highest similarity score to the given vector,
             as a list of tuples (article_uuid, similarity) """
-        if vector is None or len(vector) == 0:
+        if vector is None or len(vector) == 0 or vector == np.zeros(len(vector)):
             return []
         with self._lock:
             return heapq.nlargest(n,
@@ -179,14 +178,20 @@ class SimilarityServer:
                 key = operator.itemgetter(1))
 
 
-    def run(self, port = 5001):
+    def run(self, host, port):
         """ Run a similarity server serving requests that come in at the given port """
-        address = ('localhost', port) # Family is deduced to be 'AF_INET'
+        address = (host, port) # Family is deduced to be 'AF_INET'
         # Load the secret password that clients must use to authenticate themselves
-        with open("resources/SimilarityServerKey.txt", "rb") as file:
-            secret_password = file.read()
+        try:
+            with open("resources/SimilarityServerKey.txt", "rb") as file:
+                secret_password = file.read()
+        except FileNotFoundError:
+            print("Unable to open resources/SimilarityServerKey.txt")
+            return
         print("Listening for connections on port {0}".format(port))
         with Listener(address, authkey = secret_password) as listener:
+            self._corpus = ReynirCorpus()
+            self._load_topics()
             while True:
                 try:
                     conn = listener.accept()
@@ -291,5 +296,14 @@ if __name__ == "__main__":
         quit()
 
     # Run a similarity server on the default port
-    SimilarityServer().run()
+    # Modify host to 0.0.0.0 to enable outside access
+    try:
+        SimilarityServer().run(host = 'localhost', port = Settings.SIMSERVER_PORT)
+    except OSError as e:
+        import errno
+        if e.errno == errno.EADDRINUSE: # Address already in use
+            print("Simserver is already running on port {0}".format(Settings.SIMSERVER_PORT))
+        else:
+            raise
+
 

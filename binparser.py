@@ -373,7 +373,7 @@ class BIN_Token(Token):
         # Check whether the verb token can potentially match the argument number
         # of the terminal in question. If the verb is known to take fewer
         # arguments than the terminal wants, this is not a match.
-        if terminal.variant(0) not in "012":
+        if terminal.num_variants == 0 or terminal.variant(0) not in "012":
             # No argument number: all verbs match, except...
             if terminal.is_lh:
                 # Special check for lhþt: may specify a case without it being an argument case

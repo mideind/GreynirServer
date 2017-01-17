@@ -214,7 +214,7 @@ class Reducer:
                         # Else, give a bonus for each matched preposition
                         sc[t] += 2
                 elif tfirst == "so":
-                    if t.variant(0) in "012":
+                    if t.num_variants > 0 and t.variant(0) in "012":
                         # Consider verb arguments
                         # Normally, we give a bonus for verb arguments: the more matched, the better
                         numcases = int(t.variant(0))

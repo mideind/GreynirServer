@@ -25,37 +25,25 @@
 
 """
 
-import sys
 from datetime import datetime, timedelta
-from contextlib import closing
 
-from settings import Settings, changedlocale
-from article import Article as ArticleProxy
+from settings import Settings
 from scraperdb import Root, Article
-from bindb import BIN_Db
-from tokenizer import stems_of_token
 from similar import SimilarityClient
-
-
-_MAXLEN_ANSWER = 25 # Maximum number of top answers to send in response to queries
 
 
 class Search:
 
-    """ A Query is initialized by parsing a query string using QueryRoot as the
-        grammar root nonterminal. The Query can then be executed by processing
-        the best parse tree using the nonterminal handlers given above, returning a
-        result object if successful. """
+    """ This class wraps search queries to the similarity server
+        via the similarity client. """
 
     # Similarity query client
     similarity_client = None
 
 
-    def __init__(self, session):
-        self._session = session
-        self._error = None
-        self._answer = None
-        self._terms = None
+    def __init__(self):
+        """ This class is normally not instantiated """
+        pass
 
 
     @classmethod
@@ -63,55 +51,6 @@ class Search:
         """ Ensure that the client is connected, if possible """
         if cls.similarity_client is None:
             cls.similarity_client = SimilarityClient()
-
-
-    def parse(self, toklist, result):
-        """ Parse the token list as a search query """
-
-        self._error = None # Erase previous error, if any
-        self._answer = None
-        self._terms = None
-
-        pgs, stats, register = ArticleProxy.tag_toklist(self._session, toklist)
-
-        # Collect the list of search terms
-        terms = []
-        for pg in pgs:
-            for sent in pg:
-                for t in sent:
-                    # Obtain search stems for the tokens. name_emphasis = 2
-                    # means that person and entity names are doubled up.
-                    # The terms are represented as (stem, category) tuples.
-                    terms.extend(stems_of_token(t, name_emphasis = 2))
-        print("Terms are:\n   {0}".format(terms))
-        self._terms = terms
-        return True
-
-
-    def execute(self, n):
-        """ Execute the query contained in the previously parsed tree; return True if successful """
-        self._answer = Search.list_similar_to_terms(self._session, self._terms, n)
-        return bool(self._answer)
-
-
-    def set_answer(self, answer):
-        """ Set the answer to the query """
-        self._answer = answer
-
-
-    def set_error(self, error):
-        """ Set an error result """
-        self._error = error
-
-
-    def answer(self):
-        """ Return the query answer """
-        return self._answer
-
-
-    def error(self):
-        """ Return the query error, if any """
-        return self._error
 
 
     @classmethod

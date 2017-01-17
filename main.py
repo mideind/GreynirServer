@@ -50,6 +50,7 @@ from tokenizer import tokenize, TOK, correct_spaces, canonicalize_token
 from fastparser import Fast_Parser, ParseError, ParseForestPrinter
 from reducer import Reducer
 from article import Article as ArticleProxy
+from treeutil import TreeUtility
 from scraperdb import SessionContext, desc, Root, Person, Article, ArticleTopic, Topic,\
     GenderQuery, StatsQuery
 from query import Query
@@ -300,28 +301,13 @@ def top_persons(limit = _TOP_PERSONS_LENGTH):
         )
 
 
-def process_search(session, toklist, result):
-    """ Process the toklist as a search string and return a list of matching articles """
-    s = Search(session)
-    if not s.parse(toklist, result):
-        # Something wrong
-        return False
-    if not s.execute(n = 15): # Show 15 results
-        result["error"] = s.error()
-        return True
-    result["response"] = s.answer()
-    result["qtype"] = "Search"
-    return True
-
-
 def process_query(session, toklist, result):
     """ Check whether the parse tree is describes a query, and if so, execute the query,
         store the query answer in the result dictionary and return True """
     q = Query(session)
     if not q.parse(toklist, result):
-        # Not able to parse this as a query:
-        # try it as a search
-        return process_search(session, toklist, result)
+        result["error"] = q.error()
+        return False
     if not q.execute():
         # This is a query, but its execution failed for some reason: return the error
         result["error"] = q.error()
@@ -358,7 +344,7 @@ def analyze_api(version = 1):
     text = text.strip()[0:_MAX_TEXT_LENGTH]
 
     with SessionContext(commit = True) as session:
-        pgs, stats, register = ArticleProxy.tag_text(session, text)
+        pgs, stats, register = TreeUtility.tag_text(session, text)
 
     # Return the tokens as a JSON structure to the client
     return better_jsonify(valid = True, result = pgs, stats = stats, register = register)
@@ -392,7 +378,7 @@ def postag_api(version = 1):
         return better_jsonify(valid = False, reason = "Invalid request")
 
     with SessionContext(commit = True) as session:
-        pgs, stats, register = ArticleProxy.tag_text(session, text, all_names = True)
+        pgs, stats, register = TreeUtility.tag_text(session, text, all_names = True)
         # Amalgamate the result into a single list of sentences
         if pgs:
             # Only process the first paragraph, if there are many of them
@@ -442,7 +428,7 @@ def parse_api(version = 1):
         return better_jsonify(valid = False, reason = "Invalid request")
 
     with SessionContext(commit = True) as session:
-        pgs, stats, register = ArticleProxy.parse_text(session, text, all_names = True)
+        pgs, stats, register = TreeUtility.parse_text(session, text, all_names = True)
         # In this case, we should always get a single paragraph back
         if pgs:
             # Only process the first paragraph, if there are many of them

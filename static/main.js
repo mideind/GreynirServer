@@ -275,7 +275,7 @@ function populateQueryResult(r) {
          rlist = r.response;
       if (r.qtype == "Search") {
          // Article search by terms
-         searchResult = makeSearchList(r.response);
+         searchResult = makeSearchList(r.response.answers);
       }
       else
       if (r.qtype == "Special") {
@@ -370,7 +370,7 @@ function populateQueryResult(r) {
    $("span.art-link").add("tr.article").click(function(ev) {
       // Show a source article
       wait(true); // This can take time, if a parse is required
-      $("#url").val("Málgreining í gangi...");
+      $("#url").attr("placeholder", "Málgreining í gangi...");
       window.location.href = "/page?id=" + $(this).attr("data-uuid");
    });
 }
@@ -480,6 +480,8 @@ function initMain(jQuery) {
          recognizer.start();
       });
    }
+   else
+      $("#url").attr("placeholder", "");
 
    // Check whether a query was encoded in the URL
    var rqVars = getUrlVars();

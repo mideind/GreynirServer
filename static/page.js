@@ -10,7 +10,7 @@
    Copyright (C) 2016
    All rights reserved
 
-   For details about the token JSON format, see Article._dump_tokens() in article.py.
+   For details about the token JSON format, see TreeUtility.dump_tokens() in treeutil.py.
    t.x is original token text.
    t.k is the token kind (TOK_x). If omitted, this is TOK_WORD.
    t.t is the name of the matching terminal, if any.

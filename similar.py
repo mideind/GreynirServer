@@ -27,6 +27,7 @@
 
 
 from multiprocessing.connection import Client
+from settings import Settings
 
 
 class SimilarityClient:
@@ -38,14 +39,21 @@ class SimilarityClient:
         self._conn = None
 
 
-    def _connect(self, port = 5001):
+    def _connect(self):
         """ Connect to a similarity server, with authentication """
         if self._conn is not None:
             # Already connected
             return
-        address = ('localhost', port)
-        with open("resources/SimilarityServerKey.txt", "rb") as file:
-            secret_password = file.read()
+        if not Settings.SIMSERVER_PORT:
+            # No similarity server configured
+            return
+        try:
+            with open("resources/SimilarityServerKey.txt", "rb") as file:
+                secret_password = file.read()
+        except FileNotFoundError:
+            # Unable to load authentication key
+            return
+        address = (Settings.SIMSERVER_HOST, Settings.SIMSERVER_PORT)
         self._conn = Client(address, authkey = secret_password)
 
 
@@ -56,6 +64,8 @@ class SimilarityClient:
         retries = 0
         while retries < 2:
             self._connect()
+            if self._conn is None:
+                break
             try:
                 self._conn.send(kwargs)
                 return self._conn.recv()
@@ -72,6 +82,8 @@ class SimilarityClient:
         retries = 0
         while retries < 2:
             self._connect()
+            if self._conn is None:
+                break
             try:
                 self._conn.send(kwargs)
                 # Successful: we're done

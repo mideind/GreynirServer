@@ -612,14 +612,30 @@ class Settings:
 
     # Postgres SQL database server hostname and port
     DB_HOSTNAME = os.environ.get('GREYNIR_DB_HOST', 'localhost')
-    DB_PORT = os.environ.get('GREYNIR_DB_PORT', '5432')
+    DB_PORT = os.environ.get('GREYNIR_DB_PORT', '5432') # Default PostgreSQL port
+    try:
+        DB_PORT = int(DB_PORT)
+    except ValueError:
+        raise ConfigError("Invalid environment variable value: DB_PORT = {0}".format(DB_PORT))
 
     # Flask server host and port
-    HOST = "127.0.0.1"
-    PORT = 5000
+    HOST = os.environ.get('GREYNIR_HOST', 'localhost')
+    PORT = os.environ.get('GREYNIR_PORT', '5000')
+    try:
+        PORT = int(PORT)
+    except ValueError:
+        raise ConfigError("Invalid environment variable value: GREYNIR_PORT = {0}".format(PORT))
 
     # Flask debug parameter
     DEBUG = False
+
+    # Similarity server
+    SIMSERVER_HOST = os.environ.get('SIMSERVER_HOST', 'localhost')
+    SIMSERVER_PORT = os.environ.get('SIMSERVER_PORT', '5001')
+    try:
+        SIMSERVER_PORT = int(SIMSERVER_PORT)
+    except ValueError:
+        raise ConfigError("Invalid environment variable value: SIMSERVER_PORT = {0}".format(SIMSERVER_PORT))
 
     # Configuration settings from the Reynir.conf file
 
@@ -639,17 +655,21 @@ class Settings:
             if par == 'db_hostname':
                 Settings.DB_HOSTNAME = val
             elif par == 'db_port':
-                Settings.DB_PORT = val
+                Settings.DB_PORT = int(val)
             elif par == 'host':
                 Settings.HOST = val
             elif par == 'port':
                 Settings.PORT = int(val)
+            elif par == 'simserver_host':
+                Settings.SIMSERVER_HOST = val
+            elif par == 'simserver_port':
+                Settings.SIMSERVER_PORT = int(val)
             elif par == 'debug':
                 Settings.DEBUG = bool(val)
             else:
                 raise ConfigError("Unknown configuration parameter '{0}'".format(par))
         except ValueError:
-            raise ConfigError("Illegal parameter value: {0} = {1}".format(par, val))
+            raise ConfigError("Invalid parameter value: {0} = {1}".format(par, val))
 
 
     @staticmethod

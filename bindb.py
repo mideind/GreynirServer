@@ -28,13 +28,14 @@
 
 """
 
+import sys
+import threading
+
 from functools import lru_cache
 from collections import namedtuple
 from heapq import nsmallest
 from operator import itemgetter
 from time import sleep
-
-import threading
 
 # Import the Psycopg2 connector for PostgreSQL
 try:
@@ -156,7 +157,7 @@ class BIN_Db:
 
         if db is None:
             raise Exception("Could not open BIN database on host {0}:{1}"
-                .format(Settings.DB_HOSTNAME, Settings.DB_PORT or "5432"))
+                .format(Settings.DB_HOSTNAME, Settings.DB_PORT))
 
         return db
 
@@ -168,15 +169,8 @@ class BIN_Db:
         self._meanings_func = lambda key: self._meanings_cache.lookup(key, getattr(self, "meanings"))
         self._forms_func = lambda key: self._forms_cache.lookup(key, getattr(self, "forms"))
 
-    def open(self, host, port = None, wait = False):
+    def open(self, host, port, wait = False):
         """ Open and initialize a database connection """
-
-        try:
-            port_number = int(port) if port else 5432 # PostgreSQL default port
-        except ValueError:
-            print("Invalid database port number when opening BIN - using default: {0}".format(port),
-                file = sys.stderr)
-            port_number = 5432
 
         retries = 10
         self._conn = None
@@ -184,7 +178,7 @@ class BIN_Db:
             try:
                 self._conn = psycopg2.connect(dbname = BIN_Db._DB_NAME,
                     user = BIN_Db._DB_USER, password = BIN_Db._DB_PWD,
-                    host = host, port = port_number, client_encoding = "utf8")
+                    host = host, port = port, client_encoding = "utf8")
                 break
             except Exception as e:
                 print("Exception when connecting to BIN database: {0}".format(e), file = sys.stderr)

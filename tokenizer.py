@@ -1991,7 +1991,7 @@ def canonicalize_token(t):
                 h = val[3], m = val[4], s = val[5])
 
 
-def stems_of_token(t, name_emphasis = 1):
+def stems_of_token(t):
     """ Return a list of word stem descriptors associated with the token t.
         This is an empty list if the token is not a word or person or entity name.
         The list can contain multiple stems, for instance in the case
@@ -2011,9 +2011,7 @@ def stems_of_token(t, name_emphasis = 1):
         else:
             # Sérnafn
             stem = t["x"]
-            # Apply name emphasis if upper case
-            n = name_emphasis if stem[0].isupper() else 1
-            return [ (stem, "entity") ] * n
+            return [ (stem, "entity") ]
     elif kind == TOK.PERSON:
         # The full person name, in nominative case, is stored in the 'v' field
         stem = t["v"]
@@ -2026,10 +2024,10 @@ def stems_of_token(t, name_emphasis = 1):
         else:
             # No known gender
             gender = ""
-        return [ (stem, "person" + gender) ] * name_emphasis
+        return [ (stem, "person" + gender) ]
     else:
         # TOK.ENTITY
         stem = t["x"]
-        return [ (stem, "entity") ] * name_emphasis
+        return [ (stem, "entity") ]
     return []
 

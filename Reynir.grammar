@@ -2263,8 +2263,8 @@ NlTöluorð/tala/fall/kyn →
 
 TöluorðForskeyti →
     'að_minnsta_kosti' | "um:ao" | "minnst" | "einungis" | "aðeins" | "ekki:ao"
-    | "svo" "sem:st" | "tæplega" | "rúmlega" | "einnig" | "samtals" | "yfir:ao"
-    | "hátt:ao" "í:ao" | "allt" "að:ao" | "næstum:ao" | "nálægt:ao"
+    | "svo" "sem:st" | "tæplega" | "rúmlega" | "ríflega" | "einnig" | "samtals"
+    | "yfir:ao" | "hátt:ao" "í:ao" | "allt" "að:ao" | "næstum:ao" | "nálægt:ao"
 
 TöluorðLo/tala →
     lo_evb_nf_hk/tala # efstu tvo / efstu tvö / efstu tvær
@@ -3701,7 +3701,7 @@ DagsFs_þgf →
 
 QueryRoot →
 
-    QPerson > QCompany > QEntity > QTitle > QWord
+    QPerson > QCompany > QEntity > QTitle > QWord > QSearch
 
 # Mark the QueryRoot nonterminal as a root in the grammar
 $root(QueryRoot)
@@ -3881,3 +3881,24 @@ QWordEntity →
 
 QWordEntityKey/fall → Sérnafn/fall > Sérnafn
 
+# Arbitrary search
+
+# Try to recognize the search query first as a noun phrase,
+# then as a sentence, and finally as an arbitrary sequence of tokens
+
+QSearch →
+    QSearchNl > QSearchSentence > QSearchArbitrary
+
+QSearchNl →
+    Nl Lokatákn?
+
+QSearchSentence →
+    Málsgrein
+
+QSearchArbitrary →
+    QSearchToken+
+
+QSearchToken →
+    person/fall/kyn > fyrirtæki > no/fall/tala/kyn
+    > fn/fall/tala/kyn > pfn/fall/tala/kyn > entity > lo > so
+    > eo > ao > fs/fall > dags > tími > raðnr > to > töl > ártal > tala > sérnafn
