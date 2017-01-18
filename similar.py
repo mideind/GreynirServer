@@ -54,7 +54,11 @@ class SimilarityClient:
             # Unable to load authentication key
             return
         address = (Settings.SIMSERVER_HOST, Settings.SIMSERVER_PORT)
-        self._conn = Client(address, authkey = secret_password)
+        try:
+            self._conn = Client(address, authkey = secret_password)
+        except:
+            print("Unable to connect to similarity server at {0}:{1}".format(address[0], address[1]))
+            # Leave self._conn set to None
 
 
     def _retry_list(self, **kwargs):

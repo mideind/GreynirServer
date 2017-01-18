@@ -144,7 +144,7 @@ class Search:
                     # Similar article, and the previous one is newer: drop the one we're considering
                     print("Ignoring: {0} ({1:.2f})".format(sa.heading, spercent))
 
-        print("Similar list is:\n   {0}".format("\n   ".join(str(s) for s in similar)))
+        if similar:
+            print("Similar list is:\n   {0}".format("\n   ".join(str(s) for s in similar)))
         return similar
-
 

@@ -1,13 +1,26 @@
 """
+
     Reynir: Natural language processing for Icelandic
 
     Article class
 
-    Copyright (c) 2016 Vilhjalmur Thorsteinsson
-    All rights reserved
-    See the accompanying README.md file for further licensing and copyright information.
+    Copyright (C) 2017 Vilhjálmur Þorsteinsson
 
-    This module contains a class modeling an article originating from a scraped web page.
+       This program is free software: you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published by
+       the Free Software Foundation, either version 3 of the License, or
+       (at your option) any later version.
+       This program is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+       GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see http://www.gnu.org/licenses/.
+
+
+    This module contains a class modeling an article originating
+    from a scraped web page.
 
 """
 
@@ -27,6 +40,9 @@ from treeutil import TreeUtility
 
 
 class Article:
+
+    """ An Article represents a new article typically scraped from a web site,
+        as it is tokenized, parsed and stored in the Reynir database. """
 
     _parser = None
 
@@ -226,6 +242,9 @@ class Article:
             if (word.stem, word.cat) in NoIndexWords.SET:
                 # Specifically excluded from indexing in Reynir.conf (Main.conf)
                 continue
+            if len(word.stem) > Word.MAX_WORD_LEN:
+                # Shield the database from too long words
+                continue
             # Interesting word: let's index it
             w = Word(
                 article_id = self._uuid,
@@ -234,6 +253,8 @@ class Article:
                 cnt = cnt
             )
             session.add(w)
+        # Offload the new data from Python to PostgreSQL
+        session.flush()
 
     def _parse(self, enclosing_session = None, verbose = False):
         """ Parse the article content to yield parse trees and annotated token list """
@@ -264,9 +285,6 @@ class Article:
                 for sent in p.sentences():
 
                     num_sent += 1
-
-                    #if Settings.DEBUG:
-                    #    print("Parsing: {0}".format(sent))
 
                     if sent.parse():
                         # Obtain a text representation of the parse tree

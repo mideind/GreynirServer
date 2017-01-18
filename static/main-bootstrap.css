@@ -878,6 +878,10 @@ div#result-query {
    display: none;
 }
 
+div#result-query h3.query {
+   line-height: 1.4;
+}
+
 div#result-tabs {
    display: none;
 }

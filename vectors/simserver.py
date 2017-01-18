@@ -34,7 +34,7 @@
 
     To register this program as a service within systemd, create a unit file
     called similarity.service in the /etc/systemd/system directory, containing
-    somthing like the following:
+    somthing like the following (assuming you have a virtualenv called venv):
 
         [Unit]
         Description=Greynir document similarity service
@@ -45,9 +45,9 @@
         Type=simple
         User=[YOUR USERNAME]
         Group=[YOUR GROUPNAME]
-        WorkingDirectory=/home/[YOUR USERNAME]/github/Reynir/vectors
-        ExecStart=/home/[YOUR USERNAME]/github/Reynir/vectors/[YOUR VENV]/bin/python simserver.py
-        Environment="PATH=/home/[YOUR USERNAME]/github/Reynir/vectors/[YOUR VENV]/bin"
+        WorkingDirectory=/home/[YOUR USERNAME]/Reynir/vectors
+        ExecStart=/home/[YOUR USERNAME]/Reynir/vectors/venv/bin/python simserver.py
+        Environment="PATH=/home/[YOUR USERNAME]/Reynir/vectors/venv/bin"
         Environment="PYTHONIOENCODING=utf-8"
         Environment="PYTHONUNBUFFERED=True"
         StandardOutput=syslog
@@ -170,7 +170,7 @@ class SimilarityServer:
     def find_similar(self, n, vector):
         """ Return the N articles with the highest similarity score to the given vector,
             as a list of tuples (article_uuid, similarity) """
-        if vector is None or len(vector) == 0 or vector == np.zeros(len(vector)):
+        if vector is None or len(vector) == 0 or all(e == 0.0 for e in vector):
             return []
         with self._lock:
             return heapq.nlargest(n,
@@ -254,7 +254,6 @@ class SimilarityServer:
                                 raise ClientError(request)
                             # Convert the list of search terms to a topic vector
                             topic = self._corpus.get_topic_vector(terms)
-                            print("Topic is {0}".format(topic))
                         elif "topic" in request:
                             # Compare similarity to the given topic vector
                             topic = request["topic"]

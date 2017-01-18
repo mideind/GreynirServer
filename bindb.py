@@ -193,7 +193,6 @@ class BIN_Db:
                     break
 
         if not self._conn:
-            # print("Unable to open connection to BIN database")
             return None
 
         # Ask for automatic commit after all operations

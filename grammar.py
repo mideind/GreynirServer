@@ -216,7 +216,7 @@ class Terminal:
         self._index = ix
 
     def matches(self, t_kind, t_val, t_lit):
-        # print("Terminal.matches: self.name is {0}, t_kind is {1}".format(self.name, t_kind))
+        """ Does this terminal match the given token? """
         return self._name == t_kind
 
 

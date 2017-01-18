@@ -25,10 +25,10 @@ ratio of concrete concepts such as numbers, amounts, dates, person and entity na
 etc.
 
 Reynir is innovative in its ability to parse and disambiguate text written in a
-**grammatically complex language**, i.e. Icelandic, which does not lend itself easily to statistical
-parsing methods. Reynir uses grammatical feature agreement (cases, genders, persons,
-number (singular/plural), verb tenses, modes, etc.) to guide and disambiguate parses.
-Its optimized Earley-based parser is fast and compact enough to make real-time
+**grammatically complex language**, i.e. Icelandic, which does not lend itself easily
+to statistical parsing methods. Reynir uses grammatical feature agreement (cases, genders,
+persons, number (singular/plural), verb tenses, modes, etc.) to guide and disambiguate
+parses. Its optimized Earley-based parser is fast and compact enough to make real-time
 while-you-wait analysis of web pages, as well as bulk processing, feasible.
 
 Reynir's goal is to "understand" text to a usable extent by parsing it into
@@ -76,11 +76,12 @@ Reynir works in stages, roughly as follows:
 7. *Query processor* that allows natural language queries for entites in Reynir's database.
 
 Reynir has an embedded web server that displays news articles recently scraped into its
-databsae, as well as names of people extracted from those articles along with their titles. The web
-UI enables the user to type in any URL and have Reynir scrape it, tokenize it and display the
-result as a web page. Queries can also be entered via the keyboard or using voice input.
-The server runs on the [Flask](http://flask.pocoo.org/) framework, implements WSGi and can
-for instance be plugged into [Gunicorn](http://gunicorn.org/) and [nginx](https://www.nginx.com/).
+databsae, as well as names of people extracted from those articles along with their titles.
+The web UI enables the user to type in any URL and have Reynir scrape it, tokenize it and
+display the result as a web page. Queries can also be entered via the keyboard or using voice
+input. The server runs on the [Flask](http://flask.pocoo.org/) framework, implements WSGi and
+can for instance be plugged into [Gunicorn](http://gunicorn.org/) and
+[nginx](https://www.nginx.com/).
 
 Reynir uses the official BÍN ([Beygingarlýsing íslensks nútímamáls](http://bin.arnastofnun.is))
 lexicon and database of Icelandic word forms to identify and tokenize words, and find their
@@ -105,21 +106,23 @@ referencing Tomita. It parses ambiguous grammars without restriction and
 returns a compact Shared Packed Parse Forest (SPPF) of parse trees. If a parse
 fails, it identifies the token at which no parse was available.
 
-The Reynir scraper is typically run in a `cron` job every 30 minutes to extract articles automatically
-from the web, parse them and store the resulting trees in a PostgreSQL database for further processing.
+The Reynir scraper is typically run in a `cron` job every 30 minutes to extract
+articles automatically from the web, parse them and store the resulting trees
+in a PostgreSQL database for further processing.
 
-Scraper modules for new websites are plugged in by adding Python code to the `scrapers/` directory.
-Currently, the `scrapers/default.py` module supports four popular Icelandic news sites as well
-as the site of the Constitutional Council.
+Scraper modules for new websites are plugged in by adding Python code to the
+`scrapers/` directory. Currently, the `scrapers/default.py` module supports
+popular Icelandic news sites as well as the site of the Constitutional Council.
 
-Processor modules can be plugged in to Reynir by adding Python code to the `processors/` directory.
-The demo in `processors/default.py` extracts person names and titles from parse trees for
-storage in a database table.
+Processor modules can be plugged in to Reynir by adding Python code to the
+`processors/` directory. The demo in `processors/default.py` extracts person
+names and titles from parse trees for storage in a database table.
 
 ## File details
 
 * `main.py` : WSGi web server application and main module for command-line invocation
-* `settings.py` : Management of global settings and configuration data, obtained from `config/Reynir.conf`
+* `settings.py` : Management of global settings and configuration data,
+  obtained from `config/Reynir.conf`
 * `scraper.py` : Web scraper, collecting articles from a set of pre-selected websites (roots)
 * `scraperdb.py`: Wrapper for the scraper database via SQLAlchemy
 * `tokenizer.py` : Tokenizer, designed as a pipeline of Python generators
@@ -143,8 +146,8 @@ storage in a database table.
 * `config/Verbs.conf` : Lexicon of verbs, included in `Reynir.conf`
 * `config/Abbrev.conf` : Lexicon of abbreviations, included in `Reynir.conf`
 * `Reynir.grammar` : A context-free grammar specification for Icelandic
-  written in BNF with extensions
-  for repeating constructs (`*`, `+`) and optional constructs (`?`)
+  written in BNF with extensions for repeating constructs (`*`, `+`)
+  and optional constructs (`?`)
 * `glock.py` : Utility class for global inter-process locking
 * `fetcher.py` : Utility classes for fetching articles given their URLs
 * `parser.py` : Older, pure-Python implementation of an Earley parser
@@ -170,8 +173,8 @@ Greynir can also be [built and run in Docker containers](https://github.com/vtho
 
 ### Postgres database setup
 * `$ psql`
-* `create user reynir;`
-* `create user notandi;`
+* `create user reynir with password 'reynir';`
+* `create user notandi;` # Your username here
 * `alter role notandi with superuser;`
 * `create database bin with encoding 'UTF8' LC_COLLATE='is_IS.UTF-8' LC_CTYPE='is_IS.UTF-8' TEMPLATE=template0;`
 * `\c bin` 
@@ -184,13 +187,13 @@ Greynir can also be [built and run in Docker containers](https://github.com/vtho
 
 ### Import external text and csv data
 To load the BÍN lexicon and its supplemental text/csv files you need to run the import
-and validation script found in `utils/external_data_validator.py`. This creates the file `resources/ord.csv`
-which is copied into PostgreSQL as described above.
+and validation script found in `utils/external_data_validator.py`. This creates the
+file `resources/ord.csv` which is copied into PostgreSQL as described above.
 
 Put the downloaded BÍN files into the `Reynir/resources` directory. The names of these files
 are currently assumed to be the following:
 
-* `SHsnid.csv`
+* `SHsnid.csv` (extracted from `SHsnid.csv.zip`)
 * `obeyg.smaord.txt`
 * `plastur.feb2013.txt`
 
@@ -200,11 +203,18 @@ Reynir/Greynir is *copyright (C) 2016 by Vilhjálmur Þorsteinsson*.
 
 ![GPLv3](https://raw.githubusercontent.com/vthorsteinsson/Reynir/master/static/GPLv3.png)
 
-This set of programs is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+This set of programs is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any later
+version.
 
-This set of programs is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+This set of programs is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-The full text of the GNU General Public License v3 is [included here](https://github.com/vthorsteinsson/Reynir/blob/master/LICENSE.txt)
+The full text of the GNU General Public License v3 is
+[included here](https://github.com/vthorsteinsson/Reynir/blob/master/LICENSE.txt)
 and also available here: https://www.gnu.org/licenses/gpl-3.0.html.
 
-If you wish to use this set of programs in ways that are not covered under the GPL v3 license, please contact the author.
+If you wish to use this set of programs in ways that are not covered under the
+GPL v3 license, please contact the author.

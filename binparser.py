@@ -452,8 +452,6 @@ class BIN_Token(Token):
             return False
         if not terminal.num_variants:
             # No variant specified on terminal: we're done
-            if Settings.DEBUG:
-                print("Matching person terminal, token.t2 is {0}".format(self.t2))
             return True
         # Check each PersonName tuple in the t2 list
         case = terminal.variant(0)
@@ -551,7 +549,6 @@ class BIN_Token(Token):
             return False
         if not self.is_correct_singular_or_plural(terminal):
             return False
-        #print("matches_AMOUNT terminal {0}, amt cases {1} genders {2}".format(terminal, self.t2[2], self.t2[3]))
         if self.t2[2]:
             # See whether any of the allowed cases match the terminal
             for c in BIN_Token.CASES:

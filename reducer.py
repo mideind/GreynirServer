@@ -139,8 +139,6 @@ class Reducer:
             # Initially, each alternative has a score of 0
             scores[i] = { terminal: 0 for terminal in s }
 
-            #print("Reducing token '{0}'; scores dict initialized to:\n{1}".format(tokens[i].t1, scores[i]))
-
             if len(s) <= 1:
                 # No ambiguity to resolve here
                 continue
@@ -272,7 +270,6 @@ class Reducer:
                                 if pt.first == 'nhm':
                                     # Prop up the nhm terminal
                                     scores[i - 1][pt] += 2
-                                    # print("Propping up nhm for verb {1}, score is now {0}".format(scores[i-1][pt], tokens[i].t1))
                                     break
                         if any(pt.first == "no" and pt.has_variant("ef") and pt.is_plural for pt in s):
                             # If this is a so_nh and an alternative no_ef_ft exists, choose this one
@@ -297,18 +294,11 @@ class Reducer:
                         sc[t] += 2
                     else:
                         # BÍN meanings are available: discourage this
-                        #print("sérnafn '{0}': BÍN meanings available, discouraging".format(tokens[i].t1))
                         sc[t] -= 6
                         if i == w.start:
                             # First token in sentence, and we have BÍN meanings:
                             # further discourage this
                             sc[t] -= 4
-                        #print("Meanings for sérnafn {0}:".format(tokens[i].t1))
-                        #for m in tokens[i].t2:
-                        #    print("{0}".format(m))
-                    #        if m.stofn[0].isupper():
-                    #            sc[t] -= 4 # Discourage 'sérnafn' if an uppercase BÍN meaning is available
-                    #            break
                 elif tfirst == "st":
                     if txt == "sem":
                         # Discourage "sem" as a conjunction (samtenging)
@@ -317,8 +307,6 @@ class Reducer:
                     # Give a bonus for exact or semi-exact matches
                     sc[t] += 1
 
-        #for i in range(w.start, w.end):
-        #    print("At token '{0}' scores dict is:\n{1}".format(tokens[i].t1, scores[i]))
         return scores
 
 
@@ -456,7 +444,6 @@ class Reducer:
                 if self.nt:
                     if self.nt.has_tag("enable_prep_bonus"):
                         # SagnInnskot has this tag
-                        # print("Entering SagnInnskot: current_verb is {0}".format(verb))
                         reducer.push("prep_bonus", None if verb is None else verb[:])
                         self.pushed_preposition_bonus = True
                     elif self.nt.has_tag("begin_prep_scope"):
@@ -480,12 +467,10 @@ class Reducer:
                         else:
                             self.sc[ix][key] = sc[key][:]
                         if key == "sl":
-                            #print("add_child_score: setting current_verb to {0}".format(sc[key]))
                             self.reducer.set("current_verb", sc[key])
 
             def add_child_production(self, ix, prod):
                 """ Add a family of children to the priority pool """
-                #print("Resetting current verb to {0}".format(self.start_verb))
                 self.reducer.set("current_verb", self.start_verb)
                 if self.nt is None:
                     # Not a completed nonterminal; priorities don't apply
@@ -543,7 +528,6 @@ class Reducer:
                         if verb is not None:
                             sc["sl"] = verb[:]
 
-                    # print("Completing nt {0}, fs {1}, prep bonus {2}".format(results.name, sc.get("fs", None), self._preposition_bonus))
                     if self.nt.has_any_tag({ "begin_prep_scope", "purge_verb" }):
                         # Delete information about contained verbs
                         # SagnRuna, EinSetningÁnF, SagnHluti, NhFyllingAtv and Setning have this tag
@@ -621,8 +605,6 @@ class Reducer:
                     # We are inside a preposition bonus zone:
                     # give bonus points if this preposition terminal matches
                     # an enclosing verb
-                    #if Settings.DEBUG and len(prep_bonus) > 1:
-                    #    print("_visit_token at {1}: prep_bonus is {0}".format(prep_bonus, node.token.lower))
                     # Iterate through enclosing verbs
                     final_bonus = None
                     for terminal, token in prep_bonus:

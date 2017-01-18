@@ -343,13 +343,15 @@ class Word(Base):
 
     __tablename__ = 'words'
 
+    MAX_WORD_LEN = 64
+
     # Foreign key to an article
     article_id = Column(psql_UUID(as_uuid = False),
         ForeignKey('articles.id', onupdate="CASCADE", ondelete="CASCADE"),
         nullable = False)
 
     # The word stem
-    stem = Column(String(64), index = True, nullable = False)
+    stem = Column(String(MAX_WORD_LEN), index = True, nullable = False)
 
     # The word category
     cat = Column(String(16), index = True, nullable = False)

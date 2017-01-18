@@ -1247,8 +1247,6 @@ def parse_phrases_2(token_stream):
                         if m.stofn not in dstems or c not in dstems[m.stofn]:
                             # Note the stem ('stofn') and the gender from the word type ('ordfl')
                             result.append(PersonName(name = m.stofn, gender = m.ordfl, case = c))
-                #if len(result) > 1:
-                #    print("stems: result is\n{0}".format("\n".join(str(x) for x in result)))
                 return result if result else None
 
             def has_category(tok, categories):
@@ -1634,13 +1632,8 @@ def disambiguate_phrases(token_stream):
                         # Discard meanings of words in the token queue that are not
                         # compatible with the category list specified
                         cats = AmbigPhrases.get_cats(ix)
-                        # assert len(cats) == len(tq)
-                        # print("Matching ambiguous phrase")
                         for t, cat in zip(tq, cats):
-                            # assert t.kind == TOK.WORD
                             # Yield a new token with fewer meanings for each original token in the queue
-                            #print("Ambig word {0}:\n   original meanings {1}\n   restricted meanings {2}"
-                            #    .format(t.txt, t.val, [m for m in t.val if m.ordfl == cat]))
                             yield TOK.Word(t.txt, [m for m in t.val if m.ordfl == cat])
 
                         # Discard the state and start afresh

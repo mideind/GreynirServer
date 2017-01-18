@@ -105,7 +105,7 @@ function initializeSpeech() {
       $("#url").attr("placeholder", "");
       $("#microphone").removeClass("btn-danger").addClass("btn-info");
       // Send the query to the server
-      analyzeQuery();
+      analyzeQuery({ q: txt, autouppercase: true }); // Ask for auto-uppercasing
    };
    // Listen for errors
    recognizer.onerror = function(event) {
@@ -398,7 +398,7 @@ function navToHistory(func, q) {
       // Invalid function
       return;
    // Navigate to a previous state encoded in a URL
-   $("#url").val(q); // Go back to original query string
+   $("#url").val(q.q); // Go back to original query string
    // Execute the original query function again
    urlToFunc[func](q);
 }
@@ -407,25 +407,29 @@ function _submitQuery(q) {
    clearQueryResult();
    // Launch the query
    serverQuery('/query.api',
-      { q : q }, // Query string
+      q, // Query dictionary
       populateQueryResult, // successFunc
       null, // completeFunc
       handleQueryError // error Func
    );
 }
 
-function analyzeQuery() {
+function analyzeQuery(q) {
    // Submit the query in the url input field to the server
    if (queryInProgress)
       // Already waiting on a query
       return;
-   var q = $("#url").val().trim();
-   if (q.startsWith("http://") || q.startsWith("https://")) {
+   if (q.q.startsWith("http://") || q.q.startsWith("https://")) {
       wait(true); // Show spinner while loading page
-      window.location.href = "/page?url=" + encodeURIComponent(q);
+      window.location.href = "/page?url=" + encodeURIComponent(q.q);
       return;
    }
    _submitQuery(q);
+}
+
+function urlButtonClick() {
+   var q = $("#url").val().trim();
+   analyzeQuery({ q: q, autouppercase: false });
 }
 
 function urldecode(s) {
@@ -457,7 +461,8 @@ function initMain(jQuery) {
       })
       .keydown(function(ev) {
          if (ev.which == 13) {
-            analyzeQuery();
+            var q = this.value.trim();
+            analyzeQuery({ q: q, autouppercase: false });
             ev.preventDefault();
          }
       });
@@ -487,7 +492,7 @@ function initMain(jQuery) {
    var rqVars = getUrlVars();
    if (rqVars.f !== undefined && rqVars.q !== undefined)
       // We seem to have a legit query URL
-      navToHistory(rqVars.f, rqVars.q);
+      navToHistory(rqVars.f, { q : rqVars.q });
 
    // Select all text in the url input field
    $("#url").get(0).setSelectionRange(0, $("#url").val().length);

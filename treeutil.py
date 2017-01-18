@@ -75,6 +75,18 @@ class TreeUtility:
                     if terminal.num_variants >= 2:
                         case = terminal.variant(-2)
                 fn_list = [ (fn, g, c) for fn, g, c in t.val if (gender is None or g == gender) and (case is None or c == case) ]
+                if not fn_list:
+                    # Oops - nothing matched this. Might be a foreign, undeclinable name.
+                    # Try nominative if it wasn't alredy tried
+                    if case is not None and case != "nf":
+                        fn_list = [ (fn, g, c) for fn, g, c in t.val if (gender is None or g == gender) and (case == "nf") ]
+                    # If still nothing, try anything with the same gender
+                    if not fn_list and gender is not None:
+                        fn_list = [ (fn, g, c) for fn, g, c in t.val if (g == gender) ]
+                    # If still nothing, give up and select the first available meaning
+                    if not fn_list:
+                        fn, g, c = t.val[0]
+                        fn_list = [ (fn, g, c) ]
                 # If there are many choices, select the nominative case, or the first element as a last resort
                 fn = next((fn for fn in fn_list if fn[2] == "nf"), fn_list[0])
                 d["v"] = fn[0] # Include only the name of the person in nominal form

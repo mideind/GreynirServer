@@ -516,6 +516,8 @@ SetningSo →
 
     | VeraSkulu_et_p3 FsRuna LoTengtSögn_nf/tala/kyn Nl_nf/tala/kyn AtvFs? # Skal í frumvarpinu fólgin greinargerð um tekjur ríkisins og gjöld
 
+    # !!! Ath.: So_1_nh leyfir miðmynd nafnháttar, sem ætti ekki að vera leyfilegur hér
+    # !!! sbr. '?Endurnýjast á leigusamninginn í ár'
     | So_1_nh/fall HjSögnMegiSkuliÞurfi_et_p3 FsRuna? Nl/fall AtvFs?  # Endurnýja þarf/skal/má leigusamninginn í ár
     | So_1_nh/fall HjSögnNhMeðSo/tala/pers Nl_nf/tala/pers/kyn Nl/fall AtvFs?  # Gæta eiga/skulu/verða þeir þingskapa
 

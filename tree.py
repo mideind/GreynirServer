@@ -401,7 +401,6 @@ class TerminalDescriptor:
 
     def _bin_filter(self, m, case_override = None):
         """ Return True if the BIN meaning in m matches the variants for this terminal """
-        #print("_bin_filter checking meaning {0}".format(m))
         if self.bin_cat is not None and m.ordfl not in self.bin_cat:
             return False
         if self.gender is not None:
@@ -492,7 +491,6 @@ class TerminalDescriptor:
         if self.variant_gr:
             if "gr" not in m.beyging:
                 return False
-        #print("_bin_filter returns True")
         return True
 
     def stem(self, bindb, word, at_start = False):
@@ -569,20 +567,17 @@ class TerminalNode(Node):
     def lookup_alternative(self, bin_db, replace_func, sort_func = None):
         """ Return a different word form, if available, by altering the beyging
             spec via the given replace_func function """
-        #print("_lookup_alternative looking up {0}, cat is {1}".format(self.text, self.cat))
         w, m = bin_db.lookup_word(self.text, self.at_start)
         if m:
             # Narrow the meanings down to those that are compatible with the terminal
             m = [ x for x in m if self.td._bin_filter(x) ]
         if m:
-            #print("Meanings from lookup_word are {0}".format(m))
             # Look up the distinct roots of the word
             result = []
             for x in m:
 
                 # Calculate a new beyging string with the nominative case
                 beyging = replace_func(x.beyging)
-                #print("Replaced beyging {0} by {1}".format(x.beyging, beyging))
 
                 if beyging is x.beyging:
                     # No replacement made: word form is identical in the nominative case
@@ -590,7 +585,6 @@ class TerminalNode(Node):
                 else:
                     # Lookup the same word (identified by 'utg') but a different declination
                     prefix = "".join(x.ordmynd.split("-")[0:-1])
-                    #print("x.ordmynd is {0}, x.utg is {1}, prefix is {2}".format(x.ordmynd, x.utg, prefix))
                     wordform = bin_db.lookup_utg(x.utg, beyging = beyging)
                     if wordform:
                         result += bin_db.prefix_meanings(wordform, prefix)
@@ -600,7 +594,6 @@ class TerminalNode(Node):
                     if sort_func is not None:
                         # Sort the result before choosing the matching meaning
                         result.sort(key = sort_func)
-                    # print("Choosing first item from meaning list:\n{0}".format(result))
                 # There can be more than one word form that matches our spec.
                 # We can't choose between them so we simply return the first one.
                 w = result[0].ordmynd
@@ -609,7 +602,6 @@ class TerminalNode(Node):
     def _nominative(self, bin_db):
         """ Look up the nominative form of the word associated with this terminal """
         # Lookup the token in the BIN database
-        #print("_nominative of {0}, token {1}, terminal {2}".format(self.text, self.token, self.terminal))
         if (not self.is_word) or self.td.case_nf or not self.is_declinable:
             # Not a word, already nominative or not declinable: return it as-is
             return self.text
@@ -641,13 +633,11 @@ class TerminalNode(Node):
         elif self.text[0].isupper():
             # First letter was upper case: convert result accordingly
             w = w[0].upper() + w[1:]
-        #print("_nominative returning {0}".format(w))
         return w
 
     def _indefinite(self, bin_db):
         """ Look up the indefinite nominative form of a noun or adjective associated with this terminal """
         # Lookup the token in the BIN database
-        #print("indefinite: {0} cat {1} variants {2}".format(self.text, self.cat, self.variants))
         if (not self.is_word) or self.is_literal:
             # Not a word, not a noun or already indefinite: return it as-is
             return self.text
@@ -674,13 +664,11 @@ class TerminalNode(Node):
         # Lookup the same word stem but in the nominative case
         w = self.lookup_alternative(bin_db, replace_beyging)
 
-        #print("_indefinite returning {0}".format(w))
         return w
 
     def _canonical(self, bin_db):
         """ Look up the singular indefinite nominative form of a noun or adjective associated with this terminal """
         # Lookup the token in the BIN database
-        #print("indefinite: {0} cat {1} variants {2}".format(self.text, self.cat, self.variants))
         if (not self.is_word) or self.is_literal:
             # Not a word, not a noun or already indefinite: return it as-is
             return self.text
@@ -706,7 +694,6 @@ class TerminalNode(Node):
         # Lookup the same word stem but in the nominative case
         w = self.lookup_alternative(bin_db, replace_beyging)
 
-        #print("_indefinite returning {0}".format(w))
         return w
 
     def root(self, state, params):
@@ -800,7 +787,6 @@ class PersonNode(TerminalNode):
             if m:
                 w = m[0].stofn
             name.append(w.replace("-", ""))
-        # print("PersonNode._root: returning '{0}'".format(" ".join(name)))
         return " ".join(name)
 
     def _nominative(self, bin_db):
@@ -941,7 +927,6 @@ class TreeBase:
         # in the dictionary
         self.s[self.n] = self.stack[0]
         self.stack = None
-        #print("Tree [{0}] is: {1}".format(self.n, self.s[self.n]))
 
     def handle_E(self, n):
         """ End of sentence with error """

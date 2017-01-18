@@ -401,10 +401,11 @@ class ReynirCorpus:
                     print("Found stem/cat '{0}'/{1} in {2} documents via words table".format(clean_stem, cat, len(q)))
                     for tv_json, cnt in q:
                         # Get the term vector of a single document where the term appears
-                        tv = np.array(json.loads(tv_json))
-                        # Multiply the vector by the number of times the term appears
-                        total_cnt += cnt
-                        term_vector += tv * cnt
+                        if tv_json and cnt:
+                            tv = np.array(json.loads(tv_json))
+                            # Multiply the vector by the number of times the term appears
+                            total_cnt += cnt
+                            term_vector += tv * cnt
                     # Add the combined (weighted average) topic vector of the
                     # term to the 'missing' topic vector
                     if total_cnt > 0:

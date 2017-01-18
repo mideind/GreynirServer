@@ -145,6 +145,8 @@ def get_json_bool(rq, name, default = False):
     """ Get a boolean from JSON encoded in a request form """
     b = rq.form.get(name)
     if b is None:
+        b = rq.args.get(name)
+    if b is None:
         # Not present in the form: return the default
         return default
     return isinstance(b, str) and b == "true"
