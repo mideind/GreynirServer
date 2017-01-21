@@ -17,7 +17,7 @@ import time
 from collections import defaultdict
 
 from tokenizer import TOK, paragraphs
-from fastparser import Fast_Parser, ParseError
+from fastparser import Fast_Parser, ParseError # , ParseForestPrinter
 from reducer import Reducer
 from settings import Settings
 

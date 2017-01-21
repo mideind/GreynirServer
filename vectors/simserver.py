@@ -238,6 +238,7 @@ class SimilarityServer:
                         except:
                             n = 10
                         topic = None
+                        result = dict()
                         if "id" in request:
                             try:
                                 # Compare similarity to an article identified by UUID
@@ -253,7 +254,8 @@ class SimilarityServer:
                             if not isinstance(terms, list):
                                 raise ClientError(request)
                             # Convert the list of search terms to a topic vector
-                            topic = self._corpus.get_topic_vector(terms)
+                            topic, term_weights = self._corpus.get_topic_vector(terms)
+                            result["weights"] = term_weights
                         elif "topic" in request:
                             # Compare similarity to the given topic vector
                             topic = request["topic"]
@@ -263,7 +265,7 @@ class SimilarityServer:
                             raise ClientError(request)
                         # Launch the command and send the reply back to the client
                         t0 = time.time()
-                        result = self.find_similar(n, topic)
+                        result["articles"] = self.find_similar(n, topic)
                         t1 = time.time()
                         conn.send(result)
                         print("find_similar() took {0:.2f} seconds".format(t1 - t0))

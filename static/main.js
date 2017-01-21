@@ -258,7 +258,7 @@ function populateQueryResult(r) {
       if (r.qtype == "Word") {
          rlist = r.response.answers;
          if (rlist && rlist.length) {
-            var c = rlist.length;
+            var c = r.response.count;
             var g = correctPlural(c, "einni", "grein", "greinum");
             answer = $("<p></p>").text("'" + r.key + "' kemur fyrir í " + g + ", ásamt eftirtöldum orðum:")
                .append($("<ul></ul>"));
@@ -275,6 +275,11 @@ function populateQueryResult(r) {
          rlist = r.response;
       if (r.qtype == "Search") {
          // Article search by terms
+         q = $("<h3 class='query'>");
+         $.each(r.response.weights, function(i, t) {
+            q.append($("<span></span>").attr("class", "weight" + (t.w * 10).toFixed(0)).text(t.x));
+            q.append(" ");
+         });
          searchResult = makeSearchList(r.response.answers);
       }
       else

@@ -627,10 +627,12 @@ class RelatedWordsQuery(_BaseQuery):
         """
 
     @classmethod
-    def rel(cls, stem, limit = 20, enclosing_session = None):
+    def rel(cls, stem, limit = 21, enclosing_session = None):
         """ Return a list of (stem, category, count) tuples describing
             word stems that are related to the given stem, in descending
             order of number of appearances. """
+        # The default limit is 21 instead of 20 because the original stem
+        # is usually included in the result list
         with SessionContext(session = enclosing_session, commit = True) as session:
             return cls().execute(session, root = stem, limit = limit)
 

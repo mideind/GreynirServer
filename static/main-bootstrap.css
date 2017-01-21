@@ -297,7 +297,7 @@ div#output {
 }
 
 div#output li {
-   line-height: 1.5em;
+   line-height: 1.6em;
 }
 
 tr.topitem, tr.article {
@@ -914,3 +914,25 @@ div.headline {
    padding-top: 5px;
    padding-bottom: 6px;
 }
+
+span.weight20,
+span.weight25 {
+   color: #337ab7;
+}
+
+span.weight16 {
+   color: #5bc0de;
+}
+
+span.weight12 {
+   color: #222222;
+}
+
+span.weight10 {
+   color: #777777;
+}
+
+span.weight0 {
+   color: #cccccc;
+}
+

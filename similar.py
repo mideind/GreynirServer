@@ -64,7 +64,7 @@ class SimilarityClient:
     def _retry_list(self, **kwargs):
         """ Connect to the server and send it a request, retrying if the
             server has closed the connection in the meantime. Return a
-            result list or an empty list if no connection. """
+            dict with a result list or an empty list if no connection. """
         retries = 0
         while retries < 2:
             self._connect()
@@ -77,7 +77,7 @@ class SimilarityClient:
                 self.close()
                 retries += 1
                 continue
-        return []
+        return dict(articles = [])
 
 
     def _retry_cmd(self, **kwargs):
@@ -100,18 +100,19 @@ class SimilarityClient:
 
 
     def list_similar_to_article(self, article_id, n = 10):
-        """ Returns a list of (article_id, similarity) tuples """
+        """ Returns a dict containing a list of (article_id, similarity) tuples """
         return self._retry_list(cmd = 'similar', id = article_id, n = n)
 
 
     def list_similar_to_topic(self, topic_vector, n = 10):
-        """ Returns a list of (article_id, similarity) tuples """
+        """ Returns a dict containing a list of (article_id, similarity) tuples """
         return self._retry_list(cmd = 'similar', topic = topic_vector, n = n)
 
 
     def list_similar_to_terms(self, terms, n = 10):
         """ The terms are a list of (stem, category) tuples.
-            Returns a list of (article_id, similarity) tuples """
+            Returns a dict where the articles key contains a
+            list of (article_id, similarity) tuples """
         return self._retry_list(cmd = 'similar', terms = terms, n = n)
 
 

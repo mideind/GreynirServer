@@ -220,26 +220,15 @@ class VerbObjects:
     PREPOSITIONS = defaultdict(set)
 
     @staticmethod
-    def add (verb, args, pronouns):
+    def add (verb, args, prepositions, score):
         """ Add a verb and its objects (arguments). Called from the config file handler. """
         la = len(args)
-        assert 0 <= la < 4
-        score = 0
-        if la > 0 and args[-1].startswith("$score(") and args[-1].endswith(")"):
-            # There is an associated score with this verb form, to be taken
-            # into consideration by the reducer
-            s = args[-1][7:-1]
-            try:
-                score = int(s)
-            except ValueError:
-                raise ConfigError("Invalid score for verb form")
-            # Cut the score off the end
-            args = args[0:-1]
-            la -= 1
+        if la > 2:
+            raise ConfigError("A verb can have 0-2 arguments; {0} given".format(la))
         if la:
             for case in args:
                 if case not in _ALL_CASES:
-                    raise ConfigError("Invalid case for verb object: '{0}'".format(case))
+                    raise ConfigError("Invalid case for verb argument: '{0}'".format(case))
             # Append a possible argument list
             arglists = VerbObjects.VERBS[la][verb]
             if args not in arglists:
@@ -252,9 +241,9 @@ class VerbObjects:
         verb_with_cases = "_".join([ verb ] + args)
         if score != 0:
             VerbObjects.SCORES[verb_with_cases] = score
-        # pronouns is a list of tuples: (pronoun, case), e.g. ("í", "þgf")
+        # prepositions is a list of tuples: (preposition, case), e.g. ("í", "þgf")
         d = VerbObjects.PREPOSITIONS[verb_with_cases]
-        for p, case in pronouns:
+        for p, case in prepositions:
             # Add a generic 'case-less' forms of the preposition, such as "í"
             d.add(p)
             # Add a full form with case, such as "í_þgf"
@@ -745,9 +734,26 @@ class Settings:
     @staticmethod
     def _handle_verb_objects(s):
         """ Handle verb object specifications in the settings section """
-        # Format: verb [arg1] [arg2] [/pronoun arg]...
-        pronouns = []
-        # Process pronoun arguments, if any
+        # Format: verb [arg1] [arg2] [/preposition arg]... [$score(sc)]
+
+        # Start by handling the $score() pragma, if present
+        score = 0
+        ix = s.rfind("$score(") # Must be at the end
+        if ix >= 0:
+            sc = s[ix:].strip()
+            s = s[0:ix]
+            if not sc.endswith(")"):
+                raise ConfigError("Invalid score pragma; form should be $score(n)")
+            # There is an associated score with this verb form, to be taken
+            # into consideration by the reducer
+            sc = sc[7:-1]
+            try:
+                score = int(sc)
+            except ValueError:
+                raise ConfigError("Invalid score for verb form")
+
+        # Process preposition arguments, if any
+        prepositions = []
         ap = s.split("/")
         s = ap[0]
         ix = 1
@@ -756,18 +762,18 @@ class Settings:
             p = ap[ix].strip()
             parg = p.split()
             if len(parg) != 2:
-                raise ConfigError("Pronoun should have exactly one argument")
+                raise ConfigError("Preposition should have exactly one argument")
             if parg[1] not in _ALL_CASES:
-                raise ConfigError("Unknown argument case for pronoun")
-            pronouns.append((parg[0], parg[1]))
+                raise ConfigError("Unknown argument case for preposition")
+            prepositions.append((parg[0], parg[1]))
             ix += 1
         a = s.split()
-        if len(a) < 1 or len(a) > 4:
+        if len(a) < 1 or len(a) > 3:
             raise ConfigError("Verb should have zero, one or two arguments and an optional score")
         verb = a[0]
         if not verb.isidentifier():
             raise ConfigError("Verb '{0}' is not a valid word".format(verb))
-        VerbObjects.add(verb, a[1:], pronouns)
+        VerbObjects.add(verb, a[1:], prepositions, score)
 
     @staticmethod
     def _handle_verb_subjects(s):

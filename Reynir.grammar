@@ -2096,20 +2096,30 @@ NlStak_et_p2/fall/kyn →
     'þú'_et/fall 'sjálfur'_et/fall/kyn? FsRunaEftirNl? # Þú [sjálfur] ert ekki sem verstur
 
 NlStak_p1_ft/fall/kyn →
-    'ég'_ft/fall NlStakViðbót/fall/kyn? # Við gömlu hjónin, við Sigmundur
-    | 'vér'_ft/fall NlStak_ft_p3/fall/kyn? # Vér fóstbræður
-    | NlEind/fall KommaOgEða 'ég'_et/fall # Þú og ég fórum, Jón og ég fórum, stelpurnar og ég fórum
-    | 'ég'_et/fall KommaOgEða NlEind/fall # Ég og þú fórum, ég og Jón fórum, ég og stelpurnar fórum
+    'ég'_ft/fall NlStakViðbót/fall/kyn?     # Við gömlu hjónin, við Sigmundur, við flest, við sjálfar
+    | 'vér'_ft/fall NlStak_ft_p3/fall/kyn?  # Vér fóstbræður
+    | NlEind/fall KommaOgEða 'ég'_et/fall   # Þú og ég fórum, Jón og ég fórum, stelpurnar og ég fórum
+    | 'ég'_et/fall KommaOgEða NlEind/fall   # Ég og þú fórum, ég og Jón fórum, ég og stelpurnar fórum
 
-NlStakViðbót/fall/kyn → NlStak_p3/fall/kyn
+NlStakViðbót/fall/kyn →
+    NlStakViðbótNl/fall/kyn
+    | 'allur'_ft/fall/kyn           # við öll, okkur alla, okkar allra
+    | 'sumur:fn'_ft/fall/kyn        # við sum, okkur sumra, okkar sumra
+    | 'margur'_ft/fall/kyn          # við mörg/flest, okkur margra/flestra, okkar margra/flestra
+    | 'sjálfur'_ft/fall/kyn         # við sjálf, okkur sjálfra, okkar sjálfra
 
-$score(-8) NlStakViðbót/fall/kyn # Draga af stig fyrir "við fóstbræður" vegna hættu á ruglingi við forsetninguna 'við'
+$score(+8) NlStakViðbót/fall/kyn
+
+NlStakViðbótNl/fall/kyn →
+    NlStak_ft_p3/fall/kyn               # við fóstbræður, við alþingismennirnir
+
+$score(-16) NlStakViðbótNl/fall/kyn     # Draga af stig fyrir "við fóstbræður" vegna hættu á ruglingi við forsetninguna 'við'
 
 NlStak_ft_p1/fall/kyn → NlStak_p1_ft/fall/kyn FsRunaEftirNl?
 
 NlStak_p2_ft/fall/kyn →
-    'þú'_ft/fall NlStak_ft_p3/fall/kyn?
-    | 'þér'_ft/fall NlStak_ft_p3/fall/kyn? # Þið duglegu strákarnir, þér eplin
+    'þú'_ft/fall NlStakViðbót/fall/kyn? # þið öll, þið flest, þið stelpurnar, þið eplin
+    | 'þér'_ft/fall NlStak_ft_p3/fall/kyn? # Þér eplin
     | NlEind/fall KommaOgEða 'þú'_et/fall # Jón og þú fóruð, stelpurnar og þú fóruð
     | 'þú'_et/fall KommaOgEða NlEind/fall # Þú og Jón fóruð, þú og stelpurnar fóruð
 
@@ -2573,13 +2583,14 @@ $score(-1) ÓsamstættFall/aukafall/kyn
 # 'bandarísku sjóðirnir Eaton Vance Corp. og Autonomy Capital LP'
 
 FyrirbæriMeðGreini_ft/fall/kyn →
-    Skilgreining/fall/kyn Eindalisti/fall
+    Skilgreining/fall/kyn Eindalisti/fall/kyn
 
 Skilgreining/fall/kyn →
     VeiktLo_ft/fall/kyn* no_gr_ft/fall/kyn
 
-Eindalisti/fall →
+Eindalisti/fall/kyn →
     SérnafnEðaManneskja/fall KommaSérnafnEðaManneskja/fall* "og:st" SérnafnEðaManneskja/fall
+    | Töluorð_ft/fall/kyn # skipverjanna tveggja, börnin tvö, stúlkunum tveimur
 
 KommaSérnafnEðaManneskja/fall →
     "," SérnafnEðaManneskja/fall
@@ -3240,6 +3251,7 @@ FsMeðFallstjórn →
     | FsÍGegnUm
     | FsAðBaki
     | FsTilÞgf
+    | FsÁMeðal
     | Átt ÁttFs? Nl_þf # vestur á firði, suður götuna, austur í flóa, norður að fjalli
     # 'hvorki við stjórn spítalans né ráðherrann'
     # 'hvorki til mín né stjórnarinnar'
@@ -3273,6 +3285,11 @@ FsAðBaki →
     "að:fs" "baki:hk" Nl_þgf # 'að baki hverju bundnu sæti'
 
 $score(+4) FsAðBaki
+
+FsÁMeðal →
+    "á:ao" "meðal:fs" Nl_ef # Sérregla hér þar sem þetta er að öðrum kosti túlkað sem meðal:hk + ef
+
+$score(+16) FsÁMeðal
 
 FsTilÞgf →
     "til:fs" FsTilÞgfOrð Nl_þgf # 'til stuðnings/heiðurs Páli'
@@ -3885,20 +3902,28 @@ QWordEntityKey/fall → Sérnafn/fall > Sérnafn
 
 # Arbitrary search
 
-# Try to recognize the search query first as a noun phrase,
-# then as a sentence, and finally as an arbitrary sequence of tokens
+# Try to recognize the search query first as a sentence,
+# then as a noun phrase, and finally as an arbitrary sequence of tokens
 
 QSearch →
-    QSearchNl > QSearchSentence > QSearchArbitrary
-
-QSearchNl →
-    Nl Lokatákn?
+    QSearchSentence
+    | QSearchNl 
+    | QSearchArbitrary
 
 QSearchSentence →
     Málsgrein
+    | SetningÁnF_et_p3/kyn Lokatákn? # 'Stefndi í átt til Bláfjalla'
+    | SetningÁnF_ft_p3/kyn Lokatákn? # 'Aftengdu fjarstýringu'
+
+$score(+4) QSearchSentence
+
+QSearchNl →
+    Nl_nf Atviksliður? Lokatákn? # 'Tobías í turninum'
 
 QSearchArbitrary →
-    QSearchToken+
+    QSearchToken+ Lokatákn?
+
+$score(-100) QSearchArbitrary
 
 QSearchToken →
     person/fall/kyn > fyrirtæki > no/fall/tala/kyn

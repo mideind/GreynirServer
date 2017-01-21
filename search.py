@@ -59,6 +59,7 @@ class Search:
         cls._connect()
         # Returns a list of tuples: (article_id, similarity)
         result = cls.similarity_client.list_similar_to_article(uuid, n = n + 5)
+        result = result.get("articles", [])
         # Convert the result tuples into article descriptors
         return cls.list_articles(session, result, n)
 
@@ -69,6 +70,7 @@ class Search:
         cls._connect()
         # Returns a list of tuples: (article_id, similarity)
         result = cls.similarity_client.list_similar_to_topic(topic_vector, n = n + 5)
+        result = result.get("articles", [])
         # Convert the result tuples into article descriptors
         return cls.list_articles(session, result, n)
 
@@ -81,7 +83,11 @@ class Search:
         # Returns a list of tuples: (article_id, similarity)
         result = cls.similarity_client.list_similar_to_terms(terms, n = n + 5)
         # Convert the result tuples into article descriptors
-        return cls.list_articles(session, result, n)
+        articles = result.get("articles", [])
+        # Obtain the search term weights
+        weights = result.get("weights", [])
+        return dict(weights = weights,
+            articles = cls.list_articles(session, articles, n))
 
 
     @classmethod

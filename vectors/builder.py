@@ -312,7 +312,9 @@ class ReynirCorpus:
 
     def get_topic_vector(self, terms):
         """ Calculate a topic vector corresponding to the given list
-            of search terms, which are assumed to have the form (stem, category). """
+            of search terms, which are assumed to have the form (stem, category).
+            Return the topic vector as well as a list of weights of
+            each search term """
         if self._dictionary is None:
             self.load_dictionary()
         if self._tfidf is None:
@@ -339,6 +341,7 @@ class ReynirCorpus:
         missing = np.zeros(self._dimensions)
         weight_missing = 0.0
         lb = len(bag)
+        term_weights = []
 
         # We have missing words: look'em up
         with SessionContext(commit = True, read_only = True) as session:
@@ -351,7 +354,7 @@ class ReynirCorpus:
                     """ Does this term call for a lookup in the words database table? """
                     if cat == "entity" or cat.startswith("person"):
                         # We look up all entity and person names
-                        # and give them a double weight
+                        # and give them extra weight
                         return 2.0
                     if cat in { "kk", "kvk", "hk" } and stem[0].isupper() and index > 0:
                         # Noun starting with a capital letter, not the first word in a sentence:
@@ -373,7 +376,11 @@ class ReynirCorpus:
                 weight = word_lookup_weight(stem, cat)
 
                 if weight == 0.0:
-                    # If weight is 0, we don't need to bother
+                    # If weight is 0.0, we don't need to bother
+                    # (This means that the word is in the LSI model dictionary
+                    # and not special in any way. From the overall search term
+                    # point of view, we give it a weight of 1.0)
+                    term_weights.append(1.0)
                     continue
 
                 if cat in NoIndexWords.CATEGORIES_TO_INDEX \
@@ -414,8 +421,15 @@ class ReynirCorpus:
                         # Keep track of how many 'missing' terms have contributed
                         # to the missing term vector
                         weight_missing += weight
+                        term_weights.append(weight)
+                    else:
+                        # Not found in the words table: this term contributes nothing
+                        term_weights.append(0.0)
                 else:
                     print("Discarding term {0} (weight {1:.1f})".format(w_from_stem(stem, cat), weight))
+                    term_weights.append(0.0)
+
+        assert len(terms) == len(term_weights)
 
         if weight_missing > 0.0:
             # Adjust the weight of the returned topic vector so that the missing
@@ -426,7 +440,7 @@ class ReynirCorpus:
             # Amalgamate the resulting topic vector
             topic_vector = topic_vector * p_tv + missing * p_m
 
-        return topic_vector
+        return topic_vector, term_weights
 
     def assign_article_topics(self, article_id, heading, process_all = False):
         """ Assign the appropriate topics to the given article in the database """

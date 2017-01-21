@@ -284,6 +284,7 @@ def query_word(query, session, stem):
     # Convert to an easily serializable dict
     # Exclude the original search stem from the result
     return dict(
+        count = acnt,
         answers = [ dict(stem = rstem, cat = rcat) for rstem, rcat, rcnt in rlist if rstem != stem ]
     )
 
@@ -294,17 +295,37 @@ def launch_search(query, session, qkey):
 
     # Collect the list of search terms
     terms = []
+    tweights = []
+    fixups = []
     for pg in pgs:
         for sent in pg:
             for t in sent:
                 # Obtain search stems for the tokens.
+                d = dict(x = t["x"], w = 0.0)
+                tweights.append(d)
                 # The terms are represented as (stem, category) tuples.
-                terms.extend(stems_of_token(t))
+                stems = stems_of_token(t)
+                if stems:
+                    terms.extend(stems)
+                    fixups.append((d, len(stems)))
+
+    assert (sum(n for _, n in fixups) == len(terms))
+
     print("Terms are:\n   {0}".format(terms))
 
-    # Launch the search and return the answers
+    # Launch the search and return the answers, as well as the
+    # search terms augmented with information about
+    # whether and how they were used
     result = Search.list_similar_to_terms(session, terms, _MAXLEN_SEARCH)
-    return dict(answers = result)
+    weights = result["weights"]
+    assert len(weights) == len(terms)
+    # Insert the weights at the proper places in the
+    # token weight list
+    index = 0
+    for d, n in fixups:
+        d["w"] = sum(weights[index:index + n]) / n
+        index += n
+    return dict(answers = result["articles"], weights = tweights)
 
 
 _QFUNC = {
