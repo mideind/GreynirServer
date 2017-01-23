@@ -261,6 +261,8 @@ HreinYfirsetning →
     | SetningSo
     | SetningSkilyrði
 
+$score(+2) HreinYfirsetning
+
 $score(-2) SetningAukafall
 $score(+2) SetningLo
 $score(-1) SetningSo
@@ -2071,9 +2073,9 @@ NlKjarni_et_ef_kvk → 'hún'_et_ef
 # sjálfum sér / sjálfum sér
 # sjálfs sín  / sjálfra sín
 
-NlKjarni/tala/aukafall/kyn → 'sjálfur'/aukafall/tala/kyn? abfn/aukafall
+NlKjarni/tala/aukafall/kyn → 'sjálfur'/tala/aukafall/kyn? abfn/aukafall
 
-# Mörg þessara mála, sum þeirra sem lentu í slysinu
+# Mörg/flest þessara mála, sum þeirra sem lentu í slysinu
 NlKjarni_ft/fall/kyn →
     'margur'_ft/fall/kyn EfLiður_ft/kyn
     | 'fár:lo'_ft/fall/kyn EfLiður_ft/kyn
@@ -2846,7 +2848,7 @@ NlEind_et_p3_ef_hk →
     | SpurnarSamtenging HreinYfirsetning
     | NhLiðir  # Það að fara til tannlæknis (reynist mörgum þyrnir í augum)
 
-$score(+6) ÞaðTenging
+$score(+32) ÞaðTenging
 
 # Aðdróttanir, þó sannar séu, varða fangelsisvist
 
@@ -3243,9 +3245,8 @@ FsMeðFallstjórn →
     | "fyrir:ao" "nú"? "utan:fs" Nl_þf
     | "innan:ao" "við:fs" Nl_þf
     | "hvað" FsHvaðVarðar
-    | "um:fs" 'það'_þf_et? FsSamtenging HreinYfirsetning # 'um [það] hvort Brandur sé fallegastur'
-    | "um:fs" "að:st" HreinYfirsetning ','? # 'um að lög um endurupptökunefnd standist ekki stjórnarskrá'
-    | "á:fs" "að:st" HreinYfirsetning ','? # 'er bjartsýnn á að Alfreð komi aftur í liðið'
+    | "um:fs" "að:st" HreinYfirsetning ','? # 'um að lög um endurupptökunefnd standist ekki stjórnarskrá' - Ath: 'um það að' er höndlað í ÞaðTenging
+    | "á:fs" "að:st" HreinYfirsetning ','? # 'er bjartsýnn á að Alfreð komi aftur í liðið' - Ath: 'á það/því að' er höndlað í ÞaðTenging
     | "að:fs" "nafni:hk" person_nf    # Ég ræddi við konu að nafni Aðalbjörg Jónsdóttir
     | "á:fs" Vikudagur_gr_þf_et "kemur:so" # á sunnudaginn kemur / á laugardagskvöldið kemur
     | FsÍGegnUm
@@ -3296,13 +3297,6 @@ FsTilÞgf →
 
 FsTilÞgfOrð →
     "stuðnings" | "heiðurs" | "háðungar"
-
-FsSamtenging →
-    SpurnarSamtenging
-    # Leyfa verður 'hvort' og 'hvenær' sérstaklega hér þar sem orðin eru samtengingar í BÍN
-    # og falla ekki undir SpurnarSamtengingu (nema með forsetningarlið með sér)
-    | "hvort:st"
-    | "hvenær"
 
 So_1_gm_fh_p3_et_nf → so_1_nf_gm_fh_p3_et
 So_1_gm_fh_p3_et_þf → so_1_þf_gm_fh_p3_et

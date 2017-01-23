@@ -139,9 +139,9 @@ def _add_name(result, mannsnafn, titill, kyn):
             cut = True
         # Cut off common endings that don't belong in a title
         for s in ("í tilkynningu", "í fjölmiðlum", "í samtali", "í viðtali",
-            "í Kastljósi", "í þættinum"):
+            "í Kastljósi", "í þættinum", "í grein", " sem"):
             if titill.endswith(s):
-                titill = titill[:-1 -len(s)]
+                titill = titill[:-len(s) - (0 if s[0] == ' ' else 1)]
                 cut = True
     if len(titill) <= 2 or titill.lower() in INVALID_TITLES:
         # Last security check

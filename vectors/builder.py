@@ -125,7 +125,6 @@ class ReynirDictionary(corpora.Dictionary):
         super().__init__(iterator)
 
     def __contains__(self, word):
-        print("__contains__({0}) returns {1}".format(word, word in self.token2id))
         return word in self.token2id
 
 
@@ -158,14 +157,8 @@ class ReynirCorpus:
             and create a fresh Gensim dictionary """
         ci = CorpusIterator()
         dic = ReynirDictionary(ci)
-        if self._verbose:
-            print("Dictionary before filtering:")
-            print(dic)
         # Drop words that only occur only once or twice in the entire set
         dic.filter_extremes(no_below=3, keep_n=None)
-        if self._verbose:
-            print("Dictionary after filtering:")
-            print(dic)
         dic.save(self._DICTIONARY_FILE)
         self._dictionary = dic
 
@@ -219,8 +212,8 @@ class ReynirCorpus:
         # Initialize an LSI transformation
         lsi = models.LsiModel(corpus_tfidf, id2word = self._dictionary,
             num_topics = self._dimensions, **kwargs)
-        if self._verbose:
-            lsi.print_topics(num_topics = self._dimensions)
+        # if self._verbose:
+        #    lsi.print_topics(num_topics = self._dimensions)
         # Save the generated model
         lsi.save(self._LSI_MODEL_FILE.format(self._dimensions))
 
@@ -277,11 +270,7 @@ class ReynirCorpus:
                 if self._verbose:
                     print("Keyword list: {0}".format(keywords))
                 bag = self._dictionary.doc2bow(keywords)
-                #if self._verbose:
-                #    print("Bag: {0}".format(bag))
                 tfidf = self._tfidf[bag]
-                #if self._verbose:
-                #    print("Tfidf: {0}".format(tfidf))
                 vec = self._model[tfidf]
                 if self._verbose:
                     if self._model_name == "lda":
@@ -325,7 +314,7 @@ class ReynirCorpus:
         # to a bag of word indexes
         wlist = [ w_from_stem(stem, cat) for stem, cat in terms ]
         bag = self._dictionary.doc2bow(wlist)
-        print("Terms are:\n   {0}\nWlist is:\n   {1}\nBag is:\n   {2}".format(terms, wlist, bag))
+        print("Search terms:\n   {0}".format(terms))
         if bag:
             # We have some terms in the bag (i.e. they were in the dictionary)
             # Apply the term frequency - inverse document frequency transform
@@ -405,7 +394,7 @@ class ReynirCorpus:
                     total_cnt = 0
                     # Sum up the topic vectors of the documents where the term
                     # appears, weighted by the number of times it appears
-                    print("Found stem/cat '{0}'/{1} in {2} documents via words table".format(clean_stem, cat, len(q)))
+                    # print("Found stem/cat '{0}'/{1} in {2} documents via words table".format(clean_stem, cat, len(q)))
                     for tv_json, cnt in q:
                         # Get the term vector of a single document where the term appears
                         if tv_json and cnt:
@@ -416,7 +405,6 @@ class ReynirCorpus:
                     # Add the combined (weighted average) topic vector of the
                     # term to the 'missing' topic vector
                     if total_cnt > 0:
-                        print("Total number of occurrences: {0}".format(total_cnt))
                         missing += (term_vector / total_cnt) * weight
                         # Keep track of how many 'missing' terms have contributed
                         # to the missing term vector
@@ -426,7 +414,7 @@ class ReynirCorpus:
                         # Not found in the words table: this term contributes nothing
                         term_weights.append(0.0)
                 else:
-                    print("Discarding term {0} (weight {1:.1f})".format(w_from_stem(stem, cat), weight))
+                    # print("Discarding term {0} (weight {1:.1f})".format(w_from_stem(stem, cat), weight))
                     term_weights.append(0.0)
 
         assert len(terms) == len(term_weights)
