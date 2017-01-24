@@ -116,9 +116,10 @@ class Search:
                     # Quite similar: probably the same article
                     ratio = (spercent / last["similarity"])
                     if ratio > 0.993:
-                        print("Rejecting {0}, domain {1}, ts {2} because of similarity with {3}, {4}, {5}; ratio is {6:.3f}"
-                            .format(sa.heading, sa.root.domain, sa.timestamp,
-                                last["heading"], last["domain"], last["ts"], ratio))
+                        if Settings.DEBUG:
+                            print("Rejecting {0}, domain {1}, ts {2} because of similarity with {3}, {4}, {5}; ratio is {6:.3f}"
+                                .format(sa.heading, sa.root.domain, sa.timestamp,
+                                    last["heading"], last["domain"], last["ts"], ratio))
                         return True
                     return False
 
@@ -144,13 +145,16 @@ class Search:
                         break
                 elif d["ts"] > same[1]["ts"]:
                     # Similar article, and the one we're considering is newer: replace the one in the list
-                    print("Replacing: {0} ({1:.2f})".format(sa.heading, spercent))
+                    if Settings.DEBUG:
+                        print("Replacing: {0} ({1:.2f})".format(sa.heading, spercent))
                     similar[same[0]] = d
                 else:
                     # Similar article, and the previous one is newer: drop the one we're considering
-                    print("Ignoring: {0} ({1:.2f})".format(sa.heading, spercent))
+                    if Settings.DEBUG:
+                        print("Ignoring: {0} ({1:.2f})".format(sa.heading, spercent))
+                    pass
 
-        if similar:
+        if Settings.DEBUG and similar:
             print("Similar list is:\n   {0}".format("\n   ".join(str(s) for s in similar)))
         return similar
 

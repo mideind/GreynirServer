@@ -40,6 +40,7 @@ from fastparser import Fast_Parser, ParseForestDumper, ParseForestPrinter, Parse
 from reducer import Reducer
 from search import Search
 
+
 _THIS_MODULE = sys.modules[__name__] # The module object for this module
 _QUERY_ROOT = 'QueryRoot' # The grammar root nonterminal for queries; see Reynir.grammar
 _MAXLEN_ANSWER = 25 # Maximum number of top answers to send in response to queries
@@ -311,7 +312,8 @@ def launch_search(query, session, qkey):
 
     assert (sum(n for _, n in fixups) == len(terms))
 
-    print("Terms are:\n   {0}".format(terms))
+    if Settings.DEBUG:
+        print("Terms are:\n   {0}".format(terms))
 
     # Launch the search and return the answers, as well as the
     # search terms augmented with information about

@@ -21,6 +21,7 @@ cp config/Main.conf $DEST/config/Main.conf
 cp config/Prefs.conf $DEST/config/Prefs.conf
 cp config/Verbs.conf $DEST/config/Verbs.conf
 cp config/VerbPrepositions.conf $DEST/config/VerbPrepositions.conf
+cp config/Index.conf $DEST/config/Index.conf
 
 cp article.py $DEST/article.py
 cp baseparser.py $DEST/baseparser.py
@@ -41,9 +42,12 @@ cp reducer.py $DEST/reducer.py
 cp Reynir.grammar $DEST/Reynir.grammar
 cp scraperdb.py $DEST/scraperdb.py
 cp scraper.py $DEST/scraper.py
+cp search.py $DEST/search.py
 cp settings.py $DEST/settings.py
+cp similar.py $DEST/similar.py
 cp tokenizer.py $DEST/tokenizer.py
 cp tree.py $DEST/tree.py
+cp treeutil.py $DEST/treeutil.py
 
 cp resources/ordalisti.dawg.pickle $DEST/resources/
 

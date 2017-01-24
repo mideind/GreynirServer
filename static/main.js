@@ -272,8 +272,9 @@ function populateQueryResult(r) {
          key = r.key;
       }
       else
+      if (r.qtype != "Search")
          rlist = r.response;
-      if (r.qtype == "Search") {
+      if (r.qtype == "Search" && r.response.answers.length > 0) {
          // Article search by terms
          q = $("<h3 class='query'>");
          $.each(r.response.weights, function(i, t) {

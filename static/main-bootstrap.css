@@ -714,6 +714,7 @@ div#similar {
 
 div.guide-empty {
    /* font-size: 0.94em; */
+   line-height: 1.50em;
 }
 
 div.guide-empty i {
@@ -724,6 +725,15 @@ div.guide-empty i:hover {
    color: #23527c;
    text-decoration: underline;
    cursor: pointer;
+}
+
+ul.guide-example-list {
+   font-size: 0.95em;
+}
+
+ul.guide-example-list li {
+   font-size: 0.95em;
+   line-height: 1.75em;
 }
 
 th.count, td.count {

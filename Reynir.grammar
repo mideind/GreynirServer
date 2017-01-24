@@ -2417,12 +2417,16 @@ NlStak_ft_p3/fall/kyn →
 
 # Hvorki X né Y
 # Bæði X og Y
+# Annaðhvort X eða Y
+
+# Sama kyn á X og Y
 
 NlStak_ft_p3/fall/kyn → NlBæðiHvorki/fall/kyn
 
 NlBæðiHvorki/fall/kyn →
-    "bæði" Nl/fall/kyn "og:st" Nl/fall/kyn     # (Við þurftum að lóga) bæði hestinum og kettinum
-    | "hvorki" Nl/fall/kyn "né" Nl/fall/kyn # Hvorki hestinum né kettinum (var lógað)
+    "bæði" Nl/fall/kyn "og:st" Nl/fall/kyn          # (Við þurftum að lóga) bæði hestinum og kettinum
+    | "hvorki" Nl/fall/kyn "né" Nl/fall/kyn         # Hvorki hestinum né kettinum (var lógað)
+    | "annaðhvort" Nl/fall/kyn "eða:st" Nl/fall/kyn # Annaðhvort hestinum eða kettinum (var lógað)
 
 $score(+4) NlBæðiHvorki/fall/kyn
 
@@ -2433,17 +2437,32 @@ NlStak_ft_p3_ef_hk → NlStak_ft_p3_hk_ef
 
 Nl/kyn/fall → Nl/fall/kyn
 
+# Mismunandi kyn á X og Y, útkoman er hvorugkyns
+
 NlStak_ft_p3_hk/fall → NlBæðiHvorki_p3_hk/fall
 
 NlBæðiHvorki_p3_hk/fall →
+
     "bæði" Nl_kk/fall "og:st" Nl_kvk/fall
-    | "hvorki" Nl_kk/fall "né" Nl_kvk/fall
     | "bæði" Nl_kvk/fall "og:st" Nl_kk/fall
-    | "hvorki" Nl_kvk/fall "né" Nl_kk/fall
     | "bæði" Nl_kk/fall "og:st" Nl_hk/fall
-    | "hvorki" Nl_kk/fall "né" Nl_hk/fall
     | "bæði" Nl_hk/fall "og:st" Nl_kk/fall
+    | "bæði" Nl_kvk/fall "og:st" Nl_hk/fall
+    | "bæði" Nl_hk/fall "og:st" Nl_kvk/fall
+
+    | "hvorki" Nl_kk/fall "né" Nl_kvk/fall
+    | "hvorki" Nl_kvk/fall "né" Nl_kk/fall
+    | "hvorki" Nl_kk/fall "né" Nl_hk/fall
     | "hvorki" Nl_hk/fall "né" Nl_kk/fall
+    | "hvorki" Nl_kvk/fall "né" Nl_hk/fall
+    | "hvorki" Nl_hk/fall "né" Nl_kvk/fall
+
+    | "annaðhvort" Nl_kk/fall "eða:st" Nl_kvk/fall
+    | "annaðhvort" Nl_kvk/fall "eða:st" Nl_kk/fall
+    | "annaðhvort" Nl_kk/fall "eða:st" Nl_hk/fall
+    | "annaðhvort" Nl_hk/fall "eða:st" Nl_kk/fall
+    | "annaðhvort" Nl_kvk/fall "eða:st" Nl_hk/fall
+    | "annaðhvort" Nl_hk/fall "eða:st" Nl_kvk/fall
 
 $score(+4) NlBæðiHvorki_p3_hk/fall
 
@@ -2452,8 +2471,10 @@ NlStak_ft_p1/fall/kyn → NlBæðiHvorki_p1_hk/fall
 NlBæðiHvorki_p1_hk/fall →
     "bæði" Nl_p1/fall/kyn "og:st" Nl_p2/fall/kyn    # bæði mér og þér þykir þetta óásættanlegt
     | "hvorki" Nl_p1/fall/kyn "né" Nl_p2/fall/kyn   # hvorki ég né þú höfum vit á þessu
+    | "annaðhvort" Nl_p1/fall/kyn "eða:st" Nl_p2/fall/kyn   # annaðhvort ég eða þú þurfum að fara
     | "bæði" Nl_p2/fall/kyn "og:st" Nl_p1/fall/kyn  # bæði þér og mér þykir þetta óásættanlegt
     | "hvorki" Nl_p2/fall/kyn "né" Nl_p1/fall/kyn   # hvorki þú né ég erum fallegar/falleg/fallegir
+    | "annaðhvort" Nl_p2/fall/kyn "eða:st" Nl_p1/fall/kyn   # annaðhvort þú eða ég erum fallegar/falleg/fallegir
 
 $score(+4) NlBæðiHvorki_p1_hk/fall
 
@@ -3323,6 +3344,7 @@ EinFsAtv →
     | EinnAl
     | "hvorki" EinEinföldFsAtv+ "né" EinEinföldFsAtv+ # 'hvorki í Frakklandi né annars staðar í Evrópusambandinu'
     | "annað:fn" "hvort:st" EinEinföldFsAtv+ "eða:st" EinEinföldFsAtv+ # 'annað hvort í Breiðholti eða við World Class'
+    | "annaðhvort" EinEinföldFsAtv+ "eða:st" EinEinföldFsAtv+ # 'annaðhvort í Breiðholti eða við World Class'
     | "bæði:st" EinEinföldFsAtv+ ','? "og:st" EinEinföldFsAtv+
 
 EinEinföldFsAtv → FsMeðFallstjórn | EinnAl

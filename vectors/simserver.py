@@ -200,6 +200,12 @@ class SimilarityServer:
                     Thread(target = self._command_loop, args = (conn,)).start()
                 except AuthenticationError:
                     print("Authentication failed for client")
+                    pass
+                except Exception as ex:
+                    print("Exception when listening for connections: {0}".format(ex))
+                    pass
+                finally:
+                    sys.stdout.flush()
 
 
     def _command_loop(self, conn):
@@ -285,6 +291,13 @@ class SimilarityServer:
                 except ClientError as e:
                     # Print a message and continue listening to commands
                     print(str(e))
+
+                except Exception as ex:
+                    print("Exception in client thread loop: {0}".format(ex))
+                    break
+
+                finally:
+                    sys.stdout.flush()
 
 
 if __name__ == "__main__":
