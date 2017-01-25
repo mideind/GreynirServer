@@ -190,6 +190,8 @@ class TOK:
     S_BEGIN = 11001 # Sentence begin
     S_END = 11002 # Sentence end
 
+    END = frozenset((P_END, S_END))
+
     # Token descriptive names
 
     descr = {
@@ -578,23 +580,36 @@ def parse_particles(token_stream):
                     # Abbreviation: make a special token for it
                     # and advance the input stream
 
-                    # Check whether the following token is uppercase
-                    # (and not a month name misspelled in upper case).
-                    # If so, and this abbreviation is a common sentence finisher,
-                    # yield it as well as an extra period
+                    # Check whether we're probably at the end of a sentence, i.e.
+                    # the following token is an end-of-sentence or end-of-paragraph,
+                    # or uppercase (and not a month name misspelled in upper case).
+
                     follow_token = next(token_stream)
-                    finish = follow_token.kind == TOK.WORD and follow_token.txt[0].isupper() and \
-                        not follow_token.txt.lower() in MONTHS and \
-                        (token.txt + ".") in Abbreviations.FINISHERS
+
+                    if token.txt[0].isupper():
+                        # If the abbreviated token is an uppercase word, we don't
+                        finish = follow_token.kind in TOK.END
+                    else:
+                        finish = follow_token.kind in TOK.END or \
+                            (follow_token.kind == TOK.WORD and follow_token.txt[0].isupper() and
+                                not follow_token.txt.lower() in MONTHS)
 
                     clock = token.txt.lower() == CLOCK_ABBREV
 
                     if finish:
-                        # Yield the abbreviation and then the period token
-                        token = TOK.Word("[" + token.txt + "]", None)
+                        if (token.txt + ".") in Abbreviations.FINISHERS:
+                            # We see this as an abbreviation even if the next sentence seems
+                            # to be starting just after it.
+                            # Yield the abbreviation without a trailing dot,
+                            # and then an 'extra' period token to end the current sentence.
+                            token = TOK.Word("[" + token.txt + "]", None)
+                        # Otherwise, we don't dare interpret this as an abbreviation
+                        # and simply return the original token and the period separately
                         yield token
                         token = next_token
                     else:
+                        # 'Regular' abbreviation in the middle of a sentence:
+                        # swallow the period and yield the abbreviation as a single token
                         token = TOK.Word("[" + token.txt + ".]", None)
 
                     next_token = follow_token
@@ -918,7 +933,7 @@ def match_stem_list(token, stems, filter_func=None):
                     return stems[lower_stofn]
             except Exception as e:
                 print("Exception {0} in match_stem_list\nToken: {1}\nStems: {2}".format(e, token, stems))
-                raise e
+                raise
     # No meanings found: this might be a foreign or unknown word
     # However, if it is still in the stems list we return True
     return stems.get(token.txt.lower(), None)

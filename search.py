@@ -100,7 +100,7 @@ class Search:
                 continue
             q = session.query(Article).join(Root).filter(Article.id == sid)
             sa = q.one_or_none()
-            if sa and sa.heading.strip(): # Skip articles without headings
+            if sa and sa.heading and sa.heading.strip(): # Skip articles without headings
                 # Similarity in percent
                 spercent = 100.0 * similarity
 

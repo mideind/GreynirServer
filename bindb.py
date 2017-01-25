@@ -62,6 +62,9 @@ CACHE_SIZE_MEANINGS = 1024 # Most common lookup function (meanings of a particul
 
 # Named tuple for word meanings fetched from the BÍN database (lexicon)
 BIN_Meaning = namedtuple('BIN_Meaning', ['stofn', 'utg', 'ordfl', 'fl', 'ordmynd', 'beyging'])
+# Compact string representation
+BIN_Meaning.__str__ = BIN_Meaning.__repr__ = lambda self: "(stofn='{0}', {2}/{3}/{1}, ordmynd='{4}' {5})" \
+    .format(self.stofn, self.utg, self.ordfl, self.fl, self.ordmynd, self.beyging)
 
 
 class LFU_Cache:
@@ -152,7 +155,8 @@ class BIN_Db:
 
         if db is None:
             # New connection in this thread
-            db = cls.tls.bin_db = cls().open(host = Settings.DB_HOSTNAME, port = Settings.DB_PORT,
+            db = cls.tls.bin_db = cls().open(host = Settings.DB_HOSTNAME,
+                port = Settings.DB_PORT,
                 wait = cls.wait)
 
         if db is None:

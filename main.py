@@ -726,7 +726,7 @@ def parse_grid():
     use_reducer = "noreduce" not in request.form
 
     # Tokenize the text
-    tokens = list(tokenize(txt))
+    tokens = list(tokenize(" [[ " + txt + " ]] ")) # Ensure that we get S_BEGIN and S_END tokens
 
     # Parse the text
     with Fast_Parser(verbose = False) as bp: # Don't emit diagnostic messages

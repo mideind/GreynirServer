@@ -81,6 +81,13 @@ from scraperdb import SessionContext, desc, Article, Root
 from builder import ReynirCorpus
 
 
+class InternalError(RuntimeError):
+    """ Exception thrown from within the server, causing it to terminate """
+
+    def __init__(self, s):
+        super().__init__(s)
+
+
 class SimilarityServer:
 
     """ A class that manages an in-memory dictionary of articles
@@ -186,9 +193,12 @@ class SimilarityServer:
             with open("resources/SimilarityServerKey.txt", "rb") as file:
                 secret_password = file.read()
         except FileNotFoundError:
-            print("Unable to open resources/SimilarityServerKey.txt")
-            return
-        print("Listening for connections on port {0}".format(port))
+            raise InternalError("Server key file missing: resources/SimilarityServerKey.txt")
+        except:
+            raise InternalError("Unable to load server key when starting similarity server")
+
+        print("Reynir similarity server started\nListening for connections on port {0}".format(port))
+
         with Listener(address, authkey = secret_password) as listener:
             self._corpus = ReynirCorpus()
             self._load_topics()
@@ -307,16 +317,20 @@ if __name__ == "__main__":
         Settings.read("Vectors.conf")
     except ConfigError as e:
         print("Configuration error: {0}".format(e))
-        quit()
+        sys.exit(1)
 
     # Run a similarity server on the default port
     # Modify host to 0.0.0.0 to enable outside access
     try:
         SimilarityServer().run(host = 'localhost', port = Settings.SIMSERVER_PORT)
+    except InternalError as e:
+        print(str(e))
+        sys.exit(1)
     except OSError as e:
         import errno
         if e.errno == errno.EADDRINUSE: # Address already in use
             print("Simserver is already running on port {0}".format(Settings.SIMSERVER_PORT))
+            sys.exit(1)
         else:
             raise
 

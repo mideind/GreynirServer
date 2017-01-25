@@ -279,7 +279,7 @@ $score(+12) SetningSkilyrði
 
 EfÞegar →
     "ef" | "þegar" | "þótt" | "þó" "að:st"? | 'jafnvel_þótt' | "þar" "sem:st" | "eftir:st" "að:st"
-    | "eins:ao" "og:st" | 'líkt_og' | 'á_meðan' | "þangað" "til:st" | 'um_leið' "og:st" | "síðan:st"
+    | "eins:ao" "og:st" | 'líkt_og' | 'á_meðan' | "meðan:st" | "þangað" "til:st" | 'um_leið' "og:st" | "síðan:st"
 
 OgEfÞegar →
     "og" EfÞegar              # 'Ef og þegar eitthvað gerist læt ég þig vita'
@@ -455,8 +455,8 @@ $score(+8) SetningUmAðRæða # Mjög líklega réttur skilningur á þessari or
 
 SetningForskeyti →
     FsAtv
-    | "eins:ao" "og:st" Nl_nf  # 'Eins og Páll borða ég ekki smjör'
-    | 'líkt_og' Nl_nf          # 'Líkt og bakarar eru smiðir óhressir með þetta'
+    | "eins:ao" "og:st" Nl_nf       # 'Eins og Páll borða ég ekki smjör'
+    | 'líkt_og' Nl_nf               # 'Líkt og bakarar eru smiðir óhressir með þetta'
 
 # Setning sem byrjar á lýsingarorði í stað "það"
 # 'Óheimilt er (að fangelsa mann fyrir engar sakir)'
