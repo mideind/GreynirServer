@@ -1070,20 +1070,29 @@ EinSögn_nh/tala/kyn →
 # Boðháttur
 
 Sögn_bh →
-    # Farðu út að þvo bílinn
-    so_0_bh NhFylling? SagnInnskot?
-    # Förum að þvo bílinn
-    | so_0_gm_fh_p1_ft_nt NhFylling? SagnInnskot?
-    # Lofið barninu [að borða]
-    | Sögn_1_bh NhFylling? SagnInnskot?
+    # Farðu [út] að þvo bílinn [strax]
+    so_0_bh BhBotn
+    # Förum [út] að þvo bílinn [strax]
+    | so_0_gm_fh_p1_ft_nt BhBotn
+    # Lofið barninu [að borða] [í friði]
+    | Sögn_1_bh BhBotn
     # Skrifaðu jólasveininum bréf
-    | Sögn_2_bh SagnInnskot?
+    | Sögn_2_bh BhBotn
     # Láttu/látið það ekki slá ykkur (út af laginu) og fara (með ykkur í gönur)
     | 'láta'_bh Nl_þf AtvFs? EinSögn_nh/tala/kyn OgSögn_nh/tala/kyn*
 
 # Boðháttur er sjaldgæfur - viljum aðra kosti frekar
 $score(-5) Sögn_bh
 $tag(begin_prep_scope) Sögn_bh
+
+BhBotn →
+    # að borða í friði
+    NhFylling? SagnInnskot?
+    # í skálinni meðan þið brjótið eggin
+    | FsAtv? BhMeðan HreinYfirsetning
+
+# (Hrærið [í deiginu]) uns (súkkulaðið bráðnar)
+BhMeðan → 'á_meðan' | "meðan:st" | "uns" | "þar:st" "til:st"
 
 SögnFrh_bh →
     KommuSögn_bh* OgSögn_bh+
@@ -3466,7 +3475,7 @@ OgMeð → "og:st" "með:fs"
 
 # Talnabil nota en-dash
 
-Til → "-:en" | "til:st"
+Til → "-:en" | "til:st" | "og:st"
 
 Dagsetning →
     DagsFs_þf? Tímasetning 'sá'_et_kk_þf? dags # '[eftir] kl. 14 [þann] 3. júlí 2007'

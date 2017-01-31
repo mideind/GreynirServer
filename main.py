@@ -35,6 +35,7 @@ import os
 import time
 import random
 import re
+import logging
 from datetime import datetime
 from functools import wraps
 from decimal import Decimal
@@ -1044,13 +1045,13 @@ try:
     # Read configuration file
     Settings.read("config/Reynir.conf")
 except ConfigError as e:
-    print("Configuration error: {0}".format(e))
-    quit()
+    logging.error("Reynir did not start due to configuration error: {0}".format(e))
+    sys.exit(1)
 
 if Settings.DEBUG:
     print("Settings loaded in {0:.2f} seconds".format(time.time() - t0))
-    print("Running Reynir with debug={0}, host={1}:{2}, db_hostname={3}"
-        .format(Settings.DEBUG, Settings.HOST, Settings.PORT, Settings.DB_HOSTNAME))
+    print("Running Reynir with debug={0}, host={1}:{2}, db_hostname={3} on Python {4}"
+        .format(Settings.DEBUG, Settings.HOST, Settings.PORT, Settings.DB_HOSTNAME, sys.version))
 
 if __name__ == "__main__":
 
@@ -1072,7 +1073,8 @@ if __name__ == "__main__":
             extra_files = [ "config/" + fname for fname in extra_files ])
     except socket_error as e:
         if e.errno == errno.EADDRINUSE: # Address already in use
-            print("Reynir is already running at host {0}:{1}".format(Settings.HOST, Settings.PORT))
+            logging.error("Reynir is already running at host {0}:{1}".format(Settings.HOST, Settings.PORT))
+            sys.exit(1)
         else:
             raise
     finally:
@@ -1080,6 +1082,12 @@ if __name__ == "__main__":
         pass
 
 else:
+
+    log_str = "Reynir instance starting with host={0}:{1}, db_hostname={2} on Python {3}" \
+        .format(Settings.HOST, Settings.PORT, Settings.DB_HOSTNAME, sys.version.replace("\n", " "))
+    logging.info(log_str)
+    print(log_str)
+    sys.stdout.flush()
 
     # Running as a server module: pre-load the grammar into memory
     with Fast_Parser() as fp:

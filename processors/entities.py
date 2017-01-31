@@ -45,7 +45,12 @@ NOT_DEFINITIONS = {
     "fæddur", "fætt", "fædd",
     "spurður", "spurt", "spurð",
     "búinn", "búið", "búin",
-    "sá", "sú", "það"
+    "sá", "sú", "það", "lán"
+}
+NOT_ENTITIES = {
+    "Þeir", "Þær", "Þau", "Þá", "Þar", "Þetta", "Þessi", "Þessu", "The", "To",
+    "Aðspurð", "Aðspurður", "Aðstaða", "Aðstæður",
+    "Aftur"
 }
 
 
@@ -69,6 +74,10 @@ def article_end(state):
 def sentence(state, result):
     """ Called at the end of sentence processing """
 
+    if "entities" not in result:
+        # Nothing to do
+        return
+
     session = state["session"] # Database session
     url = state["url"] # URL of the article being processed
     authority = state["authority"] # Authority of the article being processed
@@ -86,48 +95,58 @@ def sentence(state, result):
                 # Map "Clinton->Hillary Rodham Clinton"
                 names[a[-1]] = n
 
-    if "entities" in result:
-        # Entities were found
-        for entity, verb, definition in result.entities:
+    # Process potential entities
+    for entity, verb, definition in result.entities:
 
-            if len(entity) < 2 or len(definition) < 2:
-                # Avoid chaff
-                continue
+        # Cut off ending punctuation
+        while any(entity.endswith(p) for p in (" ,", " .", " :", " !", " ?")):
+            entity = entity[:-2]
 
-            # Cut off ending punctuation
-            while any(definition.endswith(p) for p in (" ,", " .", " :", " !", " ?")):
-                definition = definition[:-2]
+        # Cut off ending punctuation
+        while any(definition.endswith(p) for p in (" ,", " .", " :", " !", " ?")):
+            definition = definition[:-2]
 
-            def def_ok(definition):
-                """ Returns True if a definition meets basic sanity criteria """
-                if definition in NOT_DEFINITIONS:
-                    return False
-                # Check for a match with a number string, eventually followed by a % sign
-                if re.match(r'-?\d+(\.\d\d\d)*(,\d+)?%?$', definition):
-                    return False
-                return True
+        if len(entity) < 2 or len(definition) < 2:
+            # Avoid chaff
+            continue
 
-            if def_ok(definition):
+        def def_ok(definition):
+            """ Returns True if a definition meets basic sanity criteria """
+            if definition in NOT_DEFINITIONS:
+                return False
+            # Check for a match with a number string, eventually followed by a % sign
+            if re.match(r'-?\d+(\.\d\d\d)*(,\d+)?%?$', definition):
+                return False
+            return True
 
-                if entity in names:
-                    # Probably the last name of a longer-named entity:
-                    # define the full name, not the last name
-                    # (i.e. 'Clinton er forsetaframbjóðandi' ->
-                    #   'Hillary Rodham Clinton er forsetaframbjóðandi')
-                    # print("Mapping entity name '{0}' to full name '{1}'".format(entity, names[entity]))
-                    entity = names[entity]
+        def name_ok(entity):
+            """ Returns True if an entity name meets basic sanity criteria """
+            if entity in NOT_ENTITIES:
+                return False
+            # Entity names must start with an uppercase letter
+            return entity[0].isupper()
 
-                print("Entity '{0}' {1} '{2}'".format(entity, verb, definition))
+        if def_ok(definition) and name_ok(entity):
 
-                e = Entity(
-                    article_url = url,
-                    name = entity,
-                    verb = verb,
-                    definition = definition,
-                    authority = authority,
-                    timestamp = datetime.utcnow()
-                )
-                session.add(e)
+            if entity in names:
+                # Probably the last name of a longer-named entity:
+                # define the full name, not the last name
+                # (i.e. 'Clinton er forsetaframbjóðandi' ->
+                #   'Hillary Rodham Clinton er forsetaframbjóðandi')
+                # print("Mapping entity name '{0}' to full name '{1}'".format(entity, names[entity]))
+                entity = names[entity]
+
+            print("Entity '{0}' {1} '{2}'".format(entity, verb, definition))
+
+            e = Entity(
+                article_url = url,
+                name = entity,
+                verb = verb,
+                definition = definition,
+                authority = authority,
+                timestamp = datetime.utcnow()
+            )
+            session.add(e)
 
 
 def visit(state, node):

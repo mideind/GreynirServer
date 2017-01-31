@@ -60,6 +60,94 @@ def append_answers(rd, q, prop_func):
         rd[s][p.id] = ai # Add to a dict of UUIDs
 
 
+def name_key_to_update(register, name):
+    """ Return the name register dictionary key to update with data about
+        the given person name. This may be an existing key within the
+        dictionary, the given key, or None if no update should happen. """
+
+    if name in register:
+        # The exact same name is already there: update it as-is
+        return name
+    # Look for alternative forms of the same name
+    # These are all the same person, respectively:
+    # Dagur Bergþóruson Eggertsson  / Lilja Dögg Alfreðsdóttir
+    # Dagur B. Eggertsson           / Lilja D. Alfreðsdóttir
+    # Dagur B Eggertsson            / Lilja D Alfreðsdóttir
+    # Dagur Eggertsson              / Lilja Alfreðsdóttir
+    nparts = name.split()
+    mn = nparts[1:-1] # Middle names
+    # Check whether the same person is already in the registry under a
+    # slightly different name
+    for k in register.keys():
+        parts = k.split()
+        if nparts[0] != parts[0] or nparts[-1] != parts[-1]:
+            # First or last names different: we don't think these are the same person
+            # !!! TODO: Could add Levenshtein distance calculation here
+            continue
+        # Same first and last names
+        # If the name to be added contains no middle name, it is judged to be
+        # already in the register and nothing more needs to be done
+        if not mn:
+            return k # We can just update the key that was already there
+        mp = parts[1:-1] # Middle names
+        if not mp:
+            # The new name has a middle name which the old one didn't:
+            # Assume its the same person but modify the registry key
+            assert name != k
+            register[name] = register[k]
+            del register[k]
+            return name # No update necessary
+        # Both have middle names
+        def has_correspondence(n, nlist):
+            """ Return True if the middle name or abbreviation n can
+                correspond to any middle name or abbreviation in nlist """
+            if n.endswith("."):
+                n = n[:-1]
+            for m in nlist:
+                if m.endswith("."):
+                    m = m[:-1]
+                if n == m:
+                    return True
+                if n.startswith(m) or m.startswith(n):
+                    return True
+            # Found no correspondence between n and nlist
+            return False
+        c_n_p = [ has_correspondence(n, mp) for n in mn ]
+        c_p_n = [ has_correspondence(n, mn) for n in mp ]
+        if all(c_n_p) or all(c_p_n):
+            # For at least one direction a->b or b->a,
+            # all middle names that occur have correspondences
+            if len(mn) > len(mp):
+                # The new name is more specific than the old one:
+                # Assign the more specific name to the registry key
+                register[name] = register[k]
+                del register[k]
+                return name
+            # Return the existing key
+            return k
+        # There is a non-correspondence between the middle names,
+        # so this does not look like it's the same person.
+        # Continue searching...
+    # An identical or corresponding name was not found:
+    # update the name key
+    return name
+
+
+def append_names(rd, q, prop_func):
+    """ Iterate over query results and add them to the result dictionary rd,
+        assuming that the key is a person name """
+    for p in q:
+        s = correct_spaces(prop_func(p))
+        ai = dict(domain = p.domain, uuid = p.id, heading = p.heading,
+            ts = p.timestamp.isoformat()[0:16], url = p.url)
+        # Obtain the key within rd that should be updated with new
+        # data. This may be an existing key, a new key or None if no
+        # update is to be performed.
+        s = name_key_to_update(rd, s)
+        if s is not None:
+            rd[s][p.id] = ai # Add to a dict of UUIDs
+
+
 def make_response_list(rd):
     """ Create a response list from the result dictionary rd """
     # Now we have a dictionary of distinct results, along with their URLs
@@ -143,14 +231,16 @@ def add_entity_to_register(name, register, session, all_names = False):
 def add_name_to_register(name, register, session, all_names = False):
     """ Add the name and the 'best' title to the given name register dictionary """
     if name in register:
-        # Already have a title for this name
+        # Already have a title for this exact name; don't bother
         return
     # Use the query module to return titles for a person
     title = query_person_title(session, name)
-    if title:
-        register[name] = dict(kind = "name", title = title)
-    elif all_names:
-        register[name] = dict(kind = "name", title = None)
+    name_key = name_key_to_update(register, name)
+    if name_key is not None:
+        if title:
+            register[name_key] = dict(kind = "name", title = title)
+        elif all_names:
+            register[name_key] = dict(kind = "name", title = None)
 
 
 def create_name_register(tokens, session, all_names = False):
@@ -172,6 +262,7 @@ def _query_person_titles(session, name):
     q = session.query(Person.title, Article.id, Article.timestamp, Article.heading, Root.domain, Article.url) \
         .filter(Person.name == name).filter(Root.visible == True) \
         .join(Article).join(Root) \
+        .order_by(Article.timestamp) \
         .all()
     # Append titles from the persons table
     append_answers(rd, q, prop_func = lambda x: x.title)
@@ -179,6 +270,7 @@ def _query_person_titles(session, name):
     q = session.query(Entity.definition, Article.id, Article.timestamp, Article.heading, Root.domain, Article.url) \
         .filter(Entity.name == name).filter(Root.visible == True) \
         .join(Article).join(Root) \
+        .order_by(Article.timestamp) \
         .all()
     append_answers(rd, q, prop_func = lambda x: x.definition)
     return make_response_list(rd)
@@ -218,17 +310,19 @@ def query_title(query, session, title):
         .filter(Person.title_lc.like(title_lc + ' %') | (Person.title_lc == title_lc)) \
         .filter(Root.visible == True) \
         .join(Article).join(Root) \
+        .order_by(Article.timestamp) \
         .all()
     # Append names from the persons table
-    append_answers(rd, q, prop_func = lambda x: x.name)
+    append_names(rd, q, prop_func = lambda x: x.name)
     # Also append definitions from the entities table, if any
     q = session.query(Entity.name, Article.id, Article.timestamp, \
         Article.heading, Root.domain, Article.url) \
         .filter(Entity.definition == title) \
         .filter(Root.visible == True) \
         .join(Article).join(Root) \
+        .order_by(Article.timestamp) \
         .all()
-    append_answers(rd, q, prop_func = lambda x: x.name)
+    append_names(rd, q, prop_func = lambda x: x.name)
     return make_response_list(rd)
 
 
@@ -239,6 +333,7 @@ def _query_entity_titles(session, name):
         .filter(Entity.name == name) \
         .filter(Root.visible == True) \
         .join(Article).join(Root) \
+        .order_by(Article.timestamp) \
         .all()
     return prepare_response(q, prop_func = lambda x: x.definition)
 
@@ -268,7 +363,8 @@ def query_company(query, session, name):
     q = session.query(Entity.verb, Entity.definition, Article.id, Article.timestamp, \
         Article.heading, Root.domain, Article.url) \
         .filter(Root.visible == True) \
-        .join(Article).join(Root)
+        .join(Article).join(Root) \
+        .order_by(Article.timestamp)
     if use_like:
         q = q.filter(Entity.name.like(qname + '%'))
     else:
