@@ -539,8 +539,12 @@ class _BaseQuery:
     def __init__(self):
         pass
 
+    def execute_q(self, session, q, **kwargs):
+        """ Execute the given query and return the result from fetchall() """
+        return session.execute(q, kwargs).fetchall()
+
     def execute(self, session, **kwargs):
-        """ Execute the query and return the result from fetchall() """
+        """ Execute the default query and return the result from fetchall() """
         return session.execute(self._Q, kwargs).fetchall()
 
     def scalar(self, session, **kwargs):
@@ -684,10 +688,18 @@ class ArticleListQuery(_BaseQuery):
     """ A query returning a list of the newest articles that contain
         a particular word stem """
 
-    _Q = """
+    _Q_lower = """
         select distinct a.id, a.heading, a.timestamp, r.domain, a.url
             from words w, articles a, roots r
             where w.stem = :stem and w.article_id = a.id and a.root_id = r.id and r.visible
+            order by a.timestamp desc
+            limit :limit;
+        """
+
+    _Q_upper = """
+        select distinct a.id, a.heading, a.timestamp, r.domain, a.url
+            from words w, articles a, roots r
+            where (w.stem = :stem or w.stem = :lstem) and w.article_id = a.id and a.root_id = r.id and r.visible
             order by a.timestamp desc
             limit :limit;
         """
@@ -696,5 +708,9 @@ class ArticleListQuery(_BaseQuery):
     def articles(cls, stem, limit = 20, enclosing_session = None):
         """ Return a list of the newest articles containing the given stem. """
         with SessionContext(session = enclosing_session, commit = True) as session:
-            return cls().execute(session, stem = stem, limit = limit)
+            if stem == stem.lower():
+                # Lower case stem
+                return cls().execute_q(session, cls._Q_lower, stem = stem, limit = limit)
+            # Upper case stem: include the lower case as well
+            return cls().execute_q(session, cls._Q_upper, stem = stem, lstem = stem.lower(), limit = limit)
 

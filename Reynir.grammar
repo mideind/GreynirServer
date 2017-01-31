@@ -2370,7 +2370,9 @@ NlStak_p3_et_ef_hk → NlSérnafn
 
 # !!! no_ef er notað í stað EfLiður til að minnka margræðni þegar
 # !!! mörg sérnöfn standa í röð
-NlSérnafn → eo* Sérnafn no_ef? # ekki Nakamoto, örugglega Nelson Mandela, Hong Kong norðursins
+NlSérnafn → eo* Sérnafn NlSérnafnEf? # ekki Nakamoto, örugglega Nelson Mandela, Hong Kong norðursins
+
+NlSérnafnEf → no_ef
 
 # Forðast að nota sérnöfn sem nafnliði, ef aðrir kostir eru í boði
 $score(-16) NlSérnafn

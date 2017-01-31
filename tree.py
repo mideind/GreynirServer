@@ -41,7 +41,6 @@ BIN_ORDFL = {
     "st" : { "st" }
 }
 
-
 class Result:
 
     """ Container for results that are sent from child nodes to parent nodes.
@@ -242,6 +241,19 @@ class Result:
             return p
         # No child node found: return None
         return None
+
+    def has_nt_base(self, s):
+        """ Does the associated node have the given nonterminal base name? """
+        return self._node.has_nt_base(s)
+
+    def has_t_base(self, s):
+        """ Does the associated node have the given terminal base name? """
+        return self._node.has_t_base(s)
+
+    def has_variant(self, s):
+        """ Does the associated node have the given variant? """
+        return self._node.has_variant(s)
+
 
 
 class Node:

@@ -200,6 +200,10 @@ def EfLiður(node, params, result):
     # Ekki senda skýringu eða mannsnafn í gegn um eignarfallslið
     result.del_attribs(("skýring", "skýring_nafn", "mannsnafn", "kyn"))
 
+def NlSérnafnEf(node, params, result):
+    # Leyfa eignarfallslið að standa óbreyttum í titli
+    result._nominative = result._text
+
 def FsLiður(node, params, result):
     """ Forsetningarliður """
     # Leyfa forsetningarlið að standa óbreyttum í titli

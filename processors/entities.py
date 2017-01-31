@@ -48,7 +48,7 @@ NOT_DEFINITIONS = {
     "sá", "sú", "það", "lán"
 }
 NOT_ENTITIES = {
-    "Þeir", "Þær", "Þau", "Þá", "Þar", "Þetta", "Þessi", "Þessu", "The", "To",
+    "Þeir", "Þær", "Þau", "Sú", "Þá", "Þar", "Þetta", "Þessi", "Þessu", "The", "To",
     "Aðspurð", "Aðspurður", "Aðstaða", "Aðstæður",
     "Aftur"
 }
@@ -168,6 +168,11 @@ def EfLiður(node, params, result):
     result._nominative = result._text
 
 
+def NlSérnafnEf(node, params, result):
+    # Ekki breyta eignarfallsliðum í nefnifall
+    result._nominative = result._text
+
+
 def FsMeðFallstjórn(node, params, result):
     """ Ekki láta sérnafn lifa í gegn um forsetningarlið """
     result.del_attribs(('sérnafn', 'sérnafn_nom'))
@@ -200,9 +205,11 @@ def Sérnafn(node, params, result):
 
 def SérnafnEðaManneskja(node, params, result):
     """ Sérnafn eða mannsnafn """
-    result.sérnafn = result._text
-    result.sérnafn_nom = result._nominative
-    result.sérnafn_eind_nom = result._nominative
+    if "sérnafn" not in result:
+        result.sérnafn = result._text
+        result.sérnafn_nom = result._nominative
+    if "sérnafn_eind_nom" not in result:
+        result.sérnafn_eind_nom = result._nominative
     result.eindir = [ result._nominative ] # Listar eru sameinaðir
     result.names = { result._nominative }
 
@@ -258,6 +265,27 @@ def NlKjarni(node, params, result):
 def NlEind(node, params, result):
     """ Ef sérnafn og sviga_innihald eru rétt undir NlEind þá er það skilgreining """
 
+    if len(params) == 2 and params[0].has_nt_base("NlStak") and params[1].has_nt_base("NlSkýring"):
+        # Ef skýring fylgir sérnafni þá sleppum við henni
+        if "sérnafn" in params[0]:
+            result.sérnafn = params[0].sérnafn
+            result.sérnafn_nom = params[0].sérnafn_nom
+        else:
+            # Gæti verið venjulegur nafnliður með upphafsstaf
+            sérnafn = params[0]._text
+            sérnafn_nom = params[0]._nominative
+
+            # Athuga hvort allir hlutar nafnsins séu með upphafsstaf
+            # Ef svo, túlka þá sem sérnafn
+            if all(part and part[0].isupper() for part in sérnafn.split()):
+                result.sérnafn = sérnafn
+                result.sérnafn_nom = sérnafn_nom
+                if "sérnafn_eind_nom" not in result:
+                    result.sérnafn_eind_nom = sérnafn_nom
+
+        if "sérnafn" in result:
+            print("NlEind: sérnafn sem flýtur upp er {0}/{1}".format(result.sérnafn, result.sérnafn_nom))
+
     if "sérnafn_eind_nom" in result and "sviga_innihald" in result:
 
         entity = result.sérnafn_eind_nom
@@ -295,11 +323,11 @@ def SamstættFall(node, params, result):
             if not part or not part[0].isupper():
                 return
 
-        # Bæta við nafnamengi
-        if "names" in result:
-            result.names.add(sérnafn_nom)
-        else:
-            result.names = { sérnafn_nom }
+    # Bæta við nafnamengi
+    if "names" in result:
+        result.names.add(sérnafn_nom)
+    else:
+        result.names = { sérnafn_nom }
 
     # Find the noun terminal parameter
     p_no = result.find_child(t_base = "no")
