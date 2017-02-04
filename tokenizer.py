@@ -39,7 +39,7 @@ import codecs
 import datetime
 
 from settings import Settings, StaticPhrases, Abbreviations, AmbigPhrases, DisallowedNames
-from settings import changedlocale
+from settings import NamePreferences, changedlocale
 from bindb import BIN_Db, BIN_Meaning
 from scraperdb import SessionContext, Entity
 
@@ -191,6 +191,8 @@ class TOK:
     S_END = 11002 # Sentence end
 
     END = frozenset((P_END, S_END))
+    TEXT = frozenset((WORD, PERSON, ENTITY))
+    TEXT_EXCL_PERSON = frozenset((WORD, ENTITY))
 
     # Token descriptive names
 
@@ -577,36 +579,48 @@ def parse_particles(token_stream):
             if next_token.kind == TOK.PUNCTUATION and next_token.txt == '.':
                 if token.kind == TOK.WORD and token.txt[-1] != '.' and ('.' in token.txt or
                     token.txt.lower() in Abbreviations.SINGLES or token.txt in Abbreviations.SINGLES):
-                    # Abbreviation: make a special token for it
+                    # Abbreviation ending with period: make a special token for it
                     # and advance the input stream
 
-                    # Check whether we're probably at the end of a sentence, i.e.
+                    clock = token.txt.lower() == CLOCK_ABBREV
+                    follow_token = next(token_stream)
+                    abbrev = token.txt + "."
+
+                    # Check whether we might be at the end of a sentence, i.e.
                     # the following token is an end-of-sentence or end-of-paragraph,
                     # or uppercase (and not a month name misspelled in upper case).
 
-                    follow_token = next(token_stream)
-
-                    if token.txt[0].isupper():
-                        # If the abbreviated token is an uppercase word, we don't
-                        finish = follow_token.kind in TOK.END
+                    if abbrev in Abbreviations.NAME_FINISHERS:
+                        # For name finishers (such as 'próf.') we don't consider a
+                        # following person name as an indicator of an end-of-sentence
+                        # !!! BUG: This does not work as intended because person names
+                        # !!! have not been recognized at this phase in the token pipeline.
+                        test_set = TOK.TEXT_EXCL_PERSON
                     else:
-                        finish = follow_token.kind in TOK.END or \
-                            (follow_token.kind == TOK.WORD and follow_token.txt[0].isupper() and
-                                not follow_token.txt.lower() in MONTHS)
+                        test_set = TOK.TEXT
 
-                    clock = token.txt.lower() == CLOCK_ABBREV
+                    finish = ((follow_token.kind in TOK.END) or
+                        (follow_token.kind in test_set and follow_token.txt[0].isupper() and
+                        not follow_token.txt.lower() in MONTHS))
 
                     if finish:
-                        if (token.txt + ".") in Abbreviations.FINISHERS:
+                        # Potentially at the end of a sentence
+                        if abbrev in Abbreviations.FINISHERS:
                             # We see this as an abbreviation even if the next sentence seems
                             # to be starting just after it.
                             # Yield the abbreviation without a trailing dot,
                             # and then an 'extra' period token to end the current sentence.
                             token = TOK.Word("[" + token.txt + "]", None)
-                        # Otherwise, we don't dare interpret this as an abbreviation
-                        # and simply return the original token and the period separately
-                        yield token
-                        token = next_token
+                            yield token
+                            token = next_token
+                        elif abbrev in Abbreviations.NOT_FINISHERS:
+                            # This is an abbreviation that we don't interpret as such
+                            # if it's at the end of a sentence ('dags.', 'próf.', 'mín.')
+                            yield token
+                            token = next_token
+                        else:
+                            # Substitute the abbreviation and eat the period
+                            token = TOK.Word("[" + token.txt + ".]", None)
                     else:
                         # 'Regular' abbreviation in the middle of a sentence:
                         # swallow the period and yield the abbreviation as a single token
@@ -672,6 +686,9 @@ def parse_sentences(token_stream):
 
     in_sentence = False
     token = None
+    tok_begin_sentence = TOK.Begin_Sentence()
+    tok_end_sentence = TOK.End_Sentence()
+
     try:
 
         # Maintain a one-token lookahead
@@ -682,7 +699,7 @@ def parse_sentences(token_stream):
             if token.kind == TOK.P_BEGIN or token.kind == TOK.P_END:
                 # Block start or end: finish the current sentence, if any
                 if in_sentence:
-                    yield TOK.End_Sentence()
+                    yield tok_begin_sentence
                     in_sentence = False
                 if token.kind == TOK.P_BEGIN and next_token.kind == TOK.P_END:
                     # P_BEGIN immediately followed by P_END:
@@ -693,7 +710,7 @@ def parse_sentences(token_stream):
             else:
                 if not in_sentence:
                     # This token starts a new sentence
-                    yield TOK.Begin_Sentence()
+                    yield tok_begin_sentence
                     in_sentence = True
                 if token.kind == TOK.PUNCTUATION and token.txt in END_OF_SENTENCE:
                     # We may be finishing a sentence with not only a period but also
@@ -704,7 +721,7 @@ def parse_sentences(token_stream):
                         next_token = next(token_stream)
                     # The sentence is definitely finished now
                     yield token
-                    token = TOK.End_Sentence()
+                    token = tok_end_sentence
                     in_sentence = False
 
             yield token
@@ -717,7 +734,7 @@ def parse_sentences(token_stream):
     if token is not None:
         if not in_sentence and token.kind != TOK.P_END and token.kind != TOK.S_END:
             # Starting something here
-            yield TOK.Begin_Sentence()
+            yield tok_begin_sentence
             in_sentence = True
         yield token
         if in_sentence and (token.kind == TOK.P_END or token.kind == TOK.S_END):
@@ -726,7 +743,7 @@ def parse_sentences(token_stream):
     # Done with the input stream
     # If still inside a sentence, finish it
     if in_sentence:
-        yield TOK.End_Sentence()
+        yield tok_end_sentence
 
 
 def annotate(token_stream, auto_uppercase):
@@ -747,15 +764,14 @@ def annotate(token_stream, auto_uppercase):
                 elif t.kind != TOK.PUNCTUATION and t.kind != TOK.ORDINAL:
                     at_sentence_start = False
                 continue
-            if t.val is not None:
+            if t.val is None:
+                # Look up word in BIN database
+                w, m = db.lookup_word(t.txt, at_sentence_start, auto_uppercase)
+                # Yield a word tuple with meanings
+                yield TOK.Word(w, m)
+            else:
                 # Already have a meaning
                 yield t
-                at_sentence_start = False
-                continue
-            # Look up word in BIN database
-            w, m = db.lookup_word(t.txt, at_sentence_start, auto_uppercase)
-            # Yield a word tuple with meanings
-            yield TOK.Word(w, m)
             # No longer at sentence start
             at_sentence_start = False
 
@@ -1334,7 +1350,7 @@ def parse_phrases_2(token_stream):
                         return None
                 # One or two letters, capitalized: accept as middle name abbrev,
                 # all genders and cases possible
-                return [PersonName(name = wrd, gender = None, case = None)]
+                return [ PersonName(name = wrd, gender = None, case = None) ]
 
             def compatible(pn, npn):
                 """ Return True if the next PersonName (np) is compatible with the one we have (p) """
@@ -1453,10 +1469,11 @@ def parse_phrases_2(token_stream):
                 # If this is not a "strong" name, backtrack from recognizing it.
                 # A "weak" name is (1) at the start of a sentence; (2) only one
                 # word; (3) that word has a meaning that is not a name;
-                # (4) the name has not been seen in a full form before.
+                # (4) the name has not been seen in a full form before;
+                # (5) not on a 'well known name' list.
 
                 weak = at_sentence_start and (' ' not in w) and not patronym and \
-                    not found_name and has_other_meaning(token, "ism")
+                    not found_name and (has_other_meaning(token, "ism") and w not in NamePreferences.SET)
 
                 if not weak:
                     # Return a person token with the accumulated name
@@ -1701,7 +1718,7 @@ def recognize_entities(token_stream, enclosing_session = None):
     ecache = dict() # Entitiy definition cache
     lastnames = dict() # Last name to full name mapping ('Clinton' -> 'Hillary Clinton')
 
-    with SessionContext(session = enclosing_session, commit = True) as session:
+    with SessionContext(session = enclosing_session, commit = True, read_only = True) as session:
 
         def fetch_entities(w, fuzzy = True):
             """ Return a list of entities matching the word(s) given,
@@ -1830,8 +1847,9 @@ def recognize_entities(token_stream, enclosing_session = None):
                             # w may be a person name with more than one embedded word
                             # parts is assigned in the if statement above
                             cnt = len(parts)
-                        elif not token.val:
-                            # No BÍN meaning for this token
+                        elif not token.val or ('-' in token.val[0].stofn):
+                            # No BÍN meaning for this token, or the meanings were constructed
+                            # by concatenation (indicated by a hyphen in the stem)
                             weak = False # Accept single-word entity references
                         # elist is a list of Entity instances
                         elist = query_entities(w)

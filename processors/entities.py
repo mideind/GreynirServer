@@ -173,6 +173,12 @@ def NlSérnafnEf(node, params, result):
     result._nominative = result._text
 
 
+def OkkarFramhald(node, params, result):
+    # Ekki breyta eignarfallsliðum í nefnifall
+    # Þetta grípur 'einn okkar', 'hvorugur þeirra'
+    result._nominative = result._text
+
+
 def FsMeðFallstjórn(node, params, result):
     """ Ekki láta sérnafn lifa í gegn um forsetningarlið """
     result.del_attribs(('sérnafn', 'sérnafn_nom'))
@@ -282,9 +288,6 @@ def NlEind(node, params, result):
                 result.sérnafn_nom = sérnafn_nom
                 if "sérnafn_eind_nom" not in result:
                     result.sérnafn_eind_nom = sérnafn_nom
-
-        if "sérnafn" in result:
-            print("NlEind: sérnafn sem flýtur upp er {0}/{1}".format(result.sérnafn, result.sérnafn_nom))
 
     if "sérnafn_eind_nom" in result and "sviga_innihald" in result:
 
@@ -424,7 +427,7 @@ def Setning(node, params, result):
 
         #print("Andlag er {0}".format(andlag._text))
 
-        print("Statement: '{0}' {2} '{1}'".format(entity, andlag._text, sagnorð._text))
+        # print("Statement: '{0}' {2} '{1}'".format(entity, andlag._text, sagnorð._text))
 
         # Append to result list
         if "entities" not in result:

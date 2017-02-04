@@ -152,6 +152,10 @@ class ReynirCorpus:
         self._topics = None
         self._dimensions = dimensions or ReynirCorpus._DEFAULT_DIMENSIONS
 
+    @property
+    def dimensions(self):
+        return self._dimensions
+
     def create_dictionary(self):
         """ Iterate through the article database
             and create a fresh Gensim dictionary """

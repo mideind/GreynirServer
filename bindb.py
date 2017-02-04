@@ -140,6 +140,9 @@ class BIN_Db:
     # Adjective endings
     _ADJECTIVE_TEST = "leg" # Check for adjective if word contains 'leg'
 
+    # Noun categories
+    _NOUNS = frozenset(("kk", "kvk", "hk"))
+
     # Singleton LFU caches for word meaning and form lookups
     _meanings_cache = LFU_Cache(maxsize = CACHE_SIZE_MEANINGS)
     _forms_cache = LFU_Cache()
@@ -406,7 +409,10 @@ class BIN_Db:
                         # Remove brackets from known abbreviations
                         w = w[1:-1]
                 else:
-                    m.extend(lookup(lower_w))
+                    # Be careful to make a new list here, not extend m
+                    # in place, as it may be a cached value from the LFU
+                    # cache and we don't want to mess the original up
+                    m = m + lookup(lower_w)
 
         if m:
             # Most common path out of this function
@@ -427,17 +433,14 @@ class BIN_Db:
             # Not found: Check whether this might be an adjective
             # ending in 'legur'/'leg'/'legt'/'legir'/'legar' etc.
             llw = len(lower_w)
+            m = []
             for aend, beyging in AdjectiveTemplate.ENDINGS:
                 if lower_w.endswith(aend) and llw > len(aend):
                     prefix = lower_w[0 : llw - len(aend)]
                     # Construct an adjective descriptor
-                    if m is None:
-                        m = []
                     m.append(BIN_Meaning(prefix + "legur", 0, "lo", "alm", lower_w, beyging))
             if lower_w.endswith("lega") and llw > 4:
                 # For words ending with "lega", add a possible adverb meaning
-                if m is None:
-                    m = []
                 m.append(BIN_Meaning(lower_w, 0, "ao", "ob", lower_w, "-"))
 
         if not m:
@@ -455,7 +458,7 @@ class BIN_Db:
                     # If this is an uppercase word in the middle of a
                     # sentence, allow only nouns as possible interpretations
                     # (it wouldn't be correct to capitalize verbs, adjectives, etc.)
-                    m = [ mm for mm in m if mm.ordfl in { "kk", "kvk", "hk" } ]
+                    m = [ mm for mm in m if mm.ordfl in BIN_Db._NOUNS ]
                 m = BIN_Db.prefix_meanings(m, prefix)
 
         if not m and lower_w.startswith('ó'):
@@ -471,8 +474,7 @@ class BIN_Db:
 
         if not m and auto_uppercase and w.islower():
             # If no meaning found and we're auto-uppercasing,
-            # convert this to upper case (could very well be a name
-            # of a person or entity)
+            # convert this to upper case (could be an entity name)
             w = w.capitalize()
 
         # noinspection PyRedundantParentheses

@@ -118,7 +118,11 @@ class SimilarityServer:
             for a in q.yield_per(2000):
                 if a.topic_vector:
                     # Load topic vector in to a numpy array
-                    self._atopics[a.id] = np.array(json.loads(a.topic_vector))
+                    vec = json.loads(a.topic_vector)
+                    if isinstance(vec, list) and len(vec) == self._corpus.dimensions:
+                        self._atopics[a.id] = np.array(vec)
+                    else:
+                        print("Warning: faulty topic vector for article {0}".format(a.id))
 
             t1 = time.time()
             print("Loading of {0} topic vectors completed in {1:.2f} seconds".format(len(self._atopics), t1 - t0))
@@ -151,8 +155,12 @@ class SimilarityServer:
                 for a in q.yield_per(100):
                     if a.topic_vector:
                         # Load topic vector in to a numpy array
-                        self._atopics[a.id] = np.array(json.loads(a.topic_vector))
-                        count += 1
+                        vec = json.loads(a.topic_vector)
+                        if isinstance(vec, list) and len(vec) == self._corpus.dimensions:
+                            self._atopics[a.id] = np.array(vec)
+                            count += 1
+                        else:
+                            print("Warning: faulty topic vector for article {0}".format(a.id))
                 print("Completed refresh_topics, {0} article vectors added".format(count))
 
 
@@ -171,7 +179,15 @@ class SimilarityServer:
             return float(dot_product / math.sqrt(norm_v * norm_base))
 
         for article_id, topic_vector in self._atopics.items():
-            yield article_id, cosine_similarity(topic_vector)
+            try:
+                cs = cosine_similarity(topic_vector)
+                yield article_id, cs
+            except Exception as ex:
+                # If there is an error in the calculations, probably
+                # due to a faulty topic vector, simply don't include
+                # the article
+                print("Error in cosine similarity for article {0}: {1}".format(article_id, ex))
+                pass
 
 
     def find_similar(self, n, vector):

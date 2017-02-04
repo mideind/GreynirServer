@@ -135,18 +135,42 @@ class Abbreviations:
     # Potential sentence finishers, i.e. those with a dot at the end, marked with an asterisk
     # in the config file
     FINISHERS = set()
+    # Abbreviations that should not be seen as such at the end of sentences, marked with
+    # an exclamation mark in the config file
+    NOT_FINISHERS = set()
+    # Abbreviations that should not be seen as such at the end of sentences, but
+    # are allowed in front of person names; marked with a hat ^ in the config file
+    NAME_FINISHERS = set()
 
     @staticmethod
     def add (abbrev, meaning, gender, fl = None):
         """ Add an abbreviation to the dictionary. Called from the config file handler. """
         # Check for sentence finishers
+        finisher = False
+        not_finisher = False
+        name_finisher = False
         if abbrev.endswith("*"):
+            # This abbreviation is explicitly allowed to finish a sentence
             finisher = True
             abbrev = abbrev[0:-1]
             if not abbrev.endswith("."):
                 raise ConfigError("Only abbreviations ending with periods can be sentence finishers")
-        else:
-            finisher = False
+        elif abbrev.endswith("!"):
+            # A not-finisher cannot finish a sentence, because it is also a valid word
+            # (Example: 'dags.', 'mín.', 'sek.')
+            not_finisher = True
+            abbrev = abbrev[0:-1]
+            if not abbrev.endswith("."):
+                raise ConfigError("Only abbreviations ending with periods can be marked as not-finishers")
+        elif abbrev.endswith("^"):
+            # This abbreviation can be followed by a name; in other aspects it is like a not-finisher
+            # (Example: 'próf.')
+            name_finisher = True
+            abbrev = abbrev[0:-1]
+            if not abbrev.endswith("."):
+                raise ConfigError("Only abbreviations ending with periods can be marked as name finishers")
+        if abbrev.endswith("!") or abbrev.endswith("*") or abbrev.endswith("^"):
+            raise ConfigError("!, * and ^ modifiers are mutually exclusive on abbreviations")
         # Append the abbreviation and its meaning in tuple form
         Abbreviations.DICT[abbrev] = (meaning, 0, gender, "skst" if fl is None else fl, abbrev, "-")
         if abbrev[-1] == '.' and '.' not in abbrev[0:-1]:
@@ -154,6 +178,11 @@ class Abbreviations:
             Abbreviations.SINGLES.add(abbrev[0:-1]) # Lookup is without the dot
         if finisher:
             Abbreviations.FINISHERS.add(abbrev)
+        if not_finisher or name_finisher:
+            # Both name finishers and not-finishers are added to the NOT_FINISHERS set
+            Abbreviations.NOT_FINISHERS.add(abbrev)
+        if name_finisher:
+            Abbreviations.NAME_FINISHERS.add(abbrev)
 
 
 class Meanings:
@@ -252,12 +281,12 @@ class VerbObjects:
     @staticmethod
     def verb_matches_preposition(verb_with_cases, prep_with_case):
         """ Does the given preposition with the given case fit the verb? """
-        if Settings.DEBUG:
-            print("verb_matches_preposition: verb {0}, prep {1}, verb found {2}, prep found {3}"
-                .format(verb_with_cases, prep_with_case,
-                    verb_with_cases in VerbObjects.PREPOSITIONS,
-                    verb_with_cases in VerbObjects.PREPOSITIONS and
-                    prep_with_case in VerbObjects.PREPOSITIONS[verb_with_cases]))
+        #if Settings.DEBUG:
+        #    print("verb_matches_preposition: verb {0}, prep {1}, verb found {2}, prep found {3}"
+        #        .format(verb_with_cases, prep_with_case,
+        #            verb_with_cases in VerbObjects.PREPOSITIONS,
+        #            verb_with_cases in VerbObjects.PREPOSITIONS and
+        #            prep_with_case in VerbObjects.PREPOSITIONS[verb_with_cases]))
         return verb_with_cases in VerbObjects.PREPOSITIONS and \
             prep_with_case in VerbObjects.PREPOSITIONS[verb_with_cases]
 
@@ -595,6 +624,18 @@ class NounPreferences:
         d[better] = better_score
 
 
+class NamePreferences:
+
+    """ Wrapper around well-known person names, initialized from the config file """
+
+    SET = set()
+
+    @staticmethod
+    def add (name):
+        """ Add a preference to the dictionary. Called from the config file handler. """
+        NamePreferences.SET.add(name)
+
+
 # Global settings
 
 class Settings:
@@ -877,6 +918,11 @@ class Settings:
         NounPreferences.add(w[0], w[1], b[0])
 
     @staticmethod
+    def _handle_name_preferences(s):
+        """ Handle well-known person names in the settings section """
+        NamePreferences.add(s)
+
+    @staticmethod
     def _handle_ambiguous_phrases(s):
         """ Handle ambiguous phrase guidance in the settings section """
         # Format: "word1 word2..." cat1 cat2...
@@ -927,6 +973,7 @@ class Settings:
             "prepositions" : Settings._handle_prepositions,
             "preferences" : Settings._handle_preferences,
             "noun_preferences" : Settings._handle_noun_preferences,
+            "name_preferences" : Settings._handle_name_preferences,
             "ambiguous_phrases" : Settings._handle_ambiguous_phrases,
             "meanings" : Settings._handle_meanings,
             "adjective_template" : Settings._handle_adjective_template,

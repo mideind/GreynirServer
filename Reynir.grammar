@@ -1945,7 +1945,7 @@ NhSögn →
     # | so_mm_nh Nl_þgf
 
     # (Páll fór inn eftir að) hafa fært bílinn / (fyrir að) geta lyft grettistaki
-    | HafaGetaFá_nh HreinSögn_sagnb_et_hk
+    | NhSögnHafaGetaFá
 
     # láta sjúklinginn ná eðlilegum líkamshita
     # segja Pál fara með rangt mál
@@ -1955,6 +1955,14 @@ NhSögn →
 
     # betur megi fara / strax skuli tilkynna
     | HjSögnMegiSkuli_et_p3 NhSögn
+
+NhSögnHafaGetaFá →
+    HafaGetaFá_nh HreinSögn_sagnb_et_hk
+
+# Gefa þessu gott forskot til að keppa við SamstættFall með greini,
+# til dæmis "hafa ráðið Jóni bana", þar sem "ráðið" er sögnin "ráða"
+# en ekki nafnorðið "ráð" með greini
+$score(+8) NhSögnHafaGetaFá
 
 # Samtengingar sagna
 

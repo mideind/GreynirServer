@@ -152,8 +152,13 @@ def make_response_list(rd):
     """ Create a response list from the result dictionary rd """
     # Now we have a dictionary of distinct results, along with their URLs
 
+    def contained(needle, haystack):
+        """ Return True if whole needles are contained in the haystack """
+        return (" " + needle.lower() + " ") in (" " + haystack.lower() + " ")
+
     # Go through the results and delete later ones
     # that are contained within earlier ones
+
     rl = list(rd.keys())
     for i in range(len(rl) - 1):
         ri = rl[i]
@@ -161,7 +166,7 @@ def make_response_list(rd):
             for j in range(i + 1, len(rl)):
                 rj = rl[j]
                 if rj is not None:
-                    if rj.lower() in ri.lower():
+                    if contained(rj, ri):
                         rd[ri].update(rd[rj])
                         del rd[rj]
                         rl[j] = None
@@ -173,7 +178,7 @@ def make_response_list(rd):
         ri = rl[i]
         for j in range(i + 1, len(rl)):
             rj = rl[j]
-            if ri.lower() in rj.lower():
+            if contained(ri, rj):
                 rd[rj].update(rd[ri])
                 del rd[ri]
                 break
