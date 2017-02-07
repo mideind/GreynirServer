@@ -158,13 +158,13 @@ class BIN_Db:
 
         if db is None:
             # New connection in this thread
-            db = cls.tls.bin_db = cls().open(host = Settings.DB_HOSTNAME,
-                port = Settings.DB_PORT,
+            db = cls.tls.bin_db = cls().open(host = Settings.BIN_DB_HOSTNAME,
+                port = Settings.BIN_DB_PORT,
                 wait = cls.wait)
 
         if db is None:
             raise Exception("Could not open BIN database on host {0}:{1}"
-                .format(Settings.DB_HOSTNAME, Settings.DB_PORT))
+                .format(Settings.BIN_DB_HOSTNAME, Settings.BIN_DB_PORT))
 
         return db
 

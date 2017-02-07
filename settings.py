@@ -643,10 +643,19 @@ class Settings:
     # Postgres SQL database server hostname and port
     DB_HOSTNAME = os.environ.get('GREYNIR_DB_HOST', 'localhost')
     DB_PORT = os.environ.get('GREYNIR_DB_PORT', '5432') # Default PostgreSQL port
+
     try:
         DB_PORT = int(DB_PORT)
     except ValueError:
         raise ConfigError("Invalid environment variable value: DB_PORT = {0}".format(DB_PORT))
+
+    BIN_DB_HOSTNAME = os.environ.get('GREYNIR_BIN_DB_HOST', DB_HOSTNAME)
+    BIN_DB_PORT = os.environ.get('GREYNIR_BIN_DB_PORT', DB_PORT)
+
+    try:
+        BIN_DB_PORT = int(BIN_DB_PORT)
+    except ValueError:
+        raise ConfigError("Invalid environment variable value: BIN_DB_PORT = {0}".format(BIN_DB_PORT))
 
     # Flask server host and port
     HOST = os.environ.get('GREYNIR_HOST', 'localhost')
@@ -683,9 +692,15 @@ class Settings:
             val = False
         try:
             if par == 'db_hostname':
-                Settings.DB_HOSTNAME = val
+                Settings.DB_HOSTNAME = Settings.BIN_DB_HOSTNAME = val
             elif par == 'db_port':
-                Settings.DB_PORT = int(val)
+                Settings.DB_PORT = Settings.BIN_DB_PORT = int(val)
+            elif par == 'bin_db_hostname':
+                # Specify this after db_hostname if different from db_hostname
+                Settings.BIN_DB_HOSTNAME = val
+            elif par == 'bin_db_port':
+                # Specify this after db_port if different from db_port
+                Settings.BIN_DB_PORT = int(val)
             elif par == 'host':
                 Settings.HOST = val
             elif par == 'port':
