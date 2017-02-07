@@ -443,11 +443,6 @@ def parse_api(version = 1):
                 for pg in pgs:
                     pa.extend(pg)
                 pgs = pa
-        #for sent in pgs:
-        #    # Transform the token representation into a
-        #    # nice canonical form for outside consumption
-        #    for t in sent:
-        #        canonicalize_token(t)
 
     # Return the tokens as a JSON structure to the client
     return better_jsonify(valid = True, result = pgs, stats = stats, register = register)

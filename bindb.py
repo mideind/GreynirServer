@@ -276,7 +276,7 @@ class BIN_Db:
         assert self._c is not None
         m = None
         try:
-            if beyging:
+            if beyging is not None:
                 self._c.execute(BIN_Db._DB_Q_UTG_BEYGING, [ utg, beyging ])
             else:
                 self._c.execute(BIN_Db._DB_Q_UTG, [ utg ])
