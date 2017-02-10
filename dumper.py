@@ -63,15 +63,19 @@ class Dumper:
             for sent in p:
                 try:
                     out = []
+                    wcnt = 0
+                    err = False
                     for t in sent:
                         kind = t.get("k")
                         text = t.get("x")
+                        err = err or "err" in t
                         if text:
                             # Person and entity names may contain spaces,
                             # but we want to keep them together as single tokens,
                             # so we replace the spaces with underscores
                             if kind == TOK.PERSON or kind == TOK.ENTITY:
                                 out.append(text.replace(" ", "_"))
+                                wcnt += 1
                             elif kind == TOK.PUNCTUATION:
                                 # Skip insignificant punctuation, such as double quotes
                                 if text in abort_punctuation:
@@ -79,8 +83,16 @@ class Dumper:
                                 elif text not in skip_punctuation:
                                     out.append(text)
                             else:
+                                if wcnt == 0 and text[0].isupper():
+                                    # First word in sentence, uppercase and we
+                                    # know its stem: check whether the stem is lowercase
+                                    # and if so, output the word in lowercase as well
+                                    if "m" not in t or not t["m"][0][0].isupper():
+                                        original = text
+                                        text = text[0].lower() + text[1:]
                                 out.append(text)
-                    if out:
+                                wcnt += 1
+                    if out: # !!! and not err:
                         line = " ".join(out)
                         if line != "." and not line.startswith("mbl.is /"):
                             print(line, file = file)
@@ -101,9 +113,14 @@ class Dumper:
             if limit > 0:
                 q = q[0:limit]
             else:
-                q = q.all()
+                q = q.yield_per(4096)
+            cnt = 0
             for a in q:
+                if cnt % 1000 == 0:
+                    print("Dumped {0} articles".format(cnt), end=chr(13))
                 self.dump(a.tokens, file)
+                cnt += 1
+            print("Dumped {0} articles".format(cnt), end=chr(13))
 
 
 def process_articles(limit = 0):
@@ -178,7 +195,7 @@ def main(argv = None):
         # Read the configuration settings file
 
         try:
-            Settings.read("config/Reynir.conf")
+            Settings.read("config/ReynirSimple.conf")
             # Don't run the processor in debug mode
             Settings.DEBUG = False
         except ConfigError as e:

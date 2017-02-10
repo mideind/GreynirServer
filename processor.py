@@ -293,7 +293,7 @@ def _main(argv = None):
         for o, a in opts:
             if o in ("-h", "--help"):
                 print(__doc__)
-                sys.exit(0)
+                return 0
             elif o in ("-i", "--init"):
                 init = True
             elif o in ("-f", "--force"):
