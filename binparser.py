@@ -569,8 +569,6 @@ class BIN_Token(Token):
     def matches_PERCENT(self, terminal):
         """ A percent token matches a number (töl) or noun terminal """
         if terminal.startswith("töl") or terminal.startswith("prósenta"):
-            if terminal.startswith("prósenta"):
-                print("Terminal starts with prósenta")
             return True
         # Matches number and noun terminals only
         if not terminal.startswith("no"):
