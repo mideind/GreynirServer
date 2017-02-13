@@ -4,11 +4,11 @@ import sys
 
 cwd = os.path.dirname(__file__)
 
-def run_txt_parser(file):
+def run_txt_parser(file, append):
     """ Read input file and output CSV """
-    out = codecs.open(file['outfile'], 'a', 'utf-8')
+    out = codecs.open(file['outfile'], 'a' if append else 'w', file['out-encoding'])
     header_skip = file['start-line']
-    with codecs.open(file['infile'], 'r', 'iso-8859-1') as inp:
+    with codecs.open(file['infile'], 'r', file['in-encoding']) as inp:
         for li in inp:
             if header_skip:
                 header_skip -= 1
@@ -26,10 +26,10 @@ def run_txt_parser(file):
                             )                                                
                             out.write(s)
 
-def run_csv_parser(file):
+def run_csv_parser(file, append):
 
     header_skip = file['start-line']
-    out = codecs.open(file['outfile'], 'a', file['out-encoding'])
+    out = codecs.open(file['outfile'], 'a' if append else 'w', file['out-encoding'])
 
     with codecs.open(file['infile'], 'r', file['in-encoding']) as f:
         for i, line in enumerate(f):
@@ -66,11 +66,18 @@ files = [
 
 
 if __name__ == '__main__':
+
+    # Start with a sanity check
     for file in files:
         if not os.path.isfile(file['infile']):            
-            sys.exit('Neccessary file is missing: {}'.format(file['infile']))
-        else:
-            print('Retrieving data from file: {}'.format(file['infile']))
-            file['func'](file)
-            print('Data appended successfully to file: {}'.format(file['outfile']))
+            sys.exit('Necessary file is missing: {}'.format(file['infile']))
+
+    append = False
+    for file in files:
+        print('Retrieving data from file: {}'.format(file['infile']))
+        file['func'](file, append)
+        print('Data {0} successfully to file: {1}'
+            .format("appended" if append else "written", file['outfile']))
+        append = True
+
     print('And we are done :D')

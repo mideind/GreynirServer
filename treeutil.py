@@ -74,12 +74,14 @@ class TreeUtility:
                         gender = None
                     if terminal.num_variants >= 2:
                         case = terminal.variant(-2)
-                fn_list = [ (fn, g, c) for fn, g, c in t.val if (gender is None or g == gender) and (case is None or c == case) ]
+                fn_list = [ (fn, g, c) for fn, g, c in t.val
+                    if (gender is None or g == gender) and (case is None or c == case) ]
                 if not fn_list:
                     # Oops - nothing matched this. Might be a foreign, undeclinable name.
                     # Try nominative if it wasn't alredy tried
                     if case is not None and case != "nf":
-                        fn_list = [ (fn, g, c) for fn, g, c in t.val if (gender is None or g == gender) and (case == "nf") ]
+                        fn_list = [ (fn, g, c) for fn, g, c in t.val
+                            if (gender is None or g == gender) and (case == "nf") ]
                     # If still nothing, try anything with the same gender
                     if not fn_list and gender is not None:
                         fn_list = [ (fn, g, c) for fn, g, c in t.val if (g == gender) ]

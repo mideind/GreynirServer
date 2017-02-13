@@ -548,24 +548,63 @@ h3.help small {
 }
 
 span.errtok {
-   background-color: #f46681; /* #CB333B; */
-   color: white;
-   padding-left: 2px;
-   padding-right: 2px;
+   font-weight: 600;
+   color: #CB333B; /* Greynir red */
 }
 
 span.sent {
+   margin-left: -2px;
    margin-right: 4px;
    cursor: pointer;
+   border-width: 2px;
+   border-style: solid;
+   border-radius: 4px;
+   border-color: transparent;
 }
 
+/*
 span.sent.err {
    background-color: #FFEDF3;
    color: #9C3D59;
 }
+*/
+
+span.sent.err::before {
+   font-family: 'Glyphicons Regular';
+   font-style: normal;
+   font-weight: normal;
+   font-size: 13px;
+   content: "\E174";
+   border-width: 2px;
+   border-style: solid;
+   border-radius: 4px;
+   margin-right: 3px;
+   padding-left: 1px;
+   padding-right: 2px;
+   color: white;
+   /* Specific settings */
+   position: relative;
+   background-color: #f46681;
+   border-color: #f46681;
+}
 
 span.sent.err:hover {
+   border-color: #FFE0EA;
    background-color: #FFE0EA;
+}
+
+span.sent.err:hover::before {
+   background-color: red;
+   border-color: red;
+}
+
+span.sent.err:hover span.errtok {
+   font-weight: 600;
+   background-color: red;
+   color: white;
+   outline-width: 1px;
+   outline-style: solid;
+   outline-color: red;
 }
 
 span.sent.parsed {
@@ -573,6 +612,7 @@ span.sent.parsed {
 
 span.sent.parsed:hover {
    background-color: #e4ffd4;
+   border-color: #e4ffd4;
 }
 
 div#result {
@@ -625,15 +665,30 @@ div#result i.amount {
 }
 
 div#result i.person {
-   font-weight: 600;
-   /* font-style: italic; */
-   color: #337ab7;
+   border-width: 2px;
+   border-style: solid;
+   border-radius: 4px;
+   margin-right: 1px;
+   padding-left: 2px;
+   padding-right: 2px;
+   /* color: white; */
+   color: black;
+   /* Specific settings */
+   background-color: #d7e6f4; /* #609dd2; #337ab7 */
+   border-color: #d7e6f4; 
 }
 
 div#result i.entity {
-   font-weight: 600;
-   font-style: italic;
-   color: #337ab7;
+   border-width: 2px;
+   border-style: solid;
+   border-radius: 4px;
+   margin-right: 1px;
+   padding-left: 2px;
+   padding-right: 2px;
+   color: black;
+   /* Specific settings */
+   background-color: #fbe9d0; /* #f2e6ff; #cc99ff; #a64dff */
+   border-color: #fbe9d0;
 }
 
 div#result i.year,
@@ -641,30 +696,6 @@ div#result i.telno,
 div#result i.email {
    font-weight: 600;
 }
-
-/*
-div#result i.kk:hover,
-div#result i.kvk:hover,
-div#result i.hk:hover {
-   background-color: #f0f0ff;
-}
-
-div#result i.so:hover {
-   background-color: #fff0f0;
-}
-
-div#result i.lo:hover {
-   background-color: #f0fff0;
-}
-
-div#result i.fs:hover {
-   background-color: #fff0ff;
-}
-
-div#result i.st:hover {
-   background-color: #fffff0;
-}
-*/
 
 div#result i:hover {
    outline-width: 1px;
@@ -674,27 +705,44 @@ div#result i:hover {
    color: white;
 }
 
+div#result i.person:hover {
+   /* Special case for person: just make background darker */
+   outline: none;
+   background-color: #337ab7;
+   border-color: #337ab7;
+}
+
+div#result i.entity:hover {
+   /* Special case for entity: just make background darker */
+   outline: none;
+   background-color: #f0ad4e; /* #a64dff; */
+   border-color: #f0ad4e; /* #a64dff; */
+}
+
+/* Noun-type word: blue color */
 div#result i.kk:hover,
 div#result i.kvk:hover,
 div#result i.hk:hover,
 div#result i.fn:hover,
-div#result i.pfn:hover,
-div#result i.person:hover {
+div#result i.pfn:hover {
    outline-color: #337ab7;
    background-color: #337ab7;
 }
 
+/* Verb-type word: red color */
 div#result i.so:hover,
 div#result i.nhm:hover {
    outline-color: #d9534f;
    background-color: #d9534f;
 }
 
+/* Adjective-type word: green color */
 div#result i.lo:hover {
    outline-color: #5cb85c;
    background-color: #5cb85c;
 }
 
+/* Conjunction-type word: yellow color */
 div#result i.st:hover {
    outline-color: #f0ad4e;
    background-color: #f0ad4e;
@@ -917,6 +965,7 @@ span.topic span.glyphicon {
 div#percent {
    margin-top: 6px;
    margin-bottom: 6px;
+   background-image: linear-gradient(to bottom, #555555 0, #777777 100%);
 }
 
 div.headline {

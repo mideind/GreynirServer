@@ -1737,9 +1737,22 @@ def recognize_entities(token_stream, enclosing_session = None):
                 ecache[w] = e = fetch_entities(w)
             return e
 
+        def lookup_lastname(lastname):
+            """ Look up a last name in the lastnames registry,
+                eventually without a possessive 's' at the end, if present """
+            fullname = lastnames.get(lastname)
+            if fullname is not None:
+                # Found it
+                return fullname
+            # Try without a possessive 's', if present
+            if len(lastname) > 1 and lastname[-1] == 's':
+                return lastnames.get(lastname[0:-1])
+            # Nope, no match
+            return None
+
         def flush_match():
             """ Flush a match that has been accumulated in the token queue """
-            if len(tq) == 1 and tq[0].txt in lastnames:
+            if len(tq) == 1 and lookup_lastname(tq[0].txt) is not None:
                 # If single token, it may be the last name of a
                 # previously seen entity or person
                 return token_or_entity(tq[0])
@@ -1753,10 +1766,10 @@ def recognize_entities(token_stream, enclosing_session = None):
             """ Return a token as-is or, if it is a last name of a person that has already
                 been mentioned in the token stream by full name, refer to the full name """
             assert token.txt[0].isupper()
-            if token.txt not in lastnames:
+            tfull = lookup_lastname(token.txt)
+            if tfull is None:
                 # Not a last name of a previously seen full name
                 return token
-            tfull = lastnames[token.txt]
             if tfull.kind != TOK.PERSON:
                 # Return an entity token with no definitions
                 # (this will eventually need to be looked up by full name when
@@ -1938,34 +1951,45 @@ def paragraphs(toklist):
     """ Generator yielding paragraphs from a token list. Each paragraph is a list
         of sentence tuples. Sentence tuples consist of the index of the first token
         of the sentence (the TOK.S_BEGIN token) and a list of the tokens within the
-        sentence, not including the terminating TOK.S_END token. """
+        sentence, not including the starting TOK.S_BEGIN or the terminating TOK.S_END
+        tokens. """
+
+    def valid_sent(sent):
+        """ Return True if the token list in sent is a proper
+            sentence that we want to process further """
+        if not sent:
+            return False
+        # A sentence with only punctuation is not valid
+        return any(t[0] != TOK.PUNCTUATION for t in sent)
+
     if not toklist:
         return
     sent = [] # Current sentence
     sent_begin = 0
     current_p = [] # Current paragraph
+
     for ix, t in enumerate(toklist):
         t0 = t[0]
         if t0 == TOK.S_BEGIN:
             sent = []
             sent_begin = ix
         elif t0 == TOK.S_END:
-            if sent:
+            if valid_sent(sent):
                 # Do not include or count zero-length sentences
                 current_p.append((sent_begin, sent))
-                sent = []
+            sent = []
         elif t0 == TOK.P_BEGIN or t0 == TOK.P_END:
             # New paragraph marker: Start a new paragraph if we didn't have one before
             # or if we already had one with some content
-            if sent:
+            if valid_sent(sent):
                 current_p.append((sent_begin, sent))
-                sent = []
+            sent = []
             if current_p:
                 yield current_p
                 current_p = []
         else:
             sent.append(t)
-    if sent:
+    if valid_sent(sent):
         current_p.append((sent_begin, sent))
     if current_p:
         yield current_p

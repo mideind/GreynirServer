@@ -225,6 +225,17 @@ def add_entity_to_register(name, register, session, all_names = False):
                 # for instance 'Clinton' -> 'Hillary Rodham Clinton'
                 register[name] = dict(kind = "ref", fullname = k)
                 return
+        # Not found as-is, but the name ends with an 's':
+        # Check again for a possessive version, i.e.
+        # 'Steinmeiers' referring to 'Steinmeier',
+        # or 'Clintons' referring to 'Clinton'
+        if name[-1] == 's':
+            name_nominative = name[0:-1]
+            for k in register.keys():
+                parts = k.split()
+                if len(parts) > 1 and parts[-1] == name_nominative:
+                    register[name] = dict(kind = "ref", fullname = k)
+                    return
     # Use the query module to return definitions for an entity
     definition = query_entity_def(session, name)
     if definition:

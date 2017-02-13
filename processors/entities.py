@@ -268,6 +268,12 @@ def NlKjarni(node, params, result):
     result.del_attribs("sérnafn_eind_nom")
 
 
+def Skst(node, params, result):
+    """ Ekki láta 'fyrirtækið Apple-búðin' skila 'Apple er fyrirtæki' """
+    result.del_attribs("sérnafn")
+    result.del_attribs("sérnafn_nom")
+
+
 def NlEind(node, params, result):
     """ Ef sérnafn og sviga_innihald eru rétt undir NlEind þá er það skilgreining """
 

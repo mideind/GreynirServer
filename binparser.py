@@ -188,9 +188,10 @@ class BIN_Token(Token):
     # '...lifði af nútímalega meðferð'
     # '...varð fyrir neðan Pál'
     # '...og Snædís, þá laganemi, bauð sig fram'
+    # '...nú liggur fyrir skýrsla'
     _NOT_NOT_EO = frozenset(["inn", "eftir", "of", "til", "upp", "um", "síðan", "fram", "nær", "nærri",
         "út", "meðal", "úti", "saman", "jafnframt", "næstum", "samt", "samtals", "því", "nokkuð", "af",
-        "neðan", "þá" ])
+        "neðan", "þá", "fyrir" ])
 
     # Words that are not eligible for interpretation as proper names, even if they are capitalized
     _NOT_PROPER_NAME = frozenset(["ég", "þú", "hann", "hún", "það", "við", "þið", "þau",
@@ -567,22 +568,25 @@ class BIN_Token(Token):
 
     def matches_PERCENT(self, terminal):
         """ A percent token matches a number (töl) or noun terminal """
-        if not terminal.startswith("töl"):
-            # Matches number and noun terminals only
-            if not terminal.startswith("no"):
-                return False
-            if terminal.is_abbrev:
-                return False
-            # If we are recognizing this as a noun, do so only with neutral gender
-            if not terminal.has_variant("hk"):
-                return False
-            if terminal.has_variant("gr"):
-                return False
-            if self.t2[1]:
-                # See whether any of the allowed cases match the terminal
-                for c in BIN_Token.CASES:
-                    if terminal.has_variant(c) and c not in self.t2[1]:
-                        return False
+        if terminal.startswith("töl") or terminal.startswith("prósenta"):
+            if terminal.startswith("prósenta"):
+                print("Terminal starts with prósenta")
+            return True
+        # Matches number and noun terminals only
+        if not terminal.startswith("no"):
+            return False
+        if terminal.is_abbrev:
+            return False
+        # If we are recognizing this as a noun, do so only with neutral gender
+        if not terminal.has_variant("hk"):
+            return False
+        if terminal.has_variant("gr"):
+            return False
+        if self.t2[1]:
+            # See whether any of the allowed cases match the terminal
+            for c in BIN_Token.CASES:
+                if terminal.has_variant(c) and c not in self.t2[1]:
+                    return False
         # We do not check singular or plural here since phrases such as
         # '35% skattur' and '1% allra blóma' are valid
         return True
