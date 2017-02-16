@@ -442,6 +442,9 @@ Upphaf_p3_nh → "það" | ao+
 
 SetningÞað/tala/pers/kyn →
     "það" SagnHluti/tala/pers/kyn
+    # Það er/var/væri verið að reka fólk burt af jörðum sínum
+    # ('verið' er ekki til sem LHÞT, en það er hins vegar 'búið' o.fl.)
+    | "það" 'vera'_gm_p3_et 'vera'_sagnb NhFyllingAtv
 
 $score(-2) SetningÞað/tala/pers/kyn # Gefa lægri forgang en setningum með "það" sem frumlag
 
@@ -482,11 +485,11 @@ SetningLoMeðSpurningu →
 $score(+4) SetningLoMeðSpurningu
 
 SetningLoSögn →
-    HjSögnLhÞtSM_et_p3 so_0_lhþt_et_hk? # er/skal/mun/hefur verið talið/þótt...
+    HjSögnLhÞtSM_et_p3 HreinSögn_lhþt_et_hk? # er/skal/mun/hefur verið talið/þótt...
     | HjSögnMegiSkuli_et_p3? so_0_mm_p3_et # sýnist/virðist/telst, má teljast
     | HjSögnMegiSkuli_et_p3 so_0_nh # má telja, skal ætla
     | 'þykja'_et_p3 # '(öruggt) þykir (að Jón vinni mótið)'
-    | VeraSkulu_et_p3 HreinSögn_sagnb_et_hk # Hægt og bítandi er verið (að ýta fólki burt)
+    | 'vera'_gm_p3_et 'vera'_sagnb # Hægt og bítandi er/var/væri verið (að ýta fólki burt)
 
 # Ekkert frumlag í nefnifalli, sögn sem sagnbót (oft í miðmynd):
 # 'Í dag er búist við vondu veðri eftir hádegi'
@@ -971,6 +974,8 @@ Sögn_lhþt/tala/pers/kyn →
     | SögnErEinsOg/tala/pers
     # talin er/hefur verið [liggja undir grun]
     | so_0_lhþt/tala/kyn HjSögnLhÞtSM/tala/pers LhÞtBotn/tala/kyn?
+
+$score(+8) Sögn_lhþt/tala/pers/kyn
 
 SögnErLo/tala/pers/kyn →
     # (Jón er orðinn) duglegur / tólf ára
