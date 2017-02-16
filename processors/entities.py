@@ -35,6 +35,7 @@
 import re
 from datetime import datetime
 from scraperdb import Entity
+from settings import Abbreviations
 
 
 MODULE_NAME = __name__
@@ -45,12 +46,12 @@ NOT_DEFINITIONS = {
     "fæddur", "fætt", "fædd",
     "spurður", "spurt", "spurð",
     "búinn", "búið", "búin",
-    "sá", "sú", "það", "lán"
+    "sá", "sú", "það", "lán", "inna"
 }
+
 NOT_ENTITIES = {
-    "Þeir", "Þær", "Þau", "Sú", "Þá", "Þar", "Þetta", "Þessi", "Þessu", "The", "To",
-    "Aðspurð", "Aðspurður", "Aðstaða", "Aðstæður",
-    "Aftur"
+    "Þeir", "Þær", "Þau", "Sú", "Þá", "Þar", "Þetta", "Þessi", "Þessu",
+    "The", "To", "Aðspurð", "Aðspurður", "Aðstaða", "Aðstæður", "Aftur"
 }
 
 
@@ -66,8 +67,6 @@ def article_begin(state):
 
 def article_end(state):
     """ Called at the end of article processing """
-    # for k, v in state["names"].items():
-    #    print("Last name '{0}' -> full name '{1}'".format(k, v))
     pass
 
 
@@ -121,7 +120,8 @@ def sentence(state, result):
 
         def name_ok(entity):
             """ Returns True if an entity name meets basic sanity criteria """
-            if entity in NOT_ENTITIES:
+            if entity in NOT_ENTITIES or entity in Abbreviations.DICT:
+                # Don't redefine abbreviations
                 return False
             # Entity names must start with an uppercase letter
             return entity[0].isupper()

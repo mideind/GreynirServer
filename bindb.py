@@ -48,7 +48,7 @@ except ImportError:
     import psycopg2cffi as psycopg2
 
 from settings import Settings, Abbreviations, AdjectiveTemplate, \
-    Meanings, StaticPhrases
+    Meanings, StaticPhrases, StemPreferences
 from dawgdictionary import Wordbase
 
 # Make Psycopg2 and PostgreSQL happy with UTF-8
@@ -231,6 +231,13 @@ class BIN_Db:
                     # There are additional word meanings in the Meanings dictionary,
                     # coming from the settings file: append them
                     m.extend(map(BIN_Meaning._make, Meanings.DICT[w]))
+                elif w in StemPreferences.DICT:
+                    # We have a preferred stem for this word form:
+                    # cut off meanings based on other stems
+                    worse, better = StemPreferences.DICT[w]
+                    m = [ mm for mm in m if mm.stofn not in worse ]
+                    # The better (preferred) stem should still be there somewhere
+                    assert any(mm.stofn in better for mm in m)
                 # Order the meanings by priority, so that the most
                 # common/likely ones are first in the list and thus
                 # matched more readily than the less common ones

@@ -2354,8 +2354,8 @@ Manns →
 NlStak_et_p3/fall/kyn →
 
     NlStak_p3_et/fall/kyn VeikSögnLhÞt_et/fall/kyn? FsRunaEftirNl?  # fulltrúi bankans í nefndinni
-    | NlStak_et_p3/fall/kyn "eða:st" NlStak_p3_et/fall                 # Þingnefnd eða hluti Alþingismanna getur lagt fram frumvarp
-    | 'hver:fn'_et/fall/kyn "og:st" 'einn:fn'_et/fall/kyn FsRuna?            # 'hver og einn [í sinni sveit] (ber ábyrgð)'
+    | NlStak_et_p3/fall/kyn "eða:st" NlStak_p3_et/fall              # Þingnefnd eða hluti Alþingismanna getur lagt fram frumvarp
+    | 'hver:fn'_et/fall/kyn "og:st" 'einn:fn'_et/fall/kyn FsRuna?   # 'hver og einn [í sinni sveit] (ber ábyrgð)'
 
 # '(svör við bréfi sínu) dagsettu (13. mars sl.)'
 VeikSögnLhÞt/tala/fall/kyn →
@@ -2540,7 +2540,7 @@ $score(+8) Skst
 $score(+4) Skst_abbrev
 
 Fyrirbæri/fall/kyn →
-    Skst? no_et/fall/kyn     # Microsoft-hugbúnaðarrisinn, Nikon myndavél
+    Skst? no_et/fall/kyn        # Microsoft-hugbúnaðarrisinn, Nikon myndavél
     | Raðnr no_et/fall/kyn
     | FyrirbæriMeðGreini/fall/kyn
     | Úrslit/fall/kyn
@@ -2702,7 +2702,8 @@ Titill/fall →
     ',' NlTitill/fall             # [Jón], formaður [félagsins]
     | KommulausTitill/fall        # [Jón] formaður [félagsins]
     | KommuTitill/fall            # [Jón], formaður námsmannafélagsins í Árósum og talsmaður þess,
-    | EinnTitill/fall OgTitill/fall* ','? "og:st" NlTitill/fall # Gunnlaugur H Jónsson eðlisfræðingur og fyrrverandi starfsmaður Orkustofnunar
+    # Gunnlaugur H Jónsson eðlisfræðingur og fyrrverandi starfsmaður Orkustofnunar
+    | EinnTitill/fall OgTitill/fall* ','? "og:st" NlTitill/fall
 
 NlTitill/fall →
     TitilEinkunn/fall/kyn? no_et/fall/kyn      # (Jón) glæsilegur fulltrúi (félagsins)
@@ -2882,7 +2883,8 @@ NlEind_p3/fall/kyn →
     NlEind_et_p3/fall/kyn | NlEind_ft_p3/fall/kyn
 
 NlEind/tala/pers/fall/kyn →
-    NlStak/tala/pers/fall/kyn Sem/tala/fall/kyn? TengiliðurMeðKommu/tala/pers/kyn? Þó/tala/pers/kyn? NlSkýring/tala/pers/fall/kyn?
+    NlStak/tala/pers/fall/kyn Sem/tala/fall/kyn? TengiliðurMeðKommu/tala/pers/kyn?
+        Þó/tala/pers/kyn? NlSkýring/tala/pers/fall/kyn?
 
 # (vegna nauðasamninganna) sem slíkra
 Sem/tala/fall/kyn →
@@ -3040,7 +3042,7 @@ KommaOgEðaEnNema → ',' | ';' | ','? OgEðaEnNema
 
 NlRuna/fall/kyn →
     KommuSamtenging/fall/kyn* KommuEndir/fall/kyn
-    | ',' KommuStForskeyti? NlEind/fall/kyn AtvKomma    # Konurnar, sérstaklega Anna, voru óánægðar
+    | ',' KommuStForskeyti? NlEind/fall/kyn AtvKomma # Konurnar, sérstaklega Anna, voru óánægðar
 
 KommuStForskeyti →
     FsRuna
@@ -3061,7 +3063,7 @@ $score(+6) KommuSamtenging/fall/kyn
 
 NlRuna/fall →
     KommuSamtenging/fall* KommuEndir/fall
-    | ',' KommuStForskeyti? NlEind/fall AtvKomma        # Þingmenn, sérstaklega Jóhanna, voru óánægðir
+    | ',' KommuStForskeyti? NlEind/fall AtvKomma # Þingmenn, sérstaklega Jóhanna, voru óánægðir
 
 KommuSamtenging/fall → ',' KommuStForskeyti? NlEind/fall
 
@@ -3256,7 +3258,8 @@ LoFornafn/fall/tala/kyn →
 # (en frumstig sterkrar beygingar er FSB og efsta stig er ESB)
 LoSamanb/tala/fall/kyn →
     Lo_sb/tala/fall/kyn
-    | "mun:kk"? Lo_mst/tala/fall/kyn EnSamanb/fall? # Miðstig: (Ég varðveitti laxinn) [mun] betur [en bleikjuna]
+    # Miðstig: (Ég varðveitti laxinn) [mun] betur [en bleikjuna]
+    | "mun:kk"? Lo_mst/tala/fall/kyn EnSamanb/fall?
 
 EnSamanb/fall →
     "en:st" Nl/fall
@@ -3322,10 +3325,12 @@ FsMeðFallstjórn →
     | "fyrir:ao" "nú"? "utan:fs" Nl_þf
     | "innan:ao" "við:fs" Nl_þf
     | "hvað" FsHvaðVarðar
-    | "um:fs" "að:st" HreinYfirsetning ','? # 'um að lög um endurupptökunefnd standist ekki stjórnarskrá' - Ath: 'um það að' er höndlað í ÞaðTenging
-    | "á:fs" "að:st" HreinYfirsetning ','? # 'er bjartsýnn á að Alfreð komi aftur í liðið' - Ath: 'á það/því að' er höndlað í ÞaðTenging
-    | "að:fs" "nafni:hk" person_nf    # Ég ræddi við konu að nafni Aðalbjörg Jónsdóttir
-    | "á:fs" Vikudagur_gr_þf_et "kemur:so" # á sunnudaginn kemur / á laugardagskvöldið kemur
+    # 'um að lög um endurupptökunefnd standist ekki stjórnarskrá' - Ath: 'um það að' er höndlað í ÞaðTenging
+    | "um:fs" "að:st" HreinYfirsetning ','?
+    # 'er bjartsýnn á að Alfreð komi aftur í liðið' - Ath: 'á það/því að' er höndlað í ÞaðTenging
+    | "á:fs" "að:st" HreinYfirsetning ','?
+    | "að:fs" "nafni:hk" person_nf          # Ég ræddi við konu að nafni Aðalbjörg Jónsdóttir
+    | "á:fs" Vikudagur_gr_þf_et "kemur:so"  # á sunnudaginn kemur / á laugardagskvöldið kemur
     | FsÍGegnUm
     | FsAðBaki
     | FsTilÞgf
@@ -3461,7 +3466,7 @@ EinnAl →
 $tag(no_prep) EinnAl        # Engar forsetningar hér inni - óþarfi að skoða dótturgreinar
 
 EkkiNeitt →
-    "ekki:ao" "neitt:ao"          # (Ég þekki þetta) ekki neitt
+    "ekki:ao" "neitt:ao"    # (Ég þekki þetta) ekki neitt
 
 $score(-6) EkkiNeitt
 
@@ -3472,7 +3477,7 @@ SemStendur →
 $score(-6) SemStendur
 
 UndirEins →
-    "undir:ao" "eins:ao"          # 'Ég fór undir eins og kannaði málið'
+    "undir:ao" "eins:ao"    # 'Ég fór undir eins og kannaði málið'
 
 $score(+4) UndirEins
 

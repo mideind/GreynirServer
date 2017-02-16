@@ -1855,7 +1855,7 @@ def recognize_entities(token_stream, enclosing_session = None):
                             else:
                                 lastnames[lastname] = token
 
-                    if token.kind == TOK.WORD and upper:
+                    if token.kind == TOK.WORD and upper and w not in Abbreviations.DICT:
                         if " " in w:
                             # w may be a person name with more than one embedded word
                             # parts is assigned in the if statement above
