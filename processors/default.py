@@ -119,6 +119,13 @@ INVALID_TITLES = {
     "segi", "sem", "hjónin"
 }
 
+# Phrases to cut off the ends of titles
+
+CUT_ENDINGS = (
+    "í tilkynningu", "í fréttatilkynningu", "í afkomutilkynningu", "í fjölmiðlum", "í samtali", "í viðtali",
+    "í Kastljósi", "í þættinum", "í grein", " sem"
+)
+
 def _add_name(result, mannsnafn, titill, kyn):
     """ Add a name to the resulting name list """
     if not titill:
@@ -138,8 +145,7 @@ def _add_name(result, mannsnafn, titill, kyn):
             titill = titill[:-2]
             cut = True
         # Cut off common endings that don't belong in a title
-        for s in ("í tilkynningu", "í fjölmiðlum", "í samtali", "í viðtali",
-            "í Kastljósi", "í þættinum", "í grein", " sem"):
+        for s in CUT_ENDINGS:
             if titill.endswith(s):
                 titill = titill[:-len(s) - (0 if s[0] == ' ' else 1)]
                 cut = True
