@@ -189,20 +189,34 @@ class BIN_Token(Token):
     # '...varð fyrir neðan Pál'
     # '...og Snædís, þá laganemi, bauð sig fram'
     # '...nú liggur fyrir skýrsla'
-    _NOT_NOT_EO = frozenset(["inn", "eftir", "of", "til", "upp", "um", "síðan", "fram", "nær", "nærri",
+    _NOT_NOT_EO = frozenset([ "inn", "eftir", "of", "til", "upp", "um", "síðan", "fram", "nær", "nærri",
         "út", "meðal", "úti", "saman", "jafnframt", "næstum", "samt", "samtals", "því", "nokkuð", "af",
         "neðan", "þá", "fyrir" ])
 
     # Words that are not eligible for interpretation as proper names, even if they are capitalized
-    _NOT_PROPER_NAME = frozenset(["ég", "þú", "hann", "hún", "það", "við", "þið", "þau",
+    _NOT_PROPER_NAME = frozenset([ "ég", "þú", "hann", "hún", "það", "við", "þið", "þau",
         "þeir", "þær", "mér", "mig", "mín", "þig", "þér", "þín", "þeim", "þeirra", "þetta", "þessi",
         "í", "á", "af", "um", "að", "með", "til", "frá", "búist", "annars", "samkvæmt", "en", "og",
-        "sem"])
+        "sem" ])
 
     # Numbers that can be used in the singular even if they are nominally plural.
     # This applies to the media company 365, where it is OK to say "365 skuldaði 389 milljónir",
     # as it would be incorrect to say "365 skulduðu 389 milljónir".
     _SINGULAR_SPECIAL_CASES = frozenset([ 365 ])
+
+    # Note: these must have a meaning for this to work, so specifying them
+    # as abbreviations to Main.conf is recommended
+    _CORPORATION_ENDINGS = frozenset([
+        "ehf.", "ehf", "hf.", "hf",
+        "bs.", "bs", "sf.", "sf", "slhf.", "slhf", "slf.", "slf", "svf.", "svf", "ohf.", "ohf",
+        "Inc", "Inc.", "Incorporated",
+        "Corp", "Corp.", "Corporation",
+        "Ltd", "Ltd.", "Limited",
+        "Co", "Co.", "Company",
+        "AS", "ASA",
+        "SA", "S.A.",
+        "GmbH", "AG",
+        "SARL", "S.à.r.l." ])
 
     _UNDERSTOOD_PUNCTUATION = ".?!,:;–-()[]"
 
@@ -744,18 +758,7 @@ class BIN_Token(Token):
             """ Check whether the token text matches a set of corporation identfiers """
             # Note: these must have a meaning for this to work, so specifying them
             # as abbreviations to Main.conf is recommended
-            return self.t1 in {
-                "ehf.", "ehf", "hf.", "hf",
-                "bs.", "bs", "sf.", "sf", "slhf.", "slhf", "slf.", "slf", "svf.", "svf", "ohf.", "ohf",
-                "Inc", "Inc.", "Incorporated",
-                "Corp", "Corp.", "Corporation",
-                "Ltd", "Ltd.", "Limited",
-                "Co", "Co.", "Company",
-                "AS", "ASA",
-                "SA", "S.A.",
-                "GmbH", "AG",
-                "SARL", "S.à.r.l."
-            }
+            return self.t1 in BIN_Token._CORPORATION_ENDINGS
 
         def matcher_default(m):
             """ Check other word categories """
@@ -855,12 +858,20 @@ class BIN_Token(Token):
 
     def matches(self, terminal):
         """ Return True if this token matches the given terminal """
-        # Dispatch the token matching according to the dispatch table in _MATCHING_FUNC
+        # If the terminal already knows it doesn't match this token,
+        # bail out quickly
+        if terminal.shortcut_match(self.t0, self.t1_lower):
+            return False
+        # Otherwise, dispatch the token matching according to the dispatch table in _MATCHING_FUNC
         return BIN_Token._MATCHING_FUNC[self.t0](self, terminal) is not False
 
     def match_with_meaning(self, terminal):
         """ Return False if this token does not match the given terminal;
             otherwise True or the actual meaning tuple that matched """
+        # If the terminal already knows it doesn't match this token,
+        # bail out quickly
+        if terminal.shortcut_match(self.t0, self.t1_lower):
+            return False
         # Dispatch the token matching according to the dispatch table in _MATCHING_FUNC
         return BIN_Token._MATCHING_FUNC[self.t0](self, terminal)
 
@@ -882,7 +893,7 @@ class BIN_Token(Token):
             # cut down by the tokenizer due to the word's context, cf. the
             # [ambiguous_phrases] section in Main.conf
             return (self.t0, self.t1, self.t2)
-        # Otherwise, the t0 and t1 fiels are enough
+        # Otherwise, the t0 and t1 fields are enough
         return (self.t0, self.t1)
 
     def __hash__(self):
@@ -1041,6 +1052,11 @@ class VariantHandler:
     def is_vh(self):
         return (self._vbits & BIN_Token.VBIT_VH) != 0
 
+    def shortcut_match(self, t_kind, t_text):
+        """ Should the token match be aborted immediately and return False? """
+        # This is overridden for BIN_LiteralTerminals with double quotes
+        return False
+
 
 class BIN_Terminal(VariantHandler, Terminal):
 
@@ -1079,6 +1095,17 @@ class BIN_LiteralTerminal(VariantHandler, LiteralTerminal):
             # It doesn't make sense to have variants on exact literals
             # since they are constant and cannot vary
             raise GrammarError('An exact literal terminal with double quotes cannot have variants')
+        if self._cat is None:
+            # In the simple case where there is no associated category,
+            # override matches_first with a simple comparison
+            if self._strong:
+                self.matches_first = lambda t_kind, t_val, t_lit: self._first == t_lit
+            else:
+                self.matches_first = lambda t_kind, t_val, t_lit: self._first == t_val
+        # For strong literal terminals, provide a fast shortcut so that a token
+        # is not considered further if its text does not match the literal
+        if self._strong:
+            self.shortcut_match = lambda t_kind, t_lit: self._first != t_lit
 
     @property
     def cat(self):
@@ -1091,7 +1118,8 @@ class BIN_LiteralTerminal(VariantHandler, LiteralTerminal):
 
     def matches_first(self, t_kind, t_val, t_lit):
         """ A literal terminal matches a token if the token text is identical to the literal """
-        if self._cat is not None and t_kind != self._cat:
+        # Note that this function is overridden in __init__ if self._cat is None
+        if t_kind != self._cat:
             # Match only the word category that was specified
             return False
         return (self._first == t_lit) if self._strong else (self._first == t_val)
