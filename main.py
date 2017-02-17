@@ -1074,7 +1074,7 @@ if __name__ == "__main__":
             raise
     finally:
         ArticleProxy.cleanup()
-        pass
+        BIN_Db.cleanup()
 
 else:
 
