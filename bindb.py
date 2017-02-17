@@ -168,6 +168,16 @@ class BIN_Db:
 
         return db
 
+    @classmethod
+    def cleanup(cls):
+        """ Close the current thread's BIN database connection, if any """
+        db = None
+        if hasattr(cls.tls, "bin_db"):
+            # Connection already established in this thread: re-use it
+            db = cls.tls.bin_db
+        if db is not None:
+            db.close()
+
     def __init__(self):
         """ Initialize DB connection instance """
         self._conn = None # Connection
@@ -210,9 +220,12 @@ class BIN_Db:
 
     def close(self):
         """ Close the DB connection and the associated cursor """
-        self._c.close()
-        self._conn.close()
-        self._c = self._conn = None
+        if self._c is not None:
+            self._c.close()
+            self._c = None
+        if self._conn is not None:
+            self._conn.close()
+            self._conn = None
         if BIN_Db.tls.bin_db is self:
             BIN_Db.tls.bin_db = None
 
