@@ -245,6 +245,9 @@ class BIN_Token(Token):
         # prefix to a noun ("einkunn")
         self._is_eo = None
 
+        # Cache the matching function to use with this token
+        self._matching_func = BIN_Token._MATCHING_FUNC[self.t0]
+
     @property
     def lower(self):
         """ Return the text for this property, in lower case """
@@ -860,20 +863,21 @@ class BIN_Token(Token):
         """ Return True if this token matches the given terminal """
         # If the terminal already knows it doesn't match this token,
         # bail out quickly
-        if terminal.shortcut_match(self.t0, self.t1_lower):
+        if terminal.shortcut_match is not None and terminal.shortcut_match(self.t1_lower):
             return False
         # Otherwise, dispatch the token matching according to the dispatch table in _MATCHING_FUNC
-        return BIN_Token._MATCHING_FUNC[self.t0](self, terminal) is not False
+        return self._matching_func(self, terminal) is not False
 
     def match_with_meaning(self, terminal):
         """ Return False if this token does not match the given terminal;
             otherwise True or the actual meaning tuple that matched """
         # If the terminal already knows it doesn't match this token,
         # bail out quickly
-        if terminal.shortcut_match(self.t0, self.t1_lower):
+        if terminal.shortcut_match is not None and terminal.shortcut_match(self.t1_lower):
+            # Strong literal terminals (those in double quotes) implement this feature
             return False
         # Dispatch the token matching according to the dispatch table in _MATCHING_FUNC
-        return BIN_Token._MATCHING_FUNC[self.t0](self, terminal)
+        return self._matching_func(self, terminal)
 
     def __repr__(self):
         return "[" + TOK.descr[self.t0] + ": " + self.t1 + "]"
@@ -1052,11 +1056,6 @@ class VariantHandler:
     def is_vh(self):
         return (self._vbits & BIN_Token.VBIT_VH) != 0
 
-    def shortcut_match(self, t_kind, t_text):
-        """ Should the token match be aborted immediately and return False? """
-        # This is overridden for BIN_LiteralTerminals with double quotes
-        return False
-
 
 class BIN_Terminal(VariantHandler, Terminal):
 
@@ -1066,6 +1065,8 @@ class BIN_Terminal(VariantHandler, Terminal):
 
     def __init__(self, name):
         super().__init__(name)
+        # By default, there is not shortcut function for matching
+        self.shortcut_match = None
 
 
 class BIN_LiteralTerminal(VariantHandler, LiteralTerminal):
@@ -1105,7 +1106,9 @@ class BIN_LiteralTerminal(VariantHandler, LiteralTerminal):
         # For strong literal terminals, provide a fast shortcut so that a token
         # is not considered further if its text does not match the literal
         if self._strong:
-            self.shortcut_match = lambda t_kind, t_lit: self._first != t_lit
+            self.shortcut_match = lambda t_lit: self._first != t_lit
+        else:
+            self.shortcut_match = None
 
     @property
     def cat(self):
