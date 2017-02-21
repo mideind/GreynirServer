@@ -420,7 +420,7 @@ class Comparison():
         print("Röng orð:", self.röng_orð)
         print("Orð vantar:", self.orð_vantar)
         if self.rétt_orð == 0:
-            ON, OH, OH = 0, 0, 0
+            ON, OH, OF = 0, 0, 0
         else:
             ON = self.rétt_orð / (self.rétt_orð + self.röng_orð)
             OH = self.rétt_orð / (self.rétt_orð + self.orð_vantar)
