@@ -77,14 +77,15 @@ class LineReader:
     def __init__(self, fname, outer_fname = None, outer_line = 0):
         self._fname = fname
         self._line = 0
+        self._inner_rdr = None
         self._outer_fname = outer_fname
         self._outer_line = outer_line
 
     def fname(self):
-        return self._fname
+        return self._fname if self._inner_rdr is None else self._inner_rdr.fname()
 
     def line(self):
-        return self._line
+        return self._line if self._inner_rdr is None else self._inner_rdr.line()
 
     def lines(self):
         """ Generator yielding lines from a text file """
@@ -102,15 +103,10 @@ class LineReader:
                         # fresh (absolute) path by itself
                         head, _ = os.path.split(self._fname)
                         iname = os.path.join(head, iname)
-                        rdr = LineReader(iname, self._fname, self._line)
-                        # Successfully opened the include file: switch context to it
-                        save = (self._line, self._fname)
-                        self._line = 0
-                        self._fname = iname
+                        rdr = self._inner_rdr = LineReader(iname, self._fname, self._line)
                         for incl_s in rdr.lines():
-                            self._line += 1
                             yield incl_s
-                        self._line, self._fname = save
+                        self._inner_rdr = None
                     else:
                         yield s
         except (IOError, OSError):
@@ -764,7 +760,11 @@ class Settings:
         # An asterisk after an abbreviation ending with a period
         # indicates that the abbreviation may finish a sentence
         a = s.split('=', maxsplit=1)
+        if len(a) != 2:
+            raise ConfigError("Wrong format for abbreviation: should be abbreviation = meaning")
         abbrev = a[0].strip()
+        if not abbrev:
+            raise ConfigError("Missing abbreviation. Format should be abbreviation = meaning.")
         m = a[1].strip().split('\"')
         par = ""
         if len(m) >= 3:
@@ -1057,10 +1057,17 @@ class Settings:
                 if handler is None:
                     raise ConfigError("No handler for config line '{0}'".format(s))
                 # Call the correct handler depending on the section
-                handler(s)
+                try:
+                    handler(s)
+                except ConfigError as e:
+                    # Add file name and line number information to the exception
+                    # if it's not already there
+                    e.set_pos(rdr.fname(), rdr.line())
+                    raise e
 
         except ConfigError as e:
             # Add file name and line number information to the exception
+            # if it's not already there
             if rdr:
                 e.set_pos(rdr.fname(), rdr.line())
             raise e

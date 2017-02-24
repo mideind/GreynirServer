@@ -1040,7 +1040,7 @@ try:
     # Read configuration file
     Settings.read("config/Reynir.conf")
 except ConfigError as e:
-    logging.error("Reynir did not start due to configuration error: {0}".format(e))
+    logging.error("Reynir did not start due to configuration error:\n{0}".format(e))
     sys.exit(1)
 
 if Settings.DEBUG:
