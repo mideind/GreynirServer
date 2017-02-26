@@ -631,14 +631,15 @@ class NounPreferences:
         if worse_score is not None:
             if better_score is not None:
                 raise ConfigError("Conflicting priorities for noun {0}".format(word))
-            better_score = worse_score + 2
+            better_score = worse_score + 4
         elif better_score is not None:
-            worse_score = better_score - 2
+            worse_score = better_score - 4
         else:
-            worse_score = -1
-            better_score = 1
+            worse_score = -2
+            better_score = 2
         d[worse] = worse_score
         d[better] = better_score
+        # print("Noun prefs for '{0}' are now {1}".format(word, d))
 
 
 class NamePreferences:

@@ -281,8 +281,10 @@ SetningSkilyrði →
 $score(+12) SetningSkilyrði
 
 EfÞegar →
-    "ef" | "þegar" | "er:st" | "þótt" | "þó" "að:st"? | 'jafnvel_þótt' | "þar" "sem:st" | "eftir:st" "að:st"
-    | "eins:ao" "og:st" | 'líkt_og' | 'á_meðan' | "meðan:st" | "þangað" "til:st" | 'um_leið' "og:st" | "síðan:st"
+    "ef" | "þegar" | "er:st" | "þótt" | "þó" "að:st"? | "þó:st" "svo:ao" "að:st" | 'jafnvel_þótt'
+    | "þar" "sem:st" | "eftir:st" "að:st"
+    | "eins:ao" "og:st" | 'líkt_og' | 'á_meðan' | "meðan:st"
+    | "þangað" "til:st" | 'um_leið' "og:st" | "síðan:st" | 'þrátt_fyrir_að'
 
 OgEfÞegar →
     "og" EfÞegar              # 'Ef og þegar eitthvað gerist læt ég þig vita'
