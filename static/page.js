@@ -258,7 +258,8 @@ function showParse(ev) {
    var sentText = $(ev.delegateTarget).text();
    // Do an HTML POST to the parsegrid URL, passing
    // the sentence text within a synthetic form
-   serverPost("/parsegrid", { txt: sentText, debug: debugMode() }, false)
+   // serverPost("/parsegrid", { txt: sentText, debug: debugMode() }, false)
+   window.location.href = "/treegrid?txt=" + encodeURIComponent(sentText);
 }
 
 function showPerson(ev) {
@@ -373,102 +374,105 @@ function makePercentGraph(percent) {
 */
 }
 
-function hoverIn() {
-   // Hovering over a token
-   var wId = $(this).attr("id");
-   var offset = $(this).position();
-   var info = $("div.info");
-   if (wId === null || wId === undefined)
-      // No id: nothing to do
-      return;
-   var ix = parseInt(wId.slice(1));
-   var t = w[ix];
-   if (!t)
-      return;
-
-   // Highlight the token
-   $(this).addClass("highlight");
-   $("#grammar").html("");
-   // Hide the percentage bar
-   $("#percent").css("display", "none");
-
+function tokenInfo(t) {
+   // Return a dict with information about the given token,
+   // including its lemma, grammar info and details
+   /*
+      t.k: token kind
+      t.t: terminal
+      t.g: gender (only present if terminal is missing)
+      t.m[0]: stofn
+      t.m[1]: ordfl
+      t.m[2]: fl
+      t.m[3]: beyging
+      t.x: ordmynd
+      t.v: extra info, eventually in a tuple
+   */
+   var r = {
+      class: null,
+      tagClass: null,
+      lemma: null,
+      details: null,
+      grammar: null,
+      percent: null
+   };
    if (!t.k) {
       // TOK_WORD
       var wcat = t.m ? t.m[1] : (t.t ? t.t.split("_")[0] : undefined);
       if (wcat === undefined)
          // Nothing to show, so we cop out
-         return;
+         return r;
       var wcls = (wcat && wordClass[wcat]) ? wordClass[wcat] : "óþekkt";
       if (t.m) {
-         info.addClass(t.m[1]);
+         r.class = t.m[1];
          // Special case for adverbs: if multi-word adverb phrase,
          // say 'atviksliður' instead of 'atviksorð'
          if (t.m[1] == "ao" && t.m[0].indexOf(" ") > -1)
             wcls = "atviksliður";
-         $("#grammar").html(grammar(t.m[1], t.m[3]));
+         r.grammar = grammar(t.m[1], t.m[3]);
       }
-      $("#lemma").text(t.m ? t.m[0] : t.x);
-      $("#details").text(wcls);
+      r.lemma = t.m ? t.m[0] : t.x;
+      r.details = wcls;
    }
    else
    if (t.k == TOK_NUMBER) {
-      $("#lemma").text(t.x);
+      r.lemma = t.x;
       // Show the parsed floating-point number to 2 decimal places
-      $("#details").text(format_is(t.v[0], 2));
+      r.details = format_is(t.v[0], 2);
    }
    else
    if (t.k == TOK_PERCENT) {
-      $("#lemma").text(t.x);
-      $("#details").text("hundraðshluti");
+      r.lemma = t.x;
+      r.details = "hundraðshluti";
       // Obtain the percentage from token val field (t.v[0]),
       // or from the token text if no such field is available
       var pc = t.v ? t.v[0] : parseFloat(t.x.slice(0, -1).replace(",", "."));
       if (pc === NaN || pc === undefined)
          pc = 0.0;
-      makePercentGraph(pc);
+      r.percent = pc;
    }
    else
    if (t.k == TOK_ORDINAL) {
-      $("#lemma").text(t.x);
-      $("#details").text("raðtala");
+      r.lemma = t.x;
+      r.details = "raðtala";
    }
    else
    if (t.k == TOK_DATE) {
-      $("#lemma").text(t.x);
+      r.lemma = t.x;
       // Show the date in ISO format
-      $("#details").text("dags. " + iso_date(t.v));
+      r.details = "dags. " + iso_date(t.v);
    }
    else
    if (t.k == TOK_TIME) {
-      $("#lemma").text(t.x);
+      r.lemma = t.x;
       // Show the time in ISO format
-      $("#details").text("kl. " + iso_time(t.v));
+      r.details = "kl. " + iso_time(t.v);
    }
    else
    if (t.k == TOK_YEAR) {
-      $("#lemma").text(t.x);
-      $("#details").text("ártal");
+      r.lemma = t.x;
+      r.details = "ártal";
    }
    else
    if (t.k == TOK_EMAIL) {
-      $("#lemma").text(t.x);
-      $("#details").text("tölvupóstfang");
+      r.lemma = t.x;
+      r.details = "tölvupóstfang";
    }
    else
    if (t.k == TOK_CURRENCY) {
-      $("#lemma").text(t.x);
+      r.lemma = t.x;
       // Show the ISO code for the currency
-      $("#details").text("gjaldmiðillinn " + t.v[0]);
+      r.details = "gjaldmiðillinn " + t.v[0];
    }
    else
    if (t.k == TOK_AMOUNT) {
-      $("#lemma").text(t.x);
+      r.lemma = t.x;
       // Show the amount as well as the ISO code for its currency
-      $("#details").text(t.v[1] + " " + format_is(t.v[0], 2));
+      r.details = t.v[1] + " " + format_is(t.v[0], 2);
    }
    else
    if (t.k == TOK_PERSON) {
-      info.addClass("person");
+      r.class = "person";
       var gender = "";
       if (t.t) {
          // Obtain gender info from the associated terminal
@@ -488,14 +492,12 @@ function hoverIn() {
             gender = "female";
       }
       if (gender) {
-         info.addClass(gender);
-         $("div.info span#tag")
-            .removeClass("glyphicon-tag")
-            .addClass("glyphicon-gender-" + gender);
+         r.class += " " + gender;
+         r.tagClass = "glyphicon-gender-" + gender;
       }
       if (!t.v.length)
          // Cut whitespace around hyphens in person names
-         $("#lemma").text(t.x.replace(" - ", "-"));
+         r.lemma = t.x.replace(" - ", "-");
       else {
          // Show full name and title
          var name = t.v;
@@ -506,8 +508,8 @@ function hoverIn() {
             else
                title = (gender == "male") ? "karl" : "kona";
          // Cut whitespace around hyphens in person names
-         $("#lemma").text(name.replace(" - ", "-"));
-         $("#details").text(title);
+         r.lemma = name.replace(" - ", "-");
+         r.details = title;
       }
    }
    else
@@ -516,25 +518,66 @@ function hoverIn() {
       if (nd && nd.kind == "ref") {
          // Last name reference to a full name entity
          // ('Clinton' -> 'Hillary Rodham Clinton')
-         $("#lemma").text(nd.fullname);
+         r.lemma = nd.fullname;
          nd = nameDict[nd.fullname];
       }
       else
          // Cut whitespace around hyphens in entity names
-         $("#lemma").text(t.x.replace(" - ", "-"));
+         r.lemma = t.x.replace(" - ", "-");
       var title = nd ? (nd.title || "") : "";
       if (!title.length)
          title = "sérnafn";
-      $("#details").text(title);
+      r.details = title;
    }
    else
    if (t.k == TOK_TIMESTAMP) {
-      $("#lemma").text(t.x);
+      r.lemma = t.x;
       // Show the timestamp in ISO format
-      $("#details").text(iso_timestamp(t.v));
+      r.details = iso_timestamp(t.v);
    }
+   return r;
+}
+
+function hoverIn() {
+   // Hovering over a token
+   var wId = $(this).attr("id");
+   if (wId === null || wId === undefined)
+      // No id: nothing to do
+      return;
+   var ix = parseInt(wId.slice(1));
+   var t = w[ix];
+   if (!t)
+      // No token: nothing to do
+      return;
+
+   // Save our position
+   var offset = $(this).position();
+   // Highlight the token
+   $(this).addClass("highlight");
+
+   var r = tokenInfo(t);
+
+   if (!r.grammar && !r.lemma && !r.details)
+      // Nothing interesting to show (probably the sentence didn't parse)
+      return;
+
+   $("#grammar").html(r.grammar || "");
+   $("#lemma").text(r.lemma || "");
+   $("#details").text(r.details || "");
+
+   // Display the percentage bar if we have percentage info
+   if (r.percent !== null)
+      makePercentGraph(r.percent);
+   else
+      $("#percent").css("display", "none");
+
+   if (r.class !== null)
+      $("div.info").addClass(r.class);
+   if (r.tagClass !== null)
+      $("div.info span#tag").removeClass("glyphicon-tag").addClass(r.tagClass);
+
    // Position the info popup
-   info
+   $("div.info")
       .css("top", offset.top.toString() + "px")
       .css("left", offset.left.toString() + "px")
       .css("visibility", "visible");

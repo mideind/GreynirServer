@@ -86,8 +86,14 @@
 .glyphicon-tag:before {
    content: "\E066";
 }
+.glyphicon-tags:before {
+   content: "\E067";
+}
 .glyphicon-warning-sign:before {
    content: "\E079";
+}
+.glyphicon-share:before {
+   content: "\E309";
 }
 
 .glyphicon-spin {
@@ -467,6 +473,7 @@ div.info.kk,
 div.info.kvk,
 div.info.hk,
 div.info.fn,
+div.info.abfn,
 div.info.pfn,
 div.info.person.male {
    background-color: #d9edf7;
@@ -501,6 +508,7 @@ div.info #tag {
 
 div.info.fn #tag,
 div.info.pfn #tag,
+div.info.abfn #tag,
 div.info.person.male #tag,
 div.info.kk #tag,
 div.info.kvk #tag,

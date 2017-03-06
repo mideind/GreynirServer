@@ -838,3 +838,103 @@ class ParseForestDumper(ParseForestNavigator):
         dumper._result.append("Q0") # End marker
         return "\n".join(dumper._result)
 
+
+class ParseForestFlattener(ParseForestNavigator):
+
+    """ Create a simpler, flatter version of an already disambiguated parse tree """
+
+    class Node:
+
+        def __init__(self, p):
+            self._p = p
+            self._children = None
+
+        def add_child(self, child):
+            if self._children is None:
+                self._children = [ child ]
+            else:
+                self._children.append(child)
+
+        @property
+        def p(self):
+            return self._p
+
+        @property
+        def children(self):
+            return self._children
+
+        @property
+        def has_children(self):
+            return self._children is not None
+
+        @property
+        def is_nonterminal(self):
+            return not isinstance(self._p, tuple)
+
+        def _to_str(self, indent):
+            if self.has_children:
+                return "{0}{1}{2}".format(" " * indent,
+                    self._p,
+                    "".join("\n" + child._to_str(indent+1) for child in self._children))
+            return "{0}{1}".format(" " * indent, self._p)
+
+        def __str__(self):
+            return self._to_str(0)
+
+    def __init__(self):
+        super().__init__(visit_all = True) # Visit all nodes
+
+    def go(self, root_node):
+        self._stack = None
+        super().go(root_node)
+
+    @property
+    def root(self):
+        return self._stack[0] if self._stack else None
+
+    def _visit_epsilon(self, level):
+        """ Epsilon (null) node: not included in a flattened tree """
+        return None
+
+    def _visit_token(self, level, w):
+        """ Add a terminal/token node to the flattened tree """
+        assert level > 0
+        assert self._stack
+        node = ParseForestFlattener.Node((w.terminal, w.token))
+        self._stack = self._stack[0:level]
+        self._stack[-1].add_child(node)
+        return None
+
+    def _visit_nonterminal(self, level, w):
+        """ Add a nonterminal node to the flattened tree """
+        # Interior nodes are not dumped
+        # and do not increment the indentation level
+        if not w.is_interior:
+            if w.is_empty and w.nonterminal.is_optional:
+                # Skip optional nodes that don't contain anything
+                return NotImplemented # Signal: Don't visit child nodes
+            # Identify this as a nonterminal
+            node = ParseForestFlattener.Node(w.nonterminal)
+            if level == 0:
+                # New root (must be the only one)
+                assert self._stack is None
+                self._stack = [ node ]
+            else:
+                # New child of the parent node
+                self._stack = self._stack[0:level]
+                self._stack[-1].add_child(node)
+                self._stack.append(node)
+        return None # No results required, but visit children
+
+    def _visit_family(self, results, level, w, ix, prod):
+        """ Visit different subtree options within a parse forest """
+        # In this case, the tree should be unambigous
+        assert not w.is_ambiguous
+
+    @classmethod
+    def flatten(cls, root_node):
+        """ Flatten a parse tree """
+        dumper = cls()
+        dumper.go(root_node)
+        return dumper.root
+

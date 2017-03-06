@@ -206,13 +206,14 @@ Samtenging →
     | "áður" "en" "að:st"?
     | "fyrr" "en" "að:st"?
     | 'á_meðan' "að:st"?
-    | "þangað" "til:st" "að:st"?
     | "allt" "frá" "því" "að:st"?
     | "þar" "á:fs" "meðal" | 'þar_á_meðal'
     | "þar" "sem:st"
     | 'auk_þess' "sem:st"
     | "eins:ao" "og:st"
-    | "vegna:fs" "þess"
+    | "vegna:fs" "þess" "að:st"?
+    | "á_sama_tíma" "og:st"
+    | ÞangaðTil
     | SpurnarSamtenging
 
 SpurnarSamtenging →
@@ -238,6 +239,11 @@ SpurnarSamtenging →
     # heldur aðeins með forsetningarrunu (hvenær í ósköpunum hann ætlaði að koma)
     # | "hvort" FsRuna # ?hvort í ósköpunum hann ætlaði að hætta
     | "hvenær" FsRuna
+
+ÞangaðTil →
+    "þangað" "til:st" "að:st"?
+
+$score(+12) ÞangaðTil
 
 HverHvor/kyn →
     'hver'/kyn | 'hvor'/kyn
@@ -391,7 +397,7 @@ SamanburðarTenging →
 SamanburðarTengingOg →
     ','? "og:st"               # Erfitt fjarskiptasamband er á staðnum og mikil snjóþyngsli
 
-$score(-4) SamanburðarTengingOg
+$score(-8) SamanburðarTengingOg
 
 Sjálfur/tala/kyn → 'sjálfur'/tala/kyn
 
@@ -1007,6 +1013,7 @@ Sögn_lhþt_et_p3_hk →
 
 Sögn_lhnt/tala/pers →
     HjSögnLhÞt/tala/pers HreinSögn_lhnt
+    | 'þykja'/tala/pers HreinSögn_lhnt  # Almenningur þykir uggandi / ég þykist vitandi
 
 HreinSögn_lhnt →
     FsAtv? so_0_lh_nt OgSögn_lhnt*
@@ -2414,6 +2421,20 @@ NlStak_p3_et_þf_hk → NlSérnafn
 NlStak_p3_et_þgf_hk → NlSérnafn
 NlStak_p3_et_ef_hk → NlSérnafn
 
+# Sérnöfn þurfa einnig að geta staðið í fleirtölu,
+# sbr. 'Valsmenn skoruðu flest mörk', 'Dodgers áttu sigurinn vísan',
+# 'Essenar voru trúflokkur'
+
+NlStak_p3_ft_nf_hk → NlSérnafn_ft
+NlStak_p3_ft_þf_hk → NlSérnafn_ft
+NlStak_p3_ft_þgf_hk → NlSérnafn_ft
+NlStak_p3_ft_ef_hk → NlSérnafn_ft
+
+NlSérnafn_ft → NlSérnafn
+
+# Gefa mínus fyrir fleirtölu m.v. eintölu
+$score(-2) NlSérnafn_ft
+
 # !!! no_ef er notað í stað EfLiður til að minnka margræðni þegar
 # !!! mörg sérnöfn standa í röð
 NlSérnafn → eo* Sérnafn NlSérnafnEf? # ekki Nakamoto, örugglega Nelson Mandela, Hong Kong norðursins
@@ -3169,6 +3190,7 @@ $score(+10) LoMun/fall/tala/kyn
 
 LoSem/fall/tala/kyn →
     "sem:ao" lo_esb/fall/tala/kyn # (hvernig skuli stuðla að) sem jöfnustu hlutfalli
+    # | "sem:ao" lo_evb/fall/tala/kyn # (hvernig skuli stuðla að) sem jafnasta hlutfallinu
 
 $score(+4) LoSem/fall/tala/kyn
 
@@ -3467,7 +3489,7 @@ EinnAl →
     | "hingað" "til:ao"
     # | "til:ao" "að:nhm" "mynda:so"
     | "sem:ao" "sagt"
-    | töl "sinnum"          # tvisvar, þrisvar og fjórum sinnum er skilgreint í Main.conf
+    | Sinnum
     | Úrslit                # KR sigraði Val 6:0
 
 $tag(no_prep) EinnAl        # Engar forsetningar hér inni - óþarfi að skoða dótturgreinar
@@ -3487,6 +3509,11 @@ UndirEins →
     "undir:ao" "eins:ao"    # 'Ég fór undir eins og kannaði málið'
 
 $score(+4) UndirEins
+
+Sinnum →
+    töl "sinnum:hk"          # tvisvar, þrisvar og fjórum sinnum er skilgreint í Main.conf
+    | tala_ft "sinnum:hk"
+    | tala_et "sinni:hk"
 
 Atviksliður →
     Al OgAtviksliður*
@@ -3520,7 +3547,7 @@ $score(+8) UmEðaYfir
 
 Tímasetning →
     "klukkan"? tími OgKlukkan? Degis?
-    | "klukkan" töl OgKlukkan? Degis?
+    | "klukkan" "hálf"? töl OgKlukkan? Degis?
     | "klukkan" "hálf"? to_nf_hk Degis?
     | Degis
 
@@ -3746,6 +3773,13 @@ Tímabil_kk/fall/tala →
     | 'klukkutími'/fall/tala
     | 'tími'_kk/fall/tala
     | 'áratugur'/fall/tala
+    | FyrriSíðari_kk/fall/tala? 'hálfleikur'/fall/tala
+    | 'leikur'/fall/tala
+
+FyrriSíðari/kyn/fall/tala →
+    'fyrri'_mst/kyn/fall/tala
+    | 'síðari'_mst/kyn/fall/tala
+    | 'seinn'_mst/kyn/fall/tala
 
 Vikudagur/fall/tala →
     # !!! Do the following in the tokenizer instead?

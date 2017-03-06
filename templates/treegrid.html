@@ -1,0 +1,422 @@
+
+{% extends "container-fluid.html" %}
+
+{% block styles %}
+
+<link href="{{ url_for('static', filename='main-bootstrap.css') }}" rel='stylesheet' type='text/css'>
+
+<style>
+
+   /* Styles for D3/SVG tree graph */
+
+   .node circle {
+      fill: white;
+      stroke: #888;
+      stroke-width: 3px;
+   }
+
+   /* Outline (stroke) colors for word categories */
+   .node.kk circle,
+   .node.kvk circle,
+   .node.hk circle,
+   .node.fn circle,
+   .node.pfn circle,
+   .node.abfn circle {
+      stroke: #337ab7;
+   }
+   .node.lo circle {
+      stroke: #5cb85c;
+   }
+   .node.nhm circle,
+   .node.so circle {
+      stroke: #d9534f;
+   }
+   .node.st circle {
+      stroke: #f0ad4e;
+   }
+
+   /* Special cases for punctuation, entities and persons: filled circles */
+   .node.punct circle {
+      fill: #888;
+   }
+   .node.entity circle {
+      fill: #888;
+   }
+   .node.person.kk circle {
+      stroke: #337ab7;
+      fill: #337ab7;
+   }
+   .node.person.kvk circle {
+      stroke: #d9534f;
+      fill: #d9534f;
+   }
+
+   .node text { font-size: 12px; }
+
+   .node-nonterminal text {
+      fill: white;
+   }
+
+   .node-nonterminal rect {
+      fill: steelblue;
+      stroke: steelblue;
+      stroke-width: 3px;
+   }
+
+   .node-terminal text {
+      font-weight: bold;
+   }
+
+   .node-terminal text.symbol {
+      stroke: transparent;
+      stroke-width: 0;
+      fill: white;
+      font-family: 'Glyphicons Regular';
+      font-weight: normal;
+      font-style: normal;
+   }
+
+   .node-terminal.punct text {
+      fill: white;
+   }
+
+   .link {
+      fill: none;
+      stroke: #ccc;
+      stroke-width: 2px;
+   }
+
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+
+<!-- D3 graphics library -->
+<script src="https://d3js.org/d3.v4.min.js"></script>
+
+{% endblock %}
+
+{%- block content -%}
+
+<div class="input-parsegrid">
+
+   <div class="row">
+
+      <h4 class="txt">
+         <button id="edit-sent" title="Breyta málsgrein">
+            <span class="glyphicon glyphicon-edit"></span>Breyta
+         </button> {{ txt }}
+      </h4>
+
+   </div>
+
+{% if not tbl -%}
+   <div class="row">
+      <p class="options">Engin greining fannst.</p>
+   </div>
+{%- endif %}
+
+</div>
+
+{% if tbl -%}
+
+<div id="tree-tabs">
+
+   <ul id="tree-hdr" class="nav nav-tabs" role="tablist">
+      <li role="presentation">
+         <a href="#tree" aria-controls="tree" role="tab" data-toggle="tab">
+            <span class="glyphicon glyphicon-share" style="transform: rotate(90deg)"></span>&nbsp;Tré
+         </a>
+      </li>
+      <li role="presentation" class="active">
+         <a href="#simple" aria-controls="simple" role="tab" data-toggle="tab">
+            <span class="glyphicon glyphicon-tag"></span>&nbsp;Einfalt
+         </a>
+      </li>
+      <li role="presentation">
+         <a href="#full" aria-controls="full" role="tab" data-toggle="tab">
+            <span class="glyphicon glyphicon-tags"></span>&nbsp;Ítarlegt
+         </a>
+      </li>
+   </ul>
+
+   <!-- Tab panes -->
+   <div class="tab-content">
+      <div role="tabpanel" class="tab-pane" id="tree">
+
+<!-- D3/SVG canvas for tree graph -->
+
+<div class="grid">
+   <div class="table-responsive">
+      <div id="canvas">
+      </div>
+   </div>
+</div>
+
+      </div>
+      <div role="tabpanel" class="tab-pane active" id="simple">
+
+<!-- Simple parse tree -->
+
+<div class="grid">
+   <div class="table-responsive">
+      <table id="treegrid-simple">
+{% for r in tbl %}
+{%- set row_loop = loop -%}
+         <tr>
+{%- for c in r -%}
+{%- if c[1] is none -%}
+{%- elif "n" in c[1] -%}
+<td class="nt" colspan="{{ c[0] }}" rowspan="1">{{ c[1]["n"] }}</td>
+{%- else -%}
+<td class="t" colspan="{{ c[0] }}" rowspan="{{ height - row_loop.index0 }}">
+{% set tname = c[1]["t"] if "t" in c[1] else "" %}
+{%- if tname | first != "'" and tname | first != '"' -%}
+{{ tname }}<br>
+{%- endif -%}
+<span class="tok">{{ c[1]["x"] if "x" in c[1] else ("&nbsp;" | safe) }}</span>
+</td>
+{%- endif -%}
+{%- endfor -%}
+         </tr>
+{% endfor %}
+      </table>
+   </div>
+</div>
+
+      </div>
+      <div role="tabpanel" class="tab-pane" id="full">
+
+<!-- Full parse tree -->
+
+<div class="grid">
+   <div class="table-responsive">
+      <table id="treegrid-full">
+{% for r in full_tbl %}
+{%- set row_loop = loop -%}
+         <tr>
+{%- for c in r -%}
+{%- if c[1] is none -%}
+{%- elif "n" in c[1] -%}
+<td class="nt" colspan="{{ c[0] }}" rowspan="1">{{ c[1]["n"] }}</td>
+{%- else -%}
+<td class="t" colspan="{{ c[0] }}" rowspan="{{ full_height - row_loop.index0 }}">
+{% set tname = c[1]["t"] if "t" in c[1] else "" %}
+{%- if tname | first != "'" and tname | first != '"' -%}
+{{ tname }}<br>
+{%- endif -%}
+<span class="tok">{{ c[1]["x"] if "x" in c[1] else ("&nbsp;" | safe) }}</span>
+</td>
+{%- endif -%}
+{%- endfor -%}
+         </tr>
+{% endfor %}
+      </table>
+   </div>
+</div>
+
+      </div>
+   </div>
+</div>
+
+{%- endif %}
+
+{% endblock %}
+
+{% block endscripts %}
+
+<script>
+
+// Display a tree hierarchy using the D3 library and SVG
+
+var treeData = {{ tree | tojson }};
+
+// Determine the drawing surface
+var margin = { top: 60, right: 20, bottom: 30, left: 20 },
+   width = $("#treegrid-simple").width() - margin.right - margin.left,
+   height = {{ 60 + height * 80 }} - margin.top - margin.bottom;
+
+// Configure the tree layout object
+var tree = d3.tree()
+   .size([width, height])
+   .separation(function(a, b) {
+      // Horizontal separation between tree nodes
+      if (a.parent != b.parent)
+         // Nodes are not siblings: double separation
+         return 2.2;
+      // For siblings, increase separation linearly with their combined
+      // text (caption) length
+      // var aLen = a.data.text.length;
+      var aLen = a.data.n ? Math.max(a.data.text.length, 11) : a.data.text.length;
+      // var bLen = b.data.text.length;
+      var bLen = b.data.n ? Math.max(b.data.text.length, 11) : b.data.text.length;
+      return Math.max(1.20, 0.115 * (aLen + bLen));
+   });
+
+// Create a D3 hierarchy from the parse tree
+var root = d3.hierarchy(treeData, function(d) {
+      // Yield the children of node d
+      return d.p;
+   });
+
+// The graphics canvas
+var g = d3.select("div#canvas")
+   .append("svg")
+      .attr("width", width + margin.right + margin.left)
+      .attr("height", height + margin.top + margin.bottom)
+   .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+function d3_update(source) {
+   // Create the SVG graphics on the canvas via D3
+   var nodes = source.descendants();
+   var links = source.links();
+
+   // Precalculate the text for each node
+   nodes.forEach(function(d) {
+      d.data.text = d.data.n ? d.data.n : d.data.x;
+   });
+
+   // Compute the new tree layout using the D3 layout object
+   tree(source);
+
+   // Normalize the y coordinates
+   nodes.forEach(function(d) {
+      d.y = d.depth * 80;
+   });
+
+   // Declare the links
+   var link = g.selectAll(".link")
+      .data(links)
+      .enter().append("path")
+         .attr("class", "link")
+         .attr("d", function(d) {
+            // Define a cubic curve originating at the source
+            // and terminating at the target, with vertical
+            // exit and entry points from and to the nodes
+            return "M " + d.source.x + "," + d.source.y
+               + " C " + d.source.x + "," + (d.source.y + d.target.y) / 2
+               + " " + d.target.x + "," + (d.source.y + d.target.y) / 2
+               + " " + d.target.x + "," + d.target.y;
+         });
+
+   // Declare the nodes
+   var node = g.selectAll(".node")
+      .data(nodes)
+      .enter().append("g")
+         .attr("class", function(d) {
+            // Assign different classes to nonterminals vs. terminals
+            var classes = ["node"];
+            if (d.children)
+               classes.push("node-nonterminal");
+            else {
+               classes.push("node-terminal");
+               if (d.data.c)
+                  // Add a class for the word category
+                  classes.push(d.data.c);
+               else
+               if (d.data.t) {
+                  // Use the first part of the terminal name, if present
+                  var firstPart = d.data.t.split("_")[0];
+                  classes.push(firstPart == "sérnafn" ? "entity" : firstPart);
+                  if (firstPart == "person") {
+                     // Extract gender information from the terminal
+                     // or the g field, if present
+                     var gender = d.data.t.split("_").pop();
+                     if (gender == "kk" || gender == "kvk")
+                        classes.push(gender);
+                     else
+                     if (d.data.g)
+                        classes.push(d.data.g);
+                  }
+               }
+               if (d.data.k && d.data.k == "PUNCTUATION") {
+                  classes.push("punct");
+               }
+            }
+            return classes.join(" ");
+         })
+         .attr("transform", function(d) { 
+            return "translate(" + d.x + "," + d.y + ")";
+         });
+
+   g.selectAll(".node-nonterminal")
+      .append("rect")
+         .attr("width", function(d) {
+            return d.data.text.length > 12 ? 100 : 64;
+         })
+         .attr("height", 20)
+         .attr("transform", function(d) {
+            var w = parseInt(this.getAttribute("width"));
+            var h = parseInt(this.getAttribute("height"));
+            return "translate(" + (-w / 2) + "," + (-h / 2) + ")";
+         })
+         .attr("rx", 6)
+         .attr("ry", 6);
+
+   g.selectAll(".node-terminal")
+      .append("circle")
+         .attr("r", 10);
+
+   // Add a male gender marker
+   g.selectAll(".node-terminal.person.kk")
+      .append("text")
+         .attr("class", "symbol")
+         .attr("text-anchor", "middle")
+         .attr("y", "5")
+         .text("\uE247");
+
+   // Add a female gender marker
+   g.selectAll(".node-terminal.person.kvk")
+      .append("text")
+         .attr("class", "symbol")
+         .attr("text-anchor", "middle")
+         .attr("y", "5")
+         .text("\uE248");
+
+   node.append("text")
+      .attr("y", function(d) {
+         // Nonterminals have their legend above the center point;
+         // terminals have their legend below the center point
+         return (d.children || (d.data.k && d.data.k == "PUNCTUATION")) ? 0 : 22;
+      })
+      .attr("dy", ".35em")
+      .attr("text-anchor", "middle")
+      .text(function(d) {
+         // Return the precalculated text
+         return d.data.text;
+      });
+
+}
+
+// Hold the text to be displayed
+
+var theText = {{ txt | tojson }};
+
+function editSentence() {
+   // Navigate to the analysis page with the text pre-set
+   window.location.href = "/analysis?txt=" + encodeURIComponent(theText);
+}
+
+function initMain(jQuery) {
+   // Initialization
+   $("#edit-sent").click(editSentence);
+
+   // Enable tabs
+   $('#tree-hdr a').click(function() {
+       $(this).tab('show');
+   });
+   $('#tree-hdr a:first').tab('show');
+
+   // Display tree using D3
+   d3.select(self.frameElement).style("height", (height + margin.top + margin.bottom) + "px");
+   d3_update(root);
+}
+
+$(document).ready(initMain);
+
+</script>
+
+{% endblock %}
+

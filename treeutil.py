@@ -140,6 +140,8 @@ class TreeUtility:
             "SetningÁnF" : "S",
             "SetningAukafall" : "S",
             "SetningSkilyrði" : "S",
+            "Tengisetning" : "S",
+            "OgTengisetning" : "S",
             "Skilyrði" : "S-COND",
             "Afleiðing" : "S-CONS",
             "Nl" : "NP",
@@ -149,9 +151,13 @@ class TreeUtility:
             "SagnInnskot" : "ADVP",
             "FsAtv" : "ADVP",
             "AtvFs" : "ADVP",
+            "Atviksliður" : "ADVP",
+            "LoAtviksliðir": "ADVP",
             "SagnRuna" : "VP",
             "NhLiðir" : "VP",
-            "SagnliðurÁnF" : "VP"
+            "SagnliðurÁnF" : "VP",
+            "SagnHluti" : "VP",
+            "SagnliðurVh" : "VP"
         }
 
         ID_MAP = {
@@ -159,7 +165,7 @@ class TreeUtility:
             "S" : dict(name = "Setning", subject_to = "S"),
             "S-COND" : dict(name = "Forsenda", overrides = "S"), # Condition
             "S-CONS" : dict(name = "Afleiðing", overrides = "S"), # Consequence
-            "VP" : dict(name = "Sagnliður"),
+            "VP" : dict(name = "Sagnliður", subject_to = "VP"),
             "NP" : dict(name = "Nafnliður"),
             "NP-POSS" : dict(name = "Eignarfallsliður", overrides = "NP"),
             "PP" : dict(name = "Forsetningarliður", overrides = "ADVP"),
@@ -315,7 +321,6 @@ class TreeUtility:
     def _process_text(session, text, all_names, xform):
         """ Low-level utility function to parse text and return the result of
             a transformation function (xform) for each sentence """
-
         t0 = time.time()
         # Demarcate paragraphs in the input
         text = Fetcher.mark_paragraphs(text)
@@ -410,4 +415,32 @@ class TreeUtility:
             return TreeUtility._simplify_tree(tokens, tree)
 
         return TreeUtility._process_text(session, text, all_names, xform)
+
+    @staticmethod
+    def parse_text_with_full_tree(session, text, all_names = False):
+        """ Parse plain text, assumed to contain one sentence only, and
+            return its simplified form as well as its full form. """
+
+        full_tree = None
+
+        def xform(tokens, tree, err_index):
+            """ Transformation function that yields a simplified parse tree
+                with POS-tagged, normalized terminal leaves for the sentence """
+            if err_index is not None:
+                return TreeUtility.dump_tokens(tokens, tree, None, err_index)
+            # Successfully parsed: return a simplified tree for the sentence
+            nonlocal full_tree
+            # We are assuming that there is only one parsed sentence
+            if full_tree is None:
+                # Note the full tree of the first parsed paragraph
+                full_tree = tree
+            return TreeUtility._simplify_tree(tokens, tree)
+
+        pgs, stats, register = TreeUtility._process_text(session, text, all_names, xform)
+        if not pgs or stats["num_parsed"] == 0 or not pgs[0] or any("err" in t for t in pgs[0][0]):
+            # The first sentence didn't parse: let's not beat around the bush with that fact
+            return (None, None, stats)
+        # Return the simplified tree, full tree and stats
+        assert full_tree is not None
+        return (pgs[0][0], full_tree, stats)
 

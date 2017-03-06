@@ -203,11 +203,13 @@ class Reducer:
                     if t.has_variant("nf"):
                         # Reduce the weight of the 'artificial' nominative prepositions
                         # 'næstum', 'sem', 'um'
-                        sc[t] -= 5 # Make other cases outweigh the Nl_nf bonus of +4 (-2 -3 = -5)
+                        sc[t] -= 8 # Make other cases outweigh the Nl_nf bonus of +4 (-2 -3 = -5)
                     elif txt == "við" and t.has_variant("þgf"):
                         sc[t] += 1 # Smaller bonus for við + þgf (is rarer than við + þf)
                     elif txt == "sem" and t.has_variant("þf"):
                         sc[t] -= 6 # Even less attractive than sem_nf
+                    elif txt == "á" and t.has_variant("þgf"):
+                        sc[t] += 4 # Larger bonus for á + þgf to resolve conflict with verb 'eiga'
                     else:
                         # Else, give a bonus for each matched preposition
                         sc[t] += 2
@@ -220,9 +222,11 @@ class Reducer:
                         # !!! Logic should be added here to encourage zero arguments for verbs in 'miðmynd'
                         if numcases == 0:
                             # Zero arguments: we might not like this
-                            if all((m.stofn not in VerbObjects.VERBS[0]) and ("MM" not in m.beyging)
+                            vo0 = VerbObjects.VERBS[0]
+                            if all((m.stofn not in vo0) and (m.ordmynd not in vo0) and ("MM" not in m.beyging)
                                 for m in tokens[i].t2 if m.ordfl == "so"):
                                 # No meaning where the verb has zero arguments
+                                # print("Subtracting 5 points for 0-arg verb {0}".format(tokens[i].t1))
                                 adj = -5
                         # Apply score adjustments for verbs with particular object cases,
                         # as specified by $score(n) pragmas in Verbs.conf
@@ -660,11 +664,11 @@ class Reducer:
         def go(self, root_node):
             """ Perform the reduction, but first split the tree underneath
                 nodes that have the enable_prep_bonus tag """
-            self._check_stacks()
+            # self._check_stacks()
             self.PrepositionUnpacker.navigate(root_node)
             # Start normal navigation of the tree after the split
             result = super().go(root_node)
-            self._check_stacks()
+            # self._check_stacks()
             return result
 
     def _reduce(self, w, scores):
