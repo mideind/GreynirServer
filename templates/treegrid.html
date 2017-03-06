@@ -34,33 +34,59 @@
    .node.st circle {
       stroke: #f0ad4e;
    }
+   .node.person-kk circle {
+      stroke: #337ab7;
+   }
+   .node.person-kvk circle {
+      stroke: #d9534f;
+   }
 
-   /* Special cases for punctuation, entities and persons: filled circles */
+   /* Special case for punctuation: filled circle */
    .node.punct circle {
       fill: #888;
-   }
-   .node.entity circle {
-      fill: #888;
-   }
-   .node.person.kk circle {
-      stroke: #337ab7;
-      fill: #337ab7;
-   }
-   .node.person.kvk circle {
-      stroke: #d9534f;
-      fill: #d9534f;
    }
 
    .node text { font-size: 12px; }
 
    .node-nonterminal text {
       fill: white;
+      cursor: default;
    }
 
    .node-nonterminal rect {
       fill: steelblue;
       stroke: steelblue;
       stroke-width: 3px;
+   }
+
+   .node-nonterminal.P rect {
+      fill: black;
+      stroke: black;
+   }
+
+   .node-nonterminal.S rect {
+      fill: #f0ad4e;
+      stroke: #f0ad4e;
+   }
+
+   .node-nonterminal.VP rect {
+      fill: #d9534f;
+      stroke: #d9534f;
+   }
+
+   .node-nonterminal.NP rect {
+      fill: #337ab7;
+      stroke: #337ab7;
+   }
+
+   .node-nonterminal.PP rect {
+      fill: #888;
+      stroke: #888;
+   }
+
+   .node-nonterminal.ADVP rect {
+      fill: #5cb85c;
+      stroke: #5cb85c;
    }
 
    .node-terminal text {
@@ -74,6 +100,46 @@
       font-family: 'Glyphicons Regular';
       font-weight: normal;
       font-style: normal;
+   }
+   .node-terminal.kk text.symbol,
+   .node-terminal.kvk text.symbol,
+   .node-terminal.hk text.symbol,
+   .node-terminal.fn text.symbol,
+   .node-terminal.pfn text.symbol,
+   .node-terminal.abfn text.symbol
+   {
+      fill: #337ab7;
+   }
+   .node-terminal.person-kk text.symbol {
+      fill: #337ab7;
+   }
+   .node-terminal.person-kvk text.symbol {
+      fill: #d9534f;
+   }
+   .node-terminal.entity text.symbol {
+      fill: #888;
+   }
+   .node-terminal.st text.symbol {
+      fill: #f0ad4e;
+   }
+   .node-terminal.so text.symbol {
+      fill: #d9534f;
+      transform: rotate(15deg);
+   }
+   .node-terminal.lo text.symbol {
+      fill: #5cb85c;
+      transform: rotate(45deg);
+   }
+   .node-terminal.fs text.symbol {
+      fill: #888;
+   }
+   .node-terminal.ártal text.symbol {
+      fill: #888;
+   }
+   .node-terminal.ao text.symbol,
+   .node-terminal.eo text.symbol
+   {
+      fill: #888;
    }
 
    .node-terminal.punct text {
@@ -308,32 +374,31 @@ function d3_update(source) {
          .attr("class", function(d) {
             // Assign different classes to nonterminals vs. terminals
             var classes = ["node"];
-            if (d.children)
+            if (d.children) {
                classes.push("node-nonterminal");
+               // Push the nonterminal identifier (P, S, NP, VP...)
+               classes.push(d.data.i);
+            }
             else {
                classes.push("node-terminal");
+               var firstPart = d.data.t ? d.data.t.split("_")[0] : undefined;
+               // Add a class name corresponding to the first part of the terminal name,
+               // if it is an interesting terminal type
+               if (firstPart == "sérnafn" || firstPart == "entity")
+                  classes.push("entity");
+               else
+               if (firstPart == "person")
+                  classes.push("person-" + d.data.c);
+               else
+               if (firstPart == "ártal")
+                  classes.push("ártal")
+               else
                if (d.data.c)
                   // Add a class for the word category
                   classes.push(d.data.c);
                else
-               if (d.data.t) {
-                  // Use the first part of the terminal name, if present
-                  var firstPart = d.data.t.split("_")[0];
-                  classes.push(firstPart == "sérnafn" ? "entity" : firstPart);
-                  if (firstPart == "person") {
-                     // Extract gender information from the terminal
-                     // or the g field, if present
-                     var gender = d.data.t.split("_").pop();
-                     if (gender == "kk" || gender == "kvk")
-                        classes.push(gender);
-                     else
-                     if (d.data.g)
-                        classes.push(d.data.g);
-                  }
-               }
-               if (d.data.k && d.data.k == "PUNCTUATION") {
+               if (d.data.k && d.data.k == "PUNCTUATION")
                   classes.push("punct");
-               }
             }
             return classes.join(" ");
          })
@@ -359,21 +424,32 @@ function d3_update(source) {
       .append("circle")
          .attr("r", 10);
 
-   // Add a male gender marker
-   g.selectAll(".node-terminal.person.kk")
-      .append("text")
-         .attr("class", "symbol")
-         .attr("text-anchor", "middle")
-         .attr("y", "5")
-         .text("\uE247");
-
-   // Add a female gender marker
-   g.selectAll(".node-terminal.person.kvk")
-      .append("text")
-         .attr("class", "symbol")
-         .attr("text-anchor", "middle")
-         .attr("y", "5")
-         .text("\uE248");
+   [
+      ["person-kk", "\uE247"], // male
+      ["person-kvk", "\uE248"], // female
+      ["entity", "\uE066"], // tag
+      ["st", "\uE051"], // link
+      ["fs", "\uE174"], // play
+      ["so", "\uE242"], // flash
+      ["kk", "\uE176"], // stop
+      ["kvk", "\uE176"], // stop
+      ["hk", "\uE176"], // stop
+      ["fn", "\uE176"], // stop
+      ["pfn", "\uE176"], // stop
+      ["abfn", "\uE176"], // stop
+      ["lo", "\uE518"], // options
+      ["ártal", "\uE055"], // clock
+      ["ao", "\uE049"], // star
+      ["eo", "\uE049"], // star
+   ]
+   .forEach(function(d) {
+      g.selectAll(".node-terminal." + d[0])
+         .append("text")
+            .attr("class", "symbol")
+            .attr("text-anchor", "middle")
+            .attr("y", "6")
+            .text(d[1])
+   });
 
    node.append("text")
       .attr("y", function(d) {

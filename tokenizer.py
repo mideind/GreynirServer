@@ -2003,6 +2003,7 @@ def canonicalize_token(t):
     # Set the token kind to a readable string
     kind = t.get("k", TOK.WORD)
     t["k"] = TOK.descr[kind]
+    terminal = None
     if "t" in t:
         terminal = t["t"]
         # Change "literal:category" to category,
@@ -2039,6 +2040,13 @@ def canonicalize_token(t):
         elif kind == TOK.TIMESTAMP:
             t["v"] = dict(y = val[0], mo = val[1], d = val[2],
                 h = val[3], m = val[4], s = val[5])
+        elif kind == TOK.PERSON:
+            # Move the nominal form of the name to the "s" (stem) field
+            t["s"] = t["v"]
+            del t["v"]
+            # Move the gender to the "c" (category) field
+            t["c"] = t["g"]
+            del t["g"]
 
 
 def stems_of_token(t):

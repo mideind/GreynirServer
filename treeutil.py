@@ -96,12 +96,14 @@ class TreeUtility:
                 # the terminal name (in some cases the terminal only contains the case)
                 if gender is None:
                     gender = fn[1]
-                if terminal:
+                if terminal is not None:
                     if not terminal.name.endswith("_" + gender):
                         d["t"] = terminal.name + "_" + gender
                 else:
-                    # There is no terminal: cop out by adding a separate gender field
-                    d["g"] = gender
+                    # No terminal field: create it
+                    d["t"] = "person_" + gender
+                # In any case, add a gender indicator for convenience
+                d["g"] = gender
                 wt = WordTuple(stem = d["v"], cat = "person_" + gender)
             else:
                 d["v"] = t.val
@@ -140,6 +142,7 @@ class TreeUtility:
             "SetningÁnF" : "S",
             "SetningAukafall" : "S",
             "SetningSkilyrði" : "S",
+            "SetningUmAðRæða" : "S",
             "Tengisetning" : "S",
             "OgTengisetning" : "S",
             "Skilyrði" : "S-COND",

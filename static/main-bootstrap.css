@@ -95,6 +95,9 @@
 .glyphicon-share:before {
    content: "\E309";
 }
+.glyphicon-link:before {
+   content: "\E051";
+}
 
 .glyphicon-spin {
     -webkit-animation: spin 2000ms infinite linear;

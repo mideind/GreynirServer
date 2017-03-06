@@ -463,9 +463,9 @@ SetningAð →
 $score(-2) SetningAð # Óalgengt form
 
 SetningUmAðRæða →
-    "um:fs" 'vera'_gm_p3_et "að:nhm" 'ræða'_gm_nh Nl_þf
+    "um:fs" 'vera'_gm_p3_et "að:nhm" 'ræða'_gm_nh Nl_þf AtvFs?
 
-$score(+8) SetningUmAðRæða # Mjög líklega réttur skilningur á þessari orðaröð
+$score(+20) SetningUmAðRæða # Mjög líklega réttur skilningur á þessari orðaröð
 
 SetningForskeyti →
     FsAtv
@@ -2809,6 +2809,12 @@ EfLiðurForskeyti →
     | "meiri" "háttar"
     | "minni" "háttar"
     | Prósentubil          # (Spáð er) a.m.k. 10-20% (aukningu)
+    | Prósenta
+
+Prósenta →
+    prósenta
+
+$score(+8) Prósenta
 
 ÓbeygðEining →
     "prósent"
@@ -3225,7 +3231,7 @@ Lo_mst_nf/tala/kyn → LoAtviksliðir? lo_mst_nf/tala/kyn LoViðhengi? # Miðsti
 LoViðhengi →
     EfLiður | Nl_þgf
 
-$score(-6) LoViðhengi
+$score(-10) LoViðhengi
 
 # Lýsingarorð sem einkunn með nafnlið
 
@@ -3344,8 +3350,6 @@ FsMeðFallstjórn →
     | "nær" 'draga'_et_p3 Nl_þgf # 'þegar nær dró/dregur jólum'
     | 'það_sem_af_er' Nl_þgf # 'það sem af er þessu þingi'
     | 'fyrir_hönd' Nl_ef
-    | "miðað" "við:fs" Nl_þf
-    | 'miðað_við' Nl_þf # Skammstöfunin m.v.
     | 'með_tilliti_til' Nl_ef # Skammstöfunin m.t.t.
     | "samanborið:so" "við:fs" Nl_þf
     | "borið:so" "saman" "við:fs" Nl_þf
@@ -3360,6 +3364,7 @@ FsMeðFallstjórn →
     | "á:fs" "að:st" HreinYfirsetning ','?
     | "að:fs" "nafni:hk" person_nf          # Ég ræddi við konu að nafni Aðalbjörg Jónsdóttir
     | "á:fs" Vikudagur_gr_þf_et "kemur:so"  # á sunnudaginn kemur / á laugardagskvöldið kemur
+    | FsMiðaðVið
     | FsÍGegnUm
     | FsAðBaki
     | FsTilÞgf
@@ -3386,6 +3391,12 @@ FsÞgfTilEf →
 
 # Ekki velja þetta nema nauðsyn beri til
 $score(-4) FsÞgfTilEf
+
+FsMiðaðVið →
+    'miða:so'_sagnb "við:fs" Nl_þf
+    | 'miðað_við' Nl_þf # Skammstöfunin m.v.
+
+$score(+12) FsMiðaðVið
 
 FsÍGegnUm →
     "í:ao" "gegn:ao" "um:fs" Nl_þf
