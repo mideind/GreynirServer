@@ -13,6 +13,11 @@
       fill: white;
       stroke: #888;
       stroke-width: 3px;
+      cursor: default;
+   }
+
+   .node circle.hovering {
+      stroke-width: 5px;
    }
 
    /* Outline (stroke) colors for word categories */
@@ -100,6 +105,7 @@
       font-family: 'Glyphicons Regular';
       font-weight: normal;
       font-style: normal;
+      cursor: default;
    }
    .node-terminal.kk text.symbol,
    .node-terminal.kvk text.symbol,
@@ -133,7 +139,12 @@
    .node-terminal.fs text.symbol {
       fill: #888;
    }
-   .node-terminal.ártal text.symbol {
+   .node-terminal.ártal text.symbol,
+   .node-terminal.currency text.symbol,
+   .node-terminal.timestamp text.symbol,
+   .node-terminal.time text.symbol,
+   .node-terminal.date text.symbol
+   {
       fill: #888;
    }
    .node-terminal.ao text.symbol,
@@ -150,6 +161,15 @@
       fill: none;
       stroke: #ccc;
       stroke-width: 2px;
+   }
+
+   div#canvas svg {
+      background-color: #f6f6f6;
+   }
+
+   div#simple {
+      /* Start off with the simple tree hidden */
+      visibility: hidden;
    }
 
 </style>
@@ -286,11 +306,31 @@
    </div>
 </div>
 
+<!-- Popup with info about a terminal that is being hovered over -->
+<div class="info">
+   <table>
+   <tr>
+   <td><span id="tag" class='glyphicon glyphicon-tag'></span></td>
+   <td id="lemma"></td>
+   </tr>
+   </table>
+   <p id="details"></p>
+   <p id="grammar"></p>
+   <div id="percent" class="progress">
+      <div class="progress-bar progress-bar-info" role="progressbar"
+         aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%">
+         <span class="sr-only">0%</span>
+      </div>
+   </div>
+</div>
+
 {%- endif %}
 
 {% endblock %}
 
 {% block endscripts %}
+
+<script src="{{ url_for('static', filename='common.js') }}"></script>
 
 <script>
 
@@ -333,6 +373,96 @@ var g = d3.select("div#canvas")
       .attr("height", height + margin.top + margin.bottom)
    .append("g")
       .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+// Hovering over terminals
+
+function wrapTokenInfo(dd) {
+   // Convert token information from the JSON simplified format
+   // to the complex format expected by tokenInfo()
+   var tv = dd.v;
+   if (dd.k == "AMOUNT")
+      tv = [ dd.v.amount, dd.v.currency ];
+   else
+   if (dd.k == "DATE")
+      tv = [ dd.v.y, dd.v.mo, dd.v.d ];
+   else
+   if (dd.k == "TIME")
+      tv = [ dd.v.h, dd.v.m, dd.v.s ];
+   else
+   if (dd.k == "TIMESTAMP")
+      tv = [ dd.v.y, dd.v.mo, dd.v.d, dd.v.h, dd.v.m, dd.v.s ];
+   else
+   if (dd.k == "PERCENT" || dd.k == "NUMBER" || dd.k == "CURRENCY")
+      tv = [ dd.v ];
+   else
+   if (dd.k == "PERSON")
+      tv = dd.s;
+   return tokenInfo(
+      {
+         k: tokId[dd.k],
+         t: dd.t,
+         g: dd.g,
+         m: [ dd.s, dd.c, dd.f, dd.b ],
+         x: dd.x,
+         v: tv
+      }, null);
+}
+
+function terminalIn(d) {
+   // Get the circle object, even if we're hovering over an associated text
+   var circle = d3.select(this.parentNode).select("circle");
+   // Indicate that we're hovering
+   circle
+      .classed("hovering", true)
+      .attr("r", 11);
+
+   // Access the node data
+   var dd = circle.data()[0].data;
+   if (dd.k == "PUNCTUATION")
+      return;
+
+   var pos = $(this).parent().children("circle").offset();
+
+   r = wrapTokenInfo(dd);
+
+   $("#grammar").html(r.grammar || "");
+   $("#lemma").text(r.lemma || "");
+   $("#details").text(r.details || "");
+
+   // Display the percentage bar if we have percentage info
+   if (r.percent !== null)
+      makePercentGraph(r.percent);
+   else
+      $("#percent").css("display", "none");
+
+   if (r.class !== null)
+      $("div.info").addClass(r.class);
+   if (r.tagClass !== null)
+      $("div.info span#tag").removeClass("glyphicon-tag").addClass(r.tagClass);
+
+   // Position the info popup
+   $("div.info")
+      .css("left", "" + pos.left + "px")
+      .css("top", "" + pos.top + "px")
+      .css("visibility", "visible");
+}
+
+function terminalOut(d) {
+   var circle = d3.select(this.parentNode).select("circle");
+   circle.classed("hovering", false).attr("r", 10);
+   var dd = circle.data()[0].data;
+   if (dd.k == "PUNCTUATION")
+      return;
+   $("div.info")
+      .css("visibility", "hidden");
+   var r = wrapTokenInfo(dd);
+   if (r.class !== null)
+      $("div.info").removeClass(r.class);
+   if (r.tagClass !== null)
+      $("div.info span#tag")
+         .removeClass(r.tagClass)
+         .addClass("glyphicon-tag");
+}
 
 function d3_update(source) {
    // Create the SVG graphics on the canvas via D3
@@ -384,6 +514,21 @@ function d3_update(source) {
                var firstPart = d.data.t ? d.data.t.split("_")[0] : undefined;
                // Add a class name corresponding to the first part of the terminal name,
                // if it is an interesting terminal type
+               if (d.data.k && d.data.k == "PUNCTUATION")
+                  classes.push("punct")
+               else
+               if (d.data.k && d.data.k == "CURRENCY")
+                  classes.push("currency");
+               else
+               if (d.data.k && d.data.k == "TIMESTAMP")
+                  classes.push("timestamp");
+               else
+               if (d.data.k && d.data.k == "TIME")
+                  classes.push("time");
+               else
+               if (d.data.k && d.data.k == "DATE")
+                  classes.push("date");
+               else
                if (firstPart == "sérnafn" || firstPart == "entity")
                   classes.push("entity");
                else
@@ -396,9 +541,6 @@ function d3_update(source) {
                if (d.data.c)
                   // Add a class for the word category
                   classes.push(d.data.c);
-               else
-               if (d.data.k && d.data.k == "PUNCTUATION")
-                  classes.push("punct");
             }
             return classes.join(" ");
          })
@@ -424,6 +566,10 @@ function d3_update(source) {
       .append("circle")
          .attr("r", 10);
 
+   // Add a symbol on top of terminal circles
+   var symbolOffset = [];
+   symbolOffset ["\uE004"] = "5"; // user
+   symbolOffset ["\uE066"] = "7"; // tag
    [
       ["person-kk", "\uE247"], // male
       ["person-kvk", "\uE248"], // female
@@ -434,20 +580,24 @@ function d3_update(source) {
       ["kk", "\uE176"], // stop
       ["kvk", "\uE176"], // stop
       ["hk", "\uE176"], // stop
-      ["fn", "\uE176"], // stop
-      ["pfn", "\uE176"], // stop
+      ["fn", "\u002A"], // asterisk
+      ["pfn", "\uE004"], // user
       ["abfn", "\uE176"], // stop
       ["lo", "\uE518"], // options
       ["ártal", "\uE055"], // clock
+      ["timestamp", "\uE055"], // clock
+      ["time", "\uE055"], // clock
+      ["date", "\uE055"], // clock
       ["ao", "\uE049"], // star
       ["eo", "\uE049"], // star
+      ["currency", "\u20AC"], // euro
    ]
    .forEach(function(d) {
       g.selectAll(".node-terminal." + d[0])
          .append("text")
             .attr("class", "symbol")
             .attr("text-anchor", "middle")
-            .attr("y", "6")
+            .attr("y", symbolOffset[d[1]] ? symbolOffset[d[1]] : "6")
             .text(d[1])
    });
 
@@ -464,6 +614,13 @@ function d3_update(source) {
          return d.data.text;
       });
 
+   // Put a hover handler on each terminal
+   g.selectAll(".node-terminal circle")
+      .on("mouseover", terminalIn)
+      .on("mouseout", terminalOut);
+   g.selectAll(".node-terminal text")
+      .on("mouseover", terminalIn)
+      .on("mouseout", terminalOut);
 }
 
 // Hold the text to be displayed
@@ -478,12 +635,14 @@ function editSentence() {
 function initMain(jQuery) {
    // Initialization
    $("#edit-sent").click(editSentence);
+   $("div.info").click(function() { $(this).css("visibility", "hidden"); });
 
    // Enable tabs
    $('#tree-hdr a').click(function() {
        $(this).tab('show');
    });
    $('#tree-hdr a:first').tab('show');
+   $('div#simple').css("visibility", "visible");
 
    // Display tree using D3
    d3.select(self.frameElement).style("height", (height + margin.top + margin.bottom) + "px");

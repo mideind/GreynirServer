@@ -209,7 +209,7 @@ Samtenging →
     | "allt" "frá" "því" "að:st"?
     | "þar" "á:fs" "meðal" | 'þar_á_meðal'
     | "þar" "sem:st"
-    | 'auk_þess' "sem:st"
+    | 'auk_þess' "sem:st" "að:st"?
     | "eins:ao" "og:st"
     | "vegna:fs" "þess" "að:st"?
     | "á_sama_tíma" "og:st"
@@ -397,6 +397,7 @@ SamanburðarTenging →
 SamanburðarTengingOg →
     ','? "og:st"               # Erfitt fjarskiptasamband er á staðnum og mikil snjóþyngsli
 
+$score(-4) Samanburður
 $score(-8) SamanburðarTengingOg
 
 Sjálfur/tala/kyn → 'sjálfur'/tala/kyn
@@ -2168,7 +2169,7 @@ $score(+8) NlStakViðbót/fall/kyn
 NlStakViðbótNl/fall/kyn →
     NlStak_ft_p3/fall/kyn               # við fóstbræður, við alþingismennirnir
 
-$score(-16) NlStakViðbótNl/fall/kyn     # Draga af stig fyrir "við fóstbræður" vegna hættu á ruglingi við forsetninguna 'við'
+$score(-20) NlStakViðbótNl/fall/kyn     # Draga af stig fyrir "við fóstbræður" vegna hættu á ruglingi við forsetninguna 'við'
 
 NlStak_ft_p1/fall/kyn → NlStak_p1_ft/fall/kyn FsRunaEftirNl?
 
@@ -3259,7 +3260,7 @@ $score(-6) StaktLoEftirNl/tala/fall/kyn
 LoEftirNlMeðÞgf/fall/tala/kyn →
     AtviksliðurEinkunn* lo_sb/fall/tala/kyn Nl_þgf
 
-$score(+6) LoEftirNlMeðÞgf/fall/tala/kyn
+$score(+4) LoEftirNlMeðÞgf/fall/tala/kyn
 
 # '(Ég drakk) hvítu, volgu og feitu mjólkina' / '(Ég sá) hvíta, volga og feita mjólk'
 # '(Íslendingar fluttu fé til annarra) og í sumum tilvikum öruggari landa'
