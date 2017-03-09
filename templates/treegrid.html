@@ -23,11 +23,15 @@
    /* Outline (stroke) colors for word categories */
    .node.kk circle,
    .node.kvk circle,
-   .node.hk circle,
+   .node.hk circle {
+      stroke: #337ab7;
+   }
+   .node.to circle,
+   .node.töl circle,
    .node.fn circle,
    .node.pfn circle,
    .node.abfn circle {
-      stroke: #337ab7;
+      stroke: #5bc0de;
    }
    .node.lo circle {
       stroke: #5cb85c;
@@ -69,7 +73,10 @@
       stroke: black;
    }
 
-   .node-nonterminal.S rect {
+   .node-nonterminal.S rect,
+   .node-nonterminal.S-COND rect,
+   .node-nonterminal.S-CONS rect
+   {
       fill: #f0ad4e;
       stroke: #f0ad4e;
    }
@@ -79,9 +86,16 @@
       stroke: #d9534f;
    }
 
-   .node-nonterminal.NP rect {
+   .node-nonterminal.NP rect
+   {
       fill: #337ab7;
       stroke: #337ab7;
+   }
+
+   .node-nonterminal.NP-POSS rect
+   {
+      fill: #5bc0de;
+      stroke: #5bc0de;
    }
 
    .node-nonterminal.PP rect {
@@ -89,7 +103,9 @@
       stroke: #888;
    }
 
-   .node-nonterminal.ADVP rect {
+   .node-nonterminal.ADVP rect,
+   .node-nonterminal.ADVP-DATE rect
+   {
       fill: #5cb85c;
       stroke: #5cb85c;
    }
@@ -109,12 +125,17 @@
    }
    .node-terminal.kk text.symbol,
    .node-terminal.kvk text.symbol,
-   .node-terminal.hk text.symbol,
+   .node-terminal.hk text.symbol
+   {
+      fill: #337ab7;
+   }
+   .node-terminal.to text.symbol,
+   .node-terminal.töl text.symbol,
    .node-terminal.fn text.symbol,
    .node-terminal.pfn text.symbol,
    .node-terminal.abfn text.symbol
    {
-      fill: #337ab7;
+      fill: #5bc0de;
    }
    .node-terminal.person-kk text.symbol {
       fill: #337ab7;
@@ -132,6 +153,9 @@
       fill: #d9534f;
       transform: rotate(15deg);
    }
+   .node-terminal.nhm text.symbol {
+      fill: #d9534f;
+   }
    .node-terminal.lo text.symbol {
       fill: #5cb85c;
       transform: rotate(45deg);
@@ -141,6 +165,7 @@
    }
    .node-terminal.ártal text.symbol,
    .node-terminal.currency text.symbol,
+   .node-terminal.number text.symbol,
    .node-terminal.timestamp text.symbol,
    .node-terminal.time text.symbol,
    .node-terminal.date text.symbol
@@ -229,18 +254,20 @@
 
    <!-- Tab panes -->
    <div class="tab-content">
+
       <div role="tabpanel" class="tab-pane" id="tree">
 
-<!-- D3/SVG canvas for tree graph -->
+         <!-- D3/SVG canvas for tree graph -->
 
-<div class="grid">
-   <div class="table-responsive">
-      <div id="canvas">
+         <div class="grid">
+            <div class="table-responsive">
+               <div id="canvas">
+                  <!-- SVG stuff is inserted here -->
+               </div>
+            </div>
+         </div>
       </div>
-   </div>
-</div>
 
-      </div>
       <div role="tabpanel" class="tab-pane active" id="simple">
 
 <!-- Simple parse tree -->
@@ -272,6 +299,7 @@
 </div>
 
       </div>
+
       <div role="tabpanel" class="tab-pane" id="full">
 
 <!-- Full parse tree -->
@@ -374,6 +402,20 @@ var g = d3.select("div#canvas")
    .append("g")
       .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
+// Make sure that the info pop-up stays in its place even
+// if the canvas is scrolled horizontally
+// (this especially applies on touchscreens)
+$("div#tree div.grid div.table-responsive")
+   .scroll(function() {
+      var jqCircle = $("div.info").data("circle");
+      if (jqCircle) {
+         var pos = jqCircle.offset();
+         $("div.info")
+            .css("left", "" + pos.left + "px")
+            .css("top", "" + pos.top + "px")
+      }
+   });
+
 // Hovering over terminals
 
 function wrapTokenInfo(dd) {
@@ -421,7 +463,8 @@ function terminalIn(d) {
    if (dd.k == "PUNCTUATION")
       return;
 
-   var pos = $(this).parent().children("circle").offset();
+   var jqCircle = $(this).parent().children("circle");
+   var pos = jqCircle.offset();
 
    r = wrapTokenInfo(dd);
 
@@ -444,7 +487,8 @@ function terminalIn(d) {
    $("div.info")
       .css("left", "" + pos.left + "px")
       .css("top", "" + pos.top + "px")
-      .css("visibility", "visible");
+      .css("visibility", "visible")
+      .data("circle", jqCircle);
 }
 
 function terminalOut(d) {
@@ -454,7 +498,8 @@ function terminalOut(d) {
    if (dd.k == "PUNCTUATION")
       return;
    $("div.info")
-      .css("visibility", "hidden");
+      .css("visibility", "hidden")
+      .data("circle", null);
    var r = wrapTokenInfo(dd);
    if (r.class !== null)
       $("div.info").removeClass(r.class);
@@ -520,6 +565,9 @@ function d3_update(source) {
                if (d.data.k && d.data.k == "CURRENCY")
                   classes.push("currency");
                else
+               if (d.data.k && (d.data.k == "NUMBER" || d.data.k == "ORDINAL"))
+                  classes.push("number");
+               else
                if (d.data.k && d.data.k == "TIMESTAMP")
                   classes.push("timestamp");
                else
@@ -551,7 +599,7 @@ function d3_update(source) {
    g.selectAll(".node-nonterminal")
       .append("rect")
          .attr("width", function(d) {
-            return d.data.text.length > 12 ? 100 : 64;
+            return d.data.text.length >= 11 ? 100 : 64;
          })
          .attr("height", 20)
          .attr("transform", function(d) {
@@ -567,14 +615,15 @@ function d3_update(source) {
          .attr("r", 10);
 
    // Add a symbol on top of terminal circles
-   var symbolOffset = [];
-   symbolOffset ["\uE004"] = "5"; // user
-   symbolOffset ["\uE066"] = "7"; // tag
+   var symbolOffset = []; // Default y offset is 6 pixels
+   symbolOffset ["\uE004"] = 5; // user
+   symbolOffset ["\uE066"] = 7; // tag
    [
       ["person-kk", "\uE247"], // male
       ["person-kvk", "\uE248"], // female
       ["entity", "\uE066"], // tag
       ["st", "\uE051"], // link
+      ["nhm", "\uE212"], // right-arrow
       ["fs", "\uE174"], // play
       ["so", "\uE242"], // flash
       ["kk", "\uE176"], // stop
@@ -591,13 +640,16 @@ function d3_update(source) {
       ["ao", "\uE049"], // star
       ["eo", "\uE049"], // star
       ["currency", "\u20AC"], // euro
+      ["number", "\uE319"], // more-items
+      ["to", "\uE319"], // more-items
+      ["töl", "\uE319"], // more-items
    ]
    .forEach(function(d) {
       g.selectAll(".node-terminal." + d[0])
          .append("text")
             .attr("class", "symbol")
             .attr("text-anchor", "middle")
-            .attr("y", symbolOffset[d[1]] ? symbolOffset[d[1]] : "6")
+            .attr("y", symbolOffset[d[1]] ? symbolOffset[d[1]] : 6)
             .text(d[1])
    });
 
@@ -635,7 +687,9 @@ function editSentence() {
 function initMain(jQuery) {
    // Initialization
    $("#edit-sent").click(editSentence);
-   $("div.info").click(function() { $(this).css("visibility", "hidden"); });
+   $("div.info")
+      .click(function() { $(this).css("visibility", "hidden"); })
+      .data("circle", null);
 
    // Enable tabs
    $('#tree-hdr a').click(function() {

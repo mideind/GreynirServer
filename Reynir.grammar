@@ -214,7 +214,7 @@ Samtenging →
     | "vegna:fs" "þess" "að:st"?
     | "á_sama_tíma" "og:st"
     | ÞangaðTil
-    | SpurnarSamtenging
+    | OgEðaEn? SpurnarSamtenging
 
 SpurnarSamtenging →
 
@@ -2038,6 +2038,8 @@ Einkunn/tala/fall/kyn →
     | Töluorð/tala/fall/kyn     # þrjá (gangandi menn) / 26
     | OkkarYkkar                # 'okkar skoðanir', 'ykkar félag' (okkar og ykkar eru pfn, ekki fn)
 
+$score(+3) Einkunn/tala/fall/kyn
+
 # Lýsingarorð eða eignarfallsliður sem kemur á eftir nafnlið
 
 NlViðbót/tala/fall/kyn →
@@ -2877,7 +2879,7 @@ TengiliðurMeðKommu/tala/pers/kyn →
 KommaTengiliður/tala/pers/kyn →
     ','? "sem:st" SetningÁnF/tala/pers/kyn
 
-$score(-2) KommaTengiliður/tala/pers/kyn
+$score(-5) KommaTengiliður/tala/pers/kyn
 
 Tengiliður/tala/pers/kyn →
     Tengiorð Tengisetning/tala/pers/kyn OgTengisetning/tala/pers/kyn*
@@ -3040,7 +3042,7 @@ OgEða → "og:st" | "eða:st" | "ellegar" | "eður" | "svo" "og:st" | "sem:st" 
 EnÍOgEða →
     "en:st"
 
-$score(-14) EnÍOgEða # Frekar að líta á 'en' sem samtengingu ef það er hægt
+$score(-24) EnÍOgEða # Frekar að líta á 'en' sem samtengingu ef það er hægt
 
 OgSem → "og:st" "sem:st"? | "eða:st" "sem:st"? | "ellegar" | "en:st" "sem:st"?
 
@@ -3391,7 +3393,7 @@ FsÞgfTilEf →
     Nl_þgf "til:fs" Nl_ef # máli sínu til stuðnings, barninu til hróss, henni til bjargar
 
 # Ekki velja þetta nema nauðsyn beri til
-$score(-4) FsÞgfTilEf
+$score(-6) FsÞgfTilEf
 
 FsMiðaðVið →
     'miða:so'_sagnb "við:fs" Nl_þf
@@ -3429,6 +3431,8 @@ So_1_gm_fh_p3_et_ef → so_1_ef_gm_fh_p3_et
 FsHvaðVarðar →
     Nl/fall So_1_gm_fh_p3_et/fall  # '(hvað) Pál varðar/Páli viðvíkur'
     | So_1_gm_fh_p3_et/fall Nl/fall # '(hvað) varðar Pál/viðvíkur Páli'
+
+$score(+4) FsHvaðVarðar
 
 FsLiður → Atviksliður? FsMeðFallstjórn # snarlega í bæinn
 
@@ -3611,7 +3615,7 @@ Dagsetning →
     | MörgÁr # '2009-13'
     | "frá:fs" OgMeð? "árinu:hk"? ártal # 'frá árinu 2009', 'frá og með 2012'
     | "til:fs" "ársins:hk"? ártal # 'til ársins 1997'
-    | "síðan:ao" ártal # síðan 2012
+    | Síðan
     | "dagana" Dagana # dagana 1. til 10. júlí
     | 'sá'_kk_et_þf? raðnr "þessa" "mánaðar" # [þann] 23. þessa mánaðar
     | ÞegarLíðaTekurÁ
@@ -3623,7 +3627,7 @@ Dagsetning →
     | Tímabil_þgf/kyn/tala TímaAfstæði_þgf # Klukkutíma fyrr kom ég á staðinn
     | Tímabil_ft_þgf/kyn "saman" # Nefndin fundaði ekki mánuðum saman
     | Tímabil_þf/kyn/tala TímaAfstæði_þf # Vikuna áður / Daginn eftir / áratugina á undan
-    | TímaForskeyti? TímaAfstæði # áður en krónan féll / eftir að landið öðlaðist sjálfstæði
+    | TímaForskeyti? TímaAfstæði # [viku/löngu] áður en krónan féll / [ári/stuttu] eftir að landið öðlaðist sjálfstæði
 
 $tag(apply_prep_bonus) Dagsetning # Gefa bónus þegar dagsetning fylgir sögn frekar en nafnlið
 
@@ -3634,6 +3638,12 @@ Undanfarið →
     | 'undangenginn'_þf/tala/kyn TalaTímabil_þf/tala/kyn # undangengnar sex vikur
 
 $score(+10) Undanfarið
+
+Síðan →
+    "síðan:ao" ártal # síðan 2012
+    | "síðan:ao" dags # síðan 19. júlí 2006
+
+$score(+10) Síðan
 
 ÞegarLíðaTekurÁ →
     "þegar:st" "líða" 'taka'_gm_p3_et "á:fs" Tímabil_þf/kyn/tala
@@ -3658,10 +3668,12 @@ $score(+4) Dagsetning Tímasetning Aldur
 
 TímaAfstæði_þgf → "síðar:ao" | "seinna:ao" | "fyrr:ao" TímaEn? | "áður:ao" TímaEn?
 TímaAfstæði_þf → "áður:ao" TímaEn? | "eftir:ao" TímaAð? | "fyrir:fs" Nl_þf | "á:ao" "undan:ao" | "á:ao" "eftir:ao"
-TímaForskeyti → "löngu:lo" | "stuttu:lo" | "töluverðu:lo" | "örstuttu:lo" | "rétt:ao" | "örskömmu:lo"
+TímaForskeyti → "löngu:lo" | "stuttu:lo" | "töluverðu:lo" | "örstuttu:lo"
+    | "rétt:ao" | "örskömmu:lo" | Tímabil_þgf/kyn/tala
 TímaAfstæði → "áður:ao" TímaEn | "eftir:ao" TímaAð
 
 $score(+2) TímaForskeyti
+$score(+4) TímaAfstæði
 
 TímaEn →
     "en:st" "að:st"? HreinYfirsetning
@@ -3740,7 +3752,7 @@ NæsturSíðastur_þf_et_kvk →
 NæsturSíðastur_þf_et_hk →
     'síðastliðinn'_sb_þf_et_hk  # síðastliðið sumar
 
-$score(+4) NæsturSíðastur_þf/tala/kyn
+$score(+6) NæsturSíðastur_þf/tala/kyn
 
 Tímabil/fall/kyn/tala → Tímabil/kyn/fall/tala
 
@@ -3761,6 +3773,8 @@ Tímabil_hk/fall/tala →
     | 'leikár'_hk/fall/tala
     | 'rekstrarár'_hk/fall/tala
     | 'almanaksár'_hk/fall/tala
+    | 'korter'_hk/fall/tala
+    | 'kortér'_hk/fall/tala
 
 Tímabil_kvk/fall/tala →
     'vika'_kvk/fall/tala
@@ -3782,7 +3796,9 @@ Tímabil_kk/fall/tala →
     | 'morgunn'/fall/tala
     | 'eftirmiðdagur'/fall/tala
     | Vikudagur/fall/tala
-    | 'klukkutími'/fall/tala
+    | 'klukkutími'_kk/fall/tala
+    | 'hálftími'_kk/fall/tala
+    | 'stundarfjórðungur'_kk/fall/tala
     | 'tími'_kk/fall/tala
     | 'áratugur'/fall/tala
     | FyrriSíðari_kk/fall/tala? 'hálfleikur'/fall/tala

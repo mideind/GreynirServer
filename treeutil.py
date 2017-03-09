@@ -143,6 +143,7 @@ class TreeUtility:
             "SetningAukafall" : "S",
             "SetningSkilyrði" : "S",
             "SetningUmAðRæða" : "S",
+            "StViðtenging" : "S",
             "Tengisetning" : "S",
             "OgTengisetning" : "S",
             "Skilyrði" : "S-COND",
@@ -155,10 +156,12 @@ class TreeUtility:
             "FsAtv" : "ADVP",
             "AtvFs" : "ADVP",
             "Atviksliður" : "ADVP",
-            "LoAtviksliðir": "ADVP",
+            "LoAtviksliðir" : "ADVP",
+            "Dagsetning" : "ADVP-DATE",
             "SagnRuna" : "VP",
             "NhLiðir" : "VP",
             "SagnliðurÁnF" : "VP",
+            "ÖfugurSagnliður" : "VP",
             "SagnHluti" : "VP",
             "SagnliðurVh" : "VP"
         }
@@ -166,13 +169,14 @@ class TreeUtility:
         ID_MAP = {
             "P" : dict(name = "Málsgrein"),
             "S" : dict(name = "Setning", subject_to = "S"),
-            "S-COND" : dict(name = "Forsenda", overrides = "S"), # Condition
+            "S-COND" : dict(name = "Skilyrði", overrides = "S"), # Condition
             "S-CONS" : dict(name = "Afleiðing", overrides = "S"), # Consequence
             "VP" : dict(name = "Sagnliður", subject_to = "VP"),
             "NP" : dict(name = "Nafnliður"),
             "NP-POSS" : dict(name = "Eignarfallsliður", overrides = "NP"),
+            "ADVP" : dict(name = "Atviksliður", subject_to = "ADVP"),
+            "ADVP-DATE" : dict(name = "Tímasetning", overrides = "ADVP"),
             "PP" : dict(name = "Forsetningarliður", overrides = "ADVP"),
-            "ADVP" : dict(name = "Atviksliður", subject_to = "ADVP")
         }
 
         def __init__(self, tokens):
