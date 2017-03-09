@@ -606,7 +606,9 @@ function d3_update(source) {
    g.selectAll(".node-nonterminal")
       .append("rect")
          .attr("width", function(d) {
-            return d.data.text.length >= 11 ? 100 : 64;
+            // Select one of three widths depending on the text length
+            return d.data.text.length < 11 ? 64 :
+               (d.data.text.length < 14 ? 80 : 100);
          })
          .attr("height", 20)
          .attr("transform", function(d) {
