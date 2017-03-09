@@ -787,9 +787,8 @@ class Comparison():
             # TODO hvað sýnir BÍN?
             greining.append("n") # orðflokkur
             uppl = word["t"].split("_") # [0]: person, [1]: fall, [2]: kyn
-            if len(uppl) >= 3:
-                kyn = uppl[2] # kyn
-            elif "g" in word:
+            kyn = uppl[2]
+            if "g" in word:
                 kyn = word["g"]
             else:
                 kyn = None # !!! Nota eitthvað kyn sem sjálfgefið?
