@@ -214,11 +214,18 @@
 
    <div class="row">
 
-      <h4 class="txt">
-         <button id="edit-sent" title="Breyta málsgrein">
-            <span class="glyphicon glyphicon-edit"></span>Breyta
-         </button> {{ txt }}
-      </h4>
+      <table id="tbl-edit-sent">
+      <tr>
+      <td>
+         <button id="edit-sent" title="Breyta málsgrein" class="btn btn-warning">
+            <span class="glyphicon glyphicon-edit"></span>&nbsp;Breyta
+         </button>
+      </td>
+      <td>
+         <h4 class="txt">{{ txt }}</h4>
+      </td>
+      </tr>
+      </table>
 
    </div>
 
@@ -562,7 +569,7 @@ function d3_update(source) {
                if (d.data.k && d.data.k == "PUNCTUATION")
                   classes.push("punct")
                else
-               if (d.data.k && d.data.k == "CURRENCY")
+               if (d.data.k && (d.data.k == "CURRENCY" || d.data.k == "AMOUNT"))
                   classes.push("currency");
                else
                if (d.data.k && (d.data.k == "NUMBER" || d.data.k == "ORDINAL"))

@@ -1018,3 +1018,19 @@ span.weight0 {
    color: #cccccc;
 }
 
+table#tbl-edit-sent {
+   margin-bottom: 12px;
+}
+
+table#tbl-edit-sent tr td {
+   vertical-align: middle;
+}
+
+table#tbl-edit-sent tr td h4 {
+   margin-top: 6px;
+   margin-bottom: 6px;
+}
+
+button#edit-sent {
+   margin-right: 12px;
+}
