@@ -48,7 +48,7 @@ from flask.wrappers import Response
 from settings import Settings, ConfigError, changedlocale
 from bindb import BIN_Db
 from tokenizer import tokenize, TOK, correct_spaces, canonicalize_token
-from fastparser import Fast_Parser, ParseError, ParseForestPrinter
+from fastparser import Fast_Parser, ParseError, ParseForestPrinter, ParseForestFlattener
 from reducer import Reducer
 from article import Article as ArticleProxy
 from treeutil import TreeUtility
@@ -711,15 +711,21 @@ def make_grid(w):
     return (cols, schema[2])
 
 
-@app.route("/parsegrid", methods=['POST'])
+@app.route("/parsegrid", methods=['GET', 'POST'])
 def parse_grid():
     """ Show the parse grid for a particular parse tree of a sentence """
 
     MAX_LEVEL = 32 # Maximum level of option depth we can handle
-    txt = request.form.get('txt', "")
-    parse_path = request.form.get('option', "")
-    debug_mode = get_json_bool(request, 'debug')
-    use_reducer = "noreduce" not in request.form
+    if request.method == 'GET':
+        txt = request.args.get('txt', "")
+        parse_path = ""
+        debug_mode = False
+        use_reducer = True
+    else:
+        txt = request.form.get('txt', "")
+        parse_path = request.form.get('option', "")
+        debug_mode = get_json_bool(request, 'debug')
+        use_reducer = "noreduce" not in request.form
 
     # Tokenize the text
     tokens = list(tokenize(" [[ " + txt + " ]] ")) # Ensure that we get S_BEGIN and S_END tokens
@@ -764,6 +770,7 @@ def parse_grid():
 
     # Make the parse grid with all options
     grid, ncols = make_grid(forest) if forest else ([], 0)
+
     # The grid is columnar; convert it to row-major
     # form for convenient translation into HTML
     # There will be as many columns as there are tokens
@@ -834,6 +841,7 @@ def parse_grid():
         ncols_adj = ncols - len(rs[gix])
         if col < ncols_adj:
             tbl[gix].append((ncols_adj - col, 1, "", ""))
+
     # Calculate the unique path choices available for this parse grid
     choices -= { NULL_TUPLE } # Default choice: don't need it in the set
     unique_choices = choices.copy()
@@ -852,6 +860,98 @@ def parse_grid():
     return render_template("parsegrid.html", txt = txt, err = err, tbl = tbl,
         combinations = combinations, score = score, debug_mode = debug_mode,
         choice_list = uc_list, parse_path = parse_path)
+
+
+@app.route("/treegrid", methods=['GET'])
+def tree_grid():
+    """ Show a simplified parse tree for a single sentence """
+
+    txt = request.args.get('txt', "")
+    with SessionContext(commit = True) as session:
+        # Obtain simplified tree, full tree and stats
+        tree, full_tree, stats = TreeUtility.parse_text_with_full_tree(session, txt)
+        if full_tree is not None:
+            # Create a more manageable, flatter tree from the binarized raw parse tree
+            full_tree = ParseForestFlattener.flatten(full_tree)
+
+    # Preprocess the trees for display, projecting them to a 2d table structure
+
+    def _wrap_build_tbl(tbl, root, is_nt_func, children_func, nt_info_func, t_info_func):
+
+        def _build_tbl(level, offset, nodelist):
+            """ Add the tree node data to be displayed at a particular
+                level (row) in the result table """
+            while len(tbl) <= level:
+                tbl.append([])
+            tlevel = tbl[level]
+            left = sum(t[0] for t in tlevel)
+            while left < offset:
+                # Insert a left margin if required
+                # (necessary if we'we alread inserted a terminal at a
+                # level above this one)
+                tlevel.append((1, None))
+                left += 1
+            index = offset
+            if nodelist is not None:
+                for n in nodelist:
+                    if is_nt_func(n):
+                        # Nonterminal: display the child nodes in deeper levels
+                        # and add a header on top of them, spanning their total width
+                        cnt = _build_tbl(level + 1, index, children_func(n))
+                        tlevel.append((cnt, nt_info_func(n)))
+                        index += cnt
+                    else:
+                        # Terminal: display it in a single column
+                        tlevel.append((1, t_info_func(n)))
+                        index += 1
+            return index - offset
+
+        return _build_tbl(0, 0, [ root ])
+
+    def _normalize_tbl(tbl, width):
+        """ Fill out the table with blanks so that it is square """
+        for row in tbl:
+            rw = sum(t[0] for t in row)
+            # Right-pad as required
+            while rw < width:
+                row.append((1, None))
+                rw += 1
+
+    tbl = []
+    full_tbl = []
+    if tree is None:
+        full_tree = None
+        width = 0
+        full_width = 0
+        height = 0 # Height of simplified table
+        full_height = 0 # Height of full table
+    else:
+
+        # Build a table structure for a simplified tree
+        width = _wrap_build_tbl(tbl, tree,
+            is_nt_func = lambda n: n["k"] == "NONTERMINAL",
+            children_func = lambda n: n["p"],
+            nt_info_func = lambda n: dict(n = n["n"]),
+            t_info_func = lambda n: n)
+        height = len(tbl)
+        if width and height:
+            _normalize_tbl(tbl, width)
+
+        # Build a table structure for a full tree
+        full_width = _wrap_build_tbl(full_tbl, full_tree,
+            is_nt_func = lambda n: n.is_nonterminal,
+            children_func = lambda n: n.children,
+            nt_info_func = lambda n: dict(n = n.p.name),
+            t_info_func = lambda n: dict(t = n.p[0].name, x = n.p[1].t1))
+        assert full_width == width
+        full_height = len(full_tbl)
+        if full_width and full_height:
+            _normalize_tbl(full_tbl, full_width)
+
+    return render_template("treegrid.html",
+        txt = txt, tree = tree,
+        tbl = tbl, height = height,
+        full_tbl = full_tbl, full_height = full_height)
 
 
 @app.route("/genders", methods=['GET'])
@@ -1040,7 +1140,7 @@ try:
     # Read configuration file
     Settings.read("config/Reynir.conf")
 except ConfigError as e:
-    logging.error("Reynir did not start due to configuration error: {0}".format(e))
+    logging.error("Reynir did not start due to configuration error:\n{0}".format(e))
     sys.exit(1)
 
 if Settings.DEBUG:

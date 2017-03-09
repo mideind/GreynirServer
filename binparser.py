@@ -213,6 +213,7 @@ class BIN_Token(Token):
         "Corp", "Corp.", "Corporation",
         "Ltd", "Ltd.", "Limited",
         "Co", "Co.", "Company",
+        "Group",
         "AS", "ASA",
         "SA", "S.A.",
         "GmbH", "AG",

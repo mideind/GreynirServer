@@ -50,49 +50,49 @@
 </head>
 <body id="bodytag">
 
-    <!-- Fixed navbar -->
-   <nav class="navbar navbar-default navbar-fixed-top">
-      <div class="container">
-         <div class="navbar-header">
-            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
-               data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-               <span class="sr-only">Toggle navigation</span>
-               <span class="icon-bar"></span>
-               <span class="icon-bar"></span>
-               <span class="icon-bar"></span>
-            </button>
-            <a class="navbar-brand" href="{{ url_for('main') }}">
-               <img src="{{ url_for('static', filename='GreynirLogo180x80.png') }}" width=90 height=40>
-            </a>
-         </div>
-         <div id="navbar" class="navbar-collapse collapse">
-            <ul class="nav navbar-nav">
-               <li id="navid-main"><a href="{{ url_for('main') }}">Heim</a></li>
-               <li id="navid-news"><a href="{{ url_for('news') }}">Nýjast</a></li>
-               <li id="navid-people"><a href="{{ url_for('people') }}">Fólk</a></li>
-               <li id="navid-analysis"><a href="{{ url_for('analysis') }}">Málgreining</a></li>
-               <li id="navid-genders"><a href="{{ url_for('genders') }}">Kynjagreining</a></li>
-               <li id="navid-stats"><a href="{{ url_for('stats') }}">Tölfræði</a></li>
-               <li id="navid-apidoc"><a href="{{ url_for('apidoc') }}">Forritaskil</a></li>
-               <li id="navid-about"><a href="{{ url_for('about') }}">Um Greyni</a></li>
-            </ul>
-         </div>
+ <!-- Fixed navbar -->
+<nav class="navbar navbar-default navbar-fixed-top">
+   <div class="container">
+      <div class="navbar-header">
+         <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
+            data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+         </button>
+         <a class="navbar-brand" href="{{ url_for('main') }}">
+            <img src="{{ url_for('static', filename='GreynirLogo180x80.png') }}" width=90 height=40>
+         </a>
       </div>
-   </nav>
+      <div id="navbar" class="navbar-collapse collapse">
+         <ul class="nav navbar-nav">
+            <li id="navid-main"><a href="{{ url_for('main') }}">Heim</a></li>
+            <li id="navid-news"><a href="{{ url_for('news') }}">Nýjast</a></li>
+            <li id="navid-people"><a href="{{ url_for('people') }}">Fólk</a></li>
+            <li id="navid-analysis"><a href="{{ url_for('analysis') }}">Málgreining</a></li>
+            <li id="navid-genders"><a href="{{ url_for('genders') }}">Kynjagreining</a></li>
+            <li id="navid-stats"><a href="{{ url_for('stats') }}">Tölfræði</a></li>
+            <li id="navid-apidoc"><a href="{{ url_for('apidoc') }}">Forritaskil</a></li>
+            <li id="navid-about"><a href="{{ url_for('about') }}">Um Greyni</a></li>
+         </ul>
+      </div>
+   </div>
+</nav>
 
-{% block container %}
-{% endblock -%}
+{% block container -%}
+{%- endblock %}
 
-	<!-- jQuery -->
-	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+<!-- jQuery -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
 
-	<!-- Bootstrap -->
-	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"
-      integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS"
-      crossorigin="anonymous"></script>
+<!-- Bootstrap -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"
+   integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS"
+   crossorigin="anonymous"></script>
 
-{%- block endscripts -%}
-{%- endblock -%}
+{% block endscripts -%}
+{%- endblock %}
 
 </body>
 </html>

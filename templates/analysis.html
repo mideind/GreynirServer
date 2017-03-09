@@ -83,6 +83,7 @@
 
 {% block endscripts %}
 
+<script src="{{ url_for('static', filename='common.js') }}"></script>
 <script src="{{ url_for('static', filename='page.js') }}"></script>
 
 <script>
@@ -147,6 +148,9 @@
    function init() {
       // Activate the top navbar
       $("#navid-analysis").addClass("active");
+      // Clicking on the info panel makes it disappear
+      // (necessary for touch screens)
+      $("div.info").click(function() { $(this).css("visibility", "hidden"); });
       // Hide the output div until we have something to show
       $("div#output").css("display", "none");
    }

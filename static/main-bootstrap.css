@@ -5,8 +5,20 @@
    CSS file for Reynir front-end web
 
    Author: Vilhjalmur Thorsteinsson
-   Copyright (C) 2016
-   All rights reserved
+   Copyright (C) 2017
+
+      This program is free software: you can redistribute it and/or modify
+      it under the terms of the GNU General Public License as published by
+      the Free Software Foundation, either version 3 of the License, or
+      (at your option) any later version.
+      This program is distributed in the hope that it will be useful,
+      but WITHOUT ANY WARRANTY; without even the implied warranty of
+      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+      GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see http://www.gnu.org/licenses/.
+
 
    Bootstrap standard theme colors:
 
@@ -86,8 +98,17 @@
 .glyphicon-tag:before {
    content: "\E066";
 }
+.glyphicon-tags:before {
+   content: "\E067";
+}
 .glyphicon-warning-sign:before {
    content: "\E079";
+}
+.glyphicon-share:before {
+   content: "\E309";
+}
+.glyphicon-link:before {
+   content: "\E051";
 }
 
 .glyphicon-spin {
@@ -467,6 +488,7 @@ div.info.kk,
 div.info.kvk,
 div.info.hk,
 div.info.fn,
+div.info.abfn,
 div.info.pfn,
 div.info.person.male {
    background-color: #d9edf7;
@@ -501,6 +523,7 @@ div.info #tag {
 
 div.info.fn #tag,
 div.info.pfn #tag,
+div.info.abfn #tag,
 div.info.person.male #tag,
 div.info.kk #tag,
 div.info.kvk #tag,
@@ -995,3 +1018,19 @@ span.weight0 {
    color: #cccccc;
 }
 
+table#tbl-edit-sent {
+   margin-bottom: 12px;
+}
+
+table#tbl-edit-sent tr td {
+   vertical-align: middle;
+}
+
+table#tbl-edit-sent tr td h4 {
+   margin-top: 6px;
+   margin-bottom: 6px;
+}
+
+button#edit-sent {
+   margin-right: 12px;
+}

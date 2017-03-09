@@ -122,8 +122,15 @@ INVALID_TITLES = {
 # Phrases to cut off the ends of titles
 
 CUT_ENDINGS = (
-    "í tilkynningu", "í fréttatilkynningu", "í afkomutilkynningu", "í fjölmiðlum", "í samtali", "í viðtali",
-    "í Kastljósi", "í þættinum", "í grein", " sem"
+    "í tilkynningu", "í tilkynningunni",
+    "í fréttatilkynningu", "í fréttatilkynningunni",
+    "í afkomutilkynningu", "í afkomutilkynningunni",
+    "í fjölmiðlum",
+    "í samtali", "í samtalinu",
+    "í viðtali", "í viðtalinu",
+    "í Kastljósi", "í þættinum",
+    "í grein", "í greininni",
+    " sem"
 )
 
 def _add_name(result, mannsnafn, titill, kyn):

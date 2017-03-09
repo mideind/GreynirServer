@@ -407,8 +407,12 @@ class MblScraper(ScrapeHelper):
     def get_metadata(self, soup):
         """ Analyze the article soup and return metadata """
         metadata = super().get_metadata(soup)
-        # Extract the heading from the OpenGraph (Facebook) og:title meta property
-        heading = ScrapeHelper.meta_property(soup, "og:title") or ""
+        # Extract the heading from the meta title or OpenGraph (Facebook) og:title property
+        heading = ScrapeHelper.meta_property(soup, "title", prop_attr = "name") or ""
+        if heading.endswith(" - mbl.is"):
+            heading = heading[0:-9]
+        if not heading:
+            heading = ScrapeHelper.meta_property(soup, "og:title") or ""
         if not heading:
             # Check for a h2 inside a div.pistill-entry
             p_e = ScrapeHelper.div_class(soup.html.body, "pistill-entry")

@@ -113,6 +113,7 @@
 
 {% block endscripts %}
 
+<script src="{{ url_for('static', filename='common.js') }}"></script>
 <script src="{{ url_for('static', filename='page.js') }}"></script>
 
 <script>
@@ -183,6 +184,9 @@
    function init() {
       // Show help text
       $("div#help").css("display", "block");
+      // Clicking on the info panel makes it disappear
+      // (necessary for touch screens)
+      $("div.info").click(function() { $(this).css("visibility", "hidden"); });
       $("button.refresh")
          .click(function(ev) {
             reparseArticle("{{ article.uuid | safe }}");

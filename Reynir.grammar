@@ -206,14 +206,15 @@ Samtenging →
     | "áður" "en" "að:st"?
     | "fyrr" "en" "að:st"?
     | 'á_meðan' "að:st"?
-    | "þangað" "til:st" "að:st"?
     | "allt" "frá" "því" "að:st"?
     | "þar" "á:fs" "meðal" | 'þar_á_meðal'
     | "þar" "sem:st"
-    | 'auk_þess' "sem:st"
+    | 'auk_þess' "sem:st" "að:st"?
     | "eins:ao" "og:st"
-    | "vegna:fs" "þess"
-    | SpurnarSamtenging
+    | "vegna:fs" "þess" "að:st"?
+    | "á_sama_tíma" "og:st"
+    | ÞangaðTil
+    | OgEðaEn? SpurnarSamtenging
 
 SpurnarSamtenging →
 
@@ -238,6 +239,11 @@ SpurnarSamtenging →
     # heldur aðeins með forsetningarrunu (hvenær í ósköpunum hann ætlaði að koma)
     # | "hvort" FsRuna # ?hvort í ósköpunum hann ætlaði að hætta
     | "hvenær" FsRuna
+
+ÞangaðTil →
+    "þangað" "til:st" "að:st"?
+
+$score(+12) ÞangaðTil
 
 HverHvor/kyn →
     'hver'/kyn | 'hvor'/kyn
@@ -281,8 +287,10 @@ SetningSkilyrði →
 $score(+12) SetningSkilyrði
 
 EfÞegar →
-    "ef" | "þegar" | "er:st" | "þótt" | "þó" "að:st"? | 'jafnvel_þótt' | "þar" "sem:st" | "eftir:st" "að:st"
-    | "eins:ao" "og:st" | 'líkt_og' | 'á_meðan' | "meðan:st" | "þangað" "til:st" | 'um_leið' "og:st" | "síðan:st"
+    "ef" | "þegar" | "er:st" | "þótt" | "þó" "að:st"? | "þó:st" "svo:ao" "að:st" | 'jafnvel_þótt'
+    | "þar" "sem:st" | "eftir:st" "að:st"
+    | "eins:ao" "og:st" | 'líkt_og' | 'á_meðan' | "meðan:st"
+    | "þangað" "til:st" | 'um_leið' "og:st" | "síðan:st" | 'þrátt_fyrir_að'
 
 OgEfÞegar →
     "og" EfÞegar              # 'Ef og þegar eitthvað gerist læt ég þig vita'
@@ -389,7 +397,8 @@ SamanburðarTenging →
 SamanburðarTengingOg →
     ','? "og:st"               # Erfitt fjarskiptasamband er á staðnum og mikil snjóþyngsli
 
-$score(-4) SamanburðarTengingOg
+$score(-4) Samanburður
+$score(-8) SamanburðarTengingOg
 
 Sjálfur/tala/kyn → 'sjálfur'/tala/kyn
 
@@ -455,9 +464,9 @@ SetningAð →
 $score(-2) SetningAð # Óalgengt form
 
 SetningUmAðRæða →
-    "um:fs" 'vera'_gm_p3_et "að:nhm" 'ræða'_gm_nh Nl_þf
+    "um:fs" 'vera'_gm_p3_et "að:nhm" 'ræða'_gm_nh Nl_þf AtvFs?
 
-$score(+8) SetningUmAðRæða # Mjög líklega réttur skilningur á þessari orðaröð
+$score(+20) SetningUmAðRæða # Mjög líklega réttur skilningur á þessari orðaröð
 
 SetningForskeyti →
     FsAtv
@@ -1005,6 +1014,7 @@ Sögn_lhþt_et_p3_hk →
 
 Sögn_lhnt/tala/pers →
     HjSögnLhÞt/tala/pers HreinSögn_lhnt
+    | 'þykja'/tala/pers HreinSögn_lhnt  # Almenningur þykir uggandi / ég þykist vitandi
 
 HreinSögn_lhnt →
     FsAtv? so_0_lh_nt OgSögn_lhnt*
@@ -2028,6 +2038,8 @@ Einkunn/tala/fall/kyn →
     | Töluorð/tala/fall/kyn     # þrjá (gangandi menn) / 26
     | OkkarYkkar                # 'okkar skoðanir', 'ykkar félag' (okkar og ykkar eru pfn, ekki fn)
 
+$score(+3) Einkunn/tala/fall/kyn
+
 # Lýsingarorð eða eignarfallsliður sem kemur á eftir nafnlið
 
 NlViðbót/tala/fall/kyn →
@@ -2159,7 +2171,7 @@ $score(+8) NlStakViðbót/fall/kyn
 NlStakViðbótNl/fall/kyn →
     NlStak_ft_p3/fall/kyn               # við fóstbræður, við alþingismennirnir
 
-$score(-16) NlStakViðbótNl/fall/kyn     # Draga af stig fyrir "við fóstbræður" vegna hættu á ruglingi við forsetninguna 'við'
+$score(-20) NlStakViðbótNl/fall/kyn     # Draga af stig fyrir "við fóstbræður" vegna hættu á ruglingi við forsetninguna 'við'
 
 NlStak_ft_p1/fall/kyn → NlStak_p1_ft/fall/kyn FsRunaEftirNl?
 
@@ -2411,6 +2423,20 @@ NlStak_p3_et_nf_hk → NlSérnafn
 NlStak_p3_et_þf_hk → NlSérnafn
 NlStak_p3_et_þgf_hk → NlSérnafn
 NlStak_p3_et_ef_hk → NlSérnafn
+
+# Sérnöfn þurfa einnig að geta staðið í fleirtölu,
+# sbr. 'Valsmenn skoruðu flest mörk', 'Dodgers áttu sigurinn vísan',
+# 'Essenar voru trúflokkur'
+
+NlStak_p3_ft_nf_hk → NlSérnafn_ft
+NlStak_p3_ft_þf_hk → NlSérnafn_ft
+NlStak_p3_ft_þgf_hk → NlSérnafn_ft
+NlStak_p3_ft_ef_hk → NlSérnafn_ft
+
+NlSérnafn_ft → NlSérnafn
+
+# Gefa mínus fyrir fleirtölu m.v. eintölu
+$score(-2) NlSérnafn_ft
 
 # !!! no_ef er notað í stað EfLiður til að minnka margræðni þegar
 # !!! mörg sérnöfn standa í röð
@@ -2786,6 +2812,12 @@ EfLiðurForskeyti →
     | "meiri" "háttar"
     | "minni" "háttar"
     | Prósentubil          # (Spáð er) a.m.k. 10-20% (aukningu)
+    | Prósenta
+
+Prósenta →
+    prósenta
+
+$score(+8) Prósenta
 
 ÓbeygðEining →
     "prósent"
@@ -2847,7 +2879,7 @@ TengiliðurMeðKommu/tala/pers/kyn →
 KommaTengiliður/tala/pers/kyn →
     ','? "sem:st" SetningÁnF/tala/pers/kyn
 
-$score(-2) KommaTengiliður/tala/pers/kyn
+$score(-5) KommaTengiliður/tala/pers/kyn
 
 Tengiliður/tala/pers/kyn →
     Tengiorð Tengisetning/tala/pers/kyn OgTengisetning/tala/pers/kyn*
@@ -3010,7 +3042,7 @@ OgEða → "og:st" | "eða:st" | "ellegar" | "eður" | "svo" "og:st" | "sem:st" 
 EnÍOgEða →
     "en:st"
 
-$score(-14) EnÍOgEða # Frekar að líta á 'en' sem samtengingu ef það er hægt
+$score(-24) EnÍOgEða # Frekar að líta á 'en' sem samtengingu ef það er hægt
 
 OgSem → "og:st" "sem:st"? | "eða:st" "sem:st"? | "ellegar" | "en:st" "sem:st"?
 
@@ -3167,6 +3199,7 @@ $score(+10) LoMun/fall/tala/kyn
 
 LoSem/fall/tala/kyn →
     "sem:ao" lo_esb/fall/tala/kyn # (hvernig skuli stuðla að) sem jöfnustu hlutfalli
+    # | "sem:ao" lo_evb/fall/tala/kyn # (hvernig skuli stuðla að) sem jafnasta hlutfallinu
 
 $score(+4) LoSem/fall/tala/kyn
 
@@ -3201,7 +3234,7 @@ Lo_mst_nf/tala/kyn → LoAtviksliðir? lo_mst_nf/tala/kyn LoViðhengi? # Miðsti
 LoViðhengi →
     EfLiður | Nl_þgf
 
-$score(-6) LoViðhengi
+$score(-10) LoViðhengi
 
 # Lýsingarorð sem einkunn með nafnlið
 
@@ -3229,7 +3262,7 @@ $score(-6) StaktLoEftirNl/tala/fall/kyn
 LoEftirNlMeðÞgf/fall/tala/kyn →
     AtviksliðurEinkunn* lo_sb/fall/tala/kyn Nl_þgf
 
-$score(+6) LoEftirNlMeðÞgf/fall/tala/kyn
+$score(+4) LoEftirNlMeðÞgf/fall/tala/kyn
 
 # '(Ég drakk) hvítu, volgu og feitu mjólkina' / '(Ég sá) hvíta, volga og feita mjólk'
 # '(Íslendingar fluttu fé til annarra) og í sumum tilvikum öruggari landa'
@@ -3320,8 +3353,6 @@ FsMeðFallstjórn →
     | "nær" 'draga'_et_p3 Nl_þgf # 'þegar nær dró/dregur jólum'
     | 'það_sem_af_er' Nl_þgf # 'það sem af er þessu þingi'
     | 'fyrir_hönd' Nl_ef
-    | "miðað" "við:fs" Nl_þf
-    | 'miðað_við' Nl_þf # Skammstöfunin m.v.
     | 'með_tilliti_til' Nl_ef # Skammstöfunin m.t.t.
     | "samanborið:so" "við:fs" Nl_þf
     | "borið:so" "saman" "við:fs" Nl_þf
@@ -3336,6 +3367,7 @@ FsMeðFallstjórn →
     | "á:fs" "að:st" HreinYfirsetning ','?
     | "að:fs" "nafni:hk" person_nf          # Ég ræddi við konu að nafni Aðalbjörg Jónsdóttir
     | "á:fs" Vikudagur_gr_þf_et "kemur:so"  # á sunnudaginn kemur / á laugardagskvöldið kemur
+    | FsMiðaðVið
     | FsÍGegnUm
     | FsAðBaki
     | FsTilÞgf
@@ -3361,7 +3393,13 @@ FsÞgfTilEf →
     Nl_þgf "til:fs" Nl_ef # máli sínu til stuðnings, barninu til hróss, henni til bjargar
 
 # Ekki velja þetta nema nauðsyn beri til
-$score(-4) FsÞgfTilEf
+$score(-6) FsÞgfTilEf
+
+FsMiðaðVið →
+    'miða:so'_sagnb "við:fs" Nl_þf
+    | 'miðað_við' Nl_þf # Skammstöfunin m.v.
+
+$score(+12) FsMiðaðVið
 
 FsÍGegnUm →
     "í:ao" "gegn:ao" "um:fs" Nl_þf
@@ -3393,6 +3431,8 @@ So_1_gm_fh_p3_et_ef → so_1_ef_gm_fh_p3_et
 FsHvaðVarðar →
     Nl/fall So_1_gm_fh_p3_et/fall  # '(hvað) Pál varðar/Páli viðvíkur'
     | So_1_gm_fh_p3_et/fall Nl/fall # '(hvað) varðar Pál/viðvíkur Páli'
+
+$score(+4) FsHvaðVarðar
 
 FsLiður → Atviksliður? FsMeðFallstjórn # snarlega í bæinn
 
@@ -3465,7 +3505,7 @@ EinnAl →
     | "hingað" "til:ao"
     # | "til:ao" "að:nhm" "mynda:so"
     | "sem:ao" "sagt"
-    | töl "sinnum"          # tvisvar, þrisvar og fjórum sinnum er skilgreint í Main.conf
+    | Sinnum
     | Úrslit                # KR sigraði Val 6:0
 
 $tag(no_prep) EinnAl        # Engar forsetningar hér inni - óþarfi að skoða dótturgreinar
@@ -3485,6 +3525,11 @@ UndirEins →
     "undir:ao" "eins:ao"    # 'Ég fór undir eins og kannaði málið'
 
 $score(+4) UndirEins
+
+Sinnum →
+    töl "sinnum:hk"          # tvisvar, þrisvar og fjórum sinnum er skilgreint í Main.conf
+    | tala_ft "sinnum:hk"
+    | tala_et "sinni:hk"
 
 Atviksliður →
     Al OgAtviksliður*
@@ -3518,7 +3563,7 @@ $score(+8) UmEðaYfir
 
 Tímasetning →
     "klukkan"? tími OgKlukkan? Degis?
-    | "klukkan" töl OgKlukkan? Degis?
+    | "klukkan" "hálf"? töl OgKlukkan? Degis?
     | "klukkan" "hálf"? to_nf_hk Degis?
     | Degis
 
@@ -3570,7 +3615,7 @@ Dagsetning →
     | MörgÁr # '2009-13'
     | "frá:fs" OgMeð? "árinu:hk"? ártal # 'frá árinu 2009', 'frá og með 2012'
     | "til:fs" "ársins:hk"? ártal # 'til ársins 1997'
-    | "síðan:ao" ártal # síðan 2012
+    | Síðan
     | "dagana" Dagana # dagana 1. til 10. júlí
     | 'sá'_kk_et_þf? raðnr "þessa" "mánaðar" # [þann] 23. þessa mánaðar
     | ÞegarLíðaTekurÁ
@@ -3582,7 +3627,7 @@ Dagsetning →
     | Tímabil_þgf/kyn/tala TímaAfstæði_þgf # Klukkutíma fyrr kom ég á staðinn
     | Tímabil_ft_þgf/kyn "saman" # Nefndin fundaði ekki mánuðum saman
     | Tímabil_þf/kyn/tala TímaAfstæði_þf # Vikuna áður / Daginn eftir / áratugina á undan
-    | TímaForskeyti? TímaAfstæði # áður en krónan féll / eftir að landið öðlaðist sjálfstæði
+    | TímaForskeyti? TímaAfstæði # [viku/löngu] áður en krónan féll / [ári/stuttu] eftir að landið öðlaðist sjálfstæði
 
 $tag(apply_prep_bonus) Dagsetning # Gefa bónus þegar dagsetning fylgir sögn frekar en nafnlið
 
@@ -3593,6 +3638,12 @@ Undanfarið →
     | 'undangenginn'_þf/tala/kyn TalaTímabil_þf/tala/kyn # undangengnar sex vikur
 
 $score(+10) Undanfarið
+
+Síðan →
+    "síðan:ao" ártal # síðan 2012
+    | "síðan:ao" dags # síðan 19. júlí 2006
+
+$score(+10) Síðan
 
 ÞegarLíðaTekurÁ →
     "þegar:st" "líða" 'taka'_gm_p3_et "á:fs" Tímabil_þf/kyn/tala
@@ -3617,10 +3668,12 @@ $score(+4) Dagsetning Tímasetning Aldur
 
 TímaAfstæði_þgf → "síðar:ao" | "seinna:ao" | "fyrr:ao" TímaEn? | "áður:ao" TímaEn?
 TímaAfstæði_þf → "áður:ao" TímaEn? | "eftir:ao" TímaAð? | "fyrir:fs" Nl_þf | "á:ao" "undan:ao" | "á:ao" "eftir:ao"
-TímaForskeyti → "löngu:lo" | "stuttu:lo" | "töluverðu:lo" | "örstuttu:lo" | "rétt:ao" | "örskömmu:lo"
+TímaForskeyti → "löngu:lo" | "stuttu:lo" | "töluverðu:lo" | "örstuttu:lo"
+    | "rétt:ao" | "örskömmu:lo" | Tímabil_þgf/kyn/tala
 TímaAfstæði → "áður:ao" TímaEn | "eftir:ao" TímaAð
 
 $score(+2) TímaForskeyti
+$score(+4) TímaAfstæði
 
 TímaEn →
     "en:st" "að:st"? HreinYfirsetning
@@ -3699,7 +3752,7 @@ NæsturSíðastur_þf_et_kvk →
 NæsturSíðastur_þf_et_hk →
     'síðastliðinn'_sb_þf_et_hk  # síðastliðið sumar
 
-$score(+4) NæsturSíðastur_þf/tala/kyn
+$score(+6) NæsturSíðastur_þf/tala/kyn
 
 Tímabil/fall/kyn/tala → Tímabil/kyn/fall/tala
 
@@ -3720,6 +3773,8 @@ Tímabil_hk/fall/tala →
     | 'leikár'_hk/fall/tala
     | 'rekstrarár'_hk/fall/tala
     | 'almanaksár'_hk/fall/tala
+    | 'korter'_hk/fall/tala
+    | 'kortér'_hk/fall/tala
 
 Tímabil_kvk/fall/tala →
     'vika'_kvk/fall/tala
@@ -3741,9 +3796,18 @@ Tímabil_kk/fall/tala →
     | 'morgunn'/fall/tala
     | 'eftirmiðdagur'/fall/tala
     | Vikudagur/fall/tala
-    | 'klukkutími'/fall/tala
+    | 'klukkutími'_kk/fall/tala
+    | 'hálftími'_kk/fall/tala
+    | 'stundarfjórðungur'_kk/fall/tala
     | 'tími'_kk/fall/tala
     | 'áratugur'/fall/tala
+    | FyrriSíðari_kk/fall/tala? 'hálfleikur'/fall/tala
+    | 'leikur'/fall/tala
+
+FyrriSíðari/kyn/fall/tala →
+    'fyrri'_mst/kyn/fall/tala
+    | 'síðari'_mst/kyn/fall/tala
+    | 'seinn'_mst/kyn/fall/tala
 
 Vikudagur/fall/tala →
     # !!! Do the following in the tokenizer instead?
