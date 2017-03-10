@@ -111,6 +111,7 @@ DIGITS = frozenset([d for d in "0123456789"]) # Set of digit characters
 ALL_CASES = frozenset(["nf", "þf", "þgf", "ef"])
 
 # Month names and numbers
+
 MONTHS = {
     "janúar": 1,
     "febrúar": 2,
@@ -125,6 +126,26 @@ MONTHS = {
     "nóvember": 11,
     "desember": 12
 }
+
+# Handling of Roman numerals
+
+RE_ROMAN_NUMERAL = re.compile(r"^M{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$")
+
+ROMAN_NUMERAL_MAP = tuple(zip(
+    (1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1),
+    ('M', 'CM', 'D', 'CD', 'C', 'XC', 'L', 'XL', 'X', 'IX', 'V', 'IV', 'I')
+))
+
+def roman_to_int(s):
+    """ Quick and dirty conversion of an already validated Roman numeral to integer """
+    # Adapted from http://code.activestate.com/recipes/81611-roman-numerals/
+    i = result = 0
+    for integer, numeral in ROMAN_NUMERAL_MAP:
+        while s[i:i + len(numeral)] == numeral:
+            result += integer
+            i += len(numeral)
+    assert i == len(s)
+    return result
 
 # Named tuple for person names, including case and gender
 
@@ -322,6 +343,17 @@ class TOK:
         return Tok(TOK.S_END, None, None)
 
 
+def is_valid_date(y, m, d):
+    """ Returns True if y, m, d is a valid date """
+    if (1776 <= y <= 2100) and (1 <= m <= 12) and (1 <= d <= 31):
+        try:
+            datetime.datetime(year = y, month = m, day = d)
+            return True
+        except ValueError:
+            pass
+    return False
+
+
 def parse_digits(w):
     """ Parse a raw token starting with a digit """
 
@@ -361,7 +393,7 @@ def parse_digits(w):
         if m > 12 >= d:
             # Probably wrong way around
             m, d = d, m
-        if (1776 <= y <= 2100) and (1 <= m <= 12) and (1 <= d <= 31):
+        if is_valid_date(y, m, d):
             return TOK.Date(w, y, m, d), s.end()
     s = re.match(r'\d+(\.\d\d\d)*,\d+', w)
     if s:
@@ -649,8 +681,9 @@ def parse_particles(token_stream):
 
             # Coalesce ordinals (1. = first, 2. = second...) into a single token
             if next_token.kind == TOK.PUNCTUATION and next_token.txt == '.':
-                if token.kind == TOK.NUMBER and not ('.' in token.txt or ',' in token.txt):
-                    # Ordinal, i.e. whole number followed by period: convert to an ordinal token
+                if (token.kind == TOK.NUMBER and not ('.' in token.txt or ',' in token.txt)) or \
+                    (token.kind == TOK.WORD and RE_ROMAN_NUMERAL.match(token.txt)):
+                    # Ordinal, i.e. whole number or Roman numeral followed by period: convert to an ordinal token
                     follow_token = next(token_stream)
                     if follow_token.kind in (TOK.S_END, TOK.P_END) or \
                         (follow_token.kind == TOK.PUNCTUATION and follow_token.txt in {'„', '"'}) or \
@@ -660,12 +693,13 @@ def parse_particles(token_stream):
                         # or opening quotes,
                         # or an uppercase word (and not a month name misspelled in upper case):
                         # fall back from assuming that this is an ordinal
-                        yield token # Yield the number
+                        yield token # Yield the number or Roman numeral
                         token = next_token # The period
                         next_token = follow_token # The following (uppercase) word or sentence end
                     else:
-                        # OK: replace the number and the period with an ordinal token
-                        token = TOK.Ordinal(token.txt + '.', token.val[0])
+                        # OK: replace the number/Roman numeral and the period with an ordinal token
+                        num = token.val[0] if token.kind == TOK.NUMBER else roman_to_int(token.txt)
+                        token = TOK.Ordinal(token.txt + '.', num)
                         # Continue with the following word
                         next_token = follow_token
 
