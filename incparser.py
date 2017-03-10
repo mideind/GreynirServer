@@ -1,10 +1,23 @@
 """
+
     Reynir: Natural language processing for Icelandic
 
     Utility class for incremental parsing of token streams
 
-    Copyright (c) 2016 Vilhjalmur Thorsteinsson
-    All rights reserved
+    Copyright (c) 2017 Vilhjalmur Thorsteinsson
+
+       This program is free software: you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published by
+       the Free Software Foundation, either version 3 of the License, or
+       (at your option) any later version.
+       This program is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+       GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see http://www.gnu.org/licenses/.
+
 
     This module implements a simple utility class for parsing token
     streams into paragraphs and sentences. The parse is incremental so
@@ -20,6 +33,7 @@ from tokenizer import TOK, paragraphs
 from fastparser import Fast_Parser, ParseError # , ParseForestPrinter
 from reducer import Reducer
 from settings import Settings
+
 
 # Number of tree combinations that must be exceeded for a verbose
 # parse dump to include the sentence text (as opposed to just basic stats)
@@ -65,17 +79,18 @@ class IncrementalParser:
         def parse(self):
             """ Parse the sentence """
             num = 0
+            score = 0
             try:
                 forest = self._ip._parser.go(self._s)
                 if forest is not None:
                     num = Fast_Parser.num_combinations(forest)
                     if num > 1:
-                        forest = self._ip._reducer.go(forest)
+                        forest, score = self._ip._reducer.go_with_score(forest)
             except ParseError as e:
                 forest = None
                 self._err_index = e.token_index
             self._tree = forest
-            self._ip._add_sentence(self, num)
+            self._ip._add_sentence(self, num, score)
             return num > 0
 
         @property
@@ -109,12 +124,15 @@ class IncrementalParser:
             for _, sent in self._p:
                 yield IncrementalParser._IncrementalSentence(self._ip, sent)
 
+
     def __init__(self, parser, toklist, verbose = False):
         self._parser = parser
         self._reducer = Reducer(parser.grammar)
         self._num_sent = 0
         self._num_parsed_sent = 0
         self._num_tokens = 0
+        self._num_combinations = 0
+        self._total_score = 0
         self._total_ambig = 0.0
         self._total_tokens = 0
         self._start_time = time.time()
@@ -131,7 +149,7 @@ class IncrementalParser:
         #for t in sorted(tokencount.items(), key = lambda x : x[1], reverse = True)[0:20]:
         #    print("Token '{0}' ({1}) occurs {2} times".format(t[0][1], TOK.descr[t[0][0]], t[1]))
 
-    def _add_sentence(self, s, num):
+    def _add_sentence(self, s, num, score):
         """ Add a processed sentence to the statistics """
         slen = len(s)
         self._num_sent += 1
@@ -139,9 +157,12 @@ class IncrementalParser:
         if num > 0:
             # The sentence was parsed successfully
             self._num_parsed_sent += 1
+            self._num_combinations += num
             ambig_factor = num ** (1 / slen)
             self._total_ambig += ambig_factor * slen
             self._total_tokens += slen
+            self._total_score += score
+        # Debugging output, if requested and enabled
         if self._verbose and Settings.DEBUG:
             print("Parsed sentence of length {0} with {1} combinations{2}"
                 .format(slen, num,
@@ -163,6 +184,14 @@ class IncrementalParser:
     @property
     def num_parsed(self):
         return self._num_parsed_sent
+
+    @property
+    def num_combinations(self):
+        return self._num_combinations
+
+    @property
+    def total_score(self):
+        return self._total_score
 
     @property
     def ambiguity(self):

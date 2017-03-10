@@ -1034,3 +1034,17 @@ table#tbl-edit-sent tr td h4 {
 button#edit-sent {
    margin-right: 12px;
 }
+
+div#stats-panel {
+   max-width: 380px;
+}
+
+div#stats-panel td.count {
+   font-weight: bold;
+}
+
+td.explain {
+   font-style: italic;
+   text-align: right;
+}
+

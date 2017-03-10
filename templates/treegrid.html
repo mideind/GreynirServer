@@ -75,7 +75,9 @@
 
    .node-nonterminal.S rect,
    .node-nonterminal.S-COND rect,
-   .node-nonterminal.S-CONS rect
+   .node-nonterminal.S-CONS rect,
+   .node-nonterminal.S-EXPLAIN rect,
+   .node-nonterminal.S-QUOTE rect
    {
       fill: #f0ad4e;
       stroke: #f0ad4e;
@@ -258,6 +260,11 @@
             <span class="glyphicon glyphicon-tags"></span>&nbsp;Ítarlegt
          </a>
       </li>
+      <li role="presentation">
+         <a href="#stats" aria-controls="full" role="tab" data-toggle="tab">
+            <span class="glyphicon glyphicon-info"></span>&nbsp;Tölfræði
+         </a>
+      </li>
    </ul>
 
    <!-- Tab panes -->
@@ -339,6 +346,26 @@
 </div>
 
       </div>
+
+      <div role="tabpanel" class="tab-pane" id="stats">
+
+         <!-- Statistics -->
+
+         <div class="panel panel-default" id="stats-panel">
+         <table class="table table-hover">
+         <tbody>
+            <tr><td>Fjöldi einda</td><td class="count">{{ stats.num_tokens | format_is }}</td></tr>
+            <tr><td>Fjöldi mögulegra trjáa</td><td class="count">{{ stats.num_combinations | format_is }}</td></tr>
+            <tr><td>Stig besta trés</td><td class="count">{{ stats.total_score | format_is }}</td></tr>
+            <tr><td>Margræðnistuðull</td><td class="count">{{ stats.ambiguity | format_is(2) }}</td></tr>
+            <tr><td class="explain" colspan="2">
+               ({{ stats.ambiguity | format_is(2) }} ^ {{ stats.num_tokens | format_is}} ≈ {{ stats.num_combinations | format_is }})</td></tr>
+         </tbody>
+         </table>
+         </div>
+
+      </div>
+
    </div>
 </div>
 
@@ -397,7 +424,7 @@ var tree = d3.tree()
    });
 
 // Create a D3 hierarchy from the parse tree
-var root = d3.hierarchy(treeData, function(d) {
+var root = treeData === null ? null : d3.hierarchy(treeData, function(d) {
       // Yield the children of node d
       return d.p;
    });
@@ -709,8 +736,10 @@ function initMain(jQuery) {
    $('div#simple').css("visibility", "visible");
 
    // Display tree using D3
-   d3.select(self.frameElement).style("height", (height + margin.top + margin.bottom) + "px");
-   d3_update(root);
+   if (root) {
+      d3.select(self.frameElement).style("height", (height + margin.top + margin.bottom) + "px");
+      d3_update(root);
+   }
 }
 
 $(document).ready(initMain);

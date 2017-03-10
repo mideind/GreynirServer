@@ -148,6 +148,8 @@ class TreeUtility:
             "OgTengisetning" : "S",
             "Skilyrði" : "S-COND",
             "Afleiðing" : "S-CONS",
+            "NlSkýring" : "S-EXPLAIN",
+            "Tilvitnun" : "S-QUOTE",
             "Nl" : "NP",
             "EfLiður" : "NP-POSS",
             "EfLiðurForskeyti" : "NP-POSS",
@@ -167,16 +169,24 @@ class TreeUtility:
             "SagnliðurVh" : "VP"
         }
 
+        # subject_to: don't push an instance of this if the
+        # immediate parent is already the subject_to nonterminal
+
+        # overrides: we cut off a parent node in favor of this one
+        # if there are no intermediate nodes
+
         ID_MAP = {
             "P" : dict(name = "Málsgrein"),
-            "S" : dict(name = "Setning", subject_to = "S"),
+            "S" : dict(name = "Setning", subject_to = { "S", "S-EXPLAIN" }),
             "S-COND" : dict(name = "Skilyrði", overrides = "S"), # Condition
             "S-CONS" : dict(name = "Afleiðing", overrides = "S"), # Consequence
-            "VP" : dict(name = "Sagnliður", subject_to = "VP"),
+            "S-EXPLAIN" : dict(name = "Skýring"), # Explanation
+            "S-QUOTE" : dict(name = "Tilvitnun"), # Quote at end of sentence
+            "VP" : dict(name = "Sagnliður", subject_to = { "VP" }),
             "NP" : dict(name = "Nafnliður"),
             "NP-POSS" : dict(name = "Eignarfallsliður", overrides = "NP"),
             "NP-ADDR" : dict(name = "Heimilisfang", overrides = "NP"),
-            "ADVP" : dict(name = "Atviksliður", subject_to = "ADVP"),
+            "ADVP" : dict(name = "Atviksliður", subject_to = { "ADVP" }),
             "ADVP-DATE" : dict(name = "Tímasetning", overrides = "ADVP"),
             "PP" : dict(name = "Forsetningarliður", overrides = "ADVP"),
         }
@@ -211,7 +221,7 @@ class TreeUtility:
                 # push it (unless it is subject to a scope we're already in)
                 mapped_id = self.ID_MAP[mapped_nt]
                 subject_to = mapped_id.get("subject_to")
-                if self._scope[-1] == subject_to:
+                if subject_to is not None and self._scope[-1] in subject_to:
                     # We are already within a nonterminal to which this one is subject:
                     # don't bother pushing it
                     return None
@@ -235,7 +245,9 @@ class TreeUtility:
             # the same nonterminal - or a nonterminal which the parent overrides
             if len(children) == 1:
 
-                def collapse_child(ch0, nt):
+                ch0 = children[0]
+
+                def collapse_child(nt):
                     """ Determine whether to cut off a child and connect directly
                         from this node to its children """
                     d = self.NT_MAP[nt]
@@ -247,19 +259,18 @@ class TreeUtility:
                     override = self.ID_MAP[d].get("overrides")
                     return ch0["i"] == override
 
-                def replace_parent(ch0, nt):
+                def replace_parent(nt):
                     d = self.NT_MAP[nt]
                     # If the child overrides the parent, replace the parent
                     override = self.ID_MAP[ch0["i"]].get("overrides")
                     return d == override
 
-                ch0 = children[0]
                 if ch0["k"] == "NONTERMINAL":
-                    if collapse_child(ch0, node.nonterminal.first):
+                    if collapse_child(node.nonterminal.first):
                         # If so, we eliminate one level and move the children of the child
                         # up to be children of this node
                         self._stack[-1][-1]["p"] = ch0["p"]
-                    elif replace_parent(ch0, node.nonterminal.first):
+                    elif replace_parent(node.nonterminal.first):
                         # The child subsumes the parent: replace
                         # the parent by the child
                         self._stack[-1][-1] = ch0
@@ -367,6 +378,8 @@ class TreeUtility:
                 num_sentences = ip.num_sentences,
                 num_parsed = ip.num_parsed,
                 ambiguity = ip.ambiguity,
+                num_combinations = ip.num_combinations,
+                total_score = ip.total_score
             )
 
         return (pgs, stats)

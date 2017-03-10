@@ -115,7 +115,7 @@ Málsgrein →
     | '(' MgrInnihald ')'
     | '[' MgrInnihald ']'
 
-MgrInnihald → Forskeyti? Yfirsetning StLiður* Lokatákn?
+MgrInnihald → Forskeyti? Yfirsetning StLiður* Tilvitnun? Lokatákn?
 
 Forskeyti →
     Samtenging "-:em"? # 'En - þegar allt er skoðað, var þetta fínt.'
@@ -133,6 +133,18 @@ Forskeyti →
 AfTala → "af:fs" tala
 
 $score(-6) Forskeyti # Ekki freistast í forskeyti ef annað er í boði
+
+Tilvitnun →
+    ',' SögnSegja/tala/pers Nl_nf/tala/pers AtvFs? # , segir/fullyrðir Jón Ásmundsson, fulltrúi samtakanna, í útvarpinu í gær
+    | ',' 'segja'_gm_fh_p3_et "í:fs" Nl_þgf AtvFs?  # , segir í tilkynningu ráðuneytisins í gær
+
+SögnSegja/tala/pers →
+    'segja'_gm_fh/tala/pers
+    | 'flissa'_gm_fh/tala/pers
+    | 'fullyrða'_gm_fh/tala/pers
+    | 'staðhæfa'_gm_fh/tala/pers
+
+$score(+32) Tilvitnun # Þarf að vera meiri plús en t.d. SagnFramhald
 
 Lokatákn → '.' | '?' | ':' | '!' | '(' '!' ')'
 LokatáknEðaKomma → Lokatákn | ','
@@ -1930,7 +1942,7 @@ NhFyllingEðaAtv →
 NhLiður →
     nhm NhRuna
 
-$score(+1) NhLiður
+$score(+2) NhLiður
 
 NhLiðurFrh →
     SagnInnskot? NhLiður
@@ -2765,7 +2777,7 @@ KommulausTitill/fall →
 $score(+5) Titill/fall
 
 # ...en ekki eins mikinn fyrir kommulausan titil
-$score(-6) KommulausTitill/fall
+$score(-5) KommulausTitill/fall
 
 # Gefa enn meiri plús fyrir heila titla innan kommu
 $score(+8) KommuTitill/fall

@@ -5,7 +5,7 @@
 
     Web server main module
 
-    Copyright (C) 2016 Vilhjálmur Þorsteinsson
+    Copyright (C) 2017 Vilhjálmur Þorsteinsson
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -48,8 +48,7 @@ from flask.wrappers import Response
 from settings import Settings, ConfigError, changedlocale
 from bindb import BIN_Db
 from tokenizer import tokenize, TOK, correct_spaces, canonicalize_token
-from fastparser import Fast_Parser, ParseError, ParseForestPrinter, ParseForestFlattener
-from reducer import Reducer
+from fastparser import Fast_Parser, ParseForestFlattener
 from article import Article as ArticleProxy
 from treeutil import TreeUtility
 from scraperdb import SessionContext, desc, Root, Person, Article, ArticleTopic, Topic,\
@@ -608,260 +607,6 @@ def query_api(version = 1):
     return better_jsonify(**result)
 
 
-def make_grid(w):
-    """ Make a 2d grid from a flattened parse schema """
-
-    def make_schema(w):
-        """ Create a flattened parse schema from the forest w """
-
-        def _part(w, level, suffix):
-            """ Return a tuple (colheading + options, start_token, end_token, partlist, info)
-                where the partlist is again a list of the component schemas - or a terminal
-                matching a single token - or None if empty """
-            if w is None:
-                # Epsilon node: return empty list
-                return None
-            if w.is_token:
-                return ([ level ] + suffix, w.start, w.end, None, (w.terminal, w.token.text))
-            # Interior nodes are not returned
-            # and do not increment the indentation level
-            if not w.is_interior:
-                level += 1
-            # Accumulate the resulting parts
-            plist = [ ]
-            ambig = w.is_ambiguous
-            add_suffix = [ ]
-
-            for ix, pc in enumerate(w.enum_children()):
-                prod, f = pc
-                if ambig:
-                    # Uniquely identify the available parse options with a coordinate
-                    add_suffix = [ ix ]
-
-                def add_part(p):
-                    """ Add a subtuple p to the part list plist """
-                    if p:
-                        if p[0] is None:
-                            # p describes an interior node
-                            plist.extend(p[3])
-                        elif p[2] > p[1]:
-                            # Only include subtrees that actually contain terminals
-                            plist.append(p)
-
-                if isinstance(f, tuple):
-                    add_part(_part(f[0], level, suffix + add_suffix))
-                    add_part(_part(f[1], level, suffix + add_suffix))
-                else:
-                    add_part(_part(f, level, suffix + add_suffix))
-
-            if w.is_interior:
-                # Interior node: relay plist up the tree
-                return (None, 0, 0, plist, None)
-            # Completed nonterminal
-            assert w.is_completed
-            assert w.nonterminal is not None
-            return ([level - 1] + suffix, w.start, w.end, plist, w.nonterminal)
-
-        # Start of make_schema
-        return _part(w, 0, [ ])
-
-    # Start of make_grid
-
-    if w is None:
-        return None
-    schema = make_schema(w)
-    assert schema[1] == 0
-    cols = [] # The columns to be populated
-    NULL_TUPLE = tuple()
-
-    def _traverse(p):
-        """ Traverse a schema subtree and insert the nodes into their
-            respective grid columns """
-        # p[0] is the coordinate of this subtree (level + suffix)
-        # p[1] is the start column of this subtree
-        # p[2] is the end column of this subtree
-        # p[3] is the subpart list
-        # p[4] is the nonterminal or terminal/token at the head of this subtree
-        col, option = p[0][0], p[0][1:] # Level of this subtree and option
-
-        if not option:
-            # No option: use a 'clean key' of NULL_TUPLE
-            option = NULL_TUPLE
-        else:
-            # Convert list to a frozen (hashable) tuple
-            option = tuple(option)
-
-        while len(cols) <= col:
-            # Add empty columns as required to reach this level
-            cols.append(dict())
-
-        # Add a tuple describing the rows spanned and the node info
-        if option not in cols[col]:
-            # Put in a dictionary entry for this option
-            cols[col][option] = []
-        cols[col][option].append((p[1], p[2], p[4]))
-
-        # Navigate into subparts, if any
-        if p[3]:
-            for subpart in p[3]:
-                _traverse(subpart)
-
-    _traverse(schema)
-    # Return a tuple with the grid and the number of tokens
-    return (cols, schema[2])
-
-
-@app.route("/parsegrid", methods=['GET', 'POST'])
-def parse_grid():
-    """ Show the parse grid for a particular parse tree of a sentence """
-
-    MAX_LEVEL = 32 # Maximum level of option depth we can handle
-    if request.method == 'GET':
-        txt = request.args.get('txt', "")
-        parse_path = ""
-        debug_mode = False
-        use_reducer = True
-    else:
-        txt = request.form.get('txt', "")
-        parse_path = request.form.get('option', "")
-        debug_mode = get_json_bool(request, 'debug')
-        use_reducer = "noreduce" not in request.form
-
-    # Tokenize the text
-    tokens = list(tokenize(" [[ " + txt + " ]] ")) # Ensure that we get S_BEGIN and S_END tokens
-
-    # Parse the text
-    with Fast_Parser(verbose = False) as bp: # Don't emit diagnostic messages
-        err = dict()
-        grammar = bp.grammar
-        try:
-            forest = bp.go(tokens)
-        except ParseError as e:
-            err["msg"] = str(e)
-            # Relay information about the parser state at the time of the error
-            err["info"] = None # e.info
-            forest = None
-
-    # Find the number of parse combinations
-    combinations = 0 if forest is None else Fast_Parser.num_combinations(forest)
-    score = 0
-
-    if Settings.DEBUG:
-        # Dump the parse tree to parse.txt
-        with open("parse.txt", mode = "w", encoding= "utf-8") as f:
-            if forest is not None:
-                print("Reynir parse forest for sentence '{0}'".format(txt), file = f)
-                print("{0} combinations\n".format(combinations), file = f)
-                if combinations < 10000:
-                    ParseForestPrinter.print_forest(forest, file = f)
-                else:
-                    print("Too many combinations to dump", file = f)
-            else:
-                print("No parse available for sentence '{0}'".format(txt), file = f)
-
-    if forest is not None and use_reducer:
-        # Reduce the parse forest
-        forest, score = Reducer(grammar).go_with_score(forest)
-        if Settings.DEBUG:
-            # Dump the reduced tree along with node scores
-            with open("reduce.txt", mode = "w", encoding= "utf-8") as f:
-                print("Reynir parse tree for sentence '{0}' after reduction".format(txt), file = f)
-                ParseForestPrinter.print_forest(forest, file = f)
-
-    # Make the parse grid with all options
-    grid, ncols = make_grid(forest) if forest else ([], 0)
-
-    # The grid is columnar; convert it to row-major
-    # form for convenient translation into HTML
-    # There will be as many columns as there are tokens
-    nrows = len(grid)
-    tbl = [ [] for _ in range(nrows) ]
-    # Info about previous row spans
-    rs = [ [] for _ in range(nrows) ]
-
-    # The particular option path we are displaying
-    if not parse_path:
-        # Not specified: display the all-zero path
-        path = [(0,) * i for i in range(1, MAX_LEVEL)]
-    else:
-        # Disassemble the passed-in path
-
-        def toint(s):
-            """ Safe conversion of string to int """
-            try:
-                n = int(s)
-            except ValueError:
-                n = 0
-            return n if n >= 0 else 0
-
-        p = [ toint(s) for s in parse_path.split("_") ]
-        path = [tuple(p[0 : i + 1]) for i in range(len(p))]
-
-    # This set will contain all option path choices
-    choices = set()
-    NULL_TUPLE = tuple()
-
-    for gix, gcol in enumerate(grid):
-        # gcol is a dictionary of options
-        # Accumulate the options that we want do display
-        # according to chosen path
-        cols = gcol[NULL_TUPLE] if NULL_TUPLE in gcol else [] # Default content
-        # Add the options we're displaying
-        for p in path:
-            if p in gcol:
-                cols.extend(gcol[p])
-        # Accumulate all possible path choices
-        choices |= gcol.keys()
-        # Sort the columns that will be displayed
-        cols.sort(key = lambda x: x[0])
-        col = 0
-        for startcol, endcol, info in cols:
-            #assert isinstance(info, Nonterminal) or isinstance(info, tuple)
-            if col < startcol:
-                gap = startcol - col
-                gap -= sum(1 for c in rs[gix] if c < startcol)
-                if gap > 0:
-                    tbl[gix].append((gap, 1, "", ""))
-            rowspan = 1
-            if isinstance(info, tuple):
-                cls = { "terminal" }
-                rowspan = nrows - gix
-                for i in range(gix + 1, nrows):
-                    # Note the rowspan's effect on subsequent rows
-                    rs[i].append(startcol)
-            else:
-                cls = { "nonterminal" }
-                # Get the 'pure' name of the nonterminal in question
-                #assert isinstance(info, Nonterminal)
-                info = info.name
-            if endcol - startcol == 1:
-                cls |= { "vertical" }
-            tbl[gix].append((endcol-startcol, rowspan, info, cls))
-            col = endcol
-        ncols_adj = ncols - len(rs[gix])
-        if col < ncols_adj:
-            tbl[gix].append((ncols_adj - col, 1, "", ""))
-
-    # Calculate the unique path choices available for this parse grid
-    choices -= { NULL_TUPLE } # Default choice: don't need it in the set
-    unique_choices = choices.copy()
-    for c in choices:
-        # Remove all shorter prefixes of c from the unique_choices set
-        unique_choices -= { c[0:i] for i in range(1, len(c)) }
-    # Create a nice string representation of the unique path choices
-    uc_list = [ "_".join(str(c) for c in choice) for choice in unique_choices ]
-    if not parse_path:
-        # We are displaying the longest possible all-zero choice: find it
-        i = 0
-        while (0,) * (i + 1) in unique_choices:
-            i += 1
-        parse_path = "_".join(["0"] * i)
-
-    return render_template("parsegrid.html", txt = txt, err = err, tbl = tbl,
-        combinations = combinations, score = score, debug_mode = debug_mode,
-        choice_list = uc_list, parse_path = parse_path)
-
-
 @app.route("/treegrid", methods=['GET'])
 def tree_grid():
     """ Show a simplified parse tree for a single sentence """
@@ -949,7 +694,7 @@ def tree_grid():
             _normalize_tbl(full_tbl, full_width)
 
     return render_template("treegrid.html",
-        txt = txt, tree = tree,
+        txt = txt, tree = tree, stats = stats,
         tbl = tbl, height = height,
         full_tbl = full_tbl, full_height = full_height)
 
