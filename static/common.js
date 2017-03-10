@@ -352,8 +352,12 @@ function tokenInfo(t, nameDict) {
    }
    else
    if (t.k == TOK_ORDINAL) {
-     r.lemma = t.x;
-     r.details = "raðtala";
+      r.lemma = t.x;
+      if ("0123456789".indexOf(t.x[0]) == -1)
+         // Roman numeral
+         r.details = "raðtala (" + t.v + ".)";
+      else
+         r.details = "raðtala";
    }
    else
    if (t.k == TOK_DATE) {
