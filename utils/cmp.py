@@ -1,12 +1,54 @@
+#!/usr/bin/env python
+"""
+
+    Reynir: Natural language processing for Icelandic
+
+    POS tagging accuracy measurement toold
+
+    Copyright (C) 2017 Miðeind ehf
+
+       This program is free software: you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published by
+       the Free Software Foundation, either version 3 of the License, or
+       (at your option) any later version.
+       This program is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+       GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see http://www.gnu.org/licenses/.
+
+
+    This module allows measurement of POS tagging accuracy for Reynir
+    against the Icelandic Frequency Database (IFD), which is a hand-tagged
+    corpus containing various types of text.
+
+"""
+
 import json
 import xml.etree.ElementTree as ET
 import os
+import sys
 import json
 import urllib.request
+
 from urllib.parse import quote
 from timeit import default_timer as timer
 
+# Hack to make this Python program executable from the utils subdirectory
+if __name__ == "__main__":
+    basepath, _ = os.path.split(os.path.realpath(__file__))
+    if basepath.endswith("/utils") or basepath.endswith("\\utils"):
+        basepath = basepath[0:-6]
+        sys.path.append(basepath)
+
+from settings import Settings, StaticPhrases
+
 IFD_DIR = "ifd" 
+CWD = os.getcwd()
+IFD_FULL_DIR = os.path.join(CWD, IFD_DIR)
+
 # GREINARMERKI = {"!", "(", ")", ",", "-", ".", "...", "/", ":", ";", "?", "[", "]", "«", "»"} # Öll greinarmerki sem koma fyrir í OTB
 VINSTRI_GREINARMERKI = "([„«#$€<"
 MIÐJA_GREINARMERKI = '"*&+=@©|—'
@@ -455,7 +497,7 @@ class Comparison():
                         if lengd > 1: # Fleiri en eitt orð í streng Greynis
                             stikk.write("Fann margorða eind í Greyni: {}\n".format(word["x"]))
                             stikk.flush()
-                            if word["x"] in MARGORÐA: # Margorða frasi, fæ mörk úr orðabók, lemmur líka.
+                            if word["x"].lower() in MARGORÐA: # Margorða frasi, fæ mörk úr orðabók, lemmur líka.
                                 stikk.write("Fann í MARGORÐA\n")
                                 stikk.flush()
                                 rétt_setning = rétt_setning & self.margorða_stikkprufa(word, lemmur_OTB, mörk_OTB, i)
@@ -527,7 +569,7 @@ class Comparison():
                 else:
                     lengd = max(len(word["x"].split(" ")), len(word["x"].split("-"))) #TODO breyta ef stuðningur við orð með bandstriki er útfærður.
                     if lengd > 1: # Fleiri en eitt orð í streng Greynis # TODO breyta þegar set dict með MWE inn
-                        if word["x"] in MARGORÐA: # Margorða frasi, fæ mörk úr orðabók, lemmur líka.
+                        if word["x"].lower() in MARGORÐA: # Margorða frasi, fæ mörk úr orðabók, lemmur líka.
                             rétt_setning = rétt_setning & self.margorða_allt(word, lemmur_OTB, mörk_OTB, i)
                             i += lengd
                             if i >= (len(orðalisti) - 1): # Ef síðasta orð í streng
@@ -585,7 +627,7 @@ class Comparison():
                     lengd = max(len(word["x"].split(" ")), len(word["x"].split("-"))) #TODO breyta ef stuðningur við orð með bandstriki er útfærður.
                     if lengd > 1: # Fleiri en eitt orð í streng Greynis
                         #print("Fann margorða eind í Greyni: {}".format(word["x"]))
-                        if word["x"] in MARGORÐA: # Margorða frasi, fæ mörk úr orðabók, lemmur líka.
+                        if word["x"].lower() in MARGORÐA: # Margorða frasi, fæ mörk úr orðabók, lemmur líka.
                             #print("Fann í MARGORÐA")
                             rétt_setning = rétt_setning & self.margorða_allt(word, lemmur_OTB, mörk_OTB, i)
                             i += lengd
@@ -619,9 +661,10 @@ class Comparison():
  
     def margorða_stikkprufa(self, word, lemmur_OTB, mörk_OTB, i):
         with open("stikkprufa.txt", "a") as stikk:
-            mörk_Gr = MARGORÐA[word["x"]][0].split(" ")
-            lemmur_Gr = MARGORÐA[word["x"]][1].split(" ")
-            öll_orð = word["x"].replace("-", " ").split(" ")
+            wx = word["x"].lower()
+            mörk_Gr = MARGORÐA[wx][0].split(" ")
+            lemmur_Gr = MARGORÐA[wx][1].split(" ")
+            öll_orð = wx.replace("-", " ").split(" ")
             allt = zip(öll_orð, lemmur_Gr, mörk_Gr)
             rétt = True # Finnst eitthvað rangt í liðnum?
             for orð, lemma_Gr, mark_Gr in allt:
@@ -673,9 +716,10 @@ class Comparison():
             return rétt
 
     def margorða_allt(self, word, lemmur_OTB, mörk_OTB, i):
-        mörk_Gr = MARGORÐA[word["x"]][0].split(" ")
-        lemmur_Gr = MARGORÐA[word["x"]][1].split(" ")
-        öll_orð = word["x"].replace("-", " ").split(" ")
+        wx = word["x"].lower()
+        mörk_Gr = MARGORÐA[wx][0].split(" ")
+        lemmur_Gr = MARGORÐA[wx][1].split(" ")
+        öll_orð = wx.replace("-", " ").split(" ")
         allt = zip(öll_orð, lemmur_Gr, mörk_Gr)
         rétt = True # Finnst eitthvað rangt í liðnum?
         for orð, lemma_Gr, mark_Gr in allt:
@@ -787,9 +831,10 @@ class Comparison():
             # TODO hvað sýnir BÍN?
             greining.append("n") # orðflokkur
             uppl = word["t"].split("_") # [0]: person, [1]: fall, [2]: kyn
-            kyn = uppl[2]
             if "g" in word:
                 kyn = word["g"]
+            elif len(uppl) > 2:
+                kyn = uppl[2]
             else:
                 kyn = None # !!! Nota eitthvað kyn sem sjálfgefið?
             if kyn is not None:
@@ -1271,104 +1316,119 @@ class Comparison():
 
     def start_stikkprufa(self):
         úrtak = 100
-        cwd = os.getcwd()
-        xml_files = [x for x in os.listdir(cwd + "/" + IFD_DIR) if x.startswith("A") and x.endswith(".xml")]
+        xml_files = [x for x in os.listdir(IFD_FULL_DIR) if x.startswith("A") and x.endswith(".xml")]
         i = 1
         lengd = len(xml_files)
         for each in xml_files:
             print("Skjal {} af {}".format(i, lengd))
-            self.úrvinnsla_stikkprufa(cwd + "/" + IFD_DIR + "/" + each, úrtak)
+            self.úrvinnsla_stikkprufa(IFD_FULL_DIR + "/" + each, úrtak)
             i += 1
         self.prenta()
    
     def start_allt(self):
-        cwd = os.getcwd()
-        xml_files = [x for x in os.listdir(cwd + "/" + IFD_DIR) if x.startswith("A") and x.endswith(".xml")]
+        xml_files = [x for x in os.listdir(IFD_FULL_DIR) if x.startswith("A") and x.endswith(".xml")]
         i = 1
         lengd = len(xml_files)
         for each in xml_files:
             print("Skjal {} af {}".format(i, lengd))
-            self.úrvinnsla_allt(cwd + "/" + IFD_DIR + "/" + each)
+            self.úrvinnsla_allt(IFD_FULL_DIR + "/" + each)
             i +=1
         self.prenta()
 
     def start_fyllimengi(self):
         úrtak = 100
-        cwd = os.getcwd()
-        xml_files = [x for x in os.listdir(cwd + "/" + IFD_DIR) if x.startswith("A") and x.endswith(".xml")]
+        xml_files = [x for x in os.listdir(IFD_FULL_DIR) if x.startswith("A") and x.endswith(".xml")]
         i = 1
         lengd = len(xml_files)
         for each in xml_files:
             print("Skjal {} af {}".format(i, lengd))
-            self.úrvinnsla_fyllimengi(cwd + "/" + IFD_DIR + "/" + each, úrtak)
+            self.úrvinnsla_fyllimengi(IFD_FULL_DIR + "/" + each, úrtak)
             i += 1
         self.prenta()
 
 def start_flokkar():
     # Íslensk skáldverk
-    skaldis = [x for x in os.listdir(cwd + "/" + IFD_DIR) if x.startswith("A1") and x.endswith(".xml")]
+    skaldis = [x for x in os.listdir(IFD_FULL_DIR) if x.startswith("A1") and x.endswith(".xml")]
     i = 1
     lengd = len(skaldis)
     comp1 = Comparison()
     for each in skaldis:
         print("Skjal {} af {}".format(i, lengd))
-        comp1.úrvinnsla_allt(cwd + "/" + IFD_DIR + "/" + each)
+        comp1.úrvinnsla_allt(IFD_FULL_DIR + "/" + each)
         i +=1
     print("*** Niðurstöður fyrir íslensk skáldverk ***")
     comp1.prenta()
 
     # Ævisögur
-    aevis = [x for x in os.listdir(cwd + "/" + IFD_DIR) if x.startswith("A3") and x.endswith(".xml")]
+    aevis = [x for x in os.listdir(IFD_FULL_DIR) if x.startswith("A3") and x.endswith(".xml")]
     i = 1
     lengd = len(aevis)
     comp2 = Comparison()    
     for each in aevis:
         print("Skjal {} af {}".format(i, lengd))
-        comp2.úrvinnsla_allt(cwd + "/" + IFD_DIR + "/" + each)
+        comp2.úrvinnsla_allt(IFD_FULL_DIR + "/" + each)
         i +=1
     print("*** Niðurstöður fyrir ævisögur ***")
     comp2.prenta()
 
     # Fræðslutextar - hugvísindi
-    nythug = [x for x in os.listdir(cwd + "/" + IFD_DIR) if x.startswith("A4") and x[2] in ["A", "B", "C", "D", "E", "F", "G", "H", "J"]]
+    nythug = [x for x in os.listdir(IFD_FULL_DIR) if x.startswith("A4") and x[2] in ["A", "B", "C", "D", "E", "F", "G", "H", "J"]]
     i = 1
     lengd = len(nythug)
     comp3 = Comparison()
     for each in nythug:
         print("Skjal {} af {}".format(i, lengd))
-        comp3.úrvinnsla_allt(cwd + "/" + IFD_DIR + "/" + each)
+        comp3.úrvinnsla_allt(IFD_FULL_DIR + "/" + each)
         i +=1
     print("*** Niðurstöður fyrir fræðslutexta - hugvísindi ***")
     comp3.prenta()
 
     #Fræðslutextar - raunvísindi
-    nytraun = [x for x in os.listdir(cwd + "/" + IFD_DIR) if x.startswith("A4") and x[2] in ["K", "M", "N", "O", "Q", "R", "S"]]
+    nytraun = [x for x in os.listdir(IFD_FULL_DIR) if x.startswith("A4") and x[2] in ["K", "M", "N", "O", "Q", "R", "S"]]
     i = 1
     lengd = len(nytraun)
     comp4 = Comparison()    
     for each in nytraun:
         print("Skjal {} af {}".format(i, lengd))
-        comp4.úrvinnsla_allt(cwd + "/" + IFD_DIR + "/" + each)
+        comp4.úrvinnsla_allt(IFD_FULL_DIR + "/" + each)
         i +=1
     print("*** Niðurstöður fyrir fræðslutexta - raunvísindi ***")
     comp4.prenta()
 
     # Barna- og unglingabækur
-    barnis = [x for x in os.listdir(cwd + "/" + IFD_DIR) if x.startswith("A5") and x.endswith(".xml")]
+    barnis = [x for x in os.listdir(IFD_FULL_DIR) if x.startswith("A5") and x.endswith(".xml")]
     i = 1
     lengd = len(barnis)
     comp5 = Comparison()
     for each in barnis:
         print("Skjal {} af {}".format(i, lengd))
-        comp5.úrvinnsla_allt(cwd + "/" + IFD_DIR + "/" + each)
+        comp5.úrvinnsla_allt(IFD_FULL_DIR + "/" + each)
         i +=1
     print("*** Niðurstöður fyrir barna- og unglingabækur ***")
     comp5.prenta()
 
+def validate_margorða(basepath):
+    """ Double-check that the MARGORÐA dictionary contains all multi-word phrases found in Main.conf """
+    try:
+        # Read configuration file
+        Settings.read(os.path.join(basepath, "config/Reynir.conf"))
+    except ConfigError as e:
+        print("Villa í uppsetningu:\n{0}".format(e))
+        sys.exit(1)
+    for phrase, m in StaticPhrases.MAP.items():
+        if m[2] in { "kk", "kvk", "hk" }:
+            # No need to check noun phrases
+            continue
+        if phrase not in MARGORÐA:
+            print("Athugið! '{}' vantar í MARGORÐA".format(phrase))
+    for phrase in MARGORÐA:
+        if phrase not in StaticPhrases.MAP:
+            print("Athugið! '{}' er ofaukið í MARGORÐA".format(phrase))
+
 if __name__ == "__main__":
+    validate_margorða(basepath)    
     response = input("Hvað viltu prófa? Stikkprufu (S), allan texta (A), allt nema stikkprufu (R) eða allt eftir flokkum (F)?\n").lower()
     byrjun = timer()
-    cwd = os.getcwd()
     if response == "s": # Stikkprufa
         comp = Comparison()
         comp.start_stikkprufa()
@@ -1383,4 +1443,4 @@ if __name__ == "__main__":
     lok = timer()
     liðið = lok - byrjun
     print("")
-    print("Keyrslan tók {:f} sekúndur, eða {:f} mínútur.".format(liðið, (liðið / 60.0)))
+    print("Keyrslan tók {:.1f} sekúndur, eða {:.1f} mínútur.".format(liðið, (liðið / 60.0)))

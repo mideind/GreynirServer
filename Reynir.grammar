@@ -3372,6 +3372,7 @@ FsMeðFallstjórn →
     | 'til_og_frá' Nl_þgf
     | "fyrir:ao" "nú"? "utan:fs" Nl_þf
     | "innan:ao" "við:fs" Nl_þf
+    | "innan:ao" "sem:st" "utan:fs" Nl_ef
     | "hvað" FsHvaðVarðar
     # 'um að lög um endurupptökunefnd standist ekki stjórnarskrá' - Ath: 'um það að' er höndlað í ÞaðTenging
     | "um:fs" "að:st" HreinYfirsetning ','?
@@ -3517,6 +3518,7 @@ EinnAl →
     | "hingað" "til:ao"
     # | "til:ao" "að:nhm" "mynda:so"
     | "sem:ao" "sagt"
+    | FyrirLöngu
     | Sinnum
     | Úrslit                # KR sigraði Val 6:0
 
@@ -3526,6 +3528,11 @@ EkkiNeitt →
     "ekki:ao" "neitt:ao"    # (Ég þekki þetta) ekki neitt
 
 $score(-6) EkkiNeitt
+
+FyrirLöngu →
+    "fyrir:ao" 'langur'_þgf_et_hk # 'fyrir löngu'
+
+$score(+8) FyrirLöngu
 
 # Sem stendur er hann ekki viðlátinn
 SemStendur →
