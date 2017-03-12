@@ -658,6 +658,8 @@ class NamePreferences:
 
 class Settings:
 
+    loaded = False
+
     # Postgres SQL database server hostname and port
     DB_HOSTNAME = os.environ.get('GREYNIR_DB_HOST', 'localhost')
     DB_PORT = os.environ.get('GREYNIR_DB_PORT', '5432') # Default PostgreSQL port
@@ -1072,4 +1074,6 @@ class Settings:
             if rdr:
                 e.set_pos(rdr.fname(), rdr.line())
             raise e
+
+        Settings.loaded = True
 

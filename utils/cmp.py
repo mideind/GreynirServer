@@ -3,9 +3,10 @@
 
     Reynir: Natural language processing for Icelandic
 
-    POS tagging accuracy measurement toold
+    POS tagging accuracy measurement tool
 
     Copyright (C) 2017 Miðeind ehf
+    Original author: Hulda Óladóttir
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -23,6 +24,20 @@
     This module allows measurement of POS tagging accuracy for Reynir
     against the Icelandic Frequency Database (IFD), which is a hand-tagged
     corpus containing various types of text.
+
+    By default, the code uses localhost:5000 as a JSON API server to
+    tag text via the /postag.api/v1?t=xxx URL. To specify a different server,
+    set the TAGGER environment variable. For instance,
+
+    TAGGER=greynir.is python utils/cmp.py
+
+    will use the main https://greynir.is server as a POS tagger. It is
+    also possible to avoid HTTP RPC and use local, in-process tagging by
+    invoking
+
+    TAGGER=LOCAL python utils/cmp.py
+
+    Note that LOCAL must be in uppercase.
 
 """
 
@@ -44,6 +59,24 @@ if __name__ == "__main__":
         sys.path.append(basepath)
 
 from settings import Settings, StaticPhrases
+
+# Stuff for deciding which POS tagging server (and what method) we will use
+
+TAGGER = os.environ.get("TAGGER", "localhost:5000")
+if TAGGER == "LOCAL":
+    # Use in-process tagger (via 'from postagger import Tagger', see below)
+    USE_LOCAL_TAGGER = True
+    MYPATH = ""
+else:
+    USE_LOCAL_TAGGER = False
+    if TAGGER == "greynir.is":
+        # Use the main Greynir server, explicitly over HTTPS
+        MYPATH = "https://greynir.is/postag.api/v1?t="
+    else:
+        # Use the given server, by default localhost:5000, over HTTP
+        MYPATH = "http://" + TAGGER + "/postag.api/v1?t="
+
+# The directory where the IFD corpus files are located
 
 IFD_DIR = "ifd" 
 CWD = os.getcwd()
@@ -439,7 +472,6 @@ EO = {
     "óbrennishólmi/-ur": ["óbrennishólmi", "óbrennishólmur"],
     "foreldri": ["foreldri", "foreldrar"]
 }
-MYPATH = "http://localhost:5000/postag.api/v1?t="
 
 class Comparison():
     def __init__(self):
@@ -459,7 +491,7 @@ class Comparison():
         self.M_confmat = {} # Lykill er (x,y), x = mark frá Greyni, y = mark frá OTB. Gildi er tíðnin. TODO útfæra confusion matrix f. niðurstöður
         self.setnf = 0
 
-    def úrvinnsla_stikkprufa(self, skjal, úrtak):
+    def úrvinnsla_stikkprufa(self, tagger, skjal, úrtak):
         print("*******************", skjal, "**************************")
         tree = ET.parse(skjal)
         root = tree.getroot()
@@ -472,7 +504,10 @@ class Comparison():
                 rétt_setning = True
                 string = ""
                 mörk_OTB, lemmur_OTB, orðalisti = self.OTB_lestur(sent)
-                all_words, setning = self.json_lestur(orðalisti)
+                if tagger is None:
+                    all_words, setning = self.json_lestur(orðalisti)
+                else:
+                    all_words, setning = self.tag_lestur(tagger, orðalisti)
                 if not all_words: # Ekkert svar fékkst fyrir setningu
                     continue
                 #Tekst að greina setninguna?
@@ -537,7 +572,7 @@ class Comparison():
                     self.rangar_setningar += 1
             stikk.flush()
 
-    def úrvinnsla_fyllimengi(self, skjal, úrtak):
+    def úrvinnsla_fyllimengi(self, tagger, skjal, úrtak):
         print("*******************", skjal, "**************************")
         tree = ET.parse(skjal)
         root = tree.getroot()
@@ -549,7 +584,10 @@ class Comparison():
             rétt_setning = True
             string = ""
             mörk_OTB, lemmur_OTB, orðalisti = self.OTB_lestur(sent)
-            all_words, setning = self.json_lestur(orðalisti)
+            if tagger is None:
+                all_words, setning = self.json_lestur(orðalisti)
+            else:
+                all_words, setning = self.tag_lestur(tagger, orðalisti)
             if not all_words: # Ekkert svar fékkst fyrir setningu
                 continue
             #Tekst að greina setninguna?
@@ -593,72 +631,75 @@ class Comparison():
             else:
                 self.rangar_setningar += 1
 
-    def úrvinnsla_allt(self, skjal):
-        print("*******************", skjal, "**************************")
-        tree = ET.parse(skjal)
-        root = tree.getroot()
-        for sent in root.iter("s"):
-            # Vinnur bara úr þeim setningum sem eru í úrtakinu
-            rétt_setning = True
-            string = ""
-            mörk_OTB, lemmur_OTB, orðalisti = self.OTB_lestur(sent)
-            all_words, setning = self.json_lestur(orðalisti)
-            if not all_words: # Ekkert svar fékkst fyrir setningu
-                continue
-            #Tekst að greina setninguna?
-            if self.error(all_words):
-                continue
-            i = 0 # Index fyrir orðalistann.
-            #print(setning)
-            for word in all_words: # Komin á dict frá Greyni með öllum flokkunum.
-                #print("***\t"+word["x"], orðalisti[i])
-                if word["x"] == "Eiríkur Tse" or word["x"] == "Vincent Peale": # Ljótt sértilvik
-                    i += 1
-                    continue
-                if not orðalisti[i]: # Tómur hnútur fremst/aftast í setningu
-                    i += 1
-                if word["x"] == "-" and orðalisti[i] != "-": # Ef bandstrikið er greint sérstaklega
-                    #print("Fann bandstrik, fer í næsta orð")
-                    continue
-                if lemmur_OTB[i] is None: # Greinarmerki
-                    #print("Fann greinarmerki: {}, {}".format(word["x"], mörk_OTB[i]))
-                    rétt_setning = rétt_setning & self.sbrGreinarmerki(mörk_OTB[i], word)
+        def úrvinnsla_allt(self, tagger, skjal):
+            print("*******************", skjal, "**************************")
+            tree = ET.parse(skjal)
+            root = tree.getroot()
+            for sent in root.iter("s"):
+                # Vinnur bara úr þeim setningum sem eru í úrtakinu
+                rétt_setning = True
+                string = ""
+                mörk_OTB, lemmur_OTB, orðalisti = self.OTB_lestur(sent)
+                if tagger is None:
+                    all_words, setning = self.json_lestur(orðalisti)
                 else:
-                    lengd = max(len(word["x"].split(" ")), len(word["x"].split("-"))) #TODO breyta ef stuðningur við orð með bandstriki er útfærður.
-                    if lengd > 1: # Fleiri en eitt orð í streng Greynis
-                        #print("Fann margorða eind í Greyni: {}".format(word["x"]))
-                        if word["x"].lower() in MARGORÐA: # Margorða frasi, fæ mörk úr orðabók, lemmur líka.
-                            #print("Fann í MARGORÐA")
-                            rétt_setning = rétt_setning & self.margorða_allt(word, lemmur_OTB, mörk_OTB, i)
-                            i += lengd
-                            if i >= (len(orðalisti) - 1): # Ef síðasta orð í frasa
-                                #print("Síðasta orð í streng, hætti (1)")
-                                break
-                            continue
-                        #print("Fann ekki í MARGORÐA")
-                        i = i + lengd -1 # Enda á síðasta orði í frasanum
-                        #print("Nú er orð {}".format(orðalisti[i]))
-                        if i >= (len(orðalisti) - 1): #Getur gerst ef síðasta orð í streng
-                            #print("Síðasta orð í streng, hætti (2)")
-                            break
-                    elif not orðalisti[i].endswith(word["x"]): # orði skipt upp í Greyni en ekki OTB
-                        #print("Orði skipt upp í Greyni ({}) en ekki OTB ({})".format(word["x"], orðalisti[i]))
-                        continue # Hægir mikið á öllu, e-r betri leið?
-                    if ("k" in word and word["k"] == "PUNCTUATION" or word["k"] == "UNKNOWN") or ("t" in word and word["t"] == "no"): # Einstaka tilvik. PUNCTUATION hér er t.d. bandstrik sem OTB heldur í orðum en Greynir greinir sem stakt orð
-                        #print("Eitthvað skrýtið á ferðinni.")
+                    all_words, setning = self.tag_lestur(tagger, orðalisti)
+                if not all_words: # Ekkert svar fékkst fyrir setningu
+                    continue
+                #Tekst að greina setninguna?
+                if self.error(all_words):
+                    continue
+                i = 0 # Index fyrir orðalistann.
+                #print(setning)
+                for word in all_words: # Komin á dict frá Greyni með öllum flokkunum.
+                    #print("***\t"+word["x"], orðalisti[i])
+                    if word["x"] == "Eiríkur Tse" or word["x"] == "Vincent Peale": # Ljótt sértilvik
                         i += 1
+                        continue
+                    if not orðalisti[i]: # Tómur hnútur fremst/aftast í setningu
+                        i += 1
+                    if word["x"] == "-" and orðalisti[i] != "-": # Ef bandstrikið er greint sérstaklega
+                        #print("Fann bandstrik, fer í næsta orð")
                         continue
                     if lemmur_OTB[i] is None: # Greinarmerki
                         #print("Fann greinarmerki: {}, {}".format(word["x"], mörk_OTB[i]))
                         rétt_setning = rétt_setning & self.sbrGreinarmerki(mörk_OTB[i], word)
                     else:
-                        rétt_setning = rétt_setning & self.skrif_allt(word, lemmur_OTB[i], mörk_OTB[i]) # Bæði og mark og lemma rétt
-                i += 1
-            if rétt_setning:
-                self.réttar_setningar += 1
-            else:
-                self.rangar_setningar += 1
- 
+                        lengd = max(len(word["x"].split(" ")), len(word["x"].split("-"))) #TODO breyta ef stuðningur við orð með bandstriki er útfærður.
+                        if lengd > 1: # Fleiri en eitt orð í streng Greynis
+                            #print("Fann margorða eind í Greyni: {}".format(word["x"]))
+                            if word["x"].lower() in MARGORÐA: # Margorða frasi, fæ mörk úr orðabók, lemmur líka.
+                                #print("Fann í MARGORÐA")
+                                rétt_setning = rétt_setning & self.margorða_allt(word, lemmur_OTB, mörk_OTB, i)
+                                i += lengd
+                                if i >= (len(orðalisti) - 1): # Ef síðasta orð í frasa
+                                    #print("Síðasta orð í streng, hætti (1)")
+                                    break
+                                continue
+                            #print("Fann ekki í MARGORÐA")
+                            i = i + lengd -1 # Enda á síðasta orði í frasanum
+                            #print("Nú er orð {}".format(orðalisti[i]))
+                            if i >= (len(orðalisti) - 1): #Getur gerst ef síðasta orð í streng
+                                #print("Síðasta orð í streng, hætti (2)")
+                                break
+                        elif not orðalisti[i].endswith(word["x"]): # orði skipt upp í Greyni en ekki OTB
+                            #print("Orði skipt upp í Greyni ({}) en ekki OTB ({})".format(word["x"], orðalisti[i]))
+                            continue # Hægir mikið á öllu, e-r betri leið?
+                        if ("k" in word and word["k"] == "PUNCTUATION" or word["k"] == "UNKNOWN") or ("t" in word and word["t"] == "no"): # Einstaka tilvik. PUNCTUATION hér er t.d. bandstrik sem OTB heldur í orðum en Greynir greinir sem stakt orð
+                            #print("Eitthvað skrýtið á ferðinni.")
+                            i += 1
+                            continue
+                        if lemmur_OTB[i] is None: # Greinarmerki
+                            #print("Fann greinarmerki: {}, {}".format(word["x"], mörk_OTB[i]))
+                            rétt_setning = rétt_setning & self.sbrGreinarmerki(mörk_OTB[i], word)
+                        else:
+                            rétt_setning = rétt_setning & self.skrif_allt(word, lemmur_OTB[i], mörk_OTB[i]) # Bæði og mark og lemma rétt
+                    i += 1
+                if rétt_setning:
+                    self.réttar_setningar += 1
+                else:
+                    self.rangar_setningar += 1
+
     def margorða_stikkprufa(self, word, lemmur_OTB, mörk_OTB, i):
         with open("stikkprufa.txt", "a") as stikk:
             wx = word["x"].lower()
@@ -1004,30 +1045,28 @@ class Comparison():
         return greining
 
     def setningabygging(self, orðalisti):
-        setning = ""
+        setning = []
         bil = True # Bil á undan núverandi staki
         for item in orðalisti:
             if not item: # Tómur hnútur fremst/aftast í setningu
                 continue
             elif item in VINSTRI_GREINARMERKI: # Ekkert bil á eftir
                 if bil:
-                    setning = setning + " " + item
-                else:
-                    setning = setning + item
+                    setning.append(" ")
+                setning.append(item)
                 bil = False # Ekkert bil á eftir þessu
             elif item in MIÐJA_GREINARMERKI: # Hvorki bil á undan né á eftir
-                setning = setning + item 
+                setning.append(item)
                 bil = False
             elif item in HÆGRI_GREINARMERKI: # Ekki bil á undan
-                setning = setning + item
+                setning.append(item)
                 bil = True
             else: # Venjulegt orð, bil á undan og á eftir nema annað komi til
                 if bil:
-                    setning = setning + " " + item
-                else:
-                    setning = setning + item
+                    setning.append(" ")
+                setning.append(item)
                 bil = True
-        return setning
+        return "".join(setning)
  
     def sbrlemma(self, lemma_OTB, word):
         #Fyllir út í self.tíðnibreytur
@@ -1202,6 +1241,7 @@ class Comparison():
             return "fx"
 
     def json_lestur(self, orðalisti):
+        """ Invoke a remote tagger over HTTP/HTTPS """
         setning = self.setningabygging(orðalisti)
         setning_slóð = quote(setning.strip())
         fullpath = MYPATH + setning_slóð
@@ -1211,11 +1251,18 @@ class Comparison():
                 string = response.read().decode('utf-8')
         except urllib.error.HTTPError as e:
             print("Error {0} requesting URL {1}, skipping...".format(e, fullpath))
-            return "", ""
+            return [], ""
         json_obj = json.loads(string)
         all_words = json_obj["result"][0]
         return all_words, setning
  
+    def tag_lestur(self, tagger, orðalisti):
+        """ Invoke a local tagger """
+        setning = self.setningabygging(orðalisti)
+        d = tagger.tag(setning.strip())
+        all_words = d["result"][0]
+        return all_words, setning
+
     def OTB_lestur(self, sent):
         mörk_OTB = [word.get("type") for word in sent.iter()]
         lemmur_OTB = [word.get("lemma") for word in sent.iter()]
@@ -1223,13 +1270,12 @@ class Comparison():
         return mörk_OTB, lemmur_OTB, orðalisti
 
     def error(self, all_words):
-        error = [y['x'] for y in all_words if "err" in y.keys()]
+        error = any("err" in y for y in all_words)
         if error:
             self.ógreindar_setningar += 1
             self.orð_vantar = self.orð_vantar + len(all_words) # Ath. þetta tekur greinarmerkin með.
             return True
-        else:
-            return False
+        return False
 
     def prenta(self):
         # Prenta fyrst tíðni
@@ -1244,7 +1290,7 @@ class Comparison():
             SA = 0
         else:
             SA = self.réttar_setningar / (self.réttar_setningar + self.rangar_setningar + self.ógreindar_setningar) # Accuracy
-        print("Nákvæmni (accuracy): {:f}".format(SA))
+        print("Nákvæmni (accuracy): {:.4f}".format(SA))
         print("")
         #Orð
         print("Rétt orð:", self.rétt_orð)
@@ -1254,7 +1300,7 @@ class Comparison():
             OA = 0
         else:
             OA = self.rétt_orð / (self.rétt_orð + self.röng_orð + self.orð_vantar)
-        print("Nákvæmni (accuracy): {:f}".format(OA))
+        print("Nákvæmni (accuracy): {:.4f}".format(OA))
         print("")
         #Lemmur
         print("Réttar lemmur:", self.LR)
@@ -1263,7 +1309,7 @@ class Comparison():
             LA = 0
         else:
             LA = self.LR / (self.LR + self.LW + self.orð_vantar) # Nákvæmni (accuracy)
-        print("Nákvæmni (accuracy): {:f}".format(LA))
+        print("Nákvæmni (accuracy): {:.4f}".format(LA))
         print("")
         #Mörk
         print("Rétt mörk:", self.MR)
@@ -1274,7 +1320,7 @@ class Comparison():
         else:
             MA = self.MR / (self.MR + self.MP + self.MW + self.orð_vantar)
             MPA = (self.MR + self.MP) / (self.MR + self.MP + self.MW + self.orð_vantar)
-        print("Nákvæmni (accuracy): {:f}\tMeð hlutréttu: {:f}".format(MA, MPA))
+        print("Nákvæmni (accuracy): {:.4f}\tMeð hlutréttu: {:.4f}".format(MA, MPA))
         print("*******************************************************")
 
         print("")
@@ -1291,7 +1337,7 @@ class Comparison():
             GOA = 0
         else:
             GOA = (self.rétt_orð + self.GR) / (self.rétt_orð + self.GR + self.GW + self.röng_orð + self.orð_vantar)
-        print("Nákvæmni (accuracy): {:f}".format(GOA))
+        print("Nákvæmni (accuracy): {:.4f}".format(GOA))
         print("")
         # Lemmur
         print("Réttar lemmur:", str(self.LR + self.GR))
@@ -1300,7 +1346,7 @@ class Comparison():
             GLA = 0
         else:
             GLA = (self.LR + self.GR) / (self.LR + self.GR + self.LW + self.GW + self.orð_vantar)
-        print("Nákvæmni (accuracy): {:f}".format(GLA))
+        print("Nákvæmni (accuracy): {:.4f}".format(GLA))
         print("")
         # Mörk
         print("Rétt mörk:", str(self.MR + self.GR))
@@ -1311,40 +1357,36 @@ class Comparison():
         else:
             GMA = (self.MR + self.GR) / (self.MR + self.MP + self.GR + self.GW + self.MW)
             GMPA = (self.MR + self.GR + self.MP) / (self.MR + self.MP + self.GR + self.GW + self.MW)
-        print("Nákvæmni (accuracy): {:f}\tMeð hlutréttu: {:f}".format(GMA, GMPA))
+        print("Nákvæmni (accuracy): {:.4f}\tMeð hlutréttu: {:.4f}".format(GMA, GMPA))
         print("*******************************************************")
+
+    def start(self, func):
+        xml_files = [x for x in os.listdir(IFD_FULL_DIR) if x.startswith("A") and x.endswith(".xml")]
+        lengd = len(xml_files)
+        if USE_LOCAL_TAGGER:
+            # Call the Reynir POS tagger directly in-process
+            from postagger import Tagger
+            with Tagger().session() as tagger:
+                for i, each in enumerate(xml_files):
+                    print("Skjal {} af {}".format(i + 1, lengd))
+                    func(tagger, IFD_FULL_DIR + "/" + each)
+        else:
+            # Use the Reynir HTTP JSON API for POS tagging (/postag.api)
+            for i, each in enumerate(xml_files):
+                print("Skjal {} af {}".format(i + 1, lengd))
+                func(None, IFD_FULL_DIR + "/" + each)
+        self.prenta()
 
     def start_stikkprufa(self):
         úrtak = 100
-        xml_files = [x for x in os.listdir(IFD_FULL_DIR) if x.startswith("A") and x.endswith(".xml")]
-        i = 1
-        lengd = len(xml_files)
-        for each in xml_files:
-            print("Skjal {} af {}".format(i, lengd))
-            self.úrvinnsla_stikkprufa(IFD_FULL_DIR + "/" + each, úrtak)
-            i += 1
-        self.prenta()
+        self.start(lambda t, file : self.úrvinnsla_stikkprufa(t, file, úrtak))
    
     def start_allt(self):
-        xml_files = [x for x in os.listdir(IFD_FULL_DIR) if x.startswith("A") and x.endswith(".xml")]
-        i = 1
-        lengd = len(xml_files)
-        for each in xml_files:
-            print("Skjal {} af {}".format(i, lengd))
-            self.úrvinnsla_allt(IFD_FULL_DIR + "/" + each)
-            i +=1
-        self.prenta()
+        self.start(lambda t, file: self.úrvinnsla_allt(t, file))
 
     def start_fyllimengi(self):
         úrtak = 100
-        xml_files = [x for x in os.listdir(IFD_FULL_DIR) if x.startswith("A") and x.endswith(".xml")]
-        i = 1
-        lengd = len(xml_files)
-        for each in xml_files:
-            print("Skjal {} af {}".format(i, lengd))
-            self.úrvinnsla_fyllimengi(IFD_FULL_DIR + "/" + each, úrtak)
-            i += 1
-        self.prenta()
+        self.start(lambda t, file: self.úrvinnsla_fyllimengi(t, file, úrtak))
 
 def start_flokkar():
     # Íslensk skáldverk

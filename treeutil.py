@@ -338,7 +338,7 @@ class TreeUtility:
         return s.result
 
     @staticmethod
-    def _process_text(session, text, all_names, xform):
+    def _process_text(parser, session, text, all_names, xform):
         """ Low-level utility function to parse text and return the result of
             a transformation function (xform) for each sentence """
         t0 = time.time()
@@ -347,7 +347,7 @@ class TreeUtility:
         # Tokenize the result
         toklist = list(tokenize(text, enclosing_session = session))
         t1 = time.time()
-        pgs, stats = TreeUtility._process_toklist(session, toklist, xform)
+        pgs, stats = TreeUtility._process_toklist(parser, session, toklist, xform)
         from query import create_name_register
         register = create_name_register(toklist, session, all_names = all_names)
         t2 = time.time()
@@ -357,30 +357,29 @@ class TreeUtility:
         return (pgs, stats, register)
 
     @staticmethod
-    def _process_toklist(session, toklist, xform, root = None):
+    def _process_toklist(parser, session, toklist, xform):
         """ Low-level utility function to parse token lists and return
             the result of a transformation function (xform) for each sentence """
         pgs = [] # Paragraph list, containing sentences, containing tokens
-        with Fast_Parser(verbose = False, root = root) as bp: # Don't emit diagnostic messages
-            ip = IncrementalParser(bp, toklist, verbose = True)
-            for p in ip.paragraphs():
-                pgs.append([])
-                for sent in p.sentences():
-                    if sent.parse():
-                        # Parsed successfully
-                        pgs[-1].append(xform(sent.tokens, sent.tree, None))
-                    else:
-                        # Errror in parse
-                        pgs[-1].append(xform(sent.tokens, None, sent.err_index))
+        ip = IncrementalParser(parser, toklist, verbose = True)
+        for p in ip.paragraphs():
+            pgs.append([])
+            for sent in p.sentences():
+                if sent.parse():
+                    # Parsed successfully
+                    pgs[-1].append(xform(sent.tokens, sent.tree, None))
+                else:
+                    # Errror in parse
+                    pgs[-1].append(xform(sent.tokens, None, sent.err_index))
 
-            stats = dict(
-                num_tokens = ip.num_tokens,
-                num_sentences = ip.num_sentences,
-                num_parsed = ip.num_parsed,
-                ambiguity = ip.ambiguity,
-                num_combinations = ip.num_combinations,
-                total_score = ip.total_score
-            )
+        stats = dict(
+            num_tokens = ip.num_tokens,
+            num_sentences = ip.num_sentences,
+            num_parsed = ip.num_parsed,
+            ambiguity = ip.ambiguity,
+            num_combinations = ip.num_combinations,
+            total_score = ip.total_score
+        )
 
         return (pgs, stats)
 
@@ -394,7 +393,21 @@ class TreeUtility:
                 normalized tokens for the sentence """
             return TreeUtility.dump_tokens(tokens, tree, None, err_index)
 
-        return TreeUtility._process_text(session, text, all_names, xform)
+        with Fast_Parser(verbose = False) as parser: # Don't emit diagnostic messages
+            return TreeUtility._process_text(parser, session, text, all_names, xform)
+
+    @staticmethod
+    def raw_tag_text(parser, session, text):
+        """ Parse plain text and return the parsed paragraphs as lists of sentences
+            where each sentence is a list of tagged tokens. Uses a caller-provided
+            parser object. """
+
+        def xform(tokens, tree, err_index):
+            """ Transformation function that simply returns a list of POS-tagged,
+                normalized tokens for the sentence """
+            return TreeUtility.dump_tokens(tokens, tree, None, err_index)
+
+        return TreeUtility._process_text(parser, session, text, False, xform)
 
     @staticmethod
     def tag_toklist(session, toklist, all_names = False):
@@ -406,9 +419,12 @@ class TreeUtility:
                 normalized tokens for the sentence """
             return TreeUtility.dump_tokens(tokens, tree, None, err_index)
 
-        pgs, stats = TreeUtility._process_toklist(session, toklist, xform)
+        with Fast_Parser(verbose = False) as parser: # Don't emit diagnostic messages
+            pgs, stats = TreeUtility._process_toklist(parser, session, toklist, xform)
+
         from query import create_name_register
         register = create_name_register(toklist, session, all_names = all_names)
+
         return (pgs, stats, register)
 
     @staticmethod
@@ -422,7 +438,8 @@ class TreeUtility:
                 normalized tokens for the sentence """
             return TreeUtility.dump_tokens(tokens, tree, None, err_index)
 
-        return TreeUtility._process_toklist(session, toklist, xform, root = root)
+        with Fast_Parser(verbose = False, root = root) as parser: # Don't emit diagnostic messages
+            return TreeUtility._process_toklist(parser, session, toklist, xform, root = root)
 
     @staticmethod
     def parse_text(session, text, all_names = False):
@@ -436,7 +453,8 @@ class TreeUtility:
             # Successfully parsed: return a simplified tree for the sentence
             return TreeUtility._simplify_tree(tokens, tree)
 
-        return TreeUtility._process_text(session, text, all_names, xform)
+        with Fast_Parser(verbose = False) as parser: # Don't emit diagnostic messages
+            return TreeUtility._process_text(parser, session, text, all_names, xform)
 
     @staticmethod
     def parse_text_with_full_tree(session, text, all_names = False):
@@ -458,10 +476,13 @@ class TreeUtility:
                 full_tree = tree
             return TreeUtility._simplify_tree(tokens, tree)
 
-        pgs, stats, register = TreeUtility._process_text(session, text, all_names, xform)
+        with Fast_Parser(verbose = False) as parser: # Don't emit diagnostic messages
+            pgs, stats, register = TreeUtility._process_text(parser, session, text, all_names, xform)
+
         if not pgs or stats["num_parsed"] == 0 or not pgs[0] or any("err" in t for t in pgs[0][0]):
             # The first sentence didn't parse: let's not beat around the bush with that fact
             return (None, None, stats)
+
         # Return the simplified tree, full tree and stats
         assert full_tree is not None
         return (pgs[0][0], full_tree, stats)
