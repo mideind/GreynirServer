@@ -2081,6 +2081,9 @@ def canonicalize_token(t):
             # Move the gender to the "c" (category) field
             t["c"] = t["g"]
             del t["g"]
+    if kind == TOK.ENTITY and "s" not in t:
+        # Put in a stem for entities
+        t["s"] = t["x"]
 
 
 def stems_of_token(t):

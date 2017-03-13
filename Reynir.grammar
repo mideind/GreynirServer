@@ -529,7 +529,7 @@ SetningSo →
     # Verið er í snatri að ráða hæfasta umsækjandann
     # Komið hefur/hafi til átaka milli þeirra
     # Farið hefur verið ofan í saumana á málinu
-    | so_0_sagnb HjSögnSagnb_et_p3 NhFyllingEðaAtv
+    | Sagnliður_sagnb
 
     | So_1_sagnb/fall HjSögnLhÞtSM_et_p3 FsAtv? Nl/fall AtvFs? # Horft hefur verið [til hennar] lostafullum augum
 
@@ -550,7 +550,7 @@ SetningSo →
     | So_1_nh/fall HjSögnMegiSkuliÞurfi_et_p3 FsRuna? Nl/fall AtvFs?  # Endurnýja þarf/skal/má leigusamninginn í ár
     | So_1_nh/fall HjSögnNhMeðSo/tala/pers Nl_nf/tala/pers/kyn Nl/fall AtvFs?  # Gæta eiga/skulu/verða þeir þingskapa
 
-    | SagnliðurLhÞt
+    | Sagnliður_lhþt
 
     | Sögn_bh SögnFrh_bh?                                       # Farðu galvaskur að sækja kaffi strax
 
@@ -565,10 +565,26 @@ SetningSo →
     | FsAtv? HjSögnVh so_0_sagnb NhFylling?
 
 
-SagnliðurLhÞt →
+Sagnliður_lhþt →
     EinSögn_lhþt/tala/kyn OgSögn_lhþt/tala/kyn* HjSögnLhÞt_p3/tala Nl_nf/tala/kyn AtvFs? # Teknar og skráðar hafa verið ákvarðanir í málinu
 
-$score(-4) SagnliðurLhÞt        # Knúsað orðalag - velja annað ef í boði
+$score(-4) Sagnliður_lhþt # Knúsað orðalag - velja annað ef í boði
+
+# Talið er (að Jón sé horfinn) / Verið er að ráða hæfasta umsækjandann
+# Sagt er algerlega óhætt [að fara út]
+Sagnliður_sagnb →
+    so_0_sagnb HjSögnSagnb_et_p3 LoTengtSögn_nf_et_hk? SagnliðurBotn_sagnb
+
+SagnliðurBotn_sagnb →
+    NhFylling
+    | SagnInnskot
+    | SagnliðurBotnSetning
+
+SagnliðurBotnSetning →
+    "að:st" HreinYfirsetning
+
+$score(+8) Sagnliður_sagnb
+$score(+8) SagnliðurBotnSetning
 
 VeraSkulu_et_p3 →
     'vera'_et_p3 | 'verða'_et_p3 | 'skulu'_et_p3 | 'munu'_et_p3
@@ -1454,6 +1470,8 @@ SagnarBotn →
     | FsAtv? so_subj_nh_ef Nl_ef
     # !!! Ekki virðist þörf fyrir öfuga orðaröð í þgf eða þf
 
+$score(+4) SagnarBotn
+
 # Sögn með einu viðfangi sem stendur í undirsetningu
 # ('Konurnar sem borðuðu matinn')
 ÖfugSögn_1/tala/pers/kyn →
@@ -2029,6 +2047,7 @@ OgNhSögn_lhþt/tala/kyn →
 # tengingu sagna og forsetninga
 
 $tag(pick_up_verb) Sagnliður/tala/pers/kyn
+$tag(pick_up_verb) Sagnliður_sagnb
 $tag(pick_up_verb) SögnMeðF/tala/pers/kyn
 $tag(pick_up_verb) ÖfugSögn_0/tala/pers/kyn
 $tag(pick_up_verb) ÖfugSögn_1/tala/pers/kyn

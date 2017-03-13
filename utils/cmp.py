@@ -59,6 +59,7 @@ if __name__ == "__main__":
         sys.path.append(basepath)
 
 from settings import Settings, StaticPhrases
+from postagger import IFD_Tagset
 
 # Stuff for deciding which POS tagging server (and what method) we will use
 
@@ -900,7 +901,7 @@ class Comparison():
                 print("???", word["x"], word["k"], word["t"]) 
                 if "b" in word:
                     print("b:", word["b"])
-        if tegund in ["kvk","kk","hk"]: # Nafnorð
+        if tegund in { "kvk","kk","hk" }: # Nafnorð
             greining.append("n") # orðflokkur
             # greining = orðfl.+kyn+tala+fall(+greinir)(+sérnafn)
             greining.append(GrToOTB[tegund]) #kyn
@@ -1094,8 +1095,15 @@ class Comparison():
 
     def sbrmark(self, mark_OTB, word):
         # Fyllir út í self.tíðnibreytur fyrir mörkunarárangur
-        einnannar = {"einn": "p", "annar": "r"}
         mark_Gr = self.vörpun(word)
+
+        mark_IFD_Tagset = str(IFD_Tagset(word))
+        print("{0:20} {1:20} {2:10} {d1}{3:9} {d2}{4:9}".format(word.get("x", ""), word.get("s", ""),
+            mark_OTB, mark_Gr, mark_IFD_Tagset,
+            d1="*" if mark_Gr != mark_OTB else " ",
+            d2="*" if mark_IFD_Tagset != mark_OTB else " "))
+
+        einnannar = {"einn": "p", "annar": "r"}
         if mark_OTB in OTB_einfaldað: # ct, ta, aþe, aþm
             mark_OTB = OTB_einfaldað[mark_OTB]
         elif mark_OTB.startswith("n") and mark_OTB.endswith(("m", "s", "ö")): # undirflokkun sérnafna # TODO breyta í elif
@@ -1121,7 +1129,7 @@ class Comparison():
             elif mark_Gr.startswith("f") or mark_Gr.startswith("tf"):
                 mark_Gr = einnannar[word["s"]] + mark_Gr[2:]
 
-        #tvennd = (tuple(mark_Gr), tuple(mark_OTB)) # TODO setja aftur inn ef útfæri confusion matrix
+        #tvennd = (mark_Gr, mark_OTB) # TODO setja aftur inn ef útfæri confusion matrix
         #if tvennd in self.M_confmat:
             #self.M_confmat[tvennd] += 1
         #else:
@@ -1167,24 +1175,24 @@ class Comparison():
         markhluti.append(BÍN_MAP[bín[1]])
         return "".join(markhluti)
 
+    PK = {
+        "ég": "1",
+        "þú": "2",
+        "hann": "k",
+        "hún": "v",
+        "það": "h" ,
+        "þér": "2",
+        "vér": "1"
+    }
+
     def pk(self, word):
         # Greinir persónu eða kyn
-        pk = {
-            "ég": "1",
-            "þú": "2",
-            "hann": "k",
-            "hún": "v",
-            "það": "h" ,
-            "þér": "2",
-            "vér": "1"
-        }
         if "s" in word:
-            return "fp" + pk[word["s"]]
+            return "fp" + self.PK[word["s"]]
         else:
-            return "fp" + pk[word["x"]] # Ætti ekki að gerast
+            return "fp" + self.PK[word["x"].lower()] # Ætti ekki að gerast
   
-    def undirflokkun(self, word):
-        fl = {
+    FL = {
         "sá": "fa",
         "þessi": "fa",
         "hinn": "fa",
@@ -1220,8 +1228,8 @@ class Comparison():
         "hvor": "fs",
         "hvaða": "fs",
         "hvílíkur": "fs"
-        }
-        samfall = { # Beygingarmyndir sem tilheyra bæði 'sá' og pfn.
+    }
+    SAMFALL = { # Beygingarmyndir sem tilheyra bæði 'sá' og pfn.
         "það",
         "því",
         "þess",
@@ -1231,14 +1239,15 @@ class Comparison():
         "þær",
         "þeim",
         "þeirra"
-        }
-        bæði = {"sá", "það"}
-        if word["x"] in samfall and (word["s"] in bæði):
+    }
+    BÆÐI = { "sá", "það" }
+
+    def undirflokkun(self, word):
+        if word["x"].lower() in self.SAMFALL and (word["s"] in self.BÆÐI):
             return "fm"
-        elif word["s"] in fl:
-            return fl[word["s"]]
-        else:
-            return "fx"
+        elif word["s"] in self.FL:
+            return self.FL[word["s"]]
+        return "fx"
 
     def json_lestur(self, orðalisti):
         """ Invoke a remote tagger over HTTP/HTTPS """
@@ -1366,7 +1375,7 @@ class Comparison():
         if USE_LOCAL_TAGGER:
             # Call the Reynir POS tagger directly in-process
             from postagger import Tagger
-            with Tagger().session() as tagger:
+            with Tagger.session() as tagger:
                 for i, each in enumerate(xml_files):
                     print("Skjal {} af {}".format(i + 1, lengd))
                     func(tagger, IFD_FULL_DIR + "/" + each)
