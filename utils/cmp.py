@@ -632,74 +632,74 @@ class Comparison():
             else:
                 self.rangar_setningar += 1
 
-        def úrvinnsla_allt(self, tagger, skjal):
-            print("*******************", skjal, "**************************")
-            tree = ET.parse(skjal)
-            root = tree.getroot()
-            for sent in root.iter("s"):
-                # Vinnur bara úr þeim setningum sem eru í úrtakinu
-                rétt_setning = True
-                string = ""
-                mörk_OTB, lemmur_OTB, orðalisti = self.OTB_lestur(sent)
-                if tagger is None:
-                    all_words, setning = self.json_lestur(orðalisti)
+    def úrvinnsla_allt(self, tagger, skjal):
+        print("*******************", skjal, "**************************")
+        tree = ET.parse(skjal)
+        root = tree.getroot()
+        for sent in root.iter("s"):
+            # Vinnur bara úr þeim setningum sem eru í úrtakinu
+            rétt_setning = True
+            string = ""
+            mörk_OTB, lemmur_OTB, orðalisti = self.OTB_lestur(sent)
+            if tagger is None:
+                all_words, setning = self.json_lestur(orðalisti)
+            else:
+                all_words, setning = self.tag_lestur(tagger, orðalisti)
+            if not all_words: # Ekkert svar fékkst fyrir setningu
+                continue
+            #Tekst að greina setninguna?
+            if self.error(all_words):
+                continue
+            i = 0 # Index fyrir orðalistann.
+            #print(setning)
+            for word in all_words: # Komin á dict frá Greyni með öllum flokkunum.
+                #print("***\t"+word["x"], orðalisti[i])
+                if word["x"] == "Eiríkur Tse" or word["x"] == "Vincent Peale": # Ljótt sértilvik
+                    i += 1
+                    continue
+                if not orðalisti[i]: # Tómur hnútur fremst/aftast í setningu
+                    i += 1
+                if word["x"] == "-" and orðalisti[i] != "-": # Ef bandstrikið er greint sérstaklega
+                    #print("Fann bandstrik, fer í næsta orð")
+                    continue
+                if lemmur_OTB[i] is None: # Greinarmerki
+                    #print("Fann greinarmerki: {}, {}".format(word["x"], mörk_OTB[i]))
+                    rétt_setning = rétt_setning & self.sbrGreinarmerki(mörk_OTB[i], word)
                 else:
-                    all_words, setning = self.tag_lestur(tagger, orðalisti)
-                if not all_words: # Ekkert svar fékkst fyrir setningu
-                    continue
-                #Tekst að greina setninguna?
-                if self.error(all_words):
-                    continue
-                i = 0 # Index fyrir orðalistann.
-                #print(setning)
-                for word in all_words: # Komin á dict frá Greyni með öllum flokkunum.
-                    #print("***\t"+word["x"], orðalisti[i])
-                    if word["x"] == "Eiríkur Tse" or word["x"] == "Vincent Peale": # Ljótt sértilvik
+                    lengd = max(len(word["x"].split(" ")), len(word["x"].split("-"))) #TODO breyta ef stuðningur við orð með bandstriki er útfærður.
+                    if lengd > 1: # Fleiri en eitt orð í streng Greynis
+                        #print("Fann margorða eind í Greyni: {}".format(word["x"]))
+                        if word["x"].lower() in MARGORÐA: # Margorða frasi, fæ mörk úr orðabók, lemmur líka.
+                            #print("Fann í MARGORÐA")
+                            rétt_setning = rétt_setning & self.margorða_allt(word, lemmur_OTB, mörk_OTB, i)
+                            i += lengd
+                            if i >= (len(orðalisti) - 1): # Ef síðasta orð í frasa
+                                #print("Síðasta orð í streng, hætti (1)")
+                                break
+                            continue
+                        #print("Fann ekki í MARGORÐA")
+                        i = i + lengd -1 # Enda á síðasta orði í frasanum
+                        #print("Nú er orð {}".format(orðalisti[i]))
+                        if i >= (len(orðalisti) - 1): #Getur gerst ef síðasta orð í streng
+                            #print("Síðasta orð í streng, hætti (2)")
+                            break
+                    elif not orðalisti[i].endswith(word["x"]): # orði skipt upp í Greyni en ekki OTB
+                        #print("Orði skipt upp í Greyni ({}) en ekki OTB ({})".format(word["x"], orðalisti[i]))
+                        continue # Hægir mikið á öllu, e-r betri leið?
+                    if ("k" in word and word["k"] == "PUNCTUATION" or word["k"] == "UNKNOWN") or ("t" in word and word["t"] == "no"): # Einstaka tilvik. PUNCTUATION hér er t.d. bandstrik sem OTB heldur í orðum en Greynir greinir sem stakt orð
+                        #print("Eitthvað skrýtið á ferðinni.")
                         i += 1
-                        continue
-                    if not orðalisti[i]: # Tómur hnútur fremst/aftast í setningu
-                        i += 1
-                    if word["x"] == "-" and orðalisti[i] != "-": # Ef bandstrikið er greint sérstaklega
-                        #print("Fann bandstrik, fer í næsta orð")
                         continue
                     if lemmur_OTB[i] is None: # Greinarmerki
                         #print("Fann greinarmerki: {}, {}".format(word["x"], mörk_OTB[i]))
                         rétt_setning = rétt_setning & self.sbrGreinarmerki(mörk_OTB[i], word)
                     else:
-                        lengd = max(len(word["x"].split(" ")), len(word["x"].split("-"))) #TODO breyta ef stuðningur við orð með bandstriki er útfærður.
-                        if lengd > 1: # Fleiri en eitt orð í streng Greynis
-                            #print("Fann margorða eind í Greyni: {}".format(word["x"]))
-                            if word["x"].lower() in MARGORÐA: # Margorða frasi, fæ mörk úr orðabók, lemmur líka.
-                                #print("Fann í MARGORÐA")
-                                rétt_setning = rétt_setning & self.margorða_allt(word, lemmur_OTB, mörk_OTB, i)
-                                i += lengd
-                                if i >= (len(orðalisti) - 1): # Ef síðasta orð í frasa
-                                    #print("Síðasta orð í streng, hætti (1)")
-                                    break
-                                continue
-                            #print("Fann ekki í MARGORÐA")
-                            i = i + lengd -1 # Enda á síðasta orði í frasanum
-                            #print("Nú er orð {}".format(orðalisti[i]))
-                            if i >= (len(orðalisti) - 1): #Getur gerst ef síðasta orð í streng
-                                #print("Síðasta orð í streng, hætti (2)")
-                                break
-                        elif not orðalisti[i].endswith(word["x"]): # orði skipt upp í Greyni en ekki OTB
-                            #print("Orði skipt upp í Greyni ({}) en ekki OTB ({})".format(word["x"], orðalisti[i]))
-                            continue # Hægir mikið á öllu, e-r betri leið?
-                        if ("k" in word and word["k"] == "PUNCTUATION" or word["k"] == "UNKNOWN") or ("t" in word and word["t"] == "no"): # Einstaka tilvik. PUNCTUATION hér er t.d. bandstrik sem OTB heldur í orðum en Greynir greinir sem stakt orð
-                            #print("Eitthvað skrýtið á ferðinni.")
-                            i += 1
-                            continue
-                        if lemmur_OTB[i] is None: # Greinarmerki
-                            #print("Fann greinarmerki: {}, {}".format(word["x"], mörk_OTB[i]))
-                            rétt_setning = rétt_setning & self.sbrGreinarmerki(mörk_OTB[i], word)
-                        else:
-                            rétt_setning = rétt_setning & self.skrif_allt(word, lemmur_OTB[i], mörk_OTB[i]) # Bæði og mark og lemma rétt
-                    i += 1
-                if rétt_setning:
-                    self.réttar_setningar += 1
-                else:
-                    self.rangar_setningar += 1
+                        rétt_setning = rétt_setning & self.skrif_allt(word, lemmur_OTB[i], mörk_OTB[i]) # Bæði og mark og lemma rétt
+                i += 1
+            if rétt_setning:
+                self.réttar_setningar += 1
+            else:
+                self.rangar_setningar += 1
 
     def margorða_stikkprufa(self, word, lemmur_OTB, mörk_OTB, i):
         with open("stikkprufa.txt", "a") as stikk:
