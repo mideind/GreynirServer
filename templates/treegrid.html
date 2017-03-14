@@ -40,7 +40,9 @@
    .node.so circle {
       stroke: #d9534f;
    }
-   .node.st circle {
+   .node.st circle,
+   .node.stt circle
+   {
       stroke: #f0ad4e;
    }
    .node.person-kk circle {
@@ -149,7 +151,8 @@
    .node-terminal.entity text.symbol {
       fill: #888;
    }
-   .node-terminal.st text.symbol {
+   .node-terminal.st text.symbol,
+   .node-terminal.stt text.symbol {
       fill: #f0ad4e;
    }
    .node-terminal.so text.symbol {
@@ -660,6 +663,7 @@ function d3_update(source) {
       ["person-kvk", "\uE248"], // female
       ["entity", "\uE066"], // tag
       ["st", "\uE051"], // link
+      ["stt", "\uE051"], // link
       ["nhm", "\uE212"], // right-arrow
       ["fs", "\uE174"], // play
       ["so", "\uE242"], // flash

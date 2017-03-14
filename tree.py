@@ -38,7 +38,8 @@ BIN_ORDFL = {
     "to" : { "töl", "to" },
     "fn" : { "fn" },
     "pfn" : { "pfn" },
-    "st" : { "st" }
+    "st" : { "st" },
+    "stt" : { "st" }
 }
 
 class Result:
@@ -381,8 +382,8 @@ class TerminalDescriptor:
         if self.cat not in { "so", "fs" }:
             # We do not check cases for verbs, except so_lhþt ones
             case = self.variants & self._CASES
-            if len(case) > 1:
-                print("Many cases detected for terminal {0}, variants {1}".format(terminal, self.variants))
+            #if len(case) > 1:
+            #    print("Many cases detected for terminal {0}, variants {1}".format(terminal, self.variants))
             assert 0 <= len(case) <= 1
             if case:
                 self.case = next(iter(case))
@@ -530,7 +531,7 @@ class TerminalNode(Node):
     _TD = dict() # Cache of terminal descriptors
 
     # Undeclinable word categories
-    _NOT_DECLINABLE = frozenset([ "ao", "eo", "fs", "st", "nhm" ])
+    _NOT_DECLINABLE = frozenset([ "ao", "eo", "fs", "st", "stt", "nhm" ])
 
     def __init__(self, terminal, token, tokentype, aux, at_start):
         super().__init__()
@@ -618,7 +619,7 @@ class TerminalNode(Node):
             # Not a word, already nominative or not declinable: return it as-is
             return self.text
         if not self.text:
-            print("self.text is empty, token is {0}, terminal is {1}".format(self.token, self.td.terminal))
+            # print("self.text is empty, token is {0}, terminal is {1}".format(self.token, self.td.terminal))
             assert False
 
         def replace_beyging(b, by_case = "NF"):
@@ -662,7 +663,7 @@ class TerminalNode(Node):
             return self.text
 
         if not self.text:
-            print("self.text is empty, token is {0}, terminal is {1}".format(self.token, self.td.terminal))
+            # print("self.text is empty, token is {0}, terminal is {1}".format(self.token, self.td.terminal))
             assert False
 
         def replace_beyging(b, by_case = "NF"):
@@ -692,7 +693,7 @@ class TerminalNode(Node):
             return self.text
 
         if not self.text:
-            print("self.text is empty, token is {0}, terminal is {1}".format(self.token, self.terminal))
+            # print("self.text is empty, token is {0}, terminal is {1}".format(self.token, self.terminal))
             assert False
 
         def replace_beyging(b, by_case = "NF"):

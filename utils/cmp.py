@@ -1032,6 +1032,8 @@ class Comparison():
             greining = "".join(greining)
         elif tegund == "st":
             return "c"
+        elif tegund == "stt":
+            return "ct"
         elif tegund == "nhm":
             return "cn"
         elif tegund == "töl": # TODO hvert er samband þessara töluorða við önnur töluorð?
@@ -1095,29 +1097,29 @@ class Comparison():
 
     def sbrmark(self, mark_OTB, word):
         # Fyllir út í self.tíðnibreytur fyrir mörkunarárangur
-        mark_Gr = self.vörpun(word)
+        #mark_Gr_eldra = self.vörpun(word)
 
-        mark_IFD_Tagset = str(IFD_Tagset(word))
-        print("{0:20} {1:20} {2:10} {d1}{3:9} {d2}{4:9}".format(word.get("x", ""), word.get("s", ""),
-            mark_OTB, mark_Gr, mark_IFD_Tagset,
-            d1="*" if mark_Gr != mark_OTB else " ",
-            d2="*" if mark_IFD_Tagset != mark_OTB else " "))
+        mark_Gr = str(IFD_Tagset(word))
+        #print("{0:20} {1:20} {2:10}  {d1} {3:10}  {d2} {4:10}".format(word.get("x", ""), word.get("s", ""),
+        #    mark_OTB, mark_Gr_eldra, mark_Gr,
+        #    d1="*" if mark_Gr_eldra != mark_OTB else " ",
+        #    d2="*" if mark_Gr != mark_OTB else " "))
 
         einnannar = {"einn": "p", "annar": "r"}
-        if mark_OTB in OTB_einfaldað: # ct, ta, aþe, aþm
-            mark_OTB = OTB_einfaldað[mark_OTB]
-        elif mark_OTB.startswith("n") and mark_OTB.endswith(("m", "s", "ö")): # undirflokkun sérnafna # TODO breyta í elif
+        #if mark_OTB in OTB_einfaldað: # ct, ta, aþe, aþm
+        #    mark_OTB = OTB_einfaldað[mark_OTB]
+        if mark_OTB.startswith("n") and mark_OTB.endswith(("m", "s", "ö")): # undirflokkun sérnafna # TODO breyta í elif
             mark_OTB = mark_OTB[:-1] + "e"
-        elif word["x"] in EO and mark_Gr[0] == "a": # Getur verið bæði forsetning og atviksorð
-            if mark_OTB.startswith("a") or mark_OTB.startswith("f"):
-                mark_OTB = "af"
-            mark_Gr = "af"
+        #elif word["x"] in EO and mark_Gr[0] == "a": # Getur verið bæði forsetning og atviksorð
+        #    if mark_OTB.startswith("a") or mark_OTB.startswith("f"):
+        #        mark_OTB = "af"
+        #    mark_Gr = "af"
         elif mark_Gr.startswith("fpx"): # afturbeygt fornafn, hunsa kyngreiningu:
             mark_Gr = mark_Gr[:2] + mark_Gr[3:]
             if mark_OTB.startswith("fp"):
                 mark_OTB = mark_OTB[:2] + mark_OTB[3:]
-        elif mark_Gr.startswith("fm"): # Samfall 'sá' og pfn
-            mark_OTB = "fm" + mark_OTB[2:]
+        #elif mark_Gr.startswith("fm"): # Samfall 'sá' og pfn
+        #    mark_OTB = "fm" + mark_OTB[2:]
         elif "s" in word and (word["s"] == "einn" or word["s"] == "annar"):
             if mark_OTB.startswith("l"): # greint sem lýsingarorð
                 mark_OTB = einnannar[word["s"]] + mark_OTB[1] + mark_OTB[2] + mark_OTB[3]

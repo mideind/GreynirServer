@@ -303,10 +303,16 @@ class Reducer:
                             # First token in sentence, and we have BÍN meanings:
                             # further discourage this
                             sc[t] -= 4
-                elif tfirst == "st":
+                elif tfirst == "st" or (tfirst == "sem" and t.cat == "st"):
                     if txt == "sem":
-                        # Discourage "sem" as a conjunction (samtenging)
-                        sc[t] -= 4
+                        # Discourage "sem" as a pure conjunction (samtenging)
+                        # (it does not get a penalty when occurring as
+                        # a connective conjunction, 'stt')
+                        sc[t] -= 6
+                elif tfirst == "abfn":
+                    # If we have number and gender information with the reflexive
+                    # pronoun, that's good: encourage it
+                    sc[t] += 6 if t.num_variants > 1 else 2
                 elif t.name[0] in "\"'":
                     # Give a bonus for exact or semi-exact matches
                     sc[t] += 1

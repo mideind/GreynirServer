@@ -2045,7 +2045,15 @@ def canonicalize_token(t):
         if terminal[0] in "\"'" and "m" in t:
             # Convert 'literal'_var1_var2 to cat_var1_var2
             a = terminal.split("_")
-            a[0] = t["m"][1] # Token category
+            if ':' in a[0]:
+                # The word category was given in the literal: use it
+                # (In almost all cases this matches the meaning, but
+                # 'stt' is an exception)
+                cat_override = a[0].split(':')[-1][:-1]
+                a[0] = cat_override
+            else:
+                # Get the word category from the meaning
+                a[0] = t["m"][1]
             if a[0] in { "kk", "kvk", "hk" }:
                 a[0] = "no"
             t["t"] = "_".join(a)
@@ -2081,8 +2089,8 @@ def canonicalize_token(t):
             # Move the gender to the "c" (category) field
             t["c"] = t["g"]
             del t["g"]
-    if kind == TOK.ENTITY and "s" not in t:
-        # Put in a stem for entities
+    if (kind == TOK.ENTITY) or (kind == TOK.WORD) and "s" not in t:
+        # Put in a stem for entities and proper names
         t["s"] = t["x"]
 
 

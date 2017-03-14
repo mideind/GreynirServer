@@ -86,6 +86,7 @@ class BIN_Token(Token):
         "töl": "töl",
         "uh": "uh",
         "st": "st",
+        "stt": "stt",
         "abfn": "abfn",
         "nhm": "nhm"
     }
@@ -197,7 +198,7 @@ class BIN_Token(Token):
     _NOT_PROPER_NAME = frozenset([ "ég", "þú", "hann", "hún", "það", "við", "þið", "þau",
         "þeir", "þær", "mér", "mig", "mín", "þig", "þér", "þín", "þeim", "þeirra", "þetta", "þessi",
         "í", "á", "af", "um", "að", "með", "til", "frá", "búist", "annars", "samkvæmt", "en", "og",
-        "sem" ])
+        "sem", "ekkert", "hæð", "svo", "veggir" ])
 
     # Numbers that can be used in the singular even if they are nominally plural.
     # This applies to the media company 365, where it is OK to say "365 skuldaði 389 milljónir",
@@ -694,6 +695,22 @@ class BIN_Token(Token):
                     return False
             return True
 
+        def matcher_abfn(m):
+            """ Check reflexive pronoun (afturbeygt fornafn) """
+            if m.ordfl != "abfn":
+                return False
+            fbits = BIN_Token.get_fbits(m.beyging)
+            # Check the case only (don't check the gender, even if present,
+            # since it isn't found in BÍN)
+            return terminal.fbits_match_mask(fbits, BIN_Token.VBIT_CASES)
+
+        def matcher_stt(m):
+            """ Check connective conjunction ('sem', 'er') """
+            # This is actually never used by the current grammar,
+            # since all instances of stt are of the form "sem:stt"
+            # which is handled in matcher_default() / terminal.matches_first()
+            return m.ordfl == "st" and m.stofn in { "sem", "er" }
+
         def matcher_eo(m):
             """ 'Einkunnarorð': adverb (atviksorð) that is not the same
                 as a preposition (forsetning) """
@@ -766,7 +783,7 @@ class BIN_Token(Token):
 
         def matcher_default(m):
             """ Check other word categories """
-            if m.beyging == "-": # Tokens without a form specifier are assumed to be universally matching
+            if m.beyging == "-":
                 fbits = 0
             else:
                 # If the meaning is a noun, its gender is coded in the ordfl attribute
@@ -798,7 +815,7 @@ class BIN_Token(Token):
             # that match the given case
             for m in self.t2:
                 fbits = BIN_Token.get_fbits(m.beyging) & BIN_Token.VBIT_CASES
-                if BIN_Token._KIND[m.ordfl] in {"no", "lo"} and terminal.fbits_match(fbits):
+                if BIN_Token._KIND[m.ordfl] in { "no", "lo" } and terminal.fbits_match(fbits):
                     return m # Return the matching meaning
             return False
 
@@ -812,6 +829,8 @@ class BIN_Token(Token):
                 "no" : matcher_no,
                 "eo" : matcher_eo,
                 "fs" : matcher_fs,
+                "stt" : matcher_stt,
+                "abfn" : matcher_abfn,
                 "person" : matcher_person,
                 "gata" : matcher_gata, # Götuheiti = Street name
                 "fyrirtæki" : matcher_corporation, # Company identifier, i.e. hf., ehf., Inc., Corp. etc.
@@ -1006,6 +1025,10 @@ class VariantHandler:
         # parameter fbits and checking whether there are any bits left.
         return (self._fbits & ~fbits) == 0
 
+    def fbits_match_mask(self, mask, fbits):
+        """ Return True if the given fbits meet the variant criteria after masking """
+        return (self._fbits & mask & ~fbits) == 0
+
     @property
     def gender(self):
         """ Return a gender string corresponding to a variant of this terminal, if any """
@@ -1082,6 +1105,7 @@ class BIN_LiteralTerminal(VariantHandler, LiteralTerminal):
         assert self._first[0] == self._first[-1]
         self._first = self._first[1:-1]
         self._cat = None
+        self._match_cat = None
         if len(self._first) > 1:
             # Check for a word category specification,
             # i.e. "sem:st", "að:fs", 'vera:so'_gm_nt
@@ -1091,7 +1115,11 @@ class BIN_LiteralTerminal(VariantHandler, LiteralTerminal):
             elif len(a) == 2:
                 # We have a word category specification
                 self._first = a[0]
-                self._cat = a[1]
+                self._cat = self._match_cat = a[1]
+                # Hack to make 'stt' terminals match with the BÍN 'st' category
+                # (stt is only there to mark 'sem' and 'er' specially in particular contexts)
+                if self._cat == "stt":
+                    self._match_cat = "st"
         # Check whether we have variants on an exact literal
         if self._strong and self.num_variants > 0:
             # It doesn't make sense to have variants on exact literals
@@ -1118,12 +1146,12 @@ class BIN_LiteralTerminal(VariantHandler, LiteralTerminal):
     def matches_category(self, cat):
         """ Returns True if the terminal matches a particular category
             (overrides VariantHandler) """
-        return self._cat == cat
+        return self._match_cat == cat
 
     def matches_first(self, t_kind, t_val, t_lit):
         """ A literal terminal matches a token if the token text is identical to the literal """
         # Note that this function is overridden in __init__ if self._cat is None
-        if t_kind != self._cat:
+        if t_kind != self._match_cat:
             # Match only the word category that was specified
             return False
         return (self._first == t_lit) if self._strong else (self._first == t_val)

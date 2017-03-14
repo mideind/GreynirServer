@@ -91,6 +91,7 @@ var wordClass = {
    "lo" : "lýsingarorð",
    "fs" : "forsetning",
    "st" : "samtenging",
+   "stt" : "samtenging",
    "ao" : "atviksorð",
    "to" : "töluorð",
    "fn" : "fornafn",

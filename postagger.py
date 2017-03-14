@@ -162,6 +162,7 @@ class IFD_Tagset:
     BIN_TAG_LIST = sorted(BIN_TO_VARIANT.keys(), key = lambda x: len(x), reverse = True)
 
     CAT_TO_SCHEME = {
+        "no" : "_n",
         "kk" : "_n",
         "kvk" : "_n",
         "hk" : "_n",
@@ -171,8 +172,9 @@ class IFD_Tagset:
         "gr" : "_g",
         "to" : "_t",
         "töl" : "_t",
-        "tala" : "_t",
-        "ártal" : "_t",
+        "tala" : "_number",
+        "raðnr" : "_raðnr",
+        "ártal" : "_year",
         "so" : "_s",
         "lo" : "_l",
         "ao" : "_a",
@@ -180,12 +182,13 @@ class IFD_Tagset:
         "fs" : "_a",
         "uh" : "_a",
         "st" : "_c",
+        "stt" : "_c",
         "nhm" : "_c",
         "entity" : "_e",
         "sérnafn" : "_n",
         "fyrirtæki" : "_n",
-        "NUMBER" : "_number",
-        "YEAR" : "_year",
+        "person" : "_n",
+        "gata" : "_n"
     }
 
     FN_FL = {
@@ -246,6 +249,30 @@ class IFD_Tagset:
         "þér": "2",
         "vér": "1"
     }
+    # Sjálfgefin fallstjórn forsetninga
+    FS_FALL = {
+        "frá" : "þ",
+        "til" : "e",
+        "í" : "þ",
+        "að" : "þ",
+        "vegna" : "e",
+        "af" : "þ",
+        "á" : "o",
+        "með" : "þ",
+        "um" : "o",
+        "nær" : "þ",
+        "utan" : "o",
+        "innan" : "o",
+        "við" : "o",
+        "vestur" : "o",
+        "austur" : "o",
+        "suður" : "o",
+        "norður" : "o",
+        "gegnum" : "o",
+        "meðal" : "e",
+        "fyrir" : "o",
+        "eftir" : "o"
+    }
 
     def _n(self):
         return "n" + self._kyn() + self._tala() + self._fall() + self._greinir() + self._sérnöfn()
@@ -260,7 +287,7 @@ class IFD_Tagset:
         return "g" + self._kyn() + self._tala() + self._fall()
 
     def _t(self):
-        return "t" + self._flokkur_t() + self._kyn() + self._tala() + self._fall()
+        return "t" + self._flokkur_t() + self._kyn() + self._tala(default = "f") + self._fall()
 
     def _s(self):
         if "lhþt" in self._tagset:
@@ -278,6 +305,8 @@ class IFD_Tagset:
         return "c" + self._flokkur_c()
 
     def _e(self):
+        if self._txt[0].isupper():
+            return "nxex-s" # Sérnafn, óþekkt kyn, óþekkt fall
         return "e"
 
     def _x(self):
@@ -285,6 +314,9 @@ class IFD_Tagset:
 
     def _number(self):
         return "tfkfn" if self._v == 11 or self._v % 10 != 1 else "tfken"
+
+    def _raðnr(self):
+        return "lxexsf" # Lýsingarorð, eintala, sterk beyging, frumstig. Kyn og fall óþekkt
 
     def _year(self):
         return "ta"
@@ -298,17 +330,23 @@ class IFD_Tagset:
             return "h"
         return "x"
 
-    def _tala(self):
-        return "f" if "ft" in self._tagset else "e"
+    def _tala(self, default = "e"):
+        if "ft" in self._tagset:
+            return "f"
+        elif "et" in self._tagset:
+            return "e"
+        return default
 
-    def _fall(self):
+    def _fall(self, default = "n"):
+        if "nf" in self._tagset:
+            return "n"
         if "þf" in self._tagset:
             return "o"
         if "þgf" in self._tagset:
             return "þ"
         if "ef" in self._tagset:
             return "e"
-        return "n"
+        return default
 
     def _greinir(self):
         return "g" if "gr" in self._tagset else ""
@@ -338,9 +376,9 @@ class IFD_Tagset:
 
     def _flokkur_f(self):
         if self._cat == "abfn":
-            return "a"
-        if self._txt in self.FN_SAMFALL and self._stem in self.FN_BÆÐI:
-            return "p"
+            return "p" # ??? Hefði þetta ekki átt að vera "a"?
+        #if self._txt in self.FN_SAMFALL and self._stem in self.FN_BÆÐI:
+        #    return "p"
         if self._cat == "pfn":
             return "p"
         return self.FN_FL.get(self._stem, "x")
@@ -400,11 +438,12 @@ class IFD_Tagset:
         if self._cat == "uh":
             return "u"
         if self._cat == "fs":
-            return self._fall()
+            return self._fall(default = self.FS_FALL.get(self._stem, "o"))
         return "a"
 
     def _flokkur_c(self):
-        if self._stem in { "sem", "er" }:
+        if self._first == "stt":
+            # 'sem', 'er' as connective conjunctions
             return "t"
         if self._cat == "nhm":
             return "n"
@@ -423,8 +462,11 @@ class IFD_Tagset:
         self._v = t.get("v")
         if "t" in t:
             # Terminal: assemble the variants
-            self._tagset = set(t["t"].split("_")[1:])
+            a = t["t"].split("_")
+            self._first = a[0]
+            self._tagset = set(a[1:])
         else:
+            self._first = None
             self._tagset = set()
         if self._cat in { "kk", "kvk", "hk" }:
             self._tagset.add(self._cat)
@@ -442,9 +484,10 @@ class IFD_Tagset:
 
     def _tagstring(self):
         """ Calculate the IFD tagstring from the tagset """
-        scheme = self.CAT_TO_SCHEME.get(self._cat or self._kind)
+        key = self._first or self._cat or self._kind
+        scheme = self.CAT_TO_SCHEME.get(key)
         if scheme is None:
-            return "[" + (self._cat or self._kind) + "]" # !!! TODO
+            return "[" + key + "]" # !!! TODO
         func = getattr(self, scheme)
         return scheme[1:] if func is None else func()
 

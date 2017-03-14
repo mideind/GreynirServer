@@ -257,12 +257,13 @@ class BIN_Db:
                 def priority(m):
                     # Order "VH" verbs (viðtengingarháttur) after other forms
                     # Also order past tense ("ÞT") after present tense
-                    # and plural after singular
+                    # plural after singular and 2p after 3p
                     if m.ordfl != "so":
                         return 0
                     prio = 4 if "VH" in m.beyging else 0
                     prio += 2 if "ÞT" in m.beyging else 0
                     prio += 1 if "FT" in m.beyging else 0
+                    prio += 1 if "2P" in m.beyging else 0
                     return prio
                 m.sort(key = priority)
         except (psycopg2.DataError, psycopg2.ProgrammingError) as e:
