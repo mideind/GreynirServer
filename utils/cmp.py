@@ -410,7 +410,10 @@ MARGORÐA = { # Margorða frasar. Bera reglulega saman við listann í Main.conf
     "þrátt fyrir að": ["aa aa c" ,"þrátt fyrir að"],
     "þvert á móti": ["lhensf aa aa" ,"þver á móti"],
     "því miður": ["faheþ aam" ,"því miður"],
-    "þá sömu viku": ["faveo fbveo nveo" ,"sá sami vika"]
+    "þá sömu viku": ["faveo fbveo nveo" ,"sá sami vika"],
+    "fyrir slysni": ["ao nveo", "fyrir slysni"],
+    "í gærkvöld": ["ao nheo", "í gærkvöld"],
+    "í hádeginu": ["aþ nheþg", "í hádegi"],
 }
 GrToOTB = {
     "kvk": "v",

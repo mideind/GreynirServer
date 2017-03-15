@@ -56,6 +56,7 @@ from scraperdb import SessionContext, desc, Root, Person, Article, ArticleTopic,
 from query import Query
 from search import Search
 from getimage import get_image_url
+from postagger import IFD_Tagset
 
 
 # Initialize Flask framework
@@ -355,10 +356,10 @@ def analyze_api(version = 1):
 # Note: Endpoints ending with .api are configured not to be cached by nginx
 @app.route("/postag.api", methods=['GET', 'POST'])
 @app.route("/postag.api/v<int:version>", methods=['GET', 'POST'])
-def postag_api(version = 1):
+def postag_api(version = 2):
     """ API to parse text and return POS tagged tokens in JSON format """
 
-    if version != 1:
+    if not (1 <= version <= 2):
         # Unsupported version
         return better_jsonify(valid = False, reason = "Unsupported version")
 
@@ -367,11 +368,11 @@ def postag_api(version = 1):
             if request.headers["Content-Type"] == "text/plain":
                 # This API accepts plain text POSTs, UTF-8 encoded.
                 # Example usage:
-                # curl -d @example.txt https://greynir.is/parse.api --header "Content-Type: text/plain"
+                # curl -d @example.txt https://greynir.is/postag.api --header "Content-Type: text/plain"
                 text = request.data.decode("utf-8")
             else:
                 # This API also accepts form/url-encoded requests:
-                # curl -d "text=Í dag er ágætt veður en mikil hálka er á götum." https://greynir.is/parse.api
+                # curl -d "text=Í dag er ágætt veður en mikil hálka er á götum." https://greynir.is/postag.api
                 text = request.form.get("text", "")
         else:
             text = request.args.get("t", "")
@@ -397,6 +398,11 @@ def postag_api(version = 1):
             # nice canonical form for outside consumption
             for t in sent:
                 canonicalize_token(t)
+                if version >= 2:
+                    # Add the Icelandic Frequency Dictionary (IFD) tagset
+                    ifd_tagset = str(IFD_Tagset(t))
+                    if ifd_tagset:
+                        t["i"] = ifd_tagset
 
     # Return the tokens as a JSON structure to the client
     return better_jsonify(valid = True, result = pgs, stats = stats, register = register)

@@ -153,6 +153,7 @@ class IFD_Tagset:
         "NT" : "nt", # Nútíð
         "ÞT" : "þt", # Þátíð
         "SAGNB" : "sagnb", # Sagnbót ('vera' -> 'hefur verið')
+        "SAGNB2" : "sagnb",
         "LHÞT" : "lhþt", # Lýsingarháttur þátíðar ('var lentur')
         "gr" : "gr", # Greinir
         "gr2" : "gr", # Greinir
@@ -160,6 +161,14 @@ class IFD_Tagset:
 
     # Create a list of BIN tags in descending order by length
     BIN_TAG_LIST = sorted(BIN_TO_VARIANT.keys(), key = lambda x: len(x), reverse = True)
+
+    KIND_TO_TAG = {
+        # !!! TBD: put in more precise tags
+        "DATE" : "to",
+        "TIME" : "to",
+        "TIMESTAMP" : "to",
+        "PUNCTUATION" : ""
+    }
 
     CAT_TO_SCHEME = {
         "no" : "_n",
@@ -185,6 +194,7 @@ class IFD_Tagset:
         "stt" : "_c",
         "nhm" : "_c",
         "entity" : "_e",
+        "prósenta" : "_t",
         "sérnafn" : "_n",
         "fyrirtæki" : "_n",
         "person" : "_n",
@@ -290,11 +300,22 @@ class IFD_Tagset:
         return "t" + self._flokkur_t() + self._kyn() + self._tala(default = "f") + self._fall()
 
     def _s(self):
+        if "lh" in self._tagset and "nt" in self._tagset:
+            # Lýsingarháttur nútíðar
+            return "slg" # Alltaf germynd - gæti hugsanlega verið miðmynd
         if "lhþt" in self._tagset:
+            # Lýsingarháttur þátíðar
             return "sþ" + self._mynd() + self._kyn() + self._tala() + self._fall()
         if "nh" in self._tagset:
+            # Nafnháttur
+            if "þt" in self._tagset:
+                return "sn" + self._mynd() + "--þ"
             return "sn" + self._mynd()
+        if "bh" in self._tagset:
+            # Boðháttur
+            return "sb" + self._mynd() + "2" + self._tala() + "n" # Alltaf 2.p. nútíð
         if "sagnb" in self._tagset:
+            # Sagnbót
             return "ss" + self._mynd()
         return "s" + self._háttur() + self._mynd() + self._persóna() + self._tala() + self._tíð()
 
@@ -358,6 +379,9 @@ class IFD_Tagset:
             return "-ö"
         if self._kind == "PERSON":
             return "-m"
+        if self._kind == "CURRENCY":
+            # !!! TBD
+            return "e" if "gr" in self._tagset else "-e"
         return "-s" if self._stem[0].isupper() else ""
 
     def _stig(self):
@@ -399,6 +423,8 @@ class IFD_Tagset:
         return "x"
 
     def _flokkur_t(self):
+        if self._kind == "PERCENT":
+            return "p"
         return "f"
 
     def _mynd(self):
@@ -421,6 +447,8 @@ class IFD_Tagset:
         return "þ" if "þt" in self._tagset else "n"
 
     def _persóna(self):
+        if "op" in self._tagset:
+            return "3"
         if "p1" in self._tagset:
             return "1"
         if "p2" in self._tagset:
@@ -484,6 +512,8 @@ class IFD_Tagset:
 
     def _tagstring(self):
         """ Calculate the IFD tagstring from the tagset """
+        if self._kind in self.KIND_TO_TAG:
+            return self.KIND_TO_TAG[self._kind]
         key = self._first or self._cat or self._kind
         scheme = self.CAT_TO_SCHEME.get(key)
         if scheme is None:
