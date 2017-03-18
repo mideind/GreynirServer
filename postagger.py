@@ -166,8 +166,7 @@ class IFD_Tagset:
         # !!! TBD: put in more precise tags
         "DATE" : "to",
         "TIME" : "to",
-        "TIMESTAMP" : "to",
-        "PUNCTUATION" : ""
+        "TIMESTAMP" : "to"
     }
 
     CAT_TO_SCHEME = {
@@ -477,8 +476,19 @@ class IFD_Tagset:
             return "n"
         return ""
 
-    def __init__(self, t):
-        # Initialize the tagset from the token
+    def __init__(self, *args, **kwargs):
+        # Initialize the tagset from a token or from keyword parameters
+        if len(args) == 1 and len(kwargs) == 0:
+            # Single positional parameter: assume it's a token dict
+            self._init_from(args[0])
+        elif len(args) == 0:
+            # Relay keyword parameters onwards
+            self._init_from(kwargs)
+        else:
+            raise ValueError("Unsupported parameter list")
+
+    def _init_from(self, t):
+        """ Initialize the tagset parameters from a dict """
         self._cache = None
         self._kind = t.get("k")
         self._cat = t.get("c")
@@ -512,6 +522,8 @@ class IFD_Tagset:
 
     def _tagstring(self):
         """ Calculate the IFD tagstring from the tagset """
+        if self._kind == "PUNCTUATION":
+            return self._txt
         if self._kind in self.KIND_TO_TAG:
             return self.KIND_TO_TAG[self._kind]
         key = self._first or self._cat or self._kind

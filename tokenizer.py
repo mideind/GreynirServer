@@ -1025,6 +1025,13 @@ def all_cases(token):
     return list(cases)
 
 
+def all_common_cases(token1, token2):
+    """ Compute intersection of case sets for two tokens """
+    set1 = set(all_cases(token1))
+    set2 = set(all_cases(token2))
+    return list(set1 & set2)
+
+
 _GENDER_SET = { "kk", "kvk", "hk" }
 _GENDER_DICT = { "KK": "kk", "KVK": "kvk", "HK": "hk" }
 
@@ -1167,7 +1174,8 @@ def parse_phrases_1(token_stream):
                         if (nat, cur) in ISO_CURRENCIES:
                             # Match: accumulate the possible cases
                             token = TOK.Currency(token.txt + " "  + next_token.txt,
-                                ISO_CURRENCIES[(nat, cur)], all_cases(token),
+                                ISO_CURRENCIES[(nat, cur)],
+                                all_common_cases(token, next_token),
                                 all_genders(next_token))
                             next_token = next(token_stream)
 
@@ -1264,19 +1272,31 @@ def parse_phrases_2(token_stream):
                 # (milljónir, milljóna, milljónum)
                 cases = token.val[1]
                 genders = token.val[2]
+                cur = None
 
                 if next_token.kind == TOK.WORD:
                     # Try to find a currency name
                     cur = match_stem_list(next_token, CURRENCIES)
+                    if cur is None and next_token.txt.isupper():
+                        # Might be an ISO abbrev (which is not in BÍN)
+                        cur = CURRENCIES.get(next_token.txt)
+                        if not cases:
+                            cases = list(ALL_CASES)
+                        if not genders:
+                            genders = ["hk"]
                     if cur is not None:
                         # Use the case and gender information from the currency name
                         if not cases:
                             cases = all_cases(next_token)
                         if not genders:
                             genders = all_genders(next_token)
-                else:
+                elif next_token.kind == TOK.CURRENCY:
                     # Already have an ISO identifier for a currency
                     cur = next_token.val[0]
+                    if next_token.val[1]:
+                        cases = next_token.val[1]
+                    if next_token.val[2]:
+                        genders = next_token.val[2]
 
                 if cur is not None:
                     # Create an amount
@@ -2031,7 +2051,7 @@ def paragraphs(toklist):
 
 def canonicalize_token(t):
     """ Convert a token in-situ from a compact dictionary representation
-        (typically created by Article._describe_token()) to a normalized,
+        (typically created by TreeUtility._describe_token()) to a normalized,
         verbose form that is appropriate for external consumption """
 
     # Set the token kind to a readable string
@@ -2087,8 +2107,9 @@ def canonicalize_token(t):
             t["s"] = t["v"]
             del t["v"]
             # Move the gender to the "c" (category) field
-            t["c"] = t["g"]
-            del t["g"]
+            if "g" in t:
+                t["c"] = t["g"]
+                del t["g"]
     if (kind == TOK.ENTITY) or (kind == TOK.WORD) and "s" not in t:
         # Put in a stem for entities and proper names
         t["s"] = t["x"]

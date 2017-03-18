@@ -1127,10 +1127,10 @@ class TreeTokenList(TreeBase):
 
     def handle_T(self, n, s):
         """ Terminal """
-        terminal, token, tokentype, aux, cat = self._parse_T(s)
+        t = self._parse_T(s)
         # Append to token list for current sentence
         assert self.stack is not None
-        self.stack.append(TreeToken(terminal = terminal, token = token, tokentype = tokentype, aux = aux, cat = cat))
+        self.stack.append(TreeToken(*t))
 
     def handle_N(self, n, nonterminal):
         """ Nonterminal """

@@ -29,6 +29,29 @@ class TreeUtility:
         with parse trees and tokens """
 
     @staticmethod
+    def choose_full_name(val, case, gender):
+        """ From a list of name possibilities in val, and given a case and a gender
+            (which may be None), return the best matching full name and gender """
+        fn_list = [ (fn, g, c) for fn, g, c in val
+            if (gender is None or g == gender) and (case is None or c == case) ]
+        if not fn_list:
+            # Oops - nothing matched this. Might be a foreign, undeclinable name.
+            # Try nominative if it wasn't alredy tried
+            if case is not None and case != "nf":
+                fn_list = [ (fn, g, c) for fn, g, c in val
+                    if (gender is None or g == gender) and (case == "nf") ]
+            # If still nothing, try anything with the same gender
+            if not fn_list and gender is not None:
+                fn_list = [ (fn, g, c) for fn, g, c in val if (g == gender) ]
+            # If still nothing, give up and select the first available meaning
+            if not fn_list:
+                fn, g, c = val[0]
+                fn_list = [ (fn, g, c) ]
+        # If there are many choices, select the nominative case, or the first element as a last resort
+        fn = next((fn for fn in fn_list if fn[2] == "nf"), fn_list[0])
+        return fn[0], fn[1] if gender is None else gender
+
+    @staticmethod
     def _describe_token(t, terminal, meaning):
         """ Return a compact dictionary and a WordTuple describing the token t,
             which matches the given terminal with the given meaning """
@@ -74,35 +97,15 @@ class TreeUtility:
                         gender = None
                     if terminal.num_variants >= 2:
                         case = terminal.variant(-2)
-                fn_list = [ (fn, g, c) for fn, g, c in t.val
-                    if (gender is None or g == gender) and (case is None or c == case) ]
-                if not fn_list:
-                    # Oops - nothing matched this. Might be a foreign, undeclinable name.
-                    # Try nominative if it wasn't alredy tried
-                    if case is not None and case != "nf":
-                        fn_list = [ (fn, g, c) for fn, g, c in t.val
-                            if (gender is None or g == gender) and (case == "nf") ]
-                    # If still nothing, try anything with the same gender
-                    if not fn_list and gender is not None:
-                        fn_list = [ (fn, g, c) for fn, g, c in t.val if (g == gender) ]
-                    # If still nothing, give up and select the first available meaning
-                    if not fn_list:
-                        fn, g, c = t.val[0]
-                        fn_list = [ (fn, g, c) ]
-                # If there are many choices, select the nominative case, or the first element as a last resort
-                fn = next((fn for fn in fn_list if fn[2] == "nf"), fn_list[0])
-                d["v"] = fn[0] # Include only the name of the person in nominal form
-                # Hack to make sure that the gender information is communicated in
-                # the terminal name (in some cases the terminal only contains the case)
-                if gender is None:
-                    gender = fn[1]
+                d["v"], gender = TreeUtility.choose_full_name(t.val, case, gender)
+                # Make sure the terminal field has a gender indicator
                 if terminal is not None:
                     if not terminal.name.endswith("_" + gender):
                         d["t"] = terminal.name + "_" + gender
                 else:
                     # No terminal field: create it
                     d["t"] = "person_" + gender
-                # In any case, add a gender indicator for convenience
+                # In any case, add a separate gender indicator field for convenience
                 d["g"] = gender
                 wt = WordTuple(stem = d["v"], cat = "person_" + gender)
             else:

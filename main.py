@@ -396,9 +396,10 @@ def postag_api(version = 2):
         for sent in pgs:
             # Transform the token representation into a
             # nice canonical form for outside consumption
+            err = any("err" in t for t in sent)
             for t in sent:
                 canonicalize_token(t)
-                if version >= 2:
+                if version >= 2 and not err:
                     # Add the Icelandic Frequency Dictionary (IFD) tagset
                     ifd_tagset = str(IFD_Tagset(t))
                     if ifd_tagset:

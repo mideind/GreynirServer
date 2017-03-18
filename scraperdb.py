@@ -464,9 +464,9 @@ class Trigram(Base):
     _Q = """
         insert into trigrams as tg (t1, t2, t3, frequency) values(:t1, :t2, :t3, 1)
             on conflict (t1, t2, t3)
-            do update set frequency = tg.frequency + 1
-            where tg.t1 = :t1 and tg.t2 = :t2 and tg.t3 = :t3;
+            do update set frequency = tg.frequency + 1;
         """
+        # where tg.t1 = :t1 and tg.t2 = :t2 and tg.t3 = :t3;
 
     __table_args__ = (
         PrimaryKeyConstraint('t1', 't2', 't3', name='trigrams_pkey'),
