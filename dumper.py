@@ -39,6 +39,10 @@ from scraperdb import Scraper_DB, Article
 from tokenizer import TOK
 
 
+# Default output file name
+OUTPUT_FILE = "reynir_dump.txt"
+
+
 class Dumper:
 
     """ The worker class that processes parsed articles """
@@ -66,15 +70,21 @@ class Dumper:
                     wcnt = 0
                     err = False
                     for t in sent:
+                        if "err" in t:
+                            err = True
+                            break
                         kind = t.get("k")
                         text = t.get("x")
-                        err = err or "err" in t
+                        m = t.get("m")
                         if text:
                             # Person and entity names may contain spaces,
                             # but we want to keep them together as single tokens,
                             # so we replace the spaces with underscores
-                            if kind == TOK.PERSON or kind == TOK.ENTITY:
-                                out.append(text.replace(" ", "_"))
+                            if kind == TOK.PERSON:
+                                out.append(text.replace(" ", "_") + "/p")
+                                wcnt += 1
+                            elif kind == TOK.ENTITY:
+                                out.append(text.replace(" ", "_") + "/e")
                                 wcnt += 1
                             elif kind == TOK.PUNCTUATION:
                                 # Skip insignificant punctuation, such as double quotes
@@ -82,19 +92,66 @@ class Dumper:
                                     raise Dumper.AbortSentence()
                                 elif text not in skip_punctuation:
                                     out.append(text)
+                            elif kind == TOK.YEAR:
+                                out.append(text + "/y")
+                                wcnt += 1
+                            elif kind == TOK.AMOUNT:
+                                out.append(text.replace(" ", "_") + "/amt")
+                                wcnt += 1
+                            elif kind == TOK.NUMBER:
+                                out.append(text.replace(" ", "_") + "/n")
+                                wcnt += 1
+                            elif kind == TOK.PERCENT:
+                                out.append(text.replace(" ", "_") + "/pc")
+                                wcnt += 1
+                            elif kind == TOK.CURRENCY:
+                                out.append(text.replace(" ", "_") + "/c")
+                                wcnt += 1
+                            elif kind == TOK.DATE:
+                                out.append(text.replace(" ", "_") + "/d")
+                                wcnt += 1
+                            elif kind == TOK.TIME:
+                                out.append(text.replace(" ", "_") + "/t")
+                                wcnt += 1
+                            elif kind == TOK.TIMESTAMP:
+                                out.append(text.replace(" ", "_") + "/ts")
+                                wcnt += 1
+                            elif kind == TOK.EMAIL:
+                                out.append(text + "/email")
+                                wcnt += 1
+                            elif kind == TOK.URL:
+                                out.append(text + "/url")
+                                wcnt += 1
+                            elif kind == TOK.TELNO:
+                                out.append(text + "/tel")
+                                wcnt += 1
+                            elif kind == TOK.ORDINAL:
+                                out.append(text + "/o")
+                                wcnt += 1
                             else:
                                 if wcnt == 0 and text[0].isupper():
                                     # First word in sentence, uppercase and we
                                     # know its stem: check whether the stem is lowercase
                                     # and if so, output the word in lowercase as well
-                                    if "m" not in t or not t["m"][0][0].isupper():
+                                    if m is None or not m[0][0].isupper():
                                         original = text
                                         text = text[0].lower() + text[1:]
-                                out.append(text)
+                                if m is None:
+                                    terminal = t.get("t")
+                                    if terminal is not None:
+                                        if terminal.startswith("sérnafn"):
+                                            out.append(text.replace(" ", "_") + "/s")
+                                        else:
+                                            out.append(text.replace(" ", "_") + "/" + terminal.split("_")[0])
+                                    else:
+                                        # print("No meaning associated with {0}".format(t))
+                                        out.append(text.replace(" ", "_") + "/x")
+                                else:
+                                    out.append(text.replace(" ", "_") + "/" + m[1])  # Add word category
                                 wcnt += 1
-                    if out: # !!! and not err:
+                    if out and not err:
                         line = " ".join(out)
-                        if line != "." and not line.startswith("mbl.is /"):
+                        if line != "." and not line.startswith("mbl.is/unk /"):
                             print(line, file = file)
                 except Dumper.AbortSentence:
                     # If a sentence contains particular 'stop tokens',
@@ -126,6 +183,7 @@ class Dumper:
 def process_articles(limit = 0):
 
     print("------ Reynir starting dump -------")
+    print("Output file: {0}".format(OUTPUT_FILE))
     if limit:
         print("Limit: {0} articles".format(limit))
     ts = "{0}".format(datetime.utcnow())[0:19]
@@ -133,7 +191,7 @@ def process_articles(limit = 0):
 
     t0 = time.time()
 
-    Dumper().go(output = "reynir_dump.txt", limit = limit)
+    Dumper().go(output = OUTPUT_FILE, limit = limit)
 
     t1 = time.time()
 
@@ -161,6 +219,7 @@ __doc__ = """
     Options:
         -h, --help: Show this help text
         -l N, --limit=N: Limit dump to N articles
+        -o filename, --output=filename: Output to the given file (default is reynir_dump.txt)
 
 """
 
@@ -171,8 +230,8 @@ def main(argv = None):
         argv = sys.argv
     try:
         try:
-            opts, args = getopt.getopt(argv[1:], "hl:",
-                ["help", "limit="])
+            opts, args = getopt.getopt(argv[1:], "hl:o:",
+                ["help", "limit=", "output="])
         except getopt.error as msg:
              raise Usage(msg)
         limit = 10 # !!! DEBUG default limit on number of articles to parse, unless otherwise specified
@@ -187,6 +246,12 @@ def main(argv = None):
                     limit = int(a)
                 except ValueError as e:
                     pass
+            elif o in ("-o", "--output"):
+                if a:
+                    global OUTPUT_FILE
+                    OUTPUT_FILE = a
+                else:
+                    raise Usage("Output file name must be nonempty")
 
         # Process arguments
         for arg in args:

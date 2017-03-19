@@ -29,6 +29,8 @@ if __name__ == "__main__":
     if basepath.endswith("/utils") or basepath.endswith("\\utils"):
         basepath = basepath[0:-6]
         sys.path.append(basepath)
+else:
+    basepath = ""
 
 from settings import Settings, ConfigError, Prepositions
 from tokenizer import tokenize, correct_spaces, canonicalize_token, TOK
@@ -188,6 +190,8 @@ class NgramTagger:
         self.EMPTY = tuple([""] * n)
         # ngram count
         self.cnt = defaultdict(int)
+        # prefix (n-1-gram) count
+        self.prefix_cnt = defaultdict(int)
         # { lemma: { tag : count} }
         self.lemma_cnt = defaultdict(lambda: defaultdict(int))
 
@@ -253,20 +257,23 @@ class NgramTagger:
 
             # Count the n-grams
             cnt = self.cnt
+            prefix_cnt = self.prefix_cnt
             EMPTY = self.EMPTY
             for ngram in ngrams(tags(q)):
-                # We don't need to count n-grams that have an empty string
-                # in the last position - they're never used or referenced
-                if ngram[-1]:
+                if ngram != EMPTY:
                     cnt[ngram] += 1
+                    prefix_cnt[ngram[:-1]] += 1
 
         # Cut off lemma/tag counts <= 1
+        lemmas_to_delete = []
         for lemma, d in self.lemma_cnt.items():
-            for tag, cnt in d.items():
-                if cnt == 1:
-                    del d[tag]
+            tags_to_delete = [ tag for tag, cnt in d.items() if cnt == 1 ]
+            for tag in tags_to_delete:
+                del d[tag]
             if len(d) == 0:
-                del self.lemma_cnt[lemma]
+                lemmas_to_delete.append(lemma)
+        for lemma in lemmas_to_delete:
+            del self.lemma_cnt[lemma]
 
         return self
 
@@ -283,6 +290,8 @@ class NgramTagger:
         with open("ngram-{0}-count.pickle".format(self.n), "rb") as f:
             self.lemma_cnt = pickle.load(f)
             self.cnt = pickle.load(f)
+            for ngram, c in self.cnt.items():
+                self.prefix_cnt[ngram[:-1]] += c
 
     def show_model(self):
         """ Dump the tag count statistics """
@@ -296,9 +305,62 @@ class NgramTagger:
 
     def _most_likely(self, tokens):
         """ Find the most likely tag sequence through the possible tags of each token """
+        cnt = self.cnt
+        prefix_cnt = self.prefix_cnt
+        n = self.n
+        history = self.EMPTY
+        best_path = []
+        best_prob = []
+        len_tokens = len(tokens)
+
+        def fwd_prob(ix, history, depth):
+            """ Find the most probable tag from the tagset at position ix,
+                using the history and looking forward up to depth tokens """
+            if ix >= len_tokens:
+                # Looking past the token string: return a log prob of 0.0
+                return (0, 0.0)
+            tagset = tokens[ix]
+            prev = history[1:]
+            if len(tagset) == 1:
+                # Short circuit if only one tag is possible
+                if depth > 0:
+                    # Relay the forward probability upwards, unchanged
+                    _, fwd_p = fwd_prob(ix + 1, prev + (tagset[0][0],), depth - 1)
+                    return 0, fwd_p
+                # Log prob is 0.0 (i.e. the probability is 1.0)
+                return 0, 0.0
+            cnt_tags = sum(cnt.get(prev + (tag,), 0) + 1 for tag, _ in tagset)
+            log_p_tags = math.log(cnt_tags) + math.log(sum(lex_p for _, lex_p in tagset))
+            best_ix, best_prob = None, None
+            for tag_ix, tp in enumerate(tagset):
+                tag, lex_p = tp
+                ngram = prev + (tag,)
+                log_p_tag = math.log(lex_p) + math.log(cnt.get(ngram, 0) + 1) - log_p_tags
+                if best_prob is not None and log_p_tag < best_prob:
+                    # Already too low prob to become the best one: skip this tag
+                    continue
+                _, fwd_p = fwd_prob(ix + 1, ngram, depth - 1) if depth > 0 else (0, 0.0)
+                total_p = log_p_tag + fwd_p
+                if best_prob is None or total_p > best_prob:
+                    best_ix = tag_ix
+                    best_prob = total_p
+            return best_ix, best_prob
+
+        for ix, tagset in enumerate(tokens):
+            ix_pick, prob = fwd_prob(ix, history, n - 1)
+            pick = tagset[ix_pick][0]
+            best_path.append(pick)
+            best_prob.append(prob)
+            history = history[1:] + (pick,)
+
+        return math.exp(sum(best_prob)), best_path
+
+    def _old_most_likely(self, tokens):
+        """ Find the most likely tag sequence through the possible tags of each token """
 
         len_tokens = len(tokens)
         cnt = self.cnt
+        prefix_cnt = self.prefix_cnt
 
         def _most_likely_from(start, history, prev_best):
             """ Return the most likely tag sequence from and including the start """
@@ -310,18 +372,23 @@ class NgramTagger:
             prev = history[1:]
             if len(tagset) == 1:
                 # Short circuit if only one tag is possible
-                best_prob, best_tail = _most_likely_from(start + 1, prev + (tagset[0][0],), prev_best)
-                return best_prob, None if best_tail is None else [ tagset[0][0] ] + best_tail
+                tag = tagset[0][0]
+                best_prob, best_tail = _most_likely_from(start + 1, prev + (tag,), prev_best)
+                if best_tail is None:
+                    return None, None
+                best_tail.append(tag)
+                return best_prob, best_tail
             # Create list of (tag, count) tuples for this tagset,
             # given the history (i.e. the previous n-1 proposed tags)
-            tagprob = [(tag, cnt.get(prev + (tag,), 0) * prob) for tag, prob in tagset]
+            tagprob = [(tag, (cnt.get(prev + (tag,), 0) + 1) * prob) for tag, prob in tagset]
             # Count the total number of ngrams that match this tagset
-            p_tags = sum(tp[1] for tp in tagprob)
+            #p_tags = sum(tp[1] for tp in tagprob)
+            p_tags = (prefix_cnt[prev] + len(tagset)) * sum(prob for _, prob in tagset)
             if p_tags == 0:
                 # No open options here: quit
                 return None, None
             log_tags = math.log(p_tags)
-            best_prob, best_tail = None, None
+            best_prob, best_tag, best_tail = None, None, None
             # Loop over the tags in descending order by count, to maximize
             # the chances of being able to short-circuit the recursion
             for tag, p in sorted(tagprob, key = lambda tp: tp[1], reverse = True):
@@ -334,10 +401,12 @@ class NgramTagger:
                     break
                 # Calculate log(p / p_tags) = log(p) - log(p_tags) = log(p) - log_tags
                 prob = math.log(p) - log_tags
+                #print("{2}Looking at {0} with prob {1:.4f}".format((prev + (tag,)), math.exp(prob), " " * start))
                 if best_prob is not None and prob < best_prob:
                     # p by itself is already worse than a candidate we
                     # have: we don't need to look at the tail, since
                     # it can only reduce p further
+                    #print("{2}Breaking because prob {0:.4f} < {1:.4f}".format(math.exp(prob), math.exp(best_prob), " " * start))
                     break
                 if prev_best is not None and prob < prev_best:
                     # p has gotten worse than a best case we already had
@@ -352,15 +421,20 @@ class NgramTagger:
                     # This is the best path found so far
                     # By adding the log probabilities, we're multiplying the probabilities
                     best_prob = prob + p_tail
-                    best_tail = [ tag ] + tail
+                    best_tag = tag
+                    best_tail = tail
+            #print("{2}Returning tail {0} with prob {1:.4f}".format(best_tail, math.exp(best_prob), " " * start))
+            if best_tail is None:
+                return None, None
+            best_tail.append(best_tag)
             return best_prob, best_tail
 
         log_prob, seq = _most_likely_from(0, self.EMPTY, None)
         if log_prob is None:
             # No consistent path found
             return 0.0, []
-        # Return the probability and the tag sequence
-        return math.exp(log_prob), seq
+        # Return the probability and the tag sequence (after reversing it)
+        return math.exp(log_prob), seq[::-1]
 
     def tag(self, toklist_or_text):
         """ Assign IFD tags to the given toklist, putting the tag in the
@@ -396,6 +470,7 @@ class NgramTagger:
             i = IFD_Tagset(
                 k = "PERSON",
                 c = "person",
+                g = p.gender,
                 x = txt,
                 s = p.name,
                 t = "person_" + p.gender + "_" + p.case
@@ -456,7 +531,7 @@ class NgramTagger:
 
         _, tags = self._most_likely(tagsets)
 
-        if tags is None:
+        if not tags:
             return []
 
         ix = 0
@@ -489,24 +564,32 @@ class NgramTagger:
 def test_tagger():
 
     TEST_SENTENCE = """
-Gott gengi hennar hélt áfram þegar komið var á seinni níu holur vallarins en tveir
-fuglar á fyrstu fjórum holunum þýddu að hún var á þremur höggum undir pari á deginum
-og alls sex höggum undir pari.
-    """
+Við þá vinnu hefur meðal annars verið unnið á grundvelli niðurstaðna sérfræðihóps sem skilaði
+greinargerð um samkeppnishæfni þjóðarbúsins í ljósi styrkingar krónunnar til ráðherranefndar
+um efnahagsmál í byrjun febrúar.
+ """
+
+# Jón bauð forsætisráðherra á fund
+
+#Ögmundur Jónasson fyrrverandi ráðherra og þingmaður vill bjóða Bjarna Benediktssyni forsætisráðherra
+#á fund í Iðnó á morgun.
+
+#Jón og Guðmundur greiddu atkvæði gegn málinu enda eru þeir sannfærðir um að betri lausn muni finnast.
 
 
     print("Initializing tagger")
-    tagger = NgramTagger(n = 4).init_model(limit = 20000)
+    tagger = NgramTagger(n = 5)#.init_model(limit = 50000)
     #tagger = NgramTagger(n = 3) # .init_model(limit = 20000)
-    tagger.store_model()
-    #tagger.load_model()
+    #tagger.store_model()
+    tagger.load_model()
     tagger.show_model()
 
     toklist = tokenize(TEST_SENTENCE)
     print("\nTagging result:\n{0}".format("\n".join(str(d) for d in tagger.tag(toklist))))
+    return tagger
 
 
-if __name__ == "__main__":
+def main():
 
     try:
         # Read configuration file
@@ -520,4 +603,9 @@ if __name__ == "__main__":
 
     #spin_trigrams(25)
 
-    test_tagger()
+    return test_tagger()
+
+
+if __name__ == "__main__":
+
+    main()

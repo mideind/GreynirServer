@@ -1324,7 +1324,7 @@ def parse_phrases_2(token_stream):
                 # Look through the token meanings
                 result = []
                 for m in tok.val:
-                    if m.fl in categories:
+                    if m.fl in categories and "ET" in m.beyging:
                         # If this is a given name, we cut out name forms
                         # that are frequently ambiguous and wrong, i.e. "Frá" as accusative
                         # of the name "Frár", and "Sigurð" in the nominative.
@@ -1344,12 +1344,8 @@ def parse_phrases_2(token_stream):
                 """ Return True if the token can denote something besides a given name """
                 if tok.kind != TOK.WORD or not tok.val:
                     return True
-                # Look through the token meanings
-                for m in tok.val:
-                    if m.fl != category:
-                        # Here is a different meaning, not a given name: return True
-                        return True
-                return False
+                # Return True if there is a different meaning, not a given name
+                return any(m.fl != category for m in tok.val)
 
             # Check for person names
             def given_names(tok):
@@ -1464,7 +1460,7 @@ def parse_phrases_2(token_stream):
                         for p in gn:
                             for np in sn:
                                 if compatible(p, np):
-                                    r.append(PersonName(name = p.name + " " + np.name, gender = p.gender, case = p.case))
+                                    r.append(PersonName(name = p.name + " " + np.name, gender = np.gender, case = np.case))
                         if not r:
                             break
                         # Compatible: include it and advance to the next token
