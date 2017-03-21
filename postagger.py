@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 
     Reynir: Natural language processing for Icelandic
@@ -42,10 +41,16 @@
 
 """
 
-from scraperdb import SessionContext
+import math
+import pickle
+import json
+from collections import defaultdict
+from itertools import islice, tee
+
+from scraperdb import SessionContext, Article, desc
 from treeutil import TreeUtility
-from tokenizer import canonicalize_token
-from settings import Settings, ConfigError
+from tokenizer import canonicalize_token, TOK
+from settings import Settings, Prepositions, ConfigError
 from contextlib import contextmanager
 from fastparser import Fast_Parser
 
@@ -166,7 +171,8 @@ class IFD_Tagset:
         # !!! TBD: put in more precise tags
         "DATE" : "to",
         "TIME" : "to",
-        "TIMESTAMP" : "to"
+        "TIMESTAMP" : "to",
+        "PERCENT" : "tp"
     }
 
     CAT_TO_SCHEME = {
@@ -296,6 +302,9 @@ class IFD_Tagset:
         return "g" + self._kyn() + self._tala() + self._fall()
 
     def _t(self):
+        if self._cat == "töl" and self._fl == "ob":
+            # Óbeygt töluorð
+            return "ta"
         return "t" + self._flokkur_t() + self._kyn() + self._tala(default = "f") + self._fall()
 
     def _s(self):
@@ -374,14 +383,17 @@ class IFD_Tagset:
     def _sérnöfn(self):
         if not self._stem:
             return ""
-        if self._fl == "örn":
-            return "-ö"
+        if self._fl in { "örn", "göt", "lönd" }:
+            return "ö" if "gr" in self._tagset else "-ö"
         if self._kind == "PERSON":
             return "-m"
         if self._kind == "CURRENCY":
             # !!! TBD
             return "e" if "gr" in self._tagset else "-e"
-        return "-s" if self._stem[0].isupper() else ""
+        if self._stem[0].isupper():
+            # Sérnafn
+            return "s" if "gr" in self._tagset else "-s"
+        return ""
 
     def _stig(self):
         if "esb" in self._tagset or "evb" in self._tagset:
@@ -400,9 +412,9 @@ class IFD_Tagset:
     def _flokkur_f(self):
         if self._cat == "abfn":
             return "p" # ??? Hefði þetta ekki átt að vera "a"?
-        #if self._txt in self.FN_SAMFALL and self._stem in self.FN_BÆÐI:
-        #    return "p"
         if self._cat == "pfn":
+            return "p"
+        if self._txt in self.FN_SAMFALL and self._stem in self.FN_BÆÐI:
             return "p"
         return self.FN_FL.get(self._stem, "x")
 
@@ -541,3 +553,417 @@ class IFD_Tagset:
         if self._cache is None:
             self._cache = self._tagstring()
         return self._cache
+
+
+class NgramCounter:
+
+    """ A container for the dictionary of known n-grams along with their
+        counts. The container can store and load itself from a compact
+        text file. """
+
+    def __init__(self):
+        self._d = defaultdict(int)
+
+    @property
+    def size(self):
+        return len(self._d)
+
+    def add(self, ngram):
+        self._d[ngram] += 1
+
+    def count(self, ngram):
+        return self._d.get(ngram, 0)
+
+    def store(self, f):
+        """ Store the ngram dictionary in a compact text format """
+        d = self._d
+        vocab = dict()
+        # First, store the vocabulary (the distinct ngram tags)
+        for ngram in d:
+            for w in ngram:
+                if w not in vocab:
+                    n = len(vocab)
+                    vocab[w] = n
+        # Store the vocabulary in index order, one per line
+        f.write(str(len(vocab)) + "\n")
+        f.writelines(map(lambda x: x[0] + "\n", sorted(vocab.items(), key = lambda x: x[1])))
+        # Store the ngrams and their counts, one per line
+        for ngram, cnt in d.items():
+            f.write(";".join(str(vocab[w]) for w in ngram) + ";" + str(cnt) + "\n")
+
+    def load(self, f):
+        cnt = int(f.readline()[:-1])
+        vocab = []
+        self._d = dict()
+        for _ in range(cnt):
+            vocab.append(f.readline()[:-1])
+        for line in f:
+            v = line.split(";")
+            v[-1] = v[-1][:-1]
+            nv = [int(s) for s in v]
+            ngram = tuple(vocab[i] for i in nv[:-1])
+            cnt = nv[-1]
+            #print("Count of {0} is {1}".format(ngram, cnt))
+            self._d[ngram] = cnt
+
+
+class NgramTagger:
+
+    """ A class to assign Icelandic Frequency Dictionary (IFD) tags
+        to sentences consisting of 'raw' tokens coming out of the
+        tokenizer. A parse tree is not required, so the class can
+        also tag sentences for which there is no parse. The tagging
+        is based on n-gram and lemma statistics harvested from
+        the Reynir article database. """
+
+    CASE_TO_TAG = {
+        "þf" : "ao",
+        "þgf" : "aþ",
+        "ef" : "ae"
+    }
+
+    def __init__(self, n = 3):
+        """ n indicates the n-gram size, i.e. 3 for trigrams, etc. """
+        self.n = n
+        self.EMPTY = tuple([""] * n)
+        # ngram count
+        #self.cnt = defaultdict(int)
+        self.cnt = NgramCounter()
+        # { lemma: { tag : count} }
+        self.lemma_cnt = defaultdict(lambda: defaultdict(int))
+
+    def lemma_tags(self, lemma):
+        """ Return a dict of tags and counts for this lemma """
+        return self.lemma_cnt.get(lemma, dict())
+
+    def lemma_count(self, lemma):
+        """ Return the total occurrence count for a lemma """
+        d = self.lemma_cnt.get(lemma)
+        return 0 if d is None else sum(d.values())
+
+    def init_model(self, limit = None):
+        """ Iterate through parsed articles and extract tag trigrams from
+            successfully parsed sentences """
+
+        with SessionContext(commit = True, read_only = True) as session:
+
+            # Iterate through the articles
+            q = session.query(Article.url, Article.parsed, Article.tokens) \
+                .filter(Article.tokens != None) \
+                .order_by(desc(Article.parsed))
+            if limit is None:
+                q = q.yield_per(200)
+            else:
+                q = q[0:limit]
+
+            n = self.n
+
+            def tags(q):
+                """ Generator for tag stream """
+                acnt = 0
+                for a in q:
+                    # print("Processing article from {0.timestamp}: {0.url}".format(a))
+                    if acnt % 50 == 0:
+                        # Show progress
+                        print(".", end = "", flush = True)
+                    acnt += 1
+                    doc = json.loads(a.tokens)
+                    for pg in doc:
+                        for sent in pg:
+                            if any("err" in t for t in sent):
+                                # Skip error sentences
+                                continue
+                            # For each sentence, start and end with empty strings
+                            for i in range(n - 1):
+                                yield ""
+                            for t in sent:
+                                # Skip punctuation
+                                if t.get("k", TOK.WORD) != TOK.PUNCTUATION:
+                                    canonicalize_token(t)
+                                    tag = str(IFD_Tagset(t))
+                                    if tag:
+                                        self.lemma_cnt[t["x"]][tag] += 1
+                                        yield tag
+                            for i in range(n - 1):
+                                yield ""
+
+                print("", flush = True)
+
+            def ngrams(iterable):
+                return zip(*((islice(seq, i, None) for i, seq in enumerate(tee(iterable, n)))))
+
+            # Count the n-grams
+            cnt = self.cnt
+            EMPTY = self.EMPTY
+            for ngram in ngrams(tags(q)):
+                if ngram != EMPTY:
+                    #cnt[ngram] += 1
+                    cnt.add(ngram)
+
+        # Cut off lemma/tag counts <= 1
+        lemmas_to_delete = []
+        for lemma, d in self.lemma_cnt.items():
+            tags_to_delete = [ tag for tag, cnt in d.items() if cnt == 1 ]
+            for tag in tags_to_delete:
+                del d[tag]
+            if len(d) == 0:
+                lemmas_to_delete.append(lemma)
+        for lemma in lemmas_to_delete:
+            del self.lemma_cnt[lemma]
+
+        return self
+
+    def store_model(self):
+        """ Store the model in a pickle file """
+        if self.cnt.size:
+            # Don't store an empty count
+            with open("ngram-{0}-model.txt".format(self.n), "w") as f:
+                f.write(str(len(self.lemma_cnt)) + "\n")
+
+                def lemma_strings():
+                    """ Generator to convert each lemma_cnt item to a string
+                        of the form lemma; tag; count; tag; count; tag; count... """
+                    for lemma, tags in self.lemma_cnt.items():
+                        yield "{0};{1}\n".format(
+                            lemma, ";".join(tag + ";" + str(cnt) for tag, cnt in tags.items()))
+
+                f.writelines(lemma_strings())
+                self.cnt.store(f)
+
+    def load_model(self):
+        """ Load the model from a pickle file """
+        with open("ngram-{0}-model.txt".format(self.n), "r") as f:
+            cnt = int(f.readline()[:-1])
+            self.lemma_cnt = dict()
+            for _ in range(cnt):
+                line = f.readline()[:-1]
+                v = line.split(";")
+                # Bit of Python skulduggery to convert a list of the format
+                # lemma, tag, count, tag, count, tag, count...
+                # to a dictionary of tag:count pairs
+                d = dict(zip(v[1::2], (int(n) for n in v[2::2])))
+                self.lemma_cnt[v[0]] = d
+            self.cnt.load(f)
+
+    def show_model(self):
+        """ Dump the tag count statistics """
+        print("\nLemmas are {0}".format(len(self.lemma_cnt)))
+        print("\nCount contains {0} distinct {1}-grams"
+            .format(self.cnt.size, self.n))
+        print("\n")
+
+    def _most_likely(self, tokens):
+        """ Find the most likely tag sequence through the possible tags of each token.
+            The tokens are represented by a list of tagset lists, where each tagset list
+            entry is a (tag, lexical probability) tuple. """
+        cnt = self.cnt
+        n = self.n
+        history = self.EMPTY
+        best_path = []
+        best_prob = []
+        len_tokens = len(tokens)
+
+        def fwd_prob(ix, history, fwd):
+            """ Find the most probable tag from the tagset at position `ix`,
+                using the history for 'backwards' probability - as well as
+                looking forward up to `n - 1` tokens """
+            indent = "  " * (fwd + 1)
+            if ix >= len_tokens:
+                # Looking past the token string: return a log prob of 0.0
+                return 0, 0.0
+            tagset = tokens[ix]
+            prev = history[1:]
+            if fwd == 0 and len(tagset) == 1:
+                # Short circuit if only one tag is possible
+                # Relay the forward probability upwards, unchanged
+                print(indent + "Short circuit as tagset contains only {0}".format(tagset[0][0]))
+                _, fwd_p = fwd_prob(ix + 1, prev + (tagset[0][0],), fwd + 1)
+                return 0, fwd_p
+            # Sum the number of occurrences of each tag in the tagset, preceded
+            # by the given history, plus 1 (meaning that zero occurrences become
+            # a count of 1)
+            if fwd > 0:
+                cnt_tags = len(tagset)
+                prev_prev = prev[1:]
+                for prev_tp in tokens[ix-1]:
+                    prev_tag, _ = prev_tp
+                    cnt_tags += sum(cnt.count(prev_prev + (prev_tag, tag)) for tag, _ in tagset)
+            else:
+                cnt_tags = sum(cnt.count(prev + (tag,)) + 1 for tag, _ in tagset)
+            # Calculate a logarithm of the total occurrence count plus the sum of
+            # the lexical probabilites of the tags (which is usually 1.0 but may in
+            # exceptional circumstances be less)
+            log_p_tags = math.log(cnt_tags) + math.log(sum(lex_p for _, lex_p in tagset))
+            best_ix, best_prob = None, None
+            for tag_ix, tp in enumerate(tagset):
+                # Calculate the independent probability, given the history, of each
+                # tag in the tagset
+                tag, lex_p = tp
+                ngram = prev + (tag,)
+                # Calculate lexical_probability * (tag_count / total_tag_count)
+                # in log space
+                print(indent + "Looking at ngram {0} having count {1}".format(ngram, cnt.count(ngram)))
+                log_p_tag = math.log(lex_p) + math.log(cnt.count(ngram) + 1) - log_p_tags
+                if best_prob is not None and log_p_tag < best_prob:
+                    # Already too low prob to become the best one: skip this tag
+                    print(indent + "Skipping tag {0} since its log_p {1:.4f} < best_prob {2:.4f}".format(tag, log_p_tag, best_prob))
+                    continue
+                # Calculate the forward probability of the next `n - 1 - fwd` tags given
+                # that we choose this one
+                _, fwd_p = fwd_prob(ix + 1, ngram, fwd + 1) if fwd < n - 1 else (0, 0.0)
+                # The total probability we are maximizing is the 'backward' probability
+                # of this tag multiplied by the 'forward' probability of the next tags,
+                # or `log_p_tag + fwd_p` in log space
+                total_p = log_p_tag + fwd_p
+                print(indent + "Tag {0}: lex_p is {1:.4f}, log_p is {2:.4f}, fwd_p is {3:.4f}, total_p {4:.4f}".format(tag, lex_p, log_p_tag, fwd_p, total_p))
+                if best_prob is None or total_p > best_prob:
+                    # New maximum probability
+                    print(indent + "New best")
+                    best_ix = tag_ix
+                    best_prob = total_p
+            return best_ix, best_prob
+
+        for ix, tagset in enumerate(tokens):
+            ix_pick, prob = fwd_prob(ix, history, 0)
+            pick = tagset[ix_pick][0]
+            print("Index {0}: pick is {1}, prob is {2:.4f}".format(ix, pick, math.exp(prob)))
+            best_path.append(pick)
+            best_prob.append(prob)
+            history = history[1:] + (pick,)
+
+        return math.exp(sum(best_prob)), best_path
+
+    def tag(self, toklist_or_text):
+        """ Assign IFD tags to the given toklist, putting the tag in the
+            "i" field of each non-punctuation token. If a string is passed,
+            tokenize it first. Return the toklist so modified. """
+        if isinstance(toklist_or_text, str):
+            toklist = list(tokenize(toklist_or_text))
+        else:
+            toklist = list(toklist_or_text)
+
+        CONJ_REF = frozenset(["sem", "er"])
+
+        def ifd_tag(kind, txt, m):
+            i = IFD_Tagset(
+                k = TOK.descr[kind],
+                c = m.ordfl,
+                t = m.ordfl,
+                f = m.fl,
+                x = txt,
+                s = m.stofn,
+                b = m.beyging
+            )
+            return str(i)
+
+        def ifd_taglist_entity(txt):
+            i = IFD_Tagset(
+                c = "entity",
+                x = txt
+            )
+            return [ (str(i), 1.0) ]
+
+        def ifd_tag_person(txt, p):
+            i = IFD_Tagset(
+                k = "PERSON",
+                c = "person",
+                g = p.gender,
+                x = txt,
+                s = p.name,
+                t = "person_" + p.gender + "_" + p.case
+            )
+            return str(i)
+
+        def ifd_taglist_person(txt, val):
+            s = set(ifd_tag_person(txt, p) for p in val)
+            # We simply assume that all possible tags for
+            # a person name are equally likely
+            prob = 1.0 / len(s)
+            return [ (tag, prob) for tag in s ]
+
+        def ifd_taglist_word(kind, txt, mlist):
+            if not mlist:
+                if txt[0].isupper():
+                    # Óþekkt sérnafn?
+                    # !!! The probabilities below are a rough guess
+                    return [ ("nxen-s", 0.6), ("nxeo-s", 0.1), ("nxeþ-s", 0.1), ("nxee-s", 0.2) ]
+                # Erlent orð?
+                return [ ("e", 1.0) ]
+            s = set(ifd_tag(kind, txt, m) for m in mlist)
+            ltxt = txt.lower()
+            if ltxt in Prepositions.PP:
+                for case in Prepositions.PP[ltxt]:
+                    if case in self.CASE_TO_TAG:
+                        s.add(self.CASE_TO_TAG[case])
+            if ltxt in CONJ_REF:
+                # For referential conjunctions,
+                # add 'ct' as a possibility (it does not come directly from a BÍN mark)
+                s.add("ct")
+            # Add a +1 bias to the counts so that no lemma/tag pairs have zero frequency
+            prob = self.lemma_count(txt) + len(s)
+            d = self.lemma_tags(txt)
+            # It is possible for the probabilities of the tags in set s
+            # not to add up to 1.0. This can happen if the tokenizer has
+            # eliminated certain BÍN meanings due to updated settings
+            # in Pref.conf.
+            return [ (tag, (d.get(tag, 0) + 1) / prob) for tag in s ]
+
+        tagsets = []
+        for t in toklist:
+            if not t.txt:
+                continue
+            if t.kind == TOK.WORD:
+                taglist = ifd_taglist_word(t.kind, t.txt, t.val)
+            elif t.kind == TOK.ENTITY:
+                taglist = ifd_taglist_entity(t.txt)
+            elif t.kind == TOK.PERSON:
+                taglist = ifd_taglist_person(t.txt, t.val)
+            elif t.kind == TOK.NUMBER:
+                taglist = [ ("tfkfn", 1.0) ] # !!!
+            elif t.kind == TOK.YEAR:
+                taglist = [ ("ta", 1.0) ]
+            elif t.kind == TOK.PERCENT:
+                taglist = [ ("tp", 1.0) ]
+            elif t.kind == TOK.ORDINAL:
+                taglist = [ ("lxexsf", 1.0) ]
+            elif t.kind == TOK.PUNCTUATION:
+                taglist = None
+            else:
+                print("Unknown tag kind: {0}, text '{1}'".format(TOK.descr[t.kind], t.txt))
+                taglist = None
+            if taglist:
+            #    display = " | ".join("{0} {1:.2f}".format(w, p) for w, p in taglist)
+            #    print("{0:20}: {1}".format(t.txt, display))
+                tagsets.append(taglist)
+
+        _, tags = self._most_likely(tagsets)
+
+        if not tags:
+            return 0.0, []
+
+        ix = 0
+        tokens = []
+        for t in toklist:
+            if not t.txt:
+                continue
+            # The code below should correspond to TreeUtility._describe_token()
+            d = dict(x = t.txt)
+            if t.kind == TOK.WORD:
+                # set d["m"] to the meaning
+                pass
+            else:
+                d["k"] = t.kind
+            if t.val is not None and t.kind not in { TOK.WORD, TOK.ENTITY, TOK.PUNCTUATION }:
+                # For tokens except words, entities and punctuation, include the val field
+                if t.kind == TOK.PERSON:
+                    d["v"], d["g"] = TreeUtility.choose_full_name(t.val, case = None, gender = None)
+                else:
+                    d["v"] = t.val
+            if t.kind in { TOK.WORD, TOK.ENTITY, TOK.PERSON, TOK.NUMBER, TOK.YEAR, TOK.ORDINAL, TOK.PERCENT }:
+                d["i"] = tags[ix]
+                ix += 1
+            tokens.append(d)
+
+        return tokens
+
+

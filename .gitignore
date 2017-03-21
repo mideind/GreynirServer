@@ -11,6 +11,9 @@ __pycache__/
 # Pickled DAWG trees
 *.pickle
 
+# ngram models
+ngram*.txt
+
 # Experimental Python stuff
 rnn.py
 sudoku.py
@@ -19,6 +22,7 @@ ssltest.py
 
 # Utility stuff
 diskuse.sh
+go.sh
 
 # Various resource files
 resources/*.txt
