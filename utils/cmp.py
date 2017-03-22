@@ -1369,8 +1369,8 @@ class Comparison():
         if self.MR == 0:
             GMA, GMPA = 0, 0
         else:
-            GMA = (self.MR + self.GR) / (self.MR + self.MP + self.GR + self.GW + self.MW)
-            GMPA = (self.MR + self.GR + self.MP) / (self.MR + self.MP + self.GR + self.GW + self.MW)
+            GMA = (self.MR + self.GR) / (self.MR + self.MP + self.GR + self.GW + self.MW + self.orð_vantar)
+            GMPA = (self.MR + self.GR + self.MP) / (self.MR + self.MP + self.GR + self.GW + self.MW + self.orð_vantar)
         print("Nákvæmni (accuracy): {:.4f}\tMeð hlutréttu: {:.4f}".format(GMA, GMPA))
         print("*******************************************************")
 

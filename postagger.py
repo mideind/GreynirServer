@@ -47,7 +47,8 @@ import json
 from collections import defaultdict
 from itertools import islice, tee
 
-from scraperdb import SessionContext, Article, desc
+from scraperdb import SessionContext, desc
+from article import Article
 from treeutil import TreeUtility
 from tokenizer import canonicalize_token, TOK
 from settings import Settings, Prepositions, ConfigError
@@ -546,6 +547,8 @@ class IFD_Tagset:
         return scheme[1:] if func is None else func()
 
     def has_tag(self, tag):
+        """ Returns True if the tagset contains the given feature,
+            i.e. kk, kvk, þgf, nh, p3, vb, etc. """
         return tag in self._tagset
 
     def __str__(self):
@@ -622,9 +625,10 @@ class NgramTagger:
         "ef" : "ae"
     }
 
-    def __init__(self, n = 3):
+    def __init__(self, n = 3, verbose = False):
         """ n indicates the n-gram size, i.e. 3 for trigrams, etc. """
         self.n = n
+        self._verbose = verbose
         self.EMPTY = tuple([""] * n)
         # ngram count
         #self.cnt = defaultdict(int)
@@ -641,64 +645,53 @@ class NgramTagger:
         d = self.lemma_cnt.get(lemma)
         return 0 if d is None else sum(d.values())
 
-    def init_model(self, limit = None):
-        """ Iterate through parsed articles and extract tag trigrams from
-            successfully parsed sentences """
+    def train(self, limit = None):
+        """ Iterate through a token stream harvested from parsed articles
+            and extract tag trigrams """
 
-        with SessionContext(commit = True, read_only = True) as session:
+        n = self.n
 
-            # Iterate through the articles
-            q = session.query(Article.url, Article.parsed, Article.tokens) \
-                .filter(Article.tokens != None) \
-                .order_by(desc(Article.parsed))
-            if limit is None:
-                q = q.yield_per(200)
-            else:
-                q = q[0:limit]
+        def tag_stream(sentence_stream):
+            """ Generator for tag stream from a token stream """
+            for sent in sentence_stream:
+                if not sent:
+                    continue
+                # For each sentence, start and end with empty strings
+                for i in range(n - 1):
+                    yield ""
+                for t in sent:
+                    tag = None
+                    # Skip punctuation
+                    if t.get("k", TOK.WORD) != TOK.PUNCTUATION:
+                        canonicalize_token(t)
+                        tag = str(IFD_Tagset(t))
+                        if tag:
+                            self.lemma_cnt[t["x"]][tag] += 1
+                    if tag:
+                        yield tag
+                for i in range(n - 1):
+                    yield ""
 
-            n = self.n
+        def ngrams(iterable):
+            """ Python magic to generate ngram tuples from an iterable input """
+            return zip(*((islice(seq, i, None) for i, seq in enumerate(tee(iterable, n)))))
 
-            def tags(q):
-                """ Generator for tag stream """
-                acnt = 0
-                for a in q:
-                    # print("Processing article from {0.timestamp}: {0.url}".format(a))
-                    if acnt % 50 == 0:
-                        # Show progress
-                        print(".", end = "", flush = True)
-                    acnt += 1
-                    doc = json.loads(a.tokens)
-                    for pg in doc:
-                        for sent in pg:
-                            if any("err" in t for t in sent):
-                                # Skip error sentences
-                                continue
-                            # For each sentence, start and end with empty strings
-                            for i in range(n - 1):
-                                yield ""
-                            for t in sent:
-                                # Skip punctuation
-                                if t.get("k", TOK.WORD) != TOK.PUNCTUATION:
-                                    canonicalize_token(t)
-                                    tag = str(IFD_Tagset(t))
-                                    if tag:
-                                        self.lemma_cnt[t["x"]][tag] += 1
-                                        yield tag
-                            for i in range(n - 1):
-                                yield ""
+        # Get a sentence stream from parsed articles
+        sentence_stream = Article.sentence_stream(limit = limit)
 
-                print("", flush = True)
-
-            def ngrams(iterable):
-                return zip(*((islice(seq, i, None) for i, seq in enumerate(tee(iterable, n)))))
-
-            # Count the n-grams
-            cnt = self.cnt
-            EMPTY = self.EMPTY
-            for ngram in ngrams(tags(q)):
-                if ngram != EMPTY:
-                    #cnt[ngram] += 1
-                    cnt.add(ngram)
+        # Count the n-grams
+        cnt = self.cnt
+        EMPTY = self.EMPTY
+        acnt = 0
+        for ngram in ngrams(tag_stream(sentence_stream)):
+            if ngram != EMPTY:
+                cnt.add(ngram)
+                acnt += 1
+                if self._verbose and acnt % 20000 == 0:
+                    # Show progress every 20000 trigrams
+                    print(".", end = "", flush = True)
+        if self._verbose:
+            print("", flush = True)
 
         # Cut off lemma/tag counts <= 1
         lemmas_to_delete = []
@@ -767,7 +760,8 @@ class NgramTagger:
             """ Find the most probable tag from the tagset at position `ix`,
                 using the history for 'backwards' probability - as well as
                 looking forward up to `n - 1` tokens """
-            indent = "  " * (fwd + 1)
+            if self._verbose:
+                indent = "  " * (fwd + 1)
             if ix >= len_tokens:
                 # Looking past the token string: return a log prob of 0.0
                 return 0, 0.0
@@ -776,7 +770,8 @@ class NgramTagger:
             if fwd == 0 and len(tagset) == 1:
                 # Short circuit if only one tag is possible
                 # Relay the forward probability upwards, unchanged
-                print(indent + "Short circuit as tagset contains only {0}".format(tagset[0][0]))
+                if self._verbose:
+                    print(indent + "Short circuit as tagset contains only {0}".format(tagset[0][0]))
                 _, fwd_p = fwd_prob(ix + 1, prev + (tagset[0][0],), fwd + 1)
                 return 0, fwd_p
             # Sum the number of occurrences of each tag in the tagset, preceded
@@ -784,10 +779,15 @@ class NgramTagger:
             # a count of 1)
             if fwd > 0:
                 cnt_tags = len(tagset)
-                prev_prev = prev[1:]
+                prev_prev = prev[:-1]
                 for prev_tp in tokens[ix-1]:
                     prev_tag, _ = prev_tp
-                    cnt_tags += sum(cnt.count(prev_prev + (prev_tag, tag)) for tag, _ in tagset)
+                    sum_prev = sum(cnt.count(prev_prev + (prev_tag, tag)) for tag, _ in tagset)
+                    if self._verbose:
+                        print(indent + "Count of {0} + (*) is {1}".format(prev_prev + (prev_tag,), sum_prev))
+                    cnt_tags += sum_prev
+                if self._verbose:
+                    print(indent + "Total count is {0}".format(cnt_tags))
             else:
                 cnt_tags = sum(cnt.count(prev + (tag,)) + 1 for tag, _ in tagset)
             # Calculate a logarithm of the total occurrence count plus the sum of
@@ -802,11 +802,13 @@ class NgramTagger:
                 ngram = prev + (tag,)
                 # Calculate lexical_probability * (tag_count / total_tag_count)
                 # in log space
-                print(indent + "Looking at ngram {0} having count {1}".format(ngram, cnt.count(ngram)))
+                if self._verbose:
+                    print(indent + "Looking at ngram {0} having count {1}".format(ngram, cnt.count(ngram)))
                 log_p_tag = math.log(lex_p) + math.log(cnt.count(ngram) + 1) - log_p_tags
                 if best_prob is not None and log_p_tag < best_prob:
                     # Already too low prob to become the best one: skip this tag
-                    print(indent + "Skipping tag {0} since its log_p {1:.4f} < best_prob {2:.4f}".format(tag, log_p_tag, best_prob))
+                    if self._verbose:
+                        print(indent + "Skipping tag {0} since its log_p {1:.4f} < best_prob {2:.4f}".format(tag, log_p_tag, best_prob))
                     continue
                 # Calculate the forward probability of the next `n - 1 - fwd` tags given
                 # that we choose this one
@@ -815,10 +817,12 @@ class NgramTagger:
                 # of this tag multiplied by the 'forward' probability of the next tags,
                 # or `log_p_tag + fwd_p` in log space
                 total_p = log_p_tag + fwd_p
-                print(indent + "Tag {0}: lex_p is {1:.4f}, log_p is {2:.4f}, fwd_p is {3:.4f}, total_p {4:.4f}".format(tag, lex_p, log_p_tag, fwd_p, total_p))
+                if self._verbose:
+                    print(indent + "Tag {0}: lex_p is {1:.4f}, log_p is {2:.4f}, fwd_p is {3:.4f}, total_p {4:.4f}".format(tag, lex_p, log_p_tag, fwd_p, total_p))
                 if best_prob is None or total_p > best_prob:
                     # New maximum probability
-                    print(indent + "New best")
+                    if self._verbose:
+                        print(indent + "New best")
                     best_ix = tag_ix
                     best_prob = total_p
             return best_ix, best_prob
@@ -826,7 +830,8 @@ class NgramTagger:
         for ix, tagset in enumerate(tokens):
             ix_pick, prob = fwd_prob(ix, history, 0)
             pick = tagset[ix_pick][0]
-            print("Index {0}: pick is {1}, prob is {2:.4f}".format(ix, pick, math.exp(prob)))
+            if self._verbose:
+                print("Index {0}: pick is {1}, prob is {2:.4f}".format(ix, pick, math.exp(prob)))
             best_path.append(pick)
             best_prob.append(prob)
             history = history[1:] + (pick,)
@@ -939,31 +944,52 @@ class NgramTagger:
         _, tags = self._most_likely(tagsets)
 
         if not tags:
-            return 0.0, []
+            return []
 
-        ix = 0
-        tokens = []
-        for t in toklist:
-            if not t.txt:
-                continue
-            # The code below should correspond to TreeUtility._describe_token()
-            d = dict(x = t.txt)
-            if t.kind == TOK.WORD:
-                # set d["m"] to the meaning
-                pass
-            else:
-                d["k"] = t.kind
-            if t.val is not None and t.kind not in { TOK.WORD, TOK.ENTITY, TOK.PUNCTUATION }:
-                # For tokens except words, entities and punctuation, include the val field
-                if t.kind == TOK.PERSON:
-                    d["v"], d["g"] = TreeUtility.choose_full_name(t.val, case = None, gender = None)
+        def gen_tokens():
+            """ Generate a Greynir token sequence from a tagging result """
+            ix = 0
+            for t in toklist:
+                if not t.txt:
+                    continue
+                # The code below should correspond to TreeUtility._describe_token()
+                d = dict(x = t.txt)
+                if t.kind == TOK.WORD:
+                    # set d["m"] to the meaning
+                    pass
                 else:
-                    d["v"] = t.val
-            if t.kind in { TOK.WORD, TOK.ENTITY, TOK.PERSON, TOK.NUMBER, TOK.YEAR, TOK.ORDINAL, TOK.PERCENT }:
-                d["i"] = tags[ix]
-                ix += 1
-            tokens.append(d)
+                    d["k"] = t.kind
+                if t.val is not None and t.kind not in { TOK.WORD, TOK.ENTITY, TOK.PUNCTUATION }:
+                    # For tokens except words, entities and punctuation, include the val field
+                    if t.kind == TOK.PERSON:
+                        d["v"], d["g"] = TreeUtility.choose_full_name(t.val, case = None, gender = None)
+                    else:
+                        d["v"] = t.val
+                if t.kind in { TOK.WORD, TOK.ENTITY, TOK.PERSON, TOK.NUMBER, TOK.YEAR, TOK.ORDINAL, TOK.PERCENT }:
+                    d["i"] = tags[ix]
+                    ix += 1
+                if t.kind == TOK.WORD and " " in d["x"]:
+                    # Some kind of phrase: split it
+                    xlist = d["x"].split()
+                    for x in xlist:
+                        d["x"] = x
+                        if x == "og":
+                            # Probably intermediate word: fjármála- og efnahagsráðherra
+                            yield dict(x = "og", i = "c")
+                        else:
+                            yield d.copy()
+                elif t.kind == TOK.PERSON:
+                    # Split person tokens into subtokens for each name component
+                    xlist = d["x"].split() # Name as it originally appeared
+                    slist = d["v"].split() # Stem (nominal) form of name
+                    assert len(xlist) == len(slist)
+                    for x, s in zip(xlist, slist):
+                        d["x"] = x
+                        d["v"] = s
+                        yield d.copy()
+                else:
+                    yield d
 
-        return tokens
+        return [ d for d in gen_tokens() ]
 
 

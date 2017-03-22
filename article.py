@@ -31,7 +31,7 @@ from datetime import datetime
 from collections import OrderedDict, defaultdict, namedtuple
 
 from settings import Settings, NoIndexWords
-from scraperdb import Article as ArticleRow, SessionContext, Word, DataError
+from scraperdb import Article as ArticleRow, SessionContext, Word, DataError, desc
 from fetcher import Fetcher
 from tokenizer import TOK, tokenize, canonicalize_token
 from fastparser import Fast_Parser, ParseError, ParseForestNavigator, ParseForestDumper
@@ -471,4 +471,63 @@ class Article:
                         cnt += len(sent)
             self._num_tokens = cnt
         return self._num_tokens
+
+
+    @staticmethod
+    def token_stream(limit = None, skip_errors = True):
+        """ Generator of a token stream consisting of `limit` sentences (or less) from the
+            most recently parsed articles. After each sentence, None is yielded. """
+        with SessionContext(commit = True, read_only = True) as session:
+
+            q = session.query(ArticleRow.url, ArticleRow.parsed, ArticleRow.tokens) \
+                .filter(ArticleRow.tokens != None) \
+                .order_by(desc(ArticleRow.parsed)) \
+                .yield_per(50)
+
+            count = 0
+            for a in q:
+                doc = json.loads(a.tokens)
+                for pg in doc:
+                    for sent in pg:
+                        if not sent:
+                            continue
+                        if skip_errors and any("err" in t for t in sent):
+                            # Skip error sentences
+                            continue
+                        for t in sent:
+                            # Yield the tokens
+                            yield t
+                        yield None # End-of-sentence marker
+                        # Are we done?
+                        count += 1
+                        if limit is not None and count >= limit:
+                            return
+
+    @staticmethod
+    def sentence_stream(limit = None, skip_errors = True):
+        """ Generator of a sentence stream consisting of `limit` sentences (or less) from the
+            most recently parsed articles. Each sentence is a list of token dicts. """
+        with SessionContext(commit = True, read_only = True) as session:
+
+            q = session.query(ArticleRow.url, ArticleRow.parsed, ArticleRow.tokens) \
+                .filter(ArticleRow.tokens != None) \
+                .order_by(desc(ArticleRow.parsed)) \
+                .yield_per(50)
+
+            count = 0
+            for a in q:
+                doc = json.loads(a.tokens)
+                for pg in doc:
+                    for sent in pg:
+                        if not sent:
+                            continue
+                        if skip_errors and any("err" in t for t in sent):
+                            # Skip error sentences
+                            continue
+                        # Yield the sentence as a fresh token list
+                        yield [ t for t in sent ]
+                        # Are we done?
+                        count += 1
+                        if limit is not None and count >= limit:
+                            return
 
