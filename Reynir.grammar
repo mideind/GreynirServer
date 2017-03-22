@@ -3442,6 +3442,7 @@ $score(+6) FsÍGegnUm
 
 FsAðBaki →
     "að:fs" "baki:hk" Nl_þgf # 'að baki hverju bundnu sæti'
+    | "á:ao" "móti:fs" Nl_þgf
 
 $score(+4) FsAðBaki
 

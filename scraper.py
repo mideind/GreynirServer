@@ -364,6 +364,7 @@ def scrape_articles(reparse = False, limit = 0, urls = None):
         print("Time: {0}, limit: {1}, reparse: {2}\n".format(ts, limit, reparse))
     else:
         print("Time: {0}, URLs read from: {1}\n".format(ts, urls))
+    t0 = time.time()
 
     try:
         sc = Scraper()
@@ -380,10 +381,14 @@ def scrape_articles(reparse = False, limit = 0, urls = None):
     finally:
         sc = None
 
+    t1 = time.time()
     ts = "{0}".format(datetime.utcnow())[0:19]
     print("\nTime: {0}".format(ts))
+    print("Elapsed: {0:.1f} minutes".format((t1 - t0) / 60))
+    if limit:
+        print("Average: {0:.2f} seconds per article".format((t1 - t0) / limit))
 
-    print("------ Scrape completed -------")
+    print("\n------ Scrape completed -------\n")
 
 
 __doc__ = """
