@@ -702,7 +702,7 @@ class BIN_Token(Token):
             fbits = BIN_Token.get_fbits(m.beyging)
             # Check the case only (don't check the gender, even if present,
             # since it isn't found in BÍN)
-            return terminal.fbits_match_mask(fbits, BIN_Token.VBIT_CASES)
+            return terminal.fbits_match_mask(BIN_Token.VBIT_CASES, fbits)
 
         def matcher_stt(m):
             """ Check connective conjunction ('sem', 'er') """
