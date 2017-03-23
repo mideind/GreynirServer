@@ -10,15 +10,18 @@
 Try Reynir (in Icelandic) at [https://greynir.is](https://greynir.is)
 
 *Reynir* is a proof-of-concept project that aims to
-**extract processable information from Icelandic text** and allow
-**natural language querying** of that information.
+**extract processable information from Icelandic text**, allow
+**natural language querying** of that information and facilitate
+**natural language understanding**.
 
-Reynir scrapes and tokenizes chunks of text from web pages
+Reynir scrapes and tokenizes chunks of text from news sites on the web
 and parses the token streams according to a **hand-written context-free grammar**
 for the Icelandic language. The resulting parse forests are disambiguated using
 scoring heuristics to find the best parse trees. The trees are then stored in a
 database and processed by grammatical pattern matching modules to obtain statements
 of fact and relations between stated facts.
+
+![Greynir](https://raw.githubusercontent.com/vthorsteinsson/Reynir/master/static/GreynirTreeExampleSmall.png)
 
 Reynir is most effective for text that is objective and factual, i.e. has a relatively high
 ratio of concrete concepts such as numbers, amounts, dates, person and entity names,
@@ -28,21 +31,24 @@ Reynir is innovative in its ability to parse and disambiguate text written in a
 **grammatically complex language**, i.e. Icelandic, which does not lend itself easily
 to statistical parsing methods. Reynir uses grammatical feature agreement (cases, genders,
 persons, number (singular/plural), verb tenses, modes, etc.) to guide and disambiguate
-parses. Its optimized Earley-based parser is fast and compact enough to make real-time
-while-you-wait analysis of web pages, as well as bulk processing, feasible.
+parses. Its highly optimized Earley-based parser, implemented in C++, is fast and compact
+enough to make real-time while-you-wait analysis of web pages, as well as bulk
+processing, feasible.
 
 Reynir's goal is to "understand" text to a usable extent by parsing it into
 structured, recursive trees that directly correspond to the original grammar.
 These trees can then be further processed and acted upon by sets of Python
 functions that are linked to grammar nonterminals.
 
-**Reynir is currently able to parse about *86%* of sentences** in a typical news article from the web,
-and many well-written articles can be parsed completely. It presently has over 100,000 parsed articles
-in its database, containing 1.8 million parsed sentences.
+**Reynir is currently able to parse about *90%* of sentences** in a typical news article from the web,
+and many well-written articles can be parsed completely. It presently has over 130,000 parsed articles
+in its database, containing 2 million parsed sentences.
 
 Reynir supports natural language querying of its databases. Users can ask about person names, titles and
 entity definitions and get appropriate replies. The HTML5 Web Speech API is supported to allow
 queries to be **recognized from speech** in enabled browsers, such as recent versions of Chrome.
+Similarity queries are also supported, yielding articles that are similar in content to a given
+search phrase or sentence.
 
 Reynir may in due course be expanded, for instance:
 
@@ -143,7 +149,11 @@ names and titles from parse trees for storage in a database table.
 * `config/Reynir.conf` : Editable configuration file for the tokenizer and parser
 * `config/Main.conf` : Various configuration data and preferences, included in `Reynir.conf`
 * `config/Prefs.conf` : Word form preference scores, included in `Reynir.conf`
+* `config/Names.conf` : Words that should be recognized as person names at the
+  start of sentences, included in `Reynir.conf`
 * `config/Verbs.conf` : Lexicon of verbs, included in `Reynir.conf`
+* `config/VerbPrepositions.conf` : Lexicon of verbs and associated prepositions,
+  included in `Reynir.conf`
 * `config/Abbrev.conf` : Lexicon of abbreviations, included in `Reynir.conf`
 * `Reynir.grammar` : A context-free grammar specification for Icelandic
   written in BNF with extensions for repeating constructs (`*`, `+`)
@@ -199,7 +209,8 @@ are currently assumed to be the following:
 
 ## Copyright and licensing
 
-Reynir/Greynir is *copyright (C) 2016 by Vilhjálmur Þorsteinsson*.
+Reynir/Greynir is *copyright (C) 2017 by Miðeind ehf.*
+The original author of this software is *Vilhjálmur Þorsteinsson*.
 
 ![GPLv3](https://raw.githubusercontent.com/vthorsteinsson/Reynir/master/static/GPLv3.png)
 
