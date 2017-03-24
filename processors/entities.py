@@ -46,7 +46,8 @@ NOT_DEFINITIONS = {
     "fæddur", "fætt", "fædd",
     "spurður", "spurt", "spurð",
     "búinn", "búið", "búin",
-    "sá", "sú", "það", "lán", "inna"
+    "sá", "sú", "það", "lán", "inna",
+    "hjónin", "Hjónin"
 }
 
 NOT_ENTITIES = {

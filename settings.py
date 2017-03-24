@@ -3,7 +3,7 @@
 
     Settings module
 
-    Copyright (c) 2016 Vilhjalmur Thorsteinsson
+    Copyright (c) 2017 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@
     making it easier to arrange configuration sections into logical
     and manageable pieces.
 
-    Sections are identified like so: [ SectionName ]
+    Sections are identified like so: [ section_name ]
 
     Comments start with # signs.
 

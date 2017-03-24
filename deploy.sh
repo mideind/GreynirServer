@@ -37,6 +37,7 @@ cp grammar.py $DEST/grammar.py
 cp incparser.py $DEST/incparser.py
 cp libeparser.so $DEST/libeparser.so
 cp main.py $DEST/main.py
+cp postagger.py $DEST/postagger.py
 cp processor.py $DEST/processor.py
 cp query.py $DEST/query.py
 cp reducer.py $DEST/reducer.py
