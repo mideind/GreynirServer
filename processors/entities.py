@@ -256,11 +256,14 @@ def SvigaInnihald(node, params, result):
         elif result.find_child(nt_base = "HreinYfirsetning") is not None:
             # Hrein yfirsetning: sleppa því að nota hana
             pass
-        elif result.find_child(nt_base = "FsRuna") is not None:
+        elif result.find_child(nt_base = "SvigaInnihaldFsRuna") is not None:
             # Forsetningaruna: sleppa því að nota hana
             pass
+        elif result.find_child(nt_base = "SvigaInnihaldNl") is not None:
+            # Nafnliður sem passar ekki við fall eða tölu: sleppa því að nota hann
+            pass
         else:
-            # Nl/fall/tala eða SvigaInnihaldNl
+            # Nl/fall/tala: OK
             result.sviga_innihald = result._nominative
 
 
