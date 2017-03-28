@@ -557,6 +557,29 @@ class IFD_Tagset:
             self._cache = self._tagstring()
         return self._cache
 
+    @classmethod
+    def word_tag_stream(cls, sentence_stream):
+        """ Generator of a (word, tag) stream from a raw token stream.
+            Both the input and the output streams are segmented into
+            sentences. """
+        for sent in sentence_stream:
+            if not sent:
+                continue
+            output = []
+            for t in sent:
+                # Skip punctuation
+                x = t.get("x")
+                if t.get("k", TOK.WORD) == TOK.PUNCTUATION:
+                    output.append((x, x))
+                    continue
+                if x:
+                    canonicalize_token(t)
+                    tag = str(cls(t))
+                    if tag:
+                        output.append((x, tag))
+            if output:
+                yield output
+
 
 class NgramCounter:
 
@@ -645,7 +668,7 @@ class NgramTagger:
         d = self.lemma_cnt.get(lemma)
         return 0 if d is None else sum(d.values())
 
-    def train(self, limit = None):
+    def train(self, sentence_stream):
         """ Iterate through a token stream harvested from parsed articles
             and extract tag trigrams """
 
@@ -675,9 +698,6 @@ class NgramTagger:
         def ngrams(iterable):
             """ Python magic to generate ngram tuples from an iterable input """
             return zip(*((islice(seq, i, None) for i, seq in enumerate(tee(iterable, n)))))
-
-        # Get a sentence stream from parsed articles
-        sentence_stream = Article.sentence_stream(limit = limit)
 
         # Count the n-grams
         cnt = self.cnt

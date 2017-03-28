@@ -504,7 +504,7 @@ class Article:
                             return
 
     @staticmethod
-    def sentence_stream(limit = None, skip_errors = True):
+    def sentence_stream(limit = None, skip = None, skip_errors = True):
         """ Generator of a sentence stream consisting of `limit` sentences (or less) from the
             most recently parsed articles. Each sentence is a list of token dicts. """
         with SessionContext(commit = True, read_only = True) as session:
@@ -512,9 +512,10 @@ class Article:
             q = session.query(ArticleRow.url, ArticleRow.parsed, ArticleRow.tokens) \
                 .filter(ArticleRow.tokens != None) \
                 .order_by(desc(ArticleRow.parsed)) \
-                .yield_per(50)
+                .yield_per(200)
 
             count = 0
+            skipped = 0
             for a in q:
                 doc = json.loads(a.tokens)
                 for pg in doc:
@@ -523,6 +524,10 @@ class Article:
                             continue
                         if skip_errors and any("err" in t for t in sent):
                             # Skip error sentences
+                            continue
+                        if skip is not None and skipped < skip:
+                            # If requested, skip sentences from the front (useful for test set)
+                            skipped += 1
                             continue
                         # Yield the sentence as a fresh token list
                         yield [ t for t in sent ]
