@@ -2846,8 +2846,8 @@ EfLiðurForskeyti →
     | eo* EfLiðurForskeytiTala/tala/kyn ÓbeygðEining # 'rúmlega sjö prósent (hækkun frá fyrra ári)'
     | 'meiri:lo'_mst_kk_ef_et "háttar:kk"
     | 'minni:lo'_mst_kk_ef_et "háttar:kk"
-    | Prósentubil          # (Spáð er) a.m.k. 10-20% (aukningu)
-    | Prósenta
+    | Prósentubil           # (Spáð er) a.m.k. 10-20% (aukningu)
+    | eo* Prósenta          # (eigi) nú 50% (hlut í fjarskiptafyrirtækinu)
 
 Prósenta →
     prósenta
@@ -3405,6 +3405,7 @@ FsMeðFallstjórn →
     | FsAðBaki
     | FsTilÞgf
     | FsÁMeðal
+    | FsÁMóti
     | Átt ÁttFs? Nl_þf # vestur á firði, suður götuna, austur í flóa, norður að fjalli
     # 'hvorki við stjórn spítalans né ráðherrann'
     # 'hvorki til mín né stjórnarinnar'
@@ -3442,7 +3443,6 @@ $score(+6) FsÍGegnUm
 
 FsAðBaki →
     "að:fs" "baki:hk" Nl_þgf # 'að baki hverju bundnu sæti'
-    | "á:ao" "móti:fs" Nl_þgf
 
 $score(+4) FsAðBaki
 
@@ -3450,6 +3450,11 @@ FsÁMeðal →
     "á:ao" "meðal:fs" Nl_ef # Sérregla hér þar sem þetta er að öðrum kosti túlkað sem meðal:hk + ef
 
 $score(+16) FsÁMeðal
+
+FsÁMóti →
+    "á:ao" "móti:fs" Nl_þgf
+
+$score(+16) FsÁMóti
 
 FsTilÞgf →
     "til:fs" FsTilÞgfOrð Nl_þgf # 'til stuðnings/heiðurs Páli'
@@ -3818,6 +3823,7 @@ Tímabil_hk/fall/tala →
 
 Tímabil_kvk/fall/tala →
     'vika'_kvk/fall/tala
+    | 'helgi'_kvk/fall/tala
     | 'nótt'_kvk/fall/tala
     | 'mínúta'/fall/tala
     | 'sekúnda'/fall/tala

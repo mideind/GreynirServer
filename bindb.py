@@ -134,6 +134,8 @@ class BIN_Db:
         "FROM " + _DB_TABLE + " WHERE utg=(%s);"
     _DB_Q_UTG_BEYGING = "SELECT stofn, utg, ordfl, fl, ordmynd, beyging " \
         "FROM " + _DB_TABLE + " WHERE utg=(%s) AND beyging=(%s);"
+    _DB_Q_STOFN_ORDFL_BEYGING = "SELECT stofn, utg, ordfl, fl, ordmynd, beyging " \
+        "FROM " + _DB_TABLE + " WHERE stofn=(%s) AND ordfl=(%s) AND beyging=(%s);"
     _DB_Q_NAMES = "SELECT stofn, utg, ordfl, fl, ordmynd, beyging " \
         "FROM " + _DB_TABLE + " WHERE stofn=(%s) AND fl='ism';"
 
@@ -259,7 +261,8 @@ class BIN_Db:
                     # Also order past tense ("ÞT") after present tense
                     # plural after singular and 2p after 3p
                     if m.ordfl != "so":
-                        return 0
+                        # Prioritize forms with non-NULL utg
+                        return 1 if m.utg is None else 0
                     prio = 4 if "VH" in m.beyging else 0
                     prio += 2 if "ÞT" in m.beyging else 0
                     prio += 1 if "FT" in m.beyging else 0
@@ -292,13 +295,23 @@ class BIN_Db:
         return m
 
     @lru_cache(maxsize = CACHE_SIZE)
-    def lookup_utg(self, utg, beyging = None):
+    def lookup_utg(self, stofn, ordfl, utg, beyging = None):
         """ Return a list of meanings with the given integer id ('utg' column) """
         assert self._c is not None
         m = None
+        if utg == -1 and stofn in Meanings.ROOT:
+            # This stem is not in BÍN - it's been added later in the config files
+            m = list(map(BIN_Meaning._make, Meanings.ROOT[stofn]))
+            if beyging is not None:
+                m = [ mm for mm in m if mm.beyging == beyging and (ordfl is None or mm.ordfl == ordfl) ]
+            return m
         try:
             if beyging is not None:
-                self._c.execute(BIN_Db._DB_Q_UTG_BEYGING, [ utg, beyging ])
+                if utg == None:
+                    # No utg for this word form: use the stem and the category as filters instead
+                    self._c.execute(BIN_Db._DB_Q_STOFN_ORDFL_BEYGING, [ stofn, ordfl, beyging ])
+                else:
+                    self._c.execute(BIN_Db._DB_Q_UTG_BEYGING, [ utg, beyging ])
             else:
                 self._c.execute(BIN_Db._DB_Q_UTG, [ utg ])
             # Map the returned data from fetchall() to a list of instances

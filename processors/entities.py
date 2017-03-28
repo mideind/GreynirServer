@@ -206,6 +206,7 @@ def Sérnafn(node, params, result):
     """ Sérnafn, stutt eða langt """
     result.sérnafn = result._text
     result.sérnafn_nom = result._nominative
+    print(f"Sérnafn: Set sérnafn to {result.sérnafn}")
     result.sérnafn_eind_nom = result._nominative
     result.names = { result._nominative }
 
@@ -214,6 +215,7 @@ def SérnafnEðaManneskja(node, params, result):
     """ Sérnafn eða mannsnafn """
     if "sérnafn" not in result:
         result.sérnafn = result._text
+        print(f"SérnafnEðaManneskja: Set sérnafn to {result.sérnafn}")
         result.sérnafn_nom = result._nominative
     if "sérnafn_eind_nom" not in result:
         result.sérnafn_eind_nom = result._nominative
@@ -224,6 +226,7 @@ def SérnafnEðaManneskja(node, params, result):
 def Fyrirtæki(node, params, result):
     """ Fyrirtækisnafn, þ.e. sérnafn + ehf./hf./Inc. o.s.frv. """
     result.sérnafn = result._text
+    print(f"Fyrirtæki: Set sérnafn to {result.sérnafn}")
     result.sérnafn_nom = result._nominative
 
 
@@ -286,6 +289,7 @@ def NlEind(node, params, result):
         if "sérnafn" in params[0]:
             result.sérnafn = params[0].sérnafn
             result.sérnafn_nom = params[0].sérnafn_nom
+            print(f"NlEind: sérnafn in params, sérnafn={result.sérnafn}, sérnafn_nom={result.sérnafn_nom}")
         else:
             # Gæti verið venjulegur nafnliður með upphafsstaf
             sérnafn = params[0]._text
@@ -296,8 +300,16 @@ def NlEind(node, params, result):
             if all(part and part[0].isupper() for part in sérnafn.split()):
                 result.sérnafn = sérnafn
                 result.sérnafn_nom = sérnafn_nom
+                print(f"NlEind: Set sérnafn to {result.sérnafn}")
+                print
                 if "sérnafn_eind_nom" not in result:
                     result.sérnafn_eind_nom = sérnafn_nom
+            else:
+                result.del_attribs(("sérnafn", "sérnafn_nom"))
+        # Drop the explanation, if any
+        result._nominative = params[0]._nominative
+        result._text = params[0]._text
+        print(f"Dropping explanation, result.nominative is now {result._nominative}")
 
     if "sérnafn_eind_nom" in result and "sviga_innihald" in result:
 
@@ -313,6 +325,8 @@ def NlEind(node, params, result):
 
             result.entities.append((entity, verb, definition))
 
+    if "sérnafn" in result:
+        print(f"Returning from NlEind with result.sérnafn={result.sérnafn}, result.sérnafn_nom={result.sérnafn_nom}")
     result.del_attribs(("sviga_innihald", "sérnafn_eind_nom"))
 
 
@@ -324,12 +338,14 @@ def SamstættFall(node, params, result):
     if "sérnafn" in params[-1]:
         sérnafn = params[-1].sérnafn
         sérnafn_nom = params[-1].sérnafn_nom
+        print(f"SamstættFall: sérnafn in params, sérnafn={sérnafn}, sérnafn_nom={sérnafn_nom}")
     else:
 
         # Gæti verið venjulegur nafnliður með upphafsstaf
         sérnafn = params[-1]._text
         sérnafn_nom = params[-1]._nominative
 
+        print(f"SamstættFall: sérnafn not in params, sérnafn={sérnafn}, sérnafn_nom={sérnafn_nom}")
         # Athuga hvort allir hlutar nafnsins séu með upphafsstaf
         # Ef ekki, hætta við
         for part in sérnafn.split():

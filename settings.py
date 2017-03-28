@@ -199,9 +199,9 @@ class Meanings:
         if not stofn:
             stofn = ordmynd
         Meanings.DICT[ordmynd].append(
-            (stofn, 0, ordfl, fl or "ob", ordmynd, beyging or "-"))
+            (stofn, -1, ordfl, fl or "ob", ordmynd, beyging or "-"))
         Meanings.ROOT[stofn].append(
-            (stofn, 0, ordfl, fl or "ob", ordmynd, beyging or "-"))
+            (stofn, -1, ordfl, fl or "ob", ordmynd, beyging or "-"))
 
     @staticmethod
     def add_composite (stofn, ordfl):
@@ -222,7 +222,7 @@ class Meanings:
             if m:
                 for w in m:
                     if w.ordfl == ordfl:
-                        t = (prefix + w.stofn, 0, ordfl, w.fl, prefix + w.ordmynd, w.beyging)
+                        t = (prefix + w.stofn, -1, ordfl, w.fl, prefix + w.ordmynd, w.beyging)
                         Meanings.DICT[prefix + w.ordmynd].append(t)
                         Meanings.ROOT[prefix + w.stofn].append(t)
 
