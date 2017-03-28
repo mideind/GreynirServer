@@ -3,7 +3,7 @@
 
     Settings module
 
-    Copyright (c) 2016 Vilhjalmur Thorsteinsson
+    Copyright (c) 2017 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@
     making it easier to arrange configuration sections into logical
     and manageable pieces.
 
-    Sections are identified like so: [ SectionName ]
+    Sections are identified like so: [ section_name ]
 
     Comments start with # signs.
 
@@ -199,9 +199,9 @@ class Meanings:
         if not stofn:
             stofn = ordmynd
         Meanings.DICT[ordmynd].append(
-            (stofn, 0, ordfl, fl or "ob", ordmynd, beyging or "-"))
+            (stofn, -1, ordfl, fl or "ob", ordmynd, beyging or "-"))
         Meanings.ROOT[stofn].append(
-            (stofn, 0, ordfl, fl or "ob", ordmynd, beyging or "-"))
+            (stofn, -1, ordfl, fl or "ob", ordmynd, beyging or "-"))
 
     @staticmethod
     def add_composite (stofn, ordfl):
@@ -222,7 +222,7 @@ class Meanings:
             if m:
                 for w in m:
                     if w.ordfl == ordfl:
-                        t = (prefix + w.stofn, 0, ordfl, w.fl, prefix + w.ordmynd, w.beyging)
+                        t = (prefix + w.stofn, -1, ordfl, w.fl, prefix + w.ordmynd, w.beyging)
                         Meanings.DICT[prefix + w.ordmynd].append(t)
                         Meanings.ROOT[prefix + w.stofn].append(t)
 

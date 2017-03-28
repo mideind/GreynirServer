@@ -442,7 +442,7 @@ class TreeUtility:
             return TreeUtility.dump_tokens(tokens, tree, None, err_index)
 
         with Fast_Parser(verbose = False, root = root) as parser: # Don't emit diagnostic messages
-            return TreeUtility._process_toklist(parser, session, toklist, xform, root = root)
+            return TreeUtility._process_toklist(parser, session, toklist, xform)
 
     @staticmethod
     def parse_text(session, text, all_names = False):

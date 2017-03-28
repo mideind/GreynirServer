@@ -5,7 +5,7 @@
 
     Web server main module
 
-    Copyright (C) 2017 Vilhjálmur Þorsteinsson
+    Copyright (C) 2017 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -309,10 +309,14 @@ def process_query(session, toklist, result):
         store the query answer in the result dictionary and return True """
     q = Query(session)
     if not q.parse(toklist, result):
+        if Settings.DEBUG:
+            print(f"Unable to parse query, error {q.error()}")
         result["error"] = q.error()
         return False
     if not q.execute():
         # This is a query, but its execution failed for some reason: return the error
+        if Settings.DEBUG:
+            print(f"Unable to execute query, error {q.error()}")
         result["error"] = q.error()
         return True
     # Successful query: return the answer in response

@@ -4,7 +4,7 @@
 
     Python wrapper for C++ Earley/Scott parser
 
-    Copyright (C) 2016 Vilhjálmur Þorsteinsson
+    Copyright (C) 2017 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by

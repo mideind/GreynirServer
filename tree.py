@@ -577,7 +577,7 @@ class TerminalNode(Node):
             w = m.stofn
         return w.replace("-", "")
 
-    def lookup_alternative(self, bin_db, replace_func, sort_func = None):
+    def lookup_alternative(self, bin_db, replace_func, sort_func = None, fallback_to_gr = False):
         """ Return a different word form, if available, by altering the beyging
             spec via the given replace_func function """
         w, m = bin_db.lookup_word(self.text, self.at_start)
@@ -598,7 +598,11 @@ class TerminalNode(Node):
                 else:
                     # Lookup the same word (identified by 'utg') but a different declination
                     prefix = "".join(x.ordmynd.split("-")[0:-1])
-                    wordform = bin_db.lookup_utg(x.utg, beyging = beyging)
+                    wordform = bin_db.lookup_utg(x.stofn, x.ordfl, x.utg, beyging = beyging)
+                    if not wordform and fallback_to_gr:
+                        # We may have removed too much from the beyging string:
+                        # try again with the definitive form ('gr')
+                        wordform = bin_db.lookup_utg(x.stofn, x.ordfl, x.utg, beyging = beyging + "gr")
                     if wordform:
                         result += bin_db.prefix_meanings(wordform, prefix)
 
@@ -675,7 +679,7 @@ class TerminalNode(Node):
             return b.replace("gr", "").replace("VB", "SB")
 
         # Lookup the same word stem but in the nominative case
-        w = self.lookup_alternative(bin_db, replace_beyging)
+        w = self.lookup_alternative(bin_db, replace_beyging, fallback_to_gr = (self.td.cat == "no"))
 
         return w
 
