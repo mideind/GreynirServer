@@ -47,13 +47,13 @@ NOT_DEFINITIONS = {
     "spurður", "spurt", "spurð",
     "búinn", "búið", "búin",
     "sá", "sú", "það", "lán", "inna",
-    "hjónin", "Hjónin"
+    "hjónin"
 }
 
 NOT_ENTITIES = {
-    "Þeir", "Þær", "Þau", "Sú", "Þá", "Þar", "Þetta", "Þessi", "Þessu",
-    "The", "To", "Aðspurð", "Aðspurður", "Aðstaða", "Aðstæður", "Aftur",
-    "Þarna", "Því", "Þó", "Hver", "Hverju", "Hvers", "Ekki"
+    "þeir", "þær", "þau", "sú", "þá", "þar", "þetta", "þessi", "þessu",
+    "the", "to", "aðspurð", "aðspurður", "aðstaða", "aðstæður", "aftur",
+    "þarna", "því", "þó", "hver", "hverju", "hvers", "ekki"
 }
 
 
@@ -113,7 +113,7 @@ def sentence(state, result):
 
         def def_ok(definition):
             """ Returns True if a definition meets basic sanity criteria """
-            if definition in NOT_DEFINITIONS:
+            if definition.lower() in NOT_DEFINITIONS:
                 return False
             # Check for a match with a number string, eventually followed by a % sign
             if re.match(r'-?\d+(\.\d\d\d)*(,\d+)?%?$', definition):
@@ -122,7 +122,7 @@ def sentence(state, result):
 
         def name_ok(entity):
             """ Returns True if an entity name meets basic sanity criteria """
-            if entity in NOT_ENTITIES or entity in Abbreviations.DICT:
+            if entity.lower() in NOT_ENTITIES or entity in Abbreviations.DICT:
                 # Don't redefine abbreviations
                 return False
             # Entity names must start with an uppercase letter
