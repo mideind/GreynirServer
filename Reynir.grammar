@@ -3480,7 +3480,7 @@ FsLiður → Atviksliður? FsMeðFallstjórn # snarlega í bæinn
 
 FsAtv →
     # (Ég samþykkti þetta), en með semingi þó
-    ','? "en:st"? EinFsAtv+ FsAtvFramhald* ','?
+    Samanburðarmerki? "en:st"? EinFsAtv+ FsAtvFramhald* ','?
 
 FsAtvFramhald → KommaOgEðaEn EinFsAtv+
 
