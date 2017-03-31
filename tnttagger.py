@@ -54,15 +54,17 @@ import time
 import operator
 from functools import reduce
 from itertools import chain
+from contextlib import closing
 
 from math import log
 from operator import itemgetter
 from collections import defaultdict, Counter
 from contextlib import contextmanager
 
+from bindb import BIN_Db
+from tokenizer import canonicalize_token, parse_tokens, TOK
 from article import Article
-from tokenizer import canonicalize_token, TOK
-from postagger import IFD_Tagset
+from postagger import IFD_Tagset, NgramTagger
 
 
 @contextmanager
@@ -124,6 +126,33 @@ class ConditionalFreqDist(defaultdict):
         self.N = lambda: n
 
 
+class UnknownWordTagger:
+
+    def __init__(self):
+        self._ngram_tagger = NgramTagger()
+
+    def tag(self, word, at_sentence_start = False):
+        """ Given a list of unknown words (which currently always has length 1),
+            return a list of (word, tag) tuples """
+        toklist = list(parse_tokens(" ".join(word)))
+        token = toklist[0]
+        w = word[0]
+        if token.kind == TOK.WORD and token.val is None:
+            with closing(BIN_Db.get_db()) as db:
+                w, m = db.lookup_word(token.txt, at_sentence_start)
+            token = TOK.Word(w, m)
+        taglist = self._ngram_tagger.tag_single_token(token)
+        if taglist:
+            # Sort in descending order of probability
+            taglist.sort(key = lambda x: x[1], reverse = True)
+            # Return the most likely tag
+            #print(f"UnknownWordTagger('{word}') returning {(w, taglist[0][0])}")
+            return [ (w, taglist[0][0]) ]
+        # No taglist: give up and return 'Unk' as the tag
+        #print(f"UnknownWordTagger('{word}') returning {(w, 'Unk')}")
+        return [ (w, 'Unk') ]
+
+
 class TnT:
     '''
     TnT - Statistical POS tagger
@@ -168,14 +197,12 @@ class TnT:
     gain in the accuracy of the results.
     '''
 
-    def __init__(self, unk=None, Trained=False, N=1000, C=False):
+    def __init__(self, unk=None, N=1000, C=False):
         '''
         Construct a TnT statistical tagger. Tagger must be trained
         before being used to tag input.
         :param unk: instance of a POS tagger, conforms to TaggerI
         :type  unk:(TaggerI)
-        :param Trained: Indication that the POS tagger is trained or not
-        :type  Trained: boolean
         :param N: Beam search degree (see above)
         :type  N:(int)
         :param C: Capitalization flag
@@ -201,9 +228,8 @@ class TnT:
         self._l3   = 0.0
         self._N    = N
         self._C    = C
-        self._T    = Trained
 
-        self._unk = unk
+        self._unk = UnknownWordTagger() if unk is None else unk
 
         # statistical tools (ignore or delete me)
         self.unknown = 0
@@ -217,11 +243,10 @@ class TnT:
         :param data: List of lists of (word, tag) tuples
         :type data: tuple(str)
         '''
-        if self._unk is not None and not self._T:
-            self._unk.train(sentences)
-
+        count = 0
         for sent in sentences:
             history = (('BOS',False), ('BOS',False))
+            count += 1
             for w, t in sent:
 
                 # if capitalization is requested,
@@ -245,6 +270,7 @@ class TnT:
 
         # compute lambda values from the trained frequency distributions
         self._compute_lambda()
+        print(f"Training session finished; {count} sentences processed")
 
     def _compute_lambda(self):
         '''
@@ -343,7 +369,7 @@ class TnT:
         '''
         return [ self.tag(sent) for sent in sentences ]
 
-    def tag(self, data):
+    def tag(self, sentence):
         '''
         Tags a single sentence
         :param data: list of words
@@ -355,7 +381,7 @@ class TnT:
         with the correct words in the input sequence
         returns a list of (word, tag) tuples
         '''
-        sent = list(data)
+        sent = list(sentence)
         len_sent = len(sent)
         _wd = self._wd
         _uni = self._uni
@@ -401,7 +427,7 @@ class TnT:
                         p_tri = _tri[h2].freq(tC)
                         p_wd = _wd[word][t] / _uni[tC]
                         p = self._l1 * p_uni + self._l2 * p_bi + self._l3 * p_tri
-                        p2 = log(p, 2) + log(p_wd, 2)
+                        p2 = log(p) + log(p_wd)
 
                         new_states.append((history + [ tC ], curr_sent_logprob + p2))
 
@@ -409,19 +435,13 @@ class TnT:
                 # otherwise a new word, set of possible tags is unknown
                 self.unknown += 1
 
-                # since a set of possible tags,
-                # and the probability of each specific tag
-                # can not be returned from most classifiers:
-                # specify that any unknown words are tagged with certainty
-                p = 1
-
                 # if no unknown word tagger has been specified
                 # then use the tag 'Unk'
                 if self._unk is None:
                     tag = ('Unk',C)
                 else:
                     # otherwise apply the unknown word tagger
-                    [(_w, t)] = list(self._unk.tag([word]))
+                    [(_w, t)] = list(self._unk.tag([word], index == 0))
                     tag = (t,C)
 
                 for (history, logprob) in current_states:

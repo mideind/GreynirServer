@@ -359,14 +359,28 @@ class StaticPhrases:
     MEANING = ("ao", "frasi", "-")
     # Dictionary of the static phrases with their meanings
     MAP = { }
+    # Dictionary of the static phrases with their IFD tags and lemmas
+    # { static_phrase : (tag string, lemma string) }
+    DETAILS = { }
     # List of all static phrases and their meanings
     LIST = []
     # Parsing dictionary keyed by first word of phrase
     DICT = { }
 
     @staticmethod
-    def add(phrase):
+    def add(spec):
         """ Add a static phrase to the dictionary. Called from the config file handler. """
+
+        parts = spec.split(',')
+        if len(parts) not in { 1, 3 }:
+            raise ConfigError("Static phrase must include IFD tag list and lemmas")
+
+        phrase = parts[0].strip()
+
+        if len(phrase) < 3 or phrase[0] != '"' or phrase[-1] != '"':
+            raise ConfigError("Static phrase must be enclosed in double quotes")
+
+        phrase = phrase[1:-1]
 
         # First add to phrase list
         ix = len(StaticPhrases.LIST)
@@ -379,6 +393,16 @@ class StaticPhrases:
 
         # Add to the main phrase dictionary
         StaticPhrases.MAP[phrase] = mtuple
+
+        # If details are supplied, store them
+        if len(parts) == 3:
+            tags = parts[1].strip()
+            lemmas = parts[2].strip()
+            if len(tags) < 3 or tags[0] != '"' or tags[-1] != '"':
+                raise ConfigError("IFD tag list must be enclosed in double quotes")
+            if len(lemmas) < 3 or lemmas[0] != '"' or lemmas[-1] != '"':
+                raise ConfigError("Lemmas must be enclosed in double quotes")
+            StaticPhrases.DETAILS[phrase] = (tags[1:-1], lemmas[1:-1])
 
         # Dictionary structure: dict { firstword: [ (restword_list, phrase_index) ] }
 
@@ -408,6 +432,23 @@ class StaticPhrases:
     def lookup(phrase):
         """ Lookup an entire phrase """
         return StaticPhrases.MAP.get(phrase)
+
+    @staticmethod
+    def has_details(phrase):
+        """ Return True if tag and lemma details are available for this phrase """
+        return phrase in StaticPhrases.DETAILS
+
+    @staticmethod
+    def tags(phrase):
+        """ Lookup a list of IFD tags for a phrase, if available """
+        details = StaticPhrases.DETAILS.get(phrase)
+        return None if details is None else details[0].split()
+
+    @staticmethod
+    def lemmas(phrase):
+        """ Lookup a list of lemmas for a phrase, if available """
+        details = StaticPhrases.DETAILS.get(phrase)
+        return None if details is None else details[1].split()
 
 
 class AmbigPhrases:
@@ -740,8 +781,8 @@ class Settings:
     @staticmethod
     def _handle_static_phrases(s):
         """ Handle static phrases in the settings section """
-        if s[0] == '\"' and s[-1] == '\"':
-            StaticPhrases.add(s[1:-1])
+        if '=' not in s:
+            StaticPhrases.add(s)
             return
         # Check for a meaning spec
         a = s.split('=', maxsplit=1)

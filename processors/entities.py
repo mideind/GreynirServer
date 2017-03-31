@@ -52,7 +52,8 @@ NOT_DEFINITIONS = {
 
 NOT_ENTITIES = {
     "Þeir", "Þær", "Þau", "Sú", "Þá", "Þar", "Þetta", "Þessi", "Þessu",
-    "The", "To", "Aðspurð", "Aðspurður", "Aðstaða", "Aðstæður", "Aftur"
+    "The", "To", "Aðspurð", "Aðspurður", "Aðstaða", "Aðstæður", "Aftur",
+    "Þarna", "Því", "Þó", "Hver", "Hverju", "Hvers", "Ekki"
 }
 
 

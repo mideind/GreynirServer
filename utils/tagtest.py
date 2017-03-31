@@ -18,7 +18,7 @@ from settings import Settings, ConfigError
 from tokenizer import tokenize, TOK
 from scraperdb import SessionContext, desc, Article as ArticleRow
 from article import Article
-from postagger import NgramTagger
+from postagger import NgramTagger, IFD_Tagset
 from tnttagger import TnT
 
 
@@ -34,18 +34,23 @@ class IFD_Corpus:
 
     def __init__(self, ifd_dir = "ifd"):
         self._ifd_full_dir = os.path.join(os.getcwd(), ifd_dir)
-        self._xml_files = [ x for x in os.listdir(self._ifd_full_dir) if x.endswith(".xml") ]
+        self._xml_files = [ x for x in os.listdir(self._ifd_full_dir) if x.startswith("A") and x.endswith(".xml") ]
 
-    def raw_sentence_stream(self, limit = None):
+    def raw_sentence_stream(self, limit = None, skip = None):
         """ Generator of sentences from the IFD XML files.
             Each sentence consists of (word, tag, lemma) triples. """
         count = 0
+        skipped = 0
         for each in self._xml_files:
             filename = os.path.join(self._ifd_full_dir, each)
             tree = ET.parse(filename)
             root = tree.getroot()
             for sent in root.iter("s"):
                 if len(sent): # Using a straight Bool test here gives a warning
+                    if skip is not None and skipped < skip:
+                        # If a skip parameter was given, skip that number of sentences up front
+                        skipped += 1
+                        continue
                     yield [
                         (word.text.strip(), word.get("type") or "", word.get("lemma") or word.text.strip())
                         for word in sent
@@ -54,16 +59,16 @@ class IFD_Corpus:
                     if limit is not None and count >= limit:
                         return
 
-    def sentence_stream(self, limit = None):
+    def sentence_stream(self, limit = None, skip = None):
         """ Generator of sentences from the IFD XML files.
             Each sentence is a list of words. """
-        for sent in self.raw_sentence_stream(limit):
+        for sent in self.raw_sentence_stream(limit, skip):
             yield [ w for (w, _, _) in sent ]
 
-    def word_tag_stream(self, limit = None):
+    def word_tag_stream(self, limit = None, skip = None):
         """ Generator of sentences from the IFD XML files.
             Each sentence consists of (word, tag) pairs. """
-        for sent in self.raw_sentence_stream(limit):
+        for sent in self.raw_sentence_stream(limit, skip):
             yield [ (w, t) for (w, t, _) in sent ]
 
 
@@ -85,19 +90,32 @@ um efnahagsmál í byrjun febrúar.
     print("Initializing tagger")
 
     # Number of training and test sentences
-    TRAINING_SET = 100000
+    TRAINING_SET = 35000
+    IFD_TRAINING_SET = 21000 # There are only about 20.800 sentences in the IFD corpus
     TEST_SET = 200
+    BEAM_SIZE = 250
 
-    tnt_tagger = TnT(N = 500) # Beam size
+    tnt_tagger = TnT(N = BEAM_SIZE)
     tagger = NgramTagger(n = 3, verbose = False)
 
     if True:
         # Create a new model and store it
-        with timeit("init_model()"):
+        with timeit("Train NgramTagger"):
             # Get a sentence stream from parsed articles
             # Number of sentences, size of training set
             sentence_stream = Article.sentence_stream(limit = TRAINING_SET, skip = TEST_SET)
             tagger.train(sentence_stream)
+        with timeit("Train TnT_Tagger on articles"):
+            # Get a sentence stream from parsed articles
+            # Number of sentences, size of training set
+            sentence_stream = Article.sentence_stream(limit = TRAINING_SET, skip = TEST_SET)
+            word_tag_stream = IFD_Tagset.word_tag_stream(sentence_stream)
+            tnt_tagger.train(word_tag_stream)
+        with timeit("Train TnT_Tagger on IFD"):
+            # Get a sentence stream from parsed articles
+            # Number of sentences, size of training set
+            word_tag_stream = IFD_Corpus().word_tag_stream(limit = IFD_TRAINING_SET, skip = TEST_SET)
+            tnt_tagger.train(word_tag_stream)
         #with timeit("store_model()"):
         #    tagger.store_model()
     else:
@@ -110,6 +128,9 @@ um efnahagsmál í byrjun febrúar.
     correct_tag = 0
     partial_tag = 0
     missing_tag = 0
+    correct_tag_tnt = 0
+    partial_tag_tnt = 0
+    missing_tag_tnt = 0
 
 
     def simple_test(session):
@@ -141,9 +162,11 @@ um efnahagsmál í byrjun febrúar.
             txt = " ".join(orðalisti)
             toklist = tokenize(txt, enclosing_session = session)
             dlist = tagger.tag(toklist)
+            tntlist = tnt_tagger.tag(orðalisti)
             ix = 0
             print("\n{0}\n".format(txt))
-            for tag, lemma, word in zip(mörk_OTB, lemmur_OTB, orðalisti):
+            for tag, lemma, word, tnt_wt in zip(mörk_OTB, lemmur_OTB, orðalisti, tntlist):
+                tnt_tag = tnt_wt[1]
                 j = ix
                 while j < len(dlist) and dlist[j].get("x", "") != word:
                     j += 1
@@ -156,7 +179,7 @@ um efnahagsmál í byrjun febrúar.
                 else:
                     gtag = "?"
 
-                def grade():
+                def grade(gtag):
                     if gtag == "?" and tag != "?":
                         return "M"
                     if gtag == tag:
@@ -165,9 +188,10 @@ um efnahagsmál í byrjun febrúar.
                         return "P"
                     return "E"
 
-                print("{0:20} | {1:20} | {2:8} | {3:8} | {4}"
-                    .format(word, lemma or word, tag, gtag, grade()))
+                print("{0:20} | {1:20} | {2:8} | {3:8} | {4} | {5:8} | {6}"
+                    .format(word, lemma or word, tag, gtag, grade(gtag), tnt_tag, grade(tnt_tag)))
                 nonlocal total_tags, missing_tag, correct_tag, partial_tag
+                nonlocal missing_tag_tnt, correct_tag_tnt, partial_tag_tnt
                 total_tags += 1
                 if gtag == "?":
                     missing_tag += 1
@@ -175,18 +199,25 @@ um efnahagsmál í byrjun febrúar.
                     correct_tag += 1
                 elif gtag[0] == tag[0]:
                     partial_tag += 1
+                if tnt_tag == "?":
+                    missing_tag_tnt += 1
+                elif tnt_tag == tag:
+                    correct_tag_tnt += 1
+                elif tnt_tag[0] == tag[0]:
+                    partial_tag_tnt += 1
 
     with SessionContext(read_only = True, commit = True) as session:
 
-        simple_test(session)
+        #simple_test(session)
 
-        article_test(session)
+        #article_test(session)
 
         test_ifd_file(session)
 
     if total_tags:
         print("\n-----------------------------------\n")
         print("Total tags:   {0:8}".format(total_tags))
+        print("\nNgram tagger:\n")
         print("Missing tags: {0:8} {1:6.2f}%"
             .format(missing_tag, 100.0 * missing_tag / total_tags))
         print("Tagged:       {0:8} {1:6.2f}%"
@@ -199,6 +230,19 @@ um efnahagsmál í byrjun febrúar.
             .format("", 100.0 * (partial_tag + correct_tag) / (total_tags - missing_tag)))
         print("Precision:    {0:8} {1:6.2f}%"
             .format("", 100.0 * correct_tag / (total_tags - missing_tag)))
+        print("\nTnT tagger:\n")
+        print("Missing tags: {0:8} {1:6.2f}%"
+            .format(missing_tag_tnt, 100.0 * missing_tag_tnt / total_tags))
+        print("Tagged:       {0:8} {1:6.2f}%"
+            .format(total_tags - missing_tag_tnt, 100.0 * (total_tags - missing_tag_tnt) / total_tags))
+        print("Correct tags: {0:8} {1:6.2f}%"
+            .format(correct_tag_tnt, 100.0 * correct_tag_tnt / total_tags))
+        print("Partial tags: {0:8} {1:6.2f}%"
+            .format(partial_tag_tnt + correct_tag_tnt, 100.0 * (partial_tag_tnt + correct_tag_tnt) / total_tags))
+        print("Partial prec: {0:8} {1:6.2f}%"
+            .format("", 100.0 * (partial_tag_tnt + correct_tag_tnt) / (total_tags - missing_tag_tnt)))
+        print("Precision:    {0:8} {1:6.2f}%"
+            .format("", 100.0 * correct_tag_tnt / (total_tags - missing_tag_tnt)))
         print("\n-----------------------------------\n")
 
 

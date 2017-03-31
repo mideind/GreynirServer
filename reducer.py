@@ -302,7 +302,7 @@ class Reducer:
                         if i == w.start:
                             # First token in sentence, and we have BÍN meanings:
                             # further discourage this
-                            sc[t] -= 4
+                            sc[t] -= 6
                 elif tfirst == "st" or (tfirst == "sem" and t.cat == "st"):
                     if txt == "sem":
                         # Discourage "sem" as a pure conjunction (samtenging)
