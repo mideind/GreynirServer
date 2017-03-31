@@ -858,16 +858,10 @@ class NgramTagger:
 
         return math.exp(sum(best_prob)), best_path
 
-    def tag(self, toklist_or_text):
-        """ Assign IFD tags to the given toklist, putting the tag in the
-            "i" field of each non-punctuation token. If a string is passed,
-            tokenize it first. Return the toklist so modified. """
-        if isinstance(toklist_or_text, str):
-            toklist = list(tokenize(toklist_or_text))
-        else:
-            toklist = list(toklist_or_text)
+    _CONJ_REF = frozenset(["sem", "er"])
 
-        CONJ_REF = frozenset(["sem", "er"])
+    def tag_single_token(self, token):
+        """ Return a tagset, with probabilities, for a single token """
 
         def ifd_tag(kind, txt, m):
             i = IFD_Tagset(
@@ -906,7 +900,7 @@ class NgramTagger:
             prob = 1.0 / len(s)
             return [ (tag, prob) for tag in s ]
 
-        def ifd_taglist_word(kind, txt, mlist):
+        def ifd_taglist_word(txt, mlist):
             if not mlist:
                 if txt[0].isupper():
                     # Óþekkt sérnafn?
@@ -914,13 +908,13 @@ class NgramTagger:
                     return [ ("nxen-s", 0.6), ("nxeo-s", 0.1), ("nxeþ-s", 0.1), ("nxee-s", 0.2) ]
                 # Erlent orð?
                 return [ ("e", 1.0) ]
-            s = set(ifd_tag(kind, txt, m) for m in mlist)
+            s = set(ifd_tag(TOK.WORD, txt, m) for m in mlist)
             ltxt = txt.lower()
             if ltxt in Prepositions.PP:
                 for case in Prepositions.PP[ltxt]:
                     if case in self.CASE_TO_TAG:
                         s.add(self.CASE_TO_TAG[case])
-            if ltxt in CONJ_REF:
+            if ltxt in self._CONJ_REF:
                 # For referential conjunctions,
                 # add 'ct' as a possibility (it does not come directly from a BÍN mark)
                 s.add("ct")
@@ -933,29 +927,47 @@ class NgramTagger:
             # in Pref.conf.
             return [ (tag, (d.get(tag, 0) + 1) / prob) for tag in s ]
 
+        if token.kind == TOK.WORD:
+            taglist = ifd_taglist_word(token.txt, token.val)
+        elif token.kind == TOK.ENTITY:
+            taglist = ifd_taglist_entity(token.txt)
+        elif token.kind == TOK.PERSON:
+            taglist = ifd_taglist_person(token.txt, token.val)
+        elif token.kind == TOK.NUMBER:
+            taglist = [ ("tfkfn", 1.0) ] # !!!
+        elif token.kind == TOK.YEAR:
+            taglist = [ ("ta", 1.0) ]
+        elif token.kind == TOK.PERCENT:
+            taglist = [ ("tp", 1.0) ]
+        elif token.kind == TOK.ORDINAL:
+            taglist = [ ("lxexsf", 1.0) ]
+        #elif token.kind == TOK.CURRENCY:
+        #    taglist = None
+        #elif token.kind == TOK.AMOUNT:
+        #    taglist = None
+        #elif token.kind == TOK.DATE:
+        #    taglist = None
+        elif token.kind == TOK.PUNCTUATION:
+            taglist = None
+        else:
+            print("Unknown tag kind: {0}, text '{1}'".format(TOK.descr[token.kind], token.txt))
+            taglist = None
+        return taglist
+
+    def tag(self, toklist_or_text):
+        """ Assign IFD tags to the given toklist, putting the tag in the
+            "i" field of each non-punctuation token. If a string is passed,
+            tokenize it first. Return the toklist so modified. """
+        if isinstance(toklist_or_text, str):
+            toklist = list(tokenize(toklist_or_text))
+        else:
+            toklist = list(toklist_or_text)
+
         tagsets = []
         for t in toklist:
             if not t.txt:
                 continue
-            if t.kind == TOK.WORD:
-                taglist = ifd_taglist_word(t.kind, t.txt, t.val)
-            elif t.kind == TOK.ENTITY:
-                taglist = ifd_taglist_entity(t.txt)
-            elif t.kind == TOK.PERSON:
-                taglist = ifd_taglist_person(t.txt, t.val)
-            elif t.kind == TOK.NUMBER:
-                taglist = [ ("tfkfn", 1.0) ] # !!!
-            elif t.kind == TOK.YEAR:
-                taglist = [ ("ta", 1.0) ]
-            elif t.kind == TOK.PERCENT:
-                taglist = [ ("tp", 1.0) ]
-            elif t.kind == TOK.ORDINAL:
-                taglist = [ ("lxexsf", 1.0) ]
-            elif t.kind == TOK.PUNCTUATION:
-                taglist = None
-            else:
-                print("Unknown tag kind: {0}, text '{1}'".format(TOK.descr[t.kind], t.txt))
-                taglist = None
+            taglist = self.tag_single_token(t)
             if taglist:
             #    display = " | ".join("{0} {1:.2f}".format(w, p) for w, p in taglist)
             #    print("{0:20}: {1}".format(t.txt, display))
@@ -1006,6 +1018,12 @@ class NgramTagger:
                     for x, s in zip(xlist, slist):
                         d["x"] = x
                         d["v"] = s
+                        yield d.copy()
+                elif t.kind == TOK.ENTITY:
+                    # Split entity tokens into subtokens for each name component
+                    xlist = d["x"].split() # Name as it originally appeared
+                    for x in xlist:
+                        d["x"] = x
                         yield d.copy()
                 else:
                     yield d
