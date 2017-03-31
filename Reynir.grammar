@@ -299,8 +299,8 @@ SetningSkilyrði →
 $score(+12) SetningSkilyrði
 
 EfÞegar →
-    "ef:st" | "þegar:st" | "er:st" | "þótt:st" | "þó:st" "að:st"? | "þó:st" "svo:ao" "að:st" | 'jafnvel_þótt'
-    | "þar:ao" "sem:st" | "eftir:st" "að:st"
+    "ef:st" | "þegar:st" | "er:st" | "þótt:st" | "þó:st" | "þó:ao" "að:st" | "þó:ao" "svo:ao" "að:st" | 'jafnvel_þótt'
+    | "þar:ao" "sem:st" | "eftir:ao" "að:st"
     | "eins:ao" "og:st" | 'líkt_og' | 'á_meðan' | "meðan:st"
     | "þangað:ao" "til:st" | 'um_leið' "og:st" | "síðan:st" | 'þrátt_fyrir_að'
 
@@ -847,7 +847,7 @@ StökSögn_et_p3_gm →
     so_0_et_p3_gm
 
 # Óalgengt að sagnorð standi ein og sér án frumlags
-$score(-4) StökSögn_et_p3_gm
+$score(-8) StökSögn_et_p3_gm
 
 HreinSögnAtv_nh →
     FsAtv? HreinSögn_nh_et_hk
@@ -2920,7 +2920,7 @@ Tengiorð →
     TengiorðSem | TengiorðEr
 
 TengiorðSem → "eða:st"? "sem:stt"
-    | "þar:st" "sem:stt"
+    | "þar:ao" "sem:st"         # ??? Er þetta rétt?
 
 TengiorðEr → "er:stt"
 
@@ -2999,7 +2999,7 @@ $score(+32) ÞaðTenging
     ÞóTenging ÞóBotn/tala/pers/kyn
     | ',' ÞóTenging ÞóBotn/tala/pers/kyn LokatáknEðaKomma
 
-ÞóTenging → "þó:st" | "þótt:st" | "þó:st" "að:st"
+ÞóTenging → "þó:st" | "þótt:st" | "þó:ao" "að:st"
 
 ÞóBotn/tala/pers/kyn →
     FsRuna? LoLiður_nf/tala/kyn VeraVerða_vh/tala/pers
@@ -3453,8 +3453,9 @@ $score(+16) FsÁMeðal
 
 FsÁMóti →
     "á:ao" "móti:fs" Nl_þgf
+    | "á:ao" "milli:fs" Nl_ef_ft
 
-$score(+16) FsÁMóti
+$score(+24) FsÁMóti
 
 FsTilÞgf →
     "til:fs" FsTilÞgfOrð Nl_þgf # 'til stuðnings/heiðurs Páli'
