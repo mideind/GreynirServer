@@ -186,7 +186,11 @@
       $("div#help").css("display", "block");
       // Clicking on the info panel makes it disappear
       // (necessary for touch screens)
-      $("div.info").click(function() { $(this).css("visibility", "hidden"); });
+      $("div.info")
+         .click(function(ev) {
+            ev.stopPropagation();
+            $(this).css("visibility", "hidden");
+         });
       $("button.refresh")
          .click(function(ev) {
             reparseArticle("{{ article.uuid | safe }}");
