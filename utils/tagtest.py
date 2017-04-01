@@ -35,6 +35,7 @@ class IFD_Corpus:
     def __init__(self, ifd_dir = "ifd"):
         self._ifd_full_dir = os.path.join(os.getcwd(), ifd_dir)
         self._xml_files = [ x for x in os.listdir(self._ifd_full_dir) if x.startswith("A") and x.endswith(".xml") ]
+        self._xml_files.sort()
 
     def raw_sentence_stream(self, limit = None, skip = None):
         """ Generator of sentences from the IFD XML files.
@@ -90,9 +91,9 @@ um efnahagsmál í byrjun febrúar.
     print("Initializing tagger")
 
     # Number of training and test sentences
-    TRAINING_SET = 35000
+    TRAINING_SET = 50000
     IFD_TRAINING_SET = 21000 # There are only about 20.800 sentences in the IFD corpus
-    TEST_SET = 200
+    TEST_SET = 400
     BEAM_SIZE = 250
 
     tnt_tagger = TnT(N = BEAM_SIZE)

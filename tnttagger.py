@@ -539,12 +539,18 @@ def demo():
                         # Split up person names, compounds ('fjármála- og efnahagsráðuneyti'),
                         # multi-word phrases, dates, etc.
                         if " " in x:
-                            for part in x.split():
-                                # !!! TODO: this needs to be made more intelligent and detailed
-                                if part in { "og", "eða" }:
-                                    r.append((part, "c"))
-                                else:
-                                    r.append((part, tag or "[UNKNOWN]"))
+                            lower_x = x.lower()
+                            if StaticPhrases.has_details(lower_x):
+                                # This is a static phrase
+                                tags = StaticPhrases.tags(lower_x)
+                                r.extend(zip(x.split(), tags))
+                            else:
+                                for part in x.split():
+                                    # !!! TODO: this needs to be made more intelligent and detailed
+                                    if part in { "og", "eða" }:
+                                        r.append((part, "c"))
+                                    else:
+                                        r.append((part, tag or "[UNKNOWN]"))
                         else:
                             r.append((x, tag or "[UNKNOWN]"))
             if r:

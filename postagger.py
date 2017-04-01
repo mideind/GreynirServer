@@ -51,7 +51,7 @@ from scraperdb import SessionContext, desc
 from article import Article
 from treeutil import TreeUtility
 from tokenizer import canonicalize_token, TOK
-from settings import Settings, Prepositions, ConfigError
+from settings import Settings, Prepositions, StaticPhrases, ConfigError
 from contextlib import contextmanager
 from fastparser import Fast_Parser
 
@@ -567,16 +567,30 @@ class IFD_Tagset:
                 continue
             output = []
             for t in sent:
-                # Skip punctuation
                 x = t.get("x")
+                if not x:
+                    continue
                 if t.get("k", TOK.WORD) == TOK.PUNCTUATION:
                     output.append((x, x))
                     continue
-                if x:
-                    canonicalize_token(t)
+                canonicalize_token(t)
+                if " " in x:
+                    lower_x = x.lower()
+                    if StaticPhrases.has_details(lower_x):
+                        # This is a static multi-word phrase
+                        tags = StaticPhrases.tags(lower_x)
+                        output.extend(zip(x.split(), tags))
+                    else:
+                        tag = str(cls(t))
+                        for part in x.split():
+                            # !!! TODO: this needs to be made more intelligent and detailed
+                            if part in { "og", "eða" }:
+                                output.append((part, "c"))
+                            else:
+                                output.append((part, tag or "Unk"))
+                else:
                     tag = str(cls(t))
-                    if tag:
-                        output.append((x, tag))
+                    output.append((x, tag or "Unk"))
             if output:
                 yield output
 
@@ -1014,7 +1028,7 @@ class NgramTagger:
                     # Split person tokens into subtokens for each name component
                     xlist = d["x"].split() # Name as it originally appeared
                     slist = d["v"].split() # Stem (nominal) form of name
-                    assert len(xlist) == len(slist)
+                    # xlist may be shorter than slist, but that is OK
                     for x, s in zip(xlist, slist):
                         d["x"] = x
                         d["v"] = s
