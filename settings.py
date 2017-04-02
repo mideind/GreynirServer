@@ -563,55 +563,6 @@ def sort_strings(strings, loc = None):
         return sorted(strings, key = strxfrm)
 
 
-class UnknownVerbs:
-
-    """ Singleton class that wraps a set of unknown verbs encountered during parsing """
-
-    _FILE = "UnknownVerbs.txt"
-    _unknown = None
-    _lock = Lock()
-
-    @classmethod
-    def add(cls, verb):
-        """ Add a single verb to the unknown set """
-        with cls._lock:
-            if cls._unknown is None:
-                cls._read_with_lock()
-            cls._unknown.add(verb)
-
-    @classmethod
-    def read(cls):
-        with cls._lock():
-            cls._read_with_lock()
-
-    @classmethod
-    def _read_with_lock(cls):
-        """ Read the unknown set from a file """
-        cls._unknown = set()
-        try:
-            with codecs.open(cls._FILE, "r", "utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if line:
-                        cls._unknown.add(line)
-        except (IOError, OSError):
-            pass
-
-    @classmethod
-    def write(cls):
-        """ Write the unknown set to a file """
-        with cls._lock:
-            if not cls._unknown:
-                return
-            vl = sort_strings(list(cls._unknown))
-            with codecs.open(cls._FILE, "w", "utf-8") as f:
-                for line in vl:
-                    if line:
-                        print(line, file = f)
-            # Clear the unknown set so we don't add duplicate verbs to the file
-            cls._unknown = None
-
-
 class Preferences:
 
     """ Wrapper around disambiguation hints, initialized from the config file """

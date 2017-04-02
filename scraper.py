@@ -40,7 +40,7 @@ from multiprocessing import Pool
 
 from datetime import datetime
 
-from settings import Settings, ConfigError, UnknownVerbs
+from settings import Settings, ConfigError
 from fetcher import Fetcher
 from article import Article
 from scraperinit import init_roots
@@ -195,8 +195,6 @@ class Scraper:
             helper = Fetcher._get_helper(d.root)
             if helper:
                 self.parse_article(d.url, helper)
-                # Save the unknown verbs accumulated during parsing, if any
-                # UnknownVerbs.write()
         except KeyboardInterrupt:
             print("KeyboardInterrupt in _parse_single_article()")
             sys.exit(1)

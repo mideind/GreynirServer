@@ -550,6 +550,8 @@ class VisirScraper(ScrapeHelper):
             heading = heading[8:]
         if heading.endswith(" - Glamour"):
             heading = heading[:-10]
+        if heading.endswith(" - Vísir"):
+            heading = heading[:-8]
         timestamp = ScrapeHelper.tag_prop_val(soup, "meta", "itemprop", "datePublished")
         timestamp = timestamp["content"] if timestamp else None
         timestamp = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S") if timestamp else None
@@ -568,9 +570,17 @@ class VisirScraper(ScrapeHelper):
                     if writer.endswith(" skrifar"):
                         # 'Jón Jónsson skrifar'
                         author = writer[0:-8]
+            else:
+                # Updated format of Visir.is
+                article = ScrapeHelper.div_class(soup, "article-single__meta")
+                if article:
+                    try:
+                        author = article.span.a.string
+                    except:
+                        author = ""
         if not author:
             author = "Ritstjórn visir.is"
-        metadata.heading = heading
+        metadata.heading = heading.strip()
         metadata.author = author
         metadata.timestamp = timestamp
         return metadata
@@ -586,6 +596,9 @@ class VisirScraper(ScrapeHelper):
         # Check for "Glamour" layout first
         soup = ScrapeHelper.div_class(soup_body, "article", "articletext")
         if not soup:
+            # Check for new Visir layout
+            soup = ScrapeHelper.div_class(soup_body, "article-single__content")
+        if not soup:
             # Check for normal Visir layout
             soup = ScrapeHelper.div_class(soup_body, "articlewrapper")
         if soup:
@@ -594,6 +607,10 @@ class VisirScraper(ScrapeHelper):
         if soup:
             # Delete div.meta from the content
             ScrapeHelper.del_div_class(soup, "meta")
+        if soup:
+            # Delete figure tags from the content
+            if soup.figure:
+                soup.figure.decompose()
         return soup
 
 
