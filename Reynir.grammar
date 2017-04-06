@@ -2543,6 +2543,7 @@ NlBæðiHvorki/fall/kyn →
     "bæði:st" Nl/fall/kyn "og:st" Nl/fall/kyn          # (Við þurftum að lóga) bæði hestinum og kettinum
     | "hvorki" Nl/fall/kyn "né" Nl/fall/kyn         # Hvorki hestinum né kettinum (var lógað)
     | "annaðhvort" Nl/fall/kyn "eða:st" Nl/fall/kyn # Annaðhvort hestinum eða kettinum (var lógað)
+    | "annað:fn" "hvort:fn" Nl/fall/kyn "eða:st" Nl/fall/kyn # Annaðhvort hestinum eða kettinum (var lógað)
 
 $score(+4) NlBæðiHvorki/fall/kyn
 
@@ -2580,6 +2581,13 @@ NlBæðiHvorki_p3_hk/fall →
     | "annaðhvort" Nl_kvk/fall "eða:st" Nl_hk/fall
     | "annaðhvort" Nl_hk/fall "eða:st" Nl_kvk/fall
 
+    | "annað:fn" "hvort:fn" Nl_kk/fall "eða:st" Nl_kvk/fall
+    | "annað:fn" "hvort:fn" Nl_kvk/fall "eða:st" Nl_kk/fall
+    | "annað:fn" "hvort:fn" Nl_kk/fall "eða:st" Nl_hk/fall
+    | "annað:fn" "hvort:fn" Nl_hk/fall "eða:st" Nl_kk/fall
+    | "annað:fn" "hvort:fn" Nl_kvk/fall "eða:st" Nl_hk/fall
+    | "annað:fn" "hvort:fn" Nl_hk/fall "eða:st" Nl_kvk/fall
+
 $score(+4) NlBæðiHvorki_p3_hk/fall
 
 NlStak_ft_p1/fall/kyn → NlBæðiHvorki_p1_hk/fall
@@ -2588,9 +2596,11 @@ NlBæðiHvorki_p1_hk/fall →
     "bæði:st" Nl_p1/fall/kyn "og:st" Nl_p2/fall/kyn    # bæði mér og þér þykir þetta óásættanlegt
     | "hvorki" Nl_p1/fall/kyn "né" Nl_p2/fall/kyn   # hvorki ég né þú höfum vit á þessu
     | "annaðhvort" Nl_p1/fall/kyn "eða:st" Nl_p2/fall/kyn   # annaðhvort ég eða þú þurfum að fara
+    | "annað:fn" "hvort:fn" Nl_p1/fall/kyn "eða:st" Nl_p2/fall/kyn   # annaðhvort ég eða þú þurfum að fara
     | "bæði:st" Nl_p2/fall/kyn "og:st" Nl_p1/fall/kyn  # bæði þér og mér þykir þetta óásættanlegt
     | "hvorki" Nl_p2/fall/kyn "né" Nl_p1/fall/kyn   # hvorki þú né ég erum fallegar/falleg/fallegir
     | "annaðhvort" Nl_p2/fall/kyn "eða:st" Nl_p1/fall/kyn   # annaðhvort þú eða ég erum fallegar/falleg/fallegir
+    | "annað:fn" "hvort:fn" Nl_p2/fall/kyn "eða:st" Nl_p1/fall/kyn   # annaðhvort þú eða ég erum fallegar/falleg/fallegir
 
 $score(+4) NlBæðiHvorki_p1_hk/fall
 
@@ -3385,6 +3395,7 @@ FsMeðFallstjórn →
     | "nær:fs" 'draga:so'_op_gm_et_p3 Nl_þgf # 'þegar nær dró/dregur jólum'
     | 'það_sem_af_er' Nl_þgf # 'það sem af er þessu þingi'
     | 'fyrir_hönd' Nl_ef
+    | "beggja" "vegna:fs" Nl_ef # 'beggja vegna vegarins'
     | 'með_tilliti_til' Nl_ef # Skammstöfunin m.t.t.
     | 'samanbera:so'_lhþt_sb_hk_nf_et "við:fs" Nl_þf
     | 'bera:so'_lhþt_sb_hk_nf_et "saman:ao" "við:fs" Nl_þf

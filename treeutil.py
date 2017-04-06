@@ -23,6 +23,68 @@ from incparser import IncrementalParser
 WordTuple = namedtuple("WordTuple", ["stem", "cat"])
 
 
+# Tree simplifier configuration maps
+
+# !!! TODO: Move the following dictionaries to a configuration file?
+_DEFAULT_NT_MAP = {
+    "S0" : "P",
+    "HreinYfirsetning" : "S",
+    "Setning" : "S",
+    "SetningSo" : "VP",
+    "SetningLo" : "S",
+    "SetningÁnF" : "S",
+    "SetningAukafall" : "S",
+    "SetningSkilyrði" : "S",
+    "SetningUmAðRæða" : "S",
+    "StViðtenging" : "S",
+    "Tengisetning" : "S",
+    "OgTengisetning" : "S",
+    "Skilyrði" : "S-COND",
+    "Afleiðing" : "S-CONS",
+    "NlSkýring" : "S-EXPLAIN",
+    "Tilvitnun" : "S-QUOTE",
+    "Nl" : "NP",
+    "EfLiður" : "NP-POSS",
+    "EfLiðurForskeyti" : "NP-POSS",
+    "Heimilisfang" : "NP-ADDR",
+    "FsMeðFallstjórn" : "PP",
+    "SagnInnskot" : "ADVP",
+    "FsAtv" : "ADVP",
+    "AtvFs" : "ADVP",
+    "Atviksliður" : "ADVP",
+    "LoAtviksliðir" : "ADVP",
+    "Dagsetning" : "ADVP-DATE",
+    "SagnRuna" : "VP",
+    "NhLiðir" : "VP",
+    "SagnliðurÁnF" : "VP",
+    "ÖfugurSagnliður" : "VP",
+    "SagnHluti" : "VP",
+    "SagnliðurVh" : "VP"
+}
+
+# subject_to: don't push an instance of this if the
+# immediate parent is already the subject_to nonterminal
+
+# overrides: we cut off a parent node in favor of this one
+# if there are no intermediate nodes
+
+_DEFAULT_ID_MAP = {
+    "P" : dict(name = "Málsgrein"),
+    "S" : dict(name = "Setning", subject_to = { "S", "S-EXPLAIN" }),
+    "S-COND" : dict(name = "Skilyrði", overrides = "S"), # Condition
+    "S-CONS" : dict(name = "Afleiðing", overrides = "S"), # Consequence
+    "S-EXPLAIN" : dict(name = "Skýring"), # Explanation
+    "S-QUOTE" : dict(name = "Tilvitnun"), # Quote at end of sentence
+    "VP" : dict(name = "Sagnliður", subject_to = { "VP" }),
+    "NP" : dict(name = "Nafnliður"),
+    "NP-POSS" : dict(name = "Eignarfallsliður", overrides = "NP"),
+    "NP-ADDR" : dict(name = "Heimilisfang", overrides = "NP"),
+    "ADVP" : dict(name = "Atviksliður", subject_to = { "ADVP" }),
+    "ADVP-DATE" : dict(name = "Tímasetning", overrides = "ADVP"),
+    "PP" : dict(name = "Forsetningarliður", overrides = "ADVP"),
+}
+
+
 class TreeUtility:
 
     """ A wrapper around a set of static utility functions for working
@@ -135,68 +197,11 @@ class TreeUtility:
             simplified, condensed representation of it in a nested dictionary
             structure """
 
-        # !!! TODO: Move the following dictionaries to a configuration file
-        NT_MAP = {
-            "S0" : "P",
-            "HreinYfirsetning" : "S",
-            "Setning" : "S",
-            "SetningSo" : "VP",
-            "SetningLo" : "S",
-            "SetningÁnF" : "S",
-            "SetningAukafall" : "S",
-            "SetningSkilyrði" : "S",
-            "SetningUmAðRæða" : "S",
-            "StViðtenging" : "S",
-            "Tengisetning" : "S",
-            "OgTengisetning" : "S",
-            "Skilyrði" : "S-COND",
-            "Afleiðing" : "S-CONS",
-            "NlSkýring" : "S-EXPLAIN",
-            "Tilvitnun" : "S-QUOTE",
-            "Nl" : "NP",
-            "EfLiður" : "NP-POSS",
-            "EfLiðurForskeyti" : "NP-POSS",
-            "Heimilisfang" : "NP-ADDR",
-            "FsMeðFallstjórn" : "PP",
-            "SagnInnskot" : "ADVP",
-            "FsAtv" : "ADVP",
-            "AtvFs" : "ADVP",
-            "Atviksliður" : "ADVP",
-            "LoAtviksliðir" : "ADVP",
-            "Dagsetning" : "ADVP-DATE",
-            "SagnRuna" : "VP",
-            "NhLiðir" : "VP",
-            "SagnliðurÁnF" : "VP",
-            "ÖfugurSagnliður" : "VP",
-            "SagnHluti" : "VP",
-            "SagnliðurVh" : "VP"
-        }
-
-        # subject_to: don't push an instance of this if the
-        # immediate parent is already the subject_to nonterminal
-
-        # overrides: we cut off a parent node in favor of this one
-        # if there are no intermediate nodes
-
-        ID_MAP = {
-            "P" : dict(name = "Málsgrein"),
-            "S" : dict(name = "Setning", subject_to = { "S", "S-EXPLAIN" }),
-            "S-COND" : dict(name = "Skilyrði", overrides = "S"), # Condition
-            "S-CONS" : dict(name = "Afleiðing", overrides = "S"), # Consequence
-            "S-EXPLAIN" : dict(name = "Skýring"), # Explanation
-            "S-QUOTE" : dict(name = "Tilvitnun"), # Quote at end of sentence
-            "VP" : dict(name = "Sagnliður", subject_to = { "VP" }),
-            "NP" : dict(name = "Nafnliður"),
-            "NP-POSS" : dict(name = "Eignarfallsliður", overrides = "NP"),
-            "NP-ADDR" : dict(name = "Heimilisfang", overrides = "NP"),
-            "ADVP" : dict(name = "Atviksliður", subject_to = { "ADVP" }),
-            "ADVP-DATE" : dict(name = "Tímasetning", overrides = "ADVP"),
-            "PP" : dict(name = "Forsetningarliður", overrides = "ADVP"),
-        }
-
-        def __init__(self, tokens):
+        def __init__(self, tokens, nt_map, id_map):
             super().__init__(visit_all = True)
             self._tokens = tokens
+            self._nt_map = nt_map
+            self._id_map = id_map
             self._result = []
             self._stack = [ self._result ]
             self._pushed = []
@@ -218,11 +223,11 @@ class TreeUtility:
             self._pushed.append(False)
             if node.is_interior or node.nonterminal.is_optional:
                 return None
-            mapped_nt = self.NT_MAP.get(node.nonterminal.first)
+            mapped_nt = self._nt_map.get(node.nonterminal.first)
             if mapped_nt is not None:
                 # We want this nonterminal in the simplified tree:
                 # push it (unless it is subject to a scope we're already in)
-                mapped_id = self.ID_MAP[mapped_nt]
+                mapped_id = self._id_map[mapped_nt]
                 subject_to = mapped_id.get("subject_to")
                 if subject_to is not None and self._scope[-1] in subject_to:
                     # We are already within a nonterminal to which this one is subject:
@@ -253,19 +258,19 @@ class TreeUtility:
                 def collapse_child(nt):
                     """ Determine whether to cut off a child and connect directly
                         from this node to its children """
-                    d = self.NT_MAP[nt]
+                    d = self._nt_map[nt]
                     if ch0["i"] == d:
                         # Same nonterminal category: do the cut
                         return True
                     # If the child is a nonterminal that this one 'overrides',
                     # cut off the child
-                    override = self.ID_MAP[d].get("overrides")
+                    override = self._id_map[d].get("overrides")
                     return ch0["i"] == override
 
                 def replace_parent(nt):
-                    d = self.NT_MAP[nt]
+                    d = self._nt_map[nt]
                     # If the child overrides the parent, replace the parent
-                    override = self.ID_MAP[ch0["i"]].get("overrides")
+                    override = self._id_map[ch0["i"]].get("overrides")
                     return d == override
 
                 if ch0["k"] == "NONTERMINAL":
@@ -330,20 +335,22 @@ class TreeUtility:
         return dump
 
     @staticmethod
-    def _simplify_tree(tokens, tree):
+    def _simplify_tree(tokens, tree, nt_map = _DEFAULT_NT_MAP, id_map = _DEFAULT_ID_MAP):
         """ Return a simplified parse tree for a sentence, including POS-tagged,
             normalized terminal leaves """
-        """ Return a dict containing a map from original token indices to matched terminals """
         if tree is None:
             return None
-        s = TreeUtility._Simplifier(tokens)
+        s = TreeUtility._Simplifier(tokens, nt_map = nt_map, id_map = id_map)
         s.go(tree)
         return s.result
 
     @staticmethod
     def _process_text(parser, session, text, all_names, xform):
         """ Low-level utility function to parse text and return the result of
-            a transformation function (xform) for each sentence """
+            a transformation function (xform) for each sentence.
+            Set all_names = True to get a comprehensive name register.
+            Set all_names = False to get a simple name register.
+            Set all_names = None to get no name register. """
         t0 = time.time()
         # Demarcate paragraphs in the input
         text = Fetcher.mark_paragraphs(text)
@@ -351,8 +358,11 @@ class TreeUtility:
         toklist = list(tokenize(text, enclosing_session = session))
         t1 = time.time()
         pgs, stats = TreeUtility._process_toklist(parser, session, toklist, xform)
-        from query import create_name_register
-        register = create_name_register(toklist, session, all_names = all_names)
+        if all_names is None:
+            register = None
+        else:
+            from query import create_name_register
+            register = create_name_register(toklist, session, all_names = all_names)
         t2 = time.time()
         stats["tok_time"] = t1 - t0
         stats["parse_time"] = t2 - t1
@@ -458,6 +468,53 @@ class TreeUtility:
 
         with Fast_Parser(verbose = False) as parser: # Don't emit diagnostic messages
             return TreeUtility._process_text(parser, session, text, all_names, xform)
+
+    @staticmethod
+    def parse_text_to_bracket_form(session, text):
+        """ Parse plain text and return the parsed paragraphs as bracketed strings """
+
+        def xform(tokens, tree, err_index):
+            """ Transformation function that yields a simplified parse tree
+                with POS-tagged, normalized terminal leaves for the sentence """
+            if err_index is not None:
+                # Return an empty string for sentences that don't parse
+                return ""
+            # Successfully parsed: obtain a simplified tree for the sentence
+            result = []
+
+            def push(node):
+                """ Append information about a node to the result list """
+                if node is None:
+                    return
+                nonlocal result
+                if node["k"] == "NONTERMINAL":
+                    result.append("(" + node["i"])
+                    # Recursively add the children of this nonterminal
+                    for child in node["p"]:
+                        result.append(" ")
+                        push(child)
+                    result.append(")")
+                elif node["k"] == "PUNCTUATION":
+                    pass
+                    # Include punctuation?
+                    # If so, do something like:
+                    # result.push("(PUNCT |" + node["x"] + "|)")
+                else:
+                    # Terminal: append the text
+                    result.append(node["x"].replace(" ", "_"))
+
+            # For different simplification schemes, replace _DEFAULT_ID_MAP and _DEFAULT_NT_MAP below
+            simple_tree = TreeUtility._simplify_tree(tokens, tree,
+                nt_map = _DEFAULT_NT_MAP, id_map = _DEFAULT_ID_MAP)
+            push(simple_tree)
+            return "".join(result)
+
+        with Fast_Parser(verbose = False) as parser: # Don't emit diagnostic messages
+            pgs, stats, _ = TreeUtility._process_text(parser, session, text,
+                all_names = None, xform = xform)
+        # pgs is a list of paragraphs, each being a list of sentences
+        # To access the first parsed sentence, use pgs[0][0]
+        return (pgs, stats)
 
     @staticmethod
     def parse_text_with_full_tree(session, text, all_names = False):

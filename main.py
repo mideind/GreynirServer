@@ -912,7 +912,8 @@ if __name__ == "__main__":
     # Note: Reynir.grammar is automatically reloaded if its timestamp changes
     extra_files = [ 'Reynir.conf',
         'Verbs.conf', 'VerbPrepositions.conf',
-        'Main.conf', 'Prefs.conf', 'Abbrev.conf'
+        'Main.conf', 'Prefs.conf', 'Abbrev.conf',
+        "Phrases.conf", "Vocab.conf", "Names.conf"
     ]
 
     from socket import error as socket_error

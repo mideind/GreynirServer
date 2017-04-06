@@ -1039,6 +1039,8 @@ class NgramTagger:
                     for x in xlist:
                         d["x"] = x
                         yield d.copy()
+                # !!! TBD: Tokens such as dates, amounts and currencies
+                # !!! should be split here into multiple subtokens
                 else:
                     yield d
 

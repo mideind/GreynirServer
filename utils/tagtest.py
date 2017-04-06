@@ -14,6 +14,7 @@ if basepath.endswith("/utils") or basepath.endswith("\\utils"):
     basepath = basepath[0:-6]
     sys.path.append(basepath)
 
+from bindb import BIN_Db
 from settings import Settings, ConfigError
 from tokenizer import tokenize, TOK
 from scraperdb import SessionContext, desc, Article as ArticleRow
@@ -91,15 +92,15 @@ um efnahagsmál í byrjun febrúar.
     print("Initializing tagger")
 
     # Number of training and test sentences
-    TRAINING_SET = 50000
+    TRAINING_SET = 500
     IFD_TRAINING_SET = 21000 # There are only about 20.800 sentences in the IFD corpus
     TEST_SET = 400
-    BEAM_SIZE = 250
+    BEAM_SIZE = 250 # A higher number does not seem to yield improved results
 
-    tnt_tagger = TnT(N = BEAM_SIZE)
-    tagger = NgramTagger(n = 3, verbose = False)
 
-    if True:
+    if False:
+        tnt_tagger = TnT(N = BEAM_SIZE, C = True)
+        tagger = NgramTagger(n = 3, verbose = False)
         # Create a new model and store it
         with timeit("Train NgramTagger"):
             # Get a sentence stream from parsed articles
@@ -117,13 +118,18 @@ um efnahagsmál í byrjun febrúar.
             # Number of sentences, size of training set
             word_tag_stream = IFD_Corpus().word_tag_stream(limit = IFD_TRAINING_SET, skip = TEST_SET)
             tnt_tagger.train(word_tag_stream)
-        #with timeit("store_model()"):
-        #    tagger.store_model()
+        with timeit("Store TnT model"):
+            tnt_tagger.store("TnT-model.pickle")
     else:
+        tagger = None
         # Load an existing model
         with timeit("load_model()"):
-            tagger.load_model()
-    tagger.show_model()
+            tnt_tagger = TnT.load("TnT-model.pickle")
+            if tnt_tagger is None:
+                print(f"Unable to load TnT model, test aborted")
+                return
+    #tagger.show_model()
+    #return
 
     total_tags = 0
     correct_tag = 0
@@ -156,29 +162,34 @@ um efnahagsmál í byrjun febrúar.
     def test_ifd_file(session):
         print("\n\n*** IFD TEST SET ***\n\n")
         gen = IFD_Corpus().raw_sentence_stream(limit = TEST_SET)
+        dlist = None
         for sent in gen:
             orðalisti = [ triple[0] for triple in sent ]
             mörk_OTB = [ triple[1] for triple in sent ]
             lemmur_OTB = [ triple[2] for triple in sent ]
             txt = " ".join(orðalisti)
-            toklist = tokenize(txt, enclosing_session = session)
-            dlist = tagger.tag(toklist)
+            if tagger is not None:
+                toklist = tokenize(txt, enclosing_session = session)
+                dlist = tagger.tag(toklist)
             tntlist = tnt_tagger.tag(orðalisti)
             ix = 0
             print("\n{0}\n".format(txt))
             for tag, lemma, word, tnt_wt in zip(mörk_OTB, lemmur_OTB, orðalisti, tntlist):
                 tnt_tag = tnt_wt[1]
                 j = ix
-                while j < len(dlist) and dlist[j].get("x", "") != word:
-                    j += 1
-                if j < len(dlist):
-                    ix = j
-                    gtag = dlist[ix].get("i", "?")
-                    if gtag == "?" and dlist[ix].get("k") == TOK.PUNCTUATION:
-                        gtag = word
-                    ix += 1
-                else:
+                if dlist is None:
                     gtag = "?"
+                else:
+                    while j < len(dlist) and dlist[j].get("x", "") != word:
+                        j += 1
+                    if j < len(dlist):
+                        ix = j
+                        gtag = dlist[ix].get("i", "?")
+                        if gtag == "?" and dlist[ix].get("k") == TOK.PUNCTUATION:
+                            gtag = word
+                        ix += 1
+                    else:
+                        gtag = "?"
 
                 def grade(gtag):
                     if gtag == "?" and tag != "?":
@@ -189,22 +200,25 @@ um efnahagsmál í byrjun febrúar.
                         return "P"
                     return "E"
 
+                grade_g = grade(gtag)
+                grade_tnt = grade(tnt_tag)
+
                 print("{0:20} | {1:20} | {2:8} | {3:8} | {4} | {5:8} | {6}"
                     .format(word, lemma or word, tag, gtag, grade(gtag), tnt_tag, grade(tnt_tag)))
                 nonlocal total_tags, missing_tag, correct_tag, partial_tag
                 nonlocal missing_tag_tnt, correct_tag_tnt, partial_tag_tnt
                 total_tags += 1
-                if gtag == "?":
+                if grade_g == "M":
                     missing_tag += 1
-                elif gtag == tag:
+                elif grade_g == " ":
                     correct_tag += 1
-                elif gtag[0] == tag[0]:
+                elif grade_g == "P":
                     partial_tag += 1
-                if tnt_tag == "?":
+                if grade_tnt == "M":
                     missing_tag_tnt += 1
-                elif tnt_tag == tag:
+                elif grade_tnt == " ":
                     correct_tag_tnt += 1
-                elif tnt_tag[0] == tag[0]:
+                elif grade_tnt == "P":
                     partial_tag_tnt += 1
 
     with SessionContext(read_only = True, commit = True) as session:
@@ -257,5 +271,8 @@ if __name__ == "__main__":
         quit()
 
     # This is always run as a main program
-    with timeit("test_tagger()"):
-        test_tagger()
+    try:
+        with timeit("test_tagger()"):
+            test_tagger()
+    finally:
+        BIN_Db.cleanup()
