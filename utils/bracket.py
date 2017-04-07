@@ -5,8 +5,9 @@ import sys
 
 # Hack to make this Python program executable from the utils subdirectory
 basepath, _ = os.path.split(os.path.realpath(__file__))
-if basepath.endswith("/utils") or basepath.endswith("\\utils"):
-    basepath = basepath[0:-6]
+_UTILS = os.sep + "utils"
+if basepath.endswith(_UTILS):
+    basepath = basepath[0:-len(_UTILS)]
     sys.path.append(basepath)
 
 from settings import Settings

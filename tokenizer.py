@@ -1969,6 +1969,18 @@ def recognize_entities(token_stream, enclosing_session = None):
     assert not tq
 
 
+def raw_tokenize(text):
+    """ Tokenize text up to but not including the BÍN annotation pass """
+
+    token_stream = parse_tokens(text)
+
+    token_stream = parse_particles(token_stream)
+
+    token_stream = parse_sentences(token_stream)
+
+    return token_stream
+
+
 def tokenize(text, auto_uppercase = False, enclosing_session = None):
     """ Tokenize text in several phases, returning a generator (iterable sequence) of tokens
         that processes tokens on-demand. If auto_uppercase is True, the tokenizer
@@ -1976,11 +1988,7 @@ def tokenize(text, auto_uppercase = False, enclosing_session = None):
 
     # Thank you Python for enabling this programming pattern ;-)
 
-    token_stream = parse_tokens(text)
-
-    token_stream = parse_particles(token_stream)
-
-    token_stream = parse_sentences(token_stream)
+    token_stream = raw_tokenize(text)
 
     token_stream = parse_static_phrases(token_stream, auto_uppercase) # Static multiword phrases
 

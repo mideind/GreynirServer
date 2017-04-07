@@ -35,9 +35,7 @@
     also possible to avoid HTTP RPC and use local, in-process tagging by
     invoking
 
-    TAGGER=LOCAL python utils/cmp.py
-
-    Note that LOCAL must be in uppercase.
+    TAGGER=local python utils/cmp.py
 
 """
 
@@ -52,11 +50,11 @@ from urllib.parse import quote
 from timeit import default_timer as timer
 
 # Hack to make this Python program executable from the utils subdirectory
-if __name__ == "__main__":
-    basepath, _ = os.path.split(os.path.realpath(__file__))
-    if basepath.endswith("/utils") or basepath.endswith("\\utils"):
-        basepath = basepath[0:-6]
-        sys.path.append(basepath)
+basepath, _ = os.path.split(os.path.realpath(__file__))
+_UTILS = os.sep + "utils"
+if basepath.endswith(_UTILS):
+    basepath = basepath[0:-len(_UTILS)]
+    sys.path.append(basepath)
 
 from settings import Settings, StaticPhrases
 from postagger import IFD_Tagset
@@ -64,7 +62,7 @@ from postagger import IFD_Tagset
 # Stuff for deciding which POS tagging server (and what method) we will use
 
 TAGGER = os.environ.get("TAGGER", "localhost:5000")
-if TAGGER == "LOCAL":
+if TAGGER.lower() == "local":
     # Use in-process tagger (via 'from postagger import Tagger', see below)
     USE_LOCAL_TAGGER = True
     MYPATH = ""
@@ -870,7 +868,7 @@ class Comparison():
         # Fyllir út í self.tíðnibreytur fyrir mörkunarárangur
         #mark_Gr_eldra = self.vörpun(word)
 
-        mark_Gr = str(IFD_Tagset(word))
+        mark_Gr = word["i"] if "i" in word else str(IFD_Tagset(word))
         #print("{0:20} {1:20} {2:10}  {d1} {3:10}  {d2} {4:10}".format(word.get("x", ""), word.get("s", ""),
         #    mark_OTB, mark_Gr_eldra, mark_Gr,
         #    d1="*" if mark_Gr_eldra != mark_OTB else " ",

@@ -56,7 +56,7 @@ from scraperdb import SessionContext, desc, Root, Person, Article, ArticleTopic,
 from query import Query
 from search import Search
 from getimage import get_image_url
-from postagger import IFD_Tagset
+from tnttagger import ifd_tag
 
 
 # Initialize Flask framework
@@ -360,10 +360,10 @@ def analyze_api(version = 1):
 # Note: Endpoints ending with .api are configured not to be cached by nginx
 @app.route("/postag.api", methods=['GET', 'POST'])
 @app.route("/postag.api/v<int:version>", methods=['GET', 'POST'])
-def postag_api(version = 2):
-    """ API to parse text and return POS tagged tokens in JSON format """
+def postag_api(version = 1):
+    """ API to parse text and return POS tagged tokens in a verbose JSON format """
 
-    if not (1 <= version <= 2):
+    if not (1 <= version <= 1):
         # Unsupported version
         return better_jsonify(valid = False, reason = "Unsupported version")
 
@@ -403,14 +403,41 @@ def postag_api(version = 2):
             err = any("err" in t for t in sent)
             for t in sent:
                 canonicalize_token(t)
-                if version >= 2 and not err:
-                    # Add the Icelandic Frequency Dictionary (IFD) tagset
-                    ifd_tagset = str(IFD_Tagset(t))
-                    if ifd_tagset:
-                        t["i"] = ifd_tagset
 
     # Return the tokens as a JSON structure to the client
     return better_jsonify(valid = True, result = pgs, stats = stats, register = register)
+
+
+# Note: Endpoints ending with .api are configured not to be cached by nginx
+@app.route("/ifdtag.api", methods=['GET', 'POST'])
+@app.route("/ifdtag.api/v<int:version>", methods=['GET', 'POST'])
+def ifdtag_api(version = 1):
+    """ API to parse text and return IFD tagged tokens in a simple and sparse JSON format """
+
+    if not (1 <= version <= 1):
+        # Unsupported version
+        return better_jsonify(valid = False, reason = "Unsupported version")
+
+    try:
+        if request.method == 'POST':
+            if request.headers["Content-Type"] == "text/plain":
+                # This API accepts plain text POSTs, UTF-8 encoded.
+                # Example usage:
+                # curl -d @example.txt https://greynir.is/ifdtag.api --header "Content-Type: text/plain"
+                text = request.data.decode("utf-8")
+            else:
+                # This API also accepts form/url-encoded requests:
+                # curl -d "text=Í dag er ágætt veður en mikil hálka er á götum." https://greynir.is/ifdtag.api
+                text = request.form.get("text", "")
+        else:
+            text = request.args.get("t", "")
+        text = text.strip()[0:_MAX_TEXT_LENGTH]
+    except:
+        return better_jsonify(valid = False, reason = "Invalid request")
+
+    pgs = ifd_tag(text)
+
+    return better_jsonify(valid = bool(pgs), result = pgs)
 
 
 # Note: Endpoints ending with .api are configured not to be cached by nginx

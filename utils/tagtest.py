@@ -10,8 +10,9 @@ import xml.etree.ElementTree as ET
 
 # Hack to make this Python program executable from the utils subdirectory
 basepath, _ = os.path.split(os.path.realpath(__file__))
-if basepath.endswith("/utils") or basepath.endswith("\\utils"):
-    basepath = basepath[0:-6]
+_UTILS = os.sep + "utils"
+if basepath.endswith(_UTILS):
+    basepath = basepath[0:-len(_UTILS)]
     sys.path.append(basepath)
 
 from bindb import BIN_Db
@@ -21,6 +22,9 @@ from scraperdb import SessionContext, desc, Article as ArticleRow
 from article import Article
 from postagger import NgramTagger, IFD_Tagset
 from tnttagger import TnT
+
+
+_TNT_MODEL_FILE = "config" + os.sep + "TnT-model.pickle"
 
 
 @contextmanager
@@ -119,14 +123,14 @@ um efnahagsmál í byrjun febrúar.
             word_tag_stream = IFD_Corpus().word_tag_stream(limit = IFD_TRAINING_SET, skip = TEST_SET)
             tnt_tagger.train(word_tag_stream)
         with timeit("Store TnT model"):
-            tnt_tagger.store("TnT-model.pickle")
+            tnt_tagger.store(_TNT_MODEL_FILE)
     else:
         tagger = None
         # Load an existing model
         with timeit("load_model()"):
-            tnt_tagger = TnT.load("TnT-model.pickle")
+            tnt_tagger = TnT.load(_TNT_MODEL_FILE)
             if tnt_tagger is None:
-                print(f"Unable to load TnT model, test aborted")
+                print(f"Unable to load TnT model from {_TNT_MODEL_FILE}, test aborted")
                 return
     #tagger.show_model()
     #return

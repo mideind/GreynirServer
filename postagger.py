@@ -50,7 +50,7 @@ from itertools import islice, tee
 from scraperdb import SessionContext, desc
 from article import Article
 from treeutil import TreeUtility
-from tokenizer import canonicalize_token, TOK
+from tokenizer import paragraphs, canonicalize_token, TOK
 from settings import Settings, Prepositions, StaticPhrases, ConfigError
 from contextlib import contextmanager
 from fastparser import Fast_Parser
@@ -64,11 +64,12 @@ class Tagger:
             Settings.read("config/Reynir.conf")
         self._parser = None
         self._session = None
+        self._tagger = None
 
     def tag(self, text):
         """ Parse and POS-tag the given text, returning a dict """
-        assert self._parser is not None, "Call Tagger.tag() inside 'with Tagger().context()'!"
-        assert self._session is not None, "Call Tagger.tag() inside 'with Tagger().context()'!"
+        assert self._parser is not None, "Call Tagger.tag() inside 'with Tagger.session()'!"
+        assert self._session is not None, "Call Tagger.tag() inside 'with Tagger.session()'!"
         pgs, stats, register = TreeUtility.raw_tag_text(self._parser, self._session, text)
         # Amalgamate the result into a single list of sentences
         if pgs:
@@ -84,8 +85,13 @@ class Tagger:
         for sent in pgs:
             # Transform the token representation into a
             # nice canonical form for outside consumption
+            err = any("err" in t for t in sent)
             for t in sent:
                 canonicalize_token(t)
+                if not err:
+                    ifd_tagset = str(IFD_Tagset(t))
+                    if ifd_tagset:
+                        t["i"] = ifd_tagset
         return dict(result = pgs, stats = stats, register = register)
 
     @contextmanager

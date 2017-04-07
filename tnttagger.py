@@ -21,7 +21,7 @@
 
 
     This module is based on the TnT Tagger module from the NLTK Project.
-    It has been significantly simplified, adapted and optimized for speed.
+    It has been extensively simplified, adapted and optimized for speed.
 
     The NLTK copyright notice and license follow:
     --------------------------------------------------------------------
@@ -50,6 +50,7 @@
 
 """
 
+import os
 import time
 import pickle
 
@@ -58,7 +59,7 @@ from collections import defaultdict
 from contextlib import contextmanager
 
 from bindb import BIN_Db
-from tokenizer import parse_tokens, TOK
+from tokenizer import raw_tokenize, parse_tokens, paragraphs, TOK
 from postagger import IFD_Tagset, NgramTagger
 
 
@@ -146,10 +147,8 @@ class UnknownWordTagger:
             # Sort in descending order of probability
             taglist.sort(key = lambda x: x[1], reverse = True)
             # Return the most likely tag
-            #print(f"UnknownWordTagger('{word}') returning {(w, taglist[0][0])}")
             return [ (w, taglist[0][0]) ]
         # No taglist: give up and return 'Unk' as the tag
-        #print(f"UnknownWordTagger('{word}') returning {(w, 'Unk')}")
         return [ (w, 'Unk') ]
 
 
@@ -260,6 +259,10 @@ class TnT:
         :param data: List of lists of (word, tag) tuples
         :type data: tuple(str)
         '''
+        self._uni  = FreqDist()
+        self._bi   = ConditionalFreqDist()
+        self._tri  = ConditionalFreqDist()
+        self._wd   = ConditionalFreqDist()
         count = 0
         for sent in sentences:
             history = (('BOS',False), ('BOS',False))
@@ -284,7 +287,6 @@ class TnT:
 
         # compute lambda values from the trained frequency distributions
         self._compute_lambda()
-        print(f"Training session finished; {count} sentences processed")
 
     def _compute_lambda(self):
         '''
@@ -439,13 +441,14 @@ class TnT:
                 # otherwise a new word, set of possible tags is unknown
                 self.unknown += 1
 
-                # if no unknown word tagger has been specified
-                # then use the tag 'Unk'
-                if self._unk is None:
-                    taglist = [ ('Unk', 1.0) ]
-                else:
-                    # otherwise apply the unknown word tagger
+                taglist = None
+                if self._unk is not None:
+                    # Apply the unknown word tagger
                     taglist = self._unk.tagset([word], index == 0)
+                if not taglist:
+                    # if no unknown word tagger has been specified
+                    # or no tag is found, use the tag 'Unk'
+                    taglist = [ ('Unk', 1.0) ]
 
                 for (curr_sent_logprob, history) in current_state:
                     for t, prob in taglist:
@@ -464,4 +467,26 @@ class TnT:
         # return the most probable tag history
         tags = current_state[0][1]
         return [ (w, tags[i + 2][0]) for i, w in enumerate(sent) ]
+
+_TAGGER = None
+
+def ifd_tag(text):
+    """ Tokenize the given text and use a global singleton TnT tagger to tag it """
+    global _TAGGER
+    if _TAGGER is None:
+        # Load the tagger from a pickle the first time it's used
+        _TAGGER = TnT.load("config" + os.sep + "TnT-model.pickle")
+        if _TAGGER is None:
+            return [] # No tagger model - unable to tag
+    token_stream = raw_tokenize(text)
+    result = []
+    # Translation dictionary
+    xlt = { "—" : "-", "–" : "-" }
+    for pg in paragraphs(token_stream):
+        for _, sent in pg:
+            toklist = [ xlt.get(t.txt, t.txt) for t in sent if t.txt ]
+            tagged = _TAGGER.tag(toklist)
+            result.append(tagged)
+    # Return a list of paragraphs, consisting of sentences, consisting of tokens
+    return result
 
