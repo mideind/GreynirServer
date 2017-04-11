@@ -200,6 +200,95 @@ kóðaða í UTF-8 og með línuskiptum (<i>newline</i>, <code>\n</code>) milli 
 }
 </pre>
 
+<p class="lead" style="padding-top: 1.6em">Þjónustan <code>ifdtag.api</code> tekur inn texta og skilar til baka
+hverju orði hans með einfaldri mörkun (<i>part-of-speech tag</i>) úr
+<a href="http://www.malfong.is/files/ot_tagset_files_is.pdf" target="_blank">markaskrá Íslensku
+orðtíðnibókarinnar (IFD)</a>.</p>
+
+<p><code>ifdtag.api</code> notar markara sem byggir á tölfræði úr stóru textasafni, ekki á málfræðireglum.
+Þjónustan getur því markað texta sem Greyni tekst ekki að þátta. Á móti kemur að nákvæmnin er
+tilviljanakenndari og samkvæmni stundum minni en í <code>postag.api</code> sem byggir á þáttun.</p>
+
+<p>Stutta texta sem eru einungis ein málsgrein má málgreina með einföldu <code>HTTPS <b>GET</b></code>
+þar sem textinn er sendur sem hluti af vefslóð (URL):</p>
+
+<pre><b>GET</b> https://greynir.is/ifdtag.api/v1?t=<i>Hér er dæmi um texta til að málgreina</i></pre>
+
+<p>Lengri texta má senda með <code>HTTP <b>POST</b></code> í <code>application/x-www-form-urlencoded</code> formi,
+í svæði sem heitir <code>text</code>.</p>
+
+<p>Dæmi um hvernig nota má POST kallið frá <code>curl</code> í GNU/Linux:</p>
+
+<pre>$ curl -d "text=Í dag er ágætt veður en mikil hálka er á götum." https://greynir.is/ifdtag.api/v1</pre>
+
+<p>Enn lengri texta má senda með <code>HTTP <b>POST</b></code> í <code>text/plain</code> formi,
+kóðaða í UTF-8 og með línuskiptum (<i>newline</i>, <code>\n</code>) milli málsgreina. Dæmi:</p>
+
+<pre>$ curl -d @example.txt https://greynir.is/ifdtag.api/v1 --header "Content-Type: text/plain"</pre>
+
+<p><code>ifdtag.api/v1</code> þjónustan skilar JSON skjali með eftirfarandi undirgreinum:</p>
+<ul>
+   <li><code>result</code> er listi af málsgreinum þar sem hver málsgrein er aftur listi
+      af eindum (<i>tokens</i>). Hver eind er listi með tveimur stökum:
+      <ul>
+        <li><code>[0]</code> Upphaflega orðið eins og það kom fyrir í textanum</li>
+        <li><code>[1]</code> Mark orðsins skv.
+          <a href="http://www.malfong.is/files/ot_tagset_files_is.pdf" target="_blank">markaskrá
+          Íslensku orðtíðnibókarinnar</a>
+        </li>
+      </ul>
+  </li>
+   <li><code>valid</code> er <code>true</code> ef mörkun tókst, annars <code>false</code></li>
+</ul>
+
+<p><button data-toggle="collapse" data-target="#ifdtag-example"><span class="caret"></span> Dæmi</button> um mörkun málsgreinarinnar <i>Halldór Laxness fékk nóbelsverðlaunin í bókmenntum árið 1955.</i></p>
+
+<pre id="ifdtag-example" class="collapse">
+{
+  "result": [
+    [
+      [
+        "Halldór", 
+        "nken-m"
+      ], 
+      [
+        "Laxness", 
+        "nken-m"
+      ], 
+      [
+        "fékk", 
+        "sfg3eþ"
+      ], 
+      [
+        "nóbelsverðlaunin", 
+        "nhfog"
+      ], 
+      [
+        "í", 
+        "aþ"
+      ], 
+      [
+        "bókmenntum", 
+        "nvfþ"
+      ], 
+      [
+        "árið", 
+        "nheog"
+      ], 
+      [
+        "1955", 
+        "ta"
+      ], 
+      [
+        ".", 
+        "."
+      ]
+    ]
+  ], 
+  "valid": true
+}
+</pre>
+
 <h1 class="page-header">Fyrirspurnir</h1>
 
 <p class="lead">Þjónustan <code>query.api</code> svarar fyrirspurnum um fólk og titla og um skilgreiningar

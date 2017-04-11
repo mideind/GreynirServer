@@ -160,6 +160,7 @@ class BIN_Db:
 
         if db is None:
             # New connection in this thread
+            print("Opening BIN database for thread {0}".format(threading.get_ident()))
             db = cls.tls.bin_db = cls().open(host = Settings.BIN_DB_HOSTNAME,
                 port = Settings.BIN_DB_PORT,
                 wait = cls.wait)
@@ -178,6 +179,7 @@ class BIN_Db:
             # Connection already established in this thread: re-use it
             db = cls.tls.bin_db
         if db is not None:
+            print("Closing BIN database for thread {0}".format(threading.get_ident()))
             db.close()
 
     def __init__(self):
@@ -195,6 +197,7 @@ class BIN_Db:
         self._conn = None
         while True:
             try:
+                print("Calling psycopg2.connect on thread {0}".format(threading.get_ident()))
                 self._conn = psycopg2.connect(dbname = BIN_Db._DB_NAME,
                     user = BIN_Db._DB_USER, password = BIN_Db._DB_PWD,
                     host = host, port = port, client_encoding = "utf8")
@@ -226,6 +229,7 @@ class BIN_Db:
             self._c.close()
             self._c = None
         if self._conn is not None:
+            print("Closing psycopg2 db object on thread {0}".format(threading.get_ident()))
             self._conn.close()
             self._conn = None
         if BIN_Db.tls.bin_db is self:

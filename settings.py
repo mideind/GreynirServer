@@ -189,6 +189,8 @@ class Meanings:
     DICT = defaultdict(list) # Keyed by word form
     ROOT = defaultdict(list) # Keyed by word root (stem)
 
+    _db = None # Cached BIN database connection
+
     @staticmethod
     def add (stofn, ordmynd, ordfl, fl, beyging):
         """ Add word meaning to the dictionary. Called from the config file handler. """
@@ -208,23 +210,27 @@ class Meanings:
         """ Add composite word forms by putting a prefix on existing BIN word forms.
             Called from the config file handler. """
 
-        from bindb import BIN_Db
 
         assert stofn is not None
         assert ordfl is not None
         a = stofn.split("-")
         if len(a) != 2:
             raise ConfigError("Composite word meaning must contain a single hyphen")
-        with closing(BIN_Db.get_db()) as db:
-            prefix = a[0]
-            stem = a[1]
-            m = db.forms(stem)
-            if m:
-                for w in m:
-                    if w.ordfl == ordfl:
-                        t = (prefix + w.stofn, -1, ordfl, w.fl, prefix + w.ordmynd, w.beyging)
-                        Meanings.DICT[prefix + w.ordmynd].append(t)
-                        Meanings.ROOT[prefix + w.stofn].append(t)
+        if Meanings._db is None:
+            # Connect to the database (there is one connection per thread)
+            from bindb import BIN_Db
+            Meanings._db = db = BIN_Db.get_db()
+        else:
+            db = Meanings._db
+        prefix = a[0]
+        stem = a[1]
+        m = db.forms(stem)
+        if m:
+            for w in m:
+                if w.ordfl == ordfl:
+                    t = (prefix + w.stofn, -1, ordfl, w.fl, prefix + w.ordmynd, w.beyging)
+                    Meanings.DICT[prefix + w.ordmynd].append(t)
+                    Meanings.ROOT[prefix + w.stofn].append(t)
 
 
 class VerbObjects:

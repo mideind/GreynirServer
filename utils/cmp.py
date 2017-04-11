@@ -62,6 +62,7 @@ from postagger import IFD_Tagset
 # Stuff for deciding which POS tagging server (and what method) we will use
 
 TAGGER = os.environ.get("TAGGER", "localhost:5000")
+USE_IFD_TAGGER = bool(os.environ.get("IFD", False))
 if TAGGER.lower() == "local":
     # Use in-process tagger (via 'from postagger import Tagger', see below)
     USE_LOCAL_TAGGER = True
@@ -70,10 +71,16 @@ else:
     USE_LOCAL_TAGGER = False
     if TAGGER == "greynir.is":
         # Use the main Greynir server, explicitly over HTTPS
-        MYPATH = "https://greynir.is/postag.api/v1?t="
+        if USE_IFD_TAGGER:
+            MYPATH = "https://greynir.is/ifdtag.api/v1?t="
+        else:
+            MYPATH = "https://greynir.is/postag.api/v1?t="
     else:
         # Use the given server, by default localhost:5000, over HTTP
-        MYPATH = "http://" + TAGGER + "/postag.api/v1?t="
+        if USE_IFD_TAGGER:
+            MYPATH = "http://" + TAGGER + "/ifdtag.api/v1?t="
+        else:
+            MYPATH = "http://" + TAGGER + "/postag.api/v1?t="
 
 # The directory where the IFD corpus files are located
 
@@ -289,8 +296,18 @@ class Comparison():
                 stikk.write(str(self.setnf/úrtak)+". "+setning+"\n")
                 stikk.flush()
                 for word in all_words: # Komin á dict frá Greyni með öllum flokkunum.
+
                     if not orðalisti[i]: # Tómur hnútur fremst/aftast í setningu
                         i += 1
+
+                    if USE_IFD_TAGGER:
+                        # Convert the word from a tuple to a dict
+                        if not word[1].isalnum():
+                            # Not an IFD mark: assume it's punctuation
+                            word = dict(x = word[0], k = "PUNCTUATION")
+                        else:
+                            word = dict(x = word[0], i = word[1])
+
                     if word["x"] == "-" and orðalisti[i] != "-": # Ef bandstrikið er greint sérstaklega # NÝTT
                         stikk.write("Fann bandstrik, fer í næsta orð\n")
                         stikk.flush()
@@ -326,7 +343,8 @@ class Comparison():
                             stikk.write("Orði skipt upp í Greyni ({}) en ekki OTB ({})\n".format(word["x"], orðalisti[i]))
                             stikk.flush()
                             continue #Hægir mikið á öllu, e-r betri leið?
-                        if ("k" in word and word["k"] == "PUNCTUATION" or word["k"] == "UNKNOWN") or ("t" in word and word["t"] == "no"): # Einstaka tilvik. PUNCTUATION hér er t.d. bandstrik sem OTB heldur í orðum en Greynir greinir sem stakt orð
+                        if ("k" in word and (word["k"] == "PUNCTUATION" or word["k"] == "UNKNOWN")) or ("t" in word and word["t"] == "no"):
+                            # Einstaka tilvik. PUNCTUATION hér er t.d. bandstrik sem OTB heldur í orðum en Greynir greinir sem stakt orð
                             i +=1
                             stikk.write("Eitthvað skrýtið á ferðinni.\n")
                             stikk.flush()
@@ -367,11 +385,21 @@ class Comparison():
                 continue
             i = 0 # Index fyrir orðalistann.
             for word in all_words: # Komin á dict frá Greyni með öllum flokkunum.
+
+                if not orðalisti[i]: # Tómur hnútur fremst/aftast í setningu
+                    i += 1
+
+                if USE_IFD_TAGGER:
+                    # Convert the word from a tuple to a dict
+                    if not word[1].isalnum():
+                        # Not an IFD mark: assume it's punctuation
+                        word = dict(x = word[0], k = "PUNCTUATION")
+                    else:
+                        word = dict(x = word[0], i = word[1], k = "WORD")
+
                 if word["x"] == "Eiríkur Tse" or word["x"] == "Vincent Peale": # Ljótt sértilvik
                     i += 1
                     continue
-                if not orðalisti[i]: # Tómur hnútur fremst/aftast í setningu
-                    i += 1
                 if word["x"] == "-" and orðalisti[i] != "-": # Ef bandstrikið er greint sérstaklega
                     continue
                 if lemmur_OTB[i] is None: # Greinarmerki
@@ -390,7 +418,7 @@ class Comparison():
                             break
                     elif not orðalisti[i].endswith(word["x"]): # orði skipt upp í Greyni en ekki OTB
                         continue #Hægir mikið á öllu, e-r betri leið?
-                    if ("k" in word and word["k"] == "PUNCTUATION" or word["k"] == "UNKNOWN") or ("t" in word and word["t"] == "no"): # Einstaka tilvik. PUNCTUATION hér er t.d. bandstrik sem OTB heldur í orðum en Greynir greinir sem stakt orð
+                    if ("k" in word and (word["k"] == "PUNCTUATION" or word["k"] == "UNKNOWN")) or ("t" in word and word["t"] == "no"): # Einstaka tilvik. PUNCTUATION hér er t.d. bandstrik sem OTB heldur í orðum en Greynir greinir sem stakt orð
                         i +=1
                         continue
                     if lemmur_OTB[i] is None: # Greinarmerki
@@ -425,11 +453,23 @@ class Comparison():
             #print(setning)
             for word in all_words: # Komin á dict frá Greyni með öllum flokkunum.
                 #print("***\t"+word["x"], orðalisti[i])
+
+                if i < len(orðalisti) and not orðalisti[i]: # Tómur hnútur fremst/aftast í setningu
+                    i += 1
+                if i >= len(orðalisti):
+                    break
+
+                if USE_IFD_TAGGER:
+                    # Convert the word from a tuple to a dict
+                    if not word[1].isalnum():
+                        # Not an IFD mark: assume it's punctuation
+                        word = dict(x = word[0], k = "PUNCTUATION")
+                    else:
+                        word = dict(x = word[0], i = word[1], k = "WORD")
+
                 if word["x"] == "Eiríkur Tse" or word["x"] == "Vincent Peale": # Ljótt sértilvik
                     i += 1
                     continue
-                if not orðalisti[i]: # Tómur hnútur fremst/aftast í setningu
-                    i += 1
                 if word["x"] == "-" and orðalisti[i] != "-": # Ef bandstrikið er greint sérstaklega
                     #print("Fann bandstrik, fer í næsta orð")
                     continue
@@ -455,7 +495,7 @@ class Comparison():
                     elif not orðalisti[i].endswith(word["x"]): # orði skipt upp í Greyni en ekki OTB
                         #print("Orði skipt upp í Greyni ({}) en ekki OTB ({})".format(word["x"], orðalisti[i]))
                         continue # Hægir mikið á öllu, e-r betri leið?
-                    if ("k" in word and word["k"] == "PUNCTUATION" or word["k"] == "UNKNOWN") or ("t" in word and word["t"] == "no"): # Einstaka tilvik. PUNCTUATION hér er t.d. bandstrik sem OTB heldur í orðum en Greynir greinir sem stakt orð
+                    if ("k" in word and (word["k"] == "PUNCTUATION" or word["k"] == "UNKNOWN")) or ("t" in word and word["t"] == "no"): # Einstaka tilvik. PUNCTUATION hér er t.d. bandstrik sem OTB heldur í orðum en Greynir greinir sem stakt orð
                         #print("Eitthvað skrýtið á ferðinni.")
                         i += 1
                         continue
@@ -1052,6 +1092,9 @@ class Comparison():
         return mörk_OTB, lemmur_OTB, orðalisti
 
     def error(self, all_words):
+        if USE_IFD_TAGGER:
+            # Assume that there are no errors in IFD tagged sentences
+            return False
         error = any("err" in y for y in all_words)
         if error:
             self.ógreindar_setningar += 1

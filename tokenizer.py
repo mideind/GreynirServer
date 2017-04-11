@@ -785,29 +785,29 @@ def annotate(token_stream, auto_uppercase):
         is True, change lower case words to uppercase if it looks likely
         that they should be uppercase. """
 
+    db = BIN_Db.get_db()
     at_sentence_start = False
 
-    with closing(BIN_Db.get_db()) as db:
-        # Consume the iterable source in wlist (which may be a generator)
-        for t in token_stream:
-            if t.kind != TOK.WORD:
-                # Not a word: relay the token unchanged
-                yield t
-                if t.kind == TOK.S_BEGIN or (t.kind == TOK.PUNCTUATION and t.txt == ':'):
-                    at_sentence_start = True
-                elif t.kind != TOK.PUNCTUATION and t.kind != TOK.ORDINAL:
-                    at_sentence_start = False
-                continue
-            if t.val is None:
-                # Look up word in BIN database
-                w, m = db.lookup_word(t.txt, at_sentence_start, auto_uppercase)
-                # Yield a word tuple with meanings
-                yield TOK.Word(w, m)
-            else:
-                # Already have a meaning
-                yield t
-            # No longer at sentence start
-            at_sentence_start = False
+    # Consume the iterable source in wlist (which may be a generator)
+    for t in token_stream:
+        if t.kind != TOK.WORD:
+            # Not a word: relay the token unchanged
+            yield t
+            if t.kind == TOK.S_BEGIN or (t.kind == TOK.PUNCTUATION and t.txt == ':'):
+                at_sentence_start = True
+            elif t.kind != TOK.PUNCTUATION and t.kind != TOK.ORDINAL:
+                at_sentence_start = False
+            continue
+        if t.val is None:
+            # Look up word in BIN database
+            w, m = db.lookup_word(t.txt, at_sentence_start, auto_uppercase)
+            # Yield a word tuple with meanings
+            yield TOK.Word(w, m)
+        else:
+            # Already have a meaning
+            yield t
+        # No longer at sentence start
+        at_sentence_start = False
 
 
 # Recognize words that multiply numbers
@@ -1064,6 +1064,7 @@ def parse_phrases_1(token_stream):
         First pass
     """
 
+    db = BIN_Db.get_db()
     token = None
     try:
 
@@ -1200,7 +1201,7 @@ def parse_phrases_1(token_stream):
                             handled = True
                         else:
                             # Check for Vestur-Þýskaland, Suður-Múlasýsla (which are in BÍN in their entirety)
-                            m = BIN_Db.get_db().meanings(composite)
+                            m = db.meanings(composite)
                             if m:
                                 # Found composite in BÍN: return it as a single token
                                 token = TOK.Word(composite, m)
@@ -1767,6 +1768,7 @@ def recognize_entities(token_stream, enclosing_session = None):
     state = defaultdict(list) # Phrases we're considering
     ecache = dict() # Entitiy definition cache
     lastnames = dict() # Last name to full name mapping ('Clinton' -> 'Hillary Clinton')
+    db = BIN_Db.get_db()
 
     with SessionContext(session = enclosing_session, commit = True, read_only = True) as session:
 
@@ -1898,7 +1900,7 @@ def recognize_entities(token_stream, enclosing_session = None):
                         # Clinton -> Hillary [Rodham] Clinton
                         if lastname[0].isupper():
                             # Look for Icelandic patronyms/matronyms
-                            _, m = BIN_Db.get_db().lookup_word(lastname, False)
+                            _, m = db.lookup_word(lastname, False)
                             if m and any(mm.fl in { "föð", "móð" } for mm in m):
                                 # We don't store Icelandic patronyms/matronyms as surnames
                                 pass

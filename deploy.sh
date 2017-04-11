@@ -17,12 +17,15 @@ sudo systemctl stop greynir
 
 cp config/Abbrev.conf $DEST/config/Abbrev.conf
 cp config/Adjectives.conf $DEST/config/Adjectives.conf
-cp config/Main.conf $DEST/config/Main.conf
-cp config/Prefs.conf $DEST/config/Prefs.conf
-cp config/Names.conf $DEST/config/Names.conf
-cp config/Verbs.conf $DEST/config/Verbs.conf
-cp config/VerbPrepositions.conf $DEST/config/VerbPrepositions.conf
 cp config/Index.conf $DEST/config/Index.conf
+cp config/Main.conf $DEST/config/Main.conf
+cp config/Names.conf $DEST/config/Names.conf
+cp config/Phrases.conf $DEST/config/Phrases.conf
+cp config/Prefs.conf $DEST/config/Prefs.conf
+cp config/VerbPrepositions.conf $DEST/config/VerbPrepositions.conf
+cp config/Verbs.conf $DEST/config/Verbs.conf
+cp config/Vocab.conf $DEST/config/Vocab.conf
+cp config/TnT-model.pickle $DEST/config/TnT-model.pickle
 
 cp article.py $DEST/article.py
 cp baseparser.py $DEST/baseparser.py
@@ -47,6 +50,7 @@ cp scraper.py $DEST/scraper.py
 cp search.py $DEST/search.py
 cp settings.py $DEST/settings.py
 cp similar.py $DEST/similar.py
+cp tnttagger.py $DEST/tnttagger.py
 cp tokenizer.py $DEST/tokenizer.py
 cp tree.py $DEST/tree.py
 cp treeutil.py $DEST/treeutil.py
