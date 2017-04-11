@@ -191,13 +191,13 @@ class Fetcher:
                 print("HTTP status {0} for URL {1}".format(r.status_code, url))
 
         except requests.exceptions.ConnectionError as e:
-            print("{0}".format(e))
+            print("ConnectionError: {0} for URL {1}".format(e, url))
             html_doc = None
         except requests.exceptions.ChunkedEncodingError as e:
-            print("{0}".format(e))
+            print("ChunkedEncodingError: {0} for URL {1}".format(e, url))
             html_doc = None
         except HTTPError as e:
-            print("HTTPError returned: {0}".format(e))
+            print("HTTPError: {0} for URL {1}".format(e, url))
             html_doc = None
         except UnicodeEncodeError as e:
             print("Exception when opening URL {0}: {1}".format(url, e)) # Don't use repr(e) here
@@ -356,7 +356,7 @@ class Fetcher:
             # Parse the HTML
             soup = Fetcher.make_soup(html_doc, helper)
             if soup is None:
-                print("Fetcher.fetch_article(): No soup")
+                print("Fetcher.fetch_article({0}): No soup".format(url))
                 return (None, None, None)
 
             # Obtain the metadata and the content from the resulting soup
@@ -387,7 +387,7 @@ class Fetcher:
             # Parse the HTML
             soup = Fetcher.make_soup(html_doc, helper)
             if soup is None:
-                print("Fetcher.fetch_url(): No soup or no soup.html")
+                print("Fetcher.fetch_url({0}): No soup or no soup.html".format(url))
                 return None
 
             # Obtain the metadata and the content from the resulting soup
@@ -418,7 +418,7 @@ class Fetcher:
             # Parse the HTML
             soup = Fetcher.make_soup(html_doc, helper)
             if soup is None:
-                print("Fetcher.fetch_url_html(): No soup")
+                print("Fetcher.fetch_url_html({0}): No soup".format(url))
                 return (None, None, None)
 
             # Obtain the metadata from the resulting soup

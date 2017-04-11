@@ -225,6 +225,7 @@ Samtenging →
     | "eins:ao" "og:st"
     | "vegna:fs" "þess:pfn" "að:st"?
     | "á_sama_tíma" "og:st"
+    | "eða:st"? 'allar_götur_síðan'
     | ÞangaðTil
     | OgEðaEn? SpurnarSamtenging
 
@@ -3134,6 +3135,7 @@ KommuEndir/fall/kyn →
     | 'og_fleira' ','?
     | 'og_margt_fleira' ','?
     | 'og_svo_framvegis' ','?
+    | 'og_þess_háttar' ','?
 
 # Hvetja til eins langra lista og mögulegt er
 $score(+6) KommuSamtenging/fall/kyn
@@ -3151,6 +3153,7 @@ KommuEndir/fall →
     | 'og_fleira' ','?
     | 'og_margt_fleira' ','?
     | 'og_svo_framvegis' ','?
+    | 'og_þess_háttar' ','?
 
 # Hvetja til eins langra lista og mögulegt er
 $score(+6) KommuSamtenging/fall
@@ -3417,7 +3420,7 @@ FsMeðFallstjórn →
     | FsTilÞgf
     | FsÁMeðal
     | FsÁMóti
-    | Átt ÁttFs? Nl_þf # vestur á firði, suður götuna, austur í flóa, norður að fjalli
+    | Átt ÁttFs # vestur á firði, suður götuna, austur í flóa, norður að fjalli
     # 'hvorki við stjórn spítalans né ráðherrann'
     # 'hvorki til mín né stjórnarinnar'
     | "hvorki" fs/fall Nl/fall "né" Nl/fall
@@ -3431,8 +3434,18 @@ FsMeðNh → NhLiðir SagnInnskot?
 
 $tag(begin_prep_scope) FsMeðNh # Nýtt samhengi fyrir samtengingu sagna og forsetninga
 
+# Áttirnar eru aðeins forsetningar í BÍN, ekki atviksorð - þess vegna þurfa þær sérmeðhöndlun
+
 Átt → "vestur:fs" | "austur:fs" | "suður:fs" | "norður:fs"
-ÁttFs → "á:fs" | "í:fs" | "að:fs"
+
+ÁttFs →
+    Nl_þf               # suður götuna
+    | "á:fs" Nl_þf      # vestur á firði 
+    | "í:fs" Nl_þf      # norður í land
+    | "að:fs" Nl_þf     # suður að læk
+    | "á:fs" Nl_þgf     # vestur á fjörðum
+    | "í:fs" Nl_þgf     # austur í dölum
+    | "að:fs" Nl_þgf    # (við fórum) norður að bænum
 
 FsÞgfTilEf →
     Nl_þgf "til:fs" Nl_ef # máli sínu til stuðnings, barninu til hróss, henni til bjargar

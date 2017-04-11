@@ -131,7 +131,7 @@ class Article:
         a._tokens = ar.tokens
         assert a._raw_tokens is None
         a._root_id = ar.root_id
-        a._root_domain = ar.root.domain
+        a._root_domain = ar.root.domain if ar.root else None
         return a
 
     @classmethod

@@ -521,6 +521,9 @@ def article_api(version = 1):
         if a is None:
             return better_jsonify(valid = False, reason = "Article not found")
 
+        if a.html is None:
+            return better_jsonify(valid = False, reason = "Unable to fetch article")
+
         # Prepare the article for display
         a.prepare(session)
         register = a.create_register(session, all_names = True)
