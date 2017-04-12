@@ -84,6 +84,10 @@ _DEFAULT_ID_MAP = {
     "PP" : dict(name = "Forsetningarliður", overrides = "ADVP"),
 }
 
+_DEFAULT_TERMINAL_MAP = {
+    # Empty
+}
+
 _TEST_NT_MAP = { # Til að prófa í parse_text_to_bracket_form()
     "S0" : "M", # P veldur ruglingi við FS, breyti í M
 
@@ -130,6 +134,14 @@ _TEST_NT_MAP = { # Til að prófa í parse_text_to_bracket_form()
     "EinnAl" : "ADV",      # Nýtt
 
 }
+
+_TEST_TERMINAL_MAP = {
+    # To specify the creation of intermediate nonterminals
+    # for particular terminals, put the first part of the terminal
+    # name here
+    "fs" : "P"
+}
+
 _TEST_ID_MAP = { # Til að prófa í parse_text_to_bracket_form()
     "M" : dict(name = "Málsgrein"), # Breytti úr P til að forðast rugling
     "S" : dict(name = "Setning", subject_to = { "S", "S-EXPLAIN" }),
@@ -156,6 +168,7 @@ _TEST_ID_MAP = { # Til að prófa í parse_text_to_bracket_form()
     "C" : dict(name = "Samtenging"),
     "ADJ" : dict(name = "Lýsingarorð"),
 }
+
 
 class TreeUtility:
 
@@ -269,11 +282,12 @@ class TreeUtility:
             simplified, condensed representation of it in a nested dictionary
             structure """
 
-        def __init__(self, tokens, nt_map, id_map):
+        def __init__(self, tokens, nt_map, id_map, terminal_map):
             super().__init__(visit_all = True)
             self._tokens = tokens
             self._nt_map = nt_map
             self._id_map = id_map
+            self._terminal_map = terminal_map
             self._result = []
             self._stack = [ self._result ]
             self._pushed = []
@@ -286,8 +300,17 @@ class TreeUtility:
                 None if isinstance(meaning, bool) else meaning)
             # Convert from compact form to external (more verbose and descriptive) form
             canonicalize_token(d)
-            # Add as a child of the current node in the condensed tree
-            self._stack[-1].append(d)
+            # Check whether this terminal should be pushed as a nonterminal
+            # with a single child
+            mapped_t = self._terminal_map.get(node.terminal.first)
+            if mapped_t is None:
+                # No: add as a child of the current node in the condensed tree
+                self._stack[-1].append(d)
+            else:
+                # Yes: create an intermediate nonterminal with this terminal
+                # as its only child
+                self._stack[-1].append(dict(k = "NONTERMINAL",
+                    n = mapped_t, i = mapped_t, p = [ d ]))
             return None
 
         def _visit_nonterminal(self, level, node):
@@ -407,12 +430,15 @@ class TreeUtility:
         return dump
 
     @staticmethod
-    def _simplify_tree(tokens, tree, nt_map = _DEFAULT_NT_MAP, id_map = _DEFAULT_ID_MAP):
+    def _simplify_tree(tokens, tree,
+            nt_map = _DEFAULT_NT_MAP,
+            id_map = _DEFAULT_ID_MAP,
+            terminal_map = _DEFAULT_TERMINAL_MAP):
         """ Return a simplified parse tree for a sentence, including POS-tagged,
             normalized terminal leaves """
         if tree is None:
             return None
-        s = TreeUtility._Simplifier(tokens, nt_map = nt_map, id_map = id_map)
+        s = TreeUtility._Simplifier(tokens, nt_map = nt_map, id_map = id_map, terminal_map = terminal_map)
         s.go(tree)
         return s.result
 
@@ -577,7 +603,7 @@ class TreeUtility:
 
             # For different simplification schemes, replace _DEFAULT_ID_MAP and _DEFAULT_NT_MAP below
             simple_tree = TreeUtility._simplify_tree(tokens, tree,
-                nt_map = _TEST_NT_MAP, id_map = _TEST_ID_MAP)
+                nt_map = _TEST_NT_MAP, id_map = _TEST_ID_MAP, terminal_map = _TEST_TERMINAL_MAP)
             push(simple_tree)
             return "".join(result)
 
