@@ -59,7 +59,7 @@ _DEFAULT_NT_MAP = {
     "SagnliðurÁnF" : "VP",
     "ÖfugurSagnliður" : "VP",
     "SagnHluti" : "VP",
-    "SagnliðurVh" : "VP"
+    "SagnliðurVh" : "VP",
 }
 
 # subject_to: don't push an instance of this if the
@@ -84,6 +84,78 @@ _DEFAULT_ID_MAP = {
     "PP" : dict(name = "Forsetningarliður", overrides = "ADVP"),
 }
 
+_TEST_NT_MAP = { # Til að prófa í parse_text_to_bracket_form()
+    "S0" : "M", # P veldur ruglingi við FS, breyti í M
+
+    "HreinYfirsetning" : "S",
+    "Setning" : "S",
+    "SetningLo" : "S",
+    "SetningÁnF" : "S",
+    "SetningAukafall" : "S",
+    "SetningSkilyrði" : "S",
+    "SetningUmAðRæða" : "S",
+    "StViðtenging" : "S",
+    "Tengisetning" : "S",
+    "OgTengisetning" : "S",
+    "Skilyrði" : "S-COND",
+    "Afleiðing" : "S-CONS",
+    "NlSkýring" : "S-EXPLAIN",
+    "Tilvitnun" : "S-QUOTE",
+
+    "FsMeðFallstjórn" : "PP",
+
+    "SetningSo" : "V", # Breytt
+    #"SagnRuna" : "V", # Breytt
+    "NhLiðir" : "V", # Breytt
+    "SagnliðurÁnF" : "V", # Breytt
+    "ÖfugurSagnliður" : "V", # Breytt
+    "SagnHluti" : "V", # Breytt
+    "SagnliðurVh" : "V", # Breytt
+    "HjSögnLhÞt" : "V",    # Nýtt
+    "EinSögn" : "V",       # Nýtt
+
+    "Nl" : "NP",
+    "EfLiður" : "NP-POSS",
+    "EfLiðurForskeyti" : "NP-POSS",
+    "Heimilisfang" : "NP-ADDR",
+    "Fyrirbæri" : "N",     # Nýtt
+    "Fornafn" : "PRON",       # Nýtt
+
+    "SagnInnskot" : "ADVP",
+    "FsAtv" : "ADVP",
+    "AtvFs" : "ADVP",
+    "Atviksliður" : "ADVP",
+    "LoAtviksliðir" : "ADVP",
+    "Dagsetning" : "ADVP-DATE",
+    "EinnAl" : "ADV",      # Nýtt
+
+}
+_TEST_ID_MAP = { # Til að prófa í parse_text_to_bracket_form()
+    "M" : dict(name = "Málsgrein"), # Breytti úr P til að forðast rugling
+    "S" : dict(name = "Setning", subject_to = { "S", "S-EXPLAIN" }),
+    "S-COND" : dict(name = "Skilyrði", overrides = "S"), # Condition
+    "S-CONS" : dict(name = "Afleiðing", overrides = "S"), # Consequence
+    "S-EXPLAIN" : dict(name = "Skýring"), # Explanation
+    "S-QUOTE" : dict(name = "Tilvitnun"), # Quote at end of sentence
+    # "VP" : dict(name = "Sagnliður", subject_to = { "VP" }),
+    "NP" : dict(name = "Nafnliður"),
+    "NP-POSS" : dict(name = "Eignarfallsliður", overrides = "NP"),
+    "NP-ADDR" : dict(name = "Heimilisfang", overrides = "NP"),
+    "ADVP" : dict(name = "Atviksliður", subject_to = { "ADVP" }),
+    "ADVP-DATE" : dict(name = "Tímasetning", overrides = "ADVP"),
+    "PP" : dict(name = "Forsetningarliður", overrides = "ADVP"),
+    "ADJP" : dict(name = "Lýsingarliður"),
+    # Hausar
+    "ADV" : dict(name = "Atviksorð"),
+    "V" : dict(name = "Sögn"),
+    "N" : dict(name = "Nafnorð"),
+    "PRON" : dict(name = "Fornafn"),
+    "P" : dict(name = "Forsetning"),
+    "INF" : dict(name = "Nafnháttarmerki"),
+    "NUM" : dict(name = "Töluorð"),
+    "C" : dict(name = "Samtenging"),
+    "ADJ" : dict(name = "Lýsingarorð"),
+}
 
 class TreeUtility:
 
@@ -505,7 +577,7 @@ class TreeUtility:
 
             # For different simplification schemes, replace _DEFAULT_ID_MAP and _DEFAULT_NT_MAP below
             simple_tree = TreeUtility._simplify_tree(tokens, tree,
-                nt_map = _DEFAULT_NT_MAP, id_map = _DEFAULT_ID_MAP)
+                nt_map = _TEST_NT_MAP, id_map = _TEST_ID_MAP)
             push(simple_tree)
             return "".join(result)
 
