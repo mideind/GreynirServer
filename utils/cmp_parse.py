@@ -62,6 +62,7 @@ class Comparison():
         frasi = []
         hreinsuð_setning = ""
         liðir = Stack()
+        # TODO eyða tvöföldum bilum eins oft og ég finn - lúppa?
         þáttuð_setning.replace("  ", " ") # Eyða tvöföldu bili eftir að greinarmerki hafa verið tekin út
         for orð in þáttuð_setning.split(" "):
             if "(" in orð: # Byrja nýjan lið
