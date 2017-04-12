@@ -209,9 +209,9 @@ class TreeUtility:
             if t.kind == TOK.PUNCTUATION:
                 if t.txt == "-":
                     # Hyphen: check whether it is matching an em or en-dash terminal
-                    if terminal.cat == "em":
+                    if terminal.colon_cat == "em":
                         d["x"] = "—" # Substitute em dash (will be displayed with surrounding space)
-                    elif terminal.cat == "en":
+                    elif terminal.colon_cat == "en":
                         d["x"] = "–" # Substitute en dash
             else:
                 # Annotate with terminal name and BÍN meaning (no need to do this for punctuation)
@@ -302,7 +302,7 @@ class TreeUtility:
             canonicalize_token(d)
             # Check whether this terminal should be pushed as a nonterminal
             # with a single child
-            mapped_t = self._terminal_map.get(node.terminal.first)
+            mapped_t = self._terminal_map.get(node.terminal.category)
             if mapped_t is None:
                 # No: add as a child of the current node in the condensed tree
                 self._stack[-1].append(d)

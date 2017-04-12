@@ -33,7 +33,7 @@ import sys
 import gc
 import getopt
 import time
-#import traceback
+import traceback
 
 #from multiprocessing.dummy import Pool
 from multiprocessing import Pool
@@ -44,6 +44,7 @@ from settings import Settings, ConfigError
 from fetcher import Fetcher
 from article import Article
 from scraperinit import init_roots
+from bindb import BIN_Db
 
 from scraperdb import Scraper_DB, SessionContext, Root, IntegrityError
 from scraperdb import Article as ArticleRow
@@ -200,8 +201,8 @@ class Scraper:
             sys.exit(1)
         except Exception as e:
             print("Exception when parsing article at {0}: {1!r}".format(d.url, e))
-            # traceback.print_exc()
-            # raise e from e
+            traceback.print_exc()
+            #raise e from e
         return True
 
 
@@ -222,6 +223,8 @@ class Scraper:
 
                 # Use a multiprocessing pool to scrape the roots
 
+                BIN_Db.cleanup() # Make sure there are no open BIN db connections
+
                 pool = Pool(4)
                 pool.map(self._scrape_single_root, iter_roots())
                 pool.close()
@@ -238,6 +241,8 @@ class Scraper:
                         yield ArticleDescr(a.root, a.url)
 
                 # Use a multiprocessing pool to scrape the articles
+
+                BIN_Db.cleanup() # Make sure there are no open BIN db connections
 
                 pool = Pool(8)
                 pool.map(self._scrape_single_article, iter_unscraped_articles())
@@ -298,6 +303,7 @@ class Scraper:
                 if lcnt:
                     # Run garbage collection to minimize common memory footprint
                     gc.collect()
+                    BIN_Db.cleanup() # Make sure there are no open BIN db connections
                     print("Parser processes forking, chunk of {0} articles".format(lcnt))
                     pool = Pool() # Defaults to using as many processes as there are CPUs
                     pool.map(self._parse_single_article, adlist)

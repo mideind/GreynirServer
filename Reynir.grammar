@@ -3700,6 +3700,7 @@ Dagsetning →
     | TímaForskeyti? TímaAfstæði # [viku/löngu] áður en krónan féll / [ári/stuttu] eftir að landið öðlaðist sjálfstæði
 
 $tag(apply_prep_bonus) Dagsetning # Gefa bónus þegar dagsetning fylgir sögn frekar en nafnlið
+$tag(apply_length_bonus) Dagsetning # Gefa bónus eftir því hversu margar eindir (tokens) falla undir dagsetninguna
 
 Undanfarið →
     # 'Undanfarið' er atviksorð í BÍN, en 'undanfarnar vikur' o.s.frv. virkar einnig

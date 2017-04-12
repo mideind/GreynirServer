@@ -988,6 +988,17 @@ class VariantHandler:
         return self._first
 
     @property
+    def category(self):
+        """ Return the word category matched by the terminal """
+        return self._first
+
+    @property
+    def colon_cat(self):
+        """ Return the string specified after a colon in the terminal name, if any """
+        # This is overridden in LiteralTerminal
+        return None
+
+    @property
     def num_variants(self):
         """ Return the number of variants in the terminal name """
         return self._vcount
@@ -1140,8 +1151,14 @@ class BIN_LiteralTerminal(VariantHandler, LiteralTerminal):
             self.shortcut_match = None
 
     @property
-    def cat(self):
+    def colon_cat(self):
+        """ Return the string occurring after a colon in the terminal name """
         return self._cat
+
+    @property
+    def category(self):
+        """ Return the word category matched by the terminal """
+        return self._match_cat
 
     def matches_category(self, cat):
         """ Returns True if the terminal matches a particular category

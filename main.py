@@ -211,6 +211,7 @@ def top_news(topic = None, start = None, limit = _TOP_NEWS_LENGTH):
             .filter(Article.timestamp != None) \
             .filter(Article.timestamp < start) \
             .filter(Article.heading > "") \
+            .filter(Article.num_sentences > 0) \
             .filter(Root.visible == True)
 
         if topic is not None:

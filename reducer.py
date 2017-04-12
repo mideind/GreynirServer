@@ -4,7 +4,7 @@
 
     Reducer module
 
-    Copyright (C) 2016 Vilhjálmur Þorsteinsson
+    Copyright (C) 2017 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -82,6 +82,7 @@ _PREP_SCOPE_SET = frozenset(("begin_prep_scope", "purge_prep", "no_prep"))
 _PREP_ALL_SET = frozenset(_PREP_SCOPE_SET | { "enable_prep_bonus" })
 _VERB_PREP_BONUS = 7 # Give 7 extra points for a verb/preposition match
 _VERB_PREP_PENALTY = -2 # Subtract 2 points for a non-match
+_LENGTH_BONUS_FACTOR = 10 # For length bonus, multiply number of tokens by this factor
 
 # Noun categories set
 _NOUN_SET = frozenset(("kk", "kvk", "hk"))
@@ -303,7 +304,7 @@ class Reducer:
                             # First token in sentence, and we have BÍN meanings:
                             # further discourage this
                             sc[t] -= 6
-                elif tfirst == "st" or (tfirst == "sem" and t.cat == "st"):
+                elif tfirst == "st" or (tfirst == "sem" and t.colon_cat == "st"):
                     if txt == "sem":
                         # Discourage "sem" as a pure conjunction (samtenging)
                         # (it does not get a penalty when occurring as
@@ -441,6 +442,7 @@ class Reducer:
 
             def __init__(self, reducer, node):
                 self.reducer = reducer
+                self.node = node
                 self.sc = defaultdict(lambda: dict(sc = 0)) # Child tree scores
                 # We are only interested in completed nonterminals
                 self.nt = node.nonterminal if node.is_completed else None
@@ -526,6 +528,12 @@ class Reducer:
                     # Get score adjustment for this nonterminal, if any
                     # (This is the $score(+/-N) pragma from Reynir.grammar)
                     sc["sc"] += self.reducer._score_adj.get(self.nt, 0)
+
+                    if self.nt.has_tag("apply_length_bonus"):
+                        # Give this nonterminal a bonus depending on how many tokens
+                        # it encloses
+                        bonus = (self.node.end - self.node.start - 1) * _LENGTH_BONUS_FACTOR
+                        sc["sc"] += bonus
 
                     if self.nt.has_tag("apply_prep_bonus") and self.reducer.get("prep_bonus") is not None:
                         # This is a nonterminal that we like to see in a verb/prep context

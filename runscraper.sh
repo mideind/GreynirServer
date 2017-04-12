@@ -13,5 +13,5 @@ deactivate
 cd ~/github/Reynir
 source p35/bin/activate
 python processor.py --limit=3000
-python processor.py --update --limit=3000
+#python processor.py --update --limit=3000
 deactivate
