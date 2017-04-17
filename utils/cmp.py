@@ -73,7 +73,7 @@ IFD_PATH = ""
 USE_LOCAL_TAGGER = False
 
 if TAGGER.lower() == "local":
-    # Use in-process tagger (via 'from postagger import Tagger', see below)
+    # Use in-process tagger
     USE_LOCAL_TAGGER = True
     USE_IFD_TAGGER = False # !!! TODO: Currently can't use the IFD tagger locally
 else:
@@ -87,10 +87,7 @@ else:
         POS_PATH = "http://" + TAGGER + "/postag.api/v1"
 
 # The directory where the IFD corpus files are located
-
 IFD_DIR = "ifd" 
-CWD = os.getcwd()
-IFD_FULL_DIR = os.path.join(CWD, IFD_DIR)
 
 # GREINARMERKI = {"!", "(", ")", ",", "-", ".", "...", "/", ":", ";", "?", "[", "]", "«", "»"} # Öll greinarmerki sem koma fyrir í OTB
 VINSTRI_GREINARMERKI = "([„«#$€<"
@@ -257,6 +254,20 @@ EO = {
 }
 
 
+class Corpus(IFD_Corpus):
+
+    """ Override the IFD_Corpus class to enumerate the IFD files
+        with verbose output """
+
+    def __init__(self):
+        super().__init__(ifd_dir = IFD_DIR)
+
+    def starting_file(self, filename, count, num_files):
+        """ Output a progress header when starting to read from a file """
+        print("Skjal {} af {}".format(count, num_files))
+        print("*******************", filename, "**************************")
+
+
 class Tagger:
 
     """ A utility class that wraps local POS tagging functionality. """
@@ -328,8 +339,8 @@ class Comparison():
         self.orð_vantar = 0 # Geymir heildarfjölda orða í setningum sem ekki tókst að greina
         self.rétt_orð = 0 # Bæði mark og lemma rétt
         self.röng_orð = 0 # Annaðhvort mark eða lemma rangt eða bæði
-        self.LR = 0 #Réttar lemmur
-        self.LW = 0 #Rangar lemmur
+        self.LR = 0 # Réttar lemmur
+        self.LW = 0 # Rangar lemmur
         self.MR = 0 # Rétt mörk
         self.MP = 0 # Hlutrétt mörk (rangur orðflokkur en rétt annað)
         self.MW = 0 # Röng mörk
@@ -337,212 +348,197 @@ class Comparison():
         self.GW = 0 # Röng greinarmerki. Þau geta ekki verið hlutrétt
         self.M_confmat = {} # Lykill er (x,y), x = mark frá Greyni, y = mark frá OTB. Gildi er tíðnin. TODO útfæra confusion matrix f. niðurstöður
         self.setnf = 0
+        self.stikk = None # Úttaksskrá
 
-    def úrvinnsla_stikkprufa(self, tagger, skjal, func_úrtak):
-        print("*******************", skjal, "**************************")
-        tree = ET.parse(skjal)
-        root = tree.getroot()
-        count = 0
-        with open("stikkprufa.txt", "a") as stikk:
-            for sent in root.iter("s"):
-                # Vinnur bara úr þeim setningum sem eru í úrtakinu
-                self.setnf += 1
-                if not func_úrtak(self.setnf):
-                    continue
-                rétt_setning = True
-                string = ""
-                mörk_OTB, lemmur_OTB, orðalisti = self.OTB_lestur(sent)
-                if tagger is None:
-                    all_words, setning = self.json_lestur(orðalisti)
-                else:
-                    all_words, setning = self.tag_lestur(tagger, orðalisti)
-                if not all_words: # Ekkert svar fékkst fyrir setningu
-                    continue
-                #Tekst að greina setninguna?
-                if self.error(all_words):
-                    continue
-                i = 0 # Index fyrir orðalistann.
-                count += 1
-                stikk.write(str(count)+". "+setning+"\n")
+    def úrvinnsla_stikkprufa(self, tagger, sent):
+        stikk = self.stikk
+        assert stikk is not None
+        self.setnf += 1
+        rétt_setning = True
+        orðalisti, mörk_OTB, lemmur_OTB = self.OTB_lestur(sent)
+        if tagger is None:
+            all_words, setning = self.json_lestur(orðalisti)
+        else:
+            all_words, setning = self.tag_lestur(tagger, orðalisti)
+        if not all_words: # Ekkert svar fékkst fyrir setningu
+            return
+        # Tekst að greina setninguna?
+        if self.error(all_words):
+            return
+        i = 0 # Index fyrir orðalistann.
+        stikk.write(str(self.setnf)+". "+setning+"\n")
+        stikk.flush()
+        for word in all_words: # Komin á dict frá Greyni með öllum flokkunum.
+
+            if i < len(orðalisti) and not orðalisti[i]: # Tómur hnútur fremst/aftast í setningu
+                i += 1
+            if i >= len(orðalisti):
+                break
+
+            if word["x"] == "-" and orðalisti[i] != "-": # Ef bandstrikið er greint sérstaklega # NÝTT
+                stikk.write("Fann bandstrik, fer í næsta orð\n")
                 stikk.flush()
-                for word in all_words: # Komin á dict frá Greyni með öllum flokkunum.
-
-                    if i < len(orðalisti) and not orðalisti[i]: # Tómur hnútur fremst/aftast í setningu
-                        i += 1
-                    if i >= len(orðalisti):
-                        break
-
-                    if word["x"] == "-" and orðalisti[i] != "-": # Ef bandstrikið er greint sérstaklega # NÝTT
-                        stikk.write("Fann bandstrik, fer í næsta orð\n")
-                        stikk.flush()
-                        continue
-                    if lemmur_OTB[i] is None: # Greinarmerki
-                        stikk.write("Fann greinarmerki: {}\n".format(mörk_OTB[i]))
-                        stikk.flush()
-                        rétt_setning = rétt_setning & self.sbrGreinarmerki(mörk_OTB[i], word)
-                    else:
-                        lengd = max(len(word["x"].split(" ")), len(word["x"].split("-"))) #TODO breyta ef stuðningur við orð með bandstriki er útfærður.
-                        if lengd > 1: # Fleiri en eitt orð í streng Greynis
-                            stikk.write("Fann margorða eind í Greyni: {}\n".format(word["x"]))
-                            stikk.flush()
-                            if StaticPhrases.has_details(word["x"].lower()): # Margorða frasi, fæ mörk úr orðabók, lemmur líka.
-                                stikk.write("Fann í MARGORÐA\n")
-                                stikk.flush()
-                                rétt_setning = rétt_setning & self.margorða_stikkprufa(word, lemmur_OTB, mörk_OTB, i)
-                                i += lengd
-                                if i >= (len(orðalisti) - 1): #Getur gerst ef síðasta orð í streng
-                                    stikk.write("Síðasta orð í streng, hætti\n")
-                                    stikk.flush()
-                                    break
-                                continue
-                            else:
-                                stikk.write("Fann ekki í MARGORÐA\n")
-                                stikk.flush()
-                            i = i + lengd -1 # Enda á síðasta orði í frasa
-                            if i >= (len(orðalisti) - 1): #Getur gerst ef síðasta orð í streng
-                                stikk.write("Síðasta orð í streng, hætti\n")
-                                stikk.flush()
-                                break
-                        elif not orðalisti[i].endswith(word["x"]): # orði skipt upp í Greyni en ekki OTB
-                            stikk.write("Orði skipt upp í Greyni ({}) en ekki OTB ({})\n".format(word["x"], orðalisti[i]))
-                            stikk.flush()
-                            continue #Hægir mikið á öllu, e-r betri leið?
-                        if ("k" in word and (word["k"] == "PUNCTUATION" or word["k"] == "UNKNOWN")) \
-                            or ("t" in word and word["t"] == "no"):
-                            # Einstaka tilvik. PUNCTUATION hér er t.d. bandstrik sem OTB heldur í orðum en Greynir greinir sem stakt orð
-                            i += 1
-                            stikk.write("Eitthvað skrýtið á ferðinni.\n")
-                            stikk.flush()
-                            continue
-                        if lemmur_OTB[i] is None: # Greinarmerki
-                            rétt_setning = rétt_setning & self.sbrGreinarmerki(mörk_OTB[i], word)
-                        else:
-                            rétt_setning = rétt_setning & self.skrif_stikkprufa(word, lemmur_OTB[i], mörk_OTB[i]) # Bæði og mark og lemma rétt
-                    stikk.write("\t\tEyk við i og held áfram!\n")
-                    stikk.flush()
-                    i += 1
-                if rétt_setning:
-                    self.réttar_setningar += 1
-                else:
-                    self.rangar_setningar += 1
-            stikk.flush()
-
-    def úrvinnsla(self, tagger, skjal, func_úrtak):
-        print("*******************", skjal, "**************************")
-        tree = ET.parse(skjal)
-        root = tree.getroot()
-        for sent in root.iter("s"):
-            self.setnf += 1
-            # Vinnur bara úr þeim setningum sem eru í úrtakinu
-            if not func_úrtak(self.setnf):
                 continue
-            rétt_setning = True
-            string = ""
-            mörk_OTB, lemmur_OTB, orðalisti = self.OTB_lestur(sent)
-            if tagger is None:
-                all_words, setning = self.json_lestur(orðalisti)
+            if not lemmur_OTB[i]: # Greinarmerki
+                stikk.write("Fann greinarmerki: {}\n".format(mörk_OTB[i]))
+                stikk.flush()
+                rétt_setning = rétt_setning & self.sbrGreinarmerki(mörk_OTB[i], word)
             else:
-                all_words, setning = self.tag_lestur(tagger, orðalisti)
-            if not all_words: # Ekkert svar fékkst fyrir setningu
-                continue
-            #Tekst að greina setninguna?
-            if self.error(all_words):
-                continue
-            i = 0 # Index fyrir orðalistann.
-            for word in all_words: # Komin á dict frá Greyni með öllum flokkunum.
-
-                if i < len(orðalisti) and not orðalisti[i]: # Tómur hnútur fremst/aftast í setningu
+                lengd = max(len(word["x"].split(" ")), len(word["x"].split("-"))) #TODO breyta ef stuðningur við orð með bandstriki er útfærður.
+                if lengd > 1: # Fleiri en eitt orð í streng Greynis
+                    stikk.write("Fann margorða eind í Greyni: {}\n".format(word["x"]))
+                    stikk.flush()
+                    if StaticPhrases.has_details(word["x"].lower()): # Margorða frasi, fæ mörk úr orðabók, lemmur líka.
+                        stikk.write("Fann í MARGORÐA\n")
+                        stikk.flush()
+                        rétt_setning = rétt_setning & self.margorða_stikkprufa(word, lemmur_OTB, mörk_OTB, i)
+                        i += lengd
+                        if i >= (len(orðalisti) - 1): #Getur gerst ef síðasta orð í streng
+                            stikk.write("Síðasta orð í streng, hætti\n")
+                            stikk.flush()
+                            break
+                        continue
+                    else:
+                        stikk.write("Fann ekki í MARGORÐA\n")
+                        stikk.flush()
+                    i = i + lengd -1 # Enda á síðasta orði í frasa
+                    if i >= (len(orðalisti) - 1): #Getur gerst ef síðasta orð í streng
+                        stikk.write("Síðasta orð í streng, hætti\n")
+                        stikk.flush()
+                        break
+                elif not orðalisti[i].endswith(word["x"]): # orði skipt upp í Greyni en ekki OTB
+                    stikk.write("Orði skipt upp í Greyni ({}) en ekki OTB ({})\n".format(word["x"], orðalisti[i]))
+                    stikk.flush()
+                    continue #Hægir mikið á öllu, e-r betri leið?
+                if ("k" in word and (word["k"] == "PUNCTUATION" or word["k"] == "UNKNOWN")) \
+                    or ("t" in word and word["t"] == "no"):
+                    # Einstaka tilvik. PUNCTUATION hér er t.d. bandstrik sem OTB heldur í orðum en Greynir greinir sem stakt orð
                     i += 1
-                if i >= len(orðalisti):
-                    break
-
-                if word["x"] == "Eiríkur Tse" or word["x"] == "Vincent Peale": # Ljótt sértilvik
-                    i += 1
+                    stikk.write("Eitthvað skrýtið á ferðinni.\n")
+                    stikk.flush()
                     continue
-                if word["x"] == "-" and orðalisti[i] != "-": # Ef bandstrikið er greint sérstaklega
-                    continue
-                if lemmur_OTB[i] is None: # Greinarmerki
+                if not lemmur_OTB[i]: # Greinarmerki
                     rétt_setning = rétt_setning & self.sbrGreinarmerki(mörk_OTB[i], word)
                 else:
-                    lengd = max(len(word["x"].split(" ")), len(word["x"].split("-"))) #TODO breyta ef stuðningur við orð með bandstriki er útfærður.
-                    if lengd > 1: # Fleiri en eitt orð í streng Greynis # TODO breyta þegar set dict með MWE inn
-                        if StaticPhrases.has_details(word["x"].lower()): # Margorða frasi, fæ mörk úr orðabók, lemmur líka.
-                            rétt_setning = rétt_setning & self.margorða_allt(word, lemmur_OTB, mörk_OTB, i)
-                            i += lengd
-                            continue
-                        i = i + lengd - 1 # Enda á síðasta orði í frasa # TODO taka þetta út?
-                    elif not orðalisti[i].endswith(word["x"]): # orði skipt upp í Greyni en ekki OTB
-                        continue #Hægir mikið á öllu, e-r betri leið?
-                    if ("k" in word and (word["k"] == "PUNCTUATION" or word["k"] == "UNKNOWN")) \
-                        or ("t" in word and word["t"] == "no"):
-                        # Einstaka tilvik. PUNCTUATION hér er t.d. bandstrik sem OTB heldur í orðum en Greynir greinir sem stakt orð
-                        i += 1
-                        continue
-                    if lemmur_OTB[i] is None: # Greinarmerki
-                        rétt_setning = rétt_setning & self.sbrGreinarmerki(mörk_OTB[i], word)
-                    else:
-                        rétt_setning = rétt_setning & self.skrif_allt(word, lemmur_OTB[i], mörk_OTB[i]) # Bæði og mark og lemma rétt
+                    rétt_setning = rétt_setning & self.skrif_stikkprufa(word, lemmur_OTB[i], mörk_OTB[i]) # Bæði og mark og lemma rétt
+            stikk.write("\t\tEyk við i og held áfram!\n")
+            stikk.flush()
+            i += 1
+        if rétt_setning:
+            self.réttar_setningar += 1
+        else:
+            self.rangar_setningar += 1
+        stikk.flush()
+
+    def úrvinnsla(self, tagger, sent):
+        self.setnf += 1
+        rétt_setning = True
+        orðalisti, mörk_OTB, lemmur_OTB = self.OTB_lestur(sent)
+        if tagger is None:
+            all_words, setning = self.json_lestur(orðalisti)
+        else:
+            all_words, setning = self.tag_lestur(tagger, orðalisti)
+        if not all_words: # Ekkert svar fékkst fyrir setningu
+            return
+        # Tekst að greina setninguna?
+        if self.error(all_words):
+            return
+        i = 0 # Index fyrir orðalistann.
+        for word in all_words: # Komin á dict frá Greyni með öllum flokkunum.
+
+            if i < len(orðalisti) and not orðalisti[i]: # Tómur hnútur fremst/aftast í setningu
                 i += 1
-            if rétt_setning:
-                self.réttar_setningar += 1
+            if i >= len(orðalisti):
+                break
+
+            if word["x"] == "Eiríkur Tse" or word["x"] == "Vincent Peale": # Ljótt sértilvik
+                i += 1
+                continue
+            if word["x"] == "-" and orðalisti[i] != "-": # Ef bandstrikið er greint sérstaklega
+                continue
+            if not lemmur_OTB[i]: # Greinarmerki
+                rétt_setning = rétt_setning & self.sbrGreinarmerki(mörk_OTB[i], word)
             else:
-                self.rangar_setningar += 1
+                lengd = max(len(word["x"].split(" ")), len(word["x"].split("-"))) #TODO breyta ef stuðningur við orð með bandstriki er útfærður.
+                if lengd > 1: # Fleiri en eitt orð í streng Greynis # TODO breyta þegar set dict með MWE inn
+                    if StaticPhrases.has_details(word["x"].lower()): # Margorða frasi, fæ mörk úr orðabók, lemmur líka.
+                        rétt_setning = rétt_setning & self.margorða_allt(word, lemmur_OTB, mörk_OTB, i)
+                        i += lengd
+                        continue
+                    i = i + lengd - 1 # Enda á síðasta orði í frasa # TODO taka þetta út?
+                elif not orðalisti[i].endswith(word["x"]): # orði skipt upp í Greyni en ekki OTB
+                    continue #Hægir mikið á öllu, e-r betri leið?
+                if ("k" in word and (word["k"] == "PUNCTUATION" or word["k"] == "UNKNOWN")) \
+                    or ("t" in word and word["t"] == "no"):
+                    # Einstaka tilvik. PUNCTUATION hér er t.d. bandstrik sem OTB heldur í orðum en Greynir greinir sem stakt orð
+                    i += 1
+                    continue
+                if not lemmur_OTB[i]: # Greinarmerki
+                    rétt_setning = rétt_setning & self.sbrGreinarmerki(mörk_OTB[i], word)
+                else:
+                    rétt_setning = rétt_setning & self.skrif_allt(word, lemmur_OTB[i], mörk_OTB[i]) # Bæði og mark og lemma rétt
+            i += 1
+        if rétt_setning:
+            self.réttar_setningar += 1
+        else:
+            self.rangar_setningar += 1
 
     def margorða_stikkprufa(self, word, lemmur_OTB, mörk_OTB, i):
-        with open("stikkprufa.txt", "a") as stikk:
-            wx = word["x"].lower()
-            mörk_Gr = StaticPhrases.tags(wx)
-            lemmur_Gr = StaticPhrases.lemmas(wx)
-            öll_orð = wx.replace("-", " ").split()
-            allt = zip(öll_orð, lemmur_Gr, mörk_Gr)
-            rétt = True # Finnst eitthvað rangt í liðnum?
-            for orð, lemma_Gr, mark_Gr in allt:
-                lemma_bool = True
-                mark_bool = True
-                lemma_OTB = lemmur_OTB[i]
-                mark_OTB = mörk_OTB[i]
-                stikk.write(orð+"\n")
-                stikk.write("\tLemma OTB: '{}'\tLemma Gr: '{}'\n".format(lemma_OTB, lemma_Gr))
-                stikk.flush()
-                if lemma_Gr == lemma_OTB:
-                    self.LR += 1
-                    lemma_bool = True
-                    stikk.write("\tRétt lemma\n")
-                    stikk.flush()
-                else:
-                    self.LW += 1
-                    lemma_bool = False
-                    rétt = False
-                    stikk.write("\tRöng lemma\n")
-                    stikk.flush()
-                stikk.write("\tMark OTB: '{}'\tMark GR: '{}'\n".format(mark_OTB, mark_Gr))
-                stikk.flush()
-                if orð in EO and mark_Gr[0] == "a": # Getur verið bæði forsetning og atviksorð
-                    if mark_OTB != "cn": #nafnháttarmerki
-                        mark_OTB = "af"
-                    mark_Gr = "af"
-                if mark_Gr and mark_OTB and mark_Gr[0] == mark_OTB[0]: # Sami orðflokkur
-                    if mark_Gr == mark_OTB:
-                        self.MR += 1
-                        stikk.write("\tRétt mark\n")
-                        stikk.flush()
-                    else:
-                        self.MP += 1
-                        mark_bool = False
-                        stikk.write("\tHlutrétt mark\n")
-                        stikk.flush()
-                else:
-                    self.MW += 1
-                    mark_bool = False
-                    stikk.write("\tRangt mark\n")
-                    stikk.flush()
-                i += 1
-                if lemma_bool and mark_bool: # Bæði mark og lemma rétt
-                    self.rétt_orð += 1
-                else:
-                    self.röng_orð += 1
+        stikk = self.stikk
+        assert stikk is not None
+        wx = word["x"].lower()
+        mörk_Gr = StaticPhrases.tags(wx)
+        lemmur_Gr = StaticPhrases.lemmas(wx)
+        öll_orð = wx.replace("-", " ").split()
+        allt = zip(öll_orð, lemmur_Gr, mörk_Gr)
+        rétt = True # Finnst eitthvað rangt í liðnum?
+        for orð, lemma_Gr, mark_Gr in allt:
+            lemma_bool = True
+            mark_bool = True
+            lemma_OTB = lemmur_OTB[i]
+            mark_OTB = mörk_OTB[i]
+            stikk.write(orð+"\n")
+            stikk.write("\tLemma OTB: '{}'\tLemma Gr: '{}'\n".format(lemma_OTB, lemma_Gr))
             stikk.flush()
-            return rétt
+            if lemma_Gr == lemma_OTB:
+                self.LR += 1
+                lemma_bool = True
+                stikk.write("\tRétt lemma\n")
+                stikk.flush()
+            else:
+                self.LW += 1
+                lemma_bool = False
+                rétt = False
+                stikk.write("\tRöng lemma\n")
+                stikk.flush()
+            stikk.write("\tMark OTB: '{}'\tMark GR: '{}'\n".format(mark_OTB, mark_Gr))
+            stikk.flush()
+            if orð in EO and mark_Gr[0] == "a": # Getur verið bæði forsetning og atviksorð
+                if mark_OTB != "cn": #nafnháttarmerki
+                    mark_OTB = "af"
+                mark_Gr = "af"
+            if mark_Gr and mark_OTB and mark_Gr[0] == mark_OTB[0]: # Sami orðflokkur
+                if mark_Gr == mark_OTB:
+                    self.MR += 1
+                    stikk.write("\tRétt mark\n")
+                    stikk.flush()
+                else:
+                    self.MP += 1
+                    mark_bool = False
+                    stikk.write("\tHlutrétt mark\n")
+                    stikk.flush()
+            else:
+                self.MW += 1
+                mark_bool = False
+                stikk.write("\tRangt mark\n")
+                stikk.flush()
+            i += 1
+            if lemma_bool and mark_bool: # Bæði mark og lemma rétt
+                self.rétt_orð += 1
+            else:
+                self.röng_orð += 1
+        stikk.flush()
+        return rétt
 
     def margorða_allt(self, word, lemmur_OTB, mörk_OTB, i):
         wx = word["x"].lower()
@@ -586,44 +582,45 @@ class Comparison():
     def skrif_stikkprufa(self, word, lemma_OTB, mark_OTB):
         #Samanburður fer fram hér, safna tvenndum fyrir mörk í orðabók ásamt tíðni fyrir confusion matrix - TODO confmat
         # Safna í allar tölfræðibreyturnar
-        with open("stikkprufa.txt", "a") as stikk:
-            stikk.write(word["x"]+"\n")
+        stikk = self.stikk
+        assert stikk is not None
+        stikk.write(word["x"]+"\n")
+        stikk.flush()
+        if "s" in word:
+            stikk.write("\tLemma OTB: '{}'\tLemma Gr: '{}'\n".format(lemma_OTB, word["s"]))
             stikk.flush()
-            if "s" in word:
-                stikk.write("\tLemma OTB: '{}'\tLemma Gr: '{}'\n".format(lemma_OTB, word["s"]))
-                stikk.flush()
-            else:
-                stikk.write("\tLemma OTB: '{}'\tLemma Gr: '{}'\n".format(lemma_OTB, word["x"]))
-                stikk.flush()
-            lemma_bool = self.sbrlemma(lemma_OTB, word)
-            if lemma_bool:
-                stikk.write("\tRétt lemma\n")
-                stikk.flush()
-            else:
-                stikk.write("\tRöng lemma\n")
-                stikk.flush()
-            mark_skil, mark_Gr = self.sbrmark(mark_OTB, word) # 0 = Rangt, 1 = Rétt, 2 = Hlutrétt
-            stikk.write("\tMark OTB: '{}'\tMark GR: '{}'\n".format(mark_OTB, mark_Gr))
+        else:
+            stikk.write("\tLemma OTB: '{}'\tLemma Gr: '{}'\n".format(lemma_OTB, word["x"].lower()))
             stikk.flush()
-            if mark_skil == 0:
-                stikk.write("\tRangt mark\n")
-                stikk.flush()
-            elif mark_skil == 1:
-                stikk.write("\tRétt mark\n")
-                stikk.flush()
-            elif mark_skil == 2:
-                stikk.write("\tHlutrétt mark\n")
-                stikk.flush()
-            else:
-                stikk.write("\tÓgild niðurstaða!\n")
-                stikk.flush()
+        lemma_bool = self.sbrlemma(lemma_OTB, word)
+        if lemma_bool:
+            stikk.write("\tRétt lemma\n")
             stikk.flush()
-            if lemma_bool and mark_skil > 0:
-                self.rétt_orð += 1
-                return True
-            else:
-                self.röng_orð += 1
-                return False
+        else:
+            stikk.write("\tRöng lemma\n")
+            stikk.flush()
+        mark_skil, mark_Gr = self.sbrmark(mark_OTB, word) # 0 = Rangt, 1 = Rétt, 2 = Hlutrétt
+        stikk.write("\tMark OTB: '{}'\tMark GR: '{}'\n".format(mark_OTB, mark_Gr))
+        stikk.flush()
+        if mark_skil == 0:
+            stikk.write("\tRangt mark\n")
+            stikk.flush()
+        elif mark_skil == 1:
+            stikk.write("\tRétt mark\n")
+            stikk.flush()
+        elif mark_skil == 2:
+            stikk.write("\tHlutrétt mark\n")
+            stikk.flush()
+        else:
+            stikk.write("\tÓgild niðurstaða!\n")
+            stikk.flush()
+        stikk.flush()
+        if lemma_bool and mark_skil > 0:
+            self.rétt_orð += 1
+            return True
+        else:
+            self.röng_orð += 1
+            return False
 
     def skrif_allt(self, word, lemma_OTB, mark_OTB):
         #Samanburður fer fram hér, safna tvenndum fyrir mörk í orðabók ásamt tíðni fyrir confusion matrix - TODO confmat
@@ -887,6 +884,7 @@ class Comparison():
         #mark_Gr_eldra = self.vörpun(word)
 
         mark_Gr = word["i"] if "i" in word else str(IFD_Tagset(word))
+        stofn_Gr = (word["s"] if "s" in word else word["x"]).lower()
         #print("{0:20} {1:20} {2:10}  {d1} {3:10}  {d2} {4:10}".format(word.get("x", ""), word.get("s", ""),
         #    mark_OTB, mark_Gr_eldra, mark_Gr,
         #    d1="*" if mark_Gr_eldra != mark_OTB else " ",
@@ -909,16 +907,16 @@ class Comparison():
                 mark_OTB = mark_OTB[:2] + mark_OTB[3:]
         #elif mark_Gr.startswith("fm"): # Samfall 'sá' og pfn
         #    mark_OTB = "fm" + mark_OTB[2:]
-        elif "s" in word and (word["s"] == "einn" or word["s"] == "annar"):
+        elif stofn_Gr in einnannar:
             if mark_OTB.startswith("l"): # greint sem lýsingarorð
-                mark_OTB = einnannar[word["s"]] + mark_OTB[1] + mark_OTB[2] + mark_OTB[3]
+                mark_OTB = einnannar[stofn_Gr] + mark_OTB[1] + mark_OTB[2] + mark_OTB[3]
             elif mark_OTB.startswith("f") or mark_OTB.startswith("tf"):
-                mark_OTB = einnannar[word["s"]] + mark_OTB[2:]
+                mark_OTB = einnannar[stofn_Gr] + mark_OTB[2:]
 
             if mark_Gr.startswith("l"): # greint sem lýsingarorð
-                mark_Gr = einnannar[word["s"]] + mark_Gr[1] + mark_Gr[2] + mark_Gr[3]
+                mark_Gr = einnannar[stofn_Gr] + mark_Gr[1] + mark_Gr[2] + mark_Gr[3]
             elif mark_Gr.startswith("f") or mark_Gr.startswith("tf"):
-                mark_Gr = einnannar[word["s"]] + mark_Gr[2:]
+                mark_Gr = einnannar[stofn_Gr] + mark_Gr[2:]
 
         #tvennd = (mark_Gr, mark_OTB) # TODO setja aftur inn ef útfæri confusion matrix
         #if tvennd in self.M_confmat:
@@ -1079,7 +1077,7 @@ class Comparison():
             # Convert ifdtag.api output to a format roughly compatible with postag.api
             converted = []
             for word in all_words:
-                if word[1].isalnum():
+                if word[1].isalnum() or ('-' in word and word != '-'): # Allow nken-s, etc.
                     # This is a proper IFD mark
                     converted.append(dict(x = word[0], i = word[1], k = "WORD"))
                 else:
@@ -1097,10 +1095,11 @@ class Comparison():
         return all_words, setning
 
     def OTB_lestur(self, sent):
-        mörk_OTB = [word.get("type") for word in sent.iter()]
-        lemmur_OTB = [word.get("lemma") for word in sent.iter()]
-        orðalisti = [word.text.strip() for word in sent.iter()]
-        return mörk_OTB, lemmur_OTB, orðalisti
+        return tuple(zip(*sent)) # Orð, mörk, lemmur
+        #mörk_OTB = [word.get("type") for word in sent.iter()]
+        #lemmur_OTB = [word.get("lemma") for word in sent.iter()]
+        #orðalisti = [word.text.strip() for word in sent.iter()]
+        #return mörk_OTB, lemmur_OTB, orðalisti
 
     def error(self, all_words):
         if USE_IFD_TAGGER:
@@ -1196,98 +1195,73 @@ class Comparison():
         print("Nákvæmni (accuracy): {:.4f}\tMeð hlutréttu: {:.4f}".format(GMA, GMPA))
         print("*******************************************************")
 
-    def start(self, func):
-        corpus = IFD_Corpus(ifd_dir = IFD_DIR)
-        xml_files = list(corpus.file_name_stream())
-        lengd = len(xml_files)
+    def start(self, process_func, filter_func, skip_func):
+        corpus = Corpus()
+        sentences = corpus.raw_sentence_stream(filter_func = filter_func, skip = skip_func)
         if USE_LOCAL_TAGGER:
             # Call the Reynir POS tagger directly in-process
-            from postagger import Tagger
             with Tagger.session() as tagger:
-                for i, each in enumerate(xml_files):
-                    print("Skjal {} af {}".format(i + 1, lengd))
-                    func(tagger, each)
+                for sent in sentences:
+                    process_func(tagger, sent)
         else:
             # Use the Reynir HTTP JSON API for POS tagging (/postag.api)
-            for i, each in enumerate(xml_files):
-                print("Skjal {} af {}".format(i + 1, lengd))
-                func(None, each)
+            for sent in sentences:
+                process_func(None, sent)
         self.prenta()
 
     def start_stikkprufa(self):
         úrtak = 100
-        self.start(lambda t, file : self.úrvinnsla_stikkprufa(t, file, lambda n: n % úrtak == 0))
+        with open("stikkprufa.txt", "w") as stikk:
+            self.stikk = stikk
+            self.start(self.úrvinnsla_stikkprufa, skip_func = lambda n: n % úrtak != 0)
+            self.stikk = None
    
     def start_allt(self):
-        self.start(lambda t, file: self.úrvinnsla(t, file, lambda n: True))
+        self.start(self.úrvinnsla)
 
     def start_fyllimengi(self):
         úrtak = 100
-        self.start(lambda t, file: self.úrvinnsla(t, file, lambda n: n % úrtak != 0))
+        self.start(self.úrvinnsla, skip_func = lambda n: n % úrtak == 0)
 
 def start_flokkar():
-    corpus = IFD_Corpus(ifd_dir = IFD_DIR)
-    # Íslensk skáldverk
-    skaldis = list(corpus.file_name_stream(lambda x: x.startswith("A1")))
-    i = 1
-    lengd = len(skaldis)
-    comp1 = Comparison()
-    for each in skaldis:
-        print("Skjal {} af {}".format(i, lengd))
-        comp1.úrvinnsla(None, each, lambda n: True)
-        i +=1
-    print("*** Niðurstöður fyrir íslensk skáldverk ***")
-    comp1.prenta()
+    corpus = Corpus()
 
-    # Ævisögur
-    aevis = list(corpus.file_name_stream(lambda x: x.startswith("A3")))
-    i = 1
-    lengd = len(aevis)
-    comp2 = Comparison()    
-    for each in aevis:
-        print("Skjal {} af {}".format(i, lengd))
-        comp2.úrvinnsla(None, each, lambda n: True)
-        i +=1
-    print("*** Niðurstöður fyrir ævisögur ***")
-    comp2.prenta()
+    def _run_flokkar(tagger):
 
-    # Fræðslutextar - hugvísindi
-    nythug = list(corpus.file_name_stream(lambda x: x.startswith("A4")
-        and x[2] in {"A", "B", "C", "D", "E", "F", "G", "H", "J"}))
-    i = 1
-    lengd = len(nythug)
-    comp3 = Comparison()
-    for each in nythug:
-        print("Skjal {} af {}".format(i, lengd))
-        comp3.úrvinnsla(None, each, lambda n: True)
-        i +=1
-    print("*** Niðurstöður fyrir fræðslutexta - hugvísindi ***")
-    comp3.prenta()
+        def _run_flokkur(filter_func, description):
+            sents = corpus.raw_sentence_stream(filter_func = filter_func)
+            comp = Comparison()
+            for sent in sents:
+                comp.úrvinnsla(tagger, sent)
+            print("*** Niðurstöður fyrir {0} ***".format(description))
+            comp.prenta()
 
-    #Fræðslutextar - raunvísindi
-    nytraun = list(corpus.file_name_stream(lambda x: x.startswith("A4")
-        and x[2] in {"K", "M", "N", "O", "Q", "R", "S"}))
-    i = 1
-    lengd = len(nytraun)
-    comp4 = Comparison()    
-    for each in nytraun:
-        print("Skjal {} af {}".format(i, lengd))
-        comp4.úrvinnsla(None, each, lambda n: True)
-        i +=1
-    print("*** Niðurstöður fyrir fræðslutexta - raunvísindi ***")
-    comp4.prenta()
+        # Íslensk skáldverk
+        f = lambda x: x.startswith("A1")
+        _run_flokkur(f, "íslensk skáldverk")
 
-    # Barna- og unglingabækur
-    barnis = list(corpus.file_name_stream(lambda x: x.startswith("A5")))
-    i = 1
-    lengd = len(barnis)
-    comp5 = Comparison()
-    for each in barnis:
-        print("Skjal {} af {}".format(i, lengd))
-        comp5.úrvinnsla(None, each, lambda n: True)
-        i +=1
-    print("*** Niðurstöður fyrir barna- og unglingabækur ***")
-    comp5.prenta()
+        # Ævisögur
+        f = lambda x: x.startswith("A3")
+        _run_flokkur(f, "ævisögur")
+
+        # Fræðslutextar - hugvísindi
+        f = lambda x: x.startswith("A4") and x[2] in {"A", "B", "C", "D", "E", "F", "G", "H", "J"}
+        _run_flokkur(f, "fræðslutexta - hugvísindi")
+
+        #Fræðslutextar - raunvísindi
+        f = lambda x: x.startswith("A4") and x[2] in {"K", "M", "N", "O", "Q", "R", "S"}
+        _run_flokkur(f, "fræðslutexta - raunvísindi")
+
+        # Barna- og unglingabækur
+        f = lambda x: x.startswith("A5")
+        _run_flokkur(f, "barna- og unglingabækur")
+
+    if USE_LOCAL_TAGGER:
+        with Tagger.session() as tagger:
+            _run_flokkar(tagger)
+    else:
+        _run_flokkar(None)
+
 
 if __name__ == "__main__":
     Settings.read("config/Reynir.conf")

@@ -199,7 +199,7 @@ class BIN_Token(Token):
     _NOT_PROPER_NAME = frozenset([ "ég", "þú", "hann", "hún", "það", "við", "þið", "þau",
         "þeir", "þær", "mér", "mig", "mín", "þig", "þér", "þín", "þeim", "þeirra", "þetta", "þessi",
         "í", "á", "af", "um", "að", "með", "til", "frá", "búist", "annars", "samkvæmt", "en", "og",
-        "sem", "ekkert", "hæð", "svo", "veggir" ])
+        "sem", "ekkert", "hæð", "svo", "veggir", "þarna", "allt" ])
 
     # Numbers that can be used in the singular even if they are nominally plural.
     # This applies to the media company 365, where it is OK to say "365 skuldaði 389 milljónir",

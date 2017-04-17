@@ -62,6 +62,10 @@ class IFD_Corpus:
         self._xml_files = [ x for x in os.listdir(self._ifd_full_dir) if x.startswith("A") and x.endswith(".xml") ]
         self._xml_files.sort()
 
+    def number_of_files(self, filter_func = None):
+        """ Return the number of files in the corpus after filtering by filter_func, if given """
+        return sum((1 if filter_func is None or filter_func(x) else 0) for x in self._xml_files)
+
     def file_name_stream(self, filter_func = None):
         """ Generator of file names, including paths, eventually filtered by the filter_func """
         for each in self._xml_files:
@@ -69,29 +73,43 @@ class IFD_Corpus:
                 filename = os.path.join(self._ifd_full_dir, each)
                 yield filename
 
+    def starting_file(self, filename, count, num_files):
+        """ Called when xml_stream() starts to read from a new file """
+        # Override in derived classes to provide a progress report, if desired
+        pass
+
     def xml_stream(self, filter_func = None):
         """ Generator of a stream of XML document roots, eventually filtered by the filter_func """
+        num_files = self.number_of_files(filter_func)
+        cnt = 0
         for each in self.file_name_stream(filter_func):
             tree = ET.parse(each)
             if tree is not None:
                 root = tree.getroot()
                 if root is not None:
+                    cnt += 1
+                    self.starting_file(each, cnt, num_files)
                     yield root
 
-    def raw_sentence_stream(self, limit = None, skip = None):
+    def raw_sentence_stream(self, limit = None, skip = None, filter_func = None):
         """ Generator of sentences from the IFD XML files.
             Each sentence consists of (word, tag, lemma) triples. """
         count = 0
         skipped = 0
-        for root in self.xml_stream():
+        for root in self.xml_stream(filter_func = filter_func):
             for sent in root.iter("s"):
                 if len(sent): # Using a straight Bool test here gives a warning
-                    if skip is not None and skipped < skip:
+                    if isinstance(skip, int) and skipped < skip:
                         # If a skip parameter was given, skip that number of sentences up front
                         skipped += 1
                         continue
+                    if callable(skip) and skip(count + skipped):
+                        # If skip is a function, call it with the number of total sentences seen
+                        # and skip this one if it returns True
+                        skipped += 1
+                        continue
                     yield [
-                        (word.text.strip(), word.get("type") or "", word.get("lemma") or word.text.strip())
+                        (word.text.strip(), word.get("type", ""), word.get("lemma", ""))
                         for word in sent
                     ]
                     count += 1
