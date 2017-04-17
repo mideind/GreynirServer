@@ -5,7 +5,7 @@
 
     Processor module
 
-    Copyright (C) 2016 Vilhjálmur Þorsteinsson
+    Copyright (C) 2017 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -181,6 +181,7 @@ class Processor:
                     self.go_single(url)
             else:
                 # Use a multiprocessing pool to process the articles
+                BIN_Db.cleanup() # Make sure there are no open BIN db connections
                 pool = Pool() # Defaults to using as many processes as there are CPUs
                 pool.map(self.go_single, iter_parsed_articles())
                 pool.close()

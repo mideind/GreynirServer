@@ -229,6 +229,8 @@ Samtenging →
     | ÞangaðTil
     | OgEðaEn? SpurnarSamtenging
 
+$tag(apply_length_bonus) Samtenging
+
 SpurnarSamtenging →
 
     HverHvor/kyn SpurnarFs/kyn?                 # '(Ég spurði) hvert af börnunum (þarna væri á ferðinni)'
@@ -393,10 +395,9 @@ Samanburður →
     SamanburðarTenging Nl_nf AtvFs? # þar af einn alvarlega
     | Samanburðarmerki? "þar:ao" "með:fs" 'telja:so'_lhþt_sb_nf/tala/kyn Nl_nf/tala/kyn AtvFs? # þar með talinn allur þingflokkur Framsóknar
     | Samanburðarmerki "öðru:fn" "nær:ao"   # Viðskiptablaðið styður ekki jafnaðarstefnuna; öðru nær.
-    | Samanburðarmerki 'allur'_nf_et_hk "frá:fs" Nl_þgf "til:fs" Nl_ef  # Verslunin þjónar fjölbreyttum markhópi, allt frá börnum til aldraðra
 
 SamanburðarTenging →
-    "heldur:st" "en:st"                # 'Forseti á ekki að gera meiri breytingu á sér heldur en forsætisráðherra'
+    "heldur:st" "en:st"             # 'Forseti á ekki að gera meiri breytingu á sér heldur en forsætisráðherra'
     | ','? "eins:ao" "og:st"        # 'Hann á ekki andstæðinga eins og aðrir kjörnir fulltrúar'
     | ','? 'líkt_og'
     | Samanburðarmerki? "þar:ao" "af:ao"  # 'Fjöldi barna var í vélinni, þar af tvö kornabörn'
@@ -499,6 +500,11 @@ SetningLo →
     # Örvingluð eftir atburði næturinnar leitaði Anna til lögreglunnar
     | LoTengtSögn_nf/tala/kyn FsAtv? SagnHluti/tala/pers/kyn
     | SetningLoMeðSpurningu
+    # Frábært að heyra [í þér]
+    # Yndislegt að sjá og heyra
+    | LoTengtSögn_nf_et_hk NhLiðir FsAtv?
+    # Gaman að sjá til þín
+    | "gaman:ao" NhLiðir FsAtv?
 
 SetningLoMeðSpurningu →
     # Aðspurð [um] hvort Jón væri edrú sagði Gunna að hann væri það
@@ -3021,6 +3027,8 @@ NlSkýring/tala/pers/fall/kyn →
     | "-:em" SvigaForskeyti? SvigaInnihald/tala/pers/fall/kyn "-:em"
     | ',' SvigaInnihald/tala/pers/fall/kyn LokatáknEðaKomma
     | ',' Skýring Skýringarliður LokatáknEðaKomma
+    # (Verslunin þjónar fjölbreyttum markhópi), allt frá börnum til aldraðra, (og er vinsæl í hverfinu)
+    | Samanburðarmerki 'allur'_nf_et_hk "frá:fs" Nl_þgf "til:fs" Nl_ef LokatáknEðaKomma
 
 # Gefa aukastig fyrir skýringar á nafnliðum
 $score(+6) NlSkýring/tala/pers/fall/kyn
@@ -3059,7 +3067,6 @@ Skýring →
     | "meðal:ao" "annars:ao" | 'meðal_annars'
     | 'það'_nf_et "er:st" | 'það_er'
     | "með:fs" 'annar:lo'_hk_þgf_ft "orðum:hk" | 'með_öðrum_orðum'
-    | 'það'_nf_et? "að:st"
 
 SvigaForskeyti →
     Skýring
@@ -3343,6 +3350,19 @@ LoSamanb/tala/fall/kyn →
     Lo_sb/tala/fall/kyn
     # Miðstig: (Ég varðveitti laxinn) [mun] betur [en bleikjuna]
     | "mun:kk"? Lo_mst/tala/fall/kyn EnSamanb/fall?
+    # (Hann tók við hrósinu) [,] ýmist glaður eða með fýlusvip
+    | LoSamanbFleiri/fall/tala/kyn
+
+LoSamanbFleiri/fall/tala/kyn →
+    Samanburðarmerki "ýmist:st" LoEðaFs/fall/tala/kyn "eða:st" LoEðaFs/fall/tala/kyn LokatáknEðaKomma
+    | "ýmist:st" LoEðaFs/fall/tala/kyn "eða:st" LoEðaFs/fall/tala/kyn
+    | Samanburðarmerki "bæði:st" LoEðaFs/fall/tala/kyn "og:st" LoEðaFs/fall/tala/kyn LokatáknEðaKomma
+    | "bæði:st" LoEðaFs/fall/tala/kyn "og:st" LoEðaFs/fall/tala/kyn
+
+$score(+4) LoSamanbFleiri/fall/tala/kyn
+
+LoEðaFs/fall/tala/kyn →
+     LoTengtSögn/tala/fall/kyn | FsAtv
 
 EnSamanb/fall →
     "en:st" Nl/fall
@@ -3351,6 +3371,8 @@ EnSamanb/fall →
 LoSamanb_nf/tala/kyn →
     Lo_sb_nf/tala/kyn
     | "mun:kk"? Lo_mst_nf/tala/kyn EnSamanb_nf? # Miðstig: (Ég var) [mun] reiðari [en Páll]
+    # (Hann tók við hrósinu) [,] ýmist glaður eða með fýlusvip
+    | LoSamanbFleiri_nf/tala/kyn
 
 LoTengtSögn/tala/fall/kyn →
     LoSamanb/tala/fall/kyn
@@ -3510,7 +3532,7 @@ FsAtv →
 FsAtvFramhald → KommaOgEðaEn EinFsAtv+
 
 EinFsAtv →
-    "nema:st"? FsMeðFallstjórn
+    Nema? FsMeðFallstjórn
     | EinnAl
     | "hvorki" EinEinföldFsAtv+ "né" EinEinföldFsAtv+ # 'hvorki í Frakklandi né annars staðar í Evrópusambandinu'
     | "annað:fn" "hvort:st" EinEinföldFsAtv+ "eða:st" EinEinföldFsAtv+ # 'annað hvort í Breiðholti eða við World Class'
@@ -3518,6 +3540,9 @@ EinFsAtv →
     | "bæði:st" EinEinföldFsAtv+ ','? "og:st" EinEinföldFsAtv+
 
 EinEinföldFsAtv → FsMeðFallstjórn | EinnAl
+
+Nema →
+    "nema:st" "þá:ao"? "helst:ao"?
 
 # AtvFs hefst alltaf á atvikslið en á eftir geta fylgt forsetningarliðir
 # og atviksliðir.

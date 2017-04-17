@@ -5,7 +5,7 @@
 
     Scraper module
 
-    Copyright (C) 2016 Vilhjálmur Þorsteinsson
+    Copyright (C) 2017 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@ import sys
 import gc
 import getopt
 import time
-import traceback
+#import traceback
 
 #from multiprocessing.dummy import Pool
 from multiprocessing import Pool
@@ -201,7 +201,7 @@ class Scraper:
             sys.exit(1)
         except Exception as e:
             print("Exception when parsing article at {0}: {1!r}".format(d.url, e))
-            traceback.print_exc()
+            #traceback.print_exc()
             #raise e from e
         return True
 

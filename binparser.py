@@ -4,7 +4,7 @@
 
     BIN parser module
 
-    Copyright (C) 2016 Vilhjálmur Þorsteinsson
+    Copyright (C) 2017 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -190,9 +190,10 @@ class BIN_Token(Token):
     # '...varð fyrir neðan Pál'
     # '...og Snædís, þá laganemi, bauð sig fram'
     # '...nú liggur fyrir skýrsla'
+    # '...átti snemma forláta grammófón'
     _NOT_NOT_EO = frozenset([ "inn", "eftir", "of", "til", "upp", "um", "síðan", "fram", "nær", "nærri",
         "út", "meðal", "úti", "saman", "jafnframt", "næstum", "samt", "samtals", "því", "nokkuð", "af",
-        "neðan", "þá", "fyrir" ])
+        "neðan", "þá", "fyrir", "snemma" ])
 
     # Words that are not eligible for interpretation as proper names, even if they are capitalized
     _NOT_PROPER_NAME = frozenset([ "ég", "þú", "hann", "hún", "það", "við", "þið", "þau",

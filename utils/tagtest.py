@@ -1,12 +1,35 @@
 #!/usr/bin/env python
+"""
+
+    Reynir: Natural language processing for Icelandic
+
+    Tagging test and training program
+
+    Copyright (C) 2017 Miðeind ehf.
+
+       This program is free software: you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published by
+       the Free Software Foundation, either version 3 of the License, or
+       (at your option) any later version.
+       This program is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+       GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see http://www.gnu.org/licenses/.
+
+
+    This program trains and tests a TnT POS tagging model.
+    Trained models are stored in the file `config/TnT-model.pickle`.
+
+"""
 
 import os
 import sys
 import json
 from contextlib import contextmanager
 import time
-
-import xml.etree.ElementTree as ET
 
 # Hack to make this Python program executable from the utils subdirectory
 basepath, _ = os.path.split(os.path.realpath(__file__))
@@ -20,7 +43,7 @@ from settings import Settings, ConfigError
 from tokenizer import tokenize, TOK
 from scraperdb import SessionContext, desc, Article as ArticleRow
 from article import Article
-from postagger import NgramTagger, IFD_Tagset
+from postagger import NgramTagger, IFD_Corpus, IFD_Tagset
 from tnttagger import TnT
 
 
@@ -35,63 +58,7 @@ def timeit(description = "Timing"):
     print("{0}: {1:.2f} seconds".format(description, t1 - t0))
 
 
-class IFD_Corpus:
-
-    def __init__(self, ifd_dir = "ifd"):
-        self._ifd_full_dir = os.path.join(os.getcwd(), ifd_dir)
-        self._xml_files = [ x for x in os.listdir(self._ifd_full_dir) if x.startswith("A") and x.endswith(".xml") ]
-        self._xml_files.sort()
-
-    def raw_sentence_stream(self, limit = None, skip = None):
-        """ Generator of sentences from the IFD XML files.
-            Each sentence consists of (word, tag, lemma) triples. """
-        count = 0
-        skipped = 0
-        for each in self._xml_files:
-            filename = os.path.join(self._ifd_full_dir, each)
-            tree = ET.parse(filename)
-            root = tree.getroot()
-            for sent in root.iter("s"):
-                if len(sent): # Using a straight Bool test here gives a warning
-                    if skip is not None and skipped < skip:
-                        # If a skip parameter was given, skip that number of sentences up front
-                        skipped += 1
-                        continue
-                    yield [
-                        (word.text.strip(), word.get("type") or "", word.get("lemma") or word.text.strip())
-                        for word in sent
-                    ]
-                    count += 1
-                    if limit is not None and count >= limit:
-                        return
-
-    def sentence_stream(self, limit = None, skip = None):
-        """ Generator of sentences from the IFD XML files.
-            Each sentence is a list of words. """
-        for sent in self.raw_sentence_stream(limit, skip):
-            yield [ w for (w, _, _) in sent ]
-
-    def word_tag_stream(self, limit = None, skip = None):
-        """ Generator of sentences from the IFD XML files.
-            Each sentence consists of (word, tag) pairs. """
-        for sent in self.raw_sentence_stream(limit, skip):
-            yield [ (w, t) for (w, t, _) in sent ]
-
-
 def test_tagger():
-
-    TEST_SENTENCE = """
-Við þá vinnu hefur meðal annars verið unnið á grundvelli niðurstaðna sérfræðihóps sem skilaði
-greinargerð um samkeppnishæfni þjóðarbúsins í ljósi styrkingar krónunnar til ráðherranefndar
-um efnahagsmál í byrjun febrúar.
- """
-
-# Jón bauð forsætisráðherra á fund
-
-#Ögmundur Jónasson fyrrverandi ráðherra og þingmaður vill bjóða Bjarna Benediktssyni forsætisráðherra
-#á fund í Iðnó á morgun.
-
-#Jón og Guðmundur greiddu atkvæði gegn málinu enda eru þeir sannfærðir um að betri lausn muni finnast.
 
     print("Initializing tagger")
 

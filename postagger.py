@@ -42,81 +42,73 @@
 """
 
 import math
-import pickle
-import json
+import os
 from collections import defaultdict
 from itertools import islice, tee
+import xml.etree.ElementTree as ET
 
-from scraperdb import SessionContext, desc
-from article import Article
 from treeutil import TreeUtility
-from tokenizer import paragraphs, canonicalize_token, TOK
+from tokenizer import canonicalize_token, TOK
 from settings import Settings, Prepositions, StaticPhrases, ConfigError
-from contextlib import contextmanager
-from fastparser import Fast_Parser
 
 
-class Tagger:
+class IFD_Corpus:
 
-    def __init__(self):
-        # Make sure that the settings are loaded
-        if not Settings.loaded:
-            Settings.read("config/Reynir.conf")
-        self._parser = None
-        self._session = None
-        self._tagger = None
+    """ A utility class to access the IFD corpus of XML files, by default
+        assumed to be located in the `ifd` directory. """
 
-    def tag(self, text):
-        """ Parse and POS-tag the given text, returning a dict """
-        assert self._parser is not None, "Call Tagger.tag() inside 'with Tagger.session()'!"
-        assert self._session is not None, "Call Tagger.tag() inside 'with Tagger.session()'!"
-        pgs, stats, register = TreeUtility.raw_tag_text(self._parser, self._session, text)
-        # Amalgamate the result into a single list of sentences
-        if pgs:
-            # Only process the first paragraph, if there are many of them
-            if len(pgs) == 1:
-                pgs = pgs[0]
-            else:
-                # More than one paragraph: gotta concatenate 'em all
-                pa = []
-                for pg in pgs:
-                    pa.extend(pg)
-                pgs = pa
-        for sent in pgs:
-            # Transform the token representation into a
-            # nice canonical form for outside consumption
-            err = any("err" in t for t in sent)
-            for t in sent:
-                canonicalize_token(t)
-                if not err:
-                    ifd_tagset = str(IFD_Tagset(t))
-                    if ifd_tagset:
-                        t["i"] = ifd_tagset
-        return dict(result = pgs, stats = stats, register = register)
+    def __init__(self, ifd_dir = "ifd"):
+        self._ifd_full_dir = os.path.join(os.getcwd(), ifd_dir)
+        self._xml_files = [ x for x in os.listdir(self._ifd_full_dir) if x.startswith("A") and x.endswith(".xml") ]
+        self._xml_files.sort()
 
-    @contextmanager
-    def _create_session(self):
-        """ Wrapper to make sure we have a fresh database session and a parser object
-            to work with in a tagging session - and that they are properly cleaned up
-            after use """
-        if self._session is not None:
-            # Already within a session: weird case, but allow it anyway
-            assert self._parser is not None
-            yield self
-        else:
-            with SessionContext(commit = True, read_only = True) as session, Fast_Parser() as parser:
-                self._session = session
-                self._parser = parser
-                try:
-                    # Nice trick enabled by the @contextmanager wrapper
-                    yield self
-                finally:
-                    self._parser = None
-                    self._session = None
+    def file_name_stream(self, filter_func = None):
+        """ Generator of file names, including paths, eventually filtered by the filter_func """
+        for each in self._xml_files:
+            if filter_func is None or filter_func(each):
+                filename = os.path.join(self._ifd_full_dir, each)
+                yield filename
 
-    @classmethod
-    def session(cls):
-        return cls()._create_session()
+    def xml_stream(self, filter_func = None):
+        """ Generator of a stream of XML document roots, eventually filtered by the filter_func """
+        for each in self.file_name_stream(filter_func):
+            tree = ET.parse(each)
+            if tree is not None:
+                root = tree.getroot()
+                if root is not None:
+                    yield root
+
+    def raw_sentence_stream(self, limit = None, skip = None):
+        """ Generator of sentences from the IFD XML files.
+            Each sentence consists of (word, tag, lemma) triples. """
+        count = 0
+        skipped = 0
+        for root in self.xml_stream():
+            for sent in root.iter("s"):
+                if len(sent): # Using a straight Bool test here gives a warning
+                    if skip is not None and skipped < skip:
+                        # If a skip parameter was given, skip that number of sentences up front
+                        skipped += 1
+                        continue
+                    yield [
+                        (word.text.strip(), word.get("type") or "", word.get("lemma") or word.text.strip())
+                        for word in sent
+                    ]
+                    count += 1
+                    if limit is not None and count >= limit:
+                        return
+
+    def sentence_stream(self, limit = None, skip = None):
+        """ Generator of sentences from the IFD XML files.
+            Each sentence is a list of words. """
+        for sent in self.raw_sentence_stream(limit, skip):
+            yield [ w for (w, _, _) in sent ]
+
+    def word_tag_stream(self, limit = None, skip = None):
+        """ Generator of sentences from the IFD XML files.
+            Each sentence consists of (word, tag) pairs. """
+        for sent in self.raw_sentence_stream(limit, skip):
+            yield [ (w, t) for (w, t, _) in sent ]
 
 
 class IFD_Tagset:

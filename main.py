@@ -335,21 +335,36 @@ def process_query(session, toklist, result):
     return True
 
 
+def text_from_request(request):
+    """ Return text passed in a HTTP request, either using GET or POST """
+    if request.method == 'POST':
+        if request.headers["Content-Type"] == "text/plain":
+            # This API accepts plain text POSTs, UTF-8 encoded.
+            # Example usage:
+            # curl -d @example.txt https://greynir.is/postag.api --header "Content-Type: text/plain"
+            text = request.data.decode("utf-8")
+        else:
+            # This API also accepts form/url-encoded requests:
+            # curl -d "text=Í dag er ágætt veður en mikil hálka er á götum." https://greynir.is/postag.api
+            text = request.form.get("text", "")
+    else:
+        text = request.args.get("t", "")
+    return text.strip()[0:_MAX_TEXT_LENGTH]
+
+
 # Note: Endpoints ending with .api are configured not to be cached by nginx
 @app.route("/analyze.api", methods=['GET', 'POST'])
 @app.route("/analyze.api/v<int:version>", methods=['GET', 'POST'])
 def analyze_api(version = 1):
     """ Analyze text manually entered by the user, i.e. not coming from an article.
         This is a lower level API used by the Greynir web front-end. """
-
-    if version != 1:
+    if not (1 <= version <= 1):
         return better_jsonify(valid = False, reason = "Unsupported version")
 
-    if request.method == 'POST':
-        text = request.form.get("text")
-    else:
-        text = request.args.get("t")
-    text = text.strip()[0:_MAX_TEXT_LENGTH]
+    try:
+        text = text_from_request(request)
+    except:
+        return better_jsonify(valid = False, reason = "Invalid request")
 
     with SessionContext(commit = True) as session:
         pgs, stats, register = TreeUtility.tag_text(session, text)
@@ -363,25 +378,12 @@ def analyze_api(version = 1):
 @app.route("/postag.api/v<int:version>", methods=['GET', 'POST'])
 def postag_api(version = 1):
     """ API to parse text and return POS tagged tokens in a verbose JSON format """
-
     if not (1 <= version <= 1):
         # Unsupported version
         return better_jsonify(valid = False, reason = "Unsupported version")
 
     try:
-        if request.method == 'POST':
-            if request.headers["Content-Type"] == "text/plain":
-                # This API accepts plain text POSTs, UTF-8 encoded.
-                # Example usage:
-                # curl -d @example.txt https://greynir.is/postag.api --header "Content-Type: text/plain"
-                text = request.data.decode("utf-8")
-            else:
-                # This API also accepts form/url-encoded requests:
-                # curl -d "text=Í dag er ágætt veður en mikil hálka er á götum." https://greynir.is/postag.api
-                text = request.form.get("text", "")
-        else:
-            text = request.args.get("t", "")
-        text = text.strip()[0:_MAX_TEXT_LENGTH]
+        text = text_from_request(request)
     except:
         return better_jsonify(valid = False, reason = "Invalid request")
 
@@ -414,25 +416,12 @@ def postag_api(version = 1):
 @app.route("/ifdtag.api/v<int:version>", methods=['GET', 'POST'])
 def ifdtag_api(version = 1):
     """ API to parse text and return IFD tagged tokens in a simple and sparse JSON format """
-
     if not (1 <= version <= 1):
         # Unsupported version
         return better_jsonify(valid = False, reason = "Unsupported version")
 
     try:
-        if request.method == 'POST':
-            if request.headers["Content-Type"] == "text/plain":
-                # This API accepts plain text POSTs, UTF-8 encoded.
-                # Example usage:
-                # curl -d @example.txt https://greynir.is/ifdtag.api --header "Content-Type: text/plain"
-                text = request.data.decode("utf-8")
-            else:
-                # This API also accepts form/url-encoded requests:
-                # curl -d "text=Í dag er ágætt veður en mikil hálka er á götum." https://greynir.is/ifdtag.api
-                text = request.form.get("text", "")
-        else:
-            text = request.args.get("t", "")
-        text = text.strip()[0:_MAX_TEXT_LENGTH]
+        text = text_from_request(request)
     except:
         return better_jsonify(valid = False, reason = "Invalid request")
 
@@ -446,25 +435,12 @@ def ifdtag_api(version = 1):
 @app.route("/parse.api/v<int:version>", methods=['GET', 'POST'])
 def parse_api(version = 1):
     """ API to parse text and return POS tagged tokens in JSON format """
-
-    if version != 1:
+    if not (1 <= version <= 1):
         # Unsupported version
         return better_jsonify(valid = False, reason = "Unsupported version")
 
     try:
-        if request.method == 'POST':
-            if request.headers["Content-Type"] == "text/plain":
-                # This API accepts plain text POSTs, UTF-8 encoded.
-                # Example usage:
-                # curl -d @example.txt https://greynir.is/parse.api --header "Content-Type: text/plain"
-                text = request.data.decode("utf-8")
-            else:
-                # This API also accepts form/url-encoded requests:
-                # curl -d "text=Í dag er ágætt veður en mikil hálka er á götum." https://greynir.is/parse.api
-                text = request.form.get("text", "")
-        else:
-            text = request.args.get("t", "")
-        text = text.strip()[0:_MAX_TEXT_LENGTH]
+        text = text_from_request(request)
     except:
         return better_jsonify(valid = False, reason = "Invalid request")
 
@@ -491,7 +467,7 @@ def parse_api(version = 1):
 def article_api(version = 1):
     """ Obtain information about an article, given its URL or id """
 
-    if version != 1:
+    if not(1 <= version <= 1):
         return better_jsonify(valid = False, reason = "Unsupported version")
 
     if request.method == 'GET':
@@ -548,8 +524,7 @@ def article_api(version = 1):
 @app.route("/reparse.api/v<int:version>", methods=['POST'])
 def reparse_api(version = 1):
     """ Reparse an already parsed and stored article with a given UUID """
-
-    if version != 1:
+    if not (1 <= version <= 1):
         return better_jsonify(valid = "False", reason = "Unsupported version")
 
     uuid = request.form.get("id", "").strip()[0:_MAX_UUID_LENGTH]
@@ -607,7 +582,7 @@ _SPECIAL_QUERIES = {
 def query_api(version = 1):
     """ Respond to a query string """
 
-    if version != 1:
+    if not (1 <= version <= 1):
         return better_jsonify(valid = False, reason = "Unsupported version")
 
     if request.method == 'GET':
