@@ -1195,7 +1195,7 @@ class Comparison():
         print("Nákvæmni (accuracy): {:.4f}\tMeð hlutréttu: {:.4f}".format(GMA, GMPA))
         print("*******************************************************")
 
-    def start(self, process_func, filter_func, skip_func):
+    def start(self, process_func, filter_func = None, skip_func = None):
         corpus = Corpus()
         sentences = corpus.raw_sentence_stream(filter_func = filter_func, skip = skip_func)
         if USE_LOCAL_TAGGER:
