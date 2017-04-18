@@ -218,6 +218,9 @@ class TnT:
 
         self._unk = UnknownWordTagger()
 
+        self._training = True # In training phase?
+        self._count = 0 # Trained sentences
+
         # statistical tools (ignore or delete me)
         self.unknown = 0
         self.known = 0
@@ -234,14 +237,27 @@ class TnT:
         self._unk = UnknownWordTagger()
 
     def _freeze_N(self):
-        """ Freeze the current total counts """
+        """ Make sure all contained FreqDicts are 'frozen' """
         self._uni.freeze_N()
         self._bi.freeze_N()
         self._tri.freeze_N()
         self._wd.freeze_N()
 
+    def _finish_training(self):
+        """ Freeze the current frequency counts and compute lambdas """
+        if self._training:
+            self._freeze_N()
+            self._compute_lambda()
+            # Training completed
+            self._training = False
+
+    @property
+    def count(self):
+        return self._count
+
     def store(self, filename):
         """ Store a previously trained model in a file """
+        self._finish_training()
         with open(filename, "wb") as file:
             pickle.dump(self, file, protocol = pickle.HIGHEST_PROTOCOL)
 
@@ -251,6 +267,7 @@ class TnT:
         try:
             with open(filename, "rb") as file:
                 tagger = pickle.load(file)
+            assert not tagger._training
             tagger._freeze_N()
             return tagger
         except OSError:
@@ -262,14 +279,9 @@ class TnT:
         :param data: List of lists of (word, tag) tuples
         :type data: tuple(str)
         '''
-        self._uni  = FreqDist()
-        self._bi   = ConditionalFreqDist()
-        self._tri  = ConditionalFreqDist()
-        self._wd   = ConditionalFreqDist()
-        count = 0
         for sent in sentences:
             history = (('BOS',False), ('BOS',False))
-            count += 1
+            self._count += 1
             for w, t in sent:
 
                 # if capitalization is requested,
@@ -284,12 +296,6 @@ class TnT:
                 self._tri[history][tC] += 1
 
                 history = (history[1], tC)
-
-        # Freeze the current total counts
-        self._freeze_N()
-
-        # compute lambda values from the trained frequency distributions
-        self._compute_lambda()
 
     def _compute_lambda(self):
         '''
@@ -400,6 +406,9 @@ class TnT:
         with the correct words in the input sequence
         returns a list of (word, tag) tuples
         '''
+        if self._training:
+            self._finish_training()
+
         sent = list(sentence)
         _wd = self._wd
         _uni = self._uni
@@ -478,6 +487,7 @@ def ifd_tag(text):
     global _TAGGER
     if _TAGGER is None:
         # Load the tagger from a pickle the first time it's used
+        print("Loading TnT model from {0}".format("config" + os.sep + "TnT-model.pickle"))
         _TAGGER = TnT.load("config" + os.sep + "TnT-model.pickle")
         if _TAGGER is None:
             return [] # No tagger model - unable to tag

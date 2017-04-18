@@ -1210,7 +1210,7 @@ class Comparison():
         self.prenta()
 
     def start_stikkprufa(self):
-        úrtak = 100
+        úrtak = 50
         with open("stikkprufa.txt", "w") as stikk:
             self.stikk = stikk
             self.start(self.úrvinnsla_stikkprufa, skip_func = lambda n: n % úrtak != 0)
@@ -1220,7 +1220,7 @@ class Comparison():
         self.start(self.úrvinnsla)
 
     def start_fyllimengi(self):
-        úrtak = 100
+        úrtak = 50
         self.start(self.úrvinnsla, skip_func = lambda n: n % úrtak == 0)
 
 def start_flokkar():

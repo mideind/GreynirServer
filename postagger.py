@@ -116,16 +116,16 @@ class IFD_Corpus:
                     if limit is not None and count >= limit:
                         return
 
-    def sentence_stream(self, limit = None, skip = None):
+    def sentence_stream(self, limit = None, skip = None, filter_func = None):
         """ Generator of sentences from the IFD XML files.
             Each sentence is a list of words. """
-        for sent in self.raw_sentence_stream(limit, skip):
+        for sent in self.raw_sentence_stream(limit, skip, filter_func):
             yield [ w for (w, _, _) in sent ]
 
-    def word_tag_stream(self, limit = None, skip = None):
+    def word_tag_stream(self, limit = None, skip = None, filter_func = None):
         """ Generator of sentences from the IFD XML files.
             Each sentence consists of (word, tag) pairs. """
-        for sent in self.raw_sentence_stream(limit, skip):
+        for sent in self.raw_sentence_stream(limit, skip, filter_func):
             yield [ (w, t) for (w, t, _) in sent ]
 
 
