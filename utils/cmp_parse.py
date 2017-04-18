@@ -46,7 +46,7 @@ class Comparison():
                 continue
             for pg in pgs:
                 if not pg[0]: # Tóm setning
-                    þáttun.append("(M (S {}))".format(setning)) # Default grunngreining setningar
+                    þáttun.append("(M (S x))") # Default grunngreining setningar -- breytt til að Evalb þoli!
                     continue
                 for þáttuð_setning in pg:
                     # Hreinsa setningu
