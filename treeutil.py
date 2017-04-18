@@ -98,7 +98,6 @@ _DEFAULT_ID_MAP = {
 _DEFAULT_TERMINAL_MAP = {
     # Empty
 }
-
 _TEST_NT_MAP = { # Til að prófa í parse_text_to_bracket_form()
     "S0" : "M", # P veldur ruglingi við FS, breyti í M
 
@@ -120,7 +119,7 @@ _TEST_NT_MAP = { # Til að prófa í parse_text_to_bracket_form()
     "FsMeðFallstjórn" : "PP",
 
     "SetningSo" : "V", # Breytt
-    #"SagnRuna" : "V", # Breytt
+    "SagnRuna" : "V", # Breytt
     "NhLiðir" : "V", # Breytt
     "SagnliðurÁnF" : "V", # Breytt
     "ÖfugurSagnliður" : "V", # Breytt
@@ -128,13 +127,18 @@ _TEST_NT_MAP = { # Til að prófa í parse_text_to_bracket_form()
     "SagnliðurVh" : "V", # Breytt
     "HjSögnLhÞt" : "V",    # Nýtt
     "EinSögn" : "V",       # Nýtt
+    "HafaGetaFá" : "V",
+    "HjSögn" : "V",         # Til skoðunar; þarf að einangra fremsta undirliði
+    "HjSögnNh" : "V",
 
     "Nl" : "NP",
+    "Sérnafn" : "N",
+    "Mannsnafn" : "N",
     "EfLiður" : "NP-POSS",
     "EfLiðurForskeyti" : "NP-POSS",
     "Heimilisfang" : "NP-ADDR",
-    "Fyrirbæri" : "N",     # Nýtt
-    "Fornafn" : "PRON",       # Nýtt
+
+    "Pfn" : "PRON",
 
     "SagnInnskot" : "ADVP",
     "FsAtv" : "ADVP",
@@ -142,7 +146,14 @@ _TEST_NT_MAP = { # Til að prófa í parse_text_to_bracket_form()
     "Atviksliður" : "ADVP",
     "LoAtviksliðir" : "ADVP",
     "Dagsetning" : "ADVP-DATE",
-    "EinnAl" : "ADV",      # Nýtt
+
+    "Töluorð" : "NUM",
+
+    "OgEða" : "C",
+    "OgEðaEn" : "C",
+    "TengiorðEr" : "C",
+
+    "ártal" : "NUM",
 
 }
 
@@ -150,7 +161,18 @@ _TEST_TERMINAL_MAP = {
     # To specify the creation of intermediate nonterminals
     # for particular terminals, put the first part of the terminal
     # name here
-    "fs" : "P"
+    "fs" : "P",
+    "no" : "N",
+    "fn" : "PRON",
+    "so" : "V",
+    "ao" : "ADV",
+    "lo" : "ADJ",
+    "töl" : "NUM",
+    "tala" : "NUM",
+    "eo" : "ADV", # Skoða betur
+    "st" : "C",
+    "nhm" : "INF", # Nafnháttarmerki
+    "raðnr" : "ADJ" # Raðtölur; skgr. frekar sem NUM?    
 }
 
 _TEST_ID_MAP = { # Til að prófa í parse_text_to_bracket_form()
