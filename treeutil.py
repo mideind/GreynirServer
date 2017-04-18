@@ -167,15 +167,19 @@ _TEST_TERMINAL_MAP = {
     "kk" : "N",
     "kvk" : "N",
     "fn" : "PRON",
+    "pfn" : "PRON", # Taka sérstaklega fyrir?
+    "abfn" : "PRON",
     "so" : "V",
     "ao" : "ADV",
     "lo" : "ADJ",
     "töl" : "NUM",
     "tala" : "NUM",
+    "ártal" : "NUM",
     "eo" : "ADV", # Skoða betur
     "st" : "C",
     "nhm" : "INF", # Nafnháttarmerki
-    "raðnr" : "ADJ" # Raðtölur; skgr. frekar sem NUM?    
+    "raðnr" : "ADJ", # Raðtölur; skgr. frekar sem NUM?   
+    "fyrirtæki" : "N",
 }
 
 _TEST_ID_MAP = { # Til að prófa í parse_text_to_bracket_form()
