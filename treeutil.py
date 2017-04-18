@@ -163,6 +163,9 @@ _TEST_TERMINAL_MAP = {
     # name here
     "fs" : "P",
     "no" : "N",
+    "hk" : "N",
+    "kk" : "N",
+    "kvk" : "N",
     "fn" : "PRON",
     "so" : "V",
     "ao" : "ADV",
