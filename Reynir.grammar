@@ -2119,6 +2119,7 @@ NlKjarni_ft/fall/kyn →
 
     # | EfLiðurForskeyti Einkunn_ft/fall/kyn* Skst? Fyrirbæri_ft/fall/kyn LoEftirNl_ft/fall/kyn?
 
+
 Fyrirbæri_ft/fall/kyn →
     Skst? no_ft/fall/kyn                 # [Commodore PET] tölvur
     | Skst? no_ft_gr/fall/kyn Fjöldi_ft/fall/kyn  # Mennina tíu / félögin tvö
