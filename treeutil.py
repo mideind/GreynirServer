@@ -118,18 +118,18 @@ _TEST_NT_MAP = { # Til að prófa í parse_text_to_bracket_form()
 
     "FsMeðFallstjórn" : "PP",
 
-    "SetningSo" : "V", # Breytt
-    "SagnRuna" : "V", # Breytt
-    "NhLiðir" : "V", # Breytt
-    "SagnliðurÁnF" : "V", # Breytt
-    "ÖfugurSagnliður" : "V", # Breytt
-    "SagnHluti" : "V", # Breytt
-    "SagnliðurVh" : "V", # Breytt
-    "HjSögnLhÞt" : "V",    # Nýtt
-    "EinSögn" : "V",       # Nýtt
-    "HafaGetaFá" : "V",
-    "HjSögn" : "V",         # Til skoðunar; þarf að einangra fremsta undirliði
-    "HjSögnNh" : "V",
+#    "SetningSo" : "V", # Breytt
+#    "SagnRuna" : "V", # Breytt
+#    "NhLiðir" : "V", # Breytt
+#    "SagnliðurÁnF" : "V", # Breytt
+#    "ÖfugurSagnliður" : "V", # Breytt
+#    "SagnHluti" : "V", # Breytt
+#    "SagnliðurVh" : "V", # Breytt
+#    "HjSögnLhÞt" : "V",    # Nýtt
+#    "EinSögn" : "V",       # Nýtt
+#    "HafaGetaFá" : "V",
+#    "HjSögn" : "V",         # Til skoðunar; þarf að einangra fremsta undirliði
+#    "HjSögnNh" : "V",
 
     "Nl" : "NP",
     "Sérnafn" : "N",
