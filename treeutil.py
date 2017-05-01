@@ -118,18 +118,18 @@ _TEST_NT_MAP = { # Til að prófa í parse_text_to_bracket_form()
 
     "FsMeðFallstjórn" : "PP",
 
-    "SetningSo" : "V", # Breytt
-    "SagnRuna" : "V", # Breytt
-    "NhLiðir" : "V", # Breytt
-    "SagnliðurÁnF" : "V", # Breytt
-    "ÖfugurSagnliður" : "V", # Breytt
-    "SagnHluti" : "V", # Breytt
-    "SagnliðurVh" : "V", # Breytt
-    "HjSögnLhÞt" : "V",    # Nýtt
-    "EinSögn" : "V",       # Nýtt
-    "HafaGetaFá" : "V",
-    "HjSögn" : "V",         # Til skoðunar; þarf að einangra fremsta undirliði
-    "HjSögnNh" : "V",
+#    "SetningSo" : "V", # Breytt
+#    "SagnRuna" : "V", # Breytt
+#    "NhLiðir" : "V", # Breytt
+#    "SagnliðurÁnF" : "V", # Breytt
+#    "ÖfugurSagnliður" : "V", # Breytt
+#    "SagnHluti" : "V", # Breytt
+#    "SagnliðurVh" : "V", # Breytt
+#    "HjSögnLhÞt" : "V",    # Nýtt
+#    "EinSögn" : "V",       # Nýtt
+#    "HafaGetaFá" : "V",
+#    "HjSögn" : "V",         # Til skoðunar; þarf að einangra fremsta undirliði
+#    "HjSögnNh" : "V",
 
     "Nl" : "NP",
     "Sérnafn" : "N",
@@ -163,16 +163,23 @@ _TEST_TERMINAL_MAP = {
     # name here
     "fs" : "P",
     "no" : "N",
+    "hk" : "N",
+    "kk" : "N",
+    "kvk" : "N",
     "fn" : "PRON",
+    "pfn" : "PRON", # Taka sérstaklega fyrir?
+    "abfn" : "PRON",
     "so" : "V",
     "ao" : "ADV",
     "lo" : "ADJ",
     "töl" : "NUM",
     "tala" : "NUM",
+    "ártal" : "NUM",
     "eo" : "ADV", # Skoða betur
     "st" : "C",
     "nhm" : "INF", # Nafnháttarmerki
-    "raðnr" : "ADJ" # Raðtölur; skgr. frekar sem NUM?    
+    "raðnr" : "ADJ", # Raðtölur; skgr. frekar sem NUM?   
+    "fyrirtæki" : "N",
 }
 
 _TEST_ID_MAP = { # Til að prófa í parse_text_to_bracket_form()
