@@ -135,7 +135,7 @@ AfTala → "af:fs" tala
 $score(-6) Forskeyti # Ekki freistast í forskeyti ef annað er í boði
 
 Tilvitnun →
-    ',' SögnSegja/tala/pers Nl_nf/tala/pers AtvFs? # , segir/fullyrðir Jón Ásmundsson, fulltrúi samtakanna, í útvarpinu í gær
+    ',' SögnSegja/tala/pers Nl_nf/tala/pers AtvFs? # , segir/fullyrðir Jón Ásmundsson, fulltrúi samtakanna, í dag í útvarpinu
     | ',' 'segja'_gm_fh_p3_et "í:fs" Nl_þgf AtvFs?  # , segir í tilkynningu ráðuneytisins í gær
 
 SögnSegja/tala/pers →

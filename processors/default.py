@@ -130,7 +130,8 @@ CUT_ENDINGS = (
     "í viðtali", "í viðtalinu",
     "í Kastljósi", "í þættinum",
     "í grein", "í greininni",
-    " sem"
+    " sem",
+    "-"
 )
 
 def _add_name(result, mannsnafn, titill, kyn):
@@ -152,10 +153,11 @@ def _add_name(result, mannsnafn, titill, kyn):
             titill = titill[:-2]
             cut = True
         # Cut off common endings that don't belong in a title
-        for s in CUT_ENDINGS:
-            if titill.endswith(s):
-                titill = titill[:-len(s) - (0 if s[0] == ' ' else 1)]
-                cut = True
+        if titill:
+            for s in CUT_ENDINGS:
+                if titill.endswith(s):
+                    titill = titill[:-len(s) - (0 if s[0] == ' ' else 1)]
+                    cut = True
     if len(titill) <= 2 or titill.lower() in INVALID_TITLES:
         # Last security check
         return False
@@ -266,6 +268,23 @@ def SvigaInnihald(node, params, result):
 # Textar sem ekki eru teknir gildir sem skýringar
 ekki_skýring = { "myndskeið" }
 
+# Forskeyti sem klippt eru framan af streng og e.t.v. annað sett í staðinn
+SEM_PREFIXES = [
+    # Keep this in increasing order by length
+    ("er", None),
+    ("sé", None),
+    ("var", None),
+    ("væri", None),
+    ("nú er", None),
+    ("mun vera", None),
+    ("ekki er", "ekki"),
+    ("ekki var", "var ekki"),
+    ("ekki væri", "ekki"),
+    ("einnig er", None),
+    ("verið hefur", "hefur verið"),
+    ("hefur verið", None)
+]
+
 def NlSkýring(node, params, result):
     """ Skýring nafnliðar (innan sviga eða komma) """
 
@@ -280,22 +299,19 @@ def NlSkýring(node, params, result):
     if s.startswith("sem "):
         # Jón, sem er heimsmethafi í hástökki,
         s = s[4:]
-        if s.startswith("er "):
-            s = s[3:]
-        elif s.startswith("væri "):
-            s = s[5:]
-        elif s.startswith("nú er "):
-            s = s[6:]
-        elif s.startswith("einnig er "):
-            s = s[10:]
-        elif s.startswith("ekki er "):
-            s = "ekki " + s[8:]
-        elif s.startswith("ekki var "):
-            s = "var ekki " + s[9:]
-        elif s.startswith("ekki væri "):
-            s = "ekki " + s[10:]
-        elif s.startswith("verið hefur "):
-            s = "hefur verið " + s[12:]
+        for prefix, replacement in reversed(SEM_PREFIXES):
+            if s.startswith(prefix + " "):
+                if replacement:
+                    s = replacement + " " + s[len(prefix) + 1:]
+                else:
+                    s = s[len(prefix) + 1:]
+                break
+        # Reverse word order such as "sem kallaður er" -> "er kallaður",
+        # "sem talinn er líklegastur" -> "er talinn líklegastur"
+        words = s.split()
+        if len(words) > 2 and words[1] in { "er", "var", "væri", "yrði" }:
+            # Juxtapose the first and second words
+            s = " ".join([words[1], words[0]] + words[2:])
     else:
         # Ég talaði við Jón (heimsmethafa í hástökki)
         s = cut(result._nominative)

@@ -280,6 +280,7 @@ def top_persons(limit = _TOP_PERSONS_LENGTH):
     """ Return a list of names and titles appearing recently in the news """
     toplist = dict()
     bindb = BIN_Db.get_db()
+    MAX_TITLE_LENGTH = 64
 
     with SessionContext(commit = True) as session:
 
@@ -288,10 +289,22 @@ def top_persons(limit = _TOP_PERSONS_LENGTH):
             .filter(Root.visible) \
             .order_by(desc(Article.timestamp))[0:limit * 2] # Go through up to 2 * N records
 
+        def is_better_title(new_title, old_title):
+            len_new = len(new_title)
+            len_old = len(old_title)
+            if len_old >= MAX_TITLE_LENGTH:
+                # Too long: we want a shorter one
+                return len_new < len_old
+            if len_new >= MAX_TITLE_LENGTH:
+                # This one is too long: we don't want it
+                return False
+            # Otherwise, longer is better
+            return len_new > len_old
+
         for p in q:
             # Insert the name into the list if it's not already there,
             # or if the new title is longer than the previous one
-            if p.name not in toplist or len(p.title) > len(toplist[p.name][0]):
+            if p.name not in toplist or is_better_title(p.title, toplist[p.name][0]):
                 toplist[p.name] = (correct_spaces(p.title), p.article_url, p.id, bindb.lookup_name_gender(p.name))
                 if len(toplist) >= limit:
                     # We now have as many names as we initially wanted: terminate the loop

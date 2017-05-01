@@ -25,6 +25,7 @@
 """
 
 import sys
+import math
 from datetime import datetime
 from contextlib import closing
 from collections import namedtuple, defaultdict
@@ -43,12 +44,15 @@ from search import Search
 
 _THIS_MODULE = sys.modules[__name__] # The module object for this module
 _QUERY_ROOT = 'QueryRoot' # The grammar root nonterminal for queries; see Reynir.grammar
-_MAXLEN_ANSWER = 25 # Maximum number of top answers to send in response to queries
+_MAXLEN_ANSWER = 20 # Maximum number of top answers to send in response to queries
 _MAXLEN_SEARCH = 20 # Maximum number of article search responses
 # If we have 5 or more titles/definitions with more than one associated URL,
 # cut off those that have only one source URL
 _CUTOFF_AFTER = 4
 _MAX_URLS = 5 # Maximum number of URL sources so provide for each top answer
+# Maximum number of identical mentions of a title or entity description
+# that we consider when scoring the mentions
+_MAX_MENTIONS = 5
 
 
 def append_answers(rd, q, prop_func):
@@ -56,7 +60,8 @@ def append_answers(rd, q, prop_func):
     for p in q:
         s = correct_spaces(prop_func(p))
         ai = dict(domain = p.domain, uuid = p.id, heading = p.heading,
-            ts = p.timestamp.isoformat()[0:16], url = p.url)
+            timestamp = p.timestamp, ts = p.timestamp.isoformat()[0:16],
+            url = p.url)
         rd[s][p.id] = ai # Add to a dict of UUIDs
 
 
@@ -139,7 +144,8 @@ def append_names(rd, q, prop_func):
     for p in q:
         s = correct_spaces(prop_func(p))
         ai = dict(domain = p.domain, uuid = p.id, heading = p.heading,
-            ts = p.timestamp.isoformat()[0:16], url = p.url)
+            timestamp = p.timestamp, ts = p.timestamp.isoformat()[0:16],
+            url = p.url)
         # Obtain the key within rd that should be updated with new
         # data. This may be an existing key, a new key or None if no
         # update is to be performed.
@@ -150,47 +156,99 @@ def append_names(rd, q, prop_func):
 
 def make_response_list(rd):
     """ Create a response list from the result dictionary rd """
-    # Now we have a dictionary of distinct results, along with their URLs
+    # rd is { result: { article_id : article_descriptor } } where article_descriptor is a dict
+
+    #print("\n" + "\n\n".join(str(key) + ": " + str(val) for key, val in rd.items()))
+
+    # We want to rank the results roughly by the following criteria:
+    # * Number of mentions
+    # * Newer mentions are better than older ones
+    # * If a result contains another result, that ranks
+    #   as a partial mention of both
+    # * Longer results are better than shorter ones
 
     def contained(needle, haystack):
         """ Return True if whole needles are contained in the haystack """
         return (" " + needle.lower() + " ") in (" " + haystack.lower() + " ")
 
-    # Go through the results and delete later ones
-    # that are contained within earlier ones
+    def sort_articles(articles):
+        """ Sort the individual article URLs so that the newest one appears first """
+        return sorted(articles.values(), key = lambda x: x["timestamp"], reverse = True)
 
-    rl = list(rd.keys())
-    for i in range(len(rl) - 1):
-        ri = rl[i]
-        if ri is not None:
-            for j in range(i + 1, len(rl)):
-                rj = rl[j]
-                if rj is not None:
-                    if contained(rj, ri):
-                        rd[ri].update(rd[rj])
-                        del rd[rj]
-                        rl[j] = None
+    def length_weight(result):
+        """ Longer results are better than shorter ones, but only to a point """
+        return min(math.e * math.log(len(result)), 10.0)
 
-    # Go again through the results and delete earlier ones
-    # that are contained within later ones
-    rl = list(rd.keys())
-    for i in range(len(rl) - 1):
+    now = datetime.utcnow()
+
+    def mention_weight(articles):
+        """ Newer mentions are better than older ones """
+        w = 0.0
+        newest_mentions = sort_articles(articles)[0:_MAX_MENTIONS]
+        for a in newest_mentions:
+            # Find the age of the article, in whole days
+            age = max(0, (now - a["timestamp"]).days)
+            # Create an appropriately shaped and sloped age decay function
+            div_factor = 1.0 + (math.log(age + 4, base = 4))
+            w += 14.0 / div_factor
+        # A single mention is only worth 1/e of a full (multiple) mention
+        if len(newest_mentions) == 1:
+            return w / math.e
+        return w
+
+    scores = dict()
+    mention_weights = dict()
+
+    for result, articles in rd.items():
+        mw = mention_weights[result] = mention_weight(articles)
+        scores[result] = mw + length_weight(result)
+
+    # Give scores for "cross mentions", where one result is contained
+    # within another (this promotes both of them). However, the cross
+    # mention bonus decays as more crosses are found.
+    CROSS_MENTION_FACTOR = 0.20
+    # Pay special attention to cases where somebody is said to be "ex" something,
+    # i.e. "fyrrverandi"
+    EX_MENTION_FACTOR = 0.35
+
+    # Sort the keys by decreasing mention weight
+    rl = sorted(rd.keys(), key = lambda x: mention_weights[x], reverse = True)
+    len_rl = len(rl)
+
+    def is_ex(s):
+        """ Does the given result contain an 'ex' prefix? """
+        return any(contained(x, s) for x in ("fyrrverandi", "fráfarandi", "áður", "þáverandi", "fyrrum"))
+
+    # Do a comparison of all pairs in the result list
+    for i in range(len_rl - 1):
         ri = rl[i]
-        for j in range(i + 1, len(rl)):
+        crosses = 0
+        ex_i = is_ex(ri)
+        for j in range(i + 1, len_rl):
             rj = rl[j]
-            if contained(ri, rj):
-                rd[rj].update(rd[ri])
-                del rd[ri]
-                break
+            if contained(rj, ri) or contained(ri, rj):
+                crosses += 1
+                # Result rj contains ri or vice versa:
+                # Cross-add a part of the respective mention weights
+                ex_j = is_ex(rj)
+                if ex_i and not ex_j:
+                    # We already had "fyrrverandi forseti Íslands" and now we
+                    # get "forseti Íslands": reinforce "fyrrverandi forseti Íslands"
+                    scores[ri] += mention_weights[rj] * EX_MENTION_FACTOR
+                else:
+                    scores[rj] += mention_weights[ri] * CROSS_MENTION_FACTOR / crosses
+                if ex_j and not ex_i:
+                    # We already had "forseti Íslands" and now we
+                    # get "fyrrverandi forseti Íslands": reinforce "fyrrverandi forseti Íslands"
+                    scores[rj] += mention_weights[ri] * EX_MENTION_FACTOR
+                else:
+                    scores[ri] += mention_weights[rj] * CROSS_MENTION_FACTOR / crosses
+                if crosses == _MAX_MENTIONS:
+                    # Don't bother with more than 5 cross mentions
+                    break
 
-    with changedlocale() as strxfrm:
-
-        def sort_articles(articles):
-            """ Sort the individual article URLs so that the newest one appears first """
-            return sorted(articles.values(), key = lambda x: x["ts"], reverse = True)
-
-        rl = sorted([(s, sort_articles(articles)) for s, articles in rd.items()],
-            key = lambda x: (-len(x[1]), strxfrm(x[0]))) # Sort by number of URLs in article dict
+    rl = sorted([(s, sort_articles(articles)) for s, articles in rd.items()],
+        key = lambda x: scores[x[0]], reverse = True) # Sort by decreasing score
 
     # If we have 5 or more titles/definitions with more than one associated URL,
     # cut off those that have only one source URL
@@ -342,7 +400,7 @@ def query_title(query, session, title):
     return make_response_list(rd)
 
 
-def _query_entity_titles(session, name):
+def _query_entity_definitions(session, name):
     """ A query for definitions of an entity by name """
     q = session.query(Entity.verb, Entity.definition, Article.id, Article.timestamp, \
         Article.heading, Root.domain, Article.url) \
@@ -356,14 +414,14 @@ def _query_entity_titles(session, name):
 
 def query_entity(query, session, name):
     """ A query for an entity by name """
-    titles = _query_entity_titles(session, name)
+    titles = _query_entity_definitions(session, name)
     articles = _query_article_list(session, name)
     return dict(answers = titles, sources = articles)
 
 
 def query_entity_def(session, name):
     """ Return a single (best) definition of an entity """
-    rl = _query_entity_titles(session, name)
+    rl = _query_entity_definitions(session, name)
     return correct_spaces(rl[0]["answer"]) if rl else ""
 
 
