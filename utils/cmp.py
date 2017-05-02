@@ -218,7 +218,7 @@ EO = {
     "víðsfjarri", "yfir", "á", "án", "ásamt", "í", "óháð", "ólíkt", "úr", "út", "útaf", "útfrá", "útundan", "útá", "útí"
 }
 
-ÓRLEM = { # Óreglulegar lemmur úr BÍN, allir möguleikar eru gefnir í gildinu.
+ÓRLEM = { # Óreglulegar lemmur úr IFD, allir möguleikar eru gefnir í gildinu.
     "barsmíð(i)": ["barsmíð", "barsmíði"],
     "dollar(i)": ["dollar", "dollari"],
     "eigin(n)": ["eigin", "eiginn"],
@@ -253,6 +253,26 @@ EO = {
     "foreldri": ["foreldri", "foreldrar"]
 }
 
+# Skammstafanir í OTB sem hafa verið slitnar í sundur. Gildi er [leiðrétt skst., fjöldi orða og lemma síðasta orðs]
+LEIÐRÉTTAR_SKST = { 
+    "a. m. k." : ["a.m.k.", 3, "kostur"], # að minnsta kosti
+    "e. t. v." : ["e.t.v.", 3, "vilja"], # ef til vill
+    "F. Í." : ["F.Í.", 2, "Ísland"], # Ferðafélag Íslands
+    "f. Kr." : ["f.Kr.", 2, "Kristur"], # fyrir Krist
+    "m. a." : ["m.a.", 2, "annar"], # meðal annars
+    "millj. kr." : ["millj.kr.", 2, "króna"], #milljónir króna
+    "o. fl." : ["o.fl.", 2, "margur"], # og fleiri/fleira
+    "o. s. frv." : ["o.s.frv.", 3, "framvegis"], # og svo framvegis
+    "o. þ. h." : ["o.þ.h.", 3, "háttur"], #og þess háttar
+    "o. þ. u. l." : "o.þ.u.l." # og því um líkt
+    "s. s." : "s.s.", # svo sem
+    "t. a. m." : "t.a.m.", # til að mynda
+    "t. d." : "t.d.", # til dæmis
+    "u. þ. b." : "u.þ.b." # um það bil
+    "m y. s." : "m y.s." # metrar yfir sjávarmáli
+    "þ. e. a. s." : "þ.e.a.s." # það er að segja
+    #þ.e. er sleppt hér, tekið sérstaklega fyrir síðar til að koma í veg fyrir rugling við "þ. e. a. s."
+}
 
 class Corpus(IFD_Corpus):
 
@@ -414,7 +434,7 @@ class Comparison():
                     or ("t" in word and word["t"] == "no"):
                     # Einstaka tilvik. PUNCTUATION hér er t.d. bandstrik sem OTB heldur í orðum en Greynir greinir sem stakt orð
                     i += 1
-                    stikk.write("Eitthvað skrýtið á ferðinni.\n")
+                    stikk.write("Eitthvað skrýtið á ferðinni. {}  -  {}\n".format(word["k"], word["x"]))
                     stikk.flush()
                     continue
                 if not lemmur_OTB[i]: # Greinarmerki
@@ -451,7 +471,7 @@ class Comparison():
             if i >= len(orðalisti):
                 break
 
-            if word["x"] == "Eiríkur Tse" or word["x"] == "Vincent Peale": # Ljótt sértilvik
+            if word["x"] == "Eiríkur Tse" or word["x"] == "Vincent Peale": # Ljót sértilvik þar sem OTB og Greynir skipta í tóka á ólíkan máta.
                 i += 1
                 continue
             if word["x"] == "-" and orðalisti[i] != "-": # Ef bandstrikið er greint sérstaklega
