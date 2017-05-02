@@ -417,10 +417,7 @@ class Comparison():
                     stikk.write("Eitthvað skrýtið á ferðinni.\n")
                     stikk.flush()
                     continue
-                if not lemmur_OTB[i]: # Greinarmerki
-                    rétt_setning = rétt_setning & self.sbrGreinarmerki(mörk_OTB[i], word)
-                else:
-                    rétt_setning = rétt_setning & self.skrif_stikkprufa(word, lemmur_OTB[i], mörk_OTB[i]) # Bæði og mark og lemma rétt
+                rétt_setning = rétt_setning & self.skrif_stikkprufa(word, lemmur_OTB[i], mörk_OTB[i]) # Bæði og mark og lemma rétt
             stikk.write("\t\tEyk við i og held áfram!\n")
             stikk.flush()
             i += 1
@@ -473,10 +470,7 @@ class Comparison():
                     # Einstaka tilvik. PUNCTUATION hér er t.d. bandstrik sem OTB heldur í orðum en Greynir greinir sem stakt orð
                     i += 1
                     continue
-                if not lemmur_OTB[i]: # Greinarmerki
-                    rétt_setning = rétt_setning & self.sbrGreinarmerki(mörk_OTB[i], word)
-                else:
-                    rétt_setning = rétt_setning & self.skrif_allt(word, lemmur_OTB[i], mörk_OTB[i]) # Bæði og mark og lemma rétt
+                rétt_setning = rétt_setning & self.skrif_allt(word, lemmur_OTB[i], mörk_OTB[i]) # Bæði og mark og lemma rétt
             i += 1
         if rétt_setning:
             self.réttar_setningar += 1
@@ -1076,13 +1070,13 @@ class Comparison():
         if convert_from_ifd:
             # Convert ifdtag.api output to a format roughly compatible with postag.api
             converted = []
-            for word in all_words:
-                if word[1].isalnum() or ('-' in word and word != '-'): # Allow nken-s, etc.
+            for word, tag in all_words:
+                if tag.isalnum() or ('-' in tag and tag != '-'): # Allow nken-s, etc.
                     # This is a proper IFD mark
-                    converted.append(dict(x = word[0], i = word[1], k = "WORD"))
+                    converted.append(dict(x = word, i = tag, k = "WORD"))
                 else:
                     # This is punctuation
-                    converted.append(dict(x = word[0], k = "PUNCTUATION"))
+                    converted.append(dict(x = word, k = "PUNCTUATION"))
             all_words = converted
 
         return all_words, setning
