@@ -410,18 +410,28 @@ def parse_digits(w):
         w = s.group()
         n = re.sub(r'\.', '', w) # Eliminate thousands separators
         return TOK.Number(w, int(n)), s.end()
-    s = re.match(r'\d{1,2}/\d{1,2}', w)
+    s = re.match(r'\d{1,2}/\d{1,2}', w) or re.match(r'\d{1,2}\.\d{1,2}', w)
     if s:
         # Looks like a date
         w = s.group()
-        p = w.split('/')
+        if '/' in w:
+            p = w.split('/')
+        else:
+            p = w.split('.')
         m = int(p[1])
         d = int(p[0])
-        if p[0][0] != '0' and p[1][0] != '0' and ((d <= 5 and m <= 6) or (d == 1 and m <= 10)):
-            # This is probably a fraction, not a date
-            # (1/2, 1/3, 1/4, 1/5, 1/6, 2/3, 2/5, 5/6 etc.)
-            # Return a number
-            return TOK.Number(w, float(d) / m), s.end()
+        if '/' in w:
+            if p[0][0] != '0' and p[1][0] != '0' and ((d <= 5 and m <= 6) or (d == 1 and m <= 10)):
+                # This is probably a fraction, not a date
+                # (1/2, 1/3, 1/4, 1/5, 1/6, 2/3, 2/5, 5/6 etc.)
+                # Return a number
+                return TOK.Number(w, float(d) / m), s.end()
+        else:
+            # We have what looks like DD.MM (or MM.DD)
+            # However, this might just as well be a time.
+            # If it is a valid time, assume so.
+            if 0 <= d <= 23 and 0 <= m <= 59:
+                return TOK.Time(w, d, m, 0), s.end()
         if m > 12 >= d:
             # Date is probably wrong way around
             m, d = d, m
@@ -438,13 +448,6 @@ def parse_digits(w):
     if s:
         # Looks like a telephone number
         return TOK.Telno(s.group()), s.end()
-    s = re.match(r'\d+\.\d+(\.\d+)+', w)
-    if s:
-        # Some kind of ordinal chapter number: 2.5.1 etc.
-        # (we need to check this before numbers with decimal points)
-        w = s.group()
-        n = re.sub(r'\.', '', w) # Eliminate dots, 2.5.1 -> 251
-        return TOK.Ordinal(w, int(n)), s.end()
     s = re.match(r'\d+(,\d\d\d)*\.\d+', w)
     if s:
         # Real number, possibly with a thousands separator and decimal comma/point

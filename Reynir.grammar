@@ -3692,7 +3692,6 @@ Dagsetning →
     | Vikudagur_þf_et dags 'næstkomandi:lo'_et_kk_þf? # 'föstudag[inn] 29. júlí [næstkomandi]'
     | 'næstkomandi:lo'_et_kk_þf Vikudagur_þf_et # 'næstkomandi fimmtudag'
     | 'síðastliðinn:lo'_et_kk_þf Vikudagur_þf_et # 'síðastliðinn fimmtudag'
-    | "á:fs" Vikudagur_þf_et # á föstudag / á sunnudaginn / á fimmtudagskvöld
     | 'á_morgun:ao' ','? Vikudagur_þf_et # á morgun, miðvikudag
 
     | DagsFs_þf? 'sá:fn'_et_kk_þf? tímapunktur # '[eftir] [þann] 3. júlí 2007 kl. 13:00'

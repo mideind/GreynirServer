@@ -480,10 +480,7 @@ class TnT:
         tags = current_state[0][1]
         return [ (w, tags[i + 2][0]) for i, w in enumerate(sent) ]
 
-# Global tagger singleton instance
 _TAGGER = None
-# Translation dictionary
-_XLT = { "—" : "-", "–" : "-" }
 
 def ifd_tag(text):
     """ Tokenize the given text and use a global singleton TnT tagger to tag it """
@@ -496,18 +493,11 @@ def ifd_tag(text):
             return [] # No tagger model - unable to tag
     token_stream = raw_tokenize(text)
     result = []
-
-    def xlt(txt):
-        """ Translate the token text as required before tagging it """
-        if txt[0] == '[' and txt[-1] == ']':
-            # Abbreviation enclosed in square brackets: remove'em
-            return txt[1:-1]
-        return _XLT.get(txt, txt)
-
+    # Translation dictionary
+    xlt = { "—" : "-", "–" : "-" }
     for pg in paragraphs(token_stream):
         for _, sent in pg:
-            toklist = [ xlt(t.txt) for t in sent if t.txt ]
-            print(f"Toklist: {toklist}")
+            toklist = [ xlt.get(t.txt, t.txt) for t in sent if t.txt ]
             tagged = _TAGGER.tag(toklist)
             result.append(tagged)
     # Return a list of paragraphs, consisting of sentences, consisting of tokens
