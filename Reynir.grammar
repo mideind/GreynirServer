@@ -3296,14 +3296,13 @@ $score(-10) LoViðhengi
 # '(Stjórnmálamaður) tengdur Framsóknarflokknum (hringdi í mig)'
 # '(Ég ræddi við) konu tengda verkefninu'
 LoEftirNl/tala/fall/kyn →
-    ',' LoLiður/tala/fall/kyn
-    | StaktLoEftirNl/tala/fall/kyn
+    StaktLoEftirNl/tala/fall/kyn
     | ',' LoLiður/tala/fall/kyn FsAtv? LokatáknEðaKomma
     | LoEftirNlMeðÞgf/fall/tala/kyn
     | ',' LoEftirNlMeðÞgf/fall/tala/kyn LokatáknEðaKomma
 
 StaktLoEftirNl/tala/fall/kyn →
-    LoLiður/tala/fall/kyn
+    ','? LoLiður/tala/fall/kyn
 
 # Stakt lýsingarorð eftir nafnorði gæti líklega tilheyrt næsta nafnorði
 $score(-6) StaktLoEftirNl/tala/fall/kyn
