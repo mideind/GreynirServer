@@ -253,25 +253,45 @@ EO = {
     "foreldri": ["foreldri", "foreldrar"]
 }
 
-# Skammstafanir í OTB sem hafa verið slitnar í sundur. Gildi er [leiðrétt skst., fjöldi orða og lemma síðasta orðs]
-LEIÐRÉTTAR_SKST = { 
-    "a. m. k." : ["a.m.k.", 3, "kostur"], # að minnsta kosti
-    "e. t. v." : ["e.t.v.", 3, "vilja"], # ef til vill
-    "F. Í." : ["F.Í.", 2, "Ísland"], # Ferðafélag Íslands
-    "f. Kr." : ["f.Kr.", 2, "Kristur"], # fyrir Krist
-    "m. a." : ["m.a.", 2, "annar"], # meðal annars
-    "millj. kr." : ["millj.kr.", 2, "króna"], #milljónir króna
-    "o. fl." : ["o.fl.", 2, "margur"], # og fleiri/fleira
-    "o. s. frv." : ["o.s.frv.", 3, "framvegis"], # og svo framvegis
-    "o. þ. h." : ["o.þ.h.", 3, "háttur"], #og þess háttar
-    "o. þ. u. l." : "o.þ.u.l." # og því um líkt
+# Skammstafanir í OTB sem hafa verið slitnar í sundur. Gildi er leiðrétt skammstöfun
+SKST_LEIÐRÉTTAR = { 
+    "a. m. k." : "a.m.k.", # að minnsta kosti
+    "e. t. v." : "e.t.v.", # ef til vill
+    "F. Í." : "F.Í.", # Ferðafélag Íslands
+    "f. Kr." : "f.Kr.", # fyrir Krist
+    "m. a." : "m.a.", # meðal annars
+    "millj. kr." : "millj.kr.", #milljónir króna
+    "o. fl." : "o.fl.", # og fleiri/fleira
+    "o. s. frv." : "o.s.frv.", # og svo framvegis
+    "o. þ. h." : "o.þ.h.", #og þess háttar
+    "o. þ. u. l." : "o.þ.u.l.", # og því um líkt
     "s. s." : "s.s.", # svo sem
     "t. a. m." : "t.a.m.", # til að mynda
     "t. d." : "t.d.", # til dæmis
-    "u. þ. b." : "u.þ.b." # um það bil
-    "m y. s." : "m y.s." # metrar yfir sjávarmáli
-    "þ. e. a. s." : "þ.e.a.s." # það er að segja
+    "u. þ. b." : "u.þ.b.", # um það bil
+    "m y. s." : "m y.s.", # metrar yfir sjávarmáli
+    "þ. e. a. s." : "þ.e.a.s.", # það er að segja
     #þ.e. er sleppt hér, tekið sérstaklega fyrir síðar til að koma í veg fyrir rugling við "þ. e. a. s."
+}
+
+SKST_LENGD = {
+    "a.m.k." : 3,
+    "e.t.v." : 3,
+    "F.Í." : 2,
+    "f.Kr." : 2,
+    "m.a." : 2,
+    "millj.kr." : 2,
+    "o.fl." : 2,
+    "o.s.frv." : 3,
+    "o.þ.h." : 3,
+    "o.þ.u.l." : 4,
+    "s.s." : 2,
+    "t.a.m." : 3,
+    "t.d." : 2,
+    "u.þ.b." : 3,
+    "y.s." : 2,     # Engin þörf á að sleppa "m"
+    "þ.e." : 2,
+    "þ.e.a.s." : 4,
 }
 
 class Corpus(IFD_Corpus):
@@ -403,6 +423,16 @@ class Comparison():
                 stikk.write("Fann greinarmerki: {}\n".format(mörk_OTB[i]))
                 stikk.flush()
                 rétt_setning = rétt_setning & self.sbrGreinarmerki(mörk_OTB[i], word)
+            skst = word["x"].replace("[", "").replace("]", "") # TODO get tekið út þegar hitt komið í lag
+            if skst in SKST_LENGD: # Leiðréttar skammstafanir, þurfa sérmeðhöndlun # NÝTT
+                stikk.write("Fann endurhæfða skammstöfun: {}\n".format(skst))
+                stikk.flush()
+                i += SKST_LENGD[skst]
+                if i >= (len(orðalisti) - 1):
+                    stikk.write("Síðasta orð í streng, hætti\n")
+                    stikk.flush()
+                    break
+                continue
             else:
                 lengd = max(len(word["x"].split(" ")), len(word["x"].split("-"))) #TODO breyta ef stuðningur við orð með bandstriki er útfærður.
                 if lengd > 1: # Fleiri en eitt orð í streng Greynis
@@ -867,7 +897,13 @@ class Comparison():
                     setning.append(" ")
                 setning.append(item)
                 bil = True
-        return "".join(setning)
+        setning_sameinuð = "".join(setning)
+        for item in SKST_LEIÐRÉTTAR:
+            if item in setning_sameinuð:
+                setning_sameinuð = setning_sameinuð.replace(item, SKST_LEIÐRÉTTAR[item])
+        if "þ. e." in setning_sameinuð: # Til að rugla ekki saman við "þ.e.a.s."
+            setning_sameinuð = setning.sameinuð.replace("þ. e.", "þ.e.")
+        return setning_sameinuð
  
     def sbrlemma(self, lemma_OTB, word):
         #Fyllir út í self.tíðnibreytur
