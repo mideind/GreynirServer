@@ -64,6 +64,7 @@ from tokenizer import canonicalize_token
 from fastparser import Fast_Parser
 from scraperdb import SessionContext
 
+
 # Stuff for deciding which POS tagging server (and what method) we will use
 
 TAGGER = os.environ.get("TAGGER", "localhost:5000")
@@ -293,7 +294,26 @@ SKST_LENGD = {
     "þ.e." : 2,
     "þ.e.a.s." : 4,
 }
-
+SKST_ÚTSKRIFAÐAR = {
+    "a.m.k." : "að minnsta kosti",
+    "e.t.v." : "ef til vill",
+    "F.Í." : "Ferðafélag Íslands",
+    "f.Kr." : "fyrir Krist",
+    "m.a." : "milljónir króna",
+    "millj.kr." : "milljónir króna",
+    "o.fl." : "og fleira",
+    "o.s.frv." : "og svo framvegis",
+    "o.þ.h." : "og þess háttar",
+    "o.þ.u.l." : "og því um líkt",
+    "s.s." : "svo sem",
+    "t.a.m." : "til að mynda",
+    "t.d." : "til dæmis",
+    "u.þ.b." : "um það bil",
+    "y.s." : "yfir sjávarmáli",     # Engin þörf á að sleppa "m"
+    "þ.e." : "það er",
+    "þ.e.a.s." : "það er að segja",
+}
+ 
 class Corpus(IFD_Corpus):
 
     """ Override the IFD_Corpus class to enumerate the IFD files
@@ -423,10 +443,17 @@ class Comparison():
                 stikk.write("Fann greinarmerki: {}\n".format(mörk_OTB[i]))
                 stikk.flush()
                 rétt_setning = rétt_setning & self.sbrGreinarmerki(mörk_OTB[i], word)
-            skst = word["x"].replace("[", "").replace("]", "") # TODO get tekið út þegar hitt komið í lag
+            skst = word["x"]
             if skst in SKST_LENGD: # Leiðréttar skammstafanir, þurfa sérmeðhöndlun # NÝTT
                 stikk.write("Fann endurhæfða skammstöfun: {}\n".format(skst))
                 stikk.flush()
+                if StaticPhrases.has_details(SKST_ÚTSKRIFAÐAR[skst]):
+                    stikk.write("\tFann skst í StaticPhrases\n")
+                    stikk.flush()
+                    rétt_setning = rétt_setning & self.margorða_stikkprufa(word, lemmur_OTB, mörk_OTB, i, SKST_ÚTSKRIFAÐAR[skst])
+                else:
+                    stikk.write("\tFann ekki skst í StaticPhrases\n")
+                    stikk.flush()
                 i += SKST_LENGD[skst]
                 if i >= (len(orðalisti) - 1):
                     stikk.write("Síðasta orð í streng, hætti\n")
@@ -439,9 +466,9 @@ class Comparison():
                     stikk.write("Fann margorða eind í Greyni: {}\n".format(word["x"]))
                     stikk.flush()
                     if StaticPhrases.has_details(word["x"].lower()): # Margorða frasi, fæ mörk úr orðabók, lemmur líka.
-                        stikk.write("Fann í MARGORÐA\n")
+                        stikk.write("Fann í StaticPhrases\n")
                         stikk.flush()
-                        rétt_setning = rétt_setning & self.margorða_stikkprufa(word, lemmur_OTB, mörk_OTB, i)
+                        rétt_setning = rétt_setning & self.margorða_stikkprufa(word, lemmur_OTB, mörk_OTB, i, None)
                         i += lengd
                         if i >= (len(orðalisti) - 1): #Getur gerst ef síðasta orð í streng
                             stikk.write("Síðasta orð í streng, hætti\n")
@@ -527,10 +554,10 @@ class Comparison():
         else:
             self.rangar_setningar += 1
 
-    def margorða_stikkprufa(self, word, lemmur_OTB, mörk_OTB, i):
+    def margorða_stikkprufa(self, word, lemmur_OTB, mörk_OTB, i, one):
         stikk = self.stikk
         assert stikk is not None
-        wx = word["x"].lower()
+        wx = word["x"].lower() if not one else one
         mörk_Gr = StaticPhrases.tags(wx)
         lemmur_Gr = StaticPhrases.lemmas(wx)
         öll_orð = wx.replace("-", " ").split()
@@ -940,24 +967,55 @@ class Comparison():
         #    d1="*" if mark_Gr_eldra != mark_OTB else " ",
         #    d2="*" if mark_Gr != mark_OTB else " "))
 
-        einnannar = {"einn": "p", "annar": "r"}
-        #if mark_OTB in OTB_einfaldað: # ct, ta, aþe, aþm
+
+        #if mark_OTB in OTB_einfaldað: # ct, ta, aþe, aþm - Afbrigði 10, 17 og 20 í einföldun
         #    mark_OTB = OTB_einfaldað[mark_OTB]
+        #if mark_Gr in OTB_einfaldað:
+        #    mark_Gr = OTB_einfaldað[mark_Gr]
+
         if mark_OTB.startswith("n") and mark_OTB.endswith(("m", "s", "ö")): # undirflokkun sérnafna # TODO breyta í elif
             mark_OTB = mark_OTB[:-1] + "e"
         if mark_Gr.startswith("n") and mark_Gr.endswith(("m", "s", "ö")): # undirflokkun sérnafna # TODO breyta í elif
             mark_Gr = mark_Gr[:-1] + "e"
-        #elif word["x"] in EO and mark_Gr[0] == "a": # Getur verið bæði forsetning og atviksorð
+
+        #if mark_OTB.startswith("s"): # Afbrigði 13 í einföldun
+        #    mark_OTB = mark_OTB[:1] + mark_OTB[2:]
+        #if mark_Gr.startswith("s"):
+        #    mark_Gr = mark_Gr[:1] + mark_Gr[2:]
+
+        #if mark_OTB.startswith("l"): # Afbrigði 15 í einföldun
+        #    mark_OTB = mark_OTB[:4] + mark_OTB[5:]
+        #if mark_Gr.startswith("l"):
+        #    mark_Gr = mark_Gr[:4] + mark_Gr[5:]
+
+        #if stofn_Gr in EO and mark_Gr[0] == "a": # Afbrigði 19 í einföldun
+        #    mark_Gr = "af"
         #    if mark_OTB.startswith("a") or mark_OTB.startswith("f"):
         #        mark_OTB = "af"
-        #    mark_Gr = "af"
-        elif mark_Gr.startswith("fpx"): # afturbeygt fornafn, hunsa kyngreiningu:
-            mark_Gr = mark_Gr[:2] + mark_Gr[3:]
-            if mark_OTB.startswith("fp"):
-                mark_OTB = mark_OTB[:2] + mark_OTB[3:]
-        #elif mark_Gr.startswith("fm"): # Samfall 'sá' og pfn
+
+        #if stofn_Gr in {"sig", "sér", "sín"} and mark_Gr.startswith("fp"): # afbrigði 26 í einföldun
+        #    if mark_OTB.startswith("fp"):
+        #        mark_OTB = mark_OTB[:2] + mark_OTB[3:]
+        #    mark_Gr = mark_Gr[:2] + mark_Gr[3:]
+        
+        #if word["x"].lower() in self.SAMFALL and (stofn_Gr in self.BÆÐI): # Samfall 'sá' og pfn - Afbrigði 5
+        #    print(stofn_Gr)
+        #    mark_Gr = "fm" + mark_Gr[2:]            
         #    mark_OTB = "fm" + mark_OTB[2:]
-        elif stofn_Gr in einnannar:
+
+        #if mark_Gr.startswith("f"): # Sleppa undirflokkun fornafna - Afbrigði 7
+        #    mark_Gr = mark_Gr[:1] + mark_Gr[2:]
+        #if mark_OTB.startswith("f"):
+        #    mark_OTB = mark_OTB[:1] + mark_OTB[2:]
+        
+        #föll = {"ao", "aþ", "ae"}   # Afbrigði 21
+        #if mark_Gr in föll:
+        #    mark_Gr = "a"
+        #if mark_OTB in föll:
+        #    mark_OTB = "a"
+        
+        einnannar = {"einn": "p", "annar": "r"}
+        if stofn_Gr in einnannar:  # Afbrigði 22-24B
             if mark_OTB.startswith("l"): # greint sem lýsingarorð
                 mark_OTB = einnannar[stofn_Gr] + mark_OTB[1] + mark_OTB[2] + mark_OTB[3]
             elif mark_OTB.startswith("f") or mark_OTB.startswith("tf"):
