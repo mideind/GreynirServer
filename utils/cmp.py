@@ -57,7 +57,7 @@ if basepath.endswith(_UTILS):
     basepath = basepath[0:-len(_UTILS)]
     sys.path.append(basepath)
 
-from settings import Settings, StaticPhrases
+from settings import Settings, StaticPhrases, Abbreviations
 from treeutil import TreeUtility
 from postagger import IFD_Tagset, IFD_Corpus
 from tokenizer import canonicalize_token
@@ -294,25 +294,6 @@ SKST_LENGD = {
     "þ.e." : 2,
     "þ.e.a.s." : 4,
 }
-SKST_ÚTSKRIFAÐAR = {
-    "a.m.k." : "að minnsta kosti",
-    "e.t.v." : "ef til vill",
-    "F.Í." : "Ferðafélag Íslands",
-    "f.Kr." : "fyrir Krist",
-    "m.a." : "milljónir króna",
-    "millj.kr." : "milljónir króna",
-    "o.fl." : "og fleira",
-    "o.s.frv." : "og svo framvegis",
-    "o.þ.h." : "og þess háttar",
-    "o.þ.u.l." : "og því um líkt",
-    "s.s." : "svo sem",
-    "t.a.m." : "til að mynda",
-    "t.d." : "til dæmis",
-    "u.þ.b." : "um það bil",
-    "y.s." : "yfir sjávarmáli",     # Engin þörf á að sleppa "m"
-    "þ.e." : "það er",
-    "þ.e.a.s." : "það er að segja",
-}
  
 class Corpus(IFD_Corpus):
 
@@ -447,12 +428,12 @@ class Comparison():
             if skst in SKST_LENGD: # Leiðréttar skammstafanir, þurfa sérmeðhöndlun # NÝTT
                 stikk.write("Fann endurhæfða skammstöfun: {}\n".format(skst))
                 stikk.flush()
-                if StaticPhrases.has_details(SKST_ÚTSKRIFAÐAR[skst]):
-                    stikk.write("\tFann skst í StaticPhrases\n")
+                if Abbreviations.has_meaning(skst):
+                    stikk.write("\tFann skst í Abbreviations\n")
                     stikk.flush()
-                    rétt_setning = rétt_setning & self.margorða_stikkprufa(word, lemmur_OTB, mörk_OTB, i, SKST_ÚTSKRIFAÐAR[skst])
+                    rétt_setning = rétt_setning & self.margorða_stikkprufa(word, lemmur_OTB, mörk_OTB, i, Abbreviations.get_meaning(skst))
                 else:
-                    stikk.write("\tFann ekki skst í StaticPhrases\n")
+                    stikk.write("\tFann ekki skst í Abbreviations ---{}---\n".format(SKST_ÚTSKRIFAÐAR[skst]))
                     stikk.flush()
                 i += SKST_LENGD[skst]
                 if i >= (len(orðalisti) - 1):
@@ -557,6 +538,7 @@ class Comparison():
     def margorða_stikkprufa(self, word, lemmur_OTB, mörk_OTB, i, one):
         stikk = self.stikk
         assert stikk is not None
+        print(one)
         wx = word["x"].lower() if not one else one
         mörk_Gr = StaticPhrases.tags(wx)
         lemmur_Gr = StaticPhrases.lemmas(wx)
@@ -1375,6 +1357,8 @@ if __name__ == "__main__":
     Settings.read("config/Reynir.conf")
     print("\nCMP.PY Copyright (C) 2017 Miðeind ehf.\n"
         "Mæling á mörkunarárangri Greynis með íslenska orðtíðnisafnið IFD sem viðmið\n")
+    #for thing in StaticPhrases.DETAILS:
+    #    print(StaticPhrases.DETAILS[thing])
     if USE_IFD_TAGGER:
         print("Þjónustan ifdtag.api verður notuð til að marka texta")
         print("Vefslóð mörkunarþjóns er {}".format(IFD_PATH))

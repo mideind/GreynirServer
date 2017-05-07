@@ -180,6 +180,14 @@ class Abbreviations:
         if name_finisher:
             Abbreviations.NAME_FINISHERS.add(abbrev)
 
+    @staticmethod
+    def has_meaning(abbrev):
+        return abbrev in Abbreviations.DICT
+
+    @staticmethod
+    def get_meaning(abbrev):
+        """ Lookup meaning of abbreviation, if available """
+        return None if abbrev not in Abbreviations.DICT else Abbreviations.DICT[abbrev][0]
 
 class Meanings:
 
@@ -376,7 +384,6 @@ class StaticPhrases:
     @staticmethod
     def add(spec):
         """ Add a static phrase to the dictionary. Called from the config file handler. """
-
         parts = spec.split(',')
         if len(parts) not in { 1, 3 }:
             raise ConfigError("Static phrase must include IFD tag list and lemmas")
@@ -387,7 +394,6 @@ class StaticPhrases:
             raise ConfigError("Static phrase must be enclosed in double quotes")
 
         phrase = phrase[1:-1]
-
         # First add to phrase list
         ix = len(StaticPhrases.LIST)
         m = StaticPhrases.MEANING
