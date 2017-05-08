@@ -513,6 +513,14 @@ class Comparison():
                 continue
             if not lemmur_OTB[i]: # Greinarmerki
                 rétt_setning = rétt_setning & self.sbrGreinarmerki(mörk_OTB[i], word)
+            skst = word["x"]
+            if skst in SKST_LENGD: # Leiðréttar skammstafanir, þurfa sérmeðhöndlun # NÝTT
+                if Abbreviations.has_meaning(skst):
+                    rétt_setning = rétt_setning & self.margorða_allt(word, lemmur_OTB, mörk_OTB, i, Abbreviations.get_meaning(skst))
+                i += SKST_LENGD[skst]
+                if i >= (len(orðalisti) - 1):
+                    break
+                continue
             else:
                 lengd = max(len(word["x"].split(" ")), len(word["x"].split("-"))) #TODO breyta ef stuðningur við orð með bandstriki er útfærður.
                 if lengd > 1: # Fleiri en eitt orð í streng Greynis # TODO breyta þegar set dict með MWE inn
@@ -538,10 +546,13 @@ class Comparison():
     def margorða_stikkprufa(self, word, lemmur_OTB, mörk_OTB, i, one):
         stikk = self.stikk
         assert stikk is not None
-        print(one)
         wx = word["x"].lower() if not one else one
-        mörk_Gr = StaticPhrases.tags(wx)
-        lemmur_Gr = StaticPhrases.lemmas(wx)
+        if wx == "milljónir króna":
+            mörk_Gr = "nvfþ nvfe"
+            lemmur_Gr = "milljón króna"
+        else:
+            mörk_Gr = StaticPhrases.tags(wx)
+            lemmur_Gr = StaticPhrases.lemmas(wx)
         öll_orð = wx.replace("-", " ").split()
         allt = zip(öll_orð, lemmur_Gr, mörk_Gr)
         rétt = True # Finnst eitthvað rangt í liðnum?
@@ -593,10 +604,14 @@ class Comparison():
         stikk.flush()
         return rétt
 
-    def margorða_allt(self, word, lemmur_OTB, mörk_OTB, i):
-        wx = word["x"].lower()
-        mörk_Gr = StaticPhrases.tags(wx)
-        lemmur_Gr = StaticPhrases.lemmas(wx)
+    def margorða_allt(self, word, lemmur_OTB, mörk_OTB, i, one):
+        wx = word["x"].lower() if not one else one
+        if wx == "milljónir króna":
+            mörk_Gr = "nvfþ nvfe"
+            lemmur_Gr = "milljón króna"
+        else:
+            mörk_Gr = StaticPhrases.tags(wx)
+            lemmur_Gr = StaticPhrases.lemmas(wx)
         öll_orð = wx.replace("-", " ").split()
         allt = zip(öll_orð, lemmur_Gr, mörk_Gr)
         rétt = True # Finnst eitthvað rangt í liðnum?
@@ -911,7 +926,7 @@ class Comparison():
             if item in setning_sameinuð:
                 setning_sameinuð = setning_sameinuð.replace(item, SKST_LEIÐRÉTTAR[item])
         if "þ. e." in setning_sameinuð: # Til að rugla ekki saman við "þ.e.a.s."
-            setning_sameinuð = setning.sameinuð.replace("þ. e.", "þ.e.")
+            setning_sameinuð = setning_sameinuð.replace("þ. e.", "þ.e.")
         return setning_sameinuð
  
     def sbrlemma(self, lemma_OTB, word):
@@ -955,7 +970,12 @@ class Comparison():
         #if mark_Gr in OTB_einfaldað:
         #    mark_Gr = OTB_einfaldað[mark_Gr]
 
-        if mark_OTB.startswith("n") and mark_OTB.endswith(("m", "s", "ö")): # undirflokkun sérnafna # TODO breyta í elif
+        if mark_OTB == "ct":
+            mark_OTB = "c"
+        if mark_Gr == "ct":
+            mark_Gr = "c"
+
+        if mark_OTB.startswith("n") and mark_OTB.endswith(("m", "s", "ö")): # undirflokkun sérnafna - Afbrigði 8
             mark_OTB = mark_OTB[:-1] + "e"
         if mark_Gr.startswith("n") and mark_Gr.endswith(("m", "s", "ö")): # undirflokkun sérnafna # TODO breyta í elif
             mark_Gr = mark_Gr[:-1] + "e"
@@ -970,20 +990,19 @@ class Comparison():
         #if mark_Gr.startswith("l"):
         #    mark_Gr = mark_Gr[:4] + mark_Gr[5:]
 
-        #if stofn_Gr in EO and mark_Gr[0] == "a": # Afbrigði 19 í einföldun
-        #    mark_Gr = "af"
-        #    if mark_OTB.startswith("a") or mark_OTB.startswith("f"):
-        #        mark_OTB = "af"
+        if stofn_Gr in EO and mark_Gr[0] == "a": # Afbrigði 19 í einföldun
+            mark_Gr = "af"
+            if mark_OTB.startswith("a") or mark_OTB.startswith("f"):
+                mark_OTB = "af"
 
-        #if stofn_Gr in {"sig", "sér", "sín"} and mark_Gr.startswith("fp"): # afbrigði 26 í einföldun
-        #    if mark_OTB.startswith("fp"):
-        #        mark_OTB = mark_OTB[:2] + mark_OTB[3:]
-        #    mark_Gr = mark_Gr[:2] + mark_Gr[3:]
+        if stofn_Gr in {"sig", "sér", "sín"} and mark_Gr.startswith("fp"): # afbrigði 25 í einföldun
+            if mark_OTB.startswith("fp"):
+                mark_OTB = mark_OTB[:2] + mark_OTB[3:]
+            mark_Gr = mark_Gr[:2] + mark_Gr[3:]
         
-        #if word["x"].lower() in self.SAMFALL and (stofn_Gr in self.BÆÐI): # Samfall 'sá' og pfn - Afbrigði 5
-        #    print(stofn_Gr)
-        #    mark_Gr = "fm" + mark_Gr[2:]            
-        #    mark_OTB = "fm" + mark_OTB[2:]
+        if word["x"].lower() in self.SAMFALL and (stofn_Gr in self.BÆÐI): # Samfall 'sá' og pfn - Afbrigði 5
+            mark_Gr = "fm" + mark_Gr[2:]            
+            mark_OTB = "fm" + mark_OTB[2:]
 
         #if mark_Gr.startswith("f"): # Sleppa undirflokkun fornafna - Afbrigði 7
         #    mark_Gr = mark_Gr[:1] + mark_Gr[2:]
