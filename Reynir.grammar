@@ -375,7 +375,7 @@ FrumlagsInnskot/tala/pers/kyn →
 # Þröngt mengi samtenginga sem nota má án kommu í frumlagsinnskoti
 # (sé mengið of vítt eykst margræðni verulega)
 InnskotsSamtenging →
-    "þegar:st" | "meðan:st" | 'á_meðan:st'
+    "þegar:st" | "meðan:st" | 'á_meðan:st' | "þar:ao" "sem:st"
 
 Frumlag/pers/tala/kyn →
     Nl_nf/tala/pers/kyn
@@ -1956,7 +1956,11 @@ NhFylling →
 NhFyllingAtv →
     NhFylling SagnInnskot?
 
+NhFyllingÁnAtv →
+    NhLiðir SagnInnskot? # Getur ekki byrjað á FsAtv
+
 $tag(begin_prep_scope) NhFyllingAtv # Nýtt undirtré fyrir tengingu sagnar og forsetningar
+$tag(begin_prep_scope) NhFyllingÁnAtv # Nýtt undirtré fyrir tengingu sagnar og forsetningar
 
 NhFyllingEðaAtv →
     NhFyllingAtv | SagnInnskot?
@@ -2359,6 +2363,7 @@ NlStak_p3/tala/fall/kyn →
 Útskýring →
     ',' "að:st" HreinYfirsetning ','
     | "að:st" HreinYfirsetning
+    | NhFyllingÁnAtv # Sú ákvörðun Úkraínustjórnar [í gær] að loka á síður
 
 $score(+12) Útskýring
 
@@ -3066,7 +3071,8 @@ Skýring →
     | "til:fs" "dæmis:hk" | 'til_dæmis:ao'
     | "þar:ao" "á:fs" "meðal:ao" | 'þar_á_meðal:ao'
     | "meðal:ao" "annars:ao" | 'meðal_annars:ao'
-    | 'það:pfn'_nf_et "er:st" | 'það_er:ao'
+    | 'það:pfn'_nf_et "er:so" | 'það_er:ao'
+    # | "þar:ao" "sem:st" "er:so"
     | "með:fs" 'annar:lo'_hk_þgf_ft "orðum:hk" | 'með_öðrum_orðum:ao'
 
 SvigaForskeyti →

@@ -730,10 +730,8 @@ class Query:
 
         self._error = None
         self._qtype = None
-        with closing(BIN_Db.get_db()) as bin_db:
-
-            # Process the tree, which has only one sentence
-            self._tree.process(self._session, _THIS_MODULE, bin_db, query = self)
+        # Process the tree, which has only one sentence
+        self._tree.process(self._session, _THIS_MODULE, query = self)
 
         return self._error is None
 

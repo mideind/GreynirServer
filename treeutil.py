@@ -23,81 +23,21 @@
 """
 
 import time
+import threading
 from collections import namedtuple
 
 from fetcher import Fetcher
 from tokenizer import TOK, tokenize, canonicalize_token
 from fastparser import Fast_Parser, ParseForestNavigator
 from incparser import IncrementalParser
+from scraperdb import SessionContext
+from settings import Settings
+from matcher import SimpleTree, SimpleTreeBuilder
 
 
 WordTuple = namedtuple("WordTuple", ["stem", "cat"])
 
 
-# Tree simplifier configuration maps
-
-# !!! TODO: Move the following dictionaries to a configuration file?
-_DEFAULT_NT_MAP = {
-    "S0" : "P",
-    "HreinYfirsetning" : "S",
-    "Setning" : "S",
-    "SetningSo" : "VP",
-    "SetningLo" : "S",
-    "SetningÁnF" : "S",
-    "SetningAukafall" : "S",
-    "SetningSkilyrði" : "S",
-    "SetningUmAðRæða" : "S",
-    "StViðtenging" : "S",
-    "Tengisetning" : "S",
-    "OgTengisetning" : "S",
-    "Skilyrði" : "S-COND",
-    "Afleiðing" : "S-CONS",
-    "NlSkýring" : "S-EXPLAIN",
-    "Tilvitnun" : "S-QUOTE",
-    "Nl" : "NP",
-    "EfLiður" : "NP-POSS",
-    "EfLiðurForskeyti" : "NP-POSS",
-    "Heimilisfang" : "NP-ADDR",
-    "FsMeðFallstjórn" : "PP",
-    "SagnInnskot" : "ADVP",
-    "FsAtv" : "ADVP",
-    "AtvFs" : "ADVP",
-    "Atviksliður" : "ADVP",
-    "LoAtviksliðir" : "ADVP",
-    "Dagsetning" : "ADVP-DATE",
-    "SagnRuna" : "VP",
-    "NhLiðir" : "VP",
-    "SagnliðurÁnF" : "VP",
-    "ÖfugurSagnliður" : "VP",
-    "SagnHluti" : "VP",
-    "SagnliðurVh" : "VP",
-}
-
-# subject_to: don't push an instance of this if the
-# immediate parent is already the subject_to nonterminal
-
-# overrides: we cut off a parent node in favor of this one
-# if there are no intermediate nodes
-
-_DEFAULT_ID_MAP = {
-    "P" : dict(name = "Málsgrein"),
-    "S" : dict(name = "Setning", subject_to = { "S", "S-EXPLAIN" }),
-    "S-COND" : dict(name = "Skilyrði", overrides = "S"), # Condition
-    "S-CONS" : dict(name = "Afleiðing", overrides = "S"), # Consequence
-    "S-EXPLAIN" : dict(name = "Skýring"), # Explanation
-    "S-QUOTE" : dict(name = "Tilvitnun"), # Quote at end of sentence
-    "VP" : dict(name = "Sagnliður", subject_to = { "VP" }),
-    "NP" : dict(name = "Nafnliður"),
-    "NP-POSS" : dict(name = "Eignarfallsliður", overrides = "NP"),
-    "NP-ADDR" : dict(name = "Heimilisfang", overrides = "NP"),
-    "ADVP" : dict(name = "Atviksliður", subject_to = { "ADVP" }),
-    "ADVP-DATE" : dict(name = "Tímasetning", overrides = "ADVP"),
-    "PP" : dict(name = "Forsetningarliður", overrides = "ADVP"),
-}
-
-_DEFAULT_TERMINAL_MAP = {
-    # Empty
-}
 _TEST_NT_MAP = { # Til að prófa í parse_text_to_bracket_form()
     "S0" : "M", # P veldur ruglingi við FS, breyti í M
 
@@ -325,13 +265,7 @@ class TreeUtility:
         def __init__(self, tokens, nt_map, id_map, terminal_map):
             super().__init__(visit_all = True)
             self._tokens = tokens
-            self._nt_map = nt_map
-            self._id_map = id_map
-            self._terminal_map = terminal_map
-            self._result = []
-            self._stack = [ self._result ]
-            self._pushed = []
-            self._scope = [ NotImplemented ] # Sentinel value
+            self._builder = SimpleTreeBuilder(nt_map, id_map, terminal_map)
 
         def _visit_token(self, level, node):
             """ At token node """
@@ -340,87 +274,25 @@ class TreeUtility:
                 None if isinstance(meaning, bool) else meaning)
             # Convert from compact form to external (more verbose and descriptive) form
             canonicalize_token(d)
-            # Check whether this terminal should be pushed as a nonterminal
-            # with a single child
-            mapped_t = self._terminal_map.get(node.terminal.category)
-            if mapped_t is None:
-                # No: add as a child of the current node in the condensed tree
-                self._stack[-1].append(d)
-            else:
-                # Yes: create an intermediate nonterminal with this terminal
-                # as its only child
-                self._stack[-1].append(dict(k = "NONTERMINAL",
-                    n = mapped_t, i = mapped_t, p = [ d ]))
+            self._builder.push_terminal(d)
             return None
 
         def _visit_nonterminal(self, level, node):
             """ Entering a nonterminal node """
-            self._pushed.append(False)
             if node.is_interior or node.nonterminal.is_optional:
-                return None
-            mapped_nt = self._nt_map.get(node.nonterminal.first)
-            if mapped_nt is not None:
-                # We want this nonterminal in the simplified tree:
-                # push it (unless it is subject to a scope we're already in)
-                mapped_id = self._id_map[mapped_nt]
-                subject_to = mapped_id.get("subject_to")
-                if subject_to is not None and self._scope[-1] in subject_to:
-                    # We are already within a nonterminal to which this one is subject:
-                    # don't bother pushing it
-                    return None
-                children = []
-                self._stack[-1].append(dict(k = "NONTERMINAL",
-                    n = mapped_id["name"], i = mapped_nt, p = children))
-                self._stack.append(children)
-                self._scope.append(mapped_nt)
-                self._pushed[-1] = True
+                nt_base = None
+            else:
+                nt_base = node.nonterminal.first
+            self._builder.push_nonterminal(nt_base)
             return None
 
         def _process_results(self, results, node):
             """ Exiting a nonterminal node """
-            if not self._pushed.pop():
-                return
-            # Pushed this nonterminal in _visit_nonterminal(): pop it
-            children = self._stack[-1]
-            self._stack.pop()
-            self._scope.pop()
-            # Check whether this nonterminal has only one child, which is again
-            # the same nonterminal - or a nonterminal which the parent overrides
-            if len(children) == 1:
-
-                ch0 = children[0]
-
-                def collapse_child(nt):
-                    """ Determine whether to cut off a child and connect directly
-                        from this node to its children """
-                    d = self._nt_map[nt]
-                    if ch0["i"] == d:
-                        # Same nonterminal category: do the cut
-                        return True
-                    # If the child is a nonterminal that this one 'overrides',
-                    # cut off the child
-                    override = self._id_map[d].get("overrides")
-                    return ch0["i"] == override
-
-                def replace_parent(nt):
-                    d = self._nt_map[nt]
-                    # If the child overrides the parent, replace the parent
-                    override = self._id_map[ch0["i"]].get("overrides")
-                    return d == override
-
-                if ch0["k"] == "NONTERMINAL":
-                    if collapse_child(node.nonterminal.first):
-                        # If so, we eliminate one level and move the children of the child
-                        # up to be children of this node
-                        self._stack[-1][-1]["p"] = ch0["p"]
-                    elif replace_parent(node.nonterminal.first):
-                        # The child subsumes the parent: replace
-                        # the parent by the child
-                        self._stack[-1][-1] = ch0
+            self._builder.pop_nonterminal()
 
         @property
         def result(self):
-            return self._result[0]
+            return self._builder.result
 
     @staticmethod
     def _terminal_map(tree):
@@ -470,10 +342,7 @@ class TreeUtility:
         return dump
 
     @staticmethod
-    def _simplify_tree(tokens, tree,
-            nt_map = _DEFAULT_NT_MAP,
-            id_map = _DEFAULT_ID_MAP,
-            terminal_map = _DEFAULT_TERMINAL_MAP):
+    def _simplify_tree(tokens, tree, nt_map = None, id_map = None, terminal_map = None):
         """ Return a simplified parse tree for a sentence, including POS-tagged,
             normalized terminal leaves """
         if tree is None:
@@ -608,6 +477,14 @@ class TreeUtility:
             return TreeUtility._process_text(parser, session, text, all_names, xform)
 
     @staticmethod
+    def simple_parse(text):
+        """ No-frills parse of text, returning a SimpleTree object """
+        if not Settings.loaded:
+            Settings.read("config/Reynir.conf")
+        with SessionContext(read_only = True) as session:
+            return SimpleTree(*TreeUtility.parse_text(session, text))
+
+    @staticmethod
     def parse_text_to_bracket_form(session, text):
         """ Parse plain text and return the parsed paragraphs as bracketed strings """
 
@@ -641,9 +518,10 @@ class TreeUtility:
                     # Terminal: append the text
                     result.append(node["x"].replace(" ", "_"))
 
-            # For different simplification schemes, replace _DEFAULT_ID_MAP and _DEFAULT_NT_MAP below
+            # This uses a custom simplification scheme
             simple_tree = TreeUtility._simplify_tree(tokens, tree,
-                nt_map = _TEST_NT_MAP, id_map = _TEST_ID_MAP, terminal_map = _TEST_TERMINAL_MAP)
+                nt_map = _TEST_NT_MAP, id_map = _TEST_ID_MAP,
+                terminal_map = _TEST_TERMINAL_MAP)
             push(simple_tree)
             return "".join(result)
 

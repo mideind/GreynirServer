@@ -119,10 +119,12 @@ class SessionContext:
             db = self.db # Creates a new Scraper_DB instance if needed
             self._new_session = True
             self._session = db.session
-            self._commit = commit
             if read_only:
                 # Set the transaction as read only, which can save resources
                 self._session.execute("SET TRANSACTION READ ONLY")
+                self._commit = True
+            else:
+                self._commit = commit
         else:
             self._new_session = False
             self._session = session

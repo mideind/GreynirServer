@@ -36,6 +36,7 @@
 import os
 import codecs
 import locale
+import threading
 
 from contextlib import contextmanager, closing
 from collections import defaultdict
@@ -656,6 +657,7 @@ class NamePreferences:
 
 class Settings:
 
+    _lock = threading.Lock()
     loaded = False
 
     # Postgres SQL database server hostname and port
@@ -1016,62 +1018,67 @@ class Settings:
     def read(fname):
         """ Read configuration file """
 
-        CONFIG_HANDLERS = {
-            "settings" : Settings._handle_settings,
-            "static_phrases" : Settings._handle_static_phrases,
-            "abbreviations" : Settings._handle_abbreviations,
-            "verb_objects" : Settings._handle_verb_objects,
-            "verb_subjects" : Settings._handle_verb_subjects,
-            "prepositions" : Settings._handle_prepositions,
-            "preferences" : Settings._handle_preferences,
-            "noun_preferences" : Settings._handle_noun_preferences,
-            "name_preferences" : Settings._handle_name_preferences,
-            "stem_preferences" : Settings._handle_stem_preferences,
-            "ambiguous_phrases" : Settings._handle_ambiguous_phrases,
-            "meanings" : Settings._handle_meanings,
-            "adjective_template" : Settings._handle_adjective_template,
-            "disallowed_names" : Settings._handle_disallowed_names,
-            "noindex_words" : Settings._handle_noindex_words,
-            "topics" : Settings._handle_topics
-        }
-        handler = None # Current section handler
+        with Settings._lock:
 
-        rdr = None
-        try:
-            rdr = LineReader(fname)
-            for s in rdr.lines():
-                # Ignore comments
-                ix = s.find('#')
-                if ix >= 0:
-                    s = s[0:ix]
-                s = s.strip()
-                if not s:
-                    # Blank line: ignore
-                    continue
-                if s[0] == '[' and s[-1] == ']':
-                    # New section
-                    section = s[1:-1].strip().lower()
-                    if section in CONFIG_HANDLERS:
-                        handler = CONFIG_HANDLERS[section]
+            if Settings.loaded:
+                return
+
+            CONFIG_HANDLERS = {
+                "settings" : Settings._handle_settings,
+                "static_phrases" : Settings._handle_static_phrases,
+                "abbreviations" : Settings._handle_abbreviations,
+                "verb_objects" : Settings._handle_verb_objects,
+                "verb_subjects" : Settings._handle_verb_subjects,
+                "prepositions" : Settings._handle_prepositions,
+                "preferences" : Settings._handle_preferences,
+                "noun_preferences" : Settings._handle_noun_preferences,
+                "name_preferences" : Settings._handle_name_preferences,
+                "stem_preferences" : Settings._handle_stem_preferences,
+                "ambiguous_phrases" : Settings._handle_ambiguous_phrases,
+                "meanings" : Settings._handle_meanings,
+                "adjective_template" : Settings._handle_adjective_template,
+                "disallowed_names" : Settings._handle_disallowed_names,
+                "noindex_words" : Settings._handle_noindex_words,
+                "topics" : Settings._handle_topics
+            }
+            handler = None # Current section handler
+
+            rdr = None
+            try:
+                rdr = LineReader(fname)
+                for s in rdr.lines():
+                    # Ignore comments
+                    ix = s.find('#')
+                    if ix >= 0:
+                        s = s[0:ix]
+                    s = s.strip()
+                    if not s:
+                        # Blank line: ignore
                         continue
-                    raise ConfigError("Unknown section name '{0}'".format(section))
-                if handler is None:
-                    raise ConfigError("No handler for config line '{0}'".format(s))
-                # Call the correct handler depending on the section
-                try:
-                    handler(s)
-                except ConfigError as e:
-                    # Add file name and line number information to the exception
-                    # if it's not already there
+                    if s[0] == '[' and s[-1] == ']':
+                        # New section
+                        section = s[1:-1].strip().lower()
+                        if section in CONFIG_HANDLERS:
+                            handler = CONFIG_HANDLERS[section]
+                            continue
+                        raise ConfigError("Unknown section name '{0}'".format(section))
+                    if handler is None:
+                        raise ConfigError("No handler for config line '{0}'".format(s))
+                    # Call the correct handler depending on the section
+                    try:
+                        handler(s)
+                    except ConfigError as e:
+                        # Add file name and line number information to the exception
+                        # if it's not already there
+                        e.set_pos(rdr.fname(), rdr.line())
+                        raise e
+
+            except ConfigError as e:
+                # Add file name and line number information to the exception
+                # if it's not already there
+                if rdr:
                     e.set_pos(rdr.fname(), rdr.line())
-                    raise e
+                raise e
 
-        except ConfigError as e:
-            # Add file name and line number information to the exception
-            # if it's not already there
-            if rdr:
-                e.set_pos(rdr.fname(), rdr.line())
-            raise e
-
-        Settings.loaded = True
+            Settings.loaded = True
 

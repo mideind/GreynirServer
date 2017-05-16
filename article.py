@@ -31,12 +31,14 @@ from datetime import datetime
 from collections import OrderedDict, defaultdict, namedtuple
 
 from settings import Settings, NoIndexWords
-from scraperdb import Article as ArticleRow, SessionContext, Word, DataError, desc
+from scraperdb import Article as ArticleRow, SessionContext, Word, Root, DataError, desc
 from fetcher import Fetcher
 from tokenizer import TOK, tokenize, canonicalize_token
 from fastparser import Fast_Parser, ParseError, ParseForestNavigator, ParseForestDumper
 from incparser import IncrementalParser
+from tree import Tree
 from treeutil import TreeUtility
+from matcher import SimpleTree
 
 
 class Article:
@@ -447,6 +449,10 @@ class Article:
         return self._root_domain
 
     @property
+    def authority(self):
+        return self._authority
+
+    @property
     def html(self):
         return self._html
 
@@ -535,4 +541,55 @@ class Article:
                         count += 1
                         if limit is not None and count >= limit:
                             return
+
+    @classmethod
+    def articles(cls, criteria, enclosing_session = None):
+        """ Generator of Article objects from the database that meet the given criteria """
+        # The criteria are currently "timestamp", "author" and "domain"
+        with SessionContext(commit = True, read_only = True,
+            session = enclosing_session) as session:
+
+            # Only fetch articles that have a parse tree
+            q = session.query(ArticleRow) \
+                .filter(ArticleRow.tree != None)
+
+            # timestamp is assumed to contain a tuple: (from, to)
+            if criteria and "timestamp" in criteria:
+                ts = criteria["timestamp"]
+                q = q.filter(ArticleRow.timestamp >= ts[0]) \
+                    .filter(ArticleRow.timestamp < ts[1])
+
+            if criteria and "author" in criteria:
+                author = criteria["author"]
+                q = q.filter(ArticleRow.author == author)
+
+            if criteria and "domain" in criteria:
+                domain = criteria["domain"]
+                q = q.join(Root).filter(Root.domain == domain)
+
+            for arow in q.yield_per(200):
+                yield cls._init_from_row(arow)
+
+    @classmethod
+    def all_matches(cls, criteria, pattern, enclosing_session = None):
+        """ Generator of SimpleTree objects (see matcher.py) from articles matching
+            the given criteria and the pattern """
+
+        with SessionContext(commit = True, read_only = True,
+            session = enclosing_session) as session:
+
+            t0 = time.time()
+            mcnt = acnt = tcnt = 0
+            print("Starting article loop")
+            for a in cls.articles(criteria, enclosing_session = enclosing_session):
+                acnt += 1
+                tree = Tree(url = a.url, authority = a.authority)
+                tree.load(a.tree)
+                for ix, stree in tree.simple_trees():
+                    tcnt += 1
+                    for match in stree.all_matches(pattern):
+                        yield (a, ix, match)
+                        mcnt += 1
+            t1 = time.time()
+            print(f"{acnt} articles with {tcnt} trees examined, {mcnt} matches in {t1-t0 :.2f} seconds")
 

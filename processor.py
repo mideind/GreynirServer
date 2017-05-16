@@ -120,10 +120,9 @@ class Processor:
                         # print("Tree:\n{0}\n".format(article.tree))
                         tree.load(article.tree)
 
-                        with closing(BIN_Db.get_db()) as bin_db:
-                            # Run all processors in turn
-                            for p in self.processors:
-                                tree.process(session, p, bin_db)
+                        # Run all processors in turn
+                        for p in self.processors:
+                            tree.process(session, p)
 
                     # Mark the article as being processed
                     article.processed = datetime.utcnow()
@@ -179,6 +178,7 @@ class Processor:
                 # If profiling, just do a simple map within a single thread and process
                 for url in iter_parsed_articles():
                     self.go_single(url)
+                BIN_Db.cleanup() # Make sure there are no open BIN db connections
             else:
                 # Use a multiprocessing pool to process the articles
                 BIN_Db.cleanup() # Make sure there are no open BIN db connections
@@ -186,6 +186,7 @@ class Processor:
                 pool.map(self.go_single, iter_parsed_articles())
                 pool.close()
                 pool.join()
+                BIN_Db.cleanup() # Make sure there are no open BIN db connections
 
 
 def process_articles(from_date = None, limit = 0, force = False, update = False, title = None, processor = None):

@@ -592,6 +592,11 @@ span.sent.err {
 }
 */
 
+span.sent.err {
+   text-decoration: underline solid rgba(255, 0, 0, 0.5);
+}
+
+/*
 span.sent.err::before {
    font-family: 'Glyphicons Regular';
    font-style: normal;
@@ -605,21 +610,23 @@ span.sent.err::before {
    padding-left: 1px;
    padding-right: 2px;
    color: white;
-   /* Specific settings */
    position: relative;
    background-color: #f46681;
    border-color: #f46681;
 }
+*/
 
 span.sent.err:hover {
    border-color: #FFE0EA;
    background-color: #FFE0EA;
 }
 
+/*
 span.sent.err:hover::before {
    background-color: red;
    border-color: red;
 }
+*/
 
 span.sent.err:hover span.errtok {
    font-weight: 600;
