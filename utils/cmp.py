@@ -1010,8 +1010,8 @@ class Comparison():
 
         if stofn_Gr in {"sig", "sér", "sín"} and mark_Gr.startswith("fp"): # afbrigði 25 í einföldun
             if mark_OTB.startswith("fp"):
-                mark_OTB = mark_OTB[:2] + mark_OTB[3:]
-            mark_Gr = mark_Gr[:2] + mark_Gr[3:]
+                mark_OTB = mark_OTB[:2] + mark_OTB[4:]
+            mark_Gr = mark_Gr[:2] + mark_Gr[4:]
         
         if word["x"].lower() in self.SAMFALL and mark_Gr.startswith(("fp", "fa")):
             if mark_OTB.startswith(("fp", "fa")):
@@ -1044,6 +1044,11 @@ class Comparison():
             elif mark_Gr.startswith("f") or mark_Gr.startswith("tf"):
                 mark_Gr = einnannar[stofn_Gr] + mark_Gr[2:]
 
+        if stofn_Gr is "fyrstur": # OTB kallar það efsta stig, Greynir kallar frumstig.
+            if mark_OTB.startswith("l") and mark_OTB.endswith("e"):
+                mark_OTB = mark_OTB[:-1] + "e"
+
+
         #tvennd = (mark_Gr, mark_OTB) # TODO setja aftur inn ef útfæri confusion matrix
         #if tvennd in self.M_confmat:
             #self.M_confmat[tvennd] += 1
@@ -1060,6 +1065,7 @@ class Comparison():
         else:
             self.MW += 1
             return 0, mark_Gr
+
 
     def sbrGreinarmerki(self, OTB, word):
         if "s" in word:
