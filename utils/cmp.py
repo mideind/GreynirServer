@@ -416,16 +416,21 @@ class Comparison():
             if i >= len(orðalisti):
                 break
 
+            skst = word["x"]
             if word["x"] == "-" and orðalisti[i] != "-": # Ef bandstrikið er greint sérstaklega # NÝTT
                 stikk.write("Fann bandstrik, fer í næsta orð\n")
                 stikk.flush()
                 continue
-            if not lemmur_OTB[i]: # Greinarmerki
+            elif not lemmur_OTB[i]: # Greinarmerki
                 stikk.write("Fann greinarmerki: {}\n".format(mörk_OTB[i]))
                 stikk.flush()
                 rétt_setning = rétt_setning & self.sbrGreinarmerki(mörk_OTB[i], word)
-            skst = word["x"]
-            if skst in SKST_LENGD: # Leiðréttar skammstafanir, þurfa sérmeðhöndlun # NÝTT
+            elif orðalisti[i].endswith("-"):
+                print("Fann svona orð, greini samt: {}".format(orðalisti[i]))
+                rétt_setning = rétt_setning & self.skrif_stikkprufa(word, lemmur_OTB[i], mörk_OTB[i]) # Bæði og mark og lemma rétt
+                i += 1
+                continue
+            elif skst in SKST_LENGD: # Leiðréttar skammstafanir, þurfa sérmeðhöndlun # NÝTT
                 stikk.write("Fann endurhæfða skammstöfun: {}\n".format(skst))
                 stikk.flush()
                 if Abbreviations.has_meaning(skst):
@@ -442,7 +447,8 @@ class Comparison():
                     break
                 continue
             else:
-                lengd = max(len(word["x"].split(" ")), len(word["x"].split("-"))) #TODO breyta ef stuðningur við orð með bandstriki er útfærður.
+                orð = word["x"]
+                lengd = max(len(orð.split(" ")), len(orð.split("-"))) #TODO breyta ef stuðningur við orð með bandstriki er útfærður.
                 if lengd > 1: # Fleiri en eitt orð í streng Greynis
                     stikk.write("Fann margorða eind í Greyni: {}\n".format(word["x"]))
                     stikk.flush()
@@ -472,6 +478,7 @@ class Comparison():
                     or ("t" in word and word["t"] == "no"):
                     # Einstaka tilvik. PUNCTUATION hér er t.d. bandstrik sem OTB heldur í orðum en Greynir greinir sem stakt orð
                     i += 1
+                    print("Eitthvað skrýtið á ferðinni. {}  -  {}\n".format(word["k"], word["x"]))
                     stikk.write("Eitthvað skrýtið á ferðinni. {}  -  {}\n".format(word["k"], word["x"]))
                     stikk.flush()
                     continue
@@ -511,10 +518,15 @@ class Comparison():
                 continue
             if word["x"] == "-" and orðalisti[i] != "-": # Ef bandstrikið er greint sérstaklega
                 continue
+            skst = word["x"]
             if not lemmur_OTB[i]: # Greinarmerki
                 rétt_setning = rétt_setning & self.sbrGreinarmerki(mörk_OTB[i], word)
-            skst = word["x"]
-            if skst in SKST_LENGD: # Leiðréttar skammstafanir, þurfa sérmeðhöndlun # NÝTT
+            elif orðalisti[i].endswith("-"):
+                print("Fann svona orð, greini samt: {}".format(orðalisti[i]))
+                rétt_setning = rétt_setning & self.skrif_allt(word, lemmur_OTB[i], mörk_OTB[i]) # Bæði og mark og lemma rétt
+                i += 1
+                continue
+            elif skst in SKST_LENGD: # Leiðréttar skammstafanir, þurfa sérmeðhöndlun # NÝTT
                 if Abbreviations.has_meaning(skst):
                     rétt_setning = rétt_setning & self.margorða_allt(word, lemmur_OTB, mörk_OTB, i, Abbreviations.get_meaning(skst))
                 i += SKST_LENGD[skst]
@@ -533,6 +545,7 @@ class Comparison():
                     continue #Hægir mikið á öllu, e-r betri leið?
                 if ("k" in word and (word["k"] == "PUNCTUATION" or word["k"] == "UNKNOWN")) \
                     or ("t" in word and word["t"] == "no"):
+                    #print("Eitthvað skrýtið á ferðinni. {}\n\t{}\n".format(setning, word["x"]))
                     # Einstaka tilvik. PUNCTUATION hér er t.d. bandstrik sem OTB heldur í orðum en Greynir greinir sem stakt orð
                     i += 1
                     continue
@@ -970,7 +983,7 @@ class Comparison():
         #if mark_Gr in OTB_einfaldað:
         #    mark_Gr = OTB_einfaldað[mark_Gr]
 
-        if mark_OTB == "ct":
+        if mark_OTB == "ct":    # Afbrigði 17
             mark_OTB = "c"
         if mark_Gr == "ct":
             mark_Gr = "c"
@@ -1000,9 +1013,13 @@ class Comparison():
                 mark_OTB = mark_OTB[:2] + mark_OTB[3:]
             mark_Gr = mark_Gr[:2] + mark_Gr[3:]
         
-        if word["x"].lower() in self.SAMFALL and (stofn_Gr in self.BÆÐI): # Samfall 'sá' og pfn - Afbrigði 5
+        if word["x"].lower() in self.SAMFALL and mark_Gr.startswith(("fp", "fa")):
+            if mark_OTB.startswith(("fp", "fa")):
+                mark_OTB = "fm" + mark_OTB[2:]
             mark_Gr = "fm" + mark_Gr[2:]            
-            mark_OTB = "fm" + mark_OTB[2:]
+        #if word["x"].lower() in self.SAMFALL and (stofn_Gr in self.BÆÐI): # Samfall 'sá' og pfn - Afbrigði 5
+        #    mark_Gr = "fm" + mark_Gr[2:]            
+        #    mark_OTB = "fm" + mark_OTB[2:]
 
         #if mark_Gr.startswith("f"): # Sleppa undirflokkun fornafna - Afbrigði 7
         #    mark_Gr = mark_Gr[:1] + mark_Gr[2:]
