@@ -31,6 +31,7 @@ cp article.py $DEST/article.py
 cp baseparser.py $DEST/baseparser.py
 cp bindb.py $DEST/bindb.py
 cp binparser.py $DEST/binparser.py
+cp cache.py $DEST/cache.py
 cp dawgdictionary.py $DEST/dawgdictionary.py
 cp fastparser.py $DEST/fastparser.py
 cp fetcher.py $DEST/fetcher.py
@@ -40,6 +41,7 @@ cp grammar.py $DEST/grammar.py
 cp incparser.py $DEST/incparser.py
 cp libeparser.so $DEST/libeparser.so
 cp main.py $DEST/main.py
+cp matcher.py $DEST/matcher.py
 cp postagger.py $DEST/postagger.py
 cp processor.py $DEST/processor.py
 cp query.py $DEST/query.py

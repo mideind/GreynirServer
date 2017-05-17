@@ -2080,7 +2080,15 @@ Einkunn/tala/fall/kyn →
     | Töluorð/tala/fall/kyn     # þrjá (gangandi menn) / 26
     | OkkarYkkar                # 'okkar skoðanir', 'ykkar félag' (okkar og ykkar eru pfn, ekki fn)
 
+# 'Skjölin voru mörg hundruð síður', 'Í húsinu voru fleiri þúsund hænur', 'hún saknaði mörg hundruð hálsmena'
+Einkunn_ft/fall/kyn →
+    HundruðForskeyti Hundruð
+
 $score(+3) Einkunn/tala/fall/kyn
+
+HundruðForskeyti → 'margur:lo'_sb_hk_nf_ft | 'margur:lo'_mst_hk_nf_ft # mörg, fleiri
+
+Hundruð → 'hundrað:hk'_nf_ft | 'þúsund:hk'_nf_ft # hundruð, þúsund
 
 # Lýsingarorð eða eignarfallsliður sem kemur á eftir nafnlið
 

@@ -129,6 +129,7 @@ _DEFAULT_NT_MAP = {
     "Dagsetning" : "ADVP-DATE",
     "SagnRuna" : "VP-SEQ",
     "Sagnliður" : "VP",
+    "SagnliðurMeðF" : "VP",
     # "SagnFramhald" : "VP",
     "NhLiðir" : "VP",
     "SagnliðurÁnF" : "VP",
