@@ -50,7 +50,7 @@ import xml.etree.ElementTree as ET
 from treeutil import TreeUtility
 from tokenizer import canonicalize_token, TOK
 from settings import Settings, Prepositions, StaticPhrases, ConfigError
-
+from bindb import BIN_Db
 
 class IFD_Corpus:
 
@@ -247,7 +247,7 @@ class IFD_Tagset:
         "sumur": "o",
         "enginn": "o",
         "margur": "o",
-        "flestir": "o", # æti að vera margur
+        "flestir": "o", # ætti að vera margur
         "einn": "o",
         "annar": "o",
         "neinn": "o",
@@ -420,6 +420,8 @@ class IFD_Tagset:
         return "f"
 
     def _beyging(self):
+        if BIN_Db.is_undeclinable(self._stem, "lo"):
+            return "o"
         if "fsb" in self._tagset or "esb" in self._tagset:
             return "s"
         if "fvb" in self._tagset or "evb" in self._tagset or "mst" in self._tagset:
