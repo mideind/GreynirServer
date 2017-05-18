@@ -420,8 +420,6 @@ class IFD_Tagset:
         return "f"
 
     def _beyging(self):
-        if BIN_Db.is_undeclinable(self._stem, "lo"):
-            return "o"
         if "fsb" in self._tagset or "esb" in self._tagset:
             return "s"
         if "fvb" in self._tagset or "evb" in self._tagset or "mst" in self._tagset:
