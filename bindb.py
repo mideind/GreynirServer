@@ -294,18 +294,15 @@ class BIN_Db:
             m = None
         return m
 
-
+    @lru_cache(2048)
     def is_undeclinable(self, stem, fl):
-
-        skipun = "SELECT ordmynd " \
-            "FROM " + "ord" + " WHERE stofn=(%s) AND ordfl=(%s);"
+        skipun = "SELECT count(*) FROM (SELECT DISTINCT ordmynd FROM ord " \
+            "WHERE stofn=(%s) AND ordfl=(%s)) AS q;"
         assert self._c is not None
         try:
             self._c.execute(skipun, [ stem, fl ])
             g = self._c.fetchall()
-            word_forms = zip(*g)
-            myset = set(*word_forms)
-            if len(myset) == 1:
+            if g[0][0] == 1:
                 #print("FANN ÓBEYGJANLEGT, {}".format(stem))
                 return True
             else:
