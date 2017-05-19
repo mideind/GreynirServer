@@ -420,6 +420,9 @@ class IFD_Tagset:
         return "f"
 
     def _beyging(self):
+        bin_db = BIN_Db.get_db()
+        if bin_db.is_undeclinable(self._stem, "lo"):
+            return "o"
         if "fsb" in self._tagset or "esb" in self._tagset:
             return "s"
         if "fvb" in self._tagset or "evb" in self._tagset or "mst" in self._tagset:
@@ -428,7 +431,7 @@ class IFD_Tagset:
 
     def _flokkur_f(self):
         if self._cat == "abfn":
-            return "p" # ??? Hefði þetta ekki átt að vera "a"?
+            return "p" # ??? Hefði þetta ekki átt að vera "a"? --- OTB flokkar abfn. með pfn.
         if self._cat == "pfn":
             return "p"
         if self._txt in self.FN_SAMFALL and self._stem in self.FN_BÆÐI:

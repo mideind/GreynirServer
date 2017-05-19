@@ -294,6 +294,26 @@ class BIN_Db:
             m = None
         return m
 
+
+    def is_undeclinable(self, stem, fl):
+
+        skipun = "SELECT ordmynd " \
+            "FROM " + "ord" + " WHERE stofn=(%s) AND ordfl=(%s);"
+        assert self._c is not None
+        try:
+            self._c.execute(skipun, [ stem, fl ])
+            g = self._c.fetchall()
+            word_forms = zip(*g)
+            myset = set(*word_forms)
+            if len(myset) == 1:
+                #print("FANN ÓBEYGJANLEGT, {}".format(stem))
+                return True
+            else:
+                return False
+        except (psycopg2.DataError, psycopg2.ProgrammingError) as e:
+            print("Word '{0}' causing DB exception {1}".format(w, e))
+            return False
+
     @lru_cache(maxsize = CACHE_SIZE)
     def lookup_utg(self, stofn, ordfl, utg, beyging = None):
         """ Return a list of meanings with the given integer id ('utg' column) """
