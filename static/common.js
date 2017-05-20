@@ -232,11 +232,22 @@ function iso_timestamp(d) {
       lzero(d[3], 2) + ":" + lzero(d[4], 2) + ":" + lzero(d[5], 2);
 }
 
-function grammar(cat, m) {
+function grammar(cat, m, txt) {
    var g = [];
-   var gender = { "kk" : "karlkyn", "kvk" : "kvenkyn", "hk" : "hvorugkyn" } [cat];
-   if (gender !== undefined)
-      g.push(gender);
+   if (cat == "pfn" && txt !== undefined) {
+      var gender = {
+         "hann" : "karlkyn", "honum" : "karlkyn", "hans" : "karlkyn",
+         "hún" : "kvenkyn", "hana" : "kvenkyn", "henni" : "kvenkyn", "hennar" : "kvenkyn",
+         "það" : "hvorugkyn", "því" : "hvorugkyn", "þess" : "hvorugkyn"
+      } [txt.toLowerCase()];
+      if (gender !== undefined)
+         g.push(gender);
+   }
+   else {
+      var gender = { "kk" : "karlkyn", "kvk" : "kvenkyn", "hk" : "hvorugkyn" } [cat];
+      if (gender !== undefined)
+         g.push(gender);
+   }
    $.each(grammarDesc, function(ix, val) {
       if (m.indexOf(val.k) > -1) {
          if (cat == "fs")
@@ -257,41 +268,6 @@ function makePercentGraph(percent) {
       .attr("aria-valuenow", Math.round(percent).toString())
       .css("width", percent.toString() + "%");
    $("#percent .progress-bar span.sr-only").text(percent.toString() + "%");
-/*
-   // Draw a simple bar graph using D3 with SVG
-   $("#grammar").html("<svg class='gpercent'></svg>");
-   var width = 134,
-     height = 16;
-
-   var x = d3.scale.linear()
-     .domain([0, 100])
-     .range([0, width])
-     .clamp(true);
-
-   var chart = d3.select(".gpercent")
-     .attr("width", width)
-     .attr("height", height);
-
-   var bar = chart.selectAll("g")
-     .data([ percent ])
-   .enter().append("g")
-     .attr("transform", "translate(0,0)");
-
-   bar.append("rect")
-     .attr("class", "gbackground")
-     .attr("width", width)
-     .attr("height", height);
-
-   bar.append("rect")
-     .attr("width", function(d) { return x(d); })
-     .attr("height", height);
-/*
-   bar.append("text")
-     .attr("x", 5)
-     .attr("y", height / 2)
-     .attr("dy", ".35em")
-     .text(function(d) { return format_is(d, 1) + "%"; });
-*/
 }
 
 function tokenInfo(t, nameDict) {
@@ -327,9 +303,9 @@ function tokenInfo(t, nameDict) {
          r.class = t.m[1];
          // Special case for adverbs: if multi-word adverb phrase,
          // say 'atviksliður' instead of 'atviksorð'
-         if (t.m[1] == "ao" && t.m[0].indexOf(" ") > -1)
+         if (r.class == "ao" && t.m[0].indexOf(" ") > -1)
             wcls = "atviksliður";
-         r.grammar = grammar(t.m[1], t.m[3]);
+         r.grammar = grammar(r.class, t.m[3], t.x);
       }
       r.lemma = (t.m && t.m[0]) ? t.m[0] : t.x;
       r.details = wcls;
