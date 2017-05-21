@@ -36,6 +36,7 @@ from collections import namedtuple
 from heapq import nsmallest
 from operator import itemgetter
 from time import sleep
+from cache import LFU_Cache
 
 # Import the Psycopg2 connector for PostgreSQL
 try:
@@ -56,57 +57,16 @@ psycopg2ext.register_type(psycopg2ext.UNICODE)
 psycopg2ext.register_type(psycopg2ext.UNICODEARRAY)
 
 
-# Size of LRU cache for word lookups
+# Size of LRU/LFU caches for word lookups
 CACHE_SIZE = 512
-CACHE_SIZE_MEANINGS = 1024 # Most common lookup function (meanings of a particular word form)
+CACHE_SIZE_MEANINGS = 2048 # Most common lookup function (meanings of a particular word form)
+CACHE_SIZE_UNDECLINABLE = 2048
 
 # Named tuple for word meanings fetched from the BÍN database (lexicon)
 BIN_Meaning = namedtuple('BIN_Meaning', ['stofn', 'utg', 'ordfl', 'fl', 'ordmynd', 'beyging'])
 # Compact string representation
 BIN_Meaning.__str__ = BIN_Meaning.__repr__ = lambda self: "(stofn='{0}', {2}/{3}/{1}, ordmynd='{4}' {5})" \
     .format(self.stofn, self.utg, self.ordfl, self.fl, self.ordmynd, self.beyging)
-
-
-class LFU_Cache:
-
-    """ Least-frequently-used (LFU) cache for word lookups.
-        Based on a pattern by Raymond Hettinger:
-        http://code.activestate.com/recipes/498245-lru-and-lfu-cache-decorators/
-    """
-
-    class Counter(dict):
-        """ Mapping where default values are zero """
-        def __missing__(self, key):
-            return 0
-
-    def __init__(self, maxsize = CACHE_SIZE):
-        self.cache = {}                     # Mapping of keys to results
-        self.use_count = self.Counter()     # Times each key has been accessed
-        self.maxsize = maxsize
-        self.hits = self.misses = 0
-        self.lock = threading.Lock()        # The cache may be accessed in parallel by multiple threads
-
-    def lookup(self, key, func):
-        """ Lookup a key in the cache, calling func(key) to obtain the data if not already there """
-        with self.lock:
-            self.use_count[key] += 1
-            # Get cache entry or compute if not found
-            try:
-                result = self.cache[key]
-                self.hits += 1
-            except KeyError:
-                result = func(key)
-                self.cache[key] = result
-                self.misses += 1
-
-                # Purge the 10% least frequently used cache entries
-                if len(self.cache) > self.maxsize:
-                    for key, _ in nsmallest(self.maxsize // 10,
-                        self.use_count.items(), key = itemgetter(1)):
-
-                        del self.cache[key], self.use_count[key]
-
-            return result
 
 
 class BIN_Db:
@@ -138,6 +98,8 @@ class BIN_Db:
         "FROM " + _DB_TABLE + " WHERE stofn=(%s) AND ordfl=(%s) AND beyging=(%s);"
     _DB_Q_NAMES = "SELECT stofn, utg, ordfl, fl, ordmynd, beyging " \
         "FROM " + _DB_TABLE + " WHERE stofn=(%s) AND fl='ism';"
+    _DB_Q_UNDECLINABLE = "SELECT count(*) FROM (SELECT DISTINCT ordmynd " \
+        "FROM " + _DB_TABLE + " WHERE stofn=(%s) AND ordfl=(%s)) AS q;"
 
     # Adjective endings
     _ADJECTIVE_TEST = "leg" # Check for adjective if word contains 'leg'
@@ -294,21 +256,20 @@ class BIN_Db:
             m = None
         return m
 
-    @lru_cache(2048)
+    @lru_cache(maxsize = CACHE_SIZE_UNDECLINABLE)
     def is_undeclinable(self, stem, fl):
-        skipun = "SELECT count(*) FROM (SELECT DISTINCT ordmynd FROM ord " \
-            "WHERE stofn=(%s) AND ordfl=(%s)) AS q;"
+        """ Return True if the given stem, of the given word category,
+            is undeclinable, i.e. all word forms are identical """
+        q = BIN_Db._DB_Q_UNDECLINABLE
         assert self._c is not None
         try:
-            self._c.execute(skipun, [ stem, fl ])
+            self._c.execute(q, [ stem, fl ])
             g = self._c.fetchall()
-            if g[0][0] == 1:
-                #print("FANN ÓBEYGJANLEGT, {}".format(stem))
-                return True
-            else:
-                return False
+            # The stem is undeclinable if there is exactly one
+            # distinct word form, i.e. all word forms are identical
+            return g[0][0] == 1
         except (psycopg2.DataError, psycopg2.ProgrammingError) as e:
-            print("Word '{0}' causing DB exception {1}".format(w, e))
+            print("Stem '{0}' causing DB exception {1}".format(stem, e))
             return False
 
     @lru_cache(maxsize = CACHE_SIZE)

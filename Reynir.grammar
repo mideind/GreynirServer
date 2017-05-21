@@ -226,6 +226,7 @@ Samtenging →
     | "vegna:fs" "þess:pfn" "að:st"?
     | "á_sama_tíma:ao" "og:st"
     | "eða:st"? 'allar_götur_síðan:ao'
+    | 'það_er_að_segja:ao' Tengimerki "að:st"?
     | ÞangaðTil
     | OgEðaEn? SpurnarSamtenging
 
@@ -485,7 +486,7 @@ $score(+20) SetningUmAðRæða # Mjög líklega réttur skilningur á þessari o
 SetningForskeyti →
     FsAtv
     | "eins:ao" "og:st" Nl_nf       # 'Eins og Páll borða ég ekki smjör'
-    | 'líkt_og:st' Nl_nf               # 'Líkt og bakarar eru smiðir óhressir með þetta'
+    | 'líkt_og:st' Nl_nf            # 'Líkt og bakarar eru smiðir óhressir með þetta'
 
 # Setning sem byrjar á lýsingarorði í stað "það"
 # 'Óheimilt er (að fangelsa mann fyrir engar sakir)'
@@ -2084,7 +2085,7 @@ Einkunn/tala/fall/kyn →
 Einkunn_ft/fall/kyn →
     HundruðForskeyti Hundruð
 
-$score(+3) Einkunn/tala/fall/kyn
+$score(+4) Einkunn/tala/fall/kyn
 
 HundruðForskeyti → 'margur:lo'_sb_hk_nf_ft | 'margur:lo'_mst_hk_nf_ft # mörg, fleiri
 
@@ -2550,7 +2551,7 @@ NlStak_p3_et/fall → NlStak_p3_et/fall/kyn   # Samtenging tveggja eintöluliða
 NlStak_ft_p3/fall/kyn →
 
     NlStak_p3_ft/fall/kyn VeikSögnLhÞt_ft/fall/kyn? FsRunaEftirNl?  # fulltrúar bankans í nefndinni
-    | 'allur:fn'_ft/fall/kyn 'sá:fn'_ft/fall/kyn                          # Allir þeir, allar þær, öll þau
+    | 'allur:fn'_ft/fall/kyn 'sá:fn'_ft/fall/kyn                    # Allir þeir, allar þær, öll þau
 
 # Hvorki X né Y
 # Bæði X og Y
