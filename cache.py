@@ -38,7 +38,9 @@
 
 """
 
+from heapq import nsmallest
 import threading
+
 
 LRU_DEFAULT = 1024
 LFU_DEFAULT = 512
