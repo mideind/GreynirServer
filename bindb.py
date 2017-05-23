@@ -33,7 +33,6 @@ import threading
 
 from functools import lru_cache
 from collections import namedtuple
-from operator import itemgetter
 from time import sleep
 from cache import LFU_Cache
 
