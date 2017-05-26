@@ -25,11 +25,15 @@ SKIPUN = './EVALB/evalb -p ./stillingar.prm' # Þróunarsafnið kemur fyrst, svo
 class Comparison():
     def start(self):
         # Sækja setningar úr þróunarmálheild
+        print("Sæki setningar...\n")
         setningar = self.fá_setningar()
+        print("Komið! Sæki þáttun... \n")
         # Fá þáttun frá Greyni á svigaformi sem búið er að hreinsa
         þáttun = self.fá_þáttun(setningar) # Listi af þáttuðum setningum sem búið er að laga að Evalb-staðli
+        print("Komið! Sæki niðurstöður í Evalb...\n")
         # Fá niðurstöður frá Evalb
         self.niðurstöður(þáttun)
+        print("Allt komið!")
 
     def fá_þáttun(self, setningar):
         þáttun = []
@@ -63,8 +67,10 @@ class Comparison():
         hreinsuð_setning = ""
         liðir = Stack()
         # TODO eyða tvöföldum bilum eins oft og ég finn - lúppa?
-        þáttuð_setning.replace("  ", " ") # Eyða tvöföldu bili eftir að greinarmerki hafa verið tekin út
+        #þáttuð_setning.replace("  ", " ") # Eyða tvöföldu bili eftir að greinarmerki hafa verið tekin út
         for orð in þáttuð_setning.split(" "):
+            if not orð: # Ef er með margföld bil - ný nálgun
+                continue
             if "(" in orð: # Byrja nýjan lið
                 liðir.push(orð)
                 liður = orð.replace("(", "")
@@ -82,7 +88,7 @@ class Comparison():
                 frasi = []
                 # Telja svigana, poppa í samræmi við það og bæta líka við hreinsuðu setninguna
                 hreinsuð_setning = hreinsuð_setning + orðin + orð[(-svigar):] + " "
-                #poppa
+                # Sæki orðið
                 for x in range(svigar):
                     liður = liðir.pop()
             else:
@@ -111,6 +117,7 @@ class Comparison():
         print("Sendi í Evalb!")
         skil = subprocess.Popen([heilskipun], shell=True, stdout=subprocess.PIPE).communicate()[0]
         print(skil)
+
     def fá_setningar(self):
         # Les setningar úr þróunarmálheild
         setningar = []
