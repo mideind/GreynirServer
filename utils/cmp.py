@@ -427,7 +427,7 @@ class Comparison():
                 rétt_setning = rétt_setning & self.sbrGreinarmerki(mörk_OTB[i], word)
             elif orðalisti[i].endswith("-"):
                 print("Fann svona orð, greini samt: {}".format(orðalisti[i]))
-                rétt_setning = rétt_setning & self.skrif_stikkprufa(word, lemmur_OTB[i], mörk_OTB[i]) # Bæði og mark og lemma rétt
+                rétt_setning = rétt_setning & self.skrif_stikkprufa(word, lemmur_OTB[i], mörk_OTB[i], i) # Bæði og mark og lemma rétt
                 i += 1
                 continue
             elif skst in SKST_LENGD: # Leiðréttar skammstafanir, þurfa sérmeðhöndlun # NÝTT
@@ -482,7 +482,7 @@ class Comparison():
                     stikk.write("Eitthvað skrýtið á ferðinni. {}  -  {}\n".format(word["k"], word["x"]))
                     stikk.flush()
                     continue
-                rétt_setning = rétt_setning & self.skrif_stikkprufa(word, lemmur_OTB[i], mörk_OTB[i]) # Bæði og mark og lemma rétt
+                rétt_setning = rétt_setning & self.skrif_stikkprufa(word, lemmur_OTB[i], mörk_OTB[i], i) # Bæði og mark og lemma rétt
             stikk.write("\t\tEyk við i og held áfram!\n")
             stikk.flush()
             i += 1
@@ -523,7 +523,7 @@ class Comparison():
                 rétt_setning = rétt_setning & self.sbrGreinarmerki(mörk_OTB[i], word)
             elif orðalisti[i].endswith("-"):
                 print("Fann svona orð, greini samt: {}".format(orðalisti[i]))
-                rétt_setning = rétt_setning & self.skrif_allt(word, lemmur_OTB[i], mörk_OTB[i]) # Bæði og mark og lemma rétt
+                rétt_setning = rétt_setning & self.skrif_allt(word, lemmur_OTB[i], mörk_OTB[i], i) # Bæði og mark og lemma rétt
                 i += 1
                 continue
             elif skst in SKST_LENGD: # Leiðréttar skammstafanir, þurfa sérmeðhöndlun # NÝTT
@@ -549,7 +549,7 @@ class Comparison():
                     # Einstaka tilvik. PUNCTUATION hér er t.d. bandstrik sem OTB heldur í orðum en Greynir greinir sem stakt orð
                     i += 1
                     continue
-                rétt_setning = rétt_setning & self.skrif_allt(word, lemmur_OTB[i], mörk_OTB[i]) # Bæði og mark og lemma rétt
+                rétt_setning = rétt_setning & self.skrif_allt(word, lemmur_OTB[i], mörk_OTB[i], i) # Bæði og mark og lemma rétt
             i += 1
         if rétt_setning:
             self.réttar_setningar += 1
@@ -660,7 +660,7 @@ class Comparison():
                 self.röng_orð += 1
         return rétt
  
-    def skrif_stikkprufa(self, word, lemma_OTB, mark_OTB):
+    def skrif_stikkprufa(self, word, lemma_OTB, mark_OTB, i):
         #Samanburður fer fram hér, safna tvenndum fyrir mörk í orðabók ásamt tíðni fyrir confusion matrix - TODO confmat
         # Safna í allar tölfræðibreyturnar
         stikk = self.stikk
@@ -680,7 +680,7 @@ class Comparison():
         else:
             stikk.write("\tRöng lemma\n")
             stikk.flush()
-        mark_skil, mark_Gr = self.sbrmark(mark_OTB, word) # 0 = Rangt, 1 = Rétt, 2 = Hlutrétt
+        mark_skil, mark_Gr = self.sbrmark(mark_OTB, word, i) # 0 = Rangt, 1 = Rétt, 2 = Hlutrétt
         stikk.write("\tMark OTB: '{}'\tMark GR: '{}'\n".format(mark_OTB, mark_Gr))
         stikk.flush()
         if mark_skil == 0:
@@ -703,11 +703,11 @@ class Comparison():
             self.röng_orð += 1
             return False
 
-    def skrif_allt(self, word, lemma_OTB, mark_OTB):
+    def skrif_allt(self, word, lemma_OTB, mark_OTB, i):
         #Samanburður fer fram hér, safna tvenndum fyrir mörk í orðabók ásamt tíðni fyrir confusion matrix - TODO confmat
         # Safna í allar tölfræðibreyturnar
         lemma_bool = self.sbrlemma(lemma_OTB, word)
-        mark_skil, mark_Gr = self.sbrmark(mark_OTB, word) # 0 = Rangt, 1 = Rétt, 2 = Hlutrétt
+        mark_skil, mark_Gr = self.sbrmark(mark_OTB, word, i) # 0 = Rangt, 1 = Rétt, 2 = Hlutrétt
         if lemma_bool and mark_skil > 0:
             self.rétt_orð += 1
             return True
@@ -966,7 +966,7 @@ class Comparison():
             self.LW += 1
             return False
 
-    def sbrmark(self, mark_OTB, word):
+    def sbrmark(self, mark_OTB, word, i):
         # Fyllir út í self.tíðnibreytur fyrir mörkunarárangur
         #mark_Gr_eldra = self.vörpun(word)
 
@@ -990,9 +990,16 @@ class Comparison():
 
         if mark_OTB.startswith("n") and mark_OTB.endswith(("m", "s", "ö")): # undirflokkun sérnafna - Afbrigði 8
             mark_OTB = mark_OTB[:-1] + "e"
-        if mark_Gr.startswith("n") and mark_Gr.endswith(("m", "s", "ö")): # undirflokkun sérnafna # TODO breyta í elif
-            mark_Gr = mark_Gr[:-1] + "e"
-
+        if mark_Gr.startswith("n"):
+            if mark_Gr.endswith(("m", "s", "ö")): # undirflokkun sérnafna
+                mark_Gr = mark_Gr[:-1] + "e"
+            elif i > 0 and word["x"][0].isupper(): # Nafnorð með stórum staf í miðri setningu sögð sérnöfn
+                # Ath. tekur ekki tillit til greinarmerkja í upphafi setningar, sbr. "- Samning X"
+                #print("Fann nýtt sérnafn - {} - {}".format(word["x"], i))
+                if mark_Gr.endswith("g"):
+                    mark_Gr = mark_Gr + "e"
+                else:
+                    mark_Gr = mark_Gr + "-e"
         #if mark_OTB.startswith("s"): # Afbrigði 13 í einföldun
         #    mark_OTB = mark_OTB[:1] + mark_OTB[2:]
         #if mark_Gr.startswith("s"):
@@ -1065,7 +1072,6 @@ class Comparison():
         else:
             self.MW += 1
             return 0, mark_Gr
-
 
     def sbrGreinarmerki(self, OTB, word):
         if "s" in word:

@@ -92,7 +92,7 @@ _TEST_NT_MAP = { # Til að prófa í parse_text_to_bracket_form()
     "OgEða" : "C",
     "OgEðaEn" : "C",
     "TengiorðEr" : "C",
-
+    "TengiorðSem" : "C",
     "ártal" : "NUM",
 
 }
@@ -117,6 +117,7 @@ _TEST_TERMINAL_MAP = {
     "ártal" : "NUM",
     "eo" : "ADV", # Skoða betur
     "st" : "C",
+    "stt" : "C", # Skilgreina ítarlegar?
     "nhm" : "INF", # Nafnháttarmerki
     "raðnr" : "ADJ", # Raðtölur; skgr. frekar sem NUM?   
     "fyrirtæki" : "N",
