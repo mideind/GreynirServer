@@ -570,11 +570,6 @@ h3.help small {
    font-style: italic;
 }
 
-span.errtok {
-   font-weight: 600;
-   color: #CB333B; /* Greynir red */
-}
-
 span.sent {
    margin-left: -2px;
    margin-right: 4px;
@@ -585,57 +580,27 @@ span.sent {
    border-color: transparent;
 }
 
-/*
 span.sent.err {
-   background-color: #FFEDF3;
-   color: #9C3D59;
+   background: url(wiggle.png) repeat-x bottom left;
+   background-size: 4px 3px;
 }
-*/
-
-span.sent.err {
-   text-decoration: underline solid rgba(255, 0, 0, 0.5);
-}
-
-/*
-span.sent.err::before {
-   font-family: 'Glyphicons Regular';
-   font-style: normal;
-   font-weight: normal;
-   font-size: 13px;
-   content: "\E174";
-   border-width: 2px;
-   border-style: solid;
-   border-radius: 4px;
-   margin-right: 3px;
-   padding-left: 1px;
-   padding-right: 2px;
-   color: white;
-   position: relative;
-   background-color: #f46681;
-   border-color: #f46681;
-}
-*/
 
 span.sent.err:hover {
    border-color: #FFE0EA;
    background-color: #FFE0EA;
 }
 
-/*
-span.sent.err:hover::before {
-   background-color: red;
-   border-color: red;
+span.errtok {
+   font-weight: 600;
+   color: #CB333B; /* Greynir red */
 }
-*/
 
+/*
 span.sent.err:hover span.errtok {
    font-weight: 600;
-   background-color: red;
-   color: white;
-   outline-width: 1px;
-   outline-style: solid;
-   outline-color: red;
+   color: #CB333B;
 }
+*/
 
 span.sent.parsed {
 }

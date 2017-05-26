@@ -299,7 +299,8 @@ class Reducer:
                         sc[t] += 2
                     else:
                         # BÍN meanings are available: discourage this
-                        sc[t] -= 6
+                        # print(f"Discouraging sérnafn {txt}, BÍN meanings are {tokens[i].t2}")
+                        sc[t] -= 10
                         if i == w.start:
                             # First token in sentence, and we have BÍN meanings:
                             # further discourage this
