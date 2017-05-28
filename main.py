@@ -170,15 +170,16 @@ _DEFAULT_TEXTS = [
     'Hvað er Wintris?',
     'Hver er Vigdís Finnbogadóttir?',
     'Hver er Kristján Eldjárn?',
-    'Hvað tengist Bjarna Benediktssyni?',
-    'Hvaða orð tengjast orðinu nauðgun?',
     'Hver er forstjóri Landsvirkjunar?',
     'Hver gegnir starfi forstjóra Orkuveitu Reykjavíkur?',
     'Hver er þjóðleikhússtjóri?',
     'Hver er fyrirliði íslenska landsliðsins?',
     'Hver er forsetaframbjóðandi?',
-    'Hvað tengist sögninni að verðtryggja?',
-    'Hver er forstjóri Google?'
+    'Hver er forseti Finnlands?',
+    'Hver hefur verið aðstoðarmaður forsætisráðherra?',
+    'Hver er forstjóri Google?',
+    "Hvað er UNESCO?",
+    'Hver er Íslandsmeistari í golfi?'
 ]
 
 # Default number of top news items to show in front page list

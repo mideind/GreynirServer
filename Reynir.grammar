@@ -2433,7 +2433,7 @@ NlStak_et_p3/fall/kyn →
 
 # '(svör við bréfi sínu) dagsettu (13. mars sl.)'
 VeikSögnLhÞt/tala/fall/kyn →
-    EinVeikSögnLhÞt/tala/fall/kyn
+    Atviksliður? EinVeikSögnLhÞt/tala/fall/kyn                      # (Stúlkan sá pabba sinn) [vel og snyrtilega] rakaðan
     | ',' so_lhþt/tala/fall/kyn FsAtv? LokatáknEðaKomma
 
 EinVeikSögnLhÞt/tala/fall/kyn → so_lhþt/tala/fall/kyn

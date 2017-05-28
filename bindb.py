@@ -73,6 +73,7 @@ class BIN_Db:
 
     # Thread local storage - used for database connections
     tls = threading.local()
+    _lock = threading.Lock()
 
     # Wait for database to become available?
     wait = False
@@ -113,32 +114,37 @@ class BIN_Db:
     def get_db(cls):
         """ Obtain a database connection instance """
         # We have one DB connection and cursor per thread.
-        db = None
-        if hasattr(cls.tls, "bin_db"):
-            # Connection already established in this thread: re-use it
-            db = cls.tls.bin_db
+        with cls._lock:
+            db = None
+            if hasattr(cls.tls, "bin_db"):
+                # Connection already established in this thread: re-use it
+                db = cls.tls.bin_db
 
-        if db is None:
-            # New connection in this thread
-            db = cls.tls.bin_db = cls().open(host = Settings.BIN_DB_HOSTNAME,
-                port = Settings.BIN_DB_PORT,
-                wait = cls.wait)
+            if db is None:
+                # New connection in this thread
+                db = cls.tls.bin_db = cls().open(
+                    host = Settings.BIN_DB_HOSTNAME,
+                    port = Settings.BIN_DB_PORT,
+                    wait = cls.wait
+                )
 
-        if db is None:
-            raise Exception("Could not open BIN database on host {0}:{1}"
-                .format(Settings.BIN_DB_HOSTNAME, Settings.BIN_DB_PORT))
+            if db is None:
+                raise Exception("Could not open BIN database on host {0}:{1}"
+                    .format(Settings.BIN_DB_HOSTNAME, Settings.BIN_DB_PORT))
 
-        return db
+            return db
 
     @classmethod
     def cleanup(cls):
         """ Close the current thread's BIN database connection, if any """
-        db = None
-        if hasattr(cls.tls, "bin_db"):
-            # Connection already established in this thread: re-use it
-            db = cls.tls.bin_db
-        if db is not None:
-            db.close()
+        with cls._lock:
+            db = None
+            if hasattr(cls.tls, "bin_db"):
+                # Connection already established in this thread: re-use it
+                db = cls.tls.bin_db
+            if db is not None:
+                db.close() # Sets cls.tls.bin_db to None
+            # assert cls.tls.bin_db is None
 
     def __init__(self):
         """ Initialize DB connection instance """
@@ -258,8 +264,8 @@ class BIN_Db:
     def is_undeclinable(self, stem, fl):
         """ Return True if the given stem, of the given word category,
             is undeclinable, i.e. all word forms are identical """
-        q = BIN_Db._DB_Q_UNDECLINABLE
         assert self._c is not None
+        q = BIN_Db._DB_Q_UNDECLINABLE
         try:
             self._c.execute(q, [ stem, fl ])
             g = self._c.fetchall()
