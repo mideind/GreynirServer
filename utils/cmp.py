@@ -90,6 +90,7 @@ else:
 # The directory where the IFD corpus files are located
 IFD_DIR = "ifd" 
 
+
 # GREINARMERKI = {"!", "(", ")", ",", "-", ".", "...", "/", ":", ";", "?", "[", "]", "«", "»"} # Öll greinarmerki sem koma fyrir í OTB
 VINSTRI_GREINARMERKI = "([„«#$€<"
 MIÐJA_GREINARMERKI = '"*&+=@©|—'
@@ -370,7 +371,6 @@ class Tagger:
     def session(cls):
         return cls()._create_session()
 
-
 class Comparison():
 
     def __init__(self):
@@ -390,6 +390,7 @@ class Comparison():
         self.M_confmat = {} # Lykill er (x,y), x = mark frá Greyni, y = mark frá OTB. Gildi er tíðnin. TODO útfæra confusion matrix f. niðurstöður
         self.setnf = 0
         self.stikk = None # Úttaksskrá
+        self.CANNOT_PARSE = 0 # Number of sentences postag.api can't parse and sends to ifdtag.api (if postag.api is selected)
 
     def úrvinnsla_stikkprufa(self, tagger, sent):
         stikk = self.stikk
@@ -507,7 +508,6 @@ class Comparison():
             return
         i = 0 # Index fyrir orðalistann.
         for word in all_words: # Komin á dict frá Greyni með öllum flokkunum.
-
             if i < len(orðalisti) and not orðalisti[i]: # Tómur hnútur fremst/aftast í setningu
                 i += 1
             if i >= len(orðalisti):
@@ -537,7 +537,7 @@ class Comparison():
                 lengd = max(len(word["x"].split(" ")), len(word["x"].split("-"))) #TODO breyta ef stuðningur við orð með bandstriki er útfærður.
                 if lengd > 1: # Fleiri en eitt orð í streng Greynis # TODO breyta þegar set dict með MWE inn
                     if StaticPhrases.has_details(word["x"].lower()): # Margorða frasi, fæ mörk úr orðabók, lemmur líka.
-                        rétt_setning = rétt_setning & self.margorða_allt(word, lemmur_OTB, mörk_OTB, i)
+                        rétt_setning = rétt_setning & self.margorða_allt(word, lemmur_OTB, mörk_OTB, i, None)
                         i += lengd
                         continue
                     i = i + lengd - 1 # Enda á síðasta orði í frasa # TODO taka þetta út?
@@ -626,6 +626,7 @@ class Comparison():
             mörk_Gr = StaticPhrases.tags(wx)
             lemmur_Gr = StaticPhrases.lemmas(wx)
         öll_orð = wx.replace("-", " ").split()
+        print(word["x"])
         allt = zip(öll_orð, lemmur_Gr, mörk_Gr)
         rétt = True # Finnst eitthvað rangt í liðnum?
         for orð, lemma_Gr, mark_Gr in allt:
@@ -1200,6 +1201,7 @@ class Comparison():
         elif any("err" in d for d in all_words):
             # POS tagger: error found, fall back to the IFD tagger
             print("Error from postag.api: falling back to ifdtag.api for sentence\n   '{0}'".format(setning))
+            self.CANNOT_PARSE += 1
             fullpath = IFD_PATH + "?t=" + setning_slóð
             try:
                 with urllib.request.urlopen(fullpath) as response:
@@ -1254,8 +1256,11 @@ class Comparison():
         # Prenta fyrst tíðni
         # Svo reikna nákvæmni, heimt, F-mælingu
         #Setningar
-        print()
+        print("")
         print("******************** NIÐURSTÖÐUR **********************")
+        if POS_PATH:
+            print("{} setningar voru sendar í ifdtag.api\n".format(self.CANNOT_PARSE))
+        print("")
         print("Réttar setningar:", self.réttar_setningar)
         print("Rangar setningar:", self.rangar_setningar)
         print("Ógreindar setningar:", self.ógreindar_setningar)
@@ -1346,7 +1351,6 @@ class Comparison():
             for sent in sentences:
                 process_func(None, sent)
         self.prenta()
-
     def start_stikkprufa(self):
         úrtak = 50
         with open("stikkprufa.txt", "w") as stikk:
@@ -1399,6 +1403,7 @@ def start_flokkar():
             _run_flokkar(tagger)
     else:
         _run_flokkar(None)
+
 
 
 if __name__ == "__main__":
