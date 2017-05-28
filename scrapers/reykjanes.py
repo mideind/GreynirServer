@@ -32,7 +32,6 @@ from sqlalchemy import desc as SqlDesc
 
 from .default import Metadata, ScrapeHelper
 
-
 MODULE_NAME = __name__
 
 
@@ -44,8 +43,8 @@ class Reykjanes_DB:
 
     """ Wrapper around the SQLAlchemy connection, engine and session """
 
-    DB_HOSTNAME = 'localhost'
-    DB_PORT = os.environ.get('GREYNIR_DB_PORT', '5432')
+    DB_HOSTNAME = os.environ.get('GREYNIR_DB_HOST', 'localhost')
+    DB_PORT = os.environ.get('GREYNIR_DB_PORT', '5432') # Default PostgreSQL port
 
     def __init__(self):
 
