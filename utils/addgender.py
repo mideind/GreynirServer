@@ -23,9 +23,7 @@ except ConfigError as e:
     print("Configuration error: {0}".format(e))
     quit()
 
-with SessionContext(commit = True) as session:
-
-    bdb = BIN_Db.get_db()
+with SessionContext(commit = True) as session, BIN_Db.get_db() as bdb:
 
     # Iterate through the persons
     q = session.query(Person) \

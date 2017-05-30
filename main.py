@@ -280,7 +280,6 @@ def top_news(topic = None, start = None, limit = _TOP_NEWS_LENGTH):
 def top_persons(limit = _TOP_PERSONS_LENGTH):
     """ Return a list of names and titles appearing recently in the news """
     toplist = dict()
-    bindb = BIN_Db.get_db()
     MAX_TITLE_LENGTH = 64
 
     with SessionContext(commit = True) as session:
@@ -302,14 +301,15 @@ def top_persons(limit = _TOP_PERSONS_LENGTH):
             # Otherwise, longer is better
             return len_new > len_old
 
-        for p in q:
-            # Insert the name into the list if it's not already there,
-            # or if the new title is longer than the previous one
-            if p.name not in toplist or is_better_title(p.title, toplist[p.name][0]):
-                toplist[p.name] = (correct_spaces(p.title), p.article_url, p.id, bindb.lookup_name_gender(p.name))
-                if len(toplist) >= limit:
-                    # We now have as many names as we initially wanted: terminate the loop
-                    break
+        with BIN_Db.get_db() as bindb:
+            for p in q:
+                # Insert the name into the list if it's not already there,
+                # or if the new title is longer than the previous one
+                if p.name not in toplist or is_better_title(p.title, toplist[p.name][0]):
+                    toplist[p.name] = (correct_spaces(p.title), p.article_url, p.id, bindb.lookup_name_gender(p.name))
+                    if len(toplist) >= limit:
+                        # We now have as many names as we initially wanted: terminate the loop
+                        break
 
     with changedlocale() as strxfrm:
         # Convert the dictionary to a sorted list of dicts

@@ -294,10 +294,11 @@ class BIN_Token(Token):
         """ Lookup a verb stem for a 'miðmynd' verb,
             i.e. "eignast" for "eiga" (which may have appeared
             as "eignaðist" in the text) """
-        for fm in BIN_Db.get_db().lookup_forms_from_stem(verb):
-            if fm.beyging == "MM-NH":
-                # The MM-NH form is the canonical (nominal) form
-                return fm.ordmynd
+        with BIN_Db.get_db() as db:
+            for fm in db.lookup_forms_from_stem(verb):
+                if fm.beyging == "MM-NH":
+                    # The MM-NH form is the canonical (nominal) form
+                    return fm.ordmynd
         # No MM canonical form found: return the original (normal) stem
         return verb
 

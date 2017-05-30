@@ -41,35 +41,34 @@ def dump_tokens(limit):
         of tokens and their matched terminals """
 
     dtd = dict()
-    with closing(BIN_Db.get_db()) as db:
-        with SessionContext(commit = True) as session:
-            # Iterate through the articles
-            q = session.query(Article) \
-                .filter(Article.tree != None) \
-                .order_by(Article.timestamp)
-            if limit is None:
-                q = q.all()
-            else:
-                q = q[0:limit]
-            for a in q:
-                print("\nARTICLE\nHeading: '{0.heading}'\nURL: {0.url}\nTimestamp: {0.timestamp}".format(a))
-                tree = TreeTokenList()
-                tree.load(a.tree)
-                for ix, toklist in tree.sentences():
-                    print("\nSentence {0}:".format(ix))
-                    at_start = True
-                    for t in toklist:
-                        if t.tokentype == "WORD":
-                            wrd = t.token[1:-1]
-                            td = dtd.get(t.terminal)
-                            if td is None:
-                                td = TerminalDescriptor(t.terminal)
-                                dtd[t.terminal] = td
-                            stem = td.stem(db, wrd, at_start)
-                            at_start = False
-                            print("    {0} {1} {2}".format(wrd, stem, t.terminal))
-                        else:
-                            print("    {0.token} {0.cat} {0.terminal}".format(t))
+    with BIN_Db.get_db() as db, SessionContext(commit = True) as session:
+        # Iterate through the articles
+        q = session.query(Article) \
+            .filter(Article.tree != None) \
+            .order_by(Article.timestamp)
+        if limit is None:
+            q = q.all()
+        else:
+            q = q[0:limit]
+        for a in q:
+            print("\nARTICLE\nHeading: '{0.heading}'\nURL: {0.url}\nTimestamp: {0.timestamp}".format(a))
+            tree = TreeTokenList()
+            tree.load(a.tree)
+            for ix, toklist in tree.sentences():
+                print("\nSentence {0}:".format(ix))
+                at_start = True
+                for t in toklist:
+                    if t.tokentype == "WORD":
+                        wrd = t.token[1:-1]
+                        td = dtd.get(t.terminal)
+                        if td is None:
+                            td = TerminalDescriptor(t.terminal)
+                            dtd[t.terminal] = td
+                        stem = td.stem(db, wrd, at_start)
+                        at_start = False
+                        print("    {0} {1} {2}".format(wrd, stem, t.terminal))
+                    else:
+                        print("    {0.token} {0.cat} {0.terminal}".format(t))
 
 
 def make_trigrams(limit):

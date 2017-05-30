@@ -71,8 +71,8 @@ class BIN_Db:
 
     """ Encapsulates the BÍN database of word forms """
 
-    # Thread local storage - used for database connections
-    tls = threading.local()
+    # Instance pool and its associated lock
+    _pool = []
     _lock = threading.Lock()
 
     # Wait for database to become available?
@@ -111,40 +111,55 @@ class BIN_Db:
     _forms_cache = LFU_Cache()
 
     @classmethod
-    def get_db(cls):
-        """ Obtain a database connection instance """
-        # We have one DB connection and cursor per thread.
+    def get_connection_from_pool(cls):
+        """ Obtain an existing or a fresh connection from the pool """
         with cls._lock:
-            db = None
-            if hasattr(cls.tls, "bin_db"):
-                # Connection already established in this thread: re-use it
-                db = cls.tls.bin_db
-
-            if db is None:
-                # New connection in this thread
-                db = cls.tls.bin_db = cls().open(
-                    host = Settings.BIN_DB_HOSTNAME,
-                    port = Settings.BIN_DB_PORT,
-                    wait = cls.wait
-                )
-
+            if cls._pool:
+                # We have a connection ready: return it
+                return cls._pool.pop()
+            # No connection available in the pool: create a new one
+            db = cls().open(
+                host = Settings.BIN_DB_HOSTNAME,
+                port = Settings.BIN_DB_PORT,
+                wait = cls.wait
+            )
             if db is None:
                 raise Exception("Could not open BIN database on host {0}:{1}"
                     .format(Settings.BIN_DB_HOSTNAME, Settings.BIN_DB_PORT))
-
             return db
 
     @classmethod
-    def cleanup(cls):
-        """ Close the current thread's BIN database connection, if any """
+    def return_connection_to_pool(cls, db):
+        """ When done using a connection, return it to the pool """
         with cls._lock:
-            db = None
-            if hasattr(cls.tls, "bin_db"):
-                # Connection already established in this thread: re-use it
-                db = cls.tls.bin_db
             if db is not None:
-                db.close() # Sets cls.tls.bin_db to None
-            # assert cls.tls.bin_db is None
+                cls._pool.append(db)
+
+    @classmethod
+    def get_db(cls):
+        """ Return a session object that can be used in a with statement """
+        class _BIN_Session:
+            def __init__(self):
+                self._db = None
+            def __enter__(self):
+                """ Python context manager protocol """
+                self._db = cls.get_connection_from_pool()
+                return self._db
+            def __exit__(self, exc_type, exc_value, traceback):
+                """ Python context manager protocol """
+                cls.return_connection_to_pool(self._db)
+                self._db = None
+                # Return False to re-throw exception from the context, if any
+                return False
+        return _BIN_Session()
+
+    @classmethod
+    def cleanup(cls):
+        """ Close all connections currently sitting around in the pool """
+        with cls._lock:
+            for db in cls._pool:
+                db.close()
+            cls._pool = []
 
     def __init__(self):
         """ Initialize DB connection instance """
@@ -194,8 +209,6 @@ class BIN_Db:
         if self._conn is not None:
             self._conn.close()
             self._conn = None
-        if BIN_Db.tls.bin_db is self:
-            BIN_Db.tls.bin_db = None
 
     def meanings(self, w):
         """ Return a list of all possible grammatical meanings of the given word """

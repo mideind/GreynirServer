@@ -563,8 +563,8 @@ class TerminalDescriptor:
 
 def _root_lookup(text, at_start, terminal):
     """ Look up the root of a word that isn't found in the cache """
-    bin_db = BIN_Db.get_db()
-    w, m = bin_db.lookup_word(text, at_start)
+    with BIN_Db.get_db() as bin_db:
+        w, m = bin_db.lookup_word(text, at_start)
     if m:
         # Find the meaning that matches the terminal
         td = TerminalNode._TD[terminal]
@@ -1009,12 +1009,13 @@ class TreeBase:
     def simple_trees(self, nt_map = None, id_map = None, terminal_map = None):
         """ Generate simple trees out of the sentences in this tree """
         # Hack to allow nodes to access the BIN database
-        state = dict(bin_db = BIN_Db.get_db())
-        for ix, sent in self.s.items():
-            builder = SimpleTreeBuilder(nt_map, id_map, terminal_map)
-            builder.state = state
-            sent.build_simple_tree(builder)
-            yield ix, builder.tree
+        with BIN_Db.get_db() as bin_db:
+            state = dict(bin_db = bin_db)
+            for ix, sent in self.s.items():
+                builder = SimpleTreeBuilder(nt_map, id_map, terminal_map)
+                builder.state = state
+                sent.build_simple_tree(builder)
+                yield ix, builder.tree
 
     def push(self, n, node):
         """ Add a node into the tree at the right level """
@@ -1164,30 +1165,32 @@ class Tree(TreeBase):
         # If no handler exists for a nonterminal, call default() instead
         default = getattr(processor, "default", None) if processor else None
 
-        state = {
-            "session": session,
-            "processor": processor,
-            "bin_db": BIN_Db.get_db(),
-            "url": self.url,
-            "authority": self.authority,
-            "_sentence": sentence,
-            "_visit": visit,
-            "_default": default,
-            "index": 0
-        }
-        # Add state parameters passed via keyword arguments, if any
-        state.update(kwargs)
+        with BIN_Db.get_db() as bin_db:
 
-        # Call the article_begin(state) function, if it exists
-        if article_begin is not None:
-            article_begin(state)
-        # Process the (parsed) sentences in the article
-        for index, tree in self.s.items():
-            state["index"] = index
-            self.process_sentence(state, tree)
-        # Call the article_end(state) function, if it exists
-        if article_end is not None:
-            article_end(state)
+            state = {
+                "session": session,
+                "processor": processor,
+                "bin_db": bin_db,
+                "url": self.url,
+                "authority": self.authority,
+                "_sentence": sentence,
+                "_visit": visit,
+                "_default": default,
+                "index": 0
+            }
+            # Add state parameters passed via keyword arguments, if any
+            state.update(kwargs)
+
+            # Call the article_begin(state) function, if it exists
+            if article_begin is not None:
+                article_begin(state)
+            # Process the (parsed) sentences in the article
+            for index, tree in self.s.items():
+                state["index"] = index
+                self.process_sentence(state, tree)
+            # Call the article_end(state) function, if it exists
+            if article_end is not None:
+                article_end(state)
 
 
 class TreeGist(TreeBase):
