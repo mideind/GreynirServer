@@ -4,7 +4,7 @@
 
     BIN database access module
 
-    Copyright (C) 2016 Vilhjálmur Þorsteinsson
+    Copyright (C) 2017 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -25,6 +25,17 @@
 
     The database is assumed to be stored in PostgreSQL. It is accessed via
     the Psycopg2 connector.
+
+    Word meaning lookups are cached in Least Frequently Used (LFU) caches, so
+    that the most common words are looked up from memory as often as possible.
+
+    This code must be thread safe. For efficiency, a pool of open BIN_Db
+    connection objects is kept ready. Client code typically uses a context manager,
+    e.g. with BIN_Db.get_db() as db: do_something(), to obtain a connection
+    from the pool and return it automatically after use. The pool is enlarged
+    on demand. Connections in the pool are closed when BIN_Db.cleanup() is
+    called. This is done when the main program exits, but could also be done
+    periodically, for instance every few hours.
 
 """
 

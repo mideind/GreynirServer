@@ -1,6 +1,6 @@
 #!/bin/bash
 cd ~/github/Reynir
-source p35/bin/activate
+source p358/bin/activate
 python scraper.py --reparse --limit=2500
-python processor.py --update --limit=2600
+python processor.py --update --limit=3100
 deactivate

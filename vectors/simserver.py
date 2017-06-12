@@ -5,7 +5,7 @@
 
     Similarity query server
 
-    Copyright (C) 2017 Vilhjálmur Þorsteinsson
+    Copyright (C) 2017 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -300,7 +300,6 @@ class SimilarityServer:
                         result["articles"] = self.find_similar(n, topic)
                         t1 = time.time()
                         conn.send(result)
-                        print("find_similar() took {0:.2f} seconds".format(t1 - t0))
                     elif cmd == "refresh":
                         # Load any new article topic vectors from the articles table
                         self.refresh_topics()

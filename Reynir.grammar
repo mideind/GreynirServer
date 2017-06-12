@@ -3708,6 +3708,7 @@ Dagsetning →
     | 'næstkomandi:lo'_et_kk_þf Vikudagur_þf_et # 'næstkomandi fimmtudag'
     | 'síðastliðinn:lo'_et_kk_þf Vikudagur_þf_et # 'síðastliðinn fimmtudag'
     | "á:fs" Vikudagur_þf_et # á föstudag / á sunnudaginn / á fimmtudagskvöld
+    | "í:fs" Mánuður_þf # í febrúar
     | 'á_morgun:ao' ','? Vikudagur_þf_et # á morgun, miðvikudag
 
     | DagsFs_þf? 'sá:fn'_et_kk_þf? tímapunktur # '[eftir] [þann] 3. júlí 2007 kl. 13:00'
@@ -3777,7 +3778,7 @@ Aldur →
     | 'fjölmargur:lo'_ef_ft Tímabil_ef_ft
 
 # Gefa plús fyrir dagsetningar, tímasetningar og aldur
-$score(+4) Dagsetning Tímasetning Aldur
+$score(+6) Dagsetning Tímasetning Aldur
 
 TímaAfstæði_þgf → "síðar:ao" | "seinna:ao" | "fyrr:ao" TímaEn? | "áður:ao" TímaEn?
 TímaAfstæði_þf → "áður:ao" TímaEn? | "eftir:ao" TímaAð? | "fyrir:fs" Nl_þf | "á:ao" "undan:ao" | "á:ao" "eftir:ao"
@@ -3961,6 +3962,20 @@ Vikudagur_gr/fall/tala →
     | 'vor:hk'_hk_þf/tala
     | 'sumar:hk'_hk_þf/tala
     | 'vetur:kk'_kk_þf/tala
+
+Mánuður_þf →
+    'janúar:kk'_þf
+    | 'febrúar:kk'_þf
+    | 'mars:kk'_þf
+    | 'apríl:kk'_þf
+    | 'maí:kk'_þf
+    | 'júní:kk'_þf
+    | 'júlí:kk'_þf
+    | 'ágúst:kk'_þf
+    | 'september:kk'_þf
+    | 'október:kk'_þf
+    | 'nóvember:kk'_þf
+    | 'desember:kk'_þf
 
 # Forsetningar sem hægt er að nota með dagsetningum
 DagsFs_þf →
