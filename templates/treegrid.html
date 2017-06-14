@@ -158,6 +158,7 @@
    .node-terminal.st text.symbol,
    .node-terminal.stt text.symbol {
       fill: #f0ad4e;
+      transform: rotate(45deg);
    }
    .node-terminal.so text.symbol {
       fill: #d9534f;
@@ -170,7 +171,8 @@
       fill: #5cb85c;
       transform: rotate(45deg);
    }
-   .node-terminal.fs text.symbol {
+   .node-terminal.fs text.symbol,
+   .node-terminal.gr text.symbol {
       fill: #888;
    }
    .node-terminal.ártal text.symbol,
@@ -669,7 +671,8 @@ function d3_update(source) {
       ["st", "\uE051"], // link
       ["stt", "\uE051"], // link
       ["nhm", "\uE212"], // right-arrow
-      ["fs", "\uE174"], // play
+      ["fs", "\uE224"], // chevron-right
+      ["gr", "\uE174"], // play
       ["so", "\uE242"], // flash
       ["kk", "\uE176"], // stop
       ["kvk", "\uE176"], // stop
