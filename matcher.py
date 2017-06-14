@@ -115,6 +115,7 @@ _DEFAULT_NT_MAP = {
     "NlSkýring" : "S-EXPLAIN",
     "FrumlagsInnskot" : "S-EXPLAIN",
     "Tilvitnun" : "S-QUOTE",
+    "Forskeyti" : "S-PREFIX",
     "Nl" : "NP",
     "EfLiður" : "NP-POSS",
     "EfLiðurForskeyti" : "NP-POSS",
@@ -152,6 +153,7 @@ _DEFAULT_ID_MAP = {
     "S-REF" : dict(name = "Tengisetning", overrides = "S", subject_to = { "S-REF" }), # Reference
     "S-EXPLAIN" : dict(name = "Skýring"), # Explanation
     "S-QUOTE" : dict(name = "Tilvitnun"), # Quote at end of sentence
+    "S-PREFIX" : dict(name = "Forskeyti"), # Prefix in front of sentence
     "VP-SEQ" : dict(name = "Sagnliður"),
     "VP" : dict(name = "Sögn", overrides = "VP-SEQ"),
     "NP" : dict(name = "Nafnliður"),

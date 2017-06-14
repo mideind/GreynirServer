@@ -783,6 +783,14 @@ class BIN_Token(Token):
             # as abbreviations to Main.conf is recommended
             return self.t1 in BIN_Token._CORPORATION_ENDINGS
 
+        def matcher_töl(m):
+            """ Undeclinable number word ('fimm', 'sex', 'tuttugu'...) """
+            # In this case, the terminal may have variants but they are only used
+            # to signal the context in which the terminal stands. We don't use
+            # the variants to disqualify meanings, since the word is undeclinable
+            # anyway.
+            return terminal.matches_first(m.ordfl, m.stofn, self.t1_lower)
+
         def matcher_default(m):
             """ Check other word categories """
             if m.beyging == "-":
@@ -832,6 +840,7 @@ class BIN_Token(Token):
                 "eo" : matcher_eo,
                 "fs" : matcher_fs,
                 "stt" : matcher_stt,
+                "töl" : matcher_töl,
                 "abfn" : matcher_abfn,
                 "person" : matcher_person,
                 "gata" : matcher_gata, # Götuheiti = Street name

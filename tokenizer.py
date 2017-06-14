@@ -730,7 +730,7 @@ def parse_sentences(token_stream):
             if token.kind == TOK.P_BEGIN or token.kind == TOK.P_END:
                 # Block start or end: finish the current sentence, if any
                 if in_sentence:
-                    yield tok_begin_sentence
+                    yield tok_end_sentence
                     in_sentence = False
                 if token.kind == TOK.P_BEGIN and next_token.kind == TOK.P_END:
                     # P_BEGIN immediately followed by P_END:

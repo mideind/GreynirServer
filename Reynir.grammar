@@ -120,17 +120,18 @@ MgrInnihald → Forskeyti? Yfirsetning StLiður* Tilvitnun? Lokatákn?
 Forskeyti →
     Samtenging "-:em"? # 'En - þegar allt er skoðað, var þetta fínt.'
     | Samtenging? uh TengimerkiVh Samtenging? # Og já, þetta var ekki gott / Nei - en hann átti ekkert svar
-    | raðnr # Raðnúmer málsgreinar
+    | raðnr_nf_kvk # Raðnúmer málsgreinar
     | "-:em"   # Þankastrik á undan setningu (allar gerðir strika varpast í '-')
-    | 'mynd:kvk'_nf_et tala AfTala? ':'? # Mynd 2 af 10
-    | 'dæmi:hk'_et_nf tala? ':'
+    | 'mynd:kvk'_nf_et tala_nf_kvk AfTala? ':'? # Mynd 2 af 10
+    | 'dæmi:hk'_et_nf tala_nf_hk? ':'
     | 'sjá:so'_gm_nh "einnig"? ':'
     | "semsagt:ao" ':'
     | "sem:st" 'segja:so'_lhþt_sb_hk_nf_et ':'
     | 'aðferð:kvk'_nf_et ':'
     | 'með_öðrum_orðum:ao' ':' | "með:fs" 'annar:lo'_hk_þgf_ft "orðum:hk" ':'
+    | Greinarnúmer ':'
 
-AfTala → "af:fs" tala
+AfTala → "af:fs" tala_þgf_kvk
 
 $score(-6) Forskeyti # Ekki freistast í forskeyti ef annað er í boði
 
@@ -167,9 +168,15 @@ SetningÁnF →
     SetningÁnF_et_p3/kyn
     | SetningÁnF_ft_p3/kyn
 
-Grein →
+Greinarnúmer →
     # Greinarnúmer, e.t.v. skammstafað, og e.t.v. með fyrirsögn
-    raðnr 'grein:kvk'_nf_et Fyrirsögn? '.'? # 17. gr. Störf Alþingis
+    raðnr_nf_kvk 'grein:kvk' # 'grein:kvk'_nf_et !!! Ef tilbrigðin eru með þá passar skammstöfunin gr. ekki við laufið
+
+Grein →
+    # Sjálfstæð fyrirsögn greinar
+    Greinarnúmer ':'? Fyrirsögn? # 17. gr. Störf Alþingis [.]
+
+$score(+6) Grein
 
 SpurnarorðAtv →
     "hve:ao" | "hversu:ao"
@@ -1397,9 +1404,9 @@ Sögn_1/tala/pers/kyn →
 # Kjósa miðmyndarform + þgf fremur en almenn sagnform + önnur föll
 #$score(+2) Sögn_1_mm/tala/pers/kyn
 
-# Býli í landinu eru/geta verið/verða/munu vera um 3.000 [talsins]
+# Býli í landinu eru/geta verið/verða/munu vera 3.000/tuttugu [talsins]
 Sögn_1_ft/pers/kyn →
-    HjSögnLhÞt_ft/pers FsAtv? tala
+    HjSögnLhÞt_ft/pers FsAtv? Töluorð_ft_nf/kyn
 
 # Sagnir sem geta staðið með þf + nh
 # '(Ég) álít (Pál vera dagfarsprúðan mann)'
@@ -1932,6 +1939,8 @@ HjSögnFinnst_sagnb →
 NhFylling/tala/kyn →
     Sjálfur/tala/kyn? NhFylling_nf/tala/kyn    # Nefnifall sjálfgefið
 
+$score(+2) NhFylling/tala/kyn # Gefa 'að borða köku' forgang sem NhFylling fremur en fs+no, til dæmis fs+no_þgf+no_ef
+
 # Aðeins nefnifall og þágufall eru notuð
 NhFylling_nf/tala/kyn → EinNhFylling_nf/tala/kyn OgNhFylling_nf/tala/kyn*
 NhFylling_þgf/tala/kyn → EinNhFylling_þgf/tala/kyn OgNhFylling_þgf/tala/kyn*
@@ -2109,11 +2118,8 @@ NlKjarni_et/fall/kyn →
     NlViðbót_et/fall/kyn?       # (Jón) sterki / (Jón), sultuslakur eftir gufubaðið, / (sonur) skósmiðsins
     Númer?                      # (ákvæði laga) nr. 33
 
-    # Eignarfallsliður á undan: 'Íslands fullorðni sprúðlandi sonurinn sterki'
-    # | EfLiðurForskeyti Einkunn_et/fall/kyn* Skst? Fyrirbæri/fall/kyn LoEftirNl_et/fall/kyn?
-
 NlKjarni_et_kk/fall →
-    tala 'hluti:kk'_et/fall EfLiður? # 1/3 hluti Alþingismanna (getur krafist atkvæðagreiðslu)
+    tala_kk/fall 'hluti:kk'_et/fall EfLiður? # 1/3 hluti Alþingismanna (getur krafist atkvæðagreiðslu)
 
 NlKjarni_et_nf_kk → NlKjarni_et_kk_nf
 NlKjarni_et_þf_kk → NlKjarni_et_kk_þf
@@ -2130,21 +2136,18 @@ NlKjarni_ft/fall/kyn →
     NlViðbót_ft/fall/kyn?
     Númer?
 
-    # | EfLiðurForskeyti Einkunn_ft/fall/kyn* Skst? Fyrirbæri_ft/fall/kyn LoEftirNl_ft/fall/kyn?
-
-
 Fyrirbæri_ft/fall/kyn →
     Skst? no_ft/fall/kyn                 # [Commodore PET] tölvur
     | Skst? no_ft_gr/fall/kyn Fjöldi_ft/fall/kyn  # Mennina tíu / félögin tvö
     | FyrirbæriMeðGreini_ft/fall/kyn
-    | raðnr OgRaðnr+ no/tala/fall/kyn       # 2. og 3. grein laganna (eru fallnar úr gildi)
+    | raðnr/fall/kyn OgRaðnr/fall/kyn+ no/tala/fall/kyn    # 2. og 3. grein laganna (eru fallnar úr gildi)
 
-OgRaðnr →
-    "og:st" raðnr
+OgRaðnr/fall/kyn →
+    "og:st" raðnr/fall/kyn
 
 Númer → 'númer:hk' tala
 
-Fjöldi_ft/fall/kyn → to_ft/fall/kyn | töl
+Fjöldi_ft/fall/kyn → to_ft/fall/kyn | töl_ft/fall/kyn
 
 # Persónufornöfn þriðju persónu eintölu, karl- og kvenkyn
 # Þessi orð eru ekki merkt með kyni í BÍN;
@@ -2360,7 +2363,7 @@ $score(-14) LoSemNafnliður/tala/fall/kyn
 
 NlStak_p3/tala/fall/kyn →
     'hver:fn'/tala/fall/kyn 'sá:fn'/tala/fall/kyn # Hver sá, hver sú, hvert það, hverjir þeir, hverjar þær, hver þau
-    | 'hvor:fn'/tala/fall/kyn 'tveir:töl'_ef_ft/kyn  # (eða) hvor/hvort tveggja
+    | 'hvor:fn'/tala/fall/kyn 'tveir:to'_ft_ef/kyn  # (eða) hvor/hvort tveggja
     # '(Sýslumenn sinna) sama hlutverki og prestar'
     # '(Ríkissaksóknari) nýtur sömu verndar í starfi og dómarar'
     | 'sami:fn'/tala/fall/kyn Nl/fall/tala/kyn "og:st" Nl_nf
@@ -2413,14 +2416,14 @@ $score(+4) TöluorðForskeyti # Rétta mínusinn af ef fleira fylgir
 # '1100 manns (voru á skemmtuninni)', '(Ég pantaði mat fyrir) sautján manns'
 # Virðist ekki ganga upp í eignarfalli
 # ('Ég lagði bílum 18 manns'?)
-NlStak_p3_ft_nf_kk → Manns
-NlStak_p3_ft_þf_kk → Manns
-NlStak_p3_ft_þgf_kk → Manns
+NlStak_p3_ft_nf_kk → Manns_nf
+NlStak_p3_ft_þf_kk → Manns_þf
+NlStak_p3_ft_þgf_kk → Manns_þgf
 
 # Hér ganga beygjanleg töluorð ekki (?'fjórir manns')
-Manns →
-    TöluorðForskeyti? töl "manns:kk"
-    | TöluorðForskeyti? tala_ft "manns:kk"
+Manns/fall →
+    TöluorðForskeyti? töl_ft_kk/fall "manns:kk"
+    | TöluorðForskeyti? tala_ft_kk/fall "manns:kk"
     | Talnabil "manns:kk" # 50-100 manns
 
 # 3p. eintala
@@ -2639,15 +2642,15 @@ $score(+4) Skst_abbrev
 
 Fyrirbæri/fall/kyn →
     Skst? no_et/fall/kyn        # Microsoft-hugbúnaðarrisinn, Nikon myndavél
-    | Raðnr no_et/fall/kyn
+    | Raðnr/fall/kyn no_et/fall/kyn
     | FyrirbæriMeðGreini/fall/kyn
     | Úrslit/fall/kyn
 
 # Raðnúmer
 
-Raðnr →
-    raðnr
-    | raðnr Til raðnr           # 2.-3. sæti listans / 2. til 3. sæti listans
+Raðnr/fall/kyn →
+    raðnr/fall/kyn
+    | raðnr/fall/kyn Til raðnr/fall/kyn           # 2.-3. sæti listans / 2. til 3. sæti listans
 
 # Úrslit í leikjum (32:27 sigur, 0:2-tap, 8:0 burst)
 
@@ -2911,11 +2914,11 @@ Fornafn_et_ef_kvk → "hennar"
 # Einn og sami veiðimaðurinn, eitt og sama fyrirbæri
 Fornafn_et/fall/kyn → 'einn:fn'_et/fall/kyn "og:st" 'sami:lo'_et/fall/kyn
 
-Töluorð/tala/fall/kyn → to/tala/fall/kyn | tala/tala
+Töluorð/tala/fall/kyn → to/tala/fall/kyn | tala/tala/fall/kyn
 
 # Öll töluorð (merkt 'töl' í BÍN) tákna fleirtölu
 # Talnabil eru líka alltaf í fleirtölu
-Töluorð_ft/fall/kyn → töl | Talnabil
+Töluorð_ft/fall/kyn → töl_ft/fall/kyn | Talnabil
 
 Talnabil → tala "-:en" tala
 $score(+4) Talnabil
@@ -3637,9 +3640,11 @@ UndirEins →
 $score(+4) UndirEins
 
 Sinnum →
-    töl "sinnum:hk"          # tvisvar, þrisvar og fjórum sinnum er skilgreint í Main.conf
-    | tala_ft "sinnum:hk"
-    | tala_et "sinni:hk"
+    töl_ft_hk_þgf "sinnum:hk"          # tvisvar, þrisvar og fjórum sinnum er skilgreint í Main.conf
+    | tala_ft_hk_þgf "sinnum:hk"
+    | tala_et_hk_þgf "sinni:hk"
+
+$score(+24) Sinnum
 
 Atviksliður →
     Al OgAtviksliður*
@@ -3673,13 +3678,13 @@ $score(+8) UmEðaYfir
 
 Tímasetning →
     "klukkan:kvk"? tími OgKlukkan? Degis?
-    | "klukkan:kvk" "hálf:lo"? töl OgKlukkan? Degis?
+    | "klukkan:kvk" "hálf:lo"? töl_ft_hk_nf OgKlukkan? Degis?
     | "klukkan:kvk" "hálf:lo"? to_nf_hk Degis?
     | Degis
 
 $tag(apply_prep_bonus) Tímasetning # Gefa bónus þegar tímasetning fylgir sögn frekar en nafnlið
 
-OgKlukkan → "og:st" tala | "og:st" töl
+OgKlukkan → "og:st" tala | "og:st" töl_ft_hk_nf
 
 Degis → "árdegis:ao" | "síðdegis:ao" | "miðdegis:ao"
 
@@ -3695,7 +3700,7 @@ Dagsetning →
     | DagsFs_þgf Tímasetning 'sá:fn'_et_kk_þf? dags # 'frá kl. 14 [þann] 3. júlí 2007'
 
     | "dags.:lo" dags # dags. 30. desember 1965
-    | "dagana:kk"? raðnr Til dags # 1. - 10. júní / 25. til 29. ágúst
+    | "dagana:kk"? raðnr_þf_kk Til dags # 1. - 10. júní / 25. til 29. ágúst
     | DagsFs_þf? 'sá:fn'_et_kk_þf? dags 'síðastliðinn:lo'_et_kk_þf? # '[eftir] [þann] 3. júlí 2007 [síðastliðinn]'
     | "hinn" dags 'síðastliðinn:lo'_et_kk_þf? # 'hinn 3. júlí [síðastliðinn]'
     | DagsFs_þgf dags # 'frá 3. júlí 2007'
@@ -3730,7 +3735,7 @@ Dagsetning →
     | "til:fs" "ársins:hk"? ártal # 'til ársins 1997'
     | Síðan
     | "dagana:kk" Dagana # dagana 1. til 10. júlí
-    | 'sá:fn'_kk_et_þf? raðnr "þessa:fn" "mánaðar:kk" # [þann] 23. þessa mánaðar
+    | 'sá:fn'_kk_et_þf? raðnr_þf_kk "þessa:fn" "mánaðar:kk" # [þann] 23. þessa mánaðar
     | ÞegarLíðaTekurÁ
 
     | Undanfarið
@@ -3765,8 +3770,8 @@ $score(+10) Síðan
 $score(+16) ÞegarLíðaTekurÁ
 
 Dagana →
-    raðnr Til dags # dagana 1. til 10. júlí / 9.-16. ágúst
-    | raðnr "og:st" dags # dagana 1. og 2. júní
+    raðnr_þf_kk Til dags # dagana 1. til 10. júlí / 9.-16. ágúst
+    | raðnr_þf_kk "og:st" dags # dagana 1. og 2. júní
     | dags Til dags # dagana 29. júní til 3. júlí
 
 # 29 ára, eins árs, tveggja vikna, margra ára
