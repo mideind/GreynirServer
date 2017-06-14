@@ -1096,7 +1096,7 @@ Sögn_nh/tala/pers/kyn →
 $score(+2) Sögn_nh/tala/pers/kyn
 
 # Miðmynd + nafnháttur
-
+# TODO skgr. hvaða sagnir ganga sem "hjálparsagnir" hér?
 Sögn_nh_mm/tala/pers/kyn →
     so_mm/tala/pers OgSögn_mm/tala/pers* Botn_nh_mm/tala/kyn
     # Hann segist munu borða kökuna
@@ -2089,6 +2089,7 @@ Einkunn/tala/fall/kyn →
     | Fornafn/tala/fall/kyn     # Sá (stóri maður), allt þetta (víkjandi lán)
     | Töluorð/tala/fall/kyn     # þrjá (gangandi menn) / 26
     | OkkarYkkar                # 'okkar skoðanir', 'ykkar félag' (okkar og ykkar eru pfn, ekki fn)
+    | GreinirMeðLo/tala/fall/kyn  # Tilbrigði 2.1 (hluti)
 
 # 'Skjölin voru mörg hundruð síður', 'Í húsinu voru fleiri þúsund hænur', 'hún saknaði mörg hundruð hálsmena'
 Einkunn_ft/fall/kyn →
@@ -2176,6 +2177,7 @@ NlKjarni/tala/aukafall/kyn →
     | abfn/aukafall # Hér vitum við hvorki tölu né kyn
 
 # Mörg/flest þessara mála, sum þeirra sem lentu í slysinu
+# TODO bæta öðrum fornöfnum sem taka hlutaeignarfall við
 NlKjarni_ft/fall/kyn →
     'margur:fn'_ft/fall/kyn EfLiður_ft/kyn
     | 'fár:lo'_ft/fall/kyn EfLiður_ft/kyn
@@ -2330,6 +2332,17 @@ OkkarYkkar → "okkar:fn" | "ykkar:fn"
 
 # Gefa stökum fornöfnum mínusstig - við viljum frekar sjá þau sem hluta af stærri nafnlið
 $score(-4) NlFornafn/tala/fall/kyn
+
+# TODO ný regla - Tilbrigði 2.1
+GreinirMeðLo/tala/fall/kyn →
+    Greinir/tala/fall/kyn LoLiður/tala/fall/kyn
+
+# Tilbrigði 2.1
+Greinir/tala/fall/kyn →
+    'hinn:gr'/tala/fall/kyn
+
+#TODO Nýtt - Tilbrigði 2.1
+$score(+6) GreinirMeðLo/tala/fall/kyn
 
 # Lýsingarorð sem stendur sem nafnliður:
 # 'Margir/fjölmargir/allmargir/heilmargir komu og aðstoðuðu Pál'
@@ -3259,9 +3272,14 @@ Nl_ft_p3_ef_hk →
 # nafnorðið er með greini eða án. (Sbr.: 'Fallega konan talaði við mig'
 # vs. 'Falleg kona talaði við mig'.)
 Lo/fall/tala/kyn →
-    AtviksliðurEinkunn* lo/fall/tala/kyn # (Þingmenn) kosnir leynilegri kosningu
+    LoSemLo/fall/tala/kyn   # Tilbrigði 3.1
     | LoMun/fall/tala/kyn
     | LoSem/fall/tala/kyn
+    | LoSemSo/fall/tala/kyn
+
+# Tilbrigði 3.1
+LoSemLo/fall/tala/kyn → 
+    AtviksliðurEinkunn* lo/fall/tala/kyn # (Þingmenn) kosnir leynilegri kosningu
 
 LoMun/fall/tala/kyn →
     'munur:kk'_þgf_et lo_mst/fall/tala/kyn # (Schengen rekur) mun öflugri gagnagrunn / (þau voru) mun frjálsari skoðana sinna
@@ -3274,12 +3292,16 @@ LoSem/fall/tala/kyn →
 
 $score(+4) LoSem/fall/tala/kyn
 
+# Tilbrigði 3.1
 # Leyfa sagnorðum að standa í stað lýsingarorða ef þau
 # eru í lýsingarhætti þátíðar, sterkri eða veikri beygingu
 # (_vb leyfir veika beygingu ásamt sterkri)
 # ('Við litum til bókfærðs hagnaðar')
-Lo/fall/tala/kyn → AtviksliðurEinkunn* so_lhþt/fall/tala/kyn
-Lo/fall/tala/kyn → AtviksliðurEinkunn* so_lh_nt
+LoSemSo/fall/tala/kyn →
+    AtviksliðurEinkunn* so_lhþt/fall/tala/kyn
+    | AtviksliðurEinkunn* so_lh_nt
+
+$score(+6) LoSemLo/fall/tala/kyn  # Tilbrigði 3.1, eina sem þarf að toggla.
 
 LoAtviksliðir →
     LoAtviksliður+ | "og:st" # 'honum er og heimilt að merkja við fleiri en einn frambjóðanda'

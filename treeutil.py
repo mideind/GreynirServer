@@ -86,21 +86,22 @@ _TEST_NT_MAP = { # Til að prófa í parse_text_to_bracket_form()
     "Atviksliður" : "ADVP",
     "LoAtviksliðir" : "ADVP",
     "Dagsetning" : "ADVP-DATE",
-
+    "LoLiður" : "ADJP",
     "Töluorð" : "NUM",
 
     "OgEða" : "C",
     "OgEðaEn" : "C",
     "TengiorðEr" : "C",
     "TengiorðSem" : "C",
-    "ártal" : "NUM",
-
+    "Greinir": "DET",
+    #"Lo" : "ADJ",
 }
 
 _TEST_TERMINAL_MAP = {
     # To specify the creation of intermediate nonterminals
     # for particular terminals, put the first part of the terminal
     # name here
+    "ártal" : "NUM",
     "fs" : "P",
     "no" : "N",
     "hk" : "N",
@@ -119,8 +120,9 @@ _TEST_TERMINAL_MAP = {
     "st" : "C",
     "stt" : "C", # Skilgreina ítarlegar?
     "nhm" : "INF", # Nafnháttarmerki
-    "raðnr" : "ADJ", # Raðtölur; skgr. frekar sem NUM?   
+    "raðnr" : "ADJ", # Raðtölur; skgr. frekar sem NUM?   Tilbrigði 1.1 - Setja ADJ í stað NUM
     "fyrirtæki" : "N",
+    "gr" : "DET", # Tilbrigði 2.1
 }
 
 _TEST_ID_MAP = { # Til að prófa í parse_text_to_bracket_form()
@@ -147,7 +149,8 @@ _TEST_ID_MAP = { # Til að prófa í parse_text_to_bracket_form()
     "INF" : dict(name = "Nafnháttarmerki"),
     "NUM" : dict(name = "Töluorð"),
     "C" : dict(name = "Samtenging"),
-    "ADJ" : dict(name = "Lýsingarorð"),
+    "ADJ" : dict(name = "Lýsingarorð", overrides = "V"),
+    "DET" : dict(name = "Greinir"),
 }
 
 
