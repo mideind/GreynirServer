@@ -319,9 +319,9 @@ class IFD_Tagset:
         return "g" + self._kyn() + self._tala() + self._fall()
 
     def _t(self):
-        if self._cat == "töl" and self._fl == "ob":
+        #if self._cat == "töl" and self._fl == "ob":        # Tekið út eftir að mörkun var bætt við í Reynir.grammar
             # Óbeygt töluorð
-            return "ta"
+        #    return "ta"
         return "t" + self._flokkur_t() + self._kyn() + self._tala(default = "f") + self._fall()
 
     def _s(self):

@@ -67,6 +67,7 @@
 # * fn for pronouns (fornöfn)
 # * ao for adverbs (atviksorð)
 # * töl for number words (töluorð)
+# * gr for determiners (greinir)
 #
 # The terminal names are matched against POS tags from the BIN
 # database in the module binparser.py.
