@@ -3455,13 +3455,13 @@ FsMeðFallstjórn →
     # 'Fjöldi stúlkna hefur leitað til okkar þrátt fyrir að hafa farið í heilsueftirlit í skólum'
     | 'þrátt_fyrir_að:st' NhRuna NhLiðurFrh*
 
-    | "á:fs" "hendur:kvk" Nl_þgf # 'að höfða sakamál á hendur Páli'
-    | "á:fs" "fætur:kk" Nl_þgf # '(Hann borðaði hverja tertusneiðina) á fætur annarri'
+    | "á:fs" "hendur:kvk" Nl_þgf    # 'að höfða sakamál á hendur Páli'
+    | "á:fs" "fætur:kk" Nl_þgf      # '(Hann borðaði hverja tertusneiðina) á fætur annarri'
     | "nær:fs" 'draga:so'_op_gm_et_p3 Nl_þgf # 'þegar nær dró/dregur jólum'
-    | 'það_sem_af_er:fs' Nl_þgf # 'það sem af er þessu þingi'
+    | 'það_sem_af_er:fs' Nl_þgf     # 'það sem af er þessu þingi'
     | 'fyrir_hönd:fs' Nl_ef
-    | "beggja:fn" "vegna:fs" Nl_ef # 'beggja vegna vegarins'
-    | 'með_tilliti_til:fs' Nl_ef # Skammstöfunin m.t.t.
+    | "beggja:fn" "vegna:fs" Nl_ef  # 'beggja vegna vegarins'
+    | 'með_tilliti_til:fs' Nl_ef    # Skammstöfunin m.t.t.
     | 'samanbera:so'_lhþt_sb_hk_nf_et "við:fs" Nl_þf
     | 'bera:so'_lhþt_sb_hk_nf_et "saman:ao" "við:fs" Nl_þf
     | "þegar:st" 'koma:so'_gm_p3_et "að:fs" Nl_þgf
@@ -3470,11 +3470,12 @@ FsMeðFallstjórn →
     | "innan:ao" "við:fs" Nl_þf
     | "innan:ao" "sem:st" "utan:fs" Nl_ef
     | "hvað:ao" FsHvaðVarðar
+    | "allt:fn" "frá:fs" Nl_þgf     # allt frá hruni, allt frá börnum til fullorðinna
     # 'um að lög um endurupptökunefnd standist ekki stjórnarskrá' - Ath: 'um það að' er höndlað í ÞaðTenging
     | "um:fs" "að:st" HreinYfirsetning ','?
     # 'er bjartsýnn á að Alfreð komi aftur í liðið' - Ath: 'á það/því að' er höndlað í ÞaðTenging
     | "á:fs" "að:st" HreinYfirsetning ','?
-    | "að:fs" "nafni:hk" person_nf          # Ég ræddi við konu að nafni Aðalbjörg Jónsdóttir
+    | "að:fs" "nafni:hk" person_nf  # Ég ræddi við konu að nafni Aðalbjörg Jónsdóttir
     | "á:fs" Vikudagur_gr_þf_et 'koma:so'_gm_fh_p3_et  # á sunnudaginn kemur / á laugardagskvöldið kemur
     | FsMiðaðVið
     | FsÍGegnUm
