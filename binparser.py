@@ -170,30 +170,35 @@ class BIN_Token(Token):
     _NOT_EO = frozenset(["og", "eða", "sem", "ekkert"])
 
     # Prepositions that nevertheless must be allowed as adverbs
-    # 'Fyrirtækið hefur skilað inn ársreikningi', 'Þá er kannski eftir klukkutími',
-    # 'Það hafi opnað fyrir of ágenga nýtingu þeirra'
-    # '...verður ekki til nægur jarðvarmi'
-    # '...til að koma upp veggspjöldum'
-    # '...séu um 20 kaupendur'
-    # '...keyptu síðan félagið'
-    # '...varpaði fram þeirri spurningu'
-    # '...samið við nær öll félögin'
-    # '...kom út skýrsla'
-    # '...að meðal hitastig'
-    # '...haldið hefur úti bloggsíðu'
-    # '...tóku saman gögn'
-    # '...það á jafnframt dótturfélag'
-    # '...næstum tvo áratugi'
-    # '...afsalaði sér samt launum'
-    # '...og færði því Markúsi Erni tómatsósu'
-    # '...lifði af nútímalega meðferð'
-    # '...varð fyrir neðan Pál'
-    # '...og Snædís, þá laganemi, bauð sig fram'
-    # '...nú liggur fyrir skýrsla'
-    # '...átti snemma forláta grammófón'
-    _NOT_NOT_EO = frozenset([ "inn", "eftir", "of", "til", "upp", "um", "síðan", "fram", "nær", "nærri",
-        "út", "meðal", "úti", "saman", "jafnframt", "næstum", "samt", "samtals", "því", "nokkuð", "af",
-        "neðan", "þá", "fyrir", "snemma" ])
+    # 'Fyrirtækið hefur skilað inn ársreikningi'
+    # 'Þá er kannski eftir klukkutími'
+    # '... verður ekki til nægur jarðvarmi'
+    # '... séu um 20 kaupendur'
+    # '... varpaði fram þeirri spurningu'
+    # '... samið við nær öll félögin'
+    # '... kom út skýrsla'
+    # '... að meðal hitastig', "Jón var þar á meðal"
+    # '... það á jafnframt dótturfélag'
+    # '... afsalaði sér samt launum'
+    # '... lifði af nútímalega meðferð'
+    # '... nú liggur fyrir skýrsla'
+    # '... það flæddi að'
+    # '... var að austan'
+    # '... ferðaðist austur'
+    # '... ók framhjá án þess að veifa'
+    # '... hitnaði innan frá', '... stökk aðeins frá'
+    # '... hitnaði að innan'
+    # '... að neðan'
+    # '... styrkurinn datt niður'
+    # '... kom að norðan'
+    # '... kom norður'
+    # '... tók ofan', '... að neðan'
+    # '... var að sunnan'
+    # '... fór austur'
+    # '... '
+
+    _NOT_NOT_EO = frozenset([ "inn", "eftir", "til", "upp", "um", "fram", "nær", "nærri",
+        "út", "meðal", "neðan", "jafnframt", "samt", "af", "fyrir"])
 
     # Words that are not eligible for interpretation as proper names, even if they are capitalized
     _NOT_PROPER_NAME = frozenset([ "ég", "þú", "hann", "hún", "það", "við", "þið", "þau",

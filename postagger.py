@@ -283,27 +283,62 @@ class IFD_Tagset:
     }
     # Sjálfgefin fallstjórn forsetninga
     FS_FALL = {
-        "frá" : "þ",
-        "til" : "e",
-        "í" : "þ",
-        "að" : "þ",
-        "vegna" : "e",
         "af" : "þ",
-        "á" : "o",
-        "með" : "þ",
-        "um" : "o",
-        "nær" : "þ",
-        "utan" : "o",
-        "innan" : "o",
-        "við" : "o",
-        "vestur" : "o",
+        "andspænis" : "þ",
+        "auk" : "e",
+        "austan" : "e",
         "austur" : "o",
-        "suður" : "o",
-        "norður" : "o",
+        "að" : "þ",
+        "eftir" : "o",      # þ kemur líka til greina
+        "fjarri" : "þ",    # til skoðunar
+        "fram" : "o",
+        "framhjá" : "þ",
+        "frá" : "þ",
+        "fyrir" : "o",      # þ kemur líka til greina
+        "gagnvart" : "þ",
         "gegnum" : "o",
+        "handa" : "þ",
+        "handan" : "e",
+        "inn" : "o",
+        "innan" : "o",      # e kemur líka til greina
+        "innanundir" : "þ",  # o kemur líka til greina (til skoðunar)
+        "kringum" : "o",
+        "með" : "þ",        # o kemur líka til greina
         "meðal" : "e",
-        "fyrir" : "o",
-        "eftir" : "o"
+        "meðfram" : "þ",
+        "milli" : "e",
+        "millum" : "e",
+        "mót" : "þ",
+        "móti" : "þ",
+        "neðan" : "e",      # o kemur líka til greina (fyrir neðan)
+        "niður" : "o",
+        "norðan" : "e",     # o kemur líka til greina (fyrir norðan)
+        "norður" : "o",
+        "nálægt" : "þ",
+        "nær" : "þ",
+        "ofan" : "e",       # o kemur líka til greina (fyrir ofan)
+        "samkvæmt" : "þ",
+        "sunnan" : "e",     # o kemur líka til greina (fyrir sunnan)
+        "suður" : "o",
+        "til" : "e",
+        "um" : "o",         # n kemur líka til greina (til skoðunar)
+        "umfram" : "o",
+        "umhverfis" : "o",
+        "undan" : "þ",
+        "undir" : "þ",      # o kemur líka til greina  
+        "upp" : "o",
+        "utan" : "o",       # e kemur líka til greina
+        "vegna" : "e",
+        "vestan" : "e",     # o kemur líka til greina (fyrir vestan)
+        "vestur" : "o",     
+        "við" : "o",        # þ kemur líka til greina
+        "yfir" : "o",       # þ kemur líka til greina
+        "á" : "o",          # þ kemur líka til greina
+        "án" : "e",
+        "ásamt" : "þ",
+        "í" : "þ",          # o kemur líka til greina
+        "úr" : "þ",
+        "út" : "o",
     }
 
     def _n(self):
