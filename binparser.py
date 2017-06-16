@@ -187,7 +187,7 @@ class BIN_Token(Token):
     # '... ferðaðist austur'
     # '... ók framhjá án þess að veifa'
     # '... hitnaði innan frá', '... stökk aðeins frá'
-    # '... hitnaði að innan'
+    # '... hitnaði að innan', '... var holt að innan'
     # '... að neðan'
     # '... styrkurinn datt niður'
     # '... kom að norðan'
@@ -195,7 +195,11 @@ class BIN_Token(Token):
     # '... tók ofan', '... að neðan'
     # '... var að sunnan'
     # '... fór austur'
-    # '... '
+    # '... hafði varla undan'
+    # '... lagði allt undir'
+    # '... kom að utan'
+    # '... bjó fyrir vestan'
+    # '... fór vestur'
 
     _NOT_NOT_EO = frozenset([ "inn", "eftir", "til", "upp", "um", "fram", "nær", "nærri",
         "út", "meðal", "neðan", "jafnframt", "samt", "af", "fyrir"])
