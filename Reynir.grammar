@@ -2524,6 +2524,8 @@ $score(-16) NlSérnafn
 Sérnafn →
     sérnafn tala? | entity tala? | LangtSérnafn
 
+$tag(apply_length_bonus) Sérnafn # Gefa bónus eftir því hversu margar eindir (tokens) falla undir sérnafnið
+
 # ATH: eitt 'entity' getur verið fleiri en eitt samliggjandi orð.
 # Ekki ætti að hafa samliggjandi 'entity' í málfræðireglu.
 # Hér eru höfð stutt bandstrik milli nafna, ekki en- eða em-dash.
@@ -2534,10 +2536,13 @@ LangtSérnafn →
     | entity+ "-"? sérnafn+ tala?           # Eining með nafni sem þekkt er úr gagnagrunni eða runu slíkra
     | entity "-" entity tala?               # Villeneuve-Loubet
     | entity+ "-"? sérnafn* tala? fyrirtæki # Standard Oil Corp.
+    | sérnafn+ tala? fyrirtæki              # Ísgerð Dísu ehf.
     | entity entity+ tala?                  # !!! Til prófunar
 
 Sérnafn/fall →
     sérnafn/fall tala? | LangtSérnafn/fall tala?
+
+$tag(apply_length_bonus) Sérnafn/fall # Gefa bónus eftir því hversu margar eindir (tokens) falla undir sérnafnið
 
 LangtSérnafn/fall →
     sérnafn/fall "-"? sérnafn/fall+ tala?               # Stóra-Felli
@@ -2546,7 +2551,12 @@ LangtSérnafn/fall →
 
 # Leyfa löngu sérnafni í nefnifalli að passa við langt sérnafn án falls
 LangtSérnafn_nf →
+    LangtSérnafnNf
+
+LangtSérnafnNf →
     LangtSérnafn
+
+$score(-12) LangtSérnafnNf
 
 # Löng sérnöfn, þ.e. runur orða með upphafsstöfum, eru mjög líklega rétt greind
 

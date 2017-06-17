@@ -296,7 +296,7 @@ class Reducer:
                     if not tokens[i].t2:
                         # If there are no BÍN meanings, we had no choice but to use sérnafn,
                         # so alleviate some of the penalty given by the grammar
-                        sc[t] += 2
+                        sc[t] += 4
                     else:
                         # BÍN meanings are available: discourage this
                         # print(f"Discouraging sérnafn {txt}, BÍN meanings are {tokens[i].t2}")
@@ -305,6 +305,11 @@ class Reducer:
                             # First token in sentence, and we have BÍN meanings:
                             # further discourage this
                             sc[t] -= 6
+                elif tfirst == "fyrirtæki":
+                    # We encourage company names to be interpreted as such,
+                    # so we give company abbreviations ('hf.', 'Corp.', 'Limited')
+                    # a high priority
+                    sc[t] += 24
                 elif tfirst == "st" or (tfirst == "sem" and t.colon_cat == "st"):
                     if txt == "sem":
                         # Discourage "sem" as a pure conjunction (samtenging)

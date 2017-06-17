@@ -724,7 +724,7 @@ class BIN_Token(Token):
 
         def matcher_eo(m):
             """ 'Einkunnarorð': adverb (atviksorð) that is not the same
-                as a preposition (forsetning) """
+                as a preposition (forsetning) or pronoun (fornafn) """
             if m.ordfl != "ao":
                 return False
             # This token can match an adverb:
@@ -738,12 +738,16 @@ class BIN_Token(Token):
                     self._is_eo = True
                 else:
                     # Check whether also a preposition or pronoun and return False in that case
-                    self._is_eo = not any(mm.ordfl in {"fs", "fn"} for mm in self.t2)
+                    self._is_eo = not(self.t1_lower in Prepositions.PP or
+                        any(mm.ordfl == "fn" for mm in self.t2))
             # Return True if this token cannot also match a preposition
             return self._is_eo
 
         def matcher_fs(m):
-            """ Check preposition """
+            """ Check preposition. Note that in this exceptional case, we
+                do not use the BÍN annotation of the token at all. Instead
+                we look up the token text in Prepositions.PP which is read
+                from the Main.conf file. """
             nv = terminal.num_variants
             if not nv:
                 return False
@@ -786,7 +790,7 @@ class BIN_Token(Token):
                 return False
             return True
 
-        def matcher_corporation(m):
+        def matcher_fyrirtæki(m):
             """ Check whether the token text matches a set of corporation identfiers """
             # Note: these must have a meaning for this to work, so specifying them
             # as abbreviations to Main.conf is recommended
@@ -816,57 +820,41 @@ class BIN_Token(Token):
                 return False
             return terminal.matches_first(m.ordfl, m.stofn, self.t1_lower)
 
-        def matches_proper_name():
+        def matcher_sérnafn(m):
             # Proper name?
             # Only allow a potential interpretation as a proper name if
             # the token is uppercase but there is no uppercase meaning of
             # the word in BÍN. This excludes for instance "Ísland" which
             # should be treated purely as a noun, not as a proper name.
-            #if any(m.ordmynd[0].isupper() and m.beyging != "-" for m in self.t2):
-            #    return False
+            if not self.is_upper:
+                return False
             if self.t1_lower in BIN_Token._NOT_PROPER_NAME:
                 return False
             if " " in self.t1_lower:
                 return False
-            if not terminal.num_variants:
-                return self.t2[0] if self.t2 else True # Return first meaning, or just plain True if no meanings
+            if terminal.num_variants == 0:
+                return True
             # The terminal is sérnafn_case: We only accept nouns or adjectives
             # that match the given case
-            for m in self.t2:
-                fbits = BIN_Token.get_fbits(m.beyging) & BIN_Token.VBIT_CASES
-                if BIN_Token._KIND[m.ordfl] in { "no", "lo" } and terminal.fbits_match(fbits):
-                    return m # Return the matching meaning
-            return False
+            fbits = BIN_Token.get_fbits(m.beyging) & BIN_Token.VBIT_CASES
+            return BIN_Token._KIND[m.ordfl] in { "no", "lo" } and terminal.fbits_match(fbits)
 
         # We have a match if any of the possible part-of-speech meanings
         # of this token match the terminal
         if self.t2:
             # The dispatch table has to be constructed each time because
             # the calls will have a wrong self pointer otherwise
-            matchers = {
-                "so" : matcher_so,
-                "no" : matcher_no,
-                "eo" : matcher_eo,
-                "fs" : matcher_fs,
-                "stt" : matcher_stt,
-                "töl" : matcher_töl,
-                "abfn" : matcher_abfn,
-                "person" : matcher_person,
-                "gata" : matcher_gata, # Götuheiti = Street name
-                "fyrirtæki" : matcher_corporation, # Company identifier, i.e. hf., ehf., Inc., Corp. etc.
-                "sérnafn" : None
-            }
-            matcher = matchers.get(terminal.first, matcher_default)
-            if matcher:
-                # Return the first matching meaning, or False if none
-                return next((m for m in self.t2 if matcher(m)), False)
-            # Terminal is a proper name ('sérnafn')
-            return self.is_upper and matches_proper_name()
+            matcher = locals().get("matcher_" + terminal.first, matcher_default)
+            # Return the first matching meaning, or False if none
+            return next((m for m in self.t2 if matcher(m)), False)
 
         # Unknown word, i.e. no meanings in BÍN (might be foreign, unknown name, etc.)
         if self.is_upper:
             # Starts in upper case: We allow this to match a named entity terminal ('sérnafn')
-            return terminal.startswith("sérnafn")
+            if terminal.startswith("sérnafn") and \
+                terminal.num_variants == 0 and \
+                " " not in self.t1_lower:
+                return True
 
         # Not upper case: allow it to match a singular, neutral noun in all cases,
         # but without the definite article ('greinir')
