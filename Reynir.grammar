@@ -2436,9 +2436,9 @@ NlStak_p3_ft_þgf_kk → Manns_þgf
 
 # Hér ganga beygjanleg töluorð ekki (?'fjórir manns')
 Manns/fall →
-    TöluorðForskeyti? töl_ft_kk/fall "manns:kk"
-    | TöluorðForskeyti? tala_ft_kk/fall "manns:kk"
-    | Talnabil "manns:kk" # 50-100 manns
+    eo* TöluorðForskeyti? töl_ft_kk/fall "manns:kk"
+    | eo* TöluorðForskeyti? tala_ft_kk/fall "manns:kk"
+    | eo* Talnabil "manns:kk" # 50-100 manns
 
 # 3p. eintala
 

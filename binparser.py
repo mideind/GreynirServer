@@ -541,22 +541,24 @@ class BIN_Token(Token):
     def matches_NUMBER(self, terminal):
         """ A number token matches a number (töl) or noun terminal """
 
-        no_info = not self.t2[1] and not self.t2[2]
+        if terminal.startswith("tala"):
+            # A 'tala' terminal matches a number regardless of any
+            # case and gender variants that it may have. Those are
+            # for informational purposes only.
+            return self.is_correct_singular_or_plural(terminal)
 
-        if no_info:
-            if terminal.startswith("tala"):
-                # Plain number with no case or gender info
-                return self.is_correct_singular_or_plural(terminal)
+        if terminal.first not in {"töl", "to"}:
+            return False
+
+        if not self.t2[1] and not self.t2[2]:
             # If no case and gender info, we only match "tala",
             # not nouns or "töl" terminals
             return False
 
-        if terminal.first not in {"töl", "to"}:
-            return False
         if not self.is_correct_singular_or_plural(terminal):
             return False
         if terminal.startswith("to"):
-            # Allow a match with "to" if we have both case and gender info
+            # Allow a match with "to" if we have BOTH case and gender info
             if not self.t2[1] or not self.t2[2]:
                 return False
             # Only check gender for "to", not "töl"
