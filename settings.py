@@ -906,17 +906,23 @@ class Settings:
     def _handle_prepositions(s):
         """ Handle preposition specifications in the settings section """
         # Format: preposition case
+        # Updated to handle multiword prepositions
+
+        # skoða strenginn aftan frá
+        # Síðasti hlutinn getur verið fall eða tala.
+        # Ef tala, þá uppfæri ég hana og uppfæri strenginn svo síðasti hlutinn er klipptur af.
+        # Ef síðasti hlutinn er þá ekki fall kemur villa. Ef hann er fall þá skrifa ég það hjá mér.
+            # Tek rest af listanum og geri " ".join og það er þá forsetningin
+        # Prepositions.add(forsetningin, fallið, tala)
         a = s.split()
-        la = len(a)
-        plural = False
-        if la == 3:
-            if a[2] not in {"et", "ft"}:
-                raise ConfigError("Preposition can only be marked as singular ('et') or plural('ft')")
-            plural = a[2] == "ft"
-            la = 2
-        if la != 2:
-            raise ConfigError("Preposition should have a single case argument and an optional singular/plural indicator")
-        Prepositions.add(a[0], a[1], plural)
+        if a[-1] not in {"nf", "þf", "þgf", "ef"}: # Ekki gilt fall aftast
+            raise ConfigError("Preposition should have a valid case argument")
+        c = a[-1]   # Case
+        if len(a) == 2: # Not mw pp
+            pp = a[0]   # Preposition
+        else:
+            pp = " ".join(a[:-1]) # Preposition
+        Prepositions.add(pp, c, False)  # TODO update to leave out plural
 
     @staticmethod
     def _handle_preferences(s):

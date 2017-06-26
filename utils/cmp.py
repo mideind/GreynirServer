@@ -626,7 +626,7 @@ class Comparison():
             mörk_Gr = StaticPhrases.tags(wx)
             lemmur_Gr = StaticPhrases.lemmas(wx)
         öll_orð = wx.replace("-", " ").split()
-        print(word["x"])
+        #print(word["x"])
         allt = zip(öll_orð, lemmur_Gr, mörk_Gr)
         rétt = True # Finnst eitthvað rangt í liðnum?
         for orð, lemma_Gr, mark_Gr in allt:

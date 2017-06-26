@@ -290,19 +290,26 @@ class IFD_Tagset:
         "austur" : "o",
         "að" : "þ",
         "eftir" : "o",      # þ kemur líka til greina
-        "fjarri" : "þ",    # til skoðunar
+        "fjarri" : "þ",
         "fram" : "o",
         "framhjá" : "þ",
         "frá" : "þ",
         "fyrir" : "o",      # þ kemur líka til greina
         "gagnvart" : "þ",
+        "gegn" : "þ",
+        "gegnt" : "þ",
         "gegnum" : "o",
         "handa" : "þ",
         "handan" : "e",
+        "heim" : "o",
+        "hjá" : "þ",
         "inn" : "o",
         "innan" : "o",      # e kemur líka til greina
         "innanundir" : "þ",  # o kemur líka til greina (til skoðunar)
+        "jafnfætis" : "þ",
         "kringum" : "o",
+        "lengi" : "e",
+        "megin" : "e",
         "með" : "þ",        # o kemur líka til greina
         "meðal" : "e",
         "meðfram" : "þ",
@@ -310,16 +317,21 @@ class IFD_Tagset:
         "millum" : "e",
         "mót" : "þ",
         "móti" : "þ",
-        "neðan" : "e",      # o kemur líka til greina (fyrir neðan)
+        "neðan" : "e",
         "niður" : "o",
-        "norðan" : "e",     # o kemur líka til greina (fyrir norðan)
+        "norðan" : "e",
         "norður" : "o",
         "nálægt" : "þ",
         "nær" : "þ",
-        "ofan" : "e",       # o kemur líka til greina (fyrir ofan)
+        "ofan" : "e",
+        "sakir" : "e",
         "samkvæmt" : "þ",
-        "sunnan" : "e",     # o kemur líka til greina (fyrir sunnan)
+        "samtímis": "þ",
+        "snemma" : "e",
+        "sunnan" : "e",
         "suður" : "o",
+        "síðla" : "e",
+        "sökum" : "e",
         "til" : "e",
         "um" : "o",         # n kemur líka til greina (til skoðunar)
         "umfram" : "o",
@@ -329,14 +341,16 @@ class IFD_Tagset:
         "upp" : "o",
         "utan" : "o",       # e kemur líka til greina
         "vegna" : "e",
-        "vestan" : "e",     # o kemur líka til greina (fyrir vestan)
+        "vestan" : "e",
         "vestur" : "o",     
         "við" : "o",        # þ kemur líka til greina
         "yfir" : "o",       # þ kemur líka til greina
         "á" : "o",          # þ kemur líka til greina
         "án" : "e",
+        "árla" : "e",
         "ásamt" : "þ",
         "í" : "þ",          # o kemur líka til greina
+        "öndvert" : "þ",
         "úr" : "þ",
         "út" : "o",
     }
@@ -620,6 +634,7 @@ class IFD_Tagset:
             if not sent:
                 continue
             output = []
+            print("******{}".format(sent))
             for t in sent:
                 x = t.get("x")
                 if not x:

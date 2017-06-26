@@ -1554,17 +1554,14 @@ def parse_static_phrases(token_stream, auto_uppercase):
         The algorithm implements N-token lookahead where N is the
         length of the longest phrase.
     """
-
     tq = [] # Token queue
     state = defaultdict(list) # Phrases we're considering
     pdict = StaticPhrases.DICT # The phrase dictionary
-
     try:
 
         while True:
 
             token = next(token_stream)
-
             if token.txt is None: # token.kind != TOK.WORD:
                 # Not a word: no match; discard state
                 if tq:
