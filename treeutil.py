@@ -393,7 +393,7 @@ class TreeUtility:
                     # Parsed successfully
                     pgs[-1].append(xform(sent.tokens, sent.tree, None))
                 else:
-                    # Errror in parse
+                    # Error in parse
                     pgs[-1].append(xform(sent.tokens, None, sent.err_index))
 
         stats = dict(
