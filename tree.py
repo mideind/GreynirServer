@@ -340,6 +340,11 @@ class Node:
                 yield c
             c = c.nxt
 
+    def contained_text(self):
+        """ Return a string consisting of the literal text of all
+            descendants of this node, in depth-first order """
+        return NotImplementedError # Should be overridden
+
     def string_self(self):
         """ String representation of the name of this node """
         raise NotImplementedError # Should be overridden
@@ -620,6 +625,11 @@ class TerminalNode(Node):
     def has_variant(self, s):
         """ Does the node have the given variant? """
         return self.td.has_variant(s)
+
+    def contained_text(self):
+        """ Return a string consisting of the literal text of all
+            descendants of this node, in depth-first order """
+        return self.text
 
     def _root(self, bin_db):
         """ Look up the root of the word associated with this terminal """
@@ -923,6 +933,16 @@ class NonterminalNode(Node):
         # This builds the child nodes
         super().build_simple_tree(builder)
         builder.pop_nonterminal()
+
+    @property
+    def text(self):
+        """ A nonterminal node has no text of its own """
+        return ""
+
+    def contained_text(self):
+        """ Return a string consisting of the literal text of all
+            descendants of this node, in depth-first order """
+        return " ".join(d.text for d in self.descendants() if d.text)
 
     def has_nt_base(self, s):
         """ Does the node have the given nonterminal base name? """

@@ -2064,21 +2064,24 @@ def canonicalize_token(t):
         terminal = t["t"]
         # Change "literal:category" to category,
         # or 'stem'_var1_var2 to category_var1_var2
-        if terminal[0] in "\"'" and "m" in t:
+        if terminal[0] in "\"'":
             # Convert 'literal'_var1_var2 to cat_var1_var2
-            a = terminal.split("_")
-            if ':' in a[0]:
+            # Note that the literal can contain underscores!
+            endq = terminal.rindex(terminal[0])
+            first = terminal[0:endq + 1]
+            rest = terminal[endq + 1:]
+            if ':' in first:
                 # The word category was given in the literal: use it
                 # (In almost all cases this matches the meaning, but
                 # 'stt' is an exception)
-                cat_override = a[0].split(':')[-1][:-1]
-                a[0] = cat_override
-            else:
+                cat_override = first.split(':')[-1][:-1]
+                first = cat_override
+            elif "m" in t:
                 # Get the word category from the meaning
-                a[0] = t["m"][1]
-            if a[0] in { "kk", "kvk", "hk" }:
-                a[0] = "no"
-            t["t"] = "_".join(a)
+                first = t["m"][1]
+            if first in { "kk", "kvk", "hk" }:
+                first = "no_" + first
+            t["t"] = first + rest
     if "m" in t:
         # Flatten the meaning from a tuple/list
         m = t["m"]

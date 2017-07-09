@@ -125,7 +125,7 @@ Forskeyti →
     | "-:em"   # Þankastrik á undan setningu (allar gerðir strika varpast í '-')
     | 'mynd:kvk'_nf_et tala_nf_kvk AfTala? ':'? # Mynd 2 af 10
     | 'dæmi:hk'_et_nf tala_nf_hk? ':'
-    | 'sjá:so'_gm_nh "einnig"? ':'
+    | 'sjá:so'_gm_nh "einnig:ao"? ':'
     | "semsagt:ao" ':'
     | "sem:st" 'segja:so'_lhþt_sb_hk_nf_et ':'
     | 'aðferð:kvk'_nf_et ':'
@@ -206,7 +206,7 @@ StSpurn →
     'hver:fn'_nf/tala/kyn ÞaðVarSem/tala? SagnRuna_p3/tala/kyn
 
 ÞaðVarSem/tala →
-    'það:fn'_nf_et VeraVerða_gm_p3/tala "sem:st"
+    'það:pfn'_hk_nf_et VeraVerða_gm_p3/tala "sem:st"
 
 Tengimerki →
     ':' | ';' | ',' | "-:em"
@@ -222,7 +222,7 @@ Samtenging →
     # Flóknari samtenging úr mörgum orðum
     SamtengingStök+
     | "þannig:ao" "að:st"
-    | 'það:fn'_nf_et "er:so" | 'það_er:ao'
+    | 'það:pfn'_hk_nf_et "er:so" | 'það_er:ao'
     | 'áðan:ao'_mst "en:st" "að:st"? # áður en [að]
     | 'snemma:ao'_mst "en:st" "að:st"? # fyrr en [að]
     | 'á_meðan:ao' "að:st"?
@@ -231,8 +231,7 @@ Samtenging →
     | "þar:ao" "sem:st"
     | 'auk_þess:ao' "sem:st" "að:st"?
     | "eins:ao" "og:st"
-    | "vegna:fs" "þess:pfn" "að:st"?
-    | "á_sama_tíma:ao" "og:st"
+    | "vegna:fs" 'það:pfn'_hk_ef_et "að:st"?
     | "eða:st"? 'allar_götur_síðan:ao'
     | 'það_er_að_segja:ao' Tengimerki "að:st"?
     | ÞangaðTil
@@ -315,6 +314,7 @@ EfÞegar →
     | "þar:ao" "sem:st" | "eftir:ao" "að:st"
     | "eins:ao" "og:st" | 'líkt_og:st' | 'á_meðan:st' | "meðan:st"
     | "þangað:ao" "til:st" | 'um_leið:ao' "og:st" | "síðan:st" | 'þrátt_fyrir_að:st'
+    | 'á_sama_tíma:ao' "og:st"
 
 OgEfÞegar →
     "og:st" EfÞegar              # 'Ef og þegar eitthvað gerist læt ég þig vita'
@@ -470,13 +470,13 @@ Setning_et_p3_hk →
 
 $tag(begin_prep_scope) Setning/tala/pers/kyn # Nýtt undirtré fyrir tengingu sagnar og forsetningar
 
-Upphaf_p3_nh → 'það:pfn'_nf_et | ao+
+Upphaf_p3_nh → 'það:pfn'_hk_nf_et | ao+
 
 SetningÞað/tala/pers/kyn →
-    'það:pfn'_nf_et SagnHluti/tala/pers/kyn
+    'það:pfn'_hk_nf_et SagnHluti/tala/pers/kyn
     # Það er/var/væri verið að reka fólk burt af jörðum sínum
     # ('verið' er ekki til sem LHÞT, en það er hins vegar 'búið' o.fl.)
-    | 'það:pfn'_nf_et 'vera:so'_gm_p3_et 'vera:so'_sagnb NhFyllingAtv
+    | 'það:pfn'_hk_nf_et 'vera:so'_gm_p3_et 'vera:so'_sagnb NhFyllingAtv
 
 $score(-2) SetningÞað/tala/pers/kyn # Gefa lægri forgang en setningum með "það" sem frumlag
 
@@ -685,7 +685,7 @@ SetningAukafall →
     | Nl_þgf/tala/kyn HjSögnFinnst FinnstÞað/tala/kyn? FinnstAndlag NhFyllingEðaAtv
 
     # Mér hefur [ekki] þótt [það] vont að sofa á nýju dýnunni
-    | Nl_þgf HjSögn_et_p3 FsAtv? HjSögnFinnst_sagnb "það:pfn"? FinnstAndlag NhFyllingEðaAtv
+    | Nl_þgf HjSögn_et_p3 FsAtv? HjSögnFinnst_sagnb 'það:pfn'_hk_nf_et? FinnstAndlag NhFyllingEðaAtv
 
     # Þann auð eigum við [ekki] að nýta (í þágu lands og þjóðar)
     | Nl/aukafall so_0/tala/pers Nl_nf/tala/pers AtvFs? nhm So_1_nh/aukafall FsAtv?
@@ -703,8 +703,8 @@ SetningAukafall →
     # | Nl_þgf 'vera:so'_gm_fh_p3_et FsAtv? lo_sb_hk_nf_et FsAtv?
 
 FinnstÞað/tala/kyn →
-    'það:pfn'_et_nf LoÞgf/tala/kyn  # Bílstjórum finnst það mörgum leiðinlegt
-    | LoÞgf/tala/kyn 'það:pfn'_et_nf?      # Bílstjórum finnst mörgum [það] leiðinlegt
+    'það:pfn'_hk_nf_et LoÞgf/tala/kyn  # Bílstjórum finnst það mörgum leiðinlegt
+    | LoÞgf/tala/kyn 'það:pfn'_hk_nf_et?      # Bílstjórum finnst mörgum [það] leiðinlegt
 
 FinnstAndlag →
     LoTengtSögn_nf_et_hk    # skemmtilegt
@@ -904,7 +904,7 @@ SagnliðurVh →
     | 'hafa:so'_vh_et_p3 Nl_ef AtvFs? 'vera:so'_sagnb so_2_þgf_ef_sagnb FsAtv?
 
     # Fari [það] svo/þannig að ég nái ekki kjöri til forseta [,] [þá] getið þið sótt fyrirlestur um þetta hjá mér
-    | 'fara:so'_vh_et_p3 "það:pfn"? FsAtv "að:st" HreinYfirsetning
+    | 'fara:so'_vh_et_p3 'það:pfn'_hk_nf_et? FsAtv "að:st" HreinYfirsetning
 
 $score(+4) SagnliðurVh
 
@@ -1660,7 +1660,7 @@ HjSögn/tala/pers →
     'hafa:so'/tala/pers Geta_sagnb?                # hafðir [í fátinu ekki getað] farið
     | 'geta:so'/tala/pers                          # gast farið
     | 'fá:so'/tala/pers                            # (allir) fái notið (þeirra réttinda)
-    | 'geta:so'/tala/pers FsAtv? 'hafa'_nh         # gast [ekki] hafa farið
+    | 'geta:so'/tala/pers FsAtv? 'hafa:so'_nh         # gast [ekki] hafa farið
     | 'vilja:so'/tala/pers FsAtv? HafaGetaFá_nh    # vildir [ekki] geta/hafa farið
     | 'mega:so'/tala/pers FsAtv? HafaGetaFá_nh     # máttir [ekki] geta/hafa farið
     | 'þykja:so'/tala/pers FsAtv? HafaGetaFá_nh    # þóttir [ekki] geta/hafa farið
@@ -2155,15 +2155,15 @@ Fjöldi_ft/fall/kyn → to_ft/fall/kyn | töl_ft/fall/kyn
 # Þessi orð eru ekki merkt með kyni í BÍN;
 # þess vegna þurfa þau sérstaka meðhöndlun hér
 
-NlKjarni_et_nf_kk → 'hann:pfn'_et_nf
-NlKjarni_et_þf_kk → 'hann:pfn'_et_þf
-NlKjarni_et_þgf_kk → 'hann:pfn'_et_þgf
-NlKjarni_et_ef_kk → 'hann:pfn'_et_ef
+NlKjarni_et_nf_kk → 'hann:pfn'_kk_et_nf
+NlKjarni_et_þf_kk → 'hann:pfn'_kk_et_þf
+NlKjarni_et_þgf_kk → 'hann:pfn'_kk_et_þgf
+NlKjarni_et_ef_kk → 'hann:pfn'_kk_et_ef
 
-NlKjarni_et_nf_kvk → 'hún:pfn'_et_nf
-NlKjarni_et_þf_kvk → 'hún:pfn'_et_þf
-NlKjarni_et_þgf_kvk → 'hún:pfn'_et_þgf
-NlKjarni_et_ef_kvk → 'hún:pfn'_et_ef
+NlKjarni_et_nf_kvk → 'hún:pfn'_kvk_et_nf
+NlKjarni_et_þf_kvk → 'hún:pfn'_kvk_et_þf
+NlKjarni_et_þgf_kvk → 'hún:pfn'_kvk_et_þgf
+NlKjarni_et_ef_kvk → 'hún:pfn'_kvk_et_ef
 
 # Fleirtölumyndir 3. persónu eru í BÍN undir 'sá'
 
@@ -2302,9 +2302,9 @@ NlFornafn/tala/fall/kyn →
     # 'okkar besta' / 'óumdeilanlega ykkar versta'
     | AtviksliðurEinkunn* OkkarYkkar LoLiður/tala/fall/kyn
 
-Pfn_kk/tala/fall → 'hann:pfn'/tala/fall
-Pfn_kvk/tala/fall → 'hún:pfn'/tala/fall
-Pfn_hk/tala/fall → 'það:pfn'/tala/fall
+Pfn_kk/tala/fall → 'hann:pfn'_kk/tala/fall
+Pfn_kvk/tala/fall → 'hún:pfn'_kvk/tala/fall
+Pfn_hk/tala/fall → 'það:pfn'_hk/tala/fall
 
 Pfn/tala/fall/kyn → Pfn/kyn/tala/fall
 
@@ -2810,11 +2810,11 @@ Manneskja/fall → Manneskja/fall/nkyn
 $score(-6) Ávarp/nkyn/fall
 
 ÞekktÁvarp_kk/fall →
-    'herra:kk'_et/fall | 'séra:kk'_et/fall | 'hann:pfn'_et/fall
+    'herra:kk'_et/fall | 'séra:kk'_et/fall | 'hann:pfn'_kk_et/fall
     | 'doktor:kk'_et/fall
     | 'prófessor:kk'_et/fall
 ÞekktÁvarp_kvk/fall →
-    'frú:kvk'_et/fall | 'séra:kk'_et/fall | 'hún:pfn'_et/fall
+    'frú:kvk'_et/fall | 'séra:kk'_et/fall | 'hún:pfn'_kvk_et/fall
     | 'doktor:kk'_et/fall
     | 'prófessor:kk'_et/fall
 
@@ -2932,8 +2932,8 @@ Fornafn/tala/fall/kyn → fn/tala/fall/kyn
 Fornafn/fall/tala/kyn → Fornafn/tala/fall/kyn
 
 # Persónufornöfnin (pfn) "hans" og "hennar" eru án kyns í BÍN
-Fornafn_et_ef_kk → "hans"
-Fornafn_et_ef_kvk → "hennar"
+Fornafn_et_ef_kk → 'hann:pfn'_kk_ef_et
+Fornafn_et_ef_kvk → 'hún:pfn'_kvk_ef_et
 
 # Einn og sami veiðimaðurinn, eitt og sama fyrirbæri
 Fornafn_et/fall/kyn → 'einn:fn'_et/fall/kyn "og:st" 'sami:lo'_et/fall/kyn
@@ -3031,19 +3031,19 @@ $score(-4) SemAukafall/aukafall/tala
 
 NlEind_et_p3_nf_hk →
     # Það [eitt] hvernig kerfið virkar (er óskiljanlegt flestum)
-    'það:pfn'_nf_et 'einn:fn'_nf_et_hk? ÞaðTenging
+    'það:pfn'_hk_nf_et 'einn:fn'_nf_et_hk? ÞaðTenging
 
 NlEind_et_p3_þf_hk →
     # (Gunnar lagði áherslu á) það [eitt] [í dag] að vægi atkvæða hafi aldrei verið jafnt
-    'það:pfn'_þf_et 'einn:fn'_þf_et_hk? ÞaðTenging
+    'það:pfn'_hk_þf_et 'einn:fn'_þf_et_hk? ÞaðTenging
 
 NlEind_et_p3_þgf_hk →
     # (Ekkert var gert í) því [einu] [strax] að Jón hefur áreitt Önnu lengi (eða því að hún vildi segja upp)
-    'það:pfn'_þgf_et 'einn:fn'_þgf_et_hk? ÞaðTenging
+    'það:pfn'_hk_þgf_et 'einn:fn'_þgf_et_hk? ÞaðTenging
 
 NlEind_et_p3_ef_hk →
     # (Þetta varð til) þess [eins] að Anna fór í fússi (og uppsagnar í kjölfarið)
-    'það:pfn'_ef_et 'einn:fn'_ef_et_hk? ÞaðTenging
+    'það:pfn'_hk_ef_et 'einn:fn'_ef_et_hk? ÞaðTenging
 
 ÞaðTenging →
     FsAtv? "að:st" HreinYfirsetning
@@ -3107,7 +3107,7 @@ Skýring →
     | "til:fs" "dæmis:hk" | 'til_dæmis:ao'
     | "þar:ao" "á:fs" "meðal:ao" | 'þar_á_meðal:ao'
     | "meðal:ao" "annars:ao" | 'meðal_annars:ao'
-    | 'það:pfn'_nf_et "er:so" | 'það_er:ao'
+    | 'það:pfn'_hk_et_nf "er:so" | 'það_er:ao'
     # | "þar:ao" "sem:st" "er:so"
     | "með:fs" 'annar:lo'_hk_þgf_ft "orðum:hk" | 'með_öðrum_orðum:ao'
 
@@ -3127,7 +3127,7 @@ Skýringarliður →
 
 OgEða → "og:st" | "eða:st" | "ellegar:st" | "eður:st" | "svo:st" "og:st" | "sem:st" "og:st" | "né:st"
     | ÞarÁMeðal | "meðal:ao" "annars:ao" | 'meðal_annars:ao'
-    | 'það'_nf_et "er:st" | 'það_er:ao'
+    | 'það:pfn'_hk_et_nf "er:st" | 'það_er:ao'
     | "eins:ao" "og:st" | 'líkt_og:st' | "jafnt:ao" "sem:st"
     | "þar:ao" "með:ao" 'telja:so'_lhþt_sb_hk_nf_et? | "svo:st" "sem:st" | 'svo_sem:st'
     | EnÍOgEða
@@ -3628,7 +3628,7 @@ $tag(purge_prep) FsRunaEftirNl # Ekki senda innifaldar forsetningar upp tréð
 
 # Forskeyti sem leyfileg eru á undan forsetningarlið innan kommu
 FsForskeyti →
-    'líkt_og:st' | "eins:ao" "og:st" | 'það_er:ao' | "það:pfn" "er:so"
+    'líkt_og:st' | "eins:ao" "og:st" | 'það_er:ao' | 'það:pfn'_hk_et_nf "er:so"
 
 # Atviksliður
 
@@ -3845,24 +3845,24 @@ Tímabil_þf →
     TímabilsEinkunn_þf/tala/kyn Tímabil_þf/kyn/tala Tímabil_ef? # (Hann kom hér) alla daga, suma vikudaga, nokkur ár, eina vikuna
 
 Tímabil_ef →
-    'ár:hk'_hk_ef_et_gr            # ársins
-    | 'skólaár:hk'_hk_ef_et_gr     # skólaársins
-    | 'misseri:hk'_hk_ef_et_gr     # misserisins
-    | 'sumar:hk'_hk_ef_et_gr
-    | 'vor:hk'_hk_ef_et_gr
-    | 'haust:hk'_hk_ef_et_gr
-    | 'kjörtímabil:hk'_hk_ef_et_gr
-    | 'leikár:hk'_hk_ef_et_gr
-    | 'rekstrarár:hk'_hk_ef_et_gr
-    | 'almanaksár:hk'_hk_ef_et_gr
-    | 'vika:kvk'_kvk_ef_et_gr
+    'ár:hk'_ef_et_gr            # ársins
+    | 'skólaár:hk'_ef_et_gr     # skólaársins
+    | 'misseri:hk'_ef_et_gr     # misserisins
+    | 'sumar:hk'_ef_et_gr
+    | 'vor:hk'_ef_et_gr
+    | 'haust:hk'_ef_et_gr
+    | 'kjörtímabil:hk'_ef_et_gr
+    | 'leikár:hk'_ef_et_gr
+    | 'rekstrarár:hk'_ef_et_gr
+    | 'almanaksár:hk'_ef_et_gr
+    | 'vika:kvk'_ef_et_gr
     | 'leiktíð:kvk'_ef_et_gr
-    | 'öld:kvk'_kvk_ef_et_gr
+    | 'öld:kvk'_ef_et_gr
     | 'mánuður:kk'_ef_et_gr
     | 'ársfjórðungur:kk'_ef_et_gr
     | 'dagur:kk'_ef_et_gr
     | 'sólarhringur:kk'_ef_et_gr
-    | 'vetur:kk'_kk_ef_et_gr
+    | 'vetur:kk'_ef_et_gr
     | 'morgunn:kk'_ef_et_gr
     | 'eftirmiðdagur:kk'_ef_et_gr
     | 'klukkutími:kk'_ef_et_gr
@@ -3914,29 +3914,29 @@ Tímabil_ft_þgf_kvk → Tímabil_kvk_þgf_ft
 Tímabil_ft_þgf_hk → Tímabil_hk_þgf_ft
 
 Tímabil_hk/fall/tala →
-    'ár:hk'_hk/fall/tala
-    | 'skólaár:hk'_hk/fall/tala
-    | 'misseri:hk'_hk/fall/tala
-    | 'sumar:hk'_hk/fall/tala
-    | 'vor:hk'_hk/fall/tala
-    | 'haust:hk'_hk/fall/tala
-    | 'kvöld:hk'_hk/fall/tala
-    | 'hádegi:hk'_hk/fall/tala
-    | 'kjörtímabil:hk'_hk/fall/tala
-    | 'leikár:hk'_hk/fall/tala
-    | 'rekstrarár:hk'_hk/fall/tala
-    | 'almanaksár:hk'_hk/fall/tala
-    | 'korter:hk'_hk/fall/tala
-    | 'kortér:hk'_hk/fall/tala
+    'ár:hk'/fall/tala
+    | 'skólaár:hk'/fall/tala
+    | 'misseri:hk'/fall/tala
+    | 'sumar:hk'/fall/tala
+    | 'vor:hk'/fall/tala
+    | 'haust:hk'/fall/tala
+    | 'kvöld:hk'/fall/tala
+    | 'hádegi:hk'/fall/tala
+    | 'kjörtímabil:hk'/fall/tala
+    | 'leikár:hk'/fall/tala
+    | 'rekstrarár:hk'/fall/tala
+    | 'almanaksár:hk'/fall/tala
+    | 'korter:hk'/fall/tala
+    | 'kortér:hk'/fall/tala
 
 Tímabil_kvk/fall/tala →
-    'vika:kvk'_kvk/fall/tala
-    | 'helgi:kvk'_kvk/fall/tala
-    | 'nótt:kvk'_kvk/fall/tala
+    'vika:kvk'/fall/tala
+    | 'helgi:kvk'/fall/tala
+    | 'nótt:kvk'/fall/tala
     | 'mínúta:kvk'/fall/tala
     | 'sekúnda:kvk'/fall/tala
     | 'leiktíð:kvk'/fall/tala
-    | 'öld:kvk'_kvk/fall/tala
+    | 'öld:kvk'/fall/tala
 
 Tímabil_kk/fall/tala →
     'mánuður:kk'/fall/tala
@@ -3946,14 +3946,14 @@ Tímabil_kk/fall/tala →
     | 'vikudagur:kk'/fall/tala
     | 'helgidagur:kk'/fall/tala
     | 'virkur:lo'_kk/fall/tala 'dagur:kk'/fall/tala
-    | 'vetur:kk'_kk/fall/tala
+    | 'vetur:kk'/fall/tala
     | 'morgunn:kk'/fall/tala
     | 'eftirmiðdagur:kk'/fall/tala
     | Vikudagur/fall/tala
-    | 'klukkutími:kk'_kk/fall/tala
-    | 'hálftími:kk'_kk/fall/tala
-    | 'stundarfjórðungur:kk'_kk/fall/tala
-    | 'tími:kk'_kk/fall/tala
+    | 'klukkutími:kk'/fall/tala
+    | 'hálftími:kk'/fall/tala
+    | 'stundarfjórðungur:kk'/fall/tala
+    | 'tími:kk'/fall/tala
     | 'áratugur:kk'/fall/tala
     | FyrriSíðari_kk/fall/tala? 'hálfleikur:kk'/fall/tala
     | 'leikur:kk'/fall/tala
@@ -3997,10 +3997,10 @@ Vikudagur_gr/fall/tala →
     | 'laugardagskvöld:hk'_gr/fall/tala
 
 Árstíð_þf/tala →
-    'haust:hk'_hk_þf/tala
-    | 'vor:hk'_hk_þf/tala
-    | 'sumar:hk'_hk_þf/tala
-    | 'vetur:kk'_kk_þf/tala
+    'haust:hk'_þf/tala
+    | 'vor:hk'_þf/tala
+    | 'sumar:hk'_þf/tala
+    | 'vetur:kk'_þf/tala
 
 Mánuður_þf →
     'janúar:kk'_þf

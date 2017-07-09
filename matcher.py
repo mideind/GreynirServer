@@ -116,6 +116,7 @@ _DEFAULT_NT_MAP = {
     "FrumlagsInnskot" : "S-EXPLAIN",
     "Tilvitnun" : "S-QUOTE",
     "Forskeyti" : "S-PREFIX",
+    "EfÞegar" : "S-PREFIX",
     "Nl" : "NP",
     "EfLiður" : "NP-POSS",
     "EfLiðurForskeyti" : "NP-POSS",
@@ -168,6 +169,26 @@ _DEFAULT_ID_MAP = {
 _DEFAULT_TERMINAL_MAP = {
     # Empty
 }
+
+
+class MultiReplacer:
+
+    """ Utility class to do multiple replacements on a string
+        in a single pass. The replacements are defined in a dict,
+        i.e. { "toReplace" : "byString" }
+    """
+
+    def __init__(self, replacements):
+        self._replacements = replacements
+        substrs = sorted(replacements, key=len, reverse=True)
+        # Create a big OR regex that matches any of the substrings to replace
+        self._regexp = re.compile('|'.join(map(re.escape, substrs)))
+
+    def replace(self, string):
+        # For each match, look up the new string in the replacements
+        return self._regexp.sub(
+            lambda match: self._replacements[match.group(0)],
+            string)
 
 
 class SimpleTree:
@@ -355,6 +376,44 @@ class SimpleTree:
     def tree(self):
         """ Return a nicely formatted string showing this subtree """
         return self._tree(0)
+
+    # Convert literal terminals that did not have word category specifiers
+    # in the grammar (now corrected)
+    _replacer = MultiReplacer({
+        "\"hans\"" : "pfn_kk_et_ef",
+        "\"hennar\"" : "pfn_kvk_et_ef",
+        "\"einnig\"" : "ao",
+        "\"hinn\"" : "gr_kk_et_þf",
+        "'það'_nf_et" : "pfn_hk_et_nf",
+        "'hafa'_nh" : "so_nh"
+    })
+
+    def _flat(self, level):
+        """ Return a string containing an a flat representation of this subtree """
+        if self._len > 1 or self._children:
+            # Children present: Array or nonterminal
+            return (self.tag or "[]") + " " + " ".join(
+                child._flat(level + 1) for child in self.children) + " /" + (self.tag or "[]")
+        # No children
+        if self._head.get("k") == "PUNCTUATION":
+            # Punctuation
+            return "p"
+        # Terminal
+        numwords = self._text.count(" ")
+        if not numwords:
+            return self._replacer.replace(self.terminal)
+        # Multi-word phrase
+        if self.tcat == "fs":
+            # fs phrase:
+            # Return a sequence of ao prefixes before the terminal itself
+            return " ".join([ "ao" ] * numwords + [ self.terminal ])
+        # Repeat the terminal name for each component word
+        return " ".join([ self.terminal ] * (numwords + 1))
+
+    @property
+    def flat(self):
+        """ Return a flat representation of this subtree """
+        return self._flat(0)
 
     def __getattr__(self, name):
         """ Return the first child of this subtree having the given tag """
@@ -775,7 +834,7 @@ class SimpleTree:
                             pc += 1
                             op = '>>'
                         if pc >= len_items:
-                            raise ValueError("Missing argument to '{op}' operator")
+                            raise ValueError(f"Missing argument to '{op}' operator")
                         result = contained(tree, items, pc, op == '>>')
                         if not result:
                             return False
@@ -829,7 +888,7 @@ class SimpleTree:
                             op = '>>'
                             pc += 1
                         if pc >= len_items:
-                            raise ValueError("Missing argument to '{op}' operator")
+                            raise ValueError(f"Missing argument to '{op}' operator")
                         if result:
                             # Further constrained by containment
                             result = contained(tree, items, pc, op == '>>')

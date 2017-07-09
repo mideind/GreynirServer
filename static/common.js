@@ -168,30 +168,30 @@ function errFunc(xhr, status, errorThrown) {
 function serverQuery(requestUrl, jsonData, successFunc, completeFunc, errorFunc) {
    /* Wraps a simple, standard Ajax request to the server */
    $.ajax({
-     // The URL for the request
-     url: requestUrl,
+      // The URL for the request
+      url: requestUrl,
 
-     // The data to send
-     data: jsonData,
+      // The data to send
+      data: jsonData,
 
-     // Whether this is a POST or GET request
-     type: "POST",
+      // Whether this is a POST or GET request
+      type: "POST",
 
-     // The type of data we expect back
-     dataType : "json",
+      // The type of data we expect back
+      dataType : "json",
 
-     cache: false,
+      cache: false,
 
-     // Code to run if the request succeeds;
-     // the response is passed to the function
-     success: (!successFunc) ? nullFunc : successFunc,
+      // Code to run if the request succeeds;
+      // the response is passed to the function
+      success: (!successFunc) ? nullFunc : successFunc,
 
-     // Code to run if the request fails; the raw request and
-     // status codes are passed to the function
-     error: (!errorFunc) ? errFunc : errorFunc,
+      // Code to run if the request fails; the raw request and
+      // status codes are passed to the function
+      error: (!errorFunc) ? errFunc : errorFunc,
 
-     // code to run regardless of success or failure
-     complete: (!completeFunc) ? nullCompleteFunc : completeFunc
+      // code to run regardless of success or failure
+      complete: (!completeFunc) ? nullCompleteFunc : completeFunc
    });
 }
 
@@ -201,10 +201,10 @@ function serverPost(url, parameters, new_window) {
    form.attr("action", url);
    form.attr("target", new_window ? "_blank" : "_self"); // Display in same or new window
    $.each(parameters, function(key, value) {
-     var field = $('<input type="hidden"></input>');
-     field.attr("name", key);
-     field.attr("value", value);
-     form.append(field);
+      var field = $('<input type="hidden"></input>');
+      field.attr("name", key);
+      field.attr("value", value);
+      form.append(field);
    });
    // The form needs to be a part of the document
    // to allow submission, at least in some browsers
@@ -305,6 +305,9 @@ function tokenInfo(t, nameDict) {
          // say 'atviksliður' instead of 'atviksorð'
          if (r.class == "ao" && t.m[0].indexOf(" ") > -1)
             wcls = "atviksliður";
+         else
+         if (r.class == "fs" && t.m[0].indexOf(" ") > -1)
+            wcls = "fleiryrt forsetning";
          r.grammar = grammar(r.class, t.m[3], t.x);
       }
       r.lemma = (t.m && t.m[0]) ? t.m[0] : t.x;

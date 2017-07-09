@@ -159,6 +159,7 @@ class BIN_Token(Token):
 
     VBIT_CASES = VBIT["nf"] | VBIT["þf"] | VBIT["þgf"] | VBIT["ef"]
     VBIT_GENDERS = VBIT["kk"] | VBIT["kvk"] | VBIT["hk"]
+    VBIT_NUMBER = VBIT["et"] | VBIT["ft"]
 
     # Variants to be checked for verbs
     VERB_VARIANTS = ["p1", "p2", "p3", "nh", "vh", "lh", "bh", "fh",
@@ -713,9 +714,18 @@ class BIN_Token(Token):
             if m.ordfl != "abfn":
                 return False
             fbits = BIN_Token.get_fbits(m.beyging)
-            # Check the case only (don't check the gender, even if present,
-            # since it isn't found in BÍN)
+            # Check the case only
+            # (don't check the gender, even if present, since it isn't found in BÍN)
             return terminal.fbits_match_mask(BIN_Token.VBIT_CASES, fbits)
+
+        def matcher_pfn(m):
+            """ Personal pronoun """
+            if m.ordfl != "pfn":
+                return False
+            fbits = BIN_Token.get_fbits(m.beyging)
+            # Check the case and number only
+            # (don't check the gender, even if present, since it isn't found in BÍN)
+            return terminal.fbits_match_mask(BIN_Token.VBIT_CASES | BIN_Token.VBIT_NUMBER, fbits)
 
         def matcher_stt(m):
             """ Check connective conjunction ('sem', 'er') """
@@ -1039,6 +1049,10 @@ class VariantHandler:
         """ Return True if this terminal has any of the variant(s) corresponding to the given bit(s) """
         return (self._vbits & vbits) != 0
 
+    def cut_fbits(self, fbits):
+        """ Mask off the given fbits, making them irrelevant in matches """
+        self._fbits &= ~fbits
+
     def fbits_match(self, fbits):
         """ Return True if the given fbits meet all variant criteria """
         # That is: for every bit in self._fbits, there must be a corresponding bit
@@ -1137,10 +1151,15 @@ class BIN_LiteralTerminal(VariantHandler, LiteralTerminal):
                 # We have a word category specification
                 self._first = a[0]
                 self._cat = self._match_cat = a[1]
-                # Hack to make 'stt' terminals match with the BÍN 'st' category
-                # (stt is only there to mark 'sem' and 'er' specially in particular contexts)
                 if self._cat == "stt":
+                    # Hack to make 'stt' terminals match with the BÍN 'st' category
+                    # (stt is only there to mark 'sem' and 'er' specially in particular contexts)
                     self._match_cat = "st"
+                elif self._cat == "pfn":
+                    # Hack to allow genders to be specified on pfn literal terminals
+                    # without having them affect the matching (since genders
+                    # are not included on pfn's in BÍN)
+                    self.cut_fbits(BIN_Token.VBIT_GENDERS)
         # Check whether we have variants on an exact literal
         if self._strong and self.num_variants > 0:
             # It doesn't make sense to have variants on exact literals
