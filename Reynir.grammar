@@ -228,16 +228,23 @@ Samtenging →
     | 'á_meðan:ao' "að:st"?
     | "allt:fn" "frá:fs" "því:fn" "að:st"?
     | "þar:ao" "á:fs" "meðal:ao" | 'þar_á_meðal:ao'
-    | "þar:ao" "sem:st"
     | 'auk_þess:ao' "sem:st" "að:st"?
     | "eins:ao" "og:st"
     | "vegna:fs" 'það:pfn'_hk_ef_et "að:st"?
     | "eða:st"? 'allar_götur_síðan:ao'
     | 'það_er_að_segja:ao' Tengimerki "að:st"?
+    | 'þrátt_fyrir:ao' "að:st"
     | ÞangaðTil
+    | ÞarSem
     | OgEðaEn? SpurnarSamtenging
 
+$score(+2) Samtenging
 $tag(apply_length_bonus) Samtenging
+
+ÞarSem →
+    "þar:st" "sem:st"
+
+$score(+4) ÞarSem # Gefa bónus á samtengingu frekar en ao + stt
 
 SpurnarSamtenging →
 
@@ -313,7 +320,7 @@ EfÞegar →
     "ef:st" | "þegar:st" | "er:st" | "þótt:st" | "þó:st" | "þó:ao" "að:st" | "þó:ao" "svo:ao" "að:st" | 'jafnvel_þótt:st'
     | "þar:ao" "sem:st" | "eftir:ao" "að:st"
     | "eins:ao" "og:st" | 'líkt_og:st' | 'á_meðan:st' | "meðan:st"
-    | "þangað:ao" "til:st" | 'um_leið:ao' "og:st" | "síðan:st" | 'þrátt_fyrir_að:st'
+    | "þangað:ao" "til:st" | 'um_leið:ao' "og:st" | "síðan:st" | 'þrátt_fyrir:ao' "að:st"
     | 'á_sama_tíma:ao' "og:st"
 
 OgEfÞegar →
@@ -965,7 +972,7 @@ OgSögn_nh/tala/kyn →
 
 # Þá segist hún styðja trúfrelsi, þrátt fyrir að vera andsnúin moskubyggingum
 OgEðaEnÞrátt →
-    OgEðaEn | 'þrátt_fyrir_að:st'
+    OgEðaEn | 'þrátt_fyrir:ao' "að:st"
 
 OgSögn_lhþt/tala/kyn →
     # Leyfa að 'og' sé sleppt, sbr. "Tveir menn voru stöðvaðir í morgun [sterklega] grunaðir um ölvun við akstur"
@@ -2976,10 +2983,13 @@ Tengiliður/tala/pers/kyn →
     Tengiorð Tengisetning/tala/pers/kyn OgTengisetning/tala/pers/kyn*
 
 Tengiorð →
-    TengiorðSem | TengiorðEr
+    TengiorðSem | TengiorðEr | TengiorðÞarSem
 
 TengiorðSem → "eða:st"? "sem:stt"
-    | "þar:ao" "sem:st"         # ??? Er þetta rétt?
+
+TengiorðÞarSem → "þar:ao" "sem:stt" # í landinu þar sem Jón átti heima
+
+$score(-4) TengiorðÞarSem # Þetta er oftar samtenging setninga ofar í trénu
 
 TengiorðEr → "er:stt"
 
@@ -3328,8 +3338,10 @@ Lo_sb/tala/fall/kyn → LoAtviksliðir? lo_sb/tala/fall/kyn LoViðhengi?
 Lo_sb_nf/tala/kyn → LoAtviksliðir? lo_sb_nf/tala/kyn LoViðhengi?
 
 # Miðstig
-Lo_mst/tala/fall/kyn → LoAtviksliðir? lo_mst/tala/fall/kyn LoViðhengi? # Miðstig
-Lo_mst_nf/tala/kyn → LoAtviksliðir? lo_mst_nf/tala/kyn LoViðhengi? # Miðstig
+Lo_mst/tala/fall/kyn →
+    LoAtviksliðir? lo_mst/tala/fall/kyn LoViðhengi? # Miðstig
+Lo_mst_nf/tala/kyn →
+    LoAtviksliðir? lo_mst_nf/tala/kyn LoViðhengi? # Miðstig
 
 # Lýsingarorð sem stendur með sögn getur haft eignarfalls- eða
 # þágufalls-viðhengi, sbr.:
@@ -3400,7 +3412,7 @@ LoFornafn/fall/tala/kyn →
 LoSamanb/tala/fall/kyn →
     Lo_sb/tala/fall/kyn
     # Miðstig: (Ég varðveitti laxinn) [mun] betur [en bleikjuna]
-    | "mun:kk"? Lo_mst/tala/fall/kyn EnSamanb/fall?
+    | MiðstigForskeyti? Lo_mst/tala/fall/kyn EnSamanb/fall?
     # (Hann tók við hrósinu) [,] ýmist glaður eða með fýlusvip
     | LoSamanbFleiri/fall/tala/kyn
 
@@ -3415,13 +3427,22 @@ $score(+4) LoSamanbFleiri/fall/tala/kyn
 LoEðaFs/fall/tala/kyn →
      LoTengtSögn/tala/fall/kyn | FsAtv
 
+MiðstigForskeyti →
+    'munur:kk'_þgf_et           # mun meira
+    | 'mikill:lo'_sb_hk_þgf_et  # miklu meira
+
+$score(+2) MiðstigForskeyti
+
 EnSamanb/fall →
     "en:st" Nl/fall
+    | "en:st" HreinYfirsetning
+
+$score(+4) EnSamanb/fall
 
 # Hann er reiður / [!!! ATH:] Hann er Önnu mun reiðari en Páli
 LoSamanb_nf/tala/kyn →
     Lo_sb_nf/tala/kyn
-    | "mun:kk"? Lo_mst_nf/tala/kyn EnSamanb_nf? # Miðstig: (Ég var) [mun] reiðari [en Páll]
+    | MiðstigForskeyti? Lo_mst_nf/tala/kyn EnSamanb_nf? # Miðstig: (Ég var) [mun] reiðari [en Páll]
     # (Hann tók við hrósinu) [,] ýmist glaður eða með fýlusvip
     | LoSamanbFleiri_nf/tala/kyn
 
@@ -3456,27 +3477,20 @@ FsMeðFallstjórn →
 
     fs/fall Nl/fall
 
-    | fs_ef_ft Nl_ef_ft # 'milli' eða 'millum'
-
     # '(Beiðnin) um að...', '(Fíknin) í að...', '(Biðin) eftir að...', '(Þörfin) fyrir að...',
-    # 'gegnum að...', 'kringum að...',
+    # 'gegnum að...', 'kringum að...', 'þrátt fyrir að (fara aldrei í Costco)'
     # 'með að...', '(Löngunin) til að...', '(Áhættan) við að...', '(Hættan) á að...'
     | fs/fall FsMeðNh
-
-    # 'Fjöldi stúlkna hefur leitað til okkar þrátt fyrir að hafa farið í heilsueftirlit í skólum'
-    | 'þrátt_fyrir_að:st' NhRuna NhLiðurFrh*
 
     | "á:fs" "hendur:kvk" Nl_þgf    # 'að höfða sakamál á hendur Páli'
     | "á:fs" "fætur:kk" Nl_þgf      # '(Hann borðaði hverja tertusneiðina) á fætur annarri'
     | "nær:fs" 'draga:so'_op_gm_et_p3 Nl_þgf # 'þegar nær dró/dregur jólum'
-    | 'það_sem_af_er:fs' Nl_þgf     # 'það sem af er þessu þingi'
     | 'fyrir_hönd:fs' Nl_ef
     | "beggja:fn" "vegna:fs" Nl_ef  # 'beggja vegna vegarins'
     | 'með_tilliti_til:fs' Nl_ef    # Skammstöfunin m.t.t.
-    | 'samanbera:so'_lhþt_sb_hk_nf_et "við:fs" Nl_þf
-    | 'bera:so'_lhþt_sb_hk_nf_et "saman:ao" "við:fs" Nl_þf
-    | "þegar:st" 'koma:so'_gm_p3_et "að:fs" Nl_þgf
-    | 'til_og_frá:fs' Nl_þgf
+    | 'samanbera:so'_lhþt_sb_hk_nf_et "við:fs" Nl_þf         # samanborið við (fyrra ár)
+    | 'bera:so'_lhþt_sb_hk_nf_et "saman:ao" "við:fs" Nl_þf   # borið saman við (fyrra ár)
+    | "þegar:st" 'koma:so'_gm_p3_et "að:fs" Nl_þgf           # þegar kom/kemur að (umhverfismálunum)
     | "fyrir:ao" "nú:ao"? "utan:fs" Nl_þf
     | "innan:ao" "við:fs" Nl_þf
     | "innan:ao" "sem:st" "utan:fs" Nl_ef
@@ -3649,8 +3663,12 @@ EinnAl →
     | FyrirLöngu
     | Sinnum
     | Úrslit                # KR sigraði Val 6:0
+    | AlMiðstig             # [mun] hraðar en augað sér
 
 $tag(no_prep) EinnAl        # Engar forsetningar hér inni - óþarfi að skoða dótturgreinar
+
+AlMiðstig →
+    MiðstigForskeyti? ao_mst EnSamanb_nf? # (Gunnar ók) [mun/miklu] hraðar [en Jón gat ímyndað sér]
 
 EkkiNeitt →
     "ekki:ao" "neitt:ao"    # (Ég þekki þetta) ekki neitt

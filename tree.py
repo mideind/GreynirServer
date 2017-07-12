@@ -65,15 +65,10 @@ class Result:
         This class is instrumented so that it is equivalent to use attribute
         or indexing notation, i.e. r.efliður is the same as r["efliður"].
 
-        (This also sidesteps a bug in PyPy 2.6.0 which doesn't fully
-        support custom handling of attribute identifiers with non-ASCII
-        characters in them.)
-
         Additionally, the class implements lazy evaluation of the r._root,
         r._nominative and similar built-in attributes so that they are only calculated when
         and if required, and then cached. This is an optimization to save database
         reads.
-
     """
 
     def __init__(self, node, state, params):

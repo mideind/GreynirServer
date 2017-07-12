@@ -60,8 +60,11 @@ def gen_file(outfile, criteria):
     print(f"Generating {outfile}")
     with open(outfile, "w") as f:
         for stree in gen_simple_trees(criteria):
-            f.write("{0}\t{1}\n".format(stree.text, stree.flat))
-            numlines += 1
+            flat = stree.flat
+            # Hack to sidestep bug in older parses
+            if '"' not in flat:
+                f.write(f"{stree.text}\t{flat}\n")
+                numlines += 1
     print(f"{numlines} lines written to {outfile}")
 
 def main():
