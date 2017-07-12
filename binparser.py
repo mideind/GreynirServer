@@ -148,6 +148,7 @@ class BIN_Token(Token):
     VBIT_SUBJ = VBIT["subj"]
     VBIT_SAGNB = VBIT["sagnb"]
     VBIT_ABBREV = VBIT["abbrev"]
+    VBIT_LHNT = VBIT["lh"] | VBIT["nt"]
 
     # Mask the following bits off a VBIT set to get an FBIT set
     FBIT_MASK = VBIT_ABBREV | VBIT_SUBJ
@@ -1109,7 +1110,13 @@ class VariantHandler:
 
     @property
     def is_lh(self):
+        # Lýsingarháttur þátíðar ("LHÞT")
         return (self._vbits & BIN_Token.VBIT_LH) != 0
+
+    @property
+    def is_lh_nt(self):
+        # Lýsingarháttur nútíðar ("LH-NT")
+        return (self._vbits & BIN_Token.VBIT_LHNT) == BIN_Token.VBIT_LHNT
 
     @property
     def is_vh(self):

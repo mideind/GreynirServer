@@ -244,7 +244,7 @@ $tag(apply_length_bonus) Samtenging
 ÞarSem →
     "þar:st" "sem:st"
 
-$score(+4) ÞarSem # Gefa bónus á samtengingu frekar en ao + stt
+$score(+6) ÞarSem # Gefa bónus á samtengingu frekar en ao + stt
 
 SpurnarSamtenging →
 
@@ -980,8 +980,8 @@ OgSögn_lhþt/tala/kyn →
     | FsAtv? ',' OgEðaEn? FsAtv? EinSögnFrh_lhþt/tala/kyn FsAtvKomma?
 
 OgSögn_lhnt →
-    FsAtv? OgEðaEn FsAtv? so_0_lh_nt
-    | FsAtv? ',' OgEðaEn FsAtv? so_0_lh_nt FsAtvKomma?
+    FsAtv? OgEðaEn FsAtv? EinSögn_lhnt
+    | FsAtv? ',' OgEðaEn FsAtv? EinSögn_lhnt FsAtvKomma?
 
 OgSögn_1_þf_nh/tala/pers →
     FsAtv? OgEðaEn FsAtv? So_1_þf_nh/tala/pers
@@ -1068,7 +1068,15 @@ Sögn_lhnt/tala/pers →
     | 'þykja:so'/tala/pers HreinSögn_lhnt  # Almenningur þykir uggandi / ég þykist vitandi
 
 HreinSögn_lhnt →
-    FsAtv? so_0_lh_nt OgSögn_lhnt*
+    FsAtv? EinSögn_lhnt OgSögn_lhnt*
+
+EinSögn_lhnt →
+    so_0_lh_nt                  # skimandi
+    | so_1_nf_lh_nt Nl_nf       # verandi lögmaður sakborningsins
+    | so_1_þf_lh_nt Nl_þf       # reykjandi sígarettu
+    | so_1_þgf_lh_nt Nl_þgf     # bölvandi Páli
+    | so_1_ef_lh_nt Nl_ef       # saknandi alls þess sem áður var
+    | so_2_þgf_þf_lh_nt Nl_þgf Nl_þf  # skrifandi konunum bréf
 
 # Sagnbót ('konurnar [segjast/þykjast/virðast] [galvaskar/sumar/allar] hafa borðað matinn')
 
@@ -3513,6 +3521,7 @@ FsMeðFallstjórn →
     # 'hvorki til mín né stjórnarinnar'
     | "hvorki:ao" fs/fall Nl/fall "né:st" Nl/fall
     | FsÞgfTilEf
+    | FsLhNt
 
     | '(' FsMeðFallstjórn ')'
 
@@ -3521,6 +3530,14 @@ $score(+1) FsMeðFallstjórn
 FsMeðNh → NhLiðir SagnInnskot?
 
 $tag(begin_prep_scope) FsMeðNh # Nýtt samhengi fyrir samtengingu sagna og forsetninga
+
+# Sagnorð í lýsingarhætti nútíðar sem stendur sjálfstætt með viðfangi, eins og forsetning
+# 'Hún stóð í sömu sporum reykjandi sígarettu'
+# 'Verandi lögmaður sakborningsins get ég ekki tjáð mig um málið'
+# 'Bölvandi þjónustukerfinu beit hún á jaxlinn'
+FsLhNt → EinSögn_lhnt
+
+$score(+8) FsLhNt
 
 # Áttirnar eru aðeins forsetningar í BÍN, ekki atviksorð - þess vegna þurfa þær sérmeðhöndlun
 
