@@ -368,6 +368,9 @@ $tag(purge_verb) SagnRuna/tala/pers/kyn
 
 SagnInnskot →
     FsAtv
+    | AtvFsSaman
+
+$score(+18) AtvFsSaman
 
 # Gefa aukabónus fyrir forsetningar innan SagnInnskots ef þær passa við umlykjandi sögn
 $tag(enable_prep_bonus) SagnInnskot
@@ -3489,7 +3492,6 @@ FsMeðFallstjórn →
     # 'gegnum að...', 'kringum að...', 'þrátt fyrir að (fara aldrei í Costco)'
     # 'með að...', '(Löngunin) til að...', '(Áhættan) við að...', '(Hættan) á að...'
     | fs/fall FsMeðNh
-
     | "á:fs" "hendur:kvk" Nl_þgf    # 'að höfða sakamál á hendur Páli'
     | "á:fs" "fætur:kk" Nl_þgf      # '(Hann borðaði hverja tertusneiðina) á fætur annarri'
     | "nær:fs" 'draga:so'_op_gm_et_p3 Nl_þgf # 'þegar nær dró/dregur jólum'
@@ -3516,7 +3518,7 @@ FsMeðFallstjórn →
     | FsTilÞgf
     | FsÁMeðal
     | FsÁMóti
-    | Átt ÁttFs # vestur á firði, suður götuna, austur í flóa, norður að fjalli
+    | ÁttFs # suður götuna
     # 'hvorki við stjórn spítalans né ráðherrann'
     # 'hvorki til mín né stjórnarinnar'
     | "hvorki:ao" fs/fall Nl/fall "né:st" Nl/fall
@@ -3543,14 +3545,10 @@ $score(+8) FsLhNt
 
 Átt → "vestur:fs" | "austur:fs" | "suður:fs" | "norður:fs"
 
-ÁttFs →
-    Nl_þf               # suður götuna
-    | "á:fs" Nl_þf      # vestur á firði 
-    | "í:fs" Nl_þf      # norður í land
-    | "að:fs" Nl_þf     # suður að læk
-    | "á:fs" Nl_þgf     # vestur á fjörðum
-    | "í:fs" Nl_þgf     # austur í dölum
-    | "að:fs" Nl_þgf    # (við fórum) norður að bænum
+ÁttFs → Átt Nl_þf    # suður götuna
+
+$score(+12) ÁttFs
+
 
 FsÞgfTilEf →
     Nl_þgf "til:fs" Nl_ef # máli sínu til stuðnings, barninu til hróss, henni til bjargar
@@ -3633,6 +3631,19 @@ Nema →
 AtvFs →
     ','? EinnAl EinFsAtv* FsAtvFramhald* ','?
 
+# AL gefa vísbendingu um fall á FL
+AtvFsSaman →
+    BreytiAtv FsEftir_þgf
+    | BreytiAtv FsVið_þf
+    | "handan:ao" FsVið_þf
+    | StaðarAtv FsUndirÁÍ_þgf
+    | StefnuAtv FsUndirÁÍ_þf
+    | ÁttarAtv FsUndirÁÍ_þf
+    | ÁttarAtv FsUndirÁÍ_þgf
+    | StefnuAtv FsYfirFyrir_þf
+    | StefnuAtv FsMeð_þgf
+    | ÁttarAtv FsMeð_þgf
+
 # Taka sérstaklega á runu forsetningarliða sem er afmörkuð milli komma;
 # það minnkar tvíræðni
 
@@ -3660,6 +3671,22 @@ $tag(purge_prep) FsRunaEftirNl # Ekki senda innifaldar forsetningar upp tréð
 # Forskeyti sem leyfileg eru á undan forsetningarlið innan kommu
 FsForskeyti →
     'líkt_og:st' | "eins:ao" "og:st" | 'það_er:ao' | 'það:pfn'_hk_et_nf "er:so"
+
+# Forsetningar þar sem AL á undan gefur vísbendingar um fall í FL
+FsEftir/fall →
+    "eftir:fs" Nl/fall
+FsMeð/fall →
+    "með:fs" Nl/fall
+FsVið/fall →
+    "við:fs" Nl/fall
+FsYfirFyrir/fall →
+    "yfir:fs" Nl/fall
+    | "fyrir:fs" Nl/fall
+FsUndirÁÍ/fall →
+    "undir:fs" Nl/fall
+    | "á:fs" Nl/fall
+    | "í:fs" Nl/fall
+
 
 # Atviksliður
 
@@ -3758,6 +3785,47 @@ OgKlukkan → "og:st" tala | "og:st" töl_ft_hk_nf
 Degis → "árdegis:ao" | "síðdegis:ao" | "miðdegis:ao"
 
 OgMeð → "og:st" "með:fs"
+
+# Atviksorð sem geta breytt falli innan forsetningarliðar sem fylgir þeim
+BreytiAtv →
+    StaðarAtv
+    | StefnuAtv
+    | UpprunaAtv
+#    | ÁttarAtv
+
+StaðarAtv →
+    "frammi:ao"
+    | "inni:ao"
+    | "niðri:ao"
+    | "uppi:ao"
+    | "úti:ao"
+
+StefnuAtv →
+    "aftur:ao"
+    | "fram:ao"
+    | "inn:ao"
+    | "niður:ao"
+    | "upp:ao"
+    | "út:ao"
+
+UpprunaAtv →
+    "aftan:ao"
+    | "austan:ao"
+    | "framan:ao"
+    | "innan:ao"
+    | "neðan:ao"
+    | "norðan:ao"
+    | "ofan:ao"
+    | "sunnan:ao"
+    | "utan:ao"
+    | "vestan:ao"
+
+ÁttarAtv →
+    "austur:ao"
+    | "norður:ao"
+    | "suður:ao"
+    | "vestur:ao"
+
 
 # Talnabil nota en-dash
 
