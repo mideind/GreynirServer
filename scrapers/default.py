@@ -78,9 +78,10 @@ class ScrapeHelper:
     def unescape(s):
         """ Unescape headings that may contain Unicode characters """
         def replacer(matchobj):
-            m = matchobj.group(0)
-            return chr(int(m[2:], 16)) # Hex
-        return re.sub(r'\\u[0-9]{4}', replacer, s) if s else "" # Example: \u0084 -> chr(132)
+            m = matchobj.group(1)
+            assert m
+            return chr(int(m, 16)) # Hex
+        return re.sub(r'\\u([0-9a-fA-F]{4})', replacer, s) if s else "" # Example: \u0084 -> chr(132)
 
     def get_metadata(self, soup):
         """ Analyze the article HTML soup and return metadata """
@@ -328,10 +329,8 @@ class RuvScraper(ScrapeHelper):
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
         s = urlparse.urlsplit(url)
-        if s.path:
-            for prefix in RuvScraper._SKIP_PREFIXES:
-                if s.path.startswith(prefix):
-                    return True
+        if s.path and any(s.path.startswith(prefix) for prefix in self._SKIP_PREFIXES):
+            return True
         return False # Scrape all other URLs by default
 
     def get_metadata(self, soup):
@@ -399,9 +398,8 @@ class MblScraper(ScrapeHelper):
         """ Return True if this URL should not be scraped """
         s = urlparse.urlsplit(url)
         if s.path:
-            for prefix in MblScraper._SKIP_PREFIXES:
-                if s.path.startswith(prefix):
-                    return True
+            if any(s.path.startswith(prefix) for prefix in self._SKIP_PREFIXES):
+                return True
             if "/breytingar_i_islenska_fotboltanum/" in s.path:
                 # Avoid lots of details about soccer players
                 return True
@@ -536,13 +534,11 @@ class VisirScraper(ScrapeHelper):
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
         s = urlparse.urlsplit(url)
-        if s.netloc.startswith("fasteignir."):
-            # Skip fasteignir.visir.is
+        if s.netloc.startswith("fasteignir.") or s.netloc.startswith("albumm."):
+            # Skip fasteignir.visir.is and albumm.visir.is
             return True
-        if s.path:
-            for prefix in self._SKIP_PREFIXES:
-                if s.path.startswith(prefix):
-                    return True
+        if s.path and any(s.path.startswith(prefix) for prefix in self._SKIP_PREFIXES):
+            return True
         return False # Scrape all URLs by default
 
     def get_metadata(self, soup):

@@ -254,7 +254,6 @@ class Reducer:
                             sc[t] += 3
                     elif t.is_lh_nt:
                         sc[t] += 12 # Encourage LHNT rather than LO
-                        print("Encouraging LHNT")
                     elif t.is_mm:
                         # Encourage mm forms. The encouragement should be better than
                         # the score for matching a single case, so we pick so_0_mm
