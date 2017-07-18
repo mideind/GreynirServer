@@ -432,6 +432,10 @@ class Article:
         return self._timestamp
 
     @property
+    def parsed(self):
+        return self._parsed
+
+    @property
     def num_sentences(self):
         return self._num_sentences
 
@@ -487,7 +491,7 @@ class Article:
             q = session.query(ArticleRow.url, ArticleRow.parsed, ArticleRow.tokens) \
                 .filter(ArticleRow.tokens != None) \
                 .order_by(desc(ArticleRow.parsed)) \
-                .yield_per(50)
+                .yield_per(200)
 
             count = 0
             for a in q:
@@ -544,7 +548,9 @@ class Article:
     @classmethod
     def articles(cls, criteria, enclosing_session = None):
         """ Generator of Article objects from the database that meet the given criteria """
-        # The criteria are currently "timestamp", "author" and "domain"
+        # The criteria are currently "timestamp", "author" and "domain",
+        # as well as "order_by_parse" which if True indicates that the result
+        # should be ordered with the most recently parsed articles first.
         with SessionContext(commit = True, read_only = True,
             session = enclosing_session) as session:
 
@@ -565,6 +571,10 @@ class Article:
             if criteria and "domain" in criteria:
                 domain = criteria["domain"]
                 q = q.join(Root).filter(Root.domain == domain)
+
+            if criteria and criteria.get("order_by_parse"):
+                # Order with newest parses first
+                q = q.order_by(desc(ArticleRow.parsed))
 
             for arow in q.yield_per(200):
                 yield cls._init_from_row(arow)

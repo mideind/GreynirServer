@@ -43,33 +43,37 @@ from tree import Tree
 OUTFILE_DEV = "parsing_dev.pairs"
 OUTFILE_TRAIN = "parsing_train.pairs"
 
-def gen_simple_trees(criteria):
+def gen_simple_trees(criteria, stats):
     """ Generate simplified parse trees from articles matching the criteria """
     for a in Article.articles(criteria):
         if not a.root_domain or "raduneyti" in a.root_domain:
             # Skip ministry websites due to amount of chaff found there
             continue
         tree = Tree(url = a.url, authority = a.authority)
+        # Note the parse timestamp
+        stats["parsed"] = a.parsed
         tree.load(a.tree)
         for _, stree in tree.simple_trees():
             yield stree
 
-def gen_file(outfile, criteria):
+def gen_file(outfile, generator, size):
     """ Generate an output file from articles that match the criteria """
-    numlines = 0
-    print(f"Generating {outfile}")
+    written = 0
     with open(outfile, "w") as f:
-        for stree in gen_simple_trees(criteria):
+        for stree in generator:
             flat = stree.flat
             # Hack to sidestep bug in older parses
             if '"' not in flat:
                 f.write(f"{stree.text}\t{flat}\n")
-                numlines += 1
-    print(f"{numlines} lines written to {outfile}")
+                written += 1
+                if written >= size:
+                    break
+    return written
 
-def main():
+def main(dev_size, train_size):
 
     print("Welcome to the text and parse tree pair generator")
+
     try:
         # Read configuration file
         Settings.read(os.path.join(basepath, "config/ReynirSimple.conf"))
@@ -77,24 +81,32 @@ def main():
         print("Configuration error: {0}".format(e))
         quit()
 
-    criteria_dev = {
-        # From, to date
-        "timestamp": (
-            datetime(year=2017, month=6, day=25), # From 2017-06-25
-            datetime(year=2017, month=7, day=1)   # To 2017-07-01 (not inclusive)
-        )
-    }
-    criteria_train = {
-        # From, to date
-        "timestamp": (
-            datetime(year=2017, month=1, day=1),  # From 2017-01-01
-            datetime(year=2017, month=6, day=25)  # To 2017-06-25 (not inclusive)
-        )
-    }
-    gen_file(OUTFILE_DEV, criteria_dev)
-    gen_file(OUTFILE_TRAIN, criteria_train)
-    print("Pair generation completed")
+    # Generate the parse trees in descending order by time of parse
+    stats = { "parsed" : datetime.utcnow() }
+    gen = gen_simple_trees({ "order_by_parse" : True }, stats)
+
+    print(f"\nWriting {dev_size} sentences to {OUTFILE_DEV}")
+    written = gen_file(OUTFILE_DEV, gen, dev_size)
+    print(f"{written} sentences written")
+
+    print(f"\nWriting {train_size} sentences to {OUTFILE_TRAIN}")
+    written = gen_file(OUTFILE_TRAIN, gen, train_size)
+    print(f"{written} sentences written")
+
+    last_parsed = stats["parsed"]
+    print(f"\nThe last article processed was parsed at {last_parsed}")
+    print("\nPair generation completed")
 
 if __name__ == "__main__":
 
-    main()
+    import argparse
+
+    parser = argparse.ArgumentParser(description='Generates training data files')
+    parser.add_argument('--dev', dest='DEV_SIZE', type=int,
+        help="number of sentences in the development set (default 20,000)", default=20000)
+    parser.add_argument('--train', dest='TRAIN_SIZE', type=int,
+        help="number of sentences in the training set (default 1,000,000)", default=1000000)
+
+    args = parser.parse_args()
+
+    main(dev_size = args.DEV_SIZE, train_size = args.TRAIN_SIZE)
