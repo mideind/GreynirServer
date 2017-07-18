@@ -2435,7 +2435,8 @@ $score(+4) Prósentubil
 TöluorðForskeyti →
     'að_minnsta_kosti:ao' | "um:ao" | "minnst:ao" | "einungis:ao" | "aðeins:ao" | "ekki:ao"
     | "svo:st" "sem:st" | "tæplega:ao" | "rúmlega:ao" | "ríflega:ao" | "einnig:ao" | "samtals:ao"
-    | "yfir:ao" | "hátt:ao" "í:ao" | 'allur:fn'_et_nf_hk "að:ao" | "næstum:ao" | "nálægt:ao"
+    | "yfir:ao" | "hátt:ao" "í:ao" | 'allur:fn'_et_nf_hk "að:ao" | "næstum:ao" | "nálægt:ao" 
+    | "innan:ao" "við:ao"
 
 TöluorðLo/tala →
     lo_evb_nf_hk/tala # efstu tvo / efstu tvö / efstu tvær
