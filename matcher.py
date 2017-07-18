@@ -133,6 +133,7 @@ _DEFAULT_NT_MAP = {
     "Sagnliður" : "VP",
     "SagnliðurMeðF" : "VP",
     # "SagnFramhald" : "VP",
+    "SögnLhNt" : "VP-PP", # Present participle, lýsingarháttur nútíðar
     "NhLiðir" : "VP",
     "SagnliðurÁnF" : "VP",
     "ÖfugurSagnliður" : "VP",
@@ -157,6 +158,7 @@ _DEFAULT_ID_MAP = {
     "S-PREFIX" : dict(name = "Forskeyti"), # Prefix in front of sentence
     "VP-SEQ" : dict(name = "Sagnliður"),
     "VP" : dict(name = "Sögn", overrides = "VP-SEQ"),
+    "VP-PP" : dict(name = "Sögn", overrides = "PP"),
     "NP" : dict(name = "Nafnliður"),
     "NP-POSS" : dict(name = "Eignarfallsliður", overrides = "NP"),
     "NP-ADDR" : dict(name = "Heimilisfang", overrides = "NP"),

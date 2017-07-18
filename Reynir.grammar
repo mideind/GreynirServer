@@ -370,8 +370,6 @@ SagnInnskot →
     FsAtv
     | AtvFsSaman
 
-$score(+18) AtvFsSaman
-
 # Gefa aukabónus fyrir forsetningar innan SagnInnskots ef þær passa við umlykjandi sögn
 $tag(enable_prep_bonus) SagnInnskot
 
@@ -383,8 +381,7 @@ SagnViðhengi/tala/pers/kyn →
 SagnHluti/tala/pers/kyn →
     SagnliðurMeðF/tala/pers/kyn SagnInnskot? SagnViðhengi/tala/pers/kyn?
 
-# Sagnir innan undirtrés geta ekki orsakað bónus á forsetningar utan þess
-$tag(purge_verb) SagnHluti/tala/pers/kyn
+$tag(begin_prep_scope) SagnHluti/tala/pers/kyn # Nýtt undirtré fyrir tengingu sagnar og forsetningar
 
 FrumlagsInnskot/tala/pers/kyn →
     ',' SetningÁnF/tala/pers/kyn ','
@@ -502,9 +499,12 @@ SetningUmAðRæða →
 $score(+20) SetningUmAðRæða # Mjög líklega réttur skilningur á þessari orðaröð
 
 SetningForskeyti →
-    FsAtv
+    SagnInnskot
     | "eins:ao" "og:st" Nl_nf       # 'Eins og Páll borða ég ekki smjör'
     | 'líkt_og:st' Nl_nf            # 'Líkt og bakarar eru smiðir óhressir með þetta'
+
+# Sagnir innan forskeytis hafa ekki áhrif á tengsl forsetninga við sagnir í setningunni sjálfri
+$tag(purge_verb) SetningForskeyti
 
 # Setning sem byrjar á lýsingarorði í stað "það"
 # 'Óheimilt er (að fangelsa mann fyrir engar sakir)'
@@ -3523,7 +3523,6 @@ FsMeðFallstjórn →
     # 'hvorki til mín né stjórnarinnar'
     | "hvorki:ao" fs/fall Nl/fall "né:st" Nl/fall
     | FsÞgfTilEf
-    | FsLhNt
 
     | '(' FsMeðFallstjórn ')'
 
@@ -3537,9 +3536,9 @@ $tag(begin_prep_scope) FsMeðNh # Nýtt samhengi fyrir samtengingu sagna og fors
 # 'Hún stóð í sömu sporum reykjandi sígarettu'
 # 'Verandi lögmaður sakborningsins get ég ekki tjáð mig um málið'
 # 'Bölvandi þjónustukerfinu beit hún á jaxlinn'
-FsLhNt → EinSögn_lhnt
+SögnLhNt → EinSögn_lhnt
 
-$score(+8) FsLhNt
+$score(+8) SögnLhNt
 
 # Áttirnar eru aðeins forsetningar í BÍN, ekki atviksorð - þess vegna þurfa þær sérmeðhöndlun
 
@@ -3619,6 +3618,7 @@ EinFsAtv →
     | "annað:fn" "hvort:st" EinEinföldFsAtv+ "eða:st" EinEinföldFsAtv+ # 'annað hvort í Breiðholti eða við World Class'
     | "annaðhvort:fn" EinEinföldFsAtv+ "eða:st" EinEinföldFsAtv+ # 'annaðhvort í Breiðholti eða við World Class'
     | "bæði:st" EinEinföldFsAtv+ ','? "og:st" EinEinföldFsAtv+
+    | SögnLhNt
 
 EinEinföldFsAtv → FsMeðFallstjórn | EinnAl
 
@@ -3643,6 +3643,8 @@ AtvFsSaman →
     | StefnuAtv FsYfirFyrir_þf
     | StefnuAtv FsMeð_þgf
     | ÁttarAtv FsMeð_þgf
+
+$score(+18) AtvFsSaman
 
 # Taka sérstaklega á runu forsetningarliða sem er afmörkuð milli komma;
 # það minnkar tvíræðni
