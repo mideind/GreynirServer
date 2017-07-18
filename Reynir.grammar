@@ -3539,7 +3539,7 @@ $tag(begin_prep_scope) FsMeðNh # Nýtt samhengi fyrir samtengingu sagna og fors
 # 'Bölvandi þjónustukerfinu beit hún á jaxlinn'
 SögnLhNt → EinSögn_lhnt
 
-$score(+8) SögnLhNt
+$score(+7) SögnLhNt
 
 # Áttirnar eru aðeins forsetningar í BÍN, ekki atviksorð - þess vegna þurfa þær sérmeðhöndlun
 
@@ -3548,7 +3548,6 @@ $score(+8) SögnLhNt
 ÁttFs → Átt Nl_þf    # suður götuna
 
 $score(+12) ÁttFs
-
 
 FsÞgfTilEf →
     Nl_þgf "til:fs" Nl_ef # máli sínu til stuðnings, barninu til hróss, henni til bjargar
