@@ -368,7 +368,8 @@ $tag(purge_verb) SagnRuna/tala/pers/kyn
 
 SagnInnskot →
     FsAtv
-    | AtvFsSaman
+    | ÁttFs # suður götuna
+
 
 # Gefa aukabónus fyrir forsetningar innan SagnInnskots ef þær passa við umlykjandi sögn
 $tag(enable_prep_bonus) SagnInnskot
@@ -3519,7 +3520,7 @@ FsMeðFallstjórn →
     | FsTilÞgf
     | FsÁMeðal
     | FsÁMóti
-    | ÁttFs # suður götuna
+    | AtvFsSaman    # inn eftir firðinum, fram undan rúminu
     # 'hvorki við stjórn spítalans né ráðherrann'
     # 'hvorki til mín né stjórnarinnar'
     | "hvorki:ao" fs/fall Nl/fall "né:st" Nl/fall
