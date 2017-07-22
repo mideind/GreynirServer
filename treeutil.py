@@ -77,6 +77,10 @@ _TEST_NT_MAP = { # Til að prófa í parse_text_to_bracket_form()
     "EfLiður" : "NP-POSS",
     "EfLiðurForskeyti" : "NP-POSS",
     "Heimilisfang" : "NP-ADDR",
+    "NlFrumlag" : "NP-SUBJ",
+    "NlBeintAndlag" : "NP-OBJ",
+    "NlÓbeintAndlag" : "NP-IOBJ",
+    "NlSagnfylling" : "NP-PRD",
 
     "Pfn" : "PRON",
 
@@ -95,6 +99,7 @@ _TEST_NT_MAP = { # Til að prófa í parse_text_to_bracket_form()
     "TengiorðSem" : "C",
     "Greinir": "DET",
     #"Lo" : "ADJ",
+
 }
 
 _TEST_TERMINAL_MAP = {
@@ -133,9 +138,14 @@ _TEST_ID_MAP = { # Til að prófa í parse_text_to_bracket_form()
     "S-EXPLAIN" : dict(name = "Skýring"), # Explanation
     "S-QUOTE" : dict(name = "Tilvitnun"), # Quote at end of sentence
     # "VP" : dict(name = "Sagnliður", subject_to = { "VP" }),
-    "NP" : dict(name = "Nafnliður"),
+    "NP" : dict(name = "Nafnliður", subject_to = { "NP-SUBJ", "NP-OBJ", "NP-IOBJ", "NP-PRD" }),
     "NP-POSS" : dict(name = "Eignarfallsliður", overrides = "NP"),
     "NP-ADDR" : dict(name = "Heimilisfang", overrides = "NP"),
+    "NP-SUBJ" : dict(name = "Frumlag"),
+    "NP-OBJ" : dict(name = "Beint andlag"),
+    "NP-IOBJ" : dict(name = "Óbeint andlag"),
+    "NP-PRD" : dict(name = "Sagnfylling"),
+
     "ADVP" : dict(name = "Atviksliður", subject_to = { "ADVP" }),
     "ADVP-DATE" : dict(name = "Tímasetning", overrides = "ADVP"),
     "PP" : dict(name = "Forsetningarliður", overrides = "ADVP"),
