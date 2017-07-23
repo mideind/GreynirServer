@@ -138,7 +138,7 @@ $score(-6) Forskeyti # Ekki freistast í forskeyti ef annað er í boði
 
 Tilvitnun →
     ',' SögnSegja/tala/pers NlFrumlag_nf/tala/pers AtvFs? # , segir/fullyrðir Jón Ásmundsson, fulltrúi samtakanna, í dag í útvarpinu
-    | ',' 'segja:so'_gm_fh_p3_et "í:fs" Nl_þgf AtvFs?  # , segir í tilkynningu ráðuneytisins í gær
+    | ',' 'segja:so'_gm_fh_et_p3 "í:fs" Nl_þgf AtvFs?  # , segir í tilkynningu ráðuneytisins í gær
 
 SögnSegja/tala/pers →
     'segja:so'_gm_fh/tala/pers
@@ -1403,7 +1403,7 @@ Sögn_1/tala/pers/kyn →
     # (Við) einsetjum okkur að vinna með öðrum þjóðum
     # (Sveitarfélögin) ráða sjálf málefnum sínum
     # (Hún) sagði lafmóð/sjálf söguna
-    so_1/fall/tala/pers OgSögn_1/fall/tala/pers* FsRuna? LoTengtSögn_nf/tala/kyn? Nl/fall NhFylling?
+    so_1/fall/tala/pers OgSögn_1/fall/tala/pers* FsRuna? LoTengtSögn_nf/tala/kyn? NlBeintAndlag/fall NhFylling?
 
     # (Ég tel/segi/álít) Pál vera dagfarsprúðan mann
     | So_1_þf_nh/tala/pers OgSögn_1_þf_nh/tala/pers* SagnarBotn
@@ -1544,7 +1544,7 @@ SögnMeðF_1/tala/pers/kyn →
     # (ef:)  (Í gærkvöldi) óskuðu konurnar [ekki] leyfis [allar/galvaskar] [að höfða mál]
     # (nf:)  (Í fyrra) voru konurnar [ekki] leikarar [sjálfar/galvaskar]
 
-    so_1/fall/tala/pers OgSögn_1/fall/tala/pers* NlFrumlag_nf/tala/pers/kyn Nl/fall LoTengtSögn_nf/tala/kyn? NhFylling?
+    so_1/fall/tala/pers OgSögn_1/fall/tala/pers* NlFrumlag_nf/tala/pers/kyn NlBeintAndlag/fall LoTengtSögn_nf/tala/kyn? NhFylling?
 
     | HjSögnLhÞtSM/tala/pers NlFrumlag_nf/tala/pers/kyn AtvFs? SagnarBotnLhÞt/tala/kyn
 
@@ -3539,7 +3539,7 @@ FsMeðFallstjórn →
     # 'er bjartsýnn á að Alfreð komi aftur í liðið' - Ath: 'á það/því að' er höndlað í ÞaðTenging
     | "á:fs" "að:st" HreinYfirsetning ','?
     | "að:fs" "nafni:hk" person_nf  # Ég ræddi við konu að nafni Aðalbjörg Jónsdóttir
-    | "á:fs" Vikudagur_gr_þf_et 'koma:so'_gm_fh_p3_et  # á sunnudaginn kemur / á laugardagskvöldið kemur
+    | "á:fs" Vikudagur_gr_þf_et 'koma:so'_gm_fh_et_p3  # á sunnudaginn kemur / á laugardagskvöldið kemur
     | FsMiðaðVið
     | FsÍGegnUm
     | FsAðBaki
@@ -3913,6 +3913,8 @@ Dagsetning →
     | Tímabil_þf/kyn/tala TímaAfstæði_þf # Vikuna áður / Daginn eftir / áratugina á undan
     | TímaForskeyti? TímaAfstæði # [viku/löngu] áður en krónan féll / [ári/stuttu] eftir að landið öðlaðist sjálfstæði
 
+    | "svo:ao" Tímabil_þgf_ft 'skipta:so'_gm_fh_et_p3 # svo mánuðum skiptir/skipti
+
 $tag(apply_prep_bonus) Dagsetning # Gefa bónus þegar dagsetning fylgir sögn frekar en nafnlið
 $tag(apply_length_bonus) Dagsetning # Gefa bónus eftir því hversu margar eindir (tokens) falla undir dagsetninguna
 
@@ -4040,6 +4042,7 @@ NæsturSíðastur_þf_et_hk →
 $score(+6) NæsturSíðastur_þf/tala/kyn
 
 Tímabil/fall/kyn/tala → Tímabil/kyn/fall/tala
+Tímabil/fall/tala → Tímabil/kyn/fall/tala
 
 Tímabil_ft_þgf_kk → Tímabil_kk_þgf_ft
 Tímabil_ft_þgf_kvk → Tímabil_kvk_þgf_ft

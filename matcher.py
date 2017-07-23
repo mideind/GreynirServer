@@ -122,6 +122,10 @@ _DEFAULT_NT_MAP = {
     "EfLiðurForskeyti" : "NP-POSS",
     "Heimilisfang" : "NP-ADDR",
     "Titill" : "NP-TITLE",
+    "NlFrumlag" : "NP-SUBJ",
+    "NlBeintAndlag" : "NP-OBJ",
+    "NlÓbeintAndlag" : "NP-IOBJ",
+    "NlSagnfylling" : "NP-PRD",
     "FsMeðFallstjórn" : "PP",
     "SagnInnskot" : "ADVP",
     "FsAtv" : "ADVP",
@@ -149,21 +153,29 @@ _DEFAULT_NT_MAP = {
 
 _DEFAULT_ID_MAP = {
     "P" : dict(name = "Málsgrein"),
-    "S" : dict(name = "Setning", subject_to = { "S", "S-EXPLAIN", "S-REF" }),
+    "S" : dict(name = "Setning",
+        subject_to = { "S", "S-EXPLAIN", "S-REF" }),
     "S-COND" : dict(name = "Skilyrði", overrides = "S"), # Condition
     "S-CONS" : dict(name = "Afleiðing", overrides = "S"), # Consequence
-    "S-REF" : dict(name = "Tengisetning", overrides = "S", subject_to = { "S-REF" }), # Reference
+    "S-REF" : dict(name = "Tengisetning", overrides = "S",
+        subject_to = { "S-REF" }), # Reference
     "S-EXPLAIN" : dict(name = "Skýring"), # Explanation
     "S-QUOTE" : dict(name = "Tilvitnun"), # Quote at end of sentence
     "S-PREFIX" : dict(name = "Forskeyti"), # Prefix in front of sentence
     "VP-SEQ" : dict(name = "Sagnliður"),
     "VP" : dict(name = "Sögn", overrides = "VP-SEQ"),
     "VP-PP" : dict(name = "Sögn", overrides = "PP"),
-    "NP" : dict(name = "Nafnliður"),
+    "NP" : dict(name = "Nafnliður",
+        subject_to = { "NP-SUBJ", "NP-OBJ", "NP-IOBJ", "NP-PRD" }),
     "NP-POSS" : dict(name = "Eignarfallsliður", overrides = "NP"),
     "NP-ADDR" : dict(name = "Heimilisfang", overrides = "NP"),
     "NP-TITLE" : dict(name = "Titill", overrides = "NP"),
-    "ADVP" : dict(name = "Atviksliður", subject_to = { "ADVP" }),
+    "NP-SUBJ" : dict(name = "Frumlag"),
+    "NP-OBJ" : dict(name = "Beint andlag"),
+    "NP-IOBJ" : dict(name = "Óbeint andlag"),
+    "NP-PRD" : dict(name = "Sagnfylling"),
+    "ADVP" : dict(name = "Atviksliður",
+        subject_to = { "ADVP" }),
     "ADVP-DATE" : dict(name = "Tímasetning", overrides = "ADVP"),
     "PP" : dict(name = "Forsetningarliður", overrides = "ADVP"),
 }
