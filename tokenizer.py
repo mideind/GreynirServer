@@ -578,6 +578,22 @@ def parse_particles(token_stream):
     """ Parse a stream of tokens looking for 'particles'
         (simple token pairs and abbreviations) and making substitutions """
 
+    def is_abbr_with_period(txt):
+        """ Return True if the given token text is an abbreviation when followed by a period """
+        if '.' in txt:
+            # There is already a period in it: must be an abbreviation
+            return True
+        if txt in Abbreviations.SINGLES:
+            # The token's literal text is defined as an abbreviation followed by a single period
+            return True
+        if txt.lower() in Abbreviations.SINGLES:
+            # The token is in upper or mixed case:
+            # We allow it as an abbreviation unless the exact form (most often uppercase)
+            # is an abbreviation that doesn't require a period (i.e. isn't in SINGLES).
+            # This applies for instance to DR which means "Danmark's Radio" instead of "doktor" (dr.)
+            return txt not in Abbreviations.DICT
+        return False
+
     token = None
     try:
 
@@ -606,8 +622,7 @@ def parse_particles(token_stream):
             # Coalesce abbreviations ending with a period into a single
             # abbreviation token
             if next_token.kind == TOK.PUNCTUATION and next_token.txt == '.':
-                if token.kind == TOK.WORD and token.txt[-1] != '.' and ('.' in token.txt or
-                    token.txt.lower() in Abbreviations.SINGLES or token.txt in Abbreviations.SINGLES):
+                if token.kind == TOK.WORD and token.txt[-1] != '.' and is_abbr_with_period(token.txt):
                     # Abbreviation ending with period: make a special token for it
                     # and advance the input stream
 

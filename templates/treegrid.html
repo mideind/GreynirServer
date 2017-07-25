@@ -94,7 +94,11 @@
       stroke: #d9534f;
    }
 
-   .node-nonterminal.NP rect
+   .node-nonterminal.NP rect,
+   .node-nonterminal.NP-SUBJ rect,
+   .node-nonterminal.NP-OBJ rect,
+   .node-nonterminal.NP-IOBJ rect,
+   .node-nonterminal.NP-PRD rect
    {
       fill: #337ab7;
       stroke: #337ab7;
@@ -665,6 +669,7 @@ function d3_update(source) {
    var symbolOffset = []; // Default y offset is 6 pixels
    symbolOffset ["\uE004"] = 5; // user
    symbolOffset ["\uE066"] = 7; // tag
+
    [
       ["person-kk", "\uE247"], // male
       ["person-kvk", "\uE248"], // female
@@ -698,7 +703,7 @@ function d3_update(source) {
          .append("text")
             .attr("class", "symbol")
             .attr("text-anchor", "middle")
-            .attr("y", symbolOffset[d[1]] ? symbolOffset[d[1]] : 6)
+            .attr("y", symbolOffset[d[1]] || 6)
             .text(d[1])
    });
 
