@@ -568,15 +568,25 @@ class Article:
                 author = criteria["author"]
                 q = q.filter(ArticleRow.author == author)
 
-            if criteria and "domain" in criteria:
-                domain = criteria["domain"]
-                q = q.join(Root).filter(Root.domain == domain)
+            if criteria and ("visible" in criteria or "domain" in criteria):
+                # Need a join with Root for these criteria
+                q = q.join(Root)
+                if "visible" in criteria:
+                    # Return only articles from roots with the specified visibility
+                    visible = criteria["visible"]
+                    assert isinstance(visible, bool)
+                    q = q.filter(Root.visible == visible)
+                if "domain" in criteria:
+                    # Return only articles from the specified domain
+                    domain = criteria["domain"]
+                    assert isinstance(domain, str)
+                    q = q.filter(Root.domain == domain)
 
             if criteria and criteria.get("order_by_parse"):
                 # Order with newest parses first
                 q = q.order_by(desc(ArticleRow.parsed))
 
-            for arow in q.yield_per(200):
+            for arow in q.yield_per(500):
                 yield cls._init_from_row(arow)
 
     @classmethod

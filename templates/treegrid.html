@@ -1,6 +1,8 @@
 
 {% extends "container-fluid.html" %}
 
+/* Copyright (C) 2017 Miðeind ehf. */
+
 {% block styles %}
 
 <link href="{{ url_for('static', filename='main-bootstrap.css') }}" rel='stylesheet' type='text/css'>
@@ -180,9 +182,10 @@
    .node-terminal.gr text.symbol {
       fill: #888;
    }
-   .node-terminal.ártal text.symbol,
+   .node-terminal.year text.symbol,
    .node-terminal.currency text.symbol,
    .node-terminal.number text.symbol,
+   .node-terminal.percent text.symbol,
    .node-terminal.timestamp text.symbol,
    .node-terminal.time text.symbol,
    .node-terminal.date text.symbol
@@ -617,6 +620,9 @@ function d3_update(source) {
                if (d.data.k && (d.data.k == "NUMBER" || d.data.k == "ORDINAL"))
                   classes.push("number");
                else
+               if (d.data.k && d.data.k == "PERCENT")
+                  classes.push("percent");
+               else
                if (d.data.k && d.data.k == "TIMESTAMP")
                   classes.push("timestamp");
                else
@@ -633,7 +639,7 @@ function d3_update(source) {
                   classes.push("person-" + d.data.c);
                else
                if (firstPart == "ártal")
-                  classes.push("ártal")
+                  classes.push("year")
                else
                if (d.data.c)
                   // Add a class for the word category
@@ -666,8 +672,10 @@ function d3_update(source) {
          .attr("r", 10);
 
    // Add a symbol on top of terminal circles
+   var DEFAULT_OFFSET = 6;
    var symbolOffset = []; // Default y offset is 6 pixels
    symbolOffset ["\uE004"] = 5; // user
+   symbolOffset ["%"] = 5; // percent sign
    symbolOffset ["\uE066"] = 7; // tag
 
    [
@@ -687,7 +695,7 @@ function d3_update(source) {
       ["pfn", "\uE004"], // user
       ["abfn", "\uE176"], // stop
       ["lo", "\uE518"], // options
-      ["ártal", "\uE055"], // clock
+      ["year", "\uE055"], // clock
       ["timestamp", "\uE055"], // clock
       ["time", "\uE055"], // clock
       ["date", "\uE055"], // clock
@@ -697,13 +705,14 @@ function d3_update(source) {
       ["number", "\uE319"], // more-items
       ["to", "\uE319"], // more-items
       ["töl", "\uE319"], // more-items
+      ["percent", "%"], // percent sign
    ]
    .forEach(function(d) {
       g.selectAll(".node-terminal." + d[0])
          .append("text")
             .attr("class", "symbol")
             .attr("text-anchor", "middle")
-            .attr("y", symbolOffset[d[1]] || 6)
+            .attr("y", symbolOffset[d[1]] || DEFAULT_OFFSET)
             .text(d[1])
    });
 

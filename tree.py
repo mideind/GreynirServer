@@ -42,6 +42,9 @@ from cache import LRU_Cache
 
 BIN_ORDFL = {
     "no" : { "kk", "kvk", "hk" },
+    "kk" : { "kk" },
+    "kvk" : { "kvk" },
+    "hk" : { "hk" },
     "sérnafn" : { "kk", "kvk", "hk" },
     "so" : { "so" },
     "lo" : { "lo" },
@@ -53,7 +56,11 @@ BIN_ORDFL = {
     "fn" : { "fn" },
     "pfn" : { "pfn" },
     "st" : { "st" },
-    "stt" : { "st" }
+    "stt" : { "st" },
+    "abfn" : { "abfn" },
+    "gr" : { "gr" },
+    "uh" : { "uh" },
+    "nhm" : { "nhm" }
 }
 
 _REPEAT_SUFFIXES = frozenset(( '+', '*', '?' ))
@@ -377,18 +384,23 @@ class TerminalDescriptor:
 
     def __init__(self, terminal):
         self.terminal = terminal
-        elems = terminal.split("_")
+        self.is_literal = terminal[0] == '"' # Literal terminal, i.e. "sem", "og"
+        self.is_stem = terminal[0] == "'" # Stem terminal, i.e. 'vera'_et_p3
+        if self.is_literal or self.is_stem:
+            # Go through hoops since it is conceivable that a
+            # literal or stem may contain an underscore ('_')
+            endq = terminal.rindex(terminal[0])
+            elems = [ terminal[0:endq + 1] ] + [ v for v in terminal[endq + 1:].split("_") if v ]
+        else:
+            elems = terminal.split("_")
         self.cat = elems[0]
-        self.is_literal = self.cat[0] == '"' # Literal terminal, i.e. "sem", "og"
-        self.is_stem = self.cat[0] == "'" # Stem terminal, i.e. 'vera'_et_p3
         self.inferred_cat = self.cat
         if self.is_literal or self.is_stem:
             # In the case of a 'stem' or "literal",
             # check whether the category is specified
             # (e.g. 'halda:so'_et_p3)
-            w = self.cat
-            if ':' in w:
-                self.inferred_cat = w.split(':')[-1][:-1]
+            if ':' in self.cat:
+                self.inferred_cat = self.cat.split(':')[-1][:-1]
         self.is_verb = self.inferred_cat == "so"
         self.varlist = elems[1:]
         self.variants = set(self.varlist)
@@ -398,6 +410,9 @@ class TerminalDescriptor:
 
         # BIN category set
         self.bin_cat = BIN_ORDFL.get(self.inferred_cat, None)
+
+        # clean_terminal property cache
+        self._clean_terminal = None
 
         # Gender of terminal
         self.gender = None
@@ -437,8 +452,15 @@ class TerminalDescriptor:
     def clean_terminal(self):
         """ Return a 'clean' terminal name, having converted literals
             to a corresponding category, if available """
-        # 'halda:so'_et_p3 becomes so_et_p3
-        return self.inferred_cat + "".join("_" + v for v in self.varlist)
+        if self._clean_terminal is None:
+            if self.inferred_cat in self._GENDERS:
+                # 'bróðir:kk'_gr_ft_nf becomes no_kk_gr_ft_nf
+                self._clean_terminal = "no_" + self.inferred_cat
+            else:
+                # 'halda:so'_et_p3 becomes so_et_p3
+                self._clean_terminal = self.inferred_cat
+            self._clean_terminal += "".join("_" + v for v in self.varlist)
+        return self._clean_terminal
 
     def has_t_base(self, s):
         """ Does the node have the given terminal base name? """
@@ -454,7 +476,11 @@ class TerminalDescriptor:
             return False
         if self.gender is not None:
             # Check gender match
-            if self.inferred_cat == "no":
+            if self.inferred_cat == "pfn":
+                # Personal pronouns don't have a gender in BÍN,
+                # so don't disqualify on lack of gender
+                pass
+            elif self.inferred_cat == "no":
                 if m.ordfl != self.gender:
                     return False
             elif self.gender.upper() not in m.beyging:
@@ -520,6 +546,7 @@ class TerminalDescriptor:
             person = person[1] + person[0] # Turn p3 into 3P
             if person not in m.beyging:
                 return False
+
         # Check VB/SB/MST for adjectives
         if "esb" in self.variants:
             if "ESB" not in m.beyging:
@@ -536,6 +563,7 @@ class TerminalDescriptor:
         if "sb" in self.variants:
             if "SB" not in m.beyging:
                 return False
+
         # Definite article
         if self.variant_gr:
             if "gr" not in m.beyging:
@@ -545,7 +573,7 @@ class TerminalDescriptor:
     def stem(self, bindb, word, at_start = False):
         """ Returns the stem of a word matching this terminal """
         if self.is_literal or self.is_stem:
-            # A literal or stem terminal only matches a word if it has the given stemw
+            # A literal or stem terminal only matches a word if it has the given stem
             w = self.cat[1:-1]
             return w.split(':')[0]
         if ' ' in word:

@@ -27,6 +27,7 @@
 
 import os
 import sys
+import random
 from datetime import datetime
 
 # Hack to make this Python program executable from the utils subdirectory
@@ -40,8 +41,10 @@ from settings import Settings
 from article import Article
 from tree import Tree
 
+
 OUTFILE_DEV = "parsing_dev.pairs"
 OUTFILE_TRAIN = "parsing_train.pairs"
+
 
 def gen_simple_trees(criteria, stats):
     """ Generate simplified parse trees from articles matching the criteria """
@@ -56,21 +59,49 @@ def gen_simple_trees(criteria, stats):
         for _, stree in tree.simple_trees():
             yield stree
 
-def gen_file(outfile, generator, size):
+
+def gen_flat_trees(generator):
+    """ Generate (text, flat tree) tuples that we want to include
+        in the file being generated """
+    for stree in generator:
+        flat, text = stree.flat, stree.text
+        # Excluding double quotes is a hack to sidestep a bug in older parses.
+        # Also, we exclude sentences with 2 or fewer tokens.
+        if '"' not in flat and text.count(' ') >= 2:
+            yield (text, flat)
+
+
+def write_file(outfile, generator, size):
     """ Generate an output file from articles that match the criteria """
     written = 0
     with open(outfile, "w") as f:
-        for stree in generator:
-            flat = stree.flat
-            # Hack to sidestep bug in older parses
-            if '"' not in flat:
-                f.write(f"{stree.text}\t{flat}\n")
-                written += 1
-                if written >= size:
-                    break
+        for text, flat in gen_flat_trees(generator):
+            f.write(f"{text}\t{flat}\n")
+            written += 1
+            if written >= size:
+                break
     return written
 
-def main(dev_size, train_size):
+
+def write_shuffled_file(outfile, generator, size):
+    """ Generate a randomly shuffled output file from articles that
+        match the criteria. Note that the shuffle is done in memory. """
+    written = 0
+    lines = []
+    for text, flat in gen_flat_trees(generator):
+        lines.append(f"{text}\t{flat}\n")
+        written += 1
+        if written >= size:
+            break
+    if lines:
+        random.shuffle(lines)
+        with open(outfile, "w") as f:
+            for line in lines:
+                f.write(line)
+    return written
+
+
+def main(dev_size, train_size, shuffle):
 
     print("Welcome to the text and parse tree pair generator")
 
@@ -81,21 +112,35 @@ def main(dev_size, train_size):
         print("Configuration error: {0}".format(e))
         quit()
 
-    # Generate the parse trees in descending order by time of parse
+    # Generate the parse trees from visible roots only,
+    # in descending order by time of parse
     stats = { "parsed" : datetime.utcnow() }
-    gen = gen_simple_trees({ "order_by_parse" : True }, stats)
+    gen = gen_simple_trees({ "order_by_parse" : True, "visible" : True }, stats)
 
-    print(f"\nWriting {dev_size} sentences to {OUTFILE_DEV}")
-    written = gen_file(OUTFILE_DEV, gen, dev_size)
-    print(f"{written} sentences written")
+    # Development set
 
-    print(f"\nWriting {train_size} sentences to {OUTFILE_TRAIN}")
-    written = gen_file(OUTFILE_TRAIN, gen, train_size)
-    print(f"{written} sentences written")
+    if dev_size:
+        print(f"\nWriting {dev_size} {'shuffled ' if shuffle else ''}sentences to {OUTFILE_DEV}")
+        if shuffle:
+            written = write_shuffled_file(OUTFILE_DEV, gen, dev_size)
+        else:
+            written = write_file(OUTFILE_DEV, gen, dev_size)
+        print(f"{written} sentences written")
+
+    # Training set
+
+    if train_size:
+        print(f"\nWriting {train_size} {'shuffled ' if shuffle else ''}sentences to {OUTFILE_TRAIN}")
+        if shuffle:
+            written = write_shuffled_file(OUTFILE_TRAIN, gen, train_size)
+        else:
+            written = write_file(OUTFILE_TRAIN, gen, train_size)
+        print(f"{written} sentences written")
 
     last_parsed = stats["parsed"]
     print(f"\nThe last article processed was parsed at {last_parsed}")
     print("\nPair generation completed")
+
 
 if __name__ == "__main__":
 
@@ -106,7 +151,9 @@ if __name__ == "__main__":
         help="number of sentences in the development set (default 20,000)", default=20000)
     parser.add_argument('--train', dest='TRAIN_SIZE', type=int,
         help="number of sentences in the training set (default 1,000,000)", default=1000000)
+    parser.add_argument('--noshuffle', dest='NO_SHUFFLE', type=bool,
+        help="do not shuffle output", default=False)
 
     args = parser.parse_args()
 
-    main(dev_size = args.DEV_SIZE, train_size = args.TRAIN_SIZE)
+    main(dev_size = args.DEV_SIZE, train_size = args.TRAIN_SIZE, shuffle = not args.NO_SHUFFLE)

@@ -1172,7 +1172,7 @@ class BIN_LiteralTerminal(VariantHandler, LiteralTerminal):
             # It doesn't make sense to have variants on exact literals
             # since they are constant and cannot vary
             raise GrammarError('An exact literal terminal with double quotes cannot have variants')
-        if self._cat is None:
+        if self._match_cat is None:
             # In the simple case where there is no associated category,
             # override matches_first with a simple comparison
             if self._strong:
