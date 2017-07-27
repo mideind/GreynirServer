@@ -150,7 +150,7 @@ if __name__ == "__main__":
     parser.add_argument('--dev', dest='DEV_SIZE', type=int,
         help="number of sentences in the development set (default 20,000)", default=20000)
     parser.add_argument('--train', dest='TRAIN_SIZE', type=int,
-        help="number of sentences in the training set (default 1,000,000)", default=1000000)
+        help="number of sentences in the training set (default 1,500,000)", default=1500000)
     parser.add_argument('--noshuffle', dest='NO_SHUFFLE', type=bool,
         help="do not shuffle output", default=False)
 
