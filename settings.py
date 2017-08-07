@@ -49,6 +49,7 @@ _DEFAULT_SORT_LOCALE = ('IS_is', 'UTF-8')
 _ALL_CASES = frozenset(("nf", "þf", "þgf", "ef"))
 _ALL_GENDERS = frozenset(("kk", "kvk", "hk"))
 
+
 class ConfigError(Exception):
 
     """ Exception class for configuration errors """
@@ -198,6 +199,18 @@ class Meanings:
     DICT = defaultdict(list) # Keyed by word form
     ROOT = defaultdict(list) # Keyed by word root (stem)
 
+    _CAT_SET = None # BIN_Token word categories
+
+    @staticmethod
+    def _check_ordfl(ordfl):
+        """ Sanity check on the word category """
+        if Meanings._CAT_SET is None:
+            # Delayed import of BIN_Token
+            from binparser import BIN_Token
+            Meanings._CAT_SET = set(BIN_Token.KIND.keys())
+        if ordfl not in Meanings._CAT_SET:
+            raise ConfigError("Unknown BÍN word category: '{0}'".format(ordfl))
+
     @staticmethod
     def add (stofn, ordmynd, ordfl, fl, beyging):
         """ Add word meaning to the dictionary. Called from the config file handler. """
@@ -205,6 +218,7 @@ class Meanings:
         # Append the word and its meaning in tuple form
         assert ordmynd is not None
         assert ordfl is not None
+        Meanings._check_ordfl(ordfl)
         if not stofn:
             stofn = ordmynd
         Meanings.DICT[ordmynd].append(
@@ -219,6 +233,7 @@ class Meanings:
 
         assert stofn is not None
         assert ordfl is not None
+        Meanings._check_ordfl(ordfl)
         a = stofn.split("-")
         if len(a) != 2:
             raise ConfigError("Composite word meaning must contain a single hyphen")

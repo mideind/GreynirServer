@@ -129,7 +129,7 @@ Forskeyti →
     | "semsagt:ao" ':'
     | "sem:st" 'segja:so'_lhþt_sb_hk_nf_et ':'
     | 'aðferð:kvk'_nf_et ':'
-    | 'með_öðrum_orðum:ao' ':' | "með:fs" 'annar:lo'_hk_þgf_ft "orðum:hk" ':'
+    | 'með_öðrum_orðum:ao' ':' | "með:fs" 'annar:lo'_hk_þgf_ft 'orð:hk'_þgf_ft ':'
     | Greinarnúmer ':'
 
 AfTala → "af:fs" tala_þgf_kvk
@@ -256,9 +256,9 @@ SpurnarSamtenging →
 
     | 'hver:fn'_hk_ef_et "vegna:fs" FsRuna?     # '(Ég spurði) hvers vegna í veröldinni (hann tók ekki símtalið)'
     | "hví:ao" FsRuna?
-    | "hvar:ao" FsRuna?                            # '(Ég spurði) hvar (matarstellið væri)'
-    | "hvernig:ao" FsRuna?                         # '(Ég spurði) hvernig (Páll ætlaði að fara að þessu)'
-    | "hvort:st" "og:st" "hvernig:ao" FsRuna?      # '(Tekjustofnar voru til umræðu og) hvort og hvernig (þeir skyldu nýttir)'
+    | "hvar:ao" FsRuna?                         # '(Ég spurði) hvar (matarstellið væri)'
+    | "hvernig:ao" FsRuna?                      # '(Ég spurði) hvernig (Páll ætlaði að fara að þessu)'
+    | "hvort:st" "og:st" "hvernig:ao" FsRuna?   # '(Tekjustofnar voru til umræðu og) hvort og hvernig (þeir skyldu nýttir)'
 
     | fs/fall 'hvaða:fn'/fall/tala/kyn Nl/fall/tala/kyn AtvFs? # '(Ég spurði) í hvaða yfirmann (þeir hefðu hringt)'
     | fs/fall SpurnarorðAtv Nl/fall AtvFs?      # '(Ég spurði) í hversu miklum mæli utan heimilda (þeir hefðu urðað sorpið)'
@@ -1564,7 +1564,7 @@ SögnMeðF_1/tala/pers/kyn →
     | HjSögnLhÞt/tala/pers FsAtv? so_lhþt_nf/tala/kyn FsAtv? NlFrumlag_nf/tala/pers/kyn
 
     # '(og) var Ástþór mjög ósáttur (við útvarpsstjóra)'
-    | HjSögnLoMeðF/tala/kyn LoTengtSögn_nf/tala/kyn
+    | HjSögnLoMeðF/tala/pers/kyn LoTengtSögn_nf/tala/kyn
 
     # (Í dag) segir hann (köttinn vera svangan)
     | So_1_þf_nh/tala/pers OgSögn_1_þf_nh/tala/pers* NlFrumlag_nf/tala/pers/kyn SagnarBotn
@@ -1863,16 +1863,16 @@ HjSögnLhÞt_p3_ft → HjSögnLhÞt_ft_p3
 
 # Hjálparsagnir með inniföldu frumlagi þegar lýsingarorð kemur á eftir
 # ('Í dag þykir Ástþór [ekki lengur] vera (sáttur)')
-HjSögnLoMeðF/tala/kyn →
-    'vera:so'/tala/pers NlFrumlag_nf/tala/pers/kyn                        # er Páll (sáttur)
-    | so_mm/tala/pers NlFrumlag_nf/tala/pers/kyn                       # telst Páll (sáttur)
+HjSögnLoMeðF/tala/pers/kyn →
+    'vera:so'/tala/pers NlFrumlag_nf/tala/pers/kyn                          # er Páll (sáttur)
+    | so_mm/tala/pers NlFrumlag_nf/tala/pers/kyn                            # telst Páll (sáttur)
 
-    | 'vilja:so'/tala/pers NlFrumlag_nf/tala/pers/kyn AtvFs? 'vera:so'_nh    # vill Páll [ekki] vera (sáttur)
-    | 'þykja:so'/tala/pers NlFrumlag_nf/tala/pers/kyn AtvFs? 'vera:so'_nh    # þótti Páll [ekki] vera (sáttur)
-    | 'mega:so'/tala/pers NlFrumlag_nf/tala/pers/kyn AtvFs? 'vera:so'_nh     # mátti Páll [ekki] vera (sáttur)
-    | 'skulu:so'/tala/pers NlFrumlag_nf/tala/pers/kyn AtvFs? 'vera:so'_nh    # skal Páll [ekki] vera (sáttur)
-    | 'munu:so'/tala/pers NlFrumlag_nf/tala/pers/kyn AtvFs? 'vera:so'_nh     # mun Páll [ekki] vera (sáttur)
-    | so_mm/tala/pers NlFrumlag_nf/tala/pers/kyn AtvFs? 'vera:so'_nh      # sagðist Páll [ekki] vera (sáttur)
+    | 'vilja:so'/tala/pers NlFrumlag_nf/tala/pers/kyn AtvFs? 'vera:so'_nh   # vill Páll [ekki] vera (sáttur)
+    | 'þykja:so'/tala/pers NlFrumlag_nf/tala/pers/kyn AtvFs? 'vera:so'_nh   # þótti Páll [ekki] vera (sáttur)
+    | 'mega:so'/tala/pers NlFrumlag_nf/tala/pers/kyn AtvFs? 'vera:so'_nh    # mátti Páll [ekki] vera (sáttur)
+    | 'skulu:so'/tala/pers NlFrumlag_nf/tala/pers/kyn AtvFs? 'vera:so'_nh   # skal Páll [ekki] vera (sáttur)
+    | 'munu:so'/tala/pers NlFrumlag_nf/tala/pers/kyn AtvFs? 'vera:so'_nh    # mun Páll [ekki] vera (sáttur)
+    | so_mm/tala/pers NlFrumlag_nf/tala/pers/kyn AtvFs? 'vera:so'_nh        # sagðist Páll [ekki] vera (sáttur)
 
     | 'hafa:so'/tala/pers NlFrumlag_nf/tala/pers/kyn AtvFs? 'vera:so'_sagnb  # hefur Páll [ekki] verið (sáttur)
     | 'geta:so'/tala/pers NlFrumlag_nf/tala/pers/kyn AtvFs? 'hafa:so'_nh? 'vera:so'_sagnb # getur Páll [ekki] [hafa] verið (sáttur)
@@ -1884,13 +1884,13 @@ HjSögnLoMeðF/tala/kyn →
     | so_mm/tala/pers NlFrumlag_nf/tala/pers/kyn AtvFs? 'hafa:so'_nh 'vera:so'_sagnb  # sagðist Páll [ekki] hafa verið (sáttur)
 
     | 'verða:so'/tala/pers NlFrumlag_nf/tala/pers/kyn                          # verður Páll (sáttur)
-    | 'vilja:so'/tala/pers NlFrumlag_nf/tala/pers/kyn AtvFs? 'verða:so'_nh        # vildi Páll [ekki] verða (sáttur)
-    | 'þykja:so'/tala/pers NlFrumlag_nf/tala/pers/kyn AtvFs? 'verða:so'_nh        # þótti Páll [ekki] verða (sáttur)
-    | 'mega:so'/tala/pers NlFrumlag_nf/tala/pers/kyn AtvFs? 'verða:so'_nh         # mátti Páll [ekki] verða (sáttur)
-    | 'skulu:so'/tala/pers NlFrumlag_nf/tala/pers/kyn AtvFs? 'verða:so'_nh        # skal Páll [ekki] verða (sáttur)
-    | 'munu:so'/tala/pers NlFrumlag_nf/tala/pers/kyn AtvFs? 'verða:so'_nh         # mun Páll [ekki] verða (sáttur)
+    | 'vilja:so'/tala/pers NlFrumlag_nf/tala/pers/kyn AtvFs? 'verða:so'_nh     # vildi Páll [ekki] verða (sáttur)
+    | 'þykja:so'/tala/pers NlFrumlag_nf/tala/pers/kyn AtvFs? 'verða:so'_nh     # þótti Páll [ekki] verða (sáttur)
+    | 'mega:so'/tala/pers NlFrumlag_nf/tala/pers/kyn AtvFs? 'verða:so'_nh      # mátti Páll [ekki] verða (sáttur)
+    | 'skulu:so'/tala/pers NlFrumlag_nf/tala/pers/kyn AtvFs? 'verða:so'_nh     # skal Páll [ekki] verða (sáttur)
+    | 'munu:so'/tala/pers NlFrumlag_nf/tala/pers/kyn AtvFs? 'verða:so'_nh      # mun Páll [ekki] verða (sáttur)
     | so_mm/tala/pers NlFrumlag_nf/tala/pers/kyn AtvFs? 'verða:so'_nh          # sagðist Páll [ekki] verða (sáttur)
-    | 'hafa:so'/tala/pers NlFrumlag_nf/tala/pers/kyn AtvFs? 'verða:so'_sagnb      # hefur Páll [ekki] orðið (sáttur)
+    | 'hafa:so'/tala/pers NlFrumlag_nf/tala/pers/kyn AtvFs? 'verða:so'_sagnb   # hefur Páll [ekki] orðið (sáttur)
 
     | 'geta:so'/tala/pers NlFrumlag_nf/tala/pers/kyn AtvFs? 'hafa:so'_nh? 'verða:so'_sagnb # getur Páll [ekki] orðið (sáttur) / geta hafa orðið (sáttur)
     | 'vilja:so'/tala/pers NlFrumlag_nf/tala/pers/kyn AtvFs? 'hafa:so'_nh 'verða:so'_sagnb # vildi Páll [ekki] hafa orðið (sáttur)
@@ -2961,8 +2961,8 @@ EfLiðurForskeyti →
     Fornafn_ef/tala/kyn* eo* EfLiðurForskeytiTala/tala/kyn? EfLiðurForskeytiKjarni/tala/kyn
     | Fornafn_ef/tala/kyn+ eo* EfLiðurForskeytiTala/tala/kyn?
     | eo* EfLiðurForskeytiTala/tala/kyn ÓbeygðEining? # 'rúmlega sjö prósent (hækkun frá fyrra ári)'
-    | 'meiri:lo'_mst_kk_ef_et "háttar:kk"
-    | 'minni:lo'_mst_kk_ef_et "háttar:kk"
+    | 'meiri:lo'_mst_kk_ef_et 'háttur:kk'_ef_et
+    | 'minni:lo'_mst_kk_ef_et 'háttur:kk'_ef_et
     | Prósentubil           # (Spáð er) a.m.k. 10-20% (aukningu)
     | eo* Prósenta          # (eigi) nú 50% (hlut í fjarskiptafyrirtækinu)
 
@@ -3165,18 +3165,21 @@ $score(-4) SvigaInnihaldFsRuna
 Skýring →
     "svo:st" "sem:st" | 'svo_sem:ao'
     | "sem:st" 'segja:so'_lhþt_sb_hk_nf_et | 'sem_sagt:ao'
-    | "til:fs" "dæmis:hk" | 'til_dæmis:ao'
+    | "til:fs" 'dæmi:hk'_ef_et | 'til_dæmis:ao'
     | "þar:ao" "á:fs" "meðal:ao" | 'þar_á_meðal:ao'
     | "meðal:ao" "annars:ao" | 'meðal_annars:ao'
     | 'það:pfn'_hk_et_nf "er:so" | 'það_er:ao'
-    # | "þar:ao" "sem:st" "er:so"
-    | "með:fs" 'annar:lo'_hk_þgf_ft "orðum:hk" | 'með_öðrum_orðum:ao'
+    | "með:fs" 'annar:lo'_hk_þgf_ft 'orð:hk'_þgf_ft | 'með_öðrum_orðum:ao'
+    | "en:st" "ekki:ao"
+    | "þó:st" "ekki:ao"
+    | "samt:ao" "ekki:ao"
 
 SvigaForskeyti →
     Skýring
     | 'dæmi:hk'_hk_et_nf ':'    # Ráðamenn (dæmi: forsetinn) hafa tjáð sig fjálglega
-    | "les:so" ':'     # Hann sagði að óþjóðalýður (les: kommúnistar) hefði ráðist á húsið
+    | "les:so" ':'              # Hann sagði að óþjóðalýður (les: kommúnistar) hefði ráðist á húsið
     # TODO: "lesist"?
+
 Skýringarliður →
     Nl | FsAtv      # , meðal annars Jón í Holti, / , oft snarlega,
 
@@ -3534,12 +3537,12 @@ FsMeðFallstjórn →
     # 'gegnum að...', 'kringum að...', 'þrátt fyrir að (fara aldrei í Costco)'
     # 'með að...', '(Löngunin) til að...', '(Áhættan) við að...', '(Hættan) á að...'
     | fs/fall FsMeðNh
-    | "á:fs" "hendur:kvk" Nl_þgf    # 'að höfða sakamál á hendur Páli'
-    | "á:fs" "fætur:kk" Nl_þgf      # '(Hann borðaði hverja tertusneiðina) á fætur annarri'
+    | "á:fs" 'hönd:kvk'_þf_ft Nl_þgf    # 'að höfða sakamál á hendur Páli'
+    | "á:fs" 'fótur:kk'_þf_ft Nl_þgf    # '(Hann borðaði hverja tertusneiðina) á fætur annarri'
     | "nær:fs" 'draga:so'_op_gm_et_p3 Nl_þgf # 'þegar nær dró/dregur jólum'
     | 'fyrir_hönd:fs' Nl_ef
-    | "beggja:fn" "vegna:fs" Nl_ef  # 'beggja vegna vegarins'
-    | 'með_tilliti_til:fs' Nl_ef    # Skammstöfunin m.t.t.
+    | "beggja:fn" "vegna:fs" Nl_ef      # 'beggja vegna vegarins'
+    | 'með_tilliti_til:fs' Nl_ef        # Skammstöfunin m.t.t.
     | 'samanbera:so'_lhþt_sb_hk_nf_et "við:fs" Nl_þf         # samanborið við (fyrra ár)
     | 'bera:so'_lhþt_sb_hk_nf_et "saman:ao" "við:fs" Nl_þf   # borið saman við (fyrra ár)
     | "þegar:st" 'koma:so'_gm_p3_et "að:fs" Nl_þgf           # þegar kom/kemur að (umhverfismálunum)
@@ -3552,7 +3555,7 @@ FsMeðFallstjórn →
     | "um:st" "að:st" HreinYfirsetning ','?
     # 'er bjartsýnn á að Alfreð komi aftur í liðið' - Ath: 'á það/því að' er höndlað í ÞaðTenging
     | "á:fs" "að:st" HreinYfirsetning ','?
-    | "að:fs" "nafni:hk" person_nf  # Ég ræddi við konu að nafni Aðalbjörg Jónsdóttir
+    | "að:fs" 'nafn:hk'_þgf_et person_nf  # Ég ræddi við konu að nafni Aðalbjörg Jónsdóttir
     | "á:fs" Vikudagur_gr_þf_et 'koma:so'_gm_fh_et_p3  # á sunnudaginn kemur / á laugardagskvöldið kemur
     | FsMiðaðVið
     | FsÍGegnUm
@@ -3609,7 +3612,7 @@ FsÍGegnUm →
 $score(+6) FsÍGegnUm
 
 FsAðBaki →
-    "að:fs" "baki:hk" Nl_þgf # 'að baki hverju bundnu sæti'
+    "að:fs" 'bak:hk'_þgf_et Nl_þgf # 'að baki hverju bundnu sæti'
 
 $score(+4) FsAðBaki
 
@@ -3628,7 +3631,7 @@ FsTilÞgf →
     "til:fs" FsTilÞgfOrð Nl_þgf # 'til stuðnings/heiðurs Páli'
 
 FsTilÞgfOrð →
-    "stuðnings:kk" | "heiðurs:kk" | "háðungar:kvk"
+    'stuðningur:kk'_ef_et | 'heiður:kk'_ef_et | 'háðung:kvk'_ef_et
 
 So_1_gm_fh_p3_et_nf → so_1_nf_gm_fh_p3_et
 So_1_gm_fh_p3_et_þf → so_1_þf_gm_fh_p3_et
@@ -3741,7 +3744,7 @@ EinnAl →
     | Tímasetning
     | EkkiNeitt
     | UndirEins
-    | "eina:fn" "ferðina:kvk" "enn:ao"
+    | "eina:fn" 'ferð:kvk'_þf_et_gr "enn:ao"
     | "heima:ao" "fyrir:ao"
     | SemStendur
     | "hingað:ao" "til:ao"
@@ -3816,9 +3819,9 @@ $score(+8) UmEðaYfir
 # Dagsetning og tími
 
 Tímasetning →
-    "klukkan:kvk"? tími OgKlukkan? Degis?
-    | "klukkan:kvk" "hálf:lo"? töl_ft_hk_nf OgKlukkan? Degis?
-    | "klukkan:kvk" "hálf:lo"? to_nf_hk Degis?
+    'klukka:kvk'_nf_et_gr? tími OgKlukkan? Degis?
+    | 'klukka:kvk'_nf_et_gr "hálf:lo"? töl_ft_hk_nf OgKlukkan? Degis?
+    | 'klukka:kvk'_nf_et_gr "hálf:lo"? to_nf_hk Degis?
     | Degis
 
 $tag(apply_prep_bonus) Tímasetning # Gefa bónus þegar tímasetning fylgir sögn frekar en nafnlið
@@ -3880,13 +3883,13 @@ Dagsetning →
     | DagsFs_þgf Tímasetning 'sá:fn'_et_kk_þf? dags # 'frá kl. 14 [þann] 3. júlí 2007'
 
     | "dags.:lo" dags # dags. 30. desember 1965
-    | "dagana:kk"? raðnr_þf_kk Til dags # 1. - 10. júní / 25. til 29. ágúst
+    | 'dagur:kk'_þf_ft? raðnr_þf_kk Til dags # [dagana] 1. - 10. júní / 25. til 29. ágúst
     | DagsFs_þf? 'sá:fn'_et_kk_þf? dags 'síðastliðinn:lo'_et_kk_þf? # '[eftir] [þann] 3. júlí 2007 [síðastliðinn]'
-    | "hinn" dags 'síðastliðinn:lo'_et_kk_þf? # 'hinn 3. júlí [síðastliðinn]'
+    | "hinn:gr" dags 'síðastliðinn:lo'_et_kk_þf? # 'hinn 3. júlí [síðastliðinn]'
     | DagsFs_þgf dags # 'frá 3. júlí 2007'
     | DagsFs_ef dags # 'til 3. júlí 2007'
-    | "aðfaranótt:kvk" dags 'síðastliðinn:lo'_et_kk_ef?
-    | "aðfaranótt:kvk" Vikudagur_ef_et # aðfaranótt sunnudags
+    | 'aðfaranótt:kvk'_þf_et dags 'síðastliðinn:lo'_et_kk_ef?
+    | 'aðfaranótt:kvk'_þf_et Vikudagur_ef_et # aðfaranótt sunnudags
 
     | Vikudagur_þf_et dags 'næstkomandi:lo'_et_kk_þf? # 'föstudag[inn] 29. júlí [næstkomandi]'
     | Vikudagur_þf_et tímapunktur # 'föstudag[inn] 29. júlí kl. 15'
@@ -3911,11 +3914,11 @@ Dagsetning →
     | Árin_þf # 'árin 2010-12'
     | ártal # 2012
     | MörgÁr # '2009-13'
-    | "frá:fs" OgMeð? "árinu:hk"? ártal # 'frá árinu 2009', 'frá og með 2012'
-    | "til:fs" "ársins:hk"? ártal # 'til ársins 1997'
+    | "frá:fs" OgMeð? 'ár:hk'_þgf_et_gr? ártal # 'frá árinu 2009', 'frá og með 2012'
+    | "til:fs" 'ár:hk'_ef_et_gr? ártal # 'til ársins 1997'
     | Síðan
-    | "dagana:kk" Dagana # dagana 1. til 10. júlí
-    | 'sá:fn'_kk_et_þf? raðnr_þf_kk "þessa:fn" "mánaðar:kk" # [þann] 23. þessa mánaðar
+    | 'dagur:kk'_þf_ft Dagana # dagana 1. til 10. júlí
+    | 'sá:fn'_kk_et_þf? raðnr_þf_kk "þessa:fn" 'mánuður:kk'_ef_et # [þann] 23. þessa mánaðar
     | ÞegarLíðaTekurÁ
 
     | Undanfarið

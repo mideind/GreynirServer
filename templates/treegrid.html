@@ -179,6 +179,7 @@
       transform: rotate(45deg);
    }
    .node-terminal.fs text.symbol,
+   .node-terminal.uh text.symbol,
    .node-terminal.gr text.symbol {
       fill: #888;
    }
@@ -676,6 +677,7 @@ function d3_update(source) {
    var symbolOffset = []; // Default y offset is 6 pixels
    symbolOffset ["\uE004"] = 5; // user
    symbolOffset ["%"] = 5; // percent sign
+   symbolOffset ["!"] = 5; // exclamation mark
    symbolOffset ["\uE066"] = 7; // tag
 
    [
@@ -706,6 +708,7 @@ function d3_update(source) {
       ["to", "\uE319"], // more-items
       ["töl", "\uE319"], // more-items
       ["percent", "%"], // percent sign
+      ["uh", "!"], // exclamation mark
    ]
    .forEach(function(d) {
       g.selectAll(".node-terminal." + d[0])

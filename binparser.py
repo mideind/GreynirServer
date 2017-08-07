@@ -70,8 +70,8 @@ class BIN_Token(Token):
 
     """
 
-    # Map word types to those used in the grammar
-    _KIND = {
+    # Map the BÍN category (ordfl) to terminal names used in the grammar
+    KIND = {
         "kk": "no",
         "kvk": "no",
         "hk": "no",
@@ -86,7 +86,7 @@ class BIN_Token(Token):
         "töl": "töl",
         "uh": "uh",
         "st": "st",
-        "stt": "stt",
+        "stt": "stt", # Never appears in BÍN
         "abfn": "abfn",
         "nhm": "nhm"
     }
@@ -667,7 +667,7 @@ class BIN_Token(Token):
 
         def matcher_no(m):
             """ Check noun """
-            if BIN_Token._KIND[m.ordfl] != "no":
+            if BIN_Token.KIND[m.ordfl] != "no":
                 return False
             no_info = m.beyging == "-"
             if terminal.is_abbrev:
@@ -698,7 +698,7 @@ class BIN_Token(Token):
             """ Check street name """
             if m.fl != "göt": # Götuheiti
                 return False
-            if BIN_Token._KIND[m.ordfl] != "no":
+            if BIN_Token.KIND[m.ordfl] != "no":
                 return False
             for v in terminal.variants:
                 if v in BIN_Token.GENDERS_SET:
@@ -850,7 +850,7 @@ class BIN_Token(Token):
             # The terminal is sérnafn_case: We only accept nouns or adjectives
             # that match the given case
             fbits = BIN_Token.get_fbits(m.beyging) & BIN_Token.VBIT_CASES
-            return BIN_Token._KIND[m.ordfl] in { "no", "lo" } and terminal.fbits_match(fbits)
+            return BIN_Token.KIND[m.ordfl] in { "no", "lo" } and terminal.fbits_match(fbits)
 
         # We have a match if any of the possible part-of-speech meanings
         # of this token match the terminal
@@ -1001,7 +1001,7 @@ class VariantHandler:
         """ Returns True if the first part of the terminal name matches the
             given word category """
         # Convert 'kk', 'kvk', 'hk' to 'no' before doing the compare
-        return self._first == BIN_Token._KIND[t_kind]
+        return self._first == BIN_Token.KIND[t_kind]
 
     @property
     def first(self):
