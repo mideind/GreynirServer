@@ -408,8 +408,9 @@ class SimpleTree:
         """ Return a string containing an a flat representation of this subtree """
         if self._len > 1 or self._children:
             # Children present: Array or nonterminal
-            return (self.tag or "[]") + " " + " ".join(
-                child._flat(level + 1) for child in self.children) + " /" + (self.tag or "[]")
+            tag = self.tag or "X" # Unknown tag (should not occur)
+            return tag + " " + " ".join(
+                child._flat(level + 1) for child in self.children) + " /" + tag
         # No children
         if self._head.get("k") == "PUNCTUATION":
             # Punctuation
@@ -424,6 +425,8 @@ class SimpleTree:
             # Return a sequence of ao prefixes before the terminal itself
             return " ".join([ "ao" ] * numwords + [ self.terminal ])
         # Repeat the terminal name for each component word
+        # !!! TODO: Potentially divide composite tokens such as
+        # !!! dates into more detailed terminals, such as tala, raðnr, etc.
         return " ".join([ self.terminal ] * (numwords + 1))
 
     @property

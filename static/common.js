@@ -140,6 +140,13 @@ var grammarDesc = [
    { k: "gr", t : "með greini", o: 10 }
 ];
 
+var cases = {
+   "nf" : "nefnifalli",
+   "þf" : "þolfalli",
+   "þgf" : "þágufalli",
+   "ef" : "eignarfalli"
+};
+
 function format_is(n, decimals) {
    /* Utility function to format a number according to is_IS */
    if (decimals === undefined || decimals < 0)
@@ -232,7 +239,7 @@ function iso_timestamp(d) {
       lzero(d[3], 2) + ":" + lzero(d[4], 2) + ":" + lzero(d[5], 2);
 }
 
-function grammar(cat, m, txt) {
+function grammar(cat, m, txt, terminal) {
    var g = [];
    if (cat == "pfn" && txt !== undefined) {
       var gender = {
@@ -258,6 +265,16 @@ function grammar(cat, m, txt) {
          m = m.replace(val.k, "");
       }
    });
+   if (cat == "fs" && !g.length && terminal !== undefined) {
+      // No information about a preposition found in the m field:
+      // attempt to fish it out of the terminal instead
+      var v = terminal.split("_");
+      if (v.length == 2) {
+         var descr = cases[v[1]];
+         if (descr !== undefined)
+            g.push("stýrir " + descr);
+      }
+   }
    return g.join("<br>");
 }
 
@@ -308,7 +325,7 @@ function tokenInfo(t, nameDict) {
          else
          if (r.class == "fs" && t.m[0].indexOf(" ") > -1)
             wcls = "fleiryrt forsetning";
-         r.grammar = grammar(r.class, t.m[3], t.x);
+         r.grammar = grammar(r.class, t.m[3], t.x, t.t);
       }
       r.lemma = (t.m && t.m[0]) ? t.m[0] : t.x;
       r.details = wcls;

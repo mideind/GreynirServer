@@ -129,16 +129,16 @@ Forskeyti →
     | "semsagt:ao" ':'
     | "sem:st" 'segja:so'_lhþt_sb_hk_nf_et ':'
     | 'aðferð:kvk'_nf_et ':'
-    | 'með_öðrum_orðum:ao' ':' | "með:fs" 'annar:lo'_hk_þgf_ft 'orð:hk'_þgf_ft ':'
+    | 'með_öðrum_orðum:ao' ':' | 'með:fs'_þgf 'annar:lo'_hk_þgf_ft 'orð:hk'_þgf_ft ':'
     | Greinarnúmer ':'
 
-AfTala → "af:fs" tala_þgf_kvk
+AfTala → 'af:fs'_þgf tala_þgf_kvk
 
 $score(-6) Forskeyti # Ekki freistast í forskeyti ef annað er í boði
 
 Tilvitnun →
     ',' SögnSegja/tala/pers NlFrumlag_nf/tala/pers AtvFs? # , segir/fullyrðir Jón Ásmundsson, fulltrúi samtakanna, í dag í útvarpinu
-    | ',' 'segja:so'_gm_fh_et_p3 "í:fs" Nl_þgf AtvFs?  # , segir í tilkynningu ráðuneytisins í gær
+    | ',' 'segja:so'_gm_fh_et_p3 'í:fs'_þgf Nl_þgf AtvFs?  # , segir í tilkynningu ráðuneytisins í gær
 
 SögnSegja/tala/pers →
     'segja:so'_gm_fh/tala/pers
@@ -226,11 +226,11 @@ Samtenging →
     | 'áðan:ao'_mst "en:st" "að:st"? # áður en [að]
     | 'snemma:ao'_mst "en:st" "að:st"? # fyrr en [að]
     | 'á_meðan:ao' "að:st"?
-    | "allt:fn" "frá:fs" "því:fn" "að:st"?
-    | "þar:ao" "á:fs" "meðal:ao" | 'þar_á_meðal:ao'
+    | "allt:fn" 'frá:fs'_þgf 'því:pfn'_þgf_et_hk "að:st"?
+    | "þar:ao" 'á:ao' "meðal:ao" | 'þar_á_meðal:ao'
     | 'auk_þess:ao' "sem:st" "að:st"?
     | "eins:ao" "og:st"
-    | "vegna:fs" 'það:pfn'_hk_ef_et "að:st"?
+    | 'vegna:fs'_ef 'það:pfn'_hk_ef_et "að:st"?
     | "eða:st"? 'allar_götur_síðan:ao'
     | 'það_er_að_segja:ao' Tengimerki "að:st"?
     | 'þrátt_fyrir:ao' "að:st"
@@ -254,7 +254,7 @@ SpurnarSamtenging →
     | fs/fall 'hver:fn'/fall/tala/kyn FsRuna?   # '(Ég vildi vita) af hverju í ósköpunum (Jón hætti við)'
     | "afhverju:ao" FsRuna?
 
-    | 'hver:fn'_hk_ef_et "vegna:fs" FsRuna?     # '(Ég spurði) hvers vegna í veröldinni (hann tók ekki símtalið)'
+    | 'hver:fn'_hk_ef_et 'vegna:fs'_ef FsRuna?     # '(Ég spurði) hvers vegna í veröldinni (hann tók ekki símtalið)'
     | "hví:ao" FsRuna?
     | "hvar:ao" FsRuna?                         # '(Ég spurði) hvar (matarstellið væri)'
     | "hvernig:ao" FsRuna?                      # '(Ég spurði) hvernig (Páll ætlaði að fara að þessu)'
@@ -417,8 +417,8 @@ Samanburðarmerki → ',' | ';' | "-:em"
 
 Samanburður →
     SamanburðarTenging Nl_nf AtvFs? # þar af einn alvarlega
-    | Samanburðarmerki? "þar:ao" "með:fs" 'telja:so'_lhþt_sb_nf/tala/kyn Nl_nf/tala/kyn AtvFs? # þar með talinn allur þingflokkur Framsóknar
-    | Samanburðarmerki "öðru:fn" "nær:ao"   # Viðskiptablaðið styður ekki jafnaðarstefnuna; öðru nær.
+    | Samanburðarmerki? "þar:ao" "með:ao" 'telja:so'_lhþt_sb_nf/tala/kyn Nl_nf/tala/kyn AtvFs? # þar með talinn allur þingflokkur Framsóknar
+    | Samanburðarmerki 'annað:fn'_þgf_et_hk "nær:ao"   # Viðskiptablaðið styður ekki jafnaðarstefnuna; öðru nær.
 
 SamanburðarTenging →
     "heldur:st" "en:st"             # 'Forseti á ekki að gera meiri breytingu á sér heldur en forsætisráðherra'
@@ -426,7 +426,7 @@ SamanburðarTenging →
     | ','? 'líkt_og:st'
     | Samanburðarmerki? "þar:ao" "af:ao"  # 'Fjöldi barna var í vélinni, þar af tvö kornabörn'
     | Samanburðarmerki? 'þar_á_meðal:ao'
-    | Samanburðarmerki? "þar:ao" "á:fs" "meðal:ao"
+    | Samanburðarmerki? "þar:ao" "á:ao" "meðal:ao"
     | Samanburðarmerki? 'þar_með_talið:ao' # Skammstöfunin 'þ.m.t.'
     | Samanburðarmerki? "nema:st"   # Allir vita það, nema ég.
     | ','? "enda:st"                # 'Réttindi í almennum sjóðum breyttust, enda lægri fjárhæð en áður'
@@ -1069,7 +1069,7 @@ SögnErEinsOg/tala/pers →
 $score(+8) SögnErLo/tala/pers/kyn
 $score(+6) SögnErEinsOg/tala/pers
 
-LhÞtÞgfBotn → "fyrir:fs" 'góður:lo'_esb_hk_þgf_et  # Það sem er börnum fyrir bestu
+LhÞtÞgfBotn → 'fyrir:fs'_þgf 'góður:lo'_esb_hk_þgf_et  # Það sem er börnum fyrir bestu
 
 LhÞtÞgfEinkunn → LhÞtÞgfBotn | LoTengtSögn_nf_et_hk
 
@@ -1232,7 +1232,9 @@ SögnMeðF_0/tala/pers/kyn →
 
     # (Í dag) tókst og heppnaðist Seðlabankanum [galvöskum að lækka vexti]
     # !!! Ath: ekki _fh hér þar sem _vh er leyfilegt (takist Seðlabankanum...)
-    | so_mm/tala/pers OgSögn_mm/tala/pers* NlFrumlag_þgf/tala/pers/kyn NhFylling_þgf/tala/kyn?
+    # !!! Ath: Sögnin er óháð frumlaginu í tölu og persónu, hún er í reynd
+    # !!! í 3p. et. (sbr. ?'Það tekst veiðimönnunum að veiða þann stóra')
+    | so_mm_et_p3 OgSögn_mm_et_p3* NlFrumlag_þgf/tala/pers/kyn NhFylling_þgf/tala/kyn?
 
     # (Í dag) ber stjórnvöldum að taka hætturnar alvarlega
     | so_subj_gm_op_p3_et_þgfnh NlFrumlag_þgf/tala/pers/kyn NhFylling/tala/kyn
@@ -3131,7 +3133,7 @@ NlSkýring/tala/pers/fall/kyn →
     | ',' SvigaInnihald/tala/pers/fall/kyn LokatáknEðaKomma
     | ',' Skýring Skýringarliður LokatáknEðaKomma
     # (Verslunin þjónar fjölbreyttum markhópi), allt frá börnum til aldraðra, (og er vinsæl í hverfinu)
-    | Samanburðarmerki 'allur:fn'_nf_et_hk "frá:fs" Nl_þgf "til:fs" Nl_ef LokatáknEðaKomma
+    | Samanburðarmerki 'allur:fn'_nf_et_hk 'frá:fs'_þgf Nl_þgf 'til:fs'_ef Nl_ef LokatáknEðaKomma
 
 # Gefa aukastig fyrir skýringar á nafnliðum
 $score(+6) NlSkýring/tala/pers/fall/kyn
@@ -3165,11 +3167,11 @@ $score(-4) SvigaInnihaldFsRuna
 Skýring →
     "svo:st" "sem:st" | 'svo_sem:ao'
     | "sem:st" 'segja:so'_lhþt_sb_hk_nf_et | 'sem_sagt:ao'
-    | "til:fs" 'dæmi:hk'_ef_et | 'til_dæmis:ao'
-    | "þar:ao" "á:fs" "meðal:ao" | 'þar_á_meðal:ao'
+    | 'til:fs'_ef 'dæmi:hk'_ef_et | 'til_dæmis:ao'
+    | "þar:ao" "á:ao" "meðal:ao" | 'þar_á_meðal:ao'
     | "meðal:ao" "annars:ao" | 'meðal_annars:ao'
     | 'það:pfn'_hk_et_nf "er:so" | 'það_er:ao'
-    | "með:fs" 'annar:lo'_hk_þgf_ft 'orð:hk'_þgf_ft | 'með_öðrum_orðum:ao'
+    | 'með:fs'_þgf 'annar:lo'_hk_þgf_ft 'orð:hk'_þgf_ft | 'með_öðrum_orðum:ao'
     | "en:st" "ekki:ao"
     | "þó:st" "ekki:ao"
     | "samt:ao" "ekki:ao"
@@ -3203,7 +3205,7 @@ $score(-24) EnÍOgEða # Frekar að líta á 'en' sem samtengingu ef það er h�
 
 OgSem → "og:st" "sem:stt"? | "eða:st" "sem:stt"? | "ellegar:st" | "en:st" "sem:stt"?
 
-ÞarÁMeðal → "þar:ao" "á:fs" "meðal:ao"
+ÞarÁMeðal → "þar:ao" "á:ao" "meðal:ao"
 
 $score(+16) ÞarÁMeðal # Líta frekar á "þar á meðal" sem samtengingu en skýringu
 
@@ -3537,26 +3539,26 @@ FsMeðFallstjórn →
     # 'gegnum að...', 'kringum að...', 'þrátt fyrir að (fara aldrei í Costco)'
     # 'með að...', '(Löngunin) til að...', '(Áhættan) við að...', '(Hættan) á að...'
     | fs/fall FsMeðNh
-    | "á:fs" 'hönd:kvk'_þf_ft Nl_þgf    # 'að höfða sakamál á hendur Páli'
-    | "á:fs" 'fótur:kk'_þf_ft Nl_þgf    # '(Hann borðaði hverja tertusneiðina) á fætur annarri'
-    | "nær:fs" 'draga:so'_op_gm_et_p3 Nl_þgf # 'þegar nær dró/dregur jólum'
-    | 'fyrir_hönd:fs' Nl_ef
-    | "beggja:fn" "vegna:fs" Nl_ef      # 'beggja vegna vegarins'
-    | 'með_tilliti_til:fs' Nl_ef        # Skammstöfunin m.t.t.
-    | 'samanbera:so'_lhþt_sb_hk_nf_et "við:fs" Nl_þf         # samanborið við (fyrra ár)
-    | 'bera:so'_lhþt_sb_hk_nf_et "saman:ao" "við:fs" Nl_þf   # borið saman við (fyrra ár)
-    | "þegar:st" 'koma:so'_gm_p3_et "að:fs" Nl_þgf           # þegar kom/kemur að (umhverfismálunum)
-    | "fyrir:ao" "nú:ao"? "utan:fs" Nl_þf
-    | "innan:ao" "við:fs" Nl_þf
-    | "innan:ao" "sem:st" "utan:fs" Nl_ef
+    | 'á:fs'_þf 'hönd:kvk'_þf_ft Nl_þgf    # 'að höfða sakamál á hendur Páli'
+    | 'á:fs'_þf 'fótur:kk'_þf_ft Nl_þgf    # '(Hann borðaði hverja tertusneiðina) á fætur annarri'
+    | 'nær:fs'_þgf 'draga:so'_op_gm_et_p3 Nl_þgf # 'þegar nær dró/dregur jólum'
+    | 'fyrir_hönd:fs'_ef Nl_ef
+    | "beggja:fn" 'vegna:fs'_ef Nl_ef      # 'beggja vegna vegarins'
+    | 'með_tilliti_til:fs'_ef Nl_ef        # Skammstöfunin m.t.t.
+    | 'samanbera:so'_lhþt_sb_hk_nf_et 'við:fs'_þf Nl_þf         # samanborið við (fyrra ár)
+    | 'bera:so'_lhþt_sb_hk_nf_et "saman:ao" 'við:fs'_þf Nl_þf   # borið saman við (fyrra ár)
+    | "þegar:st" 'koma:so'_gm_p3_et 'að:fs'_þgf Nl_þgf           # þegar kom/kemur að (umhverfismálunum)
+    | "fyrir:ao" "nú:ao"? 'utan:fs'_þf Nl_þf
+    | "innan:ao" 'við:fs'_þf Nl_þf
+    | "innan:ao" "sem:st" 'utan:fs'_ef Nl_ef
     | "hvað:ao" FsHvaðVarðar
-    | "allt:fn" "frá:fs" Nl_þgf     # allt frá hruni, allt frá börnum til fullorðinna
+    | "allt:fn" 'frá:fs'_þgf Nl_þgf     # allt frá hruni, allt frá börnum til fullorðinna
     # 'um að lög um endurupptökunefnd standist ekki stjórnarskrá' - Ath: 'um það að' er höndlað í ÞaðTenging
-    | "um:st" "að:st" HreinYfirsetning ','?
+    | 'um:fs'_þf "að:st" HreinYfirsetning ','?
     # 'er bjartsýnn á að Alfreð komi aftur í liðið' - Ath: 'á það/því að' er höndlað í ÞaðTenging
-    | "á:fs" "að:st" HreinYfirsetning ','?
-    | "að:fs" 'nafn:hk'_þgf_et person_nf  # Ég ræddi við konu að nafni Aðalbjörg Jónsdóttir
-    | "á:fs" Vikudagur_gr_þf_et 'koma:so'_gm_fh_et_p3  # á sunnudaginn kemur / á laugardagskvöldið kemur
+    | 'á:fs'_þf "að:st" HreinYfirsetning ','?
+    | 'að:fs'_þgf 'nafn:hk'_þgf_et person_nf  # Ég ræddi við konu að nafni Aðalbjörg Jónsdóttir
+    | 'á:fs'_þf Vikudagur_gr_þf_et 'koma:so'_gm_fh_et_p3  # á sunnudaginn kemur / á laugardagskvöldið kemur
     | FsMiðaðVið
     | FsÍGegnUm
     | FsAðBaki
@@ -3587,48 +3589,48 @@ $score(+7) SögnLhNt
 
 # Áttirnar eru aðeins forsetningar í BÍN, ekki atviksorð - þess vegna þurfa þær sérmeðhöndlun
 
-Átt → "vestur:fs" | "austur:fs" | "suður:fs" | "norður:fs"
+Átt → 'vestur:fs'_þf | 'austur:fs'_þf | 'suður:fs'_þf | 'norður:fs'_þf
 
 ÁttFs → Átt Nl_þf    # suður götuna
 
 $score(+12) ÁttFs
 
 FsÞgfTilEf →
-    Nl_þgf "til:fs" Nl_ef # máli sínu til stuðnings, barninu til hróss, henni til bjargar
+    Nl_þgf 'til:fs'_ef Nl_ef # máli sínu til stuðnings, barninu til hróss, henni til bjargar
 
 # Ekki velja þetta nema nauðsyn beri til
 $score(-6) FsÞgfTilEf
 
 FsMiðaðVið →
-    'miða:so'_lhþt_sb_hk_nf_et "við:fs" Nl_þf
+    'miða:so'_lhþt_sb_hk_nf_et 'við:fs'_þf Nl_þf
     | 'miðað_við:fs' Nl_þf # Skammstöfunin m.v.
 
 $score(+12) FsMiðaðVið
 
 FsÍGegnUm →
-    "í:ao" "gegn:ao" "um:fs" Nl_þf
-    | "í:ao" "gegnum:fs" Nl_þf
+    "í:ao" "gegn:ao" 'um:fs'_þf Nl_þf
+    | "í:ao" 'gegnum:fs'_þf Nl_þf
 
 $score(+6) FsÍGegnUm
 
 FsAðBaki →
-    "að:fs" 'bak:hk'_þgf_et Nl_þgf # 'að baki hverju bundnu sæti'
+    'að:fs'_þgf 'bak:hk'_þgf_et Nl_þgf # 'að baki hverju bundnu sæti'
 
 $score(+4) FsAðBaki
 
 FsÁMeðal →
-    "á:ao" "meðal:fs" Nl_ef # Sérregla hér þar sem þetta er að öðrum kosti túlkað sem meðal:hk + ef
+    "á:ao" 'meðal:fs'_ef Nl_ef # Sérregla hér þar sem þetta er að öðrum kosti túlkað sem meðal:hk + ef
 
 $score(+16) FsÁMeðal
 
 FsÁMóti →
-    "á:ao" "móti:fs" Nl_þgf
-    | "á:ao" "milli:fs" Nl_ef_ft
+    "á:ao" 'móti:fs'_þgf Nl_þgf
+    | "á:ao" 'milli:fs'_ef Nl_ef_ft
 
 $score(+24) FsÁMóti
 
 FsTilÞgf →
-    "til:fs" FsTilÞgfOrð Nl_þgf # 'til stuðnings/heiðurs Páli'
+    'til:fs'_ef FsTilÞgfOrð Nl_þgf # 'til stuðnings/heiðurs Páli'
 
 FsTilÞgfOrð →
     'stuðningur:kk'_ef_et | 'heiður:kk'_ef_et | 'háðung:kvk'_ef_et
@@ -3720,19 +3722,18 @@ FsForskeyti →
 
 # Forsetningar þar sem AL á undan gefur vísbendingar um fall í FL
 FsEftir/fall →
-    "eftir:fs" Nl/fall
+    'eftir:fs'/fall Nl/fall
 FsMeð/fall →
-    "með:fs" Nl/fall
+    'með:fs'/fall Nl/fall
 FsVið/fall →
-    "við:fs" Nl/fall
+    'við:fs'/fall Nl/fall
 FsYfirFyrir/fall →
-    "yfir:fs" Nl/fall
-    | "fyrir:fs" Nl/fall
+    'yfir:fs'/fall Nl/fall
+    | 'fyrir:fs'/fall Nl/fall
 FsUndirÁÍ/fall →
-    "undir:fs" Nl/fall
-    | "á:fs" Nl/fall
-    | "í:fs" Nl/fall
-
+    'undir:fs'/fall Nl/fall
+    | 'á:fs'/fall Nl/fall
+    | 'í:fs'/fall Nl/fall
 
 # Atviksliður
 
@@ -3766,7 +3767,7 @@ EkkiNeitt →
 $score(-6) EkkiNeitt
 
 FyrirLöngu →
-    "fyrir:fs" 'langur:lo'_þgf_et_hk # 'fyrir löngu'
+    'fyrir:fs'_þgf 'langur:lo'_þgf_et_hk # 'fyrir löngu'
 
 $score(+8) FyrirLöngu
 
@@ -3830,7 +3831,7 @@ OgKlukkan → "og:st" tala | "og:st" töl_ft_hk_nf
 
 Degis → "árdegis:ao" | "síðdegis:ao" | "miðdegis:ao"
 
-OgMeð → "og:st" "með:fs"
+OgMeð → "og:st" 'með:fs'_þgf
 
 # Atviksorð sem geta breytt falli innan forsetningarliðar sem fylgir þeim
 BreytiAtv →
@@ -3895,9 +3896,10 @@ Dagsetning →
     | Vikudagur_þf_et tímapunktur # 'föstudag[inn] 29. júlí kl. 15'
     | 'næstkomandi:lo'_et_kk_þf Vikudagur_þf_et # 'næstkomandi fimmtudag'
     | 'síðastliðinn:lo'_et_kk_þf Vikudagur_þf_et # 'síðastliðinn fimmtudag'
-    | "á:fs" Vikudagur_þf_et # á föstudag / á sunnudaginn / á fimmtudagskvöld
-    | "í:fs" Mánuður_þf # í febrúar
+    | 'á:fs'_þf Vikudagur_þf_et # á föstudag / á sunnudaginn / á fimmtudagskvöld
+    | 'í:fs'_þgf Mánuður_þgf # í febrúar, í október
     | 'á_morgun:ao' ','? Vikudagur_þf_et # á morgun, miðvikudag
+    | 'sama_dag:ao' "og:st" HreinYfirsetning # sama dag og Jón var handtekinn
 
     | DagsFs_þf? 'sá:fn'_et_kk_þf? tímapunktur # '[eftir] [þann] 3. júlí 2007 kl. 13:00'
     | DagsFs_þgf tímapunktur # 'frá 3. júlí 2007 kl. 13:00'
@@ -3914,8 +3916,8 @@ Dagsetning →
     | Árin_þf # 'árin 2010-12'
     | ártal # 2012
     | MörgÁr # '2009-13'
-    | "frá:fs" OgMeð? 'ár:hk'_þgf_et_gr? ártal # 'frá árinu 2009', 'frá og með 2012'
-    | "til:fs" 'ár:hk'_ef_et_gr? ártal # 'til ársins 1997'
+    | 'frá:fs'_þgf OgMeð? 'ár:hk'_þgf_et_gr? ártal # 'frá árinu 2009', 'frá og með 2012'
+    | 'til:fs'_ef 'ár:hk'_ef_et_gr? ártal # 'til ársins 1997'
     | Síðan
     | 'dagur:kk'_þf_ft Dagana # dagana 1. til 10. júlí
     | 'sá:fn'_kk_et_þf? raðnr_þf_kk "þessa:fn" 'mánuður:kk'_ef_et # [þann] 23. þessa mánaðar
@@ -3950,7 +3952,7 @@ Síðan →
 $score(+10) Síðan
 
 ÞegarLíðaTekurÁ →
-    "þegar:st" "líða:so" 'taka:so'_gm_p3_et "á:fs" Tímabil_þf/kyn/tala
+    "þegar:st" "líða:so" 'taka:so'_gm_p3_et 'á:fs'_þf Tímabil_þf/kyn/tala
 
 $score(+16) ÞegarLíðaTekurÁ
 
@@ -3971,7 +3973,7 @@ Aldur →
 $score(+6) Dagsetning Tímasetning Aldur
 
 TímaAfstæði_þgf → "síðar:ao" | "seinna:ao" | "fyrr:ao" TímaEn? | "áður:ao" TímaEn?
-TímaAfstæði_þf → "áður:ao" TímaEn? | "eftir:ao" TímaAð? | "fyrir:fs" Nl_þf | "á:ao" "undan:ao" | "á:ao" "eftir:ao"
+TímaAfstæði_þf → "áður:ao" TímaEn? | "eftir:ao" TímaAð? | 'fyrir:fs'_þf Nl_þf | "á:ao" "undan:ao" | "á:ao" "eftir:ao"
 TímaForskeyti → "löngu:lo" | "stuttu:lo" | "töluverðu:lo" | "örstuttu:lo"
     | "rétt:ao" | "örskömmu:lo" | Tímabil_þgf/kyn/tala
 TímaAfstæði → "áður:ao" TímaEn | "eftir:ao" TímaAð
@@ -4154,27 +4156,27 @@ Vikudagur_gr/fall/tala →
     | 'sumar:hk'_þf/tala
     | 'vetur:kk'_þf/tala
 
-Mánuður_þf →
-    'janúar:kk'_þf
-    | 'febrúar:kk'_þf
-    | 'mars:kk'_þf
-    | 'apríl:kk'_þf
-    | 'maí:kk'_þf
-    | 'júní:kk'_þf
-    | 'júlí:kk'_þf
-    | 'ágúst:kk'_þf
-    | 'september:kk'_þf
-    | 'október:kk'_þf
-    | 'nóvember:kk'_þf
-    | 'desember:kk'_þf
+Mánuður_þgf →
+    'janúar:kk'_þgf
+    | 'febrúar:kk'_þgf
+    | 'mars:kk'_þgf
+    | 'apríl:kk'_þgf
+    | 'maí:kk'_þgf
+    | 'júní:kk'_þgf
+    | 'júlí:kk'_þgf
+    | 'ágúst:kk'_þgf
+    | 'september:kk'_þgf
+    | 'október:kk'_þgf
+    | 'nóvember:kk'_þgf
+    | 'desember:kk'_þgf
 
 # Forsetningar sem hægt er að nota með dagsetningum
 DagsFs_þf →
-    "fyrir:fs" | "eftir:fs"
+    'fyrir:fs'_þf | 'eftir:fs'_þf
 DagsFs_ef →
-    "til:fs"
+    'til:fs'_ef
 DagsFs_þgf →
-    "frá:fs"
+    'frá:fs'_þgf
 
 # ----------------------------------------------
 #
