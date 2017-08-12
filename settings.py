@@ -450,6 +450,11 @@ class StaticPhrases:
         return [ StaticPhrases.LIST[ix][1] ]
 
     @staticmethod
+    def get_length(ix):
+        """ Return the length of the phrase with index ix """
+        return len(StaticPhrases.LIST[ix][0].split())
+
+    @staticmethod
     def lookup(phrase):
         """ Lookup an entire phrase """
         return StaticPhrases.MAP.get(phrase)

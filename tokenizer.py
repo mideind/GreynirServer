@@ -1617,9 +1617,17 @@ def parse_static_phrases(token_stream, auto_uppercase):
                     if not sl:
                         # No subsequent word: this is a complete match
                         # Reconstruct original text behind phrase
-                        w = " ".join([t.txt for t in tq])
+                        plen = StaticPhrases.get_length(ix)
+                        while len(tq) > plen:
+                            # We have extra queued tokens in the token queue
+                            # that belong to a previously seen partial phrase
+                            # that was not completed: yield them first
+                            yield tq.pop(0)
+                        w = " ".join([ t.txt for t in tq ])
                         # Add the entire phrase as one 'word' to the token queue
-                        yield TOK.Word(w, [BIN_Meaning._make(r) for r in StaticPhrases.get_meaning(ix)])
+                        yield TOK.Word(w,
+                            [ BIN_Meaning._make(r)
+                                for r in StaticPhrases.get_meaning(ix) ])
                         # Discard the state and start afresh
                         newstate = defaultdict(list)
                         w = wo = ""
@@ -1653,7 +1661,9 @@ def parse_static_phrases(token_stream, auto_uppercase):
                             for t in tq: yield tq
                             tq = []
                         # Yield the replacement token
-                        yield TOK.Word(token.txt, [BIN_Meaning._make(r) for r in StaticPhrases.get_meaning(ix)])
+                        yield TOK.Word(token.txt,
+                            [ BIN_Meaning._make(r)
+                                for r in StaticPhrases.get_meaning(ix) ])
                         newstate = defaultdict(list)
                         token = None
                         break
@@ -2003,17 +2013,23 @@ def tokenize(text, auto_uppercase = False, enclosing_session = None):
 
     token_stream = raw_tokenize(text)
 
-    token_stream = parse_static_phrases(token_stream, auto_uppercase) # Static multiword phrases
+    # Static multiword phrases
+    token_stream = parse_static_phrases(token_stream, auto_uppercase)
 
-    token_stream = annotate(token_stream, auto_uppercase) # Lookup meanings from dictionary
+    # Lookup meanings from dictionary
+    token_stream = annotate(token_stream, auto_uppercase)
 
-    token_stream = parse_phrases_1(token_stream) # First phrase pass
+    # First phrase pass
+    token_stream = parse_phrases_1(token_stream)
 
-    token_stream = parse_phrases_2(token_stream) # Second phrase pass
+    # Second phrase pass
+    token_stream = parse_phrases_2(token_stream)
 
-    token_stream = recognize_entities(token_stream, enclosing_session) # Recognize named entities from database
+    # Recognize named entities from database
+    token_stream = recognize_entities(token_stream, enclosing_session)
 
-    token_stream = disambiguate_phrases(token_stream) # Eliminate very uncommon meanings
+     # Eliminate very uncommon meanings
+    token_stream = disambiguate_phrases(token_stream)
 
     return token_stream
 

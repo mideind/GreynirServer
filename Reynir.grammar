@@ -3873,9 +3873,7 @@ UpprunaAtv →
     | "suður:ao"
     | "vestur:ao"
 
-
 # Talnabil nota en-dash
-
 Til → "-:en" | "til:st" | "og:st"
 
 Dagsetning →
