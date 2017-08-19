@@ -219,6 +219,15 @@ class ScrapeHelper:
         return soup
 
     @staticmethod
+    def nested_tag(soup, *argv):
+        """ Find a tag within a nested hierarchy of tags """
+        for next_tag in argv:
+            if not soup:
+                return None
+            soup = soup.find(lambda tag: tag.name == next_tag)
+        return soup
+
+    @staticmethod
     def div_id(soup, div_id):
         """ Find a div with a particular id """
         if not soup or not div_id:
@@ -728,33 +737,45 @@ class StjornarradScraper(ScrapeHelper):
     def get_metadata(self, soup):
         metadata = super().get_metadata(soup)
         body = ScrapeHelper.div_class(soup, "pgmain", "article", "boxbody")
-        metadata.heading = body.h1.string if body and body.h1 else ""
-        date = ScrapeHelper.tag_prop_val(body, "span", "class", "date")
-        if date is not None:
-            metadata.timestamp = datetime.strptime(date.string, "%d.%m.%Y")
+        heading = ScrapeHelper.nested_tag(soup, "main", "article", "header", "h1")
+        if heading:
+            metadata.heading = heading.string
+        else:
+            metadata.heading = body.h1.string if body and body.h1 else ""
+        date = ScrapeHelper.nested_tag(soup, "main", "article")
+        if date is not None and date.has_attr("data-last-modified"):
+            date = date["data-last-modified"]
+            metadata.timestamp = datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
+        else:
+            date = ScrapeHelper.tag_prop_val(body, "span", "class", "date")
+            if date is not None:
+                metadata.timestamp = datetime.strptime(date.string, "%d.%m.%Y")
         metadata.author = self._description or "Stjórnarráð Íslands" # Name of the ministry in question
         return metadata
 
     def _get_content(self, soup_body):
         """ Find the article content (main text) in the soup """
-        soup = ScrapeHelper.div_class(soup_body, "pgmain", "article", "boxbody")
-        if not soup:
-            return soup_body
-        # Delete h1
-        if soup.h1:
-            soup.h1.decompose()
-        # Delete date
-        date = ScrapeHelper.tag_prop_val(soup, "span", "class", "date")
-        if date is not None:
-            date.decompose()
-        # Delete div.imgbox
-        imgbox = ScrapeHelper.div_class(soup, "imgbox")
-        if imgbox is not None:
-            imgbox.decompose()
-        # Delete div.buttons
-        buttons = ScrapeHelper.div_class(soup, "buttons")
-        if buttons is not None:
-            buttons.decompose()
+        soup = ScrapeHelper.nested_tag(soup_body, "main", "article", "section")
+        if soup is None:
+            soup = ScrapeHelper.div_class(soup_body, "pgmain", "article", "boxbody")
+            if soup is None:
+                return soup_body
+            # Older layout: delete extra inline stuff
+            # Delete h1
+            if soup.h1:
+                soup.h1.decompose()
+            # Delete date
+            date = ScrapeHelper.tag_prop_val(soup, "span", "class", "date")
+            if date is not None:
+                date.decompose()
+            # Delete div.imgbox
+            imgbox = ScrapeHelper.div_class(soup, "imgbox")
+            if imgbox is not None:
+                imgbox.decompose()
+            # Delete div.buttons
+            buttons = ScrapeHelper.div_class(soup, "buttons")
+            if buttons is not None:
+                buttons.decompose()
         return soup
 
 
