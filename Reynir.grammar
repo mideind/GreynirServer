@@ -226,7 +226,7 @@ Samtenging →
     | 'áðan:ao'_mst "en:st" "að:st"? # áður en [að]
     | 'snemma:ao'_mst "en:st" "að:st"? # fyrr en [að]
     | 'á_meðan:ao' "að:st"?
-    | "allt:fn" 'frá:fs'_þgf 'því:pfn'_þgf_et_hk "að:st"?
+    | "allt:fn" 'frá:fs'_þgf 'það:pfn'_hk_þgf_et "að:st"?
     | "þar:ao" 'á:ao' "meðal:ao" | 'þar_á_meðal:ao'
     | 'auk_þess:ao' "sem:st" "að:st"?
     | "eins:ao" "og:st"
@@ -469,7 +469,7 @@ Setning/tala/pers/kyn →
     # 'Eins og Páll er ég mjög ósáttur við þetta'
     | SetningForskeyti? SagnHluti/tala/pers/kyn Upptalning/tala?
 
-    # 'Það fara 40 mínútur í pappírsvinuna'
+    # 'Það fara 40 mínútur í pappírsvinnuna'
     | 'það:pfn'_hk_nf_et SagnHluti/tala/pers/kyn Upptalning/tala?
 
 Setning_et_p3_hk →
@@ -893,7 +893,7 @@ SagnliðurVh →
     so_0_vh/tala/pers NlFrumlag_nf/tala/pers/kyn LoTengtSögn_nf/tala/kyn? NhFyllingEðaAtv
 
     # Borði börnin [ekki] matinn (getum við farið í sund)
-    | So_1_vh/fall/tala/pers NlFrumlag_nf/tala/pers AtvFs? Nl/fall AtvFs?
+    | So_1_vh/fall/tala/pers NlFrumlag_nf/tala/pers AtvFs? NlBeintAndlag/fall AtvFs?
 
     # Verði þessi tillaga felld (geng ég úr flokknum)
     # Verði karlarnir byrjaðir að grilla (sæki ég sósuna)
@@ -3817,22 +3817,6 @@ UmEðaYfir →
 
 $score(+8) UmEðaYfir
 
-# Dagsetning og tími
-
-Tímasetning →
-    'klukka:kvk'_nf_et_gr? tími OgKlukkan? Degis?
-    | 'klukka:kvk'_nf_et_gr "hálf:lo"? töl_ft_hk_nf OgKlukkan? Degis?
-    | 'klukka:kvk'_nf_et_gr "hálf:lo"? to_nf_hk Degis?
-    | Degis
-
-$tag(apply_prep_bonus) Tímasetning # Gefa bónus þegar tímasetning fylgir sögn frekar en nafnlið
-
-OgKlukkan → "og:st" tala | "og:st" töl_ft_hk_nf
-
-Degis → "árdegis:ao" | "síðdegis:ao" | "miðdegis:ao"
-
-OgMeð → "og:st" 'með:fs'_þgf
-
 # Atviksorð sem geta breytt falli innan forsetningarliðar sem fylgir þeim
 BreytiAtv →
     StaðarAtv
@@ -3872,6 +3856,22 @@ UpprunaAtv →
     | "norður:ao"
     | "suður:ao"
     | "vestur:ao"
+
+# Dagsetning og tími
+
+Tímasetning →
+    'klukka:kvk'_nf_et_gr? tími OgKlukkan? Degis?
+    | 'klukka:kvk'_nf_et_gr "hálf:lo"? töl_ft_hk_nf OgKlukkan? Degis?
+    | 'klukka:kvk'_nf_et_gr "hálf:lo"? to_nf_hk Degis?
+    | Degis
+
+$tag(apply_prep_bonus) Tímasetning # Gefa bónus þegar tímasetning fylgir sögn frekar en nafnlið
+
+OgKlukkan → "og:st" tala | "og:st" töl_ft_hk_nf
+
+Degis → "árdegis:ao" | "síðdegis:ao" | "miðdegis:ao"
+
+OgMeð → "og:st" 'með:fs'_þgf
 
 # Talnabil nota en-dash
 Til → "-:en" | "til:st" | "og:st"
