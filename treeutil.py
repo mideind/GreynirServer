@@ -55,8 +55,11 @@ _TEST_NT_MAP = { # Til að prófa í parse_text_to_bracket_form()
     "Afleiðing" : "S-CONS",
     "NlSkýring" : "S-EXPLAIN",
     "Tilvitnun" : "S-QUOTE",
+    "Atvikssetning" : "CP-ADV",
+    #"Tíðarsetning" : "CP-TMP",
+    "BeygingarliðurÁnUmröðunar" : "BL",
+    "BeygingarliðurMeðUmröðun" : "BL",
 
-    "FsMeðFallstjórn" : "PP",
 
 #    "SetningSo" : "V", # Breytt
 #    "SagnRuna" : "V", # Breytt
@@ -70,6 +73,8 @@ _TEST_NT_MAP = { # Til að prófa í parse_text_to_bracket_form()
 #    "HafaGetaFá" : "V",
 #    "HjSögn" : "V",         # Til skoðunar; þarf að einangra fremsta undirliði
 #    "HjSögnNh" : "V",
+
+    "FsMeðFallstjórn" : "PP",
 
     "Nl" : "NP",
     "Sérnafn" : "N",
@@ -137,6 +142,10 @@ _TEST_ID_MAP = { # Til að prófa í parse_text_to_bracket_form()
     "S-CONS" : dict(name = "Afleiðing", overrides = "S"), # Consequence
     "S-EXPLAIN" : dict(name = "Skýring"), # Explanation
     "S-QUOTE" : dict(name = "Tilvitnun"), # Quote at end of sentence
+    #"CP-TMP" : dict(name = "Tíðaratvikssetning"), # Temporal adverbial clause
+    "CP-ADV" : dict(name = "Atvikssetning"), # Adverbial clause
+    "BL" : dict(name = "Beygingarliður"),
+
     # "VP" : dict(name = "Sagnliður", subject_to = { "VP" }),
     "NP" : dict(name = "Nafnliður", subject_to = { "NP-SUBJ", "NP-OBJ", "NP-IOBJ", "NP-PRD" }),
     "NP-POSS" : dict(name = "Eignarfallsliður", overrides = "NP"),
@@ -150,6 +159,7 @@ _TEST_ID_MAP = { # Til að prófa í parse_text_to_bracket_form()
     "ADVP-DATE" : dict(name = "Tímasetning", overrides = "ADVP"),
     "PP" : dict(name = "Forsetningarliður", overrides = "ADVP"),
     "ADJP" : dict(name = "Lýsingarliður"),
+    
     # Hausar
     "ADV" : dict(name = "Atviksorð"),
     "V" : dict(name = "Sögn"),

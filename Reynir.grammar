@@ -137,8 +137,8 @@ AfTala → 'af:fs'_þgf tala_þgf_kvk
 $score(-6) Forskeyti # Ekki freistast í forskeyti ef annað er í boði
 
 Tilvitnun →
-    ',' SögnSegja/tala/pers NlFrumlag_nf/tala/pers AtvFs? # , segir/fullyrðir Jón Ásmundsson, fulltrúi samtakanna, í dag í útvarpinu
-    | ',' 'segja:so'_gm_fh_et_p3 'í:fs'_þgf Nl_þgf AtvFs?  # , segir í tilkynningu ráðuneytisins í gær
+    ',' SögnSegja/tala/pers NlFrumlag_nf/tala/pers AtvFsAuka? # , segir/fullyrðir Jón Ásmundsson, fulltrúi samtakanna, í dag í útvarpinu
+    | ',' 'segja:so'_gm_fh_et_p3 'í:fs'_þgf Nl_þgf AtvFsAuka?  # , segir í tilkynningu ráðuneytisins í gær
 
 SögnSegja/tala/pers →
     'segja:so'_gm_fh/tala/pers
@@ -196,6 +196,7 @@ StLiður →
     | StSpurn
     # Flokkurinn stefnir á stjórnarþátttöku, fái hann til þess umboð
     | StViðtenging
+    | Atvikssetning # Tilbrigði 7.1
 
 StViðtenging →
     TengimerkiVh? SagnliðurVh
@@ -223,9 +224,9 @@ Samtenging →
     SamtengingStök+
     | "þannig:ao" "að:st"
     | 'það:pfn'_hk_nf_et "er:so" | 'það_er:ao'
-    | 'áðan:ao'_mst "en:st" "að:st"? # áður en [að]
-    | 'snemma:ao'_mst "en:st" "að:st"? # fyrr en [að]
-    | 'á_meðan:ao' "að:st"?
+#    | 'áðan:ao'_mst "en:st" "að:st"? # áður en [að]
+#    | 'snemma:ao'_mst "en:st" "að:st"? # fyrr en [að]
+#    | 'á_meðan:ao' "að:st"?
     | "allt:fn" 'frá:fs'_þgf 'það:pfn'_hk_þgf_et "að:st"?
     | "þar:ao" 'á:ao' "meðal:ao" | 'þar_á_meðal:ao'
     | 'auk_þess:ao' "sem:st" "að:st"?
@@ -234,7 +235,7 @@ Samtenging →
     | "eða:st"? 'allar_götur_síðan:ao'
     | 'það_er_að_segja:ao' Tengimerki "að:st"?
     | 'þrátt_fyrir:ao' "að:st"
-    | ÞangaðTil
+#    | ÞangaðTil
     | ÞarSem
     | OgEðaEn? SpurnarSamtenging
 
@@ -335,6 +336,86 @@ Skilyrði →
 Afleiðing →
     ","? "þá:st"? SagnHluti/tala/pers/kyn   # (Ef hann gæti) [,] [þá] opinberaði Hannes niðurstöðu sína (í dag)
     | ","? "þá:st"? SagnliðurÁnF            # [Ef góða veðrið helst] [,] [þá] þyrfti að vökva grasið (fyrir myrkur)
+
+# Aukasetningar
+Atvikssetning → 
+    Tíðarsetning
+    | Tilgangssetning
+    | Viðurkenningarsetning
+    | Afleiðingarsetning
+    | Orsakarsetning
+
+$score(+15) Atvikssetning
+
+Tíðarsetning → Tíðartenging BeygingarliðurÁnUmröðunar
+
+Tilgangssetning → Tilgangstenging BeygingarliðurÁnUmröðunar
+
+Viðurkenningarsetning → Viðurkenningartenging BeygingarliðurÁnUmröðunar
+
+Afleiðingarsetning → Afleiðingartenging BeygingarliðurÁnUmröðunar
+
+Orsakarsetning → Orsakartenging BeygingarliðurÁnUmröðunar
+
+BeygingarliðurÁnUmröðunar →
+    Frumlag/pers/tala/kyn FrumlagsInnskot/tala/pers/kyn? AtviksliðurEinkunn*
+        SagnRuna/tala/pers/kyn Sjálfur/tala/kyn? KommaTengiliður/tala/pers/kyn?
+        Samanburður? Upptalning/tala?
+
+    # Frumlag fyrir aftan sögn:
+    # 'Gengu þau galvösk á Esjuna þrátt fyrir veðurútlitið'
+    # 'Bersýnilega fór Jón sterki í bága við reglurnar með þessu'
+    # 'Undir húsinu voru illa farnar skolpleiðslur'
+    # 'Í skólanum borðaði Gunna aldrei matinn eftir þetta'
+    # 'Í grein sinni opinberaði Hannes niðurstöðu sína'
+    # Ath. að frumlag 3p. et. getur verið falið:
+    # (? Það virtist mér í dag kettinum líða betur)
+    # 'Í dag virtist mér kettinum líða betur'
+    # 'Eins og Páll er ég mjög ósáttur við þetta'
+BeygingarliðurMeðUmröðun →
+    SetningForskeyti? SagnHluti/tala/pers/kyn Upptalning/tala?
+
+# Mögulegar tengingar í tíðarsetningum
+Tíðartenging →
+    'áðan:ao'_mst "en:st" "að:st"?  # áður en [að]
+    | 'frá:fs'_þgf 'það:pfn'_hk_þgf_et "að:st"
+    | 'frá:fs'_þgf 'það:pfn'_hk_þgf_et "er:st"
+    | 'snemma:ao'_mst "en:st" "að:st"?  #fyrr en [að]
+    | 'ótt:ao'_mst "en:st" "að:st"? # óðar en [að]
+    | "þá:ao" "er:st"
+    | "eftir:ao" "að:st"
+    | "um_leið:ao" "og:st"  # um leið og
+    | "síðan:st"
+    | "þegar:st"
+    | "uns:st"
+    | 'á_meðan:ao' "að:st"? # á meðan [að]
+    | "meðan:st"
+    | "þangað:ao" "til:st" "að:st"?
+    | "á_sama_tíma:ao" "og:st"
+    | "þangað:ao" "til:fs" "að:st"?
+
+Tilgangstenging → "til:fs" 'það:pfn'_hk_ef_et "að:st"
+
+Viðurkenningartenging →
+    "enda:st" "þótt:st" "að:st"?
+    | "jafnvel:st"? "þótt:st" "að:st"?
+    | "þrátt_fyrir:ao" 'það:pfn'_hk_þf_et? "að:st"?
+    | "þó" "að:st"?
+
+Afleiðingartenging →
+    "svo:ao" "að:st"?
+    | "þannig:ao" "að:st"?
+
+Orsakartenging →
+    "fyrst:ao" "að:st"?
+    | 'sök'_kvk_þf_ft 'það:pfn'_hk_ef_et "að:st"
+    | 'sök'_kvk_þgf_ft 'það:pfn'_hk_ef_et "að:st"
+    | 'úr:fs'_þgf 'það:pfn'_hk_þgf_et "að:st"
+    | "þar_eð:st"
+    | "þar:ao" "sem:st"
+    | 'af:fs'_þgf 'það:pfn'_hk_þgf_et "að:st"?
+    | 'vegna:fs'_ef 'það:pfn'_hk_ef_et "að:st"
+    | 'með:fs'_þgf'það:pfn'_hk_þgf_et "að:st"
 
 # Setningar með frumlagi
 
@@ -496,7 +577,7 @@ SetningAð →
 $score(-2) SetningAð # Óalgengt form
 
 SetningUmAðRæða →
-    "um:ao" 'vera:so'_gm_p3_et "að:nhm" 'ræða:so'_gm_nh NlBeintAndlag_þf AtvFs?
+    "um:ao" 'vera:so'_gm_p3_et "að:nhm" 'ræða:so'_gm_nh NlBeintAndlag_þf AtvFsAuka?
 
 $score(+20) SetningUmAðRæða # Mjög líklega réttur skilningur á þessari orðaröð
 
@@ -554,7 +635,7 @@ SetningLoSögn →
 
 SetningSo →
 
-    So_1_p3/fall/tala NlBeintAndlag/fall NlFrumlag_nf/tala AtvFs?                # Fylgir honum mikil úrkoma [í nótt]
+    So_1_p3/fall/tala NlBeintAndlag/fall NlFrumlag_nf/tala AtvFsAuka?                # Fylgir honum mikil úrkoma [í nótt]
 
     # Leitað verður/skal/mun til sérfræðinga
     # Verið er í snatri að ráða hæfasta umsækjandann
@@ -562,24 +643,24 @@ SetningSo →
     # Farið hefur verið ofan í saumana á málinu
     | Sagnliður_sagnb
 
-    | So_1_sagnb/fall HjSögnLhÞtSM_et_p3 FsAtv? Nl/fall AtvFs? # Horft hefur verið [til hennar] lostafullum augum
+    | So_1_sagnb/fall HjSögnLhÞtSM_et_p3 FsAtv? Nl/fall AtvFsAuka? # Horft hefur verið [til hennar] lostafullum augum
 
     | so_0_mm_sagnb HjSögnLhÞtSM_et_p3 NhFyllingEðaAtv         # Búist er við (að Sigmundur Davíð segi af sér)
 
     | so_0_mm_nh HjSögnMegiSkuliÞurfi_et_p3 SagnInnskot        # Búast má/skal/þarf/hefur mátt við töfum á veginum
 
-    | so_0_mm/pers/tala FsAtv? NlFrumlag_nf/tala/pers AtvFs?          # Fórust með honum átján menn
+    | so_0_mm/pers/tala FsAtv? NlFrumlag_nf/tala/pers AtvFsAuka?          # Fórust með honum átján menn
 
     | FsAtv? SagnliðurÁnF # NhFyllingEðaAtv                      # [Með lögum] skal tryggja rétt almennings til að fara um landið
 
     | FsAtv VeraSkulu_et_p3 HreinSögn_sagnb_et_hk NhFyllingEðaAtv # Með lögum er/verður/skal/mun [sannarlega] skipað rétti útlendinga til að dveljast hér
 
-    | VeraSkulu_et_p3 FsRuna LoTengtSögn_nf/tala/kyn NlFrumlag_nf/tala/kyn AtvFs? # Skal í frumvarpinu fólgin greinargerð um tekjur ríkisins og gjöld
+    | VeraSkulu_et_p3 FsRuna LoTengtSögn_nf/tala/kyn NlFrumlag_nf/tala/kyn AtvFsAuka? # Skal í frumvarpinu fólgin greinargerð um tekjur ríkisins og gjöld
 
     # !!! Ath.: So_1_nh leyfir miðmynd nafnháttar, sem ætti ekki að vera leyfilegur hér
     # !!! sbr. '?Endurnýjast á leigusamninginn í ár'
-    | So_1_nh/fall HjSögnMegiSkuliÞurfi_et_p3 FsRuna? NlBeintAndlag/fall AtvFs?  # Endurnýja þarf/skal/má leigusamninginn í ár
-    | So_1_nh/fall HjSögnNhMeðSo/tala/pers NlFrumlag_nf/tala/pers/kyn NlBeintAndlag/fall AtvFs?  # Gæta eiga/skulu/verða þeir þingskapa
+    | So_1_nh/fall HjSögnMegiSkuliÞurfi_et_p3 FsRuna? NlBeintAndlag/fall AtvFsAuka?  # Endurnýja þarf/skal/má leigusamninginn í ár
+    | So_1_nh/fall HjSögnNhMeðSo/tala/pers NlFrumlag_nf/tala/pers/kyn NlBeintAndlag/fall AtvFsAuka?  # Gæta eiga/skulu/verða þeir þingskapa
 
     | Sagnliður_lhþt
 
@@ -597,7 +678,7 @@ SetningSo →
 
 
 Sagnliður_lhþt →
-    EinSögn_lhþt/tala/kyn OgSögn_lhþt/tala/kyn* HjSögnLhÞt_p3/tala NlFrumlag_nf/tala/kyn AtvFs? # Teknar og skráðar hafa verið ákvarðanir í málinu
+    EinSögn_lhþt/tala/kyn OgSögn_lhþt/tala/kyn* HjSögnLhÞt_p3/tala NlFrumlag_nf/tala/kyn AtvFsAuka? # Teknar og skráðar hafa verið ákvarðanir í málinu
 
 $score(-4) Sagnliður_lhþt # Knúsað orðalag - velja annað ef í boði
 
@@ -633,7 +714,7 @@ SetningAukafall →
     # Köttum í landinu fjölgar
     NlFrumlag/aukafall so_subj_op/aukafall MiðmyndarBotn?
     # Mér blöskraði mjög vitleysan (í Páli), Mig þraut örendið
-    | NlFrumlag/aukafall Atviksliður? so_subj_op/tala/aukafall FsRuna? NlBeintAndlag_nf_þf/tala AtvFs?
+    | NlFrumlag/aukafall Atviksliður? so_subj_op/tala/aukafall FsRuna? NlBeintAndlag_nf_þf/tala AtvFsAuka?
 
     # Öfug orðaröð: 'Eignarrétti fylgja skyldur' (í stað 'Skyldur fylgja eignarrétti')
     # 'Þetta skrifar Bjarni á Facebook-síðu sinni og bendir [galvaskur] á frammistöðu stjórnarinnar'
@@ -647,7 +728,7 @@ SetningAukafall →
     | NlFrumlag/aukafall HjSögn_et_p3 FsAtv? So_1_sagnb/aukafall FsAtv?
 
     # Mér hafa ofboðið lætin í hundinum [alla daga]
-    | NlFrumlag/aukafall HjSögn/tala/pers FsAtv? so_subj_sagnb/aukafall NlBeintAndlag_nf/tala/pers AtvFs?
+    | NlFrumlag/aukafall HjSögn/tala/pers FsAtv? so_subj_sagnb/aukafall NlBeintAndlag_nf/tala/pers AtvFsAuka?
 
     # Hælisleitendum fer/hefur farið fækkandi
     | NlFrumlag_þgf HjSögnLhNt so_1_þgf_lh_nt FsAtv?
@@ -655,7 +736,7 @@ SetningAukafall →
     # Miðmynd sagna: Mér áskotnaðist, mér fyrirgefst, mér gremst, okkur finnst [öllum]...
     | NlFrumlag_þgf/tala/kyn so_0_mm LoÞgf/tala/kyn? MiðmyndarBotn?
     # Viðreisn hefur [ekki] borist/hlotnast/áskotnast öflugur liðsauki [í dag]
-    | NlFrumlag_þgf HjSögnMM FsAtv? so_0_mm_sagnb NlBeintAndlag_nf/tala/pers AtvFs?
+    | NlFrumlag_þgf HjSögnMM FsAtv? so_0_mm_sagnb NlBeintAndlag_nf/tala/pers AtvFsAuka?
     # Bönkunum hefur/hafði/hefði [flestum] tekist að halda í horfinu
     | NlFrumlag_þgf/tala/kyn HjSögnMM LoÞgf/tala/kyn? so_0_mm_sagnb MiðmyndarBotn?
 
@@ -688,13 +769,13 @@ SetningAukafall →
     | NlFrumlag/aukafall HjSögnÞurfaEiga_et_p3 FsAtv? nhm So_1_nh/aukafall NhFyllingEðaAtv
 
     # Engan má svipta íslenskum ríkisborgararétti að ósekju
-    | NlFrumlag_þf HjSögnMegiSkuli_et_p3 FsAtv? So_2_nh_þf/fall NlBeintAndlag/fall AtvFs?
+    | NlFrumlag_þf HjSögnMegiSkuli_et_p3 FsAtv? So_2_nh_þf/fall NlBeintAndlag/fall AtvFsAuka?
 
     # Öllum má tryggja heilbrigðisþjónustu í dag
-    | NlFrumlag_þgf HjSögnMegiSkuli_et_p3 FsAtv? So_2_nh_þgf/fall NlBeintAndlag/fall AtvFs?
+    | NlFrumlag_þgf HjSögnMegiSkuli_et_p3 FsAtv? So_2_nh_þgf/fall NlBeintAndlag/fall AtvFsAuka?
 
     # Öllum skal [ekki] standa [til boða] menntun (Menntun skal standa öllum til boða)
-    | Nl/aukafall HjSögnMegiSkuli_et_p3 FsAtv? So_1_nh/aukafall FsAtv? NlFrumlag_nf AtvFs?
+    | Nl/aukafall HjSögnMegiSkuli_et_p3 FsAtv? So_1_nh/aukafall FsAtv? NlFrumlag_nf AtvFsAuka?
 
     # Mér/okkur/ykkur/börnunum finnst/þykir [mörgum [það]] [ekki] skemmtilegt [að borða góðan mat / hérna í kvöld]
     | NlFrumlag_þgf/tala/kyn HjSögnFinnst FinnstÞað/tala/kyn? FinnstAndlag NhFyllingEðaAtv
@@ -731,16 +812,16 @@ AukafallÞgfAndlag →
     so_1_þgf_sagnb NhFyllingEðaAtv
 
     # (Þátttakendum er) veitt of mikið svigrúm
-    | so_2_þgf_þf_sagnb FsRuna? NlBeintAndlag_þf AtvFs?
+    | so_2_þgf_þf_sagnb FsRuna? NlBeintAndlag_þf AtvFsAuka?
 
     # (Þátttakendum er) gert kleift að matast með reisn
     | 'gera:so'_sagnb LoTengtSögn_nf_et_hk NhFyllingAtv
 
     # (Öllum hefur verið/skal/mun) óskað góðs bata
-    | so_2_þgf_ef_sagnb FsRuna? NlBeintAndlag_ef AtvFs?
+    | so_2_þgf_ef_sagnb FsRuna? NlBeintAndlag_ef AtvFsAuka?
 
     # (Öllum hefur verið/skal/mun) skilað bílunum
-    | so_2_þgf_þgf_sagnb FsRuna? NlBeintAndlag_þgf AtvFs?
+    | so_2_þgf_þgf_sagnb FsRuna? NlBeintAndlag_þgf AtvFsAuka?
 
 AukafallEfAndlag →
     # Þess skal [ekki] gætt að fara varlega með sprengiefnið
@@ -764,7 +845,7 @@ AukafallLhÞtAndlag_et/pers/kyn →
 
 AukafallsBotn →
     FsAtv                             # (Mér virtist ykkur ekki hungra) mjög undir ræðunni
-    | FsRuna? NlFrumlag_nf AtvFs?     # (Mér virtist ykkur ekki falla) í geð ræðan í kvöld
+    | FsRuna? NlFrumlag_nf AtvFsAuka? # (Mér virtist ykkur ekki falla) í geð ræðan í kvöld
     | NhFyllingAtv                    # (Mér sýndist ykkur langa) gríðarlega að fara til útlanda strax
 
 MiðmyndarBotn →
@@ -893,7 +974,7 @@ SagnliðurVh →
     so_0_vh/tala/pers NlFrumlag_nf/tala/pers/kyn LoTengtSögn_nf/tala/kyn? NhFyllingEðaAtv
 
     # Borði börnin [ekki] matinn (getum við farið í sund)
-    | So_1_vh/fall/tala/pers NlFrumlag_nf/tala/pers AtvFs? NlBeintAndlag/fall AtvFs?
+    | So_1_vh/fall/tala/pers NlFrumlag_nf/tala/pers AtvFs? NlBeintAndlag/fall AtvFsAuka?
 
     # Verði þessi tillaga felld (geng ég úr flokknum)
     # Verði karlarnir byrjaðir að grilla (sæki ég sósuna)
@@ -2368,7 +2449,7 @@ Pfn_hk/tala/fall → 'það:pfn'_hk/tala/fall
 Pfn/tala/fall/kyn → Pfn/kyn/tala/fall
 
 FornafnViðskeyti/tala/fall/kyn →
-    Atviksliður? LoFornafn/fall/tala/kyn # (hafa þeir) [þó] báðir (lýst yfir sigri)
+    AtviksliðurAuka? LoFornafn/fall/tala/kyn # (hafa þeir) [þó] báðir (lýst yfir sigri)
     | Pfn/kyn/tala/fall     # öllu því, ýmsum þeim
     | Töluorð/tala/fall/kyn # öllum fjórum, þeirra tveggja
 
@@ -3646,7 +3727,7 @@ FsHvaðVarðar →
 
 $score(+4) FsHvaðVarðar
 
-FsLiður → Atviksliður? FsMeðFallstjórn # snarlega í bæinn
+FsLiður → AtviksliðurAuka? FsMeðFallstjórn # snarlega í bæinn
 
 # FsAtv getur verið runa af forsetningarliðum með atviksliðum inn á milli,
 # á undan og í lok - eða einungis atviksliðir.
@@ -3666,7 +3747,7 @@ EinFsAtv →
     | "bæði:st" EinEinföldFsAtv+ ','? "og:st" EinEinföldFsAtv+
     | SögnLhNt
 
-EinEinföldFsAtv → FsMeðFallstjórn | EinnAl
+EinEinföldFsAtv → FsMeðFallstjórn | EinnAl | Atvikssetning
 
 Nema →
     "nema:st" "þá:ao"? "helst:ao"?
@@ -3697,11 +3778,11 @@ $score(+18) AtvFsSaman
 
 FsLiðurMeðKommu →
     FsLiður
-    | FsLiður KommaOgEðaEn? Atviksliður? FsLiðurMeðKommu
+    | FsLiður KommaOgEðaEn? AtviksliðurAuka? FsLiðurMeðKommu
 
 # FsRuna getur ekki endað á atvikslið, nema innan kommu
 # 'var, líkt og í búsáhaldabyltingunni, byggð á óánægju'
-FsRuna → ',' FsForskeyti? FsLiðurMeðKommu Atviksliður? LokatáknEðaKomma
+FsRuna → ',' FsForskeyti? FsLiðurMeðKommu AtviksliðurAuka? LokatáknEðaKomma
     | FsLiðurMeðKommu
 
 FsRunaEftirNl →
@@ -3798,10 +3879,10 @@ OgAtviksliður →
 # Fanga hugsanlegan atvikslið innan kommu:
 # Fyrirtækin annars vegar, og heimilin hins vegar, hafa dregið úr fjárfestingu
 AtvKomma →
-    Atviksliður? ','
+    AtviksliðurAuka? ','
 
 AtviksliðurKomma →
-    Atviksliður ','?
+    AtviksliðurAuka ','?
 
 AtviksliðurEinkunn →
     eo                              # Einkunnarorð = atviksorð sem geta ekki jafnframt verið forsetningar
@@ -3856,6 +3937,11 @@ UpprunaAtv →
     | "norður:ao"
     | "suður:ao"
     | "vestur:ao"
+
+# AL eða Atvikssetning koma bæði til greina
+AtvFsAuka → AtvFs | Atvikssetning
+AtviksliðurAuka → Atviksliður | Atvikssetning
+
 
 # Dagsetning og tími
 
