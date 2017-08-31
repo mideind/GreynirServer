@@ -222,7 +222,7 @@ SamtengingStök →
 Samtenging →
     # Flóknari samtenging úr mörgum orðum
     SamtengingStök+
-    | "þannig:ao" "að:st"
+#    | "þannig:ao" "að:st"
     | 'það:pfn'_hk_nf_et "er:so" | 'það_er:ao'
 #    | 'áðan:ao'_mst "en:st" "að:st"? # áður en [að]
 #    | 'snemma:ao'_mst "en:st" "að:st"? # fyrr en [að]
@@ -231,10 +231,10 @@ Samtenging →
     | "þar:ao" 'á:ao' "meðal:ao" | 'þar_á_meðal:ao'
     | 'auk_þess:ao' "sem:st" "að:st"?
     | "eins:ao" "og:st"
-    | 'vegna:fs'_ef 'það:pfn'_hk_ef_et "að:st"?
+#    | 'vegna:fs'_ef 'það:pfn'_hk_ef_et "að:st"?
     | "eða:st"? 'allar_götur_síðan:ao'
     | 'það_er_að_segja:ao' Tengimerki "að:st"?
-    | 'þrátt_fyrir:ao' "að:st"
+#    | 'þrátt_fyrir:ao' "að:st"
 #    | ÞangaðTil
     | ÞarSem
     | OgEðaEn? SpurnarSamtenging
@@ -300,6 +300,7 @@ HreinYfirsetning →
     | SetningLo
     | SetningSo
     | SetningSkilyrði
+    | AtvSetning # Atvikssetning fremst í aðalsetningu
 
 $score(+2) HreinYfirsetning
 
@@ -315,7 +316,7 @@ $tag(begin_prep_scope) HreinYfirsetning # Nýtt undirtré fyrir tengingu sagnar 
 SetningSkilyrði →
     AtviksliðurKomma? EfÞegar OgEfÞegar? Skilyrði Afleiðing FsAtv?
 
-$score(+12) SetningSkilyrði
+#$score(+12) SetningSkilyrði
 
 EfÞegar →
     "ef:st" | "þegar:st" | "er:st" | "þótt:st" | "þó:st" | "þó:ao" "að:st" | "þó:ao" "svo:ao" "að:st" | 'jafnvel_þótt:st'
@@ -337,6 +338,17 @@ Afleiðing →
     ","? "þá:st"? SagnHluti/tala/pers/kyn   # (Ef hann gæti) [,] [þá] opinberaði Hannes niðurstöðu sína (í dag)
     | ","? "þá:st"? SagnliðurÁnF            # [Ef góða veðrið helst] [,] [þá] þyrfti að vökva grasið (fyrir myrkur)
 
+# Atvikssetning fremst í setningu
+# [Ef þetta gerist](, þá) getur fatan dottið
+# [Meðan þetta heldur](, þá) sleppur þetta
+# [Af því að hún sigraði](, þá) hlýtur hún gullið
+# [Til þess að fólkið blotni ekki](, þá) verður það að nota regnhlíf
+# [Þrátt fyrir að hann missti eggið](, þá) brotnaði það ekki
+
+AtvSetning → Atvikssetning ","? "þá:st"? BeygingarliðurMeðUmröðun
+
+$score(+12) AtvSetning
+
 # Aukasetningar
 Atvikssetning → 
     Tíðarsetning
@@ -344,6 +356,7 @@ Atvikssetning →
     | Viðurkenningarsetning
     | Afleiðingarsetning
     | Orsakarsetning
+    | Skilyrðissetning
 
 $score(+15) Atvikssetning
 
@@ -356,6 +369,8 @@ Viðurkenningarsetning → Viðurkenningartenging BeygingarliðurÁnUmröðunar
 Afleiðingarsetning → Afleiðingartenging BeygingarliðurÁnUmröðunar
 
 Orsakarsetning → Orsakartenging BeygingarliðurÁnUmröðunar
+
+Skilyrðissetning → Skilyrðistenging BeygingarliðurÁnUmröðunar
 
 BeygingarliðurÁnUmröðunar →
     BeygingarliðurÁnUmröðunar/tala/pers/kyn
@@ -398,8 +413,11 @@ Tíðartenging →
     | "meðan:st"
     | "þangað:ao" "til:st" "að:st"?
     | "á_sama_tíma:ao" "og:st"
+    | "er:st" # Líka tilvísunartenging
 
-Tilgangstenging → 'til:fs'_ef 'það:pfn'_hk_ef_et "að:st"
+Tilgangstenging → 
+    'til:fs'_ef 'það:pfn'_hk_ef_et "að:st"
+    |"svo:ao" "að:st"?                 # Líka afleiðingartenging
 
 Viðurkenningartenging →
     "enda:st" "þótt:st" "að:st"?
@@ -408,7 +426,7 @@ Viðurkenningartenging →
     | "þrátt_fyrir:ao" 'það:pfn'_hk_þf_et? "að:st"
 
 Afleiðingartenging →
-    "svo:ao" "að:st"?
+    "svo:ao" "að:st"?       # Líka tilgangstenging
     | "þannig:ao" "að:st"
 
 Orsakartenging →
@@ -421,6 +439,12 @@ Orsakartenging →
     | 'af:fs'_þgf 'það:pfn'_hk_þgf_et "að:st"?
     | 'vegna:fs'_ef 'það:pfn'_hk_ef_et "að:st"
     | 'með:fs'_þgf'það:pfn'_hk_þgf_et "að:st"
+    | "þar:ao" "sem:st"
+
+Skilyrðistenging →
+    "ef:st" "að:st"?
+    | "svo:ao" "framarlega:ao" "sem:st"
+    | "nema:st"
 
 # Setningar með frumlagi
 
