@@ -81,6 +81,11 @@
    .node-nonterminal.S-COND rect,
    .node-nonterminal.S-CONS rect,
    .node-nonterminal.S-REF rect,
+   .node-nonterminal.S-ADV-TEMP rect,
+   .node-nonterminal.S-ADV-PURP rect,
+   .node-nonterminal.S-ADV-ACK rect,
+   .node-nonterminal.S-ADV-CONS rect,
+   .node-nonterminal.S-ADV-CAUSE rect,
    .node-nonterminal.S-EXPLAIN rect,
    .node-nonterminal.S-PREFIX rect,
    .node-nonterminal.S-QUOTE rect
@@ -657,7 +662,8 @@ function d3_update(source) {
          .attr("width", function(d) {
             // Select one of three widths depending on the text length
             return d.data.text.length < 11 ? 64 :
-               (d.data.text.length < 14 ? 80 : 100);
+               (d.data.text.length < 14 ? 80 :
+               (d.data.text.length < 20 ? 100 : 128));
          })
          .attr("height", 20)
          .attr("transform", function(d) {

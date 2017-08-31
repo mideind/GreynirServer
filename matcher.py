@@ -117,6 +117,11 @@ _DEFAULT_NT_MAP = {
     "Tilvitnun" : "S-QUOTE",
     "Forskeyti" : "S-PREFIX",
     "EfÞegar" : "S-PREFIX",
+    "Tíðarsetning" : "S-ADV-TEMP",
+    "Tilgangssetning" : "S-ADV-PURP",
+    "Viðurkenningarsetning" : "S-ADV-ACK",
+    "Afleiðingarsetning" : "S-ADV-CONS",
+    "Orsakarsetning" : "S-ADV-CAUSE",
     "Nl" : "NP",
     "EfLiður" : "NP-POSS",
     "EfLiðurForskeyti" : "NP-POSS",
@@ -163,6 +168,11 @@ _DEFAULT_ID_MAP = {
     "S-EXPLAIN" : dict(name = "Skýring"), # Explanation
     "S-QUOTE" : dict(name = "Tilvitnun"), # Quote at end of sentence
     "S-PREFIX" : dict(name = "Forskeyti"), # Prefix in front of sentence
+    "S-ADV-TEMP" : dict(name = "Tíðarsetning"), # Adverbial temporal phrase
+    "S-ADV-PURP" : dict(name = "Tilgangssetning"), # Adverbial purpose phrase
+    "S-ADV-ACK" : dict(name = "Viðurkenningarsetning"), # Adverbial acknowledgement phrase
+    "S-ADV-CONS" : dict(name = "Afleiðingarsetning"), # Adverbial consequence phrase
+    "S-ADV-CAUSE" : dict(name = "Orsakarsetning"), # Adverbial causal phrase
     "VP-SEQ" : dict(name = "Sagnliður"),
     "VP" : dict(name = "Sögn", overrides = "VP-SEQ"),
     "VP-PP" : dict(name = "Sögn", overrides = "PP"),

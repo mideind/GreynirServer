@@ -358,21 +358,27 @@ Afleiðingarsetning → Afleiðingartenging BeygingarliðurÁnUmröðunar
 Orsakarsetning → Orsakartenging BeygingarliðurÁnUmröðunar
 
 BeygingarliðurÁnUmröðunar →
+    BeygingarliðurÁnUmröðunar/tala/pers/kyn
+
+BeygingarliðurÁnUmröðunar/tala/pers/kyn →
     Frumlag/pers/tala/kyn FrumlagsInnskot/tala/pers/kyn? AtviksliðurEinkunn*
         SagnRuna/tala/pers/kyn Sjálfur/tala/kyn? KommaTengiliður/tala/pers/kyn?
         Samanburður? Upptalning/tala?
 
-    # Frumlag fyrir aftan sögn:
-    # 'Gengu þau galvösk á Esjuna þrátt fyrir veðurútlitið'
-    # 'Bersýnilega fór Jón sterki í bága við reglurnar með þessu'
-    # 'Undir húsinu voru illa farnar skolpleiðslur'
-    # 'Í skólanum borðaði Gunna aldrei matinn eftir þetta'
-    # 'Í grein sinni opinberaði Hannes niðurstöðu sína'
-    # Ath. að frumlag 3p. et. getur verið falið:
-    # (? Það virtist mér í dag kettinum líða betur)
-    # 'Í dag virtist mér kettinum líða betur'
-    # 'Eins og Páll er ég mjög ósáttur við þetta'
+# Frumlag fyrir aftan sögn:
+# 'Gengu þau galvösk á Esjuna þrátt fyrir veðurútlitið'
+# 'Bersýnilega fór Jón sterki í bága við reglurnar með þessu'
+# 'Undir húsinu voru illa farnar skolpleiðslur'
+# 'Í skólanum borðaði Gunna aldrei matinn eftir þetta'
+# 'Í grein sinni opinberaði Hannes niðurstöðu sína'
+# Ath. að frumlag 3p. et. getur verið falið:
+# (? Það virtist mér í dag kettinum líða betur)
+# 'Í dag virtist mér kettinum líða betur'
+# 'Eins og Páll er ég mjög ósáttur við þetta'
 BeygingarliðurMeðUmröðun →
+    BeygingarliðurMeðUmröðun/tala/pers/kyn
+
+BeygingarliðurMeðUmröðun/tala/pers/kyn →
     SetningForskeyti? SagnHluti/tala/pers/kyn Upptalning/tala?
 
 # Mögulegar tengingar í tíðarsetningum
@@ -392,24 +398,23 @@ Tíðartenging →
     | "meðan:st"
     | "þangað:ao" "til:st" "að:st"?
     | "á_sama_tíma:ao" "og:st"
-    | "þangað:ao" "til:fs" "að:st"?
 
-Tilgangstenging → "til:fs" 'það:pfn'_hk_ef_et "að:st"
+Tilgangstenging → 'til:fs'_ef 'það:pfn'_hk_ef_et "að:st"
 
 Viðurkenningartenging →
     "enda:st" "þótt:st" "að:st"?
-    | "jafnvel:st"? "þótt:st" "að:st"?
-    | "þrátt_fyrir:ao" 'það:pfn'_hk_þf_et? "að:st"?
-    | "þó" "að:st"?
+    | "jafnvel:ao"? "þótt:st" "að:st"?
+    | "jafnvel:ao"? "þó:st" "að:st"?
+    | "þrátt_fyrir:ao" 'það:pfn'_hk_þf_et? "að:st"
 
 Afleiðingartenging →
     "svo:ao" "að:st"?
-    | "þannig:ao" "að:st"?
+    | "þannig:ao" "að:st"
 
 Orsakartenging →
     "fyrst:ao" "að:st"?
-    | 'sök'_kvk_þf_ft 'það:pfn'_hk_ef_et "að:st"
-    | 'sök'_kvk_þgf_ft 'það:pfn'_hk_ef_et "að:st"
+    | 'sökum:fs'_ef 'það:pfn'_hk_ef_et "að:st"
+    | 'sakir:fs'_ef 'það:pfn'_hk_ef_et "að:st"
     | 'úr:fs'_þgf 'það:pfn'_hk_þgf_et "að:st"
     | "þar_eð:st"
     | "þar:ao" "sem:st"
@@ -450,7 +455,6 @@ $tag(purge_verb) SagnRuna/tala/pers/kyn
 SagnInnskot →
     FsAtv
     | ÁttFs # suður götuna
-
 
 # Gefa aukabónus fyrir forsetningar innan SagnInnskots ef þær passa við umlykjandi sögn
 $tag(enable_prep_bonus) SagnInnskot
@@ -534,21 +538,10 @@ Setning/tala/pers/kyn →
     # 'Rúmlega helmingur tvítugra karlmanna vill flugvöll í Vatnsmýri'
     # 'Ég bara spyr [sjálf]'
     # 'Allir mega koma til landsins [sjálfir] sem það vilja'
-    Frumlag/pers/tala/kyn FrumlagsInnskot/tala/pers/kyn? AtviksliðurEinkunn*
-        SagnRuna/tala/pers/kyn Sjálfur/tala/kyn? KommaTengiliður/tala/pers/kyn?
-        Samanburður? Upptalning/tala?
+    BeygingarliðurÁnUmröðunar/tala/pers/kyn
 
-    # Frumlag fyrir aftan sögn:
-    # 'Gengu þau galvösk á Esjuna þrátt fyrir veðurútlitið'
-    # 'Bersýnilega fór Jón sterki í bága við reglurnar með þessu'
-    # 'Undir húsinu voru illa farnar skolpleiðslur'
-    # 'Í skólanum borðaði Gunna aldrei matinn eftir þetta'
-    # 'Í grein sinni opinberaði Hannes niðurstöðu sína'
-    # Ath. að frumlag 3p. et. getur verið falið:
-    # (? Það virtist mér í dag kettinum líða betur)
-    # 'Í dag virtist mér kettinum líða betur'
-    # 'Eins og Páll er ég mjög ósáttur við þetta'
-    | SetningForskeyti? SagnHluti/tala/pers/kyn Upptalning/tala?
+    # Frumlag fyrir aftan sögn
+    | BeygingarliðurMeðUmröðun/tala/pers/kyn
 
     # 'Það fara 40 mínútur í pappírsvinnuna'
     | 'það:pfn'_hk_nf_et SagnHluti/tala/pers/kyn Upptalning/tala?
