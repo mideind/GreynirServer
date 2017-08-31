@@ -149,6 +149,7 @@ _DEFAULT_NT_MAP = {
     "ÖfugurSagnliður" : "VP",
     "SagnHluti" : "VP-SEQ",
     "SagnliðurVh" : "VP",
+    "LoTengtSögn" : "ADJP",
 }
 
 # subject_to: don't push an instance of this if the
@@ -190,6 +191,8 @@ _DEFAULT_ID_MAP = {
         subject_to = { "ADVP" }),
     "ADVP-DATE" : dict(name = "Tímasetning", overrides = "ADVP"),
     "PP" : dict(name = "Forsetningarliður", overrides = "ADVP"),
+    "ADJP" : dict(name = "Lýsingarliður",
+        subject_to = { "ADJP" }),
 }
 
 _DEFAULT_TERMINAL_MAP = {

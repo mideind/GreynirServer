@@ -3553,6 +3553,10 @@ LoSamanbFleiri/fall/tala/kyn →
     | "ýmist:st" LoEðaFs/fall/tala/kyn "eða:st" LoEðaFs/fall/tala/kyn
     | Samanburðarmerki "bæði:st" LoEðaFs/fall/tala/kyn "og:st" LoEðaFs/fall/tala/kyn LokatáknEðaKomma
     | "bæði:st" LoEðaFs/fall/tala/kyn "og:st" LoEðaFs/fall/tala/kyn
+    # Við vorum flest [,] ef ekki öll [,] hrifin af söng Maríu
+    | LoEðaFs/fall/tala/kyn "ef:st" "ekki:ao" LoEðaFs/fall/tala/kyn
+    | LoEðaFs/fall/tala/kyn "," "ef:st" "ekki:ao" LoEðaFs/fall/tala/kyn LokatáknEðaKomma
+    | LoEðaFs/fall/tala/kyn "-:em" "ef:st" "ekki:ao" LoEðaFs/fall/tala/kyn "-:em"
 
 $score(+4) LoSamanbFleiri/fall/tala/kyn
 
@@ -4072,7 +4076,12 @@ TalaTímabil_þf/tala/kyn →
     Töluorð_þf/tala/kyn? Tímabil_þf/kyn/tala # sex vikur, mánuð, tvö ár
 
 Tímabil_þf →
-    TímabilsEinkunn_þf/tala/kyn Tímabil_þf/kyn/tala Tímabil_ef? # (Hann kom hér) alla daga, suma vikudaga, nokkur ár, eina vikuna
+    TímabilsEinkunn_þf/tala/kyn Tímabil_þf/kyn/tala OgTímabil_þf/tala? Tímabil_ef? # (Hann kom hér) alla daga, suma vikudaga, nokkur ár, eina vikuna
+
+# síðustu daga og vikur
+# sum ár og daga
+OgTímabil_þf/tala →
+    "og:st" Tímabil_þf/kyn/tala
 
 Tímabil_ef →
     'ár:hk'_ef_et_gr            # ársins
