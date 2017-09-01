@@ -122,6 +122,7 @@ _DEFAULT_NT_MAP = {
     "Viðurkenningarsetning" : "S-ADV-ACK",
     "Afleiðingarsetning" : "S-ADV-CONS",
     "Orsakarsetning" : "S-ADV-CAUSE",
+    "Skilyrðissetning" : "S-ADV-COND",
     "Nl" : "NP",
     "EfLiður" : "NP-POSS",
     "EfLiðurForskeyti" : "NP-POSS",
@@ -174,6 +175,7 @@ _DEFAULT_ID_MAP = {
     "S-ADV-ACK" : dict(name = "Viðurkenningarsetning"), # Adverbial acknowledgement phrase
     "S-ADV-CONS" : dict(name = "Afleiðingarsetning"), # Adverbial consequence phrase
     "S-ADV-CAUSE" : dict(name = "Orsakarsetning"), # Adverbial causal phrase
+    "S-ADV-COND" : dict(name = "Skilyrðissetning"), # Adverbial conditional phrase
     "VP-SEQ" : dict(name = "Sagnliður"),
     "VP" : dict(name = "Sögn", overrides = "VP-SEQ"),
     "VP-PP" : dict(name = "Sögn", overrides = "PP"),

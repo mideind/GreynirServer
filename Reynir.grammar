@@ -4077,10 +4077,29 @@ Aldur →
 # Gefa plús fyrir dagsetningar, tímasetningar og aldur
 $score(+6) Dagsetning Tímasetning Aldur
 
-TímaAfstæði_þgf → "síðar:ao" | "seinna:ao" | "fyrr:ao" TímaEn? | "áður:ao" TímaEn?
-TímaAfstæði_þf → "áður:ao" TímaEn? | "eftir:ao" TímaAð? | 'fyrir:fs'_þf Nl_þf | "á:ao" "undan:ao" | "á:ao" "eftir:ao"
-TímaForskeyti → "löngu:lo" | "stuttu:lo" | "töluverðu:lo" | "örstuttu:lo"
-    | "rétt:ao" | "örskömmu:lo" | Tímabil_þgf/kyn/tala
+TímaAfstæði_þgf →
+    "síðar:ao"
+    | "seinna:ao"
+    | "fyrr:ao" TímaEn?
+    | "áður:ao" TímaEn?
+
+TímaAfstæði_þf →
+    "áður:ao" TímaEn?
+    | "eftir:ao" TímaAð?
+    | 'fyrir:fs'_þf Nl_þf
+    | "á:ao" "undan:ao"
+    | "á:ao" "eftir:ao"
+    | 'sem_um_ræðir:ao' # kvöldið/daginn sem um ræðir
+
+TímaForskeyti →
+    "löngu:lo"
+    | "stuttu:lo"
+    | "töluverðu:lo"
+    | "örstuttu:lo"
+    | "rétt:ao"
+    | "örskömmu:lo"
+    | Tímabil_þgf/kyn/tala
+
 TímaAfstæði → "áður:ao" TímaEn | "eftir:ao" TímaAð
 
 $score(+2) TímaForskeyti
