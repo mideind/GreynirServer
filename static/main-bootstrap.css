@@ -321,6 +321,13 @@ div#output li {
    line-height: 1.6em;
 }
 
+div#column {
+   /* Keep columns reasonably narrow for ease of reading */
+   max-width: 720px;
+   margin-left: 0px;
+   margin-right: auto;
+}
+
 tr.topitem, tr.article {
    cursor: pointer;
 }

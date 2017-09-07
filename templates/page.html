@@ -29,9 +29,11 @@
       </div>
    </div>
 
-   <div id="metadata">
-      <!-- Article metadata -->
-      <div id="topics">
+   <div id="column">
+
+      <div id="metadata">
+         <!-- Article metadata -->
+         <div id="topics">
 
 {% set labelmap = {
       "business" : "label-primary",
@@ -48,30 +50,32 @@
 } %}
 
 {% for t in topics -%}
-         <span class="topic label {{ labelmap[t.id] }}"><span class="glyphicon glyphicon-tag"></span>{{ t.name }}</span>
+            <span class="topic label {{ labelmap[t.id] }}"><span class="glyphicon glyphicon-tag"></span>{{ t.name }}</span>
 {%- endfor -%}
-      </div>
-      <h1 id="meta-heading">{{ article.heading }}</h1>
-      <h3 id="meta-author" class="text-muted">{{ article.author }}</h3>
-      <h4 id="meta-timestamp" class="text-muted">{{ article.timestamp | format_ts }}</h4>
-      <h5 id="meta-url">
-         <a href="{{ article.url }}" target="_blank">Upphafleg grein
+         </div>
+         <h1 id="meta-heading">{{ article.heading }}</h1>
+         <h3 id="meta-author" class="text-muted">{{ article.author }}</h3>
+         <h4 id="meta-timestamp" class="text-muted">{{ article.timestamp | format_ts }}</h4>
+         <h5 id="meta-url">
+            <a href="{{ article.url }}" target="_blank">Upphafleg grein
 {%- if article.root_domain -%}
-            <img src="{{ url_for('static', filename = article.root_domain + '.ico') }}" width="16" height="16">
+               <img src="{{ url_for('static', filename = article.root_domain + '.ico') }}" width="16" height="16">
 {%- endif -%}
-         </a>
-         <button type="button" class="btn btn-warning refresh" title="Endurgreina"><span class="glyphicon glyphicon-restart"></span></button>
-      </h5>
-   </div>
+            </a>
+            <button type="button" class="btn btn-warning refresh" title="Endurgreina"><span class="glyphicon glyphicon-restart"></span></button>
+         </h5>
+      </div>
 
-   <div id="help">
-      <h3 class="help"><small>Smelltu á málsgrein til að sjá trjágreiningu hennar</small></h3>
-   </div>
+      <div id="help">
+         <h3 class="help"><small>Smelltu á málsgrein til að sjá trjágreiningu hennar</small></h3>
+      </div>
 
-   <div id="result">
-      <!-- Result of analysis goes here -->
-      <p>Sæki grein... <span class="glyphicon glyphicon-restart glyphicon-spin"></span></p>
-   </div>
+      <div id="result">
+         <!-- Result of analysis goes here -->
+         <p>Sæki grein... <span class="glyphicon glyphicon-restart glyphicon-spin"></span></p>
+      </div>
+
+   </div> <!-- column -->
 
    <div id="register">
       <!-- Name register goes here -->
