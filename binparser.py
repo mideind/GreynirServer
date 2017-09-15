@@ -740,12 +740,15 @@ class BIN_Token(Token):
       
         def matcher_spao(m):
             """ Interrogative adverbs """
-            return m.ordfl == "ao" and m.stofn in BIN_Token._SPAO
+            if m.ordfl == "ao" and m.stofn in BIN_Token._SPAO:
+                return True
+            else:
+                return False
 
         def matcher_eo(m):
             """ 'Einkunnarorð': adverb (atviksorð) that is not the same
                 as a preposition (forsetning) or pronoun (fornafn) """
-            if m.ordfl != "ao" or matcher_spao(m):
+            if "ao" not in m.ordfl or matcher_spao(m):
                 return False
             # This token can match an adverb:
             # Cache whether it can also match a preposition
@@ -765,7 +768,7 @@ class BIN_Token(Token):
 
         def matcher_ao(m):
             """ Adverbs, excluding eo and spao """
-            if (m.ordfl != "ao" or m.ordfl != "ao_mst") or matcher_spao(m):
+            if "ao" not in m.ordfl or matcher_spao(m):
                 return False
             else:
                 return True
