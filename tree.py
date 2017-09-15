@@ -51,6 +51,7 @@ BIN_ORDFL = {
     "fs" : { "fs" },
     "ao" : { "ao" },
     "eo" : { "ao" },
+    "spao" : { "ao"},
     "töl" : { "töl", "to" },
     "to" : { "töl", "to" },
     "fn" : { "fn" },
@@ -607,7 +608,7 @@ class TerminalNode(Node):
     """ A Node corresponding to a terminal """
 
     # Undeclinable word categories
-    _NOT_DECLINABLE = frozenset([ "ao", "eo", "fs", "st", "stt", "nhm" ])
+    _NOT_DECLINABLE = frozenset([ "ao", "eo", "spao", "fs", "st", "stt", "nhm" ])
 
     _TD = dict() # Cache of terminal descriptors
 

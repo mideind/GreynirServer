@@ -60,20 +60,6 @@ _TEST_NT_MAP = { # Til að prófa í parse_text_to_bracket_form()
     "BeygingarliðurÁnUmröðunar" : "BL",
     "BeygingarliðurMeðUmröðun" : "BL",
 
-
-#    "SetningSo" : "V", # Breytt
-#    "SagnRuna" : "V", # Breytt
-#    "NhLiðir" : "V", # Breytt
-#    "SagnliðurÁnF" : "V", # Breytt
-#    "ÖfugurSagnliður" : "V", # Breytt
-#    "SagnHluti" : "V", # Breytt
-#    "SagnliðurVh" : "V", # Breytt
-#    "HjSögnLhÞt" : "V",    # Nýtt
-#    "EinSögn" : "V",       # Nýtt
-#    "HafaGetaFá" : "V",
-#    "HjSögn" : "V",         # Til skoðunar; þarf að einangra fremsta undirliði
-#    "HjSögnNh" : "V",
-
     "FsMeðFallstjórn" : "PP",
 
     "Nl" : "NP",
@@ -111,27 +97,37 @@ _TEST_TERMINAL_MAP = {
     # To specify the creation of intermediate nonterminals
     # for particular terminals, put the first part of the terminal
     # name here
-    "ártal" : "NUM",
     "fs" : "P",
+
     "no" : "N",
     "hk" : "N",
     "kk" : "N",
     "kvk" : "N",
+    "fyrirtæki" : "N",
+
     "fn" : "PRON",
     "pfn" : "PRON", # Taka sérstaklega fyrir?
     "abfn" : "PRON",
+
     "so" : "V",
+
     "ao" : "ADV",
+    "spao" : "ADV",
+    "eo" : "ADV", # Skoða betur
+
     "lo" : "ADJ",
+    "raðnr" : "ADJ", # Raðtölur; skgr. frekar sem NUM?   Tilbrigði 1.1 - Setja ADJ í stað NUM
+
+    "ártal" : "NUM",
     "töl" : "NUM",
     "tala" : "NUM",
     "ártal" : "NUM",
-    "eo" : "ADV", # Skoða betur
+
     "st" : "C",
     "stt" : "C", # Skilgreina ítarlegar?
+
     "nhm" : "INF", # Nafnháttarmerki
-    "raðnr" : "ADJ", # Raðtölur; skgr. frekar sem NUM?   Tilbrigði 1.1 - Setja ADJ í stað NUM
-    "fyrirtæki" : "N",
+
     "gr" : "DET", # Tilbrigði 2.1
 }
 

@@ -108,7 +108,7 @@ _DEFAULT_NT_MAP = {
     "SetningSkilyrði" : "S",
     "SetningUmAðRæða" : "S",
     "StViðtenging" : "S",
-    "Tengisetning" : "S-REF",
+    "Tengiliður" : "S-REF",
     "OgTengisetning" : "S-REF",
     "Skilyrði" : "S-COND",
     "Afleiðing" : "S-CONS",
@@ -116,13 +116,16 @@ _DEFAULT_NT_MAP = {
     "FrumlagsInnskot" : "S-EXPLAIN",
     "Tilvitnun" : "S-QUOTE",
     "Forskeyti" : "S-PREFIX",
-    "EfÞegar" : "S-PREFIX",
+    #"EfÞegar" : "S-PREFIX",
     "Tíðarsetning" : "S-ADV-TEMP",
     "Tilgangssetning" : "S-ADV-PURP",
     "Viðurkenningarsetning" : "S-ADV-ACK",
     "Afleiðingarsetning" : "S-ADV-CONS",
     "Orsakarsetning" : "S-ADV-CAUSE",
     "Skilyrðissetning" : "S-ADV-COND",
+    "Skýringarsetning" : "S-THT",
+    "Spurnaraukasetning" : "S-QUE",
+    "Spurnarsetning" : "S-QUE",
     "Nl" : "NP",
     "EfLiður" : "NP-POSS",
     "EfLiðurForskeyti" : "NP-POSS",
@@ -151,6 +154,9 @@ _DEFAULT_NT_MAP = {
     "SagnHluti" : "VP-SEQ",
     "SagnliðurVh" : "VP",
     "LoTengtSögn" : "ADJP",
+    "BeygingarliðurÁnF" : "IP",
+    "BeygingarliðurÁnUmröðunar" : "IP",
+    "BeygingarliðurMeðUmröðun" : "IP",
 }
 
 # subject_to: don't push an instance of this if the
@@ -162,10 +168,10 @@ _DEFAULT_NT_MAP = {
 _DEFAULT_ID_MAP = {
     "P" : dict(name = "Málsgrein"),
     "S" : dict(name = "Setning",
-        subject_to = { "S", "S-EXPLAIN", "S-REF" }),
+        subject_to = { "S", "S-EXPLAIN", "S-REF", "IP" }),
     "S-COND" : dict(name = "Skilyrði", overrides = "S"), # Condition
     "S-CONS" : dict(name = "Afleiðing", overrides = "S"), # Consequence
-    "S-REF" : dict(name = "Tengisetning", overrides = "S",
+    "S-REF" : dict(name = "Tilvísunarsetning", overrides = "S",
         subject_to = { "S-REF" }), # Reference
     "S-EXPLAIN" : dict(name = "Skýring"), # Explanation
     "S-QUOTE" : dict(name = "Tilvitnun"), # Quote at end of sentence
@@ -176,6 +182,8 @@ _DEFAULT_ID_MAP = {
     "S-ADV-CONS" : dict(name = "Afleiðingarsetning"), # Adverbial consequence phrase
     "S-ADV-CAUSE" : dict(name = "Orsakarsetning"), # Adverbial causal phrase
     "S-ADV-COND" : dict(name = "Skilyrðissetning"), # Adverbial conditional phrase
+    "S-THT" : dict(name = "Skýringarsetning"),  # Complement clause
+    "S-QUE" : dict(name = "Spurnarsetning"),    # Question clause
     "VP-SEQ" : dict(name = "Sagnliður"),
     "VP" : dict(name = "Sögn", overrides = "VP-SEQ"),
     "VP-PP" : dict(name = "Sögn", overrides = "PP"),
@@ -195,6 +203,7 @@ _DEFAULT_ID_MAP = {
     "PP" : dict(name = "Forsetningarliður", overrides = "ADVP"),
     "ADJP" : dict(name = "Lýsingarliður",
         subject_to = { "ADJP" }),
+    "IP" : dict(name = "Beygingarliður"),   # Inflectional phrase
 }
 
 _DEFAULT_TERMINAL_MAP = {
