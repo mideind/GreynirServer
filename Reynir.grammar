@@ -1473,7 +1473,7 @@ SögnMeðF_0/tala/pers/kyn →
     | HjSögnSkuluMunu/tala/pers NlFrumlag_nf/tala/pers/kyn VeraVerðaAtv? HreinSögn_lhþt/tala/kyn
 
 SögnMeðF_nh/tala/pers/kyn →
-    HjSögnNh/tala/pers NlFrumlag_nf/tala/pers/kyn ao? HreinSögn_nh/tala/kyn # (Í stað takka) vill Apple koma fyrir snertiskynjurum
+    HjSögnNh/tala/pers NlFrumlag_nf/tala/pers/kyn Atviksliður? HreinSögn_nh/tala/kyn # (Í stað takka) vill Apple koma fyrir snertiskynjurum
 
 $score(+4) SögnMeðF_nh/tala/pers/kyn
 
@@ -1599,7 +1599,7 @@ Sögn_1/tala/pers/kyn →
     # (Við) einsetjum okkur að vinna með öðrum þjóðum
     # (Sveitarfélögin) ráða sjálf málefnum sínum
     # (Hún) sagði lafmóð/sjálf söguna
-    so_1/fall/tala/pers OgSögn_1/fall/tala/pers* ao? FsRuna? LoTengtSögn_nf/tala/kyn? NlBeintAndlag/fall NhFylling?
+    so_1/fall/tala/pers OgSögn_1/fall/tala/pers* FsAtv? LoTengtSögn_nf/tala/kyn? NlBeintAndlag/fall NhFylling?
 
     # (Ég tel/segi/álít) Pál vera dagfarsprúðan mann
     | So_1_þf_nh/tala/pers OgSögn_1_þf_nh/tala/pers* SagnarBotn
