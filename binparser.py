@@ -202,9 +202,10 @@ class BIN_Token(Token):
     # '... kom að utan'
     # '... bjó fyrir vestan'
     # '... fór vestur'
+    # '... hefur því áhrif'
 
     _NOT_NOT_EO = frozenset([ "inn", "eftir", "til", "upp", "um", "fram", "nær", "nærri",
-        "út", "meðal", "neðan", "jafnframt", "samt", "af", "fyrir"])
+        "út", "meðal", "neðan", "jafnframt", "samt", "af", "fyrir", "því"])
 
     # Words that are not eligible for interpretation as proper names, even if they are capitalized
     _NOT_PROPER_NAME = frozenset([ "ég", "þú", "hann", "hún", "það", "við", "þið", "þau",

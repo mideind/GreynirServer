@@ -360,6 +360,8 @@ Atvikssetning →
 
 $score(+15) Atvikssetning
 
+$tag(begin_prep_scope) Atvikssetning # Nýtt undirtré fyrir tengingu sagnar og forsetningar
+
 Tíðarsetning → Tíðartenging BeygingarliðurÁnUmröðunar
 
 Tilgangssetning → Tilgangstenging BeygingarliðurÁnUmröðunar
@@ -599,12 +601,14 @@ SetningUmAðRæða →
 $score(+20) SetningUmAðRæða # Mjög líklega réttur skilningur á þessari orðaröð
 
 SetningForskeyti →
-    SagnInnskot
-    | "eins:ao" "og:st" Nl_nf       # 'Eins og Páll borða ég ekki smjör'
+    SagnInnskot | SamanburðarForskeyti
+
+SamanburðarForskeyti →
+    "eins:ao" "og:st" Nl_nf         # 'Eins og Páll borða ég ekki smjör'
     | 'líkt_og:st' Nl_nf            # 'Líkt og bakarar eru smiðir óhressir með þetta'
 
 # Hvetja til forskeyta fremur en samtenginga, ef val er þar á milli
-$score(+10) SetningForskeyti
+$score(+10) SamanburðarForskeyti
 
 # Sagnir innan forskeytis hafa ekki áhrif á tengsl forsetninga við sagnir í setningunni sjálfri
 $tag(purge_verb) SetningForskeyti
@@ -735,7 +739,7 @@ SetningAukafall →
 
     # Öfug orðaröð: 'Eignarrétti fylgja skyldur' (í stað 'Skyldur fylgja eignarrétti')
     # 'Þetta skrifar Bjarni á Facebook-síðu sinni og bendir [galvaskur] á frammistöðu stjórnarinnar'
-    | Nl/aukafall So_1/aukafall/tala/pers FsRuna? NlFrumlag_nf/tala/pers/kyn SagnInnskot? SagnFramhald/tala/pers/kyn*
+    | NlBeintAndlag/aukafall So_1/aukafall/tala/pers FsRuna? NlFrumlag_nf/tala/pers/kyn SagnInnskot? SagnFramhald/tala/pers/kyn*
 
     # Þessar skuldir hefur 365 ekki greitt
     # Þessa bók hef ég aldrei skilið
@@ -792,13 +796,13 @@ SetningAukafall →
     | NlFrumlag_þgf HjSögnMegiSkuli_et_p3 FsAtv? So_2_nh_þgf/fall NlBeintAndlag/fall AtvFsAuka?
 
     # Öllum skal [ekki] standa [til boða] menntun (Menntun skal standa öllum til boða)
-    | Nl/aukafall HjSögnMegiSkuli_et_p3 FsAtv? So_1_nh/aukafall FsAtv? NlFrumlag_nf AtvFsAuka?
+    | NlBeintAndlag/aukafall HjSögnMegiSkuli_et_p3 FsAtv? So_1_nh/aukafall FsAtv? NlFrumlag_nf AtvFsAuka?
 
     # Mér/okkur/ykkur/börnunum finnst/þykir [mörgum [það]] [ekki] skemmtilegt [að borða góðan mat / hérna í kvöld]
     | NlFrumlag_þgf/tala/kyn HjSögnFinnst FinnstÞað/tala/kyn? FinnstAndlag NhFyllingEðaAtv
 
     # Mér hefur [ekki] þótt [það] vont að sofa á nýju dýnunni
-    | Nl_þgf HjSögn_et_p3 FsAtv? HjSögnFinnst_sagnb 'það:pfn'_hk_nf_et? FinnstAndlag NhFyllingEðaAtv
+    | NlFrumlag_þgf HjSögn_et_p3 FsAtv? HjSögnFinnst_sagnb 'það:pfn'_hk_nf_et? FinnstAndlag NhFyllingEðaAtv
 
     # Þann auð eigum við [ekki] að nýta (í þágu lands og þjóðar)
     | NlBeintAndlag/aukafall so_0/tala/pers NlFrumlag_nf/tala/pers AtvFs? nhm So_1_nh/aukafall FsAtv?
@@ -2613,7 +2617,7 @@ VeikSögnLhÞt/tala/fall/kyn →
 
 EinVeikSögnLhÞt/tala/fall/kyn → so_lhþt/tala/fall/kyn
 
-$score(-4) EinVeikSögnLhÞt/tala/fall/kyn
+$score(-6) EinVeikSögnLhÞt/tala/fall/kyn
 
 # Meðhöndla "árið 2012" og "árin 2013 og 2014" með háum forgangi
 
@@ -3590,6 +3594,11 @@ LoEðaFs/fall/tala/kyn →
 MiðstigForskeyti →
     'munur:kk'_þgf_et           # mun meira
     | 'mikill:lo'_sb_hk_þgf_et  # miklu meira
+    | Sinnum                    # x sinnum hraðar
+    | 'tvisvar_sinnum:ao'
+    | 'þrisvar_sinnum:ao'
+    | 'fjórum_sinnum:ao'
+    | 'mörgum_sinnum:ao'
 
 $score(+2) MiðstigForskeyti
 
@@ -3885,9 +3894,16 @@ UndirEins →
 $score(+4) UndirEins
 
 Sinnum →
-    töl_ft_hk_þgf "sinnum:hk"          # tvisvar, þrisvar og fjórum sinnum er skilgreint í Main.conf
-    | tala_ft_hk_þgf "sinnum:hk"
-    | tala_et_hk_þgf "sinni:hk"
+    # tvisvar, þrisvar og fjórum sinnum er skilgreint í Main.conf
+    TalaOg? töl_ft_hk_þgf 'sinn:hk'_þgf_ft      # tuttugu og fimm sinnum
+    | tala_ft_hk_þgf 'sinn:hk'_þgf_ft           # 5 sinnum
+    | tala_et_hk_þgf 'sinn:hk'_þgf_et           # 101 sinni
+    | TalaOg 'tvisvar_sinnum:ao'
+    | TalaOg 'þrisvar_sinnum:ao'
+    | TalaOg 'fjórum_sinnum:ao'
+
+TalaOg →
+    töl_ft_hk_þgf "og:st"
 
 $score(+24) Sinnum
 
@@ -4036,6 +4052,7 @@ Dagsetning →
     | Tímabil_ft_þgf/kyn "saman:ao" # Nefndin fundaði ekki mánuðum saman
     | Tímabil_þf/kyn/tala TímaAfstæði_þf # Vikuna áður / Daginn eftir / áratugina á undan
     | TímaForskeyti? TímaAfstæði # [viku/löngu] áður en krónan féll / [ári/stuttu] eftir að landið öðlaðist sjálfstæði
+    | TímaFyrrSíðar # fyrr á árinu, síðar í dag
 
     | "svo:ao" Tímabil_þgf_ft 'skipta:so'_gm_fh_et_p3 # svo mánuðum skiptir/skipti
 
@@ -4102,8 +4119,32 @@ TímaForskeyti →
 
 TímaAfstæði → "áður:ao" TímaEn | "eftir:ao" TímaAð
 
+FyrrSíðar → "fyrr:ao" | "síðar:ao"
+
+TímaFyrrSíðar →
+    FyrrSíðar 'í_dag:ao'                    # fyrr/síðar í dag
+    | FyrrSíðar 'í:fs'_þgf FyrrSíðarÍ       # fyrr/síðar í vikunni/mánuðinum
+    | FyrrSíðar 'á:fs'_þgf FyrrSíðarÁ       # fyrr/síðar á árinu
+
+FyrrSíðarÍ →
+    'vika:kvk'_þgf_et_gr                        # vikunni
+    | 'þessi:fn'_kvk_þgf_et 'vika:kvk'_þgf_et   # þessari viku
+    | 'sá:fn'_kvk_þgf_et 'vika:kvk'_þgf_et      # þeirri viku
+    | 'sami:fn'_kvk_þgf_et 'vika:kvk'_þgf_et    # sömu viku
+    | 'mánuður:kk'_þgf_et_gr                    # mánuðinum
+    | 'þessi:fn'_kk_þgf_et 'mánuður:kk'_þgf_et  # þessum mánuði
+    | 'sá:fn'_kk_þgf_et 'mánuður:kk'_þgf_et     # þeim mánuði
+    | 'sami:fn'_kk_þgf_et 'mánuður:kk'_þgf_et   # sama mánuði
+
+FyrrSíðarÁ →
+    'ár:hk'_þgf_et_gr                           # árinu
+    | 'þessi:fn'_hk_þgf_et 'ár:hk'_þgf_et       # þessu ári
+    | 'sá:fn'_hk_þgf_et 'ár:hk'_þgf_et          # því ári
+    | 'sami:fn'_hk_þgf_et 'ár:hk'_þgf_et        # sama ári
+
 $score(+2) TímaForskeyti
 $score(+4) TímaAfstæði
+$score(+4) TímaFyrrSíðar
 
 TímaEn →
     "en:st" "að:st"? HreinYfirsetning

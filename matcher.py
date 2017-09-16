@@ -99,7 +99,7 @@ from itertools import chain
 
 _DEFAULT_NT_MAP = {
     "S0" : "P",
-    "HreinYfirsetning" : "S",
+    "HreinYfirsetning" : "S-MAIN",
     "Setning" : "S",
     "SetningSo" : "VP-SEQ",
     "SetningLo" : "S",
@@ -143,6 +143,7 @@ _DEFAULT_NT_MAP = {
     "SagnRuna" : "VP-SEQ",
     "Sagnliður" : "VP",
     "SagnliðurMeðF" : "VP",
+    "So" : "VP",
     # "SagnFramhald" : "VP",
     "SögnLhNt" : "VP-PP", # Present participle, lýsingarháttur nútíðar
     "NhLiðir" : "VP",
@@ -161,6 +162,8 @@ _DEFAULT_NT_MAP = {
 
 _DEFAULT_ID_MAP = {
     "P" : dict(name = "Málsgrein"),
+    "S-MAIN" : dict(name = "Setning", overrides = "S",
+        subject_to = { "S-MAIN" }),
     "S" : dict(name = "Setning",
         subject_to = { "S", "S-EXPLAIN", "S-REF" }),
     "S-COND" : dict(name = "Skilyrði", overrides = "S"), # Condition
@@ -177,7 +180,8 @@ _DEFAULT_ID_MAP = {
     "S-ADV-CAUSE" : dict(name = "Orsakarsetning"), # Adverbial causal phrase
     "S-ADV-COND" : dict(name = "Skilyrðissetning"), # Adverbial conditional phrase
     "VP-SEQ" : dict(name = "Sagnliður"),
-    "VP" : dict(name = "Sögn", overrides = "VP-SEQ"),
+    "VP" : dict(name = "Sögn", overrides = "VP-SEQ",
+        subject_to = { "VP" }),
     "VP-PP" : dict(name = "Sögn", overrides = "PP"),
     "NP" : dict(name = "Nafnliður",
         subject_to = { "NP-SUBJ", "NP-OBJ", "NP-IOBJ", "NP-PRD" }),

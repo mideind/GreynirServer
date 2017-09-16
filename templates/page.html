@@ -5,6 +5,28 @@
 
 <link href="{{ url_for('static', filename='main-bootstrap.css') }}" rel='stylesheet' type='text/css'>
 
+<link href="https://fonts.googleapis.com/css?family=Oswald:300,400" rel="stylesheet">
+
+<style>
+
+   h1#meta-heading {
+      font-family: 'Oswald', 'Open Sans', sans-serif;
+      font-weight: 400;
+      font-size: 40px;
+   }
+
+   h3#meta-author {
+      font-family: 'Oswald', 'Open Sans', sans-serif;
+      font-weight: 300;
+   }
+
+   h4#meta-timestamp {
+      font-weight: 400;
+      font-size: 16px;
+   }
+
+</style>
+
 {% endblock %}
 
 {% block content %}
@@ -30,6 +52,7 @@
    </div>
 
    <div id="column">
+      <!-- Article heading and content -->
 
       <div id="metadata">
          <!-- Article metadata -->

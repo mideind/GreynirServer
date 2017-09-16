@@ -78,6 +78,7 @@
    }
 
    .node-nonterminal.S rect,
+   .node-nonterminal.S-MAIN rect,
    .node-nonterminal.S-COND rect,
    .node-nonterminal.S-CONS rect,
    .node-nonterminal.S-REF rect,
@@ -305,7 +306,7 @@
          <!-- D3/SVG canvas for tree graph -->
 
          <div class="grid">
-            <div class="table-responsive">
+            <div class="table-responsive" id="canvas-container">
                <div id="canvas">
                   <!-- SVG stuff is inserted here -->
                </div>
@@ -564,6 +565,8 @@ function terminalOut(d) {
       return;
    $("div.info")
       .css("visibility", "hidden")
+      .css("left", 0)
+      .css("top", 0)
       .data("circle", null);
    var r = wrapTokenInfo(dd);
    if (r.class !== null)
@@ -782,6 +785,46 @@ function initMain(jQuery) {
       d3.select(self.frameElement).style("height", (height + margin.top + margin.bottom) + "px");
       d3_update(root);
    }
+
+   // Set up panning of the tree display
+
+   var scrollable = false;
+   var captured = false;
+   var originX;
+   var scrollX;
+
+   $('#canvas svg')
+      .mousedown(function(e) {
+         e.preventDefault();
+         if (scrollable) {
+            originX = e.clientX;
+            scrollX = $("#canvas").parent().scrollLeft();
+            captured = true;
+         }
+      })
+      .mouseup(function(e) {
+         if (captured) {
+            e.preventDefault();
+            captured = false;
+         }
+      })
+      .mousemove(function(e) {
+         if (!captured)
+            return;
+         e.preventDefault();
+         $("#canvas").parent()
+            .scrollLeft(Math.max(0, scrollX + (originX - e.clientX)))
+      });
+   // If the browser window is resized, figure out whether the canvas
+   // is scrollable or not
+   var cursorSetter =
+      function(e) {
+         scrollable = $("#canvas svg").width() > $("#canvas-container").width();
+         $("#canvas svg").css("cursor", scrollable ? "ew-resize" : "default");
+      };
+   $(window).resize(cursorSetter);
+   cursorSetter();
+
 }
 
 $(document).ready(initMain);

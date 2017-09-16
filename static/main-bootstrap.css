@@ -428,6 +428,10 @@ td.gender, th.gender {
    text-align: center;
 }
 
+td.name {
+   min-width: 200px;
+}
+
 #entity-body span.name,
 #entity-body span.entity
  {
@@ -1027,3 +1031,11 @@ td.explain {
    text-align: right;
 }
 
+div#canvas {
+   position: relative;
+   overflow: visible;
+}
+
+div#canvas svg {
+   cursor: default;
+}

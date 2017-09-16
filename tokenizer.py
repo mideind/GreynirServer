@@ -1738,7 +1738,13 @@ def disambiguate_phrases(token_stream):
                         cats = AmbigPhrases.get_cats(ix)
                         for t, cat in zip(tq, cats):
                             # Yield a new token with fewer meanings for each original token in the queue
-                            yield TOK.Word(t.txt, [m for m in t.val if m.ordfl == cat])
+                            if cat == "fs":
+                                # Handle prepositions specially, since we may have additional
+                                # preps defined in Main.conf that don't have fs meanings in BÍN
+                                w = t.txt.lower()
+                                yield TOK.Word(t.txt, [ BIN_Meaning(w, 0, "fs", "alm", w, "-") ])
+                            else:
+                                yield TOK.Word(t.txt, [m for m in t.val if m.ordfl == cat])
 
                         # Discard the state and start afresh
                         if newstate:

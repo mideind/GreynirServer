@@ -383,7 +383,7 @@ class BIN_Db:
         """ Return a meaning list with a prefix added to the stofn and ordmynd attributes """
         return [
             BIN_Meaning(prefix + "-" + r.stofn, r.utg, r.ordfl, r.fl,
-            prefix + "-" + r.ordmynd, r.beyging)
+                prefix + "-" + r.ordmynd, r.beyging)
             for r in mlist
         ] if prefix else mlist
 
