@@ -1633,7 +1633,10 @@ $score(+4) SagnarBotn
     # (nf:)  Konurnar sem voru [ekki] leikarar
 
     So_1_sagnb/fall HjSögn/tala/pers NlBeintAndlag/fall LoTengtSögn_nf/tala/kyn?  # Konurnar sem borðað höfðu matinn [sjálfar/galvaskar]
+    | NlBeintAndlag/fall HjSögn/tala/pers LoTengtSögn_nf/tala/kyn? FsAtv? So_1_sagnb/fall  # Konurnar sem þess höfðu [sjálfar/galvaskar] óskað
+
     | So_1_nh/fall HjSögnNh/tala/pers NlBeintAndlag/fall LoTengtSögn_nf/tala/kyn? # Konurnar sem borða munu matinn [allar/galvaskar]
+    | NlBeintAndlag/fall HjSögnNh/tala/pers LoTengtSögn_nf/tala/kyn? FsAtv? So_1_nh/fall # Konurnar sem matinn munu [allar/galvaskar] borða
 
     | NlBeintAndlag/fall AtvFs? so_1/fall/tala/pers LoTengtSögn_nf/tala/kyn?      # Konurnar sem matinn [snarlega] borðuðu [báðar/galvaskar]
 
