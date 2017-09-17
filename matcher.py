@@ -105,6 +105,7 @@ _DEFAULT_NT_MAP = {
     "SetningLo" : "S",
     "SetningÁnF" : "S",
     "SetningAukafall" : "S",
+    "SetningAukafallForgangur" : "S",
     "SetningSkilyrði" : "S",
     "SetningUmAðRæða" : "S",
     "StViðtenging" : "S",

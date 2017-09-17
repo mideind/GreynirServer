@@ -297,6 +297,7 @@ Upphrópun →
 HreinYfirsetning →
     Setning
     | SetningAukafall
+    | SetningAukafallForgangur
     | SetningLo
     | SetningSo
     | SetningSkilyrði
@@ -305,6 +306,7 @@ HreinYfirsetning →
 $score(+2) HreinYfirsetning
 
 $score(-2) SetningAukafall
+$score(+1) SetningAukafallForgangur
 $score(+2) SetningLo
 $score(-1) SetningSo
 $score(+3) Setning
@@ -761,9 +763,6 @@ SetningAukafall →
     # Bönkunum hefur/hafði/hefði [flestum] tekist að halda í horfinu
     | NlFrumlag_þgf/tala/kyn HjSögnMM LoÞgf/tala/kyn? so_0_mm_sagnb MiðmyndarBotn?
 
-    # Öllum er frjálst/fyrir bestu að ákveða snarlega að flytja úr landi
-    | NlFrumlag_þgf HjSögnLhÞt_et_p3 FsRuna? LhÞtÞgfEinkunn NhFyllingEðaAtv
-
     # Öllum hefur verið/skal/mun tryggð heilbrigðisþjónusta / réttur til að lifa með reisn
     | NlFrumlag_þgf HjSögnLhÞtSM_p3/tala FsAtv? so_2_þgf_þf_lhþt/tala/kyn FsRuna? AukafallLhÞtAndlag/tala/pers/kyn NhFyllingEðaAtv
     # ESB eru þröngar skorður settar í málinu
@@ -818,6 +817,12 @@ SetningAukafall →
 
     # Mér er/var [ekki] sama [um málið] / bumbult [í gær] / misboðið
     # | NlFrumlag_þgf 'vera:so'_gm_fh_p3_et FsAtv? lo_sb_hk_nf_et FsAtv?
+
+# Aukafallssetningar sem eru mjög líklega rétt greindar og fá þar
+# af leiðandi plús-skor í stað mínuss
+SetningAukafallForgangur →
+    # Öllum er frjálst/fyrir bestu að ákveða snarlega að flytja úr landi
+    NlFrumlag_þgf HjSögnLhÞt_et_p3 FsRuna? LhÞtÞgfEinkunn NhFyllingEðaAtv
 
 FinnstÞað/tala/kyn →
     'það:pfn'_hk_nf_et LoÞgf/tala/kyn  # Bílstjórum finnst það mörgum leiðinlegt
@@ -3488,7 +3493,7 @@ $score(-16) LoSemSo/fall/tala/kyn
 $score(+6) LoSemLo/fall/tala/kyn  # Tilbrigði 3.1, eina sem þarf að toggla.
 
 LoAtviksliðir →
-    LoAtviksliður+ | "og:st" # 'honum er og heimilt að merkja við fleiri en einn frambjóðanda'
+    LoAtviksliður+ | "og:ao" # 'honum er og heimilt að merkja við fleiri en einn frambjóðanda'
 
 # 'Ég vaknaði ekkert alltof fersk'
 LoAtviksliður →
@@ -3499,6 +3504,19 @@ LoAtviksliður →
 
 Lo_sb/tala/fall/kyn → LoAtviksliðir? lo_sb/tala/fall/kyn LoViðhengi?
 Lo_sb_nf/tala/kyn → LoAtviksliðir? lo_sb_nf/tala/kyn LoViðhengi?
+
+OgLo → "og:st" | "eða:st" | "en:st"
+
+# (Ég var reiður) og sár
+OgLo_sb/tala/fall/kyn →
+    OgLo Lo_sb/tala/fall/kyn
+
+# (Flokknum er rétt) [,] og skylt [,] (að fara að beiðni forsetans)
+OgLo_sb_nf/tala/kyn →
+    OgLo Lo_sb_nf/tala/kyn
+    | ',' OgLo Lo_sb_nf/tala/kyn ','
+
+$score(+2) OgLo_sb_nf/tala/kyn
 
 # Miðstig
 Lo_mst/tala/fall/kyn →
@@ -3573,7 +3591,7 @@ LoFornafn/fall/tala/kyn →
 # Ath.: miðstig lýsingarorða er merkt MST í BÍN og passar því ekki við lo_sb
 # (en frumstig sterkrar beygingar er FSB og efsta stig er ESB)
 LoSamanb/tala/fall/kyn →
-    Lo_sb/tala/fall/kyn
+    Lo_sb/tala/fall/kyn OgLo_sb/tala/fall/kyn?
     # Miðstig: (Ég varðveitti laxinn) [mun] betur [en bleikjuna]
     | MiðstigForskeyti? Lo_mst/tala/fall/kyn EnSamanb/fall?
     # (Hann tók við hrósinu) [,] ýmist glaður eða með fýlusvip
@@ -3613,7 +3631,7 @@ $score(+4) EnSamanb/fall
 
 # Hann er reiður / [!!! ATH:] Hann er Önnu mun reiðari en Páli
 LoSamanb_nf/tala/kyn →
-    Lo_sb_nf/tala/kyn
+    Lo_sb_nf/tala/kyn OgLo_sb_nf/tala/kyn?
     | MiðstigForskeyti? Lo_mst_nf/tala/kyn EnSamanb_nf? # Miðstig: (Ég var) [mun] reiðari [en Páll]
     # (Hann tók við hrósinu) [,] ýmist glaður eða með fýlusvip
     | LoSamanbFleiri_nf/tala/kyn
