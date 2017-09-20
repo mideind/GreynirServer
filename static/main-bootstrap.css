@@ -354,6 +354,10 @@ td.ts {
    min-width: 100px;
 }
 
+td.ratio {
+   max-width: 4.2em;
+}
+
 td.ratio div.progress {
    min-width: 4em;
    max-width: 4em;

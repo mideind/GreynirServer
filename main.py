@@ -77,20 +77,24 @@ def debug():
 def make_pattern(rep_dict):
     return re.compile("|".join([re.escape(k) for k in rep_dict.keys()]), re.M)
 
+
 def multiple_replace(string, rep_dict, pattern = None):
     """ Perform multiple simultaneous replacements within string """
     if pattern is None:
         pattern = make_pattern(rep_dict)
     return pattern.sub(lambda x: rep_dict[x.group(0)], string)
 
+
 _REP_DICT_IS = { ',' : '.', '.' : ',' }
 _PATTERN_IS = make_pattern(_REP_DICT_IS)
+
 
 @app.template_filter('format_is')
 def format_is(r, decimals = 0):
     """ Flask/Jinja2 template filter to format a number for the Icelandic locale """
     fmt = "{0:,." + str(decimals) + "f}"
     return multiple_replace(fmt.format(float(r)), _REP_DICT_IS, _PATTERN_IS)
+
 
 @app.template_filter('format_ts')
 def format_ts(ts):
@@ -122,6 +126,7 @@ def hashed_url_for_static_file(endpoint, values):
                 param_name = '_' + param_name
             values[param_name] = static_file_hash(os.path.join(static_folder, filename))
 
+
 def static_file_hash(filename):
     """ Obtain a timestamp for the given file """
     return int(os.stat(filename).st_mtime)
@@ -141,6 +146,7 @@ def max_age(seconds):
             return resp
         return decorated_function
     return decorator
+
 
 def get_json_bool(rq, name, default = False):
     """ Get a boolean from JSON encoded in a request form """
