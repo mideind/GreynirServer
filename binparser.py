@@ -762,8 +762,7 @@ class BIN_Token(Token):
                 do not use the BÍN annotation of the token at all. Instead
                 we look up the token text in Prepositions.PP which is read
                 from the Main.conf file. """
-            nv = terminal.num_variants
-            if not nv:
+            if not terminal.num_variants:
                 return False
             # Note that in the case of abbreviated prepositions,
             # such as 'skv.' for 'samkvæmt', the full expanded form
@@ -778,11 +777,11 @@ class BIN_Token(Token):
             if fs not in Prepositions.PP:
                 # Not a preposition
                 return False
-            if nv == 2 and terminal.variant(1) == "ft":
-                if fs not in Prepositions.PP_PLURAL:
-                    # Only prepositions marked as plural can match
-                    return False
-            return terminal.variant(0) in Prepositions.PP[fs]
+            var0 = terminal.variant(0)
+            if var0 == "nh":
+                # Only prepositions marked as nh can match
+                return fs in Prepositions.PP_NH
+            return var0 in Prepositions.PP[fs]
 
         def matcher_person(m):
             """ Check name from static phrases, coming from the Reynir.conf file """

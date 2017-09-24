@@ -339,13 +339,16 @@ class Prepositions:
     # Dictionary of prepositions: preposition -> { set of cases that it controls }
     PP = defaultdict(set)
     PP_PLURAL = set()
+    # Prepositions that can be followed by an infinitive verb phrase
+    # 'Beiðnin um að handtaka manninn var send lögreglunni'
+    PP_NH = set()
 
     @staticmethod
-    def add(prep, case, plural = False):
+    def add(prep, case, nh):
         """ Add a preposition and its case. Called from the config file handler. """
         Prepositions.PP[prep].add(case)
-        if plural:
-            Prepositions.PP_PLURAL.add(prep)
+        if nh:
+            Prepositions.PP_NH.add(prep)
 
 
 class AdjectiveTemplate:
@@ -925,24 +928,23 @@ class Settings:
     @staticmethod
     def _handle_prepositions(s):
         """ Handle preposition specifications in the settings section """
-        # Format: preposition case
-        # Updated to handle multiword prepositions
-
-        # skoða strenginn aftan frá
-        # Síðasti hlutinn getur verið fall eða tala.
-        # Ef tala, þá uppfæri ég hana og uppfæri strenginn svo síðasti hlutinn er klipptur af.
-        # Ef síðasti hlutinn er þá ekki fall kemur villa. Ef hann er fall þá skrifa ég það hjá mér.
-            # Tek rest af listanum og geri " ".join og það er þá forsetningin
-        # Prepositions.add(forsetningin, fallið, tala)
+        # Format: pw1 pw2... case [nh]
         a = s.split()
-        if a[-1] not in {"nf", "þf", "þgf", "ef"}: # Ekki gilt fall aftast
-            raise ConfigError("Preposition should have a valid case argument")
-        c = a[-1]   # Case
-        if len(a) == 2: # Not mw pp
-            pp = a[0]   # Preposition
-        else:
-            pp = " ".join(a[:-1]) # Preposition
-        Prepositions.add(pp, c, False)  # TODO update to leave out plural
+        if len(a) < 2:
+            raise ConfigError("Preposition must specify a word and a case argument")
+        c = a[-1] # Case or 'nh'
+        nh = c == "nh"
+        if nh:
+            # This is a preposition that can be followed by an infinitive verb phrase:
+            # 'Beiðnin um að handtaka manninn var send lögreglunni'
+            a = a[:-1]
+            if len(a) < 2:
+                raise ConfigError("Preposition must specify a word, case and 'nh' argument")
+            c = a[-1]
+        if c not in { "nf", "þf", "þgf", "ef" }: # Not a valid case
+            raise ConfigError("Preposition must have a case argument (nf/þf/þgf/ef)")
+        pp = " ".join(a[:-1]) # Preposition, possibly multi-word
+        Prepositions.add(pp, c, nh)
 
     @staticmethod
     def _handle_preferences(s):
