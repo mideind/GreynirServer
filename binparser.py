@@ -768,10 +768,10 @@ class BIN_Token(Token):
 
         def matcher_ao(m):
             """ Adverbs, excluding eo and spao """
-            if "ao" not in m.ordfl or matcher_spao(m):
+            if "ao" != m.ordfl or matcher_spao(m):
                 return False
-            else:
-                return True
+            fbits = BIN_Token.get_fbits(m.beyging)
+            return terminal.fbits_match(fbits)
 
         def matcher_fs(m):
             """ Check preposition. Note that in this exceptional case, we
