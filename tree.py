@@ -607,7 +607,7 @@ class TerminalNode(Node):
     """ A Node corresponding to a terminal """
 
     # Undeclinable word categories
-    _NOT_DECLINABLE = frozenset([ "ao", "eo", "fs", "st", "stt", "nhm" ])
+    _NOT_DECLINABLE = frozenset([ "ao", "eo", "spao", "fs", "st", "stt", "nhm" ])
 
     _TD = dict() # Cache of terminal descriptors
 
@@ -1301,4 +1301,3 @@ class TreeTokenList(TreeBase):
         """ Nonterminal """
         # No action required for token lists
         pass
-

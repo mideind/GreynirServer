@@ -233,6 +233,9 @@ class BIN_Token(Token):
         "GmbH", "AG",
         "SARL", "S.à.r.l." ])
 
+    # Interrogative adverbs.
+    _SPAO = frozenset([ "hvar", "hvenær", "hvernig", "hvaðan", "hvert", "hví", "hve", "hversu" ])
+
     _UNDERSTOOD_PUNCTUATION = ".?!,:;–-()[]"
 
     _MEANING_CACHE = { }
@@ -735,11 +738,18 @@ class BIN_Token(Token):
             # since all instances of stt are of the form "sem:stt"
             # which is handled in matcher_default() / terminal.matches_first()
             return m.ordfl == "st" and m.stofn in { "sem", "er" }
+      
+        def matcher_spao(m):
+            """ Interrogative adverbs """
+            if m.ordfl == "ao" and m.stofn in BIN_Token._SPAO:
+                return True
+            else:
+                return False
 
         def matcher_eo(m):
             """ 'Einkunnarorð': adverb (atviksorð) that is not the same
                 as a preposition (forsetning) or pronoun (fornafn) """
-            if m.ordfl != "ao":
+            if "ao" not in m.ordfl or matcher_spao(m):
                 return False
             # This token can match an adverb:
             # Cache whether it can also match a preposition
@@ -756,6 +766,13 @@ class BIN_Token(Token):
                         any(mm.ordfl == "fn" for mm in self.t2))
             # Return True if this token cannot also match a preposition
             return self._is_eo
+
+        def matcher_ao(m):
+            """ Adverbs, excluding eo and spao """
+            if "ao" != m.ordfl or matcher_spao(m):
+                return False
+            fbits = BIN_Token.get_fbits(m.beyging)
+            return terminal.fbits_match(fbits)
 
         def matcher_fs(m):
             """ Check preposition. Note that in this exceptional case, we
