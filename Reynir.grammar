@@ -2546,7 +2546,7 @@ NlStak_p3/tala/fall/kyn →
     'sá:fn'/tala/fall/kyn Nl/fall/tala/kyn AtvFs? Útskýring
 
 Útskýring →
-    ',' Skýringarsetning ','
+    ',' Skýringarsetning LokatáknEðaKomma
     | Skýringarsetning
     | NhFyllingÁnAtv # Sú ákvörðun Úkraínustjórnar [í gær] að loka á síður
 
@@ -3233,7 +3233,7 @@ NlEind_et_p3_ef_hk →
     Spurnarsetning
     | NhLiðir  # Það að fara til tannlæknis (reynist mörgum þyrnir í augum)
 
-$score(+32) ÞaðTenging
+$score(+40) ÞaðTenging
 
 # Aðdróttanir, þó sannar séu, varða fangelsisvist
 
@@ -3686,6 +3686,8 @@ FsMeðFallstjórn →
     # 'með að...', '(Löngunin) til að...', '(Áhættan) við að...', '(Hættan) á að...'
     | fs/fall FsMeðNh
     | fs/fall Skýringarsetning
+    | fs/fall 'það:pfn'_hk_et/fall 'einn:fn'_et_hk/fall? ÞaðTenging
+
     | 'á:fs'_þf 'hönd:kvk'_þf_ft Nl_þgf    # 'að höfða sakamál á hendur Páli'
     | 'á:fs'_þf 'fótur:kk'_þf_ft Nl_þgf    # '(Hann borðaði hverja tertusneiðina) á fætur annarri'
     | 'nær:fs'_þgf 'draga:so'_op_gm_et_p3 Nl_þgf # 'þegar nær dró/dregur jólum'
