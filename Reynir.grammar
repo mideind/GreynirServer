@@ -148,8 +148,14 @@ SögnSegja/tala/pers →
 
 $score(+32) Tilvitnun # Þarf að vera meiri plús en t.d. SagnFramhald
 
-Lokatákn → '.' | '?' | ':' | '!' | '(' '!' ')'
+Lokatákn → '.' | Spurningarmerki | ':' | '!' | '(' '!' ')'
 LokatáknEðaKomma → Lokatákn | ','
+
+Spurningarmerki → '?'
+
+# Til að gera spurnarsetningum hátt undir höfði.
+$score(-12) Spurningarmerki
+
 
 Fyrirsögn →
     Forskeyti? FyrirsögnInnihald
@@ -179,9 +185,6 @@ Grein →
 
 $score(+6) Grein
 
-SpurnarorðAtv →
-    "hve:ao" | "hversu:ao"
-
 StLiður →
     # Samtengingar yfirsetninga
     Tengimerki? Samtenging HreinYfirsetning
@@ -190,24 +193,7 @@ StLiður →
     | ':' SagnRuna
     # 'Aftur er umræðan sú sama: um rétt kirkjunnar þegna til að neita að gefa saman samkynhneigða'
     | ':' NhFylling
-    # '(Ég spurði) hversu hrikalega stór (hann væri orðinn)'
-    | SpurnarorðAtv Lo_nf/tala/kyn Setning/tala/pers/kyn
-    # '(Ekki er ljóst) hverjir [það voru sem] borðuðu kökuna og fóru í sund'
-    | StSpurn
     # Flokkurinn stefnir á stjórnarþátttöku, fái hann til þess umboð
-    | StViðtenging
-    | Atvikssetning # Tilbrigði 7.1
-
-StViðtenging →
-    TengimerkiVh? SagnliðurVh
-
-$score(+4) StViðtenging
-
-StSpurn →
-    'hver:fn'_nf/tala/kyn ÞaðVarSem/tala? SagnRuna_p3/tala/kyn
-
-ÞaðVarSem/tala →
-    'það:pfn'_hk_nf_et VeraVerða_gm_p3/tala "sem:st"
 
 Tengimerki →
     ':' | ';' | ',' | "-:em"
@@ -215,77 +201,17 @@ Tengimerki →
 TengimerkiVh →
     ';' | ',' | "-:em"
 
-SamtengingStök →
-    # Ein samtenging, sem þó getur verið samsett, sbr. skilgreiningar í Reynir.conf
-    st
-
 Samtenging →
     # Flóknari samtenging úr mörgum orðum
-    SamtengingStök+
-#    | "þannig:ao" "að:st"
+    "og:st" | "eða:st" | "ellegar:st" | "heldur:st" 
+    | "enda:st" | "en:st" | "hvorki:st"
     | 'það:pfn'_hk_nf_et "er:so" | 'það_er:ao'
-#    | 'áðan:ao'_mst "en:st" "að:st"? # áður en [að]
-#    | 'snemma:ao'_mst "en:st" "að:st"? # fyrr en [að]
-#    | 'á_meðan:ao' "að:st"?
-    | "allt:fn" 'frá:fs'_þgf 'það:pfn'_hk_þgf_et "að:st"?
     | "þar:ao" 'á:ao' "meðal:ao" | 'þar_á_meðal:ao'
     | 'auk_þess:ao' "sem:st" "að:st"?
-    | "eins:ao" "og:st"
-#    | 'vegna:fs'_ef 'það:pfn'_hk_ef_et "að:st"?
-    | "eða:st"? 'allar_götur_síðan:ao'
     | 'það_er_að_segja:ao' Tengimerki "að:st"?
-#    | 'þrátt_fyrir:ao' "að:st"
-#    | ÞangaðTil
-    | ÞarSem
-    | OgEðaEn? SpurnarSamtenging
 
 $score(+2) Samtenging
 $tag(apply_length_bonus) Samtenging
-
-ÞarSem →
-    "þar:st" "sem:st"
-
-$score(+6) ÞarSem # Gefa bónus á samtengingu frekar en ao + stt
-
-SpurnarSamtenging →
-
-    HverHvor/kyn SpurnarFs/kyn?                 # '(Ég spurði) hvert af börnunum (þarna væri á ferðinni)'
-
-    # af hverju, í hverju, í hvern, í hverja, til hvers, frá hverjum...
-    | fs/fall 'hver:fn'/fall/tala/kyn FsRuna?   # '(Ég vildi vita) af hverju í ósköpunum (Jón hætti við)'
-    | "afhverju:ao" FsRuna?
-
-    | 'hver:fn'_hk_ef_et 'vegna:fs'_ef FsRuna?     # '(Ég spurði) hvers vegna í veröldinni (hann tók ekki símtalið)'
-    | "hví:ao" FsRuna?
-    | "hvar:ao" FsRuna?                         # '(Ég spurði) hvar (matarstellið væri)'
-    | "hvernig:ao" FsRuna?                      # '(Ég spurði) hvernig (Páll ætlaði að fara að þessu)'
-    | "hvort:st" "og:st" "hvernig:ao" FsRuna?   # '(Tekjustofnar voru til umræðu og) hvort og hvernig (þeir skyldu nýttir)'
-
-    | fs/fall 'hvaða:fn'/fall/tala/kyn Nl/fall/tala/kyn AtvFs? # '(Ég spurði) í hvaða yfirmann (þeir hefðu hringt)'
-    | fs/fall SpurnarorðAtv Nl/fall AtvFs?      # '(Ég spurði) í hversu miklum mæli utan heimilda (þeir hefðu urðað sorpið)'
-
-    | SpurnarorðAtv SpurnarBotn FsRuna?         # '(Ég spurði) hversu miklu bensíni af þessari tegund (hann ætlaði að skila)'
-
-    # hvort og hvenær eru samtengingar í BÍN og því þarf ekki reglu fyrir þær einar og sér
-    # heldur aðeins með forsetningarrunu (hvenær í ósköpunum hann ætlaði að koma)
-    # | "hvort" FsRuna # ?hvort í ósköpunum hann ætlaði að hætta
-    | "hvenær:st" FsRuna
-
-ÞangaðTil →
-    "þangað:ao" "til:st" "að:st"?
-
-$score(+12) ÞangaðTil
-
-HverHvor/kyn →
-    'hver:fn'_nf_et/kyn | 'hvor:fn'_ft_et/kyn
-
-SpurnarFs/kyn →
-     Nl_ef_ft/kyn FsRuna?                       # hvert barnanna, hver kvennanna, hvor þeirra
-     | FsRuna                                   # hvern í bænum, hvorn af þeim
-
-SpurnarBotn →
-    LoLiður/tala/fall/kyn Nl/fall/tala/kyn      # (hversu) miklu bensíni (af þessari tegund)
-    | Atviksliður                               # (hversu) mikið (af hveiti þyrfti í uppskriftina)
 
 Yfirsetning →
     # Yfirsetning getur hafist á runu upphrópana
@@ -300,8 +226,10 @@ HreinYfirsetning →
     | SetningAukafallForgangur
     | SetningLo
     | SetningSo
-    | SetningSkilyrði
     | AtvSetning # Atvikssetning fremst í aðalsetningu
+    | Spurnarsetning
+    | SamsettSetning    # Annaðhvort X eða Y; bæði X og Y; ýmist X eða Y
+
 
 $score(+2) HreinYfirsetning
 
@@ -310,35 +238,29 @@ $score(+1) SetningAukafallForgangur
 $score(+2) SetningLo
 $score(-1) SetningSo
 $score(+3) Setning
+$score(+12) Spurnarsetning
+$score(+25) SamsettSetning
 
 $tag(begin_prep_scope) HreinYfirsetning # Nýtt undirtré fyrir tengingu sagnar og forsetningar
 
-# Skilyrði: EfÞegar eitthvað þá eitthvað
+# Spurnaraðalsetningar
 
-SetningSkilyrði →
-    AtviksliðurKomma? EfÞegar OgEfÞegar? Skilyrði Afleiðing FsAtv?
+Spurnarsetning →
+    SpurnarNafnliður/tala/fall/kyn FsMeðFallstjórn? BeygingarliðurSögnFremst "?"
+    | SpurnarForsetningarliður FsMeðFallstjórn? BeygingarliðurSögnFremst "?"
+    | SpurnarAtviksorð FsMeðFallstjórn? BeygingarliðurSögnFremst  "?"
+    | SpurnarFrumlag/pers/tala/kyn FsMeðFallstjórn? BlTagl/tala/pers/kyn '?'
 
-#$score(+12) SetningSkilyrði
+# Spurnarorðið er frumlag setningarinnar, stendur utan beygingarliðar
+BlTagl/tala/pers/kyn →
+    FrumlagsInnskot/tala/pers/kyn? AtviksliðurEinkunn*
+        SagnRuna/tala/pers/kyn Sjálfur/tala/kyn? KommaTilvísunarsetning/tala/pers/kyn?
+        Upptalning/tala?
 
-EfÞegar →
-    "ef:st" | "þegar:st" | "er:st" | "þótt:st" | "þó:st" | "þó:ao" "að:st" | "þó:ao" "svo:ao" "að:st" | 'jafnvel_þótt:st'
-    | "þar:ao" "sem:st" | "eftir:ao" "að:st"
-    | "eins:ao" "og:st" | 'líkt_og:st' | 'á_meðan:st' | "meðan:st"
-    | "þangað:ao" "til:st" | 'um_leið:ao' "og:st" | "síðan:st" | 'þrátt_fyrir:ao' "að:st"
-    | 'á_sama_tíma:ao' "og:st"
+SpurnarFrumlag/pers/tala/kyn →
+    SpurnarNafnliður/tala/fall/kyn
 
-OgEfÞegar →
-    "og:st" EfÞegar              # 'Ef og þegar eitthvað gerist læt ég þig vita'
-
-Skilyrði →
-    HreinYfirsetning StLiður* # (Ef) Jón fer með hundinn til dýralæknis og allt er í lagi
-    | SagnliðurÁnF            # (Þegar) kemur að því að útdeila gæðum
-
-# Afleiðing í "ef"-setningu byrjar alltaf á sögn
-
-Afleiðing →
-    ","? "þá:st"? SagnHluti/tala/pers/kyn   # (Ef hann gæti) [,] [þá] opinberaði Hannes niðurstöðu sína (í dag)
-    | ","? "þá:st"? SagnliðurÁnF            # [Ef góða veðrið helst] [,] [þá] þyrfti að vökva grasið (fyrir myrkur)
+$score(+8) Spurnarsetning
 
 # Atvikssetning fremst í setningu
 # [Ef þetta gerist](, þá) getur fatan dottið
@@ -351,6 +273,11 @@ AtvSetning → Atvikssetning ","? "þá:st"? BeygingarliðurMeðUmröðun
 
 $score(+12) AtvSetning
 
+SamsettSetning →
+    "annaðhvort:st" BeygingarliðurSögnFremst "eða:st" BeygingarliðurÁnUmröðunar
+    | "bæði:st" BeygingarliðurSögnFremst "og:st" BeygingarliðurÁnUmröðunar
+    | "ýmist:st" BeygingarliðurSögnFremst "eða:st" BeygingarliðurÁnUmröðunar
+
 # Aukasetningar
 Atvikssetning → 
     Tíðarsetning
@@ -359,33 +286,100 @@ Atvikssetning →
     | Afleiðingarsetning
     | Orsakarsetning
     | Skilyrðissetning
+    | Samanburðarsetning
 
 $score(+15) Atvikssetning
 
 $tag(begin_prep_scope) Atvikssetning # Nýtt undirtré fyrir tengingu sagnar og forsetningar
 
-Tíðarsetning → Tíðartenging BeygingarliðurÁnUmröðunar
+Tíðarsetning → 
+    Tíðartenging BeygingarliðurÁnUmröðunar
+    | Tíðartenging BeygingarliðurÁnF
+Tilgangssetning → 
+    Tilgangstenging BeygingarliðurÁnUmröðunar
+    | Tilgangstenging BeygingarliðurÁnF
+Viðurkenningarsetning → 
+    Viðurkenningartenging BeygingarliðurÁnUmröðunar
+    | Viðurkenningartenging BeygingarliðurÁnF
+Afleiðingarsetning → 
+    Afleiðingartenging BeygingarliðurÁnUmröðunar
+    | Afleiðingartenging BeygingarliðurÁnF
+Orsakarsetning →
+    Orsakartenging BeygingarliðurÁnUmröðunar
+    | Orsakartenging BeygingarliðurÁnF
+Samanburðarsetning → 
+    Samanburðartenging BeygingarliðurÁnUmröðunar # Bara vh.
+    | Samanburðartenging BeygingarliðurÁnF
+Skilyrðissetning → 
+    Skilyrðistenging BeygingarliðurÁnUmröðunar
+    | TengimerkiVh? SagnliðurVh
+    | Skilyrðistenging BeygingarliðurÁnF
 
-Tilgangssetning → Tilgangstenging BeygingarliðurÁnUmröðunar
+$score(+4) Samanburðarsetning
 
-Viðurkenningarsetning → Viðurkenningartenging BeygingarliðurÁnUmröðunar
+# Fallsetningar - skýringarsetningar og spurnaraukasetningar
 
-Afleiðingarsetning → Afleiðingartenging BeygingarliðurÁnUmröðunar
+Skýringarsetning → 
+    Skýringartenging BeygingarliðurÁnUmröðunar
+    | Skýringartenging AtvSetning
 
-Orsakarsetning → Orsakartenging BeygingarliðurÁnUmröðunar
+Skýringartenging → 
+    "að:st"
 
-Skilyrðissetning → Skilyrðistenging BeygingarliðurÁnUmröðunar
+# Spurnaraukasetningar
+Spurnaraukasetning →
+    SpurnarNafnliður/tala/fall/kyn FsMeðFallstjórn? BeygingarliðurÁnUmröðunar
+    | "hvort:st" "að:st"? BeygingarliðurÁnUmröðunar
+    | SpurnarForsetningarliður BeygingarliðurÁnUmröðunar
+    | SpurnarAtviksorð FsMeðFallstjórn? BeygingarliðurÁnUmröðunar
+    | SpurnarFrumlag/pers/tala/kyn FsMeðFallstjórn? BlTagl/tala/pers/kyn
 
+SpurnarNafnliður/tala/fall/kyn →
+    'hver:fn'/tala/fall/kyn Nl_ef_ft/pers/kyn?
+    | 'hver:fn'/tala/fall/kyn AfLiður/kyn
+    | 'hvor:fn'/tala/fall/kyn Nl_ef_ft/pers/kyn?
+    | 'hvor:fn'/tala/fall/kyn Nl/fall/tala
+    | 'hvor:fn'/tala/fall/kyn AfLiður/kyn
+    | 'hvaða:fn'/tala/fall/kyn Nl/fall/tala
+    | 'hver:fn'_ef_et_hk "konar" Nl/fall/tala
+    | HversuHve Lo/fall/tala/kyn Nl/fall/tala
+    | HversuHve Lo/fall/tala/kyn AfLiður/kyn?
+    | 'hvernig:ao' Nl/fall/tala     # Hægt að nota hliðstætt með nafnlið
+
+SpurnarForsetningarliður →
+    fs/fall SpurnarNafnliður/tala/fall/kyn
+
+SpurnarAtviksorð →
+    spao | "hvernig:ao" | 'af:fs'_þgf 'hver:fn'_þgf_et_hk | "hví:ao" | "afhverju:ao"
+    | 'til:fs'_ef 'hver:fn'_ef_et_hk | 'hver:fn'_ef_et_hk 'vegna:fs'_ef
+
+HversuHve →
+    "hversu:ao" | "hve:ao"
+
+AfLiður/kyn → 'af:fs'_þgf Nl_þgf_ft/pers/kyn
+
+$score(+2) SpurnarAtviksorð
+$score(+8) Spurnaraukasetning
+
+# Beygingarliðir
+
+# Venjuleg setningaskipan þar sem frumlag (oftast í nefnifalli) er fremst
 BeygingarliðurÁnUmröðunar →
     BeygingarliðurÁnUmröðunar/tala/pers/kyn
 
-# Venjuleg setningaskipan þar sem frumlag (oftast í nefnifalli) er fremst
 BeygingarliðurÁnUmröðunar/tala/pers/kyn →
     Frumlag/pers/tala/kyn FrumlagsInnskot/tala/pers/kyn? AtviksliðurEinkunn*
-        SagnRuna/tala/pers/kyn Sjálfur/tala/kyn? KommaTengiliður/tala/pers/kyn?
-        Samanburður? Upptalning/tala?
+        SagnRuna/tala/pers/kyn Sjálfur/tala/kyn? KommaTilvísunarsetning/tala/pers/kyn?
+        SamanburðurNl? Upptalning/tala? Atvikssetning?
 
-# Frumlag fyrir aftan sögn:
+# Sögn kemur fremst, svo frumlag. Enginn annar liður leyfist fremst, tengingin situr þar.
+BeygingarliðurSögnFremst →
+    BeygingarliðurSögnFremst/tala/pers/kyn
+
+BeygingarliðurSögnFremst/tala/pers/kyn →
+    SagnHluti/tala/pers/kyn Upptalning/tala? Atvikssetning?
+
+# Frumlag fyrir aftan sögn, annar liður getur komið fremst:
 # 'Gengu þau galvösk á Esjuna þrátt fyrir veðurútlitið'
 # 'Bersýnilega fór Jón sterki í bága við reglurnar með þessu'
 # 'Undir húsinu voru illa farnar skolpleiðslur'
@@ -399,13 +393,13 @@ BeygingarliðurMeðUmröðun →
     BeygingarliðurMeðUmröðun/tala/pers/kyn
 
 BeygingarliðurMeðUmröðun/tala/pers/kyn →
-    SetningForskeyti? SagnHluti/tala/pers/kyn Upptalning/tala?
+    SetningForskeyti? SagnHluti/tala/pers/kyn Upptalning/tala? Atvikssetning?
 
-# Mögulegar tengingar í tíðarsetningum
+# Mögulegar tengingar í aukasetningum eftir gerð aukasetningar
 Tíðartenging →
     'áðan:ao'_mst "en:st" "að:st"?  # áður en [að]
-    | 'frá:fs'_þgf 'það:pfn'_hk_þgf_et "að:st"
-    | 'frá:fs'_þgf 'það:pfn'_hk_þgf_et "er:st"
+    | 'allt:fn'_nf_hk_et? 'frá:fs'_þgf 'það:pfn'_hk_þgf_et "að:st"
+    | 'allt:fn'_nf_hk_et? 'frá:fs'_þgf 'það:pfn'_hk_þgf_et "er:st"
     | 'snemma:ao'_mst "en:st" "að:st"?  #fyrr en [að]
     | 'ótt:ao'_mst "en:st" "að:st"? # óðar en [að]
     | "þá:ao" "er:st"
@@ -418,6 +412,7 @@ Tíðartenging →
     | "meðan:st"
     | "þangað:ao" "til:st" "að:st"?
     | "á_sama_tíma:ao" "og:st"
+    | 'allar_götur_síðan:ao'
     | "er:st" # Líka tilvísunartenging
 
 Tilgangstenging → 
@@ -451,6 +446,11 @@ Skilyrðistenging →
     | "svo:ao" "framarlega:ao" "sem:st"
     | "nema:st"
 
+Samanburðartenging →
+    "sem:st"
+    | "eins:ao" "og:st"
+    | "líkt" "og:st"
+
 # Setningar með frumlagi
 
 Setning → Setning/tala/pers/kyn
@@ -464,8 +464,18 @@ SagnRuna_p3_et/kyn → SagnRuna_et_p3/kyn
 SagnRuna_p3_ft/kyn → SagnRuna_ft_p3/kyn
 
 SagnRuna/tala/pers/kyn →
+    SagnRunaKnöpp/tala/pers/kyn SagnFramhald/tala/pers/kyn*
+    | "annaðhvort:st" SagnRunaKnöpp/tala/pers/kyn SagnKomma/tala/pers/kyn* 
+        "eða:st" FsAtv? SagnRunaKnöpp/tala/pers/kyn
+    | "bæði:st" SagnRunaKnöpp/tala/pers/kyn SagnKomma/tala/pers/kyn* 
+        "og:st" FsAtv? SagnRunaKnöpp/tala/pers/kyn
+    | "hvorki:st" SagnRunaKnöpp/tala/pers/kyn SagnKomma/tala/pers/kyn* 
+        "né:st" FsAtv? SagnRunaKnöpp/tala/pers/kyn
+    | "ýmist:st" SagnRunaKnöpp/tala/pers/kyn SagnKomma/tala/pers/kyn* 
+        "eða:st" FsAtv? SagnRunaKnöpp/tala/pers/kyn
+
+SagnRunaKnöpp/tala/pers/kyn →
     Sagnliður/tala/pers/kyn LoTengtSögn_nf/tala/kyn? SagnInnskot?
-        SagnFramhald/tala/pers/kyn*
 
 SagnFramhald/tala/pers/kyn →
     SagnKomma/tala/pers/kyn* KommaOgEðaEn FsAtv? Sagnliður/tala/pers/kyn
@@ -506,7 +516,7 @@ FrumlagsInnskot/tala/pers/kyn →
 # Þröngt mengi samtenginga sem nota má án kommu í frumlagsinnskoti
 # (sé mengið of vítt eykst margræðni verulega)
 InnskotsSamtenging →
-    "þegar:st" | "meðan:st" | 'á_meðan:st' | "þar:ao" "sem:st"
+    "þegar:st" | "meðan:st" | 'á_meðan:st' | "þar:ao" "sem:st" | "þrátt_fyrir:ao"
 
 Frumlag/pers/tala/kyn →
     NlFrumlag_nf/tala/pers/kyn
@@ -529,12 +539,12 @@ Frumlag_p3_ft_hk →
 
 Samanburðarmerki → ',' | ';' | "-:em"
 
-Samanburður →
-    SamanburðarTenging Nl_nf AtvFs? # þar af einn alvarlega
+SamanburðurNl →
+    SamanburðarNlTenging Nl_nf AtvFs? # þar af einn alvarlega
     | Samanburðarmerki? "þar:ao" "með:ao" 'telja:so'_lhþt_sb_nf/tala/kyn Nl_nf/tala/kyn AtvFs? # þar með talinn allur þingflokkur Framsóknar
     | Samanburðarmerki 'annað:fn'_þgf_et_hk "nær:ao"   # Viðskiptablaðið styður ekki jafnaðarstefnuna; öðru nær.
 
-SamanburðarTenging →
+SamanburðarNlTenging →
     "heldur:st" "en:st"             # 'Forseti á ekki að gera meiri breytingu á sér heldur en forsætisráðherra'
     | ','? "eins:ao" "og:st"        # 'Hann á ekki andstæðinga eins og aðrir kjörnir fulltrúar'
     | ','? 'líkt_og:st'
@@ -544,12 +554,13 @@ SamanburðarTenging →
     | Samanburðarmerki? 'þar_með_talið:ao' # Skammstöfunin 'þ.m.t.'
     | Samanburðarmerki? "nema:st"   # Allir vita það, nema ég.
     | ','? "enda:st"                # 'Réttindi í almennum sjóðum breyttust, enda lægri fjárhæð en áður'
+    | "sem:st"
     | SamanburðarTengingOg
 
 SamanburðarTengingOg →
     ','? "og:st"               # Erfitt fjarskiptasamband er á staðnum og mikil snjóþyngsli
 
-$score(-4) Samanburður
+$score(+4) SamanburðarNlTenging
 $score(-8) SamanburðarTengingOg
 
 Sjálfur/tala/kyn → 'sjálfur:fn'_nf/tala/kyn
@@ -643,7 +654,7 @@ SetningLo →
 
 SetningLoMeðSpurningu →
     # Aðspurð [um] hvort Jón væri edrú sagði Gunna að hann væri það
-    lo_sb_nf/tala/kyn "um:st"? SpurnarSamtenging HreinYfirsetning SagnHluti/tala/pers/kyn
+    lo_sb_nf/tala/kyn "um:st"? Spurnarsetning SagnHluti/tala/pers/kyn
 
 $score(+4) SetningLoMeðSpurningu
 
@@ -702,7 +713,7 @@ SetningSo →
 
     | 'þurfa:so'_gm_et_p3 FsRuna? NlBeintAndlag_þf NhFyllingEðaAtv         # Þarf til þess lagafyrirmæli að svipta mann réttindum
 
-    | SagnliðurVh Afleiðing FsAtv?                              # Haldi þessi þróun áfram er voðinn vís
+    | SagnliðurVh ","? "þá:st"? BeygingarliðurMeðUmröðun FsAtv?            # Haldi þessi þróun áfram er voðinn vís
 
     # (Því) hafi þurft að senda alla farþegana (á hótel)
     # (Í dag) gæti hafa rignt
@@ -714,6 +725,7 @@ Sagnliður_lhþt →
         NlFrumlag_nf/tala/kyn AtvFsAuka? # Teknar og skráðar hafa verið ákvarðanir í málinu
 
 $score(-4) Sagnliður_lhþt # Knúsað orðalag - velja annað ef í boði
+
 
 # Talið er (að Jón sé horfinn) / Verið er að ráða hæfasta umsækjandann
 # Sagt er algerlega óhætt [að fara út]
@@ -805,19 +817,19 @@ SetningAukafall →
     | NlFrumlag/aukafall HjSögnÞurfaEiga_et_p3 FsAtv? nhm So_1_nh/aukafall NhFyllingEðaAtv
 
     # Engan má svipta íslenskum ríkisborgararétti að ósekju
-    | NlFrumlag_þf HjSögnMegiSkuli_et_p3 FsAtv? So_2_nh_þf/fall NlBeintAndlag/fall AtvFsAuka?
+    | NlÓbeintAndlag_þf HjSögnMegiSkuli_et_p3 FsAtv? So_2_nh_þf/fall NlBeintAndlag/fall AtvFsAuka?
 
     # Öllum má tryggja heilbrigðisþjónustu í dag
-    | NlFrumlag_þgf HjSögnMegiSkuli_et_p3 FsAtv? So_2_nh_þgf/fall NlBeintAndlag/fall AtvFsAuka?
+    | NlÓbeintAndlag_þgf HjSögnMegiSkuli_et_p3 FsAtv? So_2_nh_þgf/fall NlBeintAndlag/fall AtvFsAuka?
 
     # Öllum skal [ekki] standa [til boða] menntun (Menntun skal standa öllum til boða)
-    | NlBeintAndlag/aukafall HjSögnMegiSkuli_et_p3 FsAtv? So_1_nh/aukafall FsAtv? NlFrumlag_nf AtvFsAuka?
+    | NlÓbeintAndlag/aukafall HjSögnMegiSkuli_et_p3 FsAtv? So_1_nh/aukafall FsAtv? NlFrumlag_nf AtvFsAuka?
 
     # Mér/okkur/ykkur/börnunum finnst/þykir [mörgum [það]] [ekki] skemmtilegt [að borða góðan mat / hérna í kvöld]
     | NlFrumlag_þgf/tala/kyn HjSögnFinnst FinnstÞað/tala/kyn? FinnstAndlag NhFyllingEðaAtv
 
     # Mér hefur [ekki] þótt [það] vont að sofa á nýju dýnunni
-    | NlFrumlag_þgf HjSögn_et_p3 FsAtv? HjSögnFinnst_sagnb 'það:pfn'_hk_nf_et? FinnstAndlag NhFyllingEðaAtv
+    | Nl_þgf HjSögn_et_p3 FsAtv? HjSögnFinnst_sagnb 'það:pfn'_hk_nf_et? FinnstAndlag NhFyllingEðaAtv
 
     # Þann auð eigum við [ekki] að nýta (í þágu lands og þjóðar)
     | NlBeintAndlag/aukafall so_0/tala/pers NlFrumlag_nf/tala/pers AtvFs? nhm So_1_nh/aukafall FsAtv?
@@ -839,6 +851,7 @@ SetningAukafall →
 SetningAukafallForgangur →
     # Öllum er frjálst/fyrir bestu að ákveða snarlega að flytja úr landi
     NlFrumlag_þgf HjSögnLhÞt_et_p3 FsRuna? LhÞtÞgfEinkunn NhFyllingEðaAtv
+
 
 FinnstÞað/tala/kyn →
     'það:pfn'_hk_nf_et LoÞgf/tala/kyn  # Bílstjórum finnst það mörgum leiðinlegt
@@ -1078,7 +1091,7 @@ OgVeraVerða_gm_p3/tala →
 # '(Í gær) skrifuðu þær konur þingmönnum bréf sem voru heitastar í málinu'
 
 SagnliðurMeðF/tala/pers/kyn →
-    SögnMeðF/tala/pers/kyn Tengiliður/tala/pers/kyn?
+    SögnMeðF/tala/pers/kyn Tilvísunarsetning/tala/pers/kyn?
 
 SögnMeðF/tala/pers/kyn →
     SögnMeðF_0/tala/pers/kyn   # Sögn með engu viðfangi: (Í dag) skánaði veðrið
@@ -1176,7 +1189,6 @@ Sögn_lhþt/tala/pers/kyn →
     HjSögnLhÞtSM/tala/pers HreinSögn_lhþt/tala/kyn
     # er leiðinlegur, hefur verið frábær, munu vera einstök
     | SögnErLo/tala/pers/kyn
-    | SögnErEinsOg/tala/pers
     # talin er/hefur verið [liggja undir grun]
     | so_0_lhþt/tala/kyn HjSögnLhÞtSM/tala/pers LhÞtBotn/tala/kyn?
 
@@ -1198,13 +1210,8 @@ LoMeðÞf_nf/tala/kyn →
     | 'viðriðinn:lo'_sb_nf/tala/kyn     # viðriðinn málið
     | 'viðloðandi:lo'_sb_nf/tala/kyn    # viðloðandi kommúnistaflokka
 
-SögnErEinsOg/tala/pers →
-    # er [í laginu alveg] eins og krakki í sælgætisbúð
-    HjSögnLhÞt/tala/pers FsAtv? "eins:ao" "og:st" Nl_nf
-
 # Hvetja til 'er/var/hefur verið...' + lýsingarorð í nefnifalli og sterkri beygingu
 $score(+8) SögnErLo/tala/pers/kyn
-$score(+6) SögnErEinsOg/tala/pers
 
 LhÞtÞgfBotn → 'fyrir:fs'_þgf 'góður:lo'_esb_hk_þgf_et  # Það sem er börnum fyrir bestu
 
@@ -1430,7 +1437,7 @@ SögnMeðF_0/tala/pers/kyn →
     | HjSögnSkuluMunu/tala/pers NlFrumlag_nf/tala/pers/kyn VeraVerðaAtv? HreinSögn_lhþt/tala/kyn
 
 SögnMeðF_nh/tala/pers/kyn →
-    HjSögnNh/tala/pers NlFrumlag_nf/tala/pers/kyn HreinSögn_nh/tala/kyn # (Í stað takka) vill Apple koma fyrir snertiskynjurum
+    HjSögnNh/tala/pers NlFrumlag_nf/tala/pers/kyn Atviksliður? HreinSögn_nh/tala/kyn # (Í stað takka) vill Apple koma fyrir snertiskynjurum
 
 $score(+4) SögnMeðF_nh/tala/pers/kyn
 
@@ -2256,20 +2263,20 @@ $tag(pick_up_verb) ÖfugSögn_2/tala/pers/kyn
 $tag(pick_up_verb) SagnliðurÁnF
 $tag(pick_up_verb) NhLiður
 
-# Nafnliðir og frumlög (nafnliðir í nefnifalli)
+# Nafnliðir
 
-NlFrumlag/fall → Nl/fall
-NlFrumlag/fall/tala/pers/kyn → Nl/fall/tala/pers/kyn
-NlFrumlag/fall/tala/kyn → Nl/fall/tala/kyn
-NlFrumlag/fall/tala → Nl/fall/tala
-NlFrumlag/fall/tala/pers → Nl/fall/tala/pers
-NlBeintAndlag/fall → Nl/fall
-NlBeintAndlag/fall/tala/pers/kyn → Nl/fall/tala/pers/kyn
-NlBeintAndlag/fall/tala/pers → Nl/fall/tala/pers
-NlBeintAndlag_nf_þf/tala → Nl_nf_þf/tala
-NlÓbeintAndlag/fall → Nl/fall
-NlSagnfylling/fall → Nl/fall
-NlSagnfylling/fall/tala/pers/kyn → Nl/fall/tala/pers/kyn
+NlFrumlag/fall → Nl/fall | Skýringarsetning
+NlFrumlag/fall/tala/pers/kyn → Nl/fall/tala/pers/kyn | Skýringarsetning
+NlFrumlag/fall/tala/kyn → Nl/fall/tala/kyn | Skýringarsetning
+NlFrumlag/fall/tala → Nl/fall/tala | Skýringarsetning
+NlFrumlag/fall/tala/pers → Nl/fall/tala/pers | Skýringarsetning
+NlBeintAndlag/fall → Nl/fall | Spurnaraukasetning | Skýringarsetning
+NlBeintAndlag/fall/tala/pers/kyn → Nl/fall/tala/pers/kyn | Spurnaraukasetning | Skýringarsetning
+NlBeintAndlag/fall/tala/pers → Nl/fall/tala/pers | Spurnaraukasetning | Skýringarsetning
+NlBeintAndlag_nf_þf/tala → Nl_nf_þf/tala | Spurnaraukasetning | Skýringarsetning
+NlÓbeintAndlag/fall → Nl/fall | Skýringarsetning
+NlSagnfylling/fall → Nl/fall | Skýringarsetning
+NlSagnfylling/fall/tala/pers/kyn → Nl/fall/tala/pers/kyn | Skýringarsetning
 
 $score(+1) NlBeintAndlag/fall
 $score(+1) NlBeintAndlag/fall/tala/pers
@@ -2295,13 +2302,13 @@ Einkunn/tala/fall/kyn →
     | Fornafn/tala/fall/kyn     # Sá (stóri maður), allt þetta (víkjandi lán)
     | Töluorð/tala/fall/kyn     # þrjá (gangandi menn) / 26
     | OkkarYkkar                # 'okkar skoðanir', 'ykkar félag' (okkar og ykkar eru pfn, ekki fn)
-    | GreinirMeðLo/tala/fall/kyn  # Tilbrigði 2.1 (hluti)
+    | GreinirMeðLo/tala/fall/kyn 
 
 # 'Skjölin voru mörg hundruð síður', 'Í húsinu voru fleiri þúsund hænur', 'hún saknaði mörg hundruð hálsmena'
 Einkunn_ft/fall/kyn →
     HundruðForskeyti Hundruð
 
-$score(+8) Einkunn/tala/fall/kyn
+$score(+4) Einkunn/tala/fall/kyn
 
 HundruðForskeyti → 'margur:lo'_sb_hk_nf_ft | 'margur:lo'_mst_hk_nf_ft # mörg, fleiri
 
@@ -2541,15 +2548,12 @@ OkkarYkkar → "okkar:fn" | "ykkar:fn"
 # Gefa stökum fornöfnum mínusstig - við viljum frekar sjá þau sem hluta af stærri nafnlið
 $score(-4) NlFornafn/tala/fall/kyn
 
-# TODO ný regla - Tilbrigði 2.1
 GreinirMeðLo/tala/fall/kyn →
     Greinir/tala/fall/kyn LoLiður/tala/fall/kyn
 
-# Tilbrigði 2.1
 Greinir/tala/fall/kyn →
     'hinn:gr'/tala/fall/kyn
 
-#TODO Nýtt - Tilbrigði 2.1
 $score(+6) GreinirMeðLo/tala/fall/kyn
 
 # Lýsingarorð sem stendur sem nafnliður:
@@ -2594,8 +2598,8 @@ NlStak_p3/tala/fall/kyn →
     'sá:fn'/tala/fall/kyn Nl/fall/tala/kyn AtvFs? Útskýring
 
 Útskýring →
-    ',' "að:st" HreinYfirsetning ','
-    | "að:st" HreinYfirsetning
+    ',' Skýringarsetning ','
+    | Skýringarsetning
     | NhFyllingÁnAtv # Sú ákvörðun Úkraínustjórnar [í gær] að loka á síður
 
 $score(+12) Útskýring
@@ -2663,7 +2667,7 @@ VeikSögnLhÞt/tala/fall/kyn →
 
 EinVeikSögnLhÞt/tala/fall/kyn → so_lhþt/tala/fall/kyn
 
-$score(-6) EinVeikSögnLhÞt/tala/fall/kyn
+$score(-4) EinVeikSögnLhÞt/tala/fall/kyn
 
 # Meðhöndla "árið 2012" og "árin 2013 og 2014" með háum forgangi
 
@@ -2791,6 +2795,8 @@ NlStak_ft_p3/fall/kyn →
 # Hvorki X né Y
 # Bæði X og Y
 # Annaðhvort X eða Y
+# Annað hvort X eða Y
+# Ýmist X eða Y
 
 # Sama kyn á X og Y
 
@@ -2798,10 +2804,10 @@ NlStak_ft_p3/fall/kyn → NlBæðiHvorki/fall/kyn
 
 NlBæðiHvorki/fall/kyn →
     "bæði:st" Nl/fall/kyn "og:st" Nl/fall/kyn                   # (Við þurftum að lóga) bæði hestinum og kettinum
-    | "hvorki:ao" Nl/fall/kyn "né:st" Nl/fall/kyn               # Hvorki hestinum né kettinum (var lógað)
-    | "annaðhvort:fn" Nl/fall/kyn "eða:st" Nl/fall/kyn          # Annaðhvort hestinum eða kettinum (var lógað)
+    | "hvorki:st" Nl/fall/kyn "né:st" Nl/fall/kyn               # Hvorki hestinum né kettinum (var lógað)
+    | "annaðhvort:st" Nl/fall/kyn "eða:st" Nl/fall/kyn          # Annaðhvort hestinum eða kettinum (var lógað)
     | "annað:fn" "hvort:fn" Nl/fall/kyn "eða:st" Nl/fall/kyn    # Annaðhvort hestinum eða kettinum (var lógað)
-
+    | "ýmist:st" Nl/fall/kyn "eða:st" Nl/fall/kyn               # Ýmist hestinum eða kettinum (var lógað)
 $score(+4) NlBæðiHvorki/fall/kyn
 
 NlStak_ft_p3_nf_hk → NlStak_ft_p3_hk_nf
@@ -2824,19 +2830,19 @@ NlBæðiHvorki_p3_hk/fall →
     | "bæði:fn" Nl_kvk/fall "og:st" Nl_hk/fall
     | "bæði:fn" Nl_hk/fall "og:st" Nl_kvk/fall
 
-    | "hvorki:ao" Nl_kk/fall "né:st" Nl_kvk/fall
-    | "hvorki:ao" Nl_kvk/fall "né:st" Nl_kk/fall
-    | "hvorki:ao" Nl_kk/fall "né:st" Nl_hk/fall
-    | "hvorki:ao" Nl_hk/fall "né:st" Nl_kk/fall
-    | "hvorki:ao" Nl_kvk/fall "né:st" Nl_hk/fall
-    | "hvorki:ao" Nl_hk/fall "né:st" Nl_kvk/fall
+    | "hvorki:st" Nl_kk/fall "né:st" Nl_kvk/fall
+    | "hvorki:st" Nl_kvk/fall "né:st" Nl_kk/fall
+    | "hvorki:st" Nl_kk/fall "né:st" Nl_hk/fall
+    | "hvorki:st" Nl_hk/fall "né:st" Nl_kk/fall
+    | "hvorki:st" Nl_kvk/fall "né:st" Nl_hk/fall
+    | "hvorki:st" Nl_hk/fall "né:st" Nl_kvk/fall
 
-    | "annaðhvort:fn" Nl_kk/fall "eða:st" Nl_kvk/fall
-    | "annaðhvort:fn" Nl_kvk/fall "eða:st" Nl_kk/fall
-    | "annaðhvort:fn" Nl_kk/fall "eða:st" Nl_hk/fall
-    | "annaðhvort:fn" Nl_hk/fall "eða:st" Nl_kk/fall
-    | "annaðhvort:fn" Nl_kvk/fall "eða:st" Nl_hk/fall
-    | "annaðhvort:fn" Nl_hk/fall "eða:st" Nl_kvk/fall
+    | "annaðhvort:st" Nl_kk/fall "eða:st" Nl_kvk/fall
+    | "annaðhvort:st" Nl_kvk/fall "eða:st" Nl_kk/fall
+    | "annaðhvort:st" Nl_kk/fall "eða:st" Nl_hk/fall
+    | "annaðhvort:st" Nl_hk/fall "eða:st" Nl_kk/fall
+    | "annaðhvort:st" Nl_kvk/fall "eða:st" Nl_hk/fall
+    | "annaðhvort:st" Nl_hk/fall "eða:st" Nl_kvk/fall
 
     | "annað:fn" "hvort:fn" Nl_kk/fall "eða:st" Nl_kvk/fall
     | "annað:fn" "hvort:fn" Nl_kvk/fall "eða:st" Nl_kk/fall
@@ -2845,19 +2851,27 @@ NlBæðiHvorki_p3_hk/fall →
     | "annað:fn" "hvort:fn" Nl_kvk/fall "eða:st" Nl_hk/fall
     | "annað:fn" "hvort:fn" Nl_hk/fall "eða:st" Nl_kvk/fall
 
+    | "ýmist:st" Nl_kk/fall "eða:st" Nl_kvk/fall
+    | "ýmist:st" Nl_kvk/fall "eða:st" Nl_kk/fall
+    | "ýmist:st" Nl_kk/fall "eða:st" Nl_hk/fall
+    | "ýmist:st" Nl_hk/fall "eða:st" Nl_kk/fall
+    | "ýmist:st" Nl_kvk/fall "eða:st" Nl_hk/fall
+    | "ýmist:st" Nl_hk/fall "eða:st" Nl_kvk/fall
+
 $score(+4) NlBæðiHvorki_p3_hk/fall
 
 NlStak_ft_p1/fall/kyn → NlBæðiHvorki_p1_hk/fall
 
 NlBæðiHvorki_p1_hk/fall →
     "bæði:fn" Nl_p1/fall/kyn "og:st" Nl_p2/fall/kyn             # bæði mér og þér þykir þetta óásættanlegt
-    | "hvorki:ao" Nl_p1/fall/kyn "né:st" Nl_p2/fall/kyn         # hvorki ég né þú höfum vit á þessu
-    | "annaðhvort:fn" Nl_p1/fall/kyn "eða:st" Nl_p2/fall/kyn    # annaðhvort ég eða þú þurfum að fara
-    | "annað:fn" "hvort:fn" Nl_p1/fall/kyn "eða:st" Nl_p2/fall/kyn # annaðhvort ég eða þú þurfum að fara
+    | "hvorki:st" Nl_p1/fall/kyn "né:st" Nl_p2/fall/kyn         # hvorki ég né þú höfum vit á þessu
+    | "annaðhvort:st" Nl_p1/fall/kyn "eða:st" Nl_p2/fall/kyn    # annaðhvort ég eða þú þurfum að fara
+    | "annað:fn" "hvort:fn" Nl_p1/fall/kyn "eða:st" Nl_p2/fall/kyn # annað hvort ég eða þú þurfum að fara
     | "bæði:fn" Nl_p2/fall/kyn "og:st" Nl_p1/fall/kyn           # bæði þér og mér þykir þetta óásættanlegt
-    | "hvorki:ao" Nl_p2/fall/kyn "né" Nl_p1/fall/kyn            # hvorki þú né ég erum fallegar/falleg/fallegir
-    | "annaðhvort:fn" Nl_p2/fall/kyn "eða:st" Nl_p1/fall/kyn    # annaðhvort þú eða ég erum fallegar/falleg/fallegir
-    | "annað:fn" "hvort:fn" Nl_p2/fall/kyn "eða:st" Nl_p1/fall/kyn # annaðhvort þú eða ég erum fallegar/falleg/fallegir
+    | "hvorki:st" Nl_p2/fall/kyn "né" Nl_p1/fall/kyn            # hvorki þú né ég erum fallegar/falleg/fallegir
+    | "annaðhvort:st" Nl_p2/fall/kyn "eða:st" Nl_p1/fall/kyn    # annaðhvort þú eða ég erum fallegar/falleg/fallegir
+    | "annað:fn" "hvort:fn" Nl_p2/fall/kyn "eða:st" Nl_p1/fall/kyn # annað hvort þú eða ég erum fallegar/falleg/fallegir
+    | "ýmist:st" Nl_p2/fall/kyn "eða:st" Nl_p1/fall/kyn         # ýmist þú eða ég erum fallegar/falleg/fallegir
 
 $score(+4) NlBæðiHvorki_p1_hk/fall
 
@@ -3124,7 +3138,9 @@ $score(+8) Prósenta
 
 ÓbeygðEining →
     'prósent:hk'_ef_ft
-    | 'tomma:kvk'_ef_et # '45 tommu flatskjá' (í stað '45 tomma flatskjá', sem er málfræðilega rétt)
+    | 'tomma:kvk'_ef_et     # '45 tommu flatskjá' (í stað '45 tomma flatskjá', sem er málfræðilega rétt)
+    | 'stjarna:kvk'_ef_et   # Fjögurra stjörnu veitingastaður (ekki fjögurra stjarna veitingastaður)
+    | 'hola:kvk'_ef_et      # Átján holu golfvöllur (ekki átján hol(n)a golfvöllur)
 
 EfLiðurForskeytiKjarni_et/kyn → Fyrirbæri_ef/kyn
 EfLiðurForskeytiKjarni_ft/kyn → no_ef_ft/kyn
@@ -3167,24 +3183,24 @@ Töluorð/fall/tala/kyn → Töluorð/tala/fall/kyn
 # Gefa undirsetningum afmörkuðum með kommum forgang,
 # en forðast verri kosti
 
-TengiliðurMeðKommu/tala/pers/kyn →
-      ',' Tengiliður/tala/pers/kyn ','
-    >     Tengiliður/tala/pers/kyn
-    >     Tengiliður/tala/pers/kyn ','
-    > ',' Tengiliður/tala/pers/kyn
+TilvísunarsetningMeðKommu/tala/pers/kyn →
+      ',' Tilvísunarsetning/tala/pers/kyn ','
+    >     Tilvísunarsetning/tala/pers/kyn
+    >     Tilvísunarsetning/tala/pers/kyn ','
+    > ',' Tilvísunarsetning/tala/pers/kyn
 
-# KommaTengiliður er einungis notað í lok venjulegrar
+# KommaTilvísunarsetning er einungis notað í lok venjulegrar
 # setningar með frumlagi í nefnifalli, sbr.
 # Allir mega koma með okkur sem eru fullklæddir
-KommaTengiliður/tala/pers/kyn →
+KommaTilvísunarsetning/tala/pers/kyn →
     ','? "sem:stt" SetningÁnF/tala/pers/kyn
 
-$score(-8) KommaTengiliður/tala/pers/kyn
+$score(-8) KommaTilvísunarsetning/tala/pers/kyn
 
-Tengiliður/tala/pers/kyn →
-    Tengiorð Tengisetning/tala/pers/kyn OgTengisetning/tala/pers/kyn*
+Tilvísunarsetning/tala/pers/kyn →
+    Tilvísunartenging Tengisetning/tala/pers/kyn OgTengisetning/tala/pers/kyn*
 
-Tengiorð →
+Tilvísunartenging →
     TengiorðSem | TengiorðEr | TengiorðÞarSem
 
 TengiorðSem → "eða:st"? "sem:stt"
@@ -3199,10 +3215,18 @@ $score(-6) TengiorðEr # Sjaldgæft - ekki velja nema það þurfi
 
 Tengisetning/tala/pers/kyn →
     TengiYfirsetning            # (Maðurinn sem) konan kyssti í gær / konurnar kysstu í gær
-    | SetningÁnF/tala/pers/kyn  # (Maðurinn sem) kyssti konuna í gær / (Maðurinn sem) var fallegur
-
+    | BeygingarliðurÁnF/tala/pers/kyn  # (Maðurinn sem) kyssti konuna í gær / (Maðurinn sem) var fallegur
+ 
 TengiYfirsetning →
     HreinYfirsetning
+
+BeygingarliðurÁnF → 
+    BeygingarliðurÁnF/tala/pers/kyn
+
+BeygingarliðurÁnF/tala/pers/kyn →
+    SetningÁnF/tala/pers/kyn
+
+$score(+2) BeygingarliðurÁnF/tala/pers/kyn
 
 # Nota frekar SetningÁnF heldur en HreinYfirsetning, ef völ er á hvoru tveggja
 $score(-4) TengiYfirsetning
@@ -3223,7 +3247,7 @@ NlEind_p3/fall/kyn →
     NlEind_et_p3/fall/kyn | NlEind_ft_p3/fall/kyn
 
 NlEind/tala/pers/fall/kyn →
-    NlStak/tala/pers/fall/kyn Sem/tala/fall/kyn? TengiliðurMeðKommu/tala/pers/kyn?
+    NlStak/tala/pers/fall/kyn Sem/tala/fall/kyn? TilvísunarsetningMeðKommu/tala/pers/kyn?
         Þó/tala/pers/kyn? NlSkýring/tala/pers/fall/kyn?
 
 # (vegna nauðasamninganna) sem slíkra
@@ -3258,8 +3282,8 @@ NlEind_et_p3_ef_hk →
     'það:pfn'_hk_ef_et 'einn:fn'_ef_et_hk? ÞaðTenging
 
 ÞaðTenging →
-    FsAtv? "að:st" HreinYfirsetning
-    | SpurnarSamtenging HreinYfirsetning
+    Skýringarsetning
+    Spurnarsetning
     | NhLiðir  # Það að fara til tannlæknis (reynist mörgum þyrnir í augum)
 
 $score(+32) ÞaðTenging
@@ -3290,7 +3314,7 @@ $score(+6) NlSkýring/tala/pers/fall/kyn
 
 SvigaInnihald/tala/pers/fall/kyn →
     Árabil
-    > Tengiliður/tala/pers/kyn # (og sem ég er almennt fylgjandi)
+    > Tilvísunarsetning/tala/pers/kyn # (og sem ég er almennt fylgjandi)
     > Nl/fall/tala      # 'Ég spurði forsætisráðherra, Sigmund Davíð, um málið'
     > SvigaInnihaldFsRuna
     > SvigaInnihaldNl   # Ef ekki finnst sama fall og tala, prófa almennan nafnlið
@@ -3345,18 +3369,10 @@ OgEða → "og:st" | "eða:st" | "ellegar:st" | "eður:st"
     | "svo:st" "og:st" | "sem:st" "og:st" | "né:st"
     | ÞarÁMeðal | "meðal:ao" "annars:ao" | 'meðal_annars:ao'
     | 'það:pfn'_hk_et_nf "er:st" | 'það_er:ao'
-    | 'líkt_og:st' | "jafnt:ao" "sem:st"
+    | "eins:ao" "og:st" | 'líkt_og:st' | "jafnt:ao" "sem:st"
     | "þar:ao" "með:ao" 'telja:so'_lhþt_sb_hk_nf_et?
     | "svo:st" "sem:st" | 'svo_sem:st'
-    | EinsOg
     | EnÍOgEða
-
-$score(+2) OgEða
-
-EinsOg →
-    "eins:ao" "og:st" 
-
-$score(+4) EinsOg # Gefa hátt skor til að yfirvinna eignarfallslið
 
 EnÍOgEða →
     "en:st"
@@ -3475,7 +3491,7 @@ Nl_ft_p3/fall/kyn →
     NlSamaKyn/fall/kyn
 
 NlSamaKyn/fall/kyn →
-    NlSá_ft/fall/kyn? NlEind_p3/fall/kyn NlRuna/fall/kyn+ TengiliðurMeðKommu_ft_p3/kyn?
+    NlSá_ft/fall/kyn? NlEind_p3/fall/kyn NlRuna/fall/kyn+ TilvísunarsetningMeðKommu_ft_p3/kyn?
 
 # Fleirtölunafnliðir af sama kyni eru betri en blandaðir
 $score(+2) NlSamaKyn/fall/kyn
@@ -3489,16 +3505,16 @@ NlSá_ft/fall/kyn →
 # og einnig 'sumir, þar á meðal Jón,'
 
 Nl_ft_p3_nf_hk →
-    NlSá_ft_nf_hk? NlEind_nf NlRuna_nf+ TengiliðurMeðKommu_ft_p3_hk? # Blandað kyn verður að hvorugkyni fleirtölu
+    NlSá_ft_nf_hk? NlEind_nf NlRuna_nf+ TilvísunarsetningMeðKommu_ft_p3_hk? # Blandað kyn verður að hvorugkyni fleirtölu
 
 Nl_ft_p3_þf_hk →
-    NlSá_ft_þf_hk? NlEind_þf NlRuna_þf+ TengiliðurMeðKommu_ft_p3_hk? # Blandað kyn verður að hvorugkyni fleirtölu
+    NlSá_ft_þf_hk? NlEind_þf NlRuna_þf+ TilvísunarsetningMeðKommu_ft_p3_hk? # Blandað kyn verður að hvorugkyni fleirtölu
 
 Nl_ft_p3_þgf_hk →
-    NlSá_ft_þgf_hk? NlEind_þgf NlRuna_þgf+ TengiliðurMeðKommu_ft_p3_hk? # Blandað kyn verður að hvorugkyni fleirtölu
+    NlSá_ft_þgf_hk? NlEind_þgf NlRuna_þgf+ TilvísunarsetningMeðKommu_ft_p3_hk? # Blandað kyn verður að hvorugkyni fleirtölu
 
 Nl_ft_p3_ef_hk →
-    NlSá_ft_ef_hk? NlEind_ef NlRuna_ef+ TengiliðurMeðKommu_ft_p3_hk? # Blandað kyn verður að hvorugkyni fleirtölu
+    NlSá_ft_ef_hk? NlEind_ef NlRuna_ef+ TilvísunarsetningMeðKommu_ft_p3_hk? # Blandað kyn verður að hvorugkyni fleirtölu
 
 # Lýsingarorðaliður
 
@@ -3509,12 +3525,11 @@ Nl_ft_p3_ef_hk →
 # nafnorðið er með greini eða án. (Sbr.: 'Fallega konan talaði við mig'
 # vs. 'Falleg kona talaði við mig'.)
 Lo/fall/tala/kyn →
-    LoSemLo/fall/tala/kyn   # Tilbrigði 3.1
+    LoSemLo/fall/tala/kyn
     | LoMun/fall/tala/kyn
     | LoSem/fall/tala/kyn
     | LoSemSo/fall/tala/kyn
 
-# Tilbrigði 3.1
 LoSemLo/fall/tala/kyn → 
     AtviksliðurEinkunn* lo/fall/tala/kyn # (Þingmenn) kosnir leynilegri kosningu
 
@@ -3529,7 +3544,6 @@ LoSem/fall/tala/kyn →
 
 $score(+4) LoSem/fall/tala/kyn
 
-# Tilbrigði 3.1
 # Leyfa sagnorðum að standa í stað lýsingarorða ef þau
 # eru í lýsingarhætti þátíðar, sterkri eða veikri beygingu
 # (_vb leyfir veika beygingu ásamt sterkri)
@@ -3653,10 +3667,34 @@ LoSamanb/tala/fall/kyn →
     | LoSamanbFleiri/fall/tala/kyn
 
 LoSamanbFleiri/fall/tala/kyn →
-    Samanburðarmerki "ýmist:st" LoEðaFs/fall/tala/kyn "eða:st" LoEðaFs/fall/tala/kyn LokatáknEðaKomma
-    | "ýmist:st" LoEðaFs/fall/tala/kyn "eða:st" LoEðaFs/fall/tala/kyn
-    | Samanburðarmerki "bæði:st" LoEðaFs/fall/tala/kyn "og:st" LoEðaFs/fall/tala/kyn LokatáknEðaKomma
-    | "bæði:st" LoEðaFs/fall/tala/kyn "og:st" LoEðaFs/fall/tala/kyn
+    # ýmist blár eða með gullnum blæ
+    Samanburðarmerki "ýmist:st" LoTengtSögn/tala/fall/kyn "eða:st" LoTengtSögn/tala/fall/kyn LokatáknEðaKomma
+    | Samanburðarmerki "ýmist:st" LoTengtSögn/tala/fall/kyn "eða:st" FsAtv LokatáknEðaKomma
+    | Samanburðarmerki "ýmist:st" FsAtv "eða:st" LoTengtSögn/tala/fall/kyn LokatáknEðaKomma
+    | "ýmist:st" LoTengtSögn/tala/fall/kyn "eða:st" LoTengtSögn/tala/fall/kyn
+    | "ýmist:st" FsAtv "eða:st" LoTengtSögn/tala/fall/kyn
+    | "ýmist:st" LoTengtSögn/tala/fall/kyn "eða:st" FsAtv
+    # bæði skjálfandi og í svitabaði
+    | Samanburðarmerki "bæði:st" LoTengtSögn/tala/fall/kyn "og:st" LoTengtSögn/tala/fall/kyn LokatáknEðaKomma
+    | Samanburðarmerki "bæði:st" LoTengtSögn/tala/fall/kyn "og:st" FsAtv LokatáknEðaKomma
+    | Samanburðarmerki "bæði:st" FsAtv "og:st" LoTengtSögn/tala/fall/kyn LokatáknEðaKomma
+    | "bæði:st" LoTengtSögn/tala/fall/kyn "og:st" LoTengtSögn/tala/fall/kyn
+    | "bæði:st" FsAtv "og:st" LoTengtSögn/tala/fall/kyn
+    | "bæði:st" LoTengtSögn/tala/fall/kyn "og:st" FsAtv
+    # annaðhvort með fullan maga eða hungurmorða
+    | Samanburðarmerki "annaðhvort:st" LoTengtSögn/tala/fall/kyn "eða:st" LoTengtSögn/tala/fall/kyn LokatáknEðaKomma
+    | Samanburðarmerki "annaðhvort:st" LoTengtSögn/tala/fall/kyn "eða:st" FsAtv LokatáknEðaKomma
+    | Samanburðarmerki "annaðhvort:st" FsAtv "eða:st" LoTengtSögn/tala/fall/kyn LokatáknEðaKomma
+    | "annaðhvort:st" LoTengtSögn/tala/fall/kyn "eða:st" LoTengtSögn/tala/fall/kyn
+    | "annaðhvort:st" FsAtv "eða:st" LoTengtSögn/tala/fall/kyn
+    | "annaðhvort:st" LoTengtSögn/tala/fall/kyn "eða:st" FsAtv
+    # hvorki í djúpum þönkum né hugsandi
+    | Samanburðarmerki "hvorki:st" LoTengtSögn/tala/fall/kyn "né:st" LoTengtSögn/tala/fall/kyn LokatáknEðaKomma
+    | Samanburðarmerki "hvorki:st" LoTengtSögn/tala/fall/kyn "né:st" FsAtv LokatáknEðaKomma
+    | Samanburðarmerki "hvorki:st" FsAtv "né:st" LoTengtSögn/tala/fall/kyn LokatáknEðaKomma
+    | "hvorki:st" LoTengtSögn/tala/fall/kyn "né:st" LoTengtSögn/tala/fall/kyn
+    | "hvorki:st" FsAtv "né:st" LoTengtSögn/tala/fall/kyn
+    | "hvorki:st" LoTengtSögn/tala/fall/kyn "né:st" FsAtv
     # Við vorum flest [,] ef ekki öll [,] hrifin af söng Maríu
     | LoEðaFs/fall/tala/kyn "ef:st" "ekki:ao" LoEðaFs/fall/tala/kyn
     | LoEðaFs/fall/tala/kyn "," "ef:st" "ekki:ao" LoEðaFs/fall/tala/kyn LokatáknEðaKomma
@@ -3731,16 +3769,18 @@ FsMeðFallstjórn →
     # 'með að [gera]...', '(Löngunin) til að [berja]...', '(Áhættan) við að [kaupa]...',
     # '(Hættan) á að [aka]...'
     | fs_nh FsMeðNh
+    | fs/fall Skýringarsetning
     | 'nær:fs'_þgf 'draga:so'_op_gm_et_p3 Nl_þgf # 'þegar nær dró/dregur jólum'
-    | "beggja:fn" 'vegna:fs'_ef Nl_ef       # 'beggja vegna vegarins'
-    | 'fyrir_hönd:fs'_ef Nl_ef              # Skammstöfunin f.h.
-    | 'með_tilliti_til:fs'_ef Nl_ef         # Skammstöfunin m.t.t.
+    | 'fyrir_hönd:fs'_ef Nl_ef             # Skammstöfunin f.h.
+    | "beggja:fn" 'vegna:fs'_ef Nl_ef      # 'beggja vegna vegarins'
+    | 'með_tilliti_til:fs'_ef Nl_ef        # Skammstöfunin m.t.t.
+    | 'samanbera:so'_lhþt_sb_hk_nf_et 'við:fs'_þf Nl_þf         # samanborið við (fyrra ár)
     | 'bera:so'_lhþt_sb_hk_nf_et "saman:ao" 'við:fs'_þf Nl_þf   # borið saman við (fyrra ár)
-    | "þegar:st" 'koma:so'_gm_p3_et 'að:fs'_þgf Nl_þgf          # þegar kom/kemur að (umhverfismálunum)
     | "fyrir:ao" "nú:ao"? 'utan:fs'_þf Nl_þf
+    | "innan:ao" 'við:fs'_þf Nl_þf
     | "innan:ao" "sem:st" 'utan:fs'_ef Nl_ef
     | "hvað:ao" FsHvaðVarðar
-    | "allt:fn" 'frá:fs'_þgf Nl_þgf         # allt frá hruni, allt frá börnum til fullorðinna
+    | 'allt:fn'_nf_hk_et 'frá:fs'_þgf Nl_þgf     # allt frá hruni, allt frá börnum til fullorðinna
     # 'um að lög um endurupptökunefnd standist ekki stjórnarskrá' - Ath: 'um það að' er höndlað í ÞaðTenging
     | 'um:fs'_þf "að:st" HreinYfirsetning ','?
     # 'er bjartsýnn á að Alfreð komi aftur í liðið' - Ath: 'á það/því að' er höndlað í ÞaðTenging
@@ -3848,10 +3888,11 @@ FsAtvFramhald → KommaOgEðaEn EinFsAtv+
 EinFsAtv →
     Nema? FsMeðFallstjórn
     | EinnAl
-    | "hvorki:ao" EinEinföldFsAtv+ "né:st" EinEinföldFsAtv+ # 'hvorki í Frakklandi né annars staðar í Evrópusambandinu'
+    | "hvorki:st" EinEinföldFsAtv+ "né:st" EinEinföldFsAtv+ # 'hvorki í Frakklandi né annars staðar í Evrópusambandinu'
     | "annað:fn" "hvort:st" EinEinföldFsAtv+ "eða:st" EinEinföldFsAtv+ # 'annað hvort í Breiðholti eða við World Class'
-    | "annaðhvort:fn" EinEinföldFsAtv+ "eða:st" EinEinföldFsAtv+ # 'annaðhvort í Breiðholti eða við World Class'
+    | "annaðhvort:st" EinEinföldFsAtv+ "eða:st" EinEinföldFsAtv+ # 'annaðhvort í Breiðholti eða við World Class'
     | "bæði:st" EinEinföldFsAtv+ ','? "og:st" EinEinföldFsAtv+
+    | "ýmist:ao" EinEinföldFsAtv+ "eða:st" EinEinföldFsAtv+
     | SögnLhNt
 
 EinEinföldFsAtv → FsMeðFallstjórn | EinnAl | Atvikssetning
@@ -3949,6 +3990,8 @@ $tag(no_prep) EinnAl        # Engar forsetningar hér inni - óþarfi að skoða
 AlMiðstig →
     MiðstigForskeyti? ao_mst EnSamanb_nf? # (Gunnar ók) [mun/miklu] hraðar [en Jón gat ímyndað sér]
 
+$score(-3) AlMiðstig
+
 EkkiNeitt →
     "ekki:ao" "neitt:ao"    # (Ég þekki þetta) ekki neitt
 
@@ -4003,7 +4046,7 @@ AtviksliðurEinkunn →
     | Dagsetning                    # (hagnaðurinn var strax) árið 2012 (175 milljarðar króna)
     | Tímasetning
     | Aldur                         # Hin 29 ára gamla fyrirsæta
-    | "allt:Fn" "að:ao"             # 'fjárfesta fyrir allt að 100 milljónir króna'
+    | "allt:fn" "að:ao"                # 'fjárfesta fyrir allt að 100 milljónir króna'
     | "svo:ao" "sem:ao"             # 'enda kemur kynlíf þeirra svo sem engum við'
     | UmEðaYfir
 
