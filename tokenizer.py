@@ -32,7 +32,6 @@
 
 from contextlib import closing
 from collections import namedtuple, defaultdict
-from functools import lru_cache
 
 import re
 import codecs
@@ -411,8 +410,8 @@ def parse_digits(w):
         n = re.sub(r'\.', '', w) # Eliminate thousands separators
         return TOK.Number(w, int(n)), s.end()
     s = re.match(r'\d{1,2}/\d{1,2}', w)
-    if s:
-        # Looks like a date
+    if s and (s.end() >= len(w) or w[s.end()] not in DIGITS):
+        # Looks like a date (and not something like 10/2007)
         w = s.group()
         p = w.split('/')
         m = int(p[1])
@@ -532,6 +531,17 @@ def parse_tokens(txt):
                 yield t
                 # Continue where the digits parser left off
                 w = w[eaten:]
+            if w and w.startswith("http://") or w.startswith("https://"):
+                # Handle URL: cut RIGHT_PUNCTUATION characters off its end,
+                # even though many of them are actually allowed according to
+                # the IETF RFC
+                endp = ""
+                while w and w[-1] in RIGHT_PUNCTUATION:
+                    endp = w[-1] + endp
+                    w = w[:-1]
+                yield TOK.Url(w)
+                ate = True
+                w = endp
             # Alphabetic characters
             if w and w[0].isalpha():
                 ate = True
