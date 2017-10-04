@@ -257,9 +257,12 @@ function grammar(cat, m, txt, terminal) {
    }
    $.each(grammarDesc, function(ix, val) {
       if (m.indexOf(val.k) > -1) {
-         if (cat == "fs")
+         if (cat == "fs") {
             // For prepositions, show "stýrir þágufalli" instead of "þágufall"
-            g.push("stýrir " + val.t + "i");
+            // Avoid special case for "synthetic" prepositions (fs_nh)
+            if (val.k !== "NH")
+               g.push("stýrir " + val.t + "i");
+         }
          else
             g.push(val.t);
          m = m.replace(val.k, "");

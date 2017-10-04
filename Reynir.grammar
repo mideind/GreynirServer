@@ -447,9 +447,9 @@ Skilyrðistenging →
     | "nema:st"
 
 Samanburðartenging →
-    "sem:st"
-    | "eins:ao" "og:st"
-    | "líkt" "og:st"
+    "eins:ao" "og:st"
+    | 'líkt_og:st'
+    # | "sem:st"           # !!! TODO: Á þetta að vera hér? En ef svo, þá a.m.k. með stórum mínus.
 
 # Setningar með frumlagi
 
@@ -561,7 +561,7 @@ SamanburðarTengingOg →
     ','? "og:st"               # Erfitt fjarskiptasamband er á staðnum og mikil snjóþyngsli
 
 $score(+4) SamanburðarNlTenging
-$score(-8) SamanburðarTengingOg
+$score(-12) SamanburðarTengingOg
 
 Sjálfur/tala/kyn → 'sjálfur:fn'_nf/tala/kyn
 
@@ -2265,18 +2265,22 @@ $tag(pick_up_verb) NhLiður
 
 # Nafnliðir
 
-NlFrumlag/fall → Nl/fall | Skýringarsetning
-NlFrumlag/fall/tala/pers/kyn → Nl/fall/tala/pers/kyn | Skýringarsetning
-NlFrumlag/fall/tala/kyn → Nl/fall/tala/kyn | Skýringarsetning
-NlFrumlag/fall/tala → Nl/fall/tala | Skýringarsetning
-NlFrumlag/fall/tala/pers → Nl/fall/tala/pers | Skýringarsetning
-NlBeintAndlag/fall → Nl/fall | Spurnaraukasetning | Skýringarsetning
-NlBeintAndlag/fall/tala/pers/kyn → Nl/fall/tala/pers/kyn | Spurnaraukasetning | Skýringarsetning
-NlBeintAndlag/fall/tala/pers → Nl/fall/tala/pers | Spurnaraukasetning | Skýringarsetning
-NlBeintAndlag_nf_þf/tala → Nl_nf_þf/tala | Spurnaraukasetning | Skýringarsetning
-NlÓbeintAndlag/fall → Nl/fall | Skýringarsetning
-NlSagnfylling/fall → Nl/fall | Skýringarsetning
-NlSagnfylling/fall/tala/pers/kyn → Nl/fall/tala/pers/kyn | Skýringarsetning
+# (Kötturinn ákvað) [strax] að Jón væri farinn heim
+NlSkýringarsetning → AtviksliðurEinkunn* Skýringarsetning
+$score(-2) NlSkýringarsetning
+
+NlFrumlag/fall → Nl/fall | NlSkýringarsetning
+NlFrumlag/fall/tala/pers/kyn → Nl/fall/tala/pers/kyn | NlSkýringarsetning
+NlFrumlag/fall/tala/kyn → Nl/fall/tala/kyn | NlSkýringarsetning
+NlFrumlag/fall/tala → Nl/fall/tala | NlSkýringarsetning
+NlFrumlag/fall/tala/pers → Nl/fall/tala/pers | NlSkýringarsetning
+NlBeintAndlag/fall → Nl/fall | Spurnaraukasetning | NlSkýringarsetning
+NlBeintAndlag/fall/tala/pers/kyn → Nl/fall/tala/pers/kyn | Spurnaraukasetning | NlSkýringarsetning
+NlBeintAndlag/fall/tala/pers → Nl/fall/tala/pers | Spurnaraukasetning | NlSkýringarsetning
+NlBeintAndlag_nf_þf/tala → Nl_nf_þf/tala | Spurnaraukasetning | NlSkýringarsetning
+NlÓbeintAndlag/fall → Nl/fall | NlSkýringarsetning
+NlSagnfylling/fall → Nl/fall | NlSkýringarsetning
+NlSagnfylling/fall/tala/pers/kyn → Nl/fall/tala/pers/kyn | NlSkýringarsetning
 
 $score(+1) NlBeintAndlag/fall
 $score(+1) NlBeintAndlag/fall/tala/pers
@@ -3768,8 +3772,7 @@ FsMeðFallstjórn →
     # 'þrátt fyrir að (fara aldrei í Costco)'
     # 'með að [gera]...', '(Löngunin) til að [berja]...', '(Áhættan) við að [kaupa]...',
     # '(Hættan) á að [aka]...'
-    | fs_nh FsMeðNh
-    | fs/fall Skýringarsetning
+    | fs_nh FsAð
     | 'nær:fs'_þgf 'draga:so'_op_gm_et_p3 Nl_þgf # 'þegar nær dró/dregur jólum'
     | 'fyrir_hönd:fs'_ef Nl_ef             # Skammstöfunin f.h.
     | "beggja:fn" 'vegna:fs'_ef Nl_ef      # 'beggja vegna vegarins'
@@ -3803,9 +3806,11 @@ FsMeðFallstjórn →
 
 $score(+1) FsMeðFallstjórn
 
-FsMeðNh → NhLiðir SagnInnskot?
+FsAð →
+    NhLiðir SagnInnskot?    # Þörfin fyrir að læra spænsku í skólum
+    | Skýringarsetning      # Þörfin fyrir að Jón seldi bílinn
 
-$tag(begin_prep_scope) FsMeðNh # Nýtt samhengi fyrir samtengingu sagna og forsetninga
+$tag(begin_prep_scope) FsAð # Nýtt samhengi fyrir samtengingu sagna og forsetninga
 
 # Sagnorð í lýsingarhætti nútíðar sem stendur sjálfstætt með viðfangi, eins og forsetning
 # 'Hún stóð í sömu sporum reykjandi sígarettu'
@@ -4046,7 +4051,7 @@ AtviksliðurEinkunn →
     | Dagsetning                    # (hagnaðurinn var strax) árið 2012 (175 milljarðar króna)
     | Tímasetning
     | Aldur                         # Hin 29 ára gamla fyrirsæta
-    | "allt:fn" "að:ao"                # 'fjárfesta fyrir allt að 100 milljónir króna'
+    | "allt:fn" "að:ao"             # 'fjárfesta fyrir allt að 100 milljónir króna'
     | "svo:ao" "sem:ao"             # 'enda kemur kynlíf þeirra svo sem engum við'
     | UmEðaYfir
 
