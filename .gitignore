@@ -16,6 +16,8 @@ ngram*.txt
 
 # Training data files
 *.pairs
+*.tgz
+*.zip
 
 # Experimental Python stuff
 rnn.py
@@ -103,6 +105,7 @@ console/
 venv/
 p35/
 p358/
+p359/
 
 # Installer logs
 pip-log.txt

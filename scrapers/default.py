@@ -534,6 +534,7 @@ class VisirScraper(ScrapeHelper):
         "/section/", # All /section/X URLs seem to be (extreeeemely long) summaries
         "/property/", # Fasteignaauglýsingar
         "/lifid/",
+        "/paper/fbl/",
         "/soyouthinkyoucansnap"
     ]
 
