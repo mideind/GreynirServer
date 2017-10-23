@@ -53,6 +53,7 @@
 import os
 import time
 import pickle
+import logging
 
 from math import log
 from collections import defaultdict
@@ -480,6 +481,7 @@ class TnT:
         tags = current_state[0][1]
         return [ (w, tags[i + 2][0]) for i, w in enumerate(sent) ]
 
+
 # Global tagger singleton instance
 _TAGGER = None
 # Translation dictionary
@@ -490,7 +492,7 @@ def ifd_tag(text):
     global _TAGGER
     if _TAGGER is None:
         # Load the tagger from a pickle the first time it's used
-        print("Loading TnT model from {0}".format("config" + os.sep + "TnT-model.pickle"))
+        logging.info("Loading TnT model from {0}".format("config" + os.sep + "TnT-model.pickle"))
         _TAGGER = TnT.load("config" + os.sep + "TnT-model.pickle")
         if _TAGGER is None:
             return [] # No tagger model - unable to tag
@@ -507,9 +509,10 @@ def ifd_tag(text):
     for pg in paragraphs(token_stream):
         for _, sent in pg:
             toklist = [ xlt(t.txt) for t in sent if t.txt ]
-            print(f"Toklist: {toklist}")
+            # print(f"Toklist: {toklist}")
             tagged = _TAGGER.tag(toklist)
             result.append(tagged)
+
     # Return a list of paragraphs, consisting of sentences, consisting of tokens
     return result
 
