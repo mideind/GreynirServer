@@ -653,8 +653,14 @@ SetningLo →
     | "gaman:ao" NhLiðir FsAtv?
 
 SetningLoMeðSpurningu →
-    # Aðspurð [um] hvort Jón væri edrú sagði Gunna að hann væri það
-    lo_sb_nf/tala/kyn "um:st"? Spurnarsetning SagnHluti/tala/pers/kyn
+    # Spurð/aðspurð [um / í framhjáhlaupi / eftir atburðinn] hvort Jón væri edrú sagði Gunna að hann væri það
+    LoSpurnarUpplegg/tala/kyn LoSpurnarInnskot? Spurnaraukasetning SagnHluti/tala/pers/kyn
+
+LoSpurnarUpplegg/tala/kyn →
+    lo_sb_nf/tala/kyn | so_lhþt_sb_nf/tala/kyn # spurð/aðspurð/innt
+
+LoSpurnarInnskot →
+    "um:st" | FsAtv
 
 $score(+4) SetningLoMeðSpurningu
 
@@ -3287,7 +3293,7 @@ NlEind_et_p3_ef_hk →
 
 ÞaðTenging →
     Skýringarsetning
-    Spurnarsetning
+    | Spurnarsetning
     | NhLiðir  # Það að fara til tannlæknis (reynist mörgum þyrnir í augum)
 
 $score(+32) ÞaðTenging

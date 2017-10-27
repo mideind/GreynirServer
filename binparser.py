@@ -233,7 +233,7 @@ class BIN_Token(Token):
         "GmbH", "AG",
         "SARL", "S.à.r.l." ])
 
-    # Interrogative adverbs.
+    # Interrogative adverbs
     _SPAO = frozenset([ "hvar", "hvenær", "hvernig", "hvaðan", "hvert", "hví", "hve", "hversu" ])
 
     _UNDERSTOOD_PUNCTUATION = ".?!,:;–-()[]"
@@ -741,10 +741,7 @@ class BIN_Token(Token):
       
         def matcher_spao(m):
             """ Interrogative adverbs """
-            if m.ordfl == "ao" and m.stofn in BIN_Token._SPAO:
-                return True
-            else:
-                return False
+            return m.ordfl == "ao" and m.stofn in BIN_Token._SPAO
 
         def matcher_eo(m):
             """ 'Einkunnarorð': adverb (atviksorð) that is not the same
