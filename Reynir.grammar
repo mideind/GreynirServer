@@ -359,7 +359,8 @@ HversuHve →
 AfLiður/kyn → 'af:fs'_þgf Nl_þgf_ft/pers/kyn
 
 $score(+2) SpurnarAtviksorð
-$score(+8) Spurnaraukasetning
+#$score(+8) Spurnaraukasetning
+$score(+0) Spurnaraukasetning
 
 # Beygingarliðir
 
@@ -417,7 +418,7 @@ Tíðartenging →
 
 Tilgangstenging → 
     'til:fs'_ef 'það:pfn'_hk_ef_et "að:st"
-    |"svo:ao" "að:st"?                 # Líka afleiðingartenging
+    | "svo:ao" "að:st"?                 # Líka afleiðingartenging
 
 Viðurkenningartenging →
     "enda:st" "þótt:st" "að:st"?
@@ -494,9 +495,15 @@ $tag(purge_verb) SagnRuna/tala/pers/kyn
 SagnInnskot →
     FsAtv
     | ÁttFs # suður götuna
+    | EkkiNeitt
 
 # Gefa aukabónus fyrir forsetningar innan SagnInnskots ef þær passa við umlykjandi sögn
 $tag(enable_prep_bonus) SagnInnskot
+
+EkkiNeitt →
+    "ekki:ao" 'neinn:fn'_et_hk_nf # (Hann þekkti þá) ekki neitt
+
+$score(-2) EkkiNeitt # Betra að þekkja fornafnið 'neitt' sem nafnlið
 
 SagnViðhengi/tala/pers/kyn →
     KommaOgEðaEn SagnRuna/tala/pers/kyn
@@ -2543,6 +2550,9 @@ FornafnViðskeyti_et/fall/kyn →
 FornafnViðskeytiLo_ft_ef/kyn →
     AtviksliðurEinkunn* lo_vb_ft_ef/kyn # hvern þeirra fjögurra langsamlega sigursælustu
 
+FornafnViðskeyti_ft/fall/kyn →
+    HverHvor/fall/kyn       # þá hvern fyrir sig / þær hverja í sínu lagi / öll hvert á fætur öðru
+
 #NlFornafn_et/fall/kyn →
 #    # 'hvern þeirra' / 'hverja þeirra' / 'hvert þeirra'
 #    'hver'_et/fall/kyn 'sá'_ft_ef/kyn
@@ -3623,6 +3633,24 @@ LoEftirNl/tala/fall/kyn →
     | ',' LoLiður/tala/fall/kyn FsAtv? LokatáknEðaKomma
     | LoEftirNlMeðÞgf/fall/tala/kyn
     | ',' LoEftirNlMeðÞgf/fall/tala/kyn LokatáknEðaKomma
+
+# '(Stjórnmálaflokkarnir), hver um sig, (lýstu andstöðu við málið)'
+LoEftirNl_ft/fall/kyn →
+    HverHvor/fall/kyn
+    # | ',' HverHvor/fall/kyn LokatáknEðaKomma # Er höndlað sem NlSkýring
+
+HverHvor/fall/kyn →
+    'hver:fn'_et/fall/kyn HverHvorBotn/kyn      # hvern fyrir sig / af öðrum
+    | 'hvor:fn'_et/fall/kyn HverHvorBotn/kyn    # hvorn í sínu lagi / á fætur öðrum
+
+$score(+4) HverHvor/fall/kyn
+
+HverHvorBotn/kyn →
+    'fyrir:fs'_þf 'sig:abfn'_þf                         # fyrir sig
+    | 'um:fs'_þf 'sig:abfn'_þf                          # um sig
+    | 'í:fs'_þgf 'sinn:fn'_et_hk_þgf 'lag:hk'_et_þgf    # í sínu lagi
+    | 'á_fætur' 'annar:fn'_et_þgf/kyn                   # á fætur annarri
+    | 'af:fs'_þgf 'annar:fn'_et_þgf/kyn                 # af öðru
 
 StaktLoEftirNl/tala/fall/kyn →
     ','? LoLiður/tala/fall/kyn
