@@ -23,6 +23,9 @@ of fact and relations between stated facts.
 
 [![Greynir parse tree](https://raw.githubusercontent.com/vthorsteinsson/Reynir/master/static/GreynirTreeExampleSmall.png)](https://raw.githubusercontent.com/vthorsteinsson/Reynir/master/static/GreynirTreeExample.png)
 
+*A parse tree as displayed by Reynir. Nouns and noun phrases are blue, verbs and verb phrases are red,
+adjectives are green, prepositional and adverbial phrases are grey, etc.*
+
 Reynir is most effective for text that is objective and factual, i.e. has a relatively high
 ratio of concrete concepts such as numbers, amounts, dates, person and entity names,
 etc.
@@ -41,8 +44,8 @@ These trees can then be further processed and acted upon by sets of Python
 functions that are linked to grammar nonterminals.
 
 **Reynir is currently able to parse about *90%* of sentences** in a typical news article from the web,
-and many well-written articles can be parsed completely. It presently has over 130,000 parsed articles
-in its database, containing 2 million parsed sentences.
+and many well-written articles can be parsed completely. It presently has over 210,000 parsed articles
+in its database, containing 4 million parsed sentences.
 
 Reynir supports natural language querying of its databases. Users can ask about person names, titles and
 entity definitions and get appropriate replies. The HTML5 Web Speech API is supported to allow
