@@ -285,7 +285,7 @@ class Scraper:
             # Let the pool work on chunks of articles, recycling the
             # processes after each chunk to contain memory creep.
 
-            CHUNK_SIZE = 150
+            CHUNK_SIZE = 250
             if urls is None:
                 g = iter_unparsed_articles(reparse, limit)
             else:
@@ -309,8 +309,8 @@ class Scraper:
                     pool.map(self._parse_single_article, adlist)
                     pool.close()
                     pool.join()
-                    print("Parser processes joined, chunk of {0} articles parsed".format(lcnt))
                     cnt += lcnt
+                    print("Parser processes joined, chunk of {0} articles parsed, total {1}".format(lcnt, cnt))
                 if lcnt < CHUNK_SIZE:
                     break
 
