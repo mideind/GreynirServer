@@ -61,6 +61,7 @@ class State;
 class Column;
 class NodeDict;
 class Label;
+struct StateChunk;
 
 
 class AllocCounter {
@@ -319,7 +320,7 @@ private:
    MatchingFunc m_pMatchingFunc;
    AllocFunc m_pAllocFunc;
 
-   BOOL push(UINT nHandle, State*, Column*, State*&);
+   void push(UINT nHandle, State*, Column*, State*&, StateChunk*);
 
    Node* makeNode(State* pState, UINT nEnd, Node* pV, NodeDict& ndV);
 

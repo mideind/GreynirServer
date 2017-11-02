@@ -379,18 +379,8 @@ static void freeStates(StateChunk*& pChunkHead)
    pChunkHead = NULL;
 }
 
+// Counter of states that are allocated and then immediately discarded
 static UINT nDiscardedStates = 0;
-
-static void discardState(StateChunk* pChunkHead, State* pState)
-{
-   ASSERT(pChunkHead->m_nIndex >= sizeof(State));
-   ASSERT(pChunkHead->m_ast + pChunkHead->m_nIndex - sizeof(State) == (BYTE*)pState);
-   pState->~State();
-   // Go back one location in the chunk
-   pChunkHead->m_nIndex -= sizeof(State);
-   nDiscardedStates++;
-}
-
 
 AllocCounter State::ac;
 
@@ -1059,21 +1049,33 @@ Node* Parser::makeNode(State* pState, UINT nEnd, Node* pV, NodeDict& ndV)
    return pY;
 }
 
-BOOL Parser::push(UINT nHandle, State* pState, Column* pE, State*& pQ)
+void Parser::push(UINT nHandle, State* pState, Column* pE, State*& pQ, StateChunk* pChunkHead)
 {
    INT iItem = pState->prodDot();
-   if (iItem <= 0)
+   if (iItem <= 0) {
       // Nonterminal or epsilon: add state to column
-      return pE->addState(pState);
+      if (pE->addState(pState))
+         // State did not already exist in the column: we're done
+         return;
+   }
+   else
    if (pE->matches(nHandle, (UINT)iItem)) {
       // Terminal matching the current token
       // Link into list whose head is pQ
       pState->setNext(pQ);
       pQ = pState;
-      return true;
+      return;
    }
-   // Return false to indicate that we did not take ownership of the State
-   return false;
+   // We did not actually push the state; discard it
+   pState->~State();
+   ASSERT(pChunkHead != NULL);
+   ASSERT(pChunkHead->m_nIndex >= sizeof(State));
+   if ((BYTE*)pState + sizeof(State) == pChunkHead->m_ast + pChunkHead->m_nIndex) {
+      // The state is the most recently allocated one in the chunk
+      // (a very common case): go back one location in the chunk
+      pChunkHead->m_nIndex -= sizeof(State);
+      nDiscardedStates++;
+   }
 }
 
 Node* Parser::parse(UINT nHandle, INT iStartNt, UINT* pnErrorToken,
@@ -1113,8 +1115,7 @@ Node* Parser::parse(UINT nHandle, INT iStartNt, UINT* pnErrorToken,
    Production* p = pRootNt->getHead();
    while (p) {
       State* ps = new (pChunkHead) State(iStartNt, 0, p, 0, NULL);
-      if (!this->push(nHandle, ps, pCol[0], pQ0))
-         discardState(pChunkHead, ps);
+      this->push(nHandle, ps, pCol[0], pQ0, pChunkHead);
       p = p->getNext();
    }
 
@@ -1164,8 +1165,7 @@ Node* Parser::parse(UINT nHandle, INT iStartNt, UINT* pnErrorToken,
                p = (*this->m_pGrammar)[iItem]->getHead();
                while (p) {
                   State* psNew = new (pChunkHead) State(iItem, 0, p, i, NULL);
-                  if (!this->push(nHandle, psNew, pEi, pQ))
-                     discardState(pChunkHead, psNew);
+                  this->push(nHandle, psNew, pEi, pQ, pChunkHead);
                   p = p->getNext();
                }
             }
@@ -1177,8 +1177,7 @@ Node* Parser::parse(UINT nHandle, INT iStartNt, UINT* pnErrorToken,
                if (ph->getNt() == iItem) {
                   Node* pY = this->makeNode(pState, i, ph->getV(), ndV);
                   State* psNew = new (pChunkHead) State(pState, pY);
-                  if (!this->push(nHandle, psNew, pEi, pQ))
-                     discardState(pChunkHead, psNew);
+                  this->push(nHandle, psNew, pEi, pQ, pChunkHead);
                }
                ph = ph->getNext();
             }
@@ -1203,8 +1202,7 @@ Node* Parser::parse(UINT nHandle, INT iStartNt, UINT* pnErrorToken,
             while (psNt) {
                Node* pY = this->makeNode(psNt, i, pW, ndV);
                State* psNew = new (pChunkHead) State(psNt, pY);
-               if (!this->push(nHandle, psNew, pEi, pQ))
-                  discardState(pChunkHead, psNew);
+               this->push(nHandle, psNew, pEi, pQ, pChunkHead);
                psNt = psNt->getNtNext();
             }
          }
@@ -1245,8 +1243,7 @@ Node* Parser::parse(UINT nHandle, INT iStartNt, UINT* pnErrorToken,
          // 'incrementing' it by moving the dot one step to the right
          pQ->increment(pY);
          ASSERT(i + 1 <= nTokens);
-         if (!this->push(nHandle, pQ, pCol[i + 1], pQ0))
-            pQ->~State();
+         this->push(nHandle, pQ, pCol[i + 1], pQ0, pChunkHead);
          pQ = psNext;
       }
 

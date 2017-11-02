@@ -316,15 +316,20 @@ Skilyrðissetning →
     | Skilyrðistenging BeygingarliðurÁnF
 
 $score(+4) Samanburðarsetning
+$score(-10) Skilyrðissetning # Skilyrðistenging er með plús á móti
 
 # Fallsetningar - skýringarsetningar og spurnaraukasetningar
 
 Skýringarsetning → 
-    Skýringartenging BeygingarliðurÁnUmröðunar
-    | Skýringartenging AtvSetning
+    Skýringartenging SkýringarBotn
 
 Skýringartenging → 
     "að:st"
+
+SkýringarBotn →
+    BeygingarliðurÁnUmröðunar   # Ég taldi að Jón hefði dregið sér fé
+    | AtvSetning                # Ég taldi að meðan þetta héldi yrðu ekki frekari skakkaföll
+    | SetningAukafall           # Ég taldi að málmagnir væri að finna í hreyfli
 
 # Spurnaraukasetningar
 Spurnaraukasetning →
@@ -446,6 +451,8 @@ Skilyrðistenging →
     "ef:st" "að:st"?
     | "svo:ao" "framarlega:ao" "sem:st"
     | "nema:st"
+
+$score(+8) Skilyrðistenging # Skilyrðissetning er með mínus á móti
 
 Samanburðartenging →
     "eins:ao" "og:st"
@@ -689,7 +696,7 @@ SetningLoSögn →
 
 SetningSo →
 
-    So_1_p3/fall/tala NlBeintAndlag/fall NlFrumlag_nf/tala AtvFsAuka?                # Fylgir honum mikil úrkoma [í nótt]
+    So_1_p3/fall/tala NlBeintAndlag/fall NlFrumlag_nf/tala AtvFsAuka? # Fylgir honum mikil úrkoma [í nótt]
 
     # Leitað verður/skal/mun til sérfræðinga
     # Verið er í snatri að ráða hæfasta umsækjandann
@@ -697,17 +704,17 @@ SetningSo →
     # Farið hefur verið ofan í saumana á málinu
     | Sagnliður_sagnb
 
-    | So_1_sagnb/fall HjSögnLhÞtSM_et_p3 FsAtv? Nl/fall AtvFsAuka? # Horft hefur verið [til hennar] lostafullum augum
+    | So_1_sagnb/fall HjSögnLhÞtSM_et_p3 FsAtv? Nl/fall AtvFsAuka?  # Horft hefur verið [til hennar] lostafullum augum
 
-    | so_0_mm_sagnb HjSögnLhÞtSM_et_p3 NhFyllingEðaAtv         # Búist er við (að Sigmundur Davíð segi af sér)
+    | so_0_mm_sagnb HjSögnLhÞtSM_et_p3 NhFyllingEðaAtv              # Búist er við (að Sigmundur Davíð segi af sér)
 
-    | so_0_mm_nh HjSögnMegiSkuliÞurfi_et_p3 SagnInnskot        # Búast má/skal/þarf/hefur mátt við töfum á veginum
+    | so_0_mm_nh HjSögnMegiSkuliÞurfi_et_p3 SagnInnskot             # Búast má/skal/þarf/hefur mátt við töfum á veginum
 
-    | so_0_mm/pers/tala FsAtv? NlFrumlag_nf/tala/pers AtvFsAuka?          # Fórust með honum átján menn
+    | so_0_mm/pers/tala FsAtv? NlFrumlag_nf/tala/pers AtvFsAuka?    # Fórust með honum átján menn
 
-    | FsAtv? SagnliðurÁnF # NhFyllingEðaAtv                      # [Með lögum] skal tryggja rétt almennings til að fara um landið
+    | FsAtv? SagnliðurÁnF # NhFyllingEðaAtv                         # [Með lögum] skal tryggja rétt almennings til að fara um landið
 
-    | FsAtv VeraSkulu_et_p3 HreinSögn_sagnb_et_hk NhFyllingEðaAtv # Með lögum er/verður/skal/mun [sannarlega] skipað rétti útlendinga til að dveljast hér
+    | FsAtv VeraSkulu_et_p3 HreinSögn_sagnb_et_hk NhFyllingEðaAtv   # Með lögum er/verður/skal/mun [sannarlega] skipað rétti útlendinga til að dveljast hér
 
     | VeraSkulu_et_p3 FsRuna LoTengtSögn_nf/tala/kyn NlFrumlag_nf/tala/kyn AtvFsAuka? # Skal í frumvarpinu fólgin greinargerð um tekjur ríkisins og gjöld
 
@@ -720,13 +727,13 @@ SetningSo →
 
     | Sagnliður_lhþt
 
-    | Sögn_bh SögnFrh_bh?                                       # Farðu galvaskur að sækja kaffi strax
+    | Sögn_bh SögnFrh_bh?                                           # Farðu galvaskur að sækja kaffi strax
 
-    | HjSögnMegiSkuli_et_p3 FsAtv? EinSögn_nh_et_hk SagnInnskot? # Má með sanni segja (að þeir hafi sloppið með skrekkinn)
+    | HjSögnMegiSkuli_et_p3 FsAtv? EinSögn_nh_et_hk SagnInnskot?    # Má með sanni segja (að þeir hafi sloppið með skrekkinn)
 
-    | 'þurfa:so'_gm_et_p3 FsRuna? NlBeintAndlag_þf NhFyllingEðaAtv         # Þarf til þess lagafyrirmæli að svipta mann réttindum
+    | 'þurfa:so'_gm_et_p3 FsRuna? NlBeintAndlag_þf NhFyllingEðaAtv  # Þarf til þess lagafyrirmæli að svipta mann réttindum
 
-    | SagnliðurVh ","? "þá:st"? BeygingarliðurMeðUmröðun FsAtv?            # Haldi þessi þróun áfram er voðinn vís
+    | SagnliðurVh ","? "þá:st"? BeygingarliðurMeðUmröðun FsAtv?     # Haldi þessi þróun áfram er voðinn vís
 
     # (Því) hafi þurft að senda alla farþegana (á hótel)
     # (Í dag) gæti hafa rignt
@@ -2283,17 +2290,45 @@ NlSkýringarsetning → AtviksliðurEinkunn* Skýringarsetning
 $score(-2) NlSkýringarsetning
 
 NlFrumlag/fall → Nl/fall | NlSkýringarsetning
-NlFrumlag/fall/tala/pers/kyn → Nl/fall/tala/pers/kyn | NlSkýringarsetning
-NlFrumlag/fall/tala/kyn → Nl/fall/tala/kyn | NlSkýringarsetning
-NlFrumlag/fall/tala → Nl/fall/tala | NlSkýringarsetning
-NlFrumlag/fall/tala/pers → Nl/fall/tala/pers | NlSkýringarsetning
+NlFrumlag/fall/tala/pers/kyn → Nl/fall/tala/pers/kyn
+NlFrumlag_nf_et_p3_hk → NlSkýringarsetning
+NlFrumlag_þf_et_p3_hk → NlSkýringarsetning
+NlFrumlag_þgf_et_p3_hk → NlSkýringarsetning
+NlFrumlag_ef_et_p3_hk → NlSkýringarsetning
+NlFrumlag/fall/tala/kyn → Nl/fall/tala/kyn
+NlFrumlag_nf_et_hk → NlSkýringarsetning
+NlFrumlag_þf_et_hk → NlSkýringarsetning
+NlFrumlag_þgf_et_hk → NlSkýringarsetning
+NlFrumlag_ef_et_hk → NlSkýringarsetning
+NlFrumlag/fall/tala → Nl/fall/tala
+NlFrumlag_nf_et → NlSkýringarsetning
+NlFrumlag_þf_et → NlSkýringarsetning
+NlFrumlag_þgf_et → NlSkýringarsetning
+NlFrumlag_ef_et → NlSkýringarsetning
+NlFrumlag/fall/tala/pers → Nl/fall/tala/pers
+NlFrumlag_nf_et_p3 → NlSkýringarsetning
+NlFrumlag_þf_et_p3 → NlSkýringarsetning
+NlFrumlag_þgf_et_p3 → NlSkýringarsetning
+NlFrumlag_ef_et_p3 → NlSkýringarsetning
 NlBeintAndlag/fall → Nl/fall | Spurnaraukasetning | NlSkýringarsetning
-NlBeintAndlag/fall/tala/pers/kyn → Nl/fall/tala/pers/kyn | Spurnaraukasetning | NlSkýringarsetning
-NlBeintAndlag/fall/tala/pers → Nl/fall/tala/pers | Spurnaraukasetning | NlSkýringarsetning
+NlBeintAndlag/fall/tala/pers/kyn → Nl/fall/tala/pers/kyn
+NlBeintAndlag_nf_et_p3_hk → Spurnaraukasetning | NlSkýringarsetning
+NlBeintAndlag_þf_et_p3_hk → Spurnaraukasetning | NlSkýringarsetning
+NlBeintAndlag_þgf_et_p3_hk → Spurnaraukasetning | NlSkýringarsetning
+NlBeintAndlag_ef_et_p3_hk → Spurnaraukasetning | NlSkýringarsetning
+NlBeintAndlag/fall/tala/pers → Nl/fall/tala/pers
+NlBeintAndlag_nf_et_p3 → Spurnaraukasetning | NlSkýringarsetning
+NlBeintAndlag_þf_et_p3 → Spurnaraukasetning | NlSkýringarsetning
+NlBeintAndlag_þgf_et_p3 → Spurnaraukasetning | NlSkýringarsetning
+NlBeintAndlag_ef_et_p3 → Spurnaraukasetning | NlSkýringarsetning
 NlBeintAndlag_nf_þf/tala → Nl_nf_þf/tala | Spurnaraukasetning | NlSkýringarsetning
 NlÓbeintAndlag/fall → Nl/fall | NlSkýringarsetning
 NlSagnfylling/fall → Nl/fall | NlSkýringarsetning
-NlSagnfylling/fall/tala/pers/kyn → Nl/fall/tala/pers/kyn | NlSkýringarsetning
+NlSagnfylling/fall/tala/pers/kyn → Nl/fall/tala/pers/kyn
+NlSagnfylling_nf_et_p3_hk → NlSkýringarsetning
+NlSagnfylling_þf_et_p3_hk → NlSkýringarsetning
+NlSagnfylling_þgf_et_p3_hk → NlSkýringarsetning
+NlSagnfylling_ef_et_p3_hk → NlSkýringarsetning
 
 $score(+1) NlBeintAndlag/fall
 $score(+1) NlBeintAndlag/fall/tala/pers
@@ -3303,8 +3338,8 @@ NlEind_et_p3_ef_hk →
 
 ÞaðTenging →
     Skýringarsetning
-    | Spurnarsetning
-    | NhLiðir  # Það að fara til tannlæknis (reynist mörgum þyrnir í augum)
+    | Spurnaraukasetning    # !!! var Spurnarsetning
+    | NhFyllingÁnAtv        # Það að fara til tannlæknis (er ánægjuleg reynsla)
 
 $score(+32) ÞaðTenging
 
@@ -3420,8 +3455,12 @@ $score(-8) KommaOgEðaStrik
 # (Í gær börðu strákarnir ekki Guðmund), heldur (stríddu Páli)
 
 OgEðaEn →
-    "og:st" | "svo:st" "og:st" | "eða:st" | "ellegar:st" | "en:st" | "heldur:st"
-    | "eins:ao" "og:st"
+    "og:st" | "svo:st" "og:st" | "eða:st" | "ellegar:st" | "heldur:st"
+    | "eins:ao" "og:st" | En
+
+En → "en:st"
+
+$score(-2) En
 
 OgEðaEnNema → OgEðaEn | "nema:st"
 
@@ -4369,11 +4408,14 @@ TímabilsEinkunn_þgf/tala/kyn →
     | 'tæpur:lo'_þgf/tala/kyn Töluorð_þgf/tala/kyn # tæpum þremur mánuðum fyrr
     | 'rúmur:lo'_þgf/tala/kyn Töluorð_þgf/tala/kyn # rúmum fjórum vikum fyrr
 
-NæsturSíðastur_þf/tala/kyn →
-    'næstur:lo'_vb_þf/tala/kyn      # næsta vetur, næstu daga
-    | 'síðari:lo'_vb_þf/tala/kyn    # síðasta vetur, síðustu daga
-    | 'seinn:lo'_vb_þf/tala/kyn     # seinasta vetur, seinustu daga
-    | 'fyrstur:lo'_vb_þf/tala/kyn   # fyrstu þrjá vetur, fyrstu 10 daga
+NæsturSíðastur_þf_ft/kyn →
+    'næstur:lo'_vb_þf_ft/kyn        # næstu daga
+    | 'síðari:lo'_vb_þf_ft/kyn      # síðustu daga
+    | 'seinn:lo'_vb_þf_ft/kyn       # seinustu daga
+    | 'fyrstur:lo'_vb_þf_ft/kyn     # fyrstu 10 daga
+
+NæsturSíðastur_þf_et/kyn →
+    lo_þf_et/kyn                    # fyrsta árið, annan mánuðinn, fjórða kjörtímabil [í röð]
 
 NæsturSíðastur_þf_et_kk →
     'síðastliðinn:lo'               # skammstöfunin sl.
@@ -4385,7 +4427,7 @@ NæsturSíðastur_þf_et_kvk →
     'síðastliðinn:lo'_sb_þf_et_kvk  # síðastliðna viku
 
 NæsturSíðastur_þf_et_hk →
-    'síðastliðinn:lo'_sb_þf_et_hk  # síðastliðið sumar
+    'síðastliðinn:lo'_sb_þf_et_hk   # síðastliðið sumar
 
 $score(+6) NæsturSíðastur_þf/tala/kyn
 

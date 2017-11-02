@@ -208,7 +208,7 @@ class Reducer:
                     elif txt == "við" and t.has_variant("þgf"):
                         sc[t] += 1 # Smaller bonus for við + þgf (is rarer than við + þf)
                     elif txt == "sem" and t.has_variant("þf"):
-                        sc[t] -= 6 # Even less attractive than sem_nf
+                        sc[t] -= 4
                     elif txt == "á" and t.has_variant("þgf"):
                         sc[t] += 4 # Larger bonus for á + þgf to resolve conflict with verb 'eiga'
                     else:
