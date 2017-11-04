@@ -151,6 +151,7 @@ _DEFAULT_NT_MAP = {
     "So" : "VP",
     # "SagnFramhald" : "VP",
     "SögnLhNt" : "VP-PP", # Present participle, lýsingarháttur nútíðar
+    "SögnErLoBotn" : "NP-OBJ", # Show '(Hann er) góður / 18 ára' as a direct verb argument
     "NhLiðir" : "VP",
     "SagnliðurÁnF" : "VP",
     "ÖfugurSagnliður" : "VP",

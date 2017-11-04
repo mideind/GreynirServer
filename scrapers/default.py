@@ -379,6 +379,9 @@ class RuvScraper(ScrapeHelper):
             content = ScrapeHelper.div_class(soup_body,
                 ("block", "block-system"))
         ScrapeHelper.del_div_class(content, "pane-custom") # Sharing stuff at bottom of page
+        ScrapeHelper.del_div_class(content, "title-wrapper") # Additional header stuff
+        ScrapeHelper.del_div_class(content, "views-field-field-user-display-name") # Seriously.
+        ScrapeHelper.del_div_class(content, "field-name-myndatexti-credit-source")
         return content
 
 

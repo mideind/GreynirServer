@@ -224,6 +224,10 @@ def OkkarFramhald(node, params, result):
     # Þetta grípur 'einn okkar', 'hvorugur þeirra'
     result._nominative = result._text
 
+def AtviksliðurEinkunn(node, params, result):
+    # Ekki breyta atviksliðum í nefnifall
+    result._nominative = result._text
+
 def FsLiður(node, params, result):
     """ Forsetningarliður """
     # Leyfa forsetningarlið að standa óbreyttum í titli

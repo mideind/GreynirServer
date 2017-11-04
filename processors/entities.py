@@ -181,6 +181,11 @@ def OkkarFramhald(node, params, result):
     result._nominative = result._text
 
 
+def AtviksliðurEinkunn(node, params, result):
+    # Ekki breyta atviksliðum í nefnifall
+    result._nominative = result._text
+
+
 def FsMeðFallstjórn(node, params, result):
     """ Ekki láta sérnafn lifa í gegn um forsetningarlið """
     result.del_attribs(('sérnafn', 'sérnafn_nom'))
