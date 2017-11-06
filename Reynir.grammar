@@ -93,6 +93,7 @@
 # Case (nom, acc, dat, poss) variant
 /fall = nf þf þgf ef
 /aukafall = þf þgf ef # All cases except nominative
+/afall = nf þf þgf ef # Second case (andlagsfall) for dual argument verbs
 
 # Number (singular/plural) variant
 /tala = et ft
@@ -335,7 +336,6 @@ SkýringarBotn →
 # Spurnaraukasetningar
 Spurnaraukasetning →
     SpurnarNafnliður/tala/fall/kyn FsMeðFallstjórn? BeygingarliðurÁnUmröðunar
-    | "hvort:st" "að:st"? BeygingarliðurÁnUmröðunar
     | SpurnarForsetningarliður BeygingarliðurÁnUmröðunar
     | SpurnarAtviksorð FsMeðFallstjórn? BeygingarliðurÁnUmröðunar
     | SpurnarFrumlag/pers/tala/kyn FsMeðFallstjórn? BlTagl/tala/pers/kyn
@@ -347,7 +347,7 @@ SpurnarNafnliður/tala/fall/kyn →
     | 'hvor:fn'/tala/fall/kyn Nl/fall/tala
     | 'hvor:fn'/tala/fall/kyn AfLiður/kyn
     | 'hvaða:fn'/tala/fall/kyn Nl/fall/tala
-    | 'hver:fn'_ef_et_hk "konar" Nl/fall/tala
+    | 'hver:fn'_ef_et_kk 'konar:kk'_ef_et Nl/fall/tala
     | HversuHve Lo/fall/tala/kyn Nl/fall/tala
     | HversuHve Lo/fall/tala/kyn AfLiður/kyn?
     | 'hvernig:ao' Nl/fall/tala     # Hægt að nota hliðstætt með nafnlið
@@ -358,6 +358,7 @@ SpurnarForsetningarliður →
 SpurnarAtviksorð →
     spao | "hvernig:ao" | 'af:fs'_þgf 'hver:fn'_þgf_et_hk | "hví:ao" | "afhverju:ao"
     | 'til:fs'_ef 'hver:fn'_ef_et_hk | 'hver:fn'_ef_et_hk 'vegna:fs'_ef
+    | "hvort:st" "að:st"?
 
 HversuHve →
     "hversu:ao" | "hve:ao"
@@ -832,6 +833,7 @@ SetningAukafall →
     | NlFrumlag_þgf/tala/kyn HjSögnLhÞtSM_et_p3 FsAtv? LoÞgf/tala/kyn? AukafallÞgfAndlag
 
     # Þess skal [ekki] gætt (að fara varlega með sprengiefnið)
+    # Nánari upplýsinga er [ekki] að vænta
     | NlFrumlag_ef HjSögnLhÞtSM_et_p3 FsAtv? AukafallEfAndlag
 
     # Köttum í landinu mun [ekki/enn] fjölga á árinu
@@ -893,9 +895,6 @@ AukafallÞgfAndlag →
     # (Stóru skipunum hefur verið/skal/mun) stýrt í land
     # (Hannesi var í fyrra) falið að stýra rannsóknaverkefni
     so_1_þgf_sagnb NhFyllingEðaAtv
-
-    # (Þátttakendum er) veitt of mikið svigrúm
-    | so_2_þgf_þf_sagnb FsRuna? NlBeintAndlag_þf AtvFsAuka?
 
     # (Þátttakendum er) gert kleift að matast með reisn
     | 'gera:so'_sagnb LoTengtSögn_nf_et_hk NhFyllingAtv
@@ -1259,12 +1258,12 @@ HreinSögn_lhnt →
     FsAtv? EinSögn_lhnt OgSögn_lhnt*
 
 EinSögn_lhnt →
-    so_0_lh_nt                                              # skimandi
-    | so_1_nf_lh_nt NlSagnfylling_nf                        # verandi lögmaður sakborningsins
-    | so_1_þf_lh_nt NlBeintAndlag_þf                        # reykjandi sígarettu
-    | so_1_þgf_lh_nt NlBeintAndlag_þgf                      # bölvandi Páli
-    | so_1_ef_lh_nt NlBeintAndlag_ef                        # saknandi alls þess sem áður var
-    | so_2_þgf_þf_lh_nt NlÓbeintAndlag_þgf NlBeintAndlag_þf # skrifandi konunum bréf
+    so_0_lh_nt                          # skimandi
+    | so_1_nf_lh_nt NlSagnfylling_nf    # verandi lögmaður sakborningsins
+    | so_1_þf_lh_nt NlBeintAndlag_þf    # reykjandi sígarettu
+    | so_1_þgf_lh_nt NlBeintAndlag_þgf  # bölvandi Páli
+    | so_1_ef_lh_nt NlBeintAndlag_ef    # saknandi alls þess sem áður var
+    | so_2_þgf_þf_lh_nt Andlög_þgf_þf   # skrifandi konunum bréf / gefandi konunum meiri gaum en körlunum
 
 # Sagnbót ('konurnar [segjast/þykjast/virðast] [galvaskar/sumar/allar] hafa borðað matinn')
 
@@ -1532,14 +1531,14 @@ Sögn_1_bh → So_1_bh/fall FsRuna? NlBeintAndlag/fall
 # Sagnbót með tveimur viðföngum
 
 Sögn_2_sagnb →
-    so_2_þgf_þf_sagnb NlÓbeintAndlag_þgf NlBeintAndlag_þf     # Konurnar höfðu [ekki] gefið Páli gjöfina
-    | so_2_þf_ef_sagnb NlÓbeintAndlag_þf NlBeintAndlag_ef     # Konurnar höfðu [ekki] krafið Pál svara
-    | so_2_þf_þf_sagnb NlÓbeintAndlag_þf NlBeintAndlag_þf     # Konurnar höfðu [ekki] kostað Pál skildinginn
-    | so_2_þf_þgf_sagnb NlÓbeintAndlag_þf NlBeintAndlag_þgf   # Konurnar höfðu [ekki] kallað Pál öllum illum nöfnum
-    | so_2_þgf_þgf_sagnb NlÓbeintAndlag_þgf NlBeintAndlag_þgf # Konurnar höfðu [ekki] skilað Páli bílnum
-    | so_2_þgf_ef_sagnb NlÓbeintAndlag_þgf NlBeintAndlag_ef   # Konurnar höfðu [ekki] óskað Páli alls hins besta
-    | so_2_þgf_nf_sagnb NlÓbeintAndlag_þgf NlBeintAndlag_nf   # Kristín hafði [ekki] verið Páli stoð og stytta
-    | 'gera:so'_sagnb Nl_þgf LoTengtSögn_nf_et_hk NhFyllingAtv # Konurnar höfðu [ekki] gert Páli kleift að klæða sig
+    so_2_þgf_þf_sagnb Andlög_þgf_þf     # Konurnar höfðu [ekki] gefið Páli gjöfina
+    | so_2_þf_ef_sagnb Andlög_þf_ef     # Konurnar höfðu [ekki] krafið Pál svara
+    | so_2_þf_þf_sagnb Andlög_þf_þf     # Konurnar höfðu [ekki] kostað Pál skildinginn
+    | so_2_þf_þgf_sagnb Andlög_þf_þgf   # Konurnar höfðu [ekki] kallað Pál öllum illum nöfnum
+    | so_2_þgf_þgf_sagnb Andlög_þgf_þgf # Konurnar höfðu [ekki] skilað Páli bílnum
+    | so_2_þgf_ef_sagnb Andlög_þgf_ef   # Konurnar höfðu [ekki] óskað Páli alls hins besta
+    | so_2_þgf_nf_sagnb Andlög_þgf_nf   # Kristín hafði [ekki] verið Páli stoð og stytta
+    | 'gera:so'_sagnb Nl_þgf LoTengtSögn_nf_et_hk NhFyllingAtv  # Konurnar höfðu [ekki] gert Páli kleift að klæða sig
 
 # Það er gott að ná tveimur viðföngum með sögn í sagnbeygingu
 $score(+6) Sögn_2_sagnb
@@ -1547,14 +1546,26 @@ $score(+6) Sögn_2_sagnb
 # Sögn í nafnhætti með tveimur viðföngum
 
 Sögn_2_nh →
-    so_2_þgf_þf_nh NlÓbeintAndlag_þgf NlBeintAndlag_þf        # Konurnar munu [ekki] gefa Páli gjöfina
-    | so_2_þf_ef_nh NlÓbeintAndlag_þf NlBeintAndlag_ef        # Konurnar munu [ekki] krefja Pál svara
-    | so_2_þf_þf_nh NlÓbeintAndlag_þf NlBeintAndlag_þf        # Konurnar munu [ekki] kosta Pál skildinginn
-    | so_2_þf_þgf_nh NlÓbeintAndlag_þf NlBeintAndlag_þgf      # Konurnar munu [ekki] kalla Pál öllum illum nöfnum
-    | so_2_þgf_þgf_nh NlÓbeintAndlag_þgf NlBeintAndlag_þgf    # Konurnar munu [ekki] skila Páli bílnum
-    | so_2_þgf_ef_nh NlÓbeintAndlag_þgf NlBeintAndlag_ef      # Konurnar munu [ekki] óska Páli alls hins besta
-    | so_2_þgf_nf_nh NlÓbeintAndlag_þgf NlBeintAndlag_nf      # Kristín mun [ekki] vera Páli stoð og stytta
-    | 'gera:so'_nh Nl_þgf LoTengtSögn_nf_et_hk NhFyllingAtv # Konurnar munu [ekki] gera Páli kleift/mögulegt að klæða sig
+    so_2_þgf_þf_nh Andlög_þgf_þf        # Konurnar munu [ekki] gefa Páli gjöfina
+    | so_2_þf_ef_nh Andlög_þf_ef        # Konurnar munu [ekki] krefja Pál svara
+    | so_2_þf_þf_nh Andlög_þf_þf        # Konurnar munu [ekki] kosta Pál skildinginn
+    | so_2_þf_þgf_nh Andlög_þf_þgf      # Konurnar munu [ekki] kalla Pál öllum illum nöfnum
+    | so_2_þgf_þgf_nh Andlög_þgf_þgf    # Konurnar munu [ekki] skila Páli bílnum
+    | so_2_þgf_ef_nh Andlög_þgf_ef      # Konurnar munu [ekki] óska Páli alls hins besta
+    | so_2_þgf_nf_nh Andlög_þgf_nf      # Kristín mun [ekki] vera Páli stoð og stytta
+    | 'gera:so'_nh Nl_þgf LoTengtSögn_nf_et_hk NhFyllingAtv   # Konurnar munu [ekki] gera Páli kleift/mögulegt að klæða sig
+
+Andlög/fall/afall →
+    NlÓbeintAndlag/fall AndlögBotn/fall/afall
+
+Andlög/fall/afall/tala/kyn →
+    NlÓbeintAndlag/fall LoTengtSögn_nf/tala/kyn? AndlögBotn/fall/afall
+
+AndlögBotn/fall/afall →
+    # (gefa Páli) [stóra] gjöf
+    NlBeintAndlag/afall
+    # (gefa Páli) [talsvert] stærri gjöf/flottari bíl en mér/Sigríði
+    | LoAtviksliður* lo_mst/afall/tala/kyn NlBeintAndlag/afall/tala/pers/kyn "heldur:st"? "en:st" NlÓbeintAndlag/fall
 
 So_2_nh_þf_nf → so_2_þf_nf_nh
 So_2_nh_þf_þf → so_2_þf_þf_nh
@@ -1569,13 +1580,13 @@ So_2_nh_þgf_ef → so_2_þgf_ef_nh
 # Sögn í boðhætti með tveimur viðföngum
 
 Sögn_2_bh →
-    so_2_þgf_þf_bh NlÓbeintAndlag_þgf NlBeintAndlag_þf        # Gefðu Páli gjöfina
-    | so_2_þf_ef_bh NlÓbeintAndlag_þf NlBeintAndlag_ef        # Krefðu Pál svars
-    | so_2_þf_þf_bh NlÓbeintAndlag_þf NlBeintAndlag_þf        # Kostaðu Pál skildinginn
-    | so_2_þf_þgf_bh NlÓbeintAndlag_þf NlBeintAndlag_þgf      # Kallaðu Pál öllum illum nöfnum
-    | so_2_þgf_þgf_bh NlÓbeintAndlag_þgf NlBeintAndlag_þgf    # Skilaðu Páli bílnum
-    | so_2_þgf_ef_bh NlÓbeintAndlag_þgf NlBeintAndlag_ef      # Óskaðu Páli alls hins besta
-    | so_2_þgf_nf_bh NlÓbeintAndlag_þgf NlBeintAndlag_nf      # Vertu Páli stoð og stytta
+    so_2_þgf_þf_bh Andlög_þgf_þf        # Gefðu Páli gjöfina / stærri gjöf en mér
+    | so_2_þf_ef_bh Andlög_þf_ef        # Krefðu Pál svars / ítarlega svars en mig
+    | so_2_þf_þf_bh Andlög_þf_þf        # Kostaðu Pál skildinginn / fleiri skildinga en mig
+    | so_2_þf_þgf_bh Andlög_þf_þgf      # Kallaðu Pál öllum illum nöfnum / verri nöfnum en mig
+    | so_2_þgf_þgf_bh Andlög_þgf_þgf    # Skilaðu Páli bílnum / betri bíl en mér
+    | so_2_þgf_ef_bh Andlög_þgf_ef      # Óskaðu Páli alls hins besta / betri útkomu en mér
+    | so_2_þgf_nf_bh Andlög_þgf_nf      # Vertu Páli stoð og stytta / tryggari vinur en mér
     | 'gera:so'_bh Nl_þgf LoTengtSögn_nf_et_hk NhFyllingAtv # Gerðu Páli kleift/mögulegt að klæða sig í fötin
 
 # Sögn með einu viðfangi ('borðaði matinn')
@@ -1599,19 +1610,11 @@ Sögn_1/tala/pers/kyn →
 
     # | Sögn_1_mm/tala/pers/kyn  # !!! Á ekki að þurfa sértilvik lengur
 
-    | HjSögn/tala/pers FsAtv? so_mm_sagnb OgSögn_mm_sagnb* NlBeintAndlag_þgf    # (Bankar) hafa reynst og gagnast mér (vel)
+    | HjSögn/tala/pers FsAtv? so_mm_sagnb OgSögn_mm_sagnb* NlBeintAndlag_þgf   # (Bankar) hafa reynst og gagnast mér (vel)
 
-    | HjSögnLhÞtSM/tala/pers FsAtv? so_2_þgf_þf_lhþt/tala/kyn Nl_þgf # Konan hefur verið/skal/mun gefin Páli
-    | HjSögnLhÞtSM/tala/pers FsAtv? so_2_þf_ef_lhþt/tala/kyn NlBeintAndlag_ef   # Konan hefur verið/skal/mun spurð álits
-    | HjSögnLhÞtSM/tala/pers FsAtv? so_2_þf_þgf_lhþt/tala/kyn Nl_þgf # Konan hefur verið/skal/mun kölluð öllum illum nöfnum
-    # HjSögnLhÞtSM/tala/pers FsAtv? so_2_þgf_ef_lhþt/tala/kyn Nl_ef  # Konan hefur verið/skal/mun óska alls hins besta
-    # HjSögnLhÞtSM/tala/pers FsAtv? so_2_þf_þf_lhþt/tala/kyn Nl_þf   # Konan hefur verið/skal/mun kosta skildinginn
-
-#Sögn_1_mm/tala/pers/kyn →
-#    so_mm/tala/pers OgSögn_mm/tala/pers* Nl_þgf LoTengtSögn_nf/tala/kyn? # (Ég) giftist [og tengdist] Önnu [galvaskur]
-
-# Kjósa miðmyndarform + þgf fremur en almenn sagnform + önnur föll
-#$score(+2) Sögn_1_mm/tala/pers/kyn
+    | HjSögnLhÞtSM/tala/pers FsAtv? so_2_þgf_þf_lhþt/tala/kyn Nl_þgf           # Konan hefur verið/skal/mun gefin Páli
+    | HjSögnLhÞtSM/tala/pers FsAtv? so_2_þf_ef_lhþt/tala/kyn NlBeintAndlag_ef  # Konan hefur verið/skal/mun spurð álits
+    | HjSögnLhÞtSM/tala/pers FsAtv? so_2_þf_þgf_lhþt/tala/kyn Nl_þgf           # Konan hefur verið/skal/mun kölluð öllum illum nöfnum
 
 # Býli í landinu eru/geta verið/verða/munu vera 3.000/tuttugu [talsins]
 Sögn_1_ft/pers/kyn →
@@ -1774,95 +1777,81 @@ SagnarBotnLhÞt/tala/kyn →
 Sögn_2/tala/pers/kyn →
 
     # Þágufall + þolfall ('að gefa einhverjum kött')
-    so_2_þgf_þf/tala/pers NlÓbeintAndlag_þgf LoTengtSögn_nf/tala/kyn? NlBeintAndlag_þf     # Konurnar gáfu Páli [sjálfar] gjöfina
+    so_2_þgf_þf/tala/pers Andlög_þgf_þf/tala/kyn     # Konurnar gáfu Páli [sjálfar] gjöfina / dýrari gjöf en mér
 
     # gera + lo ('að gera einhverjum kleift að fara út')
-    | 'gera:so'/tala/pers NlÓbeintAndlag_þgf LoTengtSögn_nf_et_hk NhFyllingAtv     # Konurnar gerðu Páli kleift að matast með reisn
+    | 'gera:so'/tala/pers NlÓbeintAndlag_þgf LoTengtSögn_nf_et_hk NhFyllingAtv # Konurnar gerðu Páli kleift að matast með reisn
 
     # Þolfall + eignarfall ('að spyrja einhvern einhvers')
-    | so_2_þf_ef/tala/pers NlÓbeintAndlag_þf LoTengtSögn_nf/tala/kyn? NlBeintAndlag_ef     # Konurnar kröfðu Pál [herskáar] svars
+    | so_2_þf_ef/tala/pers Andlög_þf_ef/tala/kyn     # Konurnar kröfðu Pál [herskáar] svars / ítarlegri svara en mig
 
     # Þágufall + eignarfall ('að óska einhverjum góðs bata')
-    | so_2_þgf_ef/tala/pers NlÓbeintAndlag_þgf LoTengtSögn_nf/tala/kyn? NlBeintAndlag_ef   # Konurnar óskuðu Páli [allar] góðs bata
+    | so_2_þgf_ef/tala/pers Andlög_þgf_ef/tala/kyn   # Konurnar óskuðu Páli [allar] góðs bata / skjótari bata en mér
 
     # Þágufall + þágufall ('að skila einhverjum einhverju')
-    | so_2_þgf_þgf/tala/pers NlÓbeintAndlag_þgf LoTengtSögn_nf/tala/kyn? NlBeintAndlag_þgf # Konurnar skiluðu Páli [sjálfar] bílnum
+    | so_2_þgf_þgf/tala/pers Andlög_þgf_þgf/tala/kyn # Konurnar skiluðu Páli [sjálfar] bílnum / betri bíl en mér
 
     # Þágufall + nefnifall ('að vera einhverjum eitthvað')
-    | so_2_þgf_nf/tala/pers NlÓbeintAndlag_þgf LoTengtSögn_nf/tala/kyn? NlBeintAndlag_nf   # Konurnar voru Páli [allar] stoð og stytta
+    | so_2_þgf_nf/tala/pers Andlög_þgf_nf/tala/kyn   # Konurnar voru Páli [allar] stoð og stytta / traustari vinir en mér
 
     # Þolfall + þolfall ('að kosta einhvern eitthvað')
-    | so_2_þf_þf/tala/pers NlÓbeintAndlag_þf LoTengtSögn_nf/tala/kyn? NlBeintAndlag_þf     # Konurnar kostuðu Pál [allar] skildinginn
+    | so_2_þf_þf/tala/pers Andlög_þf_þf/tala/kyn     # Konurnar kostuðu Pál [allar] skildinginn / minna en mig
 
     # Þolfall + þágufall ('að kalla einhvern illum nöfnum')
-    | so_2_þf_þgf/tala/pers NlÓbeintAndlag_þf LoTengtSögn_nf/tala/kyn? NlBeintAndlag_þgf   # Konurnar kölluðu Pál [æstar] illum nöfnum
+    | so_2_þf_þgf/tala/pers Andlög_þf_þgf/tala/kyn   # Konurnar kölluðu Pál [æstar] illum nöfnum / verri nöfnum en mig
 
 # Sögn með tveimur viðföngum sem stendur í undirsetningu
 # ('Konan sem gaf Páli gjöfina')
 ÖfugSögn_2/tala/pers/kyn →
 
-    so_2_þgf_þf_sagnb HjSögn/tala/pers 
-        NlÓbeintAndlag_þgf NlBeintAndlag_þf                          # Konurnar sem gefið hafa Páli gjöfina
+    so_2_þgf_þf_sagnb HjSögn/tala/pers  Andlög_þgf_þf                # Konurnar sem gefið hafa Páli gjöfina
     | 'gera:so'_sagnb HjSögn/tala/pers
-        NlÓbeintAndlag_þgf LoTengtSögn_nf_et_hk NhFyllingAtv # Konurnar sem gert hafa Páli kleift að matast með reisn
-    | so_2_þgf_þf_nh HjSögnNh/tala/pers 
-        NlÓbeintAndlag_þgf NlBeintAndlag_þf                          # Konurnar sem gefa munu Páli gjöfina
+        NlÓbeintAndlag_þgf LoTengtSögn_nf_et_hk NhFyllingAtv         # Konurnar sem gert hafa Páli kleift að matast með reisn
+    | so_2_þgf_þf_nh HjSögnNh/tala/pers Andlög_þgf_þf                # Konurnar sem gefa munu Páli gjöfina
 
-    | so_2_þf_ef_sagnb HjSögn/tala/pers 
-        NlÓbeintAndlag_þf NlBeintAndlag_ef                           # Konurnar sem spurt hafa Pál spurningarinnar
-    | so_2_þf_ef_nh HjSögnNh/tala/pers 
-        NlÓbeintAndlag_þf NlBeintAndlag_ef                           # Konurnar sem spyrja munu Pál spurningarinnar
+    | so_2_þf_ef_sagnb HjSögn/tala/pers Andlög_þf_ef                 # Konurnar sem spurt hafa Pál spurningarinnar
+    | so_2_þf_ef_nh HjSögnNh/tala/pers Andlög_þf_ef                  # Konurnar sem spyrja munu Pál spurningarinnar
 
-    | so_2_þgf_ef_sagnb HjSögn/tala/pers 
-        NlÓbeintAndlag_þgf NlBeintAndlag_ef                          # Konurnar sem óskað hafa Páli góðs bata
-    | so_2_þgf_ef_nh HjSögnNh/tala/pers 
-        NlÓbeintAndlag_þgf NlBeintAndlag_ef                          # Konurnar sem óska munu Páli góðs bata
+    | so_2_þgf_ef_sagnb HjSögn/tala/pers Andlög_þgf_ef               # Konurnar sem óskað hafa Páli góðs bata
+    | so_2_þgf_ef_nh HjSögnNh/tala/pers Andlög_þgf_ef                # Konurnar sem óska munu Páli góðs bata
 
-    | so_2_þgf_þgf_sagnb HjSögn/tala/pers 
-        NlÓbeintAndlag_þgf NlBeintAndlag_þgf                         # Konurnar sem skilað hafa Páli bílnum
-    | so_2_þgf_þgf_nh HjSögnNh/tala/pers 
-        NlÓbeintAndlag_þgf NlBeintAndlag_þgf                         # Konurnar sem skila munu Páli bílnum
+    | so_2_þgf_þgf_sagnb HjSögn/tala/pers Andlög_þgf_þgf             # Konurnar sem skilað hafa Páli bílnum
+    | so_2_þgf_þgf_nh HjSögnNh/tala/pers Andlög_þgf_þgf              # Konurnar sem skila munu Páli bílnum
 
-    | so_2_þgf_nf_sagnb HjSögn/tala/pers 
-        Nl_þgf Nl_nf                          # Konurnar sem verið hafa Páli stoð og stytta
-    | so_2_þgf_nf_nh HjSögnNh/tala/pers 
-        Nl_þgf Nl_nf                          # Konurnar sem vera munu Páli stoð og stytta
+    | so_2_þgf_nf_sagnb HjSögn/tala/pers Andlög_þgf_nf               # Konurnar sem verið hafa Páli stoð og stytta
+    | so_2_þgf_nf_nh HjSögnNh/tala/pers Andlög_þgf_nf                # Konurnar sem vera munu Páli stoð og stytta
 
-    | so_2_þf_þf_sagnb HjSögn/tala/pers 
-        NlÓbeintAndlag_þf NlBeintAndlag_þf                           # Konurnar sem kostað hafa Pál skildinginn
-    | so_2_þf_þf_nh HjSögnNh/tala/pers 
-        NlÓbeintAndlag_þf NlBeintAndlag_þf                           # Konurnar sem kosta munu Pál skildinginn
+    | so_2_þf_þf_sagnb HjSögn/tala/pers Andlög_þf_þf                 # Konurnar sem kostað hafa Pál skildinginn
+    | so_2_þf_þf_nh HjSögnNh/tala/pers Andlög_þf_þf                  # Konurnar sem kosta munu Pál skildinginn
 
-    | so_2_þf_þgf_sagnb HjSögn/tala/pers 
-        NlÓbeintAndlag_þf NlBeintAndlag_þgf                          # Konurnar sem kallað hafa Pál illum nöfnum
-    | so_2_þf_þgf_nh HjSögnNh/tala/pers 
-        NlÓbeintAndlag_þf NlBeintAndlag_þgf                          # Konurnar sem kalla munu Pál illum nöfnum
+    | so_2_þf_þgf_sagnb HjSögn/tala/pers Andlög_þf_þgf               # Konurnar sem kallað hafa Pál illum nöfnum
+    | so_2_þf_þgf_nh HjSögnNh/tala/pers Andlög_þf_þgf                # Konurnar sem kalla munu Pál illum nöfnum
 
 SögnMeðF_2/tala/pers/kyn →
 
     # Þágufall + þolfall ('að gefa einhverjum kött')
-    so_2_þgf_þf/tala/pers NlFrumlag_nf/tala/pers/kyn NlÓbeintAndlag_þgf NlBeintAndlag_þf      # (Í dag) gáfu konurnar [bersýnilega] Páli [ekki] gjöfina
+    so_2_þgf_þf/tala/pers NlFrumlag_nf/tala/pers/kyn Andlög_þgf_þf      # (Í dag) gáfu konurnar [bersýnilega] Páli [ekki] gjöfina
 
     # 'gera' + lo ('að gera einhverjum eitthvað kleift')
     | 'gera:so'/tala/pers NlFrumlag_nf/tala/pers/kyn NlÓbeintAndlag_þgf LoTengtSögn_nf_et_hk NhFyllingAtv # (Í dag) gerðu konurnar Páli kleift að matast með reisn
 
     # Þolfall + eignarfall ('að spyrja einhvern einhvers')
-    | so_2_þf_ef/tala/pers NlFrumlag_nf/tala/pers/kyn NlÓbeintAndlag_þf NlBeintAndlag_ef      # (Í gær) kröfðu konurnar Pál [ekki] svars
+    | so_2_þf_ef/tala/pers NlFrumlag_nf/tala/pers/kyn Andlög_þf_ef      # (Í gær) kröfðu konurnar Pál [ekki] svars
 
     # Þágufall + eignarfall ('að óska einhverjum einhvers')
-    | so_2_þgf_ef/tala/pers NlFrumlag_nf/tala/pers/kyn NlÓbeintAndlag_þgf NlBeintAndlag_ef    # (Í gær) óskuðu konurnar Páli [ekki] góðs bata
+    | so_2_þgf_ef/tala/pers NlFrumlag_nf/tala/pers/kyn Andlög_þgf_ef    # (Í gær) óskuðu konurnar Páli [ekki] góðs bata
 
     # Þágufall + nefnifall ('að vera einhverjum eitthvað')
-    | so_2_þgf_nf/tala/pers NlFrumlag_nf/tala/pers/kyn Nl_þgf Nl_nf    # (Í gær) voru konurnar Páli [ekki] stoð og stytta
+    | so_2_þgf_nf/tala/pers NlFrumlag_nf/tala/pers/kyn Andlög_þgf_nf    # (Í gær) voru konurnar Páli [ekki] stoð og stytta
 
     # Þolfall + þolfall ('að kosta einhvern eitthvað')
-    | so_2_þf_þf/tala/pers NlFrumlag_nf/tala/pers/kyn NlÓbeintAndlag_þf NlBeintAndlag_þf      # (Í gær) kostuðu konurnar Pál [ekki] skildinginn
+    | so_2_þf_þf/tala/pers NlFrumlag_nf/tala/pers/kyn Andlög_þf_þf      # (Í gær) kostuðu konurnar Pál [ekki] skildinginn
 
     # Þágufall + þágufall ('að skila einhverjum einhverju')
-    | so_2_þgf_þgf/tala/pers NlFrumlag_nf/tala/pers/kyn NlÓbeintAndlag_þgf NlBeintAndlag_þgf  # (Í gær) skiluðu konurnar Páli [ekki] bílnum
+    | so_2_þgf_þgf/tala/pers NlFrumlag_nf/tala/pers/kyn Andlög_þgf_þgf  # (Í gær) skiluðu konurnar Páli [ekki] bílnum
 
     # Þolfall + þágufall ('að kalla einhvern illum nöfnum')
-    | so_2_þf_þgf/tala/pers NlFrumlag_nf/tala/pers/kyn NlÓbeintAndlag_þf NlBeintAndlag_þgf    # (Í gær) kölluðu konurnar Pál [ekki] illum nöfnum
+    | so_2_þf_þgf/tala/pers NlFrumlag_nf/tala/pers/kyn Andlög_þf_þgf    # (Í gær) kölluðu konurnar Pál [ekki] illum nöfnum
 
     # Sagnbót og nafnháttur    
     | HjSögn/tala/pers NlFrumlag_nf/tala/pers/kyn AtvFs? Sögn_2_sagnb  # (Í morgun) höfðu konurnar [ekki] krafið Pál svara
@@ -1881,7 +1870,7 @@ HjSögn/tala/pers →
     | 'skulu:so'/tala/pers FsAtv? HafaGetaFá_nh    # skulir [ekki] geta/hafa farið
     | 'munu:so'/tala/pers FsAtv? HafaGetaFá_nh     # munir [ekki] geta/hafa farið
     | 'eiga:so'/tala/pers FsAtv? nhm HafaGetaFá_nh # átt [ekki] að geta/hafa farið
-    | so_mm/tala/pers FsAtv? HjSögn_mm_nh       # segist [ekki] hafa farið
+    | so_mm/tala/pers FsAtv? HjSögn_mm_nh          # segist [ekki] hafa farið
 
 HafaGetaFá_nh →
     'hafa:so'_nh | 'geta:so'_nh | 'fá:so'_nh
@@ -2411,10 +2400,10 @@ NlKjarni_ft/fall/kyn →
     Númer?
 
 Fyrirbæri_ft/fall/kyn →
-    Skst? no_ft/fall/kyn                 # [Commodore PET] tölvur
-    | Skst? no_ft_gr/fall/kyn Fjöldi_ft/fall/kyn  # Mennina tíu / félögin tvö
+    Skst? no_ft/fall/kyn                            # [Commodore PET] tölvur
+    | Skst? no_ft_gr/fall/kyn Fjöldi_ft/fall/kyn    # Mennina tíu / félögin tvö
     | FyrirbæriMeðGreini_ft/fall/kyn
-    | raðnr/fall/kyn OgRaðnr/fall/kyn+ no/tala/fall/kyn    # 2. og 3. grein laganna (eru fallnar úr gildi)
+    | raðnr/fall/kyn OgRaðnr/fall/kyn+ no/tala/fall/kyn # 2. og 3. grein laganna (eru fallnar úr gildi)
 
 OgRaðnr/fall/kyn →
     "og:st" raðnr/fall/kyn
@@ -3598,7 +3587,7 @@ Lo/fall/tala/kyn →
     | LoSemSo/fall/tala/kyn
 
 LoSemLo/fall/tala/kyn → 
-    AtviksliðurEinkunn* lo/fall/tala/kyn # (Þingmenn) kosnir leynilegri kosningu
+    LoAtviksliður* lo/fall/tala/kyn # (Þingmenn kosnir) algerlega leynilegri (kosningu)
 
 LoMun/fall/tala/kyn →
     'munur:kk'_þgf_et lo_mst/fall/tala/kyn # (Schengen rekur) mun öflugri gagnagrunn / (þau voru) mun frjálsari skoðana sinna
@@ -3616,8 +3605,8 @@ $score(+4) LoSem/fall/tala/kyn
 # (_vb leyfir veika beygingu ásamt sterkri)
 # ('Við litum til bókfærðs hagnaðar')
 LoSemSo/fall/tala/kyn →
-    AtviksliðurEinkunn* so_lhþt/fall/tala/kyn
-    | AtviksliðurEinkunn* so_lh_nt
+    LoAtviksliður* so_lhþt/fall/tala/kyn
+    | LoAtviksliður* so_lh_nt
 
 $score(-16) LoSemSo/fall/tala/kyn
 
@@ -3633,7 +3622,7 @@ LoAtviksliðir →
 # leyfa atviksorðið almennt sem einkunn með nafnliðum; það myndi
 # rekast á fornafnið.
 LoAtviksliður →
-    AtviksliðurEinkunn | 'enginn:fn'_hk_et_nf | "nokkuð:ao"
+    eo | 'enginn:fn'_hk_et_nf | "nokkuð:ao"
 
 # Lýsingarorð í sterkri beygingu
 # ('Hún fór frjáls skoðana sinna í útlegð')
@@ -3867,6 +3856,8 @@ FsMeðFallstjórn →
     | 'allt:fn'_nf_hk_et 'frá:fs'_þgf Nl_þgf     # allt frá hruni, allt frá börnum til fullorðinna
     # 'um að lög um endurupptökunefnd standist ekki stjórnarskrá' - Ath: 'um það að' er höndlað í ÞaðTenging
     | 'um:fs'_þf "að:st" HreinYfirsetning ','?
+    # 'um hvort/hvenær/af hverju/til hvers/hví Jón kaus Framsóknarflokkinn'
+    | 'um:fs'_þf SpurnarAtviksorð HreinYfirsetning ','?
     # 'er bjartsýnn á að Alfreð komi aftur í liðið' - Ath: 'á það/því að' er höndlað í ÞaðTenging
     | 'á:fs'_þf "að:st" HreinYfirsetning ','?
     | 'að:fs'_þgf 'nafn:hk'_þgf_et person_nf  # Ég ræddi við konu að nafni Aðalbjörg Jónsdóttir
