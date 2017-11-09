@@ -978,7 +978,6 @@ class Comparison():
         #    d1="*" if mark_Gr_eldra != mark_OTB else " ",
         #    d2="*" if mark_Gr != mark_OTB else " "))
 
-
         #if mark_OTB in OTB_einfaldað: # ct, ta, aþe, aþm - Afbrigði 10, 17 og 20 í einföldun
         #    mark_OTB = OTB_einfaldað[mark_OTB]
         #if mark_Gr in OTB_einfaldað:
@@ -1351,6 +1350,7 @@ class Comparison():
             for sent in sentences:
                 process_func(None, sent)
         self.prenta()
+   
     def start_stikkprufa(self):
         úrtak = 50
         with open("stikkprufa.txt", "w") as stikk:

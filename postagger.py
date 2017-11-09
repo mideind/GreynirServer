@@ -210,6 +210,7 @@ class IFD_Tagset:
         "lo" : "_l",
         "ao" : "_a",
         "eo" : "_a",
+        "spao" : "_a",
         "fs" : "_a",
         "uh" : "_a",
         "st" : "_c",
@@ -220,7 +221,7 @@ class IFD_Tagset:
         "sérnafn" : "_n",
         "fyrirtæki" : "_n",
         "person" : "_n",
-        "gata" : "_n"
+        "gata" : "_n",
     }
 
     FN_FL = {
