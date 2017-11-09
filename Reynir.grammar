@@ -2685,8 +2685,8 @@ NlTöluorð/tala/fall/kyn →
     # '(Ég talaði við) tvær þeirra', 'fjórum þeirra (var kalt)'
     # 'Að minnsta kosti fjórir létust'
     # 'Um þrír af hverjum fjórum landsmönnum telja...'
-    TöluorðForskeyti* TöluorðLo/tala? Töluorð/tala/fall/kyn 'sá:fn'_ft_ef/kyn?
-    | TöluorðForskeyti* Töluorð/tala/fall/kyn TöluorðLo/tala # (önnur af) þremur hröðustu (sem eftir standa)
+    TöluorðForskeyti/tala/fall/kyn* TöluorðLo/tala? Töluorð/tala/fall/kyn 'sá:fn'_ft_ef/kyn?
+    | TöluorðForskeyti/tala/fall/kyn* Töluorð/tala/fall/kyn TöluorðLo/tala # (önnur af) þremur hröðustu (sem eftir standa)
     | 'sá:fn'_ft/fall/kyn? Töluorð/tala/fall/kyn EfLiður_ft/kyn?        # (ein af) þeim fjórum stúlknanna (sem stóðu sig best)
 
 NlTöluorð_ft_nf_hk → Prósentubil
@@ -2703,6 +2703,10 @@ TöluorðForskeyti →
     | "svo:st" "sem:st" | "tæplega:ao" | "rúmlega:ao" | "ríflega:ao" | "einnig:ao" | "samtals:ao"
     | "yfir:ao" | "hátt:ao" "í:ao" | 'allur:fn'_et_nf_hk "að:ao" | "næstum:ao" | "nálægt:ao" 
     | "innan:ao" "við:ao"
+
+TöluorðForskeyti/tala/fall/kyn →
+    TöluorðForskeyti
+    | lo_sb/tala/fall/kyn # tæpar/rúmar 115 milljónir
 
 TöluorðLo/tala →
     lo_evb_nf_hk/tala # efstu tvo / efstu tvö / efstu tvær

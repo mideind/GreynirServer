@@ -834,6 +834,11 @@ class BIN_Token(Token):
         def matcher_default(m):
             """ Check other word categories """
             if m.beyging == "-":
+                if m.ordfl == "lo":
+                    # If we have an adjective (lo) with no declination info,
+                    # assume it's an abbreviation ("hæstv." for "hæstvirtur")
+                    # and thus it matches any lo_X terminal irrespective of variants
+                    return terminal.matches_first(m.ordfl, m.stofn, self.t1_lower)
                 fbits = 0
             else:
                 # If the meaning is a noun, its gender is coded in the ordfl attribute
