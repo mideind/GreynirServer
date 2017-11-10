@@ -509,6 +509,9 @@ def parse_tokens(txt):
                     # Represent all hyphens the same way
                     yield TOK.Punctuation(HYPHEN)
                     w = w[1:]
+                    # Any sequence of hyphens is treated as a single hyphen
+                    while w and w[0] in HYPHENS:
+                        w = w[1:]
                 else:
                     yield TOK.Punctuation(w[0])
                     w = w[1:]
