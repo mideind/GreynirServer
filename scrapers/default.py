@@ -669,6 +669,10 @@ class EyjanScraper(ScrapeHelper):
         """ Find the article content (main text) in the soup """
         # Delete div.container-fluid tags from the content
         article = ScrapeHelper.div_class(soup_body, "article-full")
+        # Remove link to comments
+        soup = article.a
+        if soup is not None:
+            soup.decompose()
         # Remove the dateline from the content
         soup = ScrapeHelper.tag_class(article, "span", "date")
         if soup is not None:

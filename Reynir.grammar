@@ -461,7 +461,6 @@ $score(+8) Skilyrðistenging # Skilyrðissetning er með mínus á móti
 Samanburðartenging →
     "eins:ao" "og:st"
     | 'líkt_og:st'
-    # | "sem:st"           # !!! TODO: Á þetta að vera hér? En ef svo, þá a.m.k. með stórum mínus.
 
 # Setningar með frumlagi
 
@@ -498,6 +497,8 @@ SagnKomma/tala/pers/kyn →
 # Hvetja til framhalds sömu sagnrunu, fremur en að skipta niður í fleiri setningar
 $score(+5) SagnFramhald/tala/pers/kyn
 $score(+2) SagnKomma/tala/pers/kyn
+
+$tag(begin_prep_scope) SagnRunaKnöpp/tala/pers/kyn
 
 # Sagnir innan undirtrés geta ekki orsakað bónus á forsetningar utan þess
 $tag(purge_verb) SagnRuna/tala/pers/kyn
@@ -650,7 +651,7 @@ SetningUmAðRæða →
 $score(+30) SetningUmAðRæða # Mjög líklega réttur skilningur á þessari orðaröð
 
 SetningForskeyti →
-    SagnInnskot | SamanburðarForskeyti
+    FsAtv | SamanburðarForskeyti
 
 SamanburðarForskeyti →
     "eins:ao" "og:st" Nl_nf         # 'Eins og Páll borða ég ekki smjör'
@@ -1889,6 +1890,9 @@ HjSögn/tala/pers →
     | 'eiga:so'/tala/pers FsAtv? nhm HafaGetaFá_nh # átt [ekki] að geta/hafa farið
     | so_mm/tala/pers FsAtv? HjSögn_mm_nh       # segist [ekki] hafa farið
 
+# Hjálparsagnir koma ekki til álita varðandi tengingu forsetningar við sögn
+$tag(purge_verb) HjSögn/tala/pers
+
 HafaGetaFá_nh →
     'hafa:so'_nh | 'geta:so'_nh | 'fá:so'_nh
 
@@ -1909,6 +1913,8 @@ HjSögn_mm_nh →
     | 'skulu:so'_nh 'hafa:so'_nh   # segjast skulu hafa farið(?)
     | 'fá:so'_nh                # þykist fá notið
 
+$tag(purge_verb) HjSögn_mm_nh
+
 HjSögnVh →
     'hafa:so'_et_p3_vh                         # hafi þurft
     | 'geta:so'_et_p3_vh                       # gæti þurft
@@ -1917,6 +1923,8 @@ HjSögnVh →
     | 'þykja:so'_et_p3_vh FsAtv? 'hafa:so'_nh     # þætti [ekki] hafa þurft
     | 'skulu:so'_et_p3_vh FsAtv? 'hafa:so'_nh     # skyldi [ekki] hafa þurft
     | 'munu:so'_et_p3_vh FsAtv? 'hafa:so'_nh      # myndi [ekki] hafa þurft
+
+$tag(purge_verb) HjSögnVh
 
 # Sögnin stendur í nafnhætti með annarri nafnháttarsögn,
 # sbr. 'Gæta verða/skulu/eiga/vilja þeir þingskapa'
@@ -1929,10 +1937,14 @@ HjSögnNhMeðSo/tala/pers →
     | 'þurfa:so'/tala/pers     # gæta þurfa þeir / þurfið þið
     | 'vilja:so'/tala/pers     # gæta vilja þeir / viljið þið
 
+$tag(purge_verb) HjSögnNhMeðSo/tala/pers
+
 HjSögnNhMeðSagnb/tala/pers →
     'verða:so'/tala/pers       # verða mennirnir að hafa/geta... lent
     | 'eiga:so'/tala/pers      # eiga mennirnir að hafa/geta... lent
     | 'þurfa:so'/tala/pers     # þurfa mennirnir að hafa/geta... lent
+
+$tag(purge_verb) HjSögnNhMeðSagnb/tala/pers
 
 # Sögnin stendur í nafnhætti
 HjSögnNh/tala/pers →
@@ -1965,6 +1977,8 @@ HjSögnNh/tala/pers →
 HjSögnNh_p3_et → HjSögnNh_et_p3
 HjSögnNh_p3_ft → HjSögnNh_ft_p3
 
+$tag(purge_verb) HjSögnNh/tala/pers
+
 HjSögnÞurfaEiga_et_p3 →
     'þurfa:so'_et_p3                   # Greinarmun þarf/þyrfti að gera
     | 'eiga:so'_et_p3                  # Greinarmun á/ætti að gera
@@ -1984,6 +1998,8 @@ HjSögnMegiSkuli_et_p3 →
     | 'skulu:so'_et_p3                 # (Þann lærdóm) skuli/skyldi/skal (draga)
     | 'hafa:so'_et_p3 'mega:so'_sagnb     # (Þann lærdóm) hefur/hefði mátt (draga)
 
+$tag(purge_verb) HjSögnMegiSkuli_et_p3
+
 HjSögnMegiSkuliÞurfi_et_p3 →
     'mega:so'_et_p3                    # (Endurnýja) megi/mætti/má (leigusamninginn)
     | 'eiga:so'_et_p3                  # (Endurnýja) á/eigi/átti (leigusamninginn)
@@ -1993,6 +2009,8 @@ HjSögnMegiSkuliÞurfi_et_p3 →
     | 'hafa:so'_et_p3 'mega:so'_sagnb     # (Endurnýja) hefur/hafði/hefði mátt (leigusamninginn)
     | 'hafa:so'_et_p3 'þurfa:so'_sagnb    # (Endurnýja) hefur/hafði/hefði þurft (leigusamninginn)
     | 'hafa:so'_et_p3 'eiga:so'_sagnb     # (Endurnýja) hefur/hafði/hefði átt (leigusamninginn)
+
+$tag(purge_verb) HjSögnMegiSkuliÞurfi_et_p3
 
 # Vera/verða sambönd, öll nema sjálfar sagnirnar 'vera' og 'verða'
 HjSögnEkkiVera →
@@ -2047,6 +2065,8 @@ HjSögnLhÞt/tala/pers →
     | 'skulu:so'/tala/pers FsAtv? 'hafa:so'_nh 'verða:so'_sagnb # skulu [ekki] hafa orðið farnar
     | 'munu:so'/tala/pers FsAtv? 'hafa:so'_nh 'verða:so'_sagnb  # munu [ekki] hafa orðið farnar
 
+$tag(purge_verb) HjSögnLhÞt/tala/pers
+
 HjSögnLhÞt_p3_et → HjSögnLhÞt_et_p3
 HjSögnLhÞt_p3_ft → HjSögnLhÞt_ft_p3
 
@@ -2093,6 +2113,8 @@ HjSögnLoMeðF/tala/pers/kyn →
 HjSögnSkuluMunu/tala/pers →
     'skulu:so'/tala/pers | 'munu:so'/tala/pers
 
+$tag(purge_verb) HjSögnSkuluMunu/tala/pers
+
 # Sameiginleg regla fyrir LhÞt og SkuluMunu
 
 HjSögnLhÞtSM/tala/pers →
@@ -2106,8 +2128,6 @@ HjSögnLhÞtSM_p3_ft →
 
 HjSögnSagnb_et_p3 →
     HjSögnLhÞtSM_et_p3 # | 'hafa:so'_et_p3
-
-$tag(purge_verb) HjSögnSagnb_et_p3
 
 # 'Hælisleitendum fer/fór/færi/hefur farið/mun fara fækkandi'
 
@@ -4280,7 +4300,7 @@ Dagsetning →
     | Undanfarið
     | 'allur:fn'_þf/tala/kyn? gr_þf/tala/kyn? 'síðari:lo'_þf/tala/kyn TalaTímabil_þf/tala/kyn # síðustu sex vikur, hin síðari ár, allan síðasta mánuð
     | Tímabil_þf # (Hann kom hér) alla daga, suma vikudaga, nokkur ár, eina vikuna, síðustu fimm vetur
-    | TímabilsEinkunn_þgf/tala/kyn Tímabil_þgf/kyn/tala TímaAfstæði_þgf? # (Námsönnin hefst) þremur mánuðum áður en jólafríið byrjar
+    | TímabilsEinkunn_þgf/tala/kyn Tímabil_þgf/kyn/tala TímaAfstæði_þgf # (Námsönnin hefst) þremur mánuðum áður en jólafríið byrjar
     | Tímabil_þgf/kyn/tala TímaAfstæði_þgf # Klukkutíma fyrr kom ég á staðinn
     | Tímabil_ft_þgf/kyn "saman:ao" # Nefndin fundaði ekki mánuðum saman
     | Tímabil_þf/kyn/tala TímaAfstæði_þf # Vikuna áður / Daginn eftir / áratugina á undan
@@ -4386,8 +4406,14 @@ TímaAð →
     "að:st" HreinYfirsetning
 
 TímabilsEinkunn/fall/tala/kyn →
-    fn/fall/tala/kyn          # alla/suma/nokkra
-    | Töluorð/fall/tala/kyn   # fjóra/4
+    fn/fall/tala/kyn                # alla/suma/nokkra
+    | TímabilsTöluorð/fall/tala/kyn # fjóra/4
+
+TímabilsTöluorð/fall/tala/kyn →
+    Töluorð/fall/tala/kyn           # fjóra/4
+
+# 'Hann kom í vinnuna fjóra daga' er frekar sjaldgæft, gefa mínus
+$score(-6) TímabilsTöluorð/fall/tala/kyn
 
 TalaTímabil_þf/tala/kyn →
     Töluorð_þf/tala/kyn? Tímabil_þf/kyn/tala # sex vikur, mánuð, tvö ár
