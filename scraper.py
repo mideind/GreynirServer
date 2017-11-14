@@ -33,10 +33,11 @@ import sys
 import gc
 import getopt
 import time
+import logging
 #import traceback
 
-#from multiprocessing.dummy import Pool
-from multiprocessing import Pool
+#from multiprocessing.dummy import Pool, cpu_count
+from multiprocessing import Pool, cpu_count
 
 from datetime import datetime
 
@@ -65,7 +66,7 @@ class Scraper:
 
     def __init__(self):
 
-        print("Initializing scraper instance")
+        logging.info("Initializing scraper instance")
 
     def scrape_root(self, root, helper):
         """ Scrape a root URL """
@@ -73,12 +74,12 @@ class Scraper:
         t0 = time.time()
         # Fetch the root URL and scrape all child URLs that refer
         # to the same domain suffix and we haven't seen before
-        print("Fetching root {0}".format(root.url))
+        logging.info("Fetching root {0}".format(root.url))
 
         # Read the HTML document at the root URL
         html_doc = Fetcher._fetch_url(root.url)
         if not html_doc:
-            print("Unable to fetch root {0}".format(root.url))
+            logging.warning("Unable to fetch root {0}".format(root.url))
             return
 
         # Parse the HTML document
@@ -108,24 +109,24 @@ class Scraper:
                     # roll back and continue
                     session.rollback()
                 except Exception as e:
-                    print("Roll back due to exception in scrape_root: {0}".format(e))
+                    logging.warning("Roll back due to exception in scrape_root: {0}".format(e))
                     session.rollback()
 
         t1 = time.time()
 
-        print("Root scrape completed in {0:.2f} seconds".format(t1 - t0))
+        logging.info("Root scrape completed in {0:.2f} seconds".format(t1 - t0))
 
 
     def scrape_article(self, url, helper):
         """ Scrape a single article, retrieving its HTML and metadata """
 
         if helper.skip_url(url):
-            print("Skipping article {0}".format(url))
+            logging.info("Skipping article {0}".format(url))
             return
 
         # Fetch the root URL and scrape all child URLs that refer
         # to the same domain suffix and we haven't seen before
-        print("Scraping article {0}".format(url))
+        logging.info("Scraping article {0}".format(url))
         t0 = time.time()
 
         with SessionContext(commit = True) as session:
@@ -136,13 +137,13 @@ class Scraper:
                 a.store(session)
 
         t1 = time.time()
-        print("Scraping completed in {0:.2f} seconds".format(t1 - t0))
+        logging.info("Scraping completed in {0:.2f} seconds".format(t1 - t0))
 
 
     def parse_article(self, url, helper):
         """ Parse a single article """
 
-        print("Parsing article {0}".format(url))
+        logging.info("Parsing article {0}".format(url))
         t0 = time.time()
         num_sentences = 0
         num_parsed = 0
@@ -158,7 +159,7 @@ class Scraper:
                 num_parsed = a.num_parsed
 
         t1 = time.time()
-        print("Parsing of {2}/{1} sentences completed in {0:.2f} seconds".format(t1 - t0, num_sentences, num_parsed))
+        logging.info("Parsing of {2}/{1} sentences completed in {0:.2f} seconds".format(t1 - t0, num_sentences, num_parsed))
 
 
     def _scrape_single_root(self, r):
@@ -168,14 +169,14 @@ class Scraper:
             # We do not scrape .local roots
             return
         try:
-            print("Scraping root of {0} at {1}...".format(r.description, r.url))
+            logging.info("Scraping root of {0} at {1}...".format(r.description, r.url))
             # Process a single top-level domain and root URL,
             # parsing child URLs that have not been seen before
             helper = Fetcher._get_helper(r)
             if helper:
                 self.scrape_root(r, helper)
         except Exception as e:
-            print("Exception when scraping root at {0}: {1!r}".format(r.url, e))
+            logging.warning("Exception when scraping root at {0}: {1!r}".format(r.url, e))
 
 
     def _scrape_single_article(self, d):
@@ -186,7 +187,7 @@ class Scraper:
             if helper:
                 self.scrape_article(d.url, helper)
         except Exception as e:
-            print("Exception when scraping article at {0}: {1!r}".format(d.url, e))
+            logging.warning("Exception when scraping article at {0}: {1!r}".format(d.url, e))
 
 
     def _parse_single_article(self, d):
@@ -197,10 +198,10 @@ class Scraper:
             if helper:
                 self.parse_article(d.url, helper)
         except KeyboardInterrupt:
-            print("KeyboardInterrupt in _parse_single_article()")
+            logging.info("KeyboardInterrupt in _parse_single_article()")
             sys.exit(1)
         except Exception as e:
-            print("Exception when parsing article at {0}: {1!r}".format(d.url, e))
+            logging.warning("Exception when parsing article at {0}: {1!r}".format(d.url, e))
             #traceback.print_exc()
             #raise e from e
         return True
@@ -285,7 +286,7 @@ class Scraper:
             # Let the pool work on chunks of articles, recycling the
             # processes after each chunk to contain memory creep.
 
-            CHUNK_SIZE = 250
+            CHUNK_SIZE = 100 * cpu_count()
             if urls is None:
                 g = iter_unparsed_articles(reparse, limit)
             else:
@@ -304,13 +305,13 @@ class Scraper:
                     # Run garbage collection to minimize common memory footprint
                     gc.collect()
                     BIN_Db.cleanup() # Make sure there are no open BIN db connections
-                    print("Parser processes forking, chunk of {0} articles".format(lcnt))
+                    logging.info("Parser processes forking, chunk of {0} articles".format(lcnt))
                     pool = Pool() # Defaults to using as many processes as there are CPUs
                     pool.map(self._parse_single_article, adlist)
                     pool.close()
                     pool.join()
                     cnt += lcnt
-                    print("Parser processes joined, chunk of {0} articles parsed, total {1}".format(lcnt, cnt))
+                    logging.info("Parser processes joined, chunk of {0} articles parsed, total {1}".format(lcnt, cnt))
                 if lcnt < CHUNK_SIZE:
                     break
 
@@ -345,7 +346,7 @@ class Scraper:
 
         num_parsed_over_1 = result[0]
         
-        print ("Num_articles is {0}, scraped {1}, parsed {2}, parsed with >1 sentence {3}"
+        logging.info("Num_articles is {0}, scraped {1}, parsed {2}, parsed with >1 sentence {3}"
             .format(num_articles, num_scraped, num_parsed, num_parsed_over_1))
 
         q = "select sum(num_sentences) as sent, sum(num_parsed) as parsed " \
@@ -356,18 +357,17 @@ class Scraper:
         num_sentences = result[0] or 0 # Result of query can be None
         num_sent_parsed = result[1] or 0
 
-        print ("\nNum_sentences is {0}, num_sent_parsed is {1}, ratio is {2:.1f}%"
+        logging.info("Num_sentences is {0}, num_sent_parsed is {1}, ratio is {2:.1f}%"
             .format(num_sentences, num_sent_parsed, 100.0 * num_sent_parsed / num_sentences))
 
 
 def scrape_articles(reparse = False, limit = 0, urls = None):
 
-    print("------ Reynir starting scrape -------")
-    ts = "{0}".format(datetime.utcnow())[0:19]
+    logging.info("------ Reynir starting scrape -------")
     if urls is None:
-        print("Time: {0}, limit: {1}, reparse: {2}\n".format(ts, limit, reparse))
+        logging.info("Limit: {0}, reparse: {1}".format(limit, reparse))
     else:
-        print("Time: {0}, URLs read from: {1}\n".format(ts, urls))
+        logging.info("URLs read from: {0}".format(urls))
     t0 = time.time()
 
     try:
@@ -378,21 +378,19 @@ def scrape_articles(reparse = False, limit = 0, urls = None):
             sc.stats()
         except KeyboardInterrupt:
             # Terminate process upon Ctrl+C
-            print("KeyboardInterrupt: exiting process")
+            logging.info("KeyboardInterrupt: exiting process")
             # sys.exit(1)
         except Exception as e:
-            print("Scraper terminated with exception {0}".format(e))
+            logging.warning("Scraper terminated with exception {0}".format(e))
     finally:
         sc = None
 
     t1 = time.time()
-    ts = "{0}".format(datetime.utcnow())[0:19]
-    print("\nTime: {0}".format(ts))
-    print("Elapsed: {0:.1f} minutes".format((t1 - t0) / 60))
+    logging.info("Elapsed: {0:.1f} minutes".format((t1 - t0) / 60))
     if limit:
-        print("Average: {0:.2f} seconds per article".format((t1 - t0) / limit))
+        logging.info("Average: {0:.2f} seconds per article".format((t1 - t0) / limit))
 
-    print("\n------ Scrape completed -------\n")
+    logging.info("------ Scrape completed -------")
 
 
 __doc__ = """
@@ -462,8 +460,10 @@ def main(argv = None):
         for arg in args:
             pass
 
-        # Read the configuration settings file
+        # Set logging format
+        logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', level=logging.INFO)
 
+        # Read the configuration settings file
         try:
             Settings.read("config/Reynir.conf")
             # Don't run the scraper in debug mode

@@ -31,6 +31,7 @@ import urllib.parse as urlparse
 from datetime import datetime
 import re
 from collections import namedtuple
+import logging
 
 from bs4 import BeautifulSoup
 
@@ -98,7 +99,7 @@ class ScrapeHelper:
         """ Find the actual article content within an HTML soup and return its parent node """
         if not soup or not soup.html or not soup.html.body:
             # No body in HTML: something is wrong, return None
-            print("get_content returning None")
+            logging.warning("get_content returning None")
             return None
         if hasattr(self, "_get_content"):
             content = self._get_content(self._get_body(soup))
@@ -188,10 +189,10 @@ class ScrapeHelper:
             f = lambda tag: ScrapeHelper.meta_property_filter(tag, property_name, prop_attr)
             mp = soup.html.head.find(f)
             if not mp:
-                print("meta property {0} not found in soup.html.head".format(property_name))
+                logging.warning("meta property {0} not found in soup.html.head".format(property_name))
             return str(mp["content"]) if mp else None
         except Exception as e:
-            print("Exception in meta_property('{0}'): {1}".format(property_name, e))
+            logging.warning("Exception in meta_property('{0}'): {1}".format(property_name, e))
             return None
 
     @staticmethod
@@ -285,7 +286,7 @@ class KjarninnScraper(ScrapeHelper):
             f = lambda xtag: ScrapeHelper.general_filter(xtag, "span", "class", "author")
             tag = soup.html.body.find(f) if soup.html.body else None
         if not tag:
-            print("span.class.author tag not found in soup.html.body")
+            logging.warning("span.class.author tag not found in soup.html.body")
         author = str(tag.string) if tag and tag.string else "Ritstjórn Kjarnans"
         metadata.heading = heading
         metadata.author = author
@@ -297,7 +298,7 @@ class KjarninnScraper(ScrapeHelper):
         """ Find the article content (main text) in the soup """
         # soup_body has already been sanitized in the ScrapeHelper base class
         if soup_body.article is None:
-            print("_get_content: soup_body.article is None")
+            logging.warning("_get_content: soup_body.article is None")
             return None
         # Delete div.container.title-container tags from the content
         soup = ScrapeHelper.div_class(soup_body.article, ("container", "title-container"))
@@ -502,7 +503,7 @@ class MblScraper(ScrapeHelper):
             # Could be a picture collection - look for div#non-galleria
             soup = ScrapeHelper.div_id(soup_body, "non-galleria")
         if soup is None:
-            print("_get_content: soup_body.div.main-layout/frett-main/pistill-entry-body is None")
+            logging.warning("_get_content: soup_body.div.main-layout/frett-main/pistill-entry-body is None")
         if soup:
             # Delete h1 tags from the content
             s = soup.h1
@@ -510,8 +511,11 @@ class MblScraper(ScrapeHelper):
                 s.decompose()
             # Delete p/strong/a paragraphs from the content (intermediate links)
             for p in soup.findAll('p'):
-                if p.strong and p.strong.a:
-                    p.decompose()
+                try:
+                    if p.strong and p.strong.a:
+                        p.decompose()
+                except AttributeError:
+                    pass
             # Delete div.reporter-profile from the content
             ScrapeHelper.del_div_class(soup, "reporter-profile")
             # Delete all image instances from the content
@@ -654,7 +658,7 @@ class EyjanScraper(ScrapeHelper):
                 timestamp = datetime(year = date[2], month = date[1], day = date[0],
                     hour = time[0], minute = time[1])
             except Exception as e:
-                print("Exception when obtaining date of eyjan.is article: {0}".format(e))
+                logging.warning("Exception when obtaining date of eyjan.is article: {0}".format(e))
                 timestamp = None
         if timestamp is None:
             timestamp = datetime.utcnow()
@@ -669,6 +673,11 @@ class EyjanScraper(ScrapeHelper):
         """ Find the article content (main text) in the soup """
         # Delete div.container-fluid tags from the content
         article = ScrapeHelper.div_class(soup_body, "article-full")
+        if article is None:
+            article = soup_body
+            if article is None:
+                logging.warning("No content for eyjan.is article")
+                return None
         # Remove link to comments
         soup = article.a
         if soup is not None:
@@ -815,13 +824,16 @@ class KvennabladidScraper(ScrapeHelper):
                 timestamp = datetime(year = year, month = month, day = day,
                     hour = now.hour, minute = now.minute, second = now.second)
             except Exception as e:
-                print("Exception when obtaining date of kvennabladid.is article: {0}".format(e))
+                logging.warning("Exception when obtaining date of kvennabladid.is article: {0}".format(e))
                 timestamp = None
         if timestamp is None:
             timestamp = datetime.utcnow()
         # Extract the author name
         author = ScrapeHelper.div_class(soup, "blog-info-wrapper", "blog-author")
-        author = author.a.text if author and author.a else "Ritstjórn Kvennablaðsins"
+        try:
+            author = author.a.text
+        except:
+            author = "Ritstjórn Kvennablaðsins"
         metadata.heading = heading
         metadata.author = author
         metadata.timestamp = timestamp
@@ -869,10 +881,6 @@ class AlthingiScraper(ScrapeHelper):
 
     def make_soup(self, doc):
         """ Make a soup object from a document """
-        #if doc:
-            # The <hr> tag seems to be causing problems:
-            # cop out by replacing it with <br>
-        #    doc = doc.replace("<hr>", "<br>")
         return super().make_soup(doc)
 
     def _get_content(self, soup_body):
