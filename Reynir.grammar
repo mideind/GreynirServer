@@ -2625,10 +2625,6 @@ FornafnViðskeytiLo_ft_ef/kyn →
 FornafnViðskeyti_ft/fall/kyn →
     HverHvor/fall/kyn       # þá hvern fyrir sig / þær hverja í sínu lagi / öll hvert á fætur öðru
 
-#NlFornafn_et/fall/kyn →
-#    # 'hvern þeirra' / 'hverja þeirra' / 'hvert þeirra'
-#    'hver'_et/fall/kyn 'sá'_ft_ef/kyn
-
 # allt annar | allt aðrir
 # allt önnur | allt aðrar
 # allt annað | allt önnur
@@ -2685,16 +2681,9 @@ NlStak_p3/tala/fall/kyn →
     # '(Ríkissaksóknari) nýtur sömu verndar í starfi og dómarar'
     | 'sami:fn'/tala/fall/kyn Nl/fall/tala/kyn "og:st" Nl_nf
 
-# 'Sú útskýring, að Samfylkingin sé óalandi og óferjandi, (dugir ekki lengur)'
 NlStak_p3/tala/fall/kyn →
+    # 'Sú útskýring [núna], að Samfylkingin sé óalandi og óferjandi, (dugir ekki lengur)'
     'sá:fn'/tala/fall/kyn Nl/fall/tala/kyn AtvFs? Útskýring
-
-Útskýring →
-    ',' Skýringarsetning ','
-    | Skýringarsetning
-    | NhFyllingÁnAtv # Sú ákvörðun Úkraínustjórnar [í gær] að loka á síður
-
-$score(+12) Útskýring
 
 # Töluorð sem sjálfstæðir nafnliðir
 
@@ -2706,8 +2695,8 @@ NlTöluorð/tala/fall/kyn →
     # 'Að minnsta kosti fjórir létust'
     # 'Um þrír af hverjum fjórum landsmönnum telja...'
     TöluorðForskeyti/tala/fall/kyn* TöluorðLo/tala? Töluorð/tala/fall/kyn 'sá:fn'_ft_ef/kyn?
-    | TöluorðForskeyti/tala/fall/kyn* Töluorð/tala/fall/kyn TöluorðLo/tala # (önnur af) þremur hröðustu (sem eftir standa)
-    | 'sá:fn'_ft/fall/kyn? Töluorð/tala/fall/kyn EfLiður_ft/kyn?        # (ein af) þeim fjórum stúlknanna (sem stóðu sig best)
+    | TöluorðForskeyti/tala/fall/kyn* Töluorð/tala/fall/kyn TöluorðLo/tala  # (önnur af) þremur hröðustu (sem eftir standa)
+    | 'sá:fn'_ft/fall/kyn? Töluorð/tala/fall/kyn EfLiður_ft/kyn?            # (ein af) þeim fjórum stúlknanna (sem stóðu sig best)
 
 NlTöluorð_ft_nf_hk → Prósentubil
 NlTöluorð_ft_þf_hk → Prósentubil
@@ -2885,7 +2874,6 @@ NlStak_p3_et/fall → NlStak_p3_et/fall/kyn # Samtenging tveggja eintöluliða m
 # 3p. fleirtala
 
 NlStak_ft_p3/fall/kyn →
-
     NlStak_p3_ft/fall/kyn VeikSögnLhÞt_ft/fall/kyn? FsRunaEftirNl?  # fulltrúar bankans í nefndinni
     | 'allur:fn'_ft/fall/kyn 'sá:fn'_ft/fall/kyn                    # Allir þeir, allar þær, öll þau
 
@@ -3362,21 +3350,13 @@ SemAukafall/aukafall/tala →
 
 $score(-4) SemAukafall/aukafall/tala
 
-NlEind_et_p3_nf_hk →
-    # Það [eitt] hvernig kerfið virkar (er óskiljanlegt flestum)
-    'það:pfn'_hk_nf_et 'einn:fn'_nf_et_hk? ","? ÞaðTenging
+NlEind_et_p3/fall/kyn →
+    # það [eitt] [,] hvernig kerfið virkar [,] (er óskiljanlegt)
+    'sá:fn'_et/fall/kyn 'einn:fn'_et/fall/kyn? Útskýring
 
-NlEind_et_p3_þf_hk →
-    # (Gunnar lagði áherslu á) það [eitt] [í dag] að vægi atkvæða hafi aldrei verið jafnt
-    'það:pfn'_hk_þf_et 'einn:fn'_þf_et_hk? ","? ÞaðTenging
-
-NlEind_et_p3_þgf_hk →
-    # (Ekkert var gert í) því [einu] [strax] að Jón hefur áreitt Önnu lengi (eða því að hún vildi segja upp)
-    'það:pfn'_hk_þgf_et 'einn:fn'_þgf_et_hk? ","? ÞaðTenging
-
-NlEind_et_p3_ef_hk →
-    # (Þetta varð til) þess [eins] að Anna fór í fússi (og uppsagnar í kjölfarið)
-    'það:pfn'_hk_ef_et 'einn:fn'_ef_et_hk? ","? ÞaðTenging
+NlEind_ft_p3/fall/kyn →
+    # (Niðurstöðurnar voru) þær [einar] [,] að Katrín myndaði stjórn [,] (og kom það sumum á óvart)
+    'sá:fn'_ft/fall/kyn 'einn:fn'_ft/fall/kyn? Útskýring
 
 ÞaðTenging →
     Skýringarsetning
@@ -3384,6 +3364,12 @@ NlEind_et_p3_ef_hk →
     | NhFyllingÁnAtv        # Það að fara til tannlæknis (er ánægjuleg reynsla)
 
 $score(+32) ÞaðTenging
+
+# ÞaðTenging sem getur verið innan kommu
+
+Útskýring →
+    ÞaðTenging
+    | ',' ÞaðTenging LokatáknEðaKomma
 
 # Aðdróttanir, þó sannar séu, varða fangelsisvist
 

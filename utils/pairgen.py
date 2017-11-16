@@ -76,6 +76,7 @@ def write_file(outfile, generator, size):
     written = 0
     with open(outfile, "w") as f:
         for text, flat in gen_flat_trees(generator):
+            # Write the (input, output) training data pair, separated by a tab character (\t)
             f.write(f"{text}\t{flat}\n")
             written += 1
             if written >= size:
@@ -89,6 +90,7 @@ def write_shuffled_file(outfile, generator, size):
     written = 0
     lines = []
     for text, flat in gen_flat_trees(generator):
+        # Accumulate the (input, output) training data pairs, separated by a tab character (\t)
         lines.append(f"{text}\t{flat}\n")
         written += 1
         if written >= size:
@@ -103,7 +105,7 @@ def write_shuffled_file(outfile, generator, size):
 
 def main(dev_size, train_size, shuffle):
 
-    print("Welcome to the text and parse tree pair generator")
+    print("Welcome to the Reynir text and parse tree pair generator")
 
     try:
         # Read configuration file
@@ -157,3 +159,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     main(dev_size = args.DEV_SIZE, train_size = args.TRAIN_SIZE, shuffle = not args.NO_SHUFFLE)
+
