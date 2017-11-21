@@ -1902,7 +1902,8 @@ Geta_sagnb →
 GetaAtv_sagnb →
     AtvFs? 'geta:so'_sagnb
 
-$score(+3) HafaGetaFá_nh     # Gefa plús fyrir flókin sagnform
+$score(+3) HafaGetaFá_nh        # Gefa plús fyrir flókin sagnform
+$tag(purge_verb) HafaGetaFá_nh  # Ekki horfa á hjálparsögnina þegar forsetningar eru tengdar
 
 HjSögn_mm_nh →
     'hafa:so'_nh                # telst hafa farið
@@ -2388,7 +2389,7 @@ Einkunn/tala/fall/kyn →
     # það dregur verulega úr margræðni
     | AtviksliðurEinkunn        # rúmlega (helmingur)
     | Fornafn/tala/fall/kyn     # Sá (stóri maður), allt þetta (víkjandi lán)
-    | Töluorð/tala/fall/kyn     # þrjá (gangandi menn) / 26
+    | TöluorðForskeyti/tala/fall/kyn? Töluorð/tala/fall/kyn     # [samtals] þrjá (gangandi menn) / [hátt í] 26
     | OkkarYkkar                # 'okkar skoðanir', 'ykkar félag' (okkar og ykkar eru pfn, ekki fn)
     | GreinirMeðLo/tala/fall/kyn 
 
@@ -2709,13 +2710,24 @@ $score(+4) Prósentubil
 
 TöluorðForskeyti →
     'að_minnsta_kosti:ao' | "um:ao" | "minnst:ao" | "einungis:ao" | "aðeins:ao" | "ekki:ao"
-    | "svo:st" "sem:st" | "tæplega:ao" | "rúmlega:ao" | "ríflega:ao" | "einnig:ao" | "samtals:ao"
-    | "yfir:ao" | "hátt:ao" "í:ao" | 'allur:fn'_et_nf_hk "að:ao" | "næstum:ao" | "nálægt:ao" 
+    | "tæplega:ao" | "rúmlega:ao" | "ríflega:ao" | "einnig:ao" | "samtals:ao"
+    | "næstum:ao" | "nálægt:ao" | "yfir:ao"
+    # Fleiryrt forskeyti
+    | "hátt:ao" "í:ao"
+    | 'allur:fn'_et_nf_hk "að:ao" 
     | "innan:ao" "við:ao"
+    | "svo:st" "sem:st" 
 
 TöluorðForskeyti/tala/fall/kyn →
     TöluorðForskeyti
     | lo_sb/tala/fall/kyn # tæpar/rúmar 115 milljónir
+
+TöluorðForskeyti_ef_et_kk → TöluorðForskeyti_et_ef_kk
+TöluorðForskeyti_ef_et_kvk → TöluorðForskeyti_et_ef_kvk
+TöluorðForskeyti_ef_et_hk → TöluorðForskeyti_et_ef_hk
+TöluorðForskeyti_ef_ft_kk → TöluorðForskeyti_ft_ef_kk
+TöluorðForskeyti_ef_ft_kvk → TöluorðForskeyti_ft_ef_kvk
+TöluorðForskeyti_ef_ft_hk → TöluorðForskeyti_ft_ef_hk
 
 TöluorðLo/tala →
     lo_evb_nf_hk/tala # efstu tvo / efstu tvö / efstu tvær
@@ -2723,7 +2735,7 @@ TöluorðLo/tala →
 
 # Gefa mínusstig fyrir stök töluorð - viljum helst sjá þau sem einkunn í stærri nafnlið
 $score(-10) NlTöluorð/tala/fall/kyn
-$score(+4) TöluorðForskeyti # Rétta mínusinn af ef fleira fylgir
+$score(+12) TöluorðForskeyti # Rétta mínusinn af ef fleira fylgir
 
 # '1100 manns (voru á skemmtuninni)', '(Ég pantaði mat fyrir) sautján manns'
 # Virðist ekki ganga upp í eignarfalli
@@ -3132,14 +3144,14 @@ $score(+10) ÞekktÁvarp/nkyn/fall
 # Reynt er að láta titil ekki enda á FsRuna/FsAtv eða á EfLiður
 # því það skapar margræðni við nafnliðinn sjálfan
 Titill/fall →
-    ',' NlTitill/fall             # [Jón], formaður [félagsins]
-    | KommulausTitill/fall        # [Jón] formaður [félagsins]
-    | KommuTitill/fall            # [Jón], formaður námsmannafélagsins í Árósum og talsmaður þess,
+    ',' NlTitill/fall       # (Jón), [þá] formaður [félagsins]
+    | KommulausTitill/fall  # (Jón) [þá] formaður [félagsins]
+    | KommuTitill/fall      # (Jón), [þá] formaður námsmannafélagsins í Árósum og talsmaður þess,
     # Gunnlaugur H Jónsson eðlisfræðingur og fyrrverandi starfsmaður Orkustofnunar
     | EinnTitill/fall OgTitill/fall* ','? "og:st" NlTitill/fall
 
 NlTitill/fall →
-    TitilEinkunn/fall/kyn? no_et/fall/kyn      # (Jón) glæsilegur fulltrúi (félagsins)
+    "þá:ao"? TitilEinkunn/fall/kyn? no_et/fall/kyn  # (Jón) [þá] glæsilegur fulltrúi (félagsins)
 
 TitilEinkunn/fall/kyn →
     Einkunn_et/fall/kyn
@@ -3913,6 +3925,8 @@ FsAð →
     NhLiðir SagnInnskot?    # Þörfin fyrir að læra spænsku í skólum
     | Skýringarsetning      # Þörfin fyrir að Jón seldi bílinn
 
+$score(+4) FsAð
+
 $tag(begin_prep_scope) FsAð # Nýtt samhengi fyrir samtengingu sagna og forsetninga
 
 # Sagnorð í lýsingarhætti nútíðar sem stendur sjálfstætt með viðfangi, eins og forsetning
@@ -4322,10 +4336,10 @@ Dagana →
     | raðnr_þf_kk "og:st" dags # dagana 1. og 2. júní
     | dags Til dags # dagana 29. júní til 3. júlí
 
-# 29 ára, eins árs, tveggja vikna, margra ára
+# [tæpra] 29 ára, [rúmlega] eins árs, tveggja vikna, margra ára
 
 Aldur →
-    Töluorð_ef/tala/kyn Tímabil_ef/kyn/tala
+    TöluorðForskeyti_ef/tala/kyn? Töluorð_ef/tala/kyn Tímabil_ef/kyn/tala
     | 'margur:lo'_ef_ft Tímabil_ef_ft
     | 'allmargur:lo'_ef_ft Tímabil_ef_ft
     | 'fjölmargur:lo'_ef_ft Tímabil_ef_ft

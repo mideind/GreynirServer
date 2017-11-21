@@ -315,6 +315,8 @@ class KjarninnScraper(ScrapeHelper):
             content = soup_body.article
         # Delete div.category-snippet tags from the content
         ScrapeHelper.del_div_class(content, "category_snippet")
+        # Delete div.ad-container tags from the content
+        ScrapeHelper.del_div_class(content, "ad-container")
         return content
 
 
