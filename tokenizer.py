@@ -1131,11 +1131,21 @@ def parse_phrases_1(token_stream):
                         return token
 
                     if multiplier_next is not None:
-                        # Retain the case of the last multiplier
+                        # Retain the case of the last multiplier, except
+                        # if it is possessive (eignarfall) and the previous
+                        # token had a case ('hundruðum milljarða' is dative,
+                        # not possessive)
+                        next_case = all_cases(next_token)
+                        next_gender = all_genders(next_token)
+                        if "ef" in next_case:
+                            # We may have something like 'hundruðum milljarða':
+                            # use the case and gender of 'hundruðum', not 'milljarða'
+                            next_case = all_cases(token) or next_case
+                            next_gender = all_genders(token) or next_gender
                         token = convert_to_num(token)
                         token = TOK.Number(token.txt + " " + next_token.txt,
                             token.val[0] * multiplier_next,
-                            all_cases(next_token), all_genders(next_token))
+                            next_case, next_gender)
                         # Eat the multiplier token
                         next_token = next(token_stream)
                     elif next_token.txt in AMOUNT_ABBREV:
