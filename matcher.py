@@ -114,6 +114,7 @@ _DEFAULT_NT_MAP = {
     "Skilyrði" : "S-COND",
     "Afleiðing" : "S-CONS",
     "NlSkýring" : "S-EXPLAIN",
+    "Útskýring" : "S-EXPLAIN",
     "FrumlagsInnskot" : "S-EXPLAIN",
     "Tilvitnun" : "S-QUOTE",
     "Forskeyti" : "S-PREFIX",
@@ -151,7 +152,7 @@ _DEFAULT_NT_MAP = {
     "So" : "VP",
     # "SagnFramhald" : "VP",
     "SögnLhNt" : "VP-PP", # Present participle, lýsingarháttur nútíðar
-    "SögnErLoBotn" : "NP-OBJ", # Show '(Hann er) góður / 18 ára' as a direct verb argument
+    "SögnErLoBotn" : "NP-PRD", # Show '(Hann er) góður / 18 ára' as a predicate argument
     "NhLiðir" : "VP",
     "SagnliðurÁnF" : "VP",
     "ÖfugurSagnliður" : "VP",
@@ -188,8 +189,8 @@ _DEFAULT_ID_MAP = {
     "S-ADV-CONS" : dict(name = "Afleiðingarsetning"), # Adverbial consequence phrase
     "S-ADV-CAUSE" : dict(name = "Orsakarsetning"), # Adverbial causal phrase
     "S-ADV-COND" : dict(name = "Skilyrðissetning"), # Adverbial conditional phrase
-    "S-THT" : dict(name = "Skýringarsetning"),  # Complement clause
-    "S-QUE" : dict(name = "Spurnarsetning"),    # Question clause
+    "S-THT" : dict(name = "Skýringarsetning"), # Complement clause
+    "S-QUE" : dict(name = "Spurnarsetning"), # Question clause
     "VP-SEQ" : dict(name = "Sagnliður"),
     "VP" : dict(name = "Sögn", overrides = "VP-SEQ",
         subject_to = { "VP" }),

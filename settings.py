@@ -199,6 +199,58 @@ class Meanings:
     DICT = defaultdict(list) # Keyed by word form
     ROOT = defaultdict(list) # Keyed by word root (stem)
 
+    # All possible declination forms of adjectives (48 in total)
+    _UNDECLINED_ADJECTIVE_TEMPLATE = [
+        "FVB-HK-EFFT",
+        "FVB-HK-ÞGFFT",
+        "FVB-HK-ÞFFT",
+        "FVB-HK-NFFT",
+        "FVB-HK-EFET",
+        "FVB-HK-ÞGFET",
+        "FVB-HK-ÞFET",
+        "FVB-HK-NFET",
+        "FVB-KVK-EFFT",
+        "FVB-KVK-ÞGFFT",
+        "FVB-KVK-ÞFFT",
+        "FVB-KVK-NFFT",
+        "FVB-KVK-EFET",
+        "FVB-KVK-ÞGFET",
+        "FVB-KVK-ÞFET",
+        "FVB-KVK-NFET",
+        "FVB-KK-EFFT",
+        "FVB-KK-ÞGFFT",
+        "FVB-KK-ÞFFT",
+        "FVB-KK-NFFT",
+        "FVB-KK-EFET",
+        "FVB-KK-ÞGFET",
+        "FVB-KK-ÞFET",
+        "FVB-KK-NFET",
+        "FSB-HK-EFFT",
+        "FSB-HK-ÞGFFT",
+        "FSB-HK-ÞFFT",
+        "FSB-HK-NFFT",
+        "FSB-HK-EFET",
+        "FSB-HK-ÞGFET",
+        "FSB-HK-ÞFET",
+        "FSB-HK-NFET",
+        "FSB-KVK-EFFT",
+        "FSB-KVK-ÞGFFT",
+        "FSB-KVK-ÞFFT",
+        "FSB-KVK-NFFT",
+        "FSB-KVK-EFET",
+        "FSB-KVK-ÞGFET",
+        "FSB-KVK-ÞFET",
+        "FSB-KVK-NFET",
+        "FSB-KK-EFFT",
+        "FSB-KK-ÞGFFT",
+        "FSB-KK-ÞFFT",
+        "FSB-KK-NFFT",
+        "FSB-KK-EFET",
+        "FSB-KK-ÞGFET",
+        "FSB-KK-ÞFET",
+        "FSB-KK-NFET"
+    ]
+
     _CAT_SET = None # BIN_Token word categories
 
     @staticmethod
@@ -214,17 +266,23 @@ class Meanings:
     @staticmethod
     def add (stofn, ordmynd, ordfl, fl, beyging):
         """ Add word meaning to the dictionary. Called from the config file handler. """
-
-        # Append the word and its meaning in tuple form
         assert ordmynd is not None
         assert ordfl is not None
         Meanings._check_ordfl(ordfl)
         if not stofn:
             stofn = ordmynd
-        Meanings.DICT[ordmynd].append(
-            (stofn, -1, ordfl, fl or "ob", ordmynd, beyging or "-"))
-        Meanings.ROOT[stofn].append(
-            (stofn, -1, ordfl, fl or "ob", ordmynd, beyging or "-"))
+        # Append the word and its meaning in tuple form
+        if ordfl == "lo" and not beyging:
+            # Special case for undeclined adjectives:
+            # create all 48 forms
+            for b in Meanings._UNDECLINED_ADJECTIVE_TEMPLATE:
+                m = (stofn, -1, ordfl, fl or "ob", ordmynd, b)
+                Meanings.DICT[ordmynd].append(m)
+                Meanings.ROOT[stofn].append(m)
+        else:
+            m = (stofn, -1, ordfl, fl or "ob", ordmynd, beyging or "-")
+            Meanings.DICT[ordmynd].append(m)
+            Meanings.ROOT[stofn].append(m)
 
     @staticmethod
     def add_composite (stofn, ordfl):
