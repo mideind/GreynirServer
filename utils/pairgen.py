@@ -63,12 +63,20 @@ def gen_simple_trees(criteria, stats):
 def gen_flat_trees(generator):
     """ Generate (text, flat tree) tuples that we want to include
         in the file being generated """
+    # Exclude sentences containing English words
+    STOP_WORDS = frozenset([
+        "the", "a", "is", "each", "year", "or", "on", "and", "this", "that", "s", "t"
+    ])
     for stree in generator:
         flat, text = stree.flat, stree.text
-        # Excluding double quotes is a hack to sidestep a bug in older parses.
-        # Also, we exclude sentences with 2 or fewer tokens.
-        if '"' not in flat and text.count(' ') >= 2:
-            yield (text, flat)
+        tokens = text.split()
+        # Exclude sentences with 2 or fewer tokens
+        if len(tokens) > 2:
+            wordset = set([t.lower() for t in tokens])
+            if wordset & STOP_WORDS:
+                print(f"Skipping sentence '{text}'")
+            else:
+                yield (text, flat)
 
 
 def write_file(outfile, generator, size):
@@ -84,22 +92,39 @@ def write_file(outfile, generator, size):
     return written
 
 
-def write_shuffled_file(outfile, generator, size):
+def write_shuffled_files(outfile_dev, outfile_train, generator, dev_size, train_size):
     """ Generate a randomly shuffled output file from articles that
         match the criteria. Note that the shuffle is done in memory. """
     written = 0
     lines = []
+    size = dev_size + train_size
+    print(f"Reading up to {size} lines from the source corpus")
     for text, flat in gen_flat_trees(generator):
         # Accumulate the (input, output) training data pairs, separated by a tab character (\t)
         lines.append(f"{text}\t{flat}\n")
         written += 1
         if written >= size:
             break
-    if lines:
+    if written:
+        print(f"Shuffling {written} lines from the source corpus")
         random.shuffle(lines)
-        with open(outfile, "w") as f:
-            for line in lines:
-                f.write(line)
+        dev_set = lines[0:dev_size]
+        train_set = lines[dev_size:dev_size + train_size]
+        print(f"Final dev set is {len(dev_set)} lines, train set is {len(train_set)} lines")
+        if dev_set:
+            print(f"Writing dev set to {outfile_dev}")
+            with open(outfile_dev, "w") as f:
+                for line in dev_set:
+                    f.write(line)
+        else:
+            print(f"Dev set is empty, so {outfile_dev} was not written")
+        if train_set:
+            print(f"Writing train set to {outfile_train}")
+            with open(outfile_train, "w") as f:
+                for line in train_set:
+                    f.write(line)
+        else:
+            print(f"Train set is empty, so {outfile_train} was not written")
     return written
 
 
@@ -119,25 +144,24 @@ def main(dev_size, train_size, shuffle):
     stats = { "parsed" : datetime.utcnow() }
     gen = gen_simple_trees({ "order_by_parse" : True, "visible" : True }, stats)
 
-    # Development set
+    if shuffle:
 
-    if dev_size:
-        print(f"\nWriting {dev_size} {'shuffled ' if shuffle else ''}sentences to {OUTFILE_DEV}")
-        if shuffle:
-            written = write_shuffled_file(OUTFILE_DEV, gen, dev_size)
-        else:
+        # Write both sets
+        written = write_shuffled_files(OUTFILE_DEV, OUTFILE_TRAIN, gen, dev_size, train_size)
+
+    else:
+    
+        # Development set
+        if dev_size:
+            print(f"\nWriting {dev_size} {'shuffled ' if shuffle else ''}sentences to {OUTFILE_DEV}")
             written = write_file(OUTFILE_DEV, gen, dev_size)
-        print(f"{written} sentences written")
+            print(f"{written} sentences written")
 
-    # Training set
-
-    if train_size:
-        print(f"\nWriting {train_size} {'shuffled ' if shuffle else ''}sentences to {OUTFILE_TRAIN}")
-        if shuffle:
-            written = write_shuffled_file(OUTFILE_TRAIN, gen, train_size)
-        else:
+        # Training set
+        if train_size:
+            print(f"\nWriting {train_size} {'shuffled ' if shuffle else ''}sentences to {OUTFILE_TRAIN}")
             written = write_file(OUTFILE_TRAIN, gen, train_size)
-        print(f"{written} sentences written")
+            print(f"{written} sentences written")
 
     last_parsed = stats["parsed"]
     print(f"\nThe last article processed was parsed at {last_parsed}")
