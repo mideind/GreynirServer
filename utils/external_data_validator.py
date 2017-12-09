@@ -6,41 +6,39 @@ cwd = os.path.dirname(__file__)
 
 def run_txt_parser(file, append):
     """ Read input file and output CSV """
-    out = codecs.open(file['outfile'], 'a' if append else 'w', file['out-encoding'])
-    header_skip = file['start-line']
-    with codecs.open(file['infile'], 'r', file['in-encoding']) as inp:
-        for li in inp:
-            if header_skip:
-                header_skip -= 1
-                continue
-            if li:
-                li = li.strip()
-            if li:
-                if not li.startswith('#'):
-                    forms = li.split(u' ')
-                    if forms:                        
-                        word = forms[0]
-                        for f in forms[1:]:
-                            s = u'{0};{1};{2};{3};{4};{5}\n'.format(
-                                word, 0, f, u'ob', word, u'-'
-                            )                                                
-                            out.write(s)
+    with codecs.open(file['outfile'], 'a' if append else 'w', file['out-encoding']) as out:
+        header_skip = file['start-line']
+        with codecs.open(file['infile'], 'r', file['in-encoding']) as inp:
+            for li in inp:
+                if header_skip:
+                    header_skip -= 1
+                    continue
+                if li:
+                    li = li.strip()
+                if li:
+                    if not li.startswith('#'):
+                        forms = li.split(u' ')
+                        if forms:                        
+                            word = forms[0]
+                            for f in forms[1:]:
+                                s = u'{0};{1};{2};{3};{4};{5}\n'.format(
+                                    word, 0, f, u'ob', word, u'-'
+                                )                                                
+                                out.write(s)
 
 def run_csv_parser(file, append):
-
     header_skip = file['start-line']
-    out = codecs.open(file['outfile'], 'a' if append else 'w', file['out-encoding'])
-
-    with codecs.open(file['infile'], 'r', file['in-encoding']) as f:
-        for i, line in enumerate(f):
-            if i >= header_skip:
-                if line.strip():
-                    out.write(line)
+    with codecs.open(file['outfile'], 'a' if append else 'w', file['out-encoding']) as out:
+        with codecs.open(file['infile'], 'r', file['in-encoding']) as f:
+            for i, line in enumerate(f):
+                if i >= header_skip:
+                    if line.strip():
+                        out.write(line)
 
 files = [
     {
-        'infile': cwd+'../resources/plastur.feb2013.txt',
-        'outfile': cwd+'../resources/ord.csv',
+        'infile': cwd + '../resources/plastur.feb2013.txt',
+        'outfile': cwd + '../resources/ord.csv',
         'in-encoding': 'iso-8859-1',
         'out-encoding': 'utf-8',
         'start-line': 33,
@@ -48,20 +46,20 @@ files = [
     },
     {
         'infile': cwd + '../resources/SHsnid.csv',
-        'outfile': cwd+'../resources/ord.csv',
+        'outfile': cwd + '../resources/ord.csv',
         'in-encoding': 'utf-8',
         'out-encoding': 'utf-8',
         'start-line': 0,
         'func': run_csv_parser
-    },    
+    },
     {
-        'infile': cwd + '../resources/obeyg.smaord.txt',
-        'outfile': cwd+'../resources/ord.csv',
-        'in-encoding': 'iso-8859-1',
+        'infile': cwd + '../resources/obeygd.hreinsad.txt',
+        'outfile': cwd + '../resources/ord.csv',
+        'in-encoding': 'utf-8',
         'out-encoding': 'utf-8',
-        'start-line': 38,
+        'start-line': 0,
         'func': run_txt_parser
-    },     
+    },
 ]
 
 

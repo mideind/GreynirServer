@@ -67,6 +67,7 @@ _TEST_NT_MAP = { # Til að prófa í parse_text_to_bracket_form()
     "Mannsnafn" : "N",
     "EfLiður" : "NP-POSS",
     "EfLiðurForskeyti" : "NP-POSS",
+    "OkkarFramhald" : "NP-POSS",
     "Heimilisfang" : "NP-ADDR",
     "NlFrumlag" : "NP-SUBJ",
     "NlBeintAndlag" : "NP-OBJ",

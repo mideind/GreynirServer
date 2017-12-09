@@ -131,6 +131,7 @@ _DEFAULT_NT_MAP = {
     "Nl" : "NP",
     "EfLiður" : "NP-POSS",
     "EfLiðurForskeyti" : "NP-POSS",
+    "OkkarFramhald" : "NP-POSS",
     "Heimilisfang" : "NP-ADDR",
     "Titill" : "NP-TITLE",
     "Frumlag" : "NP-SUBJ",

@@ -76,6 +76,7 @@ from fastparser import Node, ParseForestNavigator, ParseForestPrinter
 from grammar import Terminal
 from settings import Settings, Preferences, NounPreferences, VerbObjects
 from binparser import BIN_Token
+import logging
 
 
 _PREP_SCOPE_SET = frozenset(("begin_prep_scope", "purge_prep", "no_prep"))
@@ -193,6 +194,12 @@ class Reducer:
                         # Punish abbreviations in favor of other more specific terminals
                         sc[t] -= 1
 
+                    if tokens[i].is_upper:
+                        # Punish connection of normal noun terminal to
+                        # an uppercase word that can be a person or entity name
+                        if any(m.fl in { "ism", "föð", "móð", "örn", "fyr" } for m in tokens[i].t2):
+                            logging.info("Punishing connection of {0} with 'no' terminal".format(tokens[i].t1))
+                            sc[t] -= 5
                     # Noun priorities, i.e. between different genders
                     # of the same word form
                     # (for example "ára" which can refer to three stems with different genders)

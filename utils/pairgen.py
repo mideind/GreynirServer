@@ -65,7 +65,8 @@ def gen_flat_trees(generator):
         in the file being generated """
     # Exclude sentences containing English words
     STOP_WORDS = frozenset([
-        "the", "a", "is", "each", "year", "or", "on", "and", "this", "that", "s", "t"
+        "the", "a", "is", "each", "year", "our", "on", "in",
+        "and", "this", "that", "s", "t", "don't", "isn't"
     ])
     for stree in generator:
         flat, text = stree.flat, stree.text

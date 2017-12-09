@@ -1617,11 +1617,15 @@ Sögn_1/tala/pers/kyn →
     # (Ég tel/segi/álít) Pál vera dagfarsprúðan mann
     | So_1_þf_nh/tala/pers OgSögn_1_þf_nh/tala/pers* SagnarBotn
 
-    | HjSögn/tala/pers FsAtv? so_mm_sagnb OgSögn_mm_sagnb* NlBeintAndlag_þgf    # (Bankar) hafa reynst og gagnast mér (vel)
+    # (Bankar) hafa reynst og gagnast mér (vel)
+    | HjSögn/tala/pers FsAtv? so_mm_sagnb OgSögn_mm_sagnb* NlBeintAndlag_þgf
 
-    | HjSögnLhÞtSM/tala/pers FsAtv? so_2_þgf_þf_lhþt/tala/kyn Nl_þgf # Konan hefur verið/skal/mun gefin Páli
-    | HjSögnLhÞtSM/tala/pers FsAtv? so_2_þf_ef_lhþt/tala/kyn NlBeintAndlag_ef   # Konan hefur verið/skal/mun spurð álits
-    | HjSögnLhÞtSM/tala/pers FsAtv? so_2_þf_þgf_lhþt/tala/kyn Nl_þgf # Konan hefur verið/skal/mun kölluð öllum illum nöfnum
+    # Konan hefur verið/skal/mun gefin Páli
+    | HjSögnLhÞtSM/tala/pers FsAtv? so_2_þgf_þf_lhþt/tala/kyn Nl_þgf
+    # Konan hefur verið/skal/mun spurð álits
+    | HjSögnLhÞtSM/tala/pers FsAtv? so_2_þf_ef_lhþt/tala/kyn NlBeintAndlag_ef
+    # Konan hefur verið/skal/mun kölluð öllum illum nöfnum
+    | HjSögnLhÞtSM/tala/pers FsAtv? so_2_þf_þgf_lhþt/tala/kyn Nl_þgf
 
 # Býli í landinu eru/geta verið/verða/munu vera 3.000/tuttugu [talsins]
 Sögn_1_ft/pers/kyn →
@@ -2443,10 +2447,10 @@ NlKjarni_ft/fall/kyn →
     Númer?
 
 Fyrirbæri_ft/fall/kyn →
-    Skst? no_ft/fall/kyn                 # [Commodore PET] tölvur
-    | Skst? no_ft_gr/fall/kyn Fjöldi_ft/fall/kyn  # Mennina tíu / félögin tvö
+    Skst? no_ft/fall/kyn                            # [Commodore PET] tölvur
+    | Skst? no_ft_gr/fall/kyn Fjöldi_ft/fall/kyn    # Mennina tíu / félögin tvö
     | FyrirbæriMeðGreini_ft/fall/kyn
-    | raðnr/fall/kyn OgRaðnr/fall/kyn+ no/tala/fall/kyn    # 2. og 3. grein laganna (eru fallnar úr gildi)
+    | raðnr/fall/kyn OgRaðnr/fall/kyn+ no/tala/fall/kyn # 2. og 3. grein laganna (eru fallnar úr gildi)
 
 OgRaðnr/fall/kyn →
     "og:st" raðnr/fall/kyn
@@ -2579,7 +2583,7 @@ NlStak_ft_p3_þf_hk → 'vinstri:lo'_ft_þf_hk "-"? 'grænn:lo'_ft_þf_hk
 NlStak_ft_p3_þgf_hk → 'vinstri:lo'_ft_þgf_hk "-"? 'grænn:lo'_ft_þgf_hk
 NlStak_ft_p3_ef_hk → 'vinstri:lo'_ft_ef_hk "-"? 'grænn:lo'_ft_ef_hk
 
-# 'hvorugt okkar systkinanna', 'enginn okkar', 'einhver ykkar bræðranna', 'einn liðsmanna'
+# 'hvorugt okkar systkinanna', 'enginn okkar', 'einhver ykkar bræðranna', 'einn liðsmanna', 'annar mannanna'
 NlStak_et_p3/fall/kyn → OkkarFornafn/fall/kyn OkkarFramhald/kyn
 
 OkkarFramhald/kyn →
