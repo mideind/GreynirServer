@@ -78,9 +78,6 @@ def article_begin(state):
     url = state["url"] # URL of the article being processed
     # Delete all existing persons for this article
     session.execute(Person.table().delete().where(Person.article_url == url))
-    #persons = session.query(Person).filter_by(article_url = url).all()
-    #for person in persons:
-    #    session.delete(person)
 
 def article_end(state):
     """ Called at the end of article processing """
@@ -268,6 +265,9 @@ def SvigaInnihald(node, params, result):
         result._text = ""
         result._nominative = ""
         result.del_attribs(("skýring", "skýring_nafn", "skýring_kyn"))
+    else:
+        # Don't modify cases inside the explanation
+        result._nominative = result._text
 
 # Textar sem ekki eru teknir gildir sem skýringar
 ekki_skýring = { "myndskeið" }
@@ -283,6 +283,7 @@ SEM_PREFIXES = [
     ("mun vera", None),
     ("ekki er", "ekki"),
     ("ekki var", "var ekki"),
+    ("í dag er", None),
     ("ekki væri", "ekki"),
     ("einnig er", None),
     ("verið hefur", "hefur verið"),

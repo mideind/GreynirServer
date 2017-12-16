@@ -250,14 +250,20 @@ def SvigaInnihaldFsRuna(node, params, result):
 
 def SvigaInnihald(node, params, result):
     if node.has_variant("et"):
-        tengiliður = result.find_child(nt_base = "Tengiliður")
+        tengiliður = result.find_child(nt_base = "Tilvísunarsetning")
         if tengiliður:
             # '...sem framleiðir álumgjörina fyrir iPhone'
             tengisetning = tengiliður.find_child(nt_base = "Tengisetning")
             if tengisetning:
-                setning_án_f = tengisetning.find_child(nt_base = "SetningÁnF")
+                setning_án_f = tengisetning.find_child(nt_base = "BeygingarliðurÁnF")
                 if setning_án_f:
                     skilgr = setning_án_f._text
+                    # Remove extraneous prefixes
+                    for s in ("í dag",):
+                        if skilgr.startswith(s + " "):
+                            # Skera framan af
+                            skilgr = skilgr[len(s) + 1:]
+                            break
                     sögn = None
                     for s in ("er", "var", "sé", "hefur verið", "væri", "hefði orðið", "verður"):
                         if skilgr.startswith(s + " "):

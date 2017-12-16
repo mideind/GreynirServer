@@ -93,6 +93,8 @@ var wordClass = {
    "st" : "samtenging",
    "stt" : "samtenging",
    "ao" : "atviksorð",
+   "spao" : "spurnaratviksorð",
+   "tao" : "tímaatviksorð",
    "to" : "töluorð",
    "fn" : "fornafn",
    "pfn" : "persónufornafn",

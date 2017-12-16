@@ -194,7 +194,7 @@ class Reducer:
                         # Punish abbreviations in favor of other more specific terminals
                         sc[t] -= 1
 
-                    if tokens[i].is_upper:
+                    if tokens[i].is_upper and tokens[i].t2:
                         # Punish connection of normal noun terminal to
                         # an uppercase word that can be a person or entity name
                         if any(m.fl in { "ism", "föð", "móð", "örn", "fyr" } for m in tokens[i].t2):
@@ -289,6 +289,10 @@ class Reducer:
                             # If this is a so_nh and an alternative no_ef_ft exists, choose this one
                             # (for example, 'hafa', 'vera', 'gera', 'fara', 'mynda', 'berja', 'borða')
                             sc[t] += 4
+                    if (i > 0) and tokens[i].is_upper:
+                        # The token is uppercase and not at the start of a sentence:
+                        # discourage it from being a verb
+                        sc[t] -= 4
                 elif tfirst == "tala" or tfirst == "töl":
                     # A complete 'töl' or 'no' is better (has more info) than a rough 'tala'
                     if tfirst == "tala":

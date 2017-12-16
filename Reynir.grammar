@@ -590,7 +590,7 @@ Sjálfur/tala/kyn → 'sjálfur:fn'_nf/tala/kyn
 
 # 'Þrír þingmenn greiddu atkvæði gegn tillögunni: Jón, Sigríður og Guðrún.'
 # 'Aðeins einn nemandi var með þetta rétt; strákurinn í rauðu skyrtunni.'
-Formerki → ':' | ';' | "-:em"
+Formerki → ':' | ';' | "-:em" | ','
 
 Upptalning/tala → Formerki Nl_nf/tala
 
@@ -2529,10 +2529,10 @@ NlStak_p1_ft/fall/kyn →
 
 NlStakViðbót/fall/kyn →
     NlStakViðbótNl/fall/kyn
-    | 'allur:fn'_ft/fall/kyn           # við öll, okkur alla, okkar allra
-    | 'sumur:fn'_ft/fall/kyn        # við sum, okkur sumra, okkar sumra
-    | 'margur:lo'_ft/fall/kyn          # við mörg/flest, okkur margra/flestra, okkar margra/flestra
-    | 'sjálfur:fn'_ft/fall/kyn         # við sjálf, okkur sjálfra, okkar sjálfra
+    | 'allur:fn'_ft/fall/kyn            # við öll, okkur alla, okkar allra
+    | 'sumur:fn'_ft/fall/kyn            # við sum, okkur sumra, okkar sumra
+    | 'margur:lo'_ft/fall/kyn           # við mörg/flest, okkur margra/flestra, okkar margra/flestra
+    | 'sjálfur:fn'_ft/fall/kyn          # við sjálf, okkur sjálfra, okkar sjálfra
 
 $score(+8) NlStakViðbót/fall/kyn
 
@@ -2544,10 +2544,10 @@ $score(-20) NlStakViðbótNl/fall/kyn     # Draga af stig fyrir "við fóstbræ�
 NlStak_ft_p1/fall/kyn → NlStak_p1_ft/fall/kyn FsRunaEftirNl?
 
 NlStak_p2_ft/fall/kyn →
-    'þú:pfn'_ft/fall NlStakViðbót/fall/kyn? # þið öll, þið flest, þið stelpurnar, þið eplin
-    | 'þér:pfn'_ft/fall NlStak_ft_p3/fall/kyn? # Þér eplin
-    | NlEind/fall KommaOgEða 'þú:pfn'_et/fall # Jón og þú fóruð, stelpurnar og þú fóruð
-    | 'þú:pfn'_et/fall KommaOgEða NlEind/fall # Þú og Jón fóruð, þú og stelpurnar fóruð
+    'þú:pfn'_ft/fall NlStakViðbót/fall/kyn?     # þið öll, þið flest, þið stelpurnar, þið eplin
+    | 'þér:pfn'_ft/fall NlStak_ft_p3/fall/kyn?  # Þér eplin
+    | NlEind/fall KommaOgEða 'þú:pfn'_et/fall   # Jón og þú fóruð, stelpurnar og þú fóruð
+    | 'þú:pfn'_et/fall KommaOgEða NlEind/fall   # Þú og Jón fóruð, þú og stelpurnar fóruð
 
 NlStak_ft_p2/fall/kyn → NlStak_p2_ft/fall/kyn FsRunaEftirNl?
 
@@ -2557,10 +2557,16 @@ NlStak_ft_p2/fall/kyn → NlStak_p2_ft/fall/kyn FsRunaEftirNl?
 
 NlStak_p3/tala/fall/kyn →
 
-    NlKjarni/tala/fall/kyn Fornafn/tala/fall/kyn* # (stjórnarframkvæmdum) þessum öllum
+    NlKjarni/tala/fall/kyn Fornafn/tala/fall/kyn*   # (stjórnarframkvæmdum) þessum öllum
     | NlKjarni/tala/fall/kyn EignarFornafn/tala/fall/kyn KommaOgEðaEn EfLiður # skattskýrslur mínar og eiginkonu minnar
     | NlFornafn/tala/fall/kyn
-    | Pfn/kyn/tala/fall to/tala/fall/kyn? # 'þið tvær', 'við fjögur', 'hann einn'
+    | Pfn/kyn/tala/fall to/tala/fall/kyn?           # 'þið tvær', 'við fjögur', 'hann einn'
+    | LoTöluorð_ef 'konar:kk'_ef_et NlKjarni/tala/fall/kyn # 'tvenns/þrenns/ferns konar innstungur'
+
+LoTöluorð_ef →
+    'tvennur:lo'_ef_et_hk
+    | 'þrennur:lo'_ef_et_hk
+    | 'fern:lo'_ef_et_hk
 
 # Feðgarnir séra Jón Steinsson í Víðihlíð og Arnaldur Jónsson bóndi
 Skyldleiki_kk/fall → 'feðgar:kk'_gr_ft/fall | 'bróðir:kk'_gr_ft/fall | 'frændi:kk'_gr_ft/fall
@@ -2576,7 +2582,7 @@ NlStak_ft_p3/fall/kyn → Fjölskylda_ft/kyn/fall FsRunaEftirNl?
 
 $score(+8) Fjölskylda_ft/kyn/fall
 
-# Sértilvik fyrir "vinstri-grænn" (ath: stutt bandstrik, ekki en- eða em-dash)
+# Sértilvik fyrir "vinstri-græn" (ath: stutt bandstrik, ekki en- eða em-dash)
 
 NlStak_ft_p3_nf_hk → 'vinstri:lo'_ft_nf_hk "-"? 'grænn:lo'_ft_nf_hk
 NlStak_ft_p3_þf_hk → 'vinstri:lo'_ft_þf_hk "-"? 'grænn:lo'_ft_þf_hk
@@ -3358,17 +3364,17 @@ NlEind_p3/fall/kyn →
     NlEind_et_p3/fall/kyn | NlEind_ft_p3/fall/kyn
 
 NlEind/tala/pers/fall/kyn →
-    NlStak/tala/pers/fall/kyn Sem/tala/fall/kyn? TilvísunarsetningMeðKommu/tala/pers/kyn?
+    NlStak/tala/pers/fall/kyn StakViðhengi/tala/fall/kyn? TilvísunarsetningMeðKommu/tala/pers/kyn?
         Þó/tala/pers/kyn? NlSkýring/tala/pers/fall/kyn?
 
 # (vegna nauðasamninganna) sem slíkra
-Sem/tala/fall/kyn →
+StakViðhengi/tala/fall/kyn →
     ',' "sem:st" 'slíkur:lo'/tala/fall/kyn LokatáknEðaKomma
     | "sem:st" 'slíkur:lo'/tala/fall/kyn
 
 # (að endurskapa sig) sem þjóðhetju
 # 'sem' með nefnifalli er talið vera forsetning
-Sem/tala/aukafall/kyn →
+StakViðhengi/tala/aukafall/kyn →
     SemAukafall/aukafall/tala
 
 SemAukafall/aukafall/tala →
@@ -4284,8 +4290,10 @@ Dagsetning →
     | 'síðastliðinn:lo'_et_kk_þf Vikudagur_þf_et # 'síðastliðinn fimmtudag'
     | 'á:fs'_þf Vikudagur_þf_et # á föstudag / á sunnudaginn / á fimmtudagskvöld
     | 'í:fs'_þgf Mánuður_þgf # í febrúar, í október
-    | 'á_morgun:ao' ','? Vikudagur_þf_et # á morgun, miðvikudag
     | 'sama_dag:ao' "og:st" HreinYfirsetning # sama dag og Jón var handtekinn
+    | 'í_dag:ao' Vikudag? # Margrætt en gefur aukastig fyrir tengingu við sögn
+    | 'í_gær:ao' Vikudag? # í gær, þriðjudag
+    | 'á_morgun:ao' Vikudag? # á morgun, miðvikudag
 
     | DagsFs_þf? 'sá:fn'_et_kk_þf? tímapunktur # '[eftir] [þann] 3. júlí 2007 kl. 13:00'
     | DagsFs_þgf tímapunktur # 'frá 3. júlí 2007 kl. 13:00'
@@ -4323,6 +4331,9 @@ Dagsetning →
 
 $tag(apply_prep_bonus) Dagsetning # Gefa bónus þegar dagsetning fylgir sögn frekar en nafnlið
 $tag(apply_length_bonus) Dagsetning # Gefa bónus eftir því hversu margar eindir (tokens) falla undir dagsetninguna
+
+Vikudag →
+    ','? Vikudagur_þf_et # 'Í dag, miðvikudag' - 'á morgun, fimmtudag'
 
 Undanfarið →
     # 'Undanfarið' er atviksorð í BÍN, en 'undanfarnar vikur' o.s.frv. virkar einnig
