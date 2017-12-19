@@ -4081,8 +4081,14 @@ FsLiðurMeðKommu →
 
 # FsRuna getur ekki endað á atvikslið, nema innan kommu
 # 'var, líkt og í búsáhaldabyltingunni, byggð á óánægju'
-FsRuna → ',' FsForskeyti? FsLiðurMeðKommu AtviksliðurAuka? LokatáknEðaKomma
+FsRuna →
+    FsInnanKommu
     | FsLiðurMeðKommu
+
+FsInnanKommu →
+    ',' FsForskeyti? FsLiðurMeðKommu AtviksliðurAuka? LokatáknEðaKomma
+
+$score(+4) FsInnanKommu
 
 FsRunaEftirNl →
     FsRuna

@@ -267,6 +267,10 @@ class BIN_Token(Token):
         self._matching_func = BIN_Token._MATCHING_FUNC[self.t0]
 
     @property
+    def is_word(self):
+        return self.t0 == TOK.WORD
+
+    @property
     def lower(self):
         """ Return the text for this property, in lower case """
         return self.t1_lower
@@ -1218,6 +1222,10 @@ class BIN_LiteralTerminal(VariantHandler, LiteralTerminal):
     def category(self):
         """ Return the word category matched by the terminal """
         return self._match_cat
+
+    def startswith(self, part):
+        """ Override VariantHandler.startswith() """
+        return False
 
     def matches_category(self, cat):
         """ Returns True if the terminal matches a particular category

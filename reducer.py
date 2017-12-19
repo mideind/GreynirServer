@@ -76,17 +76,18 @@ from fastparser import Node, ParseForestNavigator, ParseForestPrinter
 from grammar import Terminal
 from settings import Settings, Preferences, NounPreferences, VerbObjects
 from binparser import BIN_Token
-import logging
+# import logging
 
 
 _PREP_SCOPE_SET = frozenset(("begin_prep_scope", "purge_prep", "no_prep"))
 _PREP_ALL_SET = frozenset(_PREP_SCOPE_SET | { "enable_prep_bonus" })
+_CASES_SET = frozenset(BIN_Token.CASES)
 _VERB_PREP_BONUS = 7 # Give 7 extra points for a verb/preposition match
 _VERB_PREP_PENALTY = -2 # Subtract 2 points for a non-match
 _LENGTH_BONUS_FACTOR = 10 # For length bonus, multiply number of tokens by this factor
 
 # Noun categories set
-_NOUN_SET = frozenset(("kk", "kvk", "hk"))
+_NOUN_SET = BIN_Token.GENDERS_SET # kk, kvk, hk
 
 
 class Reducer:
@@ -193,12 +194,11 @@ class Reducer:
                     elif t.is_abbrev:
                         # Punish abbreviations in favor of other more specific terminals
                         sc[t] -= 1
-
-                    if tokens[i].is_upper and tokens[i].t2:
+                    if tokens[i].is_upper and tokens[i].is_word and tokens[i].t2:
                         # Punish connection of normal noun terminal to
                         # an uppercase word that can be a person or entity name
                         if any(m.fl in { "ism", "föð", "móð", "örn", "fyr" } for m in tokens[i].t2):
-                            logging.info("Punishing connection of {0} with 'no' terminal".format(tokens[i].t1))
+                            # logging.info("Punishing connection of {0} with 'no' terminal".format(tokens[i].t1))
                             sc[t] -= 5
                     # Noun priorities, i.e. between different genders
                     # of the same word form
@@ -206,7 +206,6 @@ class Reducer:
                     if txt_last in noun_prefs:
                         np = noun_prefs[txt_last].get(t.gender, 0)
                         sc[t] += np
-
                 elif tfirst == "fs":
                     if t.has_variant("nf"):
                         # Reduce the weight of the 'artificial' nominative prepositions
@@ -616,7 +615,12 @@ class Reducer:
             verb_with_cases = verb + verb_terminal.verb_cases
             if prep_terminal.num_variants:
                 # Normal terminal, such as fs_ef
-                prep_with_case = prep_token + "_" + prep_terminal.variant(0)
+                prep_case = prep_terminal.variant(0)
+                if prep_case in _CASES_SET:
+                    prep_with_case = prep_token + "_" + prep_case
+                else:
+                    # Probably fs_nh: match all cases
+                    prep_with_case = prep_token
             else:
                 # Literal terminal, such as "á:fs" - match all cases
                 prep_with_case = prep_token
