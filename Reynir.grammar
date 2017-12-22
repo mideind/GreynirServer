@@ -120,7 +120,7 @@ Málsgrein →
 MgrInnihald → Forskeyti? Yfirsetning StLiður* Tilvitnun? Lokatákn?
 
 Forskeyti →
-    Samtenging "-:em"? # 'En - þegar allt er skoðað, var þetta fínt.'
+    Samtenging "bara:ao"? "-:em"? # 'En - þegar allt er skoðað, var þetta fínt.'
     | Samtenging? uh TengimerkiVh Samtenging? # Og já, þetta var ekki gott / Nei - en hann átti ekkert svar
     | raðnr_nf_kvk # Raðnúmer málsgreinar
     | "-:em"   # Þankastrik á undan setningu (allar gerðir strika varpast í '-')
@@ -1283,8 +1283,10 @@ HreinSögnAtv_sagnb/tala/kyn →
     AtvFs? EinSögn_sagnb/tala/kyn OgSögn_sagnb/tala/kyn*
 
 EinSögn_sagnb/tala/kyn →
-    so_0_sagnb NhFylling/tala/kyn?      # Konurnar hafa farið að grilla
+    so_0_sagnb NhFylling/tala/kyn? # Konurnar hafa farið [sjálfar/galvaskar] að grilla
     | So_1_þf_nh_sagnb SagnarBotn       # Konurnar hafa [ekki] látið Pál borða matinn / sagt niðurstöðuna vera ranga
+    # !!! Á að höndla Sögn_1_sagnb + NhFylling fremur eins og sögn með tveimur viðföngum,
+    # !!! sbr. Konurnar hafa lofað Páli ([því] að fara út): þarna er í raun 'lofa:so'_2_þgf_þgf_sagnb
     | Sögn_1_sagnb NhFylling/tala/kyn?  # Konurnar hafa [ekki] lofað Páli [að fara út]
     | Sögn_2_sagnb
     | so_0_mm_sagnb LhÞtBotn/tala/kyn   # Konurnar hafa reynst vera bíræfnir þjófar / þóst ritfærar / sagst fara að drífa sig
@@ -2182,11 +2184,10 @@ HjSögnFinnst_sagnb →
 # Nafnháttarfylling
 # - tengd frumlagi
 # '(Þeir ætluðu) [sannarlega galvaskir/sjálfir] að þvo bílinn í gær'
-# '(Þar hættir landið) [sjálft] að vera jarðneskt'
 NhFylling/tala/kyn →
-    Sjálfur/tala/kyn? NhFylling_nf/tala/kyn    # Nefnifall sjálfgefið
+    NhFylling_nf/tala/kyn    # Nefnifall sjálfgefið
 
-$score(+2) NhFylling/tala/kyn # Gefa 'að borða köku' forgang sem NhFylling fremur en fs+no, til dæmis fs+no_þgf+no_ef
+$score(+4) NhFylling/tala/kyn # Gefa 'að borða köku' forgang sem NhFylling fremur en fs+no, til dæmis fs+no_þgf+no_ef
 
 # Aðeins nefnifall og þágufall eru notuð
 NhFylling_nf/tala/kyn → EinNhFylling_nf/tala/kyn OgNhFylling_nf/tala/kyn*
@@ -2195,7 +2196,7 @@ NhFylling_þgf/tala/kyn → EinNhFylling_þgf/tala/kyn OgNhFylling_þgf/tala/kyn
 EinNhFylling/fall/tala/kyn →
     # '(Hann ætlar) strax að fara að millilenda'
     SagnInnskot? NhLiðir
-    # '(Hann er) í reynd strax búinn að hafna þessu'
+    # '(Hann er) í reynd strax sjálfur að hafna þessu'
     | FsRuna? LoTengtSögn/tala/fall/kyn NhLiðir
     # 'að þykja og vera fallegt'
     | SagnInnskot? nhm so_1_nf_nh OgNhSögn_nf* LoTengtSögn/tala/fall/kyn
@@ -2283,7 +2284,7 @@ NhSögn →
     | HjSögnMegiSkuli_et_p3 NhSögn
 
 NhSögnHafaGetaFá →
-    HafaGetaFá_nh HreinSögn_sagnb_et_hk
+    HafaGetaFá_nh HreinSögn_sagnb/tala/kyn # !!! Strangt til tekið ætti að sækja tölu og kyn ofan að úr trénu
 
 # Gefa þessu gott forskot til að keppa við SamstættFall með greini,
 # til dæmis "hafa ráðið Jóni bana", þar sem "ráðið" er sögnin "ráða"
@@ -3786,6 +3787,8 @@ LoKomma/tala/fall/kyn →
 LoFornafn/fall/tala/kyn →
     'allur:fn'/fall/tala/kyn | 'sjálfur:fn'/fall/tala/kyn | 'báðir:fn'/fall/tala/kyn
     | 'sami:fn'/fall/tala/kyn | 'sumur:fn'/fall/tala/kyn 'hver:fn'/fall/tala/kyn?
+
+$score(+4) LoFornafn/fall/tala/kyn
 
 # Lýsingarorð sem andlag sagnar
 # Þar kemur til greina miðstig + 'en' + nafnliður
