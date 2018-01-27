@@ -403,7 +403,8 @@ class MblScraper(ScrapeHelper):
         "/myndasafn/",
         "/atvinna/",
         "/vidburdir/",
-        "/sport/"
+        "/sport/",
+        "/mogginn/"
     ]
 
     def __init__(self, root):
