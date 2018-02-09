@@ -207,7 +207,7 @@ Samtenging →
     "og:st" | "eða:st" | "ellegar:st" | "heldur:st" 
     | "enda:st" | "en:st" | "hvorki:st"
     | 'það:pfn'_hk_nf_et "er:so" | 'það_er:ao'
-    | "þar:ao" 'á:ao' "meðal:ao" | 'þar_á_meðal:ao'
+    | "þar:ao" 'á_meðal:ao' | 'þar_á_meðal:ao'
     | 'auk_þess:ao' "sem:st" "að:st"?
     | 'það_er_að_segja:ao' Tengimerki "að:st"?
 
@@ -574,7 +574,7 @@ SamanburðarNlTenging →
     | ','? 'líkt_og:st'
     | Samanburðarmerki? "þar:ao" "af:ao"  # 'Fjöldi barna var í vélinni, þar af tvö kornabörn'
     | Samanburðarmerki? 'þar_á_meðal:ao'
-    | Samanburðarmerki? "þar:ao" "á:ao" "meðal:ao"
+    | Samanburðarmerki? "þar:ao" 'á_meðal:ao'
     | Samanburðarmerki? 'þar_með_talið:ao' # Skammstöfunin 'þ.m.t.'
     | Samanburðarmerki? "nema:st"   # Allir vita það, nema ég.
     | ','? "enda:st"                # 'Réttindi í almennum sjóðum breyttust, enda lægri fjárhæð en áður'
@@ -3197,7 +3197,7 @@ $score(+5) Titill/fall
 $score(-5) KommulausTitill/fall
 
 # Gefa enn meiri plús fyrir heila titla innan kommu
-$score(+8) KommuTitill/fall
+$score(+14) KommuTitill/fall
 
 # Eignarfallsliður á eftir nafnlið
 # ('formaður Gimlis, félags eldri borgara')
@@ -3459,7 +3459,7 @@ Skýring →
     "svo:st" "sem:st" | 'svo_sem:ao'
     | "sem:st" 'segja:so'_lhþt_sb_hk_nf_et | 'sem_sagt:ao'
     | 'til:fs'_ef 'dæmi:hk'_ef_et | 'til_dæmis:ao'
-    | "þar:ao" "á:ao" "meðal:ao" | 'þar_á_meðal:ao'
+    | "þar:ao" 'á_meðal:ao' | 'þar_á_meðal:ao'
     | "meðal:ao" "annars:ao" | 'meðal_annars:ao'
     | 'það:pfn'_hk_et_nf "er:so" | 'það_er:ao'
     | 'með:fs'_þgf 'annar:lo'_hk_þgf_ft 'orð:hk'_þgf_ft | 'með_öðrum_orðum:ao'
@@ -3498,7 +3498,7 @@ $score(-24) EnÍOgEða # Frekar að líta á 'en' sem samtengingu ef það er h�
 
 OgSem → "og:st" "sem:stt"? | "eða:st" "sem:stt"? | "ellegar:st" | "en:st" "sem:stt"?
 
-ÞarÁMeðal → "þar:ao" "á:ao" "meðal:ao"
+ÞarÁMeðal → "þar:ao" 'á_meðal:ao'
 
 $score(+16) ÞarÁMeðal # Líta frekar á "þar á meðal" sem samtengingu en skýringu
 
@@ -3932,8 +3932,6 @@ FsMeðFallstjórn →
     | FsÍGegnUm
     | FsAðBaki
     | FsTilÞgf
-    | FsÁMeðal
-    | FsÁMóti
     | AtvFsSaman    # inn eftir firðinum, fram undan rúminu
     # 'hvorki við stjórn spítalans né ráðherrann'
     # 'hvorki til mín né stjórnarinnar'
@@ -3990,17 +3988,6 @@ FsAðBaki →
     'að:fs'_þgf 'bak:hk'_þgf_et Nl_þgf # 'að baki hverju bundnu sæti'
 
 $score(+4) FsAðBaki
-
-FsÁMeðal →
-    "á:ao" 'meðal:fs'_ef Nl_ef # Sérregla hér þar sem þetta er að öðrum kosti túlkað sem meðal:hk + ef
-
-$score(+16) FsÁMeðal
-
-FsÁMóti →
-    "á:ao" 'móti:fs'_þgf Nl_þgf
-    | "á:ao" 'milli:fs'_ef Nl_ef_ft
-
-$score(+24) FsÁMóti
 
 FsTilÞgf →
     'til:fs'_ef FsTilÞgfOrð Nl_þgf # 'til stuðnings/heiðurs Páli'

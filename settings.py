@@ -1009,12 +1009,16 @@ class Settings:
         """ Handle ambiguity preference hints in the settings section """
         # Format: word worse1 worse2... < better
         # If two less-than signs are used, the preference is even stronger (tripled)
-        factor = 3
-        a = s.lower().split("<<", maxsplit = 1)
+        # If three less-than signs are used, the preference is super strong (nine-fold)
+        factor = 9
+        a = s.lower().split("<<<", maxsplit = 1)
         if len(a) != 2:
-            # Not doubled preference: try a normal one
-            a = s.lower().split("<", maxsplit = 1)
-            factor = 1
+            factor = 3
+            a = s.lower().split("<<", maxsplit = 1)
+            if len(a) != 2:
+                # Not doubled preference: try a normal one
+                a = s.lower().split("<", maxsplit = 1)
+                factor = 1
         if len(a) != 2:
             raise ConfigError("Ambiguity preference missing less-than sign '<'")
         w = a[0].split()
