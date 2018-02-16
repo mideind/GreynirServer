@@ -210,6 +210,8 @@ Samtenging →
     | "þar:ao" 'á_meðal:ao' | 'þar_á_meðal:ao'
     | 'auk_þess:ao' "sem:st" "að:st"?
     | 'það_er_að_segja:ao' Tengimerki "að:st"?
+    | "svo:st" "sem:st"
+    | "eins:ao" "og:st"
 
 $score(+2) Samtenging
 $tag(apply_length_bonus) Samtenging
@@ -428,7 +430,7 @@ Tíðartenging →
 
 Tilgangstenging → 
     'til:fs'_ef 'það:pfn'_hk_ef_et "að:st"
-    | "svo:ao" "að:st"?                 # Líka afleiðingartenging
+    | "svo:st" "að:st"?                 # Líka afleiðingartenging
 
 Viðurkenningartenging →
     "enda:st" "þótt:st" "að:st"?
@@ -437,7 +439,7 @@ Viðurkenningartenging →
     | "þrátt_fyrir:ao" 'það:pfn'_hk_þf_et? "að:st"
 
 Afleiðingartenging →
-    "svo:ao" "að:st"?       # Líka tilgangstenging
+    "svo:st" "að:st"?       # Líka tilgangstenging
     | "þannig:ao" "að:st"
 
 Orsakartenging →
@@ -454,7 +456,7 @@ Orsakartenging →
 
 Skilyrðistenging →
     "ef:st" "að:st"?
-    | "svo:ao" "framarlega:ao" "sem:st"
+    | "svo:st" "framarlega:ao" "sem:st"
     | "nema:st"
 
 $score(+8) Skilyrðistenging # Skilyrðissetning er með mínus á móti
@@ -462,6 +464,7 @@ $score(+8) Skilyrðistenging # Skilyrðissetning er með mínus á móti
 Samanburðartenging →
     "eins:ao" "og:st"
     | 'líkt_og:st'
+    | "svo:st" "sem:st"
 
 # Setningar með frumlagi
 
@@ -2731,7 +2734,7 @@ TöluorðForskeyti →
     | "hátt:ao" "í:ao"
     | 'allur:fn'_et_nf_hk "að:ao" 
     | "innan:ao" "við:ao"
-    | "svo:st" "sem:st" 
+    | "svo:st" "sem:st"
 
 TöluorðForskeyti/tala/fall/kyn →
     TöluorðForskeyti
@@ -3456,7 +3459,7 @@ SvigaInnihaldFsRuna →
 $score(-4) SvigaInnihaldFsRuna
 
 Skýring →
-    "svo:st" "sem:st" | 'svo_sem:ao'
+    "svo:st" "sem:st"
     | "sem:st" 'segja:so'_lhþt_sb_hk_nf_et | 'sem_sagt:ao'
     | 'til:fs'_ef 'dæmi:hk'_ef_et | 'til_dæmis:ao'
     | "þar:ao" 'á_meðal:ao' | 'þar_á_meðal:ao'
@@ -3488,7 +3491,7 @@ OgEða → "og:st" | "eða:st" | "ellegar:st" | "eður:st"
     | 'það:pfn'_hk_et_nf "er:st" | 'það_er:ao'
     | "eins:ao" "og:st" | 'líkt_og:st' | "jafnt:ao" "sem:st"
     | "þar:ao" "með:ao" 'telja:so'_lhþt_sb_hk_nf_et?
-    | "svo:st" "sem:st" | 'svo_sem:st'
+    | "svo:st" "sem:st"
     | EnÍOgEða
 
 EnÍOgEða →
@@ -4122,15 +4125,17 @@ EinnAl →
     | Tímasetning
     | EkkiNeitt
     | UndirEins
-    | "eina:fn" 'ferð:kvk'_þf_et_gr "enn:ao"
-    | "heima:ao" "fyrir:ao"
     | SemStendur
-    | "hingað:ao" "til:ao"
-    | "sem:ao" "sagt:so"
     | FyrirLöngu
     | Sinnum
     | Úrslit                # KR sigraði Val 6:0
     | AlMiðstig             # [mun] hraðar en augað sér
+    # Fjölyrtir atviksliðir sem ekki er unnt að búa til fasta frasa úr
+    | "eina:fn" 'ferð:kvk'_þf_et_gr "enn:ao"
+    | "heima:ao" "fyrir:ao"
+    | "hingað:ao" "til:ao"
+    | "sem:ao" "sagt:so"
+    | "svo:ao" "sem:ao"
 
 $tag(no_prep) EinnAl        # Engar forsetningar hér inni - óþarfi að skoða dótturgreinar
 

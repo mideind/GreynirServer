@@ -245,6 +245,15 @@ class ScrapeHelper:
                 break
             s.decompose()
 
+    @staticmethod
+    def del_tag(soup, tag_name):
+        """ Delete all occurrences of the specified tag """
+        while True:
+            s = soup.find(lambda tag: tag.name == tag_name)
+            if s is None:
+                break
+            s.decompose()
+
 
 class KjarninnScraper(ScrapeHelper):
 
@@ -385,6 +394,7 @@ class RuvScraper(ScrapeHelper):
         ScrapeHelper.del_div_class(content, "title-wrapper") # Additional header stuff
         ScrapeHelper.del_div_class(content, "views-field-field-user-display-name") # Seriously.
         ScrapeHelper.del_div_class(content, "field-name-myndatexti-credit-source")
+        ScrapeHelper.del_tag(content, "twitterwidget")
         return content
 
 
