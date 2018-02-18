@@ -247,10 +247,7 @@ class BIN_Token(Token):
         self.t1 = t[1] # Token text
         self.t1_lower = t[1].lower() # Token text, lower case
         # t2 contains auxiliary token information, such as part-of-speech annotation, numbers, etc.
-        if self.t0 == TOK.ENTITY:
-            # Cut off the entity definitions (not used during parse or stored with the tree)
-            self.t2 = (None, t[2][1], t[2][2])
-        elif isinstance(t[2], list):
+        if isinstance(t[2], list):
             self.t2 = tuple(t[2])
         else:
             self.t2 = t[2]
@@ -502,6 +499,15 @@ class BIN_Token(Token):
     def matches_ENTITY(self, terminal):
         """ Handle an entity name token, matching it with an entity terminal """
         return terminal.startswith("entity")
+        # !!! TBD !!!
+        # Allow person terminals to match entity names that look like person names,
+        # i.e. are composed of more than one uppercase words
+        #if not terminal.startswith("person"):
+        #    return False
+        #a = self.t1.split()
+        #if len(a) < 2:
+        #    return False
+        #return all(n[0].isupper() for n in a)
 
     def matches_PUNCTUATION(self, terminal):
         """ Match a literal terminal with the same content as the punctuation token """
