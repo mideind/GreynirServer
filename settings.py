@@ -127,7 +127,8 @@ class Abbreviations:
     """ Wrapper around dictionary of abbreviations, initialized from the config file """
 
     # Dictionary of abbreviations and their meanings
-    DICT = { }
+    DICT = { } # Abbreviation -> meaning
+    MEANINGS = set() # All abbreviation meanings
     # Single-word abbreviations, i.e. those with only one dot at the end
     SINGLES = set()
     # Potential sentence finishers, i.e. those with a dot at the end, marked with an asterisk
@@ -171,6 +172,7 @@ class Abbreviations:
             raise ConfigError("!, * and ^ modifiers are mutually exclusive on abbreviations")
         # Append the abbreviation and its meaning in tuple form
         Abbreviations.DICT[abbrev] = (meaning, 0, gender, "skst" if fl is None else fl, abbrev, "-")
+        Abbreviations.MEANINGS.add(meaning)
         if abbrev[-1] == '.' and '.' not in abbrev[0:-1]:
             # Only one dot, at the end
             Abbreviations.SINGLES.add(abbrev[0:-1]) # Lookup is without the dot
@@ -185,6 +187,10 @@ class Abbreviations:
     @staticmethod
     def has_meaning(abbrev):
         return abbrev in Abbreviations.DICT
+
+    @staticmethod
+    def has_abbreviation(meaning):
+        return meaning in Abbreviations.MEANINGS
 
     @staticmethod
     def get_meaning(abbrev):

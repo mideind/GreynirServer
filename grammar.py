@@ -57,7 +57,7 @@ import struct
 
 from datetime import datetime
 from collections import defaultdict, OrderedDict
-from settings import Settings, changedlocale
+from settings import Settings, StaticPhrases, Abbreviations, changedlocale
 
 
 class GrammarError(Exception):
@@ -69,14 +69,26 @@ class GrammarError(Exception):
         """ A GrammarError contains an error text and optionally the name
             of a grammar file and a line number where the error occurred """
 
+        super().__init__(text)
         self.fname = fname
         self.line = line
+
+    def augment(self, fname, line):
+        """ Add filename and line information, if missing """
+        if self.fname is None:
+            self.fname = fname
+        if self.line == 0:
+            self.line = line
+
+    def __str__(self):
+        """ Create a string representation showing the file name and
+            line number where the error originated, if available """
         prefix = ""
-        if line:
-            prefix = "Line " + str(line) + ": "
-        if fname:
-            prefix = fname + " - " + prefix
-        Exception.__init__(self, prefix + text)
+        if self.line:
+            prefix = "Line " + str(self.line) + ": "
+        if self.fname:
+            prefix = self.fname + " - " + prefix
+        return prefix + super().__str__()
 
 
 class Nonterminal:
@@ -235,7 +247,16 @@ class LiteralTerminal(Terminal):
         assert q in "\'\""
         ix = lit[1:].index(q) + 1 # Find closing quote
         # Replace underscores within the literal with spaces
-        lit = lit[0:ix + 1].replace("_", " ") + lit[ix + 1:]
+        word = lit[1:ix]
+        if "_" in word:
+            word = word.replace('_', ' ')
+            lit = q + word + q + lit[ix + 1:]
+            word = word.split(':')[0]
+            if StaticPhrases.lookup(word) == None and not Abbreviations.has_abbreviation(word):
+                # Check that a multi-word literal terminal exists in the StaticPhrases
+                # dictionary (normally defined in Phrases.conf)
+                raise GrammarError("Multi-word literal '{0}' not found "
+                    "in static phrases or abbreviations".format(word))
         super().__init__(lit)
         # If a double quote was used, this is a 'strong' literal
         # that matches an exact terminal string as it appeared in the source
@@ -981,6 +1002,9 @@ class Grammar:
 
         except (IOError, OSError):
             raise GrammarError("Unable to open or read grammar file", fname, 0)
+        except GrammarError as e:
+            e.augment(fname, line)
+            raise e
 
         # Check all nonterminals to verify that they have productions and are referenced
         for nt in nonterminals.values():

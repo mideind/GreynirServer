@@ -3460,7 +3460,7 @@ $score(-4) SvigaInnihaldFsRuna
 
 Skýring →
     "svo:st" "sem:st"
-    | "sem:st" 'segja:so'_lhþt_sb_hk_nf_et | 'sem_sagt:ao'
+    | "sem:st" 'segja:so'_lhþt_sb_hk_nf_et
     | 'til:fs'_ef 'dæmi:hk'_ef_et | 'til_dæmis:ao'
     | "þar:ao" 'á_meðal:ao' | 'þar_á_meðal:ao'
     | "meðal:ao" "annars:ao" | 'meðal_annars:ao'
@@ -4385,7 +4385,7 @@ TímaAfstæði_þf →
     | 'fyrir:fs'_þf Nl_þf
     | "á:ao" "undan:ao"
     | "á:ao" "eftir:ao"
-    | 'sem_um_ræðir:ao' # kvöldið/daginn sem um ræðir
+    | "sem:st" 'um:fs'_þf 'ræða:so'_gm_et_p3 # kvöldið/daginn sem um ræðir
 
 TímaForskeyti →
     "löngu:lo"
