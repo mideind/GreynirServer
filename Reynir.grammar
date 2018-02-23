@@ -1523,8 +1523,9 @@ So_1_p3_ef/tala → so_1_ef_p3/tala
 # Sagnbót með einu viðfangi
 
 Sögn_1_sagnb →
-    So_1_sagnb_nf FsRuna? NlSagnfylling_nf  
-    | So_1_sagnb/aukafall FsRuna? NlBeintAndlag/aukafall  # Þingmenn geta/hafa lagt [fyrir Alþingi] frumvörp (til laga)
+    So_1_sagnb_nf FsAtv? NlSagnfylling_nf
+    # Þingmenn geta/hafa lagt [fram / fyrir Alþingi] frumvörp (til laga)
+    | So_1_sagnb/aukafall FsAtv? NlBeintAndlag/aukafall
     | 'enginn:fn'/fall/tala/kyn Nl/fall/tala/kyn So_1_sagnb/fall # (Þó getur hann) enga samninga gert
 
 # Sögn í nafnhætti með einu viðfangi
@@ -2191,7 +2192,7 @@ HjSögnFinnst_sagnb →
 NhFylling/tala/kyn →
     NhFylling_nf/tala/kyn    # Nefnifall sjálfgefið
 
-$score(+4) NhFylling/tala/kyn # Gefa 'að borða köku' forgang sem NhFylling fremur en fs+no, til dæmis fs+no_þgf+no_ef
+$score(+6) NhFylling/tala/kyn # Gefa 'að borða köku' forgang sem NhFylling fremur en fs+no, til dæmis fs+no_þgf+no_ef
 
 # Aðeins nefnifall og þágufall eru notuð
 NhFylling_nf/tala/kyn → EinNhFylling_nf/tala/kyn OgNhFylling_nf/tala/kyn*

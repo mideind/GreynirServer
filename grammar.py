@@ -247,16 +247,16 @@ class LiteralTerminal(Terminal):
         assert q in "\'\""
         ix = lit[1:].index(q) + 1 # Find closing quote
         # Replace underscores within the literal with spaces
-        word = lit[1:ix]
-        if "_" in word:
-            word = word.replace('_', ' ')
-            lit = q + word + q + lit[ix + 1:]
-            word = word.split(':')[0]
-            if StaticPhrases.lookup(word) == None and not Abbreviations.has_abbreviation(word):
-                # Check that a multi-word literal terminal exists in the StaticPhrases
+        phrase = lit[1:ix]
+        if "_" in phrase:
+            phrase = phrase.replace('_', ' ')
+            lit = q + phrase + q + lit[ix + 1:]
+            phrase = phrase.split(':')[0] # Remove :cat, if present
+            if StaticPhrases.lookup(phrase) == None and not Abbreviations.has_abbreviation(phrase):
+                # Check that a multi-phrase literal terminal exists in the StaticPhrases
                 # dictionary (normally defined in Phrases.conf)
-                raise GrammarError("Multi-word literal '{0}' not found "
-                    "in static phrases or abbreviations".format(word))
+                raise GrammarError("Multi-phrase literal '{0}' not found "
+                    "in static phrases or abbreviations".format(phrase))
         super().__init__(lit)
         # If a double quote was used, this is a 'strong' literal
         # that matches an exact terminal string as it appeared in the source
