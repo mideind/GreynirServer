@@ -646,6 +646,7 @@ class Fast_Parser(BIN_Parser):
         lw = len(wrapped_tokens)
         ep = Fast_Parser.eparser
         err = ffi.new("unsigned int*")
+        result = None
 
         # Use the context manager protocol to guarantee that the parse job
         # handle will be properly deleted even if an exception is thrown
@@ -691,7 +692,7 @@ class Fast_Parser(BIN_Parser):
             ep.printAllocationReport()
 
     @classmethod
-    def num_combinations(cls, w):
+    def num_combinations(cls, forest):
         """ Count the number of possible parse tree combinations in the given forest """
 
         nc = dict()
@@ -703,13 +704,14 @@ class Fast_Parser(BIN_Parser):
             # If a subtree has already been counted, re-use that count
             # (this is less efficient for small trees but much more efficient
             # for extremely ambiguous trees, with combinations in the
-            # hundreds of billions)
-            if w in nc:
-                if nc[w] is None:
+            # millions)
+            cnt = nc.get(w)
+            if cnt is not None:
+                if cnt is NotImplemented:
                     print("Loop in node tree at {0}".format(str(w)))
                     assert False
-                return nc[w]
-            nc[w] = None
+                return cnt
+            nc[w] = NotImplemented # Special marker for an unassigned cache entry
             comb = 0
             for _, f in w.enum_children():
                 if isinstance(f, tuple):
@@ -719,7 +721,7 @@ class Fast_Parser(BIN_Parser):
             result = nc[w] = comb if comb > 0 else 1
             return result
 
-        return _num_comb(w)
+        return _num_comb(forest)
 
 
 class ParseForestPrinter(ParseForestNavigator):
@@ -883,6 +885,7 @@ class ParseForestFlattener(ParseForestNavigator):
 
     def __init__(self):
         super().__init__(visit_all = True) # Visit all nodes
+        self._stack = None
 
     def go(self, root_node):
         self._stack = None
