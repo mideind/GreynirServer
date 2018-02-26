@@ -20,7 +20,7 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    This module is written in Python 3.2 for compatibility with PyPy3
+    This module is written in Python 3 and is compatible with PyPy3.
 
     This is the main module of the Greynir web server. It uses Flask
     as its templating and web server engine. In production, this module is

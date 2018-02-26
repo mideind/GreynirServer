@@ -120,7 +120,7 @@ Málsgrein →
 MgrInnihald → Forskeyti? Yfirsetning StLiður* Tilvitnun? Lokatákn?
 
 Forskeyti →
-    Samtenging "bara:ao"? "-:em"? # 'En - þegar allt er skoðað, var þetta fínt.'
+    "-:em"? Samtenging "bara:ao"? "-:em"? # 'En - þegar allt er skoðað, var þetta fínt.'
     | Samtenging? uh TengimerkiVh Samtenging? # Og já, þetta var ekki gott / Nei - en hann átti ekkert svar
     | raðnr_nf_kvk # Raðnúmer málsgreinar
     | "-:em"   # Þankastrik á undan setningu (allar gerðir strika varpast í '-')
@@ -146,6 +146,7 @@ SögnSegja/tala/pers →
     | 'flissa:so'_gm_fh/tala/pers
     | 'fullyrða:so'_gm_fh/tala/pers
     | 'staðhæfa:so'_gm_fh/tala/pers
+    | 'ítreka:so'_gm_fh/tala/pers
 
 $score(+32) Tilvitnun # Þarf að vera meiri plús en t.d. SagnFramhald
 
@@ -232,7 +233,6 @@ HreinYfirsetning →
     | AtvSetning # Atvikssetning fremst í aðalsetningu
     | Spurnarsetning
     | SamsettSetning    # Annaðhvort X eða Y; bæði X og Y; ýmist X eða Y
-
 
 $score(+2) HreinYfirsetning
 
@@ -3913,6 +3913,8 @@ FsMeðFallstjórn →
     # 'með að [gera]...', '(Löngunin) til að [berja]...', '(Áhættan) við að [kaupa]...',
     # '(Hættan) á að [aka]...'
     | fs_nh FsAð
+
+    # Fleiryrtar forsetningar sem eru ekki dregnar saman í Phrases.conf
     | 'nær:fs'_þgf 'draga:so'_op_gm_et_p3 Nl_þgf # 'þegar nær dró/dregur jólum'
     | 'fyrir_hönd:fs'_ef Nl_ef             # Skammstöfunin f.h.
     | "beggja:fn" 'vegna:fs'_ef Nl_ef      # 'beggja vegna vegarins'
@@ -3934,6 +3936,7 @@ FsMeðFallstjórn →
     | 'á:fs'_þf Vikudagur_gr_þf_et 'koma:so'_gm_fh_et_p3  # á sunnudaginn kemur / á laugardagskvöldið kemur
     | FsMiðaðVið
     | FsÍGegnUm
+    | FsUmOgEftir
     | FsAðBaki
     | FsTilÞgf
     | AtvFsSaman    # inn eftir firðinum, fram undan rúminu
@@ -3981,6 +3984,12 @@ FsMiðaðVið →
     | 'miðað_við:fs' Nl_þf # Skammstöfunin m.v.
 
 $score(+12) FsMiðaðVið
+
+FsUmOgEftir →
+    # 'kvikmyndir um og eftir konur'
+    'um:fs'_þf "og:st" 'eftir:fs'_þf Nl_þf
+
+$score(+8) FsUmOgEftir
 
 FsÍGegnUm →
     "í:ao" "gegn:ao" 'um:fs'_þf Nl_þf
@@ -4330,7 +4339,9 @@ Dagsetning →
     | Tímabil_þf/kyn/tala TímaAfstæði_þf # Vikuna áður / Daginn eftir / áratugina á undan
     | TímaForskeyti? TímaAfstæði # [viku/löngu] áður en krónan féll / [ári/stuttu] eftir að landið öðlaðist sjálfstæði
     | TímaFyrrSíðar # fyrr á árinu, síðar í dag
-
+    | FyrriSíðari_kk_þf_et 'partur:kk'_gr_þf_et # Fyrri partinn, seinni partinn
+    | FyrriSíðari_kk_þf_et 'partur:kk'_þf_et Tímabil_ef # Fyrri part dagsins/vikunnar
+    
     | "svo:ao" Tímabil_þgf_ft 'skipta:so'_gm_fh_et_p3 # svo mánuðum skiptir/skipti
 
 $tag(apply_prep_bonus) Dagsetning # Gefa bónus þegar dagsetning fylgir sögn frekar en nafnlið

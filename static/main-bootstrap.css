@@ -184,6 +184,11 @@ p.header {
    margin-bottom: 24px;
 }
 
+.container > .navbar-header {
+   margin-left: -6px;
+   margin-right: -6px;
+}
+
 div.input {
    padding-top: 36px;
    padding-bottom: 36px;
@@ -219,6 +224,38 @@ div.tab-pane {
 div.text-container {
    padding-top: 80px;
    font-size: 1.15em;
+}
+
+ul.nav-tabs span.glyphicon {
+   margin-right: 12px;
+}
+
+@media(max-width: 768px) {
+   /* Adjustments for mobile only */
+   div.container-fluid.text-container {
+      padding-left: 4px;
+      padding-right: 4px;
+   }
+   div.container.text-container {
+      padding-left: 4px;
+      padding-right: 4px;
+   }
+   .navbar-nav > li > a {
+      /* Dropdown menu items */
+      padding-left: 22px;
+   }
+}
+
+@media(max-width: 480px) {
+   ul.nav-tabs span.glyphicon {
+      /* Make tab headings narrower by reducing spacing between icon and text */
+      margin-right: 2px;
+   }
+   ul.nav-tabs > li > a {
+      /* Make tab headings narrower by reducing margins */
+      padding-left: 10px;
+      padding-right: 10px;
+   }
 }
 
 div.input-overlay {
@@ -298,10 +335,6 @@ div.wait {
    font-size: 17px;
    line-height: 24px;
    text-align: center;
-}
-
-ul.nav-tabs span.glyphicon {
-   margin-right: 12px;
 }
 
 div#toplist {
@@ -403,8 +436,8 @@ tr.topitem span.title {
 }
 
 #similarlist li img {
-   margin-left: 10px;
-   margin-right: 8px;
+   margin-left: 8px;
+   margin-right: 4px;
 }
 
 #similarlist li span.similarity {
@@ -416,7 +449,7 @@ tr.topitem span.title {
 
 #similarlist span.timestamp {
    display: inline-block;
-   min-width: 96px;
+   min-width: 90px;
    color: #888888;
 }
 
@@ -586,18 +619,24 @@ h3.help small {
 }
 
 span.sent {
-   margin-left: -2px;
-   margin-right: 4px;
+   margin-left: -4px;
+   margin-right: -2px;
+   padding-left: 4px;
+   padding-right: 4px;
+   padding-bottom: 2px;
    cursor: pointer;
-   border-width: 2px;
+   border-width: 1px;
    border-style: solid;
-   border-radius: 4px;
+   border-radius: 5px;
    border-color: transparent;
 }
 
 span.sent.err {
+   /*
    background: url(wiggle.png) repeat-x bottom left;
    background-size: 4px 3px;
+   */
+   border-color: #CB333B;
 }
 
 span.sent.err:hover {
@@ -634,6 +673,14 @@ div#result {
 
 div#result i {
    font-style: normal;
+   border-radius: 5px;
+   border-width: 1px;
+   border-style: solid;
+   border-color: /* grey */ transparent;
+   padding-left: 1px;
+   padding-right: 1px;
+   padding-bottom: 2px;
+   margin-right: -4px;
 }
 
 div#result i.nf {
@@ -675,20 +722,22 @@ div#result i.amount {
 }
 
 div#result i.person {
+/*
    border-width: 2px;
    border-style: solid;
    border-radius: 4px;
    margin-right: 1px;
    padding-left: 2px;
    padding-right: 2px;
-   /* color: white; */
    color: black;
+*/
    /* Specific settings */
-   background-color: #d7e6f4; /* #609dd2; #337ab7 */
-   border-color: #d7e6f4; 
+   /* background-color: #d7e6f4; */ /* #609dd2; */
+   border-color: #337ab7;
 }
 
 div#result i.entity {
+/*
    border-width: 2px;
    border-style: solid;
    border-radius: 4px;
@@ -696,8 +745,9 @@ div#result i.entity {
    padding-left: 2px;
    padding-right: 2px;
    color: black;
+*/
    /* Specific settings */
-   background-color: #fbe9d0; /* #f2e6ff; #cc99ff; #a64dff */
+   /* background-color: #fbe9d0; */ /* #f2e6ff; #cc99ff; #a64dff */
    border-color: #fbe9d0;
 }
 
@@ -708,25 +758,41 @@ div#result i.email {
 }
 
 div#result i:hover {
+   /*
    outline-width: 1px;
    outline-style: solid;
    outline-color: #777777;
-   background-color: #777777;
+   */
    color: white;
+   background-color: #777777;
+   border-color: #777777;
+}
+
+div#result i.p:hover {
+   color: black;
+   background-color: transparent;
+   border-color: transparent;
 }
 
 div#result i.person:hover {
    /* Special case for person: just make background darker */
+   /*
    outline: none;
    background-color: #337ab7;
    border-color: #337ab7;
+   */
+   border-color: #337ab7; 
+   background-color: #337ab7; 
 }
 
 div#result i.entity:hover {
    /* Special case for entity: just make background darker */
+   /*
    outline: none;
-   background-color: #f0ad4e; /* #a64dff; */
-   border-color: #f0ad4e; /* #a64dff; */
+   background-color: #f0ad4e;
+   border-color: #f0ad4e;
+   */
+   border-color: #fbe9d0;
 }
 
 /* Noun-type word: blue color */
@@ -735,26 +801,30 @@ div#result i.kvk:hover,
 div#result i.hk:hover,
 div#result i.fn:hover,
 div#result i.pfn:hover {
-   outline-color: #337ab7;
+   /* outline-color: #337ab7; */
+   border-color: #337ab7;
    background-color: #337ab7;
 }
 
 /* Verb-type word: red color */
 div#result i.so:hover,
 div#result i.nhm:hover {
-   outline-color: #d9534f;
+   /* outline-color: #d9534f; */
+   border-color: #d9534f;
    background-color: #d9534f;
 }
 
 /* Adjective-type word: green color */
 div#result i.lo:hover {
-   outline-color: #5cb85c;
+   /* outline-color: #5cb85c; */
+   border-color: #5cb85c;
    background-color: #5cb85c;
 }
 
 /* Conjunction-type word: yellow color */
 div#result i.st:hover {
-   outline-color: #f0ad4e;
+   /* outline-color: #f0ad4e; */
+   border-color: #f0ad4e;
    background-color: #f0ad4e;
 }
 

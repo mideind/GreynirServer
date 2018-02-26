@@ -8,8 +8,8 @@
    Scripts for displaying tokenized and parsed text,
    with pop-up tags on hover, name registry, statistics, etc.
 
-   Author: Vilhjalmur Thorsteinsson
-   Copyright (C) 2017
+   Copyright (C) 2018 Miðeind ehf.
+   Author: Vilhjálmur Þorsteinsson
    All rights reserved
 
       This program is free software: you can redistribute it and/or modify
@@ -243,7 +243,7 @@ function displayTokens(j) {
                   // Mark an error token
                   x += "<span class='errtok'>";
                if (t.k == TOK_PUNCTUATION)
-                  x += (t.x == "—") ? " — " : t.x; // Space around em-dash
+                  x += "<i class='p'>" + ((t.x == "—") ? " — " : t.x) + "</i>"; // Space around em-dash
                else {
                   var cls;
                   var tx = t.x;
