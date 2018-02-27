@@ -3696,7 +3696,11 @@ LoAtviksliður →
 # ('Hún fór frjáls skoðana sinna í útlegð')
 
 Lo_sb/tala/fall/kyn → LoAtviksliðir? lo_sb/tala/fall/kyn LoViðhengi?
-Lo_sb_nf/tala/kyn → LoAtviksliðir? lo_sb_nf/tala/kyn LoViðhengi?
+
+Lo_sb_nf/tala/kyn →
+    LoAtviksliðir? lo_sb_nf/tala/kyn LoViðhengi?
+Lo_sb_nf_ft/kyn →
+    'margur:lo'_sb_nf_ft/kyn 'hver:fn'_nf_ft/kyn # margir hverjir, mörg hver, margar hverjar
 
 OgLo → "og:st" | "eða:st" | "en:st"
 

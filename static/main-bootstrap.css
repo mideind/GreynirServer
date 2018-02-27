@@ -402,7 +402,7 @@ td.ratio div.progress div.progress-bar {
 }
 
 tr.topitem span.name {
-   font-weight: bold;
+   font-weight: 700;
    white-space: nowrap;
    overflow-x: hidden;
    text-overflow: ellipsis;
@@ -419,6 +419,11 @@ tr.topitem span.title {
 #similarlist span.heading {
    color: #337ab7;
    cursor: pointer;
+}
+
+#namelist span.name,
+#namelist span.entity {
+   font-weight: 700;
 }
 
 #namelist span.name:hover,
@@ -467,11 +472,18 @@ td.gender, th.gender {
 
 td.name {
    min-width: 200px;
+   font-weight: 700;
+}
+
+td.domain {
+   font-weight: 700;
+   color: #777777;
 }
 
 #entity-body span.name,
 #entity-body span.entity
  {
+   font-weight: 700;
    color: #337ab7;
    cursor: pointer;
 }
@@ -525,7 +537,7 @@ div.info {
    z-index: 10;
    min-width: 160px;
    max-width: 360px;
-   margin-top: 48px;
+   margin-top: 60px;
    padding-top: 6px;
    padding-bottom: 6px;
    padding-left: 12px;
@@ -594,7 +606,7 @@ div.info.st #tag {
 }
 
 div.info #lemma {
-   font-weight: bold;
+   font-weight: 700;
 }
 
 div.info #details {
@@ -629,6 +641,7 @@ span.sent {
    border-style: solid;
    border-radius: 5px;
    border-color: transparent;
+   line-height: 28px;
 }
 
 span.sent.err {
@@ -637,6 +650,7 @@ span.sent.err {
    background-size: 4px 3px;
    */
    border-color: #CB333B;
+   border-style: dotted;
 }
 
 span.sent.err:hover {
@@ -645,13 +659,13 @@ span.sent.err:hover {
 }
 
 span.errtok {
-   font-weight: 600;
+   font-weight: 700;
    color: #CB333B; /* Greynir red */
 }
 
 /*
 span.sent.err:hover span.errtok {
-   font-weight: 600;
+   font-weight: 700;
    color: #CB333B;
 }
 */
@@ -685,39 +699,39 @@ div#result i {
 
 div#result i.nf {
    /* Word not found */
-   font-weight: 600;
+   font-weight: 700;
    color: #CB333B; /* Greynir red */
 }
 
 div#result i.number {
-   font-weight: 600;
+   font-weight: 700;
    color: #007F33;
 }
 
 div#result i.percent {
-   font-weight: 600;
+   font-weight: 700;
    color: #337ab7;
 }
 
 div#result i.ordinal {
-   font-weight: 600;
+   font-weight: 700;
    color: #CCA500;
 }
 
 div#result i.date,
 div#result i.time,
 div#result i.timestamp {
-   font-weight: 600;
+   font-weight: 700;
    color: #CCA500;
 }
 
 div#result i.currency {
-   font-weight: 600;
+   font-weight: 700;
    color: #007F33;
 }
 
 div#result i.amount {
-   font-weight: 600;
+   font-weight: 700;
    color: #007F33;
 }
 
@@ -733,7 +747,9 @@ div#result i.person {
 */
    /* Specific settings */
    /* background-color: #d7e6f4; */ /* #609dd2; */
-   border-color: #337ab7;
+   color: #337ab7;
+   font-weight: 700;
+   /* border-color: #337ab7; */
 }
 
 div#result i.entity {
@@ -748,13 +764,16 @@ div#result i.entity {
 */
    /* Specific settings */
    /* background-color: #fbe9d0; */ /* #f2e6ff; #cc99ff; #a64dff */
-   border-color: #fbe9d0;
+   /* border-color: #fbe9d0; */
+   color: #777777;
+   font-weight: 700;
 }
 
 div#result i.year,
 div#result i.telno,
 div#result i.email {
-   font-weight: 600;
+   color: #777777;
+   font-weight: 700;
 }
 
 div#result i:hover {
@@ -881,7 +900,7 @@ th.neutral, td.neutral {
 }
 
 tfoot tr td {
-   font-weight: bold;
+   font-weight: 700;
 }
 
 table.table thead th {
@@ -984,7 +1003,7 @@ td.t span.tok {
    font-size: 16px;
    line-height: 24px;
    font-style: normal;
-   font-weight: bold;
+   font-weight: 700;
 }
 
 h4.txt {
@@ -1097,7 +1116,7 @@ div#stats-panel {
 }
 
 div#stats-panel td.count {
-   font-weight: bold;
+   font-weight: 700;
 }
 
 td.explain {
