@@ -757,6 +757,9 @@ SetningSo →
     # (Í dag) gæti hafa rignt
     | FsAtv? HjSögnVh so_0_sagnb NhFylling?
 
+    # Þykir/finnst þeim vera slagsíða í umfjölluninni
+    | HjSögnFinnst NlFrumlag_þgf 'vera:so'_nh NlSagnfylling_nf
+
 Sagnliður_lhþt →
     EinSögn_lhþt/tala/kyn OgSögn_lhþt/tala/kyn* HjSögnLhÞt_p3/tala
         NlFrumlag_nf/tala/kyn AtvFsAuka? # Teknar og skráðar hafa verið ákvarðanir í málinu
@@ -921,8 +924,8 @@ AukafallEfAndlag →
     | nhm so_1_ef_nh FsAtv?
 
 AukafallÖfugSögn →
-    Nl/fall AtvFs? So_1_nh/fall         # (skal) engum gera
-    | Nl/fall AtvFs? So_1_sagnb/fall    # (skal) engum gert
+    NlBeintAndlag/fall AtvFs? So_1_nh/fall         # (skal) engum gera
+    | NlBeintAndlag/fall AtvFs? So_1_sagnb/fall    # (skal) engum gert
 
 # Tilvik þar sem sögn í lhþt eintölu fylgir andlag í fleirtölu:
 # 'Öllum skal tryggð mannhelgi og vernd gegn hvers kyns ofbeldi'
@@ -947,7 +950,11 @@ MiðmyndarBotn →
     | MiðmyndarBotnLo
 
     # (Mér virtist) ykkur [ekki] blöskra undir ræðunni
-    | Nl/aukafall AtvFs? so_subj_nh/aukafall AukafallsBotn?
+    | NlFrumlag/aukafall AtvFs? so_subj_nh/aukafall AukafallsBotn?
+
+    # (Mér finnst) [ekki / í meginatriðum] vanta blíðu [í söng Ara]
+    # !!! ATH: Hvaða sagnir geta staðið hér? Aðeins 'vanta' og 'skorta'?
+    | FsAtv? So_1_nh/aukafall NlBeintAndlag/aukafall FsAtv?
 
     # (Mér virtist) þeim [ekki] sýnast börnin vera falleg
     | Nl_þgf AtvFs? so_nh_mm MiðmyndarBotn
@@ -1788,10 +1795,10 @@ SögnMeðF_1/tala/pers/kyn →
     # (Áður) hafði KR látið Jón og Gunnar fara / sagt niðurstöðuna vera ranga
     | HjSögn/tala/pers NlFrumlag_nf/tala/pers So_1_þf_nh_sagnb SagnarBotn
 
-SögnMeðF_1_ft/pers/kyn →
+SögnMeðF_1/tala/pers/kyn →
     # (Í dag) eru og verða þetta tvítugir strákar [galvaskir] [að hella sig fulla]
-    VeraVerða_gm_p3_ft OgVeraVerða_gm_p3_ft* 'þessi:fn'_nf_hk_et
-        NlSagnfylling_nf_ft/pers/kyn LoTengtSögn_nf_ft/kyn? NhFylling?
+    VeraVerða_gm_p3/tala OgVeraVerða_gm_p3/tala* 'þessi:fn'_nf_hk_et
+        NlSagnfylling_nf/tala/pers/kyn LoTengtSögn_nf/tala/kyn? NhFylling?
 
 SagnarBotnLhÞt/tala/kyn →
     # (Í dag) verður konan gefin Páli [sjálf]

@@ -237,6 +237,15 @@ class ScrapeHelper:
         return soup.find(f)
 
     @staticmethod
+    def del_tag_prop_val(soup, tag, prop, val):
+        """ Delete all occurrences of the tag having the property with the given value """
+        while True:
+            s = ScrapeHelper.tag_prop_val(soup, tag, prop, val)
+            if s is None:
+                break
+            s.decompose()
+
+    @staticmethod
     def del_div_class(soup, *argv):
         """ Delete all occurrences of the specified div.class """
         while True:
@@ -388,13 +397,14 @@ class RuvScraper(ScrapeHelper):
             content = ScrapeHelper.div_class(soup_body, "view-content", "second")
         if content is None:
             # Fallback to outermost block
-            content = ScrapeHelper.div_class(soup_body,
-                ("block", "block-system"))
+            content = ScrapeHelper.div_class(soup_body, ("block", "block-system"))
         ScrapeHelper.del_div_class(content, "pane-custom") # Sharing stuff at bottom of page
         ScrapeHelper.del_div_class(content, "title-wrapper") # Additional header stuff
         ScrapeHelper.del_div_class(content, "views-field-field-user-display-name") # Seriously.
         ScrapeHelper.del_div_class(content, "field-name-myndatexti-credit-source")
+        ScrapeHelper.del_div_class(content, "region-conditional-stack")
         ScrapeHelper.del_tag(content, "twitterwidget")
+        ScrapeHelper.del_div_class(content, "pane-author")
         return content
 
 
