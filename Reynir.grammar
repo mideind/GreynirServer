@@ -1360,23 +1360,24 @@ EinSögn_nh/tala/kyn →
 
 Sögn_bh →
     # Farðu [út] að þvo bílinn [strax]
-    so_0_bh BhBotn
+    so_0_bh BhBotn?
     # Förum [út] að þvo bílinn [strax]
-    | so_0_gm_fh_p1_ft_nt BhBotn
+    | so_0_gm_fh_p1_ft_nt BhBotn?
     # Lofið barninu [að borða] [í friði]
-    | Sögn_1_bh BhBotn
+    | Sögn_1_bh BhBotn?
     # Skrifaðu jólasveininum bréf
-    | Sögn_2_bh BhBotn
+    | Sögn_2_bh BhBotn?
     # Láttu/látið það ekki slá ykkur (út af laginu) og fara (með ykkur í gönur)
     | 'láta:so'_bh NlBeintAndlag_þf AtvFs? EinSögn_nh/tala/kyn OgSögn_nh/tala/kyn*
 
 # Boðháttur er sjaldgæfur - viljum aðra kosti frekar
-$score(-5) Sögn_bh
+$score(-14) Sögn_bh
 $tag(begin_prep_scope) Sögn_bh
 
 BhBotn →
     # að borða í friði
-    NhFylling? SagnInnskot?
+    NhFylling SagnInnskot?
+    | SagnInnskot
     # í skálinni meðan þið brjótið eggin
     | FsAtv? BhMeðan HreinYfirsetning
 
