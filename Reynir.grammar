@@ -316,11 +316,16 @@ Samanburðarsetning →
     | Samanburðartenging BeygingarliðurÁnF
 Skilyrðissetning → 
     Skilyrðistenging BeygingarliðurÁnUmröðunar
-    | TengimerkiVh? SagnliðurVh
     | Skilyrðistenging BeygingarliðurÁnF
+    | Skilyrðissetning_vh
+
+Skilyrðissetning_vh →
+    TengimerkiVh? SagnliðurVh
 
 $score(+4) Samanburðarsetning
+$score(+4) Tíðarsetning
 $score(-10) Skilyrðissetning # Skilyrðistenging er með plús á móti
+$score(-14) Skilyrðissetning_vh # Draga enn úr skilyrðissetningum sem byggja á viðtengingarhætti
 
 # Fallsetningar - skýringarsetningar og spurnaraukasetningar
 
@@ -673,7 +678,7 @@ $tag(purge_verb) SetningForskeyti
 # 'Öruggt hefur verið talið [að fara Vatnaleiðina í þurru veðri]'
 # 'Ljóst er (að Brandur var fallegasti kötturinn)'
 SetningLo →
-    LoTengtSögn_nf_et_hk SetningLoSögn AðLiður
+    LoTengtSögn_nf_et_hk SetningLoSögn AðLiður?
     # Kjörgengur við Alþingiskosningar skal vera hver sá ríkisborgari (sem dvalið hefur 5 ár í landinu)
     | LoTengtSögn_nf/tala/kyn FsRuna? HjSögnLhÞtSM/tala/pers Nl_nf/tala/pers/kyn AtvFs?
     # Aðspurður sagði Jón framburð Gunnu vera uppspuna frá rótum
@@ -749,7 +754,7 @@ SetningSo →
 
     | HjSögnMegiSkuli_et_p3 FsAtv? EinSögn_nh_et_hk SagnInnskot?    # Má með sanni segja (að þeir hafi sloppið með skrekkinn)
 
-    | 'þurfa:so'_gm_et_p3 FsRuna? NlBeintAndlag_þf AðLiður          # Þarf til þess lagafyrirmæli að svipta mann réttindum
+    | 'þurfa:so'_gm_et_p3 FsRuna? NlBeintAndlag_þf AðLiður?          # Þarf til þess lagafyrirmæli að svipta mann réttindum
 
     | SagnliðurVh ","? "þá:st"? BeygingarliðurMeðUmröðun FsAtv?     # Haldi þessi þróun áfram er voðinn vís
 
@@ -757,8 +762,12 @@ SetningSo →
     # (Í dag) gæti hafa rignt
     | FsAtv? HjSögnVh so_0_sagnb NhFylling?
 
-    # Þykir/finnst þeim vera slagsíða í umfjölluninni
-    | HjSögnFinnst NlFrumlag_þgf 'vera:so'_nh NlSagnfylling_nf
+    # Þykir/finnst þeim vera slagsíða [í umfjölluninni] / þeim [það] ósanngjarnt
+    | HjSögnFinnst NlFrumlag_þgf SögnFinnstBotn
+
+SögnFinnstBotn →
+     'vera:so'_nh NlSagnfylling_nf
+     | 'það:pfn'_hk_nf_et? LoSamanb_et_nf_hk AðLiður?
 
 Sagnliður_lhþt →
     EinSögn_lhþt/tala/kyn OgSögn_lhþt/tala/kyn* HjSögnLhÞt_p3/tala
@@ -850,14 +859,14 @@ SetningAukafall →
     # Þá ályktun má strax draga í dag (að Páll sé ekki með öllum mjalla)
     # Engan má skylda til að láta eign sína af hendi
     # Miklu má veðja að Guðný snúi aftur í pólitík
-    | NlFrumlag/aukafall HjSögnMegiSkuli_et_p3 FsAtv? So_1_nh/aukafall AðLiður
+    | NlFrumlag/aukafall HjSögnMegiSkuli_et_p3 FsAtv? So_1_nh/aukafall AðLiður?
 
     # Nauðungarvinnu skal engum gert að leysa af hendi
     | NlFrumlag/aukafall HjSögnMegiSkuli_et_p3 FsAtv? AukafallÖfugSögn nhm So_1_nh/aukafall FsAtv?
 
     # Engan þarf/ætti að undra (að mig langi í ís)
     # Greinarmun verður [ekki] að gera (á Jóni og séra Jóni)
-    | NlFrumlag/aukafall HjSögnÞurfaEiga_et_p3 FsAtv? nhm So_1_nh/aukafall AðLiður
+    | NlFrumlag/aukafall HjSögnÞurfaEiga_et_p3 FsAtv? nhm So_1_nh/aukafall AðLiður?
 
     # Engan má svipta íslenskum ríkisborgararétti að ósekju
     | NlÓbeintAndlag_þf HjSögnMegiSkuli_et_p3 FsAtv? So_2_nh_þf/fall NlBeintAndlag/fall AtvFsAuka?
@@ -870,10 +879,10 @@ SetningAukafall →
 
     # Mér/okkur/ykkur/börnunum finnst/þykir [mörgum [það]] [ekki] skemmtilegt
     # [að borða góðan mat / hérna í kvöld / að Jón lesi bók]
-    | NlFrumlag_þgf/tala/kyn HjSögnFinnst FinnstÞað/tala/kyn? FinnstAndlag AðLiður
+    | NlFrumlag_þgf/tala/kyn HjSögnFinnst FinnstÞað/tala/kyn? FinnstAndlag AðLiður?
 
     # Mér hefur [ekki] þótt [það] vont að sofa á nýju dýnunni
-    | NlFrumlag_þgf HjSögn_et_p3 FsAtv? HjSögnFinnst_sagnb 'það:pfn'_hk_nf_et? FinnstAndlag AðLiður
+    | NlFrumlag_þgf HjSögn_et_p3 FsAtv? HjSögnFinnst_sagnb 'það:pfn'_hk_nf_et? FinnstAndlag AðLiður?
 
     # Þann auð eigum við [ekki] að nýta (í þágu lands og þjóðar)
     | NlBeintAndlag/aukafall so_0/tala/pers NlFrumlag_nf/tala/pers AtvFs? nhm So_1_nh/aukafall FsAtv?
@@ -891,21 +900,21 @@ SetningAukafall →
 # af leiðandi plús-skor í stað mínuss
 SetningAukafallForgangur →
     # Öllum er frjálst/fyrir bestu að ákveða snarlega að flytja úr landi
-    NlFrumlag_þgf HjSögnLhÞt_et_p3 FsRuna? LhÞtÞgfEinkunn AðLiður
+    NlFrumlag_þgf HjSögnLhÞt_et_p3 FsRuna? LhÞtÞgfEinkunn AðLiður?
 
 FinnstÞað/tala/kyn →
-    'það:pfn'_hk_nf_et LoÞgf/tala/kyn  # Bílstjórum finnst það mörgum leiðinlegt
-    | LoÞgf/tala/kyn 'það:pfn'_hk_nf_et?      # Bílstjórum finnst mörgum [það] leiðinlegt
+    'það:pfn'_hk_nf_et LoÞgf/tala/kyn       # Bílstjórum finnst það mörgum leiðinlegt
+    | LoÞgf/tala/kyn 'það:pfn'_hk_nf_et?    # Bílstjórum finnst mörgum [það] leiðinlegt
 
 FinnstAndlag →
     LoTengtSögn_nf_et_hk    # skemmtilegt
     | ao* so_lh_nt          # mjög endurnærandi, afskaplega frískandi
 
 AukafallÞgfAndlag →
-    # (Stóru skipunum hefur verið/skal/mun) stýrt í land
+    # (Stóru skipunum hefur verið/skal/mun) stýrt (í land)
     # (Hannesi var í fyrra) falið að stýra rannsóknaverkefni
     # (Mér var strax) sagt að Friðgeir væri farinn að drekka aftur
-    so_1_þgf_sagnb AðLiður
+    so_1_þgf_sagnb AðLiður?
 
     # (Þátttakendum er) gert kleift að matast með reisn
     | 'gera:so'_sagnb LoTengtSögn_nf_et_hk NhFyllingAtv
@@ -918,7 +927,7 @@ AukafallÞgfAndlag →
 
 AukafallEfAndlag →
     # Þess skal [ekki] gætt að fara varlega með sprengiefnið
-    so_1_ef_sagnb AðLiður
+    so_1_ef_sagnb AðLiður?
 
     # Ákvörðunar var/er/verður/hefur verið/mun [ekki] að vænta [strax í dag]
     | nhm so_1_ef_nh FsAtv?
@@ -986,15 +995,15 @@ SetningÁnF/tala/pers/kyn →
 
 EinSetningÁnF/tala/pers/kyn →
     Atviksliður? ÖfugurSagnliður/tala/pers/kyn
-        LoTengtSögn_nf/tala/kyn? SagnInnskot? ÖfugtFramhald/tala/pers/kyn*
+        LoTengtSögn_nf/tala/kyn? SagnInnskotAtv? ÖfugtFramhald/tala/pers/kyn*
     # Lýsingarorð á undan sögn:
     # (Ráðherrar taka þær ákvarðanir sem) nauðsynlegar eru/þykja/teljast til rækslu starfa þeirra
-    | LoTengtSögn_nf/tala/kyn Sögn_0/tala/pers/kyn SagnInnskot?
+    | LoTengtSögn_nf/tala/kyn Sögn_0/tala/pers/kyn SagnInnskotAtv?
 
 $tag(begin_prep_scope) EinSetningÁnF/tala/pers/kyn # Nýtt undirtré fyrir tengingu sagnar og forsetningar
 
 ÖfugtFramhald/tala/pers/kyn →
-    KommaOgEðaEn ÖfugurSagnliður/tala/pers/kyn LoTengtSögn_nf/tala/kyn? SagnInnskot?
+    KommaOgEðaEn ÖfugurSagnliður/tala/pers/kyn LoTengtSögn_nf/tala/kyn? SagnInnskotAtv?
 
 FramhaldÁnF/tala/pers/kyn →
     FramhaldÁnFMeðKommu/tala/pers/kyn
@@ -1047,7 +1056,7 @@ SagnliðurÁnF →
     | HjSögnNh_et_p3 FsAtv? so_subj_nh_none NhFyllingAtv?  # (Í ár) mun [í sumarhitanum] þurfa (að vökva grasið)
     | HjSögnNh_et_p3 FsAtv? so_mm_nh NhFyllingAtv?         # (Í ár) mun [í sumarhitanum] dragast (að vökva grasið)
 
-    | HjSögnLhÞtSM_et_p3 FsAtv? so_0_sagnb NhFyllingEðaAtv # (í dag) verður/skal/mun [líklega] lent á brautinni (eftir hádegi)
+    | HjSögnLhÞtSM_et_p3 FsAtv? so_0_sagnb NhFyllingEðaAtv? # (í dag) verður/skal/mun [líklega] lent á brautinni (eftir hádegi)
 
     | HjSögnMegiSkuli_et_p3 HreinSögn_nh_et_hk SagnInnskot? # [Í dag] má sækja tölvuna (og byrja að vinna)
     | so_0_nh HjSögnNhMeðSo_et_p3 HreinSögnAtv_nh?          # [hvort] leggja skuli/eigi/þarf/verður [á skatt, breyta honum eða afnema hann]
@@ -1077,7 +1086,7 @@ SagnliðurVh →
 
     # Haldir þú [áfram að borða] (er voðinn vís)
     # Aki hann ölvaður (skal sekta hann um tíu þúsund krónur)
-    so_0_vh/tala/pers NlFrumlag_nf/tala/pers/kyn LoTengtSögn_nf/tala/kyn? NhFyllingEðaAtv
+    so_0_vh/tala/pers NlFrumlag_nf/tala/pers/kyn LoTengtSögn_nf/tala/kyn? NhFyllingEðaAtv?
 
     # Borði börnin [ekki] matinn (getum við farið í sund)
     | So_1_vh_nf/tala/pers NlFrumlag_nf/tala/pers AtvFs? NlSagnfylling_nf AtvFsAuka?
@@ -1089,7 +1098,7 @@ SagnliðurVh →
 
     # Verði þeim [ekki] vísað [úr landi] geta afleiðingarnar orðið hörmulegar
     # Sé börnunum sagt [að fara í háttinn] grenja þau stanslaust
-    | VeraVerða_vh_et_p3 NlFrumlag_þgf AtvFs? so_1_þgf_sagnb NhFyllingEðaAtv
+    | VeraVerða_vh_et_p3 NlFrumlag_þgf AtvFs? so_1_þgf_sagnb NhFyllingEðaAtv?
 
     # Hafi maður verið sviptur frelsi að ósekju (skal hann eiga rétt til skaðabóta)
     | 'hafa:so'_vh/tala/pers NlFrumlag_nf/tala/pers/kyn AtvFs?
@@ -1241,7 +1250,7 @@ SögnErLo/tala/pers/kyn →
     HjSögnLhÞt/tala/pers SögnErLoBotn/tala/kyn
 
 SögnErLoBotn/tala/kyn →
-    LoTengtSögn_nf/tala/kyn AðLiður     # (Guðrún er) snögg [að svara fyrir sig] / (Það er) torsótt [að Siggi fari einn í skólann]
+    LoTengtSögn_nf/tala/kyn AðLiður?     # (Guðrún er) snögg [að svara fyrir sig] / (Það er) torsótt [að Siggi fari einn í skólann]
     | Aldur 'gamall:lo'_sb_nf/tala/kyn? # (Páll var) tíu ára [gamall]
     | LoMeðÞf_nf/tala/kyn Nl_þf         # (Jón var) viðstaddur blaðamannafundinn
 
@@ -1253,7 +1262,7 @@ LoMeðÞf_nf/tala/kyn →
     | 'viðloðandi:lo'_sb_nf/tala/kyn    # viðloðandi kommúnistaflokka
 
 # Hvetja til 'er/var/hefur verið...' + lýsingarorð í nefnifalli og sterkri beygingu
-$score(+8) SögnErLo/tala/pers/kyn
+$score(+10) SögnErLo/tala/pers/kyn
 
 LhÞtÞgfBotn → 'fyrir:fs'_þgf 'góður:lo'_esb_hk_þgf_et  # Það sem er börnum fyrir bestu
 
@@ -1294,7 +1303,7 @@ HreinSögnAtv_sagnb/tala/kyn →
     AtvFs? EinSögn_sagnb/tala/kyn OgSögn_sagnb/tala/kyn*
 
 EinSögn_sagnb/tala/kyn →
-    so_0_sagnb NhFylling/tala/kyn? # Konurnar hafa farið [sjálfar/galvaskar] að grilla
+    so_0_sagnb NhFylling/tala/kyn?      # Konurnar hafa farið [sjálfar/galvaskar] að grilla
     | So_1_þf_nh_sagnb SagnarBotn       # Konurnar hafa [ekki] látið Pál borða matinn / sagt niðurstöðuna vera ranga
     # !!! Á að höndla Sögn_1_sagnb + NhFylling fremur eins og sögn með tveimur viðföngum,
     # !!! sbr. Konurnar hafa lofað Páli ([því] að fara út): þarna er í raun 'lofa:so'_2_þgf_þgf_sagnb
@@ -1792,6 +1801,9 @@ SögnMeðF_1/tala/pers/kyn →
     # (Í dag) barst lögreglunni ábending
     | so_mm_op/tala NlÓbeintAndlag_þgf NlFrumlag_nf/tala
 
+    # (Í dag) finnst þeim vera slagsíða (í umfjölluninni) / þykir okkur ósanngjarnt (að haldið sé áfram)
+    | HjSögnFinnst NlFrumlag_þgf SögnFinnstBotn
+
     # (Áður) hafði KR látið Jón og Gunnar fara / sagt niðurstöðuna vera ranga
     | HjSögn/tala/pers NlFrumlag_nf/tala/pers So_1_þf_nh_sagnb SagnarBotn
 
@@ -2233,11 +2245,14 @@ $tag(begin_prep_scope) NhFyllingAtv # Nýtt undirtré fyrir tengingu sagnar og f
 $tag(begin_prep_scope) NhFyllingÁnAtv # Nýtt undirtré fyrir tengingu sagnar og forsetningar
 
 NhFyllingEðaAtv →
-    NhFyllingAtv | SagnInnskot?
+    NhFyllingAtv | SagnInnskot
 
 # Mér fannst skemmtilegt [ að Jón læsi bókina / að fara út í þessu veðri / í dag ]
 AðLiður →
-    NhFyllingEðaAtv | Skýringarsetning
+    NhFyllingAtv
+    | SagnInnskot
+    # Málinu væri stillt upp þannig að Sjálfstæðisflokkurinn bæri ábyrgð
+    | Atviksliður? Skýringarsetning
 
 # Nafnháttarliður
 # 'að lenda snarlega á flugvellinum'

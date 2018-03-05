@@ -605,12 +605,9 @@ class VisirScraper(ScrapeHelper):
             # Check for an author name at the start of the article
             article = ScrapeHelper.div_class(soup, "articlewrapper")
             if article:
-                writer = ScrapeHelper.div_class(article, "meta")
-                if writer:
-                    writer = writer.string
-                    if writer.endswith(" skrifar"):
-                        # 'Jón Jónsson skrifar'
-                        author = writer[0:-8]
+                author = ScrapeHelper.div_class(article, "meta")
+                if author:
+                    author = author.string
             else:
                 # Updated format of Visir.is
                 article = ScrapeHelper.div_class(soup, "article-single__meta")
@@ -619,8 +616,18 @@ class VisirScraper(ScrapeHelper):
                         author = article.span.a.string
                     except:
                         author = ""
+                    if not author:
+                        try:
+                            author = article.span.string
+                        except:
+                            pass
         if not author:
             author = "Ritstjórn visir.is"
+        else:
+            author = author.strip()
+            if author.endswith(" skrifar"):
+                # 'Jón Jónsson skrifar'
+                author = author[0:-8]
         metadata.heading = heading.strip()
         metadata.author = author
         metadata.timestamp = timestamp
