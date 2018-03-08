@@ -24,17 +24,20 @@
    <li class="list-group-item">
       <p>Greynir les <a href="{{ url_for('stats') }}">nýjustu fréttir og greinar</a>
       jafnóðum af helstu íslensku fréttavefjunum.
-      Hann umbreytir textanum yfir í setningatré samkvæmt
+      Hann þáttar textann í málsgreinatré samkvæmt
       <a href="https://github.com/vthorsteinsson/Reynir/blob/master/Reynir.grammar"
       target="_blank">innbyggðum málfræðireglum fyrir íslensku</a>.
-      Trén innihalda og endurspegla setningarhluta, svo sem nafnliði, sagnliði,
-      forsetningarliði, samtengingar og svo framvegis.</p>
-      <p>Litið er til falla, kynja, persóna og annarra málfræðieiginleika og -reglna til að finna
-      sem réttasta trjágreiningu hverrar setningar. Slík greining getur þó aldrei orðið fullkomin
+      Trén innihalda og endurspegla setningarhluta, svo sem frumlög, andlög,
+      aðra nafnliði, sagnliði, forsetningarliði, samtengingar og svo framvegis.</p>
+      <p>Litið er til falls, tölu, kyns, persónu og annarra málfræðieiginleika og -reglna til að finna
+      sem réttasta trjágreiningu hverrar málsgreinar. Slík greining getur þó aldrei orðið fullkomin
       enda er tungumálið afar sveigjanlegt verkfæri.</p>
-      <p>Þegar setningartrén hafa verið fundin eru eimaðar upp
+      <p>Þegar málsgreinatrén hafa verið fundin eru eimaðar upp
       úr þeim upplýsingar á borð við nöfn fólks, titla og starfsheiti,
-      og skilgreiningar á sérnöfnum.</p>
+      og skilgreiningar á sérnöfnum. Um þessi gögn má spyrja Greyni með
+      fyrirspurnum á venjulegri íslensku, ritaðri eða talaðri.</p>
+      <p>Greynir flokkar fréttir og greinar sjálfkrafa í efnisflokka eftir
+      innihaldi þeirra.</p>
       <p>Greynir heldur jafnframt til haga
       <a href="{{ url_for('genders') }}">tölfræði um hlutföll kynjanna</a> í umfjöllun
       hinna ýmsu vefja.</p>
@@ -49,18 +52,25 @@
       sem var fyrsti vinnuveitandi minn á sviði hugbúnaðargerðar.</p>
    </li>
    <li class="list-group-item">
-      <a href="https://www.gnu.org/licenses/gpl-3.0.html"
+      <p><img src="{{ url_for('static', filename='Logo-384.png') }}"
+         width="192" height="38" style="margin-top:4px"></p>
+      <p><small>
+         <b>Copyright &copy; 2018 Miðeind ehf.</b>
+         &bull; <span>[Þróunarútgáfa]</span><br> <!-- This text is replaced by a date stamp in deploy.sh -->
+         Frumforrit Greynis og tengdar skrár eru
+         <a href="https://github.com/vthorsteinsson/Reynir" target="_blank">opin á GitHub</a>.
+         <br>Samhengisfrjálsa málfræði (<i>context-free grammar</i>) Greynis fyrir íslensku má
+         <a href="https://github.com/vthorsteinsson/Reynir/blob/master/Reynir.grammar"
+         target="_blank">sjá hér</a>.
+      </small></p>
+      <p><a href="https://www.gnu.org/licenses/gpl-3.0.html"
          target="_blank"><img src="{{ url_for('static', filename='GPLv3.png') }}"
-         width="151" height="60" style="float:right"></a>
-      <p><small><b>Copyright &copy; 2018 Miðeind ehf.</b>
-      &bull; <span>[Þróunarútgáfa]</span><br> <!-- This text is replaced by a date stamp in deploy.sh -->
-      Frumforrit Greynis og tengdar skrár eru
-      <a href="https://github.com/vthorsteinsson/Reynir" target="_blank">opin á GitHub</a>.
-      Um þau gildir notkunarleyfi <a href="https://www.gnu.org/licenses/gpl-3.0.html"
-      target="_blank">GNU General Public License v3</a>.<br>
-      Samhengisfrjálsa málfræði (<i>context-free grammar</i>) Greynis fyrir íslensku má
-      <a href="https://github.com/vthorsteinsson/Reynir/blob/master/Reynir.grammar"
-      target="_blank">sjá hér</a>.</small></p>
+         width="151" height="60" style="float:right; margin-top: -40px"></a>
+         <small>Um frumforrit og tengdar skrár gildir notkunarleyfið
+            <a href="https://www.gnu.org/licenses/gpl-3.0.html"
+            target="_blank">GNU General Public License v3</a>.
+         </small>
+      </p>
    </li>
    <li class="list-group-item">
       <small>Greynis-verkefnið hlaut styrki úr
