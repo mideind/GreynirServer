@@ -58,7 +58,7 @@ class IncrementalParser:
                     # the error token index is at sent.err_index
         num_sentences = ip.num_sentences
         num_parsed = ip.num_parsed
-        ambiguity = ip.num_sentences
+        ambiguity = ip.ambiguity
         parse_time = ip.parse_time
 
     """
