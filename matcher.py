@@ -293,9 +293,9 @@ class SimpleTree:
         if len_self == 0:
             if self._head.get("k") == "PUNCTUATION":
                 x = self._head.get("x")
-                return f"<SimpleTree object for punctuation '{x}'>"
-            return f"<SimpleTree object for terminal {self.terminal}>"
-        return f"<SimpleTree object with tag {self.tag} and length {len_self}>"
+                return "<SimpleTree object for punctuation '{0}'>".format(x)
+            return "<SimpleTree object for terminal {0}>".format(self.terminal)
+        return "<SimpleTree object with tag {0} and length {1}>".format(self.tag, len_self)
 
     @property
     def parent(self):
@@ -420,9 +420,9 @@ class SimpleTree:
         # No children
         if self._head.get("k") == "PUNCTUATION":
             # Punctuation
-            return f"{indent}'{self.text}'"
+            return "{0}'{1}'".format(indent, self.text)
         # Terminal
-        return f"{indent}{self.terminal}: '{self.text}'"
+        return "{0}{1}: '{2}'".format(indent, self.terminal, self.text)
 
     @property
     def tree(self):
@@ -491,8 +491,9 @@ class SimpleTree:
                     return ch
         # No match
         if multi > index:
-            raise AttributeError(f"Subtree has {multi - index} {name} but index {multi} was requested")
-        raise AttributeError(f"Subtree has no {name}")
+            raise AttributeError("Subtree has {0} {1} but index {2} was requested"
+                .format(multi - index, name, multi))
+        raise AttributeError("Subtree has no {0}".format(name))
 
     def __getitem__(self, index):
         """ Return the appropriate child subtree """
@@ -501,7 +502,7 @@ class SimpleTree:
             try:
                 return self.__getattr__(index)
             except AttributeError:
-                raise KeyError(f"Subtree has no {index}")
+                raise KeyError("Subtree has no {0}".format(index))
         # Handle tree[1]
         if self._children_cache is not None:
             return self._children_cache[index]
@@ -660,7 +661,7 @@ class SimpleTree:
             return self._kind
 
         def __repr__(self):
-            return f"<Nested('{self._kind}') " + super().__repr__() + ">"
+            return "<Nested('{0}') ".format(self._kind) + super().__repr__() + ">"
 
     @classmethod
     def _compile(cls, pattern):
@@ -685,7 +686,7 @@ class SimpleTree:
                                 nested = cls._NestedList(item1, nest(items[i+1:j]))
                                 for n in nested:
                                     if isinstance(n, str) and n in cls._FINISHERS:
-                                        raise ValueError(f"Mismatched '{n}' in pattern")
+                                        raise ValueError("Mismatched '{0}' in pattern".format(n))
                                 items = items[0:i] + [ nested ] + items[j+1:]
                                 len_items = len(items)
                                 break
@@ -694,7 +695,7 @@ class SimpleTree:
                         j += 1
                     else:
                         # Did not find the starting symbol again
-                        raise ValueError(f"Mismatched '{item1}' in pattern")
+                        raise ValueError("Mismatched '{0}' in pattern".format(item1))
                 i += 1
             return items
 
@@ -753,7 +754,7 @@ class SimpleTree:
             assert isinstance(item, str)
             assert item
             if item in self._NOT_ITEMS:
-                raise ValueError(f"Spurious '{item}' in pattern")
+                raise ValueError("Spurious '{0}' in pattern".format(item))
             if item == ".":
                 # Wildcard: always matches
                 return True
@@ -889,7 +890,7 @@ class SimpleTree:
                             pc += 1
                             op = '>>'
                         if pc >= len_items:
-                            raise ValueError(f"Missing argument to '{op}' operator")
+                            raise ValueError("Missing argument to '{0}' operator".format(op))
                         result = contained(tree, items, pc, op == '>>')
                         if not result:
                             return False
@@ -901,7 +902,7 @@ class SimpleTree:
                     item = items[pc]
                     # Do error checking while we're at it
                     if isinstance(item, str) and item in self._NOT_ITEMS:
-                        raise ValueError(f"Spurious '{item}' in pattern")
+                        raise ValueError("Spurious '{0}' in pattern".format(item))
                     pc += 2
                 if pc < len_items:
                     if items[pc] == '$':
@@ -943,7 +944,7 @@ class SimpleTree:
                             op = '>>'
                             pc += 1
                         if pc >= len_items:
-                            raise ValueError(f"Missing argument to '{op}' operator")
+                            raise ValueError("Missing argument to '{0}' operator".format(op))
                         if result:
                             # Further constrained by containment
                             result = contained(tree, items, pc, op == '>>')
