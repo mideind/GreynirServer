@@ -3,7 +3,8 @@
 
     Matcher module
 
-    Copyright (c) 2017 Miðeind ehf.
+    Copyright (c) 2018 Miðeind ehf.
+    Author: Vilhjálmur Þorsteinsson
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -325,11 +326,10 @@ class SimpleTree:
             tags = self._tag_cache = tag.split("-")
         else:
             tags = self._tag_cache
-        items = item.split("-")
-        if len(items) > len(tags):
-            # For example, item is NP-POSS but tag is NP
-            return False
-        return all(i == t for i, t in zip(items, tags))
+        if isinstance(item, str):
+            item = item.split("-")
+        assert isinstance(item, list)
+        return tags[0:len(item)] == item
 
     @property
     def terminal(self):
@@ -482,8 +482,11 @@ class SimpleTree:
             if index < 1:
                 raise AttributeError("Subtree indices start at 1")
         multi = index
+        # NP matches NP-POSS, NP-OBJ, etc.
+        # NP-OBJ matches NP-OBJ-PRIMARY, NP-OBJ-SECONDARY, etc.
+        names = name.split("-")
         for ch in self.children:
-            if ch.tag == name:
+            if ch.match_tag(names):
                 # Match: check whether it's the requested index
                 index -= 1
                 if index == 0:
