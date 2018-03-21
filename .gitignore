@@ -39,6 +39,7 @@ resources/*.txt
 !resources/ordalisti.sorted.txt
 !resources/obeygd.hreinsad.txt
 resources/*.csv
+resources/ord.compressed
 resources/*.tmLanguage
 resources/visir/
 resources/reykjanes/

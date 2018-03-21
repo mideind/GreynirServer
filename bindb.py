@@ -61,6 +61,7 @@ except ImportError:
 from settings import Settings, Abbreviations, AdjectiveTemplate, \
     Meanings, StaticPhrases, StemPreferences
 from dawgdictionary import Wordbase
+from bincompress import BIN_Compressed
 
 # Make Psycopg2 and PostgreSQL happy with UTF-8
 psycopg2ext.register_type(psycopg2ext.UNICODE)
@@ -180,6 +181,8 @@ class BIN_Db:
         # Cache descriptors for the lookup functions
         self._meanings_func = lambda key: self._meanings_cache.lookup(key, getattr(self, "meanings"))
         self._forms_func = lambda key: self._forms_cache.lookup(key, getattr(self, "forms"))
+        # Compressed BÍN wrapper
+        self._compressed_bin = None
 
     def open(self, host, port, wait = False):
         """ Open and initialize a database connection """
@@ -211,6 +214,13 @@ class BIN_Db:
         # We're doing only reads, so this is fine and makes things less complicated
         self._conn.autocommit = True
         self._c = self._conn.cursor()
+
+        try:
+            self._compressed_bin = BIN_Compressed()
+        except IOError:
+            # No compressed BIN file exists
+            pass
+
         return None if self._c is None else self
 
     def close(self):
@@ -221,18 +231,32 @@ class BIN_Db:
         if self._conn is not None:
             self._conn.close()
             self._conn = None
+        if self._compressed_bin is not None:
+            self._compressed_bin.close()
+            self._compressed_bin = None
+
+    def _meanings(self, w):
+        """ Low-level fetch of the BIN meanings of a given word """
+        if self._compressed_bin is not None:
+            # Route the lookup request to the compressed binary file
+            g = self._compressed_bin.lookup(w)
+        else:
+            self._c.execute(BIN_Db._DB_Q_MEANINGS, [ w ])
+            # Map the returned data from fetchall() to a list of instances
+            # of the BIN_Meaning namedtuple
+            g = self._c.fetchall()
+        # If an error occurs, this returns None.
+        # If the lookup doesn't yield any results, [] is returned.
+        # Otherwise, map the query results to a BIN_Meaning tuple
+        return list(map(BIN_Meaning._make, g)) if g else g
 
     def meanings(self, w):
         """ Return a list of all possible grammatical meanings of the given word """
         assert self._c is not None
         m = None
         try:
-            self._c.execute(BIN_Db._DB_Q_MEANINGS, [ w ])
-            # Map the returned data from fetchall() to a list of instances
-            # of the BIN_Meaning namedtuple
-            g = self._c.fetchall()
-            if g is not None:
-                m = list(map(BIN_Meaning._make, g))
+            m = self._meanings(w)
+            if m is not None:
                 if w in Meanings.DICT:
                     # There are additional word meanings in the Meanings dictionary,
                     # coming from the settings file: append them
@@ -243,7 +267,7 @@ class BIN_Db:
                     worse, better = StemPreferences.DICT[w]
                     m = [ mm for mm in m if mm.stofn not in worse ]
                     # The better (preferred) stem should still be there somewhere
-                    assert any(mm.stofn in better for mm in m)
+                    # assert any(mm.stofn in better for mm in m)
                 # Order the meanings by priority, so that the most
                 # common/likely ones are first in the list and thus
                 # matched more readily than the less common ones
@@ -288,7 +312,8 @@ class BIN_Db:
     @lru_cache(maxsize = CACHE_SIZE_UNDECLINABLE)
     def is_undeclinable(self, stem, fl):
         """ Return True if the given stem, of the given word category,
-            is undeclinable, i.e. all word forms are identical """
+            is undeclinable, i.e. all word forms are identical.
+            This is presently only used in the POS tagger (postagger.py). """
         assert self._c is not None
         q = BIN_Db._DB_Q_UNDECLINABLE
         try:
@@ -345,7 +370,9 @@ class BIN_Db:
 
     @lru_cache(maxsize = CACHE_SIZE)
     def lookup_name_gender(self, name):
-        """ Given a person name, lookup its gender """
+        """ Given a person name, lookup its gender. This is used in the
+            main web server to show person names with an icon and a color
+            corresponding to gender. """
         assert self._c is not None
         if not name:
             return "hk" # Unknown gender
