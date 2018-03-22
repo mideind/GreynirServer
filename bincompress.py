@@ -20,15 +20,16 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    This module compresses the BÍN dictionary into a compact binary
-    representation. A radix trie data structure is used to store
-    compact mappings from word forms to integer indices. These
-    indices are then used to look up word stems, categories and meanings.
+    This module compresses the BÍN dictionary from a ~300 MB uncompressed
+    form into a compact binary representation. A radix trie data structure
+    is used to store compact mappings from word forms to integer indices.
+    These indices are then used to look up word stems, categories and meanings.
 
     The data format is a tradeoff between storage space and retrieval
     speed. The resulting binary image is designed to be read into memory as
-    a BLOB and used directly to look up word forms. No auxiliary dictionaries
-    or other mappings should be needed.
+    a BLOB (via mmap) and used directly to look up word forms. No auxiliary
+    dictionaries or other data structures should be needed. The binary image
+    is shared between running processes.
 
     ************************************************************************
 
@@ -567,11 +568,14 @@ class BIN_Compressed:
             # self._b = memoryview(stream.read())
             self._b = mmap.mmap(stream.fileno(), 0, access=mmap.ACCESS_READ)
         assert self._b[0:16] == BIN_Compressor.VERSION
-        mappings_offset, self._forms_offset, stems_offset, meanings_offset = \
+        mappings_offset, forms_offset, stems_offset, meanings_offset = \
             struct.unpack("<IIII", self._b[16:32])
+        self._forms_offset = forms_offset
         self._mappings = self._b[mappings_offset:]
         self._stems = self._b[stems_offset:]
         self._meanings = self._b[meanings_offset:]
+        # Cache the trie root header
+        self._forms_root_hdr, = UINT32.unpack(self._b[forms_offset:forms_offset+4])
         # The alphabet header occupies the next 16 bytes
         # Read the alphabet length
         alphabet_length, = UINT32.unpack(self._b[48:52])
@@ -607,19 +611,24 @@ class BIN_Compressed:
 
     def lookup(self, word):
         """ Look up the given word form via the radix trie """
+        # Map the word to Latin-1 as well as a
+        # compact 7-bit-per-character representation
+        try:
+            word_latin = word.encode('latin-1')
+            cword = bytes(self._alphabet.index(c) + 1 for c in word_latin)
+        except (UnicodeEncodeError, ValueError):
+            # The word contains a letter that is not in the Latin-1
+            # or BÍN alphabets: it can't be in BÍN
+            return []
         word_len = len(word)
-        word_latin = word.encode('latin-1')
-        # Also map the word to a compact 7-bit-per-character representation
-        cword = bytes(self._alphabet.index(c) + 1 for c in word_latin)
 
-        def _matches(node_offset, fragment_index):
+        def _matches(node_offset, hdr, fragment_index):
             """ If the lookup fragment word[fragment_index:] matches the node,
                 return the number of characters matched. Otherwise,
                 return -1 if the node is lexicographically less than the
                 lookup fragment, or 0 if the node is greater than the fragment.
                 (The lexicographical ordering here is actually a comparison
                 between the Latin-1 ordinal numbers of characters.) """
-            hdr, = UINT32.unpack(self._b[node_offset:node_offset+4])
             if hdr & 0x80000000:
                 # Single-character fragment
                 chix = (hdr >> 23) & 0x7F
@@ -647,8 +656,7 @@ class BIN_Compressed:
                 return 0
             return 0 if self._b[frag] > word_latin[fragment_index + matched] else -1
 
-        def _lookup(node_offset, fragment_index):
-            hdr, = UINT32.unpack(self._b[node_offset:node_offset+4])
+        def _lookup(node_offset, hdr, fragment_index):
             if fragment_index >= word_len:
                 # We've arrived at our destination:
                 # return the associated value (unless this is an interim node)
@@ -666,9 +674,10 @@ class BIN_Compressed:
                 mid = (lo + hi) // 2
                 mid_loc = child_offset + mid * 4
                 mid_offset, = UINT32.unpack(self._b[mid_loc:mid_loc + 4])
-                match_len = _matches(mid_offset, fragment_index)
+                hdr, = UINT32.unpack(self._b[mid_offset:mid_offset+4])
+                match_len = _matches(mid_offset, hdr, fragment_index)
                 if match_len > 0:
-                    return _lookup(mid_offset, fragment_index + match_len)
+                    return _lookup(mid_offset, hdr, fragment_index + match_len)
                 if match_len < 0:
                     lo = mid + 1
                 else:
@@ -676,7 +685,7 @@ class BIN_Compressed:
             # No child route matches
             return None
 
-        mapping = _lookup(self._forms_offset, 0)
+        mapping = _lookup(self._forms_offset, self._forms_root_hdr, 0)
         if mapping is None:
             # Word not found in trie: return an empty list of meanings
             return []
