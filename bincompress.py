@@ -22,7 +22,7 @@
 
     This module compresses the BÍN dictionary from a ~300 MB uncompressed
     form into a compact binary representation. A radix trie data structure
-    is used to store compact mappings from word forms to integer indices.
+    is used to store a mapping from word forms to integer indices.
     These indices are then used to look up word stems, categories and meanings.
 
     The data format is a tradeoff between storage space and retrieval
@@ -245,6 +245,9 @@ class Trie:
 
 class Indexer:
 
+    """ A thin dict wrapper that maps unique keys to indices,
+        and is invertible, i.e. can be converted to a index->key map """
+
     def __init__(self):
         self._d = dict()
 
@@ -257,7 +260,7 @@ class Indexer:
             return ix
 
     def invert(self):
-        """ Invert the index, so it is index -> word instead of word -> index """
+        """ Invert the index, so it is index->key instead of key->index """
         self._d = { v : k for k, v in self._d.items() }
 
     def __len__(self):
@@ -277,9 +280,11 @@ class BIN_Compressor:
 
     """ This class generates a compressed binary file from plain-text
         dictionary data. The input plain-text file is assumed to be coded
-        in UTF-8 and have five columns, delimited by semicolons (';'), i.e.
+        in UTF-8 and have five columns, delimited by semicolons (';'), i.e.:
+
         (Icelandic) stofn;utg;ordfl;fl;ordmynd;beyging
         (English)   stem;version;category;subcategory;form;meaning
+
         The compression is not particularly intensive, as there is a
         tradeoff between the compression level and lookup speed. The
         resulting binary file is assumed to be read completely into
@@ -288,17 +293,17 @@ class BIN_Compressor:
         class for the lookup code.
 
         Note that all text strings and characters in the binary BLOB
-        are in the Latin-1 encoding, and Latin-1 ordinal numbers are
+        are in Latin-1 encoding, and Latin-1 ordinal numbers are
         used directly as sort keys.
 
-        To help packing of common Trie nodes (single-character ones),
+        To help the packing of common Trie nodes (single-character ones),
         a mapping of the source alphabet to 7-bit indices is used.
         This means that the source alphabet can contain no more than
         127 characters (ordinal 0 is reserved).
 
     """
 
-    VERSION = b'Reynir 001.00.00'
+    VERSION = b'Reynir 001.01.00'
     assert len(VERSION) == 16
 
     def __init__(self):
@@ -308,38 +313,40 @@ class BIN_Compressor:
         self._alphabet = set()
         self._lookup_form = defaultdict(list) # map index -> (stem, cat, tcat, meaning)
 
-    def read(self, fname):
+    def read(self, fnames):
         cnt = 0
         start_time = time.time()
-        print(f"Reading file '{fname}'...\n")
-        with open(fname, "r") as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                t = line.split(";")
-                stem, wid, ordfl, fl, form, meaning = t
-                stem = stem.encode("latin-1")
-                ordfl = ordfl.encode("latin-1")
-                fl = fl.encode("latin-1")
-                form = form.encode("latin-1")
-                meaning = meaning.encode("latin-1")
-                # Cut off redundant ending of meaning (beyging),
-                # e.g. ÞGF2
-                if meaning and meaning[-1] in {b'2', b'3'}:
-                    meaning = meaning[:-1]
-                self._alphabet |= set(form)
-                # Map null (no string) in utg to -1
-                wix = int(wid) if wid else -1
-                six = self._stems.add((stem, wix))
-                fix = self._forms.add(form) # Add to a trie
-                mix = self._meanings.add((ordfl, fl, meaning))
-                self._lookup_form[fix].append((six, mix))
-                cnt += 1
-                if cnt % 10000 == 0:
-                    print(f"{cnt}", end = "\r")
-                #if cnt >= 1000000:
-                #    break
+        for fname in fnames:
+            print(f"Reading file '{fname}'...\n")
+            with open(fname, "r") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    t = line.split(";")
+                    stem, wid, ordfl, fl, form, meaning = t
+                    stem = stem.encode("latin-1")
+                    ordfl = ordfl.encode("latin-1")
+                    fl = fl.encode("latin-1")
+                    form = form.encode("latin-1")
+                    meaning = meaning.encode("latin-1")
+                    # Cut off redundant ending of meaning (beyging),
+                    # e.g. ÞGF2
+                    if meaning and meaning[-1] in {b'2', b'3'}:
+                        meaning = meaning[:-1]
+                    self._alphabet |= set(form)
+                    # Map null (no string) in utg to -1
+                    wix = int(wid) if wid else -1
+                    six = self._stems.add((stem, wix))
+                    fix = self._forms.add(form) # Add to a trie
+                    mix = self._meanings.add((ordfl, fl, meaning))
+                    self._lookup_form[fix].append((six, mix))
+                    cnt += 1
+                    # Progress indicator
+                    if cnt % 10000 == 0:
+                        print(f"{cnt}", end = "\r")
+                    #if cnt >= 1000000:
+                    #    break
         print(f"{cnt} done\n")
         print(f"Time: {time.time() - start_time:.1f} seconds")
         self._stems.invert()
@@ -348,6 +355,7 @@ class BIN_Compressor:
         self._alphabet = bytes(sorted(self._alphabet))
 
     def print_stats(self):
+        """ Print a few key statistics about the dictionary """
         print(f"Forms are {len(self._forms)}")
         print(f"Stems are {len(self._stems)}")
         print(f"Meanings are {len(self._meanings)}")
@@ -462,6 +470,8 @@ class BIN_Compressor:
         f.write(UINT32.pack(0))
         meanings_offset = f.tell()
         f.write(UINT32.pack(0))
+        alphabet_offset = f.tell()
+        f.write(UINT32.pack(0))
 
         def write_padded(b, n):
             assert len(b) <= n
@@ -488,6 +498,7 @@ class BIN_Compressor:
 
         # Write the alphabet
         write_padded(b"[alphabet]", 16)
+        fixup(alphabet_offset)
         f.write(UINT32.pack(len(self._alphabet)))
         write_aligned(self._alphabet)
 
@@ -558,6 +569,9 @@ class BIN_Compressed:
 
     BIN_COMPRESSED_FILE = os.path.join(_PATH, "resources", "ord.compressed")
 
+    def _UINT(self, offset):
+        return UINT32.unpack(self._b[offset:offset+4])[0]
+
     def __init__(self):
         """ We use a memory map, provided by the mmap module, to
             directly map the compressed file into memory without
@@ -568,18 +582,18 @@ class BIN_Compressed:
             # self._b = memoryview(stream.read())
             self._b = mmap.mmap(stream.fileno(), 0, access=mmap.ACCESS_READ)
         assert self._b[0:16] == BIN_Compressor.VERSION
-        mappings_offset, forms_offset, stems_offset, meanings_offset = \
-            struct.unpack("<IIII", self._b[16:32])
+        mappings_offset, forms_offset, stems_offset, meanings_offset, alphabet_offset = \
+            struct.unpack("<IIIII", self._b[16:36])
         self._forms_offset = forms_offset
         self._mappings = self._b[mappings_offset:]
         self._stems = self._b[stems_offset:]
         self._meanings = self._b[meanings_offset:]
         # Cache the trie root header
-        self._forms_root_hdr, = UINT32.unpack(self._b[forms_offset:forms_offset+4])
+        self._forms_root_hdr = self._UINT(forms_offset)
         # The alphabet header occupies the next 16 bytes
         # Read the alphabet length
-        alphabet_length, = UINT32.unpack(self._b[48:52])
-        self._alphabet = bytes(self._b[52:52 + alphabet_length])
+        alphabet_length = self._UINT(alphabet_offset)
+        self._alphabet = bytes(self._b[alphabet_offset+4:alphabet_offset + 4 + alphabet_length])
 
     def close(self):
         """ Close the memory map """
@@ -641,7 +655,7 @@ class BIN_Compressed:
                 num_children = 0
                 frag = node_offset + 4
             else:
-                num_children, = UINT32.unpack(self._b[node_offset+4:node_offset+8])
+                num_children = self._UINT(node_offset + 4)
                 frag = node_offset + 8 + 4 * num_children
             matched = 0
             while self._b[frag] != 0 and (fragment_index + matched < word_len) and \
@@ -665,7 +679,7 @@ class BIN_Compressed:
             if hdr & 0x40000000:
                 # Childless node: nowhere to go
                 return None
-            num_children, = UINT32.unpack(self._b[node_offset+4:node_offset+8])
+            num_children = self._UINT(node_offset + 4)
             child_offset = node_offset + 8
             # Binary search for a matching child node
             lo = 0
@@ -673,8 +687,8 @@ class BIN_Compressed:
             while hi > lo:
                 mid = (lo + hi) // 2
                 mid_loc = child_offset + mid * 4
-                mid_offset, = UINT32.unpack(self._b[mid_loc:mid_loc + 4])
-                hdr, = UINT32.unpack(self._b[mid_offset:mid_offset+4])
+                mid_offset = self._UINT(mid_loc)
+                hdr = self._UINT(mid_offset)
                 match_len = _matches(mid_offset, hdr, fragment_index)
                 if match_len > 0:
                     return _lookup(mid_offset, hdr, fragment_index + match_len)
@@ -710,7 +724,10 @@ class BIN_Compressed:
 if __name__ == "__main__":
     # When run as a main program, generate a compressed binary file
     b = BIN_Compressor()
-    b.read(os.path.join(_PATH, "resources", "ord.csv"))
+    b.read([
+        os.path.join(_PATH, "resources", "ord.csv"),
+        os.path.join(_PATH, "resources", "ord.add.csv")
+    ])
     b.print_stats()
     # Tests
     #print(f"mín: {b.lookup('mín')}")
