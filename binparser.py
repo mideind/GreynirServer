@@ -4,7 +4,8 @@
 
     BIN parser module
 
-    Copyright (C) 2017 Miðeind ehf.
+    Copyright (C) 2018 Miðeind ehf.
+    Author: Vilhjálmur Þorsteinsson
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -308,19 +309,17 @@ class BIN_Token(Token):
     @staticmethod
     def mm_verb_stem(verb):
         """ Lookup a verb stem for a 'miðmynd' verb,
-            i.e. "eignast" for "eiga" (which may have appeared
+            i.e. "eignast" for "eigna" (which may have appeared
             as "eignaðist" in the text) """
-        with BIN_Db.get_db() as db:
-            for fm in db.lookup_forms_from_stem(verb):
-                if fm.beyging == "MM-NH":
-                    # The MM-NH form is the canonical (nominal) form
-                    return fm.ordmynd
-        # No MM canonical form found: return the original (normal) stem
-        return verb
+        # This used to be done via a database lookup but it turns
+        # out this is unnecessary, since the middle voice verb stems
+        # are always formed by adding "st" at the end of the regular
+        # nominal form (unless it already ends with "st").
+        return verb if verb.endswith("st") else verb + "st"
 
     @staticmethod
     def verb_matches(verb, terminal, form):
-        """ Return True if the verb in question matches the verb category,
+        """ Return True if the verb stem in question matches the verb category,
             where the category is one of so_0, so_1, so_2 depending on
             the allowable number of noun phrase arguments """
 
@@ -406,7 +405,8 @@ class BIN_Token(Token):
                 return False
         if terminal.has_variant("bh") and "ST" in form:
             # We only want the explicit request forms (boðháttur), i.e. "bónaðu"/"bónið",
-            # not "bóna" which causes ambiguity vs. the nominal mode (nafnháttur)
+            # not 'stýfður boðháttur' ("bóna") which causes ambiguity vs.
+            # the nominal mode (nafnháttur)
             return False
         # Check whether the verb token can potentially match the argument number
         # of the terminal in question. If the verb is known to take fewer
@@ -427,7 +427,7 @@ class BIN_Token(Token):
             # for lookup in the VerbObjects.VERBS collection;
             # instead, use the MM-NH stem.
             # This means that for instance "eignaðist hest" is not resolved
-            # to "eiga" but to "eignast"
+            # to "eigna" but to "eignast"
             verb = BIN_Token.mm_verb_stem(verb)
         if verb in VerbObjects.VERBS[nargs]:
             # Seems to take the correct number of arguments:

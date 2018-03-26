@@ -364,10 +364,6 @@ class BIN_Db:
         """ Given a word root (stem), look up all its forms """
         return self._lookup(w, at_sentence_start, False, self._forms_func)
 
-    def lookup_forms_from_stem(self, w):
-        """ Given a lowercase word root (stem), return a (possibly empty) list of meanings """
-        return self._forms_func(w) or []
-
     @lru_cache(maxsize = CACHE_SIZE)
     def lookup_name_gender(self, name):
         """ Given a person name, lookup its gender. This is used in the
