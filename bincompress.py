@@ -182,8 +182,8 @@ class _Node:
         return None
 
     def __str__(self):
-        s = f"Fragment: '{self._fragment}', value '{self._value}'\n"
-        c = [ f"   {child}" for child in self._children ] if self._children else []
+        s = "Fragment: '{0}', value '{1}'\n".format(self._fragment, self._value)
+        c = [ "   {0}".format(child) for child in self._children ] if self._children else []
         return s + "\n".join(c)
 
     def __hash__(self):
@@ -317,7 +317,7 @@ class BIN_Compressor:
         cnt = 0
         start_time = time.time()
         for fname in fnames:
-            print(f"Reading file '{fname}'...\n")
+            print("Reading file '{0}'...\n".format(fname))
             with open(fname, "r") as f:
                 for line in f:
                     line = line.strip()
@@ -344,11 +344,11 @@ class BIN_Compressor:
                     cnt += 1
                     # Progress indicator
                     if cnt % 10000 == 0:
-                        print(f"{cnt}", end = "\r")
+                        print(cnt, end = "\r")
                     #if cnt >= 1000000:
                     #    break
-        print(f"{cnt} done\n")
-        print(f"Time: {time.time() - start_time:.1f} seconds")
+        print("{0} done\n".format(cnt))
+        print("Time: {0:.1f} seconds".format(time.time() - start_time))
         self._stems.invert()
         self._meanings.invert()
         # Convert alphabet set to contiguous byte array, sorted by ordinal
@@ -356,11 +356,11 @@ class BIN_Compressor:
 
     def print_stats(self):
         """ Print a few key statistics about the dictionary """
-        print(f"Forms are {len(self._forms)}")
-        print(f"Stems are {len(self._stems)}")
-        print(f"Meanings are {len(self._meanings)}")
-        print(f"The alphabet is '{self._alphabet}'")
-        print(f"It contains {len(self._alphabet)} characters")
+        print("Forms are {0}".format(len(self._forms)))
+        print("Stems are {0}".format(len(self._stems)))
+        print("Meanings are {0}".format(len(self._meanings)))
+        print("The alphabet is '{0}'".format(self._alphabet))
+        print("It contains {0} characters".format(len(self._alphabet)))
 
     def lookup(self, form):
         """ Test lookup from uncompressed data """
@@ -436,7 +436,7 @@ class BIN_Compressor:
             else:
                 no_child_node_count += 1
             if b is not None:
-                f.write(struct.pack(f"{len(b) + 1}s0I", b))
+                f.write(struct.pack("{0}s0I".format(len(b) + 1), b))
             if parent_loc > 0:
                 # Fix up the parent
                 end = f.tell()
@@ -448,13 +448,13 @@ class BIN_Compressor:
         while todo:
             write_node(*todo.pop())
 
-        print(f"Written {node_cnt} nodes, thereof {single_char_node_count} single-char "
-            f"nodes and {multi_char_node_count} multi-char.")
-        print(f"Childless nodes are {no_child_node_count}.")
+        print("Written {0} nodes, thereof {1} single-char nodes and {2} multi-char."
+            .format(node_cnt, single_char_node_count, multi_char_node_count))
+        print("Childless nodes are {0}.".format(no_child_node_count))
 
     def write_binary(self, fname):
         """ Write the compressed structure to a packed binary file """
-        print(f"Writing file '{fname}'...")
+        print("Writing file '{0}'...".format(fname))
         # Create a byte buffer stream
         f = io.BytesIO()
 
@@ -480,7 +480,7 @@ class BIN_Compressor:
         def write_aligned(s):
             """ Write a string in the latin-1 charset, zero-terminated,
                 padded to align on a DWORD (32-bit) boundary """
-            f.write(struct.pack(f"{len(s) + 1}s0I", s))
+            f.write(struct.pack("{0}s0I".format(len(s) + 1), s))
 
         def write_spaced(s):
             """ Write a string in the latin-1 charset, zero-terminated,
