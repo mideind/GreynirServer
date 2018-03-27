@@ -22,11 +22,6 @@
 import os
 import tempfile
 
-if not __package__:
-    from settings import Settings
-else:
-    from .settings import Settings
-
 
 class LockError(Exception):
     """ Lock could not be obtained """
@@ -127,10 +122,6 @@ class GlobalLock:
             fp.seek(1)
             pid = fp.read().strip()[:20]
             fp.close()
-            if not pid:
-                pid = 'UNKNOWN'
-            if Settings.DEBUG:
-                print("Error locking file {0}; pid={1}".format(path, pid))
             raise
 
         # Once acquired, write the process id to the file
