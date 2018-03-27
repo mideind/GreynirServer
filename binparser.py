@@ -37,18 +37,22 @@ from datetime import datetime
 from functools import reduce
 import json
 
-from settings import Settings, VerbObjects, VerbSubjects, Prepositions
 from tokenizer import TOK
-from bindb import BIN_Db
-from grammar import Terminal, LiteralTerminal, Nonterminal, Token, Grammar, GrammarError
-from baseparser import Base_Parser
 
-from flask import current_app
+if not __package__:
+    from settings import Settings, VerbObjects, VerbSubjects, Prepositions
+    from bindb import BIN_Db
+    from grammar import Terminal, LiteralTerminal, Nonterminal, Token, Grammar, GrammarError
+    from baseparser import Base_Parser
+else:
+    from .settings import Settings, VerbObjects, VerbSubjects, Prepositions
+    from .bindb import BIN_Db
+    from .grammar import Terminal, LiteralTerminal, Nonterminal, Token, Grammar, GrammarError
+    from .baseparser import Base_Parser
 
 
-def debug():
-    # Call this to trigger the Flask debugger on purpose
-    assert current_app.debug == False, "Don't panic! You're here by request of debug()"
+# This is the base path where we expect to find the Reynir.grammar file
+_PATH = os.path.dirname(__file__)
 
 
 class BIN_Token(Token):
@@ -1312,7 +1316,7 @@ class BIN_Parser(Base_Parser):
     # BIN_Parser version - change when logic is modified so that it
     # affects the parse tree
     _VERSION = "1.0"
-    _GRAMMAR_FILE = "Reynir.grammar"
+    _GRAMMAR_FILE = os.path.join(_PATH, "Reynir.grammar")
 
     def __init__(self, verbose = False):
         """ Load the shared BIN grammar if not already there, then initialize
