@@ -4,7 +4,8 @@
 
     Reducer module
 
-    Copyright (C) 2017 Miðeind ehf.
+    Copyright (C) 2018 Miðeind ehf.
+    Author: Vilhjálmur Þorsteinsson
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -72,11 +73,15 @@
 import copy
 from collections import defaultdict
 
-from fastparser import Node, ParseForestNavigator, ParseForestPrinter
-from grammar import Terminal
-from settings import Settings, Preferences, NounPreferences, VerbObjects
-from binparser import BIN_Token
-# import logging
+# Make imports work both in Reynir and in ReynirPackage
+if not __package__:
+    from fastparser import Node, ParseForestNavigator, ParseForestPrinter
+    from settings import Settings, Preferences, NounPreferences, VerbObjects
+    from binparser import BIN_Token
+else:
+    from .fastparser import Node, ParseForestNavigator, ParseForestPrinter
+    from .settings import Settings, Preferences, NounPreferences, VerbObjects
+    from .binparser import BIN_Token
 
 
 _PREP_SCOPE_SET = frozenset(("begin_prep_scope", "purge_prep", "no_prep"))
