@@ -22,7 +22,10 @@
 import os
 import tempfile
 
-from settings import Settings
+if not __package__:
+    from settings import Settings
+else:
+    from .settings import Settings
 
 
 class LockError(Exception):

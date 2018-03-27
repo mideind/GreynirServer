@@ -4,7 +4,8 @@
 
     Grammar module
 
-    Copyright (C) 2016 Vilhjálmur Þorsteinsson
+    Copyright (C) 2018 Miðeind ehf.
+    Author: Vilhjálmur Þorsteinsson
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -57,7 +58,11 @@ import struct
 
 from datetime import datetime
 from collections import defaultdict, OrderedDict
-from settings import Settings, StaticPhrases, Abbreviations, changedlocale
+
+if not __package__:
+    from settings import Settings, StaticPhrases, Abbreviations, changedlocale
+else:
+    from .settings import Settings, StaticPhrases, Abbreviations, changedlocale
 
 
 class GrammarError(Exception):
