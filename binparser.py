@@ -1261,7 +1261,7 @@ class BIN_Nonterminal(Nonterminal):
     def __init__(self, name, fname, line):
         super().__init__(name, fname, line)
         # Optimized check for whether this is a noun phrase nonterminal
-        self._is_noun_phrase = name.startswith("Nl_")
+        self._is_noun_phrase = name.startswith("Nl")
 
     @property
     def is_noun_phrase(self):

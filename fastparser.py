@@ -416,9 +416,10 @@ class Node:
         """ Eliminate all child families except the given one """
         #if not self._families or child_ix >= len(self._families):
         #    raise IndexError("Child index out of range")
-        f = self._families[child_ix] # The survivor
-        # Collapse the list to one option
-        self._families = [ f ]
+        if child_ix != 0 or len(self._families) != 1:
+            f = self._families[child_ix] # The survivor
+            # Collapse the list to one option
+            self._families = [ f ]
 
     def __hash__(self):
         """ Make this node hashable """
@@ -427,8 +428,8 @@ class Node:
     def __repr__(self):
         """ Create a reasonably nice text representation of this node
             and its families of children, if any """
-        label_rep = repr(self._nonterminal or self._token)
-        families_rep = ""
+        label_rep = str(self._nonterminal or self._token)
+        families_rep = None
         if self._families:
             if len(self._families) == 1:
                 families_rep = self._families[0].__repr__()
