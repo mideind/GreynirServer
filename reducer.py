@@ -527,6 +527,8 @@ class Reducer:
                     of this nonterminal (families of children), find the
                     highest scoring one and reduce the tree to that child only """
                 csc = self.sc
+                if not csc:
+                    return dict(sc = 0) # Empty node
                 if self.use_prio:
                     # There is an absolute priority ordering ('>') between the productions
                     # of this nonterminal: remove those child trees from consideration
