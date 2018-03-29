@@ -602,24 +602,22 @@ class Grammar:
             f.write("Reynir 00.00.01\n".encode('ascii')) # 16 bytes total
             num_nt = self.num_nonterminals
             # Number of terminals and nonterminals in grammar
-            f.write(struct.pack("2I", self.num_terminals, num_nt))
+            f.write(struct.pack("<II", self.num_terminals, num_nt))
             # Root nonterminal
             if Settings.DEBUG:
                 print("Root index is {0}".format(self.root.index))
-            f.write(struct.pack("i", self.root.index))
+            f.write(struct.pack("<i", self.root.index))
             # Write nonterminals in numeric order, -1 first downto -N
             for ix in range(num_nt):
                 nt = self.lookup(-1 - ix)
                 plist = self[nt] if nt else []
-                f.write(struct.pack("I", len(plist)))
+                f.write(struct.pack("<I", len(plist)))
                 # Write productions along with their indices and priorities
                 for prio, p in plist:
-                    f.write(struct.pack("I", p.index))
-                    f.write(struct.pack("I", prio))
                     lenp = len(p)
-                    f.write(struct.pack("I", lenp))
+                    f.write(struct.pack("<III", p.index, prio, lenp))
                     if lenp:
-                        f.write(struct.pack(str(lenp)+"i", *p.prod))
+                        f.write(struct.pack("<"+str(lenp)+"i", *p.prod))
         if Settings.DEBUG:
             print("Writing of binary grammar file completed")
             print("num_terminals was {0}, num_nonterminals {1}".format(self.num_terminals, num_nt))
@@ -715,7 +713,6 @@ class Grammar:
                         v = None
                     else:
                         for vspec in v:
-                            # if vspec not in vts:
                             if vspec not in variants:
                                 raise GrammarError("Unknown variant '{0}'".format(vspec), fname, line)
                             if vspec not in vts:
@@ -1111,17 +1108,27 @@ class Grammar:
 
         # Reassign indices for nonterminals to avoid gaps in the number sequence
         # Nonterminals are indexed downwards from -1
-        self._nonterminals_by_ix = { -1 - ix : nonterminals[key] for ix, key in enumerate(nonterminals.keys()) }
+        # We must take care to sort the dictionary before enumerating it,
+        # as the ordering will otherwise be non-deterministic and non-repeatable.
+        # Note also that the sorting is by design not done on the Icelandic locale,
+        # but rather on the default Python string sorting order for maximum
+        # repeatability and to avoid requiring the is-IS locale to be installed.
+        nt_sorted = sorted(nonterminals.keys())
+        self._nonterminals_by_ix = { -1 - ix : nonterminals[key] for ix, key in enumerate(nt_sorted) }
         for key, nt in self._nonterminals_by_ix.items():
             nt.set_index(key)
 
         # Reassign indices for terminals
         # Terminals are indexed upwards from 1
-        self._terminals_by_ix = { ix + 1 : terminals[key] for ix, key in enumerate(terminals.keys()) }
+        t_sorted = sorted(terminals.keys())
+        self._terminals_by_ix = { ix + 1 : terminals[key] for ix, key in enumerate(t_sorted) }
         for key, t in self._terminals_by_ix.items():
             t.set_index(key)
 
-        # Make a dictionary of productions by integer index >= 0
+        # Make a dictionary of productions by integer index >= 0.
+        # Here, no sorting is required for repeatability, as global production indices
+        # are assigned by order of appearance in the grammar file, and the same
+        # applies for the local order of productions within a nonterminal.
         for plist in grammar.values():
             for _, p in plist:
                 self._productions_by_ix[p.index] = p
@@ -1137,7 +1144,6 @@ class Grammar:
                 binary_file_time = datetime.fromtimestamp(os.path.getmtime(fname))
             except os.error:
                 binary_file_time = None
-            # if Settings.DEBUG or binary_file_time is None or binary_file_time < self._file_time:
             if binary_file_time is None or binary_file_time < self._file_time:
                 # No binary file or older than text file: write a fresh one
                 self._write_binary(fname)
@@ -1196,6 +1202,14 @@ if __name__ == "__main__":
     # If run as a main program, do a verbose grammar check
 
     import sys
+
+    try:
+        # Read configuration file
+        basepath, _ = os.path.split(os.path.realpath(__file__))
+        Settings.read(os.path.join(basepath, "config", "Reynir.conf"))
+    except ConfigError as e:
+        print("Configuration error: {0}".format(e))
+        quit()
 
     fname = "Reynir.grammar"
     args = sys.argv

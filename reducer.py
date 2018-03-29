@@ -102,7 +102,6 @@ class Reducer:
     def __init__(self, grammar):
         self._grammar = grammar
 
-
     class OptionFinder(ParseForestNavigator):
 
         """ Subclass to navigate a parse forest and populate the set
@@ -121,11 +120,9 @@ class Reducer:
             self._finals = finals
             self._tokens = tokens
 
-
     def _find_options(self, forest, finals, tokens):
         """ Find token-terminal match options in a parse forest with a root in w """
         self.OptionFinder(finals, tokens).go(forest)
-
 
     def _calc_terminal_scores(self, w):
         """ Calculate the score for each possible terminal/token match """
@@ -343,7 +340,6 @@ class Reducer:
 
         return scores
 
-
     class ParseForestReducer(ParseForestNavigator):
 
         """ Subclass to navigate a parse forest and reduce it
@@ -457,7 +453,6 @@ class Reducer:
             def navigate(cls, root_node):
                 cls().go(root_node)
 
-
         class ReductionInfo:
 
             """ Class to accumulate information about a nonterminal and its
@@ -534,8 +529,9 @@ class Reducer:
                     # of this nonterminal: remove those child trees from consideration
                     # that do not have the highest priority
                     csc = { ix: sc for ix, sc in csc.items() if ix in self.highest_ix }
-                # assert csc
-                if len(csc) == 1 and not self.use_prio:
+                    # print(f"Node {node}: Using priority, csc is {csc}")
+                    # print(f"Node {node}: highest_ix is {self.highest_ix}")
+                if len(csc) == 1 and not self.use_prio: # The latter condition is necessary
                     # Not ambiguous: only one result
                     [ sc ] = csc.values() # Will raise an exception if not exactly one value
                 else:
@@ -543,6 +539,7 @@ class Reducer:
                     # Sort in decreasing order by score
                     s = sorted(csc.items(), key = lambda x: x[1]["sc"], reverse = True)
                     # This is the best scoring family
+                    # print(f"Node {node}: reducing children, score list is {s}")
                     ix, sc = s[0]
                     # Eliminate all other families
                     node.reduce_to(ix)
@@ -574,14 +571,15 @@ class Reducer:
                     if self.nt.has_any_tag({ "begin_prep_scope", "purge_verb" }):
                         # Delete information about contained verbs
                         # SagnRuna, EinSetningÁnF, SagnHluti, NhFyllingAtv and Setning have this tag
-                        sc.pop("so", None)
+                        sc.pop("so", None) # Simpler than if "so" in sc: del sc["so"]
                         sc.pop("sl", None)
 
                 if self.pushed_preposition_bonus:
                     self.reducer.pop("prep_bonus")
                 self.reducer.pop("current_verb")
                 # !!! DEBUG
-                #node.score = sc["sc"]
+                # node.score = sc["sc"]
+                # print(f"Node {node}: returning score {sc['sc']}")
                 return sc
 
         def __init__(self, grammar, scores):
@@ -675,7 +673,8 @@ class Reducer:
                 d["so"] = [(node.terminal, node.token)]
             d["sc"] = sc
             # !!! DEBUG
-            #node.score = d["sc"]
+            # print(f"Token {node} matching terminal {node.terminal}: returning score {sc}")
+            # node.score = d["sc"]
             return d
 
         def _visit_nonterminal(self, level, node):
@@ -685,6 +684,8 @@ class Reducer:
 
         def _visit_family(self, results, level, node, ix, prod):
             """ Add information about a family of children to the result object """
+            # if node.is_ambiguous:
+            #     print(f"Visiting family {ix} of head node {node}")
             results.add_child_production(ix, prod)
 
         def _add_result(self, results, ix, sc):
@@ -709,6 +710,9 @@ class Reducer:
             """ Perform the reduction, but first split the tree underneath
                 nodes that have the enable_prep_bonus tag """
             # self._check_stacks()
+            # print("\n\nBefore reduction, the tree is as follows:")
+            # ParseForestPrinter.print_forest(root_node)
+            # print("\n\n")
             self.PrepositionUnpacker.navigate(root_node)
             # Start normal navigation of the tree after the split
             result = super().go(root_node)
@@ -719,7 +723,6 @@ class Reducer:
         """ Reduce a forest with a root in w based on subtree scores """
         return self.ParseForestReducer(self._grammar, scores).go(w)
 
-
     def go_with_score(self, forest):
         """ Returns the argument forest after pruning it down to a single tree """
         if forest is None:
@@ -729,7 +732,6 @@ class Reducer:
         # options (subtrees) in favor of higher rated ones
         score = self._reduce(forest, scores)
         return (forest, score["sc"])
-
 
     def go(self, forest):
         """ Return only the reduced forest, without its score """
