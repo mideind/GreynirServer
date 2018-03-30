@@ -118,6 +118,7 @@ class _Node:
 
         assert hi > lo
         # Found a child with at least one common prefix character
+        # noinspection PyUnboundLocalVariable
         child = self._children[mid]
         child_fragment = child._fragment
         assert child_fragment[0] == ch

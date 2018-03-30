@@ -243,8 +243,9 @@ function iso_timestamp(d) {
 
 function grammar(cat, m, txt, terminal) {
    var g = [];
+   var gender;
    if (cat == "pfn" && txt !== undefined) {
-      var gender = {
+      gender = {
          "hann" : "karlkyn", "honum" : "karlkyn", "hans" : "karlkyn",
          "hún" : "kvenkyn", "hana" : "kvenkyn", "henni" : "kvenkyn", "hennar" : "kvenkyn",
          "það" : "hvorugkyn", "því" : "hvorugkyn", "þess" : "hvorugkyn"
@@ -253,7 +254,7 @@ function grammar(cat, m, txt, terminal) {
          g.push(gender);
    }
    else {
-      var gender = { "kk" : "karlkyn", "kvk" : "kvenkyn", "hk" : "hvorugkyn" } [cat];
+      gender = { "kk" : "karlkyn", "kvk" : "kvenkyn", "hk" : "hvorugkyn" } [cat];
       if (gender !== undefined)
          g.push(gender);
    }
@@ -314,6 +315,7 @@ function tokenInfo(t, nameDict) {
      grammar: null,
      percent: null
    };
+   var title;
    if (!t.k || t.k == TOK_WORD) {
       // TOK_WORD
       var wcat = (t.m && t.m[1]) ? t.m[1] : (t.t ? t.t.split("_")[0] : undefined);
@@ -426,7 +428,7 @@ function tokenInfo(t, nameDict) {
       else {
          // Show full name and title
          var name = t.v;
-         var title = (nameDict && nameDict[name]) ? (nameDict[name].title || "") : "";
+         title = (nameDict && nameDict[name]) ? (nameDict[name].title || "") : "";
          if (!title.length)
             if (!gender)
                title = "mannsnafn";
@@ -449,7 +451,7 @@ function tokenInfo(t, nameDict) {
       else
          // Cut whitespace around hyphens in entity names
          r.lemma = t.x.replace(" - ", "-");
-      var title = nd ? (nd.title || "") : "";
+      title = nd ? (nd.title || "") : "";
       if (!title.length)
          title = "sérnafn";
       r.details = title;

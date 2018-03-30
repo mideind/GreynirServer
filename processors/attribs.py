@@ -41,8 +41,8 @@ MODULE_NAME = __name__
 def article_begin(state):
     """ Called at the beginning of article processing """
 
-    session = state["session"] # Database session
-    url = state["url"] # URL of the article being processed
+    # session = state["session"] # Database session
+    # url = state["url"] # URL of the article being processed
     # Delete all existing attributes for this article
     # session.execute(Attribute.table().delete().where(Attribute.article_url == url))
 

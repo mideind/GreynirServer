@@ -758,7 +758,7 @@ class Comparison():
         else:
             if "t" not in word: # Skrýtnar skammstafanir, TODO ætti að lagast þegar fleiri skammstöfunum hefur verið bætt við Main.conf
                 return "x"
-            elif word["t"].split("_")[0] == "no": # Ekkert BÍN-mark. Stafsetningarvillur og annað
+            if word["t"].split("_")[0] == "no": # Ekkert BÍN-mark. Stafsetningarvillur og annað
                 #print("Hvað gerist hér??", word["t"], word["x"]) 
                 tegund = word["t"].split("_")[-1]
                 if "b" in word:
