@@ -2218,5 +2218,3 @@ def stems_of_token(t):
         # TOK.ENTITY
         stem = t["x"]
         return [ (stem, "entity") ]
-    return []
-

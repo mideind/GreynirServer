@@ -295,7 +295,7 @@ function populateQueryResult(r) {
             .html("<span class='red glyphicon glyphicon-play'></span>&nbsp;Ekkert svar fannst.");
       }
       else {
-         $.each(rlist, function(i, obj) {
+         $.each(rlist, function(ix, obj) {
             var li;
             if (r.qtype == "Word") {
                if (obj.cat.startsWith("person_"))

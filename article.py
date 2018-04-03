@@ -610,5 +610,6 @@ class Article:
                         yield (a, ix, match)
                         mcnt += 1
             t1 = time.time()
-            print(f"{acnt} articles with {tcnt} trees examined, {mcnt} matches in {t1-t0 :.2f} seconds")
+            print("{0} articles with {1} trees examined, {2} matches in {3:.2f} seconds"
+                .format(acnt, tcnt, mcnt, t1-t0))
 
