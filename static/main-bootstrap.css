@@ -48,6 +48,7 @@
    position: relative;
    top: 2px;
    display: inline-block;
+   /*noinspection CssNoGenericFontName*/
    font-family: 'Glyphicons Regular';
    font-style: normal;
    font-weight: normal;

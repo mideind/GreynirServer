@@ -801,12 +801,14 @@ class SimpleTree:
                return item, item.kind
             return items[ix:ix+1], '{' # Single item: assume set
 
+        # noinspection PyUnreachableCode
         def contained(tree, items, pc, deep):
             """ Returns True if the tree has children that match the subsequence
                 in items[pc], either directly (deep = False) or at any deeper
                 level (deep = True) """
 
             subseq, kind = unpack(items, pc)
+            # noinspection PyUnreachableCode
             if not deep:
                 if kind == '[':
                     return run_sequence(tree.children, subseq)

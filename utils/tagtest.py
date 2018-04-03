@@ -68,7 +68,7 @@ def test_tagger():
     TEST_SET = 400
     BEAM_SIZE = 250 # A higher number does not seem to yield improved results
 
-
+    # noinspection PyUnreachableCode
     if False:
         tnt_tagger = TnT(N = BEAM_SIZE, C = True)
         tagger = NgramTagger(n = 3, verbose = False)

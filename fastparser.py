@@ -222,6 +222,7 @@ def matching_func(handle, token, terminal):
         a ParseJob object that dispatches the match query. """
     return ParseJob.dispatch(handle, token, terminal)
 
+
 @ffi.callback("BYTE*(UINT, UINT, UINT)")
 def alloc_func(handle, token, size):
     """ Allocate a token/terminal matching cache buffer, at least size bytes.
@@ -249,6 +250,7 @@ class Node:
 
     def __init__(self):
         self._hash = id(self).__hash__()
+        self._families = None
 
     @classmethod
     def from_c_node(cls, job, c_node, parent = None, index = 0):
@@ -257,7 +259,6 @@ class Node:
         lb = c_node.label
         node._start = lb.nI
         node._end = lb.nJ
-        node._families = None # Families of children
         if lb.iNt < 0:
             # Nonterminal node, completed or not
             node._nonterminal = job.grammar.lookup(lb.iNt)
@@ -265,22 +266,27 @@ class Node:
             node._terminal = None
             node._token = None
             job.c_dict[c_node] = node # Re-use nonterminal nodes if identical
+            # If this nonterminal spans no tokens, don't bother copying its children
+            empty = lb.nI == lb.nJ
         else:
             # Token node: find the corresponding terminal
-            #assert parent is not None
-            #assert parent != ffi.NULL
+            # assert parent is not None
+            # assert parent != ffi.NULL
             tix = parent.pList[index + parent.n] if index < 0 else parent.pList[index]
             node._terminal = job.grammar.lookup(tix)
             node._token = job.tokens[lb.iNt]
             node._nonterminal = None
             node._completed = True
-        fe = c_node.pHead
-        while fe != ffi.NULL:
-            child_ix = -1 if node._completed else index
-            node._add_family(job, fe.pProd, fe.p1, fe.p2, child_ix)
-            fe = fe.pNext
+            empty = False
+        if not empty:
+            fe = c_node.pHead
+            while fe != ffi.NULL:
+                child_ix = -1 if node._completed else index
+                node._add_family(job, fe.pProd, fe.p1, fe.p2, child_ix)
+                fe = fe.pNext
         return node
 
+    # noinspection PyProtectedMember
     @classmethod
     def copy(cls, other):
         """ Returns a copy of a Node instance """
@@ -291,9 +297,7 @@ class Node:
         node._terminal = other._terminal
         node._token = other._token
         node._completed = other._completed
-        if other._families is None:
-            node._families = None
-        else:
+        if other._families is not None:
             # Create a new list object having the
             # same child nodes as the source node
             node._families = other._families[:] # [ pc for pc in other._families ]
@@ -414,8 +418,6 @@ class Node:
 
     def reduce_to(self, child_ix):
         """ Eliminate all child families except the given one """
-        #if not self._families or child_ix >= len(self._families):
-        #    raise IndexError("Child index out of range")
         if child_ix != 0 or len(self._families) != 1:
             f = self._families[child_ix] # The survivor
             # Collapse the list to one option
@@ -489,6 +491,7 @@ class ParseForestNavigator:
 
         visited = dict()
 
+        # noinspection PyProtectedMember
         def _nav_helper(w, index, level):
             """ Navigate from w """
             if not self._visit_all and w in visited and not self._force_visit(w, visited):
@@ -515,22 +518,23 @@ class ParseForestNavigator:
                         child_level = level + 1
                     if w.is_ambiguous:
                         child_level += 1
-                    for ix, pc in enumerate(w._families):
-                        prod, f = pc
-                        self._visit_family(results, level, w, ix, prod)
-                        if w.is_completed:
-                            # Completed nonterminal: restart children index
-                            child_ix = -1
-                        else:
-                            child_ix = index
-                        if isinstance(f, tuple):
-                            self._add_result(results, ix,
-                                _nav_helper(f[0], child_ix - 1, child_level))
-                            self._add_result(results, ix,
-                                _nav_helper(f[1], child_ix, child_level))
-                        else:
-                            self._add_result(results, ix,
-                                _nav_helper(f, child_ix, child_level))
+                    if w._families:
+                        for ix, pc in enumerate(w._families):
+                            prod, f = pc
+                            self._visit_family(results, level, w, ix, prod)
+                            if w.is_completed:
+                                # Completed nonterminal: restart children index
+                                child_ix = -1
+                            else:
+                                child_ix = index
+                            if isinstance(f, tuple):
+                                self._add_result(results, ix,
+                                    _nav_helper(f[0], child_ix - 1, child_level))
+                                self._add_result(results, ix,
+                                    _nav_helper(f[1], child_ix, child_level))
+                            else:
+                                self._add_result(results, ix,
+                                    _nav_helper(f, child_ix, child_level))
                     v = self._process_results(results, w)
             if not self._visit_all:
                 # Mark the node as visited and store its result
@@ -562,6 +566,7 @@ class ParseError(Exception):
         return self._token_index
 
 
+# noinspection PyPep8Naming
 class Fast_Parser(BIN_Parser):
 
     """ This class wraps an Earley-Scott parser written in C++.
@@ -580,6 +585,7 @@ class Fast_Parser(BIN_Parser):
     """
 
     # Dynamically load the C++ shared library
+    # noinspection SpellCheckingInspection
     eparser = ffi.dlopen("./libeparser.so")
     assert eparser is not None
 
@@ -592,6 +598,7 @@ class Fast_Parser(BIN_Parser):
     @classmethod
     def _load_binary_grammar(cls):
         """ Load the binary grammar file into memory, if required """
+        # noinspection SpellCheckingInspection
         fname = cls.GRAMMAR_BINARY_FILE_BYTES
         try:
             ts = os.path.getmtime(fname)
@@ -877,6 +884,7 @@ class ParseForestFlattener(ParseForestNavigator):
 
         def _to_str(self, indent):
             if self.has_children:
+                # noinspection PyProtectedMember
                 return "{0}{1}{2}".format(" " * indent,
                     self._p,
                     "".join("\n" + child._to_str(indent+1) for child in self._children))
@@ -933,7 +941,7 @@ class ParseForestFlattener(ParseForestNavigator):
 
     def _visit_family(self, results, level, w, ix, prod):
         """ Visit different subtree options within a parse forest """
-        # In this case, the tree should be unambigous
+        # In this case, the tree should be unambiguous
         assert not w.is_ambiguous
 
     @classmethod

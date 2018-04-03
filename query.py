@@ -379,7 +379,7 @@ def query_title(query, session, title):
     # !!! Consider doing a LIKE '%title%', not just LIKE 'title%'
     rd = defaultdict(dict)
     title_lc = title.lower() # Query by lowercase title
-    q = session.query(Person.name, Article.id, Article.timestamp, \
+    q = session.query(Person.name, Article.id, Article.timestamp,
         Article.heading, Root.domain, Article.url) \
         .filter(Person.title_lc.like(title_lc + ' %') | (Person.title_lc == title_lc)) \
         .filter(Root.visible == True) \
@@ -389,7 +389,7 @@ def query_title(query, session, title):
     # Append names from the persons table
     append_names(rd, q, prop_func = lambda x: x.name)
     # Also append definitions from the entities table, if any
-    q = session.query(Entity.name, Article.id, Article.timestamp, \
+    q = session.query(Entity.name, Article.id, Article.timestamp,
         Article.heading, Root.domain, Article.url) \
         .filter(Entity.definition == title) \
         .filter(Root.visible == True) \
@@ -402,7 +402,7 @@ def query_title(query, session, title):
 
 def _query_entity_definitions(session, name):
     """ A query for definitions of an entity by name """
-    q = session.query(Entity.verb, Entity.definition, Article.id, Article.timestamp, \
+    q = session.query(Entity.verb, Entity.definition, Article.id, Article.timestamp,
         Article.heading, Root.domain, Article.url) \
         .filter(Entity.name == name) \
         .filter(Root.visible == True) \
@@ -434,7 +434,7 @@ def query_company(query, session, name):
     while qname and qname[-1] == '.':
         qname = qname[:-1]
         use_like = True
-    q = session.query(Entity.verb, Entity.definition, Article.id, Article.timestamp, \
+    q = session.query(Entity.verb, Entity.definition, Article.id, Article.timestamp,
         Article.heading, Root.domain, Article.url) \
         .filter(Root.visible == True) \
         .join(Article).join(Root) \

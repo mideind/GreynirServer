@@ -593,7 +593,7 @@ SamanburðarTengingOg →
     ','? "og:st"               # Erfitt fjarskiptasamband er á staðnum og mikil snjóþyngsli
 
 $score(+4) SamanburðarNlTenging
-$score(-12) SamanburðarTengingOg
+$score(-14) SamanburðarTengingOg
 
 Sjálfur/tala/kyn → 'sjálfur:fn'_nf/tala/kyn
 
@@ -1548,9 +1548,16 @@ Sögn_1_sagnb →
 # Sögn í nafnhætti með einu viðfangi
 
 Sögn_1_nh →
-    So_1_nh/fall FsRuna? NlBeintAndlag/fall
+    So_1_nh/fall FsRunaInnskot? NlBeintAndlag/fall
     # sjá/láta Pál breyta sér í kött
     | So_1_þf_nh Nl_þf So_1_nh/fall FsRuna? Nl/fall
+
+# Gefa forsetningarliðum milli sagnar og andlags mínus
+# enda eru þær klasturslegt mál ('Hann mun sjá í snatri fílinn')
+FsRunaInnskot →
+    FsRuna
+
+$score(-8) FsRunaInnskot
 
 # Sögn í boðhætti með einu viðfangi
 
