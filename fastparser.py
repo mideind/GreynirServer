@@ -518,22 +518,23 @@ class ParseForestNavigator:
                         child_level = level + 1
                     if w.is_ambiguous:
                         child_level += 1
-                    for ix, pc in enumerate(w._families):
-                        prod, f = pc
-                        self._visit_family(results, level, w, ix, prod)
-                        if w.is_completed:
-                            # Completed nonterminal: restart children index
-                            child_ix = -1
-                        else:
-                            child_ix = index
-                        if isinstance(f, tuple):
-                            self._add_result(results, ix,
-                                _nav_helper(f[0], child_ix - 1, child_level))
-                            self._add_result(results, ix,
-                                _nav_helper(f[1], child_ix, child_level))
-                        else:
-                            self._add_result(results, ix,
-                                _nav_helper(f, child_ix, child_level))
+                    if w._families:
+                        for ix, pc in enumerate(w._families):
+                            prod, f = pc
+                            self._visit_family(results, level, w, ix, prod)
+                            if w.is_completed:
+                                # Completed nonterminal: restart children index
+                                child_ix = -1
+                            else:
+                                child_ix = index
+                            if isinstance(f, tuple):
+                                self._add_result(results, ix,
+                                    _nav_helper(f[0], child_ix - 1, child_level))
+                                self._add_result(results, ix,
+                                    _nav_helper(f[1], child_ix, child_level))
+                            else:
+                                self._add_result(results, ix,
+                                    _nav_helper(f, child_ix, child_level))
                     v = self._process_results(results, w)
             if not self._visit_all:
                 # Mark the node as visited and store its result
