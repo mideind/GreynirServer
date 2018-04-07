@@ -3119,7 +3119,7 @@ SérnafnEðaManneskja →
 $score(-2) SérnafnEðaManneskja # Velja form með falli frekar en án falls
 
 Nafn/fall →
-    Nl_p3/fall/kyn
+    NlKjarni/tala/fall/kyn # 50 gráir skuggar
 
 # Ekki sækja í að nota nafnlið sem nafn í kjölfar annars nafnliðar með greini
 $score(-4) Nafn/fall
