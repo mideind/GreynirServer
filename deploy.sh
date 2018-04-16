@@ -30,6 +30,7 @@ cp config/TnT-model.pickle $DEST/config/TnT-model.pickle
 cp article.py $DEST/article.py
 cp baseparser.py $DEST/baseparser.py
 cp bindb.py $DEST/bindb.py
+cp bincompress.py $DEST/bincompress.py
 cp binparser.py $DEST/binparser.py
 cp cache.py $DEST/cache.py
 cp dawgdictionary.py $DEST/dawgdictionary.py
@@ -58,7 +59,6 @@ cp tree.py $DEST/tree.py
 cp treeutil.py $DEST/treeutil.py
 
 cp resources/ordalisti.dawg.pickle $DEST/resources/
-
 cp scrapers/*.py $DEST/scrapers/
 cp templates/* $DEST/templates/
 cp static/* $DEST/static/
