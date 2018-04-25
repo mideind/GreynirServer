@@ -34,7 +34,7 @@ import gc
 import getopt
 import time
 import logging
-#import traceback
+import traceback
 
 #from multiprocessing.dummy import Pool, cpu_count
 from multiprocessing import Pool, cpu_count
@@ -202,7 +202,7 @@ class Scraper:
             sys.exit(1)
         except Exception as e:
             logging.warning("Exception when parsing article at {0}: {1!r}".format(d.url, e))
-            #traceback.print_exc()
+            traceback.print_exc()
             #raise e from e
         return True
 

@@ -257,6 +257,8 @@ class ScrapeHelper:
     @staticmethod
     def del_tag(soup, tag_name):
         """ Delete all occurrences of the specified tag """
+        if soup is None:
+            return
         while True:
             s = soup.find(lambda tag: tag.name == tag_name)
             if s is None:

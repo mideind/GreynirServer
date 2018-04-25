@@ -31,14 +31,9 @@ from collections import defaultdict
 
 from tokenizer import TOK, paragraphs
 
-if not __package__:
-    from fastparser import Fast_Parser, ParseError
-    from reducer import Reducer
-    from settings import Settings
-else:
-    from .fastparser import Fast_Parser, ParseError
-    from .reducer import Reducer
-    from .settings import Settings
+from fastparser import Fast_Parser, ParseError
+from reducer import Reducer
+from settings import Settings
 
 # Number of tree combinations that must be exceeded for a verbose
 # parse dump to include the sentence text (as opposed to just basic stats)

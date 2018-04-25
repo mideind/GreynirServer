@@ -189,7 +189,7 @@ def make_response_list(rd):
             # Find the age of the article, in whole days
             age = max(0, (now - a["timestamp"]).days)
             # Create an appropriately shaped and sloped age decay function
-            div_factor = 1.0 + (math.log(age + 4, base = 4))
+            div_factor = 1.0 + (math.log(age + 4, 4))
             w += 14.0 / div_factor
         # A single mention is only worth 1/e of a full (multiple) mention
         if len(newest_mentions) == 1:
