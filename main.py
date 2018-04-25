@@ -48,7 +48,7 @@ from flask.wrappers import Response
 from settings import Settings, ConfigError, changedlocale
 from bindb import BIN_Db
 from tokenizer import tokenize, TOK, correct_spaces, canonicalize_token
-from fastparser import Fast_Parser, ParseForestFlattener
+from reynir.fastparser import Fast_Parser, ParseForestFlattener
 from article import Article as ArticleProxy
 from treeutil import TreeUtility
 from scraperdb import SessionContext, desc, Root, Person, Article, ArticleTopic, Topic,\

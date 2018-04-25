@@ -28,7 +28,7 @@ from collections import namedtuple
 
 from fetcher import Fetcher
 from tokenizer import TOK, tokenize, canonicalize_token
-from fastparser import Fast_Parser, ParseForestNavigator
+from reynir.fastparser import Fast_Parser, ParseForestNavigator
 from incparser import IncrementalParser
 from scraperdb import SessionContext
 from settings import Settings
