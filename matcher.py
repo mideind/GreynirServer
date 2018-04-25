@@ -97,8 +97,10 @@ from itertools import chain
 
 if not __package__:
     from cache import cached_property
+    from binparser import BIN_Token
 else:
     from .cache import cached_property
+    from .binparser import BIN_Token
 
 
 # Default tree simplifier configuration maps
@@ -282,8 +284,6 @@ class SimpleTree:
         self._head = sents[0] if self._len == 1 else { }
         self._children = self._head.get("p")
         self._children_cache = None
-        self._variants = None
-        self._tcat = None
         self._tag_cache = None
 
     def __str__(self):
@@ -339,27 +339,24 @@ class SimpleTree:
         """ The terminal matched by this subtree """
         return self._head.get("t")
 
-    @property
+    @cached_property
     def variants(self):
-        """ The set of variants associated with this subtree's terminal, if any """
-        if self._variants is None:
-            t = self.terminal
-            if t is None:
-                self._variants = set()
-            else:
-                self._variants = set(t.split("_")[1:])
-        return self._variants
+        """ Returns a list of the variants associated with this subtree's terminal, if any """
+        t = self.terminal
+        return [] if t is None else t.split("_")[1:]
 
-    @property
+    @cached_property
+    def all_variants(self):
+        """ Returns a list of all variants associated with this subtree's terminal, if any,
+            augmented also by BÍN variants """
+        vlist = self.variants
+        return vlist + list(BIN_Token.bin_variants(self._head.get("b")) - set(vlist))
+
+    @cached_property
     def tcat(self):
         """ The word category associated with this subtree's terminal, if any """
-        if self._tcat is None:
-            t = self.terminal
-            if t is None:
-                self._tcat = ""
-            else:
-                self._tcat = t.split("_")[0]
-        return self._tcat
+        t = self.terminal
+        return "" if t is None else t.split("_")[0]
 
     @cached_property
     def sentences(self):
@@ -463,7 +460,7 @@ class SimpleTree:
             return " ".join([ "ao" ] * numwords + [ self.terminal ])
         # Repeat the terminal name for each component word
         # !!! TODO: Potentially divide composite tokens such as
-        # !!! dates into more detailed terminals, such as tala, raðnr, etc.
+        # !!! TODO: dates into more detailed terminals, such as tala, raðnr, etc.
         return " ".join([ self.terminal ] * (numwords + 1))
 
     @property
@@ -790,7 +787,7 @@ class SimpleTree:
                 if ilist[0] != tree.tcat:
                     return False
                 # Remaining variants must be a subset of those in the terminal
-                return set(ilist[1:]) <= tree.variants
+                return set(ilist[1:]) <= set(tree.variants)
             # Check nonterminal tag
             # NP matches NP as well as NP-POSS, etc.,
             # while NP-POSS only matches NP-POSS
