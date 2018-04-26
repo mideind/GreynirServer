@@ -42,6 +42,7 @@ from contextlib import contextmanager, closing
 from collections import defaultdict
 from threading import Lock
 
+import reynir
 
 # The sorting locale used by default in the changedlocale function
 _DEFAULT_SORT_LOCALE = ('IS_is', 'UTF-8')
@@ -201,117 +202,9 @@ class Meanings:
 
     """ Wrapper around list of additional word meanings, initialized from the config file """
 
-    # Dictionary of additional words and their meanings
-    DICT = defaultdict(list) # Keyed by word form
-    ROOT = defaultdict(list) # Keyed by word root (stem)
-
-    # All possible declination forms of adjectives (48 in total)
-    _UNDECLINED_ADJECTIVE_TEMPLATE = [
-        "FVB-HK-EFFT",
-        "FVB-HK-ÞGFFT",
-        "FVB-HK-ÞFFT",
-        "FVB-HK-NFFT",
-        "FVB-HK-EFET",
-        "FVB-HK-ÞGFET",
-        "FVB-HK-ÞFET",
-        "FVB-HK-NFET",
-        "FVB-KVK-EFFT",
-        "FVB-KVK-ÞGFFT",
-        "FVB-KVK-ÞFFT",
-        "FVB-KVK-NFFT",
-        "FVB-KVK-EFET",
-        "FVB-KVK-ÞGFET",
-        "FVB-KVK-ÞFET",
-        "FVB-KVK-NFET",
-        "FVB-KK-EFFT",
-        "FVB-KK-ÞGFFT",
-        "FVB-KK-ÞFFT",
-        "FVB-KK-NFFT",
-        "FVB-KK-EFET",
-        "FVB-KK-ÞGFET",
-        "FVB-KK-ÞFET",
-        "FVB-KK-NFET",
-        "FSB-HK-EFFT",
-        "FSB-HK-ÞGFFT",
-        "FSB-HK-ÞFFT",
-        "FSB-HK-NFFT",
-        "FSB-HK-EFET",
-        "FSB-HK-ÞGFET",
-        "FSB-HK-ÞFET",
-        "FSB-HK-NFET",
-        "FSB-KVK-EFFT",
-        "FSB-KVK-ÞGFFT",
-        "FSB-KVK-ÞFFT",
-        "FSB-KVK-NFFT",
-        "FSB-KVK-EFET",
-        "FSB-KVK-ÞGFET",
-        "FSB-KVK-ÞFET",
-        "FSB-KVK-NFET",
-        "FSB-KK-EFFT",
-        "FSB-KK-ÞGFFT",
-        "FSB-KK-ÞFFT",
-        "FSB-KK-NFFT",
-        "FSB-KK-EFET",
-        "FSB-KK-ÞGFET",
-        "FSB-KK-ÞFET",
-        "FSB-KK-NFET"
-    ]
-
-    _CAT_SET = None # BIN_Token word categories
-
-    @staticmethod
-    def _check_ordfl(ordfl):
-        """ Sanity check on the word category """
-        if Meanings._CAT_SET is None:
-            # Delayed import of BIN_Token
-            from binparser import BIN_Token
-            Meanings._CAT_SET = set(BIN_Token.KIND.keys())
-        if ordfl not in Meanings._CAT_SET:
-            raise ConfigError("Unknown BÍN word category: '{0}'".format(ordfl))
-
-    @staticmethod
-    def add (stofn, ordmynd, ordfl, fl, beyging):
-        """ Add word meaning to the dictionary. Called from the config file handler. """
-        assert ordmynd is not None
-        assert ordfl is not None
-        Meanings._check_ordfl(ordfl)
-        if not stofn:
-            stofn = ordmynd
-        # Append the word and its meaning in tuple form
-        if ordfl == "lo" and not beyging:
-            # Special case for undeclined adjectives:
-            # create all 48 forms
-            for b in Meanings._UNDECLINED_ADJECTIVE_TEMPLATE:
-                m = (stofn, -1, ordfl, fl or "ob", ordmynd, b)
-                Meanings.DICT[ordmynd].append(m)
-                Meanings.ROOT[stofn].append(m)
-        else:
-            m = (stofn, -1, ordfl, fl or "ob", ordmynd, beyging or "-")
-            Meanings.DICT[ordmynd].append(m)
-            Meanings.ROOT[stofn].append(m)
-
-    @staticmethod
-    def add_composite (stofn, ordfl):
-        """ Add composite word forms by putting a prefix on existing BIN word forms.
-            Called from the config file handler. """
-
-        assert stofn is not None
-        assert ordfl is not None
-        Meanings._check_ordfl(ordfl)
-        a = stofn.split("-")
-        if len(a) != 2:
-            raise ConfigError("Composite word meaning must contain a single hyphen")
-        prefix = a[0]
-        stem = a[1]
-        from bindb import BIN_Db
-        with BIN_Db.get_db() as db:
-            m = db.forms(stem)
-        if m:
-            for w in m:
-                if w.ordfl == ordfl:
-                    t = (prefix + w.stofn, -1, ordfl, w.fl, prefix + w.ordmynd, w.beyging)
-                    Meanings.DICT[prefix + w.ordmynd].append(t)
-                    Meanings.ROOT[prefix + w.stofn].append(t)
+    # This is passed on to the reynir module
+    DICT = reynir.settings.Meanings.DICT
+    ROOT = reynir.settings.Meanings.ROOT
 
 
 class VerbObjects:
@@ -872,30 +765,8 @@ class Settings:
     @staticmethod
     def _handle_meanings(s):
         """ Handle additional word meanings in the settings section """
-        # Format: stofn ordmynd ordfl fl (default ob) beyging (default -)
-        a = s.split()
-        if len(a) < 2 or len(a) > 5:
-            raise ConfigError("Meaning should have two to five arguments, {0} given".format(len(a)))
-        stofn = None
-        fl = None
-        beyging = None
-        if len(a) == 2:
-            # Short format: only ordmynd and ordfl
-            ordmynd = a[0]
-            ordfl = a[1]
-        else:
-            # Full format: at least three arguments, stofn ordmynd ordfl
-            stofn = a[0]
-            ordmynd = a[1]
-            ordfl = a[2]
-            fl = a[3] if len(a) >= 4 else None
-            beyging = a[4] if len(a) >= 5 else None
-
-        if len(a) == 2 and "-" in ordmynd:
-            # Creating new meanings by prefixing existing ones
-            Meanings.add_composite(ordmynd, ordfl)
-        else:
-            Meanings.add(stofn, ordmynd, ordfl, fl, beyging)
+        # This section is read and handled by the reynir module
+        pass
 
     @staticmethod
     def _handle_verb_objects(s):

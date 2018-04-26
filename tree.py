@@ -34,10 +34,10 @@ from contextlib import closing
 from collections import OrderedDict, namedtuple
 
 from settings import Settings, DisallowedNames, VerbObjects
-from bindb import BIN_Db
-from binparser import BIN_Token
-from matcher import SimpleTreeBuilder
-from cache import LRU_Cache
+from reynir.bindb import BIN_Db
+from reynir.binparser import BIN_Token
+from reynir.matcher import SimpleTreeBuilder
+from reynir.cache import LRU_Cache
 
 
 BIN_ORDFL = {

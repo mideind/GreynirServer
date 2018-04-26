@@ -17,6 +17,7 @@ pyparsing==2.2.0
 readline==6.2.4.1
 requests==2.17.3
 reynir>=1.1.4
+tokenizer>=1.0.2
 six==1.11.0
 SQLAlchemy==1.1.10
 urllib3==1.21.1

@@ -48,9 +48,9 @@ from itertools import islice, tee
 import xml.etree.ElementTree as ET
 
 from treeutil import TreeUtility
-from tokenizer import canonicalize_token, TOK
+from reynir.bintokenizer import canonicalize_token, TOK
 from settings import Settings, Prepositions, StaticPhrases, ConfigError
-from bindb import BIN_Db
+from reynir.bindb import BIN_Db
 
 class IFD_Corpus:
 

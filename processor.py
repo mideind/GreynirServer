@@ -36,15 +36,15 @@ import importlib
 import sys
 import time
 
-#from multiprocessing.dummy import Pool
-from multiprocessing import Pool
+from multiprocessing.dummy import Pool
+#from multiprocessing import Pool
 from contextlib import closing
 from datetime import datetime
 from collections import OrderedDict
 
 from settings import Settings, ConfigError
 from scraperdb import Scraper_DB, Article, Person
-from bindb import BIN_Db
+# from reynir.bindb import BIN_Db
 from tree import Tree
 
 _PROFILING = False
@@ -141,10 +141,10 @@ class Processor:
     def go(self, from_date = None, limit = 0, force = False, update = False, title = None):
         """ Process already parsed articles from the database """
 
-        with closing(self._db.session) as session:
+        # noinspection PyComparisonWithNone,PyShadowingNames
+        def iter_parsed_articles():
 
-            # noinspection PyComparisonWithNone,PyShadowingNames
-            def iter_parsed_articles():
+            with closing(self._db.session) as session:
                 """ Go through parsed articles and process them """
                 if title is not None:
                     # Use a title query on Person to find the URLs to process
@@ -174,22 +174,23 @@ class Processor:
                 for a in q:
                     yield field(a)
 
-            if _PROFILING:
-                # If profiling, just do a simple map within a single thread and process
-                for url in iter_parsed_articles():
-                    self.go_single(url)
-                BIN_Db.cleanup() # Make sure there are no open BIN db connections
-            else:
-                # Use a multiprocessing pool to process the articles
-                BIN_Db.cleanup() # Make sure there are no open BIN db connections
-                pool = Pool() # Defaults to using as many processes as there are CPUs
-                pool.map(self.go_single, iter_parsed_articles())
-                pool.close()
-                pool.join()
-                BIN_Db.cleanup() # Make sure there are no open BIN db connections
+        if _PROFILING:
+            # If profiling, just do a simple map within a single thread and process
+            for url in iter_parsed_articles():
+                self.go_single(url)
+            # BIN_Db.cleanup() # Make sure there are no open BIN db connections
+        else:
+            # Use a multiprocessing pool to process the articles
+            # BIN_Db.cleanup() # Make sure there are no open BIN db connections
+            pool = Pool() # Defaults to using as many processes as there are CPUs
+            pool.map(self.go_single, iter_parsed_articles())
+            pool.close()
+            pool.join()
+            # BIN_Db.cleanup() # Make sure there are no open BIN db connections
 
 
-def process_articles(from_date = None, limit = 0, force = False, update = False, title = None, processor = None):
+def process_articles(from_date = None, limit = 0, force = False,
+    update = False, title = None, processor = None):
 
     print("------ Reynir starting processing -------")
     if from_date:

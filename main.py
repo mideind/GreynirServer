@@ -46,8 +46,9 @@ from flask import request, send_from_directory
 from flask.wrappers import Response
 
 from settings import Settings, ConfigError, changedlocale
-from bindb import BIN_Db
-from tokenizer import tokenize, TOK, correct_spaces, canonicalize_token
+from reynir.bindb import BIN_Db
+from nertokenizer import tokenize_and_recognize, TOK, correct_spaces
+from reynir.bintokenizer import canonicalize_token
 from reynir.fastparser import Fast_Parser, ParseForestFlattener
 from article import Article as ArticleProxy
 from treeutil import TreeUtility
@@ -628,7 +629,7 @@ def query_api(version = 1):
     else:
         with SessionContext(commit = True) as session:
 
-            toklist = list(tokenize(q, enclosing_session = session,
+            toklist = list(tokenize_and_recognize(q, enclosing_session = session,
                 auto_uppercase = q.islower() if auto_uppercase else False))
             actual_q = correct_spaces(" ".join(t.txt or "" for t in toklist))
 

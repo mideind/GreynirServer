@@ -59,8 +59,8 @@ from math import log
 from collections import defaultdict
 from contextlib import contextmanager
 
-from bindb import BIN_Db
-from tokenizer import raw_tokenize, parse_tokens, paragraphs, TOK
+from reynir.bindb import BIN_Db
+from reynir.bintokenizer import raw_tokenize, parse_tokens, paragraphs, TOK
 from postagger import IFD_Tagset, NgramTagger
 
 
@@ -496,7 +496,7 @@ def ifd_tag(text):
         _TAGGER = TnT.load("config" + os.sep + "TnT-model.pickle")
         if _TAGGER is None:
             return [] # No tagger model - unable to tag
-    token_stream = raw_tokenize(text)
+    token_stream = tokenize(text)
     result = []
 
     def xlt(txt):
