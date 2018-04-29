@@ -496,7 +496,7 @@ def ifd_tag(text):
         _TAGGER = TnT.load("config" + os.sep + "TnT-model.pickle")
         if _TAGGER is None:
             return [] # No tagger model - unable to tag
-    token_stream = tokenize(text)
+    token_stream = raw_tokenize(text)
     result = []
 
     def xlt(txt):

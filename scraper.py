@@ -45,7 +45,6 @@ from settings import Settings, ConfigError
 from fetcher import Fetcher
 from article import Article
 from scraperinit import init_roots
-from bindb import BIN_Db
 
 from scraperdb import Scraper_DB, SessionContext, Root, IntegrityError
 from scraperdb import Article as ArticleRow
@@ -224,8 +223,6 @@ class Scraper:
 
                 # Use a multiprocessing pool to scrape the roots
 
-                BIN_Db.cleanup() # Make sure there are no open BIN db connections
-
                 pool = Pool(4)
                 pool.map(self._scrape_single_root, iter_roots())
                 pool.close()
@@ -242,8 +239,6 @@ class Scraper:
                         yield ArticleDescr(a.root, a.url)
 
                 # Use a multiprocessing pool to scrape the articles
-
-                BIN_Db.cleanup() # Make sure there are no open BIN db connections
 
                 pool = Pool(8)
                 pool.map(self._scrape_single_article, iter_unscraped_articles())
@@ -304,7 +299,6 @@ class Scraper:
                 if lcnt:
                     # Run garbage collection to minimize common memory footprint
                     gc.collect()
-                    BIN_Db.cleanup() # Make sure there are no open BIN db connections
                     logging.info("Parser processes forking, chunk of {0} articles".format(lcnt))
                     pool = Pool() # Defaults to using as many processes as there are CPUs
                     pool.map(self._parse_single_article, adlist)

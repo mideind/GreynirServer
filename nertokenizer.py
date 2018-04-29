@@ -249,17 +249,14 @@ def recognize_entities(token_stream, enclosing_session = None):
 
 
 def tokenize_and_recognize(text, auto_uppercase = False, enclosing_session = None):
-    """ Tokenize text in several phases, returning a generator (iterable sequence) of tokens
-        that processes tokens on-demand. If auto_uppercase is True, the tokenizer
-        attempts to correct lowercase words that probably should be uppercase. """
+    """ Adds a named entity recognition layer on top of the
+        reynir.bintokenizer.tokenize() function. """
 
-    # Thank you Python for enabling this programming pattern ;-)
-
+    # Obtain a generator
     token_stream = tokenize(text, auto_uppercase)
 
     # Recognize named entities from database
     token_stream = recognize_entities(token_stream, enclosing_session)
 
     return token_stream
-
 

@@ -489,7 +489,7 @@ class TerminalDescriptor:
             # Check case match
             if case_override is not None:
                 # Case override: we don't want other cases beside the given one
-                for c in TerminalNode._CASES:
+                for c in self._CASES:
                     if c != case_override:
                         if c.upper() in m.beyging:
                             return False
@@ -606,9 +606,8 @@ class TerminalNode(Node):
 
     """ A Node corresponding to a terminal """
 
-    # Undeclinable word categories
-    _NOT_DECLINABLE = frozenset([ "ao", "eo", "spao", "fs", "st", "stt", "nhm" ])
-
+    # Undeclinable terminal categories
+    _NOT_DECLINABLE = frozenset([ "ao", "eo", "spao", "fs", "st", "stt", "nhm", "uh", "töl" ])
     _TD = dict() # Cache of terminal descriptors
 
     # Cache of word roots (stems) keyed by (word, at_start, terminal)
@@ -628,7 +627,7 @@ class TerminalNode(Node):
         self.tokentype = tokentype
         self.is_word = tokentype in { "WORD", "PERSON" }
         self.is_literal = td.is_literal
-        self.is_declinable = False if self.is_literal else (td.inferred_cat not in self._NOT_DECLINABLE)
+        self.is_declinable = (not self.is_literal) and (td.inferred_cat not in self._NOT_DECLINABLE)
         self.aux = aux # Auxiliary information, originally from token.t2
         # Cache the root form of this word so that it is only looked up
         # once, even if multiple processors scan this tree
@@ -668,9 +667,9 @@ class TerminalNode(Node):
             return self.text
         return self._root_cache, (self.text, self.at_start, self.td.terminal)
 
-    def lookup_alternative(self, bin_db, replace_func, sort_func = None, fallback_to_gr = False):
-        """ Return a different word form, if available, by altering the beyging
-            spec via the given replace_func function """
+    def lookup_alternative(self, bin_db, replace_func, sort_func=None, fallback_to_gr=False):
+        """ Return a different (but always nominative case) word form, if available,
+            by altering the beyging spec via the given replace_func function """
         w, m = bin_db.lookup_word(self.text, self.at_start)
         if m:
             # Narrow the meanings down to those that are compatible with the terminal
@@ -688,22 +687,28 @@ class TerminalNode(Node):
                     result.append(x)
                 else:
                     # Lookup the same word (identified by 'utg') but a different declination
-                    prefix = "".join(x.ordmynd.split("-")[0:-1])
-                    wordform = bin_db.lookup_utg(x.stofn, x.ordfl, x.utg, beyging = beyging)
-                    if not wordform and fallback_to_gr:
-                        # We may have removed too much from the beyging string:
-                        # try again with the definitive form ('gr')
-                        wordform = bin_db.lookup_utg(x.stofn, x.ordfl, x.utg, beyging = beyging + "gr")
-                    if wordform:
-                        if prefix:
-                            result += bin_db.prefix_meanings(wordform, prefix)
-                        else:
-                            result += wordform
-
+                    parts = x.ordmynd.split("-")
+                    stofn = x.stofn.split("-")[-1] if len(parts) > 1 else x.stofn
+                    prefix = "".join(parts[0:-1]) if len(parts) > 1 else ""
+                    # Go through all nominative forms of this word form until we
+                    # find one that matches the meaning (beyging) that we're
+                    # looking for. It also must be the same word category and
+                    # the same stem and identifier (utg). In fact the utg check
+                    # alone should be sufficient, but better safe than sorry.
+                    n = bin_db.lookup_nominative(parts[-1]) # Note: this call is cached
+                    r = [
+                        nm for nm in n if nm.stofn == stofn and nm.ordfl == x.ordfl and
+                        nm.utg == x.utg and nm.beyging == beyging
+                    ]
+                    if prefix:
+                        # Add the word prefix again in front, if any
+                        result += bin_db.prefix_meanings(r, prefix)
+                    else:
+                        result += r
             if result:
                 if len(result) > 1 and sort_func is not None:
                     # Sort the result before choosing the matching meaning
-                    result.sort(key = sort_func)
+                    result.sort(key=sort_func)
                 # There can be more than one word form that matches our spec.
                 # We can't choose between them so we simply return the first one.
                 w = result[0].ordmynd
