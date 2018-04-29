@@ -183,8 +183,8 @@ class Processor:
                         # Only go through articles parsed since the given date
                         q = q.filter(Article.parsed >= from_date).order_by(Article.parsed)
                 if limit > 0:
-                    q = q[0:limit]
-                for a in q:
+                    q = q.limit(limit)
+                for a in q.yield_per(200):
                     yield field(a)
 
         if _PROFILING:
