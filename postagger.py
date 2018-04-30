@@ -52,6 +52,7 @@ from reynir.bintokenizer import canonicalize_token, TOK
 from settings import Settings, Prepositions, StaticPhrases, ConfigError
 from reynir.bindb import BIN_Db
 
+
 class IFD_Corpus:
 
     """ A utility class to access the IFD corpus of XML files, by default
