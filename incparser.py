@@ -4,7 +4,8 @@
 
     Utility class for incremental parsing of token streams
 
-    Copyright (c) 2017 Vilhjalmur Thorsteinsson
+    Copyright (c) 2018 Miðeind ehf.
+    Original author: Vilhjálmur Þorsteinsson
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -22,7 +23,8 @@
     This module implements a simple utility class for parsing token
     streams into paragraphs and sentences. The parse is incremental so
     that the client can take action on each paragraph and sentence as
-    it is processed.
+    it is processed. Also, time.sleep(0) is called between sentences
+    to make multi-threaded parses proceed more smoothly and evenly.
 
 """
 
@@ -122,6 +124,11 @@ class IncrementalParser:
         def sentences(self):
             """ Yield the sentences within the paragraph, nicely wrapped """
             for _, sent in self._p:
+                # Call time.sleep(0) to yield the current thread, i.e.
+                # enable the threading subsystem and/or eventlet under Gunicorn
+                # to switch threads at this point - since the parsing of an
+                # entire article can take a long time
+                time.sleep(0)
                 yield IncrementalParser._IncrementalSentence(self._ip, sent)
 
 
@@ -139,16 +146,6 @@ class IncrementalParser:
         self._verbose = verbose
         self._toklist = toklist
         
-        # Count distinct tokens
-        #self._toklist = list(toklist)
-        #print("Article has {0} tokens".format(len(self._toklist)))
-        #tokencount = defaultdict(int)
-        #for t in self._toklist:
-        #    tokencount[(t.kind, t.txt)] += 1
-        #print("Article has {0} distinct tokens".format(len(tokencount)))
-        #for t in sorted(tokencount.items(), key = lambda x : x[1], reverse = True)[0:20]:
-        #    print("Token '{0}' ({1}) occurs {2} times".format(t[0][1], TOK.descr[t[0][0]], t[1]))
-
     def _add_sentence(self, s, num, score):
         """ Add a processed sentence to the statistics """
         slen = len(s)

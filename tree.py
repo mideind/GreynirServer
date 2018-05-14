@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 """
+
     Reynir: Natural language processing for Icelandic
 
     Tree module
 
-    Copyright (c) 2017 Miðeind ehf.
+    Copyright (C) 2018 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by

@@ -4,7 +4,7 @@
 
     POS tagger module
 
-    Copyright (C) 2017 Miðeind ehf.
+    Copyright (C) 2018 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -140,18 +140,17 @@ class IFD_Tagset:
     BIN_TO_VARIANT = {
         "NF" : "nf", # Nefnifall / nominative
         "ÞF" : "þf", # Þolfall / accusative
-        "ÞF2" : "þf", # Þolfall / accusative
         "ÞGF" : "þgf", # Þágufall / dative
-        "ÞGF2" : "þgf", # Þágufall / dative
         "EF" : "ef", # Eignarfall / possessive
-        "EF2" : "ef", # Eignarfall / possessive
         "KK" : "kk", # Karlkyn / masculine
         "KVK" : "kvk", # Kvenkyn / feminine
         "HK" : "hk", # Hvorugkyn / neutral
         "ET" : "et", # Eintala / singular
         "ET2" : "et", # Eintala / singular
+        "ET3" : "et", # Eintala / singular
         "FT" : "ft", # Fleirtala / plural
         "FT2" : "ft", # Fleirtala / plural
+        "FT3" : "ft", # Fleirtala / plural
         "FSB" : "fsb", # Frumstig, sterk beyging
         "FVB" : "fvb", # Frumstig, veik beyging
         "MST" : "mst", # Miðstig / comparative
@@ -636,7 +635,6 @@ class IFD_Tagset:
             if not sent:
                 continue
             output = []
-            print("******{}".format(sent))
             for t in sent:
                 x = t.get("x")
                 if not x:
