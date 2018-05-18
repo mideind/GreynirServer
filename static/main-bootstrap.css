@@ -231,7 +231,12 @@ ul.nav-tabs span.glyphicon {
    margin-right: 12px;
 }
 
+div#stats-panel {
+   max-width: 512px;
+}
+
 @media(max-width: 768px) {
+
    /* Adjustments for mobile only */
    div.container-fluid.text-container {
       padding-left: 4px;
@@ -245,9 +250,11 @@ ul.nav-tabs span.glyphicon {
       /* Dropdown menu items */
       padding-left: 22px;
    }
+
 }
 
 @media(max-width: 480px) {
+
    ul.nav-tabs span.glyphicon {
       /* Make tab headings narrower by reducing spacing between icon and text */
       margin-right: 2px;
@@ -257,6 +264,10 @@ ul.nav-tabs span.glyphicon {
       padding-left: 10px;
       padding-right: 10px;
    }
+   div#stats-panel {
+      max-width: 380px;
+   }
+
 }
 
 div.input-overlay {
@@ -1110,10 +1121,6 @@ table#tbl-edit-sent tr td h4 {
 
 button#edit-sent {
    margin-right: 12px;
-}
-
-div#stats-panel {
-   max-width: 380px;
 }
 
 div#stats-panel td.count {

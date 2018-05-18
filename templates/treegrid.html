@@ -389,6 +389,7 @@
          <table class="table table-hover">
          <tbody>
             <tr><td>Fjöldi einda</td><td class="count">{{ stats.num_tokens | format_is }}</td></tr>
+            <tr><td>Vinnslutími</td><td class="count">{{ stats.total_time | format_is(2) }} sek.</td></tr>
             <tr><td>Fjöldi mögulegra trjáa</td><td class="count">{{ stats.num_combinations | format_is }}</td></tr>
             <tr><td>Stig besta trés</td><td class="count">{{ stats.total_score | format_is }}</td></tr>
             <tr><td>Margræðnistuðull</td><td class="count">{{ stats.ambiguity | format_is(2) }}</td></tr>

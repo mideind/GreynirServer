@@ -54,7 +54,8 @@ class ArticleDescr:
 
     """ Unit of work descriptor that is shipped between processes """
 
-    def __init__(self, root, url):
+    def __init__(self, seq, root, url):
+        self.seq = seq # Sequence number
         self.root = root
         self.url = url
 
@@ -139,26 +140,24 @@ class Scraper:
         logging.info("Scraping completed in {0:.2f} seconds".format(t1 - t0))
 
 
-    def parse_article(self, url, helper):
+    def parse_article(self, seq, url, helper):
         """ Parse a single article """
 
-        logging.info("Parsing article {0}".format(url))
+        logging.info("[{1}] Parsing article {0}".format(url, seq))
         t0 = time.time()
         num_sentences = 0
         num_parsed = 0
 
         # Load the article
         with SessionContext(commit = True) as session:
-
             a = Article.load_from_url(url, session)
-
             if a is not None:
                 a.parse(session)
                 num_sentences = a.num_sentences
                 num_parsed = a.num_parsed
 
         t1 = time.time()
-        logging.info("Parsing of {2}/{1} sentences completed in {0:.2f} seconds".format(t1 - t0, num_sentences, num_parsed))
+        logging.info("[{3}] Parsing of {2}/{1} sentences completed in {0:.2f} seconds".format(t1 - t0, num_sentences, num_parsed, seq))
 
 
     def _scrape_single_root(self, r):
@@ -186,7 +185,7 @@ class Scraper:
             if helper:
                 self.scrape_article(d.url, helper)
         except Exception as e:
-            logging.warning("Exception when scraping article at {0}: {1!r}".format(d.url, e))
+            logging.warning("[{2}] Exception when scraping article at {0}: {1!r}".format(d.url, e, d.seq))
 
 
     def _parse_single_article(self, d):
@@ -195,12 +194,15 @@ class Scraper:
         try:
             helper = Fetcher._get_helper(d.root)
             if helper:
-                self.parse_article(d.url, helper)
+                self.parse_article(d.seq, d.url, helper)
         except KeyboardInterrupt:
             logging.info("KeyboardInterrupt in _parse_single_article()")
             sys.exit(1)
+        except MemoryError:
+            # Nothing to do but give up on this process
+            sys.exit(1)
         except Exception as e:
-            logging.warning("Exception when parsing article at {0}: {1!r}".format(d.url, e))
+            logging.warning("[{2}] Exception when parsing article at {0}: {1!r}".format(d.url, e, d.seq))
             #traceback.print_exc()
             #raise e from e
         return True
@@ -224,7 +226,7 @@ class Scraper:
                 # Use a multiprocessing pool to scrape the roots
 
                 pool = Pool(4)
-                pool.map(self._scrape_single_root, iter_roots())
+                pool.imap_unordered(self._scrape_single_root, iter_roots())
                 pool.close()
                 pool.join()
 
@@ -233,15 +235,17 @@ class Scraper:
                     """ Go through any unscraped articles and scrape them """
                     # Note that the query(ArticleRow) below cannot be directly changed
                     # to query(ArticleRow.root, ArticleRow.url) since ArticleRow.root is a joined subrecord
+                    seq = 0
                     for a in session.query(ArticleRow) \
                         .filter(ArticleRow.scraped == None).filter(ArticleRow.root_id != None) \
                         .yield_per(100):
-                        yield ArticleDescr(a.root, a.url)
+                        yield ArticleDescr(seq, a.root, a.url)
+                        seq += 1
 
                 # Use a multiprocessing pool to scrape the articles
 
                 pool = Pool(8)
-                pool.map(self._scrape_single_article, iter_unscraped_articles())
+                pool.imap_unordered(self._scrape_single_article, iter_unscraped_articles())
                 pool.close()
                 pool.join()
 
@@ -263,11 +267,13 @@ class Scraper:
                 if limit > 0:
                     # Impose a limit on the query, if given
                     q = q.limit(limit)
-                for a in q:
-                    yield ArticleDescr(a.root, a.url)
+                seq = 0
+                for seq, a in enumerate(q):
+                    yield ArticleDescr(seq, a.root, a.url)
 
             def iter_urls(urls):
                 """ Iterate through the text file whose name is given in urls """
+                seq = 0
                 with open(urls, "r") as f:
                     for url in f:
                         url = url.strip()
@@ -275,13 +281,20 @@ class Scraper:
                             a = session.query(ArticleRow).filter(ArticleRow.url == url).one_or_none()
                             if a is not None:
                                 # Found the article: yield it
-                                yield ArticleDescr(a.root, a.url)
+                                yield ArticleDescr(seq, a.root, a.url)
+                                seq += 1
 
             # Use a multiprocessing pool to parse the articles.
             # Let the pool work on chunks of articles, recycling the
             # processes after each chunk to contain memory creep.
 
-            CHUNK_SIZE = 100 * cpu_count()
+            CPU_COUNT = cpu_count()
+            # Distribute the load between the CPUs, although never exceeding
+            # 100 articles per CPU per process cycle
+            if limit > 0:
+                CHUNK_SIZE = min(100 * CPU_COUNT, limit)
+            else:
+                CHUNK_SIZE = 100 * CPU_COUNT
             if urls is None:
                 g = iter_unparsed_articles(reparse, limit)
             else:
@@ -301,7 +314,10 @@ class Scraper:
                     gc.collect()
                     logging.info("Parser processes forking, chunk of {0} articles".format(lcnt))
                     pool = Pool() # Defaults to using as many processes as there are CPUs
-                    pool.map(self._parse_single_article, adlist)
+                    try:
+                        pool.imap_unordered(self._parse_single_article, adlist)
+                    except Exception as e:
+                        logging.warning("Caught exception: {0}".format(e))
                     pool.close()
                     pool.join()
                     cnt += lcnt

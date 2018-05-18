@@ -860,7 +860,10 @@ class TerminalNode(Node):
         d = dict(x = self.text, k = self.tokentype)
         if self.tokentype != "PUNCTUATION":
             # Terminal
-            d["t"] = self.td.clean_terminal
+            d["t"] = t = self.td.clean_terminal
+            if t[0] == '"' or t[0] == "'":
+                assert False, "Wrong terminal: {0}, text is '{1}', token {2}, tokentype {3}".format(self.td.terminal,
+                    self.text, self.token, self.tokentype)
             # Category
             d["c"] = self.cat
             if self.tokentype == "WORD":
@@ -1113,18 +1116,28 @@ class TreeBase:
         """ Parse a T (Terminal) descriptor """
         # The string s contains:
         # terminal "token" [TOKENTYPE] [auxiliary-json]
-        # The terminal may itself be a single-quoted string
+
+        # The terminal may itself be a single- or double-quoted string,
+        # in which case it may contain underscores, colons and other
+        # punctuation. It can then be followed by variant names,
+        # separated by underscores. The \w regexp pattern matches
+        # alpabetic characters as well as digits and underscores.
         if s[0] == "'":
             r = re.match(r'\'[^\']*\'\w*', s)
+            terminal = r.group() if r else ""
+            s = s[r.end() + 1:] if r else ""
+        elif s[0] == '"':
+            r = re.match(r'\"[^\"]*\"\w*', s)
             terminal = r.group() if r else ""
             s = s[r.end() + 1:] if r else ""
         else:
             a = s.split(' ', maxsplit = 1)
             terminal = a[0]
             s = a[1]
+        # Retrieve token text
         r = re.match(r'\"[^\"]*\"', s)
         if r is None:
-            # Compatibility: older versions used single quotes
+            # Compatibility: older versions used single quotes around token text
             r = re.match(r'\'[^\']*\'', s)
         token = r.group() if r else ""
         s = s[r.end() + 1:] if r else ""
@@ -1136,6 +1149,9 @@ class TreeBase:
             # Default token type
             tokentype = "WORD"
             aux = ""
+        # The 'cat' extracted here is actually the first part of the terminal
+        # name, which is not the word category in all cases (for instance not
+        # for literal terminals).
         cat = terminal.split("_", maxsplit = 1)[0]
         return (terminal, token, tokentype, aux, cat)
 
