@@ -449,6 +449,12 @@ class TerminalDescriptor:
         if number:
             self.number = next(iter(number))
 
+    _OLD_BUGS = {
+        "'margur'" : "lo",
+        "'annar'" : "fn",
+        "'á fætur'" : "ao",
+    }
+
     @property
     def clean_terminal(self):
         """ Return a 'clean' terminal name, having converted literals
@@ -457,6 +463,10 @@ class TerminalDescriptor:
             if self.inferred_cat in self._GENDERS:
                 # 'bróðir:kk'_gr_ft_nf becomes no_kk_gr_ft_nf
                 self._clean_terminal = "no_" + self.inferred_cat
+            elif self.inferred_cat in self._OLD_BUGS:
+                # In older parses, we may have literal terminals
+                # such as 'margur' that are not marked with a category
+                self._clean_terminal = self._OLD_BUGS[self.inferred_cat]
             else:
                 # 'halda:so'_et_p3 becomes so_et_p3
                 self._clean_terminal = self.inferred_cat
