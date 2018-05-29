@@ -44,6 +44,11 @@ var TOK_PERSON = 14;
 var TOK_EMAIL = 15;
 var TOK_ENTITY = 16;
 var TOK_UNKNOWN = 17;
+var TOK_DATEABS = 18;
+var TOK_DATEREL = 19;
+var TOK_TIMESTAMPABS = 20;
+var TOK_TIMESTAMPREL = 21;
+var TOK_MEASUREMENT = 22;
 
 var tokClass = [];
 
@@ -61,6 +66,11 @@ tokClass[TOK_TELNO] = "telno";
 tokClass[TOK_EMAIL] = "email";
 tokClass[TOK_TIME] = "time";
 tokClass[TOK_UNKNOWN] = "nf";
+tokClass[TOK_DATEABS] = "dateabs";
+tokClass[TOK_DATEREL] = "daterel";
+tokClass[TOK_TIMESTAMPABS] = "timestampabs";
+tokClass[TOK_TIMESTAMPREL] = "timestamprel";
+tokClass[TOK_MEASUREMENT] = "measurement";
 
 var tokId = [];
 
@@ -81,6 +91,11 @@ tokId["PERSON"] = TOK_PERSON;
 tokId["EMAIL"] = TOK_EMAIL;
 tokId["ENTITY"] = TOK_ENTITY;
 tokId["UNKNOWN"] = TOK_UNKNOWN;
+tokId["DATEABS"] = TOK_DATEABS;
+tokId["DATEREL"] = TOK_DATEREL;
+tokId["TIMESTAMPABS"] = TOK_TIMESTAMPABS;
+tokId["TIMESTAMPREL"] = TOK_TIMESTAMPREL;
+tokId["MEASUREMENT"] = TOK_MEASUREMENT;
 
 var wordClass = {
    "no" : "óþekkt nafnorð",
@@ -227,7 +242,8 @@ function lzero(n, field) {
 
 function iso_date(d) {
    // Format a date as an ISO string
-   return lzero(d[0], 4) + "-" + lzero(d[1], 2) + "-" + lzero(d[2], 2);
+   // Note: negative years (BCE) are shown as positive
+   return lzero(Math.abs(d[0]), 4) + "-" + lzero(d[1], 2) + "-" + lzero(d[2], 2);
 }
 
 function iso_time(d) {
@@ -237,7 +253,8 @@ function iso_time(d) {
 
 function iso_timestamp(d) {
    // Format a date + time as an ISO string
-   return lzero(d[0], 4) + "-" + lzero(d[1], 2) + "-" + lzero(d[2], 2) + " " +
+   // Note: negative years (BCE) are shown as positive
+   return lzero(Math.abs(d[0]), 4) + "-" + lzero(d[1], 2) + "-" + lzero(d[2], 2) + " " +
       lzero(d[3], 2) + ":" + lzero(d[4], 2) + ":" + lzero(d[5], 2);
 }
 
@@ -316,6 +333,7 @@ function tokenInfo(t, nameDict) {
      percent: null
    };
    var title;
+   var bc;
    if (!t.k || t.k == TOK_WORD) {
       // TOK_WORD
       var wcat = (t.m && t.m[1]) ? t.m[1] : (t.t ? t.t.split("_")[0] : undefined);
@@ -329,6 +347,9 @@ function tokenInfo(t, nameDict) {
          // say 'atviksliður' instead of 'atviksorð'
          if (r.class == "ao" && t.m[0].indexOf(" ") > -1)
             wcls = "atviksliður";
+         else
+         if (r.class == "tao" && t.m[0].indexOf(" ") > -1)
+            wcls = "tímaatviksliður";
          else
          if (r.class == "fs" && t.m[0].indexOf(" ") > -1)
             wcls = "fleiryrt forsetning";
@@ -364,10 +385,16 @@ function tokenInfo(t, nameDict) {
          r.details = "raðtala";
    }
    else
-   if (t.k == TOK_DATE) {
+   if (t.k == TOK_DATE || t.k == TOK_DATEABS) {
      r.lemma = t.x;
      // Show the date in ISO format
-     r.details = "dags. " + iso_date(t.v);
+     bc = (t.v[0] < 0) ? " f.Kr." : "";
+     r.details = "dags. " + iso_date(t.v) + bc;
+   }
+   else
+   if (t.k == TOK_DATEREL) {
+     r.lemma = t.x;
+     r.details = "afstæð dagsetning";
    }
    else
    if (t.k == TOK_TIME) {
@@ -457,10 +484,21 @@ function tokenInfo(t, nameDict) {
       r.details = title;
    }
    else
-   if (t.k == TOK_TIMESTAMP) {
+   if (t.k == TOK_TIMESTAMP || t.k == TOK_TIMESTAMPABS) {
       r.lemma = t.x;
       // Show the timestamp in ISO format
-      r.details = t.v ? iso_timestamp(t.v) : "";
+      bc = (t.v && t.v[0] < 0) ? " f.Kr." : "";
+      r.details = t.v ? (iso_timestamp(t.v) + bc) : "";
+   }
+   else
+   if (t.k == TOK_TIMESTAMPREL) {
+      r.lemma = t.x;
+      r.details = "afstæð tímasetning";
+   }
+   else
+   if (t.k == TOK_MEASUREMENT) {
+      r.lemma = t.x;
+      r.details = format_is(t.v[1], 3) + " " + t.v[0]; // Value, unit
    }
    return r;
 }
