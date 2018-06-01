@@ -52,6 +52,8 @@ BIN_ORDFL = {
     "fs" : { "fs" },
     "ao" : { "ao" },
     "eo" : { "ao" },
+    "spao" : { "ao" },
+    "tao" : { "ao" },
     "töl" : { "töl", "to" },
     "to" : { "töl", "to" },
     "fn" : { "fn" },

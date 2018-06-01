@@ -425,7 +425,7 @@
 </div>
 
 <!-- Popup with info about a terminal that is being hovered over -->
-<div class="info">
+<div id="info">
    <table>
    <tr>
    <td><span id="tag" class='glyphicon glyphicon-tag'></span></td>
@@ -497,10 +497,10 @@ var g = d3.select("div#canvas")
 // (this especially applies on touchscreens)
 $("div#tree div.grid div.table-responsive")
    .scroll(function() {
-      var jqCircle = $("div.info").data("circle");
+      var jqCircle = $("#info").data("circle");
       if (jqCircle) {
          var pos = jqCircle.offset();
-         $("div.info")
+         $("#info")
             .css("left", "" + pos.left + "px")
             .css("top", "" + pos.top + "px")
       }
@@ -510,6 +510,7 @@ $("div#tree div.grid div.table-responsive")
 
 function wrapTokenInfo(dd) {
    // Convert token information from the JSON simplified format
+   // (created in canonicalize_token() in ReynirPackage/bintokenizer.py)
    // to the complex format expected by tokenInfo()
    var tv = dd.v;
    if (dd.k == "AMOUNT")
@@ -537,6 +538,7 @@ function wrapTokenInfo(dd) {
          k: tokId[dd.k],
          t: dd.t,
          g: dd.g,
+         // stem, category (ordfl), fl, beyging
          m: [ dd.s, dd.c, dd.f, dd.b ],
          x: dd.x,
          v: tv
@@ -571,13 +573,19 @@ function terminalIn(d) {
    else
       $("#percent").css("display", "none");
 
+   // Set the class of the pop-up div
+   $("#info").removeClass();
    if (r.class !== null)
-      $("div.info").addClass(r.class);
-   if (r.tagClass !== null)
-      $("div.info span#tag").removeClass("glyphicon-tag").addClass(r.tagClass);
+      $("#info").addClass(r.class);
+
+   // Set the class of the pop-up tag
+   $("#info span#tag")
+      .removeClass()
+      .addClass("glyphicon")
+      .addClass(r.tagClass ? r.tagClass : "glyphicon-tag");
 
    // Position the info popup
-   $("div.info")
+   $("#info")
       .css("left", "" + pos.left + "px")
       .css("top", "" + pos.top + "px")
       .css("visibility", "visible")
@@ -590,18 +598,11 @@ function terminalOut(d) {
    var dd = circle.data()[0].data;
    if (dd.k == "PUNCTUATION")
       return;
-   $("div.info")
+   $("#info")
       .css("visibility", "hidden")
       .css("left", 0)
       .css("top", 0)
       .data("circle", null);
-   var r = wrapTokenInfo(dd);
-   if (r.class !== null)
-      $("div.info").removeClass(r.class);
-   if (r.tagClass !== null)
-      $("div.info span#tag")
-         .removeClass(r.tagClass)
-         .addClass("glyphicon-tag");
 }
 
 function d3_update(source) {
@@ -804,8 +805,11 @@ function editSentence() {
 function initMain(jQuery) {
    // Initialization
    $("#edit-sent").click(editSentence);
-   $("div.info")
-      .click(function() { $(this).css("visibility", "hidden"); })
+   $("#info")
+      .click(function(ev) {
+         ev.stopPropagation();
+         $(this).css("visibility", "hidden");
+      })
       .data("circle", null);
 
    // Enable tabs

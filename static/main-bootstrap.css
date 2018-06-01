@@ -540,7 +540,7 @@ p.image {
    padding-bottom: 0;
 }
 
-div.info {
+div#info {
    visibility: hidden;
    position: absolute;
    background-color: #eeeeee;
@@ -556,72 +556,72 @@ div.info {
    padding-right: 12px;
 }
 
-div.info.kk,
-div.info.kvk,
-div.info.hk,
-div.info.fn,
-div.info.abfn,
-div.info.pfn,
-div.info.person.male {
+div#info.kk,
+div#info.kvk,
+div#info.hk,
+div#info.fn,
+div#info.abfn,
+div#info.pfn,
+div#info.person.male {
    background-color: #d9edf7;
 }
 
-div.info.lo {
+div#info.lo {
    background-color: #dff0d8;
 }
 
-div.info.so,
-div.info.nhm,
-div.info.person.female {
+div#info.so,
+div#info.nhm,
+div#info.person.female {
    background-color: #f2dede;
 }
 
-div.info.st {
+div#info.st {
    background-color: #fcf8e3;
 }
 
-div.info p {
+div#info p {
    margin-top: 0px;
    margin-bottom: 4px;
    padding: 0;
 }
 
-div.info #tag {
+div#info #tag {
    display: inline-block;
    float: left;
    padding-right: 6px;
    padding-bottom: 2px;
 }
 
-div.info.fn #tag,
-div.info.pfn #tag,
-div.info.abfn #tag,
-div.info.person.male #tag,
-div.info.kk #tag,
-div.info.kvk #tag,
-div.info.hk #tag {
+div#info.fn #tag,
+div#info.pfn #tag,
+div#info.abfn #tag,
+div#info.person.male #tag,
+div#info.kk #tag,
+div#info.kvk #tag,
+div#info.hk #tag {
    color: #337ab7;
 }
 
-div.info.lo #tag {
+div#info.lo #tag {
    color: #5cb85c;
 }
 
-div.info.nhm #tag,
-div.info.so #tag,
-div.info.person.female #tag {
+div#info.nhm #tag,
+div#info.so #tag,
+div#info.person.female #tag {
    color: #d9534f;
 }
 
-div.info.st #tag {
+div#info.st #tag {
    color: #f0ad4e;
 }
 
-div.info #lemma {
+div#info #lemma {
    font-weight: 700;
 }
 
-div.info #details {
+div#info #details {
    margin-top: 4px;
    font-style: italic;
 }

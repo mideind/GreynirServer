@@ -174,13 +174,17 @@ function hoverIn() {
    else
       $("#percent").css("display", "none");
 
+   $("#info").removeClass();
    if (r.class !== null)
-      $("div.info").addClass(r.class);
-   if (r.tagClass !== null)
-      $("div.info span#tag").removeClass("glyphicon-tag").addClass(r.tagClass);
+      $("#info").addClass(r.class);
+
+   $("#info span#tag")
+      .removeClass()
+      .addClass("glyphicon")
+      .addClass(r.tagClass ? r.tagClass : "glyphicon-tag");
 
    // Position the info popup
-   $("div.info")
+   $("#info")
       .css("top", offset.top.toString() + "px")
       .css("left", offset.left.toString() + "px")
       .css("visibility", "visible");
@@ -188,8 +192,7 @@ function hoverIn() {
 
 function hoverOut() {
    // Stop hovering over a word
-   var info = $("div.info");
-   info.css("visibility", "hidden");
+   $("#info").css("visibility", "hidden");
    $(this).removeClass("highlight");
    var wId = $(this).attr("id");
    if (wId === null || wId === undefined)
@@ -199,13 +202,6 @@ function hoverOut() {
    var t = w[ix];
    if (!t)
       return;
-   var r = tokenInfo(t, null);
-   if (r.class !== null)
-      info.removeClass(r.class);
-   if (r.tagClass !== null)
-      $("div.info span#tag")
-         .removeClass(r.tagClass)
-         .addClass("glyphicon-tag");
 }
 
 function displayTokens(j) {

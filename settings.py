@@ -3,7 +3,7 @@
 
     Settings module
 
-    Copyright (c) 2017 Miðeind ehf.
+    Copyright (c) 2018 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -332,6 +332,19 @@ class DisallowedNames:
     def add(cls, name, cases):
         """ Add an adjective ending and its associated form. """
         cls.STEMS[name] = set(cases)
+
+
+class UndeclinableAdjectives:
+
+    """ Wrapper around list of undeclinable adjectives """
+
+    # Set of adjectives
+    ADJECTIVES = set()
+
+    @classmethod
+    def add(cls, wrd):
+        """ Add an adjective """
+        cls.ADJECTIVES.add(wrd)
 
 
 class StaticPhrases:
@@ -829,6 +842,14 @@ class Settings:
         VerbSubjects.add(par)
 
     @staticmethod
+    def _handle_undeclinable_adjectives(s):
+        """ Handle list of undeclinable adjectives """
+        s = s.lower().strip()
+        if not s.isalpha():
+            raise ConfigError("Expected word but got '{0}' in undeclinable_adjectives".format(s))
+        UndeclinableAdjectives.add(s)
+
+    @staticmethod
     def _handle_noindex_words(s):
         """ Handle no index instructions in the settings section """
         # Format: category = [cat] followed by word stem list
@@ -1003,6 +1024,7 @@ class Settings:
                 "ambiguous_phrases" : Settings._handle_ambiguous_phrases,
                 "meanings" : Settings._handle_meanings,
                 "adjective_template" : Settings._handle_adjective_template,
+                "undeclinable_adjectives" : Settings._handle_undeclinable_adjectives,
                 "disallowed_names" : Settings._handle_disallowed_names,
                 "noindex_words" : Settings._handle_noindex_words,
                 "topics" : Settings._handle_topics
