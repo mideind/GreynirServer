@@ -680,7 +680,7 @@ class TerminalNode(Node):
             return self.text
         return self._root_cache, (self.text, self.at_start, self.td.terminal)
 
-    def lookup_alternative(self, bin_db, replace_func, sort_func=None, fallback_to_gr=False):
+    def lookup_alternative(self, bin_db, replace_func, sort_func=None):
         """ Return a different (but always nominative case) word form, if available,
             by altering the beyging spec via the given replace_func function """
         w, m = bin_db.lookup_word(self.text, self.at_start)
@@ -790,7 +790,7 @@ class TerminalNode(Node):
             return b.replace("gr", "").replace("VB", "SB")
 
         # Lookup the same word stem but in the nominative case
-        w = self.lookup_alternative(bin_db, replace_beyging, fallback_to_gr = (self.cat == "no"))
+        w = self.lookup_alternative(bin_db, replace_beyging)
         return w
 
     def _canonical(self, bin_db):

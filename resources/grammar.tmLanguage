@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>fileTypes</key>
+	<array>
+		<string>grammar</string>
+	</array>
+	<key>name</key>
+	<string>Reynir grammar</string>
+	<key>patterns</key>
+	<array>
+		<dict>
+			<key>include</key>
+			<string>#comments</string>
+		</dict>
+		<dict>
+			<key>include</key>
+			<string>#strings</string>
+		</dict>
+		<dict>
+			<key>comment</key>
+			<string>Punctuation within productions</string>
+			<key>match</key>
+			<string>→|\||=|-&gt;|&gt;</string>
+			<key>name</key>
+			<string>keyword.other.grammar</string>
+		</dict>
+		<dict>
+			<key>comment</key>
+			<string>Token repetition specifiers</string>
+			<key>match</key>
+			<string>\?|\*|\+</string>
+			<key>name</key>
+			<string>variable.parameter.function.keyword.grammar</string>
+		</dict>
+		<dict>
+			<key>comment</key>
+			<string>Terminals starting with a lowercase letter</string>
+			<key>match</key>
+			<string>\b([[:lower:]][[:word:]]*)</string>
+			<key>name</key>
+			<string>storage.type.class.grammar</string>
+		</dict>
+		<dict>
+			<key>comment</key>
+			<string>Variant literals starting with underscores</string>
+			<key>match</key>
+			<string>(_[[:alnum:]]+)*</string>
+			<key>name</key>
+			<string>constant.numeric.integer.decimal.grammar</string>
+		</dict>
+		<dict>
+			<key>comment</key>
+			<string>Variants starting with a forward slash</string>
+			<key>match</key>
+			<string>/([[:lower:]]+)</string>
+			<key>name</key>
+			<string>entity.name.function.decorator.grammar</string>
+		</dict>
+		<dict>
+			<key>comment</key>
+			<string>Pragma directives</string>
+			<key>match</key>
+			<string>\$([[:lower:]][[:word:]]*)</string>
+			<key>name</key>
+			<string>keyword.other.grammar</string>
+		</dict>
+	</array>
+	<key>repository</key>
+	<dict>
+		<key>comments</key>
+		<dict>
+			<key>patterns</key>
+			<array>
+				<dict>
+					<key>begin</key>
+					<string>#</string>
+					<key>comment</key>
+					<string>Comment from hash sign to end of line</string>
+					<key>end</key>
+					<string>$\n?</string>
+					<key>name</key>
+					<string>comment.line.double-slash.grammar</string>
+				</dict>
+			</array>
+		</dict>
+		<key>strings</key>
+		<dict>
+			<key>patterns</key>
+			<array>
+				<dict>
+					<key>begin</key>
+					<string>'</string>
+					<key>beginCaptures</key>
+					<dict>
+						<key>0</key>
+						<dict>
+							<key>name</key>
+							<string>punctuation.definition.string.begin.grammar</string>
+						</dict>
+					</dict>
+					<key>comment</key>
+					<string>Literal terminals within single quotes</string>
+					<key>end</key>
+					<string>'</string>
+					<key>endCaptures</key>
+					<dict>
+						<key>0</key>
+						<dict>
+							<key>name</key>
+							<string>punctuation.definition.string.end.grammar</string>
+						</dict>
+					</dict>
+					<key>name</key>
+					<string>string.quoted.single.grammar</string>
+				</dict>
+				<dict>
+					<key>begin</key>
+					<string>"</string>
+					<key>beginCaptures</key>
+					<dict>
+						<key>0</key>
+						<dict>
+							<key>name</key>
+							<string>punctuation.definition.string.begin.grammar</string>
+						</dict>
+					</dict>
+					<key>comment</key>
+					<string>Literal terminals within double quotes</string>
+					<key>end</key>
+					<string>"</string>
+					<key>endCaptures</key>
+					<dict>
+						<key>0</key>
+						<dict>
+							<key>name</key>
+							<string>punctuation.definition.string.end.grammar</string>
+						</dict>
+					</dict>
+					<key>name</key>
+					<string>string.quoted.double.grammar</string>
+				</dict>
+			</array>
+		</dict>
+	</dict>
+	<key>scopeName</key>
+	<string>source.grammar</string>
+	<key>uuid</key>
+	<string>1aae12ac-bbb3-4669-bcfa-489d80d090cc</string>
+</dict>
+</plist>

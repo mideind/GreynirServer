@@ -118,8 +118,7 @@ def recognize_entities(token_stream, enclosing_session = None):
                         if None in state:
                             yield flush_match()
                         else:
-                            for t in tq:
-                                yield t
+                            yield from tq
                         tq = []
                         state = defaultdict(list)
                     yield token
@@ -159,8 +158,7 @@ def recognize_entities(token_stream, enclosing_session = None):
                             # Flush the already accumulated match
                             yield flush_match()
                         else:
-                            for t in tq:
-                                yield t
+                            yield from tq
                         tq = []
 
                     # Add all possible new states for entity names that could be starting
@@ -238,8 +236,7 @@ def recognize_entities(token_stream, enclosing_session = None):
             if None in state:
                 yield flush_match()
             else:
-                for t in tq:
-                    yield t
+                yield from tq
             tq = []
 
     # print("\nEntity cache:\n{0}".format("\n".join("'{0}': {1}".format(k, v) for k, v in ecache.items())))
