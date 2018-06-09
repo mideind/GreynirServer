@@ -40,7 +40,7 @@ resources/*.txt
 !resources/obeygd.hreinsad.txt
 resources/*.csv
 resources/ord.compressed
-resources/*.tmLanguage
+#resources/*.tmLanguage
 resources/visir/
 resources/reykjanes/
 mim/

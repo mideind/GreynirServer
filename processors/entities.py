@@ -111,6 +111,12 @@ def sentence(state, result):
             # Avoid chaff
             continue
 
+        # Cut phrases off the front
+        for p in ("sem er ", "jafnframt er "):
+            if definition.startswith(p):
+                definition = definition[len(p):]
+                break
+
         def def_ok(definition):
             """ Returns True if a definition meets basic sanity criteria """
             if definition.lower() in NOT_DEFINITIONS:

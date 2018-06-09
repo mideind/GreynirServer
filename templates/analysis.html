@@ -38,7 +38,7 @@
    <h3 class="help">Málgreining <small>Smelltu á málsgrein til að sjá trjágreiningu hennar</small></h3>
 
    <!-- Popup with info about the word being hovered over -->
-   <div class="info">
+   <div id="info">
       <table>
       <tr>
       <td><span id="tag" class='glyphicon glyphicon-tag'></span></td>
@@ -150,7 +150,10 @@
       $("#navid-analysis").addClass("active");
       // Clicking on the info panel makes it disappear
       // (necessary for touch screens)
-      $("div.info").click(function() { $(this).css("visibility", "hidden"); });
+      $("#info").click(function(ev) {
+         ev.stopPropagation();
+         $(this).css("visibility", "hidden");
+      });
       // Hide the output div until we have something to show
       $("div#output").css("display", "none");
    }

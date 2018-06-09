@@ -1,9 +1,11 @@
+#!/usr/bin/env python
 """
+    
     Reynir: Natural language processing for Icelandic
 
     Additional vocabulary utility
 
-    Copyright (c) 2018 Miðeind ehf.
+    Copyright (C) 2018 Miðeind ehf.
     Author: Vilhjálmur Þorsteinsson
 
        This program is free software: you can redistribute it and/or modify

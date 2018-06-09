@@ -5,7 +5,7 @@
 
     Web server main module
 
-    Copyright (C) 2017 Miðeind ehf.
+    Copyright (C) 2018 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -45,10 +45,12 @@ from flask import render_template, make_response, jsonify, redirect, url_for
 from flask import request, send_from_directory
 from flask.wrappers import Response
 
+import reynir
 from settings import Settings, ConfigError, changedlocale
-from bindb import BIN_Db
-from tokenizer import tokenize, TOK, correct_spaces, canonicalize_token
-from fastparser import Fast_Parser, ParseForestFlattener
+from reynir.bindb import BIN_Db
+from nertokenizer import tokenize_and_recognize, TOK, correct_spaces
+from reynir.bintokenizer import canonicalize_token
+from reynir.fastparser import Fast_Parser, ParseForestFlattener
 from article import Article as ArticleProxy
 from treeutil import TreeUtility
 from scraperdb import SessionContext, desc, Root, Person, Article, ArticleTopic, Topic,\
@@ -628,7 +630,7 @@ def query_api(version = 1):
     else:
         with SessionContext(commit = True) as session:
 
-            toklist = list(tokenize(q, enclosing_session = session,
+            toklist = list(tokenize_and_recognize(q, enclosing_session = session,
                 auto_uppercase = q.islower() if auto_uppercase else False))
             actual_q = correct_spaces(" ".join(t.txt or "" for t in toklist))
 
@@ -943,13 +945,29 @@ if __name__ == "__main__":
         "Phrases.conf", "Vocab.conf", "Names.conf"
     ]
 
+    for i, fname in enumerate(extra_files):
+        # First check our own module's config subdirectory
+        path = os.path.join(os.path.dirname(__file__), "config", fname)
+        path = os.path.realpath(path)
+        if os.path.isfile(path):
+            extra_files[i] = path
+        else:
+            # This config file is not in the Reynir/config subdirectory:
+            # Attempt to watch it in ReynirPackage
+            path = os.path.join(os.path.dirname(reynir.__file__), "config", fname)
+            path = os.path.realpath(path)
+            if os.path.isfile(path):
+                extra_files[i] = path
+            else:
+                print("Extra file path '{0}' not found".format(path))
+
     from socket import error as socket_error
     import errno
     try:
         # Run the Flask web server application
         app.run(host = Settings.HOST, port = Settings.PORT,
             debug = Settings.DEBUG, use_reloader = True,
-            extra_files = [ "config/" + fname for fname in extra_files ])
+            extra_files = extra_files)
     except socket_error as e:
         if e.errno == errno.EADDRINUSE: # Address already in use
             logging.error("Reynir is already running at host {0}:{1}".format(Settings.HOST, Settings.PORT))

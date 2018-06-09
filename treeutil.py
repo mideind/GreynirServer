@@ -27,12 +27,13 @@ import threading
 from collections import namedtuple
 
 from fetcher import Fetcher
-from tokenizer import TOK, tokenize, canonicalize_token
-from fastparser import Fast_Parser, ParseForestNavigator
+from nertokenizer import TOK, tokenize_and_recognize
+from reynir.bintokenizer import canonicalize_token
+from reynir.fastparser import Fast_Parser, ParseForestNavigator
 from incparser import IncrementalParser
 from scraperdb import SessionContext
 from settings import Settings
-from matcher import SimpleTree, SimpleTreeBuilder
+from reynir.matcher import SimpleTree, SimpleTreeBuilder
 
 
 WordTuple = namedtuple("WordTuple", ["stem", "cat"])
@@ -373,7 +374,7 @@ class TreeUtility:
         # Demarcate paragraphs in the input
         text = Fetcher.mark_paragraphs(text)
         # Tokenize the result
-        toklist = list(tokenize(text, enclosing_session = session))
+        toklist = list(tokenize_and_recognize(text, enclosing_session = session))
         t1 = time.time()
         pgs, stats = TreeUtility._process_toklist(parser, session, toklist, xform)
         if all_names is None:

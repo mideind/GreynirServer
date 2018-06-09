@@ -4,7 +4,7 @@
 
     Fetcher module
 
-    Copyright (c) 2017 Miðeind ehf.
+    Copyright (c) 2018 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@ from datetime import datetime
 from bs4 import BeautifulSoup, NavigableString
 
 from settings import Settings
-from tokenizer import tokenize
+from nertokenizer import tokenize_and_recognize
 
 from scraperdb import SessionContext, Root, Article as ArticleRow
 
@@ -182,7 +182,7 @@ class Fetcher:
         tlist = None # Free memory
 
         # Tokenize the resulting text, returning a generator
-        return tokenize(text, enclosing_session = enclosing_session)
+        return tokenize_and_recognize(text, enclosing_session = enclosing_session)
 
 
     @classmethod

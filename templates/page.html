@@ -34,7 +34,7 @@
 <div id="output">
 
    <!-- Popup with info about the word being hovered over -->
-   <div class="info">
+   <div id="info">
       <table>
       <tr>
       <td><span id="tag" class='glyphicon glyphicon-tag'></span></td>
@@ -214,7 +214,7 @@
       $("div#help").css("display", "block");
       // Clicking on the info panel makes it disappear
       // (necessary for touch screens)
-      $("div.info")
+      $("#info")
          .click(function(ev) {
             ev.stopPropagation();
             $(this).css("visibility", "hidden");

@@ -33,8 +33,9 @@ from collections import OrderedDict, defaultdict, namedtuple
 from settings import Settings, NoIndexWords
 from scraperdb import Article as ArticleRow, SessionContext, Word, Root, DataError, desc
 from fetcher import Fetcher
-from tokenizer import TOK, tokenize, canonicalize_token
-from fastparser import Fast_Parser, ParseError, ParseForestDumper
+from tokenizer import TOK, tokenize
+from reynir.bintokenizer import canonicalize_token
+from reynir.fastparser import Fast_Parser, ParseError, ParseForestDumper
 from incparser import IncrementalParser
 from tree import Tree
 from treeutil import TreeUtility

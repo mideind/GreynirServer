@@ -5,7 +5,7 @@
 
     TnT Tagger module
 
-    Copyright (C) 2017 Miðeind ehf.
+    Copyright (C) 2018 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -59,8 +59,8 @@ from math import log
 from collections import defaultdict
 from contextlib import contextmanager
 
-from bindb import BIN_Db
-from tokenizer import raw_tokenize, parse_tokens, paragraphs, TOK
+from reynir.bindb import BIN_Db
+from reynir.bintokenizer import raw_tokenize, parse_tokens, paragraphs, TOK
 from postagger import IFD_Tagset, NgramTagger
 
 

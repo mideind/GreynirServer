@@ -33,12 +33,13 @@ from collections import namedtuple, defaultdict
 from settings import Settings, changedlocale
 from scraperdb import desc, Root, Article, Person, Entity, \
     RelatedWordsQuery, ArticleCountQuery, ArticleListQuery
-from bindb import BIN_Db
+from reynir.bindb import BIN_Db
 from tree import Tree
 from treeutil import TreeUtility
-from tokenizer import TOK, correct_spaces, stems_of_token
-from fastparser import Fast_Parser, ParseForestDumper, ParseForestPrinter, ParseError
-from reducer import Reducer
+from tokenizer import TOK, correct_spaces
+from reynir.bintokenizer import stems_of_token
+from reynir.fastparser import Fast_Parser, ParseForestDumper, ParseForestPrinter, ParseError
+from reynir.reducer import Reducer
 from search import Search
 
 

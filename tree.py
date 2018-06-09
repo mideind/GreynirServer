@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 """
+
     Reynir: Natural language processing for Icelandic
 
     Tree module
 
-    Copyright (c) 2017 Miðeind ehf.
+    Copyright (C) 2018 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -34,10 +35,10 @@ from contextlib import closing
 from collections import OrderedDict, namedtuple
 
 from settings import Settings, DisallowedNames, VerbObjects
-from bindb import BIN_Db
-from binparser import BIN_Token
-from matcher import SimpleTreeBuilder
-from cache import LRU_Cache
+from reynir.bindb import BIN_Db
+from reynir.binparser import BIN_Token
+from reynir.matcher import SimpleTreeBuilder
+from reynir.cache import LRU_Cache
 
 
 BIN_ORDFL = {
@@ -51,6 +52,8 @@ BIN_ORDFL = {
     "fs" : { "fs" },
     "ao" : { "ao" },
     "eo" : { "ao" },
+    "spao" : { "ao" },
+    "tao" : { "ao" },
     "töl" : { "töl", "to" },
     "to" : { "töl", "to" },
     "fn" : { "fn" },
@@ -448,6 +451,12 @@ class TerminalDescriptor:
         if number:
             self.number = next(iter(number))
 
+    _OLD_BUGS = {
+        "'margur'" : "lo",
+        "'annar'" : "fn",
+        "'á fætur'" : "ao",
+    }
+
     @property
     def clean_terminal(self):
         """ Return a 'clean' terminal name, having converted literals
@@ -456,6 +465,10 @@ class TerminalDescriptor:
             if self.inferred_cat in self._GENDERS:
                 # 'bróðir:kk'_gr_ft_nf becomes no_kk_gr_ft_nf
                 self._clean_terminal = "no_" + self.inferred_cat
+            elif self.inferred_cat in self._OLD_BUGS:
+                # In older parses, we may have literal terminals
+                # such as 'margur' that are not marked with a category
+                self._clean_terminal = self._OLD_BUGS[self.inferred_cat]
             else:
                 # 'halda:so'_et_p3 becomes so_et_p3
                 self._clean_terminal = self.inferred_cat
@@ -489,7 +502,7 @@ class TerminalDescriptor:
             # Check case match
             if case_override is not None:
                 # Case override: we don't want other cases beside the given one
-                for c in TerminalNode._CASES:
+                for c in self._CASES:
                     if c != case_override:
                         if c.upper() in m.beyging:
                             return False
@@ -606,9 +619,8 @@ class TerminalNode(Node):
 
     """ A Node corresponding to a terminal """
 
-    # Undeclinable word categories
-    _NOT_DECLINABLE = frozenset([ "ao", "eo", "spao", "fs", "st", "stt", "nhm" ])
-
+    # Undeclinable terminal categories
+    _NOT_DECLINABLE = frozenset([ "ao", "eo", "spao", "fs", "st", "stt", "nhm", "uh", "töl" ])
     _TD = dict() # Cache of terminal descriptors
 
     # Cache of word roots (stems) keyed by (word, at_start, terminal)
@@ -628,7 +640,7 @@ class TerminalNode(Node):
         self.tokentype = tokentype
         self.is_word = tokentype in { "WORD", "PERSON" }
         self.is_literal = td.is_literal
-        self.is_declinable = False if self.is_literal else (td.inferred_cat not in self._NOT_DECLINABLE)
+        self.is_declinable = (not self.is_literal) and (td.inferred_cat not in self._NOT_DECLINABLE)
         self.aux = aux # Auxiliary information, originally from token.t2
         # Cache the root form of this word so that it is only looked up
         # once, even if multiple processors scan this tree
@@ -668,9 +680,9 @@ class TerminalNode(Node):
             return self.text
         return self._root_cache, (self.text, self.at_start, self.td.terminal)
 
-    def lookup_alternative(self, bin_db, replace_func, sort_func = None, fallback_to_gr = False):
-        """ Return a different word form, if available, by altering the beyging
-            spec via the given replace_func function """
+    def lookup_alternative(self, bin_db, replace_func, sort_func=None):
+        """ Return a different (but always nominative case) word form, if available,
+            by altering the beyging spec via the given replace_func function """
         w, m = bin_db.lookup_word(self.text, self.at_start)
         if m:
             # Narrow the meanings down to those that are compatible with the terminal
@@ -688,22 +700,28 @@ class TerminalNode(Node):
                     result.append(x)
                 else:
                     # Lookup the same word (identified by 'utg') but a different declination
-                    prefix = "".join(x.ordmynd.split("-")[0:-1])
-                    wordform = bin_db.lookup_utg(x.stofn, x.ordfl, x.utg, beyging = beyging)
-                    if not wordform and fallback_to_gr:
-                        # We may have removed too much from the beyging string:
-                        # try again with the definitive form ('gr')
-                        wordform = bin_db.lookup_utg(x.stofn, x.ordfl, x.utg, beyging = beyging + "gr")
-                    if wordform:
-                        if prefix:
-                            result += bin_db.prefix_meanings(wordform, prefix)
-                        else:
-                            result += wordform
-
+                    parts = x.ordmynd.split("-")
+                    stofn = x.stofn.split("-")[-1] if len(parts) > 1 else x.stofn
+                    prefix = "".join(parts[0:-1]) if len(parts) > 1 else ""
+                    # Go through all nominative forms of this word form until we
+                    # find one that matches the meaning (beyging) that we're
+                    # looking for. It also must be the same word category and
+                    # the same stem and identifier (utg). In fact the utg check
+                    # alone should be sufficient, but better safe than sorry.
+                    n = bin_db.lookup_nominative(parts[-1]) # Note: this call is cached
+                    r = [
+                        nm for nm in n if nm.stofn == stofn and nm.ordfl == x.ordfl and
+                        nm.utg == x.utg and nm.beyging == beyging
+                    ]
+                    if prefix:
+                        # Add the word prefix again in front, if any
+                        result += bin_db.prefix_meanings(r, prefix)
+                    else:
+                        result += r
             if result:
                 if len(result) > 1 and sort_func is not None:
                     # Sort the result before choosing the matching meaning
-                    result.sort(key = sort_func)
+                    result.sort(key=sort_func)
                 # There can be more than one word form that matches our spec.
                 # We can't choose between them so we simply return the first one.
                 w = result[0].ordmynd
@@ -772,7 +790,7 @@ class TerminalNode(Node):
             return b.replace("gr", "").replace("VB", "SB")
 
         # Lookup the same word stem but in the nominative case
-        w = self.lookup_alternative(bin_db, replace_beyging, fallback_to_gr = (self.cat == "no"))
+        w = self.lookup_alternative(bin_db, replace_beyging)
         return w
 
     def _canonical(self, bin_db):
@@ -854,7 +872,10 @@ class TerminalNode(Node):
         d = dict(x = self.text, k = self.tokentype)
         if self.tokentype != "PUNCTUATION":
             # Terminal
-            d["t"] = self.td.clean_terminal
+            d["t"] = t = self.td.clean_terminal
+            if t[0] == '"' or t[0] == "'":
+                assert False, "Wrong terminal: {0}, text is '{1}', token {2}, tokentype {3}".format(self.td.terminal,
+                    self.text, self.token, self.tokentype)
             # Category
             d["c"] = self.cat
             if self.tokentype == "WORD":
@@ -1107,18 +1128,28 @@ class TreeBase:
         """ Parse a T (Terminal) descriptor """
         # The string s contains:
         # terminal "token" [TOKENTYPE] [auxiliary-json]
-        # The terminal may itself be a single-quoted string
+
+        # The terminal may itself be a single- or double-quoted string,
+        # in which case it may contain underscores, colons and other
+        # punctuation. It can then be followed by variant names,
+        # separated by underscores. The \w regexp pattern matches
+        # alpabetic characters as well as digits and underscores.
         if s[0] == "'":
             r = re.match(r'\'[^\']*\'\w*', s)
+            terminal = r.group() if r else ""
+            s = s[r.end() + 1:] if r else ""
+        elif s[0] == '"':
+            r = re.match(r'\"[^\"]*\"\w*', s)
             terminal = r.group() if r else ""
             s = s[r.end() + 1:] if r else ""
         else:
             a = s.split(' ', maxsplit = 1)
             terminal = a[0]
             s = a[1]
+        # Retrieve token text
         r = re.match(r'\"[^\"]*\"', s)
         if r is None:
-            # Compatibility: older versions used single quotes
+            # Compatibility: older versions used single quotes around token text
             r = re.match(r'\'[^\']*\'', s)
         token = r.group() if r else ""
         s = s[r.end() + 1:] if r else ""
@@ -1130,6 +1161,9 @@ class TreeBase:
             # Default token type
             tokentype = "WORD"
             aux = ""
+        # The 'cat' extracted here is actually the first part of the terminal
+        # name, which is not the word category in all cases (for instance not
+        # for literal terminals).
         cat = terminal.split("_", maxsplit = 1)[0]
         return (terminal, token, tokentype, aux, cat)
 

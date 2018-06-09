@@ -44,6 +44,11 @@ var TOK_PERSON = 14;
 var TOK_EMAIL = 15;
 var TOK_ENTITY = 16;
 var TOK_UNKNOWN = 17;
+var TOK_DATEABS = 18;
+var TOK_DATEREL = 19;
+var TOK_TIMESTAMPABS = 20;
+var TOK_TIMESTAMPREL = 21;
+var TOK_MEASUREMENT = 22;
 
 var tokClass = [];
 
@@ -61,6 +66,11 @@ tokClass[TOK_TELNO] = "telno";
 tokClass[TOK_EMAIL] = "email";
 tokClass[TOK_TIME] = "time";
 tokClass[TOK_UNKNOWN] = "nf";
+tokClass[TOK_DATEABS] = "dateabs";
+tokClass[TOK_DATEREL] = "daterel";
+tokClass[TOK_TIMESTAMPABS] = "timestampabs";
+tokClass[TOK_TIMESTAMPREL] = "timestamprel";
+tokClass[TOK_MEASUREMENT] = "measurement";
 
 var tokId = [];
 
@@ -81,6 +91,11 @@ tokId["PERSON"] = TOK_PERSON;
 tokId["EMAIL"] = TOK_EMAIL;
 tokId["ENTITY"] = TOK_ENTITY;
 tokId["UNKNOWN"] = TOK_UNKNOWN;
+tokId["DATEABS"] = TOK_DATEABS;
+tokId["DATEREL"] = TOK_DATEREL;
+tokId["TIMESTAMPABS"] = TOK_TIMESTAMPABS;
+tokId["TIMESTAMPREL"] = TOK_TIMESTAMPREL;
+tokId["MEASUREMENT"] = TOK_MEASUREMENT;
 
 var wordClass = {
    "no" : "óþekkt nafnorð",
@@ -152,7 +167,7 @@ var cases = {
 function format_is(n, decimals) {
    /* Utility function to format a number according to is_IS */
    if (decimals === undefined || decimals < 0)
-     decimals = 0;
+      decimals = 0;
    var parts = n.toFixed(decimals).split('.');
    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
    return parts.join(',');
@@ -227,7 +242,8 @@ function lzero(n, field) {
 
 function iso_date(d) {
    // Format a date as an ISO string
-   return lzero(d[0], 4) + "-" + lzero(d[1], 2) + "-" + lzero(d[2], 2);
+   // Note: negative years (BCE) are shown as positive
+   return lzero(Math.abs(d[0]), 4) + "-" + lzero(d[1], 2) + "-" + lzero(d[2], 2);
 }
 
 function iso_time(d) {
@@ -237,7 +253,8 @@ function iso_time(d) {
 
 function iso_timestamp(d) {
    // Format a date + time as an ISO string
-   return lzero(d[0], 4) + "-" + lzero(d[1], 2) + "-" + lzero(d[2], 2) + " " +
+   // Note: negative years (BCE) are shown as positive
+   return lzero(Math.abs(d[0]), 4) + "-" + lzero(d[1], 2) + "-" + lzero(d[2], 2) + " " +
       lzero(d[3], 2) + ":" + lzero(d[4], 2) + ":" + lzero(d[5], 2);
 }
 
@@ -297,31 +314,38 @@ function tokenInfo(t, nameDict) {
    // Return a dict with information about the given token,
    // including its lemma, grammar info and details
    /*
-     t.k: token kind
-     t.t: terminal
-     t.g: gender (only present if terminal is missing)
-     t.m[0]: stofn
-     t.m[1]: ordfl
-     t.m[2]: fl
-     t.m[3]: beyging
-     t.x: ordmynd
-     t.v: extra info, eventually in a tuple
+      t.k: token kind
+      t.t: terminal
+      t.g: gender (only present if terminal is missing)
+      t.m[0]: stofn
+      t.m[1]: ordfl
+      t.m[2]: fl
+      t.m[3]: beyging
+      t.x: ordmynd
+      t.v: extra info, eventually in a tuple
    */
    var r = {
-     class: null,
-     tagClass: null,
-     lemma: null,
-     details: null,
-     grammar: null,
-     percent: null
+      class: null,
+      tagClass: null,
+      lemma: null,
+      details: null,
+      grammar: null,
+      percent: null
    };
    var title;
+   var bc;
    if (!t.k || t.k == TOK_WORD) {
       // TOK_WORD
+      // t.m[1] is the word category (kk, kvk, hk, so, lo...)
       var wcat = (t.m && t.m[1]) ? t.m[1] : (t.t ? t.t.split("_")[0] : undefined);
       if (wcat === undefined)
          // Nothing to show, so we cop out
          return r;
+      // Special case: for adverbs, if they match a tao (temporal) or
+      // spao (interrogative) adverb terminal, show that information
+      if (wcat == "ao" && t.t)
+         if (t.t == "tao" || t.t == "spao")
+            wcat = t.t;
       var wcls = (wcat && wordClass[wcat]) ? wordClass[wcat] : "óþekkt";
       if (t.m && t.m[1]) {
          r.class = t.m[1];
@@ -329,6 +353,9 @@ function tokenInfo(t, nameDict) {
          // say 'atviksliður' instead of 'atviksorð'
          if (r.class == "ao" && t.m[0].indexOf(" ") > -1)
             wcls = "atviksliður";
+         else
+         if (r.class == "tao" && t.m[0].indexOf(" ") > -1)
+            wcls = "tímaatviksliður";
          else
          if (r.class == "fs" && t.m[0].indexOf(" ") > -1)
             wcls = "fleiryrt forsetning";
@@ -339,20 +366,20 @@ function tokenInfo(t, nameDict) {
    }
    else
    if (t.k == TOK_NUMBER) {
-     r.lemma = t.x;
-     // Show the parsed floating-point number to 2 decimal places
-     r.details = format_is(t.v[0], 2);
+      r.lemma = t.x;
+      // Show the parsed floating-point number to 2 decimal places
+      r.details = format_is(t.v[0], 2);
    }
    else
    if (t.k == TOK_PERCENT) {
-     r.lemma = t.x;
-     r.details = "hundraðshluti";
-     // Obtain the percentage from token val field (t.v[0]),
-     // or from the token text if no such field is available
-     var pc = t.v ? t.v[0] : parseFloat(t.x.slice(0, -1).replace(",", "."));
-     if (pc === NaN || pc === undefined)
-       pc = 0.0;
-     r.percent = pc;
+      r.lemma = t.x;
+      r.details = "hundraðshluti";
+      // Obtain the percentage from token val field (t.v[0]),
+      // or from the token text if no such field is available
+      var pc = t.v ? t.v[0] : parseFloat(t.x.slice(0, -1).replace(",", "."));
+      if (pc === NaN || pc === undefined)
+         pc = 0.0;
+      r.percent = pc;
    }
    else
    if (t.k == TOK_ORDINAL) {
@@ -364,38 +391,44 @@ function tokenInfo(t, nameDict) {
          r.details = "raðtala";
    }
    else
-   if (t.k == TOK_DATE) {
-     r.lemma = t.x;
-     // Show the date in ISO format
-     r.details = "dags. " + iso_date(t.v);
+   if (t.k == TOK_DATE || t.k == TOK_DATEABS) {
+      r.lemma = t.x;
+      // Show the date in ISO format
+      bc = (t.v[0] < 0) ? " f.Kr." : "";
+      r.details = "dags. " + iso_date(t.v) + bc;
+   }
+   else
+   if (t.k == TOK_DATEREL) {
+      r.lemma = t.x;
+      r.details = "afstæð dagsetning";
    }
    else
    if (t.k == TOK_TIME) {
-     r.lemma = t.x;
-     // Show the time in ISO format
-     r.details = "kl. " + iso_time(t.v);
+      r.lemma = t.x;
+      // Show the time in ISO format
+      r.details = "kl. " + iso_time(t.v);
    }
    else
    if (t.k == TOK_YEAR) {
-     r.lemma = t.x;
-     r.details = "ártal";
+      r.lemma = t.x;
+      r.details = "ártal";
    }
    else
    if (t.k == TOK_EMAIL) {
-     r.lemma = t.x;
-     r.details = "tölvupóstfang";
+      r.lemma = t.x;
+      r.details = "tölvupóstfang";
    }
    else
    if (t.k == TOK_CURRENCY) {
-     r.lemma = t.x;
-     // Show the ISO code for the currency
-     r.details = "gjaldmiðillinn " + t.v[0];
+      r.lemma = t.x;
+      // Show the ISO code for the currency
+      r.details = "gjaldmiðillinn " + t.v[0];
    }
    else
    if (t.k == TOK_AMOUNT) {
-     r.lemma = t.x;
-     // Show the amount as well as the ISO code for its currency
-     r.details = t.v[1] + " " + format_is(t.v[0], 2);
+      r.lemma = t.x;
+      // Show the amount as well as the ISO code for its currency
+      r.details = t.v[1] + " " + format_is(t.v[0], 2);
    }
    else
    if (t.k == TOK_PERSON) {
@@ -457,10 +490,21 @@ function tokenInfo(t, nameDict) {
       r.details = title;
    }
    else
-   if (t.k == TOK_TIMESTAMP) {
+   if (t.k == TOK_TIMESTAMP || t.k == TOK_TIMESTAMPABS) {
       r.lemma = t.x;
       // Show the timestamp in ISO format
-      r.details = t.v ? iso_timestamp(t.v) : "";
+      bc = (t.v && t.v[0] < 0) ? " f.Kr." : "";
+      r.details = t.v ? (iso_timestamp(t.v) + bc) : "";
+   }
+   else
+   if (t.k == TOK_TIMESTAMPREL) {
+      r.lemma = t.x;
+      r.details = "afstæð tímasetning";
+   }
+   else
+   if (t.k == TOK_MEASUREMENT) {
+      r.lemma = t.x;
+      r.details = format_is(t.v[1], 3) + " " + t.v[0]; // Value, unit
    }
    return r;
 }

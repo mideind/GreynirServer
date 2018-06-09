@@ -44,7 +44,6 @@ from collections import OrderedDict
 
 from settings import Settings, ConfigError
 from scraperdb import Scraper_DB, Article, Person
-from bindb import BIN_Db
 from tree import Tree
 
 _PROFILING = False
@@ -75,6 +74,7 @@ class Processor:
         # (i.e. .py files found in the processor directory, except those
         # with names starting with an underscore)
         self.processors = []
+        self.pmodules = None
         import os
         files = [ single_processor + ".py" ] if single_processor else os.listdir(processor_directory)
         for fname in files:
@@ -86,9 +86,18 @@ class Processor:
                 continue
             modname = processor_directory + "." + fname[:-3] # Cut off .py
             try:
+                # Try import before we start
                 m = importlib.import_module(modname)
                 print("Imported processor module {0}".format(modname))
-                self.processors.append(m)
+                # Successful
+                # Note: we can't append the module object m directly to the
+                # processors list, as it will be shared between processes and
+                # CPython 3 can't pickle module references for IPC transfer.
+                # (PyPy 3.5 does this without problem, however.)
+                # We therefore store just the module names and postpone the
+                # actual import until we go_single() on the first article within
+                # each child process.
+                self.processors.append(modname)
             except Exception as e:
                 print("Error importing processor module {0}: {1}".format(modname, e))
 
@@ -104,6 +113,10 @@ class Processor:
 
         print("Processing article {0}".format(url))
         sys.stdout.flush()
+
+        # If first article within a new process, import the processor modules
+        if self.pmodules is None:
+            self.pmodules = [ importlib.import_module(modname) for modname in self.processors ]
 
         # Load the article
         with closing(self._db.session) as session:
@@ -121,7 +134,7 @@ class Processor:
                         tree.load(article.tree)
 
                         # Run all processors in turn
-                        for p in self.processors:
+                        for p in self.pmodules:
                             tree.process(session, p)
 
                     # Mark the article as being processed
@@ -141,10 +154,10 @@ class Processor:
     def go(self, from_date = None, limit = 0, force = False, update = False, title = None):
         """ Process already parsed articles from the database """
 
-        with closing(self._db.session) as session:
+        # noinspection PyComparisonWithNone,PyShadowingNames
+        def iter_parsed_articles():
 
-            # noinspection PyComparisonWithNone,PyShadowingNames
-            def iter_parsed_articles():
+            with closing(self._db.session) as session:
                 """ Go through parsed articles and process them """
                 if title is not None:
                     # Use a title query on Person to find the URLs to process
@@ -170,26 +183,24 @@ class Processor:
                         # Only go through articles parsed since the given date
                         q = q.filter(Article.parsed >= from_date).order_by(Article.parsed)
                 if limit > 0:
-                    q = q[0:limit]
-                for a in q:
+                    q = q.limit(limit)
+                for a in q.yield_per(200):
                     yield field(a)
 
-            if _PROFILING:
-                # If profiling, just do a simple map within a single thread and process
-                for url in iter_parsed_articles():
-                    self.go_single(url)
-                BIN_Db.cleanup() # Make sure there are no open BIN db connections
-            else:
-                # Use a multiprocessing pool to process the articles
-                BIN_Db.cleanup() # Make sure there are no open BIN db connections
-                pool = Pool() # Defaults to using as many processes as there are CPUs
-                pool.map(self.go_single, iter_parsed_articles())
-                pool.close()
-                pool.join()
-                BIN_Db.cleanup() # Make sure there are no open BIN db connections
+        if _PROFILING:
+            # If profiling, just do a simple map within a single thread and process
+            for url in iter_parsed_articles():
+                self.go_single(url)
+        else:
+            # Use a multiprocessing pool to process the articles
+            pool = Pool() # Defaults to using as many processes as there are CPUs
+            pool.map(self.go_single, iter_parsed_articles())
+            pool.close()
+            pool.join()
 
 
-def process_articles(from_date = None, limit = 0, force = False, update = False, title = None, processor = None):
+def process_articles(from_date = None, limit = 0, force = False,
+    update = False, title = None, processor = None):
 
     print("------ Reynir starting processing -------")
     if from_date:

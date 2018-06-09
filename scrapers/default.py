@@ -239,6 +239,8 @@ class ScrapeHelper:
     @staticmethod
     def del_tag_prop_val(soup, tag, prop, val):
         """ Delete all occurrences of the tag having the property with the given value """
+        if soup is None:
+            return
         while True:
             s = ScrapeHelper.tag_prop_val(soup, tag, prop, val)
             if s is None:
@@ -248,6 +250,8 @@ class ScrapeHelper:
     @staticmethod
     def del_div_class(soup, *argv):
         """ Delete all occurrences of the specified div.class """
+        if soup is None:
+            return
         while True:
             s = ScrapeHelper.div_class(soup, *argv)
             if s is None:

@@ -110,6 +110,7 @@
    .node-nonterminal.NP-IOBJ rect,
    .node-nonterminal.NP-PRD rect
    {
+      /* Dark blue */
       fill: #337ab7;
       stroke: #337ab7;
    }
@@ -117,8 +118,11 @@
    .node-nonterminal.NP-POSS rect,
    .node-nonterminal.NP-DAT rect,
    .node-nonterminal.NP-TITLE rect,
-   .node-nonterminal.NP-ADDR rect
+   .node-nonterminal.NP-ADDR rect,
+   .node-nonterminal.NP-AGE rect,
+   .node-nonterminal.NP-MEASURE rect
    {
+      /* Light blue */
       fill: #5bc0de;
       stroke: #5bc0de;
    }
@@ -129,7 +133,16 @@
    }
 
    .node-nonterminal.ADVP rect,
-   .node-nonterminal.ADVP-DATE rect
+   .node-nonterminal.ADVP-DATE rect,
+   .node-nonterminal.ADVP-DATE-REL rect,
+   .node-nonterminal.ADVP-DATE-ABS rect,
+   .node-nonterminal.ADVP-TIMESTAMP-REL rect,
+   .node-nonterminal.ADVP-TIMESTAMP-ABS rect,
+   .node-nonterminal.ADVP-TMP-SET rect,
+   .node-nonterminal.ADVP-DUR rect,
+   .node-nonterminal.ADVP-DUR-REL rect,
+   .node-nonterminal.ADVP-DUR-ABS rect,
+   .node-nonterminal.ADVP-DUR-TIME rect
    {
       fill: #5cb85c;
       stroke: #5cb85c;
@@ -204,13 +217,20 @@
    .node-terminal.number text.symbol,
    .node-terminal.percent text.symbol,
    .node-terminal.timestamp text.symbol,
+   .node-terminal.timestampabs text.symbol,
+   .node-terminal.timestamprel text.symbol,
    .node-terminal.time text.symbol,
-   .node-terminal.date text.symbol
+   .node-terminal.date text.symbol,
+   .node-terminal.dateabs text.symbol,
+   .node-terminal.daterel text.symbol,
+   .node-terminal.measurement text.symbol
    {
       fill: #888;
    }
    .node-terminal.ao text.symbol,
-   .node-terminal.eo text.symbol
+   .node-terminal.eo text.symbol,
+   .node-terminal.tao text.symbol,
+   .node-terminal.spao text.symbol
    {
       fill: #888;
    }
@@ -389,6 +409,7 @@
          <table class="table table-hover">
          <tbody>
             <tr><td>Fjöldi einda</td><td class="count">{{ stats.num_tokens | format_is }}</td></tr>
+            <tr><td>Vinnslutími</td><td class="count">{{ stats.total_time | format_is(2) }} sek.</td></tr>
             <tr><td>Fjöldi mögulegra trjáa</td><td class="count">{{ stats.num_combinations | format_is }}</td></tr>
             <tr><td>Stig besta trés</td><td class="count">{{ stats.total_score | format_is }}</td></tr>
             <tr><td>Margræðnistuðull</td><td class="count">{{ stats.ambiguity | format_is(2) }}</td></tr>
@@ -404,7 +425,7 @@
 </div>
 
 <!-- Popup with info about a terminal that is being hovered over -->
-<div class="info">
+<div id="info">
    <table>
    <tr>
    <td><span id="tag" class='glyphicon glyphicon-tag'></span></td>
@@ -476,10 +497,10 @@ var g = d3.select("div#canvas")
 // (this especially applies on touchscreens)
 $("div#tree div.grid div.table-responsive")
    .scroll(function() {
-      var jqCircle = $("div.info").data("circle");
+      var jqCircle = $("#info").data("circle");
       if (jqCircle) {
          var pos = jqCircle.offset();
-         $("div.info")
+         $("#info")
             .css("left", "" + pos.left + "px")
             .css("top", "" + pos.top + "px")
       }
@@ -489,22 +510,26 @@ $("div#tree div.grid div.table-responsive")
 
 function wrapTokenInfo(dd) {
    // Convert token information from the JSON simplified format
+   // (created in canonicalize_token() in ReynirPackage/bintokenizer.py)
    // to the complex format expected by tokenInfo()
    var tv = dd.v;
    if (dd.k == "AMOUNT")
       tv = [ dd.v.amount, dd.v.currency ];
    else
-   if (dd.k == "DATE")
+   if (dd.k == "DATE" || dd.k == "DATEREL" || dd.k == "DATEABS")
       tv = [ dd.v.y, dd.v.mo, dd.v.d ];
    else
    if (dd.k == "TIME")
       tv = [ dd.v.h, dd.v.m, dd.v.s ];
    else
-   if (dd.k == "TIMESTAMP")
+   if (dd.k == "TIMESTAMP" || dd.k == "TIMESTAMPABS" || dd.k == "TIMESTAMPREL")
       tv = [ dd.v.y, dd.v.mo, dd.v.d, dd.v.h, dd.v.m, dd.v.s ];
    else
    if (dd.k == "PERCENT" || dd.k == "NUMBER" || dd.k == "CURRENCY")
       tv = [ dd.v ];
+   else
+   if (dd.k == "MEASUREMENT")
+      tv = [ dd.v.unit, dd.v.value ];
    else
    if (dd.k == "PERSON")
       tv = dd.s;
@@ -513,6 +538,7 @@ function wrapTokenInfo(dd) {
          k: tokId[dd.k],
          t: dd.t,
          g: dd.g,
+         // stem, category (ordfl), fl, beyging
          m: [ dd.s, dd.c, dd.f, dd.b ],
          x: dd.x,
          v: tv
@@ -547,13 +573,19 @@ function terminalIn(d) {
    else
       $("#percent").css("display", "none");
 
+   // Set the class of the pop-up div
+   $("#info").removeClass();
    if (r.class !== null)
-      $("div.info").addClass(r.class);
-   if (r.tagClass !== null)
-      $("div.info span#tag").removeClass("glyphicon-tag").addClass(r.tagClass);
+      $("#info").addClass(r.class);
+
+   // Set the class of the pop-up tag
+   $("#info span#tag")
+      .removeClass()
+      .addClass("glyphicon")
+      .addClass(r.tagClass ? r.tagClass : "glyphicon-tag");
 
    // Position the info popup
-   $("div.info")
+   $("#info")
       .css("left", "" + pos.left + "px")
       .css("top", "" + pos.top + "px")
       .css("visibility", "visible")
@@ -566,18 +598,11 @@ function terminalOut(d) {
    var dd = circle.data()[0].data;
    if (dd.k == "PUNCTUATION")
       return;
-   $("div.info")
+   $("#info")
       .css("visibility", "hidden")
       .css("left", 0)
       .css("top", 0)
       .data("circle", null);
-   var r = wrapTokenInfo(dd);
-   if (r.class !== null)
-      $("div.info").removeClass(r.class);
-   if (r.tagClass !== null)
-      $("div.info span#tag")
-         .removeClass(r.tagClass)
-         .addClass("glyphicon-tag");
 }
 
 function d3_update(source) {
@@ -642,13 +667,17 @@ function d3_update(source) {
                if (d.data.k && d.data.k == "PERCENT")
                   classes.push("percent");
                else
-               if (d.data.k && d.data.k == "TIMESTAMP")
+               if (d.data.k && d.data.k == "MEASUREMENT")
+                  classes.push("measurement");
+               else
+               if (d.data.k && (d.data.k == "TIMESTAMP" || d.data.k == "TIMESTAMPABS" ||
+                  d.data.k == "TIMESTAMPREL"))
                   classes.push("timestamp");
                else
                if (d.data.k && d.data.k == "TIME")
                   classes.push("time");
                else
-               if (d.data.k && d.data.k == "DATE")
+               if (d.data.k && (d.data.k == "DATE" || d.data.k == "DATEABS" || d.data.k == "DATEREL"))
                   classes.push("date");
                else
                if (firstPart == "sérnafn" || firstPart == "entity")
@@ -697,6 +726,7 @@ function d3_update(source) {
    symbolOffset ["\uE004"] = 5; // user
    symbolOffset ["%"] = 5; // percent sign
    symbolOffset ["!"] = 5; // exclamation mark
+   symbolOffset ["?"] = 5; // question mark
    symbolOffset ["\uE066"] = 7; // tag
 
    [
@@ -722,11 +752,14 @@ function d3_update(source) {
       ["date", "\uE055"], // clock
       ["ao", "\uE049"], // star
       ["eo", "\uE049"], // star
+      ["spao", "?"], // question mark
+      ["tao", "\uE055"], // clock
       ["currency", "\u20AC"], // euro
       ["number", "\uE319"], // more-items
       ["to", "\uE319"], // more-items
       ["töl", "\uE319"], // more-items
       ["percent", "%"], // percent sign
+      ["measurement", "\uE332"], // dashboard
       ["uh", "!"], // exclamation mark
    ]
    .forEach(function(d) {
@@ -772,8 +805,11 @@ function editSentence() {
 function initMain(jQuery) {
    // Initialization
    $("#edit-sent").click(editSentence);
-   $("div.info")
-      .click(function() { $(this).css("visibility", "hidden"); })
+   $("#info")
+      .click(function(ev) {
+         ev.stopPropagation();
+         $(this).css("visibility", "hidden");
+      })
       .data("circle", null);
 
    // Enable tabs

@@ -4,7 +4,7 @@
 
     POS tagger module
 
-    Copyright (C) 2017 Miðeind ehf.
+    Copyright (C) 2018 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -48,9 +48,9 @@ from itertools import islice, tee
 import xml.etree.ElementTree as ET
 
 from treeutil import TreeUtility
-from tokenizer import canonicalize_token, TOK
-from settings import Settings, Prepositions, StaticPhrases, ConfigError
-from bindb import BIN_Db
+from reynir.bintokenizer import canonicalize_token, TOK
+from settings import Settings, Prepositions, StaticPhrases, ConfigError, UndeclinableAdjectives
+
 
 class IFD_Corpus:
 
@@ -139,18 +139,17 @@ class IFD_Tagset:
     BIN_TO_VARIANT = {
         "NF" : "nf", # Nefnifall / nominative
         "ÞF" : "þf", # Þolfall / accusative
-        "ÞF2" : "þf", # Þolfall / accusative
         "ÞGF" : "þgf", # Þágufall / dative
-        "ÞGF2" : "þgf", # Þágufall / dative
         "EF" : "ef", # Eignarfall / possessive
-        "EF2" : "ef", # Eignarfall / possessive
         "KK" : "kk", # Karlkyn / masculine
         "KVK" : "kvk", # Kvenkyn / feminine
         "HK" : "hk", # Hvorugkyn / neutral
         "ET" : "et", # Eintala / singular
         "ET2" : "et", # Eintala / singular
+        "ET3" : "et", # Eintala / singular
         "FT" : "ft", # Fleirtala / plural
         "FT2" : "ft", # Fleirtala / plural
+        "FT3" : "ft", # Fleirtala / plural
         "FSB" : "fsb", # Frumstig, sterk beyging
         "FVB" : "fvb", # Frumstig, veik beyging
         "MST" : "mst", # Miðstig / comparative
@@ -187,8 +186,12 @@ class IFD_Tagset:
     KIND_TO_TAG = {
         # !!! TBD: put in more precise tags
         "DATE" : "to",
+        "DATEREL" : "to",
+        "DATEABS" : "to",
         "TIME" : "to",
         "TIMESTAMP" : "to",
+        "TIMESTAMPREL" : "to",
+        "TIMESTAMPABS" : "to",
         "PERCENT" : "tp"
     }
 
@@ -211,6 +214,7 @@ class IFD_Tagset:
         "ao" : "_a",
         "eo" : "_a",
         "spao" : "_a",
+        "tao" : "_a",
         "fs" : "_a",
         "uh" : "_a",
         "st" : "_c",
@@ -355,6 +359,57 @@ class IFD_Tagset:
         "úr" : "þ",
         "út" : "o",
     }
+    # Raðtölur
+    ORDINALS = frozenset([
+        "fyrstur",
+        "annar",
+        "þriðji",
+        "fjórði",
+        "fimmti",
+        "sjötti",
+        "sjöundi",
+        "áttundi",
+        "níundi",
+        "tíundi",
+        "ellefti",
+        "tólfti",
+        "þrettándi",
+        "fjórtándi",
+        "fimmtándi",
+        "sextándi",
+        "sautjándi",
+        "átjándi",
+        "nítjándi",
+        "tuttugasti",
+        "þrítugasti",
+        "fertugasti",
+        "fimmtugasti",
+        "sextugasti",
+        "sjötugasti",
+        "átttugasti",
+        "nítugasti",
+        "hundraðasti",
+        "tvöhundraðasti",
+        "þrjúhundraðasti",
+        "fjögurhundraðasti",
+        "fimmhundraðasti",
+        "sexhundraðasti",
+        "sjöhundraðasti",
+        "áttahundraðasti",
+        "níuhundraðasti",
+        "þúsundasti",
+        "tvöþúsundasti",
+        "þrjúþúsundasti",
+        "fjögurþúsundasti",
+        "fimmþúsundasti",
+        "sexþúsundasti",
+        "sjöþúsundasti",
+        "áttaþúsundasti",
+        "níuþúsundasti",
+        "tíuþúsundasti",
+        "milljónasti",
+        "milljarðasti",
+    ])
 
     def _n(self):
         return "n" + self._kyn() + self._tala() + self._fall() + self._greinir() + self._sérnöfn()
@@ -412,7 +467,9 @@ class IFD_Tagset:
         return "tfkfn" if self._v == 11 or self._v % 10 != 1 else "tfken"
 
     def _raðnr(self):
-        return "lxexsf" # Lýsingarorð, eintala, sterk beyging, frumstig. Kyn og fall óþekkt
+        if self._tagset:
+            return "l" + self._kyn() + "e" + self._fall() + "vf"
+        return "lxexvf" # Lýsingarorð, eintala, veik beyging, frumstig. Kyn og fall óþekkt
 
     def _year(self):
         return "ta"
@@ -470,18 +527,19 @@ class IFD_Tagset:
         return "f"
 
     def _beyging(self):
-        with BIN_Db.get_db() as bin_db:
-            if bin_db.is_undeclinable(self._stem, "lo"):
-                return "o"
+        if self._stem in UndeclinableAdjectives.ADJECTIVES:
+            return "o"
         if "fsb" in self._tagset or "esb" in self._tagset:
             return "s"
         if "fvb" in self._tagset or "evb" in self._tagset or "mst" in self._tagset:
+            return "v"
+        if self._stem in self.ORDINALS:
             return "v"
         return "o"
 
     def _flokkur_f(self):
         if self._cat == "abfn":
-            return "p" # ??? Hefði þetta ekki átt að vera "a"? --- OTB flokkar abfn. með pfn.
+            return "p" # OTB flokkar abfn. með pfn.
         if self._cat == "pfn":
             return "p"
         if self._txt in self.FN_SAMFALL and self._stem in self.FN_BÆÐI:
@@ -635,7 +693,6 @@ class IFD_Tagset:
             if not sent:
                 continue
             output = []
-            print("******{}".format(sent))
             for t in sent:
                 x = t.get("x")
                 if not x:
