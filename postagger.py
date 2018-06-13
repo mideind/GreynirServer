@@ -48,7 +48,8 @@ from itertools import islice, tee
 import xml.etree.ElementTree as ET
 
 from treeutil import TreeUtility
-from reynir.bintokenizer import canonicalize_token, TOK
+from reynir.bintokenizer import TOK
+from reynir.binparser import canonicalize_token
 from settings import Settings, Prepositions, StaticPhrases, ConfigError, UndeclinableAdjectives
 
 

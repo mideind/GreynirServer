@@ -49,7 +49,7 @@ import reynir
 from settings import Settings, ConfigError, changedlocale
 from reynir.bindb import BIN_Db
 from nertokenizer import tokenize_and_recognize, TOK, correct_spaces
-from reynir.bintokenizer import canonicalize_token
+from reynir.binparser import canonicalize_token
 from reynir.fastparser import Fast_Parser, ParseForestFlattener
 from article import Article as ArticleProxy
 from treeutil import TreeUtility
