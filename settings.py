@@ -198,14 +198,6 @@ class Abbreviations:
         """ Lookup meaning of abbreviation, if available """
         return None if abbrev not in Abbreviations.DICT else Abbreviations.DICT[abbrev][0]
 
-class Meanings:
-
-    """ Wrapper around list of additional word meanings, initialized from the config file """
-
-    # This is passed on to the reynir module
-    DICT = reynir.settings.Meanings.DICT
-    ROOT = reynir.settings.Meanings.ROOT
-
 
 class VerbObjects:
 
@@ -776,12 +768,6 @@ class Settings:
         Abbreviations.add(abbrev, m[1], gender, fl)
 
     @staticmethod
-    def _handle_meanings(s):
-        """ Handle additional word meanings in the settings section """
-        # This section is read and handled by the reynir module
-        pass
-
-    @staticmethod
     def _handle_verb_objects(s):
         """ Handle verb object specifications in the settings section """
         # Format: verb [arg1] [arg2] [/preposition arg]... [$score(sc)]
@@ -1022,7 +1008,7 @@ class Settings:
                 "name_preferences" : Settings._handle_name_preferences,
                 "stem_preferences" : Settings._handle_stem_preferences,
                 "ambiguous_phrases" : Settings._handle_ambiguous_phrases,
-                "meanings" : Settings._handle_meanings,
+                # "meanings" : Settings._handle_meanings,
                 "adjective_template" : Settings._handle_adjective_template,
                 "undeclinable_adjectives" : Settings._handle_undeclinable_adjectives,
                 "disallowed_names" : Settings._handle_disallowed_names,
