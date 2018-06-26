@@ -28,6 +28,7 @@ echo "Copying files"
 cp config/Adjectives.conf $DEST/config/Adjectives.conf
 cp config/Index.conf $DEST/config/Index.conf
 cp config/Main.conf $DEST/config/Main.conf
+# Note: config/Reynir.conf is not copied
 cp config/TnT-model.pickle $DEST/config/TnT-model.pickle
 
 cp article.py $DEST/article.py
