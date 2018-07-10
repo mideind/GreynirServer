@@ -9,13 +9,15 @@
 
 Try Reynir (in Icelandic) at [https://greynir.is](https://greynir.is)
 
-*Reynir* is a proof-of-concept project that aims to
+*Reynir* is an exploratory project that aims to
 **extract processable information from Icelandic text**, allow
 **natural language querying** of that information and facilitate
 **natural language understanding**.
 
-Reynir scrapes and tokenizes chunks of text from news sites on the web
-and parses the token streams according to a **hand-written context-free grammar**
+Reynir periodically scrapes chunks of text from Icelandic news sites on the web.
+It employs the [Tokenizer](https://github.com/vthorsteinsson/Tokenizer) and
+[ReynirPackage](https://github.com/vthorsteinsson/ReynirPackage) modules (by the same authors)
+to tokenize the text and parse the token streams according to a **hand-written context-free grammar**
 for the Icelandic language. The resulting parse forests are disambiguated using
 scoring heuristics to find the best parse trees. The trees are then stored in a
 database and processed by grammatical pattern matching modules to obtain statements
@@ -44,8 +46,8 @@ These trees can then be further processed and acted upon by sets of Python
 functions that are linked to grammar nonterminals.
 
 **Reynir is currently able to parse about *90%* of sentences** in a typical news article from the web,
-and many well-written articles can be parsed completely. It presently has over 210,000 parsed articles
-in its database, containing 4 million parsed sentences.
+and many well-written articles can be parsed completely. It presently has over 300,000 parsed articles
+in its database, containing 6 million parsed sentences.
 
 Reynir supports natural language querying of its databases. Users can ask about person names, titles and
 entity definitions and get appropriate replies. The HTML5 Web Speech API is supported to allow
@@ -71,9 +73,11 @@ Reynir works in stages, roughly as follows:
 1. *Web scraper*, built on [BeautifulSoup](http://www.crummy.com/software/BeautifulSoup/)
   and [SQLAlchemy](http://www.sqlalchemy.org/) storing data
   in [PostgreSQL](http://www.postgresql.org/).
-2. *Tokenizer*, relying on the BÍN database of Icelandic word forms for lemmatization and
+2. *Tokenizer* ([this one](https://github.com/vthorsteinsson/Tokenizer)),
+  extended to use the BÍN database of Icelandic word forms for lemmatization and
   initial POS tagging.
-3. *Parser*, using an improved version of the [Earley algorithm](http://en.wikipedia.org/wiki/Earley_parser)
+3. *Parser* (from [this module](https://github.com/vthorsteinsson/ReynirPackage)),
+  using an improved version of the [Earley algorithm](http://en.wikipedia.org/wiki/Earley_parser)
   to parse text according to an unconstrained hand-written context-free grammar for Icelandic
   that may yield multiple parse trees (a parse forest) in case of ambiguity.
 4. *Parse forest reducer* with heuristics to find the best parse tree.
@@ -85,7 +89,7 @@ Reynir works in stages, roughly as follows:
 7. *Query processor* that allows natural language queries for entites in Reynir's database.
 
 Reynir has an embedded web server that displays news articles recently scraped into its
-databsae, as well as names of people extracted from those articles along with their titles.
+database, as well as names of people extracted from those articles along with their titles.
 The web UI enables the user to type in any URL and have Reynir scrape it, tokenize it and
 display the result as a web page. Queries can also be entered via the keyboard or using voice
 input. The server runs on the [Flask](http://flask.pocoo.org/) framework, implements WSGi and
@@ -93,14 +97,17 @@ can for instance be plugged into [Gunicorn](http://gunicorn.org/) and
 [nginx](https://www.nginx.com/).
 
 Reynir uses the official BÍN ([Beygingarlýsing íslensks nútímamáls](http://bin.arnastofnun.is))
-lexicon and database of Icelandic word forms to identify and tokenize words, and find their
-grammatical roots and forms. The database has been downloaded from the official BÍN website and
-stored in PostgreSQL.
+lexicon and database of Icelandic word forms to identify word forms, and find their
+potential meanings and lemmas. The database is included in
+[ReynirPackage](https://github.com/vthorsteinsson/ReynirPackage) in compressed form,
+under license from and by permission of the [BÍN copyright holder](http://bin.arnastofnun.is/DMII/).
 
-The tokenizer divides text chunks into sentences and recognizes entities such as dates, numbers,
+The [tokenizer](https://github.com/vthorsteinsson/Tokenizer) divides text chunks into
+sentences and recognizes entities such as dates, numbers,
 amounts and person names, as well as common abbreviations and punctuation.
 
-Grammar rules are laid out in a separate text file, `Reynir.grammar`. The standard
+Grammar rules are laid out in a separate text file, `Reynir.grammar`, which is a part
+of [ReynirPackage](https://github.com/vthorsteinsson/ReynirPackage). The standard
 [Backus-Naur form](http://en.wikipedia.org/wiki/Backus%E2%80%93Naur_Form) has been
 augmented with repeat specifiers for right-hand-side tokens (`*` for 0..n instances,
 `+` for 1..n instances, or `?` for 0..1 instances). Also, the grammar allows for
@@ -134,16 +141,7 @@ names and titles from parse trees for storage in a database table.
   obtained from `config/Reynir.conf`
 * `scraper.py` : Web scraper, collecting articles from a set of pre-selected websites (roots)
 * `scraperdb.py`: Wrapper for the scraper database via SQLAlchemy
-* `tokenizer.py` : Tokenizer, designed as a pipeline of Python generators
-* `dawgdictionary.py`: Handler for composite words using a compressed word form database
-* `grammar.py` : Parsing of `.grammar` files, grammar constructs
-* `baseparser.py` : Base class for parsers
-* `incparser.py` : Incremental parsing of paragraphs and sentences from token streams
-* `bindb.py`: Interface to the BÍN database of Icelandic word forms
-* `binparser.py` : Parser related subclasses for BÍN (Icelandic word) tokens
-* `eparser.cpp` : Earley parser core C++ module (header in `eparser.h`)
-* `fastparser.py` : Python wrapper for `eparser.cpp` using CFFI
-* `reducer.py` : Parse forest ambiguity resolver
+* `nertokenizer.py` : A layer on top of the tokenizer for named entity recognition
 * `processor.py`: Information extraction from parse trees
 * `article.py` : Representation of an article through its life cycle
 * `tree.py` : Representation of parse trees for processing
@@ -151,19 +149,10 @@ names and titles from parse trees for storage in a database table.
 * `vectors/builder.py` : Article indexer and LSA topic vector builder
 * `config/Reynir.conf` : Editable configuration file for the tokenizer and parser
 * `config/Main.conf` : Various configuration data and preferences, included in `Reynir.conf`
-* `config/Prefs.conf` : Word form preference scores, included in `Reynir.conf`
 * `config/Names.conf` : Words that should be recognized as person names at the
   start of sentences, included in `Reynir.conf`
-* `config/Verbs.conf` : Lexicon of verbs, included in `Reynir.conf`
-* `config/VerbPrepositions.conf` : Lexicon of verbs and associated prepositions,
-  included in `Reynir.conf`
-* `config/Abbrev.conf` : Lexicon of abbreviations, included in `Reynir.conf`
-* `Reynir.grammar` : A context-free grammar specification for Icelandic
-  written in BNF with extensions for repeating constructs (`*`, `+`)
-  and optional constructs (`?`)
 * `glock.py` : Utility class for global inter-process locking
 * `fetcher.py` : Utility classes for fetching articles given their URLs
-* `parser.py` : Older, pure-Python implementation of an Earley parser
 * `utils/*.py` : Various utility programs
 
 ## Installation and setup
@@ -187,32 +176,10 @@ Greynir can also be [built and run in Docker containers](https://github.com/vtho
 ### Postgres database setup
 * `$ psql`
 * `create user reynir with password 'reynir';`
-* `create user notandi;` # Your username here
-* `alter role notandi with superuser;`
-* `create database bin with encoding 'UTF8' LC_COLLATE='is_IS.UTF-8' LC_CTYPE='is_IS.UTF-8' TEMPLATE=template0;`
-* `\c bin` 
-* `create table ord (stofn varchar(80), utg integer, ordfl varchar(16), fl varchar(16), ordmynd varchar(80), beyging varchar(24));`
-* `copy ord from '/home/notandi/Reynir/resources/ord.csv' with (format csv, delimiter ';', encoding 'UTF8');`
-* `create index ffx on ord(fl);`
-* `create index ofx on ord(ordfl);`
-* `create index oix on ord(ordmynd);`
-* `create index sfx on ord(stofn);`
-
-### Import external text and csv data
-To load the BÍN lexicon and its supplemental text/csv files you need to run the import
-and validation script found in `utils/external_data_validator.py`. This creates the
-file `resources/ord.csv` which is copied into PostgreSQL as described above.
-
-Put the downloaded BÍN files into the `Reynir/resources` directory. The names of these files
-are currently assumed to be the following:
-
-* `SHsnid.csv` (extracted from `SHsnid.csv.zip`)
-* `obeyg.smaord.txt`
-* `plastur.feb2013.txt`
 
 ## Copyright and licensing
 
-Reynir/Greynir is *copyright (C) 2017 by Miðeind ehf.*
+Reynir/Greynir is *copyright (C) 2018 by Miðeind ehf.*
 The original author of this software is *Vilhjálmur Þorsteinsson*.
 
 ![GPLv3](https://raw.githubusercontent.com/vthorsteinsson/Reynir/master/static/GPLv3.png)
