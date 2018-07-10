@@ -57,7 +57,8 @@ if basepath.endswith(_UTILS):
     basepath = basepath[0:-len(_UTILS)]
     sys.path.append(basepath)
 
-from settings import Settings, StaticPhrases, Abbreviations
+from reynir import Abbreviations
+from settings import Settings, StaticPhrases
 from treeutil import TreeUtility
 from postagger import IFD_Tagset, IFD_Corpus
 from tokenizer import canonicalize_token

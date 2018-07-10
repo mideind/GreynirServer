@@ -536,7 +536,9 @@ function wrapTokenInfo(dd) {
    return tokenInfo(
       {
          k: tokId[dd.k],
-         t: dd.t,
+         // We use the full terminal variant set (dd.a) if available,
+         // otherwise the smaller (original) subset (dd.t)
+         t: dd.a || dd.t,
          g: dd.g,
          // stem, category (ordfl), fl, beyging
          m: [ dd.s, dd.c, dd.f, dd.b ],

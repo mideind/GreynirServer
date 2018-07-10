@@ -123,7 +123,7 @@ var wordClass = {
    "fyrirtæki" : "fyrirtæki"
 };
 
-var grammarDesc = [
+var beygingDesc = [
    { k: "LH-NT", t : "lýsingarháttur nútíðar", o: 6 },
    { k: "LHÞT", t : "lýsingarháttur þátíðar", o: 6 },
    { k: "NT", t : "nútíð", o: 0 },
@@ -156,6 +156,41 @@ var grammarDesc = [
    { k: "SB", t : "sterk beyging", o: 8 },
    { k: "VB", t : "veik beyging", o: 8 },
    { k: "gr", t : "með greini", o: 10 }
+];
+
+var variantDesc = [
+   { k: "_lh_nt", t : "lýsingarháttur nútíðar", o: 6 },
+   { k: "_lhþt", t : "lýsingarháttur þátíðar", o: 6 },
+   { k: "_nt", t : "nútíð", o: 0 },
+   { k: "_þt", t : "þátíð", o: 0 },
+   { k: "_p1", t : "fyrsta persóna", o: 1 },
+   { k: "_p2", t : "önnur persóna", o: 1 },
+   { k: "_p3", t : "þriðja persóna", o: 1 },
+   { k: "_et", t : "eintala", o: 2 },
+   { k: "_ft", t : "fleirtala", o: 2 },
+   { k: "_kk", t : "karlkyn", o: 3 },
+   { k: "_kvk", t : "kvenkyn", o: 3 },
+   { k: "_hk", t : "hvorugkyn", o: 3 },
+   { k: "_nf", t : "nefnifall", o: 4 },
+   { k: "_þf", t : "þolfall", o: 4 },
+   { k: "_þgf", t : "þágufall", o: 4 },
+   { k: "_ef", t : "eignarfall", o: 4 },
+   { k: "_gm", t : "germynd", o: 5 },
+   { k: "_mm", t : "miðmynd", o: 5 },
+   { k: "_fh", t : "framsöguháttur", o: 6 },
+   { k: "_nh", t : "nafnháttur", o: 6 },
+   { k: "_bh", t : "boðháttur", o: 6 },
+   { k: "_vh", t : "viðtengingarháttur", o: 6 },
+   { k: "_sagnb", t : "sagnbót", o: 7 },
+   // Ath.: Málfræðin gerir ekki greinarmun á sterkri og veikri beygingu lýsingarorða með nafnorðum
+   { k: "_fvb", t : "frumstig<br>veik beyging", o: 9 },
+   { k: "_fsb", t : "frumstig<br>sterk beyging", o: 9 },
+   { k: "_mst", t : "miðstig", o: 9 },
+   { k: "_esb", t : "efsta stig<br>sterk beyging", o: 9 },
+   { k: "_evb", t : "efsta stig<br>veik beyging", o: 9 },
+   { k: "_sb", t : "sterk beyging", o: 8 },
+   { k: "_vb", t : "veik beyging", o: 8 },
+   { k: "_gr", t : "með greini", o: 10 }
 ];
 
 var cases = {
@@ -259,47 +294,29 @@ function iso_timestamp(d) {
       lzero(d[3], 2) + ":" + lzero(d[4], 2) + ":" + lzero(d[5], 2);
 }
 
-function grammar(cat, m, txt, terminal) {
+function grammar(cat, terminal) {
    var g = [];
-   var gender;
-   if (cat == "pfn" && txt !== undefined) {
-      gender = {
-         "hann" : "karlkyn", "honum" : "karlkyn", "hans" : "karlkyn",
-         "hún" : "kvenkyn", "hana" : "kvenkyn", "henni" : "kvenkyn", "hennar" : "kvenkyn",
-         "það" : "hvorugkyn", "því" : "hvorugkyn", "þess" : "hvorugkyn"
-      } [txt.toLowerCase()];
-      if (gender !== undefined)
-         g.push(gender);
-   }
-   else {
-      gender = { "kk" : "karlkyn", "kvk" : "kvenkyn", "hk" : "hvorugkyn" } [cat];
-      if (gender !== undefined)
-         g.push(gender);
-   }
-   $.each(grammarDesc, function(ix, val) {
-      if (m.indexOf(val.k) > -1) {
-         if (cat == "fs") {
-            // For prepositions, show "stýrir þágufalli" instead of "þágufall"
-            // Avoid special case for "synthetic" prepositions (fs_nh)
-            if (val.k !== "NH")
-               g.push("stýrir " + val.t + "i");
+   var t = terminal;
+   if (t !== undefined) {
+      // Use the full terminal specification (e.g. 'so_2_þgf_þf_þt_p3_ft_gm_fh')
+      // Look for each feature that we want to document
+      $.each(variantDesc, function(ix, val) {
+         if (t.indexOf(val.k) > -1) {
+            if (cat == "fs") {
+               // For prepositions, show "stýrir þágufalli" instead of "þágufall"
+               // Avoid special case for "synthetic" prepositions (fs_nh)
+               if (val.k !== "nh")
+                  g.push("stýrir " + val.t + "i");
+            }
+            else
+            if (cat !== "so" || "_nf_þf_þgf_ef".indexOf(val.k) < 0)
+               // For verbs, skip the cases that they control
+               g.push(val.t);
+            t = t.replace(val.k, "")
          }
-         else
-            g.push(val.t);
-         m = m.replace(val.k, "");
-      }
-   });
-   if (cat == "fs" && !g.length && terminal !== undefined) {
-      // No information about a preposition found in the m field:
-      // attempt to fish it out of the terminal instead
-      var v = terminal.split("_");
-      if (v.length == 2) {
-         var descr = cases[v[1]];
-         if (descr !== undefined)
-            g.push("stýrir " + descr);
-      }
+      });
    }
-   return g.join("<br>");
+   return g.length ? g.join("<br>") : "";
 }
 
 function makePercentGraph(percent) {
@@ -360,7 +377,7 @@ function tokenInfo(t, nameDict) {
          else
          if (r.class == "fs" && t.m[0].indexOf(" ") > -1)
             wcls = "fleiryrt forsetning";
-         r.grammar = grammar(r.class, t.m[3], t.x, t.t);
+         r.grammar = grammar(r.class, t.t);
       }
       r.lemma = (t.m && t.m[0]) ? t.m[0] : t.x;
       r.details = wcls;

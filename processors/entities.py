@@ -34,8 +34,9 @@
 
 import re
 from datetime import datetime
+
 from scraperdb import Entity
-from settings import Abbreviations
+from reynir import Abbreviations
 
 
 MODULE_NAME = __name__
