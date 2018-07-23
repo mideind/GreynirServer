@@ -48,7 +48,7 @@ from flask.wrappers import Response
 import reynir
 from settings import Settings, ConfigError, changedlocale
 from reynir.bindb import BIN_Db
-from nertokenizer import tokenize_and_recognize, TOK, correct_spaces
+from nertokenizer import tokenize_and_recognize, correct_spaces
 from reynir.binparser import canonicalize_token
 from reynir.fastparser import Fast_Parser, ParseForestFlattener
 from article import Article as ArticleProxy
@@ -963,23 +963,36 @@ if __name__ == "__main__":
 
     from socket import error as socket_error
     import errno
+
     try:
+
+        # Suppress information log messages from Werkzeug
+        werkzeug_log = logging.getLogger('werkzeug')
+        if werkzeug_log:
+            werkzeug_log.setLevel(logging.WARNING)
         # Run the Flask web server application
         app.run(host = Settings.HOST, port = Settings.PORT,
             debug = Settings.DEBUG, use_reloader = True,
             extra_files = extra_files)
+
     except socket_error as e:
         if e.errno == errno.EADDRINUSE: # Address already in use
             logging.error("Reynir is already running at host {0}:{1}".format(Settings.HOST, Settings.PORT))
             sys.exit(1)
         else:
             raise
+
     finally:
         ArticleProxy.cleanup()
         BIN_Db.cleanup()
 
 else:
 
+    # Suppress information log messages from Werkzeug
+    werkzeug_log = logging.getLogger('werkzeug')
+    if werkzeug_log:
+        werkzeug_log.setLevel(logging.WARNING)
+    # Log our startup
     log_str = "Reynir instance starting with host={0}:{1}, db_hostname={2} on Python {3}" \
         .format(Settings.HOST, Settings.PORT, Settings.DB_HOSTNAME, sys.version.replace("\n", " "))
     logging.info(log_str)

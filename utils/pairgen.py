@@ -67,10 +67,10 @@ def gen_flat_trees(generator):
     STOP_WORDS = frozenset([
         "the", "a", "is", "each", "year", "our", "on", "in",
         "and", "this", "that", "s", "t", "don't", "isn't", "big",
-        "cheese", "steak"
+        "cheese", "steak", "email"
     ])
     for stree in generator:
-        flat, text = stree.flat, stree.text
+        flat, text = stree.flat_with_all_variants, stree.text
         tokens = text.split()
         # Exclude sentences with 2 or fewer tokens
         if len(tokens) > 2:

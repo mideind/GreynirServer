@@ -4,11 +4,11 @@ bs4==0.0.1
 certifi>=2017.4.17
 chardet==3.0.4
 click==6.7
-Flask==0.12.2
+Flask==1.0.2
 greenlet==0.4.12
 idna==2.5
 itsdangerous==0.24
-Jinja2==2.9.6
+Jinja2==2.10
 MarkupSafe==1.0
 packaging==16.8
 psycopg2cffi==2.7.7
@@ -20,4 +20,4 @@ tokenizer>=1.0.5
 six==1.11.0
 SQLAlchemy==1.1.10
 urllib3==1.21.1
-Werkzeug==0.12.2
+Werkzeug==0.14.1

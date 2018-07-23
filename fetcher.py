@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
     Reynir: Natural language processing for Icelandic
 
@@ -30,18 +29,14 @@ import requests
 import urllib.parse as urlparse
 from urllib.error import HTTPError
 
-from datetime import datetime
-
 from bs4 import BeautifulSoup, NavigableString
 
-from settings import Settings
 from nertokenizer import tokenize_and_recognize
-
 from scraperdb import SessionContext, Root, Article as ArticleRow
 
 
 # The HTML parser to use with BeautifulSoup
-#_HTML_PARSER = "html5lib"
+# _HTML_PARSER = "html5lib"
 _HTML_PARSER = "html.parser"
 
 
@@ -53,26 +48,47 @@ class Fetcher:
     _EXCLUDE_TAGS = frozenset(["script", "audio", "video", "style"])
 
     # HTML tags that typically denote blocks (DIV-like), not inline constructs (SPAN-like)
-    _BLOCK_TAGS = frozenset(["p", "h1", "h2", "h3", "h4", "div",
-        "main", "article", "header", "section",
-        "table", "thead", "tbody", "tr", "td", "ul", "li",
-        "form", "option", "input", "label",
-        "figure", "figcaption", "footer"])
+    _BLOCK_TAGS = frozenset(
+        [
+            "p",
+            "h1",
+            "h2",
+            "h3",
+            "h4",
+            "div",
+            "main",
+            "article",
+            "header",
+            "section",
+            "table",
+            "thead",
+            "tbody",
+            "tr",
+            "td",
+            "ul",
+            "li",
+            "form",
+            "option",
+            "input",
+            "label",
+            "figure",
+            "figcaption",
+            "footer",
+        ]
+    )
 
-    _INLINE_BLOCK_TAGS = frozenset(["span"]) # Inserted with whitespace
+    _INLINE_BLOCK_TAGS = frozenset(["span"])  # Inserted with whitespace
 
-    _WHITESPACE_TAGS = frozenset(["img"]) # Inserted as whitespace
+    _WHITESPACE_TAGS = frozenset(["img"])  # Inserted as whitespace
 
-    _BREAK_TAGS = frozenset(["br", "hr"]) # Cause paragraph breaks at outermost level
+    _BREAK_TAGS = frozenset(["br", "hr"])  # Cause paragraph breaks at outermost level
 
     # Cache of instantiated scrape helpers
     _helpers = dict()
 
-
     def __init__(self):
         """ No instances are supposed to be created of this class """
         assert False
-
 
     class TextList:
 
@@ -121,16 +137,14 @@ class Fetcher:
             assert self._nesting == 0
             text = "".join(self._result)
             # Eliminate soft hyphen and zero width space characters
-            text = re.sub('\u00AD|\u200B', '', text)
+            text = re.sub("\u00AD|\u200B", "", text)
             # Eliminate consecutive whitespace
-            return re.sub(r'\s+', ' ', text)
-
+            return re.sub(r"\s+", " ", text)
 
     @staticmethod
     def mark_paragraphs(txt):
         """ Insert paragraph markers into plaintext, by newlines """
-        return "[[ " + " ]] [[ ".join(txt.split('\n')) + " ]]"
-
+        return "[[ " + " ]] [[ ".join(txt.split("\n")) + " ]]"
 
     @staticmethod
     def extract_text(soup, result):
@@ -157,9 +171,9 @@ class Fetcher:
                 Fetcher.extract_text(t, result)
             elif t.name in Fetcher._BLOCK_TAGS:
                 # Nested block tag
-                result.begin() # Begin block
+                result.begin()  # Begin block
                 Fetcher.extract_text(t, result)
-                result.end() # End block
+                result.end()  # End block
             elif t.name in Fetcher._INLINE_BLOCK_TAGS:
                 # Put whitespace around the inline block
                 # so that words don't run together
@@ -170,23 +184,20 @@ class Fetcher:
                 # Non-block tag
                 Fetcher.extract_text(t, result)
 
-
     @staticmethod
-    def to_tokens(soup, enclosing_session = None):
+    def to_tokens(soup, enclosing_session=None):
         """ Convert an HTML soup root into a parsable token stream """
 
         # Extract the text content of the HTML into a list
         tlist = Fetcher.TextList()
         Fetcher.extract_text(soup, tlist)
         text = tlist.result()
-        tlist = None # Free memory
 
         # Tokenize the resulting text, returning a generator
-        return tokenize_and_recognize(text, enclosing_session = enclosing_session)
-
+        return tokenize_and_recognize(text, enclosing_session=enclosing_session)
 
     @classmethod
-    def _fetch_url(cls, url):
+    def raw_fetch_url(cls, url):
         """ Low-level fetch of an URL, returning a decoded string """
         html_doc = None
         try:
@@ -211,13 +222,18 @@ class Fetcher:
             print("HTTPError: {0} for URL {1}".format(e, url))
             html_doc = None
         except UnicodeEncodeError as e:
-            print("Exception when opening URL {0}: {1}".format(url, e)) # Don't use repr(e) here
+            print(
+                "Exception when opening URL {0}: {1}"
+                .format(url, e)
+            )
             html_doc = None
         except UnicodeDecodeError as e:
-            print("Exception when decoding HTML of {0}: {1}".format(url, e)) # Don't use repr(e) here
+            print(
+                "Exception when decoding HTML of {0}: {1}"
+                .format(url, e)
+            )
             html_doc = None
         return html_doc
-
 
     @classmethod
     def _get_helper(cls, root):
@@ -230,16 +246,15 @@ class Fetcher:
         else:
             # Dynamically instantiate a new helper class instance
             mod = importlib.import_module(root.scr_module)
-            helper_Class = getattr(mod, root.scr_class, None) if mod else None
-            helper = helper_Class(root) if helper_Class else None
+            helper_class = getattr(mod, root.scr_class, None) if mod else None
+            helper = helper_class(root) if helper_class else None
             Fetcher._helpers[helper_id] = helper
             if not helper:
                 print("Unable to instantiate helper {0}".format(helper_id))
         return helper
 
-
     @staticmethod
-    def make_soup(doc, helper = None):
+    def make_soup(doc, helper=None):
         """ Convert a document to a soup, using the helper if available """
         if helper is None:
             soup = BeautifulSoup(doc, _HTML_PARSER) if doc else None
@@ -249,9 +264,8 @@ class Fetcher:
             soup = helper.make_soup(doc) if doc else None
         return soup
 
-
     @classmethod
-    def tokenize_html(cls, url, html, enclosing_session = None):
+    def tokenize_html(cls, url, html, enclosing_session=None):
         """ Convert HTML into a token iterable (generator) """
         with SessionContext(enclosing_session) as session:
             helper = cls.helper_for(session, url)
@@ -263,8 +277,11 @@ class Fetcher:
             else:
                 content = helper.get_content(soup)
             # Convert the content soup to a token iterable (generator)
-            return Fetcher.to_tokens(content, enclosing_session = session) if content else None
-
+            return (
+                Fetcher.to_tokens(content, enclosing_session=session)
+                if content
+                else None
+            )
 
     @staticmethod
     def children(root, soup):
@@ -272,44 +289,52 @@ class Fetcher:
         # Establish the root URL base parameters
         root_s = urlparse.urlsplit(root.url)
         root_url = urlparse.urlunsplit(root_s)
-        root_url_slash = urlparse.urlunsplit((root_s.scheme, root_s.netloc, '/', root_s.query, ''))
+        root_url_slash = urlparse.urlunsplit(
+            (root_s.scheme, root_s.netloc, "/", root_s.query, "")
+        )
         # Collect all interesting <a> tags from the soup and obtain their href-s:
         fetch = set()
-        for link in soup.find_all('a'):
-            href = link.get('href')
+        for link in soup.find_all("a"):
+            href = link.get("href")
             if not href:
                 continue
             # Split the href into its components
             s = urlparse.urlsplit(href)
-            if s.scheme and s.scheme not in { 'http', 'https' }:
+            if s.scheme and s.scheme not in {"http", "https"}:
                 # Not HTTP
                 continue
-            if s.netloc and not (s.netloc == root.domain or s.netloc.endswith("." + root.domain)):
+            if s.netloc and not (
+                s.netloc == root.domain or s.netloc.endswith("." + root.domain)
+            ):
                 # External domain - we're not interested
                 continue
             # Seems to be a bug in urllib: fragments are put into the
             # path if there is no canonical path
             newpath = s.path
             if newpath.startswith("#") or newpath.startswith("/#"):
-                newpath = ''
+                newpath = ""
             if not newpath and not s.query:
                 # No meaningful path info present
                 continue
             # Make sure the newpath is properly urlencoded
             if newpath:
-               newpath = urlparse.quote(newpath)
+                newpath = urlparse.quote(newpath)
             # Fill in missing stuff from the root URL base parameters
-            newurl = (s.scheme or root_s.scheme,
-                s.netloc or root_s.netloc, newpath, s.query, '')
+            newurl = (
+                s.scheme or root_s.scheme,
+                s.netloc or root_s.netloc,
+                newpath,
+                s.query,
+                ""
+            )
             # Make a complete new URL to fetch
             url = urlparse.urlunsplit(newurl)
-            if url in { root_url, root_url_slash }:
+            if url in {root_url, root_url_slash}:
                 # Exclude the root URL
                 continue
             # Looks legit: add to the fetch set
             fetch.add(url)
         return fetch
-
 
     @classmethod
     def helper_for(cls, session, url):
@@ -320,36 +345,37 @@ class Fetcher:
         for r in session.query(Root).all():
             root_s = urlparse.urlsplit(r.url)
             # Find the root of the domain, i.e. www.ruv.is -> ruv.is
-            root_domain = '.'.join(root_s.netloc.split('.')[-2:])
+            root_domain = ".".join(root_s.netloc.split(".")[-2:])
             # This URL belongs to a root if the domain (netloc) part
             # ends with the root domain
-            if s.netloc == root_domain or s.netloc.endswith('.' + root_domain):
+            if s.netloc == root_domain or s.netloc.endswith("." + root_domain):
                 root = r
                 break
         # Obtain a scrape helper for the root, if any
         return cls._get_helper(root) if root else None
 
-
     # noinspection PyComparisonWithNone
     @classmethod
-    def find_article(cls, url, enclosing_session = None):
+    def find_article(cls, url, enclosing_session=None):
         """ Return a scraped article object, if found, else None """
-        article = None
-        with SessionContext(enclosing_session, commit = True) as session:
-            article = session.query(ArticleRow).filter_by(url = url) \
-                .filter(ArticleRow.scraped != None).one_or_none()
+        with SessionContext(enclosing_session, commit=True) as session:
+            article = (
+                session
+                .query(ArticleRow)
+                .filter_by(url=url)
+                .filter(ArticleRow.scraped != None)
+                .one_or_none()
+            )
         return article
 
-
     # noinspection PyComparisonWithNone
     @classmethod
-    def is_known_url(cls, url, session = None):
+    def is_known_url(cls, url, session=None):
         """ Return True if the URL has already been scraped """
         return cls.find_article(url, session) is not None
 
-
     @classmethod
-    def fetch_article(cls, url, enclosing_session = None):
+    def fetch_article(cls, url, enclosing_session=None):
         """ Fetch a previously scraped article, returning
             a tuple (article, metadata, content) or None if error """
 
@@ -375,9 +401,8 @@ class Fetcher:
             content = helper.get_content(soup) if helper else soup.html.body
             return (article, metadata, content)
 
-
     @classmethod
-    def fetch_url(cls, url, enclosing_session = None):
+    def fetch_url(cls, url, enclosing_session=None):
         """ Fetch a URL using the scraping mechanism, returning
             a tuple (metadata, content) or None if error """
 
@@ -387,7 +412,7 @@ class Fetcher:
 
             if helper is None or not hasattr(helper, "fetch_url"):
                 # Do a straight HTTP fetch
-                html_doc = cls._fetch_url(url)
+                html_doc = cls.raw_fetch_url(url)
             else:
                 # Hand off to the helper
                 html_doc = helper.fetch_url(url)
@@ -406,9 +431,8 @@ class Fetcher:
             content = helper.get_content(soup) if helper else soup.html.body
             return (metadata, content)
 
-
     @classmethod
-    def fetch_url_html(cls, url, enclosing_session = None):
+    def fetch_url_html(cls, url, enclosing_session=None):
         """ Fetch a URL using the scraping mechanism, returning
             a tuple (html, metadata, helper) or None if error """
 
@@ -418,7 +442,7 @@ class Fetcher:
 
             if helper is None or not hasattr(helper, "fetch_url"):
                 # Do a straight HTTP fetch
-                html_doc = cls._fetch_url(url)
+                html_doc = cls.raw_fetch_url(url)
             else:
                 # Hand off to the helper
                 html_doc = helper.fetch_url(url)
@@ -435,4 +459,3 @@ class Fetcher:
             # Obtain the metadata from the resulting soup
             metadata = helper.get_metadata(soup) if helper else None
             return (html_doc, metadata, helper)
-

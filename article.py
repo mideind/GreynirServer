@@ -4,7 +4,8 @@
 
     Article class
 
-    Copyright (C) 2017 Miðeind ehf.
+    Copyright (C) 2018 Miðeind ehf.
+    Author: Vilhjálmur Þorsteinsson
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -26,11 +27,10 @@
 
 import json
 import uuid
-import time
 from datetime import datetime
-from collections import OrderedDict, defaultdict, namedtuple
+from collections import OrderedDict, defaultdict
 
-from settings import Settings, NoIndexWords
+from settings import NoIndexWords
 from scraperdb import Article as ArticleRow, SessionContext, Word, Root, DataError, desc
 from fetcher import Fetcher
 from tokenizer import TOK, tokenize
@@ -51,7 +51,7 @@ class Article:
     def _init_class(cls):
         """ Initialize class attributes """
         if cls._parser is None:
-            cls._parser = Fast_Parser(verbose = False) # Don't emit diagnostic messages
+            cls._parser = Fast_Parser(verbose=False)  # Don't emit diagnostic messages
 
     @classmethod
     def cleanup(cls):
@@ -77,8 +77,7 @@ class Article:
         cls._init_class()
         return cls._parser.version
 
-
-    def __init__(self, uuid = None, url = None):
+    def __init__(self, uuid=None, url=None):
         self._uuid = uuid
         self._url = url
         self._heading = ""
@@ -102,14 +101,14 @@ class Article:
         self._root_id = None
         self._root_domain = None
         self._helper = None
-        self._tokens = None # JSON string
-        self._raw_tokens = None # The tokens themselves
-        self._words = None # The individual word stems, in a dictionary
+        self._tokens = None  # JSON string
+        self._raw_tokens = None  # The tokens themselves
+        self._words = None  # The individual word stems, in a dictionary
 
     @classmethod
     def _init_from_row(cls, ar):
         """ Initialize a fresh Article instance from a database row object """
-        a = cls(uuid = ar.id)
+        a = cls(uuid=ar.id)
         a._url = ar.url
         a._heading = ar.heading
         a._author = ar.author
@@ -136,11 +135,11 @@ class Article:
         return a
 
     @classmethod
-    def _init_from_scrape(cls, url, enclosing_session = None):
+    def _init_from_scrape(cls, url, enclosing_session=None):
         """ Scrape an article from its URL """
         if url is None:
             return None
-        a = cls(url = url)
+        a = cls(url=url)
         with SessionContext(enclosing_session) as session:
             # Obtain a helper corresponding to the URL
             html, metadata, helper = Fetcher.fetch_url_html(url, session)
@@ -162,7 +161,7 @@ class Article:
             return a
 
     @classmethod
-    def load_from_url(cls, url, enclosing_session = None):
+    def load_from_url(cls, url, enclosing_session=None):
         """ Load or scrape an article, given its URL """
         with SessionContext(enclosing_session) as session:
             ar = session.query(ArticleRow).filter(ArticleRow.url == url).one_or_none()
@@ -172,7 +171,7 @@ class Article:
             return cls._init_from_scrape(url, session)
 
     @classmethod
-    def scrape_from_url(cls, url, enclosing_session = None):
+    def scrape_from_url(cls, url, enclosing_session=None):
         """ Force fetch of an article, given its URL """
         with SessionContext(enclosing_session) as session:
             ar = session.query(ArticleRow).filter(ArticleRow.url == url).one_or_none()
@@ -183,11 +182,16 @@ class Article:
             return a
 
     @classmethod
-    def load_from_uuid(cls, uuid, enclosing_session = None):
+    def load_from_uuid(cls, uuid, enclosing_session=None):
         """ Load an article, given its UUID """
         with SessionContext(enclosing_session) as session:
             try:
-                ar = session.query(ArticleRow).filter(ArticleRow.id == uuid).one_or_none()
+                ar = (
+                    session
+                    .query(ArticleRow)
+                    .filter(ArticleRow.id == uuid)
+                    .one_or_none()
+                )
             except DataError:
                 # Probably wrong UUID format
                 ar = None
@@ -219,15 +223,16 @@ class Article:
                             # The entity name
                             yield t["x"]
 
-    def create_register(self, session, all_names = False):
+    def create_register(self, session, all_names=False):
         """ Create a name register dictionary for this article """
-        register = { }
+        register = {}
         from query import add_name_to_register, add_entity_to_register
+
         for name in self.person_names():
-            add_name_to_register(name, register, session, all_names = all_names)
+            add_name_to_register(name, register, session, all_names=all_names)
         # Add register of entity names
         for name in self.entity_names():
-            add_entity_to_register(name, register, session, all_names = all_names)
+            add_entity_to_register(name, register, session, all_names=all_names)
         return register
 
     def _store_words(self, session):
@@ -247,17 +252,12 @@ class Article:
                 # Shield the database from too long words
                 continue
             # Interesting word: let's index it
-            w = Word(
-                article_id = self._uuid,
-                stem = word.stem,
-                cat = word.cat,
-                cnt = cnt
-            )
+            w = Word(article_id=self._uuid, stem=word.stem, cat=word.cat, cnt=cnt)
             session.add(w)
         # Offload the new data from Python to PostgreSQL
         session.flush()
 
-    def _parse(self, enclosing_session = None, verbose = False):
+    def _parse(self, enclosing_session=None, verbose=False):
         """ Parse the article content to yield parse trees and annotated token list """
         with SessionContext(enclosing_session) as session:
 
@@ -265,7 +265,7 @@ class Article:
             toklist = Fetcher.tokenize_html(self._url, self._html, session)
 
             bp = self.get_parser()
-            ip = IncrementalParser(bp, toklist, verbose = verbose)
+            ip = IncrementalParser(bp, toklist, verbose=verbose)
 
             # List of paragraphs containing a list of sentences containing token lists
             # for sentences in string dump format (1-based paragraph and sentence indices)
@@ -289,15 +289,23 @@ class Article:
 
                     if sent.parse():
                         # Obtain a text representation of the parse tree
-                        trees[num_sent] = ParseForestDumper.dump_forest(sent.tree)
-                        pgs[-1].append(TreeUtility.dump_tokens(sent.tokens, sent.tree, words))
+                        token_dicts = TreeUtility.dump_tokens(
+                            sent.tokens, sent.tree, words
+                        )
+                        trees[num_sent] = ParseForestDumper.dump_forest(
+                            sent.tree, token_dicts
+                        )
                     else:
                         # Error or no parse: add an error index entry for this sentence
                         eix = sent.err_index
+                        token_dicts = TreeUtility.dump_tokens(
+                            sent.tokens, None, None, eix
+                        )
                         trees[num_sent] = "E{0}".format(eix)
-                        pgs[-1].append(TreeUtility.dump_tokens(sent.tokens, None, None, eix))
 
-            parse_time = ip.parse_time
+                    pgs[-1].append(token_dicts)
+
+            # parse_time = ip.parse_time
 
             self._parsed = datetime.utcnow()
             self._parser_version = bp.version
@@ -308,43 +316,44 @@ class Article:
 
             # Make one big JSON string for the paragraphs, sentences and tokens
             self._raw_tokens = pgs
-            self._tokens = json.dumps(pgs, separators = (',', ':'), ensure_ascii = False)
+            self._tokens = json.dumps(pgs, separators=(",", ":"), ensure_ascii=False)
 
             # Keep the bag of words (stem, category, count for each word)
             self._words = words
 
             # Create a tree representation string out of all the accumulated parse trees
-            self._tree = "".join("S{0}\n{1}\n".format(key, val) for key, val in trees.items())
+            self._tree = "".join(
+                "S{0}\n{1}\n".format(key, val) for key, val in trees.items()
+            )
 
-
-    def store(self, enclosing_session = None):
+    def store(self, enclosing_session=None):
         """ Store an article in the database, inserting it or updating """
-        with SessionContext(enclosing_session, commit = True) as session:
+        with SessionContext(enclosing_session, commit=True) as session:
             if self._uuid is None:
                 # Insert a new row
                 self._uuid = str(uuid.uuid1())
                 ar = ArticleRow(
-                    id = self._uuid,
-                    url = self._url,
-                    root_id = self._root_id,
-                    heading = self._heading,
-                    author = self._author,
-                    timestamp = self._timestamp,
-                    authority = self._authority,
-                    scraped = self._scraped,
-                    parsed = self._parsed,
-                    processed = self._processed,
-                    indexed = self._indexed,
-                    scr_module = self._scr_module,
-                    scr_class = self._scr_class,
-                    scr_version = self._scr_version,
-                    parser_version = self._parser_version,
-                    num_sentences = self._num_sentences,
-                    num_parsed = self._num_parsed,
-                    ambiguity = self._ambiguity,
-                    html = self._html,
-                    tree = self._tree,
-                    tokens = self._tokens
+                    id=self._uuid,
+                    url=self._url,
+                    root_id=self._root_id,
+                    heading=self._heading,
+                    author=self._author,
+                    timestamp=self._timestamp,
+                    authority=self._authority,
+                    scraped=self._scraped,
+                    parsed=self._parsed,
+                    processed=self._processed,
+                    indexed=self._indexed,
+                    scr_module=self._scr_module,
+                    scr_class=self._scr_class,
+                    scr_version=self._scr_version,
+                    parser_version=self._parser_version,
+                    num_sentences=self._num_sentences,
+                    num_parsed=self._num_parsed,
+                    ambiguity=self._ambiguity,
+                    html=self._html,
+                    tree=self._tree,
+                    tokens=self._tokens,
                 )
                 session.add(ar)
                 if self._words:
@@ -353,7 +362,12 @@ class Article:
                 return True
 
             # Update an already existing row by UUID
-            ar = session.query(ArticleRow).filter(ArticleRow.id == self._uuid).one_or_none()
+            ar = (
+                session
+                .query(ArticleRow)
+                .filter(ArticleRow.id == self._uuid)
+                .one_or_none()
+            )
             if ar is None:
                 # UUID not found: something is wrong here...
                 return False
@@ -387,29 +401,28 @@ class Article:
                 self._store_words(session)
             return True
 
-    def prepare(self, enclosing_session = None, verbose = False, reload_parser = False):
+    def prepare(self, enclosing_session=None, verbose=False, reload_parser=False):
         """ Prepare the article for display. If it's not already tokenized and parsed, do it now. """
-        with SessionContext(enclosing_session, commit = True) as session:
+        with SessionContext(enclosing_session, commit=True) as session:
             if self._tree is None or self._tokens is None:
                 if reload_parser:
                     # We need a parse: Make sure we're using the newest grammar
                     self.reload_parser()
-                self._parse(session, verbose = verbose)
+                self._parse(session, verbose=verbose)
                 if self._tree is not None or self._tokens is not None:
                     # Store the updated article in the database
                     self.store(session)
 
-    def parse(self, enclosing_session = None, verbose = False, reload_parser = False):
+    def parse(self, enclosing_session=None, verbose=False, reload_parser=False):
         """ Force a parse of the article """
-        with SessionContext(enclosing_session, commit = True) as session:
+        with SessionContext(enclosing_session, commit=True) as session:
             if reload_parser:
                 # We need a parse: Make sure we're using the newest grammar
                 self.reload_parser()
-            self._parse(session, verbose = verbose)
+            self._parse(session, verbose=verbose)
             if self._tree is not None or self._tokens is not None:
                 # Store the updated article in the database
                 self.store(session)
-
 
     @property
     def url(self):
@@ -481,17 +494,19 @@ class Article:
             self._num_tokens = cnt
         return self._num_tokens
 
-
     @staticmethod
-    def token_stream(limit = None, skip_errors = True):
+    def token_stream(limit=None, skip_errors=True):
         """ Generator of a token stream consisting of `limit` sentences (or less) from the
             most recently parsed articles. After each sentence, None is yielded. """
-        with SessionContext(commit = True, read_only = True) as session:
+        with SessionContext(commit=True, read_only=True) as session:
 
-            q = session.query(ArticleRow.url, ArticleRow.parsed, ArticleRow.tokens) \
-                .filter(ArticleRow.tokens != None) \
-                .order_by(desc(ArticleRow.parsed)) \
+            q = (
+                session
+                .query(ArticleRow.url, ArticleRow.parsed, ArticleRow.tokens)
+                .filter(ArticleRow.tokens != None)
+                .order_by(desc(ArticleRow.parsed))
                 .yield_per(200)
+            )
 
             count = 0
             for a in q:
@@ -506,22 +521,25 @@ class Article:
                         for t in sent:
                             # Yield the tokens
                             yield t
-                        yield None # End-of-sentence marker
+                        yield None  # End-of-sentence marker
                         # Are we done?
                         count += 1
                         if limit is not None and count >= limit:
                             return
 
     @staticmethod
-    def sentence_stream(limit = None, skip = None, skip_errors = True):
+    def sentence_stream(limit=None, skip=None, skip_errors=True):
         """ Generator of a sentence stream consisting of `limit` sentences (or less) from the
             most recently parsed articles. Each sentence is a list of token dicts. """
-        with SessionContext(commit = True, read_only = True) as session:
+        with SessionContext(commit=True, read_only=True) as session:
 
-            q = session.query(ArticleRow.url, ArticleRow.parsed, ArticleRow.tokens) \
-                .filter(ArticleRow.tokens != None) \
-                .order_by(desc(ArticleRow.parsed)) \
+            q = (
+                session
+                .query(ArticleRow.url, ArticleRow.parsed, ArticleRow.tokens)
+                .filter(ArticleRow.tokens != None)
+                .order_by(desc(ArticleRow.parsed))
                 .yield_per(200)
+            )
 
             count = 0
             skipped = 0
@@ -539,30 +557,33 @@ class Article:
                             skipped += 1
                             continue
                         # Yield the sentence as a fresh token list
-                        yield [ t for t in sent ]
+                        yield [t for t in sent]
                         # Are we done?
                         count += 1
                         if limit is not None and count >= limit:
                             return
 
     @classmethod
-    def articles(cls, criteria, enclosing_session = None):
+    def articles(cls, criteria, enclosing_session=None):
         """ Generator of Article objects from the database that meet the given criteria """
         # The criteria are currently "timestamp", "author" and "domain",
         # as well as "order_by_parse" which if True indicates that the result
         # should be ordered with the most recently parsed articles first.
-        with SessionContext(commit = True, read_only = True,
-            session = enclosing_session) as session:
+        with SessionContext(
+            commit=True, read_only=True, session=enclosing_session
+        ) as session:
 
             # Only fetch articles that have a parse tree
-            q = session.query(ArticleRow) \
-                .filter(ArticleRow.tree != None)
+            q = session.query(ArticleRow).filter(ArticleRow.tree != None)
 
             # timestamp is assumed to contain a tuple: (from, to)
             if criteria and "timestamp" in criteria:
                 ts = criteria["timestamp"]
-                q = q.filter(ArticleRow.timestamp >= ts[0]) \
+                q = (
+                    q
+                    .filter(ArticleRow.timestamp >= ts[0])
                     .filter(ArticleRow.timestamp < ts[1])
+                )
 
             if criteria and "author" in criteria:
                 author = criteria["author"]
@@ -590,26 +611,26 @@ class Article:
                 yield cls._init_from_row(arow)
 
     @classmethod
-    def all_matches(cls, criteria, pattern, enclosing_session = None):
+    def all_matches(cls, criteria, pattern, enclosing_session=None):
         """ Generator of SimpleTree objects (see matcher.py) from articles matching
             the given criteria and the pattern """
 
-        with SessionContext(commit = True, read_only = True,
-            session = enclosing_session) as session:
+        with SessionContext(
+            commit=True, read_only=True, session=enclosing_session
+        ) as session:
 
-            t0 = time.time()
+            # t0 = time.time()
             mcnt = acnt = tcnt = 0
-            print("Starting article loop")
-            for a in cls.articles(criteria, enclosing_session = enclosing_session):
+            # print("Starting article loop")
+            for a in cls.articles(criteria, enclosing_session=session):
                 acnt += 1
-                tree = Tree(url = a.url, authority = a.authority)
+                tree = Tree(url=a.url, authority=a.authority)
                 tree.load(a.tree)
-                for ix, stree in tree.simple_trees():
+                for ix, simple_tree in tree.simple_trees():
                     tcnt += 1
-                    for match in stree.all_matches(pattern):
+                    for match in simple_tree.all_matches(pattern):
                         yield (a, ix, match)
                         mcnt += 1
-            t1 = time.time()
-            print("{0} articles with {1} trees examined, {2} matches in {3:.2f} seconds"
-                .format(acnt, tcnt, mcnt, t1-t0))
-
+            # t1 = time.time()
+            # print("{0} articles with {1} trees examined, {2} matches in {3:.2f} seconds"
+            #     .format(acnt, tcnt, mcnt, t1-t0))

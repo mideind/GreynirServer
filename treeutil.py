@@ -175,7 +175,7 @@ class TreeUtility:
             if (gender is None or g == gender) and (case is None or c == case) ]
         if not fn_list:
             # Oops - nothing matched this. Might be a foreign, undeclinable name.
-            # Try nominative if it wasn't alredy tried
+            # Try nominative if it wasn't already tried
             if case is not None and case != "nf":
                 fn_list = [ (fn, g, c) for fn, g, c in val
                     if (gender is None or g == gender) and (case == "nf") ]
@@ -194,7 +194,7 @@ class TreeUtility:
     def _describe_token(t, terminal, meaning):
         """ Return a compact dictionary and a WordTuple describing the token t,
             which matches the given terminal with the given meaning """
-        d = dict(x = t.txt)
+        d = dict(x=t.txt)
         wt = None
         if terminal is not None:
             # There is a token-terminal match
@@ -202,9 +202,9 @@ class TreeUtility:
                 if t.txt == "-":
                     # Hyphen: check whether it is matching an em or en-dash terminal
                     if terminal.colon_cat == "em":
-                        d["x"] = "—" # Substitute em dash (will be displayed with surrounding space)
+                        d["x"] = "—"  # Substitute em dash (will be displayed with surrounding space)
                     elif terminal.colon_cat == "en":
-                        d["x"] = "–" # Substitute en dash
+                        d["x"] = "–"  # Substitute en dash
             else:
                 # Annotate with terminal name and BÍN meaning (no need to do this for punctuation)
                 d["t"] = terminal.name
@@ -217,20 +217,20 @@ class TreeUtility:
                         m = (meaning.stofn, meaning.ordfl, meaning.fl, meaning.beyging)
                     d["m"] = m
                     # Note the word stem and category
-                    wt = WordTuple(stem = m[0].replace("-", ""), cat = m[1])
+                    wt = WordTuple(stem=m[0].replace("-", ""), cat=m[1])
                 elif t.kind == TOK.ENTITY:
-                    wt = WordTuple(stem = t.txt, cat = "entity")
+                    wt = WordTuple(stem=t.txt, cat="entity")
         if t.kind != TOK.WORD:
             # Optimize by only storing the k field for non-word tokens
             d["k"] = t.kind
-        if t.val is not None and t.kind not in { TOK.WORD, TOK.ENTITY, TOK.PUNCTUATION }:
+        if t.val is not None and t.kind not in {TOK.WORD, TOK.ENTITY, TOK.PUNCTUATION}:
             # For tokens except words, entities and punctuation, include the val field
             if t.kind == TOK.PERSON:
                 case = None
                 gender = None
                 if terminal is not None and terminal.num_variants >= 1:
                     gender = terminal.variant(-1)
-                    if gender in { "nf", "þf", "þgf", "ef" }:
+                    if gender in {"nf", "þf", "þgf", "ef"}:
                         # Oops, mistaken identity
                         case = gender
                         gender = None
@@ -246,7 +246,7 @@ class TreeUtility:
                     d["t"] = "person_" + gender
                 # In any case, add a separate gender indicator field for convenience
                 d["g"] = gender
-                wt = WordTuple(stem = d["v"], cat = "person_" + gender)
+                wt = WordTuple(stem=d["v"], cat="person_" + gender)
             else:
                 d["v"] = t.val
         return d, wt
@@ -262,10 +262,11 @@ class TreeUtility:
 
         def _visit_token(self, level, node):
             """ At token node """
-            ix = node.token.index # Index into original sentence
+            ix = node.token.index  # Index into original sentence
             assert ix not in self._tmap
             meaning = node.token.match_with_meaning(node.terminal)
-            self._tmap[ix] = (node.terminal, None if isinstance(meaning, bool) else meaning) # Map from original token to matched terminal
+            # Map from original token to matched terminal
+            self._tmap[ix] = (node.terminal, None if isinstance(meaning, bool) else meaning)
             return None
 
     class _Simplifier(ParseForestNavigator):
@@ -317,9 +318,9 @@ class TreeUtility:
     @staticmethod
     def dump_tokens(tokens, tree, words, error_index = None):
 
-        """ Generate a string (JSON) representation of the tokens in the sentence.
+        """ Generate a list of dicts representing the tokens in the sentence.
 
-            The JSON token dict contents are as follows:
+            For each token dict t:
 
                 t.x is original token text.
                 t.k is the token kind (TOK.xxx). If omitted, the kind is TOK.WORD.
@@ -338,7 +339,7 @@ class TreeUtility:
         """
 
         # Map tokens to associated terminals, if any
-        tmap = TreeUtility._terminal_map(tree) # tmap is an empty dict if there's no parse tree
+        tmap = TreeUtility._terminal_map(tree)  # tmap is an empty dict if there's no parse tree
         dump = []
         for ix, token in enumerate(tokens):
             # We have already cut away paragraph and sentence markers (P_BEGIN/P_END/S_BEGIN/S_END)

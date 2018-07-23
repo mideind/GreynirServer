@@ -348,11 +348,11 @@ class Node:
     def contained_text(self):
         """ Return a string consisting of the literal text of all
             descendants of this node, in depth-first order """
-        return NotImplementedError # Should be overridden
+        return NotImplementedError  # Should be overridden
 
     def string_self(self):
         """ String representation of the name of this node """
-        raise NotImplementedError # Should be overridden
+        raise NotImplementedError  # Should be overridden
 
     def string_rep(self, indent):
         """ Indented representation of this node """
@@ -611,6 +611,10 @@ def _root_lookup(text, at_start, terminal):
         td = TerminalNode._TD[terminal]
         m = next((x for x in m if td._bin_filter(x)), None)
     if m:
+        if m.fl == "skst":
+            # For abbreviations, return the original text as the
+            # root (lemma), not the meaning of the abbreviation
+            return text
         w = m.stofn
     return w.replace("-", "")
 
@@ -626,7 +630,7 @@ class TerminalNode(Node):
     # Cache of word roots (stems) keyed by (word, at_start, terminal)
     _root_cache = LRU_Cache(_root_lookup, maxsize = 16384)
 
-    def __init__(self, terminal, token, tokentype, aux, at_start):
+    def __init__(self, terminal, augmented_terminal, token, tokentype, aux, at_start):
         super().__init__()
         td = self._TD.get(terminal)
         if td is None:
@@ -641,6 +645,7 @@ class TerminalNode(Node):
         self.is_word = tokentype in { "WORD", "PERSON" }
         self.is_literal = td.is_literal
         self.is_declinable = (not self.is_literal) and (td.inferred_cat not in self._NOT_DECLINABLE)
+        self.augmented_terminal = augmented_terminal
         self.aux = aux # Auxiliary information, originally from token.t2
         # Cache the root form of this word so that it is only looked up
         # once, even if multiple processors scan this tree
@@ -692,7 +697,7 @@ class TerminalNode(Node):
             result = []
             for x in m:
 
-                # Calculate a new beyging string with the nominative case
+                # Calculate a new 'beyging' string with the nominative case
                 beyging = replace_func(x.beyging)
 
                 if beyging is x.beyging:
@@ -704,11 +709,11 @@ class TerminalNode(Node):
                     stofn = x.stofn.split("-")[-1] if len(parts) > 1 else x.stofn
                     prefix = "".join(parts[0:-1]) if len(parts) > 1 else ""
                     # Go through all nominative forms of this word form until we
-                    # find one that matches the meaning (beyging) that we're
+                    # find one that matches the meaning ('beyging') that we're
                     # looking for. It also must be the same word category and
-                    # the same stem and identifier (utg). In fact the utg check
+                    # the same stem and identifier ('utg'). In fact the 'utg' check
                     # alone should be sufficient, but better safe than sorry.
-                    n = bin_db.lookup_nominative(parts[-1]) # Note: this call is cached
+                    n = bin_db.lookup_nominative(parts[-1])  # Note: this call is cached
                     r = [
                         nm for nm in n if nm.stofn == stofn and nm.ordfl == x.ordfl and
                         nm.utg == x.utg and nm.beyging == beyging
@@ -811,7 +816,7 @@ class TerminalNode(Node):
             assert False
 
         def replace_beyging(b, by_case = "NF"):
-            """ Change a beyging string to specify a different case, without the definitive article """
+            """ Change a 'beyging' string to specify a different case, without the definitive article """
             for case in ("NF", "ÞF", "ÞGF", "EF"):
                 if case != by_case and case in b:
                     return b.replace(case, by_case).replace("FT", "ET").replace("gr", "").replace("VB", "SB")
@@ -859,8 +864,8 @@ class TerminalNode(Node):
 
     def process(self, state, params):
         """ Prepare a result object to be passed up to enclosing nonterminals """
-        assert not params # A terminal node should not have parameters
-        result = Result(self, state, None) # No params
+        assert not params  # A terminal node should not have parameters
+        result = Result(self, state, None)  # No params
         result._terminal = self.td.terminal
         result._text = self.text
         result._token = self.token
@@ -869,13 +874,20 @@ class TerminalNode(Node):
 
     def build_simple_tree(self, builder):
         """ Create a terminal node in a simple tree for this TerminalNode """
-        d = dict(x = self.text, k = self.tokentype)
+        d = dict(x=self.text, k=self.tokentype)
         if self.tokentype != "PUNCTUATION":
             # Terminal
             d["t"] = t = self.td.clean_terminal
+            a = self.augmented_terminal
+            if a and a != t:
+                # We have an augmented terminal and it's different from the
+                # pure grammar terminal: store it
+                d["a"] = a
+            else:
+                d["a"] = t
             if t[0] == '"' or t[0] == "'":
-                assert False, "Wrong terminal: {0}, text is '{1}', token {2}, tokentype {3}".format(self.td.terminal,
-                    self.text, self.token, self.tokentype)
+                assert False, ("Wrong terminal: {0}, text is '{1}', token {2}, tokentype {3}"
+                    .format(self.td.terminal, self.text, self.token, self.tokentype))
             # Category
             d["c"] = self.cat
             if self.tokentype == "WORD":
@@ -892,8 +904,8 @@ class PersonNode(TerminalNode):
 
     """ Specialized TerminalNode for person terminals """
 
-    def __init__(self, terminal, token, tokentype, aux, at_start):
-        super().__init__(terminal, token, tokentype, aux, at_start)
+    def __init__(self, terminal, augmented_terminal, token, tokentype, aux, at_start):
+        super().__init__(terminal, augmented_terminal, token, tokentype, aux, at_start)
         # Load the full names from the auxiliary JSON information
         gender = self.td.gender or None
         case = self.td.case or None
@@ -1153,10 +1165,18 @@ class TreeBase:
             r = re.match(r'\'[^\']*\'', s)
         token = r.group() if r else ""
         s = s[r.end() + 1:] if r else ""
+        augmented_terminal = terminal
         if s:
-            a = s.split(' ', maxsplit = 1)
+            a = s.split(' ', maxsplit=1)
             tokentype = a[0]
-            aux = a[1] if len(a) > 1 else "" # Auxiliary info (originally token.t2)
+            if tokentype[0].islower():
+                # The following string is actually an augmented terminal,
+                # corresponding to a word token
+                augmented_terminal = tokentype
+                tokentype = "WORD"
+                aux = ""
+            else:
+                aux = a[1] if len(a) > 1 else "" # Auxiliary info (originally token.t2)
         else:
             # Default token type
             tokentype = "WORD"
@@ -1165,13 +1185,14 @@ class TreeBase:
         # name, which is not the word category in all cases (for instance not
         # for literal terminals).
         cat = terminal.split("_", maxsplit = 1)[0]
-        return (terminal, token, tokentype, aux, cat)
+        return (terminal, augmented_terminal, token, tokentype, aux, cat)
 
     def handle_T(self, n, s):
         """ Terminal """
-        terminal, token, tokentype, aux, cat = self._parse_T(s)
+        terminal, augmented_terminal, token, tokentype, aux, cat = self._parse_T(s)
         constructor = self._TC.get(cat, TerminalNode)
-        self.push(n, constructor(terminal, token, tokentype, aux, self.at_start))
+        self.push(n, constructor(terminal, augmented_terminal,
+            token, tokentype, aux, self.at_start))
         self.at_start = False
 
     def handle_N(self, n, nonterminal):
@@ -1195,7 +1216,7 @@ class TreeBase:
                 else:
                     f(n)
             else:
-                print("*** No handler for {0}".format(line))
+                assert False, "*** No handler for {0}".format(line)
 
 
 class Tree(TreeBase):
