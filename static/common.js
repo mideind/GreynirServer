@@ -7,9 +7,8 @@
 
    JavaScript utility functions for token display, formatting, etc.
 
-   Author: Vilhjalmur Thorsteinsson
-   Copyright (C) 2017
-   All rights reserved
+   Copyright (C) 2018 Miðeind ehf.
+   Author: Vilhjálmur Þorsteinsson
 
       This program is free software: you can redistribute it and/or modify
       it under the terms of the GNU General Public License as published by
@@ -122,41 +121,6 @@ var wordClass = {
    "gata" : "götuheiti",
    "fyrirtæki" : "fyrirtæki"
 };
-
-var beygingDesc = [
-   { k: "LH-NT", t : "lýsingarháttur nútíðar", o: 6 },
-   { k: "LHÞT", t : "lýsingarháttur þátíðar", o: 6 },
-   { k: "NT", t : "nútíð", o: 0 },
-   { k: "ÞT", t : "þátíð", o: 0 },
-   { k: "1P", t : "fyrsta persóna", o: 1 },
-   { k: "2P", t : "önnur persóna", o: 1 },
-   { k: "3P", t : "þriðja persóna", o: 1 },
-   { k: "ET", t : "eintala", o: 2 },
-   { k: "FT", t : "fleirtala", o: 2 },
-   { k: "KK", t : "karlkyn", o: 3 },
-   { k: "KVK", t : "kvenkyn", o: 3 },
-   { k: "HK", t : "hvorugkyn", o: 3 },
-   { k: "NF", t : "nefnifall", o: 4 },
-   { k: "ÞF", t : "þolfall", o: 4 },
-   { k: "ÞGF", t : "þágufall", o: 4 },
-   { k: "EF", t : "eignarfall", o: 4 },
-   { k: "GM", t : "germynd", o: 5 },
-   { k: "MM", t : "miðmynd", o: 5 },
-   { k: "FH", t : "framsöguháttur", o: 6 },
-   { k: "NH", t : "nafnháttur", o: 6 },
-   { k: "BH", t : "boðháttur", o: 6 },
-   { k: "VH", t : "viðtengingarháttur", o: 6 },
-   { k: "SAGNB", t : "sagnbót", o: 7 },
-   // Ath.: Málfræðin gerir ekki greinarmun á sterkri og veikri beygingu lýsingarorða með nafnorðum
-   { k: "FVB", t : "frumstig<br>veik beyging", o: 9 },
-   { k: "FSB", t : "frumstig<br>sterk beyging", o: 9 },
-   { k: "MST", t : "miðstig", o: 9 },
-   { k: "ESB", t : "efsta stig<br>sterk beyging", o: 9 },
-   { k: "EVB", t : "efsta stig<br>veik beyging", o: 9 },
-   { k: "SB", t : "sterk beyging", o: 8 },
-   { k: "VB", t : "veik beyging", o: 8 },
-   { k: "gr", t : "með greini", o: 10 }
-];
 
 var variantDesc = [
    { k: "_lh_nt", t : "lýsingarháttur nútíðar", o: 6 },
@@ -305,14 +269,14 @@ function grammar(cat, terminal) {
             if (cat == "fs") {
                // For prepositions, show "stýrir þágufalli" instead of "þágufall"
                // Avoid special case for "synthetic" prepositions (fs_nh)
-               if (val.k !== "nh")
+               if (val.k !== "_nh")
                   g.push("stýrir " + val.t + "i");
             }
             else
             if (cat !== "so" || "_nf_þf_þgf_ef".indexOf(val.k) < 0)
                // For verbs, skip the cases that they control
                g.push(val.t);
-            t = t.replace(val.k, "")
+            t = t.replace(val.k, "");
          }
       });
    }
