@@ -453,8 +453,12 @@ class TerminalDescriptor:
 
     _OLD_BUGS = {
         "'margur'" : "lo",
+        "'fyrri'" : "lo",
+        "'seinni'" : "lo",
         "'annar'" : "fn",
         "'á fætur'" : "ao",
+        "'á_fætur'" : "ao",
+        "'né'" : "st",
     }
 
     @property
@@ -886,8 +890,10 @@ class TerminalNode(Node):
             else:
                 d["a"] = t
             if t[0] == '"' or t[0] == "'":
-                assert False, ("Wrong terminal: {0}, text is '{1}', token {2}, tokentype {3}"
-                    .format(self.td.terminal, self.text, self.token, self.tokentype))
+                assert False, (
+                    "Wrong terminal: {0}, text is '{1}', token {2}, tokentype {3}"
+                    .format(self.td.terminal, self.text, self.token, self.tokentype)
+                )
             # Category
             d["c"] = self.cat
             if self.tokentype == "WORD":
