@@ -101,12 +101,16 @@ def write_shuffled_files(outfile_dev, outfile_train, generator, dev_size, train_
     lines = []
     size = dev_size + train_size
     print(f"Reading up to {size} lines from the source corpus")
-    for text, flat in gen_flat_trees(generator):
-        # Accumulate the (input, output) training data pairs, separated by a tab character (\t)
-        lines.append(f"{text}\t{flat}\n")
-        written += 1
-        if written >= size:
-            break
+    try:
+        for text, flat in gen_flat_trees(generator):
+            # Accumulate the (input, output) training data pairs, separated by a tab character (\t)
+            lines.append(f"{text}\t{flat}\n")
+            written += 1
+            if written >= size:
+                break
+    except Exception as e:
+        print(f"Exception {e} after {written} generated lines")
+        return 0
     if written:
         print(f"Shuffling {written} lines from the source corpus")
         random.shuffle(lines)
