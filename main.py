@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 
     Reynir: Natural language processing for Icelandic
@@ -77,7 +77,10 @@ def debug():
 # Utilities for Flask/Jinja2 formatting of numbers using the Icelandic locale
 
 def make_pattern(rep_dict):
-    return re.compile("|".join([re.escape(k) for k in rep_dict.keys()]), re.M)
+    return re.compile(
+        "|".join([re.escape(k) for k in rep_dict.keys()]),
+        re.M
+    )
 
 
 def multiple_replace(string, rep_dict, pattern = None):
@@ -126,7 +129,9 @@ def hashed_url_for_static_file(endpoint, values):
             param_name = 'h'
             while param_name in values:
                 param_name = '_' + param_name
-            values[param_name] = static_file_hash(os.path.join(static_folder, filename))
+            values[param_name] = static_file_hash(
+                os.path.join(static_folder, filename)
+            )
 
 
 def static_file_hash(filename):
@@ -262,8 +267,15 @@ def top_news(topic = None, start = None, limit = _TOP_NEWS_LENGTH):
             # Collect and count the titles
             icon = a.root.domain + ".ico"
 
-            d = ArticleDisplay(heading = a.heading, timestamp = a.timestamp, url = a.url, uuid = a.id,
-                num_sentences = a.num_sentences, num_parsed = a.num_parsed, icon = icon)
+            d = ArticleDisplay(
+                heading = a.heading,
+                timestamp = a.timestamp,
+                url = a.url,
+                uuid = a.id,
+                num_sentences = a.num_sentences,
+                num_parsed = a.num_parsed,
+                icon = icon
+            )
 
             # Have we seen the same heading on the same domain?
             t = (a.root.domain, a.heading)
@@ -292,10 +304,14 @@ def top_persons(limit = _TOP_PERSONS_LENGTH):
 
     with SessionContext(commit = True) as session:
 
-        q = session.query(Person.name, Person.title, Person.article_url, Article.id) \
-            .join(Article).join(Root) \
-            .filter(Root.visible) \
+        q = (
+            session
+            .query(Person.name, Person.title, Person.article_url, Article.id)
+            .join(Article)
+            .join(Root)
+            .filter(Root.visible)
             .order_by(desc(Article.timestamp))[0:limit * 2] # Go through up to 2 * N records
+        )
 
         def is_better_title(new_title, old_title):
             len_new = len(new_title)
@@ -313,8 +329,16 @@ def top_persons(limit = _TOP_PERSONS_LENGTH):
             for p in q:
                 # Insert the name into the list if it's not already there,
                 # or if the new title is longer than the previous one
-                if p.name not in toplist or is_better_title(p.title, toplist[p.name][0]):
-                    toplist[p.name] = (correct_spaces(p.title), p.article_url, p.id, bindb.lookup_name_gender(p.name))
+                if (
+                    p.name not in toplist or
+                    is_better_title(p.title, toplist[p.name][0])
+                ):
+                    toplist[p.name] = (
+                        correct_spaces(p.title),
+                        p.article_url,
+                        p.id,
+                        bindb.lookup_name_gender(p.name)
+                    )
                     if len(toplist) >= limit:
                         # We now have as many names as we initially wanted: terminate the loop
                         break
@@ -322,7 +346,16 @@ def top_persons(limit = _TOP_PERSONS_LENGTH):
     with changedlocale() as strxfrm:
         # Convert the dictionary to a sorted list of dicts
         return sorted(
-            [ dict(name = name, title = tu[0], gender = tu[3], url = tu[1], uuid = tu[2]) for name, tu in toplist.items() ],
+            [
+                dict(
+                    name = name,
+                    title = tu[0],
+                    gender = tu[3],
+                    url = tu[1],
+                    uuid = tu[2]
+                )
+                for name, tu in toplist.items()
+            ],
             key = lambda x: strxfrm(x["name"])
         )
 
@@ -351,9 +384,11 @@ def process_query(session, toklist, result):
         # For a person query, add an image (if available)
         img = get_image_url(q.key(), enclosing_session = session)
         if img is not None:
-            result["image"] = dict(src = img.src,
+            result["image"] = dict(
+                src = img.src,
                 width = img.width, height = img.height,
-                link = img.link, origin = img.origin)
+                link = img.link, origin = img.origin
+            )
     return True
 
 
