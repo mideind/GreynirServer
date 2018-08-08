@@ -40,6 +40,12 @@ from tree import Tree
 from treeutil import TreeUtility
 
 
+# We don't bother parsing sentences that have more tokens than 100,
+# since they require lots of memory (>16 GB) and may take
+# minutes to parse
+MAX_SENTENCE_TOKENS = 100
+
+
 class Article:
 
     """ An Article represents a new article typically scraped from a web site,
@@ -286,8 +292,12 @@ class Article:
                 for sent in p.sentences():
 
                     num_sent += 1
+                    num_tokens = len(sent)
 
-                    if sent.parse():
+                    # We don't attempt to parse very long sentences (>100 tokens)
+                    # since they are memory intensive (>16 GB) and may take
+                    # minutest to process
+                    if num_tokens <= MAX_SENTENCE_TOKENS and sent.parse():
                         # Obtain a text representation of the parse tree
                         token_dicts = TreeUtility.dump_tokens(
                             sent.tokens, sent.tree, words
@@ -296,8 +306,14 @@ class Article:
                             sent.tree, token_dicts
                         )
                     else:
-                        # Error or no parse: add an error index entry for this sentence
-                        eix = sent.err_index
+                        # Error, sentence too long or no parse:
+                        # add an error index entry for this sentence
+                        if num_tokens > MAX_SENTENCE_TOKENS:
+                            # Set the error index at the first
+                            # token outside the maximum limit
+                            eix = MAX_SENTENCE_TOKENS
+                        else:
+                            eix = sent.err_index
                         token_dicts = TreeUtility.dump_tokens(
                             sent.tokens, None, None, eix
                         )
