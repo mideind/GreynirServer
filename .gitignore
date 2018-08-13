@@ -7,11 +7,9 @@ __pycache__/
 
 # Compressed DAWG trees
 *.dawg
-!ordalisti.text.dawg
 
 # Pickled DAWG trees
 *.pickle
-!ordalisti.dawg.pickle
 
 # ngram models
 ngram*.txt
