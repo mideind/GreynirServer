@@ -316,18 +316,19 @@ function tokenInfo(t, nameDict) {
    };
    var title;
    var bc;
+   var terminal = t.a || t.t; // Use augmented terminal if available
    if (!t.k || t.k == TOK_WORD) {
       // TOK_WORD
       // t.m[1] is the word category (kk, kvk, hk, so, lo...)
-      var wcat = (t.m && t.m[1]) ? t.m[1] : (t.t ? t.t.split("_")[0] : undefined);
+      var wcat = (t.m && t.m[1]) ? t.m[1] : (terminal ? terminal.split("_")[0] : undefined);
       if (wcat === undefined)
          // Nothing to show, so we cop out
          return r;
       // Special case: for adverbs, if they match a tao (temporal) or
       // spao (interrogative) adverb terminal, show that information
-      if (wcat == "ao" && t.t)
-         if (t.t == "tao" || t.t == "spao")
-            wcat = t.t;
+      if (wcat == "ao" && terminal)
+         if (terminal == "tao" || terminal == "spao")
+            wcat = terminal;
       var wcls = (wcat && wordClass[wcat]) ? wordClass[wcat] : "óþekkt";
       if (t.m && t.m[1]) {
          r.class = t.m[1];
@@ -341,7 +342,7 @@ function tokenInfo(t, nameDict) {
          else
          if (r.class == "fs" && t.m[0].indexOf(" ") > -1)
             wcls = "fleiryrt forsetning";
-         r.grammar = grammar(r.class, t.t);
+         r.grammar = grammar(r.class, terminal);
       }
       r.lemma = (t.m && t.m[0]) ? t.m[0] : t.x;
       r.details = wcls;
@@ -425,12 +426,12 @@ function tokenInfo(t, nameDict) {
             gender = "female";
       }
       else
-      if (t.t) {
+      if (terminal) {
          // Obtain gender info from the associated terminal
-         if (t.t.slice(-3) == "_kk")
+         if (terminal.slice(-3) == "_kk")
             gender = "male";
          else
-         if (t.t.slice(-4) == "_kvk")
+         if (terminal.slice(-4) == "_kvk")
             gender = "female";
       }
       if (gender) {
