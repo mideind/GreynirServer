@@ -53,8 +53,17 @@ from reynir.binparser import canonicalize_token
 from reynir.fastparser import Fast_Parser, ParseForestFlattener
 from article import Article as ArticleProxy
 from treeutil import TreeUtility
-from scraperdb import SessionContext, desc, Root, Person, Article, ArticleTopic, Topic,\
-    GenderQuery, StatsQuery
+from scraperdb import (
+    SessionContext,
+    desc,
+    Root,
+    Person,
+    Article,
+    ArticleTopic,
+    Topic,
+    GenderQuery,
+    StatsQuery,
+)
 from query import Query
 from search import Search
 from getimage import get_image_url
@@ -64,10 +73,11 @@ from tnttagger import ifd_tag
 # Initialize Flask framework
 
 app = Flask(__name__)
-app.config["JSON_AS_ASCII"] = False # We're fine with using Unicode/UTF-8
-app.config['TEMPLATES_AUTO_RELOAD'] = True
+app.config["JSON_AS_ASCII"] = False  # We're fine with using Unicode/UTF-8
+app.config["TEMPLATES_AUTO_RELOAD"] = True
 
 from flask import current_app
+
 
 def debug():
     # Call this to trigger the Flask debugger on purpose
@@ -77,31 +87,28 @@ def debug():
 # Utilities for Flask/Jinja2 formatting of numbers using the Icelandic locale
 
 def make_pattern(rep_dict):
-    return re.compile(
-        "|".join([re.escape(k) for k in rep_dict.keys()]),
-        re.M
-    )
+    return re.compile("|".join([re.escape(k) for k in rep_dict.keys()]), re.M)
 
 
-def multiple_replace(string, rep_dict, pattern = None):
+def multiple_replace(string, rep_dict, pattern=None):
     """ Perform multiple simultaneous replacements within string """
     if pattern is None:
         pattern = make_pattern(rep_dict)
     return pattern.sub(lambda x: rep_dict[x.group(0)], string)
 
 
-_REP_DICT_IS = { ',' : '.', '.' : ',' }
+_REP_DICT_IS = {",": ".", ".": ","}
 _PATTERN_IS = make_pattern(_REP_DICT_IS)
 
 
-@app.template_filter('format_is')
-def format_is(r, decimals = 0):
+@app.template_filter("format_is")
+def format_is(r, decimals=0):
     """ Flask/Jinja2 template filter to format a number for the Icelandic locale """
     fmt = "{0:,." + str(decimals) + "f}"
     return multiple_replace(fmt.format(float(r)), _REP_DICT_IS, _PATTERN_IS)
 
 
-@app.template_filter('format_ts')
+@app.template_filter("format_ts")
 def format_ts(ts):
     """ Flask/Jinja2 template filter to format a timestamp """
     return str(ts)[0:19]
@@ -113,11 +120,11 @@ def format_ts(ts):
 def hashed_url_for_static_file(endpoint, values):
     """ Add a ?h=XXX parameter to URLs for static .js and .css files,
         where XXX is calculated from the file timestamp """
-    if 'static' == endpoint or endpoint.endswith('.static'):
-        filename = values.get('filename')
+    if "static" == endpoint or endpoint.endswith(".static"):
+        filename = values.get("filename")
         if filename and (filename.endswith(".js") or filename.endswith(".css")):
-            if '.' in endpoint:  # has higher priority
-                blueprint = endpoint.rsplit('.', 1)[0]
+            if "." in endpoint:  # has higher priority
+                blueprint = endpoint.rsplit(".", 1)[0]
             else:
                 blueprint = request.blueprint  # can be None too
 
@@ -126,12 +133,10 @@ def hashed_url_for_static_file(endpoint, values):
             else:
                 static_folder = app.static_folder
 
-            param_name = 'h'
+            param_name = "h"
             while param_name in values:
-                param_name = '_' + param_name
-            values[param_name] = static_file_hash(
-                os.path.join(static_folder, filename)
-            )
+                param_name = "_" + param_name
+            values[param_name] = static_file_hash(os.path.join(static_folder, filename))
 
 
 def static_file_hash(filename):
@@ -143,6 +148,7 @@ def static_file_hash(filename):
 
 def max_age(seconds):
     """ Caching decorator for Flask - augments response with a max-age cache header """
+
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
@@ -151,11 +157,13 @@ def max_age(seconds):
                 resp = make_response(resp)
             resp.cache_control.max_age = seconds
             return resp
+
         return decorated_function
+
     return decorator
 
 
-def get_json_bool(rq, name, default = False):
+def get_json_bool(rq, name, default=False):
     """ Get a boolean from JSON encoded in a request form """
     b = rq.form.get(name)
     if b is None:
@@ -175,24 +183,24 @@ def better_jsonify(**kwargs):
 
 # Default text shown in the URL/text box
 _DEFAULT_TEXTS = [
-    'Hver gegnir starfi seðlabankastjóra?',
-    'Hvað er HeForShe?',
-    'Hver er Valgerður Bjarnadóttir?',
-    'Hver er borgarstjóri?',
-    'Hver er formaður Öryrkjabandalagsins?',
-    'Hvað er Wintris?',
-    'Hver er Vigdís Finnbogadóttir?',
-    'Hver er Kristján Eldjárn?',
-    'Hver er forstjóri Landsvirkjunar?',
-    'Hver gegnir starfi forstjóra Orkuveitu Reykjavíkur?',
-    'Hver er þjóðleikhússtjóri?',
-    'Hver er fyrirliði íslenska landsliðsins?',
-    'Hver er forsetaframbjóðandi?',
-    'Hver er forseti Finnlands?',
-    'Hver hefur verið aðstoðarmaður forsætisráðherra?',
-    'Hver er forstjóri Google?',
+    "Hver gegnir starfi seðlabankastjóra?",
+    "Hvað er HeForShe?",
+    "Hver er Valgerður Bjarnadóttir?",
+    "Hver er borgarstjóri?",
+    "Hver er formaður Öryrkjabandalagsins?",
+    "Hvað er Wintris?",
+    "Hver er Vigdís Finnbogadóttir?",
+    "Hver er Kristján Eldjárn?",
+    "Hver er forstjóri Landsvirkjunar?",
+    "Hver gegnir starfi forstjóra Orkuveitu Reykjavíkur?",
+    "Hver er þjóðleikhússtjóri?",
+    "Hver er fyrirliði íslenska landsliðsins?",
+    "Hver er forsetaframbjóðandi?",
+    "Hver er forseti Finnlands?",
+    "Hver hefur verið aðstoðarmaður forsætisráðherra?",
+    "Hver er forstjóri Google?",
     "Hvað er UNESCO?",
-    'Hver er Íslandsmeistari í golfi?'
+    "Hver er Íslandsmeistari í golfi?",
 ]
 
 # Default number of top news items to show in front page list
@@ -209,36 +217,41 @@ _MAX_TEXT_LENGTH_VIA_URL = 512
 _MAX_QUERY_LENGTH = 512
 
 
-def top_news(topic = None, start = None, limit = _TOP_NEWS_LENGTH):
+def top_news(topic=None, start=None, limit=_TOP_NEWS_LENGTH):
     """ Return a list of top recent news, of a particular topic,
         up to a particular start time, having a specified length """
     toplist = []
     topdict = dict()
     if start is None:
         start = datetime.utcnow()
-    MARGIN = 10 # Get more articles than requested in case there are duplicates
+    MARGIN = 10  # Get more articles than requested in case there are duplicates
 
-    with SessionContext(commit = True) as session:
+    with SessionContext(commit=True) as session:
 
-        q = session.query(Article).join(Root) \
-            .filter(Article.tree != None) \
-            .filter(Article.timestamp != None) \
-            .filter(Article.timestamp < start) \
-            .filter(Article.heading > "") \
-            .filter(Article.num_sentences > 0) \
+        q = (
+            session.query(Article)
+            .join(Root)
+            .filter(Article.tree != None)
+            .filter(Article.timestamp != None)
+            .filter(Article.timestamp < start)
+            .filter(Article.heading > "")
+            .filter(Article.num_sentences > 0)
             .filter(Root.visible == True)
+        )
 
         if topic is not None:
             # Filter by topic identifier
             q = q.join(ArticleTopic).join(Topic).filter(Topic.identifier == topic)
 
-        q = q.order_by(desc(Article.timestamp))[0:limit + MARGIN]
+        q = q.order_by(desc(Article.timestamp))[0 : limit + MARGIN]
 
         class ArticleDisplay:
 
             """ Utility class to carry information about an article to the web template """
 
-            def __init__(self, heading, timestamp, url, uuid, num_sentences, num_parsed, icon):
+            def __init__(
+                self, heading, timestamp, url, uuid, num_sentences, num_parsed, icon
+            ):
                 self.heading = heading
                 self.timestamp = timestamp
                 self.url = url
@@ -268,13 +281,13 @@ def top_news(topic = None, start = None, limit = _TOP_NEWS_LENGTH):
             icon = a.root.domain + ".ico"
 
             d = ArticleDisplay(
-                heading = a.heading,
-                timestamp = a.timestamp,
-                url = a.url,
-                uuid = a.id,
-                num_sentences = a.num_sentences,
-                num_parsed = a.num_parsed,
-                icon = icon
+                heading=a.heading,
+                timestamp=a.timestamp,
+                url=a.url,
+                uuid=a.id,
+                num_sentences=a.num_sentences,
+                num_parsed=a.num_parsed,
+                icon=icon,
             )
 
             # Have we seen the same heading on the same domain?
@@ -297,20 +310,19 @@ def top_news(topic = None, start = None, limit = _TOP_NEWS_LENGTH):
     return toplist[0:limit]
 
 
-def top_persons(limit = _TOP_PERSONS_LENGTH):
+def top_persons(limit=_TOP_PERSONS_LENGTH):
     """ Return a list of names and titles appearing recently in the news """
     toplist = dict()
     MAX_TITLE_LENGTH = 64
 
-    with SessionContext(commit = True) as session:
+    with SessionContext(commit=True) as session:
 
         q = (
-            session
-            .query(Person.name, Person.title, Person.article_url, Article.id)
+            session.query(Person.name, Person.title, Person.article_url, Article.id)
             .join(Article)
             .join(Root)
             .filter(Root.visible)
-            .order_by(desc(Article.timestamp))[0:limit * 2] # Go through up to 2 * N records
+            .order_by(desc(Article.timestamp))[0 : limit * 2]  # Go through up to 2 * N records
         )
 
         def is_better_title(new_title, old_title):
@@ -329,15 +341,14 @@ def top_persons(limit = _TOP_PERSONS_LENGTH):
             for p in q:
                 # Insert the name into the list if it's not already there,
                 # or if the new title is longer than the previous one
-                if (
-                    p.name not in toplist or
-                    is_better_title(p.title, toplist[p.name][0])
+                if p.name not in toplist or is_better_title(
+                    p.title, toplist[p.name][0]
                 ):
                     toplist[p.name] = (
                         correct_spaces(p.title),
                         p.article_url,
                         p.id,
-                        bindb.lookup_name_gender(p.name)
+                        bindb.lookup_name_gender(p.name),
                     )
                     if len(toplist) >= limit:
                         # We now have as many names as we initially wanted: terminate the loop
@@ -347,16 +358,10 @@ def top_persons(limit = _TOP_PERSONS_LENGTH):
         # Convert the dictionary to a sorted list of dicts
         return sorted(
             [
-                dict(
-                    name = name,
-                    title = tu[0],
-                    gender = tu[3],
-                    url = tu[1],
-                    uuid = tu[2]
-                )
+                dict(name=name, title=tu[0], gender=tu[3], url=tu[1], uuid=tu[2])
                 for name, tu in toplist.items()
             ],
-            key = lambda x: strxfrm(x["name"])
+            key=lambda x: strxfrm(x["name"]),
         )
 
 
@@ -366,13 +371,13 @@ def process_query(session, toklist, result):
     q = Query(session)
     if not q.parse(toklist, result):
         if Settings.DEBUG:
-            print(f"Unable to parse query, error {q.error()}")
+            print("Unable to parse query, error {0}".format(q.error()))
         result["error"] = q.error()
         return False
     if not q.execute():
         # This is a query, but its execution failed for some reason: return the error
         if Settings.DEBUG:
-            print(f"Unable to execute query, error {q.error()}")
+            print("Unable to execute query, error {0}".format(q.error()))
         result["error"] = q.error()
         return True
     # Successful query: return the answer in response
@@ -382,19 +387,21 @@ def process_query(session, toklist, result):
     result["key"] = q.key()
     if qt == "Person":
         # For a person query, add an image (if available)
-        img = get_image_url(q.key(), enclosing_session = session)
+        img = get_image_url(q.key(), enclosing_session=session)
         if img is not None:
             result["image"] = dict(
-                src = img.src,
-                width = img.width, height = img.height,
-                link = img.link, origin = img.origin
+                src=img.src,
+                width=img.width,
+                height=img.height,
+                link=img.link,
+                origin=img.origin,
             )
     return True
 
 
 def text_from_request(request):
     """ Return text passed in a HTTP request, either using GET or POST """
-    if request.method == 'POST':
+    if request.method == "POST":
         if request.headers["Content-Type"] == "text/plain":
             # This API accepts plain text POSTs, UTF-8 encoded.
             # Example usage:
@@ -407,46 +414,46 @@ def text_from_request(request):
     else:
         text = request.args.get("t", "")
     # Replace all consecutive whitespace with a single space
-    return ' '.join(text.split())[0:_MAX_TEXT_LENGTH]
+    return " ".join(text.split())[0:_MAX_TEXT_LENGTH]
 
 
 # Note: Endpoints ending with .api are configured not to be cached by nginx
-@app.route("/analyze.api", methods=['GET', 'POST'])
-@app.route("/analyze.api/v<int:version>", methods=['GET', 'POST'])
-def analyze_api(version = 1):
+@app.route("/analyze.api", methods=["GET", "POST"])
+@app.route("/analyze.api/v<int:version>", methods=["GET", "POST"])
+def analyze_api(version=1):
     """ Analyze text manually entered by the user, i.e. not coming from an article.
         This is a lower level API used by the Greynir web front-end. """
     if not (1 <= version <= 1):
-        return better_jsonify(valid = False, reason = "Unsupported version")
+        return better_jsonify(valid=False, reason="Unsupported version")
 
     try:
         text = text_from_request(request)
     except:
-        return better_jsonify(valid = False, reason = "Invalid request")
+        return better_jsonify(valid=False, reason="Invalid request")
 
-    with SessionContext(commit = True) as session:
+    with SessionContext(commit=True) as session:
         pgs, stats, register = TreeUtility.tag_text(session, text)
 
     # Return the tokens as a JSON structure to the client
-    return better_jsonify(valid = True, result = pgs, stats = stats, register = register)
+    return better_jsonify(valid=True, result=pgs, stats=stats, register=register)
 
 
 # Note: Endpoints ending with .api are configured not to be cached by nginx
-@app.route("/postag.api", methods=['GET', 'POST'])
-@app.route("/postag.api/v<int:version>", methods=['GET', 'POST'])
-def postag_api(version = 1):
+@app.route("/postag.api", methods=["GET", "POST"])
+@app.route("/postag.api/v<int:version>", methods=["GET", "POST"])
+def postag_api(version=1):
     """ API to parse text and return POS tagged tokens in a verbose JSON format """
     if not (1 <= version <= 1):
         # Unsupported version
-        return better_jsonify(valid = False, reason = "Unsupported version")
+        return better_jsonify(valid=False, reason="Unsupported version")
 
     try:
         text = text_from_request(request)
     except:
-        return better_jsonify(valid = False, reason = "Invalid request")
+        return better_jsonify(valid=False, reason="Invalid request")
 
-    with SessionContext(commit = True) as session:
-        pgs, stats, register = TreeUtility.tag_text(session, text, all_names = True)
+    with SessionContext(commit=True) as session:
+        pgs, stats, register = TreeUtility.tag_text(session, text, all_names=True)
         # Amalgamate the result into a single list of sentences
         if pgs:
             # Only process the first paragraph, if there are many of them
@@ -466,44 +473,44 @@ def postag_api(version = 1):
                 canonicalize_token(t)
 
     # Return the tokens as a JSON structure to the client
-    return better_jsonify(valid = True, result = pgs, stats = stats, register = register)
+    return better_jsonify(valid=True, result=pgs, stats=stats, register=register)
 
 
 # Note: Endpoints ending with .api are configured not to be cached by nginx
-@app.route("/ifdtag.api", methods=['GET', 'POST'])
-@app.route("/ifdtag.api/v<int:version>", methods=['GET', 'POST'])
-def ifdtag_api(version = 1):
+@app.route("/ifdtag.api", methods=["GET", "POST"])
+@app.route("/ifdtag.api/v<int:version>", methods=["GET", "POST"])
+def ifdtag_api(version=1):
     """ API to parse text and return IFD tagged tokens in a simple and sparse JSON format """
     if not (1 <= version <= 1):
         # Unsupported version
-        return better_jsonify(valid = False, reason = "Unsupported version")
+        return better_jsonify(valid=False, reason="Unsupported version")
 
     try:
         text = text_from_request(request)
     except:
-        return better_jsonify(valid = False, reason = "Invalid request")
+        return better_jsonify(valid=False, reason="Invalid request")
 
     pgs = ifd_tag(text)
 
-    return better_jsonify(valid = bool(pgs), result = pgs)
+    return better_jsonify(valid=bool(pgs), result=pgs)
 
 
 # Note: Endpoints ending with .api are configured not to be cached by nginx
-@app.route("/parse.api", methods=['GET', 'POST'])
-@app.route("/parse.api/v<int:version>", methods=['GET', 'POST'])
-def parse_api(version = 1):
+@app.route("/parse.api", methods=["GET", "POST"])
+@app.route("/parse.api/v<int:version>", methods=["GET", "POST"])
+def parse_api(version=1):
     """ API to parse text and return POS tagged tokens in JSON format """
     if not (1 <= version <= 1):
         # Unsupported version
-        return better_jsonify(valid = False, reason = "Unsupported version")
+        return better_jsonify(valid=False, reason="Unsupported version")
 
     try:
         text = text_from_request(request)
     except:
-        return better_jsonify(valid = False, reason = "Invalid request")
+        return better_jsonify(valid=False, reason="Invalid request")
 
-    with SessionContext(commit = True) as session:
-        pgs, stats, register = TreeUtility.parse_text(session, text, all_names = True)
+    with SessionContext(commit=True) as session:
+        pgs, stats, register = TreeUtility.parse_text(session, text, all_names=True)
         # In this case, we should always get a single paragraph back
         if pgs:
             # Only process the first paragraph, if there are many of them
@@ -517,18 +524,18 @@ def parse_api(version = 1):
                 pgs = pa
 
     # Return the tokens as a JSON structure to the client
-    return better_jsonify(valid = True, result = pgs, stats = stats, register = register)
+    return better_jsonify(valid=True, result=pgs, stats=stats, register=register)
 
 
-@app.route("/article.api", methods=['GET', 'POST'])
-@app.route("/article.api/v<int:version>", methods=['GET', 'POST'])
-def article_api(version = 1):
+@app.route("/article.api", methods=["GET", "POST"])
+@app.route("/article.api/v<int:version>", methods=["GET", "POST"])
+def article_api(version=1):
     """ Obtain information about an article, given its URL or id """
 
-    if not(1 <= version <= 1):
-        return better_jsonify(valid = False, reason = "Unsupported version")
+    if not (1 <= version <= 1):
+        return better_jsonify(valid=False, reason="Unsupported version")
 
-    if request.method == 'GET':
+    if request.method == "GET":
         url = request.args.get("url")
         uuid = request.args.get("id")
     else:
@@ -542,9 +549,9 @@ def article_api(version = 1):
         # URL has priority, if both are specified
         uuid = None
     if not url and not uuid:
-        return better_jsonify(valid = False, reason = "No url or id specified in query")
+        return better_jsonify(valid=False, reason="No url or id specified in query")
 
-    with SessionContext(commit = True) as session:
+    with SessionContext(commit=True) as session:
 
         if uuid:
             a = ArticleProxy.load_from_uuid(uuid, session)
@@ -554,96 +561,103 @@ def article_api(version = 1):
             a = None
 
         if a is None:
-            return better_jsonify(valid = False, reason = "Article not found")
+            return better_jsonify(valid=False, reason="Article not found")
 
         if a.html is None:
-            return better_jsonify(valid = False, reason = "Unable to fetch article")
+            return better_jsonify(valid=False, reason="Unable to fetch article")
 
         # Prepare the article for display
         a.prepare(session)
-        register = a.create_register(session, all_names = True)
+        register = a.create_register(session, all_names=True)
         # Fetch names of article topics, if any
-        topics = session.query(ArticleTopic) \
-            .filter(ArticleTopic.article_id == a.uuid).all()
-        topics = [ dict(name = t.topic.name, id = t.topic.identifier) for t in topics ]
+        topics = (
+            session.query(ArticleTopic).filter(ArticleTopic.article_id == a.uuid).all()
+        )
+        topics = [dict(name=t.topic.name, id=t.topic.identifier) for t in topics]
 
-    return better_jsonify(valid = True,
-        url = a.url, id = a.uuid,
-        heading = a.heading, author = a.author,
-        ts = a.timestamp.isoformat()[0:19],
-        num_sentences = a.num_sentences,
-        num_parsed = a.num_parsed,
-        ambiguity = a.ambiguity,
-        register = register, topics = topics)
+    return better_jsonify(
+        valid=True,
+        url=a.url,
+        id=a.uuid,
+        heading=a.heading,
+        author=a.author,
+        ts=a.timestamp.isoformat()[0:19],
+        num_sentences=a.num_sentences,
+        num_parsed=a.num_parsed,
+        ambiguity=a.ambiguity,
+        register=register,
+        topics=topics,
+    )
 
 
 # Note: Endpoints ending with .api are configured not to be cached by nginx
-@app.route("/reparse.api", methods=['POST'])
-@app.route("/reparse.api/v<int:version>", methods=['POST'])
-def reparse_api(version = 1):
+@app.route("/reparse.api", methods=["POST"])
+@app.route("/reparse.api/v<int:version>", methods=["POST"])
+def reparse_api(version=1):
     """ Reparse an already parsed and stored article with a given UUID """
     if not (1 <= version <= 1):
-        return better_jsonify(valid = "False", reason = "Unsupported version")
+        return better_jsonify(valid="False", reason="Unsupported version")
 
     uuid = request.form.get("id", "").strip()[0:_MAX_UUID_LENGTH]
     tokens = None
-    register = { }
-    stats = { }
+    register = {}
+    stats = {}
 
-    with SessionContext(commit = True) as session:
+    with SessionContext(commit=True) as session:
         # Load the article
         a = ArticleProxy.load_from_uuid(uuid, session)
         if a is not None:
             # Found: Parse it (with a fresh parser) and store the updated version
-            a.parse(session, verbose = True, reload_parser = True)
+            a.parse(session, verbose=True, reload_parser=True)
             # Save the tokens
             tokens = a.tokens
             # Build register of person names
             register = a.create_register(session)
             stats = dict(
-                num_tokens = a.num_tokens,
-                num_sentences = a.num_sentences,
-                num_parsed = a.num_parsed,
-                ambiguity = a.ambiguity)
+                num_tokens=a.num_tokens,
+                num_sentences=a.num_sentences,
+                num_parsed=a.num_parsed,
+                ambiguity=a.ambiguity,
+            )
 
     # Return the tokens as a JSON structure to the client,
     # along with a name register and article statistics
-    return better_jsonify(valid = True, result = tokens, register = register, stats = stats)
+    return better_jsonify(valid=True, result=tokens, register=register, stats=stats)
 
 
 # Frivolous fun stuff
 
 _SPECIAL_QUERIES = {
-    "er þetta spurning?" : { "answer" : "Er þetta svar?" },
-    "er þetta svar?" : { "answer" : "Er þetta spurning?" },
-    "hvað er svarið?" : { "answer" : "42." },
-    "hvert er svarið?" : { "answer" : "42." },
-    "veistu allt?" : { "answer" : "Nei." },
-    "hvað veistu?" : { "answer" : "Spurðu mig!" },
-    "veistu svarið?" : { "answer" : "Spurðu mig!" },
-    "hvað heitir þú?" : { "answer" : "Greynir. Ég er grey sem reynir að greina íslensku." },
-    "hver ert þú?" : { "answer" : "Ég er grey sem reynir að greina íslensku." },
-    "hver bjó þig til?" : { "answer" : "Villi." },
-    "hver skapaði þig?" : { "answer" : "Villi." },
-    "hver er skapari þinn?" : { "answer" : "Villi." },
-    "hver er flottastur?" : { "answer" : "Villi." },
-    "er guð til?" : { "answer" : "Ég held ekki." },
-    "hver skapaði guð?" : { "answer" : "Enginn sem ég þekki." },
-    "hver skapaði heiminn?" : { "answer" : "Enginn sem ég þekki." },
-    "hver er tilgangur lífsins?" : { "answer" : "42." },
-    "hvar endar alheimurinn?" : { "answer" : "Inni í þér." },
+    "er þetta spurning?": {"answer": "Er þetta svar?"},
+    "er þetta svar?": {"answer": "Er þetta spurning?"},
+    "hvað er svarið?": {"answer": "42."},
+    "hvert er svarið?": {"answer": "42."},
+    "veistu allt?": {"answer": "Nei."},
+    "hvað veistu?": {"answer": "Spurðu mig!"},
+    "veistu svarið?": {"answer": "Spurðu mig!"},
+    "hvað heitir þú?": {"answer": "Greynir. Ég er grey sem reynir að greina íslensku."},
+    "hver ert þú?": {"answer": "Ég er grey sem reynir að greina íslensku."},
+    "hver bjó þig til?": {"answer": "Villi."},
+    "hver skapaði þig?": {"answer": "Villi."},
+    "hver er skapari þinn?": {"answer": "Villi."},
+    "hver er flottastur?": {"answer": "Villi."},
+    "er guð til?": {"answer": "Ég held ekki."},
+    "hver skapaði guð?": {"answer": "Enginn sem ég þekki."},
+    "hver skapaði heiminn?": {"answer": "Enginn sem ég þekki."},
+    "hver er tilgangur lífsins?": {"answer": "42."},
+    "hvar endar alheimurinn?": {"answer": "Inni í þér."},
 }
 
 # Note: Endpoints ending with .api are configured not to be cached by nginx
-@app.route("/query.api", methods=['GET', 'POST'])
-@app.route("/query.api/v<int:version>", methods=['GET', 'POST'])
-def query_api(version = 1):
+@app.route("/query.api", methods=["GET", "POST"])
+@app.route("/query.api/v<int:version>", methods=["GET", "POST"])
+def query_api(version=1):
     """ Respond to a query string """
 
     if not (1 <= version <= 1):
-        return better_jsonify(valid = False, reason = "Unsupported version")
+        return better_jsonify(valid=False, reason="Unsupported version")
 
-    if request.method == 'GET':
+    if request.method == "GET":
         q = request.args.get("q", "")
     else:
         q = request.form.get("q", "")
@@ -654,19 +668,24 @@ def query_api(version = 1):
     result = dict()
     ql = q.lower()
 
-    if ql in _SPECIAL_QUERIES or (ql + '?') in _SPECIAL_QUERIES:
+    if ql in _SPECIAL_QUERIES or (ql + "?") in _SPECIAL_QUERIES:
         result["valid"] = True
         result["qtype"] = "Special"
         result["q"] = q
         if ql in _SPECIAL_QUERIES:
             result["response"] = _SPECIAL_QUERIES[ql]
         else:
-            result["response"] = _SPECIAL_QUERIES[ql + '?']
+            result["response"] = _SPECIAL_QUERIES[ql + "?"]
     else:
-        with SessionContext(commit = True) as session:
+        with SessionContext(commit=True) as session:
 
-            toklist = list(tokenize_and_recognize(q, enclosing_session = session,
-                auto_uppercase = q.islower() if auto_uppercase else False))
+            toklist = list(
+                tokenize_and_recognize(
+                    q,
+                    enclosing_session=session,
+                    auto_uppercase=q.islower() if auto_uppercase else False,
+                )
+            )
             actual_q = correct_spaces(" ".join(t.txt or "" for t in toklist))
 
             if Settings.DEBUG:
@@ -682,12 +701,12 @@ def query_api(version = 1):
     return better_jsonify(**result)
 
 
-@app.route("/treegrid", methods=['GET'])
+@app.route("/treegrid", methods=["GET"])
 def tree_grid():
     """ Show a simplified parse tree for a single sentence """
 
-    txt = request.args.get('txt', "")
-    with SessionContext(commit = True) as session:
+    txt = request.args.get("txt", "")
+    with SessionContext(commit=True) as session:
         # Obtain simplified tree, full tree and stats
         tree, full_tree, stats = TreeUtility.parse_text_with_full_tree(session, txt)
         if full_tree is not None:
@@ -696,8 +715,9 @@ def tree_grid():
 
     # Preprocess the trees for display, projecting them to a 2d table structure
 
-    def _wrap_build_tbl(tbl, root, is_nt_func, children_func, nt_info_func, t_info_func):
-
+    def _wrap_build_tbl(
+        tbl, root, is_nt_func, children_func, nt_info_func, t_info_func
+    ):
         def _build_tbl(level, offset, nodelist):
             """ Add the tree node data to be displayed at a particular
                 level (row) in the result table """
@@ -726,7 +746,7 @@ def tree_grid():
                         index += 1
             return index - offset
 
-        return _build_tbl(0, 0, [ root ])
+        return _build_tbl(0, 0, [root])
 
     def _normalize_tbl(tbl, width):
         """ Fill out the table with blanks so that it is square """
@@ -743,99 +763,111 @@ def tree_grid():
         full_tree = None
         width = 0
         full_width = 0
-        height = 0 # Height of simplified table
-        full_height = 0 # Height of full table
+        height = 0  # Height of simplified table
+        full_height = 0  # Height of full table
     else:
 
         # Build a table structure for a simplified tree
-        width = _wrap_build_tbl(tbl, tree,
-            is_nt_func = lambda n: n["k"] == "NONTERMINAL",
-            children_func = lambda n: n["p"],
-            nt_info_func = lambda n: dict(n = n["n"]),
-            t_info_func = lambda n: n)
+        width = _wrap_build_tbl(
+            tbl,
+            tree,
+            is_nt_func=lambda n: n["k"] == "NONTERMINAL",
+            children_func=lambda n: n["p"],
+            nt_info_func=lambda n: dict(n=n["n"]),
+            t_info_func=lambda n: n,
+        )
         height = len(tbl)
         if width and height:
             _normalize_tbl(tbl, width)
 
         # Build a table structure for a full tree
-        full_width = _wrap_build_tbl(full_tbl, full_tree,
-            is_nt_func = lambda n: n.is_nonterminal,
-            children_func = lambda n: n.children,
-            nt_info_func = lambda n: dict(n = n.p.name),
-            t_info_func = lambda n: dict(t = n.p[0].name, x = n.p[1].t1))
+        full_width = _wrap_build_tbl(
+            full_tbl,
+            full_tree,
+            is_nt_func=lambda n: n.is_nonterminal,
+            children_func=lambda n: n.children,
+            nt_info_func=lambda n: dict(n=n.p.name),
+            t_info_func=lambda n: dict(t=n.p[0].name, x=n.p[1].t1),
+        )
         assert full_width == width
         full_height = len(full_tbl)
         if full_width and full_height:
             _normalize_tbl(full_tbl, full_width)
 
-    return render_template("treegrid.html",
-        txt = txt, tree = tree, stats = stats,
-        tbl = tbl, height = height,
-        full_tbl = full_tbl, full_height = full_height)
+    return render_template(
+        "treegrid.html",
+        txt=txt,
+        tree=tree,
+        stats=stats,
+        tbl=tbl,
+        height=height,
+        full_tbl=full_tbl,
+        full_height=full_height,
+    )
 
 
-@app.route("/genders", methods=['GET'])
-@max_age(seconds = 5 * 60)
+@app.route("/genders", methods=["GET"])
+@max_age(seconds=5 * 60)
 def genders():
     """ Render a page with gender statistics """
 
-    with SessionContext(commit = True) as session:
+    with SessionContext(commit=True) as session:
 
         gq = GenderQuery()
         result = gq.execute(session)
 
-        total = dict(kvk = Decimal(), kk = Decimal(), hk = Decimal(), total = Decimal())
+        total = dict(kvk=Decimal(), kk=Decimal(), hk=Decimal(), total=Decimal())
         for r in result:
             total["kvk"] += r.kvk
             total["kk"] += r.kk
             total["hk"] += r.hk
             total["total"] += r.kvk + r.kk + r.hk
 
-        return render_template("genders.html", result = result, total = total)
+        return render_template("genders.html", result=result, total=total)
 
 
-@app.route("/stats", methods=['GET'])
-@max_age(seconds = 5 * 60)
+@app.route("/stats", methods=["GET"])
+@max_age(seconds=5 * 60)
 def stats():
     """ Render a page with article statistics """
 
-    with SessionContext(commit = True) as session:
+    with SessionContext(commit=True) as session:
 
         sq = StatsQuery()
         result = sq.execute(session)
 
-        total = dict(art = Decimal(), sent = Decimal(), parsed = Decimal())
+        total = dict(art=Decimal(), sent=Decimal(), parsed=Decimal())
         for r in result:
             total["art"] += r.art
             total["sent"] += r.sent
             total["parsed"] += r.parsed
 
-        return render_template("stats.html", result = result, total = total)
+        return render_template("stats.html", result=result, total=total)
 
 
 @app.route("/about")
-@max_age(seconds = 10 * 60)
+@max_age(seconds=10 * 60)
 def about():
     """ Handler for an 'About' page """
     return render_template("about.html")
 
 
 @app.route("/apidoc")
-@max_age(seconds = 10 * 60)
+@max_age(seconds=10 * 60)
 def apidoc():
     """ Handler for an API documentation page """
     return render_template("apidoc.html")
 
 
 @app.route("/news")
-@max_age(seconds = 60)
+@max_age(seconds=60)
 def news():
     """ Handler for a page with a top news list """
     topic = request.args.get("topic")
     start = request.args.get("start")
     if start is not None:
         try:
-            if '.' in start:
+            if "." in start:
                 # Assume full timestamp with microseconds
                 start = datetime.strptime(start, "%Y-%m-%dT%H:%M:%S.%f")
             else:
@@ -843,7 +875,7 @@ def news():
                 start = datetime.strptime(start, "%Y-%m-%dT%H:%M:%S")
         except ValueError:
             start = None
-    articles = top_news(topic = topic, start = start)
+    articles = top_news(topic=topic, start=start)
     now = datetime.utcnow()
     # If all articles in the list are timestamped within 24 hours of now,
     # we display their times in HH:MM format. Otherwise, we display their
@@ -852,25 +884,27 @@ def news():
     if articles and (now - articles[-1].timestamp).days >= 1:
         display_time = False
     # Fetch the topics
-    with SessionContext(commit = True) as session:
+    with SessionContext(commit=True) as session:
         q = session.query(Topic.identifier, Topic.name).order_by(Topic.name).all()
-        d = { t[0] : t[1] for t in q }
-        topics = dict(id = topic, name = d.get(topic, ""), topic_list = q)
-    return render_template("news.html", articles = articles, topics = topics, display_time = display_time)
+        d = {t[0]: t[1] for t in q}
+        topics = dict(id=topic, name=d.get(topic, ""), topic_list=q)
+    return render_template(
+        "news.html", articles=articles, topics=topics, display_time=display_time
+    )
 
 
 @app.route("/people")
-@max_age(seconds = 60)
+@max_age(seconds=60)
 def people():
     """ Handler for a page with a list of people recently appearing in news """
-    return render_template("people.html", persons = top_persons())
+    return render_template("people.html", persons=top_persons())
 
 
 @app.route("/analysis")
 def analysis():
     """ Handler for a page with grammatical analysis of user-entered text """
     txt = request.args.get("txt", "")[0:_MAX_TEXT_LENGTH_VIA_URL]
-    return render_template("analysis.html", default_text = txt)
+    return render_template("analysis.html", default_text=txt)
 
 
 @app.route("/page")
@@ -888,41 +922,43 @@ def page():
         uuid = None
     if not url and not uuid:
         # !!! TODO: Separate error page
-        return redirect(url_for('main'))
+        return redirect(url_for("main"))
 
-    with SessionContext(commit = True) as session:
+    with SessionContext(commit=True) as session:
 
         if uuid:
             a = ArticleProxy.load_from_uuid(uuid, session)
         elif url.startswith("http:") or url.startswith("https:"):
             # a = ArticleProxy.load_from_url(url, session)
-            a = ArticleProxy.scrape_from_url(url, session) # Forces a new scrape
+            a = ArticleProxy.scrape_from_url(url, session)  # Forces a new scrape
         else:
             a = None
 
         if a is None:
             # !!! TODO: Separate error page
-            return redirect(url_for('main'))
+            return redirect(url_for("main"))
 
         # Prepare the article for display (may cause it to be parsed and stored)
-        a.prepare(session, verbose = True, reload_parser = True)
+        a.prepare(session, verbose=True, reload_parser=True)
         register = a.create_register(session)
 
         # Fetch names of article topics, if any
-        topics = session.query(ArticleTopic) \
-            .filter(ArticleTopic.article_id == a.uuid).all()
-        topics = [ dict(name = t.topic.name, id = t.topic.identifier) for t in topics ]
+        topics = (
+            session.query(ArticleTopic).filter(ArticleTopic.article_id == a.uuid).all()
+        )
+        topics = [dict(name=t.topic.name, id=t.topic.identifier) for t in topics]
 
         # Fetch similar (related) articles, if any
-        DISPLAY = 10 # Display at most 10 matches
-        similar = Search.list_similar_to_article(session, a.uuid, n = DISPLAY)
+        DISPLAY = 10  # Display at most 10 matches
+        similar = Search.list_similar_to_article(session, a.uuid, n=DISPLAY)
 
-        return render_template("page.html", article = a, register = register,
-            topics = topics, similar = similar)
+        return render_template(
+            "page.html", article=a, register=register, topics=topics, similar=similar
+        )
 
 
 @app.route("/")
-@max_age(seconds = 60)
+@max_age(seconds=60)
 def main():
     """ Handler for the main (index) page """
     txt = request.args.get("txt", None)
@@ -931,26 +967,29 @@ def main():
     if not txt:
         # Select a random default text
         txt = _DEFAULT_TEXTS[random.randint(0, len(_DEFAULT_TEXTS) - 1)]
-    return render_template("main.html", default_text = txt)
+    return render_template("main.html", default_text=txt)
 
 
 # Flask handlers
 
-@app.route('/fonts/<path:path>')
-@max_age(seconds = 24 * 60 * 60) # Cache font for 24 hours
+
+@app.route("/fonts/<path:path>")
+@max_age(seconds=24 * 60 * 60)  # Cache font for 24 hours
 def send_font(path):
-    return send_from_directory('fonts', path)
+    return send_from_directory("fonts", path)
+
 
 # noinspection PyUnusedLocal
 @app.errorhandler(404)
 def page_not_found(e):
     """ Return a custom 404 error """
-    return 'Þessi vefslóð er ekki rétt', 404
+    return "Þessi vefslóð er ekki rétt", 404
+
 
 @app.errorhandler(500)
 def server_error(e):
     """ Return a custom 500 error """
-    return 'Eftirfarandi villa kom upp: {}'.format(e), 500
+    return "Eftirfarandi villa kom upp: {0}".format(e), 500
 
 
 # Initialize the main module
@@ -965,8 +1004,16 @@ except ConfigError as e:
 
 if Settings.DEBUG:
     print("Settings loaded in {0:.2f} seconds".format(time.time() - t0))
-    print("Running Reynir with debug={0}, host={1}:{2}, db_hostname={3} on Python {4}"
-        .format(Settings.DEBUG, Settings.HOST, Settings.PORT, Settings.DB_HOSTNAME, sys.version))
+    print(
+        "Running Reynir with debug={0}, host={1}:{2}, db_hostname={3} on Python {4}"
+        .format(
+            Settings.DEBUG,
+            Settings.HOST,
+            Settings.PORT,
+            Settings.DB_HOSTNAME,
+            sys.version,
+        )
+    )
 
 if __name__ == "__main__":
 
@@ -974,10 +1021,15 @@ if __name__ == "__main__":
 
     # Additional files that should cause a reload of the web server application
     # Note: Reynir.grammar is automatically reloaded if its timestamp changes
-    extra_files = [ 'Reynir.conf',
-        'Verbs.conf', 'VerbPrepositions.conf',
-        'Main.conf', 'Prefs.conf',
-        "Phrases.conf", "Vocab.conf", "Names.conf"
+    extra_files = [
+        "Reynir.conf",
+        "Verbs.conf",
+        "VerbPrepositions.conf",
+        "Main.conf",
+        "Prefs.conf",
+        "Phrases.conf",
+        "Vocab.conf",
+        "Names.conf",
     ]
 
     for i, fname in enumerate(extra_files):
@@ -1002,17 +1054,24 @@ if __name__ == "__main__":
     try:
 
         # Suppress information log messages from Werkzeug
-        werkzeug_log = logging.getLogger('werkzeug')
+        werkzeug_log = logging.getLogger("werkzeug")
         if werkzeug_log:
             werkzeug_log.setLevel(logging.WARNING)
         # Run the Flask web server application
-        app.run(host = Settings.HOST, port = Settings.PORT,
-            debug = Settings.DEBUG, use_reloader = True,
-            extra_files = extra_files)
+        app.run(
+            host=Settings.HOST,
+            port=Settings.PORT,
+            debug=Settings.DEBUG,
+            use_reloader=True,
+            extra_files=extra_files,
+        )
 
     except socket_error as e:
-        if e.errno == errno.EADDRINUSE: # Address already in use
-            logging.error("Reynir is already running at host {0}:{1}".format(Settings.HOST, Settings.PORT))
+        if e.errno == errno.EADDRINUSE:  # Address already in use
+            logging.error(
+                "Reynir is already running at host {0}:{1}"
+                .format(Settings.HOST, Settings.PORT)
+            )
             sys.exit(1)
         else:
             raise
@@ -1024,12 +1083,19 @@ if __name__ == "__main__":
 else:
 
     # Suppress information log messages from Werkzeug
-    werkzeug_log = logging.getLogger('werkzeug')
+    werkzeug_log = logging.getLogger("werkzeug")
     if werkzeug_log:
         werkzeug_log.setLevel(logging.WARNING)
     # Log our startup
-    log_str = "Reynir instance starting with host={0}:{1}, db_hostname={2} on Python {3}" \
-        .format(Settings.HOST, Settings.PORT, Settings.DB_HOSTNAME, sys.version.replace("\n", " "))
+    log_str = (
+        "Reynir instance starting with host={0}:{1}, db_hostname={2} on Python {3}"
+        .format(
+            Settings.HOST,
+            Settings.PORT,
+            Settings.DB_HOSTNAME,
+            sys.version.replace("\n", " "),
+        )
+    )
     logging.info(log_str)
     print(log_str)
     sys.stdout.flush()
@@ -1037,4 +1103,3 @@ else:
     # Running as a server module: pre-load the grammar into memory
     with Fast_Parser() as fp:
         pass
-
