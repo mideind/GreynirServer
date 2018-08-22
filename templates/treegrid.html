@@ -304,6 +304,16 @@
             <span class="glyphicon glyphicon-share" style="transform: rotate(90deg)"></span>&nbsp;Tré
          </a>
       </li>
+
+<!-- nntree tab -->
+{% if nn_enabled -%}
+      <li role="presentation">
+         <a href="#nn-tree" aria-controls="full" role="tab" data-toggle="tab">
+            <span class="glyphicon glyphicon-tags"></span>&nbsp;Tauganet
+         </a>
+      </li>
+{%- endif %}
+
       <li role="presentation" class="active">
          <a href="#simple" aria-controls="simple" role="tab" data-toggle="tab">
             <span class="glyphicon glyphicon-tag"></span>&nbsp;Einfalt
@@ -400,6 +410,23 @@
 </div>
 
       </div>
+
+{% if nn_enabled -%}
+      <!-- nntree canvas -->
+      <div role="tabpanel" class="tab-pane" id="nn-tree">
+
+         <!-- D3/SVG canvas for neural output -->
+
+         <div class="grid">
+            <div class="table-responsive" id="nn-canvas-container">
+               <div id="nn-canvas">
+                  <!-- nn-tree SVG stuff is inserted here -->
+               </div>
+            </div>
+         </div>
+      </div>
+      <!-- nntree canvas -->
+{%- endif %}
 
       <div role="tabpanel" class="tab-pane" id="stats">
 
@@ -607,7 +634,7 @@ function terminalOut(d) {
       .data("circle", null);
 }
 
-function d3_update(source) {
+function d3_update(g, source) {
    // Create the SVG graphics on the canvas via D3
    var nodes = source.descendants();
    var links = source.links();
@@ -804,6 +831,64 @@ function editSentence() {
    window.location.href = "/analysis?txt=" + encodeURIComponent(theText);
 }
 
+{% if nn_enabled -%}
+var nnTreeData = null;
+var nnroot = null;
+
+function get_nntree() {
+    $.ajax({
+        url: "{{ url_for('nntree_api') }}",
+        data: theText,
+        type: "POST",
+        dataType: "json",
+        cache: false,
+        success: (x) => {
+            console.log("success");
+            console.log(x);
+            draw_nntree(x.result);
+        },
+        error: (x) => {
+            console.log("error");
+            console.log(x);
+        },
+        complete: (x) => {
+            console.log("complete");
+            console.log(x);
+        }
+    })
+}
+
+function draw_nntree(_nnTreeData) {
+    nnTreeData = _nnTreeData;
+    nnroot = nnTreeData === null ? null : d3.hierarchy(nnTreeData, function(d) {
+        // Yield the children of node d
+        return d.p;
+    });
+
+    var nng = d3.select("div#nn-canvas")
+    .append("svg")
+        .attr("width", width + margin.right + margin.left)
+        .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    $("div#nn-tree div.grid div.table-responsive")
+        .scroll(function() {
+            var jqCircle = $("#info").data("circle");
+            if (jqCircle) {
+                var pos = jqCircle.offset();
+                $("#info")
+                    .css("left", "" + pos.left + "px")
+                    .css("top", "" + pos.top + "px")
+            }
+        });
+   if (nnroot) {
+      d3.select(self.frameElement).style("height", (height + margin.top + margin.bottom) + "px");
+      d3_update(nng, nnroot);
+   }
+}
+{%- endif %}
+
 function initMain(jQuery) {
    // Initialization
    $("#edit-sent").click(editSentence);
@@ -824,8 +909,12 @@ function initMain(jQuery) {
    // Display tree using D3
    if (root) {
       d3.select(self.frameElement).style("height", (height + margin.top + margin.bottom) + "px");
-      d3_update(root);
+      d3_update(g, root);
    }
+
+{% if nn_enabled -%}
+    get_nntree();
+{%- endif %}
 
    // Set up panning of the tree display
 
