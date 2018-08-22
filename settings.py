@@ -644,6 +644,18 @@ class Settings:
             "similarity server on port {0}".format(PORT)
         )
 
+    NN_ENABLED = os.environ.get('NN_ENABLED', False)
+    try:
+        NN_ENABLED = bool(int(NN_ENABLED))
+    except ValueError:
+        raise ConfigError("Invalid environment variable value: NN_ENABLED = {0}".format(NN_ENABLED))
+    NN_HOST = os.environ.get('NN_HOST', 'localhost')
+    NN_PORT = os.environ.get('NN_PORT', '9000')
+    try:
+        NN_PORT = bool(int(NN_PORT))
+    except ValueError:
+        raise ConfigError("Invalid environment variable value: NN_PORT = {0}".format(NN_PORT))
+
     # Configuration settings from the Reynir.conf file
 
     @staticmethod
