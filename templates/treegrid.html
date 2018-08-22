@@ -835,9 +835,12 @@ function get_nntree(text) {
             draw_nntree(x.result);
         },
         error: (x) => {
+            console.log("error");
             console.log(x);
         },
         complete: (x) => {
+            console.log("complete");
+            console.log(x);
         }
     })
 }
@@ -889,6 +892,7 @@ function nn_wait(state) {
         );
     }
 }
+
 {%- endif %}
 
 function initMain(jQuery) {
@@ -915,8 +919,8 @@ function initMain(jQuery) {
    }
 
 {% if nn_enabled -%}
-    get_nntree(theText);
     nn_wait(true);
+    get_nntree(theText);
 {%- endif %}
 
    // Set up panning of the tree display
