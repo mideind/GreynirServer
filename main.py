@@ -418,6 +418,26 @@ def text_from_request(request):
 
 
 # Note: Endpoints ending with .api are configured not to be cached by nginx
+@app.route("/nntree.api", methods=["GET", "POST"])
+@app.route("/nntree.api/v<int:version>", methods=["GET", "POST"])
+def nntree_api(version=1):
+    """ Analyze text manually entered by the user, using a neural network """
+    if not (1 <= version <= 1):
+        return better_jsonify(valid=False, reason="Unsupported version")
+    try:
+        text = text_from_request(request)
+    except:
+        return better_jsonify(valid=False, reason="Invalid request")
+
+    from remote_parser import RemoteParser
+    with RemoteParser() as parser:
+        nnTree = parser.parse(text, flat=False)
+
+    print("Greynir is returning nntree:\n", nnTree)
+    # Return the tokens as a JSON structure to the client
+    return better_jsonify(valid=True, result=nnTree)
+
+# Note: Endpoints ending with .api are configured not to be cached by nginx
 @app.route("/analyze.api", methods=["GET", "POST"])
 @app.route("/analyze.api/v<int:version>", methods=["GET", "POST"])
 def analyze_api(version=1):
@@ -803,6 +823,7 @@ def tree_grid():
         height=height,
         full_tbl=full_tbl,
         full_height=full_height,
+        nn_enabled=Settings.NN_ENABLED,
     )
 
 
