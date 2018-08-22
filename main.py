@@ -502,8 +502,12 @@ def nntree_api(version=1):
         return better_jsonify(valid=False, reason="Invalid request")
 
     from remote_parser import RemoteParser
-    with RemoteParser() as parser:
-        nnTree = parser.parse(text, flat=False)
+    try:
+        with RemoteParser() as parser:
+            nnTree = parser.parse(text, flat=False)
+    except ConnectionRefusedError as e:
+        print('Neural network server unavailable')
+        return better_jsonify(valid=False, reason="Server unavailable")
 
     print("Greynir is returning nntree:\n", nnTree)
     # Return the tokens as a JSON structure to the client
