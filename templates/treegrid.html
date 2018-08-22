@@ -245,7 +245,8 @@
       stroke-width: 2px;
    }
 
-   div#canvas svg {
+   div#canvas svg,
+   div#nn-canvas svg {
       background-color: #f6f6f6;
    }
 
@@ -308,8 +309,8 @@
 <!-- nntree tab -->
 {% if nn_enabled -%}
       <li role="presentation">
-         <a href="#nn-tree" aria-controls="full" role="tab" data-toggle="tab">
-            <span class="glyphicon glyphicon-tags"></span>&nbsp;Tauganet
+         <a id="nn-status" href="#nn-tree" aria-controls="full" role="tab" data-toggle="tab">
+                <span class="glyphicon glyphicon-restart glyphicon-spin"></span>&nbsp;Tauganet
          </a>
       </li>
 {%- endif %}
@@ -843,17 +844,18 @@ function get_nntree() {
         dataType: "json",
         cache: false,
         success: (x) => {
-            console.log("success");
-            console.log(x);
+            // console.log("success");
+            // console.log(x);
+            // nn_wait(false);
             draw_nntree(x.result);
         },
         error: (x) => {
-            console.log("error");
-            console.log(x);
+            // console.log("error");
+            // console.log(x);
         },
         complete: (x) => {
-            console.log("complete");
-            console.log(x);
+            // console.log("complete");
+            // console.log(x);
         }
     })
 }
@@ -887,6 +889,19 @@ function draw_nntree(_nnTreeData) {
       d3_update(nng, nnroot);
    }
 }
+
+function nn_wait(state) {
+    // Start or stop a wait spinner
+    if (state) {
+        $("#nn-status").addClass("disabled")
+        $("#nn-status").css("color", "#BBBBBB");
+        $("#nn-status span").addClass("glyphicon-restart glyphicon-spin").removeClass("glyphicon-tag");
+    }
+    else {
+        $("#nn-status").css("color", "#337ab7");
+        $("#nn-status span").removeClass("disabled glyphicon-restart glyphicon-spin").addClass("glyphicon-tag");
+    }
+}
 {%- endif %}
 
 function initMain(jQuery) {
@@ -914,6 +929,7 @@ function initMain(jQuery) {
 
 {% if nn_enabled -%}
     get_nntree();
+    nn_wait(true);
 {%- endif %}
 
    // Set up panning of the tree display
