@@ -820,26 +820,24 @@ function editSentence() {
 var nnTreeData = null;
 var nnroot = null;
 
-function get_nntree() {
+function get_nntree(text) {
+     payload = {
+         text:text
+     }
     $.ajax({
         url: "{{ url_for('nntree_api') }}",
-        data: theText,
+        data: payload,
         type: "POST",
         dataType: "json",
         cache: false,
         success: (x) => {
-            // console.log("success");
-            // console.log(x);
-            // nn_wait(false);
+            nn_wait(false);
             draw_nntree(x.result);
         },
         error: (x) => {
-            // console.log("error");
-            // console.log(x);
+            console.log(x);
         },
         complete: (x) => {
-            // console.log("complete");
-            // console.log(x);
         }
     })
 }
@@ -912,7 +910,7 @@ function initMain(jQuery) {
    }
 
 {% if nn_enabled -%}
-    get_nntree();
+    get_nntree(theText);
     nn_wait(true);
 {%- endif %}
 

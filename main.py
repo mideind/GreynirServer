@@ -503,8 +503,8 @@ def nntree_api(version=1):
 
     from remote_parser import RemoteParser
     try:
-        with RemoteParser() as parser:
-            nnTree = parser.parse(text, flat=False)
+        with RemoteParser(host=Settings.NN_HOST, port=Settings.NN_PORT) as parser:
+            nnTree = parser.parse_sentence(text)
     except ConnectionRefusedError as e:
         print('Neural network server unavailable')
         return better_jsonify(valid=False, reason="Server unavailable")
