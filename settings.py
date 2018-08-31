@@ -664,7 +664,7 @@ class Settings:
     NN_HOST = os.environ.get('NN_HOST', 'localhost')
     NN_PORT = os.environ.get('NN_PORT', '9000')
     try:
-        NN_PORT = bool(int(NN_PORT))
+        NN_PORT = int(NN_PORT)
     except ValueError:
         raise ConfigError("Invalid environment variable value: NN_PORT = {0}".format(NN_PORT))
 
