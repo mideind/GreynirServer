@@ -577,14 +577,6 @@ class Settings:
     except ValueError:
         raise ConfigError("Invalid environment variable value: DB_PORT = {0}".format(DB_PORT))
 
-    BIN_DB_HOSTNAME = os.environ.get('GREYNIR_BIN_DB_HOST', DB_HOSTNAME)
-    BIN_DB_PORT = os.environ.get('GREYNIR_BIN_DB_PORT', DB_PORT)
-
-    try:
-        BIN_DB_PORT = int(BIN_DB_PORT)
-    except ValueError:
-        raise ConfigError("Invalid environment variable value: BIN_DB_PORT = {0}".format(BIN_DB_PORT))
-
     # Flask server host and port
     HOST = os.environ.get('GREYNIR_HOST', 'localhost')
     PORT = os.environ.get('GREYNIR_PORT', '5000')
@@ -620,15 +612,15 @@ class Settings:
             val = False
         try:
             if par == 'db_hostname':
-                Settings.DB_HOSTNAME = Settings.BIN_DB_HOSTNAME = val
+                Settings.DB_HOSTNAME = val
             elif par == 'db_port':
-                Settings.DB_PORT = Settings.BIN_DB_PORT = int(val)
+                Settings.DB_PORT = int(val)
             elif par == 'bin_db_hostname':
-                # Specify this after db_hostname if different from db_hostname
-                Settings.BIN_DB_HOSTNAME = val
+                # This is no longer required and has been deprecated
+                pass
             elif par == 'bin_db_port':
-                # Specify this after db_port if different from db_port
-                Settings.BIN_DB_PORT = int(val)
+                # This is no longer required and has been deprecated
+                pass
             elif par == 'host':
                 Settings.HOST = val
             elif par == 'port':
