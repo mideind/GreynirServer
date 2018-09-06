@@ -72,6 +72,7 @@ from query import Query
 from search import Search
 from images import get_image_url, update_broken_image_url, blacklist_image_url
 from tnttagger import ifd_tag
+from nnclient import NnClient as NnParser
 
 
 # Initialize Flask framework
@@ -435,15 +436,8 @@ def nntree_api(version=1):
     except:
         return better_jsonify(valid=False, reason="Invalid request")
 
-    from remote_parser import RemoteParser
-    try:
-        with RemoteParser(host=Settings.NN_HOST, port=Settings.NN_PORT) as parser:
-            nnTree = parser.parse_sentence(text)
-    except ConnectionRefusedError as e:
-        print('Neural network server unavailable')
-        return better_jsonify(valid=False, reason="Server unavailable")
+    nnTree = NnParser.parse_sentence(text)
 
-    print("Greynir is returning nntree:\n", nnTree)
     # Return the tokens as a JSON structure to the client
     return better_jsonify(valid=True, result=nnTree)
 
@@ -1153,6 +1147,8 @@ if Settings.DEBUG:
             sys.version,
         )
     )
+    nn_status = "disabled" if not Settings.NN_ENABLED else "enabled on {0}:{1}".format(Settings.NN_HOST, Settings.NN_PORT)
+    print("Neural network server is {0}".format(nn_status))
 
 if __name__ == "__main__":
 
