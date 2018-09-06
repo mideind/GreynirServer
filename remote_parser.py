@@ -45,7 +45,6 @@ class RemoteParser:
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     def __enter__(self):
-        print("Trying to connect to {}:{}".format(self.host, self.port))
         self.sock.connect((self.host, self.port))
         return self
 
