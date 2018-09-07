@@ -37,6 +37,7 @@ def _preprocess_word_v2(word):
         .replace("_hk_hk", "_hk")
     )
 
+
 def _preprocess_word(word):
     return (
         word.strip()
@@ -68,14 +69,16 @@ class CompositeTokenEncoder(text_encoder.TextEncoder):
 
     def __init__(self, filename=None, reorder=True, version=1):
         if filename is None:
-            self.filename = DEFAULT_PATH if version==1 else DEFAULT_PATH_V2
+            self.filename = DEFAULT_PATH if version == 1 else DEFAULT_PATH_V2
         else:
             self.filename = filename
         self._init_token_set()
         self._num_reserved_ids = len(text_encoder.RESERVED_TOKENS)
         self._reorder = reorder
         self._version = version
-        self._preprocess_word = _preprocess_word if version == 1 else _preprocess_word_v2
+        self._preprocess_word = (
+            _preprocess_word if version == 1 else _preprocess_word_v2
+        )
 
     def _init_token_set(self):
         all_tokens = []
