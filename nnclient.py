@@ -51,11 +51,11 @@ class NnClient:
     """ Client that speaks to the HTTP RESTful interface of
         a tensorflow model server. """
 
-    port=Settings.NN_PORT
-    host=Settings.NN_HOST
-    _tfms_version="v1"
-    _model_name="transformer"
-    _verb="predict"
+    port = Settings.NN_PORT
+    host = Settings.NN_HOST
+    _tfms_version = "v1"
+    _model_name = "transformer"
+    _verb = "predict"
     _parsingEncoder = ParsingEncoder(_PARSING_VOCAB_PATH, version=2)
     _enisEncoder = text_encoder.SubwordTextEncoder(_ENIS_VOCAB_PATH)
 
@@ -83,14 +83,14 @@ class NnClient:
             host=cls.host,
             version=cls._tfms_version,
             model=cls._model_name,
-            verb=cls._verb
+            verb=cls._verb,
         )
         headers = {"content-type": "application/json"}
         instances = [cls._serializeToInstance(sent) for sent in pgs]
 
         payload = {
-            "signature_name" : "serving_default",
-            "instances" : [inst for inst in instances],
+            "signature_name": "serving_default",
+            "instances": [inst for inst in instances],
         }
         payload = json.dumps(payload)
         resp = requests.post(url, data=payload, headers=headers)
@@ -99,8 +99,8 @@ class NnClient:
             obj = json.loads(resp.text)
             predictions = obj["predictions"]
             results = [
-                cls._processResponseInstance(inst, sent) for
-                    (inst, sent) in zip(predictions, pgs)
+                cls._processResponseInstance(inst, sent)
+                for (inst, sent) in zip(predictions, pgs)
             ]
             return results
 
@@ -121,7 +121,9 @@ class NnClient:
         parse_toks = cls._parsingEncoder.decode(output_ids[:sent_end])
 
         tree, p_result = nntree.parse_tree_with_text(parse_toks, sent)
+        print(tree.pprint())
         tree = tree.to_dict()
+        print(tree)
 
         if p_result != ParseResult.SUCCESS:
             print("ParseResult: {result}".format(result=p_result))
@@ -138,18 +140,12 @@ class NnClient:
 
         int64_list = feature_pb2.Int64List(value=input_ids)
         feature = feature_pb2.Feature(int64_list=int64_list)
-        feature_map = {
-            "inputs" : feature
-        }
+        feature_map = {"inputs": feature}
         features = feature_pb2.Features(feature=feature_map)
         example = example_pb2.Example(features=features)
 
         b64_example = base64.b64encode(example.SerializeToString()).decode("utf-8")
-        return {
-            "input" : {
-                "b64" : b64_example
-            }
-        }
+        return {"input": {"b64": b64_example}}
 
 
 def manual_test():
