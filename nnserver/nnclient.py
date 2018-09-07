@@ -6,7 +6,7 @@
 
     Neural Network Query Client
 
-    Copyright (C) 2018 Vilhjálmur Þorsteinsson
+    Copyright (C) 2018 Miðeind
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
