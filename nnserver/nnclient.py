@@ -6,7 +6,7 @@
 
     Neural Network Query Client
 
-    Copyright (C) 2018 Vilhjálmur Þorsteinsson
+    Copyright (C) 2018 Miðeind
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -73,7 +73,7 @@ class NnClient:
     def parse_text(cls, text):
         """ Parse contiguous text into flat parse trees """
         pgs = text.split("\n")
-        return cls.request(pgs)
+        return cls._request(pgs)
 
     @classmethod
     def _request(cls, pgs):
@@ -103,7 +103,6 @@ class NnClient:
                 for (inst, sent) in zip(predictions, pgs)
             ]
             return results
-
         except Exception as e:
             print(e)
             return None
