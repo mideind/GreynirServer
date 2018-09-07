@@ -5,7 +5,7 @@
 
     Neural Network Utilities
 
-    Copyright (C) 2018 Vilhjálmur Þorsteinsson
+    Copyright (C) 2018 Miðeind
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -28,8 +28,6 @@
 from __future__ import print_function
 from enum import IntEnum
 
-
-import numpy as np
 
 import tokenizer
 import grammar_consts as gu
