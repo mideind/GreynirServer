@@ -32,11 +32,13 @@ from enum import IntEnum
 import tokenizer
 import grammar_consts as gu
 
-from composite_encoder import CompositeTokenEncoder as Encoder
-from composite_encoder import MISSING
+from nnserver.composite_encoder import (
+    CompositeTokenEncoder as Encoder,
+    MISSING,
+)
 
 
-TOK_PATH = "parsing_tokens_180729.txt"
+TOK_PATH = "resources/parsing_tokens_180729.txt"
 ENCODER = Encoder(TOK_PATH, version=2)
 
 NONTERMINALS = ENCODER._nonterminals
