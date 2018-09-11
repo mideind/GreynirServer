@@ -130,3 +130,5 @@ $RECYCLE.BIN/
 *.msi
 *.msm
 *.msp
+/TAGS
+/__init__.py
