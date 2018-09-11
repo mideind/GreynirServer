@@ -55,8 +55,6 @@ class NnServer:
     """ Client that minics the HTTP RESTful interface of
         a tensorflow model server, but accepts plain text. """
 
-    host = app.config.get("host")
-    port = app.config.get("port")
     _tfms_version = "v1"
     _model_name = "transformer"
     _verb = "predict"
@@ -67,8 +65,8 @@ class NnServer:
     def request(cls, pgs):
         """ Send serialized request to remote model server """
         url = "http://{host}:{port}/{version}/models/{model}:{verb}".format(
-            port=cls.port,
-            host=cls.host,
+            port=app.config.get("out_port"),
+            host=app.config.get("out_host"),
             version=cls._tfms_version,
             model=cls._model_name,
             verb=cls._verb,
@@ -134,7 +132,7 @@ class NnServer:
 
 
 @app.route("/parse.api", methods=["POST"])
-def test():
+def parse_api():
     try:
         req_body = request.data.decode("utf-8")
         obj = json.loads(req_body)
@@ -161,7 +159,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--listen_host",
         dest="IN_HOST",
-        default="localhost",
+        default="0.0.0.0",
         required=False,
         type=str,
         help="Hostname to listen on",
@@ -190,8 +188,15 @@ if __name__ == "__main__":
         type=str,
         help="Port of model server",
     )
-
+    parser.add_argument(
+        "--debug",
+        dest="DEBUG",
+        default=False,
+        action="store_true",
+        required=False,
+        help="Port of model server",
+    )
     args = parser.parse_args()
     app.config["out_host"] = args.OUT_HOST
     app.config["out_port"] = args.OUT_PORT
-    app.run(debug=True, host=args.IN_HOST, port=args.IN_PORT)
+    app.run(debug=args.DEBUG, host=args.IN_HOST, port=args.IN_PORT)
