@@ -139,3 +139,5 @@ $RECYCLE.BIN/
 # Google API key
 resources/GoogleServerKey.txt
 
+/TAGS
+/__init__.py
