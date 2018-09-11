@@ -74,6 +74,15 @@ class NnClient:
                 cls._processResponse(inst, sent)
                 for (inst, sent) in zip(predictions, pgs)
             ]
+            score_str = " ".join(
+                ["{:>4.2f}".format(max(inst["scores"])) for inst in predictions]
+            )
+
+            print(
+                "Parsed {num} sentences with neural network with scores: {scores}".format(
+                    num=len(predictions), scores=score_str
+                )
+            )
             return results
         # TODO(haukurb): More graceful error handlign
         except Exception as e:
