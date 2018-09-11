@@ -161,30 +161,31 @@ if __name__ == "__main__":
     parser.add_argument(
         "--listen_host",
         dest="IN_HOST",
+        default="localhost",
         required=False,
         type=str,
-        default="localhost",
         help="Hostname to listen on",
     )
     parser.add_argument(
         "--listen_port",
         dest="IN_PORT",
+        default="8080",
         required=False,
         type=str,
-        default="8080"
         help="Port to listen on",
     )
     parser.add_argument(
         "--model_host",
         dest="OUT_HOST",
+        default="localhost",
         required=False,
         type=str,
-        default="localhost",
         help="Hostname of model server",
     )
     parser.add_argument(
         "--model_port",
-        dest="9000",
+        dest="OUT_PORT",
+        default="9000",
         required=False,
         type=str,
         help="Port of model server",
