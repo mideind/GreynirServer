@@ -14,19 +14,19 @@ contexts:
       scope: keyword.other.grammar
     - match: \?|\*|\+
       comment: Token repetition specifiers
-      scope: variable.parameter.function.keyword.grammar
-    - match: '\b([[:lower:]][[:word:]]*)'
-      comment: Terminals starting with a lowercase letter
-      scope: storage.type.class.grammar
-    - match: '^([[:upper:]][[:alnum:]]*)'
-      comment: Nonterminal definitions
-      scope: variable.parameter.grammar
+      scope: variable.other.grammar
     - match: "(_[[:alnum:]]+)+"
       comment: Variant literals starting with underscores
       scope: constant.numeric.integer.decimal.grammar
     - match: "(/[[:lower:]]+)+"
       comment: Variants starting with a forward slash
       scope: entity.name.function.decorator.grammar
+    - match: '\b([[:lower:]][[:alpha:]]*)'
+      comment: Terminals starting with a lowercase letter
+      scope: storage.type.class.grammar
+    - match: '^([[:upper:]][[:alnum:]]*)'
+      comment: Nonterminal definitions
+      scope: variable.parameter.grammar
     - match: '^\$([[:lower:]][[:word:]]*)'
       comment: Pragma directives
       scope: keyword.control.grammar
@@ -44,6 +44,9 @@ contexts:
         0: punctuation.definition.string.begin.grammar
       push:
         - meta_scope: string.quoted.single.grammar
+        - match: ":[[:word:]]+"
+          comment: Word category at end of string
+          scope: variable.other.grammar
         - match: "'"
           captures:
             0: punctuation.definition.string.end.grammar
@@ -54,7 +57,20 @@ contexts:
         0: punctuation.definition.string.begin.grammar
       push:
         - meta_scope: string.quoted.double.grammar
+        - match: ":[[:word:]]+"
+          comment: Word category at end of string
+          scope: variable.other.grammar
         - match: '"'
+          captures:
+            0: punctuation.definition.string.end.grammar
+          pop: true
+    - match: '\('
+      comment: Pragma parameters inside parentheses
+      captures:
+        0: punctuation.definition.string.begin.grammar
+      push:
+        - meta_scope: storage.type.class.grammar
+        - match: '\)'
           captures:
             0: punctuation.definition.string.end.grammar
           pop: true
