@@ -18,15 +18,18 @@ contexts:
     - match: '\b([[:lower:]][[:word:]]*)'
       comment: Terminals starting with a lowercase letter
       scope: storage.type.class.grammar
-    - match: "(_[[:alnum:]]+)*"
+    - match: '^([[:upper:]][[:alnum:]]*)'
+      comment: Nonterminal definitions
+      scope: variable.parameter.grammar
+    - match: "(_[[:alnum:]]+)+"
       comment: Variant literals starting with underscores
       scope: constant.numeric.integer.decimal.grammar
-    - match: "/([[:lower:]]+)"
+    - match: "(/[[:lower:]]+)+"
       comment: Variants starting with a forward slash
       scope: entity.name.function.decorator.grammar
-    - match: '\$([[:lower:]][[:word:]]*)'
+    - match: '^\$([[:lower:]][[:word:]]*)'
       comment: Pragma directives
-      scope: keyword.other.grammar
+      scope: keyword.control.grammar
   comments:
     - match: "#"
       comment: Comment from hash sign to end of line
