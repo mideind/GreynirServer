@@ -890,14 +890,19 @@ function draw_nntree(_nnTreeData) {
 
 function nn_wait(state) {
     // Start or stop a wait spinner
+    class_ok = "glyphicon-jpy"
     if (state) {
         $("#nn-status").addClass("disabled")
         $("#nn-status").css("color", "#BBBBBB");
-        $("#nn-status span").addClass("glyphicon-restart glyphicon-spin").removeClass("glyphicon-tag");
+        $("#nn-status span").addClass("glyphicon-restart glyphicon-spin").removeClass(class_ok).style("");
     }
     else {
         $("#nn-status").css("color", "#337ab7");
-        $("#nn-status span").removeClass("disabled glyphicon-restart glyphicon-spin").addClass("glyphicon-tag");
+        $("#nn-status span").removeClass("disabled glyphicon-restart glyphicon-spin").addClass(class_ok).css(
+            {
+                "transform": "rotate(180deg)"
+            }
+        );
     }
 }
 {%- endif %}
