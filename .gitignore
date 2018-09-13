@@ -132,3 +132,4 @@ $RECYCLE.BIN/
 *.msp
 /TAGS
 /__init__.py
+py*/
