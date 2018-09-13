@@ -294,7 +294,7 @@ def _json_terminal_node(tok, text="placeholder"):
         new_node = dict(t=tok, x=text, k="WORD", b=b, c=cat)
 
     elif first == "st":
-        new_node = dict(t=tok, x=text, k="WORD", b="-")
+        new_node = dict(t=tok, x=text, k="WORD", c="st", b="-")
 
     elif first == "eo":
         new_node = dict(t=tok, x=text, k="WORD", c="ao", b="ao")
