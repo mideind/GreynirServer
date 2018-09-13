@@ -140,4 +140,5 @@ $RECYCLE.BIN/
 resources/GoogleServerKey.txt
 
 /TAGS
+/__init__.py
 py*/
