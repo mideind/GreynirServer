@@ -116,6 +116,7 @@ class NnServer:
         of tensorflow_model_server running an exported tensor2tensor transformer translation model """
         # Add end of sentence token
         input_ids = cls._enisEncoder.encode(sent)
+        print(cls._enisEncoder.decode_list(input_ids))
         input_ids.extend([EOS_ID])
 
         int64_list = feature_pb2.Int64List(value=input_ids)
@@ -196,4 +197,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
     app.config["out_host"] = args.OUT_HOST
     app.config["out_port"] = args.OUT_PORT
-    app.run(debug=args.DEBUG, host=args.IN_HOST, port=args.IN_PORT)
+    app.run(threaded=True, debug=args.DEBUG, host=args.IN_HOST, port=args.IN_PORT)
