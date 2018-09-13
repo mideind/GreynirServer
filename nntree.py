@@ -240,6 +240,8 @@ def parse_tree(flat_parse_str):
 
 def parse_tree_with_text(flat_parse_str, text):
     parse_toks, text_toks = tokenize(parse_str=flat_parse_str, text=text)
+    print(" ".join([t for t in text_toks]))
+    parse_toks, text_toks = tokenize(parse_str=flat_parse_str, text=text)
     return parse_flat_tree_to_nodes(parse_toks, text_toks)
 
 

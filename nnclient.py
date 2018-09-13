@@ -28,6 +28,7 @@ import json
 import requests
 
 from settings import Settings
+import tokenizer
 
 import nntree
 from nntree import ParseResult
@@ -62,7 +63,13 @@ class NnClient:
         url = "http://{host}:{port}/parse.api".format(host=cls.host, port=cls.port)
         headers = {"content-type": "application/json"}
 
-        payload = {"pgs": pgs}
+        normalized_pgs = [
+            [tok.txt for tok in list(tokenizer.tokenize(pg)) if tok] for pg in pgs
+        ]
+        normalized_pgs = [" ".join([tok for tok in npg if tok]) for npg in normalized_pgs]
+        payload = {
+            "pgs": normalized_pgs,
+        }
 
         payload = json.dumps(payload)
         resp = requests.post(url, data=payload, headers=headers)
@@ -94,7 +101,9 @@ class NnClient:
     def _processResponse(cls, instance, sent):
         """ Process the response from a single sentence """
         parse_toks = instance["outputs"]
+        print(parse_toks)
         tree, p_result = nntree.parse_tree_with_text(parse_toks, sent)
+        tree.pprint()
         tree = tree.to_dict()
 
         if p_result != ParseResult.SUCCESS:
@@ -104,7 +113,7 @@ class NnClient:
         return tree
 
 
-def manual_test():
+def test_sentence():
     res = NnClient.parse_sentence("Eftirfarandi skilaboð voru smíðuð í NNCLIENT.")
     print("Received response:")
     print(res)
