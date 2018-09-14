@@ -26,6 +26,7 @@
 
 import json
 import requests
+import logging
 
 from settings import Settings
 import tokenizer
@@ -64,7 +65,7 @@ class NnClient:
         headers = {"content-type": "application/json"}
 
         normalized_pgs = [
-            [tok.txt for tok in list(tokenizer.tokenize(pg)) if tok] for pg in pgs
+            [tok.txt for tok in list(tokenizer.tokenize(pg))] for pg in pgs
         ]
         normalized_pgs = [" ".join([tok for tok in npg if tok]) for npg in normalized_pgs]
         payload = {
@@ -85,32 +86,34 @@ class NnClient:
                 ["{:>4.2f}".format(max(inst["scores"])) for inst in predictions]
             )
 
-            print(
+            logging.info(
                 "Parsed {num} sentences with neural network with scores: {scores}".format(
                     num=len(predictions), scores=score_str
                 )
             )
             return results
-        # TODO(haukurb): More graceful error handlign
+        # TODO(haukurb): More graceful error handling
         except Exception as e:
-            print("Error: could not process response from nnserver.")
-            print(e)
+            logging.error("Error: could not process response from nnserver.")
+            logging.error(e)
             return None
 
     @classmethod
     def _processResponse(cls, instance, sent):
         """ Process the response from a single sentence """
         parse_toks = instance["outputs"]
-        print(parse_toks)
-        tree, p_result = nntree.parse_tree_with_text(parse_toks, sent)
-        tree.pprint()
-        tree = tree.to_dict()
 
-        if p_result != ParseResult.SUCCESS:
-            print("NnParse not successful for input: '{text}'".format(text=sent))
-            print("ParseResult: {result}".format(result=p_result))
-            print("Output: {parse_toks}".format(parse_toks=parse_toks))
-        return tree
+        logging.info(parse_toks)
+        tree, p_result = nntree.parse_tree_with_text(parse_toks, sent)
+
+        if Settings.DEBUG:
+            tree.pprint()
+            if p_result != ParseResult.SUCCESS:
+                print("NnParse not successful for input: '{text}'".format(text=sent))
+                print("ParseResult: {result}".format(result=p_result))
+                print("Output: {parse_toks}".format(parse_toks=parse_toks))
+
+        return tree.to_dict()
 
 
 def test_sentence():
