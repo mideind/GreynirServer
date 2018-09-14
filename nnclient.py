@@ -48,7 +48,7 @@ class NnClient:
             single_sentence = text.split("\n")[0]
         else:
             single_sentence = text
-            pgs = [single_sentence]
+        pgs = [single_sentence]
         return cls._request(pgs)[0]
 
     @classmethod
