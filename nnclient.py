@@ -67,10 +67,10 @@ class NnClient:
         normalized_pgs = [
             [tok.txt for tok in list(tokenizer.tokenize(pg))] for pg in pgs
         ]
-        normalized_pgs = [" ".join([tok for tok in npg if tok]) for npg in normalized_pgs]
-        payload = {
-            "pgs": normalized_pgs,
-        }
+        normalized_pgs = [
+            " ".join([tok for tok in npg if tok]) for npg in normalized_pgs
+        ]
+        payload = {"pgs": normalized_pgs}
 
         payload = json.dumps(payload)
         resp = requests.post(url, data=payload, headers=headers)

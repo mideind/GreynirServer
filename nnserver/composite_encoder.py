@@ -6,7 +6,7 @@
 
     Neural Network Parsing Encoder
 
-    Copyright (C) 2018 Vilhjálmur Þorsteinsson
+    Copyright (C) 2018 Miðeind
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -24,6 +24,8 @@
     This module implements composite subword encoder for parsing tokens.
 
 """
+
+import os
 
 from tensor2tensor.data_generators import text_encoder
 import tensorflow as tf
@@ -48,8 +50,10 @@ def _preprocess_word(word):
 
 
 CASE_TOKS = set(["nf", "þf", "þgf", "ef"])
-DEFAULT_PATH = "parsing_tokens.txt"
-DEFAULT_PATH_V2 = "parsing_tokens_180729.txt"
+PROJECT_PATH = os.path.dirname(os.path.dirname(__file__))
+DEFAULT_PATH = os.path.join(PROJECT_PATH, "resources/parsing_tokens.txt")
+DEFAULT_PATH_V2 = os.path.join(PROJECT_PATH, "resources/parsing_tokens_180729.txt")
+
 UNK = "<UNK>"
 
 EOS_ID = text_encoder.EOS_ID

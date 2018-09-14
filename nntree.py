@@ -35,14 +35,11 @@ import tokenizer
 import grammar_consts
 
 from settings import Settings
-from nnserver.composite_encoder import (
-    CompositeTokenEncoder,
-    MISSING,
-)
+from nnserver.composite_encoder import CompositeTokenEncoder, MISSING
 
 
-FILE_PATH = os.path.dirname(__file__)
-TOK_PATH = "resources/parsing_tokens_180729.txt"
+PROJECT_PATH = os.path.dirname(__file__)
+TOK_PATH = os.path.join(PROJECT_PATH, "resources/parsing_tokens_180729.txt")
 ENCODER = CompositeTokenEncoder(TOK_PATH, version=2)
 
 NONTERMINALS = ENCODER._nonterminals
@@ -126,7 +123,7 @@ class ParseResult(IntEnum):
     UNOPENED_RTOKEN = 2
     # A left token is not closed before the surrounding nonterminal token is closed
     UNCLOSED_LTOKEN = 3
-    #pad_start
+    # pad_start
     TERM_DESC_ROOT = 5
     # Nonterminal has no terminal or leaf token
     EMPTY_NONTERM = 6
@@ -134,7 +131,6 @@ class ParseResult(IntEnum):
     MULTI = 7
     # Undocumented parse failure
     FAILURE = 8
-
 
 
 def tokenize(parse_str=None, text=None):
@@ -329,5 +325,7 @@ def _json_terminal_node(tok, text="placeholder"):
 
 # TODO: Use cache
 def _json_nonterminal_node(tok):
-    new_node = dict(i=tok, n=grammar_consts.DEFAULT_ID_MAP[tok]["name"], k="NONTERMINAL", p=[])
+    new_node = dict(
+        i=tok, n=grammar_consts.DEFAULT_ID_MAP[tok]["name"], k="NONTERMINAL", p=[]
+    )
     return new_node
