@@ -830,14 +830,14 @@ function get_nntree(text) {
         type: "POST",
         dataType: "json",
         cache: false,
-        success: (x) => {
+        success: function (x) {
             nn_wait(false);
             draw_nntree(x.result);
         },
-        error: (x) => {
+        error: function (x) {
             console.log(x);
         },
-        complete: (x) => {
+        complete: function (x) {
         }
     })
 }

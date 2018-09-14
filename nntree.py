@@ -27,20 +27,23 @@
 
 from __future__ import print_function
 from enum import IntEnum
-
+import logging
+import os
 
 import numpy as np
 import tokenizer
-import grammar_consts as gu
+import grammar_consts
 
+from settings import Settings
 from nnserver.composite_encoder import (
-    CompositeTokenEncoder as Encoder,
+    CompositeTokenEncoder,
     MISSING,
 )
 
 
+FILE_PATH = os.path.dirname(__file__)
 TOK_PATH = "resources/parsing_tokens_180729.txt"
-ENCODER = Encoder(TOK_PATH, version=2)
+ENCODER = CompositeTokenEncoder(TOK_PATH, version=2)
 
 NONTERMINALS = ENCODER._nonterminals
 NONTERM_L = ENCODER._nonterm_l
@@ -152,7 +155,8 @@ def parse_flat_tree_to_nodes(parse_toks, text_toks=None, verbose=False):
     """Parses list of toks (parse_toks) into a legal tree structure or None,
        If the corresponding tokenized source text is provided, it is
        included in the tree"""
-    vprint = print if verbose else (lambda *ar, **kw: None)
+
+    vprint = logging.debug if verbose else (lambda *ar, **kw: None)
 
     def result(root):
         if root.children:
@@ -241,8 +245,6 @@ def parse_tree(flat_parse_str):
 
 def parse_tree_with_text(flat_parse_str, text):
     parse_toks, text_toks = tokenize(parse_str=flat_parse_str, text=text)
-    print(" ".join([t for t in text_toks]))
-    parse_toks, text_toks = tokenize(parse_str=flat_parse_str, text=text)
     return parse_flat_tree_to_nodes(parse_toks, text_toks)
 
 
@@ -281,11 +283,11 @@ def _json_terminal_node(tok, text="placeholder"):
     tail = subtokens[tail_start:]
 
     if first == "no":
-        cat = [t for t in gu.GENDERS if t in tail]
+        cat = [t for t in grammar_consts.GENDERS if t in tail]
         cat = "" if not cat else cat[0]
-        case = [t for t in gu.CASES if t in tail]
+        case = [t for t in grammar_consts.CASES if t in tail]
         case = "" if not case else case[0]
-        number = [t for t in gu.NUMBERS if t in tail]
+        number = [t for t in grammar_consts.NUMBERS if t in tail]
         number = "" if not number else number[0]
         gr = "gr" if "gr" in tail else ""
 
@@ -327,5 +329,5 @@ def _json_terminal_node(tok, text="placeholder"):
 
 # TODO: Use cache
 def _json_nonterminal_node(tok):
-    new_node = dict(i=tok, n=gu.DEFAULT_ID_MAP[tok]["name"], k="NONTERMINAL", p=[])
+    new_node = dict(i=tok, n=grammar_consts.DEFAULT_ID_MAP[tok]["name"], k="NONTERMINAL", p=[])
     return new_node
