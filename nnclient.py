@@ -50,7 +50,8 @@ class NnClient:
         else:
             single_sentence = text
         pgs = [single_sentence]
-        return cls._request(pgs)[0]
+        result = cls._request(pgs)
+        return result[0] if result is not None else None
 
     @classmethod
     def parse_text(cls, text):
@@ -113,6 +114,8 @@ class NnClient:
                 print("ParseResult: {result}".format(result=p_result))
                 print("Output: {parse_toks}".format(parse_toks=parse_toks))
 
+        import json
+        print(json.dumps(tree.to_dict(), indent=3, sort_keys=True))
         return tree.to_dict()
 
 

@@ -68,11 +68,11 @@ from query import Query
 from search import Search
 from getimage import get_image_url
 from tnttagger import ifd_tag
-from nnclient import NnClient as NnParser
+from nnclient import NnClient
 
 
 # Initialize Flask framework
-
+ 
 app = Flask(__name__)
 app.config["JSON_AS_ASCII"] = False  # We're fine with using Unicode/UTF-8
 app.config["TEMPLATES_AUTO_RELOAD"] = True
@@ -430,7 +430,7 @@ def nntree_api(version=1):
     except:
         return better_jsonify(valid=False, reason="Invalid request")
 
-    nnTree = NnParser.parse_sentence(text)
+    nnTree = NnClient.parse_sentence(text)
 
     # Return the tokens as a JSON structure to the client
     return better_jsonify(valid=True, result=nnTree)

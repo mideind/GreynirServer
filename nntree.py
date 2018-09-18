@@ -32,21 +32,13 @@ import os
 
 import tokenizer
 import grammar_consts
+from reynir import matcher
+from parsing_subtokens import ParsingSubtokens, MISSING
 
 from settings import Settings
-from nnserver.composite_encoder import CompositeTokenEncoder, MISSING
 
 
-PROJECT_PATH = os.path.dirname(__file__)
-TOK_PATH = os.path.join(PROJECT_PATH, "resources/parsing_tokens_180729.txt")
-ENCODER = CompositeTokenEncoder(TOK_PATH, version=2)
-
-NONTERMINALS = ENCODER._nonterminals
-NONTERM_L = ENCODER._nonterm_l
-NONTERM_R = ENCODER._nonterm_r
-TERMINALS = ENCODER._terminals
-TERMINALS = ENCODER._terminals
-R_TO_L = ENCODER._r_to_l
+TOKENS = ParsingSubtokens()
 
 
 class Node:
@@ -114,6 +106,10 @@ class Node:
 
 
 class ParseResult(IntEnum):
+    """ Result types for the parsing of flat parse trees that are return by
+        the NMT parsing model and the corresponding natural language source text
+        into a (non) flat parse tree """
+
     # Successful parse
     SUCCESS = 0
     # A text token was not consumed before reaching end of parse tok stream
@@ -122,7 +118,7 @@ class ParseResult(IntEnum):
     UNOPENED_RTOKEN = 2
     # A left token is not closed before the surrounding nonterminal token is closed
     UNCLOSED_LTOKEN = 3
-    # pad_start
+    # Terminal descends from pseudo root instead of a proper nonterminal
     TERM_DESC_ROOT = 5
     # Nonterminal has no terminal or leaf token
     EMPTY_NONTERM = 6
@@ -132,20 +128,6 @@ class ParseResult(IntEnum):
     FAILURE = 8
 
 
-def tokenize(parse_str=None, text=None):
-    if parse_str is None and text is None:
-        return None
-    text_toks = None
-    if text is not None:
-        text_toks = [t.txt for t in tokenizer.tokenize(text.strip()) if t.txt]
-    parse_toks = None
-    if parse_str is not None:
-        parse_toks = [
-            ENCODER.decode(ENCODER.encode(t)) for t in parse_str.strip().split(" ")
-        ]
-    return (parse_toks, text_toks)
-
-
 def parse_flat_tree_to_nodes(parse_toks, text_toks=None, verbose=False):
     """Parses list of toks (parse_toks) into a legal tree structure or None,
        If the corresponding tokenized source text is provided, it is
@@ -153,12 +135,7 @@ def parse_flat_tree_to_nodes(parse_toks, text_toks=None, verbose=False):
 
     vprint = logging.debug if verbose else (lambda *ar, **kw: None)
 
-    def result(root):
-        if root.children:
-            return root.children[0]
-        return None
-
-    if not parse_toks or parse_toks[0] not in NONTERMINALS:
+    if not parse_toks or parse_toks[0] not in TOKENS.NONTERMINALS:
         raise ValueError("Invalid parse tokens.")
 
     root = Node(name="ROOT", is_terminal=False)  # Pseudo root
@@ -168,8 +145,9 @@ def parse_flat_tree_to_nodes(parse_toks, text_toks=None, verbose=False):
 
     for idx, tok in enumerate(parse_toks):
         if tok in MISSING:
+            vprint("Encountered missing token: '{}'".format(tok))
             continue
-        if tok not in NONTERMINALS:
+        if tok not in TOKENS.NONTERMINALS:
             if parent == root:
                 msg = "Error: Tried to parse terminal node {} as descendant of root."
                 vprint(msg.format(tok))
@@ -191,8 +169,8 @@ def parse_flat_tree_to_nodes(parse_toks, text_toks=None, verbose=False):
             parent.add_child(new_node)
             continue
 
-        # tok is in NONTERMINALS and therefore is either a left or right nonterminal token
-        if tok in NONTERM_L:
+        # tok is in TOKENS.NONTERMINALS and therefore is either a left or right nonterminal token
+        if tok in TOKENS.NONTERM_L:
             new_node = Node(tok, is_terminal=False)
             parent.add_child(new_node)
             stack.append(parent)
@@ -203,13 +181,13 @@ def parse_flat_tree_to_nodes(parse_toks, text_toks=None, verbose=False):
 
         # Token must be a legal right nonterminal since it is not a left token
         # A right token must be matched by its corresponding left token
-        if tok not in R_TO_L or parent.name != R_TO_L[tok]:
+        if tok not in TOKENS.R_TO_L or parent.name != TOKENS.R_TO_L[tok]:
             msg = r"Error: Found illegal nonterminal {}, expected right nonterminal"
             vprint(msg.format(tok))
 
             tree = root.children[0] if root.children else None
             return tree, ParseResult.UNOPENED_RTOKEN
-        # Empty nonterminals are not allowed
+        # Empty NONTERMINALS are not allowed
         if not parent.has_children():
             msg = ["{}{}".format(len(stack) * "    ", tok) for tok in parse_toks[idx:]]
             vprint("\n".join(msg))
@@ -233,13 +211,17 @@ def parse_flat_tree_to_nodes(parse_toks, text_toks=None, verbose=False):
     return root.children, ParseResult.MULTI
 
 
+def tokenize_flat_tree(parse_str):
+    return parse_str.strip().split(" ")
+
+
 def parse_tree(flat_parse_str):
-    parse_toks, _ = tokenize(parse_str=flat_parse_str)
-    return parse_flat_tree_to_nodes(parse_toks)
+    return parse_flat_tree_to_nodes(tokenize_flat_tree(flat_parse_str))
 
 
 def parse_tree_with_text(flat_parse_str, text):
-    parse_toks, text_toks = tokenize(parse_str=flat_parse_str, text=text)
+    parse_toks = tokenize_flat_tree(flat_parse_str)
+    text_toks = [tok.txt for tok in tokenizer.tokenize(text) if tok.txt]
     return parse_flat_tree_to_nodes(parse_toks, text_toks)
 
 
@@ -266,7 +248,7 @@ def _json_terminal_node(tok, text="placeholder"):
             to
             töl"""
 
-    subtokens = ENCODER.token_to_subtokens(tok)
+    subtokens = tok.split("_")
     first = subtokens[0].split("_", 1)[0]
 
     tail_start = 1
@@ -325,6 +307,6 @@ def _json_terminal_node(tok, text="placeholder"):
 # TODO: Use cache
 def _json_nonterminal_node(tok):
     new_node = dict(
-        i=tok, n=grammar_consts.DEFAULT_ID_MAP[tok]["name"], k="NONTERMINAL", p=[]
+        i=tok, n=matcher._DEFAULT_ID_MAP[tok]["name"], k="NONTERMINAL", p=[]
     )
     return new_node
