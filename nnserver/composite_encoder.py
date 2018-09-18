@@ -6,7 +6,7 @@
 
     Neural Network Parsing Encoder
 
-    Copyright (C) 2018 Miðeind
+    Copyright (C) 2018 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -21,7 +21,9 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    This module implements composite subword encoder for parsing tokens.
+    This module implements a composite subword encoder for tokens on
+    the output side of the text-to-parse-tree model, i.e. grammar
+    nonterminals, terminals and their variants.
 
 """
 
@@ -34,9 +36,7 @@ import tensorflow as tf
 def _preprocess_word_v2(word):
     return (
         word.strip()
-        .replace("_lhþt", "_lh_þt")
-        .replace("_hvk", "_hk")
-        .replace("_hk_hk", "_hk")
+        .replace("_lh_nt", "_lhnt")
     )
 
 
@@ -50,16 +50,16 @@ def _preprocess_word(word):
 
 
 CASE_TOKS = set(["nf", "þf", "þgf", "ef"])
-PROJECT_PATH = os.path.dirname(os.path.dirname(__file__))
-DEFAULT_PATH = os.path.join(PROJECT_PATH, "resources/parsing_tokens.txt")
-DEFAULT_PATH_V2 = os.path.join(PROJECT_PATH, "resources/parsing_tokens_180729.txt")
+PROJECT_PATH = os.path.dirname(__file__)
+DEFAULT_PATH = os.path.join(PROJECT_PATH, "resources", "parsing_tokens.txt")
+DEFAULT_PATH_V2 = os.path.join(PROJECT_PATH, "resources", "parsing_tokens_180729.txt")
 
 UNK = "<UNK>"
 
 EOS_ID = text_encoder.EOS_ID
 MISSING = ["NP-AGE", "ADVP-DUR"]
 MISSING.extend(["/" + t for t in MISSING])
-MISSING = set(t for t in MISSING)
+MISSING = set(MISSING)
 
 
 class CompositeTokenEncoder(text_encoder.TextEncoder):
@@ -68,7 +68,7 @@ class CompositeTokenEncoder(text_encoder.TextEncoder):
     Read composite vocabulary and extract subtokens according to simple
     right recursive rule (regular) with a handful a couple of exceptions
 
-    Behaves otherwise similarly to subword encoders
+    Behaves otherwise similarly to the Tensor2Tensor subword encoders
     """
 
     def __init__(self, filename=None, reorder=True, version=1):
@@ -99,7 +99,7 @@ class CompositeTokenEncoder(text_encoder.TextEncoder):
             head, t1 = toks[:2]
             tail = toks[2:]
 
-            if t1 in ["0", "1", "2", "subj"]:
+            if t1 in {"0", "1", "2", "subj"}:
                 head = head + "_" + t1
             else:
                 tail.append(t1)
@@ -113,9 +113,9 @@ class CompositeTokenEncoder(text_encoder.TextEncoder):
         self._terminals = (head_toks | full_toks | tail_toks) - self._nonterminals
         self._r_to_l = {"/" + t: t for t in self._nonterm_l}
 
-        full_toks, head_toks, tail_toks = [
-            sorted(list(l)) for l in [full_toks, head_toks, tail_toks]
-        ]
+        full_toks = sorted(list(full_toks))
+        head_toks = sorted(list(head_toks))
+        tail_toks = sorted(list(tail_toks))
 
         self._tok_id_to_tok_str = {
             tid: tok
@@ -148,7 +148,7 @@ class CompositeTokenEncoder(text_encoder.TextEncoder):
         tail = toks[2:]
 
         tail_start = 0
-        if t1 in ["0", "1", "2", "subj"]:
+        if t1 in {"0", "1", "2", "subj"}:
             head = head + "_" + t1
             tail_start += 0 if t1 == "subj" else int(t1)
         else:
@@ -157,7 +157,7 @@ class CompositeTokenEncoder(text_encoder.TextEncoder):
             tail = tmp
 
         if head not in self._htok_to_tok_id or not all(
-            [t in self._ttok_to_tok_id for t in tail]
+            t in self._ttok_to_tok_id for t in tail
         ):
             return [self.oov_id]
 
