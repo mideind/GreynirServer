@@ -1,11 +1,10 @@
-#!/usr/bin/env python
-
+#!/usr/bin/env python3
 """
     Reynir: Natural language processing for Icelandic
 
     Neural Network Query Client
 
-    Copyright (C) 2018 Miðeind
+    Copyright (C) 2018 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -20,7 +19,9 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    This module implements a client for that connects to a tensorflow model server.
+    This module implements a client that connects to a middleware
+    neural network server (see nnserver/nnserver.py), which in turn
+    connects to a TensorFlow model server.
 
 """
 
@@ -88,14 +89,14 @@ class NnClient:
             )
 
             logging.info(
-                "Parsed {num} sentences with neural network with scores: {scores}".format(
+                "Parsed {num} sentences using neural network, with scores: {scores}".format(
                     num=len(predictions), scores=score_str
                 )
             )
             return results
         # TODO(haukurb): More graceful error handling
         except Exception as e:
-            logging.error("Error: could not process response from nnserver.")
+            logging.error("Error: could not process response from nnserver")
             logging.error(e)
             return None
 
@@ -126,4 +127,4 @@ def test_sentence():
 
 
 if __name__ == "__main__":
-    manual_test()
+    test_sentence()

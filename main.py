@@ -422,9 +422,11 @@ def text_from_request(request):
 @app.route("/nntree.api", methods=["GET", "POST"])
 @app.route("/nntree.api/v<int:version>", methods=["GET", "POST"])
 def nntree_api(version=1):
-    """ Analyze text manually entered by the user, using a neural network """
+    """ Analyze text manually entered by the user, by passing the request
+        to a neural network server and returning its result back """
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
+
     try:
         text = text_from_request(request)
     except:
@@ -434,6 +436,7 @@ def nntree_api(version=1):
 
     # Return the tokens as a JSON structure to the client
     return better_jsonify(valid=True, result=nnTree)
+
 
 # Note: Endpoints ending with .api are configured not to be cached by nginx
 @app.route("/analyze.api", methods=["GET", "POST"])

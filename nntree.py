@@ -1,11 +1,9 @@
-# -*- coding: utf-8 -*-
-
 """
     Reynir: Natural language processing for Icelandic
 
     Neural Network Utilities
 
-    Copyright (C) 2018 Miðeind
+    Copyright (C) 2018 Miðeind ehf
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -21,7 +19,8 @@
 
 
     This module contains a handful of useful functions for parsing the
-    output from an IceParsing NMT model and working with the result.
+    output from an IceParsing neural network model and working with the
+    result.
 
 """
 
@@ -100,7 +99,7 @@ class Node:
         for tree in forest:
             if tree.name == name:
                 return True
-            if any([Node.contains(c, name) for c in tree.children]):
+            if any(Node.contains(c, name) for c in tree.children):
                 return True
         return False
 
@@ -182,7 +181,7 @@ def parse_flat_tree_to_nodes(parse_toks, text_toks=None, verbose=False):
         # Token must be a legal right nonterminal since it is not a left token
         # A right token must be matched by its corresponding left token
         if tok not in TOKENS.R_TO_L or parent.name != TOKENS.R_TO_L[tok]:
-            msg = r"Error: Found illegal nonterminal {}, expected right nonterminal"
+            msg = "Error: Found illegal nonterminal {}, expected right nonterminal"
             vprint(msg.format(tok))
 
             tree = root.children[0] if root.children else None
