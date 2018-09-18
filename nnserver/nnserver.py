@@ -1,12 +1,10 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
+#!/usr/bin/env python3
 """
     Reynir: Natural language processing for Icelandic
 
     Neural Network Query Client
 
-    Copyright (C) 2018 Miðeind
+    Copyright (C) 2018 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -21,8 +19,8 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    This module implements a server that provides an icelandic text interface to
-    an NMT parsing tensorflow model server.
+    This module implements a server that provides an Icelandic text interface to
+    a Tensorflow model server running a text-to-parse-tree neural network.
 
 """
 
@@ -32,7 +30,7 @@ import base64
 import json
 import requests
 
-from composite_encoder import CompositeTokenEncoder as ParsingEncoder
+from composite_encoder import CompositeTokenEncoder
 
 from tensor2tensor.data_generators import text_encoder
 from tensorflow.core.example import feature_pb2
@@ -44,8 +42,10 @@ from flask import Flask, jsonify, request
 EOS_ID = text_encoder.EOS_ID
 PAD_ID = text_encoder.PAD_ID
 
-_PARSING_VOCAB_PATH = "../resources/parsing_tokens_180729.txt"
-_ENIS_VOCAB_PATH = "../resources/vocab.enis.16384.subwords"
+basepath = os.path.dirname(__file__)
+
+_PARSING_VOCAB_PATH = os.path.join(basepath, "resources", "parsing_tokens_180729.txt")
+_ENIS_VOCAB_PATH = os.path.join(basepath, "resources", "vocab.enis.16384.subwords")
 
 
 app = Flask(__name__)
@@ -58,7 +58,7 @@ class NnServer:
     _tfms_version = "v1"
     _model_name = "transformer"
     _verb = "predict"
-    _parsingEncoder = ParsingEncoder(_PARSING_VOCAB_PATH, version=2)
+    _parsingEncoder = CompositeTokenEncoder(_PARSING_VOCAB_PATH, version=2)
     _enisEncoder = text_encoder.SubwordTextEncoder(_ENIS_VOCAB_PATH)
 
     @classmethod
@@ -71,14 +71,13 @@ class NnServer:
             model=cls._model_name,
             verb=cls._verb,
         )
-        headers = {"content-type": "application/json"}
         instances = [cls.serialize_to_instance(sent) for sent in pgs]
-
         payload = {
             "signature_name": "serving_default",
-            "instances": [inst for inst in instances],
+            "instances": instances,
         }
         payload = json.dumps(payload)
+        headers = {"content-type": "application/json"}
         resp = requests.post(url, data=payload, headers=headers)
 
         try:
@@ -88,7 +87,6 @@ class NnServer:
                 cls.process_response_instance(inst, sent)
                 for (inst, sent) in zip(predictions, pgs)
             ]
-            # return results
             obj["predictions"] = results
             return obj
         except Exception as e:
@@ -101,7 +99,6 @@ class NnServer:
         """  Process the numerical output from the model server for one sentence """
         scores = instance["scores"]
         output_ids = instance["outputs"]
-
         # Strip padding and eos token
         length = len(output_ids)
         pad_start = output_ids.index(PAD_ID) if PAD_ID in output_ids else length
@@ -109,8 +106,6 @@ class NnServer:
         sent_end = min(pad_start, eos_start)
         output_toks = cls._parsingEncoder.decode(output_ids[:sent_end])
         instance["outputs"] = output_toks
-
-        # return output_toks
         return instance
 
     @classmethod
@@ -120,7 +115,7 @@ class NnServer:
         # Add end of sentence token
         input_ids = cls._enisEncoder.encode(sent)
         print(cls._enisEncoder.decode_list(input_ids))
-        input_ids.extend([EOS_ID])
+        input_ids.append(EOS_ID)
 
         int64_list = feature_pb2.Int64List(value=input_ids)
         feature = feature_pb2.Feature(int64_list=int64_list)
@@ -128,7 +123,7 @@ class NnServer:
         features = feature_pb2.Features(feature=feature_map)
         example = example_pb2.Example(features=features)
 
-        b64_example = base64.b64encode(example.SerializeToString()).decode("utf-8")
+        b64_example = base64.b64encode(example.SerializeToString()).decode()
         return {"input": {"b64": b64_example}}
 
 
@@ -141,12 +136,10 @@ def parse_api():
         pgs = obj["pgs"]
         model_response = NnServer.request(pgs)
         resp = jsonify(model_response)
-        resp.headers["Content-Type"] = "application/json; charset=utf-8"
-        return resp
     except:
         resp = jsonify(valid=False, reason="Invalid request")
-        resp.headers["Content-Type"] = "application/json; charset=utf-8"
-        return resp
+    resp.headers["Content-Type"] = "application/json; charset=utf-8"
+    return resp
 
 
 if __name__ == "__main__":
@@ -154,7 +147,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
         description=(
-            "Middleware server for providing a textual interface to tensorflow model server"
+            "Middleware server that provides a textual interface to tensorflow model server"
         )
     )
     parser.add_argument(
@@ -195,7 +188,7 @@ if __name__ == "__main__":
         default=False,
         action="store_true",
         required=False,
-        help="Port of model server",
+        help="Emit debug information messages",
     )
     args = parser.parse_args()
     app.config["out_host"] = args.OUT_HOST
