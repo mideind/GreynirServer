@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
 
 """
     Reynir: Natural language processing for Icelandic
@@ -29,22 +29,14 @@ import os
 
 
 PROJECT_PATH = os.path.dirname(__file__)
-DEFAULT_PATH = os.path.join(PROJECT_PATH, "resources/parsing_tokens.txt")
-DEFAULT_PATH_V2 = os.path.join(PROJECT_PATH, "resources/parsing_tokens_180729.txt")
+DEFAULT_PATH = os.path.join(PROJECT_PATH, "resources", "parsing_tokens.txt")
+DEFAULT_PATH_V2 = os.path.join(PROJECT_PATH, "resources", "parsing_tokens_180729.txt")
 
 UNK = "<UNK>"
 MISSING = ["NP-AGE", "ADVP-DUR"]
 MISSING.extend(["/" + t for t in MISSING])
 MISSING = set(t for t in MISSING)
 # ADVP-DUR-REL
-
-def preprocess_word(word):
-    return (
-        word.strip()
-        .replace("_lhþt", "_lh_þt")
-        .replace("_hvk", "_hk")
-        .replace("_hk_hk", "_hk")
-    )
 
 
 class ParsingSubtokens:
@@ -57,7 +49,9 @@ class ParsingSubtokens:
             path = DEFAULT_PATH_V2
 
         with open(path, "r") as file:
-            all_tokens = [preprocess_word(l) for l in file.readlines()]
+            all_tokens = [
+                ParsingSubtokens.preprocess_word(l) for l in file.readlines()
+            ]
 
         full_toks = {t for t in all_tokens if "_" not in t}
         raw_tokens = {t for t in all_tokens if "_" in t}
@@ -102,3 +96,7 @@ class ParsingSubtokens:
             tok: (i + N_FULL + N_HEAD) for (i, tok) in enumerate(tail_toks)
         }
         self.oov_id = N_FULL + N_HEAD + N_TAIL
+
+    @classmethod
+    def preprocess_word(word):
+        return word.strip().replace("_lh_nt", "_lhnt")
