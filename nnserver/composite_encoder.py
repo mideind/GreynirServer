@@ -31,13 +31,8 @@ import os
 
 from tensor2tensor.data_generators import text_encoder
 import tensorflow as tf
-
-
-def _preprocess_word_v2(word):
-    return (
-        word.strip()
-        .replace("_lh_nt", "_lhnt")
-    )
+from Reynir.parsing_subtokens import ParsingSubtokens, preprocess_word
+import Reynir.grammar_consts as grammar_consts
 
 
 def _preprocess_word(word):
@@ -55,18 +50,14 @@ DEFAULT_PATH = os.path.join(PROJECT_PATH, "resources", "parsing_tokens.txt")
 DEFAULT_PATH_V2 = os.path.join(PROJECT_PATH, "resources", "parsing_tokens_180729.txt")
 
 UNK = "<UNK>"
-
 EOS_ID = text_encoder.EOS_ID
-MISSING = ["NP-AGE", "ADVP-DUR"]
-MISSING.extend(["/" + t for t in MISSING])
-MISSING = set(MISSING)
 
 
 class CompositeTokenEncoder(text_encoder.TextEncoder):
     """Build vocabulary from composite token vocabulary
 
     Read composite vocabulary and extract subtokens according to simple
-    right recursive rule (regular) with a handful a couple of exceptions
+    right recursive rule (regular) with a couple of exceptions
 
     Behaves otherwise similarly to the Tensor2Tensor subword encoders
     """
@@ -76,69 +67,25 @@ class CompositeTokenEncoder(text_encoder.TextEncoder):
             self.filename = DEFAULT_PATH if version == 1 else DEFAULT_PATH_V2
         else:
             self.filename = filename
-        self._init_token_set()
+        self._version = version
+
+        tokens = ParsingSubtokens(self.filename)
+
         self._num_reserved_ids = len(text_encoder.RESERVED_TOKENS)
         self._reorder = reorder
-        self._version = version
-        self._preprocess_word = (
-            _preprocess_word if version == 1 else _preprocess_word_v2
-        )
+        self._preprocess_word = ParsingSubtokens.preprocess_word
 
-    def _init_token_set(self):
-        all_tokens = []
-        with tf.gfile.Open(self.filename) as f:
-            all_tokens = [_preprocess_word_v2(l) for l in f.readlines()]
-
-        full_toks = {t for t in all_tokens if "_" not in t}
-        raw_tokens = {t for t in all_tokens if "_" in t}
-
-        head_toks = set()
-        tail_toks = set()
-        for rt in raw_tokens:
-            toks = rt.split("_")
-            head, t1 = toks[:2]
-            tail = toks[2:]
-
-            if t1 in {"0", "1", "2", "subj"}:
-                head = head + "_" + t1
-            else:
-                tail.append(t1)
-
-            tail_toks.update(tail)
-            head_toks.add(head)
-
-        self._nonterminals = {t for t in all_tokens if t == t.upper()}
-        self._nonterm_l = {t for t in self._nonterminals if "/" not in t}
-        self._nonterm_r = self._nonterminals - self._nonterm_l
-        self._terminals = (head_toks | full_toks | tail_toks) - self._nonterminals
-        self._r_to_l = {"/" + t: t for t in self._nonterm_l}
-
-        full_toks = sorted(list(full_toks))
-        head_toks = sorted(list(head_toks))
-        tail_toks = sorted(list(tail_toks))
-
-        self._tok_id_to_tok_str = {
-            tid: tok
-            for (tid, tok) in enumerate(
-                full_toks + head_toks + [("_" + t) for t in tail_toks] + [UNK]
-            )
-        }
-
-        N_FULL, N_HEAD, N_TAIL = [len(s) for s in [full_toks, head_toks, tail_toks]]
-
-        self._ftok_to_tok_id = {tok: i for (i, tok) in enumerate(full_toks)}
-        self._htok_to_tok_id = {tok: (i + N_FULL) for (i, tok) in enumerate(head_toks)}
-        self._ttok_to_tok_id = {
-            tok: (i + N_FULL + N_HEAD) for (i, tok) in enumerate(tail_toks)
-        }
-        self.oov_id = N_FULL + N_HEAD + N_TAIL
+        self._ftok_to_tok_id = tokens._ftok_to_tok_id
+        self._htok_to_tok_id = tokens._htok_to_tok_id
+        self._ttok_to_tok_id = tokens._ttok_to_tok_id
+        self.oov_id = tokens.oov_id
 
     @property
     def num_reserved_ids(self):
         return self._num_reserved_ids
 
     def _token_to_subtoken_ids(self, word):
-        word = _preprocess_word_v2(word)
+        word = self._preprocess_word_v2(word)
         if word in self._ftok_to_tok_id:
             return [self._ftok_to_tok_id[word]]
         if "_" not in word:
@@ -182,8 +129,6 @@ class CompositeTokenEncoder(text_encoder.TextEncoder):
         for word in words:
             ids = [(i + numres) for i in self._token_to_subtoken_ids(word)]
             result.extend(ids)
-            # if self.oov_id+numres in result:
-            #     print("unexpected subtoken: '{0}' in {1}".format(word, " ".join(words)))
         return result
 
     def encode(self, string):
