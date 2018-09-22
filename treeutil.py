@@ -34,7 +34,7 @@ from reynir.incparser import IncrementalParser
 from scraperdb import SessionContext
 from settings import Settings
 from reynir.matcher import SimpleTree, SimpleTreeBuilder
-from reynir_correct.errtokenizer import tokenize
+from reynir_correct import tokenize
 
 
 WordTuple = namedtuple("WordTuple", ["stem", "cat"])
