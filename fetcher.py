@@ -31,7 +31,8 @@ from urllib.error import HTTPError
 
 from bs4 import BeautifulSoup, NavigableString
 
-from nertokenizer import tokenize_and_recognize
+from nertokenizer import recognize_entities
+from reynir_correct import tokenize
 from scraperdb import SessionContext, Root, Article as ArticleRow
 
 
@@ -194,7 +195,8 @@ class Fetcher:
         text = tlist.result()
 
         # Tokenize the resulting text, returning a generator
-        return tokenize_and_recognize(text, enclosing_session=enclosing_session)
+        token_stream = tokenize(text)
+        return tokenize_and_recognize(token_stream, enclosing_session=enclosing_session)
 
     @classmethod
     def raw_fetch_url(cls, url):

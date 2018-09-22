@@ -19,7 +19,7 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    This module exports tokenize_and_recognize(), a function which
+    This module exports recognize_entities(), a function which
     adds a named entity recognition layer on top of the reynir.bintokenizer
     functionality.
 
@@ -28,7 +28,7 @@
 from collections import defaultdict
 
 from reynir import Abbreviations
-from reynir.bintokenizer import tokenize, TOK
+from reynir.bintokenizer import TOK, correct_spaces
 from reynir.bindb import BIN_Db
 
 from scraperdb import SessionContext, Entity
@@ -39,6 +39,9 @@ def recognize_entities(token_stream, enclosing_session = None):
     """ Parse a stream of tokens looking for (capitalized) entity names
         The algorithm implements N-token lookahead where N is the
         length of the longest entity name having a particular initial word.
+        Adds a named entity recognition layer on top of the
+        reynir.bintokenizer.tokenize() function. 
+
     """
 
     tq = [] # Token queue
@@ -243,17 +246,3 @@ def recognize_entities(token_stream, enclosing_session = None):
     # print("\nLast names:\n{0}".format("\n".join("{0}: {1}".format(k, v) for k, v in lastnames.items())))
 
     assert not tq
-
-
-def tokenize_and_recognize(text, auto_uppercase = False, enclosing_session = None):
-    """ Adds a named entity recognition layer on top of the
-        reynir.bintokenizer.tokenize() function. """
-
-    # Obtain a generator
-    token_stream = tokenize(text, auto_uppercase)
-
-    # Recognize named entities from database
-    token_stream = recognize_entities(token_stream, enclosing_session)
-
-    return token_stream
-
