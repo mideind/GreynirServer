@@ -401,8 +401,8 @@ class TreeUtility:
         t0 = time.time()
         # Demarcate paragraphs in the input
         text = Fetcher.mark_paragraphs(text)
-        # Tokenize, parse and possibly correct the result
-        token_stream = tokenize(text)
+        # Tokenize the result
+        token_stream = tokenize(text, correct)
         toklist = list(recognize_entities(token_stream, enclosing_session=session))
         t1 = time.time()
         pgs, stats = TreeUtility._process_toklist(parser, session, toklist, xform)
