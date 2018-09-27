@@ -35,7 +35,7 @@ from scraperdb import Article as ArticleRow, SessionContext, Word, Root, DataErr
 from fetcher import Fetcher
 from tokenizer import TOK, tokenize
 from reynir.fastparser import Fast_Parser, ParseError, ParseForestDumper
-from incparser import IncrementalParser
+from reynir.incparser import IncrementalParser
 from tree import Tree
 from treeutil import TreeUtility
 

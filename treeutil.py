@@ -30,7 +30,7 @@ from fetcher import Fetcher
 from nertokenizer import TOK, recognize_entities
 from reynir.binparser import canonicalize_token, augment_terminal
 from reynir.fastparser import Fast_Parser, ParseForestNavigator
-from incparser import IncrementalParser
+from reynir.incparser import IncrementalParser
 from scraperdb import SessionContext
 from settings import Settings
 from reynir.matcher import SimpleTree, SimpleTreeBuilder
