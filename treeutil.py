@@ -384,7 +384,7 @@ class TreeUtility:
         return s.result
 
     @staticmethod
-    def _process_text(parser, session, text, all_names, xform):
+    def _process_text(parser, session, text, all_names, xform, correct=True):
         """ Low-level utility function to parse text and return the result of
             a transformation function (xform) for each sentence.
             Set all_names = True to get a comprehensive name register.
@@ -394,7 +394,7 @@ class TreeUtility:
         # Demarcate paragraphs in the input
         text = Fetcher.mark_paragraphs(text)
         # Tokenize the result
-        token_stream = tokenize(text)
+        token_stream = tokenize(text, correct)
         toklist = list(recognize_entities(token_stream, enclosing_session=session))
         t1 = time.time()
         pgs, stats = TreeUtility._process_toklist(parser, session, toklist, xform)
@@ -437,7 +437,7 @@ class TreeUtility:
         return (pgs, stats)
 
     @staticmethod
-    def raw_tag_text(parser, session, text, all_names=False):
+    def raw_tag_text(parser, session, text, all_names=False, correct=True):
         """ Parse plain text and return the parsed paragraphs as lists of sentences
             where each sentence is a list of tagged tokens. Uses a caller-provided
             parser object. """
@@ -447,14 +447,14 @@ class TreeUtility:
                 normalized tokens for the sentence """
             return TreeUtility.dump_tokens(tokens, tree, None, err_index)
 
-        return TreeUtility._process_text(parser, session, text, all_names, xform)
+        return TreeUtility._process_text(parser, session, text, all_names, xform, correct)
 
     @staticmethod
-    def tag_text(session, text, all_names=False):
+    def tag_text(session, text, all_names=False, correct=True):
         """ Parse plain text and return the parsed paragraphs as lists of sentences
             where each sentence is a list of tagged tokens """
         with Fast_Parser(verbose=False) as parser:  # Don't emit diagnostic messages
-            return TreeUtility.raw_tag_text(parser, session, text, all_names)
+            return TreeUtility.raw_tag_text(parser, session, text, all_names, correct)
 
     @staticmethod
     def tag_toklist(session, toklist, all_names=False):
