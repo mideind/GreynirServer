@@ -34,8 +34,8 @@ cp config/TnT-model.pickle $DEST/config/TnT-model.pickle
 cp article.py $DEST/article.py
 cp fetcher.py $DEST/fetcher.py
 cp geo.py $DEST/geo.py
+cp getimage.py $DEST/getimage.py
 cp images.py $DEST/images.py
-cp incparser.py $DEST/incparser.py
 cp main.py $DEST/main.py
 cp nertokenizer.py $DEST/nertokenizer.py
 cp postagger.py $DEST/postagger.py
