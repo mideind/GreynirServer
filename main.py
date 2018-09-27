@@ -503,8 +503,9 @@ def analyze_api(version=1):
     except:
         return better_jsonify(valid=False, reason="Invalid request")
 
+    # !!! TODO Get correction switch from analysis.html
     with SessionContext(commit=True) as session:
-        pgs, stats, register = TreeUtility.tag_text(session, text)
+        pgs, stats, register = TreeUtility.tag_text(session, text, correct=True)
 
     # Return the tokens as a JSON structure to the client
     return better_jsonify(valid=True, result=pgs, stats=stats, register=register)
