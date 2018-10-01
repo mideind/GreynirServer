@@ -487,7 +487,7 @@ class Trigram(Base):
             t2 = t2[0:mwl]
         if len(t3) > mwl:
             t3 = t3[0:mwl]
-        session.execute(self._Q, dict(t1 = t1, t2 = t2, t3 = t3))
+        session.execute(Trigram._Q, dict(t1 = t1, t2 = t2, t3 = t3))
 
     @staticmethod
     def delete_all(session):
