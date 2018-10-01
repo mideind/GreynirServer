@@ -4,7 +4,7 @@
 
     Trigrams module
 
-    Copyright (c) 2017 Miðeind ehf
+    Copyright (c) 2018 Miðeind ehf
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -40,8 +40,8 @@ else:
     basepath = ""
 
 from settings import Settings, ConfigError, Prepositions
-from tokenizer import tokenize, correct_spaces, canonicalize_token, TOK
-from bindb import BIN_Db
+from tokenizer import tokenize, correct_spaces, TOK
+from reynir.bindb import BIN_Db
 from scraperdb import SessionContext, Article, Trigram, DatabaseError, desc
 from tree import TreeTokenList, TerminalDescriptor
 
@@ -85,16 +85,18 @@ def make_trigrams(limit):
     """ Iterate through parsed articles and extract trigrams from
         successfully parsed sentences """
 
-    with SessionContext(commit = True) as session:
+    with SessionContext(commit = False) as session:
 
         # Delete existing trigrams
         Trigram.delete_all(session)
+        session.commit()
+
         # Iterate through the articles
         q = session.query(Article.url, Article.timestamp, Article.tree) \
             .filter(Article.tree != None) \
             .order_by(Article.timestamp)
         if limit is None:
-            q = q.yield_per(200)
+            q = q.yield_per(1000)
         else:
             q = q[0:limit]
 
@@ -110,14 +112,14 @@ def make_trigrams(limit):
                         yield ""
                         yield ""
                         for t in toklist:
-                            yield t.token[1:-1]
+                            yield from t.token[1:-1].split()
                         yield ""
                         yield ""
 
         def trigrams(iterable):
             return zip(*((islice(seq, i, None) for i, seq in enumerate(tee(iterable, 3)))))
 
-        FLUSH_THRESHOLD = 0 # 200 # Flush once every 200 records
+        FLUSH_THRESHOLD = 200 # Flush once every 200 records
         cnt = 0
         for tg in trigrams(tokens(q)):
             # print("{0}".format(tg))
@@ -125,11 +127,12 @@ def make_trigrams(limit):
                 try:
                     Trigram.upsert(session, *tg)
                     cnt += 1
-                    if cnt == FLUSH_THRESHOLD:
-                        session.flush()
+                    if cnt >= FLUSH_THRESHOLD:
+                        session.commit()
                         cnt = 0
                 except DatabaseError as ex:
                     print("*** Exception {0} on trigram {1}, skipped".format(ex, tg))
+        session.commit()
 
 
 def spin_trigrams(num):
@@ -188,10 +191,11 @@ def main():
         print("Configuration error: {0}".format(e))
         quit()
 
-    #make_trigrams(limit = None)
+    make_trigrams(limit = None)
+    
     #dump_tokens(limit = 10)
 
-    spin_trigrams(25)
+    #spin_trigrams(25)
 
 
 if __name__ == "__main__":
