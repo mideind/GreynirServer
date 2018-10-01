@@ -40,7 +40,7 @@ else:
     basepath = ""
 
 from settings import Settings, ConfigError, Prepositions
-from tokenizer import tokenize, correct_spaces, canonicalize_token, TOK
+from tokenizer import tokenize, correct_spaces, TOK
 from bindb import BIN_Db
 from scraperdb import SessionContext, Article, Trigram, DatabaseError, desc
 from tree import TreeTokenList, TerminalDescriptor
@@ -85,10 +85,12 @@ def make_trigrams(limit):
     """ Iterate through parsed articles and extract trigrams from
         successfully parsed sentences """
 
-    with SessionContext(commit = True) as session:
+    with SessionContext(commit = False) as session:
 
         # Delete existing trigrams
         Trigram.delete_all(session)
+        session.commit()
+
         # Iterate through the articles
         q = session.query(Article.url, Article.timestamp, Article.tree) \
             .filter(Article.tree != None) \
@@ -117,7 +119,7 @@ def make_trigrams(limit):
         def trigrams(iterable):
             return zip(*((islice(seq, i, None) for i, seq in enumerate(tee(iterable, 3)))))
 
-        FLUSH_THRESHOLD = 0 # 200 # Flush once every 200 records
+        FLUSH_THRESHOLD = 200 # Flush once every 200 records
         cnt = 0
         for tg in trigrams(tokens(q)):
             # print("{0}".format(tg))
@@ -125,11 +127,13 @@ def make_trigrams(limit):
                 try:
                     Trigram.upsert(session, *tg)
                     cnt += 1
-                    if cnt == FLUSH_THRESHOLD:
+                    if cnt >= FLUSH_THRESHOLD:
+                        session.commit()
                         session.flush()
                         cnt = 0
                 except DatabaseError as ex:
                     print("*** Exception {0} on trigram {1}, skipped".format(ex, tg))
+        session.commit()
 
 
 def spin_trigrams(num):
@@ -188,10 +192,10 @@ def main():
         print("Configuration error: {0}".format(e))
         quit()
 
-    #make_trigrams(limit = None)
-    #dump_tokens(limit = 10)
+    make_trigrams(limit = None)
 
-    spin_trigrams(25)
+    #dump_tokens(limit = 10)
+    #spin_trigrams(25)
 
 
 if __name__ == "__main__":
