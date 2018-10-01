@@ -28,7 +28,7 @@
 from collections import defaultdict
 
 from reynir import Abbreviations
-from reynir.bintokenizer import tokenize, TOK, correct_spaces
+from reynir.bintokenizer import tokenize, TOK
 from reynir.bindb import BIN_Db
 
 from scraperdb import SessionContext, Entity
