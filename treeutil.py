@@ -34,7 +34,8 @@ from reynir.incparser import IncrementalParser
 from scraperdb import SessionContext
 from settings import Settings
 from reynir.matcher import SimpleTree, SimpleTreeBuilder
-from reynir_correct import tokenize
+from reynir_correct.grammarfix import correct_text
+from reynir_correct.errtokenizer import tokenize
 
 
 WordTuple = namedtuple("WordTuple", ["stem", "cat"])
@@ -401,7 +402,10 @@ class TreeUtility:
         t0 = time.time()
         # Demarcate paragraphs in the input
         text = Fetcher.mark_paragraphs(text)
-        # Tokenize the result
+        # Tokenize, parse and possibly correct the result
+        #pgs, stats = correct_text(text, correct,)
+
+        
         token_stream = tokenize(text, correct)
         toklist = list(recognize_entities(token_stream, enclosing_session=session))
         t1 = time.time()
