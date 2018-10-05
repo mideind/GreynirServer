@@ -105,10 +105,13 @@ class NnClient:
         """ Process the response from a single sentence """
         parse_toks = instance["outputs"]
 
+
         logging.info(parse_toks)
         tree, p_result = nntree.parse_tree_with_text(parse_toks, sent)
 
         if Settings.DEBUG:
+            print("Received parse tokens from nnserver:", parse_toks)
+            print("Parsed by nntree into:")
             tree.pprint()
             if p_result != ParseResult.SUCCESS:
                 print("NnParse not successful for input: '{text}'".format(text=sent))
