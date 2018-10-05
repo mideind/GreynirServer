@@ -96,7 +96,7 @@ def make_trigrams(limit):
             .filter(Article.tree != None) \
             .order_by(Article.timestamp)
         if limit is None:
-            q = q.yield_per(1000)
+            q = q.yield_per(200)
         else:
             q = q[0:limit]
 
@@ -128,7 +128,7 @@ def make_trigrams(limit):
                     Trigram.upsert(session, *tg)
                     cnt += 1
                     if cnt >= FLUSH_THRESHOLD:
-                        session.commit()
+                        session.flush()
                         cnt = 0
                 except DatabaseError as ex:
                     print("*** Exception {0} on trigram {1}, skipped".format(ex, tg))

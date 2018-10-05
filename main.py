@@ -48,7 +48,8 @@ from flask.wrappers import Response
 import reynir
 from settings import Settings, ConfigError, changedlocale
 from reynir.bindb import BIN_Db
-from nertokenizer import tokenize_and_recognize, correct_spaces
+from tokenizer import correct_spaces
+from nertokenizer import tokenize_and_recognize
 from reynir.binparser import canonicalize_token
 from reynir.fastparser import Fast_Parser, ParseForestFlattener
 from article import Article as ArticleProxy
