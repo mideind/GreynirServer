@@ -484,8 +484,6 @@ var tree = d3.tree()
       // For siblings, increase separation linearly with their combined
       // text (caption) length
       // var aLen = a.data.text.length;
-       console.log("a", a)
-       console.log("b", b)
       var aLen = a.data.n ? Math.max(a.data.text.length, 11) : a.data.text.length;
       // var bLen = b.data.text.length;
       var bLen = b.data.n ? Math.max(b.data.text.length, 11) : b.data.text.length;
@@ -833,18 +831,12 @@ function get_nntree(text) {
         dataType: "json",
         cache: false,
         success: function (x) {
-            console.log("success")
-            console.log(x)
             nn_wait(false);
             draw_nntree(x.result);
         },
         error: function (x) {
-            console.log("error")
-            console.log(x);
         },
         complete: function (x) {
-            console.log("complete")
-            console.log(x);
         }
     })
 }

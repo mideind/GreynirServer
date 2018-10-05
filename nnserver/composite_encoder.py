@@ -31,17 +31,8 @@ import os
 
 from tensor2tensor.data_generators import text_encoder
 import tensorflow as tf
-from Reynir.parsing_subtokens import ParsingSubtokens, preprocess_word
+from Reynir.parsing_subtokens import ParsingSubtokens
 import Reynir.grammar_consts as grammar_consts
-
-
-def _preprocess_word(word):
-    return (
-        word.strip()
-        .replace("_lh_nt", "_lhnt")
-        .replace("_hvk", "_hk")
-        .replace("_hk_hk", "_hk")
-    )
 
 
 CASE_TOKS = set(["nf", "þf", "þgf", "ef"])
@@ -62,7 +53,7 @@ class CompositeTokenEncoder(text_encoder.TextEncoder):
     Behaves otherwise similarly to the Tensor2Tensor subword encoders
     """
 
-    def __init__(self, filename=None, reorder=True, version=1):
+    def __init__(self, filename=None, reorder=True, version=2):
         if filename is None:
             self.filename = DEFAULT_PATH if version == 1 else DEFAULT_PATH_V2
         else:
@@ -75,6 +66,7 @@ class CompositeTokenEncoder(text_encoder.TextEncoder):
         self._reorder = reorder
         self._preprocess_word = ParsingSubtokens.preprocess_word
 
+        self._tok_id_to_tok_str = tokens._tok_id_to_tok_str
         self._ftok_to_tok_id = tokens._ftok_to_tok_id
         self._htok_to_tok_id = tokens._htok_to_tok_id
         self._ttok_to_tok_id = tokens._ttok_to_tok_id
@@ -85,7 +77,7 @@ class CompositeTokenEncoder(text_encoder.TextEncoder):
         return self._num_reserved_ids
 
     def _token_to_subtoken_ids(self, word):
-        word = self._preprocess_word_v2(word)
+        word = self._preprocess_word(word)
         if word in self._ftok_to_tok_id:
             return [self._ftok_to_tok_id[word]]
         if "_" not in word:
@@ -181,3 +173,15 @@ class CompositeTokenEncoder(text_encoder.TextEncoder):
             + len(self._htok_to_tok_id)
             + len(self._ttok_to_tok_id)
         )
+
+
+def test_roundtrip():
+    sample = "P S-MAIN IP NP-SUBJ pfn_et_nf_p3 /NP-SUBJ /IP /S-MAIN /P"
+    default_encoder = CompositeTokenEncoder()
+    subtoken_ids = default_encoder.encode(sample)
+    decoded_sample = default_encoder.decode(subtoken_ids)
+    assert sample == decoded_sample, "Encoding roundtrip does not match"
+
+
+if __name__ == "__main__":
+    test_roundtrip()
