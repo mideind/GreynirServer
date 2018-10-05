@@ -30,6 +30,7 @@ import logging
 import os
 
 import tokenizer
+# from . import grammar_consts
 import grammar_consts
 from reynir import matcher
 from parsing_subtokens import ParsingSubtokens, MISSING
@@ -298,7 +299,7 @@ def _json_terminal_node(tok, text="placeholder"):
         )
 
     if "k" in new_node and new_node["k"] in ["ENTITY", "WORD"]:
-        new_node["s"] = "-"
+        new_node["s"] = text if text else "-"
 
     return new_node
 

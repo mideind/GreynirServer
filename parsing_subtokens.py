@@ -77,9 +77,9 @@ class ParsingSubtokens:
         self.TERMINALS = (head_toks | full_toks | tail_toks) - self.NONTERMINALS
         self.R_TO_L = {"/" + t: t for t in self.NONTERM_L}
 
-        full_toks, head_toks, tail_toks = [
-            sorted(list(l)) for l in [full_toks, head_toks, tail_toks]
-        ]
+        full_toks = sorted(full_toks)
+        head_toks = sorted(head_toks)
+        tail_toks = sorted(tail_toks)
 
         self._tok_id_to_tok_str = {
             tid: tok
@@ -98,5 +98,5 @@ class ParsingSubtokens:
         self.oov_id = N_FULL + N_HEAD + N_TAIL
 
     @classmethod
-    def preprocess_word(word):
-        return word.strip().replace("_lh_nt", "_lhnt")
+    def preprocess_word(cls, word):
+        return word.strip().replace("_lhþt", "_lh_þt")

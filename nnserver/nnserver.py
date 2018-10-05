@@ -26,6 +26,7 @@
 
 import base64
 import json
+import os
 import requests
 
 from composite_encoder import CompositeTokenEncoder
@@ -96,12 +97,21 @@ class NnServer:
         """  Process the numerical output from the model server for one sentence """
         scores = instance["scores"]
         output_ids = instance["outputs"]
+
+        app.logger.debug("scores: " + str(scores))
+        app.logger.debug("output_ids: " + str(output_ids))
+
         # Strip padding and eos token
         length = len(output_ids)
         pad_start = output_ids.index(PAD_ID) if PAD_ID in output_ids else length
         eos_start = output_ids.index(EOS_ID) if EOS_ID in output_ids else length
         sent_end = min(pad_start, eos_start)
         output_toks = cls._parsingEncoder.decode(output_ids[:sent_end])
+
+        app.logger.debug("tokenized and depadded: " +
+                         str(cls._parsingEncoder.decode_list(output_ids[:sent_end])))
+        app.logger.info(output_toks)
+
         instance["outputs"] = output_toks
         return instance
 
@@ -111,7 +121,9 @@ class NnServer:
         of tensorflow_model_server running an exported tensor2tensor transformer translation model """
         # Add end of sentence token
         input_ids = cls._enisEncoder.encode(sent)
-        print(cls._enisEncoder.decode_list(input_ids))
+        app.logger.info("received: " + sent)
+        app.logger.debug("tokenized: " + str(cls._enisEncoder.decode_list(input_ids)))
+        app.logger.debug("input_ids: " + str(input_ids))
         input_ids.append(EOS_ID)
 
         int64_list = feature_pb2.Int64List(value=input_ids)
