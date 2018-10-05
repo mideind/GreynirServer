@@ -1025,7 +1025,7 @@ if __name__ == "__main__":
     extra_files = [
         "Reynir.conf",
         "Verbs.conf",
-        "VerbPrepositions.conf",
+        "Prepositions.conf",
         "Main.conf",
         "Prefs.conf",
         "Phrases.conf",
