@@ -28,9 +28,11 @@
 import os
 
 
-PROJECT_PATH = os.path.dirname(__file__)
-DEFAULT_PATH = os.path.join(PROJECT_PATH, "resources", "parsing_tokens.txt")
-DEFAULT_PATH_V2 = os.path.join(PROJECT_PATH, "resources", "parsing_tokens_180729.txt")
+_NNSERVER_DIR = os.path.dirname(os.path.realpath(__file__))
+_PROJECT_PATH = os.path.join(_NNSERVER_DIR, "greynir")
+
+DEFAULT_PATH = os.path.join(_PROJECT_PATH, "resources", "parsing_tokens.txt")
+DEFAULT_PATH_V2 = os.path.join(_PROJECT_PATH, "resources", "parsing_tokens_180729.txt")
 
 UNK = "<UNK>"
 MISSING = ["NP-AGE", "ADVP-DUR"]
