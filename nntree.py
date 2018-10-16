@@ -27,16 +27,12 @@
 from __future__ import print_function
 from enum import IntEnum
 import logging
-import os
 
 import numpy as np
 import tokenizer
-# from . import grammar_consts
 import grammar_consts
 from reynir import matcher
 from parsing_subtokens import ParsingSubtokens, MISSING
-
-from settings import Settings
 
 
 PROJECT_PATH = os.path.dirname(__file__)

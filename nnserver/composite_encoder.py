@@ -31,14 +31,17 @@ import os
 
 from tensor2tensor.data_generators import text_encoder
 import tensorflow as tf
-from Reynir.parsing_subtokens import ParsingSubtokens
-import Reynir.grammar_consts as grammar_consts
+from greynir.parsing_subtokens import ParsingSubtokens
+import greynir.grammar_consts as grammar_consts
 
 
-CASE_TOKS = set(["nf", "þf", "þgf", "ef"])
-PROJECT_PATH = os.path.dirname(__file__)
-DEFAULT_PATH = os.path.join(PROJECT_PATH, "resources", "parsing_tokens.txt")
-DEFAULT_PATH_V2 = os.path.join(PROJECT_PATH, "resources", "parsing_tokens_180729.txt")
+_NNSERVER_PATH = os.path.dirname(os.path.realpath(__file__))
+_PROJECT_PATH = os.path.join(_NNSERVER_PATH, "greynir")
+
+_DEFAULT_PATH = os.path.join(_PROJECT_PATH, "resources", "parsing_tokens.txt")
+_DEFAULT_PATH_V2 = os.path.join(_PROJECT_PATH, "resources", "parsing_tokens_180729.txt")
+
+_CASE_TOKS = set(["nf", "þf", "þgf", "ef"])
 
 UNK = "<UNK>"
 EOS_ID = text_encoder.EOS_ID

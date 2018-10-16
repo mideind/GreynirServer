@@ -43,10 +43,11 @@ from flask import Flask, jsonify, request
 EOS_ID = text_encoder.EOS_ID
 PAD_ID = text_encoder.PAD_ID
 
-basepath = os.path.dirname(__file__)
+_NNSERVER_PATH = os.path.dirname(os.path.realpath(__file__))
+_PROJECT_PATH = os.path.join(_NNSERVER_PATH, "greynir")
 
-_PARSING_VOCAB_PATH = os.path.join(basepath, "resources", "parsing_tokens_180729.txt")
-_ENIS_VOCAB_PATH = os.path.join(basepath, "resources", "vocab.enis.16384.subwords")
+_PARSING_VOCAB_PATH = os.path.join(_PROJECT_PATH, "resources", "parsing_tokens_180729.txt")
+_ENIS_VOCAB_PATH = os.path.join(_PROJECT_PATH, "resources", "vocab.enis.16384.subwords")
 
 
 app = Flask(__name__)
