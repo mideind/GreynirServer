@@ -18,6 +18,7 @@ ngram*.txt
 *.pairs
 *.tgz
 *.zip
+*.tsv
 
 # Experimental Python stuff
 rnn.py
@@ -31,6 +32,8 @@ utils/reykjanes.py
 diskuse.sh
 go.sh
 goss.sh
+parse.sh
+process.sh
 
 # Various resource files
 resources/*.txt
