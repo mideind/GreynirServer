@@ -1,5 +1,5 @@
 
-![Greynir](https://raw.githubusercontent.com/vthorsteinsson/Reynir/master/static/GreynirLogo242x100.png)
+![Greynir](https://raw.githubusercontent.com/vthorsteinsson/Reynir/master/static/img/GreynirLogo242x100.png)
 
 # Reynir
 
@@ -23,7 +23,7 @@ scoring heuristics to find the best parse trees. The trees are then stored in a
 database and processed by grammatical pattern matching modules to obtain statements
 of fact and relations between stated facts.
 
-[![Greynir parse tree](https://raw.githubusercontent.com/vthorsteinsson/Reynir/master/static/GreynirTreeExampleSmall.png)](https://raw.githubusercontent.com/vthorsteinsson/Reynir/master/static/GreynirTreeExample.png)
+[![Greynir parse tree](https://raw.githubusercontent.com/vthorsteinsson/Reynir/master/static/img/GreynirTreeExampleSmall.png)](https://raw.githubusercontent.com/vthorsteinsson/Reynir/master/static/img/GreynirTreeExample.png)
 
 *A parse tree as displayed by Reynir. Nouns and noun phrases are blue, verbs and verb phrases are red,
 adjectives are green, prepositional and adverbial phrases are grey, etc.*
@@ -182,7 +182,7 @@ Greynir can also be [built and run in Docker containers](https://github.com/vtho
 Reynir/Greynir is *copyright (C) 2018 by Miðeind ehf.*
 The original author of this software is *Vilhjálmur Þorsteinsson*.
 
-![GPLv3](https://raw.githubusercontent.com/vthorsteinsson/Reynir/master/static/GPLv3.png)
+![GPLv3](https://raw.githubusercontent.com/vthorsteinsson/Reynir/master/static/img/GPLv3.png)
 
 This set of programs is free software: you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the Free

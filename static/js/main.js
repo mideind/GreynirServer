@@ -192,7 +192,7 @@ function makeSourceList(sources) {
       var $tr = $("<tr class='article'>").attr("data-uuid", obj.uuid).append(
          $("<td>").text(obj.ts.replace("T", " ")),
          $("<td class='heading'>").text(obj.heading)
-            .prepend($("<img>").attr("src", "/static/" + obj.domain + ".ico").attr("width", "16").attr("height", "16"))
+            .prepend($("<img>").attr("src", "/static/sources/" + obj.domain + ".png").attr("width", "16").attr("height", "16"))
       );
       $tbody.append($tr);
    });
@@ -219,7 +219,7 @@ function makeSearchList(results) {
          .append(
             $("<td class='ts'>").text(obj.ts_text),
             $("<td class='heading'>").text(obj.heading)
-               .prepend($("<img>").attr("src", "/static/" + obj.domain + ".ico")
+               .prepend($("<img>").attr("src", "/static/sources/" + obj.domain + ".png")
                   .attr("width", "16").attr("height", "16")),
             $("<td class='count'>").text(formatReal(obj.similarity, 1) + "%")
          );
@@ -319,7 +319,7 @@ function populateQueryResult(r) {
                   artList.append($("<span class='art-link'></span>")
                      .attr("title", u.heading)
                      .attr("data-uuid", u.uuid)
-                     .html($("<img width='16' height='16'></img>").attr("src", "/static/" + u.domain + ".ico"))
+                     .html($("<img width='16' height='16'></img>").attr("src", "/static/sources/" + u.domain + ".png"))
                   );
                }
             }

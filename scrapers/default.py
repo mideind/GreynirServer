@@ -126,7 +126,7 @@ class ScrapeHelper:
     @property
     def icon(self):
         """ Return the name of an icon file for this root """
-        return self._domain + ".ico"
+        return self._domain + ".png"
 
     @property
     def authority(self):

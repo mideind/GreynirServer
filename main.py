@@ -279,7 +279,7 @@ def top_news(topic=None, start=None, limit=_TOP_NEWS_LENGTH):
 
         for a in q:
             # Collect and count the titles
-            icon = a.root.domain + ".ico"
+            icon = a.root.domain + ".png"
 
             d = ArticleDisplay(
                 heading=a.heading,
