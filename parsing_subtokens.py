@@ -28,8 +28,7 @@
 import os
 
 
-_NNSERVER_DIR = os.path.dirname(os.path.realpath(__file__))
-_PROJECT_PATH = os.path.join(_NNSERVER_DIR, "greynir")
+_PROJECT_PATH = os.path.dirname(os.path.realpath(__file__))
 
 DEFAULT_PATH = os.path.join(_PROJECT_PATH, "resources", "parsing_tokens.txt")
 DEFAULT_PATH_V2 = os.path.join(_PROJECT_PATH, "resources", "parsing_tokens_180729.txt")
@@ -38,21 +37,35 @@ UNK = "<UNK>"
 MISSING = ["NP-AGE", "ADVP-DUR"]
 MISSING.extend(["/" + t for t in MISSING])
 MISSING = set(t for t in MISSING)
-# ADVP-DUR-REL
 
+
+def _preprocess_word_v1(word):
+    return (
+        word.strip()
+        .replace("_lh_nt", "_lhnt")
+        .replace("_hvk", "_hk")
+        .replace("_hk_hk", "_hk")
+    )
+
+
+def _preprocess_word_v2(word):
+    return word.strip().replace("_lhþt", "_lh_þt")
 
 class ParsingSubtokens:
     """ Definition for composite parsing tokens made from
         Greynir's flattened parse trees, to be used as part
     of a subword encoder. """
 
-    def __init__(self, path=None):
+
+    def __init__(self, path=None, version=2):
+        self.version = version
+
         if path is None:
             path = DEFAULT_PATH_V2
 
         with open(path, "r") as file:
             all_tokens = [
-                ParsingSubtokens.preprocess_word(l) for l in file.readlines()
+                self.preprocess_word(l) for l in file.readlines()
             ]
 
         full_toks = {t for t in all_tokens if "_" not in t}
@@ -99,6 +112,7 @@ class ParsingSubtokens:
         }
         self.oov_id = N_FULL + N_HEAD + N_TAIL
 
-    @classmethod
-    def preprocess_word(cls, word):
-        return word.strip().replace("_lhþt", "_lh_þt")
+    def preprocess_word(self, word):
+        if self.version == 1:
+            return _preprocess_word_v1(word)
+        return _preprocess_word_v2(word)
