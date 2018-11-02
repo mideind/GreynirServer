@@ -19,7 +19,5 @@ reynir>=1.2.1
 tokenizer>=1.0.5
 six==1.11.0
 SQLAlchemy==1.1.10
-tensor2tensor==1.8.0
-tensorflow==1.10.1
 urllib3==1.21.1
 Werkzeug==0.14.1

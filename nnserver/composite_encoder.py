@@ -58,16 +58,16 @@ class CompositeTokenEncoder(text_encoder.TextEncoder):
 
     def __init__(self, filename=None, reorder=True, version=2):
         if filename is None:
-            self.filename = DEFAULT_PATH if version == 1 else DEFAULT_PATH_V2
+            self.filename = _DEFAULT_PATH if version == 1 else _DEFAULT_PATH_V2
         else:
             self.filename = filename
-        self._version = version
+        self.version = version
 
-        tokens = ParsingSubtokens(self.filename)
+        tokens = ParsingSubtokens(self.filename, version=self.version)
 
         self._num_reserved_ids = len(text_encoder.RESERVED_TOKENS)
         self._reorder = reorder
-        self._preprocess_word = ParsingSubtokens.preprocess_word
+        self._preprocess_word = tokens.preprocess_word
 
         self._tok_id_to_tok_str = tokens._tok_id_to_tok_str
         self._ftok_to_tok_id = tokens._ftok_to_tok_id
