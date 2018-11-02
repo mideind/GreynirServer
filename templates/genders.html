@@ -3,7 +3,7 @@
 
 {% block styles %}
 
-<link href="{{ url_for('static', filename='main-bootstrap.css') }}" rel='stylesheet' type='text/css'>
+<link href="{{ url_for('static', filename='css/main-bootstrap.css') }}" rel='stylesheet' type='text/css'>
 
 {% endblock %}
 
@@ -26,7 +26,7 @@
 {% for r in result %}
 {% if r.total %}
       <tr>
-         <td class="domain"><img src="{{ url_for('static', filename = r.domain + '.ico') }}"
+         <td class="domain"><img src="{{ url_for('static', filename = 'sources/' + r.domain + '.png') }}"
             width="16" height="16">&nbsp;&nbsp;{{ r.domain }}</td>
          <td class="count female">{{ r.kvk | format_is }}</td>
          <td class="count female">{{ (r.kvk / (r.kvk + r.kk) * 100) | format_is(1) }}%</td>
