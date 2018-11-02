@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """
     Reynir: Natural language processing for Icelandic
 
@@ -316,3 +318,11 @@ def _json_nonterminal_node(tok):
         i=tok, n=matcher._DEFAULT_ID_MAP[tok]["name"], k="NONTERMINAL", p=[]
     )
     return new_node
+
+def test_parse():
+    sample = "P S-MAIN IP NP-SUBJ pfn_et_nf_p3 /NP-SUBJ /IP /S-MAIN /P"
+    res = parse_tree(sample)
+    print(res)
+
+if __name__ == '__main__':
+    test_parse()

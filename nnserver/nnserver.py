@@ -60,7 +60,7 @@ class NnServer:
     _tfms_version = "v1"
     _model_name = "transformer"
     _verb = "predict"
-    _parsingEncoder = CompositeTokenEncoder(_PARSING_VOCAB_PATH, version=2)
+    _parsingEncoder = CompositeTokenEncoder(_PARSING_VOCAB_PATH, version=1)
     _enisEncoder = text_encoder.SubwordTextEncoder(_ENIS_VOCAB_PATH)
 
     @classmethod
