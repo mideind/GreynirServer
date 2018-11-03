@@ -74,6 +74,8 @@ class Node:
         return json_node
 
     def to_postfix(self):
+        """ Export tree to postfix ordering
+            with node-labels as keys """
         result = []
         for child in self.children:
             result.extend(child.to_postfix())
@@ -94,12 +96,28 @@ class Node:
         return "".join(result)
 
     def _pprint(self, _prefix="  ", depth=0):
+        """ Inner function for pretty printing tree """
         print("%s%s" % (_prefix * depth, self.__str__()))
         for c in self.children:
             c._pprint(_prefix=_prefix, depth=depth + 1)
 
     def pprint(self, indent=4):
+        """ Pretty print tree """
         self._pprint(_prefix=" " * indent)
+
+    def width(self):
+        """ Returns number of leaf nodes,
+            assumes a correctly formed tree """
+        if self.children:
+            return sum([c.width() for c in self.children])
+        return 1
+
+    def height(self):
+        """ Returns height of tree,
+            assumes a correctly formed tree """
+        if not self.children:
+            return 1
+        return 1 + max([c.height() for c in self.children])
 
     @staticmethod
     def contains(forest, name):
