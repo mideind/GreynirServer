@@ -118,9 +118,7 @@ class NnClient:
                 print("ParseResult: {result}".format(result=p_result))
                 print("Output: {parse_toks}".format(parse_toks=parse_toks))
 
-        import json
-        print(json.dumps(tree.to_dict(), indent=3, sort_keys=True))
-        return tree.to_dict()
+        return tree
 
 
 def test_sentence():

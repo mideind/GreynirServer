@@ -433,9 +433,13 @@ def nntree_api(version=1):
         return better_jsonify(valid=False, reason="Invalid request")
 
     nnTree = NnClient.parse_sentence(text)
+    result = {
+        "tree": nnTree.to_dict(),
+        "width": nnTree.width() * 80,
+        "height": nnTree.height() * 80,
+    }
 
-    # Return the tokens as a JSON structure to the client
-    return better_jsonify(valid=True, result=nnTree)
+    return better_jsonify(valid=True, result=result)
 
 
 # Note: Endpoints ending with .api are configured not to be cached by nginx
@@ -730,6 +734,7 @@ def tree_grid():
     with SessionContext(commit=True) as session:
         # Obtain simplified tree, full tree and stats
         tree, full_tree, stats = TreeUtility.parse_text_with_full_tree(session, txt)
+        # tree, full_tree, stats = TreeUtility.parse_text_with_full_tree(session, "Jónas kom")
         if full_tree is not None:
             # Create a more manageable, flatter tree from the binarized raw parse tree
             full_tree = ParseForestFlattener.flatten(full_tree)

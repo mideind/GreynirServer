@@ -483,26 +483,13 @@
 var treeData = {{ tree | tojson }};
 
 // Determine the drawing surface
-var margin = { top: 60, right: 20, bottom: 30, left: 20 },
-   width = $("#treegrid-simple").width() - margin.right - margin.left,
-   height = {{ 100 + height * 80 }} - margin.top - margin.bottom;
+var margin = { top: 60, right: 20, bottom: 30, left: 20 };
+var width = $("#treegrid-simple").width() - margin.right - margin.left;
+var height = {{ 100 + height * 80 }} - margin.top - margin.bottom;
 
 // Configure the tree layout object
-var tree = d3.tree()
-   .size([width, height])
-   .separation(function(a, b) {
-      // Horizontal separation between tree nodes
-      if (a.parent != b.parent)
-         // Nodes are not siblings: double separation
-         return 2.2;
-      // For siblings, increase separation linearly with their combined
-      // text (caption) length
-      // var aLen = a.data.text.length;
-      var aLen = a.data.n ? Math.max(a.data.text.length, 11) : a.data.text.length;
-      // var bLen = b.data.text.length;
-      var bLen = b.data.n ? Math.max(b.data.text.length, 11) : b.data.text.length;
-      return Math.max(1.20, 0.115 * (aLen + bLen));
-   });
+ var tree_fn = make_tree_fn(width, height)
+
 
 // Create a D3 hierarchy from the parse tree
 var root = treeData === null ? null : d3.hierarchy(treeData, function(d) {
@@ -633,7 +620,7 @@ function terminalOut(d) {
       .data("circle", null);
 }
 
-function d3_update(g, source) {
+function d3_update(g, source, _tree_fn) {
    // Create the SVG graphics on the canvas via D3
    var nodes = source.descendants();
    var links = source.links();
@@ -644,7 +631,7 @@ function d3_update(g, source) {
    });
 
    // Compute the new tree layout using the D3 layout object
-   tree(source);
+   _tree_fn(source);
 
    // Normalize the y coordinates
    nodes.forEach(function(d) {
@@ -831,8 +818,29 @@ function editSentence() {
 }
 
 {% if nn_enabled -%}
+ // Configure the tree layout object
+
 var nnTreeData = null;
-var nnroot = null;
+var nnRoot = null;
+var nnTree_fn = null;
+
+function make_tree_fn(_width, _height) {
+    return d3.tree()
+        .size([_width, _height])
+        .separation(function(a, b) {
+            // Horizontal separation between tree nodes
+            if (a.parent != b.parent)
+                // Nodes are not siblings: double separation
+                return 2.2;
+            // For siblings, increase separation linearly with their combined
+            // text (caption) length
+            // var aLen = a.data.text.length;
+            var aLen = a.data.n ? Math.max(a.data.text.length, 11) : a.data.text.length;
+            // var bLen = b.data.text.length;
+            var bLen = b.data.n ? Math.max(b.data.text.length, 11) : b.data.text.length;
+            return Math.max(1.20, 0.115 * (aLen + bLen));
+        });
+}
 
 function get_nntree(text) {
      payload = {
@@ -844,28 +852,31 @@ function get_nntree(text) {
         type: "POST",
         dataType: "json",
         cache: false,
-        success: function (x) {
+        success: function (resp) {
             nn_wait(false);
-            draw_nntree(x.result);
+            result = resp.result
+            nnTree_fn = make_tree_fn(result.width, result.height)
+            draw_nntree(result.tree, result.width, result.height);
         },
-        error: function (x) {
+        error: function (resp) {
         },
-        complete: function (x) {
+        complete: function (resp) {
         }
     })
 }
 
-function draw_nntree(_nnTreeData) {
+function draw_nntree(_nnTreeData, _width, _height) {
     nnTreeData = _nnTreeData;
-    nnroot = nnTreeData === null ? null : d3.hierarchy(nnTreeData, function(d) {
+
+    nnRoot = nnTreeData === null ? null : d3.hierarchy(nnTreeData, function(d) {
         // Yield the children of node d
         return d.p;
     });
 
     var nng = d3.select("div#nn-canvas")
     .append("svg")
-        .attr("width", width + margin.right + margin.left)
-        .attr("height", height + margin.top + margin.bottom)
+        .attr("width", _width + margin.right + margin.left)
+        .attr("height", _height + margin.top + margin.bottom)
     .append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
@@ -879,9 +890,9 @@ function draw_nntree(_nnTreeData) {
                     .css("top", "" + pos.top + "px")
             }
         });
-   if (nnroot) {
-      d3.select(self.frameElement).style("height", (height + margin.top + margin.bottom) + "px");
-      d3_update(nng, nnroot);
+   if (nnRoot) {
+      d3.select(self.frameElement).style("height", (_height + margin.top + margin.bottom) + "px");
+      d3_update(nng, nnRoot, nnTree_fn);
    }
 }
 
@@ -924,7 +935,7 @@ function initMain(jQuery) {
    // Display tree using D3
    if (root) {
       d3.select(self.frameElement).style("height", (height + margin.top + margin.bottom) + "px");
-      d3_update(g, root);
+      d3_update(g, root, tree_fn);
    }
 
 {% if nn_enabled -%}
