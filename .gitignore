@@ -133,3 +133,7 @@ $RECYCLE.BIN/
 *.msi
 *.msm
 *.msp
+
+# Google API key
+resources/GoogleServerKey.txt
+

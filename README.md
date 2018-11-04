@@ -151,7 +151,6 @@ names and titles from parse trees for storage in a database table.
 * `config/Main.conf` : Various configuration data and preferences, included in `Reynir.conf`
 * `config/Names.conf` : Words that should be recognized as person names at the
   start of sentences, included in `Reynir.conf`
-* `glock.py` : Utility class for global inter-process locking
 * `fetcher.py` : Utility classes for fetching articles given their URLs
 * `utils/*.py` : Various utility programs
 

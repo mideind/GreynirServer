@@ -118,6 +118,31 @@ function initializeSpeech() {
    return true;
 }
 
+function imgError(img) {
+   $(img).hide();
+   // Make sure we only report each broken image once
+   if ($(img).data('err')) {
+      return;
+   }
+   var q = { 
+      name: $(img).attr('title'),
+      url: $(img).attr('src')
+   };
+   serverQuery('/brokenimage',
+      q,
+      function(r) {
+         $(img).data('err', true);
+         if (r['found']) {
+            // Server found a new image for us
+            $(img).attr('src', r['image'][0]);
+            $(img).show();
+         }
+      }, // successFunc
+      null, // completeFunc
+      null // error Func
+      );
+}
+
 function handleQueryError(xhr, status, errorThrown) {
    /* An error occurred on the server or in the communications */
    // Hide progress indicator
@@ -248,7 +273,8 @@ function populateQueryResult(r) {
                   .attr("src", r.image.src)
                   .attr("width", r.image.width)
                   .attr("height", r.image.height)
-                  .attr("title", r.image.origin)
+                  .attr("title", r.image.name)
+                  .attr("onerror", "imgError(this);")
             )
          );
       }

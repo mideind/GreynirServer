@@ -67,7 +67,7 @@ from scraperdb import (
 )
 from query import Query
 from search import Search
-from getimage import get_image_url
+from getimage import get_image_url, update_broken_image_url
 from tnttagger import ifd_tag
 
 
@@ -396,6 +396,7 @@ def process_query(session, toklist, result):
                 height=img.height,
                 link=img.link,
                 origin=img.origin,
+                name=img.name,
             )
     return True
 
@@ -805,6 +806,24 @@ def tree_grid():
         full_tbl=full_tbl,
         full_height=full_height,
     )
+
+
+@app.route("/brokenimage", methods=["POST"])
+def brokenimage():
+    """ Notification that acached image URL failed to load client-side. """
+    resp = dict(found=False)
+
+    name = request.form.get("name", "")
+    url = request.form.get("url", "")
+
+    if name and url:
+        # Try to get new image
+        new_img_url = update_broken_image_url(name=name, url=url)
+        if new_img_url:
+            resp["image"] = new_img_url
+            resp["found"] = True
+
+    return better_jsonify(**resp)
 
 
 @app.route("/genders", methods=["GET"])

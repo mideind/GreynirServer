@@ -15,15 +15,15 @@
 
 """
 
-
+import sys
 import json
 import urllib.request
 import urllib.parse
 from urllib.error import HTTPError
-from datetime import datetime
+from datetime import datetime, timedelta
 from collections import namedtuple
 from contextlib import closing
-from scraperdb import SessionContext, Link
+from scraperdb import SessionContext, Link, Person
 
 
 def _server_query(url, q):
@@ -57,44 +57,48 @@ def _server_query(url, q):
 # The Custom Search identifier
 _CX = "001858240983628375092:9aogptqla5e"
 # The Google API identifier (you must obtain your own key if you want to use this code)
-_API_KEY = None
+_API_KEY = ""
 # The content type we're using in the links table
 _CTYPE = "image-search-"
+# Time (in days) before cached person image URL expires
+_CACHE_EXPIRATION_DAYS = 14
 # The returned image descriptor tuple
-Img = namedtuple('Img', ['src', 'width', 'height', 'link', 'origin'])
+Img = namedtuple('Img', ['src', 'width', 'height', 'link', 'origin', 'name'])
 
-
-def get_image_url(name, size = "large", enclosing_session = None):
-    """ Use a Google custom search API to obtain an image corresponding to a (person) name """
-
+def get_image_url(name, size="large", enclosing_session=None, from_cache=True):
+    """ Use Google Custom Search API to obtain an image corresponding to a (person) name """
     jdoc = None
     ctype = _CTYPE + size
 
-    with SessionContext(commit = True, session = enclosing_session) as session:
+    with SessionContext(commit=True, session=enclosing_session) as session:
 
-        q = session.query(Link.content) \
-            .filter(Link.ctype == ctype) \
-            .filter(Link.key == name) \
-            .one_or_none()
-        if q is not None:
-            # Found in cache
-            jdoc = q.content
-            # !!! TODO: make the cache content expire if too old
+        if from_cache:
+            q = session.query(Link.content, Link.timestamp) \
+                .filter(Link.ctype == ctype) \
+                .filter(Link.key == name) \
+                .one_or_none()
+            if q is not None:
+                # Found in cache
+                if datetime.utcnow() - q.timestamp > timedelta(days=_CACHE_EXPIRATION_DAYS):
+                    _purge_single(name)
+                else:
+                    jdoc = q.content
 
         if not jdoc:
             # Not found in cache: prepare to ask Google
             global _API_KEY
-            if _API_KEY is None:
+            if not _API_KEY:
                 try:
                     # Read the Google API key from a server file
                     # You need to obtain your own key if you want to use this code
                     with open("resources/GoogleServerKey.txt") as f:
-                        _API_KEY = f.read()
+                        _API_KEY = f.read().rstrip()
                 except FileNotFoundError as ex:
                     _API_KEY = ""
 
             if not _API_KEY:
                 # No API key: can't ask for an image
+                print("No API key for image lookup")
                 return None
 
             # Assemble the query parameters
@@ -120,30 +124,88 @@ def get_image_url(name, size = "large", enclosing_session = None):
 
     if not jdoc:
         return None
+
     answer = json.loads(jdoc)
 
     if answer and "items" in answer and answer["items"] and "link" in answer["items"][0]:
         # Answer looks legit
         img = answer["items"][0]
+
         image = img["image"]
         return Img(img["link"],
             image["width"], image["height"], image["contextLink"],
-            img["displayLink"])
+            img["displayLink"], name)
 
     # No answer that makes sense
     return None
 
+def update_broken_image_url(name=None, url=None):
+    """ Refetch image URL for name if broken """
+
+    # TODO: Verify that name exists in DB
+
+    # Verify that URL is indeed broken
+    if not check_image_url(url):
+        # Purge from cache and refetch
+        _purge_single(name)
+        return get_image_url(name)
+
+    return None
+
+def check_image_url(url):
+    """ Check if image exists at URL by sending HEAD request """
+    t0 = time.time()
+    req = urllib.request.Request(url, method="HEAD")
+    try:
+        response = urllib.request.urlopen(req, timeout=2.0)
+        print("{0:.2f} seconds".format(time.time() - t0))
+    except Exception as e:
+        return False
+    
+    return True
+
+def _purge():
+    """ Remove all cached data """
+    if input("Purge all cached image URL data? (y/n): ").lower().startswith('y'):
+        with SessionContext(commit=True) as session:
+            session.query(Link).delete()
+
+def _purge_single(key):
+    """ Remove cached entry by key """
+    with SessionContext(commit=True) as session:
+        session.query(Link) \
+        .filter(Link.key == key) \
+        .delete()
+
+def _test():
+    """ Test image lookup """
+    print("Testing...")
+    print("Bjarni Benediktsson")
+    img = get_image_url("Bjarni Benediktsson", from_cache=False)
+    print("{0}".format(img))
+
+    print("Vilhjálmur Þorsteinsson")
+    img = get_image_url("Vilhjálmur Þorsteinsson", from_cache=False)
+    print("{0}".format(img))
+
+    print("Blængur Klængsson Eyfjörð")
+    img = get_image_url("Blængur Klængsson Eyfjörð", from_cache=False)
+    print("{0}".format(img)) # Should be None
 
 if __name__ == "__main__":
 
-    # Test
+    cmap = {
+        "test": _test,
+        "purge": _purge,
+    }
 
-    img = get_image_url("Bjarni Benediktsson")
-    print("{0}".format(img))
+    cmd = sys.argv[1] if len(sys.argv) > 1 else "test"
 
-    img = get_image_url("Vilhjálmur Þorsteinsson")
-    print("{0}".format(img))
-
-    img = get_image_url("Blængur Klængsson Eyfjörð")
-    print("{0}".format(img)) # Should return None
+    if cmd in cmap.keys():
+        cmap[cmd]()
+    else:
+        # Interpret any other arg as person name whose image we should fetch
+        img = get_image_url(cmd)
+        print("{0}".format(img))
+               
 
