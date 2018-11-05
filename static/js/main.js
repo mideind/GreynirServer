@@ -120,13 +120,13 @@ function initializeSpeech() {
 
 function imgError(img) {
    $(img).hide();
-   // Make sure we only report each broken image once
+   // Make sure we only report each broken image once per client session
    if ($(img).data('err')) {
       return;
    }
    var q = { 
       name: $(img).attr('title'),
-      url: $(img).attr('src')
+      url: $(img).attr('src'),
    };
    serverQuery('/brokenimage',
       q,

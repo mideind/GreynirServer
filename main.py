@@ -810,7 +810,7 @@ def tree_grid():
 
 @app.route("/brokenimage", methods=["POST"])
 def brokenimage():
-    """ Notification that acached image URL failed to load client-side. """
+    """ Notification that a cached image URL failed to load client-side. """
     resp = dict(found=False)
 
     name = request.form.get("name", "")

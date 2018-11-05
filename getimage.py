@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env pypy3
 """
     Reynir: Natural language processing for Icelandic
 
@@ -60,7 +60,7 @@ _CX = "001858240983628375092:9aogptqla5e"
 _API_KEY = ""
 # The content type we're using in the links table
 _CTYPE = "image-search-"
-# Time (in days) before cached person image URL expires
+# Time (in days) before cached items expire
 _CACHE_EXPIRATION_DAYS = 14
 # The returned image descriptor tuple
 Img = namedtuple('Img', ['src', 'width', 'height', 'link', 'origin', 'name'])
@@ -80,7 +80,7 @@ def get_image_url(name, size="large", enclosing_session=None, from_cache=True):
             if q is not None:
                 # Found in cache
                 if datetime.utcnow() - q.timestamp > timedelta(days=_CACHE_EXPIRATION_DAYS):
-                    _purge_single(name)
+                    _purge_single(name, ctype=ctype, session=session)
                 else:
                     jdoc = q.content
 
@@ -139,58 +139,71 @@ def get_image_url(name, size="large", enclosing_session=None, from_cache=True):
     # No answer that makes sense
     return None
 
-def update_broken_image_url(name=None, url=None):
+def update_broken_image_url(name, url):
     """ Refetch image URL for name if broken """
 
-    # TODO: Verify that name exists in DB
+    # Verify that URL w. name exists in DB
+    # TODO: content column should be converted to jsonb
+    # from varchar to query faster & more intelligently
+    with SessionContext() as session:
+        r = session.query(Link) \
+            .filter(Link.key == name) \
+            .filter(Link.content.like('%'+url+'%')) \
+            .one_or_none()
 
-    # Verify that URL is indeed broken
-    if not check_image_url(url):
-        # Purge from cache and refetch
-        _purge_single(name)
-        return get_image_url(name)
+        # If not recently updated...
+        if r and r.timestamp < datetime.utcnow() - timedelta(minutes=30):
+            # Verify that URL is indeed broken
+            if not check_image_url(url):
+                # Purge from cache and refetch
+                _purge_single(name, ctype=r.ctype)
+                return get_image_url(name)
 
     return None
 
 def check_image_url(url):
     """ Check if image exists at URL by sending HEAD request """
-    t0 = time.time()
     req = urllib.request.Request(url, method="HEAD")
     try:
         response = urllib.request.urlopen(req, timeout=2.0)
-        print("{0:.2f} seconds".format(time.time() - t0))
-    except Exception as e:
-        return False
+        return (response.status == 200)
+    except:
+        pass
     
-    return True
+    return False
 
 def _purge():
-    """ Remove all cached data """
-    if input("Purge all cached image URL data? (y/n): ").lower().startswith('y'):
+    """ Remove all cache entries """
+    if input("Purge all cached data? (y/n): ").lower().startswith('y'):
         with SessionContext(commit=True) as session:
             session.query(Link).delete()
 
-def _purge_single(key):
-    """ Remove cached entry by key """
-    with SessionContext(commit=True) as session:
+def _purge_single(key, ctype=None, enclosing_session=None):
+    """ Remove cache entry """
+    with SessionContext(commit=True, session=enclosing_session) as session:
+        filters = [Link.key == key]
+        if ctype:
+            filters.append(Link.ctype == ctype)
+
         session.query(Link) \
-        .filter(Link.key == key) \
+        .filter(*filters) \
         .delete()
 
 def _test():
     """ Test image lookup """
     print("Testing...")
     print("Bjarni Benediktsson")
-    img = get_image_url("Bjarni Benediktsson", from_cache=False)
+    img = get_image_url("Bjarni Benediktsson")
     print("{0}".format(img))
 
     print("Vilhjálmur Þorsteinsson")
-    img = get_image_url("Vilhjálmur Þorsteinsson", from_cache=False)
+    img = get_image_url("Vilhjálmur Þorsteinsson")
     print("{0}".format(img))
 
     print("Blængur Klængsson Eyfjörð")
-    img = get_image_url("Blængur Klængsson Eyfjörð", from_cache=False)
+    img = get_image_url("Blængur Klængsson Eyfjörð")
     print("{0}".format(img)) # Should be None
+
 
 if __name__ == "__main__":
 
@@ -203,9 +216,9 @@ if __name__ == "__main__":
 
     if cmd in cmap.keys():
         cmap[cmd]()
-    else:
-        # Interpret any other arg as person name whose image we should fetch
-        img = get_image_url(cmd)
+    elif cmd:
+        # Any other arg is a name to fetch an image for
+        img = get_image_url(cmd, from_cache=False)
         print("{0}".format(img))
                
 
