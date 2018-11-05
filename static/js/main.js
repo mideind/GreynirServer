@@ -135,6 +135,8 @@ function imgError(img) {
          if (r['found']) {
             // Server found a new image for us
             $(img).attr('src', r['image'][0]);
+            $(img).attr('width', r['image'][1]);
+            $(img).attr('height', r['image'][2]);
             $(img).show();
          }
       }, // successFunc
