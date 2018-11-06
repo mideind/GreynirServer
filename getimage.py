@@ -50,7 +50,7 @@ def _server_query(url, q):
                     if doc:
                         doc = doc.decode(encoding)
     except HTTPError as ex:
-        print("server_query exception: {0}".format(ex))
+        logging.warning("server_query exception: {0}".format(ex))
     return doc
 
 
@@ -98,7 +98,7 @@ def get_image_url(name, size="large", enclosing_session=None, from_cache=True):
 
             if not _API_KEY:
                 # No API key: can't ask for an image
-                print("No API key for image lookup")
+                logging.warning("No API key for image lookup")
                 return None
 
             # Assemble the query parameters
@@ -129,12 +129,11 @@ def get_image_url(name, size="large", enclosing_session=None, from_cache=True):
 
     if answer and "items" in answer and answer["items"] and "link" in answer["items"][0]:
         # Answer looks legit
-        img = answer["items"][0]
+        item = answer["items"][0]
+        image = item["image"]
 
-        image = img["image"]
-        return Img(img["link"],
-            image["width"], image["height"], image["contextLink"],
-            img["displayLink"], name)
+        return Img(item["link"], image["width"], image["height"], 
+                image["contextLink"], item["displayLink"], name)
 
     # No answer that makes sense
     return None

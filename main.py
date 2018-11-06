@@ -818,9 +818,9 @@ def brokenimage():
 
     if name and url:
         # Try to get new image
-        new_img_url = update_broken_image_url(name=name, url=url)
-        if new_img_url:
-            resp["image"] = new_img_url
+        new_img = update_broken_image_url(name, url)
+        if new_img:
+            resp["image"] = new_img
             resp["found"] = True
 
     return better_jsonify(**resp)
