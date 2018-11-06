@@ -17,6 +17,7 @@
 
 import sys
 import json
+import logging
 import urllib.request
 import urllib.parse
 from urllib.error import HTTPError

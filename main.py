@@ -643,6 +643,8 @@ _SPECIAL_QUERIES = {
     "hver skapaði þig?": {"answer": "Villi."},
     "hver er skapari þinn?": {"answer": "Villi."},
     "hver er flottastur?": {"answer": "Villi."},
+    "hver er ég?": {"answer": "Þú ert þú."},
+    "hvar er ég?": {"answer": "Þú ert hérna."},
     "er guð til?": {"answer": "Ég held ekki."},
     "hver skapaði guð?": {"answer": "Enginn sem ég þekki."},
     "hver skapaði heiminn?": {"answer": "Enginn sem ég þekki."},

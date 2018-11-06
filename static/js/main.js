@@ -491,7 +491,12 @@ function initMain(jQuery) {
    // Set up event handlers
    $("#url")
       .click(function(ev) {
-         this.setSelectionRange(0, this.value.length);
+         var start = this.selectionStart;
+         var end = this.selectionEnd;
+         var len = this.value.length;
+         if ((start == 0 && end == 0) || (start == len && end == len)) {
+            this.setSelectionRange(0, len);
+         }
       })
       .keydown(function(ev) {
          if (ev.which == 13) {
