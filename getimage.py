@@ -24,7 +24,7 @@ from urllib.error import HTTPError
 from datetime import datetime, timedelta
 from collections import namedtuple
 from contextlib import closing
-from scraperdb import SessionContext, Link, Person
+from scraperdb import SessionContext, Link, BlacklistedLink
 
 
 def _server_query(url, q):
@@ -63,8 +63,11 @@ _API_KEY = ""
 _CTYPE = "image-search-"
 # Time (in days) before cached items expire
 _CACHE_EXPIRATION_DAYS = 14
+# Number of image URLs to fetch and store
+_NUM_IMG_URLS = 10
 # The returned image descriptor tuple
 Img = namedtuple('Img', ['src', 'width', 'height', 'link', 'origin', 'name'])
+
 
 def get_image_url(name, size="large", enclosing_session=None, from_cache=True):
     """ Use Google Custom Search API to obtain an image corresponding to a (person) name """
@@ -105,7 +108,7 @@ def get_image_url(name, size="large", enclosing_session=None, from_cache=True):
             # Assemble the query parameters
             q = dict(
                 q = '"' + name + '"', # Try for an exact match
-                num = 1,
+                num = _NUM_IMG_URLS,
                 start = 1,
                 imgSize = size,
                 searchType = "image",
@@ -129,27 +132,47 @@ def get_image_url(name, size="large", enclosing_session=None, from_cache=True):
     answer = json.loads(jdoc)
 
     if answer and "items" in answer and answer["items"] and "link" in answer["items"][0]:
-        # Answer looks legit
-        item = answer["items"][0]
-        image = item["image"]
+        blacklist = _blacklisted_urls_for_key(name, enclosing_session=session)
 
-        return Img(item["link"], image["width"], image["height"], 
-                image["contextLink"], item["displayLink"], name)
+        for item in answer["items"]:
+            if item["link"] and item["link"] not in blacklist:
+                image = item["image"]
+                return Img(item["link"], image["width"], image["height"], 
+                        image["contextLink"], item["displayLink"], name)
 
     # No answer that makes sense
     return None
 
+def blacklist_image_url(name, url):
+    with SessionContext(commit=True) as session:
+        # Verify that URL exists in DB
+        if not _get_cached_entry(name, url, enclosing_session=session):
+            return
+
+        # Check if already blacklisted
+        if session.query(BlacklistedLink) \
+            .filter(BlacklistedLink.key == name) \
+            .filter(BlacklistedLink.url == url) \
+            .one_or_none():
+            return
+
+        # Add to blacklist
+        b = BlacklistedLink(
+            key = name,
+            url = url,
+            link_type = 'image',
+            timestamp = datetime.utcnow()
+        )
+        session.add(b)
+
+        return get_image_url(name, enclosing_session=session)
+
 def update_broken_image_url(name, url):
     """ Refetch image URL for name if broken """
 
-    # Verify that URL w. name exists in DB
-    # TODO: content column should be converted to jsonb
-    # from varchar to query faster & more intelligently
     with SessionContext() as session:
-        r = session.query(Link) \
-            .filter(Link.key == name) \
-            .filter(Link.content.like('%'+url+'%')) \
-            .one_or_none()
+        # Verify that URL exists in DB
+        r = _get_cached_entry(name, url, enclosing_session=session)
 
         # If not recently updated...
         if r and r.timestamp < datetime.utcnow() - timedelta(minutes=30):
@@ -172,11 +195,23 @@ def check_image_url(url):
     
     return False
 
-def _purge():
-    """ Remove all cache entries """
-    if input("Purge all cached data? (y/n): ").lower().startswith('y'):
-        with SessionContext(commit=True) as session:
-            session.query(Link).delete()
+def _blacklisted_urls_for_key(key, enclosing_session=None):
+    """ Fetch blacklisted urls for a given key """
+    with SessionContext(commit=True, session=enclosing_session) as session:
+        q = session.query(BlacklistedLink.url) \
+            .filter(BlacklistedLink.link_type == "image") \
+            .filter(BlacklistedLink.key == key) \
+            .all()
+        return [r for (r,) in q]
+
+def _get_cached_entry(name, url, enclosing_session=None):
+    with SessionContext(commit=True, session=enclosing_session) as session:
+        # TODO: content column should be converted to jsonb
+        # from varchar to query faster & more intelligently
+        return session.query(Link) \
+                .filter(Link.key == name) \
+                .filter(Link.content.like('%'+url+'%')) \
+                .one_or_none()
 
 def _purge_single(key, ctype=None, enclosing_session=None):
     """ Remove cache entry """
@@ -188,6 +223,12 @@ def _purge_single(key, ctype=None, enclosing_session=None):
         session.query(Link) \
         .filter(*filters) \
         .delete()
+
+def _purge():
+    """ Remove all cache entries """
+    if input("Purge all cached data? (y/n): ").lower().startswith('y'):
+        with SessionContext(commit=True) as session:
+            session.query(Link).delete()
 
 def _test():
     """ Test image lookup """

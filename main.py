@@ -67,7 +67,7 @@ from scraperdb import (
 )
 from query import Query
 from search import Search
-from getimage import get_image_url, update_broken_image_url
+from getimage import get_image_url, update_broken_image_url, blacklist_image_url
 from tnttagger import ifd_tag
 
 
@@ -184,24 +184,24 @@ def better_jsonify(**kwargs):
 
 # Default text shown in the URL/text box
 _DEFAULT_TEXTS = [
-    "Hver gegnir starfi seðlabankastjóra?",
-    "Hvað er HeForShe?",
-    "Hver er Valgerður Bjarnadóttir?",
-    "Hver er borgarstjóri?",
-    "Hver er formaður Öryrkjabandalagsins?",
-    "Hvað er Wintris?",
+    # "Hver gegnir starfi seðlabankastjóra?",
+    # "Hvað er HeForShe?",
+    # "Hver er Valgerður Bjarnadóttir?",
+    # "Hver er borgarstjóri?",
+    # "Hver er formaður Öryrkjabandalagsins?",
+    # "Hvað er Wintris?",
     "Hver er Vigdís Finnbogadóttir?",
-    "Hver er Kristján Eldjárn?",
-    "Hver er forstjóri Landsvirkjunar?",
-    "Hver gegnir starfi forstjóra Orkuveitu Reykjavíkur?",
-    "Hver er þjóðleikhússtjóri?",
-    "Hver er fyrirliði íslenska landsliðsins?",
-    "Hver er forsetaframbjóðandi?",
-    "Hver er forseti Finnlands?",
-    "Hver hefur verið aðstoðarmaður forsætisráðherra?",
-    "Hver er forstjóri Google?",
-    "Hvað er UNESCO?",
-    "Hver er Íslandsmeistari í golfi?",
+    # "Hver er Kristján Eldjárn?",
+    # "Hver er forstjóri Landsvirkjunar?",
+    # "Hver gegnir starfi forstjóra Orkuveitu Reykjavíkur?",
+    # "Hver er þjóðleikhússtjóri?",
+    # "Hver er fyrirliði íslenska landsliðsins?",
+    # "Hver er forsetaframbjóðandi?",
+    # "Hver er forseti Finnlands?",
+    # "Hver hefur verið aðstoðarmaður forsætisráðherra?",
+    # "Hver er forstjóri Google?",
+    # "Hvað er UNESCO?",
+    # "Hver er Íslandsmeistari í golfi?",
 ]
 
 # Default number of top news items to show in front page list
@@ -809,24 +809,25 @@ def tree_grid():
         full_height=full_height,
     )
 
-
-@app.route("/brokenimage", methods=["POST"])
-def brokenimage():
-    """ Notification that a cached image URL failed to load client-side. """
+@app.route("/reportimage", methods=["POST"])
+def reportimage():
+    """ User has notified us that a wrong image was shown. """
     resp = dict(found=False)
 
     name = request.form.get("name", "")
     url = request.form.get("url", "")
+    status = request.form.get("status", "")
 
-    if name and url:
-        # Try to get new image
-        new_img = update_broken_image_url(name, url)
+    if name and url and status:
+        if status == "broken":
+            new_img = update_broken_image_url(name, url)
+        elif status == "wrong":
+            new_img = blacklist_image_url(name, url)
         if new_img:
             resp["image"] = new_img
             resp["found"] = True
 
     return better_jsonify(**resp)
-
 
 @app.route("/genders", methods=["GET"])
 @max_age(seconds=5 * 60)
