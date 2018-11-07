@@ -266,12 +266,15 @@ function reportImage(img, status, successFunc) {
 }
 
 function blacklistImage(img) {
-   // Report wrong image to server
-   reportImage(img, "wrong", function(i) {
-      $(img).show();
-      if (!i) {
-         $(img).hide();
-      }
+   // User reporting wrong image
+   $(img).fadeOut(400, function() {
+      reportImage(img, "wrong", function(i) {
+         if (i) {
+            $(img).fadeIn();
+         } else {
+            $(img).hide();
+         }
+      });
    });
 }
 

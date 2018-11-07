@@ -126,24 +126,26 @@ def get_image_url(name, size="large", enclosing_session=None, from_cache=True):
                 )
                 session.add(l)
 
-    if not jdoc:
-        return None
+        if not jdoc:
+            return None
 
-    answer = json.loads(jdoc)
+        answer = json.loads(jdoc)
 
-    if answer and "items" in answer and answer["items"] and "link" in answer["items"][0]:
-        blacklist = _blacklisted_urls_for_key(name, enclosing_session=session)
+        if answer and "items" in answer and answer["items"] and "link" in answer["items"][0]:
+            blacklist = _blacklisted_urls_for_key(name, enclosing_session=session)
 
-        for item in answer["items"]:
-            if item["link"] and item["link"] not in blacklist:
-                image = item["image"]
-                return Img(item["link"], image["width"], image["height"], 
-                        image["contextLink"], item["displayLink"], name)
+            for item in answer["items"]:
+                if item["link"] and item["link"] not in blacklist:
+                    image = item["image"]
+                    return Img(item["link"], image["width"], image["height"], 
+                            image["contextLink"], item["displayLink"], name)
 
     # No answer that makes sense
     return None
 
 def blacklist_image_url(name, url):
+    """ Blacklist image URL for a given key """
+
     with SessionContext(commit=True) as session:
         # Verify that URL exists in DB
         if not _get_cached_entry(name, url, enclosing_session=session):
@@ -174,11 +176,13 @@ def update_broken_image_url(name, url):
         # Verify that URL exists in DB
         r = _get_cached_entry(name, url, enclosing_session=session)
 
-        # If not recently updated...
+        # If not recently fetched...
         if r and r.timestamp < datetime.utcnow() - timedelta(minutes=30):
             # Verify that URL is indeed broken
             if not check_image_url(url):
                 # Purge from cache and refetch
+                # We could blacklist the URL, but the assumption is that
+                # new API results will not contain broken image links
                 _purge_single(name, ctype=r.ctype)
                 return get_image_url(name)
 
@@ -205,6 +209,7 @@ def _blacklisted_urls_for_key(key, enclosing_session=None):
         return [r for (r,) in q]
 
 def _get_cached_entry(name, url, enclosing_session=None):
+    """ Fetch cached entry by key and url """
     with SessionContext(commit=True, session=enclosing_session) as session:
         # TODO: content column should be converted to jsonb
         # from varchar to query faster & more intelligently
