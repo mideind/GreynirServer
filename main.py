@@ -811,7 +811,7 @@ def tree_grid():
 
 @app.route("/reportimage", methods=["POST"])
 def reportimage():
-    """ User has notified us that a wrong image was shown. """
+    """ Notification that image is wrong or broken """
     resp = dict(found_new=False)
 
     name = request.form.get("name", "")
