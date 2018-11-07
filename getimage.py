@@ -84,7 +84,7 @@ def get_image_url(name, size="large", enclosing_session=None, from_cache=True):
             if q is not None:
                 # Found in cache
                 if datetime.utcnow() - q.timestamp > timedelta(days=_CACHE_EXPIRATION_DAYS):
-                    _purge_single(name, ctype=ctype, session=session)
+                    _purge_single(name, ctype=ctype, enclosing_session=session)
                 else:
                     jdoc = q.content
 
