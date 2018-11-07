@@ -228,13 +228,97 @@ function makeSearchList(results) {
    return $table;
 }
 
+function imgError(img) {
+   $(img).hide();
+   // Make sure we only report each broken image once per client session
+   if ($(img).data('err')) {
+      return;
+   }
+   // Report broken image to server
+   reportImage(img, "broken", function(i) {
+      $(img).data('err', true);
+      $(img).show();
+   });
+}
+
+function reportImage(img, status, successFunc) {
+   var q = { 
+      name: $(img).attr('title'),
+      url: $(img).attr('src'),
+      status: status
+   };
+   serverQuery('/reportimage',
+      q,
+      function(r) {
+         if (r['found_new'] && r['image']) {
+            // Server found a new image for us
+            $(img).attr('src', r['image'][0]);
+            $(img).attr('width', r['image'][1]);
+            $(img).attr('height', r['image'][2]);
+         }
+         if (successFunc) {
+            successFunc(r['image']);
+         }
+      }, // successFunc
+      null, // completeFunc
+      null // error Func
+      );
+}
+
+function blacklistImage(img) {
+   // User reporting wrong image
+   $("span.imgreport").hide();
+   $(img).stop().animate({ opacity: 0 }, function() {
+
+      reportImage(img, "wrong", function(i) {
+         if (i) {
+            $(img).stop().animate({ opacity: 1.0 });
+         } else {
+            $(img).hide();
+            $("span.imgreport").hide();
+         }
+      });
+   });
+}
+
+function displayImage(p, img_info) {
+   // Create and show image and associated elements
+   var img = $("<img></img>")
+            .attr("src", img_info.src)
+            .attr("width", img_info.width)
+            .attr("height", img_info.height)
+            .attr("title", img_info.name)
+            .attr("onerror", "imgError(this);")
+   p.append(
+      $("<a></a>")
+      .attr("href", img_info.link)
+      .addClass("imglink")
+      .html(img)
+   )
+   .append(
+      $("<span></span>")
+      .addClass("imgreport")
+      .html(
+         $("<a>Röng mynd?</a>").click(function(){
+            blacklistImage(img);
+         })
+      )
+   );
+   $(p.find('a')).mouseenter(function () {
+      $("span.imgreport").show();
+   });
+   $(p.find('a.imglink')).mouseleave(function () {
+      $("span.imgreport").hide();
+   });
+}
+
 function populateQueryResult(r) {
    // Display the JSON result of a query sent to the server
    // Hide progress indicator
    wait(false);
    var q = $("<h3 class='query'></h3>");
    q.text(r.q);
-   var image = $("<p class='image'></p>");
+   var image_container = $("<p class='image'></p>");
    var answer;
    var searchResult;
    var key = "";
@@ -242,15 +326,7 @@ function populateQueryResult(r) {
       // This is a valid query response: present the response items in a bulleted list
       if (r.image !== undefined) {
          // The response contains an image: insert it
-         image = image.html(
-            $("<a></a>").attr("href", r.image.link).html(
-               $("<img></img>")
-                  .attr("src", r.image.src)
-                  .attr("width", r.image.width)
-                  .attr("height", r.image.height)
-                  .attr("title", r.image.origin)
-            )
-         );
+         displayImage(image_container, r.image);
       }
       answer = $("<ul></ul>");
       var rlist;
@@ -352,7 +428,7 @@ function populateQueryResult(r) {
       // Display person/entity tabs; hide the search result div
       $("div#result-tabs").css("display", "block");
       $("div#search-result").css("display", "none");
-      $("div#titles").html(image).append(answer);
+      $("div#titles").html(image_container).append(answer);
       if (articles) {
          $("#article-list").html(articles);
          $("#article-key").text(key);
@@ -463,7 +539,12 @@ function initMain(jQuery) {
    // Set up event handlers
    $("#url")
       .click(function(ev) {
-         this.setSelectionRange(0, this.value.length);
+         var start = this.selectionStart;
+         var end = this.selectionEnd;
+         var len = this.value.length;
+         if ((start == 0 && end == 0) || (start == len && end == len)) {
+            this.setSelectionRange(0, len);
+         }
       })
       .keydown(function(ev) {
          if (ev.which == 13) {

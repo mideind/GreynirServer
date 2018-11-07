@@ -163,6 +163,10 @@ body {
    background-color: white;
 }
 
+a:hover {
+   cursor:pointer;
+}
+
 .container {
    max-width: 970px;
    padding-left: 0;
@@ -533,11 +537,36 @@ span.art-link img {
 }
 
 p.image {
+   position: relative;
    margin-top: 0.4em;
    margin-bottom: 1.2em;
    padding-left: 2.4em;
    padding-top: 0;
    padding-bottom: 0;
+}
+
+span.imgreport {
+   display: none;
+   position: absolute;
+   bottom: 10px;
+   left: 50px;
+   font-size: 0.75em;
+}
+
+span.imgreport a {
+   color: white !important;
+   text-decoration: none;
+   text-shadow: 
+   #000 0px 0px 2px,   
+   #000 0px 0px 2px,   
+   #000 0px 0px 2px,
+   #000 0px 0px 2px,   
+   #000 0px 0px 2px,   
+   #000 0px 0px 2px;
+}
+
+span.imgreport a:hover {
+   text-decoration: none;
 }
 
 div#info {
