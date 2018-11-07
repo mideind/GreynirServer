@@ -267,10 +267,10 @@ function reportImage(img, status, successFunc) {
 
 function blacklistImage(img) {
    // User reporting wrong image
-   $(img).fadeOut(400, function() {
+   $(img).animate({ opacity: 0 }, function() {
       reportImage(img, "wrong", function(i) {
          if (i) {
-            $(img).fadeIn();
+            $(img).animate({ opacity: 1.0 });
          } else {
             $(img).hide();
          }

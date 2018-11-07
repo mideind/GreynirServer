@@ -152,10 +152,7 @@ def blacklist_image_url(name, url):
             return
 
         # Check if already blacklisted
-        if session.query(BlacklistedLink) \
-            .filter(BlacklistedLink.key == name) \
-            .filter(BlacklistedLink.url == url) \
-            .one_or_none():
+        if url in _blacklisted_urls_for_key(name, enclosing_session=session):
             return
 
         # Add to blacklist
