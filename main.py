@@ -184,24 +184,24 @@ def better_jsonify(**kwargs):
 
 # Default text shown in the URL/text box
 _DEFAULT_TEXTS = [
-    # "Hver gegnir starfi seðlabankastjóra?",
-    # "Hvað er HeForShe?",
-    # "Hver er Valgerður Bjarnadóttir?",
-    # "Hver er borgarstjóri?",
-    # "Hver er formaður Öryrkjabandalagsins?",
-    # "Hvað er Wintris?",
+    "Hver gegnir starfi seðlabankastjóra?",
+    "Hvað er HeForShe?",
+    "Hver er Valgerður Bjarnadóttir?",
+    "Hver er borgarstjóri?",
+    "Hver er formaður Öryrkjabandalagsins?",
+    "Hvað er Wintris?",
     "Hver er Vigdís Finnbogadóttir?",
-    # "Hver er Kristján Eldjárn?",
-    # "Hver er forstjóri Landsvirkjunar?",
-    # "Hver gegnir starfi forstjóra Orkuveitu Reykjavíkur?",
-    # "Hver er þjóðleikhússtjóri?",
-    # "Hver er fyrirliði íslenska landsliðsins?",
-    # "Hver er forsetaframbjóðandi?",
-    # "Hver er forseti Finnlands?",
-    # "Hver hefur verið aðstoðarmaður forsætisráðherra?",
-    # "Hver er forstjóri Google?",
-    # "Hvað er UNESCO?",
-    # "Hver er Íslandsmeistari í golfi?",
+    "Hver er Kristján Eldjárn?",
+    "Hver er forstjóri Landsvirkjunar?",
+    "Hver gegnir starfi forstjóra Orkuveitu Reykjavíkur?",
+    "Hver er þjóðleikhússtjóri?",
+    "Hver er fyrirliði íslenska landsliðsins?",
+    "Hver er forsetaframbjóðandi?",
+    "Hver er forseti Finnlands?",
+    "Hver hefur verið aðstoðarmaður forsætisráðherra?",
+    "Hver er forstjóri Google?",
+    "Hvað er UNESCO?",
+    "Hver er Íslandsmeistari í golfi?",
 ]
 
 # Default number of top news items to show in front page list
@@ -812,7 +812,7 @@ def tree_grid():
 @app.route("/reportimage", methods=["POST"])
 def reportimage():
     """ User has notified us that a wrong image was shown. """
-    resp = dict(found=False)
+    resp = dict(found_new=False)
 
     name = request.form.get("name", "")
     url = request.form.get("url", "")
@@ -825,7 +825,7 @@ def reportimage():
             new_img = blacklist_image_url(name, url)
         if new_img:
             resp["image"] = new_img
-            resp["found"] = True
+            resp["found_new"] = True
 
     return better_jsonify(**resp)
 

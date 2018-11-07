@@ -163,6 +163,10 @@ body {
    background-color: white;
 }
 
+a:hover {
+   cursor:pointer;
+}
+
 .container {
    max-width: 970px;
    padding-left: 0;

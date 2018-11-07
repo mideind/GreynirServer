@@ -250,7 +250,7 @@ function reportImage(img, status, successFunc) {
    serverQuery('/reportimage',
       q,
       function(r) {
-         if (r['found']) {
+         if (r['found_new'] && r['image']) {
             // Server found a new image for us
             $(img).attr('src', r['image'][0]);
             $(img).attr('width', r['image'][1]);
@@ -267,12 +267,15 @@ function reportImage(img, status, successFunc) {
 
 function blacklistImage(img) {
    // User reporting wrong image
-   $(img).animate({ opacity: 0 }, function() {
+   $("span.imgreport").hide();
+   $(img).stop().animate({ opacity: 0 }, function() {
+
       reportImage(img, "wrong", function(i) {
          if (i) {
-            $(img).animate({ opacity: 1.0 });
+            $(img).stop().animate({ opacity: 1.0 });
          } else {
             $(img).hide();
+            $("span.imgreport").hide();
          }
       });
    });
@@ -287,20 +290,24 @@ function displayImage(p, img_info) {
             .attr("title", img_info.name)
             .attr("onerror", "imgError(this);")
    p.append(
-      $("<a></a>").attr("href", img_info.link).html(img)
+      $("<a></a>")
+      .attr("href", img_info.link)
+      .addClass("imglink")
+      .html(img)
    )
    .append(
       $("<span></span>")
-         .addClass("imgreport")
-         .html(
-            $("<a href='#'>Röng mynd?</a>").click(function(){
-               blacklistImage(img);
-            })
-         )
+      .addClass("imgreport")
+      .html(
+         $("<a>Röng mynd?</a>").click(function(){
+            blacklistImage(img);
+         })
+      )
    );
    $(p.find('a')).mouseenter(function () {
       $("span.imgreport").show();
-   }).mouseleave(function () {
+   });
+   $(p.find('a.imglink').parent()).mouseleave(function () {
       $("span.imgreport").hide();
    });
 }
