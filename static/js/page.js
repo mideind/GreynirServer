@@ -144,15 +144,16 @@ function showEntity(ev) {
 function hoverIn() {
    // Hovering over a token
    var wId = $(this).attr("id");
-   if (wId === null || wId === undefined)
+   if (wId === null || wId === undefined) {
       // No id: nothing to do
       return;
+   }
    var ix = parseInt(wId.slice(1));
    var t = w[ix];
-   if (!t)
+   if (!t) {
       // No token: nothing to do
       return;
-
+   }
    // Save our position
    var offset = $(this).position();
    // Highlight the token
@@ -160,23 +161,36 @@ function hoverIn() {
 
    var r = tokenInfo(t, nameDict);
 
-   if (!r.grammar && !r.lemma && !r.details)
+   if (!r.grammar && !r.lemma && !r.details) {
       // Nothing interesting to show (probably the sentence didn't parse)
       return;
+   }
 
    $("#grammar").html(r.grammar || "");
    $("#lemma").text(r.lemma || "");
    $("#details").text(r.details || "");
 
    // Display the percentage bar if we have percentage info
-   if (r.percent !== null)
+   if (r.percent !== null) {
       makePercentGraph(r.percent);
-   else
+   } else {
       $("#percent").css("display", "none");
+   }
 
    $("#info").removeClass();
-   if (r.class !== null)
+   if (r.class !== null) {
       $("#info").addClass(r.class);
+   }
+
+   if (t.k == TOK_PERSON && t.v.split(' ').length > 1) {
+      console.log(t);
+      console.log(t.v.split(' '))
+      getImage(r.lemma, function(img) {
+         $("#info-image").html(
+            $("<img>").attr('src', img[0])
+         ).show();
+      })
+   }
 
    $("#info span#tag")
       .removeClass()
@@ -190,18 +204,36 @@ function hoverIn() {
       .css("visibility", "visible");
 }
 
+function getImage(name, successFunc) {
+   if (!getImage.imageCache) {
+      getImage.imageCache = {};
+   }
+   if (getImage.imageCache[name]) {
+      successFunc(getImage.imageCache[name]);
+   }
+   $.getJSON("/image?thumb=1&name=" + encodeURI(name), function(resp) {
+      if (resp['found']) {
+         getImage.imageCache[name] = resp['image'];
+         successFunc(resp['image'])
+      }
+   });
+}
+
 function hoverOut() {
    // Stop hovering over a word
    $("#info").css("visibility", "hidden");
+   $("#info-image").hide();
    $(this).removeClass("highlight");
    var wId = $(this).attr("id");
-   if (wId === null || wId === undefined)
+   if (wId === null || wId === undefined) {
       // No id: nothing more to do
       return;
+   }
    var ix = parseInt(wId.slice(1));
    var t = w[ix];
-   if (!t)
-      return;
+   if (!t) {
+      return; // ??
+   }
 }
 
 function displayTokens(j) {

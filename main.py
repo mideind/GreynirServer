@@ -67,7 +67,7 @@ from scraperdb import (
 )
 from query import Query
 from search import Search
-from getimage import get_image_url, update_broken_image_url, blacklist_image_url
+from images import get_image_url, update_broken_image_url, blacklist_image_url
 from tnttagger import ifd_tag
 
 
@@ -828,6 +828,24 @@ def reportimage():
             resp["found_new"] = True
 
     return better_jsonify(**resp)
+
+
+@app.route("/image", methods=["GET"])
+def image():
+    """ Get image for name """
+    resp = dict(found=False)
+
+    name = request.args.get("name", "")
+    thumb = int(request.args.get("thumb", 0))
+
+    if name:
+        img = get_image_url(name, thumb=thumb)
+        if img:
+            resp['found'] = True
+            resp['image'] = img
+
+    return better_jsonify(**resp)
+
 
 @app.route("/genders", methods=["GET"])
 @max_age(seconds=5 * 60)

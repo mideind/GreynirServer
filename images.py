@@ -69,13 +69,12 @@ _NUM_IMG_URLS = 10
 Img = namedtuple('Img', ['src', 'width', 'height', 'link', 'origin', 'name'])
 
 
-def get_image_url(name, size="large", enclosing_session=None, from_cache=True):
+def get_image_url(name, size="large", thumb=False, enclosing_session=None, from_cache=True):
     """ Use Google Custom Search API to obtain an image corresponding to a (person) name """
     jdoc = None
     ctype = _CTYPE + size
 
     with SessionContext(commit=True, session=enclosing_session) as session:
-
         if from_cache:
             q = session.query(Link.content, Link.timestamp) \
                 .filter(Link.ctype == ctype) \
@@ -135,10 +134,12 @@ def get_image_url(name, size="large", enclosing_session=None, from_cache=True):
             blacklist = _blacklisted_urls_for_key(name, enclosing_session=session)
 
             for item in answer["items"]:
-                if item["link"] and item["link"] not in blacklist:
+                k = item["link"] if not thumb else item["image"]["thumbnailLink"]
+                if k and item["link"] not in blacklist:
                     image = item["image"]
-                    return Img(item["link"], image["width"], image["height"], 
-                            image["contextLink"], item["displayLink"], name)
+                    h = image["height"] if not thumb else image["thumbnailHeight"]
+                    w = image["width"] if not thumb else image["thumbnailWidth"]
+                    return Img(k, w, h, image["contextLink"], item["displayLink"], name)
 
     # No answer that makes sense
     return None
