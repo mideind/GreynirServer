@@ -110,6 +110,9 @@ def get_image_url(name, size="large", thumb=False, enclosing_session=None, from_
                 num = _NUM_IMG_URLS,
                 start = 1,
                 imgSize = size,
+                imgType = "face",   # Only images with faces
+                lr = "lang_is",     # Higher priority for Icelandic language pages
+                gl = "is",          # Higher priority for .is results
                 searchType = "image",
                 cx = _CX,
                 key = _API_KEY

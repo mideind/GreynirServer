@@ -183,8 +183,6 @@ function hoverIn() {
    }
 
    if (t.k == TOK_PERSON && t.v.split(' ').length > 1) {
-      console.log(t);
-      console.log(t.v.split(' '))
       getImage(r.lemma, function(img) {
          $("#info-image").html(
             $("<img>").attr('src', img[0])
@@ -205,17 +203,32 @@ function hoverIn() {
 }
 
 function getImage(name, successFunc) {
-   if (!getImage.imageCache) {
-      getImage.imageCache = {};
+   var cache = getImage.imageCache;
+
+   if (cache === undefined) {
+      cache = {};
+      getImage.imageCache = cache;
    }
-   if (getImage.imageCache[name]) {
-      successFunc(getImage.imageCache[name]);
-   }
-   $.getJSON("/image?thumb=1&name=" + encodeURI(name), function(resp) {
-      if (resp['found']) {
-         getImage.imageCache[name] = resp['image'];
-         successFunc(resp['image'])
+
+   // Retrieve from cache
+   if (cache[name] !== undefined) {
+      if (cache[name].length) {
+         successFunc(cache[name]);
       }
+      return;
+   }
+   // Abort any ongoing image request
+   if (getImage.request) {
+      getImage.request.abort();
+   }
+   // Ask server for thumbnail image
+   getImage.request = $.getJSON("/image?thumb=1&name=" + encodeURI(name), function(resp) {
+      cache[name] = [];
+      if (resp['found']) {
+         cache[name] = resp['image'];
+         successFunc(resp['image']);
+      }
+      getImage.request = null;
    });
 }
 
