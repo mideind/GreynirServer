@@ -304,7 +304,7 @@ function displayImage(p, img_info) {
          })
       )
    );
-   $(p.find('a')).mouseenter(function () {
+   $(p.find('a.imglink, span.imgreport')).mouseenter(function () {
       $("span.imgreport").show();
    });
    $(p.find('a.imglink')).mouseleave(function () {
