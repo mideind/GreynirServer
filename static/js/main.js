@@ -237,7 +237,9 @@ function imgError(img) {
    // Report broken image to server
    reportImage(img, "broken", function(i) {
       $(img).data('err', true);
-      $(img).show();
+      if (i) {
+         $(img).show();
+      }
    });
 }
 
