@@ -829,6 +829,37 @@ def reportimage():
 
     return better_jsonify(**resp)
 
+@app.route("/suggest", methods=["GET"])
+def suggest():
+    txt = request.args.get("query", "")
+    suggestions = list()
+    print(txt)
+
+    whois_prefix = "Hver er "
+
+    if txt and txt.startswith(whois_prefix): # and re.match(r'Hver er (\w+)', txt):
+        name = txt[len(whois_prefix):]
+        with SessionContext(commit=False) as session:
+
+            # TODO: Also rank by mentions
+            q = (session.query(Person.name)
+            .distinct()
+            .join(Article)
+            # .join(Root)
+            # .filter(Root.visible)
+            .filter(Person.name.like(name + '%'))
+
+            .order_by(desc(Article.timestamp))
+            .limit(10)
+            .all()
+            )
+
+            for p in q:
+                print(p)
+            suggestions = [(whois_prefix + p[0]) for p in q]
+
+    return better_jsonify(suggestions=suggestions)
+
 @app.route("/genders", methods=["GET"])
 @max_age(seconds=5 * 60)
 def genders():

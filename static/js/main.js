@@ -538,21 +538,25 @@ function initMain(jQuery) {
    // Initialization
    // Set up event handlers
    $("#url")
-      .click(function(ev) {
-         var start = this.selectionStart;
-         var end = this.selectionEnd;
-         var len = this.value.length;
-         if ((start == 0 && end == 0) || (start == len && end == len)) {
-            this.setSelectionRange(0, len);
-         }
-      })
-      .keydown(function(ev) {
-         if (ev.which == 13) {
-            var q = this.value.trim();
-            analyzeQuery({ q: q, autouppercase: false });
-            ev.preventDefault();
-         }
-      });
+      // .click(function(ev) {
+      //    var start = this.selectionStart;
+      //    var end = this.selectionEnd;
+      //    var len = this.value.length;
+      //    if ((start == 0 && end == 0) || (start == len && end == len)) {
+      //       this.setSelectionRange(0, len);
+      //    }
+      // })
+      // .keydown(function(ev) {
+      //    if (ev.which == 13) {
+      //       var q = this.value.trim();
+      //       analyzeQuery({ q: q, autouppercase: false });
+      //       ev.preventDefault();
+      //    }
+      // })
+      .autocomplete({
+      serviceUrl: '/suggest',
+      preventBadQueries: false,
+   });
 
    if (initializeSpeech()) {
       // Speech input seems to be available
@@ -572,14 +576,16 @@ function initMain(jQuery) {
          recognizer.start();
       });
    }
-   else
+   else {
       $("#url").attr("placeholder", "");
+   }
 
    // Check whether a query was encoded in the URL
    var rqVars = getUrlVars();
-   if (rqVars.f !== undefined && rqVars.q !== undefined)
+   if (rqVars.f !== undefined && rqVars.q !== undefined) {
       // We seem to have a legit query URL
       navToHistory(rqVars.f, { q : rqVars.q });
+   }
 
    // Select all text in the url input field
    $("#url").get(0).setSelectionRange(0, $("#url").val().length);
