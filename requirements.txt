@@ -6,3 +6,4 @@ psycopg2cffi==2.8.1
 requests==2.20.0
 reynir>=1.2.3
 SQLAlchemy==1.2.12
+ipython>=7.0
