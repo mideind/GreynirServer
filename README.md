@@ -156,25 +156,41 @@ names and titles from parse trees for storage in a database table.
 
 ## Installation and setup
 
-Limited installation and setup instructions can be
-[found here](https://docs.google.com/document/d/1ywywjoOj5yas5QKjxLJ9Gqh-iNkfPae9-EKuES74aPU/edit?usp=sharing)
-(in Icelandic).
+  * [Instructions for Ubuntu/Debian GNU/Linux](docs/setup_linux.md)
+  * [Instructions for macOS](docs/setup_macos.md)
+  * [Running in Docker container](https://github.com/vthorsteinsson/greynir-docker)
 
-## Install with Docker
+## Running Greynir
 
-Greynir can also be [built and run in Docker containers](https://github.com/vthorsteinsson/greynir-docker).
+Once you have followed the setup and installation instructions, change to the Reynir repo directory and activate the virtual environment:
 
-## Installation on OSx (Homebrew)
-* Download and extract pypy3.3 (http://pypy.org/download.html#installing)
-* `$ brew install postgresql (comes with contrib packages)`
-* `$ pip3 install virtualenv`
-* Clone this repo
-* cd into repo
-* `virtualenv -p /_your-pypy3-install-dir_/pypy3/bin/pypy3 venv`
+```
+cd Reynir
+venv/bin/activate
+```
 
-### Postgres database setup
-* `$ psql`
-* `create user reynir with password 'reynir';`
+#### Web application
+
+Defaults to running on [`localhost:5000`](http://localhost:5000) but this can be changed in `config/Reynir.conf`.
+
+```
+python main.py
+```
+
+#### Scrapers
+
+```
+python scraper.py
+```
+
+#### Interactive shell
+
+Start an [IPython](https://ipython.org) shell with a database session (`s`), the Reynir parser (`r`) and all SQLAlchemy database models preloaded (see `scraperdb.py`):
+
+```
+./shell.sh
+```
+
 
 ## Copyright and licensing
 
