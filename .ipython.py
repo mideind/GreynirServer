@@ -6,9 +6,11 @@ c.TerminalInteractiveShell.confirm_exit = False
 c.InteractiveShellApp.exec_PYTHONSTARTUP = False
 
 c.InteractiveShell.banner1 = "Python %s (%s)" % (python_version(), python_implementation())
-c.InteractiveShell.banner2 = 'Welcome to the Greynir iPython shell!\n'
+c.InteractiveShell.banner2 = 'Welcome to the Greynir IPython shell!\n'
+
+c.InteractiveShellApp.extensions = ['autoreload']
 
 c.InteractiveShellApp.exec_lines = [
     'from scraperdb import *',
-    's = SessionContext(commit=True).__enter__()',
+    's = SessionContext(commit=False).__enter__()',
 ]
