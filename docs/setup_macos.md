@@ -12,7 +12,8 @@ brew install python3 pypy3 postgresql ossp-uuid
 
 Alternately, you can install these packages manually:
 
-* [PyPy3.5](https://pypy.org/download.html)
+* [Python 3](https://www.python.org/downloads/mac-osx/)
+* [PyPy 3.5](https://pypy.org/download.html)
 * [PostgreSQL](https://www.postgresql.org/download/macosx/)
 * [uuid-ossp module](https://www.postgresql.org/docs/devel/uuid-ossp.html)
 
@@ -88,7 +89,6 @@ cd ~/Reynir
 pypy3 scraper.py --init
 ```
 
-
 ## Run
 
 Change to the Reynir repo directory and activate the virtual environment:
@@ -110,6 +110,12 @@ python main.py
 
 ```
 python scraper.py
+```
+
+NB: Due to issues with Python's `fork()` in recent versions of macOS, you may need to run the following command first in for scraping to work:
+
+```
+export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
 ```
 
 #### Interactive shell

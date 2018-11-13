@@ -70,29 +70,29 @@ Reynir runs on CPython and [PyPy](http://pypy.org/) with the latter being recomm
 
 Reynir works in stages, roughly as follows:
 
-1. *Web scraper*, built on [BeautifulSoup](http://www.crummy.com/software/BeautifulSoup/)
+1. **Web scraper**, built on [BeautifulSoup](http://www.crummy.com/software/BeautifulSoup/)
   and [SQLAlchemy](http://www.sqlalchemy.org/) storing data
   in [PostgreSQL](http://www.postgresql.org/).
-2. *Tokenizer* ([this one](https://github.com/vthorsteinsson/Tokenizer)),
+2. **Tokenizer** ([this one](https://github.com/vthorsteinsson/Tokenizer)),
   extended to use the BÍN database of Icelandic word forms for lemmatization and
   initial POS tagging.
-3. *Parser* (from [this module](https://github.com/vthorsteinsson/ReynirPackage)),
+3. **Parser** (from [this module](https://github.com/vthorsteinsson/ReynirPackage)),
   using an improved version of the [Earley algorithm](http://en.wikipedia.org/wiki/Earley_parser)
   to parse text according to an unconstrained hand-written context-free grammar for Icelandic
   that may yield multiple parse trees (a parse forest) in case of ambiguity.
-4. *Parse forest reducer* with heuristics to find the best parse tree.
-5. *Information extractor* that maps a parse tree via its grammar constituents to plug-in
+4. **Parse forest reducer** with heuristics to find the best parse tree.
+5. **Information extractor** that maps a parse tree via its grammar constituents to plug-in
   Python functions.
-6. *Article indexer* that transforms articles from bags-of-words to fixed-dimensional
+6. **Article indexer** that transforms articles from bags-of-words to fixed-dimensional
   topic vectors using [Tf-Idf](http://www.tfidf.com/) and
   [Latent Semantic Analysis](https://en.wikipedia.org/wiki/Latent_semantic_analysis).
-7. *Query processor* that allows natural language queries for entites in Reynir's database.
+7. **Query processor** that allows natural language queries for entites in Reynir's database.
 
 Reynir has an embedded web server that displays news articles recently scraped into its
 database, as well as names of people extracted from those articles along with their titles.
 The web UI enables the user to type in any URL and have Reynir scrape it, tokenize it and
 display the result as a web page. Queries can also be entered via the keyboard or using voice
-input. The server runs on the [Flask](http://flask.pocoo.org/) framework, implements WSGi and
+input. The server runs on the [Flask](http://flask.pocoo.org/) framework, implements WSGI and
 can for instance be plugged into [Gunicorn](http://gunicorn.org/) and
 [nginx](https://www.nginx.com/).
 
@@ -136,7 +136,7 @@ names and titles from parse trees for storage in a database table.
 
 ## File details
 
-* `main.py` : WSGi web server application and main module for command-line invocation
+* `main.py` : WSGI web server application and main module for command-line invocation
 * `settings.py` : Management of global settings and configuration data,
   obtained from `config/Reynir.conf`
 * `scraper.py` : Web scraper, collecting articles from a set of pre-selected websites (roots)
@@ -162,34 +162,35 @@ names and titles from parse trees for storage in a database table.
 
 ## Running Greynir
 
-Once you have followed the setup and installation instructions, change to the Reynir repo directory and activate the virtual environment:
+Once you have followed the setup and installation instructions above, change to the Reynir repository and activate the virtual environment:
 
 ```
 cd Reynir
 venv/bin/activate
 ```
 
-#### Web application
+You should now be able to run Greynir's software components.
 
-Defaults to running on [`localhost:5000`](http://localhost:5000) but this can be changed in `config/Reynir.conf`.
+##### Web application
 
 ```
 python main.py
 ```
 
-#### Scrapers
+Defaults to running on [`localhost:5000`](http://localhost:5000) but this can be changed in `config/Reynir.conf`.
+
+##### Scrapers
 
 ```
 python scraper.py
 ```
 
-#### Interactive shell
-
-Start an [IPython](https://ipython.org) shell with a database session (`s`), the Reynir parser (`r`) and all SQLAlchemy database models preloaded (see `scraperdb.py`):
+##### Interactive shell
 
 ```
 ./shell.sh
 ```
+Starts an [IPython](https://ipython.org) shell with a database session (`s`), the Reynir parser (`r`) and all SQLAlchemy database models preloaded (see `scraperdb.py`):
 
 
 ## Copyright and licensing
