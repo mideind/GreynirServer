@@ -23,7 +23,7 @@ scoring heuristics to find the best parse trees. The trees are then stored in a
 database and processed by grammatical pattern matching modules to obtain statements
 of fact and relations between stated facts.
 
-<a href="static/img/tree-example.png" title="Greynir parse tree">
+<a href="https://raw.githubusercontent.com/vthorsteinsson/Reynir/master/static/img/tree-example.png" title="Greynir parse tree">
 <img src="static/img/tree-example-small.png" width="400" height="450" alt="Greynir parse tree">
 </a>
 
