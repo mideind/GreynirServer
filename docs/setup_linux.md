@@ -1,6 +1,7 @@
 # Greynir - Setup instructions for GNU/Linux (Debian/Ubuntu)
 
-The following instructions assume you are running a reasonably modern version of Debian or Ubuntu and have `sudo` access.
+The following instructions assume you are running a reasonably modern 
+version of Debian or Ubuntu and have `sudo` access.
 
 ## Locale
 
@@ -19,7 +20,7 @@ sudo locale-gen is_IS.UTF-8
 sudo update-locale
 ```
 
-NB: If a PostgreSQL database is already running, it needs to be restarted:
+NB: If PostgreSQL is already running, it needs to be restarted:
 
 ```
 sudo systemctl restart postgresql
@@ -27,11 +28,17 @@ sudo systemctl restart postgresql
 
 ## Set up Python virtualenv
 
+Install Python 3:
+
+```
+sudo apt-get install python3
+```
+
 Make sure you have the latest version of `pip` and `virtualenv`.
 
 ```
-sudo -H pip install --upgrade pip
-pip install --upgrade virtualenv
+sudo -H pip3 install --upgrade pip
+pip3 install --upgrade virtualenv
 ```
 
 Install [git](https://git-scm.com) if it's not already installed:
@@ -40,7 +47,8 @@ Install [git](https://git-scm.com) if it's not already installed:
 sudo apt-get install git
 ```
 
-Install PyPy3.5 or later ([available here](http://pypy.org/download.html)).
+Install PyPy 3.5 or later ([available here](http://pypy.org/download.html)). 
+For example:
 
 ```
 mkdir ~/pypy
@@ -62,16 +70,17 @@ cd ~/Reynir
 Create and activate virtual environment, install required Python packages:
 
 ```
-$ virtualenv -p /usr/local/bin/pypy3 venv
-$ source venv/bin/activate
-$ pip3 install -r requirements.txt
+virtualenv -p ~/pypy/bin/pypy3 venv
+source venv/bin/activate
+pip3 install -r requirements.txt
 ```
 
 ## Set up database
 
 ### Install postgres
 
-Install PostgreSQL 9.5 or later (Greynir relies on the UPSERT feature introduced in version 9.5).
+Install PostgreSQL 9.5 or later (Greynir relies on the UPSERT feature 
+introduced in version 9.5).
 
 ```
 sudo apt-get install postgresql-contrib postgresql-client libpq-dev
@@ -106,7 +115,8 @@ Change to user `postgres`:
 sudo su - postgres
 ```
 
-Launch postgres client and create database users (replace *your_name* with your username):
+Launch postgres client and create database users 
+(replace *your_name* with your username):
 
 ```
 create user reynir with password 'reynir';
@@ -161,7 +171,8 @@ You should now be able to run Greynir.
 python main.py
 ```
 
-Defaults to running on [`localhost:5000`](http://localhost:5000) but this can be changed in `config/Reynir.conf`.
+Defaults to running on [`localhost:5000`](http://localhost:5000) but this 
+can be changed in `config/Reynir.conf`.
 
 ##### Scrapers
 
@@ -174,4 +185,6 @@ python scraper.py
 ```
 ./shell.sh
 ```
-Starts an [IPython](https://ipython.org) shell with a database session (`s`), the Reynir parser (`r`) and all SQLAlchemy database models preloaded (see `scraperdb.py`). For more info, see [Using the Greynir Shell](docs/shell.md).
+Starts an [IPython](https://ipython.org) shell with a database session (`s`), 
+the Reynir parser (`r`) and all SQLAlchemy database models preloaded. For more 
+info, see [Using the Greynir Shell](docs/shell.md).

@@ -164,7 +164,8 @@ names and titles from parse trees for storage in a database table.
 
 ## Running Greynir
 
-Once you have followed the setup and installation instructions above, change to the Reynir repository and activate the virtual environment:
+Once you have followed the setup and installation instructions above, change to the 
+Reynir repository and activate the virtual environment:
 
 ```
 cd Reynir
@@ -179,7 +180,8 @@ You should now be able to run Greynir.
 python main.py
 ```
 
-Defaults to running on [`localhost:5000`](http://localhost:5000) but this can be changed in `config/Reynir.conf`.
+Defaults to running on [`localhost:5000`](http://localhost:5000) but this can be 
+changed in `config/Reynir.conf`.
 
 ##### Scrapers
 
@@ -187,12 +189,22 @@ Defaults to running on [`localhost:5000`](http://localhost:5000) but this can be
 python scraper.py
 ```
 
+If you are running the scraper on macOS, you may run into problems with Python's `fork()`. 
+This can be fixed by setting the following environmental variable your shell:
+
+```
+export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
+```
+
 ##### Interactive shell
 
 ```
 ./shell.sh
 ```
-Starts an [IPython](https://ipython.org) shell with a database session (`s`), the Reynir parser (`r`) and all SQLAlchemy database models preloaded (see `scraperdb.py`). For more info, see [Using the Greynir Shell](docs/shell.md).
+
+Starts an [IPython](https://ipython.org) shell with a database session (`s`), the Reynir 
+parser (`r`) and all SQLAlchemy database models preloaded. For more info, 
+see [Using the Greynir Shell](docs/shell.md).
 
 
 ## Copyright and licensing

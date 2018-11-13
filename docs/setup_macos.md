@@ -100,7 +100,8 @@ venv/bin/activate
 
 #### Web application
 
-Defaults to running on [`localhost:5000`](http://localhost:5000) but this can be changed in `config/Reynir.conf`.
+Defaults to running on [`localhost:5000`](http://localhost:5000) but this 
+can be changed in `config/Reynir.conf`.
 
 ```
 python main.py
@@ -112,7 +113,8 @@ python main.py
 python scraper.py
 ```
 
-NB: Due to issues with Python's `fork()` in recent versions of macOS, you may need to run the following command first in for scraping to work:
+NB: Due to issues with Python's `fork()` in recent versions of macOS, you 
+may need to run the following command first in for scraping to work:
 
 ```
 export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
@@ -120,8 +122,10 @@ export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
 
 #### Interactive shell
 
-Start an [IPython](https://ipython.org) shell with a database session (`s`), the Reynir parser (`r`) and all SQLAlchemy database models preloaded (see `scraperdb.py`):
-
 ```
 ./shell.sh
 ```
+
+Starts an [IPython](https://ipython.org) shell with a database session (`s`), 
+the Reynir parser (`r`) and all SQLAlchemy database models preloaded. For 
+more info, see [Using the Greynir Shell](docs/shell.md).
