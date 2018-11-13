@@ -187,4 +187,4 @@ python scraper.py
 ```
 Starts an [IPython](https://ipython.org) shell with a database session (`s`), 
 the Reynir parser (`r`) and all SQLAlchemy database models preloaded. For more 
-info, see [Using the Greynir Shell](docs/shell.md).
+info, see [Using the Greynir Shell](shell.md).
