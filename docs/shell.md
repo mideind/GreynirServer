@@ -1,6 +1,6 @@
 # Using the Greynir Shell
 
-Run the following command after activating the virtualenv in the Greynir repository root:
+To start the Greynir shell, activate the virtual environment and run the following command from the repository root:
 
 ```
 ./shell.sh 
@@ -25,7 +25,7 @@ Shell auto-imports are configured in `.ipython.py` in the repository root. Addit
 
 ### Querying the database
 
-Get titles of recently parsed articles:
+Get the titles of recent articles:
 
 ```
 In [1]: s.query(Article.heading).order_by(desc(Article.timestamp)) \
@@ -41,13 +41,14 @@ Out[1]:
 Show recent persons:
 
 ```
-In [1]: s.query(Person.name).order_by(Person.timestamp).limit(5).all()
+In [1]: s.query(Person.name, Person.title) \
+   ...: .order_by(Person.timestamp).limit(5).all()
 Out[6]:
-[('Þórður Snær Júlíusson'),
- ('Jón Magnús Kristjánsson'),
- ('Davíð Oddsson'),
- ('Þórdís Kolbrún Reykfjörð Gylfadóttir'),
- ('Ingólfur Helgason')]
+[('Þórður Snær Júlíusson', 'ritstjóri Kjarnans'),
+ ('Jón Magnús Kristjánsson', 'yfirlæknir bráðalækninga á Landspítalanum'),
+ ('Davíð Oddsson', 'ritstjóri Morgunblaðsins'),
+ ('Þórdís Kolbrún Reykfjörð Gylfadóttir', 'varaformaður Sjálfstæðisflokksins'),
+ ('Ingólfur Helgason', 'fyrrverandi forstjóri Kaupþings á Íslandi')]
 ```
 
 ### Parsing with Reynir
@@ -61,16 +62,17 @@ P
   +-IP
     +-ADVP
       +-ao: 'Mikið'
-    +-VP
-      +-so_1_nf_et_p3: 'væri'
-      +-NP-SUBJ
-        +-pfn_hk_et_nf: 'það'
-      +-NP-PRD
-        +-no_et_nf_hk: 'gaman'
-        +-PP
-          +-fs_þf: 'fyrir'
-          +-NP
-            +-person_þf_kk: 'Gunna'
+    +-VP-SEQ
+      +-VP
+        +-so_et_p3: 'væri'
+        +-NP-SUBJ
+          +-pfn_hk_et_nf: 'það'
+        +-ADJP
+          +-lo_sb_nf_et_hk: 'skemmtilegt'
+      +-PP
+        +-fs_þf: 'fyrir'
+        +-NP
+          +-person_þf_kk: 'Gunna'
 +-'.'
 In [3]: sent.tree.nouns
 Out[3]: ['Gunni']

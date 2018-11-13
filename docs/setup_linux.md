@@ -71,7 +71,7 @@ $ pip3 install -r requirements.txt
 
 ### Install postgres
 
-Install PostgreSQL 9.5 or later (Greynir relies on the UPSERT feature introduced in version 9.5+).
+Install PostgreSQL 9.5 or later (Greynir relies on the UPSERT feature introduced in version 9.5).
 
 ```
 sudo apt-get install postgresql-contrib postgresql-client libpq-dev
@@ -141,36 +141,37 @@ Finally, create the database tables used by Greynir:
 
 ```
 cd ~/Reynir
-pypy3 scraper.py --init
+python scraper.py --init
 ```
 
 ## Run
 
-Change to the Reynir repo directory and activate virtual environment:
+Change to the Reynir repo directory and activate the virtual environment:
 
 ```
-cd ~/Reynir
+cd Reynir
 venv/bin/activate
 ```
 
-#### Web application
+You should now be able to run Greynir.
 
-Defaults to running on [`localhost:5000`](http://localhost:5000) but this can be changed in `config/Reynir.conf`.
+##### Web application
 
 ```
 python main.py
 ```
 
-#### Scrapers
+Defaults to running on [`localhost:5000`](http://localhost:5000) but this can be changed in `config/Reynir.conf`.
+
+##### Scrapers
 
 ```
 python scraper.py
 ```
 
-#### Interactive shell
-
-Start an [IPython](https://ipython.org) shell with a database session (`s`), the Reynir parser (`r`) and all SQLAlchemy database models preloaded (see `scraperdb.py`):
+##### Interactive shell
 
 ```
 ./shell.sh
 ```
+Starts an [IPython](https://ipython.org) shell with a database session (`s`), the Reynir parser (`r`) and all SQLAlchemy database models preloaded (see `scraperdb.py`). For more info, see [Using the Greynir Shell](docs/shell.md).

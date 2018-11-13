@@ -76,8 +76,8 @@ Reynir works in stages, roughly as follows:
   and [SQLAlchemy](http://www.sqlalchemy.org/) storing data
   in [PostgreSQL](http://www.postgresql.org/).
 2. **Tokenizer** ([this one](https://github.com/vthorsteinsson/Tokenizer)),
-  extended to use the BÍN database of Icelandic word forms for lemmatization and
-  initial POS tagging.
+  extended to use the [BÍN](http://bin.arnastofnun.is/DMII/) database of Icelandic word forms for lemmatization and
+  initial part-of-speech tagging.
 3. **Parser** (from [this module](https://github.com/vthorsteinsson/ReynirPackage)),
   using an improved version of the [Earley algorithm](http://en.wikipedia.org/wiki/Earley_parser)
   to parse text according to an unconstrained hand-written context-free grammar for Icelandic
@@ -171,7 +171,7 @@ cd Reynir
 venv/bin/activate
 ```
 
-You should now be able to run Greynir's software components.
+You should now be able to run Greynir.
 
 ##### Web application
 

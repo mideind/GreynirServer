@@ -86,7 +86,7 @@ Finally, create the database tables used by Greynir:
 
 ```
 cd ~/Reynir
-pypy3 scraper.py --init
+python scraper.py --init
 ```
 
 ## Run
