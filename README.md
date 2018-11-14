@@ -190,7 +190,7 @@ python scraper.py
 ```
 
 If you are running the scraper on macOS, you may run into problems with Python's `fork()`. 
-This can be fixed by setting the following environmental variable your shell:
+This can be fixed by setting the following environment variable in your shell:
 
 ```
 export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
