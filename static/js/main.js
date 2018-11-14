@@ -540,25 +540,46 @@ function initMain(jQuery) {
    // Initialization
    // Set up event handlers
    $("#url")
-      // .click(function(ev) {
-      //    var start = this.selectionStart;
-      //    var end = this.selectionEnd;
-      //    var len = this.value.length;
-      //    if ((start == 0 && end == 0) || (start == len && end == len)) {
-      //       this.setSelectionRange(0, len);
-      //    }
-      // })
-      // .keydown(function(ev) {
-      //    if (ev.which == 13) {
-      //       var q = this.value.trim();
-      //       analyzeQuery({ q: q, autouppercase: false });
-      //       ev.preventDefault();
-      //    }
-      // })
+      .click(function(ev) {
+         var start = this.selectionStart;
+         var end = this.selectionEnd;
+         var len = this.value.length;
+         if ((start == 0 && end == 0) || (start == len && end == len)) {
+            this.setSelectionRange(0, len);
+         }
+      })
+      .keydown(function(ev) {
+         if (ev.which == 13) {
+            var q = this.value.trim();
+            analyzeQuery({ q: q, autouppercase: false });
+            ev.preventDefault();
+         }
+      })
       .autocomplete({
-      serviceUrl: '/suggest',
-      preventBadQueries: false,
-   });
+         lookup: function(query, done) {
+            // TODO: Implement caching!
+            // var none = { 'suggestions': [] };
+            // var whois = 'Hver er ';
+            // var valid = query.startsWith(whois) && 
+            //             query.length > whois.length &&
+            //             !query.endsWith('?');
+            // if (!valid) {
+            //    done(none);
+            //    return;
+            // }           
+            $.ajax({
+               type: 'GET',
+               url: "/suggest?q="+ query,
+               dataType: "json",
+               success: function(json) {
+                  done(json);
+               },
+               error: function(ajaxContext) {
+                  console.log(ajaxContext.responseText)
+               }
+            });
+         }
+      });
 
    if (initializeSpeech()) {
       // Speech input seems to be available

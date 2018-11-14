@@ -18,7 +18,7 @@ fi
 IPYTHON_BIN="${VENV_DIR}/bin/ipython3"
 
 if [ ! -e "$IPYTHON_BIN" ]; then
-	echo "iPython binary not found: '${IPYTHON_BIN}'"
+	echo "IPython binary not found: '${IPYTHON_BIN}'"
 	exit
 fi
 

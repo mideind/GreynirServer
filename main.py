@@ -36,7 +36,7 @@ import time
 import random
 import re
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import wraps
 from decimal import Decimal
 
@@ -57,11 +57,13 @@ from treeutil import TreeUtility
 from scraperdb import (
     SessionContext,
     desc,
+    dbfunc,
     Root,
     Person,
     Article,
     ArticleTopic,
     Topic,
+    Entity,
     GenderQuery,
     StatsQuery,
 )
@@ -830,33 +832,57 @@ def reportimage():
     return better_jsonify(**resp)
 
 @app.route("/suggest", methods=["GET"])
-def suggest():
-    txt = request.args.get("query", "")
+def suggest(limit=10):
+    """ Return query suggestions for query field autocomplete """
+    txt = request.args.get("q", "").strip()
     suggestions = list()
-    print(txt)
-
     whois_prefix = "Hver er "
+    whatis_prefix = "Hvað er "
 
-    if txt and txt.startswith(whois_prefix): # and re.match(r'Hver er (\w+)', txt):
-        name = txt[len(whois_prefix):]
-        with SessionContext(commit=False) as session:
+    prefix = None
+    if txt.startswith(whois_prefix):
+        prefix = whois_prefix
+    elif txt.startswith(whatis_prefix):
+        prefix = whatis_prefix
 
-            # TODO: Also rank by mentions
-            q = (session.query(Person.name)
-            .distinct()
-            .join(Article)
-            # .join(Root)
-            # .filter(Root.visible)
-            .filter(Person.name.like(name + '%'))
+    if not txt or not prefix:
+        return better_jsonify(suggestions=suggestions)
 
-            .order_by(desc(Article.timestamp))
-            .limit(10)
-            .all()
+    with SessionContext(commit=False) as session:
+        name = txt[len(prefix):].strip()
+
+        # Hver er Jón Jónsson ?
+        if prefix is whois_prefix and name[0].isupper():
+            # Find matching persons ordered by number of 
+            # related articles over the past year
+            q = (session.query(Person.name, dbfunc.count(Article.id).label('total'))
+                .filter(Person.name.ilike(name + '%'))
+                .join(Article)
+                .filter(Article.timestamp > datetime.utcnow() - timedelta(days=365))
+                .group_by(Person.name)
+                .order_by(desc('total'))
+            )
+        # Hver er seðlabankastjóri?
+        elif prefix is whois_prefix:
+            # Find matching title
+            q = (session.query(Person.title, dbfunc.count(Article.id).label('total'))
+                .filter(Person.title.ilike(name + '%'))
+                .join(Article)
+                .group_by(Person.title)
+                .order_by(desc('total'))
+            )
+        # Hvað er ... ?
+        elif prefix is whatis_prefix:
+            # Find matching entity name
+            q = (session.query(Entity.name, dbfunc.count(Article.id).label('total'))
+                .filter(Entity.name.ilike(name + '%'))
+                .join(Article)
+                .group_by(Entity.name)
+                .order_by(desc('total'))
             )
 
-            for p in q:
-                print(p)
-            suggestions = [(whois_prefix + p[0]) for p in q]
+        q = q.limit(limit).all()
+        suggestions = [{ 'value': (prefix + p[0] + '?'), 'data': '' } for p in q]
 
     return better_jsonify(suggestions=suggestions)
 
