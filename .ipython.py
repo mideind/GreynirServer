@@ -13,4 +13,6 @@ c.InteractiveShellApp.extensions = ['autoreload']
 c.InteractiveShellApp.exec_lines = [
     'from scraperdb import *',
     's = SessionContext(commit=False).__enter__()',
+    'from reynir import Reynir',
+    'r = Reynir()'
 ]

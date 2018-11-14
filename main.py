@@ -1,4 +1,4 @@
-#!/usr/bin/env pypy3
+#!/usr/bin/env python
 """
 
     Reynir: Natural language processing for Icelandic
