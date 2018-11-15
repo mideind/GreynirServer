@@ -69,23 +69,26 @@ _NUM_IMG_URLS = 10
 Img = namedtuple('Img', ['src', 'width', 'height', 'link', 'origin', 'name'])
 
 
-def get_image_url(name, size="large", thumb=False, enclosing_session=None, from_cache=True):
+def get_image_url(name, hints=[], size="large", thumb=False,
+                  enclosing_session=None, cache_only=False):
     """ Use Google Custom Search API to obtain an image corresponding to a (person) name """
     jdoc = None
     ctype = _CTYPE + size
 
     with SessionContext(commit=True, session=enclosing_session) as session:
-        if from_cache:
-            q = session.query(Link.content, Link.timestamp) \
-                .filter(Link.ctype == ctype) \
-                .filter(Link.key == name) \
-                .one_or_none()
-            if q is not None:
-                # Found in cache
-                if datetime.utcnow() - q.timestamp > timedelta(days=_CACHE_EXPIRATION_DAYS):
-                    _purge_single(name, ctype=ctype, enclosing_session=session)
-                else:
-                    jdoc = q.content
+        q = session.query(Link.content, Link.timestamp) \
+            .filter(Link.ctype == ctype) \
+            .filter(Link.key == name) \
+            .one_or_none()
+        if q is not None:
+            # Found in cache
+            if datetime.utcnow() - q.timestamp > timedelta(days=_CACHE_EXPIRATION_DAYS):
+                _purge_single(name, ctype=ctype, enclosing_session=session)
+            else:
+                jdoc = q.content
+
+        if not jdoc and cache_only:
+            return None
 
         if not jdoc:
             # Not found in cache: prepare to ask Google
@@ -105,17 +108,18 @@ def get_image_url(name, size="large", thumb=False, enclosing_session=None, from_
                 return None
 
             # Assemble the query parameters
+            search_str = '"{0}" {1}'.format(name, ' '.join(hints)).strip()
             q = dict(
-                q = '"' + name + '"', # Try for an exact match
+                q = search_str,
                 num = _NUM_IMG_URLS,
                 start = 1,
                 imgSize = size,
-                imgType = "face",   # Only images with faces
+                #imgType = "face",   # Only images with faces
                 lr = "lang_is",     # Higher priority for Icelandic language pages
                 gl = "is",          # Higher priority for .is results
                 searchType = "image",
                 cx = _CX,
-                key = _API_KEY
+                key = _API_KEY,
             )
             jdoc = _server_query("https://www.googleapis.com/customsearch/v1", q)
             if jdoc:
@@ -265,7 +269,7 @@ if __name__ == "__main__":
         cmap[cmd]()
     elif cmd:
         # Any other arg is a name to fetch an image for
-        img = get_image_url(cmd, from_cache=False)
+        img = get_image_url(cmd)
         print("{0}".format(img))
                
 

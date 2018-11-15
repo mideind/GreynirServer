@@ -836,10 +836,13 @@ def image():
     resp = dict(found=False)
 
     name = request.args.get("name", "")
-    thumb = int(request.args.get("thumb", 0))
+    try:
+        thumb = int(request.args.get("thumb", 0))
+    except:
+        thumb = 0
 
     if name:
-        img = get_image_url(name, thumb=thumb)
+        img = get_image_url(name, thumb=thumb, cache_only=True)
         if img:
             resp['found'] = True
             resp['image'] = img

@@ -118,11 +118,13 @@ function showPerson(ev) {
    if (wId !== undefined) {
       // Obtain the name in nominative case from the token
       var ix = parseInt(wId.slice(1));
-      if (w[ix] !== undefined)
+      if (w[ix] !== undefined) {
          name = w[ix].v;
+      }
    }
-   if (name === undefined)
+   if (name === undefined) {
       name = $(this).text(); // No associated token: use the contained text
+   }
    queryPerson(name);
    ev.stopPropagation();
 }
@@ -228,7 +230,6 @@ function getImage(name, successFunc) {
          cache[name] = resp['image'];
          successFunc(resp['image']);
       }
-      getImage.request = null;
    });
 }
 
@@ -237,16 +238,16 @@ function hoverOut() {
    $("#info").css("visibility", "hidden");
    $("#info-image").hide();
    $(this).removeClass("highlight");
-   var wId = $(this).attr("id");
-   if (wId === null || wId === undefined) {
-      // No id: nothing more to do
-      return;
-   }
-   var ix = parseInt(wId.slice(1));
-   var t = w[ix];
-   if (!t) {
-      return; // ??
-   }
+   // var wId = $(this).attr("id");
+   // if (wId === null || wId === undefined) {
+   //    // No id: nothing more to do
+   //    return;
+   // }
+   // var ix = parseInt(wId.slice(1));
+   // var t = w[ix];
+   // if (!t) {
+   //    return; // ??
+   // }
 }
 
 function displayTokens(j) {
