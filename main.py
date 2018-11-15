@@ -44,6 +44,7 @@ from flask import Flask
 from flask import render_template, make_response, jsonify, redirect, url_for
 from flask import request, send_from_directory
 from flask.wrappers import Response
+from flask_caching import Cache
 
 import reynir
 from settings import Settings, ConfigError, changedlocale
@@ -78,6 +79,7 @@ from tnttagger import ifd_tag
 app = Flask(__name__)
 app.config["JSON_AS_ASCII"] = False  # We're fine with using Unicode/UTF-8
 app.config["TEMPLATES_AUTO_RELOAD"] = True
+cache = Cache(app, config={'CACHE_TYPE': 'simple'})
 
 from flask import current_app
 
@@ -832,9 +834,12 @@ def reportimage():
     return better_jsonify(**resp)
 
 @app.route("/suggest", methods=["GET"])
+@cache.cached(timeout=300, key_prefix='suggestions', query_string=True)
 def suggest(limit=10):
-    """ Return query suggestions for query field autocomplete """
+    """ Return suggestions for query field autocompletion """
+    limit = request.args.get('limit', limit)
     txt = request.args.get("q", "").strip()
+
     suggestions = list()
     whois_prefix = "Hver er "
     whatis_prefix = "Hvað er "
@@ -871,7 +876,7 @@ def suggest(limit=10):
                 .group_by(Person.title)
                 .order_by(desc('total'))
             )
-        # Hvað er ... ?
+        # Hvað er UNESCO?
         elif prefix is whatis_prefix:
             # Find matching entity name
             q = (session.query(Entity.name, dbfunc.count(Article.id).label('total'))

@@ -53,6 +53,7 @@ DataError = SqlDataError
 # Same for the desc() function
 desc = SqlDesc
 
+
 class Scraper_DB:
 
     """ Wrapper around the SQLAlchemy connection, engine and session """

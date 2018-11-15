@@ -536,6 +536,46 @@ function getUrlVars() {
    return vars;
 }
 
+function autoCompleteLookup(query, done)  {
+   // Only trigger lookup for certain prefixes
+   var none = { 'suggestions': [] };
+   var whois = 'Hver er ';
+   var whatis = 'Hvað er ';
+   var minqlen = whois.length + 1;
+   var valid = (query.startsWith(whois) || query.startsWith(whatis)) &&
+               query.length >= minqlen && !query.endsWith('?');
+   if (!valid) {
+      done(none);
+      return;
+   }
+   // Local caching
+   if (autoCompleteLookup.cache === undefined) {
+      autoCompleteLookup.cache = { };
+   }
+   cache = autoCompleteLookup.cache;
+   if (cache[query] !== undefined) {
+      done(cache[query]);
+      return;
+   }
+   // Cancel any active request
+   if (autoCompleteLookup.req) {
+      autoCompleteLookup.req.abort();
+   }
+   // Ajax request to server
+   autoCompleteLookup.req = $.ajax({
+      type: 'GET',
+      url: "/suggest?q="+ query,
+      dataType: "json",
+      success: function(json) {
+         autoCompleteLookup.cache[query] = json;
+         done(json);
+      },
+      error: function(ajaxContext) {
+         console.log(ajaxContext.responseText)
+      }
+   });
+}
+
 function initMain(jQuery) {
    // Initialization
    // Set up event handlers
@@ -556,29 +596,7 @@ function initMain(jQuery) {
          }
       })
       .autocomplete({
-         lookup: function(query, done) {
-            // TODO: Implement caching!
-            // var none = { 'suggestions': [] };
-            // var whois = 'Hver er ';
-            // var valid = query.startsWith(whois) && 
-            //             query.length > whois.length &&
-            //             !query.endsWith('?');
-            // if (!valid) {
-            //    done(none);
-            //    return;
-            // }           
-            $.ajax({
-               type: 'GET',
-               url: "/suggest?q="+ query,
-               dataType: "json",
-               success: function(json) {
-                  done(json);
-               },
-               error: function(ajaxContext) {
-                  console.log(ajaxContext.responseText)
-               }
-            });
-         }
+         lookup: autoCompleteLookup
       });
 
    if (initializeSpeech()) {
