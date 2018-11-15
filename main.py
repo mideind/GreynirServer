@@ -871,8 +871,12 @@ def stats():
 @app.route("/about")
 @max_age(seconds=10 * 60)
 def about():
-    """ Handler for an 'About' page """
-    return render_template("about.html")
+    """ Handler for the 'About' page """
+    try:
+        version = reynir.__version__
+    except AttributeError:
+        version = ""
+    return render_template("about.html", version=version)
 
 
 @app.route("/apidoc")
