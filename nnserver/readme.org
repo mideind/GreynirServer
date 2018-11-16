@@ -3,7 +3,7 @@
    To register this program as a service within systemd, create a unit file
    called mynnserver.service in the /etc/systemd/system directory, containing
    something like the following (assuming you have a virtualenv called venv):
-#+BEGIN_SRC text
+  #+BEGIN_SRC text
   [Unit]
   Description=Middleware server for neural network parsing server
   After=nnparser.service
@@ -23,94 +23,103 @@
 
   [Install]
   WantedBy=multi-user.target
-#+END_SRC
-Then run
-#+BEGIN_SRC bash
-sudo systemctl enable nnserver
-sudo systemctl start nnserver
-#+END_SRC
+  #+END_SRC
+  Then run
+  #+BEGIN_SRC bash
+  sudo systemctl enable nnserver
+  sudo systemctl start nnserver
+  #+END_SRC
 * Tensorflow modelserver and Docker as a systemd service
 ** Miscellaneous
 #+BEGIN_SRC bash
-ABS_HOME=/home/[YOUR USERNAME]
-DOCKER_VOL=$ABS_HOME/dockervol
+  ABS_HOME=/home/[YOUR USERNAME]
+  DOCKER_VOL=$ABS_HOME/dockervol
 
-INT_GRPC_PORT=9000
-EXT_GRPC_PORT=$INT_GRPC_PORT
-GRPC_PORTS="$EXT_GRPC_PORT:$INT_GRPC_PORT/tcp"
+  mkdir -p $DOCKER_VOL
 
-INT_REST_PORT=8080
-EXT_REST_PORT=$INT_REST_PORT
-REST_PORTS="$EXT_REST_PORT:$INT_REST_PORT/tcp"
+  INT_GRPC_PORT=8081
+  EXT_GRPC_PORT=$INT_GRPC_PORT
+  GRPC_PORTS="$EXT_GRPC_PORT:$INT_GRPC_PORT/tcp"
 
-CONTAINER_NAME=nnparser
-IMAGE_NAME=devel-gpu-v2
-VOLUMES=$DOCKER_VOL:/volume
+  INT_REST_PORT=8080
+  EXT_REST_PORT=$INT_REST_PORT
+  REST_PORTS="$EXT_REST_PORT:$INT_REST_PORT/tcp"
+
+  CONTAINER_NAME=nnparser
+  IMAGE_NAME=devel-gpu-v2
+  VOLUMES=$DOCKER_VOL:/volume
 #+END_SRC
 ** Creating the container
-#+BEGIN_SRC bash
-sudo nvidia-docker container create \
-  --name $CONTAINER_NAME \
-  --publish $REST_PORTS \
-  --publish $GRPC_PORTS \
-  --volume $VOLUMES \
-  --interactive --tty $IMAGE_NAME 
-#+END_SRC
+  #+BEGIN_SRC bash
+    # If image does not already exist
+    # sudo nvidia-docker build -t $IMAGE_NAME -f $PATH_TO_DOCKERFILE .
+
+    sudo nvidia-docker container create \
+      --name $CONTAINER_NAME \
+      --publish $REST_PORTS \
+      --publish $GRPC_PORTS \
+      --volume $VOLUMES \
+      --interactive --tty $IMAGE_NAME
+  #+END_SRC
 ** Run-script inside docker volume, init.sh
-#+BEGIN_SRC bash
-INT_GRPC_PORT=8081
-EXT_GRPC_PORT=$INT_GRPC_PORT
-GRPC_PORTS="$EXT_GRPC_PORT:$INT_GRPC_PORT/tcp"
+  #+BEGIN_SRC bash
+    # Attack to docker container first
+    # docker container attach nntranslate
+    # then 
 
-INT_REST_PORT=8080
-EXT_REST_PORT=$INT_REST_PORT
-REST_PORTS="$EXT_REST_PORT:$INT_REST_PORT/tcp"
+    INT_GRPC_PORT=8081
+    EXT_GRPC_PORT=$INT_GRPC_PORT
+    GRPC_PORTS="$EXT_GRPC_PORT:$INT_GRPC_PORT/tcp"
 
-VOLUME=/volume
-MODEL_BASE="$VOLUME/models/"
-MODEL_CONFIG="$VOLUME/model_config.txt"
+    INT_REST_PORT=8080
+    EXT_REST_PORT=$INT_REST_PORT
+    REST_PORTS="$EXT_REST_PORT:$INT_REST_PORT/tcp"
 
-tensorflow_model_server \
-  --rest_api_port=$INT_REST_PORT \
-  --port=$INT_GRPC_PORT \
-  --model_base_path=$MODEL_BASE  \
-  --per_process_gpu_memory_fraction=0.95 \
-  --enable_batching=true \
-  --model_config_file=$MODEL_CONFIG
-#+END_SRC
+    VOLUME=/volume
+    MODEL_BASE="$VOLUME/models/"
+    MODEL_CONFIG="$VOLUME/model_config.txt"
+
+    tensorflow_model_server \
+        --rest_api_port=$INT_REST_PORT \
+        --port=$INT_GRPC_PORT \
+        --model_base_path=$MODEL_BASE  \
+        --per_process_gpu_memory_fraction=0.95 \
+        --enable_batching=true \
+        --model_config_file=$MODEL_CONFIG
+  #+END_SRC
 ** To manually run server inside docker instance
-#+BEGIN_SRC bash
-# If attached to docker container, detach from tty by sending <C-p><C-q>
-sudo nvidia-docker exec nnparser bash /volume/init.sh
-#+END_SRC
+  #+BEGIN_SRC bash
+  # If attached to docker container, detach from tty by sending <C-p><C-q>
+  sudo nvidia-docker exec nnparser bash /volume/init.sh
+  #+END_SRC
 ** nvidia-persistenced.service may need fixing
-You need docker and nvidia-docker, install those first
+   You need docker and nvidia-docker, install those first
 
-change the following in /lib/systemd/system/nvidia-persistenced.service
-#+BEGIN_SRC .service
-[Unit]
-Description=NVIDIA Persistence Daemon
-Wants=syslog.target
+   change the following in /lib/systemd/system/nvidia-persistenced.service
+  #+BEGIN_SRC .service
+  [Unit]
+  Description=NVIDIA Persistence Daemon
+  Wants=syslog.target
 
-[Service]
-Type=forking
-ExecStart=/usr/bin/nvidia-persistenced --user nvidia-persistenced --no-persistence-mode --verbose
-ExecStopPost=/bin/rm -rf /var/run/nvidia-persistenced
-#+END_SRC
-into the following
-#+BEGIN_SRC .service
-[Unit]
-Description=NVIDIA Persistence Daemon
-Wants=syslog.target
-After=systemd-user-sessions.service ; this line might not be necessary
+  [Service]
+  Type=forking
+  ExecStart=/usr/bin/nvidia-persistenced --user nvidia-persistenced --no-persistence-mode --verbose
+  ExecStopPost=/bin/rm -rf /var/run/nvidia-persistenced
+  #+END_SRC
+  into the following
+  #+BEGIN_SRC .service
+  [Unit]
+  Description=NVIDIA Persistence Daemon
+  Wants=syslog.target
+  After=systemd-user-sessions.service ; this line might not be necessary
 
-[Service]
-Type=forking
-ExecStart=/usr/bin/nvidia-persistenced --verbose
-ExecStopPost=/bin/rm -rf /var/run/nvidia-persistenced
-#+END_SRC
+  [Service]
+  Type=forking
+  ExecStart=/usr/bin/nvidia-persistenced --verbose
+  ExecStopPost=/bin/rm -rf /var/run/nvidia-persistenced
+  #+END_SRC
 ** Systemd unit file for Docker
-#+BEGIN_SRC text
+  #+BEGIN_SRC text
   [Unit ]
   Description=Docker container for neural network parsing server
   Documentation=info:docker man:docker http://docs.docker.com
@@ -134,9 +143,9 @@ ExecStopPost=/bin/rm -rf /var/run/nvidia-persistenced
 
   [Install]
   WantedBy=multi-user.target
-#+END_SRC
-Then run
-#+BEGIN_SRC bash
+  #+END_SRC
+  Then run
+  #+BEGIN_SRC bash
   sudo systemctl enable docker
   sudo systemctl enable nnparser
   sudo systemctl enable nvida-persistenced
@@ -146,4 +155,4 @@ Then run
   sudo systemctl restart nnparser
   # If current user does not have permissions for docker daemon socket, it can be set with this
   sudo usermod -a -G docker $USER
-#+END_SRC
+  #+END_SRC
