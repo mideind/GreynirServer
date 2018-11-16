@@ -206,12 +206,10 @@ function hoverIn() {
 
 function getImage(name, successFunc) {
    var cache = getImage.imageCache;
-
    if (cache === undefined) {
       cache = {};
       getImage.imageCache = cache;
    }
-
    // Retrieve from cache
    if (cache[name] !== undefined) {
       if (cache[name].length) {
@@ -224,11 +222,12 @@ function getImage(name, successFunc) {
       getImage.request.abort();
    }
    // Ask server for thumbnail image
-   getImage.request = $.getJSON("/image?thumb=1&name=" + encodeURI(name), function(resp) {
+   var enc = encodeURIComponent(name)
+   getImage.request = $.getJSON("/image?thumb=1&name=" + enc, function(r) {
       cache[name] = [];
-      if (resp['found']) {
-         cache[name] = resp['image'];
-         successFunc(resp['image']);
+      if (r['found']) {
+         cache[name] = r['image'];
+         successFunc(r['image']);
       }
    });
 }
@@ -238,16 +237,6 @@ function hoverOut() {
    $("#info").css("visibility", "hidden");
    $("#info-image").hide();
    $(this).removeClass("highlight");
-   // var wId = $(this).attr("id");
-   // if (wId === null || wId === undefined) {
-   //    // No id: nothing more to do
-   //    return;
-   // }
-   // var ix = parseInt(wId.slice(1));
-   // var t = w[ix];
-   // if (!t) {
-   //    return; // ??
-   // }
 }
 
 function displayTokens(j) {

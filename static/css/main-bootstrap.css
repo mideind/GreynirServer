@@ -656,11 +656,12 @@ div#info #details {
 }
 
 div#info-image {
-   max-width:100%;
+   max-width: 100%;
 }
 
 div#info-image img {
-   max-width:100%;
+   width: 100%;
+   margin-bottom: 5px;
 }
 
 #meta-author, #meta-timestamp, #meta-url {
