@@ -71,6 +71,10 @@
             <li id="navid-news"><a href="{{ url_for('news') }}">Nýjast</a></li>
             <li id="navid-people"><a href="{{ url_for('people') }}">Fólk</a></li>
             <li id="navid-analysis"><a href="{{ url_for('analysis') }}">Málgreining</a></li>
+
+{% if nn_translate_enabled -%}
+            <li id="navid-translate"><a href="{{ url_for('translate') }}">Þýðing</a></li>
+{%- endif %}
             <li id="navid-genders"><a href="{{ url_for('genders') }}">Kynjagreining</a></li>
             <li id="navid-stats"><a href="{{ url_for('stats') }}">Tölfræði</a></li>
             <li id="navid-apidoc"><a href="{{ url_for('apidoc') }}">Forritaskil</a></li>

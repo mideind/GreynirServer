@@ -37,14 +37,15 @@ from nntree import ParseResult
 
 
 class NnClient:
-    """ Client that speaks to the HTTP RESTful interface of
-        a tensorflow model server. """
+    """ A client that connects to the HTTP rest interface of
+        a tensorflow model server (using plaintext) """
 
-    port = Settings.NN_PORT
-    host = Settings.NN_HOST
+    port = None
+    host = None
+    verb = None
 
     @classmethod
-    def parse_sentence(cls, text):
+    def request_sentence(cls, text):
         """ Parse a single sentence into flat parse tree """
         if "\n" in text:
             single_sentence = text.split("\n")[0]
@@ -52,18 +53,22 @@ class NnClient:
             single_sentence = text
         pgs = [single_sentence]
         result = cls._request(pgs)
-        return result[0] if result is not None else None
+        result = result[0] if result is not None else None
+        return result
 
     @classmethod
-    def parse_text(cls, text):
+    def request_text(cls, text):
         """ Parse contiguous text into flat parse trees """
         pgs = text.split("\n")
-        return cls._request(pgs)
+        resp = cls._request(pgs)
+        return resp
 
     @classmethod
     def _request(cls, pgs):
         """ Send serialized request to remote model server """
-        url = "http://{host}:{port}/parse.api".format(host=cls.host, port=cls.port)
+        url = "http://{host}:{port}/{verb}.api".format(
+            host=cls.host, port=cls.port, verb=cls.verb
+        )
         headers = {"content-type": "application/json"}
 
         normalized_pgs = [
@@ -84,15 +89,7 @@ class NnClient:
                 cls._processResponse(inst, sent)
                 for (inst, sent) in zip(predictions, pgs)
             ]
-            score_str = " ".join(
-                ["{:>4.2f}".format(max(inst["scores"])) for inst in predictions]
-            )
 
-            logging.info(
-                "Parsed {num} sentences using neural network, with scores: {scores}".format(
-                    num=len(predictions), scores=score_str
-                )
-            )
             return results
         # TODO(haukurb): More graceful error handling
         except Exception as e:
@@ -102,9 +99,50 @@ class NnClient:
 
     @classmethod
     def _processResponse(cls, instance, sent):
+        """ Process the response from a single sentence
+
+            Abstract method """
+        raise NotImplemented
+
+
+class TranslateClient(NnClient):
+    """ A client that connects to the HTTP rest interface of
+        a tensorflow model server (using plaintext) that returns
+        an English translation of Icelandic text """
+
+    port = Settings.NN_TRANSLATE_PORT
+    host = Settings.NN_TRANSLATE_HOST
+    verb = "translate"
+
+    @classmethod
+    def _processResponse(cls, instance, sent):
+        """ Process the response from a single sentence """
+        model_output = instance["outputs"]
+        scores = instance["scores"]
+        instance["scores"] = float(scores)
+        bkey = "batch_prediction_key" 
+        if bkey in instance:
+            del instance[bkey]
+
+        logging.debug(model_output)
+
+        return instance
+
+
+class ParsingClient(NnClient):
+    """ A client that connects to an HTTP RESTful interface of
+        a tensorflow model server (using plaintext) that returns
+        a parse tree of Icelandic text """
+
+    port = Settings.NN_PARSING_PORT
+    host = Settings.NN_PARSING_HOST
+    verb = "parse"
+
+    @classmethod
+    def _processResponse(cls, instance, sent):
         """ Process the response from a single sentence """
         parse_toks = instance["outputs"]
-
+        scores = instance["scores"]
 
         logging.info(parse_toks)
         tree, p_result = nntree.parse_tree_with_text(parse_toks, sent)
@@ -121,11 +159,37 @@ class NnClient:
         return tree
 
 
-def test_sentence():
-    res = NnClient.parse_sentence("Eftirfarandi skilaboð voru smíðuð í NNCLIENT.")
+def test_translate_sentence():
+    sample_phrase = "Hæ."
+    print("sample_phrase:", sample_phrase)
+    res = TranslateClient.request_sentence(sample_phrase)
+    # json = "{'predictions':[{'batch_prediction_key':[0],'outputs':'Hi.','scores':-0.946593}]}"
+    print("processed_output:", res)
+    print()
+
+
+def test_translate_text():
+    sample_phrase = "Hæ.\nHvernig?"
+    print("sample_phrase: \"\"\"", sample_phrase, "\"\"\"", sep="")
+    print()
+    res = TranslateClient.request_text(sample_phrase)
+    # json = "{'predictions':[{'batch_prediction_key':[0],'outputs':'Hi.','scores':-0.946593}]}"
+    print("processed_output:", res)
+    print()
+
+
+def send_test_parse():
+    sample_phrase = (
+        "Eftirfarandi skilaboð voru smíðuð í Nnclient og þau skulu verða þáttuð."
+    )
+    print("Sending test translate phrase to server:", sample_phrase)
+    res = ParsingClient.request_sentence(sample_phrase)
     print("Received response:")
     print(res)
 
 
 if __name__ == "__main__":
-    test_sentence()
+    test_translate_sentence()
+    # test_translate_text()
+    pass
+    # manual_test_sentence()
