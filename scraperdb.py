@@ -39,8 +39,8 @@ from sqlalchemy.exc import IntegrityError as SqlIntegrityError
 from sqlalchemy.exc import DataError as SqlDataError
 from sqlalchemy import desc as SqlDesc
 from sqlalchemy.dialects.postgresql import UUID as psql_UUID
-
 from settings import Settings
+from sqlalchemy import func as dbfunc
 
 
 # Create the SQLAlchemy ORM Base class
