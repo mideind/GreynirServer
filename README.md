@@ -1,5 +1,5 @@
 
-![Greynir](https://raw.githubusercontent.com/vthorsteinsson/Reynir/master/static/GreynirLogo242x100.png)
+![Greynir](https://raw.githubusercontent.com/vthorsteinsson/Reynir/master/static/img/GreynirLogo242x100.png)
 
 # Reynir
 
@@ -23,7 +23,9 @@ scoring heuristics to find the best parse trees. The trees are then stored in a
 database and processed by grammatical pattern matching modules to obtain statements
 of fact and relations between stated facts.
 
-[![Greynir parse tree](https://raw.githubusercontent.com/vthorsteinsson/Reynir/master/static/GreynirTreeExampleSmall.png)](https://raw.githubusercontent.com/vthorsteinsson/Reynir/master/static/GreynirTreeExample.png)
+<a href="https://raw.githubusercontent.com/vthorsteinsson/Reynir/master/static/img/tree-example.png" title="Greynir parse tree">
+<img src="static/img/tree-example-small.png" width="400" height="450" alt="Greynir parse tree">
+</a>
 
 *A parse tree as displayed by Reynir. Nouns and noun phrases are blue, verbs and verb phrases are red,
 adjectives are green, prepositional and adverbial phrases are grey, etc.*
@@ -70,29 +72,29 @@ Reynir runs on CPython and [PyPy](http://pypy.org/) with the latter being recomm
 
 Reynir works in stages, roughly as follows:
 
-1. *Web scraper*, built on [BeautifulSoup](http://www.crummy.com/software/BeautifulSoup/)
+1. **Web scraper**, built on [BeautifulSoup](http://www.crummy.com/software/BeautifulSoup/)
   and [SQLAlchemy](http://www.sqlalchemy.org/) storing data
   in [PostgreSQL](http://www.postgresql.org/).
-2. *Tokenizer* ([this one](https://github.com/vthorsteinsson/Tokenizer)),
-  extended to use the BÍN database of Icelandic word forms for lemmatization and
-  initial POS tagging.
-3. *Parser* (from [this module](https://github.com/vthorsteinsson/ReynirPackage)),
+2. **Tokenizer** ([this one](https://github.com/vthorsteinsson/Tokenizer)),
+  extended to use the [BÍN](http://bin.arnastofnun.is/DMII/) database of Icelandic word forms for lemmatization and
+  initial part-of-speech tagging.
+3. **Parser** (from [this module](https://github.com/vthorsteinsson/ReynirPackage)),
   using an improved version of the [Earley algorithm](http://en.wikipedia.org/wiki/Earley_parser)
   to parse text according to an unconstrained hand-written context-free grammar for Icelandic
   that may yield multiple parse trees (a parse forest) in case of ambiguity.
-4. *Parse forest reducer* with heuristics to find the best parse tree.
-5. *Information extractor* that maps a parse tree via its grammar constituents to plug-in
+4. **Parse forest reducer** with heuristics to find the best parse tree.
+5. **Information extractor** that maps a parse tree via its grammar constituents to plug-in
   Python functions.
-6. *Article indexer* that transforms articles from bags-of-words to fixed-dimensional
+6. **Article indexer** that transforms articles from bags-of-words to fixed-dimensional
   topic vectors using [Tf-Idf](http://www.tfidf.com/) and
   [Latent Semantic Analysis](https://en.wikipedia.org/wiki/Latent_semantic_analysis).
-7. *Query processor* that allows natural language queries for entites in Reynir's database.
+7. **Query processor** that allows natural language queries for entites in Reynir's database.
 
 Reynir has an embedded web server that displays news articles recently scraped into its
 database, as well as names of people extracted from those articles along with their titles.
 The web UI enables the user to type in any URL and have Reynir scrape it, tokenize it and
 display the result as a web page. Queries can also be entered via the keyboard or using voice
-input. The server runs on the [Flask](http://flask.pocoo.org/) framework, implements WSGi and
+input. The server runs on the [Flask](http://flask.pocoo.org/) framework, implements WSGI and
 can for instance be plugged into [Gunicorn](http://gunicorn.org/) and
 [nginx](https://www.nginx.com/).
 
@@ -136,7 +138,7 @@ names and titles from parse trees for storage in a database table.
 
 ## File details
 
-* `main.py` : WSGi web server application and main module for command-line invocation
+* `main.py` : WSGI web server application and main module for command-line invocation
 * `settings.py` : Management of global settings and configuration data,
   obtained from `config/Reynir.conf`
 * `scraper.py` : Web scraper, collecting articles from a set of pre-selected websites (roots)
@@ -151,38 +153,66 @@ names and titles from parse trees for storage in a database table.
 * `config/Main.conf` : Various configuration data and preferences, included in `Reynir.conf`
 * `config/Names.conf` : Words that should be recognized as person names at the
   start of sentences, included in `Reynir.conf`
-* `glock.py` : Utility class for global inter-process locking
 * `fetcher.py` : Utility classes for fetching articles given their URLs
 * `utils/*.py` : Various utility programs
 
 ## Installation and setup
 
-Limited installation and setup instructions can be
-[found here](https://docs.google.com/document/d/1ywywjoOj5yas5QKjxLJ9Gqh-iNkfPae9-EKuES74aPU/edit?usp=sharing)
-(in Icelandic).
+  * [Instructions for Ubuntu/Debian GNU/Linux](docs/setup_linux.md)
+  * [Instructions for macOS](docs/setup_macos.md)
+  * [Docker container](https://github.com/vthorsteinsson/greynir-docker)
 
-## Install with Docker
+## Running Greynir
 
-Greynir can also be [built and run in Docker containers](https://github.com/vthorsteinsson/greynir-docker).
+Once you have followed the setup and installation instructions above, change to the 
+Reynir repository and activate the virtual environment:
 
-## Installation on OSx (Homebrew)
-* Download and extract pypy3.3 (http://pypy.org/download.html#installing)
-* `$ brew install postgresql (comes with contrib packages)`
-* `$ pip3 install virtualenv`
-* Clone this repo
-* cd into repo
-* `virtualenv -p /_your-pypy3-install-dir_/pypy3/bin/pypy3 venv`
+```
+cd Reynir
+venv/bin/activate
+```
 
-### Postgres database setup
-* `$ psql`
-* `create user reynir with password 'reynir';`
+You should now be able to run Greynir.
+
+##### Web application
+
+```
+python main.py
+```
+
+Defaults to running on [`localhost:5000`](http://localhost:5000) but this can be 
+changed in `config/Reynir.conf`.
+
+##### Scrapers
+
+```
+python scraper.py
+```
+
+If you are running the scraper on macOS, you may run into problems with Python's `fork()`. 
+This can be fixed by setting the following environment variable in your shell:
+
+```
+export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
+```
+
+##### Interactive shell
+
+```
+./shell.sh
+```
+
+Starts an [IPython](https://ipython.org) shell with a database session (`s`), the Reynir 
+parser (`r`) and all SQLAlchemy database models preloaded. For more info, 
+see [Using the Greynir Shell](docs/shell.md).
+
 
 ## Copyright and licensing
 
 Reynir/Greynir is *copyright (C) 2018 by Miðeind ehf.*
 The original author of this software is *Vilhjálmur Þorsteinsson*.
 
-![GPLv3](https://raw.githubusercontent.com/vthorsteinsson/Reynir/master/static/GPLv3.png)
+![GPLv3](https://raw.githubusercontent.com/vthorsteinsson/Reynir/master/static/img/GPLv3.png)
 
 This set of programs is free software: you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the Free

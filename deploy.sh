@@ -51,7 +51,7 @@ cp treeutil.py $DEST/treeutil.py
 
 cp scrapers/*.py $DEST/scrapers/
 cp templates/* $DEST/templates/
-cp static/* $DEST/static/
+rsync -av --delete static/ $DEST/static/
 cp fonts/* $DEST/fonts/
 
 # Put a version identifier (date and time) into the about.html template

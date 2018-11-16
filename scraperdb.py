@@ -487,7 +487,7 @@ class Trigram(Base):
             t2 = t2[0:mwl]
         if len(t3) > mwl:
             t3 = t3[0:mwl]
-        session.execute(self._Q, dict(t1 = t1, t2 = t2, t3 = t3))
+        session.execute(Trigram._Q, dict(t1 = t1, t2 = t2, t3 = t3))
 
     @staticmethod
     def delete_all(session):
@@ -527,13 +527,42 @@ class Link(Base):
     timestamp = Column(DateTime, nullable = False)
 
     def __repr__(self):
-        return "Link(ctype='{0}', key='{1}', content='{2}')" \
-            .format(self.ctype, self.key, self.content)
+        return "Link(ctype='{0}', key='{1}', content='{2}', ts='{3}')" \
+            .format(self.ctype, self.key, self.content, self.timestamp)
 
     @classmethod
     def table(cls):
         return cls.__table__
 
+class BlacklistedLink(Base):
+
+    """ Represents a link blacklisted for a particular key """
+
+    __tablename__ = 'blacklist'
+
+    __table_args__ = (
+        PrimaryKeyConstraint('key', 'url', name='blacklisted_pkey'),
+    )
+
+    # Key, for instance a person name
+    key = Column(String(256), nullable = False, index = True) 
+
+    # URL
+    url = Column(String(2000), nullable = False, index = True)
+
+    # Type (e.g. "image")
+    link_type = Column(String(32))
+
+    # Timestamp of this entry
+    timestamp = Column(DateTime, nullable = False)
+
+    def __repr__(self):
+        return "BlacklistedLink(key='{0}', url='{1}', type='{2}', ts='{3}')" \
+            .format(self.key, self.url, self.link_type, self.timestamp)
+
+    @classmethod
+    def table(cls):
+        return cls.__table__
 
 class _BaseQuery:
 

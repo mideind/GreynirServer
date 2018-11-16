@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 
     Reynir: Natural language processing for Icelandic
@@ -48,7 +48,12 @@ from flask.wrappers import Response
 import reynir
 from settings import Settings, ConfigError, changedlocale
 from reynir.bindb import BIN_Db
+<<<<<<< HEAD
 from nertokenizer import recognize_entities, correct_spaces
+=======
+from tokenizer import correct_spaces
+from nertokenizer import tokenize_and_recognize
+>>>>>>> 2f1147742a561591cadd2e61a58148c10990eb09
 from reynir.binparser import canonicalize_token
 from reynir.fastparser import Fast_Parser, ParseForestFlattener
 from reynir_correct import tokenize
@@ -67,7 +72,7 @@ from scraperdb import (
 )
 from query import Query
 from search import Search
-from getimage import get_image_url
+from getimage import get_image_url, update_broken_image_url, blacklist_image_url
 from tnttagger import ifd_tag
 
 
@@ -279,7 +284,7 @@ def top_news(topic=None, start=None, limit=_TOP_NEWS_LENGTH):
 
         for a in q:
             # Collect and count the titles
-            icon = a.root.domain + ".ico"
+            icon = a.root.domain + ".png"
 
             d = ArticleDisplay(
                 heading=a.heading,
@@ -396,6 +401,7 @@ def process_query(session, toklist, result):
                 height=img.height,
                 link=img.link,
                 origin=img.origin,
+                name=img.name,
             )
     return True
 
@@ -643,6 +649,8 @@ _SPECIAL_QUERIES = {
     "hver skapaði þig?": {"answer": "Villi."},
     "hver er skapari þinn?": {"answer": "Villi."},
     "hver er flottastur?": {"answer": "Villi."},
+    "hver er ég?": {"answer": "Þú ert þú."},
+    "hvar er ég?": {"answer": "Þú ert hérna."},
     "er guð til?": {"answer": "Ég held ekki."},
     "hver skapaði guð?": {"answer": "Enginn sem ég þekki."},
     "hver skapaði heiminn?": {"answer": "Enginn sem ég þekki."},
@@ -807,6 +815,25 @@ def tree_grid():
         full_height=full_height,
     )
 
+@app.route("/reportimage", methods=["POST"])
+def reportimage():
+    """ Notification that image is wrong or broken """
+    resp = dict(found_new=False)
+
+    name = request.form.get("name", "")
+    url = request.form.get("url", "")
+    status = request.form.get("status", "")
+
+    if name and url and status:
+        if status == "broken":
+            new_img = update_broken_image_url(name, url)
+        elif status == "wrong":
+            new_img = blacklist_image_url(name, url)
+        if new_img:
+            resp["image"] = new_img
+            resp["found_new"] = True
+
+    return better_jsonify(**resp)
 
 @app.route("/genders", methods=["GET"])
 @max_age(seconds=5 * 60)
@@ -850,8 +877,12 @@ def stats():
 @app.route("/about")
 @max_age(seconds=10 * 60)
 def about():
-    """ Handler for an 'About' page """
-    return render_template("about.html")
+    """ Handler for the 'About' page """
+    try:
+        version = reynir.__version__
+    except AttributeError:
+        version = ""
+    return render_template("about.html", version=version)
 
 
 @app.route("/apidoc")
@@ -1026,7 +1057,11 @@ if __name__ == "__main__":
     extra_files = [
         "Reynir.conf",
         "Verbs.conf",
+<<<<<<< HEAD
         #"VerbPrepositions.conf",
+=======
+        "Prepositions.conf",
+>>>>>>> 2f1147742a561591cadd2e61a58148c10990eb09
         "Main.conf",
         "Prefs.conf",
         "Phrases.conf",

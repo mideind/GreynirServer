@@ -1337,7 +1337,10 @@ class TreeGist(TreeBase):
         pass
 
 
-TreeToken = namedtuple('TreeToken', [ 'terminal', 'token', 'tokentype', 'aux', 'cat' ])
+TreeToken = namedtuple(
+    'TreeToken',
+    [ 'terminal', 'augmented_terminal', 'token', 'tokentype', 'aux', 'cat' ]
+)
 
 class TreeTokenList(TreeBase):
 

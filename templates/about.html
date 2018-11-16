@@ -3,7 +3,7 @@
 
 {% block styles %}
 
-<link href="{{ url_for('static', filename='main-bootstrap.css') }}"
+<link href="{{ url_for('static', filename='css/main-bootstrap.css') }}"
    rel='stylesheet' type='text/css'>
 
 {% endblock %}
@@ -14,7 +14,7 @@
    <div class="panel-heading"><span class="glyphicon glyphicon-info"></span></div>
    <div class="panel-body">
       <div style="float:right"><img class="villi img-rounded"
-      src="{{ url_for('static', filename='2325.jpg') }}" width="80" height="97"></div>
+      src="{{ url_for('static', filename='img/vth.jpg') }}" width="80" height="97"></div>
       <p class="lead"><b>Greynir</b> er málgreinir fyrir íslensku.</p>
       <p class="author"><i>Aðalhöfundur Greynis er<br>
       <a href="http://blog.pressan.is/vthorsteinsson"
@@ -25,7 +25,7 @@
       <p>Greynir les <a href="{{ url_for('stats') }}">nýjustu fréttir og greinar</a>
       jafnóðum af helstu íslensku fréttavefjunum.
       Hann þáttar textann í málsgreinatré samkvæmt
-      <a href="https://github.com/vthorsteinsson/Reynir/blob/master/Reynir.grammar"
+      <a href="https://github.com/vthorsteinsson/ReynirPackage/blob/master/src/reynir/Reynir.grammar"
       target="_blank">innbyggðum málfræðireglum fyrir íslensku</a>.
       Trén innihalda og endurspegla setningarhluta, svo sem frumlög, andlög,
       aðra nafnliði, sagnliði, forsetningarliði, samtengingar og svo framvegis.</p>
@@ -53,11 +53,17 @@
       sem var fyrsti vinnuveitandi minn á sviði hugbúnaðargerðar.</p>
    </li>
    <li class="list-group-item">
-      <p><img src="{{ url_for('static', filename='Logo-384.png') }}"
+      <p><img src="{{ url_for('static', filename='img/Logo-384.png') }}"
          width="192" height="38" style="margin-top:4px"></p>
       <p><small>
          <b>Copyright &copy; 2018 Miðeind ehf.</b>
-         &bull; <span>[Þróunarútgáfa]</span><br> <!-- This text is replaced by a date stamp in deploy.sh -->
+         &bull; <span>[Þróunarútgáfa]</span> <!-- This text is replaced by a date stamp in deploy.sh -->
+{%- if version %}
+         &bull; <span>
+            <a href="https://pypi.org/project/reynir" target="_blank">ReynirPackage {{version}}</a>
+         </span>
+{%- endif -%}
+         <br>
          Frumforrit Greynis og tengdar skrár eru
          <a href="https://github.com/vthorsteinsson/Reynir" target="_blank">opin á GitHub</a>.
          <br>Samhengisfrjálsa málfræði (<i>context-free grammar</i>) Greynis fyrir íslensku má
@@ -67,7 +73,7 @@
          sem er einnig opinn og frjáls hugbúnaður.
       </small></p>
       <p><a href="https://www.gnu.org/licenses/gpl-3.0.html"
-         target="_blank"><img src="{{ url_for('static', filename='GPLv3.png') }}"
+         target="_blank"><img src="{{ url_for('static', filename='img/GPLv3.png') }}"
          width="151" height="60" style="float:right; margin-top: -40px"></a>
          <small>Um frumforrit og tengdar skrár gildir notkunarleyfið
             <a href="https://www.gnu.org/licenses/gpl-3.0.html"

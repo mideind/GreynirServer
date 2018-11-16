@@ -4,7 +4,7 @@
 
     Trigrams module
 
-    Copyright (c) 2017 Miðeind ehf
+    Copyright (c) 2018 Miðeind ehf
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -40,8 +40,8 @@ else:
     basepath = ""
 
 from settings import Settings, ConfigError, Prepositions
-from tokenizer import tokenize, correct_spaces, canonicalize_token, TOK
-from bindb import BIN_Db
+from tokenizer import tokenize, correct_spaces, TOK
+from reynir.bindb import BIN_Db
 from scraperdb import SessionContext, Article, Trigram, DatabaseError, desc
 from tree import TreeTokenList, TerminalDescriptor
 
@@ -51,17 +51,22 @@ def dump_tokens(limit):
         of tokens and their matched terminals """
 
     dtd = dict()
-    with BIN_Db.get_db() as db, SessionContext(commit = True) as session:
+    with BIN_Db.get_db() as db, SessionContext(commit=True) as session:
         # Iterate through the articles
-        q = session.query(Article) \
-            .filter(Article.tree != None) \
+        q = (
+            session.query(Article)
+            .filter(Article.tree != None)
             .order_by(Article.timestamp)
+        )
         if limit is None:
             q = q.all()
         else:
             q = q[0:limit]
         for a in q:
-            print("\nARTICLE\nHeading: '{0.heading}'\nURL: {0.url}\nTimestamp: {0.timestamp}".format(a))
+            print(
+                "\nARTICLE\nHeading: '{0.heading}'\nURL: {0.url}\nTimestamp: {0.timestamp}"
+                .format(a)
+            )
             tree = TreeTokenList()
             tree.load(a.tree)
             for ix, toklist in tree.sentences():
@@ -81,18 +86,29 @@ def dump_tokens(limit):
                         print("    {0.token} {0.cat} {0.terminal}".format(t))
 
 
-def make_trigrams(limit):
+def make_trigrams(limit, output_tsv=False):
     """ Iterate through parsed articles and extract trigrams from
-        successfully parsed sentences """
+        successfully parsed sentences. If output_tsv is True, the
+        trigrams are output to a tab-separated text file. Otherwise,
+        they are 'upserted' into the trigrams table of the
+        scraper database. """
 
-    with SessionContext(commit = True) as session:
+    with SessionContext(commit=False) as session:
 
-        # Delete existing trigrams
-        Trigram.delete_all(session)
+        if output_tsv:
+            tsv_file = open(os.path.join(basepath, "resources", "trigrams.tsv"), "w")
+        else:
+            # Delete existing trigrams
+            Trigram.delete_all(session)
+            session.commit()
+            tsv_file = None
+
         # Iterate through the articles
-        q = session.query(Article.url, Article.timestamp, Article.tree) \
-            .filter(Article.tree != None) \
+        q = (
+            session.query(Article.url, Article.timestamp, Article.tree)
+            .filter(Article.tree != None)
             .order_by(Article.timestamp)
+        )
         if limit is None:
             q = q.yield_per(200)
         else:
@@ -105,44 +121,92 @@ def make_trigrams(limit):
                 tree = TreeTokenList()
                 tree.load(a.tree)
                 for ix, toklist in tree.sentences():
-                    if toklist:
+                    if toklist and len(toklist) > 1:
                         # For each sentence, start and end with empty strings
                         yield ""
                         yield ""
                         for t in toklist:
-                            yield t.token[1:-1]
+                            yield from t.token[1:-1].split()
                         yield ""
                         yield ""
 
         def trigrams(iterable):
-            return zip(*((islice(seq, i, None) for i, seq in enumerate(tee(iterable, 3)))))
+            return zip(
+                *((islice(seq, i, None) for i, seq in enumerate(tee(iterable, 3))))
+            )
 
-        FLUSH_THRESHOLD = 0 # 200 # Flush once every 200 records
+        FLUSH_THRESHOLD = 200  # Flush once every 200 records
         cnt = 0
-        for tg in trigrams(tokens(q)):
-            # print("{0}".format(tg))
-            if any(w for w in tg):
-                try:
-                    Trigram.upsert(session, *tg)
-                    cnt += 1
-                    if cnt == FLUSH_THRESHOLD:
-                        session.flush()
-                        cnt = 0
-                except DatabaseError as ex:
-                    print("*** Exception {0} on trigram {1}, skipped".format(ex, tg))
+        try:
+            for tg in trigrams(tokens(q)):
+                # print("{0}".format(tg))
+                if any(w for w in tg):
+                    try:
+                        if output_tsv:
+                            tsv_file.write("{0}\t{1}\t{2}\n".format(*tg))
+                        else:
+                            Trigram.upsert(session, *tg)
+                            cnt += 1
+                            if cnt >= FLUSH_THRESHOLD:
+                                session.flush()
+                                cnt = 0
+                    except DatabaseError as ex:
+                        print(
+                            "*** Exception {0} on trigram {1}, skipped"
+                            .format(ex, tg)
+                        )
+        finally:
+            if output_tsv:
+                tsv_file.close()
+            else:
+                session.commit()
+
+
+def create_trigrams_csv():
+    """ Read a text file generated by uniq -c < trigrams.sorted.tsv > trigrams.uniq.tsv
+        and create a corresponding csv file for bulk load into PostgreSQL """
+
+    def csv(s):
+        """ Convert a string to CSV format, with double quotes and escaping """
+        return '"' + s.replace('"', '""') + '"'
+
+    ix = 0
+
+    with open(
+        os.path.join(basepath, "resources", "trigrams.uniq.tsv"), "r"
+    ) as tsv_file:
+
+        with open(os.path.join(basepath, "resources", "trigrams.csv"), "w") as csv_file:
+            for line in tsv_file:
+                if not line:
+                    continue
+                cnt = int(line[0:8])
+                a = line[8:].rstrip().split("\t")
+                if any(len(s) > 64 for s in a):
+                    # Skip words longer than 64 characters, as they exceed
+                    # the trigram table's column width
+                    continue
+                while len(a) < 3:
+                    a.append("")
+                csv_file.write(
+                    "{0},{1},{2},{3}\n".format(csv(a[0]), csv(a[1]), csv(a[2]), cnt)
+                )
+                ix += 1
+                if ix % 100000 == 0:
+                    print("{0} lines processed".format(ix), end="\r")
 
 
 def spin_trigrams(num):
     """ Spin random sentences out of trigrams """
 
-    with SessionContext(commit = True) as session:
+    with SessionContext(commit=True) as session:
         print("Loading first candidates")
         q = session.execute(
             "select t3, frequency from trigrams where t1='' and t2='' order by frequency desc"
         )
         # DEBUG
-        #from sqlalchemy.dialects import postgresql
-        #print(str(q.statement.compile(dialect=postgresql.dialect())))
+        # from sqlalchemy.dialects import postgresql
+        # print(str(q.statement.compile(dialect=postgresql.dialect())))
         # DEBUG
         first = q.fetchall()
         print("{0} first candidates loaded".format(len(first)))
@@ -161,13 +225,14 @@ def spin_trigrams(num):
                             candidates = []
                             break
                         if sent:
-                            sent += ' ' + t3
+                            sent += " " + t3
                         else:
                             sent = t3
                         t1, t2 = t2, t3
                         q = session.execute(
-                            "select t3, frequency from trigrams where t1=:t1 and t2=:t2 order by frequency desc",
-                            dict(t1 = t1, t2 = t2)
+                            "select t3, frequency from trigrams "
+                            "where t1=:t1 and t2=:t2 order by frequency desc",
+                            dict(t1=t1, t2=t2)
                         )
                         candidates = q.fetchall()
                         break
@@ -188,8 +253,11 @@ def main():
         print("Configuration error: {0}".format(e))
         quit()
 
-    #make_trigrams(limit = None)
-    #dump_tokens(limit = 10)
+    # make_trigrams(limit=None, output_tsv=True)
+
+    # create_trigrams_csv()
+
+    # dump_tokens(limit = 10)
 
     spin_trigrams(25)
 
