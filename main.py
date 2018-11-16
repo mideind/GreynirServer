@@ -841,13 +841,13 @@ def suggest(limit=10):
     txt = request.args.get("q", "").strip()
 
     suggestions = list()
-    whois_prefix = "Hver er "
-    whatis_prefix = "Hvað er "
+    whois_prefix = "hver er "
+    whatis_prefix = "hvað er "
 
     prefix = None
-    if txt.startswith(whois_prefix):
+    if txt.lower().startswith(whois_prefix):
         prefix = whois_prefix
-    elif txt.startswith(whatis_prefix):
+    elif txt.lower().startswith(whatis_prefix):
         prefix = whatis_prefix
 
     if not txt or not prefix:
@@ -887,6 +887,8 @@ def suggest(limit=10):
             )
 
         q = q.limit(limit).all()
+        
+        prefix = prefix[:1].upper() + prefix[1:].lower()
         suggestions = [{ 'value': (prefix + p[0] + '?'), 'data': '' } for p in q]
 
     return better_jsonify(suggestions=suggestions)

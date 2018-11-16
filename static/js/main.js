@@ -536,14 +536,14 @@ function getUrlVars() {
    return vars;
 }
 
-function autoCompleteLookup(query, done)  {
+function autoCompleteLookup(q, done)  {
    // Only trigger lookup for certain prefixes
    var none = { 'suggestions': [] };
-   var whois = 'Hver er ';
-   var whatis = 'Hvað er ';
-   var minqlen = whois.length + 1;
-   var valid = (query.startsWith(whois) || query.startsWith(whatis)) &&
-               query.length >= minqlen && !query.endsWith('?');
+   var whois = 'hver er ';
+   var whatis = 'hvað er ';
+   var minqlen = Math.max(whois.length, whatis.length) + 1;
+   var valid = (q.toLowerCase().startsWith(whois) || q.toLowerCase().startsWith(whatis))
+               && q.length >= minqlen && !q.endsWith('?');
    if (!valid) {
       done(none);
       return;
@@ -553,8 +553,8 @@ function autoCompleteLookup(query, done)  {
       autoCompleteLookup.cache = { };
    }
    cache = autoCompleteLookup.cache;
-   if (cache[query] !== undefined) {
-      done(cache[query]);
+   if (cache[q] !== undefined) {
+      done(cache[q]);
       return;
    }
    // Cancel any active request
@@ -564,14 +564,14 @@ function autoCompleteLookup(query, done)  {
    // Ajax request to server
    autoCompleteLookup.req = $.ajax({
       type: 'GET',
-      url: "/suggest?q="+ query,
+      url: "/suggest?q=" + encodeURIComponent(q),
       dataType: "json",
       success: function(json) {
-         autoCompleteLookup.cache[query] = json;
+         autoCompleteLookup.cache[q] = json;
          done(json);
       },
       error: function(ajaxContext) {
-         console.log(ajaxContext.responseText)
+         done(none);
       }
    });
 }
