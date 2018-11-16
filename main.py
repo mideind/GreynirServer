@@ -68,7 +68,7 @@ from query import Query
 from search import Search
 from getimage import get_image_url
 from tnttagger import ifd_tag
-from nnclient import NnClient
+from nnclient import ParsingClient, TranslateClient
 
 
 # Initialize Flask framework
@@ -418,10 +418,19 @@ def text_from_request(request):
     return " ".join(text.split())[0:_MAX_TEXT_LENGTH]
 
 
+@app.context_processor
+def inject_nn_bools():
+    """ Inject bool switches for neural network features """
+    return dict(
+        nn_parsing_enabled=Settings.NN_PARSING_ENABLED,
+        nn_translate_enabled=Settings.NN_TRANSLATE_ENABLED,
+    )
+
+
 # Note: Endpoints ending with .api are configured not to be cached by nginx
-@app.route("/nntree.api", methods=["GET", "POST"])
-@app.route("/nntree.api/v<int:version>", methods=["GET", "POST"])
-def nntree_api(version=1):
+@app.route("/nnparse.api", methods=["GET", "POST"])
+@app.route("/nnparse.api/v<int:version>", methods=["GET", "POST"])
+def nnparse_api(version=1):
     """ Analyze text manually entered by the user, by passing the request
         to a neural network server and returning its result back """
     if not (1 <= version <= 1):
@@ -432,15 +441,34 @@ def nntree_api(version=1):
     except:
         return better_jsonify(valid=False, reason="Invalid request")
 
-    nnTree = NnClient.parse_sentence(text)
+    nnTree = ParsingClient.request_sentence(text)
     result = {
         "tree": nnTree.to_dict(),
-        "width": nnTree.width() * 80,
-        "height": nnTree.height() * 80,
+        "width": nnTree.width() * 60,
+        "height": nnTree.height() * 60,
     }
 
     return better_jsonify(valid=True, result=result)
 
+# Note: Endpoints ending with .api are configured not to be cached by nginx
+@app.route("/nntranslate.api", methods=["GET", "POST"])
+@app.route("/nntranslate.api/v<int:version>", methods=["GET", "POST"])
+def nntranslate_api(version=1):
+    """ Translate text manually entered by the user, by passing the request
+        to a neural network server and returning its result back """
+    if not (1 <= version <= 1):
+        return better_jsonify(valid=False, reason="Unsupported version")
+
+    try:
+        text = text_from_request(request)
+    except:
+        return better_jsonify(valid=False, reason="Invalid request")
+
+    # TODO(haukurb): Hvar skal aðskilja í setningar?
+    result = TranslateClient.request_text(text)
+    app.logger.info(result)
+
+    return better_jsonify(valid=True, result=result)
 
 # Note: Endpoints ending with .api are configured not to be cached by nginx
 @app.route("/analyze.api", methods=["GET", "POST"])
@@ -734,7 +762,6 @@ def tree_grid():
     with SessionContext(commit=True) as session:
         # Obtain simplified tree, full tree and stats
         tree, full_tree, stats = TreeUtility.parse_text_with_full_tree(session, txt)
-        # tree, full_tree, stats = TreeUtility.parse_text_with_full_tree(session, "Jónas kom")
         if full_tree is not None:
             # Create a more manageable, flatter tree from the binarized raw parse tree
             full_tree = ParseForestFlattener.flatten(full_tree)
@@ -829,7 +856,6 @@ def tree_grid():
         height=height,
         full_tbl=full_tbl,
         full_height=full_height,
-        nn_enabled=Settings.NN_ENABLED,
     )
 
 
@@ -932,6 +958,13 @@ def analysis():
     """ Handler for a page with grammatical analysis of user-entered text """
     txt = request.args.get("txt", "")[0:_MAX_TEXT_LENGTH_VIA_URL]
     return render_template("analysis.html", default_text=txt)
+
+
+@app.route("/translate")
+def translate():
+    """ Handler for a page with machine translation of user-entered text """
+    txt = request.args.get("txt", "")[0:_MAX_TEXT_LENGTH_VIA_URL]
+    return render_template("translate.html", default_text=txt)
 
 
 @app.route("/page")
@@ -1041,8 +1074,27 @@ if Settings.DEBUG:
             sys.version,
         )
     )
-    nn_status = "disabled" if not Settings.NN_ENABLED else "enabled on {0}:{1}".format(Settings.NN_HOST, Settings.NN_PORT)
-    print("Neural network server is {0}".format(nn_status))
+    nn_parsing_status = "disabled"
+    if Settings.NN_PARSING_ENABLED:
+        nn_parsing_status = "disabled"
+        nn_parsing_status = ("enabled on {host}:{port}"
+                             .format(host=Settings.NN_PARSING_HOST,
+                                     port=Settings.NN_PARSING_PORT,
+                             ))
+    print("Neural network parsing server is {status}".format(
+        status=nn_parsing_status)
+    )
+
+    nn_translate_status = "disabled"
+    if Settings.NN_TRANSLATE_ENABLED:
+        nn_translate_status = "disabled"
+        nn_translate_status = ("enabled on {host}:{port}"
+                             .format(host=Settings.NN_TRANSLATE_HOST,
+                                     port=Settings.NN_TRANSLATE_PORT,
+                             ))
+    print("Neural network translation server is {status}".format(
+        status=nn_translate_status)
+    )
 
 if __name__ == "__main__":
 

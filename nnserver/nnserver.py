@@ -22,6 +22,30 @@
     This module implements a server that provides an Icelandic text interface to
     a Tensorflow model server running a text-to-parse-tree neural network.
 
+    Example usage:
+    python nnserver.py -lh 0.0.0.0 -lp 8080 -mh localhost -mp 9001
+
+    To curl a running nnserver try:
+    curl --header "Content-Type: application/json" \
+        --request POST \
+        http://localhost:8080/translate.api \
+        --data '{"pgs":["Hvernig komstu þangað?", "Hvert er ferðinni svo heitið?"],"signature_name":"serving_default"}'
+
+    To test a running model server directly, try:
+    curl --header "Content-Type: application/json" \
+        --request POST \
+        http://localhost:8080/v1/models/transformer:predict \
+        --data '{"instances":[{"input":{"b64":"CiAKHgoGaW5wdXRzEhQaEgoQpweFF0oOBsI+EclIBP4cAQ=="}}],"signature_name":"serving_default"}'
+
+    To test a running model server directly and receive gRPC error feedback (more informative than RESTful):
+    cd tf/lib/python3.5/site-packages
+    python tensor2tensor/serving/query.py \
+        --server 'localhost:8081' \
+        --servable_name transformer \
+        --data_dir ~/t2t_data \
+        --t2t_usr_dir ~/t2t_usr \
+        --problem translate_enis16k_rev \
+        --inputs_once "Kominn."
 """
 
 import base64
@@ -44,7 +68,9 @@ PAD_ID = text_encoder.PAD_ID
 _NNSERVER_PATH = os.path.dirname(os.path.realpath(__file__))
 _PROJECT_PATH = os.path.join(_NNSERVER_PATH, "greynir")
 
-_PARSING_VOCAB_PATH = os.path.join(_PROJECT_PATH, "resources", "parsing_tokens_180729.txt")
+_PARSING_VOCAB_PATH = os.path.join(
+    _PROJECT_PATH, "resources", "parsing_tokens_180729.txt"
+)
 _ENIS_VOCAB_PATH = os.path.join(_PROJECT_PATH, "resources", "vocab.enis.16384.subwords")
 
 
@@ -52,14 +78,14 @@ app = Flask(__name__)
 
 
 class NnServer:
-    """ Client that minics the HTTP RESTful interface of
+    """ Client that mimics the HTTP RESTful interface of
         a tensorflow model server, but accepts plain text. """
 
     _tfms_version = "v1"
     _model_name = "transformer"
     _verb = "predict"
-    _parsingEncoder = CompositeTokenEncoder(_PARSING_VOCAB_PATH, version=1)
-    _enisEncoder = text_encoder.SubwordTextEncoder(_ENIS_VOCAB_PATH)
+    src_enc = None
+    tgt_enc = None
 
     @classmethod
     def request(cls, pgs):
@@ -72,10 +98,7 @@ class NnServer:
             verb=cls._verb,
         )
         instances = [cls.serialize_to_instance(sent) for sent in pgs]
-        payload = {
-            "signature_name": "serving_default",
-            "instances": instances,
-        }
+        payload = {"signature_name": "serving_default", "instances": instances}
         payload = json.dumps(payload)
         headers = {"content-type": "application/json"}
         resp = requests.post(url, data=payload, headers=headers)
@@ -94,8 +117,11 @@ class NnServer:
             return None
 
     @classmethod
-    def process_response_instance(cls, instance, sent):
+    def process_response_instance(cls, instance, sent, src_enc=None, tgt_enc=None):
         """  Process the numerical output from the model server for one sentence """
+        src_enc = src_enc or cls.src_enc
+        tgt_enc = tgt_enc or cls.tgt_enc
+
         scores = instance["scores"]
         output_ids = instance["outputs"]
 
@@ -107,23 +133,28 @@ class NnServer:
         pad_start = output_ids.index(PAD_ID) if PAD_ID in output_ids else length
         eos_start = output_ids.index(EOS_ID) if EOS_ID in output_ids else length
         sent_end = min(pad_start, eos_start)
-        output_toks = cls._parsingEncoder.decode(output_ids[:sent_end])
+        output_toks = cls.tgt_enc.decode(output_ids[:sent_end])
 
-        app.logger.debug("tokenized and depadded: " +
-                         str(cls._parsingEncoder.decode_list(output_ids[:sent_end])))
+        app.logger.debug(
+            "tokenized and depadded: "
+            + str(cls.tgt_enc.decode_list(output_ids[:sent_end]))
+        )
         app.logger.info(output_toks)
 
         instance["outputs"] = output_toks
         return instance
 
     @classmethod
-    def serialize_to_instance(cls, sent):
+    def serialize_to_instance(cls, sent, src_enc=None, tgt_enc=None):
         """ Encodes a single sentence into the format expected by the RESTful interface
         of tensorflow_model_server running an exported tensor2tensor transformer translation model """
         # Add end of sentence token
-        input_ids = cls._enisEncoder.encode(sent)
+        src_enc = src_enc or cls.src_enc
+        tgt_enc = tgt_enc or cls.tgt_enc
+
+        input_ids = cls.src_enc.encode(sent)
         app.logger.info("received: " + sent)
-        app.logger.debug("tokenized: " + str(cls._enisEncoder.decode_list(input_ids)))
+        app.logger.debug("tokenized: " + str(cls.src_enc.decode_list(input_ids)))
         app.logger.debug("input_ids: " + str(input_ids))
         input_ids.append(EOS_ID)
 
@@ -137,6 +168,23 @@ class NnServer:
         return {"input": {"b64": b64_example}}
 
 
+class ParsingServer(NnServer):
+    """ Client that accepts plain text Icelandic
+        and returns a flattened parse tree according
+        to the Reynir schema """
+
+    src_enc = text_encoder.SubwordTextEncoder(_ENIS_VOCAB_PATH)
+    tgt_enc = CompositeTokenEncoder(_PARSING_VOCAB_PATH, version=1)
+
+
+class TranslateServer(NnServer):
+    """ Client that accepts plain text Icelandic
+        and returns an English translation of the text """
+
+    src_enc = text_encoder.SubwordTextEncoder(_ENIS_VOCAB_PATH)
+    tgt_enc = src_enc
+
+
 @app.route("/parse.api", methods=["POST"])
 def parse_api():
     try:
@@ -144,7 +192,21 @@ def parse_api():
         obj = json.loads(req_body)
         # TODO: validate form?
         pgs = obj["pgs"]
-        model_response = NnServer.request(pgs)
+        model_response = ParsingServer.request(pgs)
+        resp = jsonify(model_response)
+    except:
+        resp = jsonify(valid=False, reason="Invalid request")
+    resp.headers["Content-Type"] = "application/json; charset=utf-8"
+    return resp
+
+
+@app.route("/translate.api", methods=["POST"])
+def translate_api():
+    try:
+        req_body = request.data.decode("utf-8")
+        obj = json.loads(req_body)
+        pgs = obj["pgs"]
+        model_response = TranslateServer.request(pgs)
         resp = jsonify(model_response)
     except:
         resp = jsonify(valid=False, reason="Invalid request")
@@ -161,6 +223,7 @@ if __name__ == "__main__":
         )
     )
     parser.add_argument(
+        "-lh",
         "--listen_host",
         dest="IN_HOST",
         default="0.0.0.0",
@@ -169,6 +232,7 @@ if __name__ == "__main__":
         help="Hostname to listen on",
     )
     parser.add_argument(
+        "-lp",
         "--listen_port",
         dest="IN_PORT",
         default="8080",
@@ -177,6 +241,7 @@ if __name__ == "__main__":
         help="Port to listen on",
     )
     parser.add_argument(
+        "-mh",
         "--model_host",
         dest="OUT_HOST",
         default="localhost",
@@ -185,6 +250,7 @@ if __name__ == "__main__":
         help="Hostname of model server",
     )
     parser.add_argument(
+        "-mp",
         "--model_port",
         dest="OUT_PORT",
         default="9000",

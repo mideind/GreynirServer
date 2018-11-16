@@ -596,17 +596,29 @@ class Settings:
     except ValueError:
         raise ConfigError("Invalid environment variable value: SIMSERVER_PORT = {0}".format(SIMSERVER_PORT))
 
-    NN_ENABLED = os.environ.get('NN_ENABLED', False)
+    NN_PARSING_ENABLED = os.environ.get('NN_PARSING_ENABLED', False)
     try:
-        NN_ENABLED = bool(int(NN_ENABLED))
+        NN_PARSING_ENABLED = bool(int(NN_PARSING_ENABLED))
     except ValueError:
-        raise ConfigError("Invalid environment variable value: NN_ENABLED = {0}".format(NN_ENABLED))
-    NN_HOST = os.environ.get('NN_HOST', 'localhost')
-    NN_PORT = os.environ.get('NN_PORT', '9000')
+        raise ConfigError("Invalid environment variable value: NN_PARSING_ENABLED = {0}".format(NN_PARSING_ENABLED))
+    NN_PARSING_HOST = os.environ.get('NN_PARSING_HOST', 'localhost')
+    NN_PARSING_PORT = os.environ.get('NN_PARSING_PORT', '9000')
     try:
-        NN_PORT = int(NN_PORT)
+        NN_PARSING_PORT = int(NN_PARSING_PORT)
     except ValueError:
-        raise ConfigError("Invalid environment variable value: NN_PORT = {0}".format(NN_PORT))
+        raise ConfigError("Invalid environment variable value: NN_PARSING_PORT = {0}".format(NN_PARSING_PORT))
+
+    NN_TRANSLATE_ENABLED = os.environ.get('NN_TRANSLATE_ENABLED', False)
+    try:
+        NN_TRANSLATE_ENABLED = bool(int(NN_TRANSLATE_ENABLED))
+    except ValueError:
+        raise ConfigError("Invalid environment variable value: NN_TRANSLATE_ENABLED = {0}".format(NN_TRANSLATE_ENABLED))
+    NN_TRANSLATE_HOST = os.environ.get('NN_TRANSLATE_HOST', 'localhost')
+    NN_TRANSLATE_PORT = os.environ.get('NN_TRANSLATE_PORT', '9001')
+    try:
+        NN_TRANSLATE_PORT = int(NN_TRANSLATE_PORT)
+    except ValueError:
+        raise ConfigError("Invalid environment variable value: NN_TRANSLATE_PORT = {0}".format(NN_TRANSLATE_PORT))
 
     # Configuration settings from the Reynir.conf file
 

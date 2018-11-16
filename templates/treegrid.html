@@ -306,7 +306,7 @@
       </li>
 
 <!-- nntree tab -->
-{% if nn_enabled -%}
+{% if nn_parsing_enabled -%}
       <li role="presentation">
          <a id="nn-status" href="#nn-tree" aria-controls="nn-tree" role="tab" data-toggle="tab">
                 <span class="glyphicon glyphicon-restart glyphicon-spin"></span>&nbsp;Tauganet
@@ -411,7 +411,7 @@
 
       </div>
 
-{% if nn_enabled -%}
+{% if nn_parsing_enabled -%}
       <!-- nntree canvas -->
       <div role="tabpanel" class="tab-pane" id="nn-tree">
 
@@ -817,7 +817,7 @@ function editSentence() {
    window.location.href = "/analysis?txt=" + encodeURIComponent(theText);
 }
 
-{% if nn_enabled -%}
+{% if nn_parsing_enabled -%}
  // Configure the tree layout object
 
 var nnTreeData = null;
@@ -847,7 +847,7 @@ function get_nntree(text) {
          text:text
      }
     $.ajax({
-        url: "{{ url_for('nntree_api') }}",
+        url: "{{ url_for('nnparse_api') }}",
         data: payload,
         type: "POST",
         dataType: "json",
@@ -938,7 +938,7 @@ function initMain(jQuery) {
       d3_update(g, root, tree_fn);
    }
 
-{% if nn_enabled -%}
+{% if nn_parsing_enabled -%}
     get_nntree(theText);
     nn_wait(true);
 {%- endif %}
