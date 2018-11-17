@@ -177,10 +177,9 @@ def update_broken_image_url(name, url):
         if r and r.timestamp < datetime.utcnow() - timedelta(minutes=30):
             # Verify that URL is indeed broken
             if not check_image_url(url):
-                # Purge from cache and refetch
-                # We could blacklist the URL, but the assumption is that
-                # new API results will not contain broken image links
-                _purge_single(name, ctype=r.ctype)
+                # Blacklist the URL, purge results from cache and refetch
+                blacklist_image_url(name, url)
+                _purge_single(name, ctype=r.ctype, enclosing_session=session)
                 return get_image_url(name)
 
     return None

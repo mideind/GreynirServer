@@ -1,5 +1,6 @@
 bs4==0.0.1
 Flask==1.0.2
+flask-caching>=1.4.0
 greenlet==0.4.13
 eventlet==0.23.0
 psycopg2cffi==2.8.1
