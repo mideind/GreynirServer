@@ -70,7 +70,7 @@ from scraperdb import (
 )
 from query import Query
 from search import Search
-from getimage import get_image_url, update_broken_image_url, blacklist_image_url
+from images import get_image_url, update_broken_image_url, blacklist_image_url
 from tnttagger import ifd_tag
 
 
@@ -813,6 +813,7 @@ def tree_grid():
         full_height=full_height,
     )
 
+
 @app.route("/reportimage", methods=["POST"])
 def reportimage():
     """ Notification that image is wrong or broken """
@@ -832,6 +833,27 @@ def reportimage():
             resp["found_new"] = True
 
     return better_jsonify(**resp)
+
+
+@app.route("/image", methods=["GET"])
+def image():
+    """ Get image for name """
+    resp = dict(found=False)
+
+    name = request.args.get("name", "")
+    try:
+        thumb = int(request.args.get("thumb", 0))
+    except:
+        thumb = 0
+
+    if name:
+        img = get_image_url(name, thumb=thumb, cache_only=True)
+        if img:
+            resp['found'] = True
+            resp['image'] = img
+
+    return better_jsonify(**resp)
+
 
 @app.route("/suggest", methods=["GET"])
 @cache.cached(timeout=300, key_prefix='suggestions', query_string=True)
@@ -892,6 +914,7 @@ def suggest(limit=10):
         suggestions = [{ 'value': (prefix + p[0] + '?'), 'data': '' } for p in q]
 
     return better_jsonify(suggestions=suggestions)
+
 
 @app.route("/genders", methods=["GET"])
 @max_age(seconds=5 * 60)
