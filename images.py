@@ -37,17 +37,17 @@ def _server_query(url, q):
             if response:
                 # Decode the HTML Content-type header to obtain the
                 # document type and the charset (content encoding), if specified
-                encoding = 'ISO-8859-1'
+                encoding = "ISO-8859-1"
                 ctype = response.getheader("Content-type", "")
-                if ';' in ctype:
-                    s = ctype.split(';')
+                if ";" in ctype:
+                    s = ctype.split(";")
                     ctype = s[0]
                     enc = s[1].strip()
-                    s = enc.split('=')
+                    s = enc.split("=")
                     if s[0] == "charset" and len(s) == 2:
                         encoding = s[1]
                 if ctype == "application/json":
-                    doc = response.read() # doc is a bytes object
+                    doc = response.read()  # doc is a bytes object
                     if doc:
                         doc = doc.decode(encoding)
     except HTTPError as ex:
@@ -66,20 +66,23 @@ _CACHE_EXPIRATION_DAYS = 14
 # Number of image URLs to fetch and store
 _NUM_IMG_URLS = 10
 # The returned image descriptor tuple
-Img = namedtuple('Img', ['src', 'width', 'height', 'link', 'origin', 'name'])
+Img = namedtuple("Img", ["src", "width", "height", "link", "origin", "name"])
 
 
-def get_image_url(name, hints=[], size="large", thumb=False,
-                  enclosing_session=None, cache_only=False):
+def get_image_url(
+    name, hints=[], size="large", thumb=False, enclosing_session=None, cache_only=False
+):
     """ Use Google Custom Search API to obtain an image corresponding to a (person) name """
     jdoc = None
     ctype = _CTYPE + size
 
     with SessionContext(commit=True, session=enclosing_session) as session:
-        q = session.query(Link.content, Link.timestamp) \
-            .filter(Link.ctype == ctype) \
-            .filter(Link.key == name) \
+        q = (
+            session.query(Link.content, Link.timestamp)
+            .filter(Link.ctype == ctype)
+            .filter(Link.key == name)
             .one_or_none()
+        )
         if q is not None:
             # Found in cache
             if datetime.utcnow() - q.timestamp > timedelta(days=_CACHE_EXPIRATION_DAYS):
@@ -108,27 +111,24 @@ def get_image_url(name, hints=[], size="large", thumb=False,
                 return None
 
             # Assemble the query parameters
-            search_str = '"{0}" {1}'.format(name, ' '.join(hints)).strip()
+            search_str = '"{0}" {1}'.format(name, " ".join(hints)).strip()
             q = dict(
-                q = search_str,
-                num = _NUM_IMG_URLS,
-                start = 1,
-                imgSize = size,
-                #imgType = "face",   # Only images with faces
-                lr = "lang_is",     # Higher priority for Icelandic language pages
-                gl = "is",          # Higher priority for .is results
-                searchType = "image",
-                cx = _CX,
-                key = _API_KEY,
+                q=search_str,
+                num=_NUM_IMG_URLS,
+                start=1,
+                imgSize=size,
+                # imgType = "face",   # Only images with faces
+                lr="lang_is",       # Higher priority for Icelandic language pages
+                gl="is",            # Higher priority for .is results
+                searchType="image",
+                cx=_CX,
+                key=_API_KEY,
             )
             jdoc = _server_query("https://www.googleapis.com/customsearch/v1", q)
             if jdoc:
                 # Store in the cache
                 l = Link(
-                    ctype = ctype,
-                    key = name,
-                    content = jdoc,
-                    timestamp = datetime.utcnow()
+                    ctype=ctype, key=name, content=jdoc, timestamp=datetime.utcnow()
                 )
                 session.add(l)
 
@@ -137,7 +137,12 @@ def get_image_url(name, hints=[], size="large", thumb=False,
 
         answer = json.loads(jdoc)
 
-        if answer and "items" in answer and answer["items"] and "link" in answer["items"][0]:
+        if (
+            answer
+            and "items" in answer
+            and answer["items"]
+            and "link" in answer["items"][0]
+        ):
             blacklist = _blacklisted_urls_for_key(name, enclosing_session=session)
 
             for item in answer["items"]:
@@ -150,6 +155,7 @@ def get_image_url(name, hints=[], size="large", thumb=False,
 
     # No answer that makes sense
     return None
+
 
 def blacklist_image_url(name, url):
     """ Blacklist image URL for a given key """
@@ -165,14 +171,12 @@ def blacklist_image_url(name, url):
 
         # Add to blacklist
         b = BlacklistedLink(
-            key = name,
-            url = url,
-            link_type = 'image',
-            timestamp = datetime.utcnow()
+            key=name, url=url, link_type="image", timestamp=datetime.utcnow()
         )
         session.add(b)
 
         return get_image_url(name, enclosing_session=session)
+
 
 def update_broken_image_url(name, url):
     """ Refetch image URL for name if broken """
@@ -193,35 +197,43 @@ def update_broken_image_url(name, url):
 
     return None
 
+
 def check_image_url(url):
     """ Check if image exists at URL by sending HEAD request """
     req = urllib.request.Request(url, method="HEAD")
     try:
         response = urllib.request.urlopen(req, timeout=2.0)
-        return (response.status == 200)
+        return response.status == 200
     except:
         pass
-    
+
     return False
+
 
 def _blacklisted_urls_for_key(key, enclosing_session=None):
     """ Fetch blacklisted urls for a given key """
     with SessionContext(commit=True, session=enclosing_session) as session:
-        q = session.query(BlacklistedLink.url) \
-            .filter(BlacklistedLink.link_type == "image") \
-            .filter(BlacklistedLink.key == key) \
+        q = (
+            session.query(BlacklistedLink.url)
+            .filter(BlacklistedLink.link_type == "image")
+            .filter(BlacklistedLink.key == key)
             .all()
+        )
         return [r for (r,) in q]
+
 
 def _get_cached_entry(name, url, enclosing_session=None):
     """ Fetch cached entry by key and url """
     with SessionContext(commit=True, session=enclosing_session) as session:
         # TODO: content column should be converted to jsonb
         # from varchar to query faster & more intelligently
-        return session.query(Link) \
-                .filter(Link.key == name) \
-                .filter(Link.content.like('%'+url+'%')) \
-                .one_or_none()
+        return (
+            session.query(Link)
+            .filter(Link.key == name)
+            .filter(Link.content.like("%" + url + "%"))
+            .one_or_none()
+        )
+
 
 def _purge_single(key, ctype=None, enclosing_session=None):
     """ Remove cache entry """
@@ -230,15 +242,15 @@ def _purge_single(key, ctype=None, enclosing_session=None):
         if ctype:
             filters.append(Link.ctype == ctype)
 
-        session.query(Link) \
-        .filter(*filters) \
-        .delete()
+        session.query(Link).filter(*filters).delete()
+
 
 def _purge():
     """ Remove all cache entries """
-    if input("Purge all cached data? (y/n): ").lower().startswith('y'):
+    if input("Purge all cached data? (y/n): ").lower().startswith("y"):
         with SessionContext(commit=True) as session:
             session.query(Link).delete()
+
 
 def _test():
     """ Test image lookup """
@@ -253,15 +265,12 @@ def _test():
 
     print("Blængur Klængsson Eyfjörð")
     img = get_image_url("Blængur Klængsson Eyfjörð")
-    print("{0}".format(img)) # Should be None
+    print("{0}".format(img))  # Should be None
 
 
 if __name__ == "__main__":
 
-    cmap = {
-        "test": _test,
-        "purge": _purge,
-    }
+    cmap = {"test": _test, "purge": _purge}
 
     cmd = sys.argv[1] if len(sys.argv) > 1 else "test"
 
@@ -271,5 +280,3 @@ if __name__ == "__main__":
         # Any other arg is a name to fetch an image for
         img = get_image_url(cmd)
         print("{0}".format(img))
-               
-
