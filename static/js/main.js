@@ -237,7 +237,9 @@ function imgError(img) {
    // Report broken image to server
    reportImage(img, "broken", function(i) {
       $(img).data('err', true);
-      $(img).show();
+      if (i) {
+         $(img).show();
+      }
    });
 }
 
@@ -534,6 +536,46 @@ function getUrlVars() {
    return vars;
 }
 
+function autoCompleteLookup(q, done)  {
+   // Only trigger lookup for certain prefixes
+   var none = { 'suggestions': [] };
+   var whois = 'hver er ';
+   var whatis = 'hvað er ';
+   var minqlen = Math.max(whois.length, whatis.length) + 1;
+   var valid = (q.toLowerCase().startsWith(whois) || q.toLowerCase().startsWith(whatis))
+               && q.length >= minqlen && !q.endsWith('?');
+   if (!valid) {
+      done(none);
+      return;
+   }
+   // Local caching
+   if (autoCompleteLookup.cache === undefined) {
+      autoCompleteLookup.cache = { };
+   }
+   cache = autoCompleteLookup.cache;
+   if (cache[q] !== undefined) {
+      done(cache[q]);
+      return;
+   }
+   // Cancel any active request
+   if (autoCompleteLookup.req) {
+      autoCompleteLookup.req.abort();
+   }
+   // Ajax request to server
+   autoCompleteLookup.req = $.ajax({
+      type: 'GET',
+      url: "/suggest?q=" + encodeURIComponent(q),
+      dataType: "json",
+      success: function(json) {
+         autoCompleteLookup.cache[q] = json;
+         done(json);
+      },
+      error: function(ajaxContext) {
+         done(none);
+      }
+   });
+}
+
 function initMain(jQuery) {
    // Initialization
    // Set up event handlers
@@ -552,6 +594,9 @@ function initMain(jQuery) {
             analyzeQuery({ q: q, autouppercase: false });
             ev.preventDefault();
          }
+      })
+      .autocomplete({
+         lookup: autoCompleteLookup
       });
 
    if (initializeSpeech()) {
@@ -572,14 +617,16 @@ function initMain(jQuery) {
          recognizer.start();
       });
    }
-   else
+   else {
       $("#url").attr("placeholder", "");
+   }
 
    // Check whether a query was encoded in the URL
    var rqVars = getUrlVars();
-   if (rqVars.f !== undefined && rqVars.q !== undefined)
+   if (rqVars.f !== undefined && rqVars.q !== undefined) {
       // We seem to have a legit query URL
       navToHistory(rqVars.f, { q : rqVars.q });
+   }
 
    // Select all text in the url input field
    $("#url").get(0).setSelectionRange(0, $("#url").val().length);

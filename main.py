@@ -36,7 +36,7 @@ import time
 import random
 import re
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import wraps
 from decimal import Decimal
 
@@ -44,6 +44,7 @@ from flask import Flask
 from flask import render_template, make_response, jsonify, redirect, url_for
 from flask import request, send_from_directory
 from flask.wrappers import Response
+from flask_caching import Cache
 
 import reynir
 from settings import Settings, ConfigError, changedlocale
@@ -57,17 +58,19 @@ from treeutil import TreeUtility
 from scraperdb import (
     SessionContext,
     desc,
+    dbfunc,
     Root,
     Person,
     Article,
     ArticleTopic,
     Topic,
+    Entity,
     GenderQuery,
     StatsQuery,
 )
 from query import Query
 from search import Search
-from getimage import get_image_url, update_broken_image_url, blacklist_image_url
+from images import get_image_url, update_broken_image_url, blacklist_image_url
 from tnttagger import ifd_tag
 
 
@@ -76,6 +79,7 @@ from tnttagger import ifd_tag
 app = Flask(__name__)
 app.config["JSON_AS_ASCII"] = False  # We're fine with using Unicode/UTF-8
 app.config["TEMPLATES_AUTO_RELOAD"] = True
+cache = Cache(app, config={'CACHE_TYPE': 'simple'})
 
 from flask import current_app
 
@@ -807,6 +811,7 @@ def tree_grid():
         full_height=full_height,
     )
 
+
 @app.route("/reportimage", methods=["POST"])
 def reportimage():
     """ Notification that image is wrong or broken """
@@ -826,6 +831,88 @@ def reportimage():
             resp["found_new"] = True
 
     return better_jsonify(**resp)
+
+
+@app.route("/image", methods=["GET"])
+def image():
+    """ Get image for name """
+    resp = dict(found=False)
+
+    name = request.args.get("name", "")
+    try:
+        thumb = int(request.args.get("thumb", 0))
+    except:
+        thumb = 0
+
+    if name:
+        img = get_image_url(name, thumb=thumb, cache_only=True)
+        if img:
+            resp['found'] = True
+            resp['image'] = img
+
+    return better_jsonify(**resp)
+
+
+@app.route("/suggest", methods=["GET"])
+@cache.cached(timeout=300, key_prefix='suggestions', query_string=True)
+def suggest(limit=10):
+    """ Return suggestions for query field autocompletion """
+    limit = request.args.get('limit', limit)
+    txt = request.args.get("q", "").strip()
+
+    suggestions = list()
+    whois_prefix = "hver er "
+    whatis_prefix = "hvað er "
+
+    prefix = None
+    if txt.lower().startswith(whois_prefix):
+        prefix = whois_prefix
+    elif txt.lower().startswith(whatis_prefix):
+        prefix = whatis_prefix
+
+    if not txt or not prefix:
+        return better_jsonify(suggestions=suggestions)
+
+    with SessionContext(commit=False) as session:
+        name = txt[len(prefix):].strip()
+
+        # Hver er Jón Jónsson ?
+        if prefix is whois_prefix and name[0].isupper():
+            # Find matching persons ordered by number of 
+            # related articles over the past year
+            q = (session.query(Person.name, dbfunc.count(Article.id).label('total'))
+                .filter(Person.name.ilike(name + '%'))
+                .join(Article)
+                .filter(Article.timestamp > datetime.utcnow() - timedelta(days=365))
+                .group_by(Person.name)
+                .order_by(desc('total'))
+            )
+        # Hver er seðlabankastjóri?
+        elif prefix is whois_prefix:
+            # Find matching title
+            q = (session.query(Person.title, dbfunc.count(Article.id).label('total'))
+                .filter(Person.title.ilike(name + '%'))
+                .join(Article)
+                .group_by(Person.title)
+                .order_by(desc('total'))
+            )
+        # Hvað er UNESCO?
+        elif prefix is whatis_prefix:
+            # Find matching entity name
+            q = (session.query(Entity.name, dbfunc.count(Article.id).label('total'))
+                .filter(Entity.name.ilike(name + '%'))
+                .join(Article)
+                .group_by(Entity.name)
+                .order_by(desc('total'))
+            )
+
+        q = q.limit(limit).all()
+        
+        prefix = prefix[:1].upper() + prefix[1:].lower()
+        suggestions = [{ 'value': (prefix + p[0] + '?'), 'data': '' } for p in q]
+
+    return better_jsonify(suggestions=suggestions)
+
 
 @app.route("/genders", methods=["GET"])
 @max_age(seconds=5 * 60)

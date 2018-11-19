@@ -118,11 +118,13 @@ function showPerson(ev) {
    if (wId !== undefined) {
       // Obtain the name in nominative case from the token
       var ix = parseInt(wId.slice(1));
-      if (w[ix] !== undefined)
+      if (w[ix] !== undefined) {
          name = w[ix].v;
+      }
    }
-   if (name === undefined)
+   if (name === undefined) {
       name = $(this).text(); // No associated token: use the contained text
+   }
    queryPerson(name);
    ev.stopPropagation();
 }
@@ -144,15 +146,16 @@ function showEntity(ev) {
 function hoverIn() {
    // Hovering over a token
    var wId = $(this).attr("id");
-   if (wId === null || wId === undefined)
+   if (wId === null || wId === undefined) {
       // No id: nothing to do
       return;
+   }
    var ix = parseInt(wId.slice(1));
    var t = w[ix];
-   if (!t)
+   if (!t) {
       // No token: nothing to do
       return;
-
+   }
    // Save our position
    var offset = $(this).position();
    // Highlight the token
@@ -160,23 +163,34 @@ function hoverIn() {
 
    var r = tokenInfo(t, nameDict);
 
-   if (!r.grammar && !r.lemma && !r.details)
+   if (!r.grammar && !r.lemma && !r.details) {
       // Nothing interesting to show (probably the sentence didn't parse)
       return;
+   }
 
    $("#grammar").html(r.grammar || "");
    $("#lemma").text(r.lemma || "");
    $("#details").text(r.details || "");
 
    // Display the percentage bar if we have percentage info
-   if (r.percent !== null)
+   if (r.percent !== null) {
       makePercentGraph(r.percent);
-   else
+   } else {
       $("#percent").css("display", "none");
+   }
 
    $("#info").removeClass();
-   if (r.class !== null)
+   if (r.class !== null) {
       $("#info").addClass(r.class);
+   }
+
+   if (t.k == TOK_PERSON && t.v.split(' ').length > 1) {
+      getImage(r.lemma, function(img) {
+         $("#info-image").html(
+            $("<img>").attr('src', img[0])
+         ).show();
+      })
+   }
 
    $("#info span#tag")
       .removeClass()
@@ -190,18 +204,39 @@ function hoverIn() {
       .css("visibility", "visible");
 }
 
+function getImage(name, successFunc) {
+   var cache = getImage.imageCache;
+   if (cache === undefined) {
+      cache = {};
+      getImage.imageCache = cache;
+   }
+   // Retrieve from cache
+   if (cache[name] !== undefined) {
+      if (cache[name].length) {
+         successFunc(cache[name]);
+      }
+      return;
+   }
+   // Abort any ongoing image request
+   if (getImage.request) {
+      getImage.request.abort();
+   }
+   // Ask server for thumbnail image
+   var enc = encodeURIComponent(name)
+   getImage.request = $.getJSON("/image?thumb=1&name=" + enc, function(r) {
+      cache[name] = [];
+      if (r['found']) {
+         cache[name] = r['image'];
+         successFunc(r['image']);
+      }
+   });
+}
+
 function hoverOut() {
    // Stop hovering over a word
    $("#info").css("visibility", "hidden");
+   $("#info-image").hide();
    $(this).removeClass("highlight");
-   var wId = $(this).attr("id");
-   if (wId === null || wId === undefined)
-      // No id: nothing more to do
-      return;
-   var ix = parseInt(wId.slice(1));
-   var t = w[ix];
-   if (!t)
-      return;
 }
 
 function displayTokens(j) {

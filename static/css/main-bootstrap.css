@@ -664,6 +664,15 @@ div#info #details {
    font-style: italic;
 }
 
+div#info-image {
+   max-width: 100%;
+}
+
+div#info-image img {
+   width: 100%;
+   margin-bottom: 5px;
+}
+
 #meta-author, #meta-timestamp, #meta-url {
    text-align: right;
 }
@@ -1178,3 +1187,26 @@ div#canvas {
 div#canvas svg {
    cursor: default;
 }
+
+/* Autosuggestions in query field */
+.autocomplete-suggestions {
+   border: 1px solid #999;
+   background: #FFF;
+   overflow: auto;
+}
+
+.autocomplete-suggestion {
+   padding: 2px 5px;
+   white-space: nowrap;
+   overflow: hidden;
+   font-size: 18px;
+}
+
+.autocomplete-selected {
+   background: #F0F0F0;
+}
+.autocomplete-suggestions strong {
+   /*font-weight: normal; */
+   color: #2aabd2;
+}
+
