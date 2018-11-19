@@ -249,6 +249,7 @@ function reportImage(img, status, successFunc) {
       url: $(img).attr('src'),
       status: status
    };
+   $(img).attr('src', '/static/img/placeholder.png');
    serverQuery('/reportimage',
       q,
       function(r) {
@@ -271,7 +272,6 @@ function blacklistImage(img) {
    // User reporting wrong image
    $("span.imgreport").hide();
    $(img).stop().animate({ opacity: 0 }, function() {
-
       reportImage(img, "wrong", function(i) {
          if (i) {
             $(img).stop().animate({ opacity: 1.0 });
