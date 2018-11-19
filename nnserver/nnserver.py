@@ -101,20 +101,18 @@ class NnServer:
         payload = {"signature_name": "serving_default", "instances": instances}
         payload = json.dumps(payload)
         headers = {"content-type": "application/json"}
-        resp = requests.post(url, data=payload, headers=headers)
 
-        try:
-            obj = json.loads(resp.text)
-            predictions = obj["predictions"]
-            results = [
-                cls.process_response_instance(inst, sent)
-                for (inst, sent) in zip(predictions, pgs)
-            ]
-            obj["predictions"] = results
-            return obj
-        except Exception as e:
-            print(e)
-            return None
+        resp = requests.post(url, data=payload, headers=headers)
+        resp.raise_for_status()
+
+        obj = json.loads(resp.text)
+        predictions = obj["predictions"]
+        results = [
+            cls.process_response_instance(inst, sent)
+            for (inst, sent) in zip(predictions, pgs)
+        ]
+        obj["predictions"] = results
+        return obj
 
     @classmethod
     def process_response_instance(cls, instance, sent, src_enc=None, tgt_enc=None):
@@ -194,8 +192,9 @@ def parse_api():
         pgs = obj["pgs"]
         model_response = ParsingServer.request(pgs)
         resp = jsonify(model_response)
-    except:
+    except Exception as error:
         resp = jsonify(valid=False, reason="Invalid request")
+        app.logger.exception(error)
     resp.headers["Content-Type"] = "application/json; charset=utf-8"
     return resp
 
@@ -208,8 +207,9 @@ def translate_api():
         pgs = obj["pgs"]
         model_response = TranslateServer.request(pgs)
         resp = jsonify(model_response)
-    except:
+    except Exception as error:
         resp = jsonify(valid=False, reason="Invalid request")
+        app.logger.exception(error)
     resp.headers["Content-Type"] = "application/json; charset=utf-8"
     return resp
 

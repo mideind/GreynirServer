@@ -11,71 +11,55 @@
 
 <div class="input-translation">
 
-   <div class="row">
+    <div class="row">
 
-      <div class="col-xs-12" id="txt-div">
+        <div class="col-xs-12" id="txt-div">
 
-         <textarea rows="8" class="form-control input-lg"
-            id="txt" tabindex="1" maxlength="4096" autofocus required placeholder="Sláðu inn texta til að þýða">
+            <textarea rows="8" class="form-control input-lg"
+                      id="txt" tabindex="1" maxlength="4096" autofocus required placeholder="Sláðu inn texta til að þýða">
             {{- default_text -}}
-         </textarea>
+            </textarea>
 
-      </div>
+        </div>
 
-   </div>
+    </div>
 
-   <div class="row">
-      <div class="col-xs-4 col-sm-3 col-md-2 pull-right">
-         <button class="btn btn-success btn-lg btn-block" id="txt-ok" title="Þýða" tabindex="3"
-            onclick="doTranslation()">Þýða</button>
-      </div>
-   </div>
+    <div class="row">
+        <div id="lang-btns" class="col-xs-6 col-sm-4 col-md-5 pull-left">
+            <ul class="nav nav-pills">
+                <li id="lang-btn-en" data-lang="en" role="presentation" class=""><a href="#">Enska</a></li>
+                <li id="lang-btn-de" data-lang="de" role="presentation" class="disabled"><a href="#">Þýska</a></li>
+                <li id="lang-dropdown-btn" role="presentation" class="dropdown disabled">
+                    <a id="lang-dropdown-a" class="dropdown-toggle" data-toggle="dropdown" data-placeholder="Önnur tungumál"
+                       href="#" role="button" aria-haspopup="true" aria-expanded="false">
+                        Önnur tungumál <span class="caret"></span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li id="lang-btn-fr" data-lang="fr" role="presentation" class=""><a href="#">Franska</a></li>
+                        <li id="lang-btn-no" data-lang="no" role="presentation" class=""><a href="#">Norska</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <div class="col-xs-4 col-sm-3 col-md-2 pull-right">
+            <button class="btn btn-success btn-lg btn-block" id="txt-ok" title="Þýða" tabindex="3"
+                    onclick="doTranslation()">Þýða</button>
+        </div>
+    </div>
 
 </div>
 
 <div id="output">
 
-   <h3 class="help">Þýðing <small>Smelltu á orð til að velja aðra þýðingu</small></h3>
+    <h3 class="help">Þýðing <small>Smelltu á orð til að velja aðra þýðingu</small></h3>
 
-   <!-- Popup with info about the word being hovered over -->
-   <div id="info">
-      <table>
-      <tr>
-      <td><span id="tag" class='glyphicon glyphicon-tag'></span></td>
-      <td id="lemma"></td>
-      </tr>
-      </table>
-      <p id="details"></p>
-      <p id="grammar"></p>
-      <div id="percent" class="progress">
-         <div class="progress-bar progress-bar-info" role="progressbar"
-            aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%">
-            <span class="sr-only">0%</span>
-         </div>
-      </div>
-   </div>
+    <!-- This pop up will eventually show different beams -->
+    <div id="info">
+    </div>
 
-   <div id="result">
-   </div>
-
-   <!-- <div id="register"> -->
-   <!-- Name register goes here -->
-   <!-- <h3>Nafnalisti</h3> -->
-   <!-- <ul id="namelist"></ul> -->
-   <!-- </div> -->
-
-   <!-- <div id="statistics"> -->
-      <!-- Statistics go here -->
-   <!-- <h3>Tölfræði</h3> -->
-   <!-- <ul> -->
-   <!-- <li>Textinn inniheldur <span id="tok-num">0</span> eindir í -->
-   <!-- <span id="num-sent">0</span> málsgreinum.</li> -->
-   <!-- <li>Það tókst að greina <span id="num-parsed-sent">0</span> málsgreinar eða -->
-   <!-- <span id="num-parsed-ratio">0,0</span>%.</li> -->
-   <!-- <li>Margræðnistuðull var -->
-   <!-- <span id="avg-ambig-factor">1,00</span>.</li> -->
-   <!-- </ul> -->
-   <!-- </div> -->
+    <div id="result">
+    </div>
 
 </div>
 
@@ -87,6 +71,9 @@
 <script src="{{ url_for('static', filename='page.js') }}"></script>
 
 <script>
+
+ var currentLang = "en";
+ var currentLangBtnId = "#lang-btn-en";
 
  function wait(state) {
      // Start or stop a wait spinner
@@ -105,30 +92,21 @@
  function clearResult() {
      // Clear previous result
      $("div#result").html("");
-     /* $("div#statistics").css("display", "none"); */
-     /* $("div#register").css("display", "none"); */
-     // Display progress indicator
      wait(true);
  }
 
  function handleError(xhr, status, errorThrown) {
      /* An error occurred on the server or in the communications */
-     $("div#result").html("<p><b>Villa kom upp</b> í samskiptum við netþjón Greynis</p>"); 
+     $("div#result").html("<p><b>Villa kom upp</b> í samskiptum við netþjón Greynis</p>");
      wait(false);
  }
 
  function populateResult(json) {
      wait(false);
-     /* console.log(json); */
      displayTranslation(json.result);
-     /* populateStats(json.stats); */
-     /* nameDict = json.register; */
-     /* populateRegister(); */
  }
 
  function displayTranslation(result) {
-     /* debugger; */
-     /* console.log(result) */
      text_no_ui = ""
      for (var i=0; i<result.length; i++) {
          text_no_ui += result[i].outputs + " "
@@ -136,13 +114,15 @@
      $("div#result").html(text_no_ui);
  }
 
- function translateText(txt) {
+ function translateText(txt, lang) {
      // Ask the server to translate
      clearResult();
      // Launch the query
      serverQuery("{{ url_for('nntranslate_api') }}", // Endpoint with .api suffix are not cached
                  {
-                     text : txt
+                     text : txt,
+                     src_lang : "is",
+                     tgt_lang : lang
                  },
                  populateResult,
                  null,
@@ -153,19 +133,65 @@
  function doTranslation() {
      // Submit the contents of the textarea to the server
      // for translation
-     // Nú fer að koma helgi og þá væri gott að fá sér hamborgara.
      theText = $("#txt").val().trim();
-     translateText(theText);
+
+     translateText(theText, currentLang);
      storeTextInUrl(theText);
  }
 
  function storeTextInUrl(theText) {
+     // Store current text in url and add to browser history
+     // allows using back-button to traverse translation history
      newPage = "translate?txt=" + encodeURIComponent(theText);
-     window.history.pushState("jonas1", "jonas2", newPage);
-     /* window.history.pushState("jonas1", "jonas2", "jonas3"); */
-     /* window.history.pushState({result:result}, "Greynir - Þýðing", newPage); */
+     window.history.pushState("greynir-state", "greynir-title", newPage);
  }
 
+ function initLangBtns() {
+     // Add listeners to language buttons that determine the
+     // target language for translation
+     $("#lang-btns").on("click", handleLangBtn);
+     $(currentLangBtnId).addClass("active")
+ }
+
+ function handleLangBtn(e) {
+     btn = e.target.parentElement;
+
+     if (!btn) {
+         // after dropdown button is pressed
+         // clicking elsewhere activates listener
+         e.preventDefault();
+         return false;
+     }
+     if (btn.id !== "lang-btn-en") {
+         // languages other than en are not yet available
+         e.preventDefault();
+         return true;
+     }
+     if (btn.id === "lang-dropdown-btn") {
+         // dropdown button selected, do nothing
+         e.preventDefault();
+         return true;
+     }
+
+     currentLang = btn.dataset.lang;
+     currentLangBtnId = btn.id;
+     $("#lang-btns li").removeClass("active");
+
+     if ($("#lang-dropdown-btn").has(btn).length) {
+         // clicked a button inside dropdown language menu
+         $("#lang-dropdown-btn").addClass("active");
+         $("#lang-dropdown-a").html(e.target.text + ' <span class="caret"></span>')
+     } else {
+         // clicked a button that is not part of dropdown menu
+         $(btn).toggleClass("active")
+
+         // reset dropdown button text
+         placeholder = $("#lang-dropdown-a").data().placeholder + ' <span class="caret"></span>'
+         $("#lang-dropdown-a").html(placeholder)
+     }
+
+     e.preventDefault();
+ }
 
  function init() {
      // Activate the top navbar
@@ -178,6 +204,7 @@
      });
      // Hide the output div until we have something to show
      $("div#output").css("display", "none");
+     initLangBtns();
  }
 
  $(document).ready(init);
@@ -185,4 +212,3 @@
 </script>
 
 {% endblock %}
-
