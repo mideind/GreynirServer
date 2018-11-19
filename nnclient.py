@@ -45,26 +45,26 @@ class NnClient:
     verb = None
 
     @classmethod
-    def request_sentence(cls, text):
+    def request_sentence(cls, text, src_lang=None, tgt_lang=None):
         """ Parse a single sentence into flat parse tree """
         if "\n" in text:
             single_sentence = text.split("\n")[0]
         else:
             single_sentence = text
         pgs = [single_sentence]
-        result = cls._request(pgs)
+        result = cls._request(pgs, src_lang, tgt_lang)
         result = result[0] if result is not None else None
         return result
 
     @classmethod
-    def request_text(cls, text):
+    def request_text(cls, text, src_lang=None, tgt_lang=None):
         """ Parse contiguous text into flat parse trees """
         pgs = text.split("\n")
-        resp = cls._request(pgs)
+        resp = cls._request(pgs, src_lang, tgt_lang)
         return resp
 
     @classmethod
-    def _request(cls, pgs):
+    def _request(cls, pgs, src_lang=None, tgt_lang=None):
         """ Send serialized request to remote model server """
         url = "http://{host}:{port}/{verb}.api".format(
             host=cls.host, port=cls.port, verb=cls.verb
@@ -78,6 +78,9 @@ class NnClient:
             " ".join([tok for tok in npg if tok]) for npg in normalized_pgs
         ]
         payload = {"pgs": normalized_pgs}
+        if src_lang and tgt_lang:
+            payload["src_lang"] = src_lang
+            payload["tgt_lang"] = tgt_lang
 
         payload = json.dumps(payload)
         resp = requests.post(url, data=payload, headers=headers)
