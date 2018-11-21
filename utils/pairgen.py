@@ -56,8 +56,8 @@ def gen_simple_trees(criteria, stats):
         # Note the parse timestamp
         stats["parsed"] = a.parsed
         tree.load(a.tree)
-        for _, stree in tree.simple_trees():
-            yield stree
+        for ix, stree in tree.simple_trees():
+            yield stree, tree.score(ix), tree.length(ix)
 
 
 def gen_flat_trees(generator):
@@ -67,9 +67,9 @@ def gen_flat_trees(generator):
     STOP_WORDS = frozenset([
         "the", "a", "is", "each", "year", "our", "on", "in",
         "and", "this", "that", "s", "t", "don't", "isn't", "big",
-        "cheese", "steak", "email"
+        "cheese", "steak", "email", "search"
     ])
-    for stree in generator:
+    for stree, score, length in generator:
         flat, text = stree.flat_with_all_variants, stree.text
         tokens = text.split()
         # Exclude sentences with 2 or fewer tokens
@@ -78,23 +78,26 @@ def gen_flat_trees(generator):
             if wordset & STOP_WORDS:
                 print(f"Skipping sentence '{text}'")
             else:
-                yield (text, flat)
+                yield text, flat, score, length
 
 
-def write_file(outfile, generator, size):
+def write_file(outfile, generator, size, scores):
     """ Generate an output file from articles that match the criteria """
     written = 0
     with open(outfile, "w") as f:
-        for text, flat in gen_flat_trees(generator):
+        for text, flat, score, length in gen_flat_trees(generator):
             # Write the (input, output) training data pair, separated by a tab character (\t)
-            f.write(f"{text}\t{flat}\n")
+            if scores:
+                f.write(f"{text}\t{flat}\t{score}\n")
+            else:
+                f.write(f"{text}\t{flat}\n")
             written += 1
             if written >= size:
                 break
     return written
 
 
-def write_shuffled_files(outfile_dev, outfile_train, generator, dev_size, train_size):
+def write_shuffled_files(outfile_dev, outfile_train, generator, dev_size, train_size, scores):
     """ Generate a randomly shuffled output file from articles that
         match the criteria. Note that the shuffle is done in memory. """
     written = 0
@@ -102,9 +105,12 @@ def write_shuffled_files(outfile_dev, outfile_train, generator, dev_size, train_
     size = dev_size + train_size
     print(f"Reading up to {size} lines from the source corpus")
     try:
-        for text, flat in gen_flat_trees(generator):
+        for text, flat, score, length in gen_flat_trees(generator):
             # Accumulate the (input, output) training data pairs, separated by a tab character (\t)
-            lines.append(f"{text}\t{flat}\n")
+            if scores:
+                lines.append(f"{text}\t{flat}\t{score}\n")
+            else:
+                lines.append(f"{text}\t{flat}\n")
             written += 1
             if written >= size:
                 break
@@ -134,7 +140,7 @@ def write_shuffled_files(outfile_dev, outfile_train, generator, dev_size, train_
     return written
 
 
-def main(dev_size, train_size, shuffle):
+def main(dev_size, train_size, shuffle, scores):
 
     print("Welcome to the Reynir text and parse tree pair generator")
 
@@ -153,20 +159,20 @@ def main(dev_size, train_size, shuffle):
     if shuffle:
 
         # Write both sets
-        written = write_shuffled_files(OUTFILE_DEV, OUTFILE_TRAIN, gen, dev_size, train_size)
+        written = write_shuffled_files(OUTFILE_DEV, OUTFILE_TRAIN, gen, dev_size, train_size, scores)
 
     else:
     
         # Development set
         if dev_size:
             print(f"\nWriting {dev_size} {'shuffled ' if shuffle else ''}sentences to {OUTFILE_DEV}")
-            written = write_file(OUTFILE_DEV, gen, dev_size)
+            written = write_file(OUTFILE_DEV, gen, dev_size, scores)
             print(f"{written} sentences written")
 
         # Training set
         if train_size:
             print(f"\nWriting {train_size} {'shuffled ' if shuffle else ''}sentences to {OUTFILE_TRAIN}")
-            written = write_file(OUTFILE_TRAIN, gen, train_size)
+            written = write_file(OUTFILE_TRAIN, gen, train_size, scores)
             print(f"{written} sentences written")
 
     last_parsed = stats["parsed"]
@@ -185,8 +191,15 @@ if __name__ == "__main__":
         help="number of sentences in the training set (default 1,500,000)", default=1500000)
     parser.add_argument('--noshuffle', dest='NO_SHUFFLE', action="store_true",
         help="do not shuffle output", default=False)
+    parser.add_argument('--scores', dest='SCORES', action="store_true",
+        help="include sentence scores", default=False)
 
     args = parser.parse_args()
 
-    main(dev_size = args.DEV_SIZE, train_size = args.TRAIN_SIZE, shuffle = not args.NO_SHUFFLE)
+    main(
+        dev_size = args.DEV_SIZE,
+        train_size = args.TRAIN_SIZE,
+        shuffle = not args.NO_SHUFFLE,
+        scores = args.SCORES
+    )
 
