@@ -84,6 +84,7 @@ class NnClient:
 
         payload = json.dumps(payload)
         resp = requests.post(url, data=payload, headers=headers)
+        resp.raise_for_status()
 
         try:
             obj = json.loads(resp.text)
