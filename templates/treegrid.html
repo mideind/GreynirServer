@@ -800,6 +800,23 @@ function editSentence() {
    // Navigate to the analysis page with the text pre-set
    window.location.href = "/analysis?txt=" + encodeURIComponent(theText);
 }
+ function make_tree_fn(_width, _height) {
+     return d3.tree()
+              .size([_width, _height])
+              .separation(function(a, b) {
+                  // Horizontal separation between tree nodes
+                  if (a.parent != b.parent)
+                      // Nodes are not siblings: double separation
+                      return 2.2;
+                  // For siblings, increase separation linearly with their combined
+                  // text (caption) length
+                  // var aLen = a.data.text.length;
+                  var aLen = a.data.n ? Math.max(a.data.text.length, 11) : a.data.text.length;
+                  // var bLen = b.data.text.length;
+                  var bLen = b.data.n ? Math.max(b.data.text.length, 11) : b.data.text.length;
+                  return Math.max(1.20, 0.115 * (aLen + bLen));
+              });
+ }
 
 {% if nn_parsing_enabled -%}
  // Configure the tree layout object
@@ -807,24 +824,6 @@ function editSentence() {
 var nnTreeData = null;
 var nnRoot = null;
 var nnTree_fn = null;
-
-function make_tree_fn(_width, _height) {
-    return d3.tree()
-        .size([_width, _height])
-        .separation(function(a, b) {
-            // Horizontal separation between tree nodes
-            if (a.parent != b.parent)
-                // Nodes are not siblings: double separation
-                return 2.2;
-            // For siblings, increase separation linearly with their combined
-            // text (caption) length
-            // var aLen = a.data.text.length;
-            var aLen = a.data.n ? Math.max(a.data.text.length, 11) : a.data.text.length;
-            // var bLen = b.data.text.length;
-            var bLen = b.data.n ? Math.max(b.data.text.length, 11) : b.data.text.length;
-            return Math.max(1.20, 0.115 * (aLen + bLen));
-        });
-}
 
 function get_nntree(text) {
      payload = {
