@@ -30,23 +30,13 @@ from __future__ import print_function
 from enum import IntEnum
 import logging
 
-import numpy as np
 import tokenizer
 import grammar_consts
 from reynir import matcher
 from parsing_subtokens import ParsingSubtokens, MISSING
 
 
-PROJECT_PATH = os.path.dirname(__file__)
-TOK_PATH = os.path.join(PROJECT_PATH, "resources", "parsing_tokens_180729.txt")
-ENCODER = CompositeTokenEncoder(TOK_PATH, version=2)
-
-NONTERMINALS = ENCODER._nonterminals
-NONTERM_L = ENCODER._nonterm_l
-NONTERM_R = ENCODER._nonterm_r
-TERMINALS = ENCODER._terminals
-TERMINALS = ENCODER._terminals
-R_TO_L = ENCODER._r_to_l
+TOKENS = ParsingSubtokens()
 
 
 class Node:
@@ -207,7 +197,7 @@ def parse_flat_tree_to_nodes(parse_toks, text_toks=None, verbose=False):
 
         # Token must be a legal right nonterminal since it is not a left token
         # A right token must be matched by its corresponding left token
-        if tok not in R_TO_L or parent.name != R_TO_L[tok]:
+        if tok not in TOKENS.R_TO_L or parent.name != TOKENS.R_TO_L[tok]:
             msg = "Error: Found illegal nonterminal {}, expected right nonterminal"
             vprint(msg.format(tok))
 
