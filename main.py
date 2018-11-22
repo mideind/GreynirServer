@@ -623,7 +623,6 @@ def analyze_api(version=1):
     # !!! TODO Get correction switch from analysis.html
     with SessionContext(commit=True) as session:
         pgs, stats, register = TreeUtility.tag_text(session, text, correct=True)
-
     # Return the tokens as a JSON structure to the client
     return better_jsonify(valid=True, result=pgs, stats=stats, register=register)
 
@@ -1544,6 +1543,7 @@ if __name__ == "__main__":
     extra_files = [
         "Reynir.conf",
         "Verbs.conf",
+        "Errors.conf",
         "Prepositions.conf",
         "Main.conf",
         "Prefs.conf",

@@ -831,7 +831,7 @@ class DawgBuilder:
             print("No inputs or no output: Nothing to do")
             return
         self._load(relpath, inputs, removals, filter_func)
-        self._output_text(relpath, output)
+        #self._output_text(relpath, output)
         self._output_binary(relpath, output)
         print("DawgBuilder done")
 
