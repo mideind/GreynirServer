@@ -136,7 +136,7 @@ class UnknownWordTagger:
         if token.kind == TOK.WORD and token.val is None:
             try:
                 with BIN_Db.get_db() as db:
-                    w, m = db.lookup_word(token.txt, at_sentence_start)
+                    w, m, _ = db.lookup_word(token.txt, at_sentence_start)
             except Exception as e:
                 w, m = token.txt, []
             token = TOK.Word(w, m)
