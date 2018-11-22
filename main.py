@@ -48,12 +48,7 @@ from flask.wrappers import Response
 import reynir
 from settings import Settings, ConfigError, changedlocale
 from reynir.bindb import BIN_Db
-<<<<<<< HEAD
 from nertokenizer import recognize_entities, correct_spaces
-=======
-from tokenizer import correct_spaces
-from nertokenizer import tokenize_and_recognize
->>>>>>> 2f1147742a561591cadd2e61a58148c10990eb09
 from reynir.binparser import canonicalize_token
 from reynir.fastparser import Fast_Parser, ParseForestFlattener
 from reynir_correct import tokenize
@@ -441,7 +436,6 @@ def analyze_api(version=1):
     # !!! TODO Get correction switch from analysis.html
     with SessionContext(commit=True) as session:
         pgs, stats, register = TreeUtility.tag_text(session, text, correct=True)
-
     # Return the tokens as a JSON structure to the client
     return better_jsonify(valid=True, result=pgs, stats=stats, register=register)
 
@@ -1057,11 +1051,8 @@ if __name__ == "__main__":
     extra_files = [
         "Reynir.conf",
         "Verbs.conf",
-<<<<<<< HEAD
-        #"VerbPrepositions.conf",
-=======
+        "Errors.conf",
         "Prepositions.conf",
->>>>>>> 2f1147742a561591cadd2e61a58148c10990eb09
         "Main.conf",
         "Prefs.conf",
         "Phrases.conf",
