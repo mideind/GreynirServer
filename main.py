@@ -882,41 +882,26 @@ def suggest(limit=10):
 
     with SessionContext(commit=False) as session:
         name = txt[len(prefix) :].strip()
+        model_col = None
 
         # Hver er Jón Jónsson ?
         if prefix is whois_prefix and name[0].isupper():
-            # Find matching persons ordered by number of
-            # related articles over the past year
-            q = (
-                session.query(Person.name, dbfunc.count(Article.id).label("total"))
-                .filter(Person.name.ilike(name + "%"))
-                .join(Article)
-                .filter(Article.timestamp > datetime.utcnow() - timedelta(days=365))
-                .group_by(Person.name)
-                .order_by(desc("total"))
-            )
+            model_col = Person.name
         # Hver er seðlabankastjóri?
         elif prefix is whois_prefix:
-            # Find matching title
-            q = (
-                session.query(Person.title, dbfunc.count(Article.id).label("total"))
-                .filter(Person.title.ilike(name + "%"))
-                .join(Article)
-                .group_by(Person.title)
-                .order_by(desc("total"))
-            )
+            model_col = Person.title
         # Hvað er UNESCO?
         elif prefix is whatis_prefix:
-            # Find matching entity name
-            q = (
-                session.query(Entity.name, dbfunc.count(Article.id).label("total"))
-                .filter(Entity.name.ilike(name + "%"))
-                .join(Article)
-                .group_by(Entity.name)
-                .order_by(desc("total"))
-            )
+            model_col = Entity.name
 
-        q = q.limit(limit).all()
+        q = (
+            session.query(model_col, dbfunc.count(Article.id).label("total"))
+            .filter(model_col.ilike(name + "%"))
+            .join(Article)
+            .group_by(model_col)
+            .order_by(desc("total"))
+            .limit(limit).all()
+        )
 
         prefix = prefix[:1].upper() + prefix[1:].lower()
         suggestions = [{"value": (prefix + p[0] + "?"), "data": ""} for p in q]
