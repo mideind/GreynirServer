@@ -18,7 +18,7 @@ cd $DEST
 echo "Upgrading the reynir package"
 
 source p3510/bin/activate
-pip install --upgrade reynir
+pip install --upgrade -r requirements.txt
 deactivate
 
 cd $SRC

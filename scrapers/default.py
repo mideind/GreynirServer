@@ -859,9 +859,8 @@ class StjornarradScraper(ScrapeHelper):
             date = ScrapeHelper.tag_prop_val(body, "span", "class", "date")
             if date is not None:
                 metadata.timestamp = datetime.strptime(date.string, "%d.%m.%Y")
-        metadata.author = (
-            self._description or "Stjórnarráð Íslands"
-        )  # Name of the ministry in question
+        # Name of the ministry in question
+        metadata.author = self._description or "Stjórnarráð Íslands"
         return metadata
 
     def _get_content(self, soup_body):

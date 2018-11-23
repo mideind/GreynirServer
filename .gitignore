@@ -1,5 +1,6 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
+.pytest_cache/
 *.py[cod]
 *.o
 *.so
@@ -34,6 +35,7 @@ go.sh
 goss.sh
 parse.sh
 process.sh
+makezip.sh
 
 # Various resource files
 resources/*.txt
