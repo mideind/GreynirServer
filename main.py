@@ -58,12 +58,15 @@ from flask.wrappers import Response
 from flask_caching import Cache
 
 import reynir
-from settings import Settings, ConfigError, changedlocale
+from reynir import correct_spaces
 from reynir.bindb import BIN_Db
-from nertokenizer import recognize_entities, correct_spaces
 from reynir.binparser import canonicalize_token
 from reynir.fastparser import Fast_Parser, ParseForestFlattener
+
 from reynir_correct import tokenize
+
+from settings import Settings, ConfigError, changedlocale
+from nertokenizer import recognize_entities
 from article import Article as ArticleProxy
 from treeutil import TreeUtility
 from scraperdb import (

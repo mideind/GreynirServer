@@ -196,7 +196,7 @@ class Fetcher:
 
         # Tokenize the resulting text, returning a generator
         token_stream = tokenize(text)
-        return tokenize_and_recognize(token_stream, enclosing_session=enclosing_session)
+        return recognize_entities(token_stream, enclosing_session=enclosing_session)
 
     @classmethod
     def raw_fetch_url(cls, url):
