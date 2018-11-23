@@ -34,7 +34,6 @@ from reynir.incparser import IncrementalParser
 from scraperdb import SessionContext
 from settings import Settings
 from reynir.matcher import SimpleTree, SimpleTreeBuilder
-from reynir_correct.grammarfix import correct_text
 from reynir_correct.errtokenizer import tokenize
 
 
