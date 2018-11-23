@@ -237,6 +237,9 @@ function hoverOut() {
    $("#info").css("visibility", "hidden");
    $("#info-image").hide();
    $(this).removeClass("highlight");
+   if (getImage.request) {
+      getImage.request.abort();
+   }
 }
 
 function displayTokens(j) {

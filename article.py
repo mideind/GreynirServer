@@ -302,8 +302,19 @@ class Article:
                         token_dicts = TreeUtility.dump_tokens(
                             sent.tokens, sent.tree, words
                         )
-                        trees[num_sent] = ParseForestDumper.dump_forest(
-                            sent.tree, token_dicts
+                        # Create a verbose text representation of
+                        # the highest scoring parse tree
+                        tree = ParseForestDumper.dump_forest(
+                            sent.tree, token_dicts=token_dicts
+                        )
+                        # Add information about the sentence tree's score
+                        # and the number of tokens
+                        trees[num_sent] = "\n".join(
+                            [
+                                "C{0}".format(sent.score),
+                                "L{0}".format(num_tokens),
+                                tree
+                            ]
                         )
                     else:
                         # Error, sentence too long or no parse:
