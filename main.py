@@ -67,7 +67,7 @@ import reynir_correct
 from reynir_correct import tokenize
 
 from settings import Settings, ConfigError, changedlocale
-from nertokenizer import tokenize_and_recognize
+from nertokenizer import recognize_entities
 from article import Article as ArticleProxy
 from treeutil import TreeUtility
 from scraperdb import (
