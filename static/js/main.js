@@ -178,7 +178,7 @@ function makeSourceList(sources) {
    // Return a HTML rendering of a list of articles where the person or entity name appears
    if (!sources)
       return undefined;
-   var $table = $("<table class='table table-condensed table-hover'>")
+   var $table = $("<table class='table table-hover'>")
       .append($("<thead>")
          .append($("<tr>")
             .append(
@@ -203,7 +203,7 @@ function makeSearchList(results) {
    // Return a HTML rendering of a list of articles in a search result
    if (!results)
       return undefined;
-   var $table = $("<table class='table table-condensed table-hover'>")
+   var $table = $("<table class='table table-hover'>")
       .append($("<thead>")
          .append($("<tr>")
             .append(

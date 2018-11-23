@@ -43,7 +43,7 @@
       </ul>
    </div>
 </div>
-<table class="table table-condensed table-hover" id="toplist">
+<table class="table table-hover" id="toplist">
    <thead>
 {% if display_time %}
       <th>Tími</th>
@@ -108,14 +108,14 @@
 
 {% if articles and offset != 0  %}
       $("#prev-page").click(function(ev) {
-         // Go to the next page, as determined by the timestamp of the last item shown
+         // Go to the previous page
          window.location.href = "{{ url_for('news', topic = topics.id, offset = offset-limit) | safe }}";
       });
 {% endif %}
 
 {% if articles and articles|length == limit  %}
       $("#next-page").click(function(ev) {
-         // Go to the next page, as determined by the timestamp of the last item shown
+         // Go to the next page
          window.location.href = "{{ url_for('news', topic = topics.id, offset = offset+limit) | safe }}";
       });
 {% endif %}
