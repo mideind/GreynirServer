@@ -47,15 +47,95 @@
 </table>
 </div>
 
+<div class="panel panel-default">
+   <div class="panel-heading">Nýleg gögn</div>
+   <canvas id="scraped_chart_canvas" style="padding: 25px;"></canvas>
+</div>
+
+<div class="panel panel-default">
+   <div class="panel-heading">Trjágreining</div>
+   <canvas id="parsed_chart_canvas" style="padding: 25px;"></canvas>
+</div>
+
 {% endblock %}
 
 {% block endscripts %}
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.bundle.min.js"></script>
+
 <script>
+
+   function initCharts() {
+
+      var scrapeChartData = {{ scraped_chart_data | safe }};
+      
+      var parseChartData = {{ parsed_chart_data | safe }};
+
+      // Scraped articles stacked bar chart
+      var scrapeCtx =  $('#scraped_chart_canvas').get(0).getContext('2d');
+      var scrapeChart = new Chart(scrapeCtx, {
+         type: 'bar',
+         data: scrapeChartData,
+         options: {
+            legend: {
+               display: true,
+               position: 'bottom',
+            },
+            tooltips: {
+               mode: 'index',
+               intersect: false,
+            },
+            responsive: true,
+            scales: {
+               xAxes: [{
+                  stacked: true,
+               }],
+               yAxes: [{
+                  stacked: true,
+               }]
+            }
+         }
+      });
+
+      // Parsed % chart
+      var parseCtx =  $('#parsed_chart_canvas').get(0).getContext('2d');
+      parseChartData.datasets[0].backgroundColor = 'rgba(200, 222, 255, 0.5)';
+      // parseChartData.datasets[0].fill = true;
+      var parseChart = new Chart(parseCtx, {
+         type: 'line',
+         data: parseChartData,
+         options: {
+            legend: {
+               display: false,
+            },
+            tooltips: {
+               callbacks: {
+                  label: function(tooltipItem, data) {
+                     return tooltipItem.yLabel + '%';
+                  },
+               }
+            },
+            scales: {
+               xAxes: [{
+                  distribution: 'series',
+               }],
+               yAxes: [{
+                  ticks: {
+                     callback: function(tick) {
+                        return tick.toString() + '%';
+                     }
+                  }
+               }]
+            }
+         }
+      });
+   }
 
    function init() {
       // Activate the top navbar
       $("#navid-stats").addClass("active");
+      // Set up charts
+      initCharts();
    }
 
    $(document).ready(init);

@@ -44,8 +44,8 @@ from threading import Lock
 
 import reynir
 
-# The sorting locale used by default in the changedlocale function
-_DEFAULT_SORT_LOCALE = ("IS_is", "UTF-8")
+# The locale used by default in the changedlocale function
+_DEFAULT_LOCALE = ("IS_is", "UTF-8")
 # A set of all valid argument cases
 _ALL_CASES = frozenset(("nf", "þf", "þgf", "ef"))
 _ALL_GENDERS = frozenset(("kk", "kvk", "hk"))
@@ -490,15 +490,17 @@ class Topics:
 
 
 @contextmanager
-def changedlocale(new_locale=None):
-    """ Change locale for collation temporarily within a context (with-statement) """
-    # The newone locale parameter should be a tuple: ('is_IS', 'UTF-8')
-    old_locale = locale.getlocale(locale.LC_COLLATE)
+def changedlocale(new_locale=None, category='LC_COLLATE'):
+    """ Change locale temporarily within a context (with-statement) """
+    # The new locale parameter should be a tuple, e.g. ('is_IS', 'UTF-8')
+    # The category should be a string such as 'LC_TIME', 'LC_NUMERIC' etc.
+    cat = locale.__getattribute__(category)
+    old_locale = locale.getlocale(cat)
     try:
-        locale.setlocale(locale.LC_COLLATE, new_locale or _DEFAULT_SORT_LOCALE)
+        locale.setlocale(cat, new_locale or _DEFAULT_LOCALE)
         yield locale.strxfrm  # Function to transform string for sorting
     finally:
-        locale.setlocale(locale.LC_COLLATE, old_locale)
+        locale.setlocale(cat, old_locale)
 
 
 def sort_strings(strings, loc=None):

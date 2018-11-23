@@ -36,6 +36,7 @@ import time
 import random
 import re
 import logging
+import json
 from datetime import datetime, timedelta
 from functools import wraps
 from decimal import Decimal
@@ -67,6 +68,7 @@ from scraperdb import (
     Entity,
     GenderQuery,
     StatsQuery,
+    ChartsQuery,
 )
 from query import Query
 from search import Search
@@ -373,6 +375,63 @@ def top_persons(limit=_TOP_PERSONS_LENGTH):
             ],
             key=lambda x: strxfrm(x["name"]),
         )
+
+
+def chart_stats(session=None, num_days=7):
+    """ Return scraping and parsing stats for charts """
+
+    # TODO: This should be put in a column in the roots table
+    colors = {
+        "Kjarninn": "#f17030",
+        "RÚV": "#dcdcdc",
+        "Vísir": "#3d6ab9",
+        "Morgunblaðið": "#020b75",
+        "Eyjan": "#ca151c",
+        "Kvennablaðið": "#900000",
+    }
+
+    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    labels = []
+    sources = {}
+    parsed_data = []
+
+    # Get article count for each source for each day
+    with changedlocale(category="LC_TIME"):
+        for n in range(0, num_days):
+            days_back = num_days - n - 1
+            start = today - timedelta(days=days_back)
+            end = today - timedelta(days=days_back - 1)
+
+            # Generate label
+            if start < today - timedelta(days=6):
+                labels.append(start.strftime("%-d. %b"))
+            else:
+                labels.append(start.strftime("%A"))
+
+            sent = 0
+            parsed = 0
+
+            # Get article count per source for day
+            # Also collect parsing stats
+            q = ChartsQuery.period(start, end, enclosing_session=session)
+            for (name, cnt, s, p) in q:
+                sources.setdefault(name, []).append(cnt)
+                sent += s
+                parsed += p
+
+            percent = round((parsed / sent) * 100, 2) if sent else 0
+            parsed_data.append(percent)
+
+    # Create datasets for bar chart
+    datasets = []
+    for k, v in sorted(sources.items()):
+        color = colors.get(k, "#000")
+        datasets.append({"label": k, "backgroundColor": color, "data": v})
+
+    return {
+        "scraped": {"labels": labels, "datasets": datasets},
+        "parsed": {"labels": labels, "datasets": [{"data": parsed_data}]},
+    }
 
 
 def process_query(session, toklist, result):
@@ -900,7 +959,8 @@ def suggest(limit=10):
             .join(Article)
             .group_by(model_col)
             .order_by(desc("total"))
-            .limit(limit).all()
+            .limit(limit)
+            .all()
         )
 
         prefix = prefix[:1].upper() + prefix[1:].lower()
@@ -934,7 +994,7 @@ def genders():
 def stats():
     """ Render a page with article statistics """
 
-    with SessionContext(commit=True) as session:
+    with SessionContext(commit=False) as session:
 
         sq = StatsQuery()
         result = sq.execute(session)
@@ -945,7 +1005,15 @@ def stats():
             total["sent"] += r.sent
             total["parsed"] += r.parsed
 
-        return render_template("stats.html", result=result, total=total)
+        chart_data = chart_stats(session=session, num_days=10)
+
+        return render_template(
+            "stats.html",
+            result=result,
+            scraped_chart_data=json.dumps(chart_data["scraped"]),
+            parsed_chart_data=json.dumps(chart_data["parsed"]),
+            total=total,
+        )
 
 
 @app.route("/about")
