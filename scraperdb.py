@@ -618,6 +618,28 @@ class StatsQuery(_BaseQuery):
             order by r.domain;
         """
 
+class ChartsQuery(_BaseQuery):
+
+    """ Statistics on article, sentence and parse count  
+        for all sources for a given time period """
+
+    _Q = """
+        select r.description AS name,
+            count(a.id) AS cnt,
+            coalesce(sum(a.num_sentences),0) as sent,
+            coalesce(sum(a.num_parsed), 0) as parsed
+            from roots as r
+            left join articles as a on r.id = a.root_id
+            and a.timestamp >= :start and a.timestamp < :end
+            where r.visible and r.scrape
+            group by name
+            order by name
+        """
+
+    @classmethod
+    def period(cls, start, end, enclosing_session = None):
+        with SessionContext(session = enclosing_session, commit = False) as session:
+            return cls().execute(session, start=start, end=end)
 
 class BestAuthorsQuery(_BaseQuery):
 

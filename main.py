@@ -36,6 +36,7 @@ import time
 import random
 import re
 import logging
+import json
 from datetime import datetime, timedelta
 from functools import wraps
 from decimal import Decimal
@@ -67,6 +68,7 @@ from scraperdb import (
     Entity,
     GenderQuery,
     StatsQuery,
+    ChartsQuery,
 )
 from query import Query
 from search import Search
@@ -79,7 +81,7 @@ from tnttagger import ifd_tag
 app = Flask(__name__)
 app.config["JSON_AS_ASCII"] = False  # We're fine with using Unicode/UTF-8
 app.config["TEMPLATES_AUTO_RELOAD"] = True
-cache = Cache(app, config={'CACHE_TYPE': 'simple'})
+cache = Cache(app, config={"CACHE_TYPE": "simple"})
 
 from flask import current_app
 
@@ -90,6 +92,7 @@ def debug():
 
 
 # Utilities for Flask/Jinja2 formatting of numbers using the Icelandic locale
+
 
 def make_pattern(rep_dict):
     return re.compile("|".join([re.escape(k) for k in rep_dict.keys()]), re.M)
@@ -121,6 +124,7 @@ def format_ts(ts):
 
 # Flask cache busting for static .css and .js files
 
+
 @app.url_defaults
 def hashed_url_for_static_file(endpoint, values):
     """ Add a ?h=XXX parameter to URLs for static .js and .css files,
@@ -150,6 +154,7 @@ def static_file_hash(filename):
 
 
 # Miscellaneous utility stuff
+
 
 def max_age(seconds):
     """ Caching decorator for Flask - augments response with a max-age cache header """
@@ -327,7 +332,9 @@ def top_persons(limit=_TOP_PERSONS_LENGTH):
             .join(Article)
             .join(Root)
             .filter(Root.visible)
-            .order_by(desc(Article.timestamp))[0 : limit * 2]  # Go through up to 2 * N records
+            .order_by(desc(Article.timestamp))[
+                0 : limit * 2
+            ]  # Go through up to 2 * N records
         )
 
         def is_better_title(new_title, old_title):
@@ -368,6 +375,63 @@ def top_persons(limit=_TOP_PERSONS_LENGTH):
             ],
             key=lambda x: strxfrm(x["name"]),
         )
+
+
+def chart_stats(session=None, num_days=7):
+    """ Return scraping and parsing stats for charts """
+
+    # TODO: This should be put in a column in the roots table
+    colors = {
+        "Kjarninn": "#f17030",
+        "RÚV": "#dcdcdc",
+        "Vísir": "#3d6ab9",
+        "Morgunblaðið": "#020b75",
+        "Eyjan": "#ca151c",
+        "Kvennablaðið": "#900000",
+    }
+
+    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    labels = []
+    sources = {}
+    parsed_data = []
+
+    # Get article count for each source for each day
+    with changedlocale(category="LC_TIME"):
+        for n in range(0, num_days):
+            days_back = num_days - n - 1
+            start = today - timedelta(days=days_back)
+            end = today - timedelta(days=days_back - 1)
+
+            # Generate label
+            if start < today - timedelta(days=6):
+                labels.append(start.strftime("%-d. %b"))
+            else:
+                labels.append(start.strftime("%A"))
+
+            sent = 0
+            parsed = 0
+
+            # Get article count per source for day
+            # Also collect parsing stats
+            q = ChartsQuery.period(start, end, enclosing_session=session)
+            for (name, cnt, s, p) in q:
+                sources.setdefault(name, []).append(cnt)
+                sent += s
+                parsed += p
+
+            percent = round((parsed / sent) * 100, 2) if sent else 0
+            parsed_data.append(percent)
+
+    # Create datasets for bar chart
+    datasets = []
+    for k, v in sorted(sources.items()):
+        color = colors.get(k, "#000")
+        datasets.append({"label": k, "backgroundColor": color, "data": v})
+
+    return {
+        "scraped": {"labels": labels, "datasets": datasets},
+        "parsed": {"labels": labels, "datasets": [{"data": parsed_data}]},
+    }
 
 
 def process_query(session, toklist, result):
@@ -849,17 +913,17 @@ def image():
     if name:
         img = get_image_url(name, thumb=thumb, cache_only=True)
         if img:
-            resp['found'] = True
-            resp['image'] = img
+            resp["found"] = True
+            resp["image"] = img
 
     return better_jsonify(**resp)
 
 
 @app.route("/suggest", methods=["GET"])
-@cache.cached(timeout=300, key_prefix='suggestions', query_string=True)
+@cache.cached(timeout=300, key_prefix="suggestions", query_string=True)
 def suggest(limit=10):
     """ Return suggestions for query field autocompletion """
-    limit = request.args.get('limit', limit)
+    limit = request.args.get("limit", limit)
     txt = request.args.get("q", "").strip()
 
     suggestions = list()
@@ -876,42 +940,31 @@ def suggest(limit=10):
         return better_jsonify(suggestions=suggestions)
 
     with SessionContext(commit=False) as session:
-        name = txt[len(prefix):].strip()
+        name = txt[len(prefix) :].strip()
+        model_col = None
 
         # Hver er Jón Jónsson ?
         if prefix is whois_prefix and name[0].isupper():
-            # Find matching persons ordered by number of 
-            # related articles over the past year
-            q = (session.query(Person.name, dbfunc.count(Article.id).label('total'))
-                .filter(Person.name.ilike(name + '%'))
-                .join(Article)
-                .filter(Article.timestamp > datetime.utcnow() - timedelta(days=365))
-                .group_by(Person.name)
-                .order_by(desc('total'))
-            )
+            model_col = Person.name
         # Hver er seðlabankastjóri?
         elif prefix is whois_prefix:
-            # Find matching title
-            q = (session.query(Person.title, dbfunc.count(Article.id).label('total'))
-                .filter(Person.title.ilike(name + '%'))
-                .join(Article)
-                .group_by(Person.title)
-                .order_by(desc('total'))
-            )
+            model_col = Person.title
         # Hvað er UNESCO?
         elif prefix is whatis_prefix:
-            # Find matching entity name
-            q = (session.query(Entity.name, dbfunc.count(Article.id).label('total'))
-                .filter(Entity.name.ilike(name + '%'))
-                .join(Article)
-                .group_by(Entity.name)
-                .order_by(desc('total'))
-            )
+            model_col = Entity.name
 
-        q = q.limit(limit).all()
-        
+        q = (
+            session.query(model_col, dbfunc.count(Article.id).label("total"))
+            .filter(model_col.ilike(name + "%"))
+            .join(Article)
+            .group_by(model_col)
+            .order_by(desc("total"))
+            .limit(limit)
+            .all()
+        )
+
         prefix = prefix[:1].upper() + prefix[1:].lower()
-        suggestions = [{ 'value': (prefix + p[0] + '?'), 'data': '' } for p in q]
+        suggestions = [{"value": (prefix + p[0] + "?"), "data": ""} for p in q]
 
     return better_jsonify(suggestions=suggestions)
 
@@ -941,7 +994,7 @@ def genders():
 def stats():
     """ Render a page with article statistics """
 
-    with SessionContext(commit=True) as session:
+    with SessionContext(commit=False) as session:
 
         sq = StatsQuery()
         result = sq.execute(session)
@@ -952,7 +1005,15 @@ def stats():
             total["sent"] += r.sent
             total["parsed"] += r.parsed
 
-        return render_template("stats.html", result=result, total=total)
+        chart_data = chart_stats(session=session, num_days=10)
+
+        return render_template(
+            "stats.html",
+            result=result,
+            scraped_chart_data=json.dumps(chart_data["scraped"]),
+            parsed_chart_data=json.dumps(chart_data["parsed"]),
+            total=total,
+        )
 
 
 @app.route("/about")
@@ -1119,8 +1180,7 @@ except ConfigError as e:
 if Settings.DEBUG:
     print("Settings loaded in {0:.2f} seconds".format(time.time() - t0))
     print(
-        "Running Reynir with debug={0}, host={1}:{2}, db_hostname={3} on Python {4}"
-        .format(
+        "Running Reynir with debug={0}, host={1}:{2}, db_hostname={3} on Python {4}".format(
             Settings.DEBUG,
             Settings.HOST,
             Settings.PORT,
@@ -1183,8 +1243,9 @@ if __name__ == "__main__":
     except socket_error as e:
         if e.errno == errno.EADDRINUSE:  # Address already in use
             logging.error(
-                "Reynir is already running at host {0}:{1}"
-                .format(Settings.HOST, Settings.PORT)
+                "Reynir is already running at host {0}:{1}".format(
+                    Settings.HOST, Settings.PORT
+                )
             )
             sys.exit(1)
         else:
@@ -1201,14 +1262,11 @@ else:
     if werkzeug_log:
         werkzeug_log.setLevel(logging.WARNING)
     # Log our startup
-    log_str = (
-        "Reynir instance starting with host={0}:{1}, db_hostname={2} on Python {3}"
-        .format(
-            Settings.HOST,
-            Settings.PORT,
-            Settings.DB_HOSTNAME,
-            sys.version.replace("\n", " "),
-        )
+    log_str = "Reynir instance starting with host={0}:{1}, db_hostname={2} on Python {3}".format(
+        Settings.HOST,
+        Settings.PORT,
+        Settings.DB_HOSTNAME,
+        sys.version.replace("\n", " "),
     )
     logging.info(log_str)
     print(log_str)
