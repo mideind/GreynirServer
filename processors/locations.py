@@ -25,8 +25,10 @@
 
 """
 
-from iceaddr import iceaddr_lookup
 from tree import Node
+from scraperdb import Location
+from iceaddr import iceaddr_lookup
+
 
 def article_begin(state):
     """ Called at the beginning of article processing """

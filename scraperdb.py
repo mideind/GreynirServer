@@ -45,6 +45,7 @@ from sqlalchemy import (
     ForeignKey,
     PrimaryKeyConstraint,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.exc import SQLAlchemyError as SqlError
 from sqlalchemy.exc import IntegrityError as SqlIntegrityError
 from sqlalchemy.exc import DataError as SqlDataError
@@ -358,6 +359,48 @@ class Entity(Base):
     def __repr__(self):
         return "Entity(id='{0}', name='{1}', verb='{2}', definition='{3}')".format(
             self.id, self.name, self.verb, self.definition
+        )
+
+    @classmethod
+    def table(cls):
+        return cls.__table__
+
+
+class Location(Base):
+    """ Represents a location """
+
+    __tablename__ = "locations"
+
+    # Primary key
+    id = Column(Integer, Sequence("locations_id_seq"), primary_key=True)
+
+    # Foreign key to an article
+    article_url = Column(
+        String,
+        # We don't delete associated location if the article is deleted
+        ForeignKey("articles.url", onupdate="CASCADE", ondelete="SET NULL"),
+        index=True,
+        nullable=True,
+    )
+
+    # Name
+    name = Column(String, index=True)
+
+    # Kind ('address', 'country')
+    kind = Column(String, index=True)
+
+    # Data
+    data = Column(JSONB)
+
+    # Timestamp of this entry
+    timestamp = Column(DateTime)
+
+    # The back-reference to the Article parent of this Location
+    article = relationship("Article", backref=backref("locations", order_by=name))
+
+    def __repr__(self):
+        return "Article(id='{0}', name='{1}', kind='{2}')".format(
+            self.id, self.name, self.verb
         )
 
     @classmethod
