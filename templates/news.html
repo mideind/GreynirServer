@@ -57,7 +57,7 @@
    <tbody>
 {% for article in articles %}
    <tr class="topitem" data-uuid="{{ article.uuid }}">
-      <td class="timestamp text-muted" title="{{ article.time }}{{ ', ' + article.fulldate }}">
+      <td class="timestamp text-muted" title="{{ article.time }}, {{ article.fulldate }}">
          {{ article.time if display_time else article.date }}
       </td>
       <td class="ratio">

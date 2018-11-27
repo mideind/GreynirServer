@@ -1051,8 +1051,7 @@ def news():
     articles = top_news(topic=topic, offset=offset)
 
     # If all articles in the list are timestamped within 24 hours of now,
-    # we display their times in HH:MM format. Otherwise, we display their
-    # dates in YYYY-MM-DD format.
+    # we display their times in HH:MM format. Otherwise, we display date.
     display_time = True
     if articles and (datetime.utcnow() - articles[-1].timestamp).days >= 1:
         display_time = False
