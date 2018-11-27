@@ -324,7 +324,7 @@ class TreeUtility:
         return tmap
 
     @staticmethod
-    def dump_tokens(tokens, tree, words, error_index=None):
+    def dump_tokens(tokens, tree, words, error_index=None, correct=False):
 
         """ Generate a list of dicts representing the tokens in the sentence.
 
@@ -340,6 +340,7 @@ class TreeUtility:
                     t.m[3] is the word meaning/declination (beyging)
                 t.v contains auxiliary information, depending on the token kind
                 t.err is 1 if the token is an error token
+                t.corr contains explanatory text if a correction has been applied
 
             This function has the side effect of filling in the words dictionary
             with (stem, cat) keys and occurrence counts.
@@ -365,6 +366,13 @@ class TreeUtility:
                     d["x"].lower(),
                     meaning.beyging
                 )
+            if correct and hasattr(token, "error") and token.error is not None:
+                # We want information about corrections applied to
+                # this token, if any
+                d["corr"] = {
+                    "code": token.error.code,
+                    "descr": token.error.description
+                }
             dump.append(d)
             if words is not None and wt is not None:
                 # Add the (stem, cat) combination to the words dictionary
@@ -404,6 +412,7 @@ class TreeUtility:
         else:
             from query import create_name_register
             register = create_name_register(toklist, session, all_names=all_names)
+
         t2 = time.time()
         stats["tok_time"] = t1 - t0
         stats["parse_time"] = t2 - t1
@@ -446,7 +455,7 @@ class TreeUtility:
         def xform(tokens, tree, err_index):
             """ Transformation function that simply returns a list of POS-tagged,
                 normalized tokens for the sentence """
-            return TreeUtility.dump_tokens(tokens, tree, None, err_index)
+            return TreeUtility.dump_tokens(tokens, tree, None, err_index, correct)
 
         return TreeUtility._process_text(parser, session, text, all_names, xform, correct)
 

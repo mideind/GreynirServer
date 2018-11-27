@@ -903,7 +903,6 @@ def reportimage():
 
     return better_jsonify(**resp)
 
-
 @app.route("/image", methods=["GET"])
 def image():
     """ Get image for name """
@@ -1012,12 +1011,21 @@ def stats():
 
         chart_data = chart_stats(session=session, num_days=10)
 
-        return render_template(
-            "stats.html",
-            result=result,
+        gq = GenderQuery()
+        gresult = gq.execute(session)
+
+        gtotal = dict(kvk=Decimal(), kk=Decimal(), hk=Decimal(), total=Decimal())
+        for r in gresult:
+            gtotal["kvk"] += r.kvk
+            gtotal["kk"] += r.kk
+            gtotal["hk"] += r.hk
+            gtotal["total"] += r.kvk + r.kk + r.hk
+
+        return render_template("stats.html",
+            result=result, total=total,
+            gresult=gresult, gtotal=gtotal,
             scraped_chart_data=json.dumps(chart_data["scraped"]),
             parsed_chart_data=json.dumps(chart_data["parsed"]),
-            total=total,
         )
 
 
@@ -1087,6 +1095,14 @@ def analysis():
     """ Handler for a page with grammatical analysis of user-entered text """
     txt = request.args.get("txt", "")[0:_MAX_TEXT_LENGTH_VIA_URL]
     return render_template("analysis.html", default_text=txt)
+
+
+@app.route("/correct")
+def correct():
+    """ Handler for a page for spelling and grammar correction
+        of user-entered text """
+    txt = request.args.get("txt", "")[0:_MAX_TEXT_LENGTH_VIA_URL]
+    return render_template("correct.html", default_text=txt)
 
 
 @app.route("/page")
@@ -1204,7 +1220,11 @@ if __name__ == "__main__":
     # Note: Reynir.grammar is automatically reloaded if its timestamp changes
     extra_files = [
         "Reynir.conf",
+        "Index.conf",
         "Verbs.conf",
+        "Adjectives.conf",
+        "AdjectivePredicates.conf",
+        "Morphemes.conf",
         "Prepositions.conf",
         "Main.conf",
         "Prefs.conf",

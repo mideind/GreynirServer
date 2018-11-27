@@ -242,7 +242,57 @@ function hoverOut() {
    }
 }
 
-function displayTokens(j) {
+function correctionHoverIn() {
+   // Hovering over a token
+   var wId = $(this).attr("id");
+   if (wId === null || wId === undefined)
+      // No id: nothing to do
+      return;
+   var ix = parseInt(wId.slice(1));
+   var t = w[ix];
+   if (!t || !t.corr)
+      // No token or no correction: nothing to do
+      return;
+
+   // Save our position
+   var offset = $(this).position();
+   // Highlight the token
+   $(this).addClass("highlight");
+   var r = t.corr;
+
+   $("#grammar").text(r.descr);
+   $("#details").text(r.code);
+   if (r.code[0] == "U")
+      $("#lemma").text("Óþekkt orð");
+   else
+      $("#lemma").text("Leiðrétt");
+
+   $("#info").removeClass();
+   /*
+   if (r.class !== null)
+      $("#info").addClass(r.class);
+   */
+
+   $("#info span#tag")
+      .removeClass()
+      .addClass("glyphicon")
+      .addClass("glyphicon-tag");
+
+   // Position the info popup
+   $("#info")
+      .css("top", offset.top.toString() + "px")
+      .css("left", offset.left.toString() + "px")
+      .css("visibility", "visible");
+}
+
+function displayTokens(j, correction) {
+   // Generate HTML for the token list given in j,
+   // and insert it into the <div> with id 'result'.
+   // Also, populate the global w array with the
+   // token list.
+   // If correction is true, display spelling
+   // and grammar correction information.
+   // Otherwise, display grammatical analysis.
    var x = ""; // Result text
    var lastSp;
    w = [];
@@ -261,6 +311,9 @@ function displayTokens(j) {
                   return false; // Break the iteration
                }
             });
+            if (correction)
+               x += "<span class='sent'>";
+            else
             if (err)
                x += "<span class='sent err'>";
             else
@@ -273,17 +326,34 @@ function displayTokens(j) {
                if (TP_SPACE[lastSp - 1][thisSp - 1] && tix)
                   x += " ";
                lastSp = thisSp;
-               if (t.err)
-                  // Mark an error token
-                  x += "<span class='errtok'>";
+               if (correction) {
+                  // Correction mode
+                  if (t.corr) {
+                     // Mark a corrected token. Give the span an
+                     // id that refers to the token index in the w array.
+                     var unknown = (t.corr.code[0] == "U");
+                     var corrClass = "corrtok" + (unknown ? " unknown" : "");
+                     x += "<span class='" + corrClass + "' id='c" + w.length + "'>";
+                  }
+               }
+               else {
+                  // Analysis mode
+                  if (t.err)
+                     // Mark an error token
+                     x += "<span class='errtok'>";
+               }
                if (t.k == TOK_PUNCTUATION)
-                  x += "<i class='p'>" + ((t.x == "—") ? " — " : t.x) + "</i>"; // Space around em-dash
+                   // Add space around em-dash
+                  x += "<i class='p'>" + ((t.x == "—") ? " — " : t.x) + "</i>";
                else {
                   var cls;
                   var tx = t.x;
                   if (!t.k) {
                      // TOK_WORD
                      if (err)
+                        // If the sentence was not parsed successfully,
+                        // we don't have an unambiguous interpretation of
+                        // the token (PoS tag or terminal name)
                         cls = "";
                      else
                      if (t.m)
@@ -304,12 +374,21 @@ function displayTokens(j) {
                      if (t.k == TOK_ENTITY)
                         tx = tx.replace(" - ", "-"); // Tight hyphen, no whitespace
                   }
+                  if (correction)
+                     // Use a neutral class for all words in correction mode
+                     cls = " class='c'";
                   x += "<i id='w" + w.length + "'" + cls + ">" + tx + "</i>";
-                  // Append to word/token list
-                  w.push(t);
                }
-               if (t.err)
-                  x += "</span>";
+               if (correction) {
+                  if (t.corr)
+                     x += "</span>";
+               }
+               else {
+                  if (t.err)
+                     x += "</span>";
+               }
+               // Append to word/token list
+               w.push(t);
             });
             // Finish sentence
             x += "</span>\n";
@@ -319,8 +398,14 @@ function displayTokens(j) {
       });
    // Show the page text
    $("div#result").html(x);
-   // Put a hover handler on each word
-   $("div#result i").hover(hoverIn, hoverOut);
+   if (correction) {
+      // Put a hover handler on each correction
+      $("div#result span.corrtok").hover(correctionHoverIn, hoverOut);
+   }
+   else {
+      // Put a hover handler on each word
+      $("div#result i").hover(hoverIn, hoverOut);
+   }
    // Put a click handler on each sentence
    $("span.sent").click(showParse);
    // Separate click handler on entity names
@@ -333,6 +418,10 @@ function populateStats(stats) {
    $("#tok-num").text(format_is(stats.num_tokens));
    $("#num-sent").text(format_is(stats.num_sentences));
    $("#num-parsed-sent").text(format_is(stats.num_parsed));
+   if (stats.num_parsed == 1)
+      $("#paragraphs").text("málsgrein")
+   else
+      $("#paragraphs").text("málsgreinar");
    if (stats.num_sentences > 0)
       $("#num-parsed-ratio").text(format_is(100.0 * stats.num_parsed / stats.num_sentences, 1));
    else

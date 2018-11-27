@@ -754,6 +754,19 @@ span.errtok {
    color: #CB333B; /* Greynir red */
 }
 
+span.corrtok:before {
+   font-family: "Glyphicons Regular";
+   top: 0.4em;
+   margin-left: 0.2em;
+   font-size: 0.7em;
+   color: #5cb85c; /* Greynir green */
+   content: "\E174";
+}
+
+span.corrtok.unknown:before {
+   color: #CB333B; /* Greynir red */
+}
+
 /*
 span.sent.err:hover span.errtok {
    font-weight: 700;

@@ -9,14 +9,14 @@
 
 {% block content %}
 
-<div class="input-analysis">
+<div class="input-correct">
 
    <div class="row">
 
       <div class="col-xs-12" id="txt-div">
 
          <textarea rows="8" class="form-control input-lg"
-            id="txt" tabindex="1" maxlength="4096" autofocus required placeholder="Sláðu inn texta til að málgreina">
+            id="txt" tabindex="1" maxlength="4096" autofocus required placeholder="Sláðu inn texta til að lesa yfir">
             {{- default_text -}}
          </textarea>
 
@@ -26,8 +26,8 @@
 
    <div class="row">
       <div class="col-xs-4 col-sm-3 col-md-2 pull-right">
-         <button class="btn btn-success btn-lg btn-block" id="txt-ok" title="Greina" tabindex="3"
-            onclick="analyze()">Greina</button>
+         <button class="btn btn-success btn-lg btn-block" id="txt-ok" title="Lesa yfir" tabindex="3"
+            onclick="correct()">Lesa yfir</button>
       </div>
    </div>
 
@@ -35,17 +35,23 @@
 
 <div id="output">
 
-   <h3 class="help">Málgreining <small>Smelltu á málsgrein til að sjá trjágreiningu hennar</small></h3>
+   <h3 class="help">Yfirlesinn texti <small>Farðu með músina yfir
+      <span class="corrtok">merkt</span> orð til að sjá útskýringar</small>
+   </h3>
 
-   {% include 'hover-infobox.html' %}
-
-   <div id="result">
+   <!-- Popup with info about the word being hovered over -->
+   <div id="info">
+      <table>
+      <tr>
+      <td><span id="tag" class='glyphicon glyphicon-tag'></span></td>
+      <td id="lemma"></td>
+      </tr>
+      </table>
+      <p id="details"></p>
+      <p id="grammar"></p>
    </div>
 
-   <div id="register">
-      <!-- Name register goes here -->
-      <h3>Nafnalisti</h3>
-      <ul id="namelist"></ul>
+   <div id="result">
    </div>
 
    <div id="statistics">
@@ -82,7 +88,7 @@
       }
       else {
          $("#txt-ok").removeAttr("disabled")
-            .text("Greina");
+            .text("Lesa yfir");
          $("div#output").css("display", "block");
       }
    }
@@ -91,7 +97,6 @@
       // Clear previous result
       $("div#result").html("");
       $("div#statistics").css("display", "none");
-      $("div#register").css("display", "none");
       // Display progress indicator
       wait(true);
    }
@@ -104,14 +109,12 @@
 
    function populateResult(json) {
       wait(false);
-      // Display the tokens in analysis mode
-      displayTokens(json.result, false);
+      // Display the tokens in correction mode
+      displayTokens(json.result, true);
       populateStats(json.stats);
-      nameDict = json.register;
-      populateRegister();
    }
 
-   function analyzeText(txt) {
+   function correctText(txt) {
       // Ask the server to tokenize and parse the given text
       clearResult();
       // Launch the query
@@ -125,15 +128,15 @@
       );
    }
 
-   function analyze() {
+   function correct() {
       // Submit the contents of the textarea to the server
       // for tokenization and parsing
-      analyzeText($("#txt").val().trim());
+      correctText($("#txt").val().trim());
    }
 
    function init() {
       // Activate the top navbar
-      $("#navid-analysis").addClass("active");
+      $("#navid-correct").addClass("active");
       // Clicking on the info panel makes it disappear
       // (necessary for touch screens)
       $("#info").click(function(ev) {
