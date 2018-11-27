@@ -52,19 +52,29 @@
 {% endif %}
       <th>%</th>
       <th>Fyrirsögn</th>
+      <th></th>
    </thead>
    <tbody>
 {% for article in articles %}
    <tr class="topitem" data-uuid="{{ article.uuid }}">
-      <td class="timestamp text-muted">{{ article.time if display_time else article.date }}</td>
+      <td class="timestamp text-muted" title="{{ article.time }}{{ ', ' + article.fulldate }}">
+         {{ article.time if display_time else article.date }}
+      </td>
       <td class="ratio">
          <div class="progress" title="{{ article.width }} málsgreina trjágreind">
             <div class="progress-bar progress-bar-success" role="progressbar"
                style="width:{{ article.width }}">{{ article.width }}</div>
          </div>
       </td>
-      <td class="heading"><img src="{{ url_for('static', filename = 'sources/' + article.icon) }}" width="16" height="16" alt="{{ article.icon }}"/>
-      {{ article.heading }}</td>
+      <td class="heading">
+         <img src="{{ url_for('static', filename = 'sources/' + article.icon) }}" width="16" height="16" alt="{{ article.source }}"/>
+         {{ article.heading }}
+      </td>
+      <td class="extlink">
+         <a href="{{ article.url }}" onclick="event.stopPropagation();" title="Skoða á {{ article.source }}">
+            <span class="glyphicon glyphicon-arrow-right"></span>
+         </a>
+      </td>
    </tr>
 {% endfor %}
    </tbody>

@@ -256,7 +256,16 @@ def top_news(topic=None, offset=0, limit=_TOP_NEWS_LENGTH):
             """ Utility class to carry information about an article to the web template """
 
             def __init__(
-                self, heading, timestamp, url, uuid, num_sentences, num_parsed, icon, localized_date
+                self,
+                heading,
+                timestamp,
+                url,
+                uuid,
+                num_sentences,
+                num_parsed,
+                icon,
+                localized_date,
+                source,
             ):
                 self.heading = heading
                 self.timestamp = timestamp
@@ -266,6 +275,7 @@ def top_news(topic=None, offset=0, limit=_TOP_NEWS_LENGTH):
                 self.num_parsed = num_parsed
                 self.icon = icon
                 self.localized_date = localized_date
+                self.source = source
 
             @property
             def width(self):
@@ -281,14 +291,20 @@ def top_news(topic=None, offset=0, limit=_TOP_NEWS_LENGTH):
 
             @property
             def date(self):
-                return self.localized_date or self.timestamp.isoformat()[0:10]
+                if datetime.today().year is self.timestamp.year:
+                    return self.localized_date
+                return self.fulldate
 
-        with changedlocale(category='LC_TIME'):
+            @property
+            def fulldate(self):
+                return self.localized_date + self.timestamp.strftime(" %Y")
+
+        with changedlocale(category="LC_TIME"):
             for a in q:
                 # Instantiate article objects from results
-                icon = a.root.domain + ".png"
-                dfmt = "%-d. %b" if datetime.today().year is a.timestamp.year else "%-d. %b %Y"
-                dstr = a.timestamp.strftime(dfmt)
+                source = a.root.domain
+                icon = source + ".png"
+                locdate = a.timestamp.strftime("%-d. %b")
 
                 d = ArticleDisplay(
                     heading=a.heading,
@@ -298,7 +314,8 @@ def top_news(topic=None, offset=0, limit=_TOP_NEWS_LENGTH):
                     num_sentences=a.num_sentences,
                     num_parsed=a.num_parsed,
                     icon=icon,
-                    localized_date=dstr,
+                    localized_date=locdate,
+                    source=source,
                 )
                 toplist.append(d)
 
