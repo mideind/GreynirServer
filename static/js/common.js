@@ -119,7 +119,8 @@ var wordClass = {
    "uh" : "upphrópun",
    "sérnafn" : "sérnafn",
    "gata" : "götuheiti",
-   "fyrirtæki" : "fyrirtæki"
+   "fyrirtæki" : "fyrirtæki",
+   "entity" : "sérnafn"
 };
 
 var variantDesc = [
@@ -269,7 +270,7 @@ function grammar(cat, terminal) {
             if (cat == "fs") {
                // For prepositions, show "stýrir þágufalli" instead of "þágufall"
                // Avoid special case for "synthetic" prepositions (fs_nh)
-               if (val.k !== "_nh")
+               if (val.k !== "_nh" && "_nf_þf_þgf_ef".indexOf(val.k) >= 0)
                   g.push("stýrir " + val.t + "i");
             }
             else
@@ -312,7 +313,8 @@ function tokenInfo(t, nameDict) {
       lemma: null,
       details: null,
       grammar: null,
-      percent: null
+      percent: null,
+      corr: null
    };
    var title;
    var bc;
@@ -488,6 +490,16 @@ function tokenInfo(t, nameDict) {
    if (t.k == TOK_MEASUREMENT) {
       r.lemma = t.x;
       r.details = format_is(t.v[1], 3) + " " + t.v[0]; // Value, unit
+   }
+   if (t.corr !== undefined) {
+      // A correction applies to this token:
+      // add the "corr" class to it
+      if (!r.class)
+         r.class = "corr";
+      else
+         r.class += " corr";
+      // Copy the correction info (code, description) from the token
+      r.corr = t.corr;
    }
    return r;
 }

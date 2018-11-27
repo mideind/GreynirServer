@@ -178,7 +178,7 @@ def recognize_entities(token_stream, enclosing_session = None):
                         # Clinton -> Hillary [Rodham] Clinton
                         if lastname[0].isupper():
                             # Look for Icelandic patronyms/matronyms
-                            _, m, _ = db.lookup_word(lastname, False)
+                            _, m = db.lookup_word(lastname, False)
                             if m and any(mm.fl in { "föð", "móð" } for mm in m):
                                 # We don't store Icelandic patronyms/matronyms as surnames
                                 pass

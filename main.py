@@ -832,25 +832,6 @@ def reportimage():
 
     return better_jsonify(**resp)
 
-@app.route("/genders", methods=["GET"])
-@max_age(seconds=5 * 60)
-def genders():
-    """ Render a page with gender statistics """
-
-    with SessionContext(commit=True) as session:
-
-        gq = GenderQuery()
-        result = gq.execute(session)
-
-        total = dict(kvk=Decimal(), kk=Decimal(), hk=Decimal(), total=Decimal())
-        for r in result:
-            total["kvk"] += r.kvk
-            total["kk"] += r.kk
-            total["hk"] += r.hk
-            total["total"] += r.kvk + r.kk + r.hk
-
-        return render_template("genders.html", result=result, total=total)
-
 
 @app.route("/stats", methods=["GET"])
 @max_age(seconds=5 * 60)
@@ -868,7 +849,20 @@ def stats():
             total["sent"] += r.sent
             total["parsed"] += r.parsed
 
-        return render_template("stats.html", result=result, total=total)
+        gq = GenderQuery()
+        gresult = gq.execute(session)
+
+        gtotal = dict(kvk=Decimal(), kk=Decimal(), hk=Decimal(), total=Decimal())
+        for r in gresult:
+            gtotal["kvk"] += r.kvk
+            gtotal["kk"] += r.kk
+            gtotal["hk"] += r.hk
+            gtotal["total"] += r.kvk + r.kk + r.hk
+
+        return render_template("stats.html",
+            result=result, total=total,
+            gresult=gresult, gtotal=gtotal
+        )
 
 
 @app.route("/about")
@@ -935,6 +929,14 @@ def analysis():
     """ Handler for a page with grammatical analysis of user-entered text """
     txt = request.args.get("txt", "")[0:_MAX_TEXT_LENGTH_VIA_URL]
     return render_template("analysis.html", default_text=txt)
+
+
+@app.route("/correct")
+def correct():
+    """ Handler for a page for spelling and grammar correction
+        of user-entered text """
+    txt = request.args.get("txt", "")[0:_MAX_TEXT_LENGTH_VIA_URL]
+    return render_template("correct.html", default_text=txt)
 
 
 @app.route("/page")
@@ -1053,8 +1055,11 @@ if __name__ == "__main__":
     # Note: Reynir.grammar is automatically reloaded if its timestamp changes
     extra_files = [
         "Reynir.conf",
+        "Index.conf",
         "Verbs.conf",
-        "Errors.conf",
+        "Adjectives.conf",
+        "AdjectivePredicates.conf",
+        "Morphemes.conf",
         "Prepositions.conf",
         "Main.conf",
         "Prefs.conf",
