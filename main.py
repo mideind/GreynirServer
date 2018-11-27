@@ -228,11 +228,11 @@ _MAX_QUERY_LENGTH = 512
 
 
 def top_news(topic=None, offset=0, limit=_TOP_NEWS_LENGTH):
-    """ Return a list of top recent news, of a particular topic,
-        up to a particular start time, having a specified length """
+    """ Return a list of articles (with a particular topic) in
+        chronologically reversed order. """
     toplist = []
     topdict = dict()
-    
+
     with SessionContext(commit=True) as session:
 
         q = (
@@ -240,7 +240,7 @@ def top_news(topic=None, offset=0, limit=_TOP_NEWS_LENGTH):
             .join(Root)
             .filter(Article.tree != None)
             .filter(Article.timestamp != None)
-            # .filter(Article.timestamp < start)
+            .filter(Article.timestamp <= datetime.utcnow())
             .filter(Article.heading > "")
             .filter(Article.num_sentences > 0)
             .filter(Root.visible == True)
@@ -253,11 +253,10 @@ def top_news(topic=None, offset=0, limit=_TOP_NEWS_LENGTH):
         q = q.order_by(desc(Article.timestamp)).offset(offset).limit(limit)
 
         class ArticleDisplay:
-
             """ Utility class to carry information about an article to the web template """
 
             def __init__(
-                self, heading, timestamp, url, uuid, num_sentences, num_parsed, icon
+                self, heading, timestamp, url, uuid, num_sentences, num_parsed, icon, localized_date
             ):
                 self.heading = heading
                 self.timestamp = timestamp
@@ -266,6 +265,7 @@ def top_news(topic=None, offset=0, limit=_TOP_NEWS_LENGTH):
                 self.num_sentences = num_sentences
                 self.num_parsed = num_parsed
                 self.icon = icon
+                self.localized_date = localized_date
 
             @property
             def width(self):
@@ -281,39 +281,26 @@ def top_news(topic=None, offset=0, limit=_TOP_NEWS_LENGTH):
 
             @property
             def date(self):
-                return self.timestamp.isoformat()[0:10]
+                return self.localized_date or self.timestamp.isoformat()[0:10]
 
-        for a in q:
-            # Collect and count the titles
-            icon = a.root.domain + ".png"
+        with changedlocale(category='LC_TIME'):
+            for a in q:
+                # Instantiate article objects from results
+                icon = a.root.domain + ".png"
+                dfmt = "%-d. %b" if datetime.today().year is a.timestamp.year else "%-d. %b %Y"
+                dstr = a.timestamp.strftime(dfmt)
 
-            d = ArticleDisplay(
-                heading=a.heading,
-                timestamp=a.timestamp,
-                url=a.url,
-                uuid=a.id,
-                num_sentences=a.num_sentences,
-                num_parsed=a.num_parsed,
-                icon=icon,
-            )
-
-            # Have we seen the same heading on the same domain?
-            # t = (a.root.domain, a.heading)
-            # if t in topdict:
-            #     # Same domain+heading already in the list
-            #     i = topdict[t]
-            #     if d.timestamp > toplist[i].timestamp:
-            #         # The new entry is newer: replace the old one
-            #         toplist[i] = d
-            #     # Otherwise, ignore the new entry and continue
-            # else:
-            #     # New heading: note its index in the list
-            #     llist = len(toplist)
-            #     topdict[t] = llist
-            #     toplist.append(d)
-            #     if llist + 1 >= limit:
-            #         break
-            toplist.append(d)
+                d = ArticleDisplay(
+                    heading=a.heading,
+                    timestamp=a.timestamp,
+                    url=a.url,
+                    uuid=a.id,
+                    num_sentences=a.num_sentences,
+                    num_parsed=a.num_parsed,
+                    icon=icon,
+                    localized_date=dstr,
+                )
+                toplist.append(d)
 
     return toplist
 
@@ -1038,8 +1025,8 @@ def news():
     """ Handler for a page with a top news list """
     topic = request.args.get("topic")
     try:
-        offset = int(request.args.get("offset", 0))
-        limit = int(request.args.get("limit", _TOP_NEWS_LENGTH))
+        offset = max(0, int(request.args.get("offset", 0)))
+        limit = max(0, int(request.args.get("limit", _TOP_NEWS_LENGTH)))
     except:
         offset = 0
         limit = _TOP_NEWS_LENGTH
@@ -1059,8 +1046,12 @@ def news():
         d = {t[0]: t[1] for t in q}
         topics = dict(id=topic, name=d.get(topic, ""), topic_list=q)
     return render_template(
-        "news.html", articles=articles, topics=topics,
-        display_time=display_time, offset=offset, limit=limit
+        "news.html",
+        articles=articles,
+        topics=topics,
+        display_time=display_time,
+        offset=offset,
+        limit=limit,
     )
 
 
