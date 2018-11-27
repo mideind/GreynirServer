@@ -601,7 +601,7 @@ class TerminalDescriptor:
         if " " in word:
             # Multi-word phrase: we return it unchanged
             return word
-        _, meanings, _ = bindb.lookup_word(word, at_start)
+        _, meanings = bindb.lookup_word(word, at_start)
         if meanings:
             for m in meanings:
                 if self._bin_filter(m):
@@ -614,7 +614,7 @@ class TerminalDescriptor:
 def _root_lookup(text, at_start, terminal):
     """ Look up the root of a word that isn't found in the cache """
     with BIN_Db.get_db() as bin_db:
-        w, m, _ = bin_db.lookup_word(text, at_start)
+        w, m = bin_db.lookup_word(text, at_start)
     if m:
         # Find the meaning that matches the terminal
         td = TerminalNode._TD[terminal]
@@ -701,7 +701,7 @@ class TerminalNode(Node):
     def lookup_alternative(self, bin_db, replace_func, sort_func=None):
         """ Return a different (but always nominative case) word form, if available,
             by altering the beyging spec via the given replace_func function """
-        w, m, _ = bin_db.lookup_word(self.text, self.at_start)
+        w, m = bin_db.lookup_word(self.text, self.at_start)
         if m:
             # Narrow the meanings down to those that are compatible with the terminal
             m = [x for x in m if self.td._bin_filter(x)]
@@ -970,7 +970,7 @@ class PersonNode(TerminalNode):
         at_start = self.at_start
         name = []
         for part in self.text.split(" "):
-            w, m, _ = bin_db.lookup_word(part, at_start)
+            w, m = bin_db.lookup_word(part, at_start)
             at_start = False
             if m:
                 m = [

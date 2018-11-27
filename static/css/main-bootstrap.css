@@ -790,10 +790,13 @@ span.corrtok.unknown:before {
    color: #CB333B; /* Greynir red */
 }
 
+<<<<<<< HEAD
 span.corrtok.advisory:before {
    color: #f0ad4e; /* Greynir yellow */
 }
 
+=======
+>>>>>>> Added correct.html template; moved genders.html content to stats.html
 /*
 span.sent.err:hover span.errtok {
    font-weight: 700;

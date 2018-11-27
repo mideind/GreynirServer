@@ -356,6 +356,7 @@ function correctionHoverIn() {
    $("#grammar").text(r.descr);
    $("#details").text(r.code);
    if (r.code[0] == "U")
+<<<<<<< HEAD
       // Unknown word
       $("#lemma").text("Óþekkt orð");
    else
@@ -364,6 +365,10 @@ function correctionHoverIn() {
       $("#lemma").text("Ábending");
    else
       // Correction
+=======
+      $("#lemma").text("Óþekkt orð");
+   else
+>>>>>>> Added correct.html template; moved genders.html content to stats.html
       $("#lemma").text("Leiðrétt");
 
    $("#info").removeClass();
@@ -382,6 +387,9 @@ function correctionHoverIn() {
       .css("top", offset.top.toString() + "px")
       .css("left", offset.left.toString() + "px")
       .css("visibility", "visible");
+<<<<<<< HEAD
+>>>>>>> Added correct.html template; moved genders.html content to stats.html
+=======
 >>>>>>> Added correct.html template; moved genders.html content to stats.html
 }
 
@@ -432,12 +440,16 @@ function displayTokens(j, correction) {
                      // Mark a corrected token. Give the span an
                      // id that refers to the token index in the w array.
                      var unknown = (t.corr.code[0] == "U");
+<<<<<<< HEAD
                      var advisory = (t.corr.code[0] == "T");
                      var corrClass = "corrtok";
                      if (unknown)
                         corrClass += " unknown";
                      if (advisory)
                         corrClass += " advisory";
+=======
+                     var corrClass = "corrtok" + (unknown ? " unknown" : "");
+>>>>>>> Added correct.html template; moved genders.html content to stats.html
                      x += "<span class='" + corrClass + "' id='c" + w.length + "'>";
                   }
                }
