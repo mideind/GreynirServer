@@ -1020,7 +1020,6 @@ def reportimage():
 
     return better_jsonify(**resp)
 
-
 @app.route("/image", methods=["GET"])
 def image():
     """ Get image for (person) name """
@@ -1429,6 +1428,13 @@ def parsefail():
     return render_template("parsefail.html", sentences=json.dumps(sfails), num=num)
 
 
+@app.route("/correct")
+def correct():
+    """ Handler for a page for spelling and grammar correction
+        of user-entered text """
+    txt = request.args.get("txt", "")[0:_MAX_TEXT_LENGTH_VIA_URL]
+    return render_template("correct.html", default_text=txt)
+
 
 @app.route("/page")
 def page():
@@ -1545,8 +1551,11 @@ if __name__ == "__main__":
     # Note: Reynir.grammar is automatically reloaded if its timestamp changes
     extra_files = [
         "Reynir.conf",
+        "Index.conf",
         "Verbs.conf",
-        "Errors.conf",
+        "Adjectives.conf",
+        "AdjectivePredicates.conf",
+        "Morphemes.conf",
         "Prepositions.conf",
         "Main.conf",
         "Prefs.conf",
