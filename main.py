@@ -291,7 +291,7 @@ def top_news(topic=None, offset=0, limit=_TOP_NEWS_LENGTH):
 
             @property
             def date(self):
-                if datetime.today().year is self.timestamp.year:
+                if datetime.today().year == self.timestamp.year:
                     return self.localized_date
                 return self.fulldate
 
@@ -1048,7 +1048,8 @@ def news():
         offset = 0
         limit = _TOP_NEWS_LENGTH
 
-    articles = top_news(topic=topic, offset=offset)
+    limit = min(limit, 100) # Cap at max 100 results per page
+    articles = top_news(topic=topic, offset=offset, limit=limit)
 
     # If all articles in the list are timestamped within 24 hours of now,
     # we display their times in HH:MM format. Otherwise, we display date.
