@@ -34,7 +34,7 @@
         <div id="lang-btns" class="pull-right">
             <ul class="nav nav-pills pull-right list-inline language-list">
                 <li id="lang-dropdown-btn" role="presentation" class="list-inline-item dropdown">
-                    <a class="btn btn-default" id="lang-dropdown-a" class="dropdown-toggle" data-toggle="dropdown" data-placeholder="Önnur tungumál"
+                    <a class="btn btn-default disabled" id="lang-dropdown-a" class="dropdown-toggle" data-toggle="dropdown" data-placeholder="Önnur tungumál"
                        href="#" role="button" aria-haspopup="true" aria-expanded="false">
                         Önnur tungumál <span class="caret"></span>
                     </a>
@@ -43,7 +43,7 @@
                         <li id="lang-btn-no" data-lang="no" role="presentation" class=""><a href="#">Norska</a></li>
                     </ul>
                 </li> 
-                <li class="list-inline-item" id="lang-btn-de" data-lang="de" role="presentation"><a class="btn btn-default" href="#">Þýska</a></li>
+                <li class="list-inline-item" id="lang-btn-de" data-lang="de" role="presentation"><a class="btn btn-default disabled" href="#">Þýska</a></li>
                 <li  class="list-inline-item" id="lang-btn-en" data-lang="en" role="presentation"><a class="btn btn-default" href="#">Enska</a></li>
             </ul>
         </div>
@@ -208,7 +208,6 @@
      // Add listeners to language buttons that determine the
      // target language for translation
      $("#lang-btns").on("click", handleLangBtn);
-     $("#txt").val("Þetta er texti var settur inn af init.");
      // Display if state of textarea is dirty w.r.t the shown translation
      /* $("#txt").bind("input propertychange", function (event) { */
      /* console.log("Change event"); */
