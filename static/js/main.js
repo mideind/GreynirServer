@@ -548,6 +548,10 @@ function autoCompleteLookup(q, done)  {
       done(none);
       return;
    }
+   // Cancel any active request
+   if (autoCompleteLookup.req) {
+      autoCompleteLookup.req.abort();
+   }
    // Local caching
    if (autoCompleteLookup.cache === undefined) {
       autoCompleteLookup.cache = { };
@@ -556,10 +560,6 @@ function autoCompleteLookup(q, done)  {
    if (cache[q] !== undefined) {
       done(cache[q]);
       return;
-   }
-   // Cancel any active request
-   if (autoCompleteLookup.req) {
-      autoCompleteLookup.req.abort();
    }
    // Ajax request to server
    autoCompleteLookup.req = $.ajax({

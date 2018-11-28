@@ -185,8 +185,7 @@ def update_broken_image_url(name, url):
         # Verify that URL exists in DB
         r = _get_cached_entry(name, url, enclosing_session=session)
 
-        # If not recently fetched...
-        if r and r.timestamp < datetime.utcnow() - timedelta(minutes=30):
+        if r:
             # Verify that URL is indeed broken
             if not check_image_url(url):
                 # Blacklist the URL, purge results from cache and refetch
