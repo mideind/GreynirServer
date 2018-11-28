@@ -118,6 +118,7 @@ var wordClass = {
    "töl" : "töluorð",
    "uh" : "upphrópun",
    "sérnafn" : "sérnafn",
+   "entity" : "sérnafn",
    "gata" : "götuheiti",
    "fyrirtæki" : "fyrirtæki"
 };
