@@ -823,7 +823,7 @@ function editSentence() {
 
 var nnTreeData = null;
 var nnRoot = null;
-var nnTree_fn = null;
+var nntree_fn = null;
 
 function get_nntree(text) {
      payload = {
@@ -838,8 +838,10 @@ function get_nntree(text) {
         success: function (resp) {
             nn_wait(false);
             result = resp.result
-            nnTree_fn = make_tree_fn(result.width, result.height)
-            draw_nntree(result.tree, result.width, result.height);
+            nnwidth = result.width * 56;
+            nnheight = 100 + result.height * 80 - margin.top - margin.bottom;
+            nntree_fn = make_tree_fn(nnwidth, nnheight)
+            draw_nntree(result.tree, nnwidth, nnheight);
         },
         error: function (resp) {
         },
@@ -857,11 +859,11 @@ function draw_nntree(_nnTreeData, _width, _height) {
     });
 
     var nng = d3.select("div#nn-canvas")
-    .append("svg")
-        .attr("width", _width + margin.right + margin.left)
-        .attr("height", _height + margin.top + margin.bottom)
-    .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+        .append("svg")
+            .attr("width", _width + margin.right + margin.left)
+            .attr("height", _height + margin.top + margin.bottom)
+        .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
     $("div#nn-tree div.grid div.table-responsive")
         .scroll(function() {
@@ -875,7 +877,7 @@ function draw_nntree(_nnTreeData, _width, _height) {
         });
    if (nnRoot) {
       d3.select(self.frameElement).style("height", (_height + margin.top + margin.bottom) + "px");
-      d3_update(nng, nnRoot, nnTree_fn);
+      d3_update(nng, nnRoot, nntree_fn);
    }
 }
 

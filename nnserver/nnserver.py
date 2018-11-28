@@ -29,7 +29,7 @@
     curl --header "Content-Type: application/json" \
         --request POST \
         http://localhost:8080/translate.api \
-        --data '{"pgs":["Hvernig komstu þangað?", "Hvert er ferðinni svo heitið?"],"signature_name":"serving_default"}'
+        --data '{"pgs":["Hvernig komstu þangað?"],"signature_name":"serving_default"}'
 
     To test a running model server directly, try:
     curl --header "Content-Type: application/json" \
@@ -175,6 +175,7 @@ class ParsingServer(NnServer):
 
     src_enc = text_encoder.SubwordTextEncoder(_ENIS_VOCAB_PATH)
     tgt_enc = CompositeTokenEncoder(_PARSING_VOCAB_PATH, version=1)
+    _model_name = "parse"
 
 
 class TranslateServer(NnServer):
@@ -183,6 +184,7 @@ class TranslateServer(NnServer):
 
     src_enc = text_encoder.SubwordTextEncoder(_ENIS_VOCAB_PATH)
     tgt_enc = src_enc
+    _model_name = "translate"
 
 
 @app.route("/parse.api", methods=["POST"])
@@ -267,6 +269,15 @@ if __name__ == "__main__":
         action="store_true",
         required=False,
         help="Emit debug information messages",
+    )
+    parser.add_argument(
+        "--only",
+        dest="ONLY",
+        default=False,
+        required=False,
+        type=str,
+        choices=["parse", "translate"],
+        help="Only use one model (otherwise both).",
     )
     args = parser.parse_args()
     app.config["out_host"] = args.OUT_HOST

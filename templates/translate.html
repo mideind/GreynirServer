@@ -4,6 +4,11 @@
 {% block styles %}
 
 <link href="{{ url_for('static', filename='css/main-bootstrap.css') }}" rel='stylesheet' type='text/css'>
+<style type="text/css" media="screen">
+ #lang-btns>.nav>li>a:focus, .nav>li>a:hover {
+     background-position: 0px;
+ }
+</style>
 
 {% endblock %}
 
@@ -25,29 +30,25 @@
     </div>
 
     <div class="row">
-        <div id="lang-btns" class="col-xs-6 col-sm-4 col-md-5 pull-left">
-            <ul class="nav nav-pills">
-                <li id="lang-btn-en" data-lang="en" role="presentation" class=""><a href="#">Enska</a></li>
-                <li id="lang-btn-de" data-lang="de" role="presentation" class="disabled"><a href="#">Þýska</a></li>
-                <li id="lang-dropdown-btn" role="presentation" class="dropdown disabled">
-                    <a id="lang-dropdown-a" class="dropdown-toggle" data-toggle="dropdown" data-placeholder="Önnur tungumál"
+
+        <div id="lang-btns" class="pull-right">
+            <ul class="nav nav-pills pull-right list-inline language-list">
+                <li id="lang-dropdown-btn" role="presentation" class="list-inline-item dropdown">
+                    <a class="btn btn-default" id="lang-dropdown-a" class="dropdown-toggle" data-toggle="dropdown" data-placeholder="Önnur tungumál"
                        href="#" role="button" aria-haspopup="true" aria-expanded="false">
                         Önnur tungumál <span class="caret"></span>
                     </a>
                     <ul class="dropdown-menu">
-                        <li id="lang-btn-fr" data-lang="fr" role="presentation" class=""><a href="#">Franska</a></li>
+                        <li id="lang-btn-fr" data-lang="fr" role="presentation"><a href="#">Franska</a></li>
                         <li id="lang-btn-no" data-lang="no" role="presentation" class=""><a href="#">Norska</a></li>
                     </ul>
-                </li>
+                </li> 
+                <li class="list-inline-item" id="lang-btn-de" data-lang="de" role="presentation"><a class="btn btn-default" href="#">Þýska</a></li>
+                <li  class="list-inline-item" id="lang-btn-en" data-lang="en" role="presentation"><a class="btn btn-default" href="#">Enska</a></li>
             </ul>
         </div>
 
-        <div class="col-xs-4 col-sm-3 col-md-2 pull-right">
-            <button class="btn btn-success btn-lg btn-block" id="txt-ok" title="Þýða" tabindex="3"
-                    onclick="doTranslation()">Þýða</button>
-        </div>
     </div>
-
 </div>
 
 <div id="output">
@@ -72,8 +73,8 @@
 
 <script>
 
- var currentLang = "en";
- var currentLangBtnId = "#lang-btn-en";
+ var currentLang = false;
+ var currentLangBtnId = false;
 
  function wait(state) {
      // Start or stop a wait spinner
@@ -147,10 +148,6 @@
  }
 
  function initLangBtns() {
-     // Add listeners to language buttons that determine the
-     // target language for translation
-     $("#lang-btns").on("click", handleLangBtn);
-     $(currentLangBtnId).addClass("active")
  }
 
  function handleLangBtn(e) {
@@ -159,37 +156,41 @@
      if (!btn) {
          // after dropdown button is pressed
          // clicking elsewhere activates listener
+         // this means a cancelled action
          e.preventDefault();
          return false;
      }
      if (btn.id !== "lang-btn-en") {
-         // languages other than en are not yet available
-         e.preventDefault();
-         return true;
+     /* // languages other than English are not yet available */
+     e.preventDefault();
+     return true;
      }
-     if (btn.id === "lang-dropdown-btn") {
+     /* if (btn.id === "lang-dropdown-btn") { */
          // dropdown button selected, do nothing
-         e.preventDefault();
-         return true;
-     }
+     /* e.preventDefault(); */
+     /* return true; */
+     /* } */
 
      currentLang = btn.dataset.lang;
      currentLangBtnId = btn.id;
-     $("#lang-btns li").removeClass("active");
+     $("#lang-btns > ul > li >  a").removeClass("btn-primary").addClass("btn-default");
 
      if ($("#lang-dropdown-btn").has(btn).length) {
          // clicked a button inside dropdown language menu
-         $("#lang-dropdown-btn").addClass("active");
          $("#lang-dropdown-a").html(e.target.text + ' <span class="caret"></span>')
+         $("#lang-dropdown-a").addClass("btn-primary");
+         $("#lang-dropdown-a").removeClass("btn-default");
      } else {
          // clicked a button that is not part of dropdown menu
-         $(btn).toggleClass("active")
+         $(btn).children("a").eq(0).removeClass("btn-default");
+         $(btn).children("a").eq(0).addClass("btn-primary");
 
          // reset dropdown button text
          placeholder = $("#lang-dropdown-a").data().placeholder + ' <span class="caret"></span>'
          $("#lang-dropdown-a").html(placeholder)
      }
 
+     doTranslation();
      e.preventDefault();
  }
 
@@ -204,7 +205,17 @@
      });
      // Hide the output div until we have something to show
      $("div#output").css("display", "none");
-     initLangBtns();
+     // Add listeners to language buttons that determine the
+     // target language for translation
+     $("#lang-btns").on("click", handleLangBtn);
+     $("#txt").val("Þetta er texti var settur inn af init.");
+     // Display if state of textarea is dirty w.r.t the shown translation
+     /* $("#txt").bind("input propertychange", function (event) { */
+     /* console.log("Change event"); */
+     /* if (currentLangBtnId) { */
+             /* $(currentLangBtnId).addClass("") */
+     /* } */
+     /* }); */
  }
 
  $(document).ready(init);
