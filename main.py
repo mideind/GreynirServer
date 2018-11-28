@@ -450,8 +450,8 @@ def nnparse_api(version=1):
     nnTree = ParsingClient.request_sentence(text)
     result = {
         "tree": nnTree.to_dict(),
-        "width": nnTree.width() * 60,
-        "height": nnTree.height() * 60,
+        "width": nnTree.width(),
+        "height": nnTree.height(),
     }
 
     return better_jsonify(valid=True, result=result)
