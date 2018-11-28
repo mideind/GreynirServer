@@ -598,7 +598,6 @@ function initMain(jQuery) {
       .autocomplete({
          lookup: autoCompleteLookup,
          deferRequestBy: 100,
-         autoSelectFirst: true,
       });
 
    if (initializeSpeech()) {
