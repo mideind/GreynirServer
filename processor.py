@@ -66,9 +66,10 @@ class Processor:
         """ Perform any cleanup """
         cls._db = None
 
-    def __init__(self, processor_directory, single_processor = None):
+    def __init__(self, processor_directory, single_processor = None, workers = None):
 
         Processor._init_class()
+        self.workers = workers
 
         # Dynamically load all processor modules
         # (i.e. .py files found in the processor directory, except those
@@ -193,14 +194,14 @@ class Processor:
                 self.go_single(url)
         else:
             # Use a multiprocessing pool to process the articles
-            pool = Pool() # Defaults to using as many processes as there are CPUs
+            pool = Pool(self.workers) # Defaults to using as many processes as there are CPUs
             pool.map(self.go_single, iter_parsed_articles())
             pool.close()
             pool.join()
 
 
 def process_articles(from_date = None, limit = 0, force = False,
-    update = False, title = None, processor = None):
+    update = False, title = None, processor = None, workers = None):
 
     print("------ Reynir starting processing -------")
     if from_date:
@@ -215,6 +216,8 @@ def process_articles(from_date = None, limit = 0, force = False,
         print("Update: Yes")
     if processor:
         print("Invoke single processor: {0}".format(processor))
+    if workers:
+        print("Number of workers: {0}".format(workers))
     ts = "{0}".format(datetime.utcnow())[0:19]
     print("Time: {0}\n".format(ts))
 
@@ -222,7 +225,7 @@ def process_articles(from_date = None, limit = 0, force = False,
 
     try:
         # Run all processors in the processors directory, or the single processor given
-        proc = Processor(processor_directory = "processors", single_processor = processor)
+        proc = Processor(processor_directory = "processors", single_processor = processor, workers = workers)
         proc.go(from_date, limit = limit, force = force, update = update, title = title)
     finally:
         proc = None
@@ -291,8 +294,8 @@ def _main(argv = None):
         argv = sys.argv
     try:
         try:
-            opts, args = getopt.getopt(argv[1:], "hifl:u:p:t:",
-                ["help", "init", "force", "update", "limit=", "url=", "processor=", "title="])
+            opts, args = getopt.getopt(argv[1:], "hifl:u:p:t:w:",
+                ["help", "init", "force", "update", "limit=", "url=", "processor=", "title=", "workers="])
         except getopt.error as msg:
              raise Usage(msg)
         limit = 10 # !!! DEBUG default limit on number of articles to parse, unless otherwise specified
@@ -302,6 +305,7 @@ def _main(argv = None):
         update = False
         title = None # Title pattern
         proc = None # Single processor to invoke
+        workers = None
         # Process options
         for o, a in opts:
             if o in ("-h", "--help"):
@@ -331,6 +335,9 @@ def _main(argv = None):
                 # In the case of a single processor, we force processing
                 # of already processed articles instead of processing new ones
                 force = True
+            elif o in ("-w", "--workers"):
+                # Limit the number of workers
+                workers = int(a)
 
         # Process arguments
         for arg in args:
@@ -365,7 +372,7 @@ def _main(argv = None):
                     update = False
                 from_date = None if update else datetime(year = 2016, month = 3, day = 1)
                 process_articles(from_date = from_date,
-                    limit = limit, force = force, update = update, title = title, processor = proc)
+                    limit = limit, force = force, update = update, title = title, processor = proc, workers = workers)
                 # process_articles(limit = limit)
 
     except Usage as err:
