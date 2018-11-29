@@ -386,10 +386,17 @@ class Location(Base):
     # Name
     name = Column(String, index=True)
 
-    # Kind ('address', 'country')
-    kind = Column(String, index=True)
+    # Kind (e.g. 'address', 'country', 'region')
+    kind = Column(String(16), index=True)
 
-    # Data
+    # Country (ISO 3166-1 alpha-2, e.g. 'is')
+    country = Column(String(2))
+
+    # Coordinates (WGS84)
+    longitude = Column(Float)
+    latitude = Column(Float)
+
+    # Additional data
     data = Column(JSONB)
 
     # Timestamp of this entry
@@ -399,8 +406,8 @@ class Location(Base):
     article = relationship("Article", backref=backref("locations", order_by=name))
 
     def __repr__(self):
-        return "Article(id='{0}', name='{1}', kind='{2}')".format(
-            self.id, self.name, self.verb
+        return "Location(id='{0}', name='{1}', kind='{2}', country='{3}')".format(
+            self.id, self.name, self.kind, self.country
         )
 
     @classmethod
