@@ -717,6 +717,10 @@ span.corrtok.unknown:before {
    color: #CB333B; /* Greynir red */
 }
 
+span.corrtok.advisory:before {
+   color: #f0ad4e; /* Greynir yellow */
+}
+
 /*
 span.sent.err:hover span.errtok {
    font-weight: 700;
