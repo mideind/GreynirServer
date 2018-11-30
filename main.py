@@ -418,8 +418,7 @@ def text_from_request(request):
             text = request.form.get("text", "")
     else:
         text = request.args.get("t", "")
-    # Replace all consecutive whitespace with a single space
-    return " ".join(text.split())[0:_MAX_TEXT_LENGTH]
+    return text[0:_MAX_TEXT_LENGTH]
 
 
 # Note: Endpoints ending with .api are configured not to be cached by nginx
