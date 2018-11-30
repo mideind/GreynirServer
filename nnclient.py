@@ -31,9 +31,37 @@ import logging
 
 from settings import Settings
 import tokenizer
+from fetcher import Fetcher
 
 import nntree
 from nntree import ParseResult
+
+
+def index_text(text):
+    """ Segments text into paragraphs and sentences
+        and returns:
+            dictionary of sentence indices to sentences
+            dictionary of paragraph index to constituent sentence indices"""
+    text = Fetcher.mark_paragraphs(text)
+    tok_stream = tokenizer.tokenize(text)
+
+    pgs = tokenizer.paragraphs(tok_stream)
+    pg_idx_to_sent_idx = dict()
+    sent_idx_to_sent = dict()
+    curr_sent_idx = 0
+    curr_pg_idx = 0
+
+    for pg in pgs:
+        sent_idxs = []
+        for (idx, sent) in pg:
+            # yield tokenizer.correct_spaces(" ".join([t.txt for t in sent if t]))
+            curr_sent = tokenizer.correct_spaces(" ".join([t.txt for t in sent if t]))
+            sent_idxs.append(curr_sent_idx)
+            sent_idx_to_sent[curr_sent_idx] = curr_sent
+            curr_sent_idx += 1
+        curr_pg_idx += 1
+        pg_idx_to_sent_idx[curr_pg_idx] = sent_idxs
+    return pg_idx_to_sent_idx, sent_idx_to_sent
 
 
 class NnClient:
@@ -134,15 +162,20 @@ class TranslateClient(NnClient):
     @classmethod
     def _normalizeText(cls, text):
         """ Preprocess text and normalize for translation network """
-        tok_stream = tokenizer.tokenize(text)
-        pgs = tokenizer.paragraphs(tok_stream)
-        result = []
-        for pg in pgs:
-            for (idx, sent) in pg:
-                sent = tokenizer.correct_spaces(" ".join([t.txt for t in sent if t]))
-                result.append(sent)
-        return result
+        return text
 
+    @classmethod
+    def request_text(cls, text, src_lang=None, tgt_lang=None):
+        """ Preprocess text and normalize for translation network """
+        pg_map, sent_map = index_text(text)
+        sents = list(sent_map.values())
+        result = TranslateClient._request(sents, src_lang, tgt_lang)
+        inst_map = {idx:inst for (idx,inst) in enumerate(result)}
+        resp = dict(
+            pgs=pg_map,
+            results=inst_map,
+        )
+        return resp
 
 class ParsingClient(NnClient):
     """ A client that connects to an HTTP RESTful interface of

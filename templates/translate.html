@@ -104,15 +104,21 @@
 
  function populateResult(json) {
      wait(false);
-     displayTranslation(json.result);
+     displayTranslation(json.result.pgs, json.result.results)
  }
 
- function displayTranslation(result) {
-     text_no_ui = ""
-     for (var i=0; i<result.length; i++) {
-         text_no_ui += result[i].outputs + " "
-     }
-     $("div#result").html(text_no_ui);
+ function displayTranslation(pgs, sents) {
+     container = $("div#result");
+     $.each(pgs, function (pg_idx, sent_idx_arr) {
+         curr_pg = $(document.createElement("p"));
+
+         for (var idx in sent_idx_arr) {
+             curr_sent = $(document.createElement("span")).addClass("sent");
+             curr_sent.append($(document.createElement("i")).text(sents[idx].outputs));
+             curr_pg.append(curr_sent);
+         }
+         container.append(curr_pg);
+     })
  }
 
  function translateText(txt, lang) {
@@ -161,12 +167,12 @@
          return false;
      }
      if (btn.id !== "lang-btn-en") {
-     /* // languages other than English are not yet available */
-     e.preventDefault();
-     return true;
+         /* // languages other than English are not yet available */
+         e.preventDefault();
+         return true;
      }
      /* if (btn.id === "lang-dropdown-btn") { */
-         // dropdown button selected, do nothing
+     // dropdown button selected, do nothing
      /* e.preventDefault(); */
      /* return true; */
      /* } */
@@ -212,7 +218,7 @@
      /* $("#txt").bind("input propertychange", function (event) { */
      /* console.log("Change event"); */
      /* if (currentLangBtnId) { */
-             /* $(currentLangBtnId).addClass("") */
+     /* $(currentLangBtnId).addClass("") */
      /* } */
      /* }); */
  }

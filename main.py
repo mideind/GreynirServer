@@ -538,7 +538,6 @@ def nntranslate_api(version=1):
     except:
         return better_jsonify(valid=False, reason="Invalid request")
 
-    # TODO(haukurb): Hvar skal aðskilja í setningar?
     result = TranslateClient.request_text(text, src_lang, tgt_lang)
     app.logger.info(result)
 
