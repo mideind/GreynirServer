@@ -66,6 +66,7 @@ from scraperdb import (
     ArticleTopic,
     Topic,
     Entity,
+    Location,
     GenderQuery,
     StatsQuery,
     ChartsQuery,
@@ -375,6 +376,34 @@ def top_persons(limit=_TOP_PERSONS_LENGTH):
             ],
             key=lambda x: strxfrm(x["name"]),
         )
+
+
+def top_locations(limit=20):
+    """ Return a list of names and titles appearing recently in the news """
+
+    with SessionContext(commit=False) as session:
+        q = (
+            session.query(Location.name, Location.country, Location.article_url, Article.id, Article.heading, Root.domain)
+            .join(Article)
+            .join(Root)
+            .filter(Root.visible)
+            .order_by(desc(Article.timestamp))
+            .limit(limit)
+            .all()
+        )
+
+    toplist = []
+    for l in q:
+        toplist.append({
+            'name': l[0],
+            'country': l[1],
+            'article_url': l[2],
+            'article_id': l[3],
+            'article_heading': l[4],
+            'root_domain': l[5],
+        })
+
+    return toplist
 
 
 def chart_stats(session=None, num_days=7):
@@ -968,6 +997,14 @@ def suggest(limit=10):
 
     return better_jsonify(suggestions=suggestions)
 
+
+@app.route("/locations", methods=["GET"])
+@max_age(seconds=5 * 60)
+def locations():
+
+    locs = top_locations(limit=15)
+
+    return render_template("locations.html", locations=locs) 
 
 @app.route("/genders", methods=["GET"])
 @max_age(seconds=5 * 60)
