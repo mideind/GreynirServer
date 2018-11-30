@@ -228,14 +228,11 @@ _MAX_TEXT_LENGTH_VIA_URL = 512
 _MAX_QUERY_LENGTH = 512
 
 
-def top_news(topic=None, start=None, limit=_TOP_NEWS_LENGTH):
-    """ Return a list of top recent news, of a particular topic,
-        up to a particular start time, having a specified length """
+def top_news(topic=None, offset=0, limit=_TOP_NEWS_LENGTH):
+    """ Return a list of articles (with a particular topic) in
+        chronologically reversed order. """
     toplist = []
     topdict = dict()
-    if start is None:
-        start = datetime.utcnow()
-    MARGIN = 10  # Get more articles than requested in case there are duplicates
 
     with SessionContext(commit=True) as session:
 
@@ -244,7 +241,7 @@ def top_news(topic=None, start=None, limit=_TOP_NEWS_LENGTH):
             .join(Root)
             .filter(Article.tree != None)
             .filter(Article.timestamp != None)
-            .filter(Article.timestamp < start)
+            .filter(Article.timestamp <= datetime.utcnow())
             .filter(Article.heading > "")
             .filter(Article.num_sentences > 0)
             .filter(Root.visible == True)
@@ -254,14 +251,22 @@ def top_news(topic=None, start=None, limit=_TOP_NEWS_LENGTH):
             # Filter by topic identifier
             q = q.join(ArticleTopic).join(Topic).filter(Topic.identifier == topic)
 
-        q = q.order_by(desc(Article.timestamp))[0 : limit + MARGIN]
+        q = q.order_by(desc(Article.timestamp)).offset(offset).limit(limit)
 
         class ArticleDisplay:
-
             """ Utility class to carry information about an article to the web template """
 
             def __init__(
-                self, heading, timestamp, url, uuid, num_sentences, num_parsed, icon
+                self,
+                heading,
+                timestamp,
+                url,
+                uuid,
+                num_sentences,
+                num_parsed,
+                icon,
+                localized_date,
+                source,
             ):
                 self.heading = heading
                 self.timestamp = timestamp
@@ -270,6 +275,8 @@ def top_news(topic=None, start=None, limit=_TOP_NEWS_LENGTH):
                 self.num_sentences = num_sentences
                 self.num_parsed = num_parsed
                 self.icon = icon
+                self.localized_date = localized_date
+                self.source = source
 
             @property
             def width(self):
@@ -285,40 +292,35 @@ def top_news(topic=None, start=None, limit=_TOP_NEWS_LENGTH):
 
             @property
             def date(self):
-                return self.timestamp.isoformat()[0:10]
+                if datetime.today().year == self.timestamp.year:
+                    return self.localized_date
+                return self.fulldate
 
-        for a in q:
-            # Collect and count the titles
-            icon = a.root.domain + ".png"
+            @property
+            def fulldate(self):
+                return self.localized_date + self.timestamp.strftime(" %Y")
 
-            d = ArticleDisplay(
-                heading=a.heading,
-                timestamp=a.timestamp,
-                url=a.url,
-                uuid=a.id,
-                num_sentences=a.num_sentences,
-                num_parsed=a.num_parsed,
-                icon=icon,
-            )
+        with changedlocale(category="LC_TIME"):
+            for a in q:
+                # Instantiate article objects from results
+                source = a.root.domain
+                icon = source + ".png"
+                locdate = a.timestamp.strftime("%-d. %b")
 
-            # Have we seen the same heading on the same domain?
-            t = (a.root.domain, a.heading)
-            if t in topdict:
-                # Same domain+heading already in the list
-                i = topdict[t]
-                if d.timestamp > toplist[i].timestamp:
-                    # The new entry is newer: replace the old one
-                    toplist[i] = d
-                # Otherwise, ignore the new entry and continue
-            else:
-                # New heading: note its index in the list
-                llist = len(toplist)
-                topdict[t] = llist
+                d = ArticleDisplay(
+                    heading=a.heading,
+                    timestamp=a.timestamp,
+                    url=a.url,
+                    uuid=a.id,
+                    num_sentences=a.num_sentences,
+                    num_parsed=a.num_parsed,
+                    icon=icon,
+                    localized_date=locdate,
+                    source=source,
+                )
                 toplist.append(d)
-                if llist + 1 >= limit:
-                    break
 
-    return toplist[0:limit]
+    return toplist
 
 
 def top_persons(limit=_TOP_PERSONS_LENGTH):
@@ -1076,32 +1078,34 @@ def apidoc():
 def news():
     """ Handler for a page with a top news list """
     topic = request.args.get("topic")
-    start = request.args.get("start")
-    if start is not None:
-        try:
-            if "." in start:
-                # Assume full timestamp with microseconds
-                start = datetime.strptime(start, "%Y-%m-%dT%H:%M:%S.%f")
-            else:
-                # Compact timestamp
-                start = datetime.strptime(start, "%Y-%m-%dT%H:%M:%S")
-        except ValueError:
-            start = None
-    articles = top_news(topic=topic, start=start)
-    now = datetime.utcnow()
+    try:
+        offset = max(0, int(request.args.get("offset", 0)))
+        limit = max(0, int(request.args.get("limit", _TOP_NEWS_LENGTH)))
+    except:
+        offset = 0
+        limit = _TOP_NEWS_LENGTH
+
+    limit = min(limit, 100) # Cap at max 100 results per page
+    articles = top_news(topic=topic, offset=offset, limit=limit)
+
     # If all articles in the list are timestamped within 24 hours of now,
-    # we display their times in HH:MM format. Otherwise, we display their
-    # dates in YYYY-MM-DD format.
+    # we display their times in HH:MM format. Otherwise, we display date.
     display_time = True
-    if articles and (now - articles[-1].timestamp).days >= 1:
+    if articles and (datetime.utcnow() - articles[-1].timestamp).days >= 1:
         display_time = False
+
     # Fetch the topics
     with SessionContext(commit=True) as session:
         q = session.query(Topic.identifier, Topic.name).order_by(Topic.name).all()
         d = {t[0]: t[1] for t in q}
         topics = dict(id=topic, name=d.get(topic, ""), topic_list=q)
     return render_template(
-        "news.html", articles=articles, topics=topics, display_time=display_time
+        "news.html",
+        articles=articles,
+        topics=topics,
+        display_time=display_time,
+        offset=offset,
+        limit=limit,
     )
 
 

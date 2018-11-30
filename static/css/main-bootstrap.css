@@ -69,6 +69,15 @@
 .glyphicon-play:before {
    content: "\E174";
 }
+.glyphicon-reverse-play:before {
+   content: "\E174";
+}
+.glyphicon-reverse-play {
+   transform: scaleX(-1);
+   -moz-transform: scaleX(-1);
+   -webkit-transform: scaleX(-1);
+   -ms-transform: scaleX(-1);
+}
 .glyphicon-info:before {
    content: "\E196";
 }
@@ -111,13 +120,14 @@
 .glyphicon-link:before {
    content: "\E051";
 }
-
+.glyphicon-arrow-right:before {
+   content: "\E212";
+}
 .glyphicon-spin {
     -webkit-animation: spin 2000ms infinite linear;
     animation: spin 2000ms infinite linear;
     color: #f0ad4e;
 }
-
 .glyphicon-spin-white {
     -webkit-animation: spin 2000ms infinite linear;
     animation: spin 2000ms infinite linear;
@@ -390,21 +400,26 @@ tr.article td.heading img {
    margin-right: 8px;
 }
 
+td.timestamp {
+   width: 4.5em;
+}
+
+td.ratio {
+   width: 4.5em;
+}
+
 td.heading {
-   white-space: nowrap;
-   overflow-x: hidden;
    max-width: 782px;
-   text-overflow: ellipsis;
+}
+
+td.extlink {
+   width: 2em;
 }
 
 td.ts {
    white-space: nowrap;
    overflow-x: hidden;
    min-width: 100px;
-}
-
-td.ratio {
-   max-width: 4.2em;
 }
 
 td.ratio div.progress {

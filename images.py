@@ -62,7 +62,7 @@ _API_KEY = ""
 # The content type we're using in the links table
 _CTYPE = "image-search-"
 # Time (in days) before cached items expire
-_CACHE_EXPIRATION_DAYS = 14
+_CACHE_EXPIRATION_DAYS = 30
 # Number of image URLs to fetch and store
 _NUM_IMG_URLS = 10
 # The returned image descriptor tuple
@@ -84,9 +84,10 @@ def get_image_url(
             .one_or_none()
         )
         if q is not None:
-            # Found in cache
-            if datetime.utcnow() - q.timestamp > timedelta(days=_CACHE_EXPIRATION_DAYS):
-                _purge_single(name, ctype=ctype, enclosing_session=session)
+            # Found in cache. If the result is old, purge it
+            expired = datetime.utcnow() - q.timestamp > timedelta(days=_CACHE_EXPIRATION_DAYS)
+            if expired and not cache_only:
+                _purge_single(name, ctype=ctype, enclosing_session=session)                
             else:
                 jdoc = q.content
 
@@ -185,8 +186,7 @@ def update_broken_image_url(name, url):
         # Verify that URL exists in DB
         r = _get_cached_entry(name, url, enclosing_session=session)
 
-        # If not recently fetched...
-        if r and r.timestamp < datetime.utcnow() - timedelta(minutes=30):
+        if r:
             # Verify that URL is indeed broken
             if not check_image_url(url):
                 # Blacklist the URL, purge results from cache and refetch

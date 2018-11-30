@@ -178,7 +178,7 @@ function makeSourceList(sources) {
    // Return a HTML rendering of a list of articles where the person or entity name appears
    if (!sources)
       return undefined;
-   var $table = $("<table class='table table-condensed table-hover'>")
+   var $table = $("<table class='table table-hover'>")
       .append($("<thead>")
          .append($("<tr>")
             .append(
@@ -203,7 +203,7 @@ function makeSearchList(results) {
    // Return a HTML rendering of a list of articles in a search result
    if (!results)
       return undefined;
-   var $table = $("<table class='table table-condensed table-hover'>")
+   var $table = $("<table class='table table-hover'>")
       .append($("<thead>")
          .append($("<tr>")
             .append(
@@ -249,6 +249,7 @@ function reportImage(img, status, successFunc) {
       url: $(img).attr('src'),
       status: status
    };
+   $(img).attr('src', '/static/img/placeholder.png');
    serverQuery('/reportimage',
       q,
       function(r) {
@@ -271,7 +272,6 @@ function blacklistImage(img) {
    // User reporting wrong image
    $("span.imgreport").hide();
    $(img).stop().animate({ opacity: 0 }, function() {
-
       reportImage(img, "wrong", function(i) {
          if (i) {
             $(img).stop().animate({ opacity: 1.0 });
@@ -548,6 +548,10 @@ function autoCompleteLookup(q, done)  {
       done(none);
       return;
    }
+   // Cancel any active request
+   if (autoCompleteLookup.req) {
+      autoCompleteLookup.req.abort();
+   }
    // Local caching
    if (autoCompleteLookup.cache === undefined) {
       autoCompleteLookup.cache = { };
@@ -556,10 +560,6 @@ function autoCompleteLookup(q, done)  {
    if (cache[q] !== undefined) {
       done(cache[q]);
       return;
-   }
-   // Cancel any active request
-   if (autoCompleteLookup.req) {
-      autoCompleteLookup.req.abort();
    }
    // Ajax request to server
    autoCompleteLookup.req = $.ajax({
@@ -598,7 +598,6 @@ function initMain(jQuery) {
       .autocomplete({
          lookup: autoCompleteLookup,
          deferRequestBy: 100,
-         autoSelectFirst: true,
       });
 
    if (initializeSpeech()) {
