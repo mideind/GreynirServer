@@ -286,9 +286,10 @@ function displayTokens(j) {
                      if (err)
                         cls = "";
                      else
-                     if (t.m)
+                     if (t.m) { 
                         // Word class (noun, verb, adjective...)
-                        cls = " class='" + t.m[1] + "'";
+                        cls = " class='" + t.m[1] + ' ' + t.m[2] + "'";
+                     }
                      else
                      if (t.t && t.t.split("_")[0] == "sérnafn") {
                         // Special case to display 'sérnafn' as 'entity'

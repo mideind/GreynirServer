@@ -818,9 +818,16 @@ div#result i.entity {
    /* Specific settings */
    /* background-color: #fbe9d0; */ /* #f2e6ff; #cc99ff; #a64dff */
    /* border-color: #fbe9d0; */
-   color: #777777;
+   color: #666633;
    font-weight: 700;
 }
+
+div#result i.lönd,
+div#result i.örn,
+div#result i.göt {
+   color: #cc6600;
+   font-weight: 700;
+} 
 
 div#result i.year,
 div#result i.telno,
