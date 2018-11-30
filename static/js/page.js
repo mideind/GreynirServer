@@ -356,8 +356,14 @@ function correctionHoverIn() {
    $("#grammar").text(r.descr);
    $("#details").text(r.code);
    if (r.code[0] == "U")
+      // Unknown word
       $("#lemma").text("Óþekkt orð");
    else
+   if (r.code[0] == "T")
+      // Taboo word
+      $("#lemma").text("Ábending");
+   else
+      // Correction
       $("#lemma").text("Leiðrétt");
 
    $("#info").removeClass();
@@ -426,7 +432,12 @@ function displayTokens(j, correction) {
                      // Mark a corrected token. Give the span an
                      // id that refers to the token index in the w array.
                      var unknown = (t.corr.code[0] == "U");
-                     var corrClass = "corrtok" + (unknown ? " unknown" : "");
+                     var advisory = (t.corr.code[0] == "T");
+                     var corrClass = "corrtok";
+                     if (unknown)
+                        corrClass += " unknown";
+                     if (advisory)
+                        corrClass += " advisory";
                      x += "<span class='" + corrClass + "' id='c" + w.length + "'>";
                   }
                }
