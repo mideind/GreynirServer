@@ -46,7 +46,7 @@ class NnClient:
 
     @classmethod
     def request_sentence(cls, text, src_lang=None, tgt_lang=None):
-        """ Parse a single sentence into flat parse tree """
+        """ Request neural network output for a single sentence """
         if "\n" in text:
             single_sentence = text.split("\n")[0]
         else:
@@ -58,8 +58,8 @@ class NnClient:
 
     @classmethod
     def request_text(cls, text, src_lang=None, tgt_lang=None):
-        """ Parse contiguous text into flat parse trees """
-        pgs = text.split("\n")
+        """ Request neural network output for contiguous text """
+        pgs = cls._normalizeText(text)
         resp = cls._request(pgs, src_lang, tgt_lang)
         return resp
 
@@ -70,30 +70,27 @@ class NnClient:
             host=cls.host, port=cls.port, verb=cls.verb
         )
         headers = {"content-type": "application/json"}
+        payload = {"pgs": pgs}
 
-        normalized_pgs = [
-            [tok.txt for tok in list(tokenizer.tokenize(pg))] for pg in pgs
-        ]
-        normalized_pgs = [
-            " ".join([tok for tok in npg if tok]) for npg in normalized_pgs
-        ]
-        payload = {"pgs": normalized_pgs}
         if src_lang and tgt_lang:
             payload["src_lang"] = src_lang
             payload["tgt_lang"] = tgt_lang
 
+        logging.debug(str(payload))
         payload = json.dumps(payload)
         resp = requests.post(url, data=payload, headers=headers)
         resp.raise_for_status()
 
         try:
             obj = json.loads(resp.text)
+            logging.debug(str(obj))
             predictions = obj["predictions"]
             results = [
                 cls._processResponse(inst, sent)
-                for (inst, sent) in zip(predictions, pgs)
+                for (inst, sent) in zip(predictions, list(pgs))
             ]
 
+            logging.debug(str(results))
             return results
         # TODO(haukurb): More graceful error handling
         except Exception as e:
@@ -103,15 +100,21 @@ class NnClient:
 
     @classmethod
     def _processResponse(cls, instance, sent):
-        """ Process the response from a single sentence
+        """ Process the response from a single sentence.
+            Abstract method """
+        raise NotImplemented
 
+    @classmethod
+    def _normalizeText(cls, instance, sent):
+        """ Preprocess text and normalize for neural network input
             Abstract method """
         raise NotImplemented
 
 
+
 class TranslateClient(NnClient):
-    """ A client that connects to the HTTP rest interface of
-        a tensorflow model server (using plaintext) that returns
+    """ A client that connects to an HTTP RESTful interface of
+        middleware server for a tensorflow model server (using plaintext) that returns
         an English translation of Icelandic text """
 
     port = Settings.NN_TRANSLATE_PORT
@@ -121,21 +124,29 @@ class TranslateClient(NnClient):
     @classmethod
     def _processResponse(cls, instance, sent):
         """ Process the response from a single sentence """
-        model_output = instance["outputs"]
-        scores = instance["scores"]
-        instance["scores"] = float(scores)
-        bkey = "batch_prediction_key" 
-        if bkey in instance:
-            del instance[bkey]
+        result = dict(
+            inputs=sent,
+            outputs=instance["outputs"],
+            scores=float(instance["scores"]),
+        )
+        return result
 
-        logging.debug(model_output)
-
-        return instance
+    @classmethod
+    def _normalizeText(cls, text):
+        """ Preprocess text and normalize for translation network """
+        tok_stream = tokenizer.tokenize(text)
+        pgs = tokenizer.paragraphs(tok_stream)
+        result = []
+        for pg in pgs:
+            for (idx, sent) in pg:
+                sent = tokenizer.correct_spaces(" ".join([t.txt for t in sent if t]))
+                result.append(sent)
+        return result
 
 
 class ParsingClient(NnClient):
     """ A client that connects to an HTTP RESTful interface of
-        a tensorflow model server (using plaintext) that returns
+        middleware server for a tensorflow model server (using plaintext) that returns
         a parse tree of Icelandic text """
 
     port = Settings.NN_PARSING_PORT
@@ -161,6 +172,19 @@ class ParsingClient(NnClient):
                 print("Output: {parse_toks}".format(parse_toks=parse_toks))
 
         return tree
+
+    @classmethod
+    def _normalizeText(cls, text):
+        """ Preprocess text and normalize for parsing network """
+
+        normalized_pgs = [
+            [tok.txt for tok in list(tokenizer.tokenize(pg))] for pg in pgs
+        ]
+        normalized_pgs = [
+            " ".join([tok for tok in npg if tok]) for npg in normalized_pgs
+        ]
+        return normalized_pgs
+
 
 
 def test_translate_sentence():
