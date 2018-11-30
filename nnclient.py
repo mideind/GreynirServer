@@ -54,13 +54,12 @@ def index_text(text):
     for pg in pgs:
         sent_idxs = []
         for (idx, sent) in pg:
-            # yield tokenizer.correct_spaces(" ".join([t.txt for t in sent if t]))
             curr_sent = tokenizer.correct_spaces(" ".join([t.txt for t in sent if t]))
             sent_idxs.append(curr_sent_idx)
             sent_idx_to_sent[curr_sent_idx] = curr_sent
             curr_sent_idx += 1
-        curr_pg_idx += 1
         pg_idx_to_sent_idx[curr_pg_idx] = sent_idxs
+        curr_pg_idx += 1
     return pg_idx_to_sent_idx, sent_idx_to_sent
 
 
