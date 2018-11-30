@@ -113,12 +113,12 @@
          curr_pg = $(document.createElement("p"));
 
          for (var idx in sent_idx_arr) {
-             curr_sent = sents[sent_idx_arr[idx]].output
+             curr_sent = sents[sent_idx_arr[idx]].outputs;
              curr_sent_elem = $(document.createElement("span")).addClass("sent");
              curr_sent_elem.append(
                  $(document.createElement("i")).text(curr_sent)
              );
-             curr_pg.append(curr_sent);
+             curr_pg.append(curr_sent_elem);
          }
          container.append(curr_pg);
      })
