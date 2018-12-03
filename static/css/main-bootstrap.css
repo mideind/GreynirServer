@@ -123,6 +123,9 @@
 .glyphicon-arrow-right:before {
    content: "\E212";
 }
+.glyphicon-globe:before {
+   content: "\E371";
+}
 .glyphicon-spin {
     -webkit-animation: spin 2000ms infinite linear;
     animation: spin 2000ms infinite linear;

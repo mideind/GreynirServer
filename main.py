@@ -385,7 +385,16 @@ def top_locations(limit=20):
 
     with SessionContext(commit=False) as session:
         q = (
-            session.query(Location.name, Location.country, Location.article_url, Article.id, Article.heading, Root.domain)
+            session.query(
+                Location.name,
+                Location.country,
+                Location.article_url,
+                Location.latitude,
+                Location.longitude,
+                Article.id,
+                Article.heading,
+                Root.domain,
+            )
             .join(Article)
             .join(Root)
             .filter(Root.visible)
@@ -396,14 +405,18 @@ def top_locations(limit=20):
 
     toplist = []
     for l in q:
-        toplist.append({
-            'name': l[0],
-            'country': l[1],
-            'article_url': l[2],
-            'article_id': l[3],
-            'article_heading': l[4],
-            'root_domain': l[5],
-        })
+        toplist.append(
+            {
+                "name": l[0],
+                "country": l[1],
+                "article_url": l[2],
+                "latitude": l[3],
+                "longitude": l[4],
+                "article_id": l[5],
+                "article_heading": l[6],
+                "root_domain": l[7],
+            }
+        )
 
     return toplist
 
@@ -1004,9 +1017,10 @@ def suggest(limit=10):
 @max_age(seconds=5 * 60)
 def locations():
 
-    locs = top_locations(limit=15)
+    locs = top_locations(limit=30)
 
-    return render_template("locations.html", locations=locs) 
+    return render_template("locations.html", locations=locs)
+
 
 @app.route("/genders", methods=["GET"])
 @max_age(seconds=5 * 60)
@@ -1085,7 +1099,7 @@ def news():
         offset = 0
         limit = _TOP_NEWS_LENGTH
 
-    limit = min(limit, 100) # Cap at max 100 results per page
+    limit = min(limit, 100)  # Cap at max 100 results per page
     articles = top_news(topic=topic, offset=offset, limit=limit)
 
     # If all articles in the list are timestamped within 24 hours of now,

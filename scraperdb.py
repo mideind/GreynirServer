@@ -386,15 +386,15 @@ class Location(Base):
     # Name
     name = Column(String, index=True)
 
-    # Kind (e.g. 'address', 'country', 'region')
+    # Kind (e.g. 'address', 'street', 'country', 'region', 'placename')
     kind = Column(String(16), index=True)
 
     # Country (ISO 3166-1 alpha-2, e.g. 'is')
     country = Column(String(2))
 
     # Coordinates (WGS84)
-    longitude = Column(Float)
     latitude = Column(Float)
+    longitude = Column(Float)
 
     # Additional data
     data = Column(JSONB)

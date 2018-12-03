@@ -13,6 +13,7 @@
    <table class="table table-hover" id="plist">
    <thead>
       <th></th>
+      <th></th>
       <th>Nafn</th>
       <th>Frétt</th>
    </thead>
@@ -24,11 +25,22 @@
                <img src="{{ url_for('static', filename='img/flags/' + loc.country + '.png') }}" width="25">
             {% endif %}
          </td>
+         <td>
+            {% if loc.latitude and loc.longitude %}
+               <a href="http://www.google.com/maps/place/{{ loc.latitude }},{{ loc.longitude }}">
+                  <span class="glyphicon glyphicon-globe"></span>
+               </a>
+            {% endif %}
+         </td>
          <td class="name">
-            <span class="text-info">{{ loc.name }}</span>
+            <a href="{{ url_for('page') }}?id={{ loc.article_id }}"">
+               <span class="text-info">{{ loc.name }}</span>
+            </a>
          </td>
          <td class="title">
             <a href="{{ loc.article_url }}" title="Skoða á {{ loc.root_domain }}">
+               <img src="{{ url_for('static', filename = 'sources/' + loc.root_domain + '.png') }}" width="16" height="16" alt="{{ loc.root_domain }}"/>
+
                {{ loc.article_heading }}
             </a>
          </td>
