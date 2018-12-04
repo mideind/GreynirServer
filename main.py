@@ -53,6 +53,7 @@ from reynir.bindb import BIN_Db
 from reynir.binparser import canonicalize_token
 from reynir.fastparser import Fast_Parser, ParseForestFlattener
 
+import reynir_correct
 from reynir_correct import tokenize
 
 from settings import Settings, ConfigError, changedlocale
@@ -1230,6 +1231,7 @@ if __name__ == "__main__":
         "Phrases.conf",
         "Vocab.conf",
         "Names.conf",
+        "ReynirCorrect.conf"
     ]
 
     for i, fname in enumerate(extra_files):
@@ -1246,7 +1248,14 @@ if __name__ == "__main__":
             if os.path.isfile(path):
                 extra_files[i] = path
             else:
-                print("Extra file path '{0}' not found".format(path))
+                # This config file is not in the ReynirPackage/config subdirectory:
+                # Attempt to watch it in ReynirCorrect
+                path = os.path.join(os.path.dirname(reynir_correct.__file__), "config", fname)
+                path = os.path.realpath(path)
+                if os.path.isfile(path):
+                    extra_files[i] = path
+                else:
+                    print("Extra file path '{0}' not found".format(path))
 
     from socket import error as socket_error
     import errno
