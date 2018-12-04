@@ -107,21 +107,46 @@
      displayTranslation(json.result.pgs, json.result.results)
  }
 
+ function normalizeScore(score) {
+     /* Receive float and return linearly normalized score between 0 and 1  */
+     MIN_SCORE = -11.0;
+     MAX_SCORE = 1.0;
+     INTERVAL = MAX_SCORE - MIN_SCORE
+     score = Math.min(MAX_SCORE, score);
+     score = Math.max(MIN_SCORE, score);
+     score = (score - MIN_SCORE)/INTERVAL;
+     return score;
+ }
+
  function displayTranslation(pgs, sents) {
-     container = $("div#result");
+     pg_container = $("div#result");
      $.each(pgs, function (pg_idx, sent_idx_arr) {
-         curr_pg = $(document.createElement("p"));
+         pg_elem = $(document.createElement("p"));
 
          for (var idx in sent_idx_arr) {
              curr_sent = sents[sent_idx_arr[idx]].outputs;
-             curr_sent_elem = $(document.createElement("span")).addClass("sent");
-             curr_sent_elem.append(
-                 $(document.createElement("i")).text(curr_sent)
-             );
-             curr_pg.append(curr_sent_elem);
+             sent_elem = $("<i></i>", {"text": curr_sent});
+             sent_score =sents[sent_idx_arr[idx]].scores;
+
+             sent_container = $("<span></span>", {"class": "sent"});
+             sent_container.append(sent_elem);
+             pg_elem.append(sent_container);
          }
-         container.append(curr_pg);
+         pg_container.append(pg_elem);
      })
+ }
+
+ function style_sentence_score(sent_elem, sent_score) {
+     // Add style to sentence element that depends on translation score
+     // Is currently linear, but should probably depend on quintiles found empirically
+     score = parseFloat(sent_score);
+     score = normalizeScore(score);
+     color_range = 80;
+     min_color = 175;
+     score = Math.floor(color_range * score) + min_color;
+     var rgb_color_str = "rgb(50,50," + score + ")";
+     sent_elem.css("background-color", rgb_color_str);
+     sent_elem.css("color", "white");
  }
 
  function translateText(txt, lang) {
