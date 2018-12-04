@@ -25,117 +25,140 @@
 
 """
 
+from collections import namedtuple
 from datetime import datetime
 from scraperdb import Location
-from iceaddr import iceaddr_lookup
-from country_list import countries_for_language, available_languages
-from pprint import pprint
+from geo import (
+    coords_for_country,
+    coords_for_street_name,
+    icelandic_addr_info,
+    isocode_for_country_name,
+    ICELAND_ISOCODE,
+)
 
+Loc = namedtuple("Loc", "name kind")
 
-def _country_name_for_isocode(iso_code, language="is"):
-    assert language in available_languages()
-    assert len(iso_code) == 2
-
-    countries = dict(countries_for_language(language))
-    return countries.get(iso_code)
-
-def _isocode_for_country_name(country_name, language="is"):
-    """ Return ISO 3166-1 alpha-2 code for a country 
-        name in the specified language"""
-    assert language in available_languages()
-
-    countries = countries_for_language(language)
-    for iso_code, name in countries:
-        if name == country_name:
-            return iso_code
-
-    return None
 
 def article_begin(state):
     """ Called at the beginning of article processing """
 
     # Delete all existing locations for this article
-    # session = state["session"] # Database session
-    # url = state["url"] # URL of the article being processed
-    # session.execute(Location.table().delete().where(Location.article_url == url))
+    session = state["session"]  # Database session
+    url = state["url"]  # URL of the article being processed
+    session.execute(Location.table().delete().where(Location.article_url == url))
+
+    # Set of all unique locations found in article
+    state["locations"] = set()
 
 
 def article_end(state):
     """ Called at the end of article processing """
-    pass
+
+    url = state["url"]
+    session = state["session"]
+
+    locs = state.get("locations")
+    if not locs:
+        return
+
+    print(locs)
+
+    # Find all placenames mentioned in article
+    # We can use them to disambiguate addresses and street names
+    placenames = [p.name for p in locs if p.kind == "placename"]
+
+    # Get info about each location and save to database
+    for loctuple in locs:
+        loc = loctuple._asdict()
+        kind = loc["kind"]
+        coords = None
+
+        # Heimilisfang
+        if kind == "address":
+            loc["country"] = ICELAND_ISOCODE
+            info = icelandic_addr_info(loc["name"], placename_hints=placenames)
+            if info and info.get("lat_wgs84") and info.get("long_wgs84"):
+                coords = (info["lat_wgs84"], info["long_wgs84"])
+            loc["data"] = info
+
+        # Land
+        elif kind == "country":
+            code = isocode_for_country_name(loc["name"])
+            if code:
+                loc["country"] = code
+                coords = coords_for_country(code)
+
+        # Götuheiti
+        elif kind == "street":
+            # All the street names in BÍN are Icelandic
+            loc["country"] = ICELAND_ISOCODE
+            coords = coords_for_street_name(loc["name"], placename_hints=placenames)
+
+        # Örnefni
+        elif kind == "placename":
+            # TODO: 
+            pass
+
+        if coords:
+            (loc["latitude"], loc["longitude"]) = coords
+
+        loc["article_url"] = url
+        loc["timestamp"] = datetime.utcnow()
+
+        l = Location(**loc)
+        session.add(l)
 
 
 def sentence(state, result):
     """ Called at the end of sentence processing """
     pass
 
+
 def Heimilisfang(node, params, result):
-    return
-    addrstr = node.contained_text()
-    print(addrstr)
+    """ NP-ADDR """
 
     children = list(node.children())
-    last = children[-1]
-    first = children[0]
-    # print(', '.join("%s: %s" % item for item in vars(first).items()))
 
+    # Make sure address is in nominative case
     def nom(w):
         bindb = result._state["bin_db"]
         n = bindb.lookup_nominative(w)
         return n[0][0] if n else w
 
-    street = " ".join([nom(c.contained_text()) for c in children[:-1]])
+    addr_nom = " ".join([nom(c.contained_text()) for c in children])
 
-    number = int(last.contained_text())
-    address = "{0} {1}".format(street, number)
-    print(address)
+    l = Loc(name=addr_nom, kind="address")
+    result._state["locations"].add(l)
 
-    # Look up address in Staðfangaskrá
-    info = None
-    lat = None
-    lon = None
-    if last.tokentype in ["NUMBER", "NUMWLETTER"]:
-        info = iceaddr_lookup(street, number=number, letter="")
-        if len(info) == 1:
-            (lat, lon) = (info[0]["lat_wgs84"], info[0]["long_wgs84"])
 
-    session = result._state["session"]
-    url = result._state["session"]
-    l = Location(
-        article_url=result._state["url"],
-        name=address,
-        kind="address",
-        country="IS",
-        latitude=lat,
-        longitude=lon,
-        data=info,
-        timestamp=datetime.utcnow(),
-    )
-    session.add(l)
-
-    # for c in children:
-    #     print(c.contained_text())
-    #     print(c.tokentype)
-    #     #print(c._nominative)
+def Nafn(node, params, result):
+    # print(node.contained_text())
+    pass
 
 
 def Sérnafn(node, params, result):
-    return
-    # print("")
-    # pprint(node.contained_text())
-    # for c in node.descendants():
-    #     pprint(type(c).__name__)
-    #     pprint('    ' + type(c).__name__ + ': ' + c.contained_text())
-    # child = next(node.descendants())
-    # pprint(child.contained_text())
+    # print(node.contained_text())
+
+    state = result._state
 
     bindb = result["_state"]["bin_db"]
     name = node.contained_text()
-    m = bindb.meanings(name)
-    for me in m: # "göt", "örn",
-        if me.fl in [ "lönd"]:
-            print("\n" + result["_state"]["url"])
-            nom = me[0]
-            pprint(nom)
-            if me.fl == "lönd":
-                print(_iso_for_country(nom))
+    meanings = bindb.meanings(name)
+
+    loc_fl = ["göt", "lönd", "örn"]
+    binfl2kind = dict(zip(loc_fl, ["street", "country", "placename"]))
+
+    # TODO: Ignore words with non-placename meanings?
+    for m in meanings:
+        if m.fl not in loc_fl:
+            continue
+
+        nom = m[0]
+        kind = binfl2kind[m.fl]
+
+        # HACK: BÍN has Iceland as "örn"!
+        if nom == "Ísland":
+            kind = "country"
+
+        loc = Loc(name=nom, kind=kind)
+        state["locations"].add(loc)
