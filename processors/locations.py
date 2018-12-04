@@ -36,6 +36,8 @@ from geo import (
     ICELAND_ISOCODE,
 )
 
+PLACENAME_BLACKLIST = ["Staður", "Eyjan", "Fjöll", "Bæir""]
+
 Loc = namedtuple("Loc", "name kind")
 
 
@@ -96,8 +98,8 @@ def article_end(state):
 
         # Örnefni
         elif kind == "placename":
-            # TODO: 
-            pass
+            if loc["name"] in PLACENAME_BLACKLIST:
+                continue
 
         if coords:
             (loc["latitude"], loc["longitude"]) = coords
