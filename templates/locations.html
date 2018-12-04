@@ -9,45 +9,69 @@
 {% block content %}
 
 <div class="panel panel-default table-responsive">
-   <div class="panel-heading">Staðir nýlega í fréttum</div>
-   <table class="table table-hover" id="plist">
-   <thead>
-      <th></th>
-      <th></th>
-      <th>Nafn</th>
-      <th>Frétt</th>
-   </thead>
-   <tbody>
-{% for loc in locations %}
-      <tr class="topitem" data-uuid="">
-         <td class="country">
-            {% if loc.country %}
-               <img src="{{ url_for('static', filename='img/flags/' + loc.country + '.png') }}" width="25">
-            {% endif %}
-         </td>
-         <td>
-            {% if loc.latitude and loc.longitude %}
-               <a href="http://www.google.com/maps/place/{{ loc.latitude }},{{ loc.longitude }}">
-                  <span class="glyphicon glyphicon-globe"></span>
-               </a>
-            {% endif %}
-         </td>
-         <td class="name">
-            <a href="{{ url_for('page') }}?id={{ loc.article_id }}"">
-               <span class="text-info">{{ loc.name }}</span>
-            </a>
-         </td>
-         <td class="title">
-            <a href="{{ loc.article_url }}" title="Skoða á {{ loc.root_domain }}">
-               <img src="{{ url_for('static', filename = 'sources/' + loc.root_domain + '.png') }}" width="16" height="16" alt="{{ loc.root_domain }}"/>
 
-               {{ loc.article_heading }}
-            </a>
-         </td>
-      </tr>
-{% endfor %}
-   </tbody>
-</table>
+   <div class="panel-heading">
+      Staðir nýlega í fréttum
+      <div class="headline visible-xs-inline-block">Nýjustu staðir</div>
+
+      <div class="btn-group pull-right">
+         <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+         Öll staðföng <span class="caret"></span>
+         </button>
+
+         <ul class="dropdown-menu">
+            <li><a href="{{ url_for('locations') }}">Öll staðföng</a></li>
+            <li role="separator" class="divider"></li>
+            <li><a href="{{ url_for('locations', kind='address') | safe }}">Heimilisföng</a></li>
+            <li><a href="{{ url_for('locations', kind='country') | safe }}">Lönd</a></li>
+            <li><a href="{{ url_for('locations', kind='street') | safe }}">Götur</a></li>
+            <li><a href="{{ url_for('locations', kind='placename') | safe }}">Örnefni</a></li>
+         </ul>
+      </div>
+   </div>
+
+   <table class="table table-hover" id="plist">
+      <thead>
+         <th></th>
+         <th></th>
+         <th></th>
+         <th>Nafn</th>
+         <th>Frétt</th>
+      </thead>
+      <tbody>
+   {% for loc in locations %}
+         <tr class="topitem" data-uuid="">
+            <td class="country">
+               {% if loc.country %}
+                  <img src="{{ url_for('static', filename='img/flags/' + loc.country + '.png') }}" width="25">
+               {% endif %}
+            </td>
+            <td>
+               {% if loc.latitude and loc.longitude %}
+                  <a href="{{ loc.mapurl }}">
+                     <span class="glyphicon glyphicon-globe"></span>
+                  </a>
+               {% endif %}
+            </td>
+            <td>
+               {{ loc.kind }}
+            </td>
+            <td class="name">
+               <a href="{{ url_for('page') }}?id={{ loc.article_id }}"">
+                  <span class="text-info">{{ loc.name }}</span>
+               </a>
+            </td>
+            <td class="title">
+               <a href="{{ loc.article_url }}" title="Skoða á {{ loc.root_domain }}">
+                  <img src="{{ url_for('static', filename = 'sources/' + loc.root_domain + '.png') }}" width="16" height="16" alt="{{ loc.root_domain }}"/>
+
+                  {{ loc.article_heading }}
+               </a>
+            </td>
+         </tr>
+   {% endfor %}
+      </tbody>
+   </table>
 
 </div>
 

@@ -380,13 +380,14 @@ def top_persons(limit=_TOP_PERSONS_LENGTH):
         )
 
 
-def top_locations(limit=20):
+def top_locations(limit=20, kind=None):
     """ Return a list of names and titles appearing recently in the news """
 
     with SessionContext(commit=False) as session:
         q = (
             session.query(
                 Location.name,
+                Location.kind,
                 Location.country,
                 Location.article_url,
                 Location.latitude,
@@ -399,22 +400,26 @@ def top_locations(limit=20):
             .join(Root)
             .filter(Root.visible)
             .order_by(desc(Article.timestamp))
-            .limit(limit)
-            .all()
         )
 
+    if kind:
+        q = q.filter(Location.kind == kind)
+
     toplist = []
-    for l in q:
+    for l in q.limit(limit).all():
+        zoom = "6z" if l.kind == "country" else "16z"
+        mapurl = "http://google.com/maps/@{0},{1},{2}".format(l[4], l[5], zoom)
         toplist.append(
             {
                 "name": l[0],
-                "country": l[1],
-                "article_url": l[2],
-                "latitude": l[3],
-                "longitude": l[4],
-                "article_id": l[5],
-                "article_heading": l[6],
-                "root_domain": l[7],
+                "country": l[2],
+                "article_url": l[3],
+                "latitude": l[4],
+                "longitude": l[5],
+                "article_id": l[6],
+                "article_heading": l[7],
+                "root_domain": l[8],
+                "mapurl": mapurl,
             }
         )
 
@@ -1016,8 +1021,8 @@ def suggest(limit=10):
 @app.route("/locations", methods=["GET"])
 @max_age(seconds=5 * 60)
 def locations():
-
-    locs = top_locations(limit=30)
+    kind = request.args.get("kind")
+    locs = top_locations(limit=100, kind=kind)
 
     return render_template("locations.html", locations=locs)
 
