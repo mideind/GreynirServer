@@ -34,9 +34,9 @@
       <thead>
          <th></th>
          <th></th>
-         <th></th>
-         <th>Nafn</th>
-         <th>Frétt</th>
+         <th>Tegund</th>
+         <th>Staður</th>
+         <th>Grein</th>
       </thead>
       <tbody>
    {% for loc in locations %}
@@ -51,6 +51,8 @@
                   <a href="{{ loc.mapurl }}">
                      <span class="glyphicon glyphicon-globe"></span>
                   </a>
+               {% else %}
+                  <span class="glyphicon glyphicon-globe"></span>
                {% endif %}
             </td>
             <td>
@@ -64,7 +66,6 @@
             <td class="title">
                <a href="{{ loc.article_url }}" title="Skoða á {{ loc.root_domain }}">
                   <img src="{{ url_for('static', filename = 'sources/' + loc.root_domain + '.png') }}" width="16" height="16" alt="{{ loc.root_domain }}"/>
-
                   {{ loc.article_heading }}
                </a>
             </td>
@@ -76,10 +77,10 @@
 </div>
 
 
-<div class="panel panel-default table-responsive">
+<!--<div class="panel panel-default table-responsive">
    <div class="panel-heading">Heimskort</div>
    <div id="world-map" style="width: 100%; height: 550px;"></div>
-</div>
+</div>-->
 
 {% endblock %}
 

@@ -412,6 +412,7 @@ def top_locations(limit=20, kind=None):
         toplist.append(
             {
                 "name": l[0],
+                "kind": l[1],
                 "country": l[2],
                 "article_url": l[3],
                 "latitude": l[4],

@@ -36,7 +36,7 @@ from geo import (
     ICELAND_ISOCODE,
 )
 
-PLACENAME_BLACKLIST = ["Staður", "Eyjan", "Fjöll", "Bæir""]
+PLACENAME_BLACKLIST = ["Staður", "Eyjan", "Fjöll", "Bæir"]
 
 Loc = namedtuple("Loc", "name kind")
 
@@ -133,14 +133,7 @@ def Heimilisfang(node, params, result):
     result._state["locations"].add(l)
 
 
-def Nafn(node, params, result):
-    # print(node.contained_text())
-    pass
-
-
-def Sérnafn(node, params, result):
-    # print(node.contained_text())
-
+def _process(node, params, result):
     state = result._state
 
     bindb = result["_state"]["bin_db"]
@@ -164,3 +157,11 @@ def Sérnafn(node, params, result):
 
         loc = Loc(name=nom, kind=kind)
         state["locations"].add(loc)
+
+
+def Sérnafn(node, params, result):
+    _process(node, params, result)
+
+def Fyrirbæri(node, params, result):
+    _process(node, params, result)
+
