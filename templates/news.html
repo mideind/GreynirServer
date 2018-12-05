@@ -51,13 +51,14 @@
       <th>Dags.</th>
 {% endif %}
       <th class="hidden-sm hidden-xs">%</th>
-      <th>Fyrirsögn</th>
+      <th class="hidden-xs">Fyrirsögn</th>
       <th class="hidden-sm hidden-xs"></th>
    </thead>
    <tbody>
 {% for article in articles %}
    <tr class="topitem" data-uuid="{{ article.uuid }}">
-      <td class="timestamp text-muted hidden-xs" title="{{ article.time }}, {{ article.fulldate }}">
+      <td class="timestamp text-muted hidden-xs"
+         title="{{ article.time }}, {{ article.fulldate }}">
          {{ article.time if display_time else article.date }}
       </td>
       <td class="ratio hidden-sm hidden-xs">
@@ -67,11 +68,13 @@
          </div>
       </td>
       <td class="heading">
-         <img src="{{ url_for('static', filename = 'sources/' + article.icon) }}" width="16" height="16" alt="{{ article.source }}"/>
+         <img src="{{ url_for('static', filename = 'sources/' + article.icon) }}"
+            width="16" height="16" alt="{{ article.source }}"/>
          {{ article.heading }}
       </td>
       <td class="extlink hidden-sm hidden-xs">
-         <a href="{{ article.url }}" onclick="event.stopPropagation();" title="Skoða á {{ article.source }}">
+         <a href="{{ article.url }}" onclick="event.stopPropagation();"
+            title="Skoða á {{ article.source }}">
             <span class="glyphicon glyphicon-arrow-right"></span>
          </a>
       </td>
