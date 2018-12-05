@@ -410,6 +410,9 @@ td.ratio {
 
 td.heading {
    max-width: 782px;
+   overflow: hidden;
+   white-space: nowrap;
+   text-overflow: ellipsis;
 }
 
 td.extlink {
@@ -420,6 +423,10 @@ td.ts {
    white-space: nowrap;
    overflow-x: hidden;
    min-width: 100px;
+}
+
+.table-responsive {
+   overflow-x: hidden;
 }
 
 td.ratio div.progress {
