@@ -118,15 +118,13 @@ def sentence(state, result):
 def Heimilisfang(node, params, result):
     """ NP-ADDR """
 
-    children = list(node.children())
-
-    # Make sure address is in nominative case
+    # Convert address to nominative case
     def nom(w):
         bindb = result._state["bin_db"]
         n = bindb.lookup_nominative(w)
         return n[0][0] if n else w
 
-    addr_nom = " ".join([nom(c.contained_text()) for c in children])
+    addr_nom = " ".join([nom(c.contained_text()) for c in node.children()])
 
     l = Loc(name=addr_nom, kind="address")
     result._state["locations"].add(l)

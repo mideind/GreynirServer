@@ -37,7 +37,9 @@ COUNTRY_COORDS_JSONPATH = "resources/country_coords.json"
 
 def coords_for_country(iso_code):
     """ Return coordinates for a given country code """
-    assert len(iso_code) == 2 and iso_code.isupper()
+    assert len(iso_code) == 2
+
+    iso_code = iso_code.upper()
 
     # Lazy-load data, save as function attribute
     if not hasattr(coords_for_country, "iso2coord"):
@@ -48,7 +50,10 @@ def coords_for_country(iso_code):
 
 
 def coords_for_street_name(street_name, placename=None, placename_hints=[]):
-    """ Return coordinates for an Icelandic street name as a tuple """
+    """ Return coordinates for an Icelandic street name as a tuple. As some
+        street names exist in more than one place, we try to narrow it down 
+        to a single street if possible. Street coordinates are the coordinates
+        of the lowest house number. """
 
     addresses = iceaddr_lookup(street_name, placename=placename, limit=100)
 
@@ -75,7 +80,7 @@ def coords_for_street_name(street_name, placename=None, placename_hints=[]):
 
 
 def coords_from_addr_info(info):
-    """ Get coordinates from address dict provided by iceaddr """
+    """ Get coordinates from the address dict provided by iceaddr """
     if info and info.get("lat_wgs84") and info.get("long_wgs84"):
         return (info["lat_wgs84"], info["long_wgs84"])
     return None
@@ -97,7 +102,7 @@ def country_name_for_isocode(iso_code, lang=ICELANDIC_LANG_ISOCODE):
 
 
 def isocode_for_country_name(country_name, lang=ICELANDIC_LANG_ISOCODE):
-    """ Return ISO 3166-1 alpha-2 code for a country 
+    """ Return the ISO 3166-1 alpha-2 code for a country 
         name in the specified language (two-char ISO 639-1) """
     assert len(lang) == 2
 
@@ -119,6 +124,8 @@ def isocode_for_country_name(country_name, lang=ICELANDIC_LANG_ISOCODE):
             "Makaó": "MO",
             "England": "GB",
             "Skotland": "GB",
+            "Wales": "GB",
+            "Norður-Írland": "GB",
             "Bosnía": "BA",
             "Hersegóvína": "BA",
             "Palestína": "PS",
