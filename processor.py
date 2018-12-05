@@ -277,10 +277,10 @@ def process_articles(
     print("Time: {0}\n".format(ts))
 
 
-def process_article(url):
+def process_article(url, processor=None):
 
     try:
-        proc = Processor("processors")
+        proc = Processor(processor_directory="processors", single_processor=processor)
         proc.go_single(url)
     finally:
         proc = None
@@ -358,7 +358,7 @@ def _main(argv=None):
         update = False
         title = None  # Title pattern
         proc = None  # Single processor to invoke
-        workers = None # Number of workers to run simultaneously
+        workers = None  # Number of workers to run simultaneously
         # Process options
         for o, a in opts:
             if o in ("-h", "--help"):
@@ -413,7 +413,7 @@ def _main(argv=None):
 
             if url:
                 # Process a single URL
-                process_article(url)
+                process_article(url, processor=proc)
             else:
                 # Process already parsed trees, starting on March 1, 2016
                 if force:
