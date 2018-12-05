@@ -1,4 +1,26 @@
-#!/usr/bin/env python
+"""
+    Reynir: Natural language processing for Icelandic
+
+    Processor module to extract entity names & definitions
+
+    Copyright (c) 2018 Miðeind ehf.
+
+       This program is free software: you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published by
+       the Free Software Foundation, either version 3 of the License, or
+       (at your option) any later version.
+       This program is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+       GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see http://www.gnu.org/licenses/.
+
+
+    This module contains geography and location-related utility functions.
+
+"""
 
 
 import json
@@ -10,15 +32,16 @@ from country_list import countries_for_language, available_languages
 ICELAND_ISOCODE = "IS"
 ICELANDIC_LANG_ISOCODE = "is"
 
-ISO2COORD_JSONPATH = "resources/country_coords.json"
+COUNTRY_COORDS_JSONPATH = "resources/country_coords.json"
 
 
 def coords_for_country(iso_code):
     """ Return coordinates for a given country code """
     assert len(iso_code) == 2 and iso_code.isupper()
 
+    # Lazy-load data, save as function attribute
     if not hasattr(coords_for_country, "iso2coord"):
-        with open(ISO2COORD_JSONPATH) as f:
+        with open(COUNTRY_COORDS_JSONPATH) as f:
             coords_for_country.iso2coord = json.load(f)
 
     return coords_for_country.iso2coord.get(iso_code)
@@ -61,7 +84,7 @@ def country_name_for_isocode(iso_code, lang=ICELANDIC_LANG_ISOCODE):
 
 def isocode_for_country_name(country_name, lang=ICELANDIC_LANG_ISOCODE):
     """ Return ISO 3166-1 alpha-2 code for a country 
-        name in the specified language (ISO 639-1) """
+        name in the specified language (two-char ISO 639-1) """
     assert len(lang) == 2 and lang.islower()
     assert lang in available_languages()
 
@@ -119,6 +142,7 @@ def icelandic_addr_info(addr_str, placename=None, placename_hints=[]):
 
 
 def parse_address_string(addrstr):
+    """ Break Icelandic address string down to its components """
     addr = {"street": addrstr}
 
     comp = addrstr.split(" ")

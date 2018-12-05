@@ -2,9 +2,7 @@
 """
     Reynir: Natural language processing for Icelandic
 
-    Processor module to extract entity names & definitions
-
-    Copyright (C) 2016 Vilhjálmur Þorsteinsson
+    Copyright (c) 2018 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -134,16 +132,17 @@ def Heimilisfang(node, params, result):
 
 
 def _process(node, params, result):
+    """ Look up meaning in BÍN, add as location if in right category """
     state = result._state
+
+    loc_fl = ["göt", "lönd", "örn"]
+    binfl2kind = dict(zip(loc_fl, ["street", "country", "placename"]))
 
     bindb = result["_state"]["bin_db"]
     name = node.contained_text()
     meanings = bindb.meanings(name)
 
-    loc_fl = ["göt", "lönd", "örn"]
-    binfl2kind = dict(zip(loc_fl, ["street", "country", "placename"]))
-
-    # TODO: Ignore words with non-placename meanings?
+    # TODO: Skip any words that also have non-placename meanings?
     for m in meanings:
         if m.fl not in loc_fl:
             continue
@@ -151,7 +150,7 @@ def _process(node, params, result):
         nom = m[0]
         kind = binfl2kind[m.fl]
 
-        # HACK: BÍN has Iceland as "örn"!
+        # HACK: BÍN has Iceland as "örn"! Should be fixed by patching BÍN data
         if nom == "Ísland":
             kind = "country"
 
@@ -159,9 +158,12 @@ def _process(node, params, result):
         state["locations"].add(loc)
 
 
+""" Country and place names can occur as both Fyrirbæri and Sérnafn """
+
+
 def Sérnafn(node, params, result):
     _process(node, params, result)
 
+
 def Fyrirbæri(node, params, result):
     _process(node, params, result)
-

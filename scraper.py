@@ -339,7 +339,7 @@ class Scraper:
                         .format(lcnt)
                     )
                     # Defaults to using as many processes as there are CPUs
-                    pool = Pool(4)
+                    pool = Pool()
                     try:
                         pool.imap_unordered(self._parse_single_article, adlist)
                     except Exception as e:
