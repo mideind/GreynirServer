@@ -29,12 +29,13 @@ from scraperdb import Location
 from geo import (
     coords_for_country,
     coords_for_street_name,
+    coords_from_addr_info,
     icelandic_addr_info,
     isocode_for_country_name,
     ICELAND_ISOCODE,
 )
 
-PLACENAME_BLACKLIST = ["Staður", "Eyjan", "Fjöll", "Bæir"]
+PLACENAME_BLACKLIST = frozenset(["Staður", "Eyjan", "Fjöll", "Bæir", "Á"])
 
 Loc = namedtuple("Loc", "name kind")
 
@@ -68,22 +69,22 @@ def article_end(state):
     placenames = [p.name for p in locs if p.kind == "placename"]
 
     # Get info about each location and save to database
-    for loctuple in locs:
-        loc = loctuple._asdict()
-        kind = loc["kind"]
+    for name, kind in locs:
+        loc = {"name": name, "kind": kind}
         coords = None
 
         # Heimilisfang
         if kind == "address":
+            # We currently assume all addresses are Icelandic ones
             loc["country"] = ICELAND_ISOCODE
-            info = icelandic_addr_info(loc["name"], placename_hints=placenames)
-            if info and info.get("lat_wgs84") and info.get("long_wgs84"):
-                coords = (info["lat_wgs84"], info["long_wgs84"])
+            info = icelandic_addr_info(name, placename_hints=placenames)
+            if info:
+                coords = coords_from_addr_info(info)
             loc["data"] = info
 
         # Land
         elif kind == "country":
-            code = isocode_for_country_name(loc["name"])
+            code = isocode_for_country_name(name)
             if code:
                 loc["country"] = code
                 coords = coords_for_country(code)
@@ -92,11 +93,11 @@ def article_end(state):
         elif kind == "street":
             # All the street names in BÍN are Icelandic
             loc["country"] = ICELAND_ISOCODE
-            coords = coords_for_street_name(loc["name"], placename_hints=placenames)
+            coords = coords_for_street_name(name, placename_hints=placenames)
 
         # Örnefni
         elif kind == "placename":
-            if loc["name"] in PLACENAME_BLACKLIST:
+            if name in PLACENAME_BLACKLIST:
                 continue
 
         if coords:
@@ -131,12 +132,13 @@ def Heimilisfang(node, params, result):
     result._state["locations"].add(l)
 
 
+BIN_LOCFL = ["göt", "lönd", "örn"]
+LOCFL_TO_KIND = dict(zip(BIN_LOCFL, ["street", "country", "placename"]))
+
+
 def _process(node, params, result):
     """ Look up meaning in BÍN, add as location if in right category """
     state = result._state
-
-    loc_fl = ["göt", "lönd", "örn"]
-    binfl2kind = dict(zip(loc_fl, ["street", "country", "placename"]))
 
     bindb = result["_state"]["bin_db"]
     name = node.contained_text()
@@ -144,11 +146,11 @@ def _process(node, params, result):
 
     # TODO: Skip any words that also have non-placename meanings?
     for m in meanings:
-        if m.fl not in loc_fl:
+        if m.fl not in BIN_LOCFL:
             continue
 
         nom = m[0]
-        kind = binfl2kind[m.fl]
+        kind = LOCFL_TO_KIND[m.fl]
 
         # HACK: BÍN has Iceland as "örn"! Should be fixed by patching BÍN data
         if nom == "Ísland":

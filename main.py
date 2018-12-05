@@ -214,11 +214,14 @@ _DEFAULT_TEXTS = [
     "Hver er Íslandsmeistari í golfi?",
 ]
 
-# Default number of top news items to show in front page list
+# Default number of top news items to show in /news
 _TOP_NEWS_LENGTH = 20
 
-# Default number of top persons to show in front page list
+# Default number of top persons to show in /people
 _TOP_PERSONS_LENGTH = 20
+
+# Default number of top locations to show in /locations
+_TOP_LOCATIONS_LENGTH = 100
 
 # Maximum length of incoming GET/POST parameters
 _MAX_URL_LENGTH = 512
@@ -408,7 +411,7 @@ def top_locations(limit=20, kind=None):
     toplist = []
     for l in q.limit(limit).all():
         zoom = "6z" if l.kind == "country" else "16z"
-        mapurl = "http://google.com/maps/@{0},{1},{2}".format(l[4], l[5], zoom)
+        mapurl = "https://google.com/maps/@{0},{1},{2}".format(l[4], l[5], zoom)
         toplist.append(
             {
                 "name": l[0],
@@ -1023,7 +1026,7 @@ def suggest(limit=10):
 @max_age(seconds=5 * 60)
 def locations():
     kind = request.args.get("kind")
-    locs = top_locations(limit=100, kind=kind)
+    locs = top_locations(limit=_TOP_LOCATIONS_LENGTH, kind=kind)
 
     return render_template("locations.html", locations=locs)
 

@@ -389,7 +389,7 @@ class Location(Base):
     # Kind (e.g. 'address', 'street', 'country', 'region', 'placename')
     kind = Column(String(16), index=True)
 
-    # Country (ISO 3166-1 alpha-2, e.g. 'is')
+    # Country (ISO 3166-1 alpha-2, e.g. 'IS')
     country = Column(String(2))
 
     # Coordinates (WGS84)

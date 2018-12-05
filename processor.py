@@ -219,9 +219,8 @@ class Processor:
                 self.go_single(url)
         else:
             # Use a multiprocessing pool to process the articles
-            pool = Pool(
-                self.workers
-            )  # Defaults to using as many processes as there are CPUs
+            # Defaults to using as many processes as there are CPUs
+            pool = Pool(self.workers)
             pool.map(self.go_single, iter_parsed_articles())
             pool.close()
             pool.join()
