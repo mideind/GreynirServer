@@ -156,6 +156,7 @@ function hoverIn() {
       // No token: nothing to do
       return;
    }
+
    // Save our position
    var offset = $(this).position();
    // Highlight the token
@@ -184,12 +185,46 @@ function hoverIn() {
       $("#info").addClass(r.class);
    }
 
+   // Display image for person
    if (t.k == TOK_PERSON && t.v.split(' ').length > 1) {
       getImage(r.lemma, function(img) {
          $("#info-image").html(
             $("<img>").attr('src', img[0])
          ).show();
-      })
+      });
+   }
+
+   // Display info for location
+   console.log(t);
+   if (t["m"]) {
+      var fl = t["m"][2];
+      if (fl === "lönd" || fl === "örn" || fl === "göt") {
+
+         r.tagClass = "glyphicon-globe"
+
+         locationInfo(r.lemma, function(info) {
+
+            $('#lemma').append(
+               $("<img>").attr('src', info['flag']).attr('class', 'flag')
+            );
+
+            // $("#info-image").html(
+            //    $("<img>").attr('src', info['flag'])
+            // ).show()
+
+
+            // .append(
+            //    $("<img>").attr('src', info['map'])
+            // );
+
+
+
+
+
+
+         });
+      }
+
    }
 
    $("#info span#tag")
@@ -202,6 +237,16 @@ function hoverIn() {
       .css("top", offset.top.toString() + "px")
       .css("left", offset.left.toString() + "px")
       .css("visibility", "visible");
+}
+
+function locationInfo(name, successFunc) {
+   // Ask server for thumbnail image
+   var enc = encodeURIComponent(name);
+   getImage.request = $.getJSON("/locinfo?name=" + enc, function(r) {
+      if (r['found']) {
+         successFunc(r);
+      }
+   });
 }
 
 function getImage(name, successFunc) {
@@ -222,7 +267,7 @@ function getImage(name, successFunc) {
       getImage.request.abort();
    }
    // Ask server for thumbnail image
-   var enc = encodeURIComponent(name)
+   var enc = encodeURIComponent(name);
    getImage.request = $.getJSON("/image?thumb=1&name=" + enc, function(r) {
       cache[name] = [];
       if (r['found']) {

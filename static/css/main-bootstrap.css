@@ -668,6 +668,12 @@ div#info #lemma {
    font-weight: 700;
 }
 
+div#info #lemma > .flag {
+   height: 15px;
+   margin-left: 8px;
+   margin-top: -3px;
+}
+
 div#info #details {
    margin-top: 4px;
    font-style: italic;
