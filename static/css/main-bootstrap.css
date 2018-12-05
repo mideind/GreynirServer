@@ -267,6 +267,22 @@ div#stats-panel {
 
 }
 
+@media(max-width: 992px) {
+
+   div.container.text-container {
+      padding-top: 120px; /* Make more room for the top navbar */
+   }
+
+}
+
+@media(max-width: 768px) {
+
+   div.container.text-container {
+      padding-top: 72px; /* Go back to less room for top navbar */
+   }
+
+}
+
 @media(max-width: 480px) {
 
    ul.nav-tabs span.glyphicon {
@@ -410,6 +426,9 @@ td.ratio {
 
 td.heading {
    max-width: 782px;
+   overflow: hidden;
+   white-space: nowrap;
+   text-overflow: ellipsis;
 }
 
 td.extlink {
@@ -420,6 +439,10 @@ td.ts {
    white-space: nowrap;
    overflow-x: hidden;
    min-width: 100px;
+}
+
+.table-responsive {
+   overflow-x: hidden;
 }
 
 td.ratio div.progress {
