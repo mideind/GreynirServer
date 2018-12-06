@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 	Look up all UN country names (in Icelandic) in BÍN.
-	Print if country name is not found.
+	Print if country name is not found or has wrong category.
 """
 
 from reynir.bindb import BIN_Db

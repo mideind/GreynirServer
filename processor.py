@@ -125,7 +125,7 @@ class Processor:
         """ Single article processor that will be called by a process within a
             multiprocessing pool """
 
-        print("Processing article {0}".format(url))
+        #print("Processing article {0}".format(url))
         sys.stdout.flush()
 
         # If first article within a new process, import the processor modules
