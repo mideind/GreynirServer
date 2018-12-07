@@ -2,9 +2,7 @@
 """
     Reynir: Natural language processing for Icelandic
 
-    Processor module to extract entity names & definitions
-
-    Copyright (C) 2016 Vilhjálmur Þorsteinsson
+    Copyright (c) 2018 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -23,6 +21,9 @@
     and extracts any addresses / locations, looks up information about
     them and saves to a database.
 
+    The taxonomy provides four different kinds of locations.
+    They are: address, street, placename, country.
+
 """
 
 from collections import namedtuple
@@ -31,14 +32,61 @@ from scraperdb import Location
 from geo import (
     coords_for_country,
     coords_for_street_name,
+    coords_from_addr_info,
     icelandic_addr_info,
     isocode_for_country_name,
     ICELAND_ISOCODE,
 )
 
-PLACENAME_BLACKLIST = ["Staður", "Eyjan", "Fjöll", "Bæir"]
+Loc = namedtuple("Loc", ["name", "kind"])
 
-Loc = namedtuple("Loc", "name kind")
+BIN_LOCFL = ["lönd", "göt", "örn"]
+LOCFL_TO_KIND = dict(zip(BIN_LOCFL, ["country", "street", "placename"]))
+
+# Always identify these words as location, even when other meanings exist
+ALWAYS_LOCATION = frozenset(
+    (
+        "París",  # ism í BÍN
+        "Ísrael",  # ism
+        "Víetnam",  # alm
+        "Sýrland",  # fyr
+        "Mið-Afríkulýðveldið",  # alm
+        "Grænland",  # fyr
+        "Aþena",  # ism
+        "Árborg",
+        "Borg",
+        "Hella",
+        "Suðurnes",
+    )
+)
+
+PLACENAME_BLACKLIST = frozenset(
+    (
+        "Staður",
+        "Eyjan",
+        "Fjöll",
+        "Bæir",
+        "Rauða",
+        "Hjálp",
+        "Stjórn",
+        "Hrunið",
+        "Mark",
+        "Á",
+        "Kjarni",
+        "Hagar",
+        "Þing",
+        "Hús",
+        "Langa",
+        "Húsið",
+        "Maður",
+        "Systur",
+        "Snið",
+    )
+)
+
+STREETNAME_BLACKLIST = frozenset(("Mark"))
+
+COUNTRY_BLACKLIST = frozenset(())
 
 
 def article_begin(state):
@@ -63,29 +111,31 @@ def article_end(state):
     if not locs:
         return
 
+    print(url)
     print(locs)
+    print("--------------")
 
     # Find all placenames mentioned in article
     # We can use them to disambiguate addresses and street names
     placenames = [p.name for p in locs if p.kind == "placename"]
 
     # Get info about each location and save to database
-    for loctuple in locs:
-        loc = loctuple._asdict()
-        kind = loc["kind"]
+    for name, kind in locs:
+        loc = {"name": name, "kind": kind}
         coords = None
 
         # Heimilisfang
         if kind == "address":
+            # We currently assume all addresses are Icelandic ones
             loc["country"] = ICELAND_ISOCODE
-            info = icelandic_addr_info(loc["name"], placename_hints=placenames)
-            if info and info.get("lat_wgs84") and info.get("long_wgs84"):
-                coords = (info["lat_wgs84"], info["long_wgs84"])
+            info = icelandic_addr_info(name, placename_hints=placenames)
+            if info:
+                coords = coords_from_addr_info(info)
             loc["data"] = info
 
         # Land
         elif kind == "country":
-            code = isocode_for_country_name(loc["name"])
+            code = isocode_for_country_name(name)
             if code:
                 loc["country"] = code
                 coords = coords_for_country(code)
@@ -94,12 +144,12 @@ def article_end(state):
         elif kind == "street":
             # All the street names in BÍN are Icelandic
             loc["country"] = ICELAND_ISOCODE
-            coords = coords_for_street_name(loc["name"], placename_hints=placenames)
+            coords = coords_for_street_name(name, placename_hints=placenames)
 
         # Örnefni
         elif kind == "placename":
-            if loc["name"] in PLACENAME_BLACKLIST:
-                continue
+            # TODO: More could be done to get info on placenames
+            pass
 
         if coords:
             (loc["latitude"], loc["longitude"]) = coords
@@ -119,49 +169,82 @@ def sentence(state, result):
 def Heimilisfang(node, params, result):
     """ NP-ADDR """
 
-    children = list(node.children())
-
-    # Make sure address is in nominative case
+    # Convert address to nominative case
     def nom(w):
         bindb = result._state["bin_db"]
         n = bindb.lookup_nominative(w)
         return n[0][0] if n else w
 
-    addr_nom = " ".join([nom(c.contained_text()) for c in children])
+    addr_nom = " ".join([nom(c.contained_text()) for c in node.children()])
 
+    # Add as location
     l = Loc(name=addr_nom, kind="address")
     result._state["locations"].add(l)
 
 
 def _process(node, params, result):
+    """ Look up meaning in BÍN, add as location if in right category """
     state = result._state
 
-    bindb = result["_state"]["bin_db"]
-    name = node.contained_text()
-    meanings = bindb.meanings(name)
+    # Get in nominative form
+    txt = node.nominative(state, params)
 
-    loc_fl = ["göt", "lönd", "örn"]
-    binfl2kind = dict(zip(loc_fl, ["street", "country", "placename"]))
+    # Look up meanings
+    bindb = state["bin_db"]
+    meanings = bindb.meanings(txt)
 
-    # TODO: Ignore words with non-placename meanings?
-    for m in meanings:
-        if m.fl not in loc_fl:
-            continue
+    if not meanings:
+        return
 
-        nom = m[0]
-        kind = binfl2kind[m.fl]
+    fls = [m.fl for m in meanings]
 
-        # HACK: BÍN has Iceland as "örn"!
-        if nom == "Ísland":
-            kind = "country"
+    # Skip if no location-related meaning
+    if not any(f in BIN_LOCFL for f in fls):
+        return
 
-        loc = Loc(name=nom, kind=kind)
-        state["locations"].add(loc)
+    # Skip if one or more non-location-related meanings,
+    if any(f not in BIN_LOCFL for f in fls):
+        # print("MULTIPLE MEANINGS FOR: " + txt)
+        # print(fls)
+
+        if txt not in ALWAYS_LOCATION:
+            return
+        else:
+            # Get rid of non-loc meanings
+            meanings = [m for m in meanings if m.fl in BIN_LOCFL]
+
+    # If more than one loc-related meaning, pick one 
+    # based on the order of items in BIN_LOCFL
+    if len(meanings) > 1:
+        meanings.sort(key=lambda x: BIN_LOCFL.index(x.fl))
+
+    m = meanings[0]
+    name = m.stofn
+    kind = LOCFL_TO_KIND[m.fl]
+
+    # Skip if blacklisted
+    if kind == "placename" and name in PLACENAME_BLACKLIST:
+        return
+    if kind == "street" and name in STREETNAME_BLACKLIST:
+        return
+    if kind == "country" and name in COUNTRY_BLACKLIST:
+        return
+
+    # HACK: BÍN has Iceland as "örn"! Should be fixed by patching BÍN data
+    if name == "Ísland":
+        kind = "country"
+
+    # Add
+    loc = Loc(name=name, kind=kind)
+    state["locations"].add(loc)
+
+
+""" Country and place names can occur as both Fyrirbæri and Sérnafn """
 
 
 def Sérnafn(node, params, result):
     _process(node, params, result)
 
+
 def Fyrirbæri(node, params, result):
     _process(node, params, result)
-

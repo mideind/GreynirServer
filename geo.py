@@ -1,4 +1,26 @@
-#!/usr/bin/env python
+"""
+    Reynir: Natural language processing for Icelandic
+
+    Processor module to extract entity names & definitions
+
+    Copyright (c) 2018 Miðeind ehf.
+
+       This program is free software: you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published by
+       the Free Software Foundation, either version 3 of the License, or
+       (at your option) any later version.
+       This program is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+       GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see http://www.gnu.org/licenses/.
+
+
+    This module contains geography and location-related utility functions.
+
+"""
 
 
 import json
@@ -10,60 +32,83 @@ from country_list import countries_for_language, available_languages
 ICELAND_ISOCODE = "IS"
 ICELANDIC_LANG_ISOCODE = "is"
 
-ISO2COORD_JSONPATH = "resources/country_coords.json"
+COUNTRY_COORDS_JSONPATH = "resources/country_coords.json"
 
 
 def coords_for_country(iso_code):
     """ Return coordinates for a given country code """
-    assert len(iso_code) == 2 and iso_code.isupper()
+    assert len(iso_code) == 2
 
+    iso_code = iso_code.upper()
+
+    # Lazy-load data, save as function attribute
     if not hasattr(coords_for_country, "iso2coord"):
-        with open(ISO2COORD_JSONPATH) as f:
+        with open(COUNTRY_COORDS_JSONPATH) as f:
             coords_for_country.iso2coord = json.load(f)
 
     return coords_for_country.iso2coord.get(iso_code)
 
 
 def coords_for_street_name(street_name, placename=None, placename_hints=[]):
-    """ Return coordinates for an Icelandic street name as a tuple """
+    """ Return coordinates for an Icelandic street name as a tuple. As some
+        street names exist in more than one place, we try to narrow it down 
+        to a single street if possible. Street coordinates are the coordinates
+        of the lowest house number. """
 
     addresses = iceaddr_lookup(street_name, placename=placename, limit=100)
-    places = set(a["stadur_nf"] for a in addresses if a.get("stadur_nf"))
+
+    if not len(addresses):
+        return None
+
+    # Find all places containing street_name
+    places = set(a.get("stadur_nf") for a in addresses)
     addr = None
 
-    # Street name only exists in one place
+    # Only exists in one place
     if len(places) == 1:
         addr = addresses[0]
     elif placename_hints:
         # See if placename hints can narrow it down
         for pn in placename_hints:
             addresses = iceaddr_lookup(street_name, placename=pn)
-            places = set(a["stadur_nf"] for a in addresses if a.get("stadur_nf"))
+            places = set(a.get("stadur_nf") for a in addresses)
             if len(places) == 1:
                 addr = addresses[0]
                 break
 
-    if addr and addr.get("lat_wgs84") and addr.get("long_wgs84"):
-        return (addr["lat_wgs84"], addr["long_wgs84"])
+    return coords_from_addr_info(addr)
 
+
+def coords_from_addr_info(info):
+    """ Get coordinates from the address dict provided by iceaddr """
+    if info and info.get("lat_wgs84") and info.get("long_wgs84"):
+        return (info["lat_wgs84"], info["long_wgs84"])
     return None
 
 
 def country_name_for_isocode(iso_code, lang=ICELANDIC_LANG_ISOCODE):
     """ Return country name for an ISO 3166-1 alpha-2 code """
-    assert len(iso_code) == 2 and iso_code.isupper()
-    assert len(lang) == 2 and lang.islower()
-    assert lang in available_languages()
+    assert len(iso_code) == 2
+    assert len(lang) == 2
+
+    iso_code = iso_code.upper()
+    lang = lang.lower()
+
+    if not lang in available_languages():
+        return None
 
     countries = dict(countries_for_language(lang))
     return countries.get(iso_code)
 
 
 def isocode_for_country_name(country_name, lang=ICELANDIC_LANG_ISOCODE):
-    """ Return ISO 3166-1 alpha-2 code for a country 
-        name in the specified language (ISO 639-1) """
-    assert len(lang) == 2 and lang.islower()
-    assert lang in available_languages()
+    """ Return the ISO 3166-1 alpha-2 code for a country 
+        name in the specified language (two-char ISO 639-1) """
+    assert len(lang) == 2
+
+    lang = lang.lower()
+    if not lang in available_languages():
+        return None
 
     countries = countries_for_language(lang)
     for iso_code, name in countries:
@@ -79,20 +124,23 @@ def isocode_for_country_name(country_name, lang=ICELANDIC_LANG_ISOCODE):
             "Makaó": "MO",
             "England": "GB",
             "Skotland": "GB",
+            "Wales": "GB",
+            "Norður-Írland": "GB",
             "Bosnía": "BA",
             "Hersegóvína": "BA",
             "Palestína": "PS",
         }
     }
 
-    if additions.get(lang):
+    if lang in additions:
         return additions[lang].get(country_name)
 
     return None
 
 
 def icelandic_addr_info(addr_str, placename=None, placename_hints=[]):
-    """ Look up info about Icelandic address in Staðfangaskrá """
+    """ Look up info about a specific Icelandic address in Staðfangaskrá.
+        We want either a single match or nothing. """
     addr = parse_address_string(addr_str)
 
     def lookup(pn):
@@ -101,7 +149,7 @@ def icelandic_addr_info(addr_str, placename=None, placename_hints=[]):
             number=addr.get("number"),
             letter=addr.get("letter"),
             placename=pn,
-            limit=100,
+            limit=2,
         )
         return a[0] if len(a) == 1 else None
 
@@ -109,7 +157,7 @@ def icelandic_addr_info(addr_str, placename=None, placename_hints=[]):
     res = lookup(placename)
 
     # If no single address found, try to disambiguate using placename hints
-    if not res:
+    if not res and placename_hints:
         for p in placename_hints:
             res = lookup(p)
             if res:
@@ -119,9 +167,10 @@ def icelandic_addr_info(addr_str, placename=None, placename_hints=[]):
 
 
 def parse_address_string(addrstr):
+    """ Break Icelandic address string down to its components """
     addr = {"street": addrstr}
 
-    comp = addrstr.split(" ")
+    comp = addrstr.split()
     if len(comp) == 1:
         return addr
 
@@ -129,7 +178,7 @@ def parse_address_string(addrstr):
     r = re.search(r"^(\d+)([a-zA-Z]?)$", last)
     if r:
         addr["number"] = int(r.group(1))
-        addr["letter"] = r.group(2) if r.group(2) else None
+        addr["letter"] = r.group(2) or None
         addr["street"] = " ".join(comp[:-1])
     else:
         addr["street"] = addrstr
