@@ -57,7 +57,7 @@ import reynir_correct
 from reynir_correct import tokenize
 
 from settings import Settings, ConfigError, changedlocale
-from nertokenizer import recognize_entities
+from nertokenizer import tokenize_and_recognize
 from article import Article as ArticleProxy
 from treeutil import TreeUtility
 from scraperdb import (
@@ -755,12 +755,12 @@ def query_api(version=1):
             result["response"] = _SPECIAL_QUERIES[ql + "?"]
     else:
         with SessionContext(commit=True) as session:
-            a_u = q.islower() if auto_uppercase else False
-            tokstream = tokenize(text, a_u)
+
             toklist = list(
-                recognize_entities(
+                tokenize_and_recognize(
                     q,
                     enclosing_session=session,
+                    auto_uppercase=q.islower() if auto_uppercase else False,
                 )
             )
             actual_q = correct_spaces(" ".join(t.txt or "" for t in toklist))
@@ -1220,13 +1220,13 @@ if __name__ == "__main__":
     # Note: Reynir.grammar is automatically reloaded if its timestamp changes
     extra_files = [
         "Reynir.conf",
+        "ReynirPackage.conf",
         "Index.conf",
         "Verbs.conf",
         "Adjectives.conf",
         "AdjectivePredicates.conf",
         "Morphemes.conf",
         "Prepositions.conf",
-        "Main.conf",
         "Prefs.conf",
         "Phrases.conf",
         "Vocab.conf",
