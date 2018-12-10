@@ -25,7 +25,7 @@
 
 import json
 import re
-from iceaddr import iceaddr_lookup
+from iceaddr import iceaddr_lookup, placename_lookup
 from country_list import countries_for_language, available_languages
 
 
@@ -77,6 +77,20 @@ def coords_for_street_name(street_name, placename=None, placename_hints=[]):
                 break
 
     return coords_from_addr_info(addr)
+
+
+def coords_for_placename(placename, country=ICELAND_ISOCODE):
+    """ Return coordinates for a placename as a tuple """
+
+    # For now, we only support Icelandic placename lookups
+    if country != ICELAND_ISOCODE:
+        return None
+
+    res = placename_lookup(placename)
+    if len(res) >= 1:
+        return coords_from_addr_info(res[0])
+
+    return None
 
 
 def coords_from_addr_info(info):

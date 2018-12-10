@@ -32,6 +32,7 @@ from scraperdb import Location
 from geo import (
     coords_for_country,
     coords_for_street_name,
+    coords_for_placename,
     coords_from_addr_info,
     icelandic_addr_info,
     isocode_for_country_name,
@@ -148,8 +149,9 @@ def article_end(state):
 
         # Örnefni
         elif kind == "placename":
-            # TODO: More could be done to get info on placenames
-            pass
+            coords = coords_for_placename(name)
+            if coords:
+                loc["country"] = ICELAND_ISOCODE
 
         if coords:
             (loc["latitude"], loc["longitude"]) = coords
