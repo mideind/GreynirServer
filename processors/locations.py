@@ -32,8 +32,9 @@ from scraperdb import Location
 from geo import (
     coords_for_country,
     coords_for_street_name,
-    coords_from_addr_info,
+    icelandic_placename_info,
     icelandic_addr_info,
+    coords_from_addr_info,
     isocode_for_country_name,
     ICELAND_ISOCODE,
 )
@@ -148,8 +149,11 @@ def article_end(state):
 
         # Örnefni
         elif kind == "placename":
-            # TODO: More could be done to get info on placenames
-            pass
+            info = icelandic_placename_info(name)
+            if info:
+                loc["country"] = ICELAND_ISOCODE
+                # Pick first matching placename, w/o disambiguating
+                coords = coords_from_addr_info(info[0])
 
         if coords:
             (loc["latitude"], loc["longitude"]) = coords
@@ -213,7 +217,7 @@ def _process(node, params, result):
             # Get rid of non-loc meanings
             meanings = [m for m in meanings if m.fl in BIN_LOCFL]
 
-    # If more than one loc-related meaning, pick one 
+    # If more than one loc-related meaning, pick one
     # based on the order of items in BIN_LOCFL
     if len(meanings) > 1:
         meanings.sort(key=lambda x: BIN_LOCFL.index(x.fl))

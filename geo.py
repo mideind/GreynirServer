@@ -25,7 +25,7 @@
 
 import json
 import re
-from iceaddr import iceaddr_lookup
+from iceaddr import iceaddr_lookup, placename_lookup
 from country_list import countries_for_language, available_languages
 
 
@@ -135,6 +135,15 @@ def isocode_for_country_name(country_name, lang=ICELANDIC_LANG_ISOCODE):
     if lang in additions:
         return additions[lang].get(country_name)
 
+    return None
+
+
+def icelandic_placename_info(placename)
+    res = placename_lookup(placename)
+    if len(res) >= 1:
+        # Prefer placenames marked 'Þéttbýli'
+        res.sort(key=lambda x: 0 if x.get('flokkur') == 'Þéttbýli' else 1)
+        return res
     return None
 
 
