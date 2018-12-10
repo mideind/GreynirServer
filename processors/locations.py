@@ -149,9 +149,11 @@ def article_end(state):
 
         # Örnefni
         elif kind == "placename":
-            coords = coords_for_placename(name)
-            if coords:
+            info = icelandic_placename_info(name)
+            if info:
                 loc["country"] = ICELAND_ISOCODE
+                # Pick first matching placename, w/o disambiguating
+                coords = coords_from_addr_info(info[0])
 
         if coords:
             (loc["latitude"], loc["longitude"]) = coords
