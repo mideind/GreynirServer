@@ -487,7 +487,8 @@ def text_from_request(request):
     else:
         text = request.args.get("t", "")
     # Replace all consecutive whitespace with a single space
-    return " ".join(text.split())[0:_MAX_TEXT_LENGTH]
+    # return " ".join(text.split())[0:_MAX_TEXT_LENGTH]
+    return text[0:_MAX_TEXT_LENGTH]
 
 
 @app.context_processor
@@ -513,11 +514,16 @@ def nnparse_api(version=1):
     except:
         return better_jsonify(valid=False, reason="Invalid request")
 
-    nnTree = ParsingClient.request_sentence(text)
+    results = ParsingClient.request_sentence(text)
+    if results is None:
+        return better_jsonify(valid=False, reason="Service unavailable")
+    nnTree = results["outputs"]
+    scores = results["scores"]
     result = {
         "tree": nnTree.to_dict(),
         "width": nnTree.width(),
         "height": nnTree.height(),
+        "scores": scores,
     }
 
     return better_jsonify(valid=True, result=result)

@@ -38,7 +38,7 @@ from nntree import ParseResult
 
 
 def index_text(text):
-    """ Segments text into paragraphs and sentences
+    """ Segments contiguous (Icelandic) text into paragraphs and sentences
         and returns:
             dictionary of sentence indices to sentences
             dictionary of paragraph index to constituent sentence indices"""
@@ -72,26 +72,17 @@ class NnClient:
     verb = None
 
     @classmethod
-    def request_sentence(cls, text, src_lang=None, tgt_lang=None):
+    def request_sentence(cls, text):
         """ Request neural network output for a single sentence """
-        if "\n" in text:
-            single_sentence = text.split("\n")[0]
-        else:
-            single_sentence = text
-        pgs = [single_sentence]
-        result = cls._request(pgs, src_lang, tgt_lang)
-        result = result[0] if result is not None else None
-        return result
+        raise NotImplemented
 
     @classmethod
-    def request_text(cls, text, src_lang=None, tgt_lang=None):
+    def request_text(cls, text):
         """ Request neural network output for contiguous text """
-        pgs = cls._normalizeText(text)
-        resp = cls._request(pgs, src_lang, tgt_lang)
-        return resp
+        raise NotImplemented
 
     @classmethod
-    def _request(cls, pgs, src_lang=None, tgt_lang=None):
+    def _request(cls, pgs, data=None):
         """ Send serialized request to remote model server """
         url = "http://{host}:{port}/{verb}.api".format(
             host=cls.host, port=cls.port, verb=cls.verb
@@ -99,9 +90,9 @@ class NnClient:
         headers = {"content-type": "application/json"}
         payload = {"pgs": pgs}
 
-        if src_lang and tgt_lang:
-            payload["src_lang"] = src_lang
-            payload["tgt_lang"] = tgt_lang
+        if data is not None:
+            for (k, v) in data.items():
+                payload[k] = v
 
         logging.debug(str(payload))
         payload = json.dumps(payload)
@@ -110,19 +101,18 @@ class NnClient:
 
         try:
             obj = json.loads(resp.text)
-            logging.debug(str(obj))
             predictions = obj["predictions"]
             results = [
                 cls._processResponse(inst, sent)
                 for (inst, sent) in zip(predictions, list(pgs))
             ]
 
-            logging.debug(str(results))
             return results
         # TODO(haukurb): More graceful error handling
         except Exception as e:
-            logging.error("Error: could not process response from nnserver")
-            logging.error(e)
+            logging.exception("Error: could not process response from nnserver")
+            import traceback
+            traceback.print_exc()
             return None
 
     @classmethod
@@ -138,7 +128,6 @@ class NnClient:
         raise NotImplemented
 
 
-
 class TranslateClient(NnClient):
     """ A client that connects to an HTTP RESTful interface of
         middleware server for a tensorflow model server (using plaintext) that returns
@@ -152,9 +141,7 @@ class TranslateClient(NnClient):
     def _processResponse(cls, instance, sent):
         """ Process the response from a single sentence """
         result = dict(
-            inputs=sent,
-            outputs=instance["outputs"],
-            scores=float(instance["scores"]),
+            inputs=sent, outputs=instance["outputs"], scores=float(instance["scores"])
         )
         return result
 
@@ -164,17 +151,30 @@ class TranslateClient(NnClient):
         return text
 
     @classmethod
+    def request_sentence(cls, text, src_lang=None, tgt_lang=None):
+        """ Request neural network output for a single sentence """
+        if "\n" in text:
+            single_sentence = text.split("\n")[0]
+        else:
+            single_sentence = text
+        pgs = [single_sentence]
+        data = dict(src_lang=src_lang, tgt_lang=tgt_lang)
+        results = cls._request(pgs, data=data)
+        if results is None:
+            return results
+        return results[0]
+
+    @classmethod
     def request_text(cls, text, src_lang=None, tgt_lang=None):
-        """ Preprocess text and normalize for translation network """
+        """ Preprocess, segment and normalize text for translation network """
         pg_map, sent_map = index_text(text)
         sents = list(sent_map.values())
-        result = TranslateClient._request(sents, src_lang, tgt_lang)
-        inst_map = {idx:inst for (idx,inst) in enumerate(result)}
-        resp = dict(
-            pgs=pg_map,
-            results=inst_map,
-        )
+        data = dict(src_lang=src_lang, tgt_lang=tgt_lang)
+        result = TranslateClient._request(sents, data=data)
+        inst_map = {idx: inst for (idx, inst) in enumerate(result)}
+        resp = dict(pgs=pg_map, results=inst_map)
         return resp
+
 
 class ParsingClient(NnClient):
     """ A client that connects to an HTTP RESTful interface of
@@ -188,27 +188,59 @@ class ParsingClient(NnClient):
     @classmethod
     def _processResponse(cls, instance, sent):
         """ Process the response from a single sentence """
-        parse_toks = instance["outputs"]
         scores = instance["scores"]
+        scores = max([float(score) for score in scores])
+        instance["scores"] = scores
+        return instance
 
-        logging.info(parse_toks)
-        tree, p_result = nntree.parse_tree_with_text(parse_toks, sent)
+    @classmethod
+    def _instances_to_ptrees(cls, insts, sents):
+        """ Transforms list of result dicts of flat parse trees
+            into a list of dicts of parsed tree structures """
+        for (inst, sent) in zip(insts, sents):
+            parse_toks = inst["outputs"]
+            tree, p_result = nntree.parse_tree_with_text(parse_toks, sent)
+            inst["outputs"] = tree
 
-        if Settings.DEBUG:
-            print("Received parse tokens from nnserver:", parse_toks)
-            print("Parsed by nntree into:")
-            tree.pprint()
-            if p_result != ParseResult.SUCCESS:
-                print("NnParse not successful for input: '{text}'".format(text=sent))
-                print("ParseResult: {result}".format(result=p_result))
-                print("Output: {parse_toks}".format(parse_toks=parse_toks))
+            if Settings.DEBUG:
+                print("Received parse tokens from nnserver:", parse_toks)
+                print("Parsed by nntree into:")
+                tree.pprint()
+                if p_result != ParseResult.SUCCESS:
+                    print(
+                        "NnParse not successful for input: '{text}'".format(text=sent)
+                    )
+                    print("ParseResult: {result}".format(result=p_result))
+                    print("Output: {parse_toks}".format(parse_toks=parse_toks))
 
-        return tree
+    @classmethod
+    def request_text(cls, text, flat=False):
+        """ Request neural network output for contiguous text """
+        sents = cls._normalizeText(text)
+        results = cls._request(sents)
+        if not flat:
+            cls._instances_to_ptrees(results, sents)
+        return results
+
+    @classmethod
+    def request_sentence(cls, text, flat=False):
+        """ Request neural network output for a single sentence """
+        if "\n" in text:
+            single_sentence = text.split("\n")[0]
+        else:
+            single_sentence = text
+        sents = [single_sentence]
+        results = cls._request(sents)
+        if results is None:
+            return results
+        if not flat:
+            cls._instances_to_ptrees(results, sents)
+        return results[0]
 
     @classmethod
     def _normalizeText(cls, text):
         """ Preprocess text and normalize for parsing network """
-
+        pgs = text.split("\n")
         normalized_pgs = [
             [tok.txt for tok in list(tokenizer.tokenize(pg))] for pg in pgs
         ]
@@ -216,7 +248,6 @@ class ParsingClient(NnClient):
             " ".join([tok for tok in npg if tok]) for npg in normalized_pgs
         ]
         return normalized_pgs
-
 
 
 def test_translate_sentence():
@@ -230,7 +261,7 @@ def test_translate_sentence():
 
 def test_translate_text():
     sample_phrase = "Hæ.\nHvernig?"
-    print("sample_phrase: \"\"\"", sample_phrase, "\"\"\"", sep="")
+    print('sample_phrase: """', sample_phrase, '"""', sep="")
     print()
     res = TranslateClient.request_text(sample_phrase)
     # json = "{'predictions':[{'batch_prediction_key':[0],'outputs':'Hi.','scores':-0.946593}]}"
