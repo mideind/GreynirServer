@@ -405,6 +405,8 @@ class Location(Base):
     # The back-reference to the Article parent of this Location
     article = relationship("Article", backref=backref("locations", order_by=name))
 
+    __table_args__ = (UniqueConstraint("name", "kind", "article_url"),)
+
     def __repr__(self):
         return "Location(id='{0}', name='{1}', kind='{2}', country='{3}')".format(
             self.id, self.name, self.kind, self.country

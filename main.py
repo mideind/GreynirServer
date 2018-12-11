@@ -1031,6 +1031,22 @@ def locations():
     return render_template("locations.html", locations=locs)
 
 
+@app.route("/locinfo", methods=["GET"])
+def locinfo():
+    """ Return info about a location """
+    resp = dict(found=False)
+
+    name = request.args.get("name")
+    # if name:
+    #     code = isocode_for_country_name(name)
+    #     if code:
+    #         resp["found"] = True
+    #         resp["flag"] = "/static/img/flags/" + code + ".png"
+    #         resp["map"] = "/static/img/maps/countries/" + code + ".png"
+
+    return better_jsonify(**resp)
+
+
 @app.route("/genders", methods=["GET"])
 @max_age(seconds=5 * 60)
 def genders():

@@ -25,6 +25,7 @@
 
 import json
 import re
+from pkg_resources import resource_stream
 from iceaddr import iceaddr_lookup, placename_lookup
 from country_list import countries_for_language, available_languages
 
@@ -38,13 +39,13 @@ COUNTRY_COORDS_JSONPATH = "resources/country_coords.json"
 def coords_for_country(iso_code):
     """ Return coordinates for a given country code """
     assert len(iso_code) == 2
-
+    
     iso_code = iso_code.upper()
 
     # Lazy-load data, save as function attribute
     if not hasattr(coords_for_country, "iso2coord"):
-        with open(COUNTRY_COORDS_JSONPATH) as f:
-            coords_for_country.iso2coord = json.load(f)
+        jsonstr = resource_stream(__name__, COUNTRY_COORDS_JSONPATH).read().decode()
+        coords_for_country.iso2coord = json.loads(jsonstr)
 
     return coords_for_country.iso2coord.get(iso_code)
 
@@ -138,7 +139,7 @@ def isocode_for_country_name(country_name, lang=ICELANDIC_LANG_ISOCODE):
     return None
 
 
-def icelandic_placename_info(placename)
+def icelandic_placename_info(placename):
     res = placename_lookup(placename)
     if len(res) >= 1:
         # Prefer placenames marked 'Þéttbýli'

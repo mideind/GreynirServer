@@ -206,16 +206,13 @@ def _process(node, params, result):
     if not any(f in BIN_LOCFL for f in fls):
         return
 
-    # Skip if one or more non-location-related meanings,
+    # Skip if one or more non-location-related meanings
     if any(f not in BIN_LOCFL for f in fls):
-        # print("MULTIPLE MEANINGS FOR: " + txt)
-        # print(fls)
-
-        if txt not in ALWAYS_LOCATION:
-            return
-        else:
+        if txt in ALWAYS_LOCATION:
             # Get rid of non-loc meanings
             meanings = [m for m in meanings if m.fl in BIN_LOCFL]
+        else:
+            return
 
     # If more than one loc-related meaning, pick one
     # based on the order of items in BIN_LOCFL
