@@ -73,14 +73,53 @@
          </h5>
       </div>
 
-      <div id="help">
-         <h3 class="help"><small>Smelltu á málsgrein til að sjá trjágreiningu hennar</small></h3>
+      <!-- <div id="help"> -->
+          <!-- <h3 class="help"><small>Smelltu á málsgrein til að sjá trjágreiningu hennar</small></h3> -->
+         <!-- </div> -->
+
+{% if nn_translate_enabled -%}
+      <div id="language-tabs">
+          <ul id="language-hdr" class="nav nav-tabs" role="tablist">
+              <li role="presentation" class="active">
+                  <a href="#translation-article-source" aria-controls="icelandic" role="tab" data-toggle="tab">
+                      <!-- https://www.countryflags.com/en/iceland-flag-icon.html -->
+                      <img src="{{ url_for('static', filename = 'flag/iceland-flag-icon-32.png') }}" width="32" height="20">&nbsp;Íslenska
+                  </a>
+              </li>
+              <li role="presentation">
+                  <a href="#translation-article-target" aria-controls="translation" role="tab" data-toggle="tab">
+                      <!-- https://www.countryflags.com/en/united-states-flag-icon.html -->
+                      <img src="{{ url_for('static', filename = 'flag/united-states-of-america-flag-icon-32.png') }}" width="32" height="20">&nbsp;Enska
+                  </a>
+              </li>
+              <li role="presentation" class="pull-right">
+                  <div id="help">
+                      <h4 class="help"><small>Smelltu á málsgrein til að sjá trjágreiningu hennar</small></h4>
+                  </div>
+              </li>
+          </ul>
       </div>
 
-      <div id="result">
-         <!-- Result of analysis goes here -->
-         <p>Sæki grein... <span class="glyphicon glyphicon-restart glyphicon-spin"></span></p>
+      <div class="tab-content">
+          <div role="tabpanel" class="tab-pane active" id="translation-article-source">
+              <div id="result">
+                  <!-- Result of analysis goes here -->
+                  <p>Sæki grein...&nbsp;<span class="glyphicon glyphicon-restart glyphicon-spin"></span></p>
+              </div>
+          </div>
+          <div role="tabpanel" class="tab-pane" id="translation-article-target">
+              <div id="result-translation">
+                  <!-- Result of analysis goes here -->
+                  <p>Sæki þýðingu...&nbsp;<span class="glyphicon glyphicon-restart glyphicon-spin"></span></p>
+              </div>
+          </div>
       </div>
+{%- endif %}
+
+      <!-- <div id="result"> -->
+         <!-- Result of analysis goes here -->
+      <!-- <p>Sæki grein... <span class="glyphicon glyphicon-restart glyphicon-spin"></span></p> -->
+      <!-- </div> -->
 
    </div> <!-- column -->
 
@@ -134,6 +173,64 @@
    var j =
       {{ article.tokens | safe }}
       ;
+
+ {% if nn_translate_enabled -%}
+    function wait(state) {
+        // Start or stop a wait spinner on translation button
+        if (state) {
+            /* $("#txt-ok").attr("disabled", "disabled") */
+            /* .html("<span class='glyphicon glyphicon-restart glyphicon-spin-white'></span>"); */
+            /* $("div#output").css("display", "none"); */
+        }
+        else {
+            /* $("#txt-ok").removeAttr("disabled") */
+            /* .text("Greina"); */
+            /* $("div#output").css("display", "block"); */
+        }
+    }
+
+    function extract_segmented_paragraphs(pgs_obj) {
+       /* Extract article text and segment into paragraphs
+          and sentences returns:
+             map of
+                map from sentence_id to sentence_str
+                map from pgs_id to array of sentence_ids */
+       num_pgs = pgs_obj.length;
+       sent_idx_offset = 0;
+       pgs = [];
+       sent_count = 0;
+       pg_map = {};
+       sent_map = {};
+       for (var pg_idx = 0; pg_idx < num_pgs; pg_idx++) {
+           pg_obj = pgs_obj[pg_idx];
+           num_sents = pg_obj.length;
+           sents = [];
+           pg_map[pg_idx] = []
+           for (var sent_idx = 0; sent_idx < num_sents; sent_idx++ ) {
+               sent_obj = pg_obj[sent_idx];
+               num_toks = sent_obj.length;
+               toks = [];
+               for (var tok_idx = 0; tok_idx < num_toks; tok_idx++ ) {
+                   tok_obj = sent_obj[tok_idx];
+                   if (tok_obj.hasOwnProperty("x")) {
+                       toks.push(tok_obj.x);
+                   }
+               }
+               sent_map[sent_count] = toks.join(" ");
+               pg_map[pg_idx].push(sent_count);
+               /* sents.push(toks.join(" ")) */
+               sent_count++;
+           }
+           /* pgs.push(sents); */
+       }
+        /* return pgs */
+        return {
+            "pg_map": pg_map,
+            "sent_map": sent_map
+        }
+    }
+
+ {%- endif %}
 
    // Name and title list
    nameDict = {{ register | tojson | safe }};
@@ -214,6 +311,11 @@
       // Show statistics
       $("div#statistics").css("display", "block");
       populateRegister();
+
+      $('#lang-hdr a').click(function() {
+          $(this).tab('show');
+      });
+      $('#lang-hdr a:first').tab('show');
    }
 
    $(document).ready(init);

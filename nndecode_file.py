@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
     Usage:
         NN_PARSING_ENABLED=1 \
@@ -12,18 +13,47 @@ python nnclient_file.py -i=/tmp/nnclient_file/test.batches.is -o=test.outputs.tx
 """
 
 
+import datetime
 import logging
 import os
-import subprocess
+from subprocess import PIPE, run
 import time
 
 from nnclient import ParsingClient, TranslateClient
 
 
+class AvgQueue:
+    """ Limited size FIFO queue for keeping running averages """
+
+    def __init__(self, maxsize):
+        self._ringbuffer = dict()
+        self.maxsize = maxsize
+        self._cursor = 0
+        self._begin = 0
+
+    def put(self, numberlike, weight=1, times=1):
+        self._ringbuffer[self._cursor] = (numberlike, weight, times)
+        self._cursor = (self._cursor + 1) % self.maxsize
+
+    @property
+    def average(self):
+        return sum(
+            [(n * w * t) for (n, w, t) in self._ringbuffer.values()]
+        ) / sum([t for (n, w, t) in self._ringbuffer.values()])
+
+
 _logging_info_fn = print
-_RETRY_WAIT_TIME = 10 # seconds
+_RETRY_WAIT_TIME = 10  # seconds
 _MAX_RETRIES_IN_ROW = 3
-_DEFAULT_BATCH_SIZE_LINES = 80
+_DEFAULT_BATCH_SIZE_LINES = 10
+
+
+def count_lines_in_path(path):
+    if not os.path.isfile(path):
+        raise ValueError("Expected {path} to be a file but it is not".format(path=path))
+    result = run(["wc", "-l", path], stdout=PIPE)
+    line_count = result.stdout.decode("utf-8").split(" ", 1)[0]
+    return int(line_count)
 
 
 def get_completed(path):
@@ -71,11 +101,16 @@ def translate_file(in_path, out_path, verb, batch_size, batch_by):
     completed = get_completed(out_path)
 
     batch_gen = batch_by_lines if batch_by == "lines" else batch_by_chars
+    total_lines = count_lines_in_path(in_path)
+    remaining_lines = total_lines - len(completed)
+    queue = AvgQueue(maxsize=100)
 
     _logging_info_fn("Translating {0}".format(in_path))
     _logging_info_fn("Output file is {0}".format(out_path))
     _logging_info_fn("Batch size is {0} {1}".format(batch_size, batch_by))
-    _logging_info_fn("Currently {0} entries are done".format(len(completed)))
+    _logging_info_fn(
+        "Currently {0:_}/{1:_} entries are done".format(len(completed), total_lines)
+    )
 
     with open(in_path, "r") as in_path:
         for (batch_num, batch) in enumerate(batch_gen(in_path, completed, batch_size)):
@@ -99,25 +134,32 @@ def translate_file(in_path, out_path, verb, batch_size, batch_by):
                         _logging_info_fn("Maximum retries reached, exiting.")
                         return
 
-            completed.update([entry[0] for entry in out_batch])
             with open(out_path, "a") as out_file:
                 for (idx, outputs, scores) in out_batch:
                     msg = "{0}\t{1}\t{2}\n".format(idx, outputs, scores)
                     out_file.write(msg)
+
+                completed.update([entry[0] for entry in out_batch])
+                remaining_lines -= len(out_batch)
                 elaps = round(time.time() - begin_time, 4)
-                ms_per_example = round(100 * elaps / batch_size, 4)
+                ms_per_example = round(1000 * elaps / batch_size, 3)
+
+                queue.put(elaps / batch_size, times=batch_size)
+                eta_sec = int(remaining_lines * queue.average)
+                eta_str = datetime.timedelta(0, eta_sec)
+
                 _logging_info_fn(
-                    "Finished batch {0} in {1} seconds, {2} ms per example".format(
-                        batch_num, elaps, ms_per_example
+                    "Batch {0} in {1} seconds, {2} ms/ex, estimated time remaining {3}".format(
+                        batch_num, elaps, ms_per_example, eta_str
                     )
                 )
+
     _logging_info_fn("Finished all batches")
 
 
 def translate_batch(batch, verb):
     ids, sents = zip(*batch)
-    client = (ParsingClient if verb == "parse"
-              else TranslateClient)
+    client = ParsingClient if verb == "parse" else TranslateClient
     result = client._request(sents)
 
     out_batch = []
@@ -175,7 +217,7 @@ if __name__ == "__main__":
         choices=["chars", "lines"],
         default="lines",
         type=str,
-        required=True,
+        required=False,
         help="Set which unit to batch by, defaults to line count.",
     )
 
