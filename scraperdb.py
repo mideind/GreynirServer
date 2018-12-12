@@ -371,8 +371,15 @@ class Location(Base):
 
     __tablename__ = "locations"
 
-    # Primary key
-    id = Column(Integer, Sequence("locations_id_seq"), primary_key=True)
+    # UUID
+    id = Column(
+        psql_UUID(as_uuid=False),
+        index=True,
+        nullable=False,
+        unique=True,
+        primary_key=True,
+        server_default=text("uuid_generate_v1()")
+    )
 
     # Foreign key to an article
     article_url = Column(
