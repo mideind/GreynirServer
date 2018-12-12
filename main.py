@@ -52,12 +52,12 @@ from reynir import correct_spaces
 from reynir.bindb import BIN_Db
 from reynir.binparser import canonicalize_token
 from reynir.fastparser import Fast_Parser, ParseForestFlattener
+from reynir.bintokenizer import tokenize
 
 import reynir_correct
-from reynir_correct import tokenize
 
 from settings import Settings, ConfigError, changedlocale
-from nertokenizer import tokenize_and_recognize
+from nertokenizer import recognize_entities
 from article import Article as ArticleProxy
 from treeutil import TreeUtility
 from scraperdb import (
@@ -756,21 +756,23 @@ def query_api(version=1):
     else:
         with SessionContext(commit=True) as session:
 
-            toklist = list(
-                tokenize_and_recognize(
-                    q,
-                    enclosing_session=session,
-                    auto_uppercase=q.islower() if auto_uppercase else False,
-                )
+            toklist = tokenize(
+                q, auto_uppercase = q.islower() if auto_uppercase else False
             )
-            actual_q = correct_spaces(" ".join(t.txt or "" for t in toklist))
+            toklist = list(
+                recognize_entities(toklist, enclosing_session=session)
+            )
+            actual_q = correct_spaces(" ".join(t.txt for t in toklist if t.txt))
 
             if Settings.DEBUG:
                 # Log the query string as seen by the parser
                 print("Query is: '{0}'".format(actual_q))
 
             # Try to parse and process as a query
-            is_query = process_query(session, toklist, result)
+            try:
+                is_query = process_query(session, toklist, result)
+            except:
+                is_query = False
 
         result["valid"] = is_query
         result["q"] = actual_q
