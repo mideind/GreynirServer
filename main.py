@@ -221,7 +221,7 @@ _TOP_NEWS_LENGTH = 20
 _TOP_PERSONS_LENGTH = 20
 
 # Default number of top locations to show in /locations
-_TOP_LOCATIONS_LENGTH = 100
+_TOP_LOCATIONS_LENGTH = 200
 
 # Maximum length of incoming GET/POST parameters
 _MAX_URL_LENGTH = 512
@@ -1036,13 +1036,43 @@ def locinfo():
     """ Return info about a location """
     resp = dict(found=False)
 
+    URL = ("https://maps.googleapis.com/maps/api/staticmap?"
+           "zoom={0}&style=feature:poi%7Cvisibility:off"
+           "&size=180x180&language=is&scale=2&maptype=roadmap"
+           "&key=AIzaSyDtaUviBnNjgsz3lDf7YIFHu9tlwB5IFes"
+           "&markers={1},{2}")
+
     name = request.args.get("name")
-    # if name:
-    #     code = isocode_for_country_name(name)
-    #     if code:
-    #         resp["found"] = True
-    #         resp["flag"] = "/static/img/flags/" + code + ".png"
-    #         resp["map"] = "/static/img/maps/countries/" + code + ".png"
+    article_id = request.args.get("article_id")
+
+    if name:
+        with SessionContext(commit=False) as session:
+            q = session.query(
+                Location.name,
+                Location.kind,
+                Location.country,
+                Location.latitude,
+                Location.longitude,
+            ).filter(Location.name == name).limit(1)
+
+            res = q.all()
+            if len(res):
+                loc = res[0]
+                # code = isocode_for_country_name(name)
+                code = loc.country
+                resp["found"] = True
+                if code:
+                    resp["flag"] = "/static/img/flags/" + code + ".png"
+                # resp["map"] = "/static/img/maps/countries/" + code + ".png"
+                if loc.latitude and loc.longitude:
+                    zoom4kind = {
+                        'street': 12,
+                        'placename': 5,
+                        'country': 2,
+                    }
+
+
+                    resp["map"] = URL.format(zoom4kind[loc.kind], loc.latitude, loc.longitude)
 
     return better_jsonify(**resp)
 

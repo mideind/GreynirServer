@@ -200,22 +200,28 @@ function hoverIn() {
       var fl = t["m"][2];
       if (fl === "lönd" || fl === "örn" || fl === "göt") {
 
+         fl2descr = {
+            "lönd": "Land",
+            "örn": "Örnefni",
+            "göt": "Götuheiti",
+         };
+
          r.tagClass = "glyphicon-globe"
 
          locationInfo(r.lemma, function(info) {
+            $('#grammar').hide();
+            $('#details').html(fl2descr[fl]);
 
             $('#lemma').append(
                $("<img>").attr('src', info['flag']).attr('class', 'flag')
             );
 
-            // $("#info-image").html(
-            //    $("<img>").attr('src', info['flag'])
-            // ).show()
-
-
-            // .append(
-            //    $("<img>").attr('src', info['map'])
-            // );
+            if (info['map']) {
+               $("#info-image").html(
+                  // $("<img>").attr('src', info['flag'])
+                  $("<img>").attr('src', info['map'])
+               ).show()
+            }
 
 
 
@@ -223,6 +229,9 @@ function hoverIn() {
 
 
          });
+      }
+      else {
+         $('#grammar').show();
       }
 
    }
