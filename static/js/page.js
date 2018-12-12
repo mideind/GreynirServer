@@ -69,11 +69,20 @@ var RIGHT_PUNCTUATION = ".,:;)]!%?“»”’…°>";
 var NONE_PUNCTUATION = "—–-/'~‘\\";
 // CENTER_PUNCTUATION = '"*&+=@©|'
 
+// Location word categories
+var LOC_FL = ["lönd", "örn", "göt"];
+var FL_TO_DESC = {
+   "lönd": "land",
+   "örn": "örnefni",
+   "göt": "götuheiti",
+};
+
 // Words array
 var w = [];
 
 // Name dictionary
 var nameDict = { };
+
 
 function debugMode() {
    return false;
@@ -102,6 +111,11 @@ function queryEntity(name) {
    window.location.href = "/?f=q&q=" + encodeURIComponent("Hvað er " + name + "?");
 }
 
+function queryLocation(name) {
+   // Implement me!
+   // window.location.href = "/?f=q&q=" + encodeURIComponent("Hvað er " + name + "?");
+}
+
 function showParse(ev) {
    // A sentence has been clicked: show its parse grid
    var sentText = $(ev.delegateTarget).text();
@@ -112,7 +126,7 @@ function showParse(ev) {
 }
 
 function showPerson(ev) {
-   // Send a query to the server
+   // A person name has been clicked
    var name = undefined;
    var wId = $(this).attr("id"); // Check for token id
    if (wId !== undefined) {
@@ -130,7 +144,7 @@ function showPerson(ev) {
 }
 
 function showEntity(ev) {
-   // Send a query to the server
+   // An entity name has been clicked
    var ename = $(this).text();
    var nd = nameDict[ename];
    if (nd && nd.kind == "ref")
@@ -161,7 +175,7 @@ function hoverIn() {
    var offset = $(this).position();
    // Highlight the token
    $(this).addClass("highlight");
-
+   // Get token info
    var r = tokenInfo(t, nameDict);
 
    if (!r.grammar && !r.lemma && !r.details) {
@@ -169,9 +183,9 @@ function hoverIn() {
       return;
    }
 
-   $("#grammar").html(r.grammar || "");
-   $("#lemma").text(r.lemma || "");
-   $("#details").text(r.details || "");
+   $("#grammar").html(r.grammar || "").show();
+   $("#lemma").text(r.lemma || "").show();
+   $("#details").text(r.details || "").show();
 
    // Display the percentage bar if we have percentage info
    if (r.percent !== null) {
@@ -185,55 +199,45 @@ function hoverIn() {
       $("#info").addClass(r.class);
    }
 
-   // Display image for person
+   // Try to fetch image if person (and at least two names)
    if (t.k == TOK_PERSON && t.v.split(' ').length > 1) {
-      getImage(r.lemma, function(img) {
+      getPersonImage(r.lemma, function(img) {
          $("#info-image").html(
             $("<img>").attr('src', img[0])
          ).show();
       });
    }
 
-   // Display info for location
-   console.log(t);
+   
    if (t["m"]) {
       var fl = t["m"][2];
-      if (fl === "lönd" || fl === "örn" || fl === "göt") {
 
-         fl2descr = {
-            "lönd": "Land",
-            "örn": "Örnefni",
-            "göt": "Götuheiti",
-         };
-
+      // Display info for location
+      if (LOC_FL.includes(fl)) {
+         $('#grammar').hide();
+         $('#details').html(FL_TO_DESC[fl]);
          r.tagClass = "glyphicon-globe"
 
-         locationInfo(r.lemma, function(info) {
-            $('#grammar').hide();
-            $('#details').html(fl2descr[fl]);
-
-            $('#lemma').append(
-               $("<img>").attr('src', info['flag']).attr('class', 'flag')
-            );
-
+         // Query server for more information about location
+         getLocationInfo(r.lemma, function(info) {
+            // We know which country, show flag image
+            if (info['country']) {
+               $('#lemma').append(
+                  $("<img>").attr('src', '/static/img/flags/' + info['country'] + '.png').attr('class', 'flag')
+               );
+            }
+            // Description
+            if (info['desc']) {
+               $('#details').html(info['desc']);
+            }
+            // We have a map image
             if (info['map']) {
                $("#info-image").html(
-                  // $("<img>").attr('src', info['flag'])
                   $("<img>").attr('src', info['map'])
-               ).show()
+               ).show();
             }
-
-
-
-
-
-
          });
       }
-      else {
-         $('#grammar').show();
-      }
-
    }
 
    $("#info span#tag")
@@ -248,37 +252,55 @@ function hoverIn() {
       .css("visibility", "visible");
 }
 
-function locationInfo(name, successFunc) {
-   // Ask server for thumbnail image
+function getLocationInfo(name, successFunc) {
+   var cache = getLocationInfo.cache;
+   if (cache === undefined) {
+      cache = {};
+      getLocationInfo.cache = cache;
+   }
+   // Retrieve from cache
+   if (cache[name] !== undefined) {
+      if (cache[name]) {
+         successFunc(cache[name]);
+      }
+      return;
+   }
+   // Abort any ongoing request
+   if (getLocationInfo.request) {
+      getLocationInfo.request.abort();
+   }
+   // Ask server for location info
    var enc = encodeURIComponent(name);
-   getImage.request = $.getJSON("/locinfo?name=" + enc, function(r) {
+   getLocationInfo.request = $.getJSON("/locinfo?name=" + enc, function(r) {
+      cache[name] = null;
       if (r['found']) {
+         cache[name] = r;
          successFunc(r);
       }
    });
 }
 
-function getImage(name, successFunc) {
-   var cache = getImage.imageCache;
+function getPersonImage(name, successFunc) {
+   var cache = getPersonImage.imageCache;
    if (cache === undefined) {
       cache = {};
-      getImage.imageCache = cache;
+      getPersonImage.imageCache = cache;
    }
    // Retrieve from cache
    if (cache[name] !== undefined) {
-      if (cache[name].length) {
+      if (cache[name]) {
          successFunc(cache[name]);
       }
       return;
    }
    // Abort any ongoing image request
-   if (getImage.request) {
-      getImage.request.abort();
+   if (getPersonImage.request) {
+      getPersonImage.request.abort();
    }
    // Ask server for thumbnail image
    var enc = encodeURIComponent(name);
-   getImage.request = $.getJSON("/image?thumb=1&name=" + enc, function(r) {
-      cache[name] = [];
+   getPersonImage.request = $.getJSON("/image?thumb=1&name=" + enc, function(r) {
+      cache[name] = null;
       if (r['found']) {
          cache[name] = r['image'];
          successFunc(r['image']);
@@ -291,8 +313,8 @@ function hoverOut() {
    $("#info").css("visibility", "hidden");
    $("#info-image").hide();
    $(this).removeClass("highlight");
-   if (getImage.request) {
-      getImage.request.abort();
+   if (getPersonImage.request) {
+      getPersonImage.request.abort();
    }
 }
 

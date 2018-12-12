@@ -1061,8 +1061,7 @@ def locinfo():
                 # code = isocode_for_country_name(name)
                 code = loc.country
                 resp["found"] = True
-                if code:
-                    resp["flag"] = "/static/img/flags/" + code + ".png"
+                resp["country"] = loc.country
                 # resp["map"] = "/static/img/maps/countries/" + code + ".png"
                 if loc.latitude and loc.longitude:
                     zoom4kind = {
