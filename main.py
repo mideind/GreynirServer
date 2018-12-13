@@ -1022,13 +1022,47 @@ def suggest(limit=10):
     return better_jsonify(suggestions=suggestions)
 
 
+def iceland_map_markers():
+    with SessionContext(commit=False) as session:
+        q = (
+            session.query(
+                Location.name,
+                Location.kind,
+                Location.article_url,
+                Location.latitude,
+                Location.longitude,
+                Article.id,
+                Article.heading,
+                Root.domain,
+            )
+            .join(Article)
+            .join(Root)
+            .filter(Root.visible)
+            .filter(Location.country == "IS")
+            .filter(Location.kind != "country")
+            .filter(Location.latitude != None)
+            .filter(Location.longitude != None)
+            .order_by(desc(Article.timestamp))
+            .limit(100)
+        )
+
+    markers = []
+    for l in q.all():
+        markers.append([l[0], l[3], l[4]])
+
+    return markers
+
+
 @app.route("/locations", methods=["GET"])
-@max_age(seconds=5 * 60)
+@max_age(seconds=60 * 60)
 def locations():
     kind = request.args.get("kind")
     locs = top_locations(limit=_TOP_LOCATIONS_LENGTH, kind=kind)
+    icemarkers = iceland_map_markers()
 
-    return render_template("locations.html", locations=locs)
+    return render_template(
+        "locations/locations.html", locations=locs, icemarkers=json.dumps(icemarkers)
+    )
 
 
 @app.route("/locinfo", methods=["GET"])
@@ -1036,24 +1070,30 @@ def locinfo():
     """ Return info about a location """
     resp = dict(found=False)
 
-    URL = ("https://maps.googleapis.com/maps/api/staticmap?"
-           "zoom={0}&style=feature:poi%7Cvisibility:off"
-           "&size=180x180&language=is&scale=2&maptype=roadmap"
-           "&key=AIzaSyDtaUviBnNjgsz3lDf7YIFHu9tlwB5IFes"
-           "&markers={1},{2}")
+    URL = (
+        "https://maps.googleapis.com/maps/api/staticmap?"
+        "zoom={0}&style=feature:poi%7Cvisibility:off"
+        "&size=180x180&language=is&scale=2&maptype=roadmap"
+        "&key=AIzaSyDtaUviBnNjgsz3lDf7YIFHu9tlwB5IFes"
+        "&markers={1},{2}"
+    )
 
     name = request.args.get("name")
     article_id = request.args.get("article_id")
 
     if name:
         with SessionContext(commit=False) as session:
-            q = session.query(
-                Location.name,
-                Location.kind,
-                Location.country,
-                Location.latitude,
-                Location.longitude,
-            ).filter(Location.name == name).limit(1)
+            q = (
+                session.query(
+                    Location.name,
+                    Location.kind,
+                    Location.country,
+                    Location.latitude,
+                    Location.longitude,
+                )
+                .filter(Location.name == name)
+                .limit(1)
+            )
 
             res = q.all()
             if len(res):
@@ -1064,14 +1104,11 @@ def locinfo():
                 resp["country"] = loc.country
                 # resp["map"] = "/static/img/maps/countries/" + code + ".png"
                 if loc.latitude and loc.longitude:
-                    zoom4kind = {
-                        'street': 12,
-                        'placename': 5,
-                        'country': 2,
-                    }
+                    zoom4kind = {"street": 12, "placename": 5, "country": 2}
 
-
-                    resp["map"] = URL.format(zoom4kind[loc.kind], loc.latitude, loc.longitude)
+                    resp["map"] = URL.format(
+                        zoom4kind[loc.kind], loc.latitude, loc.longitude
+                    )
 
     return better_jsonify(**resp)
 

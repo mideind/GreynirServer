@@ -1,0 +1,51 @@
+
+<div class="panel panel-default">
+
+   <div id="icemap" style="width:100%;height:550px;"></div>
+
+</div>
+
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDtaUviBnNjgsz3lDf7YIFHu9tlwB5IFes&callback=initIceMap"></script>
+
+<script>
+
+
+function initIceMap() {
+
+   // Markers on map
+   var markers = {{ icemarkers | safe }};
+
+   var iceland = {lat: 64.9957538607, lng: -18.5739616708};    
+
+   // Create and display map on page
+   var options = {
+       mapTypeId: 'roadmap',
+       center: iceland,
+       zoom: 6.6,
+   };
+   var icemap = new google.maps.Map(document.getElementById('icemap'), options);
+   
+   // Create info window
+   var infoWindow = new google.maps.InfoWindow();
+   
+   // Loop through markers and place each one on map
+   for(var i = 0; i < markers.length; i++ ) {
+      var position = new google.maps.LatLng(markers[i][1], markers[i][2]);
+      var marker = new google.maps.Marker({
+         position: position,
+         map: icemap,
+         title: markers[i][0],
+         info: ''//'<a href="https://sveinbjorn.org">Hello</a>',
+      });
+      
+      // Add info window for each marker
+      google.maps.event.addListener(marker, 'click', (function(marker, i) {
+         return function() {
+            infoWindow.setContent(marker.title + '\n' + marker.info);
+            infoWindow.open(icemap, marker);
+         }
+      })(marker, i));
+   }
+   
+}
+</script>

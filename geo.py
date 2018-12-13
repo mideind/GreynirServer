@@ -130,6 +130,8 @@ def isocode_for_country_name(country_name, lang=ICELANDIC_LANG_ISOCODE):
             "Bosnía": "BA",
             "Hersegóvína": "BA",
             "Palestína": "PS",
+            "Páfagarður": "VA",
+            "Chile": "CL",
         }
     }
 

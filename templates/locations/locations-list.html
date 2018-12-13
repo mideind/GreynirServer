@@ -1,13 +1,5 @@
-{% extends "container-normal.html" %}
 
-{% block styles %}
-
-<link href="{{ url_for('static', filename='css/main-bootstrap.css') }}" rel='stylesheet' type='text/css'>
-
-{% endblock %}
-
-{% block content %}
-
+<!-- Locations list -->
 <div class="panel panel-default table-responsive">
 
    <div class="panel-heading">
@@ -73,30 +65,4 @@
    {% endfor %}
       </tbody>
    </table>
-
 </div>
-
-
-<!--<div class="panel panel-default table-responsive">
-   <div class="panel-heading">Heimskort</div>
-   <div id="world-map" style="width: 100%; height: 550px;"></div>
-</div>-->
-
-{% endblock %}
-
-{% block endscripts %}
-
-<script>
-
-   function init() {
-      // Activate the top navbar
-      $("#navid-locations").addClass("active");
-   }
-
-   $(document).ready(init);
-
-</script>
-
-
-
-{% endblock %}
