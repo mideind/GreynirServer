@@ -383,10 +383,12 @@ def top_persons(limit=_TOP_PERSONS_LENGTH):
         )
 
 
-def top_locations(limit=20, kind=None):
-    """ Return a list of names and titles appearing recently in the news """
+GOOGLE_MAPS_URL = "https://google.com/maps/@{0},{1},{2}"
 
-    with SessionContext(commit=False) as session:
+def top_locations(limit=20, kind=None, enclosing_session=None):
+    """ Return a list of locations appearing recently in the news """
+
+    with SessionContext(commit=False, session=enclosing_session) as session:
         q = (
             session.query(
                 Location.name,
@@ -411,7 +413,7 @@ def top_locations(limit=20, kind=None):
     toplist = []
     for l in q.limit(limit).all():
         zoom = "6z" if l.kind == "country" else "16z"
-        mapurl = "https://google.com/maps/@{0},{1},{2}".format(l[4], l[5], zoom)
+        mapurl = GOOGLE_MAPS_URL.format(l[4], l[5], zoom)
         toplist.append(
             {
                 "name": l[0],
@@ -933,7 +935,7 @@ def tree_grid():
 
 @app.route("/reportimage", methods=["POST"])
 def reportimage():
-    """ Notification that image is wrong or broken """
+    """ Notification that a (person) image is wrong or broken """
     resp = dict(found_new=False)
 
     name = request.form.get("name", "")
@@ -954,7 +956,7 @@ def reportimage():
 
 @app.route("/image", methods=["GET"])
 def image():
-    """ Get image for name """
+    """ Get image for (person) name """
     resp = dict(found=False)
 
     name = request.args.get("name", "")
@@ -1022,8 +1024,9 @@ def suggest(limit=10):
     return better_jsonify(suggestions=suggestions)
 
 
-def iceland_map_markers():
-    with SessionContext(commit=False) as session:
+def iceland_map_markers(enclosing_session=None):
+    """ Return a list of recently mentioned places and their coordinates """
+    with SessionContext(commit=False, session=enclosing_session) as session:
         q = (
             session.query(
                 Location.name,
@@ -1053,21 +1056,36 @@ def iceland_map_markers():
     return markers
 
 
+def world_map_data():
+    """ Return data for world map """
+    return []
+
+
 @app.route("/locations", methods=["GET"])
 @max_age(seconds=60 * 60)
 def locations():
+    """ Render locations page """
     kind = request.args.get("kind")
-    locs = top_locations(limit=_TOP_LOCATIONS_LENGTH, kind=kind)
-    icemarkers = iceland_map_markers()
+
+    with SessionContext(commit=False) as session:
+
+        locs = top_locations(
+            limit=_TOP_LOCATIONS_LENGTH, kind=kind, enclosing_session=session
+        )
+        icemarkers = iceland_map_markers(enclosing_session=session)
+        country_data = world_map_data()
 
     return render_template(
-        "locations/locations.html", locations=locs, icemarkers=json.dumps(icemarkers)
+        "locations/locations.html",
+        locations=locs,
+        icemarkers=json.dumps(icemarkers),
+        country_data=json.dumps(country_data),
     )
 
 
 @app.route("/locinfo", methods=["GET"])
 def locinfo():
-    """ Return info about a location """
+    """ Return info about a location as JSON """
     resp = dict(found=False)
 
     URL = (
