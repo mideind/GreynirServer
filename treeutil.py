@@ -366,12 +366,12 @@ class TreeUtility:
                     d["x"].lower(),
                     meaning.beyging
                 )
-            if correct and hasattr(token, "error") and token.error is not None:
+            if correct and hasattr(token, "error_code") and token.error_code:
                 # We want information about corrections applied to
                 # this token, if any
                 d["corr"] = {
-                    "code": token.error.code,
-                    "descr": token.error.description
+                    "code": token.error_code,
+                    "descr": token.error_description
                 }
             dump.append(d)
             if words is not None and wt is not None:
