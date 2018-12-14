@@ -12,36 +12,27 @@
 <div id="language-tabs">
     <ul id="language-hdr" class="nav nav-tabs" role="tablist">
         <li role="presentation" class="active">
-            <a href="#locations" aria-controls="locations" role="tab" data-toggle="tab">
+            <a href="#locations">
                Staðir
             </a>
         </li>
-        <li role="presentation" class="">
-            <a href="#icemap" aria-controls="icemap" role="tab" data-toggle="tab">
+        <!--<li role="presentation" class="">
+            <a href="/locations-icemap">
                Íslandskort
             </a>
         </li>
         <li role="presentation" class="">
-            <a href="#worldmap" aria-controls="worldmap" role="tab" data-toggle="tab">
+            <a href="/locations-worldmap">
                Heimskort
             </a>
-        </li>
+        </li>-->
     </ul>
 </div>
 
 <div class="tab-content">
 
-   <!-- TAB 1 -->
    <div role="tabpanel" class="tab-pane active" id="locations">
-      {% include "locations/locations-worldmap.html" %}
-   </div>
-
-   <!-- TAB 2 -->
-   <div role="tabpanel" class="tab-pane" id="icemap">
-   </div>
-
-   <!-- TAB 2 -->
-   <div role="tabpanel" class="tab-pane" id="worldmap">
+      {% include "locations/locations-list.html" %}
    </div>
 
 </div>
@@ -51,7 +42,7 @@
 {% block endscripts %}
 
 <script>
-
+  
    $(document).ready(function() {
       // Activate the top navbar
       $("#navid-locations").addClass("active");

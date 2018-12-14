@@ -2,7 +2,7 @@
 
 <div class="panel panel-default">
 
-   <div id="worldmap" style="width: 100%; height:550px;"></div>
+   <div id="worldmap_container" style="width: 100%; height:550px;"></div>
 
 </div>
 
@@ -11,9 +11,10 @@
 <script src="http://jvectormap.com/js/jquery-jvectormap-world-mill.js" defer></script>
 <script>
 
+var c = {{ country_data | safe }};
 
 document.addEventListener("DOMContentLoaded", function(event) { 
-   $('#worldmap').vectorMap({
+   $('#worldmap_container').vectorMap({
       map: 'world_mill',
       regionsSelectable: true,
       regionsSelectableOne: true,
@@ -25,15 +26,22 @@ document.addEventListener("DOMContentLoaded", function(event) {
             fill: '#a00'
          }
       },
-      backgroundColor: '#66CCFF',
+      //backgroundColor: '#66CCFF',
       series: {
          regions: [{
-            values: [],
-            scale: ['#fcfeff', '#005277'],
+            values: c,
+            scale: ['#fcfeff', '#007297'],
             normalizeFunction: 'polynomial'
-           }]
-        	}
+         }]
+      },
+      onRegionTipShow: function(e, el, code){
+         var cname = code;
+         el.html(cname);
+         console.log("SMOO!");
+		},
    });
+
+
 });
 
 

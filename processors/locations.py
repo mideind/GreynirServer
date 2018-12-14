@@ -85,6 +85,8 @@ PLACENAME_BLACKLIST = frozenset(
         "Síðan",
         "Hundruð",
         "Skipti",
+        "Skóli",
+        "Gat",
     )
 )
 
@@ -192,6 +194,9 @@ def Heimilisfang(node, params, result):
 def _process(node, params, result):
     """ Look up meaning in BÍN, add as location if in right category """
     state = result._state
+
+    # TODO: Special handling of placenames at the beginning 
+    # of sentences to reduce the number of false positives.
 
     # Get in nominative form
     txt = node.nominative(state, params)

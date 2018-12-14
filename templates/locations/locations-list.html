@@ -3,64 +3,69 @@
 <div class="panel panel-default table-responsive">
 
    <div class="panel-heading">
-      Staðir nýlega í fréttum
+      <div class="headline hidden-xs">Staðir í nýlegum fréttum vefmiðla</div>
       <div class="headline visible-xs-inline-block">Nýjustu staðir</div>
 
       <div class="btn-group pull-right">
-         <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-         Öll staðföng <span class="caret"></span>
-         </button>
+         <span class="hidden-xs">
+            <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="margin-right: 10px;">
+               Allir staðir <span class="caret"></span>
+            </button>
 
-         <ul class="dropdown-menu">
-            <li><a href="{{ url_for('locations') }}">Öll staðföng</a></li>
-            <li role="separator" class="divider"></li>
-            <li><a href="{{ url_for('locations', kind='address') | safe }}">Heimilisföng</a></li>
-            <li><a href="{{ url_for('locations', kind='country') | safe }}">Lönd</a></li>
-            <li><a href="{{ url_for('locations', kind='street') | safe }}">Götur</a></li>
-            <li><a href="{{ url_for('locations', kind='placename') | safe }}">Örnefni</a></li>
-         </ul>
+            <ul class="dropdown-menu">
+               <li><a href="{{ url_for('locations') }}">Allir staðir</a></li>
+               <li role="separator" class="divider"></li>
+               <li><a href="{{ url_for('locations', kind='country') | safe }}">Lönd</a></li>
+               <li><a href="{{ url_for('locations', kind='placename') | safe }}">Örnefni</a></li>
+               <li><a href="{{ url_for('locations', kind='street') | safe }}">Götur</a></li>
+               <li><a href="{{ url_for('locations', kind='address') | safe }}">Heimilisföng</a></li>
+            </ul>
+         </span>
+
+         <span class="hidden-xs">
+            <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+               Undanfarnar 24 klst. <span class="caret"></span>
+            </button>
+
+            <ul class="dropdown-menu">
+               <li><a href="{{ url_for('locations') }}">Undanfarnar 24 klst.</a></li>
+               <li><a href="{{ url_for('locations', period='week') | safe }}">Undanfarna viku</a></li>
+            </ul>
+         </span>
       </div>
+
    </div>
 
    <table class="table table-hover" id="plist">
       <thead>
-         <th></th>
-         <th></th>
-         <th>Tegund</th>
+         <th class="hidden-xs"></th>
          <th>Staður</th>
-         <th>Grein</th>
+         <th>Greinar</th>
       </thead>
       <tbody>
    {% for loc in locations %}
-         <tr class="topitem" data-uuid="">
-            <td class="country">
+         <tr class="topitem">
+            <td align="center" class="hidden-xs">
                {% if loc.country %}
-                  <img src="{{ url_for('static', filename='img/flags/' + loc.country + '.png') }}" width="25">
-               {% endif %}
-            </td>
-            <td>
-               {% if loc.latitude and loc.longitude %}
-                  <a href="{{ loc.mapurl }}">
-                     <span class="glyphicon glyphicon-globe"></span>
-                  </a>
+                  <img src="{{ url_for('static', filename='img/flags/' + loc.country + '.png') }}" width="22">
                {% else %}
                   <span class="glyphicon glyphicon-globe"></span>
                {% endif %}
             </td>
-            <td>
-               {{ loc.kind }}
-            </td>
             <td class="name">
-               <a href="{{ url_for('page') }}?id={{ loc.article_id }}"">
-                  <span class="text-info">{{ loc.name }}</span>
+               <a href="">
+               {{ loc.name }}
                </a>
             </td>
-            <td class="title">
-               <a href="{{ loc.article_url }}" title="Skoða á {{ loc.root_domain }}">
-                  <img src="{{ url_for('static', filename = 'sources/' + loc.root_domain + '.png') }}" width="16" height="16" alt="{{ loc.root_domain }}"/>
-                  {{ loc.article_heading }}
-               </a>
+            <td>
+               {% for a in loc.articles %}
+                  <span class="art-link" title="{{ a.heading }}">
+                     <a href="{{ url_for('page', id=a.id) | safe }}"><img src="{{ url_for('static', filename = 'sources/' + a.domain + '.png') }}"
+            width="16" height="16" alt="{{ a.heading }}"/></a>
+                  </span>
+               {% endfor %}
             </td>
+            
          </tr>
    {% endfor %}
       </tbody>

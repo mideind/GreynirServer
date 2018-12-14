@@ -40,9 +40,10 @@ import json
 from datetime import datetime, timedelta
 from functools import wraps
 from decimal import Decimal
+from collections import defaultdict
 
 from flask import Flask
-from flask import render_template, make_response, jsonify, redirect, url_for
+from flask import render_template, make_response, jsonify, redirect, url_for, send_file
 from flask import request, send_from_directory
 from flask.wrappers import Response
 from flask_caching import Cache
@@ -73,7 +74,12 @@ from scraperdb import (
 )
 from query import Query
 from search import Search
-from images import get_image_url, update_broken_image_url, blacklist_image_url
+from images import (
+    get_image_url,
+    update_broken_image_url,
+    blacklist_image_url,
+    get_staticmap_image,
+)
 from tnttagger import ifd_tag
 
 
@@ -221,7 +227,8 @@ _TOP_NEWS_LENGTH = 20
 _TOP_PERSONS_LENGTH = 20
 
 # Default number of top locations to show in /locations
-_TOP_LOCATIONS_LENGTH = 200
+_TOP_LOCATIONS_LENGTH = 20
+_TOP_LOCATIONS_PERIOD = 1
 
 # Maximum length of incoming GET/POST parameters
 _MAX_URL_LENGTH = 512
@@ -385,8 +392,14 @@ def top_persons(limit=_TOP_PERSONS_LENGTH):
 
 GOOGLE_MAPS_URL = "https://google.com/maps/@{0},{1},{2}"
 
-def top_locations(limit=20, kind=None, enclosing_session=None):
-    """ Return a list of locations appearing recently in the news """
+
+def top_locations(
+    limit=_TOP_LOCATIONS_LENGTH,
+    kind=None,
+    days=_TOP_LOCATIONS_PERIOD,
+    enclosing_session=None,
+):
+    """ Return a list of recent locations and the articles in which they are mentioned """
 
     with SessionContext(commit=False, session=enclosing_session) as session:
         q = (
@@ -404,32 +417,22 @@ def top_locations(limit=20, kind=None, enclosing_session=None):
             .join(Article)
             .join(Root)
             .filter(Root.visible)
+            .filter(Article.timestamp > datetime.utcnow() - timedelta(days=days))
             .order_by(desc(Article.timestamp))
         )
 
-    if kind:
-        q = q.filter(Location.kind == kind)
+        locs = defaultdict(list)
 
-    toplist = []
-    for l in q.limit(limit).all():
-        zoom = "6z" if l.kind == "country" else "16z"
-        mapurl = GOOGLE_MAPS_URL.format(l[4], l[5], zoom)
-        toplist.append(
-            {
-                "name": l[0],
-                "kind": l[1],
-                "country": l[2],
-                "article_url": l[3],
-                "latitude": l[4],
-                "longitude": l[5],
-                "article_id": l[6],
-                "article_heading": l[7],
-                "root_domain": l[8],
-                "mapurl": mapurl,
-            }
-        )
+        for r in q:
+            article = {"url": r[3], "id": r[6], "heading": r[7], "domain": r[8]}
+            locs[(r[0], r[1], r[2])].append(article)
 
-    return toplist
+        loclist = []
+        for k, v in locs.items():
+            loclist.append({"name": k[0], "kind": k[1], "country": k[2], "articles": v})
+        loclist.sort(key=lambda x: len(x["articles"]), reverse=True)
+
+        return loclist[:limit]
 
 
 def chart_stats(session=None, num_days=7):
@@ -1024,41 +1027,71 @@ def suggest(limit=10):
     return better_jsonify(suggestions=suggestions)
 
 
-def iceland_map_markers(enclosing_session=None):
-    """ Return a list of recently mentioned places and their coordinates """
-    with SessionContext(commit=False, session=enclosing_session) as session:
-        q = (
-            session.query(
-                Location.name,
-                Location.kind,
-                Location.article_url,
-                Location.latitude,
-                Location.longitude,
-                Article.id,
-                Article.heading,
-                Root.domain,
-            )
-            .join(Article)
-            .join(Root)
-            .filter(Root.visible)
-            .filter(Location.country == "IS")
-            .filter(Location.kind != "country")
-            .filter(Location.latitude != None)
-            .filter(Location.longitude != None)
-            .order_by(desc(Article.timestamp))
-            .limit(100)
-        )
+@app.route("/staticmap", methods=["GET"])
+@cache.cached(timeout=60 * 60 * 24, key_prefix="staticmap", query_string=True)
+def staticmap():
+    """ Proxy for Google Static Maps API """
+    print("FETCHING STATIC MAP")
+    try:
+        lat = float(request.args.get("lat"))
+        lon = float(request.args.get("lon"))
+        zoom = int(request.args.get("z"))
+    except:
+        return server_error(500)
 
-    markers = []
-    for l in q.all():
-        markers.append([l[0], l[3], l[4]])
+    imgdata = get_staticmap_image(lat, lon, zoom=zoom)
+    print(imgdata)
+    if imgdata:
+        fn = lat + lon + zoom
+        return send_file(imgdata, attachment_filename=fn, mimetype="image/png")
 
-    return markers
+    return page_not_found(404)
 
 
-def world_map_data():
-    """ Return data for world map """
-    return []
+# def iceland_map_markers(enclosing_session=None):
+#     """ Return a list of recently mentioned places and their coordinates """
+#     with SessionContext(commit=False, session=enclosing_session) as session:
+#         q = (
+#             session.query(
+#                 Location.name,
+#                 Location.kind,
+#                 Location.article_url,
+#                 Location.latitude,
+#                 Location.longitude,
+#                 Article.id,
+#                 Article.heading,
+#                 Root.domain,
+#             )
+#             .join(Article)
+#             .join(Root)
+#             .filter(Root.visible)
+#             .filter(Location.country == "IS")
+#             .filter(Location.kind != "country")
+#             .filter(Location.latitude != None)
+#             .filter(Location.longitude != None)
+#             .order_by(desc(Article.timestamp))
+#             .limit(100)
+#         )
+
+#     markers = []
+#     for l in q.all():
+#         markers.append([l[0], l[3], l[4]])
+
+#     return markers
+
+
+# def world_map_data(enclosing_session=None):
+#     """ Return data for world map """
+#     with SessionContext(commit=False, session=enclosing_session) as session:
+#         q = (
+#             session.query(Location.country, dbfunc.count(Location.id))
+#             .filter(Location.kind == "country")
+#             .filter(Location.country != None)
+#             .group_by(Location.country)
+#             .order_by(Location.country)
+#         )
+
+#         return {r[0]: r[1] for r in q.all()}
 
 
 @app.route("/locations", methods=["GET"])
@@ -1069,17 +1102,15 @@ def locations():
 
     with SessionContext(commit=False) as session:
 
-        locs = top_locations(
-            limit=_TOP_LOCATIONS_LENGTH, kind=kind, enclosing_session=session
-        )
-        icemarkers = iceland_map_markers(enclosing_session=session)
-        country_data = world_map_data()
+        locs = top_locations(enclosing_session=session)
+        # icemarkers = iceland_map_markers(enclosing_session=session)
+        # country_data = world_map_data(enclosing_session=session)
 
     return render_template(
         "locations/locations.html",
         locations=locs,
-        icemarkers=json.dumps(icemarkers),
-        country_data=json.dumps(country_data),
+        # icemarkers=json.dumps(icemarkers),
+        # country_data=json.dumps(country_data),
     )
 
 
@@ -1087,14 +1118,6 @@ def locations():
 def locinfo():
     """ Return info about a location as JSON """
     resp = dict(found=False)
-
-    URL = (
-        "https://maps.googleapis.com/maps/api/staticmap?"
-        "zoom={0}&style=feature:poi%7Cvisibility:off"
-        "&size=180x180&language=is&scale=2&maptype=roadmap"
-        "&key=AIzaSyDtaUviBnNjgsz3lDf7YIFHu9tlwB5IFes"
-        "&markers={1},{2}"
-    )
 
     name = request.args.get("name")
     article_id = request.args.get("article_id")
@@ -1116,16 +1139,13 @@ def locinfo():
             res = q.all()
             if len(res):
                 loc = res[0]
-                # code = isocode_for_country_name(name)
                 code = loc.country
                 resp["found"] = True
                 resp["country"] = loc.country
-                # resp["map"] = "/static/img/maps/countries/" + code + ".png"
                 if loc.latitude and loc.longitude:
                     zoom4kind = {"street": 12, "placename": 5, "country": 2}
-
-                    resp["map"] = URL.format(
-                        zoom4kind[loc.kind], loc.latitude, loc.longitude
+                    resp["map"] = "/staticmap?lat={0}&lon={1}&z={2}".format(
+                        loc.latitude, loc.longitude, zoom4kind[loc.kind]
                     )
 
     return better_jsonify(**resp)
