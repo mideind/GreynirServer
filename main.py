@@ -538,13 +538,27 @@ def nntranslate_api(version=1):
         return better_jsonify(valid=False, reason="Unsupported version")
 
     try:
-        text = text_from_request(request)
-        src_lang = request.form.get("src_lang")
-        tgt_lang = request.form.get("tgt_lang")
+        segmented = True
+        trnsl_src = None
+        if "application/json" in request.headers["Content-Type"]:
+            # import pdb; pdb.set_trace()
+            trnsl_src = request.json["pgs"]
+            src_lang = request.json["src_lang"]
+            tgt_lang = request.json["tgt_lang"]
+        else:
+            segmented = False
+            trnsl_src = text_from_request(request)
+            src_lang = request.form.get("src_lang")
+            tgt_lang = request.form.get("tgt_lang")
+        if not trnsl_src:
+            return better_jsonify(valid=False, reason="Invalid request")
     except:
         return better_jsonify(valid=False, reason="Invalid request")
 
-    result = TranslateClient.request_text(text, src_lang, tgt_lang)
+    if segmented:
+        result = TranslateClient.request_segmented(trnsl_src, src_lang, tgt_lang)
+    else:
+        result = TranslateClient.request_text(trnsl_src, src_lang, tgt_lang)
     app.logger.info(result)
 
     return better_jsonify(valid=True, result=result)

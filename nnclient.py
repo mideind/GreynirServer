@@ -112,6 +112,7 @@ class NnClient:
         except Exception as e:
             logging.exception("Error: could not process response from nnserver")
             import traceback
+
             traceback.print_exc()
             return None
 
@@ -173,6 +174,24 @@ class TranslateClient(NnClient):
         result = TranslateClient._request(sents, data=data)
         inst_map = {idx: inst for (idx, inst) in enumerate(result)}
         resp = dict(pgs=pg_map, results=inst_map)
+        return resp
+
+    @classmethod
+    def request_segmented(cls, sent_map, src_lang=None, tgt_lang=None):
+        """ Translate presegmented sentences
+            args:
+                sent_map: either a list of sentences or a dict[key] of sentences"""
+        data = dict(src_lang=src_lang, tgt_lang=tgt_lang)
+        if type(sent_map) is dict:
+            sents = list(sent_map.values())
+            result = TranslateClient._request(sents, data=data)
+            inst_map = {idx: inst for (idx, inst) in zip(sent_map.keys(), result)}
+            resp = dict(results=inst_map)
+        else:
+            sents = sent_map
+            result = TranslateClient._request(sents, data=data)
+            inst_map = {idx: inst for (idx, inst) in enumerate(result)}
+            resp = dict(results=inst_map)
         return resp
 
 

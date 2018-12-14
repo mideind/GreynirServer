@@ -25,6 +25,24 @@
       font-size: 16px;
    }
 
+   div#result-translation span i {
+      font-style: italic;
+      font-size: 1.05em;
+   }
+
+   div#result-translation span i:hover {
+      color: white;
+      background-color: #777777;
+   }
+
+   div#result-translation span.translated i {
+      font-style: normal;
+   }
+
+   span#spinner {
+      color: #f0ad4e;
+   }
+
 </style>
 
 {% endblock %}
@@ -73,23 +91,21 @@
          </h5>
       </div>
 
-      <!-- <div id="help"> -->
-          <!-- <h3 class="help"><small>Smelltu á málsgrein til að sjá trjágreiningu hennar</small></h3> -->
-         <!-- </div> -->
-
 {% if nn_translate_enabled -%}
       <div id="language-tabs">
           <ul id="language-hdr" class="nav nav-tabs" role="tablist">
               <li role="presentation" class="active">
-                  <a href="#translation-article-source" aria-controls="icelandic" role="tab" data-toggle="tab">
+                  <a href="#translation-article-src" aria-controls="icelandic" role="tab" data-toggle="tab">
                       <!-- https://www.countryflags.com/en/iceland-flag-icon.html -->
-                      <img src="{{ url_for('static', filename = 'flag/iceland-flag-icon-32.png') }}" width="32" height="20">&nbsp;Íslenska
+                      <img src="{{ url_for('static', filename = 'flag/iceland-flag-icon-32.png') }}" width="32" height="20">&nbsp;Íslenska&nbsp;
                   </a>
               </li>
               <li role="presentation">
-                  <a href="#translation-article-target" aria-controls="translation" role="tab" data-toggle="tab">
+                  <a id="translate-tgt-btn" href="#translation-article-tgt" aria-controls="translation" role="tab" data-toggle="tab">
                       <!-- https://www.countryflags.com/en/united-states-flag-icon.html -->
-                      <img src="{{ url_for('static', filename = 'flag/united-states-of-america-flag-icon-32.png') }}" width="32" height="20">&nbsp;Enska
+                      <span><img src="{{ url_for('static', filename = 'flag/united-states-of-america-flag-icon-32.png') }}" width="32" height="20">&nbsp;Enska
+                      </span>
+                      &nbsp;<span id="spinner" style="display: none;" class='glyphicon glyphicon-restart glyphicon-spin-white'></span>
                   </a>
               </li>
               <li role="presentation" class="pull-right">
@@ -101,25 +117,19 @@
       </div>
 
       <div class="tab-content">
-          <div role="tabpanel" class="tab-pane active" id="translation-article-source">
+          <div role="tabpanel" class="tab-pane active" id="translation-article-src">
               <div id="result">
                   <!-- Result of analysis goes here -->
                   <p>Sæki grein...&nbsp;<span class="glyphicon glyphicon-restart glyphicon-spin"></span></p>
               </div>
           </div>
-          <div role="tabpanel" class="tab-pane" id="translation-article-target">
+          <div role="tabpanel" class="tab-pane" id="translation-article-tgt">
               <div id="result-translation">
-                  <!-- Result of analysis goes here -->
-                  <p>Sæki þýðingu...&nbsp;<span class="glyphicon glyphicon-restart glyphicon-spin"></span></p>
+                  <!-- Translated article goes here -->
               </div>
           </div>
       </div>
 {%- endif %}
-
-      <!-- <div id="result"> -->
-         <!-- Result of analysis goes here -->
-      <!-- <p>Sæki grein... <span class="glyphicon glyphicon-restart glyphicon-spin"></span></p> -->
-      <!-- </div> -->
 
    </div> <!-- column -->
 
@@ -174,18 +184,22 @@
       {{ article.tokens | safe }}
       ;
 
- {% if nn_translate_enabled -%}
-    function wait(state) {
-        // Start or stop a wait spinner on translation button
+{% if nn_translate_enabled -%}
+    var BATCH_SIZE = 10;
+    var batches = [];
+    var batch_queue = [];
+    var sent_map = {};
+    var pg_map = {};
+    var is_translating = false;
+
+    function wait_translation(state) {
+        // Start or stop a wait spinner when awaiting translation
+        // True means spinner is active
         if (state) {
-            /* $("#txt-ok").attr("disabled", "disabled") */
-            /* .html("<span class='glyphicon glyphicon-restart glyphicon-spin-white'></span>"); */
-            /* $("div#output").css("display", "none"); */
+            $("#spinner").show();
         }
         else {
-            /* $("#txt-ok").removeAttr("disabled") */
-            /* .text("Greina"); */
-            /* $("div#output").css("display", "block"); */
+            $("#spinner").hide();
         }
     }
 
@@ -193,44 +207,165 @@
        /* Extract article text and segment into paragraphs
           and sentences returns:
              map of
-                map from sentence_id to sentence_str
-                map from pgs_id to array of sentence_ids */
-       num_pgs = pgs_obj.length;
-       sent_idx_offset = 0;
-       pgs = [];
-       sent_count = 0;
-       pg_map = {};
-       sent_map = {};
-       for (var pg_idx = 0; pg_idx < num_pgs; pg_idx++) {
-           pg_obj = pgs_obj[pg_idx];
-           num_sents = pg_obj.length;
-           sents = [];
-           pg_map[pg_idx] = []
-           for (var sent_idx = 0; sent_idx < num_sents; sent_idx++ ) {
-               sent_obj = pg_obj[sent_idx];
-               num_toks = sent_obj.length;
-               toks = [];
-               for (var tok_idx = 0; tok_idx < num_toks; tok_idx++ ) {
-                   tok_obj = sent_obj[tok_idx];
+                map from sentence_id to sent_obj
+                map from pgs_id to array of sent_obj */
+       var pg_map = {};
+       var sent_map = {};
+       var sent_idx = 1
+       $.each(pgs_obj, function (pg_cursor, pg_obj) {
+           pg_map[pg_cursor] = []
+           $.each(pg_obj, function (sent_cursor, sent_obj) {
+               var toks = [];
+               $.each(sent_obj, function (tok_cursor, tok_obj) {
                    if (tok_obj.hasOwnProperty("x")) {
                        toks.push(tok_obj.x);
                    }
-               }
-               sent_map[sent_count] = toks.join(" ");
-               pg_map[pg_idx].push(sent_count);
-               /* sents.push(toks.join(" ")) */
-               sent_count++;
-           }
-           /* pgs.push(sents); */
-       }
-        /* return pgs */
+               });
+               sent_map[sent_idx] = {is: toks.join(" ")}
+               pg_map[pg_cursor].push(sent_idx)
+               sent_idx++;
+           });
+        });
         return {
             "pg_map": pg_map,
             "sent_map": sent_map
         }
     }
 
- {%- endif %}
+    function populateTargets(pg_map, sent_map) {
+        var pg_container = $("div#result-translation");
+        $.each(pg_map, function (pg_idx, sent_key) {
+            var pg_elem = $("<p></p>");
+            $.each(pg_map[pg_idx], function (sent_cursor, sent_idx) {
+                var sent_elem = $("<i></i>", {
+                    "text": sent_map[sent_idx]["is"]
+                });
+                var sent_container = $("<span></span>", {
+                    "id": "trnsl" + sent_idx,
+                    "class": "sent"
+                });
+                sent_container.append(sent_elem);
+                pg_elem.append(sent_container);
+            });
+            pg_container.append(pg_elem);
+        });
+    }
+
+    function make_batches(sent_map, batch_size) {
+        var parseIntDec = function (str) { return parseInt(str, 10) };
+        var cmpInt = function (a, b) { return a - b };
+        var isInt = function (n) { return !isNaN(n) };
+        var idxs = Object.keys(sent_map)
+                         .map(parseIntDec)
+                         .filter(isInt)
+                         .sort(cmpInt);
+        var batches = [];
+        var batch = {};
+        var idx = 0;
+        var count = 0;
+        while (idx < idxs.length ) {
+            if (count < batch_size) {
+                if (sent_map[idx].hasOwnProperty("en")) {
+                    idx++;
+                    continue;
+                }
+                batch[idx] = sent_map[idx]["is"];
+                idx++;
+                count++;
+            }
+            else {
+                batches.push(batch);
+                batch = {};
+                count = 0;
+            }
+        }
+        if (count > 0) {
+            batches.push(batch);
+        }
+        return batches;
+    }
+
+    function translateNext() {
+        if (batch_queue.length > 0 && is_translating) {
+            var batch_idx = batch_queue.pop();
+            var batch = batches[batch_idx];
+            translateBatch(batch, translateNext);
+        } else {
+            wait_translation(false);
+        }
+    }
+
+    function translateBatch(batch, callback) {
+        serverJsonQuery("{{ url_for('nntranslate_api') }}", // Endpoint with .api suffix are not cached
+                    {
+                        pgs : batch,
+                        src_lang : "is",
+                        tgt_lang : "en",
+                    },
+                    function handleSuccess(json) {
+                        results = json.result.results;
+                        populateBatchResults(results, callback);
+                        wait_translation(false);
+                    },
+                    null,
+                    function handleError(json) {
+                        console.log(json)
+                        wait_translation(false);
+                    }
+        );
+    }
+
+    function populateBatchResults(results, callback) {
+        $.each(results, function (sent_key, obj) {
+            if (sent_key !== "0") {
+                // we need to handle article title seperately
+                sent_map[sent_key]["en"] = obj.outputs;
+                $("#trnsl" + sent_key).addClass("translated")
+                                        .children("i")
+                                        .eq(0)
+                                        .text(obj.outputs)
+            } else {
+                // replace article head
+                $("#meta-heading").text(obj.outputs)
+            }
+        })
+        callback();
+    }
+
+    function doTranslation() {
+        // Submit the contents of the article incrementally
+        // to the server for translation
+
+        if ($.isEmptyObject(sent_map)) {
+            wait_translation(true);
+            var pg_seg = extract_segmented_paragraphs(j);
+            pg_map = pg_seg["pg_map"];
+            sent_map = pg_seg["sent_map"];
+            var a_title = $("#meta-heading").text()
+            sent_map[0] = a_title;
+
+            populateTargets(pg_map, sent_map);
+            batches = make_batches(sent_map, BATCH_SIZE);
+            batch_queue = Array.from(Array(batches.length).keys()).reverse()
+            is_translating = true;
+            translateNext();
+        } else {
+            is_translating = true;
+            batches = make_batches(sent_map, BATCH_SIZE);
+            batch_queue = Array.from(Array(batches.length).keys()).reverse()
+            translateNext();
+        }
+    }
+
+    function showOriginalArticle() {
+        if ($.isEmptyObject(sent_map)) {
+        } else {
+            is_translating = false;
+            $("#meta-heading").text(sent_map[0])
+        }
+    }
+
+{%- endif %}
 
    // Name and title list
    nameDict = {{ register | tojson | safe }};
@@ -317,6 +452,17 @@
       });
       $('#lang-hdr a:first').tab('show');
    }
+
+{% if nn_translate_enabled -%}
+
+    $("#translate-tgt-btn").click(function (item) {
+        doTranslation();
+    })
+    $("#translation-article-src").click(function (item) {
+        showOriginalArticle();
+    })
+
+{% endif %}
 
    $(document).ready(init);
 

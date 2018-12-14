@@ -220,6 +220,36 @@ function serverQuery(requestUrl, jsonData, successFunc, completeFunc, errorFunc)
    });
 }
 
+function serverJsonQuery(requestUrl, jsonData, successFunc, completeFunc, errorFunc) {
+    /* Wraps a simple, standard Ajax request to the server */
+    $.ajax({
+        // The URL for the request
+        url: requestUrl,
+
+        // The data to send
+        data: JSON.stringify(jsonData),
+
+        // Whether this is a POST or GET request
+        type: "POST",
+
+        // The type of data we expect back
+        dataType : "json",
+        contentType : "application/json; charset=utf-8",
+
+        cache: false,
+
+        // Code to run if the request succeeds;
+        // the response is passed to the function
+        success: (!successFunc) ? nullFunc : successFunc,
+
+        // Code to run if the request fails; the raw request and
+        // status codes are passed to the function
+        error: (!errorFunc) ? errFunc : errorFunc,
+
+        // code to run regardless of success or failure
+        complete: (!completeFunc) ? nullCompleteFunc : completeFunc
+    });
+}
 function serverPost(url, parameters, new_window) {
    /* Post to the provided URL with the specified parameters */
    var form = $('<form method="post"></form>');
