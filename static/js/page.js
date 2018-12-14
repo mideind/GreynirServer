@@ -335,6 +335,17 @@ function hoverOut() {
    }
 }
 
+var explainCode = [];
+
+explainCode["P_yi"] = "Víxlun á <em>y</em> og <em>i</em>";
+explainCode["P_aðaf"] = "Víxlun á <em>að</em> og <em>af</em>";
+explainCode["P_hkv"] = "Víxlun á <em>h</em> og <em>kv</em>";
+explainCode["P_wrong_person"] = "Röng persóna";
+explainCode["P_wrong_gender"] = "Rangt kyn";
+explainCode["P_wrong_word"] = "Rangt orð";
+explainCode["S004"] = "Óþekkt eða sjaldgæft orð";
+explainCode["C001"] = "Endurtekið orð";
+
 function correctionHoverIn() {
    // Hovering over a token
    var wId = $(this).attr("id");
@@ -354,7 +365,8 @@ function correctionHoverIn() {
    var r = t.corr;
 
    $("#grammar").text(r.descr);
-   $("#details").text(r.code);
+   $("#details").html(explainCode[r.code] || r.code);
+
    if (r.code[0] == "U")
       // Unknown word
       $("#lemma").text("Óþekkt orð");
