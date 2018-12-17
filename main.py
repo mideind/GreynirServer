@@ -390,7 +390,7 @@ def top_persons(limit=_TOP_PERSONS_LENGTH):
         )
 
 
-GOOGLE_MAPS_URL = "https://google.com/maps/@{0},{1},{2}"
+GOOGLE_MAPS_URL = "https://www.google.com/maps/place/{0}+{1}/@{0},{1},{2}"
 
 
 def top_locations(
@@ -444,7 +444,7 @@ def top_locations(
             map_url = None
             if k[3] and k[4]:
                 map_url = GOOGLE_MAPS_URL.format(k[3], k[4], "7z")
-                
+
             loclist.append(
                 {
                     "name": k[0],

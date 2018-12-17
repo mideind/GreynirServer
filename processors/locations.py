@@ -225,8 +225,8 @@ def _process(node, params, result):
         else:
             return
 
-    # If more than one loc-related meaning, pick one
-    # based on the order of items in BIN_LOCFL
+    # If more than one location-related meaning, pick
+    # one based on the order of items in BIN_LOCFL
     if len(meanings) > 1:
         meanings.sort(key=lambda x: BIN_LOCFL.index(x.fl))
 
