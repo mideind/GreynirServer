@@ -36,6 +36,8 @@ goss.sh
 parse.sh
 process.sh
 makezip.sh
+gfixmain.sh
+nnmain.sh
 
 # Various resource files
 resources/*.txt
