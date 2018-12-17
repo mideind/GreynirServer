@@ -37,7 +37,7 @@ COUNTRY_COORDS_JSONPATH = "resources/country_coords.json"
 
 
 def location_info(name, kind, placename_hints=None):
-    """ Returns dict with all info about location that could be found """
+    """ Returns dict with info about a location """
 
     loc = dict(name=name, kind=kind)
     coords = None
