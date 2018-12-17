@@ -1052,6 +1052,22 @@ def suggest(limit=10):
     return better_jsonify(suggestions=suggestions)
 
 
+@app.route("/locations", methods=["GET"])
+@max_age(seconds=60 * 5)
+def locations():
+    """ Render locations page """
+    kind = request.args.get("kind")
+    period = request.args.get("period")
+    days = _TOP_LOCATIONS_LENGTH
+    if period == "week":
+        days = 7
+
+    with SessionContext(commit=False) as session:
+        locs = top_locations(enclosing_session=session, kind=kind, days=days)
+
+    return render_template("locations/locations.html", locations=locs, period=period)
+
+
 @app.route("/staticmap", methods=["GET"])
 @cache.cached(timeout=60 * 60 * 24, key_prefix="staticmap", query_string=True)
 def staticmap():
@@ -1069,76 +1085,6 @@ def staticmap():
         return send_file(imgdata, attachment_filename=fn, mimetype="image/png")
 
     return page_not_found(404)
-
-
-# def iceland_map_markers(enclosing_session=None):
-#     """ Return a list of recently mentioned places and their coordinates """
-#     with SessionContext(commit=False, session=enclosing_session) as session:
-#         q = (
-#             session.query(
-#                 Location.name,
-#                 Location.kind,
-#                 Location.article_url,
-#                 Location.latitude,
-#                 Location.longitude,
-#                 Article.id,
-#                 Article.heading,
-#                 Root.domain,
-#             )
-#             .join(Article)
-#             .join(Root)
-#             .filter(Root.visible)
-#             .filter(Location.country == "IS")
-#             .filter(Location.kind != "country")
-#             .filter(Location.latitude != None)
-#             .filter(Location.longitude != None)
-#             .order_by(desc(Article.timestamp))
-#             .limit(100)
-#         )
-
-#     markers = []
-#     for l in q.all():
-#         markers.append([l[0], l[3], l[4]])
-
-#     return markers
-
-
-# def world_map_data(enclosing_session=None):
-#     """ Return data for world map """
-#     with SessionContext(commit=False, session=enclosing_session) as session:
-#         q = (
-#             session.query(Location.country, dbfunc.count(Location.id))
-#             .filter(Location.kind == "country")
-#             .filter(Location.country != None)
-#             .group_by(Location.country)
-#             .order_by(Location.country)
-#         )
-
-#         return {r[0]: r[1] for r in q.all()}
-
-
-@app.route("/locations", methods=["GET"])
-@max_age(seconds=60 * 60)
-def locations():
-    """ Render locations page """
-    kind = request.args.get("kind")
-    period = request.args.get("period")
-    days = _TOP_LOCATIONS_LENGTH
-    if period == "week":
-        days = 7
-
-    with SessionContext(commit=False) as session:
-        locs = top_locations(enclosing_session=session, kind=kind, days=days)
-        # icemarkers = iceland_map_markers(enclosing_session=session)
-        # country_data = world_map_data(enclosing_session=session)
-
-    return render_template(
-        "locations/locations.html",
-        locations=locs,
-        period=period,
-        # icemarkers=json.dumps(icemarkers),
-        # country_data=json.dumps(country_data),
-    )
 
 
 STATIC_MAP_URL = "/staticmap?lat={0}&lon={1}&z={2}"
