@@ -441,15 +441,16 @@ def top_locations(
         # Create top locations list and sort by article count
         loclist = []
         for k, v in locs.items():
+            (name, kind, country, lat, lon) = k
             map_url = None
-            if k[3] and k[4]:
-                map_url = GOOGLE_MAPS_URL.format(k[3], k[4], "7z")
+            if lat and lon:
+                map_url = GOOGLE_MAPS_URL.format(lat, lon, "7z")
 
             loclist.append(
                 {
-                    "name": k[0],
-                    "kind": k[1],
-                    "country": k[2],
+                    "name": name,
+                    "kind": kind,
+                    "country": country,
                     "map_url": map_url,
                     "articles": v,
                 }
@@ -1122,7 +1123,7 @@ def locations():
     """ Render locations page """
     kind = request.args.get("kind")
     period = request.args.get("period")
-    days = 1
+    days = _TOP_LOCATIONS_LENGTH
     if period == "week":
         days = 7
 

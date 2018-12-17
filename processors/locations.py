@@ -45,7 +45,7 @@ Loc = namedtuple("Loc", ["name", "kind"])
 BIN_LOCFL = ["lönd", "göt", "örn"]
 LOCFL_TO_KIND = dict(zip(BIN_LOCFL, ["country", "street", "placename"]))
 
-# Always identify these words as location, even when other meanings exist
+# Always identify these words as locations, even when other meanings exist
 ALWAYS_LOCATION = frozenset(
     (
         "París",  # ism í BÍN
@@ -71,7 +71,7 @@ PLACENAME_BLACKLIST = frozenset(
         "Rauða",
         "Hjálp",
         "Stjórn",
-        "Hrunið",
+        "Hrun",
         "Mark",
         "Á",
         "Kjarni",
@@ -79,7 +79,7 @@ PLACENAME_BLACKLIST = frozenset(
         "Þing",
         "Hús",
         "Langa",
-        "Húsið",
+        "Hús",
         "Maður",
         "Systur",
         "Snið",
@@ -99,9 +99,10 @@ COUNTRY_BLACKLIST = frozenset(())
 def article_begin(state):
     """ Called at the beginning of article processing """
 
-    # Delete all existing locations for this article
     session = state["session"]  # Database session
     url = state["url"]  # URL of the article being processed
+
+    # Delete all existing locations for this article
     session.execute(Location.table().delete().where(Location.article_url == url))
 
     # Set of all unique locations found in article
@@ -122,7 +123,7 @@ def article_end(state):
     # We can use them to disambiguate addresses and street names
     placenames = [p.name for p in locs if p.kind == "placename"]
 
-    # Get info about each location and save to database
+    # Get as much info as possible about each location and save to database
     for name, kind in locs:
         loc = {"name": name, "kind": kind}
         coords = None
@@ -180,8 +181,11 @@ def Heimilisfang(node, params, result):
 
     # Convert address to nominative case
     def nom(w):
-        bindb = result._state["bin_db"]
-        n = bindb.lookup_nominative(w)
+        try:
+            bindb = result._state["bin_db"]
+            n = bindb.lookup_nominative(w)
+        except:
+            return w
         return n[0][0] if n else w
 
     addr_nom = " ".join([nom(c.contained_text()) for c in node.children()])
@@ -195,7 +199,7 @@ def _process(node, params, result):
     """ Look up meaning in BÍN, add as location if in right category """
     state = result._state
 
-    # TODO: Special handling of placenames at the beginning 
+    # TODO: Special handling of placenames at the beginning
     # of sentences to reduce the number of false positives.
 
     # Get in nominative form

@@ -245,10 +245,6 @@ def recognize_entities(token_stream, enclosing_session = None):
     assert not tq
 
 
-def recognize_locations(token_stream, enclosing_session):
-    pass
-
-
 def tokenize_and_recognize(text, auto_uppercase = False, enclosing_session = None):
     """ Adds a named entity recognition layer on top of the
         reynir.bintokenizer.tokenize() function. """
