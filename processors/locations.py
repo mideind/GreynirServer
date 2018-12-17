@@ -21,7 +21,7 @@
     and extracts any addresses / locations, looks up information about
     them and saves to a database.
 
-    The taxonomy provides four different kinds of locations.
+    The taxonomy includes four different kinds of locations.
     They are: address, street, placename, country.
 
 """
@@ -117,10 +117,6 @@ def article_end(state):
     if not locs:
         return
 
-    print(url)
-    print(locs)
-    print("--------------")
-
     # Find all placenames mentioned in article
     # We can use them to disambiguate addresses and street names
     placenames = [p.name for p in locs if p.kind == "placename"]
@@ -158,6 +154,7 @@ def article_end(state):
             if info:
                 loc["country"] = ICELAND_ISOCODE
                 # Pick first matching placename, w/o disambiguating
+                # TODO: This could be smarter
                 coords = coords_from_addr_info(info[0])
 
         if coords:
@@ -165,6 +162,8 @@ def article_end(state):
 
         loc["article_url"] = url
         loc["timestamp"] = datetime.utcnow()
+
+        print("Location '{0}' is a '{1}'".format(name, kind))
 
         l = Location(**loc)
         session.add(l)
@@ -202,8 +201,11 @@ def _process(node, params, result):
     txt = node.nominative(state, params)
 
     # Look up meanings
-    bindb = state["bin_db"]
-    meanings = bindb.meanings(txt)
+    try:
+        bindb = state["bin_db"]
+        meanings = bindb.meanings(txt)
+    except Exception as e:
+        return
 
     if not meanings:
         return
