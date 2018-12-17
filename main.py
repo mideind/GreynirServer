@@ -422,8 +422,8 @@ def top_locations(
         )
 
         # Filter by kind
-        if kind:
-            q = q.filter(Location.kind == kind)
+        # if kind:
+        #     q = q.filter(Location.kind == kind)
 
         q = q.order_by(desc(Article.timestamp))
 
@@ -439,7 +439,7 @@ def top_locations(
             k = (r.name, r.kind, r.country, r.latitude, r.longitude)
             locs[k].append(article)
 
-        # Create top locations list and sort by article count
+        # Create top locations list sorted by article count
         loclist = []
         for k, v in locs.items():
             (name, kind, country, lat, lon) = k
@@ -1059,9 +1059,12 @@ def locations():
     """ Render locations page """
     kind = request.args.get("kind")
     period = request.args.get("period")
+
     days = _TOP_LOCATIONS_PERIOD
     if period == "week":
         days = 7
+
+    kind = kind if kind in LOCATION_TAXONOMY else None
 
     with SessionContext(commit=False) as session:
         locs = top_locations(enclosing_session=session, kind=kind, days=days)

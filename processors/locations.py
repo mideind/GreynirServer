@@ -163,6 +163,7 @@ def _process(node, params, result):
         bindb = state["bin_db"]
         meanings = bindb.meanings(txt)
     except Exception as e:
+        logging.warning("Error looking up word '{0}': {1}".format(txt, str(e)))
         return
 
     if not meanings:
@@ -199,7 +200,7 @@ def _process(node, params, result):
     if kind == "country" and name in COUNTRY_BLACKLIST:
         return
 
-    # UGLY HACK: BÍN has Iceland as "örn"! Should be fixed by patching BÍN data
+    # UGLY HACK: BÍN has Iceland as "örn". Should be fixed by patching BÍN data
     if name == "Ísland":
         kind = "country"
 

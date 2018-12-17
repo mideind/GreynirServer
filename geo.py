@@ -39,7 +39,8 @@ COUNTRY_COORDS_JSONPATH = "resources/country_coords.json"
 
 
 def location_info(name, kind, placename_hints=None):
-    """ Returns dict with info about a location """
+    """ Returns dict with info about a location, given name and kind.
+        Info includes country code, gps coordinates etc. """
     if kind not in LOCATION_TAXONOMY:
         return None
 
