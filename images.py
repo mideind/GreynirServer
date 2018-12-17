@@ -62,6 +62,7 @@ def _server_query(url, q):
 _API_KEY = ""
 _API_KEY_PATH = "resources/GoogleServerKey.txt"
 
+
 def _get_API_key():
     """ Read Google API key from file """
     global _API_KEY
@@ -75,6 +76,7 @@ def _get_API_key():
     except FileNotFoundError as ex:
         _API_KEY = ""
     return _API_KEY
+
 
 # Custom Search identifier
 _CX = "001858240983628375092:9aogptqla5e"
@@ -283,15 +285,17 @@ def get_staticmap_image(latitude, longitude, zoom=6, width=180, height=180):
 
     url = STATICMAP_URL.format(zoom, width, height, key, latitude, longitude)
     # TODO: Use urllib instead of requests here
-    r = requests.get(url, stream=True)
+    try:
+        r = requests.get(url, stream=True)
+    except:
+        logging.warning(str(e))
+        return None
+
     if r.status_code == 200:
         r.raw.decode_content = True
         return BytesIO(r.raw.data)
-    else:
-        logging.warning(
-            "Status {0} for static map image from Google".format(r.status_code)
-        )
 
+    logging.warning("Status {0} when requesting static map image".format(r.status_code))
     return None
 
 

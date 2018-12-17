@@ -1058,7 +1058,7 @@ def locations():
     """ Render locations page """
     kind = request.args.get("kind")
     period = request.args.get("period")
-    days = _TOP_LOCATIONS_LENGTH
+    days = _TOP_LOCATIONS_PERIOD
     if period == "week":
         days = 7
 
