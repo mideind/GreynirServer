@@ -36,6 +36,49 @@ ICELANDIC_LANG_ISOCODE = "is"
 COUNTRY_COORDS_JSONPATH = "resources/country_coords.json"
 
 
+def location_info(name, kind, placename_hints=None):
+    """ Returns dict with all info about location that could be found """
+
+    loc = dict(name=name, kind=kind)
+    coords = None
+
+    # Heimilisfang
+    if kind == "address":
+        # We currently assume all addresses are Icelandic ones
+        loc["country"] = ICELAND_ISOCODE
+        info = icelandic_addr_info(name, placename_hints=placename_hints)
+        if info:
+            coords = coords_from_addr_info(info)
+        loc["data"] = info
+
+    # Land
+    elif kind == "country":
+        code = isocode_for_country_name(name)
+        if code:
+            loc["country"] = code
+            coords = coords_for_country(code)
+
+    # Götuheiti
+    elif kind == "street":
+        # All street names in BÍN are Icelandic
+        loc["country"] = ICELAND_ISOCODE
+        coords = coords_for_street_name(name, placename_hints=placename_hints)
+
+    # Örnefni
+    elif kind == "placename":
+        info = icelandic_placename_info(name)
+        if info:
+            loc["country"] = ICELAND_ISOCODE
+            # Pick first matching placename, w/o disambiguating
+            # TODO: This could be smarter
+            coords = coords_from_addr_info(info[0])
+
+    if coords:
+        (loc["latitude"], loc["longitude"]) = coords
+
+    return loc
+
+
 def coords_for_country(iso_code):
     """ Return coordinates for a given country code """
     assert len(iso_code) == 2
