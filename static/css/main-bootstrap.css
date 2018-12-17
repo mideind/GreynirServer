@@ -444,6 +444,14 @@ td.ts {
    min-width: 100px;
 }
 
+td.flags {
+   width: 2.5em;
+}
+
+/*td.locname {
+   max-width: 270px;
+}*/
+
 .table-responsive {
    overflow-x: hidden;
 }

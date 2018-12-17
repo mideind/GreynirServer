@@ -418,18 +418,42 @@ def top_locations(
             .join(Root)
             .filter(Root.visible)
             .filter(Article.timestamp > datetime.utcnow() - timedelta(days=days))
-            .order_by(desc(Article.timestamp))
         )
 
+        # Filter by kind
+        if kind:
+            q = q.filter(Location.kind == kind)
+
+        q = q.order_by(desc(Article.timestamp))
+
+        # Group articles by unique location
         locs = defaultdict(list)
+        for r in q.all():
+            article = {
+                "url": r.article_url,
+                "id": r.id,
+                "heading": r.heading,
+                "domain": r.domain,
+            }
+            k = (r.name, r.kind, r.country, r.latitude, r.longitude)
+            locs[k].append(article)
 
-        for r in q:
-            article = {"url": r[3], "id": r[6], "heading": r[7], "domain": r[8]}
-            locs[(r[0], r[1], r[2])].append(article)
-
+        # Create top locations list and sort by article count
         loclist = []
         for k, v in locs.items():
-            loclist.append({"name": k[0], "kind": k[1], "country": k[2], "articles": v})
+            map_url = None
+            if k[3] and k[4]:
+                map_url = GOOGLE_MAPS_URL.format(k[3], k[4], "7z")
+                
+            loclist.append(
+                {
+                    "name": k[0],
+                    "kind": k[1],
+                    "country": k[2],
+                    "map_url": map_url,
+                    "articles": v,
+                }
+            )
         loclist.sort(key=lambda x: len(x["articles"]), reverse=True)
 
         return loclist[:limit]
@@ -1031,7 +1055,6 @@ def suggest(limit=10):
 @cache.cached(timeout=60 * 60 * 24, key_prefix="staticmap", query_string=True)
 def staticmap():
     """ Proxy for Google Static Maps API """
-    print("FETCHING STATIC MAP")
     try:
         lat = float(request.args.get("lat"))
         lon = float(request.args.get("lon"))
@@ -1040,7 +1063,6 @@ def staticmap():
         return server_error(500)
 
     imgdata = get_staticmap_image(lat, lon, zoom=zoom)
-    print(imgdata)
     if imgdata:
         fn = lat + lon + zoom
         return send_file(imgdata, attachment_filename=fn, mimetype="image/png")
@@ -1099,19 +1121,26 @@ def staticmap():
 def locations():
     """ Render locations page """
     kind = request.args.get("kind")
+    period = request.args.get("period")
+    days = 1
+    if period == "week":
+        days = 7
 
     with SessionContext(commit=False) as session:
-
-        locs = top_locations(enclosing_session=session)
+        locs = top_locations(enclosing_session=session, kind=kind, days=days)
         # icemarkers = iceland_map_markers(enclosing_session=session)
         # country_data = world_map_data(enclosing_session=session)
 
     return render_template(
         "locations/locations.html",
         locations=locs,
+        period=period,
         # icemarkers=json.dumps(icemarkers),
         # country_data=json.dumps(country_data),
     )
+
+
+STATIC_MAP_URL = "/staticmap?lat={0}&lon={1}&z={2}"
 
 
 @app.route("/locinfo", methods=["GET"])
@@ -1136,15 +1165,14 @@ def locinfo():
                 .limit(1)
             )
 
-            res = q.all()
-            if len(res):
-                loc = res[0]
+            loc = q.one_or_none()
+            if loc:
                 code = loc.country
                 resp["found"] = True
                 resp["country"] = loc.country
                 if loc.latitude and loc.longitude:
                     zoom4kind = {"street": 12, "placename": 5, "country": 2}
-                    resp["map"] = "/staticmap?lat={0}&lon={1}&z={2}".format(
+                    resp["map"] = STATIC_MAP_URL.format(
                         loc.latitude, loc.longitude, zoom4kind[loc.kind]
                     )
 

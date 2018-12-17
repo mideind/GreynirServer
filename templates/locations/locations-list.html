@@ -7,6 +7,8 @@
       <div class="headline visible-xs-inline-block">Nýjustu staðir</div>
 
       <div class="btn-group pull-right">
+         
+         <!--
          <span class="hidden-xs">
             <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="margin-right: 10px;">
                Allir staðir <span class="caret"></span>
@@ -21,14 +23,16 @@
                <li><a href="{{ url_for('locations', kind='address') | safe }}">Heimilisföng</a></li>
             </ul>
          </span>
+         -->
 
          <span class="hidden-xs">
             <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-               Undanfarnar 24 klst. <span class="caret"></span>
+               {{ "Undanfarna viku" if period == 'week' else "Síðasta sólarhring" }} 
+               <span class="caret"></span>
             </button>
 
             <ul class="dropdown-menu">
-               <li><a href="{{ url_for('locations') }}">Undanfarnar 24 klst.</a></li>
+               <li><a href="{{ url_for('locations') }}">Síðasta sólarhring</a></li>
                <li><a href="{{ url_for('locations', period='week') | safe }}">Undanfarna viku</a></li>
             </ul>
          </span>
@@ -45,19 +49,23 @@
       <tbody>
    {% for loc in locations %}
          <tr class="topitem">
-            <td align="center" class="hidden-xs">
+            <td align="center" class="hidden-xs flags">
                {% if loc.country %}
                   <img src="{{ url_for('static', filename='img/flags/' + loc.country + '.png') }}" width="22">
                {% else %}
                   <span class="glyphicon glyphicon-globe"></span>
                {% endif %}
             </td>
-            <td class="name">
-               <a href="">
-               {{ loc.name }}
-               </a>
-            </td>
             <td>
+               {% if loc.map_url %}
+                  <a href="{{ loc.map_url }}" title="Skoða á Google Maps">
+                     {{ loc.name }}
+                  </a>
+               {% else %}
+                  {{ loc.name }}
+               {% endif %}
+            </td>
+            <td class="locarticles">
                {% for a in loc.articles %}
                   <span class="art-link" title="{{ a.heading }}">
                      <a href="{{ url_for('page', id=a.id) | safe }}"><img src="{{ url_for('static', filename = 'sources/' + a.domain + '.png') }}"

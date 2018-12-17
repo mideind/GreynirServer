@@ -233,7 +233,7 @@ function hoverIn() {
             // We have a map image
             if (info['map']) {
                $("#info-image").html(
-                  $("<img>").attr('src', info['map'])
+                  $("<img>").attr('src', info['map']).attr('onerror', '$(this).hide();')
                ).show();
             }
          });
