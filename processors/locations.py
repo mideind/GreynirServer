@@ -32,6 +32,7 @@ from scraperdb import Location
 from geo import (
     coords_for_country,
     coords_for_street_name,
+    coords_for_placename,
     icelandic_placename_info,
     icelandic_addr_info,
     coords_from_addr_info,

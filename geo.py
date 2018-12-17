@@ -39,7 +39,7 @@ COUNTRY_COORDS_JSONPATH = "resources/country_coords.json"
 def coords_for_country(iso_code):
     """ Return coordinates for a given country code """
     assert len(iso_code) == 2
-    
+
     iso_code = iso_code.upper()
 
     # Lazy-load data, save as function attribute
@@ -145,7 +145,7 @@ def icelandic_placename_info(placename):
     res = placename_lookup(placename)
     if len(res) >= 1:
         # Prefer placenames marked 'Þéttbýli'
-        res.sort(key=lambda x: 0 if x.get('flokkur') == 'Þéttbýli' else 1)
+        res.sort(key=lambda x: 0 if x.get("flokkur") == "Þéttbýli" else 1)
         return res
     return None
 
