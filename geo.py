@@ -30,10 +30,57 @@ from iceaddr import iceaddr_lookup, placename_lookup
 from country_list import countries_for_language, available_languages
 
 
+LOCATION_TAXONOMY = frozenset(("country", "placename", "street", "address"))
+
 ICELAND_ISOCODE = "IS"
 ICELANDIC_LANG_ISOCODE = "is"
 
 COUNTRY_COORDS_JSONPATH = "resources/country_coords.json"
+
+
+def location_info(name, kind, placename_hints=None):
+    """ Returns dict with info about a location """
+    if kind not in LOCATION_TAXONOMY:
+        return None
+
+    loc = dict(name=name, kind=kind)
+    coords = None
+
+    # Heimilisfang
+    if kind == "address":
+        # We currently assume all addresses are Icelandic ones
+        loc["country"] = ICELAND_ISOCODE
+        info = icelandic_addr_info(name, placename_hints=placename_hints)
+        if info:
+            coords = coords_from_addr_info(info)
+        loc["data"] = info
+
+    # Land
+    elif kind == "country":
+        code = isocode_for_country_name(name)
+        if code:
+            loc["country"] = code
+            coords = coords_for_country(code)
+
+    # Götuheiti
+    elif kind == "street":
+        # All street names in BÍN are Icelandic
+        loc["country"] = ICELAND_ISOCODE
+        coords = coords_for_street_name(name, placename_hints=placename_hints)
+
+    # Örnefni
+    elif kind == "placename":
+        info = icelandic_placename_info(name)
+        if info:
+            loc["country"] = ICELAND_ISOCODE
+            # Pick first matching placename, w/o disambiguating
+            # TODO: This could be smarter
+            coords = coords_from_addr_info(info[0])
+
+    if coords:
+        (loc["latitude"], loc["longitude"]) = coords
+
+    return loc
 
 
 def coords_for_country(iso_code):
@@ -123,6 +170,7 @@ def isocode_for_country_name(country_name, lang=ICELANDIC_LANG_ISOCODE):
             "Ameríka": "US",
             "Hong Kong": "HK",
             "Makaó": "MO",
+            "Stóra-Bretland": "GB",
             "England": "GB",
             "Skotland": "GB",
             "Wales": "GB",

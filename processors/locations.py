@@ -21,24 +21,12 @@
     and extracts any addresses / locations, looks up information about
     them and saves to a database.
 
-    The taxonomy includes four different kinds of locations.
-    They are: address, street, placename, country.
-
 """
 
 from collections import namedtuple
 from datetime import datetime
 from scraperdb import Location
-from geo import (
-    coords_for_country,
-    coords_for_street_name,
-    coords_for_placename,
-    icelandic_placename_info,
-    icelandic_addr_info,
-    coords_from_addr_info,
-    isocode_for_country_name,
-    ICELAND_ISOCODE,
-)
+from geo import location_info
 
 Loc = namedtuple("Loc", ["name", "kind"])
 
@@ -123,44 +111,9 @@ def article_end(state):
     # We can use them to disambiguate addresses and street names
     placenames = [p.name for p in locs if p.kind == "placename"]
 
-    # Get as much info as possible about each location and save to database
+    # Get info about each location and save to database
     for name, kind in locs:
-        loc = {"name": name, "kind": kind}
-        coords = None
-
-        # Heimilisfang
-        if kind == "address":
-            # We currently assume all addresses are Icelandic ones
-            loc["country"] = ICELAND_ISOCODE
-            info = icelandic_addr_info(name, placename_hints=placenames)
-            if info:
-                coords = coords_from_addr_info(info)
-            loc["data"] = info
-
-        # Land
-        elif kind == "country":
-            code = isocode_for_country_name(name)
-            if code:
-                loc["country"] = code
-                coords = coords_for_country(code)
-
-        # Götuheiti
-        elif kind == "street":
-            # All the street names in BÍN are Icelandic
-            loc["country"] = ICELAND_ISOCODE
-            coords = coords_for_street_name(name, placename_hints=placenames)
-
-        # Örnefni
-        elif kind == "placename":
-            info = icelandic_placename_info(name)
-            if info:
-                loc["country"] = ICELAND_ISOCODE
-                # Pick first matching placename, w/o disambiguating
-                # TODO: This could be smarter
-                coords = coords_from_addr_info(info[0])
-
-        if coords:
-            (loc["latitude"], loc["longitude"]) = coords
+        loc = location_info(name=name, kind=kind, placename_hints=placenames)
 
         loc["article_url"] = url
         loc["timestamp"] = datetime.utcnow()
@@ -246,7 +199,7 @@ def _process(node, params, result):
     if kind == "country" and name in COUNTRY_BLACKLIST:
         return
 
-    # HACK: BÍN has Iceland as "örn"! Should be fixed by patching BÍN data
+    # UGLY HACK: BÍN has Iceland as "örn"! Should be fixed by patching BÍN data
     if name == "Ísland":
         kind = "country"
 

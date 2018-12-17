@@ -80,6 +80,7 @@ from images import (
     blacklist_image_url,
     get_staticmap_image,
 )
+from geo import location_info, LOCATION_TAXONOMY
 from tnttagger import ifd_tag
 
 
@@ -1058,7 +1059,7 @@ def locations():
     """ Render locations page """
     kind = request.args.get("kind")
     period = request.args.get("period")
-    days = _TOP_LOCATIONS_LENGTH
+    days = _TOP_LOCATIONS_PERIOD
     if period == "week":
         days = 7
 
@@ -1091,37 +1092,26 @@ STATIC_MAP_URL = "/staticmap?lat={0}&lon={1}&z={2}"
 
 
 @app.route("/locinfo", methods=["GET"])
+@cache.cached(timeout=60 * 60, key_prefix="locinfo", query_string=True)
 def locinfo():
     """ Return info about a location as JSON """
     resp = dict(found=False)
 
     name = request.args.get("name")
-    article_id = request.args.get("article_id")
+    kind = request.args.get("kind")
 
-    if name:
-        with SessionContext(commit=False) as session:
-            q = (
-                session.query(
-                    Location.name,
-                    Location.kind,
-                    Location.country,
-                    Location.latitude,
-                    Location.longitude,
-                )
-                .filter(Location.name == name)
-                .limit(1)
-            )
+    # UGLY HACK: BÍN has Iceland as "örn". Should be fixed by patching BÍN data
+    if name == "Ísland":
+        kind = "country"
 
-            loc = q.one_or_none()
-            if loc:
-                code = loc.country
-                resp["found"] = True
-                resp["country"] = loc.country
-                if loc.latitude and loc.longitude:
-                    zoom4kind = {"street": 12, "placename": 5, "country": 2}
-                    resp["map"] = STATIC_MAP_URL.format(
-                        loc.latitude, loc.longitude, zoom4kind[loc.kind]
-                    )
+    if name and kind and kind in LOCATION_TAXONOMY:
+        loc = location_info(name, kind)
+        resp["found"] = True
+        resp["country"] = loc.get("country")
+        lat, lon = loc.get("latitude"), loc.get("longitude")
+        if lat and lon:
+            zoom4kind = {"street": 12, "placename": 5, "country": 2}
+            resp["map"] = STATIC_MAP_URL.format(lat, lon, zoom4kind.get(kind))
 
     return better_jsonify(**resp)
 

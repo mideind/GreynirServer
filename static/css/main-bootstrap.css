@@ -448,9 +448,11 @@ td.flags {
    width: 2.5em;
 }
 
-/*td.locname {
-   max-width: 270px;
-}*/
+td.locname {
+   width: 200px;
+   font-weight: 700;
+
+}
 
 .table-responsive {
    overflow-x: hidden;

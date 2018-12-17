@@ -71,10 +71,15 @@ var NONE_PUNCTUATION = "—–-/'~‘\\";
 
 // Location word categories
 var LOC_FL = ["lönd", "örn", "göt"];
-var FL_TO_DESC = {
+var FL_TO_LOC_DESC = {
    "lönd": "land",
    "örn": "örnefni",
    "göt": "götuheiti",
+};
+var FL_TO_LOC_KIND = {
+   "lönd": "country",
+   "örn": "placename",
+   "göt": "street",
 };
 
 // Words array
@@ -212,14 +217,17 @@ function hoverIn() {
    if (t["m"]) {
       var fl = t["m"][2];
 
-      // Display info for location
+      // It's a location. Display loc info.
       if (LOC_FL.includes(fl)) {
          $('#grammar').hide();
-         $('#details').html(FL_TO_DESC[fl]);
+         $('#details').html(FL_TO_LOC_DESC[fl]);
          r.tagClass = "glyphicon-globe"
 
+         var name = r.lemma;
+         var kind = FL_TO_LOC_KIND[fl];
+
          // Query server for more information about location
-         getLocationInfo(r.lemma, function(info) {
+         getLocationInfo(name, kind, function(info) {
             // We know which country, show flag image
             if (info['country']) {
                $('#lemma').append(
@@ -252,16 +260,17 @@ function hoverIn() {
       .css("visibility", "visible");
 }
 
-function getLocationInfo(name, successFunc) {
+function getLocationInfo(name, kind, successFunc) {
+   var ckey = kind + '_' + name;
    var cache = getLocationInfo.cache;
    if (cache === undefined) {
       cache = {};
       getLocationInfo.cache = cache;
    }
    // Retrieve from cache
-   if (cache[name] !== undefined) {
-      if (cache[name]) {
-         successFunc(cache[name]);
+   if (cache[ckey] !== undefined) {
+      if (cache[ckey]) {
+         successFunc(cache[ckey]);
       }
       return;
    }
@@ -270,11 +279,11 @@ function getLocationInfo(name, successFunc) {
       getLocationInfo.request.abort();
    }
    // Ask server for location info
-   var enc = encodeURIComponent(name);
-   getLocationInfo.request = $.getJSON("/locinfo?name=" + enc, function(r) {
-      cache[name] = null;
+   var data = { name: name, kind: kind };
+   getLocationInfo.request = $.getJSON("/locinfo", data, function(r) {
+      cache[ckey] = null;
       if (r['found']) {
-         cache[name] = r;
+         cache[ckey] = r;
          successFunc(r);
       }
    });
