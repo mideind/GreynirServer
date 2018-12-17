@@ -80,7 +80,7 @@ var FL_TO_LOC_KIND = {
    "lönd": "country",
    "örn": "placename",
    "göt": "street",
-}
+};
 
 // Words array
 var w = [];
@@ -217,16 +217,17 @@ function hoverIn() {
    if (t["m"]) {
       var fl = t["m"][2];
 
-      // Display info for location
+      // It's a location. Display loc info.
       if (LOC_FL.includes(fl)) {
          $('#grammar').hide();
          $('#details').html(FL_TO_LOC_DESC[fl]);
          r.tagClass = "glyphicon-globe"
 
+         var name = r.lemma;
          var kind = FL_TO_LOC_KIND[fl];
 
          // Query server for more information about location
-         getLocationInfo(r.lemma, kind, function(info) {
+         getLocationInfo(name, kind, function(info) {
             // We know which country, show flag image
             if (info['country']) {
                $('#lemma').append(

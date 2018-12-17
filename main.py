@@ -80,7 +80,7 @@ from images import (
     blacklist_image_url,
     get_staticmap_image,
 )
-from geo import location_info
+from geo import location_info, LOCATION_TAXONOMY
 from tnttagger import ifd_tag
 
 
@@ -1099,7 +1099,11 @@ def locinfo():
     name = request.args.get("name")
     kind = request.args.get("kind")
 
-    if name and kind:
+    # UGLY HACK: BÍN has Iceland as "örn". Should be fixed by patching BÍN data
+    if name == "Ísland":
+        kind = "country"
+
+    if name and kind and kind in LOCATION_TAXONOMY:
         loc = location_info(name, kind)
         resp["found"] = True
         resp["country"] = loc.get("country")

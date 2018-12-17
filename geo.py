@@ -30,6 +30,8 @@ from iceaddr import iceaddr_lookup, placename_lookup
 from country_list import countries_for_language, available_languages
 
 
+LOCATION_TAXONOMY = frozenset(("country", "placename", "street", "address"))
+
 ICELAND_ISOCODE = "IS"
 ICELANDIC_LANG_ISOCODE = "is"
 
@@ -38,6 +40,8 @@ COUNTRY_COORDS_JSONPATH = "resources/country_coords.json"
 
 def location_info(name, kind, placename_hints=None):
     """ Returns dict with info about a location """
+    if kind not in LOCATION_TAXONOMY:
+        return None
 
     loc = dict(name=name, kind=kind)
     coords = None
@@ -166,6 +170,7 @@ def isocode_for_country_name(country_name, lang=ICELANDIC_LANG_ISOCODE):
             "Ameríka": "US",
             "Hong Kong": "HK",
             "Makaó": "MO",
+            "Stóra-Bretland": "GB",
             "England": "GB",
             "Skotland": "GB",
             "Wales": "GB",

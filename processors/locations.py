@@ -21,9 +21,6 @@
     and extracts any addresses / locations, looks up information about
     them and saves to a database.
 
-    The taxonomy includes four different kinds of locations.
-    They are: address, street, placename, country.
-
 """
 
 from collections import namedtuple
@@ -202,7 +199,7 @@ def _process(node, params, result):
     if kind == "country" and name in COUNTRY_BLACKLIST:
         return
 
-    # HACK: BÍN has Iceland as "örn"! Should be fixed by patching BÍN data
+    # UGLY HACK: BÍN has Iceland as "örn"! Should be fixed by patching BÍN data
     if name == "Ísland":
         kind = "country"
 
