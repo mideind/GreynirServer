@@ -1092,6 +1092,7 @@ STATIC_MAP_URL = "/staticmap?lat={0}&lon={1}&z={2}"
 
 
 @app.route("/locinfo", methods=["GET"])
+@cache.cached(timeout=60 * 60, key_prefix="locinfo", query_string=True)
 def locinfo():
     """ Return info about a location as JSON """
     resp = dict(found=False)
