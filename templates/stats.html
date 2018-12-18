@@ -47,6 +47,50 @@
 </table>
 </div>
 
+<div class="panel panel-default table-responsive">
+<div class="panel-heading">Nöfn karla og kvenna í gagnagrunni Greynis þar sem
+      titill eða starfsheiti kemur fram<br>
+      <small>Nafn er aðeins talið einu sinni í hverri frétt eða grein</small></div>
+<table class="table table-hover" id="dtable">
+   <thead>
+      <th>Vefur</th>
+      <th class="count female"><span class="glyphicon glyphicon-gender-female"></span> Konur</th>
+      <th class="count female">%</th>
+      <th class="count male"><span class="glyphicon glyphicon-gender-male"></span> Karlar</th>
+      <th class="count male">%</th>
+      <th class="count total">Samtals</th>
+   </thead>
+   <tbody>
+{% for r in gresult %}
+{% if r.total %}
+      <tr>
+         <td class="domain"><img src="{{ url_for('static', filename = 'sources/' + r.domain + '.png') }}"
+            width="16" height="16">&nbsp;&nbsp;{{ r.domain }}</td>
+         <td class="count female">{{ r.kvk | format_is }}</td>
+         <td class="count female">{{ (r.kvk / (r.kvk + r.kk) * 100) | format_is(1) }}%</td>
+         <td class="count male">{{ r.kk | format_is }}</td>
+         <td class="count male">{{ (r.kk / (r.kvk + r.kk) * 100) | format_is(1) }}%</td>
+         <td class="count total">{{ r.total | format_is }}</td>
+      </tr>
+{% endif %}
+{% endfor %}
+   </tbody>
+{% if gtotal.total %}
+   <tfoot>
+      <tr>
+         <td class="domain">Samtals</td>
+         <td class="count female">{{ gtotal.kvk | format_is }}</td>
+         <td class="count female">{{ (gtotal.kvk / (gtotal.kvk + gtotal.kk) * 100) | format_is(1) }}%</td>
+         <td class="count male">{{ gtotal.kk | format_is }}</td>
+         <td class="count male">{{ (gtotal.kk / (gtotal.kvk + gtotal.kk) * 100) | format_is(1) }}%</td>
+         <td class="count total">{{ gtotal.total | format_is }}</td>
+      </tr>
+   </tfoot>
+{% endif %}
+</table>
+</div>
+
+
 <div class="panel panel-default">
    <div class="panel-heading">Nýleg gögn</div>
    <canvas id="scraped_chart_canvas" style="padding: 25px;"></canvas>

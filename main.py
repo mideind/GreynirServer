@@ -1156,12 +1156,24 @@ def stats():
 
         chart_data = chart_stats(session=session, num_days=10)
 
+        gq = GenderQuery()
+        gresult = gq.execute(session)
+
+        gtotal = dict(kvk=Decimal(), kk=Decimal(), hk=Decimal(), total=Decimal())
+        for r in gresult:
+            gtotal["kvk"] += r.kvk
+            gtotal["kk"] += r.kk
+            gtotal["hk"] += r.hk
+            gtotal["total"] += r.kvk + r.kk + r.hk
+
         return render_template(
             "stats.html",
             result=result,
+            total=total,
+            gresult=gresult,
+            gtotal=gtotal,
             scraped_chart_data=json.dumps(chart_data["scraped"]),
             parsed_chart_data=json.dumps(chart_data["parsed"]),
-            total=total,
         )
 
 
