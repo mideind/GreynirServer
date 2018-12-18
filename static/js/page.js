@@ -69,11 +69,25 @@ var RIGHT_PUNCTUATION = ".,:;)]!%?“»”’…°>";
 var NONE_PUNCTUATION = "—–-/'~‘\\";
 // CENTER_PUNCTUATION = '"*&+=@©|'
 
+// Location word categories
+var LOC_FL = ["lönd", "örn", "göt"];
+var FL_TO_LOC_DESC = {
+   "lönd": "land",
+   "örn": "örnefni",
+   "göt": "götuheiti",
+};
+var FL_TO_LOC_KIND = {
+   "lönd": "country",
+   "örn": "placename",
+   "göt": "street",
+};
+
 // Words array
 var w = [];
 
 // Name dictionary
 var nameDict = { };
+
 
 function debugMode() {
    return false;
@@ -102,6 +116,10 @@ function queryEntity(name) {
    window.location.href = "/?f=q&q=" + encodeURIComponent("Hvað er " + name + "?");
 }
 
+function queryLocation(name) {
+   // TODO: Implement me!
+}
+
 function showParse(ev) {
    // A sentence has been clicked: show its parse grid
    var sentText = $(ev.delegateTarget).text();
@@ -112,7 +130,7 @@ function showParse(ev) {
 }
 
 function showPerson(ev) {
-   // Send a query to the server
+   // A person name has been clicked
    var name = undefined;
    var wId = $(this).attr("id"); // Check for token id
    if (wId !== undefined) {
@@ -130,7 +148,7 @@ function showPerson(ev) {
 }
 
 function showEntity(ev) {
-   // Send a query to the server
+   // An entity name has been clicked
    var ename = $(this).text();
    var nd = nameDict[ename];
    if (nd && nd.kind == "ref")
@@ -156,11 +174,12 @@ function hoverIn() {
       // No token: nothing to do
       return;
    }
+
    // Save our position
    var offset = $(this).position();
    // Highlight the token
    $(this).addClass("highlight");
-
+   // Get token info
    var r = tokenInfo(t, nameDict);
 
    if (!r.grammar && !r.lemma && !r.details) {
@@ -168,9 +187,9 @@ function hoverIn() {
       return;
    }
 
-   $("#grammar").html(r.grammar || "");
-   $("#lemma").text(r.lemma || "");
-   $("#details").text(r.details || "");
+   $("#grammar").html(r.grammar || "").show();
+   $("#lemma").text(r.lemma || "").show();
+   $("#details").text(r.details || "").show();
 
    // Display the percentage bar if we have percentage info
    if (r.percent !== null) {
@@ -184,12 +203,48 @@ function hoverIn() {
       $("#info").addClass(r.class);
    }
 
+   // Try to fetch image if person (and at least two names)
    if (t.k == TOK_PERSON && t.v.split(' ').length > 1) {
-      getImage(r.lemma, function(img) {
+      getPersonImage(r.lemma, function(img) {
          $("#info-image").html(
             $("<img>").attr('src', img[0])
          ).show();
-      })
+      });
+   }
+
+   
+   if (t["m"]) {
+      var fl = t["m"][2];
+
+      // It's a location. Display loc info.
+      if (LOC_FL.includes(fl)) {
+         $('#grammar').hide();
+         $('#details').html(FL_TO_LOC_DESC[fl]);
+         r.tagClass = "glyphicon-globe"
+
+         var name = r.lemma;
+         var kind = FL_TO_LOC_KIND[fl];
+
+         // Query server for more information about location
+         getLocationInfo(name, kind, function(info) {
+            // We know which country, show flag image
+            if (info['country']) {
+               $('#lemma').append(
+                  $("<img>").attr('src', '/static/img/flags/' + info['country'] + '.png').attr('class', 'flag')
+               );
+            }
+            // Description
+            if (info['desc']) {
+               $('#details').html(info['desc']);
+            }
+            // We have a map image
+            if (info['map']) {
+               $("#info-image").html(
+                  $("<img>").attr('src', info['map']).attr('onerror', '$(this).hide();')
+               ).show();
+            }
+         });
+      }
    }
 
    $("#info span#tag")
@@ -204,27 +259,56 @@ function hoverIn() {
       .css("visibility", "visible");
 }
 
-function getImage(name, successFunc) {
-   var cache = getImage.imageCache;
+function getLocationInfo(name, kind, successFunc) {
+   var ckey = kind + '_' + name;
+   var cache = getLocationInfo.cache;
    if (cache === undefined) {
       cache = {};
-      getImage.imageCache = cache;
+      getLocationInfo.cache = cache;
+   }
+   // Retrieve from cache
+   if (cache[ckey] !== undefined) {
+      if (cache[ckey]) {
+         successFunc(cache[ckey]);
+      }
+      return;
+   }
+   // Abort any ongoing request
+   if (getLocationInfo.request) {
+      getLocationInfo.request.abort();
+   }
+   // Ask server for location info
+   var data = { name: name, kind: kind };
+   getLocationInfo.request = $.getJSON("/locinfo", data, function(r) {
+      cache[ckey] = null;
+      if (r['found']) {
+         cache[ckey] = r;
+         successFunc(r);
+      }
+   });
+}
+
+function getPersonImage(name, successFunc) {
+   var cache = getPersonImage.imageCache;
+   if (cache === undefined) {
+      cache = {};
+      getPersonImage.imageCache = cache;
    }
    // Retrieve from cache
    if (cache[name] !== undefined) {
-      if (cache[name].length) {
+      if (cache[name]) {
          successFunc(cache[name]);
       }
       return;
    }
    // Abort any ongoing image request
-   if (getImage.request) {
-      getImage.request.abort();
+   if (getPersonImage.request) {
+      getPersonImage.request.abort();
    }
    // Ask server for thumbnail image
-   var enc = encodeURIComponent(name)
-   getImage.request = $.getJSON("/image?thumb=1&name=" + enc, function(r) {
-      cache[name] = [];
+   var enc = encodeURIComponent(name);
+   getPersonImage.request = $.getJSON("/image?thumb=1&name=" + enc, function(r) {
+      cache[name] = null;
       if (r['found']) {
          cache[name] = r['image'];
          successFunc(r['image']);
@@ -237,8 +321,8 @@ function hoverOut() {
    $("#info").css("visibility", "hidden");
    $("#info-image").hide();
    $(this).removeClass("highlight");
-   if (getImage.request) {
-      getImage.request.abort();
+   if (getPersonImage.request) {
+      getPersonImage.request.abort();
    }
 }
 
@@ -286,9 +370,10 @@ function displayTokens(j) {
                      if (err)
                         cls = "";
                      else
-                     if (t.m)
+                     if (t.m) { 
                         // Word class (noun, verb, adjective...)
-                        cls = " class='" + t.m[1] + "'";
+                        cls = " class='" + t.m[1] + ' ' + t.m[2] + "'";
+                     }
                      else
                      if (t.t && t.t.split("_")[0] == "sérnafn") {
                         // Special case to display 'sérnafn' as 'entity'

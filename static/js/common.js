@@ -48,6 +48,7 @@ var TOK_DATEREL = 19;
 var TOK_TIMESTAMPABS = 20;
 var TOK_TIMESTAMPREL = 21;
 var TOK_MEASUREMENT = 22;
+var TOK_NUMWLETTER = 23;
 
 var tokClass = [];
 
@@ -70,6 +71,7 @@ tokClass[TOK_DATEREL] = "daterel";
 tokClass[TOK_TIMESTAMPABS] = "timestampabs";
 tokClass[TOK_TIMESTAMPREL] = "timestamprel";
 tokClass[TOK_MEASUREMENT] = "measurement";
+tokClass[TOK_NUMWLETTER] = "numwletter";
 
 var tokId = [];
 
@@ -95,6 +97,7 @@ tokId["DATEREL"] = TOK_DATEREL;
 tokId["TIMESTAMPABS"] = TOK_TIMESTAMPABS;
 tokId["TIMESTAMPREL"] = TOK_TIMESTAMPREL;
 tokId["MEASUREMENT"] = TOK_MEASUREMENT;
+tokId["NUMWLETTER"] = TOK_NUMWLETTER;
 
 var wordClass = {
    "no" : "óþekkt nafnorð",

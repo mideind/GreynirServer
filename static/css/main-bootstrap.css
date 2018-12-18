@@ -123,6 +123,9 @@
 .glyphicon-arrow-right:before {
    content: "\E212";
 }
+.glyphicon-globe:before {
+   content: "\E371";
+}
 .glyphicon-spin {
     -webkit-animation: spin 2000ms infinite linear;
     animation: spin 2000ms infinite linear;
@@ -441,6 +444,16 @@ td.ts {
    min-width: 100px;
 }
 
+td.flags {
+   width: 2.5em;
+}
+
+td.locname {
+   width: 200px;
+   font-weight: 700;
+
+}
+
 .table-responsive {
    overflow-x: hidden;
 }
@@ -688,6 +701,12 @@ div#info #lemma {
    font-weight: 700;
 }
 
+div#info #lemma > .flag {
+   height: 15px;
+   margin-left: 8px;
+   margin-top: -3px;
+}
+
 div#info #details {
    margin-top: 4px;
    font-style: italic;
@@ -859,6 +878,13 @@ div#result i.entity {
    color: #777777;
    font-weight: 700;
 }
+
+div#result i.lönd,
+div#result i.örn,
+div#result i.göt {
+   color: #774400;
+   font-weight: 700;
+} 
 
 div#result i.year,
 div#result i.telno,

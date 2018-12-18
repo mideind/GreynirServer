@@ -36,7 +36,7 @@ import importlib
 import sys
 import time
 
-#from multiprocessing.dummy import Pool
+# from multiprocessing.dummy import Pool
 from multiprocessing import Pool
 from contextlib import closing
 from datetime import datetime
@@ -66,9 +66,10 @@ class Processor:
         """ Perform any cleanup """
         cls._db = None
 
-    def __init__(self, processor_directory, single_processor = None):
+    def __init__(self, processor_directory, single_processor=None, workers=None):
 
         Processor._init_class()
+        self.workers = workers
 
         # Dynamically load all processor modules
         # (i.e. .py files found in the processor directory, except those
@@ -76,7 +77,12 @@ class Processor:
         self.processors = []
         self.pmodules = None
         import os
-        files = [ single_processor + ".py" ] if single_processor else os.listdir(processor_directory)
+
+        files = (
+            [single_processor + ".py"]
+            if single_processor
+            else os.listdir(processor_directory)
+        )
         for fname in files:
             if not isinstance(fname, str):
                 continue
@@ -84,7 +90,7 @@ class Processor:
                 continue
             if fname.startswith("_"):
                 continue
-            modname = processor_directory + "." + fname[:-3] # Cut off .py
+            modname = processor_directory + "." + fname[:-3]  # Cut off .py
             try:
                 # Try import before we start
                 m = importlib.import_module(modname)
@@ -103,9 +109,17 @@ class Processor:
 
         if not self.processors:
             if single_processor:
-                print("Processor {1} not found in directory {0}".format(processor_directory, single_processor))
+                print(
+                    "Processor {1} not found in directory {0}".format(
+                        processor_directory, single_processor
+                    )
+                )
             else:
-                print("No processing modules found in directory {0}".format(processor_directory))
+                print(
+                    "No processing modules found in directory {0}".format(
+                        processor_directory
+                    )
+                )
 
     def go_single(self, url):
         """ Single article processor that will be called by a process within a
@@ -116,14 +130,16 @@ class Processor:
 
         # If first article within a new process, import the processor modules
         if self.pmodules is None:
-            self.pmodules = [ importlib.import_module(modname) for modname in self.processors ]
+            self.pmodules = [
+                importlib.import_module(modname) for modname in self.processors
+            ]
 
         # Load the article
         with closing(self._db.session) as session:
 
             try:
 
-                article = session.query(Article).filter_by(url = url).one_or_none()
+                article = session.query(Article).filter_by(url=url).one_or_none()
 
                 if article is None:
                     print("Article not found in scraper database")
@@ -146,12 +162,16 @@ class Processor:
             except Exception as e:
                 # If an exception occurred, roll back the transaction
                 session.rollback()
-                print("Exception in article {0}, transaction rolled back\nException: {1}".format(url, e))
+                print(
+                    "Exception in article {0}, transaction rolled back\nException: {1}".format(
+                        url, e
+                    )
+                )
                 raise
 
         sys.stdout.flush()
 
-    def go(self, from_date = None, limit = 0, force = False, update = False, title = None):
+    def go(self, from_date=None, limit=0, force=False, update=False, title=None):
         """ Process already parsed articles from the database """
 
         # noinspection PyComparisonWithNone,PyShadowingNames
@@ -162,10 +182,12 @@ class Processor:
                 if title is not None:
                     # Use a title query on Person to find the URLs to process
                     qtitle = title.lower()
-                    if '%' not in qtitle:
+                    if "%" not in qtitle:
                         # Match start of title by default
-                        qtitle += '%'
-                    q = session.query(Person.article_url).filter(Person.title_lc.like(qtitle))
+                        qtitle += "%"
+                    q = session.query(Person.article_url).filter(
+                        Person.title_lc.like(qtitle)
+                    )
                     field = lambda x: x.article_url
                 else:
                     q = session.query(Article.url).filter(Article.tree != None)
@@ -176,12 +198,16 @@ class Processor:
                         if update:
                             # If update, we re-process articles that have been parsed
                             # again in the meantime
-                            q = q.filter(Article.processed < Article.parsed).order_by(Article.processed)
+                            q = q.filter(Article.processed < Article.parsed).order_by(
+                                Article.processed
+                            )
                         else:
                             q = q.filter(Article.processed == None)
                     if from_date is not None:
                         # Only go through articles parsed since the given date
-                        q = q.filter(Article.parsed >= from_date).order_by(Article.parsed)
+                        q = q.filter(Article.parsed >= from_date).order_by(
+                            Article.parsed
+                        )
                 if limit > 0:
                     q = q.limit(limit)
                 for a in q.yield_per(200):
@@ -193,14 +219,22 @@ class Processor:
                 self.go_single(url)
         else:
             # Use a multiprocessing pool to process the articles
-            pool = Pool() # Defaults to using as many processes as there are CPUs
+            # Defaults to using as many processes as there are CPUs
+            pool = Pool(self.workers)
             pool.map(self.go_single, iter_parsed_articles())
             pool.close()
             pool.join()
 
 
-def process_articles(from_date = None, limit = 0, force = False,
-    update = False, title = None, processor = None):
+def process_articles(
+    from_date=None,
+    limit=0,
+    force=False,
+    update=False,
+    title=None,
+    processor=None,
+    workers=None,
+):
 
     print("------ Reynir starting processing -------")
     if from_date:
@@ -215,6 +249,8 @@ def process_articles(from_date = None, limit = 0, force = False,
         print("Update: Yes")
     if processor:
         print("Invoke single processor: {0}".format(processor))
+    if workers:
+        print("Number of workers: {0}".format(workers))
     ts = "{0}".format(datetime.utcnow())[0:19]
     print("Time: {0}\n".format(ts))
 
@@ -222,8 +258,12 @@ def process_articles(from_date = None, limit = 0, force = False,
 
     try:
         # Run all processors in the processors directory, or the single processor given
-        proc = Processor(processor_directory = "processors", single_processor = processor)
-        proc.go(from_date, limit = limit, force = force, update = update, title = title)
+        proc = Processor(
+            processor_directory="processors",
+            single_processor=processor,
+            workers=workers,
+        )
+        proc.go(from_date, limit=limit, force=force, update=update, title=title)
     finally:
         proc = None
         Processor.cleanup()
@@ -236,10 +276,10 @@ def process_articles(from_date = None, limit = 0, force = False,
     print("Time: {0}\n".format(ts))
 
 
-def process_article(url):
+def process_article(url, processor=None):
 
     try:
-        proc = Processor("processors")
+        proc = Processor(processor_directory="processors", single_processor=processor)
         proc.go_single(url)
     finally:
         proc = None
@@ -247,7 +287,6 @@ def process_article(url):
 
 
 class Usage(Exception):
-
     def __init__(self, msg):
         self.msg = msg
 
@@ -284,24 +323,39 @@ __doc__ = """
 
 """
 
-def _main(argv = None):
+
+def _main(argv=None):
     """ Guido van Rossum's pattern for a Python main function """
 
     if argv is None:
         argv = sys.argv
     try:
         try:
-            opts, args = getopt.getopt(argv[1:], "hifl:u:p:t:",
-                ["help", "init", "force", "update", "limit=", "url=", "processor=", "title="])
+            opts, args = getopt.getopt(
+                argv[1:],
+                "hifl:u:p:t:w:",
+                [
+                    "help",
+                    "init",
+                    "force",
+                    "update",
+                    "limit=",
+                    "url=",
+                    "processor=",
+                    "title=",
+                    "workers=",
+                ],
+            )
         except getopt.error as msg:
-             raise Usage(msg)
-        limit = 10 # !!! DEBUG default limit on number of articles to parse, unless otherwise specified
+            raise Usage(msg)
+        limit = 10  # Default number of articles to parse, unless otherwise specified
         init = False
         url = None
         force = False
         update = False
-        title = None # Title pattern
-        proc = None # Single processor to invoke
+        title = None  # Title pattern
+        proc = None  # Single processor to invoke
+        workers = None  # Number of workers to run simultaneously
         # Process options
         for o, a in opts:
             if o in ("-h", "--help"):
@@ -331,6 +385,9 @@ def _main(argv = None):
                 # In the case of a single processor, we force processing
                 # of already processed articles instead of processing new ones
                 force = True
+            elif o in ("-w", "--workers"):
+                # Limit the number of workers
+                workers = int(a) if int(a) else None
 
         # Process arguments
         for arg in args:
@@ -348,12 +405,12 @@ def _main(argv = None):
                 # Don't run the processor in debug mode
                 Settings.DEBUG = False
             except ConfigError as e:
-                print("Configuration error: {0}".format(e), file = sys.stderr)
+                print("Configuration error: {0}".format(e), file=sys.stderr)
                 return 2
 
             if url:
                 # Process a single URL
-                process_article(url)
+                process_article(url, processor=proc)
             else:
                 # Process already parsed trees, starting on March 1, 2016
                 if force:
@@ -363,14 +420,21 @@ def _main(argv = None):
                     # --title overrides both --force and --update
                     force = False
                     update = False
-                from_date = None if update else datetime(year = 2016, month = 3, day = 1)
-                process_articles(from_date = from_date,
-                    limit = limit, force = force, update = update, title = title, processor = proc)
+                from_date = None if update else datetime(year=2016, month=3, day=1)
+                process_articles(
+                    from_date=from_date,
+                    limit=limit,
+                    force=force,
+                    update=update,
+                    title=title,
+                    processor=proc,
+                    workers=workers,
+                )
                 # process_articles(limit = limit)
 
     except Usage as err:
-        print(err.msg, file = sys.stderr)
-        print("For help use --help", file = sys.stderr)
+        print(err.msg, file=sys.stderr)
+        print("For help use --help", file=sys.stderr)
         return 2
 
     # Completed with no error
@@ -388,9 +452,9 @@ def main():
 
     _PROFILING = True
 
-    filename = 'Processor.profile'
+    filename = "Processor.profile"
 
-    profile.run('_main()', filename)
+    profile.run("_main()", filename)
 
     stats = pstats.Stats(filename)
 
@@ -398,11 +462,11 @@ def main():
     stats.strip_dirs()
 
     # Sort the statistics by the total time spent in the function itself
-    stats.sort_stats('tottime')
+    stats.sort_stats("tottime")
 
-    stats.print_stats(100) # Print 100 most significant lines
+    stats.print_stats(100)  # Print 100 most significant lines
 
 
 if __name__ == "__main__":
-    #sys.exit(main()) # For profiling
-    sys.exit(_main()) # For normal execution
+    # sys.exit(main()) # For profiling
+    sys.exit(_main())  # For normal execution

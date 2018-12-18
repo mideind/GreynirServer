@@ -40,9 +40,10 @@ import json
 from datetime import datetime, timedelta
 from functools import wraps
 from decimal import Decimal
+from collections import defaultdict
 
 from flask import Flask
-from flask import render_template, make_response, jsonify, redirect, url_for
+from flask import render_template, make_response, jsonify, redirect, url_for, send_file
 from flask import request, send_from_directory
 from flask.wrappers import Response
 from flask_caching import Cache
@@ -66,13 +67,20 @@ from scraperdb import (
     ArticleTopic,
     Topic,
     Entity,
+    Location,
     GenderQuery,
     StatsQuery,
     ChartsQuery,
 )
 from query import Query
 from search import Search
-from images import get_image_url, update_broken_image_url, blacklist_image_url
+from images import (
+    get_image_url,
+    update_broken_image_url,
+    blacklist_image_url,
+    get_staticmap_image,
+)
+from geo import location_info, LOCATION_TAXONOMY
 from tnttagger import ifd_tag
 
 
@@ -213,11 +221,15 @@ _DEFAULT_TEXTS = [
     "Hver er Íslandsmeistari í golfi?",
 ]
 
-# Default number of top news items to show in front page list
+# Default number of top news items to show in /news
 _TOP_NEWS_LENGTH = 20
 
-# Default number of top persons to show in front page list
+# Default number of top persons to show in /people
 _TOP_PERSONS_LENGTH = 20
+
+# Default number of top locations to show in /locations
+_TOP_LOCATIONS_LENGTH = 20
+_TOP_LOCATIONS_PERIOD = 1  # in days
 
 # Maximum length of incoming GET/POST parameters
 _MAX_URL_LENGTH = 512
@@ -377,6 +389,76 @@ def top_persons(limit=_TOP_PERSONS_LENGTH):
             ],
             key=lambda x: strxfrm(x["name"]),
         )
+
+
+GOOGLE_MAPS_URL = "https://www.google.com/maps/place/{0}+{1}/@{0},{1},{2}"
+
+
+def top_locations(
+    limit=_TOP_LOCATIONS_LENGTH,
+    kind=None,
+    days=_TOP_LOCATIONS_PERIOD,
+    enclosing_session=None,
+):
+    """ Return a list of recent locations and the articles in which they are mentioned """
+
+    with SessionContext(commit=False, session=enclosing_session) as session:
+        q = (
+            session.query(
+                Location.name,
+                Location.kind,
+                Location.country,
+                Location.article_url,
+                Location.latitude,
+                Location.longitude,
+                Article.id,
+                Article.heading,
+                Root.domain,
+            )
+            .join(Article)
+            .join(Root)
+            .filter(Root.visible)
+            .filter(Article.timestamp > datetime.utcnow() - timedelta(days=days))
+        )
+
+        # Filter by kind
+        # if kind:
+        #     q = q.filter(Location.kind == kind)
+
+        q = q.order_by(desc(Article.timestamp))
+
+        # Group articles by unique location
+        locs = defaultdict(list)
+        for r in q.all():
+            article = {
+                "url": r.article_url,
+                "id": r.id,
+                "heading": r.heading,
+                "domain": r.domain,
+            }
+            k = (r.name, r.kind, r.country, r.latitude, r.longitude)
+            locs[k].append(article)
+
+        # Create top locations list sorted by article count
+        loclist = []
+        for k, v in locs.items():
+            (name, kind, country, lat, lon) = k
+            map_url = None
+            if lat and lon:
+                map_url = GOOGLE_MAPS_URL.format(lat, lon, "7z")
+
+            loclist.append(
+                {
+                    "name": name,
+                    "kind": kind,
+                    "country": country,
+                    "map_url": map_url,
+                    "articles": v,
+                }
+            )
+        loclist.sort(key=lambda x: len(x["articles"]), reverse=True)
+
+        return loclist[:limit]
 
 
 def chart_stats(session=None, num_days=7):
@@ -882,7 +964,7 @@ def tree_grid():
 
 @app.route("/reportimage", methods=["POST"])
 def reportimage():
-    """ Notification that image is wrong or broken """
+    """ Notification that a (person) image is wrong or broken """
     resp = dict(found_new=False)
 
     name = request.form.get("name", "")
@@ -903,7 +985,7 @@ def reportimage():
 
 @app.route("/image", methods=["GET"])
 def image():
-    """ Get image for name """
+    """ Get image for (person) name """
     resp = dict(found=False)
 
     name = request.args.get("name", "")
@@ -969,6 +1051,71 @@ def suggest(limit=10):
         suggestions = [{"value": (prefix + p[0] + "?"), "data": ""} for p in q]
 
     return better_jsonify(suggestions=suggestions)
+
+
+@app.route("/locations", methods=["GET"])
+@max_age(seconds=60 * 5)
+def locations():
+    """ Render locations page """
+    kind = request.args.get("kind")
+    kind = kind if kind in LOCATION_TAXONOMY else None
+
+    period = request.args.get("period")
+    days = 7 if period == "week" else _TOP_LOCATIONS_PERIOD
+
+    with SessionContext(commit=False) as session:
+        locs = top_locations(enclosing_session=session, kind=kind, days=days)
+
+    return render_template("locations/locations.html", locations=locs, period=period)
+
+
+@app.route("/staticmap", methods=["GET"])
+@cache.cached(timeout=60 * 60 * 24, key_prefix="staticmap", query_string=True)
+def staticmap():
+    """ Proxy for Google Static Maps API """
+    try:
+        lat = float(request.args.get("lat"))
+        lon = float(request.args.get("lon"))
+        zoom = int(request.args.get("z", 7))
+    except:
+        return abort(400)
+
+    imgdata = get_staticmap_image(lat, lon, zoom=zoom)
+    if imgdata:
+        fn = lat + lon + zoom
+        return send_file(imgdata, attachment_filename=fn, mimetype="image/png")
+
+    return page_not_found(404)
+
+
+STATIC_MAP_URL = "/staticmap?lat={0}&lon={1}&z={2}"
+ZOOM_FOR_LOC_KIND = {"street": 12, "address": 12, "placename": 5, "country": 2}
+
+
+@app.route("/locinfo", methods=["GET"])
+@cache.cached(timeout=60 * 60, key_prefix="locinfo", query_string=True)
+def locinfo():
+    """ Return info about a location as JSON """
+    resp = dict(found=False)
+
+    name = request.args.get("name")
+    kind = request.args.get("kind")
+
+    # UGLY HACK: BÍN has Iceland as "örn". Should be fixed by patching BÍN data
+    if name == "Ísland":
+        kind = "country"
+
+    if name and kind and kind in LOCATION_TAXONOMY:
+        loc = location_info(name, kind)
+        if loc:
+            resp["found"] = True
+            resp["country"] = loc.get("country")
+            lat, lon = loc.get("latitude"), loc.get("longitude")
+            if lat and lon:
+                z = ZOOM_FOR_LOC_KIND.get(kind)
+                resp["map"] = STATIC_MAP_URL.format(lat, lon, z)
+
+    return better_jsonify(**resp)
 
 
 @app.route("/genders", methods=["GET"])
@@ -1048,7 +1195,7 @@ def news():
         offset = 0
         limit = _TOP_NEWS_LENGTH
 
-    limit = min(limit, 100) # Cap at max 100 results per page
+    limit = min(limit, 100)  # Cap at max 100 results per page
     articles = top_news(topic=topic, offset=offset, limit=limit)
 
     # If all articles in the list are timestamped within 24 hours of now,

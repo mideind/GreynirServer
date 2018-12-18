@@ -1,0 +1,55 @@
+
+{% extends "container-normal.html" %}
+
+{% block styles %}
+
+<link href="{{ url_for('static', filename='css/main-bootstrap.css') }}" rel='stylesheet' type='text/css'>
+
+{% endblock %}
+
+{% block content %}
+
+<!--
+<div id="language-tabs">
+    <ul id="language-hdr" class="nav nav-tabs" role="tablist">
+        <li role="presentation" class="active">
+            <a href="#locations">
+               Staðir
+            </a>
+        </li>
+        <li role="presentation" class="">
+            <a href="/locations-icemap">
+               Íslandskort
+            </a>
+        </li>
+        <li role="presentation" class="">
+            <a href="/locations-worldmap">
+               Heimskort
+            </a>
+        </li>
+    </ul>
+</div>
+-->
+
+<!--<div class="tab-content">
+
+   <div role="tabpanel" class="tab-pane active" id="locations">-->
+      {% include "locations/locations-list.html" %}
+<!--   </div>
+
+</div>-->
+
+{% endblock %}
+
+{% block endscripts %}
+
+<script>
+  
+   $(document).ready(function() {
+      // Activate the top navbar
+      $("#navid-locations").addClass("active");
+   });
+
+</script>
+
+{% endblock %}
