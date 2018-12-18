@@ -23,6 +23,7 @@
 
 """
 
+import logging
 from collections import namedtuple
 from datetime import datetime
 from scraperdb import Location
