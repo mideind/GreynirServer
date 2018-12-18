@@ -66,19 +66,18 @@ _API_KEY_PATH = "resources/GoogleServerKey.txt"
 def _get_API_key():
     """ Read Google API key from file """
     global _API_KEY
-    if _API_KEY:
-        return _API_KEY
-    try:
-        # You need to obtain your own key and put it in
-        # _API_KEY_PATH if you want to use this code
-        with open(_API_KEY_PATH) as f:
-            _API_KEY = f.read().rstrip()
-    except FileNotFoundError as ex:
-        _API_KEY = ""
+    if not _API_KEY:
+        try:
+            # You need to obtain your own key and put it in
+            # _API_KEY_PATH if you want to use this code
+            with open(_API_KEY_PATH) as f:
+                _API_KEY = f.read().rstrip()
+        except FileNotFoundError as ex:
+            _API_KEY = ""
     return _API_KEY
 
 
-# Custom Search identifier
+# Google Custom Search Engine identifier
 _CX = "001858240983628375092:9aogptqla5e"
 
 # The content type we're using in the links table
@@ -110,9 +109,8 @@ def get_image_url(
         )
         if q is not None:
             # Found in cache. If the result is old, purge it
-            expired = datetime.utcnow() - q.timestamp > timedelta(
-                days=_CACHE_EXPIRATION_DAYS
-            )
+            period = timedelta(days=_CACHE_EXPIRATION_DAYS)
+            expired = datetime.utcnow() - q.timestamp > period
             if expired and not cache_only:
                 _purge_single(name, ctype=ctype, enclosing_session=session)
             else:
@@ -287,7 +285,7 @@ def get_staticmap_image(latitude, longitude, zoom=6, width=180, height=180):
     # TODO: Use urllib instead of requests here
     try:
         r = requests.get(url, stream=True)
-    except:
+    except Exception as e:
         logging.warning(str(e))
         return None
 

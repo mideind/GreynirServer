@@ -117,8 +117,7 @@ function queryEntity(name) {
 }
 
 function queryLocation(name) {
-   // Implement me!
-   // window.location.href = "/?f=q&q=" + encodeURIComponent("Hvað er " + name + "?");
+   // TODO: Implement me!
 }
 
 function showParse(ev) {

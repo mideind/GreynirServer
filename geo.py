@@ -30,12 +30,32 @@ from iceaddr import iceaddr_lookup, placename_lookup
 from country_list import countries_for_language, available_languages
 
 
-LOCATION_TAXONOMY = frozenset(("country", "placename", "street", "address"))
-
 ICELAND_ISOCODE = "IS"
 ICELANDIC_LANG_ISOCODE = "is"
 
 COUNTRY_COORDS_JSONPATH = "resources/country_coords.json"
+
+LOCATION_TAXONOMY = frozenset(("country", "placename", "street", "address"))
+
+COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
+    ICELANDIC_LANG_ISOCODE: {
+        "Mjanmar": "MM",
+        "Búrma": "MM",
+        "Ameríka": "US",
+        "Hong Kong": "HK",
+        "Makaó": "MO",
+        "Stóra-Bretland": "GB",
+        "England": "GB",
+        "Skotland": "GB",
+        "Wales": "GB",
+        "Norður-Írland": "GB",
+        "Bosnía": "BA",
+        "Hersegóvína": "BA",
+        "Palestína": "PS",
+        "Páfagarður": "VA",
+        "Chile": "CL",
+    }
+}
 
 
 def location_info(name, kind, placename_hints=None):
@@ -130,7 +150,7 @@ def coords_for_street_name(street_name, placename=None, placename_hints=[]):
 
 def coords_from_addr_info(info):
     """ Get coordinates from the address dict provided by iceaddr """
-    if info and info.get("lat_wgs84") and info.get("long_wgs84"):
+    if info is not None and "lat_wgs84" in info and "long_wgs84" in info:
         return (info["lat_wgs84"], info["long_wgs84"])
     return None
 
@@ -143,7 +163,7 @@ def country_name_for_isocode(iso_code, lang=ICELANDIC_LANG_ISOCODE):
     iso_code = iso_code.upper()
     lang = lang.lower()
 
-    if not lang in available_languages():
+    if lang not in available_languages():
         return None
 
     countries = dict(countries_for_language(lang))
@@ -156,36 +176,16 @@ def isocode_for_country_name(country_name, lang=ICELANDIC_LANG_ISOCODE):
     assert len(lang) == 2
 
     lang = lang.lower()
-    if not lang in available_languages():
+    if lang not in available_languages():
         return None
 
-    countries = countries_for_language(lang)
+    countries = countries_for_language(lang)  # This is cached by module
     for iso_code, name in countries:
         if name == country_name:
             return iso_code
 
-    additions = {
-        ICELANDIC_LANG_ISOCODE: {
-            "Mjanmar": "MM",
-            "Búrma": "MM",
-            "Ameríka": "US",
-            "Hong Kong": "HK",
-            "Makaó": "MO",
-            "Stóra-Bretland": "GB",
-            "England": "GB",
-            "Skotland": "GB",
-            "Wales": "GB",
-            "Norður-Írland": "GB",
-            "Bosnía": "BA",
-            "Hersegóvína": "BA",
-            "Palestína": "PS",
-            "Páfagarður": "VA",
-            "Chile": "CL",
-        }
-    }
-
-    if lang in additions:
-        return additions[lang].get(country_name)
+    if lang in COUNTRY_NAME_TO_ISOCODE_ADDITIONS:
+        return COUNTRY_NAME_TO_ISOCODE_ADDITIONS[lang].get(country_name)
 
     return None
 
@@ -235,13 +235,14 @@ def parse_address_string(addrstr):
     if len(comp) == 1:
         return addr
 
+    # Check if last address component is a house number
+    # (possibly with trailing alphabetic character)
     last = comp[-1]
     r = re.search(r"^(\d+)([a-zA-Z]?)$", last)
     if r:
         addr["number"] = int(r.group(1))
         addr["letter"] = r.group(2) or None
+        # Non-numeric earlier components must be the street name
         addr["street"] = " ".join(comp[:-1])
-    else:
-        addr["street"] = addrstr
 
     return addr

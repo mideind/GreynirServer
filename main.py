@@ -229,7 +229,7 @@ _TOP_PERSONS_LENGTH = 20
 
 # Default number of top locations to show in /locations
 _TOP_LOCATIONS_LENGTH = 20
-_TOP_LOCATIONS_PERIOD = 1
+_TOP_LOCATIONS_PERIOD = 1  # in days
 
 # Maximum length of incoming GET/POST parameters
 _MAX_URL_LENGTH = 512
@@ -1058,13 +1058,10 @@ def suggest(limit=10):
 def locations():
     """ Render locations page """
     kind = request.args.get("kind")
-    period = request.args.get("period")
-
-    days = _TOP_LOCATIONS_PERIOD
-    if period == "week":
-        days = 7
-
     kind = kind if kind in LOCATION_TAXONOMY else None
+
+    period = request.args.get("period")
+    days = 7 if period == "week" else _TOP_LOCATIONS_PERIOD
 
     with SessionContext(commit=False) as session:
         locs = top_locations(enclosing_session=session, kind=kind, days=days)
@@ -1079,9 +1076,9 @@ def staticmap():
     try:
         lat = float(request.args.get("lat"))
         lon = float(request.args.get("lon"))
-        zoom = int(request.args.get("z"))
+        zoom = int(request.args.get("z", 7))
     except:
-        return server_error(500)
+        return abort(400)
 
     imgdata = get_staticmap_image(lat, lon, zoom=zoom)
     if imgdata:
@@ -1092,6 +1089,7 @@ def staticmap():
 
 
 STATIC_MAP_URL = "/staticmap?lat={0}&lon={1}&z={2}"
+ZOOM_FOR_LOC_KIND = {"street": 12, "address": 12, "placename": 5, "country": 2}
 
 
 @app.route("/locinfo", methods=["GET"])
@@ -1109,12 +1107,13 @@ def locinfo():
 
     if name and kind and kind in LOCATION_TAXONOMY:
         loc = location_info(name, kind)
-        resp["found"] = True
-        resp["country"] = loc.get("country")
-        lat, lon = loc.get("latitude"), loc.get("longitude")
-        if lat and lon:
-            zoom4kind = {"street": 12, "placename": 5, "country": 2}
-            resp["map"] = STATIC_MAP_URL.format(lat, lon, zoom4kind.get(kind))
+        if loc:
+            resp["found"] = True
+            resp["country"] = loc.get("country")
+            lat, lon = loc.get("latitude"), loc.get("longitude")
+            if lat and lon:
+                z = ZOOM_FOR_LOC_KIND.get(kind)
+                resp["map"] = STATIC_MAP_URL.format(lat, lon, z)
 
     return better_jsonify(**resp)
 
