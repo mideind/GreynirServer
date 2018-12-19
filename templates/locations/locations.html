@@ -9,35 +9,111 @@
 
 {% block content %}
 
-<!--
+
 <div id="language-tabs">
     <ul id="language-hdr" class="nav nav-tabs" role="tablist">
         <li role="presentation" class="active">
-            <a href="#locations">
+            <a href="{{ url_for('locations') }}">
                Staðir
             </a>
         </li>
-        <li role="presentation" class="">
-            <a href="/locations-icemap">
+        <li role="presentation">
+            <a href="{{ url_for('locations_icemap') }}">
                Íslandskort
             </a>
         </li>
-        <li role="presentation" class="">
-            <a href="/locations-worldmap">
+<!--         <li role="presentation" class="">
+            <a href="{{ url_for('locations_worldmap') }}">
                Heimskort
             </a>
-        </li>
+        </li> -->
     </ul>
 </div>
--->
 
-<!--<div class="tab-content">
 
-   <div role="tabpanel" class="tab-pane active" id="locations">-->
-      {% include "locations/locations-list.html" %}
-<!--   </div>
+<!-- Locations list -->
 
-</div>-->
+<div role="tabpanel" class="tab-pane active">
+
+<div class="panel panel-default table-responsive">
+
+   <div class="panel-heading">
+      <div class="headline hidden-xs">Nýlega í fréttum vefmiðla</div>
+      <div class="headline visible-xs-inline-block">Nýjustu staðir</div>
+
+      <div class="btn-group pull-right">
+         
+         <!--
+         <span class="hidden-xs">
+            <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="margin-right: 10px;">
+               Allir staðir <span class="caret"></span>
+            </button>
+
+            <ul class="dropdown-menu">
+               <li><a href="{{ url_for('locations') }}">Allir staðir</a></li>
+               <li role="separator" class="divider"></li>
+               <li><a href="{{ url_for('locations', kind='country') | safe }}">Lönd</a></li>
+               <li><a href="{{ url_for('locations', kind='placename') | safe }}">Örnefni</a></li>
+               <li><a href="{{ url_for('locations', kind='street') | safe }}">Götur</a></li>
+               <li><a href="{{ url_for('locations', kind='address') | safe }}">Heimilisföng</a></li>
+            </ul>
+         </span>
+         -->
+
+         <span class="hidden-xs">
+            <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+               {{ "Undanfarna viku" if period == 'week' else "Síðasta sólarhring" }} 
+               <span class="caret"></span>
+            </button>
+
+            <ul class="dropdown-menu">
+               <li><a href="{{ url_for('locations') }}">Síðasta sólarhring</a></li>
+               <li><a href="{{ url_for('locations', period='week') | safe }}">Undanfarna viku</a></li>
+            </ul>
+         </span>
+      </div>
+
+   </div>
+
+   <table class="table table-hover" id="plist">
+      <thead>
+         <th class="hidden-xs"></th>
+         <th>Staður</th>
+         <th>Greinar</th>
+      </thead>
+      <tbody>
+   {% for loc in locations %}
+         <tr class="topitem">
+            <td align="center" class="hidden-xs flags">
+               {% if loc.country %}
+                  <img src="{{ url_for('static', filename='img/flags/' + loc.country + '.png') }}" width="22">
+               {% else %}
+                  <span class="glyphicon glyphicon-globe"></span>
+               {% endif %}
+            </td>
+            <td class="locname">
+               {% if loc.map_url %}
+                  <a href="{{ loc.map_url }}" title="Skoða á Google Maps">
+                     {{ loc.name }}
+                  </a>
+               {% else %}
+                  {{ loc.name }}
+               {% endif %}
+            </td>
+            <td class="locarticles">
+               {% for a in loc.articles %}
+                  <span class="art-link" title="{{ a.heading }}"><a href="{{ url_for('page', id=a.id) | safe }}"><img src="{{ url_for('static', filename = 'sources/' + a.domain + '.png') }}"
+            width="16" height="16" alt="{{ a.heading }}"/></a></span>
+               {% endfor %}
+            </td>
+            
+         </tr>
+   {% endfor %}
+      </tbody>
+   </table>
+</div>
+
+</div>
 
 {% endblock %}
 

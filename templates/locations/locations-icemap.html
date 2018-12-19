@@ -1,0 +1,105 @@
+
+{% extends "container-normal.html" %}
+
+{% block styles %}
+
+<link href="{{ url_for('static', filename='css/main-bootstrap.css') }}" rel='stylesheet' type='text/css'>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.4/dist/leaflet.css"
+   integrity="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA=="
+   crossorigin=""/>
+
+<style type="text/css">
+   #icemap { height: 550px; }
+</style>
+
+{% endblock %}
+
+{% block content %}
+
+<div id="language-tabs">
+    <ul id="language-hdr" class="nav nav-tabs" role="tablist">
+        <li role="presentation">
+            <a href="{{ url_for('locations') }}">
+               Staðir
+            </a>
+        </li>
+        <li role="presentation" class="active">
+            <a href="{{ url_for('locations_icemap') }}">
+               Íslandskort
+            </a>
+        </li>
+<!--         <li role="presentation" class="">
+            <a href="{{ url_for('locations_worldmap') }}">
+               Heimskort
+            </a>
+        </li> -->
+    </ul>
+</div>
+
+
+<div role="tabpanel" class="tab-pane active">
+
+   <div id="icemap" style="border:1px solid #ddd;"></div>
+
+</div>
+
+
+
+{% endblock %}
+
+{% block endscripts %}
+
+<script src="https://unpkg.com/leaflet@1.3.4/dist/leaflet.js"
+   integrity="sha512-nMMmRyTVoLYqjP9hrbed9S+FzjZHW5gY1TWCHA5ckwXZBadntCNs8kEqAWdrb9O7rxbCaA4lKTIWjDXZxflOcA=="
+   crossorigin=""></script>
+
+<script>
+
+var map;
+var markers = {{ markers | safe }};
+
+function initMap() {
+   
+   var iceloc = new L.LatLng(64.9957538607, -18.5739616708);
+   var margin = 4.0;
+   var bounds = L.latLngBounds(
+      L.latLng(iceloc.lat + margin, iceloc.lng + margin),
+      L.latLng(iceloc.lat - margin, iceloc.lng - margin)
+   );
+
+   // Set up a map centered on Iceland, with constrained bounds
+   map = new L.Map('icemap', { 
+      zoomSnap:0.5, 
+      maxZoom:10, 
+      minZoom:5.5, 
+      maxBounds:bounds, 
+      maxBoundsViscosity:1.0,
+   });
+
+   // create the tile layer with correct attribution
+   var osmUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+   var osmAttrib = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+   var osm = new L.TileLayer(osmUrl, { attribution: osmAttrib });		
+
+   map.setView(iceloc, 6.5);
+   map.addLayer(osm);
+
+   //var marker = L.marker([64.9957538607, -18.5739616708]).addTo(map);
+   for (m in markers) {
+      //console.log(markers[m]);
+      var marker = L.marker([markers[m][1], markers[m][2]]).addTo(map);
+      console.log(marker);
+   }
+}
+  
+$(document).ready(function() {
+   // Activate the top navbar
+   $("#navid-locations").addClass("active");
+   // Set up map
+   initMap();
+});
+
+</script>
+
+{% endblock %}

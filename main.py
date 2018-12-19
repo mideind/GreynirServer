@@ -1069,6 +1069,49 @@ def locations():
     return render_template("locations/locations.html", locations=locs, period=period)
 
 
+def icemap_markers(days=_TOP_LOCATIONS_PERIOD, enclosing_session=None):
+    """ Return a list of recent Icelandic locations and their coordinates """
+    with SessionContext(commit=False, session=enclosing_session) as session:
+        q = (
+            session.query(
+                Location.name,
+                Location.kind,
+                Location.article_url,
+                Location.latitude,
+                Location.longitude,
+                Article.id,
+                Article.heading,
+                Root.domain,
+            )
+            .join(Article)
+            .join(Root)
+            .filter(Root.visible)
+            .filter(Location.country == "IS")
+            .filter(Location.kind != "country")
+            .filter(Location.latitude != None)
+            .filter(Location.longitude != None)
+            .filter(Article.timestamp > datetime.utcnow() - timedelta(days=days))
+            .order_by(desc(Article.timestamp))
+        )
+
+        markers = [(l.name, l.latitude, l.longitude) for l in q.all()]
+
+    return markers
+
+
+@app.route("/locations_icemap", methods=["GET"])
+def locations_icemap():
+    """ Render Icelandic map locations page """
+    markers = icemap_markers(days=_TOP_LOCATIONS_PERIOD)
+    return render_template("locations/locations-icemap.html", markers=json.dumps(markers))
+
+
+@app.route("/locations_worldmap", methods=["GET"])
+def locations_worldmap():
+    """ Render Icelandic map locations page """
+    return render_template("locations/locations-worldmap.html")
+
+
 @app.route("/staticmap", methods=["GET"])
 @cache.cached(timeout=60 * 60 * 24, key_prefix="staticmap", query_string=True)
 def staticmap():

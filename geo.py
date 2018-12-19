@@ -54,6 +54,8 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
         "Palestína": "PS",
         "Páfagarður": "VA",
         "Chile": "CL",
+        "Kenýa": "KE",
+        "Kirgisistan": "KG",
     }
 }
 
@@ -94,7 +96,7 @@ def location_info(name, kind, placename_hints=None):
         info = icelandic_placename_info(name)
         if info:
             loc["country"] = ICELAND_ISOCODE
-            # Pick first matching placename, w/o disambiguating
+            # Pick first matching placename w/o disambiguating
             # TODO: This could be smarter
             coords = coords_from_addr_info(info[0])
 
@@ -191,6 +193,8 @@ def isocode_for_country_name(country_name, lang=ICELANDIC_LANG_ISOCODE):
 
 
 def icelandic_placename_info(placename):
+    """ Look up info about an Icelandic placename ("örnefni") using
+        data from Landmælingar Íslands via iceaddr """
     res = placename_lookup(placename)
     if len(res) >= 1:
         # Prefer placenames marked 'Þéttbýli'
@@ -201,7 +205,7 @@ def icelandic_placename_info(placename):
 
 def icelandic_addr_info(addr_str, placename=None, placename_hints=[]):
     """ Look up info about a specific Icelandic address in Staðfangaskrá.
-        We want either a single match or nothing. """
+        via iceaddr. We want either a single match or nothing. """
     addr = parse_address_string(addr_str)
 
     def lookup(pn):
