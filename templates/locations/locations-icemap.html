@@ -62,7 +62,7 @@ var markers = {{ markers | safe }};
 function initMap() {
    
    var iceloc = new L.LatLng(64.9957538607, -18.5739616708);
-   var margin = 4.0;
+   var margin = 8.0;
    var bounds = L.latLngBounds(
       L.latLng(iceloc.lat + margin, iceloc.lng + margin),
       L.latLng(iceloc.lat - margin, iceloc.lng - margin)
@@ -71,7 +71,7 @@ function initMap() {
    // Set up a map centered on Iceland, with constrained bounds
    map = new L.Map('icemap', { 
       zoomSnap:0.5, 
-      maxZoom:10, 
+      maxZoom:12, 
       minZoom:5.5, 
       maxBounds:bounds, 
       maxBoundsViscosity:1.0,
@@ -79,7 +79,7 @@ function initMap() {
 
    // create the tile layer with correct attribution
    var osmUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-   var osmAttrib = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+   var osmAttrib = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
    var osm = new L.TileLayer(osmUrl, { attribution: osmAttrib });		
 
    map.setView(iceloc, 6.5);
@@ -88,7 +88,10 @@ function initMap() {
    //var marker = L.marker([64.9957538607, -18.5739616708]).addTo(map);
    for (m in markers) {
       //console.log(markers[m]);
-      var marker = L.marker([markers[m][1], markers[m][2]]).addTo(map);
+      var marker = L.marker([markers[m][1], markers[m][2]]);
+      marker.addTo(map);
+      marker.bindTooltip(markers[m][0], {permanent: true, className: "my-label", offset: [0, 0] });
+      //.bindPopup("<b>Hello world!</b><br />I am a popup.");
       console.log(marker);
    }
 }
