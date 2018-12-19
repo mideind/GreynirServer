@@ -30,13 +30,20 @@ from iceaddr import iceaddr_lookup, placename_lookup
 from country_list import countries_for_language, available_languages
 
 
-ICELAND_ISOCODE = "IS"
-ICELANDIC_LANG_ISOCODE = "is"
+ICELAND_ISOCODE = "IS"  # ISO 3166-1 alpha-2
+ICELANDIC_LANG_ISOCODE = "is"  # ISO 639-1
 
 COUNTRY_COORDS_JSONPATH = "resources/country_coords.json"
 
+# Types of locations
 LOCATION_TAXONOMY = frozenset(("country", "placename", "street", "address"))
 
+# Location names that exist in Iceland but
+# should never be categorised as such
+NEVER_ICELANDIC = frozenset(("Norðurlönd"))
+
+# ISO codes for country names are not included
+# in UN Icelandic country names
 COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
     ICELANDIC_LANG_ISOCODE: {
         "Mjanmar": "MM",
@@ -88,17 +95,19 @@ def location_info(name, kind, placename_hints=None):
     # Götuheiti
     elif kind == "street":
         # All street names in BÍN are Icelandic
-        loc["country"] = ICELAND_ISOCODE
-        coords = coords_for_street_name(name, placename_hints=placename_hints)
+        if name not in NEVER_ICELANDIC:
+            loc["country"] = ICELAND_ISOCODE
+            coords = coords_for_street_name(name, placename_hints=placename_hints)
 
     # Örnefni
     elif kind == "placename":
-        info = icelandic_placename_info(name)
-        if info:
-            loc["country"] = ICELAND_ISOCODE
-            # Pick first matching placename w/o disambiguating
-            # TODO: This could be smarter
-            coords = coords_from_addr_info(info[0])
+        if name not in NEVER_ICELANDIC:
+            info = icelandic_placename_info(name)
+            if info:
+                loc["country"] = ICELAND_ISOCODE
+                # Pick first matching placename w/o disambiguating
+                # TODO: This could be smarter
+                coords = coords_from_addr_info(info[0])
 
     if coords:
         (loc["latitude"], loc["longitude"]) = coords

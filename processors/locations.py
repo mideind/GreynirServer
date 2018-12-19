@@ -48,6 +48,7 @@ ALWAYS_LOCATION = frozenset(
         "Borg",
         "Hella",
         "Suðurnes",
+        "Jamaíka",
     )
 )
 
@@ -77,6 +78,8 @@ PLACENAME_BLACKLIST = frozenset(
         "Skipti",
         "Skóli",
         "Gat",
+        "Eik",
+        "Hlíf",
     )
 )
 
