@@ -391,8 +391,8 @@ def top_persons(limit=_TOP_PERSONS_LENGTH):
         )
 
 
-GOOGLE_MAPS_URL = "https://www.google.com/maps/place/{0}+{1}/@{0},{1},{2}"
-
+GMAPS_COORD_URL = "https://www.google.com/maps/place/{0}+{1}/@{0},{1},{2}"
+GMAPS_PLACE_URL = "https://www.google.com/maps/place/{0}"
 
 def top_locations(
     limit=_TOP_LOCATIONS_LENGTH,
@@ -444,8 +444,10 @@ def top_locations(
         for k, v in locs.items():
             (name, kind, country, lat, lon) = k
             map_url = None
-            if lat and lon:
-                map_url = GOOGLE_MAPS_URL.format(lat, lon, "7z")
+            if kind == "country":
+                map_url = GMAPS_PLACE_URL.format(name)
+            elif lat and lon:
+                map_url = GMAPS_COORD_URL.format(lat, lon, "7z")
 
             loclist.append(
                 {

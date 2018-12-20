@@ -40,7 +40,7 @@ LOCATION_TAXONOMY = frozenset(("country", "placename", "street", "address"))
 
 # Location names that exist in Iceland but
 # should never be categorised as such
-NEVER_ICELANDIC = frozenset(("Norðurlönd"))
+NEVER_ICELANDIC = frozenset(("Norðurlönd", "París"))
 
 # ISO codes for country names are not included
 # in UN Icelandic country names
