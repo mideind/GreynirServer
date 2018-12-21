@@ -37,18 +37,12 @@ LOCFL_TO_KIND = dict(zip(BIN_LOCFL, ["country", "street", "placename"]))
 # Always identify these words as locations, even when other meanings exist
 ALWAYS_LOCATION = frozenset(
     (
-        "París",  # ism í BÍN
+        "París",  # also ism in BÍN
         "Ísrael",  # ism
-        "Víetnam",  # alm
-        "Sýrland",  # fyr
-        "Mið-Afríkulýðveldið",  # alm
-        "Grænland",  # fyr
         "Aþena",  # ism
-        "Árborg",
-        "Borg",
-        "Hella",
-        "Suðurnes",
-        "Jamaíka",
+        "Árborg", # ism
+        "Borg", # ism
+        "Hella", # ism
     )
 )
 
@@ -203,10 +197,6 @@ def _process(node, params, result):
         return
     if kind == "country" and name in COUNTRY_BLACKLIST:
         return
-
-    # UGLY HACK: BÍN has Iceland as "örn". Should be fixed by patching BÍN data
-    if name == "Ísland":
-        kind = "country"
 
     # Add
     loc = Loc(name=name, kind=kind)

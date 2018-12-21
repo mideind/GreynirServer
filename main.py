@@ -1146,10 +1146,6 @@ def locinfo():
     name = request.args.get("name")
     kind = request.args.get("kind")
 
-    # UGLY HACK: BÍN has Iceland as "örn". Should be fixed by patching BÍN data
-    if name == "Ísland":
-        kind = "country"
-
     if name and kind and kind in LOCATION_TAXONOMY:
         loc = location_info(name, kind)
         if loc:
