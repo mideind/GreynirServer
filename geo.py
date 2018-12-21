@@ -87,11 +87,13 @@ ICE_PLACENAME_BLACKLIST = frozenset(
         "Suðurland",
         "Austurland",
         "Suðurnes",
+        "Vestfirðir",
+        "Svalbarði",
     )
 )
 
-# ISO codes for country names are not included
-# in UN Icelandic country names
+# ISO codes for country names that are not 
+# included in Icelandic country name UN data
 COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
     ICELANDIC_LANG_ISOCODE: {
         "Mjanmar": "MM",
@@ -115,17 +117,48 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
 }
 
 
+def location_description(loc):
+    """ Return a description for a location (in Icelandic) """
+    if "kind" not in loc:
+        return "staður"
+
+    if loc["kind"] == "continent":
+        return "heimsálfa"
+
+    if loc["kind"] == "country":
+        desc = "land"
+        c = loc.get("continent")
+        if c is None and "country" in loc:
+            c = continent_for_country(loc["country"])
+        if c and c in ISO_TO_CONTINENT:
+            cname = ISO_TO_CONTINENT[c]
+            desc = "land í {0}u".format(cname[:-1])
+        return desc
+
+    if loc["kind"] == "address":
+        desc = "heimilisfang"
+        return desc
+
+    if loc["kind"] == "street":
+        return "gata"
+
+    if loc["kind"] == "placename":
+        return "örnefni"
+
+    return "staður"
+
+
 def location_info(name, kind, placename_hints=None):
     """ Returns dict with info about a location, given name and kind.
         Info includes country code, gps coordinates etc. """
     if kind not in LOCATION_TAXONOMY:
         return None
 
-    loc = dict(name=name, kind=kind)
-    coords = None
-
     if name in CONTINENTS:
         kind = "continent"
+
+    loc = dict(name=name, kind=kind)
+    coords = None
 
     # Heimilisfang
     if kind == "address":
@@ -143,6 +176,7 @@ def location_info(name, kind, placename_hints=None):
             loc["country"] = code
             coords = coords_for_country(code)
 
+    # Heimsálfa
     elif kind == "continent":
         code = CONTINENTS.get(name)
 
@@ -166,6 +200,11 @@ def location_info(name, kind, placename_hints=None):
         (loc["latitude"], loc["longitude"]) = coords
 
     return loc
+
+
+def continent_for_country(iso_code):
+    """ Return two-char continent code, given a two-char country code """
+    return None
 
 
 def coords_for_country(iso_code):

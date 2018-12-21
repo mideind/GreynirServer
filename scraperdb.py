@@ -398,6 +398,9 @@ class Location(Base):
 
     # Country (ISO 3166-1 alpha-2, e.g. 'IS')
     country = Column(String(2))
+    
+    # Continent ISO code (e.g. 'EU')
+    continent = Column(String(2))
 
     # Coordinates (WGS84)
     latitude = Column(Float)

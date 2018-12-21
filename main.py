@@ -80,7 +80,7 @@ from images import (
     blacklist_image_url,
     get_staticmap_image,
 )
-from geo import location_info, LOCATION_TAXONOMY
+from geo import location_info, location_description, LOCATION_TAXONOMY
 from tnttagger import ifd_tag
 
 
@@ -228,7 +228,7 @@ _TOP_NEWS_LENGTH = 20
 _TOP_PERSONS_LENGTH = 20
 
 # Default number of top locations to show in /locations
-_TOP_LOCATIONS_LENGTH = 20
+_TOP_LOCATIONS_LENGTH = 100
 _TOP_LOCATIONS_PERIOD = 1  # in days
 
 # Maximum length of incoming GET/POST parameters
@@ -444,7 +444,7 @@ def top_locations(
         for k, v in locs.items():
             (name, kind, country, lat, lon) = k
             map_url = None
-            if kind == "country":
+            if kind in ["country", "continent"]:
                 map_url = GMAPS_PLACE_URL.format(name)
             elif lat and lon:
                 map_url = GMAPS_COORD_URL.format(lat, lon, "7z")
@@ -1151,6 +1151,7 @@ def locinfo():
         if loc:
             resp["found"] = True
             resp["country"] = loc.get("country")
+            resp["desc"] = location_description(loc)
             lat, lon = loc.get("latitude"), loc.get("longitude")
             if lat and lon:
                 z = ZOOM_FOR_LOC_KIND.get(kind)
