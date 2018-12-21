@@ -33,14 +33,62 @@ from country_list import countries_for_language, available_languages
 ICELAND_ISOCODE = "IS"  # ISO 3166-1 alpha-2
 ICELANDIC_LANG_ISOCODE = "is"  # ISO 639-1
 
+CONTINENTS = {
+    "Afríka": "AF",
+    "Norður-Afríka": "AF",
+    "Austur-Afríka": "AF",
+    "Vestur-Afríka": "AF",
+    "Mið-Afríka": "AF",
+    "Norður-Ameríka": "NA",
+    "Eyjaálfa": "OC",
+    "Suðurskautslandið": "AN",
+    "Asía": "AS",
+    "Norður-Asía": "AS",
+    "Suður-Asía": "AS",
+    "Mið-Asía": "AS",
+    "Austur-Asía": "AS",
+    "Suðaustur-Asía": "AS",
+    "Suðvestur-Asía": "AS",
+    "Vestur-Asía": "AS",
+    "Evrópa": "EU",
+    "Suður-Evrópa": "EU",
+    "Vestur-Evrópa": "EU",
+    "Norður-Evrópa": "EU",
+    "Austur-Evrópa": "EU",
+    "Mið-Evrópa": "EU",
+    "Suður-Ameríka": "SA",
+}
+
+ISO_TO_CONTINENT = {
+    "AF": "Afríka",
+    "NA": "Norður-Ameríka",
+    "OC": "Eyjaálfa",
+    "AN": "Suðurskautslandið",
+    "AS": "Asía",
+    "EU": "Evrópa",
+    "SA": "Suður-Ameríka",
+}
+
 COUNTRY_COORDS_JSONPATH = "resources/country_coords.json"
 
 # Types of locations
-LOCATION_TAXONOMY = frozenset(("country", "placename", "street", "address"))
+LOCATION_TAXONOMY = frozenset(
+    ("continent", "country", "placename", "street", "address")
+)
 
 # Location names that exist in Iceland but
-# should never be categorised as such
-NEVER_ICELANDIC = frozenset(("Norðurlönd", "París"))
+# should not be looked up in placenames
+ICE_PLACENAME_BLACKLIST = frozenset(
+    (
+        "Norðurlönd",
+        "París",
+        "Vesturland",
+        "Norðurland",
+        "Suðurland",
+        "Austurland",
+        "Suðurnes",
+    )
+)
 
 # ISO codes for country names are not included
 # in UN Icelandic country names
@@ -76,6 +124,9 @@ def location_info(name, kind, placename_hints=None):
     loc = dict(name=name, kind=kind)
     coords = None
 
+    if name in CONTINENTS:
+        kind = "continent"
+
     # Heimilisfang
     if kind == "address":
         # We currently assume all addresses are Icelandic ones
@@ -92,16 +143,18 @@ def location_info(name, kind, placename_hints=None):
             loc["country"] = code
             coords = coords_for_country(code)
 
+    elif kind == "continent":
+        code = CONTINENTS.get(name)
+
     # Götuheiti
     elif kind == "street":
         # All street names in BÍN are Icelandic
-        if name not in NEVER_ICELANDIC:
-            loc["country"] = ICELAND_ISOCODE
-            coords = coords_for_street_name(name, placename_hints=placename_hints)
+        loc["country"] = ICELAND_ISOCODE
+        coords = coords_for_street_name(name, placename_hints=placename_hints)
 
     # Örnefni
     elif kind == "placename":
-        if name not in NEVER_ICELANDIC:
+        if name not in ICE_PLACENAME_BLACKLIST:
             info = icelandic_placename_info(name)
             if info:
                 loc["country"] = ICELAND_ISOCODE
