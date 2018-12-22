@@ -82,15 +82,11 @@ ICE_PLACENAME_BLACKLIST = frozenset(
     (
         "Norðurlönd",
         "París",
-        "Vesturland",
-        "Norðurland",
-        "Suðurland",
-        "Austurland",
-        # "Suðurnes",
-        "Vestfirðir",
         "Svalbarði",
     )
 )
+
+ICE_REGIONS = frozenset(("Vesturland", "Norðurland", "Suðurland", "Austurland", "Vestfirðir", "Suðurnes"))
 
 # ISO codes for country names that are not 
 # included in Icelandic country name UN data
@@ -118,12 +114,15 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
 
 
 def location_description(loc):
-    """ Return a description for a location (in Icelandic) """
+    """ Return a description string for a location (in Icelandic) """
     if "kind" not in loc:
         return "staður"
 
     if loc["kind"] == "continent":
         return "heimsálfa"
+
+    if loc["name"] in ICE_REGIONS:
+        return "landshluti"
 
     if loc["kind"] == "country":
         desc = "land"
@@ -156,6 +155,7 @@ def location_info(name, kind, placename_hints=None):
     if kind not in LOCATION_TAXONOMY:
         return None
 
+    # Continents are marked "lönd" in BÍN, so we set kind manually
     if name in CONTINENTS:
         kind = "continent"
 
@@ -190,7 +190,7 @@ def location_info(name, kind, placename_hints=None):
 
     # Örnefni
     elif kind == "placename":
-        if name not in ICE_PLACENAME_BLACKLIST:
+        if name not in ICE_PLACENAME_BLACKLIST and name not in ICE_REGIONS:
             info = icelandic_placename_info(name)
             if info:
                 loc["country"] = ICELAND_ISOCODE
