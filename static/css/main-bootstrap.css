@@ -458,6 +458,10 @@ td.locname {
    overflow-x: hidden;
 }
 
+div.grid .table-responsive {
+   overflow-x: auto;
+}
+
 td.ratio div.progress {
    min-width: 4em;
    max-width: 4em;
