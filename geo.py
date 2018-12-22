@@ -190,7 +190,9 @@ def location_info(name, kind, placename_hints=None):
 
     # Örnefni
     elif kind == "placename":
-        if name not in ICE_PLACENAME_BLACKLIST and name not in ICE_REGIONS:
+        if name in ICE_REGIONS:
+            loc["country"] = ICELAND_ISOCODE
+        elif name not in ICE_PLACENAME_BLACKLIST:
             info = icelandic_placename_info(name)
             if info:
                 loc["country"] = ICELAND_ISOCODE
