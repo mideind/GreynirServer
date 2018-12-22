@@ -28,7 +28,7 @@ import re
 from pkg_resources import resource_stream
 from iceaddr import iceaddr_lookup, placename_lookup
 from country_list import countries_for_language, available_languages
-
+from pycountry_convert import country_alpha2_to_continent_code
 
 ICELAND_ISOCODE = "IS"  # ISO 3166-1 alpha-2
 ICELANDIC_LANG_ISOCODE = "is"  # ISO 639-1
@@ -86,7 +86,7 @@ ICE_PLACENAME_BLACKLIST = frozenset(
         "Norðurland",
         "Suðurland",
         "Austurland",
-        "Suðurnes",
+        # "Suðurnes",
         "Vestfirðir",
         "Svalbarði",
     )
@@ -140,6 +140,8 @@ def location_description(loc):
         return desc
 
     if loc["kind"] == "street":
+        if "country" in loc and loc["country"] == ICELAND_ISOCODE:
+            return "gata á Íslandi"
         return "gata"
 
     if loc["kind"] == "placename":
@@ -204,7 +206,16 @@ def location_info(name, kind, placename_hints=None):
 
 def continent_for_country(iso_code):
     """ Return two-char continent code, given a two-char country code """
-    return None
+    assert len(iso_code) == 2
+
+    iso_code = iso_code.upper()
+    cc = None
+    try:
+        cc = country_alpha2_to_continent_code(iso_code)
+    except:
+        pass
+
+    return cc
 
 
 def coords_for_country(iso_code):
