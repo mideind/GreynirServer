@@ -63,7 +63,7 @@ Create database:
 
 ```
 create database scraper with encoding 'UTF8' \
-LC_COLLATE='is_IS.utf8' LC_CTYPE='is_IS.utf8' \
+LC_COLLATE='is_IS.UTF-8' LC_CTYPE='is_IS.UTF-8' \
 TEMPLATE=template0;
 ```
 
