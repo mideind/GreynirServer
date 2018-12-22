@@ -394,6 +394,7 @@ def top_persons(limit=_TOP_PERSONS_LENGTH):
 GMAPS_COORD_URL = "https://www.google.com/maps/place/{0}+{1}/@{0},{1},{2}?hl=is"
 GMAPS_PLACE_URL = "https://www.google.com/maps/place/{0}?hl=is"
 
+
 def top_locations(
     limit=_TOP_LOCATIONS_LENGTH,
     kind=None,
@@ -442,7 +443,7 @@ def top_locations(
         # Create top locations list sorted by article count
         loclist = []
         for k, v in locs.items():
-            (name, kind, country, lat, lon) = k
+            (name, kind, country, lat, lon) = k  # Unpack tuple key
             map_url = None
             # if kind in ["country", "continent"]:
             map_url = GMAPS_PLACE_URL.format(name)
@@ -1105,7 +1106,9 @@ def icemap_markers(days=_TOP_LOCATIONS_PERIOD, enclosing_session=None):
 def locations_icemap():
     """ Render Icelandic map locations page """
     markers = icemap_markers(days=_TOP_LOCATIONS_PERIOD)
-    return render_template("locations/locations-icemap.html", markers=json.dumps(markers))
+    return render_template(
+        "locations/locations-icemap.html", markers=json.dumps(markers)
+    )
 
 
 @app.route("/locations_worldmap", methods=["GET"])
@@ -1127,7 +1130,7 @@ def staticmap():
 
     imgdata = get_staticmap_image(lat, lon, zoom=zoom)
     if imgdata:
-        fn = lat + lon + zoom
+        fn = "{0}_{1}_{2}.png".format(lat, lon, zoom)
         return send_file(imgdata, attachment_filename=fn, mimetype="image/png")
 
     return page_not_found(404)

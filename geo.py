@@ -25,6 +25,7 @@
 
 import json
 import re
+import sys
 from pkg_resources import resource_stream
 from iceaddr import iceaddr_lookup, placename_lookup
 from country_list import countries_for_language, available_languages
@@ -78,17 +79,13 @@ LOCATION_TAXONOMY = frozenset(
 
 # Location names that exist in Iceland but
 # should not be looked up in placenames
-ICE_PLACENAME_BLACKLIST = frozenset(
-    (
-        "Norðurlönd",
-        "París",
-        "Svalbarði",
-    )
+ICE_PLACENAME_BLACKLIST = frozenset(("Norðurlönd", "París", "Svalbarði"))
+
+ICE_REGIONS = frozenset(
+    ("Vesturland", "Norðurland", "Suðurland", "Austurland", "Vestfirðir", "Suðurnes")
 )
 
-ICE_REGIONS = frozenset(("Vesturland", "Norðurland", "Suðurland", "Austurland", "Vestfirðir", "Suðurnes"))
-
-# ISO codes for country names that are not 
+# ISO codes for country names that are not
 # included in Icelandic country name UN data
 COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
     ICELANDIC_LANG_ISOCODE: {
@@ -364,3 +361,12 @@ def parse_address_string(addrstr):
         addr["street"] = " ".join(comp[:-1])
 
     return addr
+
+
+if __name__ == "__main__":
+
+    name = sys.argv[1] if len(sys.argv) > 1 else None
+    kind = sys.argv[2] if len(sys.argv) > 2 else None
+
+    if name and kind:
+        print(location_info(name, kind))
