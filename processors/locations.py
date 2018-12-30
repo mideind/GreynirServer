@@ -74,7 +74,9 @@ PLACENAME_BLACKLIST = frozenset(
         "Eik",
         "Hlíf",
         "Félagar",
-        "Lækur"
+        "Lækur",
+        "Síðan",
+        "Lægðin",
     )
 )
 
@@ -117,7 +119,7 @@ def article_end(state):
         loc["article_url"] = url
         loc["timestamp"] = datetime.utcnow()
 
-        print("Location '{0}' is a '{1}'".format(loc["name"], loc["kind"]))
+        print("Location '{0}' is a {1}".format(loc["name"], loc["kind"]))
 
         l = Location(**loc)
         session.add(l)

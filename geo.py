@@ -82,7 +82,18 @@ LOCATION_TAXONOMY = frozenset(
 ICE_PLACENAME_BLACKLIST = frozenset(("Norðurlönd", "París", "Svalbarði"))
 
 ICE_REGIONS = frozenset(
-    ("Vesturland", "Norðurland", "Suðurland", "Austurland", "Vestfirðir", "Suðurnes")
+    (
+        "Vesturland",
+        "Norðurland",
+        "Norðausturland",
+        "Norðvesturland",
+        "Suðvesturland",
+        "Suðausturland",
+        "Suðurland",
+        "Austurland",
+        "Vestfirðir",
+        "Suðurnes",
+    )
 )
 
 # ISO codes for country names that are not
