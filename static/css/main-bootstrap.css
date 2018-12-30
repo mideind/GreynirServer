@@ -881,8 +881,9 @@ div#result i.entity {
 
 div#result i.lönd,
 div#result i.örn,
-div#result i.göt {
-   color: #774400;
+div#result i.göt,
+div#result i.borg {
+   color: #774400 !important;
    font-weight: 700;
 } 
 

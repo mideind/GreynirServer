@@ -70,16 +70,18 @@ var NONE_PUNCTUATION = "—–-/'~‘\\";
 // CENTER_PUNCTUATION = '"*&+=@©|'
 
 // Location word categories
-var LOC_FL = ["lönd", "örn", "göt"];
+var LOC_FL = ["lönd", "örn", "göt", "borg"];
 var FL_TO_LOC_DESC = {
    "lönd": "land",
    "örn": "örnefni",
    "göt": "götuheiti",
+   "borg": "borg",
 };
 var FL_TO_LOC_KIND = {
    "lönd": "country",
    "örn": "placename",
    "göt": "street",
+   "borg": "borg",
 };
 
 // Words array
