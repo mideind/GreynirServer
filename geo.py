@@ -41,6 +41,8 @@ CONTINENTS = {
     "Vestur-Afríka": "AF",
     "Mið-Afríka": "AF",
     "Norður-Ameríka": "NA",
+    "Mið-Ameríka": "NA",
+    "Suður-Ameríka": "SA",
     "Eyjaálfa": "OC",
     "Suðurskautslandið": "AN",
     "Asía": "AS",
@@ -57,7 +59,6 @@ CONTINENTS = {
     "Norður-Evrópa": "EU",
     "Austur-Evrópa": "EU",
     "Mið-Evrópa": "EU",
-    "Suður-Ameríka": "SA",
 }
 
 ISO_TO_CONTINENT = {

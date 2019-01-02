@@ -1137,7 +1137,7 @@ def staticmap():
 
 
 STATIC_MAP_URL = "/staticmap?lat={0}&lon={1}&z={2}"
-ZOOM_FOR_LOC_KIND = {"street": 12, "address": 12, "placename": 5, "country": 2}
+ZOOM_FOR_LOC_KIND = {"street": 11, "address": 12, "placename": 5, "country": 2}
 
 
 @app.route("/locinfo", methods=["GET"])
@@ -1154,6 +1154,7 @@ def locinfo():
         if loc:
             resp["found"] = True
             resp["country"] = loc.get("country")
+            resp["continent"] = loc.get("continent")
             resp["desc"] = location_description(loc)
             lat, lon = loc.get("latitude"), loc.get("longitude")
             if lat and lon:
