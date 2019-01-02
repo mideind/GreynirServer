@@ -115,8 +115,13 @@ Change to user `postgres`:
 sudo su - postgres
 ```
 
-Launch postgres client and create database users 
-(replace *your_name* with your username):
+Launch the postgres client:
+
+```
+psql
+```
+
+Create database users (replace *your_name* with your username):
 
 ```
 create user reynir with password 'reynir';
