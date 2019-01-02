@@ -29,7 +29,7 @@ import sys
 from pkg_resources import resource_stream
 from iceaddr import iceaddr_lookup, placename_lookup
 from country_list import countries_for_language, available_languages
-from pycountry_convert import country_alpha2_to_continent_code
+
 
 ICELAND_ISOCODE = "IS"  # ISO 3166-1 alpha-2
 ICELANDIC_LANG_ISOCODE = "is"  # ISO 639-1
@@ -70,16 +70,14 @@ ISO_TO_CONTINENT = {
     "SA": "Suður-Ameríka",
 }
 
-COUNTRY_COORDS_JSONPATH = "resources/country_coords.json"
-
 # Types of locations
 LOCATION_TAXONOMY = frozenset(
     ("continent", "country", "placename", "street", "address")
 )
 
 # Location names that exist in Iceland but
-# should not be looked up in placenames
-ICE_PLACENAME_BLACKLIST = frozenset(("Norðurlönd", "París", "Svalbarði"))
+# should not be looked up as Icelandic placenames
+ICE_PLACENAME_BLACKLIST = frozenset(("Norðurlönd", "París", "Svalbarði", "Höfðaborg"))
 
 ICE_REGIONS = frozenset(
     (
@@ -117,6 +115,8 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
         "Chile": "CL",
         "Kenýa": "KE",
         "Kirgisistan": "KG",
+        "Antígva": "AG",
+        "Antígúa": "AG",
     }
 }
 
@@ -188,7 +188,7 @@ def location_info(name, kind, placename_hints=None):
 
     # Heimsálfa
     elif kind == "continent":
-        code = CONTINENTS.get(name)
+        loc["continent"] = CONTINENTS.get(name)
 
     # Götuheiti
     elif kind == "street":
@@ -208,10 +208,28 @@ def location_info(name, kind, placename_hints=None):
                 # TODO: This could be smarter
                 coords = coords_from_addr_info(info[0])
 
+    # Look up continent code for country
+    if "country" in loc:
+        loc["continent"] = continent_for_country(loc["country"])
+
     if coords:
         (loc["latitude"], loc["longitude"]) = coords
 
     return loc
+
+
+# Data about countries, loaded from JSON data file
+COUNTRY_DATA = None
+COUNTRY_DATA_JSONPATH = "resources/country_data.json"
+
+
+def _load_country_data():
+    """ Load country data from JSON file """
+    global COUNTRY_DATA
+    if COUNTRY_DATA is None:
+        jsonstr = resource_stream(__name__, COUNTRY_DATA_JSONPATH).read().decode()
+        COUNTRY_DATA = json.loads(jsonstr)
+    return COUNTRY_DATA
 
 
 def continent_for_country(iso_code):
@@ -219,13 +237,14 @@ def continent_for_country(iso_code):
     assert len(iso_code) == 2
 
     iso_code = iso_code.upper()
-    cc = None
-    try:
-        cc = country_alpha2_to_continent_code(iso_code)
-    except:
-        pass
 
-    return cc
+    # Lazy-loaded
+    data = _load_country_data()
+
+    if iso_code in data:
+        return data[iso_code].get("cc")
+
+    return None
 
 
 def coords_for_country(iso_code):
@@ -234,12 +253,13 @@ def coords_for_country(iso_code):
 
     iso_code = iso_code.upper()
 
-    # Lazy-load data, save as function attribute
-    if not hasattr(coords_for_country, "iso2coord"):
-        jsonstr = resource_stream(__name__, COUNTRY_COORDS_JSONPATH).read().decode()
-        coords_for_country.iso2coord = json.loads(jsonstr)
+    # Lazy-loaded
+    data = _load_country_data()
 
-    return coords_for_country.iso2coord.get(iso_code)
+    if iso_code in data:
+        return data[iso_code].get("coords")
+
+    return None
 
 
 def coords_for_street_name(street_name, placename=None, placename_hints=[]):
