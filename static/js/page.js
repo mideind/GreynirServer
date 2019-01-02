@@ -81,7 +81,7 @@ var FL_TO_LOC_KIND = {
    "lönd": "country",
    "örn": "placename",
    "göt": "street",
-   "borg": "borg",
+   "borg": "placename",
 };
 
 // Words array

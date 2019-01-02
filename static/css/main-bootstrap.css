@@ -889,7 +889,14 @@ div#result i.göt,
 div#result i.borg {
    color: #774400 !important;
    font-weight: 700;
-} 
+}
+
+div#result i.lönd:hover,
+div#result i.örn:hover,
+div#result i.göt:hover,
+div#result i.borg:hover {
+   color: white !important;
+}
 
 div#result i.year,
 div#result i.telno,
