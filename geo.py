@@ -34,6 +34,7 @@ from country_list import countries_for_language, available_languages
 ICELAND_ISOCODE = "IS"  # ISO 3166-1 alpha-2
 ICELANDIC_LANG_ISOCODE = "is"  # ISO 639-1
 
+# Map Icelandic continent names to ISO continent code
 CONTINENTS = {
     "Afríka": "AF",
     "Norður-Afríka": "AF",
@@ -61,6 +62,7 @@ CONTINENTS = {
     "Mið-Evrópa": "EU",
 }
 
+# Map ISO continent codes to corresponding Icelandic name
 ISO_TO_CONTINENT = {
     "AF": "Afríka",
     "NA": "Norður-Ameríka",
@@ -76,12 +78,13 @@ LOCATION_TAXONOMY = frozenset(
     ("continent", "country", "placename", "street", "address")
 )
 
-# Location names that exist in Iceland but
-# should not be looked up as Icelandic placenames
-ICE_PLACENAME_BLACKLIST = frozenset(
-    ("Norðurlönd", "París", "Svalbarði", "Höfðaborg", "Sjáland")
-)
+# Location names that exist in Iceland but should
+# not be looked up as Icelandic place/street names
+ICE_PLACENAME_BLACKLIST = frozenset(("Norðurlönd", "París", "Svalbarði", "Höfðaborg"))
+ICE_STREETNAME_BLACKLIST = frozenset(("Sjáland"))
 
+# Names that should always be identified
+# as Icelandic regions, not placenames
 ICE_REGIONS = frozenset(
     (
         "Vesturland",
@@ -128,7 +131,7 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
 def location_description(loc):
     """ Return a description string (in Icelandic) for a location.
         Argument is dictionary with at least "name" and "kind" keys """
-    if "kind" not in loc:
+    if "kind" not in loc or "name" not in loc:
         return "staður"
 
     if loc["kind"] == "continent":
@@ -198,14 +201,16 @@ def location_info(name, kind, placename_hints=None):
     # Götuheiti
     elif kind == "street":
         # All street names in BÍN are Icelandic
-        loc["country"] = ICELAND_ISOCODE
-        coords = coords_for_street_name(name, placename_hints=placename_hints)
+        if name not in ICE_STREETNAME_BLACKLIST:
+            loc["country"] = ICELAND_ISOCODE
+            coords = coords_for_street_name(name, placename_hints=placename_hints)
 
     # Örnefni
     elif kind == "placename":
         if name in ICE_REGIONS:
             loc["country"] = ICELAND_ISOCODE
         elif name not in ICE_PLACENAME_BLACKLIST:
+            # Try to find a matching Icelandic placename
             info = icelandic_placename_info(name)
             if info:
                 loc["country"] = ICELAND_ISOCODE
