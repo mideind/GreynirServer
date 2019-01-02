@@ -78,7 +78,9 @@ LOCATION_TAXONOMY = frozenset(
 
 # Location names that exist in Iceland but
 # should not be looked up as Icelandic placenames
-ICE_PLACENAME_BLACKLIST = frozenset(("Norðurlönd", "París", "Svalbarði", "Höfðaborg"))
+ICE_PLACENAME_BLACKLIST = frozenset(
+    ("Norðurlönd", "París", "Svalbarði", "Höfðaborg", "Sjáland")
+)
 
 ICE_REGIONS = frozenset(
     (
@@ -91,6 +93,7 @@ ICE_REGIONS = frozenset(
         "Suðurland",
         "Austurland",
         "Vestfirðir",
+        "Austfirðir",
         "Suðurnes",
     )
 )
@@ -123,7 +126,8 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
 
 
 def location_description(loc):
-    """ Return a description string for a location (in Icelandic) """
+    """ Return a description string (in Icelandic) for a location.
+        Argument is dictionary with at least "name" and "kind" keys """
     if "kind" not in loc:
         return "staður"
 
@@ -340,8 +344,9 @@ def icelandic_placename_info(placename):
         data from Landmælingar Íslands via iceaddr """
     res = placename_lookup(placename)
     if len(res) >= 1:
-        # Prefer placenames marked 'Þéttbýli'
-        res.sort(key=lambda x: 0 if x.get("flokkur") == "Þéttbýli" else 1)
+        # Always prefer placenames marked 'Þéttbýli' or 'Sveitarfélag'
+        pref = ("Þéttbýli", "Sveitarfélag")
+        res.sort(key=lambda x: 0 if x.get("flokkur") in pref else 1)
         return res
     return None
 
