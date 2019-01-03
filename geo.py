@@ -1,8 +1,6 @@
 """
     Reynir: Natural language processing for Icelandic
 
-    Processor module to extract entity names & definitions
-
     Copyright (c) 2018 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
@@ -28,6 +26,7 @@ import re
 import sys
 from pkg_resources import resource_stream
 from iceaddr import iceaddr_lookup, placename_lookup
+from cityloc import city_lookup
 from country_list import countries_for_language, available_languages
 
 
@@ -167,11 +166,11 @@ def location_description(loc):
 
 def location_info(name, kind, placename_hints=None):
     """ Returns dict with info about a location, given name and kind.
-        Info includes country code, gps coordinates etc. """
+        Info includes country code, gps coordinates, continent etc. """
     if kind not in LOCATION_TAXONOMY:
         return None
 
-    # Continents are marked "lönd" in BÍN, so we set kind manually
+    # Continents are marked as "lönd" in BÍN, so we set kind manually
     if name in CONTINENTS:
         kind = "continent"
 
@@ -196,6 +195,7 @@ def location_info(name, kind, placename_hints=None):
 
     # Heimsálfa
     elif kind == "continent":
+        # Get continent ISO code
         loc["continent"] = CONTINENTS.get(name)
 
     # Götuheiti
@@ -217,6 +217,13 @@ def location_info(name, kind, placename_hints=None):
                 # Pick first matching placename w/o disambiguating
                 # TODO: This could be smarter
                 coords = coords_from_addr_info(info[0])
+        # OK, not Icelandic. Let's see if it's a foreign city
+        if not info:
+            cities = city_lookup(name)
+            if cities:
+                c = cities[0]
+                loc["country"] = c.get("country")
+                coords = coords_from_addr_info(c)
 
     # Look up continent code for country
     if "country" in loc:
@@ -358,7 +365,7 @@ def icelandic_placename_info(placename):
 
 def icelandic_addr_info(addr_str, placename=None, placename_hints=[]):
     """ Look up info about a specific Icelandic address in Staðfangaskrá.
-        via iceaddr. We want either a single match or nothing. """
+        via iceaddr package. We want either a single definite match or nothing. """
     addr = parse_address_string(addr_str)
 
     def lookup(pn):

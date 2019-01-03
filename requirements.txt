@@ -10,3 +10,4 @@ SQLAlchemy==1.2.12
 ipython>=7.0
 iceaddr>=0.3.2
 country-list>=0.1.1
+cityloc>=0.1.0

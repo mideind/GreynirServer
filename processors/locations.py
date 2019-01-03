@@ -17,9 +17,8 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    This module implements a processor that looks at parsed sentence trees
-    and extracts any addresses / locations, looks up information about
-    them and saves to a database.
+    This module implements a processor that extracts any addresses / locations
+    in parsed sentence trees, looks up information about them and saves to a database.
 
 """
 
@@ -40,9 +39,9 @@ ALWAYS_LOCATION = frozenset(
         "París",  # also ism in BÍN
         "Ísrael",  # ism
         "Aþena",  # ism
-        "Árborg", # ism
-        "Borg", # ism
-        "Hella", # ism
+        "Árborg",  # ism
+        "Borg",  # ism
+        "Hella",  # ism
     )
 )
 
