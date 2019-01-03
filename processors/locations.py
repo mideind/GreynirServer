@@ -57,6 +57,7 @@ PLACENAME_BLACKLIST = frozenset(
         "Stjórn",
         "Hrun",
         "Mark",
+        "Vatnið",
         "Á",
         "Kjarni",
         "Hagar",
@@ -65,9 +66,11 @@ PLACENAME_BLACKLIST = frozenset(
         "Húsið",
         "Maður",
         "Systur",
+        "Pallar",
         "Snið",
         "Síðan",
         "Hundruð",
+        "Hestur",
         "Skipti",
         "Skólinn",
         "Gat",
@@ -79,6 +82,7 @@ PLACENAME_BLACKLIST = frozenset(
         "Síðan",
         "Lægðin",
         "Prestur",
+        "Lón",
     )
 )
 

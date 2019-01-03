@@ -79,7 +79,7 @@ LOCATION_TAXONOMY = frozenset(
 
 # Location names that exist in Iceland but should
 # not be looked up as Icelandic place/street names
-ICE_PLACENAME_BLACKLIST = frozenset(("Norðurlönd", "París", "Svalbarði", "Höfðaborg"))
+ICE_PLACENAME_BLACKLIST = frozenset(("Norðurlönd", "París", "Svalbarði", "Höfðaborg", "Feney"))
 ICE_STREETNAME_BLACKLIST = frozenset(("Sjáland"))
 
 # Names that should always be identified
@@ -207,6 +207,7 @@ def location_info(name, kind, placename_hints=None):
 
     # Örnefni
     elif kind == "placename":
+        info = None
         if name in ICE_REGIONS:
             loc["country"] = ICELAND_ISOCODE
         elif name not in ICE_PLACENAME_BLACKLIST:
@@ -219,8 +220,9 @@ def location_info(name, kind, placename_hints=None):
                 coords = coords_from_addr_info(info[0])
         # OK, not Icelandic. Let's see if it's a foreign city
         if not info:
-            cities = city_lookup(name)
+            cities = lookup_city_info(name)
             if cities:
+                # Pick first match
                 c = cities[0]
                 loc["country"] = c.get("country")
                 coords = coords_from_addr_info(c)
@@ -233,6 +235,29 @@ def location_info(name, kind, placename_hints=None):
         (loc["latitude"], loc["longitude"]) = coords
 
     return loc
+
+
+ICE_CITY_NAMES = None
+ICE_CITIES_JSONPATH = "resources/cities_is.json"
+
+
+def _load_city_names():
+    """ Load data from JSON file mapping Icelandic city names
+        to their corresponding English name. """
+    global ICE_CITY_NAMES
+    if ICE_CITY_NAMES is None:
+        jsonstr = resource_stream(__name__, ICE_CITIES_JSONPATH).read().decode()
+        ICE_CITY_NAMES = json.loads(jsonstr)
+    return ICE_CITY_NAMES
+
+
+def lookup_city_info(name):
+    """ Look up name in city database. Convert Icelandic-specific 
+        city names to their corresponding English/international name """
+    names = _load_city_names() # Lazy-load
+    cn = ICE_CITY_NAMES[name] if name in ICE_CITY_NAMES else name
+    print(cn)
+    return city_lookup(cn)
 
 
 # Data about countries, loaded from JSON data file
