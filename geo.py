@@ -256,7 +256,6 @@ def lookup_city_info(name):
         city names to their corresponding English/international name """
     names = _load_city_names() # Lazy-load
     cn = ICE_CITY_NAMES[name] if name in ICE_CITY_NAMES else name
-    print(cn)
     return city_lookup(cn)
 
 
