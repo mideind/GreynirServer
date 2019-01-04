@@ -1166,6 +1166,7 @@ def locinfo():
             resp["desc"] = location_description(loc)
             lat, lon = loc.get("latitude"), loc.get("longitude")
             if lat and lon:
+                # ZOOM level should be different for foreign cities
                 z = ZOOM_FOR_LOC_KIND.get(kind)
                 resp["map"] = STATIC_MAP_URL.format(lat, lon, z)
 
