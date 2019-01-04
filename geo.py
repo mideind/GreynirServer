@@ -79,7 +79,9 @@ LOCATION_TAXONOMY = frozenset(
 
 # Location names that exist in Iceland but should
 # not be looked up as Icelandic place/street names
-ICE_PLACENAME_BLACKLIST = frozenset(("Norðurlönd", "París", "Svalbarði", "Höfðaborg", "Feney"))
+ICE_PLACENAME_BLACKLIST = frozenset(
+    ("Norðurlönd", "París", "Svalbarði", "Höfðaborg", "Feney")
+)
 ICE_STREETNAME_BLACKLIST = frozenset(("Sjáland"))
 
 # Names that should always be identified
@@ -130,6 +132,7 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
 def location_description(loc):
     """ Return a description string (in Icelandic) for a location.
         Argument is dictionary with at least "name" and "kind" keys """
+
     if "kind" not in loc or "name" not in loc:
         return "staður"
 
@@ -167,6 +170,7 @@ def location_description(loc):
 def location_info(name, kind, placename_hints=None):
     """ Returns dict with info about a location, given name and kind.
         Info includes country code, gps coordinates, continent etc. """
+
     if kind not in LOCATION_TAXONOMY:
         return None
 
@@ -253,9 +257,10 @@ def _load_city_names():
 
 def lookup_city_info(name):
     """ Look up name in city database. Convert Icelandic-specific 
-        city names to their corresponding English/international name """
-    names = _load_city_names() # Lazy-load
-    cn = ICE_CITY_NAMES[name] if name in ICE_CITY_NAMES else name
+        city names (e.g. "Lundúnir") to their corresponding 
+        English/international name before querying. """
+    cnames = _load_city_names()  # Lazy-load
+    cn = cnames[name] if name in cnames else name
     return city_lookup(cn)
 
 
@@ -377,7 +382,7 @@ def isocode_for_country_name(country_name, lang=ICELANDIC_LANG_ISOCODE):
 
 def icelandic_placename_info(placename):
     """ Look up info about an Icelandic placename ("örnefni") using
-        data from Landmælingar Íslands via iceaddr """
+        data from Landmælingar Íslands via the iceaddr package """
     res = placename_lookup(placename)
     if len(res) >= 1:
         # Always prefer placenames marked 'Þéttbýli' or 'Sveitarfélag'
@@ -388,8 +393,8 @@ def icelandic_placename_info(placename):
 
 
 def icelandic_addr_info(addr_str, placename=None, placename_hints=[]):
-    """ Look up info about a specific Icelandic address in Staðfangaskrá.
-        via iceaddr package. We want either a single definite match or nothing. """
+    """ Look up info about a specific Icelandic address in Staðfangaskrá via
+        the iceaddr package. We want either a single definite match or nothing. """
     addr = parse_address_string(addr_str)
 
     def lookup(pn):
@@ -424,7 +429,7 @@ def parse_address_string(addrstr):
         return addr
 
     # Check if last address component is a house number
-    # (possibly with trailing alphabetic character)
+    # (possibly with a trailing alphabetic character)
     last = comp[-1]
     r = re.search(r"^(\d+)([a-zA-Z]?)$", last)
     if r:
