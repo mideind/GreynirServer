@@ -51,7 +51,8 @@ from flask import (
     url_for,
     send_file,
     abort,
-    request, send_from_directory
+    request,
+    send_from_directory,
 )
 from flask.wrappers import Response
 from flask_caching import Cache
@@ -88,7 +89,7 @@ from images import (
     blacklist_image_url,
     get_staticmap_image,
 )
-from geo import location_info, location_description, LOCATION_TAXONOMY
+from geo import location_info, location_description, LOCATION_TAXONOMY, ICELAND_ISOCODE
 from tnttagger import ifd_tag
 
 
@@ -1097,7 +1098,7 @@ def icemap_markers(days=_TOP_LOCATIONS_PERIOD, enclosing_session=None):
             .join(Article)
             .join(Root)
             .filter(Root.visible)
-            .filter(Location.country == "IS")
+            .filter(Location.country == ICELAND_ISOCODE)
             .filter(Location.kind != "country")
             .filter(Location.latitude != None)
             .filter(Location.longitude != None)
@@ -1166,8 +1167,10 @@ def locinfo():
             resp["desc"] = location_description(loc)
             lat, lon = loc.get("latitude"), loc.get("longitude")
             if lat and lon:
-                # ZOOM level should be different for foreign cities
                 z = ZOOM_FOR_LOC_KIND.get(kind)
+                # We want a slightly lower zoom level for foreign placenames
+                if resp["country"] != ICELAND_ISOCODE and kind == "placename":
+                    z -= 1
                 resp["map"] = STATIC_MAP_URL.format(lat, lon, z)
 
     return better_jsonify(**resp)

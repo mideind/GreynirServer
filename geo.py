@@ -122,9 +122,11 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
         "Páfagarður": "VA",
         "Chile": "CL",
         "Kenýa": "KE",
+        "Kongó": "CD",
         "Kirgisistan": "KG",
         "Antígva": "AG",
         "Antígúa": "AG",
+        "Sri Lanka": "LK",
     }
 }
 
