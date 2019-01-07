@@ -10,24 +10,24 @@
 {% block content %}
 
 
-<div id="language-tabs">
-    <ul id="language-hdr" class="nav nav-tabs" role="tablist">
-        <li role="presentation" class="active">
-            <a href="{{ url_for('locations') }}">
-               Staðir
-            </a>
-        </li>
-        <li role="presentation">
-            <a href="{{ url_for('locations_icemap') }}">
-               Íslandskort
-            </a>
-        </li>
-<!--         <li role="presentation" class="">
-            <a href="{{ url_for('locations_worldmap') }}">
-               Heimskort
-            </a>
-        </li> -->
-    </ul>
+<div>
+   <ul class="nav nav-tabs" role="tablist">
+      <li role="presentation" class="active">
+         <a href="{{ url_for('locations') }}">
+             Staðir
+         </a>
+      </li>
+      <li role="presentation">
+         <a href="{{ url_for('locations_icemap') }}">
+             Íslandskort
+         </a>
+      </li>
+      <li role="presentation">
+         <a href="{{ url_for('locations_worldmap') }}">
+            Heimskort
+         </a>
+      </li>
+   </ul>
 </div>
 
 

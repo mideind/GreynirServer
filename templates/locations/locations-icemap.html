@@ -9,25 +9,26 @@
    integrity="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA=="
    crossorigin=""/>
 
-<style type="text/css">
-   #icemap { height: 550px; }
-</style>
-
 {% endblock %}
 
 {% block content %}
 
-<div id="language-tabs">
-   <ul id="language-hdr" class="nav nav-tabs" role="tablist">
+<div>
+   <ul class="nav nav-tabs" role="tablist">
       <li role="presentation">
-          <a href="{{ url_for('locations') }}">
+         <a href="{{ url_for('locations') }}">
              Staðir
-          </a>
+         </a>
       </li>
       <li role="presentation" class="active">
-          <a href="{{ url_for('locations_icemap') }}">
+         <a href="{{ url_for('locations_icemap') }}">
              Íslandskort
-          </a>
+         </a>
+      </li>
+      <li role="presentation">
+         <a href="{{ url_for('locations_worldmap') }}">
+            Heimskort
+         </a>
       </li>
    </ul>
 </div>
@@ -49,7 +50,7 @@
 
 <!-- Article results when marker is clicked -->
 <div class="results">
-   <h1 class="results-title"></h1>
+   <h3 class="results-title"></h1>
    <div class="results-body"></div>
 </div>
 
@@ -69,6 +70,7 @@ var markers = {{ markers | safe }};
 
 function initMap() {
    
+   // Set up map centered on Iceland, with constrained bounds
    var iceloc = new L.LatLng(64.9957538607, -18.5739616708);
    var margin = 8.0;
    var bounds = L.latLngBounds(
@@ -76,7 +78,6 @@ function initMap() {
       L.latLng(iceloc.lat - margin, iceloc.lng - margin)
    );
 
-   // Set up a map centered on Iceland, with constrained bounds
    map = new L.Map('icemap', { 
       zoomSnap: 0.5, 
       maxZoom: 12, 
@@ -85,21 +86,21 @@ function initMap() {
       maxBoundsViscosity: 1.0,
    });
 
-   // Create the tile layer with attribution
+   map.setView(iceloc, 6.5);
+
+   // Create the tile layer with attribution label, as per license
    var osmUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
    var osmAttrib = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
    var osm = new L.TileLayer(osmUrl, { attribution: osmAttrib });		
 
-   map.setView(iceloc, 6.5);
    map.addLayer(osm);
 
-   //var marker = L.marker([64.9957538607, -18.5739616708]).addTo(map);
+   // Add markers
    for (m in markers) {
       var marker = L.marker([markers[m][1], markers[m][2]]);
       marker.addTo(map);
       marker.bindTooltip(markers[m][0], { permanent: false, className: "map-label", offset:[ 0, 0] });
       marker.on('click', onMarkerClick);
-      //.bindPopup("<b>Hello world!</b><br />I am a popup.");
    }
 }
 

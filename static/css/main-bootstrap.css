@@ -1280,3 +1280,15 @@ div#canvas svg {
    color: #2aabd2;
 }
 
+/* Location maps */
+
+div#icemap { 
+   height: 550px; 
+}
+
+@media(max-width: 768px) {
+   div#icemap {
+      height: 350px;
+   }
+}
+
