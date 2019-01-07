@@ -323,8 +323,13 @@ function hoverOut() {
    $("#info").css("visibility", "hidden");
    $("#info-image").hide();
    $(this).removeClass("highlight");
+
+   // Abort any ongoing onhover requests to server
    if (getPersonImage.request) {
       getPersonImage.request.abort();
+   }
+   if (getLocationInfo.request) {
+      getLocationInfo.request.abort();
    }
 }
 

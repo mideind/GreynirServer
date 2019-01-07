@@ -64,9 +64,9 @@ PLACENAME_BLACKLIST = frozenset(
         "Hagar",
         "Þing",
         "Langa",
-        "Húsið",
         "Hús",
         "Kirkjan",
+        "Kirkja",
         "Maður",
         "Systur",
         "Pallar",
@@ -77,6 +77,7 @@ PLACENAME_BLACKLIST = frozenset(
         "Hestur",
         "Skipti",
         "Skólinn",
+        "Skurður",
         "Gat",
         "Eik",
         "Hlíf",
@@ -95,7 +96,7 @@ PLACENAME_BLACKLIST = frozenset(
     )
 )
 
-STREETNAME_BLACKLIST = frozenset(("Mark", "Á", "Sjáland", "Uppsalir"))
+STREETNAME_BLACKLIST = frozenset(("Mark", "Á", "Sjáland", "Uppsalir", "Hús", "Húsið"))
 
 COUNTRY_BLACKLIST = frozenset(())
 

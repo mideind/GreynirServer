@@ -237,7 +237,7 @@ _TOP_NEWS_LENGTH = 20
 _TOP_PERSONS_LENGTH = 20
 
 # Default number of top locations to show in /locations
-_TOP_LOCATIONS_LENGTH = 100
+_TOP_LOCATIONS_LENGTH = 20
 _TOP_LOCATIONS_PERIOD = 1  # in days
 
 # Maximum length of incoming GET/POST parameters
@@ -248,7 +248,7 @@ _MAX_TEXT_LENGTH_VIA_URL = 512
 _MAX_QUERY_LENGTH = 512
 
 
-def top_news(topic=None, offset=0, limit=_TOP_NEWS_LENGTH):
+def top_news(topic=None, offset=0, limit=_TOP_NEWS_LENGTH, start=None, location=None):
     """ Return a list of articles (with a particular topic) in
         chronologically reversed order. """
     toplist = []
@@ -266,6 +266,12 @@ def top_news(topic=None, offset=0, limit=_TOP_NEWS_LENGTH):
             .filter(Article.num_sentences > 0)
             .filter(Root.visible == True)
         )
+
+        if start is not None:
+            q = q.filter(Article.timestamp > start)
+
+        if location is not None:
+            q = q.join(Location).filter(Location.name == location)
 
         if topic is not None:
             # Filter by topic identifier
@@ -1065,6 +1071,21 @@ def suggest(limit=10):
     return better_jsonify(suggestions=suggestions)
 
 
+@app.route("/articles", methods=["GET"])
+def articles_list():
+    """ Returns rendered article list as JSON payload """
+    locname = request.args.get("locname")
+    period = request.args.get("period")
+
+    days = 7 if period == "week" else 1
+    start_date = datetime.utcnow() - timedelta(days=days)
+
+    articles = top_news(start=start_date, location=locname)
+    html = render_template("articles.html", articles=articles)
+
+    return better_jsonify(payload=html)
+
+
 @app.route("/locations", methods=["GET"])
 @max_age(seconds=60 * 5)
 def locations():
@@ -1081,20 +1102,11 @@ def locations():
     return render_template("locations/locations.html", locations=locs, period=period)
 
 
-def icemap_markers(days=_TOP_LOCATIONS_PERIOD, enclosing_session=None):
+def icemap_markers(days=_TOP_LOCATIONS_PERIOD):
     """ Return a list of recent Icelandic locations and their coordinates """
-    with SessionContext(commit=False, session=enclosing_session) as session:
+    with SessionContext(commit=False) as session:
         q = (
-            session.query(
-                Location.name,
-                Location.kind,
-                Location.article_url,
-                Location.latitude,
-                Location.longitude,
-                Article.id,
-                Article.heading,
-                Root.domain,
-            )
+            session.query(Location.name, Location.latitude, Location.longitude)
             .join(Article)
             .join(Root)
             .filter(Root.visible)
@@ -1103,9 +1115,7 @@ def icemap_markers(days=_TOP_LOCATIONS_PERIOD, enclosing_session=None):
             .filter(Location.latitude != None)
             .filter(Location.longitude != None)
             .filter(Article.timestamp > datetime.utcnow() - timedelta(days=days))
-            .order_by(desc(Article.timestamp))
         )
-
         markers = [(l.name, l.latitude, l.longitude) for l in q.all()]
 
     return markers
