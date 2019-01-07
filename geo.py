@@ -133,7 +133,7 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
 
 def location_description(loc):
     """ Return a description string (in Icelandic) for a location.
-        Argument is dictionary with at least "name" and "kind" keys """
+        Argument is a dictionary with at least "name" and "kind" keys """
 
     if "kind" not in loc or "name" not in loc:
         return "staður"
@@ -171,7 +171,7 @@ def location_description(loc):
 
 def location_info(name, kind, placename_hints=None):
     """ Returns dict with info about a location, given name and kind.
-        Info includes country code, gps coordinates, continent etc. """
+        Info includes ISO country and continent code, GPS coordinates, etc. """
 
     if kind not in LOCATION_TAXONOMY:
         return None

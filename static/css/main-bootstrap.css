@@ -1282,13 +1282,21 @@ div#canvas svg {
 
 /* Location maps */
 
-div#icemap { 
-   height: 550px; 
+div#icemap, div#worldmap { 
+   height: 550px;
+   width: 100%;
 }
 
 @media(max-width: 768px) {
-   div#icemap {
+   div#icemap, div#worldmap {
       height: 350px;
    }
+}
+
+img.mapflag {
+   max-height: 12px;
+   margin-left: 2px;
+   margin-bottom: 2px;
+   margin-right: 5px;
 }
 

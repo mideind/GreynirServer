@@ -17,12 +17,12 @@
    <ul class="nav nav-tabs" role="tablist">
       <li role="presentation">
          <a href="{{ url_for('locations') }}">
-             Staðir
+            Staðir
          </a>
       </li>
       <li role="presentation" class="active">
          <a href="{{ url_for('locations_icemap') }}">
-             Íslandskort
+            Íslandskort
          </a>
       </li>
       <li role="presentation">
@@ -44,14 +44,14 @@
       <div class="headline visible-xs-inline-block">Staðir á Íslandi</div>
    </div>
 
-   <div id="icemap" style="border:1px solid #ddd;"></div>
+   <div id="icemap"></div>
 
 </div>
 
 <!-- Article results when marker is clicked -->
-<div class="results">
-   <h3 class="results-title"></h1>
-   <div class="results-body"></div>
+<div class="map-results">
+   <h3 class="map-results-title"></h3>
+   <div class="map-results-body"></div>
 </div>
 
 
@@ -110,12 +110,12 @@ function onMarkerClick(arg) {
    }
 
    var placename = arg.sourceTarget._tooltip._content;
-   $('div.results > .results-title').text(placename);
+   $('div.map-results > .map-results-title').text(placename);
 
    var enc = encodeURIComponent(placename);
    onMarkerClick.request = $.getJSON("/articles?locname=" + enc, function(r) {
       if (r['payload']) {
-         $('div.results > .results-body').html(r['payload']);
+         $('div.map-results > .map-results-body').html(r['payload']);
       }
    });
 }

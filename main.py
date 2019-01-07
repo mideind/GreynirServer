@@ -90,6 +90,7 @@ from images import (
     get_staticmap_image,
 )
 from geo import location_info, location_description, LOCATION_TAXONOMY, ICELAND_ISOCODE
+from country_list import countries_for_language
 from tnttagger import ifd_tag
 
 
@@ -248,7 +249,7 @@ _MAX_TEXT_LENGTH_VIA_URL = 512
 _MAX_QUERY_LENGTH = 512
 
 
-def top_news(topic=None, offset=0, limit=_TOP_NEWS_LENGTH, start=None, location=None):
+def top_news(topic=None, offset=0, limit=_TOP_NEWS_LENGTH, start=None, location=None, country=None):
     """ Return a list of articles (with a particular topic) in
         chronologically reversed order. """
     toplist = []
@@ -267,14 +268,20 @@ def top_news(topic=None, offset=0, limit=_TOP_NEWS_LENGTH, start=None, location=
             .filter(Root.visible == True)
         )
 
+        # Filter by date
         if start is not None:
             q = q.filter(Article.timestamp > start)
 
+        # Filter by location
         if location is not None:
             q = q.join(Location).filter(Location.name == location)
 
+        # Filter by country code
+        if country is not None:
+            q = q.join(Location).filter(Location.country == country)
+
+        # Filter by topic identifier
         if topic is not None:
-            # Filter by topic identifier
             q = q.join(ArticleTopic).join(Topic).filter(Topic.identifier == topic)
 
         q = q.order_by(desc(Article.timestamp)).offset(offset).limit(limit)
@@ -1073,14 +1080,15 @@ def suggest(limit=10):
 
 @app.route("/articles", methods=["GET"])
 def articles_list():
-    """ Returns rendered article list as JSON payload """
+    """ Returns rendered HTML article list as JSON payload """
     locname = request.args.get("locname")
+    country = request.args.get("country")
     period = request.args.get("period")
 
     days = 7 if period == "week" else 1
     start_date = datetime.utcnow() - timedelta(days=days)
 
-    articles = top_news(start=start_date, location=locname)
+    articles = top_news(start=start_date, location=locname, country=country)
     html = render_template("articles.html", articles=articles)
 
     return better_jsonify(payload=html)
@@ -1130,10 +1138,31 @@ def locations_icemap():
     )
 
 
+def world_map_data(days=_TOP_LOCATIONS_PERIOD):
+    """ Return data for world map. List of country iso codes with article count """
+    with SessionContext(commit=False) as session:
+        q = (
+            session.query(Location.country, dbfunc.count(Location.id))
+            .filter(Location.kind == "country")
+            .filter(Location.country != None)
+            .join(Article)
+            .filter(Article.timestamp > datetime.utcnow() - timedelta(days=days))
+            .group_by(Location.country)
+            .order_by(Location.country)
+        )
+
+        return {r[0]: r[1] for r in q.all()}
+
+
 @app.route("/locations_worldmap", methods=["GET"])
 def locations_worldmap():
-    """ Render Icelandic map locations page """
-    return render_template("locations/locations-worldmap.html")
+    """ Render world map locations page """
+    period = request.args.get("period")
+    days = 7 if period == "week" else _TOP_LOCATIONS_PERIOD
+
+    d = world_map_data(days=days)
+    n = dict(countries_for_language('is'))
+    return render_template("locations/locations-worldmap.html", country_data=d, country_names=n)
 
 
 @app.route("/staticmap", methods=["GET"])
