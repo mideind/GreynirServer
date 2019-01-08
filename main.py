@@ -1139,9 +1139,12 @@ def icemap_markers(days=_TOP_LOCATIONS_PERIOD):
 @app.route("/locations_icemap", methods=["GET"])
 def locations_icemap():
     """ Render Icelandic map locations page """
-    markers = icemap_markers(days=_TOP_LOCATIONS_PERIOD)
+    period = request.args.get("period")
+    days = 7 if period == "week" else _TOP_LOCATIONS_PERIOD
+
+    markers = icemap_markers(days=days)
     return render_template(
-        "locations/locations-icemap.html", markers=json.dumps(markers)
+        "locations/locations-icemap.html", markers=json.dumps(markers), period=period
     )
 
 
@@ -1170,7 +1173,10 @@ def locations_worldmap():
     d = world_map_data(days=days)
     n = dict(countries_for_language("is"))
     return render_template(
-        "locations/locations-worldmap.html", country_data=d, country_names=n
+        "locations/locations-worldmap.html",
+        country_data=d,
+        country_names=n,
+        period=period,
     )
 
 

@@ -46,6 +46,21 @@
          <small>Smelltu á merki til að sjá tengdar greinar</small>
       </div>
       <div class="headline visible-xs-inline-block">Staðir á Íslandi</div>
+
+      <div class="btn-group pull-right">
+         <span class="hidden-xs">
+            <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+               {{ "Undanfarna viku" if period == 'week' else "Síðasta sólarhring" }} 
+               <span class="caret"></span>
+            </button>
+
+            <ul class="dropdown-menu">
+               <li><a href="{{ url_for('locations_icemap') | safe }}">Síðasta sólarhring</a></li>
+               <li><a href="{{ url_for('locations_icemap', period='week') | safe }}">Undanfarna viku</a></li>
+            </ul>
+         </span>
+      </div>
+
    </div>
 
    <div id="icemap"></div>
@@ -113,7 +128,7 @@ function initMap() {
 
 function onMarkerClick(arg) {
    $('#map-results-body').html('');
-   
+
    if (onMarkerClick.request) {
       onMarkerClick.request.abort();
    }
@@ -124,7 +139,7 @@ function onMarkerClick(arg) {
       .html("<span class='glyphicon glyphicon-restart glyphicon-spin'></span>");
 
    var enc = encodeURIComponent(placename);
-   onMarkerClick.request = $.getJSON("/articles?locname=" + enc, function(r) {
+   onMarkerClick.request = $.getJSON("/articles?period={{ period | safe }}&locname=" + enc, function(r) {
       if (r['payload']) {
          $('#map-results-body').html(r['payload']);
          $('#map-results-progress').html('');

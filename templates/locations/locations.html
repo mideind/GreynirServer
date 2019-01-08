@@ -67,7 +67,7 @@
             </button>
 
             <ul class="dropdown-menu">
-               <li><a href="{{ url_for('locations') }}">Síðasta sólarhring</a></li>
+               <li><a href="{{ url_for('locations') | safe }}">Síðasta sólarhring</a></li>
                <li><a href="{{ url_for('locations', period='week') | safe }}">Undanfarna viku</a></li>
             </ul>
          </span>

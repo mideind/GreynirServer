@@ -46,6 +46,21 @@
          <small>Smelltu á land til að sjá tengdar greinar</small>
       </div>
       <div class="headline visible-xs-inline-block">Lönd í fréttum</div>
+
+      <div class="btn-group pull-right">
+         <span class="hidden-xs">
+            <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+               {{ "Undanfarna viku" if period == 'week' else "Síðasta sólarhring" }} 
+               <span class="caret"></span>
+            </button>
+
+            <ul class="dropdown-menu">
+               <li><a href="{{ url_for('locations_worldmap') | safe }}">Síðasta sólarhring</a></li>
+               <li><a href="{{ url_for('locations_worldmap', period='week') | safe }}">Undanfarna viku</a></li>
+            </ul>
+         </span>
+      </div>
+
    </div>
 
    <div id="worldmap"></div>
@@ -122,7 +137,7 @@ function onRegionClick(e, code) {
       .html("<span class='glyphicon glyphicon-restart glyphicon-spin'></span>");
 
    var enc = encodeURIComponent(code);
-   onRegionClick.request = $.getJSON("/articles?country=" + enc, function(r) {
+   onRegionClick.request = $.getJSON("/articles?period={{ period | safe }}&country=" + enc, function(r) {
       var res = r['payload'] ? r['payload'] : "";
       $('#map-results-body').html(res);
       $('#map-results-progress').html('');
