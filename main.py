@@ -249,13 +249,20 @@ _MAX_TEXT_LENGTH_VIA_URL = 512
 _MAX_QUERY_LENGTH = 512
 
 
-def top_news(topic=None, offset=0, limit=_TOP_NEWS_LENGTH, start=None, location=None, country=None):
+def top_news(
+    topic=None,
+    offset=0,
+    limit=_TOP_NEWS_LENGTH,
+    start=None,
+    location=None,
+    country=None,
+):
     """ Return a list of articles (with a particular topic) in
         chronologically reversed order. """
     toplist = []
     topdict = dict()
 
-    with SessionContext(commit=True) as session:
+    with SessionContext(commit=False) as session:
 
         q = (
             session.query(Article)
@@ -1161,8 +1168,10 @@ def locations_worldmap():
     days = 7 if period == "week" else _TOP_LOCATIONS_PERIOD
 
     d = world_map_data(days=days)
-    n = dict(countries_for_language('is'))
-    return render_template("locations/locations-worldmap.html", country_data=d, country_names=n)
+    n = dict(countries_for_language("is"))
+    return render_template(
+        "locations/locations-worldmap.html", country_data=d, country_names=n
+    )
 
 
 @app.route("/staticmap", methods=["GET"])
@@ -1320,7 +1329,7 @@ def news():
         topics = dict(id=topic, name=d.get(topic, ""), topic_list=q)
     return render_template(
         "news.html",
-        articles=articles,
+        articles=[],
         topics=topics,
         display_time=display_time,
         offset=offset,

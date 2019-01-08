@@ -40,7 +40,11 @@
    <div class="panel panel-default table-responsive">
 
    <div class="panel-heading">
-      <div class="headline hidden-xs">Lönd nýlega í fréttum vefmiðla</div>
+      <div class="headline hidden-xs">
+         Lönd nýlega í fréttum vefmiðla
+         <br>
+         <small>Smelltu á land til að sjá tengdar greinar</small>
+      </div>
       <div class="headline visible-xs-inline-block">Lönd í fréttum</div>
    </div>
 
@@ -48,10 +52,13 @@
 
 </div>
 
-<!-- Article results when marker is clicked -->
+<!-- Article results when country is clicked -->
 <div class="map-results">
-   <h3 class="map-results-title"></h3>
-   <div class="map-results-body"></div>
+   <h3 class="map-results-header">
+      <span id="map-results-title"></span>
+      <span id="map-results-progress"></span>
+   </h3>
+   <div id="map-results-body"></div>
 </div>
 
 
@@ -100,17 +107,25 @@ function onRegionTipShow(e, el, code) {
 }
 
 function onRegionClick(e, code) {
+   $('#map-results-body').html('');
+
    if (onRegionClick.request) {
       onRegionClick.request.abort();
    }
 
-   $('div.map-results > .map-results-title').text(countryNames[code]);
+   var flag_img = $('<img>').attr('src', flagURL4cc(code)).attr("class", "titleflag");
+   console.log(flag_img);
+
+   $('#map-results-title').html(flag_img).append(countryNames[code]);
+
+   $('#map-results-progress')
+      .html("<span class='glyphicon glyphicon-restart glyphicon-spin'></span>");
 
    var enc = encodeURIComponent(code);
    onRegionClick.request = $.getJSON("/articles?country=" + enc, function(r) {
-      if (r['payload']) {
-         $('div.map-results > .map-results-body').html(r['payload']);
-      }
+      var res = r['payload'] ? r['payload'] : "";
+      $('#map-results-body').html(res);
+      $('#map-results-progress').html('');
    });
 }
 

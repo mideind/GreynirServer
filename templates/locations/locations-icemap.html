@@ -40,7 +40,11 @@
    <div class="panel panel-default table-responsive">
 
    <div class="panel-heading">
-      <div class="headline hidden-xs">Staðir á Íslandi í fréttum síðustu 24 klst.</div>
+      <div class="headline hidden-xs">
+         Staðir á Íslandi í fréttum síðustu 24 klst.
+         <br>
+         <small>Smelltu á merki til að sjá tengdar greinar</small>
+      </div>
       <div class="headline visible-xs-inline-block">Staðir á Íslandi</div>
    </div>
 
@@ -50,8 +54,11 @@
 
 <!-- Article results when marker is clicked -->
 <div class="map-results">
-   <h3 class="map-results-title"></h3>
-   <div class="map-results-body"></div>
+   <h3 class="map-results-header">
+      <span id="map-results-title"></span>
+      <span id="map-results-progress"></span>
+   </h3>
+   <div id="map-results-body"></div>
 </div>
 
 
@@ -105,17 +112,22 @@ function initMap() {
 }
 
 function onMarkerClick(arg) {
+   $('#map-results-body').html('');
+   
    if (onMarkerClick.request) {
       onMarkerClick.request.abort();
    }
 
    var placename = arg.sourceTarget._tooltip._content;
-   $('div.map-results > .map-results-title').text(placename);
+   $('#map-results-title').text(placename);
+   $('#map-results-progress')
+      .html("<span class='glyphicon glyphicon-restart glyphicon-spin'></span>");
 
    var enc = encodeURIComponent(placename);
    onMarkerClick.request = $.getJSON("/articles?locname=" + enc, function(r) {
       if (r['payload']) {
-         $('div.map-results > .map-results-body').html(r['payload']);
+         $('#map-results-body').html(r['payload']);
+         $('#map-results-progress').html('');
       }
    });
 }
