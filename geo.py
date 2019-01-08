@@ -215,16 +215,18 @@ def location_info(name, kind, placename_hints=None):
     # Örnefni
     elif kind == "placename":
         info = None
+        
+        # Check if it's an Icelandic placename
         if name in ICE_REGIONS:
             loc["country"] = ICELAND_ISOCODE
         elif name not in ICE_PLACENAME_BLACKLIST:
             # Try to find a matching Icelandic placename
-            info = icelandic_placename_info(name)
+            info = placename_lookup(name)
             if info:
                 loc["country"] = ICELAND_ISOCODE
-                # Pick first matching placename w/o disambiguating
-                # TODO: This could be smarter
+                # Pick first matching placename
                 coords = coords_from_addr_info(info[0])
+
         # OK, not Icelandic. Let's see if it's a foreign city
         if not info:
             cities = lookup_city_info(name)
@@ -381,18 +383,6 @@ def isocode_for_country_name(country_name, lang=ICELANDIC_LANG_ISOCODE):
     if lang in COUNTRY_NAME_TO_ISOCODE_ADDITIONS:
         return COUNTRY_NAME_TO_ISOCODE_ADDITIONS[lang].get(country_name)
 
-    return None
-
-
-def icelandic_placename_info(placename):
-    """ Look up info about an Icelandic placename ("örnefni") using
-        data from Landmælingar Íslands via the iceaddr package """
-    res = placename_lookup(placename)
-    if len(res) >= 1:
-        # Always prefer placenames marked 'Þéttbýli' or 'Sveitarfélag'
-        pref = ("Þéttbýli", "Sveitarfélag")
-        res.sort(key=lambda x: 0 if x.get("flokkur") in pref else 1)
-        return res
     return None
 
 
