@@ -80,9 +80,9 @@ LOCATION_TAXONOMY = frozenset(
 # Location names that exist in Iceland but should
 # not be looked up as Icelandic place/street names
 ICE_PLACENAME_BLACKLIST = frozenset(
-    ("Norðurlönd", "París", "Svalbarði", "Höfðaborg", "Feney")
+    ("Norðurlönd", "París", "Svalbarði", "Höfðaborg", "Hamborg")
 )
-ICE_STREETNAME_BLACKLIST = frozenset(("Sjáland"))
+ICE_STREETNAME_BLACKLIST = frozenset(("Sjáland", "Feney"))
 
 # Names that should always be identified
 # as Icelandic regions, not placenames
@@ -127,6 +127,7 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
         "Antígva": "AG",
         "Antígúa": "AG",
         "Sri Lanka": "LK",
+        "Kórea": "KR", # South Korea :)
     }
 }
 
