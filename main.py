@@ -1329,7 +1329,7 @@ def news():
         topics = dict(id=topic, name=d.get(topic, ""), topic_list=q)
     return render_template(
         "news.html",
-        articles=[],
+        articles=articles,
         topics=topics,
         display_time=display_time,
         offset=offset,

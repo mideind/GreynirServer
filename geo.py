@@ -229,7 +229,8 @@ def location_info(name, kind, placename_hints=None):
         if not info:
             cities = lookup_city_info(name)
             if cities:
-                # Pick first match
+                # Pick first match. Cityloc package should give us a match list
+                # with capitals given precedence, and ordered by population.
                 c = cities[0]
                 loc["country"] = c.get("country")
                 coords = coords_from_addr_info(c)
@@ -250,7 +251,7 @@ ICE_CITIES_JSONPATH = "resources/cities_is.json"
 
 def _load_city_names():
     """ Load data from JSON file mapping Icelandic city names
-        to their corresponding English name. """
+        to their corresponding English/international name. """
     global ICE_CITY_NAMES
     if ICE_CITY_NAMES is None:
         jsonstr = resource_stream(__name__, ICE_CITIES_JSONPATH).read().decode()
