@@ -324,12 +324,15 @@ function hoverOut() {
    $("#info-image").hide();
    $(this).removeClass("highlight");
 
-   // Abort any ongoing onhover requests to server
-   if (getPersonImage.request) {
-      getPersonImage.request.abort();
-   }
-   if (getLocationInfo.request) {
-      getLocationInfo.request.abort();
+   // Abort any ongoing onhover requests to server.
+   // These requests are stored as properties of 
+   // the functions that send them.
+   var reqobjs = [getPersonImage, getLocationInfo];
+   for (var idx in reqobjs) {
+      if (reqobjs[idx] && reqobjs[idx].request) {
+         reqobjs[idx].request.abort();
+         reqobjs[idx].request = null;
+      }
    }
 }
 

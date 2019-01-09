@@ -260,9 +260,8 @@ def top_news(
     """ Return a list of articles (with a particular topic) in
         chronologically reversed order. """
     toplist = []
-    topdict = dict()
 
-    with SessionContext(commit=False) as session:
+    with SessionContext(read_only=True) as session:
 
         q = (
             session.query(Article)
@@ -473,10 +472,11 @@ def top_locations(
         loclist = []
         for k, v in locs.items():
             (name, kind, country, lat, lon) = k  # Unpack tuple key
-            map_url = None
-            # if kind in ["country", "continent"]:
+            # Google map links currently use the placename instead of
+            # coordinates. This works well for most Icelandic and 
+            # international placenames, but fails on some.
             map_url = GMAPS_PLACE_URL.format(name)
-            # elif lat and lon:
+            # if lat and lon:
             #     map_url = GMAPS_COORD_URL.format(lat, lon, "7z")
 
             loclist.append(
@@ -1055,7 +1055,7 @@ def suggest(limit=10):
     if not txt or not prefix:
         return better_jsonify(suggestions=suggestions)
 
-    with SessionContext(commit=False) as session:
+    with SessionContext(read_only=True) as session:
         name = txt[len(prefix) :].strip()
         model_col = None
 
@@ -1111,7 +1111,7 @@ def locations():
     period = request.args.get("period")
     days = 7 if period == "week" else _TOP_LOCATIONS_PERIOD
 
-    with SessionContext(commit=False) as session:
+    with SessionContext(read_only=True) as session:
         locs = top_locations(enclosing_session=session, kind=kind, days=days)
 
     return render_template("locations/locations.html", locations=locs, period=period)
@@ -1119,7 +1119,7 @@ def locations():
 
 def icemap_markers(days=_TOP_LOCATIONS_PERIOD):
     """ Return a list of recent Icelandic locations and their coordinates """
-    with SessionContext(commit=False) as session:
+    with SessionContext(read_only=True) as session:
         q = (
             session.query(Location.name, Location.latitude, Location.longitude)
             .join(Article)
@@ -1154,7 +1154,7 @@ def locations_icemap():
 
 def world_map_data(days=_TOP_LOCATIONS_PERIOD):
     """ Return data for world map. List of country iso codes with article count """
-    with SessionContext(commit=False) as session:
+    with SessionContext(read_only=True) as session:
         q = (
             session.query(Location.country, dbfunc.count(Location.id))
             .filter(Location.kind == "country")
@@ -1263,7 +1263,7 @@ def genders():
 def stats():
     """ Render a page with article statistics """
 
-    with SessionContext(commit=False) as session:
+    with SessionContext(read_only=True) as session:
 
         sq = StatsQuery()
         result = sq.execute(session)
