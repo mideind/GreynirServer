@@ -40,11 +40,14 @@ CONTINENTS = {
     "Austur-Afríka": "AF",
     "Vestur-Afríka": "AF",
     "Mið-Afríka": "AF",
+    "Suðurálfa": "AF",
     "Norður-Ameríka": "NA",
     "Mið-Ameríka": "NA",
     "Suður-Ameríka": "SA",
     "Eyjaálfa": "OC",
     "Suðurskautslandið": "AN",
+    "Suðurskautsland": "AN",
+    "Antarktíka": "AN",  # Til í BÍN!
     "Asía": "AS",
     "Norður-Asía": "AS",
     "Suður-Asía": "AS",
@@ -54,6 +57,7 @@ CONTINENTS = {
     "Suðvestur-Asía": "AS",
     "Vestur-Asía": "AS",
     "Evrópa": "EU",
+    "Norðurálfa": "EU",
     "Suður-Evrópa": "EU",
     "Vestur-Evrópa": "EU",
     "Norður-Evrópa": "EU",
@@ -61,7 +65,7 @@ CONTINENTS = {
     "Mið-Evrópa": "EU",
 }
 
-# Map ISO continent codes to corresponding Icelandic name
+# Map ISO continent codes to canonical Icelandic name
 ISO_TO_CONTINENT = {
     "AF": "Afríka",
     "NA": "Norður-Ameríka",
@@ -96,6 +100,7 @@ ICE_REGIONS = frozenset(
         "Suðausturland",
         "Suðurland",
         "Austurland",
+        "Mið-Austurland",
         "Vestfirðir",
         "Austfirðir",
         "Suðurnes",
@@ -108,6 +113,7 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
     ICELANDIC_LANG_ISOCODE: {
         "Mjanmar": "MM",
         "Búrma": "MM",
+        "Burma": "MM",
         "Ameríka": "US",
         "Hong Kong": "HK",
         "Makaó": "MO",
@@ -120,14 +126,41 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
         "Hersegóvína": "BA",
         "Palestína": "PS",
         "Páfagarður": "VA",
+        "Páfastóll": "VA",
+        "Páfaríki": "VA",
+        "Vatíkan": "VA",
+        "Papúa": "PG",
+        "Nevis": "KN",
         "Chile": "CL",
         "Kenýa": "KE",
         "Kongó": "CD",
+        "Caicoseyjar": "TC",
+        "Fídjieyjar": "FJ",
+        "Grenadíneyjar": "VC",
+        "Guatemala": "GT",
         "Kirgisistan": "KG",
         "Antígva": "AG",
-        "Antígúa": "AG",
+        "Antigva": "AG",
+        "Antigúa": "AG",
         "Sri Lanka": "LK",
-        "Kórea": "KR", # South Korea :)
+        "Kórea": "KR",  # South Korea :)
+        "Moldavía": "MD",
+        "Trínidad": "TT",
+        "Tóbagó": "TT",
+        "Seychelleseyjar": "SC",
+        "Salvador": "SV",
+        "Mikrónesía": "FM",
+        "Lýbía": "LY",
+        "Líbýa": "LY",
+        "Kókoseyjar": "CC",
+        "Kípur": "CY",
+        "Barbadoseyjar": "BB",
+        "Austur-Tímor": "TL",
+        "Kíríbatí": "KI",
+        "Nikaragva": "NI",
+        "Nikaragúa": "NI",
+        "Cookseyjar": "CK",
+        "Egiptaland": "EG",
     }
 }
 
@@ -139,32 +172,34 @@ def location_description(loc):
     if "kind" not in loc or "name" not in loc:
         return "staður"
 
-    if loc["kind"] == "continent":
+    name = loc["name"]
+    kind = loc["kind"]
+
+    if kind == "continent":
         return "heimsálfa"
 
-    if loc["name"] in ICE_REGIONS:
+    if name in ICE_REGIONS:
         return "landshluti"
 
-    if loc["kind"] == "country":
+    if kind == "country":
         desc = "land"
         c = loc.get("continent")
         if c is None and "country" in loc:
             c = continent_for_country(loc["country"])
-        if c and c in ISO_TO_CONTINENT:
+        if c in ISO_TO_CONTINENT:
             cname = ISO_TO_CONTINENT[c]
             desc = "land í {0}u".format(cname[:-1])
         return desc
 
-    if loc["kind"] == "address":
-        desc = "heimilisfang"
-        return desc
+    if kind == "address":
+        return "heimilisfang"
 
-    if loc["kind"] == "street":
+    if kind == "street":
         if "country" in loc and loc["country"] == ICELAND_ISOCODE:
             return "gata á Íslandi"
         return "gata"
 
-    if loc["kind"] == "placename":
+    if kind == "placename":
         return "örnefni"
 
     return "staður"
@@ -215,7 +250,7 @@ def location_info(name, kind, placename_hints=None):
     # Örnefni
     elif kind == "placename":
         info = None
-        
+
         # Check if it's an Icelandic placename
         if name in ICE_REGIONS:
             loc["country"] = ICELAND_ISOCODE
@@ -232,7 +267,7 @@ def location_info(name, kind, placename_hints=None):
             cities = lookup_city_info(name)
             if cities:
                 # Pick first match. Cityloc package should give us a match list
-                # with capitals given precedence, and ordered by population.
+                # ordered by population, with capital cities given precedence
                 c = cities[0]
                 loc["country"] = c.get("country")
                 coords = coords_from_addr_info(c)
@@ -266,7 +301,7 @@ def lookup_city_info(name):
         city names (e.g. "Lundúnir") to their corresponding 
         English/international name before querying. """
     cnames = _load_city_names()  # Lazy-load
-    cn = cnames[name] if name in cnames else name
+    cn = cnames.get(name, name)
     return city_lookup(cn)
 
 
@@ -290,8 +325,7 @@ def continent_for_country(iso_code):
 
     iso_code = iso_code.upper()
 
-    # Lazy-loaded
-    data = _load_country_data()
+    data = _load_country_data()  # Lazy-load
 
     if iso_code in data:
         return data[iso_code].get("cc")

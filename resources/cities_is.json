@@ -81,6 +81,7 @@
   "Lundúnir": "London",
   "Köln": "Cologne",
   "Napolí": "Naples",
+  "Napólí": "Naples",
   "Kölnarborg": "Cologne",
   "Delí": "Delhi",
   "Nýja-Delí": "New Delhi",
@@ -104,8 +105,10 @@
   "Ljúblíana": "Ljubljana",
   "Þessalóníka": "Thessaloniki",
   "Þessalónika": "Thessaloniki",
+  "Þessaloníka": "Thessaloniki",
   "Salóníka": "Thessaloniki",
   "Vín": "Vienna",
+  "Vínarborg": "Vienna",
   "Askabad": "Ashgabat",
   "Gíbraltar": "Gibraltar",
   "Dakka": "Dhaka",
@@ -159,5 +162,7 @@
   "Edinborg": "Edinburgh",
   "Vilníus": "Vilnius",
   "Núrnberg": "Nurnberg",
-  "Feneyjar": "Venice"
+  "Feneyjar": "Venice",
+  "Fíladelfía": "Philadelphia",
+  "Trípólí": "Tripoli"
 }
