@@ -1245,6 +1245,54 @@ def analysis():
     return render_template("analysis.html", default_text=txt)
 
 
+PARSEFAIL_DEFAULT = 50
+PARSEFAIL_MAX = 250
+
+
+@app.route("/parsefail")
+def parsefail():
+    """ Handler for a page showing recent sentences where parsing failed """
+
+    num = request.args.get("num", PARSEFAIL_DEFAULT)
+    try:
+        num = min(int(num), PARSEFAIL_MAX)
+    except:
+        num = PARSEFAIL_DEFAULT
+
+    with SessionContext(read_only=True) as session:
+        q = (
+            session.query(Article.id, Article.timestamp, Article.tokens)
+            .filter(Article.tree != None)
+            .filter(Article.timestamp != None)
+            .filter(Article.timestamp <= datetime.utcnow())
+            .filter(Article.heading > "")
+            .filter(Article.num_sentences > 0)
+            .filter(Article.num_sentences != Article.num_parsed)
+            .order_by(desc(Article.timestamp))
+            .limit(num)
+        )
+
+        sfails = []
+
+        for a in q.all():
+            tokens = json.loads(a.tokens)
+            # Paragraphs
+            for p in tokens:
+                # Sentences
+                for s in p:
+                    # Tokens
+                    for t in s:
+                        if "err" in t:
+                            # Only add well-formed sentences that start   
+                            # with a capital letter and end with a period
+                            if s[0]['x'][0].isupper() and s[-1]['x'] == '.':
+                                sfails.append([s])
+                                break
+
+    return render_template("parsefail.html", sentences=json.dumps(sfails), num=num)
+
+
+
 @app.route("/page")
 def page():
     """ Handler for a page displaying the parse of an arbitrary web page by URL
