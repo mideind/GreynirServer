@@ -1252,6 +1252,7 @@ td.explain {
 div#canvas {
    position: relative;
    overflow: visible;
+   margin-bottom: 80px;
 }
 
 div#canvas svg {
