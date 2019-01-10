@@ -265,12 +265,12 @@ def top_news(
 
         q = (
             session.query(Article)
-            .join(Root)
             .filter(Article.tree != None)
             .filter(Article.timestamp != None)
             .filter(Article.timestamp <= datetime.utcnow())
             .filter(Article.heading > "")
             .filter(Article.num_sentences > 0)
+            .join(Root)
             .filter(Root.visible == True)
         )
 
@@ -290,7 +290,7 @@ def top_news(
         if topic is not None:
             q = q.join(ArticleTopic).join(Topic).filter(Topic.identifier == topic)
 
-        q = q.order_by(desc(Article.timestamp)).offset(offset).limit(limit)
+        q = q.distinct().order_by(desc(Article.timestamp)).offset(offset).limit(limit)
 
         class ArticleDisplay:
             """ Utility class to carry information about an article to the web template """
@@ -473,7 +473,7 @@ def top_locations(
         for k, v in locs.items():
             (name, kind, country, lat, lon) = k  # Unpack tuple key
             # Google map links currently use the placename instead of
-            # coordinates. This works well for most Icelandic and 
+            # coordinates. This works well for most Icelandic and
             # international placenames, but fails on some.
             map_url = GMAPS_PLACE_URL.format(name)
             # if lat and lon:
@@ -1085,6 +1085,9 @@ def suggest(limit=10):
     return better_jsonify(suggestions=suggestions)
 
 
+ARTICLES_LIST_MAXITEMS = 50
+
+
 @app.route("/articles", methods=["GET"])
 def articles_list():
     """ Returns rendered HTML article list as JSON payload """
@@ -1095,10 +1098,17 @@ def articles_list():
     days = 7 if period == "week" else 1
     start_date = datetime.utcnow() - timedelta(days=days)
 
-    articles = top_news(start=start_date, location=locname, country=country)
+    articles = top_news(
+        start=start_date,
+        location=locname,
+        country=country,
+        limit=ARTICLES_LIST_MAXITEMS,
+    )
+
+    count = len(articles)
     html = render_template("articles.html", articles=articles)
 
-    return better_jsonify(payload=html)
+    return better_jsonify(payload=html, count=count)
 
 
 @app.route("/locations", methods=["GET"])
@@ -1125,6 +1135,7 @@ def icemap_markers(days=_TOP_LOCATIONS_PERIOD):
             .join(Article)
             .filter(Article.tree != None)
             .filter(Article.timestamp != None)
+            .filter(Article.timestamp <= datetime.utcnow())
             .filter(Article.heading > "")
             .filter(Article.num_sentences > 0)
             .filter(Article.timestamp > datetime.utcnow() - timedelta(days=days))
@@ -1135,7 +1146,7 @@ def icemap_markers(days=_TOP_LOCATIONS_PERIOD):
             .filter(Location.latitude != None)
             .filter(Location.longitude != None)
         )
-        markers = [(l.name, l.latitude, l.longitude) for l in q.all()]
+        markers = set([(l.name, l.latitude, l.longitude) for l in q.all()])
 
     return markers
 
@@ -1157,18 +1168,18 @@ def world_map_data(days=_TOP_LOCATIONS_PERIOD):
     with SessionContext(read_only=True) as session:
         q = (
             session.query(Location.country, dbfunc.count(Location.id))
-            .filter(Location.kind == "country")
             .filter(Location.country != None)
             .join(Article)
             .filter(Article.tree != None)
             .filter(Article.timestamp != None)
+            .filter(Article.timestamp <= datetime.utcnow())
             .filter(Article.heading > "")
             .filter(Article.num_sentences > 0)
             .filter(Article.timestamp > datetime.utcnow() - timedelta(days=days))
+            .join(Root)
+            .filter(Root.visible)
             .group_by(Location.country)
-            .order_by(Location.country)
         )
-
         return {r[0]: r[1] for r in q.all()}
 
 
