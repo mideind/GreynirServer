@@ -24,6 +24,7 @@
 import json
 import re
 import sys
+import os
 from pkg_resources import resource_stream
 from iceaddr import iceaddr_lookup, placename_lookup
 from cityloc import city_lookup
@@ -283,7 +284,9 @@ def location_info(name, kind, placename_hints=None):
 
 
 ICE_CITY_NAMES = None
-ICE_CITIES_JSONPATH = "resources/cities_is.json"
+ICE_CITIES_JSONPATH = os.path.join(
+    os.path.dirname(__file__), "resources/cities_is.json"
+)
 
 
 def _load_city_names():
@@ -291,8 +294,8 @@ def _load_city_names():
         to their corresponding English/international name. """
     global ICE_CITY_NAMES
     if ICE_CITY_NAMES is None:
-        jsonstr = resource_stream(__name__, ICE_CITIES_JSONPATH).read().decode()
-        ICE_CITY_NAMES = json.loads(jsonstr)
+        with open(ICE_CITIES_JSONPATH) as f:
+            ICE_CITY_NAMES = json.load(f)
     return ICE_CITY_NAMES
 
 
@@ -307,15 +310,17 @@ def lookup_city_info(name):
 
 # Data about countries, loaded from JSON data file
 COUNTRY_DATA = None
-COUNTRY_DATA_JSONPATH = "resources/country_data.json"
+COUNTRY_DATA_JSONPATH = os.path.join(
+    os.path.dirname(__file__), "resources/country_data.json"
+)
 
 
 def _load_country_data():
     """ Load country data from JSON file """
     global COUNTRY_DATA
     if COUNTRY_DATA is None:
-        jsonstr = resource_stream(__name__, COUNTRY_DATA_JSONPATH).read().decode()
-        COUNTRY_DATA = json.loads(jsonstr)
+        with open(COUNTRY_DATA_JSONPATH) as f:
+            COUNTRY_DATA = json.load(f)
     return COUNTRY_DATA
 
 
