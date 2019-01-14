@@ -885,10 +885,18 @@ div#result i.entity {
 
 div#result i.lönd,
 div#result i.örn,
-div#result i.göt {
-   color: #774400;
+div#result i.göt,
+div#result i.borg {
+   color: #774400 !important;
    font-weight: 700;
-} 
+}
+
+div#result i.lönd:hover,
+div#result i.örn:hover,
+div#result i.göt:hover,
+div#result i.borg:hover {
+   color: white !important;
+}
 
 div#result i.year,
 div#result i.telno,
@@ -1244,6 +1252,7 @@ td.explain {
 div#canvas {
    position: relative;
    overflow: visible;
+   margin-bottom: 80px;
 }
 
 div#canvas svg {
@@ -1271,4 +1280,41 @@ div#canvas svg {
    /*font-weight: normal; */
    color: #2aabd2;
 }
+
+/* Location maps */
+
+div#icemap, div#worldmap { 
+   height: 470px;
+   width: 100%;
+}
+
+@media(max-width: 768px) {
+   div#icemap, div#worldmap {
+      height: 300px;
+   }
+}
+
+img.mapflag {
+   max-height: 12px;
+   margin-left: 4px;
+   margin-bottom: 2px;
+   margin-right: 5px;
+}
+
+img.titleflag {
+   max-height: 20px;
+   margin-right: 8px;
+   margin-left: 10px;
+   margin-top: -6px;
+}
+
+span#map-results-progress {
+   font-size: 0.8em;
+   margin-left: 8px;
+}
+
+p.no-results {
+   margin: 10px;
+}
+
 

@@ -17,9 +17,8 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    This module implements a processor that looks at parsed sentence trees
-    and extracts any addresses / locations, looks up information about
-    them and saves to a database.
+    This module implements a processor that extracts any addresses / locations
+    in parsed sentence trees, looks up information about them and saves to a database.
 
 """
 
@@ -37,17 +36,12 @@ LOCFL_TO_KIND = dict(zip(BIN_LOCFL, ["country", "street", "placename"]))
 # Always identify these words as locations, even when other meanings exist
 ALWAYS_LOCATION = frozenset(
     (
-        "París",  # ism í BÍN
+        "París",  # also ism in BÍN
         "Ísrael",  # ism
-        "Víetnam",  # alm
-        "Sýrland",  # fyr
-        "Mið-Afríkulýðveldið",  # alm
-        "Grænland",  # fyr
         "Aþena",  # ism
-        "Árborg",
-        "Borg",
-        "Hella",
-        "Suðurnes",
+        "Árborg",  # ism
+        "Borg",  # ism
+        "Hella",  # ism
     )
 )
 
@@ -57,30 +51,59 @@ PLACENAME_BLACKLIST = frozenset(
         "Eyjan",
         "Fjöll",
         "Bæir",
+        "Bær",
         "Rauða",
         "Hjálp",
         "Stjórn",
         "Hrun",
         "Mark",
+        "Vatnið",
+        "Vatn",
         "Á",
         "Kjarni",
         "Hagar",
         "Þing",
-        "Hús",
         "Langa",
         "Hús",
+        "Kirkjan",
+        "Kirkja",
         "Maður",
         "Systur",
+        "Pallar",
         "Snið",
+        "Síða",
         "Síðan",
         "Hundruð",
+        "Hestur",
         "Skipti",
-        "Skóli",
+        "Skólinn",
+        "Skurður",
         "Gat",
+        "Eik",
+        "Hlíf",
+        "Karl",
+        "Félagar",
+        "Lækur",
+        "Síðan",
+        "Lægðin",
+        "Prestur",
+        "Paradís",
+        "Lón",
+        "Hróarskeldu",
+        "Land",
+        "Fjórðungur",
+        "Grænur",
+        "Hagi",
+        "Hagar",
+        "Opnur",
+        "Guðfinna",
+        "Svið",
+        "Öxi",
+        "Skyggnir"
     )
 )
 
-STREETNAME_BLACKLIST = frozenset(("Mark", "Á"))
+STREETNAME_BLACKLIST = frozenset(("Mark", "Á", "Sjáland", "Hús", "Húsið"))
 
 COUNTRY_BLACKLIST = frozenset(())
 
@@ -119,7 +142,7 @@ def article_end(state):
         loc["article_url"] = url
         loc["timestamp"] = datetime.utcnow()
 
-        print("Location '{0}' is a '{1}'".format(name, kind))
+        print("Location '{0}' is a {1}".format(loc["name"], loc["kind"]))
 
         l = Location(**loc)
         session.add(l)
@@ -200,10 +223,6 @@ def _process(node, params, result):
         return
     if kind == "country" and name in COUNTRY_BLACKLIST:
         return
-
-    # UGLY HACK: BÍN has Iceland as "örn". Should be fixed by patching BÍN data
-    if name == "Ísland":
-        kind = "country"
 
     # Add
     loc = Loc(name=name, kind=kind)

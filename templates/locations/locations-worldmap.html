@@ -1,0 +1,160 @@
+
+{% extends "container-normal.html" %}
+
+{% block styles %}
+
+<link href="{{ url_for('static', filename='css/main-bootstrap.css') }}" rel='stylesheet' type='text/css'>
+<link href="{{ url_for('static', filename='css/jquery-jvectormap-2.0.3.css') }}" rel='stylesheet' type='text/css'>
+<script src="{{ url_for('static', filename='js/jquery-jvectormap-2.0.3.min.js') }}" defer></script>
+<script src="http://jvectormap.com/js/jquery-jvectormap-world-mill.js" defer></script>
+
+
+{% endblock %}
+
+{% block content %}
+
+<div>
+   <ul class="nav nav-tabs" role="tablist">
+      <li role="presentation">
+         <a href="{{ url_for('locations') }}">
+            Staðir
+         </a>
+      </li>
+      <li role="presentation">
+         <a href="{{ url_for('locations_icemap') }}">
+            Íslandskort
+         </a>
+      </li>
+      <li role="presentation" class="active">
+         <a href="{{ url_for('locations_worldmap') }}">
+            Heimskort
+         </a>
+      </li>
+   </ul>
+</div>
+
+
+<!-- Map of Iceland -->
+<div role="tabpanel" class="tab-pane active">
+
+   <div class="panel panel-default table-responsive">
+
+   <div class="panel-heading">
+      <div class="headline hidden-xs">
+         Lönd nýlega í fréttum vefmiðla
+         <br>
+         <small>Smelltu á land til að sjá tengdar greinar</small>
+      </div>
+      <div class="headline visible-xs-inline-block">Lönd í fréttum</div>
+
+      <div class="btn-group pull-right">
+         <span class="hidden-xs">
+            <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+               {{ "Undanfarna viku" if period == 'week' else "Síðasta sólarhring" }} 
+               <span class="caret"></span>
+            </button>
+
+            <ul class="dropdown-menu">
+               <li><a href="{{ url_for('locations_worldmap') | safe }}">Síðasta sólarhring</a></li>
+               <li><a href="{{ url_for('locations_worldmap', period='week') | safe }}">Undanfarna viku</a></li>
+            </ul>
+         </span>
+      </div>
+
+   </div>
+
+   <div id="worldmap"></div>
+
+</div>
+
+<!-- Article results when country is clicked -->
+<div class="map-results">
+   <h3 class="map-results-header">
+      <span id="map-results-title"></span>
+      <span id="map-results-progress"></span>
+   </h3>
+   <div id="map-results-body"></div>
+</div>
+
+
+{% endblock %}
+
+{% block endscripts %}
+
+<script type="text/javascript">
+
+var countryData = {{ country_data | safe }};
+var countryNames = {{ country_names | safe }};
+
+function initWorldMap() {
+   $('#worldmap').vectorMap({
+      map: 'world_mill',
+      regionsSelectable: true,
+      regionsSelectableOne: true,
+      regionStyle: {
+         initial: {
+            fill: '#eee'
+         },
+         selected: {
+            fill: '#ff0'
+         }
+      },
+      //backgroundColor: '#66CCFF',
+      series: {
+         regions: [{
+            values: countryData,
+            scale: ['#b1d9ff', '#2375c3'],
+            normalizeFunction: 'polynomial'
+         }]
+      },
+      onRegionTipShow: onRegionTipShow,
+      onRegionClick: onRegionClick,
+   });
+}
+
+function onRegionTipShow(e, el, code) {
+   var flag = '<img src="' + flagURL4cc(code) + '" class="mapflag">';
+   var msg = flag + countryNames[code];
+   if (countryData[code]) {
+      msg += ' (' + countryData[code] + ')';
+   }
+   el.html(msg);
+}
+
+function onRegionClick(e, code) {
+   $('#map-results-body').html('');
+
+   if (onRegionClick.request) {
+      onRegionClick.request.abort();
+   }
+
+   var flag_img = $('<img>').attr('src', flagURL4cc(code)).attr("class", "titleflag");
+   console.log(flag_img);
+
+   $('#map-results-title').html(flag_img).append(countryNames[code]);
+
+   $('#map-results-progress')
+      .html("<span class='glyphicon glyphicon-restart glyphicon-spin'></span>");
+
+   var enc = encodeURIComponent(code);
+   onRegionClick.request = $.getJSON("/articles?period={{ period | safe }}&country=" + enc, function(r) {
+      var res = r['payload'] ? r['payload'] : "";
+      $('#map-results-body').html(res);
+      $('#map-results-progress').html('');
+   });
+}
+
+function flagURL4cc(code) {
+   return "{{ url_for('static', filename='img/flags/') }}" + code + '.png';
+}
+
+$(document).ready(function() {
+   // Activate the top navbar
+   $("#navid-locations").addClass("active");
+   // Set up map
+   initWorldMap();
+});
+
+</script>
+
+{% endblock %}

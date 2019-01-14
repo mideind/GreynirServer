@@ -70,16 +70,18 @@ var NONE_PUNCTUATION = "—–-/'~‘\\";
 // CENTER_PUNCTUATION = '"*&+=@©|'
 
 // Location word categories
-var LOC_FL = ["lönd", "örn", "göt"];
+var LOC_FL = ["lönd", "örn", "göt", "borg"];
 var FL_TO_LOC_DESC = {
    "lönd": "land",
    "örn": "örnefni",
    "göt": "götuheiti",
+   "borg": "borg",
 };
 var FL_TO_LOC_KIND = {
    "lönd": "country",
    "örn": "placename",
    "göt": "street",
+   "borg": "placename",
 };
 
 // Words array
@@ -321,8 +323,16 @@ function hoverOut() {
    $("#info").css("visibility", "hidden");
    $("#info-image").hide();
    $(this).removeClass("highlight");
-   if (getPersonImage.request) {
-      getPersonImage.request.abort();
+
+   // Abort any ongoing onhover requests to server.
+   // These requests are stored as properties of 
+   // the functions that send them.
+   var reqobjs = [getPersonImage, getLocationInfo];
+   for (var idx in reqobjs) {
+      if (reqobjs[idx] && reqobjs[idx].request) {
+         reqobjs[idx].request.abort();
+         reqobjs[idx].request = null;
+      }
    }
 }
 

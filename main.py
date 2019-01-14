@@ -42,9 +42,18 @@ from functools import wraps
 from decimal import Decimal
 from collections import defaultdict
 
-from flask import Flask
-from flask import render_template, make_response, jsonify, redirect, url_for, send_file
-from flask import request, send_from_directory
+from flask import (
+    Flask,
+    render_template,
+    make_response,
+    jsonify,
+    redirect,
+    url_for,
+    send_file,
+    abort,
+    request,
+    send_from_directory,
+)
 from flask.wrappers import Response
 from flask_caching import Cache
 
@@ -80,7 +89,8 @@ from images import (
     blacklist_image_url,
     get_staticmap_image,
 )
-from geo import location_info, LOCATION_TAXONOMY
+from geo import location_info, location_description, LOCATION_TAXONOMY, ICELAND_ISOCODE
+from country_list import countries_for_language
 from tnttagger import ifd_tag
 
 
@@ -239,30 +249,48 @@ _MAX_TEXT_LENGTH_VIA_URL = 512
 _MAX_QUERY_LENGTH = 512
 
 
-def top_news(topic=None, offset=0, limit=_TOP_NEWS_LENGTH):
+def top_news(
+    topic=None,
+    offset=0,
+    limit=_TOP_NEWS_LENGTH,
+    start=None,
+    location=None,
+    country=None,
+):
     """ Return a list of articles (with a particular topic) in
         chronologically reversed order. """
     toplist = []
-    topdict = dict()
 
-    with SessionContext(commit=True) as session:
+    with SessionContext(read_only=True) as session:
 
         q = (
             session.query(Article)
-            .join(Root)
             .filter(Article.tree != None)
             .filter(Article.timestamp != None)
             .filter(Article.timestamp <= datetime.utcnow())
             .filter(Article.heading > "")
             .filter(Article.num_sentences > 0)
+            .join(Root)
             .filter(Root.visible == True)
         )
 
+        # Filter by date
+        if start is not None:
+            q = q.filter(Article.timestamp > start)
+
+        # Filter by location
+        if location is not None:
+            q = q.join(Location).filter(Location.name == location)
+
+        # Filter by country code
+        if country is not None:
+            q = q.join(Location).filter(Location.country == country)
+
+        # Filter by topic identifier
         if topic is not None:
-            # Filter by topic identifier
             q = q.join(ArticleTopic).join(Topic).filter(Topic.identifier == topic)
 
-        q = q.order_by(desc(Article.timestamp)).offset(offset).limit(limit)
+        q = q.distinct().order_by(desc(Article.timestamp)).offset(offset).limit(limit)
 
         class ArticleDisplay:
             """ Utility class to carry information about an article to the web template """
@@ -391,7 +419,8 @@ def top_persons(limit=_TOP_PERSONS_LENGTH):
         )
 
 
-GOOGLE_MAPS_URL = "https://www.google.com/maps/place/{0}+{1}/@{0},{1},{2}"
+GMAPS_COORD_URL = "https://www.google.com/maps/place/{0}+{1}/@{0},{1},{2}?hl=is"
+GMAPS_PLACE_URL = "https://www.google.com/maps/place/{0}?hl=is"
 
 
 def top_locations(
@@ -442,10 +471,13 @@ def top_locations(
         # Create top locations list sorted by article count
         loclist = []
         for k, v in locs.items():
-            (name, kind, country, lat, lon) = k
-            map_url = None
-            if lat and lon:
-                map_url = GOOGLE_MAPS_URL.format(lat, lon, "7z")
+            (name, kind, country, lat, lon) = k  # Unpack tuple key
+            # Google map links currently use the placename instead of
+            # coordinates. This works well for most Icelandic and
+            # international placenames, but fails on some.
+            map_url = GMAPS_PLACE_URL.format(name)
+            # if lat and lon:
+            #     map_url = GMAPS_COORD_URL.format(lat, lon, "7z")
 
             loclist.append(
                 {
@@ -1023,7 +1055,7 @@ def suggest(limit=10):
     if not txt or not prefix:
         return better_jsonify(suggestions=suggestions)
 
-    with SessionContext(commit=False) as session:
+    with SessionContext(read_only=True) as session:
         name = txt[len(prefix) :].strip()
         model_col = None
 
@@ -1053,6 +1085,32 @@ def suggest(limit=10):
     return better_jsonify(suggestions=suggestions)
 
 
+ARTICLES_LIST_MAXITEMS = 50
+
+
+@app.route("/articles", methods=["GET"])
+def articles_list():
+    """ Returns rendered HTML article list as JSON payload """
+    locname = request.args.get("locname")
+    country = request.args.get("country")
+    period = request.args.get("period")
+
+    days = 7 if period == "week" else 1
+    start_date = datetime.utcnow() - timedelta(days=days)
+
+    articles = top_news(
+        start=start_date,
+        location=locname,
+        country=country,
+        limit=ARTICLES_LIST_MAXITEMS,
+    )
+
+    count = len(articles)
+    html = render_template("articles.html", articles=articles)
+
+    return better_jsonify(payload=html, count=count)
+
+
 @app.route("/locations", methods=["GET"])
 @max_age(seconds=60 * 5)
 def locations():
@@ -1063,10 +1121,82 @@ def locations():
     period = request.args.get("period")
     days = 7 if period == "week" else _TOP_LOCATIONS_PERIOD
 
-    with SessionContext(commit=False) as session:
+    with SessionContext(read_only=True) as session:
         locs = top_locations(enclosing_session=session, kind=kind, days=days)
 
     return render_template("locations/locations.html", locations=locs, period=period)
+
+
+def icemap_markers(days=_TOP_LOCATIONS_PERIOD):
+    """ Return a list of recent Icelandic locations and their coordinates """
+    with SessionContext(read_only=True) as session:
+        q = (
+            session.query(Location.name, Location.latitude, Location.longitude)
+            .join(Article)
+            .filter(Article.tree != None)
+            .filter(Article.timestamp != None)
+            .filter(Article.timestamp <= datetime.utcnow())
+            .filter(Article.heading > "")
+            .filter(Article.num_sentences > 0)
+            .filter(Article.timestamp > datetime.utcnow() - timedelta(days=days))
+            .join(Root)
+            .filter(Root.visible)
+            .filter(Location.country == ICELAND_ISOCODE)
+            .filter(Location.kind != "country")
+            .filter(Location.latitude != None)
+            .filter(Location.longitude != None)
+        )
+        markers = list(set((l.name, l.latitude, l.longitude) for l in q.all()))
+
+    return markers
+
+
+@app.route("/locations_icemap", methods=["GET"])
+def locations_icemap():
+    """ Render Icelandic map locations page """
+    period = request.args.get("period")
+    days = 7 if period == "week" else _TOP_LOCATIONS_PERIOD
+
+    markers = icemap_markers(days=days)
+    return render_template(
+        "locations/locations-icemap.html", markers=json.dumps(markers), period=period
+    )
+
+
+def world_map_data(days=_TOP_LOCATIONS_PERIOD):
+    """ Return data for world map. List of country iso codes with article count """
+    with SessionContext(read_only=True) as session:
+        q = (
+            session.query(Location.country, dbfunc.count(Location.id))
+            .filter(Location.country != None)
+            .join(Article)
+            .filter(Article.tree != None)
+            .filter(Article.timestamp != None)
+            .filter(Article.timestamp <= datetime.utcnow())
+            .filter(Article.heading > "")
+            .filter(Article.num_sentences > 0)
+            .filter(Article.timestamp > datetime.utcnow() - timedelta(days=days))
+            .join(Root)
+            .filter(Root.visible)
+            .group_by(Location.country)
+        )
+        return {r[0]: r[1] for r in q.all()}
+
+
+@app.route("/locations_worldmap", methods=["GET"])
+def locations_worldmap():
+    """ Render world map locations page """
+    period = request.args.get("period")
+    days = 7 if period == "week" else _TOP_LOCATIONS_PERIOD
+
+    d = world_map_data(days=days)
+    n = dict(countries_for_language("is"))
+    return render_template(
+        "locations/locations-worldmap.html",
+        country_data=d,
+        country_names=n,
+        period=period,
+    )
 
 
 @app.route("/staticmap", methods=["GET"])
@@ -1082,14 +1212,14 @@ def staticmap():
 
     imgdata = get_staticmap_image(lat, lon, zoom=zoom)
     if imgdata:
-        fn = lat + lon + zoom
+        fn = "{0}_{1}_{2}.png".format(lat, lon, zoom)
         return send_file(imgdata, attachment_filename=fn, mimetype="image/png")
 
     return page_not_found(404)
 
 
 STATIC_MAP_URL = "/staticmap?lat={0}&lon={1}&z={2}"
-ZOOM_FOR_LOC_KIND = {"street": 12, "address": 12, "placename": 5, "country": 2}
+ZOOM_FOR_LOC_KIND = {"street": 11, "address": 12, "placename": 5, "country": 2}
 
 
 @app.route("/locinfo", methods=["GET"])
@@ -1101,18 +1231,19 @@ def locinfo():
     name = request.args.get("name")
     kind = request.args.get("kind")
 
-    # UGLY HACK: BÍN has Iceland as "örn". Should be fixed by patching BÍN data
-    if name == "Ísland":
-        kind = "country"
-
     if name and kind and kind in LOCATION_TAXONOMY:
         loc = location_info(name, kind)
         if loc:
             resp["found"] = True
             resp["country"] = loc.get("country")
+            resp["continent"] = loc.get("continent")
+            resp["desc"] = location_description(loc)
             lat, lon = loc.get("latitude"), loc.get("longitude")
             if lat and lon:
                 z = ZOOM_FOR_LOC_KIND.get(kind)
+                # We want a slightly lower zoom level for foreign placenames
+                if resp["country"] != ICELAND_ISOCODE and kind == "placename":
+                    z -= 1
                 resp["map"] = STATIC_MAP_URL.format(lat, lon, z)
 
     return better_jsonify(**resp)
@@ -1143,7 +1274,7 @@ def genders():
 def stats():
     """ Render a page with article statistics """
 
-    with SessionContext(commit=False) as session:
+    with SessionContext(read_only=True) as session:
 
         sq = StatsQuery()
         result = sq.execute(session)

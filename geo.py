@@ -1,8 +1,6 @@
 """
     Reynir: Natural language processing for Icelandic
 
-    Processor module to extract entity names & definitions
-
     Copyright (c) 2018 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
@@ -25,22 +23,98 @@
 
 import json
 import re
+import sys
+import os
 from pkg_resources import resource_stream
 from iceaddr import iceaddr_lookup, placename_lookup
+from cityloc import city_lookup
 from country_list import countries_for_language, available_languages
 
 
-ICELAND_ISOCODE = "IS"
-ICELANDIC_LANG_ISOCODE = "is"
+ICELAND_ISOCODE = "IS"  # ISO 3166-1 alpha-2
+ICELANDIC_LANG_ISOCODE = "is"  # ISO 639-1
 
-COUNTRY_COORDS_JSONPATH = "resources/country_coords.json"
+# Map Icelandic continent names to ISO continent code
+CONTINENTS = {
+    "Afríka": "AF",
+    "Norður-Afríka": "AF",
+    "Austur-Afríka": "AF",
+    "Vestur-Afríka": "AF",
+    "Mið-Afríka": "AF",
+    "Suðurálfa": "AF",
+    "Norður-Ameríka": "NA",
+    "Mið-Ameríka": "NA",
+    "Suður-Ameríka": "SA",
+    "Eyjaálfa": "OC",
+    "Suðurskautslandið": "AN",
+    "Suðurskautsland": "AN",
+    "Antarktíka": "AN",  # Til í BÍN!
+    "Asía": "AS",
+    "Norður-Asía": "AS",
+    "Suður-Asía": "AS",
+    "Mið-Asía": "AS",
+    "Austur-Asía": "AS",
+    "Suðaustur-Asía": "AS",
+    "Suðvestur-Asía": "AS",
+    "Vestur-Asía": "AS",
+    "Evrópa": "EU",
+    "Norðurálfa": "EU",
+    "Suður-Evrópa": "EU",
+    "Vestur-Evrópa": "EU",
+    "Norður-Evrópa": "EU",
+    "Austur-Evrópa": "EU",
+    "Mið-Evrópa": "EU",
+}
 
-LOCATION_TAXONOMY = frozenset(("country", "placename", "street", "address"))
+# Map ISO continent codes to canonical Icelandic name
+ISO_TO_CONTINENT = {
+    "AF": "Afríka",
+    "NA": "Norður-Ameríka",
+    "OC": "Eyjaálfa",
+    "AN": "Suðurskautslandið",
+    "AS": "Asía",
+    "EU": "Evrópa",
+    "SA": "Suður-Ameríka",
+}
 
+# Types of locations
+LOCATION_TAXONOMY = frozenset(
+    ("continent", "country", "placename", "street", "address")
+)
+
+# Location names that exist in Iceland but should
+# not be looked up as Icelandic place/street names
+ICE_PLACENAME_BLACKLIST = frozenset(
+    ("Norðurlönd", "París", "Svalbarði", "Höfðaborg", "Hamborg")
+)
+ICE_STREETNAME_BLACKLIST = frozenset(("Sjáland", "Feney"))
+
+# Names that should always be identified
+# as Icelandic regions, not placenames
+ICE_REGIONS = frozenset(
+    (
+        "Vesturland",
+        "Norðurland",
+        "Norðausturland",
+        "Norðvesturland",
+        "Suðvesturland",
+        "Suðausturland",
+        "Suðurland",
+        "Austurland",
+        "Mið-Austurland",
+        "Vestfirðir",
+        "Austfirðir",
+        "Suðurnes",
+    )
+)
+
+# ISO codes for country names that are not
+# included in Icelandic country name UN data
 COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
     ICELANDIC_LANG_ISOCODE: {
         "Mjanmar": "MM",
         "Búrma": "MM",
+        "Burma": "MM",
         "Ameríka": "US",
         "Hong Kong": "HK",
         "Makaó": "MO",
@@ -53,16 +127,97 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
         "Hersegóvína": "BA",
         "Palestína": "PS",
         "Páfagarður": "VA",
+        "Páfastóll": "VA",
+        "Páfaríki": "VA",
+        "Vatíkan": "VA",
+        "Papúa": "PG",
+        "Nevis": "KN",
         "Chile": "CL",
+        "Kenýa": "KE",
+        "Kongó": "CD",
+        "Austur-Kongó": "CD",
+        "Vestur-Kongó": "CG",
+        "Caicoseyjar": "TC",
+        "Fídjieyjar": "FJ",
+        "Grenadíneyjar": "VC",
+        "Guatemala": "GT",
+        "Kirgisistan": "KG",
+        "Antígva": "AG",
+        "Antigva": "AG",
+        "Antigúa": "AG",
+        "Sri Lanka": "LK",
+        "Kórea": "KR",  # South Korea :)
+        "Moldavía": "MD",
+        "Trínidad": "TT",
+        "Tóbagó": "TT",
+        "Seychelleseyjar": "SC",
+        "Salvador": "SV",
+        "Mikrónesía": "FM",
+        "Lýbía": "LY",
+        "Líbýa": "LY",
+        "Kókoseyjar": "CC",
+        "Kípur": "CY",
+        "Barbadoseyjar": "BB",
+        "Austur-Tímor": "TL",
+        "Kíríbatí": "KI",
+        "Nikaragva": "NI",
+        "Nikaragúa": "NI",
+        "Cookseyjar": "CK",
+        "Egiptaland": "EG",
     }
 }
 
 
+def location_description(loc):
+    """ Return a description string (in Icelandic) for a location.
+        Argument is a dictionary with at least "name" and "kind" keys """
+
+    if "kind" not in loc or "name" not in loc:
+        return "staður"
+
+    name = loc["name"]
+    kind = loc["kind"]
+
+    if kind == "continent":
+        return "heimsálfa"
+
+    if name in ICE_REGIONS:
+        return "landshluti"
+
+    if kind == "country":
+        desc = "land"
+        c = loc.get("continent")
+        if c is None and "country" in loc:
+            c = continent_for_country(loc["country"])
+        if c in ISO_TO_CONTINENT:
+            cname = ISO_TO_CONTINENT[c]
+            desc = "land í {0}u".format(cname[:-1])
+        return desc
+
+    if kind == "address":
+        return "heimilisfang"
+
+    if kind == "street":
+        if "country" in loc and loc["country"] == ICELAND_ISOCODE:
+            return "gata á Íslandi"
+        return "gata"
+
+    if kind == "placename":
+        return "örnefni"
+
+    return "staður"
+
+
 def location_info(name, kind, placename_hints=None):
     """ Returns dict with info about a location, given name and kind.
-        Info includes country code, gps coordinates etc. """
+        Info includes ISO country and continent code, GPS coordinates, etc. """
+
     if kind not in LOCATION_TAXONOMY:
         return None
+
+    # Continents are marked as "lönd" in BÍN, so we set kind manually
+    if name in CONTINENTS:
+        kind = "continent"
 
     loc = dict(name=name, kind=kind)
     coords = None
@@ -83,25 +238,106 @@ def location_info(name, kind, placename_hints=None):
             loc["country"] = code
             coords = coords_for_country(code)
 
+    # Heimsálfa
+    elif kind == "continent":
+        # Get continent ISO code
+        loc["continent"] = CONTINENTS.get(name)
+
     # Götuheiti
     elif kind == "street":
         # All street names in BÍN are Icelandic
-        loc["country"] = ICELAND_ISOCODE
-        coords = coords_for_street_name(name, placename_hints=placename_hints)
+        if name not in ICE_STREETNAME_BLACKLIST:
+            loc["country"] = ICELAND_ISOCODE
+            coords = coords_for_street_name(name, placename_hints=placename_hints)
 
     # Örnefni
     elif kind == "placename":
-        info = icelandic_placename_info(name)
-        if info:
+        info = None
+
+        # Check if it's an Icelandic placename
+        if name in ICE_REGIONS:
             loc["country"] = ICELAND_ISOCODE
-            # Pick first matching placename, w/o disambiguating
-            # TODO: This could be smarter
-            coords = coords_from_addr_info(info[0])
+        elif name not in ICE_PLACENAME_BLACKLIST:
+            # Try to find a matching Icelandic placename
+            info = placename_lookup(name)
+            if info:
+                loc["country"] = ICELAND_ISOCODE
+                # Pick first matching placename
+                coords = coords_from_addr_info(info[0])
+
+        # OK, not Icelandic. Let's see if it's a foreign city
+        if not info:
+            cities = lookup_city_info(name)
+            if cities:
+                # Pick first match. Cityloc package should give us a match list
+                # ordered by population, with capital cities given precedence
+                c = cities[0]
+                loc["country"] = c.get("country")
+                coords = coords_from_addr_info(c)
+
+    # Look up continent code for country
+    if "country" in loc:
+        loc["continent"] = continent_for_country(loc["country"])
 
     if coords:
         (loc["latitude"], loc["longitude"]) = coords
 
     return loc
+
+
+ICE_CITY_NAMES = None
+ICE_CITIES_JSONPATH = os.path.join(
+    os.path.dirname(__file__), "resources/cities_is.json"
+)
+
+
+def _load_city_names():
+    """ Load data from JSON file mapping Icelandic city names
+        to their corresponding English/international name. """
+    global ICE_CITY_NAMES
+    if ICE_CITY_NAMES is None:
+        with open(ICE_CITIES_JSONPATH) as f:
+            ICE_CITY_NAMES = json.load(f)
+    return ICE_CITY_NAMES
+
+
+def lookup_city_info(name):
+    """ Look up name in city database. Convert Icelandic-specific 
+        city names (e.g. "Lundúnir") to their corresponding 
+        English/international name before querying. """
+    cnames = _load_city_names()  # Lazy-load
+    cn = cnames.get(name, name)
+    return city_lookup(cn)
+
+
+# Data about countries, loaded from JSON data file
+COUNTRY_DATA = None
+COUNTRY_DATA_JSONPATH = os.path.join(
+    os.path.dirname(__file__), "resources/country_data.json"
+)
+
+
+def _load_country_data():
+    """ Load country data from JSON file """
+    global COUNTRY_DATA
+    if COUNTRY_DATA is None:
+        with open(COUNTRY_DATA_JSONPATH) as f:
+            COUNTRY_DATA = json.load(f)
+    return COUNTRY_DATA
+
+
+def continent_for_country(iso_code):
+    """ Return two-char continent code, given a two-char country code """
+    assert len(iso_code) == 2
+
+    iso_code = iso_code.upper()
+
+    data = _load_country_data()  # Lazy-load
+
+    if iso_code in data:
+        return data[iso_code].get("cc")
+
+    return None
 
 
 def coords_for_country(iso_code):
@@ -110,12 +346,13 @@ def coords_for_country(iso_code):
 
     iso_code = iso_code.upper()
 
-    # Lazy-load data, save as function attribute
-    if not hasattr(coords_for_country, "iso2coord"):
-        jsonstr = resource_stream(__name__, COUNTRY_COORDS_JSONPATH).read().decode()
-        coords_for_country.iso2coord = json.loads(jsonstr)
+    # Lazy-loaded
+    data = _load_country_data()
 
-    return coords_for_country.iso2coord.get(iso_code)
+    if iso_code in data:
+        return data[iso_code].get("coords")
+
+    return None
 
 
 def coords_for_street_name(street_name, placename=None, placename_hints=[]):
@@ -190,18 +427,9 @@ def isocode_for_country_name(country_name, lang=ICELANDIC_LANG_ISOCODE):
     return None
 
 
-def icelandic_placename_info(placename):
-    res = placename_lookup(placename)
-    if len(res) >= 1:
-        # Prefer placenames marked 'Þéttbýli'
-        res.sort(key=lambda x: 0 if x.get("flokkur") == "Þéttbýli" else 1)
-        return res
-    return None
-
-
 def icelandic_addr_info(addr_str, placename=None, placename_hints=[]):
-    """ Look up info about a specific Icelandic address in Staðfangaskrá.
-        We want either a single match or nothing. """
+    """ Look up info about a specific Icelandic address in Staðfangaskrá via
+        the iceaddr package. We want either a single definite match or nothing. """
     addr = parse_address_string(addr_str)
 
     def lookup(pn):
@@ -236,7 +464,7 @@ def parse_address_string(addrstr):
         return addr
 
     # Check if last address component is a house number
-    # (possibly with trailing alphabetic character)
+    # (possibly with a trailing alphabetic character)
     last = comp[-1]
     r = re.search(r"^(\d+)([a-zA-Z]?)$", last)
     if r:
@@ -246,3 +474,12 @@ def parse_address_string(addrstr):
         addr["street"] = " ".join(comp[:-1])
 
     return addr
+
+
+if __name__ == "__main__":
+
+    name = sys.argv[1] if len(sys.argv) > 1 else None
+    kind = sys.argv[2] if len(sys.argv) > 2 else None
+
+    if name and kind:
+        print(location_info(name, kind))

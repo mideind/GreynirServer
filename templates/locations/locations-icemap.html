@@ -1,0 +1,159 @@
+
+{% extends "container-normal.html" %}
+
+{% block styles %}
+
+<link href="{{ url_for('static', filename='css/main-bootstrap.css') }}" rel='stylesheet' type='text/css'>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.4/dist/leaflet.css"
+   integrity="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA=="
+   crossorigin=""/>
+
+{% endblock %}
+
+{% block content %}
+
+<div>
+   <ul class="nav nav-tabs" role="tablist">
+      <li role="presentation">
+         <a href="{{ url_for('locations') }}">
+            Staðir
+         </a>
+      </li>
+      <li role="presentation" class="active">
+         <a href="{{ url_for('locations_icemap') }}">
+            Íslandskort
+         </a>
+      </li>
+      <li role="presentation">
+         <a href="{{ url_for('locations_worldmap') }}">
+            Heimskort
+         </a>
+      </li>
+   </ul>
+</div>
+
+
+<!-- Map of Iceland -->
+<div role="tabpanel" class="tab-pane active">
+
+   <div class="panel panel-default table-responsive">
+
+   <div class="panel-heading">
+      <div class="headline hidden-xs">
+         Staðir á Íslandi nýlega í fréttum vefmiðla
+         <br>
+         <small>Smelltu á merki til að sjá tengdar greinar</small>
+      </div>
+      <div class="headline visible-xs-inline-block">Staðir á Íslandi</div>
+
+      <div class="btn-group pull-right">
+         <span class="hidden-xs">
+            <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+               {{ "Undanfarna viku" if period == 'week' else "Síðasta sólarhring" }} 
+               <span class="caret"></span>
+            </button>
+
+            <ul class="dropdown-menu">
+               <li><a href="{{ url_for('locations_icemap') | safe }}">Síðasta sólarhring</a></li>
+               <li><a href="{{ url_for('locations_icemap', period='week') | safe }}">Undanfarna viku</a></li>
+            </ul>
+         </span>
+      </div>
+
+   </div>
+
+   <div id="icemap"></div>
+
+</div>
+
+<!-- Article results when marker is clicked -->
+<div class="map-results">
+   <h3 class="map-results-header">
+      <span id="map-results-title"></span>
+      <span id="map-results-progress"></span>
+   </h3>
+   <div id="map-results-body"></div>
+</div>
+
+
+{% endblock %}
+
+{% block endscripts %}
+
+<script src="https://unpkg.com/leaflet@1.3.4/dist/leaflet.js"
+   integrity="sha512-nMMmRyTVoLYqjP9hrbed9S+FzjZHW5gY1TWCHA5ckwXZBadntCNs8kEqAWdrb9O7rxbCaA4lKTIWjDXZxflOcA=="
+   crossorigin=""></script>
+
+<script type="text/javascript">
+
+var map;
+var markers = {{ markers | safe }};
+
+function initMap() {
+   
+   // Set up map centered on Iceland, with constrained bounds
+   var iceloc = new L.LatLng(64.9957538607, -18.5739616708);
+   var margin = 8.0;
+   var bounds = L.latLngBounds(
+      L.latLng(iceloc.lat + margin, iceloc.lng + margin),
+      L.latLng(iceloc.lat - margin, iceloc.lng - margin)
+   );
+
+   map = new L.Map('icemap', { 
+      zoomSnap: 0.5, 
+      maxZoom: 12, 
+      minZoom: 5.5, 
+      maxBounds: bounds, 
+      maxBoundsViscosity: 1.0,
+   });
+
+   map.setView(iceloc, 6.5);
+
+   // Create the tile layer with attribution label, as per license
+   var osmUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+   var osmAttrib = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+   var osm = new L.TileLayer(osmUrl, { attribution: osmAttrib });		
+
+   map.addLayer(osm);
+
+   // Add markers
+   for (m in markers) {
+      var marker = L.marker([markers[m][1], markers[m][2]]);
+      marker.addTo(map);
+      marker.bindTooltip(markers[m][0], { permanent: false, className: "map-label", offset:[ 0, 0] });
+      marker.on('click', onMarkerClick);
+   }
+}
+
+function onMarkerClick(arg) {
+   $('#map-results-body').html('');
+
+   if (onMarkerClick.request) {
+      onMarkerClick.request.abort();
+   }
+
+   var placename = arg.sourceTarget._tooltip._content;
+   $('#map-results-title').text(placename);
+   $('#map-results-progress')
+      .html("<span class='glyphicon glyphicon-restart glyphicon-spin'></span>");
+
+   var enc = encodeURIComponent(placename);
+   onMarkerClick.request = $.getJSON("/articles?period={{ period | safe }}&locname=" + enc, function(r) {
+      if (r['payload']) {
+         $('#map-results-body').html(r['payload']);
+         $('#map-results-progress').html('');
+      }
+   });
+}
+  
+$(document).ready(function() {
+   // Activate the top navbar
+   $("#navid-locations").addClass("active");
+   // Set up map
+   initMap();
+});
+
+</script>
+
+{% endblock %}
