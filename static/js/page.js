@@ -1,4 +1,3 @@
-
 /*
 
    Reynir: Natural language processing for Icelandic
@@ -9,8 +8,6 @@
    with pop-up tags on hover, name registry, statistics, etc.
 
    Copyright (C) 2018 Miðeind ehf.
-   Author: Vilhjálmur Þorsteinsson
-   All rights reserved
 
       This program is free software: you can redistribute it and/or modify
       it under the terms of the GNU General Public License as published by
@@ -69,7 +66,7 @@ var RIGHT_PUNCTUATION = ".,:;)]!%?“»”’…°>";
 var NONE_PUNCTUATION = "—–-/'~‘\\";
 // CENTER_PUNCTUATION = '"*&+=@©|'
 
-// Words array
+// Token array
 var w = [];
 
 // Name dictionary
@@ -250,6 +247,7 @@ explainCode["P_hkv"] = "Víxlun á <em>h</em> og <em>kv</em>";
 explainCode["P_wrong_person"] = "Röng persóna";
 explainCode["P_wrong_gender"] = "Rangt kyn";
 explainCode["P_wrong_word"] = "Rangt orð";
+explainCode["P_wrong_phrase"] = "Rangt orðasamband";
 explainCode["S004"] = "Óþekkt eða sjaldgæft orð";
 explainCode["C001"] = "Endurtekið orð";
 
@@ -303,14 +301,11 @@ function correctionHoverIn() {
       .css("visibility", "visible");
 }
 
-function displayTokens(j, correction) {
+function displayTokens(j) {
    // Generate HTML for the token list given in j,
    // and insert it into the <div> with id 'result'.
    // Also, populate the global w array with the
    // token list.
-   // If correction is true, display spelling
-   // and grammar correction information.
-   // Otherwise, display grammatical analysis.
    var x = ""; // Result text
    var lastSp;
    w = [];
@@ -329,9 +324,6 @@ function displayTokens(j, correction) {
                   return false; // Break the iteration
                }
             });
-            if (correction)
-               x += "<span class='sent'>";
-            else
             if (err)
                x += "<span class='sent err'>";
             else
@@ -344,27 +336,9 @@ function displayTokens(j, correction) {
                if (TP_SPACE[lastSp - 1][thisSp - 1] && tix)
                   x += " ";
                lastSp = thisSp;
-               if (correction) {
-                  // Correction mode
-                  if (t.corr) {
-                     // Mark a corrected token. Give the span an
-                     // id that refers to the token index in the w array.
-                     var unknown = (t.corr.code[0] == "U");
-                     var advisory = (t.corr.code[0] == "T");
-                     var corrClass = "corrtok";
-                     if (unknown)
-                        corrClass += " unknown";
-                     if (advisory)
-                        corrClass += " advisory";
-                     x += "<span class='" + corrClass + "' id='c" + w.length + "'>";
-                  }
-               }
-               else {
-                  // Analysis mode
-                  if (t.err)
-                     // Mark an error token
-                     x += "<span class='errtok'>";
-               }
+               if (t.err)
+                  // Mark an error token
+                  x += "<span class='errtok'>";
                if (t.k == TOK_PUNCTUATION)
                    // Add space around em-dash
                   x += "<i class='p'>" + ((t.x == "—") ? " — " : t.x) + "</i>";
@@ -397,19 +371,10 @@ function displayTokens(j, correction) {
                      if (t.k == TOK_ENTITY)
                         tx = tx.replace(" - ", "-"); // Tight hyphen, no whitespace
                   }
-                  if (correction)
-                     // Use a neutral class for all words in correction mode
-                     cls = " class='c'";
                   x += "<i id='w" + w.length + "'" + cls + ">" + tx + "</i>";
                }
-               if (correction) {
-                  if (t.corr)
-                     x += "</span>";
-               }
-               else {
-                  if (t.err)
-                     x += "</span>";
-               }
+               if (t.err)
+                  x += "</span>";
                // Append to word/token list
                w.push(t);
             });
@@ -421,14 +386,8 @@ function displayTokens(j, correction) {
       });
    // Show the page text
    $("div#result").html(x);
-   if (correction) {
-      // Put a hover handler on each correction
-      $("div#result span.corrtok").hover(correctionHoverIn, hoverOut);
-   }
-   else {
-      // Put a hover handler on each word
-      $("div#result i").hover(hoverIn, hoverOut);
-   }
+   // Put a hover handler on each word
+   $("div#result i").hover(hoverIn, hoverOut);
    // Put a click handler on each sentence
    $("span.sent").click(showParse);
    // Separate click handler on entity names
@@ -463,7 +422,13 @@ function populateRegister() {
       if (desc.kind != "ref")
          // We don't display references to full names
          // Whitespace around hyphens is eliminated for display
-         register.push({ name: name.replace(" - ", "-"), title: desc.title, kind: desc.kind });
+         register.push(
+            {
+               name: name.replace(" - ", "-"),
+               title: desc.title,
+               kind: desc.kind
+            }
+         );
    });
    register.sort(function(a, b) {
       return a.name.localeCompare(b.name);

@@ -79,6 +79,7 @@
 
    .node-nonterminal.S rect,
    .node-nonterminal.S-MAIN rect,
+   .node-nonterminal.S-HEADING rect,
    .node-nonterminal.S-COND rect,
    .node-nonterminal.S-CONS rect,
    .node-nonterminal.S-REF rect,
@@ -99,6 +100,7 @@
 
    .node-nonterminal.VP rect,
    .node-nonterminal.VP-PP rect,
+   .node-nonterminal.VP-REV rect,
    .node-nonterminal.VP-SEQ rect {
       fill: #d9534f;
       stroke: #d9534f;
@@ -382,15 +384,22 @@
 {%- for c in r -%}
 {%- if c[1] is none -%}
 {%- elif "n" in c[1] -%}
-<td class="nt" colspan="{{ c[0] }}" rowspan="1">{{ c[1]["n"] }}</td>
+   <!-- Nonterminal -->
+   {%- if c[1]["error"] -%}
+      <!-- Nonterminal marked with an error tag -->
+      <td class="nt error" colspan="{{ c[0] }}" rowspan="1">{{ c[1]["n"] }}</td>
+   {%- else -%}
+      <td class="nt" colspan="{{ c[0] }}" rowspan="1">{{ c[1]["n"] }}</td>
+   {%- endif -%}
 {%- else -%}
-<td class="t" colspan="{{ c[0] }}" rowspan="{{ full_height - row_loop.index0 }}">
-{% set tname = c[1]["t"] if "t" in c[1] else "" %}
-{%- if tname | first != "'" and tname | first != '"' -%}
-{{ tname }}<br>
-{%- endif -%}
-<span class="tok">{{ c[1]["x"] if "x" in c[1] else ("&nbsp;" | safe) }}</span>
-</td>
+   <!-- Terminal -->
+   <td class="t" colspan="{{ c[0] }}" rowspan="{{ full_height - row_loop.index0 }}">
+      {% set tname = c[1]["t"] if "t" in c[1] else "" %}
+      {%- if tname | first != "'" and tname | first != '"' -%}
+      {{ tname }}<br>
+      {%- endif -%}
+      <span class="tok">{{ c[1]["x"] if "x" in c[1] else ("&nbsp;" | safe) }}</span>
+   </td>
 {%- endif -%}
 {%- endfor -%}
          </tr>

@@ -1,11 +1,10 @@
-
 /*
 
    Main.js
 
    Reynir/Greynir front page script
 
-    Copyright (C) 2016 Vilhjálmur Þorsteinsson
+    Copyright (C) 2018 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
