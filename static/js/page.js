@@ -1,4 +1,3 @@
-
 /*
 
    Reynir: Natural language processing for Icelandic
@@ -9,8 +8,6 @@
    with pop-up tags on hover, name registry, statistics, etc.
 
    Copyright (C) 2018 Miðeind ehf.
-   Author: Vilhjálmur Þorsteinsson
-   All rights reserved
 
       This program is free software: you can redistribute it and/or modify
       it under the terms of the GNU General Public License as published by
@@ -69,27 +66,11 @@ var RIGHT_PUNCTUATION = ".,:;)]!%?“»”’…°>";
 var NONE_PUNCTUATION = "—–-/'~‘\\";
 // CENTER_PUNCTUATION = '"*&+=@©|'
 
-// Location word categories
-var LOC_FL = ["lönd", "örn", "göt", "borg"];
-var FL_TO_LOC_DESC = {
-   "lönd": "land",
-   "örn": "örnefni",
-   "göt": "götuheiti",
-   "borg": "borg",
-};
-var FL_TO_LOC_KIND = {
-   "lönd": "country",
-   "örn": "placename",
-   "göt": "street",
-   "borg": "placename",
-};
-
-// Words array
+// Token array
 var w = [];
 
 // Name dictionary
 var nameDict = { };
-
 
 function debugMode() {
    return false;
@@ -118,10 +99,6 @@ function queryEntity(name) {
    window.location.href = "/?f=q&q=" + encodeURIComponent("Hvað er " + name + "?");
 }
 
-function queryLocation(name) {
-   // TODO: Implement me!
-}
-
 function showParse(ev) {
    // A sentence has been clicked: show its parse grid
    var sentText = $(ev.delegateTarget).text();
@@ -132,7 +109,7 @@ function showParse(ev) {
 }
 
 function showPerson(ev) {
-   // A person name has been clicked
+   // Send a query to the server
    var name = undefined;
    var wId = $(this).attr("id"); // Check for token id
    if (wId !== undefined) {
@@ -150,7 +127,7 @@ function showPerson(ev) {
 }
 
 function showEntity(ev) {
-   // An entity name has been clicked
+   // Send a query to the server
    var ename = $(this).text();
    var nd = nameDict[ename];
    if (nd && nd.kind == "ref")
@@ -176,12 +153,11 @@ function hoverIn() {
       // No token: nothing to do
       return;
    }
-
    // Save our position
    var offset = $(this).position();
    // Highlight the token
    $(this).addClass("highlight");
-   // Get token info
+
    var r = tokenInfo(t, nameDict);
 
    if (!r.grammar && !r.lemma && !r.details) {
@@ -189,9 +165,9 @@ function hoverIn() {
       return;
    }
 
-   $("#grammar").html(r.grammar || "").show();
-   $("#lemma").text(r.lemma || "").show();
-   $("#details").text(r.details || "").show();
+   $("#grammar").html(r.grammar || "");
+   $("#lemma").text(r.lemma || "");
+   $("#details").text(r.details || "");
 
    // Display the percentage bar if we have percentage info
    if (r.percent !== null) {
@@ -205,48 +181,12 @@ function hoverIn() {
       $("#info").addClass(r.class);
    }
 
-   // Try to fetch image if person (and at least two names)
    if (t.k == TOK_PERSON && t.v.split(' ').length > 1) {
-      getPersonImage(r.lemma, function(img) {
+      getImage(r.lemma, function(img) {
          $("#info-image").html(
             $("<img>").attr('src', img[0])
          ).show();
-      });
-   }
-
-   
-   if (t["m"]) {
-      var fl = t["m"][2];
-
-      // It's a location. Display loc info.
-      if (LOC_FL.includes(fl)) {
-         $('#grammar').hide();
-         $('#details').html(FL_TO_LOC_DESC[fl]);
-         r.tagClass = "glyphicon-globe"
-
-         var name = r.lemma;
-         var kind = FL_TO_LOC_KIND[fl];
-
-         // Query server for more information about location
-         getLocationInfo(name, kind, function(info) {
-            // We know which country, show flag image
-            if (info['country']) {
-               $('#lemma').append(
-                  $("<img>").attr('src', '/static/img/flags/' + info['country'] + '.png').attr('class', 'flag')
-               );
-            }
-            // Description
-            if (info['desc']) {
-               $('#details').html(info['desc']);
-            }
-            // We have a map image
-            if (info['map']) {
-               $("#info-image").html(
-                  $("<img>").attr('src', info['map']).attr('onerror', '$(this).hide();')
-               ).show();
-            }
-         });
-      }
+      })
    }
 
    $("#info span#tag")
@@ -261,56 +201,27 @@ function hoverIn() {
       .css("visibility", "visible");
 }
 
-function getLocationInfo(name, kind, successFunc) {
-   var ckey = kind + '_' + name;
-   var cache = getLocationInfo.cache;
+function getImage(name, successFunc) {
+   var cache = getImage.imageCache;
    if (cache === undefined) {
       cache = {};
-      getLocationInfo.cache = cache;
-   }
-   // Retrieve from cache
-   if (cache[ckey] !== undefined) {
-      if (cache[ckey]) {
-         successFunc(cache[ckey]);
-      }
-      return;
-   }
-   // Abort any ongoing request
-   if (getLocationInfo.request) {
-      getLocationInfo.request.abort();
-   }
-   // Ask server for location info
-   var data = { name: name, kind: kind };
-   getLocationInfo.request = $.getJSON("/locinfo", data, function(r) {
-      cache[ckey] = null;
-      if (r['found']) {
-         cache[ckey] = r;
-         successFunc(r);
-      }
-   });
-}
-
-function getPersonImage(name, successFunc) {
-   var cache = getPersonImage.imageCache;
-   if (cache === undefined) {
-      cache = {};
-      getPersonImage.imageCache = cache;
+      getImage.imageCache = cache;
    }
    // Retrieve from cache
    if (cache[name] !== undefined) {
-      if (cache[name]) {
+      if (cache[name].length) {
          successFunc(cache[name]);
       }
       return;
    }
    // Abort any ongoing image request
-   if (getPersonImage.request) {
-      getPersonImage.request.abort();
+   if (getImage.request) {
+      getImage.request.abort();
    }
    // Ask server for thumbnail image
-   var enc = encodeURIComponent(name);
-   getPersonImage.request = $.getJSON("/image?thumb=1&name=" + enc, function(r) {
-      cache[name] = null;
+   var enc = encodeURIComponent(name)
+   getImage.request = $.getJSON("/image?thumb=1&name=" + enc, function(r) {
+      cache[name] = [];
       if (r['found']) {
          cache[name] = r['image'];
          successFunc(r['image']);
@@ -323,15 +234,8 @@ function hoverOut() {
    $("#info").css("visibility", "hidden");
    $("#info-image").hide();
    $(this).removeClass("highlight");
-   // Abort any ongoing onhover requests to server.
-   // These requests are stored as properties of 
-   // the functions that send them.
-   var reqobjs = [getPersonImage, getLocationInfo];
-   for (var idx in reqobjs) {
-      if (reqobjs[idx] && reqobjs[idx].request) {
-         reqobjs[idx].request.abort();
-         reqobjs[idx].request = null;
-      }
+   if (getImage.request) {
+      getImage.request.abort();
    }
 }
 
@@ -343,6 +247,7 @@ explainCode["P_hkv"] = "Víxlun á <em>h</em> og <em>kv</em>";
 explainCode["P_wrong_person"] = "Röng persóna";
 explainCode["P_wrong_gender"] = "Rangt kyn";
 explainCode["P_wrong_word"] = "Rangt orð";
+explainCode["P_wrong_phrase"] = "Rangt orðasamband";
 explainCode["S004"] = "Óþekkt eða sjaldgæft orð";
 explainCode["C001"] = "Endurtekið orð";
 
@@ -396,14 +301,11 @@ function correctionHoverIn() {
       .css("visibility", "visible");
 }
 
-function displayTokens(j, correction) {
+function displayTokens(j) {
    // Generate HTML for the token list given in j,
    // and insert it into the <div> with id 'result'.
    // Also, populate the global w array with the
    // token list.
-   // If correction is true, display spelling
-   // and grammar correction information.
-   // Otherwise, display grammatical analysis.
    var x = ""; // Result text
    var lastSp;
    w = [];
@@ -422,9 +324,6 @@ function displayTokens(j, correction) {
                   return false; // Break the iteration
                }
             });
-            if (correction)
-               x += "<span class='sent'>";
-            else
             if (err)
                x += "<span class='sent err'>";
             else
@@ -437,27 +336,9 @@ function displayTokens(j, correction) {
                if (TP_SPACE[lastSp - 1][thisSp - 1] && tix)
                   x += " ";
                lastSp = thisSp;
-               if (correction) {
-                  // Correction mode
-                  if (t.corr) {
-                     // Mark a corrected token. Give the span an
-                     // id that refers to the token index in the w array.
-                     var unknown = (t.corr.code[0] == "U");
-                     var advisory = (t.corr.code[0] == "T");
-                     var corrClass = "corrtok";
-                     if (unknown)
-                        corrClass += " unknown";
-                     if (advisory)
-                        corrClass += " advisory";
-                     x += "<span class='" + corrClass + "' id='c" + w.length + "'>";
-                  }
-               }
-               else {
-                  // Analysis mode
-                  if (t.err)
-                     // Mark an error token
-                     x += "<span class='errtok'>";
-               }
+               if (t.err)
+                  // Mark an error token
+                  x += "<span class='errtok'>";
                if (t.k == TOK_PUNCTUATION)
                    // Add space around em-dash
                   x += "<i class='p'>" + ((t.x == "—") ? " — " : t.x) + "</i>";
@@ -472,10 +353,9 @@ function displayTokens(j, correction) {
                         // the token (PoS tag or terminal name)
                         cls = "";
                      else
-                     if (t.m) { 
+                     if (t.m)
                         // Word class (noun, verb, adjective...)
-                        cls = " class='" + t.m[1] + ' ' + t.m[2] + "'";
-                     }
+                        cls = " class='" + t.m[1] + "'";
                      else
                      if (t.t && t.t.split("_")[0] == "sérnafn") {
                         // Special case to display 'sérnafn' as 'entity'
@@ -491,19 +371,10 @@ function displayTokens(j, correction) {
                      if (t.k == TOK_ENTITY)
                         tx = tx.replace(" - ", "-"); // Tight hyphen, no whitespace
                   }
-                  if (correction)
-                     // Use a neutral class for all words in correction mode
-                     cls = " class='c'";
                   x += "<i id='w" + w.length + "'" + cls + ">" + tx + "</i>";
                }
-               if (correction) {
-                  if (t.corr)
-                     x += "</span>";
-               }
-               else {
-                  if (t.err)
-                     x += "</span>";
-               }
+               if (t.err)
+                  x += "</span>";
                // Append to word/token list
                w.push(t);
             });
@@ -515,14 +386,8 @@ function displayTokens(j, correction) {
       });
    // Show the page text
    $("div#result").html(x);
-   if (correction) {
-      // Put a hover handler on each correction
-      $("div#result span.corrtok").hover(correctionHoverIn, hoverOut);
-   }
-   else {
-      // Put a hover handler on each word
-      $("div#result i").hover(hoverIn, hoverOut);
-   }
+   // Put a hover handler on each word
+   $("div#result i").hover(hoverIn, hoverOut);
    // Put a click handler on each sentence
    $("span.sent").click(showParse);
    // Separate click handler on entity names
@@ -557,7 +422,13 @@ function populateRegister() {
       if (desc.kind != "ref")
          // We don't display references to full names
          // Whitespace around hyphens is eliminated for display
-         register.push({ name: name.replace(" - ", "-"), title: desc.title, kind: desc.kind });
+         register.push(
+            {
+               name: name.replace(" - ", "-"),
+               title: desc.title,
+               kind: desc.kind
+            }
+         );
    });
    register.sort(function(a, b) {
       return a.name.localeCompare(b.name);
@@ -584,4 +455,3 @@ function populateRegister() {
       });
    }
 }
-

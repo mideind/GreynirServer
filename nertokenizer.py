@@ -23,6 +23,10 @@
     adds a named entity recognition layer on top of the reynir.bintokenizer
     functionality.
 
+    Named entity recognition requires access to the SQL scraper database
+    and is thus not appropriate for inclusion in reynir.bintokenizer,
+    as ReynirPackage does not (and should not) require a database to be present.
+
 """
 
 from collections import defaultdict
@@ -34,7 +38,7 @@ from reynir.bindb import BIN_Db
 from scraperdb import SessionContext, Entity
 
 
-def recognize_entities(token_stream, enclosing_session = None):
+def recognize_entities(token_stream, enclosing_session=None):
 
     """ Parse a stream of tokens looking for (capitalized) entity names
         The algorithm implements N-token lookahead where N is the
@@ -44,15 +48,17 @@ def recognize_entities(token_stream, enclosing_session = None):
 
     """
 
-    tq = [] # Token queue
-    state = defaultdict(list) # Phrases we're considering
-    ecache = dict() # Entitiy definition cache
-    lastnames = dict() # Last name to full name mapping ('Clinton' -> 'Hillary Clinton')
+    tq = []  # Token queue
+    state = defaultdict(list)  # Phrases we're considering
+    ecache = dict()  # Entitiy definition cache
+    # Last name to full name mapping ('Clinton' -> 'Hillary Clinton')
+    lastnames = dict()
 
-    with BIN_Db.get_db() as db, \
-        SessionContext(session = enclosing_session, commit = True, read_only = True) as session:
+    with BIN_Db.get_db() as db, SessionContext(
+        session=enclosing_session, commit=True, read_only=True
+    ) as session:
 
-        def fetch_entities(w, fuzzy = True):
+        def fetch_entities(w, fuzzy=True):
             """ Return a list of entities matching the word(s) given,
                 exactly if fuzzy = False, otherwise also as a starting word(s) """
             q = session.query(Entity.name, Entity.verb, Entity.definition)
@@ -77,7 +83,7 @@ def recognize_entities(token_stream, enclosing_session = None):
                 # Found it
                 return fullname
             # Try without a possessive 's', if present
-            if lastname.endswith('s'):
+            if lastname.endswith("s"):
                 return lastnames.get(lastname[0:-1])
             # Nope, no match
             return None
@@ -95,8 +101,9 @@ def recognize_entities(token_stream, enclosing_session = None):
             return TOK.Entity(ename)
 
         def token_or_entity(token):
-            """ Return a token as-is or, if it is a last name of a person that has already
-                been mentioned in the token stream by full name, refer to the full name """
+            """ Return a token as-is or, if it is a last name of a person
+                that has already been mentioned in the token stream by full name,
+                refer to the full name """
             assert token.txt[0].isupper()
             tfull = lookup_lastname(token.txt)
             if tfull is None:
@@ -116,7 +123,7 @@ def recognize_entities(token_stream, enclosing_session = None):
 
                 token = next(token_stream)
 
-                if not token.txt: # token.kind != TOK.WORD:
+                if not token.txt:  # token.kind != TOK.WORD:
                     if state:
                         if None in state:
                             yield flush_match()
@@ -129,7 +136,7 @@ def recognize_entities(token_stream, enclosing_session = None):
 
                 # Look for matches in the current state and build a new state
                 newstate = defaultdict(list)
-                w = token.txt # Original word
+                w = token.txt  # Original word
 
                 def add_to_state(slist, entity):
                     """ Add the list of subsequent words to the new parser state """
@@ -139,7 +146,7 @@ def recognize_entities(token_stream, enclosing_session = None):
 
                 if w in state:
                     # This matches an expected token
-                    tq.append(token) # Add to lookahead token queue
+                    tq.append(token)  # Add to lookahead token queue
                     # Add the matching tails to the new state
                     for sl, entity in state[w]:
                         add_to_state(sl, entity)
@@ -164,7 +171,8 @@ def recognize_entities(token_stream, enclosing_session = None):
                             yield from tq
                         tq = []
 
-                    # Add all possible new states for entity names that could be starting
+                    # Add all possible new states for entity names
+                    # that could be starting
                     weak = True
                     cnt = 1
                     upper = w and w[0].isupper()
@@ -179,8 +187,9 @@ def recognize_entities(token_stream, enclosing_session = None):
                         if lastname[0].isupper():
                             # Look for Icelandic patronyms/matronyms
                             _, m = db.lookup_word(lastname, False)
-                            if m and any(mm.fl in { "föð", "móð" } for mm in m):
-                                # We don't store Icelandic patronyms/matronyms as surnames
+                            if m and any(mm.fl in {"föð", "móð"} for mm in m):
+                                # We don't store Icelandic patronyms/matronyms
+                                # as surnames
                                 pass
                             else:
                                 lastnames[lastname] = token
@@ -190,10 +199,11 @@ def recognize_entities(token_stream, enclosing_session = None):
                             # w may be a person name with more than one embedded word
                             # parts is assigned in the if statement above
                             cnt = len(parts)
-                        elif not token.val or ('-' in token.val[0].stofn):
-                            # No BÍN meaning for this token, or the meanings were constructed
-                            # by concatenation (indicated by a hyphen in the stem)
-                            weak = False # Accept single-word entity references
+                        elif not token.val or ("-" in token.val[0].stofn):
+                            # No BÍN meaning for this token, or the meanings
+                            # were constructed by concatenation (indicated by a hyphen
+                            # in the stem)
+                            weak = False  # Accept single-word entity references
                         # elist is a list of Entity instances
                         elist = query_entities(w)
                     else:
@@ -203,21 +213,24 @@ def recognize_entities(token_stream, enclosing_session = None):
                         # This word might be a candidate to start an entity reference
                         candidate = False
                         for e in elist:
-                            sl = e.name.split()[cnt:] # List of subsequent words in entity name
+                            # List of subsequent words in entity name
+                            sl = e.name.split()[cnt:]
                             if sl:
-                                # Here's a candidate for a longer entity reference than we already have
+                                # Here's a candidate for a longer entity reference
+                                # than we already have
                                 candidate = True
                             if sl or not weak:
                                 add_to_state(sl, e)
                         if weak and not candidate:
                             # Found no potential entity reference longer than this token
-                            # already is - and we have a BÍN meaning for it: Abandon the effort
+                            # already is - and we have a BÍN meaning for it:
+                            # Abandon the effort
                             assert not newstate
                             assert not tq
                             yield token_or_entity(token)
                         else:
                             # Go for it: Initialize the token queue
-                            tq = [ token ]
+                            tq = [token]
                     else:
                         # Not a start of an entity reference: simply yield the token
                         assert not tq

@@ -300,7 +300,7 @@ class Article:
                     if num_tokens <= MAX_SENTENCE_TOKENS and sent.parse():
                         # Obtain a text representation of the parse tree
                         token_dicts = TreeUtility.dump_tokens(
-                            sent.tokens, sent.tree, words
+                            sent.tokens, sent.tree, words=words
                         )
                         # Create a verbose text representation of
                         # the highest scoring parse tree
@@ -326,7 +326,7 @@ class Article:
                         else:
                             eix = sent.err_index
                         token_dicts = TreeUtility.dump_tokens(
-                            sent.tokens, None, None, eix
+                            sent.tokens, None, eix
                         )
                         trees[num_sent] = "E{0}".format(eix)
 

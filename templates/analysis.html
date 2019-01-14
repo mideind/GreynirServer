@@ -39,7 +39,7 @@
 
    {% include 'hover-infobox.html' %}
 
-   <div id="result">
+   <div id="result" class="result">
    </div>
 
    <div id="register">
@@ -104,8 +104,8 @@
 
    function populateResult(json) {
       wait(false);
-      // Display the tokens in analysis mode
-      displayTokens(json.result, false);
+      // Display the tokens
+      displayTokens(json.result);
       populateStats(json.stats);
       nameDict = json.register;
       populateRegister();

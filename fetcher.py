@@ -93,7 +93,8 @@ class Fetcher:
 
     class TextList:
 
-        """ Accumulates raw text blocks and eliminates unnecessary nesting indicators """
+        """ Accumulates raw text blocks and eliminates
+            unnecessary nesting indicators """
 
         def __init__(self):
             self._result = []
@@ -143,13 +144,9 @@ class Fetcher:
             return re.sub(r"\s+", " ", text)
 
     @staticmethod
-    def mark_paragraphs(txt):
-        """ Insert paragraph markers into plaintext, by newlines """
-        return "[[ " + " ]] [[ ".join(txt.split("\n")) + " ]]"
-
-    @staticmethod
     def extract_text(soup, result):
-        """ Append the human-readable text found in an HTML soup to the result TextList """
+        """ Append the human-readable text found in an HTML soup
+            to the result TextList """
         if soup is None:
             return
         for t in soup.children:
@@ -287,7 +284,8 @@ class Fetcher:
 
     @staticmethod
     def children(root, soup):
-        """ Return a set of child URLs within a HTML soup, relative to the given root """
+        """ Return a set of child URLs within a HTML soup,
+            relative to the given root """
         # Establish the root URL base parameters
         root_s = urlparse.urlsplit(root.url)
         root_url = urlparse.urlunsplit(root_s)

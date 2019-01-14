@@ -14,7 +14,7 @@ from settings import Settings
 from scraperdb import SessionContext
 from treeutil import TreeUtility as tu
 
-Settings.read("config/Reynir.conf")
+Settings.read(os.path.join(basepath, "config", "Reynir.conf"))
 Settings.DEBUG = False
 
 TEXT = "Ég bý í Baugatanga 6. Hér er prófun á þáttun texta."

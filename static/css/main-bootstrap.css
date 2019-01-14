@@ -775,6 +775,10 @@ span.sent.err:hover {
    background-color: #FFE0EA;
 }
 
+span.sent.err-corr {
+   color: #CB333B; /* Greynir red */
+}
+
 span.errtok {
    font-weight: 700;
    color: #CB333B; /* Greynir red */
@@ -812,14 +816,14 @@ span.sent.parsed:hover {
    border-color: #e4ffd4;
 }
 
-div#result {
+div.result {
    font-size: 1.05em;
    line-height: 1.6;
    padding-top: 0.2em;
    padding-bottom: 0.8em;
 }
 
-div#result i {
+div.result i {
    font-style: normal;
    border-radius: 5px;
    border-width: 1px;
@@ -831,45 +835,45 @@ div#result i {
    margin-right: -4px;
 }
 
-div#result i.nf {
+div.result i.nf {
    /* Word not found */
    font-weight: 700;
    color: #CB333B; /* Greynir red */
 }
 
-div#result i.number {
+div.result i.number {
    font-weight: 700;
    color: #007F33;
 }
 
-div#result i.percent {
+div.result i.percent {
    font-weight: 700;
    color: #337ab7;
 }
 
-div#result i.ordinal {
+div.result i.ordinal {
    font-weight: 700;
    color: #CCA500;
 }
 
-div#result i.date,
-div#result i.time,
-div#result i.timestamp {
+div.result i.date,
+div.result i.time,
+div.result i.timestamp {
    font-weight: 700;
    color: #CCA500;
 }
 
-div#result i.currency {
+div.result i.currency {
    font-weight: 700;
    color: #007F33;
 }
 
-div#result i.amount {
+div.result i.amount {
    font-weight: 700;
    color: #007F33;
 }
 
-div#result i.person {
+div.result i.person {
 /*
    border-width: 2px;
    border-style: solid;
@@ -886,7 +890,7 @@ div#result i.person {
    /* border-color: #337ab7; */
 }
 
-div#result i.entity {
+div.result i.entity {
 /*
    border-width: 2px;
    border-style: solid;
@@ -925,7 +929,7 @@ div#result i.email {
    font-weight: 700;
 }
 
-div#result i:hover {
+div.result i:hover {
    /*
    outline-width: 1px;
    outline-style: solid;
@@ -936,13 +940,13 @@ div#result i:hover {
    border-color: #777777;
 }
 
-div#result i.p:hover {
+div.result i.p:hover {
    color: black;
    background-color: transparent;
    border-color: transparent;
 }
 
-div#result i.person:hover {
+div.result i.person:hover {
    /* Special case for person: just make background darker */
    /*
    outline: none;
@@ -953,7 +957,7 @@ div#result i.person:hover {
    background-color: #337ab7; 
 }
 
-div#result i.entity:hover {
+div.result i.entity:hover {
    /* Special case for entity: just make background darker */
    /*
    outline: none;
@@ -964,33 +968,33 @@ div#result i.entity:hover {
 }
 
 /* Noun-type word: blue color */
-div#result i.kk:hover,
-div#result i.kvk:hover,
-div#result i.hk:hover,
-div#result i.fn:hover,
-div#result i.pfn:hover {
+div.result i.kk:hover,
+div.result i.kvk:hover,
+div.result i.hk:hover,
+div.result i.fn:hover,
+div.result i.pfn:hover {
    /* outline-color: #337ab7; */
    border-color: #337ab7;
    background-color: #337ab7;
 }
 
 /* Verb-type word: red color */
-div#result i.so:hover,
-div#result i.nhm:hover {
+div.result i.so:hover,
+div.result i.nhm:hover {
    /* outline-color: #d9534f; */
    border-color: #d9534f;
    background-color: #d9534f;
 }
 
 /* Adjective-type word: green color */
-div#result i.lo:hover {
+div.result i.lo:hover {
    /* outline-color: #5cb85c; */
    border-color: #5cb85c;
    background-color: #5cb85c;
 }
 
 /* Conjunction-type word: yellow color */
-div#result i.st:hover {
+div.result i.st:hover {
    /* outline-color: #f0ad4e; */
    border-color: #f0ad4e;
    background-color: #f0ad4e;
@@ -1006,6 +1010,43 @@ div#register {
 
 div#similar {
    display: none;
+}
+
+div.correct {
+   width: 100%;
+   overflow-x: hidden;
+}
+
+div.annotation {
+   font-size: 0.8em;
+   line-height: 1.4;
+   padding-top: 0.2em;
+   padding-bottom: 0; /* 0.8em; */
+}
+
+div.correct div.result {
+   float: left;
+   width: 70%;
+   margin-left: 0;
+   margin-right: 0;
+   padding-right: 8px;
+}
+
+div.correct div.annotation {
+   float: left;
+   width: 30%;
+   margin-left: 0;
+   margin-right: 0;
+   padding-left: 8px;
+}
+
+div.annotation div {
+   font-style: italic;
+   color: red;
+   border: 1px solid red;
+   border-radius: 5px;
+   padding: 6px;
+   margin-bottom: 0.5em;
 }
 
 div.guide-empty {
@@ -1140,7 +1181,13 @@ div.grid table tr td {
    padding-bottom: 1px;
 }
 
+div.grid table tr td.error {
+   /* Nonterminal marked with an error tag */
+   color: red;
+}
+
 div.grid table tr td.t {
+   /* Terminal */
    font-style: italic;
    background-color: #FFEEA9; /* Pale Greynir yellow */
    vertical-align: bottom;
@@ -1180,15 +1227,15 @@ h3.query {
    margin-bottom: 20px;
 }
 
-div#result-query {
+div.result-query {
    display: none;
 }
 
-div#result-query h3.query {
+div.result-query h3.query {
    line-height: 1.4;
 }
 
-div#result-tabs {
+div.result-tabs {
    display: none;
 }
 
