@@ -135,6 +135,8 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
         "Chile": "CL",
         "Kenýa": "KE",
         "Kongó": "CD",
+        "Austur-Kongó": "CD",
+        "Vestur-Kongó": "CG",
         "Caicoseyjar": "TC",
         "Fídjieyjar": "FJ",
         "Grenadíneyjar": "VC",

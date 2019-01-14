@@ -99,6 +99,7 @@ PLACENAME_BLACKLIST = frozenset(
         "Guðfinna",
         "Svið",
         "Öxi",
+        "Skyggnir"
     )
 )
 
