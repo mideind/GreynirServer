@@ -39,18 +39,14 @@
 
       <div class="col-xs-12">
 
-         <h3 class="help">Yfirlesinn texti <small>Farðu með músina yfir
-            <span class="corrtok">merkt</span> orð til að sjá útskýringar</small>
-         </h3>
+         <h3 class="help">Yfirlesinn texti</h3>
 
-         <div class="correct">
-            <!--
-               The result div contains a list of paragraph divs, each
-               consisting of two side-by-side divs for the text
-               and its annotations
-            -->
-            <div id="result"></div>
-         </div>
+         <!--
+            The result div contains a list of paragraph divs, each
+            consisting of two side-by-side divs for the text
+            and its annotations
+         -->
+         <div id="result"></div>
 
          <div id="statistics">
             <!-- Statistics go here -->
@@ -127,6 +123,41 @@
       return fmt.replace(/\[bold\]/g, "<b>").replace(/\[~bold\]/g, "</b>");
    }
 
+   function annHoverIn(ev) {
+      // Hovering over an annotation
+      var wId = $(this).attr("id");
+      if (wId === null || wId === undefined) {
+         // No id: nothing to do
+         return;
+      }
+      var ix = parseInt(wId.slice(1));
+      var span = annSpan[ix];
+      if (!span) {
+         // No annotation: nothing to do
+         return;
+      }
+      // Add a highlight to all tokens spanned by this annotation
+      for (var i = span.start; i <= span.end; i++)
+         $("#w" + i).addClass("highlight");
+   }
+
+   function annHoverOut(ev) {
+      var wId = $(this).attr("id");
+      if (wId === null || wId === undefined) {
+         // No id: nothing to do
+         return;
+      }
+      var ix = parseInt(wId.slice(1));
+      var span = annSpan[ix];
+      if (!span) {
+         // No annotation: nothing to do
+         return;
+      }
+      // Add a highlight to all tokens spanned by this annotation
+      for (var i = span.start; i <= span.end; i++)
+         $("#w" + i).removeClass("highlight");
+   }
+
    function displayAnnotations(j) {
       // Generate HTML for the token list given in j,
       // and insert it into the <div> with id 'result'.
@@ -193,6 +224,8 @@
       // above their respective start token
       repositionAnnotations();
       $(window).resize(repositionAnnotations);
+      // Put a hover handler on each annotation
+      $("div.annotation div").hover(annHoverIn, annHoverOut);
       // Put a click handler on each sentence
       $("span.sent").click(showParse);
    }
