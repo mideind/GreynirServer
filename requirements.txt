@@ -11,3 +11,4 @@ ipython>=7.0
 iceaddr>=0.3.3
 country-list>=0.1.1
 cityloc>=0.1.0
+feedparser>=5.2.1

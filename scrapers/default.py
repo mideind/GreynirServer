@@ -64,6 +64,7 @@ class ScrapeHelper:
         self._author = root.author
         self._description = root.description
         self._root_id = root.id
+        self._feeds = []
 
     def make_soup(self, doc):
         """ Make a soup object from a document """
@@ -135,6 +136,10 @@ class ScrapeHelper:
     @property
     def author(self):
         return self._author
+
+    @property
+    def feeds(self):
+        return self._feeds
 
     @property
     def scr_module(self):
@@ -292,6 +297,9 @@ class KjarninnScraper(ScrapeHelper):
 
     def __init__(self, root):
         super().__init__(root)
+        self._feeds = [
+            "https://kjarninn.is/feed/"
+        ]
 
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
@@ -387,6 +395,9 @@ class RuvScraper(ScrapeHelper):
 
     def __init__(self, root):
         super().__init__(root)
+        self._feeds = [
+            "http://www.ruv.is/rss/frettir"
+        ]
 
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
@@ -895,6 +906,9 @@ class KvennabladidScraper(ScrapeHelper):
 
     def __init__(self, root):
         super().__init__(root)
+        self._feeds = [
+            "https://kvennabladid.is/feed/"
+        ]
 
     def get_metadata(self, soup):
         """ Analyze the article soup and return metadata """
