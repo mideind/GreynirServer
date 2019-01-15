@@ -929,6 +929,18 @@ div#result i.email {
    font-weight: 700;
 }
 
+div.result i.highlight {
+   border-bottom-style: dotted;
+   border-bottom-width: 1px;
+   border-bottom-color: #d9534f;
+   border-bottom-left-radius: 0;
+   border-bottom-right-radius: 0;
+}
+
+div.result i.errtok {
+   color: #d9534f;
+}
+
 div.result i:hover {
    /*
    outline-width: 1px;
@@ -1042,11 +1054,17 @@ div.correct div.annotation {
 
 div.annotation div {
    font-style: italic;
-   color: red;
-   border: 1px solid red;
+   color: #d9534f;
+   border: 1px solid #d9534f;
    border-radius: 5px;
    padding: 6px;
    margin-bottom: 0.5em;
+   cursor: pointer;
+}
+
+div.annotation div:hover {
+   /* color: white; */
+   background-color: rgba(217, 83, 79, 0.10);
 }
 
 div.guide-empty {

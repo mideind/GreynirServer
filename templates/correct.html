@@ -189,15 +189,31 @@
                if (TP_SPACE[lastSp - 1][thisSp - 1] && tix)
                   left += " ";
                lastSp = thisSp;
-               if (t.k == TOK_PUNCTUATION)
-                   // Add space around em-dash
-                  left += "<i class='p'>" + ((t.x == "—") ? " — " : t.x) + "</i>";
-               else {
-                  var cls = " class='c'";
-                  var tx = t.x;
-                  tx = tx.replace(" - ", "-"); // Tight hyphen, no whitespace
-                  left += "<i id='w" + w.length + "'" + cls + ">" + tx + "</i>";
+               var tx = t.x;
+               var cls = [];
+               if (t.k == TOK_PUNCTUATION) {
+                  // Add space around em-dash
+                  if (tx == "—")
+                     tx = " — ";
+                  cls.push("p");
                }
+               else {
+                  cls.push("c");
+                  tx = tx.replace(" - ", "-"); // Tight hyphen, no whitespace
+               }
+               // Check whether the token occurs inside an annotation
+               // This is fairly inefficient but that is not a problem in practice
+               $.each(s.annotations, function(aix, a) {
+                  // Annotation a
+                  if (tix >= a.start && tix <= a.end) {
+                     // The annotation applies to this token:
+                     // mark the token
+                     cls.push("errtok");
+                     return false; // break from $each loop
+                  }
+               });
+               left += "<i id='w" + w.length +
+                  "' class='" + cls.join(" ") + "'>" + tx + "</i>";
                // Append to word/token list
                w.push(t);
             });
