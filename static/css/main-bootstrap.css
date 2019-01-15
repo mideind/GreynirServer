@@ -1227,15 +1227,15 @@ h3.query {
    margin-bottom: 20px;
 }
 
-div.result-query {
+div#result-query {
    display: none;
 }
 
-div.result-query h3.query {
+div#result-query h3.query {
    line-height: 1.4;
 }
 
-div.result-tabs {
+div#result-tabs {
    display: none;
 }
 
