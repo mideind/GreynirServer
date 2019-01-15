@@ -175,6 +175,8 @@
          var left = "";
          // Right column: paragraph annotations
          var right = "";
+         // Third child: SVG drawing stuff
+         var canvas = "";
          $.each(p, function(six, s) {
             // Sentence s
             lastSp = TP_NONE;
@@ -222,6 +224,8 @@
                // Annotation a
                right += "<div id='a" + annSpan.length + "'>" +
                   formatAnnotation(a.text) + "</div>\n";
+               // Add a path to the canvas
+               canvas += "<path id='p" + annSpan.length + "'></path>\n";
                // Note the token span to which the annotation applies,
                // within the global token list
                annSpan.push({ start: six + a.start, end: six + a.end });
@@ -231,6 +235,12 @@
          });
          x += "<div class='result'>" + left + "</div>\n";
          x += "<div class='annotation'>" + right + "</div>\n";
+         if (canvas) {
+            // Encapsulate the paths in svg/g elements...
+            canvas = "\n<svg width='100%' height='100%'><g>\n" + canvas + "</g></svg>\n";
+            // and then within a canvas div
+            x += "<div class='canvas'>" + canvas + "</div>\n";
+         }
          // Finish paragraph
          x += "</div>\n"; // div class='correct'
       });
@@ -248,7 +258,9 @@
 
    function repositionAnnotations() {
       // Reposition the annotations to align
-      // with their respective tokens
+      // with their respective tokens. This function
+      // is called both when the annotations are originally
+      // positioned, and when the browser window is resized.
       // Begin by clearing any previous top margins
       $.each(annSpan, function(six) {
          var ann = $("#a" + six);
@@ -257,13 +269,40 @@
       // Then, align with tokens as necessary
       $.each(annSpan, function(six, span) {
          var tokenTop = $("#w" + span.start).offset().top;
+         var endToken = $("#w" + span.end);
+         var tokenOffset = endToken.offset();
+         var tokenY = tokenOffset.top + endToken.outerHeight();
+         var tokenX = tokenOffset.left + endToken.outerWidth() / 2;
          var ann = $("#a" + six);
-         var annTop = ann.offset().top;
+         var annOffset = ann.offset();
+         var annTop = annOffset.top;
+         var annX = annOffset.left;
          if (annTop < tokenTop) {
             // Put a top margin on the annotation to make its
             // top align with the token's top
             ann.css("margin-top", "" + (tokenTop - annTop) + "px");
+            annTop = tokenTop;
          }
+         // Work out the coordinates of a path from the span's
+         // end token to the corresponding annotation
+         var annY = annTop + ann.outerHeight() / 2;
+         // Make the coordinates relative to the parent div.correct
+         var parentOffset = ann.parents("div.correct").offset();
+         tokenX -= parentOffset.left;
+         tokenY -= parentOffset.top + 2; // Small upwards nudge for the start point
+         annX -= parentOffset.left;
+         annY -= parentOffset.top;
+         // Make the path point from the end token to the
+         // associated annotation. We position the Bezier curve
+         // handles 40 pixels from the end points, below the end
+         // token and to the left of the annotation.
+         var path = $("#p" + six);
+         path.attr("d",
+            "M " + tokenX + " " + tokenY + 
+            " C " + tokenX + " " + (tokenY + 40) +
+            " " + (annX - 40) + " " + annY +
+            " " + annX + " " + annY
+         );
       });
    }
 
