@@ -991,8 +991,29 @@ div#similar {
 }
 
 div.correct {
+   position: relative;
+   display: block;
    width: 100%;
    overflow-x: hidden;
+}
+
+div.canvas {
+   position: absolute;
+   display: block;
+   z-index: -1;
+   top: 0;
+   left: 0;
+   width: 100%;
+   height: 100%;
+   overflow-y: hidden;
+}
+
+div.canvas svg g path {
+   fill: none;
+   stroke: #d9534f;
+   stroke-dasharray: 3;
+   stroke-opacity: 0.4;
+   stroke-width: 2px;
 }
 
 div.annotation {
