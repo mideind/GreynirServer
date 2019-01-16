@@ -895,14 +895,22 @@ div.result i.email {
    font-weight: 700;
 }
 
-div.result i.highlight {
+div.result i.c.highlight {
+   text-decoration: underline;
+   /*
    border-bottom-style: dotted;
    border-bottom-width: 1px;
    border-bottom-color: #d9534f;
    border-bottom-left-radius: 0;
    border-bottom-right-radius: 0;
+   */
 }
 
+div.result i.warntok {
+   color: #eb9316;
+}
+
+/* Note: errtok should appear after warntok, since it has higher priority */
 div.result i.errtok {
    color: #d9534f;
 }
@@ -1016,6 +1024,14 @@ div.canvas svg g path {
    stroke-width: 2px;
 }
 
+div.canvas svg g path.warning {
+   stroke: #eb9316;
+}
+
+div.canvas svg g path.highlight {
+   stroke-opacity: 0.85;
+}
+
 div.annotation {
    font-size: 0.8em;
    line-height: 1.4;
@@ -1052,6 +1068,15 @@ div.annotation div {
 div.annotation div:hover {
    /* color: white; */
    background-color: rgba(217, 83, 79, 0.10);
+}
+
+div.annotation div.warning {
+   color: #eb9316;
+   border: 1px solid #eb9316;
+}
+
+div.annotation div.warning:hover {
+   background-color: #ffeed6;
 }
 
 div.guide-empty {

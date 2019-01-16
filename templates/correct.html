@@ -139,9 +139,13 @@
       // Add a highlight to all tokens spanned by this annotation
       for (var i = span.start; i <= span.end; i++)
          $("#w" + i).addClass("highlight");
+      // Emphasize the path associated with this annotation
+      // Note: addClass() doesn't work on SVG elements until jQuery 3.0.
+      $("#p" + ix)[0].classList.add("highlight");
    }
 
    function annHoverOut(ev) {
+      // No longer hovering over an annotation
       var wId = $(this).attr("id");
       if (wId === null || wId === undefined) {
          // No id: nothing to do
@@ -153,9 +157,11 @@
          // No annotation: nothing to do
          return;
       }
-      // Add a highlight to all tokens spanned by this annotation
+      // Remove highlight from all tokens spanned by this annotation
       for (var i = span.start; i <= span.end; i++)
          $("#w" + i).removeClass("highlight");
+      // De-emphasize the path associated with this annotation
+      $("#p" + ix)[0].classList.remove("highlight");
    }
 
    function displayAnnotations(j) {
@@ -210,7 +216,12 @@
                   if (tix >= a.start && tix <= a.end) {
                      // The annotation applies to this token:
                      // mark the token
-                     cls.push("errtok");
+                     if (a.code[0] == "T")
+                        // Taboo word warning
+                        cls.push("warntok");
+                     else
+                        // Other error
+                        cls.push("errtok");
                      return false; // break from $each loop
                   }
                });
@@ -222,10 +233,12 @@
             // Accumulate annotations into the right column
             $.each(s.annotations, function(aix, a) {
                // Annotation a
-               right += "<div id='a" + annSpan.length + "'>" +
+               var cls = a.code[0] == "T" ? " class='warning'" : "";
+               right += "<div id='a" + annSpan.length + "'" + cls + ">" +
                   formatAnnotation(a.text) + "</div>\n";
-               // Add a path to the canvas
-               canvas += "<path id='p" + annSpan.length + "'></path>\n";
+               // Add a path to the canvas (empty at this point
+               // but will be defined in repositionAnnotations())
+               canvas += "<path id='p" + annSpan.length + "'" + cls + "></path>\n";
                // Note the token span to which the annotation applies,
                // within the global token list
                annSpan.push({ start: six + a.start, end: six + a.end });
@@ -269,7 +282,13 @@
       // Then, align with tokens as necessary
       $.each(annSpan, function(six, span) {
          var tokenTop = $("#w" + span.start).offset().top;
-         var endToken = $("#w" + span.end);
+         var spanEnd = span.end;
+         // If the last token is a punctuation token,
+         // try to go back to the previous word token
+         // (it looks nicer and more consistent)
+         while (spanEnd > span.start && w[spanEnd].k == TOK_PUNCTUATION)
+            spanEnd--;
+         var endToken = $("#w" + spanEnd);
          var tokenOffset = endToken.offset();
          var tokenY = tokenOffset.top + endToken.outerHeight();
          var tokenX = tokenOffset.left + endToken.outerWidth() / 2;

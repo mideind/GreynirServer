@@ -518,16 +518,28 @@ def correct_api(version=1):
         This is a lower level API used by the Greynir web front-end. """
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
+
     try:
         text = text_from_request(request)
     except Exception as e:
         logging.warning("Exception in correct_api(): {0}".format(e))
         return better_jsonify(valid=False, reason="Invalid request")
+
     result = reynir_correct.check_with_stats(text, split_paragraphs=True)
 
     def encode_sentence(sent):
+        """ Map a reynir._Sentence object to a raw sentence dictionary
+            expected by the web UI """
+        if sent.tree is None:
+            # Not parsed: use the raw token list
+            tokens = [dict(k=d.kind, x=d.txt) for d in sent.tokens]
+        else:
+            # Successfully parsed: use the terminals, since we have
+            # more info there, for instance on em/en dashes
+            stok = sent.tokens
+            tokens = [dict(k=stok[t.index].kind, x=t.text) for t in sent.terminals]
         return dict(
-            tokens=[dict(k=d.kind, x=d.txt) for d in sent.tokens],
+            tokens=tokens,
             annotations=[
                 dict(
                     start=ann.start,
@@ -1282,6 +1294,13 @@ if __name__ == "__main__":
                 break
         else:
             print("Extra file '{0}' not found".format(fname))
+    # Add src/reynir/resources/ord.compressed from reynir
+    extra_files.append(
+        os.path.join(
+            os.path.dirname(reynir.__file__),
+            "src", "reynir", "resources", "ord.compressed"
+        )
+    )
 
     from socket import error as socket_error
     import errno
