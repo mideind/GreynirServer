@@ -205,14 +205,14 @@ class ScrapeHelper:
             mp = soup.html.head.find(f)
             if not mp:
                 logging.warning(
-                    "meta property {0} not found in soup.html.head"
-                    .format(property_name)
+                    "meta property {0} not found in soup.html.head".format(
+                        property_name
+                    )
                 )
             return str(mp["content"]) if mp else None
         except Exception as e:
             logging.warning(
-                "Exception in meta_property('{0}'): {1}"
-                .format(property_name, e)
+                "Exception in meta_property('{0}'): {1}".format(property_name, e)
             )
             return None
 
@@ -297,9 +297,7 @@ class KjarninnScraper(ScrapeHelper):
 
     def __init__(self, root):
         super().__init__(root)
-        self._feeds = [
-            "https://kjarninn.is/feed/"
-        ]
+        # self._feeds = ["https://kjarninn.is/feed/"]
 
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
@@ -395,9 +393,7 @@ class RuvScraper(ScrapeHelper):
 
     def __init__(self, root):
         super().__init__(root)
-        self._feeds = [
-            "http://www.ruv.is/rss/frettir"
-        ]
+        # self._feeds = ["http://www.ruv.is/rss/frettir"]
 
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
@@ -906,9 +902,7 @@ class KvennabladidScraper(ScrapeHelper):
 
     def __init__(self, root):
         super().__init__(root)
-        self._feeds = [
-            "https://kvennabladid.is/feed/"
-        ]
+        # self._feeds = ["https://kvennabladid.is/feed/"]
 
     def get_metadata(self, soup):
         """ Analyze the article soup and return metadata """
@@ -951,8 +945,9 @@ class KvennabladidScraper(ScrapeHelper):
                 )
             except Exception as e:
                 logging.warning(
-                    "Exception when obtaining date of kvennabladid.is article: {0}"
-                    .format(e)
+                    "Exception when obtaining date of kvennabladid.is article: {0}".format(
+                        e
+                    )
                 )
                 timestamp = None
         if timestamp is None:
@@ -1015,4 +1010,55 @@ class AlthingiScraper(ScrapeHelper):
     def _get_content(self, soup_body):
         """ Find the article content (main text) in the soup """
         article = ScrapeHelper.div_class(soup_body, "pgmain", "news", "boxbody")
+        return article
+
+
+class StundinScraper(ScrapeHelper):
+    def __init__(self, root):
+        super().__init__(root)
+        self._feeds = ["https://stundin.is/rss/free/"]
+
+    def get_metadata(self, soup):
+        """ Analyze the article soup and return metadata """
+        metadata = super().get_metadata(soup)
+
+        # Extract the heading from the OpenGraph (Facebook) og:title meta property
+        heading = ScrapeHelper.meta_property(soup, "og:title") or ""
+        heading = self.unescape(heading)
+
+        # Extract author name, if available
+        name = soup.find("div", {"class": "journalist-name"})
+        author = name.get_text() if name else None
+
+        # Timestamp
+        info = soup.find("div", {"class": "info"})
+        time_el = info.find("time", {"class": "datetime"})
+        ts = time_el["datetime"]
+
+        if ts and len(ts) == 16:
+            timestamp = datetime(
+                year=int(ts[0:4]),
+                month=int(ts[5:7]),
+                day=int(ts[8:10]),
+                hour=int(ts[11:13]),
+                minute=int(ts[14:16]),
+            )
+        else:
+            timestamp = datetime.utcnow()
+
+        metadata.heading = heading
+        metadata.author = author
+        metadata.timestamp = timestamp
+
+        return metadata
+
+    def _get_content(self, soup_body):
+        """ Find the article content (main text) in the soup """
+        article = ScrapeHelper.div_class(soup_body, "body")
+
+        # Delete these elements
+        ScrapeHelper.del_tag(article, "figure")
+        ScrapeHelper.del_tag(article, "aside")
+        ScrapeHelper.del_tag(article, "h2")
+
         return article

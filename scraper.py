@@ -62,7 +62,6 @@ class ArticleDescr:
         self.url = url
 
 
-
 class Scraper:
 
     """ The worker class that scrapes the known roots """
@@ -84,12 +83,12 @@ class Scraper:
                 try:
                     d = feedparser.parse(feed_url)
                 except Exception as e:
-                    logging.warning("Error parsing feed {0}: {1}".format(feed_url, str(e)))
+                    logging.warning(
+                        "Error fetching/parsing feed {0}: {1}".format(feed_url, str(e))
+                    )
                     continue
 
                 for entry in d.entries:
-                    # print(entry.title)
-                    print(entry.link)
                     if entry.link:
                         fetch_set.add(entry.link)
 
@@ -120,8 +119,8 @@ class Scraper:
 
         fetch_set = self.urls2fetch(root, helper)
 
-        # Add the children whose URLs we don't already have 
-        # sto the craper articles table
+        # Add the children whose URLs we don't already have
+        # stored in the scraper articles table
         with SessionContext() as session:
 
             for url in fetch_set:
