@@ -33,6 +33,7 @@ cp config/TnT-model.pickle $DEST/config/TnT-model.pickle
 
 cp article.py $DEST/article.py
 cp fetcher.py $DEST/fetcher.py
+cp geo.py $DEST/geo.py
 cp images.py $DEST/images.py
 cp incparser.py $DEST/incparser.py
 cp main.py $DEST/main.py
@@ -49,9 +50,13 @@ cp tnttagger.py $DEST/tnttagger.py
 cp tree.py $DEST/tree.py
 cp treeutil.py $DEST/treeutil.py
 
-cp scrapers/*.py $DEST/scrapers/
-cp templates/* $DEST/templates/
+# cp scrapers/*.py $DEST/scrapers/
+# cp processors/*.py $DEST/processors/
+
+rsync -av --delete templates/ $DEST/templates/
 rsync -av --delete static/ $DEST/static/
+
+cp resources/*.json $DEST/resources/
 cp fonts/* $DEST/fonts/
 
 # Put a version identifier (date and time) into the about.html template
