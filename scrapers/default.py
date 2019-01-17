@@ -342,7 +342,7 @@ class KjarninnScraper(ScrapeHelper):
 
     def __init__(self, root):
         super().__init__(root)
-        # self._feeds = ["https://kjarninn.is/feed/"]
+        self._feeds = ["https://kjarninn.is/feed/"]
 
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
@@ -438,7 +438,7 @@ class RuvScraper(ScrapeHelper):
 
     def __init__(self, root):
         super().__init__(root)
-        # self._feeds = ["http://www.ruv.is/rss/frettir"]
+        self._feeds = ["http://www.ruv.is/rss/frettir"]
 
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
@@ -722,9 +722,7 @@ class VisirScraper(ScrapeHelper):
                 )
             except Exception as e:
                 logging.warning(
-                    "Exception when obtaining date of visir.is article: {0}".format(
-                        e
-                    )
+                    "Exception when obtaining date of visir.is article: {0}".format(e)
                 )
 
         # Author
@@ -775,7 +773,7 @@ class VisirScraper(ScrapeHelper):
         # We shouldn't even try to extract text from the live sport event pages
         liveheader = ScrapeHelper.div_id(soup_body, "livefeed-sporthead")
         if liveheader:
-            return BeautifulSoup("", _HTML_PARSER) # Return empty soup.
+            return BeautifulSoup("", _HTML_PARSER)  # Return empty soup.
 
         soup = ScrapeHelper.div_class(soup_body, "article", "articletext")
         if not soup:
@@ -971,7 +969,7 @@ class KvennabladidScraper(ScrapeHelper):
 
     def __init__(self, root):
         super().__init__(root)
-        # self._feeds = ["https://kvennabladid.is/feed/"]
+        self._feeds = ["https://kvennabladid.is/feed/"]
 
     def get_metadata(self, soup):
         """ Analyze the article soup and return metadata """
