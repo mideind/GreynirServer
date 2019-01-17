@@ -54,7 +54,8 @@ def init_roots(wait = False):
         ("https://www.fjarmalaraduneyti.is", "fjarmalaraduneyti.is", "Fjármálaráðuneyti", 1.0, "scrapers.default", "StjornarradScraper", True),
         ("http://reykjanes.local", "reykjanes.local", "Reykjanesbær", 1.0, "scrapers.reykjanes", "ReykjanesScraper", False),
         ("http://althingi.is", "althingi.is", "Alþingi", 1.0, "scrapers.default", "AlthingiScraper", False),
-        ("https://stundin.is", "stundin.is", "Stundin", 1.0, "scrapers.default", "StundinScraper", True),
+        ("http://stundin.is", "stundin.is", "Stundin", 1.0, "scrapers.default", "StundinScraper", True),
+        ("http://hringbraut.is", "hringbraut.is", "Hringbraut", 1.0, "scrapers.default", "HringbrautScraper", True),
     ]
 
     retries = 36 # Do no more than 36 retries (~3 minutes) before giving up and returning an error code

@@ -42,6 +42,39 @@ MODULE_NAME = __name__
 _HTML_PARSER = "html.parser"
 
 
+# Icelandic month names
+
+MONTHS = [
+    "janúar",
+    "febrúar",
+    "mars",
+    "apríl",
+    "maí",
+    "júní",
+    "júlí",
+    "ágúst",
+    "september",
+    "október",
+    "nóvember",
+    "desember",
+]
+
+MONTHS_ABBR = [
+    "jan",
+    "feb",
+    "mar",
+    "apr",
+    "maí",
+    "jún",
+    "júl",
+    "ágú",
+    "sep",
+    "okt",
+    "nóv",
+    "des",
+]
+
+
 # The metadata returned by the helper.get_metadata() function
 
 
@@ -741,7 +774,7 @@ class EyjanScraper(ScrapeHelper):
         dateline = ScrapeHelper.div_class(soup, "article-full")
         dateline = ScrapeHelper.tag_class(dateline, "span", "date")
         dateline = "".join(dateline.stripped_strings).split() if dateline else None
-        timestamp = None
+        timestamp = datetime.utcnow()
         if dateline:
             # Example: Þriðjudagur 15.12.2015 - 14:14
             try:
@@ -758,14 +791,11 @@ class EyjanScraper(ScrapeHelper):
                 logging.warning(
                     "Exception when obtaining date of eyjan.is article: {0}".format(e)
                 )
-                timestamp = None
-        if timestamp is None:
-            timestamp = datetime.utcnow()
-        # Extract the author name
-        author = "Ritstjórn eyjan.is"
+
         metadata.heading = heading
-        metadata.author = author
+        metadata.author = "Ritstjórn eyjan.is"
         metadata.timestamp = timestamp
+
         return metadata
 
     def _get_content(self, soup_body):
@@ -918,20 +948,7 @@ class KvennabladidScraper(ScrapeHelper):
             try:
                 dateline = dateline.split()  # 18 jún 2016
                 day = int(dateline[0])
-                month = [
-                    "jan",
-                    "feb",
-                    "mar",
-                    "apr",
-                    "maí",
-                    "jún",
-                    "júl",
-                    "ágú",
-                    "sep",
-                    "okt",
-                    "nóv",
-                    "des",
-                ].index(dateline[1]) + 1
+                month = MONTHS_ABBR.index(dateline[1]) + 1
                 year = int(dateline[2])
                 # Use current H:M:S as there is no time of day in the document itself
                 now = datetime.utcnow()
@@ -1033,6 +1050,7 @@ class StundinScraper(ScrapeHelper):
         # Timestamp
         info = soup.find("div", {"class": "info"})
         time_el = info.find("time", {"class": "datetime"})
+
         ts = time_el["datetime"]
 
         if ts and len(ts) == 16:
@@ -1062,3 +1080,66 @@ class StundinScraper(ScrapeHelper):
         ScrapeHelper.del_tag(article, "h2")
 
         return article
+
+
+class HringbrautScraper(ScrapeHelper):
+    def __init__(self, root):
+        super().__init__(root)
+        self._feeds = ["http://www.hringbraut.is/frettir/feed/"]
+
+    def get_metadata(self, soup):
+        """ Analyze the article soup and return metadata """
+        metadata = super().get_metadata(soup)
+
+        # Extract the heading from the OpenGraph (Facebook) og:title meta property
+        heading = ScrapeHelper.meta_property(soup, "og:title") or ""
+        heading = self.unescape(heading)
+        heading = heading.replace("\u00AD", "") # Remove soft hyphen
+
+        # Author
+        author = "Ritstjórn Hringbrautar"
+
+        # Timestamp
+        timestamp = datetime.utcnow()
+
+        info = soup.find("div", {"class": "entryInfo"})
+        date_span = info.find("span", {"class": "date"})
+
+        if date_span:
+            # Example: "17. janúar 2019 - 11:58"
+            datestr = date_span.get_text().rstrip()
+            try:
+                print(datestr.split())
+                (mday, m, y, _, hm) = datestr.split()
+                (hour, mins) = hm.split(":")
+                mday = mday.replace(".", "")
+                month = MONTHS.index(m) + 1
+
+                timestamp = datetime(
+                    year=int(y),
+                    month=int(month),
+                    day=int(mday),
+                    hour=int(hour),
+                    minute=int(mins),
+                )
+            except Exception as e:
+                logging.warning(
+                    "Exception when obtaining date of hringbraut.is article: {0}".format(
+                        e
+                    )
+                )
+
+        metadata.heading = heading
+        metadata.author = author
+        metadata.timestamp = timestamp
+
+        return metadata
+
+    def _get_content(self, soup_body):
+        """ Find the article content (main text) in the soup """
+        entry = ScrapeHelper.div_class(soup_body, "entryContent")
+
+        # Delete these elements
+        ScrapeHelper.del_tag(entry, "iframe")
+
+        return entry
