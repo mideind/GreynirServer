@@ -43,7 +43,6 @@ _HTML_PARSER = "html.parser"
 
 
 # Icelandic month names
-
 MONTHS = [
     "janúar",
     "febrúar",
@@ -143,6 +142,9 @@ class ScrapeHelper:
             return None
         if hasattr(self, "_get_content"):
             content = self._get_content(self._get_body(soup))
+            if content:
+                # Always delete embedded social media widgets
+                content = ScrapeHelper.del_social_embeds(content)
         else:
             content = None
         # By default, return the entire body
@@ -322,6 +324,16 @@ class ScrapeHelper:
             if s is None:
                 break
             s.decompose()
+
+    @staticmethod
+    def del_social_embeds(soup):
+        # Delete all iframes and embedded FB/Twitter/Instagram posts)
+        ScrapeHelper.del_tag(soup, "iframe")
+        ScrapeHelper.del_tag(soup, "twitterwidget")
+        ScrapeHelper.del_div_class(soup, "fb-post")
+        ScrapeHelper.del_tag_prop_val(soup, "blockquote", "class", "instagram-media")
+        ScrapeHelper.del_tag_prop_val(soup, "blockquote", "class", "twitter-tweet")
+        return soup
 
 
 class KjarninnScraper(ScrapeHelper):
@@ -663,6 +675,7 @@ class VisirScraper(ScrapeHelper):
 
     def __init__(self, root):
         super().__init__(root)
+        self._feeds = ["http://www.visir.is/rss/allt"]
 
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
@@ -677,6 +690,7 @@ class VisirScraper(ScrapeHelper):
     def get_metadata(self, soup):
         """ Analyze the article soup and return metadata """
         metadata = super().get_metadata(soup)
+
         # Extract the heading from the OpenGraph (Facebook) og:title meta property
         heading = ScrapeHelper.meta_property(soup, "og:title") or ""
         heading = self.unescape(heading)
@@ -686,13 +700,34 @@ class VisirScraper(ScrapeHelper):
             heading = heading[:-10]
         if heading.endswith(" - Vísir"):
             heading = heading[:-8]
-        timestamp = ScrapeHelper.tag_prop_val(soup, "meta", "itemprop", "datePublished")
-        timestamp = timestamp["content"] if timestamp else None
-        timestamp = (
-            datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S") if timestamp else None
-        )
-        if timestamp is None:
-            timestamp = datetime.utcnow()
+
+        # Timestamp
+        timestamp = datetime.utcnow()
+        time_el = soup.find("time", {"class": "article-single__time"})
+        if time_el:
+            # Example: "17. janúar 2019 14:30"
+            datestr = time_el.get_text().rstrip()
+            try:
+                (mday, m, y, hm) = datestr.split()
+                (hour, mins) = hm.split(":")
+                mday = mday.replace(".", "")
+                month = MONTHS.index(m) + 1
+
+                timestamp = datetime(
+                    year=int(y),
+                    month=int(month),
+                    day=int(mday),
+                    hour=int(hour),
+                    minute=int(mins),
+                )
+            except Exception as e:
+                logging.warning(
+                    "Exception when obtaining date of visir.is article: {0}".format(
+                        e
+                    )
+                )
+
+        # Author
         author = ScrapeHelper.tag_prop_val(soup, "a", "itemprop", "author")
         if author:
             author = author.string
@@ -736,7 +771,12 @@ class VisirScraper(ScrapeHelper):
 
     def _get_content(self, soup_body):
         """ Find the article content (main text) in the soup """
-        # Check for "Glamour" layout first
+
+        # We shouldn't even try to extract text from the live sport event pages
+        liveheader = ScrapeHelper.div_id(soup_body, "livefeed-sporthead")
+        if liveheader:
+            return BeautifulSoup("", _HTML_PARSER) # Return empty soup.
+
         soup = ScrapeHelper.div_class(soup_body, "article", "articletext")
         if not soup:
             # Check for new Visir layout
@@ -747,13 +787,12 @@ class VisirScraper(ScrapeHelper):
         if soup:
             # Delete div.media from the content
             ScrapeHelper.del_div_class(soup, "media")
-        if soup:
             # Delete div.meta from the content
             ScrapeHelper.del_div_class(soup, "meta")
-        if soup:
             # Delete figure tags from the content
             if soup.figure:
                 soup.figure.decompose()
+
         return soup
 
 
@@ -1094,7 +1133,7 @@ class HringbrautScraper(ScrapeHelper):
         # Extract the heading from the OpenGraph (Facebook) og:title meta property
         heading = ScrapeHelper.meta_property(soup, "og:title") or ""
         heading = self.unescape(heading)
-        heading = heading.replace("\u00AD", "") # Remove soft hyphen
+        heading = heading.replace("\u00AD", "")  # Remove soft hyphen
 
         # Author
         author = "Ritstjórn Hringbrautar"
@@ -1109,7 +1148,6 @@ class HringbrautScraper(ScrapeHelper):
             # Example: "17. janúar 2019 - 11:58"
             datestr = date_span.get_text().rstrip()
             try:
-                print(datestr.split())
                 (mday, m, y, _, hm) = datestr.split()
                 (hour, mins) = hm.split(":")
                 mday = mday.replace(".", "")
