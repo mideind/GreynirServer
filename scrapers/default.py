@@ -906,9 +906,7 @@ class StjornarradScraper(ScrapeHelper):
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
         s = urlparse.urlsplit(url)
-        if not s.path:
-            return True
-        if s.path.startswith("/bitar/"):
+        if not s.path.startswith("/efst-a-baugi/frettir/stok-frett"):
             return True
         return False
 

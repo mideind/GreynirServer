@@ -41,7 +41,7 @@ def init_roots(wait = False):
         container to start serving. """
 
     ROOTS = [
-        # Root URL, top-level domain, description, authority
+        # Root URL, top-level domain, description, authority, module, scraper class, enabled
         ("http://kjarninn.is", "kjarninn.is", "Kjarninn", 1.0, "scrapers.default", "KjarninnScraper", True),
         ("http://www.ruv.is", "ruv.is", "RÚV", 1.0, "scrapers.default", "RuvScraper", True),
         ("http://www.visir.is", "visir.is", "Vísir", 0.8, "scrapers.default", "VisirScraper", True),
@@ -52,6 +52,7 @@ def init_roots(wait = False):
         ("https://www.forsaetisraduneyti.is", "forsaetisraduneyti.is", "Forsætisráðuneyti", 1.0, "scrapers.default", "StjornarradScraper", True),
         ("https://www.innanrikisraduneyti.is", "innanrikisraduneyti.is", "Innanríkisráðuneyti", 1.0, "scrapers.default", "StjornarradScraper", True),
         ("https://www.fjarmalaraduneyti.is", "fjarmalaraduneyti.is", "Fjármálaráðuneyti", 1.0, "scrapers.default", "StjornarradScraper", True),
+        ("https://www.utanrikisraduneyti.is", "utanrikisraduneyti.is", "Utanríkisráðuneyti", 1.0, "scrapers.default", "StjornarradScraper", True),
         ("http://reykjanes.local", "reykjanes.local", "Reykjanesbær", 1.0, "scrapers.reykjanes", "ReykjanesScraper", False),
         ("http://althingi.is", "althingi.is", "Alþingi", 1.0, "scrapers.default", "AlthingiScraper", False),
         ("http://stundin.is", "stundin.is", "Stundin", 1.0, "scrapers.default", "StundinScraper", True),
