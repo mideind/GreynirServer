@@ -523,6 +523,22 @@ class MblScraper(ScrapeHelper):
 
     def __init__(self, root):
         super().__init__(root)
+        self._feeds = [
+            "https://www.mbl.is/feeds/fp/",
+            "https://www.mbl.is/feeds/innlent/",
+            "https://www.mbl.is/feeds/erlent/",
+            "https://www.mbl.is/feeds/togt/",
+            "https://www.mbl.is/feeds/helst/",
+            "https://www.mbl.is/feeds/nyjast/",
+            "https://www.mbl.is/feeds/vidskipti/",
+            "https://www.mbl.is/feeds/200milur/",
+            "https://www.mbl.is/feeds/sport/",
+            "https://www.mbl.is/feeds/folk/",
+            "https://www.mbl.is/feeds/matur/",
+            "https://www.mbl.is/feeds/smartland/",
+            "https://www.mbl.is/feeds/bill/",
+            "https://www.mbl.is/feeds/k100/",
+        ]
 
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
@@ -540,11 +556,16 @@ class MblScraper(ScrapeHelper):
     def get_metadata(self, soup):
         """ Analyze the article soup and return metadata """
         metadata = super().get_metadata(soup)
+
+        url = ScrapeHelper.meta_property(soup, "og:url") or ""
+
         # Extract the heading from the meta title or
         # OpenGraph (Facebook) og:title property
         heading = ScrapeHelper.meta_property(soup, "title", prop_attr="name") or ""
         if heading.endswith(" - mbl.is"):
             heading = heading[0:-9]
+        if heading.endswith(" - K100"):
+            heading = heading[0:-7]
         if not heading:
             heading = ScrapeHelper.meta_property(soup, "og:title") or ""
         if not heading:
@@ -552,10 +573,12 @@ class MblScraper(ScrapeHelper):
             p_e = ScrapeHelper.div_class(soup.html.body, "pistill-entry")
             if p_e and p_e.h2:
                 heading = p_e.h2.string
+        heading = heading.strip()
         heading = self.unescape(heading)
+
         # Extract the publication time from the article:published_time meta property
         # A dateline from mbl.is looks like this: Viðskipti | mbl | 24.8.2015 | 10:48
-        dateline = ScrapeHelper.div_class(soup.html.body, "frett-container", "dateline")
+        dateline = ScrapeHelper.div_class(soup.html.body, "dateline")
         dateline = "".join(dateline.stripped_strings).split("|") if dateline else None
         timestamp = None
         if dateline:
@@ -588,10 +611,16 @@ class MblScraper(ScrapeHelper):
                         hour=time[0],
                         minute=time[1],
                     )
-                except:
+                except Exception as e:
+                    logging.warning(
+                        "Exception when obtaining date of mbl.is article '{0}': {1}".format(url, e)
+                    )
                     timestamp = None
+
         if timestamp is None:
+            logging.warning("Failed to obtain date of mbl.is article '{0}'".format(url))
             timestamp = datetime.utcnow()
+
         # Extract the author name
         rp = ScrapeHelper.div_class(soup.html.body, "frett-main", "reporter-profile")
         f = lambda tag: ScrapeHelper.general_filter(tag, "a", "class", "name")
@@ -603,6 +632,7 @@ class MblScraper(ScrapeHelper):
             rp = ScrapeHelper.div_class(soup.html.body, "pistlar-author-profile-box")
             if rp and rp.h4:
                 rname = rp.h4.string
+
         author = rname if rname else "Ritstjórn mbl.is"
         metadata.heading = heading
         metadata.author = author
@@ -650,9 +680,11 @@ class MblScraper(ScrapeHelper):
             ScrapeHelper.del_div_class(soup, "extraimg-big")
             ScrapeHelper.del_div_class(soup, "newsimg-left")
             ScrapeHelper.del_div_class(soup, "newsimg-right")
+            ScrapeHelper.del_div_class(soup, "newsitem-image")
             # Toolbar
             ScrapeHelper.del_div_class(soup, "newsitem-bottom-toolbar")
             ScrapeHelper.del_div_class(soup, "sidebar-mobile")
+            ScrapeHelper.del_div_class(soup, "mbl-news-link")
             # Embedded media such as Twitter and Facebook posts
             ScrapeHelper.del_div_class(soup, "embedded-media")
         return soup
