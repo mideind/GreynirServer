@@ -487,9 +487,10 @@ def text_from_request(request):
             # This API also accepts form/url-encoded requests:
             # curl -d "text=Í dag er ágætt veður en mikil hálka er á götum." https://greynir.is/postag.api
             text = request.form.get("text", "")
+        text = text[0:_MAX_TEXT_LENGTH]
     else:
-        text = request.args.get("t", "")
-    return text[0:_MAX_TEXT_LENGTH]
+        text = request.args.get("t", "")[0:_MAX_TEXT_LENGTH_VIA_URL]
+    return text
 
 
 # Note: Endpoints ending with .api are configured not to be cached by nginx
