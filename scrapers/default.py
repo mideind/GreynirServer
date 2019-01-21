@@ -109,6 +109,11 @@ class ScrapeHelper:
         """ Return True if this URL should not be scraped """
         return False  # Scrape all URLs by default
 
+    def skip_rss_title(self, title):
+        """ Return True if articles with matching title in feed 
+            should be skipped """
+        return False
+
     @staticmethod
     def unescape(s):
         """ Unescape headings that may contain Unicode characters """
@@ -716,6 +721,11 @@ class VisirScraper(ScrapeHelper):
         if s.path and any(s.path.startswith(prefix) for prefix in self._SKIP_PREFIXES):
             return True
         return False  # Scrape all URLs by default
+
+    def skip_rss_title(self, title):
+        if title.startswith("Í beinni: ") or title.startswith("Leik lokið: "):
+            return True # Skip live sport event pages
+        return False
 
     def get_metadata(self, soup):
         """ Analyze the article soup and return metadata """

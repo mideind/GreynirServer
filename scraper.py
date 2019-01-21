@@ -71,9 +71,9 @@ class Scraper:
         logging.info("Initializing scraper instance")
 
     def urls2fetch(self, root, helper):
-        """ Returns a set of URLs to fetch. If the scraper helper class
-            has RSS feed URLs, these are used to acquire the URLs. Otherwise,
-            links are found by scraping the root website and searching for links. """
+        """ Returns a set of URLs to fetch. If the scraper helper class has associated
+            RSS feed URLs, these are used to acquire the URLs. Otherwise, links are 
+            found by scraping the root website and searching for links to subpages. """
         fetch_set = set()
         feeds = helper.feeds
 
@@ -89,7 +89,7 @@ class Scraper:
                     continue
 
                 for entry in d.entries:
-                    if entry.link:
+                    if entry.link and not helper.skip_rss_title(entry.title):
                         fetch_set.add(entry.link)
 
         else:
