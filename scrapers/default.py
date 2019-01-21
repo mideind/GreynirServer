@@ -334,7 +334,7 @@ class ScrapeHelper:
 
     @staticmethod
     def del_social_embeds(soup):
-        # Delete all iframes and embedded FB/Twitter/Instagram posts)
+        # Delete all iframes and embedded FB/Twitter/Instagram posts
         ScrapeHelper.del_tag(soup, "iframe")
         ScrapeHelper.del_tag(soup, "twitterwidget")
         ScrapeHelper.del_div_class(soup, "fb-post")
@@ -447,7 +447,7 @@ class RuvScraper(ScrapeHelper):
 
     def __init__(self, root):
         super().__init__(root)
-        self._feeds = ["http://www.ruv.is/rss/frettir"]
+        # self._feeds = ["http://www.ruv.is/rss/frettir"]
 
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
@@ -858,6 +858,7 @@ class VisirScraper(ScrapeHelper):
 
 
 class EyjanScraper(ScrapeHelper):
+
     """ Scraping helper for Eyjan.pressan.is """
 
     def __init__(self, root):
@@ -873,7 +874,7 @@ class EyjanScraper(ScrapeHelper):
         dateline = ScrapeHelper.div_class(soup, "article-full")
         dateline = ScrapeHelper.tag_class(dateline, "span", "date")
         dateline = "".join(dateline.stripped_strings).split() if dateline else None
-        timestamp = datetime.utcnow()
+        timestamp = None
         if dateline:
             # Example: Þriðjudagur 15.12.2015 - 14:14
             try:
@@ -890,11 +891,14 @@ class EyjanScraper(ScrapeHelper):
                 logging.warning(
                     "Exception when obtaining date of eyjan.is article: {0}".format(e)
                 )
-
+                timestamp = None
+        if timestamp is None:
+            timestamp = datetime.utcnow()
+        # Extract the author name
+        author = "Ritstjórn eyjan.is"
         metadata.heading = heading
-        metadata.author = "Ritstjórn eyjan.is"
+        metadata.author = author
         metadata.timestamp = timestamp
-
         return metadata
 
     def _get_content(self, soup_body):
@@ -1204,7 +1208,7 @@ class HringbrautScraper(ScrapeHelper):
         timestamp = datetime.utcnow()
 
         info = soup.find("div", {"class": "entryInfo"})
-        date_span = info.find("span", {"class": "date"})
+        date_span = info.find("span", {"class": "date"}) if info else None
 
         if date_span:
             # Example: "17. janúar 2019 - 11:58"
