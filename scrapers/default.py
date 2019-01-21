@@ -731,6 +731,8 @@ class VisirScraper(ScrapeHelper):
         """ Analyze the article soup and return metadata """
         metadata = super().get_metadata(soup)
 
+        url = ScrapeHelper.meta_property(soup, "og:title") or ""
+
         # Extract the heading from the OpenGraph (Facebook) og:title meta property
         heading = ScrapeHelper.meta_property(soup, "og:title") or ""
         heading = self.unescape(heading)
@@ -742,28 +744,41 @@ class VisirScraper(ScrapeHelper):
             heading = heading[:-8]
 
         # Timestamp
-        timestamp = datetime.utcnow()
+        timestamp = None
         time_el = soup.find("time", {"class": "article-single__time"})
-        if time_el:
-            # Example: "17. janúar 2019 14:30"
+        if time_el:            
             datestr = time_el.get_text().rstrip()
-            try:
-                (mday, m, y, hm) = datestr.split()
-                (hour, mins) = hm.split(":")
-                mday = mday.replace(".", "")
-                month = MONTHS.index(m) + 1
 
-                timestamp = datetime(
-                    year=int(y),
-                    month=int(month),
-                    day=int(mday),
-                    hour=int(hour),
-                    minute=int(mins),
-                )
-            except Exception as e:
-                logging.warning(
-                    "Exception when obtaining date of visir.is article: {0}".format(e)
-                )
+            # Example: "21.1.2019 09:04"
+            if re.search(r"^\d{1,2}\.\d{1,2}\.\d\d\d\d\s\d{1,2}:\d{1,2}", datestr):
+                try:
+                    timestamp = datetime.strptime(datestr, "%d.%m.%Y %H:%M")
+                except Exception as e:
+                    print(e)
+                    pass
+            # Example: "17. janúar 2019 14:30"
+            else:
+                try:
+                    (mday, m, y, hm) = datestr.split()
+                    (hour, mins) = hm.split(":")
+                    mday = mday.replace(".", "")
+                    month = MONTHS.index(m) + 1
+
+                    timestamp = datetime(
+                        year=int(y),
+                        month=int(month),
+                        day=int(mday),
+                        hour=int(hour),
+                        minute=int(mins),
+                    )
+                except Exception as e:
+                    print(e)
+                    pass
+
+        if timestamp is None:
+            logging.warning("Could not parse date in visir.is article {0}".format(url))
+            timestamp = datetime.utcnow()
+
 
         # Author
         author = ScrapeHelper.tag_prop_val(soup, "a", "itemprop", "author")
@@ -827,6 +842,9 @@ class VisirScraper(ScrapeHelper):
             ScrapeHelper.del_div_class(soup, "media")
             # Delete div.meta from the content
             ScrapeHelper.del_div_class(soup, "meta")
+            # Delete video players
+            ScrapeHelper.del_div_class(soup, "jwplayer")
+            ScrapeHelper.del_div_class(soup, "embedd-media-player")
             # Delete figure tags from the content
             if soup.figure:
                 soup.figure.decompose()
