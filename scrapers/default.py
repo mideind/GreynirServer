@@ -422,6 +422,10 @@ class KjarninnScraper(ScrapeHelper):
             content = soup_body.article
         # Delete div.category-snippet tags from the content
         ScrapeHelper.del_div_class(content, "category_snippet")
+        # Delete image containers from content
+        ScrapeHelper.del_div_class(content, "image-container")
+        # Delete "Lestu meira" lists at bottom of article
+        ScrapeHelper.del_div_class(content, "tag_list_block")
         # Delete div.ad-container tags from the content
         ScrapeHelper.del_div_class(content, "ad-container")
         return content
@@ -498,12 +502,12 @@ class RuvScraper(ScrapeHelper):
             content, "pane-custom"
         )  # Sharing stuff at bottom of page
         ScrapeHelper.del_div_class(content, "title-wrapper")  # Additional header stuff
-        ScrapeHelper.del_div_class(
-            content, "views-field-field-user-display-name"
-        )  # Seriously.
+        ScrapeHelper.del_div_class(content, "views-field-field-user-display-name")
         ScrapeHelper.del_div_class(content, "field-name-myndatexti-credit-source")
+        ScrapeHelper.del_div_class(content, "field-name-field-media-reference")
+        ScrapeHelper.del_div_class(content, "field-name-field-myndatexti")
+        ScrapeHelper.del_div_class(content, "pane-menningin-faerslur-panel-pane-16")
         ScrapeHelper.del_div_class(content, "region-conditional-stack")
-        ScrapeHelper.del_tag(content, "twitterwidget")
         ScrapeHelper.del_div_class(content, "pane-author")
         return content
 
@@ -618,7 +622,9 @@ class MblScraper(ScrapeHelper):
                     )
                 except Exception as e:
                     logging.warning(
-                        "Exception when obtaining date of mbl.is article '{0}': {1}".format(url, e)
+                        "Exception when obtaining date of mbl.is article '{0}': {1}".format(
+                            url, e
+                        )
                     )
                     timestamp = None
 
@@ -724,7 +730,7 @@ class VisirScraper(ScrapeHelper):
 
     def skip_rss_title(self, title):
         if title.startswith("Í beinni: ") or title.startswith("Leik lokið: "):
-            return True # Skip live sport event pages
+            return True  # Skip live sport event pages
         return False
 
     def get_metadata(self, soup):
@@ -746,7 +752,7 @@ class VisirScraper(ScrapeHelper):
         # Timestamp
         timestamp = None
         time_el = soup.find("time", {"class": "article-single__time"})
-        if time_el:            
+        if time_el:
             datestr = time_el.get_text().rstrip()
 
             # Example: "21.1.2019 09:04"
@@ -778,7 +784,6 @@ class VisirScraper(ScrapeHelper):
         if timestamp is None:
             logging.warning("Could not parse date in visir.is article {0}".format(url))
             timestamp = datetime.utcnow()
-
 
         # Author
         author = ScrapeHelper.tag_prop_val(soup, "a", "itemprop", "author")
@@ -1072,10 +1077,9 @@ class KvennabladidScraper(ScrapeHelper):
     def _get_content(self, soup_body):
         """ Find the article content (main text) in the soup """
         article = ScrapeHelper.div_class(soup_body, "blog-content")
-        # Delete div.wp-caption
-        caption = ScrapeHelper.div_class(article, "wp-caption")
-        if caption is not None:
-            caption.decompose()
+        # Delete all captions
+        ScrapeHelper.del_div_class(article, "wp-caption")
+        ScrapeHelper.del_tag_prop_val(article, "p", "class", "wp-caption-text")
         return article
 
 
