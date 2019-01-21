@@ -33,7 +33,7 @@ from collections import OrderedDict, defaultdict
 from settings import NoIndexWords
 from scraperdb import Article as ArticleRow, SessionContext, Word, Root, DataError, desc
 from fetcher import Fetcher
-from tokenizer import TOK, tokenize
+from reynir import TOK
 from reynir.fastparser import Fast_Parser, ParseError, ParseForestDumper
 from reynir.incparser import IncrementalParser
 from tree import Tree

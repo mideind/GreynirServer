@@ -48,11 +48,10 @@ from flask.wrappers import Response
 from flask_caching import Cache
 
 import reynir
-from reynir import correct_spaces
+from reynir import correct_spaces, tokenize
 from reynir.bindb import BIN_Db
 from reynir.binparser import canonicalize_token
 from reynir.fastparser import Fast_Parser, ParseForestFlattener
-from reynir.bintokenizer import tokenize
 
 import reynir_correct
 
@@ -78,6 +77,7 @@ from query import Query
 from search import Search
 from images import get_image_url, update_broken_image_url, blacklist_image_url
 from tnttagger import ifd_tag
+from correct import check_grammar
 
 
 # Initialize Flask framework
@@ -475,21 +475,28 @@ def process_query(session, toklist, result):
     return True
 
 
-def text_from_request(request):
-    """ Return text passed in a HTTP request, either using GET or POST """
+def text_from_request(request, *, post_field=None, get_field=None):
+    """ Return text passed in a HTTP request, either using GET or POST.
+        When using GET, the default parameter name is 't'. This can
+        be overridden using the get_field parameter.
+        When using POST, the default form field name is 'text'. This can
+        be overridden using the post_field paramter.
+    """
     if request.method == "POST":
         if request.headers["Content-Type"] == "text/plain":
             # This API accepts plain text POSTs, UTF-8 encoded.
             # Example usage:
-            # curl -d @example.txt https://greynir.is/postag.api --header "Content-Type: text/plain"
+            # curl -d @example.txt https://greynir.is/postag.api \
+            #     --header "Content-Type: text/plain"
             text = request.data.decode("utf-8")
         else:
             # This API also accepts form/url-encoded requests:
-            # curl -d "text=Í dag er ágætt veður en mikil hálka er á götum." https://greynir.is/postag.api
-            text = request.form.get("text", "")
+            # curl -d "text=Í dag er ágætt veður en mikil hálka er á götum." \
+            #     https://greynir.is/postag.api
+            text = request.form.get(post_field or "text", "")
         text = text[0:_MAX_TEXT_LENGTH]
     else:
-        text = request.args.get("t", "")[0:_MAX_TEXT_LENGTH_VIA_URL]
+        text = request.args.get(get_field or "t", "")[0:_MAX_TEXT_LENGTH_VIA_URL]
     return text
 
 
@@ -526,48 +533,11 @@ def correct_api(version=1):
         logging.warning("Exception in correct_api(): {0}".format(e))
         return better_jsonify(valid=False, reason="Invalid request")
 
-    result = reynir_correct.check_with_stats(text, split_paragraphs=True)
+    pgs, stats = check_grammar(text)
 
-    def encode_sentence(sent):
-        """ Map a reynir._Sentence object to a raw sentence dictionary
-            expected by the web UI """
-        if sent.tree is None:
-            # Not parsed: use the raw token list
-            tokens = [dict(k=d.kind, x=d.txt) for d in sent.tokens]
-        else:
-            # Successfully parsed: use the terminals, since we have
-            # more info there, for instance on em/en dashes
-            stok = sent.tokens
-            tokens = [dict(k=stok[t.index].kind, x=t.text) for t in sent.terminals]
-        return dict(
-            tokens=tokens,
-            annotations=[
-                dict(
-                    start=ann.start,
-                    end=ann.end,
-                    code=ann.code,
-                    text=ann.text
-                )
-                for ann in sent.annotations
-            ]
-        )
-
-    pgs = [
-        [encode_sentence(sent) for sent in pg]
-        for pg in result["paragraphs"]
-    ]
     # Return the annotated paragraphs/sentences and stats
     # in a JSON structure to the client
-    return better_jsonify(
-        valid=True,
-        result=pgs,
-        stats=dict(
-            num_tokens=result["num_tokens"],
-            num_sentences=result["num_sentences"],
-            num_parsed=result["num_parsed"],
-            ambiguity=result["ambiguity"]
-        )
-    )
+    return better_jsonify(valid=True, result=pgs, stats=stats)
 
 
 # Note: Endpoints ending with .api are configured not to be cached by nginx
@@ -1136,11 +1106,14 @@ def analysis():
     return render_template("analysis.html", default_text=txt)
 
 
-@app.route("/correct")
+@app.route("/correct", methods=["GET", "POST"])
 def correct():
     """ Handler for a page for spelling and grammar correction
         of user-entered text """
-    txt = request.args.get("txt", "")[0:_MAX_TEXT_LENGTH_VIA_URL]
+    try:
+        txt = text_from_request(request, post_field="txt", get_field="txt")
+    except:
+        txt = ""
     return render_template("correct.html", default_text=txt)
 
 
@@ -1166,7 +1139,6 @@ def page():
         if uuid:
             a = ArticleProxy.load_from_uuid(uuid, session)
         elif url.startswith("http:") or url.startswith("https:"):
-            # a = ArticleProxy.load_from_url(url, session)
             a = ArticleProxy.scrape_from_url(url, session)  # Forces a new scrape
         else:
             a = None
