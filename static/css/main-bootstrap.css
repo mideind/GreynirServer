@@ -1286,6 +1286,15 @@ div#metadata h1 {
    line-height: 1.25;
 }
 
+div#metadata button.btn {
+   font-size: 18px;
+   line-height: 18px;
+}
+
+div#metadata button.btn span.glyphicon {
+   top: 0px;
+}
+
 h3.query {
    margin-top: 0px;
    margin-bottom: 20px;

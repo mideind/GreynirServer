@@ -29,16 +29,16 @@ import threading
 from collections import namedtuple
 
 from fetcher import Fetcher
-from nertokenizer import TOK, recognize_entities
+from nertokenizer import recognize_entities
 from scraperdb import SessionContext
 from settings import Settings
 
-from reynir import mark_paragraphs
+from reynir import TOK, mark_paragraphs, tokenize
 from reynir.binparser import augment_terminal
 from reynir.fastparser import Fast_Parser, ParseForestNavigator
 from reynir.incparser import IncrementalParser
 from reynir.matcher import Annotator, Simplifier, SimpleTree
-from reynir.bintokenizer import tokenize, describe_token
+from reynir.bintokenizer import describe_token
 
 
 WordTuple = namedtuple("WordTuple", ["stem", "cat"])

@@ -47,7 +47,7 @@ from collections import defaultdict
 from itertools import islice, tee
 import xml.etree.ElementTree as ET
 
-from reynir.bintokenizer import TOK
+from reynir import TOK, tokenize
 from reynir.binparser import canonicalize_token
 from reynir.ifdtagger import IFD_Tagset
 

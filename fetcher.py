@@ -31,8 +31,8 @@ from urllib.error import HTTPError
 
 from bs4 import BeautifulSoup, NavigableString
 
+from reynir import tokenize
 from nertokenizer import recognize_entities
-from reynir_correct import tokenize
 from scraperdb import SessionContext, Root, Article as ArticleRow
 
 

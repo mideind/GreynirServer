@@ -31,8 +31,7 @@
 
 from collections import defaultdict
 
-from reynir import Abbreviations
-from reynir.bintokenizer import TOK
+from reynir import Abbreviations, TOK
 from reynir.bindb import BIN_Db
 
 from scraperdb import SessionContext, Entity
