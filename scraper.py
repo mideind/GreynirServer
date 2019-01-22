@@ -92,8 +92,8 @@ class Scraper:
                     if entry.link and not helper.skip_rss_entry(entry):
                         fetch_set.add(entry.link)
         else:
-            # Fetch the root URL and scrape all child URLs that refer
-            # to the same domain suffix and we haven't seen before
+            # Fetch the root URL and scrape all child URLs
+            # that refer to the same domain suffix
             logging.info("Fetching root {0}".format(root.url))
 
             # Read the HTML document at the root URL

@@ -30,7 +30,7 @@ import re
 import logging
 import urllib.parse as urlparse
 from datetime import datetime
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, NavigableString
 
 MODULE_NAME = __name__
 
@@ -453,11 +453,11 @@ class RuvScraper(ScrapeHelper):
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
         s = urlparse.urlsplit(url)
-        if not s.path or not s.path.startswith("/frett/"):
-            return True
-        if s.path and any(s.path.startswith(prefix) for prefix in self._SKIP_PREFIXES):
-            return True
-        return False  # Scrape all other URLs by default
+        p = s.path
+        # Only scrape urls with the right path prefix
+        if p and p.startswith("/frett/"):
+            return False  # Don't skip
+        return True
 
     def get_metadata(self, soup):
         """ Analyze the article soup and return metadata """
@@ -555,13 +555,14 @@ class MblScraper(ScrapeHelper):
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
         s = urlparse.urlsplit(url)
-        if s.path:
-            if any(s.path.startswith(prefix) for prefix in self._SKIP_PREFIXES):
+        path = s.path
+        if path:
+            if any(path.startswith(p) for p in self._SKIP_PREFIXES):
                 return True
-            if "/breytingar_i_islenska_fotboltanum/" in s.path:
+            if "/breytingar_i_islenska_fotboltanum/" in path:
                 # Avoid lots of details about soccer players
                 return True
-            if "/felagaskipti_i_enska_fotboltanum/" in s.path:
+            if "/felagaskipti_i_enska_fotboltanum/" in path:
                 return True
         return False  # Scrape all URLs by default
 
@@ -727,7 +728,7 @@ class VisirScraper(ScrapeHelper):
         if s.netloc.startswith("fasteignir.") or s.netloc.startswith("albumm."):
             # Skip fasteignir.visir.is and albumm.visir.is
             return True
-        if s.path and any(s.path.startswith(prefix) for prefix in self._SKIP_PREFIXES):
+        if s.path and any(s.path.startswith(p) for p in self._SKIP_PREFIXES):
             return True
         return False  # Scrape all URLs by default
 
@@ -1243,5 +1244,90 @@ class HringbrautScraper(ScrapeHelper):
     def _get_content(self, soup_body):
         """ Find the article content (main text) in the soup """
         content = ScrapeHelper.div_class(soup_body, "entryContent")
+
+        return content
+
+
+class FrettabladidScraper(ScrapeHelper):
+    """ Scraping helper for frettabladid.is """
+
+    _ALLOWED_PREFIXES = [
+        "/frettir/",
+        "/markadurinn/",
+        "/sport/",
+        "/lifid/",
+        "/skodun/",
+        "/timamot/",
+    ]
+
+    def __init__(self, root):
+        super().__init__(root)
+
+    def skip_url(self, url):
+        """ Return True if this URL should not be scraped """
+        s = urlparse.urlsplit(url)
+        if s.path and any(
+            s.path.startswith(prefix) for prefix in self._ALLOWED_PREFIXES
+        ):
+            return False
+        return True  # Skip all other URLs by default
+
+    def get_metadata(self, soup):
+        """ Analyze the article soup and return metadata """
+        metadata = super().get_metadata(soup)
+
+        # Extract the heading from the OpenGraph (Facebook) og:title meta property
+        heading = ScrapeHelper.meta_property(soup, "og:title") or ""
+        heading = self.unescape(heading)
+        title_suffix = "– Fréttablaðið"
+        if heading.endswith(title_suffix):
+            heading = heading[: -len(title_suffix)].strip()
+
+        # Author
+        name = soup.find("span", {"class": "article__byline"})
+        if not name:
+            name = soup.find("span", {"class": "bylineblock__heading"})
+        author = name.get_text() if name else "Ritstjórn Fréttablaðsins"
+
+        # Timestamp
+        ts = ScrapeHelper.meta_property(soup, "article:published_time")
+        if ts:
+            timestamp = datetime(
+                year=int(ts[0:4]),
+                month=int(ts[5:7]),
+                day=int(ts[8:10]),
+                hour=int(ts[11:13]),
+                minute=int(ts[14:16]),
+                second=int(ts[17:19]),
+            )
+        else:
+            timestamp = datetime.utcnow()
+
+        metadata.heading = heading
+        metadata.author = author
+        metadata.timestamp = timestamp
+
+        return metadata
+
+    def _get_content(self, soup_body):
+        """ Find the article content (main text) in the soup """
+        content = ScrapeHelper.div_class(soup_body, "article__body")
+        # Get rid of stuff we don't want
+        ScrapeHelper.del_tag(content, "figure")
+        ScrapeHelper.del_div_class(content, "embed")
+
+        # First char in first paragraph is wrapped in its own span tag
+        # for styling purposes, which separates it from the rest of the word.
+        # We extract the character and insert it into the first p tag
+        firstchar = ""
+        span = content.find("span", {"class": "article__dropcap"})
+        if span:
+            firstchar = span.get_text()
+            span.decompose()
+
+        # Insert it in the first paragraph
+        ptag = content.find("p")
+        if ptag and firstchar:
+            ptag.insert(0, NavigableString(firstchar))
 
         return content

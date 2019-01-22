@@ -57,6 +57,7 @@ def init_roots(wait = False):
         ("http://althingi.is", "althingi.is", "Alþingi", 1.0, "scrapers.default", "AlthingiScraper", False),
         ("http://stundin.is", "stundin.is", "Stundin", 1.0, "scrapers.default", "StundinScraper", True),
         ("http://hringbraut.is", "hringbraut.is", "Hringbraut", 1.0, "scrapers.default", "HringbrautScraper", True),
+        ("https://www.frettabladid.is/", "frettabladid.is", "Fréttablaðið", 1.0, "scrapers.default", "FrettabladidScraper", True),
     ]
 
     retries = 36 # Do no more than 36 retries (~3 minutes) before giving up and returning an error code
