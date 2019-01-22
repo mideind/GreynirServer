@@ -26,8 +26,10 @@
 
    <div class="row">
       <div class="col-xs-4 col-sm-3 col-md-2 pull-right">
-         <button class="btn btn-success btn-lg btn-block" id="txt-ok" title="Greina" tabindex="3"
-            onclick="analyze()">Greina</button>
+         <button class="btn btn-success btn-lg btn-block"
+            id="txt-ok" title="Greina" tabindex="3" onclick="analyze()">
+            <span class="glyphicon glyphicon-cogwheel"></span> Greina
+         </button>
       </div>
    </div>
 
@@ -82,7 +84,7 @@
       }
       else {
          $("#txt-ok").removeAttr("disabled")
-            .text("Greina");
+            .html("<span class='glyphicon glyphicon-cogwheel'></span> Greina");
          $("div#output").css("display", "block");
       }
    }
