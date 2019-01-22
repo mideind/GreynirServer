@@ -74,10 +74,16 @@ def check_grammar(text):
             # Not parsed: use the raw token list
             tokens = [dict(k=d.kind, x=d.txt) for d in sent.tokens]
         else:
-            # Successfully parsed: use the terminals, since we have
-            # more info there, for instance on em/en dashes
-            stok = sent.tokens
-            tokens = [dict(k=stok[t.index].kind, x=t.text) for t in sent.terminals]
+            # Successfully parsed: use the text from the terminals (where available)
+            # since we have more info there, for instance on em/en dashes.
+            # Create a map of token indices to corresponding terminal text
+            token_map = {t.index : t.text for t in sent.terminals}
+            tokens = [
+                dict(
+                    k=d.kind,
+                    x=token_map.get(ix, d.txt)
+                ) for ix, d in enumerate(sent.tokens)
+            ]
         return dict(
             tokens=tokens,
             annotations=[

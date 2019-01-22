@@ -107,6 +107,9 @@
 .glyphicon-tag:before {
    content: "\E066";
 }
+.glyphicon-cogwheel:before {
+   content: "\E137";
+}
 .glyphicon-tags:before {
    content: "\E067";
 }
@@ -1293,6 +1296,10 @@ div#metadata button.btn {
 
 div#metadata button.btn span.glyphicon {
    top: 0px;
+}
+
+button.btn.btn-lg.btn-block span.glyphicon {
+   margin-right: 4px;
 }
 
 h3.query {
