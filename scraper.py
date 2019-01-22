@@ -89,14 +89,12 @@ class Scraper:
                     continue
 
                 for entry in d.entries:
-                    if entry.link and not helper.skip_rss_title(entry.title):
+                    if entry.link and not helper.skip_rss_entry(entry):
                         fetch_set.add(entry.link)
-
         else:
-            logging.info("Fetching root {0}".format(root.url))
-
             # Fetch the root URL and scrape all child URLs that refer
             # to the same domain suffix and we haven't seen before
+            logging.info("Fetching root {0}".format(root.url))
 
             # Read the HTML document at the root URL
             html_doc = Fetcher.raw_fetch_url(root.url)

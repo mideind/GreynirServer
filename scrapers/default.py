@@ -109,9 +109,8 @@ class ScrapeHelper:
         """ Return True if this URL should not be scraped """
         return False  # Scrape all URLs by default
 
-    def skip_rss_title(self, title):
-        """ Return True if articles with matching title in feed 
-            should be skipped """
+    def skip_rss_entry(self, entry):
+        """ Return True if URL in RSS feed entry should be skipped """
         return False
 
     @staticmethod
@@ -448,7 +447,7 @@ class RuvScraper(ScrapeHelper):
 
     def __init__(self, root):
         super().__init__(root)
-        # Not using RÚV's RSS feed for now since it contains English-language article
+        # Not using RÚV's RSS feed for now since it contains English-language articles
         # self._feeds = ["http://www.ruv.is/rss/frettir"]
 
     def skip_url(self, url):
@@ -732,9 +731,11 @@ class VisirScraper(ScrapeHelper):
             return True
         return False  # Scrape all URLs by default
 
-    def skip_rss_title(self, title):
+    def skip_rss_entry(self, entry):
+        # Skip live sport event pages
+        title = entry.title
         if title.startswith("Í beinni: ") or title.startswith("Leik lokið: "):
-            return True  # Skip live sport event pages
+            return True
         return False
 
     def get_metadata(self, soup):
