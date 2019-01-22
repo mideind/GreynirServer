@@ -211,7 +211,8 @@ class ScrapeHelper:
         if tag.name != name or not tag.has_attr(attr):
             return False
         a = tag[attr]
-        assert a
+        assert a is not None
+
         # Handle both potentially multi-valued attrs
         # (for instance multiple classes on a div),
         # and multi-valued attr_vals (for instance more
@@ -447,11 +448,14 @@ class RuvScraper(ScrapeHelper):
 
     def __init__(self, root):
         super().__init__(root)
+        # Not using RÚV's RSS feed for now since it contains English-language article
         # self._feeds = ["http://www.ruv.is/rss/frettir"]
 
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
         s = urlparse.urlsplit(url)
+        if not s.path or not s.path.startswith("/frett/"):
+            return True
         if s.path and any(s.path.startswith(prefix) for prefix in self._SKIP_PREFIXES):
             return True
         return False  # Scrape all other URLs by default
