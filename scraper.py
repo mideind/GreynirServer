@@ -72,7 +72,7 @@ class Scraper:
 
     def urls2fetch(self, root, helper):
         """ Returns a set of URLs to fetch. If the scraper helper class has associated
-            RSS feed URLs, these are used to acquire the URLs. Otherwise, links are 
+            RSS feed URLs, these are used to acquire article URLs. Otherwise, the URLs are 
             found by scraping the root website and searching for links to subpages. """
         fetch_set = set()
         feeds = helper.feeds

@@ -742,7 +742,7 @@ class VisirScraper(ScrapeHelper):
         """ Analyze the article soup and return metadata """
         metadata = super().get_metadata(soup)
 
-        url = ScrapeHelper.meta_property(soup, "og:title") or ""
+        url = ScrapeHelper.meta_property(soup, "og:url") or ""
 
         # Extract the heading from the OpenGraph (Facebook) og:title meta property
         heading = ScrapeHelper.meta_property(soup, "og:title") or ""
@@ -765,7 +765,6 @@ class VisirScraper(ScrapeHelper):
                 try:
                     timestamp = datetime.strptime(datestr, "%d.%m.%Y %H:%M")
                 except Exception as e:
-                    print(e)
                     pass
             # Example: "17. janúar 2019 14:30"
             else:
@@ -783,7 +782,6 @@ class VisirScraper(ScrapeHelper):
                         minute=int(mins),
                     )
                 except Exception as e:
-                    print(e)
                     pass
 
         if timestamp is None:
@@ -980,7 +978,7 @@ class StjornarradScraper(ScrapeHelper):
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
         s = urlparse.urlsplit(url)
-        if not s.path.startswith("/efst-a-baugi/frettir/stok-frett"):
+        if not s.path or not s.path.startswith("/efst-a-baugi/frettir/stok-frett"):
             return True
         return False
 
