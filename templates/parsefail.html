@@ -1,0 +1,56 @@
+
+{% extends "container-normal.html" %}
+
+{% block styles %}
+
+<link href="{{ url_for('static', filename='css/main-bootstrap.css') }}"
+   rel='stylesheet' type='text/css'>
+
+{% endblock %}
+
+{% block content %}
+
+
+<div class="panel panel-default">
+
+   <div class="panel-heading">
+      <div class="headline hidden-xs">Nýlegar setningar sem ekki tókst að trjágreina</div>
+      <div class="headline visible-xs-inline-block">Nýjustu staðir</div>
+      <div class="btn-group pull-right">
+         <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            {{ num }}
+            <span class="caret"></span>
+         </button>
+
+         <ul class="dropdown-menu">
+            <li><a href="{{ url_for('parsefail') | safe }}">50</a></li>
+            <li><a href="{{ url_for('parsefail', num='100') | safe }}">100</a></li>
+            <li><a href="{{ url_for('parsefail', num='250') | safe }}">250</a></li>
+         </ul>
+      </div>
+   </div>
+
+   <div id="result" style="padding: 20px;"></div>
+
+</div>
+
+{% endblock %}
+
+{% block endscripts %}
+
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
+<script src="{{ url_for('static', filename='js/page.js') }}"></script>
+
+<script>
+
+   var j = {{ sentences | safe }};
+
+   function init() {
+      displayTokens(j);
+   }
+
+   $(document).ready(init);
+
+</script>
+
+{% endblock %}
