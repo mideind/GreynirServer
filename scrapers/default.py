@@ -1245,6 +1245,16 @@ class HringbrautScraper(ScrapeHelper):
         """ Find the article content (main text) in the soup """
         content = ScrapeHelper.div_class(soup_body, "entryContent")
 
+        # Many hringbraut.is articles end with a "Sjá nánar" paragraph
+        # and then a paragraph containing a URL. Remove these.
+        paragraphs = list(content.find_all("p" , recursive=False))
+        if len(paragraphs) > 2:
+            last = paragraphs[-1]
+            sec_last = paragraphs[-2]
+            if last.get_text().startswith('http'):
+                last.decompose()
+            if sec_last.get_text().startswith('Nánar á'):
+                sec_last.decompose()
         return content
 
 
