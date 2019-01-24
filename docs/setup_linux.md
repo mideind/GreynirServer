@@ -77,7 +77,7 @@ pip3 install -r requirements.txt
 
 ## Set up database
 
-### Install postgres
+### Install PostgreSQL
 
 Install PostgreSQL 9.5 or later (Greynir relies on the UPSERT feature 
 introduced in version 9.5).
@@ -86,13 +86,14 @@ introduced in version 9.5).
 sudo apt-get install postgresql-contrib postgresql-client libpq-dev
 ```
 
-Permit user access to postgres from localhost by editing `pg_hba.conf`:
+Permit user access to PostgreSQL from localhost by editing `pg_hba.conf`
+(replace `9.5` in the path with your version):
 
 ```
 sudo nano /etc/postgresql/9.5/main/pg_hba.conf
 ```
 
-Make sure the config file contains the following entries:
+Make sure that the config file contains the following entries:
 
 ```
 # IPv4 local connections:
@@ -101,7 +102,7 @@ host    all       all             127.0.0.1/32      trust
 host    all       all             ::1/128           trust
 ```
 
-Restart postgres for the changes to take effect:
+Restart PostgreSQL for the changes to take effect:
 
 ```
 sudo systemctl reload postgresql
@@ -109,27 +110,26 @@ sudo systemctl reload postgresql
 
 ### Set up users
 
-Change to user `postgres`:
+Change to the default PostgreSQL user `postgres`:
 
 ```
 sudo su - postgres
 ```
 
-Launch postgres client and create database users 
-(replace *your_name* with your username):
+Launch PostgreSQL client and create database users 
+(replace *your_user_name* with your username):
 
 ```
+psql
 create user reynir with password 'reynir';
-create user your_name;
-alter role your_name with superuser;
+create user your_user_name;
+alter role your_user_name with superuser;
 ```
 
 ### Create database
 
 ```
-create database scraper with encoding 'UTF8' \ 
-LC_COLLATE='is_IS.utf8' LC_CTYPE='is_IS.utf8' \ 
-TEMPLATE=template0;
+create database scraper with encoding 'UTF8' LC_COLLATE='is_IS.utf8' LC_CTYPE='is_IS.utf8' TEMPLATE=template0;
 ```
 
 Enable uuid extension:
@@ -145,13 +145,14 @@ Verify that the uuid extension is enabled:
 select * from pg_extension;
 ```
 
-and then `\q` to quit the postgres client.
+and then `\q` to quit the `psql` client.
 
-Finally, create the database tables used by Greynir:
+Finally, create the database tables used by Greynir (this will only create
+the tables if needed, and no existing data is erased):
 
 ```
 cd ~/Reynir
-python scraper.py --init
+python scraperinit.py
 ```
 
 ## Run
@@ -159,8 +160,8 @@ python scraper.py --init
 Change to the Reynir repo directory and activate the virtual environment:
 
 ```
-cd Reynir
-venv/bin/activate
+cd ~/Reynir
+source venv/bin/activate
 ```
 
 You should now be able to run Greynir.
@@ -185,6 +186,7 @@ python scraper.py
 ```
 ./shell.sh
 ```
+
 Starts an [IPython](https://ipython.org) shell with a database session (`s`), 
 the Reynir parser (`r`) and all SQLAlchemy database models preloaded. For more 
 info, see [Using the Greynir Shell](shell.md).

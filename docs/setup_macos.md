@@ -62,9 +62,7 @@ alter role your_name with superuser;
 Create database:
 
 ```
-create database scraper with encoding 'UTF8' \
-LC_COLLATE='is_IS.utf8' LC_CTYPE='is_IS.utf8' \
-TEMPLATE=template0;
+create database scraper with encoding 'UTF8' LC_COLLATE='is_IS.utf8' LC_CTYPE='is_IS.utf8' TEMPLATE=template0;
 ```
 
 Enable uuid extension:
@@ -82,11 +80,12 @@ select * from pg_extension;
 
 and then `\q` to quit the postgres client.
 
-Finally, create the database tables used by Greynir:
+Finally, create the database tables used by Greynir (this will only create
+the tables if needed, and no existing data is erased):
 
 ```
 cd ~/Reynir
-python scraper.py --init
+python scraperinit.py
 ```
 
 ## Run
@@ -95,7 +94,7 @@ Change to the Reynir repo directory and activate the virtual environment:
 
 ```
 cd ~/Reynir
-venv/bin/activate
+source venv/bin/activate
 ```
 
 #### Web application
