@@ -434,17 +434,6 @@ class KjarninnScraper(ScrapeHelper):
 class RuvScraper(ScrapeHelper):
     """ Scraping helper for RUV.is """
 
-    _SKIP_PREFIXES = [
-        "/frontpage",
-        "/sarpurinn/",
-        "/tag/",
-        "/frettalisti/",
-        "/ibrennidepli/",
-        "/nyjast/",
-        "/thaettir/",
-        "/dagskra",
-    ]
-
     def __init__(self, root):
         super().__init__(root)
         # Not using RÚV's RSS feed for now since it contains English-language articles
@@ -728,7 +717,7 @@ class VisirScraper(ScrapeHelper):
         if s.netloc.startswith("fasteignir.") or s.netloc.startswith("albumm."):
             # Skip fasteignir.visir.is and albumm.visir.is
             return True
-        if s.path and any(s.path.startswith(p) for p in self._SKIP_PREFIXES):
+        if not s.path or any(s.path.startswith(p) for p in self._SKIP_PREFIXES):
             return True
         return False  # Scrape all URLs by default
 
