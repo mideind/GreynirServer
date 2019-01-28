@@ -6,7 +6,7 @@
 
     Scraper database initialization module
 
-    Copyright (C) 2016 Vilhjálmur Þorsteinsson
+    Copyright (C) 2019 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@ from settings import Settings, ConfigError
 from scraperdb import SessionContext, Root, IntegrityError
 
 
-def init_roots(wait = False):
+def init_roots(wait=False):
     """ Create tables and initialize the scraping roots, if not already present.
         If wait = True, repeated attempts are made to connect to the database
         before returning an error code. This is useful for instance in a Docker
@@ -41,40 +41,174 @@ def init_roots(wait = False):
         container to start serving. """
 
     ROOTS = [
-        # Root URL, top-level domain, description, authority, module, scraper class, enabled
-        ("http://kjarninn.is", "kjarninn.is", "Kjarninn", 1.0, "scrapers.default", "KjarninnScraper", True),
-        ("http://www.ruv.is", "ruv.is", "RÚV", 1.0, "scrapers.default", "RuvScraper", True),
-        ("http://www.visir.is", "visir.is", "Vísir", 0.8, "scrapers.default", "VisirScraper", True),
-        ("http://www.mbl.is/frettir/", "mbl.is", "Morgunblaðið", 0.6, "scrapers.default", "MblScraper", True),
-        ("http://eyjan.pressan.is", "eyjan.pressan.is", "Eyjan", 0.4, "scrapers.default", "EyjanScraper", False),
-        ("http://kvennabladid.is", "kvennabladid.is", "Kvennablaðið", 0.4, "scrapers.default", "KvennabladidScraper", True),
-        ("http://stjornlagarad.is", "stjornlagarad.is", "Stjórnlagaráð", 1.0, "scrapers.default", "StjornlagaradScraper", True),
-        ("https://www.forsaetisraduneyti.is", "forsaetisraduneyti.is", "Forsætisráðuneyti", 1.0, "scrapers.default", "StjornarradScraper", True),
-        ("https://www.innanrikisraduneyti.is", "innanrikisraduneyti.is", "Innanríkisráðuneyti", 1.0, "scrapers.default", "StjornarradScraper", True),
-        ("https://www.fjarmalaraduneyti.is", "fjarmalaraduneyti.is", "Fjármálaráðuneyti", 1.0, "scrapers.default", "StjornarradScraper", True),
-        ("https://www.utanrikisraduneyti.is", "utanrikisraduneyti.is", "Utanríkisráðuneyti", 1.0, "scrapers.default", "StjornarradScraper", True),
-        ("http://reykjanes.local", "reykjanes.local", "Reykjanesbær", 1.0, "scrapers.reykjanes", "ReykjanesScraper", False),
-        ("http://althingi.is", "althingi.is", "Alþingi", 1.0, "scrapers.default", "AlthingiScraper", False),
-        ("http://stundin.is", "stundin.is", "Stundin", 1.0, "scrapers.default", "StundinScraper", True),
-        ("http://hringbraut.is", "hringbraut.is", "Hringbraut", 1.0, "scrapers.default", "HringbrautScraper", True),
-        ("https://www.frettabladid.is/", "frettabladid.is", "Fréttablaðið", 1.0, "scrapers.default", "FrettabladidScraper", True),
+        # Root URL, top-level domain, description, authority
+        (
+            "http://kjarninn.is",
+            "kjarninn.is",
+            "Kjarninn",
+            1.0,
+            "scrapers.default",
+            "KjarninnScraper",
+            True,
+        ),
+        (
+            "http://www.ruv.is",
+            "ruv.is",
+            "RÚV",
+            1.0,
+            "scrapers.default",
+            "RuvScraper",
+            True,
+        ),
+        (
+            "http://www.visir.is",
+            "visir.is",
+            "Vísir",
+            0.8,
+            "scrapers.default",
+            "VisirScraper",
+            True,
+        ),
+        (
+            "http://www.mbl.is/frettir/",
+            "mbl.is",
+            "Morgunblaðið",
+            0.6,
+            "scrapers.default",
+            "MblScraper",
+            True,
+        ),
+        (
+            "http://eyjan.pressan.is",
+            "eyjan.pressan.is",
+            "Eyjan",
+            0.4,
+            "scrapers.default",
+            "EyjanScraper",
+            True,
+        ),
+        (
+            "http://kvennabladid.is",
+            "kvennabladid.is",
+            "Kvennablaðið",
+            0.4,
+            "scrapers.default",
+            "KvennabladidScraper",
+            True,
+        ),
+        (
+            "http://stjornlagarad.is",
+            "stjornlagarad.is",
+            "Stjórnlagaráð",
+            1.0,
+            "scrapers.default",
+            "StjornlagaradScraper",
+            True,
+        ),
+        (
+            "https://www.forsaetisraduneyti.is",
+            "forsaetisraduneyti.is",
+            "Forsætisráðuneyti",
+            1.0,
+            "scrapers.default",
+            "StjornarradScraper",
+            True,
+        ),
+        (
+            "https://www.innanrikisraduneyti.is",
+            "innanrikisraduneyti.is",
+            "Innanríkisráðuneyti",
+            1.0,
+            "scrapers.default",
+            "StjornarradScraper",
+            True,
+        ),
+        (
+            "https://www.fjarmalaraduneyti.is",
+            "fjarmalaraduneyti.is",
+            "Fjármálaráðuneyti",
+            1.0,
+            "scrapers.default",
+            "StjornarradScraper",
+            True,
+        ),
+        (
+            "http://reykjanes.local",
+            "reykjanes.local",
+            "Reykjanesbær",
+            1.0,
+            "scrapers.reykjanes",
+            "ReykjanesScraper",
+            False,
+        ),
+        (
+            "http://althingi.is",
+            "althingi.is",
+            "Alþingi",
+            1.0,
+            "scrapers.default",
+            "AlthingiScraper",
+            False,
+        ),
+        (
+            "http://stundin.is",
+            "stundin.is",
+            "Stundin",
+            1.0,
+            "scrapers.default",
+            "StundinScraper",
+            True,
+        ),
+        (
+            "http://hringbraut.is",
+            "hringbraut.is",
+            "Hringbraut",
+            1.0,
+            "scrapers.default",
+            "HringbrautScraper",
+            True,
+        ),
+        (
+            "https://www.frettabladid.is/",
+            "frettabladid.is",
+            "Fréttablaðið",
+            1.0,
+            "scrapers.default",
+            "FrettabladidScraper",
+            True,
+        ),
     ]
 
-    retries = 36 # Do no more than 36 retries (~3 minutes) before giving up and returning an error code
+    # Do no more than 36 retries (~3 minutes) before giving up and returning an error code
+    retries = 36
 
     while True:
 
         try:
 
             db = SessionContext.db
-
             db.create_tables()
 
             with SessionContext() as session:
-                for url, domain, description, authority, scr_module, scr_class, scrape in ROOTS:
-                    r = Root(url = url, domain = domain, description = description, authority = authority,
-                        scr_module = scr_module, scr_class = scr_class, scrape = scrape,
-                        visible = scrape and not domain.endswith(".local"))
+                for (
+                    url,
+                    domain,
+                    description,
+                    authority,
+                    scr_module,
+                    scr_class,
+                    scrape,
+                ) in ROOTS:
+                    r = Root(
+                        url=url,
+                        domain=domain,
+                        description=description,
+                        authority=authority,
+                        scr_module=scr_module,
+                        scr_class=scr_class,
+                        scrape=scrape,
+                        visible=scrape and not domain.endswith(".local"),
+                    )
                     session.add(r)
                     try:
                         # Commit the insert
@@ -92,20 +226,30 @@ def init_roots(wait = False):
             break
 
         except Exception as e:
-            print("Exception in scraperinit.init_roots(): {0}"
-                .format(e), file = sys.stderr)
-            sys.stderr.flush()
             if wait:
                 # If we want to wait until the database responds, sleep and loop
+                # (this is most common in a Docker situation where we need to wait
+                # for the postgres container to come online before continuing)
+                print("PostgreSQL is not yet accepting connections.", file=sys.stderr)
                 if not retries:
-                    return 2 # No more retries: Return an error code
-                print("Retrying connection in 5 seconds ({0} retries left)...".format(retries), file = sys.stderr)
+                    return 2  # No more retries: Return an error code
+                print(
+                    "Retrying connection in 5 seconds ({0} retries left)...".format(
+                        retries
+                    ),
+                    file=sys.stderr,
+                )
                 sys.stderr.flush()
                 sleep(5)
                 retries -= 1
                 SessionContext.cleanup()
                 # Loop to retry
             else:
+                print(
+                    "Exception in scraperinit.init_roots(): {0}".format(e),
+                    file=sys.stderr,
+                )
+                sys.stderr.flush()
                 # Re-raise the exception
                 raise
 
@@ -121,7 +265,7 @@ if __name__ == "__main__":
         # Don't run the scraper in debug mode
         Settings.DEBUG = False
     except ConfigError as e:
-        print("Configuration error: {0}".format(e), file = sys.stderr)
+        print("Configuration error: {0}".format(e), file=sys.stderr)
         sys.exit(2)
 
-    sys.exit(init_roots(wait = True))
+    sys.exit(init_roots(wait=True))
