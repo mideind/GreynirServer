@@ -239,68 +239,6 @@ function hoverOut() {
    }
 }
 
-var explainCode = [];
-
-explainCode["P_yi"] = "Víxlun á <em>y</em> og <em>i</em>";
-explainCode["P_aðaf"] = "Víxlun á <em>að</em> og <em>af</em>";
-explainCode["P_hkv"] = "Víxlun á <em>h</em> og <em>kv</em>";
-explainCode["P_wrong_person"] = "Röng persóna";
-explainCode["P_wrong_gender"] = "Rangt kyn";
-explainCode["P_wrong_word"] = "Rangt orð";
-explainCode["P_wrong_phrase"] = "Rangt orðasamband";
-explainCode["S004"] = "Óþekkt eða sjaldgæft orð";
-explainCode["C001"] = "Endurtekið orð";
-
-function correctionHoverIn() {
-   // Hovering over a token
-   var wId = $(this).attr("id");
-   if (wId === null || wId === undefined)
-      // No id: nothing to do
-      return;
-   var ix = parseInt(wId.slice(1));
-   var t = w[ix];
-   if (!t || !t.corr)
-      // No token or no correction: nothing to do
-      return;
-
-   // Save our position
-   var offset = $(this).position();
-   // Highlight the token
-   $(this).addClass("highlight");
-   var r = t.corr;
-
-   $("#grammar").text(r.descr);
-   $("#details").html(explainCode[r.code] || r.code);
-
-   if (r.code[0] == "U")
-      // Unknown word
-      $("#lemma").text("Óþekkt orð");
-   else
-   if (r.code[0] == "T")
-      // Taboo word
-      $("#lemma").text("Ábending");
-   else
-      // Correction
-      $("#lemma").text("Leiðrétt");
-
-   $("#info").removeClass();
-   /*
-   if (r.class !== null)
-      $("#info").addClass(r.class);
-   */
-
-   $("#info span#tag")
-      .removeClass()
-      .addClass("glyphicon")
-      .addClass("glyphicon-tag");
-
-   // Position the info popup
-   $("#info")
-      .css("top", offset.top.toString() + "px")
-      .css("left", offset.left.toString() + "px")
-      .css("visibility", "visible");
-}
-
 function displayTokens(j) {
    // Generate HTML for the token list given in j,
    // and insert it into the <div> with id 'result'.
