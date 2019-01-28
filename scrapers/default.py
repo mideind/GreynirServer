@@ -26,13 +26,11 @@
 
 """
 
+import re
+import logging
 import urllib.parse as urlparse
 from datetime import datetime
-import re
-from collections import namedtuple
-import logging
-
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, NavigableString
 
 MODULE_NAME = __name__
 
@@ -42,10 +40,42 @@ MODULE_NAME = __name__
 _HTML_PARSER = "html.parser"
 
 
-# The metadata returned by the helper.get_metadata() function
+# Icelandic month names. Used for parsing
+# date strings in some of the scrapers
+MONTHS = [
+    "janúar",
+    "febrúar",
+    "mars",
+    "apríl",
+    "maí",
+    "júní",
+    "júlí",
+    "ágúst",
+    "september",
+    "október",
+    "nóvember",
+    "desember",
+]
+
+MONTHS_ABBR = [
+    "jan",
+    "feb",
+    "mar",
+    "apr",
+    "maí",
+    "jún",
+    "júl",
+    "ágú",
+    "sep",
+    "okt",
+    "nóv",
+    "des",
+]
 
 
 class Metadata:
+    """ The metadata returned by the helper.get_metadata() function """
+
     def __init__(self, heading, author, timestamp, authority, icon):
         self.heading = heading
         self.author = author
@@ -53,9 +83,13 @@ class Metadata:
         self.authority = authority
         self.icon = icon
 
+    def __repr__(self):
+        return "{0}(heading='{1}', author='{2}', ts='{3}')".format(
+            type(self).__name__, self.heading, self.author, self.timestamp
+        )
+
 
 class ScrapeHelper:
-
     """ Generic scraping helper base class """
 
     def __init__(self, root):
@@ -64,6 +98,7 @@ class ScrapeHelper:
         self._author = root.author
         self._description = root.description
         self._root_id = root.id
+        self._feeds = []
 
     def make_soup(self, doc):
         """ Make a soup object from a document """
@@ -73,6 +108,10 @@ class ScrapeHelper:
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
         return False  # Scrape all URLs by default
+
+    def skip_rss_entry(self, entry):
+        """ Return True if URL in RSS feed entry should be skipped """
+        return False
 
     @staticmethod
     def unescape(s):
@@ -109,6 +148,9 @@ class ScrapeHelper:
             return None
         if hasattr(self, "_get_content"):
             content = self._get_content(self._get_body(soup))
+            if content:
+                # Always delete embedded social media widgets
+                content = ScrapeHelper.del_social_embeds(content)
         else:
             content = None
         # By default, return the entire body
@@ -135,6 +177,10 @@ class ScrapeHelper:
     @property
     def author(self):
         return self._author
+
+    @property
+    def feeds(self):
+        return self._feeds
 
     @property
     def scr_module(self):
@@ -164,7 +210,8 @@ class ScrapeHelper:
         if tag.name != name or not tag.has_attr(attr):
             return False
         a = tag[attr]
-        assert a
+        assert a is not None
+
         # Handle both potentially multi-valued attrs
         # (for instance multiple classes on a div),
         # and multi-valued attr_vals (for instance more
@@ -200,14 +247,14 @@ class ScrapeHelper:
             mp = soup.html.head.find(f)
             if not mp:
                 logging.warning(
-                    "meta property {0} not found in soup.html.head"
-                    .format(property_name)
+                    "meta property {0} not found in soup.html.head".format(
+                        property_name
+                    )
                 )
             return str(mp["content"]) if mp else None
         except Exception as e:
             logging.warning(
-                "Exception in meta_property('{0}'): {1}"
-                .format(property_name, e)
+                "Exception in meta_property('{0}'): {1}".format(property_name, e)
             )
             return None
 
@@ -285,13 +332,23 @@ class ScrapeHelper:
                 break
             s.decompose()
 
+    @staticmethod
+    def del_social_embeds(soup):
+        # Delete all iframes and embedded FB/Twitter/Instagram posts
+        ScrapeHelper.del_tag(soup, "iframe")
+        ScrapeHelper.del_tag(soup, "twitterwidget")
+        ScrapeHelper.del_div_class(soup, "fb-post")
+        ScrapeHelper.del_tag_prop_val(soup, "blockquote", "class", "instagram-media")
+        ScrapeHelper.del_tag_prop_val(soup, "blockquote", "class", "twitter-tweet")
+        return soup
+
 
 class KjarninnScraper(ScrapeHelper):
-
     """ Scraping helper for Kjarninn.is """
 
     def __init__(self, root):
         super().__init__(root)
+        self._feeds = ["https://kjarninn.is/feed/"]
 
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
@@ -365,35 +422,31 @@ class KjarninnScraper(ScrapeHelper):
             content = soup_body.article
         # Delete div.category-snippet tags from the content
         ScrapeHelper.del_div_class(content, "category_snippet")
+        # Delete image containers from content
+        ScrapeHelper.del_div_class(content, "image-container")
+        # Delete "Lestu meira" lists at bottom of article
+        ScrapeHelper.del_div_class(content, "tag_list_block")
         # Delete div.ad-container tags from the content
         ScrapeHelper.del_div_class(content, "ad-container")
         return content
 
 
 class RuvScraper(ScrapeHelper):
-
     """ Scraping helper for RUV.is """
-
-    _SKIP_PREFIXES = [
-        "/frontpage",
-        "/sarpurinn/",
-        "/tag/",
-        "/frettalisti/",
-        "/ibrennidepli/",
-        "/nyjast/",
-        "/thaettir/",
-        "/dagskra",
-    ]
 
     def __init__(self, root):
         super().__init__(root)
+        # Not using RÚV's RSS feed for now since it contains English-language articles
+        # self._feeds = ["http://www.ruv.is/rss/frettir"]
 
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
         s = urlparse.urlsplit(url)
-        if s.path and any(s.path.startswith(prefix) for prefix in self._SKIP_PREFIXES):
-            return True
-        return False  # Scrape all other URLs by default
+        p = s.path
+        # Only scrape urls with the right path prefix
+        if p and p.startswith("/frett/"):
+            return False  # Don't skip
+        return True
 
     def get_metadata(self, soup):
         """ Analyze the article soup and return metadata """
@@ -441,18 +494,17 @@ class RuvScraper(ScrapeHelper):
             content, "pane-custom"
         )  # Sharing stuff at bottom of page
         ScrapeHelper.del_div_class(content, "title-wrapper")  # Additional header stuff
-        ScrapeHelper.del_div_class(
-            content, "views-field-field-user-display-name"
-        )  # Seriously.
+        ScrapeHelper.del_div_class(content, "views-field-field-user-display-name")
         ScrapeHelper.del_div_class(content, "field-name-myndatexti-credit-source")
+        ScrapeHelper.del_div_class(content, "field-name-field-media-reference")
+        ScrapeHelper.del_div_class(content, "field-name-field-myndatexti")
+        ScrapeHelper.del_div_class(content, "pane-menningin-faerslur-panel-pane-16")
         ScrapeHelper.del_div_class(content, "region-conditional-stack")
-        ScrapeHelper.del_tag(content, "twitterwidget")
         ScrapeHelper.del_div_class(content, "pane-author")
         return content
 
 
 class MblScraper(ScrapeHelper):
-
     """ Scraping helper for Mbl.is """
 
     _SKIP_PREFIXES = [
@@ -472,28 +524,50 @@ class MblScraper(ScrapeHelper):
 
     def __init__(self, root):
         super().__init__(root)
+        self._feeds = [
+            "https://www.mbl.is/feeds/fp/",
+            "https://www.mbl.is/feeds/innlent/",
+            "https://www.mbl.is/feeds/erlent/",
+            "https://www.mbl.is/feeds/togt/",
+            "https://www.mbl.is/feeds/helst/",
+            "https://www.mbl.is/feeds/nyjast/",
+            "https://www.mbl.is/feeds/vidskipti/",
+            "https://www.mbl.is/feeds/200milur/",
+            "https://www.mbl.is/feeds/sport/",
+            "https://www.mbl.is/feeds/folk/",
+            "https://www.mbl.is/feeds/matur/",
+            "https://www.mbl.is/feeds/smartland/",
+            "https://www.mbl.is/feeds/bill/",
+            "https://www.mbl.is/feeds/k100/",
+        ]
 
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
         s = urlparse.urlsplit(url)
-        if s.path:
-            if any(s.path.startswith(prefix) for prefix in self._SKIP_PREFIXES):
+        path = s.path
+        if path:
+            if any(path.startswith(p) for p in self._SKIP_PREFIXES):
                 return True
-            if "/breytingar_i_islenska_fotboltanum/" in s.path:
+            if "/breytingar_i_islenska_fotboltanum/" in path:
                 # Avoid lots of details about soccer players
                 return True
-            if "/felagaskipti_i_enska_fotboltanum/" in s.path:
+            if "/felagaskipti_i_enska_fotboltanum/" in path:
                 return True
         return False  # Scrape all URLs by default
 
     def get_metadata(self, soup):
         """ Analyze the article soup and return metadata """
         metadata = super().get_metadata(soup)
+
+        url = ScrapeHelper.meta_property(soup, "og:url") or ""
+
         # Extract the heading from the meta title or
         # OpenGraph (Facebook) og:title property
         heading = ScrapeHelper.meta_property(soup, "title", prop_attr="name") or ""
         if heading.endswith(" - mbl.is"):
             heading = heading[0:-9]
+        if heading.endswith(" - K100"):
+            heading = heading[0:-7]
         if not heading:
             heading = ScrapeHelper.meta_property(soup, "og:title") or ""
         if not heading:
@@ -501,10 +575,12 @@ class MblScraper(ScrapeHelper):
             p_e = ScrapeHelper.div_class(soup.html.body, "pistill-entry")
             if p_e and p_e.h2:
                 heading = p_e.h2.string
+        heading = heading.strip()
         heading = self.unescape(heading)
+
         # Extract the publication time from the article:published_time meta property
         # A dateline from mbl.is looks like this: Viðskipti | mbl | 24.8.2015 | 10:48
-        dateline = ScrapeHelper.div_class(soup.html.body, "frett-container", "dateline")
+        dateline = ScrapeHelper.div_class(soup.html.body, "dateline")
         dateline = "".join(dateline.stripped_strings).split("|") if dateline else None
         timestamp = None
         if dateline:
@@ -537,10 +613,18 @@ class MblScraper(ScrapeHelper):
                         hour=time[0],
                         minute=time[1],
                     )
-                except:
+                except Exception as e:
+                    logging.warning(
+                        "Exception when obtaining date of mbl.is article '{0}': {1}".format(
+                            url, e
+                        )
+                    )
                     timestamp = None
+
         if timestamp is None:
+            logging.warning("Failed to obtain date of mbl.is article '{0}'".format(url))
             timestamp = datetime.utcnow()
+
         # Extract the author name
         rp = ScrapeHelper.div_class(soup.html.body, "frett-main", "reporter-profile")
         f = lambda tag: ScrapeHelper.general_filter(tag, "a", "class", "name")
@@ -552,6 +636,7 @@ class MblScraper(ScrapeHelper):
             rp = ScrapeHelper.div_class(soup.html.body, "pistlar-author-profile-box")
             if rp and rp.h4:
                 rname = rp.h4.string
+
         author = rname if rname else "Ritstjórn mbl.is"
         metadata.heading = heading
         metadata.author = author
@@ -599,16 +684,17 @@ class MblScraper(ScrapeHelper):
             ScrapeHelper.del_div_class(soup, "extraimg-big")
             ScrapeHelper.del_div_class(soup, "newsimg-left")
             ScrapeHelper.del_div_class(soup, "newsimg-right")
+            ScrapeHelper.del_div_class(soup, "newsitem-image")
             # Toolbar
             ScrapeHelper.del_div_class(soup, "newsitem-bottom-toolbar")
             ScrapeHelper.del_div_class(soup, "sidebar-mobile")
+            ScrapeHelper.del_div_class(soup, "mbl-news-link")
             # Embedded media such as Twitter and Facebook posts
             ScrapeHelper.del_div_class(soup, "embedded-media")
         return soup
 
 
 class VisirScraper(ScrapeHelper):
-
     """ Scraping helper for Visir.is """
 
     _SKIP_PREFIXES = [
@@ -623,6 +709,7 @@ class VisirScraper(ScrapeHelper):
 
     def __init__(self, root):
         super().__init__(root)
+        self._feeds = ["http://www.visir.is/rss/allt"]
 
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
@@ -630,13 +717,23 @@ class VisirScraper(ScrapeHelper):
         if s.netloc.startswith("fasteignir.") or s.netloc.startswith("albumm."):
             # Skip fasteignir.visir.is and albumm.visir.is
             return True
-        if s.path and any(s.path.startswith(prefix) for prefix in self._SKIP_PREFIXES):
+        if not s.path or any(s.path.startswith(p) for p in self._SKIP_PREFIXES):
             return True
         return False  # Scrape all URLs by default
+
+    def skip_rss_entry(self, entry):
+        # Skip live sport event pages
+        title = entry.title
+        if title.startswith("Í beinni: ") or title.startswith("Leik lokið: "):
+            return True
+        return False
 
     def get_metadata(self, soup):
         """ Analyze the article soup and return metadata """
         metadata = super().get_metadata(soup)
+
+        url = ScrapeHelper.meta_property(soup, "og:url") or ""
+
         # Extract the heading from the OpenGraph (Facebook) og:title meta property
         heading = ScrapeHelper.meta_property(soup, "og:title") or ""
         heading = self.unescape(heading)
@@ -646,13 +743,42 @@ class VisirScraper(ScrapeHelper):
             heading = heading[:-10]
         if heading.endswith(" - Vísir"):
             heading = heading[:-8]
-        timestamp = ScrapeHelper.tag_prop_val(soup, "meta", "itemprop", "datePublished")
-        timestamp = timestamp["content"] if timestamp else None
-        timestamp = (
-            datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S") if timestamp else None
-        )
+
+        # Timestamp
+        timestamp = None
+        time_el = soup.find("time", {"class": "article-single__time"})
+        if time_el:
+            datestr = time_el.get_text().rstrip()
+
+            # Example: "21.1.2019 09:04"
+            if re.search(r"^\d{1,2}\.\d{1,2}\.\d\d\d\d\s\d{1,2}:\d{1,2}", datestr):
+                try:
+                    timestamp = datetime.strptime(datestr, "%d.%m.%Y %H:%M")
+                except Exception as e:
+                    pass
+            # Example: "17. janúar 2019 14:30"
+            else:
+                try:
+                    (mday, m, y, hm) = datestr.split()
+                    (hour, mins) = hm.split(":")
+                    mday = mday.replace(".", "")
+                    month = MONTHS.index(m) + 1
+
+                    timestamp = datetime(
+                        year=int(y),
+                        month=int(month),
+                        day=int(mday),
+                        hour=int(hour),
+                        minute=int(mins),
+                    )
+                except Exception as e:
+                    pass
+
         if timestamp is None:
+            logging.warning("Could not parse date in visir.is article {0}".format(url))
             timestamp = datetime.utcnow()
+
+        # Author
         author = ScrapeHelper.tag_prop_val(soup, "a", "itemprop", "author")
         if author:
             author = author.string
@@ -696,7 +822,12 @@ class VisirScraper(ScrapeHelper):
 
     def _get_content(self, soup_body):
         """ Find the article content (main text) in the soup """
-        # Check for "Glamour" layout first
+
+        # We shouldn't even try to extract text from the live sport event pages
+        liveheader = ScrapeHelper.div_id(soup_body, "livefeed-sporthead")
+        if liveheader:
+            return BeautifulSoup("", _HTML_PARSER)  # Return empty soup.
+
         soup = ScrapeHelper.div_class(soup_body, "article", "articletext")
         if not soup:
             # Check for new Visir layout
@@ -707,13 +838,15 @@ class VisirScraper(ScrapeHelper):
         if soup:
             # Delete div.media from the content
             ScrapeHelper.del_div_class(soup, "media")
-        if soup:
             # Delete div.meta from the content
             ScrapeHelper.del_div_class(soup, "meta")
-        if soup:
+            # Delete video players
+            ScrapeHelper.del_div_class(soup, "jwplayer")
+            ScrapeHelper.del_div_class(soup, "embedd-media-player")
             # Delete figure tags from the content
             if soup.figure:
                 soup.figure.decompose()
+
         return soup
 
 
@@ -790,7 +923,6 @@ class EyjanScraper(ScrapeHelper):
 
 
 class StjornlagaradScraper(ScrapeHelper):
-
     """ Scraping helper for stjornlagarad.is """
 
     def __init__(self, root):
@@ -828,7 +960,6 @@ class StjornlagaradScraper(ScrapeHelper):
 
 
 class StjornarradScraper(ScrapeHelper):
-
     """ Scraping helper for the webs of Icelandic ministries """
 
     def __init__(self, root):
@@ -837,9 +968,7 @@ class StjornarradScraper(ScrapeHelper):
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
         s = urlparse.urlsplit(url)
-        if not s.path:
-            return True
-        if s.path.startswith("/bitar/"):
+        if not s.path or not s.path.startswith("/efst-a-baugi/frettir/stok-frett"):
             return True
         return False
 
@@ -890,11 +1019,11 @@ class StjornarradScraper(ScrapeHelper):
 
 
 class KvennabladidScraper(ScrapeHelper):
-
     """ Scraping helper for Kvennabladid.is """
 
     def __init__(self, root):
         super().__init__(root)
+        self._feeds = ["https://kvennabladid.is/feed/"]
 
     def get_metadata(self, soup):
         """ Analyze the article soup and return metadata """
@@ -910,20 +1039,7 @@ class KvennabladidScraper(ScrapeHelper):
             try:
                 dateline = dateline.split()  # 18 jún 2016
                 day = int(dateline[0])
-                month = [
-                    "jan",
-                    "feb",
-                    "mar",
-                    "apr",
-                    "maí",
-                    "jún",
-                    "júl",
-                    "ágú",
-                    "sep",
-                    "okt",
-                    "nóv",
-                    "des",
-                ].index(dateline[1]) + 1
+                month = MONTHS_ABBR.index(dateline[1]) + 1
                 year = int(dateline[2])
                 # Use current H:M:S as there is no time of day in the document itself
                 now = datetime.utcnow()
@@ -937,8 +1053,9 @@ class KvennabladidScraper(ScrapeHelper):
                 )
             except Exception as e:
                 logging.warning(
-                    "Exception when obtaining date of kvennabladid.is article: {0}"
-                    .format(e)
+                    "Exception when obtaining date of kvennabladid.is article: {0}".format(
+                        e
+                    )
                 )
                 timestamp = None
         if timestamp is None:
@@ -957,15 +1074,13 @@ class KvennabladidScraper(ScrapeHelper):
     def _get_content(self, soup_body):
         """ Find the article content (main text) in the soup """
         article = ScrapeHelper.div_class(soup_body, "blog-content")
-        # Delete div.wp-caption
-        caption = ScrapeHelper.div_class(article, "wp-caption")
-        if caption is not None:
-            caption.decompose()
+        # Delete all captions
+        ScrapeHelper.del_div_class(article, "wp-caption")
+        ScrapeHelper.del_tag_prop_val(article, "p", "class", "wp-caption-text")
         return article
 
 
 class AlthingiScraper(ScrapeHelper):
-
     """ Scraping helper for althingi.is """
 
     def __init__(self, root):
@@ -994,11 +1109,224 @@ class AlthingiScraper(ScrapeHelper):
         metadata.timestamp = timestamp
         return metadata
 
-    def make_soup(self, doc):
-        """ Make a soup object from a document """
-        return super().make_soup(doc)
-
     def _get_content(self, soup_body):
         """ Find the article content (main text) in the soup """
         article = ScrapeHelper.div_class(soup_body, "pgmain", "news", "boxbody")
         return article
+
+
+class StundinScraper(ScrapeHelper):
+    """ Scraping helper for stundin.is """
+
+    def __init__(self, root):
+        super().__init__(root)
+        # Feed with links to Stundin's open-access articles
+        self._feeds = ["https://stundin.is/rss/free/"]
+
+    def get_metadata(self, soup):
+        """ Analyze the article soup and return metadata """
+        metadata = super().get_metadata(soup)
+
+        # Extract the heading from the OpenGraph (Facebook) og:title meta property
+        heading = ScrapeHelper.meta_property(soup, "og:title") or ""
+        heading = self.unescape(heading)
+
+        # Extract author name, if available
+        name = soup.find("div", {"class": "journalist-name"})
+        if not name:
+            name = soup.find("h3", {"class": "entry-columnist-headline"})
+        author = name.get_text() if name else None
+
+        # Timestamp
+        timestamp = datetime.utcnow()
+        try:
+            info = soup.find("div", {"class": "info"})
+            time_el = info.find("time", {"class": "datetime"})
+
+            ts = time_el["datetime"]
+
+            # Example: "2019-01-18 09:55"
+            timestamp = datetime(
+                year=int(ts[0:4]),
+                month=int(ts[5:7]),
+                day=int(ts[8:10]),
+                hour=int(ts[11:13]),
+                minute=int(ts[14:16]),
+            )
+        except Exception as e:
+            logging.warning(
+                "Exception obtaining date of stundin.is article: {0}".format(e)
+            )
+
+        metadata.heading = heading
+        metadata.author = author
+        metadata.timestamp = timestamp
+
+        return metadata
+
+    def _get_content(self, soup_body):
+        """ Find the article content (main text) in the soup """
+        article = ScrapeHelper.div_class(soup_body, "body")
+
+        # Delete these elements
+        ScrapeHelper.del_tag(article, "figure")
+        ScrapeHelper.del_tag(article, "aside")
+        ScrapeHelper.del_tag(article, "h2")
+        ScrapeHelper.del_tag(article, "h3")
+        ScrapeHelper.del_tag_prop_val(article, "p", "class", "hang_quotes")
+
+        return article
+
+
+class HringbrautScraper(ScrapeHelper):
+    """ Scraping helper for hringbraut.is """
+
+    def __init__(self, root):
+        super().__init__(root)
+        self._feeds = ["http://www.hringbraut.is/frettir/feed/"]
+
+    def get_metadata(self, soup):
+        """ Analyze the article soup and return metadata """
+        metadata = super().get_metadata(soup)
+
+        # Extract the heading from the OpenGraph (Facebook) og:title meta property
+        heading = ScrapeHelper.meta_property(soup, "og:title") or ""
+        heading = self.unescape(heading)
+        heading = heading.replace("\u00AD", "")  # Remove soft hyphens
+
+        # Author
+        author = "Ritstjórn Hringbrautar"
+
+        # Timestamp
+        timestamp = datetime.utcnow()
+
+        info = soup.find("div", {"class": "entryInfo"})
+        date_span = info.find("span", {"class": "date"}) if info else None
+
+        if date_span:
+            # Example: "17. janúar 2019 - 11:58"
+            datestr = date_span.get_text().rstrip()
+            try:
+                (mday, m, y, _, hm) = datestr.split()
+                (hour, mins) = hm.split(":")
+                mday = mday.replace(".", "")
+                month = MONTHS.index(m) + 1
+
+                timestamp = datetime(
+                    year=int(y),
+                    month=int(month),
+                    day=int(mday),
+                    hour=int(hour),
+                    minute=int(mins),
+                )
+            except Exception as e:
+                logging.warning(
+                    "Exception obtaining date of hringbraut.is article: {0}".format(e)
+                )
+
+        metadata.heading = heading
+        metadata.author = author
+        metadata.timestamp = timestamp
+
+        return metadata
+
+    def _get_content(self, soup_body):
+        """ Find the article content (main text) in the soup """
+        content = ScrapeHelper.div_class(soup_body, "entryContent")
+
+        # Many hringbraut.is articles end with a "Sjá nánar" paragraph
+        # and then a paragraph containing a URL. Remove these.
+        paragraphs = list(content.find_all("p" , recursive=False))
+        if len(paragraphs) > 2:
+            last = paragraphs[-1]
+            sec_last = paragraphs[-2]
+            if last.get_text().startswith('http'):
+                last.decompose()
+            if sec_last.get_text().startswith('Nánar á'):
+                sec_last.decompose()
+        return content
+
+
+class FrettabladidScraper(ScrapeHelper):
+    """ Scraping helper for frettabladid.is """
+
+    _ALLOWED_PREFIXES = [
+        "/frettir/",
+        "/markadurinn/",
+        "/sport/",
+        "/lifid/",
+        "/skodun/",
+        "/timamot/",
+    ]
+
+    def __init__(self, root):
+        super().__init__(root)
+
+    def skip_url(self, url):
+        """ Return True if this URL should not be scraped """
+        s = urlparse.urlsplit(url)
+        if s.path and any(
+            s.path.startswith(prefix) for prefix in self._ALLOWED_PREFIXES
+        ):
+            return False
+        return True  # Skip all other URLs by default
+
+    def get_metadata(self, soup):
+        """ Analyze the article soup and return metadata """
+        metadata = super().get_metadata(soup)
+
+        # Extract the heading from the OpenGraph (Facebook) og:title meta property
+        heading = ScrapeHelper.meta_property(soup, "og:title") or ""
+        heading = self.unescape(heading)
+        title_suffix = "– Fréttablaðið"
+        if heading.endswith(title_suffix):
+            heading = heading[: -len(title_suffix)].strip()
+
+        # Author
+        name = soup.find("span", {"class": "article__byline"})
+        if not name:
+            name = soup.find("span", {"class": "bylineblock__heading"})
+        author = name.get_text() if name else "Ritstjórn Fréttablaðsins"
+
+        # Timestamp
+        ts = ScrapeHelper.meta_property(soup, "article:published_time")
+        if ts:
+            timestamp = datetime(
+                year=int(ts[0:4]),
+                month=int(ts[5:7]),
+                day=int(ts[8:10]),
+                hour=int(ts[11:13]),
+                minute=int(ts[14:16]),
+                second=int(ts[17:19]),
+            )
+        else:
+            timestamp = datetime.utcnow()
+
+        metadata.heading = heading
+        metadata.author = author
+        metadata.timestamp = timestamp
+
+        return metadata
+
+    def _get_content(self, soup_body):
+        """ Find the article content (main text) in the soup """
+        content = ScrapeHelper.div_class(soup_body, "article__body")
+        # Get rid of stuff we don't want
+        ScrapeHelper.del_tag(content, "figure")
+        ScrapeHelper.del_div_class(content, "embed")
+
+        # First char in first paragraph is wrapped in its own span tag
+        # for styling purposes, which separates it from the rest of the word.
+        # We extract the character and insert it into the first p tag
+        firstchar = ""
+        span = content.find("span", {"class": "article__dropcap"})
+        if span:
+            firstchar = span.get_text()
+            span.decompose()
+
+        # Insert it in the first paragraph
+        ptag = content.find("p")
+        if ptag and firstchar:
+            ptag.insert(0, NavigableString(firstchar))
+
+        return content

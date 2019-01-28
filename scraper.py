@@ -49,6 +49,8 @@ from scraperinit import init_roots
 from scraperdb import SessionContext, Root, IntegrityError
 from scraperdb import Article as ArticleRow
 
+import feedparser
+
 
 class ArticleDescr:
 
@@ -68,28 +70,55 @@ class Scraper:
 
         logging.info("Initializing scraper instance")
 
+    def urls2fetch(self, root, helper):
+        """ Returns a set of URLs to fetch. If the scraper helper class has associated
+            RSS feed URLs, these are used to acquire article URLs. Otherwise, the URLs are 
+            found by scraping the root website and searching for links to subpages. """
+        fetch_set = set()
+        feeds = helper.feeds
+
+        if feeds:
+            for feed_url in feeds:
+                logging.info("Fetching feed {0}".format(feed_url))
+                try:
+                    d = feedparser.parse(feed_url)
+                except Exception as e:
+                    logging.warning(
+                        "Error fetching/parsing feed {0}: {1}".format(feed_url, str(e))
+                    )
+                    continue
+
+                for entry in d.entries:
+                    if entry.link and not helper.skip_rss_entry(entry):
+                        fetch_set.add(entry.link)
+        else:
+            # Fetch the root URL and scrape all child URLs
+            # that refer to the same domain suffix
+            logging.info("Fetching root {0}".format(root.url))
+
+            # Read the HTML document at the root URL
+            html_doc = Fetcher.raw_fetch_url(root.url)
+            if not html_doc:
+                logging.warning("Unable to fetch root {0}".format(root.url))
+                return
+
+            # Parse the HTML document
+            soup = Fetcher.make_soup(html_doc)
+
+            # Obtain the set of child URLs to fetch
+            fetch_set = Fetcher.children(root, soup)
+
+        return fetch_set
+
     def scrape_root(self, root, helper):
         """ Scrape a root URL """
 
         t0 = time.time()
-        # Fetch the root URL and scrape all child URLs that refer
-        # to the same domain suffix and we haven't seen before
-        logging.info("Fetching root {0}".format(root.url))
 
-        # Read the HTML document at the root URL
-        html_doc = Fetcher.raw_fetch_url(root.url)
-        if not html_doc:
-            logging.warning("Unable to fetch root {0}".format(root.url))
-            return
+        fetch_set = self.urls2fetch(root, helper)
 
-        # Parse the HTML document
-        soup = Fetcher.make_soup(html_doc)
-
-        # Obtain the set of child URLs to fetch
-        fetch_set = Fetcher.children(root, soup)
-
-        # Add the children whose URLs we don't already have to the
-        # scraper articles table
+        # Add the children whose URLs we don't already have
+        # stored in the scraper articles table
         with SessionContext() as session:
 
             for url in fetch_set:
@@ -110,8 +139,7 @@ class Scraper:
                     session.rollback()
                 except Exception as e:
                     logging.warning(
-                        "Roll back due to exception in scrape_root: {0}"
-                        .format(e)
+                        "Roll back due to exception in scrape_root: {0}".format(e)
                     )
                     session.rollback()
 
@@ -158,8 +186,9 @@ class Scraper:
 
         t1 = time.time()
         logging.info(
-            "[{3}] Parsing of {2}/{1} sentences completed in {0:.2f} seconds"
-            .format(t1 - t0, num_sentences, num_parsed, seq)
+            "[{3}] Parsing of {2}/{1} sentences completed in {0:.2f} seconds".format(
+                t1 - t0, num_sentences, num_parsed, seq
+            )
         )
 
     def _scrape_single_root(self, r):
@@ -177,8 +206,7 @@ class Scraper:
                 self.scrape_root(r, helper)
         except Exception as e:
             logging.warning(
-                "Exception when scraping root at {0}: {1!r}"
-                .format(r.url, e)
+                "Exception when scraping root at {0}: {1!r}".format(r.url, e)
             )
 
     def _scrape_single_article(self, d):
@@ -190,8 +218,9 @@ class Scraper:
                 self.scrape_article(d.url, helper)
         except Exception as e:
             logging.warning(
-                "[{2}] Exception when scraping article at {0}: {1!r}"
-                .format(d.url, e, d.seq)
+                "[{2}] Exception when scraping article at {0}: {1!r}".format(
+                    d.url, e, d.seq
+                )
             )
 
     def _parse_single_article(self, d):
@@ -209,8 +238,9 @@ class Scraper:
             sys.exit(1)
         except Exception as e:
             logging.warning(
-                "[{2}] Exception when parsing article at {0}: {1!r}"
-                .format(d.url, e, d.seq)
+                "[{2}] Exception when parsing article at {0}: {1!r}".format(
+                    d.url, e, d.seq
+                )
             )
             # traceback.print_exc()
             # raise
@@ -245,8 +275,7 @@ class Scraper:
                     # to query(ArticleRow.root, ArticleRow.url) since ArticleRow.root is a joined subrecord
                     seq = 0
                     for a in (
-                        session
-                        .query(ArticleRow)
+                        session.query(ArticleRow)
                         .filter(ArticleRow.scraped == None)
                         .filter(ArticleRow.root_id != None)
                         .yield_per(100)
@@ -273,10 +302,8 @@ class Scraper:
                 if reparse:
                     # Reparse articles that were originally parsed with an older
                     # grammar and/or parser version
-                    q = (
-                        q
-                        .filter(ArticleRow.parser_version < version)
-                        .order_by(ArticleRow.parsed)
+                    q = q.filter(ArticleRow.parser_version < version).order_by(
+                        ArticleRow.parsed
                     )
                 else:
                     # Only parse articles that have no parse tree
@@ -296,8 +323,7 @@ class Scraper:
                         url = url.strip()
                         if url:
                             a = (
-                                session
-                                .query(ArticleRow)
+                                session.query(ArticleRow)
                                 .filter(ArticleRow.url == url)
                                 .one_or_none()
                             )
@@ -335,8 +361,7 @@ class Scraper:
                     # Run garbage collection to minimize common memory footprint
                     gc.collect()
                     logging.info(
-                        "Parser processes forking, chunk of {0} articles"
-                        .format(lcnt)
+                        "Parser processes forking, chunk of {0} articles".format(lcnt)
                     )
                     # Defaults to using as many processes as there are CPUs
                     pool = Pool()
@@ -348,8 +373,9 @@ class Scraper:
                     pool.join()
                     cnt += lcnt
                     logging.info(
-                        "Parser processes joined, chunk of {0} articles parsed, total {1}"
-                        .format(lcnt, cnt)
+                        "Parser processes joined, chunk of {0} articles parsed, total {1}".format(
+                            lcnt, cnt
+                        )
                     )
                 if lcnt < CHUNK_SIZE:
                     break
@@ -385,8 +411,9 @@ class Scraper:
         num_parsed_over_1 = result[0]
 
         logging.info(
-            "Num_articles is {0}, scraped {1}, parsed {2}, parsed with >1 sentence {3}"
-            .format(num_articles, num_scraped, num_parsed, num_parsed_over_1)
+            "Num_articles is {0}, scraped {1}, parsed {2}, parsed with >1 sentence {3}".format(
+                num_articles, num_scraped, num_parsed, num_parsed_over_1
+            )
         )
 
         q = (
@@ -400,8 +427,9 @@ class Scraper:
         num_sent_parsed = result[1] or 0
 
         logging.info(
-            "Num_sentences is {0}, num_sent_parsed is {1}, ratio is {2:.1f}%"
-            .format(num_sentences, num_sent_parsed, 100.0 * num_sent_parsed / num_sentences)
+            "Num_sentences is {0}, num_sent_parsed is {1}, ratio is {2:.1f}%".format(
+                num_sentences, num_sent_parsed, 100.0 * num_sent_parsed / num_sentences
+            )
         )
 
 

@@ -698,8 +698,8 @@ class StatsQuery(_BaseQuery):
     _Q = """
         select r.domain,
             sum(1) as art,
-            sum(a.num_sentences) as sent,
-            sum(a.num_parsed) as parsed
+            coalesce(sum(a.num_sentences),0) as sent,
+            coalesce(sum(a.num_parsed),0) as parsed
             from articles as a, roots as r
             where a.root_id = r.id and r.visible
             group by r.domain
@@ -715,7 +715,7 @@ class ChartsQuery(_BaseQuery):
         select r.description AS name,
             count(a.id) AS cnt,
             coalesce(sum(a.num_sentences),0) as sent,
-            coalesce(sum(a.num_parsed), 0) as parsed
+            coalesce(sum(a.num_parsed),0) as parsed
             from roots as r
             left join articles as a on r.id = a.root_id
             and a.timestamp >= :start and a.timestamp < :end
