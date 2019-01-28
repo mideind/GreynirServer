@@ -16,7 +16,7 @@
       <div style="float:right"><img class="villi img-rounded"
       src="{{ url_for('static', filename='img/vth.jpg') }}" width="80" height="97"></div>
       <p class="lead"><b>Greynir</b> er málgreinir fyrir íslensku.</p>
-      <p class="author"><i>Aðalhöfundur Greynis er<br>
+      <p class="author"><i>Upphafsmaður Greynis er<br>
       <a href="http://blog.pressan.is/vthorsteinsson"
       target="_blank">Vilhjálmur Þorsteinsson</a></i></p>
    </div>
@@ -56,7 +56,7 @@
       <p><img src="{{ url_for('static', filename='img/Logo-384.png') }}"
          width="192" height="38" style="margin-top:4px"></p>
       <p><small>
-         <b>Copyright &copy; 2018 Miðeind ehf.</b>
+         <b>Copyright &copy; 2019 Miðeind ehf.</b>
          &bull; <span>[Þróunarútgáfa]</span> <!-- This text is replaced by a date stamp in deploy.sh -->
 {%- if version %}
          &bull; <span>
@@ -71,6 +71,7 @@
          target="_blank">sjá hér</a>.
          <br>Greynir byggir á <a href="https://greynir.is/doc/" target="_blank">Python-pakkanum <b>Reyni</b></a>
          sem er einnig opinn og frjáls hugbúnaður.
+         <br>Forritaskil (API) Greynis eru <a href="{{ url_for('apidoc') }}">skjöluð hér</a>.
       </small></p>
       <p><a href="https://www.gnu.org/licenses/gpl-3.0.html"
          target="_blank"><img src="{{ url_for('static', filename='img/GPLv3.png') }}"
