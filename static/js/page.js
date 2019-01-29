@@ -7,7 +7,8 @@
    Scripts for displaying tokenized and parsed text,
    with pop-up tags on hover, name registry, statistics, etc.
 
-   Copyright (C) 2018 Miðeind ehf.
+   Copyright (C) 2019 Miðeind ehf.
+   Original author: Vilhjálmur Þorsteinsson
 
       This program is free software: you can redistribute it and/or modify
       it under the terms of the GNU General Public License as published by
@@ -114,6 +115,10 @@ function queryEntity(name) {
    window.location.href = "/?f=q&q=" + encodeURIComponent("Hvað er " + name + "?");
 }
 
+function queryLocation(name) {
+   // TODO: Implement me!
+}
+
 function showParse(ev) {
    // A sentence has been clicked: show its parse grid
    var sentText = $(ev.delegateTarget).text();
@@ -197,6 +202,7 @@ function hoverIn() {
       $("#info").addClass(r.class);
    }
 
+   // Try to fetch image if person (and at least two names)
    if (t.k == TOK_PERSON && t.v.split(' ').length > 1) {
       getPersonImage(r.lemma, function(img) {
          $("#info-image").html(
@@ -288,7 +294,7 @@ function getPersonImage(name, successFunc) {
    }
    // Retrieve from cache
    if (cache[name] !== undefined) {
-      if (cache[name].length) {
+      if (cache[name]) {
          successFunc(cache[name]);
       }
       return;
@@ -377,9 +383,10 @@ function displayTokens(j) {
                         // the token (PoS tag or terminal name)
                         cls = "";
                      else
-                     if (t.m)
+                     if (t.m) {
                         // Word class (noun, verb, adjective...)
-                        cls = " class='" + t.m[1] + "'";
+                        cls = " class='" + t.m[1] + ' ' + t.m[2] + "'";
+                     }
                      else
                      if (t.t && t.t.split("_")[0] == "sérnafn") {
                         // Special case to display 'sérnafn' as 'entity'
