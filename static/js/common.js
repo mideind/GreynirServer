@@ -294,7 +294,7 @@ function grammar(cat, terminal) {
             if (cat == "fs") {
                // For prepositions, show "stýrir þágufalli" instead of "þágufall"
                // Avoid special case for "synthetic" prepositions (fs_nh)
-               if (val.k !== "_nh" && "_nf_þf_þgf_ef".indexOf(val.k) >= 0)
+               if ("_nf_þf_þgf_ef".indexOf(val.k) >= 0)
                   g.push("stýrir " + val.t + "i");
             }
             else
