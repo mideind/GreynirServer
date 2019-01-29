@@ -35,7 +35,6 @@ cp config/TnT-model.pickle $DEST/config/TnT-model.pickle
 cp article.py $DEST/article.py
 cp fetcher.py $DEST/fetcher.py
 cp geo.py $DEST/geo.py
-cp getimage.py $DEST/getimage.py
 cp images.py $DEST/images.py
 # incparser.py is no longer needed
 rm $DEST/incparser.py
@@ -53,6 +52,7 @@ cp tnttagger.py $DEST/tnttagger.py
 cp tree.py $DEST/tree.py
 cp treeutil.py $DEST/treeutil.py
 
+# Scrapers and processors are not required for the web server
 # cp scrapers/*.py $DEST/scrapers/
 # cp processors/*.py $DEST/processors/
 
