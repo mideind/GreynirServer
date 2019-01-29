@@ -1,4 +1,3 @@
-
 /*
 
    Reynir: Natural language processing for Icelandic
@@ -8,9 +7,8 @@
    Scripts for displaying tokenized and parsed text,
    with pop-up tags on hover, name registry, statistics, etc.
 
-   Copyright (C) 2018 Miðeind ehf.
-   Author: Vilhjálmur Þorsteinsson
-   All rights reserved
+   Copyright (C) 2019 Miðeind ehf.
+   Original author: Vilhjálmur Þorsteinsson
 
       This program is free software: you can redistribute it and/or modify
       it under the terms of the GNU General Public License as published by
@@ -75,21 +73,20 @@ var FL_TO_LOC_DESC = {
    "lönd": "land",
    "örn": "örnefni",
    "göt": "götuheiti",
-   "borg": "borg",
+   "borg": "borg"
 };
 var FL_TO_LOC_KIND = {
    "lönd": "country",
    "örn": "placename",
    "göt": "street",
-   "borg": "placename",
+   "borg": "placename"
 };
 
-// Words array
+// Token array
 var w = [];
 
 // Name dictionary
 var nameDict = { };
-
 
 function debugMode() {
    return false;
@@ -176,11 +173,11 @@ function hoverIn() {
       // No token: nothing to do
       return;
    }
-
    // Save our position
    var offset = $(this).position();
    // Highlight the token
    $(this).addClass("highlight");
+
    // Get token info
    var r = tokenInfo(t, nameDict);
 
@@ -214,20 +211,19 @@ function hoverIn() {
       });
    }
 
-   
    if (t["m"]) {
       var fl = t["m"][2];
 
-      // It's a location. Display loc info.
+       // It's a location. Display loc info.
       if (LOC_FL.includes(fl)) {
          $('#grammar').hide();
          $('#details').html(FL_TO_LOC_DESC[fl]);
-         r.tagClass = "glyphicon-globe"
+         r.tagClass = "glyphicon-globe";
 
          var name = r.lemma;
          var kind = FL_TO_LOC_KIND[fl];
 
-         // Query server for more information about location
+          // Query server for more information about location
          getLocationInfo(name, kind, function(info) {
             // We know which country, show flag image
             if (info['country']) {
@@ -323,10 +319,9 @@ function hoverOut() {
    $("#info").css("visibility", "hidden");
    $("#info-image").hide();
    $(this).removeClass("highlight");
-
    // Abort any ongoing onhover requests to server.
-   // These requests are stored as properties of 
-   // the functions that send them.
+   // These requests are stored as properties of
+   // the functions that sent them.
    var reqobjs = [getPersonImage, getLocationInfo];
    for (var idx in reqobjs) {
       if (reqobjs[idx] && reqobjs[idx].request) {
@@ -337,6 +332,10 @@ function hoverOut() {
 }
 
 function displayTokens(j) {
+   // Generate HTML for the token list given in j,
+   // and insert it into the <div> with id 'result'.
+   // Also, populate the global w array with the
+   // token list.
    var x = ""; // Result text
    var lastSp;
    w = [];
@@ -371,16 +370,20 @@ function displayTokens(j) {
                   // Mark an error token
                   x += "<span class='errtok'>";
                if (t.k == TOK_PUNCTUATION)
-                  x += "<i class='p'>" + ((t.x == "—") ? " — " : t.x) + "</i>"; // Space around em-dash
+                   // Add space around em-dash
+                  x += "<i class='p'>" + ((t.x == "—") ? " — " : t.x) + "</i>";
                else {
                   var cls;
                   var tx = t.x;
                   if (!t.k) {
                      // TOK_WORD
                      if (err)
+                        // If the sentence was not parsed successfully,
+                        // we don't have an unambiguous interpretation of
+                        // the token (PoS tag or terminal name)
                         cls = "";
                      else
-                     if (t.m) { 
+                     if (t.m) {
                         // Word class (noun, verb, adjective...)
                         cls = " class='" + t.m[1] + ' ' + t.m[2] + "'";
                      }
@@ -400,11 +403,11 @@ function displayTokens(j) {
                         tx = tx.replace(" - ", "-"); // Tight hyphen, no whitespace
                   }
                   x += "<i id='w" + w.length + "'" + cls + ">" + tx + "</i>";
-                  // Append to word/token list
-                  w.push(t);
                }
                if (t.err)
                   x += "</span>";
+               // Append to word/token list
+               w.push(t);
             });
             // Finish sentence
             x += "</span>\n";
@@ -428,6 +431,10 @@ function populateStats(stats) {
    $("#tok-num").text(format_is(stats.num_tokens));
    $("#num-sent").text(format_is(stats.num_sentences));
    $("#num-parsed-sent").text(format_is(stats.num_parsed));
+   if (stats.num_parsed == 1)
+      $("#paragraphs").text("málsgrein")
+   else
+      $("#paragraphs").text("málsgreinar");
    if (stats.num_sentences > 0)
       $("#num-parsed-ratio").text(format_is(100.0 * stats.num_parsed / stats.num_sentences, 1));
    else
@@ -446,7 +453,13 @@ function populateRegister() {
       if (desc.kind != "ref")
          // We don't display references to full names
          // Whitespace around hyphens is eliminated for display
-         register.push({ name: name.replace(" - ", "-"), title: desc.title, kind: desc.kind });
+         register.push(
+            {
+               name: name.replace(" - ", "-"),
+               title: desc.title,
+               kind: desc.kind
+            }
+         );
    });
    register.sort(function(a, b) {
       return a.name.localeCompare(b.name);
@@ -473,4 +486,3 @@ function populateRegister() {
       });
    }
 }
-

@@ -27,7 +27,8 @@ echo "Copying files"
 
 cp config/Adjectives.conf $DEST/config/Adjectives.conf
 cp config/Index.conf $DEST/config/Index.conf
-cp config/Main.conf $DEST/config/Main.conf
+# Main.conf is no longer needed
+rm $DEST/config/Main.conf
 # Note: config/Reynir.conf is not copied
 cp config/TnT-model.pickle $DEST/config/TnT-model.pickle
 
@@ -35,7 +36,8 @@ cp article.py $DEST/article.py
 cp fetcher.py $DEST/fetcher.py
 cp geo.py $DEST/geo.py
 cp images.py $DEST/images.py
-cp incparser.py $DEST/incparser.py
+# incparser.py is no longer needed
+rm $DEST/incparser.py
 cp main.py $DEST/main.py
 cp nertokenizer.py $DEST/nertokenizer.py
 cp postagger.py $DEST/postagger.py
@@ -50,6 +52,7 @@ cp tnttagger.py $DEST/tnttagger.py
 cp tree.py $DEST/tree.py
 cp treeutil.py $DEST/treeutil.py
 
+# Scrapers and processors are not required for the web server
 # cp scrapers/*.py $DEST/scrapers/
 # cp processors/*.py $DEST/processors/
 

@@ -69,17 +69,28 @@
                <img src="{{ url_for('static', filename = 'sources/' + article.root_domain + '.png') }}" width="16" height="16">
 {%- endif -%}
             </a>
-            <button type="button" class="btn btn-warning refresh" title="Endurgreina"><span class="glyphicon glyphicon-restart"></span></button>
+            <button type="button" class="btn btn-warning" id="refresh"
+               title="Endurgreina">
+               <span class="glyphicon glyphicon-restart"></span>
+            </button>
+            <button type="button" class="btn btn-info" id="check"
+               title="Lesa yfir">
+               <span class="glyphicon glyphicon-eye-open"></span>
+            </button>
          </h5>
       </div>
 
       <div id="help">
-         <h3 class="help"><small>Smelltu á málsgrein til að sjá trjágreiningu hennar</small></h3>
+         <h3 class="help">
+            <small>Smelltu á málsgrein til að sjá trjágreiningu hennar</small>
+         </h3>
       </div>
 
-      <div id="result">
+      <div id="result" class="result">
          <!-- Result of analysis goes here -->
-         <p>Sæki grein... <span class="glyphicon glyphicon-restart glyphicon-spin"></span></p>
+         <p>Sæki grein...
+            <span class="glyphicon glyphicon-restart glyphicon-spin"></span>
+         </p>
       </div>
 
    </div> <!-- column -->
@@ -111,7 +122,7 @@
       <ul>
          <li>Textinn inniheldur <span id="tok-num">0</span> eindir í
             <span id="num-sent">0</span> málsgreinum.</li>
-         <li>Það tókst að greina <span id="num-parsed-sent">0</span> málsgreinar eða
+         <li>Það tókst að trjágreina <span id="num-parsed-sent">0</span> málsgreinar eða
             <span id="num-parsed-ratio">0,0</span>%.</li>
          <li>Margræðnistuðull var
             <span id="avg-ambig-factor">1,00</span>.</li>
@@ -150,7 +161,8 @@
       /* An error occurred on the server or in the communications */
       $("div#help").css("display", "none");
       $("div#result").html("<p><b>Villa kom upp</b> í samskiptum við netþjón Greynis</p>"); 
-      $("button.refresh").removeAttr("disabled");
+      $("button#refresh").removeAttr("disabled");
+      $("button#check").removeAttr("disabled");
    }
 
    function populateArticle(json) {
@@ -169,7 +181,8 @@
       $("div#statistics").css("display", "block");
       nameDict = json.register;
       populateRegister();
-      $("button.refresh").removeAttr("disabled");
+      $("button#refresh").removeAttr("disabled");
+      $("button#check").removeAttr("disabled");
    }
 
    function reparseArticle(uuid) {
@@ -179,7 +192,8 @@
       $("div#result").html("<p>Málgreining stendur yfir... " +
          "<span class='glyphicon glyphicon-restart glyphicon-spin'></span>" +
          "</p>");
-      $("button.refresh").attr("disabled", "disabled");
+      $("button#refresh").attr("disabled", "disabled");
+      $("button#check").attr("disabled", "disabled");
       $("div#statistics").css("display", "none");
       $("div#register").css("display", "none");
       $("div#similar").css("display", "none");
@@ -193,6 +207,23 @@
       );
    }
 
+   function checkArticle() {
+      // Send the text of the current article over to correct.html
+      // for spelling and grammar checking
+      var txt = "";
+      $.each($("div#result p"), function() {
+         // Handle each paragraph
+         var ptxt = "";
+         $.each($("span.sent", this), function () {
+            // Handle each sentence
+            ptxt += $(this).text() + " ";
+         });
+         txt += ptxt + "\n\n";
+      });
+      // POST to the /correct page
+      serverPost("/correct", { txt: txt });
+   }
+
    function init() {
       // Show help text
       $("div#help").css("display", "block");
@@ -203,9 +234,13 @@
             ev.stopPropagation();
             $(this).css("visibility", "hidden");
          });
-      $("button.refresh")
+      $("button#refresh")
          .click(function(ev) {
             reparseArticle("{{ article.uuid | safe }}");
+         });
+      $("button#check")
+         .click(function(ev) {
+            checkArticle();
          });
       displayTokens(j);
       // Show similar list
