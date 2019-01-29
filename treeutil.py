@@ -237,7 +237,7 @@ class TreeUtility:
         return tmap
 
     @staticmethod
-    def dump_tokens(tokens, tree, error_index=None, correct=False, words=None):
+    def dump_tokens(tokens, tree, *, error_index=None, words=None):
 
         """ Generate a list of dicts representing the tokens in the sentence.
 
@@ -284,18 +284,6 @@ class TreeUtility:
                     d["x"].lower(),
                     meaning.beyging
                 )
-            if correct and hasattr(token, "error_code") and token.error_code:
-                # We want information about corrections applied to
-                # this token, if any
-                ed = {
-                    "code": token.error_code,
-                    "descr": token.error_description,
-                }
-                if hasattr(token, "error_span") and token.error_span > 1:
-                    # The error spans more than one token:
-                    # note this
-                    ed["span"] = token.error_span
-                d["corr"] = ed
             dump.append(d)
         return dump
 
@@ -375,7 +363,7 @@ class TreeUtility:
         def xform(tokens, tree, err_index):
             """ Transformation function that simply returns a list of POS-tagged,
                 normalized tokens for the sentence """
-            return TreeUtility.dump_tokens(tokens, tree, err_index)
+            return TreeUtility.dump_tokens(tokens, tree, error_index=err_index)
 
         return TreeUtility._process_text(
             parser, session, text, all_names, xform
@@ -399,7 +387,7 @@ class TreeUtility:
         def xform(tokens, tree, err_index):
             """ Transformation function that simply returns a list of POS-tagged,
                 normalized tokens for the sentence """
-            return TreeUtility.dump_tokens(tokens, tree, err_index)
+            return TreeUtility.dump_tokens(tokens, tree, error_index=err_index)
 
         with Fast_Parser(verbose=False) as parser:  # Don't emit diagnostic messages
             pgs, stats = TreeUtility._process_toklist(parser, session, toklist, xform)
@@ -416,7 +404,7 @@ class TreeUtility:
         def xform(tokens, tree, err_index):
             """ Transformation function that simply returns a list of POS-tagged,
                 normalized tokens for the sentence """
-            return TreeUtility.dump_tokens(tokens, tree, err_index)
+            return TreeUtility.dump_tokens(tokens, tree, error_index=err_index)
 
         with Fast_Parser(verbose=False, root=root) as parser:
             return TreeUtility._process_toklist(parser, session, toklist, xform)
@@ -429,7 +417,7 @@ class TreeUtility:
             """ Transformation function that yields a simplified parse tree
                 with POS-tagged, normalized terminal leaves for the sentence """
             if err_index is not None:
-                return TreeUtility.dump_tokens(tokens, tree, err_index)
+                return TreeUtility.dump_tokens(tokens, tree, error_index=err_index)
             # Successfully parsed: return a simplified tree for the sentence
             return TreeUtility._simplify_tree(tokens, tree)
 
@@ -508,7 +496,7 @@ class TreeUtility:
             """ Transformation function that yields a simplified parse tree
                 with POS-tagged, normalized terminal leaves for the sentence """
             if err_index is not None:
-                return TreeUtility.dump_tokens(tokens, tree, err_index)
+                return TreeUtility.dump_tokens(tokens, tree, error_index=err_index)
             # Successfully parsed: return a simplified tree for the sentence
             nonlocal full_tree
             # We are assuming that there is only one parsed sentence

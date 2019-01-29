@@ -326,7 +326,7 @@ class Article:
                         else:
                             eix = sent.err_index
                         token_dicts = TreeUtility.dump_tokens(
-                            sent.tokens, None, eix
+                            sent.tokens, None, error_index=eix
                         )
                         trees[num_sent] = "E{0}".format(eix)
 
