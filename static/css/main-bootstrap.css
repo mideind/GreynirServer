@@ -4,8 +4,7 @@
 
    CSS file for Reynir front-end web
 
-   Author: Vilhjalmur Thorsteinsson
-   Copyright (C) 2017
+   Copyright (C) 2018 Miðeind ehf.
 
       This program is free software: you can redistribute it and/or modify
       it under the terms of the GNU General Public License as published by
@@ -107,6 +106,9 @@
 }
 .glyphicon-tag:before {
    content: "\E066";
+}
+.glyphicon-cogwheel:before {
+   content: "\E137";
 }
 .glyphicon-tags:before {
    content: "\E067";
@@ -728,6 +730,10 @@ div#info-image img {
    object-fit: cover;
 }
 
+div#info > p em {
+   font-weight: bold;
+}
+
 #meta-author, #meta-timestamp, #meta-url {
    text-align: right;
 }
@@ -772,9 +778,30 @@ span.sent.err:hover {
    background-color: #FFE0EA;
 }
 
+span.sent.err-corr {
+   color: #CB333B; /* Greynir red */
+}
+
 span.errtok {
    font-weight: 700;
    color: #CB333B; /* Greynir red */
+}
+
+span.corrtok:before {
+   font-family: "Glyphicons Regular";
+   top: 0.4em;
+   margin-left: 0.2em;
+   font-size: 0.7em;
+   color: #5cb85c; /* Greynir green */
+   content: "\E174";
+}
+
+span.corrtok.unknown:before {
+   color: #CB333B; /* Greynir red */
+}
+
+span.corrtok.advisory:before {
+   color: #f0ad4e; /* Greynir yellow */
 }
 
 /*
@@ -792,14 +819,14 @@ span.sent.parsed:hover {
    border-color: #e4ffd4;
 }
 
-div#result {
+div.result {
    font-size: 1.05em;
    line-height: 1.6;
    padding-top: 0.2em;
    padding-bottom: 0.8em;
 }
 
-div#result i {
+div.result i {
    font-style: normal;
    border-radius: 5px;
    border-width: 1px;
@@ -811,45 +838,45 @@ div#result i {
    margin-right: -4px;
 }
 
-div#result i.nf {
+div.result i.nf {
    /* Word not found */
    font-weight: 700;
    color: #CB333B; /* Greynir red */
 }
 
-div#result i.number {
+div.result i.number {
    font-weight: 700;
    color: #007F33;
 }
 
-div#result i.percent {
+div.result i.percent {
    font-weight: 700;
    color: #337ab7;
 }
 
-div#result i.ordinal {
+div.result i.ordinal {
    font-weight: 700;
    color: #CCA500;
 }
 
-div#result i.date,
-div#result i.time,
-div#result i.timestamp {
+div.result i.date,
+div.result i.time,
+div.result i.timestamp {
    font-weight: 700;
    color: #CCA500;
 }
 
-div#result i.currency {
+div.result i.currency {
    font-weight: 700;
    color: #007F33;
 }
 
-div#result i.amount {
+div.result i.amount {
    font-weight: 700;
    color: #007F33;
 }
 
-div#result i.person {
+div.result i.person {
 /*
    border-width: 2px;
    border-style: solid;
@@ -866,7 +893,7 @@ div#result i.person {
    /* border-color: #337ab7; */
 }
 
-div#result i.entity {
+div.result i.entity {
 /*
    border-width: 2px;
    border-style: solid;
@@ -905,7 +932,27 @@ div#result i.email {
    font-weight: 700;
 }
 
-div#result i:hover {
+div.result i.c.highlight {
+   text-decoration: underline;
+   /*
+   border-bottom-style: dotted;
+   border-bottom-width: 1px;
+   border-bottom-color: #d9534f;
+   border-bottom-left-radius: 0;
+   border-bottom-right-radius: 0;
+   */
+}
+
+div.result i.warntok {
+   color: #eb9316;
+}
+
+/* Note: errtok should appear after warntok, since it has higher priority */
+div.result i.errtok {
+   color: #d9534f;
+}
+
+div.result i:hover {
    /*
    outline-width: 1px;
    outline-style: solid;
@@ -916,13 +963,13 @@ div#result i:hover {
    border-color: #777777;
 }
 
-div#result i.p:hover {
+div.result i.p:hover {
    color: black;
    background-color: transparent;
    border-color: transparent;
 }
 
-div#result i.person:hover {
+div.result i.person:hover {
    /* Special case for person: just make background darker */
    /*
    outline: none;
@@ -933,7 +980,7 @@ div#result i.person:hover {
    background-color: #337ab7; 
 }
 
-div#result i.entity:hover {
+div.result i.entity:hover {
    /* Special case for entity: just make background darker */
    /*
    outline: none;
@@ -944,33 +991,33 @@ div#result i.entity:hover {
 }
 
 /* Noun-type word: blue color */
-div#result i.kk:hover,
-div#result i.kvk:hover,
-div#result i.hk:hover,
-div#result i.fn:hover,
-div#result i.pfn:hover {
+div.result i.kk:hover,
+div.result i.kvk:hover,
+div.result i.hk:hover,
+div.result i.fn:hover,
+div.result i.pfn:hover {
    /* outline-color: #337ab7; */
    border-color: #337ab7;
    background-color: #337ab7;
 }
 
 /* Verb-type word: red color */
-div#result i.so:hover,
-div#result i.nhm:hover {
+div.result i.so:hover,
+div.result i.nhm:hover {
    /* outline-color: #d9534f; */
    border-color: #d9534f;
    background-color: #d9534f;
 }
 
 /* Adjective-type word: green color */
-div#result i.lo:hover {
+div.result i.lo:hover {
    /* outline-color: #5cb85c; */
    border-color: #5cb85c;
    background-color: #5cb85c;
 }
 
 /* Conjunction-type word: yellow color */
-div#result i.st:hover {
+div.result i.st:hover {
    /* outline-color: #f0ad4e; */
    border-color: #f0ad4e;
    background-color: #f0ad4e;
@@ -986,6 +1033,87 @@ div#register {
 
 div#similar {
    display: none;
+}
+
+div.correct {
+   position: relative;
+   display: block;
+   width: 100%;
+   overflow-x: hidden;
+}
+
+div.canvas {
+   position: absolute;
+   display: block;
+   z-index: -1;
+   top: 0;
+   left: 0;
+   width: 100%;
+   height: 100%;
+   overflow-y: hidden;
+}
+
+div.canvas svg g path {
+   fill: none;
+   stroke: #d9534f;
+   stroke-dasharray: 3;
+   stroke-opacity: 0.4;
+   stroke-width: 2px;
+}
+
+div.canvas svg g path.warning {
+   stroke: #eb9316;
+}
+
+div.canvas svg g path.highlight {
+   stroke-opacity: 0.85;
+}
+
+div.annotation {
+   font-size: 0.8em;
+   line-height: 1.4;
+   padding-top: 0.2em;
+   padding-bottom: 0; /* 0.8em; */
+}
+
+div.correct div.result {
+   float: left;
+   width: 70%;
+   margin-left: 0;
+   margin-right: 0;
+   padding-right: 8px;
+}
+
+div.correct div.annotation {
+   float: left;
+   width: 30%;
+   margin-left: 0;
+   margin-right: 0;
+   padding-left: 8px;
+}
+
+div.annotation div {
+   font-style: italic;
+   color: #d9534f;
+   border: 1px solid #d9534f;
+   border-radius: 5px;
+   padding: 6px;
+   margin-bottom: 0.5em;
+   cursor: pointer;
+}
+
+div.annotation div:hover {
+   /* color: white; */
+   background-color: rgba(217, 83, 79, 0.10);
+}
+
+div.annotation div.warning {
+   color: #eb9316;
+   border: 1px solid #eb9316;
+}
+
+div.annotation div.warning:hover {
+   background-color: #ffeed6;
 }
 
 div.guide-empty {
@@ -1120,7 +1248,13 @@ div.grid table tr td {
    padding-bottom: 1px;
 }
 
+div.grid table tr td.error {
+   /* Nonterminal marked with an error tag */
+   color: red;
+}
+
 div.grid table tr td.t {
+   /* Terminal */
    font-style: italic;
    background-color: #FFEEA9; /* Pale Greynir yellow */
    vertical-align: bottom;
@@ -1153,6 +1287,19 @@ h4.txt span.glyphicon:hover {
 
 div#metadata h1 {
    line-height: 1.25;
+}
+
+div#metadata button.btn {
+   font-size: 18px;
+   line-height: 18px;
+}
+
+div#metadata button.btn span.glyphicon {
+   top: 0px;
+}
+
+button.btn.btn-lg.btn-block span.glyphicon {
+   margin-right: 4px;
 }
 
 h3.query {

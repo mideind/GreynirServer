@@ -23,7 +23,7 @@
     This module is written in Python 3 and is compatible with PyPy3.
 
     This is the main module of the Greynir web server. It uses Flask
-    as its templating and web server engine. In production, this module is
+    as its web server and templating engine. In production, this module is
     typically run inside Gunicorn (using servlets) under nginx or a
     compatible WSGi HTTP(S) server. For development, it can be run
     directly from the command line and accessed through port 5000.
@@ -58,12 +58,15 @@ from flask.wrappers import Response
 from flask_caching import Cache
 
 import reynir
-from settings import Settings, ConfigError, changedlocale
+from reynir import correct_spaces, tokenize
 from reynir.bindb import BIN_Db
-from tokenizer import correct_spaces
-from nertokenizer import tokenize_and_recognize
 from reynir.binparser import canonicalize_token
 from reynir.fastparser import Fast_Parser, ParseForestFlattener
+
+import reynir_correct
+
+from settings import Settings, ConfigError, changedlocale
+from nertokenizer import recognize_entities
 from article import Article as ArticleProxy
 from treeutil import TreeUtility
 from scraperdb import (
@@ -92,6 +95,7 @@ from images import (
 from geo import location_info, location_description, LOCATION_TAXONOMY, ICELAND_ISOCODE
 from country_list import countries_for_language
 from tnttagger import ifd_tag
+from correct import check_grammar
 
 
 # Initialize Flask framework
@@ -191,7 +195,7 @@ def max_age(seconds):
     return decorator
 
 
-def get_json_bool(rq, name, default=False):
+def bool_from_request(rq, name, default=False):
     """ Get a boolean from JSON encoded in a request form """
     b = rq.form.get(name)
     if b is None:
@@ -199,7 +203,7 @@ def get_json_bool(rq, name, default=False):
     if b is None:
         # Not present in the form: return the default
         return default
-    return isinstance(b, str) and b == "true"
+    return isinstance(b, str) and b.lower() in {"true", "1", "yes"}
 
 
 def better_jsonify(**kwargs):
@@ -588,22 +592,29 @@ def process_query(session, toklist, result):
     return True
 
 
-def text_from_request(request):
-    """ Return text passed in a HTTP request, either using GET or POST """
+def text_from_request(request, *, post_field=None, get_field=None):
+    """ Return text passed in a HTTP request, either using GET or POST.
+        When using GET, the default parameter name is 't'. This can
+        be overridden using the get_field parameter.
+        When using POST, the default form field name is 'text'. This can
+        be overridden using the post_field paramter.
+    """
     if request.method == "POST":
         if request.headers["Content-Type"] == "text/plain":
             # This API accepts plain text POSTs, UTF-8 encoded.
             # Example usage:
-            # curl -d @example.txt https://greynir.is/postag.api --header "Content-Type: text/plain"
+            # curl -d @example.txt https://greynir.is/postag.api \
+            #     --header "Content-Type: text/plain"
             text = request.data.decode("utf-8")
         else:
             # This API also accepts form/url-encoded requests:
-            # curl -d "text=Í dag er ágætt veður en mikil hálka er á götum." https://greynir.is/postag.api
-            text = request.form.get("text", "")
+            # curl -d "text=Í dag er ágætt veður en mikil hálka er á götum." \
+            #     https://greynir.is/postag.api
+            text = request.form.get(post_field or "text", "")
+        text = text[0:_MAX_TEXT_LENGTH]
     else:
-        text = request.args.get("t", "")
-    # Replace all consecutive whitespace with a single space
-    return " ".join(text.split())[0:_MAX_TEXT_LENGTH]
+        text = request.args.get(get_field or "t", "")[0:_MAX_TEXT_LENGTH_VIA_URL]
+    return text
 
 
 # Note: Endpoints ending with .api are configured not to be cached by nginx
@@ -614,17 +625,36 @@ def analyze_api(version=1):
         This is a lower level API used by the Greynir web front-end. """
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
-
     try:
         text = text_from_request(request)
     except:
         return better_jsonify(valid=False, reason="Invalid request")
-
     with SessionContext(commit=True) as session:
         pgs, stats, register = TreeUtility.tag_text(session, text)
-
     # Return the tokens as a JSON structure to the client
     return better_jsonify(valid=True, result=pgs, stats=stats, register=register)
+
+
+# Note: Endpoints ending with .api are configured not to be cached by nginx
+@app.route("/correct.api", methods=["GET", "POST"])
+@app.route("/correct.api/v<int:version>", methods=["GET", "POST"])
+def correct_api(version=1):
+    """ Correct text manually entered by the user, i.e. not coming from an article.
+        This is a lower level API used by the Greynir web front-end. """
+    if not (1 <= version <= 1):
+        return better_jsonify(valid=False, reason="Unsupported version")
+
+    try:
+        text = text_from_request(request)
+    except Exception as e:
+        logging.warning("Exception in correct_api(): {0}".format(e))
+        return better_jsonify(valid=False, reason="Invalid request")
+
+    pgs, stats = check_grammar(text)
+
+    # Return the annotated paragraphs/sentences and stats
+    # in a JSON structure to the client
+    return better_jsonify(valid=True, result=pgs, stats=stats)
 
 
 # Note: Endpoints ending with .api are configured not to be cached by nginx
@@ -855,7 +885,7 @@ def query_api(version=1):
     q = q.strip()[0:_MAX_QUERY_LENGTH]
 
     # Auto-uppercasing can be turned off by sending autouppercase: false in the query JSON
-    auto_uppercase = get_json_bool(request, "autouppercase", True)
+    auto_uppercase = bool_from_request(request, "autouppercase", True)
     result = dict()
     ql = q.lower()
 
@@ -870,21 +900,23 @@ def query_api(version=1):
     else:
         with SessionContext(commit=True) as session:
 
-            toklist = list(
-                tokenize_and_recognize(
-                    q,
-                    enclosing_session=session,
-                    auto_uppercase=q.islower() if auto_uppercase else False,
-                )
+            toklist = tokenize(
+                q, auto_uppercase = q.islower() if auto_uppercase else False
             )
-            actual_q = correct_spaces(" ".join(t.txt or "" for t in toklist))
+            toklist = list(
+                recognize_entities(toklist, enclosing_session=session)
+            )
+            actual_q = correct_spaces(" ".join(t.txt for t in toklist if t.txt))
 
             if Settings.DEBUG:
                 # Log the query string as seen by the parser
                 print("Query is: '{0}'".format(actual_q))
 
             # Try to parse and process as a query
-            is_query = process_query(session, toklist, result)
+            try:
+                is_query = process_query(session, toklist, result)
+            except:
+                is_query = False
 
         result["valid"] = is_query
         result["q"] = actual_q
@@ -964,7 +996,7 @@ def tree_grid():
             tree,
             is_nt_func=lambda n: n["k"] == "NONTERMINAL",
             children_func=lambda n: n["p"],
-            nt_info_func=lambda n: dict(n=n["n"]),
+            nt_info_func=lambda n: dict(n=n["n"], error=False),
             t_info_func=lambda n: n,
         )
         height = len(tbl)
@@ -977,7 +1009,7 @@ def tree_grid():
             full_tree,
             is_nt_func=lambda n: n.is_nonterminal,
             children_func=lambda n: n.children,
-            nt_info_func=lambda n: dict(n=n.p.name),
+            nt_info_func=lambda n: dict(n=n.p.name, error=n.p.has_tag("error")),
             t_info_func=lambda n: dict(t=n.p[0].name, x=n.p[1].t1),
         )
         assert full_width == width
@@ -1016,7 +1048,6 @@ def reportimage():
             resp["found_new"] = True
 
     return better_jsonify(**resp)
-
 
 @app.route("/image", methods=["GET"])
 def image():
@@ -1426,6 +1457,16 @@ def parsefail():
     return render_template("parsefail.html", sentences=json.dumps(sfails), num=num)
 
 
+@app.route("/correct", methods=["GET", "POST"])
+def correct():
+    """ Handler for a page for spelling and grammar correction
+        of user-entered text """
+    try:
+        txt = text_from_request(request, post_field="txt", get_field="txt")
+    except:
+        txt = ""
+    return render_template("correct.html", default_text=txt)
+
 
 @app.route("/page")
 def page():
@@ -1449,7 +1490,6 @@ def page():
         if uuid:
             a = ArticleProxy.load_from_uuid(uuid, session)
         elif url.startswith("http:") or url.startswith("https:"):
-            # a = ArticleProxy.load_from_url(url, session)
             a = ArticleProxy.scrape_from_url(url, session)  # Forces a new scrape
         else:
             a = None
@@ -1517,20 +1557,22 @@ def server_error(e):
 t0 = time.time()
 try:
     # Read configuration file
-    Settings.read("config/Reynir.conf")
+    Settings.read(os.path.join("config", "Reynir.conf"))
 except ConfigError as e:
     logging.error("Reynir did not start due to configuration error:\n{0}".format(e))
     sys.exit(1)
 
 if Settings.DEBUG:
-    print("Settings loaded in {0:.2f} seconds".format(time.time() - t0))
     print(
-        "Running Reynir with debug={0}, host={1}:{2}, db_hostname={3} on Python {4}".format(
+        "\nStarting Reynir at {5} with debug={0}, host={1}:{2}, db_hostname={3}\n"
+        "Python {4}"
+        .format(
             Settings.DEBUG,
             Settings.HOST,
             Settings.PORT,
             Settings.DB_HOSTNAME,
             sys.version,
+            datetime.utcnow()
         )
     )
 
@@ -1542,30 +1584,47 @@ if __name__ == "__main__":
     # Note: Reynir.grammar is automatically reloaded if its timestamp changes
     extra_files = [
         "Reynir.conf",
+        "ReynirPackage.conf",
+        "Index.conf",
         "Verbs.conf",
+        "Adjectives.conf",
+        "AdjectivePredicates.conf",
+        "Morphemes.conf",
         "Prepositions.conf",
-        "Main.conf",
         "Prefs.conf",
         "Phrases.conf",
         "Vocab.conf",
         "Names.conf",
+        "ReynirCorrect.conf"
     ]
 
+    dirs = list(
+        map(
+            os.path.dirname,
+            [
+                __file__,
+                reynir.__file__,
+                reynir_correct.__file__
+            ]
+        )
+    )
     for i, fname in enumerate(extra_files):
-        # First check our own module's config subdirectory
-        path = os.path.join(os.path.dirname(__file__), "config", fname)
-        path = os.path.realpath(path)
-        if os.path.isfile(path):
-            extra_files[i] = path
-        else:
-            # This config file is not in the Reynir/config subdirectory:
-            # Attempt to watch it in ReynirPackage
-            path = os.path.join(os.path.dirname(reynir.__file__), "config", fname)
+        # Look for the extra file in the different package directories
+        for directory in dirs:
+            path = os.path.join(directory, "config", fname)
             path = os.path.realpath(path)
             if os.path.isfile(path):
                 extra_files[i] = path
-            else:
-                print("Extra file path '{0}' not found".format(path))
+                break
+        else:
+            print("Extra file '{0}' not found".format(fname))
+    # Add src/reynir/resources/ord.compressed from reynir
+    extra_files.append(
+        os.path.join(
+            os.path.dirname(reynir.__file__),
+            "src", "reynir", "resources", "ord.compressed"
+        )
+    )
 
     from socket import error as socket_error
     import errno

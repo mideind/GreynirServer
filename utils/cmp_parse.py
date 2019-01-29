@@ -16,7 +16,7 @@ from settings import Settings
 from scraperdb import SessionContext
 from treeutil import TreeUtility as tu
 
-Settings.read("config/Reynir.conf")
+Settings.read(os.path.join(basepath, "config", "Reynir.conf"))
 Settings.DEBUG = False
 TEXTI = 'þróunarsafn_texti.txt'
 SBR = 'þróunarsafn.txt'
@@ -127,23 +127,24 @@ class Comparison():
         return setningar
 
 class Stack:
-     def __init__(self):
-         self.items = []
 
-     def isEmpty(self):
-         return self.items == []
+    def __init__(self):
+        self.items = []
 
-     def push(self, item):
-         self.items.append(item)
+    def isEmpty(self):
+        return self.items == []
 
-     def pop(self):
-         return self.items.pop()
+    def push(self, item):
+        self.items.append(item)
 
-     def peek(self):
-         return self.items[len(self.items)-1]
+    def pop(self):
+        return self.items.pop()
 
-     def size(self):
-         return len(self.items)
+    def peek(self):
+        return self.items[len(self.items)-1]
+
+    def size(self):
+        return len(self.items)
 
 if __name__ == "__main__":
     byrjun = timer()
@@ -153,3 +154,4 @@ if __name__ == "__main__":
     liðið = lok - byrjun
     print("")
     print("Keyrslan tók {:f} sekúndur, eða {:f} mínútur.".format(liðið, (liðið / 60.0)))
+

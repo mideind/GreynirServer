@@ -33,9 +33,9 @@ from collections import OrderedDict, defaultdict
 from settings import NoIndexWords
 from scraperdb import Article as ArticleRow, SessionContext, Word, Root, DataError, desc
 from fetcher import Fetcher
-from tokenizer import TOK, tokenize
+from reynir import TOK
 from reynir.fastparser import Fast_Parser, ParseError, ParseForestDumper
-from incparser import IncrementalParser
+from reynir.incparser import IncrementalParser
 from tree import Tree
 from treeutil import TreeUtility
 
@@ -300,7 +300,7 @@ class Article:
                     if num_tokens <= MAX_SENTENCE_TOKENS and sent.parse():
                         # Obtain a text representation of the parse tree
                         token_dicts = TreeUtility.dump_tokens(
-                            sent.tokens, sent.tree, words
+                            sent.tokens, sent.tree, words=words
                         )
                         # Create a verbose text representation of
                         # the highest scoring parse tree
@@ -326,7 +326,7 @@ class Article:
                         else:
                             eix = sent.err_index
                         token_dicts = TreeUtility.dump_tokens(
-                            sent.tokens, None, None, eix
+                            sent.tokens, None, error_index=eix
                         )
                         trees[num_sent] = "E{0}".format(eix)
 
