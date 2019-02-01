@@ -198,9 +198,8 @@ function hoverIn() {
    }
 
    $("#info").removeClass();
-   if (r.class !== null) {
+   if (r.class)
       $("#info").addClass(r.class);
-   }
 
    // Try to fetch image if person (and at least two names)
    if (t.k == TOK_PERSON && t.v.split(' ').length > 1) {
@@ -252,8 +251,8 @@ function hoverIn() {
 
    // Position the info popup
    $("#info")
-      .css("top", offset.top.toString() + "px")
-      .css("left", offset.left.toString() + "px")
+      .css("top", "" + offset.top + "px")
+      .css("left", "" + offset.left + "px")
       .css("visibility", "visible");
 }
 
@@ -333,7 +332,7 @@ function hoverOut() {
 
 function displayTokens(j) {
    // Generate HTML for the token list given in j,
-   // and insert it into the <div> with id 'result'.
+   // and insert it into the <div> with id 'pgs'.
    // Also, populate the global w array with the
    // token list.
    var x = ""; // Result text
@@ -416,9 +415,9 @@ function displayTokens(j) {
          x += "</p>\n";
       });
    // Show the page text
-   $("div#result").html(x);
+   $("div#pgs").html(x);
    // Put a hover handler on each word
-   $("div#result i").hover(hoverIn, hoverOut);
+   $("div#pgs i").hover(hoverIn, hoverOut);
    // Put a click handler on each sentence
    $("span.sent").click(showParse);
    // Separate click handler on entity names

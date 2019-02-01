@@ -460,10 +460,6 @@ td.locname {
    overflow-x: hidden;
 }
 
-div.grid .table-responsive {
-   overflow-x: auto;
-}
-
 td.ratio div.progress {
    min-width: 4em;
    max-width: 4em;
@@ -1076,12 +1072,27 @@ div.annotation {
    padding-bottom: 0; /* 0.8em; */
 }
 
+div#result {
+   position: relative;
+}
+
+/* Annotation background */
+div#result div.background {
+   position: absolute;
+   z-index: -1;
+   background-color: #f6f6f6;
+   height: 100%;
+   width: 30%;
+   right: 0;
+}
+
+/* Result div on correct.html page */
 div.correct div.result {
    float: left;
    width: 70%;
    margin-left: 0;
    margin-right: 0;
-   padding-right: 8px;
+   padding-right: 12px;
 }
 
 div.correct div.annotation {
@@ -1090,11 +1101,13 @@ div.correct div.annotation {
    margin-left: 0;
    margin-right: 0;
    padding-left: 8px;
+   padding-right: 8px;
 }
 
 div.annotation div {
    font-style: italic;
    color: #d9534f;
+   background-color: white;
    border: 1px solid #d9534f;
    border-radius: 5px;
    padding: 6px;
@@ -1227,6 +1240,10 @@ div.input-parsegrid h4 button {
 div.grid {
    font-size: 14px;
    margin-bottom: 16px;
+}
+
+div.grid .table-responsive {
+   overflow-x: auto;
 }
 
 div.grid table {

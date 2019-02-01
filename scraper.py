@@ -5,8 +5,8 @@
 
     Scraper module
 
-    Copyright (C) 2018 Miðeind ehf.
-    Author: Vilhjálmur Þorsteinsson
+    Copyright (C) 2019 Miðeind ehf.
+    Original author: Vilhjálmur Þorsteinsson
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -186,9 +186,8 @@ class Scraper:
 
         t1 = time.time()
         logging.info(
-            "[{3}] Parsing of {2}/{1} sentences completed in {0:.2f} seconds".format(
-                t1 - t0, num_sentences, num_parsed, seq
-            )
+            "[{3}] Parsing of {2}/{1} sentences completed in {0:.2f} seconds"
+            .format(t1 - t0, num_sentences, num_parsed, seq)
         )
 
     def _scrape_single_root(self, r):
@@ -218,9 +217,8 @@ class Scraper:
                 self.scrape_article(d.url, helper)
         except Exception as e:
             logging.warning(
-                "[{2}] Exception when scraping article at {0}: {1!r}".format(
-                    d.url, e, d.seq
-                )
+                "[{2}] Exception when scraping article at {0}: {1!r}"
+                .format(d.url, e, d.seq)
             )
 
     def _parse_single_article(self, d):
@@ -238,9 +236,8 @@ class Scraper:
             sys.exit(1)
         except Exception as e:
             logging.warning(
-                "[{2}] Exception when parsing article at {0}: {1!r}".format(
-                    d.url, e, d.seq
-                )
+                "[{2}] Exception when parsing article at {0}: {1!r}"
+                .format(d.url, e, d.seq)
             )
             # traceback.print_exc()
             # raise
@@ -272,7 +269,8 @@ class Scraper:
                 def iter_unscraped_articles():
                     """ Go through any unscraped articles and scrape them """
                     # Note that the query(ArticleRow) below cannot be directly changed
-                    # to query(ArticleRow.root, ArticleRow.url) since ArticleRow.root is a joined subrecord
+                    # to query(ArticleRow.root, ArticleRow.url) since
+                    # ArticleRow.root is a joined subrecord
                     seq = 0
                     for a in (
                         session.query(ArticleRow)
@@ -297,7 +295,8 @@ class Scraper:
                 """ Go through articles to be parsed """
                 # Fetch 100 rows at a time
                 # Note that the query(ArticleRow) below cannot be directly changed
-                # to query(ArticleRow.root, ArticleRow.url) since ArticleRow.root is a joined subrecord
+                # to query(ArticleRow.root, ArticleRow.url) since
+                # ArticleRow.root is a joined subrecord
                 q = session.query(ArticleRow).filter(ArticleRow.scraped != None)
                 if reparse:
                     # Reparse articles that were originally parsed with an older
@@ -373,12 +372,13 @@ class Scraper:
                     pool.join()
                     cnt += lcnt
                     logging.info(
-                        "Parser processes joined, chunk of {0} articles parsed, total {1}".format(
-                            lcnt, cnt
-                        )
+                        "Parser processes joined, chunk of {0} articles parsed, "
+                        "total {1}".format(lcnt, cnt)
                     )
                 if lcnt < CHUNK_SIZE:
                     break
+            # Return the total number of articles parsed
+            return cnt
 
     @staticmethod
     def stats():
@@ -411,9 +411,9 @@ class Scraper:
         num_parsed_over_1 = result[0]
 
         logging.info(
-            "Num_articles is {0}, scraped {1}, parsed {2}, parsed with >1 sentence {3}".format(
-                num_articles, num_scraped, num_parsed, num_parsed_over_1
-            )
+            "Num_articles is {0}, scraped {1}, parsed {2}, "
+            "parsed with >1 sentence {3}"
+            .format(num_articles, num_scraped, num_parsed, num_parsed_over_1)
         )
 
         q = (
@@ -427,8 +427,11 @@ class Scraper:
         num_sent_parsed = result[1] or 0
 
         logging.info(
-            "Num_sentences is {0}, num_sent_parsed is {1}, ratio is {2:.1f}%".format(
-                num_sentences, num_sent_parsed, 100.0 * num_sent_parsed / num_sentences
+            "Num_sentences is {0}, num_sent_parsed is {1}, ratio is {2:.1f}%"
+            .format(
+                num_sentences,
+                num_sent_parsed,
+                100.0 * num_sent_parsed / num_sentences
             )
         )
 
@@ -441,11 +444,12 @@ def scrape_articles(reparse=False, limit=0, urls=None):
     else:
         logging.info("URLs read from: {0}".format(urls))
     t0 = time.time()
+    count = 0
 
     try:
         sc = Scraper()
         try:
-            sc.go(reparse=reparse, limit=limit, urls=urls)
+            count = sc.go(reparse=reparse, limit=limit, urls=urls)
             # Successful finish: print stats
             sc.stats()
         except KeyboardInterrupt:
@@ -458,9 +462,9 @@ def scrape_articles(reparse=False, limit=0, urls=None):
         pass
 
     t1 = time.time()
-    logging.info("Elapsed: {0:.1f} minutes".format((t1 - t0) / 60))
-    if limit:
-        logging.info("Average: {0:.2f} seconds per article".format((t1 - t0) / limit))
+    logging.info("{1} articles parsed in {0:.1f} minutes".format((t1 - t0) / 60, count))
+    if count > 0:
+        logging.info("Average: {0:.2f} seconds per article".format((t1 - t0) / count))
 
     logging.info("------ Scrape completed -------")
 

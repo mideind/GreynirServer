@@ -1,7 +1,7 @@
 
 {% extends "container-fluid.html" %}
 
-/* Copyright (C) 2017 Miðeind ehf. */
+/* Copyright (C) 2019 Miðeind ehf. */
 
 {% block styles %}
 
@@ -330,8 +330,11 @@
 
          <!-- D3/SVG canvas for tree graph -->
 
-         <div class="grid">
+         <div class="graph">
             <div class="table-responsive" id="canvas-container">
+
+               {% include 'hover-infobox.html' %}
+
                <div id="canvas">
                   <!-- SVG stuff is inserted here -->
                </div>
@@ -432,8 +435,6 @@
 
    </div>
 </div>
-
-{% include 'hover-infobox.html' %}
 
 {%- endif %}
 
