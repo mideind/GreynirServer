@@ -204,9 +204,9 @@ class Meanings:
             Called from the config file handler. """
         assert stofn is not None
         assert ordfl is not None
-        a = stofn.split("-")
-        if len(a) != 2:
-            raise ConfigError("Composite word meaning must contain a single hyphen")
+        # Handle cases like 'Suður-Ameríku-ríki' correctly
+        a = stofn.rsplit("-", maxsplit=1)
+        assert len(a) == 2
         prefix = a[0]
         stem = a[1]
         m = Meanings.forms(stem)
