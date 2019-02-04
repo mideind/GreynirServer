@@ -906,24 +906,24 @@ div.result i.entity {
    font-weight: 700;
 }
 
-div#result i.lönd,
-div#result i.örn,
-div#result i.göt,
-div#result i.borg {
+div.result i.lönd,
+div.result i.örn,
+div.result i.göt,
+div.result i.borg {
    color: #774400 !important;
    font-weight: 700;
 }
 
-div#result i.lönd:hover,
-div#result i.örn:hover,
-div#result i.göt:hover,
-div#result i.borg:hover {
+div.result i.lönd:hover,
+div.result i.örn:hover,
+div.result i.göt:hover,
+div.result i.borg:hover {
    color: white !important;
 }
 
-div#result i.year,
-div#result i.telno,
-div#result i.email {
+div.result i.year,
+div.result i.telno,
+div.result i.email {
    color: #777777;
    font-weight: 700;
 }
