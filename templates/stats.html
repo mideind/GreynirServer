@@ -22,9 +22,12 @@
    <tbody>
 {% for r in result %}
 {% if r.sent %}
-      <tr>
-         <td class="domain"><img src="{{ url_for('static', filename = 'sources/' + r.domain + '.png') }}"
-            width="16" height="16">&nbsp;&nbsp;{{ r.domain }}</td>
+      <tr class="topitem" data-domain="{{ r.domain }}">
+         <td class="domain">
+            <img src="{{ url_for('static', filename = 'sources/' + r.domain + '.png') }}"
+            width="16" height="16">&nbsp;&nbsp;
+            {{ r.domain }}
+         </td>
          <td class="count">{{ r.art | format_is }}</td>
          <td class="count">{{ r.sent | format_is }}</td>
          <td class="count">{{ r.parsed | format_is }}</td>
@@ -64,7 +67,7 @@
    <tbody>
 {% for r in gresult %}
 {% if r.total %}
-      <tr>
+      <tr class="topitem" data-domain="{{ r.domain }}">
          <td class="domain"><img src="{{ url_for('static', filename = 'sources/' + r.domain + '.png') }}"
             width="16" height="16">&nbsp;&nbsp;{{ r.domain }}</td>
          <td class="count female">{{ r.kvk | format_is }}</td>
@@ -178,8 +181,17 @@
    }
 
    function init() {
+
       // Activate the top navbar
       $("#navid-stats").addClass("active");
+      
+      // Enable clicking on source items
+      $("tr.topitem").click(function(ev) {
+         // A source has been clicked: show articles from the source
+         var domain = $(this).attr("data-domain");
+         window.location.href = "{{ url_for('news') }}?root=" + domain;
+      });
+      
       // Set up charts
       initCharts();
    }
