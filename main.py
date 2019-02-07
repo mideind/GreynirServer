@@ -1401,7 +1401,7 @@ def news():
 @max_age(seconds=60)
 def people():
     """ Handler for a page with a list of people recently appearing in news """
-    return render_template("people.html", persons=top_persons())
+    return render_template("people/people-new.html", persons=top_persons())
 
 
 @app.route("/analysis")
