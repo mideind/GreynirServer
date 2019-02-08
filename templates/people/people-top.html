@@ -9,6 +9,33 @@
 
 {% block content %}
 
+<div>
+   <ul class="nav nav-tabs" role="tablist">
+      <li role="presentation">
+         <a href="{{ url_for('people') }}">
+            Nýlegt
+         </a>
+      </li>
+      <li role="presentation" class="active">
+         <a href="{{ url_for('people_top') }}">
+            Topp
+         </a>
+      </li>
+      <li role="presentation">
+         <a href="{{ url_for('people') }}">
+            Vensl
+         </a>
+      </li>
+      <li role="presentation">
+         <a href="{{ url_for('people') }}">
+            Tímalína
+         </a>
+      </li>
+   </ul>
+</div>
+
+<div role="tabpanel" class="tab-pane active">
+
 <!-- List of people in the news goes here -->
 <div class="panel panel-default table-responsive">
 <div class="panel-heading">Fólk í nýlegum fréttum vefmiðla</div>
@@ -21,21 +48,29 @@
    <tbody>
 {% for person in persons %}
       <tr class="topitem" data-uuid="{{ person.uuid }}">
-{% if person.gender == 'kk' %}
+   {% if person.gender == 'kk' %}
          <td class="gender" title="Karl"><span class="glyphicon glyphicon-gender-male"></span></td>
          <td class="name"><span class="text-info">{{ person.name }}</span></td>
-{% elif person.gender == 'kvk' %}
+   {% elif person.gender == 'kvk' %}
          <td class="gender" title="Kona"><span class="glyphicon glyphicon-gender-female"></span></td>
          <td class="name"><span class="text-danger">{{ person.name }}</span></td>
-{% else %}
+   {% else %}
          <td class="gender"></td>
          <td class="name">{{ person.name }}</td>
-{% endif %}
-         <td class="title">{{ person.title }}</td>
+   {% endif %}
+         <td class="articles">
+         {% for a in person.articles %}
+               <span class="art-link" title="{{ a.heading }}"><a href="{{ url_for('page', id=a.id) | safe }}"><img src="{{ url_for('static', filename = 'sources/' + a.domain + '.png') }}"
+            width="16" height="16" alt="{{ a.heading }}"/></a></span>
+         {% endfor %}
+
+         </td>
       </tr>
 {% endfor %}
    </tbody>
 </table>
+</div>
+
 </div>
 
 {% endblock %}
@@ -47,12 +82,6 @@
    function init() {
       // Activate the top navbar
       $("#navid-people").addClass("active");
-      // Enable clicking on a list item
-      $("tr.topitem").click(function(ev) {
-         // A person name has been clicked: show the article where s/he appears
-         var uuid = $(this).attr("data-uuid");
-         window.location.href = "{{ url_for('page') }}?id=" + uuid;
-      });
    }
 
    $(document).ready(init);

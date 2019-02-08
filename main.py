@@ -240,7 +240,7 @@ _DEFAULT_TEXTS = [
 _TOP_NEWS_LENGTH = 20
 
 # Default number of top persons to show in /people
-_TOP_PERSONS_LENGTH = 20
+_TOP_PERSONS_LENGTH = 30
 
 # Default number of top locations to show in /locations
 _TOP_LOCATIONS_LENGTH = 20
@@ -424,6 +424,44 @@ def top_persons(limit=_TOP_PERSONS_LENGTH):
         )
 
 
+def top_people():
+    with SessionContext(read_only=True) as session:
+        q = (
+            session.query(
+                Person.name,
+                Person.gender,
+                Article.id,
+                Article.heading,
+                Article.url,
+                Root.domain,
+            )
+            .join(Article)
+            .join(Root)
+            .filter(Root.visible)
+            .filter(Article.timestamp > datetime.utcnow() - timedelta(days=7))
+            .distinct()
+        )
+
+        persons = defaultdict(list)
+        for r in q.all():
+            article = {
+                "url": r.url,
+                "id": r.id,
+                "heading": r.heading,
+                "domain": r.domain,
+            }
+            k = (r.name, r.gender)
+            persons[k].append(article)
+
+        personlist = []
+        for k, v in persons.items():
+            (name, gender) = k  # Unpack tuple key
+            personlist.append({"name": name, "gender": gender, "articles": v})
+        personlist.sort(key=lambda x: len(x["articles"]), reverse=True)
+
+    return personlist
+
+
 GMAPS_COORD_URL = "https://www.google.com/maps/place/{0}+{1}/@{0},{1},{2}?hl=is"
 GMAPS_PLACE_URL = "https://www.google.com/maps/place/{0}?hl=is"
 
@@ -511,7 +549,7 @@ def chart_stats(session=None, num_days=7):
         "Kvennablaðið": "#900000",
         "Stundin": "#ee4420",
         "Hringbraut": "#44607a",
-        "Fréttablaðið": "#002a61"
+        "Fréttablaðið": "#002a61",
     }
 
     today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
@@ -902,11 +940,9 @@ def query_api(version=1):
         with SessionContext(commit=True) as session:
 
             toklist = tokenize(
-                q, auto_uppercase = q.islower() if auto_uppercase else False
+                q, auto_uppercase=q.islower() if auto_uppercase else False
             )
-            toklist = list(
-                recognize_entities(toklist, enclosing_session=session)
-            )
+            toklist = list(recognize_entities(toklist, enclosing_session=session))
             actual_q = correct_spaces(" ".join(t.txt for t in toklist if t.txt))
 
             if Settings.DEBUG:
@@ -1049,6 +1085,7 @@ def reportimage():
             resp["found_new"] = True
 
     return better_jsonify(**resp)
+
 
 @app.route("/image", methods=["GET"])
 def image():
@@ -1403,6 +1440,12 @@ def people():
     """ Handler for a page with a list of people recently appearing in news """
     return render_template("people/people-new.html", persons=top_persons())
 
+@app.route("/people_top")
+@max_age(seconds=60)
+def people_top():
+    """ Blabla """
+    return render_template("people/people-top.html", persons=top_people())
+
 
 @app.route("/analysis")
 def analysis():
@@ -1449,9 +1492,9 @@ def parsefail():
                     # Tokens
                     for t in s:
                         if "err" in t:
-                            # Only add well-formed sentences that start   
+                            # Only add well-formed sentences that start
                             # with a capital letter and end with a period
-                            if s[0]['x'][0].isupper() and s[-1]['x'] == '.':
+                            if s[0]["x"][0].isupper() and s[-1]["x"] == ".":
                                 sfails.append([s])
                                 break
 
@@ -1566,14 +1609,13 @@ except ConfigError as e:
 if Settings.DEBUG:
     print(
         "\nStarting Reynir at {5} with debug={0}, host={1}:{2}, db_hostname={3}\n"
-        "Python {4}"
-        .format(
+        "Python {4}".format(
             Settings.DEBUG,
             Settings.HOST,
             Settings.PORT,
             Settings.DB_HOSTNAME,
             sys.version,
-            datetime.utcnow()
+            datetime.utcnow(),
         )
     )
 
@@ -1596,18 +1638,11 @@ if __name__ == "__main__":
         "Phrases.conf",
         "Vocab.conf",
         "Names.conf",
-        "ReynirCorrect.conf"
+        "ReynirCorrect.conf",
     ]
 
     dirs = list(
-        map(
-            os.path.dirname,
-            [
-                __file__,
-                reynir.__file__,
-                reynir_correct.__file__
-            ]
-        )
+        map(os.path.dirname, [__file__, reynir.__file__, reynir_correct.__file__])
     )
     for i, fname in enumerate(extra_files):
         # Look for the extra file in the different package directories
@@ -1623,7 +1658,10 @@ if __name__ == "__main__":
     extra_files.append(
         os.path.join(
             os.path.dirname(reynir.__file__),
-            "src", "reynir", "resources", "ord.compressed"
+            "src",
+            "reynir",
+            "resources",
+            "ord.compressed",
         )
     )
 
