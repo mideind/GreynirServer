@@ -263,6 +263,7 @@ def top_news(
     start=None,
     location=None,
     country=None,
+    root=None,
 ):
     """ Return a list of articles (with a particular topic) in
         chronologically reversed order. """
@@ -292,6 +293,10 @@ def top_news(
         # Filter by country code
         if country is not None:
             q = q.join(Location).filter(Location.country == country)
+
+        # Filter by source (root), using domain (e.g. "kjarninn.is")
+        if root is not None:
+            q = q.filter(Root.domain == root)
 
         # Filter by topic identifier
         if topic is not None:
@@ -442,7 +447,7 @@ def top_persons(limit=_TOP_PERSONS_LENGTH, days=_TOP_PERSONS_PERIOD):
             .filter(Root.visible)
             .filter(Article.timestamp > datetime.utcnow() - timedelta(days=days))
             .filter((Word.cat == "person_kk") | (Word.cat == "person_kvk"))
-            .filter(Word.stem.like("% %"))  # Match whitespace. We want at least two names.
+            .filter(Word.stem.like("% %"))  # Match whitespace for least two names.
             .distinct()
         )
 
@@ -454,7 +459,7 @@ def top_persons(limit=_TOP_PERSONS_LENGTH, days=_TOP_PERSONS_PERIOD):
                 "heading": r.heading,
                 "domain": r.domain,
             }
-            gender = r.cat.split("_")[1] # Get gender from _ suffix
+            gender = r.cat.split("_")[1]  # Get gender from _ suffix
             k = (r.stem, gender)
             persons[k].append(article)
 
@@ -462,7 +467,7 @@ def top_persons(limit=_TOP_PERSONS_LENGTH, days=_TOP_PERSONS_PERIOD):
         for k, v in persons.items():
             (name, gender) = k  # Unpack tuple key
             personlist.append({"name": name, "gender": gender, "articles": v})
-        
+
         personlist.sort(key=lambda x: len(x["articles"]), reverse=True)
 
     return personlist[:limit]
@@ -478,7 +483,8 @@ def top_locations(
     days=_TOP_LOCATIONS_PERIOD,
     enclosing_session=None,
 ):
-    """ Return a list of recent locations and the articles in which they are mentioned """
+    """ Return a list of recent locations along with the list of
+        articles in which they are mentioned """
 
     with SessionContext(commit=False, session=enclosing_session) as session:
         q = (
@@ -500,8 +506,8 @@ def top_locations(
         )
 
         # Filter by kind
-        # if kind:
-        #     q = q.filter(Location.kind == kind)
+        if kind:
+            q = q.filter(Location.kind == kind)
 
         q = q.order_by(desc(Article.timestamp))
 
@@ -1202,7 +1208,9 @@ def locations():
     with SessionContext(read_only=True) as session:
         locs = top_locations(enclosing_session=session, kind=kind, days=days)
 
-    return render_template("locations/locations.html", locations=locs, period=period)
+    return render_template(
+        "locations/locations.html", locations=locs, period=period, kind=kind
+    )
 
 
 def icemap_markers(days=_TOP_LOCATIONS_PERIOD):
@@ -1327,26 +1335,6 @@ def locinfo():
     return better_jsonify(**resp)
 
 
-@app.route("/genders", methods=["GET"])
-@max_age(seconds=5 * 60)
-def genders():
-    """ Render a page with gender statistics """
-
-    with SessionContext(commit=True) as session:
-
-        gq = GenderQuery()
-        result = gq.execute(session)
-
-        total = dict(kvk=Decimal(), kk=Decimal(), hk=Decimal(), total=Decimal())
-        for r in result:
-            total["kvk"] += r.kvk
-            total["kk"] += r.kk
-            total["hk"] += r.hk
-            total["total"] += r.kvk + r.kk + r.hk
-
-        return render_template("genders.html", result=result, total=total)
-
-
 @app.route("/stats", methods=["GET"])
 @max_age(seconds=5 * 60)
 def stats():
@@ -1409,6 +1397,8 @@ def apidoc():
 def news():
     """ Handler for a page with a top news list """
     topic = request.args.get("topic")
+    root = request.args.get("root")
+
     try:
         offset = max(0, int(request.args.get("offset", 0)))
         limit = max(0, int(request.args.get("limit", _TOP_NEWS_LENGTH)))
@@ -1417,7 +1407,7 @@ def news():
         limit = _TOP_NEWS_LENGTH
 
     limit = min(limit, 100)  # Cap at max 100 results per page
-    articles = top_news(topic=topic, offset=offset, limit=limit)
+    articles = top_news(topic=topic, offset=offset, limit=limit, root=root)
 
     # If all articles in the list are timestamped within 24 hours of now,
     # we display their times in HH:MM format. Otherwise, we display date.
@@ -1437,6 +1427,7 @@ def news():
         display_time=display_time,
         offset=offset,
         limit=limit,
+        root=root,
     )
 
 
@@ -1448,12 +1439,14 @@ def people_recent():
 
 
 @app.route("/people_top")
-@max_age(seconds=5*60)
+@max_age(seconds=5 * 60)
 def people_top():
     """ Return list of people most frequently mentioned in articles """
     period = request.args.get("period")
     days = 7 if period == "week" else _TOP_LOCATIONS_PERIOD
-    return render_template("people/people-top.html", persons=top_persons(days=days), period=period)
+    return render_template(
+        "people/people-top.html", persons=top_persons(days=days), period=period
+    )
 
 
 @app.route("/analysis")
