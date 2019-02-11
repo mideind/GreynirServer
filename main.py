@@ -1627,6 +1627,9 @@ if Settings.DEBUG:
             datetime.utcnow(),
         )
     )
+    # Clobber Settings.DEBUG in ReynirPackage and ReynirCorrect
+    reynir.Settings.DEBUG = True
+    reynir_correct.Settings.DEBUG = True
 
 if __name__ == "__main__":
 
