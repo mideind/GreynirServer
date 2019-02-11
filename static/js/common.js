@@ -124,7 +124,6 @@ var wordClass = {
    "entity" : "sérnafn",
    "gata" : "götuheiti",
    "fyrirtæki" : "fyrirtæki",
-   "entity" : "sérnafn"
 };
 
 var variantDesc = [

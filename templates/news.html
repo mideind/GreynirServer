@@ -27,7 +27,9 @@
 <div class="panel panel-default table-responsive">
 <div class="panel-heading">
    <!-- Show full heading or shorter one depending on viewport width -->
-   <div class="headline hidden-xs">Nýjustu fréttir af helstu vefmiðlum</div>
+   <div class="headline hidden-xs">
+      Nýjustu fréttir {{ 'á ' + root if root else 'af helstu vefmiðlum' }}
+   </div>
    <div class="headline visible-xs-inline-block">Nýjustu fréttir</div>
    <div class="btn-group pull-right">
       <button class="btn {{ labelmap.get(topics.id, 'btn-default') }} dropdown-toggle"
@@ -38,7 +40,7 @@
          <li><a href="{{ url_for('news') }}">Allir efnisflokkar</a></li>
          <li role="separator" class="divider"></li>
 {% for t in topics.topic_list %}
-         <li><a href="{{ url_for('news', topic=t[0]) | safe }}">{{ t[1] }}</a></li>
+         <li><a href="{{ url_for('news', topic=t[0], root=root) | safe }}">{{ t[1] }}</a></li>
 {% endfor %}
       </ul>
    </div>
@@ -80,17 +82,17 @@
       // Activate the top navbar
       $("#navid-news").addClass("active");
 
-{% if articles and offset != 0  %}
+{% if articles and offset != 0 %}
       $("#prev-page").click(function(ev) {
          // Go to the previous page
-         window.location.href = "{{ url_for('news', topic = topics.id, offset = offset-limit) | safe }}";
+         window.location.href = "{{ url_for('news', topic=topics.id, root=root, offset=offset-limit) | safe }}";
       });
 {% endif %}
 
-{% if articles and articles|length == limit  %}
+{% if articles and articles|length == limit %}
       $("#next-page").click(function(ev) {
          // Go to the next page
-         window.location.href = "{{ url_for('news', topic = topics.id, offset = offset+limit) | safe }}";
+         window.location.href = "{{ url_for('news', topic=topics.id, root=root, offset=offset+limit) | safe }}";
       });
 {% endif %}
    }
