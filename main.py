@@ -245,8 +245,8 @@ _TOP_PERSONS_LENGTH = 20
 _TOP_PERSONS_PERIOD = 1  # in days
 
 # Default number of top locations to show in /locations
-_TOP_LOCATIONS_LENGTH = 20
-_TOP_LOCATIONS_PERIOD = 1  # in days
+_TOP_LOC_LENGTH = 20
+_TOP_LOC_PERIOD = 1  # in days
 
 # Maximum length of incoming GET/POST parameters
 _MAX_URL_LENGTH = 512
@@ -379,7 +379,7 @@ def recent_persons(limit=_TOP_PERSONS_LENGTH):
     toplist = dict()
     MAX_TITLE_LENGTH = 64
 
-    with SessionContext(commit=True) as session:
+    with SessionContext(read_only=True) as session:
 
         q = (
             session.query(Person.name, Person.title, Person.article_url, Article.id)
@@ -477,16 +477,11 @@ GMAPS_COORD_URL = "https://www.google.com/maps/place/{0}+{1}/@{0},{1},{2}?hl=is"
 GMAPS_PLACE_URL = "https://www.google.com/maps/place/{0}?hl=is"
 
 
-def top_locations(
-    limit=_TOP_LOCATIONS_LENGTH,
-    kind=None,
-    days=_TOP_LOCATIONS_PERIOD,
-    enclosing_session=None,
-):
+def top_locations(limit=_TOP_LOC_LENGTH, kind=None, days=_TOP_LOC_PERIOD):
     """ Return a list of recent locations along with the list of
         articles in which they are mentioned """
 
-    with SessionContext(commit=False, session=enclosing_session) as session:
+    with SessionContext(read_only=True) as session:
         q = (
             session.query(
                 Location.name,
@@ -1203,17 +1198,16 @@ def locations():
     kind = kind if kind in LOCATION_TAXONOMY else None
 
     period = request.args.get("period")
-    days = 7 if period == "week" else _TOP_LOCATIONS_PERIOD
+    days = 7 if period == "week" else _TOP_LOC_PERIOD
 
-    with SessionContext(read_only=True) as session:
-        locs = top_locations(enclosing_session=session, kind=kind, days=days)
+    locs = top_locations(kind=kind, days=days)
 
     return render_template(
         "locations/locations.html", locations=locs, period=period, kind=kind
     )
 
 
-def icemap_markers(days=_TOP_LOCATIONS_PERIOD):
+def icemap_markers(days=_TOP_LOC_PERIOD):
     """ Return a list of recent Icelandic locations and their coordinates """
     with SessionContext(read_only=True) as session:
         q = (
@@ -1241,7 +1235,7 @@ def icemap_markers(days=_TOP_LOCATIONS_PERIOD):
 def locations_icemap():
     """ Render Icelandic map locations page """
     period = request.args.get("period")
-    days = 7 if period == "week" else _TOP_LOCATIONS_PERIOD
+    days = 7 if period == "week" else _TOP_LOC_PERIOD
 
     markers = icemap_markers(days=days)
     return render_template(
@@ -1249,7 +1243,7 @@ def locations_icemap():
     )
 
 
-def world_map_data(days=_TOP_LOCATIONS_PERIOD):
+def world_map_data(days=_TOP_LOC_PERIOD):
     """ Return data for world map. List of country iso codes with article count """
     with SessionContext(read_only=True) as session:
         q = (
@@ -1273,7 +1267,7 @@ def world_map_data(days=_TOP_LOCATIONS_PERIOD):
 def locations_worldmap():
     """ Render world map locations page """
     period = request.args.get("period")
-    days = 7 if period == "week" else _TOP_LOCATIONS_PERIOD
+    days = 7 if period == "week" else _TOP_LOC_PERIOD
 
     d = world_map_data(days=days)
     n = dict(countries_for_language("is"))
@@ -1335,10 +1329,19 @@ def locinfo():
     return better_jsonify(**resp)
 
 
+DEFAULT_STATS_PERIOD = 10  # days
+MAX_STATS_PERIOD = 30
+
+
 @app.route("/stats", methods=["GET"])
 @max_age(seconds=5 * 60)
 def stats():
     """ Render a page with article statistics """
+    days = DEFAULT_STATS_PERIOD
+    try:
+        days = min(MAX_STATS_PERIOD, int(request.args.get("days")))
+    except:
+        pass
 
     with SessionContext(read_only=True) as session:
 
@@ -1351,7 +1354,7 @@ def stats():
             total["sent"] += r.sent
             total["parsed"] += r.parsed
 
-        chart_data = chart_stats(session=session, num_days=10)
+        chart_data = chart_stats(session=session, num_days=days)
 
         gq = GenderQuery()
         gresult = gq.execute(session)
@@ -1416,7 +1419,7 @@ def news():
         display_time = False
 
     # Fetch the topics
-    with SessionContext(commit=True) as session:
+    with SessionContext(read_only=True) as session:
         q = session.query(Topic.identifier, Topic.name).order_by(Topic.name).all()
         d = {t[0]: t[1] for t in q}
         topics = dict(id=topic, name=d.get(topic, ""), topic_list=q)
@@ -1434,16 +1437,16 @@ def news():
 @app.route("/people")
 @max_age(seconds=60)
 def people_recent():
-    """ Handler for a page with a list of people recently appearing in news """
+    """ Handler for a page with a list of people recently appearing in articles """
     return render_template("people/people-recent.html", persons=recent_persons())
 
 
 @app.route("/people_top")
 @max_age(seconds=5 * 60)
 def people_top():
-    """ Return list of people most frequently mentioned in articles """
+    """ Return list of people most frequently mentioned in recent articles """
     period = request.args.get("period")
-    days = 7 if period == "week" else _TOP_LOCATIONS_PERIOD
+    days = 7 if period == "week" else _TOP_LOC_PERIOD
     return render_template(
         "people/people-top.html", persons=top_persons(days=days), period=period
     )
