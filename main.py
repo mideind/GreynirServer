@@ -369,7 +369,7 @@ def top_news(
     return toplist
 
 
-def top_persons(limit=_TOP_PERSONS_LENGTH):
+def recent_persons(limit=_TOP_PERSONS_LENGTH):
     """ Return a list of names and titles appearing recently in the news """
     toplist = dict()
     MAX_TITLE_LENGTH = 64
@@ -426,7 +426,7 @@ def top_persons(limit=_TOP_PERSONS_LENGTH):
         )
 
 
-def top_people(limit=_TOP_PERSONS_LENGTH, days=_TOP_PERSONS_PERIOD):
+def top_persons(limit=_TOP_PERSONS_LENGTH, days=_TOP_PERSONS_PERIOD):
     with SessionContext(read_only=True) as session:
         q = (
             session.query(
@@ -442,7 +442,7 @@ def top_people(limit=_TOP_PERSONS_LENGTH, days=_TOP_PERSONS_PERIOD):
             .filter(Root.visible)
             .filter(Article.timestamp > datetime.utcnow() - timedelta(days=days))
             .filter((Word.cat == "person_kk") | (Word.cat == "person_kvk"))
-            .filter(Word.stem.like("% %"))  # Match space. We want at least two names.
+            .filter(Word.stem.like("% %"))  # Match whitespace. We want at least two names.
             .distinct()
         )
 
@@ -1442,9 +1442,9 @@ def news():
 
 @app.route("/people")
 @max_age(seconds=60)
-def people():
+def people_recent():
     """ Handler for a page with a list of people recently appearing in news """
-    return render_template("people/people-new.html", persons=top_persons())
+    return render_template("people/people-recent.html", persons=recent_persons())
 
 
 @app.route("/people_top")
@@ -1453,7 +1453,7 @@ def people_top():
     """ Return list of people most frequently mentioned in articles """
     period = request.args.get("period")
     days = 7 if period == "week" else _TOP_LOCATIONS_PERIOD
-    return render_template("people/people-top.html", persons=top_people(days=days), period=period)
+    return render_template("people/people-top.html", persons=top_persons(days=days), period=period)
 
 
 @app.route("/analysis")

@@ -11,14 +11,14 @@
 
 <div>
    <ul class="nav nav-tabs" role="tablist">
+      <li role="presentation">
+         <a href="{{ url_for('people_recent') }}">
+            Nýlegt
+         </a>
+      </li>
       <li role="presentation" class="active">
          <a href="{{ url_for('people_top') }}">
             Mest
-         </a>
-      </li>
-      <li role="presentation">
-         <a href="{{ url_for('people') }}">
-            Nýlegt
          </a>
       </li>
       <!--<li role="presentation">
@@ -65,27 +65,38 @@
    <thead>
       <th class="gender">Kyn</th>
       <th>Nafn</th>
-      <th>Titill</th>
+      <th>Greinar</th>
    </thead>
    <tbody>
 {% for person in persons %}
       <tr class="topitem" data-uuid="{{ person.uuid }}">
-   {% if person.gender == 'kk' %}
-         <td class="gender" title="Karl"><span class="glyphicon glyphicon-gender-male"></span></td>
-         <td class="name"><span class="text-info">{{ person.name }}</span></td>
-   {% elif person.gender == 'kvk' %}
-         <td class="gender" title="Kona"><span class="glyphicon glyphicon-gender-female"></span></td>
-         <td class="name"><span class="text-danger">{{ person.name }}</span></td>
-   {% else %}
-         <td class="gender"></td>
-         <td class="name">{{ person.name }}</td>
-   {% endif %}
+         {% if person.gender == 'kk' %}
+            {% set name_class = "text-info" %}
+            {% set desc_text = "Karl" %}
+            {% set icon_class = "glyphicon-gender-male" %}
+         {% elif person.gender == 'kvk' %}
+            {% set name_class = "text-danger" %}
+            {% set desc_text = "Kona" %}
+            {% set icon_class = "glyphicon-gender-female" %}
+         {% else %}
+            {% set name_class = "" %}
+            {% set desc_text = "Kyn óþekkt" %}
+            {% set icon_class = "" %}
+         {% endif %}
+
+         <td class="gender" title="{{ desc_text }}">
+            <span class="glyphicon {{ icon_class }}"></span>
+         </td>
+         <td class="name">
+            <span class="{{ name_class }}">{{ person.name }}</span>
+         </td>
+
          <td class="articles">
          {% set width = (person.articles|length / persons[0].articles|length) * 100 %}
-            <div class="progress progress-bar loc-progressbar" style="width:{{ width | round | int }}%;">
+            <div class="progress progress-bar rank-progressbar" style="width:{{ width | round | int }}%;">
                <span>{{ person.articles|length }}</span>
             </div>
-            <div class="personarticle-items">
+            <div class="rank-article-items">
                {% for a in person.articles %}
                <span class="art-link" title="{{ a.heading }}"><a href="{{ url_for('page', id=a.id) | safe }}"><img src="{{ url_for('static', filename = 'sources/' + a.domain + '.png') }}"
             width="16" height="16" alt="{{ a.heading }}"/></a></span>
@@ -112,7 +123,7 @@
 
       // Toggle showing articles associated with person name
       $("#plist > tbody > tr.topitem").click(function(evt) {
-         $(this).find(".personarticle-items").slideToggle(150);
+         $(this).find(".rank-article-items").slideToggle(150);
          evt.stopPropagation();
       });
    }

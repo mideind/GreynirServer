@@ -1455,19 +1455,19 @@ div#canvas svg {
                                   supported by Chrome and Opera */
 }
 
-/* Locations page */
+/* Top People and Locations ranking */
 
-div.loc-progressbar {
+div.rank-progressbar {
    margin-bottom: 0;
    text-align: left;
    float:none;
 }
 
-div.loc-progressbar > span {
+div.rank-progressbar > span {
    margin-left: 10px;
 }
 
-div.locarticle-items, div.personarticle-items {
+div.rank-article-items {
    display: none;
    margin-top: 10px;
 }
