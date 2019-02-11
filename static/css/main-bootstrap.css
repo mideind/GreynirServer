@@ -242,7 +242,8 @@ div.tab-pane {
 }
 
 div.text-container {
-   padding-top: 80px;
+   padding-top: 70px;
+   padding-bottom: 50px;
    font-size: 1.15em;
 }
 
@@ -269,15 +270,14 @@ div#stats-panel {
       /* Dropdown menu items */
       padding-left: 22px;
    }
-
+   
 }
 
 @media(max-width: 992px) {
 
    div.container.text-container {
-      padding-top: 120px; /* Make more room for the top navbar */
+      /*padding-top: 100px;*/ /* Make more room for the top navbar */
    }
-
 }
 
 @media(max-width: 768px) {
@@ -446,12 +446,12 @@ td.ts {
    min-width: 100px;
 }
 
-td.flags {
+td.flags, td.gender {
    width: 2.5em;
 }
 
-td.locname {
-   width: 200px;
+td.locname, #plist td.name {
+   width: 260px;
    font-weight: 700;
 
 }
@@ -1443,6 +1443,33 @@ div#canvas svg {
 .autocomplete-suggestions strong {
    /*font-weight: normal; */
    color: #2aabd2;
+}
+
+.noselect {
+  -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+     -khtml-user-select: none; /* Konqueror HTML */
+       -moz-user-select: none; /* Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome and Opera */
+}
+
+/* Locations page */
+
+div.loc-progressbar {
+   margin-bottom: 0;
+   text-align: left;
+   float:none;
+}
+
+div.loc-progressbar > span {
+   margin-left: 10px;
+}
+
+div.locarticle-items, div.personarticle-items {
+   display: none;
+   margin-top: 10px;
 }
 
 /* Location maps */

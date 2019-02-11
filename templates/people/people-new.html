@@ -11,34 +11,38 @@
 
 <div>
    <ul class="nav nav-tabs" role="tablist">
+      <li role="presentation">
+         <a href="{{ url_for('people_top') }}">
+            Mest
+         </a>
+      </li>
       <li role="presentation" class="active">
          <a href="{{ url_for('people') }}">
             Nýlegt
          </a>
       </li>
-      <li role="presentation">
-         <a href="{{ url_for('people_top') }}">
-            Topp
-         </a>
-      </li>
-      <li role="presentation">
-         <a href="{{ url_for('people') }}">
+      <!--<li role="presentation">
+         <a href="">
             Vensl
          </a>
       </li>
       <li role="presentation">
-         <a href="{{ url_for('people') }}">
+         <a href="">
             Tímalína
          </a>
-      </li>
+      </li>-->
    </ul>
 </div>
-
 <!-- List of people in the news goes here -->
 <div role="tabpanel" class="tab-pane active">
 
    <div class="panel panel-default table-responsive">
-   <div class="panel-heading">Fólk í nýlegum fréttum vefmiðla</div>
+   <div class="panel-heading">
+      <div class="headline hidden-xs">Fólk í nýlegum fréttum vefmiðla</div>
+      <div class="headline visible-xs-inline-block">Nýlega</div>
+   </div>
+
+
    <table class="table table-hover" id="plist">
       <thead>
          <th class="gender">Kyn</th>

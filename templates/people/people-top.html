@@ -11,26 +11,26 @@
 
 <div>
    <ul class="nav nav-tabs" role="tablist">
+      <li role="presentation" class="active">
+         <a href="{{ url_for('people_top') }}">
+            Mest
+         </a>
+      </li>
       <li role="presentation">
          <a href="{{ url_for('people') }}">
             Nýlegt
          </a>
       </li>
-      <li role="presentation" class="active">
-         <a href="{{ url_for('people_top') }}">
-            Topp
-         </a>
-      </li>
-      <li role="presentation">
-         <a href="{{ url_for('people') }}">
+      <!--<li role="presentation">
+         <a href="">
             Vensl
          </a>
       </li>
       <li role="presentation">
-         <a href="{{ url_for('people') }}">
+         <a href="">
             Tímalína
          </a>
-      </li>
+      </li>-->
    </ul>
 </div>
 
@@ -38,7 +38,29 @@
 
 <!-- List of people in the news goes here -->
 <div class="panel panel-default table-responsive">
-<div class="panel-heading">Fólk í nýlegum fréttum vefmiðla</div>
+<div class="panel-heading">
+   <div class="headline hidden-xs">Fólk sem er mest í fréttum vefmiðla</div>
+   <div class="headline visible-xs-inline-block">Fólk</div>
+
+   <div class="btn-group pull-right">
+      
+      <!-- Period Popup Button -->
+      <span class="hidden-xs">
+         <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            {{ "Undanfarna viku" if period == 'week' else "Síðasta sólarhring" }} 
+            <span class="caret"></span>
+         </button>
+
+         <ul class="dropdown-menu">
+            <li><a href="{{ url_for('people_top') | safe }}">Síðasta sólarhring</a></li>
+            <li><a href="{{ url_for('people_top', period='week') | safe }}">Undanfarna viku</a></li>
+         </ul>
+      </span>
+
+   </div>
+
+
+</div>
 <table class="table table-hover" id="plist">
    <thead>
       <th class="gender">Kyn</th>
@@ -59,11 +81,16 @@
          <td class="name">{{ person.name }}</td>
    {% endif %}
          <td class="articles">
-         {% for a in person.articles %}
+         {% set width = (person.articles|length / persons[0].articles|length) * 100 %}
+            <div class="progress progress-bar loc-progressbar" style="width:{{ width | round | int }}%;">
+               <span>{{ person.articles|length }}</span>
+            </div>
+            <div class="personarticle-items">
+               {% for a in person.articles %}
                <span class="art-link" title="{{ a.heading }}"><a href="{{ url_for('page', id=a.id) | safe }}"><img src="{{ url_for('static', filename = 'sources/' + a.domain + '.png') }}"
             width="16" height="16" alt="{{ a.heading }}"/></a></span>
-         {% endfor %}
-
+               {% endfor %}
+            </div>
          </td>
       </tr>
 {% endfor %}
@@ -82,6 +109,12 @@
    function init() {
       // Activate the top navbar
       $("#navid-people").addClass("active");
+
+      // Toggle showing articles associated with person name
+      $("#plist > tbody > tr.topitem").click(function(evt) {
+         $(this).find(".personarticle-items").slideToggle(150);
+         evt.stopPropagation();
+      });
    }
 
    $(document).ready(init);

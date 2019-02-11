@@ -81,6 +81,7 @@ from scraperdb import (
     Topic,
     Entity,
     Location,
+    Word,
     GenderQuery,
     StatsQuery,
     ChartsQuery,
@@ -240,7 +241,8 @@ _DEFAULT_TEXTS = [
 _TOP_NEWS_LENGTH = 20
 
 # Default number of top persons to show in /people
-_TOP_PERSONS_LENGTH = 30
+_TOP_PERSONS_LENGTH = 20
+_TOP_PERSONS_PERIOD = 1  # in days
 
 # Default number of top locations to show in /locations
 _TOP_LOCATIONS_LENGTH = 20
@@ -424,12 +426,12 @@ def top_persons(limit=_TOP_PERSONS_LENGTH):
         )
 
 
-def top_people():
+def top_people(limit=_TOP_PERSONS_LENGTH, days=_TOP_PERSONS_PERIOD):
     with SessionContext(read_only=True) as session:
         q = (
             session.query(
-                Person.name,
-                Person.gender,
+                Word.stem,
+                Word.cat,
                 Article.id,
                 Article.heading,
                 Article.url,
@@ -438,7 +440,9 @@ def top_people():
             .join(Article)
             .join(Root)
             .filter(Root.visible)
-            .filter(Article.timestamp > datetime.utcnow() - timedelta(days=7))
+            .filter(Article.timestamp > datetime.utcnow() - timedelta(days=days))
+            .filter((Word.cat == "person_kk") | (Word.cat == "person_kvk"))
+            .filter(Word.stem.like("% %"))  # Match space. We want at least two names.
             .distinct()
         )
 
@@ -450,16 +454,18 @@ def top_people():
                 "heading": r.heading,
                 "domain": r.domain,
             }
-            k = (r.name, r.gender)
+            gender = r.cat.split("_")[1] # Get gender from _ suffix
+            k = (r.stem, gender)
             persons[k].append(article)
 
         personlist = []
         for k, v in persons.items():
             (name, gender) = k  # Unpack tuple key
             personlist.append({"name": name, "gender": gender, "articles": v})
+        
         personlist.sort(key=lambda x: len(x["articles"]), reverse=True)
 
-    return personlist
+    return personlist[:limit]
 
 
 GMAPS_COORD_URL = "https://www.google.com/maps/place/{0}+{1}/@{0},{1},{2}?hl=is"
@@ -1440,11 +1446,14 @@ def people():
     """ Handler for a page with a list of people recently appearing in news """
     return render_template("people/people-new.html", persons=top_persons())
 
+
 @app.route("/people_top")
-@max_age(seconds=60)
+@max_age(seconds=5*60)
 def people_top():
-    """ Blabla """
-    return render_template("people/people-top.html", persons=top_people())
+    """ Return list of people most frequently mentioned in articles """
+    period = request.args.get("period")
+    days = 7 if period == "week" else _TOP_LOCATIONS_PERIOD
+    return render_template("people/people-top.html", persons=top_people(days=days), period=period)
 
 
 @app.route("/analysis")
