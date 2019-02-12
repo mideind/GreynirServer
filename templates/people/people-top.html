@@ -39,7 +39,7 @@
 <!-- List of people in the news goes here -->
 <div class="panel panel-default table-responsive">
 <div class="panel-heading">
-   <div class="headline hidden-xs">Fólk sem er mest í fréttum vefmiðla</div>
+   <div class="headline hidden-xs">Fólk sem kemur oftast fyrir í fréttum vefmiðla</div>
    <div class="headline visible-xs-inline-block">Fólk</div>
 
    <div class="btn-group pull-right">
@@ -91,15 +91,14 @@
             <span class="{{ name_class }}">{{ person.name }}</span>
          </td>
 
-         <td class="articles">
+         <td class="noselect">
          {% set width = (person.articles|length / persons[0].articles|length) * 100 %}
             <div class="progress progress-bar rank-progressbar" style="width:{{ width | round | int }}%;">
                <span>{{ person.articles|length }}</span>
             </div>
             <div class="rank-article-items">
                {% for a in person.articles %}
-               <span class="art-link" title="{{ a.heading }}"><a href="{{ url_for('page', id=a.id) | safe }}"><img src="{{ url_for('static', filename = 'sources/' + a.domain + '.png') }}"
-            width="16" height="16" alt="{{ a.heading }}"/></a></span>
+               <span class="art-link"><a href="{{ url_for('page', id=a.id) | safe }}" onclick="event.stopPropagation();"  data-toggle="tooltip" data-placement="bottom" title="{{ a.heading }}"><img src="{{ url_for('static', filename = 'sources/' + a.domain + '.png') }}" width="16" height="16" alt="{{ a.heading }}"/></a></span>
                {% endfor %}
             </div>
          </td>
@@ -126,6 +125,9 @@
          $(this).find(".rank-article-items").slideToggle(150);
          evt.stopPropagation();
       });
+
+      // Activate bootstrap tooltips for article icons
+      $('[data-toggle="tooltip"]').tooltip({ 'animation': false });
    }
 
    $(document).ready(init);

@@ -100,14 +100,14 @@
                   {{ loc.name }}
                {% endif %}
             </td>
-            <td class="locarticles noselect">
+            <td class="noselect">
                {% set width = (loc.articles|length / locations[0].articles|length) * 100 %}
                <div class="progress progress-bar rank-progressbar" style="width:{{ width | round | int }}%;">
                   <span>{{ loc.articles|length }}</span>
                </div>
                <div class="rank-article-items">
                   {% for a in loc.articles %}
-                     <span class="art-link"><a href="{{ url_for('page', id=a.id) | safe }}" onClick="event.stopPropagation();" data-toggle="tooltip" data-placement="bottom" title="{{ a.heading }}"><img src="{{ url_for('static', filename = 'sources/' + a.domain + '.png') }}" width="16" height="16"/></a></span>
+                     <span class="art-link"><a href="{{ url_for('page', id=a.id) | safe }}" onClick="event.stopPropagation();" data-toggle="tooltip" data-placement="bottom" title="{{ a.heading }}"><img src="{{ url_for('static', filename = 'sources/' + a.domain + '.png') }}" width="16" height="16" alt="{{ a.heading }}"/></a></span>
                   {% endfor %}
                </div>
             </td>
@@ -145,7 +145,7 @@
       });
 
       // Activate bootstrap tooltips for article icons
-      $('[data-toggle="tooltip"]').tooltip();
+      $('[data-toggle="tooltip"]').tooltip({ 'animation': false });
    });
 
 </script>

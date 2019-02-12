@@ -1174,7 +1174,7 @@ tfoot tr td {
 }
 
 table.table thead th {
-   padding-top: 18px;
+   padding-top: 8px;
    padding-bottom: 8px;
 }
 
@@ -1445,14 +1445,26 @@ div#canvas svg {
    color: #2aabd2;
 }
 
+/* Disable text selection in element */
+
 .noselect {
-  -webkit-touch-callout: none; /* iOS Safari */
-    -webkit-user-select: none; /* Safari */
-     -khtml-user-select: none; /* Konqueror HTML */
-       -moz-user-select: none; /* Firefox */
-        -ms-user-select: none; /* Internet Explorer/Edge */
-            user-select: none; /* Non-prefixed version, currently
-                                  supported by Chrome and Opera */
+  -webkit-touch-callout: none;
+    -webkit-user-select: none;
+     -khtml-user-select: none;
+       -moz-user-select: none;
+        -ms-user-select: none;
+            user-select: none;       
+}
+
+/* Styling for bootstrap tooltips */ 
+
+.tooltip .tooltip-inner {
+   font-size: 1.2em;
+}
+
+.tooltip.in {
+  opacity: 1;
+  filter: alpha(opacity=100);
 }
 
 /* Top People and Locations ranking */
@@ -1460,11 +1472,11 @@ div#canvas svg {
 div.rank-progressbar {
    margin-bottom: 0;
    text-align: left;
-   float:none;
+   float: none;
 }
 
 div.rank-progressbar > span {
-   margin-left: 10px;
+   margin-left: 6px;
 }
 
 div.rank-article-items {
