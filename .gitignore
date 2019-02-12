@@ -112,10 +112,7 @@ console/
 
 # Virtual environments
 venv/
-p35/
-p358/
-p359/
-p3510/
+p35*/
 
 # Installer logs
 pip-log.txt
