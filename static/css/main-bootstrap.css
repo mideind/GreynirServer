@@ -270,7 +270,7 @@ div#stats-panel {
       /* Dropdown menu items */
       padding-left: 22px;
    }
-   
+
 }
 
 @media(max-width: 992px) {
@@ -1482,6 +1482,10 @@ div.rank-progressbar > span {
 div.rank-article-items {
    display: none;
    margin-top: 10px;
+}
+
+div.minheight {
+   min-height: 300px;
 }
 
 /* Location maps */

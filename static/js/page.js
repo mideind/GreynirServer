@@ -122,13 +122,10 @@ function queryLocation(name) {
 function showParse(ev) {
    // A sentence has been clicked: show its parse grid
    var sentText = $(ev.delegateTarget).text();
-   var url = "/treegrid?txt=" + encodeURIComponent(sentText);
-   if (ev.altKey || ev.metaKey) {
-      // Open in new tab/window
-      window.open(url);
-   } else {
-      window.location.href = url;
-   }
+   // Do an HTML POST to the parsegrid URL, passing
+   // the sentence text within a synthetic form
+   // serverPost("/parsegrid", { txt: sentText, debug: debugMode() }, false)
+   window.location.href = "/treegrid?txt=" + encodeURIComponent(sentText);
 }
 
 function showPerson(ev) {

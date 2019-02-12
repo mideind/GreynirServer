@@ -265,8 +265,8 @@ def top_news(
     country=None,
     root=None,
 ):
-    """ Return a list of articles (with a particular topic) in
-        chronologically reversed order. """
+    """ Return a list of articles in chronologically reversed order. 
+        Articles can be filtered by start, location, country, root etc. """
     toplist = []
 
     with SessionContext(read_only=True) as session:
@@ -294,7 +294,7 @@ def top_news(
         if country is not None:
             q = q.join(Location).filter(Location.country == country)
 
-        # Filter by source (root), using domain (e.g. "kjarninn.is")
+        # Filter by source (root) using domain (e.g. "kjarninn.is")
         if root is not None:
             q = q.filter(Root.domain == root)
 
@@ -1336,7 +1336,7 @@ MAX_STATS_PERIOD = 30
 @app.route("/stats", methods=["GET"])
 @max_age(seconds=10 * 60)
 def stats():
-    """ Render a page with article statistics """
+    """ Render a page with various statistics """
     days = DEFAULT_STATS_PERIOD
     try:
         days = min(MAX_STATS_PERIOD, int(request.args.get("days")))
@@ -1398,7 +1398,7 @@ def apidoc():
 @app.route("/news")
 @max_age(seconds=60)
 def news():
-    """ Handler for a page with a top news list """
+    """ Handler for a page with a list of articles """
     topic = request.args.get("topic")
     root = request.args.get("root")
 
@@ -1423,6 +1423,7 @@ def news():
         q = session.query(Topic.identifier, Topic.name).order_by(Topic.name).all()
         d = {t[0]: t[1] for t in q}
         topics = dict(id=topic, name=d.get(topic, ""), topic_list=q)
+
     return render_template(
         "news.html",
         articles=articles,
@@ -1435,7 +1436,7 @@ def news():
 
 
 @app.route("/people")
-@max_age(seconds=60)
+@max_age(seconds=5 * 60)
 def people_recent():
     """ Handler for a page with a list of people recently appearing in articles """
     return render_template("people/people-recent.html", persons=recent_persons())

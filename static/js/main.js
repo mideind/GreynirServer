@@ -393,13 +393,13 @@ function populateQueryResult(r) {
                var artList = li.append($("<span class='art-list'></span>")).children().last();
                for (var i = 0; i < urlList.length; i++) {
                   var u = urlList[i];
-                  var img = $("<img width='16' height='16'></img>").attr("src", "/static/sources/" + u.domain + ".png");
+                  var img = $("<img width='16' height='16'></img>")
+                     .attr("src", "/static/sources/" + u.domain + ".png");
                   var art_link = $("<span class='art-link'></span>")
                      .attr("title", u.heading)
                      .attr("data-uuid", u.uuid)
                      .attr("data-toggle", "tooltip")
                      .html(img);
-
                   artList.append(art_link);
                }
             }

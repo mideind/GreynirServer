@@ -113,9 +113,9 @@ INVALID_TITLES = {
     "sig", "væri", "orðið", "ávísun", "hér heima", "lán", "úr láni", "bar", "ver",
     "bætir", "býr", "get", "vera", "eiga", "var", "búa", "setur", "heggur", "átt",
     "keppa", "rétt", "ráðning", "sætti", "hlaut", "mynd", "myndband", "já", "nei",
-    "segi", "sem", "hjónin", "verið", "lið", "munur", "selur", "verður", "gerði", 
-    "boðið", "leikur", "staðfesti", "veit", "hafi", "kona", "konan", "maður",
-    "maðurinn", "slysið", "met", "frest", "sent",
+    "segi", "sem", "hjónin", "verið", "lið", "munur", "verður", "gerði", "boðið", 
+    "leikur", "staðfesti", "veit", "hafi", "kona", "konan", "maður", "maðurinn", 
+    "slysið", "met", "frest", "sent",
 }
 
 # Phrases to cut off the ends of titles

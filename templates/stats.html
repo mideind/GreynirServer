@@ -178,6 +178,7 @@
             }
          }
       });
+      
    }
 
    function init() {
@@ -187,7 +188,7 @@
       
       // Enable clicking on source items
       $("tr.topitem").click(function(ev) {
-         // A source has been clicked: show articles from the source
+         // A source has been clicked. Show articles from source.
          var domain = $(this).attr("data-domain");
          window.location.href = "{{ url_for('news') }}?root=" + domain;
       });
