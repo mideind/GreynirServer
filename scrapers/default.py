@@ -1259,18 +1259,29 @@ class FrettabladidScraper(ScrapeHelper):
         "/timamot/",
     ]
 
+    _BANNED_PREFIXES = [
+        "/sport/i-beinni-",
+    ]
+
     def __init__(self, root):
         super().__init__(root)
 
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
         s = urlparse.urlsplit(url)
-
-        # Skip live sport events
-        if s.path and s.path.startswith("/sport/i-beinni-"):
+        if not s.path:
             return True
 
-        # Only accept URLs starting with allowed prefix
+        # Skip live sport events
+        if any(s.path.startswith(p) for p in self._BANNED_PREFIXES):
+            return True
+
+        # Skip photos-only articles
+        comp = s.path.split('/')
+        if comp[-1].startswith('myndasyrpa-'):
+            return True
+
+        # Accept any URLs starting with allowed prefixes
         if s.path and any(
             s.path.startswith(prefix) for prefix in self._ALLOWED_PREFIXES
         ):
