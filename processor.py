@@ -33,8 +33,10 @@
 
 import getopt
 import importlib
+import json
 import sys
 import time
+import os
 
 # from multiprocessing.dummy import Pool
 from multiprocessing import Pool
@@ -49,8 +51,86 @@ from tree import Tree
 _PROFILING = False
 
 
-class Processor:
+class TokenContainer: # Better name wanted. Open to suggestions.
+    """ Class wrapper around tokens """
+    def __init__(self, tokens_json, url=None):
+        self.url = url
+        self.tokens = json.loads(tokens_json)
 
+    def process(self, session, processor, **kwargs):
+        """ Process tokens for an entire article """
+        
+        # Iterate over each paragraph, sentence and token
+        # Initialize state that we keep for the duration
+
+        assert processor is not None
+
+        article_begin = getattr(processor, "article_begin", None)
+        article_end = getattr(processor, "article_end", None)
+        paragraph_begin = getattr(processor, "paragraph_begin", None)
+        paragraph_end = getattr(processor, "paragraph_end", None)
+        sentence_begin = getattr(processor, "sentence_begin", None)
+        sentence_end = getattr(processor, "sentence_end", None)
+        token_func = getattr(processor, "token", None)
+
+        # Make sure processor implements at least one of these methods
+        if not any(
+            (
+                article_begin,
+                article_end,
+                paragraph_begin,
+                paragraph_end,
+                sentence_begin,
+                sentence_end,
+                token_func,
+            )
+        ):
+            logging.warning(
+                "No functions implemented in processor module {0}".format(
+                    str(processor)
+                )
+            )
+            return None
+
+        state = {
+            "session": session,
+            "url": self.url,
+            "processor": processor,
+        }
+
+        # Call the article_begin function, if it exists
+        if article_begin is not None:
+            article_begin(state)
+
+        # Paragraphs
+        for p in self.tokens:
+            if paragraph_begin:
+                paragraph_begin(state, p)
+
+            # Sentences
+            for s in p:
+                if sentence_begin:
+                    sentence_begin(state, p, s)
+
+                # Tokens
+                if token_func:
+                    i = 0
+                    for t in s:
+                        token_func(state, p, s, t, i)
+                        i += 1
+
+                if sentence_end:
+                    sentence_end(state, p, s)
+
+            if paragraph_end:
+                paragraph_end(state, p)
+
+        # Call the article_end function, if it exists
+        if article_end is not None:
+            article_end(state)
+
+
+class Processor:
     """ The worker class that processes parsed articles """
 
     _db = None
@@ -66,23 +146,10 @@ class Processor:
         """ Perform any cleanup """
         cls._db = None
 
-    def __init__(self, processor_directory, single_processor=None, workers=None):
-
-        Processor._init_class()
-        self.workers = workers
-
-        # Dynamically load all processor modules
-        # (i.e. .py files found in the processor directory, except those
-        # with names starting with an underscore)
-        self.processors = []
-        self.pmodules = None
-        import os
-
-        files = (
-            [single_processor + ".py"]
-            if single_processor
-            else os.listdir(processor_directory)
-        )
+    def modules_in_dir(self, directory):
+        """ Find all python modules in a given directory """
+        files = os.listdir(directory)
+        modnames = list()
         for fname in files:
             if not isinstance(fname, str):
                 continue
@@ -90,11 +157,33 @@ class Processor:
                 continue
             if fname.startswith("_"):
                 continue
-            modname = processor_directory + "." + fname[:-3]  # Cut off .py
+            mod = directory.replace("/", ".") + "." + fname[:-3]  # Cut off .py
+            modnames.append(mod)
+        return modnames
+
+    def __init__(self, processor_directory, single_processor=None, workers=None):
+
+        Processor._init_class()
+        self.workers = workers
+
+        self.processors = []
+        self.pmodules = None
+
+        # Find .py files in the processor directory
+        modnames = self.modules_in_dir(processor_directory)
+
+        if single_processor:
+            # Remove all except the single processor pecified
+            modnames = [m for m in modnames if m.endswith('.' + single_processor)]
+
+        # Dynamically load all processor modules
+        for modname in modnames:
             try:
                 # Try import before we start
                 m = importlib.import_module(modname)
-                print("Imported processor module {0}".format(modname))
+                ptype = m.PROCESSOR_TYPE
+                assert ptype
+                print("Imported {0} processor module {1}".format(ptype, modname))
                 # Successful
                 # Note: we can't append the module object m directly to the
                 # processors list, as it will be shared between processes and
@@ -110,15 +199,13 @@ class Processor:
         if not self.processors:
             if single_processor:
                 print(
-                    "Processor {1} not found in directory {0}".format(
-                        processor_directory, single_processor
+                    "Processor '{0}' not found in directory {1}".format(
+                        single_processor, processor_directory
                     )
                 )
             else:
                 print(
-                    "No processing modules found in directory {0}".format(
-                        processor_directory
-                    )
+                    "No processors found in directory {0}".format(processor_directory)
                 )
 
     def go_single(self, url):
@@ -138,20 +225,23 @@ class Processor:
         with closing(self._db.session) as session:
 
             try:
-
                 article = session.query(Article).filter_by(url=url).one_or_none()
 
                 if article is None:
                     print("Article not found in scraper database")
                 else:
-                    if article.tree:
+                    if article.tree and article.tokens:
                         tree = Tree(url, article.authority)
-                        # print("Tree:\n{0}\n".format(article.tree))
                         tree.load(article.tree)
+
+                        token_container = TokenContainer(article.tokens, url)
 
                         # Run all processors in turn
                         for p in self.pmodules:
-                            tree.process(session, p)
+                            if p.PROCESSOR_TYPE == "tree":
+                                tree.process(session, p)
+                            elif p.PROCESSOR_TYPE == "token":
+                                token_container.process(session, p)
 
                     # Mark the article as being processed
                     article.processed = datetime.utcnow()
