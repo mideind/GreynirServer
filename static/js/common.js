@@ -379,6 +379,11 @@ function tokenInfo(t, nameDict) {
       r.details = format_is(t.v[0], 2);
    }
    else
+   if (t.k == TOK_NUMWLETTER) {
+      r.lemma = t.x;
+      r.details = "tala með bókstaf";
+   }
+   else
    if (t.k == TOK_PERCENT) {
       r.lemma = t.x;
       r.details = "hundraðshluti";
