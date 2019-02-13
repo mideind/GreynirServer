@@ -123,6 +123,7 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
         "Skotland": "GB",
         "Wales": "GB",
         "Norður-Írland": "GB",
+        "Norður-Makedónía": "MK",
         "Bosnía": "BA",
         "Hersegóvína": "BA",
         "Palestína": "PS",
@@ -173,7 +174,7 @@ def location_description(loc):
         Argument is a dictionary with at least "name" and "kind" keys """
 
     if "kind" not in loc or "name" not in loc:
-        return "staður"
+        return "staðarheiti"
 
     name = loc["name"]
     kind = loc["kind"]
@@ -185,7 +186,7 @@ def location_description(loc):
         return "landshluti"
 
     if kind == "country":
-        desc = "land"
+        desc = "landsvæði"
         c = loc.get("continent")
         if c is None and "country" in loc:
             c = continent_for_country(loc["country"])
@@ -205,15 +206,12 @@ def location_description(loc):
     if kind == "placename":
         return "örnefni"
 
-    return "staður"
+    return "staðarheiti"
 
 
 def location_info(name, kind, placename_hints=None):
     """ Returns dict with info about a location, given name and kind.
         Info includes ISO country and continent code, GPS coordinates, etc. """
-
-    if kind not in LOCATION_TAXONOMY:
-        return None
 
     # Continents are marked as "lönd" in BÍN, so we set kind manually
     if name in CONTINENTS:
@@ -481,5 +479,5 @@ if __name__ == "__main__":
     name = sys.argv[1] if len(sys.argv) > 1 else None
     kind = sys.argv[2] if len(sys.argv) > 2 else None
 
-    if name and kind:
+    if name:
         print(location_info(name, kind))
