@@ -1355,6 +1355,8 @@ def stats():
             total["parsed"] += r.parsed
 
         chart_data = chart_stats(session=session, num_days=days)
+        pp_days = chart_data["parsed"]["datasets"][0]["data"]
+        parse_avg = round(sum(pp_days)/len(pp_days), 2)
 
         gq = GenderQuery()
         gresult = gq.execute(session)
@@ -1374,6 +1376,7 @@ def stats():
             gtotal=gtotal,
             scraped_chart_data=json.dumps(chart_data["scraped"]),
             parsed_chart_data=json.dumps(chart_data["parsed"]),
+            parse_avg=parse_avg
         )
 
 
