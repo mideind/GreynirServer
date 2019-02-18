@@ -18,7 +18,7 @@
       </li>
       <li role="presentation" class="active">
          <a href="{{ url_for('people_top') }}">
-            Mest
+            Oftast
          </a>
       </li>
       <!--<li role="presentation">
@@ -121,6 +121,12 @@
       // Toggle showing articles associated with person name
       $("#plist > tbody > tr.topitem").click(function(evt) {
          $(this).find(".rank-article-items").slideToggle(150);
+         evt.stopPropagation();
+      });
+
+      $("#plist td.name > span").click(function(evt) {
+         var name = $(this).text();
+         window.location.href = "/?f=q&q=" + encodeURIComponent("Hver er " + name + "?");
          evt.stopPropagation();
       });
 
