@@ -676,7 +676,7 @@ def analyze_api(version=1):
     except:
         return better_jsonify(valid=False, reason="Invalid request")
     with SessionContext(commit=True) as session:
-        pgs, stats, register = TreeUtility.tag_text(session, text)
+        pgs, stats, register = TreeUtility.tag_text(session, text, all_names=True)
     # Return the tokens as a JSON structure to the client
     return better_jsonify(valid=True, result=pgs, stats=stats, register=register)
 
@@ -1553,7 +1553,7 @@ def page():
 
         # Prepare the article for display (may cause it to be parsed and stored)
         a.prepare(session, verbose=True, reload_parser=True)
-        register = a.create_register(session)
+        register = a.create_register(session, all_names=True)
 
         # Fetch names of article topics, if any
         topics = (
