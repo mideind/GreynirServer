@@ -1586,10 +1586,10 @@ def main():
 # Flask handlers
 
 
-@app.route("/fonts/<path:path>")
+@app.route("/static/fonts/<path:path>")
 @max_age(seconds=24 * 60 * 60)  # Cache font for 24 hours
 def send_font(path):
-    return send_from_directory("fonts", path)
+    return send_from_directory("static/fonts", path)
 
 
 # noinspection PyUnusedLocal
