@@ -58,13 +58,15 @@ class TokenContainer: # Better name wanted. Open to suggestions.
         self.tokens = json.loads(tokens_json)
 
     def process(self, session, processor, **kwargs):
-        """ Process tokens for an entire article """
-        
-        # Iterate over each paragraph, sentence and token
-        # Initialize state that we keep for the duration
+        """ Process tokens for an entire article.  Iterate over each paragraph, 
+            sentence and token, calling revelant functions in processor module. """
 
         assert processor is not None
 
+        if not self.tokens:
+            return
+
+        # Get functions from processor module
         article_begin = getattr(processor, "article_begin", None)
         article_end = getattr(processor, "article_end", None)
         paragraph_begin = getattr(processor, "paragraph_begin", None)
@@ -73,7 +75,7 @@ class TokenContainer: # Better name wanted. Open to suggestions.
         sentence_end = getattr(processor, "sentence_end", None)
         token_func = getattr(processor, "token", None)
 
-        # Make sure processor implements at least one of these methods
+        # Make sure at least one of these functions is is present
         if not any(
             (
                 article_begin,
@@ -92,14 +94,14 @@ class TokenContainer: # Better name wanted. Open to suggestions.
             )
             return None
 
+        # Initialize state that we keep throughout processing
         state = {
             "session": session,
             "url": self.url,
             "processor": processor,
         }
 
-        # Call the article_begin function, if it exists
-        if article_begin is not None:
+        if article_begin:
             article_begin(state)
 
         # Paragraphs
@@ -114,10 +116,8 @@ class TokenContainer: # Better name wanted. Open to suggestions.
 
                 # Tokens
                 if token_func:
-                    i = 0
-                    for t in s:
-                        token_func(state, p, s, t, i)
-                        i += 1
+                    for idx, t in enumerate(s):
+                        token_func(state, p, s, t, idx)
 
                 if sentence_end:
                     sentence_end(state, p, s)
@@ -125,8 +125,7 @@ class TokenContainer: # Better name wanted. Open to suggestions.
             if paragraph_end:
                 paragraph_end(state, p)
 
-        # Call the article_end function, if it exists
-        if article_end is not None:
+        if article_end:
             article_end(state)
 
 
@@ -151,20 +150,18 @@ class Processor:
         files = os.listdir(directory)
         modnames = list()
         for fname in files:
-            if not isinstance(fname, str):
-                continue
             if not fname.endswith(".py"):
                 continue
-            if fname.startswith("_"):
+            if fname.startswith("_"): # Skip any files starting with _
                 continue
             mod = directory.replace("/", ".") + "." + fname[:-3]  # Cut off .py
             modnames.append(mod)
         return modnames
 
-    def __init__(self, processor_directory, single_processor=None, workers=None):
+    def __init__(self, processor_directory, single_processor=None, num_workers=None):
 
         Processor._init_class()
-        self.workers = workers
+        self.num_workers = num_workers
 
         self.processors = []
         self.pmodules = None
@@ -182,8 +179,7 @@ class Processor:
                 # Try import before we start
                 m = importlib.import_module(modname)
                 ptype = m.PROCESSOR_TYPE
-                assert ptype
-                print("Imported {0} processor module {1}".format(ptype, modname))
+                print("Imported processor module {0} ({1})".format(modname, ptype))
                 # Successful
                 # Note: we can't append the module object m directly to the
                 # processors list, as it will be shared between processes and
@@ -310,7 +306,7 @@ class Processor:
         else:
             # Use a multiprocessing pool to process the articles
             # Defaults to using as many processes as there are CPUs
-            pool = Pool(self.workers)
+            pool = Pool(self.num_workers)
             pool.map(self.go_single, iter_parsed_articles())
             pool.close()
             pool.join()
@@ -323,7 +319,7 @@ def process_articles(
     update=False,
     title=None,
     processor=None,
-    workers=None,
+    num_workers=None,
 ):
 
     print("------ Reynir starting processing -------")
@@ -339,8 +335,8 @@ def process_articles(
         print("Update: Yes")
     if processor:
         print("Invoke single processor: {0}".format(processor))
-    if workers:
-        print("Number of workers: {0}".format(workers))
+    if num_workers:
+        print("Number of workers: {0}".format(num_workers))
     ts = "{0}".format(datetime.utcnow())[0:19]
     print("Time: {0}\n".format(ts))
 
@@ -351,7 +347,7 @@ def process_articles(
         proc = Processor(
             processor_directory="processors",
             single_processor=processor,
-            workers=workers,
+            num_workers=num_workers,
         )
         proc.go(from_date, limit=limit, force=force, update=update, title=title)
     finally:
@@ -445,7 +441,7 @@ def _main(argv=None):
         update = False
         title = None  # Title pattern
         proc = None  # Single processor to invoke
-        workers = None  # Number of workers to run simultaneously
+        num_workers = None  # Number of workers to run simultaneously
         # Process options
         for o, a in opts:
             if o in ("-h", "--help"):
@@ -477,7 +473,7 @@ def _main(argv=None):
                 force = True
             elif o in ("-w", "--workers"):
                 # Limit the number of workers
-                workers = int(a) if int(a) else None
+                num_workers = int(a) if int(a) else None
 
         # Process arguments
         for arg in args:
@@ -518,7 +514,7 @@ def _main(argv=None):
                     update=update,
                     title=title,
                     processor=proc,
-                    workers=workers,
+                    num_workers=num_workers,
                 )
                 # process_articles(limit = limit)
 

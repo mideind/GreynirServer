@@ -5,6 +5,6 @@
     Processors folder
 
     This is the location to put custom processors for
-    parsed trees and token streams.
+    parsed trees and tokens.
 
 """
