@@ -433,6 +433,7 @@ def recent_persons(limit=_TOP_PERSONS_LENGTH):
 
 
 def top_persons(limit=_TOP_PERSONS_LENGTH, days=_TOP_PERSONS_PERIOD):
+    """ Return a list of person names appearing most frequently in recent articles. """
     with SessionContext(read_only=True) as session:
         q = (
             session.query(
@@ -1392,7 +1393,8 @@ def about():
             platform.python_implementation(),
         )
     except AttributeError:
-        version = ""
+        reynir_version = ""
+        python_version = ""
     return render_template(
         "about.html", reynir_version=reynir_version, python_version=python_version
     )
