@@ -38,6 +38,7 @@ import random
 import re
 import logging
 import json
+import platform
 from datetime import datetime, timedelta
 from functools import wraps
 from decimal import Decimal
@@ -676,7 +677,7 @@ def analyze_api(version=1):
     except:
         return better_jsonify(valid=False, reason="Invalid request")
     with SessionContext(commit=True) as session:
-        pgs, stats, register = TreeUtility.tag_text(session, text)
+        pgs, stats, register = TreeUtility.tag_text(session, text, all_names=True)
     # Return the tokens as a JSON structure to the client
     return better_jsonify(valid=True, result=pgs, stats=stats, register=register)
 
@@ -1355,6 +1356,8 @@ def stats():
             total["parsed"] += r.parsed
 
         chart_data = chart_stats(session=session, num_days=days)
+        pp_days = chart_data["parsed"]["datasets"][0]["data"]
+        parse_avg = round(sum(pp_days) / len(pp_days), 2)
 
         gq = GenderQuery()
         gresult = gq.execute(session)
@@ -1374,6 +1377,7 @@ def stats():
             gtotal=gtotal,
             scraped_chart_data=json.dumps(chart_data["scraped"]),
             parsed_chart_data=json.dumps(chart_data["parsed"]),
+            parse_avg=parse_avg,
         )
 
 
@@ -1382,10 +1386,16 @@ def stats():
 def about():
     """ Handler for the 'About' page """
     try:
-        version = reynir.__version__
+        reynir_version = reynir.__version__
+        python_version = "{0} ({1})".format(
+            ".".join(str(n) for n in sys.version_info[:3]),
+            platform.python_implementation(),
+        )
     except AttributeError:
         version = ""
-    return render_template("about.html", version=version)
+    return render_template(
+        "about.html", reynir_version=reynir_version, python_version=python_version
+    )
 
 
 @app.route("/apidoc")
@@ -1550,7 +1560,7 @@ def page():
 
         # Prepare the article for display (may cause it to be parsed and stored)
         a.prepare(session, verbose=True, reload_parser=True)
-        register = a.create_register(session)
+        register = a.create_register(session, all_names=True)
 
         # Fetch names of article topics, if any
         topics = (
@@ -1583,10 +1593,10 @@ def main():
 # Flask handlers
 
 
-@app.route("/fonts/<path:path>")
+@app.route("/static/fonts/<path:path>")
 @max_age(seconds=24 * 60 * 60)  # Cache font for 24 hours
 def send_font(path):
-    return send_from_directory("fonts", path)
+    return send_from_directory("static/fonts", path)
 
 
 # noinspection PyUnusedLocal

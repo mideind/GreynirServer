@@ -40,6 +40,7 @@ from reynir import Abbreviations
 
 
 MODULE_NAME = __name__
+PROCESSOR_TYPE = "tree"
 
 # Avoid chaff
 NOT_DEFINITIONS = {

@@ -60,7 +60,6 @@ rsync -av --delete templates/ $DEST/templates/
 rsync -av --delete static/ $DEST/static/
 
 cp resources/*.json $DEST/resources/
-cp fonts/* $DEST/fonts/
 
 # Put a version identifier (date and time) into the about.html template
 sed -i "s/\[Þróunarútgáfa\]/Útgáfa `date "+%Y-%m-%d %H:%M"`/g" $DEST/templates/about.html

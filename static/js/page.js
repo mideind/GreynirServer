@@ -474,9 +474,11 @@ function populateRegister() {
       var ri = register[i];
       item = $("<li></li>");
       name = $("<span></span>").addClass(ri.kind).text(ri.name);
-      title = $("<span></span>").addClass("title").text(ri.title);
       item.append(name);
-      item.append(title);
+      if (ri.title) {
+         title = $("<span></span>").addClass("title").text(ri.title);
+         item.append(title);
+      }
       $("#namelist").append(item);
    }
    // Display the register

@@ -58,9 +58,14 @@
       <p><small>
          <b>Copyright &copy; 2019 Miðeind ehf.</b>
          &bull; <span>[Þróunarútgáfa]</span> <!-- This text is replaced by a date stamp in deploy.sh -->
-{%- if version %}
+{%- if reynir_version %}
          &bull; <span>
-            <a href="https://pypi.org/project/reynir" target="_blank">ReynirPackage {{version}}</a>
+            <a href="https://pypi.org/project/reynir" target="_blank">ReynirPackage {{ reynir_version }}</a>
+         </span>
+{%- endif -%}
+{%- if python_version %}
+         &bull; <span>
+            Python {{ python_version }}</a>
          </span>
 {%- endif -%}
          <br>

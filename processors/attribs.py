@@ -37,6 +37,7 @@ from datetime import datetime
 
 
 MODULE_NAME = __name__
+PROCESSOR_TYPE = "tree"
 
 def article_begin(state):
     """ Called at the beginning of article processing """
