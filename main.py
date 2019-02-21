@@ -1457,7 +1457,7 @@ def people_recent():
 @app.route("/people_top")
 @max_age(seconds=5 * 60)
 def people_top():
-    """ Return list of people most frequently mentioned in recent articles """
+    """ Handler for page showing people most frequently mentioned in recent articles """
     period = request.args.get("period")
     days = 7 if period == "week" else _TOP_LOC_PERIOD
     return render_template(
