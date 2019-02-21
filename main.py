@@ -38,6 +38,7 @@ import random
 import re
 import logging
 import json
+import platform
 from datetime import datetime, timedelta
 from functools import wraps
 from decimal import Decimal
@@ -1356,7 +1357,7 @@ def stats():
 
         chart_data = chart_stats(session=session, num_days=days)
         pp_days = chart_data["parsed"]["datasets"][0]["data"]
-        parse_avg = round(sum(pp_days)/len(pp_days), 2)
+        parse_avg = round(sum(pp_days) / len(pp_days), 2)
 
         gq = GenderQuery()
         gresult = gq.execute(session)
@@ -1376,7 +1377,7 @@ def stats():
             gtotal=gtotal,
             scraped_chart_data=json.dumps(chart_data["scraped"]),
             parsed_chart_data=json.dumps(chart_data["parsed"]),
-            parse_avg=parse_avg
+            parse_avg=parse_avg,
         )
 
 
@@ -1385,10 +1386,16 @@ def stats():
 def about():
     """ Handler for the 'About' page """
     try:
-        version = reynir.__version__
+        reynir_version = reynir.__version__
+        python_version = "{0} ({1})".format(
+            ".".join(str(n) for n in sys.version_info[:3]),
+            platform.python_implementation(),
+        )
     except AttributeError:
         version = ""
-    return render_template("about.html", version=version)
+    return render_template(
+        "about.html", reynir_version=reynir_version, python_version=python_version
+    )
 
 
 @app.route("/apidoc")
