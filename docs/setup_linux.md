@@ -72,7 +72,7 @@ Create and activate virtual environment, install required Python packages:
 ```
 virtualenv -p ~/pypy/bin/pypy3 venv
 source venv/bin/activate
-pip3 install -r requirements.txt
+pip install -r requirements.txt
 ```
 
 ## Set up database

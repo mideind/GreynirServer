@@ -95,7 +95,7 @@ from images import (
     blacklist_image_url,
     get_staticmap_image,
 )
-from geo import location_info, location_description, LOCATION_TAXONOMY, ICELAND_ISOCODE
+from geo import location_info, location_description, LOCATION_TAXONOMY, ICELAND_ISOCODE, ICE_REGIONS
 from country_list import countries_for_language
 from tnttagger import ifd_tag
 from correct import check_grammar
@@ -1322,11 +1322,13 @@ def locinfo():
             resp["desc"] = location_description(loc)
             lat, lon = loc.get("latitude"), loc.get("longitude")
             if lat and lon:
-                z = ZOOM_FOR_LOC_KIND.get(kind)
+                z = ZOOM_FOR_LOC_KIND.get(loc.get("kind"))
                 # We want a slightly lower zoom level for foreign placenames
                 if resp["country"] != ICELAND_ISOCODE and kind == "placename":
                     z -= 1
                 resp["map"] = STATIC_MAP_URL.format(lat, lon, z)
+            elif name in ICE_REGIONS:
+                resp["map"] = "/static/img/maps/regions/" + name + ".png"
 
     return better_jsonify(**resp)
 

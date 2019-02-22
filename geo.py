@@ -89,6 +89,8 @@ ICE_PLACENAME_BLACKLIST = frozenset(
 )
 ICE_STREETNAME_BLACKLIST = frozenset(("Sjáland", "Feney"))
 
+ALWAYS_STREET_ADDR = frozenset(("Skeifan", "Bessastaðir"))
+
 # Names that should always be identified
 # as Icelandic regions, not placenames
 ICE_REGIONS = frozenset(
@@ -216,9 +218,14 @@ def location_info(name, kind, placename_hints=None):
     # Continents are marked as "lönd" in BÍN, so we set kind manually
     if name in CONTINENTS:
         kind = "continent"
+    elif name in ALWAYS_STREET_ADDR:
+        kind = "street"
+
 
     loc = dict(name=name, kind=kind)
     coords = None
+
+
 
     # Heimilisfang
     if kind == "address":

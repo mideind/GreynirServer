@@ -45,7 +45,6 @@ LOCFL_TO_KIND = dict(zip(LOCFL, ["country", "street", "placename", "placename"])
 ALWAYS_LOCATION = frozenset(
     (
         "París",  # also ism in BÍN
-        "Ísrael",  # ism
         # "Aþena",  # ism
         # "Árborg",  # ism
         # "Borg",  # ism
