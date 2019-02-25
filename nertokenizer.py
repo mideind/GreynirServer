@@ -43,7 +43,7 @@ def recognize_entities(token_stream, enclosing_session=None):
         The algorithm implements N-token lookahead where N is the
         length of the longest entity name having a particular initial word.
         Adds a named entity recognition layer on top of the
-        reynir.bintokenizer.tokenize() function. 
+        reynir.bintokenizer.tokenize() function.
 
     """
 

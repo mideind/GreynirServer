@@ -21,13 +21,12 @@ import logging
 import urllib.request
 import urllib.parse
 from urllib.error import HTTPError
+from io import BytesIO
 from datetime import datetime, timedelta
 from collections import namedtuple
 from contextlib import closing
-from scraperdb import SessionContext, Link, BlacklistedLink
-
 import requests
-from io import BytesIO
+from scraperdb import SessionContext, Link, BlacklistedLink
 
 
 def _server_query(url, q):
@@ -72,7 +71,7 @@ def _get_API_key():
             # _API_KEY_PATH if you want to use this code
             with open(_API_KEY_PATH) as f:
                 _API_KEY = f.read().rstrip()
-        except FileNotFoundError as ex:
+        except FileNotFoundError:
             _API_KEY = ""
     return _API_KEY
 
@@ -144,10 +143,10 @@ def get_image_url(
             jdoc = _server_query("https://www.googleapis.com/customsearch/v1", q)
             if jdoc:
                 # Store in the cache
-                l = Link(
+                lnk = Link(
                     ctype=ctype, key=name, content=jdoc, timestamp=datetime.utcnow()
                 )
-                session.add(l)
+                session.add(lnk)
 
         if not jdoc:
             return None
@@ -180,11 +179,11 @@ def blacklist_image_url(name, url):
     with SessionContext(commit=True) as session:
         # Verify that URL exists in DB
         if not _get_cached_entry(name, url, enclosing_session=session):
-            return
+            return None
 
         # Check if already blacklisted
         if url in _blacklisted_urls_for_key(name, enclosing_session=session):
-            return
+            return None
 
         # Add to blacklist
         b = BlacklistedLink(

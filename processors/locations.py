@@ -22,7 +22,6 @@
 
 """
 
-import logging
 import re
 from collections import namedtuple
 from datetime import datetime
@@ -116,7 +115,7 @@ PLACENAME_BLACKLIST = frozenset(
         "Hraun",
         "Hagar",
         "Opnur",
-        "Guðfinna", # !
+        "Guðfinna",  # !
         "Svið",
         "Öxi",
         "Skyggnir",
@@ -191,8 +190,8 @@ def article_end(state):
 
         print("Location '{0}' is a {1}".format(loc["name"], loc["kind"]))
 
-        l = Location(**loc)
-        session.add(l)
+        locmodel = Location(**loc)
+        session.add(locmodel)
 
 
 # def paragraph_begin(state, paragraph):
@@ -221,7 +220,7 @@ def token(state, paragraph, sentence, token, idx):
     fl = token["m"][2]  # BÍN category
     if fl not in LOCFL and name not in ALWAYS_LOCATION:
         return
-    
+
     kind = LOCFL_TO_KIND.get(fl)
 
     # Skip if blacklisted

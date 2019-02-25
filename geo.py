@@ -25,7 +25,6 @@ import json
 import re
 import sys
 import os
-from pkg_resources import resource_stream
 from iceaddr import iceaddr_lookup, placename_lookup
 from cityloc import city_lookup
 from country_list import countries_for_language, available_languages
@@ -221,11 +220,8 @@ def location_info(name, kind, placename_hints=None):
     elif name in ALWAYS_STREET_ADDR:
         kind = "street"
 
-
     loc = dict(name=name, kind=kind)
     coords = None
-
-
 
     # Heimilisfang
     if kind == "address":
@@ -307,8 +303,8 @@ def _load_city_names():
 
 
 def lookup_city_info(name):
-    """ Look up name in city database. Convert Icelandic-specific 
-        city names (e.g. "Lundúnir") to their corresponding 
+    """ Look up name in city database. Convert Icelandic-specific
+        city names (e.g. "Lundúnir") to their corresponding
         English/international name before querying. """
     cnames = _load_city_names()  # Lazy-load
     cn = cnames.get(name, name)
@@ -362,13 +358,13 @@ def coords_for_country(iso_code):
 
 def coords_for_street_name(street_name, placename=None, placename_hints=[]):
     """ Return coordinates for an Icelandic street name as a tuple. As some
-        street names exist in more than one place, we try to narrow it down 
+        street names exist in more than one place, we try to narrow it down
         to a single street if possible. Street coordinates are the coordinates
         of the lowest house number. """
 
     addresses = iceaddr_lookup(street_name, placename=placename, limit=100)
 
-    if not len(addresses):
+    if not addresses:
         return None
 
     # Find all places containing street_name
@@ -413,7 +409,7 @@ def country_name_for_isocode(iso_code, lang=ICELANDIC_LANG_ISOCODE):
 
 
 def isocode_for_country_name(country_name, lang=ICELANDIC_LANG_ISOCODE):
-    """ Return the ISO 3166-1 alpha-2 code for a country 
+    """ Return the ISO 3166-1 alpha-2 code for a country
         name in the specified language (two-char ISO 639-1) """
     assert len(lang) == 2
 

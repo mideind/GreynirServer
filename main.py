@@ -55,6 +55,7 @@ from flask import (
     abort,
     request,
     send_from_directory,
+    current_app,
 )
 from flask.wrappers import Response
 from flask_caching import Cache
@@ -95,7 +96,13 @@ from images import (
     blacklist_image_url,
     get_staticmap_image,
 )
-from geo import location_info, location_description, LOCATION_TAXONOMY, ICELAND_ISOCODE, ICE_REGIONS
+from geo import (
+    location_info,
+    location_description,
+    LOCATION_TAXONOMY,
+    ICELAND_ISOCODE,
+    ICE_REGIONS,
+)
 from country_list import countries_for_language
 from tnttagger import ifd_tag
 from correct import check_grammar
@@ -107,8 +114,6 @@ app = Flask(__name__)
 app.config["JSON_AS_ASCII"] = False  # We're fine with using Unicode/UTF-8
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 cache = Cache(app, config={"CACHE_TYPE": "simple"})
-
-from flask import current_app
 
 
 def debug():
@@ -266,7 +271,7 @@ def top_news(
     country=None,
     root=None,
 ):
-    """ Return a list of articles in chronologically reversed order. 
+    """ Return a list of articles in chronologically reversed order.
         Articles can be filtered by start, location, country, root etc. """
     toplist = []
 
@@ -735,7 +740,7 @@ def postag_api(version=1):
         for sent in pgs:
             # Transform the token representation into a
             # nice canonical form for outside consumption
-            err = any("err" in t for t in sent)
+            # err = any("err" in t for t in sent)
             for t in sent:
                 canonicalize_token(t)
 

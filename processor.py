@@ -42,7 +42,6 @@ import os
 from multiprocessing import Pool
 from contextlib import closing
 from datetime import datetime
-from collections import OrderedDict
 
 from settings import Settings, ConfigError
 from scraperdb import Scraper_DB, Article, Person
@@ -51,14 +50,15 @@ from tree import Tree
 _PROFILING = False
 
 
-class TokenContainer: # Better name wanted. Open to suggestions.
+class TokenContainer:  # Better name wanted. Open to suggestions.
     """ Class wrapper around tokens """
+
     def __init__(self, tokens_json, url=None):
         self.url = url
         self.tokens = json.loads(tokens_json)
 
     def process(self, session, processor, **kwargs):
-        """ Process tokens for an entire article.  Iterate over each paragraph, 
+        """ Process tokens for an entire article.  Iterate over each paragraph,
             sentence and token, calling revelant functions in processor module. """
 
         assert processor is not None
@@ -87,7 +87,7 @@ class TokenContainer: # Better name wanted. Open to suggestions.
                 token_func,
             )
         ):
-            logging.warning(
+            print(
                 "No functions implemented in processor module {0}".format(
                     str(processor)
                 )
@@ -95,11 +95,7 @@ class TokenContainer: # Better name wanted. Open to suggestions.
             return None
 
         # Initialize state that we keep throughout processing
-        state = {
-            "session": session,
-            "url": self.url,
-            "processor": processor,
-        }
+        state = {"session": session, "url": self.url, "processor": processor}
 
         if article_begin:
             article_begin(state)
@@ -152,7 +148,7 @@ class Processor:
         for fname in files:
             if not fname.endswith(".py"):
                 continue
-            if fname.startswith("_"): # Skip any files starting with _
+            if fname.startswith("_"):  # Skip any files starting with _
                 continue
             mod = directory.replace("/", ".") + "." + fname[:-3]  # Cut off .py
             modnames.append(mod)
@@ -171,7 +167,7 @@ class Processor:
 
         if single_processor:
             # Remove all except the single processor pecified
-            modnames = [m for m in modnames if m.endswith('.' + single_processor)]
+            modnames = [m for m in modnames if m.endswith("." + single_processor)]
 
         # Dynamically load all processor modules
         for modname in modnames:
