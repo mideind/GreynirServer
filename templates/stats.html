@@ -95,14 +95,17 @@
 </div>
 
 <div class="panel panel-default">
-   <div class="panel-heading">Nýleg gögn</div>
+   <div class="panel-heading">
+      Nýleg gögn
+      <div class="pull-right hidden-xs">Meðaltal síðustu daga: <strong>{{ scraped_avg }} gr./dag</strong></div>
+   </div>
    <canvas id="scraped_chart_canvas" style="padding: 25px;"></canvas>
 </div>
 
 <div class="panel panel-default">
    <div class="panel-heading">
       Trjágreining
-      <div class="pull-right hidden-xs">Meðaltal síðustu daga: <strong>{{ parse_avg }}%</strong></div>
+      <div class="pull-right hidden-xs">Meðaltal síðustu daga: <strong>{{ parsed_avg }}%</strong></div>
    </div>
    <canvas id="parsed_chart_canvas" style="padding: 25px;"></canvas>
 </div>

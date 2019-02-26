@@ -572,6 +572,7 @@ def chart_stats(session=None, num_days=7):
     parsed_data = []
 
     # Get article count for each source for each day
+    # We change locale to get localized date weekday/month names
     with changedlocale(category="LC_TIME"):
         for n in range(0, num_days):
             days_back = num_days - n - 1
@@ -600,13 +601,23 @@ def chart_stats(session=None, num_days=7):
 
     # Create datasets for bar chart
     datasets = []
+    article_count = 0
     for k, v in sorted(sources.items()):
         color = colors.get(k, "#000")
         datasets.append({"label": k, "backgroundColor": color, "data": v})
+        article_count += sum(v)
+
+    # Calculate averages
+    scrape_avg = article_count / num_days
+    parse_avg = sum(parsed_data) / num_days
 
     return {
-        "scraped": {"labels": labels, "datasets": datasets},
-        "parsed": {"labels": labels, "datasets": [{"data": parsed_data}]},
+        "scraped": {"labels": labels, "datasets": datasets, "avg": scrape_avg},
+        "parsed": {
+            "labels": labels,
+            "datasets": [{"data": parsed_data}],
+            "avg": parse_avg,
+        },
     }
 
 
@@ -1354,19 +1365,16 @@ def stats():
 
     with SessionContext(read_only=True) as session:
 
+        # Article stats
         sq = StatsQuery()
         result = sq.execute(session)
-
         total = dict(art=Decimal(), sent=Decimal(), parsed=Decimal())
         for r in result:
             total["art"] += r.art
             total["sent"] += r.sent
             total["parsed"] += r.parsed
 
-        chart_data = chart_stats(session=session, num_days=days)
-        pp_days = chart_data["parsed"]["datasets"][0]["data"]
-        parse_avg = round(sum(pp_days) / len(pp_days), 2)
-
+        # Gender stats
         gq = GenderQuery()
         gresult = gq.execute(session)
 
@@ -1377,6 +1385,9 @@ def stats():
             gtotal["hk"] += r.hk
             gtotal["total"] += r.kvk + r.kk + r.hk
 
+        # Chart stats
+        chart_data = chart_stats(session=session, num_days=days)
+
         return render_template(
             "stats.html",
             result=result,
@@ -1385,7 +1396,8 @@ def stats():
             gtotal=gtotal,
             scraped_chart_data=json.dumps(chart_data["scraped"]),
             parsed_chart_data=json.dumps(chart_data["parsed"]),
-            parse_avg=parse_avg,
+            scraped_avg=int(round(chart_data["scraped"]["avg"])),
+            parsed_avg=round(chart_data["parsed"]["avg"], 1),
         )
 
 
