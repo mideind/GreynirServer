@@ -1,0 +1,32 @@
+language: python
+
+dist: xenial
+
+python:
+  # - "3.4"
+  - "3.5"
+  # - "3.6"
+  # - "3.7"
+  - "pypy3.5"
+
+# services:
+#   - postgresql
+
+install:
+  - pip install -r requirements.txt
+
+before_script:
+  - sudo apt-get install language-pack-is
+  - sudo locale-gen is_IS.UTF-8
+  - sudo update-locale
+  - sudo systemctl start postgresql
+  - psql -c "create database scraper with encoding 'UTF8' LC_COLLATE='is_IS.UTF-8' LC_CTYPE='is_IS.UTF-8' TEMPLATE=template0;" -U postgres
+  - psql -d scraper -c "create extension if not exists \"uuid-ossp\";" -U postgres
+  - psql -c "create user reynir with password 'reynir';" -U postgres
+  - python scraper.py --init
+
+script:
+  - python -m pytest
+
+# notifications:
+#   slack: greynir:38FfPr1S8oZRNFMmt47mzT3z
