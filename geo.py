@@ -25,7 +25,6 @@ import json
 import re
 import sys
 import os
-from pkg_resources import resource_stream
 from iceaddr import iceaddr_lookup, placename_lookup
 from cityloc import city_lookup
 from country_list import countries_for_language, available_languages
