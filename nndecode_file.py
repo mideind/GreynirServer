@@ -27,7 +27,7 @@
         NN_PARSING_ENABLED=1 \
         NN_PARSING_HOST=$PHOST \
         NN_PARSING_PORT=$PPORT \
-        python nnclient.py \
+        python nndecode_file.py \
         -i=source.txt -o=outputs.txt \
         -t=parse
 """
@@ -45,6 +45,7 @@ from nnclient import ParsingClient, TranslateClient
 
 _logging_info_fn = print
 _RETRY_WAIT_TIME = 10  # seconds
+_MAX_ENTRIES_IN_BATCH = 100
 _MAX_RETRIES_IN_ROW = 3
 _DEF_B_SIZE_LINES = 15
 _DEF_B_SIZE_CHARS = 3000
@@ -140,8 +141,10 @@ def batch_by_gen(lines, key, completed, batch_size):
             yield (batch, accum)
             batch = []
             accum = 0
-        if batch and accum + weight > batch_size:
-            # Batch is not empty and would be overfull
+        if len(batch) >= _MAX_ENTRIES_IN_BATCH or (
+            batch and accum + weight > batch_size
+        ):
+            # Batch is not empty and would be overfull with next entry
             yield (batch, accum)
             batch = []
             accum = 0

@@ -584,7 +584,9 @@ span.imgreport a:hover {
    text-decoration: none;
 }
 
-div#info {
+div#info,
+div#info-trnsl
+{
    visibility: hidden;
    position: absolute;
    background-color: #eeeeee;
@@ -598,6 +600,11 @@ div#info {
    padding-bottom: 6px;
    padding-left: 12px;
    padding-right: 12px;
+}
+
+div#info-trnsl
+{
+   margin-top: 4px;
 }
 
 div#info.kk,

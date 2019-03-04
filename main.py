@@ -541,7 +541,6 @@ def nntranslate_api(version=1):
         segmented = True
         trnsl_src = None
         if "application/json" in request.headers["Content-Type"]:
-            # import pdb; pdb.set_trace()
             trnsl_src = request.json["pgs"]
             src_lang = request.json["src_lang"]
             tgt_lang = request.json["tgt_lang"]
@@ -595,7 +594,7 @@ def postag_api(version=1):
 
     try:
         text = text_from_request(request)
-    except:
+    except Exception as e:
         return better_jsonify(valid=False, reason="Invalid request")
 
     with SessionContext(commit=True) as session:

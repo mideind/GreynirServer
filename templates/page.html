@@ -30,9 +30,19 @@
       font-size: 1.05em;
    }
 
-   div#result-translation span i:hover {
-      color: white;
+   div#result-translation span.good i:hover {
+      background-color: #77FF77;
+      color: black;
+   }
+
+   div#result-translation span.average i:hover {
       background-color: #777777;
+      color: white;
+   }
+
+   div#result-translation span.bad i:hover {
+      color: black;
+      background-color: #FF7777;
    }
 
    div#result-translation span.translated i {
@@ -48,6 +58,11 @@
 {% endblock %}
 
 {% block content %}
+
+{% if nn_translate_enabled -%}
+<div id="info-trnsl">
+</div>
+{%- endif -%}
 
 <div id="output">
 
@@ -192,6 +207,39 @@
     var pg_map = {};
     var is_translating = false;
 
+    function hoverInTranslation(ev) {
+        var sId = $(this).parent().attr("id");
+        if (sId === null || sId === undefined || !sent_map || !sId.startsWith("trnsl")) {
+           // No id: nothing to do
+           return;
+        }
+        var offset = $(this).position();
+        height = $(this).outerHeight();
+        bottom = offset.top + height;
+        /* console.log(offset); */
+        /* console.log(ev.pageY); */
+
+        sent_idx = sId.replace("trnsl","");
+        $("#info-trnsl").html(sent_map[sent_idx]["is"]);
+        /* var sent_container = $("<span></span>", { */
+        /* "id": "trnsl" + sent_idx, */
+        /* "text": sent_map[sent_idx]["is"] */
+        /* }); */
+        /* $("#info-trnsl").append(sent_container); */
+
+        /* .css("top", (offset.top + height).toString() + "px") */
+        // Position the info popup
+        $("#info-trnsl")
+            .css("top", bottom + "px")
+            .css("left", offset.left.toString() + "px")
+            .css("visibility", "visible");
+    }
+
+    function hoverOutTranslation() {
+        $("#info-trnsl").css("visibility", "hidden");
+        $("#info-trnsl").html("")
+    }
+
     function wait_translation(state) {
         // Start or stop a wait spinner when awaiting translation
         // True means spinner is active
@@ -226,6 +274,7 @@
                sent_idx++;
            });
         });
+
         return {
             "pg_map": pg_map,
             "sent_map": sent_map
@@ -249,6 +298,7 @@
             });
             pg_container.append(pg_elem);
         });
+        $("div#result-translation i").hover(hoverInTranslation, hoverOutTranslation);
     }
 
     function make_batches(sent_map, batch_size) {
@@ -317,19 +367,36 @@
 
     function populateBatchResults(results, callback) {
         $.each(results, function (sent_key, obj) {
+            outputs = obj.outputs;
+            inputs = obj.inputs;
+            scores = obj.scores;
+            score_class = scoreClass(scores);
             if (sent_key !== "0") {
                 // we need to handle article title seperately
-                sent_map[sent_key]["en"] = obj.outputs;
-                $("#trnsl" + sent_key).addClass("translated")
+                sent_map[sent_key]["is"] = inputs;
+                sent_map[sent_key]["en"] = outputs;
+                sent_map[sent_key]["scores"] = scores;
+                $("#trnsl" + sent_key).addClass("translated " + score_class)
                                         .children("i")
                                         .eq(0)
-                                        .text(obj.outputs)
+                                        .text(outputs)
             } else {
                 // replace article head
                 $("#meta-heading").text(obj.outputs)
             }
         })
         callback();
+    }
+
+    function scoreClass(_score) {
+        score = parseFloat(_score);
+        if (score <= -8.5) {
+            return "bad err"
+        } else if (score <= -4.0) {
+            return "average"
+        } else {
+            return "good"
+        }
     }
 
     function doTranslation() {

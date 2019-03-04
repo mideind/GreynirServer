@@ -177,18 +177,26 @@ class TranslateClient(NnClient):
         return resp
 
     @classmethod
-    def request_segmented(cls, sent_map, src_lang=None, tgt_lang=None):
+    def request_segmented(cls, sent_map, src_lang=None, tgt_lang=None, verbatim=False):
         """ Translate presegmented sentences
             args:
                 sent_map: either a list of sentences or a dict[key] of sentences"""
         data = dict(src_lang=src_lang, tgt_lang=tgt_lang)
         if type(sent_map) is dict:
-            sents = list(sent_map.values())
+            sents = (
+                [tokenizer.correct_spaces(sent) for sent in sent_map.values()]
+                if not verbatim
+                else list(sent_map.values())
+            )
             result = TranslateClient._request(sents, data=data)
             inst_map = {idx: inst for (idx, inst) in zip(sent_map.keys(), result)}
             resp = dict(results=inst_map)
         else:
-            sents = sent_map
+            sents = (
+                [tokenizer.correct_spaces(sent) for sent in sent_map]
+                if not verbatim
+                else sent_map
+            )
             result = TranslateClient._request(sents, data=data)
             inst_map = {idx: inst for (idx, inst) in enumerate(result)}
             resp = dict(results=inst_map)
