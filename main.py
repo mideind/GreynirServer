@@ -1352,7 +1352,6 @@ def locinfo():
 DEFAULT_STATS_PERIOD = 10  # days
 MAX_STATS_PERIOD = 30
 
-
 @app.route("/stats", methods=["GET"])
 @max_age(seconds=10 * 60)
 def stats():
