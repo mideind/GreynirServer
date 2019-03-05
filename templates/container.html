@@ -28,12 +28,11 @@
 <meta name="theme-color" content="#ffffff">
 
 <!-- Bootstrap main CSS -->
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"
-   integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
-
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css" 
+   integrity="sha384-PmY9l28YgO4JwMKbTvgaS7XNZJ30MK9FAZjjzXtlqyZCqBY6X6bXIkM++IkyinN+" crossorigin="anonymous">
 <!-- Bootstrap theme CSS -->
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css"
-   integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap-theme.min.css" 
+   integrity="sha384-jzngWsPS6op3fgRCDTESqrEJwRKck+CILhJVO5VvaAZCq8JYf8HsR/HPpBOOPZfR" crossorigin="anonymous">
 
 {% block styles %}
 {% endblock %}
@@ -63,7 +62,7 @@
          <ul class="nav navbar-nav">
             <li id="navid-main"><a href="{{ url_for('main') }}">Heim</a></li>
             <li id="navid-news"><a href="{{ url_for('news') }}">Nýjast</a></li>
-            <li id="navid-people"><a href="{{ url_for('people') }}">Fólk</a></li>
+            <li id="navid-people"><a href="{{ url_for('people_recent') }}">Fólk</a></li>
             <li id="navid-locations"><a href="{{ url_for('locations') }}">Staðir</a></li>
             <li id="navid-analysis"><a href="{{ url_for('analysis') }}">Málgreining</a></li>
             <li id="navid-correct"><a href="{{ url_for('correct') }}">Yfirlestur</a></li>
@@ -81,8 +80,8 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
 
 <!-- Bootstrap -->
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"
-   integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS"
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js" 
+   integrity="sha384-vhJnz1OVIdLktyixHY4Uk3OHEwdQqPppqYR8+5mjsauETgLOcEynD9oPHhhz18Nw" 
    crossorigin="anonymous"></script>
 
 {% block endscripts -%}

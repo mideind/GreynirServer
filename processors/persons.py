@@ -70,6 +70,7 @@ from scraperdb import Person
 
 
 MODULE_NAME = __name__
+PROCESSOR_TYPE = "tree"
 
 def article_begin(state):
     """ Called at the beginning of article processing """
@@ -113,7 +114,9 @@ INVALID_TITLES = {
     "sig", "væri", "orðið", "ávísun", "hér heima", "lán", "úr láni", "bar", "ver",
     "bætir", "býr", "get", "vera", "eiga", "var", "búa", "setur", "heggur", "átt",
     "keppa", "rétt", "ráðning", "sætti", "hlaut", "mynd", "myndband", "já", "nei",
-    "segi", "sem", "hjónin"
+    "segi", "sem", "hjónin", "verið", "lið", "munur", "verður", "gerði", "boðið", 
+    "leikur", "staðfesti", "veit", "hafi", "kona", "konan", "maður", "maðurinn", 
+    "slysið", "met", "frest", "sent",
 }
 
 # Phrases to cut off the ends of titles

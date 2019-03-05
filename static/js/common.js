@@ -124,7 +124,6 @@ var wordClass = {
    "entity" : "sérnafn",
    "gata" : "götuheiti",
    "fyrirtæki" : "fyrirtæki",
-   "entity" : "sérnafn"
 };
 
 var variantDesc = [
@@ -378,6 +377,11 @@ function tokenInfo(t, nameDict) {
       r.lemma = t.x;
       // Show the parsed floating-point number to 2 decimal places
       r.details = format_is(t.v[0], 2);
+   }
+   else
+   if (t.k == TOK_NUMWLETTER) {
+      r.lemma = t.x;
+      r.details = "tala með bókstaf";
    }
    else
    if (t.k == TOK_PERCENT) {

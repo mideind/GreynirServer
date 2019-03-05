@@ -71,9 +71,10 @@ class Scraper:
         logging.info("Initializing scraper instance")
 
     def urls2fetch(self, root, helper):
-        """ Returns a set of URLs to fetch. If the scraper helper class has associated
-            RSS feed URLs, these are used to acquire article URLs. Otherwise, the URLs are 
-            found by scraping the root website and searching for links to subpages. """
+        """ Returns a set of URLs to fetch. If the scraper helper class has
+            associated RSS feed URLs, these are used to acquire article URLs.
+            Otherwise, the URLs are found by scraping the root website and
+            searching for links to subpages. """
         fetch_set = set()
         feeds = helper.feeds
 
@@ -186,8 +187,9 @@ class Scraper:
 
         t1 = time.time()
         logging.info(
-            "[{3}] Parsing of {2}/{1} sentences completed in {0:.2f} seconds"
-            .format(t1 - t0, num_sentences, num_parsed, seq)
+            "[{3}] Parsing of {2}/{1} sentences completed in {0:.2f} seconds".format(
+                t1 - t0, num_sentences, num_parsed, seq
+            )
         )
 
     def _scrape_single_root(self, r):
@@ -217,8 +219,9 @@ class Scraper:
                 self.scrape_article(d.url, helper)
         except Exception as e:
             logging.warning(
-                "[{2}] Exception when scraping article at {0}: {1!r}"
-                .format(d.url, e, d.seq)
+                "[{2}] Exception when scraping article at {0}: {1!r}".format(
+                    d.url, e, d.seq
+                )
             )
 
     def _parse_single_article(self, d):
@@ -236,8 +239,9 @@ class Scraper:
             sys.exit(1)
         except Exception as e:
             logging.warning(
-                "[{2}] Exception when parsing article at {0}: {1!r}"
-                .format(d.url, e, d.seq)
+                "[{2}] Exception when parsing article at {0}: {1!r}".format(
+                    d.url, e, d.seq
+                )
             )
             # traceback.print_exc()
             # raise
@@ -412,8 +416,9 @@ class Scraper:
 
         logging.info(
             "Num_articles is {0}, scraped {1}, parsed {2}, "
-            "parsed with >1 sentence {3}"
-            .format(num_articles, num_scraped, num_parsed, num_parsed_over_1)
+            "parsed with >1 sentence {3}".format(
+                num_articles, num_scraped, num_parsed, num_parsed_over_1
+            )
         )
 
         q = (
@@ -427,11 +432,8 @@ class Scraper:
         num_sent_parsed = result[1] or 0
 
         logging.info(
-            "Num_sentences is {0}, num_sent_parsed is {1}, ratio is {2:.1f}%"
-            .format(
-                num_sentences,
-                num_sent_parsed,
-                100.0 * num_sent_parsed / num_sentences
+            "Num_sentences is {0}, num_sent_parsed is {1}, ratio is {2:.1f}%".format(
+                num_sentences, num_sent_parsed, 100.0 * num_sent_parsed / num_sentences
             )
         )
 
