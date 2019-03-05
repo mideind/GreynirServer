@@ -25,9 +25,7 @@
 """
 
 
-import sys
 import platform
-from time import sleep
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
@@ -378,7 +376,7 @@ class Location(Base):
         nullable=False,
         unique=True,
         primary_key=True,
-        server_default=text("uuid_generate_v1()")
+        server_default=text("uuid_generate_v1()"),
     )
 
     # Foreign key to an article
@@ -398,7 +396,7 @@ class Location(Base):
 
     # Country (ISO 3166-1 alpha-2, e.g. 'IS')
     country = Column(String(2))
-    
+
     # Continent ISO code (e.g. 'EU')
     continent = Column(String(2))
 
@@ -708,7 +706,7 @@ class StatsQuery(_BaseQuery):
 
 
 class ChartsQuery(_BaseQuery):
-    """ Statistics on article, sentence and parse count  
+    """ Statistics on article, sentence and parse count
         for all sources for a given time period """
 
     _Q = """

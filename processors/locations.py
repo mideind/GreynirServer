@@ -18,37 +18,47 @@
 
 
     This module implements a processor that extracts any addresses / locations
-    in parsed sentence trees, looks up information about them and saves to a database.
+    in article tokens, looks up information about them and saves to a database.
 
 """
 
-import logging
+import re
 from collections import namedtuple
 from datetime import datetime
 from scraperdb import Location
 from geo import location_info
 
+
+MODULE_NAME = __name__
+PROCESSOR_TYPE = "token"
+
+
 Loc = namedtuple("Loc", ["name", "kind"])
 
-BIN_LOCFL = ["lönd", "göt", "örn"]
-LOCFL_TO_KIND = dict(zip(BIN_LOCFL, ["country", "street", "placename"]))
+LOCFL = ["lönd", "göt", "örn", "borg"]
+LOCFL_TO_KIND = dict(zip(LOCFL, ["country", "street", "placename", "placename"]))
 
-# Always identify these words as locations, even when other meanings exist
+
+# Always identify these words as locations, even when they
+# have been identified as words in some other category.
 ALWAYS_LOCATION = frozenset(
     (
         "París",  # also ism in BÍN
-        "Ísrael",  # ism
-        "Aþena",  # ism
-        "Árborg",  # ism
-        "Borg",  # ism
-        "Hella",  # ism
+        # "Aþena",  # ism
+        # "Árborg",  # ism
+        # "Borg",  # ism
+        # "Hella",  # ism
     )
 )
 
+# GENERAL_BLACKLIST = frozenset(())
+
 PLACENAME_BLACKLIST = frozenset(
     (
+        "Sámur",
         "Staður",
         "Eyjan",
+        "Eyja",
         "Fjöll",
         "Bæir",
         "Bær",
@@ -56,10 +66,14 @@ PLACENAME_BLACKLIST = frozenset(
         "Hjálp",
         "Stjórn",
         "Hrun",
+        "Hrunið",
         "Mark",
+        "Bás",
         "Vatnið",
         "Vatn",
         "Á",
+        "Flag",
+        "Stigi",
         "Kjarni",
         "Hagar",
         "Þing",
@@ -71,7 +85,7 @@ PLACENAME_BLACKLIST = frozenset(
         "Systur",
         "Pallar",
         "Snið",
-        "Stöð"
+        "Stöð",
         "Síða",
         "Síðan",
         "Hundruð",
@@ -90,14 +104,18 @@ PLACENAME_BLACKLIST = frozenset(
         "Prestur",
         "Paradís",
         "Lón",
-        "Hróarskeldu",
         "Land",
+        "Gil",
+        "Höllin",
+        "Höll",
         "Fjórðungur",
         "Grænur",
         "Hagi",
+        "Brenna",
+        "Hraun",
         "Hagar",
         "Opnur",
-        "Guðfinna",
+        "Guðfinna",  # !
         "Svið",
         "Öxi",
         "Skyggnir",
@@ -108,12 +126,30 @@ PLACENAME_BLACKLIST = frozenset(
         "Borgir",
         "Langur",
         "Drög",
+        "Haf",
+        "Fossar",
+        "Stuðlar",
+        "Straumur",
+        "Eden",
+        "Haft",
+        "Rétt",
+        "Veitur",
+        "Örkin",
+        "Svangi",
+        "Samvinna",
+        "Stígamót",
+        "Tafla",
+        "Rauði",
+        "Reitar",
+        "Festi",
+        "Bekkur",
+        "Bakland",
     )
 )
 
 STREETNAME_BLACKLIST = frozenset(("Mark", "Á", "Sjáland", "Hús", "Húsið"))
 
-COUNTRY_BLACKLIST = frozenset(())
+# COUNTRY_BLACKLIST = frozenset(())
 
 
 def article_begin(state):
@@ -125,22 +161,24 @@ def article_begin(state):
     # Delete all existing locations for this article
     session.execute(Location.table().delete().where(Location.article_url == url))
 
-    # Set of all unique locations found in article
+    # Set that will contain all unique locations found in the article
     state["locations"] = set()
 
 
 def article_end(state):
     """ Called at the end of article processing """
 
-    url = state["url"]
-    session = state["session"]
-
     locs = state.get("locations")
     if not locs:
         return
 
+    url = state["url"]
+    session = state["session"]
+
     # Find all placenames mentioned in article
     # We can use them to disambiguate addresses and street names
+    # TODO: Perhaps do this in a more fine-grained manner, at a
+    # sentence or paragraph level.
     placenames = [p.name for p in locs if p.kind == "placename"]
 
     # Get info about each location and save to database
@@ -152,97 +190,58 @@ def article_end(state):
 
         print("Location '{0}' is a {1}".format(loc["name"], loc["kind"]))
 
-        l = Location(**loc)
-        session.add(l)
+        locmodel = Location(**loc)
+        session.add(locmodel)
 
 
-def sentence(state, result):
-    """ Called at the end of sentence processing """
-    pass
+# def paragraph_begin(state, paragraph):
+#     pass
 
 
-def Heimilisfang(node, params, result):
-    """ NP-ADDR """
-
-    # Convert address to nominative case
-    def nom(w):
-        try:
-            bindb = result._state["bin_db"]
-            n = bindb.lookup_nominative(w)
-        except:
-            return w
-        return n[0][0] if n else w
-
-    addr_nom = " ".join([nom(c.contained_text()) for c in node.children()])
-
-    # Add as location
-    l = Loc(name=addr_nom, kind="address")
-    result._state["locations"].add(l)
+# def paragraph_end(state, paragraph):
+#     pass
 
 
-def _process(node, params, result):
-    """ Look up meaning in BÍN, add as location if in right category """
-    state = result._state
+# def sentence_begin(state, paragraph, sentence):
+#     pass
 
-    # TODO: Special handling of placenames at the beginning
-    # of sentences to reduce the number of false positives.
 
-    # Get in nominative form
-    txt = node.nominative(state, params)
+# def sentence_end(state, paragraph, sentence):
+#     pass
 
-    # Look up meanings
-    try:
-        bindb = state["bin_db"]
-        meanings = bindb.meanings(txt)
-    except Exception as e:
-        logging.warning("Error looking up word '{0}': {1}".format(txt, str(e)))
+
+def token(state, paragraph, sentence, token, idx):
+    """ Called for each token in each sentence. idx is the
+        index of the token within the sentence. """
+    if "m" not in token or len(token["m"]) < 3:
         return
 
-    if not meanings:
+    name = token["m"][0]  # Nominative case
+    fl = token["m"][2]  # BÍN category
+    if fl not in LOCFL and name not in ALWAYS_LOCATION:
         return
 
-    fls = [m.fl for m in meanings]
-
-    # Skip if no location-related meaning
-    if not any(f in BIN_LOCFL for f in fls):
-        return
-
-    # Skip if one or more non-location-related meanings
-    if any(f not in BIN_LOCFL for f in fls):
-        if txt in ALWAYS_LOCATION:
-            # Get rid of non-loc meanings
-            meanings = [m for m in meanings if m.fl in BIN_LOCFL]
-        else:
-            return
-
-    # If more than one location-related meaning, pick
-    # one based on the order of items in BIN_LOCFL
-    if len(meanings) > 1:
-        meanings.sort(key=lambda x: BIN_LOCFL.index(x.fl))
-
-    m = meanings[0]
-    name = m.stofn
-    kind = LOCFL_TO_KIND[m.fl]
+    kind = LOCFL_TO_KIND.get(fl)
 
     # Skip if blacklisted
+    # if name in GENERAL_BLACKLIST:
+    #     return
     if kind == "placename" and name in PLACENAME_BLACKLIST:
         return
     if kind == "street" and name in STREETNAME_BLACKLIST:
         return
-    if kind == "country" and name in COUNTRY_BLACKLIST:
-        return
+    # if kind == "country" and name in COUNTRY_BLACKLIST:
+    #     return
+
+    # Special handling of addresses
+    # Check if next token is a house number
+    if kind == "street" and idx != len(sentence) - 1:  # not last token in sentence
+        next_tok = sentence[idx + 1]
+        next_word = next_tok["x"]
+        if re.search(r"^\d+", next_word):
+            name = "{0} {1}".format(name, next_word)
+            kind = "address"
 
     # Add
     loc = Loc(name=name, kind=kind)
     state["locations"].add(loc)
-
-
-""" Country and place names can occur as both Fyrirbæri and Sérnafn """
-
-
-def Sérnafn(node, params, result):
-    _process(node, params, result)
-
-
-def Fyrirbæri(node, params, result):
-    _process(node, params, result)

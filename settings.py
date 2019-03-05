@@ -42,8 +42,6 @@ from contextlib import contextmanager, closing
 from collections import defaultdict
 from threading import Lock
 
-import reynir
-
 # The locale used by default in the changedlocale function
 _DEFAULT_LOCALE = ("IS_is", "UTF-8")
 # A set of all valid argument cases

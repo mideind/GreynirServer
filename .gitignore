@@ -51,7 +51,6 @@ resources/reykjanes/
 mim/
 ifd/
 gold/
-fonts/
 logs/
 .idea/
 node_modules/
@@ -112,10 +111,7 @@ console/
 
 # Virtual environments
 venv/
-p35/
-p358/
-p359/
-p3510/
+p35*/
 
 # Installer logs
 pip-log.txt
@@ -128,6 +124,7 @@ ehthumbs.db
 
 # Folder config file
 Desktop.ini
+.DS_Store
 
 # Recycle Bin used on file shares
 $RECYCLE.BIN/

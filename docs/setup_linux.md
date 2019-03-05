@@ -72,7 +72,7 @@ Create and activate virtual environment, install required Python packages:
 ```
 virtualenv -p ~/pypy/bin/pypy3 venv
 source venv/bin/activate
-pip3 install -r requirements.txt
+pip install -r requirements.txt
 ```
 
 ## Set up database
@@ -129,7 +129,7 @@ alter role your_user_name with superuser;
 ### Create database
 
 ```
-create database scraper with encoding 'UTF8' LC_COLLATE='is_IS.utf8' LC_CTYPE='is_IS.utf8' TEMPLATE=template0;
+create database scraper with encoding 'UTF8' LC_COLLATE='is_IS.UTF-8' LC_CTYPE='is_IS.UTF-8' TEMPLATE=template0;
 ```
 
 Enable uuid extension:

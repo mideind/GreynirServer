@@ -1236,13 +1236,13 @@ class HringbrautScraper(ScrapeHelper):
 
         # Many hringbraut.is articles end with a "Sjá nánar" paragraph
         # and then a paragraph containing a URL. Remove these.
-        paragraphs = list(content.find_all("p" , recursive=False))
+        paragraphs = list(content.find_all("p", recursive=False))
         if len(paragraphs) > 2:
             last = paragraphs[-1]
             sec_last = paragraphs[-2]
-            if last.get_text().startswith('http'):
+            if last.get_text().startswith("http"):
                 last.decompose()
-            if sec_last.get_text().startswith('Nánar á'):
+            if sec_last.get_text().startswith("Nánar á"):
                 sec_last.decompose()
         return content
 
@@ -1259,16 +1259,34 @@ class FrettabladidScraper(ScrapeHelper):
         "/timamot/",
     ]
 
+    _BANNED_PREFIXES = [
+        "/sport/i-beinni-",
+    ]
+
     def __init__(self, root):
         super().__init__(root)
 
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
         s = urlparse.urlsplit(url)
+        if not s.path:
+            return True
+
+        # Skip live sport events
+        if any(s.path.startswith(p) for p in self._BANNED_PREFIXES):
+            return True
+
+        # Skip photos-only articles
+        comp = s.path.split('/')
+        if comp[-1].startswith('myndasyrpa-'):
+            return True
+
+        # Accept any URLs starting with allowed prefixes
         if s.path and any(
             s.path.startswith(prefix) for prefix in self._ALLOWED_PREFIXES
         ):
             return False
+
         return True  # Skip all other URLs by default
 
     def get_metadata(self, soup):

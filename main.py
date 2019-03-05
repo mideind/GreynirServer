@@ -38,6 +38,7 @@ import random
 import re
 import logging
 import json
+import platform
 from datetime import datetime, timedelta
 from functools import wraps
 from decimal import Decimal
@@ -54,6 +55,7 @@ from flask import (
     abort,
     request,
     send_from_directory,
+    current_app,
 )
 from flask.wrappers import Response
 from flask_caching import Cache
@@ -81,6 +83,7 @@ from scraperdb import (
     Topic,
     Entity,
     Location,
+    Word,
     GenderQuery,
     StatsQuery,
     ChartsQuery,
@@ -93,7 +96,13 @@ from images import (
     blacklist_image_url,
     get_staticmap_image,
 )
-from geo import location_info, location_description, LOCATION_TAXONOMY, ICELAND_ISOCODE
+from geo import (
+    location_info,
+    location_description,
+    LOCATION_TAXONOMY,
+    ICELAND_ISOCODE,
+    ICE_REGIONS,
+)
 from country_list import countries_for_language
 from tnttagger import ifd_tag
 from correct import check_grammar
@@ -105,8 +114,6 @@ app = Flask(__name__)
 app.config["JSON_AS_ASCII"] = False  # We're fine with using Unicode/UTF-8
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 cache = Cache(app, config={"CACHE_TYPE": "simple"})
-
-from flask import current_app
 
 
 def debug():
@@ -241,10 +248,11 @@ _TOP_NEWS_LENGTH = 20
 
 # Default number of top persons to show in /people
 _TOP_PERSONS_LENGTH = 20
+_TOP_PERSONS_PERIOD = 1  # in days
 
 # Default number of top locations to show in /locations
-_TOP_LOCATIONS_LENGTH = 20
-_TOP_LOCATIONS_PERIOD = 1  # in days
+_TOP_LOC_LENGTH = 20
+_TOP_LOC_PERIOD = 1  # in days
 
 # Maximum length of incoming GET/POST parameters
 _MAX_URL_LENGTH = 512
@@ -261,9 +269,10 @@ def top_news(
     start=None,
     location=None,
     country=None,
+    root=None,
 ):
-    """ Return a list of articles (with a particular topic) in
-        chronologically reversed order. """
+    """ Return a list of articles in chronologically reversed order.
+        Articles can be filtered by start, location, country, root etc. """
     toplist = []
 
     with SessionContext(read_only=True) as session:
@@ -290,6 +299,10 @@ def top_news(
         # Filter by country code
         if country is not None:
             q = q.join(Location).filter(Location.country == country)
+
+        # Filter by source (root) using domain (e.g. "kjarninn.is")
+        if root is not None:
+            q = q.filter(Root.domain == root)
 
         # Filter by topic identifier
         if topic is not None:
@@ -367,12 +380,12 @@ def top_news(
     return toplist
 
 
-def top_persons(limit=_TOP_PERSONS_LENGTH):
+def recent_persons(limit=_TOP_PERSONS_LENGTH):
     """ Return a list of names and titles appearing recently in the news """
     toplist = dict()
     MAX_TITLE_LENGTH = 64
 
-    with SessionContext(commit=True) as session:
+    with SessionContext(read_only=True) as session:
 
         q = (
             session.query(Person.name, Person.title, Person.article_url, Article.id)
@@ -424,19 +437,58 @@ def top_persons(limit=_TOP_PERSONS_LENGTH):
         )
 
 
+def top_persons(limit=_TOP_PERSONS_LENGTH, days=_TOP_PERSONS_PERIOD):
+    """ Return a list of person names appearing most frequently in recent articles. """
+    with SessionContext(read_only=True) as session:
+        q = (
+            session.query(
+                Word.stem,
+                Word.cat,
+                Article.id,
+                Article.heading,
+                Article.url,
+                Root.domain,
+            )
+            .join(Article)
+            .join(Root)
+            .filter(Root.visible)
+            .filter(Article.timestamp > datetime.utcnow() - timedelta(days=days))
+            .filter((Word.cat == "person_kk") | (Word.cat == "person_kvk"))
+            .filter(Word.stem.like("% %"))  # Match whitespace for least two names.
+            .distinct()
+        )
+
+        persons = defaultdict(list)
+        for r in q.all():
+            article = {
+                "url": r.url,
+                "id": r.id,
+                "heading": r.heading,
+                "domain": r.domain,
+            }
+            gender = r.cat.split("_")[1]  # Get gender from _ suffix
+            k = (r.stem, gender)
+            persons[k].append(article)
+
+        personlist = []
+        for k, v in persons.items():
+            (name, gender) = k  # Unpack tuple key
+            personlist.append({"name": name, "gender": gender, "articles": v})
+
+        personlist.sort(key=lambda x: len(x["articles"]), reverse=True)
+
+    return personlist[:limit]
+
+
 GMAPS_COORD_URL = "https://www.google.com/maps/place/{0}+{1}/@{0},{1},{2}?hl=is"
 GMAPS_PLACE_URL = "https://www.google.com/maps/place/{0}?hl=is"
 
 
-def top_locations(
-    limit=_TOP_LOCATIONS_LENGTH,
-    kind=None,
-    days=_TOP_LOCATIONS_PERIOD,
-    enclosing_session=None,
-):
-    """ Return a list of recent locations and the articles in which they are mentioned """
+def top_locations(limit=_TOP_LOC_LENGTH, kind=None, days=_TOP_LOC_PERIOD):
+    """ Return a list of recent locations along with the list of
+        articles in which they are mentioned """
 
-    with SessionContext(commit=False, session=enclosing_session) as session:
+    with SessionContext(read_only=True) as session:
         q = (
             session.query(
                 Location.name,
@@ -456,8 +508,8 @@ def top_locations(
         )
 
         # Filter by kind
-        # if kind:
-        #     q = q.filter(Location.kind == kind)
+        if kind:
+            q = q.filter(Location.kind == kind)
 
         q = q.order_by(desc(Article.timestamp))
 
@@ -511,7 +563,7 @@ def chart_stats(session=None, num_days=7):
         "Kvennablaðið": "#900000",
         "Stundin": "#ee4420",
         "Hringbraut": "#44607a",
-        "Fréttablaðið": "#002a61"
+        "Fréttablaðið": "#002a61",
     }
 
     today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
@@ -520,6 +572,7 @@ def chart_stats(session=None, num_days=7):
     parsed_data = []
 
     # Get article count for each source for each day
+    # We change locale to get localized date weekday/month names
     with changedlocale(category="LC_TIME"):
         for n in range(0, num_days):
             days_back = num_days - n - 1
@@ -548,13 +601,23 @@ def chart_stats(session=None, num_days=7):
 
     # Create datasets for bar chart
     datasets = []
+    article_count = 0
     for k, v in sorted(sources.items()):
         color = colors.get(k, "#000")
         datasets.append({"label": k, "backgroundColor": color, "data": v})
+        article_count += sum(v)
+
+    # Calculate averages
+    scrape_avg = article_count / num_days
+    parse_avg = sum(parsed_data) / num_days
 
     return {
-        "scraped": {"labels": labels, "datasets": datasets},
-        "parsed": {"labels": labels, "datasets": [{"data": parsed_data}]},
+        "scraped": {"labels": labels, "datasets": datasets, "avg": scrape_avg},
+        "parsed": {
+            "labels": labels,
+            "datasets": [{"data": parsed_data}],
+            "avg": parse_avg,
+        },
     }
 
 
@@ -631,7 +694,7 @@ def analyze_api(version=1):
     except:
         return better_jsonify(valid=False, reason="Invalid request")
     with SessionContext(commit=True) as session:
-        pgs, stats, register = TreeUtility.tag_text(session, text)
+        pgs, stats, register = TreeUtility.tag_text(session, text, all_names=True)
     # Return the tokens as a JSON structure to the client
     return better_jsonify(valid=True, result=pgs, stats=stats, register=register)
 
@@ -688,7 +751,7 @@ def postag_api(version=1):
         for sent in pgs:
             # Transform the token representation into a
             # nice canonical form for outside consumption
-            err = any("err" in t for t in sent)
+            # err = any("err" in t for t in sent)
             for t in sent:
                 canonicalize_token(t)
 
@@ -902,11 +965,9 @@ def query_api(version=1):
         with SessionContext(commit=True) as session:
 
             toklist = tokenize(
-                q, auto_uppercase = q.islower() if auto_uppercase else False
+                q, auto_uppercase=q.islower() if auto_uppercase else False
             )
-            toklist = list(
-                recognize_entities(toklist, enclosing_session=session)
-            )
+            toklist = list(recognize_entities(toklist, enclosing_session=session))
             actual_q = correct_spaces(" ".join(t.txt for t in toklist if t.txt))
 
             if Settings.DEBUG:
@@ -1050,6 +1111,7 @@ def reportimage():
 
     return better_jsonify(**resp)
 
+
 @app.route("/image", methods=["GET"])
 def image():
     """ Get image for (person) name """
@@ -1154,15 +1216,16 @@ def locations():
     kind = kind if kind in LOCATION_TAXONOMY else None
 
     period = request.args.get("period")
-    days = 7 if period == "week" else _TOP_LOCATIONS_PERIOD
+    days = 7 if period == "week" else _TOP_LOC_PERIOD
 
-    with SessionContext(read_only=True) as session:
-        locs = top_locations(enclosing_session=session, kind=kind, days=days)
+    locs = top_locations(kind=kind, days=days)
 
-    return render_template("locations/locations.html", locations=locs, period=period)
+    return render_template(
+        "locations/locations.html", locations=locs, period=period, kind=kind
+    )
 
 
-def icemap_markers(days=_TOP_LOCATIONS_PERIOD):
+def icemap_markers(days=_TOP_LOC_PERIOD):
     """ Return a list of recent Icelandic locations and their coordinates """
     with SessionContext(read_only=True) as session:
         q = (
@@ -1190,7 +1253,7 @@ def icemap_markers(days=_TOP_LOCATIONS_PERIOD):
 def locations_icemap():
     """ Render Icelandic map locations page """
     period = request.args.get("period")
-    days = 7 if period == "week" else _TOP_LOCATIONS_PERIOD
+    days = 7 if period == "week" else _TOP_LOC_PERIOD
 
     markers = icemap_markers(days=days)
     return render_template(
@@ -1198,7 +1261,7 @@ def locations_icemap():
     )
 
 
-def world_map_data(days=_TOP_LOCATIONS_PERIOD):
+def world_map_data(days=_TOP_LOC_PERIOD):
     """ Return data for world map. List of country iso codes with article count """
     with SessionContext(read_only=True) as session:
         q = (
@@ -1222,7 +1285,7 @@ def world_map_data(days=_TOP_LOCATIONS_PERIOD):
 def locations_worldmap():
     """ Render world map locations page """
     period = request.args.get("period")
-    days = 7 if period == "week" else _TOP_LOCATIONS_PERIOD
+    days = 7 if period == "week" else _TOP_LOC_PERIOD
 
     d = world_map_data(days=days)
     n = dict(countries_for_language("is"))
@@ -1275,53 +1338,43 @@ def locinfo():
             resp["desc"] = location_description(loc)
             lat, lon = loc.get("latitude"), loc.get("longitude")
             if lat and lon:
-                z = ZOOM_FOR_LOC_KIND.get(kind)
+                z = ZOOM_FOR_LOC_KIND.get(loc.get("kind"))
                 # We want a slightly lower zoom level for foreign placenames
                 if resp["country"] != ICELAND_ISOCODE and kind == "placename":
                     z -= 1
                 resp["map"] = STATIC_MAP_URL.format(lat, lon, z)
+            elif name in ICE_REGIONS:
+                resp["map"] = "/static/img/maps/regions/" + name + ".png"
 
     return better_jsonify(**resp)
 
 
-@app.route("/genders", methods=["GET"])
-@max_age(seconds=5 * 60)
-def genders():
-    """ Render a page with gender statistics """
-
-    with SessionContext(commit=True) as session:
-
-        gq = GenderQuery()
-        result = gq.execute(session)
-
-        total = dict(kvk=Decimal(), kk=Decimal(), hk=Decimal(), total=Decimal())
-        for r in result:
-            total["kvk"] += r.kvk
-            total["kk"] += r.kk
-            total["hk"] += r.hk
-            total["total"] += r.kvk + r.kk + r.hk
-
-        return render_template("genders.html", result=result, total=total)
+DEFAULT_STATS_PERIOD = 10  # days
+MAX_STATS_PERIOD = 30
 
 
 @app.route("/stats", methods=["GET"])
-@max_age(seconds=5 * 60)
+@max_age(seconds=10 * 60)
 def stats():
-    """ Render a page with article statistics """
+    """ Render a page with various statistics """
+    days = DEFAULT_STATS_PERIOD
+    try:
+        days = min(MAX_STATS_PERIOD, int(request.args.get("days")))
+    except:
+        pass
 
     with SessionContext(read_only=True) as session:
 
+        # Article stats
         sq = StatsQuery()
         result = sq.execute(session)
-
         total = dict(art=Decimal(), sent=Decimal(), parsed=Decimal())
         for r in result:
             total["art"] += r.art
             total["sent"] += r.sent
             total["parsed"] += r.parsed
 
-        chart_data = chart_stats(session=session, num_days=10)
-
+        # Gender stats
         gq = GenderQuery()
         gresult = gq.execute(session)
 
@@ -1332,6 +1385,9 @@ def stats():
             gtotal["hk"] += r.hk
             gtotal["total"] += r.kvk + r.kk + r.hk
 
+        # Chart stats
+        chart_data = chart_stats(session=session, num_days=days)
+
         return render_template(
             "stats.html",
             result=result,
@@ -1340,6 +1396,8 @@ def stats():
             gtotal=gtotal,
             scraped_chart_data=json.dumps(chart_data["scraped"]),
             parsed_chart_data=json.dumps(chart_data["parsed"]),
+            scraped_avg=int(round(chart_data["scraped"]["avg"])),
+            parsed_avg=round(chart_data["parsed"]["avg"], 1),
         )
 
 
@@ -1348,10 +1406,17 @@ def stats():
 def about():
     """ Handler for the 'About' page """
     try:
-        version = reynir.__version__
+        reynir_version = reynir.__version__
+        python_version = "{0} ({1})".format(
+            ".".join(str(n) for n in sys.version_info[:3]),
+            platform.python_implementation(),
+        )
     except AttributeError:
-        version = ""
-    return render_template("about.html", version=version)
+        reynir_version = ""
+        python_version = ""
+    return render_template(
+        "about.html", reynir_version=reynir_version, python_version=python_version
+    )
 
 
 @app.route("/apidoc")
@@ -1364,8 +1429,10 @@ def apidoc():
 @app.route("/news")
 @max_age(seconds=60)
 def news():
-    """ Handler for a page with a top news list """
+    """ Handler for a page with a list of articles """
     topic = request.args.get("topic")
+    root = request.args.get("root")
+
     try:
         offset = max(0, int(request.args.get("offset", 0)))
         limit = max(0, int(request.args.get("limit", _TOP_NEWS_LENGTH)))
@@ -1374,7 +1441,7 @@ def news():
         limit = _TOP_NEWS_LENGTH
 
     limit = min(limit, 100)  # Cap at max 100 results per page
-    articles = top_news(topic=topic, offset=offset, limit=limit)
+    articles = top_news(topic=topic, offset=offset, limit=limit, root=root)
 
     # If all articles in the list are timestamped within 24 hours of now,
     # we display their times in HH:MM format. Otherwise, we display date.
@@ -1383,10 +1450,11 @@ def news():
         display_time = False
 
     # Fetch the topics
-    with SessionContext(commit=True) as session:
+    with SessionContext(read_only=True) as session:
         q = session.query(Topic.identifier, Topic.name).order_by(Topic.name).all()
         d = {t[0]: t[1] for t in q}
         topics = dict(id=topic, name=d.get(topic, ""), topic_list=q)
+
     return render_template(
         "news.html",
         articles=articles,
@@ -1394,14 +1462,26 @@ def news():
         display_time=display_time,
         offset=offset,
         limit=limit,
+        root=root,
     )
 
 
 @app.route("/people")
-@max_age(seconds=60)
-def people():
-    """ Handler for a page with a list of people recently appearing in news """
-    return render_template("people.html", persons=top_persons())
+@max_age(seconds=5 * 60)
+def people_recent():
+    """ Handler for a page with a list of people recently appearing in articles """
+    return render_template("people/people-recent.html", persons=recent_persons())
+
+
+@app.route("/people_top")
+@max_age(seconds=5 * 60)
+def people_top():
+    """ Handler for page showing people most frequently mentioned in recent articles """
+    period = request.args.get("period")
+    days = 7 if period == "week" else _TOP_LOC_PERIOD
+    return render_template(
+        "people/people-top.html", persons=top_persons(days=days), period=period
+    )
 
 
 @app.route("/analysis")
@@ -1449,9 +1529,9 @@ def parsefail():
                     # Tokens
                     for t in s:
                         if "err" in t:
-                            # Only add well-formed sentences that start   
+                            # Only add well-formed sentences that start
                             # with a capital letter and end with a period
-                            if s[0]['x'][0].isupper() and s[-1]['x'] == '.':
+                            if s[0]["x"][0].isupper() and s[-1]["x"] == ".":
                                 sfails.append([s])
                                 break
 
@@ -1501,7 +1581,7 @@ def page():
 
         # Prepare the article for display (may cause it to be parsed and stored)
         a.prepare(session, verbose=True, reload_parser=True)
-        register = a.create_register(session)
+        register = a.create_register(session, all_names=True)
 
         # Fetch names of article topics, if any
         topics = (
@@ -1534,10 +1614,10 @@ def main():
 # Flask handlers
 
 
-@app.route("/fonts/<path:path>")
+@app.route("/static/fonts/<path:path>")
 @max_age(seconds=24 * 60 * 60)  # Cache font for 24 hours
 def send_font(path):
-    return send_from_directory("fonts", path)
+    return send_from_directory("static/fonts", path)
 
 
 # noinspection PyUnusedLocal
@@ -1566,14 +1646,13 @@ except ConfigError as e:
 if Settings.DEBUG:
     print(
         "\nStarting Reynir at {5} with debug={0}, host={1}:{2}, db_hostname={3}\n"
-        "Python {4}"
-        .format(
+        "Python {4}".format(
             Settings.DEBUG,
             Settings.HOST,
             Settings.PORT,
             Settings.DB_HOSTNAME,
             sys.version,
-            datetime.utcnow()
+            datetime.utcnow(),
         )
     )
     # Clobber Settings.DEBUG in ReynirPackage and ReynirCorrect
@@ -1599,18 +1678,11 @@ if __name__ == "__main__":
         "Phrases.conf",
         "Vocab.conf",
         "Names.conf",
-        "ReynirCorrect.conf"
+        "ReynirCorrect.conf",
     ]
 
     dirs = list(
-        map(
-            os.path.dirname,
-            [
-                __file__,
-                reynir.__file__,
-                reynir_correct.__file__
-            ]
-        )
+        map(os.path.dirname, [__file__, reynir.__file__, reynir_correct.__file__])
     )
     for i, fname in enumerate(extra_files):
         # Look for the extra file in the different package directories
@@ -1626,7 +1698,10 @@ if __name__ == "__main__":
     extra_files.append(
         os.path.join(
             os.path.dirname(reynir.__file__),
-            "src", "reynir", "resources", "ord.compressed"
+            "src",
+            "reynir",
+            "resources",
+            "ord.compressed",
         )
     )
 

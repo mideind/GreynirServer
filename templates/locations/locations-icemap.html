@@ -36,35 +36,35 @@
 
 <!-- Map of Iceland -->
 <div role="tabpanel" class="tab-pane active">
-
    <div class="panel panel-default table-responsive">
 
-   <div class="panel-heading">
-      <div class="headline hidden-xs">
-         Staðir á Íslandi nýlega í fréttum vefmiðla
-         <br>
-         <small>Smelltu á merki til að sjá tengdar greinar</small>
-      </div>
-      <div class="headline visible-xs-inline-block">Staðir á Íslandi</div>
+      <div class="panel-heading">
+         <div class="headline hidden-xs">
+            Staðir á Íslandi nýlega í fréttum vefmiðla
+            <br>
+            <small>Smelltu á merki til að sjá tengdar greinar</small>
+         </div>
+         <div class="headline visible-xs-inline-block">Staðir á Íslandi</div>
 
-      <div class="btn-group pull-right">
-         <span class="hidden-xs">
-            <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-               {{ "Undanfarna viku" if period == 'week' else "Síðasta sólarhring" }} 
-               <span class="caret"></span>
-            </button>
+         <div class="btn-group pull-right">
+            <span class="hidden-xs">
+               <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  {{ "Undanfarna viku" if period == 'week' else "Síðasta sólarhring" }} 
+                  <span class="caret"></span>
+               </button>
 
-            <ul class="dropdown-menu">
-               <li><a href="{{ url_for('locations_icemap') | safe }}">Síðasta sólarhring</a></li>
-               <li><a href="{{ url_for('locations_icemap', period='week') | safe }}">Undanfarna viku</a></li>
-            </ul>
-         </span>
+               <ul class="dropdown-menu">
+                  <li><a href="{{ url_for('locations_icemap') | safe }}">Síðasta sólarhring</a></li>
+                  <li><a href="{{ url_for('locations_icemap', period='week') | safe }}">Undanfarna viku</a></li>
+               </ul>
+            </span>
+         </div>
+
       </div>
+
+      <div id="icemap"></div>
 
    </div>
-
-   <div id="icemap"></div>
-
 </div>
 
 <!-- Article results when marker is clicked -->
@@ -102,7 +102,7 @@ function initMap() {
 
    map = new L.Map('icemap', { 
       zoomSnap: 0.5, 
-      maxZoom: 12, 
+      maxZoom: 13, 
       minZoom: 5.5, 
       maxBounds: bounds, 
       maxBoundsViscosity: 1.0,

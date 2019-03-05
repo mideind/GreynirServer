@@ -36,11 +36,8 @@
 
 @font-face {
    font-family: 'Glyphicons Regular';
-   src: url('/fonts/glyphicons-regular.eot');
-   src: url('/fonts/glyphicons-regular.eot?#iefix') format('embedded-opentype'),
-      url('/fonts/glyphicons-regular.woff') format('woff'),
-      url('/fonts/glyphicons-regular.ttf') format('truetype'),
-      url('/fonts/glyphicons-regular.svg#glyphiconsregular') format('svg');
+   src: url('/static/fonts/glyphicons-regular.woff') format('woff'),
+      url('/static/fonts/glyphicons-regular.ttf') format('truetype')
 }
 
 .glyphicon {
@@ -242,7 +239,8 @@ div.tab-pane {
 }
 
 div.text-container {
-   padding-top: 80px;
+   padding-top: 70px;
+   padding-bottom: 50px;
    font-size: 1.15em;
 }
 
@@ -275,9 +273,8 @@ div#stats-panel {
 @media(max-width: 992px) {
 
    div.container.text-container {
-      padding-top: 120px; /* Make more room for the top navbar */
+      /*padding-top: 100px;*/ /* Make more room for the top navbar */
    }
-
 }
 
 @media(max-width: 768px) {
@@ -446,12 +443,12 @@ td.ts {
    min-width: 100px;
 }
 
-td.flags {
+td.flags, td.gender {
    width: 2.5em;
 }
 
-td.locname {
-   width: 200px;
+td.locname, #plist td.name {
+   width: 260px;
    font-weight: 700;
 
 }
@@ -1174,7 +1171,7 @@ tfoot tr td {
 }
 
 table.table thead th {
-   padding-top: 18px;
+   padding-top: 8px;
    padding-bottom: 8px;
 }
 
@@ -1443,6 +1440,49 @@ div#canvas svg {
 .autocomplete-suggestions strong {
    /*font-weight: normal; */
    color: #2aabd2;
+}
+
+/* Disable text selection in element */
+
+.noselect {
+  -webkit-touch-callout: none;
+    -webkit-user-select: none;
+     -khtml-user-select: none;
+       -moz-user-select: none;
+        -ms-user-select: none;
+            user-select: none;       
+}
+
+/* Styling for bootstrap tooltips */ 
+
+.tooltip .tooltip-inner {
+   font-size: 1.2em;
+}
+
+.tooltip.in {
+  opacity: 1;
+  filter: alpha(opacity=100);
+}
+
+/* Top People and Locations ranking */
+
+div.rank-progressbar {
+   margin-bottom: 0;
+   text-align: left;
+   float: none;
+}
+
+div.rank-progressbar > span {
+   margin-left: 6px;
+}
+
+div.rank-article-items {
+   display: none;
+   margin-top: 10px;
+}
+
+div.minheight {
+   min-height: 300px;
 }
 
 /* Location maps */
