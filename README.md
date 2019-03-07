@@ -3,6 +3,7 @@
 
 # Reynir
 
+[![Build Status](https://travis-ci.com/vthorsteinsson/Reynir.svg?branch=master)](https://travis-ci.com/vthorsteinsson/Reynir) 
 [![Join the chat at https://gitter.im/Greynir/Lobby](https://badges.gitter.im/Greynir/Lobby.svg)](https://gitter.im/Greynir/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 ## Natural language processing for Icelandic
