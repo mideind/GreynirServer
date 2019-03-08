@@ -35,7 +35,7 @@
 import re
 from datetime import datetime
 
-from scraperdb import Entity
+from db.models import Entity
 from reynir import Abbreviations
 
 

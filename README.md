@@ -143,7 +143,7 @@ names and titles from parse trees for storage in a database table.
 * `settings.py` : Management of global settings and configuration data,
   obtained from `config/Reynir.conf`
 * `scraper.py` : Web scraper, collecting articles from a set of pre-selected websites (roots)
-* `scraperdb.py`: Wrapper for the scraper database via SQLAlchemy
+* `db/*`: Scraper database models and functions via SQLAlchemy
 * `nertokenizer.py` : A layer on top of the tokenizer for named entity recognition
 * `processor.py`: Information extraction from parse trees
 * `article.py` : Representation of an article through its life cycle

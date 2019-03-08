@@ -26,7 +26,8 @@ from datetime import datetime, timedelta
 from collections import namedtuple
 from contextlib import closing
 import requests
-from scraperdb import SessionContext, Link, BlacklistedLink
+from db import SessionContext
+from db.models import Link, BlacklistedLink
 
 
 def _server_query(url, q):

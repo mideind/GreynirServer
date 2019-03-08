@@ -33,16 +33,11 @@ from contextlib import closing
 from collections import namedtuple, defaultdict
 
 from settings import Settings, changedlocale
-from scraperdb import (
-    desc,
-    Root,
-    Article,
-    Person,
-    Entity,
-    RelatedWordsQuery,
-    ArticleCountQuery,
-    ArticleListQuery,
-)
+
+from db import desc
+from db.models import Article, Person, Entity, Root
+from db.queries import RelatedWordsQuery, ArticleCountQuery, ArticleListQuery
+
 from reynir.bindb import BIN_Db
 from tree import Tree
 from treeutil import TreeUtility
@@ -578,9 +573,7 @@ def query_word(query, session, stem):
     return dict(
         count=acnt,
         answers=[
-            dict(stem=rstem, cat=rcat)
-            for rstem, rcat, rcnt in rlist
-            if rstem != stem
+            dict(stem=rstem, cat=rcat) for rstem, rcat, rcnt in rlist if rstem != stem
         ],
     )
 

@@ -46,8 +46,8 @@ from fetcher import Fetcher
 from article import Article
 from scraperinit import init_roots
 
-from scraperdb import SessionContext, Root, IntegrityError
-from scraperdb import Article as ArticleRow
+from db import SessionContext, IntegrityError
+from db.models import Root, Article as ArticleRow
 
 import feedparser
 

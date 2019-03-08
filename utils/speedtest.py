@@ -14,7 +14,7 @@ if basepath.endswith("/utils") or basepath.endswith("\\utils"):
 import time
 
 from settings import Settings
-from scraperdb import SessionContext
+from db import SessionContext
 from article import Article
 from fastparser import Fast_Parser
 

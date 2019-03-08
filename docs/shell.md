@@ -19,7 +19,7 @@ The shell has been configured to automatically import Greynir's database models 
 * `s` - SQLAlchemy database session
 * `r` - Instance of the [Reynir](https://github.com/vthorsteinsson/ReynirPackage) parser.
 
-For an overview of Greynir's database models, see `scraperdb.py`.
+For an overview of Greynir's database models, see `db/models.py`.
 
 Shell auto-imports are configured in `.ipython.py` in the repository root. Additional local user settings can be configured in `~/.ipython/profile_default`.
 

@@ -30,7 +30,7 @@ import sys
 from time import sleep
 
 from settings import Settings, ConfigError
-from scraperdb import SessionContext, Root, IntegrityError
+from . import SessionContext, Root, IntegrityError
 
 
 def init_roots(wait=False):

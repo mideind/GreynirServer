@@ -44,7 +44,8 @@ from contextlib import closing
 from datetime import datetime
 
 from settings import Settings, ConfigError
-from scraperdb import Scraper_DB, Article, Person
+from db import Scraper_DB
+from db.models import Article, Person
 from tree import Tree
 
 _PROFILING = False

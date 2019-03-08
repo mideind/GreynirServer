@@ -33,8 +33,8 @@ from bs4 import BeautifulSoup, NavigableString
 
 from reynir import tokenize
 from nertokenizer import recognize_entities
-from scraperdb import SessionContext, Root, Article as ArticleRow
-
+from db import SessionContext
+from db.models import Root, Article as ArticleRow
 
 # The HTML parser to use with BeautifulSoup
 # _HTML_PARSER = "html5lib"

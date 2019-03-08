@@ -42,7 +42,8 @@ else:
 from settings import Settings, ConfigError, Prepositions
 from tokenizer import tokenize, correct_spaces, TOK
 from reynir.bindb import BIN_Db
-from scraperdb import SessionContext, Article, Trigram, DatabaseError, desc
+from db import SessionContext, DatabaseError, desc
+from db.models import Article, Trigram
 from tree import TreeTokenList, TerminalDescriptor
 
 

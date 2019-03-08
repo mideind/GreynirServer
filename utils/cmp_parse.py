@@ -13,7 +13,7 @@ if basepath.endswith(_UTILS):
     sys.path.append(basepath)
 
 from settings import Settings
-from scraperdb import SessionContext
+from db import SessionContext
 from treeutil import TreeUtility as tu
 
 Settings.read(os.path.join(basepath, "config", "Reynir.conf"))

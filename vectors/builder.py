@@ -62,7 +62,9 @@ from datetime import datetime
 from collections import defaultdict
 
 from settings import Settings, Topics, NoIndexWords
-from scraperdb import Article, Topic, ArticleTopic, Word, SessionContext, TermTopicsQuery
+from db import SessionContext
+from db.models import Article, Topic, ArticleTopic, Word
+from db.queries import TermTopicsQuery
 from similar import SimilarityClient
 
 import numpy as np

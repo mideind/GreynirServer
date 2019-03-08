@@ -31,7 +31,8 @@ from datetime import datetime
 from collections import OrderedDict, defaultdict
 
 from settings import NoIndexWords
-from scraperdb import Article as ArticleRow, SessionContext, Word, Root, DataError, desc
+from db import SessionContext, DataError, desc
+from db.models import Article as ArticleRow, Word, Root
 from fetcher import Fetcher
 from reynir import TOK
 from reynir.fastparser import Fast_Parser, ParseError, ParseForestDumper

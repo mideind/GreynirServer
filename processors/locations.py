@@ -25,7 +25,7 @@
 import re
 from collections import namedtuple
 from datetime import datetime
-from scraperdb import Location
+from db.models import Location
 from geo import location_info
 
 
