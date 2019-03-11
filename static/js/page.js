@@ -105,27 +105,33 @@ function spacing(t) {
    return TP_CENTER;
 }
 
-function queryPerson(name) {
+function openURL(url, ev) {
+   if (ev.altKey || ev.metaKey) {
+      // Open in new tab/window
+      window.open(url);
+   } else {
+      window.location.href = url;
+   } 
+}
+
+function queryPerson(name, ev) {
    // Navigate to the main page with a person query
-   window.location.href = "/?f=q&q=" + encodeURIComponent("Hver er " + name + "?");
+   openURL("/?f=q&q=" + encodeURIComponent("Hver er " + name + "?"), ev);
 }
 
-function queryEntity(name) {
+function queryEntity(name, ev) {
    // Navigate to the main page with an entity query
-   window.location.href = "/?f=q&q=" + encodeURIComponent("Hvað er " + name + "?");
+   openURL("/?f=q&q=" + encodeURIComponent("Hvað er " + name + "?"), ev);
 }
 
-function queryLocation(name) {
+function queryLocation(name, ev) {
    // TODO: Implement me!
 }
 
 function showParse(ev) {
    // A sentence has been clicked: show its parse grid
    var sentText = $(ev.delegateTarget).text();
-   // Do an HTML POST to the parsegrid URL, passing
-   // the sentence text within a synthetic form
-   // serverPost("/parsegrid", { txt: sentText, debug: debugMode() }, false)
-   window.location.href = "/treegrid?txt=" + encodeURIComponent(sentText);
+   openURL("/treegrid?txt=" + encodeURIComponent(sentText), ev);
 }
 
 function showPerson(ev) {
@@ -142,7 +148,7 @@ function showPerson(ev) {
    if (name === undefined) {
       name = $(this).text(); // No associated token: use the contained text
    }
-   queryPerson(name);
+   queryPerson(name, ev);
    ev.stopPropagation();
 }
 
@@ -150,13 +156,14 @@ function showEntity(ev) {
    // An entity name has been clicked
    var ename = $(this).text();
    var nd = nameDict[ename];
-   if (nd && nd.kind == "ref")
+   if (nd && nd.kind == "ref") {
       // Last name reference to a full name entity
       // ('Clinton' -> 'Hillary Rodham Clinton')
       // In this case, we assume that we're asking about a person
-      queryPerson(nd.fullname);
-   else
-      queryEntity(ename);
+      queryPerson(nd.fullname, ev);
+   } else {
+      queryEntity(ename, ev);
+   }
    ev.stopPropagation();
 }
 
@@ -198,9 +205,8 @@ function hoverIn() {
    }
 
    $("#info").removeClass();
-   if (r.class !== null) {
+   if (r.class)
       $("#info").addClass(r.class);
-   }
 
    // Try to fetch image if person (and at least two names)
    if (t.k == TOK_PERSON && t.v.split(' ').length > 1) {
@@ -252,8 +258,8 @@ function hoverIn() {
 
    // Position the info popup
    $("#info")
-      .css("top", offset.top.toString() + "px")
-      .css("left", offset.left.toString() + "px")
+      .css("top", "" + offset.top + "px")
+      .css("left", "" + offset.left + "px")
       .css("visibility", "visible");
 }
 
@@ -333,7 +339,7 @@ function hoverOut() {
 
 function displayTokens(j) {
    // Generate HTML for the token list given in j,
-   // and insert it into the <div> with id 'result'.
+   // and insert it into the <div> with id 'pgs'.
    // Also, populate the global w array with the
    // token list.
    var x = ""; // Result text
@@ -416,9 +422,9 @@ function displayTokens(j) {
          x += "</p>\n";
       });
    // Show the page text
-   $("div#result").html(x);
+   $("div#pgs").html(x);
    // Put a hover handler on each word
-   $("div#result i").hover(hoverIn, hoverOut);
+   $("div#pgs i").hover(hoverIn, hoverOut);
    // Put a click handler on each sentence
    $("span.sent").click(showParse);
    // Separate click handler on entity names
@@ -468,9 +474,11 @@ function populateRegister() {
       var ri = register[i];
       item = $("<li></li>");
       name = $("<span></span>").addClass(ri.kind).text(ri.name);
-      title = $("<span></span>").addClass("title").text(ri.title);
       item.append(name);
-      item.append(title);
+      if (ri.title) {
+         title = $("<span></span>").addClass("title").text(ri.title);
+         item.append(title);
+      }
       $("#namelist").append(item);
    }
    // Display the register
@@ -478,11 +486,11 @@ function populateRegister() {
       $("#register").css("display", "block");
       $("#namelist span.name").click(function(ev) {
          // Send a person query to the server
-         queryPerson($(this).text());
+         queryPerson($(this).text(), ev);
       });
       $("#namelist span.entity").click(function(ev) {
          // Send an entity query to the server
-         queryEntity($(this).text());
+         queryEntity($(this).text(), ev);
       });
    }
 }

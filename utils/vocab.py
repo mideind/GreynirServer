@@ -5,8 +5,8 @@
 
     Additional vocabulary utility
 
-    Copyright (C) 2018 Miðeind ehf.
-    Author: Vilhjálmur Þorsteinsson
+    Copyright (C) 2019 Miðeind ehf.
+    Original author: Vilhjálmur Þorsteinsson
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -55,7 +55,7 @@ psycopg2ext.register_type(psycopg2ext.UNICODEARRAY)
 basepath, _ = os.path.split(os.path.realpath(__file__))
 _UTILS = os.sep + "utils"
 if basepath.endswith(_UTILS):
-    basepath = basepath[0:-len(_UTILS)]
+    basepath = basepath[0 : -len(_UTILS)]
     sys.path.append(basepath)
 
 
@@ -64,7 +64,9 @@ if basepath.endswith(_UTILS):
 from settings import LineReader, ConfigError
 
 
-BIN_Meaning = namedtuple('BIN_Meaning', ['stofn', 'utg', 'ordfl', 'fl', 'ordmynd', 'beyging'])
+BIN_Meaning = namedtuple(
+    "BIN_Meaning", ["stofn", "utg", "ordfl", "fl", "ordmynd", "beyging"]
+)
 
 
 class Meanings:
@@ -77,11 +79,14 @@ class Meanings:
     _conn = None
     _cursor = None
     _DB_NAME = "bin"
-    _DB_USER = "reynir" # This user typically has only SELECT privileges on the database
+    # This user typically has only SELECT privileges on the database
+    _DB_USER = "reynir"
     _DB_PWD = "reynir"
     _DB_TABLE = "ord"
-    _DB_Q_FORMS = "SELECT stofn, utg, ordfl, fl, ordmynd, beyging " \
+    _DB_Q_FORMS = (
+        "SELECT stofn, utg, ordfl, fl, ordmynd, beyging "
         "FROM " + _DB_TABLE + " WHERE stofn=(%s);"
+    )
 
     # All possible declination forms of adjectives (48 in total)
     _UNDECLINED_ADJECTIVE_TEMPLATE = [
@@ -132,13 +137,49 @@ class Meanings:
         "FSB-KK-EFET",
         "FSB-KK-ÞGFET",
         "FSB-KK-ÞFET",
-        "FSB-KK-NFET"
+        "FSB-KK-NFET",
     ]
 
     _CAT_SET = None  # BIN_Token word categories
 
     @staticmethod
-    def add (stofn, ordmynd, ordfl, fl, beyging):
+    def open_db(host, port):
+        c = Meanings._conn = psycopg2.connect(
+            dbname=Meanings._DB_NAME,
+            user=Meanings._DB_USER,
+            password=Meanings._DB_PWD,
+            host=host,
+            port=port,
+            client_encoding="utf8",
+        )
+        c.autocommit = True
+        Meanings._cursor = c.cursor()
+
+    @staticmethod
+    def close_db():
+        Meanings._cursor.close()
+        Meanings._conn.close()
+
+    @staticmethod
+    def forms(w):
+        """ Return a list of all possible forms of a particular root (stem) """
+        c = Meanings._cursor
+        assert c is not None
+        m = None
+        try:
+            c.execute(Meanings._DB_Q_FORMS, [w])
+            # Map the returned data from fetchall() to a list of instances
+            # of the BIN_Meaning namedtuple
+            g = c.fetchall()
+            if g is not None:
+                m = list(map(BIN_Meaning._make, g))
+        except (psycopg2.DataError, psycopg2.ProgrammingError) as e:
+            print("Word '{0}' caused DB exception {1}".format(w, e))
+            m = None
+        return m
+
+    @staticmethod
+    def add(stofn, ordmynd, ordfl, fl, beyging):
         """ Add word meaning to the dictionary. Called from the config file handler. """
         assert ordmynd is not None
         assert ordfl is not None
@@ -158,52 +199,28 @@ class Meanings:
             Meanings.ROOT[stofn].append(m)
 
     @staticmethod
-    def open_db(host, port):
-        c = Meanings._conn = psycopg2.connect(dbname = Meanings._DB_NAME,
-            user = Meanings._DB_USER, password = Meanings._DB_PWD,
-            host = host, port = port, client_encoding = "utf8")
-        c.autocommit = True
-        Meanings._cursor = c.cursor()
-
-    @staticmethod
-    def close_db():
-        Meanings._cursor.close()
-        Meanings._conn.close()
-
-    @staticmethod
-    def forms(w):
-        """ Return a list of all possible forms of a particular root (stem) """
-        c = Meanings._cursor
-        assert c is not None
-        m = None
-        try:
-            c.execute(Meanings._DB_Q_FORMS, [ w ])
-            # Map the returned data from fetchall() to a list of instances
-            # of the BIN_Meaning namedtuple
-            g = c.fetchall()
-            if g is not None:
-                m = list(map(BIN_Meaning._make, g))
-        except (psycopg2.DataError, psycopg2.ProgrammingError) as e:
-            print("Word '{0}' causing DB exception {1}".format(w, e))
-            m = None
-        return m
-
-    @staticmethod
-    def add_composite(stofn, ordfl):
+    def add_composite(stofn, ordfl, fl):
         """ Add composite word forms by putting a prefix on existing BIN word forms.
             Called from the config file handler. """
         assert stofn is not None
         assert ordfl is not None
-        a = stofn.split("-")
-        if len(a) != 2:
-            raise ConfigError("Composite word meaning must contain a single hyphen")
+        # Handle cases like 'Suður-Ameríku-ríki' correctly
+        a = stofn.rsplit("-", maxsplit=1)
+        assert len(a) == 2
         prefix = a[0]
         stem = a[1]
         m = Meanings.forms(stem)
         if m:
             for w in m:
                 if w.ordfl == ordfl:
-                    t = (prefix + w.stofn, -1, ordfl, w.fl, prefix + w.ordmynd, w.beyging)
+                    t = (
+                        prefix + w.stofn,
+                        -1,
+                        ordfl,
+                        fl or w.fl,
+                        prefix + w.ordmynd,
+                        w.beyging,
+                    )
                     Meanings.DICT[prefix + w.ordmynd].append(t)
                     Meanings.ROOT[prefix + w.stofn].append(t)
 
@@ -213,25 +230,29 @@ class Meanings:
         # Format: stofn ordmynd ordfl fl (default ob) beyging (default -)
         a = s.split()
         if len(a) < 2 or len(a) > 5:
-            raise ConfigError("Meaning should have two to five arguments, {0} given".format(len(a)))
+            raise ConfigError(
+                "Meaning should have two to five arguments, {0} given".format(len(a))
+            )
         stofn = None
         fl = None
         beyging = None
-        if len(a) == 2:
-            # Short format: only ordmynd and ordfl
+        if len(a) <= 3:
+            # Short format: ordmynd ordfl [fl]
             ordmynd = a[0]
             ordfl = a[1]
+            if len(a) == 3:
+                fl = a[2]
         else:
-            # Full format: at least three arguments, stofn ordmynd ordfl
+            # Full format: at least four arguments, stofn ordmynd ordfl fl
             stofn = a[0]
             ordmynd = a[1]
             ordfl = a[2]
-            fl = a[3] if len(a) >= 4 else None
+            fl = a[3]
             beyging = a[4] if len(a) >= 5 else None
 
-        if len(a) == 2 and "-" in ordmynd:
+        if len(a) <= 3 and "-" in ordmynd:
             # Creating new meanings by prefixing existing ones
-            Meanings.add_composite(ordmynd, ordfl)
+            Meanings.add_composite(ordmynd, ordfl, fl)
         else:
             Meanings.add(stofn, ordmynd, ordfl, fl, beyging)
 
@@ -242,14 +263,14 @@ class Meanings:
             rdr = LineReader(fname)
             for s in rdr.lines():
                 # Ignore comments
-                ix = s.find('#')
+                ix = s.find("#")
                 if ix >= 0:
                     s = s[0:ix]
                 s = s.strip()
                 if not s:
                     # Blank line: ignore
                     continue
-                if s[0] == '[' and s[-1] == ']':
+                if s[0] == "[" and s[-1] == "]":
                     # Handle section name, if found (it is redundant in this case)
                     section = s[1:-1].strip().lower()
                     if section != "meanings":
@@ -283,16 +304,16 @@ if __name__ == "__main__":
         quit()
 
     if len(Meanings.DICT) == 0:
-        print("No vocabulary entries ([meanings] section) found in "
-            "Vocab.conf file")
+        print("No vocabulary entries ([meanings] section) found in " "Vocab.conf file")
         quit()
 
     with open(fname, "w") as f:
         for _, meanings in Meanings.DICT.items():
             for m in meanings:
                 stofn, utg, ordfl, fl, ordmynd, beyging = m
-                f.write("{0};{1};{2};{3};{4};{5}\n"
-                    .format(stofn, utg, ordfl, fl, ordmynd, beyging)
+                f.write(
+                    "{0};{1};{2};{3};{4};{5}\n".format(
+                        stofn, utg, ordfl, fl, ordmynd, beyging
+                    )
                 )
     print("\nDone")
-

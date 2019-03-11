@@ -51,16 +51,15 @@ cp similar.py $DEST/similar.py
 cp tnttagger.py $DEST/tnttagger.py
 cp tree.py $DEST/tree.py
 cp treeutil.py $DEST/treeutil.py
+cp scrapers/*.py $DEST/scrapers/
 
-# Scrapers and processors are not required for the web server
-# cp scrapers/*.py $DEST/scrapers/
+# Processors are not required for the web server
 # cp processors/*.py $DEST/processors/
 
 rsync -av --delete templates/ $DEST/templates/
 rsync -av --delete static/ $DEST/static/
 
 cp resources/*.json $DEST/resources/
-cp fonts/* $DEST/fonts/
 
 # Put a version identifier (date and time) into the about.html template
 sed -i "s/\[Þróunarútgáfa\]/Útgáfa `date "+%Y-%m-%d %H:%M"`/g" $DEST/templates/about.html

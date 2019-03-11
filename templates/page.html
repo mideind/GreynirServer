@@ -33,8 +33,6 @@
 
 <div id="output">
 
-   {% include 'hover-infobox.html' %}
-
    <div id="column">
       <!-- Article heading and content -->
 
@@ -87,10 +85,16 @@
       </div>
 
       <div id="result" class="result">
-         <!-- Result of analysis goes here -->
-         <p>Sæki grein...
-            <span class="glyphicon glyphicon-restart glyphicon-spin"></span>
-         </p>
+
+         {% include 'hover-infobox.html' %}
+
+         <div id="pgs">
+            <!-- Result of analysis goes here -->
+            <p>Sæki grein...
+               <span class="glyphicon glyphicon-restart glyphicon-spin"></span>
+            </p>
+         </div>
+
       </div>
 
    </div> <!-- column -->
@@ -160,7 +164,7 @@
    function handleError(xhr, status, errorThrown) {
       /* An error occurred on the server or in the communications */
       $("div#help").css("display", "none");
-      $("div#result").html("<p><b>Villa kom upp</b> í samskiptum við netþjón Greynis</p>"); 
+      $("div#pgs").html("<p><b>Villa kom upp</b> í samskiptum við netþjón Greynis</p>"); 
       $("button#refresh").removeAttr("disabled");
       $("button#check").removeAttr("disabled");
    }
@@ -189,7 +193,7 @@
       // Ask the server to scrape, tokenize and parse a fresh URL
       // Launch the query
       $("div#help").css("display", "none");
-      $("div#result").html("<p>Málgreining stendur yfir... " +
+      $("div#pgs").html("<p>Málgreining stendur yfir... " +
          "<span class='glyphicon glyphicon-restart glyphicon-spin'></span>" +
          "</p>");
       $("button#refresh").attr("disabled", "disabled");
@@ -211,7 +215,7 @@
       // Send the text of the current article over to correct.html
       // for spelling and grammar checking
       var txt = "";
-      $.each($("div#result p"), function() {
+      $.each($("div#pgs p"), function() {
          // Handle each paragraph
          var ptxt = "";
          $.each($("span.sent", this), function () {
@@ -239,9 +243,7 @@
             reparseArticle("{{ article.uuid | safe }}");
          });
       $("button#check")
-         .click(function(ev) {
-            checkArticle();
-         });
+         .click(checkArticle);
       displayTokens(j);
       // Show similar list
       $("div#similar").css("display", "block");

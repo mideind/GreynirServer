@@ -5,8 +5,8 @@
 
     Scraper module
 
-    Copyright (C) 2018 Miðeind ehf.
-    Author: Vilhjálmur Þorsteinsson
+    Copyright (C) 2019 Miðeind ehf.
+    Original author: Vilhjálmur Þorsteinsson
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -71,9 +71,10 @@ class Scraper:
         logging.info("Initializing scraper instance")
 
     def urls2fetch(self, root, helper):
-        """ Returns a set of URLs to fetch. If the scraper helper class has associated
-            RSS feed URLs, these are used to acquire article URLs. Otherwise, the URLs are 
-            found by scraping the root website and searching for links to subpages. """
+        """ Returns a set of URLs to fetch. If the scraper helper class has
+            associated RSS feed URLs, these are used to acquire article URLs.
+            Otherwise, the URLs are found by scraping the root website and
+            searching for links to subpages. """
         fetch_set = set()
         feeds = helper.feeds
 
@@ -272,7 +273,8 @@ class Scraper:
                 def iter_unscraped_articles():
                     """ Go through any unscraped articles and scrape them """
                     # Note that the query(ArticleRow) below cannot be directly changed
-                    # to query(ArticleRow.root, ArticleRow.url) since ArticleRow.root is a joined subrecord
+                    # to query(ArticleRow.root, ArticleRow.url) since
+                    # ArticleRow.root is a joined subrecord
                     seq = 0
                     for a in (
                         session.query(ArticleRow)
@@ -297,7 +299,8 @@ class Scraper:
                 """ Go through articles to be parsed """
                 # Fetch 100 rows at a time
                 # Note that the query(ArticleRow) below cannot be directly changed
-                # to query(ArticleRow.root, ArticleRow.url) since ArticleRow.root is a joined subrecord
+                # to query(ArticleRow.root, ArticleRow.url) since
+                # ArticleRow.root is a joined subrecord
                 q = session.query(ArticleRow).filter(ArticleRow.scraped != None)
                 if reparse:
                     # Reparse articles that were originally parsed with an older
@@ -373,12 +376,13 @@ class Scraper:
                     pool.join()
                     cnt += lcnt
                     logging.info(
-                        "Parser processes joined, chunk of {0} articles parsed, total {1}".format(
-                            lcnt, cnt
-                        )
+                        "Parser processes joined, chunk of {0} articles parsed, "
+                        "total {1}".format(lcnt, cnt)
                     )
                 if lcnt < CHUNK_SIZE:
                     break
+            # Return the total number of articles parsed
+            return cnt
 
     @staticmethod
     def stats():
@@ -411,7 +415,8 @@ class Scraper:
         num_parsed_over_1 = result[0]
 
         logging.info(
-            "Num_articles is {0}, scraped {1}, parsed {2}, parsed with >1 sentence {3}".format(
+            "Num_articles is {0}, scraped {1}, parsed {2}, "
+            "parsed with >1 sentence {3}".format(
                 num_articles, num_scraped, num_parsed, num_parsed_over_1
             )
         )
@@ -441,11 +446,12 @@ def scrape_articles(reparse=False, limit=0, urls=None):
     else:
         logging.info("URLs read from: {0}".format(urls))
     t0 = time.time()
+    count = 0
 
     try:
         sc = Scraper()
         try:
-            sc.go(reparse=reparse, limit=limit, urls=urls)
+            count = sc.go(reparse=reparse, limit=limit, urls=urls)
             # Successful finish: print stats
             sc.stats()
         except KeyboardInterrupt:
@@ -458,9 +464,9 @@ def scrape_articles(reparse=False, limit=0, urls=None):
         pass
 
     t1 = time.time()
-    logging.info("Elapsed: {0:.1f} minutes".format((t1 - t0) / 60))
-    if limit:
-        logging.info("Average: {0:.2f} seconds per article".format((t1 - t0) / limit))
+    logging.info("{1} articles parsed in {0:.1f} minutes".format((t1 - t0) / 60, count))
+    if count > 0:
+        logging.info("Average: {0:.2f} seconds per article".format((t1 - t0) / count))
 
     logging.info("------ Scrape completed -------")
 

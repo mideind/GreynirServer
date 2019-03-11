@@ -25,7 +25,7 @@
 
 """
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from settings import Settings
 from scraperdb import Root, Article

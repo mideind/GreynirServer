@@ -39,9 +39,9 @@
 
    <h3 class="help">Málgreining <small>Smelltu á málsgrein til að sjá trjágreiningu hennar</small></h3>
 
-   {% include 'hover-infobox.html' %}
-
    <div id="result" class="result">
+      {% include 'hover-infobox.html' %}
+      <div id="pgs"></div>
    </div>
 
    <div id="register">
@@ -91,7 +91,7 @@
 
    function clearResult() {
       // Clear previous result
-      $("div#result").html("");
+      $("div#pgs").html("");
       $("div#statistics").css("display", "none");
       $("div#register").css("display", "none");
       // Display progress indicator
@@ -100,7 +100,7 @@
 
    function handleError(xhr, status, errorThrown) {
       /* An error occurred on the server or in the communications */
-      $("div#result").html("<p><b>Villa kom upp</b> í samskiptum við netþjón Greynis</p>"); 
+      $("div#pgs").html("<p><b>Villa kom upp</b> í samskiptum við netþjón Greynis</p>");
       wait(false);
    }
 

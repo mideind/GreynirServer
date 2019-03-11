@@ -1,0 +1,142 @@
+
+{% extends "container-normal.html" %}
+
+{% block styles %}
+
+<link href="{{ url_for('static', filename='css/main-bootstrap.css') }}" rel='stylesheet' type='text/css'>
+
+{% endblock %}
+
+{% block content %}
+
+<div>
+   <ul class="nav nav-tabs" role="tablist">
+      <li role="presentation">
+         <a href="{{ url_for('people_recent') }}">
+            Nýlegt
+         </a>
+      </li>
+      <li role="presentation" class="active">
+         <a href="{{ url_for('people_top') }}">
+            Oftast
+         </a>
+      </li>
+      <!--<li role="presentation">
+         <a href="">
+            Vensl
+         </a>
+      </li>
+      <li role="presentation">
+         <a href="">
+            Tímalína
+         </a>
+      </li>-->
+   </ul>
+</div>
+
+<div role="tabpanel" class="tab-pane active">
+   <div class="panel panel-default table-responsive minheight">
+
+      <div class="panel-heading">
+         <div class="headline hidden-xs">Fólk sem kemur oftast fyrir í fréttum vefmiðla</div>
+         <div class="headline visible-xs-inline-block">Fólk</div>
+
+         <div class="btn-group pull-right">
+            
+            <!-- Period Popup Button -->
+            <span class="hidden-xs">
+               <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  {{ "Undanfarna viku" if period == 'week' else "Síðasta sólarhring" }} 
+                  <span class="caret"></span>
+               </button>
+
+               <ul class="dropdown-menu">
+                  <li><a href="{{ url_for('people_top') | safe }}">Síðasta sólarhring</a></li>
+                  <li><a href="{{ url_for('people_top', period='week') | safe }}">Undanfarna viku</a></li>
+               </ul>
+            </span>
+
+         </div>
+      </div>
+
+      <table class="table table-hover" id="plist">
+         <thead>
+            <th class="gender">Kyn</th>
+            <th>Nafn</th>
+            <th>Greinar</th>
+         </thead>
+         <tbody>
+      {% for person in persons %}
+            <tr class="topitem" data-uuid="{{ person.uuid }}">
+               {% if person.gender == 'kk' %}
+                  {% set name_class = "text-info" %}
+                  {% set desc_text = "Karl" %}
+                  {% set icon_class = "glyphicon-gender-male" %}
+               {% elif person.gender == 'kvk' %}
+                  {% set name_class = "text-danger" %}
+                  {% set desc_text = "Kona" %}
+                  {% set icon_class = "glyphicon-gender-female" %}
+               {% else %}
+                  {% set name_class = "" %}
+                  {% set desc_text = "Kyn óþekkt" %}
+                  {% set icon_class = "" %}
+               {% endif %}
+
+               <td class="gender" title="{{ desc_text }}">
+                  <span class="glyphicon {{ icon_class }}"></span>
+               </td>
+               <td class="name">
+                  <span class="{{ name_class }}">{{ person.name }}</span>
+               </td>
+
+               <td class="noselect">
+               {% set width = (person.articles|length / persons[0].articles|length) * 100 %}
+                  <div class="progress progress-bar rank-progressbar" style="width:{{ width | round | int }}%;">
+                     <span>{{ person.articles|length }}</span>
+                  </div>
+                  <div class="rank-article-items">
+                     {% for a in person.articles %}
+                     <span class="art-link"><a href="{{ url_for('page', id=a.id) | safe }}" onclick="event.stopPropagation();"  data-toggle="tooltip" data-placement="bottom" title="{{ a.heading }}"><img src="{{ url_for('static', filename = 'sources/' + a.domain + '.png') }}" width="16" height="16" alt="{{ a.heading }}"/></a></span>
+                     {% endfor %}
+                  </div>
+               </td>
+            </tr>
+      {% endfor %}
+         </tbody>
+      </table>
+
+   </div>
+</div>
+
+{% endblock %}
+
+{% block endscripts %}
+
+<script>
+
+   function init() {
+      // Activate the top navbar
+      $("#navid-people").addClass("active");
+
+      // Toggle showing articles associated with person name
+      $("#plist > tbody > tr.topitem").click(function(evt) {
+         $(this).find(".rank-article-items").slideToggle(150);
+         evt.stopPropagation();
+      });
+
+      $("#plist td.name > span").click(function(evt) {
+         var name = $(this).text();
+         window.location.href = "/?f=q&q=" + encodeURIComponent("Hver er " + name + "?");
+         evt.stopPropagation();
+      });
+
+      // Activate bootstrap tooltips for article icons
+      $('[data-toggle="tooltip"]').tooltip({ 'animation': false });
+   }
+
+   $(document).ready(init);
+
+</script>
+
+{% endblock %}
+

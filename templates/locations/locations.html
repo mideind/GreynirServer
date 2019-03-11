@@ -9,7 +9,6 @@
 
 {% block content %}
 
-
 <div>
    <ul class="nav nav-tabs" role="tablist">
       <li role="presentation" class="active">
@@ -30,89 +29,91 @@
    </ul>
 </div>
 
-
 <!-- Locations list -->
 
 <div role="tabpanel" class="tab-pane active">
+   <div class="panel panel-default table-responsive minheight">
 
-<div class="panel panel-default table-responsive">
+      <div class="panel-heading">
+         <div class="headline hidden-xs">Nýlega í fréttum vefmiðla</div>
+         <div class="headline visible-xs-inline-block">Nýjustu staðir</div>
 
-   <div class="panel-heading">
-      <div class="headline hidden-xs">Nýlega í fréttum vefmiðla</div>
-      <div class="headline visible-xs-inline-block">Nýjustu staðir</div>
+         <div class="btn-group pull-right">
+            
+            <!-- Kind Popup Button -->
+            <span class="hidden-xs">
+               <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="margin-right: 10px;" id="kindbutton">
+                  Allir staðir <span class="caret"></span>
+               </button>
+               <ul class="dropdown-menu" id="kind-dropdown-menu">
+                  <li><a href="{{ url_for('locations') }}">Allir staðir</a></li>
+                  <li role="separator" class="divider"></li>
+                  <li><a href="{{ url_for('locations', period=period, kind='continent') | safe }}" id="continent">Álfur</a></li>
+                  <li><a href="{{ url_for('locations', period=period, kind='country') | safe }}" id="country">Lönd</a></li>
+                  <li><a href="{{ url_for('locations', period=period, kind='placename') | safe }}" id="placename">Örnefni</a></li>
+                  <li><a href="{{ url_for('locations', period=period, kind='street') | safe }}" id="street">Götur</a></li>
+                  <li><a href="{{ url_for('locations', period=period, kind='address') | safe }}" id="address">Heimilisföng</a></li>
+               </ul>
+            </span>
 
-      <div class="btn-group pull-right">
-         
-         <!--
-         <span class="hidden-xs">
-            <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="margin-right: 10px;">
-               Allir staðir <span class="caret"></span>
-            </button>
+            <!-- Period Popup Button -->
+            <span class="hidden-xs">
+               <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  {{ "Undanfarna viku" if period == 'week' else "Síðasta sólarhring" }} 
+                  <span class="caret"></span>
+               </button>
+               <ul class="dropdown-menu">
+                  <li><a href="{{ url_for('locations', kind=kind) | safe }}">Síðasta sólarhring</a></li>
+                  <li><a href="{{ url_for('locations', period='week', kind=kind ) | safe }}">Undanfarna viku</a></li>
+               </ul>
+            </span>
 
-            <ul class="dropdown-menu">
-               <li><a href="{{ url_for('locations') }}">Allir staðir</a></li>
-               <li role="separator" class="divider"></li>
-               <li><a href="{{ url_for('locations', kind='country') | safe }}">Lönd</a></li>
-               <li><a href="{{ url_for('locations', kind='placename') | safe }}">Örnefni</a></li>
-               <li><a href="{{ url_for('locations', kind='street') | safe }}">Götur</a></li>
-               <li><a href="{{ url_for('locations', kind='address') | safe }}">Heimilisföng</a></li>
-            </ul>
-         </span>
-         -->
+         </div>
 
-         <span class="hidden-xs">
-            <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-               {{ "Undanfarna viku" if period == 'week' else "Síðasta sólarhring" }} 
-               <span class="caret"></span>
-            </button>
-
-            <ul class="dropdown-menu">
-               <li><a href="{{ url_for('locations') | safe }}">Síðasta sólarhring</a></li>
-               <li><a href="{{ url_for('locations', period='week') | safe }}">Undanfarna viku</a></li>
-            </ul>
-         </span>
       </div>
 
-   </div>
-
-   <table class="table table-hover" id="plist">
-      <thead>
-         <th class="hidden-xs"></th>
-         <th>Staður</th>
-         <th>Greinar</th>
-      </thead>
-      <tbody>
-   {% for loc in locations %}
-         <tr class="topitem">
-            <td align="center" class="hidden-xs flags">
-               {% if loc.country %}
-                  <img src="{{ url_for('static', filename='img/flags/' + loc.country + '.png') }}" width="22">
-               {% else %}
-                  <span class="glyphicon glyphicon-globe"></span>
-               {% endif %}
-            </td>
-            <td class="locname">
-               {% if loc.map_url %}
-                  <a href="{{ loc.map_url }}" title="Skoða á Google Maps">
+      <table class="table table-hover" id="loclist">
+         <thead>
+            <th class="hidden-xs"></th>
+            <th>Staður</th>
+            <th>Greinar</th>
+         </thead>
+         <tbody>
+      {% for loc in locations %}
+            <tr class="topitem">
+               <td align="center" class="hidden-xs flags">
+                  {% if loc.country %}
+                     <img src="{{ url_for('static', filename='img/flags/' + loc.country + '.png') }}" width="22">
+                  {% else %}
+                     <span class="glyphicon glyphicon-globe"></span>
+                  {% endif %}
+               </td>
+               <td class="locname">
+                  {% if loc.map_url %}
+                     <a href="{{ loc.map_url }}" onClick="event.stopPropagation();" title="Skoða á Google Maps">
+                        {{ loc.name }}
+                     </a>
+                  {% else %}
                      {{ loc.name }}
-                  </a>
-               {% else %}
-                  {{ loc.name }}
-               {% endif %}
-            </td>
-            <td class="locarticles">
-               {% for a in loc.articles %}
-                  <span class="art-link" title="{{ a.heading }}"><a href="{{ url_for('page', id=a.id) | safe }}"><img src="{{ url_for('static', filename = 'sources/' + a.domain + '.png') }}"
-            width="16" height="16" alt="{{ a.heading }}"/></a></span>
-               {% endfor %}
-            </td>
-            
-         </tr>
-   {% endfor %}
-      </tbody>
-   </table>
-</div>
+                  {% endif %}
+               </td>
+               <td class="noselect">
+                  {% set width = (loc.articles|length / locations[0].articles|length) * 100 %}
+                  <div class="progress progress-bar rank-progressbar" style="width:{{ width | round | int }}%;">
+                     <span>{{ loc.articles|length }}</span>
+                  </div>
+                  <div class="rank-article-items">
+                     {% for a in loc.articles %}
+                        <span class="art-link"><a href="{{ url_for('page', id=a.id) | safe }}" onClick="event.stopPropagation();" data-toggle="tooltip" data-placement="bottom" title="{{ a.heading }}"><img src="{{ url_for('static', filename = 'sources/' + a.domain + '.png') }}" width="16" height="16" alt="{{ a.heading }}"/></a></span>
+                     {% endfor %}
+                  </div>
+               </td>
+            </tr>
+      {% endfor %}
+         </tbody>
+      </table>
 
+   </div>
 </div>
 
 {% endblock %}
@@ -121,10 +122,29 @@
 
 <script>
   
-   $(document).ready(function() {
+   function init() {
       // Activate the top navbar
       $("#navid-locations").addClass("active");
-   });
+      
+      // Show correct selection in kind popup button
+      var kindName = 'Allir staðir';
+      {% if kind %}
+         kindName = $('#{{ kind }}').text();
+      {% endif %}
+      $('#kindbutton').text(kindName);
+      
+      // Clicking toggles visibility of articles associated with location
+      $("#loclist > tbody > tr.topitem").click(function(ev) {
+         // $(".locarticle-items:visible").slideToggle(150);
+         $(this).find(".rank-article-items").slideToggle(150);
+         ev.stopPropagation();
+      });
+
+      // Activate bootstrap tooltips for article icons
+      $('[data-toggle="tooltip"]').tooltip({ 'animation': false });
+   }
+
+   $(document).ready(init);
 
 </script>
 

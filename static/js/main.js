@@ -393,11 +393,14 @@ function populateQueryResult(r) {
                var artList = li.append($("<span class='art-list'></span>")).children().last();
                for (var i = 0; i < urlList.length; i++) {
                   var u = urlList[i];
-                  artList.append($("<span class='art-link'></span>")
+                  var img = $("<img width='16' height='16'></img>")
+                     .attr("src", "/static/sources/" + u.domain + ".png");
+                  var art_link = $("<span class='art-link'></span>")
                      .attr("title", u.heading)
                      .attr("data-uuid", u.uuid)
-                     .html($("<img width='16' height='16'></img>").attr("src", "/static/sources/" + u.domain + ".png"))
-                  );
+                     .attr("data-toggle", "tooltip")
+                     .html(img);
+                  artList.append(art_link);
                }
             }
             answer.append(li);
@@ -450,6 +453,9 @@ function populateQueryResult(r) {
       $("#entity-body span.name").click(showPerson);
       $("#entity-body span.entity").click(showEntity);
    }
+   // Activate bootstrap tooltips for article icons
+   $('[data-toggle="tooltip"]').tooltip({ 'animation': false });
+   // Click handler for article icons
    $("span.art-link").add("tr.article").click(function(ev) {
       // Show a source article
       wait(true); // This can take time, if a parse is required
