@@ -2,7 +2,7 @@
 
     Reynir: Natural language processing for Icelandic
 
-    Scraper database model
+    Scraper database models
 
     Copyright (C) 2019 Miðeind ehf.
 
@@ -43,6 +43,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as psql_UUID
 
+from . import Settings
 
 # Create the SQLAlchemy ORM Base class
 Base = declarative_base()

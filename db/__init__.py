@@ -28,13 +28,15 @@ import platform
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from settings import Settings
+from settings import Settings, ConfigError
 
 from sqlalchemy.exc import SQLAlchemyError as SqlError
 from sqlalchemy.exc import IntegrityError as SqlIntegrityError
 from sqlalchemy.exc import DataError as SqlDataError
 from sqlalchemy import desc as SqlDesc
 from sqlalchemy import func as dbfunc
+
+from .models import Base
 
 # Allow client use of these exception without importing them from sqlalchemy
 IntegrityError = SqlIntegrityError

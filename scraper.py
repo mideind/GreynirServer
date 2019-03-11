@@ -44,10 +44,10 @@ from multiprocessing import Pool, cpu_count
 from settings import Settings, ConfigError
 from fetcher import Fetcher
 from article import Article
-from scraperinit import init_roots
 
 from db import SessionContext, IntegrityError
 from db.models import Root, Article as ArticleRow
+from db.setup import init_roots
 
 import feedparser
 
