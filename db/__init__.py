@@ -19,7 +19,7 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    This module describes the SQLAlchemy models for the scraper database.
+    This module contains database-related functionality.
 
 """
 
