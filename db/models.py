@@ -43,7 +43,6 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as psql_UUID
 
-from . import Settings
 
 # Create the SQLAlchemy ORM Base class
 Base = declarative_base()

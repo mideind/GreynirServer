@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 
     Reynir: Natural language processing for Icelandic
@@ -31,6 +29,7 @@ from time import sleep
 
 from . import SessionContext, IntegrityError, Settings
 from .models import Root
+
 
 def init_roots(wait=False):
     """ Create tables and initialize the scraping roots, if not already present.
@@ -244,10 +243,7 @@ def init_roots(wait=False):
                 SessionContext.cleanup()
                 # Loop to retry
             else:
-                print(
-                    "Exception in init_roots(): {0}".format(e),
-                    file=sys.stderr,
-                )
+                print("Exception in init_roots(): {0}".format(e), file=sys.stderr)
                 sys.stderr.flush()
                 # Re-raise the exception
                 raise

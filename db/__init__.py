@@ -50,20 +50,19 @@ class Scraper_DB:
     """ Wrapper around the SQLAlchemy connection, engine and session """
 
     def __init__(self):
-
-        """ Initialize the SQLAlchemy connection with the scraper database """
+        """ Initialize the SQLAlchemy connection to the scraper database """
 
         # Assemble the right connection string for CPython/psycopg2 vs.
         # PyPy/psycopg2cffi, respectively
-
         is_pypy = platform.python_implementation() == "PyPy"
         conn_str = "postgresql+{0}://reynir:reynir@{1}:{2}/scraper".format(
             "psycopg2cffi" if is_pypy else "psycopg2",
             Settings.DB_HOSTNAME,
             Settings.DB_PORT,
         )
+
+        # Create engine and bind session
         self._engine = create_engine(conn_str)
-        # Create a Session class bound to this engine
         self._Session = sessionmaker(bind=self._engine)
 
     def create_tables(self):

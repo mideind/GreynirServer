@@ -3,8 +3,6 @@
 # Start IPython shell using config stored in repository
 #
 
-# Change to parent directory of the directory containing the script
-# This should be the repo root
 SCRIPT_DIR=$(dirname "$0")
 CONFIG_PATH="${SCRIPT_DIR}/.ipython.py"
 
@@ -12,6 +10,8 @@ if [ ! -e $CONFIG_PATH ]; then
     echo "Warning: IPython config not found at ${CONFIG_PATH}"
 fi
 
+# Change to parent directory of the script
+# This should be the repo root
 cd $SCRIPT_DIR/..
 
 # Make sure we're running in a virtual environment
@@ -35,5 +35,5 @@ if [ ! -e "$IPYTHON_BIN" ]; then
 	exit
 fi
 
-# Run IPython shell iwth custom configuration
+# Run IPython shell with custom configuration
 $IPYTHON_BIN --config="${CONFIG_PATH}" --pprint --no-simple-prompt
