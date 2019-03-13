@@ -33,6 +33,17 @@
             <span class="glyphicon glyphicon-eye-open"></span> Lesa yfir
          </button>
       </div>
+
+      <form id="uploadForm" style="display: none;">
+         <input id="file-input" type="file" name="filename" onChange="uploadFile()">
+      </form>
+      <div class="col-xs-4 col-sm-3 col-md-2 pull-right">
+         <button class="btn btn-info btn-lg btn-block"
+            id="txt-ok" title="Skjal" tabindex="3"
+            onclick="selectFile()">
+            <span class="glyphicon glyphicon-file"></span> Skjal
+         </button>
+      </div>
    </div>
 
 </div>
@@ -363,6 +374,25 @@
       // Submit the contents of the textarea to the server
       // for tokenization and parsing
       correctText($("#txt").val().trim());
+   }
+
+   function selectFile() {
+      $('#file-input').trigger('click');
+   }
+
+   function uploadFile() {
+      var fd = new FormData();
+      fd.set('file', $('#file-input')[0].files[0]);
+      $.ajax({
+         url: '/correct.api',  
+         type: 'POST',
+         data: fd,
+         success:populateResult,
+         error:handleError,
+         cache: false,
+         contentType: false,
+         processData: false
+      });
    }
 
    function init() {

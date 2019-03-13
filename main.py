@@ -699,6 +699,10 @@ def analyze_api(version=1):
     return better_jsonify(valid=True, result=pgs, stats=stats, register=register)
 
 
+ALLOWED_UPLOAD_MIME_TYPES = frozenset(
+    ("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+)  # Yes, really
+
 # Note: Endpoints ending with .api are configured not to be cached by nginx
 @app.route("/correct.api", methods=["GET", "POST"])
 @app.route("/correct.api/v<int:version>", methods=["GET", "POST"])
@@ -707,6 +711,15 @@ def correct_api(version=1):
         This is a lower level API used by the Greynir web front-end. """
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
+
+    file = request.files.get("file")
+    if file:
+        mimetype = file.content_type
+        if mimetype not in ALLOWED_UPLOAD_MIME_TYPES:
+            pass # FIXME
+        # filename = werkzeug.secure_filename(file.filename)
+        #print(request.files)
+        # Process file
 
     try:
         text = text_from_request(request)
@@ -1351,6 +1364,7 @@ def locinfo():
 
 DEFAULT_STATS_PERIOD = 10  # days
 MAX_STATS_PERIOD = 30
+
 
 @app.route("/stats", methods=["GET"])
 @max_age(seconds=10 * 60)
