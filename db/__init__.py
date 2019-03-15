@@ -30,21 +30,13 @@ from sqlalchemy.orm import sessionmaker
 
 from settings import Settings, ConfigError
 
-from sqlalchemy.exc import SQLAlchemyError as SqlError
-from sqlalchemy.exc import IntegrityError as SqlIntegrityError
-from sqlalchemy.exc import DataError as SqlDataError
-from sqlalchemy import desc as SqlDesc
+from sqlalchemy.exc import SQLAlchemyError as DatabaseError
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import DataError
+from sqlalchemy import desc
 from sqlalchemy import func as dbfunc
 
 from .models import Base
-
-# Allow client use of these exception without importing them from sqlalchemy
-IntegrityError = SqlIntegrityError
-DatabaseError = SqlError
-DataError = SqlDataError
-# Same for the desc() function
-desc = SqlDesc
-
 
 class Scraper_DB:
     """ Wrapper around the SQLAlchemy connection, engine and session """
