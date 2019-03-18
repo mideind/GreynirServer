@@ -438,7 +438,7 @@ def top_persons(limit=_TOP_PERSONS_LENGTH, days=_TOP_PERSONS_PERIOD):
                 Article.url,
                 Root.domain,
             )
-            .join(Article)
+            .join(Article, Article.id == Word.article_id)
             .join(Root)
             .filter(Root.visible)
             .filter(Article.timestamp > datetime.utcnow() - timedelta(days=days))
@@ -490,10 +490,10 @@ def top_locations(limit=_TOP_LOC_LENGTH, kind=None, days=_TOP_LOC_PERIOD):
                 Article.heading,
                 Root.domain,
             )
-            .join(Article)
+            .join(Article, Article.url == Location.article_url)
+            .filter(Article.timestamp > datetime.utcnow() - timedelta(days=days))
             .join(Root)
             .filter(Root.visible)
-            .filter(Article.timestamp > datetime.utcnow() - timedelta(days=days))
         )
 
         # Filter by kind
