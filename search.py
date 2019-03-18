@@ -28,7 +28,7 @@
 from datetime import timedelta
 
 from settings import Settings
-from scraperdb import Root, Article
+from db.models import Root, Article
 from similar import SimilarityClient
 
 

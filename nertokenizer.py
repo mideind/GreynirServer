@@ -34,7 +34,8 @@ from collections import defaultdict
 from reynir import Abbreviations, TOK
 from reynir.bindb import BIN_Db
 
-from scraperdb import SessionContext, Entity
+from db import SessionContext
+from db.models import Entity
 
 
 def recognize_entities(token_stream, enclosing_session=None):

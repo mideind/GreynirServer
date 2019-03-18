@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 
     Reynir: Natural language processing for Icelandic
@@ -29,8 +27,8 @@
 import sys
 from time import sleep
 
-from settings import Settings, ConfigError
-from scraperdb import SessionContext, Root, IntegrityError
+from . import SessionContext, IntegrityError, Settings
+from .models import Root
 
 
 def init_roots(wait=False):
@@ -177,6 +175,15 @@ def init_roots(wait=False):
             "FrettabladidScraper",
             True,
         ),
+        (
+            "https://www.utanrikisraduneyti.is",
+            "utanrikisraduneyti.is",
+            "Utanríkisráðuneyti",
+            1.0,
+            "scrapers.default",
+            "StjornarradScraper",
+            True,
+        ),
     ]
 
     # Do no more than 36 retries (~3 minutes) before giving up and returning an error code
@@ -245,27 +252,10 @@ def init_roots(wait=False):
                 SessionContext.cleanup()
                 # Loop to retry
             else:
-                print(
-                    "Exception in scraperinit.init_roots(): {0}".format(e),
-                    file=sys.stderr,
-                )
+                print("Exception in init_roots(): {0}".format(e), file=sys.stderr)
                 sys.stderr.flush()
                 # Re-raise the exception
                 raise
 
     # Finished without error
     return 0
-
-
-if __name__ == "__main__":
-
-    try:
-        # Load the simple Reynir configuration (we don't need the lexicon stuff)
-        Settings.read("config/ReynirSimple.conf")
-        # Don't run the scraper in debug mode
-        Settings.DEBUG = False
-    except ConfigError as e:
-        print("Configuration error: {0}".format(e), file=sys.stderr)
-        sys.exit(2)
-
-    sys.exit(init_roots(wait=True))

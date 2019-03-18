@@ -3,7 +3,7 @@
 To start the Greynir shell, activate the virtual environment and run the following command from the repository root:
 
 ```
-./shell.sh 
+scripts/shell.sh 
 ```
 
 This will launch an [IPython](http://ipython.readthedocs.io) shell, a superior alternative to the standard Python REPL. Features include syntax highlighting, auto-pretty-printing, auto-indentation, smart autocompletion, persistent history across sessions, integrated access to pdb and the profiler, and various introspection tools.
@@ -19,7 +19,7 @@ The shell has been configured to automatically import Greynir's database models 
 * `s` - SQLAlchemy database session
 * `r` - Instance of the [Reynir](https://github.com/vthorsteinsson/ReynirPackage) parser.
 
-For an overview of Greynir's database models, see `scraperdb.py`.
+For an overview of Greynir's database models, see `db/models.py`.
 
 Shell auto-imports are configured in `.ipython.py` in the repository root. Additional local user settings can be configured in `~/.ipython/profile_default`.
 

@@ -72,22 +72,11 @@ from settings import Settings, ConfigError, changedlocale
 from nertokenizer import recognize_entities
 from article import Article as ArticleProxy
 from treeutil import TreeUtility
-from scraperdb import (
-    SessionContext,
-    desc,
-    dbfunc,
-    Root,
-    Person,
-    Article,
-    ArticleTopic,
-    Topic,
-    Entity,
-    Location,
-    Word,
-    GenderQuery,
-    StatsQuery,
-    ChartsQuery,
-)
+from db import SessionContext, desc, dbfunc
+from db.models import Root, Person, Article, ArticleTopic, Topic, Entity, Location, Word
+from db.queries import GenderQuery, StatsQuery, ChartsQuery
+
+
 from query import Query
 from search import Search
 from images import (

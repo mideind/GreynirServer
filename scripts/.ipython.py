@@ -11,7 +11,8 @@ c.InteractiveShell.banner2 = 'Welcome to the Greynir IPython shell!\n'
 c.InteractiveShellApp.extensions = ['autoreload']
 
 c.InteractiveShellApp.exec_lines = [
-    'from scraperdb import *',
+    'from db import *',
+    'from db.models import *',
     's = SessionContext(commit=False).__enter__()',
     'from reynir import Reynir',
     'r = Reynir()'

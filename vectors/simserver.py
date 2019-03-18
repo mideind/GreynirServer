@@ -77,7 +77,8 @@ from multiprocessing import AuthenticationError
 from multiprocessing.connection import Listener, Client
 
 from settings import Settings, ConfigError
-from scraperdb import SessionContext, desc, Article, Root
+from db import SessionContext, desc
+from db.models import Article, Root
 from builder import ReynirCorpus
 
 

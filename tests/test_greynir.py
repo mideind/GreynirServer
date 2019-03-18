@@ -63,27 +63,27 @@ def test_processors():
 
 
 def test_nertokenizer():
-    pass
+    from nertokenizer import recognize_entities
 
 
 def test_postagger():
-    pass
+    from postagger import NgramTagger
 
 
 def test_query():
-    pass
+    from query import Query
 
 
 def test_scraper():
-    pass
+    from scraper import Scraper
 
 
 def test_search():
-    pass
+    from search import Search
 
 
 def test_tnttagger():
-    pass
+    from tnttagger import TnT
 
 
 def test_geo():

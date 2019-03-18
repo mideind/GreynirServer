@@ -13,7 +13,8 @@
 """
 
 from settings import Settings, ConfigError
-from scraperdb import SessionContext, Person
+from db import SessionContext
+from db.models import Person
 from bindb import BIN_Db
 
 try:

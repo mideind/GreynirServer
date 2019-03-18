@@ -85,7 +85,7 @@ the tables if needed, and no existing data is erased):
 
 ```
 cd ~/Reynir
-python scraperinit.py
+python scraper.py --init
 ```
 
 ## Run

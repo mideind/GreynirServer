@@ -30,7 +30,7 @@ from collections import namedtuple
 
 from fetcher import Fetcher
 from nertokenizer import recognize_entities
-from scraperdb import SessionContext
+from db import SessionContext
 from settings import Settings
 
 from reynir import TOK, mark_paragraphs, tokenize
