@@ -373,7 +373,12 @@
    function correct() {
       // Submit the contents of the textarea to the server
       // for tokenization and parsing
-      correctText($("#txt").val().trim());
+      var s = $("#txt").val().trim();
+      if (s && s.length) {
+         correctText(s);
+      } else {
+         $("#txt").focus();
+      }
    }
 
    function selectFile() {

@@ -437,14 +437,16 @@ function populateStats(stats) {
    $("#tok-num").text(format_is(stats.num_tokens));
    $("#num-sent").text(format_is(stats.num_sentences));
    $("#num-parsed-sent").text(format_is(stats.num_parsed));
-   if (stats.num_parsed == 1)
+   if (stats.num_parsed == 1) {
       $("#paragraphs").text("málsgrein")
-   else
+   } else {
       $("#paragraphs").text("málsgreinar");
-   if (stats.num_sentences > 0)
+   }
+   if (stats.num_sentences > 0) {
       $("#num-parsed-ratio").text(format_is(100.0 * stats.num_parsed / stats.num_sentences, 1));
-   else
+   } else {
       $("#num-parsed-ratio").text("0.0");
+   }
    $("#avg-ambig-factor").text(format_is(stats.ambiguity, 2));
    $("div#statistics").css("display", "block");
 }

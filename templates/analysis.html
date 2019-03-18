@@ -130,7 +130,12 @@
    function analyze() {
       // Submit the contents of the textarea to the server
       // for tokenization and parsing
-      analyzeText($("#txt").val().trim());
+      var s = $("#txt").val().trim();
+      if (s && s.length) {
+         analyzeText(s);
+      } else {
+         $("#txt").focus();
+      }
    }
 
    function init() {
