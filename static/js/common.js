@@ -316,6 +316,15 @@ function makePercentGraph(percent) {
    $("#percent .progress-bar span.sr-only").text(percent.toString() + "%");
 }
 
+function openURL(url, ev) {
+   if (ev.altKey || ev.metaKey) {
+      // Open in new tab/window
+      window.open(url);
+   } else {
+      window.location.href = url;
+   } 
+}
+
 function tokenInfo(t, nameDict) {
    // Return a dict with information about the given token,
    // including its lemma, grammar info and details

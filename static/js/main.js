@@ -460,7 +460,7 @@ function populateQueryResult(r) {
       // Show a source article
       wait(true); // This can take time, if a parse is required
       $("#url").attr("placeholder", "Málgreining í gangi...");
-      window.location.href = "/page?id=" + $(this).attr("data-uuid");
+      openURL("/page?id=" + $(this).attr("data-uuid"), ev);
    });
 }
 
@@ -639,7 +639,7 @@ function initMain(jQuery) {
 
    // Clicking in italic words in the guide
    $("div.guide-empty i").click(function(ev) {
-      window.location.href = "/?f=q&q=" + encodeURIComponent($(this).text());
+      openURL("/?f=q&q=" + encodeURIComponent($(this).text()), ev);
    });
 
    // Activate the top navbar

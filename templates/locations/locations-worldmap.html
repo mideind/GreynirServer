@@ -80,6 +80,8 @@
 
 {% block endscripts %}
 
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
+
 <script type="text/javascript">
 
 var countryData = {{ country_data | safe }};

@@ -114,6 +114,8 @@
 
 {% block endscripts %}
 
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.bundle.min.js"></script>
 
 <script>
@@ -196,7 +198,7 @@
       $("tr.topitem").click(function(ev) {
          // A source has been clicked. Show articles from source.
          var domain = $(this).attr("data-domain");
-         window.location.href = "{{ url_for('news') }}?root=" + domain;
+         openURL("{{ url_for('news') }}?root=" + domain, ev);
       });
       
       // Set up charts

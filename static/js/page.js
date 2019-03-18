@@ -105,15 +105,6 @@ function spacing(t) {
    return TP_CENTER;
 }
 
-function openURL(url, ev) {
-   if (ev.altKey || ev.metaKey) {
-      // Open in new tab/window
-      window.open(url);
-   } else {
-      window.location.href = url;
-   } 
-}
-
 function queryPerson(name, ev) {
    // Navigate to the main page with a person query
    openURL("/?f=q&q=" + encodeURIComponent("Hver er " + name + "?"), ev);
