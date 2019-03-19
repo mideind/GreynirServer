@@ -34,6 +34,7 @@
   "Mónakó": "Monaco",
   "Róm": "Rome",
   "Tríest": "Trieste",
+  "Tríeste": "Trieste",
   "Úlan Bator": "Ulaanbaatar",
   "Ulan Bator": "Ulaanbaatar",
   "Óðinsvé": "Odense",
@@ -54,6 +55,7 @@
   "Sarajevó": "Sarajevo",
   "Kænugarður": "Kiev",
   "Haag": "The Hague",
+  "Mekka": "Makkah",
   "Moskva": "Moscow",
   "Hanoí": "Hanoi",
   "Mósúl": "Mosul",
@@ -62,6 +64,7 @@
   "Maserú": "Maseru",
   "Belgrad": "Belgrade",
   "München": "Munich",
+  "Munchen": "Munich",
   "Bagdad": "Baghdad",
   "París": "Paris",
   "Singapúr": "Singapore",
@@ -131,6 +134,7 @@
   "Kalíníngrad": "Kaliningrad",
   "Mikligarður": "Istanbul",
   "Þusslaþorp": "Düsseldorf",
+  "Dusseldorf": "Düsseldorf",
   "Nýja-Jórvík": "New York",
   "Öxnafurða": "Oxford",
   "Rúðuborg": "Rouen",
@@ -172,5 +176,10 @@
   "Feneyjar": "Venice",
   "Fíladelfía": "Philadelphia",
   "Trípólí": "Tripoli",
-  "Taípei": "Taipei"
+  "Taípei": "Taipei",
+  "Útrekt": "Utrecht",
+  "Písa": "Pisa",
+  "Karkív": "Kharkiv",
+  "Volgógrad": "Volgograd",
+  "Ódessa": "Odessa"
 }
