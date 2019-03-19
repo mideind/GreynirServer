@@ -510,7 +510,7 @@ def _query_entity_definitions(session, name):
         )
         .filter(Entity.name == name)
         .filter(Root.visible == True)
-        .join(Article)
+        .join(Article, Article.url == Entity.article_url)
         .join(Root)
         .order_by(Article.timestamp)
         .all()
