@@ -140,7 +140,6 @@ function showPerson(ev) {
       name = $(this).text(); // No associated token: use the contained text
    }
    queryPerson(name, ev);
-   ev.stopPropagation();
 }
 
 function showEntity(ev) {
@@ -155,7 +154,6 @@ function showEntity(ev) {
    } else {
       queryEntity(ename, ev);
    }
-   ev.stopPropagation();
 }
 
 function hoverIn() {

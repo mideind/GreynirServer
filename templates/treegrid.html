@@ -483,6 +483,9 @@ var g = d3.select("div#canvas")
    .append("svg")
       .attr("width", width + margin.right + margin.left)
       .attr("height", height + margin.top + margin.bottom)
+      .call(d3.zoom().on("zoom", function () {
+         g.attr("transform", d3.event.transform)
+      }))
    .append("g")
       .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 

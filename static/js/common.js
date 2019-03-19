@@ -317,6 +317,7 @@ function makePercentGraph(percent) {
 }
 
 function openURL(url, ev) {
+   ev.stopPropagation();
    if (ev.altKey || ev.metaKey) {
       // Open in new tab/window
       window.open(url);
