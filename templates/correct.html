@@ -34,7 +34,7 @@
          </button>
       </div>
 
-      <form id="uploadForm" style="display: none;">
+      <form id="uploadForm" class="hidden">
          <input id="file-input" type="file" name="filename" onChange="uploadFile()">
       </form>
       <div class="col-xs-4 col-sm-3 col-md-2 pull-right">
@@ -48,7 +48,7 @@
 
 </div>
 
-<div id="output">
+<div id="output" class="hidden">
 
    <div class="row">
 
@@ -403,14 +403,6 @@
    function init() {
       // Activate the top navbar
       $("#navid-correct").addClass("active");
-      // Clicking on the info panel makes it disappear
-      // (necessary for touch screens)
-      $("#info").click(function(ev) {
-         ev.stopPropagation();
-         $(this).css("visibility", "hidden");
-      });
-      // Hide the output div until we have something to show
-      $("div#output").css("display", "none");
    }
 
    $(document).ready(init);

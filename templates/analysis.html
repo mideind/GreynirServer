@@ -35,7 +35,7 @@
 
 </div>
 
-<div id="output">
+<div id="output" class="hidden">
 
    <h3 class="help">Málgreining <small>Smelltu á málsgrein til að sjá trjágreiningu hennar</small></h3>
 
@@ -141,14 +141,6 @@
    function init() {
       // Activate the top navbar
       $("#navid-analysis").addClass("active");
-      // Clicking on the info panel makes it disappear
-      // (necessary for touch screens)
-      $("#info").click(function(ev) {
-         ev.stopPropagation();
-         $(this).css("visibility", "hidden");
-      });
-      // Hide the output div until we have something to show
-      $("div#output").css("display", "none");
    }
 
    $(document).ready(init);

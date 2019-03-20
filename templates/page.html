@@ -230,26 +230,17 @@
 
    function init() {
       // Show help text
-      $("div#help").css("display", "block");
-      // Clicking on the info panel makes it disappear
-      // (necessary for touch screens)
-      $("#info")
-         .click(function(ev) {
-            ev.stopPropagation();
-            $(this).css("visibility", "hidden");
-         });
-      $("button#refresh")
-         .click(function(ev) {
-            reparseArticle("{{ article.uuid | safe }}");
-         });
-      $("button#check")
-         .click(checkArticle);
+      $("div#help").show();
+      $("button#refresh").click(function(ev) {
+         reparseArticle("{{ article.uuid | safe }}");
+      });
+      $("button#check").click(checkArticle);
       displayTokens(j);
       // Show similar list
-      $("div#similar").css("display", "block");
-      populateStats(stats);
+      $("div#similar").show();
       // Show statistics
-      $("div#statistics").css("display", "block");
+      populateStats(stats);
+      $("div#statistics").show();
       populateRegister();
    }
 
