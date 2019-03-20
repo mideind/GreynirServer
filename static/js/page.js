@@ -190,7 +190,7 @@ function hoverIn() {
    if (r.percent !== null) {
       makePercentGraph(r.percent);
    } else {
-      $("#percent").css("display", "none");
+      $("#percent").hide();
    }
 
    $("#info").removeClass();

@@ -121,8 +121,9 @@ function handleQueryError(xhr, status, errorThrown) {
    /* An error occurred on the server or in the communications */
    // Hide progress indicator
    wait(false);
-   $("div.guide-empty").html("<p><b>Villa kom upp</b> í samskiptum við netþjón Greynis</p>")
-      .css("display", "block");
+   $("div.guide-empty")
+      .html("<p><b>Villa kom upp</b> í samskiptum við netþjón Greynis</p>")
+      .show();
 }
 
 function queryPerson(name) {
@@ -637,7 +638,7 @@ function initMain(jQuery) {
    // Select all text in the url input field
    $("#url").get(0).setSelectionRange(0, $("#url").val().length);
 
-   // Clicking in italic words in the guide
+   // Clicking in italic word in the guide
    $("div.guide-empty i").click(function(ev) {
       openURL("/?f=q&q=" + encodeURIComponent($(this).text()), ev);
    });

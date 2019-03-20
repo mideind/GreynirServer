@@ -35,7 +35,7 @@
 
 </div>
 
-<div id="output" class="hidden">
+<div id="output" style="display: none;">
 
    <h3 class="help">Málgreining <small>Smelltu á málsgrein til að sjá trjágreiningu hennar</small></h3>
 
@@ -80,20 +80,20 @@
       if (state) {
          $("#txt-ok").attr("disabled", "disabled")
             .html("<span class='glyphicon glyphicon-restart glyphicon-spin-white'></span>");
-         $("div#output").css("display", "none");
+         $("div#output").hide();
       }
       else {
          $("#txt-ok").removeAttr("disabled")
             .html("<span class='glyphicon glyphicon-cogwheel'></span> Greina");
-         $("div#output").css("display", "block");
+         $("div#output").show();
       }
    }
 
    function clearResult() {
       // Clear previous result
       $("div#pgs").html("");
-      $("div#statistics").css("display", "none");
-      $("div#register").css("display", "none");
+      $("div#statistics").hide();
+      $("div#register").hide();
       // Display progress indicator
       wait(true);
    }

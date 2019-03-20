@@ -5,8 +5,7 @@
 
    Common.js
 
-   JavaScript utility functions for token display, formatting, etc.
-
+   JavaScript utility functions shared by the Greynir front-end.
    Copyright (C) 2018 Miðeind ehf.
    Author: Vilhjálmur Þorsteinsson
 
@@ -309,7 +308,7 @@ function grammar(cat, terminal) {
 
 function makePercentGraph(percent) {
    // Adjust progress bar
-   $("#percent").css("display", "block");
+   $("#percent").show();
    $("#percent .progress-bar")
       .attr("aria-valuenow", Math.round(percent).toString())
       .css("width", percent.toString() + "%");
@@ -356,9 +355,10 @@ function tokenInfo(t, nameDict) {
       // TOK_WORD
       // t.m[1] is the word category (kk, kvk, hk, so, lo...)
       var wcat = (t.m && t.m[1]) ? t.m[1] : (terminal ? terminal.split("_")[0] : undefined);
-      if (wcat === undefined)
+      if (wcat === undefined) {
          // Nothing to show, so we cop out
          return r;
+      }
       // Special case: for adverbs, if they match a tao (temporal) or
       // spao (interrogative) adverb terminal, show that information
       if (wcat == "ao" && terminal)
