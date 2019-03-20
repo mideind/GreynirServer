@@ -36,8 +36,9 @@
 
 @font-face {
    font-family: 'Glyphicons Regular';
-   src: url('/static/fonts/glyphicons-regular.woff') format('woff'),
-      url('/static/fonts/glyphicons-regular.ttf') format('truetype')
+   src:  url('/static/fonts/glyphicons-regular.woff2') format('woff2'), 
+         url('/static/fonts/glyphicons-regular.woff') format('woff'),
+         url('/static/fonts/glyphicons-regular.ttf') format('truetype')
 }
 
 .glyphicon {
