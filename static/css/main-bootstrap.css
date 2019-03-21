@@ -126,6 +126,27 @@
 .glyphicon-globe:before {
    content: "\E371";
 }
+.glyphicon-envelope:before {
+   content: "\2709";
+}
+.glyphicon-weights:before {
+   content: "\E544";
+}
+.glyphicon-telephone:before {
+   content: "\E442";
+}
+.glyphicon-money:before {
+   content: "\E459";
+}
+.glyphicon-calendar:before {
+   content: "\E046";
+}
+.glyphicon-user:before {
+   content: "\E004";
+}
+.glyphicon-alert:before {
+   content: "\E079";
+}
 .glyphicon-spin {
     -webkit-animation: spin 2000ms infinite linear;
     animation: spin 2000ms infinite linear;

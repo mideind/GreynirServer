@@ -229,6 +229,7 @@ function makeSearchList(results) {
 }
 
 function imgError(img) {
+   // A (person) image failed to load client-side
    $(img).hide();
    // Make sure we only report each broken image once per client session
    if ($(img).data('err')) {
@@ -244,6 +245,7 @@ function imgError(img) {
 }
 
 function reportImage(img, status, successFunc) {
+   // Report image status to server
    var q = { 
       name: $(img).attr('title'),
       url: $(img).attr('src'),
@@ -269,7 +271,7 @@ function reportImage(img, status, successFunc) {
 }
 
 function blacklistImage(img) {
-   // User reporting wrong image
+   // User reporting that a person image is wrong
    $("span.imgreport").hide();
    $(img).stop().animate({ opacity: 0 }, function() {
       reportImage(img, "wrong", function(i) {
@@ -506,9 +508,10 @@ function _submitQuery(q) {
 
 function analyzeQuery(q) {
    // Submit the query in the url input field to the server
-   if (queryInProgress)
+   if (queryInProgress) {
       // Already waiting on a query
       return;
+   }
    if (q.q.startsWith("http://") || q.q.startsWith("https://")) {
       wait(true); // Show spinner while loading page
       window.location.href = "/page?url=" + encodeURIComponent(q.q);
@@ -646,4 +649,3 @@ function initMain(jQuery) {
    // Activate the top navbar
    $("#navid-main").addClass("active");
 }
-

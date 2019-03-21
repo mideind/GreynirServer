@@ -194,8 +194,9 @@ function hoverIn() {
    }
 
    $("#info").removeClass();
-   if (r.class)
+   if (r.class) {
       $("#info").addClass(r.class);
+   }
 
    // Try to fetch image if person (and at least two names)
    if (t.k == TOK_PERSON && t.v.split(' ').length > 1) {
@@ -230,7 +231,7 @@ function hoverIn() {
             if (info['desc']) {
                $('#details').html(info['desc']);
             }
-            // We have a map image
+            // Map image
             if (info['map']) {
                $("#info-image").html(
                   $("<img>").attr('src', info['map']).attr('onerror', '$(this).hide();')

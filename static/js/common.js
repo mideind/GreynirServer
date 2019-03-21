@@ -6,6 +6,7 @@
    Common.js
 
    JavaScript utility functions shared by the Greynir front-end.
+
    Copyright (C) 2018 Miðeind ehf.
    Author: Vilhjálmur Þorsteinsson
 
@@ -97,6 +98,33 @@ tokId["TIMESTAMPABS"] = TOK_TIMESTAMPABS;
 tokId["TIMESTAMPREL"] = TOK_TIMESTAMPREL;
 tokId["MEASUREMENT"] = TOK_MEASUREMENT;
 tokId["NUMWLETTER"] = TOK_NUMWLETTER;
+
+// Maps token type to glyph icon class
+var tokIcons = [];
+
+tokIcons[TOK_PUNCTUATION] = "glyphicon-tag";
+tokIcons[TOK_TIME] = "glyphicon-time";
+tokIcons[TOK_DATE] = "glyphicon-calendar";
+tokIcons[TOK_YEAR] = "glyphicon-calendar";
+tokIcons[TOK_NUMBER] = "glyphicon-tag";
+tokIcons[TOK_WORD] = "glyphicon-tag";
+tokIcons[TOK_TELNO] = "glyphicon-telephone";
+tokIcons[TOK_PERCENT] = "glyphicon-tag";
+tokIcons[TOK_URL] = "glyphicon-link";
+tokIcons[TOK_ORDINAL] = "glyphicon-tag";
+tokIcons[TOK_TIMESTAMP] = "glyphicon-time";
+tokIcons[TOK_CURRENCY] = "glyphicon-money";
+tokIcons[TOK_AMOUNT] = "glyphicon-money";
+tokIcons[TOK_PERSON] = "glyphicon-user";
+tokIcons[TOK_EMAIL] = "glyphicon-envelope";
+tokIcons[TOK_ENTITY] = "glyphicon-tag";
+tokIcons[TOK_UNKNOWN] = "glyphicon-alert";
+tokIcons[TOK_DATEABS] = "glyphicon-calendar";
+tokIcons[TOK_DATEREL] = "glyphicon-calendar";
+tokIcons[TOK_TIMESTAMPABS] = "glyphicon-time";
+tokIcons[TOK_TIMESTAMPREL] = "glyphicon-time";
+tokIcons[TOK_MEASUREMENT] = "glyphicon-weights";
+tokIcons[TOK_NUMWLETTER] = "glyphicon-tag";
 
 var wordClass = {
    "no" : "óþekkt nafnorð",
@@ -322,7 +350,7 @@ function openURL(url, ev) {
       window.open(url);
    } else {
       window.location.href = url;
-   } 
+   }
 }
 
 function tokenInfo(t, nameDict) {
@@ -351,6 +379,10 @@ function tokenInfo(t, nameDict) {
    var title;
    var bc;
    var terminal = t.a || t.t; // Use augmented terminal if available
+
+   // Add glyphicon class for token type
+   r.tagClass = tokIcons[t.k] ? tokIcons[t.k] : "glyphicon-tag";
+
    if (!t.k || t.k == TOK_WORD) {
       // TOK_WORD
       // t.m[1] is the word category (kk, kvk, hk, so, lo...)
@@ -440,6 +472,11 @@ function tokenInfo(t, nameDict) {
    if (t.k == TOK_EMAIL) {
       r.lemma = t.x;
       r.details = "tölvupóstfang";
+   }
+   else
+   if (t.k == TOK_TELNO) {
+      r.lemma = t.x;
+      r.details = "símanúmer";
    }
    else
    if (t.k == TOK_CURRENCY) {
