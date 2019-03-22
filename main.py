@@ -555,6 +555,7 @@ def chart_stats(session=None, num_days=7):
         "Stundin": "#ee4420",
         "Hringbraut": "#44607a",
         "Fréttablaðið": "#002a61",
+        "Hagstofa Íslands": "#818285",
     }
 
     today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
@@ -622,14 +623,10 @@ def top_authors(days=_TOP_AUTHORS_PERIOD):
         for a in authors:
             name = a[0]
             gender = bindb.lookup_name_gender(name)
-            if gender == "hk": # Skip unnamed authors (e.g. "Ritstjórn Vísis")
+            if gender == "hk":  # Skip unnamed authors (e.g. "Ritstjórn Vísis")
                 continue
-            perc = round(float(a[4]),2)
-            authresult.append({
-                'name': name,
-                'gender': gender,
-                'perc': perc
-            })
+            perc = round(float(a[4]), 2)
+            authresult.append({"name": name, "gender": gender, "perc": perc})
     return authresult[:10]
 
 

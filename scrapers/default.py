@@ -29,6 +29,7 @@
 import re
 import logging
 import urllib.parse as urlparse
+import requests
 from datetime import datetime
 from bs4 import BeautifulSoup, NavigableString
 
@@ -1259,9 +1260,7 @@ class FrettabladidScraper(ScrapeHelper):
         "/timamot/",
     ]
 
-    _BANNED_PREFIXES = [
-        "/sport/i-beinni-",
-    ]
+    _BANNED_PREFIXES = ["/sport/i-beinni-"]
 
     def __init__(self, root):
         super().__init__(root)
@@ -1277,8 +1276,8 @@ class FrettabladidScraper(ScrapeHelper):
             return True
 
         # Skip photos-only articles
-        comp = s.path.split('/')
-        if comp[-1].startswith('myndasyrpa-'):
+        comp = s.path.split("/")
+        if comp[-1].startswith("myndasyrpa-"):
             return True
 
         # Accept any URLs starting with allowed prefixes
@@ -1350,5 +1349,101 @@ class FrettabladidScraper(ScrapeHelper):
         ptag = content.find("p")
         if ptag and firstchar:
             ptag.insert(0, NavigableString(firstchar))
+
+        return content
+
+
+class HagstofanScraper(ScrapeHelper):
+    """ Scraping helper for hringbraut.is """
+
+    def __init__(self, root):
+        super().__init__(root)
+        self._feeds = ["https://hagstofa.is/rss/allt/"]
+
+    def fetch_url(self, url):
+        # Requests defaults to ISO-8859-1 because content-type
+        # does not declare encoding. In fact, charset is UTF-8.
+        r = requests.get(url)
+        r.encoding = r.apparent_encoding
+        return r.text
+
+    def get_metadata(self, soup):
+        """ Analyze the article soup and return metadata """
+        metadata = super().get_metadata(soup)
+
+        # Author
+        author = "Hagstofa Íslands"
+
+        # Extract the heading from the OpenGraph (Facebook) og:title meta property
+        heading = ScrapeHelper.meta_property(soup, "og:title") or ""
+        prefix = "Hagstofan:"
+        if heading.startswith(prefix):
+            heading = heading[len(prefix) :].strip()
+
+        # Timestamp
+        timestamp = datetime.utcnow()
+
+        info = soup.find("div", {"class": "page-header"})
+        # h2 = info.find("h2") if info else None
+        # heading = h2.text() if info and h2 else heading
+
+        date_span = info.find("i", {"class": "date"}) if info else None
+
+        if date_span:
+            # Example: "22. mars 2019"
+            datestr = date_span.get_text().rstrip()
+            try:
+                (mday, m, y) = datestr.split()
+                mday = mday.replace(".", "")
+                month = MONTHS.index(m) + 1
+
+                timestamp = datetime(
+                    year=int(y),
+                    month=int(month),
+                    day=int(mday),
+                    hour=timestamp.hour,
+                    minute=timestamp.minute,
+                )
+            except Exception as e:
+                logging.warning(
+                    "Exception obtaining date of hagstofa.is article: {0}".format(e)
+                )
+
+        metadata.heading = heading
+        metadata.author = author
+        metadata.timestamp = timestamp
+
+        return metadata
+
+    def _get_content(self, soup_body):
+        """ Find the article content (main text) in the soup """
+        content = soup_body.article
+
+        # Remove tables
+        for div in content.find_all("div", {"class": "scrollable"}):
+            div.decompose()
+        for table in content.find_all("table"):
+            table.decompose()
+
+        # Remove buttons
+        for a in content.find_all("a", {"class": "btn"}):
+            a.decompose()
+
+        # Remove social media stuff
+        for ul in content.find_all("ul", {"class": "article-social"}):
+            ul.decompose()
+
+        # Remove source lists, and paragraphs containing only a single link
+        for p in content.find_all("p"):
+            children = list(p.children)
+            if len(children) and children[0].name == "sup":
+                p.decompose()
+            elif len(children) == 1 and children[0].name == "a":
+                p.decompose()
+
+        # Remove footer
+        footer = content.find("div", {"class": "article-footer"})
+        if footer:
+            footer.decompose()
 
         return content

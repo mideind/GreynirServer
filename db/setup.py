@@ -184,6 +184,15 @@ def init_roots(wait=False):
             "StjornarradScraper",
             True,
         ),
+        (
+            "https://hagstofa.is",
+            "hagstofa.is",
+            "Hagstofa Íslands",
+            1.0,
+            "scrapers.default",
+            "HagstofanScraper",
+            True,
+        ),
     ]
 
     # Do no more than 36 retries (~3 minutes) before giving up and returning an error code
