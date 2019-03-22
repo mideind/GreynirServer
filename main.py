@@ -1693,7 +1693,7 @@ if Settings.DEBUG:
     # Clobber Settings.DEBUG in ReynirPackage and ReynirCorrect
     reynir.Settings.DEBUG = True
     reynir_correct.Settings.DEBUG = True
-    app.config["PRODUCTION"] = True
+    app.config["PRODUCTION"] = False
 
 if __name__ == "__main__":
 
