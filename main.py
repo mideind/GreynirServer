@@ -101,6 +101,7 @@ from correct import check_grammar
 app = Flask(__name__)
 app.config["JSON_AS_ASCII"] = False  # We're fine with using Unicode/UTF-8
 app.config["TEMPLATES_AUTO_RELOAD"] = True
+app.config["PRODUCTION"] = True
 cache = Cache(app, config={"CACHE_TYPE": "simple"})
 
 
@@ -720,6 +721,9 @@ ALLOWED_UPLOAD_MIME_TYPES = frozenset(
 def correct_api(version=1):
     """ Correct text manually entered by the user, i.e. not coming from an article.
         This is a lower level API used by the Greynir web front-end. """
+    if app.config["PRODUCTION"]:
+        return abort(403)
+
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
 
@@ -1571,6 +1575,8 @@ def parsefail():
 def correct():
     """ Handler for a page for spelling and grammar correction
         of user-entered text """
+    if app.config["PRODUCTION"]:
+        return abort(403)
     try:
         txt = text_from_request(request, post_field="txt", get_field="txt")
     except:
@@ -1687,6 +1693,7 @@ if Settings.DEBUG:
     # Clobber Settings.DEBUG in ReynirPackage and ReynirCorrect
     reynir.Settings.DEBUG = True
     reynir_correct.Settings.DEBUG = True
+    app.config["PRODUCTION"] = True
 
 if __name__ == "__main__":
 
