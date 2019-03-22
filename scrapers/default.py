@@ -1329,6 +1329,10 @@ class FrettabladidScraper(ScrapeHelper):
     def _get_content(self, soup_body):
         """ Find the article content (main text) in the soup """
         content = ScrapeHelper.div_class(soup_body, "article__body")
+        # Some sports event pages don't have an article__body
+        if not content:
+            return BeautifulSoup("", _HTML_PARSER)  # Return empty soup.
+
         # Get rid of stuff we don't want
         ScrapeHelper.del_tag(content, "figure")
         ScrapeHelper.del_div_class(content, "embed")

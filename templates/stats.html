@@ -96,6 +96,28 @@
 
 <div class="panel panel-default">
    <div class="panel-heading">
+      Nafngreindir höfundar<br>
+      <small>með hæsta greiningarhlutfall síðustu 30 daga</small>
+   </div>
+   <table class="table table-hover" id="dtable">
+      <tbody>
+         {% for a in authresult %}
+         <tr>
+            {% if a.gender == 'kk' %}
+            <td class="gender" title="Karl"><span class="glyphicon glyphicon-gender-male"></span></td>
+            {% elif a.gender == 'kvk' %}
+            <td class="gender" title="Kona"><span class="glyphicon glyphicon-gender-female"></span></td>
+            {% endif %}
+            <td>{{ a.name | safe }}</td>
+            <td class="count">{{ a.perc | safe }}%</td>
+         </tr>
+         {% endfor %}
+      </tbody>
+   </table>
+</div>
+
+<div class="panel panel-default">
+   <div class="panel-heading">
       Nýleg gögn
       <div class="pull-right hidden-xs">Meðaltal síðustu daga: <strong>{{ scraped_avg }} gr./dag</strong></div>
    </div>

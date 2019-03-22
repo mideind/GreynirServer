@@ -74,8 +74,7 @@ from article import Article as ArticleProxy
 from treeutil import TreeUtility
 from db import SessionContext, desc, dbfunc
 from db.models import Root, Person, Article, ArticleTopic, Topic, Entity, Location, Word
-from db.queries import GenderQuery, StatsQuery, ChartsQuery
-
+from db.queries import GenderQuery, StatsQuery, ChartsQuery, BestAuthorsQuery
 
 from query import Query
 from search import Search
@@ -242,6 +241,8 @@ _TOP_PERSONS_PERIOD = 1  # in days
 # Default number of top locations to show in /locations
 _TOP_LOC_LENGTH = 20
 _TOP_LOC_PERIOD = 1  # in days
+
+_TOP_AUTHORS_PERIOD = 30  # in days
 
 # Maximum length of incoming GET/POST parameters
 _MAX_URL_LENGTH = 512
@@ -610,6 +611,27 @@ def chart_stats(session=None, num_days=7):
     }
 
 
+def top_authors(days=_TOP_AUTHORS_PERIOD):
+    end = datetime.utcnow()
+    start = end - timedelta(days=_TOP_AUTHORS_PERIOD)
+    authors = BestAuthorsQuery.period(start, end, min_articles=10)[:20]
+
+    authresult = list()
+    with BIN_Db.get_db() as bindb:
+        for a in authors:
+            name = a[0]
+            gender = bindb.lookup_name_gender(name)
+            if gender == "hk": # Skip unnamed authors (e.g. "Ritstjórn Vísis")
+                continue
+            perc = round(float(a[4]),2)
+            authresult.append({
+                'name': name,
+                'gender': gender,
+                'perc': perc
+            })
+    return authresult[:10]
+
+
 def process_query(session, toklist, result):
     """ Check whether the parse tree is describes a query, and if so, execute the query,
         store the query answer in the result dictionary and return True """
@@ -705,9 +727,9 @@ def correct_api(version=1):
     if file:
         mimetype = file.content_type
         if mimetype not in ALLOWED_UPLOAD_MIME_TYPES:
-            pass # FIXME
+            pass  # FIXME
         # filename = werkzeug.secure_filename(file.filename)
-        #print(request.files)
+        # print(request.files)
         # Process file
 
     try:
@@ -1356,7 +1378,8 @@ MAX_STATS_PERIOD = 30
 
 
 @app.route("/stats", methods=["GET"])
-@max_age(seconds=10 * 60)
+# @cache.cached(timeout=60 * 30, key_prefix="stats", query_string=True)
+@max_age(seconds=30 * 60)
 def stats():
     """ Render a page with various statistics """
     days = DEFAULT_STATS_PERIOD
@@ -1387,6 +1410,9 @@ def stats():
             gtotal["hk"] += r.hk
             gtotal["total"] += r.kvk + r.kk + r.hk
 
+        # Author stats
+        authresult = top_authors()
+
         # Chart stats
         chart_data = chart_stats(session=session, num_days=days)
 
@@ -1396,6 +1422,7 @@ def stats():
             total=total,
             gresult=gresult,
             gtotal=gtotal,
+            authresult=authresult,
             scraped_chart_data=json.dumps(chart_data["scraped"]),
             parsed_chart_data=json.dumps(chart_data["parsed"]),
             scraped_avg=int(round(chart_data["scraped"]["avg"])),
