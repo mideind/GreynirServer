@@ -37,7 +37,7 @@ from reynir.bindb import BIN_Db
 from scraperdb import SessionContext, Entity
 
 
-def recognize_entities(token_stream, enclosing_session=None):
+def recognize_entities(token_stream, enclosing_session=None, token_ctor=TOK):
 
     """ Parse a stream of tokens looking for (capitalized) entity names
         The algorithm implements N-token lookahead where N is the
@@ -97,7 +97,7 @@ def recognize_entities(token_stream, enclosing_session=None):
             ename = " ".join([t.txt for t in tq])
             # We don't include the definitions in the token - they should be looked up
             # on the fly when processing or displaying the parsed article
-            return TOK.Entity(ename)
+            return token_ctor.Entity(ename)
 
         def token_or_entity(token):
             """ Return a token as-is or, if it is a last name of a person
@@ -112,9 +112,9 @@ def recognize_entities(token_stream, enclosing_session=None):
                 # Return an entity token with no definitions
                 # (this will eventually need to be looked up by full name when
                 # displaying or processing the article)
-                return TOK.Entity(token.txt)
+                return token_ctor.Entity(token.txt)
             # Return the full name meanings
-            return TOK.Person(token.txt, tfull.val)
+            return token_ctor.Person(token.txt, tfull.val)
 
         try:
 
@@ -159,7 +159,7 @@ def recognize_entities(token_stream, enclosing_session=None):
                             del lastnames[p]
                     if parts[-1][0].isupper():
                         # 'Clinton' -> 'Hillary Rodham Clinton'
-                        lastnames[parts[-1]] = TOK.Entity(fullname)
+                        lastnames[parts[-1]] = token_ctor.Entity(fullname)
                 else:
                     # Not a match for an expected token
                     if state:
