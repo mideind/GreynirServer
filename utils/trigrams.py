@@ -4,7 +4,7 @@
 
     Trigrams module
 
-    Copyright (c) 2018 Miðeind ehf
+    Copyright (c) 2019 Miðeind ehf
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -249,7 +249,7 @@ def main():
 
     try:
         # Read configuration file
-        Settings.read(os.path.join(basepath, "config/ReynirSimple.conf"))
+        Settings.read(os.path.join(basepath, "config", "ReynirSimple.conf"))
     except ConfigError as e:
         print("Configuration error: {0}".format(e))
         quit()

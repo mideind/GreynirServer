@@ -5,7 +5,7 @@
 
     TnT Tagger module
 
-    Copyright (C) 2018 Miðeind ehf.
+    Copyright (C) 2019 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -319,48 +319,56 @@ class TnT:
         tl2 = 0.0
         tl3 = 0.0
 
+        uni_N = self._uni.N() - 1
+
         # for each t1,t2 in system
         for history in self._tri:
             (h1, h2) = history
 
+            bi = self._bi[h2]
+            bi_N = bi.N() - 1
+            tri = self._tri[history]
+            tri_N = tri.N() - 1
+
             # for each t3 given t1,t2 in system
             # (NOTE: tag actually represents (tag,C))
             # However no effect within this function
-            for tag in self._tri[history]:
+            for tag in tri:
 
                 # if there has only been 1 occurrence of this tag in the data
                 # then ignore this trigram.
-                if self._uni[tag] == 1:
+                uni = self._uni[tag]
+                if uni == 1:
                     continue
 
                 # safe_div provides a safe floating point division
                 # it returns -1 if the denominator is 0
-                c3 = self._safe_div((self._tri[history][tag]-1), (self._tri[history].N()-1))
-                c2 = self._safe_div((self._bi[h2][tag]-1), (self._bi[h2].N()-1))
-                c1 = self._safe_div((self._uni[tag]-1), (self._uni.N()-1))
+                c3 = self._safe_div(tri[tag] - 1, tri_N)
+                c2 = self._safe_div(bi[tag] - 1, bi_N)
+                c1 = self._safe_div(uni - 1, uni_N)
 
                 # if c1 is the maximum value:
                 if (c1 > c3) and (c1 > c2):
-                    tl1 += self._tri[history][tag]
+                    tl1 += tri[tag]
 
                 # if c2 is the maximum value
                 elif (c2 > c3) and (c2 > c1):
-                    tl2 += self._tri[history][tag]
+                    tl2 += tri[tag]
 
                 # if c3 is the maximum value
                 elif (c3 > c2) and (c3 > c1):
-                    tl3 += self._tri[history][tag]
+                    tl3 += tri[tag]
 
                 # if c3, and c2 are equal and larger than c1
                 elif (c3 == c2) and (c3 > c1):
-                    half = self._tri[history][tag] / 2.0
+                    half = tri[tag] / 2.0
                     tl2 += half
                     tl3 += half
 
                 # if c1, and c2 are equal and larger than c3
                 # this might be a dumb thing to do....(not sure yet)
                 elif (c2 == c1) and (c1 > c3):
-                    half = self._tri[history][tag] / 2.0
+                    half = tri[tag] / 2.0
                     tl1 += half
                     tl2 += half
 

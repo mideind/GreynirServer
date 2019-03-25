@@ -37,8 +37,12 @@ class RecognitionPipeline(reynir_correct.CorrectionPipeline):
         super().__init__(text)
 
     def recognize_entities(self, stream):
-        """ Recognize named entities using the nertokenizer module """
-        return nertokenizer.recognize_entities(stream)
+        """ Recognize named entities using the nertokenizer module,
+            but construct tokens using the Correct_TOK class from
+            reynir_correct """
+        return nertokenizer.recognize_entities(
+            stream, token_ctor=reynir_correct.Correct_TOK
+        )
 
 
 class NERCorrect(reynir_correct.ReynirCorrect):
