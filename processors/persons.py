@@ -66,7 +66,7 @@
 import re
 from datetime import datetime
 
-from db import Person
+from db.models import Person
 
 
 MODULE_NAME = __name__
