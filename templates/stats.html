@@ -105,7 +105,7 @@
 <div class="panel panel-default">
    <div class="panel-heading">
       Trjágreining
-      <div class="pull-right hidden-xs">Meðaltal síðustu daga: <strong>{{ parsed_avg }}%</strong></div>
+      <div class="pull-right hidden-xs">Meðaltal síðustu daga: <strong>{{ parsed_avg | format_is(1) }}%</strong></div>
    </div>
    <canvas id="parsed_chart_canvas" style="padding: 25px;"></canvas>
 </div>
