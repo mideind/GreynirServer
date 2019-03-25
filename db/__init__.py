@@ -46,9 +46,9 @@ class Scraper_DB:
 
         # Assemble the right connection string for CPython/psycopg2 vs.
         # PyPy/psycopg2cffi, respectively
-        is_pypy = platform.python_implementation() == "PyPy"
+        # is_pypy = platform.python_implementation() == "PyPy"
         conn_str = "postgresql+{0}://reynir:reynir@{1}:{2}/scraper".format(
-            "psycopg2cffi" if is_pypy else "psycopg2",
+            "psycopg2cffi", # if is_pypy else "psycopg2",
             Settings.DB_HOSTNAME,
             Settings.DB_PORT,
         )
