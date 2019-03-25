@@ -141,6 +141,9 @@
 .glyphicon-calendar:before {
    content: "\E046";
 }
+.glyphicon-piechart:before {
+   content: "\E043";
+}
 .glyphicon-user:before {
    content: "\E004";
 }
