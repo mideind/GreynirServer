@@ -5,7 +5,7 @@
 
     POS tagger training program
 
-    Copyright (C) 2017 Miðeind ehf.
+    Copyright (C) 2019 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -44,7 +44,7 @@ from postagger import IFD_Corpus, IFD_Tagset
 from tnttagger import TnT
 
 
-_TNT_MODEL_FILE = "config" + os.sep + "TnT-model.pickle"
+_TNT_MODEL_FILE = os.path.join(basepath, "config", "TnT-model.pickle")
 
 
 @contextmanager
@@ -88,7 +88,7 @@ if __name__ == "__main__":
 
     try:
         # Read configuration file
-        Settings.read(os.path.join(basepath, "config/Reynir.conf"))
+        Settings.read(os.path.join(basepath, "config", "Reynir.conf"))
     except ConfigError as e:
         print("Configuration error: {0}".format(e))
         quit()
