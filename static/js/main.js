@@ -565,9 +565,8 @@ function autoCompleteLookup(q, done)  {
    if (autoCompleteLookup.cache === undefined) {
       autoCompleteLookup.cache = { };
    }
-   cache = autoCompleteLookup.cache;
-   if (cache[q] !== undefined) {
-      done(cache[q]);
+   if (autoCompleteLookup.cache[q] !== undefined) {
+      done(autoCompleteLookup.cache[q]);
       return;
    }
    // Ajax request to server
@@ -576,7 +575,7 @@ function autoCompleteLookup(q, done)  {
       url: "/suggest?q=" + encodeURIComponent(q),
       dataType: "json",
       success: function(json) {
-         autoCompleteLookup.cache[q] = json;
+         autoCompleteLookup.cache[q] = json; // Save to local cache
          done(json);
       },
       error: function(ajaxContext) {

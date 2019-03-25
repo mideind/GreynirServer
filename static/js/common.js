@@ -432,8 +432,9 @@ function tokenInfo(t, nameDict) {
       // Obtain the percentage from token val field (t.v[0]),
       // or from the token text if no such field is available
       var pc = t.v ? t.v[0] : parseFloat(t.x.slice(0, -1).replace(",", "."));
-      if (pc === NaN || pc === undefined)
+      if (isNaN(pc) || pc === undefined) {
          pc = 0.0;
+      }
       r.percent = pc;
    }
    else
