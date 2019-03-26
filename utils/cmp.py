@@ -63,7 +63,7 @@ from treeutil import TreeUtility
 from postagger import IFD_Tagset, IFD_Corpus
 from tokenizer import canonicalize_token
 from fastparser import Fast_Parser
-from scraperdb import SessionContext
+from db import SessionContext
 
 
 # Stuff for deciding which POS tagging server (and what method) we will use

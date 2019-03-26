@@ -67,7 +67,7 @@ vectors/t
 vectors/test.py
 
 # Files that are symlinked into the vectors directory
-vectors/scraperdb.py
+vectors/db
 vectors/settings.py
 vectors/similar.py
 vectors/Index.conf

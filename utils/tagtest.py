@@ -41,7 +41,8 @@ if basepath.endswith(_UTILS):
 from bindb import BIN_Db
 from settings import Settings, ConfigError
 from tokenizer import tokenize, TOK
-from scraperdb import SessionContext, desc, Article as ArticleRow
+from db import SessionContext, desc
+from db.models import Article as ArticleRow
 from article import Article
 from postagger import NgramTagger, IFD_Corpus, IFD_Tagset
 from tnttagger import TnT

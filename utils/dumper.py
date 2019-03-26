@@ -35,7 +35,8 @@ from contextlib import closing
 from datetime import datetime
 
 from settings import Settings, ConfigError
-from scraperdb import Scraper_DB, Article
+from db import Scraper_DB
+from db.models import Article
 from tokenizer import TOK
 
 
