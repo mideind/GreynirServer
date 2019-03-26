@@ -27,12 +27,11 @@ echo "Copying files"
 
 cp config/Adjectives.conf $DEST/config/Adjectives.conf
 cp config/Index.conf $DEST/config/Index.conf
-# Main.conf is no longer needed
-rm $DEST/config/Main.conf
 # Note: config/Reynir.conf is not copied
 cp config/TnT-model.pickle $DEST/config/TnT-model.pickle
 
 cp article.py $DEST/article.py
+cp correct.py $DEST/correct.py
 cp fetcher.py $DEST/fetcher.py
 cp geo.py $DEST/geo.py
 cp images.py $DEST/images.py
