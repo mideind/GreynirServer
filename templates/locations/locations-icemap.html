@@ -16,17 +16,17 @@
 <div>
    <ul class="nav nav-tabs" role="tablist">
       <li role="presentation">
-         <a href="{{ url_for('locations') }}">
+         <a href="{{ url_for('routes.locations') }}">
             Staðir
          </a>
       </li>
       <li role="presentation" class="active">
-         <a href="{{ url_for('locations_icemap') }}">
+         <a href="{{ url_for('routes.locations_icemap') }}">
             Íslandskort
          </a>
       </li>
       <li role="presentation">
-         <a href="{{ url_for('locations_worldmap') }}">
+         <a href="{{ url_for('routes.locations_worldmap') }}">
             Heimskort
          </a>
       </li>
@@ -54,8 +54,8 @@
                </button>
 
                <ul class="dropdown-menu">
-                  <li><a href="{{ url_for('locations_icemap') | safe }}">Síðasta sólarhring</a></li>
-                  <li><a href="{{ url_for('locations_icemap', period='week') | safe }}">Undanfarna viku</a></li>
+                  <li><a href="{{ url_for('routes.locations_icemap') | safe }}">Síðasta sólarhring</a></li>
+                  <li><a href="{{ url_for('routes.locations_icemap', period='week') | safe }}">Undanfarna viku</a></li>
                </ul>
             </span>
          </div>

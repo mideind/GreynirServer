@@ -220,7 +220,7 @@
       $("tr.topitem").click(function(ev) {
          // A source has been clicked. Show articles from source.
          var domain = $(this).attr("data-domain");
-         openURL("{{ url_for('news') }}?root=" + domain, ev);
+         openURL("{{ url_for('routes.news') }}?root=" + domain, ev);
       });
       
       // Set up charts

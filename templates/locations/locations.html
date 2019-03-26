@@ -12,17 +12,17 @@
 <div>
    <ul class="nav nav-tabs" role="tablist">
       <li role="presentation" class="active">
-         <a href="{{ url_for('locations') }}">
+         <a href="{{ url_for('routes.locations') }}">
             Staðir
          </a>
       </li>
       <li role="presentation">
-         <a href="{{ url_for('locations_icemap') }}">
+         <a href="{{ url_for('routes.locations_icemap') }}">
             Íslandskort
          </a>
       </li>
       <li role="presentation">
-         <a href="{{ url_for('locations_worldmap') }}">
+         <a href="{{ url_for('routes.locations_worldmap') }}">
             Heimskort
          </a>
       </li>
@@ -46,13 +46,13 @@
                   Allir staðir <span class="caret"></span>
                </button>
                <ul class="dropdown-menu" id="kind-dropdown-menu">
-                  <li><a href="{{ url_for('locations') }}">Allir staðir</a></li>
+                  <li><a href="{{ url_for('routes.locations') }}">Allir staðir</a></li>
                   <li role="separator" class="divider"></li>
-                  <li><a href="{{ url_for('locations', period=period, kind='continent') | safe }}" id="continent">Álfur</a></li>
-                  <li><a href="{{ url_for('locations', period=period, kind='country') | safe }}" id="country">Lönd</a></li>
-                  <li><a href="{{ url_for('locations', period=period, kind='placename') | safe }}" id="placename">Örnefni</a></li>
-                  <li><a href="{{ url_for('locations', period=period, kind='street') | safe }}" id="street">Götur</a></li>
-                  <li><a href="{{ url_for('locations', period=period, kind='address') | safe }}" id="address">Heimilisföng</a></li>
+                  <li><a href="{{ url_for('routes.locations', period=period, kind='continent') | safe }}" id="continent">Álfur</a></li>
+                  <li><a href="{{ url_for('routes.locations', period=period, kind='country') | safe }}" id="country">Lönd</a></li>
+                  <li><a href="{{ url_for('routes.locations', period=period, kind='placename') | safe }}" id="placename">Örnefni</a></li>
+                  <li><a href="{{ url_for('routes.locations', period=period, kind='street') | safe }}" id="street">Götur</a></li>
+                  <li><a href="{{ url_for('routes.locations', period=period, kind='address') | safe }}" id="address">Heimilisföng</a></li>
                </ul>
             </span>
 
@@ -63,8 +63,8 @@
                   <span class="caret"></span>
                </button>
                <ul class="dropdown-menu">
-                  <li><a href="{{ url_for('locations', kind=kind) | safe }}">Síðasta sólarhring</a></li>
-                  <li><a href="{{ url_for('locations', period='week', kind=kind ) | safe }}">Undanfarna viku</a></li>
+                  <li><a href="{{ url_for('routes.locations', kind=kind) | safe }}">Síðasta sólarhring</a></li>
+                  <li><a href="{{ url_for('routes.locations', period='week', kind=kind ) | safe }}">Undanfarna viku</a></li>
                </ul>
             </span>
 
@@ -104,7 +104,7 @@
                   </div>
                   <div class="rank-article-items">
                      {% for a in loc.articles %}
-                        <span class="art-link"><a href="{{ url_for('page', id=a.id) | safe }}" onClick="event.stopPropagation();" data-toggle="tooltip" data-placement="bottom" title="{{ a.heading }}"><img src="{{ url_for('static', filename = 'sources/' + a.domain + '.png') }}" width="16" height="16" alt="{{ a.heading }}"/></a></span>
+                        <span class="art-link"><a href="{{ url_for('routes.page', id=a.id) | safe }}" onClick="event.stopPropagation();" data-toggle="tooltip" data-placement="bottom" title="{{ a.heading }}"><img src="{{ url_for('static', filename = 'sources/' + a.domain + '.png') }}" width="16" height="16" alt="{{ a.heading }}"/></a></span>
                      {% endfor %}
                   </div>
                </td>

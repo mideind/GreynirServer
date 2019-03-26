@@ -37,10 +37,10 @@
        {{ topics.name if topics.name else "Allir efnisflokkar" }} <span class="caret"></span>
       </button>
       <ul class="dropdown-menu">
-         <li><a href="{{ url_for('news') }}">Allir efnisflokkar</a></li>
+         <li><a href="{{ url_for('routes.news') }}">Allir efnisflokkar</a></li>
          <li role="separator" class="divider"></li>
 {% for t in topics.topic_list %}
-         <li><a href="{{ url_for('news', topic=t[0], root=root) | safe }}">{{ t[1] }}</a></li>
+         <li><a href="{{ url_for('routes.news', topic=t[0], root=root) | safe }}">{{ t[1] }}</a></li>
 {% endfor %}
       </ul>
    </div>
@@ -87,14 +87,14 @@
 {% if articles and offset != 0 %}
       $("#prev-page").click(function(ev) {
          // Go to the previous page
-         window.location.href = "{{ url_for('news', topic=topics.id, root=root, offset=offset-limit) | safe }}";
+         window.location.href = "{{ url_for('routes.news', topic=topics.id, root=root, offset=offset-limit) | safe }}";
       });
 {% endif %}
 
 {% if articles and articles|length == limit %}
       $("#next-page").click(function(ev) {
          // Go to the next page
-         window.location.href = "{{ url_for('news', topic=topics.id, root=root, offset=offset+limit) | safe }}";
+         window.location.href = "{{ url_for('routes.news', topic=topics.id, root=root, offset=offset+limit) | safe }}";
       });
 {% endif %}
    }

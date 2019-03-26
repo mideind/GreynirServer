@@ -23,9 +23,9 @@
          </button>
 
          <ul class="dropdown-menu">
-            <li><a href="{{ url_for('parsefail') | safe }}">50</a></li>
-            <li><a href="{{ url_for('parsefail', num='100') | safe }}">100</a></li>
-            <li><a href="{{ url_for('parsefail', num='250') | safe }}">250</a></li>
+            <li><a href="{{ url_for('routes.parsefail') | safe }}">50</a></li>
+            <li><a href="{{ url_for('routes.parsefail', num='100') | safe }}">100</a></li>
+            <li><a href="{{ url_for('routes.parsefail', num='250') | safe }}">250</a></li>
          </ul>
       </div>
    </div>

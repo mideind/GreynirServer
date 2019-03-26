@@ -15,7 +15,7 @@
       </thead>
       <tbody>
    {% for article in articles %}
-      <tr class="topitem" onClick="openURL('{{ url_for('page') }}?id={{ article.uuid }}', event);">
+      <tr class="topitem" onClick="openURL('{{ url_for('routes.page') }}?id={{ article.uuid }}', event);">
          <td class="timestamp text-muted hidden-xs"
             title="{{ article.time }}, {{ article.fulldate }}">
             {{ article.time if display_time else article.date }}

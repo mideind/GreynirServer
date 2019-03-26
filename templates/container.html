@@ -56,22 +56,22 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
          </button>
-         <a class="navbar-brand" href="{{ url_for('main') }}">
+         <a class="navbar-brand" href="{{ url_for('routes.main') }}">
             <img src="{{ url_for('static', filename='img/GreynirLogo180x80.png') }}" width=90 height=40>
          </a>
       </div>
       <div id="navbar" class="navbar-collapse collapse">
          <ul class="nav navbar-nav">
-            <li id="navid-main"><a href="{{ url_for('main') }}">Heim</a></li>
-            <li id="navid-news"><a href="{{ url_for('news') }}">Nýjast</a></li>
-            <li id="navid-people"><a href="{{ url_for('people_recent') }}">Fólk</a></li>
-            <li id="navid-locations"><a href="{{ url_for('locations') }}">Staðir</a></li>
-            <li id="navid-analysis"><a href="{{ url_for('analysis') }}">Málgreining</a></li>
+            <li id="navid-main"><a href="{{ url_for('routes.main') }}">Heim</a></li>
+            <li id="navid-news"><a href="{{ url_for('routes.news') }}">Nýjast</a></li>
+            <li id="navid-people"><a href="{{ url_for('routes.people_recent') }}">Fólk</a></li>
+            <li id="navid-locations"><a href="{{ url_for('routes.locations') }}">Staðir</a></li>
+            <li id="navid-analysis"><a href="{{ url_for('routes.analysis') }}">Málgreining</a></li>
             {% if not config.PRODUCTION %}
-            <li id="navid-correct"><a href="{{ url_for('correct') }}">Yfirlestur</a></li>
+            <li id="navid-correct"><a href="{{ url_for('routes.correct') }}">Yfirlestur</a></li>
             {% endif %}
-            <li id="navid-stats"><a href="{{ url_for('stats') }}">Tölfræði</a></li>
-            <li id="navid-about"><a href="{{ url_for('about') }}">Um Greyni</a></li>
+            <li id="navid-stats"><a href="{{ url_for('routes.stats') }}">Tölfræði</a></li>
+            <li id="navid-about"><a href="{{ url_for('routes.about') }}">Um Greyni</a></li>
          </ul>
       </div>
    </div>

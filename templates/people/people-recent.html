@@ -12,12 +12,12 @@
 <div>
    <ul class="nav nav-tabs" role="tablist">
       <li role="presentation" class="active">
-         <a href="{{ url_for('people_recent') }}">
+         <a href="{{ url_for('routes.people_recent') }}">
             Nýlegt
          </a>
       </li>
       <li role="presentation">
-         <a href="{{ url_for('people_top') }}">
+         <a href="{{ url_for('routes.people_top') }}">
             Oftast
          </a>
       </li>
@@ -84,7 +84,7 @@
       $("tr.topitem").click(function(ev) {
          // A person name has been clicked: show the article where s/he appears
          var uuid = $(this).attr("data-uuid");
-         window.location.href = "{{ url_for('page') }}?id=" + uuid;
+         window.location.href = "{{ url_for('routes.page') }}?id=" + uuid;
       });
    }
 

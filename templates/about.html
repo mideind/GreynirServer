@@ -22,7 +22,7 @@
    </div>
    <ul class="list-group">
    <li class="list-group-item">
-      <p>Greynir les <a href="{{ url_for('stats') }}">nýjustu fréttir og greinar</a>
+      <p>Greynir les <a href="{{ url_for('routes.stats') }}">nýjustu fréttir og greinar</a>
       jafnóðum af helstu íslensku fréttavefjunum.
       Hann þáttar textann í málsgreinatré samkvæmt
       <a href="https://github.com/vthorsteinsson/ReynirPackage/blob/master/src/reynir/Reynir.grammar"
@@ -38,7 +38,7 @@
       fyrirspurnum á venjulegri íslensku, ritaðri eða talaðri.</p>
       <p>Greynir flokkar fréttir og greinar sjálfkrafa í efnisflokka eftir
       innihaldi þeirra. Hann heldur jafnframt til haga
-      <a href="{{ url_for('stats') }}">tölfræði um greinarnar</a>,
+      <a href="{{ url_for('routes.stats') }}">tölfræði um greinarnar</a>,
       m.a. um hlutföll kynjanna.</p>
       <p>Fylgjast má með fréttum af Greyni í
       <a href="https://www.facebook.com/groups/835777623244578/" target="_blank">Facebook-hópi hans</a>.</p>
@@ -76,7 +76,7 @@
          target="_blank">sjá hér</a>.
          <br>Greynir byggir á <a href="https://greynir.is/doc/" target="_blank">Python-pakkanum <b>Reyni</b></a>
          sem er einnig opinn og frjáls hugbúnaður.
-         <br>Forritaskil (API) Greynis eru <a href="{{ url_for('apidoc') }}">skjöluð hér</a>.
+         <br>Forritaskil (API) Greynis eru <a href="{{ url_for('routes.apidoc') }}">skjöluð hér</a>.
       </small></p>
       <p><a href="https://www.gnu.org/licenses/gpl-3.0.html"
          target="_blank"><img src="{{ url_for('static', filename='img/GPLv3.png') }}"
