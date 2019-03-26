@@ -696,7 +696,7 @@ def correct_api(version=1):
     """ Correct text manually entered by the user, i.e. not coming from an article.
         This is a lower level API used by the Greynir web front-end. """
     if app.config["PRODUCTION"]:
-        return abort(403)
+        return abort(403)  # Forbidden
 
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
@@ -1536,7 +1536,7 @@ def correct():
     """ Handler for a page for spelling and grammar correction
         of user-entered text """
     if app.config["PRODUCTION"]:
-        return abort(403)
+        return abort(403)  # Forbidden
     try:
         txt = text_from_request(request, post_field="txt", get_field="txt")
     except:
