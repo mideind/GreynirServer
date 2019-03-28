@@ -1261,6 +1261,19 @@ class FrettabladidScraper(ScrapeHelper):
 
     _BANNED_PREFIXES = [
         "/sport/i-beinni-",
+        "/sport/sport-fotbolti",
+        "/sport/sport-enski-boltinn",
+        "/sport/sport-islenski-boltinn",
+        "/skodun/skoun-fastir-pennar/",
+        "/timamot/timamot-afmli",
+        "/timamot/timamot-minningargreinar",
+        "/skodun/skoun-fra-degi-til-dags",
+        "/markadurinn/markadurinn-innlent/",
+        "/lifid/lifi-helgarblai",
+        "/lifid/lifi-tiska",
+        "/lifid/lifi-folk",
+        "/skodun/skoun-bakankar",
+        "/markadurinn/markadurinn-innlent",
     ]
 
     def __init__(self, root):
@@ -1277,8 +1290,8 @@ class FrettabladidScraper(ScrapeHelper):
             return True
 
         # Skip photos-only articles
-        comp = s.path.split('/')
-        if comp[-1].startswith('myndasyrpa-'):
+        comp = s.path.split("/")
+        if comp[-1].startswith("myndasyrpa-"):
             return True
 
         # Accept any URLs starting with allowed prefixes
@@ -1301,12 +1314,13 @@ class FrettabladidScraper(ScrapeHelper):
             heading = heading[: -len(title_suffix)].strip()
 
         # Author
-        name = soup.find("span", {"class": "article__byline"})
+        name = soup.find("div", {"class": "article-byline"})
         if not name:
-            name = soup.find("span", {"class": "bylineblock__heading"})
+            name = soup.find("div", {"class": "bylineblock-heading"})
         author = name.get_text() if name else "Ritstjórn Fréttablaðsins"
 
         # Timestamp
+        timestamp = datetime.utcnow()
         ts = ScrapeHelper.meta_property(soup, "article:published_time")
         if ts:
             timestamp = datetime(
@@ -1318,7 +1332,32 @@ class FrettabladidScraper(ScrapeHelper):
                 second=int(ts[17:19]),
             )
         else:
-            timestamp = datetime.utcnow()
+            try:
+                # T.d. "Fimmtudagur 28. mars 2019"
+                pubdate = soup.find("div", {"class": "article-pubdate"})
+                # T.d. "Kl. 13.35"
+                pubtime = soup.find("div", {"class": "article-pubtime"})
+                print(pubdate)
+
+                if pubdate and pubtime:
+                    (dn, mday, m, y) = pubdate.get_text().split()
+                    mday = mday.replace(".", "")
+                    month = MONTHS.index(m) + 1
+                    (_, tt) = pubtime.get_text().split()
+                    (hh, mm) = tt.split(".")
+
+                    timestamp = datetime(
+                        year=int(y),
+                        month=int(month),
+                        day=int(mday),
+                        hour=int(hh),
+                        minute=int(mm),
+                    )
+            except Exception as e:
+                logging.warning(
+                    "Error finding Frettabladid article date: {0}".format(str(e))
+                )
+                timestamp = datetime.utcnow()
 
         metadata.heading = heading
         metadata.author = author
@@ -1328,7 +1367,11 @@ class FrettabladidScraper(ScrapeHelper):
 
     def _get_content(self, soup_body):
         """ Find the article content (main text) in the soup """
-        content = ScrapeHelper.div_class(soup_body, "article__body")
+        content = ScrapeHelper.div_class(soup_body, "article-body")
+        # Some sports event pages don't have an article__body
+        if not content:
+            return BeautifulSoup("", _HTML_PARSER)  # Return empty soup.
+
         # Get rid of stuff we don't want
         ScrapeHelper.del_tag(content, "figure")
         ScrapeHelper.del_div_class(content, "embed")
@@ -1337,10 +1380,19 @@ class FrettabladidScraper(ScrapeHelper):
         # for styling purposes, which separates it from the rest of the word.
         # We extract the character and insert it into the first p tag
         firstchar = ""
-        span = content.find("span", {"class": "article__dropcap"})
+        span = content.find("span", {"class": "article-dropcap"})
         if span:
             firstchar = span.get_text()
             span.decompose()
+
+        for div in content.find_all("div", {"class": "read-more-block"}):
+            div.decompose()
+
+        for div in content.find_all("div", {"class": "sja-einnig"}):
+            div.decompose()
+
+        for div in content.find_all("div", {"class": "img-block"}):
+            div.decompose()
 
         # Insert it in the first paragraph
         ptag = content.find("p")
