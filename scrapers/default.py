@@ -846,6 +846,9 @@ class VisirScraper(ScrapeHelper):
             # Delete figure tags from the content
             if soup.figure:
                 soup.figure.decompose()
+            for fc in soup.find_all('figcaption'):
+                fc.decompose()
+
 
         return soup
 
@@ -1015,6 +1018,9 @@ class StjornarradScraper(ScrapeHelper):
             buttons = ScrapeHelper.div_class(soup, "buttons")
             if buttons is not None:
                 buttons.decompose()
+        # Remove embedded infograms
+        if soup:
+            ScrapeHelper.del_div_class('infogram-embed')
         return soup
 
 
@@ -1337,7 +1343,6 @@ class FrettabladidScraper(ScrapeHelper):
                 pubdate = soup.find("div", {"class": "article-pubdate"})
                 # T.d. "Kl. 13.35"
                 pubtime = soup.find("div", {"class": "article-pubtime"})
-                print(pubdate)
 
                 if pubdate and pubtime:
                     (dn, mday, m, y) = pubdate.get_text().split()
