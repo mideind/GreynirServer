@@ -723,7 +723,7 @@ function d3_update(source) {
             // Select one of three widths depending on the text length
             return d.data.text.length < 11 ? 64 :
                (d.data.text.length < 14 ? 80 :
-               (d.data.text.length < 20 ? 100 : 128));
+               (d.data.text.length < 20 ? 108 : 128));
          })
          .attr("height", 20)
          .attr("transform", function(d) {
