@@ -64,7 +64,7 @@ def text_from_request(request, *, post_field=None, get_field=None):
         be overridden using the post_field paramter.
     """
     if request.method == "POST":
-        if request.headers["Content-Type"] == "text/plain":
+        if request.headers.get("Content-Type") == "text/plain":
             # Accept plain text POSTs, UTF-8 encoded.
             # Example usage:
             # curl -d @example.txt https://greynir.is/postag.api \
