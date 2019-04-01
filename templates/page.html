@@ -67,14 +67,15 @@
                <img src="{{ url_for('static', filename = 'sources/' + article.root_domain + '.png') }}" width="16" height="16">
 {%- endif -%}
             </a>
-            <button type="button" class="btn btn-warning" id="refresh"
-               title="Endurgreina">
+            <button type="button" class="btn btn-warning" id="refresh" title="Endurgreina">
                <span class="glyphicon glyphicon-restart"></span>
             </button>
-            <button type="button" class="btn btn-info" id="check"
-               title="Lesa yfir">
+            {% if not config.PRODUCTION %}
+            <button type="button" class="btn btn-info" id="check" title="Lesa yfir">
                <span class="glyphicon glyphicon-eye-open"></span>
             </button>
+            {% endif %}
+   
          </h5>
       </div>
 
