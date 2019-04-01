@@ -2,12 +2,13 @@
 
 {% if articles %}
 
+   <div class="table-scroll-wrapper">
    <table class="table table-hover" id="toplist">
       <thead>
    {% if display_time %}
          <th class="hidden-xs">Tími</th>
    {% else %}
-         <th>Dags.</th>
+         <th class="hidden-xs">Dags.</th>
    {% endif %}
          <th class="hidden-sm hidden-xs">%</th>
          <th class="hidden-xs">Fyrirsögn</th>
@@ -41,7 +42,7 @@
    {% endfor %}
       </tbody>
    </table>
-
+   </div>
 {% else %}
    
    <p class="no-results">Engar greinar fundust.</p>

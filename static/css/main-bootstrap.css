@@ -448,13 +448,21 @@ td.flags, td.gender {
 }
 
 td.locname, #plist td.name {
-   width: 260px;
+   width: 240px;
    font-weight: 700;
 
 }
 
 .table-responsive {
    overflow-x: hidden;
+}
+
+.table-scroll-wrapper {
+   overflow-x:auto;
+}
+
+.table-scroll-wrapper table {
+   margin-bottom: 0;
 }
 
 td.ratio div.progress {
@@ -474,7 +482,7 @@ tr.topitem span.name {
    text-overflow: ellipsis;
 }
 
-tr.topitem span.title {
+tr.topitem span.title, tr.topitem td.title {
    white-space: nowrap;
    overflow-x: hidden;
    text-overflow: ellipsis;

@@ -11,6 +11,7 @@
 
 <div class="panel panel-default table-responsive">
 <div class="panel-heading">Fjöldi frétta og málsgreina í gagnagrunni Greynis eftir vefjum</div>
+<div class="table-scroll-wrapper">
 <table class="table table-hover" id="stable">
    <thead>
       <th>Vefur</th>
@@ -23,10 +24,8 @@
 {% for r in result %}
 {% if r.sent %}
       <tr class="topitem" data-domain="{{ r.domain }}">
-         <td class="domain">
-            <img src="{{ url_for('static', filename = 'sources/' + r.domain + '.png') }}"
-            width="16" height="16">&nbsp;&nbsp;
-            {{ r.domain }}
+         <td class="domain"><img src="{{ url_for('static', filename = 'sources/' + r.domain + '.png') }}"
+            width="16" height="16">&nbsp;&nbsp;{{ r.domain }}
          </td>
          <td class="count">{{ r.art | format_is }}</td>
          <td class="count">{{ r.sent | format_is }}</td>
@@ -49,18 +48,20 @@
 {% endif %}
 </table>
 </div>
+</div>
 
 <div class="panel panel-default table-responsive">
 <div class="panel-heading">Nöfn karla og kvenna í gagnagrunni Greynis þar sem
       titill eða starfsheiti kemur fram<br>
       <small>Nafn er aðeins talið einu sinni í hverri frétt eða grein</small>
 </div>
+<div class="table-scroll-wrapper">
 <table class="table table-hover" id="dtable">
    <thead>
       <th>Vefur</th>
-      <th class="count female"><span class="glyphicon glyphicon-gender-female"></span> Konur</th>
+      <th class="count female"><span class="glyphicon glyphicon-gender-female"></span> <span class="hidden-xs">Konur</span></th>
       <th class="count female">%</th>
-      <th class="count male"><span class="glyphicon glyphicon-gender-male"></span> Karlar</th>
+      <th class="count male"><span class="glyphicon glyphicon-gender-male"></span> <span class="hidden-xs">Karlar</span></th>
       <th class="count male">%</th>
       <th class="count total">Samtals</th>
    </thead>
@@ -92,6 +93,7 @@
    </tfoot>
 {% endif %}
 </table>
+</div>
 </div>
 
 <div class="panel panel-default">
