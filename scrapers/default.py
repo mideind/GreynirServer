@@ -665,6 +665,7 @@ class MblScraper(ScrapeHelper):
                 "_get_content: "
                 "soup_body.div.main-layout/frett-main/pistill-entry-body is None"
             )
+
         if soup:
             # Delete h1 tags from the content
             s = soup.h1
@@ -677,21 +678,28 @@ class MblScraper(ScrapeHelper):
                         p.decompose()
                 except AttributeError:
                     pass
-            # Delete div.reporter-profile from the content
-            ScrapeHelper.del_div_class(soup, "reporter-profile")
-            # Delete all image instances from the content
-            ScrapeHelper.del_div_class(soup, "mainimg-big")
-            ScrapeHelper.del_div_class(soup, "extraimg-big-w-txt")
-            ScrapeHelper.del_div_class(soup, "extraimg-big")
-            ScrapeHelper.del_div_class(soup, "newsimg-left")
-            ScrapeHelper.del_div_class(soup, "newsimg-right")
-            ScrapeHelper.del_div_class(soup, "newsitem-image")
-            # Toolbar
-            ScrapeHelper.del_div_class(soup, "newsitem-bottom-toolbar")
-            ScrapeHelper.del_div_class(soup, "sidebar-mobile")
-            ScrapeHelper.del_div_class(soup, "mbl-news-link")
-            # Embedded media such as Twitter and Facebook posts
-            ScrapeHelper.del_div_class(soup, "embedded-media")
+
+            deldivs = tupe(
+                "reporter-profile",
+                "mainimg-big",
+                "extraimg-big-w-txt",
+                "extraimg-big",
+                "newsimg-left",
+                "newsimg-right",
+                "newsitem-image",
+                "newsitem-image-center",
+                "newsitem-fptitle",
+                "newsitem-intro",
+                "sidebar-row",
+                "reporter-line",
+                "newsitem-bottom-toolbar",
+                "sidebar-mobile",
+                "mbl-news-link",
+                "embedded-media",
+            )
+            for divclass in deldivs:
+                ScrapeHelper.del_div_class(soup, divclass)
+
         return soup
 
 
