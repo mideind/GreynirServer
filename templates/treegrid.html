@@ -479,15 +479,33 @@ var root = treeData === null ? null : d3.hierarchy(treeData, function(d) {
    });
 
 // The graphics canvas
+var tw = width + margin.right + margin.left;
+var th = height + margin.top + margin.bottom;
 var g = d3.select("div#canvas")
    .append("svg")
-      .attr("width", width + margin.right + margin.left)
-      .attr("height", height + margin.top + margin.bottom)
-      .call(d3.zoom().on("zoom", function () {
-         g.attr("transform", d3.event.transform)
+      .attr("width", tw)
+      .attr("height", th)
+      .call(d3.zoom().scaleExtent([0.3,4]).on("zoom", function () {
+         var tr = d3.event.transform;
+         // Proportion of tree that should always be visible
+         var min2show = 0.2 
+
+         // Constrain x/y coordinates
+         if (tr.x > 0) {
+            tr.x = Math.min(tw - (min2show * tw * tr.k), tr.x);
+         } else {
+            tr.x = Math.max((1.0 - min2show) * -1 * tw * tr.k, tr.x);
+         }
+         if (tr.y > 0) {
+            tr.y = Math.min(th - (min2show * th * tr.k), tr.y);
+         } else {
+            tr.y = Math.max((1.0 - min2show) * -1 * th * tr.k, tr.y);
+         }
+         g.attr("transform", tr);
       }))
    .append("g")
-      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+   // .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+      
 
 // Make sure that the info pop-up stays in its place even
 // if the canvas is scrolled horizontally
@@ -620,6 +638,7 @@ function d3_update(source) {
    // Normalize the y coordinates
    nodes.forEach(function(d) {
       d.y = d.depth * 80;
+      d.y += 40; // 
    });
 
    // Declare the links
