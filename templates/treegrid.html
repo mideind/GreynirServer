@@ -495,7 +495,8 @@ svg.call(d3.zoom().scaleExtent([0.3,4]).on("zoom", function() {
    // Proportion of tree that should always be visible
    var min2show = 0.2;
 
-   // Constrain x/y coordinates
+   // Constrain x/y coordinates for panning so that
+   // a certain portion of the tree cannot go outside bounds
    if (tr.x > 0) {
       tr.x = Math.min(tw - (min2show * tw * tr.k), tr.x);
    } else {

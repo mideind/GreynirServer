@@ -679,7 +679,7 @@ class MblScraper(ScrapeHelper):
                 except AttributeError:
                     pass
 
-            deldivs = tupe(
+            deldivs = tuple(
                 "reporter-profile",
                 "mainimg-big",
                 "extraimg-big-w-txt",
