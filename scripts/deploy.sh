@@ -1,23 +1,43 @@
 #! /bin/bash
-
+#
 # deploy.sh
-
+#
 # Deployment script for greynir.is
+# 
+# Prompts for confirmation before copying files over
+#
+# Defaults to deploying to production.
+# Run with argument "staging" to deploy to staging
 
 SRC=~/github/Reynir
-DEST=/usr/share/nginx/greynir.is
+MODE="PRODUCTION"
+DEST=/usr/share/nginx/greynir.is # Production
+SERVICE="greynir"
+
+if [ "$1" = "staging" ]; then
+    MODE="STAGING"
+    DEST=/usr/share/nginx/staging # Staging
+    SERVICE="staging"
+fi
+
+read -p "This will deploy Greynir to **${MODE}**. Confirm? (y/n): " CONFIRMED
+
+if [ "$CONFIRMED" != "y" ]; then
+    echo "Deployment aborted"
+    exit 1
+fi
 
 echo "Deploying $SRC to $DEST..."
 
-echo "Stopping greynir.is server"
+echo "Stopping gunicorn server"
 
-sudo systemctl stop greynir
+sudo systemctl stop $SERVICE
 
 cd $DEST
 
 echo "Upgrading the reynir package"
 
-source p3510/bin/activate
+source venv/bin/activate
 pip install --upgrade -r requirements.txt
 deactivate
 
@@ -61,9 +81,10 @@ rsync -av --delete static/ $DEST/static/
 cp resources/*.json $DEST/resources/
 
 # Put a version identifier (date and time) into the about.html template
+# TODO: Put Git commit hash / revision count here as well as date and time
 sed -i "s/\[Þróunarútgáfa\]/Útgáfa `date "+%Y-%m-%d %H:%M"`/g" $DEST/templates/about.html
 
 echo "Deployment done"
-echo "Starting greynir.is server..."
+echo "Starting gunicorn server..."
 
-sudo systemctl start greynir
+sudo systemctl start $SERVICE
