@@ -481,31 +481,40 @@ var root = treeData === null ? null : d3.hierarchy(treeData, function(d) {
 // The graphics canvas
 var tw = width + margin.right + margin.left;
 var th = height + margin.top + margin.bottom;
-var g = d3.select("div#canvas")
-   .append("svg")
-      .attr("width", tw)
-      .attr("height", th)
-      .call(d3.zoom().scaleExtent([0.3,4]).on("zoom", function () {
-         var tr = d3.event.transform;
-         // Proportion of tree that should always be visible
-         var min2show = 0.2 
 
-         // Constrain x/y coordinates
-         if (tr.x > 0) {
-            tr.x = Math.min(tw - (min2show * tw * tr.k), tr.x);
-         } else {
-            tr.x = Math.max((1.0 - min2show) * -1 * tw * tr.k, tr.x);
-         }
-         if (tr.y > 0) {
-            tr.y = Math.min(th - (min2show * th * tr.k), tr.y);
-         } else {
-            tr.y = Math.max((1.0 - min2show) * -1 * th * tr.k, tr.y);
-         }
-         g.attr("transform", tr);
-      }))
-   .append("g")
-   // .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-      
+// Create SVG and append container group
+var svg = d3.select("div#canvas")
+   .append("svg")
+   .attr("width", tw)
+   .attr("height", th);
+var g = svg.append("g");
+
+// Zoom handler for SVG
+svg.call(d3.zoom().scaleExtent([0.3,4]).on("zoom", function() {
+   var tr = d3.event.transform;
+   // Proportion of tree that should always be visible
+   var min2show = 0.2;
+
+   // Constrain x/y coordinates
+   if (tr.x > 0) {
+      tr.x = Math.min(tw - (min2show * tw * tr.k), tr.x);
+   } else {
+      tr.x = Math.max((1.0 - min2show) * -1 * tw * tr.k, tr.x);
+   }
+   if (tr.y > 0) {
+      tr.y = Math.min(th - (min2show * th * tr.k), tr.y);
+   } else {
+      tr.y = Math.max((1.0 - min2show) * -1 * th * tr.k, tr.y);
+   }
+   g.attr("transform", tr);
+}));
+
+// Double click should remove zoom transform,
+// restoring original zoom level
+svg.on("dblclick.zoom", function() {
+   g.attr("transform", d3.zoomIdentity);
+   svg.call(d3.zoom().transform, d3.zoomIdentity);
+});      
 
 // Make sure that the info pop-up stays in its place even
 // if the canvas is scrolled horizontally
