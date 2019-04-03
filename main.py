@@ -61,6 +61,7 @@ app.config["PRODUCTION"] = True
 
 # Register blueprint routes
 from routes import routes, max_age
+
 app.register_blueprint(routes)
 
 

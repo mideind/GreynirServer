@@ -1,8 +1,26 @@
 """
 
-    News-related routes.
+    Reynir: Natural language processing for Icelandic
+
+    Copyright (C) 2019 Miðeind ehf.
+
+       This program is free software: you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published by
+       the Free Software Foundation, either version 3 of the License, or
+       (at your option) any later version.
+       This program is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+       GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see http://www.gnu.org/licenses/.
+
+
+    News-related routes
 
 """
+
 
 from . import routes, max_age, better_jsonify
 
@@ -15,10 +33,10 @@ from db import SessionContext, desc
 from db.models import Article, Root, Location, ArticleTopic, Topic
 
 
-
 # Default number of top news items to show in /news
 _TOP_NEWS_LENGTH = 20
 _MAX_NEWS_LENGTH = 100
+
 
 def top_news(
     topic=None,
@@ -30,7 +48,7 @@ def top_news(
     root=None,
 ):
     """ Return a list of articles in chronologically reversed order.
-        Articles can be filtered by start, location, country, root etc. """
+        Articles can be filtered by start date, location, country, root etc. """
     toplist = []
 
     with SessionContext(read_only=True) as session:
