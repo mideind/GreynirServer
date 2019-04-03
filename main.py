@@ -122,7 +122,6 @@ def hashed_url_for_static_file(endpoint, values):
             values[param_name] = static_file_hash(os.path.join(static_folder, filename))
 
 
-# Font caching
 @app.route("/static/fonts/<path:path>")
 @max_age(seconds=24 * 60 * 60)  # Cache font for 24 hours
 def send_font(path):
