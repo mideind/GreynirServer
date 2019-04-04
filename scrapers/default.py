@@ -29,6 +29,7 @@
 import re
 import logging
 import urllib.parse as urlparse
+import requests
 from datetime import datetime
 from bs4 import BeautifulSoup, NavigableString
 
@@ -564,10 +565,6 @@ class MblScraper(ScrapeHelper):
         # Extract the heading from the meta title or
         # OpenGraph (Facebook) og:title property
         heading = ScrapeHelper.meta_property(soup, "title", prop_attr="name") or ""
-        if heading.endswith(" - mbl.is"):
-            heading = heading[0:-9]
-        if heading.endswith(" - K100"):
-            heading = heading[0:-7]
         if not heading:
             heading = ScrapeHelper.meta_property(soup, "og:title") or ""
         if not heading:
@@ -575,8 +572,19 @@ class MblScraper(ScrapeHelper):
             p_e = ScrapeHelper.div_class(soup.html.body, "pistill-entry")
             if p_e and p_e.h2:
                 heading = p_e.h2.string
-        heading = heading.strip()
-        heading = self.unescape(heading)
+        if not heading:
+            h1 = soup.find("h1", {"class": "newsitem-fptitle"})
+            if h1:
+                heading = h1.get_text()
+
+
+        if heading:
+            if heading.endswith(" - mbl.is"):
+                heading = heading[0:-9]
+            if heading.endswith(" - K100"):
+                heading = heading[0:-7]
+            heading = heading.strip()
+            heading = self.unescape(heading)
 
         # Extract the publication time from the article:published_time meta property
         # A dateline from mbl.is looks like this: Viðskipti | mbl | 24.8.2015 | 10:48
@@ -664,6 +672,7 @@ class MblScraper(ScrapeHelper):
                 "_get_content: "
                 "soup_body.div.main-layout/frett-main/pistill-entry-body is None"
             )
+
         if soup:
             # Delete h1 tags from the content
             s = soup.h1
@@ -676,21 +685,30 @@ class MblScraper(ScrapeHelper):
                         p.decompose()
                 except AttributeError:
                     pass
-            # Delete div.reporter-profile from the content
-            ScrapeHelper.del_div_class(soup, "reporter-profile")
-            # Delete all image instances from the content
-            ScrapeHelper.del_div_class(soup, "mainimg-big")
-            ScrapeHelper.del_div_class(soup, "extraimg-big-w-txt")
-            ScrapeHelper.del_div_class(soup, "extraimg-big")
-            ScrapeHelper.del_div_class(soup, "newsimg-left")
-            ScrapeHelper.del_div_class(soup, "newsimg-right")
-            ScrapeHelper.del_div_class(soup, "newsitem-image")
-            # Toolbar
-            ScrapeHelper.del_div_class(soup, "newsitem-bottom-toolbar")
-            ScrapeHelper.del_div_class(soup, "sidebar-mobile")
-            ScrapeHelper.del_div_class(soup, "mbl-news-link")
-            # Embedded media such as Twitter and Facebook posts
-            ScrapeHelper.del_div_class(soup, "embedded-media")
+
+            deldivs = (
+                "reporter-profile",
+                "reporter-line",
+                "mainimg-big",
+                "extraimg-big-w-txt",
+                "extraimg-big",
+                "newsimg-left",
+                "newsimg-right",
+                "newsitem-image",
+                "newsitem-image-center",
+                "newsitem-fptitle",
+                "newsitem-intro",
+                "sidebar-row",
+                "reporter-line",
+                "newsitem-bottom-toolbar",
+                "sidebar-mobile",
+                "mbl-news-link",
+                "embedded-media",
+                "r-sidebar",
+            )
+            for divclass in deldivs:
+                ScrapeHelper.del_div_class(soup, divclass)
+
         return soup
 
 
@@ -1020,7 +1038,7 @@ class StjornarradScraper(ScrapeHelper):
                 buttons.decompose()
         # Remove embedded infograms
         if soup:
-            ScrapeHelper.del_div_class('infogram-embed')
+            ScrapeHelper.del_div_class(soup, 'infogram-embed')
         return soup
 
 
@@ -1403,5 +1421,101 @@ class FrettabladidScraper(ScrapeHelper):
         ptag = content.find("p")
         if ptag and firstchar:
             ptag.insert(0, NavigableString(firstchar))
+
+        return content
+
+
+class HagstofanScraper(ScrapeHelper):
+    """ Scraping helper for hagstofa.is """
+
+    def __init__(self, root):
+        super().__init__(root)
+        self._feeds = ["https://hagstofa.is/rss/allt/"]
+
+    def fetch_url(self, url):
+        # Requests defaults to ISO-8859-1 because content-type
+        # does not declare encoding. In fact, charset is UTF-8.
+        r = requests.get(url)
+        r.encoding = r.apparent_encoding
+        return r.text
+
+    def get_metadata(self, soup):
+        """ Analyze the article soup and return metadata """
+        metadata = super().get_metadata(soup)
+
+        # Author
+        author = "Hagstofa Íslands"
+
+        # Extract the heading from the OpenGraph (Facebook) og:title meta property
+        heading = ScrapeHelper.meta_property(soup, "og:title") or ""
+        prefix = "Hagstofan:"
+        if heading.startswith(prefix):
+            heading = heading[len(prefix) :].strip()
+
+        # Timestamp
+        timestamp = datetime.utcnow()
+
+        info = soup.find("div", {"class": "page-header"})
+        # h2 = info.find("h2") if info else None
+        # heading = h2.text() if info and h2 else heading
+
+        date_span = info.find("i", {"class": "date"}) if info else None
+
+        if date_span:
+            # Example: "22. mars 2019"
+            datestr = date_span.get_text().rstrip()
+            try:
+                (mday, m, y) = datestr.split()
+                mday = mday.replace(".", "")
+                month = MONTHS.index(m) + 1
+
+                timestamp = datetime(
+                    year=int(y),
+                    month=int(month),
+                    day=int(mday),
+                    hour=timestamp.hour,
+                    minute=timestamp.minute,
+                )
+            except Exception as e:
+                logging.warning(
+                    "Exception obtaining date of hagstofa.is article: {0}".format(e)
+                )
+
+        metadata.heading = heading
+        metadata.author = author
+        metadata.timestamp = timestamp
+
+        return metadata
+
+    def _get_content(self, soup_body):
+        """ Find the article content (main text) in the soup """
+        content = soup_body.article
+
+        # Remove tables
+        for div in content.find_all("div", {"class": "scrollable"}):
+            div.decompose()
+        for table in content.find_all("table"):
+            table.decompose()
+
+        # Remove buttons
+        for a in content.find_all("a", {"class": "btn"}):
+            a.decompose()
+
+        # Remove social media stuff
+        for ul in content.find_all("ul", {"class": "article-social"}):
+            ul.decompose()
+
+        # Remove source lists, and paragraphs containing only a single link
+        for p in content.find_all("p"):
+            children = list(p.children)
+            if len(children) and children[0].name == "sup":
+                p.decompose()
+            elif len(children) == 1 and children[0].name == "a":
+                p.decompose()
+
+        # Remove footer
+        footer = content.find("div", {"class": "article-footer"})
+        if footer:
+            footer.decompose()
 
         return content
