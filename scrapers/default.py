@@ -1038,7 +1038,7 @@ class StjornarradScraper(ScrapeHelper):
                 buttons.decompose()
         # Remove embedded infograms
         if soup:
-            ScrapeHelper.del_div_class('infogram-embed')
+            ScrapeHelper.del_div_class(soup, 'infogram-embed')
         return soup
 
 
