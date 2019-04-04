@@ -565,10 +565,6 @@ class MblScraper(ScrapeHelper):
         # Extract the heading from the meta title or
         # OpenGraph (Facebook) og:title property
         heading = ScrapeHelper.meta_property(soup, "title", prop_attr="name") or ""
-        if heading.endswith(" - mbl.is"):
-            heading = heading[0:-9]
-        if heading.endswith(" - K100"):
-            heading = heading[0:-7]
         if not heading:
             heading = ScrapeHelper.meta_property(soup, "og:title") or ""
         if not heading:
@@ -576,8 +572,19 @@ class MblScraper(ScrapeHelper):
             p_e = ScrapeHelper.div_class(soup.html.body, "pistill-entry")
             if p_e and p_e.h2:
                 heading = p_e.h2.string
-        heading = heading.strip()
-        heading = self.unescape(heading)
+        if not heading:
+            h1 = soup.find("h1", {"class": "newsitem-fptitle"})
+            if h1:
+                heading = h1.get_text()
+
+
+        if heading:
+            if heading.endswith(" - mbl.is"):
+                heading = heading[0:-9]
+            if heading.endswith(" - K100"):
+                heading = heading[0:-7]
+            heading = heading.strip()
+            heading = self.unescape(heading)
 
         # Extract the publication time from the article:published_time meta property
         # A dateline from mbl.is looks like this: Viðskipti | mbl | 24.8.2015 | 10:48
@@ -679,8 +686,9 @@ class MblScraper(ScrapeHelper):
                 except AttributeError:
                     pass
 
-            deldivs = tuple(
+            deldivs = (
                 "reporter-profile",
+                "reporter-line",
                 "mainimg-big",
                 "extraimg-big-w-txt",
                 "extraimg-big",
@@ -696,6 +704,7 @@ class MblScraper(ScrapeHelper):
                 "sidebar-mobile",
                 "mbl-news-link",
                 "embedded-media",
+                "r-sidebar",
             )
             for divclass in deldivs:
                 ScrapeHelper.del_div_class(soup, divclass)
