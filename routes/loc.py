@@ -39,6 +39,7 @@ from geo import (
     LOCATION_TAXONOMY,
     ICELAND_ISOCODE,
     ICE_REGIONS,
+    ISO_TO_CONTINENT
 )
 from country_list import countries_for_language
 
@@ -254,5 +255,7 @@ def locinfo():
                 resp["map"] = STATIC_MAP_URL.format(lat, lon, z)
             elif name in ICE_REGIONS:
                 resp["map"] = "/static/img/maps/regions/" + name + ".png"
+            elif resp["continent"] and name in ISO_TO_CONTINENT.values():
+                resp["map"] = "/static/img/maps/continents/" + resp["continent"] + ".png"
 
     return better_jsonify(**resp)

@@ -1417,7 +1417,7 @@ class FrettabladidScraper(ScrapeHelper):
 
 
 class HagstofanScraper(ScrapeHelper):
-    """ Scraping helper for hringbraut.is """
+    """ Scraping helper for hagstofa.is """
 
     def __init__(self, root):
         super().__init__(root)

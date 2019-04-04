@@ -35,6 +35,7 @@ from db import SessionContext
 from db.queries import StatsQuery, ChartsQuery, GenderQuery, BestAuthorsQuery
 from reynir.bindb import BIN_Db
 
+
 DEFAULT_STATS_PERIOD = 10  # days
 MAX_STATS_PERIOD = 30  # days
 _TOP_AUTHORS_PERIOD = 30  # days

@@ -140,6 +140,7 @@ names and titles from parse trees for storage in a database table.
 ## File details
 
 * `main.py` : WSGI web server application and main module for command-line invocation
+* `routes/*` : Routes for the web application
 * `settings.py` : Management of global settings and configuration data,
   obtained from `config/Reynir.conf`
 * `scraper.py` : Web scraper, collecting articles from a set of pre-selected websites (roots)

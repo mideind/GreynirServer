@@ -478,11 +478,11 @@ var root = treeData === null ? null : d3.hierarchy(treeData, function(d) {
       return d.p;
    });
 
-// The graphics canvas
+// Dimensions of the graphics canvas
 var tw = width + margin.right + margin.left;
 var th = height + margin.top + margin.bottom;
 
-// Create SVG and append container group
+// Create SVG and append graphics container group
 var svg = d3.select("div#canvas")
    .append("svg")
    .attr("width", tw)
@@ -510,8 +510,7 @@ svg.call(d3.zoom().scaleExtent([0.3,4]).on("zoom", function() {
    g.attr("transform", tr);
 }));
 
-// Double click should remove zoom transform,
-// restoring original zoom level
+// Double click should remove any zoom transform
 svg.on("dblclick.zoom", function() {
    g.attr("transform", d3.zoomIdentity);
    svg.call(d3.zoom().transform, d3.zoomIdentity);
