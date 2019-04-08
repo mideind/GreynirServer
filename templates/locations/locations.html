@@ -41,7 +41,8 @@
          <!-- Period Popup Button -->
          <div class="btn-group pull-right">
             <span class="hidden-xs">
-               <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+               <button class="btn btn-default dropdown-toggle" type="button" 
+               data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                   {{ "Undanfarna viku" if period == 'week' else "Síðasta sólarhring" }} 
                   <span class="caret"></span>
                </button>
@@ -55,17 +56,30 @@
          <!-- Kind Popup Button -->
          <div class="btn-group pull-right">
             <span class="hidden-xs">
-               <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="margin-right: 10px;" id="kindbutton">
+               <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" 
+               aria-haspopup="true" aria-expanded="false" style="margin-right: 10px;" id="kindbutton">
                   Allir staðir <span class="caret"></span>
                </button>
                <ul class="dropdown-menu" id="kind-dropdown-menu">
-                  <li><a href="{{ url_for('routes.locations') }}">Allir staðir</a></li>
+                  <li><a href="{{ url_for('routes.locations') }}">
+                     Allir staðir</a>
+                  </li>
                   <li role="separator" class="divider"></li>
-                  <li><a href="{{ url_for('routes.locations', period=period, kind='continent') | safe }}" id="continent"><span class="glyphicon glyphicon-globe"></span> Álfur</a></li>
-                  <li><a href="{{ url_for('routes.locations', period=period, kind='country') | safe }}" id="country"><span class="glyphicon glyphicon-flag"></span> Lönd</a></li>
-                  <li><a href="{{ url_for('routes.locations', period=period, kind='placename') | safe }}" id="placename"><span class="glyphicon glyphicon-marker"></span> Örnefni</a></li>
-                  <li><a href="{{ url_for('routes.locations', period=period, kind='street') | safe }}" id="street"><span class="glyphicon glyphicon-road"></span> Götur</a></li>
-                  <li><a href="{{ url_for('routes.locations', period=period, kind='address') | safe }}" id="address"><span class="glyphicon glyphicon-home"></span> Heimilisföng</a></li>
+                  <li><a href="{{ url_for('routes.locations', period=period, kind='continent') | safe }}" id="continent">
+                     <span class="glyphicon glyphicon-globe"></span> Álfur
+                  </a></li>
+                  <li><a href="{{ url_for('routes.locations', period=period, kind='country') | safe }}" id="country">
+                     <span class="glyphicon glyphicon-flag"></span> Lönd
+                  </a></li>
+                  <li><a href="{{ url_for('routes.locations', period=period, kind='placename') | safe }}" id="placename">
+                     <span class="glyphicon glyphicon-marker"></span> Örnefni
+                  </a></li>
+                  <li><a href="{{ url_for('routes.locations', period=period, kind='street') | safe }}" id="street">
+                     <span class="glyphicon glyphicon-road"></span> Götur
+                  </a></li>
+                  <li><a href="{{ url_for('routes.locations', period=period, kind='address') | safe }}" id="address">
+                     <span class="glyphicon glyphicon-home"></span> Heimilisföng
+                  </a></li>
                </ul>
             </span>
          </div>
@@ -106,7 +120,12 @@
                   </div>
                   <div class="rank-article-items">
                      {% for a in loc.articles %}
-                        <span class="art-link"><a href="{{ url_for('routes.page', id=a.id) | safe }}" onClick="event.stopPropagation();" data-toggle="tooltip" data-placement="bottom" title="{{ a.heading }}"><img src="{{ url_for('static', filename = 'sources/' + a.domain + '.png') }}" width="16" height="16" alt="{{ a.heading }}"/></a></span>
+                        <span class="art-link">
+                           <a href="{{ url_for('routes.page', id=a.id) | safe }}" onClick="event.stopPropagation();" 
+                           data-toggle="tooltip" data-placement="bottom" title="{{ a.heading }}">
+                              <img src="{{ url_for('static', filename = 'sources/' + a.domain + '.png') }}" width="16" height="16" alt="{{ a.heading }}"/>
+                           </a>
+                        </span>
                      {% endfor %}
                   </div>
                </td>
@@ -129,13 +148,13 @@
       // Activate the top navbar
       $("#navid-locations").addClass("active");
       
-      // Show correct selection in kind popup button
-      var caret = '<span class="caret"></span>';
-      var kindName = 'Allir staðir ' + caret;
+      // Show correct selection in location kind dropdown button
+      var caret = ' <span class="caret"></span>';
+      var kindName = 'Allir staðir ';
       {% if kind %}
-         kindName = $('#{{ kind }}').html() + ' ' + caret;
+         kindName = $('#{{ kind }}').html();
       {% endif %}
-      $('#kindbutton').html(kindName);
+      $('#kindbutton').html(kindName + caret);
       
       // Clicking toggles visibility of articles associated with location
       $("#loclist > tbody > tr.topitem").click(function(ev) {

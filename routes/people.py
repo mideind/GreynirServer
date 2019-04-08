@@ -38,15 +38,18 @@ from reynir import correct_spaces
 from reynir.bindb import BIN_Db
 
 
-# Default number of top persons to show in /people
+# Default number of persons to show in /people
+_RECENT_PERSONS_LENGTH = 20
+_MAX_TITLE_LENGTH = 64
+
+# Defaults for /people_top
 _TOP_PERSONS_LENGTH = 20
 _TOP_PERSONS_PERIOD = 1  # in days
 
 
-def recent_persons(limit=_TOP_PERSONS_LENGTH):
+def recent_persons(limit=_RECENT_PERSONS_LENGTH):
     """ Return a list of names and titles appearing recently in the news """
     toplist = dict()
-    MAX_TITLE_LENGTH = 64
 
     with SessionContext(read_only=True) as session:
 
@@ -63,10 +66,10 @@ def recent_persons(limit=_TOP_PERSONS_LENGTH):
         def is_better_title(new_title, old_title):
             len_new = len(new_title)
             len_old = len(old_title)
-            if len_old >= MAX_TITLE_LENGTH:
+            if len_old >= _MAX_TITLE_LENGTH:
                 # Too long: we want a shorter one
                 return len_new < len_old
-            if len_new >= MAX_TITLE_LENGTH:
+            if len_new >= _MAX_TITLE_LENGTH:
                 # This one is too long: we don't want it
                 return False
             # Otherwise, longer is better

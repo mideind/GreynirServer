@@ -75,30 +75,16 @@ def analyze_api(version=1):
     return better_jsonify(valid=True, result=pgs, stats=stats, register=register)
 
 
-ALLOWED_UPLOAD_MIME_TYPES = frozenset(
-    ("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-)  # Yes, really
-
-
 @routes.route("/correct.api", methods=["GET", "POST"])
 @routes.route("/correct.api/v<int:version>", methods=["GET", "POST"])
 def correct_api(version=1):
     """ Correct text manually entered by the user, i.e. not coming from an article.
         This is a lower level API used by the Greynir web front-end. """
     if current_app.config["PRODUCTION"]:
-        return abort(403)
+        return abort(403) # Forbidden
 
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
-
-    file = request.files.get("file")
-    if file:
-        mimetype = file.content_type
-        if mimetype not in ALLOWED_UPLOAD_MIME_TYPES:
-            pass  # FIXME
-        # filename = werkzeug.secure_filename(file.filename)
-        # print(request.files)
-        # Process file
 
     try:
         text = text_from_request(request)

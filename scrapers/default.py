@@ -577,7 +577,6 @@ class MblScraper(ScrapeHelper):
             if h1:
                 heading = h1.get_text()
 
-
         if heading:
             if heading.endswith(" - mbl.is"):
                 heading = heading[0:-9]
@@ -864,9 +863,8 @@ class VisirScraper(ScrapeHelper):
             # Delete figure tags from the content
             if soup.figure:
                 soup.figure.decompose()
-            for fc in soup.find_all('figcaption'):
+            for fc in soup.find_all("figcaption"):
                 fc.decompose()
-
 
         return soup
 
@@ -1038,7 +1036,7 @@ class StjornarradScraper(ScrapeHelper):
                 buttons.decompose()
         # Remove embedded infograms
         if soup:
-            ScrapeHelper.del_div_class(soup, 'infogram-embed')
+            ScrapeHelper.del_div_class(soup, "infogram-embed")
         return soup
 
 
@@ -1456,9 +1454,6 @@ class HagstofanScraper(ScrapeHelper):
         timestamp = datetime.utcnow()
 
         info = soup.find("div", {"class": "page-header"})
-        # h2 = info.find("h2") if info else None
-        # heading = h2.text() if info and h2 else heading
-
         date_span = info.find("i", {"class": "date"}) if info else None
 
         if date_span:

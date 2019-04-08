@@ -162,6 +162,9 @@
 .glyphicon-home:before {
    content: "\E021";
 }
+.glyphicon-upload:before {
+   content: "\E202";
+}
 .glyphicon-spin {
     -webkit-animation: spin 2000ms infinite linear;
     animation: spin 2000ms infinite linear;

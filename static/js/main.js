@@ -640,7 +640,7 @@ function initMain(jQuery) {
    // Select all text in the url input field
    $("#url").get(0).setSelectionRange(0, $("#url").val().length);
 
-   // Clicking in italic word in the guide
+   // Clicking in italic words in the guide
    $("div.guide-empty i").click(function(ev) {
       openURL("/?f=q&q=" + encodeURIComponent($(this).text()), ev);
    });

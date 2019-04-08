@@ -34,14 +34,14 @@ from db.models import Article, Root, Location, ArticleTopic, Topic
 
 
 # Default number of top news items to show in /news
-_TOP_NEWS_LENGTH = 20
-_MAX_NEWS_LENGTH = 100
+_DEFAULT_NUM_ARTICLES = 20
+_MAX_NUM_ARTICLES = 100
 
 
-def top_news(
+def fetch_articles(
     topic=None,
     offset=0,
-    limit=_TOP_NEWS_LENGTH,
+    limit=_DEFAULT_NUM_ARTICLES,
     start=None,
     location=None,
     country=None,
@@ -159,23 +159,22 @@ def top_news(
 @routes.route("/news")
 @max_age(seconds=60)
 def news():
-    """ Handler for a page with a list of articles """
+    """ Handler for a page with a list of articles + pagination """
     topic = request.args.get("topic")
     root = request.args.get("root")
 
     try:
         offset = max(0, int(request.args.get("offset", 0)))
-        limit = max(0, int(request.args.get("limit", _TOP_NEWS_LENGTH)))
+        limit = max(0, int(request.args.get("limit", _DEFAULT_NUM_ARTICLES)))
     except:
         offset = 0
-        limit = _TOP_NEWS_LENGTH
+        limit = _DEFAULT_NUM_ARTICLES
 
-    limit = min(limit, _MAX_NEWS_LENGTH)  # Cap at max 100 results per page
+    limit = min(limit, _MAX_NUM_ARTICLES)  # Cap at max 100 results per page
 
     with SessionContext(read_only=True) as session:
-
         # Fetch articles
-        articles = top_news(
+        articles = fetch_articles(
             topic=topic,
             offset=offset,
             limit=limit,
@@ -228,7 +227,7 @@ def articles_list():
     start_date = datetime.utcnow() - timedelta(days=days)
 
     # Fetch articles
-    articles = top_news(
+    articles = fetch_articles(
         start=start_date,
         location=locname,
         country=country,

@@ -5,7 +5,8 @@
 
    Common.js
 
-   JavaScript utility functions shared by the Greynir front-end.
+   JS utility functions for token display, formatting, etc. shared by 
+   the Greynir front-end.
 
    Copyright (C) 2018 Miðeind ehf.
    Author: Vilhjálmur Þorsteinsson
