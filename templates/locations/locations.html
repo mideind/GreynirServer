@@ -38,25 +38,8 @@
          <div class="headline hidden-xs">Nýlega í fréttum vefmiðla</div>
          <div class="headline visible-xs-inline-block">Nýjustu staðir</div>
 
+         <!-- Period Popup Button -->
          <div class="btn-group pull-right">
-            
-            <!-- Kind Popup Button -->
-            <span class="hidden-xs">
-               <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="margin-right: 10px;" id="kindbutton">
-                  Allir staðir <span class="caret"></span>
-               </button>
-               <ul class="dropdown-menu" id="kind-dropdown-menu">
-                  <li><a href="{{ url_for('routes.locations') }}">Allir staðir</a></li>
-                  <li role="separator" class="divider"></li>
-                  <li><a href="{{ url_for('routes.locations', period=period, kind='continent') | safe }}" id="continent">Álfur</a></li>
-                  <li><a href="{{ url_for('routes.locations', period=period, kind='country') | safe }}" id="country">Lönd</a></li>
-                  <li><a href="{{ url_for('routes.locations', period=period, kind='placename') | safe }}" id="placename">Örnefni</a></li>
-                  <li><a href="{{ url_for('routes.locations', period=period, kind='street') | safe }}" id="street">Götur</a></li>
-                  <li><a href="{{ url_for('routes.locations', period=period, kind='address') | safe }}" id="address">Heimilisföng</a></li>
-               </ul>
-            </span>
-
-            <!-- Period Popup Button -->
             <span class="hidden-xs">
                <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                   {{ "Undanfarna viku" if period == 'week' else "Síðasta sólarhring" }} 
@@ -67,7 +50,24 @@
                   <li><a href="{{ url_for('routes.locations', period='week', kind=kind ) | safe }}">Undanfarna viku</a></li>
                </ul>
             </span>
+         </div>
 
+         <!-- Kind Popup Button -->
+         <div class="btn-group pull-right">
+            <span class="hidden-xs">
+               <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="margin-right: 10px;" id="kindbutton">
+                  Allir staðir <span class="caret"></span>
+               </button>
+               <ul class="dropdown-menu" id="kind-dropdown-menu">
+                  <li><a href="{{ url_for('routes.locations') }}">Allir staðir</a></li>
+                  <li role="separator" class="divider"></li>
+                  <li><a href="{{ url_for('routes.locations', period=period, kind='continent') | safe }}" id="continent"><span class="glyphicon glyphicon-globe"></span> Álfur</a></li>
+                  <li><a href="{{ url_for('routes.locations', period=period, kind='country') | safe }}" id="country"><span class="glyphicon glyphicon-flag"></span> Lönd</a></li>
+                  <li><a href="{{ url_for('routes.locations', period=period, kind='placename') | safe }}" id="placename"><span class="glyphicon glyphicon-marker"></span> Örnefni</a></li>
+                  <li><a href="{{ url_for('routes.locations', period=period, kind='street') | safe }}" id="street"><span class="glyphicon glyphicon-road"></span> Götur</a></li>
+                  <li><a href="{{ url_for('routes.locations', period=period, kind='address') | safe }}" id="address"><span class="glyphicon glyphicon-home"></span> Heimilisföng</a></li>
+               </ul>
+            </span>
          </div>
 
       </div>
@@ -130,11 +130,12 @@
       $("#navid-locations").addClass("active");
       
       // Show correct selection in kind popup button
-      var kindName = 'Allir staðir';
+      var caret = '<span class="caret"></span>';
+      var kindName = 'Allir staðir ' + caret;
       {% if kind %}
-         kindName = $('#{{ kind }}').text();
+         kindName = $('#{{ kind }}').html() + ' ' + caret;
       {% endif %}
-      $('#kindbutton').text(kindName);
+      $('#kindbutton').html(kindName);
       
       // Clicking toggles visibility of articles associated with location
       $("#loclist > tbody > tr.topitem").click(function(ev) {

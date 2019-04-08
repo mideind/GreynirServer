@@ -150,6 +150,18 @@
 .glyphicon-alert:before {
    content: "\E079";
 }
+.glyphicon-flag:before {
+   content: "\E267";
+}
+.glyphicon-marker:before {
+   content: "\E243";
+}
+.glyphicon-road:before {
+   content: "\E027";
+}
+.glyphicon-home:before {
+   content: "\E021";
+}
 .glyphicon-spin {
     -webkit-animation: spin 2000ms infinite linear;
     animation: spin 2000ms infinite linear;
