@@ -31,6 +31,9 @@
       Nýjustu fréttir {{ 'á ' + root if root else 'af helstu vefmiðlum' }}
    </div>
    <div class="headline visible-xs-inline-block">Nýjustu fréttir</div>
+
+
+   <!-- Topics dropdown -->
    <div class="btn-group pull-right">
       <button class="btn {{ labelmap.get(topics.id, 'btn-default') }} dropdown-toggle"
          type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -44,6 +47,34 @@
 {% endfor %}
       </ul>
    </div>
+
+
+   <!-- Sources (roots) dropdown -->
+   <div class="btn-group pull-right" style="margin-right: 10px;">
+      <button class="btn btn-default dropdown-toggle"
+         type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+         {% if root %}
+            <img src="/static/sources/{{ root }}.png" width="16" height="16" 
+            style="margin-top: -2px; margin-right: 4px;" alt="{{ root }}"> 
+            {{ root }}
+         {% else %}
+            Allir miðlar
+         {% endif %}
+         <span class="caret"></span>
+      </button>
+      <ul class="dropdown-menu">
+         <li><a href="{{ url_for('routes.news') }}">Allir miðlar</a></li>
+         <li role="separator" class="divider"></li>
+{% for r in rootlist %}
+         <li><a href="{{ url_for('routes.news', root=r[1]) | safe }}">
+            <img src="/static/sources/{{ r[1] }}.png" width="16" height="16" alt="{{ r[0] }}">
+            {{ r[0] }}
+         </a></li>
+{% endfor %}
+      </ul>
+   </div>
+
+
 </div>
 
 <!-- Generate table listing articles -->

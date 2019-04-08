@@ -113,10 +113,12 @@ def chart_stats(session=None, num_days=7):
     }
 
 
-def top_authors(days=_TOP_AUTHORS_PERIOD):
+def top_authors(days=_TOP_AUTHORS_PERIOD, session=None):
     end = datetime.utcnow()
     start = end - timedelta(days=_TOP_AUTHORS_PERIOD)
-    authors = BestAuthorsQuery.period(start, end, min_articles=10)[:20]
+    authors = BestAuthorsQuery.period(
+        start, end, enclosing_session=session, min_articles=10
+    )[:20]
 
     authresult = list()
     with BIN_Db.get_db() as bindb:
@@ -127,6 +129,7 @@ def top_authors(days=_TOP_AUTHORS_PERIOD):
                 continue
             perc = round(float(a[4]), 2)
             authresult.append({"name": name, "gender": gender, "perc": perc})
+
     return authresult[:10]
 
 
@@ -163,7 +166,7 @@ def stats():
             gtotal["total"] += r.kvk + r.kk + r.hk
 
         # Author stats
-        authresult = top_authors()
+        authresult = top_authors(session=session)
 
         # Chart stats
         chart_data = chart_stats(session=session, num_days=days)

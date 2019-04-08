@@ -46,13 +46,13 @@ def top_news(
     location=None,
     country=None,
     root=None,
+    enclosing_session=None,
 ):
     """ Return a list of articles in chronologically reversed order.
         Articles can be filtered by start date, location, country, root etc. """
     toplist = []
 
-    with SessionContext(read_only=True) as session:
-
+    with SessionContext(read_only=True, session=enclosing_session) as session:
         q = (
             session.query(Article)
             .filter(Article.tree != None)
@@ -171,19 +171,36 @@ def news():
         limit = _TOP_NEWS_LENGTH
 
     limit = min(limit, _MAX_NEWS_LENGTH)  # Cap at max 100 results per page
-    articles = top_news(topic=topic, offset=offset, limit=limit, root=root)
 
-    # If all articles in the list are timestamped within 24 hours of now,
-    # we display their times in HH:MM format. Otherwise, we display full date.
-    display_time = True
-    if articles and (datetime.utcnow() - articles[-1].timestamp).days >= 1:
-        display_time = False
-
-    # Fetch the topics
     with SessionContext(read_only=True) as session:
+
+        # Fetch articles
+        articles = top_news(
+            topic=topic,
+            offset=offset,
+            limit=limit,
+            root=root,
+            enclosing_session=session,
+        )
+
+        # If all articles in the list are timestamped within 24 hours of now,
+        # we display their times in HH:MM format. Otherwise, we display full date.
+        display_time = True
+        if articles and (datetime.utcnow() - articles[-1].timestamp).days >= 1:
+            display_time = False
+
+        # Fetch lists of article topics
         q = session.query(Topic.identifier, Topic.name).order_by(Topic.name).all()
         d = {t[0]: t[1] for t in q}
         topics = dict(id=topic, name=d.get(topic, ""), topic_list=q)
+
+        # Fetch list of article sources (roots)
+        q = (
+            session.query(Root.description, Root.domain)
+            .filter(Root.visible == True)
+            .order_by(Root.description)
+        )
+        rootlist = list(q.all())
 
     return render_template(
         "news.html",
@@ -193,6 +210,7 @@ def news():
         offset=offset,
         limit=limit,
         root=root,
+        rootlist=rootlist,
     )
 
 
