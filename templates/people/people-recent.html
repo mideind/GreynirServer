@@ -77,6 +77,8 @@
 
 {% block endscripts %}
 
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
+
 <script>
 
    function init() {
@@ -86,7 +88,7 @@
       $("tr.topitem").click(function(ev) {
          // A person name has been clicked: show the article where s/he appears
          var uuid = $(this).attr("data-uuid");
-         window.location.href = "{{ url_for('routes.page') }}?id=" + uuid;
+         openURL("{{ url_for('routes.page') }}?id=" + uuid, ev);
       });
    }
 
