@@ -28,7 +28,7 @@
 <div class="panel-heading">
    <!-- Show full heading or shorter one depending on viewport width -->
    <div class="headline hidden-xs">
-      Nýjustu fréttir {{ 'á ' + root if root else 'af helstu vefmiðlum' }}
+      Nýjustu fréttir {{ 'á ' + selected_root if selected_root else 'af helstu vefmiðlum' }}
    </div>
    <div class="headline visible-xs-inline-block">Nýjustu fréttir</div>
 
@@ -43,20 +43,20 @@
          <li><a href="{{ url_for('routes.news') }}">Allir efnisflokkar</a></li>
          <li role="separator" class="divider"></li>
 {% for t in topics.topic_list %}
-         <li><a href="{{ url_for('routes.news', topic=t[0], root=root) | safe }}">{{ t[1] }}</a></li>
+         <li><a href="{{ url_for('routes.news', topic=t[0], root=selected_root) | safe }}">{{ t[1] }}</a></li>
 {% endfor %}
       </ul>
    </div>
 
 
    <!-- Sources (roots) dropdown -->
-   <div class="btn-group pull-right" style="margin-right: 10px;">
+   <div class="btn-group pull-right hidden-xs" style="margin-right: 10px;">
       <button class="btn btn-default dropdown-toggle"
          type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-         {% if root %}
-            <img src="/static/sources/{{ root }}.png" width="16" height="16" 
-            style="margin-top: -2px; margin-right: 4px;" alt="{{ root }}"> 
-            {{ root }}
+         {% if selected_root and selected_root in roots %}
+            <img src="/static/sources/{{ selected_root }}.png" width="16" height="16" 
+            style="margin-top: -2px; margin-right: 4px;" alt="{{ selected_root }}"> 
+            {{ roots[selected_root] }}
          {% else %}
             Allir miðlar
          {% endif %}
@@ -65,10 +65,10 @@
       <ul class="dropdown-menu">
          <li><a href="{{ url_for('routes.news') }}">Allir miðlar</a></li>
          <li role="separator" class="divider"></li>
-{% for r in rootlist %}
-         <li><a href="{{ url_for('routes.news', root=r[1]) | safe }}">
-            <img src="/static/sources/{{ r[1] }}.png" width="16" height="16" alt="{{ r[0] }}">
-            {{ r[0] }}
+{% for domain, name in roots.items() %}
+         <li><a href="{{ url_for('routes.news', root=domain) | safe }}">
+            <img src="/static/sources/{{ domain }}.png" width="16" height="16" alt="{{ name }}">
+            {{ name }}
          </a></li>
 {% endfor %}
       </ul>
@@ -118,14 +118,14 @@
 {% if articles and offset != 0 %}
       $("#prev-page").click(function(ev) {
          // Go to the previous page
-         window.location.href = "{{ url_for('routes.news', topic=topics.id, root=root, offset=offset-limit) | safe }}";
+         openURL("{{ url_for('routes.news', topic=topics.id, root=selected_root, offset=offset-limit) | safe }}", ev);
       });
 {% endif %}
 
 {% if articles and articles|length == limit %}
       $("#next-page").click(function(ev) {
          // Go to the next page
-         window.location.href = "{{ url_for('routes.news', topic=topics.id, root=root, offset=offset+limit) | safe }}";
+         openURL("{{ url_for('routes.news', topic=topics.id, root=selected_root, offset=offset+limit) | safe }}", ev);
       });
 {% endif %}
    }

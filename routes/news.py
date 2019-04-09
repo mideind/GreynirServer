@@ -195,11 +195,11 @@ def news():
 
         # Fetch list of article sources (roots)
         q = (
-            session.query(Root.description, Root.domain)
+            session.query(Root.domain, Root.description)
             .filter(Root.visible == True)
             .order_by(Root.description)
         )
-        rootlist = list(q.all())
+        roots = dict(q.all())
 
     return render_template(
         "news.html",
@@ -208,8 +208,8 @@ def news():
         display_time=display_time,
         offset=offset,
         limit=limit,
-        root=root,
-        rootlist=rootlist,
+        selected_root=root,
+        roots=roots,
     )
 
 
