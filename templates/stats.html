@@ -111,7 +111,7 @@
             <td class="gender" title="Kona"><span class="glyphicon glyphicon-gender-female"></span></td>
             {% endif %}
             <td>{{ a.name | safe }}</td>
-            <td class="count">{{ a.perc | safe }}%</td>
+            <td class="count">{{ a.perc | format_is(1) }}%</td>
          </tr>
          {% endfor %}
       </tbody>
