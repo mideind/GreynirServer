@@ -165,6 +165,9 @@
 .glyphicon-upload:before {
    content: "\E202";
 }
+.glyphicon-calculator:before {
+   content: "\E324";
+}
 .glyphicon-spin {
     -webkit-animation: spin 2000ms infinite linear;
     animation: spin 2000ms infinite linear;
