@@ -105,15 +105,6 @@ function spacing(t) {
    return TP_CENTER;
 }
 
-function openURL(url, ev) {
-   if (ev.altKey || ev.metaKey) {
-      // Open in new tab/window
-      window.open(url);
-   } else {
-      window.location.href = url;
-   } 
-}
-
 function queryPerson(name, ev) {
    // Navigate to the main page with a person query
    openURL("/?f=q&q=" + encodeURIComponent("Hver er " + name + "?"), ev);
@@ -149,7 +140,6 @@ function showPerson(ev) {
       name = $(this).text(); // No associated token: use the contained text
    }
    queryPerson(name, ev);
-   ev.stopPropagation();
 }
 
 function showEntity(ev) {
@@ -164,7 +154,6 @@ function showEntity(ev) {
    } else {
       queryEntity(ename, ev);
    }
-   ev.stopPropagation();
 }
 
 function hoverIn() {
@@ -201,12 +190,13 @@ function hoverIn() {
    if (r.percent !== null) {
       makePercentGraph(r.percent);
    } else {
-      $("#percent").css("display", "none");
+      $("#percent").hide();
    }
 
    $("#info").removeClass();
-   if (r.class)
+   if (r.class) {
       $("#info").addClass(r.class);
+   }
 
    // Try to fetch image if person (and at least two names)
    if (t.k == TOK_PERSON && t.v.split(' ').length > 1) {
@@ -241,7 +231,7 @@ function hoverIn() {
             if (info['desc']) {
                $('#details').html(info['desc']);
             }
-            // We have a map image
+            // Map image
             if (info['map']) {
                $("#info-image").html(
                   $("<img>").attr('src', info['map']).attr('onerror', '$(this).hide();')
@@ -437,14 +427,16 @@ function populateStats(stats) {
    $("#tok-num").text(format_is(stats.num_tokens));
    $("#num-sent").text(format_is(stats.num_sentences));
    $("#num-parsed-sent").text(format_is(stats.num_parsed));
-   if (stats.num_parsed == 1)
+   if (stats.num_parsed == 1) {
       $("#paragraphs").text("málsgrein")
-   else
+   } else {
       $("#paragraphs").text("málsgreinar");
-   if (stats.num_sentences > 0)
+   }
+   if (stats.num_sentences > 0) {
       $("#num-parsed-ratio").text(format_is(100.0 * stats.num_parsed / stats.num_sentences, 1));
-   else
+   } else {
       $("#num-parsed-ratio").text("0.0");
+   }
    $("#avg-ambig-factor").text(format_is(stats.ambiguity, 2));
    $("div#statistics").css("display", "block");
 }

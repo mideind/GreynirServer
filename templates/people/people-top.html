@@ -12,12 +12,12 @@
 <div>
    <ul class="nav nav-tabs" role="tablist">
       <li role="presentation">
-         <a href="{{ url_for('people_recent') }}">
+         <a href="{{ url_for('routes.people_recent') }}">
             Nýlegt
          </a>
       </li>
       <li role="presentation" class="active">
-         <a href="{{ url_for('people_top') }}">
+         <a href="{{ url_for('routes.people_top') }}">
             Oftast
          </a>
       </li>
@@ -51,8 +51,8 @@
                </button>
 
                <ul class="dropdown-menu">
-                  <li><a href="{{ url_for('people_top') | safe }}">Síðasta sólarhring</a></li>
-                  <li><a href="{{ url_for('people_top', period='week') | safe }}">Undanfarna viku</a></li>
+                  <li><a href="{{ url_for('routes.people_top') | safe }}">Síðasta sólarhring</a></li>
+                  <li><a href="{{ url_for('routes.people_top', period='week') | safe }}">Undanfarna viku</a></li>
                </ul>
             </span>
 
@@ -97,7 +97,7 @@
                   </div>
                   <div class="rank-article-items">
                      {% for a in person.articles %}
-                     <span class="art-link"><a href="{{ url_for('page', id=a.id) | safe }}" onclick="event.stopPropagation();"  data-toggle="tooltip" data-placement="bottom" title="{{ a.heading }}"><img src="{{ url_for('static', filename = 'sources/' + a.domain + '.png') }}" width="16" height="16" alt="{{ a.heading }}"/></a></span>
+                     <span class="art-link"><a href="{{ url_for('routes.page', id=a.id) | safe }}" onclick="event.stopPropagation();"  data-toggle="tooltip" data-placement="bottom" title="{{ a.heading }}"><img src="{{ url_for('static', filename = 'sources/' + a.domain + '.png') }}" width="16" height="16" alt="{{ a.heading }}"/></a></span>
                      {% endfor %}
                   </div>
                </td>
@@ -113,6 +113,8 @@
 
 {% block endscripts %}
 
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
+
 <script>
 
    function init() {
@@ -127,8 +129,7 @@
 
       $("#plist td.name > span").click(function(evt) {
          var name = $(this).text();
-         window.location.href = "/?f=q&q=" + encodeURIComponent("Hver er " + name + "?");
-         evt.stopPropagation();
+         openURL("/?f=q&q=" + encodeURIComponent("Hver er " + name + "?"), evt);
       });
 
       // Activate bootstrap tooltips for article icons

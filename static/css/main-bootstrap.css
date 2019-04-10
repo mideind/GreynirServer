@@ -36,8 +36,9 @@
 
 @font-face {
    font-family: 'Glyphicons Regular';
-   src: url('/static/fonts/glyphicons-regular.woff') format('woff'),
-      url('/static/fonts/glyphicons-regular.ttf') format('truetype')
+   src:  url('/static/fonts/glyphicons-regular.woff2') format('woff2'), 
+         url('/static/fonts/glyphicons-regular.woff') format('woff'),
+         url('/static/fonts/glyphicons-regular.ttf') format('truetype')
 }
 
 .glyphicon {
@@ -124,6 +125,45 @@
 }
 .glyphicon-globe:before {
    content: "\E371";
+}
+.glyphicon-envelope:before {
+   content: "\2709";
+}
+.glyphicon-weights:before {
+   content: "\E544";
+}
+.glyphicon-telephone:before {
+   content: "\E442";
+}
+.glyphicon-money:before {
+   content: "\E459";
+}
+.glyphicon-calendar:before {
+   content: "\E046";
+}
+.glyphicon-piechart:before {
+   content: "\E043";
+}
+.glyphicon-user:before {
+   content: "\E004";
+}
+.glyphicon-alert:before {
+   content: "\E079";
+}
+.glyphicon-flag:before {
+   content: "\E267";
+}
+.glyphicon-marker:before {
+   content: "\E243";
+}
+.glyphicon-road:before {
+   content: "\E027";
+}
+.glyphicon-home:before {
+   content: "\E021";
+}
+.glyphicon-upload:before {
+   content: "\E202";
 }
 .glyphicon-spin {
     -webkit-animation: spin 2000ms infinite linear;
@@ -766,10 +806,6 @@ span.sent {
 }
 
 span.sent.err {
-   /*
-   background: url(wiggle.png) repeat-x bottom left;
-   background-size: 4px 3px;
-   */
    border-color: #CB333B;
    border-style: dotted;
 }
@@ -1529,4 +1565,6 @@ p.no-results {
    margin: 10px;
 }
 
-
+.hidden {
+   display: none;
+}

@@ -16,7 +16,7 @@
       </thead>
       <tbody>
    {% for article in articles %}
-      <tr class="topitem" onClick="window.location.href = '{{ url_for('page') }}?id={{ article.uuid }}';">
+      <tr class="topitem" onClick="openURL('{{ url_for('routes.page') }}?id={{ article.uuid }}', event);">
          <td class="timestamp text-muted hidden-xs"
             title="{{ article.time }}, {{ article.fulldate }}">
             {{ article.time if display_time else article.date }}
@@ -34,7 +34,7 @@
          </td>
          <td class="extlink hidden-sm hidden-xs">
             <a href="{{ article.url }}" onclick="event.stopPropagation();"
-               title="Skoða á {{ article.source }}">
+               title="Skoða grein á {{ article.source }}">
                <span class="glyphicon glyphicon-arrow-right"></span>
             </a>
          </td>

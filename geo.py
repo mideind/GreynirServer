@@ -88,7 +88,7 @@ ICE_PLACENAME_BLACKLIST = frozenset(
 )
 ICE_STREETNAME_BLACKLIST = frozenset(("Sjáland", "Feney"))
 
-ALWAYS_STREET_ADDR = frozenset(("Skeifan", "Bessastaðir"))
+ALWAYS_STREET_ADDR = frozenset(("Skeifan", "Bessastaðir", "Kringlan"))
 
 # Names that should always be identified
 # as Icelandic regions, not placenames

@@ -116,13 +116,17 @@ class BestAuthorsQuery(_BaseQuery):
                 (sum(100.0 * num_parsed) / sum(1.0 * num_sentences)) as ratio
                 from articles
                 where num_sentences > 0
+                and articles.timestamp >= :start and articles.timestamp < :end
                 group by auth
             ) as q
-            where cnt >= {0}
+            where cnt >= :min_articles
             order by ratio desc;
-        """.format(
-        _MIN_ARTICLE_COUNT
-    )
+        """
+
+    @classmethod
+    def period(cls, start, end, min_articles=_MIN_ARTICLE_COUNT, enclosing_session=None):
+        with SessionContext(session=enclosing_session, commit=False) as session:
+            return cls().execute(session, start=start, end=end, min_articles=min_articles)
 
 
 class RelatedWordsQuery(_BaseQuery):

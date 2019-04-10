@@ -114,7 +114,7 @@
          <li>
             <span class="timestamp">{{ sa.ts_text }}</span>
             <img src="{{ url_for('static', filename = 'sources/' + sa.domain + '.png') }}" width="16" height="16">
-            <a href="{{ url_for('page', id = sa.uuid) }}"><span class="heading">{{ sa.heading }}</span></a>
+            <a href="{{ url_for('routes.page', id = sa.uuid) }}"><span class="heading">{{ sa.heading }}</span></a>
             <span class="similarity">{{ sa.similarity | format_is(1) }}%</span>
          </li>
 {% endfor %}
@@ -231,26 +231,17 @@
 
    function init() {
       // Show help text
-      $("div#help").css("display", "block");
-      // Clicking on the info panel makes it disappear
-      // (necessary for touch screens)
-      $("#info")
-         .click(function(ev) {
-            ev.stopPropagation();
-            $(this).css("visibility", "hidden");
-         });
-      $("button#refresh")
-         .click(function(ev) {
-            reparseArticle("{{ article.uuid | safe }}");
-         });
-      $("button#check")
-         .click(checkArticle);
+      $("div#help").show();
+      $("button#refresh").click(function(ev) {
+         reparseArticle("{{ article.uuid | safe }}");
+      });
+      $("button#check").click(checkArticle);
       displayTokens(j);
       // Show similar list
-      $("div#similar").css("display", "block");
-      populateStats(stats);
+      $("div#similar").show();
       // Show statistics
-      $("div#statistics").css("display", "block");
+      populateStats(stats);
+      $("div#statistics").show();
       populateRegister();
    }
 

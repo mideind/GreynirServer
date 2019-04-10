@@ -64,6 +64,7 @@ cp processor.py $DEST/processor.py
 cp query.py $DEST/query.py
 cp scraper.py $DEST/scraper.py
 cp -r db $DEST/
+cp -r routes $DEST/
 cp search.py $DEST/search.py
 cp settings.py $DEST/settings.py
 cp similar.py $DEST/similar.py

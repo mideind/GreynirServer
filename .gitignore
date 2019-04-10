@@ -72,8 +72,10 @@ vectors/settings.py
 vectors/similar.py
 vectors/Index.conf
 
-# Minified JavaScript
-static/*.min.js
+# JavaScript & Node stuff
+.eslintrc.js
+package-lock.json
+package.json
 
 # Scratch work files
 *.bin

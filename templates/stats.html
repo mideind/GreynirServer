@@ -98,6 +98,28 @@
 
 <div class="panel panel-default">
    <div class="panel-heading">
+      Nafngreindir höfundar<br>
+      <small>með hæsta greiningarhlutfall síðustu 30 daga</small>
+   </div>
+   <table class="table table-hover" id="dtable">
+      <tbody>
+         {% for a in authresult %}
+         <tr>
+            {% if a.gender == 'kk' %}
+            <td class="gender" title="Karl"><span class="glyphicon glyphicon-gender-male"></span></td>
+            {% elif a.gender == 'kvk' %}
+            <td class="gender" title="Kona"><span class="glyphicon glyphicon-gender-female"></span></td>
+            {% endif %}
+            <td>{{ a.name | safe }}</td>
+            <td class="count">{{ a.perc | format_is(1) }}%</td>
+         </tr>
+         {% endfor %}
+      </tbody>
+   </table>
+</div>
+
+<div class="panel panel-default">
+   <div class="panel-heading">
       Nýleg gögn
       <div class="pull-right hidden-xs">Meðaltal síðustu daga: <strong>{{ scraped_avg }} gr./dag</strong></div>
    </div>
@@ -115,6 +137,8 @@
 {% endblock %}
 
 {% block endscripts %}
+
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.bundle.min.js"></script>
 
@@ -198,7 +222,7 @@
       $("tr.topitem").click(function(ev) {
          // A source has been clicked. Show articles from source.
          var domain = $(this).attr("data-domain");
-         window.location.href = "{{ url_for('news') }}?root=" + domain;
+         openURL("{{ url_for('routes.news') }}?root=" + domain, ev);
       });
       
       // Set up charts

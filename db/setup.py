@@ -77,15 +77,6 @@ def init_roots(wait=False):
             True,
         ),
         (
-            "http://eyjan.pressan.is",
-            "eyjan.pressan.is",
-            "Eyjan",
-            0.4,
-            "scrapers.default",
-            "EyjanScraper",
-            True,
-        ),
-        (
             "http://kvennabladid.is",
             "kvennabladid.is",
             "Kvennablaðið",
@@ -182,6 +173,15 @@ def init_roots(wait=False):
             1.0,
             "scrapers.default",
             "StjornarradScraper",
+            True,
+        ),
+        (
+            "https://hagstofa.is",
+            "hagstofa.is",
+            "Hagstofa Íslands",
+            1.0,
+            "scrapers.default",
+            "HagstofanScraper",
             True,
         ),
     ]

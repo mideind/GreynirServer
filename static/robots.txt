@@ -2,3 +2,8 @@ User-agent: *
 Disallow: /query.api
 Disallow: /display.api
 Disallow: /analyze.api
+Disallow: /correct.api
+Disallow: /ifdtag.api
+Disallow: /postag.api
+Disallow: /parse.api
+Disallow: /article.api
