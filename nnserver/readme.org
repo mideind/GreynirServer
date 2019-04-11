@@ -1,3 +1,23 @@
+* Simple setup: tensorflow model server without GPU or other accelerations
+  Install =nnserver/requirements.txt=.
+  Setup [[https://www.tensorflow.org/tfx/serving/setup][tensorflow model server]] first.
+  Acquire an exported =model.tar.gz=, extract it and place it in =model_base=.
+  #+BEGIN_SRC bash
+    ABS_PATH="[USER_HOME]"
+
+    REST_PORT=8080
+    GRPC_PORT=8081
+
+    MODEL_BASE="$ABS_PATH/models/"
+
+    tensorflow_model_server \
+        --rest_api_port=$REST_PORT \
+        --port=$GRPC_PORT \
+        --model_base_path=$MODEL_BASE  \
+        --per_process_gpu_memory_fraction=0.95 \
+        --enable_batching=true
+  #+END_SRC
+
 * NN Server as a systemd service
 ** systemd unit file for NN server
    To register this program as a service within systemd, create a unit file
@@ -29,7 +49,7 @@
   sudo systemctl enable nnserver
   sudo systemctl start nnserver
   #+END_SRC
-* Tensorflow modelserver and Docker as a systemd service
+* Tensorflow-gpu model server and Docker as a systemd service
 ** Miscellaneous
 #+BEGIN_SRC bash
   ABS_HOME=/home/[YOUR USERNAME]
@@ -51,8 +71,9 @@
 #+END_SRC
 ** Creating the container
   #+BEGIN_SRC bash
-    # If image does not already exist
+    # If image does not already exist, using dockerfile
     # sudo nvidia-docker build -t $IMAGE_NAME -f $PATH_TO_DOCKERFILE .
+    # else pull tensorflow/serving from docker
 
     sudo nvidia-docker container create \
       --name $CONTAINER_NAME \
@@ -77,7 +98,7 @@
 
     VOLUME=/volume
     MODEL_BASE="$VOLUME/models/"
-    MODEL_CONFIG="$VOLUME/model_config.txt"
+    MODEL_CONFIG="$VOLUME/models.conf"
 
     tensorflow_model_server \
         --rest_api_port=$INT_REST_PORT \
