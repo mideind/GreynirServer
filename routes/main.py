@@ -299,7 +299,7 @@ def parsefail():
                                 sfails.append([s])
                                 break
 
-    return render_template("parsefail.html", sentences=json.dumps(sfails), num=num)
+    return render_template("parsefail.html", sentences=sfails, num=num)
 
 
 @routes.route("/apidoc")
