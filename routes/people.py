@@ -24,8 +24,11 @@
 
 from . import routes, max_age
 
+import json
+from pprint import pprint
 from datetime import datetime, timedelta
-from collections import defaultdict
+from collections import defaultdict, Counter
+from itertools import permutations
 
 from flask import request, render_template
 
@@ -146,19 +149,93 @@ def top_persons(limit=_TOP_PERSONS_LENGTH, days=_TOP_PERSONS_PERIOD):
     return personlist[:limit]
 
 
+_DEFAULT_NUM_PERSONS_GRAPH = 50
+
+
+def graph_data(num_persons=_DEFAULT_NUM_PERSONS_GRAPH):
+    """ Get and prepare data for people graph """
+    with SessionContext(read_only=True) as session:
+        # Find all persons mentioned in articles that
+        # have at least two names (i.e. match whitespace)
+        q = (
+            session.query(Word.stem, Word.article_id, Word.cat)
+            .filter(Word.cat.like("person_%"))
+            .filter(Word.stem.like("% %"))
+        )
+        res = q.all()
+
+        # Count number of occurrences of each name
+        cnt = Counter()
+        for name, _, _ in res:
+            cnt[name] += 1
+
+        # Get most common names
+        names = [name for name, freq in cnt.most_common(num_persons)]
+
+        # Generate dict mapping article ids to a set of top names mentioned
+        articles = defaultdict(set)
+        for name, art_id, _ in res:
+            if name in names:
+                articles[art_id].add(name)
+
+        # Find all links
+        nlinks = defaultdict(int)
+        for a_id, persons in articles.items():
+            if len(persons) < 2:
+                # We need at least two names to establish link
+                continue
+
+            # Find all permutations of people mentioned in article
+            perm = list(permutations(persons, 2))
+            for a, b in perm:
+                # We use a sorted tuple as hashable dict key when
+                # counting number of connections between any two names
+                k = tuple(sorted([names.index(a), names.index(b)]))
+                nlinks[k] += 1
+
+        # Create final link and node data structures
+        links = [
+            {"source": k[0], "target": k[1], "weight": v} for k, v in nlinks.items()
+        ]
+        nodes = []
+        for idx, n in enumerate(names):
+            # print(cnt[n])
+            # TODO: Normalize influence
+            nodes.append({"name": n, "id": idx, "influence": cnt[n] / 7, "zone": 0})
+
+        dataset = {"nodes": nodes, "links": links}
+
+        return dataset
+
+
 @routes.route("/people")
-@max_age(seconds=5 * 60)
+@max_age(seconds=10 * 60)
 def people_recent():
-    """ Handler for a page with a list of people recently appearing in articles """
+    """ Page with a list of people recently appearing in articles """
     return render_template("people/people-recent.html", persons=recent_persons())
 
 
 @routes.route("/people_top")
-@max_age(seconds=5 * 60)
+@max_age(seconds=10 * 60)
 def people_top():
-    """ Handler for page showing people most frequently mentioned in recent articles """
+    """ Page showing people most frequently mentioned in recent articles """
     period = request.args.get("period")
     days = 7 if period == "week" else _TOP_PERSONS_PERIOD
     return render_template(
         "people/people-top.html", persons=top_persons(days=days), period=period
     )
+
+
+@routes.route("/people_graph")
+@max_age(seconds=10 * 60)
+def people_graph():
+    """ Page with a weighted, force directed graph of relations 
+        between people via mentions in articles. """
+    return render_template("people/people-graph.html", graph_data=graph_data())
+
+
+@routes.route("/people_timeline")
+@max_age(seconds=10 * 60)
+def people_timeline():
+    """ Person timeline page. """
+    return render_template("people/people-timeline.html")

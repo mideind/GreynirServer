@@ -1,0 +1,83 @@
+
+{% extends "container-normal.html" %}
+
+{% block styles %}
+
+<link href="{{ url_for('static', filename='css/main-bootstrap.css') }}" rel='stylesheet' type='text/css'>
+
+        <style>
+            body{ font: Arial 12px; text-align: center;}
+
+            .link {
+              stroke: #ccc;
+            }
+
+            .node text {
+              pointer-events: none;
+              font: sans-serif;
+            }
+        </style>
+
+
+{% endblock %}
+
+{% block content %}
+
+<div>
+   <ul class="nav nav-tabs" role="tablist">
+      <li role="presentation">
+         <a href="{{ url_for('routes.people_recent') }}">
+            Nýlegt
+         </a>
+      </li>
+      <li role="presentation">
+         <a href="{{ url_for('routes.people_top') }}">
+            Oftast
+         </a>
+      </li>
+      <li role="presentation">
+         <a href="{{ url_for('routes.people_graph') }}">
+            Vensl
+         </a>
+      </li>
+      <li role="presentation" class="active">
+         <a href="{{ url_for('routes.people_timeline') }}">
+            Tímalína
+         </a>
+      </li>
+   </ul>
+</div>
+
+<div role="tabpanel" class="tab-pane active">
+   <div class="panel panel-default table-responsive minheight">
+
+      <div class="panel-heading">
+         Nafn
+         <input>
+
+      </div>
+
+   </div>
+</div>
+
+{% endblock %}
+
+{% block endscripts %}
+
+<!-- <script src="{{ url_for('static', filename='js/common.js') }}"></script>
+<script type="text/javascript" src="https://d3js.org/d3.v3.js"></script>
+ -->
+
+<script type="text/javascript">
+
+   function init() {
+      // Activate the top navbar
+      $("#navid-people").addClass("active");
+   }
+
+   $(document).ready(init);
+
+</script>
+
+{% endblock %}
+
