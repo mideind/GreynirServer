@@ -41,6 +41,7 @@ import logging
 from datetime import datetime
 
 from flask import Flask, send_from_directory
+from flask_caching import Cache
 
 import reynir
 from reynir.bindb import BIN_Db
@@ -58,6 +59,13 @@ app.config["JSON_AS_ASCII"] = False  # We're fine with using Unicode/UTF-8
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 app.config["PRODUCTION"] = True
 
+# Push application context to give view functions, error handlers, 
+# and other functions access to app via current_app
+app.app_context().push()
+
+# Set up caching
+cache = Cache(app, config={'CACHE_TYPE': 'simple'})
+app.config["CACHE"] = cache
 
 # Register blueprint routes
 from routes import routes, max_age

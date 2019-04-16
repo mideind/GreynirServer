@@ -22,7 +22,7 @@
 """
 
 
-from . import routes, max_age, better_jsonify
+from . import routes, max_age, better_jsonify, cache
 
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -39,7 +39,7 @@ from geo import (
     LOCATION_TAXONOMY,
     ICELAND_ISOCODE,
     ICE_REGIONS,
-    ISO_TO_CONTINENT
+    ISO_TO_CONTINENT,
 )
 from country_list import countries_for_language
 
@@ -164,8 +164,9 @@ def world_map_data(days=_TOP_LOC_PERIOD):
         return {r[0]: r[1] for r in q.all()}
 
 
+@cache.cached(timeout=30 * 60, key_prefix="locations", query_string=True)
 @routes.route("/locations", methods=["GET"])
-@max_age(seconds=60 * 5)
+@max_age(seconds=30 * 60)
 def locations():
     """ Render locations page """
     kind = request.args.get("kind")
@@ -181,6 +182,7 @@ def locations():
     )
 
 
+@cache.cached(timeout=30 * 60, key_prefix="icemap", query_string=True)
 @routes.route("/locations_icemap", methods=["GET"])
 def locations_icemap():
     """ Render Icelandic map locations page """
@@ -193,6 +195,7 @@ def locations_icemap():
     )
 
 
+@cache.cached(timeout=30 * 60, key_prefix="worldmap", query_string=True)
 @routes.route("/locations_worldmap", methods=["GET"])
 def locations_worldmap():
     """ Render world map locations page """
@@ -209,6 +212,7 @@ def locations_worldmap():
     )
 
 
+@cache.cached(timeout=60 * 60 * 24, key_prefix="staticmap", query_string=True)
 @routes.route("/staticmap", methods=["GET"])
 def staticmap():
     """ Proxy for Google Static Maps API """
@@ -231,6 +235,7 @@ STATIC_MAP_URL = "/staticmap?lat={0}&lon={1}&z={2}"
 ZOOM_FOR_LOC_KIND = {"street": 11, "address": 12, "placename": 5, "country": 2}
 
 
+@cache.cached(timeout=60 * 60 * 24, key_prefix="locinfo", query_string=True)
 @routes.route("/locinfo", methods=["GET"])
 def locinfo():
     """ Return info about a location as JSON """
@@ -256,6 +261,8 @@ def locinfo():
             elif name in ICE_REGIONS:
                 resp["map"] = "/static/img/maps/regions/" + name + ".png"
             elif resp["continent"] and name in ISO_TO_CONTINENT.values():
-                resp["map"] = "/static/img/maps/continents/" + resp["continent"] + ".png"
+                resp["map"] = (
+                    "/static/img/maps/continents/" + resp["continent"] + ".png"
+                )
 
     return better_jsonify(**resp)

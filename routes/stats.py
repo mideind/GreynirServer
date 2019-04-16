@@ -22,7 +22,7 @@
 """
 
 
-from . import routes, max_age
+from . import routes, max_age, cache
 
 import json
 from datetime import datetime, timedelta
@@ -133,6 +133,7 @@ def top_authors(days=_TOP_AUTHORS_PERIOD, session=None):
     return authresult[:10]
 
 
+@cache.cached(timeout=30 * 60, key_prefix="stats", query_string=True)
 @routes.route("/stats", methods=["GET"])
 @max_age(seconds=30 * 60)
 def stats():

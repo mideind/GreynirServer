@@ -34,6 +34,8 @@ _MAX_URL_LENGTH = 512
 _MAX_UUID_LENGTH = 36
 
 
+cache = current_app.config["CACHE"]
+
 routes = Blueprint("routes", __name__)
 
 

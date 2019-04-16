@@ -22,7 +22,7 @@
 """
 
 
-from . import routes, max_age, text_from_request, better_jsonify
+from . import routes, max_age, cache, text_from_request, better_jsonify
 from . import _MAX_URL_LENGTH, _MAX_UUID_LENGTH, _MAX_TEXT_LENGTH_VIA_URL
 
 import platform
@@ -368,6 +368,7 @@ def image():
     return better_jsonify(**resp)
 
 
+@cache.cached(timeout=30 * 60, key_prefix="stats", query_string=True)
 @routes.route("/suggest", methods=["GET"])
 def suggest(limit=10):
     """ Return suggestions for query field autocompletion """

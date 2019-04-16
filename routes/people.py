@@ -22,7 +22,7 @@
 """
 
 
-from . import routes, max_age
+from . import routes, max_age, cache
 
 import json
 from pprint import pprint
@@ -208,6 +208,7 @@ def graph_data(num_persons=_DEFAULT_NUM_PERSONS_GRAPH):
         return dataset
 
 
+@cache.cached(timeout=10 * 60, key_prefix="stats", query_string=True)
 @routes.route("/people")
 @max_age(seconds=10 * 60)
 def people_recent():
@@ -215,6 +216,7 @@ def people_recent():
     return render_template("people/people-recent.html", persons=recent_persons())
 
 
+@cache.cached(timeout=30 * 60, key_prefix="stats", query_string=True)
 @routes.route("/people_top")
 @max_age(seconds=10 * 60)
 def people_top():
