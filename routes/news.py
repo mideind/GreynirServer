@@ -84,7 +84,7 @@ def fetch_articles(
         if topic is not None:
             q = q.join(ArticleTopic).join(Topic).filter(Topic.identifier == topic)
 
-        q = q.distinct().order_by(desc(Article.timestamp)).offset(offset).limit(limit)
+        q = q.order_by(desc(Article.timestamp)).offset(offset).limit(limit)
 
         class ArticleDisplay:
             """ Utility class to carry information about an article to the web template """
