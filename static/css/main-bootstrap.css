@@ -448,7 +448,7 @@ div#column {
    margin-right: auto;
 }
 
-tr.topitem, tr.article {
+tr.topitem, tr.authitem, tr.article {
    cursor: pointer;
 }
 
