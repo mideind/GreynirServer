@@ -104,7 +104,7 @@ def correct_api(version=1):
         # Create document object from file and extract text
         try:
             doc_class = MIMETYPE_TO_DOC_CLASS[mimetype]
-            doc = doc_class(file._file)
+            doc = doc_class(file.read())
             text = doc.extract_text()
         except Exception as e:
             logging.warning("Exception in correct_api(): {0}".format(e))

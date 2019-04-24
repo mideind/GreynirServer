@@ -1,17 +1,9 @@
 import pytest
 
 from main import app
-from processor import Processor
-from geo import (
-    lookup_city_info,
-    continent_for_country,
-    coords_for_country,
-    coords_for_street_name,
-    country_name_for_isocode,
-    isocode_for_country_name,
-    icelandic_addr_info,
-    parse_address_string,
-)
+
+from doc import *
+from geo import *
 
 # Routes that don't return 200 OK without certain query/post parameters
 SKIP_ROUTES = frozenset(("/staticmap", "/page"))
@@ -59,6 +51,7 @@ def test_api(client):
 
 def test_processors():
     """ Try to import all tree/token processors by instantiating Processor object """
+    from processor import Processor
     p = Processor(processor_directory="processors")
 
 
@@ -88,6 +81,7 @@ def test_tnttagger():
 
 def test_geo():
     """ Test geography and location-related functions in geo.py """
+
     assert continent_for_country("IS") == "EU"
     assert coords_for_country("DE") != None
     assert coords_for_street_name("Austurstræti") != None
@@ -110,3 +104,12 @@ def test_geo():
         "number": 19,
         "letter": "c",
     }
+
+
+def test_doc():
+    """ Test document-related functions in doc.py """
+
+    txt_bytes = "Halló, gaman að kynnast þér.\n\nHvernig gengur?".encode('utf-8')
+    doc = PlainTextDocument(txt_bytes)
+    assert(doc.extract_text() == txt_bytes.decode('utf-8'))
+

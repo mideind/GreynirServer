@@ -1,7 +1,7 @@
 """
     Reynir: Natural language processing for Icelandic
 
-    Copyright (c) 2018 Miðeind ehf.
+    Copyright (c) 2019 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -16,7 +16,8 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    This module contains code to handle documents such as rtf and docx.
+    This module contains code to manipulate and extract text from documents 
+    such as plain text, html, rtf and docx files.
 
 """
 
@@ -26,44 +27,86 @@ import re
 from zipfile import ZipFile
 from pathlib import Path
 from bs4 import BeautifulSoup
+import html2text
+
+
+DEFAULT_TEXT_ENCODING = "UTF-8"
 
 
 class Document(abc.ABC):
     """ Abstract base class for documents. """
 
-    def __init__(self, filepath_or_data):
-        if isinstance(filepath_or_data, str):
+    def __init__(self, path_or_bytes):
+        """ Accepts either a file path or bytes object """
+        if isinstance(path_or_bytes, str):
             # It's a file path
-            with open(filepath_or_data, "rb") as file:
-                self.data = BytesIO(file.read())
+            with open(path_or_bytes, "rb") as file:
+                self.data = file.read()
         else:
             # It's a byte stream
-            self.data = filepath_or_data
-
-        print(type(filepath_or_data))
-        print(type(self.data))
+            self.data = path_or_bytes
 
     @abc.abstractmethod
     def extract_text(self):
+        """ All subclasses must implement this method """
         pass
 
     def write_to_file(self, path):
-        raise NotImplementedError
+        with open(path, 'wb') as f:
+            f.write(self.data)
 
 
 class PlainTextDocument(Document):
     """ Plain text document """
 
     def extract_text(self):
-        byte_str = self.data.read()
-        return byte_str.decode("UTF-8")
+        return self.data.decode(DEFAULT_TEXT_ENCODING)
+
+
+class HTMLDocument(Document):
+    """ HTML document """
+
+    @staticmethod
+    def remove_header_prefixes(text):
+        """ Removes all line starting with '#'. Annoyingly, html2text 
+            adds markdown-style headers for <h*> tags """
+        lines = text.split("\n")
+        for i, line in enumerate(lines):
+            if line.startswith("#"):
+                lines[i] = re.sub(r"[#]+\s", "", line)
+        return "\n".join(lines)
+
+    def extract_text(self):
+        html = self.data.decode(DEFAULT_TEXT_ENCODING)
+
+        h = html2text.HTML2Text()
+        # See https://github.com/Alir3z4/html2text/blob/master/html2text/cli.py
+        h.ignore_links = True
+        h.ignore_emphasis = True
+        h.ignore_images = True
+        h.unicode_snob = True
+        h.ignore_tables = True
+        h.decode_errors = "ignore"
+
+        text = h.handle(html)
+
+        return self.remove_header_prefixes(text)
+
+    # def extract_text(self):
+    #     soup = BeautifulSoup(self.data, features="html.parser")
+    #     try:
+    #         body = soup.find("body")
+    #         clean_text = " ".join(body.stripped_strings)
+    #     except:
+    #         return ""
+    #     return clean_text
 
 
 class RTFDocument(Document):
     """ Rich text document """
 
     def extract_text(self):
-        return self.strip_rtf(self.data.read())
+        return self.strip_rtf(self.data)
 
     def strip_rtf(self, text):
         """ Extract plain text from RTF.
@@ -75,6 +118,7 @@ class RTFDocument(Document):
             r"\\([a-z]{1,32})(-?\d{1,10})?[ ]?|\\'([0-9a-f]{2})|\\([^a-z])|([{}])|[\r\n]+|(.)",
             re.I,
         )
+
         # Control words which specify a "destination".
         destinations = frozenset(
             (
@@ -374,6 +418,7 @@ class RTFDocument(Document):
                 "xmlopen",
             )
         )
+
         # Translation of some special characters.
         specialchars = {
             "par": "\n",
@@ -392,11 +437,13 @@ class RTFDocument(Document):
             "ldblquote": "\201C",
             "rdblquote": "\u201D",
         }
+
         stack = []
         ignorable = False  # Whether this group (and all inside it) are "ignorable".
         ucskip = 1  # Number of ASCII characters to skip after a unicode character.
         curskip = 0  # Number of ASCII characters left to skip
         out = []  # Output buffer.
+
         for match in pattern.finditer(text.decode()):
             word, arg, hex, char, brace, tchar = match.groups()
             if brace:
@@ -468,14 +515,14 @@ class DocxDocument(Document):
     COMXML_PATH = "word/comments.xml"
     MODIFIED = frozenset((DOCXML_PATH, COMXML_PATH))
 
-    def __init__(self, filepath_or_data):
-        super().__init__(filepath_or_data)
+    def __init__(self, path_or_bytes):
+        super().__init__(path_or_bytes)
 
-        self.zip = ZipFile(self.data, "r")
+        self.zip = ZipFile(BytesIO(self.data), "r")
 
         # document.xml
         doc_bytes = self.zip.read(self.DOCXML_PATH)
-        self.doc_xml = doc_bytes.decode("utf-8")
+        self.doc_xml = doc_bytes.decode(DEFAULT_TEXT_ENCODING)
         self.doc_soup = BeautifulSoup(self.doc_xml, "lxml-xml")
 
         # comments.xml
@@ -580,10 +627,11 @@ class DocxDocument(Document):
 # Map file mime type to document class
 MIMETYPE_TO_DOC_CLASS = {
     "text/plain": PlainTextDocument,
+    "text/html": HTMLDocument,
     "text/rtf": RTFDocument,
     "application/rtf": RTFDocument,
-    "application/pdf": PDFDocument,
-    "application/application/x-pdf": PDFDocument,
+    # "application/pdf": PDFDocument,
+    # "application/application/x-pdf": PDFDocument,
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": DocxDocument,
 }
 
