@@ -26,6 +26,7 @@
 from . import routes, better_jsonify, text_from_request, bool_from_request
 from . import _MAX_URL_LENGTH, _MAX_UUID_LENGTH
 from flask import request, abort, current_app
+import werkzeug
 from tnttagger import ifd_tag
 from db import SessionContext
 from db.models import ArticleTopic
@@ -37,6 +38,7 @@ from article import Article as ArticleProxy
 from nertokenizer import recognize_entities
 from query import Query
 from images import get_image_url
+from doc import SUPPORTED_DOC_MIMETYPES, MIMETYPE_TO_DOC_CLASS
 import logging
 
 
@@ -86,11 +88,33 @@ def correct_api(version=1):
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
 
-    try:
-        text = text_from_request(request)
-    except Exception as e:
-        logging.warning("Exception in correct_api(): {0}".format(e))
-        return better_jsonify(valid=False, reason="Invalid request")
+    file = request.files.get("file")
+    if file:
+        """ file is a Werkzeug FileStorage object """
+        mimetype = file.content_type
+        print(mimetype)
+        if mimetype not in SUPPORTED_DOC_MIMETYPES:
+            return better_jsonify(valid=False, reason="File type not supported")
+
+        filename = werkzeug.secure_filename(file.filename)
+        print(filename)
+        print(type(file))
+        print(type(file._file))
+
+        # Create document object from file and extract text
+        try:
+            doc_class = MIMETYPE_TO_DOC_CLASS[mimetype]
+            doc = doc_class(file._file)
+            text = doc.extract_text()
+        except Exception as e:
+            logging.warning("Exception in correct_api(): {0}".format(e))
+            return better_jsonify(valid=False, reason="Error reading file")
+    else:
+        try:
+            text = text_from_request(request)
+        except Exception as e:
+            logging.warning("Exception in correct_api(): {0}".format(e))
+            return better_jsonify(valid=False, reason="Invalid request")
 
     pgs, stats = check_grammar(text)
 
