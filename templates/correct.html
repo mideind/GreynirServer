@@ -64,7 +64,11 @@
             and its annotations
          -->
          <div id="result">
-            <div class="background"></div>
+            <div class="background">
+               <span id="no-annotations">
+                  Engar athugasemdir <span class="glyphicon glyphicon-circle-ok"></span>
+               </span>
+            </div>
             <div id="pgs"></div>
          </div>
 
@@ -116,6 +120,7 @@
    function clearResult() {
       // Clear previous result
       $("div#pgs").html("");
+      $("#no-annotations").css("display", "none");
       $(window).off("resize");
       annSpan = [];
       $("div#statistics").css("display", "none");
@@ -280,6 +285,10 @@
       });
       // Show the text and annotation columns
       $("div#pgs").html(x);
+      if (!annSpan.length) {
+         // No annotations: show that fact
+         $("#no-annotations").css("display", "inline-block");
+      }
       // Fix the annotations so that they are never
       // above their respective start token
       repositionAnnotations();
