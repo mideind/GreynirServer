@@ -1,12 +1,11 @@
 boto==2.42.0
 bz2file==0.98
-Cython==0.24.1
+Cython==0.29.7
 gensim==0.13.2
 numpy==1.11.1
-psycopg2==2.6.2
-readline==6.2.4.1
+psycopg2cffi==2.8.1
 requests==2.20.0
 scipy==0.18.0
 six==1.10.0
 smart-open==1.3.4
-SQLAlchemy==1.2.12
+SQLAlchemy==1.3.1

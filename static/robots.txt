@@ -7,3 +7,4 @@ Disallow: /ifdtag.api
 Disallow: /postag.api
 Disallow: /parse.api
 Disallow: /article.api
+Crawl-delay: 1800
