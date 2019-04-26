@@ -25,12 +25,13 @@
 
    </div>
 
-   <div class="row">
+   <div class="row buttons">
       <div class="col-xs-4 col-sm-3 col-md-2 pull-right">
          <button class="btn btn-success btn-lg btn-block"
             id="txt-ok" title="Lesa yfir" tabindex="3"
             onclick="correct()">
-            <span class="glyphicon glyphicon-eye-open"></span> Lesa yfir
+            <span class='glyphicon glyphicon-restart glyphicon-spin-white spin' style="display:none;"></span>
+            <span class="glyphicon glyphicon-eye-open normal"></span> Lesa yfir
          </button>
       </div>
 
@@ -48,12 +49,13 @@
             application/vnd.openxmlformats-officedocument.wordprocessingml.document
          ">
       </form>
-      
+
       <div class="col-xs-4 col-sm-3 col-md-2 pull-right">
          <button class="btn btn-info btn-lg btn-block"
-            id="txt-ok" title="Skjal" tabindex="3"
+            id="file-ok" title="Skjal" tabindex="3"
             onclick="selectFile()">
-            <span class="glyphicon glyphicon-upload"></span> Skjal
+            <span class='glyphicon glyphicon-restart glyphicon-spin-white spin' style="display:none;"></span>
+            <span class="glyphicon glyphicon-upload normal"></span> Skjal
          </button>
       </div>
 
@@ -110,17 +112,27 @@
    // Global array linking annotations to token span indices
    var annSpan = [];
 
-   function wait(state) {
+   function wait(state, button) {
       // Start or stop a wait spinner
       if (state) {
-         $("#txt-ok").attr("disabled", "disabled")
-            .html("<span class='glyphicon glyphicon-restart glyphicon-spin-white'></span>");
+         // Disable both buttons
+         $("#txt-ok, #file-ok").attr("disabled", "disabled");
          $("div#output").css("display", "none");
+
+         // Activate spinner on relevant button
+         var sel = button ? button : "#txt-ok, #file-ok";
+         $(sel).find('.spin').show();
+         $(sel).find('.normal').hide();
       }
       else {
-         $("#txt-ok").removeAttr("disabled")
-            .html("<span class='glyphicon glyphicon-eye-open'></span> Lesa yfir");
+         // Re-enable both buttons
+         $("#txt-ok, #file-ok").removeAttr("disabled");
          $("div#output").css("display", "block");
+
+         // Deactivate spinners
+         var sel = "#txt-ok, #file-ok";
+         $(sel).find('.spin').hide();
+         $(sel).find('.normal').show();
       }
    }
 
@@ -131,13 +143,13 @@
       annSpan = [];
       $("div#statistics").css("display", "none");
       // Display progress indicator
-      wait(true);
+      wait(true, "#txt-ok");
    }
 
    function handleError(xhr, status, errorThrown) {
       /* An error occurred on the server or in the communications */
       $("div#pgs").html("<p><b>Villa kom upp</b> í samskiptum við netþjón Greynis</p>");
-      wait(false);
+      wait(false, "#txt-ok");
    }
 
    function formatAnnotation(txt) {
@@ -401,6 +413,7 @@
    function uploadFile() {
       var fd = new FormData();
       fd.set('file', $('#file-input')[0].files[0]);
+      wait(true, "#file-ok");
       $.ajax({
          url: '/correct.api',  
          type: 'POST',
