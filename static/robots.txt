@@ -7,6 +7,7 @@ Disallow: /ifdtag.api
 Disallow: /postag.api
 Disallow: /parse.api
 Disallow: /article.api
+Crawl-delay: 120
 
 # Marketing scraper bots
 User-agent: MJ12bot
@@ -16,4 +17,6 @@ Disallow: /
 User-agent: AhrefsBot 
 Disallow: /
 User-agent: SemrushBot
+Disallow: /
+User-agent: BLEXBot
 Disallow: /

@@ -89,19 +89,14 @@ def correct_api(version=1):
     file = request.files.get("file")
     if file:
         """ file is a Werkzeug FileStorage object """
-
-        # import time
-        # time.sleep(3.0)
-
         mimetype = file.content_type
         if mimetype not in SUPPORTED_DOC_MIMETYPES:
             return better_jsonify(valid=False, reason="File type not supported")
 
-        # filename = werkzeug.secure_filename(file.filename)
-
         # Create document object from file and extract text
         try:
             # Instantiate appropriate class for mime type from file data
+            # filename = werkzeug.secure_filename(file.filename)
             doc_class = MIMETYPE_TO_DOC_CLASS[mimetype]
             doc = doc_class(file.read())
             text = doc.extract_text()
