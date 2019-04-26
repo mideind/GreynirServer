@@ -83,7 +83,7 @@ def correct_api(version=1):
     """ Correct text manually entered by the user, i.e. not coming from an article.
         This is a lower level API used by the Greynir web front-end. """
     if current_app.config["PRODUCTION"]:
-        return abort(403) # Forbidden
+        return abort(403)  # Forbidden
 
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
@@ -91,18 +91,19 @@ def correct_api(version=1):
     file = request.files.get("file")
     if file:
         """ file is a Werkzeug FileStorage object """
+
+        # import time
+        # time.sleep(3.0)
+
         mimetype = file.content_type
-        print(mimetype)
         if mimetype not in SUPPORTED_DOC_MIMETYPES:
             return better_jsonify(valid=False, reason="File type not supported")
 
-        filename = werkzeug.secure_filename(file.filename)
-        print(filename)
-        print(type(file))
-        print(type(file._file))
+        # filename = werkzeug.secure_filename(file.filename)
 
         # Create document object from file and extract text
         try:
+            # Instantiate appropriate class for mime type from file data
             doc_class = MIMETYPE_TO_DOC_CLASS[mimetype]
             doc = doc_class(file.read())
             text = doc.extract_text()

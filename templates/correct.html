@@ -35,8 +35,20 @@
       </div>
 
       <form id="uploadForm" class="hidden">
-         <input id="file-input" type="file" name="filename" onChange="uploadFile()">
+         <input id="file-input" type="file" name="filename" onChange="uploadFile()"
+         accept="
+            .txt,
+            .html,
+            .rtf,
+            .docx,
+            text/plain,
+            text/html,
+            text/rtf,
+            application/rtf,
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document
+         ">
       </form>
+      
       <div class="col-xs-4 col-sm-3 col-md-2 pull-right">
          <button class="btn btn-info btn-lg btn-block"
             id="txt-ok" title="Skjal" tabindex="3"
