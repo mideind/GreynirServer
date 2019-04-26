@@ -378,6 +378,11 @@
          // along with the sentence-level annotations
          displayAnnotations(json.result);
          populateStats(json.stats);
+
+         // Replace text in text field
+         if (json.text) {
+            $("#txt").val(json.text);
+         }
       }
    }
 
@@ -413,6 +418,7 @@
    function uploadFile() {
       var fd = new FormData();
       fd.set('file', $('#file-input')[0].files[0]);
+      $("#txt").val("");
       wait(true, "#file-ok");
       $.ajax({
          url: '/correct.api',  

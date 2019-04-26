@@ -56,6 +56,17 @@ def max_age(seconds):
     return decorator
 
 
+def restricted(f):
+    """ Decorator to return 403 Forbidden if running in production mode """
+
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if current_app.config["PRODUCTION"]:
+            return abort(403)
+        return f(*args, **kwargs)
+    return decorated_function
+
+
 def bool_from_request(rq, name, default=False):
     """ Get a boolean from JSON encoded in a request form """
     b = rq.form.get(name)

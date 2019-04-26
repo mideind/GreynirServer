@@ -22,7 +22,7 @@
 """
 
 
-from . import routes, max_age, cache, text_from_request, better_jsonify
+from . import routes, max_age, cache, text_from_request, better_jsonify, restricted
 from . import _MAX_URL_LENGTH, _MAX_UUID_LENGTH, _MAX_TEXT_LENGTH_VIA_URL
 
 import platform
@@ -90,11 +90,10 @@ def analysis():
 
 
 @routes.route("/correct", methods=["GET", "POST"])
+@restricted
 def correct():
     """ Handler for a page for spelling and grammar correction
         of user-entered text """
-    if current_app.config["PRODUCTION"]:
-        return abort(403)
     try:
         txt = text_from_request(request, post_field="txt", get_field="txt")
     except:
