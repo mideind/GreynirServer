@@ -14,3 +14,4 @@ cityloc>=0.1.0
 feedparser>=5.2.1
 html2text>=2018.1.9
 lxml>=4.3.3
+striprtf>=0.0.4
