@@ -4,7 +4,7 @@
 
     High-level tokenizer and named entity recognizer
 
-    Copyright (C) 2018 Miðeind ehf.
+    Copyright (C) 2019 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -48,9 +48,12 @@ def recognize_entities(token_stream, enclosing_session=None, token_ctor=TOK):
 
     """
 
-    tq = []  # Token queue
-    state = defaultdict(list)  # Phrases we're considering
-    ecache = dict()  # Entitiy definition cache
+    # Token queue
+    tq = []
+    # Phrases we're considering
+    state = defaultdict(list)
+    # Entitiy definition cache
+    ecache = dict()
     # Last name to full name mapping ('Clinton' -> 'Hillary Clinton')
     lastnames = dict()
 
