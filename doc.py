@@ -26,9 +26,9 @@ from io import BytesIO
 import re
 from zipfile import ZipFile
 from pathlib import Path
-from bs4 import BeautifulSoup
 import html2text
 from striprtf.striprtf import rtf_to_text
+from xml.etree.ElementTree import XML
 
 
 DEFAULT_TEXT_ENCODING = "UTF-8"
@@ -53,7 +53,7 @@ class Document(abc.ABC):
         pass
 
     def write_to_file(self, path):
-        with open(path, 'wb') as f:
+        with open(path, "wb") as f:
             f.write(self.data)
 
 
@@ -93,15 +93,6 @@ class HTMLDocument(Document):
 
         return self.remove_header_prefixes(text)
 
-    # def extract_text(self):
-    #     soup = BeautifulSoup(self.data, features="html.parser")
-    #     try:
-    #         body = soup.find("body")
-    #         clean_text = " ".join(body.stripped_strings)
-    #     except:
-    #         return ""
-    #     return clean_text
-
 
 class RTFDocument(Document):
     """ Rich text document """
@@ -120,118 +111,35 @@ class PDFDocument(Document):
 class DocxDocument(Document):
     """ Microsoft docx document """
 
-    COMMENTS_AUTHOR = "Greynir"
     DOCXML_PATH = "word/document.xml"
-    COMXML_PATH = "word/comments.xml"
-    MODIFIED = frozenset((DOCXML_PATH, COMXML_PATH))
-
-    def __init__(self, path_or_bytes):
-        super().__init__(path_or_bytes)
-
-        self.zip = ZipFile(BytesIO(self.data), "r")
-
-        # document.xml
-        doc_bytes = self.zip.read(self.DOCXML_PATH)
-        self.doc_xml = doc_bytes.decode(DEFAULT_TEXT_ENCODING)
-        self.doc_soup = BeautifulSoup(self.doc_xml, "lxml-xml")
-
-        # comments.xml
-        # comments_bytes = self.zip.read(self.COMXML_PATH)
-        # self.comments_xml = comments_bytes.decode("utf-8")
-        # self.comments_soup = BeautifulSoup(self.comments_xml, "lxml-xml")
+    WORD_NAMESPACE = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+    PARAGRAPH_TAG = WORD_NAMESPACE + "p"
+    TEXT_TAG = WORD_NAMESPACE + "t"
 
     def extract_text(self):
 
-        soup = BeautifulSoup(self.doc_xml, "lxml-xml")
-        if soup is None:
-            return None
+        zipfile = ZipFile(BytesIO(self.data), "r")
 
-        paragraphs = soup.find_all("w:p")
-        text = "\n".join(p.text for p in paragraphs)
+        # Verify that archive contains document.xml
+        if self.DOCXML_PATH not in zipfile.namelist():
+            raise Exception("Malformed docx file")
 
-        return text
+        # Read xml file
+        content = zipfile.read(self.DOCXML_PATH)
+        zipfile.close()
 
-    # def next_comment_id(self):
-    #     highest = -1
-    #     for c in self.comments_soup.find_all("w:comment"):
-    #         idstr = c.get("w:id")
-    #         try:
-    #             idint = int(idstr)
-    #             highest = max(highest, idint)
-    #         except:
-    #             pass
+        tree = XML(content)
 
-    #     return highest + 1
+        # Extract text elements from all paragraphs
+        paragraphs = []
+        for p in tree.getiterator(self.PARAGRAPH_TAG):
+            texts = [
+                node.text for node in p.getiterator(self.TEXT_TAG) if node.text
+            ]
+            if texts:
+                paragraphs.append("".join(texts))
 
-    # def annotate(self, comments):
-
-    #     comments_elm = self.comments_soup.find("w:comments")
-    #     next_id = self.next_comment_id()
-    #     paragraphs = self.doc_soup.find_all("w:p")
-
-    #     for c in comments:
-
-    #         # First, append comment objects to comments.xml
-    #         elm = '\
-    #         <w:comment xmlns:w="https://ss" w:author="{0}" w:date="{1}" w:id="{2}" w:initials="{3}"> \
-    #             <w:p> \
-    #                 <w:pPr> \
-    #                     <w:pStyle w:val="CommentText"/> \
-    #                 </w:pPr> \
-    #                 <w:r> \
-    #                     <w:rPr> \
-    #                         <w:rStyle w:val="CommentReference"/> \
-    #                     </w:rPr> \
-    #                     <w:annotationRef/> \
-    #                 </w:r> \
-    #                 <w:r> \
-    #                     <w:t>{4}</w:t> \
-    #                 </w:r> \
-    #             </w:p> \
-    #         </w:comment>'.format(
-    #             COMMENTS_AUTHOR, "", str(next_id), COMMENTS_AUTHOR[:1], c["text"]
-    #         )
-    #         # comments_elm.append(BeautifulSoup(elm, "lxml-xml"))
-
-    #         # Add references to comments for the specified range in document.xml
-    #         if c["p"] > len(paragraphs) - 1:
-    #             print("Outside paragraph range")
-    #             continue
-
-    #         # for p in paragraphs:
-    #         #     print(p)
-
-    #         # p = paragraphs[int(c["p"])]
-
-    #         # start = self.doc_soup.new_tag("w:commentRangeStart")
-    #         # start["w:id"] = str(next_id)
-
-    #         # end = self.doc_soup.new_tag("w:commentRangeEnd")
-    #         # end["w:id"] = str(next_id)
-
-    #         # p.insert(0, start)
-    #         # p.append(end)
-
-    #         next_id += 1
-
-    #     print(self.doc_soup)
-
-    # def write_to_file(self, path):
-    #     # Python's zip module doesn't allow overwriting or removing
-    #     # files from an archive so we create a new one.
-    #     outzip = ZipFile(path, "x")
-
-    #     # Copy over all unmodified files
-    #     for m in self.zip.namelist():
-    #         if m not in MODIFIED:
-    #             mbytes = self.zip.read(m)
-    #             outzip.writestr(m, mbytes)
-
-    #     # Write modified files
-    #     outzip.writestr(self.DOCXML_PATH, str(self.doc_soup))
-    #     outzip.writestr(self.COMXML_PATH, str(self.comments_soup))
-
-    #     outzip.close()
+        return "\n\n".join(paragraphs)
 
 
 # Map file mime type to document class
@@ -241,7 +149,7 @@ MIMETYPE_TO_DOC_CLASS = {
     "text/rtf": RTFDocument,
     "application/rtf": RTFDocument,
     # "application/pdf": PDFDocument,
-    # "application/application/x-pdf": PDFDocument,
+    # "application/x-pdf": PDFDocument,
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": DocxDocument,
 }
 
