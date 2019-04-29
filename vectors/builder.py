@@ -73,7 +73,7 @@ from gensim import corpora, models, matutils
 
 def w_from_stem(stem, cat):
     """ Convert a (stem, cat) tuple to a bag-of-words key """
-    return stem.lower().replace('-', "").replace(' ', '_') + "/" + cat
+    return stem.lower().replace("-", "").replace(" ", "_") + "/" + cat
 
 
 class CorpusIterator:
@@ -81,7 +81,7 @@ class CorpusIterator:
     """ Iterate through the Reynir words database, yielding a bag-of-words
         for each article """
 
-    def __init__(self, dictionary = None):
+    def __init__(self, dictionary=None):
         self._dictionary = dictionary
 
     def __iter__(self):
@@ -91,10 +91,13 @@ class CorpusIterator:
             xform = lambda x: self._dictionary.doc2bow(x)
         else:
             xform = lambda x: x
-        with SessionContext(commit = True) as session:
+        with SessionContext(commit=True) as session:
             # Fetch bags of words sorted by articles
-            q = session.query(Word.article_id, Word.stem, Word.cat, Word.cnt) \
-                .order_by(Word.article_id).yield_per(2000)
+            q = (
+                session.query(Word.article_id, Word.stem, Word.cat, Word.cnt)
+                .order_by(Word.article_id)
+                .yield_per(2000)
+            )
             bag = []
             last_uuid = None
             for uuid, stem, cat, cnt in q:
@@ -138,14 +141,14 @@ class ReynirCorpus:
     _DEFAULT_DIMENSIONS = 200
 
     # Work file names
-    _DICTIONARY_FILE = './models/reynir.dict'
-    _PLAIN_CORPUS_FILE = './models/corpus.mm'
-    _TFIDF_CORPUS_FILE = './models/corpus-tfidf.mm'
-    _TFIDF_MODEL_FILE = './models/tfidf.model'
-    _LSI_MODEL_FILE = './models/lsi-{0}.model'
-    _LDA_MODEL_FILE = './models/lda-{0}.model'
+    _DICTIONARY_FILE = "./models/reynir.dict"
+    _PLAIN_CORPUS_FILE = "./models/corpus.mm"
+    _TFIDF_CORPUS_FILE = "./models/corpus-tfidf.mm"
+    _TFIDF_MODEL_FILE = "./models/tfidf.model"
+    _LSI_MODEL_FILE = "./models/lsi-{0}.model"
+    _LDA_MODEL_FILE = "./models/lda-{0}.model"
 
-    def __init__(self, verbose = False, dimensions = None):
+    def __init__(self, verbose=False, dimensions=None):
         self._verbose = verbose
         self._dictionary = None
         self._tfidf = None
@@ -179,7 +182,7 @@ class ReynirCorpus:
             the document. """
         if self._dictionary is None:
             self.load_dictionary()
-        dci = CorpusIterator(dictionary = self._dictionary)
+        dci = CorpusIterator(dictionary=self._dictionary)
         corpora.MmCorpus.serialize(self._PLAIN_CORPUS_FILE, dci)
 
     def load_plain_corpus(self):
@@ -190,13 +193,13 @@ class ReynirCorpus:
         """ Create a fresh TFIDF model from a dictionary """
         if self._dictionary is None:
             self.load_dictionary()
-        tfidf = models.TfidfModel(dictionary = self._dictionary)
+        tfidf = models.TfidfModel(dictionary=self._dictionary)
         tfidf.save(self._TFIDF_MODEL_FILE)
         self._tfidf = tfidf
 
     def load_tfidf_model(self):
         """ Load an already generated TFIDF model """
-        self._tfidf = models.TfidfModel.load(self._TFIDF_MODEL_FILE, mmap='r')
+        self._tfidf = models.TfidfModel.load(self._TFIDF_MODEL_FILE, mmap="r")
 
     def create_tfidf_corpus(self):
         """ Create a TFIDF corpus from a plain vector corpus """
@@ -216,8 +219,12 @@ class ReynirCorpus:
         if self._dictionary is None:
             self.load_dictionary()
         # Initialize an LSI transformation
-        lsi = models.LsiModel(corpus_tfidf, id2word = self._dictionary,
-            num_topics = self._dimensions, **kwargs)
+        lsi = models.LsiModel(
+            corpus_tfidf,
+            id2word=self._dictionary,
+            num_topics=self._dimensions,
+            **kwargs
+        )
         # if self._verbose:
         #    lsi.print_topics(num_topics = self._dimensions)
         # Save the generated model
@@ -225,7 +232,9 @@ class ReynirCorpus:
 
     def load_lsi_model(self):
         """ Load a previously generated LSI model """
-        self._model = models.LsiModel.load(self._LSI_MODEL_FILE.format(self._dimensions), mmap='r')
+        self._model = models.LsiModel.load(
+            self._LSI_MODEL_FILE.format(self._dimensions), mmap="r"
+        )
         self._model_name = "lsi"
 
     def create_lda_model(self, **kwargs):
@@ -235,16 +244,22 @@ class ReynirCorpus:
         if self._dictionary is None:
             self.load_dictionary()
         # Initialize an LDA transformation
-        lda = models.LdaMulticore(corpus_tfidf, id2word = self._dictionary,
-            num_topics = self._dimensions, **kwargs)
+        lda = models.LdaMulticore(
+            corpus_tfidf,
+            id2word=self._dictionary,
+            num_topics=self._dimensions,
+            **kwargs
+        )
         if self._verbose:
-            lda.print_topics(num_topics = self._dimensions)
+            lda.print_topics(num_topics=self._dimensions)
         # Save the generated model
         lda.save(self._LDA_MODEL_FILE.format(self._dimensions))
 
     def load_lda_model(self):
         """ Load a previously generated LDA model """
-        self._model = models.LdaMulticore.load(self._LDA_MODEL_FILE.format(self._dimensions), mmap='r')
+        self._model = models.LdaMulticore.load(
+            self._LDA_MODEL_FILE.format(self._dimensions), mmap="r"
+        )
         self._model_name = "lda"
 
     def calculate_topics(self):
@@ -257,13 +272,13 @@ class ReynirCorpus:
             self.load_lsi_model()
         if self._verbose:
             print("Calculating topics")
-        with SessionContext(commit = True) as session:
+        with SessionContext(commit=True) as session:
             for topic in session.query(Topic).all():
                 if self._verbose:
                     print("Topic {0}".format(topic.name))
                 if topic.name in Topics.DICT:
                     # Overwrite the existing keywords
-                    keywords = list(Topics.DICT[topic.name]) # Convert set to list
+                    keywords = list(Topics.DICT[topic.name])  # Convert set to list
                     topic.keywords = " ".join(keywords)
                     # Set the identifier
                     topic.identifier = Topics.ID[topic.name]
@@ -272,7 +287,7 @@ class ReynirCorpus:
                 else:
                     # Use the ones that are already there
                     keywords = topic.keywords.split()
-                assert all('/' in kw for kw in keywords) # Must contain a slash
+                assert all("/" in kw for kw in keywords)  # Must contain a slash
                 if self._verbose:
                     print("Keyword list: {0}".format(keywords))
                 bag = self._dictionary.doc2bow(keywords)
@@ -285,7 +300,11 @@ class ReynirCorpus:
                             print("Topic #{0}".format(t))
                             wt = self._model.get_topic_terms(t, topn=25)
                             for word, wprob in wt:
-                                print("   {0} has probability {1:.3f}".format(self._dictionary.get(word), wprob))
+                                print(
+                                    "   {0} has probability {1:.3f}".format(
+                                        self._dictionary.get(word), wprob
+                                    )
+                                )
                     elif self._model_name == "lsi":
                         pass
                         # self._model.print_debug(num_topics = 20)
@@ -296,14 +315,17 @@ class ReynirCorpus:
 
     def load_topics(self):
         """ Load the topics into a dict of topic vectors by topic id """
-        self._topics = { }
-        with SessionContext(commit = True) as session:
+        self._topics = {}
+        with SessionContext(commit=True) as session:
             for topic in session.query(Topic).all():
                 if topic.vector:
                     topic_vector = json.loads(topic.vector)[self._model_name]
                     if topic_vector:
-                        self._topics[topic.id] = dict(name = topic.name,
-                            vector = topic_vector, threshold = topic.threshold)
+                        self._topics[topic.id] = dict(
+                            name=topic.name,
+                            vector=topic_vector,
+                            threshold=topic.threshold,
+                        )
 
     def get_topic_vector(self, terms):
         """ Calculate a topic vector corresponding to the given list
@@ -318,7 +340,7 @@ class ReynirCorpus:
             self.load_lsi_model()
         # Convert the word list, assumed to contain items of the form 'stem/cat',
         # to a bag of word indexes
-        wlist = [ w_from_stem(stem, cat) for stem, cat in terms ]
+        wlist = [w_from_stem(stem, cat) for stem, cat in terms]
         bag = self._dictionary.doc2bow(wlist)
         print("Search terms:\n   {0}".format(terms))
         if bag:
@@ -326,7 +348,7 @@ class ReynirCorpus:
             # Apply the term frequency - inverse document frequency transform
             tfidf = self._tfidf[bag]
             # Map the resulting vector to the LSI model space
-            topic_vector = np.array([ float(x) for _, x in self._model[tfidf] ])
+            topic_vector = np.array([float(x) for _, x in self._model[tfidf]])
         else:
             # No bag, we're just going to use word occurrences
             topic_vector = np.zeros(self._dimensions)
@@ -339,7 +361,7 @@ class ReynirCorpus:
         term_weights = []
 
         # We have missing words: look'em up
-        with SessionContext(commit = True, read_only = True) as session:
+        with SessionContext(commit=True, read_only=True) as session:
             # The same (stem, cat) tuple may appear multiple times:
             # coalesce into one counting dictionary
 
@@ -351,7 +373,7 @@ class ReynirCorpus:
                         # We look up all entity and person names
                         # and give them extra weight
                         return 2.0
-                    if cat in { "kk", "kvk", "hk" } and stem[0].isupper() and index > 0:
+                    if cat in {"kk", "kvk", "hk"} and stem[0].isupper() and index > 0:
                         # Noun starting with a capital letter, not the first word in a sentence:
                         # assume it's a proper name and do a lookup with a weight of 1.6
                         return 1.6
@@ -378,8 +400,10 @@ class ReynirCorpus:
                     term_weights.append(1.0)
                     continue
 
-                if cat in NoIndexWords.CATEGORIES_TO_INDEX \
-                    and (stem, cat) not in NoIndexWords.SET:
+                if (
+                    cat in NoIndexWords.CATEGORIES_TO_INDEX
+                    and (stem, cat) not in NoIndexWords.SET
+                ):
                     # We have a significant (potentially indexable)
                     # person, entity, noun, adjective or verb. Give it
                     # a weight in the final topic vector.
@@ -395,7 +419,9 @@ class ReynirCorpus:
                         return " - ".join(p.replace("-", "") for p in a)
 
                     clean_stem = clean(stem)
-                    q = TermTopicsQuery().execute(session, stem = clean_stem, cat = cat, limit = 25)
+                    q = TermTopicsQuery().execute(
+                        session, stem=clean_stem, cat=cat, limit=25
+                    )
                     term_vector = np.zeros(self._dimensions)
                     total_cnt = 0
                     # Sum up the topic vectors of the documents where the term
@@ -436,7 +462,7 @@ class ReynirCorpus:
 
         return topic_vector, term_weights
 
-    def assign_article_topics(self, article_id, heading, process_all = False):
+    def assign_article_topics(self, article_id, heading, process_all=False):
         """ Assign the appropriate topics to the given article in the database """
         if self._dictionary is None:
             self.load_dictionary()
@@ -446,9 +472,12 @@ class ReynirCorpus:
             self.load_lsi_model()
         if self._topics is None:
             self.load_topics()
-        with SessionContext(commit = True) as session:
-            q = session.query(Word.stem, Word.cat, Word.cnt) \
-                .filter(Word.article_id == article_id).all()
+        with SessionContext(commit=True) as session:
+            q = (
+                session.query(Word.stem, Word.cat, Word.cnt)
+                .filter(Word.article_id == article_id)
+                .all()
+            )
             wlist = []
             for stem, cat, cnt in q:
                 # Convert stem to lowercase and replace spaces with underscores
@@ -473,7 +502,11 @@ class ReynirCorpus:
                     # Calculate the cosine similarity between the article and the topic
                     similarity = matutils.cossim(article_vector, topic_vector)
                     if self._verbose:
-                        print("   Similarity to topic {0} is {1:.3f}".format(topic_name, similarity))
+                        print(
+                            "   Similarity to topic {0} is {1:.3f}".format(
+                                topic_name, similarity
+                            )
+                        )
                     if similarity >= topic_threshold:
                         # Similar enough: this is a topic of the article
                         topics.append(topic_id)
@@ -481,31 +514,37 @@ class ReynirCorpus:
                 if topic_names and not process_all:
                     print("Article '{0}':\n   topics {1}".format(heading, topic_names))
             # Topics found (if any): delete previous ones (if any)
-            session.execute(ArticleTopic.table().delete().where(ArticleTopic.article_id == article_id))
+            session.execute(
+                ArticleTopic.table()
+                .delete()
+                .where(ArticleTopic.article_id == article_id)
+            )
             # ...and add the new ones
             for topic_id in topics:
-                session.add(ArticleTopic(article_id = article_id, topic_id = topic_id))
+                session.add(ArticleTopic(article_id=article_id, topic_id=topic_id))
             # Update the indexed timestamp and the article topic vector
             a = session.query(Article).filter(Article.id == article_id).one_or_none()
             if a is not None:
                 a.indexed = datetime.utcnow()
                 if article_vector:
                     # Store a pure list of floats
-                    topic_vector = [ t[1] for t in article_vector ]
+                    topic_vector = [t[1] for t in article_vector]
                     a.topic_vector = json.dumps(topic_vector)
                 else:
                     a.topic_vector = None
 
-    def assign_topics(self, limit = None, process_all = False, uuid = None):
+    def assign_topics(self, limit=None, process_all=False, uuid=None):
         """ Assign topics to all articles that have no such assignment yet """
-        with SessionContext(commit = True) as session:
+        with SessionContext(commit=True) as session:
             # Fetch articles that haven't been indexed (or have been parsed since),
             # and that have at least one associated Word in the words table.
             q = session.query(Article.id, Article.heading)
             if uuid:
                 q = q.filter(Article.id == uuid)
             elif not process_all:
-                q = q.filter((Article.indexed == None) | (Article.indexed < Article.parsed))
+                q = q.filter(
+                    (Article.indexed == None) | (Article.indexed < Article.parsed)
+                )
             q = q.join(Word).group_by(Article.id, Article.heading)
             if uuid:
                 q = q.all()
@@ -514,10 +553,10 @@ class ReynirCorpus:
             else:
                 q = q[0:limit]
         for article_id, heading in q:
-            self.assign_article_topics(article_id, heading, process_all = process_all)
+            self.assign_article_topics(article_id, heading, process_all=process_all)
 
 
-def build_model(verbose = False):
+def build_model(verbose=False):
     """ Build a new model from the words (and articles) table """
 
     print("------ Reynir starting model build -------")
@@ -526,7 +565,7 @@ def build_model(verbose = False):
 
     t0 = time.time()
 
-    rc = ReynirCorpus(verbose = verbose)
+    rc = ReynirCorpus(verbose=verbose)
     print("Creating dictionary")
     rc.create_dictionary()
     print("Creating plain corpus")
@@ -535,7 +574,7 @@ def build_model(verbose = False):
     rc.create_tfidf_model()
     print("Creating TF-IDF corpus")
     rc.create_tfidf_corpus()
-    #rc.create_lda_model(passes = 15)
+    # rc.create_lda_model(passes = 15)
     print("Creating LSI model")
     rc.create_lsi_model()
 
@@ -547,17 +586,17 @@ def build_model(verbose = False):
     print("Time: {0}\n".format(ts))
 
 
-def calculate_topics(verbose = False):
+def calculate_topics(verbose=False):
     """ Recalculate topic vectors from keywords """
 
     print("------ Reynir recalculating topic vectors -------")
-    rc = ReynirCorpus(verbose = verbose)
+    rc = ReynirCorpus(verbose=verbose)
     rc.load_lsi_model()
     rc.calculate_topics()
     print("------ Reynir recalculation complete -------")
 
 
-def tag_articles(limit, verbose = False, process_all = False, uuid = None):
+def tag_articles(limit, verbose=False, process_all=False, uuid=None):
     """ Tag all untagged articles or articles that
         have been parsed since they were tagged """
 
@@ -573,7 +612,7 @@ def tag_articles(limit, verbose = False, process_all = False, uuid = None):
 
     t0 = time.time()
 
-    rc = ReynirCorpus(verbose = verbose)
+    rc = ReynirCorpus(verbose=verbose)
     rc.load_lsi_model()
     rc.assign_topics(limit, process_all, uuid)
 
@@ -596,7 +635,6 @@ def notify_similarity_server():
 
 
 class Usage(Exception):
-
     def __init__(self, msg):
         self.msg = msg
 
@@ -624,16 +662,17 @@ __doc__ = """
 """
 
 
-def _main(argv = None):
+def _main(argv=None):
 
     if argv is None:
         argv = sys.argv
     try:
         try:
-            opts, args = getopt.getopt(argv[1:], "hl:van",
-                ["help", "limit=", "verbose", "all", "notify"])
+            opts, args = getopt.getopt(
+                argv[1:], "hl:van", ["help", "limit=", "verbose", "all", "notify"]
+            )
         except getopt.error as msg:
-             raise Usage(msg)
+            raise Usage(msg)
 
         limit_specified = False
         limit = 10
@@ -660,7 +699,7 @@ def _main(argv = None):
             elif o in ("-n", "--notify"):
                 notify = True
 
-        #if process_all and limit_specified:
+        # if process_all and limit_specified:
         #    raise Usage("--all and --limit cannot be used together")
 
         Settings.read("Vectors.conf")
@@ -683,7 +722,9 @@ def _main(argv = None):
                     raise Usage("Conflict between uuid argument and --limit option")
             if process_all and not limit_specified:
                 limit = None
-            tag_articles(limit = limit, verbose = verbose, process_all = process_all, uuid = uuid)
+            tag_articles(
+                limit=limit, verbose=verbose, process_all=process_all, uuid=uuid
+            )
             if notify:
                 # Inform the similarity server that we have new article tags
                 notify_similarity_server()
@@ -691,18 +732,18 @@ def _main(argv = None):
             # Calculate topics
             if la > 1:
                 raise Usage("Too many arguments")
-            calculate_topics(verbose = verbose)
+            calculate_topics(verbose=verbose)
         elif arg == "model":
             # Rebuild model
             if la > 1:
                 raise Usage("Too many arguments")
-            build_model(verbose = verbose)
+            build_model(verbose=verbose)
         else:
             raise Usage("Unknown command: '{0}'".format(arg))
 
     except Usage as err:
-        print(err.msg, file = sys.stderr)
-        print("For help use --help", file = sys.stderr)
+        print(err.msg, file=sys.stderr)
+        print("For help use --help", file=sys.stderr)
         return 2
 
     # Completed with no error
@@ -712,4 +753,3 @@ def _main(argv = None):
 if __name__ == "__main__":
 
     sys.exit(_main())
-

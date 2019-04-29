@@ -104,17 +104,20 @@ class SimilarityServer:
         self._atopics = {}
         self._corpus = None
 
-
     def _load_topics(self):
         """ Load all article topics into the self._atopics dictionary """
         self._atopics = {}
-        with SessionContext(commit = True, read_only = True) as session:
+        with SessionContext(commit=True, read_only=True) as session:
             print("Starting load of all article topic vectors")
             t0 = time.time()
             # Do the next refresh from this time point
             self._timestamp = datetime.utcnow()
-            q = session.query(Article).join(Root).filter(Root.visible) \
+            q = (
+                session.query(Article)
+                .join(Root)
+                .filter(Root.visible)
                 .with_entities(Article.id, Article.topic_vector)
+            )
 
             for a in q.yield_per(2000):
                 if a.topic_vector:
@@ -123,17 +126,21 @@ class SimilarityServer:
                     if isinstance(vec, list) and len(vec) == self._corpus.dimensions:
                         self._atopics[a.id] = np.array(vec)
                     else:
-                        print("Warning: faulty topic vector for article {0}".format(a.id))
+                        print(
+                            "Warning: faulty topic vector for article {0}".format(a.id)
+                        )
 
             t1 = time.time()
-            print("Loading of {0} topic vectors completed in {1:.2f} seconds".format(len(self._atopics), t1 - t0))
-
+            print(
+                "Loading of {0} topic vectors completed in {1:.2f} seconds".format(
+                    len(self._atopics), t1 - t0
+                )
+            )
 
     def article_topic(self, article_id):
         """ Return the topic vector of the article having the given uuid,
             or None if no such article exists """
         return self._atopics.get(article_id)
-
 
     def reload_topics(self):
         """ Reload all article topic vectors from the database """
@@ -141,41 +148,52 @@ class SimilarityServer:
             # Can't serve queries while we're doing this
             self._load_topics()
 
-
     def refresh_topics(self):
         """ Load any new article topics into the _atopics dict """
         with self._lock:
-            with SessionContext(commit = True, read_only = True) as session:
+            with SessionContext(commit=True, read_only=True) as session:
                 # Do the next refresh from this time point
                 ts = datetime.utcnow()
-                q = session.query(Article).join(Root).filter(Root.visible) \
-                    .filter(Article.indexed >= self._timestamp) \
+                q = (
+                    session.query(Article)
+                    .join(Root)
+                    .filter(Root.visible)
+                    .filter(Article.indexed >= self._timestamp)
                     .with_entities(Article.id, Article.topic_vector)
+                )
                 self._timestamp = ts
                 count = 0
                 for a in q.yield_per(100):
                     if a.topic_vector:
                         # Load topic vector in to a numpy array
                         vec = json.loads(a.topic_vector)
-                        if isinstance(vec, list) and len(vec) == self._corpus.dimensions:
+                        if (
+                            isinstance(vec, list)
+                            and len(vec) == self._corpus.dimensions
+                        ):
                             self._atopics[a.id] = np.array(vec)
                             count += 1
                         else:
-                            print("Warning: faulty topic vector for article {0}".format(a.id))
-                print("Completed refresh_topics, {0} article vectors added".format(count))
-
+                            print(
+                                "Warning: faulty topic vector for article {0}".format(
+                                    a.id
+                                )
+                            )
+                print(
+                    "Completed refresh_topics, {0} article vectors added".format(count)
+                )
 
     def _iter_similarities(self, vector):
         """ Generator of (id, similarity) tuples for all articles to the given vector """
         base = np.array(vector)
-        norm_base = np.dot(base, base) # This is faster than linalg.norm()
+        norm_base = np.dot(base, base)  # This is faster than linalg.norm()
         if norm_base < 1.0e-6:
             # No data to search by
             return
 
         def cosine_similarity(v):
             """ Compute cosine similarity of v1 to v2: (v1 dot v2)/(|v1|*|v2|) """
-            norm_v = np.dot(v, v) # This is faster than linalg.norm()
+            norm_v = np.dot(v, v)  # This is faster than linalg.norm()
             dot_product = np.dot(v, base)
             return float(dot_product / math.sqrt(norm_v * norm_base))
 
@@ -187,9 +205,12 @@ class SimilarityServer:
                 # If there is an error in the calculations, probably
                 # due to a faulty topic vector, simply don't include
                 # the article
-                print("Error in cosine similarity for article {0}: {1}".format(article_id, ex))
+                print(
+                    "Error in cosine similarity for article {0}: {1}".format(
+                        article_id, ex
+                    )
+                )
                 pass
-
 
     def find_similar(self, n, vector):
         """ Return the N articles with the highest similarity score to the given vector,
@@ -197,34 +218,41 @@ class SimilarityServer:
         if vector is None or len(vector) == 0 or all(e == 0.0 for e in vector):
             return []
         with self._lock:
-            return heapq.nlargest(n,
-                self._iter_similarities(vector),
-                key = operator.itemgetter(1))
-
+            return heapq.nlargest(
+                n, self._iter_similarities(vector), key=operator.itemgetter(1)
+            )
 
     def run(self, host, port):
         """ Run a similarity server serving requests that come in at the given port """
-        address = (host, port) # Family is deduced to be 'AF_INET'
+        address = (host, port)  # Family is deduced to be 'AF_INET'
         # Load the secret password that clients must use to authenticate themselves
         try:
             with open("resources/SimilarityServerKey.txt", "rb") as file:
                 secret_password = file.read()
         except FileNotFoundError:
-            raise InternalError("Server key file missing: resources/SimilarityServerKey.txt")
+            raise InternalError(
+                "Server key file missing: resources/SimilarityServerKey.txt"
+            )
         except:
-            raise InternalError("Unable to load server key when starting similarity server")
+            raise InternalError(
+                "Unable to load server key when starting similarity server"
+            )
 
-        print("Reynir similarity server started\nListening for connections on port {0}".format(port))
+        print(
+            "Reynir similarity server started\nListening for connections on port {0}".format(
+                port
+            )
+        )
 
-        with Listener(address, authkey = secret_password) as listener:
+        with Listener(address, authkey=secret_password) as listener:
             self._corpus = ReynirCorpus()
             self._load_topics()
             while True:
                 try:
                     conn = listener.accept()
-                    print('Connection accepted from {0}'.format(listener.last_accepted))
+                    print("Connection accepted from {0}".format(listener.last_accepted))
                     # Launch a thread to handle commands from this client
-                    Thread(target = self._command_loop, args = (conn,)).start()
+                    Thread(target=self._command_loop, args=(conn,)).start()
                 except AuthenticationError:
                     print("Authentication failed for client")
                     pass
@@ -234,12 +262,12 @@ class SimilarityServer:
                 finally:
                     sys.stdout.flush()
 
-
     def _command_loop(self, conn):
         """ Run a command loop for this server inside a client thread """
 
         class ClientError(RuntimeError):
             """ Local exception class for handling erroneous requests from clients """
+
             def __init__(self, request):
                 super().__init__("Invalid request received: {0!r}".format(request))
 
@@ -338,16 +366,19 @@ if __name__ == "__main__":
     # Run a similarity server on the default port
     # Modify host to 0.0.0.0 to enable outside access
     try:
-        SimilarityServer().run(host = 'localhost', port = Settings.SIMSERVER_PORT)
+        SimilarityServer().run(host="localhost", port=Settings.SIMSERVER_PORT)
     except InternalError as e:
         print(str(e))
         sys.exit(1)
     except OSError as e:
         import errno
-        if e.errno == errno.EADDRINUSE: # Address already in use
-            print("Simserver is already running on port {0}".format(Settings.SIMSERVER_PORT))
+
+        if e.errno == errno.EADDRINUSE:  # Address already in use
+            print(
+                "Simserver is already running on port {0}".format(
+                    Settings.SIMSERVER_PORT
+                )
+            )
             sys.exit(1)
         else:
             raise
-
-
