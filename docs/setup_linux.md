@@ -63,7 +63,7 @@ Check out the Greynir repo:
 
 ```
 cd ~
-git clone https://github.com/vthorsteinsson/Reynir
+git clone https://github.com/mideind/Reynir
 cd ~/Reynir
 ```
 
