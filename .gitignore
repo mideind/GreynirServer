@@ -114,7 +114,7 @@ log/
 console/
 
 # Virtual environments
-venv/
+venv
 p35*/
 
 # Installer logs

@@ -1,5 +1,5 @@
 
-![Greynir](https://raw.githubusercontent.com/vthorsteinsson/Reynir/master/static/img/GreynirLogo242x100.png)
+![Greynir](https://raw.githubusercontent.com/mideind/Reynir/master/static/img/GreynirLogo242x100.png)
 
 # Reynir
 
@@ -16,15 +16,15 @@ Try Reynir (in Icelandic) at [https://greynir.is](https://greynir.is)
 **natural language understanding**.
 
 Reynir periodically scrapes chunks of text from Icelandic news sites on the web.
-It employs the [Tokenizer](https://github.com/vthorsteinsson/Tokenizer) and
-[ReynirPackage](https://github.com/vthorsteinsson/ReynirPackage) modules (by the same authors)
+It employs the [Tokenizer](https://github.com/mideind/Tokenizer) and
+[ReynirPackage](https://github.com/mideind/ReynirPackage) modules (by the same authors)
 to tokenize the text and parse the token streams according to a **hand-written context-free grammar**
 for the Icelandic language. The resulting parse forests are disambiguated using
 scoring heuristics to find the best parse trees. The trees are then stored in a
 database and processed by grammatical pattern matching modules to obtain statements
 of fact and relations between stated facts.
 
-<a href="https://raw.githubusercontent.com/vthorsteinsson/Reynir/master/static/img/tree-example.png" title="Greynir parse tree">
+<a href="https://raw.githubusercontent.com/mideind/Reynir/master/static/img/tree-example.png" title="Greynir parse tree">
 <img src="static/img/tree-example-small.png" width="400" height="450" alt="Greynir parse tree">
 </a>
 
@@ -76,10 +76,10 @@ Reynir works in stages, roughly as follows:
 1. **Web scraper**, built on [BeautifulSoup](http://www.crummy.com/software/BeautifulSoup/)
   and [SQLAlchemy](http://www.sqlalchemy.org/) storing data
   in [PostgreSQL](http://www.postgresql.org/).
-2. **Tokenizer** ([this one](https://github.com/vthorsteinsson/Tokenizer)),
+2. **Tokenizer** ([this one](https://github.com/mideind/Tokenizer)),
   extended to use the [BÍN](http://bin.arnastofnun.is/DMII/) database of Icelandic word forms for lemmatization and
   initial part-of-speech tagging.
-3. **Parser** (from [this module](https://github.com/vthorsteinsson/ReynirPackage)),
+3. **Parser** (from [this module](https://github.com/mideind/ReynirPackage)),
   using an improved version of the [Earley algorithm](http://en.wikipedia.org/wiki/Earley_parser)
   to parse text according to an unconstrained hand-written context-free grammar for Icelandic
   that may yield multiple parse trees (a parse forest) in case of ambiguity.
@@ -102,15 +102,15 @@ can for instance be plugged into [Gunicorn](http://gunicorn.org/) and
 Reynir uses the official BÍN ([Beygingarlýsing íslensks nútímamáls](http://bin.arnastofnun.is))
 lexicon and database of Icelandic word forms to identify word forms, and find their
 potential meanings and lemmas. The database is included in
-[ReynirPackage](https://github.com/vthorsteinsson/ReynirPackage) in compressed form,
+[ReynirPackage](https://github.com/mideind/ReynirPackage) in compressed form,
 under license from and by permission of the [BÍN copyright holder](http://bin.arnastofnun.is/DMII/).
 
-The [tokenizer](https://github.com/vthorsteinsson/Tokenizer) divides text chunks into
+The [tokenizer](https://github.com/mideind/Tokenizer) divides text chunks into
 sentences and recognizes entities such as dates, numbers,
 amounts and person names, as well as common abbreviations and punctuation.
 
 Grammar rules are laid out in a separate text file, `Reynir.grammar`, which is a part
-of [ReynirPackage](https://github.com/vthorsteinsson/ReynirPackage). The standard
+of [ReynirPackage](https://github.com/mideind/ReynirPackage). The standard
 [Backus-Naur form](http://en.wikipedia.org/wiki/Backus%E2%80%93Naur_Form) has been
 augmented with repeat specifiers for right-hand-side tokens (`*` for 0..n instances,
 `+` for 1..n instances, or `?` for 0..1 instances). Also, the grammar allows for
@@ -214,7 +214,7 @@ see [Using the Greynir Shell](docs/shell.md).
 Reynir/Greynir is *copyright (C) 2018 by Miðeind ehf.*
 The original author of this software is *Vilhjálmur Þorsteinsson*.
 
-![GPLv3](https://raw.githubusercontent.com/vthorsteinsson/Reynir/master/static/img/GPLv3.png)
+![GPLv3](https://raw.githubusercontent.com/mideind/Reynir/master/static/img/GPLv3.png)
 
 This set of programs is free software: you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the Free
@@ -226,7 +226,7 @@ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FO
 A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
 The full text of the GNU General Public License v3 is
-[included here](https://github.com/vthorsteinsson/Reynir/blob/master/LICENSE.txt)
+[included here](https://github.com/mideind/Reynir/blob/master/LICENSE.txt)
 and also available here: https://www.gnu.org/licenses/gpl-3.0.html.
 
 If you wish to use this set of programs in ways that are not covered under the
