@@ -667,6 +667,9 @@ class MblScraper(ScrapeHelper):
             # Could be a picture collection - look for div#non-galleria
             soup = ScrapeHelper.div_id(soup_body, "non-galleria")
         if soup is None:
+            # Could be special layout for /ferdalog
+            soup = ScrapeHelper.div_class(soup_body, "newsitem")
+        if soup is None:
             logging.warning(
                 "_get_content: "
                 "soup_body.div.main-layout/frett-main/pistill-entry-body is None"
@@ -678,14 +681,18 @@ class MblScraper(ScrapeHelper):
             if s is not None:
                 s.decompose()
             # Delete p/strong/a paragraphs from the content (intermediate links)
-            for p in soup.findAll("p"):
+            for p in soup.find_all("p"):
                 try:
                     if p.strong and p.strong.a:
                         p.decompose()
                 except AttributeError:
                     pass
 
+            for ul in soup.find_all("ul", {"class": "list-group"}):
+                ul.decompose()
+
             deldivs = (
+                "info",
                 "reporter-profile",
                 "reporter-line",
                 "mainimg-big",
@@ -704,6 +711,12 @@ class MblScraper(ScrapeHelper):
                 "mbl-news-link",
                 "embedded-media",
                 "r-sidebar",
+                "big-teaser",
+                "imagebox",
+                "imagebox-description",
+                "augl",
+                "box-teaser",
+                "reporter-line",
             )
             for divclass in deldivs:
                 ScrapeHelper.del_div_class(soup, divclass)
