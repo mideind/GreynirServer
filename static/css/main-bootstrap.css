@@ -54,6 +54,12 @@
    -moz-osx-font-smoothing: grayscale;
 }
 
+.glyphicon-ok:before {
+   content: "\E199";
+}
+.glyphicon-circle-ok:before {
+   content: "\E194";
+}
 .glyphicon-user:before {
    content: "\E004";
 }
@@ -1128,6 +1134,24 @@ div#result div.background {
    height: 100%;
    width: 30%;
    right: 0;
+}
+
+span#no-annotations {
+   display: none;
+   text-align: right;
+   font-style: italic;
+   position: absolute;
+   right: 0;
+   margin-right: 8px;
+   margin-top: 4px;
+}
+
+span#no-annotations span.glyphicon-circle-ok {
+   color: #3e8f3e; /* green */
+   font-size: 1.5em;
+   margin-left: 4px;
+   position: relative;
+   top: 7px;
 }
 
 /* Result div on correct.html page */

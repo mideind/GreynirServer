@@ -4,7 +4,7 @@
 
     High-level tokenizer and named entity recognizer
 
-    Copyright (C) 2018 Miðeind ehf.
+    Copyright (C) 2019 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -48,9 +48,14 @@ def recognize_entities(token_stream, enclosing_session=None, token_ctor=TOK):
 
     """
 
-    tq = []  # Token queue
-    state = defaultdict(list)  # Phrases we're considering
-    ecache = dict()  # Entitiy definition cache
+    # Token queue
+    tq = []
+    # Phrases we're considering. Note that an entry of None
+    # indicates that the accumulated phrase so far is a complete
+    # and valid known entity name.
+    state = defaultdict(list)
+    # Entitiy definition cache
+    ecache = dict()
     # Last name to full name mapping ('Clinton' -> 'Hillary Clinton')
     lastnames = dict()
 
@@ -165,6 +170,18 @@ def recognize_entities(token_stream, enclosing_session=None, token_ctor=TOK):
                     # Not a match for an expected token
                     if state:
                         if None in state:
+                            # We have an accumulated match, but if the next token
+                            # is an uppercase word without a BÍN meaning, we
+                            # append it to the current entity regardless.
+                            # This means that 'Charley Lucknow' is handled as a single
+                            # new entity name even if 'Charley' already exists
+                            # as an entity.
+                            while w and w[0].isupper() and not token.val:
+                                # Append to the accumulated token queue, which will
+                                # be squashed to a single token in flush_match()
+                                tq.append(token)
+                                token = next(token_stream)
+                                w = token.txt
                             # Flush the already accumulated match
                             yield flush_match()
                         else:

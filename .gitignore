@@ -41,6 +41,8 @@ nnmain.sh
 
 # Various resource files
 resources/*.txt
+!resources/formers.txt
+!resources/last.txt
 !resources/ordalisti.sorted.txt
 !resources/obeygd.hreinsad.txt
 resources/*.csv
