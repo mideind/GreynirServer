@@ -56,6 +56,7 @@ from article import Article as ArticleProxy
 # Initialize and configure Flask app
 app = Flask(__name__)
 app.config["JSON_AS_ASCII"] = False  # We're fine with using Unicode/UTF-8
+app.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024 # 1 MB, max upload file size
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 app.config["PRODUCTION"] = True
 
