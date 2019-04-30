@@ -28,7 +28,8 @@ from zipfile import ZipFile
 from pathlib import Path
 import html2text
 from striprtf.striprtf import rtf_to_text
-from xml.etree.ElementTree import XML
+# Use defusedxml module to prevent parsing of malicious XML
+from defusedxml import ElementTree
 
 
 DEFAULT_TEXT_ENCODING = "UTF-8"
@@ -128,7 +129,7 @@ class DocxDocument(Document):
         content = zipfile.read(self.DOCXML_PATH)
         zipfile.close()
 
-        tree = XML(content)
+        tree = ElementTree.fromstring(content)
 
         # Extract text elements from all paragraphs
         paragraphs = []
