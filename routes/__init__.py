@@ -57,11 +57,11 @@ def max_age(seconds):
 
 
 def restricted(f):
-    """ Decorator to return 403 Forbidden if running in production mode """
+    """ Decorator to return 403 Forbidden if not running in debug mode """
 
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if current_app.config["PRODUCTION"]:
+        if not current_app.config["DEBUG"]:
             return abort(403)
         return f(*args, **kwargs)
     return decorated_function

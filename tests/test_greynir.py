@@ -15,8 +15,8 @@ REQ_METHODS = frozenset(["GET", "POST"])
 def client():
     """ Instantiate Flask's modified Werkzeug client to use in tests """
     app.config["TESTING"] = True
-    client = app.test_client()
-    return client
+    app.config["DEBUG"] = True
+    return app.test_client()
 
 
 def test_routes(client):
@@ -52,6 +52,7 @@ def test_api(client):
 def test_processors():
     """ Try to import all tree/token processors by instantiating Processor object """
     from processor import Processor
+
     p = Processor(processor_directory="processors")
 
 
@@ -94,12 +95,12 @@ def test_geo():
     city_info = lookup_city_info("Kaupmannahöfn")
     assert city_info and len(city_info) == 1 and city_info[0]["country"] == "DK"
 
-    assert parse_address_string("Fiskislóð 31") == {
+    assert parse_address_string("   Fiskislóð 31") == {
         "street": "Fiskislóð",
         "number": 31,
         "letter": None,
     }
-    assert parse_address_string("Öldugata 19c") == {
+    assert parse_address_string("Öldugata 19c ") == {
         "street": "Öldugata",
         "number": 19,
         "letter": "c",
@@ -108,8 +109,8 @@ def test_geo():
 
 def test_doc():
     """ Test document-related functions in doc.py """
+    suffixes = frozenset(("txt", "rtf", "html", "docx"))
 
-    txt_bytes = "Halló, gaman að kynnast þér.\n\nHvernig gengur?".encode('utf-8')
+    txt_bytes = "Halló, gaman að kynnast þér.\n\nHvernig gengur?".encode("utf-8")
     doc = PlainTextDocument(txt_bytes)
-    assert(doc.extract_text() == txt_bytes.decode('utf-8'))
-
+    assert doc.extract_text() == txt_bytes.decode("utf-8")

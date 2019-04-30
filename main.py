@@ -58,7 +58,6 @@ app = Flask(__name__)
 app.config["JSON_AS_ASCII"] = False  # We're fine with using Unicode/UTF-8
 app.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024 # 1 MB, max upload file size
 app.config["TEMPLATES_AUTO_RELOAD"] = True
-app.config["PRODUCTION"] = True
 
 # Push application context to give view functions, error handlers, 
 # and other functions access to app via current_app
@@ -176,7 +175,6 @@ if Settings.DEBUG:
     # Clobber Settings.DEBUG in ReynirPackage and ReynirCorrect
     reynir.Settings.DEBUG = True
     reynir_correct.Settings.DEBUG = True
-    app.config["PRODUCTION"] = False
 
 
 if __name__ == "__main__":
