@@ -100,7 +100,12 @@ class RTFDocument(Document):
     """ Rich text document """
 
     def extract_text(self):
-        return rtf_to_text(self.data.decode(DEFAULT_TEXT_ENCODING))
+        txt = self.data.decode(DEFAULT_TEXT_ENCODING)
+
+        # Hack to handle Apple's extensions to the RTF format
+        txt = txt.replace("\\\n\\\n", "\\\n\\par\n")
+
+        return rtf_to_text(txt)
 
 
 class PDFDocument(Document):
