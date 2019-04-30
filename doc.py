@@ -28,6 +28,7 @@ from zipfile import ZipFile
 from pathlib import Path
 import html2text
 from striprtf.striprtf import rtf_to_text
+
 # Use defusedxml module to prevent parsing of malicious XML
 from defusedxml import ElementTree
 
@@ -116,6 +117,7 @@ class DocxDocument(Document):
     WORD_NAMESPACE = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
     PARAGRAPH_TAG = WORD_NAMESPACE + "p"
     TEXT_TAG = WORD_NAMESPACE + "t"
+    BREAK_TAG = WORD_NAMESPACE + "br"
 
     def extract_text(self):
 
@@ -133,10 +135,13 @@ class DocxDocument(Document):
 
         # Extract text elements from all paragraphs
         paragraphs = []
-        for p in tree.getiterator(self.PARAGRAPH_TAG):
-            texts = [
-                node.text for node in p.getiterator(self.TEXT_TAG) if node.text
-            ]
+        for p in tree.iter(self.PARAGRAPH_TAG):
+            texts = []
+            for node in p.iter():
+                if node.tag.endswith(self.TEXT_TAG) and node.text:
+                    texts.append(node.text)
+                elif node.tag.endswith(self.BREAK_TAG):
+                    texts.append("\n")
             if texts:
                 paragraphs.append("".join(texts))
 
