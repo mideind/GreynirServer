@@ -429,11 +429,18 @@
       $('#file-input').trigger('click');
    }
 
-   function uploadFile() {
+   function uploadFile(file) {
       var fd = new FormData();
-      fd.set('file', $('#file-input')[0].files[0]);
+      var f = file === undefined ? $('#file-input')[0].files[0] : file;
+      if (file === undefined) {
+         return;
+      }
+      fd.set('file', f);
+   
       $("#txt").val("");
       wait(true, "#file-ok");
+
+      // Send off ajax request
       $.ajax({
          url: '/correct.api',  
          type: 'POST',
@@ -449,6 +456,13 @@
    function init() {
       // Activate the top navbar
       $("#navid-correct").addClass("active");
+      // Drag and drop handling for textarea
+      $("#txt").on("drop", function(event) {
+         event.preventDefault();  
+         event.stopPropagation();
+         var file = event.originalEvent.dataTransfer.files[0];
+         uploadFile(file);
+      });
    }
 
    $(document).ready(init);
