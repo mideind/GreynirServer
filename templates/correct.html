@@ -153,8 +153,13 @@
 
    function handleError(xhr, status, errorThrown) {
       /* An error occurred on the server or in the communications */
-      $("div#pgs").html("<p><b>Villa kom upp</b> í samskiptum við netþjón Greynis</p>");
-      wait(false, "#txt-ok");
+      var msg = "<b>Villa kom upp</b> í samskiptum við netþjón Greynis";
+      if (xhr.status == 413) {
+         msg = "<b>Skjalið er of stórt</b> (> 1.0 MB)";
+      }
+
+      $("div#pgs").html("<p>" + msg + "</p>");
+      wait(false);
    }
 
    function formatAnnotation(txt) {
