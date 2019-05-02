@@ -432,8 +432,8 @@
 
    function uploadFile(file) {
       var fd = new FormData();
-      var f = file === undefined ? $('#file-input')[0].files[0] : file;
-      if (file === undefined) {
+      var f = (file === undefined) ? $('#file-input')[0].files[0] : file;
+      if (f === undefined) {
          return;
       }
       fd.set('file', f);

@@ -90,6 +90,7 @@ class HTMLDocument(Document):
         h.unicode_snob = True
         h.ignore_tables = True
         h.decode_errors = "ignore"
+        h.body_width = 0
 
         text = h.handle(html)
 
