@@ -132,13 +132,15 @@ class DocxDocument(Document):
         if self.DOCXML_PATH not in zipfile.namelist():
             raise Exception("Malformed docx file")
 
-        # Read xml file
+        # Read xml file from archive
         content = zipfile.read(self.DOCXML_PATH)
         zipfile.close()
 
+        # Parse it
         tree = ElementTree.fromstring(content)
 
         # Extract text elements from all paragraphs
+        # (with special handling of line breaks)
         paragraphs = []
         for p in tree.iter(self.PARAGRAPH_TAG):
             texts = []

@@ -17,7 +17,7 @@
 
          <textarea rows="12" class="form-control input-lg"
             id="txt" tabindex="1" maxlength="16384" autofocus required
-            placeholder="Sláðu inn texta til að lesa yfir">
+            placeholder="Sláðu inn texta eða veldu skjal til að lesa yfir...">
             {{- default_text -}}
          </textarea>
 
@@ -51,9 +51,9 @@
       </form>
 
       <div class="col-xs-4 col-sm-3 col-md-2 pull-right">
-         <button class="btn btn-info btn-lg btn-block"
-            id="file-ok" title="Skjal" tabindex="3"
-            onclick="selectFile()">
+         <button class="btn btn-info btn-lg btn-block" id="file-ok" 
+         title="Smelltu hér til þess að hlaða upp skjal til yfirlestrar (styður RTF, HTML og DOCX snið)" 
+         tabindex="3"onclick="selectFile()">
             <span class='glyphicon glyphicon-restart glyphicon-spin-white spin' style="display:none;"></span>
             <span class="glyphicon glyphicon-upload normal"></span> Skjal
          </button>
@@ -120,17 +120,17 @@
       // Start or stop a wait spinner
       if (state) {
          // Disable both buttons
-         $("#txt-ok, #file-ok").attr("disabled", "disabled");
+         $("#txt-ok, #file-ok, #txt").attr("disabled", "disabled");
          $("div#output").css("display", "none");
 
          // Activate spinner on relevant button
-         var sel = button ? button : "#txt-ok, #file-ok";
+         var sel = button ? button : "#txt-ok";
          $(sel).find('.spin').show();
          $(sel).find('.normal').hide();
       }
       else {
          // Re-enable both buttons
-         $("#txt-ok, #file-ok").removeAttr("disabled");
+         $("#txt-ok, #file-ok, #txt").removeAttr("disabled");
          $("div#output").css("display", "block");
 
          // Deactivate spinners
@@ -148,12 +148,13 @@
       annSpan = [];
       $("div#statistics").css("display", "none");
       // Display progress indicator
-      wait(true, "#txt-ok");
+      wait(true);
    }
 
    function handleError(xhr, status, errorThrown) {
       /* An error occurred on the server or in the communications */
       var msg = "<b>Villa kom upp</b> í samskiptum við netþjón Greynis";
+      // http status code 413: Payload too large
       if (xhr.status == 413) {
          msg = "<b>Skjalið er of stórt</b> (>1.0 MB)";
       }
