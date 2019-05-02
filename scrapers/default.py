@@ -1208,7 +1208,6 @@ class StundinScraper(ScrapeHelper):
         ScrapeHelper.del_tag(article, "aside")
         ScrapeHelper.del_tag(article, "h2")
         ScrapeHelper.del_tag(article, "h3")
-        ScrapeHelper.del_tag_prop_val(article, "p", "class", "hang_quotes")
 
         return article
 
