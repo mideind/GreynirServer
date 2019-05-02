@@ -56,6 +56,7 @@ def chart_stats(session=None, num_days=7):
         "Hringbraut": "#44607a",
         "Fréttablaðið": "#002a61",
         "Hagstofa Íslands": "#818285",
+        "DV": "#ed1c24",
     }
 
     today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
