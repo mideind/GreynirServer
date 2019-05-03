@@ -22,7 +22,7 @@
 """
 
 
-from . import routes, max_age, cache
+from . import routes, max_age, cache, restricted
 
 import json
 from pprint import pprint
@@ -229,6 +229,7 @@ def people_top():
 
 
 @routes.route("/people_graph")
+@restricted
 @max_age(seconds=10 * 60)
 def people_graph():
     """ Page with a weighted, force directed graph of relations 
@@ -237,6 +238,7 @@ def people_graph():
 
 
 @routes.route("/people_timeline")
+@restricted
 @max_age(seconds=10 * 60)
 def people_timeline():
     """ Person timeline page. """
