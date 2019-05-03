@@ -367,8 +367,8 @@ def image():
     return better_jsonify(**resp)
 
 
-@cache.cached(timeout=30 * 60, key_prefix="suggest", query_string=True)
 @routes.route("/suggest", methods=["GET"])
+@cache.cached(timeout=30 * 60, key_prefix="suggest", query_string=True)
 def suggest(limit=10):
     """ Return suggestions for query field autocompletion """
     limit = request.args.get("limit", limit)

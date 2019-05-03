@@ -164,8 +164,8 @@ def world_map_data(days=_TOP_LOC_PERIOD):
         return {r[0]: r[1] for r in q.all()}
 
 
-@cache.cached(timeout=30 * 60, key_prefix="locations", query_string=True)
 @routes.route("/locations", methods=["GET"])
+@cache.cached(timeout=30 * 60, key_prefix="locations", query_string=True)
 @max_age(seconds=30 * 60)
 def locations():
     """ Render locations page """
@@ -182,8 +182,8 @@ def locations():
     )
 
 
-@cache.cached(timeout=30 * 60, key_prefix="icemap", query_string=True)
 @routes.route("/locations_icemap", methods=["GET"])
+@cache.cached(timeout=30 * 60, key_prefix="icemap", query_string=True)
 def locations_icemap():
     """ Render Icelandic map locations page """
     period = request.args.get("period")
@@ -195,8 +195,8 @@ def locations_icemap():
     )
 
 
-@cache.cached(timeout=30 * 60, key_prefix="worldmap", query_string=True)
 @routes.route("/locations_worldmap", methods=["GET"])
+@cache.cached(timeout=30 * 60, key_prefix="worldmap", query_string=True)
 def locations_worldmap():
     """ Render world map locations page """
     period = request.args.get("period")
@@ -212,8 +212,8 @@ def locations_worldmap():
     )
 
 
-@cache.cached(timeout=60 * 60 * 24, key_prefix="staticmap", query_string=True)
 @routes.route("/staticmap", methods=["GET"])
+@cache.cached(timeout=60 * 60 * 24, key_prefix="staticmap", query_string=True)
 def staticmap():
     """ Proxy for Google Static Maps API """
     try:
@@ -235,8 +235,8 @@ STATIC_MAP_URL = "/staticmap?lat={0}&lon={1}&z={2}"
 ZOOM_FOR_LOC_KIND = {"street": 11, "address": 12, "placename": 5, "country": 2}
 
 
-@cache.cached(timeout=60 * 60 * 24, key_prefix="locinfo", query_string=True)
 @routes.route("/locinfo", methods=["GET"])
+@cache.cached(timeout=60 * 60 * 24, key_prefix="locinfo", query_string=True)
 def locinfo():
     """ Return info about a location as JSON """
     resp = dict(found=False)
