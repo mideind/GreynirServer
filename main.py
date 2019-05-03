@@ -60,7 +60,7 @@ app.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024 # 1 MB, max upload file size
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 
 # Push application context to give view functions, error handlers, 
-# and other functions access to app via current_app
+# and other functions access to app instance via current_app
 app.app_context().push()
 
 # Set up caching

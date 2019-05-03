@@ -16,7 +16,7 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    This module contains code to manipulate and extract text from documents 
+    This module contains code to extract text from documents 
     such as plain text, html, rtf and docx files.
 
 """

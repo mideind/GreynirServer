@@ -28,7 +28,7 @@
    <div class="row buttons">
       <div class="col-xs-4 col-sm-3 col-md-2 pull-right">
          <button class="btn btn-success btn-lg btn-block"
-            id="txt-ok" title="Lesa yfir" tabindex="3"
+            id="txt-ok" title="Lesa yfir texta" tabindex="3"
             onclick="correct()">
             <span class='glyphicon glyphicon-restart glyphicon-spin-white spin' style="display:none;"></span>
             <span class="glyphicon glyphicon-eye-open normal"></span> Lesa yfir
@@ -52,7 +52,7 @@
 
       <div class="col-xs-4 col-sm-3 col-md-2 pull-right">
          <button class="btn btn-info btn-lg btn-block" id="file-ok" 
-         title="Smelltu hér til þess að hlaða upp skjal til yfirlestrar (styður RTF, HTML og DOCX snið)" 
+         title="Smelltu hér til þess að hlaða upp skjali til yfirlestrar (styður TXT, RTF, HTML og DOCX snið)" 
          tabindex="3"onclick="selectFile()">
             <span class='glyphicon glyphicon-restart glyphicon-spin-white spin' style="display:none;"></span>
             <span class="glyphicon glyphicon-upload normal"></span> Skjal
@@ -119,7 +119,7 @@
    function wait(state, button) {
       // Start or stop a wait spinner
       if (state) {
-         // Disable both buttons
+         // Disable textarea and buttons
          $("#txt-ok, #file-ok, #txt").attr("disabled", "disabled");
          $("div#output").css("display", "none");
 
@@ -129,7 +129,7 @@
          $(sel).find('.normal').hide();
       }
       else {
-         // Re-enable both buttons
+         // Re-enable textarea and buttons
          $("#txt-ok, #file-ok, #txt").removeAttr("disabled");
          $("div#output").css("display", "block");
 

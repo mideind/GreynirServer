@@ -17,7 +17,7 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    Tests for the code contained in the Reynir repo.
+    Tests for code in the Reynir repo.
 
 """
 
