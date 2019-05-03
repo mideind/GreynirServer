@@ -44,7 +44,7 @@ from reynir.fastparser import ParseForestFlattener
 from treeutil import TreeUtility
 
 from images import get_image_url, update_broken_image_url, blacklist_image_url
-
+from doc import SUPPORTED_DOC_MIMETYPES
 
 # Default text shown in the URL/text box
 _DEFAULT_TEXTS = [
@@ -98,7 +98,9 @@ def correct():
         txt = text_from_request(request, post_field="txt", get_field="txt")
     except:
         txt = ""
-    return render_template("correct.html", default_text=txt)
+    return render_template(
+        "correct.html", default_text=txt, supported_mime_types=list(SUPPORTED_DOC_MIMETYPES)
+    )
 
 
 @routes.route("/page")

@@ -36,18 +36,7 @@
       </div>
 
       <form id="uploadForm" class="hidden">
-         <input id="file-input" type="file" name="filename" onChange="uploadFile()"
-         accept="
-            .txt,
-            .html,
-            .rtf,
-            .docx,
-            text/plain,
-            text/html,
-            text/rtf,
-            application/rtf,
-            application/vnd.openxmlformats-officedocument.wordprocessingml.document
-         ">
+         <input id="file-input" type="file" name="filename" onChange="uploadFile()" accept="">
       </form>
 
       <div class="col-xs-4 col-sm-3 col-md-2 pull-right">
@@ -113,6 +102,8 @@
 
 <script>
 
+   var supported_mime_types = {{ supported_mime_types | tojson }}; 
+
    // Global array linking annotations to token span indices
    var annSpan = [];
 
@@ -121,7 +112,7 @@
       if (state) {
          // Disable textarea and buttons
          $("#txt-ok, #file-ok, #txt").attr("disabled", "disabled");
-         $("div#output").css("display", "none");
+         $("div#output").hide();
 
          // Activate spinner on relevant button
          var sel = button ? button : "#txt-ok";
@@ -131,7 +122,7 @@
       else {
          // Re-enable textarea and buttons
          $("#txt-ok, #file-ok, #txt").removeAttr("disabled");
-         $("div#output").css("display", "block");
+         $("div#output").show();
 
          // Deactivate spinners
          var sel = "#txt-ok, #file-ok";
@@ -143,24 +134,31 @@
    function clearResult() {
       // Clear previous result
       $("div#pgs").html("");
-      $("#no-annotations").css("display", "none");
+      $("#no-annotations").hide();
       $(window).off("resize");
       annSpan = [];
-      $("div#statistics").css("display", "none");
+      $("div#statistics").hide();
       // Display progress indicator
       wait(true);
    }
 
    function handleError(xhr, status, errorThrown) {
-      /* An error occurred on the server or in the communications */
+      // An error occurred on the server or in the communications
       var msg = "<b>Villa kom upp</b> í samskiptum við netþjón Greynis";
       // http status code 413: Payload too large
       if (xhr.status == 413) {
          msg = "<b>Skjalið er of stórt</b> (>1.0 MB)";
       }
-
-      $("div#pgs").html("<p>" + msg + "</p>");
       wait(false);
+      showError(msg);
+   }
+
+   function showError(errStr) {
+      // Hide any current results and show error message
+      $("div#output").show();
+      $("#no-annotations").hide();
+      $("div#statistics").hide();
+      $("div#pgs").html("<p style='color:#cc0000;'>" + errStr + "</p>");
    }
 
    function formatAnnotation(txt) {
@@ -386,8 +384,9 @@
 
    function populateResult(json) {
       wait(false);
-      if (!json.valid || json.result === undefined || json.result === null)
+      if (!json.valid || json.result === undefined || json.result === null) {
          $("div#pgs").html("<p><b>Villa kom upp</b> í samskiptum við netþjón Greynis</p>");
+      }
       else {
          // Display the paragraphs, sentences and tokens
          // along with the sentence-level annotations
@@ -430,14 +429,25 @@
       $('#file-input').trigger('click');
    }
 
+   function isSupportedFileType(file) {
+      // Document types supported for uploading
+      return (supported_mime_types.indexOf(file.type) > -1);
+   }
+
    function uploadFile(file) {
       var fd = new FormData();
       var f = (file === undefined) ? $('#file-input')[0].files[0] : file;
       if (f === undefined) {
          return;
       }
-      fd.set('file', f);
-   
+
+      // Make sure file type is supported
+      if (!isSupportedFileType(f)) {
+         showError("Greynir styðir ekki yfirlestur á skjölum á þessu sniði.");
+         return;
+      }
+
+      fd.set('file', f);   
       $("#txt").val("");
       wait(true, "#file-ok");
 
@@ -457,7 +467,9 @@
    function init() {
       // Activate the top navbar
       $("#navid-correct").addClass("active");
+
       // Drag and drop handling for textarea
+      $("#file-input").attr("accept", supported_mime_types.join(","));
       $("#txt").on("drop", function(event) {
          event.preventDefault();  
          event.stopPropagation();
