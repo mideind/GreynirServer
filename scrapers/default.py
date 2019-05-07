@@ -1585,6 +1585,7 @@ class DVScraper(ScrapeHelper):
         for t in content.find_all("style"):
             t.decompose()
         ScrapeHelper.del_div_class(content, "efnisordin")
+        ScrapeHelper.del_div_class(content, "ibodi")
         if content.figure:
             content.figure.decompose()
         for fc in content.find_all("figcaption"):
