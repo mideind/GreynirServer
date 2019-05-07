@@ -973,7 +973,8 @@ div.result i.borg:hover {
 
 div.result i.year,
 div.result i.telno,
-div.result i.email {
+div.result i.email,
+div.result i.url {
    color: #777777;
    font-weight: 700;
 }
