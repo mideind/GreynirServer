@@ -242,8 +242,9 @@
                   if (tix >= a.start && tix <= a.end) {
                      // The annotation applies to this token:
                      // mark the token
-                     if (a.code[0] == "T")
-                        // Taboo word warning
+                     var isWarning = a.code[0] == "T" || a.code[0] == "W";
+                     if (isWarning)
+                        // Suggestion or taboo word warning
                         cls.push("warntok");
                      else
                         // Other error
@@ -259,7 +260,8 @@
             // Accumulate annotations into the right column
             $.each(s.annotations, function(aix, a) {
                // Annotation a
-               var cls = a.code[0] == "T" ? " class='warning'" : "";
+               var isWarning = a.code[0] == "T" || a.code[0] == "W";
+               var cls = isWarning ? " class='warning'" : "";
                right += "<div id='a" + annSpan.length + "'" + cls + ">" +
                   formatAnnotation(a.text) + "</div>\n";
                // Add a path to the canvas (empty at this point
