@@ -78,12 +78,12 @@
    function wait(state) {
       // Start or stop a wait spinner
       if (state) {
-         $("#txt-ok").attr("disabled", "disabled")
+         $("#txt-ok, #txt").attr("disabled", "disabled")
             .html("<span class='glyphicon glyphicon-restart glyphicon-spin-white'></span>");
          $("div#output").hide();
       }
       else {
-         $("#txt-ok").removeAttr("disabled")
+         $("#txt-ok, #txt").removeAttr("disabled")
             .html("<span class='glyphicon glyphicon-cogwheel'></span> Greina");
          $("div#output").show();
       }

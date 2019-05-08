@@ -73,6 +73,7 @@ tokClass[TOK_TIMESTAMPABS] = "timestampabs";
 tokClass[TOK_TIMESTAMPREL] = "timestamprel";
 tokClass[TOK_MEASUREMENT] = "measurement";
 tokClass[TOK_NUMWLETTER] = "numwletter";
+tokClass[TOK_URL] = "url";
 
 var tokId = [];
 
@@ -474,6 +475,11 @@ function tokenInfo(t, nameDict) {
    if (t.k == TOK_EMAIL) {
       r.lemma = t.x;
       r.details = "tölvupóstfang";
+   }
+   else
+   if (t.k == TOK_URL) {
+      r.lemma = t.x;
+      r.details = "vefslóð";
    }
    else
    if (t.k == TOK_TELNO) {

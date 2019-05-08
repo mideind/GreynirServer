@@ -3,6 +3,10 @@
 # Start IPython shell using config stored in repository
 #
 
+command -v ipython >/dev/null 2>&1 || \
+{ echo >&2 "Requires IPython. Run 'pip install ipython'."; exit 1; }
+
+
 SCRIPT_DIR=$(dirname "$0")
 CONFIG_PATH="${SCRIPT_DIR}/.ipython.py"
 
@@ -27,13 +31,5 @@ if [ ! -d "$VENV_DIR" ]; then
 	exit
 fi
 
-# Check for presence of IPython binary
-IPYTHON_BIN="${VENV_DIR}/bin/ipython3"
-
-if [ ! -e "$IPYTHON_BIN" ]; then
-	echo "IPython binary not found: '${IPYTHON_BIN}'"
-	exit
-fi
-
 # Run IPython shell with custom configuration
-$IPYTHON_BIN --config="${CONFIG_PATH}" --pprint --no-simple-prompt
+ipython --config="${CONFIG_PATH}" --pprint --no-simple-prompt

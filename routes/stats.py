@@ -22,7 +22,7 @@
 """
 
 
-from . import routes, max_age
+from . import routes, max_age, cache
 
 import json
 from datetime import datetime, timedelta
@@ -56,6 +56,7 @@ def chart_stats(session=None, num_days=7):
         "Hringbraut": "#44607a",
         "Fréttablaðið": "#002a61",
         "Hagstofa Íslands": "#818285",
+        "DV": "#ed1c24",
     }
 
     today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
@@ -134,6 +135,7 @@ def top_authors(days=_TOP_AUTHORS_PERIOD, session=None):
 
 
 @routes.route("/stats", methods=["GET"])
+@cache.cached(timeout=30 * 60, key_prefix="stats", query_string=True)
 @max_age(seconds=30 * 60)
 def stats():
     """ Render a page with various statistics """

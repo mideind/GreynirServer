@@ -1,0 +1,174 @@
+
+{% extends "container-normal.html" %}
+
+{% block styles %}
+
+<link href="{{ url_for('static', filename='css/main-bootstrap.css') }}" rel='stylesheet' type='text/css'>
+
+        <style>
+            body{ font: Arial 12px; text-align: center;}
+
+            .link {
+              stroke: #ccc;
+            }
+
+            .node text {
+              pointer-events: none;
+              font: sans-serif;
+            }
+        </style>
+
+
+{% endblock %}
+
+{% block content %}
+
+<div>
+   <ul class="nav nav-tabs" role="tablist">
+      <li role="presentation">
+         <a href="{{ url_for('routes.people_recent') }}">
+            Nýlegt
+         </a>
+      </li>
+      <li role="presentation">
+         <a href="{{ url_for('routes.people_top') }}">
+            Oftast
+         </a>
+      </li>
+      <!--<li role="presentation" class="active">
+         <a href="{{ url_for('routes.people_graph') }}">
+            Vensl
+         </a>
+      </li>
+      <li role="presentation">
+         <a href="{{ url_for('routes.people_timeline') }}">
+            Tímalína
+         </a>
+      </li>-->
+   </ul>
+</div>
+
+<!-- <div role="tabpanel" class="tab-pane active">
+   <div class="panel panel-default table-responsive minheight">
+
+      <div class="panel-heading">
+         <div class="headline hidden-xs">Fólk sem kemur oftast fyrir í fréttum vefmiðla</div>
+         <div class="headline visible-xs-inline-block">Fólk</div>
+      </div>
+
+
+   </div>
+</div>
+-->
+
+<div id="canvas"></div>
+
+{% endblock %}
+
+{% block endscripts %}
+
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
+<script type="text/javascript" src="https://d3js.org/d3.v3.js"></script>
+
+
+<script type="text/javascript">
+
+   function loadGraph() {
+
+      // Set margins and sizes
+      var margin = {
+         top: 20,
+         bottom: 50,
+         right: 30,
+         left: 50
+      };
+
+      // Canvas dimensions
+      var width = 980 - margin.left - margin.right;
+      var height = 900 - margin.top - margin.bottom;
+
+      // Load Color Scale
+      var c10 = d3.scale.category10();
+
+      // Create an SVG element and append it to the DOM
+      var svgElement = d3.select("div#canvas")
+                     .append("svg")
+                     .attr({"width": width+margin.left+margin.right, "height": height+margin.top+margin.bottom})
+                     .append("g")
+                     .attr("transform","translate("+margin.left+","+margin.top+")");
+
+      var dataset = {{ graph_data | tojson | safe }};
+      
+      var nodes = dataset.nodes;
+      var links = dataset.links;
+
+      // Create Force Layout
+      var force = d3.layout.force()
+                  .size([width, height])
+                  .nodes(nodes)
+                  .links(links)
+                  .gravity(0.05)
+                  .charge(-300)
+                  .linkDistance(300);
+
+      // Add links to SVG
+      var link = svgElement.selectAll(".link")
+               .data(links)
+               .enter()
+               .append("line")
+               // TODO: Normalize weight
+               .attr("stroke-width", function(d) { return d.weight/10; })
+               .attr("class", "link");
+
+      // Add nodes to SVG
+      var node = svgElement.selectAll(".node")
+               .data(nodes)
+               .enter()
+               .append("g")
+               .attr("class", "node")
+               .call(force.drag);
+
+      // Add labels to each node
+      var label = node.append("text")
+                  .attr("dx", 12)
+                  .attr("dy", "0.35em")
+                  .attr("font-size", function(d) { return d.influence*1.5>10 ? d.influence*1.5 : 10; })
+                  .text(function(d) { return d.name; });
+
+      // Add circles to each node
+      var circle = node.append("circle")
+                  .attr("r", function(d) { return d.influence/2>5 ? d.influence/2 : 5; })
+                  .attr("fill", function(d) { return c10(d.zone*10); });
+
+      // Function executed for every tick of force layout 
+      force.on("tick", function(){
+         // Set X and Y of node
+         node.attr("r", function(d) { return d.influence; })
+            .attr("cx", function(d) { return d.x; })
+            .attr("cy", function(d) { return d.y; });
+         // Set X, Y of link
+         link.attr("x1", function(d) { return d.source.x; })
+         link.attr("y1", function(d) { return d.source.y; })
+         link.attr("x2", function(d) { return d.target.x; })
+         link.attr("y2", function(d) { return d.target.y; });
+         // Shift node a little
+          node.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+      });
+
+      // Start force layout calculation
+      force.start();
+   }
+
+   function init() {
+      // Activate the top navbar
+      $("#navid-people").addClass("active");
+
+      loadGraph();
+   }
+
+   $(document).ready(init);
+
+</script>
+
+{% endblock %}
+

@@ -146,7 +146,7 @@ names and titles from parse trees for storage in a database table.
 * `scraper.py` : Web scraper, collecting articles from a set of pre-selected websites (roots)
 * `db/*`: Scraper database models and functions via SQLAlchemy
 * `nertokenizer.py` : A layer on top of the tokenizer for named entity recognition
-* `processor.py`: Information extraction from parse trees
+* `processor.py`: Information extraction from parse trees and token streams
 * `article.py` : Representation of an article through its life cycle
 * `tree.py` : Representation of parse trees for processing
 * `query.py` : Natural language query processor
@@ -155,6 +155,8 @@ names and titles from parse trees for storage in a database table.
 * `config/Main.conf` : Various configuration data and preferences, included in `Reynir.conf`
 * `config/Names.conf` : Words that should be recognized as person names at the
   start of sentences, included in `Reynir.conf`
+* `doc.py` : Extract text from various document formats
+* `geo.py` : Geography and location-related utility functions
 * `fetcher.py` : Utility classes for fetching articles given their URLs
 * `utils/*.py` : Various utility programs
 
