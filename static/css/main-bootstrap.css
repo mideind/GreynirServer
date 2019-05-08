@@ -990,7 +990,7 @@ div.result i.c.highlight {
 }
 
 div.result i.warntok {
-   color: #eb9316;
+   color: #e28400;
 }
 
 /* Note: errtok should appear after warntok, since it has higher priority */
@@ -1108,7 +1108,7 @@ div.canvas svg g path {
 }
 
 div.canvas svg g path.warning {
-   stroke: #eb9316;
+   stroke: #e28400;
 }
 
 div.canvas svg g path.highlight {
@@ -1130,7 +1130,7 @@ div#result {
 div#result div.background {
    position: absolute;
    z-index: -1;
-   background-color: #f6f6f6;
+   /* background-color: #f6f6f6; */ /* Light gray */
    height: 100%;
    width: 30%;
    right: 0;
@@ -1189,8 +1189,8 @@ div.annotation div:hover {
 }
 
 div.annotation div.warning {
-   color: #eb9316;
-   border: 1px solid #eb9316;
+   color: #e28400;
+   border: 1px solid #e28400; /* #eb9316; */
 }
 
 div.annotation div.warning:hover {
