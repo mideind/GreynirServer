@@ -1,6 +1,12 @@
 # Using the Greynir Shell
 
-To start the Greynir shell, activate the virtual environment and run the following command from the repository root:
+To start the Greynir shell, activate the virtual environment and install IPython:
+
+```
+pip install ipython
+```
+
+You can then run the following command from the repository root:
 
 ```
 scripts/shell.sh 
@@ -17,7 +23,7 @@ To enable auto-reloading of modules prior to every command, run the following co
 The shell has been configured to automatically import Greynir's database models and create a (commit-disabled) database session when launched. The Reynir parser is also imported.
 
 * `s` - SQLAlchemy database session
-* `r` - Instance of the [Reynir](https://github.com/vthorsteinsson/ReynirPackage) parser.
+* `r` - Instance of the [Reynir](https://github.com/mideind/ReynirPackage) parser.
 
 For an overview of Greynir's database models, see `db/models.py`.
 

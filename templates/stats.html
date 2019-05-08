@@ -104,7 +104,7 @@
    <table class="table table-hover" id="dtable">
       <tbody>
          {% for a in authresult %}
-         <tr>
+         <tr class="authitem" data-author="{{ a.name | safe }}">
             {% if a.gender == 'kk' %}
             <td class="gender" title="Karl"><span class="glyphicon glyphicon-gender-male"></span></td>
             {% elif a.gender == 'kvk' %}
@@ -223,6 +223,12 @@
          // A source has been clicked. Show articles from source.
          var domain = $(this).attr("data-domain");
          openURL("{{ url_for('routes.news') }}?root=" + domain, ev);
+      });
+
+      $("tr.authitem").click(function(ev) {
+         // An author name has been clicked.
+         var authName = $(this).attr("data-author");
+         openURL("{{ url_for('routes.news') }}?author=" + authName, ev);
       });
       
       // Set up charts

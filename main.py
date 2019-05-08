@@ -41,6 +41,7 @@ import logging
 from datetime import datetime
 
 from flask import Flask, send_from_directory
+from flask_caching import Cache
 
 import reynir
 from reynir.bindb import BIN_Db
@@ -55,9 +56,19 @@ from article import Article as ArticleProxy
 # Initialize and configure Flask app
 app = Flask(__name__)
 app.config["JSON_AS_ASCII"] = False  # We're fine with using Unicode/UTF-8
+app.config["MAX_CONTENT_LENGTH"] = 1 * 1024 * 1024  # 1 MB, max upload file size
 app.config["TEMPLATES_AUTO_RELOAD"] = True
-app.config["PRODUCTION"] = True
+app.config["CACHE_NO_NULL_WARNING"] = True  # Don't warn if caching is disabled
 
+# Push application context to give view functions, error handlers,
+# and other functions access to app instance via current_app
+app.app_context().push()
+
+# Set up caching
+# Caching is disabled if app is invoked via the command line
+cache_type = "null" if __name__ == "__main__" else "simple"
+cache = Cache(app, config={"CACHE_TYPE": cache_type})
+app.config["CACHE"] = cache
 
 # Register blueprint routes
 from routes import routes, max_age
@@ -167,7 +178,6 @@ if Settings.DEBUG:
     # Clobber Settings.DEBUG in ReynirPackage and ReynirCorrect
     reynir.Settings.DEBUG = True
     reynir_correct.Settings.DEBUG = True
-    app.config["PRODUCTION"] = False
 
 
 if __name__ == "__main__":

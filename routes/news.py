@@ -46,6 +46,7 @@ def fetch_articles(
     location=None,
     country=None,
     root=None,
+    author=None,
     enclosing_session=None,
 ):
     """ Return a list of articles in chronologically reversed order.
@@ -80,11 +81,15 @@ def fetch_articles(
         if root is not None:
             q = q.filter(Root.domain == root)
 
+        # Filter by author name
+        if author is not None:
+            q = q.filter(Article.author == author)
+
         # Filter by topic identifier
         if topic is not None:
             q = q.join(ArticleTopic).join(Topic).filter(Topic.identifier == topic)
 
-        q = q.distinct().order_by(desc(Article.timestamp)).offset(offset).limit(limit)
+        q = q.order_by(desc(Article.timestamp)).offset(offset).limit(limit)
 
         class ArticleDisplay:
             """ Utility class to carry information about an article to the web template """
@@ -162,6 +167,7 @@ def news():
     """ Handler for a page with a list of articles + pagination """
     topic = request.args.get("topic")
     root = request.args.get("root")
+    author = request.args.get("author")
 
     try:
         offset = max(0, int(request.args.get("offset", 0)))
@@ -179,6 +185,7 @@ def news():
             offset=offset,
             limit=limit,
             root=root,
+            author=author,
             enclosing_session=session,
         )
 

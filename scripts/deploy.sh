@@ -63,6 +63,7 @@ cp postagger.py $DEST/postagger.py
 cp processor.py $DEST/processor.py
 cp query.py $DEST/query.py
 cp scraper.py $DEST/scraper.py
+cp doc.py $DEST/doc.py
 cp -r db $DEST/
 cp -r routes $DEST/
 cp search.py $DEST/search.py

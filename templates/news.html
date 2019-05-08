@@ -1,6 +1,13 @@
 
 {% extends "container-normal.html" %}
 
+{% block meta %}
+
+<meta name="robots" content="nofollow" />
+
+{% endblock %}
+
+
 {% block styles %}
 
 <link href="{{ url_for('static', filename='css/main-bootstrap.css') }}" rel='stylesheet' type='text/css'>

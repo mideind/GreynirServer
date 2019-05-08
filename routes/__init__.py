@@ -34,6 +34,8 @@ _MAX_URL_LENGTH = 512
 _MAX_UUID_LENGTH = 36
 
 
+cache = current_app.config["CACHE"]
+
 routes = Blueprint("routes", __name__)
 
 
@@ -52,6 +54,17 @@ def max_age(seconds):
         return decorated_function
 
     return decorator
+
+
+def restricted(f):
+    """ Decorator to return 403 Forbidden if not running in debug mode """
+
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_app.config["DEBUG"]:
+            return abort(403)
+        return f(*args, **kwargs)
+    return decorated_function
 
 
 def bool_from_request(rq, name, default=False):

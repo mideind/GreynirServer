@@ -169,7 +169,7 @@
    content: "\E021";
 }
 .glyphicon-upload:before {
-   content: "\E202";
+   content: "\E416";
 }
 .glyphicon-calculator:before {
    content: "\E324";
@@ -454,7 +454,7 @@ div#column {
    margin-right: auto;
 }
 
-tr.topitem, tr.article {
+tr.topitem, tr.authitem, tr.article {
    cursor: pointer;
 }
 
@@ -973,7 +973,8 @@ div.result i.borg:hover {
 
 div.result i.year,
 div.result i.telno,
-div.result i.email {
+div.result i.email,
+div.result i.url {
    color: #777777;
    font-weight: 700;
 }

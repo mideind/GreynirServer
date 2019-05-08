@@ -43,7 +43,7 @@
 
 <script>
 
-   var j = {{ sentences | safe }};
+   var j = {{ sentences | tojson | safe }};
 
    function init() {
       displayTokens(j);

@@ -1,17 +1,32 @@
+"""
+
+    Reynir: Natural language processing for Icelandic
+
+    Copyright (C) 2019 Miðeind ehf.
+
+       This program is free software: you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published by
+       the Free Software Foundation, either version 3 of the License, or
+       (at your option) any later version.
+       This program is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+       GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see http://www.gnu.org/licenses/.
+
+
+    Tests for code in the Reynir repo.
+
+"""
+
 import pytest
+import os
 
 from main import app
-from processor import Processor
-from geo import (
-    lookup_city_info,
-    continent_for_country,
-    coords_for_country,
-    coords_for_street_name,
-    country_name_for_isocode,
-    isocode_for_country_name,
-    icelandic_addr_info,
-    parse_address_string,
-)
+
+from geo import *
 
 # Routes that don't return 200 OK without certain query/post parameters
 SKIP_ROUTES = frozenset(("/staticmap", "/page"))
@@ -23,8 +38,8 @@ REQ_METHODS = frozenset(["GET", "POST"])
 def client():
     """ Instantiate Flask's modified Werkzeug client to use in tests """
     app.config["TESTING"] = True
-    client = app.test_client()
-    return client
+    app.config["DEBUG"] = True
+    return app.test_client()
 
 
 def test_routes(client):
@@ -59,6 +74,8 @@ def test_api(client):
 
 def test_processors():
     """ Try to import all tree/token processors by instantiating Processor object """
+    from processor import Processor
+
     p = Processor(processor_directory="processors")
 
 
@@ -88,6 +105,7 @@ def test_tnttagger():
 
 def test_geo():
     """ Test geography and location-related functions in geo.py """
+
     assert continent_for_country("IS") == "EU"
     assert coords_for_country("DE") != None
     assert coords_for_street_name("Austurstræti") != None
@@ -100,13 +118,32 @@ def test_geo():
     city_info = lookup_city_info("Kaupmannahöfn")
     assert city_info and len(city_info) == 1 and city_info[0]["country"] == "DK"
 
-    assert parse_address_string("Fiskislóð 31") == {
+    assert parse_address_string("   Fiskislóð 31") == {
         "street": "Fiskislóð",
         "number": 31,
         "letter": None,
     }
-    assert parse_address_string("Öldugata 19c") == {
+    assert parse_address_string("Öldugata 19c ") == {
         "street": "Öldugata",
         "number": 19,
         "letter": "c",
     }
+
+
+def test_doc():
+    """ Test document-related functions in doc.py """
+    from doc import PlainTextDocument, DocxDocument
+
+    txt_bytes = "Halló, gaman að kynnast þér.\n\nHvernig gengur?".encode("utf-8")
+    doc = PlainTextDocument(txt_bytes)
+    assert doc.extract_text() == txt_bytes.decode("utf-8")
+
+    # Change to same directory as this file in order
+    # to resolve relative path to files used by tests
+    abspath = os.path.abspath(__file__)
+    dname = os.path.dirname(abspath)
+    os.chdir(dname)
+
+    txt = "Þetta er prufa.\n\nLína 1.\n\nLína 2."
+    doc = DocxDocument("test_files/test.docx")
+    assert doc.extract_text() == txt

@@ -22,7 +22,7 @@
 """
 
 
-from . import routes, max_age, text_from_request, better_jsonify
+from . import routes, max_age, cache, text_from_request, better_jsonify, restricted
 from . import _MAX_URL_LENGTH, _MAX_UUID_LENGTH, _MAX_TEXT_LENGTH_VIA_URL
 
 import platform
@@ -44,7 +44,7 @@ from reynir.fastparser import ParseForestFlattener
 from treeutil import TreeUtility
 
 from images import get_image_url, update_broken_image_url, blacklist_image_url
-
+from doc import SUPPORTED_DOC_MIMETYPES
 
 # Default text shown in the URL/text box
 _DEFAULT_TEXTS = [
@@ -90,16 +90,17 @@ def analysis():
 
 
 @routes.route("/correct", methods=["GET", "POST"])
+@restricted
 def correct():
     """ Handler for a page for spelling and grammar correction
         of user-entered text """
-    if current_app.config["PRODUCTION"]:
-        return abort(403)
     try:
         txt = text_from_request(request, post_field="txt", get_field="txt")
     except:
         txt = ""
-    return render_template("correct.html", default_text=txt)
+    return render_template(
+        "correct.html", default_text=txt, supported_mime_types=list(SUPPORTED_DOC_MIMETYPES)
+    )
 
 
 @routes.route("/page")
@@ -299,7 +300,7 @@ def parsefail():
                                 sfails.append([s])
                                 break
 
-    return render_template("parsefail.html", sentences=json.dumps(sfails), num=num)
+    return render_template("parsefail.html", sentences=sfails, num=num)
 
 
 @routes.route("/apidoc")
@@ -369,6 +370,7 @@ def image():
 
 
 @routes.route("/suggest", methods=["GET"])
+@cache.cached(timeout=30 * 60, key_prefix="suggest", query_string=True)
 def suggest(limit=10):
     """ Return suggestions for query field autocompletion """
     limit = request.args.get("limit", limit)

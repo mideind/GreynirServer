@@ -184,6 +184,15 @@ def init_roots(wait=False):
             "HagstofanScraper",
             True,
         ),
+        (
+            "https://www.dv.is/",
+            "dv.is",
+            "DV",
+            0.4,
+            "scrapers.default",
+            "DVScraper",
+            True,
+        )
     ]
 
     # Do no more than 36 retries (~3 minutes) before giving up and returning an error code

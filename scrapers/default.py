@@ -1208,7 +1208,6 @@ class StundinScraper(ScrapeHelper):
         ScrapeHelper.del_tag(article, "aside")
         ScrapeHelper.del_tag(article, "h2")
         ScrapeHelper.del_tag(article, "h3")
-        ScrapeHelper.del_tag_prop_val(article, "p", "class", "hang_quotes")
 
         return article
 
@@ -1525,5 +1524,71 @@ class HagstofanScraper(ScrapeHelper):
         footer = content.find("div", {"class": "article-footer"})
         if footer:
             footer.decompose()
+
+        return content
+
+
+class DVScraper(ScrapeHelper):
+    """ Scraping helper for hagstofa.is """
+
+    def __init__(self, root):
+        super().__init__(root)
+        self._feeds = ["https://www.dv.is/feed/", "https://pressan.dv.is/feed/"]
+
+    def get_metadata(self, soup):
+        """ Analyze the article soup and return metadata """
+        metadata = super().get_metadata(soup)
+
+        # Author
+        author = "Ritstjórn DV"
+        try:
+            info_div = soup.find("div", {"class": "grein_upplysingar"})
+            if info_div:
+                author = info_div.find("strong").get_text()
+        except:
+            logging.warning(
+                "Exception obtaining author of dv.is article: {0}".format(e)
+            )
+
+        # Extract the heading from the OpenGraph og:title meta property
+        heading = ScrapeHelper.meta_property(soup, "og:title") or ""
+        suffix = "- DV"
+        if heading.endswith(suffix):
+            heading = heading[: -len(suffix)].strip()
+
+        # Extract the publication time from the article:published_time meta property
+        timestamp = datetime.utcnow()
+        try:
+            ts = ScrapeHelper.meta_property(soup, "article:published_time")
+            if ts:
+                timestamp = datetime(
+                    year=int(ts[0:4]),
+                    month=int(ts[5:7]),
+                    day=int(ts[8:10]),
+                    hour=int(ts[11:13]),
+                    minute=int(ts[14:16]),
+                    second=int(ts[17:19]),
+                )
+        except:
+            pass
+
+        metadata.heading = heading
+        metadata.author = author
+        metadata.timestamp = timestamp
+
+        return metadata
+
+    def _get_content(self, soup_body):
+        """ Find the article content (main text) in the soup """
+        content = ScrapeHelper.div_class(soup_body, "textinn")
+
+        for t in content.find_all("style"):
+            t.decompose()
+        ScrapeHelper.del_div_class(content, "efnisordin")
+        ScrapeHelper.del_div_class(content, "ibodi")
+        if content.figure:
+            content.figure.decompose()
+        for fc in content.find_all("figcaption"):
+            fc.decompose()
 
         return content
