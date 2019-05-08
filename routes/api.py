@@ -87,8 +87,8 @@ def correct_api(version=1):
         return better_jsonify(valid=False, reason="Unsupported version")
 
     file = request.files.get("file")
-    if file:
-        """ file is a Werkzeug FileStorage object """
+    if file is not None:
+        # file is a Werkzeug FileStorage object
         mimetype = file.content_type
         if mimetype not in SUPPORTED_DOC_MIMETYPES:
             return better_jsonify(valid=False, reason="File type not supported")

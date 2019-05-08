@@ -26,7 +26,6 @@ import os
 
 from main import app
 
-from doc import *
 from geo import *
 
 # Routes that don't return 200 OK without certain query/post parameters
@@ -133,6 +132,7 @@ def test_geo():
 
 def test_doc():
     """ Test document-related functions in doc.py """
+    from doc import PlainTextDocument, DocxDocument
 
     txt_bytes = "Halló, gaman að kynnast þér.\n\nHvernig gengur?".encode("utf-8")
     doc = PlainTextDocument(txt_bytes)

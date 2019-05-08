@@ -36,6 +36,10 @@ from defusedxml import ElementTree
 DEFAULT_TEXT_ENCODING = "UTF-8"
 
 
+class MalformedDocumentError(Exception):
+    pass
+
+
 class Document(abc.ABC):
     """ Abstract base class for documents. """
 
@@ -131,7 +135,7 @@ class DocxDocument(Document):
 
         # Verify that archive contains document.xml
         if self.DOCXML_PATH not in zipfile.namelist():
-            raise Exception("Malformed docx file")
+            raise MalformedDocumentError("Malformed docx file")
 
         # Read xml file from archive
         content = zipfile.read(self.DOCXML_PATH)

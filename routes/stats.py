@@ -138,7 +138,7 @@ def top_authors(days=_TOP_AUTHORS_PERIOD, session=None):
 @cache.cached(timeout=30 * 60, key_prefix="stats", query_string=True)
 @max_age(seconds=30 * 60)
 def stats():
-    """ Render a page with various statistics """    
+    """ Render a page with various statistics """
     days = DEFAULT_STATS_PERIOD
     try:
         days = min(MAX_STATS_PERIOD, int(request.args.get("days")))

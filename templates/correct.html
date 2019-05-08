@@ -115,7 +115,7 @@
          $("div#output").hide();
 
          // Activate spinner on relevant button
-         var sel = button ? button : "#txt-ok";
+         var sel = button || "#txt-ok";
          $(sel).find('.spin').show();
          $(sel).find('.normal').hide();
       }
@@ -147,7 +147,7 @@
       var msg = "<b>Villa kom upp</b> í samskiptum við netþjón Greynis";
       // http status code 413: Payload too large
       if (xhr.status == 413) {
-         msg = "<b>Skjalið er of stórt</b> (>1.0 MB)";
+         msg = "<b>Skjalið er of stórt</b> (>1.0 megabæti)";
       }
       wait(false);
       showError(msg);
@@ -431,7 +431,7 @@
 
    function isSupportedFileType(file) {
       // Document types supported for uploading
-      return (supported_mime_types.indexOf(file.type) > -1);
+      return supported_mime_types.indexOf(file.type) > -1;
    }
 
    function uploadFile(file) {
