@@ -140,11 +140,11 @@ names and titles from parse trees for storage in a database table.
 ## File details
 
 * `main.py` : WSGI web server application and main module for command-line invocation
-* `routes/*` : Routes for the web application
+* `routes/*.py` : Routes for the web application
 * `settings.py` : Management of global settings and configuration data,
   obtained from `config/Reynir.conf`
 * `scraper.py` : Web scraper, collecting articles from a set of pre-selected websites (roots)
-* `db/*`: Scraper database models and functions via SQLAlchemy
+* `db/*.py`: Scraper database models and functions via SQLAlchemy
 * `nertokenizer.py` : A layer on top of the tokenizer for named entity recognition
 * `processor.py`: Information extraction from parse trees and token streams
 * `article.py` : Representation of an article through its life cycle
@@ -152,9 +152,6 @@ names and titles from parse trees for storage in a database table.
 * `query.py` : Natural language query processor
 * `vectors/builder.py` : Article indexer and LSA topic vector builder
 * `config/Reynir.conf` : Editable configuration file for the tokenizer and parser
-* `config/Main.conf` : Various configuration data and preferences, included in `Reynir.conf`
-* `config/Names.conf` : Words that should be recognized as person names at the
-  start of sentences, included in `Reynir.conf`
 * `doc.py` : Extract text from various document formats
 * `geo.py` : Geography and location-related utility functions
 * `fetcher.py` : Utility classes for fetching articles given their URLs
