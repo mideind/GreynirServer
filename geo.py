@@ -166,6 +166,7 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
         "Nikaragúa": "NI",
         "Cookseyjar": "CK",
         "Egiptaland": "EG",
+        "Egiftaland": "EG",
     }
 }
 
