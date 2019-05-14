@@ -167,6 +167,8 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
         "Cookseyjar": "CK",
         "Egiptaland": "EG",
         "Egiftaland": "EG",
+        "Malawi": "MW",
+        "Norður-Noregur": "NO",
     }
 }
 
