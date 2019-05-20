@@ -49,8 +49,8 @@ These trees can then be further processed and acted upon by sets of Python
 functions that are linked to grammar nonterminals.
 
 **Reynir is currently able to parse about *90%* of sentences** in a typical news article from the web,
-and many well-written articles can be parsed completely. It presently has over 300,000 parsed articles
-in its database, containing 6 million parsed sentences.
+and many well-written articles can be parsed completely. It presently has over 400,000 parsed articles
+in its database, containing 8 million parsed sentences.
 
 Reynir supports natural language querying of its databases. Users can ask about person names, titles and
 entity definitions and get appropriate replies. The HTML5 Web Speech API is supported to allow
