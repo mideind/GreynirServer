@@ -50,22 +50,27 @@ var TOK_TIMESTAMPABS = 20;
 var TOK_TIMESTAMPREL = 21;
 var TOK_MEASUREMENT = 22;
 var TOK_NUMWLETTER = 23;
+var TOK_DOMAIN = 24;
+var TOK_HASHTAG = 25;
 
 var tokClass = [];
 
-tokClass[TOK_NUMBER] = "number";
-tokClass[TOK_PERCENT] = "percent";
-tokClass[TOK_ORDINAL] = "ordinal";
+// tokClass[TOK_PUNCTUATION] = "punct";
+tokClass[TOK_TIME] = "time";
 tokClass[TOK_DATE] = "date";
+tokClass[TOK_YEAR] = "year";
+tokClass[TOK_NUMBER] = "number";
+// tokClass[TOK_WORD] = "word";
+tokClass[TOK_TELNO] = "telno";
+tokClass[TOK_PERCENT] = "percent";
+tokClass[TOK_URL] = "url";
+tokClass[TOK_ORDINAL] = "ordinal";
 tokClass[TOK_TIMESTAMP] = "timestamp";
 tokClass[TOK_CURRENCY] = "currency";
 tokClass[TOK_AMOUNT] = "amount";
 tokClass[TOK_PERSON] = "person";
-tokClass[TOK_ENTITY] = "entity";
-tokClass[TOK_YEAR] = "year";
-tokClass[TOK_TELNO] = "telno";
 tokClass[TOK_EMAIL] = "email";
-tokClass[TOK_TIME] = "time";
+tokClass[TOK_ENTITY] = "entity";
 tokClass[TOK_UNKNOWN] = "nf";
 tokClass[TOK_DATEABS] = "dateabs";
 tokClass[TOK_DATEREL] = "daterel";
@@ -73,7 +78,8 @@ tokClass[TOK_TIMESTAMPABS] = "timestampabs";
 tokClass[TOK_TIMESTAMPREL] = "timestamprel";
 tokClass[TOK_MEASUREMENT] = "measurement";
 tokClass[TOK_NUMWLETTER] = "numwletter";
-tokClass[TOK_URL] = "url";
+tokClass[TOK_DOMAIN] = "domain";
+tokClass[TOK_HASHTAG] = "hashtag";
 
 var tokId = [];
 
@@ -100,6 +106,8 @@ tokId["TIMESTAMPABS"] = TOK_TIMESTAMPABS;
 tokId["TIMESTAMPREL"] = TOK_TIMESTAMPREL;
 tokId["MEASUREMENT"] = TOK_MEASUREMENT;
 tokId["NUMWLETTER"] = TOK_NUMWLETTER;
+tokId["DOMAIN"] = TOK_DOMAIN;
+tokId["HASHTAG"] = TOK_HASHTAG;
 
 // Maps token type to glyph icon class
 var tokIcons = [];
@@ -127,6 +135,8 @@ tokIcons[TOK_TIMESTAMPABS] = "glyphicon-time";
 tokIcons[TOK_TIMESTAMPREL] = "glyphicon-time";
 tokIcons[TOK_MEASUREMENT] = "glyphicon-weights";
 tokIcons[TOK_NUMWLETTER] = "glyphicon-tag";
+tokIcons[TOK_DOMAIN] = "glyphicon-world";
+tokIcons[TOK_HASHTAG] = "glyphicon-world";
 
 var wordClass = {
    "no" : "óþekkt nafnorð",
@@ -428,6 +438,16 @@ function tokenInfo(t, nameDict) {
       r.details = "tala með bókstaf";
    }
    else
+   if (t.k == TOK_DOMAIN) {
+      r.lemma = t.x;
+      r.details = "lén";
+   }
+   else
+   if (t.k == TOK_HASHTAG) {
+      r.lemma = t.x;
+      r.details = "myllumerki";
+   }
+   else
    if (t.k == TOK_PERCENT) {
       r.lemma = t.x;
       r.details = "hundraðshluti";
@@ -531,10 +551,11 @@ function tokenInfo(t, nameDict) {
          var name = t.v;
          title = (nameDict && nameDict[name]) ? (nameDict[name].title || "") : "";
          if (!title.length)
-            if (!gender)
+            if (!gender) {
                title = "mannsnafn";
-            else
+            } else {
                title = (gender == "male") ? "karl" : "kona";
+            }
          // Cut whitespace around hyphens in person names
          r.lemma = name.replace(" - ", "-");
          r.details = title;
@@ -549,9 +570,10 @@ function tokenInfo(t, nameDict) {
          r.lemma = nd.fullname;
          nd = nameDict[nd.fullname];
       }
-      else
+      else {
          // Cut whitespace around hyphens in entity names
          r.lemma = t.x.replace(" - ", "-");
+      }
       title = nd ? (nd.title || "") : "";
       if (!title.length)
          title = "sérnafn";

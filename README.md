@@ -49,8 +49,8 @@ These trees can then be further processed and acted upon by sets of Python
 functions that are linked to grammar nonterminals.
 
 **Reynir is currently able to parse about *90%* of sentences** in a typical news article from the web,
-and many well-written articles can be parsed completely. It presently has over 300,000 parsed articles
-in its database, containing 6 million parsed sentences.
+and many well-written articles can be parsed completely. It presently has over 400,000 parsed articles
+in its database, containing 8 million parsed sentences.
 
 Reynir supports natural language querying of its databases. Users can ask about person names, titles and
 entity definitions and get appropriate replies. The HTML5 Web Speech API is supported to allow
@@ -140,11 +140,11 @@ names and titles from parse trees for storage in a database table.
 ## File details
 
 * `main.py` : WSGI web server application and main module for command-line invocation
-* `routes/*` : Routes for the web application
+* `routes/*.py` : Routes for the web application
 * `settings.py` : Management of global settings and configuration data,
   obtained from `config/Reynir.conf`
 * `scraper.py` : Web scraper, collecting articles from a set of pre-selected websites (roots)
-* `db/*`: Scraper database models and functions via SQLAlchemy
+* `db/*.py`: Scraper database models and functions via SQLAlchemy
 * `nertokenizer.py` : A layer on top of the tokenizer for named entity recognition
 * `processor.py`: Information extraction from parse trees and token streams
 * `article.py` : Representation of an article through its life cycle
@@ -152,9 +152,6 @@ names and titles from parse trees for storage in a database table.
 * `query.py` : Natural language query processor
 * `vectors/builder.py` : Article indexer and LSA topic vector builder
 * `config/Reynir.conf` : Editable configuration file for the tokenizer and parser
-* `config/Main.conf` : Various configuration data and preferences, included in `Reynir.conf`
-* `config/Names.conf` : Words that should be recognized as person names at the
-  start of sentences, included in `Reynir.conf`
 * `doc.py` : Extract text from various document formats
 * `geo.py` : Geography and location-related utility functions
 * `fetcher.py` : Utility classes for fetching articles given their URLs

@@ -260,7 +260,7 @@ def locinfo():
                 resp["map"] = STATIC_MAP_URL.format(lat, lon, z)
             elif name in ICE_REGIONS:
                 resp["map"] = "/static/img/maps/regions/" + name + ".png"
-            elif resp["continent"] and resp["continent"] in ISO_TO_CONTINENT:
+            elif kind == "continent" and resp["continent"] and resp["continent"] in ISO_TO_CONTINENT:
                 resp["map"] = (
                     "/static/img/maps/continents/" + resp["continent"] + ".png"
                 )
