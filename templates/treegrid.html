@@ -225,7 +225,9 @@
    .node-terminal.date text.symbol,
    .node-terminal.dateabs text.symbol,
    .node-terminal.daterel text.symbol,
-   .node-terminal.measurement text.symbol
+   .node-terminal.measurement text.symbol,
+   .node-terminal.domain text.symbol,
+   .node-terminal.hashtag text.symbol
    {
       fill: #888;
    }
@@ -714,7 +716,13 @@ function d3_update(source) {
                   classes.push("person-" + d.data.c);
                else
                if (firstPart == "ártal")
-                  classes.push("year")
+                  classes.push("year");
+               else
+               if (firstPart == "lén")
+                  classes.push("domain");
+               else
+               if (firstPart == "myllumerki")
+                  classes.push("hashtag");
                else
                if (d.data.c)
                   // Add a class for the word category
@@ -787,6 +795,8 @@ function d3_update(source) {
       ["töl", "\uE319"], // more-items
       ["percent", "%"], // percent sign
       ["measurement", "\uE332"], // dashboard
+      ["domain", "\uE372"], // global
+      ["hashtag", "\uE372"], // global
       ["uh", "!"], // exclamation mark
    ]
    .forEach(function(d) {
