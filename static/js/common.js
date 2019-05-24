@@ -354,6 +354,37 @@ function makePercentGraph(percent) {
    $("#percent .progress-bar span.sr-only").text(percent.toString() + "%");
 }
 
+var currencyCache = undefined;
+
+function getCurrencyValue(currCode, completionHandler) {
+   // Get the value of a foreign currency (e.g. USD) in ISK
+   // Fetches Landsbankinn exchange rates and stores in cache 
+   if (currencyCache === undefined) {
+      $.ajax({
+         url: 'http://apis.is/currency/lb', 
+         type: 'GET',
+         dataType: 'json',
+         success: function(response) {
+            currencyCache = { "ISK": 1 };
+            if (response.results) {
+               // Generate dictionary mapping ISO currency
+               // code to ISK exchange rate
+               $.each(response.results, function(idx, val) {
+                  if (val.shortName && val.value) {
+                     currencyCache[val.shortName] = val.value;
+                  }
+               });
+            }
+         },
+         complete: function() {
+            completionHandler(currencyCache[currCode]);
+         }
+      });
+   } else {
+      completionHandler(currencyCache[currCode]);
+   }
+}
+
 function openURL(url, ev) {
    ev.stopPropagation();
    if (ev.altKey || ev.metaKey) {
@@ -515,7 +546,7 @@ function tokenInfo(t, nameDict) {
    if (t.k == TOK_AMOUNT) {
       r.lemma = t.x;
       // Show the amount as well as the ISO code for its currency
-      r.details = t.v[1] + " " + format_is(t.v[0], 2);
+      r.details = t.v[1] + " " + format_is(t.v[0], 0);
    }
    else
    if (t.k == TOK_PERSON) {

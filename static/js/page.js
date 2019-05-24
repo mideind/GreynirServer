@@ -198,6 +198,24 @@ function hoverIn() {
       $("#info").addClass(r.class);
    }
 
+   // If foreign currency amount, show rough equivalent in ISK
+   if (t.k == TOK_AMOUNT && t.v[1] !== "ISK") {
+      getCurrencyValue(t.v[1], function(val) {
+         var inISK = t.v[0] * val;
+         var round = 100;
+         if (inISK > 10000000) {
+            round = 100000;
+         } if (inISK >= 1000000) {
+            round = 10000;
+         } else if (inISK >= 10000) {
+            round = 1000;
+         }
+         var roundedISK = Math.ceil(inISK/round) * round;
+         var desc = "u.þ.b. " + format_is(roundedISK, 0) + " íslenskar krónur";
+         $("#details").html($("#details").text() + "<br>" + desc);
+      });
+   }
+
    // Try to fetch image if person (and at least two names)
    if (t.k == TOK_PERSON && t.v.split(' ').length > 1) {
       getPersonImage(r.lemma, function(img) {
