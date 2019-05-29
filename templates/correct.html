@@ -216,6 +216,15 @@
       $("#p" + ix)[0].classList.remove("highlight");
    }
 
+   function isWarning(code) {
+      // Return true if the annotation code should be displayed  as a warning,
+      // not as an error
+      return code[0] == "T"
+         || code[0] == "W"
+         || code == "P_NT_Komma"
+         || code == "P_NT_Að";
+   }
+
    function displayAnnotations(j) {
       // Generate HTML for the token list given in j,
       // and insert it into the <div> with id 'pgs'.
@@ -269,8 +278,7 @@
                   if (tix >= a.start && tix <= a.end) {
                      // The annotation applies to this token:
                      // mark the token
-                     var isWarning = a.code[0] == "T" || a.code[0] == "W";
-                     if (isWarning)
+                     if (isWarning(a.code))
                         // Suggestion or taboo word warning
                         cls.push("warntok");
                      else
@@ -287,8 +295,7 @@
             // Accumulate annotations into the right column
             $.each(s.annotations, function(aix, a) {
                // Annotation a
-               var isWarning = a.code[0] == "T" || a.code[0] == "W";
-               var cls = isWarning ? " class='warning'" : "";
+               var cls = isWarning(a.code) ? " class='warning'" : "";
                right += "<div id='a" + annSpan.length + "'" + cls + ">" +
                   formatAnnotation(a.text) + "</div>\n";
                // Add a path to the canvas (empty at this point

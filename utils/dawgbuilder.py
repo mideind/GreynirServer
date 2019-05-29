@@ -2,8 +2,7 @@
 
 """ DAWG dictionary builder
 
-    Copyright (C) 2018 Miðeind ehf.
-    Author: Vilhjálmur Þorsteinsson
+    Copyright (C) 2019 Miðeind ehf.
 
     DawgBuilder implements a Directed Acyclic Word Graph (DAWG)
     to store a large set of words in an efficient structure
@@ -161,7 +160,8 @@ class _DawgNode:
 
     @staticmethod
     def stringify_edges(edges):
-        """ Utility function to create a compact descriptor string and hashable key for node edges """
+        """ Utility function to create a compact descriptor string and
+            hashable key for node edges """
         parts = [
             prefix + ":" + ("0" if node is None else str(node.id))
             for prefix, node in _DawgNode.sort_by_prefix(edges.items())
@@ -196,7 +196,8 @@ class _DawgNode:
         return self.__str__() == other.__str__()
 
     def reset_id(self, newid):
-        """ Set a new id number for this node. This forces a reset of the cached data. """
+        """ Set a new id number for this node. This forces
+            a reset of the cached data. """
         self.id = newid
         self._strng = None
         self._hash = None
@@ -234,7 +235,8 @@ class _Dawg:
 
         if len(di) == 0:
             assert node.final
-            # We don't need to put a vertical bar (final marker) at the end of the prefix; it's implicit
+            # We don't need to put a vertical bar (final marker) at the
+            # end of the prefix; it's implicit
             parent[prefix] = None
             return
 
@@ -251,7 +253,8 @@ class _Dawg:
                 # There will only be one iteration of this loop
                 tail = ch
                 lastd = nx
-            # Delete the child node and put a string of prefix characters into the root instead
+            # Delete the child node and put a string of prefix
+            # characters into the root instead
             del parent[prefix]
             if node.final:
                 tail = "|" + tail
@@ -268,7 +271,8 @@ class _Dawg:
             # Signature matches a previously generated node: replace the edge
             parent[prefix] = self._unique_nodes[node]
         else:
-            # This is a new, unique signature: store it in the dictionary of unique nodes
+            # This is a new, unique signature:
+            # store it in the dictionary of unique nodes
             self._unique_nodes[node] = node
 
     def _collapse(self, edges):
@@ -303,8 +307,7 @@ class _Dawg:
         lenword = len(wrd)
         if lenword >= MAXLEN:
             raise ValueError(
-                "Word exceeds maximum length of {0} letters"
-                .format(MAXLEN)
+                "Word exceeds maximum length of {0} letters".format(MAXLEN)
             )
         char_set = set(c for c in wrd)
         if char_set & ILLEGAL_CHARS:
@@ -367,7 +370,8 @@ class _Dawg:
                 self._dump_level(level + 1, nx.edges)
 
     def dump(self):
-        """ Write a human-readable text representation of the DAWG to the standard output """
+        """ Write a human-readable text representation of
+            the DAWG to the standard output """
         self._dump_level(0, self._root)
         print(
             "Total of {0} nodes and {1} edges with {2} prefix characters"
@@ -382,8 +386,7 @@ class _Dawg:
                     print(
                         "   Edge {0} to node {1}"
                         .format(
-                            prefix,
-                            0 if nd is None else nd.id
+                            prefix, 0 if nd is None else nd.id
                         )
                     )
 
@@ -405,8 +408,9 @@ class _Dawg:
         for n in self._unique_nodes.values():
             if n is not None:
                 for prefix in n.edges:
-                    # Add the length of all prefixes to the edge, minus the vertical bar
-                    # '|' which indicates a final character within the prefix
+                    # Add the length of all prefixes to the edge,
+                    # minus the vertical bar '|' which indicates
+                    # a final character within the prefix
                     chars += len(prefix) - prefix.count("|")
         return chars
 
@@ -433,12 +437,11 @@ class _Dawg:
 
     def write_text(self, stream):
         """ Write the optimized DAWG to a text stream """
-        print(
-            "Output graph has {0} nodes"
-            .format(len(self._unique_nodes))
-        )
-        # We don't have to write node ids since they correspond to line numbers.
-        # The root is always in the first line and the first node after the root has id 2.
+        print("Output graph has {0} nodes".format(len(self._unique_nodes)))
+        # We don't have to write node ids since they
+        # correspond to line numbers.
+        # The root is always in the first line and
+        # the first node after the root has id 2.
         # Start with the root edges
         stream.write(_DawgNode.stringify_edges(self._root) + "\n")
         for node in self._unique_nodes.values():
@@ -460,14 +463,14 @@ class _BinaryDawgPacker:
         # occur in the source text and need to be encoded
         self._vocabulary = "".join(sorted(list(vocabulary), key=KEY_FUNC))
         assert len(self._vocabulary) < 128
-        print("Vocabulary is '{0}' ({1} characters)"
-            .format(self._vocabulary, len(self._vocabulary))
+        print(
+            "Vocabulary is '{0}' ({1} characters)".format(
+                self._vocabulary, len(self._vocabulary)
+            )
         )
         # Since we use the most significant bit (0x80) to store
         # the final flag, the vocabulary must contain less than 128 characters
-        self._encoding = {
-            char: byte for byte, char in enumerate(self._vocabulary)
-        }
+        self._encoding = {char: byte for byte, char in enumerate(self._vocabulary)}
         # _locs is a dict of already written nodes and their stream locations
         self._locs = dict()
         # _fixups is a dict of node ids and file positions where the
@@ -480,7 +483,7 @@ class _BinaryDawgPacker:
         # 12 byte signature
         self._stream.write(b"ReynirDawg!\n")
         # Convert the vocabulary to an UTF-8 byte string
-        voc_utf8 = self._vocabulary.encode('utf-8')
+        voc_utf8 = self._vocabulary.encode("utf-8")
         # Write the number of bytes in the UTF-8 byte buffer
         self._stream.write(self.UINT32.pack(len(voc_utf8)))
         # Write the vocabulary itself as an UTF-8 string
@@ -532,7 +535,8 @@ class _BinaryDawgPacker:
             # We've already written a null pointer marker
             pass
         elif ident in self._locs:
-            # We've already written the node and know where it is: write its location
+            # We've already written the node and know where it is:
+            # write its location
             stream.write(self.UINT32.pack(self._locs[ident]))
         else:
             # This is a forward reference to a node we haven't written yet:
@@ -560,12 +564,7 @@ class _BinaryDawgPacker:
             print(
                 "{0:08x}: {1}".format(
                     addr,
-                    " ".join(
-                        [
-                            line[j : j + 2]
-                            for j in range(0, len(line) - 1, 2)
-                        ]
-                    )
+                    " ".join([line[j : j + 2] for j in range(0, len(line) - 1, 2)]),
                 )
             )
             i += CHARS_PER_LINE
@@ -622,7 +621,8 @@ class DawgBuilder:
             return None if self._eof else self._nxt
 
         def next_key(self):
-            """ Returns the sort key of the next available word from this input file """
+            """ Returns the sort key of the next available word
+                from this input file """
             return None if self._eof else self._key
 
         def has_word(self):
@@ -636,7 +636,8 @@ class DawgBuilder:
             self._fin = None
 
     class _InFileToBeSorted(_InFile):
-        """ InFileToBeSorted represents an input file that should be pre-sorted in memory """
+        """ InFileToBeSorted represents an input file
+            that should be pre-sorted in memory """
 
         def __init__(self, relpath, fname):
             # Call base class constructor
@@ -704,7 +705,8 @@ class DawgBuilder:
         # to be pre-sorted. Other input files are sorted in memory before
         # being used.
         infiles = [
-            DawgBuilder._InFile(relpath, f) if False  # ix == 0
+            DawgBuilder._InFile(relpath, f)
+            if False  # ix == 0
             else DawgBuilder._InFileToBeSorted(relpath, f)
             for ix, f in enumerate(inputs)
         ]
@@ -724,10 +726,12 @@ class DawgBuilder:
                         smallest = f
                         key_smallest = smallest.next_key()
                     else:
-                        # Use the sort ordering of the current locale to compare words
+                        # Use the sort ordering of the current locale
+                        # to compare words
                         key_f = f.next_key()
                         if key_f == key_smallest:
-                            # We have the same word in two files: make sure we don't add it twice
+                            # We have the same word in two files:
+                            # make sure we don't add it twice
                             f.read_word()
                             incount += 1
                             duplicates += 1
@@ -748,7 +752,8 @@ class DawgBuilder:
                 # of order, display a warning
                 if lastkey > key:
                     print(
-                        u'Warning: input files should be in ascending order, but "{0}" > "{1}"'
+                        "Warning: input files should be in ascending order, "
+                        "but '{0}' > '{1}'"
                         .format(lastword, word)
                     )
                 else:
@@ -785,8 +790,9 @@ class DawgBuilder:
         self._dawg.finish()
         print(
             "Finished loading {0} words, output {1} words, "
-            "{2} duplicates skipped, {3} removed"
-            .format(incount, outcount, duplicates, removed )
+            "{2} duplicates skipped, {3} removed".format(
+                incount, outcount, duplicates, removed
+            )
         )
 
     def _output_binary(self, relpath, output):
@@ -813,14 +819,14 @@ class DawgBuilder:
             self._dawg.write_text(fout)
 
     def build(
-        self,
-        inputs, output,
-        relpath="resources",
-        filter_func=None, removals=None
+        self, inputs, output, relpath="resources", filter_func=None, removals=None
     ):
-        """ Build a DAWG from input file(s) and write it to the output file(s) (potentially in multiple formats).
-            The input files are assumed to be individually sorted in correct ascending alphabetical
-            order. They will be merged in parallel into a single sorted stream and added to the DAWG.
+        """ Build a DAWG from input file(s) and write it to the
+            output file(s) (potentially in multiple formats).
+            The input files are assumed to be individually sorted
+            in correct ascending alphabetical order. They will be
+            merged in parallel into a single sorted stream
+            and added to the DAWG.
         """
         # inputs is a list of input file names
         # output is an output file name without file type suffix (extension)
@@ -831,7 +837,7 @@ class DawgBuilder:
             print("No inputs or no output: Nothing to do")
             return
         self._load(relpath, inputs, removals, filter_func)
-        #self._output_text(relpath, output)
+        # self._output_text(relpath, output)
         self._output_binary(relpath, output)
         print("DawgBuilder done")
 
@@ -848,7 +854,7 @@ def generate_dawgs():
         ["last.txt", "formers.txt"],
         # Output file - extension will be added
         "ordalisti-all",
-        resources_path  # Subfolder of input and output files
+        resources_path,  # Subfolder of input and output files
     )
     t1 = time.time()
     print("Build took {0:.2f} seconds".format(t1 - t0))
@@ -859,7 +865,7 @@ def generate_dawgs():
         ["formers.txt"],
         # Output file - extension will be added
         "ordalisti-formers",
-        resources_path  # Subfolder of input and output files
+        resources_path,  # Subfolder of input and output files
     )
     t1 = time.time()
     print("Build took {0:.2f} seconds".format(t1 - t0))
@@ -870,7 +876,7 @@ def generate_dawgs():
         ["last.txt"],
         # Output file - extension will be added
         "ordalisti-last",
-        resources_path  # Subfolder of input and output files
+        resources_path,  # Subfolder of input and output files
     )
     t1 = time.time()
     print("Build took {0:.2f} seconds".format(t1 - t0))
