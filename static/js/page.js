@@ -198,6 +198,16 @@ function hoverIn() {
       $("#info").addClass(r.class);
    }
 
+   // If foreign currency amount, show rough equivalent in ISK
+   if (t.k == TOK_AMOUNT && t.v[1] !== "ISK") {
+      getCurrencyValue(t.v[1], function(val) {
+         if (val !== undefined) {
+            var desc = friendlyISKDescription(t.v[0] * val);
+            $("#details").html($("#details").text() + "<br>" + desc);
+         }
+      });
+   }
+
    // Try to fetch image if person (and at least two names)
    if (t.k == TOK_PERSON && t.v.split(' ').length > 1) {
       getPersonImage(r.lemma, function(img) {

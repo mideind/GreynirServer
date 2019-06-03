@@ -209,13 +209,17 @@ var cases = {
    "ef" : "eignarfalli"
 };
 
-function format_is(n, decimals) {
+function format_is(n, decimals, noTrailingZeros) {
    /* Utility function to format a number according to is_IS */
-   if (decimals === undefined || decimals < 0)
+   if (decimals === undefined || decimals < 0) {
       decimals = 0;
-   var parts = n.toFixed(decimals).split('.');
+   }
+   var fx = noTrailingZeros ? parseFloat(n.toFixed(decimals)).toString() : n.toFixed(decimals);
+   var parts = fx.split('.');
    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-   return parts.join(',');
+   var final = parts.join(',');
+
+   return final;
 }
 
 function nullFunc(json) {
@@ -352,6 +356,59 @@ function makePercentGraph(percent) {
       .attr("aria-valuenow", Math.round(percent).toString())
       .css("width", percent.toString() + "%");
    $("#percent .progress-bar span.sr-only").text(percent.toString() + "%");
+}
+
+var currencyCache = undefined;
+
+function getCurrencyValue(currCode, completionHandler) {
+   // Get the value of a foreign currency (e.g. USD) in ISK
+   // Fetches Landsbankinn exchange rates and stores in cache 
+   if (currencyCache === undefined) {
+      currencyCache = { "ISK": 1 };
+      $.ajax({
+         url: 'https://apis.is/currency/lb', 
+         type: 'GET',
+         dataType: 'json',
+         success: function(response) {
+            if (response.results) {
+               // Generate dictionary mapping ISO currency
+               // code to ISK exchange rate
+               $.each(response.results, function(idx, val) {
+                  if (val.shortName && val.value) {
+                     currencyCache[val.shortName] = val.value;
+                  }
+               });
+            }
+         },
+         complete: function() {
+            completionHandler(currencyCache[currCode]);
+         }
+      });
+   } else {
+      completionHandler(currencyCache[currCode]);
+   }
+}
+
+function friendlyISKDescription(amount) {
+   var pre = "U.þ.b.",
+       post = "íslenskar krónur",
+       d;
+   if (amount >= 1.0e+9) { // 1b+
+      d = format_is(amount/1.0e+9, 1, true);
+      post = d.endsWith('1') ? 'milljarður' : 'milljarðar';
+      post += ' íslenskra króna';
+   } else if (amount >= 1.0e+6) { // 1m+
+      d = format_is(amount/1.0e+6, 1, true);
+      post = d.endsWith('1') ? 'milljón' : 'milljónir';
+      post += ' íslenskra króna';
+   } else if (amount >= 1.0e+4) { // 10k+
+      d = Math.round(amount/1000) + ' þús.';
+   } else if (amount >= 1.0e+3) { // 1k+
+      d = format_is(Math.round(amount/100)*100);
+   } else {
+      d = Math.round(amount/1.0)*1.0;
+   }
+   return pre + ' ' + d + ' ' + post;
 }
 
 function openURL(url, ev) {
@@ -515,7 +572,7 @@ function tokenInfo(t, nameDict) {
    if (t.k == TOK_AMOUNT) {
       r.lemma = t.x;
       // Show the amount as well as the ISO code for its currency
-      r.details = t.v[1] + " " + format_is(t.v[0], 2);
+      r.details = t.v[1] + " " + format_is(t.v[0], 2, true);
    }
    else
    if (t.k == TOK_PERSON) {
