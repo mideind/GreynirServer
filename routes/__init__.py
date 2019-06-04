@@ -21,7 +21,6 @@
 
 """
 
-
 from flask import Blueprint, jsonify, make_response, current_app, Response
 from functools import wraps
 
@@ -33,9 +32,7 @@ _MAX_TEXT_LENGTH_VIA_URL = 512
 _MAX_URL_LENGTH = 512
 _MAX_UUID_LENGTH = 36
 
-
 cache = current_app.config["CACHE"]
-
 routes = Blueprint("routes", __name__)
 
 

@@ -443,7 +443,13 @@ def query_person(query, session, name):
     titles = _query_person_titles(session, name)
     # Now, create a list of articles where this person name appears
     articles = _query_article_list(session, name)
-    return dict(answers=titles, sources=articles)
+    response = dict(answers=titles, sources=articles)
+    if titles and "answer" in titles[0]:
+        # 'Már Guðmundsson er seðlabankastjóri.'
+        voice_answer = name + " er " + titles[0]["answer"] + "."
+    else:
+        voice_answer = "Ég veit ekki hver " + name + " er."
+    return response, voice_answer
 
 
 def query_person_title(session, name):
@@ -468,7 +474,7 @@ def query_title(query, session, title):
         )
         .filter(Person.title_lc.like(title_lc + " %") | (Person.title_lc == title_lc))
         .filter(Root.visible == True)
-        .join(Article)
+        .join(Article, Article.url == Person.article_url)
         .join(Root)
         .order_by(Article.timestamp)
         .all()
@@ -487,13 +493,20 @@ def query_title(query, session, title):
         )
         .filter(Entity.definition == title)
         .filter(Root.visible == True)
-        .join(Article)
+        .join(Article, Article.url == Entity.article_url)
         .join(Root)
         .order_by(Article.timestamp)
         .all()
     )
     append_names(rd, q, prop_func=lambda x: x.name)
-    return make_response_list(rd)
+    response = make_response_list(rd)
+    if response and title and "answer" in response[0]:
+        # Return 'Seðlabankastjóri er Már Guðmundsson.'
+        upper_title = title[0].upper() + title[1:]
+        voice_answer = upper_title + " er " + response[0]["answer"] + "."
+    else:
+        voice_answer = "Ég veit ekki hver er " + title + "."
+    return response, voice_answer
 
 
 def _query_entity_definitions(session, name):
@@ -522,7 +535,13 @@ def query_entity(query, session, name):
     """ A query for an entity by name """
     titles = _query_entity_definitions(session, name)
     articles = _query_article_list(session, name)
-    return dict(answers=titles, sources=articles)
+    response = dict(answers=titles, sources=articles)
+    if titles and "answer" in titles[0]:
+        # 'Mál og menning er bókmenntafélag.'
+        voice_answer = name + " er " + titles[0]["answer"] + "."
+    else:
+        voice_answer = "Ég veit ekki hvað " + name + " er."
+    return response, voice_answer
 
 
 def query_entity_def(session, name):
@@ -536,10 +555,8 @@ def query_company(query, session, name):
     # Create a query name by cutting off periods at the end
     # (hf. -> hf) and adding a percent pattern match at the end
     qname = name.strip()
-    use_like = False
     while qname and qname[-1] == ".":
         qname = qname[:-1]
-        use_like = True
     q = (
         session.query(
             Entity.verb,
@@ -551,16 +568,18 @@ def query_company(query, session, name):
             Article.url,
         )
         .filter(Root.visible == True)
-        .join(Article)
+        .join(Article, Article.url == Entity.article_url)
         .join(Root)
         .order_by(Article.timestamp)
     )
-    if use_like:
-        q = q.filter(Entity.name.like(qname + "%"))
-    else:
-        q = q.filter(Entity.name == qname)
+    q = q.filter(Entity.name.like(qname + "%"))
     q = q.all()
-    return prepare_response(q, prop_func=lambda x: x.definition)
+    response = prepare_response(q, prop_func=lambda x: x.definition)
+    if response and response[0]["answer"]:
+        voice_answer = name + " er " + response[0]["answer"] + "."
+    else:
+        voice_answer = "Ég veit ekki hvað " + name + " er."
+    return response, voice_answer
 
 
 def query_word(query, session, stem):
@@ -609,6 +628,11 @@ def launch_search(query, session, qkey):
     # search terms augmented with information about
     # whether and how they were used
     result = Search.list_similar_to_terms(session, terms, _MAXLEN_SEARCH)
+
+    if "weights" not in result or not result["weights"]:
+        # Probably unable to connect to the similarity server
+        raise RuntimeError("Unable to connect to the similarity server")
+
     weights = result["weights"]
     assert len(weights) == len(terms)
     # Insert the weights at the proper places in the
@@ -644,7 +668,15 @@ def sentence(state, result):
             q.set_answer(result.qtype + ": " + result.qkey)
         else:
             try:
-                q.set_answer(qfunc(q, session, result.qkey))
+                answer = qfunc(q, session, result.qkey)
+                if isinstance(answer, tuple):
+                    # We have both a normal and a voice answer
+                    q.set_answer(*answer)
+                else:
+                    # We have a single answer, usually a dict
+                    q.set_answer(answer)
+            except AssertionError:
+                raise
             except Exception as e:
                 q.set_error("E_EXCEPTION: {0}".format(e))
     else:
@@ -763,6 +795,7 @@ class Query:
         self._session = session
         self._error = None
         self._answer = None
+        self._voice_answer = None
         self._tree = None
         self._qtype = None
         self._key = None
@@ -877,9 +910,10 @@ class Query:
         """ Set the query type ('Person', 'Title', 'Company', 'Entity'...) """
         self._qtype = qtype
 
-    def set_answer(self, answer):
+    def set_answer(self, answer, voice_answer=None):
         """ Set the answer to the query """
         self._answer = answer
+        self._voice_answer = voice_answer
 
     def set_key(self, key):
         """ Set the query key, i.e. the term or string used to execute the query """
@@ -894,8 +928,12 @@ class Query:
         """ Return the query type """
         return self._qtype
 
-    def answer(self):
+    def answer(self, voice=False):
         """ Return the query answer """
+        if voice and self._voice_answer:
+            # If asking for a voice version of the answer
+            # and we have one, return it
+            return self._voice_answer
         return self._answer
 
     def key(self):

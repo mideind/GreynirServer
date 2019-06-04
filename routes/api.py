@@ -22,7 +22,6 @@
 
 """
 
-
 from . import routes, better_jsonify, text_from_request, bool_from_request, restricted
 from . import _MAX_URL_LENGTH, _MAX_UUID_LENGTH
 from flask import request, current_app
@@ -287,30 +286,60 @@ def reparse_api(version=1):
 _SPECIAL_QUERIES = {
     "er þetta spurning?": {"answer": "Er þetta svar?"},
     "er þetta svar?": {"answer": "Er þetta spurning?"},
-    "hvað er svarið?": {"answer": "42."},
-    "hvert er svarið?": {"answer": "42."},
+    "hvað er svarið?": {
+        "answer": "42.",
+        "voice": "Fjörutíu og tveir."
+    },
+    "hvert er svarið?": {
+        "answer": "42.",
+        "voice": "Fjörutíu og tveir."
+    },
     "veistu allt?": {"answer": "Nei."},
     "hvað veistu?": {"answer": "Spurðu mig!"},
     "veistu svarið?": {"answer": "Spurðu mig!"},
-    "hvað heitir þú?": {"answer": "Greynir. Ég er grey sem reynir að greina íslensku."},
-    "hver ert þú?": {"answer": "Ég er grey sem reynir að greina íslensku."},
-    "hver bjó þig til?": {"answer": "Villi."},
-    "hver skapaði þig?": {"answer": "Villi."},
-    "hver er skapari þinn?": {"answer": "Villi."},
-    "hver er flottastur?": {"answer": "Villi."},
+    "hvað heitir þú?": {
+        "answer": "Greynir. Ég er grey sem reynir að greina íslensku.",
+        "voice": "Ég heiti Greynir. Ég er grey sem reynir að greina íslensku."
+    },
+    "hver ert þú?": {
+        "answer": "Ég er grey sem reynir að greina íslensku."
+    },
+    "hver bjó þig til?": {
+        "answer": "Flotta teymið hjá Miðeind.",
+    },
+    "hver skapaði þig?": {
+        "answer": "Flotta teymið hjá Miðeind."
+    },
+    "hver er skapari þinn?": {
+        "answer": "Flotta teymið hjá Miðeind."
+    },
+    "hver er flottastur?": {
+        "answer": "Flotta teymið hjá Miðeind."
+    },
     "hver er ég?": {"answer": "Þú ert þú."},
     "hvar er ég?": {"answer": "Þú ert hérna."},
-    "er guð til?": {"answer": "Ég held ekki."},
-    "hver skapaði guð?": {"answer": "Enginn sem ég þekki."},
-    "hver skapaði heiminn?": {"answer": "Enginn sem ég þekki."},
-    "hver er tilgangur lífsins?": {"answer": "42."},
-    "hvar endar alheimurinn?": {"answer": "Inni í þér."},
+    "er guð til?": {
+        "answer": "Ég held ekki."
+    },
+    "hver skapaði guð?": {
+        "answer": "Enginn sem ég þekki."
+    },
+    "hver skapaði heiminn?": {
+        "answer": "Enginn sem ég þekki."
+    },
+    "hver er tilgangur lífsins?": {
+        "answer": "42.",
+        "voice": "Fjörutíu og tveir."
+    },
+    "hvar endar alheimurinn?": {
+        "answer": "Inni í þér."
+    },
 }
 
 _MAX_QUERY_LENGTH = 512
 
 
-def process_query(session, toklist, result):
+def process_query(session, toklist, result, voice=False):
     """ Check whether the parse tree is describes a query, and if so, execute the query,
         store the query answer in the result dictionary and return True """
     q = Query(session)
@@ -326,7 +355,7 @@ def process_query(session, toklist, result):
         result["error"] = q.error()
         return True
     # Successful query: return the answer in response
-    result["response"] = q.answer()
+    result["response"] = q.answer(voice)
     # ...and the query type, as a string ('Person', 'Entity', 'Title' etc.)
     result["qtype"] = qt = q.qtype()
     result["key"] = q.key()
@@ -353,6 +382,8 @@ def query_api(version=1):
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
 
+    # If voice is set, return a voice-friendly string
+    voice = bool_from_request(request, "voice")
     if request.method == "GET":
         q = request.args.get("q", "")
     else:
@@ -369,9 +400,14 @@ def query_api(version=1):
         result["qtype"] = "Special"
         result["q"] = q
         if ql in _SPECIAL_QUERIES:
-            result["response"] = _SPECIAL_QUERIES[ql]
+            response = _SPECIAL_QUERIES[ql]
         else:
-            result["response"] = _SPECIAL_QUERIES[ql + "?"]
+            response = _SPECIAL_QUERIES[ql + "?"]
+        if voice and "voice" in response:
+            # Asking for a voice answer: provide it, if available
+            result["response"] = { "answer": response["voice"] }
+        else:
+            result["response"] = { "answer": response["answer"] }
     else:
         with SessionContext(commit=True) as session:
 
@@ -379,6 +415,7 @@ def query_api(version=1):
                 q, auto_uppercase=q.islower() if auto_uppercase else False
             )
             toklist = list(recognize_entities(toklist, enclosing_session=session))
+
             actual_q = correct_spaces(" ".join(t.txt for t in toklist if t.txt))
 
             # if Settings.DEBUG:
@@ -387,7 +424,9 @@ def query_api(version=1):
 
             # Try to parse and process as a query
             try:
-                is_query = process_query(session, toklist, result)
+                is_query = process_query(session, toklist, result, voice)
+            except AssertionError:
+                raise
             except:
                 is_query = False
 
