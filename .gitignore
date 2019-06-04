@@ -139,6 +139,6 @@ $RECYCLE.BIN/
 *.msm
 *.msp
 
-# Google API key
+# API keys
 resources/GoogleServerKey.txt
-
+resources/aws_polly_keys.json
