@@ -38,6 +38,7 @@ from nertokenizer import recognize_entities
 from query import Query
 from images import get_image_url
 from doc import SUPPORTED_DOC_MIMETYPES, MIMETYPE_TO_DOC_CLASS
+from voice import synthesize_text
 import logging
 
 
@@ -403,9 +404,12 @@ def query_api(version=1):
             response = _SPECIAL_QUERIES[ql]
         else:
             response = _SPECIAL_QUERIES[ql + "?"]
-        if voice and "voice" in response:
+        if voice:
             # Asking for a voice answer: provide it, if available
-            result["response"] = { "answer": response["voice"] }
+            if "voice" in response:
+                result["response"] = response["voice"]
+            else:
+                result["response"] = response["answer"]
         else:
             result["response"] = { "answer": response["answer"] }
     else:
@@ -432,5 +436,12 @@ def query_api(version=1):
 
         result["valid"] = is_query
         result["q"] = actual_q
+
+    # Append synthesised speech audio file URL
+    if voice and "response" in result:
+        url = synthesize_text(result["response"])
+        if url:
+            result["audio"] = url
+
 
     return better_jsonify(**result)

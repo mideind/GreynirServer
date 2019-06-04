@@ -28,7 +28,7 @@ from pprint import pprint
 
 import boto3
 
-# The AWS Polly API access keys (you must obtain your own key if you want to use this code)
+# The AWS Polly API access keys (you must obtain your own keys if you want to use this code)
 _API_KEYS_PATH = "resources/aws_polly_keys.json"
 _api_client = None
 
@@ -51,6 +51,7 @@ def _intialize_client():
                 aws_config = json.load(json_file)
         except FileNotFoundError:
             logging.warning("Unable to read AWS Polly keys")
+            return None
 
         # Create client instance
         _api_client = boto3.Session(**aws_config).client("polly")
