@@ -284,8 +284,12 @@ def reparse_api(version=1):
 # Frivolous fun stuff
 
 _SPECIAL_QUERIES = {
-    "er þetta spurning?": {"answer": "Er þetta svar?"},
-    "er þetta svar?": {"answer": "Er þetta spurning?"},
+    "er þetta spurning?": {
+        "answer": "Er þetta svar?"
+    },
+    "er þetta svar?": {
+        "answer": "Er þetta spurning?"
+    },
     "hvað er svarið?": {
         "answer": "42.",
         "voice": "Fjörutíu og tveir."
@@ -294,9 +298,15 @@ _SPECIAL_QUERIES = {
         "answer": "42.",
         "voice": "Fjörutíu og tveir."
     },
-    "veistu allt?": {"answer": "Nei."},
-    "hvað veistu?": {"answer": "Spurðu mig!"},
-    "veistu svarið?": {"answer": "Spurðu mig!"},
+    "veistu allt?": {
+        "answer": "Nei, því miður."
+    },
+    "hvað veistu?": {
+        "answer": "Spurðu mig!"
+    },
+    "veistu svarið?": {
+        "answer": "Spurðu mig!"
+    },
     "hvað heitir þú?": {
         "answer": "Greynir. Ég er grey sem reynir að greina íslensku.",
         "voice": "Ég heiti Greynir. Ég er grey sem reynir að greina íslensku."
@@ -314,10 +324,17 @@ _SPECIAL_QUERIES = {
         "answer": "Flotta teymið hjá Miðeind."
     },
     "hver er flottastur?": {
-        "answer": "Flotta teymið hjá Miðeind."
+        "answer": "Teymið hjá Miðeind."
     },
-    "hver er ég?": {"answer": "Þú ert þú."},
-    "hvar er ég?": {"answer": "Þú ert hérna."},
+    "hver er sætastur?": {
+        "answer": "Tumi Þorsteinsson er sætastur."
+    },
+    "hver er ég?": {
+        "answer": "Þú ert þú."
+    },
+    "hvar er ég?": {
+        "answer": "Þú ert hérna."
+    },
     "er guð til?": {
         "answer": "Ég held ekki."
     },
@@ -358,6 +375,7 @@ def process_query(session, toklist, result, voice=False):
     result["response"] = q.answer(voice)
     # ...and the query type, as a string ('Person', 'Entity', 'Title' etc.)
     result["qtype"] = qt = q.qtype()
+    # ...and the key used to retrieve the answer, if any
     result["key"] = q.key()
     if qt == "Person":
         # For a person query, add an image (if available)

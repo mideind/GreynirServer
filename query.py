@@ -49,6 +49,7 @@ from reynir.fastparser import (
     ParseForestPrinter,
     ParseError,
 )
+from reynir.binparser import BIN_Grammar
 from reynir.reducer import Reducer
 from search import Search
 
@@ -668,13 +669,12 @@ def sentence(state, result):
             q.set_answer(result.qtype + ": " + result.qkey)
         else:
             try:
+                voice_answer = None
                 answer = qfunc(q, session, result.qkey)
                 if isinstance(answer, tuple):
                     # We have both a normal and a voice answer
-                    q.set_answer(*answer)
-                else:
-                    # We have a single answer, usually a dict
-                    q.set_answer(answer)
+                    answer, voice_answer = answer
+                q.set_answer(answer, voice_answer)
             except AssertionError:
                 raise
             except Exception as e:
@@ -784,12 +784,48 @@ def QWordVerbKey(node, params, result):
     result.qkey = result._root
 
 
+class QueryGrammar(BIN_Grammar):
+
+    """ A subclass of BIN_Grammar that causes conditional sections in the
+        Reynir.grammar file, demarcated using
+        $if(include_queries)...$endif(include_queries),
+        to be included in the grammar as it is read and parsed """
+
+    def __init__(self):
+        super().__init__()
+        # Enable the 'include_queries' condition
+        self.set_conditions({"include_queries"})
+
+
+class QueryParser(Fast_Parser):
+
+    """ A subclass of Fast_Parser, specialized to parse queries """
+
+    _GRAMMAR_BINARY_FILE = Fast_Parser._GRAMMAR_FILE + ".query.bin"
+
+    # Keep a separate grammar class instance and time stamp for
+    # QueryParser. This Python sleight-of-hand overrides
+    # class attributes that are defined in BIN_Parser, see binparser.py.
+    _grammar_ts = None
+    _grammar = None
+    _grammar_class = QueryGrammar
+
+    # Also keep separate class instances of the C grammar and its timestamp
+    _c_grammar = None
+    _c_grammar_ts = None
+
+    def __init__(self):
+        super().__init__(verbose=False, root=_QUERY_ROOT)
+
+
 class Query:
 
     """ A Query is initialized by parsing a query string using QueryRoot as the
         grammar root nonterminal. The Query can then be executed by processing
         the best parse tree using the nonterminal handlers given above, returning a
         result object if successful. """
+
+    _parser = None
 
     def __init__(self, session):
         self._session = session
@@ -805,49 +841,52 @@ class Query:
     def _parse(toklist):
         """ Parse a token list as a query """
 
-        # Parse with the nonterminal 'QueryRoot' as the grammar root
-        with Fast_Parser(verbose=False, root=_QUERY_ROOT) as bp:
+        if Query._parser is None:
+            # Initialize a singleton parser instance for queries,
+            # with the nonterminal 'QueryRoot' as the grammar root
+            Query._parser = QueryParser()
 
-            sent_begin = 0
-            num_sent = 0
-            num_parsed_sent = 0
-            rdc = Reducer(bp.grammar)
-            trees = dict()
-            sent = []
+        bp = Query._parser
+        sent_begin = 0
+        num_sent = 0
+        num_parsed_sent = 0
+        rdc = Reducer(bp.grammar)
+        trees = dict()
+        sent = []
 
-            for ix, t in enumerate(toklist):
-                if t[0] == TOK.S_BEGIN:
-                    sent = []
-                    sent_begin = ix
-                elif t[0] == TOK.S_END:
-                    slen = len(sent)
-                    if not slen:
-                        continue
-                    num_sent += 1
-                    # Parse the accumulated sentence
-                    num = 0
-                    try:
-                        # Parse the sentence
-                        forest = bp.go(sent)
-                        if forest is not None:
-                            num = Fast_Parser.num_combinations(forest)
-                            if num > 1:
-                                # Reduce the resulting forest
-                                forest = rdc.go(forest)
-                    except ParseError as e:
-                        forest = None
-                    if num > 0:
-                        num_parsed_sent += 1
-                        # Obtain a text representation of the parse tree
-                        trees[num_sent] = ParseForestDumper.dump_forest(forest)
-                        # ParseForestPrinter.print_forest(forest)
+        for ix, t in enumerate(toklist):
+            if t[0] == TOK.S_BEGIN:
+                sent = []
+                sent_begin = ix
+            elif t[0] == TOK.S_END:
+                slen = len(sent)
+                if not slen:
+                    continue
+                num_sent += 1
+                # Parse the accumulated sentence
+                num = 0
+                try:
+                    # Parse the sentence
+                    forest = bp.go(sent)
+                    if forest is not None:
+                        num = Fast_Parser.num_combinations(forest)
+                        if num > 1:
+                            # Reduce the resulting forest
+                            forest = rdc.go(forest)
+                except ParseError as e:
+                    forest = None
+                if num > 0:
+                    num_parsed_sent += 1
+                    # Obtain a text representation of the parse tree
+                    trees[num_sent] = ParseForestDumper.dump_forest(forest)
+                    # ParseForestPrinter.print_forest(forest)
 
-                elif t[0] == TOK.P_BEGIN:
-                    pass
-                elif t[0] == TOK.P_END:
-                    pass
-                else:
-                    sent.append(t)
+            elif t[0] == TOK.P_BEGIN:
+                pass
+            elif t[0] == TOK.P_END:
+                pass
+            else:
+                sent.append(t)
 
         result = dict(num_sent=num_sent, num_parsed_sent=num_parsed_sent)
         return result, trees
@@ -898,12 +937,10 @@ class Query:
         if self._tree is None:
             self.set_error("E_QUERY_NOT_PARSED")
             return False
-
         self._error = None
         self._qtype = None
         # Process the tree, which has only one sentence
         self._tree.process(self._session, _THIS_MODULE, query=self)
-
         return self._error is None
 
     def set_qtype(self, qtype):

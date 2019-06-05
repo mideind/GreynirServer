@@ -5,7 +5,7 @@
 
     Processor module
 
-    Copyright (C) 2017 Miðeind ehf.
+    Copyright (C) 2019 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -167,7 +167,7 @@ class Processor:
         modnames = self.modules_in_dir(processor_directory)
 
         if single_processor:
-            # Remove all except the single processor pecified
+            # Remove all except the single processor specified
             modnames = [m for m in modnames if m.endswith("." + single_processor)]
 
         # Dynamically load all processor modules
@@ -318,7 +318,7 @@ def process_articles(
     processor=None,
     num_workers=None,
 ):
-
+    """ Process multiple articles according to the given parameters """
     print("------ Reynir starting processing -------")
     if from_date:
         print("From date: {0}".format(from_date))
@@ -360,7 +360,7 @@ def process_articles(
 
 
 def process_article(url, processor=None):
-
+    """ Process a single article, eventually with a single processor """
     try:
         proc = Processor(processor_directory="processors", single_processor=processor)
         proc.go_single(url)
@@ -370,6 +370,7 @@ def process_article(url, processor=None):
 
 
 class Usage(Exception):
+
     def __init__(self, msg):
         self.msg = msg
 
