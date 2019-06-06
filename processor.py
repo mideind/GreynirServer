@@ -48,7 +48,22 @@ from db import Scraper_DB
 from db.models import Article, Person
 from tree import Tree
 
+
 _PROFILING = False
+
+
+def modules_in_dir(directory):
+    """ Find all python modules in a given directory """
+    files = os.listdir(directory)
+    modnames = list()
+    for fname in files:
+        if not fname.endswith(".py"):
+            continue
+        if fname.startswith("_"):  # Skip any files starting with _
+            continue
+        mod = directory.replace("/", ".") + "." + fname[:-3]  # Cut off .py
+        modnames.append(mod)
+    return modnames
 
 
 class TokenContainer:  # Better name wanted. Open to suggestions.
@@ -142,19 +157,6 @@ class Processor:
         """ Perform any cleanup """
         cls._db = None
 
-    def modules_in_dir(self, directory):
-        """ Find all python modules in a given directory """
-        files = os.listdir(directory)
-        modnames = list()
-        for fname in files:
-            if not fname.endswith(".py"):
-                continue
-            if fname.startswith("_"):  # Skip any files starting with _
-                continue
-            mod = directory.replace("/", ".") + "." + fname[:-3]  # Cut off .py
-            modnames.append(mod)
-        return modnames
-
     def __init__(self, processor_directory, single_processor=None, num_workers=None):
 
         Processor._init_class()
@@ -164,7 +166,7 @@ class Processor:
         self.pmodules = None
 
         # Find .py files in the processor directory
-        modnames = self.modules_in_dir(processor_directory)
+        modnames = modules_in_dir(processor_directory)
 
         if single_processor:
             # Remove all except the single processor specified
