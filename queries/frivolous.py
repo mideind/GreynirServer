@@ -111,14 +111,12 @@ def handle_plain_text(q):
         been set, such as the answer and the query type (qtype).
         If the query is not recognized, returns False. """
     ql = q.query_lower
-
-    if ql in _SPECIAL_QUERIES or (ql + "?") in _SPECIAL_QUERIES:
+    if not ql.endswith("?"):
+        ql += "?"
+    if ql in _SPECIAL_QUERIES:
         # This is a query we recognize and handle
         q.set_qtype("Special")
-        if ql in _SPECIAL_QUERIES:
-            response = _SPECIAL_QUERIES[ql]
-        else:
-            response = _SPECIAL_QUERIES[ql + "?"]
+        response = _SPECIAL_QUERIES[ql]
         # A non-voice answer is usually a dict or a list
         answer = dict(answer=response.get("answer"))
         # A voice answer is always a plain string
