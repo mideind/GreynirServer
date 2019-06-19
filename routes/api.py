@@ -38,7 +38,7 @@ from nertokenizer import recognize_entities
 from query import Query
 from images import get_image_url
 from doc import SUPPORTED_DOC_MIMETYPES, MIMETYPE_TO_DOC_CLASS
-from voice import synthesize_text
+from speech import get_synthesized_text_url
 import logging
 
 
@@ -439,7 +439,7 @@ def query_api(version=1):
 
     # Append synthesised speech audio file URL
     if voice and "response" in result:
-        url = synthesize_text(result["response"])
+        url = get_synthesized_text_url(result["response"])
         if url:
             result["audio"] = url
 
