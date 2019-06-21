@@ -35,6 +35,7 @@ from reynir.binparser import canonicalize_token
 from article import Article as ArticleProxy
 from query import process_query
 from doc import SUPPORTED_DOC_MIMETYPES, MIMETYPE_TO_DOC_CLASS
+from speech import get_synthesized_text_url
 import logging
 
 
@@ -301,5 +302,11 @@ def query_api(version=1):
     auto_uppercase = bool_from_request(request, "autouppercase", True)
 
     result = process_query(q, voice, auto_uppercase)
+
+    # Get URL for response as synthesized speech audio
+    if voice and "response" in result and result["response"]:
+        url = get_synthesized_text_url(result["response"])
+        if url:
+            result["audio"] = url
 
     return better_jsonify(**result)
