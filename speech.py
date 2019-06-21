@@ -122,7 +122,7 @@ def get_synthesized_text_url(text, txt_format="text", voice=_DEFAULT_VOICE):
 
 if __name__ == "__main__":
     """ Test speech synthesis through command line invocation """
-    txt = sys.argv[1] if len(sys.argv) > 1 else "Góðan daginn, félagi."
+    txt = " ".join(sys.argv[1:]) if len(sys.argv) > 1 else "Góðan daginn, félagi."
 
     url = get_synthesized_text_url(txt)
     print(url)

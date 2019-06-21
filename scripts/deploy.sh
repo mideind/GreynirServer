@@ -69,6 +69,7 @@ cp -r routes $DEST/
 cp search.py $DEST/search.py
 cp settings.py $DEST/settings.py
 cp similar.py $DEST/similar.py
+cp speech.py $DEST/speech.py
 cp tnttagger.py $DEST/tnttagger.py
 cp tree.py $DEST/tree.py
 cp treeutil.py $DEST/treeutil.py
