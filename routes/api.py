@@ -32,14 +32,14 @@ from db.models import ArticleTopic
 from treeutil import TreeUtility
 from correct import check_grammar
 from reynir.binparser import canonicalize_token
-from reynir import correct_spaces, tokenize
 from article import Article as ArticleProxy
-from nertokenizer import recognize_entities
-from query import Query
-from images import get_image_url
+from query import process_query
 from doc import SUPPORTED_DOC_MIMETYPES, MIMETYPE_TO_DOC_CLASS
 from speech import get_synthesized_text_url
 import logging
+
+
+_MAX_QUERY_LENGTH = 512
 
 
 @routes.route("/ifdtag.api", methods=["GET", "POST"])
@@ -282,99 +282,6 @@ def reparse_api(version=1):
     return better_jsonify(valid=True, result=tokens, register=register, stats=stats)
 
 
-# Frivolous fun stuff
-
-_SPECIAL_QUERIES = {
-    "er þetta spurning?": {"answer": "Er þetta svar?"},
-    "er þetta svar?": {"answer": "Er þetta spurning?"},
-    "hvað er svarið?": {
-        "answer": "42.",
-        "voice": "Fjörutíu og tveir."
-    },
-    "hvert er svarið?": {
-        "answer": "42.",
-        "voice": "Fjörutíu og tveir."
-    },
-    "veistu allt?": {"answer": "Nei."},
-    "hvað veistu?": {"answer": "Spurðu mig!"},
-    "veistu svarið?": {"answer": "Spurðu mig!"},
-    "hvað heitir þú?": {
-        "answer": "Greynir. Ég er grey sem reynir að greina íslensku.",
-        "voice": "Ég heiti Greynir. Ég er grey sem reynir að greina íslensku."
-    },
-    "hver ert þú?": {
-        "answer": "Ég er grey sem reynir að greina íslensku."
-    },
-    "hver bjó þig til?": {
-        "answer": "Flotta teymið hjá Miðeind.",
-    },
-    "hver skapaði þig?": {
-        "answer": "Flotta teymið hjá Miðeind."
-    },
-    "hver er skapari þinn?": {
-        "answer": "Flotta teymið hjá Miðeind."
-    },
-    "hver er flottastur?": {
-        "answer": "Flotta teymið hjá Miðeind."
-    },
-    "hver er ég?": {"answer": "Þú ert þú."},
-    "hvar er ég?": {"answer": "Þú ert hérna."},
-    "er guð til?": {
-        "answer": "Ég held ekki."
-    },
-    "hver skapaði guð?": {
-        "answer": "Enginn sem ég þekki."
-    },
-    "hver skapaði heiminn?": {
-        "answer": "Enginn sem ég þekki."
-    },
-    "hver er tilgangur lífsins?": {
-        "answer": "42.",
-        "voice": "Fjörutíu og tveir."
-    },
-    "hvar endar alheimurinn?": {
-        "answer": "Inni í þér."
-    },
-}
-
-_MAX_QUERY_LENGTH = 512
-
-
-def process_query(session, toklist, result, voice=False):
-    """ Check whether the parse tree is describes a query, and if so, execute the query,
-        store the query answer in the result dictionary and return True """
-    q = Query(session)
-    if not q.parse(toklist, result):
-        # if Settings.DEBUG:
-        #     print("Unable to parse query, error {0}".format(q.error()))
-        result["error"] = q.error()
-        return False
-    if not q.execute():
-        # This is a query, but its execution failed for some reason: return the error
-        # if Settings.DEBUG:
-        #     print("Unable to execute query, error {0}".format(q.error()))
-        result["error"] = q.error()
-        return True
-    # Successful query: return the answer in response
-    result["response"] = q.answer(voice)
-    # ...and the query type, as a string ('Person', 'Entity', 'Title' etc.)
-    result["qtype"] = qt = q.qtype()
-    result["key"] = q.key()
-    if qt == "Person":
-        # For a person query, add an image (if available)
-        img = get_image_url(q.key(), enclosing_session=session)
-        if img is not None:
-            result["image"] = dict(
-                src=img.src,
-                width=img.width,
-                height=img.height,
-                link=img.link,
-                origin=img.origin,
-                name=img.name,
-            )
-    return True
-
-
 @routes.route("/query.api", methods=["GET", "POST"])
 @routes.route("/query.api/v<int:version>", methods=["GET", "POST"])
 def query_api(version=1):
@@ -393,55 +300,13 @@ def query_api(version=1):
 
     # Auto-uppercasing can be turned off by sending autouppercase: false in the query JSON
     auto_uppercase = bool_from_request(request, "autouppercase", True)
-    result = dict()
-    ql = q.lower()
 
-    if ql in _SPECIAL_QUERIES or (ql + "?") in _SPECIAL_QUERIES:
-        result["valid"] = True
-        result["qtype"] = "Special"
-        result["q"] = q
-        if ql in _SPECIAL_QUERIES:
-            response = _SPECIAL_QUERIES[ql]
-        else:
-            response = _SPECIAL_QUERIES[ql + "?"]
-        if voice:
-            # Asking for a voice answer: provide it, if available
-            if "voice" in response:
-                result["response"] = response["voice"]
-            else:
-                result["response"] = response["answer"]
-        else:
-            result["response"] = { "answer": response["answer"] }
-    else:
-        with SessionContext(commit=True) as session:
+    result = process_query(q, voice, auto_uppercase)
 
-            toklist = tokenize(
-                q, auto_uppercase=q.islower() if auto_uppercase else False
-            )
-            toklist = list(recognize_entities(toklist, enclosing_session=session))
-
-            actual_q = correct_spaces(" ".join(t.txt for t in toklist if t.txt))
-
-            # if Settings.DEBUG:
-            #     # Log the query string as seen by the parser
-            #     print("Query is: '{0}'".format(actual_q))
-
-            # Try to parse and process as a query
-            try:
-                is_query = process_query(session, toklist, result, voice)
-            except AssertionError:
-                raise
-            except:
-                is_query = False
-
-        result["valid"] = is_query
-        result["q"] = actual_q
-
-    # Append synthesised speech audio file URL
-    if voice and "response" in result:
+    # Get URL for response as synthesized speech audio
+    if voice and "response" in result and result["response"]:
         url = get_synthesized_text_url(result["response"])
         if url:
             result["audio"] = url
-
 
     return better_jsonify(**result)

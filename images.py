@@ -28,6 +28,11 @@ from contextlib import closing
 import requests
 from db import SessionContext
 from db.models import Link, BlacklistedLink
+from settings import Settings
+
+
+# HTTP request timeout
+QUERY_TIMEOUT = 4.0
 
 
 def _server_query(url, q):
@@ -36,7 +41,7 @@ def _server_query(url, q):
     if len(q):
         url += "?" + urllib.parse.urlencode(q)
     try:
-        with closing(urllib.request.urlopen(url)) as response:
+        with closing(urllib.request.urlopen(url, timeout=QUERY_TIMEOUT)) as response:
             if response:
                 # Decode the HTML Content-type header to obtain the
                 # document type and the charset (content encoding), if specified
@@ -87,7 +92,7 @@ _CTYPE = "image-search-"
 _CACHE_EXPIRATION_DAYS = 30
 
 # Number of image URLs to fetch and store
-_NUM_IMG_URLS = 10
+_NUM_IMG_URLS = 6
 
 # The returned image descriptor tuple
 Img = namedtuple("Img", ["src", "width", "height", "link", "origin", "name"])
@@ -141,7 +146,11 @@ def get_image_url(
                 cx=_CX,
                 key=key,
             )
+            if Settings.DEBUG:
+                print("Sending Google image search request for '{0}'".format(search_str))
             jdoc = _server_query("https://www.googleapis.com/customsearch/v1", q)
+            if Settings.DEBUG:
+                print("Back from Google image search for '{0}'".format(search_str))
             if jdoc:
                 # Store in the cache
                 lnk = Link(

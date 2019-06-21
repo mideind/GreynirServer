@@ -28,29 +28,31 @@
 
 import sys
 import math
+import importlib
 from datetime import datetime
-from contextlib import closing
-from collections import namedtuple, defaultdict
+from collections import defaultdict
 
-from settings import Settings, changedlocale
+from settings import Settings
 
-from db import desc
+from db import SessionContext
 from db.models import Article, Person, Entity, Root
 from db.queries import RelatedWordsQuery, ArticleCountQuery, ArticleListQuery
 
-from reynir.bindb import BIN_Db
 from tree import Tree
 from treeutil import TreeUtility
-from tokenizer import TOK, correct_spaces
+from reynir import TOK, tokenize, correct_spaces
 from reynir.bintokenizer import stems_of_token
 from reynir.fastparser import (
     Fast_Parser,
     ParseForestDumper,
-    ParseForestPrinter,
     ParseError,
 )
+from reynir.binparser import BIN_Grammar
 from reynir.reducer import Reducer
+from nertokenizer import recognize_entities
 from search import Search
+from images import get_image_url
+from processor import modules_in_dir
 
 
 # The module object for this module
@@ -668,13 +670,12 @@ def sentence(state, result):
             q.set_answer(result.qtype + ": " + result.qkey)
         else:
             try:
+                voice_answer = None
                 answer = qfunc(q, session, result.qkey)
                 if isinstance(answer, tuple):
                     # We have both a normal and a voice answer
-                    q.set_answer(*answer)
-                else:
-                    # We have a single answer, usually a dict
-                    q.set_answer(answer)
+                    answer, voice_answer = answer
+                q.set_answer(answer, voice_answer)
             except AssertionError:
                 raise
             except Exception as e:
@@ -784,6 +785,40 @@ def QWordVerbKey(node, params, result):
     result.qkey = result._root
 
 
+class QueryGrammar(BIN_Grammar):
+
+    """ A subclass of BIN_Grammar that causes conditional sections in the
+        Reynir.grammar file, demarcated using
+        $if(include_queries)...$endif(include_queries),
+        to be included in the grammar as it is read and parsed """
+
+    def __init__(self):
+        super().__init__()
+        # Enable the 'include_queries' condition
+        self.set_conditions({"include_queries"})
+
+
+class QueryParser(Fast_Parser):
+
+    """ A subclass of Fast_Parser, specialized to parse queries """
+
+    _GRAMMAR_BINARY_FILE = Fast_Parser._GRAMMAR_FILE + ".query.bin"
+
+    # Keep a separate grammar class instance and time stamp for
+    # QueryParser. This Python sleight-of-hand overrides
+    # class attributes that are defined in BIN_Parser, see binparser.py.
+    _grammar_ts = None
+    _grammar = None
+    _grammar_class = QueryGrammar
+
+    # Also keep separate class instances of the C grammar and its timestamp
+    _c_grammar = None
+    _c_grammar_ts = None
+
+    def __init__(self):
+        super().__init__(verbose=False, root=_QUERY_ROOT)
+
+
 class Query:
 
     """ A Query is initialized by parsing a query string using QueryRoot as the
@@ -791,8 +826,13 @@ class Query:
         the best parse tree using the nonterminal handlers given above, returning a
         result object if successful. """
 
-    def __init__(self, session):
+    _parser = None
+    _processors = None
+
+    def __init__(self, session, query, auto_uppercase):
         self._session = session
+        self._query = query
+        self._auto_uppercase = auto_uppercase
         self._error = None
         self._answer = None
         self._voice_answer = None
@@ -801,65 +841,96 @@ class Query:
         self._key = None
         self._toklist = None
 
+    @classmethod
+    def init_class(cls):
+        """ Initialize singleton data, i.e. the list of query
+            processor modules and the query parser instance """
+        # Load the query processor modules found in the
+        # queries directory
+        modnames = modules_in_dir("queries")
+        procs = []
+        for modname in modnames:
+            try:
+                m = importlib.import_module(modname)
+                procs.append(m)
+            except ImportError as e:
+                print(
+                    "Error importing query processor module {0}: {1}"
+                    .format(modname, e)
+                )
+        cls._processors = procs
+        # Initialize a singleton parser instance for queries,
+        # with the nonterminal 'QueryRoot' as the grammar root
+        cls._parser = QueryParser()
+
     @staticmethod
     def _parse(toklist):
         """ Parse a token list as a query """
+        bp = Query._parser
+        num_sent = 0
+        num_parsed_sent = 0
+        rdc = Reducer(bp.grammar)
+        trees = dict()
+        sent = []
 
-        # Parse with the nonterminal 'QueryRoot' as the grammar root
-        with Fast_Parser(verbose=False, root=_QUERY_ROOT) as bp:
+        for ix, t in enumerate(toklist):
+            if t[0] == TOK.S_BEGIN:
+                sent = []
+            elif t[0] == TOK.S_END:
+                slen = len(sent)
+                if not slen:
+                    continue
+                num_sent += 1
+                # Parse the accumulated sentence
+                num = 0
+                try:
+                    # Parse the sentence
+                    forest = bp.go(sent)
+                    if forest is not None:
+                        num = Fast_Parser.num_combinations(forest)
+                        if num > 1:
+                            # Reduce the resulting forest
+                            forest = rdc.go(forest)
+                except ParseError:
+                    forest = None
+                if num > 0:
+                    num_parsed_sent += 1
+                    # Obtain a text representation of the parse tree
+                    trees[num_sent] = ParseForestDumper.dump_forest(forest)
+                    # ParseForestPrinter.print_forest(forest)
 
-            sent_begin = 0
-            num_sent = 0
-            num_parsed_sent = 0
-            rdc = Reducer(bp.grammar)
-            trees = dict()
-            sent = []
-
-            for ix, t in enumerate(toklist):
-                if t[0] == TOK.S_BEGIN:
-                    sent = []
-                    sent_begin = ix
-                elif t[0] == TOK.S_END:
-                    slen = len(sent)
-                    if not slen:
-                        continue
-                    num_sent += 1
-                    # Parse the accumulated sentence
-                    num = 0
-                    try:
-                        # Parse the sentence
-                        forest = bp.go(sent)
-                        if forest is not None:
-                            num = Fast_Parser.num_combinations(forest)
-                            if num > 1:
-                                # Reduce the resulting forest
-                                forest = rdc.go(forest)
-                    except ParseError as e:
-                        forest = None
-                    if num > 0:
-                        num_parsed_sent += 1
-                        # Obtain a text representation of the parse tree
-                        trees[num_sent] = ParseForestDumper.dump_forest(forest)
-                        # ParseForestPrinter.print_forest(forest)
-
-                elif t[0] == TOK.P_BEGIN:
-                    pass
-                elif t[0] == TOK.P_END:
-                    pass
-                else:
-                    sent.append(t)
+            elif t[0] == TOK.P_BEGIN:
+                pass
+            elif t[0] == TOK.P_END:
+                pass
+            else:
+                sent.append(t)
 
         result = dict(num_sent=num_sent, num_parsed_sent=num_parsed_sent)
         return result, trees
 
-    def parse(self, toklist, result):
+    def parse(self, result):
         """ Parse the token list as a query, returning True if valid """
+        if Query._parser is None:
+            Query.init_class()
 
         self._tree = None  # Erase previous tree, if any
         self._error = None  # Erase previous error, if any
         self._qtype = None  # Erase previous query type, if any
         self._key = None
         self._toklist = None
+
+        q = self._query
+        toklist = tokenize(
+            q, auto_uppercase=q.islower() if self._auto_uppercase else False
+        )
+        toklist = list(recognize_entities(toklist, enclosing_session=self._session))
+
+        actual_q = correct_spaces(" ".join(t.txt for t in toklist if t.txt))
+
+        # if Settings.DEBUG:
+        #     # Log the query string as seen by the parser
+        #     print("Query is: '{0}'".format(actual_q))
 
         parse_result, trees = Query._parse(toklist)
 
@@ -892,20 +963,40 @@ class Query:
         self._toklist = toklist
         return True
 
-    def execute(self):
+    def execute_from_plain_text(self):
+        """ Attempt to execute a plain text query, without having to parse it """
+        if Query._parser is None:
+            Query.init_class()
+        for processor in self._processors:
+            handle_plain_text = getattr(processor, "handle_plain_text", None)
+            if handle_plain_text is not None:
+                # This processor has a handle_plain_text function:
+                # call it
+                if handle_plain_text(self):
+                    return True
+        return False
+
+    def execute_from_tree(self):
         """ Execute the query contained in the previously parsed tree;
             return True if successful """
         if self._tree is None:
             self.set_error("E_QUERY_NOT_PARSED")
             return False
-
+        assert Query._processors is not None
         self._error = None
         self._qtype = None
         # Process the tree, which has only one sentence
         self._tree.process(self._session, _THIS_MODULE, query=self)
-
         return self._error is None
 
+    @property
+    def query(self):
+        return self._query
+    
+    @property
+    def query_lower(self):
+        return self._query.lower()
+    
     def set_qtype(self, qtype):
         """ Set the query type ('Person', 'Title', 'Company', 'Entity'...) """
         self._qtype = qtype
@@ -940,10 +1031,75 @@ class Query:
         """ Return the query key """
         return self._key
 
-    def token_list(self):
-        """ Return the token list for the query """
-        return self._toklist
-
     def error(self):
         """ Return the query error, if any """
         return self._error
+
+
+def execute_query(session, query, voice, auto_uppercase):
+    """ Check whether the parse tree is describes a query, and if so, execute the query,
+        store the query answer in the result dictionary and return True """
+    result = dict(q=query)
+    q = Query(session, query, auto_uppercase)
+    if q.execute_from_plain_text():
+        # We are able to handle this from plain text, without parsing:
+        # shortcut to a successful, plain response
+        result["valid"] = True
+        result["response"] = q.answer(voice)
+        result["qtype"] = q.qtype()
+        return result
+    if not q.parse(result):
+        # if Settings.DEBUG:
+        #     print("Unable to parse query, error {0}".format(q.error()))
+        result["error"] = q.error()
+        result["valid"] = False
+        return result
+    if not q.execute_from_tree():
+        # This is a query, but its execution failed for some reason: return the error
+        # if Settings.DEBUG:
+        #     print("Unable to execute query, error {0}".format(q.error()))
+        result["error"] = q.error()
+        result["valid"] = True
+        return result
+    # Successful query: return the answer in response
+    result["response"] = q.answer(voice)
+    # ...and the query type, as a string ('Person', 'Entity', 'Title' etc.)
+    result["qtype"] = qt = q.qtype()
+    # ...and the key used to retrieve the answer, if any
+    result["key"] = q.key()
+    if qt == "Person":
+        # For a person query, add an image (if available)
+        img = get_image_url(q.key(), enclosing_session=session)
+        if img is not None:
+            result["image"] = dict(
+                src=img.src,
+                width=img.width,
+                height=img.height,
+                link=img.link,
+                origin=img.origin,
+                name=img.name,
+            )
+    result["valid"] = True
+    return result
+
+
+def process_query(q, voice, auto_uppercase):
+    """ Process an incoming natural language query.
+        If voice is True, return a voice-friendly string to
+        be spoken to the user. If auto_uppercase is True,
+        the string probably came from voice input and we
+        need to intelligently guess which words in the query
+        should be upper case (to the extent that it matters). """
+
+    with SessionContext(commit=True) as session:
+
+        # Try to parse and process as a query
+        try:
+            result = execute_query(session, q, voice, auto_uppercase)
+        except AssertionError:
+            raise
+        except:
+            # result = dict(valid=False)
+            raise
+
+    return result

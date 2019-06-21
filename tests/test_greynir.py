@@ -68,8 +68,33 @@ def test_api(client):
     # TODO: Route-specific validation of JSON responses
     for r in API_ROUTES:
         resp = client.post(str(r))
-
         assert resp.content_type.startswith(API_CONTENT_TYPE)
+
+
+def test_query_api(client):
+    """ Call API routes and validate response. """
+    resp = client.get("/query.api?voice=1&q=Hver er sætastur?")
+    assert resp.content_type.startswith(API_CONTENT_TYPE)
+    assert resp.is_json
+    json = resp.get_json()
+    assert "valid" in json
+    assert json["valid"] == True
+    assert "qtype" in json
+    assert json["qtype"] == "Special"
+    assert "response" in json
+    assert json["response"] == "Tumi Þorsteinsson er langsætastur."
+
+    resp = client.get("/query.api?voice=0&q=Hver er sætastur?")
+    assert resp.content_type.startswith(API_CONTENT_TYPE)
+    assert resp.is_json
+    json = resp.get_json()
+    assert "valid" in json
+    assert json["valid"] == True
+    assert "qtype" in json
+    assert json["qtype"] == "Special"
+    assert "response" in json
+    assert "answer" in json["response"]
+    assert json["response"]["answer"] == "Tumi Þorsteinsson."
 
 
 def test_processors():
