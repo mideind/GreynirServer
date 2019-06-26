@@ -192,6 +192,15 @@ def init_roots(wait=False):
             "scrapers.default",
             "DVScraper",
             True,
+        ),
+        (
+            "http://www.bb.is/",
+            "bb.is",
+            "BB",
+            0.4,
+            "scrapers.default",
+            "BBScraper",
+            True,
         )
     ]
 
