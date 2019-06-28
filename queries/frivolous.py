@@ -78,6 +78,10 @@ _SPECIAL_QUERIES = {
         "answer": "Tumi Þorsteinsson.",
         "voice": "Tumi Þorsteinsson er langsætastur."
     },
+    "hver er lang sætastur?": {
+        "answer": "Tumi Þorsteinsson.",
+        "voice": "Tumi Þorsteinsson er langsætastur."
+    },
     "hver er ég?": {
         "answer": "Þú ert þú."
     },
