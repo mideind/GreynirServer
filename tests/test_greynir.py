@@ -82,7 +82,10 @@ def test_query_api(client):
     assert "qtype" in json
     assert json["qtype"] == "Special"
     assert "response" in json
-    assert json["response"] == "Tumi Þorsteinsson er langsætastur."
+    assert "voice" in json
+    assert "answer" in json["response"]
+    assert json["response"]["answer"] == "Tumi Þorsteinsson."
+    assert json["voice"] == "Tumi Þorsteinsson er langsætastur."
 
     resp = client.get("/query.api?voice=0&q=Hver er sætastur?")
     assert resp.content_type.startswith(API_CONTENT_TYPE)
@@ -114,6 +117,8 @@ def test_postagger():
 
 def test_query():
     from query import Query
+    from queries.builtin import HANDLE_TREE
+    assert HANDLE_TREE is True
 
 
 def test_scraper():

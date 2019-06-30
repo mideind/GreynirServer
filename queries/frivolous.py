@@ -122,10 +122,10 @@ def handle_plain_text(q):
         q.set_qtype("Special")
         response = _SPECIAL_QUERIES[ql]
         # A non-voice answer is usually a dict or a list
-        answer = dict(answer=response.get("answer"))
+        answer = response.get("answer")
         # A voice answer is always a plain string
-        voice = response.get("voice")
-        q.set_answer(answer, voice)
+        voice = response.get("voice") or answer
+        q.set_answer(dict(answer=answer), voice)
         return True
 
     return False

@@ -304,9 +304,27 @@ def query_api(version=1):
     result = process_query(q, voice, auto_uppercase)
 
     # Get URL for response as synthesized speech audio
-    if voice and "response" in result and result["response"]:
-        url = get_synthesized_text_url(result["response"])
+    if voice:
+        # If the result contains a "voice" key, return it
+        audio = result.get("voice")
+        url = get_synthesized_text_url(audio) if audio else None
         if url:
             result["audio"] = url
+        response = result.get("response")
+        if response:
+            if "sources" in response:
+                # A list of sources is not needed for voice results
+                del response["sources"]
+            if "answers" in response:
+                answers = response["answers"]
+                # If there is a multi-item answer list
+                # in the response, delete all but the first
+                # item in the list to simplify the response
+                if isinstance(answers, list):
+                    del answers[1:]
+    else:
+        if "voice" in result:
+            # Voice result not needed, so don't send it to the client
+            del result["voice"]
 
     return better_jsonify(**result)
