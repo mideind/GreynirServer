@@ -368,7 +368,7 @@ class Query:
         if not self.execute_from_plain_text():
             if not self.parse(result):
                 if Settings.DEBUG:
-                    print("Unable to parse query, error {0}".format(q.error()))
+                    print("Unable to parse query, error {0}".format(self.error()))
                 result["error"] = self.error()
                 result["valid"] = False
                 return result
