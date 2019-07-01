@@ -72,36 +72,39 @@
       stroke-width: 3px;
    }
 
-   .node-nonterminal.P rect {
+   .node-nonterminal.S0 rect,
+   .node-nonterminal.S0-X rect {
       fill: black;
       stroke: black;
    }
 
-   .node-nonterminal.S rect,
    .node-nonterminal.S-MAIN rect,
    .node-nonterminal.S-HEADING rect,
-   .node-nonterminal.S-COND rect,
-   .node-nonterminal.S-CONS rect,
-   .node-nonterminal.S-REF rect,
-   .node-nonterminal.S-ADV-TEMP rect,
-   .node-nonterminal.S-ADV-PURP rect,
-   .node-nonterminal.S-ADV-ACK rect,
-   .node-nonterminal.S-ADV-CONS rect,
-   .node-nonterminal.S-ADV-CAUSE rect,
-   .node-nonterminal.S-ADV-COND rect,
-   .node-nonterminal.S-EXPLAIN rect,
    .node-nonterminal.S-PREFIX rect,
-   .node-nonterminal.S-QUOTE rect,
-   .node-nonterminal.IP rect
+   .node-nonterminal.S-QUE rect,
+
+   .node-nonterminal.CP-ADV-TEMP rect,
+   .node-nonterminal.CP-ADV-PURP rect,
+   .node-nonterminal.CP-ADV-ACK rect,
+   .node-nonterminal.CP-ADV-CONS rect,
+   .node-nonterminal.CP-ADV-CAUSE rect,
+   .node-nonterminal.CP-ADV-COND rect,
+   .node-nonterminal.CP-ADV-CMP rect,
+   .node-nonterminal.CP-THT rect,
+   .node-nonterminal.CP-QUE rect,
+   .node-nonterminal.CP-REL rect,
+   .node-nonterminal.CP-QUOTE rect,
+
+   .node-nonterminal.IP rect,
+   .node-nonterminal.IP-INF rect
    {
       fill: #f0ad4e;
       stroke: #f0ad4e;
    }
 
    .node-nonterminal.VP rect,
-   .node-nonterminal.VP-PP rect,
-   .node-nonterminal.VP-REV rect,
-   .node-nonterminal.VP-SEQ rect {
+   .node-nonterminal.VP-AUX rect,
+   .node-nonterminal.TO rect {
       fill: #d9534f;
       stroke: #d9534f;
    }
@@ -110,7 +113,8 @@
    .node-nonterminal.NP-SUBJ rect,
    .node-nonterminal.NP-OBJ rect,
    .node-nonterminal.NP-IOBJ rect,
-   .node-nonterminal.NP-PRD rect
+   .node-nonterminal.NP-PRD rect,
+   .node-nonterminal.NP-ADP rect
    {
       /* Dark blue */
       fill: #337ab7;
@@ -119,8 +123,9 @@
 
    .node-nonterminal.NP-POSS rect,
    .node-nonterminal.NP-DAT rect,
-   .node-nonterminal.NP-TITLE rect,
    .node-nonterminal.NP-ADDR rect,
+   .node-nonterminal.NP-COMPANY rect,
+   .node-nonterminal.NP-TITLE rect,
    .node-nonterminal.NP-AGE rect,
    .node-nonterminal.NP-MEASURE rect
    {
@@ -129,31 +134,40 @@
       stroke: #5bc0de;
    }
 
-   .node-nonterminal.PP rect {
+   .node-nonterminal.FOREIGN rect
+   {
+      /* Light blue */
+      fill: #5bc0de;
+      stroke: #5bc0de;
+   }
+
+   .node-nonterminal.PP rect,
+   .node-nonterminal.P rect {
       fill: #888;
       stroke: #888;
    }
 
    .node-nonterminal.ADVP rect,
+   .node-nonterminal.ADVP-DIR rect,
    .node-nonterminal.ADVP-DATE rect,
-   .node-nonterminal.ADVP-DATE-REL rect,
    .node-nonterminal.ADVP-DATE-ABS rect,
-   .node-nonterminal.ADVP-TIMESTAMP-REL rect,
+   .node-nonterminal.ADVP-DATE-REL rect,
    .node-nonterminal.ADVP-TIMESTAMP-ABS rect,
+   .node-nonterminal.ADVP-TIMESTAMP-REL rect,
    .node-nonterminal.ADVP-TMP-SET rect,
-   .node-nonterminal.ADVP-DUR rect,
-   .node-nonterminal.ADVP-DUR-REL rect,
    .node-nonterminal.ADVP-DUR-ABS rect,
-   .node-nonterminal.ADVP-DUR-TIME rect
+   .node-nonterminal.ADVP-DUR-REL rect,
+   .node-nonterminal.ADVP-DUR-TIME rect,
+   .node-nonterminal.ADVP-PCL rect
    {
       fill: #5cb85c;
       stroke: #5cb85c;
    }
 
-   .node-nonterminal.ADJP rect
+   .node-nonterminal.C rect
    {
-      fill: #5cb85c;
-      stroke: #5cb85c;
+      fill: #f0ad4e;
+      stroke: #f0ad4e;
    }
 
    .node-terminal text {

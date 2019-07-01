@@ -27,6 +27,7 @@
 """
 
 import importlib
+import logging
 
 from settings import Settings
 
@@ -62,6 +63,33 @@ class QueryGrammar(BIN_Grammar):
         # Enable the 'include_queries' condition
         self.set_conditions({"include_queries"})
 
+    def read(self, fname, verbose=False, binary_fname=None):
+        """ Overrides the inherited read() function to supply grammar
+            text from a file as well as additional grammar fragments
+            from query processor modules. """
+
+        def grammar_generator():
+            """ A generator that yields a grammar file, line-by-line,
+                followed by grammar additions coming from a string
+                that has been coalesced from grammar fragments in query
+                processor modules. """
+            with open(fname, "r", encoding="utf-8") as inp:
+                # Read grammar file line-by-line
+                for line in inp:
+                    yield line
+            # Yield grammar additions, if any
+            grammar_additions = QueryParser.grammar_additions().split("\n")
+            for line in grammar_additions:
+                print(line)
+                yield line + "\n"
+
+        try:
+            return self.read_from_generator(
+                fname, grammar_generator(), verbose, binary_fname
+            )
+        except (IOError, OSError):
+            raise GrammarError("Unable to open or read grammar file", fname, 0)
+
 
 class QueryParser(Fast_Parser):
 
@@ -80,8 +108,18 @@ class QueryParser(Fast_Parser):
     _c_grammar = None
     _c_grammar_ts = None
 
-    def __init__(self):
+    # Store the grammar additions for queries
+    # (these remain constant for all query parsers, so there is no
+    # need to store them per-instance)
+    _grammar_additions = ""
+
+    def __init__(self, grammar_additions):
+        QueryParser._grammar_additions = grammar_additions
         super().__init__(verbose=False, root=_QUERY_ROOT)
+
+    @classmethod
+    def grammar_additions(cls):
+        return cls._grammar_additions
 
 
 class Query:
@@ -120,14 +158,30 @@ class Query:
                 m = importlib.import_module(modname)
                 procs.append(m)
             except ImportError as e:
-                print(
+                logging.error(
                     "Error importing query processor module {0}: {1}"
                     .format(modname, e)
                 )
         cls._processors = procs
+
+        # Obtain query grammar fragments from those processors
+        # that handle parse trees
+        grammar_fragments = []
+        for processor in procs:
+            handle_tree = getattr(processor, "HANDLE_TREE", None)
+            if handle_tree:
+                # Check whether this processor supplies
+                # a query grammar fragment
+                fragment = getattr(processor, "GRAMMAR", None)
+                if fragment and isinstance(fragment, str):
+                    # Looks legit: add it to our list
+                    grammar_fragments.append(fragment)
+
+        # Coalesce the grammar additions from the fragments
+        grammar_additions = "\n".join(grammar_fragments)
         # Initialize a singleton parser instance for queries,
         # with the nonterminal 'QueryRoot' as the grammar root
-        cls._parser = QueryParser()
+        cls._parser = QueryParser(grammar_additions)
 
     @staticmethod
     def _parse(toklist):
@@ -191,9 +245,9 @@ class Query:
 
         actual_q = correct_spaces(" ".join(t.txt for t in toklist if t.txt))
 
-        # if Settings.DEBUG:
-        #     # Log the query string as seen by the parser
-        #     print("Query is: '{0}'".format(actual_q))
+        if Settings.DEBUG:
+            # Log the query string as seen by the parser
+            print("Query is: '{0}'".format(actual_q))
 
         parse_result, trees = Query._parse(toklist)
 
@@ -249,7 +303,6 @@ class Query:
             # If a processor defines HANDLE_TREE and sets it to
             # a truthy value, it wants to handle parse trees
             handle_tree = getattr(processor, "HANDLE_TREE", None)
-            print("handle_tree is {0}".format(handle_tree))
             if handle_tree:
                 # Process the tree, which has only one sentence
                 self._tree.process(self._session, processor, query=self)
@@ -314,8 +367,8 @@ class Query:
         # shortcut to a successful, plain response
         if not self.execute_from_plain_text():
             if not self.parse(result):
-                # if Settings.DEBUG:
-                #     print("Unable to parse query, error {0}".format(q.error()))
+                if Settings.DEBUG:
+                    print("Unable to parse query, error {0}".format(q.error()))
                 result["error"] = self.error()
                 result["valid"] = False
                 return result
