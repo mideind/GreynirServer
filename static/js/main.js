@@ -364,7 +364,7 @@ function populateQueryResult(r) {
          searchResult = makeSearchList(r.response.answers);
       }
       else
-      if (r.qtype == "Special") {
+      if (r.qtype == "Special" || r.qtype == "ArrivalTime") {
          answer = $("<p class='query-empty'></p>")
             .html("<span class='green glyphicon glyphicon-play'></span>&nbsp;")
             .append(r.response.answer);

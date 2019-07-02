@@ -100,26 +100,72 @@ def QBus(node, params, result):
     pass
 
 
+_BUS_WORDS = {
+    "ás": 1,
+    "tvistur": 2,
+    "þristur": 3,
+    "fjarki": 4,
+    "fimma": 5,
+    "sexa": 6,
+    "sjöa": 7,
+    "átta": 8,
+    "nía": 9,
+    "tía": 10,
+    "tólfa": 12,
+    "einn": 1,
+    "tveir": 2,
+    "þrír": 3,
+    "fjórir": 4,
+    "fimm": 5,
+    "sex": 6,
+    "sjö": 7,
+    "níu": 9,
+    "tíu": 10,
+    "ellefu": 11,
+    "tólf": 12,
+    "þrettán": 13,
+    "fjórtán": 14,
+    "fimmtán": 15,
+    "sextán": 16,
+    "sautján": 17,
+    "átján": 18,
+    "nítján": 19,
+    "tuttugu": 20,
+    "þrjátíu": 30,
+    "fjörutíu": 40,
+    "fimmtíu": 50,
+    "sextíu": 60,
+    "sjötíu": 70,
+    "áttatíu": 80,
+    "níutíu": 90,
+}
+
+
 def QBusWord(node, params, result):
-    result.bus_number = result._nominative
+    result.bus_name = result._nominative
+    result.bus_number = _BUS_WORDS.get(result._canonical, 0)
+    print("Translated bus number {0} to {1}".format(result._canonical, result.bus_number))
+    print("_nominative is {0}, _indefinite is {1}".format(result._nominative, result._indefinite))
 
 
 def QBusNumber(node, params, result):
-    result.bus_number = result._nominative
+    result.bus_name = result._nominative
 
 
 def QBusNumberWord(node, params, result):
-    pass
+    result.bus_number = _BUS_WORDS.get(result._canonical, 0)
+    print("Translated bus number {0} to {1}".format(result._canonical, result.bus_number))
+    print("_nominative is {0}, _indefinite is {1}".format(result._nominative, result._indefinite))
 
 
 # End of grammar nonterminal handlers
 
 # The function below answers queries about bus arrival times
 
-def query_arrival_time(query, session, bus_number):
+def query_arrival_time(query, session, bus_number, bus_name):
     """ A query for a bus arrival time """
     response = dict(answer="15:33")
-    voice_answer = bus_number + " kemur klukkan 15 33"
+    voice_answer = bus_name[0].upper() + bus_name[1:] + " kemur klukkan 15 33"
     return response, voice_answer
 
 
@@ -146,7 +192,7 @@ def sentence(state, result):
         else:
             try:
                 voice_answer = None
-                answer = qfunc(q, session, result.qkey)
+                answer = qfunc(q, session, result.bus_number, result.bus_name)
                 if isinstance(answer, tuple):
                     # We have both a normal and a voice answer
                     answer, voice_answer = answer

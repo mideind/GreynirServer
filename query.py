@@ -98,11 +98,11 @@ class QueryGrammar(BIN_Grammar):
             # Yield the grammar preamble
             grammar_preamble = _GRAMMAR_PREAMBLE.split("\n")
             for line in grammar_preamble:
-                yield line + "\n"
+                yield line
             # Yield grammar additions, if any
             grammar_additions = QueryParser.grammar_additions().split("\n")
             for line in grammar_additions:
-                yield line + "\n"
+                yield line
 
         try:
             return self.read_from_generator(
