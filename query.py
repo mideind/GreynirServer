@@ -40,7 +40,7 @@ from reynir.fastparser import (
     ParseForestDumper,
     ParseError,
 )
-from reynir.binparser import BIN_Grammar
+from reynir.binparser import BIN_Grammar, GrammarError
 from reynir.reducer import Reducer
 from nertokenizer import recognize_entities
 from images import get_image_url
