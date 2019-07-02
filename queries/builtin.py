@@ -677,14 +677,8 @@ GRAMMAR = """
 #
 # ----------------------------------------------
 
-$if(include_queries)
-
-QueryRoot →
-
+Queries →
     QPerson > QCompany > QEntity > QTitle > QWord > QSearch
-
-# Mark the QueryRoot nonterminal as a root in the grammar
-$root(QueryRoot)
 
 QPerson →
     Manneskja_nf
@@ -897,8 +891,6 @@ QSearchToken →
     > dags > dagsafs > dagsföst
     > tímapunkturafs > tímapunkturfast > tími
     > raðnr > to > töl > ártal > tala > sérnafn
-
-$endif(include_queries)
 
 """
 

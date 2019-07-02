@@ -50,6 +50,17 @@ from processor import modules_in_dir
 # The grammar root nonterminal for queries; see Reynir.grammar
 _QUERY_ROOT = "QueryRoot"
 
+# A fixed preamble that is inserted before all query grammar fragments
+_GRAMMAR_PREAMBLE = """
+
+QueryRoot →
+    Queries
+
+# Mark the QueryRoot nonterminal as a root in the grammar
+$root(QueryRoot)
+
+"""
+
 
 class QueryGrammar(BIN_Grammar):
 
@@ -62,6 +73,13 @@ class QueryGrammar(BIN_Grammar):
         super().__init__()
         # Enable the 'include_queries' condition
         self.set_conditions({"include_queries"})
+
+    @classmethod
+    def is_grammar_modified(cls):
+        """ Override inherited function to specify that query grammars
+            should always be reparsed, since the set of plug-in query
+            handlers may have changed, as well as their grammar fragments. """
+        return True
 
     def read(self, fname, verbose=False, binary_fname=None):
         """ Overrides the inherited read() function to supply grammar
@@ -77,10 +95,13 @@ class QueryGrammar(BIN_Grammar):
                 # Read grammar file line-by-line
                 for line in inp:
                     yield line
+            # Yield the grammar preamble
+            grammar_preamble = _GRAMMAR_PREAMBLE.split("\n")
+            for line in grammar_preamble:
+                yield line + "\n"
             # Yield grammar additions, if any
             grammar_additions = QueryParser.grammar_additions().split("\n")
             for line in grammar_additions:
-                print(line)
                 yield line + "\n"
 
         try:
@@ -217,7 +238,6 @@ class Query:
                     num_parsed_sent += 1
                     # Obtain a text representation of the parse tree
                     trees[num_sent] = ParseForestDumper.dump_forest(forest)
-                    # ParseForestPrinter.print_forest(forest)
 
             elif t[0] == TOK.P_BEGIN:
                 pass

@@ -20,27 +20,116 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    This module implements a query processor for information about
-    bus schedules.
+    This module implements a processor for queries about bus schedules.
 
 """
 
 
-# Indicate that this module wants to handle parse trees for queries
+# Indicate that this module wants to handle parse trees for queries,
+# as opposed to simple literal text strings
 HANDLE_TREE = True
 
+# The context-free grammar for the queries recognized by this plug-in module
+GRAMMAR = """
+
+# ----------------------------------------------
+#
+# Query grammar for bus-related queries
+#
+# ----------------------------------------------
+
+# A plug-in query grammar always starts with the following,
+# adding one or more query productions to the Queries nonterminal
+
+Queries →
+    QBusArrivalTime
+
+QBusArrivalTime →
+    # 'Hvenær kemur ásinn/sexan/tían/strætó númer tvö?'
+    "hvenær" "kemur" QBus_nf '?'?
+    # 'Hvenær er von á fimmunni / vagni númer sex?'
+    | "hvenær" "er" "von" "á" QBus_þgf '?'?
+    # 'Hvenær má búast við leið þrettán?
+    | "hvenær" "má" "búast" "við" QBus_þgf '?'?
+
+# We can specify a bus in different ways, which may require
+# the bus identifier to be in different cases
+
+QBus/fall →
+    QBusWord/fall | QBusNumber/fall
+
+QBusWord/fall →
+    'ás:kk'_et_gr/fall
+    | 'tvistur:kk'_et_gr/fall
+    | 'þristur:kk'_et_gr/fall
+    | 'fjarki:kk'_et_gr/fall
+    | 'fimma:kvk'_et_gr/fall
+    | 'sexa:kvk'_et_gr/fall
+    | 'sjöa:kvk'_et_gr/fall
+    | 'átta:kvk'_et_gr/fall
+    | 'nía:kvk'_et_gr/fall
+    | 'tía:kvk'_et_gr/fall
+    | 'tólfa:kvk'_et_gr/fall
+
+QBusNumber/fall →
+    'leið:kvk'_et/fall 'númer:hk'_et_nf? QBusNumberWord
+    | 'strætó:kk'_et/fall 'númer:hk'_et_nf QBusNumberWord
+    | 'vagn:kk'_et/fall 'númer:hk'_et_nf QBusNumberWord
+
+QBusNumberWord →
+    "eitt" | to_nf_ft_hk | töl
+
+"""
+
+
+# The following functions correspond to grammar nonterminals (see
+# the context-free grammar above, in GRAMMAR) and are called during
+# tree processing (depth-first, i.e. bottom-up navigation).
+
+
+def QBusArrivalTime(node, params, result):
+    """ Bus arrival time query """
+    # Set the query type
+    result.qtype = "ArrivalTime"
+    if "bus_number" in result:
+        # Set the query key
+        result.qkey = result.bus_number
+
+
+def QBus(node, params, result):
+    pass
+
+
+def QBusWord(node, params, result):
+    result.bus_number = result._nominative
+
+
+def QBusNumber(node, params, result):
+    result.bus_number = result._nominative
+
+
+def QBusNumberWord(node, params, result):
+    pass
+
+
+# End of grammar nonterminal handlers
+
+# The function below answers queries about bus arrival times
 
 def query_arrival_time(query, session, bus_number):
-    """ A query for a person by name """
+    """ A query for a bus arrival time """
     response = dict(answer="15:33")
     voice_answer = bus_number + " kemur klukkan 15 33"
     return response, voice_answer
 
 
+# Dispatcher for the various query types implemented in this module
 _QFUNC = {
     "ArrivalTime": query_arrival_time,
 }
 
+# The following function is called after processing the parse
+# tree for a query sentence that is handled in this module
 
 def sentence(state, result):
     """ Called when sentence processing is complete """
@@ -68,79 +157,3 @@ def sentence(state, result):
                 q.set_error("E_EXCEPTION: {0}".format(e))
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
-
-
-GRAMMAR = """ """
-
-_GRAMMAR = """
-
-# ----------------------------------------------
-#
-# Query grammar
-#
-# The following grammar is used for queries only
-#
-# ----------------------------------------------
-
-$if(include_queries)
-
-QueryRoot →
-    QArrivalTime
-
-QArrivalTime →
-    'hvenær:st' 'koma:so'_gm_fh_nt_p3 QBus_nf '?'?
-    | 'hvenær:st' 'vera:so'_gm_fh_nt_p3 'von:kvk'_nf_et 'á:fs'_þgf QBus_þgf '?'?
-
-QBus/fall →
-    QBusWord/fall | QBusNumber/fall
-
-QBusWord/fall →
-    'ás:kk'_et_gr/fall
-    | 'tvistur:kk'_et_gr/fall
-    | 'þristur:kk'_et_gr/fall
-    | 'fjarki:kk'_et_gr/fall
-    | 'fimma:kvk'_et_gr/fall
-    | 'sexa:kvk'_et_gr/fall
-    | 'sjöa:kvk'_et_gr/fall
-    | 'átta:kvk'_et_gr/fall
-    | 'nía:kvk'_et_gr/fall
-    | 'tía:kvk'_et_gr/fall
-    | 'tólfa:kvk'_et_gr/fall
-
-QBusNumber/fall →
-    'leið:kvk'_et/fall QBusNumberWord
-
-QBusNumberWord →
-    to_nf_ft_hk
-
-$endif(include_queries)
-
-"""
-
-
-# The following functions correspond to grammar nonterminals (see Reynir.grammar)
-# and are called during tree processing (depth-first, i.e. bottom-up navigation)
-
-
-def QArrivalTime(node, params, result):
-    """ Arrival time query """
-    result.qtype = "ArrivalTime"
-    if "bus_number" in result:
-        result.qkey = result.bus_number
-
-
-def QBus(node, params, result):
-    pass
-
-
-def QBusWord(node, params, result):
-    result.bus_number = result._nominative
-
-
-def QBusNumber(node, params, result):
-    pass
-
-
-def QBusNumberWord(node, params, result):
-    result.bus_number = result._text
-
