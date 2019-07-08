@@ -29,6 +29,8 @@ from itertools import islice, tee
 from contextlib import closing
 from random import randint
 import json
+import collections 
+
 
 # Hack to make this Python program executable from the utils subdirectory
 if __name__ == "__main__":
@@ -45,6 +47,12 @@ from reynir.bindb import BIN_Db
 from db import SessionContext, DatabaseError, desc
 from db.models import Article, Trigram
 from tree import TreeTokenList, TerminalDescriptor
+
+
+CHANGING = set() # A set of all words we need to change
+REPLACING = collections.defaultdict(str)    # fACE_SK.txt
+DELETING = set()                            # d.txt
+DOUBLING = collections.defaultdict(str)     # fMW.txt
 
 
 def dump_tokens(limit):
@@ -104,6 +112,26 @@ def make_trigrams(limit, output_tsv=False):
             session.commit()
             tsv_file = None
 
+        # Fill correction data structures
+        def fill_corrections():
+            """ Fills global data structures for correcting tokens """
+            with open(os.path.join(basepath, "resources", "fACE_SK.txt"), 'r') as myfile:
+                for line in myfile:
+                    content = line.strip().split("\t")
+                    REPLACING["\""+content[0]+"\""] = "\""+content[1]+"\""
+                    CHANGING.add("\""+content[0]+"\"")
+            with open(os.path.join(basepath, "resources", "d.txt"), 'r') as myfile:
+                for line in myfile:
+                    DELETING.add("\""+line.strip()+"\"")
+                    CHANGING.add("\""+line.strip()+"\"")
+            with open(os.path.join(basepath, "resources", "fMW.txt"), 'r') as myfile:
+                for line in myfile:
+                    content = line.strip().split("\t")
+                    corr = content[1].replace(" ", "\" \"")
+                    corr = "\""+corr+"\""
+                    DOUBLING["\""+content[0]+"\""] = corr
+                    CHANGING.add("\""+content[0]+"\"")
+        fill_corrections()
         # Iterate through the articles
         q = (
             session.query(Article.url, Article.timestamp, Article.tree)
@@ -118,7 +146,7 @@ def make_trigrams(limit, output_tsv=False):
         def tokens(q):
             """ Generator for token stream """
             for a in q:
-                print("Processing article from {0.timestamp}: {0.url}".format(a))
+                #print("Processing article from {0.timestamp}: {0.url}".format(a))
                 tree = TreeTokenList()
                 tree.load(a.tree)
                 for ix, toklist in tree.sentences():
@@ -127,7 +155,18 @@ def make_trigrams(limit, output_tsv=False):
                         yield ""
                         yield ""
                         for t in toklist:
-                            yield from t.token[1:-1].split()
+                            if t.token in CHANGING:
+                                # We take a closer look
+                                # We assume multi-word tokens don´t need to be changed
+                                if t.token in REPLACING: # Words we simply need to replace
+                                    yield REPLACING[t.token]
+                                elif t.token in DELETING: # Words that don't belong in trigrams
+                                    pass
+                                elif t.token in DOUBLING: # Words incorrectly in one token
+                                    for each in DOUBLING[t.token].split(" "):
+                                        yield each
+                            else:
+                                yield from t.token[1:-1].split()
                         yield ""
                         yield ""
 
@@ -254,9 +293,9 @@ def main():
         print("Configuration error: {0}".format(e))
         quit()
 
-    # make_trigrams(limit=None, output_tsv=True)
+    #make_trigrams(limit=None, output_tsv=True)
 
-    # create_trigrams_csv()
+    #create_trigrams_csv()
 
     # dump_tokens(limit = 10)
 
