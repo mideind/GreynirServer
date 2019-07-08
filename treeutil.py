@@ -345,7 +345,7 @@ class TreeUtility:
         if all_names is None:
             register = None
         else:
-            from query import create_name_register
+            from queries.builtin import create_name_register
             register = create_name_register(toklist, session, all_names=all_names)
 
         t2 = time.time()
@@ -391,7 +391,7 @@ class TreeUtility:
 
         with Fast_Parser(verbose=False) as parser:  # Don't emit diagnostic messages
             pgs, stats = TreeUtility._process_toklist(parser, session, toklist, xform)
-        from query import create_name_register
+        from queries.builtin import create_name_register
         register = create_name_register(toklist, session, all_names=all_names)
         return pgs, stats, register
 

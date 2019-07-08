@@ -50,6 +50,7 @@ resources/ord.compressed
 #resources/*.tmLanguage
 resources/visir/
 resources/reykjanes/
+queries/resources/
 mim/
 ifd/
 gold/

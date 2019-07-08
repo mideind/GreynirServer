@@ -5,7 +5,7 @@
 
     Tree module
 
-    Copyright (C) 2018 Miðeind ehf.
+    Copyright (C) 2019 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -421,6 +421,9 @@ class TerminalDescriptor:
         # clean_terminal property cache
         self._clean_terminal = None
 
+        # clean_cat property cache
+        self._clean_cat = None
+
         # Gender of terminal
         self.gender = None
         gender = self.variants & self._GENDERS
@@ -480,6 +483,16 @@ class TerminalDescriptor:
                 self._clean_terminal = self.inferred_cat
             self._clean_terminal += "".join("_" + v for v in self.varlist)
         return self._clean_terminal
+
+    @property
+    def clean_cat(self):
+        """ Return the category from the front of the clean terminal name.
+            This returns 'no' for all nouns (instead of 'kk', 'kvk', 'hk'),
+            and handles stem literals correctly (i.e. the terminal
+            'vagn:kk'_nf_et_gr has clean_cat == 'no') """
+        if self._clean_cat is None:
+            self._clean_cat = self.clean_terminal.split("_")[0]
+        return self._clean_cat
 
     def has_t_base(self, s):
         """ Does the node have the given terminal base name? """
@@ -756,7 +769,6 @@ class TerminalNode(Node):
             # Not a word, already nominative or not declinable: return it as-is
             return self.text
         if not self.text:
-            # print("self.text is empty, token is {0}, terminal is {1}".format(self.token, self.td.terminal))
             assert False
 
         def replace_beyging(b, by_case="NF"):
@@ -786,16 +798,18 @@ class TerminalNode(Node):
         return w
 
     def _indefinite(self, bin_db):
-        """ Look up the indefinite nominative form of a noun or adjective associated with this terminal """
+        """ Look up the indefinite nominative form of a noun
+            or adjective associated with this terminal """
         # Lookup the token in the BIN database
         if (not self.is_word) or self.is_literal:
             # Not a word, not a noun or already indefinite: return it as-is
             return self.text
-        if self.cat not in {"no", "lo"}:
+        cat = self.td.clean_cat
+        if cat not in {"no", "lo"}:
             return self.text
         if self.td.case_nf and (
-            (self.cat == "no" and not self.td.variant_gr)
-            or (self.cat == "lo" and not self.td.variant_vb)
+            (cat == "no" and not self.td.variant_gr)
+            or (cat == "lo" and not self.td.variant_vb)
         ):
             # Already in nominative case, and indefinite in the case of a noun
             # or strong declination in the case of an adjective
@@ -806,7 +820,8 @@ class TerminalNode(Node):
             assert False
 
         def replace_beyging(b, by_case="NF"):
-            """ Change a beyging string to specify a different case, without the definitive article """
+            """ Change a beyging string to specify a different case,
+                without the definitive article """
             for case in ("NF", "ÞF", "ÞGF", "EF"):
                 if case != by_case and case in b:
                     return (
@@ -820,19 +835,21 @@ class TerminalNode(Node):
         return w
 
     def _canonical(self, bin_db):
-        """ Look up the singular indefinite nominative form of a noun or adjective associated with this terminal """
+        """ Look up the singular indefinite nominative form of a noun
+            or adjective associated with this terminal """
         # Lookup the token in the BIN database
         if (not self.is_word) or self.is_literal:
             # Not a word, not a noun or already indefinite: return it as-is
             return self.text
-        if self.cat not in {"no", "lo"}:
+        cat = self.td.clean_cat
+        if cat not in {"no", "lo"}:
             return self.text
         if (
             self.td.case_nf
             and self.td.number == "et"
             and (
-                (self.cat == "no" and not self.td.variant_gr)
-                or (self.cat == "lo" and not self.td.variant_vb)
+                (cat == "no" and not self.td.variant_gr)
+                or (cat == "lo" and not self.td.variant_vb)
             )
         ):
             # Already singular, nominative, indefinite (if noun)

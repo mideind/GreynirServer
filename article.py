@@ -233,7 +233,7 @@ class Article:
     def create_register(self, session, all_names=False):
         """ Create a name register dictionary for this article """
         register = {}
-        from query import add_name_to_register, add_entity_to_register
+        from queries.builtin import add_name_to_register, add_entity_to_register
 
         for name in self.person_names():
             add_name_to_register(name, register, session, all_names=all_names)

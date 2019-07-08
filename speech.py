@@ -24,6 +24,7 @@
 """
 
 import sys
+import os
 import json
 import logging
 from pprint import pprint
@@ -39,7 +40,7 @@ from botocore.exceptions import ClientError
 #     "region_name": "my_region"
 # }
 #
-_API_KEYS_PATH = "resources/aws_polly_keys.json"
+_API_KEYS_PATH = os.path.join("resources", "aws_polly_keys.json")
 _api_client = None
 
 # Voices
