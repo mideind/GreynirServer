@@ -1592,3 +1592,73 @@ class DVScraper(ScrapeHelper):
             fc.decompose()
 
         return content
+
+
+
+class BBScraper(ScrapeHelper):
+    """ Scraping helper for bb.is """
+
+    def __init__(self, root):
+        super().__init__(root)
+        self._feeds = ["http://www.bb.is/feed/"]
+
+    def get_metadata(self, soup):
+        """ Analyze the article soup and return metadata """
+        metadata = super().get_metadata(soup)
+
+        # Author
+        author = "Ritstjórn Bæjarins besta"
+        try:
+            meta_auth = ScrapeHelper.meta_property(soup, "author")
+            if meta_auth:
+                author = meta_auth
+        except:
+            logging.warning(
+                "Exception obtaining author of bb.is article: {0}".format(e)
+            )
+
+        # Extract the heading from the OpenGraph og:title meta property
+        heading = ScrapeHelper.meta_property(soup, "og:title") or ""
+
+        # Extract the publication time from the article:published_time meta property
+        timestamp = datetime.utcnow()
+        try:
+            ts = ScrapeHelper.meta_property(soup, "article:published_time")
+            if ts:
+                timestamp = datetime(
+                    year=int(ts[0:4]),
+                    month=int(ts[5:7]),
+                    day=int(ts[8:10]),
+                    hour=int(ts[11:13]),
+                    minute=int(ts[14:16]),
+                    second=int(ts[17:19]),
+                )
+        except:
+            pass
+
+        metadata.heading = heading
+        metadata.author = author
+        metadata.timestamp = timestamp
+
+        return metadata
+
+    def _get_content(self, soup_body):
+        """ Find the article content (main text) in the soup """
+        content = ScrapeHelper.div_class(soup_body, "td-post-content")
+
+        ScrapeHelper.del_div_class(content, "td-featured-image-rec")
+        ScrapeHelper.del_div_class(content, "td-post-featured-image")
+        ScrapeHelper.del_div_class(content, "sharedaddy")
+        ScrapeHelper.del_div_class(content, "fb-comments")
+
+        ScrapeHelper.del_tag(content, "h3")
+        ScrapeHelper.del_tag(content, "fb:comments-count")
+
+        for t in content.find_all(text=re.compile(r"\sathugasemdir$")):
+            p = t.find_parent("p")
+            if p:
+                p.decompose()
+
+        return content
+
+

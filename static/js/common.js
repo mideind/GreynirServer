@@ -496,7 +496,7 @@ function tokenInfo(t, nameDict) {
    else
    if (t.k == TOK_DOMAIN) {
       r.lemma = t.x;
-      r.details = "lén";
+      r.details = r.lemma.endsWith(".is") ? "íslenskt lén" : "lén";
    }
    else
    if (t.k == TOK_HASHTAG) {
