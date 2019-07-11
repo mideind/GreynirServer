@@ -159,7 +159,12 @@ class Query:
         self._voice = voice
         self._auto_uppercase = auto_uppercase
         self._error = None
+        # A detailed answer, which can be a list or a dict
+        self._response = None
+        # A single "best" displayable text answer
         self._answer = None
+        # A version of self._answer that can be
+        # fed to a voice synthesizer
         self._voice_answer = None
         self._tree = None
         self._qtype = None
@@ -337,14 +342,22 @@ class Query:
     @property
     def query_lower(self):
         return self._query.lower()
-    
+
+    @property
+    def token_list(self):
+        return self._toklist
+
     def set_qtype(self, qtype):
         """ Set the query type ('Person', 'Title', 'Company', 'Entity'...) """
         self._qtype = qtype
 
-    def set_answer(self, answer, voice_answer=None):
+    def set_answer(self, response, answer, voice_answer=None):
         """ Set the answer to the query """
+        # Detailed response
+        self._response = response
+        # Single best answer, as a displayable string
         self._answer = answer
+        # A voice version of the single best answer
         self._voice_answer = voice_answer
 
     def set_key(self, key):
@@ -360,12 +373,16 @@ class Query:
         """ Return the query type """
         return self._qtype
 
+    def response(self):
+        """ Return the detailed query answer """
+        return self._response
+
     def answer(self):
-        """ Return the query answer """
+        """ Return the 'single best' displayable query answer """
         return self._answer
 
     def voice_answer(self):
-        """ Return a voice answer, if any """
+        """ Return a voice version of the 'single best' answer, if any """
         return self._voice_answer
 
     def key(self):
@@ -397,18 +414,20 @@ class Query:
                 # return the error
                 # if Settings.DEBUG:
                 #     print("Unable to execute query, error {0}".format(q.error()))
-                result["error"] = self.error()
+                result["error"] = self.error() or "E_UNABLE_TO_EXECUTE_QUERY"
                 result["valid"] = True
                 return result
         # Successful query: return the answer in response
-        result["response"] = self._answer
+        result["response"] = self._response
+        if self._answer:
+            result["answer"] = self._answer
         if self._voice and self._voice_answer:
             result["voice"] = self._voice_answer
         # ...and the query type, as a string ('Person', 'Entity', 'Title' etc.)
         result["qtype"] = qt = self.qtype()
         # ...and the key used to retrieve the answer, if any
         result["key"] = self.key()
-        if qt == "Person":
+        if not self._voice and qt == "Person":
             # For a person query, add an image (if available)
             img = get_image_url(self.key(), enclosing_session=self._session)
             if img is not None:

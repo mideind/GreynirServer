@@ -40,15 +40,19 @@ def handle_plain_text(q):
     ql = q.query_lower
     if ql.endswith("?"):
         ql = ql[:-1]
+
     if ql == "hvað er klukkan":
         # This is a query we recognize and handle
         q.set_qtype("Special")
-        # A non-voice answer is usually a dict or a list
         now = datetime.utcnow()
-        answer = dict(answer="{0:02}:{1:02}".format(now.hour, now.minute))
-        # A voice answer is always a plain string
-        voice = "Klukkan er {0} {1:02}".format(now.hour, now.minute)
-        q.set_answer(answer, voice)
+        # Calculate a 'single best' displayable answer
+        answer = "{0:02}:{1:02}".format(now.hour, now.minute)
+        # A detailed response object is usually a list or a dict
+        response = dict(answer=answer)
+        # A voice answer is a plain string that will be
+        # passed as-is to a voice synthesizer
+        voice = "Klukkan er {0} {1:02}.".format(now.hour, now.minute)
+        q.set_answer(response, answer, voice)
         return True
 
     return False

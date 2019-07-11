@@ -431,10 +431,12 @@ def query_person(query, session, name):
     response = dict(answers=titles, sources=articles)
     if titles and "answer" in titles[0]:
         # 'Már Guðmundsson er seðlabankastjóri.'
-        voice_answer = name + " er " + titles[0]["answer"] + "."
+        answer = titles[0]["answer"]
+        voice_answer = name + " er " + answer + "."
     else:
+        answer = ""
         voice_answer = "Ég veit ekki hver " + name + " er."
-    return response, voice_answer
+    return response, answer, voice_answer
 
 
 def query_person_title(session, name):
@@ -488,10 +490,12 @@ def query_title(query, session, title):
     if response and title and "answer" in response[0]:
         # Return 'Seðlabankastjóri er Már Guðmundsson.'
         upper_title = title[0].upper() + title[1:]
-        voice_answer = upper_title + " er " + response[0]["answer"] + "."
+        answer = response[0]["answer"]
+        voice_answer = upper_title + " er " + answer + "."
     else:
+        answer = ""
         voice_answer = "Ég veit ekki hver er " + title + "."
-    return response, voice_answer
+    return response, answer, voice_answer
 
 
 def _query_entity_definitions(session, name):
@@ -523,10 +527,12 @@ def query_entity(query, session, name):
     response = dict(answers=titles, sources=articles)
     if titles and "answer" in titles[0]:
         # 'Mál og menning er bókmenntafélag.'
-        voice_answer = name + " er " + titles[0]["answer"] + "."
+        answer = titles[0]["answer"]
+        voice_answer = name + " er " + answer + "."
     else:
+        answer = ""
         voice_answer = "Ég veit ekki hvað " + name + " er."
-    return response, voice_answer
+    return response, answer, voice_answer
 
 
 def query_entity_def(session, name):
@@ -561,10 +567,12 @@ def query_company(query, session, name):
     q = q.all()
     response = prepare_response(q, prop_func=lambda x: x.definition)
     if response and response[0]["answer"]:
-        voice_answer = name + " er " + response[0]["answer"] + "."
+        answer = response[0]["answer"]
+        voice_answer = name + " er " + answer + "."
     else:
+        answer = ""
         voice_answer = "Ég veit ekki hvað " + name + " er."
-    return response, voice_answer
+    return response, answer, voice_answer
 
 
 def query_word(query, session, stem):
@@ -585,7 +593,7 @@ def query_word(query, session, stem):
 def launch_search(query, session, qkey):
     """ Launch a search with the given search terms """
     pgs, stats = TreeUtility.raw_tag_toklist(
-        session, query.token_list(), root=_QUERY_ROOT
+        session, query.token_list, root=_QUERY_ROOT
     )
 
     # Collect the list of search terms
@@ -650,15 +658,18 @@ def sentence(state, result):
         # Select a query function and exceute it
         qfunc = _QFUNC.get(result.qtype)
         if qfunc is None:
-            q.set_answer(result.qtype + ": " + result.qkey)
+            answer = result.qtype + ": " + result.qkey
+            response = dict(answer=answer)
+            q.set_answer(response, answer)
         else:
             try:
+                answer = None
                 voice_answer = None
-                answer = qfunc(q, session, result.qkey)
-                if isinstance(answer, tuple):
+                response = qfunc(q, session, result.qkey)
+                if isinstance(response, tuple):
                     # We have both a normal and a voice answer
-                    answer, voice_answer = answer
-                q.set_answer(answer, voice_answer)
+                    response, answer, voice_answer = response
+                q.set_answer(response, answer, voice_answer)
             except AssertionError:
                 raise
             except Exception as e:
@@ -678,6 +689,9 @@ GRAMMAR = """
 # ----------------------------------------------
 
 Queries →
+    BuiltinQueries
+
+BuiltinQueries →
     QPerson > QCompany > QEntity > QTitle > QWord > QSearch
 
 QPerson →
@@ -868,6 +882,9 @@ QSearch →
     QSearchSentence
     | QSearchNl
     | QSearchArbitrary
+
+# Prefer other parses to QSearch
+$score(-999) QSearch
 
 QSearchSentence →
     Málsgrein
