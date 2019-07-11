@@ -99,6 +99,19 @@ def test_query_api(client):
     assert "answer" in json["response"]
     assert json["response"]["answer"] == "Tumi Þorsteinsson."
 
+    resp = client.get("/query.api?voice=1&q=hvenær er von á vagni númer 17")
+    assert resp.content_type.startswith(API_CONTENT_TYPE)
+    assert resp.is_json
+    json = resp.get_json()
+    assert "valid" in json
+    assert json["valid"] == True
+    assert "qtype" in json
+    assert json["qtype"] == "ArrivalTime"
+    assert "answer" in json
+    assert json["answer"] == "15:33"  # !!! Will need to revise once proper API is implemented
+    assert "voice" in json
+    assert json["voice"] == "Vagn númer 17 kemur klukkan 15 33"
+
 
 def test_processors():
     """ Try to import all tree/token processors by instantiating Processor object """
