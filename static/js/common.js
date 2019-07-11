@@ -148,15 +148,17 @@ var wordClass = {
    "st" : "samtenging",
    "stt" : "samtenging",
    "ao" : "atviksorð",
+   "eo" : "atviksorð",
    "spao" : "spurnaratviksorð",
    "tao" : "tímaatviksorð",
-   "to" : "töluorð",
    "fn" : "fornafn",
    "pfn" : "persónufornafn",
    "abfn" : "afturbeygt fornafn",
    "gr" : "greinir",
    "nhm" : "nafnháttarmerki",
+   "to" : "töluorð",
    "töl" : "töluorð",
+   "tala" : "tala",
    "uh" : "upphrópun",
    "sérnafn" : "sérnafn",
    "entity" : "sérnafn",
@@ -496,7 +498,7 @@ function tokenInfo(t, nameDict) {
    else
    if (t.k == TOK_DOMAIN) {
       r.lemma = t.x;
-      r.details = "lén";
+      r.details = r.lemma.endsWith(".is") ? "íslenskt lén" : "lén";
    }
    else
    if (t.k == TOK_HASHTAG) {

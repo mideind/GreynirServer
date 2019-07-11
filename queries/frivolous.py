@@ -125,7 +125,7 @@ def handle_plain_text(q):
         answer = response.get("answer")
         # A voice answer is always a plain string
         voice = response.get("voice") or answer
-        q.set_answer(dict(answer=answer), voice)
+        q.set_answer(dict(answer=answer), answer, voice)
         return True
 
     return False

@@ -30,6 +30,7 @@
    }
    .node.to circle,
    .node.töl circle,
+   .node.tala circle,
    .node.fn circle,
    .node.pfn circle,
    .node.abfn circle {
@@ -192,6 +193,7 @@
    }
    .node-terminal.to text.symbol,
    .node-terminal.töl text.symbol,
+   .node-terminal.tala text.symbol,
    .node-terminal.fn text.symbol,
    .node-terminal.pfn text.symbol,
    .node-terminal.abfn text.symbol
@@ -720,6 +722,9 @@ function d3_update(source) {
                if (d.data.k && d.data.k == "TIME")
                   classes.push("time");
                else
+               if (d.data.k && d.data.k == "YEAR")
+                  classes.push("year");
+               else
                if (d.data.k && (d.data.k == "DATE" || d.data.k == "DATEABS" || d.data.k == "DATEREL"))
                   classes.push("date");
                else
@@ -731,6 +736,9 @@ function d3_update(source) {
                else
                if (firstPart == "ártal")
                   classes.push("year");
+               else
+               if (firstPart == "tala")
+                  classes.push("number");
                else
                if (firstPart == "lén")
                   classes.push("domain");
@@ -807,6 +815,7 @@ function d3_update(source) {
       ["number", "\uE319"], // more-items
       ["to", "\uE319"], // more-items
       ["töl", "\uE319"], // more-items
+      ["tala", "\uE319"], // more-items
       ["percent", "%"], // percent sign
       ["measurement", "\uE332"], // dashboard
       ["domain", "\uE372"], // global

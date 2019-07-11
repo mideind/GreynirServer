@@ -48,6 +48,10 @@ QBusArrivalTime →
     # 'Hvenær kemur ásinn/sexan/tían/strætó númer tvö?'
     "hvenær" "kemur" QBus_nf '?'?
     # 'Hvenær er von á fimmunni / vagni númer sex?'
+    # Note that "Von" is also a person name, but
+    # the double quote literal form is not case-sensitive
+    # and will match person and entity names as well,
+    # even if (auto-)capitalized
     | "hvenær" "er" "von" "á" QBus_þgf '?'?
     # 'Hvenær má búast við leið þrettán?
     | "hvenær" "má" "búast" "við" QBus_þgf '?'?
@@ -75,6 +79,12 @@ QBusNumber/fall →
     'leið:kvk'_et/fall 'númer:hk'_et_nf? QBusNumberWord
     | 'strætó:kk'_et/fall 'númer:hk'_et_nf QBusNumberWord
     | 'vagn:kk'_et/fall 'númer:hk'_et_nf QBusNumberWord
+    # We also need to handle the person name 'Vagn',
+    # in case the query comes in with an uppercase 'V'.
+    # A lemma literal, within single quotes, will match
+    # person and entity names in the indicated case, if given,
+    # or in any case if no case variant is given. 
+    | 'Vagn'/fall 'númer:hk'_et_nf QBusNumberWord
 
 QBusNumberWord →
     "eitt" | to_nf_ft_hk | töl
@@ -164,9 +174,10 @@ def QBusNumberWord(node, params, result):
 
 def query_arrival_time(query, session, bus_number, bus_name):
     """ A query for a bus arrival time """
-    response = dict(answer="15:33")
+    answer = "15:33"
+    response = dict(answer=answer)
     voice_answer = bus_name[0].upper() + bus_name[1:] + " kemur klukkan 15 33"
-    return response, voice_answer
+    return response, answer, voice_answer
 
 
 # Dispatcher for the various query types implemented in this module
@@ -188,15 +199,18 @@ def sentence(state, result):
         # Select a query function and exceute it
         qfunc = _QFUNC.get(result.qtype)
         if qfunc is None:
-            q.set_answer(result.qtype + ": " + result.qkey)
+            # Something weird going on - should not happen
+            answer = result.qtype + ": " + result.qkey
+            q.set_answer(dict(answer=answer), answer)
         else:
             try:
+                answer = None
                 voice_answer = None
-                answer = qfunc(q, session, result.bus_number, result.bus_name)
-                if isinstance(answer, tuple):
+                response = qfunc(q, session, result.bus_number, result.bus_name)
+                if isinstance(response, tuple):
                     # We have both a normal and a voice answer
-                    answer, voice_answer = answer
-                q.set_answer(answer, voice_answer)
+                    response, answer, voice_answer = response
+                q.set_answer(response, answer, voice_answer)
             except AssertionError:
                 raise
             except Exception as e:
