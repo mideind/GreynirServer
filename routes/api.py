@@ -296,6 +296,9 @@ def query_api(version=1):
         q = request.args.get("q", "")
     else:
         q = request.form.get("q", "")
+
+    mq = q.split("|")
+    q = mq[0]
     q = q.strip()[0:_MAX_QUERY_LENGTH]
 
     # Auto-uppercasing can be turned off by sending autouppercase: false in the query JSON
