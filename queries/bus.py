@@ -87,7 +87,7 @@ QBusNumber/fall →
     | 'Vagn'/fall 'númer:hk'_et_nf QBusNumberWord
 
 QBusNumberWord →
-    "eitt" | to_nf_ft_hk | töl
+    "eitt" | to_nf_ft_hk | töl | tala
 
 """
 
@@ -154,8 +154,6 @@ _BUS_WORDS = {
 def QBusWord(node, params, result):
     result.bus_name = result._nominative
     result.bus_number = _BUS_WORDS.get(result._canonical, 0)
-    print("Translated bus number {0} to {1}".format(result._canonical, result.bus_number))
-    print("_nominative is {0}, _indefinite is {1}".format(result._nominative, result._indefinite))
 
 
 def QBusNumber(node, params, result):
@@ -163,9 +161,16 @@ def QBusNumber(node, params, result):
 
 
 def QBusNumberWord(node, params, result):
-    result.bus_number = _BUS_WORDS.get(result._canonical, 0)
-    print("Translated bus number {0} to {1}".format(result._canonical, result.bus_number))
-    print("_nominative is {0}, _indefinite is {1}".format(result._nominative, result._indefinite))
+    word = result._canonical
+    try:
+        # Handle digits ("17")
+        result.bus_number = int(word)
+    except ValueError:
+        # Handle number words ("sautján")
+        result.bus_number = _BUS_WORDS.get(word, 0)
+    except Exception as e:
+        print("Unexpected exception: {0}".format(e))
+        raise
 
 
 # End of grammar nonterminal handlers

@@ -39,6 +39,9 @@ from speech import get_synthesized_text_url
 import logging
 
 
+# Maximum number of query string variants
+_MAX_QUERY_VARIANTS = 10
+# Maximum length of each query string
 _MAX_QUERY_LENGTH = 512
 
 
@@ -297,9 +300,8 @@ def query_api(version=1):
     else:
         q = request.form.get("q", "")
 
-    mq = q.split("|")
-    q = mq[0]
-    q = q.strip()[0:_MAX_QUERY_LENGTH]
+    mq = q.split("|")[0:_MAX_QUERY_VARIANTS]
+    q = [m.strip()[0:_MAX_QUERY_LENGTH] for m in mq]
 
     # Auto-uppercasing can be turned off by sending autouppercase: false in the query JSON
     auto_uppercase = bool_from_request(request, "autouppercase", True)
