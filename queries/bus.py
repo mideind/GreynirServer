@@ -21,6 +21,8 @@
 
 
     This module implements a processor for queries about bus schedules.
+    It also serves as an example of how to plug query grammars into Reynir's
+    query subsystem and how to handle the resulting trees.
 
 """
 
@@ -39,20 +41,26 @@ GRAMMAR = """
 # ----------------------------------------------
 
 # A plug-in query grammar always starts with the following,
-# adding one or more query productions to the Queries nonterminal
+# adding one or more query productions to the Query nonterminal
 
-Queries →
+Query →
     QBusArrivalTime
 
+# By convention, names of nonterminals in query grammars should
+# start with an uppercase Q
+
 QBusArrivalTime →
+
     # 'Hvenær kemur ásinn/sexan/tían/strætó númer tvö?'
     "hvenær" "kemur" QBus_nf '?'?
+
     # 'Hvenær er von á fimmunni / vagni númer sex?'
     # Note that "Von" is also a person name, but
     # the double quote literal form is not case-sensitive
     # and will match person and entity names as well,
     # even if (auto-)capitalized
     | "hvenær" "er" "von" "á" QBus_þgf '?'?
+
     # 'Hvenær má búast við leið þrettán?
     | "hvenær" "má" "búast" "við" QBus_þgf '?'?
 
@@ -75,10 +83,20 @@ QBusWord/fall →
     | 'tía:kvk'_et_gr/fall
     | 'tólfa:kvk'_et_gr/fall
 
+QBusNumber_nf →
+    "leið" 'númer:hk'_et_nf? QBusNumberWord
+QBusNumber_þf →
+    "leið" 'númer:hk'_et_nf? QBusNumberWord
+QBusNumber_þgf →
+    "leið" 'númer:hk'_et_nf? QBusNumberWord
+QBusNumber_ef →
+    "leiðar" 'númer:hk'_et_nf? QBusNumberWord
+
 QBusNumber/fall →
-    'leið:kvk'_et/fall 'númer:hk'_et_nf? QBusNumberWord
-    | 'strætó:kk'_et/fall 'númer:hk'_et_nf QBusNumberWord
+    'strætó:kk'_et/fall 'númer:hk'_et_nf QBusNumberWord
+
     | 'vagn:kk'_et/fall 'númer:hk'_et_nf QBusNumberWord
+
     # We also need to handle the person name 'Vagn',
     # in case the query comes in with an uppercase 'V'.
     # A lemma literal, within single quotes, will match
@@ -87,6 +105,10 @@ QBusNumber/fall →
     | 'Vagn'/fall 'númer:hk'_et_nf QBusNumberWord
 
 QBusNumberWord →
+
+    # to is a declinable number word ('tveir/tvo/tveim/tveggja')
+    # töl is an undeclinable number word ('sautján')
+    # tala is a number ('17')
     "eitt" | to_nf_ft_hk | töl | tala
 
 """
@@ -102,6 +124,8 @@ def QBusArrivalTime(node, params, result):
     # Set the query type
     result.qtype = "ArrivalTime"
     if "bus_number" in result:
+        # The bus number has been automatically
+        # percolated upwards from a child node (see below).
         # Set the query key
         result.qkey = result.bus_number
 
@@ -109,6 +133,8 @@ def QBusArrivalTime(node, params, result):
 def QBus(node, params, result):
     pass
 
+
+# Translate bus number words to integers
 
 _BUS_WORDS = {
     "ás": 1,
@@ -152,22 +178,38 @@ _BUS_WORDS = {
 
 
 def QBusWord(node, params, result):
+    """ Handle buses specified in single words,
+        such as 'tvisturinn' or 'fimman' """
+    # Retrieve the contained text (in nominative case)
+    # and set the bus_name and bus_number attributes,
+    # which are then percolated automatically upwards in the tree.
+    # We use the ._nominative form of the bus word, converting
+    # 'tvistinum' to 'tvisturinn' (retaining the definite article).
     result.bus_name = result._nominative
+    # result._canonical is the nominative, singular, indefinite form
+    # of the enclosed noun phrase. For example, if the enclosed
+    # noun phrase is 'tvistinum', result._canonical returns 'tvistur'.
     result.bus_number = _BUS_WORDS.get(result._canonical, 0)
 
 
 def QBusNumber(node, params, result):
+    """ Reflect back the phrase used to specify the bus,
+        but in nominative case. """
+    # 'vagni númer 17' -> 'vagn númer 17'
+    # 'leið fimm' -> 'leið fimm'
     result.bus_name = result._nominative
 
 
 def QBusNumberWord(node, params, result):
-    word = result._canonical
+    """ Obtain the bus number as an integer from word or number terminals. """
+    # Use the nominative, singular, indefinite form
+    number = result._canonical
     try:
         # Handle digits ("17")
-        result.bus_number = int(word)
+        result.bus_number = int(number)
     except ValueError:
         # Handle number words ("sautján")
-        result.bus_number = _BUS_WORDS.get(word, 0)
+        result.bus_number = _BUS_WORDS.get(number, 0)
     except Exception as e:
         print("Unexpected exception: {0}".format(e))
         raise
@@ -175,10 +217,16 @@ def QBusNumberWord(node, params, result):
 
 # End of grammar nonterminal handlers
 
-# The function below answers queries about bus arrival times
-
 def query_arrival_time(query, session, bus_number, bus_name):
     """ A query for a bus arrival time """
+    # TODO: Add the actual logic for calling the straeto.is API
+    # Retrieve the client location
+    location = query.location
+    if location is None:
+        answer = "Staðsetning óþekkt"
+        response = dict(answer=answer)
+        voice_answer = "Ég veit ekki hvar þú ert."
+        return response, answer, voice_answer
     answer = "15:33"
     response = dict(answer=answer)
     voice_answer = bus_name[0].upper() + bus_name[1:] + " kemur klukkan 15 33"
@@ -200,6 +248,7 @@ def sentence(state, result):
         # Successfully matched a query type
         q.set_qtype(result.qtype)
         q.set_key(result.qkey)
+        # SQLAlchemy session, if required
         session = state["session"]
         # Select a query function and exceute it
         qfunc = _QFUNC.get(result.qtype)

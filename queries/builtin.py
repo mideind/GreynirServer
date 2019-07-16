@@ -238,7 +238,7 @@ def make_response_list(rd):
         """ Does the given result contain an 'ex' prefix? """
         return any(
             contained(x, s)
-            for x in ("fyrrverandi", "fráfarandi", "áður", "þáverandi", "fyrrum")
+            for x in ("fyrrverandi", "fv.", "fráfarandi", "áður", "þáverandi", "fyrrum")
         )
 
     # Do a comparison of all pairs in the result list
@@ -510,7 +510,7 @@ def _query_entity_definitions(session, name):
             Root.domain,
             Article.url,
         )
-        .filter(Entity.name == name)
+        .filter_by(name_lc=name)
         .filter(Root.visible == True)
         .join(Article, Article.url == Entity.article_url)
         .join(Root)
@@ -528,7 +528,12 @@ def query_entity(query, session, name):
     if titles and "answer" in titles[0]:
         # 'Mál og menning er bókmenntafélag.'
         answer = titles[0]["answer"]
-        voice_answer = name + " er " + answer + "."
+        v = answer
+        if len(v) > 1 and v.isupper():
+            # Probably an abbreviation, such as 'FME':
+            # convert to 'F M E'
+            v = " ".join(v)
+        voice_answer = name + " er " + v + "."
     else:
         answer = ""
         voice_answer = "Ég veit ekki hvað " + name + " er."
@@ -654,6 +659,10 @@ def sentence(state, result):
         # Successfully matched a query type
         q.set_qtype(result.qtype)
         q.set_key(result.qkey)
+        if result.qtype == "Search":
+            # For searches, don't add a question mark at the end
+            if q.beautified_query.endswith("?") and not q.query.endswith("?"):
+                q.set_beautified_query(q.beautified_query[:-1])
         session = state["session"]
         # Select a query function and exceute it
         qfunc = _QFUNC.get(result.qtype)
@@ -688,7 +697,7 @@ GRAMMAR = """
 #
 # ----------------------------------------------
 
-Queries →
+Query →
     BuiltinQueries
 
 BuiltinQueries →
@@ -696,11 +705,11 @@ BuiltinQueries →
 
 QPerson →
     Manneskja_nf
-    | QPersonPrefix_nf Manneskja_nf '?'?
-    | QPersonPrefix_þf Manneskja_þf '?'?
-    | QPersonPrefix_þgf Manneskja_þgf # '?'?
-    | QPersonPrefix_ef Manneskja_ef '?'?
-    | QPersonPrefixAny Sérnafn '?'?
+    | QPersonPrefix_nf Manneskja_nf "?"?
+    | QPersonPrefix_þf Manneskja_þf "?"?
+    | QPersonPrefix_þgf Manneskja_þgf # "?"?
+    | QPersonPrefix_ef Manneskja_ef "?"?
+    | QPersonPrefixAny Sérnafn "?"?
 
 QPersonPrefixAny →
     QPersonPrefix/fall
@@ -731,9 +740,9 @@ QCompany →
     # enda fyrirspurnarinnar þar sem punktur á eftir 'hf.'
     # eða 'ehf.' í enda setningar er skilinn frá
     # skammstöfunar-tókanum.
-    QCompanyPrefix_nf Fyrirtæki_nf '.'? '?'?
-    | QCompanyPrefix_þf Fyrirtæki_þf '.'? '?'?
-    | QCompanyPrefix_þgf Fyrirtæki_þgf '.' # '?'?
+    QCompanyPrefix_nf Fyrirtæki_nf "."? "?"?
+    | QCompanyPrefix_þf Fyrirtæki_þf "."? "?"?
+    | QCompanyPrefix_þgf Fyrirtæki_þgf "." # "?"?
 
 QCompanyPrefix_nf →
     "hvað" "er"
@@ -745,10 +754,12 @@ QCompanyPrefix_þf →
 QCompanyPrefix_þgf →
     "segðu" "mér"? "frá"
 
-QEntity → QEntityPrefix/fall QEntityKey/fall '.'? '?'?
+# A question about the definition of a named entity
+
+QEntity → QEntityPrefix/fall QEntityKey/fall "."? "?"?
 
 QEntityKey/fall →
-    Sérnafn/fall > Sérnafn > no/fall > no
+    Sérnafn/fall > Sérnafn > Nl/fall
 
 QEntityPrefix_nf →
     "hvað" "er"
@@ -766,8 +777,8 @@ QEntityPrefix_ef →
     0
 
 QTitle →
-    QTitlePrefix_nf QTitleKey_nf '?'?
-    | QTitlePrefix_ef QTitleKey_ef '?'?
+    QTitlePrefix_nf QTitleKey_nf "?"?
+    | QTitlePrefix_ef QTitleKey_ef "?"?
 
 QSegðuMér →
     "segðu" "mér"
@@ -817,14 +828,14 @@ QWordNoun →
     | QWordNoun_þgf
 
 QWordNoun_þgf →
-    QWordPrefix_þgf QWordNounKey_þgf '?'?
+    QWordPrefix_þgf QWordNounKey_þgf "?"?
 
 QWordNoun_nf →
     QWordNounKey_nf
-    | QWordPrefix_þgf "orðinu" QWordNounKey_nf '?'?
-    | QWordPrefix_þgf "nafnorðinu" QWordNounKey_nf '?'?
-    | QWordPrefix_nf "orðið" QWordNounKey_nf '?'?
-    | QWordPrefix_nf "nafnorðið" QWordNounKey_nf '?'?
+    | QWordPrefix_þgf "orðinu" QWordNounKey_nf "?"?
+    | QWordPrefix_þgf "nafnorðinu" QWordNounKey_nf "?"?
+    | QWordPrefix_nf "orðið" QWordNounKey_nf "?"?
+    | QWordPrefix_nf "nafnorðið" QWordNounKey_nf "?"?
 
 QWordNounKey/fall → no/fall
 
@@ -836,11 +847,11 @@ QWordPerson →
     | QWordPerson_þgf
 
 QWordPerson_þgf →
-    QWordPrefix_þgf QWordPersonKey_þgf '?'?
+    QWordPrefix_þgf QWordPersonKey_þgf "?"?
 
 QWordPerson_nf →
-    QWordPrefix_þgf "nafninu" QWordPersonKey_nf '?'?
-    | QWordPrefix_nf "nafnið" QWordPersonKey_nf '?'?
+    QWordPrefix_þgf "nafninu" QWordPersonKey_nf "?"?
+    | QWordPrefix_nf "nafnið" QWordPersonKey_nf "?"?
 
 QWordPersonKey/fall → person/fall
 
@@ -848,12 +859,12 @@ QWordPersonKey/fall → person/fall
 
 QWordVerb →
     Nhm? QWordVerbKey
-    | QWordPrefix_þgf "orðinu" QWordVerbKey '?'?
-    | QWordPrefix_þgf "sögninni" Nhm? QWordVerbKey '?'?
-    | QWordPrefix_þgf "sagnorðinu" Nhm? QWordVerbKey '?'?
-    | QWordPrefix_nf "orðið" QWordVerbKey '?'?
-    | QWordPrefix_nf "sögnin" Nhm? QWordVerbKey '?'?
-    | QWordPrefix_nf "sagnorðið" Nhm? QWordVerbKey '?'?
+    | QWordPrefix_þgf "orðinu" QWordVerbKey "?"?
+    | QWordPrefix_þgf "sögninni" Nhm? QWordVerbKey "?"?
+    | QWordPrefix_þgf "sagnorðinu" Nhm? QWordVerbKey "?"?
+    | QWordPrefix_nf "orðið" QWordVerbKey "?"?
+    | QWordPrefix_nf "sögnin" Nhm? QWordVerbKey "?"?
+    | QWordPrefix_nf "sagnorðið" Nhm? QWordVerbKey "?"?
 
 QWordVerbKey → so_nh
 
@@ -861,15 +872,15 @@ QWordVerbKey → so_nh
 
 QWordEntity →
     QWordEntityKey_nf
-    | QWordPrefix_þgf QWordEntityKey_þgf '?'?
-    | QWordPrefix_þgf "orðinu" QWordEntityKey_nf '?'?
-    | QWordPrefix_þgf "nafninu" QWordEntityKey_nf '?'?
-    | QWordPrefix_þgf "sérnafninu" QWordEntityKey_nf '?'?
-    | QWordPrefix_þgf "heitinu" QWordEntityKey_nf '?'?
-    | QWordPrefix_nf "orðið" QWordEntityKey_nf '?'?
-    | QWordPrefix_nf "nafnið" QWordEntityKey_nf '?'?
-    | QWordPrefix_nf "sérnafnið" QWordEntityKey_nf '?'?
-    | QWordPrefix_nf "heitið" QWordEntityKey_nf '?'?
+    | QWordPrefix_þgf QWordEntityKey_þgf "?"?
+    | QWordPrefix_þgf "orðinu" QWordEntityKey_nf "?"?
+    | QWordPrefix_þgf "nafninu" QWordEntityKey_nf "?"?
+    | QWordPrefix_þgf "sérnafninu" QWordEntityKey_nf "?"?
+    | QWordPrefix_þgf "heitinu" QWordEntityKey_nf "?"?
+    | QWordPrefix_nf "orðið" QWordEntityKey_nf "?"?
+    | QWordPrefix_nf "nafnið" QWordEntityKey_nf "?"?
+    | QWordPrefix_nf "sérnafnið" QWordEntityKey_nf "?"?
+    | QWordPrefix_nf "heitið" QWordEntityKey_nf "?"?
 
 QWordEntityKey/fall → Sérnafn/fall > Sérnafn
 

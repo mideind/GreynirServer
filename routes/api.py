@@ -295,18 +295,45 @@ def query_api(version=1):
 
     # If voice is set, return a voice-friendly string
     voice = bool_from_request(request, "voice")
+
+    # Obtain the query string(s) and the client's location, if present
     if request.method == "GET":
         q = request.args.get("q", "")
+        lat = request.args.get("latitude")
+        lon = request.args.get("longitude")
     else:
         q = request.form.get("q", "")
+        lat = request.form.get("latitude")
+        lon = request.form.get("longitude")
 
     mq = q.split("|")[0:_MAX_QUERY_VARIANTS]
     q = [m.strip()[0:_MAX_QUERY_LENGTH] for m in mq]
 
+    # Attempt to convert the (lat, lon) location coordinates to floats
+    location_present = bool(lat) and bool(lon)
+    if location_present:
+        try:
+            lat = float(lat)
+            if not(-90.0 <= lat <= 90.0):
+                location_present = False
+        except ValueError:
+            location_present = False
+    if location_present:
+        try:
+            lon = float(lon)
+            if not(-180.0 <= lon <= 180.0):
+                location_present = False
+        except ValueError:
+            location_present = False
+
     # Auto-uppercasing can be turned off by sending autouppercase: false in the query JSON
     auto_uppercase = bool_from_request(request, "autouppercase", True)
 
-    result = process_query(q, voice, auto_uppercase)
+    # Send the query to the query processor
+    result = process_query(
+        q, voice, auto_uppercase,
+        location=(lat, lon) if location_present else None
+    )
 
     # Get URL for response as synthesized speech audio
     if voice:

@@ -28,6 +28,8 @@
 
 import importlib
 import logging
+import datetime
+import json
 
 from settings import Settings
 
@@ -54,7 +56,7 @@ _QUERY_ROOT = "QueryRoot"
 _GRAMMAR_PREAMBLE = """
 
 QueryRoot →
-    Queries
+    Query
 
 # Mark the QueryRoot nonterminal as a root in the grammar
 $root(QueryRoot)
@@ -64,10 +66,9 @@ $root(QueryRoot)
 
 class QueryGrammar(BIN_Grammar):
 
-    """ A subclass of BIN_Grammar that causes conditional sections in the
-        Reynir.grammar file, demarcated using
-        $if(include_queries)...$endif(include_queries),
-        to be included in the grammar as it is read and parsed """
+    """ A subclass of BIN_Grammar that reads its input from
+        strings obtained from query handler plug-ins in the
+        queries subdirectory, prefixed by a preamble """
 
     def __init__(self):
         super().__init__()
@@ -95,11 +96,11 @@ class QueryGrammar(BIN_Grammar):
                 # Read grammar file line-by-line
                 for line in inp:
                     yield line
-            # Yield the grammar preamble
+            # Yield the query grammar preamble
             grammar_preamble = _GRAMMAR_PREAMBLE.split("\n")
             for line in grammar_preamble:
                 yield line
-            # Yield grammar additions, if any
+            # Yield grammar additions from plug-ins, if any
             grammar_additions = QueryParser.grammar_additions().split("\n")
             for line in grammar_additions:
                 yield line
@@ -153,9 +154,16 @@ class Query:
     _parser = None
     _processors = None
 
-    def __init__(self, session, query, voice, auto_uppercase):
+    def __init__(self, session, query, voice, auto_uppercase, location):
         self._session = session
         self._query = query
+        self._location = location
+        # Prepare a "beautified query" object, that can be
+        # shown in a client user interface
+        bq = (query[0].upper() + query[1:]) if query else ""
+        if not bq.endswith("?"):
+            bq += "?"
+        self._beautified_query = bq
         self._voice = voice
         self._auto_uppercase = auto_uppercase
         self._error = None
@@ -278,7 +286,7 @@ class Query:
 
         if not trees:
             # No parse at all
-            self.set_error("E_NO_TREES")
+            self.set_error("E_NO_PARSE_TREES")
             return False
 
         result.update(parse_result)
@@ -298,7 +306,6 @@ class Query:
         # Looks good
         # Store the resulting parsed query as a tree
         tree_string = "S1\n" + trees[1]
-        # print("Query tree:\n{0}".format(tree_string))
         self._tree = Tree()
         self._tree.load(tree_string)
         # Store the token list
@@ -313,6 +320,7 @@ class Query:
                 # This processor has a handle_plain_text function:
                 # call it
                 if handle_plain_text(self):
+                    # Successfully handled: we're done
                     return True
         return False
 
@@ -332,16 +340,29 @@ class Query:
                 # Process the tree, which has only one sentence
                 self._tree.process(self._session, processor, query=self)
                 if self._answer and self._error is None:
+                    # The processor successfully answered the query
                     return True
+        # No processor was able to answer the query
         return False
 
     @property
     def query(self):
         return self._query
-    
+
     @property
     def query_lower(self):
         return self._query.lower()
+
+    @property
+    def beautified_query(self):
+        return self._beautified_query
+
+    def set_beautified_query(self, q):
+        self._beautified_query = q
+
+    @property
+    def location(self):
+        return self._location
 
     @property
     def token_list(self):
@@ -399,7 +420,7 @@ class Query:
             and return True """
         if Query._parser is None:
             Query.init_class()
-        result = dict(q=self.query)
+        result = dict(q_raw=self.query, q=self.beautified_query)
         # First, try to handle this from plain text, without parsing:
         # shortcut to a successful, plain response
         if not self.execute_from_plain_text():
@@ -418,11 +439,21 @@ class Query:
                 result["valid"] = True
                 return result
         # Successful query: return the answer in response
-        result["response"] = self._response
         if self._answer:
             result["answer"] = self._answer
         if self._voice and self._voice_answer:
+            # This is a voice query and we have a voice answer to it
             result["voice"] = self._voice_answer
+        if self._voice:
+            # Optimize the response to voice queries:
+            # we don't need detailed information about alternative
+            # answers or their sources
+            result["response"] = dict(answer=self._answer or "")
+        else:
+            # Return a detailed response if not a voice query
+            result["response"] = self._response
+        # Re-assign the beautified query string, in case the processor modified it
+        result["q"] = self.beautified_query
         # ...and the query type, as a string ('Person', 'Entity', 'Title' etc.)
         result["qtype"] = qt = self.qtype()
         # ...and the key used to retrieve the answer, if any
@@ -440,10 +471,21 @@ class Query:
                     name=img.name,
                 )
         result["valid"] = True
+        if Settings.DEBUG:
+            def converter(o):
+                """ Ensure that datetime.datetime is output in ISO format to JSON """
+                if isinstance(o, datetime.datetime):
+                    return o.isoformat()[0:16]
+                return None
+            print(
+                "{0}".format(
+                    json.dumps(result, indent=3, ensure_ascii=False, default=converter)
+                )
+            )
         return result
 
 
-def process_query(q, voice, auto_uppercase):
+def process_query(q, voice, auto_uppercase, location=None):
     """ Process an incoming natural language query.
         If voice is True, return a voice-friendly string to
         be spoken to the user. If auto_uppercase is True,
@@ -464,13 +506,13 @@ def process_query(q, voice, auto_uppercase):
             it = iter([q])
         else:
             # This should be an iterable of strings,
-            # in priority order
+            # in decreasing priority order
             it = iter(q)
         # Iterate through the submitted query strings,
         # attempting to execute them in turn until we find
         # one that works (or we're stumped)
         for qtext in it:
-            query = Query(session, qtext, voice, auto_uppercase)
+            query = Query(session, qtext, voice, auto_uppercase, location)
             result = query.execute()
             if result["valid"] and "error" not in result:
                 # Successful: our job is done

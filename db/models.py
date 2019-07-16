@@ -37,11 +37,25 @@ from sqlalchemy import (
     Sequence,
     Boolean,
     UniqueConstraint,
+    Index,
     ForeignKey,
     PrimaryKeyConstraint,
+    func
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as psql_UUID
+from sqlalchemy.ext.hybrid import Comparator, hybrid_property
+
+
+class CaseInsensitiveComparator(Comparator):
+
+    """ Boilerplate from the PostgreSQL documentation to implement
+        a case-insensitive comparator """
+
+    # See https://docs.sqlalchemy.org/en/13/orm/extensions/hybrid.html
+
+    def __eq__(self, other):
+        return func.lower(self.__clause_element__()) == func.lower(other)
 
 
 # Create the SQLAlchemy ORM Base class
@@ -227,6 +241,15 @@ class Entity(Base):
 
     # Name
     name = Column(String, index=True)
+
+    @hybrid_property
+    def name_lc(self):
+        return self.name.lower()
+
+    @name_lc.comparator
+    def name_lc(cls):
+        return CaseInsensitiveComparator(cls.name)
+
     # Verb ('er', 'var', 'sé')
     verb = Column(String, index=True)
     # Entity definition
@@ -240,6 +263,9 @@ class Entity(Base):
 
     # The back-reference to the Article parent of this Entity
     article = relationship("Article", backref=backref("entities", order_by=name))
+
+    # Add an index on the entity name in lower case
+    name_lc_index = Index('ix_entities_name_lc', func.lower(name))
 
     def __repr__(self):
         return "Entity(id='{0}', name='{1}', verb='{2}', definition='{3}')".format(
