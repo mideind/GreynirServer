@@ -295,10 +295,13 @@ def query_api(version=1):
 
     # If voice is set, return a voice-friendly string
     voice = bool_from_request(request, "voice")
+    voice_id = None
     if request.method == "GET":
         q = request.args.get("q", "")
+        voice_id = request.args.get("voice_id")
     else:
         q = request.form.get("q", "")
+        voice_id = request.form.get("voice_id")
 
     mq = q.split("|")[0:_MAX_QUERY_VARIANTS]
     q = [m.strip()[0:_MAX_QUERY_LENGTH] for m in mq]
@@ -306,13 +309,14 @@ def query_api(version=1):
     # Auto-uppercasing can be turned off by sending autouppercase: false in the query JSON
     auto_uppercase = bool_from_request(request, "autouppercase", True)
 
+    # Process the query
     result = process_query(q, voice, auto_uppercase)
 
     # Get URL for response as synthesized speech audio
     if voice:
         # If the result contains a "voice" key, return it
         audio = result.get("voice")
-        url = get_synthesized_text_url(audio) if audio else None
+        url = get_synthesized_text_url(audio, voice_id=voice_id) if audio else None
         if url:
             result["audio"] = url
         response = result.get("response")
