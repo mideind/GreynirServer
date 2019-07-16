@@ -79,11 +79,13 @@ def _intialize_client():
     return boto3.Session(**aws_config).client("polly")
 
 
-def get_synthesized_text_url(text, txt_format="text", voice=_DEFAULT_VOICE):
+def get_synthesized_text_url(text, txt_format="text", voice_id=_DEFAULT_VOICE):
     """ Returns AWS URL to audio file with speech-synthesised text """
 
     assert txt_format in _TEXT_FORMATS
-    assert voice in _VOICES
+
+    if voice_id not in _VOICES:
+        voice_id = _DEFAULT_VOICE
 
     client = _intialize_client()  # Set up client lazily
     if not client:
@@ -97,7 +99,7 @@ def get_synthesized_text_url(text, txt_format="text", voice=_DEFAULT_VOICE):
         # mp3 | ogg_vorbis | pcm
         "OutputFormat": _DEFAULT_AUDIO_FORMAT,
         # Dora or Karl
-        "VoiceId": voice,
+        "VoiceId": voice_id,
         # Valid values for mp3 and ogg_vorbis are "8000", "16000", and "22050".
         # The default value is "22050".
         # "SampleRate": "",

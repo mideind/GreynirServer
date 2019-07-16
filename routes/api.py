@@ -297,12 +297,15 @@ def query_api(version=1):
     voice = bool_from_request(request, "voice")
 
     # Obtain the query string(s) and the client's location, if present
+    voice_id = None
     if request.method == "GET":
         q = request.args.get("q", "")
+        voice_id = request.args.get("voice_id")
         lat = request.args.get("latitude")
         lon = request.args.get("longitude")
     else:
         q = request.form.get("q", "")
+        voice_id = request.form.get("voice_id")
         lat = request.form.get("latitude")
         lon = request.form.get("longitude")
 
@@ -339,7 +342,7 @@ def query_api(version=1):
     if voice:
         # If the result contains a "voice" key, return it
         audio = result.get("voice")
-        url = get_synthesized_text_url(audio) if audio else None
+        url = get_synthesized_text_url(audio, voice_id=voice_id) if audio else None
         if url:
             result["audio"] = url
         response = result.get("response")
