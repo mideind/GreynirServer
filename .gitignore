@@ -84,6 +84,7 @@ package.json
 *.bin
 *.sublime-project
 *.sublime-workspace
+*.code-workspace
 *.bak
 *.profile
 *.log
