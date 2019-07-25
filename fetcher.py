@@ -3,7 +3,7 @@
 
     Fetcher module
 
-    Copyright (c) 2018 Miðeind ehf.
+    Copyright (c) 2019 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -48,7 +48,8 @@ class Fetcher:
     # HTML tags that we explicitly don't want to look at
     _EXCLUDE_TAGS = frozenset(["script", "audio", "video", "style"])
 
-    # HTML tags that typically denote blocks (DIV-like), not inline constructs (SPAN-like)
+    # HTML tags that typically denote blocks (DIV-like),
+    # not inline constructs (SPAN-like)
     _BLOCK_TAGS = frozenset(
         [
             "p",

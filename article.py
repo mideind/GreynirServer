@@ -4,7 +4,7 @@
 
     Article class
 
-    Copyright (C) 2018 Miðeind ehf.
+    Copyright (C) 2019 Miðeind ehf.
     Author: Vilhjálmur Þorsteinsson
 
        This program is free software: you can redistribute it and/or modify
@@ -274,8 +274,9 @@ class Article:
             bp = self.get_parser()
             ip = IncrementalParser(bp, toklist, verbose=verbose)
 
-            # List of paragraphs containing a list of sentences containing token lists
-            # for sentences in string dump format (1-based paragraph and sentence indices)
+            # List of paragraphs containing a list of sentences containing
+            # token lists for sentences in string dump format
+            # (1-based paragraph and sentence indices)
             pgs = []
 
             # Dict of parse trees in string dump format,
@@ -349,7 +350,8 @@ class Article:
             # Keep the bag of words (stem, category, count for each word)
             self._words = words
 
-            # Create a tree representation string out of all the accumulated parse trees
+            # Create a tree representation string out of
+            # all the accumulated parse trees
             self._tree = "".join(
                 "S{0}\n{1}\n".format(key, val) for key, val in trees.items()
             )
@@ -430,7 +432,8 @@ class Article:
             return True
 
     def prepare(self, enclosing_session=None, verbose=False, reload_parser=False):
-        """ Prepare the article for display. If it's not already tokenized and parsed, do it now. """
+        """ Prepare the article for display.
+            If it's not already tokenized and parsed, do it now. """
         with SessionContext(enclosing_session, commit=True) as session:
             if self._tree is None or self._tokens is None:
                 if reload_parser:
@@ -524,8 +527,9 @@ class Article:
 
     @staticmethod
     def token_stream(limit=None, skip_errors=True):
-        """ Generator of a token stream consisting of `limit` sentences (or less) from the
-            most recently parsed articles. After each sentence, None is yielded. """
+        """ Generator of a token stream consisting of `limit` sentences
+            (or less) from the most recently parsed articles. After
+            each sentence, None is yielded. """
         with SessionContext(commit=True, read_only=True) as session:
 
             q = (
@@ -557,8 +561,9 @@ class Article:
 
     @staticmethod
     def sentence_stream(limit=None, skip=None, skip_errors=True):
-        """ Generator of a sentence stream consisting of `limit` sentences (or less) from the
-            most recently parsed articles. Each sentence is a list of token dicts. """
+        """ Generator of a sentence stream consisting of `limit`
+            sentences (or less) from the most recently parsed articles.
+            Each sentence is a list of token dicts. """
         with SessionContext(commit=True, read_only=True) as session:
 
             q = (
@@ -581,7 +586,8 @@ class Article:
                             # Skip error sentences
                             continue
                         if skip is not None and skipped < skip:
-                            # If requested, skip sentences from the front (useful for test set)
+                            # If requested, skip sentences from the front
+                            # (useful for test set)
                             skipped += 1
                             continue
                         # Yield the sentence as a fresh token list
@@ -593,7 +599,8 @@ class Article:
 
     @classmethod
     def articles(cls, criteria, enclosing_session=None):
-        """ Generator of Article objects from the database that meet the given criteria """
+        """ Generator of Article objects from the database that
+            meet the given criteria """
         # The criteria are currently "timestamp", "author" and "domain",
         # as well as "order_by_parse" which if True indicates that the result
         # should be ordered with the most recently parsed articles first.
@@ -640,8 +647,8 @@ class Article:
 
     @classmethod
     def all_matches(cls, criteria, pattern, enclosing_session=None):
-        """ Generator of SimpleTree objects (see matcher.py) from articles matching
-            the given criteria and the pattern """
+        """ Generator of SimpleTree objects (see matcher.py) from
+            articles matching the given criteria and the pattern """
 
         with SessionContext(
             commit=True, read_only=True, session=enclosing_session

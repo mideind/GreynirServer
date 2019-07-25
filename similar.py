@@ -5,7 +5,7 @@
 
     Similarity query client
 
-    Copyright (C) 2018 Miðeind ehf.
+    Copyright (C) 2019 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -42,10 +42,12 @@ from settings import Settings
 
 try:
     import eventlet
+
     USING_EVENTLET = True
-    socket = eventlet.patcher.original('socket')
+    socket = eventlet.patcher.original("socket")
 except ImportError:
     import socket
+
     USING_EVENTLET = False
 
 # The following two functions replicate and hack/tweak corresponding functions
@@ -53,6 +55,7 @@ except ImportError:
 # multiprocessing.connection.SocketClient() function uses the context protocol
 # on a socket, but this is not allowed by the monkey-patched GreenSocket
 # that eventlet inserts instead of the original socket class.
+
 
 def _SocketClient(address):
     """ Return a connection object connected to the socket given by `address` """
@@ -81,10 +84,8 @@ class SimilarityClient:
     BASE_PATH = os.path.dirname(os.path.realpath(__file__))
     KEY_FILE = os.path.join(BASE_PATH, "resources/SimilarityServerKey.txt")
 
-
     def __init__(self):
         self._conn = None
-
 
     def _connect(self):
         """ Connect to a similarity server, with authentication """
@@ -99,17 +100,24 @@ class SimilarityClient:
                 secret_password = file.read()
         except OSError as oserr:
             # Unable to load authentication key
-            print("Unable to read similarity server key file {0}; error {1}".format(self.KEY_FILE, oserr))
+            print(
+                "Unable to read similarity server key file {0}; error {1}".format(
+                    self.KEY_FILE, oserr
+                )
+            )
             sys.stdout.flush()
             return
         address = (Settings.SIMSERVER_HOST, Settings.SIMSERVER_PORT)
         try:
-            self._conn = _Client(address, authkey = secret_password)
+            self._conn = _Client(address, authkey=secret_password)
         except Exception as ex:
-            print("Unable to connect to similarity server at {0}:{1}; error {2}".format(address[0], address[1], ex))
+            print(
+                "Unable to connect to similarity server at {0}:{1}; error {2}".format(
+                    address[0], address[1], ex
+                )
+            )
             sys.stdout.flush()
             # Leave self._conn set to None
-
 
     def _retry_list(self, **kwargs):
         """ Connect to the server and send it a request, retrying if the
@@ -127,8 +135,7 @@ class SimilarityClient:
                 self.close()
                 retries += 1
                 continue
-        return dict(articles = [])
-
+        return dict(articles=[])
 
     def _retry_cmd(self, **kwargs):
         """ Connect to the server and send it a command, retrying if the
@@ -148,38 +155,31 @@ class SimilarityClient:
                 retries += 1
                 continue
 
-
-    def list_similar_to_article(self, article_id, n = 10):
+    def list_similar_to_article(self, article_id, n=10):
         """ Returns a dict containing a list of (article_id, similarity) tuples """
-        return self._retry_list(cmd = 'similar', id = article_id, n = n)
+        return self._retry_list(cmd="similar", id=article_id, n=n)
 
-
-    def list_similar_to_topic(self, topic_vector, n = 10):
+    def list_similar_to_topic(self, topic_vector, n=10):
         """ Returns a dict containing a list of (article_id, similarity) tuples """
-        return self._retry_list(cmd = 'similar', topic = topic_vector, n = n)
+        return self._retry_list(cmd="similar", topic=topic_vector, n=n)
 
-
-    def list_similar_to_terms(self, terms, n = 10):
+    def list_similar_to_terms(self, terms, n=10):
         """ The terms are a list of (stem, category) tuples.
             Returns a dict where the articles key contains a
             list of (article_id, similarity) tuples """
-        return self._retry_list(cmd = 'similar', terms = terms, n = n)
-
+        return self._retry_list(cmd="similar", terms=terms, n=n)
 
     def refresh_topics(self):
         """ Cause the server to refresh article topic vectors from the database """
-        self._retry_cmd(cmd = 'refresh')
-
+        self._retry_cmd(cmd="refresh")
 
     def reload_topics(self):
         """ Cause the server to reload article topic vectors from the database """
-        self._retry_cmd(cmd = 'reload')
-
+        self._retry_cmd(cmd="reload")
 
     def close(self):
         """ Close a client connection """
         if self._conn is not None:
             self._conn.close()
             self._conn = None
-
 
