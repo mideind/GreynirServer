@@ -210,7 +210,7 @@ see [Using the Greynir Shell](docs/shell.md).
 
 ## Copyright and licensing
 
-Reynir/Greynir is *copyright (C) 2018 by Miðeind ehf.*
+Reynir/Greynir is *copyright (C) 2019 by Miðeind ehf.*
 The original author of this software is *Vilhjálmur Þorsteinsson*.
 
 ![GPLv3](https://raw.githubusercontent.com/mideind/Reynir/master/static/img/GPLv3.png)
