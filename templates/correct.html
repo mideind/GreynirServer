@@ -219,10 +219,10 @@
    function isWarning(code) {
       // Return true if the annotation code should be displayed  as a warning,
       // not as an error
-      return code[0] == "T"
-         || code[0] == "W"
-         || code == "P_NT_Komma"
-         || code == "P_NT_Að";
+      return code[0] === "T"
+         || code[0] === "W"
+         || code === "P_NT_Komma"
+         || code === "P_NT_Að";
    }
 
    function displayAnnotations(j) {
@@ -236,6 +236,7 @@
       var lastSp;
       w = []; // Token array (declared as a global in page.js)
       annSpan = []; // Array of annotation token spans
+      var unknownWords = {}; // Dict of already seen unknown words
       $.each(j, function(pix, p) {
          // We create a div for each paragraph
          x += "<div class='correct'>\n";
@@ -245,7 +246,7 @@
          var right = "";
          // Third child: SVG drawing stuff
          var canvas = "";
-         $.each(p, function(six, s) {
+         $.each(p, function(sentence_index, s) {
             // Sentence s
             lastSp = TP_NONE;
             left += "<span class='sent'>";
@@ -261,9 +262,9 @@
                lastSp = thisSp;
                var tx = t.x;
                var cls = [];
-               if (t.k == TOK_PUNCTUATION) {
+               if (t.k === TOK_PUNCTUATION) {
                   // Add space around em-dash
-                  if (tx == "—")
+                  if (tx === "—")
                      tx = " — ";
                   cls.push("p");
                }
@@ -295,15 +296,21 @@
             // Accumulate annotations into the right column
             $.each(s.annotations, function(aix, a) {
                // Annotation a
-               var cls = isWarning(a.code) ? " class='warning'" : "";
-               right += "<div id='a" + annSpan.length + "'" + cls + ">" +
-                  formatAnnotation(a.text) + "</div>\n";
-               // Add a path to the canvas (empty at this point
-               // but will be defined in repositionAnnotations())
-               canvas += "<path id='p" + annSpan.length + "'" + cls + "></path>\n";
-               // Note the token span to which the annotation applies,
-               // within the global token list
-               annSpan.push({ start: six + a.start, end: six + a.end });
+               // We do not show repeated annotations for unknown words
+               if (a.code !== "U001" || unknownWords[a.text] === undefined) {
+                  var cls = isWarning(a.code) ? " class='warning'" : "";
+                  right += "<div id='a" + annSpan.length + "'" + cls + ">" +
+                     formatAnnotation(a.text) + "</div>\n";
+                  // Add a path to the canvas (empty at this point
+                  // but will be defined in repositionAnnotations())
+                  canvas += "<path id='p" + annSpan.length + "'" + cls + "></path>\n";
+                  // Note the token span to which the annotation applies,
+                  // within the global token list
+                  annSpan.push({start: six + a.start, end: six + a.end});
+                  if (a.code === "U001")
+                     // Note that we have have now annotated this unknown word
+                     unknownWords[a.text] = true;
+               }
             });
             // Finish sentence
             left += "</span>\n";

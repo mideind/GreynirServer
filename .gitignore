@@ -56,6 +56,7 @@ ifd/
 gold/
 logs/
 .idea/
+.vscode/
 node_modules/
 cffi_test/
 backup/
