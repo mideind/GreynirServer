@@ -4,7 +4,6 @@
     Reynir: Natural language processing for Icelandic
 
     Copyright (C) 2019 Miðeind ehf.
-    Original author: Vilhjálmur Þorsteinsson
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -44,7 +43,7 @@ _API_KEYS_PATH = os.path.join("resources", "aws_polly_keys.json")
 _api_client = None
 
 # Voices
-_DEFAULT_VOICE = "Dora"  # "Karl"
+_DEFAULT_VOICE = "Dora"
 _VOICES = frozenset(("Dora", "Karl"))
 
 # Audio formats
