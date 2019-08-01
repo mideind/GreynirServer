@@ -24,6 +24,7 @@ from tokenizer import tokenize, TOK
 
 _OPERATORS = {"sinnum": "*", "plús": "+", "mínus": "-", "deiltmeð": "/"}
 
+# TODO: Ráða við töluorð
 # TODO: Support "hvað er x í y veldi" and "hver er kvaðraðrótin af x"
 
 def handle_plain_text(q):

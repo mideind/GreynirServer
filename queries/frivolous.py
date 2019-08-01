@@ -85,9 +85,9 @@ _SPECIAL_QUERIES = {
     "hver er ég?": {
         "answer": "Þú ert þú."
     },
-    "hvar er ég?": {
-        "answer": "Þú ert hérna."
-    },
+    # "hvar er ég?": {
+    #     "answer": "Þú ert hérna."
+    # },
     "er guð til?": {
         "answer": "Ég held ekki."
     },
