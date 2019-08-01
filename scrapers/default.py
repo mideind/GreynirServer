@@ -1581,6 +1581,8 @@ class DVScraper(ScrapeHelper):
     def _get_content(self, soup_body):
         """ Find the article content (main text) in the soup """
         content = ScrapeHelper.div_class(soup_body, "textinn")
+        if not content:
+            return BeautifulSoup("", _HTML_PARSER)  # Return empty soup.
 
         for t in content.find_all("style"):
             t.decompose()
