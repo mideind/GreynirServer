@@ -20,12 +20,13 @@
 
 """
 
-# TODO: Iceland street names should be in the accusative. Country name should also be declined.
+# TODO: Country name should also be declined.
 # TODO: "staddur á" vs. "staddur í"
 
 import requests
 import json
 import logging
+from iceaddr import iceaddr_lookup
 
 MAPS_API_URL = "https://maps.googleapis.com/maps/api/geocode/json?latlng={0},{1}&key={2}&language=is"
 
@@ -49,6 +50,64 @@ def _get_API_key():
     return _API_KEY
 
 
+def _query_geocode_API(lat, lon):
+    # Load API key
+    key = _get_API_key()
+    if not key:
+        # No key, can't query Google location API
+        logging.warning("No API key for location lookup")
+        return False
+
+    # Send API request
+    url = MAPS_API_URL.format(lat, lon, key)
+    try:
+        r = requests.get(url)
+    except Exception as e:
+        logging.warning(str(e))
+        return None
+
+    # Verify that status is OK
+    if r.status_code != 200:
+        logging.warning("Received status {0} from geocode API server", r.status_code)
+        return None
+
+    # Parse json API response
+    try:
+        res = json.loads(r.text)
+        return res
+    except Exception as e:
+        logging.warning("Error parsing JSON API response: {0}", str(e))
+
+    return None
+
+
+def _addrinfo_from_api_result(result):
+    """ Extract relevant address components from Google API result """
+    comp = result["address_components"]
+
+    num = None
+    street = None
+    locality = None
+    country = None
+    postcode = None
+
+    for c in comp:
+        if not "types" in c:
+            continue
+        if "street_number" in c["types"]:
+            num = c["long_name"]
+        elif "route" in c["types"]:
+            street = c["long_name"]
+        elif "locality" in c["types"]:
+            locality = c["long_name"]
+        elif "country" in c["types"]:
+            country = c["long_name"]
+        elif "postal_code" in c["types"]:
+            postcode = c["long_name"]
+
+    return (street, num, locality, postcode, country)
+
+
 WHERE_AM_I_STRINGS = frozenset(
     ("hvar er ég", "hvar er ég núna", "hvar er ég staddur", "hver er staðsetning mín")
 )
@@ -56,12 +115,7 @@ LOC_QTYPE = "Location"
 
 
 def handle_plain_text(q):
-    """ Handle a plain text query, contained in the q parameter
-        which is an instance of the query.Query class.
-        Returns True if the query was handled, and in that case
-        the appropriate properties on the Query instance have
-        been set, such as the answer and the query type (qtype).
-        If the query is not recognized, returns False. """
+    """ Handle a plain text query asking about user's current location. """
     ql = q.query_lower
 
     if ql.endswith("?"):
@@ -73,6 +127,7 @@ def handle_plain_text(q):
     loc = q.location
     if not loc:
         # We don't have a location associated with the query
+        # so we return a response saying we don't know
         answer = "Ég veit ekkert um staðsetningu þína."
         response = dict(answer=answer)
         voice = answer
@@ -80,54 +135,49 @@ def handle_plain_text(q):
         q.set_answer(response, answer, voice)
         return True
 
-    # Load API key
-    key = _get_API_key()
-    if not key:
-        # No key, can't query Google location API
-        logging.warning("No API key for location lookup")
-        return False
-
     # Send API request
-    url = MAPS_API_URL.format(loc[0], loc[1], key)
-    try:
-        r = requests.get(url)
-    except Exception as e:
-        logging.warning(str(e))
-        return False
+    res = _query_geocode_API(loc[0], loc[1])
 
-    if r.status_code != 200:
-        return False
-
-    # Parse json API response
-    resp = json.loads(r.text)
-
+    # Verify that we have at least one valid result
     if (
-        not resp
-        or "results" not in resp
-        or not len(resp["results"])
-        or not resp["results"][0]
+        not res
+        or "results" not in res
+        or not len(res["results"])
+        or not res["results"][0]
     ):
         return False
 
-    top = resp["results"][0]
+    top = res["results"][0]
 
-    try:
-        comp = top["address_components"]
+    # Extract address info from top result
+    (street, num, locality, postcode, country) = _addrinfo_from_api_result(top)
 
-        # Extract address info
-        num = comp[0]["long_name"]
-        street = comp[1]["long_name"]
-        locality = comp[3]["long_name"]
+    if country == "Ísland":
+        descr = "Íslandi"
 
-        # Create response string
-        descr = "{1} {0} í {2}".format(num, street, locality)
-    except Exception as e:
-        logging.warning("Failed to create address string from API response")
+        if street:
+            # Look up address in staðfangaskrá to get the
+            # dative case of street name and locality
+            addrinfo = iceaddr_lookup(street, placename=locality, limit=1)
+            if len(addrinfo):
+                street = addrinfo[0]["heiti_tgf"]
+                if locality and locality == addrinfo[0]["stadur_nf"]:
+                    locality = addrinfo[0]["stadur_tgf"]
+
+            descr = street
+            if num:
+                descr += " " + num
+            if locality:
+                prefix = "í" # TODO: "í" vs. "á" for locality
+                descr += " {0} {1}".format(prefix, locality)
+    
+    if not descr:
+        # Just use the formatted address string provided by Google
         descr = top["formatted_address"]
 
     answer = descr
     response = dict(answer=answer)
-    voice = "Þú ert staddur á {0}".format(answer)
+    voice = "Þú ert á {0}".format(answer)
 
     q.set_qtype(LOC_QTYPE)
     q.set_answer(response, answer, voice)
