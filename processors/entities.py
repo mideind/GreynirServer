@@ -109,15 +109,30 @@ def sentence(state, result):
         while any(definition.endswith(p) for p in (" ,", " .", " :", " !", " ?")):
             definition = definition[:-2]
 
-        if len(entity) < 2 or len(definition) < 2:
-            # Avoid chaff
-            continue
-
-        # Cut phrases off the front
-        for p in ("sem er ", "jafnframt er "):
+        # Cut phrases off the front of the definition
+        for p in (
+            "sem er ",
+            "jafnframt er ",
+        ):
             if definition.startswith(p):
                 definition = definition[len(p):]
                 break
+
+        # Cut phrases off the back of the entity
+        for p in (
+            " sem framleiddur var"
+            " sem haldin var",
+            " sem lagt var",
+            " sem var",
+            " var",
+        ):
+            if entity.endswith(p):
+                entity = entity[:-len(p)]
+                break
+
+        if len(entity) < 2 or len(definition) < 2:
+            # Avoid chaff
+            continue
 
         def def_ok(definition):
             """ Returns True if a definition meets basic sanity criteria """
