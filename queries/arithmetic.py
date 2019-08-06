@@ -20,63 +20,223 @@
 
 """
 
-from tokenizer import tokenize, TOK
+# TODO: Support "hvað er x í y veldi"
 
-_OPERATORS = {"sinnum": "*", "plús": "+", "mínus": "-", "deiltmeð": "/"}
 
-# TODO: Ráða við töluorð
-# TODO: Support "hvað er x í y veldi" and "hver er kvaðraðrótin af x"
+from math import sqrt
 
-def handle_plain_text(q):
-    """ Handle a plain text query, contained in the q parameter
-        which is an instance of the query.Query class.
-        Returns True if the query was handled, and in that case
-        the appropriate properties on the Query instance have
-        been set, such as the answer and the query type (qtype).
-        If the query is not recognized, returns False. """
-    ql = q.query_lower
+_NUMBER_WORDS = {
+    "núll": 0,
+    "einn": 1,
+    "tveir": 2,
+    "þrír": 3,
+    "fjórir": 4,
+    "fimm": 5,
+    "sex": 6,
+    "sjö": 7,
+    "átta": 8,
+    "níu": 9,
+    "tíu": 10,
+    "ellefu": 11,
+    "tólf": 12,
+    "þrettán": 13,
+    "fjórtán": 14,
+    "fimmtán": 15,
+    "sextán": 16,
+    "sautján": 17,
+    "átján": 18,
+    "nítján": 19,
+    "tuttugu": 20,
+    "þrjátíu": 30,
+    "fjörutíu": 40,
+    "fimmtíu": 50,
+    "sextíu": 60,
+    "sjötíu": 70,
+    "áttatíu": 80,
+    "níutíu": 90,
+    "hundrað": 100,
+    "þúsund": 1000,
+    "milljón": 1e6,
+    "milljarður": 1e9,
+}
 
-    if not ql.startswith("hvað er "):
-        return False
+# Indicate that this module wants to handle parse trees for queries,
+# as opposed to simple literal text strings
+HANDLE_TREE = True
 
-    ql = ql[8:]
-    if ql.endswith("?"):
-        ql = ql[:-1]
+# The context-free grammar for the queries recognized by this plug-in module
+GRAMMAR = """
 
-    ql = ql.replace("deilt með", "deiltmeð")
+# ----------------------------------------------
+#
+# Query grammar for arithmetic-related queries
+#
+# ----------------------------------------------
 
-    tokens = list(tokenize(ql))[1:-1]
-    # For now, we only support arithmetic queries of
-    # the form "NUMBER OPERATOR NUMBER"
-    if (
-        len(tokens) != 3
-        or tokens[0].kind != TOK.NUMBER
-        or tokens[1].txt not in _OPERATORS.keys()
-        or tokens[2].kind != TOK.NUMBER
-    ):
-        return False
+# A plug-in query grammar always starts with the following,
+# adding one or more query productions to the Query nonterminal
 
-    def proc(t):
-        if t.txt in _OPERATORS.keys():
-            return _OPERATORS[t.txt]
-        if t.kind == TOK.NUMBER:
-            return str(t.val[0])
-        return ""
+Query →
+    QArithmetic
 
-    qs = " ".join([proc(t) for t in tokens])
-    # EVAL!!!
-    result = eval(qs, {"__builtins__": None}, {})
+# By convention, names of nonterminals in query grammars should
+# start with an uppercase Q
 
-    if isinstance(result, float):
-        answer = "{0:.2f}".format(result).replace(".", ",")
+QArithmetic →
+
+    # 'Hvað er nítjan sinnum 12?'
+    # 'Hvað er sautján deilt með tveimur?'
+    "hvað" "er" QArithmeticFirstNumber QArithmeticOperator QArithmeticSecondNumber '?'?
+    | "hver" "er" QSquareRootOperator QArithmeticFirstNumber '?'?
+#    | "hvað" "er" QArithmeticFirstNumber "í" QArithmeticSecondNumber "veldi" '?'?
+
+QArithmeticNumberWord →
+
+    # to is a declinable number word ('tveir/tvo/tveim/tveggja')
+    # töl is an undeclinable number word ('sautján')
+    # tala is a number ('17')
+    "einn" | to | töl | tala
+
+QArithmeticFirstNumber → QArithmeticNumberWord
+QArithmeticSecondNumber → QArithmeticNumberWord
+
+QArithmeticPlusOperator → "plús"
+QArithmeticMinusOperator → "mínus" 
+QArithmeticDivisionOperator → "deilt" "með"
+QArithmeticMultiplicationOperator → "sinnum"
+
+QSquareRootOperator → "kvaðratrótin" "af" | "kvaðratrót" "af"
+
+QArithmeticOperator → 
+    QArithmeticPlusOperator 
+    | QArithmeticMinusOperator
+    | QArithmeticMultiplicationOperator 
+    | QArithmeticDivisionOperator
+
+"""
+
+
+def parse_num(number_str):
+    num = None
+    try:
+        # Handle digits
+        num = int(number_str)
+    except ValueError:
+        # Handle number words ("sautján")
+        num = _NUMBER_WORDS.get(number_str, 0)
+    except Exception as e:
+        print("Unexpected exception: {0}".format(e))
+        raise
+    return num
+
+
+def QArithmeticNumberWord(node, params, result):
+    pass
+
+
+def QArithmeticFirstNumber(node, params, result):
+    print(result._canonical)
+    result.first_num = parse_num(result._nominative)
+
+
+def QArithmeticSecondNumber(node, params, result):
+    result.second_num = parse_num(result._nominative)
+
+
+def QSquareRootOperator(node, params, result):
+    result.operator = result._canonical
+
+
+def QArithmeticOperator(node, params, result):
+    result.operator = result._canonical
+
+
+def QArithmetic(node, params, result):
+    """ Arithmetic query """
+    # Set the query type
+    result.qtype = "Arithmetic"
+    result.qkey = "5"
+
+    # if "bus_number" in result:
+    #     # The bus number has been automatically
+    #     # percolated upwards from a child node (see below).
+    #     # Set the query key
+    #     result.qkey = result.bus_number
+
+
+_OPERATORS = {"sinnum": "*", "plús": "+", "mínus": "-", "deilt með": "/"}
+
+
+def query_arithmetic(query, result):
+    """ A query for arithmetic """
+
+    eval_globals = {"__builtins__": None}
+
+    operator = result.operator
+    # Square root calculation
+    if operator == "kvaðratrótin af":  # TODO: Ugh!
+        # Allow sqrt function in eval namespace
+        eval_globals["sqrt"] = sqrt
+
+        # TODO: Size of number should be capped
+        s = "sqrt({0})".format(result["first_num"])
+    # Addition, subtraction, multiplication, division
+    else:
+        math_op = _OPERATORS.get(operator)
+
+        # Check for division by zero
+        if math_op == "/" and result["second_num"] == 0:
+            # TODO: Handle this better
+            return (None, None, None)
+
+        s = "{0} {1} {2}".format(result["first_num"], math_op, result["second_num"])
+
+    # TODO, safety checks here. This is eval!
+    print(s)
+    res = eval(s, eval_globals, {})
+    print(res)
+
+    if isinstance(res, float):
+        # Convert to Icelandic decimal places
+        answer = "{0:.2f}".format(res).replace(".", ",")
+        # Strip trailing zeros
         while answer.endswith("0") or answer.endswith(","):
             answer = answer[:-1]
     else:
-        answer = str(result)
+        answer = str(res)
 
-    q.set_qtype("Arithmetic")
     response = dict(answer=answer)
-    voice = "{0} er {1}".format(ql, answer)
-    q.set_answer(response, answer, voice)
+    voice_answer = (
+        answer
+    )  # "{0} {1} {2} er {3}".format(result["first_num"], operator, result["second_num"], answer)
+    return response, answer, voice_answer
 
-    return True
+
+_QFUNC = {"Arithmetic": query_arithmetic}
+
+
+def sentence(state, result):
+    """ Called when sentence processing is complete """
+    q = state["query"]
+    if "qtype" in result:
+        # Successfully matched a query type
+        q.set_qtype(result.qtype)
+        q.set_key(result.qkey)
+
+        # Select a query function and execute it
+        qfunc = _QFUNC.get(result.qtype)
+        if qfunc is None:
+            # Something weird going on - should not happen
+            answer = result.qtype + ": " + result.qkey
+            q.set_answer(dict(answer=answer), answer)
+        else:
+            try:
+                (response, answer, voice_answer) = qfunc(q, result)
+                q.set_answer(response, answer, voice_answer)
+            except AssertionError:
+                raise
+            except Exception as e:
+                raise
+                q.set_error("E_EXCEPTION: {0}".format(e))
+    else:
+        q.set_error("E_QUERY_NOT_UNDERSTOOD")
