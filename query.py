@@ -106,8 +106,14 @@ class QueryGrammar(BIN_Grammar):
                 yield line
 
         try:
+            # Note that if Settings.DEBUG is True, we always write a fresh
+            # binary grammar file, regardless of file timestamps. This helps
+            # in query development, as query grammar fragment strings may change
+            # without any .grammar source file change (which is the default
+            # trigger for generating new binary grammar files).
             return self.read_from_generator(
-                fname, grammar_generator(), verbose, binary_fname
+                fname, grammar_generator(), verbose, binary_fname,
+                force_new_binary=Settings.DEBUG
             )
         except (IOError, OSError):
             raise GrammarError("Unable to open or read grammar file", fname, 0)
