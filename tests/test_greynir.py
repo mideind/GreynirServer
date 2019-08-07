@@ -113,6 +113,28 @@ def test_query_api(client):
     assert "voice" in json
     # assert json["voice"] == "Vagn númer 17 kemur klukkan 15 33"
 
+    ARITHM_QUERIES = {
+        "hvað er fimm sinnum tólf": "60",
+        "hvað er 12 sinnum 12?": "144",
+        "hvað er nítján plús 3": "22",
+        "hvað er hundrað mínus sautján": "83",
+        "hvað er 17 deilt með fjórum": "4,25",
+        "hver er kvaðratrótin af 256": "16",
+        #"hvað er 12 í þriðja veldi": "1728",
+        #"hvað er 17 prósent af 20": "3,4",
+    }
+
+    for q, a in ARITHM_QUERIES.items():
+        resp = client.get("/query.api?voice=1&q={0}".format(q))
+        assert resp.content_type.startswith(API_CONTENT_TYPE)
+        assert resp.is_json
+        json = resp.get_json()
+        assert "valid" in json
+        assert json["valid"] == True
+        assert "qtype" in json
+        assert json["qtype"] == "Arithmetic"
+        assert "answer" in json
+        assert json["answer"] == a
 
 def test_processors():
     """ Try to import all tree/token processors by instantiating Processor object """

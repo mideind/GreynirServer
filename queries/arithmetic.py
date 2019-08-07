@@ -20,10 +20,8 @@
 
 """
 
-# TODO: Support "hvað er x í y veldi"
 
-
-from math import sqrt
+import math
 
 _NUMBER_WORDS = {
     "núll": 0,
@@ -60,6 +58,23 @@ _NUMBER_WORDS = {
     "milljarður": 1e9,
 }
 
+# _ORDINAL_WORDS = {
+#     "fyrsta": 1,
+#     "öðru": 2,
+#     "þriðja": 3,
+#     "fjórða": 4,
+#     "fimmta": 5,
+#     "sjötta": 6,
+#     "sjöunda": 7,
+#     "áttunda": 8,
+#     "níunda": 9,
+#     "tíunda": 10,
+#     "ellefta": 11,
+#     "tólfta": 12,
+#     "þrettánda": 13,
+#     "fjórtánda": 14,
+# }
+
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings
 HANDLE_TREE = True
@@ -83,115 +98,162 @@ Query →
 # start with an uppercase Q
 
 QArithmetic →
+    # 'Hvað er X sinnum/deilt með/plús/mínus Y?'
+    QArGenericPrefix QArStd '?'?
+    # 'Hver/Hvað er kvaðratrótin af X?'
+    | QArAnyPrefix QArSqrt '?'?
+    # 'Hvað er 12 prósent af 93'
+    | QArGenericPrefix QArPercent '?'?
+#    # 'Hvað er X í Y veldi?'
+#    | QArGenericPrefix QArPow '?'?
 
-    # 'Hvað er nítjan sinnum 12?'
-    # 'Hvað er sautján deilt með tveimur?'
-    "hvað" "er" QArithmeticFirstNumber QArithmeticOperator QArithmeticSecondNumber '?'?
-    | "hver" "er" QSquareRootOperator QArithmeticFirstNumber '?'?
-#    | "hvað" "er" QArithmeticFirstNumber "í" QArithmeticSecondNumber "veldi" '?'?
+QArGenericPrefix → "hvað" "er"
+QArSpecificPrefix → "hver" "er"
+QArAnyPrefix → QArGenericPrefix | QArSpecificPrefix
 
-QArithmeticNumberWord →
+QArStd → QArNumberWord QArOperator QArNumberWord
+QArSqrt → QArSquareRootOperator QArNumberWord
+QArPow → QArNumberWord "í" QArNumberWord QArPowOperator
+QArPercent → QArPercentOperator QArNumberWord
 
+QArNumberWord →
     # to is a declinable number word ('tveir/tvo/tveim/tveggja')
     # töl is an undeclinable number word ('sautján')
     # tala is a number ('17')
-    "einn" | to | töl | tala
+    "einn" | "einum" | "eitt" | to | töl | tala
 
-QArithmeticFirstNumber → QArithmeticNumberWord
-QArithmeticSecondNumber → QArithmeticNumberWord
+QArPlusOperator → "plús"
+QArMinusOperator → "mínus" 
+QArDivisionOperator → "deilt" "með"
+QArMultiplicationOperator → "sinnum"
 
-QArithmeticPlusOperator → "plús"
-QArithmeticMinusOperator → "mínus" 
-QArithmeticDivisionOperator → "deilt" "með"
-QArithmeticMultiplicationOperator → "sinnum"
+QArSquareRootOperator → "kvaðratrótin" "af" | "kvaðratrót" "af"
+QArPowOperator → "veldi"
+QArPercentOperator → "prósent" "af" 
 
-QSquareRootOperator → "kvaðratrótin" "af" | "kvaðratrót" "af"
-
-QArithmeticOperator → 
-    QArithmeticPlusOperator 
-    | QArithmeticMinusOperator
-    | QArithmeticMultiplicationOperator 
-    | QArithmeticDivisionOperator
+QArOperator → 
+    QArPlusOperator 
+    | QArMinusOperator
+    | QArMultiplicationOperator 
+    | QArDivisionOperator
 
 """
 
 
-def parse_num(number_str):
+def parse_num(num_str):
     num = None
     try:
-        # Handle digits
-        num = int(number_str)
+        # Handle digits ("17")
+        num = int(num_str)
     except ValueError:
         # Handle number words ("sautján")
-        num = _NUMBER_WORDS.get(number_str, 0)
+        num = _NUMBER_WORDS.get(num_str, 0)
     except Exception as e:
         print("Unexpected exception: {0}".format(e))
         raise
     return num
 
 
-def QArithmeticNumberWord(node, params, result):
-    pass
+def add_num(num_str, result):
+    if "numbers" not in result:
+        result.numbers = []
+    result.numbers.append(parse_num(num_str))
 
 
-def QArithmeticFirstNumber(node, params, result):
-    print(result._canonical)
-    result.first_num = parse_num(result._nominative)
+def QArNumberWord(node, params, result):
+    add_num(result._nominative, result)
 
 
-def QArithmeticSecondNumber(node, params, result):
-    result.second_num = parse_num(result._nominative)
+def QArPlusOperator(node, params, result):
+    result.operator = "plus"
 
 
-def QSquareRootOperator(node, params, result):
-    result.operator = result._canonical
+def QArMinusOperator(node, params, result):
+    result.operator = "minus"
 
 
-def QArithmeticOperator(node, params, result):
-    result.operator = result._canonical
+def QArDivisionOperator(node, params, result):
+    result.operator = "divide"
+
+
+def QArMultiplicationOperator(node, params, result):
+    result.operator = "multiply"
+
+
+def QArSquareRootOperator(node, params, result):
+    result.operator = "sqrt"
+
+
+def QArPowOperator(node, params, result):
+    result.operator = "pow"
+
+
+def QArPercentOperator(node, params, result):
+    result.operator = "percent"
+
+
+def QArStd(node, params, result):
+    result.desc = result._canonical
+
+
+def QArSqrt(node, params, result):
+    result.desc = result._canonical
+
+
+def QArPow(node, params, result):
+    result.desc = result._canonical
+
+
+def QArPercent(node, params, result):
+    result.desc = result._canonical
 
 
 def QArithmetic(node, params, result):
     """ Arithmetic query """
-    # Set the query type
+    # Set query type & key
     result.qtype = "Arithmetic"
-    result.qkey = "5"
-
-    # if "bus_number" in result:
-    #     # The bus number has been automatically
-    #     # percolated upwards from a child node (see below).
-    #     # Set the query key
-    #     result.qkey = result.bus_number
+    result.qkey = result.get("desc", "")
 
 
-_OPERATORS = {"sinnum": "*", "plús": "+", "mínus": "-", "deilt með": "/"}
+_OPERATORS = {"multiply": "*", "divide": "/", "plus": "+", "minus": "-"}
 
 
-def query_arithmetic(query, result):
+def calc_arithmetic(query, result):
     """ A query for arithmetic """
 
     eval_globals = {"__builtins__": None}
 
     operator = result.operator
-    # Square root calculation
-    if operator == "kvaðratrótin af":  # TODO: Ugh!
-        # Allow sqrt function in eval namespace
-        eval_globals["sqrt"] = sqrt
+    nums = result.numbers
 
+    #assert (len(nums) == 1 and operator in ["percent", "sqrt"]) or len(nums) == 2
+
+    # Square root calculation
+    if operator == "sqrt":
+        # Allow sqrt function in eval namespace
+        eval_globals["sqrt"] = math.sqrt
         # TODO: Size of number should be capped
-        s = "sqrt({0})".format(result["first_num"])
+        s = "sqrt({0})".format(nums[0])
+    # Pow
+    elif operator == "pow":
+        # Allow pow function in eval namespace
+        eval_globals["pow"] = pow
+        # TODO: Size of numbers should be capped
+        s = "pow({0},{1})".format(nums[0], nums[1])
+    # Percent
+    elif operator == "percent":
+        s = "({0} * {1}) / 100.0".format(nums[0], 1)
     # Addition, subtraction, multiplication, division
     else:
         math_op = _OPERATORS.get(operator)
 
         # Check for division by zero
-        if math_op == "/" and result["second_num"] == 0:
-            # TODO: Handle this better
-            return (None, None, None)
+        if operator == "divide" and nums[1] == 0:
+            answer = "Það er ekki hægt að deila með núlli."
+            return dict(answer=answer), answer, answer
 
-        s = "{0} {1} {2}".format(result["first_num"], math_op, result["second_num"])
+        s = "{0} {1} {2}".format(nums[0], math_op, nums[1])
 
-    # TODO, safety checks here. This is eval!
     print(s)
     res = eval(s, eval_globals, {})
     print(res)
@@ -206,13 +268,9 @@ def query_arithmetic(query, result):
         answer = str(res)
 
     response = dict(answer=answer)
-    voice_answer = (
-        answer
-    )  # "{0} {1} {2} er {3}".format(result["first_num"], operator, result["second_num"], answer)
+    voice_answer = "{0} er {1}".format(result.desc, answer)
+
     return response, answer, voice_answer
-
-
-_QFUNC = {"Arithmetic": query_arithmetic}
 
 
 def sentence(state, result):
@@ -223,20 +281,13 @@ def sentence(state, result):
         q.set_qtype(result.qtype)
         q.set_key(result.qkey)
 
-        # Select a query function and execute it
-        qfunc = _QFUNC.get(result.qtype)
-        if qfunc is None:
-            # Something weird going on - should not happen
-            answer = result.qtype + ": " + result.qkey
-            q.set_answer(dict(answer=answer), answer)
-        else:
-            try:
-                (response, answer, voice_answer) = qfunc(q, result)
-                q.set_answer(response, answer, voice_answer)
-            except AssertionError:
-                raise
-            except Exception as e:
-                raise
-                q.set_error("E_EXCEPTION: {0}".format(e))
+        try:
+            (response, answer, voice_answer) = calc_arithmetic(q, result)
+            q.set_answer(response, answer, voice_answer)
+        except AssertionError:
+            raise
+        except Exception as e:
+            raise
+            q.set_error("E_EXCEPTION: {0}".format(e))
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
