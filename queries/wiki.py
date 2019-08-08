@@ -1,0 +1,100 @@
+"""
+
+    Reynir: Natural language processing for Icelandic
+
+    Arithmetic query response module
+
+    Copyright (C) 2019 Miðeind ehf.
+
+       This program is free software: you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published by
+       the Free Software Foundation, either version 3 of the License, or
+       (at your option) any later version.
+       This program is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+       GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see http://www.gnu.org/licenses/.
+
+
+    This modules answers queries by fetching information on diverse topics
+    from the Icelandic Wikipedia API.
+
+"""
+
+from pprint import pprint
+
+# Indicate that this module wants to handle parse trees for queries,
+# as opposed to simple literal text strings
+HANDLE_TREE = True
+
+# The context-free grammar for the queries recognized by this plug-in module
+GRAMMAR = """
+
+# ----------------------------------------------
+#
+# Query grammar for arithmetic-related queries
+#
+# ----------------------------------------------
+
+# A plug-in query grammar always starts with the following,
+# adding one or more query productions to the Query nonterminal
+
+Query →
+    QAbout
+
+# By convention, names of nonterminals in query grammars should
+# start with an uppercase Q
+
+QAbout →
+    "hvað" "wiki" Manneskja/fall/nkyn '?'?
+"""
+
+
+def QAbout(node, params, result):
+    pprint(result._canonical)
+
+    # Set the query type
+    result.qtype = "About"
+    result.qkey = "5"
+
+
+def Manneskja(node, params, result):
+    pprint(result._canonical)
+
+
+_WIKI_API_URL = "https://is.wikipedia.org/w/api.php?format=json&action=query&prop=extracts&exintro&explaintext&redirects=1&titles={0}"
+
+
+def sentence(state, result):
+    """ Called when sentence processing is complete """
+    # pprint(result)
+    q = state["query"]
+    if "qtype" in result:
+        # Successfully matched a query type
+        q.set_qtype(result.qtype)
+        q.set_key(result.qkey)
+
+        answer = "Ekkert"
+        response = dict(answer=answer)
+        voice_answer = answer
+        q.set_answer(response, answer, voice_answer)
+    #     # Select a query function and execute it
+    #     qfunc = _QFUNC.get(result.qtype)
+    #     if qfunc is None:
+    #         # Something weird going on - should not happen
+    #         answer = result.qtype + ": " + result.qkey
+    #         q.set_answer(dict(answer=answer), answer)
+    #     else:
+    #         try:
+    #             (response, answer, voice_answer) = qfunc(q, result)
+    #             q.set_answer(response, answer, voice_answer)
+    #         except AssertionError:
+    #             raise
+    #         except Exception as e:
+    #             raise
+    #             q.set_error("E_EXCEPTION: {0}".format(e))
+    else:
+        state["query"].set_error("E_QUERY_NOT_UNDERSTOOD")
