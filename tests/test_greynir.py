@@ -73,13 +73,19 @@ def test_api(client):
 
 def test_query_api(client):
     """ Call API routes and validate response. """
+
+    def validate_json(r):
+        assert r.content_type.startswith(API_CONTENT_TYPE)
+        assert r.is_json
+        j = resp.get_json()
+        assert "valid" in j
+        assert j["valid"] == True
+        assert "qtype" in j
+        return j
+
+    # Frivolous module
     resp = client.get("/query.api?voice=1&q=Hver er sætastur?")
-    assert resp.content_type.startswith(API_CONTENT_TYPE)
-    assert resp.is_json
-    json = resp.get_json()
-    assert "valid" in json
-    assert json["valid"] == True
-    assert "qtype" in json
+    json = validate_json(resp)
     assert json["qtype"] == "Special"
     assert "response" in json
     assert "voice" in json
@@ -87,25 +93,9 @@ def test_query_api(client):
     assert json["response"]["answer"] == "Tumi Þorsteinsson."
     assert json["voice"] == "Tumi Þorsteinsson er langsætastur."
 
-    resp = client.get("/query.api?voice=0&q=Hver er sætastur?")
-    assert resp.content_type.startswith(API_CONTENT_TYPE)
-    assert resp.is_json
-    json = resp.get_json()
-    assert "valid" in json
-    assert json["valid"] == True
-    assert "qtype" in json
-    assert json["qtype"] == "Special"
-    assert "response" in json
-    assert "answer" in json["response"]
-    assert json["response"]["answer"] == "Tumi Þorsteinsson."
-
+    # Bus module
     resp = client.get("/query.api?voice=1&q=hvenær er von á vagni númer 17")
-    assert resp.content_type.startswith(API_CONTENT_TYPE)
-    assert resp.is_json
-    json = resp.get_json()
-    assert "valid" in json
-    assert json["valid"] == True
-    assert "qtype" in json
+    json = validate_json(resp)
     assert json["qtype"] == "ArrivalTime"
     assert "answer" in json
     # assert json["answer"] == "15:33"
@@ -113,6 +103,7 @@ def test_query_api(client):
     assert "voice" in json
     # assert json["voice"] == "Vagn númer 17 kemur klukkan 15 33"
 
+    # Arithmetic module
     ARITHM_QUERIES = {
         "hvað er fimm sinnum tólf": "60",
         "hvað er 12 sinnum 12?": "144",
@@ -120,21 +111,31 @@ def test_query_api(client):
         "hvað er hundrað mínus sautján": "83",
         "hvað er 17 deilt með fjórum": "4,25",
         "hver er kvaðratrótin af 256": "16",
-        #"hvað er 12 í þriðja veldi": "1728",
-        #"hvað er 17 prósent af 20": "3,4",
+        # "hvað er 12 í þriðja veldi": "1728",
+        # "hvað er 17 prósent af 20": "3,4",
     }
 
     for q, a in ARITHM_QUERIES.items():
         resp = client.get("/query.api?voice=1&q={0}".format(q))
-        assert resp.content_type.startswith(API_CONTENT_TYPE)
-        assert resp.is_json
-        json = resp.get_json()
-        assert "valid" in json
-        assert json["valid"] == True
-        assert "qtype" in json
+        json = validate_json(resp)
         assert json["qtype"] == "Arithmetic"
         assert "answer" in json
         assert json["answer"] == a
+
+    # Location module
+    # No API key on test server!
+    # resp = client.get(
+    #     "/query.api?q=Hvar er ég?&latitude={0}&longitude={1}".format(
+    #         64.15673429618045, -21.9511777069624
+    #     )
+    # )
+    # json = validate_json(resp)
+    # assert json["qtype"] == "Location"
+    # assert "answer" in json
+    # assert json["answer"].startswith("Fiskislóð 31")
+
+    # TODO: Add tests for weather module
+
 
 def test_processors():
     """ Try to import all tree/token processors by instantiating Processor object """
@@ -154,6 +155,7 @@ def test_postagger():
 def test_query():
     from query import Query
     from queries.builtin import HANDLE_TREE
+
     assert HANDLE_TREE is True
 
 
