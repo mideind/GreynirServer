@@ -24,7 +24,9 @@
 
 """
 
+from . import query_json_api
 from pprint import pprint
+import re
 
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings
@@ -49,7 +51,7 @@ Query →
 # start with an uppercase Q
 
 QAbout →
-    "hvað" "wiki" Manneskja/fall/nkyn '?'?
+    "hvaða" "upplýsingar" "ert" "þú" "með" "um" Manneskja/fall/nkyn '?'?
 """
 
 
@@ -62,22 +64,52 @@ def QAbout(node, params, result):
 
 
 def Manneskja(node, params, result):
-    pprint(result._canonical)
+    pprint(result._nominative)
+    result["subject"] = result._nominative.title()
+
+
+def _clean_answer(answer):
+    # Remove text within parentheses
+    a = re.sub(r"\([^)]+\)", "", answer)
+    # Split on newline, use only first paragraph
+    a = a.split("\n")[0]
+    return a
 
 
 _WIKI_API_URL = "https://is.wikipedia.org/w/api.php?format=json&action=query&prop=extracts&exintro&explaintext&redirects=1&titles={0}"
 
 
+def _query_wiki_api(subject):
+    url = _WIKI_API_URL.format(subject)
+    return query_json_api(url)
+
+
+def get_wiki_summary(subject):
+    res = _query_wiki_api(subject)
+    if not res or "query" not in res or "pages" not in res["query"]:
+        return None
+
+    pages = res["query"]["pages"]
+    keys = pages.keys()
+    if not len(keys):
+        #logging.warning("No info found on Wikipedia: {0}", res)
+        return None
+
+    k = sorted(keys)[0]
+    text = pages[k]["extract"]
+
+    return _clean_answer(text)
+
+
 def sentence(state, result):
     """ Called when sentence processing is complete """
-    # pprint(result)
     q = state["query"]
-    if "qtype" in result:
+    if "qtype" in result and "subject" in result:
         # Successfully matched a query type
         q.set_qtype(result.qtype)
         q.set_key(result.qkey)
 
-        answer = "Ekkert"
+        answer = get_wiki_summary(result["subject"])
         response = dict(answer=answer)
         voice_answer = answer
         q.set_answer(response, answer, voice_answer)

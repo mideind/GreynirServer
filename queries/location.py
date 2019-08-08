@@ -26,9 +26,8 @@
 # TODO: Country name should also be declined.
 # TODO: "staddur á" vs. "staddur í"
 
-import requests
-import json
 import logging
+from queries import query_json_api
 from iceaddr import iceaddr_lookup
 
 MAPS_API_URL = "https://maps.googleapis.com/maps/api/geocode/json?latlng={0},{1}&key={2}&language=is"
@@ -63,25 +62,7 @@ def _query_geocode_API(lat, lon):
 
     # Send API request
     url = MAPS_API_URL.format(lat, lon, key)
-    try:
-        r = requests.get(url)
-    except Exception as e:
-        logging.warning(str(e))
-        return None
-
-    # Verify that status is OK
-    if r.status_code != 200:
-        logging.warning("Received status {0} from geocode API server", r.status_code)
-        return None
-
-    # Parse json API response
-    try:
-        res = json.loads(r.text)
-        return res
-    except Exception as e:
-        logging.warning("Error parsing JSON API response: {0}", str(e))
-
-    return None
+    return query_json_api(url)
 
 
 def _addrinfo_from_api_result(result):

@@ -23,10 +23,8 @@
 
 """
 
-import logging
-import requests
-import json
 import re
+from queries import query_json_api
 
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings
@@ -69,28 +67,7 @@ _WEATHER_API_URL = "https://apis.is/weather/texts?types=3"
 
 def _query_weather_api():
     """ Send request to weather API """
-
-    # Send request
-    url = _WEATHER_API_URL
-    try:
-        r = requests.get(url)
-    except Exception as e:
-        logging.warning(str(e))
-        return None
-
-    # Verify that status is OK
-    if r.status_code != 200:
-        logging.warning("Received status {0} from weather API server", r.status_code)
-        return None
-
-    # Parse json API response
-    try:
-        res = json.loads(r.text)
-        return res
-    except Exception as e:
-        logging.warning("Error parsing JSON API response: {0}", str(e))
-
-    return None
+    return query_json_api(_WEATHER_API_URL)
 
 
 def _handle_weather_query(q, result):
@@ -103,7 +80,7 @@ def _handle_weather_query(q, result):
     answer = r["content"]
     response = dict(answer=answer)
 
-    # Prepare voice answer
+    # Prepare voice answer for speech synthesis
     voice_answer = answer.replace("m/s", "metrar á sekúndu")
     voice_answer = re.sub(r"(\d+)\-(\d+)", r"\1 til \2", voice_answer)
 
