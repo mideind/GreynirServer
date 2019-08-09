@@ -93,7 +93,13 @@ def _addrinfo_from_api_result(result):
 
 
 WHERE_AM_I_STRINGS = frozenset(
-    ("hvar er ég", "hvar er ég núna", "hvar er ég staddur", "hver er staðsetning mín")
+    (
+        "hvar er ég",
+        "hvar er ég núna",
+        "hvar er ég staddur",
+        "hvar er ég stödd",
+        "hver er staðsetning mín",
+    )
 )
 LOC_QTYPE = "Location"
 
@@ -152,9 +158,9 @@ def handle_plain_text(q):
             if num:
                 descr += " " + num
             if locality:
-                prefix = "í" # TODO: "í" vs. "á" for locality
+                prefix = "í"  # TODO: "í" vs. "á" for locality
                 descr += " {0} {1}".format(prefix, locality)
-    
+
     if not descr:
         # Just use the formatted address string provided by Google
         descr = top["formatted_address"]

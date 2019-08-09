@@ -96,8 +96,11 @@ def sentence(state, result):
         q.set_key(result.qkey)
 
         try:
-            (response, answer, voice_answer) = _handle_weather_query(q, result)
-            q.set_answer(response, answer, voice_answer)
+            r = _handle_weather_query(q, result)
+            if r:
+                q.set_answer(response, answer, voice_answer)
+            else:
+                raise Exception("No response from weather API")
         except AssertionError:
             raise
         except Exception as e:

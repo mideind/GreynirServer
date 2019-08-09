@@ -28,6 +28,9 @@
 """
 
 from datetime import datetime
+from pytz import country_timezones, timezone
+from reynir.bindb import BIN_Db
+from geo import isocode_for_country_name, lookup_city_info
 
 
 def handle_plain_text(q):
@@ -43,7 +46,7 @@ def handle_plain_text(q):
 
     if ql == "hvað er klukkan":
         # This is a query we recognize and handle
-        q.set_qtype("Special")
+        q.set_qtype("Time")
         now = datetime.utcnow()
         # Calculate a 'single best' displayable answer
         answer = "{0:02}:{1:02}".format(now.hour, now.minute)
@@ -53,6 +56,47 @@ def handle_plain_text(q):
         # passed as-is to a voice synthesizer
         voice = "Klukkan er {0} {1:02}.".format(now.hour, now.minute)
         q.set_answer(response, answer, voice)
+        return True
+    elif ql.startswith("hvað er klukkan á ") or ql.startswith("hvað er klukkan í "):
+        loc = ql[18:]
+        # Capitalize each word in country/city name
+        loc = " ".join([c.capitalize() for c in loc.split()])
+
+        # Look up nominative
+        # TODO: This only works for single-word city/country names (fails for e.g. "Nýja Jórvík")
+        bres = BIN_Db().lookup_nominative(loc)
+        words = [m.stofn for m in bres]
+        words.append(loc)  # In case it doesn't exist in BÍN (e.g. "New York")
+
+        # Check if any word is a recognised country or city name
+        for w in words:
+            cc = isocode_for_country_name(w)
+            if not cc:
+                info = lookup_city_info(w)
+                if info:
+                    cc = info[0].get("country")
+            if cc:
+                break
+
+        if not cc or cc not in country_timezones:
+            return False
+
+        # Look up timezone for country
+        # We use the first timezone although some countries have more than one
+        # TODO: Be smarter about this.
+        ct = country_timezones[cc]
+        tz = timezone(country_timezones[cc][0])
+        now = datetime.now(tz)
+
+        answer = "{0:02}:{1:02}".format(now.hour, now.minute)
+        response = dict(answer=answer)
+        voice = "{0} er {1} {2:02}.".format(ql[8:], now.hour, now.minute)
+
+        q.set_qtype("Time")
+        q.set_beautified_query("{0}{1}".format(q.beautified_query[:18], loc))
+        q.set_answer(response, answer, voice)
+
+
         return True
 
     return False
