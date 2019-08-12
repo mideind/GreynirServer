@@ -30,7 +30,8 @@
 from datetime import datetime
 from pytz import country_timezones, timezone
 from reynir.bindb import BIN_Db
-from geo import isocode_for_country_name, lookup_city_info
+from geo import isocode_for_country_name, lookup_city_info, ICELAND_ISOCODE
+from tzwhere import tzwhere
 
 
 def handle_plain_text(q):
@@ -44,59 +45,71 @@ def handle_plain_text(q):
     if ql.endswith("?"):
         ql = ql[:-1]
 
+    tz = None  # Timezone being asked about
+    specific_loc = None
+
     if ql == "hvað er klukkan":
-        # This is a query we recognize and handle
-        q.set_qtype("Time")
-        now = datetime.utcnow()
-        # Calculate a 'single best' displayable answer
-        answer = "{0:02}:{1:02}".format(now.hour, now.minute)
-        # A detailed response object is usually a list or a dict
-        response = dict(answer=answer)
-        # A voice answer is a plain string that will be
-        # passed as-is to a voice synthesizer
-        voice = "Klukkan er {0} {1:02}.".format(now.hour, now.minute)
-        q.set_answer(response, answer, voice)
-        return True
+        # Use location, if available, to determine time zone
+        loc = q.location
+        if loc:
+            tz = tzwhere.tzwhere().tzNameAt(loc[0], loc[1])
+        else:
+            # Default to Iceland's timezone
+            tz = country_timezones[ICELAND_ISOCODE][0]
+
     elif ql.startswith("hvað er klukkan á ") or ql.startswith("hvað er klukkan í "):
+        # Query about the time in a particular location, i.e. country or city
         loc = ql[18:]
         # Capitalize each word in country/city name
         loc = " ".join([c.capitalize() for c in loc.split()])
 
         # Look up nominative
-        # TODO: This only works for single-word city/country names (fails for e.g. "Nýja Jórvík")
+        # TODO: This only works for single-word city/country names
+        # in BÍN and could be improved (e.g. fails for "Nýja Jórvík")
         bres = BIN_Db().lookup_nominative(loc)
         words = [m.stofn for m in bres]
-        words.append(loc)  # In case it doesn't exist in BÍN (e.g. "New York")
+        words.append(loc)  # In case it's not in BÍN (e.g. "New York", "San José")
 
         # Check if any word is a recognised country or city name
         for w in words:
             cc = isocode_for_country_name(w)
-            if not cc:
+            if cc and cc in country_timezones:
+                # Look up country timezone
+                # Use the first timezone although some countries have more than one
+                # The timezone list returned by pytz is ordered by "dominance"
+                tz = country_timezones[cc][0]
+            else:
+                # It's not a country name, look up in city database
                 info = lookup_city_info(w)
                 if info:
-                    cc = info[0].get("country")
-            if cc:
+                    top = info[0]
+                    (lat, lon) = (top.get("lat_wgs84"), top.get("long_wgs84"))
+                    tz = tzwhere.tzwhere().tzNameAt(lat, lon)
+            if tz:
+                # We have a timezone
                 break
 
-        if not cc or cc not in country_timezones:
-            return False
+        # "Klukkan í Lundúnum er" - Used for voice answer
+        specific_loc = "{0} er".format(ql[8:])
 
-        # Look up timezone for country
-        # We use the first timezone although some countries have more than one
-        # TODO: Be smarter about this.
-        ct = country_timezones[cc]
-        tz = timezone(country_timezones[cc][0])
-        now = datetime.now(tz)
-
-        answer = "{0:02}:{1:02}".format(now.hour, now.minute)
-        response = dict(answer=answer)
-        voice = "{0} er {1} {2:02}.".format(ql[8:], now.hour, now.minute)
-
-        q.set_qtype("Time")
+        # Beautify query by capitalizing the country/city name
         q.set_beautified_query("{0}{1}".format(q.beautified_query[:18], loc))
+
+    # We have a timezone. Return formatted answer.
+    if tz:
+        now = datetime.now(timezone(tz))
+
+        desc = specific_loc if specific_loc else "Klukkan er"
+
+        # Create displayable answer
+        answer = "{0:02}:{1:02}".format(now.hour, now.minute)
+        # A detailed response object is usually a list or a dict
+        response = dict(answer=answer)
+        # A voice answer is a plain string that will be
+        # passed as-is to a voice synthesizer
+        voice = "{0} {1} {2:02}.".format(desc, now.hour, now.minute)
+        q.set_qtype("Time")
         q.set_answer(response, answer, voice)
-
-
         return True
 
     return False

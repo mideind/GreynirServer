@@ -17,3 +17,4 @@ striprtf>=0.0.4
 defusedxml>=0.6.0
 boto3>=1.9
 pytz>=2019.2
+tzwhere>=3.0.3

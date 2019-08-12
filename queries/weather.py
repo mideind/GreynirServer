@@ -98,6 +98,7 @@ def sentence(state, result):
         try:
             r = _handle_weather_query(q, result)
             if r:
+                (response, answer, voice_answer) = r
                 q.set_answer(response, answer, voice_answer)
             else:
                 raise Exception("No response from weather API")
