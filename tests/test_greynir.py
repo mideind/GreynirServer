@@ -118,8 +118,8 @@ def test_query_api(client):
         "hvað er hundrað mínus sautján": "83",
         "hvað er 17 deilt með fjórum": "4,25",
         "hver er kvaðratrótin af 256": "16",
-        # "hvað er 12 í þriðja veldi": "1728",
-        # "hvað er 17 prósent af 20": "3,4",
+        "hvað er 12 í þriðja veldi": "1728",
+        "hvað er 17 prósent af 20": "3,4",
     }
 
     for q, a in ARITHM_QUERIES.items():

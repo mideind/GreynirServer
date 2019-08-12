@@ -22,6 +22,8 @@
 
 
 import math
+import json
+import re
 
 _NUMBER_WORDS = {
     "núll": 0,
@@ -58,22 +60,39 @@ _NUMBER_WORDS = {
     "milljarður": 1e9,
 }
 
-# _ORDINAL_WORDS = {
-#     "fyrsta": 1,
-#     "öðru": 2,
-#     "þriðja": 3,
-#     "fjórða": 4,
-#     "fimmta": 5,
-#     "sjötta": 6,
-#     "sjöunda": 7,
-#     "áttunda": 8,
-#     "níunda": 9,
-#     "tíunda": 10,
-#     "ellefta": 11,
-#     "tólfta": 12,
-#     "þrettánda": 13,
-#     "fjórtánda": 14,
-# }
+# Ordinal words in the accusative case
+_ORDINAL_WORDS_ACC = {
+    "fyrsta": 1,
+    "öðru": 2,
+    "þriðja": 3,
+    "fjórða": 4,
+    "fimmta": 5,
+    "sjötta": 6,
+    "sjöunda": 7,
+    "áttunda": 8,
+    "níunda": 9,
+    "tíunda": 10,
+    "ellefta": 11,
+    "tólfta": 12,
+    "þrettánda": 13,
+    "fjórtánda": 14,
+    "fimmtánda": 15,
+    "sextánda": 16,
+    "sautjánda": 17,
+    "átjánda": 18,
+    "nítjánda": 19,
+    "tuttugasta": 20,
+    "þrítugasta": 30,
+    "fertugasta": 40,
+    "fimmtugasta": 50,
+    "sextugasta": 60,
+    "sjötugasta": 70,
+    "áttatugasta": 80,
+    "nítugasta": 90,
+    "hundraðasta": 100,
+    "þúsundasta": 1000,
+    "milljónasta": 1e6,
+}
 
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings
@@ -100,36 +119,52 @@ Query →
 QArithmetic →
     # 'Hvað er X sinnum/deilt með/plús/mínus Y?'
     QArGenericPrefix QArStd '?'?
+
+    # 'Hver er summan af X og Y?'
+    | QArAnyPrefix QArSum '?'?
+
     # 'Hver/Hvað er kvaðratrótin af X?'
     | QArAnyPrefix QArSqrt '?'?
+    
+    # 'Hvað er X í Y veldi?'
+    | QArGenericPrefix QArPow '?'?
+
     # 'Hvað er 12 prósent af 93'
     | QArGenericPrefix QArPercent '?'?
-#    # 'Hvað er X í Y veldi?'
-#    | QArGenericPrefix QArPow '?'?
 
-QArGenericPrefix → "hvað" "er"
-QArSpecificPrefix → "hver" "er"
+
+$score(35) QArithmetic
+
+QArGenericPrefix → "hvað" "er" | "hvað" "eru" | 0
+QArSpecificPrefix → "hver" "er" | 0
 QArAnyPrefix → QArGenericPrefix | QArSpecificPrefix
 
 QArStd → QArNumberWord QArOperator QArNumberWord
+QArSum → QArPlusOperator QArNumberWord "og" QArNumberWord
 QArSqrt → QArSquareRootOperator QArNumberWord
-QArPow → QArNumberWord "í" QArNumberWord QArPowOperator
+QArPow → QArNumberWord "í" QArOrdinalOrNumberWord QArPowOperator
 QArPercent → QArPercentOperator QArNumberWord
 
 QArNumberWord →
     # to is a declinable number word ('tveir/tvo/tveim/tveggja')
     # töl is an undeclinable number word ('sautján')
     # tala is a number ('17')
-    "einn" | "einum" | "eitt" | to | töl | tala
+    to | töl | tala
 
-QArPlusOperator → "plús"
+QArOrdinalWord →
+    "{0}" | raðnr
+
+QArOrdinalOrNumberWord →
+    QArNumberWord | QArOrdinalWord
+
+QArPlusOperator → "plús" | "summan" "af"
 QArMinusOperator → "mínus" 
-QArDivisionOperator → "deilt" "með"
-QArMultiplicationOperator → "sinnum"
+QArDivisionOperator → "deilt" "með" | "skipt" "með"
+QArMultiplicationOperator → "sinnum" | "margfaldað" "með"
 
 QArSquareRootOperator → "kvaðratrótin" "af" | "kvaðratrót" "af"
 QArPowOperator → "veldi"
-QArPercentOperator → "prósent" "af" 
+QArPercentOperator → Prósenta "af"
 
 QArOperator → 
     QArPlusOperator 
@@ -137,7 +172,9 @@ QArOperator →
     | QArMultiplicationOperator 
     | QArDivisionOperator
 
-"""
+""".format(
+    " | ".join(['"' + w + '"' for w in _ORDINAL_WORDS_ACC.keys()])
+)
 
 
 def parse_num(num_str):
@@ -147,21 +184,37 @@ def parse_num(num_str):
         num = int(num_str)
     except ValueError:
         # Handle number words ("sautján")
-        num = _NUMBER_WORDS.get(num_str, 0)
+        if num_str in _NUMBER_WORDS:
+            num = _NUMBER_WORDS[num_str]
+        # Ordinal words in accusative case ("þriðja")
+        elif num_str in _ORDINAL_WORDS_ACC:
+            num = _ORDINAL_WORDS_ACC[num_str]
+        # Ordinal number strings ("3.")
+        elif re.search(r"^\d+\.$", num_str):
+            num = int(num_str[:-1])
+        else:
+            num = 0
     except Exception as e:
         print("Unexpected exception: {0}".format(e))
         raise
     return num
 
 
-def add_num(num_str, result):
+def add_num(num, result):
     if "numbers" not in result:
         result.numbers = []
-    result.numbers.append(parse_num(num_str))
+    if isinstance(num, str):
+        result.numbers.append(parse_num(num))
+    else:
+        result.numbers.append(num)
 
 
 def QArNumberWord(node, params, result):
     add_num(result._nominative, result)
+
+
+def QArOrdinalWord(node, params, result):
+    add_num(result._canonical, result)
 
 
 def QArPlusOperator(node, params, result):
@@ -192,7 +245,25 @@ def QArPercentOperator(node, params, result):
     result.operator = "percent"
 
 
+def Prósenta(node, params, result):
+    # Find percentage terminal
+    d = result.find_descendant(t_base="prósenta")
+
+    # Extract percentage from token's auxiliary information
+    # which is attached to the node as json
+    if d and d._node.aux:
+        aux = json.loads(d._node.aux)
+        add_num(aux[0], result)
+    else:
+        # We shouldn't be here. Something went horriby wrong.
+        raise ValueError("No auxiliary information in percentage token")
+
+
 def QArStd(node, params, result):
+    result.desc = result._canonical
+
+
+def QArSum(node, params, result):
     result.desc = result._canonical
 
 
@@ -226,7 +297,7 @@ def calc_arithmetic(query, result):
     operator = result.operator
     nums = result.numbers
 
-    #assert (len(nums) == 1 and operator in ["percent", "sqrt"]) or len(nums) == 2
+    # assert (len(nums) == 1 and operator in ["percent", "sqrt"]) or len(nums) == 2
 
     # Square root calculation
     if operator == "sqrt":
@@ -236,13 +307,16 @@ def calc_arithmetic(query, result):
         s = "sqrt({0})".format(nums[0])
     # Pow
     elif operator == "pow":
+        # Cap max pow
+        if nums[1] > 20:
+            answer = "Þetta er of hátt veldi."
+            return dict(answer=answer), answer, answer
         # Allow pow function in eval namespace
         eval_globals["pow"] = pow
-        # TODO: Size of numbers should be capped
         s = "pow({0},{1})".format(nums[0], nums[1])
     # Percent
     elif operator == "percent":
-        s = "({0} * {1}) / 100.0".format(nums[0], 1)
+        s = "({0} * {1}) / 100.0".format(nums[0], nums[1])
     # Addition, subtraction, multiplication, division
     else:
         math_op = _OPERATORS.get(operator)
@@ -254,9 +328,9 @@ def calc_arithmetic(query, result):
 
         s = "{0} {1} {2}".format(nums[0], math_op, nums[1])
 
-    print(s)
+    # print(s)
     res = eval(s, eval_globals, {})
-    print(res)
+    # print(res)
 
     if isinstance(res, float):
         # Convert to Icelandic decimal places
