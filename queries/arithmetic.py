@@ -149,7 +149,7 @@ QArNumberWord →
     # to is a declinable number word ('tveir/tvo/tveim/tveggja')
     # töl is an undeclinable number word ('sautján')
     # tala is a number ('17')
-    to | töl | tala
+    to | töl | tala | "núlli"
 
 QArOrdinalWord →
     "{0}" | raðnr
@@ -180,8 +180,12 @@ QArOperator →
 def parse_num(num_str):
     num = None
     try:
+        # Handle numbers w. Icelandic decimal places ("17,2")
+        if re.search(r"^\d+,\d+", num_str):
+            num = float(num_str.replace(",", "."))
         # Handle digits ("17")
-        num = int(num_str)
+        else:
+            num = float(num_str)
     except ValueError:
         # Handle number words ("sautján")
         if num_str in _NUMBER_WORDS:
@@ -328,9 +332,9 @@ def calc_arithmetic(query, result):
 
         s = "{0} {1} {2}".format(nums[0], math_op, nums[1])
 
-    # print(s)
+    print(s)
     res = eval(s, eval_globals, {})
-    # print(res)
+    print(res)
 
     if isinstance(res, float):
         # Convert to Icelandic decimal places
