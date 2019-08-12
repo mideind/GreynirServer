@@ -4,7 +4,7 @@
 
     Default scraping helpers module
 
-    Copyright (C) 2018 Miðeind ehf.
+    Copyright (C) 2019 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -33,13 +33,12 @@ import requests
 from datetime import datetime
 from bs4 import BeautifulSoup, NavigableString
 
-MODULE_NAME = __name__
 
+MODULE_NAME = __name__
 
 # The HTML parser to use with BeautifulSoup
 # _HTML_PARSER = "html5lib"
 _HTML_PARSER = "html.parser"
-
 
 # Icelandic month names. Used for parsing
 # date strings in some of the scrapers
@@ -142,7 +141,8 @@ class ScrapeHelper:
         return soup.html.body
 
     def get_content(self, soup):
-        """ Find the actual article content within an HTML soup and return its parent node """
+        """ Find the actual article content within an HTML soup
+            and return its parent node """
         if not soup or not soup.html or not soup.html.body:
             # No body in HTML: something is wrong, return None
             logging.warning("get_content returning None")
@@ -302,7 +302,8 @@ class ScrapeHelper:
 
     @staticmethod
     def del_tag_prop_val(soup, tag, prop, val):
-        """ Delete all occurrences of the tag having the property with the given value """
+        """ Delete all occurrences of the tag having the property
+            with the given value """
         if soup is None:
             return
         while True:
@@ -1088,9 +1089,8 @@ class KvennabladidScraper(ScrapeHelper):
                 )
             except Exception as e:
                 logging.warning(
-                    "Exception when obtaining date of kvennabladid.is article: {0}".format(
-                        e
-                    )
+                    "Exception when obtaining date of kvennabladid.is "
+                    "article: {0}".format(e)
                 )
                 timestamp = None
         if timestamp is None:
@@ -1129,7 +1129,8 @@ class AlthingiScraper(ScrapeHelper):
         heading = self.unescape(heading)
         # Default timestamp
         timestamp = datetime.utcnow()
-        # Check whether this heading starts with 'NN/YYYY:', and if so, extract the year
+        # Check whether this heading starts with 'NN/YYYY:',
+        # and if so, extract the year
         a = heading.split(":", maxsplit=1)
         if len(a) > 1:
             a = a[0].split("/", maxsplit=1)
@@ -1581,18 +1582,16 @@ class DVScraper(ScrapeHelper):
     def _get_content(self, soup_body):
         """ Find the article content (main text) in the soup """
         content = ScrapeHelper.div_class(soup_body, "textinn")
-
-        for t in content.find_all("style"):
-            t.decompose()
-        ScrapeHelper.del_div_class(content, "efnisordin")
-        ScrapeHelper.del_div_class(content, "ibodi")
-        if content.figure:
-            content.figure.decompose()
-        for fc in content.find_all("figcaption"):
-            fc.decompose()
-
+        if content:
+            for t in content.find_all("style"):
+                t.decompose()
+            ScrapeHelper.del_div_class(content, "efnisordin")
+            ScrapeHelper.del_div_class(content, "ibodi")
+            if content.figure:
+                content.figure.decompose()
+            for fc in content.find_all("figcaption"):
+                fc.decompose()
         return content
-
 
 
 class BBScraper(ScrapeHelper):
@@ -1660,5 +1659,3 @@ class BBScraper(ScrapeHelper):
                 p.decompose()
 
         return content
-
-

@@ -5,7 +5,6 @@
     Article class
 
     Copyright (C) 2019 Miðeind ehf.
-    Author: Vilhjálmur Þorsteinsson
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -248,21 +247,20 @@ class Article:
         # Delete previously stored words for this article
         session.execute(Word.table().delete().where(Word.article_id == self._uuid))
         # Index the words by storing them in the words table
-        for word, cnt in self._words.items():
-            if word.cat not in NoIndexWords.CATEGORIES_TO_INDEX:
-                # We do not index closed word categories and non-distinctive constructs
-                continue
-            if (word.stem, word.cat) in NoIndexWords.SET:
-                # Specifically excluded from indexing in Reynir.conf (Main.conf)
-                continue
-            if len(word.stem) > Word.MAX_WORD_LEN:
-                # Shield the database from too long words
-                continue
-            # Interesting word: let's index it
-            w = Word(article_id=self._uuid, stem=word.stem, cat=word.cat, cnt=cnt)
-            session.add(w)
-        # Offload the new data from Python to PostgreSQL
-        session.flush()
+        if self._words:
+            for word, cnt in self._words.items():
+                if word.cat not in NoIndexWords.CATEGORIES_TO_INDEX:
+                    # We do not index closed word categories and non-distinctive constructs
+                    continue
+                if (word.stem, word.cat) in NoIndexWords.SET:
+                    # Specifically excluded from indexing in Reynir.conf (Main.conf)
+                    continue
+                if len(word.stem) > Word.MAX_WORD_LEN:
+                    # Shield the database from too long words
+                    continue
+                # Interesting word: let's index it
+                w = Word(article_id=self._uuid, stem=word.stem, cat=word.cat, cnt=cnt)
+                session.add(w)
 
     def _parse(self, enclosing_session=None, verbose=False):
         """ Parse the article content to yield parse trees and annotated token list """
@@ -385,10 +383,16 @@ class Article:
                     tree=self._tree,
                     tokens=self._tokens,
                 )
+                # Delete any existing rows with the same URL
+                session.execute(
+                    ArticleRow.table().delete().where(ArticleRow.url == self._url)
+                )
+                # Add the new row with a fresh UUID
                 session.add(ar)
-                if self._words:
-                    # Store the word stems occurring in the article
-                    self._store_words(session)
+                # Store the word stems occurring in the article
+                self._store_words(session)
+                # Offload the new data from Python to PostgreSQL
+                session.flush()
                 return True
 
             # Update an already existing row by UUID
@@ -424,11 +428,12 @@ class Article:
             ar.html = self._html
             ar.tree = self._tree
             ar.tokens = self._tokens
-            if self._words is not None:
-                # If the article has been parsed, update the index of word stems
-                # (This may cause all stems for the article to be deleted, if
-                # there are no successfully parsed sentences in the article)
-                self._store_words(session)
+            # If the article has been parsed, update the index of word stems
+            # (This may cause all stems for the article to be deleted, if
+            # there are no successfully parsed sentences in the article)
+            self._store_words(session)
+            # Offload the new data from Python to PostgreSQL
+            session.flush()
             return True
 
     def prepare(self, enclosing_session=None, verbose=False, reload_parser=False):

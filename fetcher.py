@@ -1,4 +1,5 @@
 """
+
     Reynir: Natural language processing for Icelandic
 
     Fetcher module

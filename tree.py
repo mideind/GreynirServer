@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 
     Reynir: Natural language processing for Icelandic
@@ -267,6 +266,11 @@ class Result:
         # No child node found: return None
         return None
 
+    @property
+    def at_start(self):
+        """ Return True if the associated node spans the start of the sentence """
+        return self._node.at_start
+
     def has_nt_base(self, s):
         """ Does the associated node have the given nonterminal base name? """
         return self._node.has_nt_base(s)
@@ -306,6 +310,12 @@ class Node:
     def has_variant(self, s):
         """ Does the node have the given variant? """
         return False
+
+    @property
+    def at_start(self):
+        """ Return True if this node spans the start of a sentence """
+        # This is overridden in TerminalNode
+        return False if self.child is None else self.child.at_start
 
     def child_has_nt_base(self, s):
         """ Does the node have a single child with the given nonterminal base name? """
@@ -664,7 +674,7 @@ class TerminalNode(Node):
         self.td = td
         self.token = token
         self.text = token[1:-1]  # Cut off quotes
-        self.at_start = at_start
+        self._at_start = at_start
         self.tokentype = tokentype
         self.is_word = tokentype in {"WORD", "PERSON"}
         self.is_literal = td.is_literal
@@ -684,6 +694,11 @@ class TerminalNode(Node):
     def cat(self):
         return self.td.inferred_cat
 
+    @property
+    def at_start(self):
+        """ Return True if the associated node spans the start of the sentence """
+        return self._at_start
+
     def has_t_base(self, s):
         """ Does the node have the given terminal base name? """
         return self.td.has_t_base(s)
@@ -702,19 +717,19 @@ class TerminalNode(Node):
         # Lookup the token in the BIN database
         if (not self.is_word) or self.is_literal:
             return self.text
-        return self._root_cache(self.text, self.at_start, self.td.terminal)
+        return self._root_cache(self.text, self._at_start, self.td.terminal)
 
     def _lazy_eval_root(self):
         """ Return a word root (stem) function object, with arguments, that can be
             used for lazy evaluation of word stems. """
         if (not self.is_word) or self.is_literal:
             return self.text
-        return self._root_cache, (self.text, self.at_start, self.td.terminal)
+        return self._root_cache, (self.text, self._at_start, self.td.terminal)
 
     def lookup_alternative(self, bin_db, replace_func, sort_func=None):
         """ Return a different (but always nominative case) word form, if available,
             by altering the beyging spec via the given replace_func function """
-        w, m = bin_db.lookup_word(self.text, self.at_start)
+        w, m = bin_db.lookup_word(self.text, self._at_start)
         if m:
             # Narrow the meanings down to those that are compatible with the terminal
             m = [x for x in m if self.td._bin_filter(x)]
@@ -739,7 +754,7 @@ class TerminalNode(Node):
                     # looking for. It also must be the same word category and
                     # the same stem and identifier ('utg'). In fact the 'utg' check
                     # alone should be sufficient, but better safe than sorry.
-                    n = bin_db.lookup_nominative(parts[-1])  # Note: this call is cached
+                    n = bin_db.lookup_raw_nominative(parts[-1])  # Note: this call is cached
                     r = [
                         nm
                         for nm in n
@@ -984,7 +999,7 @@ class PersonNode(TerminalNode):
         case = self.td.case.upper()
         # Lookup the token in the BIN database
         # Look up each part of the name
-        at_start = self.at_start
+        at_start = self._at_start
         name = []
         for part in self.text.split(" "):
             w, m = bin_db.lookup_word(part, at_start)
@@ -1104,7 +1119,8 @@ class NonterminalNode(Node):
         # Invoke a processor function for this nonterminal, if
         # present in the given processor module
         if params and not self.is_repeated:
-            # Don't invoke if this is an epsilon nonterminal (i.e. has no children)
+            # Don't invoke if this is an epsilon nonterminal (i.e. has no children),
+            # or if this is a repetition parent (X?, X* or X+)
             processor = state["processor"]
             func = (
                 getattr(processor, self.nt_base, state["_default"])

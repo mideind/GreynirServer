@@ -1,10 +1,10 @@
-#!/usr/bin/env python
 """
+
     Reynir: Natural language processing for Icelandic
 
     Processor module to extract entity names & definitions
 
-    Copyright (C) 2016 Vilhjálmur Þorsteinsson
+    Copyright (C) 2019 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -44,29 +44,75 @@ PROCESSOR_TYPE = "tree"
 
 # Avoid chaff
 NOT_DEFINITIONS = {
-    "við", "ári", "ár", "sæti", "stig", "færi", "var", "varð"
-    "fæddur", "fætt", "fædd",
-    "spurður", "spurt", "spurð",
-    "búinn", "búið", "búin",
-    "sá", "sú", "það", "lán", "inna",
-    "hjónin", "hjónanna"
+    "við",
+    "ári",
+    "ár",
+    "sæti",
+    "stig",
+    "færi",
+    "var",
+    "varð",
+    "fæddur",
+    "fætt",
+    "fædd",
+    "spurður",
+    "spurt",
+    "spurð",
+    "búinn",
+    "búið",
+    "búin",
+    "sá",
+    "sú",
+    "það",
+    "lán",
+    "inna",
+    "hjónin",
+    "hjónanna",
 }
 
 NOT_ENTITIES = {
-    "þeir", "þær", "þau", "sú", "þá", "þar", "þetta", "þessi", "þessu",
-    "the", "to", "aðspurð", "aðspurður", "aðstaða", "aðstæður", "aftur",
-    "þarna", "því", "þó", "hver", "hverju", "hvers", "ekki"
+    "þeir",
+    "þær",
+    "þau",
+    "sú",
+    "þá",
+    "þar",
+    "þetta",
+    "þessi",
+    "þessu",
+    "the",
+    "to",
+    "aðspurð",
+    "aðspurður",
+    "aðstaða",
+    "aðstæður",
+    "aftur",
+    "þarna",
+    "því",
+    "þó",
+    "hver",
+    "hverju",
+    "hvers",
+    "ekki",
 }
+
+# Lower-case abbreviations that are allowed to be a part of entity names
+ALLOWED_PARTS = frozenset(
+    (
+        "hf.", "ehf.", "sf.", "slhf.", "svf.",
+        "hf", "ehf", "sf", "slhf", "svf"
+    )
+)
 
 
 def article_begin(state):
     """ Called at the beginning of article processing """
-    session = state["session"] # Database session
-    url = state["url"] # URL of the article being processed
+    session = state["session"]  # Database session
+    url = state["url"]  # URL of the article being processed
     # Delete all existing entities for this article
     session.execute(Entity.table().delete().where(Entity.article_url == url))
     # Create a name mapping dict for the article
-    state["names"] = dict() # Last name -> full name
+    state["names"] = dict()  # Last name -> full name
 
 
 def article_end(state):
@@ -81,10 +127,10 @@ def sentence(state, result):
         # Nothing to do
         return
 
-    session = state["session"] # Database session
-    url = state["url"] # URL of the article being processed
-    authority = state["authority"] # Authority of the article being processed
-    names = state["names"] # Mapping of last names to full names
+    session = state["session"]  # Database session
+    url = state["url"]  # URL of the article being processed
+    authority = state["authority"]  # Authority of the article being processed
+    names = state["names"]  # Mapping of last names to full names
 
     if "names" in result:
         # Names were found: add to name mapping dict
@@ -110,25 +156,24 @@ def sentence(state, result):
             definition = definition[:-2]
 
         # Cut phrases off the front of the definition
-        for p in (
-            "sem er ",
-            "jafnframt er ",
-        ):
+        for p in ("sem er ", "jafnframt er "):
             if definition.startswith(p):
-                definition = definition[len(p):]
+                definition = definition[len(p) :]
                 break
 
         # Cut phrases off the back of the entity
         for p in (
-            " sem framleiddur var"
-            " sem haldin var",
+            " sem framleiddur var" " sem haldin var",
             " sem lagt var",
             " sem var",
             " var",
         ):
             if entity.endswith(p):
-                entity = entity[:-len(p)]
+                entity = entity[: -len(p)]
                 break
+
+        # Eliminate white space around hyphens
+        entity = entity.replace(" - ", "-")
 
         if len(entity) < 2 or len(definition) < 2:
             # Avoid chaff
@@ -139,7 +184,7 @@ def sentence(state, result):
             if definition.lower() in NOT_DEFINITIONS:
                 return False
             # Check for a match with a number string, eventually followed by a % sign
-            if re.match(r'-?\d+(\.\d\d\d)*(,\d+)?%?$', definition):
+            if re.match(r"-?\d+(\.\d\d\d)*(,\d+)?%?$", definition):
                 return False
             return True
 
@@ -164,21 +209,21 @@ def sentence(state, result):
             print("Entity '{0}' {1} '{2}'".format(entity, verb, definition))
 
             e = Entity(
-                article_url = url,
-                name = entity,
-                verb = verb,
-                definition = definition,
-                authority = authority,
-                timestamp = datetime.utcnow()
+                article_url=url,
+                name=entity,
+                verb=verb,
+                definition=definition,
+                authority=authority,
+                timestamp=datetime.utcnow(),
             )
             session.add(e)
 
 
 def visit(state, node):
     """ Determine whether to visit a particular node """
-    # We don't visit SetningSkilyrði or any of its children
+    # We don't visit Skilyrðissetning or any of its children
     # because we know any assertions in there are conditional
-    return not node.has_nt_base("SetningSkilyrði")
+    return not node.has_nt_base("Skilyrðissetning")
 
 
 # Below are functions that have names corresponding to grammar nonterminals.
@@ -187,8 +232,19 @@ def visit(state, node):
 
 
 def EfLiður(node, params, result):
+    """ Ekki láta sérnafn lifa í gegn um eignarfallslið, nema
+        það sé fyrirtækisnafn, sbr. 'Eimskipafélag Íslands hf.' """
+    result.del_attribs(("sérnafn", "sérnafn_nom"))
+    # Ekki breyta eignarfallsliðum í nefnifall
+    result._nominative = result._text
+    if "fyrirtæki" in result:
+        result.sérnafn = result.sérnafn_nom = result.fyrirtæki
+        result.del_attribs(("fyrirtæki",))
+
+
+def EfLiðurForskeyti(node, params, result):
     """ Ekki láta sérnafn lifa í gegn um eignarfallslið """
-    result.del_attribs(('sérnafn', 'sérnafn_nom'))
+    result.del_attribs(("sérnafn", "sérnafn_nom"))
     # Ekki breyta eignarfallsliðum í nefnifall
     result._nominative = result._text
 
@@ -211,24 +267,24 @@ def AtviksliðurEinkunn(node, params, result):
 
 def FsMeðFallstjórn(node, params, result):
     """ Ekki láta sérnafn lifa í gegn um forsetningarlið """
-    result.del_attribs(('sérnafn', 'sérnafn_nom'))
+    result.del_attribs(("sérnafn", "sérnafn_nom"))
     # Ekki breyta forsetningarliðum í nefnifall
     result._nominative = result._text
 
 
-def TengiliðurMeðKommu(node, params, result):
+def TilvísunarsetningMeðKommu(node, params, result):
     """ '...sem Jón í Múla taldi gott fé' - ekki breyta í nefnifall """
     result._nominative = result._text
 
 
 def SetningÁnF(node, params, result):
     """ Ekki láta sérnafn lifa í gegn um setningu án frumlags """
-    result.del_attribs(('sérnafn', 'sérnafn_nom'))
+    result.del_attribs(("sérnafn", "sérnafn_nom"))
 
 
 def SetningSo(node, params, result):
     """ Ekki láta sérnafn lifa í gegn um setningu sem hefst á sögn """
-    result.del_attribs(('sérnafn', 'sérnafn_nom'))
+    result.del_attribs(("sérnafn", "sérnafn_nom"))
 
 
 def Sérnafn(node, params, result):
@@ -236,7 +292,7 @@ def Sérnafn(node, params, result):
     result.sérnafn = result._text
     result.sérnafn_nom = result._nominative
     result.sérnafn_eind_nom = result._nominative
-    result.names = { result._nominative }
+    result.names = {result._nominative}
 
 
 def Nafn(node, params, result):
@@ -248,21 +304,22 @@ def SérnafnEðaManneskja(node, params, result):
     """ Sérnafn eða mannsnafn, eða flóknari nafnliður (Nafn) """
     if "nafn_flag" in result:
         # Flóknari nafnliður: notum hann ekki sem nafn á Entity
-        result.del_attribs(('sérnafn', 'sérnafn_nom', 'nafn_flag'))
+        result.del_attribs(("sérnafn", "sérnafn_nom", "nafn_flag"))
         return
     if "sérnafn" not in result:
         result.sérnafn = result._text
         result.sérnafn_nom = result._nominative
     if "sérnafn_eind_nom" not in result:
         result.sérnafn_eind_nom = result._nominative
-    result.eindir = [ result._nominative ] # Listar eru sameinaðir
-    result.names = { result._nominative }
+    result.eindir = [result._nominative]  # Listar eru sameinaðir
+    result.names = {result._nominative}
 
 
 def Fyrirtæki(node, params, result):
     """ Fyrirtækisnafn, þ.e. sérnafn + ehf./hf./Inc. o.s.frv. """
     result.sérnafn = result._text
     result.sérnafn_nom = result._nominative
+    result.fyrirtæki = result._text
 
 
 def SvigaInnihaldFsRuna(node, params, result):
@@ -273,38 +330,46 @@ def SvigaInnihaldFsRuna(node, params, result):
 
 def SvigaInnihald(node, params, result):
     if node.has_variant("et"):
-        tengiliður = result.find_child(nt_base = "Tilvísunarsetning")
+        tengiliður = result.find_child(nt_base="Tilvísunarsetning")
         if tengiliður:
             # '...sem framleiðir álumgjörina fyrir iPhone'
-            tengisetning = tengiliður.find_child(nt_base = "Tengisetning")
+            tengisetning = tengiliður.find_child(nt_base="Tengisetning")
             if tengisetning:
-                setning_án_f = tengisetning.find_child(nt_base = "BeygingarliðurÁnF")
+                setning_án_f = tengisetning.find_child(nt_base="BeygingarliðurÁnF")
                 if setning_án_f:
                     skilgr = setning_án_f._text
                     # Remove extraneous prefixes
                     for s in ("í dag",):
                         if skilgr.startswith(s + " "):
                             # Skera framan af
-                            skilgr = skilgr[len(s) + 1:]
+                            skilgr = skilgr[len(s) + 1 :]
                             break
                     sögn = None
-                    for s in ("er", "var", "sé", "hefur verið", "væri", "hefði orðið", "verður"):
+                    for s in (
+                        "er",
+                        "var",
+                        "sé",
+                        "hefur verið",
+                        "væri",
+                        "hefði orðið",
+                        "verður",
+                    ):
                         if skilgr.startswith(s + " "):
                             # Skera framan af
                             sögn = s
-                            skilgr = skilgr[len(s) + 1:]
+                            skilgr = skilgr[len(s) + 1 :]
                             break
                     if skilgr:
                         result.sviga_innihald = skilgr
                         if sögn:
                             result.sviga_sögn = sögn
-        elif result.find_child(nt_base = "HreinYfirsetning") is not None:
+        elif result.find_child(nt_base="HreinYfirsetning") is not None:
             # Hrein yfirsetning: sleppa því að nota hana
             pass
-        elif result.find_child(nt_base = "SvigaInnihaldFsRuna") is not None:
+        elif result.find_child(nt_base="SvigaInnihaldFsRuna") is not None:
             # Forsetningaruna: sleppa því að nota hana
             pass
-        elif result.find_child(nt_base = "SvigaInnihaldNl") is not None:
+        elif result.find_child(nt_base="SvigaInnihaldNl") is not None:
             # Nafnliður sem passar ekki við fall eða tölu: sleppa því að nota hann
             pass
         else:
@@ -322,14 +387,32 @@ def Skst(node, params, result):
     result.del_attribs("sérnafn_nom")
 
 
+def Fyrirbæri(node, params, result):
+    """ Bæta Fyrirbæri við sem sérnafni ef það uppfyllir skilyrði þar um """
+    if "sérnafn" in result or "entities" in result or "sviga_innihald" in result:
+        return
+    txt = result._text
+    if all(part and (part[0].isupper() or part == "-") for part in txt.split()):
+        # Allir hlutar fyrirbærisins eru skrifaðir með upphafsstaf:
+        # túlka sem sérnafn
+        result.sérnafn = result._text
+        result.sérnafn_nom = result._nominative
+
+
 def NlEind(node, params, result):
     """ Ef sérnafn og sviga_innihald eru rétt undir NlEind þá er það skilgreining """
 
-    if len(params) == 2 and params[0].has_nt_base("NlStak") and params[1].has_nt_base("NlSkýring"):
+    if (
+        len(params) == 2
+        and params[0].has_nt_base("NlStak")
+        and params[1].has_nt_base("NlSkýring")
+    ):
         # Ef skýring fylgir sérnafni þá sleppum við henni
         if "sérnafn" in params[0]:
             result.sérnafn = params[0].sérnafn
             result.sérnafn_nom = params[0].sérnafn_nom
+            if "sérnafn_eind_nom" not in result:
+                result.sérnafn_eind_nom = result.sérnafn_nom
         else:
             # Gæti verið venjulegur nafnliður með upphafsstaf
             sérnafn = params[0]._text
@@ -382,25 +465,28 @@ def SamstættFall(node, params, result):
         # Athuga hvort allir hlutar nafnsins séu með upphafsstaf
         # Ef ekki, hætta við
         for part in sérnafn.split():
-            if not part or not part[0].isupper():
+            if not part or not (part[0].isupper() or part in ALLOWED_PARTS):
                 return
 
     # Bæta við nafnamengi
     if "names" in result:
         result.names.add(sérnafn_nom)
     else:
-        result.names = { sérnafn_nom }
+        result.names = {sérnafn_nom}
 
     # Find the noun terminal parameter
-    p_no = result.find_child(t_base = "no")
+    p_no = result.find_child(t_base="no")
 
     if len(params) >= 3 and p_no is params[-3]:
         # An adjective follows the noun ('Lagahöfundurinn góðkunni Jónas Friðrik')
         pp = params[:]
-        pp[-2], pp[-3] = pp[-3], pp[-2] # Swap word order
-        definition = " ".join(p._indefinite for p in pp[0:-1]) # góðkunnur lagahöfundur
+        # Swap word order
+        pp[-2], pp[-3] = pp[-3], pp[-2]
+        # góðkunnur lagahöfundur
+        definition = " ".join(p._indefinite for p in pp[0:-1])
     else:
-        definition = " ".join(p._indefinite for p in params[0:-1]) # dönsk byggingavörukeðja
+        # dönsk byggingavörukeðja
+        definition = " ".join(p._indefinite for p in params[0:-1])
 
     if node.has_variant("nf"):
         # Nafnliðurinn er í nefnifalli: nota sérnafnið eins og það stendur
@@ -425,7 +511,7 @@ def ÓsamstættFall(node, params, result):
 
 def Skilgreining(node, params, result):
     """ 'bandarísku sjóðirnir' """
-    result.skilgreining = result._canonical # bandarískur sjóður
+    result.skilgreining = result._canonical  # bandarískur sjóður
 
 
 def FyrirbæriMeðGreini(node, params, result):
@@ -442,49 +528,36 @@ def FyrirbæriMeðGreini(node, params, result):
 def Setning(node, params, result):
     """ Meðhöndla setningar á forminu 'sérnafn fsliðir* er-sögn eitthvað' """
 
+    if not node.has_variant("p3"):
+        # Only bother with third-person sentences
+        return
+
     try:
 
-        frumlag = result.find_child(nt_base = "Nl", variant = "nf")
+        frumlag = result.find_descendant(nt_base="NlFrumlag", variant="nf")
         if not frumlag:
             return
 
-        #print("Frumlag er {0}".format(frumlag._text))
-
         entity = frumlag.get("sérnafn")
-
         if not entity:
             return
 
-        # print("Entity er {0}".format(entity))
-
         # fsliðir = result.all_children(nt_base = "FsAtv")
-        sagnruna = result.find_child(nt_base = "SagnRuna")
-
+        sagnruna = result.find_descendant(nt_base="SagnRuna")
         if not sagnruna:
             return
 
-        # print("Sagnruna er {0}".format(sagnruna._text))
-
-        sögn = sagnruna.find_descendant(nt_base = "Sögn", variant = "1")
-
+        sögn = sagnruna.find_descendant(nt_base="Sögn", variant="1")
         if not sögn:
             return
 
-        sagnorð = sögn.find_descendant(t_base = "so")
-
-        #print("Sagnorð er {0}".format(sagnorð._text))
-
-        if not sagnorð or sagnorð._text not in { "er", "var", "sé" }:
+        sagnorð = sögn.find_descendant(t_base="so")
+        if not sagnorð or sagnorð._text not in {"er", "var", "sé"}:
             return
 
-        andlag = sögn.find_child(nt_base = "Nl", variant = "nf")
-
+        andlag = sögn.find_descendant(nt_base="NlSagnfylling", variant="nf")
         if not andlag:
             return
-
-        #print("Andlag er {0}".format(andlag._text))
-
-        # print("Statement: '{0}' {2} '{1}'".format(entity, andlag._text, sagnorð._text))
 
         # Append to result list
         if "entities" not in result:
@@ -494,6 +567,5 @@ def Setning(node, params, result):
 
     finally:
         # Ekki senda sérnöfn upp í tréð ef þau hafa ekki verið höndluð nú þegar
-        result.del_attribs(('sérnafn', 'sérnafn_nom'))
+        result.del_attribs(("sérnafn", "sérnafn_nom"))
         result.del_attribs(("skilgreining", "eindir"))
-
