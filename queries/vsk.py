@@ -17,6 +17,6 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    This module handles queries related to currencies and exchange rates.
+    This module handles queries related to sums and value added tax.
 
 """

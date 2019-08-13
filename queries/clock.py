@@ -25,6 +25,8 @@
     it only needs to implement the handle_plain_text() function, as
     shown below.
 
+    This particular module handles queries related to time and timezones.
+
 """
 
 from datetime import datetime

@@ -20,6 +20,8 @@
     Queries folder
     This is the location to put custom query responders.
 
+    This file contains shared code used the query modules.
+
 """
 
 

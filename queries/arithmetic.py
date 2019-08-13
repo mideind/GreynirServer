@@ -18,6 +18,9 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
+
+    This module handles arithmetic queries.
+
 """
 
 
@@ -61,7 +64,7 @@ _NUMBER_WORDS = {
 }
 
 # Ordinal words in the accusative case
-_ORDINAL_WORDS_ACC = {
+_ORDINAL_WORDS_DATIVE = {
     "fyrsta": 1,
     "öðru": 2,
     "þriðja": 3,
@@ -149,7 +152,7 @@ QArNumberWord →
     # to is a declinable number word ('tveir/tvo/tveim/tveggja')
     # töl is an undeclinable number word ('sautján')
     # tala is a number ('17')
-    to | töl | tala | "núlli"
+    to | töl | tala | "núlli" | "núll"
 
 QArOrdinalWord →
     "{0}" | raðnr
@@ -173,11 +176,12 @@ QArOperator →
     | QArDivisionOperator
 
 """.format(
-    " | ".join(['"' + w + '"' for w in _ORDINAL_WORDS_ACC.keys()])
+    " | ".join(['"' + w + '"' for w in _ORDINAL_WORDS_DATIVE.keys()])
 )
 
 
 def parse_num(num_str):
+    """ Parse Icelandic number string to float or int """
     num = None
     try:
         # Handle numbers w. Icelandic decimal places ("17,2")
@@ -190,10 +194,10 @@ def parse_num(num_str):
         # Handle number words ("sautján")
         if num_str in _NUMBER_WORDS:
             num = _NUMBER_WORDS[num_str]
-        # Ordinal words in accusative case ("þriðja")
-        elif num_str in _ORDINAL_WORDS_ACC:
-            num = _ORDINAL_WORDS_ACC[num_str]
-        # Ordinal number strings ("3.")
+        # Ordinal words in dative case ("sautjánda")
+        elif num_str in _ORDINAL_WORDS_DATIVE:
+            num = _ORDINAL_WORDS_DATIVE[num_str]
+        # Ordinal number strings ("17.")
         elif re.search(r"^\d+\.$", num_str):
             num = int(num_str[:-1])
         else:
@@ -205,6 +209,7 @@ def parse_num(num_str):
 
 
 def add_num(num, result):
+    """ Add a number to accumulated number args """
     if "numbers" not in result:
         result.numbers = []
     if isinstance(num, str):
@@ -264,6 +269,8 @@ def Prósenta(node, params, result):
 
 
 def QArStd(node, params, result):
+    # Used later for voice response format,
+    # e.g. "[expression] er [svar]"
     result.desc = result._canonical
 
 
@@ -290,63 +297,92 @@ def QArithmetic(node, params, result):
     result.qkey = result.get("desc", "")
 
 
-_OPERATORS = {"multiply": "*", "divide": "/", "plus": "+", "minus": "-"}
+# Map operator name to python operator
+_STD_OPERATORS = {"multiply": "*", "divide": "/", "plus": "+", "minus": "-"}
+
+# Number of args required for each operator
+_OP_NUM_ARGS = {
+    "multiply": 2,
+    "divide": 2,
+    "plus": 2,
+    "minus": 2,
+    "sqrt": 1,
+    "pow": 2,
+    "percent": 2,
+}
+
+
+def strip_trailing_zeros(num_str):
+    # Strip trailing decimal zeros from an Icelandic-style 
+    # float num string, e.g. "17,0" -> "17"
+    return num_str.rstrip("0").rstrip(",")
 
 
 def calc_arithmetic(query, result):
-    """ A query for arithmetic """
-
-    eval_globals = {"__builtins__": None}
-
+    """ Calculate the answer to an arithmetic query """
     operator = result.operator
     nums = result.numbers
+    desc = result.desc
 
-    # assert (len(nums) == 1 and operator in ["percent", "sqrt"]) or len(nums) == 2
+    # Ensure that we have the right number of
+    # number args for the operation in question
+    assert _OP_NUM_ARGS[operator] == len(nums)
+
+    # Global namespace for eval
+    # Block access to all builtins
+    eval_globals = {"__builtins__": None}
+
+    def err_answer(errstr):
+        return dict(answer=errstr), errstr, errstr
 
     # Square root calculation
     if operator == "sqrt":
+        if len(str(nums[0])) > 100:
+            return err_answer("Þessi tala er of há.")
         # Allow sqrt function in eval namespace
         eval_globals["sqrt"] = math.sqrt
-        # TODO: Size of number should be capped
         s = "sqrt({0})".format(nums[0])
+    
     # Pow
     elif operator == "pow":
         # Cap max pow
-        if nums[1] > 20:
-            answer = "Þetta er of hátt veldi."
-            return dict(answer=answer), answer, answer
+        if nums[1] > 30:
+            return err_answer("Þetta er of hátt veldi.")
         # Allow pow function in eval namespace
         eval_globals["pow"] = pow
         s = "pow({0},{1})".format(nums[0], nums[1])
+    
     # Percent
     elif operator == "percent":
         s = "({0} * {1}) / 100.0".format(nums[0], nums[1])
+
     # Addition, subtraction, multiplication, division
-    else:
-        math_op = _OPERATORS.get(operator)
+    elif operator in _STD_OPERATORS:
+        math_op = _STD_OPERATORS[operator]
 
         # Check for division by zero
-        if operator == "divide" and nums[1] == 0:
-            answer = "Það er ekki hægt að deila með núlli."
-            return dict(answer=answer), answer, answer
+        if math_op == "/" and nums[1] == 0:
+            return err_answer("Það er ekki hægt að deila með núlli.")
 
         s = "{0} {1} {2}".format(nums[0], math_op, nums[1])
+    else:
+        logging.warning("Unknown operator: {0}".format(operator))
+        return None
 
     print(s)
+    # Run eval on expression
     res = eval(s, eval_globals, {})
     print(res)
 
     if isinstance(res, float):
-        # Convert to Icelandic decimal places
+        # Convert result to Icelandic decimal format
         answer = "{0:.2f}".format(res).replace(".", ",")
-        # Strip trailing zeros
-        while answer.endswith("0") or answer.endswith(","):
-            answer = answer[:-1]
+        answer = strip_trailing_zeros(answer)
     else:
         answer = str(res)
 
     response = dict(answer=answer)
-    voice_answer = "{0} er {1}".format(result.desc, answer)
+    voice_answer = "{0} er {1}".format(desc, answer)
 
     return response, answer, voice_answer
 
@@ -360,8 +396,11 @@ def sentence(state, result):
         q.set_key(result.qkey)
 
         try:
-            (response, answer, voice_answer) = calc_arithmetic(q, result)
-            q.set_answer(response, answer, voice_answer)
+            r = calc_arithmetic(q, result)
+            if r is not None:
+                q.set_answer(*r)
+            else:
+                raise Exception("Arithmetic calculation failed")
         except AssertionError:
             raise
         except Exception as e:

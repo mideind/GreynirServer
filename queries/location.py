@@ -30,6 +30,7 @@ import logging
 from queries import query_json_api
 from iceaddr import iceaddr_lookup
 
+
 MAPS_API_URL = "https://maps.googleapis.com/maps/api/geocode/json?latlng={0},{1}&key={2}&language=is"
 
 
