@@ -44,8 +44,10 @@ Query →
 # By convention, names of nonterminals in query grammars should
 # start with an uppercase Q
 
+QAboutTopic → QPerson | QCompany | QEntity
+
 QAbout →
-    "hvaða" "upplýsingar" "ert" "þú" "með" "um" Manneskja/fall/nkyn '?'?
+    "hvaða" "upplýsingar" "ert" "þú" "með" "um" QEntityKey_þf '?'?
 """
 
 
@@ -57,7 +59,7 @@ def QAbout(node, params, result):
     result.qkey = "5"
 
 
-def Manneskja(node, params, result):
+def QEntityKey(node, params, result):
     pprint(result._nominative)
     result["subject"] = result._nominative.title()
 
@@ -75,11 +77,13 @@ _WIKI_API_URL = "https://is.wikipedia.org/w/api.php?format=json&action=query&pro
 
 def _query_wiki_api(subject):
     url = _WIKI_API_URL.format(subject)
+    print(url)
     return query_json_api(url)
 
 
 def get_wiki_summary(subject):
     res = _query_wiki_api(subject)
+    print(res)
     if not res or "query" not in res or "pages" not in res["query"]:
         return None
 

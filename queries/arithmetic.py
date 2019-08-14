@@ -27,6 +27,7 @@
 import math
 import json
 import re
+from . import format_icelandic_float
 
 _NUMBER_WORDS = {
     "núll": 0,
@@ -312,12 +313,6 @@ _OP_NUM_ARGS = {
 }
 
 
-def strip_trailing_zeros(num_str):
-    # Strip trailing decimal zeros from an Icelandic-style 
-    # float num string, e.g. "17,0" -> "17"
-    return num_str.rstrip("0").rstrip(",")
-
-
 def calc_arithmetic(query, result):
     """ Calculate the answer to an arithmetic query """
     operator = result.operator
@@ -342,7 +337,7 @@ def calc_arithmetic(query, result):
         # Allow sqrt function in eval namespace
         eval_globals["sqrt"] = math.sqrt
         s = "sqrt({0})".format(nums[0])
-    
+
     # Pow
     elif operator == "pow":
         # Cap max pow
@@ -351,7 +346,7 @@ def calc_arithmetic(query, result):
         # Allow pow function in eval namespace
         eval_globals["pow"] = pow
         s = "pow({0},{1})".format(nums[0], nums[1])
-    
+
     # Percent
     elif operator == "percent":
         s = "({0} * {1}) / 100.0".format(nums[0], nums[1])
@@ -376,8 +371,7 @@ def calc_arithmetic(query, result):
 
     if isinstance(res, float):
         # Convert result to Icelandic decimal format
-        answer = "{0:.2f}".format(res).replace(".", ",")
-        answer = strip_trailing_zeros(answer)
+        answer = format_icelandic_float(res)
     else:
         answer = str(res)
 

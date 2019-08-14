@@ -54,3 +54,15 @@ def query_json_api(url):
         logging.warning("Error parsing JSON API response: {0}", str(e))
 
     return None
+
+
+def strip_trailing_zeros(num_str):
+    # Strip trailing decimal zeros from an Icelandic-style
+    # float num string, e.g. "17,0" -> "17"
+    return num_str.rstrip("0").rstrip(",")
+
+
+def format_icelandic_float(fp_num):
+    # Convert number to Icelandic decimal format
+    res = "{0:.2f}".format(fp_num).replace(".", ",")
+    return strip_trailing_zeros(res)
