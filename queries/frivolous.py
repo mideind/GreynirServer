@@ -27,6 +27,9 @@
 
 """
 
+from datetime import datetime, timedelta
+
+
 _SPECIAL_QUERIES = {
     "er þetta spurning?": {
         "answer": "Er þetta svar?"
@@ -126,6 +129,7 @@ def handle_plain_text(q):
         # A voice answer is always a plain string
         voice = response.get("voice") or answer
         q.set_answer(dict(answer=answer), answer, voice)
+        q.set_expires(datetime.utcnow() + timedelta(minutes=10))
         return True
 
     return False

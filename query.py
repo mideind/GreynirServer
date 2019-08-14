@@ -28,12 +28,13 @@
 
 import importlib
 import logging
-import datetime
+from datetime import datetime
 import json
 
 from settings import Settings
 
-from db import SessionContext
+from db import SessionContext, desc
+from db.models import Query as QueryRow
 
 from tree import Tree
 from reynir import TOK, tokenize, correct_spaces
@@ -184,6 +185,8 @@ class Query:
         self._qtype = None
         self._key = None
         self._toklist = None
+        # Expiration timestamp, if any
+        self._expires = None
 
     @classmethod
     def init_class(cls):
@@ -367,6 +370,14 @@ class Query:
         self._beautified_query = q
 
     @property
+    def expires(self):
+        """ Expiration time stamp for this query answer, if any """
+        return self._expires
+
+    def set_expires(self, ts):
+        self._expires = ts
+
+    @property
     def location(self):
         return self._location
 
@@ -479,8 +490,8 @@ class Query:
         result["valid"] = True
         if Settings.DEBUG:
             def converter(o):
-                """ Ensure that datetime.datetime is output in ISO format to JSON """
-                if isinstance(o, datetime.datetime):
+                """ Ensure that datetime is output in ISO format to JSON """
+                if isinstance(o, datetime):
                     return o.isoformat()[0:16]
                 return None
             print(
@@ -517,11 +528,80 @@ def process_query(q, voice, auto_uppercase, location=None):
         # Iterate through the submitted query strings,
         # attempting to execute them in turn until we find
         # one that works (or we're stumped)
+        first_qtext = None
         for qtext in it:
+            qtext = qtext.strip()
+            clean_q = qtext.rstrip("?")
+            if first_qtext is None:
+                first_qtext = clean_q
+            # First, look in the query cache for the same question
+            # (in lower case), having a not-expired answer
+            cached_answer = None
+            if voice:
+                # Only use the cache for voice queries
+                # (handling detailed responses in other queries
+                # is too much for the cache)
+                cached_answer = (
+                    session
+                    .query(QueryRow)
+                    .filter(QueryRow.question_lc == clean_q.lower())
+                    .filter(QueryRow.expires >= datetime.utcnow())
+                    .order_by(desc(QueryRow.expires))
+                    .one_or_none()
+                )
+            if cached_answer is not None:
+                # The same question is found in the cache and has not expired:
+                # return the previous answer
+                a = cached_answer
+                result=dict(
+                    valid=True,
+                    q_raw=qtext,
+                    q=a.bquestion,
+                    answer=a.answer,
+                    response=a.answer or "",
+                    voice=a.voice,
+                    expires=a.expires,
+                    qtype=a.qtype,
+                    key=a.key,
+                )
+                # !!! TBD: Log the cached answer as well?
+                return result
             query = Query(session, qtext, voice, auto_uppercase, location)
             result = query.execute()
             if result["valid"] and "error" not in result:
                 # Successful: our job is done
+                # Log the result
+                qrow = QueryRow(
+                    timestamp=datetime.utcnow(),
+                    question=clean_q,
+                    # bquestion is the beautified query string
+                    bquestion=result["q"],
+                    answer=result["answer"],
+                    voice=result.get("voice"),
+                    # Only put an expiration on voice queries
+                    expires=query.expires if voice else None,
+                    qtype=result.get("qtype"),
+                    key=result.get("key"),
+                    latitude=location[0] if location else None,
+                    longitude=location[1] if location else None,
+                    # !!! TBD: clienttype
+                    # !!! TBD: clientid
+                    # !!! TBD: context
+                    # All other fields are set to NULL
+                )
+                session.add(qrow)
                 return result
 
-        return result or dict(valid=False, error="E_NO_RESULT")
+        # Failed to answer the query
+        result = result or dict(valid=False, error="E_NO_RESULT")
+        if first_qtext:
+            # Log the failure
+            qrow = QueryRow(
+                timestamp=datetime.utcnow(),
+                question=first_qtext,
+                error=result.get("error"),
+                # All other fields are set to NULL
+            )
+            session.add(qrow)
+
+        return result
