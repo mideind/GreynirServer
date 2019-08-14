@@ -46,13 +46,15 @@ QCurAnyPrefix → QCurGenericPrefix | QCurSpecificPrefix
 
 # Supported currencies
 QCurUnit/fall →
-    QCurISK/fall | QCurUSD/fall | QCurEUR/fall | QCurGBP/fall
+    QCurISK/fall | QCurUSD/fall | QCurEUR/fall | QCurGBP/fall 
+    | QCurJPY/fall | QCurRUB/fall | QCurCHF/fall | QCurCAD/fall 
+    | QCurZAR/fall | QCurPLN/fall | QCurRUB/fall | QCurCNY/fall
 
-QCurISK/fall → 
+QCurISK/fall →
     'króna:kvk'_et/fall
     | 'króna:kvk'_et_gr/fall
 
-QCurUSD/fall → 
+QCurUSD/fall →
     'Bandaríkjadalur:kk'_et/fall 
     | 'Bandaríkjadalur:kk'_et_gr/fall 
     | 'Bandaríkjadollari:kk'_et/fall
@@ -60,15 +62,57 @@ QCurUSD/fall →
     | 'dollari:kk'_et/fall
     | 'dollari:kk'_et_gr/fall
 
-QCurEUR/fall → 
+QCurEUR/fall →
     'evra:kvk'_et/fall
     | 'evra:kvk'_et_gr/fall
+    | 'evrópumynt:kvk'_et/fall
+    | 'evrópumynt:kvk'_et_gr/fall
 
-QCurGBP/fall → 
+QCurGBP/fall →
     'pund:hk'_et/fall 
     | 'pund:hk'_et_gr/fall
+    | 'breskur:lo'_esb_et_hk/fall 'pund:hk'_et/fall 
+    | 'breskur:lo'_esb_et_hk/fall 'pund:hk'_et_gr/fall 
     | 'sterlingspund:hk'_et/fall
     | 'sterlingspund:hk'_et_gr/fall
+
+QCurJPY/fall →
+    'jen:hk'_et/fall 
+    | 'jen:hk'_et_gr/fall
+    # "Japansk jen"
+
+QCurCHF/fall →
+    'franki:kk'_et/fall 
+    | 'franki:kk'_et_gr/fall
+    # "Svissneskur franki"
+
+QCurCAD/fall →
+    'kanadadalur:kk'_et/fall 
+    | 'kanadadalur:kk'_et_gr/fall 
+    | 'kanadadollari:kk'_et/fall
+    | 'kanadadollari:kk'_et_gr/fall
+    # "Kanada dollari"
+
+QCurZAR/fall →
+    'rand:hk'_et/fall 
+    | 'rand:hk'_et_gr/fall 
+    # "suður-afrískt rand"
+
+QCurPLN/fall →
+    'slot:hk'_et/fall 
+    | 'slot:hk'_et_gr/fall 
+    # "pólskt slot"
+
+QCurRUB/fall →
+    'rúbla:kvk'_et/fall 
+    | 'rúbla:kvk'_et_gr/fall
+    # "Rússnesk rúbla"
+
+QCurCNY/fall →
+    'júan:hk'_et/fall 
+    | 'júan:hk'_et_gr/fall
+    | "yuan"
+    # "Kínverskt júan"
 
 QCurNumberWord →
     # to is a declinable number word ('tveir/tvo/tveim/tveggja')
@@ -76,18 +120,28 @@ QCurNumberWord →
     # tala is a number ('17')
     to | töl | tala
 
-QCurrency →
-    # "Hvert er gengi X gagnvart Y?"
-    QCurAnyPrefix QCurExchangeRate '?'?
-
-    # "Hvað eru NUM X margir/margar/mörg Y?"
-    # |
-    # "Hvað fæ ég marga/margar/mörg X fyrir NUM Y?"
+QCurCurrencyIndex/fall →
+    'gengisvísitala:kvk'_et/fall 
+    | 'gengisvísitala:kvk'_et_gr/fall
 
 QCurExchangeRate →
     "gengi" QCurUnit_ef "gagnvart" QCurUnit_þgf
 
-$score(35) QCurrency
+QCurrency →
+    # "Hver er gengisvísitalan?"
+    "hver" "er" QCurCurrencyIndex_nf '?'?
+    
+    # "Hvert er gengi X gagnvart Y?"
+    | QCurAnyPrefix QCurExchangeRate '?'?
+
+    # "Hvað eru NUM X margir/margar/mörg Y?"
+    # |
+
+    # "Hvað fæ ég marga/margar/mörg X fyrir NUM Y?"
+    # |
+
+
+$score(155) QCurrency
 
 """
 
@@ -116,6 +170,12 @@ def QCurExchangeRate(node, params, result):
     result.desc = node.contained_text()
 
 
+def QCurCurrencyIndex(node, params, result):
+    result.op = "index"
+    result.desc = node.contained_text()
+    add_currency("GVT", result)
+
+
 CURR_API_URL = "https://apis.is/currency/lb"
 ISK_EXCHRATE = {}
 
@@ -129,10 +189,13 @@ def _query_exchange_rate(curr1, curr2):
 
     xr = {c["shortName"]: c["value"] for c in res}
 
-    if curr2 in xr:
+    if curr1 == "GVT":
+        return xr["GVT"]
+    elif curr2 in xr:
         return xr[curr2]
 
     return None
+
 
 # def article_begin(state):
 #     print(state)
@@ -146,6 +209,9 @@ def sentence(state, result):
         # Successfully matched a query type
 
         print(result.currencies)
+        # Temp hack while I fix this
+        if len(result.currencies) == 1:
+            result.currencies.append(None)
 
         val = _query_exchange_rate(result.currencies[0], result.currencies[1])
         if val:
@@ -155,7 +221,6 @@ def sentence(state, result):
             q.set_answer(response, answer, voice_answer)
             q.set_qtype("Currency")
             q.set_key("ISK")
-            return;
-
+            return
 
     state["query"].set_error("E_QUERY_NOT_UNDERSTOOD")
