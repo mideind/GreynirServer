@@ -434,7 +434,7 @@ def query_person(query, session, name):
         answer = titles[0]["answer"]
         voice_answer = name + " er " + answer + "."
     else:
-        answer = ""
+        answer = "Nafnið '" + nafn + "' finnst ekki."
         voice_answer = "Ég veit ekki hver " + name + " er."
     return response, answer, voice_answer
 
@@ -493,7 +493,7 @@ def query_title(query, session, title):
         answer = response[0]["answer"]
         voice_answer = upper_title + " er " + answer + "."
     else:
-        answer = ""
+        answer = "Ekkert nafn finnst með titilinn '" + title + "'."
         voice_answer = "Ég veit ekki hver er " + title + "."
     return response, answer, voice_answer
 
@@ -535,7 +535,7 @@ def query_entity(query, session, name):
             v = " ".join(v)
         voice_answer = name + " er " + v + "."
     else:
-        answer = ""
+        answer = "Engin skilgreining finnst á nafninu '" + name + "'."
         voice_answer = "Ég veit ekki hvað " + name + " er."
     return response, answer, voice_answer
 
@@ -575,7 +575,7 @@ def query_company(query, session, name):
         answer = response[0]["answer"]
         voice_answer = name + " er " + answer + "."
     else:
-        answer = ""
+        answer = "Engin skilgreining finnst á nafninu '" + name + "'."
         voice_answer = "Ég veit ekki hvað " + name + " er."
     return response, answer, voice_answer
 
