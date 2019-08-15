@@ -10,7 +10,7 @@
 
     This module implements a processor that looks at parsed sentence trees
     and extracts attributes of objects from sentences of the form
-    '[attribute] [object in the possessive case] [prepositions*] [is-verb] [attribute value].'
+    '[attribute] [object in the genitive case] [prepositions*] [is-verb] [attribute value].'
 
     Examples:
     'Verg landsframleiðsla Íslands árið 2005 var 420 milljarðar króna.' ->

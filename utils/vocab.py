@@ -61,7 +61,7 @@ if basepath.endswith(_UTILS):
 
 # Note: We can't use settings from ReynirPackage because it
 # reads package resource streams, not plain text files
-from settings import LineReader, ConfigError
+from settings import Settings, LineReader, ConfigError
 
 
 BIN_Meaning = namedtuple(
@@ -296,7 +296,12 @@ if __name__ == "__main__":
 
     try:
         # Read configuration file
-        Meanings.open_db("localhost", 5432)
+        Settings.read(os.path.join(basepath, "config", "ReynirSimple.conf"))
+        print(
+            "Accessing BÍN database at {0}:{1}"
+            .format(Settings.DB_HOSTNAME, Settings.DB_PORT)
+        )
+        Meanings.open_db(Settings.DB_HOSTNAME, Settings.DB_PORT)
         Meanings.read_config(src)
         Meanings.close_db()
     except ConfigError as e:

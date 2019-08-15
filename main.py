@@ -6,7 +6,6 @@
     Web server main module
 
     Copyright (C) 2019 Miðeind ehf.
-    Original author: Vilhjálmur Þorsteinsson
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -276,6 +275,8 @@ else:
     logging.info(log_str)
     print(log_str)
     sys.stdout.flush()
+
+    app.config["TEMPLATES_AUTO_RELOAD"] = False
 
     # Running as a server module: pre-load the grammar into memory
     with Fast_Parser() as fp:

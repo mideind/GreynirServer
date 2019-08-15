@@ -21,30 +21,32 @@
 
 """
 
-
-from . import routes, max_age, cache, text_from_request, better_jsonify, restricted
-from . import _MAX_URL_LENGTH, _MAX_UUID_LENGTH, _MAX_TEXT_LENGTH_VIA_URL
-
 import platform
 import sys
 import random
 import json
 from datetime import datetime
 
+from flask import render_template, request, current_app, abort, redirect, url_for
+
+from db import SessionContext, desc, dbfunc
+from db.models import Person, Article, ArticleTopic, Entity
+
 from article import Article as ArticleProxy
 from search import Search
 
 import reynir
 
-from db import SessionContext, desc, dbfunc
-from db.models import Person, Article, ArticleTopic, Entity
-
-from flask import render_template, request, current_app, abort, redirect, url_for
 from reynir.fastparser import ParseForestFlattener
 from treeutil import TreeUtility
+from settings import Settings
 
 from images import get_image_url, update_broken_image_url, blacklist_image_url
 from doc import SUPPORTED_DOC_MIMETYPES
+
+from . import routes, max_age, cache, text_from_request, better_jsonify, restricted
+from . import _MAX_URL_LENGTH, _MAX_UUID_LENGTH, _MAX_TEXT_LENGTH_VIA_URL
+
 
 # Default text shown in the URL/text box
 _DEFAULT_TEXTS = [
@@ -125,7 +127,8 @@ def page():
         if uuid:
             a = ArticleProxy.load_from_uuid(uuid, session)
         elif url.startswith("http:") or url.startswith("https:"):
-            a = ArticleProxy.scrape_from_url(url, session)  # Forces a new scrape
+            # Force a new scrape
+            a = ArticleProxy.scrape_from_url(url, session)
         else:
             a = None
 
@@ -134,7 +137,7 @@ def page():
             return redirect(url_for("routes.main"))
 
         # Prepare the article for display (may cause it to be parsed and stored)
-        a.prepare(session, verbose=True, reload_parser=True)
+        a.prepare(session, verbose=True, reload_parser=Settings.DEBUG)
         register = a.create_register(session, all_names=True)
 
         # Fetch names of article topics, if any

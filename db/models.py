@@ -223,7 +223,7 @@ class Person(Base):
 
 
 class Entity(Base):
-    """ Represents an entity """
+    """ Represents a named entity """
 
     __tablename__ = "entities"
 
@@ -559,6 +559,105 @@ class BlacklistedLink(Base):
     def __repr__(self):
         return "BlacklistedLink(key='{0}', url='{1}', type='{2}', ts='{3}')".format(
             self.key, self.url, self.link_type, self.timestamp
+        )
+
+    @classmethod
+    def table(cls):
+        return cls.__table__
+
+
+class Query(Base):
+    """ Represents a logged incoming query with its answer """
+
+    __tablename__ = "queries"
+
+    # UUID
+    id = Column(
+        psql_UUID(as_uuid=False),
+        index=True,
+        nullable=False,
+        unique=True,
+        primary_key=True,
+        server_default=text("uuid_generate_v1()"),
+    )
+
+    # Timestamp of the incoming query
+    timestamp = Column(DateTime, index=True, nullable=False)
+
+    # Question
+    question = Column(String, index=True, nullable=False)
+
+    @hybrid_property
+    def question_lc(self):
+        return self.question.lower()
+
+    @question_lc.comparator
+    def question_lc(cls):
+        return CaseInsensitiveComparator(cls.question)
+
+    # Beautified question
+    bquestion = Column(String, index=False, nullable=True)
+
+    # Answer
+    answer = Column(String, index=True, nullable=True)
+
+    @hybrid_property
+    def answer_lc(self):
+        return self.answer.lower()
+
+    @answer_lc.comparator
+    def answer_lc(cls):
+        return CaseInsensitiveComparator(cls.answer)
+
+    # Voice answer
+    voice = Column(String, index=True, nullable=True)
+
+    @hybrid_property
+    def voice_lc(self):
+        return self.voice.lower()
+
+    @voice_lc.comparator
+    def voice_lc(cls):
+        return CaseInsensitiveComparator(cls.voice)
+
+    # Error code
+    error = Column(String(80), nullable=True)
+
+    # When does this answer expire, for caching purposes?
+    # NULL=immediately
+    expires = Column(DateTime, index=True, nullable=True)
+
+    # The query type, NULL if not able to process
+    qtype = Column(String(80), index=True, nullable=True)
+
+    # The query key, NULL if not able to process or not applicable
+    key = Column(String(256), index=True, nullable=True)
+
+    # Client type
+    clienttype = Column(String(80), index=True, nullable=True)
+
+    # Client identifier, if applicable
+    clientid = Column(String(80), index=True, nullable=True)
+
+    # Client location coordinates (WGS84)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+
+    # Additional context used to answer the query
+    context = Column(JSONB, nullable=True)
+
+    # Add an index on the question in lower case
+    question_lc_index = Index('ix_queries_question_lc', func.lower(question))
+
+    # Add an index on the answer in lower case
+    answer_lc_index = Index('ix_queries_answer_lc', func.lower(answer))
+
+    # Add an index on the voice answer in lower case
+    voice_lc_index = Index('ix_queries_voice_lc', func.lower(voice))
+
+    def __repr__(self):
+        return "Query(question='{0}', answer='{1}')".format(
+            self.question, self.answer
         )
 
     @classmethod

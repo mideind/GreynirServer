@@ -66,7 +66,8 @@ def modules_in_dir(directory):
     return modnames
 
 
-class TokenContainer:  # Better name wanted. Open to suggestions.
+class TokenContainer:
+
     """ Class wrapper around tokens """
 
     def __init__(self, tokens_json, url=None):
@@ -111,7 +112,11 @@ class TokenContainer:  # Better name wanted. Open to suggestions.
             return None
 
         # Initialize state that we keep throughout processing
-        state = {"session": session, "url": self.url, "processor": processor}
+        state = {
+            "session": session,
+            "url": self.url,
+            "processor": processor,
+        }
 
         if article_begin:
             article_begin(state)
@@ -142,6 +147,7 @@ class TokenContainer:  # Better name wanted. Open to suggestions.
 
 
 class Processor:
+
     """ The worker class that processes parsed articles """
 
     _db = None
@@ -237,6 +243,12 @@ class Processor:
                                 tree.process(session, p)
                             elif p.PROCESSOR_TYPE == "token":
                                 token_container.process(session, p)
+                            else:
+                                assert False, (
+                                    "Unknown processor type '"
+                                    + p.PROCESSOR_TYPE
+                                    + "' (should be 'tree' or 'token')"
+                                )
 
                     # Mark the article as being processed
                     article.processed = datetime.utcnow()
@@ -379,7 +391,6 @@ class Usage(Exception):
 
 def init_db():
     """ Initialize the database, to the extent required """
-
     db = Scraper_DB()
     try:
         db.create_tables()
@@ -412,7 +423,6 @@ __doc__ = """
 
 def _main(argv=None):
     """ Guido van Rossum's pattern for a Python main function """
-
     if argv is None:
         argv = sys.argv
     try:
@@ -528,28 +538,20 @@ def _main(argv=None):
 
 
 def main():
-
     """ Main function to invoke for profiling """
-
     import cProfile as profile
     import pstats
 
     global _PROFILING
 
     _PROFILING = True
-
     filename = "Processor.profile"
-
     profile.run("_main()", filename)
-
     stats = pstats.Stats(filename)
-
     # Clean up filenames for the report
     stats.strip_dirs()
-
     # Sort the statistics by the total time spent in the function itself
     stats.sort_stats("tottime")
-
     stats.print_stats(100)  # Print 100 most significant lines
 
 
