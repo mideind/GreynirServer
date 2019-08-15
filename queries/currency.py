@@ -71,8 +71,8 @@ QCurEUR/fall →
 QCurGBP/fall →
     'pund:hk'_et/fall 
     | 'pund:hk'_et_gr/fall
-    | 'breskur:lo'_esb_et_hk/fall 'pund:hk'_et/fall 
-    | 'breskur:lo'_esb_et_hk/fall 'pund:hk'_et_gr/fall 
+    | 'breskur:lo'_hk_et/fall 'pund:hk'_et/fall 
+    | 'breskur:lo'_hk_et/fall 'pund:hk'_et_gr/fall 
     | 'sterlingspund:hk'_et/fall
     | 'sterlingspund:hk'_et_gr/fall
 
@@ -124,18 +124,27 @@ QCurCurrencyIndex/fall →
     'gengisvísitala:kvk'_et/fall 
     | 'gengisvísitala:kvk'_et_gr/fall
 
+
+QCurVisAVis → "gagnvart" | "á" "móti"
+
 QCurExchangeRate →
-    "gengi" QCurUnit_ef "gagnvart" QCurUnit_þgf
+    "gengi" QCurUnit_ef QCurVisAVis QCurUnit_þgf
+
+QCurGeneralRate →
+    "gengi" QCurUnit_ef
 
 QCurrency →
     # "Hver er gengisvísitalan?"
     "hver" "er" QCurCurrencyIndex_nf '?'?
     
+    # "Hvert er gengi X?"
+    | QCurAnyPrefix QCurGeneralRate '?'?
+
     # "Hvert er gengi X gagnvart Y?"
     | QCurAnyPrefix QCurExchangeRate '?'?
 
     # "Hvað eru NUM X margir/margar/mörg Y?"
-    # |
+    # | QCurGenericPrefix QCurNumberWord QCurUnit 'margur:lo'/kyn/fall QCurUnit '?'?
 
     # "Hvað fæ ég marga/margar/mörg X fyrir NUM Y?"
     # |
@@ -167,6 +176,11 @@ def QCurUnit(node, params, result):
 
 def QCurExchangeRate(node, params, result):
     result.op = "exchange"
+    result.desc = node.contained_text()
+
+
+def QCurGeneralRate(node, params, result):
+    result.op = "general"
     result.desc = node.contained_text()
 
 
@@ -208,19 +222,24 @@ def sentence(state, result):
     if "qtype" in result:
         # Successfully matched a query type
 
-        print(result.currencies)
-        # Temp hack while I fix this
-        if len(result.currencies) == 1:
-            result.currencies.append(None)
+        if result.op == "index":
+            val = _query_exchange_rate("GVT", None)
+        elif result.op == "exchange":
+            val = _query_exchange_rate(result.currencies[0], result.currencies[1])
+        elif result.op == "general":
+            pass
+        else:
+            raise Exception("Unknown operator: {0}".format(result.op))
 
-        val = _query_exchange_rate(result.currencies[0], result.currencies[1])
         if val:
             answer = format_icelandic_float(val)
             response = dict(answer=answer)
             voice_answer = "{0} er {1}".format(result.desc, answer)
             q.set_answer(response, answer, voice_answer)
-            q.set_qtype("Currency")
             q.set_key("ISK")
-            return
+            q.set_qtype("Currency")
+
+        return
+
 
     state["query"].set_error("E_QUERY_NOT_UNDERSTOOD")

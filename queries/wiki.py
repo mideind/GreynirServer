@@ -47,7 +47,8 @@ Query →
 QAboutTopic → QPerson | QCompany | QEntity
 
 QAbout →
-    "hvaða" "upplýsingar" "ert" "þú" "með" "um" QEntityKey_þf '?'?
+    "hvaða" "upplýsingar" "ert" "þú" "með" "um" QEntityKey_þf '?'? 
+    | "hvaða" "upplýsingar" "ertu" "með" "um" QEntityKey_þf '?'? 
 """
 
 

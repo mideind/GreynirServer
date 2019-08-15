@@ -54,6 +54,7 @@ def handle_plain_text(q):
         # Use location, if available, to determine time zone
         loc = q.location
         if loc:
+            # TODO: This seems to be rather slow :(
             tz = tzwhere.tzwhere().tzNameAt(loc[0], loc[1])
         else:
             # Default to Iceland's timezone
