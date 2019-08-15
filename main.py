@@ -6,6 +6,7 @@
     Web server main module
 
     Copyright (C) 2019 Miðeind ehf.
+    Original author: Vilhjálmur Þorsteinsson
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -52,12 +53,19 @@ from settings import Settings, ConfigError
 from article import Article as ArticleProxy
 
 
+# RUNNING_AS_SERVER is True if we're executing under nginx/Gunicorn,
+# but False if the program was invoked directly as a Python main module.
+RUNNING_AS_SERVER = __name__ != "__main__"
+
 # Initialize and configure Flask app
 app = Flask(__name__)
+
 app.config["JSON_AS_ASCII"] = False  # We're fine with using Unicode/UTF-8
 app.config["MAX_CONTENT_LENGTH"] = 1 * 1024 * 1024  # 1 MB, max upload file size
-app.config["TEMPLATES_AUTO_RELOAD"] = True
 app.config["CACHE_NO_NULL_WARNING"] = True  # Don't warn if caching is disabled
+
+# Only auto-reload templates if we're not running as a production server
+app.config["TEMPLATES_AUTO_RELOAD"] = not RUNNING_AS_SERVER
 
 # Push application context to give view functions, error handlers,
 # and other functions access to app instance via current_app
@@ -65,13 +73,12 @@ app.app_context().push()
 
 # Set up caching
 # Caching is disabled if app is invoked via the command line
-cache_type = "null" if __name__ == "__main__" else "simple"
+cache_type = "simple" if RUNNING_AS_SERVER else "null"
 cache = Cache(app, config={"CACHE_TYPE": cache_type})
 app.config["CACHE"] = cache
 
 # Register blueprint routes
 from routes import routes, max_age
-
 app.register_blueprint(routes)
 
 
@@ -179,7 +186,7 @@ if Settings.DEBUG:
     reynir_correct.Settings.DEBUG = True
 
 
-if __name__ == "__main__":
+if not RUNNING_AS_SERVER:
 
     # Run a default Flask web server for testing if invoked directly as a main program
 
@@ -275,8 +282,6 @@ else:
     logging.info(log_str)
     print(log_str)
     sys.stdout.flush()
-
-    app.config["TEMPLATES_AUTO_RELOAD"] = False
 
     # Running as a server module: pre-load the grammar into memory
     with Fast_Parser() as fp:

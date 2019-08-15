@@ -17,7 +17,7 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    Main Flask routes
+    This module contains the main Flask routes for the Reynir web server.
 
 """
 
@@ -27,20 +27,17 @@ import random
 import json
 from datetime import datetime
 
-from flask import render_template, request, current_app, abort, redirect, url_for
+from flask import render_template, request, redirect, url_for
+
+import reynir
+from reynir.fastparser import ParseForestFlattener
 
 from db import SessionContext, desc, dbfunc
 from db.models import Person, Article, ArticleTopic, Entity
 
 from article import Article as ArticleProxy
 from search import Search
-
-import reynir
-
-from reynir.fastparser import ParseForestFlattener
 from treeutil import TreeUtility
-from settings import Settings
-
 from images import get_image_url, update_broken_image_url, blacklist_image_url
 from doc import SUPPORTED_DOC_MIMETYPES
 
@@ -69,6 +66,9 @@ _DEFAULT_TEXTS = [
     "Hvað er UNESCO?",
     "Hver er Íslandsmeistari í golfi?",
 ]
+
+PARSEFAIL_DEFAULT = 50
+PARSEFAIL_MAX = 250
 
 
 @routes.route("/")
@@ -127,7 +127,7 @@ def page():
         if uuid:
             a = ArticleProxy.load_from_uuid(uuid, session)
         elif url.startswith("http:") or url.startswith("https:"):
-            # Force a new scrape
+            # Forces a new scrape
             a = ArticleProxy.scrape_from_url(url, session)
         else:
             a = None
@@ -257,10 +257,6 @@ def tree_grid():
         full_tbl=full_tbl,
         full_height=full_height,
     )
-
-
-PARSEFAIL_DEFAULT = 50
-PARSEFAIL_MAX = 250
 
 
 @routes.route("/parsefail")
