@@ -32,6 +32,7 @@ from collections import defaultdict
 
 from settings import Settings
 
+from db import desc
 from db.models import Article, Person, Entity, Root
 from db.queries import RelatedWordsQuery, ArticleCountQuery, ArticleListQuery
 
@@ -361,6 +362,8 @@ def create_name_register(tokens, session, all_names=False):
 
 def _query_person_titles(session, name):
     """ Return a list of all titles for a person """
+    # This list should never become very long, so we don't
+    # apply a limit here
     rd = defaultdict(dict)
     q = (
         session.query(
@@ -448,6 +451,11 @@ def query_person_title(session, name):
 def query_title(query, session, title):
     """ A query for a person by title """
     # !!! Consider doing a LIKE '%title%', not just LIKE 'title%'
+    # We impose a LIMIT of 1024 on each query result,
+    # since the query may return many names (for instance 'Hver er formaður?'),
+    # and getting more name mentions than this is not likely to significantly
+    # affect the outcome.
+    QUERY_LIMIT = 1024
     rd = defaultdict(dict)
     title_lc = title.lower()  # Query by lowercase title
     q = (
@@ -463,7 +471,8 @@ def query_title(query, session, title):
         .filter(Root.visible == True)
         .join(Article, Article.url == Person.article_url)
         .join(Root)
-        .order_by(Article.timestamp)
+        .order_by(desc(Article.timestamp))
+        .limit(QUERY_LIMIT)
         .all()
     )
     # Append names from the persons table
@@ -482,7 +491,8 @@ def query_title(query, session, title):
         .filter(Root.visible == True)
         .join(Article, Article.url == Entity.article_url)
         .join(Root)
-        .order_by(Article.timestamp)
+        .order_by(desc(Article.timestamp))
+        .limit(QUERY_LIMIT)
         .all()
     )
     append_names(rd, q, prop_func=lambda x: x.name)
