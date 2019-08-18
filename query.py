@@ -502,7 +502,7 @@ class Query:
         return result
 
 
-def process_query(q, voice, auto_uppercase, location=None):
+def process_query(q, voice, auto_uppercase, location=None, clientid=None):
     """ Process an incoming natural language query.
         If voice is True, return a voice-friendly string to
         be spoken to the user. If auto_uppercase is True,
@@ -584,8 +584,9 @@ def process_query(q, voice, auto_uppercase, location=None):
                     key=result.get("key"),
                     latitude=location[0] if location else None,
                     longitude=location[1] if location else None,
+                    # Client identifier (IP address by default)
+                    clientid=clientid,
                     # !!! TBD: clienttype
-                    # !!! TBD: clientid
                     # !!! TBD: context
                     # All other fields are set to NULL
                 )

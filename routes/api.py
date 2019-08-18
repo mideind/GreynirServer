@@ -335,7 +335,8 @@ def query_api(version=1):
     # Send the query to the query processor
     result = process_query(
         q, voice, auto_uppercase,
-        location=(lat, lon) if location_present else None
+        location=(lat, lon) if location_present else None,
+        clientid=request.remote_addr,
     )
 
     # Get URL for response as synthesized speech audio
