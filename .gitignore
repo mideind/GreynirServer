@@ -118,7 +118,7 @@ console/
 
 # Virtual environments
 venv/
-p35*/
+p3*/
 p7*/
 
 # Installer logs

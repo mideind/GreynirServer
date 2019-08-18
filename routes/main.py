@@ -35,6 +35,7 @@ from reynir.fastparser import ParseForestFlattener
 from db import SessionContext, desc, dbfunc
 from db.models import Person, Article, ArticleTopic, Entity
 
+from settings import Settings
 from article import Article as ArticleProxy
 from search import Search
 from treeutil import TreeUtility
