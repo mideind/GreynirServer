@@ -95,7 +95,8 @@ def get_wiki_summary(subject):
         return None
 
     k = sorted(keys)[0]
-    text = pages[k]["extract"]
+
+    text = pages[k].get("extract", "")
 
     return _clean_answer(text)
 

@@ -29,6 +29,8 @@ import json
 import re
 from . import format_icelandic_float
 
+_ARITHMETIC_QTYPE = "Arithmetic"
+
 _NUMBER_WORDS = {
     "núll": 0,
     "einn": 1,
@@ -294,7 +296,7 @@ def QArPercent(node, params, result):
 def QArithmetic(node, params, result):
     """ Arithmetic query """
     # Set query type & key
-    result.qtype = "Arithmetic"
+    result.qtype = _ARITHMETIC_QTYPE
     result.qkey = result.get("desc", "")
 
 

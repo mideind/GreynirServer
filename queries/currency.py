@@ -25,6 +25,8 @@ from . import format_icelandic_float
 from queries import query_json_api
 import re
 
+_CURRENCY_QTYPE = "Currency"
+
 _NUMBER_WORDS = {
     "núll": 0,
     "einn": 1,
@@ -337,7 +339,7 @@ def sentence(state, result):
             voice_answer = "{0} er {1}".format(result.desc, answer)
             q.set_answer(response, answer, voice_answer)
             q.set_key("ISK")
-            q.set_qtype("Currency")
+            q.set_qtype(_CURRENCY_QTYPE)
 
         return
 

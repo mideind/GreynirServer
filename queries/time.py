@@ -36,6 +36,9 @@ from geo import isocode_for_country_name, lookup_city_info, ICELAND_ISOCODE
 from tzwhere import tzwhere
 
 
+TIME_QTYPE = "Time"
+
+
 def handle_plain_text(q):
     """ Handle a plain text query, contained in the q parameter
         which is an instance of the query.Query class.
@@ -43,9 +46,7 @@ def handle_plain_text(q):
         the appropriate properties on the Query instance have
         been set, such as the answer and the query type (qtype).
         If the query is not recognized, returns False. """
-    ql = q.query_lower
-    if ql.endswith("?"):
-        ql = ql[:-1]
+    ql = q.query_lower.rstrip("?")
 
     tz = None  # Timezone being asked about
     specific_loc = None
@@ -111,7 +112,7 @@ def handle_plain_text(q):
         # A voice answer is a plain string that will be
         # passed as-is to a voice synthesizer
         voice = "{0} {1} {2:02}.".format(desc, now.hour, now.minute)
-        q.set_qtype("Time")
+        q.set_qtype(TIME_QTYPE)
         q.set_answer(response, answer, voice)
         return True
 

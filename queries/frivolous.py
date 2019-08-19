@@ -29,6 +29,7 @@
 
 from datetime import datetime, timedelta
 
+_SPECIAL_QTYPE = "Special"
 
 _SPECIAL_QUERIES = {
     "er þetta spurning?": {
@@ -122,7 +123,7 @@ def handle_plain_text(q):
         ql += "?"
     if ql in _SPECIAL_QUERIES:
         # This is a query we recognize and handle
-        q.set_qtype("Special")
+        q.set_qtype(_SPECIAL_QTYPE)
         response = _SPECIAL_QUERIES[ql]
         # A non-voice answer is usually a dict or a list
         answer = response.get("answer")

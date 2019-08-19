@@ -95,7 +95,7 @@ def _addrinfo_from_api_result(result):
     return (street, num, locality, postcode, country)
 
 
-WHERE_AM_I_STRINGS = frozenset(
+_WHERE_AM_I_STRINGS = frozenset(
     (
         "hvar er ég",
         "hvar er ég núna",
@@ -104,17 +104,14 @@ WHERE_AM_I_STRINGS = frozenset(
         "hver er staðsetning mín",
     )
 )
-LOC_QTYPE = "Location"
+_LOC_QTYPE = "Location"
 
 
 def handle_plain_text(q):
     """ Handle a plain text query asking about user's current location. """
-    ql = q.query_lower
+    ql = q.query_lower.rstrip("?")
 
-    if ql.endswith("?"):
-        ql = ql[:-1]
-
-    if ql not in WHERE_AM_I_STRINGS:
+    if ql not in _WHERE_AM_I_STRINGS:
         return False
 
     loc = q.location
@@ -172,7 +169,7 @@ def handle_plain_text(q):
     response = dict(answer=answer)
     voice = "Þú ert á {0}".format(answer)
 
-    q.set_qtype(LOC_QTYPE)
+    q.set_qtype(_LOC_QTYPE)
     q.set_answer(response, answer, voice)
 
     return True
