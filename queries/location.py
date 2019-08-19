@@ -26,6 +26,7 @@
 # TODO: Country name should also be declined.
 # TODO: "staddur á" vs. "staddur í"
 # TODO: "Bárugötu þrjú" ekki "þrír"
+# TODO: "Hvað er ég langt frá X?"
 
 import logging
 from queries import query_json_api
