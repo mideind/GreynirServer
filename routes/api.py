@@ -303,11 +303,15 @@ def query_api(version=1):
         voice_id = request.args.get("voice_id")
         lat = request.args.get("latitude")
         lon = request.args.get("longitude")
+        client_id = request.args.get("client_id")
+        client_type = request.args.get("client_type")
     else:
         q = request.form.get("q", "")
         voice_id = request.form.get("voice_id")
         lat = request.form.get("latitude")
         lon = request.form.get("longitude")
+        client_id = request.form.get("client_id")
+        client_type = request.form.get("client_type")
 
     mq = q.split("|")[0:_MAX_QUERY_VARIANTS]
     q = [m.strip()[0:_MAX_QUERY_LENGTH] for m in mq]
@@ -336,7 +340,9 @@ def query_api(version=1):
     result = process_query(
         q, voice, auto_uppercase,
         location=(lat, lon) if location_present else None,
-        clientid=request.remote_addr,
+        remote_addr=request.remote_addr,
+        client_type=client_type,
+        client_id=client_id,
     )
 
     # Get URL for response as synthesized speech audio

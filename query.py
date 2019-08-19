@@ -38,11 +38,7 @@ from db.models import Query as QueryRow
 
 from tree import Tree
 from reynir import TOK, tokenize, correct_spaces
-from reynir.fastparser import (
-    Fast_Parser,
-    ParseForestDumper,
-    ParseError,
-)
+from reynir.fastparser import Fast_Parser, ParseForestDumper, ParseError
 from reynir.binparser import BIN_Grammar, GrammarError
 from reynir.reducer import Reducer
 from nertokenizer import recognize_entities
@@ -113,8 +109,11 @@ class QueryGrammar(BIN_Grammar):
             # without any .grammar source file change (which is the default
             # trigger for generating new binary grammar files).
             return self.read_from_generator(
-                fname, grammar_generator(), verbose, binary_fname,
-                force_new_binary=Settings.DEBUG
+                fname,
+                grammar_generator(),
+                verbose,
+                binary_fname,
+                force_new_binary=Settings.DEBUG,
             )
         except (IOError, OSError):
             raise GrammarError("Unable to open or read grammar file", fname, 0)
@@ -202,8 +201,7 @@ class Query:
                 procs.append(m)
             except ImportError as e:
                 logging.error(
-                    "Error importing query processor module {0}: {1}"
-                    .format(modname, e)
+                    "Error importing query processor module {0}: {1}".format(modname, e)
                 )
         cls._processors = procs
 
@@ -489,11 +487,13 @@ class Query:
                 )
         result["valid"] = True
         if Settings.DEBUG:
+
             def converter(o):
                 """ Ensure that datetime is output in ISO format to JSON """
                 if isinstance(o, datetime):
                     return o.isoformat()[0:16]
                 return None
+
             print(
                 "{0}".format(
                     json.dumps(result, indent=3, ensure_ascii=False, default=converter)
@@ -502,7 +502,15 @@ class Query:
         return result
 
 
-def process_query(q, voice, auto_uppercase, location=None, clientid=None):
+def process_query(
+    q,
+    voice,
+    auto_uppercase,
+    location=None,
+    remote_addr=None,
+    client_id=None,
+    client_type=None,
+):
     """ Process an incoming natural language query.
         If voice is True, return a voice-friendly string to
         be spoken to the user. If auto_uppercase is True,
@@ -542,8 +550,7 @@ def process_query(q, voice, auto_uppercase, location=None, clientid=None):
                 # (handling detailed responses in other queries
                 # is too much for the cache)
                 cached_answer = (
-                    session
-                    .query(QueryRow)
+                    session.query(QueryRow)
                     .filter(QueryRow.question_lc == clean_q.lower())
                     .filter(QueryRow.expires >= datetime.utcnow())
                     .order_by(desc(QueryRow.expires))
@@ -553,7 +560,7 @@ def process_query(q, voice, auto_uppercase, location=None, clientid=None):
                 # The same question is found in the cache and has not expired:
                 # return the previous answer
                 a = cached_answer
-                result=dict(
+                result = dict(
                     valid=True,
                     q_raw=qtext,
                     q=a.bquestion,
@@ -584,9 +591,11 @@ def process_query(q, voice, auto_uppercase, location=None, clientid=None):
                     key=result.get("key"),
                     latitude=location[0] if location else None,
                     longitude=location[1] if location else None,
-                    # Client identifier (IP address by default)
-                    clientid=clientid,
-                    # !!! TBD: clienttype
+                    # Client identifier
+                    client_id=client_id[:256] if client_id else None,
+                    client_type=client_type,
+                    # IP address
+                    remote_addr=remote_addr
                     # !!! TBD: context
                     # All other fields are set to NULL
                 )

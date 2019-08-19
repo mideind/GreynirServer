@@ -42,7 +42,7 @@ from sqlalchemy import (
     PrimaryKeyConstraint,
     func
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, INET
 from sqlalchemy.dialects.postgresql import UUID as psql_UUID
 from sqlalchemy.ext.hybrid import Comparator, hybrid_property
 
@@ -634,14 +634,20 @@ class Query(Base):
     key = Column(String(256), index=True, nullable=True)
 
     # Client type
-    clienttype = Column(String(80), index=True, nullable=True)
+    # Currently, either "www" (web interface) or "ios" (iOS)
+    client_type = Column(String(80), index=True, nullable=True)
 
     # Client identifier, if applicable
-    clientid = Column(String(80), index=True, nullable=True)
+    # If web client, this is the HTTP client user agent
+    # On iOS, this is the device UUID string
+    client_id = Column(String(256), index=True, nullable=True)
 
     # Client location coordinates (WGS84)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
+
+    # Client IP address
+    remote_addr = Column(INET, nullable=True)
 
     # Additional context used to answer the query
     context = Column(JSONB, nullable=True)
