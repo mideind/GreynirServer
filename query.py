@@ -313,6 +313,7 @@ class Query:
         # Looks good
         # Store the resulting parsed query as a tree
         tree_string = "S1\n" + trees[1]
+        print(tree_string)
         self._tree = Tree()
         self._tree.load(tree_string)
         # Store the token list
@@ -338,6 +339,7 @@ class Query:
             self.set_error("E_QUERY_NOT_PARSED")
             return False
         for processor in self._processors:
+            print(processor)
             self._error = None
             self._qtype = None
             # If a processor defines HANDLE_TREE and sets it to
@@ -594,9 +596,9 @@ def process_query(
                         longitude=location[1] if location else None,
                         # Client identifier
                         client_id=client_id[:256] if client_id else None,
-                        client_type=client_type if client_type else None,
+                        client_type=client_type or None,
                         # IP address
-                        remote_addr=remote_addr if remote_addr else None
+                        remote_addr=remote_addr or None
                         # !!! TBD: context
                         # All other fields are set to NULL
                     )
