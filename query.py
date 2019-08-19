@@ -578,28 +578,32 @@ def process_query(
             if result["valid"] and "error" not in result:
                 # Successful: our job is done
                 # Log the result
-                qrow = QueryRow(
-                    timestamp=datetime.utcnow(),
-                    question=clean_q,
-                    # bquestion is the beautified query string
-                    bquestion=result["q"],
-                    answer=result["answer"],
-                    voice=result.get("voice"),
-                    # Only put an expiration on voice queries
-                    expires=query.expires if voice else None,
-                    qtype=result.get("qtype"),
-                    key=result.get("key"),
-                    latitude=location[0] if location else None,
-                    longitude=location[1] if location else None,
-                    # Client identifier
-                    client_id=client_id[:256] if client_id else None,
-                    client_type=client_type,
-                    # IP address
-                    remote_addr=remote_addr
-                    # !!! TBD: context
-                    # All other fields are set to NULL
-                )
-                session.add(qrow)
+                try:
+                    qrow = QueryRow(
+                        timestamp=datetime.utcnow(),
+                        question=clean_q,
+                        # bquestion is the beautified query string
+                        bquestion=result["q"],
+                        answer=result["answer"],
+                        voice=result.get("voice"),
+                        # Only put an expiration on voice queries
+                        expires=query.expires if voice else None,
+                        qtype=result.get("qtype"),
+                        key=result.get("key"),
+                        latitude=location[0] if location else None,
+                        longitude=location[1] if location else None,
+                        # Client identifier
+                        client_id=client_id[:256] if client_id else None,
+                        client_type=client_type if client_type else None,
+                        # IP address
+                        remote_addr=remote_addr if remote_addr else None
+                        # !!! TBD: context
+                        # All other fields are set to NULL
+                    )
+                    session.add(qrow)
+                except Exception as e:
+                    logging.error("Error logging query: {1}".format(e))
+                
                 return result
 
         # Failed to answer the query
