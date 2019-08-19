@@ -497,6 +497,8 @@ function navToHistory(func, q) {
 
 function _submitQuery(q) {
    clearQueryResult();
+   q.client_type = "www";
+   q.client_id = navigator.userAgent;
    // Launch the query
    serverQuery('/query.api',
       q, // Query dictionary
