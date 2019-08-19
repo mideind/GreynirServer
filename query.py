@@ -592,7 +592,7 @@ def process_query(
                     latitude=location[0] if location else None,
                     longitude=location[1] if location else None,
                     # Client identifier
-                    client_id=client_id,
+                    client_id=client_id[:256] if client_id else None,
                     client_type=client_type,
                     # IP address
                     remote_addr=remote_addr
