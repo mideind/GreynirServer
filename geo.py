@@ -314,6 +314,16 @@ def lookup_city_info(name):
     return city_lookup(cn)
 
 
+def icelandic_city_name(name):
+    """ Look up the Icelandic name of a city, given its
+        English/international name. """
+    cnames = _load_city_names()  # Lazy-load
+    for ice, n in cnames.items():
+        if n == name:
+            return ice
+    return None
+
+
 # Data about countries, loaded from JSON data file
 COUNTRY_DATA = None
 COUNTRY_DATA_JSONPATH = os.path.join(
