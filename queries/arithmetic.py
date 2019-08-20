@@ -267,12 +267,12 @@ def Prósenta(node, params, result):
         aux = json.loads(d._node.aux)
         add_num(aux[0], result)
     else:
-        # We shouldn't be here. Something went horriby wrong.
+        # We shouldn't be here. Something went horriby wrong somewhere.
         raise ValueError("No auxiliary information in percentage token")
 
 
 def QArStd(node, params, result):
-    # Used later for voice response format,
+    # Used later for formatting voice answer string,
     # e.g. "[expression] er [svar]"
     result.desc = result._canonical
 
@@ -294,8 +294,7 @@ def QArPercent(node, params, result):
 
 
 def QArithmetic(node, params, result):
-    """ Arithmetic query """
-    # Set query type & key
+    # Set query type
     result.qtype = _ARITHMETIC_QTYPE
 
 
@@ -367,10 +366,8 @@ def calc_arithmetic(query, result):
 
     result.qkey = s
 
-    print(s)
     # Run eval on expression
     res = eval(s, eval_globals, {})
-    print(res)
 
     if isinstance(res, float):
         # Convert result to Icelandic decimal format
@@ -395,7 +392,7 @@ def sentence(state, result):
             r = calc_arithmetic(q, result)
             if r is not None:
                 q.set_answer(*r)
-                q.set_key(result.qkey)
+                q.set_key(result.get("qkey"))
             else:
                 raise Exception("Arithmetic calculation failed")
         except AssertionError:
