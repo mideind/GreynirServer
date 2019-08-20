@@ -38,6 +38,16 @@ from tzwhere import tzwhere
 
 TIME_QTYPE = "Time"
 
+_TZW = None
+
+
+def _tzw():
+    """ Lazy-load location/timezone database """
+    global _TZW
+    if not _TZW:
+        _TZW = tzwhere.tzwhere()
+    return _TZW
+
 
 def handle_plain_text(q):
     """ Handle a plain text query, contained in the q parameter
@@ -55,8 +65,7 @@ def handle_plain_text(q):
         # Use location, if available, to determine time zone
         loc = q.location
         if loc:
-            # TODO: This seems to be rather slow :(
-            tz = tzwhere.tzwhere().tzNameAt(loc[0], loc[1])
+            tz = _tzw().tzNameAt(loc[0], loc[1])
         else:
             # Default to Iceland's timezone
             tz = country_timezones[ICELAND_ISOCODE][0]
@@ -88,7 +97,7 @@ def handle_plain_text(q):
                 if info:
                     top = info[0]
                     (lat, lon) = (top.get("lat_wgs84"), top.get("long_wgs84"))
-                    tz = tzwhere.tzwhere().tzNameAt(lat, lon)
+                    tz = _tzw().tzNameAt(lat, lon)
             if tz:
                 # We have a timezone
                 break
