@@ -321,7 +321,7 @@ def icelandic_city_name(name):
     for ice, n in cnames.items():
         if n == name:
             return ice
-    return None
+    return name
 
 
 # Data about countries, loaded from JSON data file
