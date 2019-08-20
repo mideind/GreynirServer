@@ -42,8 +42,12 @@ _DATE_QUERIES = frozenset(
         "hver er dagsetningin í dag",
         "hver er dagurinn í dag",
         "hvaða dagur er í dag",
+        "hvaða mánaðardagur er í dag",
+        "hver er mánaðardagurinn í dag",
+        "hvaða mánuður er í dag",
     )
 )
+
 
 def handle_plain_text(q):
     """ Handle a plain text query, contained in the q parameter
@@ -57,16 +61,15 @@ def handle_plain_text(q):
     if ql in _DATE_QUERIES:
         # TODO: Use time zone!
         with changedlocale(category="LC_TIME"):
-
             now = datetime.now()
             date_str = now.strftime("%-d. %B %Y")
+
             answer = date_str
-
             response = dict(answer=answer)
-            voice = "Í dag er {0}".format(date_str)
+            voice = "Í dag er {0}".format(answer)
 
-            q.set_qtype(_DATE_QTYPE)
             q.set_answer(response, answer, voice)
+            q.set_qtype(_DATE_QTYPE)
 
         return True
 

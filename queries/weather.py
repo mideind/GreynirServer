@@ -23,6 +23,10 @@
 
 """
 
+# Provide local weather news for Iceland depending on location
+# Provide weather info for foreign countries/cities
+# General weather forecast, not just current weather
+
 import re
 from queries import query_json_api
 

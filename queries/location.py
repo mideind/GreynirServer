@@ -25,15 +25,12 @@
 
 # TODO: Country name should also be declined.
 # TODO: "staddur á" vs. "staddur í"
-# TODO: "Bárugötu þrjú" ekki "þrír"
+# TODO: Speech synthesis: "Bárugötu þrjú" ekki "þrír"
 # TODO: "Hvað er ég langt frá X?"
 
 import logging
 from queries import query_json_api
 from iceaddr import iceaddr_lookup
-
-
-MAPS_API_URL = "https://maps.googleapis.com/maps/api/geocode/json?latlng={0},{1}&key={2}&language=is"
 
 
 # The Google API identifier (you must obtain your own key if you want to use this code)
@@ -55,16 +52,19 @@ def _get_API_key():
     return _API_KEY
 
 
+_MAPS_API_URL = "https://maps.googleapis.com/maps/api/geocode/json?latlng={0},{1}&key={2}&language=is"
+
+
 def _query_geocode_API(lat, lon):
     # Load API key
     key = _get_API_key()
     if not key:
         # No key, can't query Google location API
         logging.warning("No API key for location lookup")
-        return False
+        return None
 
     # Send API request
-    url = MAPS_API_URL.format(lat, lon, key)
+    url = _MAPS_API_URL.format(lat, lon, key)
     return query_json_api(url)
 
 
@@ -160,6 +160,9 @@ def handle_plain_text(q):
             if locality:
                 prefix = "í"  # TODO: "í" vs. "á" for locality
                 descr += " {0} {1}".format(prefix, locality)
+    else:
+        pass
+
 
     if not descr:
         # Just use the formatted address string provided by Google

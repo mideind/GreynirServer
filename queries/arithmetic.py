@@ -163,7 +163,7 @@ QArOrdinalWord →
 QArOrdinalOrNumberWord →
     QArNumberWord | QArOrdinalWord
 
-QArPlusOperator → "plús" | "summan" "af"
+QArPlusOperator → "plús"
 QArMinusOperator → "mínus" 
 QArDivisionOperator → "deilt" "með" | "skipt" "með"
 QArMultiplicationOperator → "sinnum" | "margfaldað" "með"
@@ -262,7 +262,7 @@ def Prósenta(node, params, result):
     d = result.find_descendant(t_base="prósenta")
 
     # Extract percentage from token's auxiliary information
-    # which is attached to the node as json
+    # which is attached to the node as a json-encoded array
     if d and d._node.aux:
         aux = json.loads(d._node.aux)
         add_num(aux[0], result)
@@ -297,7 +297,6 @@ def QArithmetic(node, params, result):
     """ Arithmetic query """
     # Set query type & key
     result.qtype = _ARITHMETIC_QTYPE
-    result.qkey = result.get("desc", "")
 
 
 # Map operator name to python operator
@@ -366,6 +365,8 @@ def calc_arithmetic(query, result):
         logging.warning("Unknown operator: {0}".format(operator))
         return None
 
+    result.qkey = s
+
     print(s)
     # Run eval on expression
     res = eval(s, eval_globals, {})
@@ -389,12 +390,12 @@ def sentence(state, result):
     if "qtype" in result:
         # Successfully matched a query type
         q.set_qtype(result.qtype)
-        q.set_key(result.qkey)
 
         try:
             r = calc_arithmetic(q, result)
             if r is not None:
                 q.set_answer(*r)
+                q.set_key(result.qkey)
             else:
                 raise Exception("Arithmetic calculation failed")
         except AssertionError:

@@ -28,6 +28,8 @@ from . import query_json_api
 from pprint import pprint
 import re
 
+_WIKI_QTYPE = "Wiki"
+
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings
 HANDLE_TREE = True
@@ -56,8 +58,8 @@ def QAbout(node, params, result):
     pprint(result._canonical)
 
     # Set the query type
-    result.qtype = "About"
-    result.qkey = "5"
+    result.qtype = _WIKI_QTYPE
+    result.qkey = result["subject"]
 
 
 def QEntityKey(node, params, result):

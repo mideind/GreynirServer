@@ -24,3 +24,7 @@
 """
 
 _GEO_QTYPE = "Geography"
+
+# "Hver er höfuðborg [LANDS]?"
+# "Í hvaða landi er [BORG]?"
+# "Hvað búa margir í [BORG]?"
