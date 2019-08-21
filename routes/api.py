@@ -305,9 +305,11 @@ def query_api(version=1):
     # Additional client info
     client_id = request.values.get("client_id")
     client_type = request.values.get("client_type")
-
+    # When running behind an nginx reverse proxy, the client's remote 
+    # address is passed to the web application via the "X-Real-IP" header
     client_ip = request.remote_addr or request.headers.get("X-Real-IP")
 
+    # q param contains one or more |-separated strings
     mq = q.split("|")[0:_MAX_QUERY_VARIANTS]
     q = [m.strip()[0:_MAX_QUERY_LENGTH] for m in mq]
 
@@ -342,7 +344,7 @@ def query_api(version=1):
         client_id=client_id,
     )
 
-    # Get URL for response as synthesized speech audio
+    # Get URL for response synthesized speech audio
     if voice:
         # If the result contains a "voice" key, return it
         audio = result.get("voice")
