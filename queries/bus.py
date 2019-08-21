@@ -217,6 +217,25 @@ def QBusNumberWord(node, params, result):
 
 # End of grammar nonterminal handlers
 
+def voice_distance(d):
+    """ Convert a distance, given as a float in units of kilometers, to a string
+        that can be read aloud in Icelandic """
+    # Convert to 100 meter integer units
+    km1dec = int(d * 100 + 5) // 10
+    if km1dec >= 10:
+        # One kilometer or longer
+        if km1dec == 10:
+            return "einn kílómetri"
+        if km1dec % 10 == 1:
+            # 3,1 kílómetri
+            return "{0},{1} kílómetri".format(km1dec // 10, km1dec % 10)
+        # 5,6 kílómetrar
+        return "{0},{1} kílómetrar".format(km1dec // 10, km1dec % 10)
+    # Distance less than 1 km: Round to 10 meters
+    m = int(d * 1000 + 5) // 10
+    return "{0}0 metrar".format(m)
+
+
 def query_arrival_time(query, session, bus_number, bus_name):
     """ A query for a bus arrival time """
     # TODO: Add the actual logic for calling the straeto.is API
