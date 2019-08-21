@@ -313,6 +313,8 @@ def query_api(version=1):
         client_id = request.form.get("client_id")
         client_type = request.form.get("client_type")
 
+    client_ip = request.remote_addr or request.headers.get("X-Real-IP")
+
     mq = q.split("|")[0:_MAX_QUERY_VARIANTS]
     q = [m.strip()[0:_MAX_QUERY_LENGTH] for m in mq]
 
@@ -340,7 +342,7 @@ def query_api(version=1):
     result = process_query(
         q, voice, auto_uppercase,
         location=(lat, lon) if location_present else None,
-        remote_addr=request.remote_addr,
+        remote_addr=client_ip,
         client_type=client_type,
         client_id=client_id,
     )
