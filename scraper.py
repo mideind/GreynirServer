@@ -247,15 +247,16 @@ class Scraper:
             # raise
         return True
 
-    def go(self, reparse=False, limit=0, urls=None):
+    def go(self, reparse=False, limit=0, urls=None, uuid=None):
         """ Run a scraping pass from all roots in the scraping database """
 
         version = Article.parser_version()
 
-        # Go through the roots and scrape them, inserting into the articles table
         with SessionContext(commit=True) as session:
 
-            if urls is None and not reparse:
+            if urls is None and uuid is None and not reparse:
+
+                # Go through the roots and scrape them, inserting into the articles table
 
                 def iter_roots():
                     """ Iterate the roots to be scraped """
@@ -335,6 +336,17 @@ class Scraper:
                                 yield ArticleDescr(seq, a.root, a.url)
                                 seq += 1
 
+            def iter_uuid(uuid):
+                """ Reparse a single article having the given UUID """
+                a = (
+                    session.query(ArticleRow)
+                    .filter(ArticleRow.id == uuid)
+                    .one_or_none()
+                )
+                if a is not None:
+                    # Found the article: yield it
+                    yield ArticleDescr(0, a.root, a.url)
+
             # Use a multiprocessing pool to parse the articles.
             # Let the pool work on chunks of articles, recycling the
             # processes after each chunk to contain memory creep.
@@ -346,11 +358,14 @@ class Scraper:
                 CHUNK_SIZE = min(100 * CPU_COUNT, limit)
             else:
                 CHUNK_SIZE = 100 * CPU_COUNT
-            if urls is None:
-                g = iter_unparsed_articles(reparse, limit)
-            else:
+            if uuid is not None:
+                g = iter_uuid(uuid)
+                limit = 0
+            elif urls is not None:
                 g = iter_urls(urls)
                 limit = 0
+            else:
+                g = iter_unparsed_articles(reparse, limit)
             cnt = 0
             while True:
                 adlist = []
@@ -438,20 +453,22 @@ class Scraper:
         )
 
 
-def scrape_articles(reparse=False, limit=0, urls=None):
+def scrape_articles(reparse=False, limit=0, urls=None, uuid=None):
 
     logging.info("------ Reynir starting scrape -------")
-    if urls is None:
-        logging.info("Limit: {0}, reparse: {1}".format(limit, reparse))
-    else:
+    if uuid is not None:
+        logging.info("Parsing single article with UUID {0}".format(uuid))
+    elif urls is not None:
         logging.info("URLs read from: {0}".format(urls))
+    else:
+        logging.info("Limit: {0}, reparse: {1}".format(limit, reparse))
     t0 = time.time()
     count = 0
 
     try:
         sc = Scraper()
         try:
-            count = sc.go(reparse=reparse, limit=limit, urls=urls)
+            count = sc.go(reparse=reparse, limit=limit, urls=urls, uuid=uuid)
             # Successful finish: print stats
             sc.stats()
         except KeyboardInterrupt:
@@ -485,6 +502,7 @@ __doc__ = """
         -i, --init: Initialize the scraper database, if required
         -r, --reparse: Reparse the oldest previously parsed articles
         -u filename, --urls=filename: Reparse the URLs listed in the given file
+        -d uuid, --uuid=filename: Reparse the article having the given UUID
         -l N, --limit=N: Limit parsing session to N articles (default 10)
 
     If --reparse is not specified, the scraper will read all previously
@@ -507,7 +525,7 @@ def main(argv=None):
     try:
         try:
             opts, args = getopt.getopt(
-                argv[1:], "hirl:u:", ["help", "init", "reparse", "limit=", "urls="]
+                argv[1:], "hirl:u:d:", ["help", "init", "reparse", "limit=", "urls=", "uuid="]
             )
         except getopt.error as msg:
             raise Usage(msg)
@@ -516,6 +534,7 @@ def main(argv=None):
         limit = 10
         reparse = False
         urls = None
+        uuid = None
 
         # Process options
         for o, a in opts:
@@ -534,6 +553,8 @@ def main(argv=None):
                     pass
             elif o in ("-u", "--urls"):
                 urls = a  # Text file with list of URLs
+            elif o in ("-d", "--uuid"):
+                uuid = a  # UUID of article to reparse
 
         # Process arguments
         for _ in args:
@@ -558,7 +579,7 @@ def main(argv=None):
             init_roots()
         else:
             # Run the scraper
-            scrape_articles(reparse=reparse, limit=limit, urls=urls)
+            scrape_articles(reparse=reparse, limit=limit, urls=urls, uuid=uuid)
 
     except Usage as err:
         print(err.msg, file=sys.stderr)
