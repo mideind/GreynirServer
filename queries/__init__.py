@@ -32,7 +32,7 @@ import json
 
 def query_json_api(url):
     """ Request the URL, expecting a json response which is 
-        parsed and return as a Python data structure """
+        parsed and returned as a Python data structure """
 
     # Send request
     try:

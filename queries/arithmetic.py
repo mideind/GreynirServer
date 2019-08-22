@@ -135,9 +135,8 @@ QArithmetic →
     # 'Hvað er X í Y veldi?'
     | QArGenericPrefix QArPow '?'?
 
-    # 'Hvað er 12 prósent af 93'
+    # 'Hvað er(u) 12 prósent af 93'
     | QArGenericPrefix QArPercent '?'?
-
 
 $score(35) QArithmetic
 
@@ -261,7 +260,7 @@ def Prósenta(node, params, result):
     # Find percentage terminal
     d = result.find_descendant(t_base="prósenta")
 
-    # Extract percentage from token's auxiliary information
+    # Extract percentage number from the token's auxiliary information
     # which is attached to the node as a json-encoded array
     if d and d._node.aux:
         aux = json.loads(d._node.aux)
@@ -273,7 +272,7 @@ def Prósenta(node, params, result):
 
 def QArStd(node, params, result):
     # Used later for formatting voice answer string,
-    # e.g. "[expression] er [svar]"
+    # e.g. "[tveir plús tveir] er [fjórir]"
     result.desc = result._canonical
 
 
@@ -341,7 +340,7 @@ def calc_arithmetic(query, result):
     # Pow
     elif operator == "pow":
         # Cap max pow
-        if nums[1] > 30:
+        if nums[1] > 50:
             return err_answer("Þetta er of hátt veldi.")
         # Allow pow function in eval namespace
         eval_globals["pow"] = pow
@@ -364,6 +363,7 @@ def calc_arithmetic(query, result):
         logging.warning("Unknown operator: {0}".format(operator))
         return None
 
+    # Set arithmetic expression as query key
     result.qkey = s
 
     # Run eval on expression
@@ -395,10 +395,7 @@ def sentence(state, result):
                 q.set_key(result.get("qkey"))
             else:
                 raise Exception("Arithmetic calculation failed")
-        except AssertionError:
-            raise
         except Exception as e:
-            raise
             q.set_error("E_EXCEPTION: {0}".format(e))
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")

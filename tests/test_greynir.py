@@ -23,6 +23,7 @@
 
 import pytest
 import os
+import re
 
 from main import app
 
@@ -103,11 +104,12 @@ def test_query_api(client):
     assert "voice" in json
     # assert json["voice"] == "Vagn númer 17 kemur klukkan 15 33"
 
-    # Time queries
+    # Time module
     resp = client.get("/query.api?voice=1&q=hvað er klukkan í Kaupmannahöfn?")
     json = validate_json(resp)
     assert json["qtype"] == "Time"
     assert "answer" in json
+    assert re.search(r"^\d\d:\d\d$", json["answer"])
     assert "voice" in json
 
     # Arithmetic module
@@ -120,6 +122,7 @@ def test_query_api(client):
         "hver er kvaðratrótin af 256": "16",
         "hvað er 12 í þriðja veldi": "1728",
         "hvað er 17 prósent af 20": "3,4",
+        # "hvað er sjö þúsund deilt með átta hundruð og tólf": "8,62"
     }
 
     for q, a in ARITHM_QUERIES.items():

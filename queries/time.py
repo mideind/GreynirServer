@@ -2,7 +2,7 @@
 
     Reynir: Natural language processing for Icelandic
 
-    Clock query response module
+    Time query response module
 
     Copyright (C) 2019 Miðeind ehf.
 
@@ -36,7 +36,7 @@ from geo import isocode_for_country_name, lookup_city_info, ICELAND_ISOCODE
 from tzwhere import tzwhere
 
 
-TIME_QTYPE = "Time"
+_TIME_QTYPE = "Time"
 
 _TZW = None
 
@@ -58,7 +58,10 @@ def handle_plain_text(q):
         If the query is not recognized, returns False. """
     ql = q.query_lower.rstrip("?")
 
-    tz = None  # Timezone being asked about
+
+    # Timezone being asked about
+    tz = None
+    # Whether user asked for the time in a particular location
     specific_loc = None
 
     if ql == "hvað er klukkan":
@@ -74,13 +77,14 @@ def handle_plain_text(q):
         # Query about the time in a particular location, i.e. country or city
         loc = ql[18:]
         # Capitalize each word in country/city name
-        loc = " ".join([c.capitalize() for c in loc.split()])
+        # TODO: Fix, this mangles lookup for city names such as "Rio de Janeiro"
+        loc = " ".join([c.capitalize() for c in loc.strip().split()])
 
         # Look up nominative
-        # TODO: This only works for single-word city/country names
-        # in BÍN and could be improved (e.g. fails for "Nýja Jórvík")
-        bres = BIN_Db().lookup_nominative(loc)
-        words = [m.stofn for m in bres]
+        # TODO: This only works for single-word city/country names found
+        # in BÍN and could be improved (e.g. fails for "Nýju Jórvík")
+        bin_res = BIN_Db().lookup_nominative(loc)
+        words = [m.stofn for m in bin_res]
         words.append(loc)  # In case it's not in BÍN (e.g. "New York", "San José")
 
         # Check if any word is a recognised country or city name
@@ -121,7 +125,8 @@ def handle_plain_text(q):
         # A voice answer is a plain string that will be
         # passed as-is to a voice synthesizer
         voice = "{0} {1} {2:02}.".format(desc, now.hour, now.minute)
-        q.set_qtype(TIME_QTYPE)
+
+        q.set_qtype(_TIME_QTYPE)
         q.set_answer(response, answer, voice)
         return True
 
