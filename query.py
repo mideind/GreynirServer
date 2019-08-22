@@ -487,7 +487,7 @@ class Query:
                 )
         result["valid"] = True
         if Settings.DEBUG:
-
+            # Dump query results to the console
             def converter(o):
                 """ Ensure that datetime is output in ISO format to JSON """
                 if isinstance(o, datetime):

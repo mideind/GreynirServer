@@ -26,7 +26,9 @@ import os
 
 from main import app
 
+# pylint: disable=unused-wildcard-import
 from geo import *
+
 
 # Routes that don't return 200 OK without certain query/post parameters
 SKIP_ROUTES = frozenset(("/staticmap", "/page"))
@@ -117,8 +119,7 @@ def test_query_api(client):
 def test_processors():
     """ Try to import all tree/token processors by instantiating Processor object """
     from processor import Processor
-
-    p = Processor(processor_directory="processors")
+    _ = Processor(processor_directory="processors")
 
 
 def test_nertokenizer():
