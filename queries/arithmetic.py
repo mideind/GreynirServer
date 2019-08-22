@@ -27,7 +27,7 @@
 import math
 import json
 import re
-from . import format_icelandic_float
+from queries import format_icelandic_float, gen_answer
 
 _ARITHMETIC_QTYPE = "Arithmetic"
 
@@ -326,13 +326,10 @@ def calc_arithmetic(query, result):
     # Block access to all builtins
     eval_globals = {"__builtins__": None}
 
-    def err_answer(errstr):
-        return dict(answer=errstr), errstr, errstr
-
     # Square root calculation
     if operator == "sqrt":
         if len(str(nums[0])) > 100:
-            return err_answer("Þessi tala er of há.")
+            return gen_answer("Þessi tala er of há.")
         # Allow sqrt function in eval namespace
         eval_globals["sqrt"] = math.sqrt
         s = "sqrt({0})".format(nums[0])
@@ -341,7 +338,7 @@ def calc_arithmetic(query, result):
     elif operator == "pow":
         # Cap max pow
         if nums[1] > 50:
-            return err_answer("Þetta er of hátt veldi.")
+            return gen_answer("Þetta er of hátt veldi.")
         # Allow pow function in eval namespace
         eval_globals["pow"] = pow
         s = "pow({0},{1})".format(nums[0], nums[1])
@@ -356,7 +353,7 @@ def calc_arithmetic(query, result):
 
         # Check for division by zero
         if math_op == "/" and nums[1] == 0:
-            return err_answer("Það er ekki hægt að deila með núlli.")
+            return gen_answer("Það er ekki hægt að deila með núlli.")
 
         s = "{0} {1} {2}".format(nums[0], math_op, nums[1])
     else:

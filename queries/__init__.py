@@ -66,3 +66,7 @@ def format_icelandic_float(fp_num):
     # Convert number to Icelandic decimal format
     res = "{0:.2f}".format(fp_num).replace(".", ",")
     return strip_trailing_zeros(res)
+
+
+def gen_answer(a):
+    return dict(answer=a), a, a
