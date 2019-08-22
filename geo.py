@@ -490,6 +490,33 @@ def parse_address_string(addrstr):
     return addr
 
 
+def iceprep_for_country(cn):
+    # TODO: Implement me
+    return "á"
+
+
+def iceprep_for_placename(pn):
+    # TODO: Update this with better data
+    suffix2prep = {
+        "vík": "í",
+        "fjörður": "á",
+        "eyri": "á",
+        "gata": "á",
+        "stígur": "á",
+        "vogur": "í",
+        "staðir": "á",
+        "höfn": "á",
+        "eyjar": "í",
+        "ey": "í",
+        "nes": "á",
+    }
+    for suffix, prep in suffix2prep.items():
+        if pn.endswith(suffix):
+            return prep
+
+    return "í"
+
+
 if __name__ == "__main__":
 
     name = sys.argv[1] if len(sys.argv) > 1 else None
