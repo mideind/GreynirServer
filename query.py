@@ -158,7 +158,7 @@ class Query:
         result object if successful. """
 
     _parser = None
-    _processors = None
+    _processors = []
 
     def __init__(self, session, query, voice, auto_uppercase, location):
         self._session = session
@@ -234,7 +234,7 @@ class Query:
         trees = dict()
         sent = []
 
-        for ix, t in enumerate(toklist):
+        for t in toklist:
             if t[0] == TOK.S_BEGIN:
                 sent = []
             elif t[0] == TOK.S_END:
