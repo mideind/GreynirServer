@@ -26,8 +26,15 @@
 
 """
 
+from threading import Lock
+
+from settings import Settings
 import straeto
 
+
+# Today's bus schedule, cached
+SCHEDULE_TODAY = None
+SCHEDULE_LOCK = Lock()
 
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings
@@ -58,6 +65,8 @@ QBusNearestStop →
     | "hver" "er" "næsta" QBusStop_kvk '?'?
     | "hvert" "er" "næsta" QBusStop_hk '?'?
 
+$score(+32) QBusNearestStop
+
 QBusStop_kvk →
     "stoppistöð" | "stoppustöð" | "biðstöð" | "strætóstöð"
     | "strætóstoppistöð" | "strætóstoppustöð"
@@ -85,6 +94,8 @@ QBusArrivalTime →
 
     # 'Hvenær má búast við leið þrettán?
     | "hvenær" "má" "búast" "við" QBus_þgf '?'?
+
+$score(+32) QBusArrivalTime
 
 # We can specify a bus in different ways, which may require
 # the bus identifier to be in different cases
@@ -309,11 +320,14 @@ def query_arrival_time(query, session, result):
     bus_number = result.bus_number
     bus_name = result.bus_name
     # Obtain today's bus schedule
-    # !!! TODO: Cache this
-    sched_today = straeto.BusSchedule()
+    global SCHEDULE_TODAY
+    with SCHEDULE_LOCK:
+        if SCHEDULE_TODAY is None or not SCHEDULE_TODAY.is_valid_today:
+            # We don't have today's schedule: create it
+            SCHEDULE_TODAY = straeto.BusSchedule()
     stop = straeto.BusStop.closest_to(location)
     va = [bus_name[0].upper() + bus_name[1:]]
-    arrivals = sched_today.arrivals(str(bus_number), stop.stop_id).items()
+    arrivals = SCHEDULE_TODAY.arrivals(str(bus_number), stop.stop_id).items()
     if arrivals:
         first = True
         for direction, times in arrivals:
@@ -370,7 +384,8 @@ def sentence(state, result):
             except AssertionError:
                 raise
             except Exception as e:
-                print("Exception: {0}".format(e))
+                if Settings.DEBUG:
+                    raise
                 q.set_error("E_EXCEPTION: {0}".format(e))
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")

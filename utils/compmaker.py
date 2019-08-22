@@ -6,17 +6,17 @@
 import os
 import sys
 
-OPEN_CLASSES = ("kk", "kvk", "hk", "so", "lo", "ao")
+OPEN_CLASSES = frozenset(("kk", "kvk", "hk", "so", "lo", "ao"))
 
 # Hlutar BÍN sem leyfast ekki sem fyrri hlutar
-FORBIDDEN_CATEGORIES = ("föð", "móð", "ætt", "dyr", "göt", "fyr", "ism")
+FORBIDDEN_CATEGORIES = frozenset(("föð", "móð", "ætt", "dyr", "göt", "fyr", "ism"))
 
 # Orðflokkar sem leyfast hvergi í samsetningum
 # Atviksorð sem geta staðið í samsetningum eru svo fá að best er að handvelja þau 
-FORBIDDEN_CLASSES = ("pfn", "fn", "st", "uh", "gr", "ao")
+FORBIDDEN_CLASSES = frozenset(("pfn", "fn", "st", "uh", "gr", "ao"))
 
 # Lítil, sjaldgæf orð sem rugla samsetningu með mun algengari orðum
-FORBIDDEN_FORMS = (
+FORBIDDEN_FORMS = frozenset((
     "afbragð", "afdrátta", "aflóa", "afnám", "afrek", "afrétta", "afréttir", "afréttum", "afs", 
     "afslátta", "afvega", "ag", "agan", "agata", "agg", "agi", "agl", "ak", "aki", "akt", "al", 
     "ala", "alba", "ald ", "aldna", "aldæla", "alfata", "alger", "algjör", "ali", "alkunnu", "alls", 
@@ -79,7 +79,7 @@ FORBIDDEN_FORMS = (
     "ordru", "orf", "ori", "orn", "orr", "ors", "orti", "ortið", "ost", "ot", "otl", "ox", "oðr", "pari", "past", 
     "pastor", "pastur", "pat", "pata", "patt", "patti", "pells", "pen", "per", "pers", "pes", "pil", "pip", "por", 
     "pora", "pos", "prí", "pul", "pur", "pus", "put", "pá", "pák", "pál", "pás", "pæ", "pæj", "pé", "pí", "pít", 
-  , "pú", "púk", "púð", "rad", "rada", "rag", "rak", "ram", "ran", "rara", "rari", "ras", "rat", "rats", 
+    "pú", "púk", "púð", "rad", "rada", "rag", "rak", "ram", "ran", "rara", "rari", "ras", "rat", "rats", 
     "raut", "refl", "rella", "rem", "ren", "rendi", "reykj", "reytu", "rifj", "rig", "rillu", "rim", 
     "ringur", "rjáa", "rog", "rol", "ront", "rop", "ros", "rost", "rum", "rur", "rusk", "ryt", "rá", "rár", "ræ", 
     "ræk", "ræs", "ræt", "ré", "réið", "rés", "réttn", "rí", "ríinu", "rílinn", "rín", "rít", "ró", "róa", "róman", 
@@ -126,10 +126,11 @@ FORBIDDEN_FORMS = (
     "deils", "haul", "hauls", "fyll", "fylls", "fordóm", "fordóms", "róman", "dragon", "dragons", "tamp", "tamps", 
     "stjór", "stjórs", "bumb", "bumbs", "damm", "damms", "skálp", "skálps", "leist", "leists", "dritt", "dritts", 
     "Tút", "trjámáv", "anka", "alba", "aða", "brigðar", "brigða", "arða", "arðar", "banga", "bjá", "rjá", "strind", 
-    "und", "undar", "reik", "eink", "visk")    
+    "und", "undar", "reik", "eink", "visk"
+))
 
 # ID-númer beygingardæma sem eiga ekki að taka þátt í samsetningu sem síðasti hluti
-FORBIDDEN_IDS = (
+FORBIDDEN_IDS = frozenset((
     "100647", "1007", "101227", "10176", "10178", "10189", "10197", "10203", "10223", "10229", "10230", "10249", "10250", 
     "10256", "10319", "10347", "10351", "10361", "10363", "10394", "10395", "10399", "10404", "10414", "10421", "10428", 
     "10440", "104540", "10472", "10532", "10540", "10555", "10575", "10578", "10617", "1063", "10630", "10660", "10665", 
@@ -235,9 +236,10 @@ FORBIDDEN_IDS = (
     "8830", "8835", "8838", "8839", "8840", "8843", "8847", "88669", "8877", "8931", "8935", "8981", "8988", "8997", "9004", "9008", 
     "9017", "9025", "9047", "90615", "9069", "9077", "9078", "9087", "9088", "9089", "9100", "9101", "9103", "9114", "9115", "9134", 
     "9135", "9136", "9147", "9151", "9163", "917", "9195", "9208", "9218", "9220", "92257", "9226", "9258", "938", "947", "94970", 
-    "95765", "963", "9790", "99017", "372341", "244131", "5164", "354304")
+    "95765", "963", "9790", "99017", "372341", "244131", "5164", "354304"
+))
 
-OUTFORMERS = (
+OUTFORMERS = frozenset((
     "blæðingar", "barnavernd", "lausn", "afgang", "akstur", "athafnar", "aðstoð", "aðgang", "bils", "birkis", "Breiðholt", 
     "breiðs", "brennivín", "blóms", "bliks", "blóðrás", "bakki", "blóðs", "bogi", "buna", "bænar", "dagskrárgerð", "áa",
     "dagskrárlið", "Danmörku", "deigs", "djúps", "doktor", "dolla", "dula", "dómnefnd", "eftirlit", "einkarétt", "einleik", 
@@ -246,9 +248,9 @@ OUTFORMERS = (
     "gistu", "gal", "grimmd", "gönguá", "heill", "heiður", "hlust", "jáeind", "korter", "kosningaspá", "lækja", "líkan", 
     "markmið", "nýr", "nýtpólitík", "rekstur", "samtal", "samúð", "sjálfvirk", "staðreynd", "stjórnarskrá", "stjörnuspá", 
     "umtal", "vernd", "ábyrgð", "áhrif", "árekstur", "ári", "ásýndóbyggð", "úrval", "úttekt", "komment", "pels", "böð", "búi", "fló",  
-    )
+))
 
-OUTLATTERS = (
+OUTLATTERS = frozenset((
     "ak", "al", "aldinum", "andana", "andandi", "andanna", "andir", "andið", "bergum", "brögum", "bura", "buran", "buranna", "burum", 
     "buruna", "burunnar", "burunni", "burunum", "burur", "bururnar", "bygginu", "báðum", "bæg", "dramanna", "efnana", "efum", "eigan", 
     "eikanna", "ein", "ekki", "eldra", "eldri", "ester", "eys", "fangin", "fimmta", "fimmti", "fiss", "fissins", "fitið", "fjórða", 
@@ -260,13 +262,16 @@ OUTLATTERS = (
     "rant", "rants", "rauði", "reiðan", "renn", "ruðust", "ryfir", "rym", "rynni", "ræki", "rækið", "rómanir", "róum", "rúnar", 
     "sef", "set", "sjóna", "sjötta", "sjötti", "sjöunda", "sjöundi", "skráum", "skýrs", "sleit", "slest", "slægð", "sprest", "staðin", 
     "stendur", "stunin", "sætan", "sí", "síðastliðnum", "te", "tingana", "tíðna", "tönnur", "ungan", "van", "vaningum", "vast", 
-    "vegana", "vegu", "verra", "verður", "við", "viðana", "voru", "ækist", "æsti", "úr", "þriðja", "þriðji", "þáttana", "þáttununum")
+    "vegana", "vegu", "verra", "verður", "við", "viðana", "voru", "ækist", "æsti", "úr", "þriðja", "þriðji", "þáttana", "þáttununum"
+))
 
 CONSONANTS = "bdðfghjklmnprstvxzþ"
 UPPERS = "AÁBDÐEÉFGHIÍJKLMNOÓPRSTUÚVXYÝZÞÆÖ"
-BADS_LO = ("ddur", "ftur", "fður", "gdur", "gður", "ktur", "gtur", "ltur", "ptur", "ldur", "ndur", "rtur", 
-    "stur", "rður", "ttur", "áður", "æður", "éður")
-FORMERS_TO_ADD = (
+BADS_LO = frozenset((
+    "ddur", "ftur", "fður", "gdur", "gður", "ktur", "gtur", "ltur", "ptur", "ldur", "ndur", "rtur", 
+    "stur", "rður", "ttur", "áður", "æður", "éður"
+))
+FORMERS_TO_ADD = frozenset((
     "aðal", 
     "af", 
     "afar",         # villa
@@ -600,11 +605,11 @@ FORMERS_TO_ADD = (
     "þétt",
     "þúsund",
     "þúsunda",
-    )
-
+))
 
 
 class Fixer():
+
     def __init__(self):
         self.former_parts = set()
         self.latter_parts = set()
@@ -645,8 +650,8 @@ class Fixer():
         if y[3] in FORBIDDEN_CATEGORIES or "ü" in y[4] or y[4] in OUTFORMERS:
             return
         # Nafnorð
-        if y[2] in ["kk", "kvk", "hk"] and not "gr" in y[5]: # Fann nafnorð, mark er í y[5]
-            if "EF" in y[5]: 
+        if y[2] in {"kk", "kvk", "hk"} and not "gr" in y[5]: # Fann nafnorð, mark er í y[5]
+            if "EF" in y[5]:
                 self.former_parts.add(y[4])
                 #print("1:\t{}".format(y[4]))
             if y[5] in FORBIDDEN_CATEGORIES:
@@ -691,7 +696,7 @@ class Fixer():
                     self.former_parts.add(y[4])             # Orð eins og þistill, bróðir, skór, steinn, jökull, aftann, karl, víðir, herra, ... stofn er þolfallsmyndin.
 
         # Lýsingarorð        
-        elif y[2] in ["lo"]:
+        elif y[2] == "lo":
             if y[0].endswith("andi") or y[0].endswith("legur") or y[0].endswith("aður") or y[0].endswith("inn") or y[0].endswith("kvæmur") \
                 or y[0].endswith("samur") or y[0].endswith("gengur") or y[0].endswith("mennur") or y[0].endswith("rænn") or y[0].endswith("nægur") \
                 or y[0].endswith("lægur") or y[0].endswith("látur") or y[0].endswith("drægur") or y[0][-4:] in BADS_LO:
@@ -717,7 +722,7 @@ class Fixer():
             else:
                 return
         # Sagnorð
-        elif y[2] in ["so"]:
+        elif y[2] == "so":
             pass            # Sleppi sagnasamsetningum í bili. Hef ekki rekið mig á að það sé að hjálpa.
             # Búin að skoða niðurstöður eftir að sleppti því, þær eru mun skárri. Held mig við að sleppa sagnasamsetningum.
             #if "MM" in y[5] or not "NH" in y[5]:
@@ -733,7 +738,7 @@ class Fixer():
             #    self.former_parts.add(y[0]+"i")
 
         # Atviksorð
-        elif y[2] in ["ao"]:
+        elif y[2] == "ao":
             pass
         return
 
@@ -744,7 +749,7 @@ class Fixer():
         # Ath. að neðst í skjali eru alls konar ao sem ganga ekki sem seinni hluti; agnir, setningaratviksorð og annað. Taka út handvirkt eftir á.
         if y[2] == "ao" and y[3] == "ob":
             return
-        if y[1] in FORBIDDEN_IDS or y[4] in OUTLATTERS or "GM-BH-ST" in y[5] or "MM-SAGNB" in y[5] or "ü" in y[4] :
+        if y[1] in FORBIDDEN_IDS or y[4] in OUTLATTERS or "GM-BH-ST" in y[5] or "MM-SAGNB" in y[5] or "ü" in y[4]:
             return
         self.latter_parts.add(y[4])
 
@@ -803,22 +808,17 @@ class Fixer():
                         self.latter(y)
 
     def other_forms(self):
-        for each in FORMERS_TO_ADD:
-            self.former_parts.add(each)
-        self.former_parts = [ w for w in self.former_parts if w not in FORBIDDEN_FORMS ]
-        self.latter_parts = [ w for w in self.latter_parts if w not in FORBIDDEN_FORMS ]
+        self.former_parts |= FORMERS_TO_ADD
+        self.former_parts -= FORBIDDEN_FORMS
+        self.latter_parts -= FORBIDDEN_FORMS
 
     def print_parts(self):
-        with open('formers.txt','w+') as formers:
+        with open('formers.txt', 'w+') as formers:
             for item in self.former_parts:
-                    formers.write("{}\n".format(item))
-            formers.close()
-
+                formers.write("{}\n".format(item))
         with open('last.txt', 'w+') as latters:
             for item in self.latter_parts:
                 latters.write("{}\n".format(item))
-            latters.close()
-        return
 
     def ends_in_consonant(self, word):
         return word[-1] in CONSONANTS
