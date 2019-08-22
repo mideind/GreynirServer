@@ -122,6 +122,7 @@ def test_query_api(client):
         "hver er kvaðratrótin af 256": "16",
         "hvað er 12 í þriðja veldi": "1728",
         "hvað er 17 prósent af 20": "3,4",
+        # "hvað er sjö þúsund deilt með átta hundruð og tólf": "8,62"
     }
 
     for q, a in ARITHM_QUERIES.items():

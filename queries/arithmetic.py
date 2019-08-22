@@ -273,7 +273,7 @@ def Prósenta(node, params, result):
 
 def QArStd(node, params, result):
     # Used later for formatting voice answer string,
-    # e.g. "[expression] er [svar]"
+    # e.g. "[tveir plús tveir] er [fjórir]"
     result.desc = result._canonical
 
 
@@ -401,10 +401,7 @@ def sentence(state, result):
                 q.set_key(result.get("qkey"))
             else:
                 raise Exception("Arithmetic calculation failed")
-        except AssertionError:
-            raise
         except Exception as e:
-            raise
             q.set_error("E_EXCEPTION: {0}".format(e))
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")

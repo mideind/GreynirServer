@@ -76,11 +76,11 @@ def handle_plain_text(q):
         # Query about the time in a particular location, i.e. country or city
         loc = ql[18:]
         # Capitalize each word in country/city name
-        loc = " ".join([c.capitalize() for c in loc.split()])
+        loc = " ".join([c.capitalize() for c in loc.strip().split()])
 
         # Look up nominative
-        # TODO: This only works for single-word city/country names
-        # in BÍN and could be improved (e.g. fails for "Nýja Jórvík")
+        # TODO: This only works for single-word city/country names found
+        # in BÍN and could be improved (e.g. fails for "Nýju Jórvík")
         bin_res = BIN_Db().lookup_nominative(loc)
         words = [m.stofn for m in bin_res]
         words.append(loc)  # In case it's not in BÍN (e.g. "New York", "San José")
