@@ -116,7 +116,7 @@ def handle_plain_text(q):
     if tz:
         now = datetime.now(timezone(tz))
 
-        desc = specific_loc if specific_loc else "Klukkan er"
+        desc = specific_loc or "Klukkan er"
 
         # Create displayable answer
         answer = "{0:02}:{1:02}".format(now.hour, now.minute)

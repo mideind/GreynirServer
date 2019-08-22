@@ -29,8 +29,11 @@
 # TODO: "Hvað er ég langt frá X?"
 
 import logging
-from queries import query_json_api
+from queries import query_json_api, gen_answer
 from iceaddr import iceaddr_lookup
+from geo import iceprep_for_country, iceprep_for_placename
+from reynir.bindb import BIN_Db
+from pprint import pprint
 
 
 # The Google API identifier (you must obtain your own key if you want to use this code)
@@ -70,6 +73,7 @@ def _query_geocode_API(lat, lon):
 
 def _addrinfo_from_api_result(result):
     """ Extract relevant address components from Google API result """
+
     comp = result["address_components"]
 
     num = None
@@ -107,62 +111,74 @@ _WHERE_AM_I_STRINGS = frozenset(
 _LOC_QTYPE = "Location"
 
 
-def handle_plain_text(q):
-    """ Handle a plain text query asking about user's current location. """
-    ql = q.query_lower.rstrip("?")
-
-    if ql not in _WHERE_AM_I_STRINGS:
-        return False
-
-    loc = q.location
-    if not loc:
-        # We don't have a location associated with the query
-        # so we return a response saying we don't know
-        answer = "Ég veit ekkert um staðsetningu þína."
-        response = dict(answer=answer)
-        voice = answer
-        q.set_qtype(LOC_QTYPE)
-        q.set_answer(response, answer, voice)
-        return True
-
+def answer_for_location(loc):
     # Send API request
     res = _query_geocode_API(loc[0], loc[1])
+    pprint(res)
 
     # Verify that we have at least one valid result
+    # TODO: Handle this differently?
     if (
         not res
         or "results" not in res
         or not len(res["results"])
         or not res["results"][0]
     ):
-        return False
+        return None
 
     top = res["results"][0]
+    # TODO, fall back on lower-ranked results from the API
+    # if the top result doesn't even contain a locality.
 
     # Extract address info from top result
     (street, num, locality, postcode, country) = _addrinfo_from_api_result(top)
+    print(street, num, locality, postcode, country)
+
+
+    def nom2dat(w):
+        """ Look up dative form of a noun in BÍN, try
+            lowercase if capitalized form not found """
+        b = BIN_Db() 
+        bin_res = b.lookup_dative(w, cat="no")
+        if not bin_res and not w.islower():
+            bin_res = b.lookup_dative(w.lower(), cat="no")
+        if bin_res:
+            return bin_res[0].ordmynd
+        return None
 
     if country == "Ísland":
         descr = "Íslandi"
 
         if street:
-            # Look up address in staðfangaskrá to get the
-            # dative case of street name and locality
-            addrinfo = iceaddr_lookup(street, placename=locality, limit=1)
-            if len(addrinfo):
-                street = addrinfo[0]["heiti_tgf"]
-                if locality and locality == addrinfo[0]["stadur_nf"]:
-                    locality = addrinfo[0]["stadur_tgf"]
+            street_dat = None
+            locality_dat = None
 
-            descr = street
+            # Start by looking up address in staðfangaskrá to get 
+            # the dative case of street name and locality
+            # addrinfo = iceaddr_lookup(street, placename=locality, limit=1)
+            # if len(addrinfo):
+            #     street_dat = addrinfo[0]["heiti_tgf"]
+            #     if locality and locality == addrinfo[0]["stadur_nf"]:
+            #         locality_dat = addrinfo[0]["stadur_tgf"]
+
+            # OK, if staðfangaskrá can't help us, try to use BÍN to
+            # get dative version of name. Some names given by Google's
+            # API are generic words such as "Göngustígur" and the like.
+            if not street_dat:
+                street_dat = nom2dat(street)
+                locality_dat = nom2dat(locality)
+                print(street_dat)
+                print(locality_dat)
+
+            descr = street_dat or street
             if num:
                 descr += " " + num
             if locality:
-                prefix = "í"  # TODO: "í" vs. "á" for locality
-                descr += " {0} {1}".format(prefix, locality)
+                prep = iceprep_for_placename(locality_dat)
+                descr += " {0} {1}".format(prep, locality_dat)
     else:
+        # TODO: Elegant implementation for foreign roads/placenames/countries
         pass
-
 
     if not descr:
         # Just use the formatted address string provided by Google
@@ -172,7 +188,29 @@ def handle_plain_text(q):
     response = dict(answer=answer)
     voice = "Þú ert á {0}".format(answer)
 
+    return response, answer, voice
+
+
+def handle_plain_text(q):
+    """ Handle a plain text query asking about user's current location. """
+    ql = q.query_lower.rstrip("?")
+
+    if ql not in _WHERE_AM_I_STRINGS:
+        return False
+
+    loc = q.location
+    answ = None
+
+    if loc:
+        # Get info about this location
+        answ = answer_for_location(loc)
+
+    if not answ:
+        # We either don't have a location or no info about the
+        # location associated with the query
+        answ = gen_answer("Ég veit ekkert um staðsetningu þína.")
+
     q.set_qtype(_LOC_QTYPE)
-    q.set_answer(response, answer, voice)
+    q.set_answer(*answ)
 
     return True
