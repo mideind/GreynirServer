@@ -45,7 +45,7 @@ def _tzw():
     """ Lazy-load location/timezone database """
     global _TZW
     if not _TZW:
-        _TZW = tzwhere.tzwhere()
+        _TZW = tzwhere.tzwhere(forceTZ=True)
     return _TZW
 
 
@@ -67,7 +67,7 @@ def handle_plain_text(q):
         # Use location, if available, to determine time zone
         loc = q.location
         if loc:
-            tz = _tzw().tzNameAt(loc[0], loc[1])
+            tz = _tzw().tzNameAt(loc[0], loc[1], forceTZ=True)
         else:
             # Default to Iceland's timezone
             tz = country_timezones[ICELAND_ISOCODE][0]
