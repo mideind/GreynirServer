@@ -113,7 +113,7 @@ python scraper.py
 ```
 
 NB: Due to issues with Python's `fork()` in recent versions of macOS, you 
-may need to run the following command first in for scraping to work:
+may need to run the following shell command in order for scraping to work:
 
 ```
 export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES

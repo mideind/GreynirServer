@@ -157,7 +157,7 @@ python scraper.py --init
 
 ## Run
 
-Change to the Reynir repo directory and activate the virtual environment:
+Change to the Reynir repository and activate the virtual environment:
 
 ```
 cd ~/Reynir
