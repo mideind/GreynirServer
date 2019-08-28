@@ -491,10 +491,21 @@ def parse_address_string(addrstr):
 
 
 def iceprep_for_street(sn):
+    """ Return the right preposition ("í" or "á") for
+        an Icelandic street name, e.g. "Fiskislóð" """
+
+    # TODO: Implement me properly
+    isuffixes = frozenset(("brekka", "ás", "holt"))
+    for suffix in isuffixes:
+        if sn.endswith(suffix):
+            return "í"
     return "á"
 
 
 def iceprep_for_placename(pn):
+    """ Return the right preposition ("í" or "á")
+        for an Icelandic placename, e.g. "Akureyri" """
+
     # TODO: Update this with the data acquired
     # from Íslenskt Málfar (1992)
     suffix2prep = {
@@ -517,6 +528,7 @@ def iceprep_for_placename(pn):
             return prep
 
     return "í"
+
 
 # TODO: This should be in a separate file, and should
 # probably be part of the ReynirCorrect package
@@ -780,16 +792,21 @@ ICEPREP_FOR_CC = {
 
 
 def iceprep4cc(cc):
+    """ Return the right Icelandic preposition ("í" or "á") for
+        a country, given its ISO country code, e.g. "IS" """
     return ICEPREP_FOR_CC.get(cc)
 
 
 def iceprep_for_country(cn):
+    """ Return the right Icelandic preposition ("í" or "á") for
+        a country, given its Icelandic name in the nominative
+        case, e.g. "Ítalía" """
     # TODO: Implement me
     return iceprep4cc(isocode_for_country_name(cn))
 
 
 if __name__ == "__main__":
-
+    """ Test location info lookup via command line """
     name = sys.argv[1] if len(sys.argv) > 1 else None
     kind = sys.argv[2] if len(sys.argv) > 2 else None
 

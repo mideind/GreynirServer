@@ -23,8 +23,6 @@
 
 """
 
-# TODO: Country name should also be declined.
-# TODO: "staddur á" vs. "staddur í"
 # TODO: Speech synthesis: "Bárugötu þrjú" ekki "þrír"
 # TODO: "Hvað er ég langt frá X?"
 
@@ -106,16 +104,62 @@ def _addrinfo_from_api_result(result):
     return (street, num, locality, postcode, country)
 
 
-_WHERE_AM_I_STRINGS = frozenset(
-    (
-        "hvar er ég",
-        "hvar er ég núna",
-        "hvar er ég staddur",
-        "hvar er ég stödd",
-        "hver er staðsetning mín",
-    )
-)
-_LOC_QTYPE = "Location"
+def nom2dat(w):
+    """ Look up dative form of a noun in BÍN, try
+        lowercase if capitalized form not found """
+    if w:
+        b = BIN_Db()
+        bin_res = b.lookup_dative(w, cat="no")
+        if not bin_res and not w.islower():
+            bin_res = b.lookup_dative(w.lower(), cat="no")
+        if bin_res:
+            return bin_res[0].ordmynd
+    return None
+
+
+def country_desc(cc):
+    """ Generate description string of being in a particular country
+        with correct preposition and case e.g. 'á Spáni' """
+    cn = country_name_for_isocode(cc)
+    prep = iceprep4cc(cc)
+    return "{0} {1}".format(prep, nom2dat(cn))
+
+
+def street_desc(street_nom, street_num, locality_nom):
+    """ Generate description of being on a particular (Icelandic)
+        street with correct preposition and case e.g. 'í Þverholti 3'. """
+    street_dat = None
+    locality_dat = None
+
+    # Start by looking up address in staðfangaskrá to get
+    # the dative case of street name and locality.
+    # This works better than BÍN lookup since not all street
+    # names are present in BÍN.
+    addrinfo = iceaddr_lookup(street_nom, placename=locality_nom, limit=1)
+    if len(addrinfo):
+        street_dat = addrinfo[0]["heiti_tgf"]
+        if locality_nom and locality_nom == addrinfo[0]["stadur_nf"]:
+            locality_dat = addrinfo[0]["stadur_tgf"]
+
+    # OK, if staðfangaskrá can't help us, try to use BÍN to
+    # get dative version of name. Some names given by Google's
+    # API are generic terms such as "Göngustígur" and the like.
+    if not street_dat:
+        street_dat = nom2dat(street_nom) or street_nom
+    if not locality_dat:
+        locality_dat = nom2dat(locality_nom) or locality_nom
+
+    # Create street descr. ("á Fiskislóð 31")
+    street_comp = iceprep_for_street(street_nom) + " " + street_dat
+    if street_num:
+        street_comp += " " + street_num
+
+    # Append locality if available ("í Reykjavík")
+    if locality_dat:
+        ldesc = iceprep_for_placename(locality_nom) + " " + locality_dat
+        street_comp += " " + ldesc
+
+    return street_comp
 
 
 def answer_for_location(loc):
@@ -133,6 +177,7 @@ def answer_for_location(loc):
     ):
         return None
 
+    # Grab top result from API call
     top = res["results"][0]
     # TODO, fall back on lower-ranked results from the API
     # if the top result doesn't even contain a locality.
@@ -141,69 +186,55 @@ def answer_for_location(loc):
     (street, num, locality, postcode, country_code) = _addrinfo_from_api_result(top)
     print(street, num, locality, postcode, country_code)
 
-    def nom2dat(w):
-        """ Look up dative form of a noun in BÍN, try
-            lowercase if capitalized form not found """
-        b = BIN_Db()
-        bin_res = b.lookup_dative(w, cat="no")
-        if not bin_res and not w.islower():
-            bin_res = b.lookup_dative(w.lower(), cat="no")
-        if bin_res:
-            return bin_res[0].ordmynd
-        return None
+    descr = list()
 
-    def country_desc(cc):
-        """ Generate description of being in a particular country
-            with correct preposition and case e.g. 'á Spáni' """
-        cn = country_name_for_isocode(country_code)
-        prep = iceprep4cc(country_code)
-        return "{0} {1}".format(prep, nom2dat(cn))
-
+    # Special handling of Icelandic locations since we have more info
+    # about them and street/locality names need to be declined.
     if country_code == "IS":
-
+        d = None
         # We received a street name from the API
         if street:
-            street_dat = None
-            locality_dat = None
-
-            # Start by looking up address in staðfangaskrá to get
-            # the dative case of street name and locality
-            addrinfo = iceaddr_lookup(street, placename=locality, limit=1)
-            if len(addrinfo):
-                street_dat = addrinfo[0]["heiti_tgf"]
-                if locality and locality == addrinfo[0]["stadur_nf"]:
-                    locality_dat = addrinfo[0]["stadur_tgf"]
-
-            # OK, if staðfangaskrá can't help us, try to use BÍN to
-            # get dative version of name. Some names given by Google's
-            # API are generic words such as "Göngustígur" and the like.
-            if not street_dat:
-                street_dat = nom2dat(street)
-                locality_dat = nom2dat(locality)
-
-            descr = street_dat or street
-            if num:
-                descr += " " + num
-            if locality:
-                lprep = iceprep_for_placename(locality)
-                sprep = iceprep_for_street(street)
-                descr = "{0} {1} {2}".format(sprep, descr, prep, locality_dat)
+            descr = street_desc(street, num, locality)
+        # We at least have a locality (e.g. "Reykjavík")
+        elif locality:
+            # TODO: Fix me
+            descr = iceprep_for_placename(locality) + " " + locality
+        # Only country
         else:
-            descr = country_desc('IS')
-
+            descr = country_desc("IS")
+    # The provided location is abroad.
     else:
-        locdesc = "{0} {1}".format(iceprep_for_placename(locality), locality) if locality else ""
-        descr = "{0} {1}".format(locdesc, country_desc(country_code)).strip()
+        sdesc = "á " + street + " " + (num or "") if street else ""
+        locdesc = (
+            "{0} {1}".format(iceprep_for_placename(locality), locality)
+            if locality
+            else ""
+        )
+        descr = "{0} {1} {2}".format(
+            sdesc, locdesc, country_desc(country_code)
+        ).strip()
 
     if not descr:
-        # Just use the formatted address string provided by Google
+        # Fall back on the formatted address string provided by Google
         descr = top["formatted_address"]
 
-    answer = descr
-    response = dict(answer=answer)
-    voice = "Þú ert {0}".format(answer)
+    response = dict(answer=descr)
+    voice = "Þú ert {0}".format(descr)
+    answer = descr[0].upper() + descr[1:]
 
     return response, answer, voice
+
+
+_WHERE_AM_I_STRINGS = frozenset(
+    (
+        "hvar er ég",
+        "hvar er ég núna",
+        "hvar er ég staddur",
+        "hvar er ég stödd",
+        "hver er staðsetning mín",
+    )
+)
+_LOC_QTYPE = "Location"
 
 
 def handle_plain_text(q):
