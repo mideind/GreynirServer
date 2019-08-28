@@ -8,8 +8,8 @@ import sys
 
 OPEN_CLASSES = frozenset(("kk", "kvk", "hk", "so", "lo", "ao"))
 
-# Hlutar BÍN sem leyfast ekki sem fyrri hlutar
-FORBIDDEN_CATEGORIES = frozenset(("föð", "móð", "ætt", "dyr", "göt", "fyr", "ism"))
+# Hlutar BÍN sem leyfast ekki sem fyrri hlutar nema í eignarfalli
+FORBIDDEN_CATEGORIES = frozenset(("föð", "móð", "ætt", "dyr", "göt", "fyr", "ism", "erm"))
 
 # Orðflokkar sem leyfast hvergi í samsetningum
 # Atviksorð sem geta staðið í samsetningum eru svo fá að best er að handvelja þau 
@@ -478,6 +478,7 @@ FORMERS_TO_ADD = frozenset((
     "pólý",
     "regin",
     "reða",
+    "Reykjanes",
     "réttsýnis",
     "rök",
     "sam",
@@ -606,7 +607,9 @@ FORMERS_TO_ADD = frozenset((
     "þúsund",
     "þúsunda",
 ))
-
+LATTERS_TO_ADD = frozenset((
+    "setur",
+))
 
 class Fixer():
 
@@ -647,17 +650,17 @@ class Fixer():
         # Valin atviksorð
         # Sleppa sérnöfnum
         
-        if y[3] in FORBIDDEN_CATEGORIES or "ü" in y[4] or y[4] in OUTFORMERS:
+        if "ü" in y[4] or y[4] in OUTFORMERS:
             return
         # Nafnorð
         if y[2] in {"kk", "kvk", "hk"} and not "gr" in y[5]: # Fann nafnorð, mark er í y[5]
             if "EF" in y[5]:
                 self.former_parts.add(y[4])
                 #print("1:\t{}".format(y[4]))
-            if y[5] in FORBIDDEN_CATEGORIES:
+            if y[3] in FORBIDDEN_CATEGORIES:
                 return
             # Stofnmyndir
-            if "kvk" in y[2] and "ÞFET" in y[5]:            # Stofn kvenkynsorða
+            if y[2] == "kvk" and "ÞFET" in y[5]:            # Stofn kvenkynsorða
                 if y[0].endswith("un") or y[0].endswith("an") or y[0].endswith("ing") or y[0].endswith("ung"): # Ath. truflar 'baun', 'laun'...
                     return
                 if self.ends_in_consonant(y[0]):
@@ -676,11 +679,11 @@ class Fixer():
                         #pass                                # Orð eins og langnefja, ... Stofninn er ekki notaður sem fyrri hluti.
                 else:
                     self.former_parts.add(y[0])             # Orð eins og skrá, þrá, ró, trú, ... Stofninn er nefnimyndin.
-            elif "hk" in y[2] and "NFET" in y[5]:                              # Stofn hvorugkynsorða
+            elif y[2] == "hk" and "NFET" in y[5]:                              # Stofn hvorugkynsorða
                 if y[0].endswith("land"):
                     return
                 self.former_parts.add(y[4])                 # Orð eins og hús, rán, haf; firma, nammi, vé, sjampó, ... stofninn er nefnimyndin
-            elif "kk" in y[2] and "ÞFET" in y[5]:
+            elif y[2] == "kk" and "ÞFET" in y[5]:
                 if y[0].endswith("ingur") or y[0].endswith("ungur") or y[0].endswith("aður") or y[0].endswith("uður") or y[0].endswith("angur"):
                     return
                 if y[0].endswith("ur"):
@@ -808,9 +811,10 @@ class Fixer():
                         self.latter(y)
 
     def other_forms(self):
-        self.former_parts |= FORMERS_TO_ADD
         self.former_parts -= FORBIDDEN_FORMS
         self.latter_parts -= FORBIDDEN_FORMS
+        self.former_parts |= FORMERS_TO_ADD
+        self.latter_parts |= LATTERS_TO_ADD
 
     def print_parts(self):
         with open('formers.txt', 'w+') as formers:

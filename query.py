@@ -30,6 +30,7 @@ import importlib
 import logging
 from datetime import datetime
 import json
+import re
 
 from settings import Settings
 
@@ -41,6 +42,7 @@ from reynir import TOK, tokenize, correct_spaces
 from reynir.fastparser import Fast_Parser, ParseForestDumper, ParseError
 from reynir.binparser import BIN_Grammar, GrammarError
 from reynir.reducer import Reducer
+from reynir.bindb import BIN_Db
 from nertokenizer import recognize_entities
 from images import get_image_url
 from processor import modules_in_dir
@@ -500,6 +502,59 @@ class Query:
                 )
             )
         return result
+
+
+def _to_case(np, lookup_func, cast_func, meaning_filter_func):
+    """ Return the noun phrase after casting it from nominative to accusative case """
+    # Split the phrase into words and punctuation, respectively
+    a = re.split(r"([\w]+)", np)
+    seen_preposition = False
+    # Enumerate through the 'tokens'
+    for ix, w in enumerate(a):
+        if not w:
+            continue
+        if w == "- ":
+            # Something like 'Skeiða- og Hrunamannavegur'
+            continue
+        if w.strip() in {"-", "/"}:
+            # Reset the seen_preposition flag after seeing a hyphen or slash
+            seen_preposition = False
+            continue
+        if seen_preposition:
+            continue
+        if re.match(r"^[\w]+$", w):
+            # This is a word: begin by looking up the word form
+            _, mm = lookup_func(w)
+            if not mm:
+                # Unknown word form: leave it as-is
+                continue
+            if any(m.ordfl == "fs" for m in mm):
+                # Probably a preposition: don't modify it, but
+                # stop casting until the end of this phrase
+                seen_preposition = True
+                continue
+            # Cast the word to the case we want
+            a[ix] = cast_func(w, meaning_filter_func=meaning_filter_func)
+    # Reassemble the list of words and punctuation
+    return "".join(a)
+
+
+def to_accusative(np, *, meaning_filter_func=None):
+    """ Return the noun phrase after casting it from nominative to accusative case """
+    with BIN_Db.get_db() as db:
+        return _to_case(
+            np, db.lookup_word, db.cast_to_accusative,
+            meaning_filter_func=meaning_filter_func
+        )
+
+
+def to_dative(np, *, meaning_filter_func=None):
+    """ Return the noun phrase after casting it from nominative to dative case """
+    with BIN_Db.get_db() as db:
+        return _to_case(
+            np, db.lookup_word, db.cast_to_dative,
+            meaning_filter_func=meaning_filter_func
+        )
 
 
 def process_query(

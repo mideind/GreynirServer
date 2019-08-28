@@ -40,6 +40,7 @@ from treeutil import TreeUtility
 from reynir import TOK, correct_spaces
 from reynir.bintokenizer import stems_of_token
 from search import Search
+from query import _QUERY_ROOT
 
 
 # Indicate that this module wants to handle parse trees for queries
@@ -437,7 +438,7 @@ def query_person(query, session, name):
         answer = titles[0]["answer"]
         voice_answer = name + " er " + answer + "."
     else:
-        answer = "Nafnið '" + nafn + "' finnst ekki."
+        answer = "Nafnið '" + name + "' finnst ekki."
         voice_answer = "Ég veit ekki hver " + name + " er."
     return response, answer, voice_answer
 
@@ -607,8 +608,8 @@ def query_word(query, session, stem):
 
 def launch_search(query, session, qkey):
     """ Launch a search with the given search terms """
-    pgs, stats = TreeUtility.raw_tag_toklist(
-        session, query.token_list, root=_QUERY_ROOT
+    pgs, _ = TreeUtility.raw_tag_toklist(
+        session, query.token_list,  # root=_QUERY_ROOT
     )
 
     # Collect the list of search terms
@@ -774,7 +775,8 @@ QEntityKey/fall →
 QEntityPrefix_nf →
     "hvað" "er"
     | "hvað" "eru"
-    | 0
+    # Allowing epsilon here makes this production catch too much
+    # | 0
 
 QEntityPrefix_þf →
     "hvað" "veistu" "um"
