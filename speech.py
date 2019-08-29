@@ -54,10 +54,6 @@ _AUDIO_FORMATS = frozenset(("mp3", "ogg_vorbis", "pcm"))
 _DEFAULT_TEXT_FORMAT = "text"
 _TEXT_FORMATS = frozenset(("text", "ssml"))
 
-# S3 bucket
-# _S3_KEY_PREFIX = ""
-# _S3_BUCKET = "greynir-uswest2"
-
 
 def _intialize_client():
     """ Set up AWS Polly client """
@@ -76,6 +72,7 @@ def _intialize_client():
 
     # Return client instance
     return boto3.Session(**aws_config).client("polly")
+
 
 # TODO: Add caching for identical responses
 def get_synthesized_text_url(text, txt_format="text", voice_id=_DEFAULT_VOICE):

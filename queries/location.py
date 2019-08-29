@@ -89,21 +89,24 @@ def _addrinfo_from_api_result(result):
     for c in comp:
         if not "types" in c:
             continue
-        if "street_number" in c["types"]:
+
+        types = c["types"]
+
+        if "street_number" in types:
             num = c["long_name"]
-        elif "route" in c["types"]:
+        elif "route" in types:
             street = c["long_name"]
-        elif "locality" in c["types"]:
+        elif "locality" in types:
             locality = c["long_name"]
-        elif "country" in c["types"]:
+        elif "country" in types:
             country = c["short_name"]
-        elif "postal_code" in c["types"]:
+        elif "postal_code" in types:
             postcode = c["long_name"]
 
     # HACK: Google's API sometimes (rarely) returns the English-language
     # string "Unnamed Road" irrespective of language settings.
     if street == "Unnamed Road":
-        street = "ónefndri götu"
+        street = "ónefnd gata"
 
     return (street, num, locality, postcode, country)
 
@@ -118,7 +121,7 @@ def nom2dat(w):
             bin_res = b.lookup_dative(w.lower(), cat="no")
         if bin_res:
             return bin_res[0].ordmynd
-    return None
+    return w
 
 
 def country_desc(cc):
@@ -149,9 +152,9 @@ def street_desc(street_nom, street_num, locality_nom):
     # get dative version of name. Some names given by Google's
     # API are generic terms such as "Göngustígur" and the like.
     if not street_dat:
-        street_dat = nom2dat(street_nom) or street_nom
+        street_dat = nom2dat(street_nom)
     if not locality_dat:
-        locality_dat = nom2dat(locality_nom) or locality_nom
+        locality_dat = nom2dat(locality_nom)
 
     # Create street descr. ("á Fiskislóð 31")
     street_comp = iceprep_for_street(street_nom) + " " + street_dat
@@ -169,7 +172,6 @@ def street_desc(street_nom, street_num, locality_nom):
 def answer_for_location(loc):
     # Send API request
     res = _query_geocode_API(loc[0], loc[1])
-    pprint(res)
 
     # Verify that we have at least one valid result
     if (
@@ -204,7 +206,9 @@ def answer_for_location(loc):
             descr = country_desc("IS")
     # The provided location is abroad.
     else:
-        sdesc = "á " + street + " " + (num or "") if street else ""
+        sdesc = ("á " + street) if street else ""
+        if num and street:
+            sdesc += " " + num
         locdesc = (
             "{0} {1}".format(iceprep_for_placename(locality), locality)
             if locality
@@ -216,7 +220,7 @@ def answer_for_location(loc):
 
     if not descr:
         # Fall back on the formatted address string provided by Google
-        descr = top.get("formatted_address")
+        descr = "á" + top.get("formatted_address")
 
     response = dict(answer=descr)
     voice = "Þú ert {0}".format(descr)
@@ -254,7 +258,7 @@ def handle_plain_text(q):
     if not answ:
         # We either don't have a location or no info about the
         # location associated with the query
-        answ = gen_answer("Ég veit ekkert um staðsetningu þína.")
+        answ = gen_answer("Ég veit ekki hvar þú ert.")
 
     q.set_qtype(_LOC_QTYPE)
     q.set_key("CurrentPosition")

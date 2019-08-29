@@ -28,7 +28,7 @@ import os
 from iceaddr import iceaddr_lookup, placename_lookup
 from cityloc import city_lookup
 from country_list import countries_for_language, available_languages
-
+from functools import lru_cache
 
 ICELAND_ISOCODE = "IS"  # ISO 3166-1 alpha-2
 ICELANDIC_LANG_ISOCODE = "is"  # ISO 639-1
@@ -314,6 +314,7 @@ def lookup_city_info(name):
     return city_lookup(cn)
 
 
+@lru_cache(maxsize=32)
 def icelandic_city_name(name):
     """ Look up the Icelandic name of a city, given its
         English/international name. """
@@ -490,13 +491,15 @@ def parse_address_string(addrstr):
     return addr
 
 
+_I_SUFFIXES = ("brekka", "ás", "holt", "tún")
+
+
 def iceprep_for_street(street_name):
     """ Return the right preposition ("í" or "á") for
         an Icelandic street name, e.g. "Fiskislóð" """
 
     # TODO: Implement me properly
-    isuffixes = frozenset(("brekka", "ás", "holt", "tún"))
-    for suffix in isuffixes:
+    for suffix in _I_SUFFIXES:
         if street_name.endswith(suffix):
             return "í"
     return "á"
@@ -504,7 +507,7 @@ def iceprep_for_street(street_name):
 
 ICELOC_PREP = None
 ICELOC_PREP_JSONPATH = os.path.join(
-    os.path.dirname(__file__), "resources/iceloc_prep.json"
+    os.path.dirname(__file__), "resources", "iceloc_prep.json"
 )
 
 
@@ -517,31 +520,31 @@ def _load_placename_prepositions():
             ICELOC_PREP = json.load(f)
     return ICELOC_PREP
 
+# This is not strictly accurate as the correct prepositions
+# are based on convention, not rational rules. :/
+_SUFFIX2PREP = {
+    "vík": "í",
+    "fjörður": "á",
+    "eyri": "á",
+    "vogur": "í",
+    "brekka": "í",
+    "staðir": "á",
+    "höfn": "á",
+    "eyjar": "í",
+    "ey": "í",
+    "nes": "á",
+}
+
 
 def iceprep_for_placename(pn):
     """ Return the right preposition ("í" or "á")
         for an Icelandic placename, e.g. "Akureyri" """
-
     place2prep = _load_placename_prepositions()  # Lazy-load
     if pn in place2prep:
         return place2prep[pn]
 
-    # This is not strictly accurate as the correct prepositions
-    # are based on convention, not rational rules. :/
-    suffix2prep = {
-        "vík": "í",
-        "fjörður": "á",
-        "eyri": "á",
-        "vogur": "í",
-        "brekka": "í",
-        "staðir": "á",
-        "höfn": "á",
-        "eyjar": "í",
-        "ey": "í",
-        "nes": "á",
-    }
-    for suffix, prep in suffix2prep.items():
-        if pn.endswith(suffix):
+    for suffix, prep in _SUFFIX2PREP.items():
+        if pn.lower().endswith(suffix):
             return prep
 
     return "í"
@@ -623,9 +626,7 @@ CC_ICEPREP_A = frozenset(
 def iceprep4cc(cc):
     """ Return the right Icelandic preposition ("í" or "á") for
         a country, given its ISO country code, e.g. "IS" """
-    if cc in CC_ICEPREP_A:
-        return "á"
-    return "í"
+    return "á" if cc in CC_ICEPREP_A else "í"
 
 
 def iceprep_for_country(cn):
