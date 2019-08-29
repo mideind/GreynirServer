@@ -188,6 +188,16 @@ if Settings.DEBUG:
 
 if not RUNNING_AS_SERVER:
 
+    if os.environ.get("GREYNIR_ATTACH_PTVSD"):
+        # Attach to the VSCode PTVSD debugger, enabling remote debugging via SSH
+        import ptvsd
+        ptvsd.enable_attach()
+        ptvsd.wait_for_attach()  # Blocks execution until debugger is attached
+        ptvsd_attached = True
+        print("Attached to PTVSD")
+    else:
+        ptvsd_attached = False
+
     # Run a default Flask web server for testing if invoked directly as a main program
 
     # Additional files that should cause a reload of the web server application
@@ -246,7 +256,7 @@ if not RUNNING_AS_SERVER:
             host=Settings.HOST,
             port=Settings.PORT,
             debug=Settings.DEBUG,
-            use_reloader=True,
+            use_reloader=not ptvsd_attached,
             extra_files=extra_files,
         )
 

@@ -84,6 +84,7 @@ class SessionContext:
 
     _db = None  # Singleton instance of Scraper_DB
 
+    # pylint: disable=no-self-argument
     @classproperty
     def db(cls):
         if cls._db is None:
@@ -100,9 +101,9 @@ class SessionContext:
         if session is None:
             # Create a new session that will be automatically committed
             # (if commit == True) and closed upon exit from the context
-            db = self.db  # Creates a new Scraper_DB instance if needed
+            # pylint: disable=no-member
+            self._session = self.db.session  # Creates a new Scraper_DB instance if needed
             self._new_session = True
-            self._session = db.session
             if read_only:
                 # Set the transaction as read only, which can save resources
                 self._session.execute("SET TRANSACTION READ ONLY")

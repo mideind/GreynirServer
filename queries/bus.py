@@ -26,10 +26,31 @@
 
 """
 
+import re
+from threading import Lock
+from functools import lru_cache
+
+import query
+from settings import Settings
+from reynir.bindb import BIN_Db
+
+import straeto
+
+
+# Today's bus schedule, cached
+SCHEDULE_TODAY = None
+SCHEDULE_LOCK = Lock()
 
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings
 HANDLE_TREE = True
+
+# Translate slightly wrong words that we allow in the grammar in order to
+# make it more resilient
+_WRONG_STOP_WORDS = {
+    "stoppustuð": "stoppistöð",
+    "Stoppustuð": "stoppistöð",
+}
 
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """
@@ -44,10 +65,35 @@ GRAMMAR = """
 # adding one or more query productions to the Query nonterminal
 
 Query →
-    QBusArrivalTime
+    QBusArrivalTime | QBusNearestStop
 
 # By convention, names of nonterminals in query grammars should
 # start with an uppercase Q
+
+QBusNearestStop →
+
+    "hvaða" QBusStop_kvk "er" QBusStopTail_kvk '?'?
+    | "hvaða" QBusStop_hk "er" QBusStopTail_hk '?'?
+    | "hver" "er" "næsta" QBusStop_kvk '?'?
+    # Leyfa 'hvað er næsta stoppistöð' (algeng misheyrn)
+    | "hvað" "er" "næsta" QBusStop_kvk '?'?
+    | "hvert" "er" "næsta" QBusStop_hk '?'?
+    | "hvar" "stoppar" "strætó" '?'?
+
+$score(+32) QBusNearestStop
+
+QBusStop_kvk →
+    "stoppistöð" | "stoppustöð" | "stoppustuð" | "Stoppustuð" | "biðstöð" | "strætóstöð"
+    | "strætóstoppistöð" | "strætóstoppustöð"
+
+QBusStop_hk →
+    "strætóstopp" | "stopp"
+
+QBusStopTail_kvk →
+    "næst" "mér"? | "nálægust" | "styst" "í" "burtu"
+
+QBusStopTail_hk →
+    "næst" "mér"? | "nálægast" | "styst" "í" "burtu"
 
 QBusArrivalTime →
 
@@ -63,6 +109,8 @@ QBusArrivalTime →
 
     # 'Hvenær má búast við leið þrettán?
     | "hvenær" "má" "búast" "við" QBus_þgf '?'?
+
+$score(+32) QBusArrivalTime
 
 # We can specify a bus in different ways, which may require
 # the bus identifier to be in different cases
@@ -117,6 +165,18 @@ QBusNumberWord →
 # The following functions correspond to grammar nonterminals (see
 # the context-free grammar above, in GRAMMAR) and are called during
 # tree processing (depth-first, i.e. bottom-up navigation).
+
+
+def QBusNearestStop(node, params, result):
+    """ Nearest stop query """
+    result.qtype = "NearestStop"
+    # No query key in this case
+    result.qkey = ""
+
+
+def QBusStop(node, params, result):
+    """ Save the word that was used to describe a bus stop """
+    result.stop_word = _WRONG_STOP_WORDS.get(result._nominative, result._nominative)
 
 
 def QBusArrivalTime(node, params, result):
@@ -217,6 +277,35 @@ def QBusNumberWord(node, params, result):
 
 # End of grammar nonterminal handlers
 
+
+def _meaning_filter_func(mm):
+    """ Filter word meanings when casting bus stop names
+        to cases other than nominative """
+    # Handle secondary and ternary forms (ÞFFT2, ÞGFET3...)
+    # This is a bit hacky, but necessary for optimal results.
+    # For place names, ÞGFET2 seems often to be a better choice
+    # than ÞGFET, since it has a trailing -i
+    # (for instance 'Skjólvangi' instead of 'Skjólvang')
+    mm2 = [m for m in mm if "ÞGF" in m.beyging and "2" in m.beyging]
+    if not mm2:
+        # Did not find the preferred ÞGF2, so we go for the
+        # normal form and cut away the secondary and ternary ones
+        mm2 = [m for m in mm if "2" not in m.beyging and "3" not in m.beyging]
+    return mm2 or mm
+
+
+@lru_cache(maxsize=None)
+def to_accusative(np):
+    """ Return the noun phrase after casting it from nominative to accusative case """
+    return query.to_accusative(np, meaning_filter_func=_meaning_filter_func)
+
+
+@lru_cache(maxsize=None)
+def to_dative(np):
+    """ Return the noun phrase after casting it from nominative to dative case """
+    return query.to_dative(np, meaning_filter_func=_meaning_filter_func)
+
+
 def voice_distance(d):
     """ Convert a distance, given as a float in units of kilometers, to a string
         that can be read aloud in Icelandic """
@@ -236,9 +325,33 @@ def voice_distance(d):
     return "{0}0 metrar".format(m)
 
 
-def query_arrival_time(query, session, bus_number, bus_name):
+def query_nearest_stop(query, session, result):
+    """ A query for the stop closest to the user """
+    # Retrieve the client location
+    location = query.location
+    if location is None:
+        # No location provided in the query
+        answer = "Staðsetning óþekkt"
+        response = dict(answer=answer)
+        voice_answer = "Ég veit ekki hvar þú ert."
+        return response, answer, voice_answer
+    # Get the stop closest to the user
+    stop = straeto.BusStop.closest_to(location)
+    va = [
+        "Næsta",
+        # Use the same word for the bus stop as in the query
+        result.stop_word,
+        "er", stop.name + ";",
+        "þangað", "eru",
+        voice_distance(straeto.distance(location, stop.location)),
+    ]
+    voice_answer = answer = " ".join(va) + "."
+    response = dict(answer=voice_answer)
+    return response, answer, voice_answer
+
+
+def query_arrival_time(query, session, result):
     """ A query for a bus arrival time """
-    # TODO: Add the actual logic for calling the straeto.is API
     # Retrieve the client location
     location = query.location
     if location is None:
@@ -246,15 +359,41 @@ def query_arrival_time(query, session, bus_number, bus_name):
         response = dict(answer=answer)
         voice_answer = "Ég veit ekki hvar þú ert."
         return response, answer, voice_answer
-    answer = "15:33"
-    response = dict(answer=answer)
-    voice_answer = bus_name[0].upper() + bus_name[1:] + " kemur klukkan 15 33"
+    bus_number = result.bus_number
+    bus_name = result.bus_name
+    # Obtain today's bus schedule
+    global SCHEDULE_TODAY
+    with SCHEDULE_LOCK:
+        if SCHEDULE_TODAY is None or not SCHEDULE_TODAY.is_valid_today:
+            # We don't have today's schedule: create it
+            SCHEDULE_TODAY = straeto.BusSchedule()
+    stop = straeto.BusStop.closest_to(location)
+    va = [bus_name[0].upper() + bus_name[1:]]
+    arrivals = SCHEDULE_TODAY.arrivals(str(bus_number), stop.name).items()
+    if arrivals:
+        first = True
+        for direction, times in arrivals:
+            if not first:
+                va.append("og")
+            va.extend(["í átt að", to_dative(direction)])
+            if first:
+                va.extend(["kemur", "næst", "á", to_accusative(stop.name), "klukkan"])
+            else:
+                va.append("klukkan")
+            va.append(" og ".join("{0:02}:{1:02}".format(hms[0], hms[1]) for hms in times))
+            first = False
+    else:
+        # The given bus doesn't stop there
+        va.extend(["stoppar", "ekki", "á", to_dative(stop.name)])
+    voice_answer = answer = " ".join(va) + "."
+    response = dict(answer=voice_answer)
     return response, answer, voice_answer
 
 
 # Dispatcher for the various query types implemented in this module
 _QFUNC = {
     "ArrivalTime": query_arrival_time,
+    "NearestStop": query_nearest_stop,
 }
 
 # The following function is called after processing the parse
@@ -279,7 +418,7 @@ def sentence(state, result):
             try:
                 answer = None
                 voice_answer = None
-                response = qfunc(q, session, result.bus_number, result.bus_name)
+                response = qfunc(q, session, result)
                 if isinstance(response, tuple):
                     # We have both a normal and a voice answer
                     response, answer, voice_answer = response
@@ -287,6 +426,8 @@ def sentence(state, result):
             except AssertionError:
                 raise
             except Exception as e:
+                if Settings.DEBUG:
+                    raise
                 q.set_error("E_EXCEPTION: {0}".format(e))
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
