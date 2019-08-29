@@ -594,9 +594,9 @@ def process_query(
                         longitude=location[1] if location else None,
                         # Client identifier
                         client_id=client_id[:256] if client_id else None,
-                        client_type=client_type if client_type else None,
+                        client_type=client_type or None,
                         # IP address
-                        remote_addr=remote_addr if remote_addr else None
+                        remote_addr=remote_addr or None
                         # !!! TBD: context
                         # All other fields are set to NULL
                     )

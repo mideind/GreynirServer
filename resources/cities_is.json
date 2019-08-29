@@ -27,6 +27,7 @@
   "Istanbúl": "Istanbul",
   "Jerevan": "Yerevan",
   "Kabúl": "Kabul",
+  "Abú Dabí": "Abu Dhabi",
   "Prag": "Prague",
   "Djakarta": "Jakarta",
   "Nikósía": "Nicosia",
@@ -184,5 +185,8 @@
   "Volgógrad": "Volgograd",
   "Ódessa": "Odessa",
   "Vladívostok": "Vladivostok",
-  "Höfðaborg": "Cape Town"
+  "Höfðaborg": "Cape Town",
+  "Jóhannesarborg": "Johannesburg",
+  "Pétursborg": "St. Petersburg",
+  "Sankti Pétursborg": "St. Petersburg"
 }

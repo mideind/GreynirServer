@@ -132,6 +132,20 @@ def test_query_api(client):
         assert "answer" in json
         assert json["answer"] == a
 
+    # Location module
+    # No API key on test server!
+    # resp = client.get(
+    #     "/query.api?q=Hvar er ég?&latitude={0}&longitude={1}".format(
+    #         64.15673429618045, -21.9511777069624
+    #     )
+    # )
+    # json = validate_json(resp)
+    # assert json["qtype"] == "Location"
+    # assert "answer" in json
+    # assert json["answer"].startswith("Fiskislóð 31")
+
+    # TODO: Add tests for weather module
+
 
 def test_processors():
     """ Try to import all tree/token processors by instantiating Processor object """

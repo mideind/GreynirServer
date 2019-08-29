@@ -58,6 +58,7 @@ def handle_plain_text(q):
         If the query is not recognized, returns False. """
     ql = q.query_lower.rstrip("?")
 
+
     # Timezone being asked about
     tz = None
     # Whether user asked for the time in a particular location
@@ -76,6 +77,7 @@ def handle_plain_text(q):
         # Query about the time in a particular location, i.e. country or city
         loc = ql[18:]
         # Capitalize each word in country/city name
+        # TODO: Fix, this mangles lookup for city names such as "Rio de Janeiro"
         loc = " ".join([c.capitalize() for c in loc.strip().split()])
 
         # Look up nominative
@@ -114,7 +116,7 @@ def handle_plain_text(q):
     if tz:
         now = datetime.now(timezone(tz))
 
-        desc = specific_loc if specific_loc else "Klukkan er"
+        desc = specific_loc or "Klukkan er"
 
         # Create displayable answer
         answer = "{0:02}:{1:02}".format(now.hour, now.minute)
@@ -123,6 +125,7 @@ def handle_plain_text(q):
         # A voice answer is a plain string that will be
         # passed as-is to a voice synthesizer
         voice = "{0} {1} {2:02}.".format(desc, now.hour, now.minute)
+
         q.set_qtype(_TIME_QTYPE)
         q.set_answer(response, answer, voice)
         return True
