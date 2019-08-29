@@ -25,12 +25,17 @@
     it only needs to implement the handle_plain_text() function, as
     shown below.
 
+
     This particular module handles queries related to dates.
 
 """
 
 from datetime import datetime
+from pytz import timezone
+
+from queries import timezone4loc
 from settings import changedlocale
+
 
 _DATE_QTYPE = "Date"
 
@@ -44,25 +49,20 @@ _DATE_QUERIES = frozenset(
         "hvaða dagur er í dag",
         "hvaða mánaðardagur er í dag",
         "hver er mánaðardagurinn í dag",
-        "hvaða mánuður er í dag",
     )
 )
 
 
 def handle_plain_text(q):
-    """ Handle a plain text query, contained in the q parameter
-        which is an instance of the query.Query class.
-        Returns True if the query was handled, and in that case
-        the appropriate properties on the Query instance have
-        been set, such as the answer and the query type (qtype).
-        If the query is not recognized, returns False. """
+    """ Handle a plain text query asking about the current date/weekday. """
     ql = q.query_lower.rstrip("?")
 
     if ql in _DATE_QUERIES:
-        # TODO: Use time zone!
+        tz = timezone4loc(q.location, fallback="IS")
+        now = datetime.now(timezone(tz))
+
         with changedlocale(category="LC_TIME"):
-            now = datetime.now()
-            date_str = now.strftime("%-d. %B %Y")
+            date_str = now.strftime("%A %-d. %B %Y")
 
             answer = date_str
             response = dict(answer=answer)

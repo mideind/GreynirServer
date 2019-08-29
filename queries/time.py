@@ -32,21 +32,11 @@
 from datetime import datetime
 from pytz import country_timezones, timezone
 from reynir.bindb import BIN_Db
-from geo import isocode_for_country_name, lookup_city_info, ICELAND_ISOCODE
-from tzwhere import tzwhere
+from geo import isocode_for_country_name, lookup_city_info
+from queries import timezone4loc
 
 
 _TIME_QTYPE = "Time"
-
-_TZW = None
-
-
-def _tzw():
-    """ Lazy-load location/timezone database """
-    global _TZW
-    if not _TZW:
-        _TZW = tzwhere.tzwhere(forceTZ=True)
-    return _TZW
 
 
 def handle_plain_text(q):
@@ -58,21 +48,14 @@ def handle_plain_text(q):
         If the query is not recognized, returns False. """
     ql = q.query_lower.rstrip("?")
 
-
     # Timezone being asked about
     tz = None
     # Whether user asked for the time in a particular location
     specific_loc = None
 
     if ql == "hvað er klukkan":
-        # Use location, if available, to determine time zone
-        loc = q.location
-        if loc:
-            tz = _tzw().tzNameAt(loc[0], loc[1], forceTZ=True)
-        else:
-            # Default to Iceland's timezone
-            tz = country_timezones[ICELAND_ISOCODE][0]
-
+        # Use location to determine time zone
+        tz = timezone4loc(q.location, fallback="IS")
     elif ql.startswith("hvað er klukkan á ") or ql.startswith("hvað er klukkan í "):
         # Query about the time in a particular location, i.e. country or city
         loc = ql[18:]
@@ -100,8 +83,8 @@ def handle_plain_text(q):
                 info = lookup_city_info(w)
                 if info:
                     top = info[0]
-                    (lat, lon) = (top.get("lat_wgs84"), top.get("long_wgs84"))
-                    tz = _tzw().tzNameAt(lat, lon)
+                    location = (top.get("lat_wgs84"), top.get("long_wgs84"))
+                    tz = timezone4loc(location)
             if tz:
                 # We have a timezone
                 break
@@ -129,5 +112,6 @@ def handle_plain_text(q):
         q.set_qtype(_TIME_QTYPE)
         q.set_answer(response, answer, voice)
         return True
+
 
     return False

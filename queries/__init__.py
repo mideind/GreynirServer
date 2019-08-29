@@ -28,6 +28,8 @@
 import logging
 import requests
 import json
+from tzwhere import tzwhere
+from pytz import country_timezones
 
 
 def query_json_api(url):
@@ -70,3 +72,26 @@ def format_icelandic_float(fp_num):
 
 def gen_answer(a):
     return dict(answer=a), a, a
+
+
+_TZW = None
+
+
+def tzwhere_singleton(force=True):
+    """ Lazy-load location/timezone database. The force argument 
+        makes tzwhere return the closest timezone if location is
+        outside all timezone polygons. """
+    global _TZW
+    if not _TZW:
+        _TZW = tzwhere.tzwhere(forceTZ=force)
+    return _TZW
+
+
+def timezone4loc(loc, fallback=None):
+    """ Returns timezone string given a tuple of coordinates.
+        Default fallback is Iceland's timezone. """
+    if loc:
+        return tzwhere_singleton().tzNameAt(loc[0], loc[1])
+    if fallback:
+        return country_timezones[fallback][0]
+    return None
