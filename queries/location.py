@@ -31,7 +31,6 @@ from queries import query_json_api, gen_answer
 from iceaddr import iceaddr_lookup
 from geo import (
     iceprep4cc,
-    iceprep_for_country,
     iceprep_for_placename,
     iceprep_for_street,
     country_name_for_isocode,
@@ -101,6 +100,11 @@ def _addrinfo_from_api_result(result):
         elif "postal_code" in c["types"]:
             postcode = c["long_name"]
 
+    # HACK: Google's API sometimes (rarely) returns the English-language
+    # string "Unnamed Road" irrespective of language settings.
+    if street == "Unnamed Road":
+        street = "ónefndri götu"
+
     return (street, num, locality, postcode, country)
 
 
@@ -168,7 +172,6 @@ def answer_for_location(loc):
     pprint(res)
 
     # Verify that we have at least one valid result
-    # TODO: Handle this differently?
     if (
         not res
         or "results" not in res
@@ -216,7 +219,7 @@ def answer_for_location(loc):
 
     if not descr:
         # Fall back on the formatted address string provided by Google
-        descr = top["formatted_address"]
+        descr = top.get("formatted_address")
 
     response = dict(answer=descr)
     voice = "Þú ert {0}".format(descr)

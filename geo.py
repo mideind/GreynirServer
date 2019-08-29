@@ -502,18 +502,36 @@ def iceprep_for_street(sn):
     return "á"
 
 
+ICELOC_PREP = None
+ICELOC_PREP_JSONPATH = os.path.join(
+    os.path.dirname(__file__), "resources/iceloc_prep.json"
+)
+
+
+def _load_placename_prepositions():
+    """ Load data mapping Icelandic placenames to the correct
+        prepositions ("á" or "í") from JSON file. """
+    global ICELOC_PREP
+    if ICELOC_PREP is None:
+        with open(ICELOC_PREP_JSONPATH) as f:
+            ICELOC_PREP = json.load(f)
+    return ICELOC_PREP
+
+
 def iceprep_for_placename(pn):
     """ Return the right preposition ("í" or "á")
         for an Icelandic placename, e.g. "Akureyri" """
 
-    # TODO: Update this with the data acquired
-    # from Íslenskt Málfar (1992)
+    place2prep = _load_placename_prepositions()  # Lazy-load
+    if pn in place2prep:
+        return place2prep[pn]
+
+    # This is not strictly accurate as the correct prepositions
+    # are based on convention, not rational rules. :/
     suffix2prep = {
         "vík": "í",
         "fjörður": "á",
         "eyri": "á",
-        "gata": "á",
-        "stígur": "á",
         "vogur": "í",
         "brekka": "í",
         "staðir": "á",
@@ -521,7 +539,6 @@ def iceprep_for_placename(pn):
         "eyjar": "í",
         "ey": "í",
         "nes": "á",
-        "fjörður": "á",
     }
     for suffix, prep in suffix2prep.items():
         if pn.endswith(suffix):
@@ -530,278 +547,91 @@ def iceprep_for_placename(pn):
     return "í"
 
 
+# ISO country codes of all countries whose names take
+# the preposition "á" in Icelandic (mostly islands, with
+# notable exceptions such as "Spánn" and "Ítalía")
 # TODO: This should be in a separate file, and should
-# probably be part of the ReynirCorrect package
-ICEPREP_FOR_CC = {
-    "AF": "í",  # Afganistan
-    "AL": "í",  # Albanía
-    "DZ": "í",  # Alsír
-    "AD": "í",  # Andorra
-    "AO": "í",  # Angóla
-    "AI": "í",  # Angvilla
-    "AG": "á",  # Antígva og Barbúda
-    "AR": "í",  # Argentína
-    "AM": "í",  # Armenía
-    "AW": "í",  # Arúba
-    "AC": "á",  # Ascension-eyja
-    "AZ": "í",  # Aserbaídsjan
-    "AT": "í",  # Austurríki
-    "AX": "á",  # Álandseyjar
-    "AU": "í",  # Ástralía
-    "BS": "á",  # Bahamaeyjar
-    "US": "í",  # Bandaríkin
-    "AS": "í",  # Bandaríska Samóa
-    "VI": "á",  # Bandarísku Jómfrúaeyjar
-    "BD": "í",  # Bangladess
-    "BB": "á",  # Barbados
-    "BH": "í",  # Barein
-    "BE": "í",  # Belgía
-    "BZ": "í",  # Belís
-    "BJ": "í",  # Benín
-    "BM": "í",  # Bermúdaeyjar
-    "BA": "í",  # Bosnía og Hersegóvína
-    "BW": "í",  # Botsvana
-    "BO": "í",  # Bólivía
-    "BR": "í",  # Brasilía
-    "IO": "í",  # Bresku Indlandshafseyjar
-    "VG": "í",  # Bresku Jómfrúaeyjar
-    "GB": "í",  # Bretland
-    "BN": "í",  # Brúnei
-    "BG": "í",  # Búlgaría
-    "BF": "í",  # Búrkína Fasó
-    "BI": "í",  # Búrúndí
-    "BT": "í",  # Bútan
-    "KY": "í",  # Caymaneyjar
-    "EA": "í",  # Ceuta og Melilla
-    "CK": "í",  # Cooks-eyjar
-    "CW": "í",  # Curacao
-    "DK": "í",  # Danmörk
-    "DG": "í",  # Diego Garcia
-    "DJ": "í",  # Djíbútí
-    "DM": "á",  # Dóminíka
-    "DO": "í",  # Dóminíska lýðveldið
-    "EG": "í",  # Egyptaland
-    "EE": "í",  # Eistland
-    "EC": "í",  # Ekvador
-    "SV": "í",  # El Salvador
-    "ER": "í",  # Erítrea
-    "ET": "í",  # Eþíópía
-    "FK": "á",  # Falklandseyjar
-    "PH": "á",  # Filippseyjar
-    "FI": "í",  # Finnland
-    "FJ": "á",  # Fídjíeyjar
-    "CI": "í",  # Fílabeinsströndin
-    "FR": "í",  # Frakkland
-    "GF": "í",  # Franska Gvæjana
-    "PF": "í",  # Franska Pólýnesía
-    "TF": "á",  # Frönsku suðlægu landsvæðin
-    "FO": "í",  # Færeyjar
-    "GA": "í",  # Gabon
-    "GM": "í",  # Gambía
-    "GH": "í",  # Gana
-    "GE": "í",  # Georgía
-    "GI": "í",  # Gíbraltar
-    "GN": "í",  # Gínea
-    "GW": "í",  # Gínea-Bissá
-    "GD": "í",  # Grenada
-    "GR": "í",  # Grikkland
-    "CV": "á",  # Grænhöfðaeyjar
-    "GL": "á",  # Grænland
-    "GG": "í",  # Guernsey
-    "GP": "í",  # Gvadelúpeyjar
-    "GU": "í",  # Gvam
-    "GT": "í",  # Gvatemala
-    "GY": "í",  # Gvæjana
-    "HT": "á",  # Haítí
-    "PS": "í",  # Heimastjórnarsvæði Palestínumanna
-    "NL": "í",  # Holland
-    "HN": "í",  # Hondúras
-    "BY": "í",  # Hvíta-Rússland
-    "IN": "í",  # Indland
-    "ID": "í",  # Indónesía
-    "IQ": "í",  # Írak
-    "IR": "í",  # Íran
-    "IE": "í",  # Írland
-    "IS": "á",  # Ísland
-    "IL": "í",  # Ísrael
-    "IT": "á",  # Ítalía
-    "JM": "á",  # Jamaíka
-    "JP": "í",  # Japan
-    "YE": "í",  # Jemen
-    "JE": "í",  # Jersey
-    "CX": "á",  # Jólaey
-    "JO": "í",  # Jórdanía
-    "KH": "í",  # Kambódía
-    "CM": "í",  # Kamerún
-    "CA": "í",  # Kanada
-    "IC": "á",  # Kanaríeyjar
-    "BQ": "í",  # Karíbahafshluti Hollands
-    "KZ": "í",  # Kasakstan
-    "QA": "í",  # Katar
-    "KE": "í",  # Kenía
-    "KG": "í",  # Kirgistan
-    "CN": "í",  # Kína
-    "KI": "í",  # Kíribatí
-    "CG": "í",  # Kongó-Brazzaville
-    "CD": "í",  # Kongó-Kinshasa
-    "CR": "í",  # Kostaríka
-    "CC": "í",  # Kókoseyjar (Keeling)
-    "CO": "í",  # Kólumbía
-    "KM": "á",  # Kómoreyjar
-    "XK": "í",  # Kósóvó
-    "HR": "í",  # Króatía
-    "CU": "á",  # Kúba
-    "KW": "í",  # Kúveit
-    "CY": "á",  # Kýpur
-    "LA": "í",  # Laos
-    "LS": "í",  # Lesótó
-    "LV": "í",  # Lettland
-    "LI": "í",  # Liechtenstein
-    "LT": "í",  # Litháen
-    "LB": "í",  # Líbanon
-    "LR": "í",  # Líbería
-    "LY": "í",  # Líbía
-    "LU": "í",  # Lúxemborg
-    "MG": "á",  # Madagaskar
-    "MK": "í",  # Makedónía
-    "MY": "í",  # Malasía
-    "MW": "í",  # Malaví
-    "MV": "á",  # Maldíveyjar
-    "ML": "í",  # Malí
-    "MT": "á",  # Malta
-    "MA": "í",  # Marokkó
-    "MH": "á",  # Marshalleyjar
-    "MQ": "á",  # Martiník
-    "YT": "í",  # Mayotte
-    "MR": "í",  # Máritanía
-    "MU": "í",  # Máritíus
-    "MX": "í",  # Mexíkó
-    "CF": "í",  # Mið-Afríkulýðveldið
-    "GQ": "í",  # Miðbaugs-Gínea
-    "FM": "í",  # Míkrónesía
-    "MM": "í",  # Mjanmar (Búrma)
-    "MD": "í",  # Moldóva
-    "MN": "í",  # Mongólía
-    "MS": "í",  # Montserrat
-    "MC": "í",  # Mónakó
-    "MZ": "í",  # Mósambík
-    "IM": "á",  # Mön
-    "NA": "í",  # Namibía
-    "NR": "á",  # Nárú
-    "NP": "í",  # Nepal
-    "NU": "í",  # Niue
-    "NE": "í",  # Níger
-    "NG": "í",  # Nígería
-    "NI": "í",  # Níkaragva
-    "KP": "í",  # Norður-Kórea
-    "MP": "á",  # Norður-Maríanaeyjar
-    "NO": "í",  # Noregur
-    "NF": "á",  # Norfolkeyja
-    "NC": "í",  # Nýja-Kaledónía
-    "NZ": "á",  # Nýja-Sjáland
-    "OM": "í",  # Óman
-    "PK": "í",  # Pakistan
-    "PW": "í",  # Palá
-    "PA": "í",  # Panama
-    "PG": "í",  # Papúa Nýja-Gínea
-    "PY": "í",  # Paragvæ
-    "PE": "í",  # Perú
-    "PN": "á",  # Pitcairn-eyjar
-    "PT": "í",  # Portúgal
-    "PL": "í",  # Pólland
-    "XA": "í",  # Pseudo-Accents
-    "XB": "í",  # Pseudo-Bidi
-    "PR": "í",  # Púertó Ríkó
-    "RE": "í",  # Réunion
-    "RW": "í",  # Rúanda
-    "RO": "í",  # Rúmenía
-    "RU": "í",  # Rússland
-    "SB": "í",  # Salómonseyjar
-    "ZM": "í",  # Sambía
-    "AE": "í",  # Sameinuðu arabísku furstadæmin
-    "WS": "í",  # Samóa
-    "SM": "í",  # San Marínó
-    "BL": "í",  # Sankti Bartólómeusareyjar
-    "SH": "í",  # Sankti Helena
-    "KN": "í",  # Sankti Kitts og Nevis
-    "LC": "í",  # Sankti Lúsía
-    "SX": "í",  # Sankti Martin
-    "PM": "í",  # Sankti Pierre og Miquelon
-    "VC": "í",  # Sankti Vinsent og Grenadíneyjar
-    "ST": "í",  # Saó Tóme og Prinsípe
-    "SA": "í",  # Sádi-Arabía
-    "SN": "í",  # Senegal
-    "RS": "í",  # Serbía
-    "SC": "í",  # Seychelles-eyjar
-    "HK": "í",  # sérstjórnarsvæðið Hong Kong
-    "MO": "í",  # sérstjórnarsvæðið Makaó
-    "ZW": "í",  # Simbabve
-    "SG": "í",  # Singapúr
-    "SL": "í",  # Síerra Leóne
-    "CL": "í",  # Síle
-    "SK": "í",  # Slóvakía
-    "SI": "í",  # Slóvenía
-    "UM": "í",  # Smáeyjar Bandaríkjanna
-    "SO": "í",  # Sómalía
-    "ES": "á",  # Spánn
-    "LK": "á",  # Srí Lanka
-    "MF": "á",  # St. Martin
-    "ZA": "í",  # Suður-Afríka
-    "GS": "á",  # Suður-Georgía og Suður-Sandvíkureyjar
-    "KR": "í",  # Suður-Kórea
-    "SS": "í",  # Suður-Súdan
-    "AQ": "á",  # Suðurskautslandið
-    "SD": "í",  # Súdan
-    "SR": "í",  # Súrínam
-    "SJ": "á",  # Svalbarði og Jan Mayen
-    "ME": "í",  # Svartfjallaland
-    "SZ": "í",  # Svasíland
-    "CH": "í",  # Sviss
-    "SE": "í",  # Svíþjóð
-    "SY": "í",  # Sýrland
-    "TJ": "í",  # Tadsjikistan
-    "TH": "í",  # Taíland
-    "TW": "í",  # Taívan
-    "TZ": "í",  # Tansanía
-    "CZ": "í",  # Tékkland
-    "TL": "í",  # Tímor-Leste
-    "TO": "í",  # Tonga
-    "TG": "í",  # Tógó
-    "TK": "í",  # Tókelá
-    "TA": "í",  # Tristan da Cunha
-    "TT": "í",  # Trínidad og Tóbagó
-    "TD": "í",  # Tsjad
-    "TC": "í",  # Turks- og Caicoseyjar
-    "TN": "í",  # Túnis
-    "TM": "í",  # Túrkmenistan
-    "TV": "í",  # Túvalú
-    "TR": "í",  # Tyrkland
-    "HU": "í",  # Ungverjaland
-    "UG": "í",  # Úganda
-    "UA": "í",  # Úkraína
-    "UY": "í",  # Úrúgvæ
-    "UZ": "í",  # Úsbekistan
-    "VU": "á",  # Vanúatú
-    "VA": "í",  # Vatíkanið
-    "VE": "í",  # Venesúela
-    "EH": "í",  # Vestur-Sahara
-    "VN": "í",  # Víetnam
-    "WF": "í",  # Wallis- og Fútúnaeyjar
-    "DE": "í",  # Þýskaland
-}
+# probably be part of the ReynirCorrect package going forward
+CC_ICEPREP_A = frozenset(
+    (
+        "AG",  # Antígva og Barbúda
+        "AC",  # Ascension-eyja
+        "AX",  # Álandseyjar
+        "BS",  # Bahamaeyjar
+        "VI",  # Bandarísku Jómfrúaeyjar
+        "BB",  # Barbados
+        "BM",  # Bermúdaeyjar
+        "IO",  # Bresku Indlandshafseyjar
+        "VG",  # Bresku Jómfrúaeyjar
+        "KY",  # Caymaneyjar
+        "CK",  # Cooks-eyjar
+        "DM",  # Dóminíka
+        "FK",  # Falklandseyjar
+        "PH",  # Filippseyjar
+        "FJ",  # Fídjíeyjar
+        "TF",  # Frönsku suðlægu landsvæðin
+        "GD",  # Grenada
+        "CV",  # Grænhöfðaeyjar
+        "GL",  # Grænland
+        "GG",  # Guernsey
+        "GP",  # Gvadelúpeyjar
+        "HT",  # Haítí
+        "IE",  # Írland
+        "IS",  # Ísland
+        "IT",  # Ítalía
+        "JM",  # Jamaíka
+        "JE",  # Jersey
+        "CX",  # Jólaey
+        "IC",  # Kanaríeyjar
+        "CC",  # Kókoseyjar
+        "KM",  # Kómoreyjar
+        "CU",  # Kúba
+        "CY",  # Kýpur
+        "MG",  # Madagaskar
+        "MV",  # Maldíveyjar
+        "MT",  # Malta
+        "MH",  # Marshalleyjar
+        "MQ",  # Martiník
+        "IM",  # Mön
+        "NR",  # Nárú
+        "MP",  # Norður-Maríanaeyjar
+        "NF",  # Norfolkeyja
+        "NZ",  # Nýja-Sjáland
+        "PN",  # Pitcairn-eyjar
+        "SB",  # Salómonseyjar
+        "BL",  # Sankti Bartólómeusareyjar
+        "SH",  # Sankti Helena
+        "LC",  # Sankti Lúsía
+        "SX",  # Sankti Martin
+        "PM",  # Sankti Pierre og Miquelon
+        "VC",  # Sankti Vinsent og Grenadíneyjar
+        "SC",  # Seychelles-eyjar
+        "ES",  # Spánn
+        "LK",  # Srí Lanka
+        "MF",  # St. Martin
+        "GS",  # Suður-Georgía og Suður-Sandvíkureyjar
+        "AQ",  # Suðurskautslandið
+        "SJ",  # Svalbarði og Jan Mayen
+        "TA",  # Tristan da Cunha
+        "TC",  # Turks- og Caicoseyjar
+        "VU",  # Vanúatú
+        "WF",  # Wallis- og Fútúnaeyjar
+    )
+)
 
 
 def iceprep4cc(cc):
     """ Return the right Icelandic preposition ("í" or "á") for
         a country, given its ISO country code, e.g. "IS" """
-    return ICEPREP_FOR_CC.get(cc)
+    if cc in CC_ICEPREP_A:
+        return "á"
+    return "í"
 
 
 def iceprep_for_country(cn):
     """ Return the right Icelandic preposition ("í" or "á") for
         a country, given its Icelandic name in the nominative
         case, e.g. "Ítalía" """
-    # TODO: Implement me
     return iceprep4cc(isocode_for_country_name(cn))
 
 
