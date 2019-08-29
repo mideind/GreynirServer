@@ -24,7 +24,6 @@
 
 """
 
-
 import logging
 import requests
 import json
@@ -80,7 +79,7 @@ _TZW = None
 def tzwhere_singleton(force=True):
     """ Lazy-load location/timezone database. The force argument 
         makes tzwhere return the closest timezone if location is
-        outside all timezone polygons. """
+        outside of all timezone polygons. """
     global _TZW
     if not _TZW:
         _TZW = tzwhere.tzwhere(forceTZ=force)
@@ -88,10 +87,10 @@ def tzwhere_singleton(force=True):
 
 
 def timezone4loc(loc, fallback=None):
-    """ Returns timezone string given a tuple of coordinates.
-        Default fallback is Iceland's timezone. """
+    """ Returns timezone string given a tuple of coordinates. 
+        Fallback argument can be an ISO country code."""
     if loc:
         return tzwhere_singleton().tzNameAt(loc[0], loc[1])
-    if fallback:
+    if fallback and fallback in country_timezones:
         return country_timezones[fallback][0]
     return None

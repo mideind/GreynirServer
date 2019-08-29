@@ -30,6 +30,8 @@
 
 """
 
+# TODO: Fix pronunciation of ordinal day of month (i.e. "29di" vs "29da")
+
 from datetime import datetime
 from pytz import timezone
 
@@ -49,6 +51,7 @@ _DATE_QUERIES = frozenset(
         "hvaða dagur er í dag",
         "hvaða mánaðardagur er í dag",
         "hver er mánaðardagurinn í dag",
+        "hvaða vikudagur er í dag",
     )
 )
 
@@ -64,9 +67,9 @@ def handle_plain_text(q):
         with changedlocale(category="LC_TIME"):
             date_str = now.strftime("%A %-d. %B %Y")
 
-            answer = date_str
+            voice = "Í dag er {0}".format(date_str)
+            answer = date_str.capitalize()
             response = dict(answer=answer)
-            voice = "Í dag er {0}".format(answer)
 
             q.set_answer(response, answer, voice)
             q.set_qtype(_DATE_QTYPE)
