@@ -92,8 +92,7 @@ def test_query_api(client):
     assert json["qtype"] == "Special"
     assert "response" in json
     assert "voice" in json
-    assert "answer" in json["response"]
-    assert json["response"]["answer"] == "Tumi Þorsteinsson."
+    assert json["response"] == "Tumi Þorsteinsson."
     assert json["voice"] == "Tumi Þorsteinsson er langsætastur."
 
     # Bus module
