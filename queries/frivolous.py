@@ -29,6 +29,7 @@
 
 from datetime import datetime, timedelta
 
+_SPECIAL_QTYPE = "Special"
 
 _SPECIAL_QUERIES = {
     "er þetta spurning?": {
@@ -88,9 +89,6 @@ _SPECIAL_QUERIES = {
     "hver er ég?": {
         "answer": "Þú ert þú."
     },
-    "hvar er ég?": {
-        "answer": "Þú ert hérna."
-    },
     "er guð til?": {
         "answer": "Ég held ekki."
     },
@@ -107,6 +105,9 @@ _SPECIAL_QUERIES = {
     "hvar endar alheimurinn?": {
         "answer": "Inni í þér."
     },
+    "hvar er draumurinn?": {
+        "answer": "Hvar ertu, lífið sem ég þrái?"
+    }
 }
 
 
@@ -122,7 +123,7 @@ def handle_plain_text(q):
         ql += "?"
     if ql in _SPECIAL_QUERIES:
         # This is a query we recognize and handle
-        q.set_qtype("Special")
+        q.set_qtype(_SPECIAL_QTYPE)
         response = _SPECIAL_QUERIES[ql]
         # A non-voice answer is usually a dict or a list
         answer = response.get("answer")

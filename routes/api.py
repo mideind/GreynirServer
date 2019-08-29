@@ -86,7 +86,8 @@ def analyze_api(version=1):
 @routes.route("/correct.api/v<int:version>", methods=["GET", "POST"])
 @restricted
 def correct_api(version=1):
-    """ Correct text manually entered by the user, i.e. not coming from an article.
+    """ Correct text provided by the user, i.e. not coming from an article.
+        This can be either an uploaded file or a string.
         This is a lower level API used by the Greynir web front-end. """
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
@@ -198,12 +199,9 @@ def article_api(version=1):
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
 
-    if request.method == "GET":
-        url = request.args.get("url")
-        uuid = request.args.get("id")
-    else:
-        url = request.form.get("url")
-        uuid = request.form.get("id")
+    url = request.values.get("url")
+    uuid = request.values.get("id")
+
     if url:
         url = url.strip()[0:_MAX_URL_LENGTH]
     if uuid:
@@ -295,28 +293,28 @@ def query_api(version=1):
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
 
+    # String with query
+    q = request.values.get("q", "")
+
     # If voice is set, return a voice-friendly string
     voice = bool_from_request(request, "voice")
+    # Specify a particular voice
+    voice_id = request.values.get("voice_id")
     # If test is set, add a synthetic location, if not given
     test = bool_from_request(request, "test")
 
     # Obtain the query string(s) and the client's location, if present
-    voice_id = None
-    if request.method == "GET":
-        q = request.args.get("q", "")
-        voice_id = request.args.get("voice_id")
-        lat = request.args.get("latitude")
-        lon = request.args.get("longitude")
-        client_id = request.args.get("client_id")
-        client_type = request.args.get("client_type")
-    else:
-        q = request.form.get("q", "")
-        voice_id = request.form.get("voice_id")
-        lat = request.form.get("latitude")
-        lon = request.form.get("longitude")
-        client_id = request.form.get("client_id")
-        client_type = request.form.get("client_type")
+    lat = request.values.get("latitude")
+    lon = request.values.get("longitude")
 
+    # Additional client info
+    client_id = request.values.get("client_id")
+    client_type = request.values.get("client_type")
+    # When running behind an nginx reverse proxy, the client's remote 
+    # address is passed to the web application via the "X-Real-IP" header
+    client_ip = request.remote_addr or request.headers.get("X-Real-IP")
+
+    # q param contains one or more |-separated strings
     mq = q.split("|")[0:_MAX_QUERY_VARIANTS]
     q = [m.strip()[0:_MAX_QUERY_LENGTH] for m in mq]
 
@@ -329,14 +327,14 @@ def query_api(version=1):
     if location_present:
         try:
             lat = float(lat)
-            if not(-90.0 <= lat <= 90.0):
+            if not (-90.0 <= lat <= 90.0):
                 location_present = False
         except ValueError:
             location_present = False
     if location_present:
         try:
             lon = float(lon)
-            if not(-180.0 <= lon <= 180.0):
+            if not (-180.0 <= lon <= 180.0):
                 location_present = False
         except ValueError:
             location_present = False
@@ -346,14 +344,16 @@ def query_api(version=1):
 
     # Send the query to the query processor
     result = process_query(
-        q, voice, auto_uppercase,
+        q,
+        voice,
+        auto_uppercase,
         location=(lat, lon) if location_present else None,
-        remote_addr=request.remote_addr,
+        remote_addr=client_ip,
         client_type=client_type,
         client_id=client_id,
     )
 
-    # Get URL for response as synthesized speech audio
+    # Get URL for response synthesized speech audio
     if voice:
         # If the result contains a "voice" key, return it
         audio = result.get("voice")

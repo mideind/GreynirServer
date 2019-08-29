@@ -28,7 +28,7 @@ import os
 from iceaddr import iceaddr_lookup, placename_lookup
 from cityloc import city_lookup
 from country_list import countries_for_language, available_languages
-
+from functools import lru_cache
 
 ICELAND_ISOCODE = "IS"  # ISO 3166-1 alpha-2
 ICELANDIC_LANG_ISOCODE = "is"  # ISO 639-1
@@ -314,6 +314,17 @@ def lookup_city_info(name):
     return city_lookup(cn)
 
 
+@lru_cache(maxsize=32)
+def icelandic_city_name(name):
+    """ Look up the Icelandic name of a city, given its
+        English/international name. """
+    cnames = _load_city_names()  # Lazy-load
+    for ice, n in cnames.items():
+        if n == name:
+            return ice
+    return name
+
+
 # Data about countries, loaded from JSON data file
 COUNTRY_DATA = None
 COUNTRY_DATA_JSONPATH = os.path.join(
@@ -480,8 +491,153 @@ def parse_address_string(addrstr):
     return addr
 
 
-if __name__ == "__main__":
+_I_SUFFIXES = ("brekka", "ás", "holt", "tún")
 
+
+def iceprep_for_street(street_name):
+    """ Return the right preposition ("í" or "á") for
+        an Icelandic street name, e.g. "Fiskislóð" """
+
+    # TODO: Implement me properly
+    for suffix in _I_SUFFIXES:
+        if street_name.endswith(suffix):
+            return "í"
+    return "á"
+
+
+ICELOC_PREP = None
+ICELOC_PREP_JSONPATH = os.path.join(
+    os.path.dirname(__file__), "resources", "iceloc_prep.json"
+)
+
+
+def _load_placename_prepositions():
+    """ Load data mapping Icelandic placenames to the correct
+        prepositions ("á" or "í") from JSON file. """
+    global ICELOC_PREP
+    if ICELOC_PREP is None:
+        with open(ICELOC_PREP_JSONPATH) as f:
+            ICELOC_PREP = json.load(f)
+    return ICELOC_PREP
+
+# This is not strictly accurate as the correct prepositions
+# are based on convention, not rational rules. :/
+_SUFFIX2PREP = {
+    "vík": "í",
+    "fjörður": "á",
+    "eyri": "á",
+    "vogur": "í",
+    "brekka": "í",
+    "staðir": "á",
+    "höfn": "á",
+    "eyjar": "í",
+    "ey": "í",
+    "nes": "á",
+}
+
+
+def iceprep_for_placename(pn):
+    """ Return the right preposition ("í" or "á")
+        for an Icelandic placename, e.g. "Akureyri" """
+    place2prep = _load_placename_prepositions()  # Lazy-load
+    if pn in place2prep:
+        return place2prep[pn]
+
+    for suffix, prep in _SUFFIX2PREP.items():
+        if pn.lower().endswith(suffix):
+            return prep
+
+    return "í"
+
+
+# ISO country codes of all countries whose names take
+# the preposition "á" in Icelandic (mostly islands, with
+# notable exceptions such as "Spánn" and "Ítalía")
+# TODO: This should be in a separate file, and should
+# probably be part of the ReynirCorrect package going forward
+CC_ICEPREP_A = frozenset(
+    (
+        "AG",  # Antígva og Barbúda
+        "AC",  # Ascension-eyja
+        "AX",  # Álandseyjar
+        "BS",  # Bahamaeyjar
+        "VI",  # Bandarísku Jómfrúaeyjar
+        "BB",  # Barbados
+        "BM",  # Bermúdaeyjar
+        "IO",  # Bresku Indlandshafseyjar
+        "VG",  # Bresku Jómfrúaeyjar
+        "KY",  # Caymaneyjar
+        "CK",  # Cooks-eyjar
+        "DM",  # Dóminíka
+        "FK",  # Falklandseyjar
+        "PH",  # Filippseyjar
+        "FJ",  # Fídjíeyjar
+        "TF",  # Frönsku suðlægu landsvæðin
+        "GD",  # Grenada
+        "CV",  # Grænhöfðaeyjar
+        "GL",  # Grænland
+        "GG",  # Guernsey
+        "GP",  # Gvadelúpeyjar
+        "HT",  # Haítí
+        "IE",  # Írland
+        "IS",  # Ísland
+        "IT",  # Ítalía
+        "JM",  # Jamaíka
+        "JE",  # Jersey
+        "CX",  # Jólaey
+        "IC",  # Kanaríeyjar
+        "CC",  # Kókoseyjar
+        "KM",  # Kómoreyjar
+        "CU",  # Kúba
+        "CY",  # Kýpur
+        "MG",  # Madagaskar
+        "MV",  # Maldíveyjar
+        "MT",  # Malta
+        "MH",  # Marshalleyjar
+        "MQ",  # Martiník
+        "IM",  # Mön
+        "NR",  # Nárú
+        "MP",  # Norður-Maríanaeyjar
+        "NF",  # Norfolkeyja
+        "NZ",  # Nýja-Sjáland
+        "PN",  # Pitcairn-eyjar
+        "SB",  # Salómonseyjar
+        "BL",  # Sankti Bartólómeusareyjar
+        "SH",  # Sankti Helena
+        "LC",  # Sankti Lúsía
+        "SX",  # Sankti Martin
+        "PM",  # Sankti Pierre og Miquelon
+        "VC",  # Sankti Vinsent og Grenadíneyjar
+        "SC",  # Seychelles-eyjar
+        "ES",  # Spánn
+        "LK",  # Srí Lanka
+        "MF",  # St. Martin
+        "GS",  # Suður-Georgía og Suður-Sandvíkureyjar
+        "AQ",  # Suðurskautslandið
+        "SJ",  # Svalbarði og Jan Mayen
+        "TA",  # Tristan da Cunha
+        "TC",  # Turks- og Caicoseyjar
+        "VU",  # Vanúatú
+        "WF",  # Wallis- og Fútúnaeyjar
+    )
+)
+
+
+def iceprep4cc(cc):
+    """ Return the right Icelandic preposition ("í" or "á") for
+        a country, given its ISO country code, e.g. "IS" """
+    return "á" if cc in CC_ICEPREP_A else "í"
+
+
+def iceprep_for_country(cn):
+    """ Return the right Icelandic preposition ("í" or "á") for
+        a country, given its Icelandic name in the nominative
+        case, e.g. "Ítalía" """
+    return iceprep4cc(isocode_for_country_name(cn))
+
+
+if __name__ == "__main__":
+    """ Test location info lookup via command line """
     name = sys.argv[1] if len(sys.argv) > 1 else None
     kind = sys.argv[2] if len(sys.argv) > 2 else None
 

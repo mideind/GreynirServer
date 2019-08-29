@@ -408,7 +408,7 @@ def sentence(state, result):
         q.set_key(result.qkey)
         # SQLAlchemy session, if required
         session = state["session"]
-        # Select a query function and exceute it
+        # Select a query function and execute it
         qfunc = _QFUNC.get(result.qtype)
         if qfunc is None:
             # Something weird going on - should not happen

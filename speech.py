@@ -4,7 +4,6 @@
     Reynir: Natural language processing for Icelandic
 
     Copyright (C) 2019 Miðeind ehf.
-    Original author: Vilhjálmur Þorsteinsson
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -44,7 +43,7 @@ _API_KEYS_PATH = os.path.join("resources", "aws_polly_keys.json")
 _api_client = None
 
 # Voices
-_DEFAULT_VOICE = "Dora"  # "Karl"
+_DEFAULT_VOICE = "Dora"
 _VOICES = frozenset(("Dora", "Karl"))
 
 # Audio formats
@@ -54,10 +53,6 @@ _AUDIO_FORMATS = frozenset(("mp3", "ogg_vorbis", "pcm"))
 # Text formats
 _DEFAULT_TEXT_FORMAT = "text"
 _TEXT_FORMATS = frozenset(("text", "ssml"))
-
-# S3 bucket
-_S3_KEY_PREFIX = ""
-_S3_BUCKET = "greynir-uswest2"
 
 
 def _intialize_client():
@@ -79,6 +74,7 @@ def _intialize_client():
     return boto3.Session(**aws_config).client("polly")
 
 
+# TODO: Add caching for identical responses
 def get_synthesized_text_url(text, txt_format="text", voice_id=_DEFAULT_VOICE):
     """ Returns AWS URL to audio file with speech-synthesised text """
 
