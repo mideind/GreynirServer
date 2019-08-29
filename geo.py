@@ -490,14 +490,14 @@ def parse_address_string(addrstr):
     return addr
 
 
-def iceprep_for_street(sn):
+def iceprep_for_street(street_name):
     """ Return the right preposition ("í" or "á") for
         an Icelandic street name, e.g. "Fiskislóð" """
 
     # TODO: Implement me properly
-    isuffixes = frozenset(("brekka", "ás", "holt"))
+    isuffixes = frozenset(("brekka", "ás", "holt", "tún"))
     for suffix in isuffixes:
-        if sn.endswith(suffix):
+        if street_name.endswith(suffix):
             return "í"
     return "á"
 

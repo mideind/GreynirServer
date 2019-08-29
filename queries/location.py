@@ -187,20 +187,17 @@ def answer_for_location(loc):
 
     # Extract address info from top result
     (street, num, locality, postcode, country_code) = _addrinfo_from_api_result(top)
-    print(street, num, locality, postcode, country_code)
 
-    descr = list()
+    descr = None
 
     # Special handling of Icelandic locations since we have more info
     # about them and street/locality names need to be declined.
     if country_code == "IS":
-        d = None
         # We received a street name from the API
         if street:
             descr = street_desc(street, num, locality)
         # We at least have a locality (e.g. "Reykjavík")
         elif locality:
-            # TODO: Fix me
             descr = iceprep_for_placename(locality) + " " + locality
         # Only country
         else:

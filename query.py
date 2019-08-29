@@ -313,7 +313,6 @@ class Query:
         # Looks good
         # Store the resulting parsed query as a tree
         tree_string = "S1\n" + trees[1]
-        print(tree_string)
         self._tree = Tree()
         self._tree.load(tree_string)
         # Store the token list
@@ -339,7 +338,6 @@ class Query:
             self.set_error("E_QUERY_NOT_PARSED")
             return False
         for processor in self._processors:
-            print(processor)
             self._error = None
             self._qtype = None
             # If a processor defines HANDLE_TREE and sets it to
