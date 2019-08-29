@@ -45,6 +45,13 @@ SCHEDULE_LOCK = Lock()
 # as opposed to simple literal text strings
 HANDLE_TREE = True
 
+# Translate slightly wrong words that we allow in the grammar in order to
+# make it more resilient
+_WRONG_STOP_WORDS = {
+    "stoppustuð": "stoppistöð",
+    "Stoppustuð": "stoppistöð",
+}
+
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """
 
@@ -76,7 +83,7 @@ QBusNearestStop →
 $score(+32) QBusNearestStop
 
 QBusStop_kvk →
-    "stoppistöð" | "stoppustöð" | "stoppustuð" | "biðstöð" | "strætóstöð"
+    "stoppistöð" | "stoppustöð" | "stoppustuð" | "Stoppustuð" | "biðstöð" | "strætóstöð"
     | "strætóstoppistöð" | "strætóstoppustöð"
 
 QBusStop_hk →
@@ -168,8 +175,8 @@ def QBusNearestStop(node, params, result):
 
 
 def QBusStop(node, params, result):
-    """ The word that was used to describe a bus stop """
-    result.stop_word = result._nominative
+    """ Save the word that was used to describe a bus stop """
+    result.stop_word = _WRONG_STOP_WORDS.get(result._nominative, result._nominative)
 
 
 def QBusArrivalTime(node, params, result):
