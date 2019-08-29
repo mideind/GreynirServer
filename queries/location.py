@@ -26,7 +26,9 @@
 # TODO: Speech synthesis: "Bárugötu þrjú" ekki "þrír"
 # TODO: "Hvað er ég langt frá X?"
 
+import os
 import logging
+
 from queries import query_json_api, gen_answer
 from iceaddr import iceaddr_lookup
 from geo import (
@@ -36,13 +38,12 @@ from geo import (
     country_name_for_isocode,
 )
 from reynir.bindb import BIN_Db
-from pprint import pprint
 
 
 # The Google API identifier (you must obtain your
 # own key if you want to use this code)
 _API_KEY = ""
-_API_KEY_PATH = "resources/GoogleServerKey.txt"
+_API_KEY_PATH = os.path.join("resources", "GoogleServerKey.txt")
 
 
 def _get_API_key():

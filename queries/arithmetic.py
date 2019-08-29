@@ -27,7 +27,10 @@
 import math
 import json
 import re
+import logging
+
 from queries import format_icelandic_float, gen_answer
+
 
 _ARITHMETIC_QTYPE = "Arithmetic"
 

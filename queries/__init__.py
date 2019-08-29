@@ -43,7 +43,7 @@ def query_json_api(url):
 
     # Verify that status is OK
     if r.status_code != 200:
-        logging.warning("Received status {0} from API server", r.status_code)
+        logging.warning("Received status {0} from API server".format(r.status_code))
         return None
 
     # Parse json API response
@@ -51,7 +51,7 @@ def query_json_api(url):
         res = json.loads(r.text)
         return res
     except Exception as e:
-        logging.warning("Error parsing JSON API response: {0}", str(e))
+        logging.warning("Error parsing JSON API response: {0}".format(e))
 
     return None
 
