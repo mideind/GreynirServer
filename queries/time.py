@@ -113,5 +113,4 @@ def handle_plain_text(q):
         q.set_answer(response, answer, voice)
         return True
 
-
     return False
