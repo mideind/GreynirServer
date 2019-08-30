@@ -565,6 +565,7 @@ def process_query(
     remote_addr=None,
     client_id=None,
     client_type=None,
+    bypass_cache=False,
 ):
     """ Process an incoming natural language query.
         If voice is True, return a voice-friendly string to
@@ -600,7 +601,7 @@ def process_query(
             # First, look in the query cache for the same question
             # (in lower case), having a not-expired answer
             cached_answer = None
-            if voice:
+            if voice and not bypass_cache:
                 # Only use the cache for voice queries
                 # (handling detailed responses in other queries
                 # is too much for the cache)

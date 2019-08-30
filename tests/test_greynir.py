@@ -87,15 +87,24 @@ def test_query_api(client):
         return j
 
     # Frivolous module
-    resp = client.get("/query.api?voice=1&q=Hver er sætastur?")
+    # Note: test=1 ensures that the query bypasses the cache
+    resp = client.get("/query.api?test=1&voice=1&q=Hver er sætastur?")
     json = validate_json(resp)
     assert json["qtype"] == "Special"
-    assert "response" in json
     assert "voice" in json
-    assert json["response"] == "Tumi Þorsteinsson."
+    assert "answer" in json
+    assert json["answer"] == "Tumi Þorsteinsson."
     assert json["voice"] == "Tumi Þorsteinsson er langsætastur."
 
     # Bus module
+    resp = client.get("/query.api?test=1&voice=1&q=hvaða stoppistöð er næst mér")
+    json = validate_json(resp)
+    assert json["qtype"] == "NearestStop"
+    assert "answer" in json
+    assert json["answer"] == "Fiskislóð"
+    assert "voice" in json
+    assert json["voice"] == "Næsta stoppistöð er Fiskislóð; þangað eru 310 metrar."
+
     resp = client.get("/query.api?voice=1&q=hvenær er von á vagni númer 17")
     json = validate_json(resp)
     assert json["qtype"] == "ArrivalTime"

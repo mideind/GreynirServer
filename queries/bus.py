@@ -337,6 +337,7 @@ def query_nearest_stop(query, session, result):
         return response, answer, voice_answer
     # Get the stop closest to the user
     stop = straeto.BusStop.closest_to(location)
+    answer = stop.name
     va = [
         "Næsta",
         # Use the same word for the bus stop as in the query
@@ -345,8 +346,8 @@ def query_nearest_stop(query, session, result):
         "þangað", "eru",
         voice_distance(straeto.distance(location, stop.location)),
     ]
-    voice_answer = answer = " ".join(va) + "."
-    response = dict(answer=voice_answer)
+    voice_answer = " ".join(va) + "."
+    response = dict(answer=answer)
     return response, answer, voice_answer
 
 
@@ -361,6 +362,7 @@ def query_arrival_time(query, session, result):
         return response, answer, voice_answer
     bus_number = result.bus_number
     bus_name = result.bus_name
+    bus_name = bus_name[0].upper() + bus_name[1:]
     # Obtain today's bus schedule
     global SCHEDULE_TODAY
     with SCHEDULE_LOCK:
@@ -368,25 +370,32 @@ def query_arrival_time(query, session, result):
             # We don't have today's schedule: create it
             SCHEDULE_TODAY = straeto.BusSchedule()
     stop = straeto.BusStop.closest_to(location)
-    va = [bus_name[0].upper() + bus_name[1:]]
+    va = [bus_name]
+    a = ["Á", to_accusative(stop.name), "í átt að"]
     arrivals = SCHEDULE_TODAY.arrivals(str(bus_number), stop.name).items()
     if arrivals:
         first = True
         for direction, times in arrivals:
             if not first:
                 va.append("og")
+                a.append(". Í átt að")
             va.extend(["í átt að", to_dative(direction)])
+            a.append(to_dative(direction))
             if first:
                 va.extend(["kemur", "næst", "á", to_accusative(stop.name), "klukkan"])
             else:
                 va.append("klukkan")
+            a.append("klukkan")
             va.append(" og ".join("{0:02}:{1:02}".format(hms[0], hms[1]) for hms in times))
+            a.append(" og ".join("{0:02}:{1:02}".format(hms[0], hms[1]) for hms in times))
             first = False
     else:
         # The given bus doesn't stop there
-        va.extend(["stoppar", "ekki", "á", to_dative(stop.name)])
-    voice_answer = answer = " ".join(va) + "."
-    response = dict(answer=voice_answer)
+        va.extend(["stoppar ekki á", to_dative(stop.name)])
+        a = [bus_name, "stoppar ekki á", to_dative(stop.name)]
+    voice_answer = " ".join(va) + "."
+    answer = " ".join(a) + "."
+    response = dict(answer=answer)
     return response, answer, voice_answer
 
 
