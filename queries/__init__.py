@@ -44,7 +44,7 @@ def query_json_api(url):
 
     # Verify that status is OK
     if r.status_code != 200:
-        logging.warning("Received status {0} from API server", r.status_code)
+        logging.warning("Received status {0} from API server".format(r.status_code))
         return None
 
     # Parse json API response
@@ -52,7 +52,7 @@ def query_json_api(url):
         res = json.loads(r.text)
         return res
     except Exception as e:
-        logging.warning("Error parsing JSON API response: {0}", str(e))
+        logging.warning("Error parsing JSON API response: {0}".format(e))
 
     return None
 
@@ -86,7 +86,7 @@ def tzwhere_singleton():
 
 def timezone4loc(loc, fallback=None):
     """ Returns timezone string given a tuple of coordinates. 
-        Fallback argument can be an ISO country code."""
+        Fallback argument should be an ISO country code."""
     if loc:
         return tzwhere_singleton().tzNameAt(loc[0], loc[1], forceTZ=True)
     if fallback and fallback in country_timezones:

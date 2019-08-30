@@ -486,13 +486,12 @@ class Topics:
 
 # Magic stuff to change locale context temporarily
 
-
 @contextmanager
 def changedlocale(new_locale=None, category='LC_COLLATE'):
     """ Change locale temporarily within a context (with-statement) """
     # The new locale parameter should be a tuple, e.g. ('is_IS', 'UTF-8')
     # The category should be a string such as 'LC_TIME', 'LC_NUMERIC' etc.
-    cat = locale.__getattribute__(category)
+    cat = getattr(locale, category)
     old_locale = locale.getlocale(cat)
     try:
         locale.setlocale(cat, new_locale or _DEFAULT_LOCALE)

@@ -232,7 +232,7 @@ class Result:
                     return False
             return True
 
-        for c, p in self.enum_children(test_f):
+        for _, p in self.enum_children(test_f):
             # Found a child node meeting the criteria: return its associated param
             return p
         # No child node found: return None
@@ -260,7 +260,7 @@ class Result:
                     return False
             return True
 
-        for c, p in self.enum_descendants(test_f):
+        for _, p in self.enum_descendants(test_f):
             # Found a child node meeting the criteria: return its associated param
             return p
         # No child node found: return None

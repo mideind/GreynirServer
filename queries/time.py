@@ -51,7 +51,7 @@ def handle_plain_text(q):
     # Timezone being asked about
     tz = None
     # Whether user asked for the time in a particular location
-    specific_loc = None
+    specific_desc = None
 
     if ql == "hvað er klukkan":
         # Use location to determine time zone
@@ -90,7 +90,7 @@ def handle_plain_text(q):
                 break
 
         # "Klukkan í Lundúnum er" - Used for voice answer
-        specific_loc = "{0} er".format(ql[8:])
+        specific_desc = "{0} er".format(ql[8:])
 
         # Beautify query by capitalizing the country/city name
         q.set_beautified_query("{0}{1}".format(q.beautified_query[:18], loc))
@@ -99,7 +99,7 @@ def handle_plain_text(q):
     if tz:
         now = datetime.now(timezone(tz))
 
-        desc = specific_loc or "Klukkan er"
+        desc = specific_desc or "Klukkan er"
 
         # Create displayable answer
         answer = "{0:02}:{1:02}".format(now.hour, now.minute)

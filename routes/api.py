@@ -43,6 +43,8 @@ import logging
 _MAX_QUERY_VARIANTS = 10
 # Maximum length of each query string
 _MAX_QUERY_LENGTH = 512
+# Synthetic location for use in testing
+_MIDEIND_LOCATION = (64.156896, -21.951200)  # Fiskislóð 31, 101 Reykjavík
 
 
 @routes.route("/ifdtag.api", methods=["GET", "POST"])
@@ -296,7 +298,10 @@ def query_api(version=1):
 
     # If voice is set, return a voice-friendly string
     voice = bool_from_request(request, "voice")
-    voice_id = request.values.get("voice_id")  # Specify a particular voice
+    # Specify a particular voice
+    voice_id = request.values.get("voice_id")
+    # If test is set, add a synthetic location, if not given
+    test = bool_from_request(request, "test")
 
     # Obtain the query string(s) and the client's location, if present
     lat = request.values.get("latitude")
@@ -315,6 +320,10 @@ def query_api(version=1):
 
     # Attempt to convert the (lat, lon) location coordinates to floats
     location_present = bool(lat) and bool(lon)
+    # For testing, insert a synthetic location if not already present
+    if not location_present and test:
+        lat, lon = _MIDEIND_LOCATION
+        location_present = True
     if location_present:
         try:
             lat = float(lat)
@@ -342,6 +351,7 @@ def query_api(version=1):
         remote_addr=client_ip,
         client_type=client_type,
         client_id=client_id,
+        bypass_cache=test,
     )
 
     # Get URL for response synthesized speech audio
