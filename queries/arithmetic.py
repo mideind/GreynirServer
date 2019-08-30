@@ -220,8 +220,20 @@ def add_num(num, result):
         result.numbers.append(num)
 
 
+def _terminal_num(t):
+    """ Extract num value from terminal token's auxiliary info,
+        which is attached as a json-encoded array """
+    if t and t._node.aux:
+        aux = json.loads(t._node.aux)
+        return aux[0]
+
+
 def QArNumberWord(node, params, result):
-    add_num(result._nominative, result)
+    d = result.find_descendant(t_base="tala")
+    if d:
+        add_num(_terminal_num(d), result)
+    else:
+        add_num(result._nominative, result)
 
 
 def QArOrdinalWord(node, params, result):
@@ -259,12 +271,8 @@ def QArPercentOperator(node, params, result):
 def Prósenta(node, params, result):
     # Find percentage terminal
     d = result.find_descendant(t_base="prósenta")
-
-    # Extract percentage number from the token's auxiliary information
-    # which is attached to the node as a json-encoded array
-    if d and d._node.aux:
-        aux = json.loads(d._node.aux)
-        add_num(aux[0], result)
+    if d:
+        add_num(_terminal_num(d), result)
     else:
         # We shouldn't be here. Something went horriby wrong somewhere.
         raise ValueError("No auxiliary information in percentage token")
