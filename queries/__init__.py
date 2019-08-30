@@ -76,13 +76,11 @@ def gen_answer(a):
 _TZW = None
 
 
-def tzwhere_singleton(force=True):
-    """ Lazy-load location/timezone database. The force argument 
-        makes tzwhere return the closest timezone if location is
-        outside of all timezone polygons. """
+def tzwhere_singleton():
+    """ Lazy-load location/timezone database. """
     global _TZW
     if not _TZW:
-        _TZW = tzwhere.tzwhere(forceTZ=force)
+        _TZW = tzwhere.tzwhere(forceTZ=True)
     return _TZW
 
 
@@ -90,7 +88,7 @@ def timezone4loc(loc, fallback=None):
     """ Returns timezone string given a tuple of coordinates. 
         Fallback argument can be an ISO country code."""
     if loc:
-        return tzwhere_singleton().tzNameAt(loc[0], loc[1])
+        return tzwhere_singleton().tzNameAt(loc[0], loc[1], forceTZ=True)
     if fallback and fallback in country_timezones:
         return country_timezones[fallback][0]
     return None
