@@ -29,10 +29,11 @@
 import math
 from datetime import datetime
 from collections import defaultdict
+import logging
 
 from settings import Settings
 
-from db import desc
+from db import desc, OperationalError
 from db.models import Article, Person, Entity, Root
 from db.queries import RelatedWordsQuery, ArticleCountQuery, ArticleListQuery
 
@@ -366,41 +367,49 @@ def _query_person_titles(session, name):
     # This list should never become very long, so we don't
     # apply a limit here
     rd = defaultdict(dict)
-    q = (
-        session.query(
-            Person.title,
-            Article.id,
-            Article.timestamp,
-            Article.heading,
-            Root.domain,
-            Article.url,
+    try:
+        q = (
+            session.query(
+                Person.title,
+                Article.id,
+                Article.timestamp,
+                Article.heading,
+                Root.domain,
+                Article.url,
+            )
+            .filter(Person.name == name)
+            .filter(Root.visible == True)
+            .join(Article, Article.url == Person.article_url)
+            .join(Root)
+            .order_by(Article.timestamp)
+            .all()
         )
-        .filter(Person.name == name)
-        .filter(Root.visible == True)
-        .join(Article, Article.url == Person.article_url)
-        .join(Root)
-        .order_by(Article.timestamp)
-        .all()
-    )
+    except OperationalError as e:
+        logging.warning("SQL error in _query_person_titles(): {0}".format(e))
+        q = []
     # Append titles from the persons table
     append_answers(rd, q, prop_func=lambda x: x.title)
     # Also append definitions from the entities table, if any
-    q = (
-        session.query(
-            Entity.definition,
-            Article.id,
-            Article.timestamp,
-            Article.heading,
-            Root.domain,
-            Article.url,
+    try:
+        q = (
+            session.query(
+                Entity.definition,
+                Article.id,
+                Article.timestamp,
+                Article.heading,
+                Root.domain,
+                Article.url,
+            )
+            .filter(Entity.name == name)
+            .filter(Root.visible == True)
+            .join(Article, Article.url == Entity.article_url)
+            .join(Root)
+            .order_by(Article.timestamp)
+            .all()
         )
-        .filter(Entity.name == name)
-        .filter(Root.visible == True)
-        .join(Article, Article.url == Entity.article_url)
-        .join(Root)
-        .order_by(Article.timestamp)
-        .all()
-    )
+    except OperationalError as e:
+        logging.warning("SQL error in _query_person_titles(): {0}".format(e))
+        q = []
     append_answers(rd, q, prop_func=lambda x: x.definition)
     return make_response_list(rd)
 

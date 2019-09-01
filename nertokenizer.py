@@ -30,11 +30,12 @@
 """
 
 from collections import defaultdict
+import logging
 
 from reynir import Abbreviations, TOK
 from reynir.bindb import BIN_Db
 
-from db import SessionContext
+from db import SessionContext, OperationalError
 from db.models import Entity
 
 
@@ -66,12 +67,16 @@ def recognize_entities(token_stream, enclosing_session=None, token_ctor=TOK):
         def fetch_entities(w, fuzzy=True):
             """ Return a list of entities matching the word(s) given,
                 exactly if fuzzy = False, otherwise also as a starting word(s) """
-            q = session.query(Entity.name, Entity.verb, Entity.definition)
-            if fuzzy:
-                q = q.filter(Entity.name.like(w + " %") | (Entity.name == w))
-            else:
-                q = q.filter(Entity.name == w)
-            return q.all()
+            try:
+                q = session.query(Entity.name, Entity.verb, Entity.definition)
+                if fuzzy:
+                    q = q.filter(Entity.name.like(w + " %") | (Entity.name == w))
+                else:
+                    q = q.filter(Entity.name == w)
+                return q.all()
+            except OperationalError as e:
+                logging.warning("SQL error in fetch_entities(): {0}".format(e))
+                return []
 
         def query_entities(w):
             """ Return a list of entities matching the initial word given """
