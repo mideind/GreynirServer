@@ -28,10 +28,10 @@ sudo systemctl restart postgresql
 
 ## Set up Python virtualenv
 
-Install Python 3:
+Install Python 3 and other packages required by Greynir:
 
 ```
-sudo apt-get install python3
+sudo apt-get install python3 libgeos-dev
 ```
 
 Make sure you have the latest version of `pip` and `virtualenv`.

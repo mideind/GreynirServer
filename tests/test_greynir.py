@@ -24,6 +24,7 @@
 import pytest
 import os
 import re
+from datetime import datetime
 
 from main import app
 
@@ -121,6 +122,13 @@ def test_query_api(client):
     assert "answer" in json
     assert re.search(r"^\d\d:\d\d$", json["answer"])
     assert "voice" in json
+
+    # Date module
+    resp = client.get("/query.api?q=Hver er dagsetningin?")
+    json = validate_json(resp)
+    assert json["qtype"] == "Date"
+    assert "answer" in json
+    assert json["answer"].endswith(datetime.now().strftime("%Y"))
 
     # Arithmetic module
     ARITHM_QUERIES = {
