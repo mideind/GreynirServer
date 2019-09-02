@@ -33,6 +33,7 @@ from settings import Settings, ConfigError
 from sqlalchemy.exc import SQLAlchemyError as DatabaseError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.exc import DataError
+from sqlalchemy.exc import OperationalError
 from sqlalchemy import desc
 from sqlalchemy import func as dbfunc
 
