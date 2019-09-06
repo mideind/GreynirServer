@@ -24,10 +24,11 @@
 
 """
 
-
 import logging
 import requests
 import json
+from tzwhere import tzwhere
+from pytz import country_timezones
 
 
 def query_json_api(url):
@@ -70,3 +71,24 @@ def format_icelandic_float(fp_num):
 
 def gen_answer(a):
     return dict(answer=a), a, a
+
+
+_TZW = None
+
+
+def tzwhere_singleton():
+    """ Lazy-load location/timezone database. """
+    global _TZW
+    if not _TZW:
+        _TZW = tzwhere.tzwhere(forceTZ=True)
+    return _TZW
+
+
+def timezone4loc(loc, fallback=None):
+    """ Returns timezone string given a tuple of coordinates. 
+        Fallback argument should be an ISO country code."""
+    if loc:
+        return tzwhere_singleton().tzNameAt(loc[0], loc[1], forceTZ=True)
+    if fallback and fallback in country_timezones:
+        return country_timezones[fallback][0]
+    return None
