@@ -36,7 +36,7 @@ from settings import Settings
 
 from reynir import TOK, mark_paragraphs, tokenize
 from reynir.binparser import augment_terminal
-from reynir.fastparser import Fast_Parser, ParseForestNavigator
+from reynir.fastparser import Fast_Parser
 from reynir.incparser import IncrementalParser
 from reynir.matcher import Annotator, Simplifier, SimpleTree
 from reynir.bintokenizer import describe_token
@@ -507,7 +507,7 @@ class TreeUtility:
             return TreeUtility._simplify_tree(tokens, tree)
 
         with Fast_Parser(verbose=False) as parser:
-            pgs, stats, register = TreeUtility._process_text(
+            pgs, stats, _ = TreeUtility._process_text(
                 parser, session, text, all_names, xform
             )
 

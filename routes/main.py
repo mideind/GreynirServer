@@ -102,7 +102,9 @@ def correct():
     except:
         txt = ""
     return render_template(
-        "correct.html", default_text=txt, supported_mime_types=list(SUPPORTED_DOC_MIMETYPES)
+        "correct.html",
+        default_text=txt,
+        supported_mime_types=list(SUPPORTED_DOC_MIMETYPES),
     )
 
 
@@ -186,7 +188,7 @@ def tree_grid():
                 tlevel.append((1, None))
                 left += 1
             index = offset
-            if nodelist is not None:
+            if nodelist:
                 for n in nodelist:
                     if is_nt_func(n):
                         # Nonterminal: display the child nodes in deeper levels
@@ -240,8 +242,10 @@ def tree_grid():
             full_tree,
             is_nt_func=lambda n: n.is_nonterminal,
             children_func=lambda n: n.children,
-            nt_info_func=lambda n: dict(n=n.p.name, error=n.p.has_tag("error")),
-            t_info_func=lambda n: dict(t=n.p[0].name, x=n.p[1].t1),
+            nt_info_func=lambda n: dict(
+                n=n.p.name, sc=n.score, error=n.p.has_tag("error")
+            ),
+            t_info_func=lambda n: dict(t=n.p[0].name, sc=n.score, x=n.p[1].t1),
         )
         assert full_width == width
         full_height = len(full_tbl)

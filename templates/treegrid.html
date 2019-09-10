@@ -403,23 +403,34 @@
 {%- set row_loop = loop -%}
          <tr>
 {%- for c in r -%}
-{%- if c[1] is none -%}
-{%- elif "n" in c[1] -%}
-   <!-- Nonterminal -->
-   {%- if c[1]["error"] -%}
-      <!-- Nonterminal marked with an error tag -->
-      <td class="nt error" colspan="{{ c[0] }}" rowspan="1">{{ c[1]["n"] }}</td>
+{%- set node = c[1] -%}
+{%- if node is none -%}
+   {# pass #}
+{%- elif "n" in node -%}
+   {# Nonterminal #}
+   {%- set wide = " wide" if c[0] >= 5 else "" -%}
+   {%- set neg = " neg" if node["sc"] < 0 else "" -%}
+   {%- if node["error"] -%}
+      {# Nonterminal marked with an error tag #}
+      <td class="nt error{{ wide }}" colspan="{{ c[0] }}" rowspan="1">
+         {{ node["n"] }}
+         <span class="score{{ neg }}">{{ node["sc"] }}</span>
+      </td>
    {%- else -%}
-      <td class="nt" colspan="{{ c[0] }}" rowspan="1">{{ c[1]["n"] }}</td>
+      <td class="nt{{ wide }}" colspan="{{ c[0] }}" rowspan="1">
+         {{ node["n"] }}
+         <span class="score{{ neg }}">{{ node["sc"] }}</span>
+      </td>
    {%- endif -%}
 {%- else -%}
-   <!-- Terminal -->
+   {# Terminal #}
    <td class="t" colspan="{{ c[0] }}" rowspan="{{ full_height - row_loop.index0 }}">
-      {% set tname = c[1]["t"] if "t" in c[1] else "" %}
+      <span class="score{{ neg }}">{{ node["sc"] }}</span>
+      {% set tname = node["t"] if "t" in node else "" %}
       {%- if tname | first != "'" and tname | first != '"' -%}
-      {{ tname }}<br>
+      <span class="tname">{{ tname }}</span>
       {%- endif -%}
-      <span class="tok">{{ c[1]["x"] if "x" in c[1] else ("&nbsp;" | safe) }}</span>
+      <span class="tok">{{ node["x"] if "x" in node else ("&nbsp;" | safe) }}</span>
    </td>
 {%- endif -%}
 {%- endfor -%}

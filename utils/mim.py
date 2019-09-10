@@ -48,7 +48,7 @@ def find_pos_tags(forest):
         """ Subclass to navigate a parse forest and populate the set
             of terminals that match each token """
 
-        def _visit_token(self, level, node):
+        def visit_token(self, level, node):
             """ At token node """
             assert node.terminal is not None
             pos_tags[node.start] = (node.token, node.terminal)

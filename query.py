@@ -164,7 +164,7 @@ class Query:
 
     def __init__(self, session, query, voice, auto_uppercase, location):
         self._session = session
-        self._query = query
+        self._query = query or ""
         self._location = location
         # Prepare a "beautified query" object, that can be
         # shown in a client user interface
@@ -279,7 +279,11 @@ class Query:
         self._key = None
         self._toklist = None
 
-        q = self._query
+        q = self._query.strip()
+        if not q:
+            self.set_error("E_EMPTY_QUERY")
+            return False
+
         toklist = tokenize(
             q, auto_uppercase=q.islower() if self._auto_uppercase else False
         )
@@ -323,6 +327,8 @@ class Query:
 
     def execute_from_plain_text(self):
         """ Attempt to execute a plain text query, without having to parse it """
+        if not self._query:
+            return False
         for processor in self._processors:
             handle_plain_text = getattr(processor, "handle_plain_text", None)
             if handle_plain_text is not None:

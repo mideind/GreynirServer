@@ -1342,20 +1342,53 @@ div.grid table tr td.error {
    color: red;
 }
 
+div.grid table tr td.nt {
+   /* Nonerminal */
+   position: relative;
+   padding-right: 32px; /* Make room for the score to the right */
+   text-align: left;
+}
+
+div.grid table tr td.nt.wide {
+   /* Nonerminal with a wide span */
+   text-align: center;
+}
+
 div.grid table tr td.t {
    /* Terminal */
    font-style: italic;
    background-color: #FFEEA9; /* Pale Greynir yellow */
    vertical-align: bottom;
-   padding-top: 3px;
+   padding-top: 18px; /* Make room for the score at the top */
    padding-bottom: 3px;
+   position: relative;
 }
 
 td.t span.tok {
+   display: block;
    font-size: 16px;
    line-height: 24px;
    font-style: normal;
    font-weight: 700;
+}
+
+span.score {
+   display: block;
+   position: absolute;
+   width: 100%;
+   top: 0;
+   right: 2px;
+   font-style: normal;
+   text-align: right;
+   color: green;
+}
+
+span.score.neg {
+   color: red;
+}
+
+td.t span.tname {
+   display: block;
 }
 
 h4.txt {
