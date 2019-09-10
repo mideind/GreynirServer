@@ -474,6 +474,7 @@ FORMERS_TO_ADD = frozenset((
     "parma",
     "pastel",
     "prumpu",
+    "pung",
     "pólí",
     "pólý",
     "regin",
