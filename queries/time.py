@@ -107,7 +107,7 @@ def handle_plain_text(q):
         response = dict(answer=answer)
         # A voice answer is a plain string that will be
         # passed as-is to a voice synthesizer
-        voice = "{0} {1} {2:02}.".format(desc, now.hour, now.minute)
+        voice = "{0} {1}:{2:02}.".format(desc, now.hour, now.minute)
 
         q.set_qtype(_TIME_QTYPE)
         q.set_answer(response, answer, voice)
