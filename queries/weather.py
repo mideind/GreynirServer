@@ -32,9 +32,12 @@ import logging
 
 from pprint import pprint
 
-from iceweather import observation_for_closest, observation_for_station
+from iceweather import observation_for_closest, observation_for_station, forecast_text
 
 from queries import gen_answer
+
+
+_WEATHER_QTYPE = "Weather"
 
 
 # This module wants to handle parse trees for queries,
@@ -55,14 +58,16 @@ QWeatherQuery →
 
 QWeatherCurrent →
     "hvernig" "er" "veðrið" QWeatherNow?
-    | "hvernig" "veður" "er" QWeatherNow
+    | "hvernig" "veður" "er" QWeatherNow?
 
 QWeatherForecast →
-    "hver" "er" "veðurspáin" QWeatherNextDays?
-    | "hvernig" "er" "veðrið" QWeatherNextDays
-    | "hvernig" "verður" "veðrið" QWeatherNextDays
-    | "hvernig" "eru" "veðurhorfur" QWeatherHere? QWeatherNextDays?
-    | "hverjar" "eru" "veðurhorfur" QWeatherHere? QWeatherNextDays?
+    "hver" "er" "veðurspáin" QWeatherLocation? QWeatherNextDays?
+    | "hver" "er" "veðurspá" QWeatherLocation? QWeatherNextDays?
+    | "hvernig" "er" "veðrið" QWeatherLocation? QWeatherNextDays
+    | "hvernig" "verður" "veðrið" QWeatherLocation? QWeatherNextDays
+    | "hvernig" "eru" "veðurhorfur" QWeatherLocation? QWeatherNextDays?
+    | "hverjar" "eru" "veðurhorfur" QWeatherLocation? QWeatherNextDays?
+    | "hvers" "konar" "veðri" "er" "spáð" QWeatherLocation? QWeatherNextDays?
 
 QWeatherTemperature →
     "hvert" "er" "hitastigið" QWeatherNow?
@@ -78,34 +83,28 @@ QWeatherTemperature →
 QWeatherNow →
     "úti"? "í" "dag" | "úti"? "núna" | "úti"
 
+QWeatherNextDays →
+    "næstu" "daga"
+    | "næstu" "dagana"
+    | "þessa" "viku" 
+    | "út" "vikuna" 
+    | "á" "næstunni" 
+    | "á" "morgun"
+    | "í" "fyrramálið"
+
 QWeatherHere →
     "á" "landinu" | "á" "Íslandi" | "hér" "á" "landi"
 
-QWeatherNextDays →
-    "næstu" "daga" | "þessa" "viku" | "út" "vikuna" | "á" "næstunni"
+QWeatherCapitalRegion →
+    "á" "höfuðborgarsvæðinu" | "í" "Reykjavík"
+
+QWeatherLocation →
+    QWeatherHere | QWeatherCapitalRegion
 
 
-# Hver er veðurspáin
-# Hver er veðurspáin fyrir morgundaginn
-# Hver er veðurspáin á morgun
-# Hvernig verður veðrið á morgun
-# Hvernig veður er á morgun
-# Hversu hlýtt/heitt er úti
-# Hvert er hitastigið úti
-
-
-
-$score(535) QWeather
+$score(135) QWeather
 
 """
-
-
-def _descr4voice(descr):
-    """ Prepare description for voice synthesizer by rewriting abbreviations etc. """
-    d = descr.replace("m/s", "metrar á sekúndu")
-    d = re.sub(r"(\d+)\-(\d+)", r"\1 til \2", voice_answer)
-    # TODO: More processing needed, "NV-lands" etc.
-    return d
 
 
 _BFT_THRESHOLD = (0.3, 1.5, 3.4, 5.4, 7.9, 10.7, 13.8, 17.1, 20.7, 24.4, 28.4, 32.6)
@@ -140,11 +139,11 @@ _BFT_ICEDESC = {
 
 
 def _wind_descr(wind_ms):
-    """ Icelandic-language description of wind conditions given meters per second.
+    """ Icelandic-language description of wind conditions given meters 
+        per second. Uses Beaufort scale lookup.
         See https://www.vedur.is/vedur/frodleikur/greinar/nr/1098
     """
-    bft = _wind_bft(wind_ms)
-    return _BFT_ICEDESC.get(bft)
+    return _BFT_ICEDESC.get(_wind_bft(wind_ms))
 
 
 def _near_capital_region(lat, lon):
@@ -157,6 +156,9 @@ def _round_to_nearest_hour(t):
     )
 
 
+_RVK_STATION_ID = 1
+
+
 def _curr_observations(query):
     loc = query.location
 
@@ -164,7 +166,7 @@ def _curr_observations(query):
         res = (
             observation_for_closest(loc[0], loc[1])
             if loc
-            else observation_for_station(1)  # Default to Reykjavík
+            else observation_for_station(_RVK_STATION_ID)  # Default to Reykjavík
         )
     except Exception as e:
         logging.warning("Failed to fetch weather info: {0}".format(str(e)))
@@ -216,71 +218,106 @@ def get_currweather_answer(query):
     )
 
     answer = "{0}°{1}, vindhraði {2} m/s".format(temp, mdesc, windsp)
-    
+
     response = dict(answer=answer)
 
     return response, answer, voice
 
 
-def get_forecast(query):
-    fc = res["results"][0]["forecast"]
+# Abbreviations to be expanded in natural language weather
+# descriptions from the Icelandic Met Office.
+_DESCR_ABBR = {
+    "m/s": "metrar á sekúndu",
+    "NV-": "norðvestan",
+    "NA-": "norðaustan",
+    "SV-": "suðvestan",
+    "SA-": "suðaustan",
+}
 
-    # Look up by ftime key, fmt. "2019-09-10 10:00:00"
-    currhour = _round_to_nearest_hour(datetime.now())
-    ftime = currhour.strftime("%Y-%m-%d %H:%M:%S")
 
-    now_info = [x for x in fc if x.get("ftime") == ftime]
-    if not now_info or "T" not in now_info[0]:
-        return gen_answer(errmsg)
+def _descr4voice(descr):
+    """ Prepare natural language weather description for voice synthesizer 
+        by rewriting/expanding abbreviations, etc. """
 
-    now_info = now_info[0]
-    temp = now_info["T"].replace(".", ",")
-    desc = now_info["W"].lower()
+    # E.g. "8-13" becomes "8 til 13"
+    d = re.sub(r"(\d+)\-(\d+)", r"\1 til \2", descr)
 
-    voice = "Úti er {0} stiga hiti og {1}".format(temp, desc)
-    answer = "{0}°".format(temp)
+    for k, v in _DESCR_ABBR.items():
+        d = d.replace(k, v)
+
+    return d
+
+
+_COUNTRY_FC_ID = 2
+_CAPITAL_FC_ID = 3
+
+
+def get_forecast_answer(query):
+    loc = query.location
+    txt_id = _CAPITAL_FC_ID if (loc and _near_capital_region(loc)) else _COUNTRY_FC_ID
+
+    try:
+        res = forecast_text(txt_id)
+    except Exception as e:
+        logging.warning("Failed to fetch weather text: {0}".format(str(e)))
+        res = None
+
+    if (
+        not res
+        or not "results" in res
+        or not len(res["results"])
+        or "content" not in res["results"][0]
+    ):
+        return gen_answer(_API_ERRMSG)
+
+    answer = res["results"][0]["content"]
     response = dict(answer=answer)
+    voice = _descr4voice(answer)
 
     return response, answer, voice
+
+
+# def get_detailed_forecast(query):
+#     fc = res["results"][0]["forecast"]
+
+#     # Look up by ftime key, fmt. "2019-09-10 10:00:00"
+#     currhour = _round_to_nearest_hour(datetime.now())
+#     ftime = currhour.strftime("%Y-%m-%d %H:%M:%S")
+
+#     now_info = [x for x in fc if x.get("ftime") == ftime]
+#     if not now_info or "T" not in now_info[0]:
+#         return gen_answer(errmsg)
+
+#     now_info = now_info[0]
+#     temp = now_info["T"].replace(".", ",")
+#     desc = now_info["W"].lower()
+
+#     voice = "Úti er {0} stiga hiti og {1}".format(temp, desc)
+#     answer = "{0}°".format(temp)
+#     response = dict(answer=answer)
 
 
 def QWeather(node, params, result):
-    pass
+    result.qtype = _WEATHER_QTYPE
 
 
 def QWeatherCurrent(node, params, result):
-    result.qtype = "Weather"
     result.qkey = "CurrentWeather"
 
 
 def QWeatherForecast(node, params, result):
-    result.qtype = "Weather"
     result.qkey = "WeatherForecast"
 
 
 def QWeatherTemperature(node, params, result):
-    result.qtype = "Weather"
     result.qkey = "CurrentTemperature"
 
 
 _HANDLERS = {
-    "CurrentWeather": get_currweather_answer,
-    "WeatherForecast": get_forecast,
     "CurrentTemperature": get_currtemp_answer,
+    "CurrentWeather": get_currweather_answer,
+    "WeatherForecast": get_forecast_answer,
 }
-
-
-def _handle_weather_query(q, result):
-    resp = _query_weather_api()
-
-    if not resp or "results" not in resp or len(resp["results"]) < 1:
-        return None
-
-    r = resp["results"][0]
-    answer = r["content"]
-    response = dict(answer=answer)
-
-    return response, answer, voice_answer
 
 
 def sentence(state, result):
@@ -291,7 +328,7 @@ def sentence(state, result):
         q.set_qtype(result.qtype)
         q.set_key(result.qkey)
 
-        handler_func = _HANDLERS.get(result.qkey)
+        handler_func = _HANDLERS[result.qkey]
 
         try:
             r = handler_func(q)
@@ -299,7 +336,6 @@ def sentence(state, result):
                 (response, answer, voice_answer) = r
                 q.set_answer(response, answer, voice_answer)
         except Exception as e:
-            raise
             q.set_error("E_EXCEPTION: {0}".format(e))
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
