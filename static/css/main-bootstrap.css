@@ -726,7 +726,7 @@ div#info p {
 }
 
 div#info #tag {
-   display: inline-block;
+   display: block; /* Implied by float: left */
    float: left;
    padding-right: 6px;
    padding-bottom: 2px;
