@@ -27,14 +27,11 @@
 # TODO: Timezones
 
 import re
-from datetime import datetime, timedelta
 import logging
-
-from pprint import pprint
-
-from iceweather import observation_for_closest, observation_for_station, forecast_text
+from datetime import datetime, timedelta
 
 from queries import gen_answer
+from iceweather import observation_for_closest, observation_for_station, forecast_text
 
 
 _WEATHER_QTYPE = "Weather"
@@ -188,10 +185,9 @@ def get_currtemp_answer(query):
         return gen_answer(_API_ERRMSG)
 
     temp = int(float(res["T"]))  # Round to nearest whole number
-    if temp < 0:
-        voice = "Úti er {0} stiga frost".format(temp * -1)
-    else:
-        voice = "Úti er {0} stiga hiti".format(temp)
+    temp_type = "hiti" if temp >= 0 else "frost"
+
+    voice = "Úti er {0} stiga {1}".format(abs(temp), temp_type)
     answer = "{0}°".format(temp)
     response = dict(answer=answer)
 
@@ -232,6 +228,10 @@ _DESCR_ABBR = {
     "NA-": "norðaustan",
     "SV-": "suðvestan",
     "SA-": "suðaustan",
+    "S-": "sunnan",
+    "V-": "vestan",
+    "N-": "norðan",
+    "A-": "austan",
 }
 
 
