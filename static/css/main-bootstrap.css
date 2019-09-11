@@ -1342,26 +1342,29 @@ div.grid table tr td.error {
    color: red;
 }
 
-div.grid table tr td.nt {
+div.grid table tr td.t {
+   /* Terminal */
+   font-style: italic;
+   background-color: #FFEEA9; /* Pale Greynir yellow */
+   vertical-align: bottom;
+   padding-bottom: 3px;
+   position: relative;
+}
+
+div.grid table#treegrid-full tr td.nt {
    /* Nonerminal */
    position: relative;
    padding-right: 32px; /* Make room for the score to the right */
    text-align: left;
 }
 
-div.grid table tr td.nt.wide {
+div.grid table#treegrid-full tr td.nt.wide {
    /* Nonerminal with a wide span */
    text-align: center;
 }
 
-div.grid table tr td.t {
-   /* Terminal */
-   font-style: italic;
-   background-color: #FFEEA9; /* Pale Greynir yellow */
-   vertical-align: bottom;
+div.grid table#treegrid-full tr td.t {
    padding-top: 18px; /* Make room for the score at the top */
-   padding-bottom: 3px;
-   position: relative;
 }
 
 td.t span.tok {
@@ -1525,6 +1528,15 @@ div#canvas {
 }
 
 div#canvas svg {
+   cursor: default;
+}
+
+div#treegrid {
+   position: relative;
+   overflow: visible;
+}
+
+div#treegrid table {
    cursor: default;
 }
 

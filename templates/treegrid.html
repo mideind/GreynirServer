@@ -327,13 +327,13 @@
             <span class="glyphicon glyphicon-share" style="transform: rotate(90deg)"></span>&nbsp;Tré
          </a>
       </li>
-      <li role="presentation" class="active">
+      <li role="presentation" class="active"> <!-- This tab is marked active on purpose -->
          <a href="#simple" aria-controls="simple" role="tab" data-toggle="tab">
             <span class="glyphicon glyphicon-tag"></span>&nbsp;Einfalt
          </a>
       </li>
       <li role="presentation">
-         <a href="#full" aria-controls="full" role="tab" data-toggle="tab">
+         <a href="#full" aria-controls="full" role="tab" data-toggle="tab" id="full-hdr">
             <span class="glyphicon glyphicon-tags"></span>&nbsp;Ítarlegt
          </a>
       </li>
@@ -400,11 +400,12 @@
 <!-- Full parse tree -->
 
 <div class="grid">
-   <div class="table-responsive">
-      <table id="treegrid-full">
+   <div class="table-responsive" id="treegrid-container">
+      <div id="treegrid">
+         <table id="treegrid-full">
 {% for r in full_tbl %}
 {%- set row_loop = loop -%}
-         <tr>
+            <tr>
 {%- for c in r -%}
 {%- set node = c[1] -%}
 {%- if node is none -%}
@@ -427,19 +428,20 @@
    {%- endif -%}
 {%- else -%}
    {# Terminal #}
-   <td class="t" colspan="{{ c[0] }}" rowspan="{{ full_height - row_loop.index0 }}">
-      <span class="score{{ neg }}">{{ node["sc"] }}</span>
+      <td class="t" colspan="{{ c[0] }}" rowspan="{{ full_height - row_loop.index0 }}">
+         <span class="score{{ neg }}">{{ node["sc"] }}</span>
       {% set tname = node["t"] if "t" in node else "" %}
       {%- if tname | first != "'" and tname | first != '"' -%}
-      <span class="tname">{{ tname }}</span>
+         <span class="tname">{{ tname }}</span>
       {%- endif -%}
-      <span class="tok">{{ node["x"] if "x" in node else ("&nbsp;" | safe) }}</span>
-   </td>
+         <span class="tok">{{ node["x"] if "x" in node else ("&nbsp;" | safe) }}</span>
+      </td>
 {%- endif -%}
 {%- endfor -%}
-         </tr>
+            </tr>
 {% endfor %}
-      </table>
+         </table>
+      </div>
    </div>
 </div>
 
@@ -876,35 +878,12 @@ function editSentence() {
    window.location.href = "/analysis?txt=" + encodeURIComponent(theText);
 }
 
-function initMain(jQuery) {
-   // Initialization
-   $("#edit-sent").click(editSentence);
-   $("#info")
-      .click(function(ev) {
-         ev.stopPropagation();
-         $(this).css("visibility", "hidden");
-      })
-      .data("circle", null);
-
-   // Enable tabs
-   $('#tree-hdr a').click(function() {
-       $(this).tab('show');
-   });
-   $('#tree-hdr a:first').tab('show');
-   $('div#simple').css("visibility", "visible");
-
-   // Display tree using D3
-   if (root) {
-      d3.select(self.frameElement).style("height", (height + margin.top + margin.bottom) + "px");
-      d3_update(root);
-   }
-
+function panTreeDisplay() {
    // Set up panning of the tree display
-
    var scrollable = false;
    var captured = false;
-   var originX;
-   var scrollX;
+   var originX = 0;
+   var scrollX = 0;
 
    $('#canvas svg')
       .mousedown(function(e) {
@@ -928,16 +907,81 @@ function initMain(jQuery) {
          $("#canvas").parent()
             .scrollLeft(Math.max(0, scrollX + (originX - e.clientX)))
       });
+
    // If the browser window is resized, figure out whether the canvas
    // is scrollable or not
    var cursorSetter =
       function(e) {
+         captured = false;
          scrollable = $("#canvas svg").width() > $("#canvas-container").width();
          $("#canvas svg").css("cursor", scrollable ? "ew-resize" : "default");
       };
    $(window).resize(cursorSetter);
    cursorSetter();
+}
 
+function panDetailDisplay() {
+   // Set up panning of the detailed display
+   var scrollable = false;
+   var t = $("#treegrid-full");
+   var tParent = $("#treegrid-container");
+
+   t.mousedown(function(e) {
+      if (scrollable) {
+         var originX = e.clientX;
+         var scrollX = tParent.scrollLeft();
+         var mouseMove = function(e) {
+            tParent.scrollLeft(Math.max(0, scrollX + (originX - e.clientX)));
+            e.preventDefault();
+         };
+         var mouseUp = function(e) {
+            tParent.scrollLeft(Math.max(0, scrollX + (originX - e.clientX)));
+            window.removeEventListener('mousemove', mouseMove, false);
+            window.removeEventListener('mouseup', mouseUp, false);
+         };
+         window.addEventListener('mousemove', mouseMove, false);
+         window.addEventListener('mouseup', mouseUp, false);
+      }
+   });
+   // If the browser window is resized, figure out whether the canvas
+   // is scrollable or not
+   var cursorSetter =
+      function(e) {
+         scrollable = t.width() > tParent.width();
+         t.css("cursor", scrollable ? "ew-resize" : "default");
+      };
+   $(window).resize(cursorSetter);
+   // When selecting the detailed tree tab,
+   // recalculate the scroll parameters
+   $("#full-hdr").click(cursorSetter);
+}
+
+function initMain(jQuery) {
+   // Initialization
+   $("#edit-sent").click(editSentence);
+   $("#info")
+      .click(function(ev) {
+         ev.stopPropagation();
+         $(this).css("visibility", "hidden");
+      })
+      .data("circle", null);
+
+   // Enable tabs
+   $('#tree-hdr a').click(function() {
+       $(this).tab('show');
+   });
+   $('#tree-hdr a:first').tab('show');
+   $('div#simple').css("visibility", "visible");
+
+   // Display tree using D3
+   if (root) {
+      d3.select(self.frameElement).style("height", (height + margin.top + margin.bottom) + "px");
+      d3_update(root);
+   }
+
+   // Set up panning via the mouse
+   panTreeDisplay();
+   panDetailDisplay();
 }
 
 $(document).ready(initMain);
