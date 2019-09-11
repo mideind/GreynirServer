@@ -408,7 +408,7 @@
    {# pass #}
 {%- elif "n" in node -%}
    {# Nonterminal #}
-   {%- set wide = " wide" if c[0] >= 5 else "" -%}
+   {%- set wide = " wide" if c[0] >= 3 else "" -%}
    {%- set neg = " neg" if node["sc"] < 0 else "" -%}
    {%- if node["error"] -%}
       {# Nonterminal marked with an error tag #}
