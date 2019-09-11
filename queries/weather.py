@@ -24,13 +24,16 @@
 """
 
 # TODO: Provide weather info for locations outside Iceland
-# TODO: Timezones
+# TODO: Add more info to description of current weather conditions?
+# TODO: More detailed forecast?
 
 import re
 import logging
 from datetime import datetime, timedelta
 
 from queries import gen_answer
+from geo import distance
+
 from iceweather import observation_for_closest, observation_for_station, forecast_text
 
 
@@ -59,6 +62,9 @@ QWeatherCurrent →
 
 QWeatherForecast →
     "hver" "er" "veðurspáin" QWeatherLocation? QWeatherNextDays?
+    | "hver" "er" "spáin" QWeatherLocation? QWeatherNextDays?
+    | "hvernig" "er" "veðurspáin" QWeatherLocation? QWeatherNextDays?
+    | "hvernig" "er" "spáin" QWeatherLocation? QWeatherNextDays?
     | "hver" "er" "veðurspá" QWeatherLocation? QWeatherNextDays?
     | "hvernig" "er" "veðrið" QWeatherLocation? QWeatherNextDays
     | "hvernig" "verður" "veðrið" QWeatherLocation? QWeatherNextDays
@@ -89,17 +95,17 @@ QWeatherNextDays →
     | "á" "morgun"
     | "í" "fyrramálið"
 
-QWeatherHere →
-    "á" "landinu" | "á" "Íslandi" | "hér" "á" "landi"
+QWeatherCountry →
+    "á" "landinu" | "á" "Íslandi" | "hér" "á" "landi" | "á" "landsvísu"
 
 QWeatherCapitalRegion →
     "á" "höfuðborgarsvæðinu" | "í" "Reykjavík"
 
 QWeatherLocation →
-    QWeatherHere | QWeatherCapitalRegion
+    QWeatherCountry | QWeatherCapitalRegion
 
 
-$score(135) QWeather
+$score(35) QWeather
 
 """
 
@@ -143,11 +149,24 @@ def _wind_descr(wind_ms):
     return _BFT_ICEDESC.get(_wind_bft(wind_ms))
 
 
-def _near_capital_region(lat, lon):
-    return False
+_RVK_COORDS = (64.133097, -21.898145)
+
+
+def _near_capital_region(loc):
+    """ Returns true if location coordinates are within 30 km of central Rvk """
+    return distance(loc, _RVK_COORDS) < 30
+
+
+_ICELAND_COORDS = (64.9957538607, -18.5739616708)
+
+
+def _in_iceland(loc):
+    """ Check if coordinates are within or very close to Iceland """
+    return distance(loc, _ICELAND_COORDS) < 300
 
 
 def _round_to_nearest_hour(t):
+    """ Round datetime to nearest hour """
     return t.replace(second=0, microsecond=0, minute=0, hour=t.hour) + timedelta(
         hours=t.minute // 30
     )
@@ -157,6 +176,7 @@ _RVK_STATION_ID = 1
 
 
 def _curr_observations(query):
+    """ Fetch latest weather observation data from nearest weather station """
     loc = query.location
 
     try:
@@ -179,7 +199,8 @@ def _curr_observations(query):
 _API_ERRMSG = "Ekki tókst að sækja veðurupplýsingar."
 
 
-def get_currtemp_answer(query):
+def get_currtemp_answer(query, result):
+    """ Handle queries concerning outside temperature """
     res = _curr_observations(query)
     if not res:
         return gen_answer(_API_ERRMSG)
@@ -194,14 +215,13 @@ def get_currtemp_answer(query):
     return response, answer, voice
 
 
-def get_currweather_answer(query):
+def get_currweather_answer(query, result):
+    """ Handle queries concerning current weather conditions """
     res = _curr_observations(query)
     if not res:
         return gen_answer(_API_ERRMSG)
 
-    print(res)
-
-    temp = int(float(res["T"]))
+    temp = int(float(res["T"]))  # Round to nearest whole number
     desc = res["W"].lower()
     windsp = float(res["F"])
 
@@ -209,11 +229,11 @@ def get_currweather_answer(query):
     temp_type = "hiti" if temp >= 0 else "frost"
     mdesc = ", " + desc + "," if desc else ""
 
-    voice = "Úti er {0} stiga {1},{2} og {3}".format(
+    voice = "Úti er {0} stiga {1}{2} og {3}".format(
         abs(temp), temp_type, mdesc, wind_desc
     )
 
-    answer = "{0}°{1}, vindhraði {2} m/s".format(temp, mdesc, windsp)
+    answer = "{0}°{1} og vindhraði {2} m/s".format(temp, mdesc, windsp)
 
     response = dict(answer=answer)
 
@@ -252,9 +272,17 @@ _COUNTRY_FC_ID = 2
 _CAPITAL_FC_ID = 3
 
 
-def get_forecast_answer(query):
+def get_forecast_answer(query, result):
+    """ Handle weather forecast queries """
     loc = query.location
     txt_id = _CAPITAL_FC_ID if (loc and _near_capital_region(loc)) else _COUNTRY_FC_ID
+
+    # Did the query mention a specific scope?
+    if "location" in result:
+        if result.location == "capital":
+            txt_id = _CAPITAL_FC_ID
+        elif result.location == "general":
+            txt_id = _COUNTRY_FC_ID
 
     try:
         res = forecast_text(txt_id)
@@ -277,28 +305,16 @@ def get_forecast_answer(query):
     return response, answer, voice
 
 
-# def get_detailed_forecast(query):
-#     fc = res["results"][0]["forecast"]
-
-#     # Look up by ftime key, fmt. "2019-09-10 10:00:00"
-#     currhour = _round_to_nearest_hour(datetime.now())
-#     ftime = currhour.strftime("%Y-%m-%d %H:%M:%S")
-
-#     now_info = [x for x in fc if x.get("ftime") == ftime]
-#     if not now_info or "T" not in now_info[0]:
-#         return gen_answer(errmsg)
-
-#     now_info = now_info[0]
-#     temp = now_info["T"].replace(".", ",")
-#     desc = now_info["W"].lower()
-
-#     voice = "Úti er {0} stiga hiti og {1}".format(temp, desc)
-#     answer = "{0}°".format(temp)
-#     response = dict(answer=answer)
-
-
 def QWeather(node, params, result):
     result.qtype = _WEATHER_QTYPE
+
+
+def QWeatherCapitalRegion(node, params, result):
+    result["subject"] = "capital"
+
+
+def QWeatherCountry(node, params, result):
+    result["subject"] = "general"
 
 
 def QWeatherCurrent(node, params, result):
@@ -328,14 +344,17 @@ def sentence(state, result):
         q.set_qtype(result.qtype)
         q.set_key(result.qkey)
 
+        if q.location and not _in_iceland(q.location):
+            return gen_answer("Ég bý ekki yfir upplýsingum um veður utan Íslands")
+
         handler_func = _HANDLERS[result.qkey]
 
         try:
-            r = handler_func(q)
+            r = handler_func(q, result)
             if r:
-                (response, answer, voice_answer) = r
-                q.set_answer(response, answer, voice_answer)
+                q.set_answer(*r)
         except Exception as e:
+            logging.warning("Exception while processing weather query: {0}".format(str(e)))
             q.set_error("E_EXCEPTION: {0}".format(e))
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
