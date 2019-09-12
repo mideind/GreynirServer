@@ -134,8 +134,8 @@ def country_desc(cc):
 
 
 def street_desc(street_nom, street_num, locality_nom):
-    """ Generate description of being on a particular (Icelandic)
-        street with correct preposition and case e.g. 'í Þverholti 3'. """
+    """ Generate description of being on a particular (Icelandic) street with 
+        correct preposition and case + locality e.g. 'á Fiskislóð 31 í Reykjavík'. """
     street_dat = None
     locality_dat = None
 
@@ -185,7 +185,7 @@ def answer_for_location(loc):
 
     # Grab top result from API call
     top = res["results"][0]
-    # TODO, fall back on lower-ranked results from the API
+    # TODO: Fall back on lower-ranked results from the API
     # if the top result doesn't even contain a locality.
 
     # Extract address info from top result
@@ -215,6 +215,7 @@ def answer_for_location(loc):
             if locality
             else ""
         )
+        # "[á Boulevard St. Germain] [í París] [í Frakklandi]"
         descr = "{0} {1} {2}".format(
             sdesc, locdesc, country_desc(country_code)
         ).strip()
@@ -257,8 +258,8 @@ def handle_plain_text(q):
         answ = answer_for_location(loc)
 
     if not answ:
-        # We either don't have a location or no info about the
-        # location associated with the query
+        # We either don't have a location or no info about
+        # the location associated with the query
         answ = gen_answer("Ég veit ekki hvar þú ert.")
 
     q.set_qtype(_LOC_QTYPE)

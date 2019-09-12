@@ -162,12 +162,18 @@ def test_query_api(client):
     # assert "answer" in json
     # assert json["answer"].startswith("Fiskislóð 31")
 
-    # TODO: Add tests for weather module
+    # Weather module
+    resp = client.get("/query.api?q=Hversu hlýtt er úti?")
+    json = validate_json(resp)
+    assert json["qtype"] == "Weather"
+    assert "answer" in json
+    assert re.search(r"^\d+°$", json["answer"])
 
 
 def test_processors():
     """ Try to import all tree/token processors by instantiating Processor object """
     from processor import Processor
+
     _ = Processor(processor_directory="processors")
 
 
