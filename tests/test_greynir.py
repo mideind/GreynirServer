@@ -169,9 +169,11 @@ def test_query_api(client):
     assert "answer" in json
     assert re.search(r"^\d+°$", json["answer"])
 
+
 def test_processors():
     """ Try to import all tree/token processors by instantiating Processor object """
     from processor import Processor
+
     _ = Processor(processor_directory="processors")
 
 

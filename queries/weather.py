@@ -57,8 +57,8 @@ QWeatherQuery →
     | QWeatherTemperature
 
 QWeatherCurrent →
-    "hvernig" "er" "veðrið" QWeatherNow?
-    | "hvernig" "veður" "er" QWeatherNow?
+    "hvernig" "er" "veðrið" QWeatherLocation? QWeatherNow?
+    | "hvernig" "veður" "er" QWeatherLocation? QWeatherNow?
 
 QWeatherForecast →
     "hver" "er" "veðurspáin" QWeatherLocation? QWeatherNextDays?
@@ -97,10 +97,10 @@ QWeatherNextDays →
     | "í" "fyrramálið"
 
 QWeatherCountry →
-    "á" "landinu" | "á" "Íslandi" | "hér" "á" "landi" | "á" "landsvísu"
+    "á" "landinu" | "á" "íslandi" | "hér" "á" "landi" | "á" "landsvísu"
 
 QWeatherCapitalRegion →
-    "á" "höfuðborgarsvæðinu" | "í" "Reykjavík"
+    "á" "höfuðborgarsvæðinu" | "í" "reykjavík"
 
 QWeatherLocation →
     QWeatherCountry | QWeatherCapitalRegion
@@ -118,10 +118,10 @@ def _wind_bft(ms):
     """ Convert wind from metres per second to Beaufort scale """
     if ms is None:
         return None
-    for bft in range(len(_BFT_THRESHOLD)):
-        if ms < _BFT_THRESHOLD[bft]:
-            return bft
-    return len(_BFT_THRESHOLD)
+    for ix, bft in enumerate(_BFT_THRESHOLD):
+        if ms < bft:
+            return ix
+    return ix + 1
 
 
 # From https://www.vedur.is/vedur/frodleikur/greinar/nr/1098
@@ -206,7 +206,7 @@ def get_currtemp_answer(query, result):
     if not res:
         return gen_answer(_API_ERRMSG)
 
-    temp = int(float(res["T"]))  # Round to nearest whole number
+    temp = int(round(float(res["T"])))  # Round to nearest whole number
     temp_type = "hiti" if temp >= 0 else "frost"
 
     voice = "Úti er {0} stiga {1}".format(abs(temp), temp_type)
@@ -222,7 +222,7 @@ def get_currweather_answer(query, result):
     if not res:
         return gen_answer(_API_ERRMSG)
 
-    temp = int(float(res["T"]))  # Round to nearest whole number
+    temp = int(round(float(res["T"])))  # Round to nearest whole number
     desc = res["W"].lower()
     windsp = float(res["F"])
 
@@ -288,7 +288,7 @@ def get_forecast_answer(query, result):
     try:
         res = forecast_text(txt_id)
     except Exception as e:
-        logging.warning("Failed to fetch weather text: {0}".format(str(e)))
+        logging.warning("Failed to fetch weather text: {0}".format(e))
         res = None
 
     if (
@@ -346,7 +346,7 @@ def sentence(state, result):
         q.set_key(result.qkey)
 
         if q.location and not _in_iceland(q.location):
-            return gen_answer("Ég bý ekki yfir upplýsingum um veður utan Íslands")
+            return gen_answer("Ég þekki ekki til veðurs utan Íslands")
 
         handler_func = _HANDLERS[result.qkey]
 
@@ -355,9 +355,7 @@ def sentence(state, result):
             if r:
                 q.set_answer(*r)
         except Exception as e:
-            logging.warning(
-                "Exception while processing weather query: {0}".format(str(e))
-            )
+            logging.warning("Exception while processing weather query: {0}".format(e))
             q.set_error("E_EXCEPTION: {0}".format(e))
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
