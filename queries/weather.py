@@ -81,6 +81,7 @@ QWeatherTemperature →
     | "hversu" "heitt" "er" QWeatherNow?
     | "hversu" "kalt" "er" QWeatherNow?
     | "hvað" "er" "kalt" QWeatherNow
+    | "hvað" "er" "hlýtt" QWeatherNow
     | "hvað" "er" "margra" "stiga" "hiti" QWeatherNow?
 
 QWeatherNow →
@@ -354,7 +355,9 @@ def sentence(state, result):
             if r:
                 q.set_answer(*r)
         except Exception as e:
-            logging.warning("Exception while processing weather query: {0}".format(str(e)))
+            logging.warning(
+                "Exception while processing weather query: {0}".format(str(e))
+            )
             q.set_error("E_EXCEPTION: {0}".format(e))
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
