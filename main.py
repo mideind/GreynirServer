@@ -209,7 +209,6 @@ if not RUNNING_AS_SERVER:
         "Verbs.conf",
         "Adjectives.conf",
         "AdjectivePredicates.conf",
-        "Morphemes.conf",
         "Prepositions.conf",
         "Prefs.conf",
         "Phrases.conf",
