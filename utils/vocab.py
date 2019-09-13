@@ -34,6 +34,7 @@
 
 import os
 import sys
+import re
 from collections import defaultdict, namedtuple
 
 # Import the Psycopg2 connector for PostgreSQL
@@ -199,7 +200,7 @@ class Meanings:
             Meanings.ROOT[stofn].append(m)
 
     @staticmethod
-    def add_composite(stofn, ordfl, fl):
+    def add_composite(stofn, ordfl, fl, *, utg=None):
         """ Add composite word forms by putting a prefix on existing BIN word forms.
             Called from the config file handler. """
         assert stofn is not None
@@ -207,12 +208,29 @@ class Meanings:
         # Handle cases like 'Suður-Ameríku-ríki' correctly
         a = stofn.rsplit("-", maxsplit=1)
         assert len(a) == 2
-        prefix = a[0]
         stem = a[1]
+        if stem[0].isupper():
+            # Uppercase stem (such as 'Norður-Makedónía'): keep the hyphen
+            prefix = a[0] + "-"
+        else:
+            prefix = a[0]
         m = Meanings.forms(stem)
         if m:
+            last_utg = None
             for w in m:
-                if w.ordfl == ordfl:
+                if w.ordfl == ordfl and (utg is None or utg == w.utg):
+                    # Check for ambiguity between different lemmas
+                    if last_utg is None:
+                        last_utg = w.utg
+                    elif w.utg != last_utg:
+                        # We are encountering two different ids (utg):
+                        # this probably needs to be disambiguated
+                        raise ConfigError(
+                            "Ambiguous word stem: {0}/{1}".format(w.stofn, w.ordfl)
+                        )
+                    # Matches the requested category and also the
+                    # id number (utg), if given: create a new entry in the
+                    # Meanings dict, having id -1
                     t = (
                         prefix + w.stofn,
                         -1,
@@ -236,6 +254,12 @@ class Meanings:
         stofn = None
         fl = None
         beyging = None
+        utg = None
+        if 3 <= len(a) <= 4 and re.match(r"\d+$", a[-1]):
+            # An id number (utg) is being given in the last argument
+            utg = int(a[-1])
+            # Cut it off the end and proceed
+            a = a[:-1]
         if len(a) <= 3:
             # Short format: ordmynd ordfl [fl]
             ordmynd = a[0]
@@ -244,16 +268,25 @@ class Meanings:
                 fl = a[2]
         else:
             # Full format: at least four arguments, stofn ordmynd ordfl fl
+            if utg is not None:
+                raise ConfigError(
+                    "An id number (utg) can't be specified with a full meaning"
+                )
             stofn = a[0]
             ordmynd = a[1]
             ordfl = a[2]
             fl = a[3]
             beyging = a[4] if len(a) >= 5 else None
 
+        if utg is not None and not "-" in ordmynd:
+            raise ConfigError(
+                "An id number (utg) should only be specified for a composite word"
+            )
         if len(a) <= 3 and "-" in ordmynd:
             # Creating new meanings by prefixing existing ones
-            Meanings.add_composite(ordmynd, ordfl, fl)
+            Meanings.add_composite(ordmynd, ordfl, fl, utg=utg)
         else:
+            assert utg is None
             Meanings.add(stofn, ordmynd, ordfl, fl, beyging)
 
     @staticmethod
