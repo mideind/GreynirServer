@@ -25,6 +25,7 @@ import json
 import re
 import sys
 import os
+import math
 from iceaddr import iceaddr_lookup, placename_lookup
 from cityloc import city_lookup
 from country_list import countries_for_language, available_languages
@@ -520,6 +521,7 @@ def _load_placename_prepositions():
             ICELOC_PREP = json.load(f)
     return ICELOC_PREP
 
+
 # This is not strictly accurate as the correct prepositions
 # are based on convention, not rational rules. :/
 _SUFFIX2PREP = {
@@ -634,6 +636,46 @@ def iceprep_for_country(cn):
         a country, given its Icelandic name in the nominative
         case, e.g. "Ítalía" """
     return iceprep4cc(isocode_for_country_name(cn))
+
+
+_EARTH_RADIUS = 6371.0088  # Earth's radius in km
+
+
+def distance(loc1, loc2):
+    """
+    Calculate the Haversine distance.
+    Parameters
+    ----------
+    origin : tuple of float
+        (lat, long)
+    destination : tuple of float
+        (lat, long)
+    Returns
+    -------
+    distance_in_km : float
+    Examples
+    --------
+    >>> origin = (48.1372, 11.5756)  # Munich
+    >>> destination = (52.5186, 13.4083)  # Berlin
+    >>> round(distance(origin, destination), 1)
+    504.2
+    Source:
+    https://stackoverflow.com/questions/19412462
+        /getting-distance-between-two-points-based-on-latitude-longitude
+    """
+    lat1, lon1 = loc1
+    lat2, lon2 = loc2
+
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    slat = math.sin(dlat / 2)
+    slon = math.sin(dlon / 2)
+    a = (
+        slat * slat
+        + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * slon * slon
+    )
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return _EARTH_RADIUS * c
 
 
 if __name__ == "__main__":

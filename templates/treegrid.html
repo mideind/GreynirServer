@@ -881,40 +881,34 @@ function editSentence() {
 function panTreeDisplay() {
    // Set up panning of the tree display
    var scrollable = false;
-   var captured = false;
-   var originX = 0;
-   var scrollX = 0;
+   var t = $("#canvas svg");
+   var tParent = $("#canvas").parent();
 
-   $('#canvas svg')
-      .mousedown(function(e) {
-         e.preventDefault();
-         if (scrollable) {
-            originX = e.clientX;
-            scrollX = $("#canvas").parent().scrollLeft();
-            captured = true;
-         }
-      })
-      .mouseup(function(e) {
-         if (captured) {
+   t.mousedown(function(e) {
+      if (scrollable) {
+         var originX = e.clientX;
+         var scrollX = tParent.scrollLeft();
+         var mouseMove = function(e) {
+            tParent.scrollLeft(Math.max(0, scrollX + (originX - e.clientX)));
             e.preventDefault();
-            captured = false;
-         }
-      })
-      .mousemove(function(e) {
-         if (!captured)
-            return;
-         e.preventDefault();
-         $("#canvas").parent()
-            .scrollLeft(Math.max(0, scrollX + (originX - e.clientX)))
-      });
+         };
+         var mouseUp = function(e) {
+            tParent.scrollLeft(Math.max(0, scrollX + (originX - e.clientX)));
+            window.removeEventListener('mousemove', mouseMove, false);
+            window.removeEventListener('mouseup', mouseUp, false);
+         };
+         window.addEventListener('mousemove', mouseMove, false);
+         window.addEventListener('mouseup', mouseUp, false);
+      }
+   });
 
    // If the browser window is resized, figure out whether the canvas
    // is scrollable or not
    var cursorSetter =
       function(e) {
          captured = false;
-         scrollable = $("#canvas svg").width() > $("#canvas-container").width();
-         $("#canvas svg").css("cursor", scrollable ? "ew-resize" : "default");
+         scrollable = t.width() > $("#canvas-container").width();
+         t.css("cursor", scrollable ? "move" : "default");
       };
    $(window).resize(cursorSetter);
    cursorSetter();
