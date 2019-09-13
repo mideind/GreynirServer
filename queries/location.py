@@ -29,7 +29,7 @@
 import os
 import logging
 
-from queries import query_json_api, gen_answer
+from queries import gen_answer, query_geocode_API_coords
 from iceaddr import iceaddr_lookup
 from geo import (
     iceprep4cc,
@@ -38,42 +38,6 @@ from geo import (
     country_name_for_isocode,
 )
 from reynir.bindb import BIN_Db
-
-
-# The Google API identifier (you must obtain your
-# own key if you want to use this code)
-_API_KEY = ""
-_API_KEY_PATH = os.path.join("resources", "GoogleServerKey.txt")
-
-
-def _get_API_key():
-    """ Read Google API key from file """
-    global _API_KEY
-    if not _API_KEY:
-        try:
-            # You need to obtain your own key and put it in
-            # _API_KEY_PATH if you want to use this code
-            with open(_API_KEY_PATH) as f:
-                _API_KEY = f.read().rstrip()
-        except FileNotFoundError:
-            _API_KEY = ""
-    return _API_KEY
-
-
-_MAPS_API_URL = "https://maps.googleapis.com/maps/api/geocode/json?latlng={0},{1}&key={2}&language=is"
-
-
-def _query_geocode_API(lat, lon):
-    # Load API key
-    key = _get_API_key()
-    if not key:
-        # No key, can't query Google location API
-        logging.warning("No API key for location lookup")
-        return None
-
-    # Send API request
-    url = _MAPS_API_URL.format(lat, lon, key)
-    return query_json_api(url)
 
 
 def _addrinfo_from_api_result(result):
@@ -172,7 +136,7 @@ def street_desc(street_nom, street_num, locality_nom):
 
 def answer_for_location(loc):
     # Send API request
-    res = _query_geocode_API(loc[0], loc[1])
+    res = query_geocode_API_coords(loc[0], loc[1])
 
     # Verify that we have at least one valid result
     if (
