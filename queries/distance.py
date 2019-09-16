@@ -26,7 +26,9 @@
 import re
 import logging
 import math
+from pprint import pprint
 
+from reynir.bindb import BIN_Db
 from queries import gen_answer, query_geocode_API_addr
 from geo import distance
 
@@ -44,11 +46,26 @@ _QREGEXES = (
 )
 
 
+def _addr2nom(address):
+    """ Convert location name to nominative form """
+    words = address.split()
+    nf = []
+    for w in words:
+        bin_res = BIN_Db().lookup_nominative(w)
+        if bin_res:
+            nf.append(bin_res[0].stofn)
+        else:
+            nf.append(w)
+    return " ".join(nf)
+
+
 def answer_for_remote_loc(locname, query):
+    """ Generate response to distance query """
     if not query.location:
         return gen_answer("Ég veit ekki hvar þú ert.")
 
-    res = query_geocode_API_addr(locname)
+    loc_nf = _addr2nom(locname[:1].upper() + locname[1:])
+    res = query_geocode_API_addr(loc_nf)
 
     # Verify sanity of API response
     if (
@@ -67,22 +84,29 @@ def answer_for_remote_loc(locname, query):
     # Calculate distance, round it intelligently and format num string
     km_dist = distance(query.location, loc)
     km_dist = round(km_dist, 1 if km_dist < 10 else 0)
-    dist = km_dist if km_dist > 1.0 else int(math.ceil((km_dist * 1000.0) / 10.0)) * 10
-    dist_str = str(dist).replace(".", ",").rstrip(",0")
 
-    # Units of measurement
-    unit = "kílómetra" if km_dist > 1.0 else "metra"
-    unit_abbr = "km" if km_dist > 1.0 else "m"
+    if km_dist >= 1.0:
+        dist = str(km_dist).replace(".", ",")
+        dist = re.sub(r",0$", "", dist)
+        unit = "kílómetra"
+        unit_abbr = "km"
+    else:
+        dist = int(math.ceil((km_dist * 1000.0) / 10.0) * 10)  # Round to nearest 10 m
+        unit = "metra"
+        unit_abbr = "m"    
 
     # Generate answer
-    answer = "{0} {1}".format(dist_str, unit_abbr)
+    answer = "{0} {1}".format(dist, unit_abbr)
     response = dict(answer=answer)
-    voice = "Þú ert {0} {1} frá {2}".format(dist_str, unit, locname)
+    voice = "Þú ert {0} {1} frá {2}".format(dist, unit, locname)
+
+    query.set_key(loc_nf[:1].upper() + loc_nf[1:])
 
     return response, answer, voice
 
 
 def handle_plain_text(q):
+    """ Handle a plain text query, contained in the q parameter """
     ql = q.query_lower.rstrip("?")
 
     remote_loc = None
@@ -100,10 +124,10 @@ def handle_plain_text(q):
     except Exception as e:
         logging.warning("Exception looking up addr in geocode API: {0}".format(e))
         answ = None
+    
     if not answ:
         return False
 
-    q.set_key(remote_loc)
     q.set_qtype(_DISTANCE_QTYPE)
     q.set_answer(*answ)
 
