@@ -285,11 +285,17 @@ class Query:
             return False
 
         toklist = tokenize(
-            q, auto_uppercase=q.islower() if self._auto_uppercase else False
+            q, auto_uppercase=self._auto_uppercase and q.islower()
         )
         toklist = list(recognize_entities(toklist, enclosing_session=self._session))
 
         actual_q = correct_spaces(" ".join(t.txt for t in toklist if t.txt))
+        if actual_q:
+            actual_q = actual_q[0].upper() + actual_q[1:] + "?"
+
+        # Update the beautified query string, as the actual_q string
+        # probably has more correct capitalization
+        self.set_beautified_query(actual_q)
 
         if Settings.DEBUG:
             # Log the query string as seen by the parser
@@ -416,6 +422,11 @@ class Query:
     def qtype(self):
         """ Return the query type """
         return self._qtype
+
+    @property
+    def is_voice(self):
+        """ Return True if this is a voice query """
+        return self._voice
 
     def response(self):
         """ Return the detailed query answer """
@@ -676,6 +687,11 @@ def process_query(
                 timestamp=datetime.utcnow(),
                 question=first_qtext,
                 error=result.get("error"),
+                # Client identifier
+                client_id=client_id[:256] if client_id else None,
+                client_type=client_type or None,
+                # IP address
+                remote_addr=remote_addr or None
                 # All other fields are set to NULL
             )
             session.add(qrow)
