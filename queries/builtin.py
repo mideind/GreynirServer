@@ -557,6 +557,12 @@ def query_entity(query, session, name):
     else:
         answer = "Engin skilgreining finnst á nafninu '" + name + "'."
         voice_answer = "Ég veit ekki hvað " + name + " er."
+        if query.is_voice:
+            # Rather than accept this as a voice query
+            # for an entity that is not found, return an
+            # error and thereby give other query handlers
+            # a chance to parse this
+            query.set_error("E_ENTITY_NOT_FOUND")
     return response, answer, voice_answer
 
 
@@ -662,6 +668,7 @@ def launch_search(query, session, qkey):
     return dict(answers=result["articles"], weights=tweights)
 
 
+# Map query types to handler functions
 _QFUNC = {
     "Person": query_person,
     "Title": query_title,
@@ -671,12 +678,20 @@ _QFUNC = {
     "Search": launch_search,
 }
 
+# Query types that are not supported for voice queries
+_Q_NO_VOICE = frozenset(("Search", "Word"))
+
 
 def sentence(state, result):
     """ Called when sentence processing is complete """
     q = state["query"]
     if "qtype" in result:
         # Successfully matched a query type
+        if q.is_voice and result.qtype in _Q_NO_VOICE:
+            # We don't do topic searches or word relationship
+            # queries via voice; that would be pretty meaningless.
+            q.set_error("E_VOICE_NOT_SUPPORTED")
+            return
         q.set_qtype(result.qtype)
         q.set_key(result.qkey)
         if result.qtype == "Search":

@@ -29,9 +29,11 @@
 import re
 from threading import Lock
 from functools import lru_cache
+from collections import defaultdict
 
 import query
 from settings import Settings
+from reynir import correct_spaces
 from reynir.bindb import BIN_Db
 
 import straeto
@@ -65,7 +67,7 @@ GRAMMAR = """
 # adding one or more query productions to the Query nonterminal
 
 Query →
-    QBusArrivalTime | QBusNearestStop
+    QBusArrivalTime | QBusNearestStop | QBusWhich
 
 # By convention, names of nonterminals in query grammars should
 # start with an uppercase Q
@@ -94,6 +96,35 @@ QBusStopTail_kvk →
 
 QBusStopTail_hk →
     "næst" "mér"? | "nálægast" | "styst" "í" "burtu"
+
+QBusNoun/fall →
+    'strætó:kk'_et/fall
+    | 'leið:kvk'_et/fall
+    | 'vagn:kk'_et/fall
+    | 'strætisvagn:kk'_et/fall
+
+QBusWhich →
+    # 'Hvaða strætó stoppar í Einarsnesi'?
+    "hvaða" QBusNoun_nf QBusWhichTail '?'?
+
+$score(+32) QBusWhich
+
+QBusWhichTail →
+    "stoppar" "í" QBusStopName_þgf
+    | "stoppar" "á" QBusStopName_þgf
+    | "stöðvar" "í" QBusStopName_þgf
+    | "stöðvar" "á" QBusStopName_þgf
+    | "ekur" "í" QBusStopName_þf
+    | "ekur" "á" QBusStopName_þf
+    | "kemur" "á" QBusStopName_þf
+    | "kemur" "í" QBusStopName_þf
+    | "kemur" "til" QBusStopName_ef
+    | "fer" "frá" QBusStopName_þgf
+
+QBusStopName/fall →
+    no/fall
+
+$score(+1) QBusStopName/fall
 
 QBusArrivalTime →
 
@@ -131,26 +162,8 @@ QBusWord/fall →
     | 'tía:kvk'_et_gr/fall
     | 'tólfa:kvk'_et_gr/fall
 
-QBusNumber_nf →
-    "leið" 'númer:hk'_et_nf? QBusNumberWord
-QBusNumber_þf →
-    "leið" 'númer:hk'_et_nf? QBusNumberWord
-QBusNumber_þgf →
-    "leið" 'númer:hk'_et_nf? QBusNumberWord
-QBusNumber_ef →
-    "leiðar" 'númer:hk'_et_nf? QBusNumberWord
-
 QBusNumber/fall →
-    'strætó:kk'_et/fall 'númer:hk'_et_nf QBusNumberWord
-
-    | 'vagn:kk'_et/fall 'númer:hk'_et_nf QBusNumberWord
-
-    # We also need to handle the person name 'Vagn',
-    # in case the query comes in with an uppercase 'V'.
-    # A lemma literal, within single quotes, will match
-    # person and entity names in the indicated case, if given,
-    # or in any case if no case variant is given. 
-    | 'Vagn'/fall 'númer:hk'_et_nf QBusNumberWord
+    QBusNoun/fall 'númer:hk'_et_nf? QBusNumberWord
 
 QBusNumberWord →
 
@@ -179,6 +192,16 @@ def QBusStop(node, params, result):
     result.stop_word = _WRONG_STOP_WORDS.get(result._nominative, result._nominative)
 
 
+def QBusStopName(node, params, result):
+    """ Save the bus stop name """
+    result.stop_name = result._nominative
+
+
+def QBusNoun(node, params, result):
+    """ Save the noun used to refer to a bus """
+    result.bus_noun = result._nominative
+
+
 def QBusArrivalTime(node, params, result):
     """ Bus arrival time query """
     # Set the query type
@@ -188,6 +211,15 @@ def QBusArrivalTime(node, params, result):
         # percolated upwards from a child node (see below).
         # Set the query key
         result.qkey = result.bus_number
+
+
+def QBusWhich(node, params, result):
+    """ Buses on which routes stop at a given stop """
+    # Set the query type
+    result.qtype = "WhichRoute"
+    if "stop_name" in result:
+        # Set the query key to the name of the bus stop
+        result.qkey = result.stop_name
 
 
 def QBus(node, params, result):
@@ -236,6 +268,49 @@ _BUS_WORDS = {
     "níutíu": 90,
 }
 
+# How to pronounce route numbers after 'númer'
+_VOICE_NUMBERS = {
+    "1": "eitt",
+    "2": "tvö",
+    "3": "þrjú",
+    "4": "fjögur",
+    "21": "tuttugu og eitt",
+    "22": "tuttugu og tvö",
+    "23": "tuttugu og þrjú",
+    "24": "tuttugu og fjögur",
+    "31": "þrjátíu og eitt",
+    "32": "þrjátíu og tvö",
+    "33": "þrjátíu og þrjú",
+    "34": "þrjátíu og fjögur",
+    "41": "fjörutíu og eitt",
+    "42": "fjörutíu og tvö",
+    "43": "fjörutíu og þrjú",
+    "44": "fjörutíu og fjögur",
+    "51": "fimmtíu og eitt",
+    "52": "fimmtíu og tvö",
+    "53": "fimmtíu og þrjú",
+    "54": "fimmtíu og fjögur",
+    "61": "sextíu og eitt",
+    "62": "sextíu og tvö",
+    "63": "sextíu og þrjú",
+    "64": "sextíu og fjögur",
+    "71": "sjötíu og eitt",
+    "72": "sjötíu og tvö",
+    "73": "sjötíu og þrjú",
+    "74": "sjötíu og fjögur",
+    "81": "áttatíu og eitt",
+    "82": "áttatíu og tvö",
+    "83": "áttatíu og þrjú",
+    "84": "áttatíu og fjögur",
+    "91": "níutíu og eitt",
+    "92": "níutíu og tvö",
+    "93": "níutíu og þrjú",
+    "94": "níutíu og fjögur",
+    "101": "hundrað og eitt",
+    "102": "hundrað og tvö",
+    "103": "hundrað og þrjú",
+    "104": "hundrað og fjögur",
+}
 
 def QBusWord(node, params, result):
     """ Handle buses specified in single words,
@@ -399,10 +474,47 @@ def query_arrival_time(query, session, result):
     return response, answer, voice_answer
 
 
+def query_which_route(query, session, result):
+    """ Which routes stop at a given bus stop """
+    stop_name = result.stop_name  # 'Einarsnes', 'Fiskislóð'...
+    bus_noun = result.bus_noun  # 'strætó', 'vagn', 'leið'...
+    stops = straeto.BusStop.named(stop_name, fuzzy=True)
+    if not stops:
+        answer = stop_name + " þekkist ekki."
+        va = a = [
+            "Ég", "þekki", "ekki", "stoppistöðina", stop_name.capitalize(),
+        ]
+    else:
+        routes = defaultdict(set)
+        for stop in stops:
+            for key, val in stop.visits.items():
+                routes[key] |= val
+        va = [bus_noun, "númer"]
+        a = va[:]
+        nroutes = len(routes)
+        cnt = 0
+        for key, val in sorted(routes.items(), key=lambda t:int(t[0])):
+            if cnt:
+                sep = "og" if cnt + 1 == nroutes else ","
+                va.append(sep)
+                a.append(sep)
+            # We convert inflectable numbers to their text equivalents
+            # since the speech engine can't be relied upon to get the
+            # inflection of numbers right
+            va.append(_VOICE_NUMBERS.get(key, key))
+            a.append(key)
+            cnt += 1
+    voice_answer = correct_spaces(" ".join(va) + ".")
+    answer = correct_spaces(" ".join(a))
+    response = dict(answer=answer)
+    return response, answer, voice_answer
+
+
 # Dispatcher for the various query types implemented in this module
 _QFUNC = {
     "ArrivalTime": query_arrival_time,
     "NearestStop": query_nearest_stop,
+    "WhichRoute": query_which_route,
 }
 
 # The following function is called after processing the parse

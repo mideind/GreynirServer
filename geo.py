@@ -31,6 +31,7 @@ from cityloc import city_lookup
 from country_list import countries_for_language, available_languages
 from functools import lru_cache
 
+
 ICELAND_ISOCODE = "IS"  # ISO 3166-1 alpha-2
 ICELANDIC_LANG_ISOCODE = "is"  # ISO 639-1
 
@@ -292,7 +293,7 @@ def location_info(name, kind, placename_hints=None):
 
 ICE_CITY_NAMES = None
 ICE_CITIES_JSONPATH = os.path.join(
-    os.path.dirname(__file__), "resources/cities_is.json"
+    os.path.dirname(__file__), "resources", "cities_is.json"
 )
 
 
@@ -329,7 +330,7 @@ def icelandic_city_name(name):
 # Data about countries, loaded from JSON data file
 COUNTRY_DATA = None
 COUNTRY_DATA_JSONPATH = os.path.join(
-    os.path.dirname(__file__), "resources/country_data.json"
+    os.path.dirname(__file__), "resources", "country_data.json"
 )
 
 
@@ -345,29 +346,21 @@ def _load_country_data():
 def continent_for_country(iso_code):
     """ Return two-char continent code, given a two-char country code """
     assert len(iso_code) == 2
-
     iso_code = iso_code.upper()
-
     data = _load_country_data()  # Lazy-load
-
     if iso_code in data:
         return data[iso_code].get("cc")
-
     return None
 
 
 def coords_for_country(iso_code):
     """ Return coordinates for a given country code """
     assert len(iso_code) == 2
-
     iso_code = iso_code.upper()
-
     # Lazy-loaded
     data = _load_country_data()
-
     if iso_code in data:
         return data[iso_code].get("coords")
-
     return None
 
 
@@ -412,13 +405,10 @@ def country_name_for_isocode(iso_code, lang=ICELANDIC_LANG_ISOCODE):
     """ Return country name for an ISO 3166-1 alpha-2 code """
     assert len(iso_code) == 2
     assert len(lang) == 2
-
     iso_code = iso_code.upper()
     lang = lang.lower()
-
     if lang not in available_languages():
         return None
-
     countries = dict(countries_for_language(lang))
     return countries.get(iso_code)
 
@@ -427,19 +417,15 @@ def isocode_for_country_name(country_name, lang=ICELANDIC_LANG_ISOCODE):
     """ Return the ISO 3166-1 alpha-2 code for a country
         name in the specified language (two-char ISO 639-1) """
     assert len(lang) == 2
-
     lang = lang.lower()
     if lang not in available_languages():
         return None
-
     countries = countries_for_language(lang)  # This is cached by module
     for iso_code, name in countries:
         if name == country_name:
             return iso_code
-
     if lang in COUNTRY_NAME_TO_ISOCODE_ADDITIONS:
         return COUNTRY_NAME_TO_ISOCODE_ADDITIONS[lang].get(country_name)
-
     return None
 
 
@@ -492,7 +478,10 @@ def parse_address_string(addrstr):
     return addr
 
 
-_I_SUFFIXES = ("brekka", "ás", "holt", "tún")
+_I_SUFFIXES = (
+    "brekka", "ás", "holt", "tún", "tangi", "nes", "stræti",
+    "Lækjargata",
+)
 
 
 def iceprep_for_street(street_name):
@@ -539,7 +528,7 @@ _SUFFIX2PREP = {
 
 
 def iceprep_for_placename(pn):
-    """ Return the right preposition ("í" or "á")
+    """ Attempt to return the right preposition ("í" or "á")
         for an Icelandic placename, e.g. "Akureyri" """
     place2prep = _load_placename_prepositions()  # Lazy-load
     if pn in place2prep:
