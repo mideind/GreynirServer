@@ -23,9 +23,9 @@
 
 """
 
-# "Hver er höfuðborg [LANDS]?"
-# "Í hvaða landi er [BORG]?"
-# "Hvað búa margir í [BORG]?"
+
+# TODO: "Í hvaða landi er [BORG]?", "Hvað búa margir í/á [BORG/LAND]?" etc.
+
 
 from cityloc import capital_for_cc
 from geo import icelandic_city_name, isocode_for_country_name
@@ -36,12 +36,7 @@ _GEO_QTYPE = "Geography"
 
 
 def handle_plain_text(q):
-    """ Handle a plain text query, contained in the q parameter
-        which is an instance of the query.Query class.
-        Returns True if the query was handled, and in that case
-        the appropriate properties on the Query instance have
-        been set, such as the answer and the query type (qtype).
-        If the query is not recognized, returns False. """
+    """ Handle a plain text query, contained in the q parameter """
     ql = q.query_lower.rstrip("?").strip()
     pfx = "hver er höfuðborg "
 
@@ -51,7 +46,7 @@ def handle_plain_text(q):
             return False
 
         country = country[0].upper() + country[1:]  # Capitalize first char
-        # TODO: This only works for single-word country names
+        # TODO: This only works for single-word country names, fix that
         # Transform country name from genitive to nominative
         bres = BIN_Db().lookup_nominative(country, cat="no")
         words = [m.stofn for m in bres]
