@@ -31,6 +31,7 @@
    .node.to circle,
    .node.töl circle,
    .node.tala circle,
+   .node.sequence circle,
    .node.fn circle,
    .node.pfn circle,
    .node.abfn circle {
@@ -197,6 +198,7 @@
    .node-terminal.to text.symbol,
    .node-terminal.töl text.symbol,
    .node-terminal.tala text.symbol,
+   .node-terminal.sequence text.symbol,
    .node-terminal.fn text.symbol,
    .node-terminal.pfn text.symbol,
    .node-terminal.abfn text.symbol
@@ -716,6 +718,10 @@ function d3_update(source) {
                var firstPart = d.data.t ? d.data.t.split("_")[0] : undefined;
                // Add a class name corresponding to the first part of the terminal name,
                // if it is an interesting terminal type
+               if (firstPart == "sequence")
+                  // In this case, the associated token may be a number or a word
+                  classes.push("sequence");
+               else
                if (d.data.k && d.data.k == "PUNCTUATION")
                   classes.push("punct")
                else
@@ -832,6 +838,7 @@ function d3_update(source) {
       ["to", "\uE319"], // more-items
       ["töl", "\uE319"], // more-items
       ["tala", "\uE319"], // more-items
+      ["sequence", "\uE518"], // options
       ["percent", "%"], // percent sign
       ["measurement", "\uE332"], // dashboard
       ["domain", "\uE372"], // global

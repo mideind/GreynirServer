@@ -164,6 +164,7 @@ var wordClass = {
    "entity" : "sérnafn",
    "gata" : "götuheiti",
    "fyrirtæki" : "fyrirtæki",
+   "sequence" : "raðtala"
 };
 
 var variantDesc = [
@@ -449,14 +450,22 @@ function tokenInfo(t, nameDict) {
    var title;
    var bc;
    var terminal = t.a || t.t; // Use augmented terminal if available
+   var first = terminal ? terminal.split("_")[0] : undefined;
 
    // Add glyphicon class for token type
-   r.tagClass = tokIcons[t.k] ? tokIcons[t.k] : "glyphicon-tag";
+   r.tagClass = tokIcons[t.k] || "glyphicon-tag";
 
+   if (first == "sequence") {
+      // Special case for 'sequence' terminals since they
+      // can match more than one token type
+      r.lemma = t.x;
+      r.details = "raðtala";
+   }
+   else
    if (!t.k || t.k == TOK_WORD) {
       // TOK_WORD
       // t.m[1] is the word category (kk, kvk, hk, so, lo...)
-      var wcat = (t.m && t.m[1]) ? t.m[1] : (terminal ? terminal.split("_")[0] : undefined);
+      var wcat = (t.m && t.m[1]) ? t.m[1] : first;
       if (wcat === undefined) {
          // Nothing to show, so we cop out
          return r;
