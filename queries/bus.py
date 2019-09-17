@@ -468,10 +468,20 @@ def query_arrival_time(query, session, result):
         if SCHEDULE_TODAY is None or not SCHEDULE_TODAY.is_valid_today:
             # We don't have today's schedule: create it
             SCHEDULE_TODAY = straeto.BusSchedule()
-    stop = straeto.BusStop.closest_to(location)
+    # Obtain the closest stops (at least within 300 meters radius)
+    stops = straeto.BusStop.closest_to(location, n=2, within_radius=0.3)
+    if not stops:
+        # This will fetch the single closest stop, regardless of distance
+        stops = [straeto.BusStop.closest_to(location)]
     va = [bus_name]
-    a = ["Á", to_accusative(stop.name), "í átt að"]
+    # First, check the closest stop
+    stop = stops[0]
     arrivals = SCHEDULE_TODAY.arrivals(str(bus_number), stop.name).items()
+    if not arrivals and len(stops) > 1:
+        # If no stops there, check the 2nd closest stop, if it is close enough
+        stop = stops[1]
+        arrivals = SCHEDULE_TODAY.arrivals(str(bus_number), stop.name).items()
+    a = ["Á", to_accusative(stop.name), "í átt að"]
     if arrivals:
         first = True
         for direction, times in arrivals:
@@ -489,7 +499,8 @@ def query_arrival_time(query, session, result):
             a.append(" og ".join("{0:02}:{1:02}".format(hms[0], hms[1]) for hms in times))
             first = False
     else:
-        # The given bus doesn't stop there
+        # The given bus doesn't stop at either of the two closest stops
+        stop = stops[0]
         va.extend(["stoppar ekki á", to_dative(stop.name)])
         a = [bus_name, "stoppar ekki á", to_dative(stop.name)]
     voice_answer = " ".join(va) + "."

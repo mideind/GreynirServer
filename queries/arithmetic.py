@@ -141,14 +141,15 @@ QArithmetic →
     # 'Hvað er(u) 12 prósent af 93'
     | QArGenericPrefix QArPercent '?'?
 
-$score(35) QArithmetic
+$score(+35) QArithmetic
 
 QArGenericPrefix → "hvað" "er" | "hvað" "eru" | 0
 QArSpecificPrefix → "hver" "er" | 0
 QArAnyPrefix → QArGenericPrefix | QArSpecificPrefix
 
 QArStd → QArNumberWord QArOperator QArNumberWord
-QArSum → QArPlusOperator QArNumberWord "og" QArNumberWord
+
+QArSum → QArSumOperator QArNumberWord "og" QArNumberWord
 QArSqrt → QArSquareRootOperator QArNumberWord
 QArPow → QArNumberWord "í" QArOrdinalOrNumberWord QArPowOperator
 QArPercent → QArPercentOperator QArNumberWord
@@ -160,19 +161,25 @@ QArNumberWord →
     to | töl | tala | "núlli" | "núll"
 
 QArOrdinalWord →
-    "{0}" | raðnr
+    {0} | raðnr
 
 QArOrdinalOrNumberWord →
     QArNumberWord | QArOrdinalWord
 
-QArPlusOperator → "plús"
-QArMinusOperator → "mínus" 
-QArDivisionOperator → "deilt" "með" | "skipt" "með"
-QArMultiplicationOperator → "sinnum" | "margfaldað" "með"
+# Prefix operators
+QArSumOperator → "summan" "af"
+QArSquareRootOperator →
+    "kvaðratrótin" "af" | "kvaðratrót" "af"
+    | "ferningsrótin" "af" | "ferningsrót" "af"
+QArPercentOperator → Prósenta "af"?
 
-QArSquareRootOperator → "kvaðratrótin" "af" | "kvaðratrót" "af"
+# Infix operators
+QArPlusOperator → "plús" | "að" "viðbættum"
+QArMinusOperator → "mínus" | "að" "frádregnum"
+QArDivisionOperator → "deilt" "með" | "skipt" "með"
+QArMultiplicationOperator → "sinnum" | "margfaldað" "með" | "margfaldaðir" "með"
+
 QArPowOperator → "veldi"
-QArPercentOperator → Prósenta "af"
 
 QArOperator → 
     QArPlusOperator 
@@ -181,7 +188,7 @@ QArOperator →
     | QArDivisionOperator
 
 """.format(
-    " | ".join(['"' + w + '"' for w in _ORDINAL_WORDS_DATIVE.keys()])
+    " | ".join('"' + w + '"' for w in _ORDINAL_WORDS_DATIVE.keys())
 )
 
 
@@ -228,6 +235,8 @@ def _terminal_num(t):
         which is attached as a json-encoded array """
     if t and t._node.aux:
         aux = json.loads(t._node.aux)
+        if isinstance(aux, int) or isinstance(aux, float):
+            return aux
         return aux[0]
 
 
@@ -244,6 +253,10 @@ def QArOrdinalWord(node, params, result):
 
 
 def QArPlusOperator(node, params, result):
+    result.operator = "plus"
+
+
+def QArSumOperator(node, params, result):
     result.operator = "plus"
 
 
