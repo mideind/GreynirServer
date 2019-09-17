@@ -23,6 +23,7 @@
 
 """
 
+# TODO: Natural language weather forecasts for different parts of the country (N-land, etc.)
 # TODO: Provide weather info for locations outside Iceland
 # TODO: Add more info to description of current weather conditions?
 # TODO: More detailed forecast?
@@ -32,7 +33,8 @@ import logging
 from datetime import datetime, timedelta
 
 from queries import gen_answer
-from geo import distance
+from geo import distance, isocode_for_country_name, ICE_PLACENAME_BLACKLIST
+from iceaddr import placename_lookup
 
 from iceweather import observation_for_closest, observation_for_station, forecast_text
 
@@ -57,8 +59,8 @@ QWeatherQuery →
     | QWeatherTemperature
 
 QWeatherCurrent →
-    "hvernig" "er" "veðrið" QWeatherLocation? QWeatherNow?
-    | "hvernig" "veður" "er" QWeatherLocation? QWeatherNow?
+    "hvernig" "er" "veðrið" QWeatherAnyLoc? QWeatherNow?
+    | "hvernig" "veður" "er" QWeatherAnyLoc? QWeatherNow?
 
 QWeatherForecast →
     "hver" "er" "veðurspáin" QWeatherLocation? QWeatherNextDays?
@@ -73,16 +75,16 @@ QWeatherForecast →
     | "hvers" "konar" "veðri" "er" "spáð" QWeatherLocation? QWeatherNextDays?
 
 QWeatherTemperature →
-    "hvert" "er" "hitastigið" QWeatherNow?
-    | "hversu" "heitt" "er" QWeatherNow?
-    | "hvað" "er" "heitt" QWeatherNow?
-    | "hvaða" "hitastig" "er" QWeatherNow
-    | "hversu" "hlýtt" "er" QWeatherNow?
-    | "hversu" "heitt" "er" QWeatherNow?
-    | "hversu" "kalt" "er" QWeatherNow?
-    | "hvað" "er" "kalt" QWeatherNow
-    | "hvað" "er" "hlýtt" QWeatherNow
-    | "hvað" "er" "margra" "stiga" "hiti" QWeatherNow?
+    "hvert" "er" "hitastigið" QWeatherAnyLoc? QWeatherNow?
+    | "hversu" "heitt" "er" QWeatherAnyLoc? QWeatherNow?
+    | "hvað" "er" "heitt" QWeatherAnyLoc? QWeatherNow?
+    | "hvaða" "hitastig" "er" QWeatherAnyLoc? QWeatherNow
+    | "hversu" "hlýtt" "er" QWeatherAnyLoc? QWeatherNow?
+    | "hversu" "heitt" "er" QWeatherAnyLoc? QWeatherNow?
+    | "hversu" "kalt" "er" QWeatherAnyLoc? QWeatherNow?
+    | "hvað" "er" "kalt" QWeatherAnyLoc? QWeatherNow
+    | "hvað" "er" "hlýtt" QWeatherAnyLoc? QWeatherNow
+    | "hvað" "er" "margra" "stiga" "hiti" QWeatherAnyLoc? QWeatherNow?
 
 QWeatherNow →
     "úti"? "í" "dag" | "úti"? "núna" | "úti"
@@ -101,6 +103,12 @@ QWeatherCountry →
 
 QWeatherCapitalRegion →
     "á" "höfuðborgarsvæðinu" | "í" "reykjavík"
+
+QWeatherAnyLoc →
+    QWeatherCountry | QWeatherCapitalRegion | QWeatherOpenLoc
+
+QWeatherOpenLoc →
+    fs_þgf Nl_þgf
 
 QWeatherLocation →
     QWeatherCountry | QWeatherCapitalRegion
@@ -176,16 +184,40 @@ def _round_to_nearest_hour(t):
 _RVK_STATION_ID = 1
 
 
-def _curr_observations(query):
-    """ Fetch latest weather observation data from nearest weather station """
+def _curr_observations(query, result):
+    """ Fetch latest weather observation data from weather station closest
+        to the location associated with the query (i.e. either user location 
+        coordinates or a specific placename) """
     loc = query.location
 
+    # User asked about a specific location
+    # Try to find a matching Icelandic placename
+    if "location" in result and result.location != "Ísland":
+
+        # Some strings should never be interpreted as Icelandic placenames
+        if result.location in ICE_PLACENAME_BLACKLIST:
+            return None
+
+        # Unfortunately, many foreign country names are also Icelandic
+        # placenames, so we automatically exclude country names.
+        cc = isocode_for_country_name(result.location)
+        if cc:
+            return None
+
+        info = placename_lookup(result.location)
+        if info:
+            i = info[0]
+            loc = (i.get("lat_wgs84"), i.get("long_wgs84"))
+        else:
+            return None
+
+    # Talk to weather API
     try:
-        res = (
-            observation_for_closest(loc[0], loc[1])
-            if loc
-            else observation_for_station(_RVK_STATION_ID)  # Default to Reykjavík
-        )
+        if loc:
+            res = observation_for_closest(loc[0], loc[1])
+        else:
+            res = observation_for_station(_RVK_STATION_ID)  # Default to Reykjavík
+            result.subject = "Í Reykjavík"
     except Exception as e:
         logging.warning("Failed to fetch weather info: {0}".format(str(e)))
         return None
@@ -201,15 +233,17 @@ _API_ERRMSG = "Ekki tókst að sækja veðurupplýsingar."
 
 
 def get_currtemp_answer(query, result):
-    """ Handle queries concerning outside temperature """
-    res = _curr_observations(query)
+    """ Handle queries concerning temperature """
+    res = _curr_observations(query, result)
     if not res:
         return gen_answer(_API_ERRMSG)
 
     temp = int(round(float(res["T"])))  # Round to nearest whole number
     temp_type = "hiti" if temp >= 0 else "frost"
 
-    voice = "Úti er {0} stiga {1}".format(abs(temp), temp_type)
+    locdesc = result.get("subject") or "Úti"
+
+    voice = "{0} er {1} stiga {2}".format(locdesc.capitalize(), abs(temp), temp_type)
     answer = "{0}°".format(temp)
     response = dict(answer=answer)
 
@@ -218,7 +252,7 @@ def get_currtemp_answer(query, result):
 
 def get_currweather_answer(query, result):
     """ Handle queries concerning current weather conditions """
-    res = _curr_observations(query)
+    res = _curr_observations(query, result)
     if not res:
         return gen_answer(_API_ERRMSG)
 
@@ -230,18 +264,20 @@ def get_currweather_answer(query, result):
     temp_type = "hiti" if temp >= 0 else "frost"
     mdesc = ", " + desc + "," if desc else ""
 
-    voice = "Úti er {0} stiga {1}{2} og {3}".format(
-        abs(temp), temp_type, mdesc, wind_desc
+    locdesc = result.get("subject") or "Úti"
+
+    voice = "{0} er {1} stiga {2}{3} og {4}".format(
+        locdesc.capitalize(), abs(temp), temp_type, mdesc, wind_desc
     )
 
-    answer = "{0}°{1} og vindhraði {2} m/s".format(temp, mdesc, windsp)
+    answer = "{0}°{1} og {2} ({3} m/s)".format(temp, mdesc, wind_desc, windsp)
 
     response = dict(answer=answer)
 
     return response, answer, voice
 
 
-# Abbreviations to be expanded in natural language weather
+# Abbreviations to expand in natural language weather
 # descriptions from the Icelandic Met Office.
 _DESCR_ABBR = {
     "m/s": "metrar á sekúndu",
@@ -311,11 +347,22 @@ def QWeather(node, params, result):
 
 
 def QWeatherCapitalRegion(node, params, result):
-    result["subject"] = "capital"
+    result["location"] = "capital"
 
 
 def QWeatherCountry(node, params, result):
-    result["subject"] = "general"
+    result["location"] = "general"
+
+
+def QWeatherOpenLoc(node, params, result):
+    """ Store preposition and placename to use in voice
+        description, e.g. "á Raufarhöfn" """
+    result["subject"] = result._node.contained_text()
+
+
+def Nl(node, params, result):
+    """ Noun phrase containing name of specific location """
+    result["location"] = result._nominative
 
 
 def QWeatherCurrent(node, params, result):
@@ -357,5 +404,6 @@ def sentence(state, result):
         except Exception as e:
             logging.warning("Exception while processing weather query: {0}".format(e))
             q.set_error("E_EXCEPTION: {0}".format(e))
+            raise
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
