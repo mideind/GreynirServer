@@ -28,7 +28,7 @@
 
 import importlib
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import re
 
@@ -162,7 +162,7 @@ class Query:
     _parser = None
     _processors = []
 
-    def __init__(self, session, query, voice, auto_uppercase, location):
+    def __init__(self, session, query, voice, auto_uppercase, location, client_id):
         self._session = session
         self._query = query or ""
         self._location = location
@@ -188,6 +188,8 @@ class Query:
         self._toklist = None
         # Expiration timestamp, if any
         self._expires = None
+        # Client id, if known
+        self._client_id = client_id
 
     @classmethod
     def init_class(cls):
@@ -365,6 +367,27 @@ class Query:
                     return True
         # No processor was able to answer the query
         return False
+
+    def last_answer(self, *, within_minutes=5):
+        """ Return the last answer given to this client, by default
+            within the last 5 minutes (0=forever) """
+        if not self._client_id:
+            # Can't find the last answer if no client_id given
+            return None
+        # Find the newest non-error, no-repeat query result for this client
+        q = (
+            self._session.query(QueryRow.answer, QueryRow.voice)
+                .filter(QueryRow.client_id == self._client_id)
+                .filter(QueryRow.qtype != "Repeat")
+                .filter(QueryRow.error == None)
+        )
+        if within_minutes > 0:
+            # Apply a timestamp filter
+            since = datetime.utcnow() - timedelta(minutes=within_minutes)
+            q = q.filter(QueryRow.timestamp >= since)
+        # Sort to get the newest query that fulfills the criteria
+        last = q.order_by(desc(QueryRow.timestamp)).limit(1).one_or_none()
+        return None if last is None else tuple(last)
 
     @property
     def query(self):
@@ -597,6 +620,7 @@ def process_query(
     with SessionContext(commit=True) as session:
 
         result = None
+        client_id = client_id[:256] if client_id else None
 
         # Try to parse and process as a query
         if isinstance(q, str):
@@ -646,7 +670,7 @@ def process_query(
                 )
                 # !!! TBD: Log the cached answer as well?
                 return result
-            query = Query(session, qtext, voice, auto_uppercase, location)
+            query = Query(session, qtext, voice, auto_uppercase, location, client_id)
             result = query.execute()
             if result["valid"] and "error" not in result:
                 # Successful: our job is done
@@ -666,7 +690,7 @@ def process_query(
                         latitude=location[0] if location else None,
                         longitude=location[1] if location else None,
                         # Client identifier
-                        client_id=client_id[:256] if client_id else None,
+                        client_id=client_id,
                         client_type=client_type or None,
                         # IP address
                         remote_addr=remote_addr or None
@@ -688,7 +712,7 @@ def process_query(
                 question=first_qtext,
                 error=result.get("error"),
                 # Client identifier
-                client_id=client_id[:256] if client_id else None,
+                client_id=client_id,
                 client_type=client_type or None,
                 # IP address
                 remote_addr=remote_addr or None

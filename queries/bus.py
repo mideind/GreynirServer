@@ -24,6 +24,14 @@
     It also serves as an example of how to plug query grammars into Reynir's
     query subsystem and how to handle the resulting trees.
 
+    The queries supported by the module are as follows:
+
+    * Hvaða stoppistöð er næst mér? (Which bus stop is closest to me?)
+
+    * Hvenær kemur strætó númer tólf? (When does bus number twelve arrive?)
+
+    * Hvaða strætó stoppar á Lækjartorgi? (Which buses stop at Lækjartorg?)
+
 """
 
 import re
@@ -97,29 +105,47 @@ QBusStopTail_kvk →
 QBusStopTail_hk →
     "næst" "mér"? | "nálægast" | "styst" "í" "burtu"
 
-QBusNoun/fall →
-    'strætó:kk'_et/fall
-    | 'leið:kvk'_et/fall
-    | 'vagn:kk'_et/fall
-    | 'strætisvagn:kk'_et/fall
+QBusNoun/fall/tala →
+    'strætó:kk'/tala/fall
+    | 'leið:kvk'/tala/fall
+    | 'vagn:kk'/tala/fall
+    | 'strætisvagn:kk'/tala/fall
+
+QBusNounSingular_nf →
+    QBusNoun_nf_et
+
+QBusNounSingular_þf →
+    QBusNoun_þf_et
+
+QBusNounSingular_þgf →
+    QBusNoun_þgf_et
+
+QBusNounSingular_ef →
+    QBusNoun_ef_et
 
 QBusWhich →
     # 'Hvaða strætó stoppar í Einarsnesi'?
-    "hvaða" QBusNoun_nf QBusWhichTail '?'?
+    # 'Hvaða strætisvagnar stoppa á Lækjartorgi'?
+    "hvaða" QBusNoun_nf/tala QBusWhichTail/tala '?'?
 
 $score(+32) QBusWhich
 
-QBusWhichTail →
-    "stoppar" "í" QBusStopName_þgf
-    | "stoppar" "á" QBusStopName_þgf
-    | "stöðvar" "í" QBusStopName_þgf
-    | "stöðvar" "á" QBusStopName_þgf
-    | "ekur" "í" QBusStopName_þf
-    | "ekur" "á" QBusStopName_þf
-    | "kemur" "á" QBusStopName_þf
-    | "kemur" "í" QBusStopName_þf
-    | "kemur" "til" QBusStopName_ef
-    | "fer" "frá" QBusStopName_þgf
+QBusWhichTail/tala →
+    'stoppa:so'_p3_gm_fh_nt/tala "í" QBusStopName_þgf
+    | 'stoppa:so'_p3_gm_fh_nt/tala "á" QBusStopName_þgf
+    | 'stöðva:so'_p3_gm_fh_nt/tala "í" QBusStopName_þgf
+    | 'stöðva:so'_p3_gm_fh_nt/tala "á" QBusStopName_þgf
+    | 'aka:so'_p3_gm_fh_nt/tala "í" QBusStopName_þf
+    | 'aka:so'_p3_gm_fh_nt/tala "á" QBusStopName_þf
+    | 'aka:so'_p3_gm_fh_nt/tala "til" QBusStopName_ef
+    | 'aka:so'_p3_gm_fh_nt/tala "frá" QBusStopName_þgf
+    | 'koma:so'_p3_gm_fh_nt/tala "á" QBusStopName_þf
+    | 'koma:so'_p3_gm_fh_nt/tala "í" QBusStopName_þf
+    | 'koma:so'_p3_gm_fh_nt/tala "til" QBusStopName_ef
+    | 'fara:so'_p3_gm_fh_nt/tala "í" QBusStopName_þf
+    | 'fara:so'_p3_gm_fh_nt/tala "á" QBusStopName_þf
+    | 'fara:so'_p3_gm_fh_nt/tala "frá" QBusStopName_þgf
+    | 'fara:so'_p3_gm_fh_nt/tala "til" QBusStopName_ef
 
 QBusStopName/fall →
     no/fall
@@ -130,12 +156,9 @@ QBusArrivalTime →
 
     # 'Hvenær kemur ásinn/sexan/tían/strætó númer tvö?'
     "hvenær" "kemur" QBus_nf '?'?
+    | "hvenær" "fer" QBus_nf '?'?
 
     # 'Hvenær er von á fimmunni / vagni númer sex?'
-    # Note that "Von" is also a person name, but
-    # the double quote literal form is not case-sensitive
-    # and will match person and entity names as well,
-    # even if (auto-)capitalized
     | "hvenær" "er" "von" "á" QBus_þgf '?'?
 
     # 'Hvenær má búast við leið þrettán?
@@ -163,7 +186,7 @@ QBusWord/fall →
     | 'tólfa:kvk'_et_gr/fall
 
 QBusNumber/fall →
-    QBusNoun/fall 'númer:hk'_et_nf? QBusNumberWord
+    QBusNounSingular/fall 'númer:hk'_et_nf? QBusNumberWord
 
 QBusNumberWord →
 
@@ -199,7 +222,8 @@ def QBusStopName(node, params, result):
 
 def QBusNoun(node, params, result):
     """ Save the noun used to refer to a bus """
-    result.bus_noun = result._nominative
+    # Use singular, indefinite form
+    result.bus_noun = result._canonical
 
 
 def QBusArrivalTime(node, params, result):
