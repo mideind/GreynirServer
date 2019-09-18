@@ -26,7 +26,7 @@
 # TODO: Natural language weather forecasts for different parts of the country (N-land, etc.)
 # TODO: Provide weather info for locations outside Iceland
 # TODO: Add more info to description of current weather conditions?
-# TODO: More detailed forecast?
+# TODO: More detailed forecast, time specific? E.g. "hvernig verður veðrið klukkan þrjú?"
 
 import re
 import logging
