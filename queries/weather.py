@@ -293,12 +293,17 @@ _DESCR_ABBR = {
 
 
 def _descr4voice(descr):
-    """ Prepare natural language weather description for voice synthesizer 
+    """ Prepare natural language weather description for speech synthesizer 
         by rewriting/expanding abbreviations, etc. """
 
     # E.g. "8-13" becomes "8 til 13"
     d = re.sub(r"(\d+)\-(\d+)", r"\1 til \2", descr)
 
+    # Fix faulty formatting in Met text where no space follows period.
+    # This formatting error confuses speech synthesis.
+    d = re.sub(r"(\S+)\.(\S+)", r"\1. \2", d)
+
+    # Abbreviations
     for k, v in _DESCR_ABBR.items():
         d = d.replace(k, v)
 
