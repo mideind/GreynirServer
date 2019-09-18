@@ -381,6 +381,12 @@ function displayTokens(j) {
                else {
                   var cls;
                   var tx = t.x;
+                  var first = t.t ? t.t.split("_")[0] : undefined;
+                  if (first == "sequence") {
+                     // Special case to display tokens matching 'sequence' terminals
+                     cls = " class='sequence'";
+                  }
+                  else
                   if (!t.k) {
                      // TOK_WORD
                      if (err)
@@ -394,7 +400,7 @@ function displayTokens(j) {
                         cls = " class='" + t.m[1] + ' ' + t.m[2] + "'";
                      }
                      else
-                     if (t.t && t.t.split("_")[0] == "sérnafn") {
+                     if (first == "sérnafn") {
                         // Special case to display 'sérnafn' as 'entity'
                         cls = " class='entity'";
                         tx = tx.replace(" - ", "-"); // Tight hyphen, no whitespace

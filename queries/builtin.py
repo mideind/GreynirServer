@@ -668,6 +668,18 @@ def launch_search(query, session, qkey):
     return dict(answers=result["articles"], weights=tweights)
 
 
+def repeat_query(query, session, qkey):
+    """ Request to repeat the result of the last query """
+    last = query.last_answer()
+    if last is None:
+        answer = "Ekkert nýlegt svar."
+        voice_answer = "Ég hef ekki svarað neinu nýlega."
+    else:
+        answer, voice_answer = last
+    response = dict(answer=answer)
+    return response, answer, voice_answer
+
+
 # Map query types to handler functions
 _QFUNC = {
     "Person": query_person,
@@ -676,10 +688,14 @@ _QFUNC = {
     "Company": query_company,
     "Word": query_word,
     "Search": launch_search,
+    "Repeat": repeat_query,
 }
 
 # Query types that are not supported for voice queries
 _Q_NO_VOICE = frozenset(("Search", "Word"))
+
+# Query types that are only supported for voice queries
+_Q_ONLY_VOICE = frozenset(("Repeat",))
 
 
 def sentence(state, result):
@@ -691,6 +707,10 @@ def sentence(state, result):
             # We don't do topic searches or word relationship
             # queries via voice; that would be pretty meaningless.
             q.set_error("E_VOICE_NOT_SUPPORTED")
+            return
+        if not q.is_voice and result.qtype in _Q_ONLY_VOICE:
+            # We don't allow repeat requests in non-voice queries
+            q.set_error("E_ONLY_VOICE_SUPPORTED")
             return
         q.set_qtype(result.qtype)
         q.set_key(result.qkey)
@@ -736,7 +756,7 @@ Query →
     BuiltinQueries
 
 BuiltinQueries →
-    QPerson > QCompany > QEntity > QTitle > QWord > QSearch
+    QPerson > QCompany > QEntity > QTitle > QRepeat > QWord > QSearch
 
 QPerson →
     Manneskja_nf
@@ -837,6 +857,22 @@ QTitleKey_nf →
 
 QTitleKey_ef →
     EinnTitill_ef OgTitill_ef*
+
+# Request to repeat the last answer
+
+QRepeat →
+    QRepeatQuery '?'?
+
+QRepeatQuery →
+    QPlease? "endurtaktu" "þetta"?
+    | QPlease? "segðu" "mér"? "þetta" "aftur"
+    | "geturðu" "endurtekið" "þetta"?
+    | "geturðu" "sagt" "þetta" "aftur"
+    | "gætirðu" "endurtekið" "þetta"?
+    | "gætirðu" "sagt" "þetta" "aftur"
+
+QPlease →
+    "vinsamlega" | "vinsamlegast"
 
 # Word relation query
 
@@ -998,6 +1034,12 @@ def QSearch(node, params, result):
     result.qtype = "Search"
     # Return the entire query text as the search key
     result.qkey = result._text
+
+
+def QRepeat(node, params, result):
+    """ Request to repeat the last query answer """
+    result.qkey = ""
+    result.qtype = "Repeat"
 
 
 def Sérnafn(node, params, result):
