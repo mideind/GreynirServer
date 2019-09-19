@@ -476,8 +476,8 @@ def query_arrival_time(query, session, result):
         if SCHEDULE_TODAY is None or not SCHEDULE_TODAY.is_valid_today:
             # We don't have today's schedule: create it
             SCHEDULE_TODAY = straeto.BusSchedule()
-    # Obtain the closest stops (at least within 300 meters radius)
-    stops = straeto.BusStop.closest_to(location, n=2, within_radius=0.3)
+    # Obtain the closest stops (at least within 400 meters radius)
+    stops = straeto.BusStop.closest_to(location, n=2, within_radius=0.4)
     if not stops:
         # This will fetch the single closest stop, regardless of distance
         stops = [straeto.BusStop.closest_to(location)]
@@ -511,6 +511,10 @@ def query_arrival_time(query, session, result):
         stop = stops[0]
         va.extend(["stoppar ekki á", to_dative(stop.name)])
         a = [bus_name, "stoppar ekki á", to_dative(stop.name)]
+    # Since we know that the query string contains no uppercase words,
+    # adjust it accordingly; otherwise it may erroneously contain capitalized
+    # words such as Vagn and Leið.
+    query.lowercase_beautified_query()
     voice_answer = " ".join(va) + "."
     answer = " ".join(a) + "."
     response = dict(answer=answer)

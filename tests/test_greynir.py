@@ -97,6 +97,30 @@ def test_query_api(client):
     assert json["answer"] == "Tumi Þorsteinsson."
     assert json["voice"] == "Tumi Þorsteinsson er langsætastur."
 
+    # Builtin module: title
+    resp = client.get("/query.api?voice=1&q=hver er viðar þorsteinsson")
+    json = validate_json(resp)
+    assert json["qtype"] == "Person"
+    assert "voice" in json
+    assert json["voice"].startswith("Viðar Þorsteinsson er ")
+    assert json["voice"].endswith(".")
+
+    # Builtin module: title
+    resp = client.get("/query.api?voice=1&q=hver er björn þorsteinsson")
+    json = validate_json(resp)
+    assert json["qtype"] == "Person"
+    assert "voice" in json
+    assert json["voice"].startswith("Björn Þorsteinsson er ")
+    assert json["voice"].endswith(".")
+
+    # Builtin module: person
+    resp = client.get("/query.api?voice=1&q=hver er forsætisráðherra")
+    json = validate_json(resp)
+    assert json["qtype"] == "Title"
+    assert "voice" in json
+    assert json["voice"].startswith("Forsætisráðherra er ")
+    assert json["voice"].endswith(".")
+
     # Bus module
     resp = client.get("/query.api?test=1&voice=1&q=hvaða stoppistöð er næst mér")
     json = validate_json(resp)
