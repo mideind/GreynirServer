@@ -438,6 +438,23 @@ def _query_article_list(session, name):
 
 def query_person(query, session, name):
     """ A query for a person by name """
+    if name in {"hann", "hún", "hán", "það"}:
+        # Using a personal pronoun: check whether we can infer
+        # the name from the query context, i.e. from a recent query result
+        ctx = None if name == "það" else query.fetch_context()
+        if ctx and "person_name" in ctx:
+            # Yes, success
+            name = ctx["person_name"]
+        else:
+            # No - give up
+            response=dict(answers=[], sources=[])
+            if name == "hann":
+                answer = voice_answer = "Ég veit ekki við hvern þú átt."
+            elif name == "hún":
+                answer = voice_answer = "Ég veit ekki við hverja þú átt."
+            else:
+                answer = voice_answer = "Ég veit ekki við hvert þú átt."
+            return response, answer, voice_answer
     titles = _query_person_titles(session, name)
     # Now, create a list of articles where this person name appears
     articles = _query_article_list(session, name)
@@ -446,6 +463,8 @@ def query_person(query, session, name):
         # 'Már Guðmundsson er seðlabankastjóri.'
         answer = titles[0]["answer"]
         voice_answer = name + " er " + answer + "."
+        # Set the context for a subsequent query
+        query.set_context({"person_name": name})
     else:
         answer = "Nafnið '" + name + "' finnst ekki."
         voice_answer = "Ég veit ekki hver " + name + " er."
@@ -512,6 +531,9 @@ def query_title(query, session, title):
         upper_title = title[0].upper() + title[1:]
         answer = response[0]["answer"]
         voice_answer = upper_title + " er " + answer + "."
+        # Store the person name in the query context
+        # so it can be referred to in subsequent queries
+        query.set_context({"person_name": answer})
     else:
         answer = "Ekkert nafn finnst með titilinn '" + title + "'."
         voice_answer = "Ég veit ekki hver er " + title + "."
@@ -760,16 +782,19 @@ BuiltinQueries →
 
 QPerson →
     Manneskja_nf
-    | QPersonPrefix_nf Manneskja_nf "?"?
-    | QPersonPrefix_þf Manneskja_þf "?"?
-    | QPersonPrefix_þgf Manneskja_þgf # "?"?
-    | QPersonPrefix_ef Manneskja_ef "?"?
-    | QPersonPrefixAny Sérnafn "?"?
+    | QPersonPrefix/fall QPersonKey/fall "?"?
+    
+QPersonKey/fall →
+    Manneskja/fall
+    | QPersonPronoun/fall/kyn
 
-QPersonPrefixAny →
-    QPersonPrefix/fall
+QPersonKey/fall →
+    > Sérnafn
 
-$score(-2) QPersonPrefixAny # Discourage entity names if person names are available
+QPersonPronoun/fall/kyn →
+    Pfn_et/fall/kyn
+
+$tag(keep) QPersonPronoun/fall/kyn
 
 QPersonPrefix_nf →
     "hver" "er"
@@ -1006,8 +1031,15 @@ def QPerson(node, params, result):
         result.qkey = result.mannsnafn
     elif "sérnafn" in result:
         result.qkey = result.sérnafn
+    elif "persónufornafn" in result:
+        result.qkey = result.persónufornafn
     else:
         assert False
+
+
+def QPersonPronoun(node, params, result):
+    """ Persónufornafn: hann, hún, það """
+    result.persónufornafn = result._nominative
 
 
 def QCompany(node, params, result):

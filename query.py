@@ -190,6 +190,8 @@ class Query:
         self._expires = None
         # Client id, if known
         self._client_id = client_id
+        # Query context, which is None until fetched via self.fetch_context()
+        self._context = None
 
     @classmethod
     def init_class(cls):
@@ -389,6 +391,29 @@ class Query:
         last = q.order_by(desc(QueryRow.timestamp)).limit(1).one_or_none()
         return None if last is None else tuple(last)
 
+    def fetch_context(self, *, within_minutes=10):
+        """ Return the context from the last answer given to this client,
+            by default within the last 10 minutes (0=forever) """
+        if not self._client_id:
+            # Can't find the last answer if no client_id given
+            return None
+        # Find the newest non-error, no-repeat query result for this client
+        q = (
+            self._session.query(QueryRow.context)
+                .filter(QueryRow.client_id == self._client_id)
+                .filter(QueryRow.qtype != "Repeat")
+                .filter(QueryRow.error == None)
+        )
+        if within_minutes > 0:
+            # Apply a timestamp filter
+            since = datetime.utcnow() - timedelta(minutes=within_minutes)
+            q = q.filter(QueryRow.timestamp >= since)
+        # Sort to get the newest query that fulfills the criteria
+        ctx = q.order_by(desc(QueryRow.timestamp)).limit(1).one_or_none()
+        if ctx is None:
+            return None
+        return None if ctx is None else ctx[0]
+
     @property
     def query(self):
         return self._query
@@ -470,6 +495,16 @@ class Query:
     def error(self):
         """ Return the query error, if any """
         return self._error
+
+    def set_context(self, ctx):
+        """ Set a query context that will be stored and made available
+            to the next query from the same client """
+        self._context = ctx
+
+    @property
+    def context(self):
+        """ Return the context that has been set by self.set_context() """
+        return self._context
 
     def execute(self):
         """ Check whether the parse tree is describes a query, and if so,
@@ -693,8 +728,9 @@ def process_query(
                         client_id=client_id,
                         client_type=client_type or None,
                         # IP address
-                        remote_addr=remote_addr or None
-                        # !!! TBD: context
+                        remote_addr=remote_addr or None,
+                        # Context, if set during query execution
+                        context=query.context,
                         # All other fields are set to NULL
                     )
                     session.add(qrow)

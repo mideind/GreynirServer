@@ -111,6 +111,14 @@ QBusNoun/fall/tala →
     | 'vagn:kk'/tala/fall
     | 'strætisvagn:kk'/tala/fall
 
+# Hack to also match Vagn as a person name
+# (the lemma terminal 'vagn:kk', used above, does not match person names)
+
+QBusNoun_nf_et → 'Vagn'_nf_kk
+QBusNoun_þf_et → 'Vagn'_þf_kk
+QBusNoun_þgf_et → 'Vagn'_þgf_kk
+QBusNoun_ef_et → 'Vagn'_ef_kk
+
 QBusNounSingular_nf →
     QBusNoun_nf_et
 
