@@ -89,6 +89,9 @@ _SPECIAL_QUERIES = {
     "hver er ég?": {
         "answer": "Þú ert þú."
     },
+    "hvað er ég?": {
+        "answer": "Þú ert væntanlega manneskja sem talar íslensku."
+    },
     "er guð til?": {
         "answer": "Ég held ekki."
     },
@@ -107,7 +110,10 @@ _SPECIAL_QUERIES = {
     },
     "hvar er draumurinn?": {
         "answer": "Hvar ertu, lífið sem ég þrái?"
-    }
+    },
+    "hvað get ég spurt þig um?": {
+        "answer": "Þú getur meðal annars spurt mig um veðrið."
+    },
 }
 
 

@@ -327,6 +327,7 @@ class Query:
         # Looks good
         # Store the resulting parsed query as a tree
         tree_string = "S1\n" + trees[1]
+        print(tree_string)
         self._tree = Tree()
         self._tree.load(tree_string)
         # Store the token list

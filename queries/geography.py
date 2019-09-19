@@ -35,13 +35,25 @@ from reynir.bindb import BIN_Db
 _GEO_QTYPE = "Geography"
 
 
+_CAPITAL_QUERIES = [
+    "hver er höfuðborgin í ",
+    "hver er höfuðborgin á ",
+    "hver er höfuðborg ",
+]
+
+
 def handle_plain_text(q):
     """ Handle a plain text query, contained in the q parameter """
     ql = q.query_lower.rstrip("?").strip()
-    pfx = "hver er höfuðborg "
+    pfx = None
 
-    if ql.startswith(pfx):
-        country = q.query[len(pfx) :].strip()
+    for p in _CAPITAL_QUERIES:
+        if ql.startswith(p):
+            pfx = p
+            break
+
+    if pfx:
+        country = ql[len(pfx) :].strip()
         if not len(country):
             return False
 
@@ -49,9 +61,9 @@ def handle_plain_text(q):
         # TODO: This only works for single-word country names, fix that
         # Transform country name from genitive to nominative
         bres = BIN_Db().lookup_nominative(country, cat="no")
-        words = [m.stofn for m in bres]
-        if not words:
+        if not bres:
             return False
+        words = [m.stofn for m in bres]
 
         # Look up ISO code from country name
         nom_country = words[0]

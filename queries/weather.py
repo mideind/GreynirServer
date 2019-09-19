@@ -27,6 +27,8 @@
 # TODO: Provide weather info for locations outside Iceland
 # TODO: Add more info to description of current weather conditions?
 # TODO: More detailed forecast, time specific? E.g. "hvernig verður veðrið klukkan þrjú?"
+# TODO: "Mun rigna í dag?" "Verður mikið rok í dag?" "Verður kalt í kvöld?" "Þarf ég regnhlíf?"
+# TODO: "Hversu mikið rok er úti?" 
 
 import re
 import logging
@@ -105,7 +107,7 @@ QWeatherCapitalRegion →
     "á" "höfuðborgarsvæðinu" | "í" "reykjavík"
 
 QWeatherAnyLoc →
-    QWeatherCountry | QWeatherCapitalRegion | QWeatherOpenLoc
+    QWeatherCountry > QWeatherCapitalRegion > QWeatherOpenLoc
 
 QWeatherOpenLoc →
     fs_þgf Nl_þgf

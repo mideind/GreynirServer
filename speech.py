@@ -26,10 +26,8 @@ import sys
 import os
 import json
 import logging
-from pprint import pprint
-import datetime
-import functools
 
+import cachetools
 import boto3
 from botocore.exceptions import ClientError
 
@@ -56,7 +54,7 @@ _AUDIO_FORMATS = frozenset(("mp3", "ogg_vorbis", "pcm"))
 _DEFAULT_TEXT_FORMAT = "text"
 _TEXT_FORMATS = frozenset(("text", "ssml"))
 
-_URL_TTL = 900  # 15 mins in seconds
+_AWS_URL_TTL = 900  # 15 mins in seconds
 
 
 def _intialize_client():
@@ -78,33 +76,14 @@ def _intialize_client():
     return boto3.Session(**aws_config).client("polly")
 
 
-def ttlcache(ttl=datetime.timedelta(seconds=600)):
-    """ Caching function decorator with time to live.
-        From https://stackoverflow.com/a/50866968/481073 """
-    def wrap(func):
-        cache = {}
-
-        @functools.wraps(func)
-        def wrapped(*args, **kw):
-            now = datetime.datetime.now()
-            key = tuple(args), frozenset(kw.items())
-            if key not in cache or now - cache[key][0] > ttl:
-                value = func(*args, **kw)
-                cache[key] = (now, value)
-            return cache[key][1]
-
-        return wrapped
-
-    return wrap
-
-
 # TTL (in seconds) for get_synthesized_text_url caching
 # Add a safe 30 second margin to ensure that clients are never provided with an
 # audio URL that's just about to expire and could do so before playback starts.
-_URL_CACHE_TTL = _URL_TTL - 30
+_CACHE_TTL = _AWS_URL_TTL - 30
+_CACHE_MAXITEMS = 30
 
 
-@ttlcache(ttl=datetime.timedelta(seconds=_URL_CACHE_TTL))
+@cachetools.cached(cachetools.TTLCache(_CACHE_MAXITEMS, _CACHE_TTL))
 def get_synthesized_text_url(text, txt_format="text", voice_id=_DEFAULT_VOICE):
     """ Returns AWS URL to audio file with speech-synthesised text """
 
@@ -139,7 +118,7 @@ def get_synthesized_text_url(text, txt_format="text", voice_id=_DEFAULT_VOICE):
         url = client.generate_presigned_url(
             ClientMethod="synthesize_speech",
             Params=params,
-            ExpiresIn=_URL_TTL,
+            ExpiresIn=_AWS_URL_TTL,
             HttpMethod="GET",
         )
     except ClientError as e:

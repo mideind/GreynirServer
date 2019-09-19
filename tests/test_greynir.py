@@ -169,6 +169,13 @@ def test_query_api(client):
     assert "answer" in json
     assert re.search(r"^\d+°$", json["answer"])
 
+    # Geography module
+    resp = client.get("/query.api?q=Hver er höfuðborg Spánar?")
+    json = validate_json(resp)
+    assert json["qtype"] == "Geography"
+    assert "answer" in json
+    assert json["answer"] == "Madríd"
+
 
 def test_processors():
     """ Try to import all tree/token processors by instantiating Processor object """

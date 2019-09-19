@@ -23,6 +23,8 @@
 
 """
 
+# TODO: This module should probably use grammar instead of regexes
+
 import re
 import logging
 import math
@@ -43,6 +45,9 @@ _QREGEXES = (
     r"^hve langt er ég frá (.+)$",
     r"^hvað er langt á (.+)$",
     r"^hvað er langt í (.+)$",
+    # TODO: Fix response for these two (transform location to dative)
+    # r"^hvað er langt til (.+)$",
+    # r"^hversu langt er til (.+)$",
 )
 
 
@@ -53,7 +58,7 @@ def _addr2nom(address):
     for w in words:
         bin_res = BIN_Db().lookup_nominative(w)
         if bin_res:
-            nf.append(bin_res[0].stofn)
+            nf.append(bin_res[0].ordmynd)
         else:
             nf.append(w)
     return " ".join(nf)
@@ -115,14 +120,14 @@ def handle_plain_text(q):
         if m:
             remote_loc = m.group(1)
             break
-
-    if not remote_loc:
+    else:
         return False
 
     try:
         answ = answer_for_remote_loc(remote_loc, q)
     except Exception as e:
         logging.warning("Exception looking up addr in geocode API: {0}".format(e))
+        q.set_error("E_EXCEPTION: {0}".format(e))
         answ = None
     
     if not answ:

@@ -24,7 +24,8 @@
 """
 
 # TODO: Speech synthesis: "Bárugötu þrjú" ekki "þrír"
-# TODO: "Hvað er ég langt frá X?"
+# TODO: "Í hvaða póstnúmeri er ég?" "Í hvaða póstnúmeri er Fiskislóð 31?"
+# TODO: "Í hvaða hverfi er ég?" - "Þú ert í Hlíðunum"
 
 import os
 import logging
@@ -199,9 +200,14 @@ _WHERE_AM_I_STRINGS = frozenset(
     (
         "hvar er ég",
         "hvar er ég núna",
+        "hvar er ég eins og stendur",
+        "hvar er ég eiginlega",
         "hvar er ég staddur",
+        "hvar er ég eiginlega staddur",
         "hvar er ég stödd",
+        "hvar er ég eiginlega stödd",
         "hver er staðsetning mín",
+        "hvar erum við",
     )
 )
 _LOC_QTYPE = "Location"

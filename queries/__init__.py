@@ -61,7 +61,9 @@ def query_json_api(url):
 # The Google API identifier (you must obtain your
 # own key if you want to use this code)
 _API_KEY = ""
-_API_KEY_PATH = os.path.join("resources", "GoogleServerKey.txt")
+_API_KEY_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "resources", "GoogleServerKey.txt"
+)
 
 
 def _get_API_key():
@@ -94,7 +96,9 @@ def query_geocode_API_coords(lat, lon):
     return query_json_api(url)
 
 
-_MAPS_API_ADDR_URL = "https://maps.googleapis.com/maps/api/geocode/json?address={0}&key={1}&language=is"
+_MAPS_API_ADDR_URL = (
+    "https://maps.googleapis.com/maps/api/geocode/json?address={0}&key={1}&language=is"
+)
 
 
 def query_geocode_API_addr(addr):
