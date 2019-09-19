@@ -26,8 +26,8 @@ import sys
 import os
 import json
 import logging
-from pprint import pprint
 
+import cachetools
 import boto3
 from botocore.exceptions import ClientError
 
@@ -54,6 +54,8 @@ _AUDIO_FORMATS = frozenset(("mp3", "ogg_vorbis", "pcm"))
 _DEFAULT_TEXT_FORMAT = "text"
 _TEXT_FORMATS = frozenset(("text", "ssml"))
 
+_AWS_URL_TTL = 900  # 15 mins in seconds
+
 
 def _intialize_client():
     """ Set up AWS Polly client """
@@ -74,7 +76,14 @@ def _intialize_client():
     return boto3.Session(**aws_config).client("polly")
 
 
-# TODO: Add caching for identical responses
+# TTL (in seconds) for get_synthesized_text_url caching
+# Add a safe 30 second margin to ensure that clients are never provided with an
+# audio URL that's just about to expire and could do so before playback starts.
+_CACHE_TTL = _AWS_URL_TTL - 30
+_CACHE_MAXITEMS = 30
+
+
+@cachetools.cached(cachetools.TTLCache(_CACHE_MAXITEMS, _CACHE_TTL))
 def get_synthesized_text_url(text, txt_format="text", voice_id=_DEFAULT_VOICE):
     """ Returns AWS URL to audio file with speech-synthesised text """
 
@@ -109,7 +118,7 @@ def get_synthesized_text_url(text, txt_format="text", voice_id=_DEFAULT_VOICE):
         url = client.generate_presigned_url(
             ClientMethod="synthesize_speech",
             Params=params,
-            ExpiresIn=600,
+            ExpiresIn=_AWS_URL_TTL,
             HttpMethod="GET",
         )
     except ClientError as e:

@@ -31,6 +31,10 @@
 """
 
 # TODO: Fix pronunciation of ordinal day of month (i.e. "29di" vs "29da")
+# TODO: Check the number of days between dates. Ex.: "How many days until October 6?" 
+#       or "How many weeks between April 3 and June 16?"
+# TODO: Find out the date and day of the week of holidays, e.g. "When is Easter?" 
+#       or "When is Labor Day?"
 
 from datetime import datetime
 from pytz import timezone
