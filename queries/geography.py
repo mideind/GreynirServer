@@ -37,10 +37,13 @@ _GEO_QTYPE = "Geography"
 
 _CAPITAL_QUERIES = [
     "hver er höfuðborgin í ",
+    "hvað er höfuðborgin í ",
     "hver er höfuðborgin á ",
+    "hvað er höfuðborgin á ",
     "hvað er höfuðborg ",
     "hver er höfuðborg ",
     "hver er höfuðstaður ",
+    "hvað er höfuðstaður ",
 ]
 
 
@@ -81,7 +84,7 @@ def handle_plain_text(q):
         # Use the Icelandic name for the city
         ice_cname = icelandic_city_name(capital["name_ascii"])
 
-        # Get genitive version of country name for voice description,
+        # Look up genitive country name for voice description,
         bres = BIN_Db().lookup_genitive(nom_country, cat="no")
         country_gen = bres[0].ordmynd if bres else country
 

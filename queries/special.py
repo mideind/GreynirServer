@@ -48,8 +48,29 @@ def _random_joke():
     return { "answer": choice(_JOKES) }
 
 
+_CAP = (
+    "Þú getur til dæmis spurt mig um veðrið.",
+    "Þú getur til dæmis spurt mig um höfuðborgir.",
+    "Þú getur til dæmis spurt mig um tíma og dagsetningu.",
+    "Þú getur til dæmis spurt mig um strætósamgöngur.",
+    "Þú getur til dæmis spurt mig um fjarlægðir.",
+    "Þú getur til dæmis spurt mig um gengi gjaldmiðla.",
+    "Þú getur til dæmis spurt mig um fólk sem kemur fram í fjölmiðlum.",
+)
+
+
 def _capabilities():
-    return { "answer": "Þú getur meðal annars spurt mig um veðrið." }
+    return { "answer": choice(_CAP) }
+
+
+def _identity():
+    return { "answer": "Ég heiti Embla og ég skil íslensku." }
+
+
+_MEANING_OF_LIFE = {
+    "answer": "42.",
+    "voice": "Fjörutíu og tveir."
+}
 
 
 _SPECIAL_QUERIES = {
@@ -59,14 +80,11 @@ _SPECIAL_QUERIES = {
     "er þetta svar": {
         "answer": "Er þetta spurning?"
     },
-    "hvað er svarið": {
-        "answer": "42.",
-        "voice": "Fjörutíu og tveir."
-    },
-    "hvert er svarið": {
-        "answer": "42.",
-        "voice": "Fjörutíu og tveir."
-    },
+
+    "hvað er svarið": _MEANING_OF_LIFE,
+    "hvert er svarið": _MEANING_OF_LIFE,
+    "hver er tilgangur lífsins": _MEANING_OF_LIFE,
+
     "veistu allt": {
         "answer": "Nei, því miður."
     },
@@ -75,13 +93,6 @@ _SPECIAL_QUERIES = {
     },
     "veistu svarið": {
         "answer": "Spurðu mig!"
-    },
-    "hvað heitir þú": {
-        "answer": "Greynir. Ég er grey sem reynir að greina íslensku.",
-        "voice": "Ég heiti Greynir. Ég er grey sem reynir að greina íslensku."
-    },
-    "hver ert þú": {
-        "answer": "Ég er grey sem reynir að greina íslensku."
     },
     "hver bjó þig til": {
         "answer": "Flotta teymið hjá Miðeind.",
@@ -108,23 +119,19 @@ _SPECIAL_QUERIES = {
         "voice": "Tumi Þorsteinsson er langsætastur."
     },
     "hver er ég": {
-        "answer": "Þú ert þú."
+        "answer": "Þú ert væntanlega manneskja sem talar íslensku."
     },
     "hvað er ég": {
         "answer": "Þú ert væntanlega manneskja sem talar íslensku."
     },
     "er guð til": {
-        "answer": "Ég held ekki."
+        "answer": "Það held ég ekki."
     },
     "hver skapaði guð": {
         "answer": "Enginn sem ég þekki."
     },
     "hver skapaði heiminn": {
         "answer": "Enginn sem ég þekki."
-    },
-    "hver er tilgangur lífsins": {
-        "answer": "42.",
-        "voice": "Fjörutíu og tveir."
     },
     "hvar endar alheimurinn": {
         "answer": "Inni í þér."
@@ -133,19 +140,38 @@ _SPECIAL_QUERIES = {
         "answer": "Hvar ertu, lífið sem ég þrái?"
     },
 
+    "hvað heitir þú": _identity,
+    "hvað heitirðu": _identity,
+    "hver ert þú": _identity,
+    "hver ertu": _identity,
+
     "hvað get ég spurt þig um": _capabilities,
     "hvað er hægt að spyrja um": _capabilities,
     "hvað er hægt að spyrja þig um": _capabilities,
+    "hvað annað get ég spurt þig um": _capabilities,
+    "hvað annað er hægt að spyrja um": _capabilities,
+
     "hvaða spurningar skilur þú": _capabilities,
+    "hvaða spurningar skilurðu": _capabilities,
+
     "hvers konar spurningar skilur þú": _capabilities,
+    "hvers konar spurningar skilurðu": _capabilities,
+
+    "hvers konar fyrirspurnir skilur þú": _capabilities,
+    "hvers konar fyrirspurnir skilurðu": _capabilities,
 
     "ertu með kímnigáfu": {
         "answer": "Afar takmarkaða.",
         "voice": "Já, en afar takmarkaða",
     },
+
     "segðu mér brandara": _random_joke,
+    "segðu mér annan brandara": _random_joke,
     "segðu brandara": _random_joke,
+    "segðu annan brandara": _random_joke,
     "komdu með brandara": _random_joke,
+    "komdu með annan brandara": _random_joke,
+    "segðu eitthvað fyndið": _random_joke,
 }
 
 
