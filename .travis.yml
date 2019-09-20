@@ -26,6 +26,10 @@ before_script:
   - psql -d scraper -c "create extension if not exists \"uuid-ossp\";" -U postgres
   - psql -c "create user reynir with password 'reynir';" -U postgres
   - python scraper.py --init
+  - cp tests/test_files/testdb_articles.csv /tmp/
+  - psql -d scraper -c "copy articles from '/tmp/testdb_articles.csv' delimiter ',' csv;"
+  - cp tests/test_files/testdb_persons.csv /tmp/
+  - psql -d scraper -c "copy persons from '/tmp/testdb_persons.csv' delimiter ',' csv;"
 
 script:
   - python -m pytest
