@@ -150,7 +150,9 @@ _SPECIAL_QUERIES = {
     "hvað get ég spurt þig um": _capabilities,
     "hvað er hægt að spyrja um": _capabilities,
     "hvað er hægt að spyrja þig um": _capabilities,
+    "hvað annað get ég spurt um": _capabilities,
     "hvað annað get ég spurt þig um": _capabilities,
+    "hvað annað gæti ég spurt þig um": _capabilities,
     "hvað annað er hægt að spyrja um": _capabilities,
 
     "hvaða spurningar skilur þú": _capabilities,

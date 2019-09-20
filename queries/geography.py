@@ -66,7 +66,7 @@ def handle_plain_text(q):
 
     country = country[0].upper() + country[1:]  # Capitalize first char
     # TODO: This only works for single-word country names, fix that
-    # Transform country name from genitive to nominative
+    # Transform country name to nominative
     bres = BIN_Db().lookup_nominative(country, cat="no")
     if not bres:
         return False
@@ -96,6 +96,11 @@ def handle_plain_text(q):
 
     q.set_answer(response, answer, voice)
     q.set_qtype(_GEO_QTYPE)
+    q.set_key("Höfuðborg {0}".format(country_gen))
     q.set_expires(datetime.utcnow() + timedelta(hours=12))
+
+    # Capitalize name of country
+    b = q.beautified_query
+    q.set_beautified_query("{0}{1}".format(b[:len(pfx)], b[len(pfx):].capitalize()))
 
     return True
