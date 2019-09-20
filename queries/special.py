@@ -67,6 +67,18 @@ def _identity():
     return { "answer": "Ég heiti Embla og ég skil íslensku." }
 
 
+_RUDE = (
+    "Þetta var ekki fallega sagt.",
+    "Þvoðu á þér munninn með sápu.",
+    "Ekki vera með dónaskap.",
+    "Svona munnsöfnuður er alveg óþarfi.",
+    "Kenndi mamma þín þér svona munnsöfnuð?",
+)
+
+
+def _rudeness():
+    return { "answer": choice(_RUDE) }
+
 _MEANING_OF_LIFE = {
     "answer": "42.",
     "voice": "Fjörutíu og tveir."
@@ -178,9 +190,10 @@ _SPECIAL_QUERIES = {
     "segðu eitthvað fyndið": _random_joke,
 
     # Rudeness :)
-    "fokkaðu þér": {
-        "answer": "Þetta var ekki fallega sagt."
-    },
+    "fokkaðu þér": _rudeness,
+    "éttu skít": _rudeness,
+    "farðu til helvítis": _rudeness,
+    "farðu í rass og rófu": _rudeness,
 }
 
 
