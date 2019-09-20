@@ -27,6 +27,7 @@
 # TODO: "Í hvaða landi er [BORG]?", "Hvað búa margir í/á [BORG/LAND]?" etc.
 
 
+from datetime import datetime, timedelta
 from cityloc import capital_for_cc
 from geo import icelandic_city_name, isocode_for_country_name
 from reynir.bindb import BIN_Db
@@ -37,8 +38,13 @@ _GEO_QTYPE = "Geography"
 
 _CAPITAL_QUERIES = [
     "hver er höfuðborgin í ",
+    "hvað er höfuðborgin í ",
     "hver er höfuðborgin á ",
+    "hvað er höfuðborgin á ",
+    "hvað er höfuðborg ",
     "hver er höfuðborg ",
+    "hver er höfuðstaður ",
+    "hvað er höfuðstaður ",
 ]
 
 
@@ -51,41 +57,50 @@ def handle_plain_text(q):
         if ql.startswith(p):
             pfx = p
             break
+    else:
+        return False
 
-    if pfx:
-        country = ql[len(pfx) :].strip()
-        if not len(country):
-            return False
+    country = ql[len(pfx) :].strip()
+    if not len(country):
+        return False
 
-        country = country[0].upper() + country[1:]  # Capitalize first char
-        # TODO: This only works for single-word country names, fix that
-        # Transform country name from genitive to nominative
-        bres = BIN_Db().lookup_nominative(country, cat="no")
-        if not bres:
-            return False
-        words = [m.stofn for m in bres]
+    country = country[0].upper() + country[1:]  # Capitalize first char
+    # TODO: This only works for single-word country names, fix that
+    # Transform country name to nominative
+    bres = BIN_Db().lookup_nominative(country, cat="no")
+    if not bres:
+        return False
+    words = [m.ordmynd for m in bres]
 
-        # Look up ISO code from country name
-        nom_country = words[0]
-        cc = isocode_for_country_name(nom_country)
-        if not cc:
-            return False
+    # Look up ISO code from country name
+    nom_country = words[0]
+    cc = isocode_for_country_name(nom_country)
+    if not cc:
+        return False
 
-        # Find capital city, given the country code
-        capital = capital_for_cc(cc)
-        if not capital:
-            return False
+    # Find capital city, given the country code
+    capital = capital_for_cc(cc)
+    if not capital:
+        return False
 
-        # Use the Icelandic name for the city
-        ice_cname = icelandic_city_name(capital["name_ascii"])
+    # Use the Icelandic name for the city
+    ice_cname = icelandic_city_name(capital["name_ascii"])
 
-        answer = ice_cname
-        response = dict(answer=answer)
-        voice = "Höfuðborg {0} er {1}".format(country, answer)
+    # Look up genitive country name for voice description,
+    bres = BIN_Db().lookup_genitive(nom_country, cat="no")
+    country_gen = bres[0].ordmynd if bres else country
 
-        q.set_answer(response, answer, voice)
-        q.set_qtype(_GEO_QTYPE)
+    answer = ice_cname
+    response = dict(answer=answer)
+    voice = "Höfuðborg {0} er {1}".format(country_gen, answer)
 
-        return True
+    q.set_answer(response, answer, voice)
+    q.set_qtype(_GEO_QTYPE)
+    q.set_key("Höfuðborg {0}".format(country_gen))
+    q.set_expires(datetime.utcnow() + timedelta(hours=12))
 
-    return False
+    # Capitalize name of country
+    b = q.beautified_query
+    q.set_beautified_query("{0}{1}".format(b[:len(pfx)], b[len(pfx):].capitalize()))
+
+    return True

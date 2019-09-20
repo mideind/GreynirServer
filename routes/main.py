@@ -290,7 +290,10 @@ def parsefail():
         sfails = []
 
         for a in q.all():
-            tokens = json.loads(a.tokens)
+            try:
+                tokens = json.loads(a.tokens)
+            except:
+                continue
             # Paragraphs
             for p in tokens:
                 # Sentences
