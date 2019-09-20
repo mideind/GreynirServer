@@ -425,10 +425,18 @@ class Query:
 
     @property
     def beautified_query(self):
+        """ Return the query string that will be reflected back to the client """
         return self._beautified_query
 
     def set_beautified_query(self, q):
+        """ Set the query string that will be reflected back to the client """
         self._beautified_query = q
+
+    def lowercase_beautified_query(self):
+        """ If we know that no uppercase words occur in the query,
+            except the initial capital, this function can be called
+            to adjust the beautified query string accordingly. """
+        self._beautified_query = self._beautified_query.capitalize()
 
     @property
     def expires(self):

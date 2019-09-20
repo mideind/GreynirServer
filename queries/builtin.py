@@ -781,11 +781,11 @@ BuiltinQueries →
     QPerson > QCompany > QEntity > QTitle > QRepeat > QWord > QSearch
 
 QPerson →
-    Manneskja_nf
+    Mannsnafn_nf/nkyn
     | QPersonPrefix/fall QPersonKey/fall "?"?
     
 QPersonKey/fall →
-    Manneskja/fall
+    Mannsnafn/fall/nkyn
     | QPersonPronoun/fall/kyn
 
 QPersonKey/fall →
