@@ -80,11 +80,6 @@ _SPECIAL_QUERIES = {
     "er þetta svar": {
         "answer": "Er þetta spurning?"
     },
-
-    "hvað er svarið": _MEANING_OF_LIFE,
-    "hvert er svarið": _MEANING_OF_LIFE,
-    "hver er tilgangur lífsins": _MEANING_OF_LIFE,
-
     "veistu allt": {
         "answer": "Nei, því miður."
     },
@@ -140,11 +135,18 @@ _SPECIAL_QUERIES = {
         "answer": "Hvar ertu, lífið sem ég þrái?"
     },
 
+    # Philosophy
+    "hvað er svarið": _MEANING_OF_LIFE,
+    "hvert er svarið": _MEANING_OF_LIFE,
+    "hver er tilgangur lífsins": _MEANING_OF_LIFE,
+
+    # Identity
     "hvað heitir þú": _identity,
     "hvað heitirðu": _identity,
     "hver ert þú": _identity,
     "hver ertu": _identity,
 
+    # Capabilities
     "hvað get ég spurt þig um": _capabilities,
     "hvað er hægt að spyrja um": _capabilities,
     "hvað er hægt að spyrja þig um": _capabilities,
@@ -160,11 +162,11 @@ _SPECIAL_QUERIES = {
     "hvers konar fyrirspurnir skilur þú": _capabilities,
     "hvers konar fyrirspurnir skilurðu": _capabilities,
 
+    # Jokes
     "ertu með kímnigáfu": {
         "answer": "Afar takmarkaða.",
         "voice": "Já, en afar takmarkaða",
     },
-
     "segðu mér brandara": _random_joke,
     "segðu mér annan brandara": _random_joke,
     "segðu brandara": _random_joke,
@@ -172,6 +174,11 @@ _SPECIAL_QUERIES = {
     "komdu með brandara": _random_joke,
     "komdu með annan brandara": _random_joke,
     "segðu eitthvað fyndið": _random_joke,
+
+    # Rudeness :)
+    "fokkaðu þér": {
+        "answer": "Þetta var ekki fallega sagt."
+    },
 }
 
 
