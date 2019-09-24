@@ -163,8 +163,10 @@ def test_query_api(client):
         "hvað er 17 deilt með fjórum": "4,25",
         "hver er kvaðratrótin af 256": "16",
         "hvað er 12 í þriðja veldi": "1728",
-        "hvað er 17 prósent af 20": "3,4",
-        # "hvað er sjö þúsund deilt með átta hundruð og tólf": "8,62"
+        "hvað eru tveir í tíunda veldi": "1024",
+        "hvað eru 17 prósent af 20": "3,4",
+        "hvað er 7000 deilt með 812": "8,62",
+        "hvað er þrisvar sinnum sjö": "21",
     }
 
     for q, a in ARITHM_QUERIES.items():

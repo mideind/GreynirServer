@@ -177,11 +177,11 @@ QArMultiplicationOperator_þgf → "margfaldað" "með" | "margfaldaðir" "með"
 
 QArDivisionOperator_þgf → "deilt" "með" | "skipt" "með"
 
-QArSum → QArSumOperator QArNumberWord "og" QArNumberWord
+QArSum → QArSumOperator QArNumberWordAny "og" QArNumberWordAny
 QArMult → QArMultOperator QArNumberWord_nf
-QArSqrt → QArSquareRootOperator QArNumberWord
+QArSqrt → QArSquareRootOperator QArNumberWordAny
 QArPow → QArPowOperator
-QArPercent → QArPercentOperator QArNumberWord
+QArPercent → QArPercentOperator QArNumberWordAny
 
 # Prevent nonterminal from being optimized out of the grammar
 $tag(keep) QArPow
@@ -217,7 +217,7 @@ QArLastResult/arfall →
     # Reference to last result
     'það:pfn'_et/arfall
 
-QArNumberWord → QArNumberWord/arfall
+QArNumberWordAny → QArNumberWord/arfall
 
 QArOrdinalWord_þgf →
     {0} | raðnr
