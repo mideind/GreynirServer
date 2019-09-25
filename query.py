@@ -191,6 +191,7 @@ class Query:
         # Client id, if known
         self._client_id = client_id
         # Query context, which is None until fetched via self.fetch_context()
+        # This should be a dict that can be represented in JSON
         self._context = None
 
     @classmethod
@@ -413,6 +414,7 @@ class Query:
         ctx = q.order_by(desc(QueryRow.timestamp)).limit(1).one_or_none()
         if ctx is None:
             return None
+        # This function normally returns a dict that has been decoded from JSON
         return None if ctx is None else ctx[0]
 
     @property
@@ -738,7 +740,8 @@ def process_query(
                         client_type=client_type or None,
                         # IP address
                         remote_addr=remote_addr or None,
-                        # Context, if set during query execution
+                        # Context dict, stored as JSON, if present
+                        # (set during query execution)
                         context=query.context,
                         # All other fields are set to NULL
                     )

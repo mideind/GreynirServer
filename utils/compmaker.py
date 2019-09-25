@@ -96,7 +96,7 @@ FORBIDDEN_FORMS = frozenset((
     "tut", "tvenn", "tæj", "té", "tí", "tíf", "tífu", "tín", "tís", "tísk", "tít", "tó", "tóf", "tóg", "tór", "túb", 
     "túl", "túlkan", "tút", "tý", "týp", "ufs", "ugl", "uma", "umb", "umi", "umr", "un", "una", "uni", "urg", 
     "urn", "urna", "urninn", "urninum", "urt", "urðu", "uss", "uxa", "vall", "vans", "vaplan", "var", "Varsjá", "vas", 
-    "vasi", "vass", "vat", "vaðstu", "vei", "vek", "ven", "vent", "venta", "ventan", "verj", "Vestu", "vila", 
+    "vasi", "vass", "vat", "vaðstu", "vei", "vek", "vels", "ven", "vent", "venta", "ventan", "verj", "Vestu", "vila", 
     "vilni", "vim", "virð", "vis", "visin", "vok", "vol", "vos", "vá", "vár", "væm", "væma", "væmdir", "væmt", "værð", 
     "vé", "vés", "ví", "vía", "vísk", "yli", "ym", "yr", "yrr", "ys", "yssi", "zar", "zet", "Ák", 
     "Ál", "ál", "ála", "álag", "álút", "ám", "Án", "án", "áta", "átu", "áð", "æf", "æg", 
@@ -274,10 +274,12 @@ BADS_LO = frozenset((
 FORMERS_TO_ADD = frozenset((
     "aðal", 
     "af", 
-    "afar",         # villa
+    "afar",         # villa, tek á í WRONG_FORMERS í errtokenizer.py
     "afbragðs",
     "aftan",
     "aftur",
+    "akrýl",        # villa
+    "akstur",       # villa
     "al",
     "alhliða",      # villa
     "all",
@@ -289,6 +291,7 @@ FORMERS_TO_ADD = frozenset((
     "alþjóða",
     "and",
     "annars",
+    "athugana",     # villa
     "augn",
     "auk",
     "auka",
@@ -313,6 +316,7 @@ FORMERS_TO_ADD = frozenset((
     "bráða",
     "burt",
     "dánar",
+    "dísel",    # villa
     "dóta",
     "efra",
     "efri",
@@ -327,12 +331,15 @@ FORMERS_TO_ADD = frozenset((
     "ellefu",
     "endur",
     "erki",
+    "eyrnar",   # villa
     "fagur",
     "fatlaðra",
     "feikna",
     "feiki",
     "fer",
+    "ferminga",     # villa
     "feyki",
+    "feykna",       # villa
     "fimm",
     "fimmtán",
     "fimmtíu",
@@ -340,6 +347,7 @@ FORMERS_TO_ADD = frozenset((
     "fjar",
     "fjarska",
     "fjarskiptar",  # villa
+    "fjárfestinga", # villa
     "fjær",
     "fjór",
     "fjórtán",
@@ -351,6 +359,7 @@ FORMERS_TO_ADD = frozenset((
     "for",
     "foráttu",
     "forkunnar",
+    "forvarna", # villa
     "fram",
     "framan",
     "framm",    # villa
@@ -358,7 +367,7 @@ FORMERS_TO_ADD = frozenset((
     "frá",
     "full",
     "fullorðins",
-    "fyrna",
+    "fyrna",    # villa
     "fyrir",
     "fyrr",
     "fyrra",
@@ -379,6 +388,7 @@ FORMERS_TO_ADD = frozenset((
     "heim",
     "heima",
     "heiman",
+    "heyrna",   # villa
     "hingað",
     "hjarð",
     "hjá",
@@ -408,6 +418,7 @@ FORMERS_TO_ADD = frozenset((
     "kringum",
     "krist",
     "krists",
+    "kvartana", # villa
     "kven",
     "kvenn",  # villa
     "land",
@@ -418,11 +429,13 @@ FORMERS_TO_ADD = frozenset((
     "míní",
     "líkams",
     "lítt",
-    "loftlags",
+    "loftlags", # villa
+    "Lundúnar", # villa
+    "lundúnar", # villa
     "mandarín",
     "mann",
     "marg",
-    "margnota",
+    "margnota", # villa, tekið á í NOT_FORMERS
     "masters",
     "mega",
     "megin",
@@ -456,6 +469,7 @@ FORMERS_TO_ADD = frozenset((
     "norðvestur",
     "nyrðra",
     "nær",
+    "næringa",  # villa
     "næst",
     "næstum",
     "ní",
@@ -473,6 +487,7 @@ FORMERS_TO_ADD = frozenset((
     "óskapa",
     "ótal",
     "óvenju",
+    "pantana",  # villa
     "parma",
     "pastel",
     "prumpu",
@@ -480,6 +495,7 @@ FORMERS_TO_ADD = frozenset((
     "pólí",
     "pólý",
     "ramm",
+    "ráðninga", # villa
     "regin",
     "reða",
     "Reykjanes",
@@ -504,6 +520,7 @@ FORMERS_TO_ADD = frozenset((
     "sjötíu",
     "sjúkra",
     "ská",
+    "skráninga",    # villa
     "slembi",
     "smur",
     "smá",
@@ -556,6 +573,8 @@ FORMERS_TO_ADD = frozenset((
     "vegna",
     "vel",
     "vestan",
+    "Vestfjarðar",  # villa
+    "vestfjarðar",  # villa
     "vestsuðvestur",
     "vestur",
     "vinstri",
@@ -569,6 +588,7 @@ FORMERS_TO_ADD = frozenset((
     "yngra",
     "yngri",
     "á",
+    "ábendinga",    # villa
     "áfram",
     "án",
     "árdegis",
@@ -591,6 +611,7 @@ FORMERS_TO_ADD = frozenset((
     "óða",
     "öfga",
     "öku",
+    "öldungar", # villa
     "ör",
     "últra",
     "úr",

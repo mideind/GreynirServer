@@ -45,7 +45,7 @@ _QREGEXES = (
     r"^hve langt er ég frá (.+)$",
     r"^hvað er langt á (.+)$",
     r"^hvað er langt í (.+)$",
-    # TODO: Fix response for these two (transform location to dative)
+    # TODO: Fix response for these two (transform location to genitive)
     # r"^hvað er langt til (.+)$",
     # r"^hversu langt er til (.+)$",
 )

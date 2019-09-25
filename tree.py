@@ -86,6 +86,18 @@ class Result:
         self._state = state
         self._params = params
 
+    @property
+    def node(self):
+        return self._node
+
+    @property
+    def state(self):
+        return self._state
+
+    @property
+    def params(self):
+        return self._params
+
     def __repr__(self):
         return "Result with {0} params\nDict is: {1}".format(
             len(self._params) if self._params else 0, self.dict
@@ -102,9 +114,7 @@ class Result:
 
     def __getattr__(self, key):
         """ Fancy attribute getter with special cases for _root and _nominative """
-        if key == "__dict__" or key == "dict" or key in self.__dict__:
-            # Relay to Python's default attribute resolution mechanism
-            return super().__getattr__(key)
+        # Note: this is only called for attributes that are not found by 'normal' means
         d = self.dict
         if key in d:
             return d[key]
@@ -129,9 +139,8 @@ class Result:
             # (Note that it can be overridden by setting it directly)
             d[key] = val = self._node.canonical(self._state, self._params)
             return val
-        # Not found in our custom dict:
-        # hand off to Python's default attribute resolution mechanism
-        return super().__getattr__(key)
+        # Not found in our custom dict
+        raise AttributeError("Result object has no attribute named '{0}'".format(key))
 
     def __contains__(self, key):
         return key in self.dict

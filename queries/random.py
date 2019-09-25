@@ -82,7 +82,7 @@ QRandNumber →
     # tala is a number ('17')
     to | töl | tala | "núll"
 
-$score(35) QRandom
+$score(+35) QRandom
 
 """
 

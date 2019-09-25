@@ -37,9 +37,13 @@ _ARITHMETIC_QTYPE = "Arithmetic"
 _NUMBER_WORDS = {
     "núll": 0,
     "einn": 1,
+    "einu": 1,
     "tveir": 2,
+    "tvisvar sinnum": 2,
     "þrír": 3,
+    "þrisvar sinnum": 3,
     "fjórir": 4,
+    "fjórum sinnum": 4,
     "fimm": 5,
     "sex": 6,
     "sjö": 7,
@@ -132,6 +136,9 @@ QArithmetic →
     # 'Hver er summan af X og Y?'
     | QArAnyPrefix QArSum '?'?
 
+    # 'Hvað er tvisvar/þrisvar/fjórum sinnum Y?'
+    | QArAnyPrefix QArMult '?'?
+
     # 'Hver/Hvað er kvaðratrótin af X?'
     | QArAnyPrefix QArSqrt '?'?
     
@@ -143,28 +150,41 @@ QArithmetic →
 
 $score(+35) QArithmetic
 
+/arfall = nf þgf
+
 QArGenericPrefix → "hvað" "er" | "hvað" "eru" | 0
 QArSpecificPrefix → "hver" "er" | 0
 QArAnyPrefix → QArGenericPrefix | QArSpecificPrefix
 
-QArStd → QArNumberWord QArOperator QArNumberWord
+QArStd → QArNumberWord_nf QArOperator/arfall QArNumberWord/arfall
 
-QArSum → QArSumOperator QArNumberWord "og" QArNumberWord
-QArSqrt → QArSquareRootOperator QArNumberWord
-QArPow → QArNumberWord "í" QArOrdinalOrNumberWord QArPowOperator
-QArPercent → QArPercentOperator QArNumberWord
+QArOperator/arfall → 
+    QArPlusOperator/arfall
+    | QArMinusOperator/arfall
+    | QArMultiplicationOperator/arfall
+QArOperator_þgf → 
+    QArDivisionOperator_þgf
 
-QArNumberWord →
-    # to is a declinable number word ('tveir/tvo/tveim/tveggja')
-    # töl is an undeclinable number word ('sautján')
-    # tala is a number ('17')
-    to | töl | tala | "núlli" | "núll"
+# Infix operators
+QArPlusOperator_nf → "plús"
+QArPlusOperator_þgf → "að" "viðbættum"
 
-QArOrdinalWord →
-    {0} | raðnr
+QArMinusOperator_nf → "mínus"
+QArMinusOperator_þgf → "að" "frádregnum"
 
-QArOrdinalOrNumberWord →
-    QArNumberWord | QArOrdinalWord
+QArMultiplicationOperator_nf → "sinnum"
+QArMultiplicationOperator_þgf → "margfaldað" "með" | "margfaldaðir" "með"
+
+QArDivisionOperator_þgf → "deilt" "með" | "skipt" "með"
+
+QArSum → QArSumOperator QArNumberWordAny "og" QArNumberWordAny
+QArMult → QArMultOperator QArNumberWord_nf
+QArSqrt → QArSquareRootOperator QArNumberWordAny
+QArPow → QArPowOperator
+QArPercent → QArPercentOperator QArNumberWordAny
+
+# Prevent nonterminal from being optimized out of the grammar
+$tag(keep) QArPow
 
 # Prefix operators
 QArSumOperator → "summan" "af"
@@ -173,19 +193,38 @@ QArSquareRootOperator →
     | "ferningsrótin" "af" | "ferningsrót" "af"
 QArPercentOperator → Prósenta "af"?
 
-# Infix operators
-QArPlusOperator → "plús" | "að" "viðbættum"
-QArMinusOperator → "mínus" | "að" "frádregnum"
-QArDivisionOperator → "deilt" "með" | "skipt" "með"
-QArMultiplicationOperator → "sinnum" | "margfaldað" "með" | "margfaldaðir" "með"
+QArMultOperator →
+    # 'hvað er tvisvar sinnum X?'
+    # The following phrases are defined in reynir/config/Phrases.conf
+    'tvisvar_sinnum' | 'þrisvar_sinnum' | 'fjórum_sinnum'
 
-QArPowOperator → "veldi"
+QArPowOperator →
+    QArNumberWord_nf "í" QArOrdinalOrNumberWord_þgf "veldi"
 
-QArOperator → 
-    QArPlusOperator 
-    | QArMinusOperator
-    | QArMultiplicationOperator 
-    | QArDivisionOperator
+QArNumberWord/arfall →
+    # to is a declinable number word ('tveir/tvo/tveim/tveggja')
+    # töl is an undeclinable number word ('sautján')
+    # tala is a number ('17')
+    to/arfall | töl | tala
+
+QArNumberWord_nf →
+    "núll" | QArLastResult_nf
+
+QArNumberWord_þgf →
+    "núlli" | QArLastResult_þgf
+
+QArLastResult/arfall →
+    # Reference to last result
+    'það:pfn'_et/arfall
+
+QArNumberWordAny → QArNumberWord/arfall
+
+QArOrdinalWord_þgf →
+    {0} | raðnr
+
+QArOrdinalOrNumberWord_þgf →
+    QArNumberWord_þgf | QArOrdinalWord_þgf
+
 
 """.format(
     " | ".join('"' + w + '"' for w in _ORDINAL_WORDS_DATIVE.keys())
@@ -241,6 +280,10 @@ def terminal_num(t):
 
 
 def QArNumberWord(node, params, result):
+    if "context_reference" in result or "error_context_reference" in result:
+        # Already pushed the context reference
+        # ('það', 'því'): we're done
+        return
     d = result.find_descendant(t_base="tala")
     if d:
         add_num(terminal_num(d), result)
@@ -250,6 +293,26 @@ def QArNumberWord(node, params, result):
 
 def QArOrdinalWord(node, params, result):
     add_num(result._canonical, result)
+
+
+def QArMultOperator(node, params, result):
+    """ 'tvisvar_sinnum', 'þrisvar_sinnum', 'fjórum_sinnum' """
+    add_num(result._nominative, result)
+    result.operator = "multiply"
+
+
+def QArLastResult(node, params, result):
+    """ Reference to previous result, usually via the words
+        'það' or 'því' ('Hvað er það sinnum sautján?') """
+    q = result.state.get("query")
+    ctx = q is not None and q.fetch_context()
+    if ctx is None or "result" not in ctx:
+        # There is a reference to a previous result
+        # which is not available: flag an error
+        result.error_context_reference = True
+    else:
+        add_num(ctx["result"], result)
+        result.context_reference = True
 
 
 def QArPlusOperator(node, params, result):
@@ -269,6 +332,7 @@ def QArDivisionOperator(node, params, result):
 
 
 def QArMultiplicationOperator(node, params, result):
+    """ 'Hvað er 17 sinnum 34?' """
     result.operator = "multiply"
 
 
@@ -301,6 +365,10 @@ def QArStd(node, params, result):
 
 
 def QArSum(node, params, result):
+    result.desc = result._canonical
+
+
+def QArMult(node, params, result):
     result.desc = result._canonical
 
 
@@ -341,6 +409,10 @@ def calc_arithmetic(query, result):
     operator = result.operator
     nums = result.numbers
     desc = result.desc
+
+    if "error_context_reference" in result:
+        # Used 'það' or 'því' without context
+        return gen_answer("Ég veit ekki til hvers þú vísar.")
 
     # Ensure that we have the right number of
     # number args for the operation in question
@@ -396,7 +468,7 @@ def calc_arithmetic(query, result):
     else:
         answer = str(res)
 
-    response = dict(answer=answer)
+    response = dict(answer=answer, result=res)
     voice_answer = "{0} er {1}".format(desc, answer)
 
     return response, answer, voice_answer
@@ -414,6 +486,10 @@ def sentence(state, result):
             if r is not None:
                 q.set_answer(*r)
                 q.set_key(result.get("qkey"))
+                if "result" in r[0]:
+                    # Pass the result into a query context having
+                    # the 'result' property
+                    q.set_context(dict(result=r[0]["result"]))
             else:
                 raise Exception("Arithmetic calculation failed")
         except Exception as e:
