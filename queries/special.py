@@ -225,6 +225,7 @@ _SPECIAL_QUERIES = {
     "komdu með annan brandara": _random_joke,
     "segðu eitthvað fyndið": _random_joke,
     "segðu mér eitthvað fyndið": _random_joke,
+    "segðu mér eitthvað skemmtilegt": _random_joke,
     "segðu eitthvað skemmtilegt": _random_joke,
     "vertu skemmtileg": _random_joke,
 
