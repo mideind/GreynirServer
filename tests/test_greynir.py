@@ -209,7 +209,7 @@ def test_query_api(client):
     json = validate_json(resp)
     assert json["qtype"] == "Random"
     assert "answer" in json
-    assert int(json["answer"]) > 17 and int(json["answer"]) <= 30
+    assert int(json["answer"]) >= 17 and int(json["answer"]) <= 30
 
 
 def test_processors():

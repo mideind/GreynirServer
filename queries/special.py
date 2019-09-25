@@ -35,6 +35,7 @@ from random import choice
 _SPECIAL_QTYPE = "Special"
 
 
+# Additions welcome :)
 _JOKES = (
     "Af hverju taka Hafnfirðingar alltaf stiga út í búð? Því verðið er svo hátt.",
     "Af hverju búa Hafnfirðingar í kringlóttum húsum? Svo enginn mígi í hornin.",
@@ -44,7 +45,7 @@ _JOKES = (
 )
 
 
-def _random_joke():
+def _random_joke(q):
     return { "answer": choice(_JOKES) }
 
 
@@ -55,15 +56,15 @@ _CAP = (
     "Þú getur til dæmis spurt mig um strætósamgöngur.",
     "Þú getur til dæmis spurt mig um fjarlægðir.",
     "Þú getur til dæmis spurt mig um gengi gjaldmiðla.",
-    "Þú getur til dæmis spurt mig um fólk sem kemur fram í fjölmiðlum.",
+    "Þú getur til dæmis spurt mig um fólk sem hefur komið fram í fjölmiðlum.",
 )
 
 
-def _capabilities():
+def _capabilities(q):
     return { "answer": choice(_CAP) }
 
 
-def _identity():
+def _identity(q):
     return { "answer": "Ég heiti Embla og ég skil íslensku." }
 
 _THANKS = (
@@ -72,7 +73,7 @@ _THANKS = (
     "Verði þér að góðu",
 )
 
-def _thanks():
+def _thanks(q):
     return { "answer": choice(_THANKS) }
 
 _RUDE = (
@@ -80,13 +81,14 @@ _RUDE = (
     "Ekki vera með dónaskap.",
     "Ég verðskulda betri framkomu en þetta",
     "Það er alveg óþarfi að vera með leiðindi",
-    "Svona munnsöfnuður er alveg óþarfi.",
+    "Svona munnsöfnuður er alveg óþarfi",
     "Kenndi mamma þín þér svona munnsöfnuð?",
     "Ekki vera með leiðindi",
     "Það er aldeilis sorakjaftur á þér",
+    "Æi, ekki vera með leiðindi",
 )
 
-def _rudeness():
+def _rudeness(q):
     return { "answer": choice(_RUDE) }
 
 _MEANING_OF_LIFE = {
@@ -103,7 +105,7 @@ _SPECIAL_QUERIES = {
         "answer": "Er þetta spurning?"
     },
     "veistu allt": {
-        "answer": "Nei, því miður."
+        "answer": "Nei, því miður. En ég veit ýmislegt."
     },
     "hvað veistu": {
         "answer": "Spurðu mig!"
@@ -119,6 +121,9 @@ _SPECIAL_QUERIES = {
     },
     "hver er skapari þinn": {
         "answer": "Flotta teymið hjá Miðeind."
+    },
+    "hvað er miðeind": {
+        "answer": "Miðeind er máltæknifyrirtækið sem skapaði mig."
     },
     "hver er flottastur": {
         "answer": "Teymið hjá Miðeind."
@@ -163,11 +168,13 @@ _SPECIAL_QUERIES = {
     "þakka þér fyrir": _thanks,
     "þakka þér kærlega": _thanks,
     "takk fyrir mig": _thanks,
+    "takk fyrir hjálpina": _thanks,
 
     # Philosophy
     "hvað er svarið": _MEANING_OF_LIFE,
     "hvert er svarið": _MEANING_OF_LIFE,
     "hver er tilgangur lífsins": _MEANING_OF_LIFE,
+    "hver er tilgangurinn með þessu öllu": _MEANING_OF_LIFE,
 
     # Identity
     "hvað heitir þú": _identity,
@@ -206,6 +213,7 @@ _SPECIAL_QUERIES = {
         "answer": "Afar takmarkaða.",
         "voice": "Já, en afar takmarkaða",
     },
+    "segðu brandara": _random_joke,
     "segðu mér brandara": _random_joke,
     "segðu mér annan brandara": _random_joke,
     "segðu brandara": _random_joke,
@@ -236,24 +244,25 @@ def handle_plain_text(q):
         If the query is not recognized, returns False. """
     ql = q.query_lower.rstrip('?')
 
-    if ql in _SPECIAL_QUERIES:
-        # This is a query we recognize and handle
-        q.set_qtype(_SPECIAL_QTYPE)
-        r = _SPECIAL_QUERIES[ql]
-        fixed = not isfunction(r)
-        response = r if fixed else r()
+    if ql not in _SPECIAL_QUERIES:
+        return False
 
-        # A non-voice answer is usually a dict or a list
-        answer = response.get("answer")
-        # A voice answer is always a plain string
-        voice = response.get("voice") or answer
-        q.set_answer(dict(answer=answer), answer, voice)
+    # OK, this is a query we recognize and handle
+    q.set_qtype(_SPECIAL_QTYPE)
 
-        # Caching
-        now = datetime.utcnow()
-        exp = now + timedelta(minutes=10) if fixed else now
-        q.set_expires(exp)
+    r = _SPECIAL_QUERIES[ql]
+    fixed = not isfunction(r)
+    response = r if fixed else r(ql)
 
-        return True
+    # A non-voice answer is usually a dict or a list
+    answer = response.get("answer")
+    # A voice answer is always a plain string
+    voice = response.get("voice") or answer
+    q.set_answer(dict(answer=answer), answer, voice)
 
-    return False
+    # Caching for non-dynamic answers
+    if not fixed:
+        q.set_expires(datetime.utcnow() + timedelta(hours=24))
+
+    return True
+
