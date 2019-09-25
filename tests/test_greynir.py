@@ -200,6 +200,13 @@ def test_query_api(client):
     assert "answer" in json
     assert json["answer"] == "Madríd"
 
+    # Random module
+    resp = client.get("/query.api?q=Veldu tölu milli sautján og 30")
+    json = validate_json(resp)
+    assert json["qtype"] == "Random"
+    assert "answer" in json
+    assert int(json["answer"]) > 17 and int(json["answer"]) <= 30
+
 
 def test_processors():
     """ Try to import all tree/token processors by instantiating Processor object """
