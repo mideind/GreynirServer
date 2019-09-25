@@ -66,15 +66,25 @@ def _capabilities():
 def _identity():
     return { "answer": "Ég heiti Embla og ég skil íslensku." }
 
+_THANKS = (
+    "Það var nú lítið",
+    "Mín var ánægjan", 
+    "Verði þér að góðu",
+)
+
+def _thanks():
+    return { "answer": choice(_THANKS) }
 
 _RUDE = (
     "Þetta var ekki fallega sagt.",
-    "Þvoðu á þér munninn með sápu.",
     "Ekki vera með dónaskap.",
+    "Ég verðskulda betri framkomu en þetta",
+    "Það er alveg óþarfi að vera með leiðindi",
     "Svona munnsöfnuður er alveg óþarfi.",
     "Kenndi mamma þín þér svona munnsöfnuð?",
+    "Ekki vera með leiðindi",
+    "Það er aldeilis sorakjaftur á þér",
 )
-
 
 def _rudeness():
     return { "answer": choice(_RUDE) }
@@ -144,8 +154,15 @@ _SPECIAL_QUERIES = {
         "answer": "Inni í þér."
     },
     "hvar er draumurinn": {
-        "answer": "Hvar ertu, lífið sem ég þrái?"
+        "answer": "Hvar ertu lífið sem ég þrái?"
     },
+
+    # Thanks
+    "takk fyrir": _thanks,
+    "takk kærlega": _thanks,
+    "þakka þér fyrir": _thanks,
+    "þakka þér kærlega": _thanks,
+    "takk fyrir mig": _thanks,
 
     # Philosophy
     "hvað er svarið": _MEANING_OF_LIFE,
@@ -157,6 +174,8 @@ _SPECIAL_QUERIES = {
     "hvað heitirðu": _identity,
     "hver ert þú": _identity,
     "hver ertu": _identity,
+    "hver er embla": _identity,
+    "hvað er embla": _identity,
 
     # Capabilities
     "hvað get ég spurt þig um": _capabilities,
@@ -166,15 +185,21 @@ _SPECIAL_QUERIES = {
     "hvað annað get ég spurt þig um": _capabilities,
     "hvað annað gæti ég spurt þig um": _capabilities,
     "hvað annað er hægt að spyrja um": _capabilities,
+    "hvað getur þú sagt mér": _capabilities,
+    "hvað geturðu sagt mér": _capabilities,
 
     "hvaða spurningar skilur þú": _capabilities,
     "hvaða spurningar skilurðu": _capabilities,
 
     "hvers konar spurningar skilur þú": _capabilities,
     "hvers konar spurningar skilurðu": _capabilities,
+    "hvers konar spurningum geturðu svarað": _capabilities,
+    "hvers konar spurningum getur þú svarað": _capabilities,
 
     "hvers konar fyrirspurnir skilur þú": _capabilities,
     "hvers konar fyrirspurnir skilurðu": _capabilities,
+    "hvers konar fyrirspurnum getur þú svarað": _capabilities,
+    "hvers konar fyrirspurnum geturðu svarað": _capabilities,
 
     # Jokes
     "ertu með kímnigáfu": {
@@ -188,12 +213,17 @@ _SPECIAL_QUERIES = {
     "komdu með brandara": _random_joke,
     "komdu með annan brandara": _random_joke,
     "segðu eitthvað fyndið": _random_joke,
+    "segðu mér eitthvað fyndið": _random_joke,
 
     # Rudeness :)
+    "fokk jú": _rudeness,
     "fokkaðu þér": _rudeness,
     "éttu skít": _rudeness,
+    "haltu kjafti": _rudeness,
+    "éttu það sem úti frýs": _rudeness,
     "farðu til helvítis": _rudeness,
     "farðu í rass og rófu": _rudeness,
+    "hoppaðu upp í rassgatið á þér":  _rudeness,
 }
 
 

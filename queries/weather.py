@@ -37,7 +37,6 @@ from datetime import datetime, timedelta
 from queries import gen_answer
 from geo import distance, isocode_for_country_name, ICE_PLACENAME_BLACKLIST
 from iceaddr import placename_lookup
-
 from iceweather import observation_for_closest, observation_for_station, forecast_text
 
 
@@ -63,6 +62,8 @@ QWeatherQuery →
 QWeatherCurrent →
     "hvernig" "er" "veðrið" QWeatherAnyLoc? QWeatherNow?
     | "hvernig" "veður" "er" QWeatherAnyLoc? QWeatherNow?
+    | "hvað" "getur" "þú" "sagt" "mér" "um" "veðrið" QWeatherAnyLoc? QWeatherNow?
+    | "hvað" "geturðu" "sagt" "mér" "um" "veðrið" QWeatherAnyLoc? QWeatherNow?
 
 QWeatherForecast →
     "hver" "er" "veðurspáin" QWeatherLocation? QWeatherNextDays?
