@@ -187,6 +187,8 @@ _SPECIAL_QUERIES = {
 
     # Capabilities
     "hvað get ég spurt þig um": _capabilities,
+    "hvað get ég spurt um": _capabilities,
+    "hvað get ég spurt": _capabilities,
     "hvað er hægt að spyrja um": _capabilities,
     "hvað er hægt að spyrja þig um": _capabilities,
     "hvað annað get ég spurt um": _capabilities,
@@ -223,6 +225,8 @@ _SPECIAL_QUERIES = {
     "komdu með annan brandara": _random_joke,
     "segðu eitthvað fyndið": _random_joke,
     "segðu mér eitthvað fyndið": _random_joke,
+    "segðu eitthvað skemmtilegt": _random_joke,
+    "vertu skemmtileg": _random_joke,
 
     # Rudeness :)
     "fokk jú": _rudeness,
