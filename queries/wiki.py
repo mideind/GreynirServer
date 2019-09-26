@@ -25,6 +25,8 @@
 """
 
 # TODO: Clean up query string, show canonical Wikipedia name in Icelandic
+#       in beautify_query
+# TODO: Fix grammar, return sensible answer if no reply from API
 
 from . import query_json_api
 from pprint import pprint
@@ -57,26 +59,33 @@ HANDLE_TREE = True
 GRAMMAR = """
 
 Query →
-    QWiki
+    QWikiQuery '?'?
 
-QWiki →
-    "hvað" "segir" "vikipedija" "um" QWikiSubject '?'? 
-    | "hvaða" "upplýsingar" "er" QWikipedia "með" "um" QWikiSubject '?'?
+QWikiQuery →
+    "hvað" "segir" QWikipedia "um" QWikiSubject
+    | "hvað" "getur" QWikipedia "sagt" "mér"? "um" QWikiSubject
+    | "hvaða" "upplýsingar" "er" QWikipedia "með" "um" QWikiSubject
+    | "hvaða" "upplýsingar" "býr" QWikipedia "yfir" "varðandi" QWikiSubject
+    | "hvað" "myndi" QWikipedia "segja" "mér"? "um" QWikiSubject
+    # | "flettu" "upp" QWikiSubject "í" QWikipedia
+    # | "hvað" "er" QWikiSubject "samkvæmt" QWikipedia
+    # | "hver" "er QWikiSubject "samkvæmt" QWikipedia
+    # | "fræddu" "mig" "um" QWikiSubject
 
 QWikiSubject →
-    Nl_þf
+    Nl_þf | Nl_nf
 
 QWikipedia →
     {0}
 
-$score(+535) QWiki
+$score(+535) QWikiQuery
 
 """.format(
     " | ".join(_WIKI_VARIATIONS)
 )
 
 
-def QWiki(node, params, result):
+def QWikiQuery(node, params, result):
     # Set the query type
     result.qtype = _WIKI_QTYPE
     result.qkey = result["subject"]
@@ -104,7 +113,7 @@ def _query_wiki_api(subject):
 
 def get_wiki_summary(subject):
     res = _query_wiki_api(subject)
-    print(res)
+    pprint(res)
     if not res or "query" not in res or "pages" not in res["query"]:
         return None
 

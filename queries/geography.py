@@ -25,7 +25,7 @@
 
 
 # TODO: "Í hvaða landi er [BORG]?", "Hvað búa margir í/á [BORG/LAND]?" etc.
-
+# TODO: Handle queries w. multi-word country names such as "Hver er höfuðborg suður afríku"
 
 from datetime import datetime, timedelta
 from cityloc import capital_for_cc
@@ -34,6 +34,15 @@ from reynir.bindb import BIN_Db
 
 
 _GEO_QTYPE = "Geography"
+
+
+_CITY_QUERIES = [
+    "í hvaða landi er ",
+    "í hvaða landi er borgin ",
+    "í hvaða ríki er borgin ",
+]
+
+_CONTINENT_QUERIES = ["í hvaða heimsálfu er "]
 
 
 _CAPITAL_QUERIES = [
@@ -97,10 +106,10 @@ def handle_plain_text(q):
     q.set_answer(response, answer, voice)
     q.set_qtype(_GEO_QTYPE)
     q.set_key("Höfuðborg {0}".format(country_gen))
-    q.set_expires(datetime.utcnow() + timedelta(hours=12))
+    q.set_expires(datetime.utcnow() + timedelta(hours=24))
 
     # Capitalize name of country
     b = q.beautified_query
-    q.set_beautified_query("{0}{1}".format(b[:len(pfx)], b[len(pfx):].capitalize()))
+    q.set_beautified_query("{0}{1}".format(b[: len(pfx)], b[len(pfx) :].capitalize()))
 
     return True
