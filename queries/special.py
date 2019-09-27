@@ -45,11 +45,11 @@ _JOKES = (
 )
 
 
-def _random_joke(q):
+def _random_joke(qs, q):
     return { "answer": choice(_JOKES) }
 
 
-# TODO: Extend as the range of queries
+# TODO: Extend this list as the range of queries is expanded
 _CAP = (
     "Þú getur til dæmis spurt mig um veðrið.",
     "Þú getur til dæmis spurt mig um höfuðborgir.",
@@ -57,15 +57,16 @@ _CAP = (
     "Þú getur til dæmis spurt mig um strætósamgöngur.",
     "Þú getur til dæmis spurt mig um fjarlægðir.",
     "Þú getur til dæmis spurt mig um gengi gjaldmiðla.",
+    "Þú getur til dæmis beðið mig um að kasta teningi",
     "Þú getur til dæmis spurt mig um fólk sem hefur komið fram í fjölmiðlum.",
 )
 
 
-def _capabilities(q):
+def _capabilities(qs, q):
     return { "answer": choice(_CAP) }
 
 
-def _identity(q):
+def _identity(qs, q):
     return { "answer": "Ég heiti Embla og ég skil íslensku." }
 
 _THANKS = (
@@ -74,7 +75,7 @@ _THANKS = (
     "Verði þér að góðu",
 )
 
-def _thanks(q):
+def _thanks(qs, q):
     return { "answer": choice(_THANKS) }
 
 _RUDE = (
@@ -89,8 +90,13 @@ _RUDE = (
     "Æi, ekki vera með leiðindi",
 )
 
-def _rudeness(q):
+def _rudeness(qs, q):
     return { "answer": choice(_RUDE) }
+
+
+def _open_url(qs, q):
+    q.set_url("https://sveinbjorn.org")
+    return { "answer": "Skal gert!" }
 
 _MEANING_OF_LIFE = {
     "answer": "42.",
@@ -162,6 +168,15 @@ _SPECIAL_QUERIES = {
     "hvar er draumurinn": {
         "answer": "Hvar ertu lífið sem ég þrái?"
     },
+    "af hverju er ég hérna": {
+        "answer": "Það er góð spurning."
+    },
+    "viltu giftast mér": {
+        "answer": "Nei, því miður. Ég er gift vinnunni."
+    },
+    "þetta var ekki rétt hjá þér": {
+        "answer": "Það þykir mér leitt að heyra."
+    },
 
     # Thanks
     "takk fyrir": _thanks,
@@ -194,6 +209,7 @@ _SPECIAL_QUERIES = {
     "hvað annað get ég spurt um": _capabilities,
     "hvað annað get ég spurt þig um": _capabilities,
     "hvað annað gæti ég spurt þig um": _capabilities,
+    "hvað annað gæti ég spurt um": _capabilities,
     "hvað annað er hægt að spyrja um": _capabilities,
     "hvað getur þú sagt mér": _capabilities,
     "hvað geturðu sagt mér": _capabilities,
@@ -225,9 +241,13 @@ _SPECIAL_QUERIES = {
     "komdu með annan brandara": _random_joke,
     "segðu eitthvað fyndið": _random_joke,
     "segðu mér eitthvað fyndið": _random_joke,
-    "segðu mér eitthvað skemmtilegt": _random_joke,
     "segðu eitthvað skemmtilegt": _random_joke,
+    "segðu mér eitthvað skemmtilegt": _random_joke,
     "vertu skemmtileg": _random_joke,
+    "kanntu einhverja brandara": _random_joke,
+    "kanntu brandara": _random_joke,
+
+    "opnaðu vefsíðu sveinbjarnar": _open_url,
 
     # Rudeness :)
     "fokk jú": _rudeness,
@@ -238,6 +258,14 @@ _SPECIAL_QUERIES = {
     "farðu til helvítis": _rudeness,
     "farðu í rass og rófu": _rudeness,
     "hoppaðu upp í rassgatið á þér":  _rudeness,
+
+    # Emotional enquiries
+    "ertu í góðu skapi": {
+        "answer": "Já, ég er alltaf eldhress.",
+    },
+    "ert þú í góðu skapi": {
+        "answer": "Já, ég er alltaf eldhress.",
+    }
 }
 
 
@@ -258,7 +286,7 @@ def handle_plain_text(q):
 
     r = _SPECIAL_QUERIES[ql]
     fixed = not isfunction(r)
-    response = r if fixed else r(ql)
+    response = r if fixed else r(ql, q)
 
     # A non-voice answer is usually a dict or a list
     answer = response.get("answer")

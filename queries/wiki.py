@@ -65,7 +65,7 @@ QWikiQuery →
     "hvað" "segir" QWikipedia "um" QWikiSubject
     | "hvað" "getur" QWikipedia "sagt" "mér"? "um" QWikiSubject
     | "hvaða" "upplýsingar" "er" QWikipedia "með" "um" QWikiSubject
-    | "hvaða" "upplýsingar" "býr" QWikipedia "yfir" "varðandi" QWikiSubject
+    | "hvaða" "upplýsingum" "býr" QWikipedia "yfir" "varðandi" QWikiSubject
     | "hvað" "myndi" QWikipedia "segja" "mér"? "um" QWikiSubject
     # | "flettu" "upp" QWikiSubject "í" QWikipedia
     # | "hvað" "er" QWikiSubject "samkvæmt" QWikipedia
@@ -73,15 +73,15 @@ QWikiQuery →
     # | "fræddu" "mig" "um" QWikiSubject
 
 QWikiSubject →
-    Nl_þf | Nl_nf
+    Nl_þf
 
 QWikipedia →
     {0}
 
-$score(+535) QWikiQuery
+$score(+35) QWikiQuery
 
 """.format(
-    " | ".join(_WIKI_VARIATIONS)
+    " | ".join('"' + v + '"' for v in _WIKI_VARIATIONS)
 )
 
 

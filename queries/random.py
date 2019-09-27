@@ -124,7 +124,7 @@ def gen_random_answer(q, result):
     if result.action == "dieroll":
         voice_answer = "Talan {0} kom upp á teningnum".format(answer)
     else:
-        voice_answer = answer
+        voice_answer = "Ég vel töluna {0}".format(answer)
 
     return response, answer, voice_answer
 
