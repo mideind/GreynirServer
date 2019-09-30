@@ -188,6 +188,9 @@ class Query:
         self._toklist = None
         # Expiration timestamp, if any
         self._expires = None
+        # URL assocated with query, can be set by query response handler
+        # and subsequently provided to the remote client
+        self._url = None
         # Client id, if known
         self._client_id = client_id
         # Query context, which is None until fetched via self.fetch_context()
@@ -449,6 +452,14 @@ class Query:
         self._expires = ts
 
     @property
+    def url(self):
+        """ URL answer associated with this query """
+        return self._url
+
+    def set_url(self, u):
+        self._url = u
+
+    @property
     def location(self):
         return self._location
 
@@ -555,12 +566,15 @@ class Query:
         else:
             # Return a detailed response if not a voice query
             result["response"] = self._response
-        # Re-assign the beautified query string, in case the processor modified it
+        # Re-assign the beautified query string, in case the query processor modified it
         result["q"] = self.beautified_query
         # ...and the query type, as a string ('Person', 'Entity', 'Title' etc.)
         result["qtype"] = qt = self.qtype()
         # ...and the key used to retrieve the answer, if any
         result["key"] = self.key()
+        # ...and a URL, if any has been set by the query processor
+        if self.url:
+            result["open_url"] = self.url
         if not self._voice and qt == "Person":
             # For a person query, add an image (if available)
             img = get_image_url(self.key(), enclosing_session=self._session)
@@ -747,7 +761,7 @@ def process_query(
                     )
                     session.add(qrow)
                 except Exception as e:
-                    logging.error("Error logging query: {1}".format(e))
+                    logging.error("Error logging query: {0}".format(e))
                 
                 return result
 
