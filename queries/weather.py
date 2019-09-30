@@ -28,7 +28,7 @@
 # TODO: Add more info to description of current weather conditions?
 # TODO: More detailed forecast, time specific? E.g. "hvernig verður veðrið klukkan þrjú?"
 # TODO: "Mun rigna í dag?" "Verður mikið rok í dag?" "Verður kalt í kvöld?" "Þarf ég regnhlíf?"
-# TODO: "Hversu mikið rok er úti?" 
+# TODO: "Hversu mikið rok er úti?"
 
 import re
 import logging
@@ -227,7 +227,12 @@ def _curr_observations(query, result):
         return None
 
     # Verify that response from server is sane
-    if not res or "results" not in res or not len(res["results"]):
+    if (
+        not res
+        or "results" not in res
+        or not len(res["results"])
+        or res["results"][0].get("err")
+    ):
         return None
 
     return res["results"][0]
