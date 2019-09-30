@@ -168,12 +168,6 @@ class Result:
             if isinstance(key, str) and not key.startswith("_") and not callable(val):
                 yield (key, val)
 
-    def set(self, key, val):
-        """ Set the key to the value, unless it has already been assigned """
-        d = self.dict
-        if key not in d:
-            d[key] = val
-
     def copy_from(self, p):
         """ Copy all user attributes from p into this result """
         if p is self or p is None:
