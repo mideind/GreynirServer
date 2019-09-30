@@ -98,7 +98,7 @@ def test_query_api(client):
     assert json["voice"] == "Tumi Þorsteinsson er langsætastur."
 
     # Person and entity title queries are tested using a dummy database
-    # populated with data from CSV files stored in tests/test_files/testdb_*.csv 
+    # populated with data from CSV files stored in tests/test_files/testdb_*.csv
     # Builtin module: title
     resp = client.get("/query.api?voice=1&q=hver er viðar þorsteinsson")
     json = validate_json(resp)
@@ -210,6 +210,15 @@ def test_query_api(client):
     assert json["qtype"] == "Random"
     assert "answer" in json
     assert int(json["answer"]) >= 17 and int(json["answer"]) <= 30
+
+    # Telephone module
+    resp = client.get("/query.api?q=Hringdu í síma 6 9 9 2 4 2 2")
+    json = validate_json(resp)
+    assert json["qtype"] == "Telephone"
+    assert "answer" in json
+    assert "open_url" in json
+    assert json["open_url"] == "tel:6992422"
+    assert json["q"].endswith("6992422")
 
 
 def test_processors():

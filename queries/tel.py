@@ -2,7 +2,7 @@
 
     Reynir: Natural language processing for Icelandic
 
-    Telephone query response module
+    Telephony query response module
 
     Copyright (C) 2019 Miðeind ehf.
 
@@ -26,59 +26,53 @@
     shown below.
 
 
-    This module handles telephone-related queries.
+    This module handles telephony-related queries.
 
 """
 
+import re
 
-_DATE_QTYPE = "Telephone"
+_TELEPHONE_QTYPE = "Telephone"
 
 _PHONECALL_REGEXES = frozenset(
     (
-        r"hringdu í (\d.+)",
-        r"hringdu í síma (\d.+)",
-        r"hringdu í símanúmerið (\d.+)",
-        r"hringdu í númerið (\d.+)"
+        r"(hringdu í )([\d|\-|\s]+)",
+        r"(hringdu í síma )([\d|\-|\s]+)",
+        r"(hringdu í símanúmerið )([\d|\-|\s]+)",
+        r"(hringdu í númerið )([\d|\-|\s]+)",
     )
 )
 
 
-def _christmas():
-    return datetime(
-        year=datetime.today().year, month=12, day=24, hour=0, minute=0, second=0
-    )
-
-
-_DATE_QUERIES = {
-    "hvað er langt í jólin": _christmas,
-    "hvað er langt í jól": _christmas,
-    "hvað er langt til jóla": _christmas,
-    "hvað er langt til jólanna": _christmas,
-    "hvað eru margir dagar til jóla": _christmas,
-    "hvað eru margir dagar til jólanna": _christmas,
-    "hversu langt er í jólin": _christmas,
-    "hve langt er í jólin": _christmas,
-}
-
-
 def handle_plain_text(q):
-    """ Handle a plain text query asking about the current date/weekday. """
+    """ Handle a plain text query requesting a call to a telephone number. """
     ql = q.query_lower.rstrip("?")
 
-    if ql in _CURRDATE_QUERIES:
-        tz = timezone4loc(q.location, fallback="IS")
-        now = datetime.now(timezone(tz))
+    pfx = None
+    number = None
 
-        with changedlocale(category="LC_TIME"):
-            date_str = now.strftime("%A %-d. %B %Y")
+    for rx in _PHONECALL_REGEXES:
+        m = re.search(rx, ql)
+        if m:
+            pfx = m.group(1)
+            number = m.group(2)
+            break
+    else:
+        return False
 
-            voice = "Í dag er {0}".format(date_str)
-            answer = date_str.capitalize()
-            response = dict(answer=answer)
+    # At this point we have a phone number.
+    # Sanitize by removing all non-numeric characters.
+    number = re.sub(r"[^0-9]", "", number)
+    tel_url = "tel:{0}".format(number)
 
-            q.set_answer(response, answer, voice)
-            q.set_qtype(_DATE_QTYPE)
+    voice = ""
+    answer = "Skal gert"
+    response = dict(answer=answer)
 
-        return True
+    q.set_beautified_query("{0}{1}".format(pfx, number))
+    q.set_answer(response, answer, voice)
+    q.set_qtype(_TELEPHONE_QTYPE)
+    q.set_url(tel_url)
 
-    return False
+    return True
+
