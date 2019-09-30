@@ -126,29 +126,29 @@ GRAMMAR = """
 Query →
     QArithmetic
 
-# By convention, names of nonterminals in query grammars should
-# start with an uppercase Q
-
 QArithmetic →
-    # 'Hvað er X sinnum/deilt með/plús/mínus Y?'
-    QArGenericPrefix QArStd '?'?
-
-    # 'Hver er summan af X og Y?'
-    | QArAnyPrefix QArSum '?'?
-
-    # 'Hvað er tvisvar/þrisvar/fjórum sinnum Y?'
-    | QArAnyPrefix QArMult '?'?
-
-    # 'Hver/Hvað er kvaðratrótin af X?'
-    | QArAnyPrefix QArSqrt '?'?
-    
-    # 'Hvað er X í Y veldi?'
-    | QArGenericPrefix QArPow '?'?
-
-    # 'Hvað er(u) 12 prósent af 93'
-    | QArGenericPrefix QArPercent '?'?
+    QArithmeticQuery '?'?
 
 $score(+35) QArithmetic
+
+QArithmeticQuery →
+    # 'Hvað er X sinnum/deilt með/plús/mínus Y?'
+    QArGenericPrefix QArStd
+
+    # 'Hver er summan af X og Y?'
+    | QArAnyPrefix QArSum
+
+    # 'Hvað er tvisvar/þrisvar/fjórum sinnum Y?'
+    | QArAnyPrefix QArMult
+
+    # 'Hver/Hvað er kvaðratrótin af X?'
+    | QArAnyPrefix QArSqrt
+    
+    # 'Hvað er X í Y veldi?'
+    | QArGenericPrefix QArPow
+
+    # 'Hvað er(u) 12 prósent af 93'
+    | QArGenericPrefix QArPercent
 
 /arfall = nf þgf
 
@@ -224,7 +224,6 @@ QArOrdinalWord_þgf →
 
 QArOrdinalOrNumberWord_þgf →
     QArNumberWord_þgf | QArOrdinalWord_þgf
-
 
 """.format(
     " | ".join('"' + w + '"' for w in _ORDINAL_WORDS_DATIVE.keys())

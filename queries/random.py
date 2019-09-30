@@ -58,15 +58,15 @@ QRandomDiceSides →
     QRandNumber "hliða"
 
 QRandomBetween →
-    QRandAction "tölu" "milli" QRandNumber "og" QRandNumber QRandRand?
-    | QRandAction "tölu" QRandRand? "milli" QRandNumber "og" QRandNumber
+    QRandAction "tölu" "á"? "milli" QRandNumber "og" QRandNumber QRandRand?
+    | QRandAction "tölu" QRandRand? "á"? "milli" QRandNumber "og" QRandNumber
 
 QRandAction →
     "veldu" | "nefndu" | "gefðu" "mér" | "komdu" "með"
     | "getur" "þú" "gefið" "mér" | "geturðu" "gefið" "mér"
 
 QRandRand →
-    "af" "handahófi" | "að" "handahófi"
+    "af" "handahófi"
 
 QRandNumber →
     # to is a declinable number word ('tveir/tvo/tveim/tveggja')
