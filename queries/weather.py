@@ -265,9 +265,13 @@ def get_currweather_answer(query, result):
     if not res:
         return gen_answer(_API_ERRMSG)
 
-    temp = int(round(float(res["T"])))  # Round to nearest whole number
-    desc = res["W"].lower()
-    windsp = float(res["F"])
+    try:
+        temp = int(round(float(res["T"])))  # Round to nearest whole number
+        desc = res["W"].lower()
+        windsp = float(res["F"])
+    except:
+        logging.warning("Exception parsing weather API result: {0}".format(e))
+        return gen_answer(_API_ERRMSG)
 
     wind_desc = _wind_descr(windsp)
     temp_type = "hiti" if temp >= 0 else "frost"
@@ -376,7 +380,7 @@ def QWeatherOpenLoc(node, params, result):
 
 def Nl(node, params, result):
     """ Noun phrase containing name of specific location """
-    result["location"] = result._nominative
+    result["location"] = result._nominative.capitalize()
 
 
 def QWeatherCurrent(node, params, result):
