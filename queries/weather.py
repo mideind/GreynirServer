@@ -264,7 +264,7 @@ def get_currweather_answer(query, result):
     res = _curr_observations(query, result)
     if not res:
         return gen_answer(_API_ERRMSG)
-
+    
     try:
         temp = int(round(float(res["T"])))  # Round to nearest whole number
         desc = res["W"].lower()
@@ -283,7 +283,9 @@ def get_currweather_answer(query, result):
         locdesc.capitalize(), abs(temp), temp_type, mdesc, wind_desc
     )
 
-    answer = "{0}°{1} og {2} ({3} m/s)".format(temp, mdesc, wind_desc, windsp)
+    answer = "{0}°{1} og {2} ({3} m/s)".format(
+        temp, mdesc, wind_desc, str(windsp).rstrip("0").rstrip(".")
+    )
 
     response = dict(answer=answer)
 
