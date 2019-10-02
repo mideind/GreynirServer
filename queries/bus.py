@@ -511,12 +511,12 @@ def query_arrival_time(query, session, result):
         stop = stops[0]
         va.extend(["stoppar ekki á", to_dative(stop.name)])
         a = [bus_name, "stoppar ekki á", to_dative(stop.name)]
-    # Since we know that the query string contains no uppercase words,
+    # Hack: Since we know that the query string contains no uppercase words,
     # adjust it accordingly; otherwise it may erroneously contain capitalized
     # words such as Vagn and Leið.
     query.lowercase_beautified_query()
     voice_answer = " ".join(va) + "."
-    answer = " ".join(a) + "."
+    answer = (" ".join(a) + ".").replace(" .", ".")
     response = dict(answer=answer)
     return response, answer, voice_answer
 
