@@ -23,7 +23,7 @@
 
 """
 
-
+# TODO: Use grammar query style, not plain text
 # TODO: "Í hvaða landi er [BORG]?", "Hvað búa margir í/á [BORG/LAND]?" etc.
 # TODO: Handle queries w. multi-word country names such as "Hver er höfuðborg suður afríku"
 
@@ -42,8 +42,12 @@ _CITY_QUERIES = [
     "í hvaða ríki er borgin ",
 ]
 
-_CONTINENT_QUERIES = ["í hvaða heimsálfu er "]
-
+_CONTINENT_QUERIES = [
+    "í hvaða heimsálfu er ",
+    "í hvaða heimsálfu er borgin",
+    "í hvaða heimsálfu er landið",
+    "í hvaða heimsálfu er ríkið",
+]
 
 _CAPITAL_QUERIES = [
     "hver er höfuðborgin í ",

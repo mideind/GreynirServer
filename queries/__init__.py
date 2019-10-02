@@ -32,6 +32,15 @@ from tzwhere import tzwhere
 from pytz import country_timezones
 
 
+def natlang_seq(words):
+    """ Generate an Icelandic natural language sequence of words e.g.
+        "A og B", "A, B og C", "A, B, C og D". No Oxford comma :) """
+    if len(words) == 1:
+        return words[0]
+    elif len(words) >= 2:
+        return "{0} og {1}".format(", ".join(words[:-1]), words[-1])
+
+
 def query_json_api(url):
     """ Request the URL, expecting a json response which is 
         parsed and returned as a Python data structure """
