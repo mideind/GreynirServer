@@ -28,7 +28,7 @@ from flask import request, current_app
 import werkzeug
 from tnttagger import ifd_tag
 from db import SessionContext
-from db.models import ArticleTopic
+from db.models import ArticleTopic, Query
 from treeutil import TreeUtility
 from correct import check_grammar
 from reynir.binparser import canonicalize_token
@@ -310,7 +310,7 @@ def query_api(version=1):
     # Additional client info
     client_id = request.values.get("client_id")
     client_type = request.values.get("client_type")
-    # When running behind an nginx reverse proxy, the client's remote 
+    # When running behind an nginx reverse proxy, the client's remote
     # address is passed to the web application via the "X-Real-IP" header
     client_ip = request.remote_addr or request.headers.get("X-Real-IP")
 
@@ -379,3 +379,29 @@ def query_api(version=1):
             del result["voice"]
 
     return better_jsonify(**result)
+
+
+@routes.route("/query_history.api", methods=["GET", "POST"])
+@routes.route("/query_history.api/v<int:version>", methods=["GET", "POST"])
+def query_history_api(version=1):
+    """ Delete query history for a particular unique client ID """
+
+    if not (1 <= version <= 1):
+        return better_jsonify(valid=False, reason="Unsupported version")
+
+    action = request.values.get("action")
+    client_type = request.values.get("client_type")
+    client_version = request.values.get("client_version")
+    client_id = request.values.get("client_id")
+
+    if action != "clear" or not client_type or not client_id or len(client_id) < 18:
+        return better_jsonify(valid=False, reason="Missing parameters")
+
+    with SessionContext(commit=True) as session:
+        session.execute(
+            Query.table()
+            .delete()
+            .where(Query.client_type == client_type and Query.client_id == client_id)
+        )
+
+    return better_jsonify(valid=True)
