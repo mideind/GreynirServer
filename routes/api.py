@@ -401,7 +401,7 @@ def query_history_api(version=1):
         session.execute(
             Query.table()
             .delete()
-            .where(Query.client_type == client_type and Query.client_id == unique_id)
+            .where(Query.client_type == client_type and Query.client_id == client_id)
         )
 
     return better_jsonify(valid=True)
