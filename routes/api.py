@@ -310,9 +310,13 @@ def query_api(version=1):
     # Additional client info
     client_id = request.values.get("client_id")
     client_type = request.values.get("client_type")
+    client_version = request.values.get("client_version")
     # When running behind an nginx reverse proxy, the client's remote
     # address is passed to the web application via the "X-Real-IP" header
     client_ip = request.remote_addr or request.headers.get("X-Real-IP")
+
+    # Query is marked as private and shouldn't be logged.
+    private = request.values.get("private")
 
     # q param contains one or more |-separated strings
     mq = q.split("|")[0:_MAX_QUERY_VARIANTS]
@@ -352,6 +356,7 @@ def query_api(version=1):
         client_type=client_type,
         client_id=client_id,
         bypass_cache=test,
+        private=private,
     )
 
     # Get URL for response synthesized speech audio

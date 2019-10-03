@@ -634,12 +634,15 @@ class Query(Base):
     key = Column(String(256), index=True, nullable=True)
 
     # Client type
-    # Currently, either "www" (web interface) or "ios" (iOS)
+    # Either "www" (web interface), "ios" (iOS) or "android" (Android)
     client_type = Column(String(80), index=True, nullable=True)
+
+    # Client version
+    client_version = Column(String(10), nullable=True)
 
     # Client identifier, if applicable
     # If web client, this is the HTTP client user agent
-    # On iOS, this is the device UUID string
+    # On iOS and Android, this is a unique device UUID string
     client_id = Column(String(256), index=True, nullable=True)
 
     # Client location coordinates (WGS84)
