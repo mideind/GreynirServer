@@ -134,6 +134,14 @@
    <canvas id="parsed_chart_canvas" style="padding: 25px;"></canvas>
 </div>
 
+<div class="panel panel-default">
+   <div class="panel-heading">
+      Fyrirspurnir
+      <div class="pull-right hidden-xs">Meðaltal síðustu daga: <strong>{{ queries_avg | format_is(1) }}</strong></div>
+   </div>
+   <canvas id="queries_chart_canvas" style="padding: 25px;"></canvas>
+</div>
+
 {% endblock %}
 
 {% block endscripts %}
@@ -149,6 +157,8 @@
       var scrapeChartData = {{ scraped_chart_data | safe }};
       
       var parseChartData = {{ parsed_chart_data | safe }};
+
+      var queriesChartData = {{ queries_chart_data | safe }};
 
       // Scraped articles stacked bar chart
       var scrapeCtx =  $('#scraped_chart_canvas').get(0).getContext('2d');
@@ -204,6 +214,41 @@
                      max: 100,
                      callback: function(tick) {
                         return tick.toString() + '%';
+                     }
+                  }
+               }]
+            }
+         }
+      });
+
+      // Queries chart
+      var queriesCtx =  $('#queries_chart_canvas').get(0).getContext('2d');
+      queriesChartData.datasets[0].backgroundColor = 'rgba(200, 222, 255, 0.5)';
+      // parseChartData.datasets[0].fill = true;
+      var queriesChart = new Chart(queriesCtx, {
+         type: 'line',
+         data: queriesChartData,
+         options: {
+            legend: {
+               display: false,
+            },
+            tooltips: {
+               callbacks: {
+                  label: function(tooltipItem, data) {
+                     return tooltipItem.yLabel + ' fyrirspurnir';
+                  },
+               }
+            },
+            scales: {
+               xAxes: [{
+                  distribution: 'series',
+               }],
+               yAxes: [{
+                  ticks: {
+                     stepSize: 1,
+                     min: 0,
+                     callback: function(tick) {
+                        return tick.toString();
                      }
                   }
                }]

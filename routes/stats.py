@@ -32,13 +32,21 @@ from flask import request, render_template
 
 from settings import changedlocale
 from db import SessionContext
-from db.queries import StatsQuery, ChartsQuery, GenderQuery, BestAuthorsQuery
+from db.queries import (
+    StatsQuery,
+    ChartsQuery,
+    GenderQuery,
+    BestAuthorsQuery,
+    QueriesQuery,
+)
 from reynir.bindb import BIN_Db
 
 
-DEFAULT_STATS_PERIOD = 10  # days
-MAX_STATS_PERIOD = 30  # days
-_TOP_AUTHORS_PERIOD = 30  # days
+# Days
+_DEFAULT_STATS_PERIOD = 10
+_MAX_STATS_PERIOD = 30
+_TOP_AUTHORS_PERIOD = 30
+_QUERY_STATS_PERIOD = 10
 
 
 def chart_stats(session=None, num_days=7):
@@ -63,8 +71,9 @@ def chart_stats(session=None, num_days=7):
     labels = []
     sources = {}
     parsed_data = []
+    query_data = []
 
-    # Get article count for each source for each day
+    # Get article count for each source for each day, and query count for each day
     # We change locale to get localized date weekday/month names
     with changedlocale(category="LC_TIME"):
         for n in range(0, num_days):
@@ -82,7 +91,7 @@ def chart_stats(session=None, num_days=7):
             parsed = 0
 
             # Get article count per source for day
-            # Also collect parsing stats
+            # Also collect parsing stats for parse % chart
             q = ChartsQuery.period(start, end, enclosing_session=session)
             for (name, cnt, s, p) in q:
                 sources.setdefault(name, []).append(cnt)
@@ -91,6 +100,10 @@ def chart_stats(session=None, num_days=7):
 
             percent = round((parsed / sent) * 100, 2) if sent else 0
             parsed_data.append(percent)
+
+            # Get query count for day
+            q = QueriesQuery.period(start, end, enclosing_session=session)
+            query_data.append(q[0][0])
 
     # Create datasets for bar chart
     datasets = []
@@ -103,6 +116,7 @@ def chart_stats(session=None, num_days=7):
     # Calculate averages
     scrape_avg = article_count / num_days
     parse_avg = sum(parsed_data) / num_days
+    query_avg = sum(query_data) / num_days
 
     return {
         "scraped": {"labels": labels, "datasets": datasets, "avg": scrape_avg},
@@ -111,12 +125,17 @@ def chart_stats(session=None, num_days=7):
             "datasets": [{"data": parsed_data}],
             "avg": parse_avg,
         },
+        "queries": {
+            "labels": labels,
+            "datasets": [{"data": query_data}],
+            "avg": query_avg,
+        },
     }
 
 
 def top_authors(days=_TOP_AUTHORS_PERIOD, session=None):
     end = datetime.utcnow()
-    start = end - timedelta(days=_TOP_AUTHORS_PERIOD)
+    start = end - timedelta(days=days)
     authors = BestAuthorsQuery.period(
         start, end, enclosing_session=session, min_articles=10
     )[:20]
@@ -139,9 +158,9 @@ def top_authors(days=_TOP_AUTHORS_PERIOD, session=None):
 @max_age(seconds=30 * 60)
 def stats():
     """ Render a page with various statistics """
-    days = DEFAULT_STATS_PERIOD
+    days = _DEFAULT_STATS_PERIOD
     try:
-        days = min(MAX_STATS_PERIOD, int(request.args.get("days")))
+        days = min(_MAX_STATS_PERIOD, int(request.args.get("days")))
     except:
         pass
 
@@ -182,6 +201,8 @@ def stats():
             authresult=authresult,
             scraped_chart_data=json.dumps(chart_data["scraped"]),
             parsed_chart_data=json.dumps(chart_data["parsed"]),
+            queries_chart_data=json.dumps(chart_data["queries"]),
             scraped_avg=int(round(chart_data["scraped"]["avg"])),
             parsed_avg=round(chart_data["parsed"]["avg"], 1),
+            queries_avg=round(chart_data["queries"]["avg"], 1),
         )

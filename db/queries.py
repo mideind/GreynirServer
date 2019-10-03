@@ -101,6 +101,29 @@ class ChartsQuery(_BaseQuery):
             return cls().execute(session, start=start, end=end)
 
 
+class QueriesQuery(_BaseQuery):
+    """ Statistics on the type and number of logged queries
+        over a given time period. """
+
+    # _Q = """
+    #     select count(queries.id), queries.qtype from queries
+    #         where timestamp >= :start and timestamp < :end
+    #         group by queries.qtype
+    #         order by queries.qtype
+    #     """
+    _Q = """
+        select count(queries.id) from queries
+            where timestamp >= :start and timestamp < :end
+        """
+
+    @classmethod
+    def period(cls, start, end, enclosing_session=None):
+        with SessionContext(session=enclosing_session, commit=False) as session:
+            return cls().execute(session, start=start, end=end)
+
+
+
+
 class BestAuthorsQuery(_BaseQuery):
     """ A query for statistics on authors with the best parse ratios.
         The query only includes authors with at least 10 articles. """
