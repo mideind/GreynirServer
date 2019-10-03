@@ -67,7 +67,7 @@ def _capabilities(qs, q):
 
 
 def _identity(qs, q):
-    return { "answer": "Ég heiti Embla og ég skil íslensku." }
+    return { "answer": "Ég heiti Embla og ég skil íslensku. Ég er til þjónustu reiðubúin." }
 
 _THANKS = (
     "Það var nú lítið",
@@ -197,6 +197,7 @@ _SPECIAL_QUERIES = {
     "hvað heitirðu": _identity,
     "hver ert þú": _identity,
     "hver ertu": _identity,
+    "hver ertu eiginlega": _identity,
     "hver er embla": _identity,
     "hvað er embla": _identity,
 
@@ -216,6 +217,8 @@ _SPECIAL_QUERIES = {
 
     "hvaða spurningar skilur þú": _capabilities,
     "hvaða spurningar skilurðu": _capabilities,
+    "hvaða aðrar spurningar skilur þú": _capabilities,
+    "hvaða aðrar spurningar skilurðu": _capabilities,
 
     "hvers konar spurningar skilur þú": _capabilities,
     "hvers konar spurningar skilurðu": _capabilities,
