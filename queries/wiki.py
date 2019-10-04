@@ -67,10 +67,10 @@ QWikiQuery →
     | "hvaða" "upplýsingar" "er" QWikipedia "með" "um" QWikiSubject
     | "hvaða" "upplýsingum" "býr" QWikipedia "yfir" "varðandi" QWikiSubject
     | "hvað" "myndi" QWikipedia "segja" "mér"? "um" QWikiSubject
+    | "fræddu" "mig" "um" QWikiSubject
     # | "flettu" "upp" QWikiSubject "í" QWikipedia
     # | "hvað" "er" QWikiSubject "samkvæmt" QWikipedia
     # | "hver" "er QWikiSubject "samkvæmt" QWikipedia
-    # | "fræddu" "mig" "um" QWikiSubject
 
 QWikiSubject →
     Nl_þf
@@ -88,18 +88,24 @@ $score(+35) QWikiQuery
 def QWikiQuery(node, params, result):
     # Set the query type
     result.qtype = _WIKI_QTYPE
-    result.qkey = result["subject"]
+    result.qkey = result["subject_nom"]
 
 
 def Nl(node, params, result):
-    result["subject"] = result._nominative.title()
+    result["subject_nom"] = result._nominative.title()
+    result["subject_dat"] = result._text
 
 
 def _clean_answer(answer):
-    # Remove text within parentheses
-    a = re.sub(r"\([^)]+\)", "", answer)
     # Split on newline, use only first paragraph
-    a = a.split("\n")[0]
+    a = answer.split("\n")[0]
+    # Get rid of "Getur líka átt við" leading sentence
+    if a.startswith("Getur líka átt"):
+        a = ". ".join(a.split(".")[1:])
+    # Remove text within parentheses
+    a = re.sub(r"\([^)]+\)", "", a)
+    # Normalize whitespace
+    a = re.sub(r"\s+", " ", a)
     return a
 
 
@@ -111,17 +117,16 @@ def _query_wiki_api(subject):
     return query_json_api(url)
 
 
-def get_wiki_summary(subject):
-    res = _query_wiki_api(subject)
+def get_wiki_summary(subject_nom, subject_dat):
+    res = _query_wiki_api(subject_nom)
     pprint(res)
     if not res or "query" not in res or "pages" not in res["query"]:
         return None
 
     pages = res["query"]["pages"]
     keys = pages.keys()
-    if not len(keys):
-        # logging.warning("No info found on Wikipedia: {0}", res)
-        return None
+    if not len(keys) or "-1" in keys:
+        return "Ekkert fannst um {0} í Wikipedíu".format(subject_dat)
 
     k = sorted(keys)[0]
 
@@ -133,14 +138,20 @@ def get_wiki_summary(subject):
 def sentence(state, result):
     """ Called when sentence processing is complete """
     q = state["query"]
-    if "qtype" in result and "subject" in result:
+    if "qtype" in result and "subject_nom" in result:
         # Successfully matched a query type
         q.set_qtype(result.qtype)
         q.set_key(result.qkey)
 
-        answer = get_wiki_summary(result["subject"])
+        answer = get_wiki_summary(result["subject_nom"], result["subject_dat"])
         response = dict(answer=answer)
         voice_answer = answer
         q.set_answer(response, answer, voice_answer)
+
+        # Beautify query by fixing spelling of Wikipedia
+        b = q.beautified_query
+        for w in _WIKI_VARIATIONS:
+            b = b.replace(w, _WIKIPEDIA_CANONICAL)
+        q.set_beautified_query(b)
     else:
         state["query"].set_error("E_QUERY_NOT_UNDERSTOOD")
