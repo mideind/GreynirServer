@@ -24,10 +24,6 @@
 
 """
 
-# TODO: Clean up query string, show canonical Wikipedia name in Icelandic
-#       in beautify_query
-# TODO: Fix grammar, return sensible answer if no reply from API
-
 from . import query_json_api
 from datetime import datetime, timedelta
 import re
@@ -120,13 +116,15 @@ def _query_wiki_api(subject):
 def get_wiki_summary(subject_nom, subject_dat):
     res = _query_wiki_api(subject_nom)
 
+    not_found = "Ekkert fannst um {0} í Wikipedíu".format(subject_dat)
+
     if not res or "query" not in res or "pages" not in res["query"]:
-        return None
+        return not_found
 
     pages = res["query"]["pages"]
     keys = pages.keys()
     if not len(keys) or "-1" in keys:
-        return "Ekkert fannst um {0} í Wikipedíu".format(subject_dat)
+        return not_found
 
     k = sorted(keys)[0]
 

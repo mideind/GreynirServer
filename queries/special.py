@@ -67,6 +67,7 @@ def _random_joke(qs, q):
     return { "answer": choice(_JOKES) }
 
 
+# TODO: Add fun trivia here
 _TRIVIA = (
     "Eitthvað skemmtilegt."
 )
