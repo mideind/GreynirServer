@@ -204,6 +204,18 @@ def test_query_api(client):
     assert "answer" in json
     assert json["answer"] == "Madríd"
 
+    resp = client.get("/query.api?q=Í hvaða landi er Jóhannesarborg?")
+    json = validate_json(resp)
+    assert json["qtype"] == "Geography"
+    assert "answer" in json
+    assert json["answer"].endswith("Suður-Afríku")
+
+    resp = client.get("/query.api?q=Í hvaða heimsálfu er míkrónesía?")
+    json = validate_json(resp)
+    assert json["qtype"] == "Geography"
+    assert "answer" in json
+    assert json["answer"].startswith("Eyjaálfu")
+
     # Random module
     resp = client.get("/query.api?q=Veldu tölu milli sautján og 30")
     json = validate_json(resp)
@@ -219,6 +231,21 @@ def test_query_api(client):
     assert "open_url" in json
     assert json["open_url"] == "tel:6992422"
     assert json["q"].endswith("6992422")
+
+    # Wikipedia module
+    resp = client.get("/query.api?q=Hvað segir wikipedia um Jón Leifs?")
+    json = validate_json(resp)
+    assert json["qtype"] == "Wikipedia"
+    assert "answer" in json
+    assert "Wikipedía" in json["q"]  # Make sure it's being beautified
+    assert "tónskáld" in json["answer"]
+
+    # Opinion module
+    resp = client.get("/query.api?q=Hvað finnst þér um loftslagsmál?")
+    json = validate_json(resp)
+    assert json["qtype"] == "Opinion"
+    assert "answer" in json
+    assert json["answer"].startswith("Ég hef enga sérstaka skoðun")
 
 
 def test_processors():

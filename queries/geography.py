@@ -24,11 +24,11 @@
 """
 
 # TODO: "Hvað búa margir í/á [BORG/LAND]?" etc.
-# TODO: Handle queries w. annoying multi-word country names such as "Hver er höfuðborg suður afríku"
 
 from datetime import datetime, timedelta
 from cityloc import capital_for_cc
 from queries import country_desc, nom2dat
+from reynir.bindb import BIN_Db
 from geo import (
     icelandic_city_name,
     isocode_for_country_name,
@@ -223,5 +223,6 @@ def sentence(state, result):
 
     if handled:
         q.set_qtype(_GEO_QTYPE)
+        q.set_expires(datetime.utcnow() + timedelta(hours=24))
     else:
         state["query"].set_error("E_QUERY_NOT_UNDERSTOOD")

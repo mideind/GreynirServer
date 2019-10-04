@@ -44,7 +44,7 @@ _OPINION_REGEXES = frozenset(
 
 
 def handle_plain_text(q):
-    """ Handle a plain text query requesting a call to a telephone number. """
+    """ Handle a plain text query concerning opinion on any subject. """
     ql = q.query_lower.rstrip("?")
 
     subj = None

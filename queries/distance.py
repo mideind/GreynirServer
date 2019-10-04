@@ -28,7 +28,6 @@
 import re
 import logging
 import math
-from pprint import pprint
 
 from reynir.bindb import BIN_Db
 from queries import gen_answer, query_geocode_API_addr

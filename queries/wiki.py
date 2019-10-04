@@ -29,7 +29,7 @@
 # TODO: Fix grammar, return sensible answer if no reply from API
 
 from . import query_json_api
-from pprint import pprint
+from datetime import datetime, timedelta
 import re
 
 _WIKI_QTYPE = "Wikipedia"
@@ -119,7 +119,7 @@ def _query_wiki_api(subject):
 
 def get_wiki_summary(subject_nom, subject_dat):
     res = _query_wiki_api(subject_nom)
-    pprint(res)
+
     if not res or "query" not in res or "pages" not in res["query"]:
         return None
 
@@ -153,5 +153,6 @@ def sentence(state, result):
         for w in _WIKI_VARIATIONS:
             b = b.replace(w, _WIKIPEDIA_CANONICAL)
         q.set_beautified_query(b)
+        q.set_expires(datetime.utcnow() + timedelta(hours=24))
     else:
         state["query"].set_error("E_QUERY_NOT_UNDERSTOOD")

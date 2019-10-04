@@ -64,22 +64,22 @@ _CURRDATE_QUERIES = frozenset(
 )
 
 
-def _christmas():
-    return datetime(
-        year=datetime.today().year, month=12, day=24, hour=0, minute=0, second=0
-    )
+# def _christmas():
+#     return datetime(
+#         year=datetime.today().year, month=12, day=24, hour=0, minute=0, second=0
+#     )
 
 
-_DATE_QUERIES = {
-    "hvað er langt í jólin": _christmas,
-    "hvað er langt í jól": _christmas,
-    "hvað er langt til jóla": _christmas,
-    "hvað er langt til jólanna": _christmas,
-    "hvað eru margir dagar til jóla": _christmas,
-    "hvað eru margir dagar til jólanna": _christmas,
-    "hversu langt er í jólin": _christmas,
-    "hve langt er í jólin": _christmas,
-}
+# _DATE_QUERIES = {
+#     "hvað er langt í jólin": _christmas,
+#     "hvað er langt í jól": _christmas,
+#     "hvað er langt til jóla": _christmas,
+#     "hvað er langt til jólanna": _christmas,
+#     "hvað eru margir dagar til jóla": _christmas,
+#     "hvað eru margir dagar til jólanna": _christmas,
+#     "hversu langt er í jólin": _christmas,
+#     "hve langt er í jólin": _christmas,
+# }
 
 
 def handle_plain_text(q):
