@@ -665,7 +665,9 @@ def process_query(
     remote_addr=None,
     client_id=None,
     client_type=None,
+    client_version=None,
     bypass_cache=False,
+    private=False,
 ):
     """ Process an incoming natural language query.
         If voice is True, return a voice-friendly string to
@@ -735,33 +737,35 @@ def process_query(
             if result["valid"] and "error" not in result:
                 # Successful: our job is done
                 # Log the result
-                try:
-                    qrow = QueryRow(
-                        timestamp=datetime.utcnow(),
-                        question=clean_q,
-                        # bquestion is the beautified query string
-                        bquestion=result["q"],
-                        answer=result["answer"],
-                        voice=result.get("voice"),
-                        # Only put an expiration on voice queries
-                        expires=query.expires if voice else None,
-                        qtype=result.get("qtype"),
-                        key=result.get("key"),
-                        latitude=location[0] if location else None,
-                        longitude=location[1] if location else None,
-                        # Client identifier
-                        client_id=client_id,
-                        client_type=client_type or None,
-                        # IP address
-                        remote_addr=remote_addr or None,
-                        # Context dict, stored as JSON, if present
-                        # (set during query execution)
-                        context=query.context,
-                        # All other fields are set to NULL
-                    )
-                    session.add(qrow)
-                except Exception as e:
-                    logging.error("Error logging query: {0}".format(e))
+                if not private:
+                    try:
+                        qrow = QueryRow(
+                            timestamp=datetime.utcnow(),
+                            question=clean_q,
+                            # bquestion is the beautified query string
+                            bquestion=result["q"],
+                            answer=result["answer"],
+                            voice=result.get("voice"),
+                            # Only put an expiration on voice queries
+                            expires=query.expires if voice else None,
+                            qtype=result.get("qtype"),
+                            key=result.get("key"),
+                            latitude=location[0] if location else None,
+                            longitude=location[1] if location else None,
+                            # Client identifier
+                            client_id=client_id,
+                            client_type=client_type or None,
+                            client_version=client_version or None,
+                            # IP address
+                            remote_addr=remote_addr or None,
+                            # Context dict, stored as JSON, if present
+                            # (set during query execution)
+                            context=query.context,
+                            # All other fields are set to NULL
+                        )
+                        session.add(qrow)
+                    except Exception as e:
+                        logging.error("Error logging query: {0}".format(e))
                 
                 return result
 
