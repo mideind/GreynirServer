@@ -181,9 +181,7 @@ def answer_for_location(loc):
             else ""
         )
         # "[á Boulevard St. Germain] [í París] [í Frakklandi]"
-        descr = "{0} {1} {2}".format(
-            sdesc, locdesc, country_desc(country_code)
-        ).strip()
+        descr = "{0} {1} {2}".format(sdesc, locdesc, country_desc(country_code)).strip()
 
     if not descr:
         # Fall back on the formatted address string provided by Google
@@ -200,6 +198,7 @@ _WHERE_AM_I_STRINGS = frozenset(
     (
         "hvar er ég",
         "hvar er ég núna",
+        "hvar er ég nú",
         "hvar er ég eins og stendur",
         "hvar er ég eiginlega",
         "hvar er ég staddur",
@@ -208,8 +207,10 @@ _WHERE_AM_I_STRINGS = frozenset(
         "hvar er ég eiginlega stödd",
         "hver er staðsetning mín",
         "hvar erum við",
+        "hvar erum við stödd",
     )
 )
+
 _LOC_QTYPE = "Location"
 
 

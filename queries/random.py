@@ -62,11 +62,13 @@ QRandomBetween →
     | QRandAction "tölu" QRandRand? "á"? "milli" QRandNumber "og" QRandNumber
 
 QRandAction →
-    "veldu" | "nefndu" | "gefðu" "mér" | "komdu" "með"
-    | "getur" "þú" "gefið" "mér" | "geturðu" "gefið" "mér"
+    "veldu" | "veldu" "fyrir" "mig" | "nefndu" | "nefndu" "fyrir" "mig" 
+    | "gefðu" "mér" | "komdu" "með" | "getur" "þú" "gefið" "mér" 
+    | "geturðu" "gefið" "mér" | "segðu" "mér"
 
 QRandRand →
-    "af" "handahófi"
+    # "Að handahófi" is incorrect but we'll allow it
+    "af" "handahófi" | "að" "handahófi"
 
 QRandNumber →
     # to is a declinable number word ('tveir/tvo/tveim/tveggja')

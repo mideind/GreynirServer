@@ -40,6 +40,7 @@ _PHONECALL_REGEXES = frozenset(
         r"(hringdu í síma )([\d|\-|\s]+)",
         r"(hringdu í símanúmerið )([\d|\-|\s]+)",
         r"(hringdu í númerið )([\d|\-|\s]+)",
+        r"(hringdu í númer )([\d|\-|\s]+)",
     )
 )
 

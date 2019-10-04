@@ -35,20 +35,6 @@ from random import choice
 _SPECIAL_QTYPE = "Special"
 
 
-# Additions welcome :)
-_JOKES = (
-    "Af hverju taka Hafnfirðingar alltaf stiga út í búð? Því verðið er svo hátt.",
-    "Af hverju búa Hafnfirðingar í kringlóttum húsum? Svo enginn mígi í hornin.",
-    "Af hverju eru Hafnfirðingar alltaf með stól úti á svölum? Svo sólin geti sest.",
-    "Af hverju læðast Hafnfirðingar alltaf fram hjá apótekum? Til að vekja ekki svefnpillurnar.",
-    "Af hverju fara Hafnfirðingar alltaf niður í fjöru um jólin? Til þess að bíða eftir jólabókaflóðinu.",
-)
-
-
-def _random_joke(qs, q):
-    return { "answer": choice(_JOKES) }
-
-
 # TODO: Extend this list as the range of queries is expanded
 _CAP = (
     "Þú getur til dæmis spurt mig um veðrið.",
@@ -67,8 +53,32 @@ def _capabilities(qs, q):
     return { "answer": choice(_CAP) }
 
 
+# Additions welcome :)
+_JOKES = (
+    "Af hverju taka Hafnfirðingar alltaf stiga út í búð? Því verðið er svo hátt.",
+    "Af hverju búa Hafnfirðingar í kringlóttum húsum? Svo enginn mígi í hornin.",
+    "Af hverju eru Hafnfirðingar alltaf með stól úti á svölum? Svo sólin geti sest.",
+    "Af hverju læðast Hafnfirðingar alltaf fram hjá apótekum? Til að vekja ekki svefnpillurnar.",
+    "Af hverju fara Hafnfirðingar alltaf niður í fjöru um jólin? Til þess að bíða eftir jólabókaflóðinu.",
+)
+
+
+def _random_joke(qs, q):
+    return { "answer": choice(_JOKES) }
+
+
+_TRIVIA = (
+    "Eitthvað skemmtilegt."
+)
+
+
+def _random_trivia(qs, q):
+    return { "answer": choice(_TRIVIA) }
+
+
 def _identity(qs, q):
     return { "answer": "Ég er Embla. Ég skil íslensku og er til þjónustu reiðubúin." }
+
 
 _SORRY = (
     "Það þykir mér leitt.",
@@ -91,8 +101,10 @@ _THANKS = (
     "Ekki málið",
 )
 
+
 def _thanks(qs, q):
     return { "answer": choice(_THANKS) }
+
 
 _RUDE = (
     "Þetta var ekki fallega sagt.",
@@ -106,6 +118,7 @@ _RUDE = (
     "Æi, ekki vera með leiðindi.",
 )
 
+
 def _rudeness(qs, q):
     return { "answer": choice(_RUDE) }
 
@@ -113,6 +126,12 @@ def _rudeness(qs, q):
 def _open_embla_url(qs, q):
     q.set_url("https://embla.is")
     return { "answer": "Skal gert!" }
+
+
+def _open_mideind_url(qs, q):
+    q.set_url("https://mideind.is")
+    return { "answer": "Skal gert!" }
+
 
 _MEANING_OF_LIFE = {
     "answer": "42.",
@@ -216,6 +235,7 @@ _SPECIAL_QUERIES = {
     "ertu ástfangin í mér": _ROMANCE,
     "ert þú ástfangin í mér": _ROMANCE,
     "ertu þú ástfangin": _ROMANCE,
+    "hver er ástin í lífi þínu": _ROMANCE,
 
     # Positive affirmation ;)
     "kanntu vel við mig": _OF_COURSE,
@@ -227,15 +247,14 @@ _SPECIAL_QUERIES = {
     "er ég góður": _OF_COURSE,
     "er ég góð": _OF_COURSE,
     "er ég góð manneskja": _OF_COURSE,
-
     "hvað finnst þér um mig": {
-        "answer": "Þú ert einstakur notandi og sérstakur fyrir mér."
+        "answer": "Þú ert einstakur, kæri notandi."
     },
 
-    # Website
+    # Websites
     "opnaðu vefsíðuna þína": _open_embla_url,
-    "opnaðu emblu vefsíðuna": _open_embla_url,
-    "opnaðu vefsíðuna": _open_embla_url,
+    "opnaðu vefsíðu emblu": _open_embla_url,
+    "opnaðu vefsíðu miðeindar": _open_mideind_url,
 
     # Blame
     "þetta er ekki rétt": _sorry,
@@ -400,6 +419,8 @@ _SPECIAL_QUERIES = {
     "segðu eitthvað áhugavert": _random_trivia,
     "segðu mér eitthvað áhugavert": _random_trivia,
     "segðu mér áhugaverða staðreynd": _random_trivia,
+    "komdu með eitthvað áhugavert": _random_trivia,
+    "komdu með áhugaverða staðreynd": _random_trivia,
 
     # Rudeness :)
     "þú sökkar": _rudeness,
@@ -464,7 +485,7 @@ _SPECIAL_QUERIES = {
     },
 
     # Cheating, I know. But I'm never in the news and it just doesn't  
-    # sit right with me that I am incognito :) - Sveinbjörn 04/10/2019
+    # sit right with me that I should remain incognito :) - Sveinbjörn 04/10/2019
     "hver er sveinbjörn þórðarson": {
         "answer": "Sveinbjörn Þórðarson er hugbúnaðarsmiður. Hann átti þátt í að skapa mig.",
     },
