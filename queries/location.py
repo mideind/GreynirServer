@@ -30,15 +30,9 @@
 import os
 import logging
 
-from queries import gen_answer, query_geocode_API_coords
+from queries import gen_answer, query_geocode_API_coords, country_desc, nom2dat
 from iceaddr import iceaddr_lookup
-from geo import (
-    iceprep4cc,
-    iceprep_for_placename,
-    iceprep_for_street,
-    country_name_for_isocode,
-)
-from reynir.bindb import BIN_Db
+from geo import iceprep_for_placename, iceprep_for_street
 
 
 def _addrinfo_from_api_result(result):
@@ -75,27 +69,6 @@ def _addrinfo_from_api_result(result):
         street = "ónefnd gata"
 
     return (street, num, locality, postcode, country)
-
-
-def nom2dat(w):
-    """ Look up dative form of a noun in BÍN, try
-        lowercase if capitalized form not found """
-    if w:
-        b = BIN_Db()
-        bin_res = b.lookup_dative(w, cat="no")
-        if not bin_res and not w.islower():
-            bin_res = b.lookup_dative(w.lower(), cat="no")
-        if bin_res:
-            return bin_res[0].ordmynd
-    return w
-
-
-def country_desc(cc):
-    """ Generate description string of being in a particular country
-        with correct preposition and case e.g. 'á Spáni' """
-    cn = country_name_for_isocode(cc)
-    prep = iceprep4cc(cc)
-    return "{0} {1}".format(prep, nom2dat(cn))
 
 
 def street_desc(street_nom, street_num, locality_nom):

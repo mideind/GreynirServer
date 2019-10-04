@@ -34,11 +34,14 @@ _OPINION_REGEXES = frozenset(
         r"hvað finnst þér um (.+)",
         r"hvaða skoðun hefurðu á (.+)",
         r"hvaða skoðun hefur þú á (.+)",
+        r"hvaða skoðun ertu með á (.+)",
+        r"hvaða skoðun ert þú með á (.+)",
         r"hver er skoðun þín á (.+)",
         r"hvaða skoðanir hefur þú á (.+)",
         r"hvaða skoðanir hefurðu á (.+)",
     )
 )
+
 
 def handle_plain_text(q):
     """ Handle a plain text query requesting a call to a telephone number. """
@@ -63,4 +66,3 @@ def handle_plain_text(q):
     q.set_expires(datetime.utcnow() + timedelta(hours=24))
 
     return True
-

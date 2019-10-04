@@ -20,7 +20,7 @@
     Queries folder
     This is the location to put custom query responders.
 
-    This file contains shared code used the query modules.
+    This file contains various shared functions used by the query modules.
 
 """
 
@@ -30,6 +30,8 @@ import json
 import os
 from tzwhere import tzwhere
 from pytz import country_timezones
+from geo import country_name_for_isocode, iceprep4cc
+from reynir.bindb import BIN_Db
 
 
 def natlang_seq(words):
@@ -39,6 +41,27 @@ def natlang_seq(words):
         return words[0]
     elif len(words) >= 2:
         return "{0} og {1}".format(", ".join(words[:-1]), words[-1])
+
+
+def nom2dat(w):
+    """ Look up dative form of a noun in BÍN, try
+        lowercase if capitalized form not found """
+    if w:
+        b = BIN_Db()
+        bin_res = b.lookup_dative(w, cat="no")
+        if not bin_res and not w.islower():
+            bin_res = b.lookup_dative(w.lower(), cat="no")
+        if bin_res:
+            return bin_res[0].ordmynd
+    return w
+
+
+def country_desc(cc):
+    """ Generate description string of being in a particular country
+        with correct preposition and case e.g. 'á Spáni' """
+    cn = country_name_for_isocode(cc)
+    prep = iceprep4cc(cc)
+    return "{0} {1}".format(prep, nom2dat(cn))
 
 
 def query_json_api(url):
