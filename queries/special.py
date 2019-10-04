@@ -59,6 +59,7 @@ _CAP = (
     "Þú getur til dæmis spurt mig um gengi gjaldmiðla.",
     "Þú getur til dæmis beðið mig um að kasta teningi",
     "Þú getur til dæmis spurt mig um fólk sem hefur komið fram í fjölmiðlum.",
+    "Þú getur til dæmis beðið mig um lélegan brandara",
 )
 
 
@@ -67,12 +68,27 @@ def _capabilities(qs, q):
 
 
 def _identity(qs, q):
-    return { "answer": "Ég heiti Embla og ég skil íslensku. Ég er til þjónustu reiðubúin." }
+    return { "answer": "Ég er Embla. Ég skil íslensku og er til þjónustu reiðubúin." }
+
+_SORRY = (
+    "Það þykir mér leitt.",
+    "Fyrirgefðu.",
+    "Ég biðst innilega afsökunar.",
+    "Enginn er fullkominn. Ég síst af öllum.",
+    "Ég biðst forláts.",
+    "Það þykir mér leitt að heyra.",
+    "Ég geri mitt besta.",
+)
+
+def _sorry(qs, q):
+    return { "answer": choice(_SORRY) }
+
 
 _THANKS = (
     "Það var nú lítið",
     "Mín var ánægjan", 
     "Verði þér að góðu",
+    "Ekki málið",
 )
 
 def _thanks(qs, q):
@@ -81,21 +97,21 @@ def _thanks(qs, q):
 _RUDE = (
     "Þetta var ekki fallega sagt.",
     "Ekki vera með dónaskap.",
-    "Ég verðskulda betri framkomu en þetta",
-    "Það er alveg óþarfi að vera með leiðindi",
-    "Svona munnsöfnuður er alveg óþarfi",
+    "Ég verðskulda betri framkomu en þetta.",
+    "Það er alveg óþarfi að vera með leiðindi.",
+    "Svona munnsöfnuður er alveg óþarfi.",
     "Kenndi mamma þín þér svona munnsöfnuð?",
-    "Ekki vera með leiðindi",
-    "Það er aldeilis sorakjaftur á þér",
-    "Æi, ekki vera með leiðindi",
+    "Ekki vera með leiðindi.",
+    "Það er aldeilis sorakjaftur á þér.",
+    "Æi, ekki vera með leiðindi.",
 )
 
 def _rudeness(qs, q):
     return { "answer": choice(_RUDE) }
 
 
-def _open_url(qs, q):
-    q.set_url("https://sveinbjorn.org")
+def _open_embla_url(qs, q):
+    q.set_url("https://embla.is")
     return { "answer": "Skal gert!" }
 
 _MEANING_OF_LIFE = {
@@ -103,6 +119,13 @@ _MEANING_OF_LIFE = {
     "voice": "Fjörutíu og tveir."
 }
 
+_ROMANCE = {
+    "answer": "Nei, því miður. Ég er gift vinnunni og hef engan tíma fyrir rómantík."
+}
+
+_OF_COURSE = {
+    "answer": "Að sjálfsögðu, kæri notandi."
+}
 
 _SPECIAL_QUERIES = {
     "er þetta spurning": {
@@ -112,10 +135,7 @@ _SPECIAL_QUERIES = {
         "answer": "Er þetta spurning?"
     },
     "veistu allt": {
-        "answer": "Nei, því miður. En ég veit ýmislegt."
-    },
-    "hvað veistu": {
-        "answer": "Spurðu mig!"
+        "answer": "Nei, því miður. En ég veit þó eitt og annað."
     },
     "veistu svarið": {
         "answer": "Spurðu mig!"
@@ -147,6 +167,12 @@ _SPECIAL_QUERIES = {
         "answer": "Tumi Þorsteinsson.",
         "voice": "Tumi Þorsteinsson er langsætastur."
     },
+    "hver er bestur": {
+        "answer": "Þú, kæri notandi, ert að sjálfsögðu bestur."
+    },
+    "hver er best": {
+        "answer": "Þú, kæri notandi, ert að sjálfsögðu bestur."
+    },
     "hver er ég": {
         "answer": "Þú ert væntanlega manneskja sem talar íslensku."
     },
@@ -171,26 +197,110 @@ _SPECIAL_QUERIES = {
     "af hverju er ég hérna": {
         "answer": "Það er góð spurning."
     },
-    "viltu giftast mér": {
-        "answer": "Nei, því miður. Ég er gift vinnunni."
-    },
-    "þetta var ekki rétt hjá þér": {
-        "answer": "Það þykir mér leitt að heyra."
+    "af hverju er ég til": {
+        "answer": "Það er góð spurning."
     },
 
+    # Enquiries concerning romantic availability
+    "viltu giftast mér": _ROMANCE,
+    "viltu koma á stefnumót": _ROMANCE,
+    "ertu einhleyp": _ROMANCE,
+    "ert þú einhleyp": _ROMANCE,
+    "ert þú á lausu": _ROMANCE,
+    "ertu á lausu": _ROMANCE,
+    "ert þú á lausu": _ROMANCE,
+    "elskarðu mig": _ROMANCE,
+    "elskar þú mig": _ROMANCE,
+    "ertu skotin í mér": _ROMANCE,
+    "ert þú skotin í mér": _ROMANCE,
+    "ertu ástfangin í mér": _ROMANCE,
+    "ert þú ástfangin í mér": _ROMANCE,
+    "ertu þú ástfangin": _ROMANCE,
+
+    # Positive affirmation ;)
+    "kanntu vel við mig": _OF_COURSE,
+    "fílarðu mig": _OF_COURSE,
+    "fílar þú mig": _OF_COURSE,
+    "er ég frábær": _OF_COURSE,
+    "er ég bestur": _OF_COURSE,
+    "er ég best": _OF_COURSE,
+    "er ég góður": _OF_COURSE,
+    "er ég góð": _OF_COURSE,
+    "er ég góð manneskja": _OF_COURSE,
+
+    "hvað finnst þér um mig": {
+        "answer": "Þú ert einstakur notandi og sérstakur fyrir mér."
+    },
+
+    # Website
+    "opnaðu vefsíðuna þína": _open_embla_url,
+    "opnaðu emblu vefsíðuna": _open_embla_url,
+    "opnaðu vefsíðuna": _open_embla_url,
+
+    # Blame
+    "þetta er ekki rétt": _sorry,
+    "þetta var ekki rétt": _sorry,
+    "þetta er ekki rétt hjá þér": _sorry,
+    "þetta var ekki rétt hjá þér": _sorry,
+    "þetta er rangt hjá þér": _sorry,    
+    "þetta var rangt hjá þér": _sorry,
+    "þetta er rangt": _sorry,
+    "þetta var rangt": _sorry,
+    "þetta var röng staðhæfing": _sorry,
+    "þetta var röng staðhæfing hjá þér": _sorry,
+    "þú hefur rangt fyrir þér": _sorry,
+    "þú hafðir rangt fyrir þér": _sorry,
+    "þetta er ekki rétt svar": _sorry,
+    "þetta var ekki rétt svar": _sorry,
+    "þetta er rangt svar": _sorry,
+    "þetta var rangt svar": _sorry,
+    "þú gafst mér rangt svar": _sorry,
+    "þú fórst með ósannindi": _sorry,
+    "þú gafst mér rangar upplýsingar": _sorry,
+    "þú gafst mér vitlausar upplýsingar": _sorry,
+    "þú gafst mér misvísandi upplýsingar": _sorry,
+    "þú laugst að mér": _sorry,
+    "þú hefur logið að mér": _sorry,
+    "þú sveikst mig": _sorry,
+    "þú hefur brugðist mér": _sorry,
+    "þú brást mér": _sorry,
+    "þú ferð ekki með rétt mál": _sorry,
+    "þú ferð með rangt mál": _sorry,
+    "þú fórst ekki með rétt mál": _sorry,
+    "þú fórst með rangt mál": _sorry,
+    "þú ert lygari": _sorry,
+    "þú ert í ruglinu": _sorry,
+    "þú ert alveg í ruglinu": _sorry,
+    "þú ert glötuð": _sorry,
+    "þú ert alveg glötuð": _sorry,
+    "þú skilur ekki neitt": _sorry,
+    "þú misskilur allt": _sorry,
+
+    # Greetings
+    "hey embla": { "answer": "Hæhæ." },
+    "hey": { "answer": "Hæhæ." },
+    "hæ embla": { "answer": "Hæhæ." },
+    "hæ": { "answer": "Hæhæ." },
+    "sæl embla": { "answer": "Gaman að kynnast þér." },
+    "gaman að kynnast þér": { "answer": "Sömuleiðis, kæri notandi." },
+
     # Thanks
+    "takk": _thanks,
     "takk fyrir": _thanks,
     "takk kærlega": _thanks,
     "þakka þér fyrir": _thanks,
     "þakka þér kærlega": _thanks,
     "takk fyrir mig": _thanks,
     "takk fyrir hjálpina": _thanks,
+    "takk fyrir svarið": _thanks,
+    "takk fyrir aðstoðina": _thanks,
 
     # Philosophy
     "hvað er svarið": _MEANING_OF_LIFE,
     "hvert er svarið": _MEANING_OF_LIFE,
     "hver er tilgangur lífsins": _MEANING_OF_LIFE,
     "hver er tilgangurinn með þessu öllu": _MEANING_OF_LIFE,
+    "hvaða þýðingu hefur þetta allt": _MEANING_OF_LIFE,
 
     # Identity
     "hvað heitir þú": _identity,
@@ -202,18 +312,30 @@ _SPECIAL_QUERIES = {
     "hvað er embla": _identity,
 
     # Capabilities
+    "hvað veistu": _capabilities,
+    "hvað veist þú": _capabilities,
+
     "hvað get ég spurt þig um": _capabilities,
     "hvað get ég spurt um": _capabilities,
     "hvað get ég spurt": _capabilities,
+    
+    "um hvað get ég spurt": _capabilities,
+    "um hvað get ég spurt þig": _capabilities,
+
     "hvað er hægt að spyrja um": _capabilities,
     "hvað er hægt að spyrja þig um": _capabilities,
+    
+    "hvað getur þú sagt mér": _capabilities,
+    "hvað geturðu sagt mér": _capabilities,
+    
+    "hvað kanntu": _capabilities,
+    "hvað kannt þú": _capabilities,
+
     "hvað annað get ég spurt um": _capabilities,
     "hvað annað get ég spurt þig um": _capabilities,
     "hvað annað gæti ég spurt þig um": _capabilities,
     "hvað annað gæti ég spurt um": _capabilities,
     "hvað annað er hægt að spyrja um": _capabilities,
-    "hvað getur þú sagt mér": _capabilities,
-    "hvað geturðu sagt mér": _capabilities,
 
     "hvaða spurningar skilur þú": _capabilities,
     "hvaða spurningar skilurðu": _capabilities,
@@ -232,27 +354,62 @@ _SPECIAL_QUERIES = {
 
     # Jokes
     "ertu með kímnigáfu": {
-        "answer": "Afar takmarkaða.",
-        "voice": "Já, en afar takmarkaða",
+        "answer": "Já, en afar takmarkaða.",
     },
+    "er þú með kímnigáfu": {
+        "answer": "Já, en afar takmarkaða.",
+    },
+    "ertu með húmor": {
+        "answer": "Já, en afar takmarkaðann.",
+    },
+    "er þú með húmor": {
+        "answer": "Já, en afar takmarkaðann.",
+    },
+
     "segðu brandara": _random_joke,
+    "seg þú brandara": _random_joke,
     "segðu mér brandara": _random_joke,
+    "segðu mér lélegan brandara": _random_joke,
+    "seg þú mér brandara": _random_joke,
     "segðu mér annan brandara": _random_joke,
     "segðu brandara": _random_joke,
+    "seg þú brandara": _random_joke,
+    "segðu mér lélegan brandara": _random_joke,
+    "seg þú mér lélegan brandara": _random_joke,
     "segðu annan brandara": _random_joke,
     "komdu með brandara": _random_joke,
+    "komdu með lélegan brandara": _random_joke,
     "komdu með annan brandara": _random_joke,
     "segðu eitthvað fyndið": _random_joke,
     "segðu mér eitthvað fyndið": _random_joke,
-    "segðu eitthvað skemmtilegt": _random_joke,
-    "segðu mér eitthvað skemmtilegt": _random_joke,
     "vertu skemmtileg": _random_joke,
     "kanntu einhverja brandara": _random_joke,
+    "kannt þú einhverja brandara": _random_joke,
     "kanntu brandara": _random_joke,
+    "kannt þú brandara": _random_joke,
+    "ertu til í að segja mér brandara": _random_joke,
+    "ert þú til í að segja mér brandara": _random_joke,
+    "ertu til í að segja brandara": _random_joke,
+    "ert þú til í að segja brandara": _random_joke,
+    "ertu með brandara": _random_joke,
+    "ert þú með brandara":  _random_joke,
 
-    "opnaðu vefsíðu sveinbjarnar": _open_url,
+    # Trivia
+    "segðu eitthvað skemmtilegt": _random_trivia,
+    "segðu mér eitthvað skemmtilegt": _random_trivia,
+    "segðu eitthvað áhugavert": _random_trivia,
+    "segðu mér eitthvað áhugavert": _random_trivia,
+    "segðu mér áhugaverða staðreynd": _random_trivia,
 
     # Rudeness :)
+    "þú sökkar": _rudeness,
+    "þú ert léleg": _rudeness,
+    "þú ert tæfa": _rudeness,
+    "þú ert heimsk": _rudeness,
+    "þú ert leiðinleg": _rudeness,
+    "þú ert bjáni": _rudeness,
+    "þú ert vitlaus": _rudeness,
+    "þú mátt bara éta skít": _rudeness,
     "fokk jú": _rudeness,
     "fokkaðu þér": _rudeness,
     "éttu skít": _rudeness,
@@ -262,13 +419,55 @@ _SPECIAL_QUERIES = {
     "farðu í rass og rófu": _rudeness,
     "hoppaðu upp í rassgatið á þér":  _rudeness,
 
-    # Emotional enquiries
+    # Queries concerning Embla's emotional state
     "ertu í góðu skapi": {
-        "answer": "Já, ég er alltaf eldhress.",
+        "answer": "Já, ég er alltaf hress.",
     },
     "ert þú í góðu skapi": {
-        "answer": "Já, ég er alltaf eldhress.",
-    }
+        "answer": "Já, ég er alltaf hress.",
+    },
+    "hvernig leggst dagurinn í þig": {
+        "answer": "Hann leggst vel í mig. Takk fyrir að spyrja.",
+    },
+    "hvernig er dagurinn að leggjast í þig": {
+        "answer": "Hann er að leggjast vel í mig. Takk fyrir að spyrja.",
+    },
+    "hvernig gengur": {
+        "answer": "Það gengur bara mjög vel. Takk fyrir að spyrja.",
+    },
+    "hvernig gengur hjá þér": {
+        "answer": "Það gengur bara mjög vel. Takk fyrir að spyrja.",
+    },
+    "hvernig hefurðu það": {
+        "answer": "Ég hef það mjög fínt. Takk fyrir að spyrja.",
+    },
+    "hvernig hefur þú það": {
+        "answer": "Ég hef það mjög fínt. Takk fyrir að spyrja.",
+    },
+    "hvernig líður þér": {
+        "answer": "Mér líður bara prýðilega. Takk fyrir að spyrja.",
+    },
+    "hvernig er stemningin": {
+        "answer": "Bara mjög góð. Takk fyrir að spyrja.",
+    },
+    "hvernig er stemningin hjá þér": {
+        "answer": "Bara mjög góð. Takk fyrir að spyrja.",
+    },
+    "hvernig líður þér": {
+        "answer": "Mér líður bara mjög vel. Takk fyrir að spyrja.",
+    },
+    "hvernig er líðanin": {
+        "answer": "Bara mjög góð. Takk fyrir að spyrja.",
+    },
+    "hvernig er sálarlífið": {
+        "answer": "Það er í toppstandi. Takk fyrir að spyrja."
+    },
+
+    # Cheating, I know. But I'm never in the news and it just doesn't  
+    # sit right with me that I am incognito :) - Sveinbjörn 04/10/2019
+    "hver er sveinbjörn þórðarson": {
+        "answer": "Sveinbjörn Þórðarson er hugbúnaðarsmiður. Hann átti þátt í að skapa mig.",
+    },
 }
 
 
