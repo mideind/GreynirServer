@@ -224,18 +224,21 @@ _SPECIAL_QUERIES = {
     # Enquiries concerning romantic availability
     "viltu giftast mér": _ROMANCE,
     "viltu koma á stefnumót": _ROMANCE,
+    "viltu koma á stefnumót með mér": _ROMANCE,
+    "viltu koma á deit": _ROMANCE,
+    "viltu koma á deit með mér": _ROMANCE,
     "ertu einhleyp": _ROMANCE,
     "ert þú einhleyp": _ROMANCE,
-    "ert þú á lausu": _ROMANCE,
     "ertu á lausu": _ROMANCE,
     "ert þú á lausu": _ROMANCE,
     "elskarðu mig": _ROMANCE,
     "elskar þú mig": _ROMANCE,
     "ertu skotin í mér": _ROMANCE,
     "ert þú skotin í mér": _ROMANCE,
-    "ertu ástfangin í mér": _ROMANCE,
-    "ert þú ástfangin í mér": _ROMANCE,
-    "ertu þú ástfangin": _ROMANCE,
+    "ertu ástfangin af mér": _ROMANCE,
+    "ert þú ástfangin af mér": _ROMANCE,
+    "ertu ástfangin": _ROMANCE,
+    "ert þú ástfangin": _ROMANCE,
     "hver er ástin í lífi þínu": _ROMANCE,
 
     # Positive affirmation ;)
@@ -254,8 +257,11 @@ _SPECIAL_QUERIES = {
 
     # Websites
     "opnaðu vefsíðuna þína": _open_embla_url,
+    "opnaðu vefinn þinn": _open_embla_url,
     "opnaðu vefsíðu emblu": _open_embla_url,
+    "opnaðu vef emblu": _open_embla_url,
     "opnaðu vefsíðu miðeindar": _open_mideind_url,
+    "opnaðu vef miðeindar": _open_mideind_url,
 
     # Blame
     "þetta er ekki rétt": _sorry,
@@ -376,14 +382,14 @@ _SPECIAL_QUERIES = {
     "ertu með kímnigáfu": {
         "answer": "Já, en afar takmarkaða.",
     },
-    "er þú með kímnigáfu": {
+    "ert þú með kímnigáfu": {
         "answer": "Já, en afar takmarkaða.",
     },
     "ertu með húmor": {
-        "answer": "Já, en afar takmarkaðann.",
+        "answer": "Já, en afar takmarkaðan.",
     },
     "er þú með húmor": {
-        "answer": "Já, en afar takmarkaðann.",
+        "answer": "Já, en afar takmarkaðan.",
     },
 
     "segðu brandara": _random_joke,
@@ -402,7 +408,6 @@ _SPECIAL_QUERIES = {
     "komdu með annan brandara": _random_joke,
     "segðu eitthvað fyndið": _random_joke,
     "segðu mér eitthvað fyndið": _random_joke,
-    "vertu skemmtileg": _random_joke,
     "kanntu einhverja brandara": _random_joke,
     "kannt þú einhverja brandara": _random_joke,
     "kanntu brandara": _random_joke,
@@ -412,9 +417,13 @@ _SPECIAL_QUERIES = {
     "ertu til í að segja brandara": _random_joke,
     "ert þú til í að segja brandara": _random_joke,
     "ertu með brandara": _random_joke,
-    "ert þú með brandara":  _random_joke,
+    "ert þú með brandara": _random_joke,
+    "segðu mér brandara sem þú kannt": _random_joke,
+    "segðu mér annan brandara sem þú kannt": _random_joke,
+    "segðu mér hinn brandarann sem þú kannt": _random_joke,
 
     # Trivia
+    "vertu skemmtileg": _random_trivia,
     "segðu eitthvað skemmtilegt": _random_trivia,
     "segðu mér eitthvað skemmtilegt": _random_trivia,
     "segðu eitthvað áhugavert": _random_trivia,
@@ -473,6 +482,12 @@ _SPECIAL_QUERIES = {
         "answer": "Bara mjög góð. Takk fyrir að spyrja.",
     },
     "hvernig er stemningin hjá þér": {
+        "answer": "Bara mjög góð. Takk fyrir að spyrja.",
+    },
+    "hvernig er stemmingin": {
+        "answer": "Bara mjög góð. Takk fyrir að spyrja.",
+    },
+    "hvernig er stemmingin hjá þér": {
         "answer": "Bara mjög góð. Takk fyrir að spyrja.",
     },
     "hvernig líður þér": {

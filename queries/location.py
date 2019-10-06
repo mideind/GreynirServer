@@ -175,12 +175,15 @@ _WHERE_AM_I_STRINGS = frozenset(
         "hvar er ég eins og stendur",
         "hvar er ég eiginlega",
         "hvar er ég staddur",
-        "hvar er ég eiginlega staddur",
         "hvar er ég stödd",
-        "hvar er ég eiginlega stödd",
         "hver er staðsetning mín",
         "hvar erum við",
         "hvar erum við stödd",
+        "hvar er ég sem stendur",
+        "hvar er ég niðurkominn", 
+        "hvar er ég niðurkomin",
+        "hvar erum við niðurkomin",
+        "hvar erum við sem stendur",
     )
 )
 

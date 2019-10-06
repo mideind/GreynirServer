@@ -33,7 +33,7 @@ from queries.arithmetic import add_num, terminal_num
 
 _RANDOM_QTYPE = "Random"
 
-# This module wants to handle parse trees for queries,
+# This module wants to handle parse trees for queries
 HANDLE_TREE = True
 
 # The context-free grammar for the queries recognized by this plug-in module
@@ -48,7 +48,11 @@ QRandomQuery →
     QRandomDiceRoll | QRandomBetween
 
 QRandomDiceRoll →
-    "kastaðu" QRandomDiceSides? QRandomDie
+    "kastaðu" QRandomDiceSides? QRandomDie QRandomForMe?
+    | "kastaðu" QRandomForMe? QRandomDiceSides? QRandomDie
+
+QRandomForMe →
+    "fyrir" "mig"
 
 QRandomDie →
     # Allow "tening" (accusative) to make it a bit more robust. Common error.
@@ -60,6 +64,7 @@ QRandomDiceSides →
 QRandomBetween →
     QRandAction "tölu" "á"? "milli" QRandNumber "og" QRandNumber QRandRand?
     | QRandAction "tölu" QRandRand? "á"? "milli" QRandNumber "og" QRandNumber
+    | QRandAction QRandRand? "tölu" "á"? "milli" QRandNumber "og" QRandNumber
 
 QRandAction →
     "veldu" | "veldu" "fyrir" "mig" | "nefndu" | "nefndu" "fyrir" "mig" 

@@ -36,11 +36,14 @@ _TELEPHONE_QTYPE = "Telephone"
 
 _PHONECALL_REGEXES = frozenset(
     (
-        r"(hringdu í )([\d|\-|\s]+)",
-        r"(hringdu í síma )([\d|\-|\s]+)",
-        r"(hringdu í símanúmerið )([\d|\-|\s]+)",
-        r"(hringdu í númerið )([\d|\-|\s]+)",
-        r"(hringdu í númer )([\d|\-|\s]+)",
+        r"(hringdu í )([\d|\-|\s]+)$",
+        r"(hringdu í síma )([\d|\-|\s]+)$",
+        r"(hringdu í símanúmerið )([\d|\-|\s]+)$",
+        r"(hringdu í númerið )([\d|\-|\s]+)$",
+        r"(hringdu í númer )([\d|\-|\s]+)$",
+        r"(værirðu til í að hringja í síma )([\d|\-|\s]+)$",
+        r"(værirðu til í að hringja í símanúmerið )([\d|\-|\s]+)$",
+        r"(værirðu til í að hringja í númerið )([\d|\-|\s]+)$",
     )
 )
 

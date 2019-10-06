@@ -2,7 +2,7 @@
 
     Reynir: Natural language processing for Icelandic
 
-    Arithmetic query response module
+    Wikipedia query response module
 
     Copyright (C) 2019 Miðeind ehf.
 
@@ -87,14 +87,14 @@ def QWikiQuery(node, params, result):
     result.qkey = result["subject_nom"]
 
 
-def Nl(node, params, result):
+def QWikiSubject(node, params, result):
     result["subject_nom"] = result._nominative.title()
     result["subject_dat"] = result._text
 
 
 def _clean_answer(answer):
     # Split on newline, use only first paragraph
-    a = answer.split("\n")[0]
+    a = answer.split("\n")[0].strip()
     # Get rid of "Getur líka átt við" leading sentence
     if a.startswith("Getur líka átt"):
         a = ". ".join(a.split(".")[1:])
@@ -116,7 +116,7 @@ def _query_wiki_api(subject):
 def get_wiki_summary(subject_nom, subject_dat):
     res = _query_wiki_api(subject_nom)
 
-    not_found = "Ekkert fannst um {0} í Wikipedíu".format(subject_dat)
+    not_found = "Ég fann ekkert um {0} í Wikipedíu".format(subject_dat)
 
     if not res or "query" not in res or "pages" not in res["query"]:
         return not_found

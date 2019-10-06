@@ -107,6 +107,7 @@ QWeatherCountry →
 QWeatherCapitalRegion →
     "á" "höfuðborgarsvæðinu" | "fyrir" "höfuðborgarsvæðið" 
     | "í" "reykjavík" | "fyrir" "reykjavík"
+    | "í" "höfuðborginni" | "fyrir" "höfuðborgina"
 
 QWeatherAnyLoc →
     QWeatherCountry > QWeatherCapitalRegion > QWeatherOpenLoc

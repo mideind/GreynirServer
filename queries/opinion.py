@@ -29,17 +29,15 @@ from datetime import datetime, timedelta
 
 _OPINION_QTYPE = "Opinion"
 
-_OPINION_REGEXES = frozenset(
-    (
-        r"hvað finnst þér um (.+)",
-        r"hvaða skoðun hefurðu á (.+)",
-        r"hvaða skoðun hefur þú á (.+)",
-        r"hvaða skoðun ertu með á (.+)",
-        r"hvaða skoðun ert þú með á (.+)",
-        r"hver er skoðun þín á (.+)",
-        r"hvaða skoðanir hefur þú á (.+)",
-        r"hvaða skoðanir hefurðu á (.+)",
-    )
+_OPINION_REGEXES = (
+    r"hvað finnst þér um (.+)$",
+    r"hvaða skoðun hefurðu á (.+)$",
+    r"hvaða skoðun hefur þú á (.+)$",
+    r"hvaða skoðun ertu með á (.+)$",
+    r"hvaða skoðun ert þú með á (.+)$",
+    r"hver er skoðun þín á (.+)$",
+    r"hvaða skoðanir hefur þú á (.+)$",
+    r"hvaða skoðanir hefurðu á (.+)$",
 )
 
 

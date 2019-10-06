@@ -39,7 +39,7 @@ from queries import timezone4loc
 _TIME_QTYPE = "Time"
 
 
-_TIME_QUERIES = (
+_TIME_QUERIES = frozenset((
     "hvað er klukkan",
     "hvað er klukkan eiginlega"
     "hvað er klukkan núna",
@@ -48,7 +48,7 @@ _TIME_QUERIES = (
     "hvað er tíminn",
     "hvað er tíminn núna",
     "hvernig líður tímanum",
-)
+))
 
 
 def handle_plain_text(q):

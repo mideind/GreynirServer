@@ -40,7 +40,7 @@ from geo import (
 _GEO_QTYPE = "Geography"
 
 
-# This module wants to handle parse trees for queries,
+# This module wants to handle parse trees for queries
 HANDLE_TREE = True
 
 # The context-free grammar for the queries recognized by this plug-in module
@@ -65,16 +65,17 @@ QGeoCapitalQuery →
     | QGeoWhatIs "höfuðstaður" QGeoSubject_ef
 
 QGeoCountryQuery →
-    "í" "hvaða" "landi" "er" "borgin"? QGeoSubject_nf |
-    "í" "hvaða" "ríki" "er" "borgin"? QGeoSubject_nf
+    "í" "hvaða" "landi" "er" "borgin"? QGeoSubject_nf
+    | "í" "hvaða" "ríki" "er" "borgin"? QGeoSubject_nf
 
 QGeoContinentQuery →
-    "í" "hvaða" "heimsálfu" "er" "landið"? QGeoSubject_nf
-    | "í" "hvaða" "heimsálfu" "er" "ríkið"? QGeoSubject_nf
-    | "í" "hvaða" "heimsálfu" "er" "borgin"? QGeoSubject_nf
+    "í" "hvaða" "heimsálfu" "er" QGeoCountryOrCity? QGeoSubject_nf
+
+QGeoCountryOrCity →
+    "landið" | "ríkið" | "borgin"
 
 QGeoWhatIs →
-    "hver" "er" | "hvað" "er" | 0
+    "hver" "er" | "hvað" "er" | "hvað" "heitir" | 0
 
 QGeoPreposition →
     "í" | "á"
@@ -110,8 +111,9 @@ def QGeoSubject(node, params, result):
     n = result._nominative
     if n:
         n = n.replace(" - ", "-")
-        n = n[:1].capitalize() + n[1:]
+        n = n[0].upper() + n[1:]
         result.subject = n
+        print(n)
 
 
 def _capital_query(country, q):
@@ -128,7 +130,7 @@ def _capital_query(country, q):
     # Use the Icelandic name for the city
     ice_cname = icelandic_city_name(capital["name_ascii"])
 
-    # Look up genitive country name for voice description,
+    # Look up genitive country name for voice description
     bres = BIN_Db().lookup_genitive(country, cat="no")
     country_gen = bres[0].ordmynd if bres else country
 
@@ -155,7 +157,7 @@ def _which_country_query(subject, q):
     desc = country_desc(cc)
 
     # Format answer
-    answer = desc[:1].upper() + desc[1:]
+    answer = desc[0].upper() + desc[1:]
     response = dict(answer=answer)
     voice = "{0} er {1}".format(subject, desc)
 
@@ -182,15 +184,15 @@ def _which_continent_query(subject, q):
     continent = ISO_TO_CONTINENT[contcode]
 
     # Look up dative continent name
-    continent_gen = nom2dat(continent)
+    continent_dat = nom2dat(continent)
 
     # Format answer
-    answer = continent_gen
+    answer = continent_dat
     response = dict(answer=answer)
     if is_city:
-        voice = "Borgin {0} er {1} sem er land í {2}".format(subject, country_desc(cc), continent_gen)
+        voice = "Borgin {0} er {1}, sem er land í {2}".format(subject, country_desc(cc), continent_dat)
     else:
-        voice = "Landið {0} er í {1}".format(subject, continent_gen)
+        voice = "Landið {0} er í {1}".format(subject, continent_dat)
 
     q.set_answer(response, answer, voice)
     q.set_key(subject)
