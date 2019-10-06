@@ -34,16 +34,48 @@ import re
 
 _TELEPHONE_QTYPE = "Telephone"
 
+# TODO: This should be moved over to grammar, too repetitive
+# Should also be able to handle natural language number words
+# but at this stage the speech to text engine solidly delivers
+# numerical characters.
 _PHONECALL_REGEXES = frozenset(
     (
         r"(hringdu í )([\d|\-|\s]+)$",
         r"(hringdu í síma )([\d|\-|\s]+)$",
+        r"(hringdu í símanúmer )([\d|\-|\s]+)$",
         r"(hringdu í símanúmerið )([\d|\-|\s]+)$",
         r"(hringdu í númerið )([\d|\-|\s]+)$",
         r"(hringdu í númer )([\d|\-|\s]+)$",
+        r"(hringdu fyrir mig í )([\d|\-|\s]+)$",
+        r"(hringdu fyrir mig í síma )([\d|\-|\s]+)$",
+        r"(hringdu fyrir mig í símanúmer )([\d|\-|\s]+)$",
+        r"(hringdu fyrir mig í símanúmerið )([\d|\-|\s]+)$",
+        r"(hringdu fyrir mig í númerið )([\d|\-|\s]+)$",
+        r"(hringdu fyrir mig í númer )([\d|\-|\s]+)$",
         r"(værirðu til í að hringja í síma )([\d|\-|\s]+)$",
+        r"(værirðu til í að hringja í símanúmer )([\d|\-|\s]+)$",
         r"(værirðu til í að hringja í símanúmerið )([\d|\-|\s]+)$",
         r"(værirðu til í að hringja í númerið )([\d|\-|\s]+)$",
+        r"(værir þú til í að hringja í síma )([\d|\-|\s]+)$",
+        r"(værir þú til í að hringja í símanúmer )([\d|\-|\s]+)$",
+        r"(værir þú til í að hringja í símanúmerið )([\d|\-|\s]+)$",
+        r"(værir þú til í að hringja í númerið )([\d|\-|\s]+)$",
+        r"(geturðu hringt í )([\d|\-|\s]+)$",
+        r"(geturðu hringt í síma )([\d|\-|\s]+)$",
+        r"(geturðu hringt í símanúmer )([\d|\-|\s]+)$",
+        r"(geturðu hringt í símanúmerið )([\d|\-|\s]+)$",
+        r"(geturðu hringt í númerið )([\d|\-|\s]+)$",
+        r"(geturðu hringt í númer )([\d|\-|\s]+)$",
+        r"(getur þú hringt í )([\d|\-|\s]+)$",
+        r"(getur þú hringt í síma )([\d|\-|\s]+)$",
+        r"(getur þú hringt í símanúmer )([\d|\-|\s]+)$",
+        r"(getur þú hringt í símanúmerið )([\d|\-|\s]+)$",
+        r"(getur þú hringt í númerið )([\d|\-|\s]+)$",
+        r"(getur þú hringt í númer )([\d|\-|\s]+)$",
+        r"(nennirðu að hringja í )([\d|\-|\s]+)$",
+        r"(nennirðu að hringja í síma )([\d|\-|\s]+)$",
+        r"(vinsamlegast hringdu í )([\d|\-|\s]+)$",
+        r"(vinsamlegast hringdu í síma )([\d|\-|\s]+)$",
     )
 )
 
