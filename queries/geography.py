@@ -220,11 +220,16 @@ def sentence(state, result):
         and result.geo_qtype in _HANDLERS
     ):
         # Successfully matched a query type
-        fn = _HANDLERS[result.geo_qtype]
-        handled = fn(result.subject, q)
+        try:
+            fn = _HANDLERS[result.geo_qtype]
+            handled = fn(result.subject, q)
+        except Exception as e:
+            logging.warning("Exception answering geography query: {0}".format(e))
+            q.set_error("E_EXCEPTION: {0}".format(e))
+            return
 
     if handled:
         q.set_qtype(_GEO_QTYPE)
         q.set_expires(datetime.utcnow() + timedelta(hours=24))
     else:
-        state["query"].set_error("E_QUERY_NOT_UNDERSTOOD")
+        q.set_error("E_QUERY_NOT_UNDERSTOOD")
