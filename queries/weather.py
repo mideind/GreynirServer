@@ -28,7 +28,7 @@
 # TODO: Add more info to description of current weather conditions?
 # TODO: More detailed forecast, time specific? E.g. "hvernig verður veðrið klukkan þrjú?"
 # TODO: "Mun rigna í dag?" "Verður mikið rok í dag?" "Verður kalt í kvöld?" "Þarf ég regnhlíf?"
-# TODO: "Hversu mikið rok er úti?" 
+# TODO: "Hversu mikið rok er úti?"
 
 import re
 import logging
@@ -37,7 +37,6 @@ from datetime import datetime, timedelta
 from queries import gen_answer
 from geo import distance, isocode_for_country_name, ICE_PLACENAME_BLACKLIST
 from iceaddr import placename_lookup
-
 from iceweather import observation_for_closest, observation_for_station, forecast_text
 
 
@@ -63,6 +62,8 @@ QWeatherQuery →
 QWeatherCurrent →
     "hvernig" "er" "veðrið" QWeatherAnyLoc? QWeatherNow?
     | "hvernig" "veður" "er" QWeatherAnyLoc? QWeatherNow?
+    | "hvað" "getur" "þú" "sagt" "mér" "um" "veðrið" QWeatherAnyLoc? QWeatherNow?
+    | "hvað" "geturðu" "sagt" "mér" "um" "veðrið" QWeatherAnyLoc? QWeatherNow?
 
 QWeatherForecast →
     "hver" "er" "veðurspáin" QWeatherLocation? QWeatherNextDays?
@@ -104,7 +105,9 @@ QWeatherCountry →
     "á" "landinu" | "á" "íslandi" | "hér" "á" "landi" | "á" "landsvísu"
 
 QWeatherCapitalRegion →
-    "á" "höfuðborgarsvæðinu" | "í" "reykjavík"
+    "á" "höfuðborgarsvæðinu" | "fyrir" "höfuðborgarsvæðið" 
+    | "í" "reykjavík" | "fyrir" "reykjavík"
+    | "í" "höfuðborginni" | "fyrir" "höfuðborgina"
 
 QWeatherAnyLoc →
     QWeatherCountry > QWeatherCapitalRegion > QWeatherOpenLoc
@@ -116,7 +119,7 @@ QWeatherLocation →
     QWeatherCountry | QWeatherCapitalRegion
 
 
-$score(35) QWeather
+$score(+35) QWeather
 
 """
 
@@ -225,7 +228,12 @@ def _curr_observations(query, result):
         return None
 
     # Verify that response from server is sane
-    if not res or "results" not in res or not len(res["results"]):
+    if (
+        not res
+        or "results" not in res
+        or not len(res["results"])
+        or res["results"][0].get("err")
+    ):
         return None
 
     return res["results"][0]
@@ -257,10 +265,14 @@ def get_currweather_answer(query, result):
     res = _curr_observations(query, result)
     if not res:
         return gen_answer(_API_ERRMSG)
-
-    temp = int(round(float(res["T"])))  # Round to nearest whole number
-    desc = res["W"].lower()
-    windsp = float(res["F"])
+    
+    try:
+        temp = int(round(float(res["T"])))  # Round to nearest whole number
+        desc = res["W"].lower()
+        windsp = float(res["F"])
+    except:
+        logging.warning("Exception parsing weather API result: {0}".format(e))
+        return gen_answer(_API_ERRMSG)
 
     wind_desc = _wind_descr(windsp)
     temp_type = "hiti" if temp >= 0 else "frost"
@@ -272,7 +284,9 @@ def get_currweather_answer(query, result):
         locdesc.capitalize(), abs(temp), temp_type, mdesc, wind_desc
     )
 
-    answer = "{0}°{1} og {2} ({3} m/s)".format(temp, mdesc, wind_desc, windsp)
+    answer = "{0}°{1} og {2} ({3} m/s)".format(
+        temp, mdesc, wind_desc, str(windsp).rstrip("0").rstrip(".")
+    )
 
     response = dict(answer=answer)
 
@@ -369,7 +383,7 @@ def QWeatherOpenLoc(node, params, result):
 
 def Nl(node, params, result):
     """ Noun phrase containing name of specific location """
-    result["location"] = result._nominative
+    result["location"] = result._nominative.capitalize()
 
 
 def QWeatherCurrent(node, params, result):

@@ -31,12 +31,14 @@
 """
 
 # TODO: Fix pronunciation of ordinal day of month (i.e. "29di" vs "29da")
-# TODO: Check the number of days between dates. Ex.: "How many days until October 6?" 
+# TODO: Check the number of days between dates. Ex.: "How many days until October 6?"
 #       or "How many weeks between April 3 and June 16?"
-# TODO: Find out the date and day of the week of holidays, e.g. "When is Easter?" 
-#       or "When is Labor Day?"
+# TODO: Find out the date and day of the week of holidays, e.g. "When is Easter?"
+#       or "When is Labour Day?"
+# TODO: "Hvað er langt í jólin?" "Hvað er langt til jóla" "Hvað er langt í áramótin"
+# TODO: Move this module over to grammar parsing
 
-from datetime import datetime
+from datetime import datetime, date
 from pytz import timezone
 
 from queries import timezone4loc
@@ -45,7 +47,7 @@ from settings import changedlocale
 
 _DATE_QTYPE = "Date"
 
-_DATE_QUERIES = frozenset(
+_CURRDATE_QUERIES = frozenset(
     (
         "hvað er dagsetningin",
         "hver er dagsetningin",
@@ -55,16 +57,36 @@ _DATE_QUERIES = frozenset(
         "hvaða dagur er í dag",
         "hvaða mánaðardagur er í dag",
         "hver er mánaðardagurinn í dag",
+        "hvaða mánaðardagur er núna",
         "hvaða vikudagur er í dag",
+        "hvaða vikudagur er núna",
     )
 )
+
+
+# def _christmas():
+#     return datetime(
+#         year=datetime.today().year, month=12, day=24, hour=0, minute=0, second=0
+#     )
+
+
+# _DATE_QUERIES = {
+#     "hvað er langt í jólin": _christmas,
+#     "hvað er langt í jól": _christmas,
+#     "hvað er langt til jóla": _christmas,
+#     "hvað er langt til jólanna": _christmas,
+#     "hvað eru margir dagar til jóla": _christmas,
+#     "hvað eru margir dagar til jólanna": _christmas,
+#     "hversu langt er í jólin": _christmas,
+#     "hve langt er í jólin": _christmas,
+# }
 
 
 def handle_plain_text(q):
     """ Handle a plain text query asking about the current date/weekday. """
     ql = q.query_lower.rstrip("?")
 
-    if ql in _DATE_QUERIES:
+    if ql in _CURRDATE_QUERIES:
         tz = timezone4loc(q.location, fallback="IS")
         now = datetime.now(timezone(tz))
 
