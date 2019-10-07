@@ -34,31 +34,69 @@ import re
 
 _TELEPHONE_QTYPE = "Telephone"
 
-# TODO: This should be moved over to grammar, too repetitive
-# Should also be able to handle natural language number words
-# but at this stage the speech to text engine solidly delivers
-# numerical characters.
+# # This module wants to handle parse trees for queries,
+# HANDLE_TREE = True
+
+# # The context-free grammar for the queries recognized by this plug-in module
+# GRAMMAR = """
+
+# Query →
+#     QTel
+
+# QTel → QTelQuery '?'?
+
+# QTelQuery →
+#     QTelCmd QTelNumPrep QTelPhoneNumberNoun? QTelPhoneNumber
+
+# QTelPhoneNumberNoun →
+#     "síma" | "símanúmer" | "símanúmerið" | "númer" | "númerið"
+
+# QTelNumPrep →
+#     "í"
+
+# # QTelPhoneNumber →
+# # To be implemented
+
+# QTelCmd →
+#     "hringdu" 
+#     | "hringdu" "fyrir" mig" 
+#     | "værirðu" "til" "í" "að" "hringja"
+#     | "værir" "þú" "til" "í" "að" "hringja" 
+#     | "geturðu" "hringt"
+#     | "getur" "þú" "hringt"
+#     | "nennirðu" "að" "hringja"
+#     | "nennir" "þú" "að" "hringja"
+#     | "vinsamlegast" "hringdu"
+
+# """
+
+# TODO: This should be moved over to grammar at some point, too many manually defined, 
+# almost identical commands. But at the moment, the grammar has poor support for phone 
+# numbers, especially  when the numbers are coming out of a speech recognition engine 
+# This module should also be able to handle natural language number words
 _PHONECALL_REGEXES = frozenset(
     (
         r"(hringdu í )([\d|\-|\s]+)$",
         r"(hringdu í síma )([\d|\-|\s]+)$",
         r"(hringdu í símanúmer )([\d|\-|\s]+)$",
         r"(hringdu í símanúmerið )([\d|\-|\s]+)$",
-        r"(hringdu í númerið )([\d|\-|\s]+)$",
         r"(hringdu í númer )([\d|\-|\s]+)$",
+        r"(hringdu í númerið )([\d|\-|\s]+)$",
         r"(hringdu fyrir mig í )([\d|\-|\s]+)$",
         r"(hringdu fyrir mig í síma )([\d|\-|\s]+)$",
         r"(hringdu fyrir mig í símanúmer )([\d|\-|\s]+)$",
         r"(hringdu fyrir mig í símanúmerið )([\d|\-|\s]+)$",
-        r"(hringdu fyrir mig í númerið )([\d|\-|\s]+)$",
         r"(hringdu fyrir mig í númer )([\d|\-|\s]+)$",
+        r"(hringdu fyrir mig í númerið )([\d|\-|\s]+)$",
         r"(værirðu til í að hringja í síma )([\d|\-|\s]+)$",
         r"(værirðu til í að hringja í símanúmer )([\d|\-|\s]+)$",
         r"(værirðu til í að hringja í símanúmerið )([\d|\-|\s]+)$",
+        r"(værirðu til í að hringja í númer )([\d|\-|\s]+)$",
         r"(værirðu til í að hringja í númerið )([\d|\-|\s]+)$",
         r"(værir þú til í að hringja í síma )([\d|\-|\s]+)$",
         r"(værir þú til í að hringja í símanúmer )([\d|\-|\s]+)$",
         r"(værir þú til í að hringja í símanúmerið )([\d|\-|\s]+)$",
+        r"(værir þú til í að hringja í númer )([\d|\-|\s]+)$",
         r"(værir þú til í að hringja í númerið )([\d|\-|\s]+)$",
         r"(geturðu hringt í )([\d|\-|\s]+)$",
         r"(geturðu hringt í síma )([\d|\-|\s]+)$",
@@ -74,8 +112,16 @@ _PHONECALL_REGEXES = frozenset(
         r"(getur þú hringt í númer )([\d|\-|\s]+)$",
         r"(nennirðu að hringja í )([\d|\-|\s]+)$",
         r"(nennirðu að hringja í síma )([\d|\-|\s]+)$",
+        r"(nennirðu að hringja í símanúmer )([\d|\-|\s]+)$",
+        r"(nennirðu að hringja í símanúmerið )([\d|\-|\s]+)$",
+        r"(nennirðu að hringja í númerið )([\d|\-|\s]+)$",
+        r"(nennirðu að hringja í númer )([\d|\-|\s]+)$",
         r"(vinsamlegast hringdu í )([\d|\-|\s]+)$",
         r"(vinsamlegast hringdu í síma )([\d|\-|\s]+)$",
+        r"(nennirðu að hringja í símanúmer )([\d|\-|\s]+)$",
+        r"(nennirðu að hringja í símanúmerið )([\d|\-|\s]+)$",
+        r"(nennirðu að hringja í númerið )([\d|\-|\s]+)$",
+        r"(nennirðu að hringja í númer )([\d|\-|\s]+)$",
     )
 )
 

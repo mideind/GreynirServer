@@ -309,6 +309,7 @@ _SPECIAL_QUERIES = {
     "hæ": { "answer": "Hæhæ." },
     "sæl embla": { "answer": "Gaman að kynnast þér." },
     "gaman að kynnast þér": { "answer": "Sömuleiðis, kæri notandi." },
+    "góðan daginn": { "answer": "Góðan daginn, kæri notandi." },
 
     # Thanks
     "takk": _thanks,
