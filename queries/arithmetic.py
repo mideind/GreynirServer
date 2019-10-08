@@ -269,7 +269,7 @@ def add_num(num, result):
 
 
 def terminal_num(t):
-    """ Extract num value from terminal token's auxiliary info,
+    """ Extract numerical value from terminal token's auxiliary info,
         which is attached as a json-encoded array """
     if t and t._node.aux:
         aux = json.loads(t._node.aux)
@@ -388,7 +388,7 @@ def QArithmetic(node, params, result):
     result.qtype = _ARITHMETIC_QTYPE
 
 
-# Map operator name to python operator
+# Map operator name to python corresponding operator
 _STD_OPERATORS = {"multiply": "*", "divide": "/", "plus": "+", "minus": "-"}
 
 # Number of args required for each operator
