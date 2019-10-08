@@ -141,16 +141,19 @@ def sentence(state, result):
         q.set_qtype(result.qtype)
         q.set_key(result.qkey)
 
+        # Fetch from Wikipedia API
         answer = get_wiki_summary(result["subject_nom"], result["subject_dat"])
         response = dict(answer=answer)
-        voice_answer = answer
-        q.set_answer(response, answer, voice_answer)
+        voice = answer
+        q.set_answer(response, answer, voice)
 
         # Beautify query by fixing spelling of Wikipedia
         b = q.beautified_query
         for w in _WIKI_VARIATIONS:
             b = b.replace(w, _WIKIPEDIA_CANONICAL)
         q.set_beautified_query(b)
+
+        # Long expiry period
         q.set_expires(datetime.utcnow() + timedelta(hours=24))
     else:
         state["query"].set_error("E_QUERY_NOT_UNDERSTOOD")

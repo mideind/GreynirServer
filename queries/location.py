@@ -28,6 +28,7 @@
 # TODO: "Í hvaða hverfi er ég?" - "Þú ert í Hlíðunum"
 
 import os
+import re
 import logging
 
 from queries import gen_answer, query_geocode_API_coords, country_desc, nom2dat
@@ -108,6 +109,13 @@ def street_desc(street_nom, street_num, locality_nom):
     return street_comp
 
 
+def _addr4voice(addr):
+    """ Prepare an address string for voice synthesizer. """
+    # E.g. "Fiskislóð 5-9" becomes "Fiskislóð 5 til 9"
+    s = re.sub(r"(\d+)\-(\d+)", r"\1 til \2", addr)
+    return s
+
+
 def answer_for_location(loc):
     # Send API request
     res = query_geocode_API_coords(loc[0], loc[1])
@@ -161,7 +169,7 @@ def answer_for_location(loc):
         descr = "á" + top.get("formatted_address")
 
     response = dict(answer=descr)
-    voice = "Þú ert {0}".format(descr)
+    voice = "Þú ert {0}".format(_addr4voice(descr))
     answer = descr[0].upper() + descr[1:]
 
     return response, answer, voice
