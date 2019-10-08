@@ -167,7 +167,7 @@ def answer_for_location(loc):
     return response, answer, voice
 
 
-_WHERE_AM_I_STRINGS = frozenset(
+_WHERE_AM_I_QUERIES = frozenset(
     (
         "hvar er ég",
         "hvar er ég núna",
@@ -187,6 +187,17 @@ _WHERE_AM_I_STRINGS = frozenset(
     )
 )
 
+_POSTCODE_QUERIES = frozenset(
+    (
+        "í hvaða póstnúmeri er ég",
+        "í hvaða póstnúmer er ég staddur",
+        "í hvaða póstnúmer er ég stödd",
+        "hvaða póstnúmeri er ég í",
+        "hvaða póstnúmeri er ég staddur í",
+        "hvaða póstnúmeri er ég stödd í",
+    )
+)
+
 _LOC_QTYPE = "Location"
 
 
@@ -194,12 +205,11 @@ def handle_plain_text(q):
     """ Handle a plain text query asking about user's current location. """
     ql = q.query_lower.rstrip("?")
 
-    if ql not in _WHERE_AM_I_STRINGS:
+    if ql not in _WHERE_AM_I_QUERIES:
         return False
 
-    loc = q.location
     answ = None
-
+    loc = q.location
     if loc:
         # Get info about this location
         answ = answer_for_location(loc)

@@ -70,7 +70,7 @@ _CURRDATE_QUERIES = frozenset(
 #     )
 
 
-# _DATE_QUERIES = {
+# _CHRISTMAS_QUERIES = {
 #     "hvað er langt í jólin": _christmas,
 #     "hvað er langt í jól": _christmas,
 #     "hvað er langt til jóla": _christmas,
@@ -79,6 +79,13 @@ _CURRDATE_QUERIES = frozenset(
 #     "hvað eru margir dagar til jólanna": _christmas,
 #     "hversu langt er í jólin": _christmas,
 #     "hve langt er í jólin": _christmas,
+# }
+
+# _WORKING_WEEK_QUERIES = {
+#     "hvað er mikið eftir af vinnuvikunni",
+#     "hvað er langt í helgina",
+#     "hvað er langt í helgi",
+#     "hvað á ég mikið eftir af vinnuvikunni",
 # }
 
 

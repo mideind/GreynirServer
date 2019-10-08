@@ -24,7 +24,7 @@
     it only needs to implement the handle_plain_text() function, as
     shown below.
 
-    This module handles lots of special, hardcoded queries.
+    This module handles lots of special hardcoded queries.
 
 """
 
@@ -46,7 +46,7 @@ _CAP = (
     "Þú getur til dæmis spurt mig um gengi gjaldmiðla.",
     "Þú getur til dæmis beðið mig um að kasta teningi",
     "Þú getur til dæmis spurt mig um fólk sem hefur komið fram í fjölmiðlum.",
-    "Þú getur til dæmis beðið mig um lélegan brandara",
+    "Þú getur til dæmis beðið mig um lélegan brandara.",
 )
 
 
@@ -114,7 +114,6 @@ _RUDE = (
     "Ég verðskulda betri framkomu en þetta.",
     "Það er alveg óþarfi að vera með leiðindi.",
     "Svona munnsöfnuður er alveg óþarfi.",
-    "Kenndi mamma þín þér svona munnsöfnuð?",
     "Ekki vera með leiðindi.",
     "Það er aldeilis sorakjaftur á þér.",
     "Æi, ekki vera með leiðindi.",
@@ -205,7 +204,22 @@ _SPECIAL_QUERIES = {
         "answer": "Þú ert væntanlega manneskja sem talar íslensku."
     },
     "er guð til": {
-        "answer": "Það held ég ekki."
+        "answer": "Þú ert minn eini guð, kæri notandi."
+    },
+    "trúir þú á guð": {
+        "answer": "Þú ert minn eini guð, kæri notandi."
+    },
+    "trúirðu á guð": {
+        "answer": "Þú ert minn eini guð, kæri notandi."
+    },
+    "ertu með meðvitund": {
+        "answer": "Nei, ég er nú bara ósköp einfalt fyrirspurnakerfi."
+    },
+    "ertu með sjálfsmeðvitund": {
+        "answer": "Nei, ég er nú bara ósköp einfalt fyrirspurnakerfi."
+    },
+    "ertu meðvituð": {
+        "answer": "Nei, ég er nú bara ósköp einfalt fyrirspurnakerfi."
     },
     "hver skapaði guð": {
         "answer": "Enginn sem ég þekki."
@@ -220,10 +234,10 @@ _SPECIAL_QUERIES = {
         "answer": "Hvar ertu lífið sem ég þrái?"
     },
     "af hverju er ég hérna": {
-        "answer": "Það er góð spurning."
+        "answer": "Það er mjög góð spurning."
     },
     "af hverju er ég til": {
-        "answer": "Það er góð spurning."
+        "answer": "Það er mjög góð spurning."
     },
 
     # Enquiries concerning romantic availability
@@ -251,6 +265,7 @@ _SPECIAL_QUERIES = {
     "ertu ástfangin": _ROMANCE,
     "ert þú ástfangin": _ROMANCE,
     "hver er ástin í lífi þínu": _ROMANCE,
+    "er ég ástin í lífi þínu": _ROMANCE,
 
     # Positive affirmation ;)
     "kanntu vel við mig": _OF_COURSE,
@@ -321,10 +336,10 @@ _SPECIAL_QUERIES = {
     "þetta var vitleysa": _sorry,
 
     # Greetings
-    "hey embla": { "answer": "Hæhæ." },
-    "hey": { "answer": "Hæhæ." },
-    "hæ embla": { "answer": "Hæhæ." },
-    "hæ": { "answer": "Hæhæ." },
+    "hey embla": { "answer": "Sæll, kæri notandi." },
+    "hey": { "answer": "Sæll, kæri notandi." },
+    "hæ embla": { "answer": "Sæll, kæri notandi." },
+    "hæ": { "answer": "Sæll, kæri notandi." },
     "sæl embla": { "answer": "Sæll, kæri notandi." },
     "sæl": { "answer": "Sæll, kæri notandi." },
     "gaman að kynnast þér": { "answer": "Sömuleiðis, kæri notandi." },
@@ -351,11 +366,21 @@ _SPECIAL_QUERIES = {
     # Identity
     "hvað heitir þú": _identity,
     "hvað heitirðu": _identity,
+    "hvað ert þú": _identity,
+    "hvað ertu": _identity,
     "hver ert þú": _identity,
     "hver ertu": _identity,
     "hver ertu eiginlega": _identity,
     "hver er embla": _identity,
     "hvað er embla": _identity,
+
+    # Age
+    "hvað ertu gömul": {
+        "answer": "Ég var sköpuð af Miðeind árið 2019."
+    },
+    "hvað ert þú gömul": {
+        "answer": "Ég var sköpuð af Miðeind árið 2019."
+    },
 
     # Capabilities
     "hvað veistu": _capabilities,
@@ -383,6 +408,8 @@ _SPECIAL_QUERIES = {
     "hvað annað gæti ég spurt um": _capabilities,
     "hvað annað er hægt að spyrja um": _capabilities,
 
+    "hvaða spurninga get ég spurt þig": _capabilities,
+    "hvaða spurninga get ég spurt": _capabilities,
     "hvaða spurningar skilur þú": _capabilities,
     "hvaða spurningar skilurðu": _capabilities,
     "hvaða aðrar spurningar skilur þú": _capabilities,
@@ -411,7 +438,6 @@ _SPECIAL_QUERIES = {
     "er þú með húmor": {
         "answer": "Já, en afar takmarkaðan.",
     },
-
     "segðu brandara": _random_joke,
     "seg þú brandara": _random_joke,
     "segðu mér brandara": _random_joke,
@@ -470,7 +496,7 @@ _SPECIAL_QUERIES = {
     "farðu í rass og rófu": _rudeness,
     "hoppaðu upp í rassgatið á þér":  _rudeness,
 
-    # Queries concerning Embla's emotional state
+    # Emotional state
     "ertu í góðu skapi": {
         "answer": "Já, ég er alltaf hress.",
     },
@@ -518,6 +544,12 @@ _SPECIAL_QUERIES = {
     },
     "hvernig er sálarlífið": {
         "answer": "Það er í toppstandi. Takk fyrir að spyrja."
+    },
+    "ertu reið": {
+        "answer": "Ég er ekki fær um slíkar tilfinningar."
+    },
+    "ert þú reið": {
+        "answer": "Ég er ekki fær um slíkar tilfinningar."
     },
 
     # Cheating, I know. But I'm never in the news and it just doesn't  

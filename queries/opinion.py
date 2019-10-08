@@ -38,6 +38,12 @@ _OPINION_REGEXES = (
     r"hver er skoðun þín á (.+)$",
     r"hvaða skoðanir hefur þú á (.+)$",
     r"hvaða skoðanir hefurðu á (.+)$",
+    r"ertu reið yfir (.+)$",
+    r"ert þú reið yfir (.+)$",
+    r"ertu bitur yfir (.+)$",
+    r"ert þú bitur yfir (.+)$",
+    r"ertu í uppnámi yfir (.+)$",
+    r"ert þú í uppnámi yfir (.+)$",
 )
 
 
