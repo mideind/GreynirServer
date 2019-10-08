@@ -355,6 +355,7 @@ def query_api(version=1):
         remote_addr=client_ip,
         client_type=client_type,
         client_id=client_id,
+        client_version=client_version,
         bypass_cache=test,
         private=private,
     )

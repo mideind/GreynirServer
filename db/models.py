@@ -584,6 +584,11 @@ class Query(Base):
     # Timestamp of the incoming query
     timestamp = Column(DateTime, index=True, nullable=False)
 
+    # Interpretations
+    # JSON array containing list of possible interpretations
+    # provided by a speech to text engine.
+    interpretations = Column(JSONB, nullable=True)
+
     # Question
     question = Column(String, index=True, nullable=False)
 
@@ -621,7 +626,7 @@ class Query(Base):
         return CaseInsensitiveComparator(cls.voice)
 
     # Error code
-    error = Column(String(80), nullable=True)
+    error = Column(String(256), nullable=True)
 
     # When does this answer expire, for caching purposes?
     # NULL=immediately
