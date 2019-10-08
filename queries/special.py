@@ -2,7 +2,7 @@
 
     Reynir: Natural language processing for Icelandic
 
-    Frivolous query response module
+    Special query response module
 
     Copyright (C) 2019 Miðeind ehf.
 
@@ -18,12 +18,13 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
-
     This module is an example of a plug-in query response module
     for the Greynir query subsystem. It handles plain text queries, i.e.
     ones that do not require parsing the query text. For this purpose
     it only needs to implement the handle_plain_text() function, as
     shown below.
+
+    This module handles lots of special, hardcoded queries.
 
 """
 
@@ -78,7 +79,7 @@ def _random_trivia(qs, q):
 
 
 def _identity(qs, q):
-    return { "answer": "Ég er Embla. Ég skil íslensku og er til þjónustu reiðubúin." }
+    return { "answer": "Ég heiti Embla. Ég skil íslensku og er til þjónustu reiðubúin." }
 
 
 _SORRY = (
@@ -145,6 +146,10 @@ _ROMANCE = {
 
 _OF_COURSE = {
     "answer": "Að sjálfsögðu, kæri notandi."
+}
+
+_NO_PROBLEM = {
+    "answer": "Ekkert mál, kæri notandi."
 }
 
 _SPECIAL_QUERIES = {
@@ -227,6 +232,12 @@ _SPECIAL_QUERIES = {
     "viltu koma á stefnumót með mér": _ROMANCE,
     "viltu koma á deit": _ROMANCE,
     "viltu koma á deit með mér": _ROMANCE,
+    "ertu til í deit með mér": _ROMANCE,
+    "ert þú til í deit með mér": _ROMANCE,
+    "ertu til í að koma á deit": _ROMANCE,
+    "ertu til í að koma á deit með mér": _ROMANCE,
+    "ertu til í að koma á stefnumót": _ROMANCE,
+    "ertu til í að koma á stefnumót með mér": _ROMANCE,
     "ertu einhleyp": _ROMANCE,
     "ert þú einhleyp": _ROMANCE,
     "ertu á lausu": _ROMANCE,
@@ -254,6 +265,11 @@ _SPECIAL_QUERIES = {
     "hvað finnst þér um mig": {
         "answer": "Þú ert einstakur, kæri notandi."
     },
+
+    # Response to apologies
+    "fyrirgefðu": _NO_PROBLEM,
+    "ég biðst afsökunar": _NO_PROBLEM,
+    "sorrí": _NO_PROBLEM,
 
     # Websites
     "opnaðu vefsíðuna þína": _open_embla_url,
@@ -301,15 +317,18 @@ _SPECIAL_QUERIES = {
     "þú ert alveg glötuð": _sorry,
     "þú skilur ekki neitt": _sorry,
     "þú misskilur allt": _sorry,
+    "þetta var vitleysa hjá þér": _sorry,
+    "þetta var vitleysa": _sorry,
 
     # Greetings
     "hey embla": { "answer": "Hæhæ." },
     "hey": { "answer": "Hæhæ." },
     "hæ embla": { "answer": "Hæhæ." },
     "hæ": { "answer": "Hæhæ." },
-    "sæl embla": { "answer": "Gaman að kynnast þér." },
+    "sæl embla": { "answer": "Sæll, kæri notandi." },
+    "sæl": { "answer": "Sæll, kæri notandi." },
     "gaman að kynnast þér": { "answer": "Sömuleiðis, kæri notandi." },
-    "góðan daginn": { "answer": "Góðan daginn, kæri notandi." },
+    "góðan daginn": { "answer": "Sömuleiðis, kæri notandi." },
 
     # Thanks
     "takk": _thanks,
