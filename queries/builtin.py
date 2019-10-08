@@ -1132,5 +1132,3 @@ def QWordEntityKey(node, params, result):
 
 def QWordVerbKey(node, params, result):
     result.qkey = result._root
-
-
