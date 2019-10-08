@@ -23,58 +23,102 @@
 
 """
 
-
-# TODO: "Í hvaða landi er [BORG]?", "Hvað búa margir í/á [BORG/LAND]?" etc.
-
+# TODO: "Hvað búa margir í/á [BORG/LAND]?" etc.
 
 from datetime import datetime, timedelta
 from cityloc import capital_for_cc
-from geo import icelandic_city_name, isocode_for_country_name
+from queries import country_desc, nom2dat
 from reynir.bindb import BIN_Db
-
+from geo import (
+    icelandic_city_name,
+    isocode_for_country_name,
+    continent_for_country,
+    ISO_TO_CONTINENT,
+    location_info,
+)
 
 _GEO_QTYPE = "Geography"
 
 
-_CAPITAL_QUERIES = [
-    "hver er höfuðborgin í ",
-    "hvað er höfuðborgin í ",
-    "hver er höfuðborgin á ",
-    "hvað er höfuðborgin á ",
-    "hvað er höfuðborg ",
-    "hver er höfuðborg ",
-    "hver er höfuðstaður ",
-    "hvað er höfuðstaður ",
-]
+# This module wants to handle parse trees for queries
+HANDLE_TREE = True
+
+# The context-free grammar for the queries recognized by this plug-in module
+GRAMMAR = """
+
+Query →
+    QGeo
+
+QGeo → QGeoQuery '?'?
+
+QGeoQuery →
+    QGeoCapitalQuery
+    | QGeoCountryQuery
+    | QGeoContinentQuery
+
+QGeoCapitalQuery →
+    # "hvað/hver er höfuðborgin í/á Spáni?"
+    QGeoWhatIs "höfuðborgin" QGeoPreposition QGeoSubject_þgf
+    # "hvað/hver er höfuðborg Spánar?"
+    | QGeoWhatIs "höfuðborg" QGeoSubject_ef
+    # "hvað/hver er höfuðstaður Spánar?"
+    | QGeoWhatIs "höfuðstaður" QGeoSubject_ef
+
+QGeoCountryQuery →
+    "í" "hvaða" "landi" "er" "borgin"? QGeoSubject_nf
+    | "í" "hvaða" "ríki" "er" "borgin"? QGeoSubject_nf
+
+QGeoContinentQuery →
+    "í" "hvaða" "heimsálfu" "er" QGeoCountryOrCity? QGeoSubject_nf
+
+QGeoCountryOrCity →
+    "landið" | "ríkið" | "borgin"
+
+QGeoWhatIs →
+    "hver" "er" | "hvað" "er" | "hvað" "heitir" | 0
+
+QGeoPreposition →
+    "í" | "á"
+
+QGeoSubject/fall →
+    Nl/fall
+
+$score(+1) QGeoSubject/fall
+
+$score(+35) QGeo
+
+"""
 
 
-def handle_plain_text(q):
-    """ Handle a plain text query, contained in the q parameter """
-    ql = q.query_lower.rstrip("?").strip()
-    pfx = None
+def QGeoQuery(node, params, result):
+    # Set the query type
+    result.qtype = _GEO_QTYPE
 
-    for p in _CAPITAL_QUERIES:
-        if ql.startswith(p):
-            pfx = p
-            break
-    else:
-        return False
 
-    country = ql[len(pfx) :].strip()
-    if not len(country):
-        return False
+def QGeoCapitalQuery(node, params, result):
+    result["geo_qtype"] = "capital"
 
-    country = country[0].upper() + country[1:]  # Capitalize first char
-    # TODO: This only works for single-word country names, fix that
-    # Transform country name to nominative
-    bres = BIN_Db().lookup_nominative(country, cat="no")
-    if not bres:
-        return False
-    words = [m.ordmynd for m in bres]
 
-    # Look up ISO code from country name
-    nom_country = words[0]
-    cc = isocode_for_country_name(nom_country)
+def QGeoCountryQuery(node, params, result):
+    result["geo_qtype"] = "country"
+
+
+def QGeoContinentQuery(node, params, result):
+    result["geo_qtype"] = "continent"
+
+
+def QGeoSubject(node, params, result):
+    n = result._nominative
+    if n:
+        n = n.replace(" - ", "-")
+        n = n[0].upper() + n[1:]
+        result.subject = n
+        print(n)
+
+
+def _capital_query(country, q):
+    # Get country code
+    cc = isocode_for_country_name(country)
     if not cc:
         return False
 
@@ -86,8 +130,8 @@ def handle_plain_text(q):
     # Use the Icelandic name for the city
     ice_cname = icelandic_city_name(capital["name_ascii"])
 
-    # Look up genitive country name for voice description,
-    bres = BIN_Db().lookup_genitive(nom_country, cat="no")
+    # Look up genitive country name for voice description
+    bres = BIN_Db().lookup_genitive(country, cat="no")
     country_gen = bres[0].ordmynd if bres else country
 
     answer = ice_cname
@@ -95,12 +139,97 @@ def handle_plain_text(q):
     voice = "Höfuðborg {0} er {1}".format(country_gen, answer)
 
     q.set_answer(response, answer, voice)
-    q.set_qtype(_GEO_QTYPE)
     q.set_key("Höfuðborg {0}".format(country_gen))
-    q.set_expires(datetime.utcnow() + timedelta(hours=12))
-
-    # Capitalize name of country
-    b = q.beautified_query
-    q.set_beautified_query("{0}{1}".format(b[:len(pfx)], b[len(pfx):].capitalize()))
 
     return True
+
+
+def _which_country_query(subject, q):
+    info = location_info(subject, "placename")
+    if not info:
+        return False
+
+    cc = info.get("country")
+    if not cc:
+        return False
+
+    # Get country name w. preposition ("í Þýskalandi")
+    desc = country_desc(cc)
+
+    # Format answer
+    answer = desc[0].upper() + desc[1:]
+    response = dict(answer=answer)
+    voice = "{0} er {1}".format(subject, desc)
+
+    q.set_answer(response, answer, voice)
+    q.set_key(subject)
+
+    return True
+
+
+def _which_continent_query(subject, q):
+    # Get country code
+    cc = isocode_for_country_name(subject)
+    is_city = False
+    if not cc:
+        # OK, the subject is not a country
+        # Let's see if it's a city
+        info = location_info(subject, "placename")
+        if not info:
+            return False
+        cc = info.get("country")
+        is_city = True
+
+    contcode = continent_for_country(cc)
+    continent = ISO_TO_CONTINENT[contcode]
+
+    # Look up dative continent name
+    continent_dat = nom2dat(continent)
+
+    # Format answer
+    answer = continent_dat
+    response = dict(answer=answer)
+    if is_city:
+        voice = "Borgin {0} er {1}, sem er land í {2}".format(subject, country_desc(cc), continent_dat)
+    else:
+        voice = "Landið {0} er í {1}".format(subject, continent_dat)
+
+    q.set_answer(response, answer, voice)
+    q.set_key(subject)
+
+    return True
+
+
+_HANDLERS = {
+    "capital": _capital_query,
+    "country": _which_country_query,
+    "continent": _which_continent_query,
+}
+
+
+def sentence(state, result):
+    """ Called when sentence processing is complete """
+    q = state["query"]
+
+    handled = False
+
+    if (
+        "qtype" in result
+        and "subject" in result
+        and "geo_qtype" in result
+        and result.geo_qtype in _HANDLERS
+    ):
+        # Successfully matched a query type
+        try:
+            fn = _HANDLERS[result.geo_qtype]
+            handled = fn(result.subject, q)
+        except Exception as e:
+            logging.warning("Exception answering geography query: {0}".format(e))
+            q.set_error("E_EXCEPTION: {0}".format(e))
+            return
+
+    if handled:
+        q.set_qtype(_GEO_QTYPE)
+        q.set_expires(datetime.utcnow() + timedelta(hours=24))
+    else:
+        q.set_error("E_QUERY_NOT_UNDERSTOOD")

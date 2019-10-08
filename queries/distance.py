@@ -28,7 +28,6 @@
 import re
 import logging
 import math
-from pprint import pprint
 
 from reynir.bindb import BIN_Db
 from queries import gen_answer, query_geocode_API_addr
@@ -45,7 +44,7 @@ _QREGEXES = (
     r"^hve langt er ég frá (.+)$",
     r"^hvað er langt á (.+)$",
     r"^hvað er langt í (.+)$",
-    # TODO: Fix response for these two (transform location to dative)
+    # TODO: Fix response for these two (transform location to genitive)
     # r"^hvað er langt til (.+)$",
     # r"^hversu langt er til (.+)$",
 )

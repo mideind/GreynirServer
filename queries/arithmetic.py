@@ -126,29 +126,29 @@ GRAMMAR = """
 Query →
     QArithmetic
 
-# By convention, names of nonterminals in query grammars should
-# start with an uppercase Q
-
 QArithmetic →
-    # 'Hvað er X sinnum/deilt með/plús/mínus Y?'
-    QArGenericPrefix QArStd '?'?
-
-    # 'Hver er summan af X og Y?'
-    | QArAnyPrefix QArSum '?'?
-
-    # 'Hvað er tvisvar/þrisvar/fjórum sinnum Y?'
-    | QArAnyPrefix QArMult '?'?
-
-    # 'Hver/Hvað er kvaðratrótin af X?'
-    | QArAnyPrefix QArSqrt '?'?
-    
-    # 'Hvað er X í Y veldi?'
-    | QArGenericPrefix QArPow '?'?
-
-    # 'Hvað er(u) 12 prósent af 93'
-    | QArGenericPrefix QArPercent '?'?
+    QArithmeticQuery '?'?
 
 $score(+35) QArithmetic
+
+QArithmeticQuery →
+    # 'Hvað er X sinnum/deilt með/plús/mínus Y?'
+    QArGenericPrefix QArStd
+
+    # 'Hver er summan af X og Y?'
+    | QArAnyPrefix QArSum
+
+    # 'Hvað er tvisvar/þrisvar/fjórum sinnum Y?'
+    | QArAnyPrefix QArMult
+
+    # 'Hver/Hvað er kvaðratrótin af X?'
+    | QArAnyPrefix QArSqrt
+    
+    # 'Hvað er X í Y veldi?'
+    | QArGenericPrefix QArPow
+
+    # 'Hvað er(u) 12 prósent af 93'
+    | QArGenericPrefix QArPercent
 
 /arfall = nf þgf
 
@@ -225,7 +225,6 @@ QArOrdinalWord_þgf →
 QArOrdinalOrNumberWord_þgf →
     QArNumberWord_þgf | QArOrdinalWord_þgf
 
-
 """.format(
     " | ".join('"' + w + '"' for w in _ORDINAL_WORDS_DATIVE.keys())
 )
@@ -269,7 +268,7 @@ def add_num(num, result):
         result.numbers.append(num)
 
 
-def _terminal_num(t):
+def terminal_num(t):
     """ Extract num value from terminal token's auxiliary info,
         which is attached as a json-encoded array """
     if t and t._node.aux:
@@ -286,7 +285,7 @@ def QArNumberWord(node, params, result):
         return
     d = result.find_descendant(t_base="tala")
     if d:
-        add_num(_terminal_num(d), result)
+        add_num(terminal_num(d), result)
     else:
         add_num(result._nominative, result)
 
@@ -352,7 +351,7 @@ def Prósenta(node, params, result):
     # Find percentage terminal
     d = result.find_descendant(t_base="prósenta")
     if d:
-        add_num(_terminal_num(d), result)
+        add_num(terminal_num(d), result)
     else:
         # We shouldn't be here. Something went horriby wrong somewhere.
         raise ValueError("No auxiliary information in percentage token")

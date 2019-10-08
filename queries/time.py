@@ -39,6 +39,18 @@ from queries import timezone4loc
 _TIME_QTYPE = "Time"
 
 
+_TIME_QUERIES = frozenset((
+    "hvað er klukkan",
+    "hvað er klukkan eiginlega"
+    "hvað er klukkan núna",
+    "hver er klukkan",
+    "hver er klukkan núna",
+    "hvað er tíminn",
+    "hvað er tíminn núna",
+    "hvernig líður tímanum",
+))
+
+
 def handle_plain_text(q):
     """ Handle a plain text query, contained in the q parameter
         which is an instance of the query.Query class.
@@ -53,7 +65,7 @@ def handle_plain_text(q):
     # Whether user asked for the time in a particular location
     specific_desc = None
 
-    if ql == "hvað er klukkan":
+    if ql in _TIME_QUERIES:
         # Use location to determine time zone
         tz = timezone4loc(q.location, fallback="IS")
     elif ql.startswith("hvað er klukkan á ") or ql.startswith("hvað er klukkan í "):

@@ -20,7 +20,7 @@
     Queries folder
     This is the location to put custom query responders.
 
-    This file contains shared code used the query modules.
+    This file contains various shared functions used by the query modules.
 
 """
 
@@ -30,11 +30,43 @@ import json
 import os
 from tzwhere import tzwhere
 from pytz import country_timezones
+from geo import country_name_for_isocode, iceprep4cc
+from reynir.bindb import BIN_Db
+
+
+def natlang_seq(words):
+    """ Generate an Icelandic natural language sequence of words e.g.
+        "A og B", "A, B og C", "A, B, C og D". No Oxford comma :) """
+    if len(words) == 1:
+        return words[0]
+    elif len(words) >= 2:
+        return "{0} og {1}".format(", ".join(words[:-1]), words[-1])
+
+
+def nom2dat(w):
+    """ Look up dative form of a noun in BÍN, try
+        lowercase if capitalized form not found. """
+    if w:
+        b = BIN_Db()
+        bin_res = b.lookup_dative(w, cat="no")
+        if not bin_res and not w.islower():
+            bin_res = b.lookup_dative(w.lower(), cat="no")
+        if bin_res:
+            return bin_res[0].ordmynd
+    return w
+
+
+def country_desc(cc):
+    """ Generate description string of being in a particular country
+        with correct preposition and case e.g. 'á Spáni'. """
+    cn = country_name_for_isocode(cc)
+    prep = iceprep4cc(cc)
+    return "{0} {1}".format(prep, nom2dat(cn))
 
 
 def query_json_api(url):
     """ Request the URL, expecting a json response which is 
-        parsed and returned as a Python data structure """
+        parsed and returned as a Python data structure. """
 
     # Send request
     try:
@@ -72,7 +104,7 @@ def _get_API_key():
     if not _API_KEY:
         try:
             # You need to obtain your own key and put it in
-            # _API_KEY_PATH if you want to use this code
+            # _API_KEY_PATH if you want to use this code.
             with open(_API_KEY_PATH) as f:
                 _API_KEY = f.read().rstrip()
         except FileNotFoundError:
@@ -84,6 +116,7 @@ _MAPS_API_COORDS_URL = "https://maps.googleapis.com/maps/api/geocode/json?latlng
 
 
 def query_geocode_API_coords(lat, lon):
+    """ Look up coordinates in Google's geocode API. """
     # Load API key
     key = _get_API_key()
     if not key:
@@ -102,10 +135,11 @@ _MAPS_API_ADDR_URL = (
 
 
 def query_geocode_API_addr(addr):
+    """ Look up address in Google's geocode API. """
     # Load API key
     key = _get_API_key()
     if not key:
-        # No key, can't query Google location API
+        # No key, can't query the API
         logging.warning("No API key for location lookup")
         return None
 
@@ -115,13 +149,13 @@ def query_geocode_API_addr(addr):
 
 
 def strip_trailing_zeros(num_str):
-    # Strip trailing decimal zeros from an Icelandic-style
-    # float num string, e.g. "17,0" -> "17"
+    """ Strip trailing decimal zeros from an Icelandic-style
+        float num string, e.g. "17,0" -> "17". """
     return num_str.rstrip("0").rstrip(",")
 
 
 def format_icelandic_float(fp_num):
-    # Convert number to Icelandic decimal format
+    """ Convert number to Icelandic decimal format. """
     res = "{0:.2f}".format(fp_num).replace(".", ",")
     return strip_trailing_zeros(res)
 
