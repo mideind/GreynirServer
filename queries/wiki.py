@@ -92,6 +92,16 @@ def QWikiSubject(node, params, result):
     result["subject_dat"] = result._text
 
 
+def EfLiður(node, params, result):
+    """ Don't change the case of possessive clauses """
+    result._nominative = result._text
+
+
+def FsMeðFallstjórn(node, params, result):
+    """ Don't change the case of prepositional clauses """
+    result._nominative = result._text
+
+
 def _clean_answer(answer):
     # Split on newline, use only first paragraph
     a = answer.split("\n")[0].strip()
@@ -151,6 +161,9 @@ def sentence(state, result):
         for w in _WIKI_VARIATIONS:
             b = b.replace(w, _WIKIPEDIA_CANONICAL)
         q.set_beautified_query(b)
+
+        # Cache reply for 24 hours
         q.set_expires(datetime.utcnow() + timedelta(hours=24))
+
     else:
         state["query"].set_error("E_QUERY_NOT_UNDERSTOOD")
