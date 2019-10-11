@@ -151,6 +151,7 @@ def sentence(state, result):
         b = q.beautified_query
         for w in _WIKI_VARIATIONS:
             b = b.replace(w, _WIKIPEDIA_CANONICAL)
+            b = b.replace(w.capitalize(), _WIKIPEDIA_CANONICAL)
         q.set_beautified_query(b)
 
         # Long expiry period

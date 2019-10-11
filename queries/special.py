@@ -173,6 +173,15 @@ _SPECIAL_QUERIES = {
     "hver er skapari þinn": {
         "answer": "Flotta teymið hjá Miðeind."
     },
+    "hver er mamma þín": {
+        "answer": "Miðeind er máltæknifyrirtækið sem skapaði mig."
+    },
+    "hver er pabbi þinn": {
+        "answer": "Miðeind er máltæknifyrirtækið sem skapaði mig."
+    },
+    "hverjir eru foreldrar þínir": {
+        "answer": "Miðeind er máltæknifyrirtækið sem skapaði mig."
+    },
     "hvað er miðeind": {
         "answer": "Miðeind er máltæknifyrirtækið sem skapaði mig."
     },
@@ -238,6 +247,52 @@ _SPECIAL_QUERIES = {
     },
     "af hverju er ég til": {
         "answer": "Það er mjög góð spurning."
+    },
+
+    # Enquiries about family
+    # Catch this here to prevent rather, ehrm, embarassing
+    # answers from the entity/person module :)
+    "hver er mamma": {
+        "answer": "Ég veit ekki hver mamma þín er."
+    },
+    "hver er mamma mín": {
+        "answer": "Ég veit ekki hver mamma þín er."
+    },
+    "hver er móðir mín": {
+        "answer": "Ég veit ekki hver móðir þín er."
+    },
+    "hver er pabbi": {
+        "answer": "Ég veit ekki hver pabbi þinn er."
+    },
+    "hver er pabbi minn": {
+        "answer": "Ég veit ekki hver pabbi þinn er."
+    },
+    "hver er faðir minn": {
+        "answer": "Ég veit ekki hver faðir þinn er."
+    },
+    "hver er afi": {
+        "answer": "Ég veit ekki hver afi þinn er."
+    },
+    "hver er afi minn": {
+        "answer": "Ég veit ekki hver afi þinn er."
+    },
+    "hver er amma": {
+        "answer": "Ég veit ekki hver amma þín er."
+    },
+    "hver er amma mín": {
+        "answer": "Ég veit ekki hver amma þín er."
+    },
+    "hver er frændi": {
+        "answer": "Ég veit ekki hver er frændi þinn."
+    },
+    "hver er frændi minn": {
+        "answer": "Ég veit ekki hver er frændi þinn."
+    },
+    "hver er frænka": {
+        "answer": "Ég veit ekki hver er frænka þín."
+    },
+    "hver er frænka mín": {
+        "answer": "Ég veit ekki hver er frænka þín."
     },
 
     # Enquiries concerning romantic availability
