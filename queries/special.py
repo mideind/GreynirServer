@@ -134,6 +134,10 @@ def _open_mideind_url(qs, q):
     q.set_url("https://mideind.is")
     return { "answer": "Skal gert!", "is_question": False  }
 
+def _play_jazz(qs, q):
+    q.set_url("https://www.youtube.com/watch?v=E5loTx0_KDE")
+    return { "answer": "Skal gert!", "is_question": False  }
+
 
 _MEANING_OF_LIFE = {
     "answer": "42.",
@@ -349,6 +353,10 @@ _SPECIAL_QUERIES = {
     "opnaðu vef emblu": _open_embla_url,
     "opnaðu vefsíðu miðeindar": _open_mideind_url,
     "opnaðu vef miðeindar": _open_mideind_url,
+
+    # Play some music. Just experimental fun for now.
+    "spilaðu djass": _play_jazz,
+    "spila þú djass": _play_jazz,
 
     # Blame
     "þetta er ekki rétt": _sorry,
