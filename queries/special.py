@@ -44,7 +44,7 @@ _CAP = (
     "Þú getur til dæmis spurt mig um strætósamgöngur.",
     "Þú getur til dæmis spurt mig um fjarlægðir.",
     "Þú getur til dæmis spurt mig um gengi gjaldmiðla.",
-    "Þú getur til dæmis beðið mig um að kasta teningi",
+    "Þú getur til dæmis beðið mig um að kasta teningi.",
     "Þú getur til dæmis spurt mig um fólk sem hefur komið fram í fjölmiðlum.",
     "Þú getur til dæmis beðið mig um lélegan brandara.",
 )
@@ -61,21 +61,22 @@ _JOKES = (
     "Af hverju eru Hafnfirðingar alltaf með stól úti á svölum? Svo sólin geti sest.",
     "Af hverju læðast Hafnfirðingar alltaf fram hjá apótekum? Til að vekja ekki svefnpillurnar.",
     "Af hverju fara Hafnfirðingar alltaf niður í fjöru um jólin? Til þess að bíða eftir jólabókaflóðinu.",
+    "Af hverju hætti tannlæknirinn störfum? Hann reif kjaft.",
 )
 
 
 def _random_joke(qs, q):
-    return { "answer": choice(_JOKES) }
+    return { "answer": choice(_JOKES), "is_question": False }
 
 
 # TODO: Add fun trivia here
 _TRIVIA = (
-    "Eitthvað skemmtilegt."
+    "Eitthvað skemmtilegt.",
 )
 
 
 def _random_trivia(qs, q):
-    return { "answer": choice(_TRIVIA) }
+    return { "answer": choice(_TRIVIA), "is_question": False }
 
 
 def _identity(qs, q):
@@ -93,7 +94,7 @@ _SORRY = (
 )
 
 def _sorry(qs, q):
-    return { "answer": choice(_SORRY) }
+    return { "answer": choice(_SORRY), "is_question": False }
 
 
 _THANKS = (
@@ -105,7 +106,7 @@ _THANKS = (
 
 
 def _thanks(qs, q):
-    return { "answer": choice(_THANKS) }
+    return { "answer": choice(_THANKS), "is_question": False }
 
 
 _RUDE = (
@@ -121,22 +122,22 @@ _RUDE = (
 
 
 def _rudeness(qs, q):
-    return { "answer": choice(_RUDE) }
+    return { "answer": choice(_RUDE), "is_question": False }
 
 
 def _open_embla_url(qs, q):
     q.set_url("https://embla.is")
-    return { "answer": "Skal gert!" }
+    return { "answer": "Skal gert!", "is_question": False }
 
 
 def _open_mideind_url(qs, q):
     q.set_url("https://mideind.is")
-    return { "answer": "Skal gert!" }
+    return { "answer": "Skal gert!", "is_question": False  }
 
 
 _MEANING_OF_LIFE = {
     "answer": "42.",
-    "voice": "Fjörutíu og tveir."
+    "voice": "Fjörutíu og tveir.",
 }
 
 _ROMANCE = {
@@ -360,6 +361,8 @@ _SPECIAL_QUERIES = {
     "þetta var rangt": _sorry,
     "þetta var röng staðhæfing": _sorry,
     "þetta var röng staðhæfing hjá þér": _sorry,
+    "þetta var vitlaust": _sorry,
+    "þetta var vitlaust hjá þér": _sorry,
     "þú hefur rangt fyrir þér": _sorry,
     "þú hafðir rangt fyrir þér": _sorry,
     "þetta er ekki rétt svar": _sorry,
@@ -391,14 +394,15 @@ _SPECIAL_QUERIES = {
     "þetta var vitleysa": _sorry,
 
     # Greetings
-    "hey embla": { "answer": "Sæll, kæri notandi." },
-    "hey": { "answer": "Sæll, kæri notandi." },
-    "hæ embla": { "answer": "Sæll, kæri notandi." },
-    "hæ": { "answer": "Sæll, kæri notandi." },
-    "sæl embla": { "answer": "Sæll, kæri notandi." },
-    "sæl": { "answer": "Sæll, kæri notandi." },
-    "gaman að kynnast þér": { "answer": "Sömuleiðis, kæri notandi." },
-    "góðan daginn": { "answer": "Sömuleiðis, kæri notandi." },
+    "hey embla": { "answer": "Sæll, kæri notandi.", "is_question": False },
+    "hey": { "answer": "Sæll, kæri notandi.", "is_question": False },
+    "hæ embla": { "answer": "Sæll, kæri notandi.", "is_question": False },
+    "hæ": { "answer": "Sæll, kæri notandi.", "is_question": False },
+    "sæl embla": { "answer": "Gaman að kynnast þér.", "is_question": False },
+    "gaman að kynnast þér": {
+        "answer": "Sömuleiðis, kæri notandi.",
+        "is_question": False,
+    },
 
     # Thanks
     "takk": _thanks,
@@ -639,9 +643,14 @@ def handle_plain_text(q):
     # A voice answer is always a plain string
     voice = response.get("voice") or answer
     q.set_answer(dict(answer=answer), answer, voice)
+    # If this is a command, rather than a question,
+    # let the query object know so that it can represent
+    # itself accordingly
+    if not response.get("is_question", True):
+        q.query_is_command()
 
     # Caching for non-dynamic answers
-    if not fixed:
+    if fixed:
         q.set_expires(datetime.utcnow() + timedelta(hours=24))
 
     return True

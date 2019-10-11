@@ -169,9 +169,9 @@ class Query:
         # Prepare a "beautified query" object, that can be
         # shown in a client user interface
         bq = (query[0].upper() + query[1:]) if query else ""
-        if not bq.endswith("?"):
+        if not any(bq.endswith(s) for s in ("?", ".", "!")):
             bq += "?"
-        self._beautified_query = bq
+        self.set_beautified_query(bq)
         self._voice = voice
         self._auto_uppercase = auto_uppercase
         self._error = None
@@ -280,7 +280,7 @@ class Query:
         return result, trees
 
     def parse(self, result):
-        """ Parse the token list as a query, returning True if valid """
+        """ Parse the query from its string, returning True if valid """
         self._tree = None  # Erase previous tree, if any
         self._error = None  # Erase previous error, if any
         self._qtype = None  # Erase previous query type, if any
@@ -299,7 +299,9 @@ class Query:
 
         actual_q = correct_spaces(" ".join(t.txt for t in toklist if t.txt))
         if actual_q:
-            actual_q = actual_q[0].upper() + actual_q[1:] + "?"
+            actual_q = actual_q[0].upper() + actual_q[1:]
+            if not any(actual_q.endswith(s) for s in ("?", ".", "!")):
+                actual_q += "?"
 
         # Update the beautified query string, as the actual_q string
         # probably has more correct capitalization
@@ -435,13 +437,22 @@ class Query:
 
     def set_beautified_query(self, q):
         """ Set the query string that will be reflected back to the client """
-        self._beautified_query = q
+        self._beautified_query = (
+            q.replace("embla", "Embla").replace("miðeind", "Miðeind")
+        )
 
     def lowercase_beautified_query(self):
         """ If we know that no uppercase words occur in the query,
             except the initial capital, this function can be called
             to adjust the beautified query string accordingly. """
-        self._beautified_query = self._beautified_query.capitalize()
+        self.set_beautified_query(self._beautified_query.capitalize())
+
+    def query_is_command(self):
+        """ Called from a query processor if the query is a command, not a question """
+        # Put a period at the end of the beautified query text
+        # instead of a question mark
+        if self._beautified_query.endswith("?"):
+            self._beautified_query = self._beautified_query[:-1] + "."
 
     @property
     def expires(self):
