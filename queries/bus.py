@@ -83,8 +83,8 @@ Query →
 
 QBusNearestStop →
 
-    "hvaða" QBusStop_kvk "er" QBusStopTail_kvk '?'?
-    | "hvaða" QBusStop_hk "er" QBusStopTail_hk '?'?
+    "hvaða" QBusStop_kvk QBusVarEr QBusStopTail_kvk '?'?
+    | "hvaða" QBusStop_hk QBusVarEr QBusStopTail_hk '?'?
     | "hver" "er" "næsta" QBusStop_kvk '?'?
     # Leyfa 'hvað er næsta stoppistöð' (algeng misheyrn)
     | "hvað" "er" "næsta" QBusStop_kvk '?'?
@@ -93,8 +93,10 @@ QBusNearestStop →
 
 $score(+32) QBusNearestStop
 
+QBusVarEr → "er" | "var"
+
 QBusStop_kvk →
-    "stoppistöð" | "stoppustöð" | "stoppustuð" | "Stoppustuð" | "biðstöð" | "strætóstöð"
+    "stoppistöð" | "stoppustöð" | "stoppustuð" | "biðstöð" | "strætóstöð"
     | "strætóstoppistöð" | "strætóstoppustöð"
 
 QBusStop_hk →
@@ -111,6 +113,7 @@ QBusNoun/fall/tala →
     | 'leið:kvk'/tala/fall
     | 'vagn:kk'/tala/fall
     | 'strætisvagn:kk'/tala/fall
+    | "strædo" | "stræto"
 
 # Hack to also match Vagn as a person name
 # (the lemma terminal 'vagn:kk', used above, does not match person names)

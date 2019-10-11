@@ -56,6 +56,9 @@ def _addr2nom(address):
     nf = []
     for w in words:
         bin_res = BIN_Db().lookup_nominative(w)
+        if not bin_res and not w.islower():
+            # Try lowercase form
+            bin_res = BIN_Db().lookup_nominative(w.lower())
         if bin_res:
             nf.append(bin_res[0].ordmynd)
         else:
@@ -102,9 +105,10 @@ def answer_for_remote_loc(locname, query):
     # Generate answer
     answer = "{0} {1}".format(dist, unit_abbr)
     response = dict(answer=answer)
-    voice = "Þú ert {0} {1} frá {2}".format(dist, unit, locname)
+    loc_nf = loc_nf[0].upper() + loc_nf[1:]
+    voice = "{2} er {0} {1} í burtu".format(dist, unit, loc_nf)
 
-    query.set_key(loc_nf[:1].upper() + loc_nf[1:])
+    query.set_key(loc_nf)
 
     return response, answer, voice
 
