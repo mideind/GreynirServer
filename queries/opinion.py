@@ -45,8 +45,12 @@ _OPINION_REGEXES = (
     r"ert þú reið yfir (.+)$",
     r"ertu bitur yfir (.+)$",
     r"ert þú bitur yfir (.+)$",
+    r"ertu bitur út af (.+)$",
+    r"ert þú bitur út af (.+)$",
     r"ertu í uppnámi yfir (.+)$",
     r"ert þú í uppnámi yfir (.+)$",
+    r"ertu í uppnámi út af (.+)$",
+    r"ert þú í uppnámi út af (.+)$",
 )
 
 

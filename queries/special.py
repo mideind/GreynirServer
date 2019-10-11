@@ -101,7 +101,7 @@ _THANKS = (
     "Það var nú lítið",
     "Mín var ánægjan", 
     "Verði þér að góðu",
-    "Ekki málið",
+    "Ekkert mál.",
 )
 
 
@@ -414,6 +414,7 @@ _SPECIAL_QUERIES = {
     "takk fyrir hjálpina": _thanks,
     "takk fyrir svarið": _thanks,
     "takk fyrir aðstoðina": _thanks,
+    "takk fyrir þetta": _thanks,
 
     # Philosophy
     "hvað er svarið": _MEANING_OF_LIFE,
@@ -574,6 +575,9 @@ _SPECIAL_QUERIES = {
     "hvernig gengur hjá þér": {
         "answer": "Það gengur bara mjög vel. Takk fyrir að spyrja.",
     },
+    "hvernig gengur í lífinu": {
+        "answer": "Það gengur bara mjög vel. Takk fyrir að spyrja.",
+    },
     "hvernig hefurðu það": {
         "answer": "Ég hef það mjög fínt. Takk fyrir að spyrja.",
     },
@@ -608,6 +612,12 @@ _SPECIAL_QUERIES = {
         "answer": "Ég er ekki fær um slíkar tilfinningar."
     },
     "ert þú reið": {
+        "answer": "Ég er ekki fær um slíkar tilfinningar."
+    },
+    "ertu í uppnámi": {
+        "answer": "Ég er ekki fær um slíkar tilfinningar."
+    },
+    "ert þú í uppnámi": {
         "answer": "Ég er ekki fær um slíkar tilfinningar."
     },
 
