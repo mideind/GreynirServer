@@ -37,10 +37,11 @@
 # TODO: "Hvað er langt í jólin?" "Hvað er langt til jóla" "Hvað er langt í áramótin"
 
 import json
+import logging
 from datetime import datetime, date
 from pytz import timezone
 
-from queries import timezone4loc
+from queries import timezone4loc, gen_answer
 from settings import changedlocale
 
 
@@ -78,7 +79,10 @@ QDateHowLongUntil →
     "hvað" "er" "langt" "í" QDateItem
     | "hvað" "er" "langt" "fram" "að" QDateItem
     | "hvað" "er" "langt" "til" QDateItem
+    | "hversu" "langt" "er" "í" QDateItem
+    | "hversu" "langt" "er" "til" QDateItem
     | "hvað" "eru" "margir" "dagar" "í" QDateItem
+    | "hvað" "eru" "margir" "dagar" "til" QDateItem
     | "hvað" "eru" "margar" "vikur" "í" QDateItem
     | "hvað" "eru" "margir" "mánuðir" "í" QDateItem
 
@@ -149,8 +153,8 @@ def QDateItem(node, params, result):
 def date_diff(d1, d2, unit="days"):
     delta = d2 - d1
     cnt = getattr(delta, unit)
+    return abs(cnt)
 
-    return cnt
 
 # def _christmas():
 #     return datetime(
@@ -180,60 +184,51 @@ def date_diff(d1, d2, unit="days"):
 def sentence(state, result):
     """ Called when sentence processing is complete """
     q = state["query"]
-    if "qtype" in result:
-        # Successfully matched a query type
-
-        tz = timezone4loc(q.location, fallback="IS")
-        now = datetime.now(timezone(tz))
-
-        with changedlocale(category="LC_TIME"):
-
-            if "now" in result:
-                    date_str = now.strftime("%A %-d. %B %Y")
-
-                    voice = "Í dag er {0}".format(date_str)
-                    answer = date_str.capitalize()
-                    response = dict(answer=answer)
-
-            elif "howlong" and "target" in result:
-                print(result.target)
-                days = date_diff(now, result.target)
-                tfmt = result.target.strftime("%-d. %B")
-                voice = "Það eru {0} dagar þar til {1} gengur í garð.".format(days, tfmt)
-                answer = "{0} dagar".format(days)
-                response = dict(answer=answer)
-
-        # q.set_key(result.qkey)
-        q.set_answer(response, answer, voice)
-        q.set_qtype(_DATE_QTYPE)
-
-        # try:
-        # except Exception as e:
-        #     logging.warning("Exception while processing weather query: {0}".format(e))
-        #     q.set_error("E_EXCEPTION: {0}".format(e))
-        #     raise
-    else:
+    if "qtype" not in result:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
+        return
 
+    # Successfully matched a query type
+    try:
+        with changedlocale(category="LC_TIME"):
+            # Get timezone and date
+            tz = timezone4loc(q.location, fallback="IS")
+            now = datetime.now(timezone(tz))
+            qkey = None
 
-# def handle_plain_text(q):
-#     """ Handle a plain text query asking about the current date/weekday. """
-#     ql = q.query_lower.rstrip("?")
+            # Asking about current date
+            if "now" in result:
+                date_str = now.strftime("%A %-d. %B %Y")
+                voice = "Í dag er {0}".format(date_str)
+                answer = date_str.capitalize()
+                response = dict(answer=answer)
+                qkey = "CurrentDate"
+            # Asking about length of period until a given date
+            elif "howlong" and "target" in result:
+                target = result.target
+                days = date_diff(now, target)
+                # Date asked about is current date
+                if days == 0:
+                    (response, answer, voice) = gen_answer(
+                        "Það er {0} í dag.".format(target.strftime("%-d. %B"))
+                    )
+                else:
+                    fmt = "%-d. %B" if now.year == target.year else "%-d. %B %Y"
+                    tfmt = target.strftime(fmt)
+                    voice = "Það eru {0} dagar þar til {1} gengur í garð.".format(
+                        days, tfmt
+                    )
+                    answer = "{0} dagar".format(days)
+                    response = dict(answer=answer)
+                qkey = "FutureDate"
+            else:
+                # Shouldn't be here
+                raise Exception("Unable to handle date query")
 
-#     if ql in _CURRDATE_QUERIES:
-#         tz = timezone4loc(q.location, fallback="IS")
-#         now = datetime.now(timezone(tz))
+            q.set_key(qkey)
+            q.set_answer(response, answer, voice)
+            q.set_qtype(_DATE_QTYPE)
 
-#         with changedlocale(category="LC_TIME"):
-#             date_str = now.strftime("%A %-d. %B %Y")
-
-#             voice = "Í dag er {0}".format(date_str)
-#             answer = date_str.capitalize()
-#             response = dict(answer=answer)
-
-#             q.set_answer(response, answer, voice)
-#             q.set_qtype(_DATE_QTYPE)
-
-#         return True
-
-#     return False
+    except Exception as e:
+        logging.warning("Exception while processing date query: {0}".format(e))
+        q.set_error("E_EXCEPTION: {0}".format(e))
