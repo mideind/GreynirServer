@@ -71,11 +71,20 @@ QWeatherForecast →
     | "hvernig" "er" "veðurspáin" QWeatherLocation? QWeatherNextDays?
     | "hvernig" "er" "spáin" QWeatherLocation? QWeatherNextDays?
     | "hver" "er" "veðurspá" QWeatherLocation? QWeatherNextDays?
+    | "hver" "er" "veðurspáin" QWeatherLocation? QWeatherNextDays?
     | "hvernig" "er" "veðrið" QWeatherLocation? QWeatherNextDays
     | "hvernig" "verður" "veðrið" QWeatherLocation? QWeatherNextDays
     | "hvernig" "eru" "veðurhorfur" QWeatherLocation? QWeatherNextDays?
+    | "hvernig" "eru" "veður" "horfur" QWeatherLocation? QWeatherNextDays?
+    | "hvernig" "eru" "veðurhorfurnar" QWeatherLocation? QWeatherNextDays?
+    | "hvernig" "eru" "veður" "horfurnar" QWeatherLocation? QWeatherNextDays?
     | "hverjar" "eru" "veðurhorfur" QWeatherLocation? QWeatherNextDays?
+    | "hverjar" "eru" "veður" "horfur" QWeatherLocation? QWeatherNextDays?
+    | "hverjar" "eru" "veðurhorfurnar" QWeatherLocation? QWeatherNextDays?
+    | "hverjar" "eru" "veður" "horfurnar" QWeatherLocation? QWeatherNextDays?
     | "hvers" "konar" "veðri" "er" "spáð" QWeatherLocation? QWeatherNextDays?
+    | "hverskonar" "veðri" "er" "spáð" QWeatherLocation? QWeatherNextDays?
+
 
 QWeatherTemperature →
     "hvert" "er" "hitastigið" QWeatherAnyLoc? QWeatherNow?
@@ -95,7 +104,9 @@ QWeatherNow →
 QWeatherNextDays →
     "næstu" "daga"
     | "næstu" "dagana"
+    | "fyrir" "næstu" "daga"
     | "þessa" "viku" 
+    | "þessa" "vikuna"
     | "út" "vikuna" 
     | "á" "næstunni" 
     | "á" "morgun"
@@ -108,6 +119,7 @@ QWeatherCapitalRegion →
     "á" "höfuðborgarsvæðinu" | "fyrir" "höfuðborgarsvæðið" 
     | "í" "reykjavík" | "fyrir" "reykjavík"
     | "í" "höfuðborginni" | "fyrir" "höfuðborgina"
+    | "á" "reykjavíkursvæðinu" | "í" "borginni" | "fyrir" "borgina"
 
 QWeatherAnyLoc →
     QWeatherCountry > QWeatherCapitalRegion > QWeatherOpenLoc
@@ -198,23 +210,26 @@ def _curr_observations(query, result):
     # User asked about a specific location
     # Try to find a matching Icelandic placename
     if "location" in result and result.location != "Ísland":
-
-        # Some strings should never be interpreted as Icelandic placenames
-        if result.location in ICE_PLACENAME_BLACKLIST:
-            return None
-
-        # Unfortunately, many foreign country names are also Icelandic
-        # placenames, so we automatically exclude country names.
-        cc = isocode_for_country_name(result.location)
-        if cc:
-            return None
-
-        info = placename_lookup(result.location)
-        if info:
-            i = info[0]
-            loc = (i.get("lat_wgs84"), i.get("long_wgs84"))
+        if result.location == "capital":
+            loc = _RVK_COORDS
+            result.subject = "Í Reykjavík"
         else:
-            return None
+            # Some strings should never be interpreted as Icelandic placenames
+            if result.location in ICE_PLACENAME_BLACKLIST:
+                return None
+
+            # Unfortunately, many foreign country names are also Icelandic
+            # placenames, so we automatically exclude country names.
+            cc = isocode_for_country_name(result.location)
+            if cc:
+                return None
+
+            info = placename_lookup(result.location)
+            if info:
+                i = info[0]
+                loc = (i.get("lat_wgs84"), i.get("long_wgs84"))
+            else:
+                return None
 
     # Talk to weather API
     try:
