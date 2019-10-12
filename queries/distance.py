@@ -43,7 +43,7 @@ _QREGEXES = (
     r"^hversu langt er ég frá (.+)$",
     r"^hve langt er ég frá (.+)$",
     r"^hvað er langt á (.+)$",
-    r"^hvað er langt í (.+)$",
+    r"^hvað er langt í ([^0-9.].+)$",
     # TODO: Fix response for these two (transform location from genitive)
     # r"^hvað er langt til (.+)$",
     # r"^hversu langt er til (.+)$",
@@ -52,6 +52,9 @@ _QREGEXES = (
 
 def _addr2nom(address):
     """ Convert location name to nominative form """
+    # TODO: Implement more intelligently
+    # This is a tad simplistic and mucks up some things,
+    # e.g. "Ráðhús Reykjavíkur" becomes "Ráðhús Reykjavík"
     words = address.split()
     nf = []
     for w in words:
@@ -68,7 +71,7 @@ def answer_for_remote_loc(locname, query):
     if not query.location:
         return gen_answer("Ég veit ekki hvar þú ert.")
 
-    loc_nf = _addr2nom(locname[:1].upper() + locname[1:])
+    loc_nf = _addr2nom(locname[0].upper() + locname[1:])
     res = query_geocode_API_addr(loc_nf)
 
     # Verify sanity of API response
@@ -89,11 +92,13 @@ def answer_for_remote_loc(locname, query):
     km_dist = distance(query.location, loc)
     km_dist = round(km_dist, 1 if km_dist < 10 else 0)
 
+    # E.g. 7,3 kílómetra
     if km_dist >= 1.0:
         dist = str(km_dist).replace(".", ",")
         dist = re.sub(r",0$", "", dist)
         unit = "kílómetra"
         unit_abbr = "km"
+    # E.g. 940 metra
     else:
         dist = int(math.ceil((km_dist * 1000.0) / 10.0) * 10)  # Round to nearest 10 m
         unit = "metra"
@@ -120,8 +125,10 @@ def handle_plain_text(q):
             remote_loc = m.group(1)
             break
     else:
+        # Nothing caught by regexes, bail
         return False
 
+    # Look up in geo API
     try:
         answ = answer_for_remote_loc(remote_loc, q)
     except Exception as e:
@@ -129,10 +136,9 @@ def handle_plain_text(q):
         q.set_error("E_EXCEPTION: {0}".format(e))
         answ = None
     
-    if not answ:
-        return False
+    if answ:
+        q.set_qtype(_DISTANCE_QTYPE)
+        q.set_answer(*answ)
+        return True
 
-    q.set_qtype(_DISTANCE_QTYPE)
-    q.set_answer(*answ)
-
-    return True
+    return False
