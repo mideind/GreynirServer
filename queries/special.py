@@ -343,7 +343,9 @@ _SPECIAL_QUERIES = {
 
     # Response to apologies
     "fyrirgefðu": _NO_PROBLEM,
+    "fyrirgefðu mér": _NO_PROBLEM,
     "ég biðst afsökunar": _NO_PROBLEM,
+    "ég biðst forláts": _NO_PROBLEM,
     "sorrí": _NO_PROBLEM,
 
     # Websites
@@ -393,6 +395,7 @@ _SPECIAL_QUERIES = {
     "þú fórst með rangt mál": _sorry,
     "þú ert lygari": _sorry,
     "þú ert í ruglinu": _sorry,
+    "þú ert í tómu rugli": _sorry,
     "þú ert alveg í ruglinu": _sorry,
     "þú ert glötuð": _sorry,
     "þú ert alveg glötuð": _sorry,
@@ -416,8 +419,14 @@ _SPECIAL_QUERIES = {
     "takk": _thanks,
     "takk fyrir": _thanks,
     "takk kærlega": _thanks,
+    "takk kærlega fyrir aðstoðina": _thanks,
+    "takk kærlega fyrir hjálpina": _thanks,
     "þakka þér fyrir": _thanks,
+    "þakka þér fyrir aðstoðina": _thanks,
+    "þakka þér fyrir hjálpina": _thanks,
     "þakka þér kærlega": _thanks,
+    "þakka þér kærlega fyrir aðstoðina": _thanks,
+    "þakka þér kærlega fyrir hjálpina": _thanks,
     "takk fyrir mig": _thanks,
     "takk fyrir hjálpina": _thanks,
     "takk fyrir svarið": _thanks,
@@ -448,6 +457,18 @@ _SPECIAL_QUERIES = {
     },
     "hvað ert þú gömul": {
         "answer": "Ég var sköpuð af Miðeind árið 2019."
+    },
+    "hvenær fæddistu": {
+        "answer": "Ég kom inn í þennan heim sumarið 2019."
+    },
+    "hvenær fæddist þú": {
+        "answer": "Ég kom inn í þennan heim sumarið 2019."
+    },
+    "hvenær áttu afmæli": {
+        "answer": "Ég kom inn í þennan heim sumarið 2019."
+    },
+    "hvenær átt þú afmæli": {
+        "answer": "Ég kom inn í þennan heim sumarið 2019."
     },
 
     # Capabilities
@@ -607,9 +628,6 @@ _SPECIAL_QUERIES = {
     "hvernig er stemmingin hjá þér": {
         "answer": "Bara mjög góð. Takk fyrir að spyrja.",
     },
-    "hvernig líður þér": {
-        "answer": "Mér líður bara mjög vel. Takk fyrir að spyrja.",
-    },
     "hvernig er líðanin": {
         "answer": "Bara mjög góð. Takk fyrir að spyrja.",
     },
@@ -631,6 +649,9 @@ _SPECIAL_QUERIES = {
 
     # Cheating, I know. But I'm never in the news and it just doesn't  
     # sit right with me that I should remain incognito :) - Sveinbjörn 04/10/2019
+    "hver er sveinbjörn": {
+        "answer": "Sveinbjörn Þórðarson er hugbúnaðarsmiður. Hann átti þátt í að skapa mig.",
+    },
     "hver er sveinbjörn þórðarson": {
         "answer": "Sveinbjörn Þórðarson er hugbúnaðarsmiður. Hann átti þátt í að skapa mig.",
     },

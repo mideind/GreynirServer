@@ -38,6 +38,8 @@ _STATS_QTYPE = "Stats"
 _NUM_PEOPLE_Q = (
     "hvað þekkirðu margar manneskjur",
     "hvað þekkir þú margar manneskjur",
+    "hvað þekkirðu mikið af fólki",
+    "hvað þekkir þú mikið af fólki",
     "hversu marga einstaklinga þekkirðu",
     "hversu marga einstaklinga þekkir þú",
 )
