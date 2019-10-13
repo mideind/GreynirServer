@@ -64,6 +64,16 @@ _JOKES = (
     "Af hverju læðast Hafnfirðingar alltaf fram hjá apótekum? Til að vekja ekki svefnpillurnar.",
     "Af hverju fara Hafnfirðingar alltaf niður í fjöru um jólin? Til þess að bíða eftir jólabókaflóðinu.",
     "Af hverju hætti tannlæknirinn störfum? Hann reif kjaft.",
+    "Sölumaðurinn: Þessi ryksuga flýtir fyrir þér um helming. Kúnninn: Vá! Þá ætla ég að fá tvær.",
+    
+    "Vísindamaður og kona hans eru á ferð úti í sveit. "
+    "Konan segir: Sjáðu, það er búið að rýja þessar kindur! "
+    "Já, segir vísindamaðurinn, - á þessari hlið.",
+
+    "Ég kann örugga aðferð til að verða langlífur: Borða eina kjötbollu á dag í hundrað ár.",
+
+    "Siggi: Hann er alveg frábær söngvari! Jói: Hu, ef ég hefði röddina hans væri ég alveg jafn góður.",
+
 )
 
 
@@ -533,14 +543,12 @@ _SPECIAL_QUERIES = {
     "segðu brandara": _random_joke,
     "seg þú brandara": _random_joke,
     "segðu mér brandara": _random_joke,
-    "segðu mér lélegan brandara": _random_joke,
     "seg þú mér brandara": _random_joke,
-    "segðu mér annan brandara": _random_joke,
-    "segðu brandara": _random_joke,
-    "seg þú brandara": _random_joke,
-    "segðu mér lélegan brandara": _random_joke,
+    "segðu lélegan brandara": _random_joke,
     "seg þú mér lélegan brandara": _random_joke,
+    "segðu mér lélegan brandara": _random_joke,
     "segðu annan brandara": _random_joke,
+    "segðu mér annan brandara": _random_joke,
     "komdu með brandara": _random_joke,
     "komdu með lélegan brandara": _random_joke,
     "komdu með annan brandara": _random_joke,
