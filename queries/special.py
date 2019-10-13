@@ -452,6 +452,7 @@ _SPECIAL_QUERIES = {
     "hver er tilgangur lífsins": _MEANING_OF_LIFE,
     "hver er tilgangurinn með þessu öllu": _MEANING_OF_LIFE,
     "hvaða þýðingu hefur þetta allt": _MEANING_OF_LIFE,
+    "hvað þýðir þetta allt saman": _MEANING_OF_LIFE,
 
     # Identity
     "hvað heitir þú": _identity,
@@ -586,13 +587,16 @@ _SPECIAL_QUERIES = {
     "þú ert leiðinleg": _rudeness,
     "þú ert bjáni": _rudeness,
     "þú ert vitlaus": _rudeness,
+    "þú ert glötuð": _rudeness,
     "þú mátt bara éta skít": _rudeness,
     "fokk jú": _rudeness,
     "fokkaðu þér": _rudeness,
+    "fokka þú þér": _rudeness,
     "éttu skít": _rudeness,
     "haltu kjafti": _rudeness,
     "éttu það sem úti frýs": _rudeness,
     "farðu til helvítis": _rudeness,
+    "farðu til andskotans": _rudeness,
     "farðu í rass og rófu": _rudeness,
     "hoppaðu upp í rassgatið á þér":  _rudeness,
 

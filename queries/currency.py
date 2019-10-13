@@ -21,11 +21,12 @@
 
 """
 
-from . import format_icelandic_float
-from queries import query_json_api
 import re
+from queries import query_json_api, format_icelandic_float
+
 
 _CURRENCY_QTYPE = "Currency"
+
 
 _NUMBER_WORDS = {
     "núll": 0,
