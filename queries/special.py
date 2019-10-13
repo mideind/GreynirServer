@@ -45,8 +45,10 @@ _CAP = (
     "Þú getur til dæmis spurt mig um fjarlægðir.",
     "Þú getur til dæmis spurt mig um gengi gjaldmiðla.",
     "Þú getur til dæmis beðið mig um að kasta teningi.",
+    "Þú getur til dæmis spurt mig um staðsetningu.",
     "Þú getur til dæmis spurt mig um fólk sem hefur komið fram í fjölmiðlum.",
     "Þú getur til dæmis beðið mig um lélegan brandara.",
+    "Þú getur til dæmis beðið mig um upplýsingar úr Wikipedíu."
 )
 
 
@@ -133,6 +135,7 @@ def _open_embla_url(qs, q):
 def _open_mideind_url(qs, q):
     q.set_url("https://mideind.is")
     return { "answer": "Skal gert!", "is_question": False  }
+
 
 def _play_jazz(qs, q):
     q.set_url("https://www.youtube.com/watch?v=E5loTx0_KDE")

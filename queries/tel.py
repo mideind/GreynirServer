@@ -116,13 +116,14 @@ _PHONECALL_REGEXES = frozenset(
         r"(nennirðu að hringja í símanúmerið )([\d|\-|\s]+)$",
         r"(nennirðu að hringja í númerið )([\d|\-|\s]+)$",
         r"(nennirðu að hringja í númer )([\d|\-|\s]+)$",
+        r"(nennir þú að hringja í )([\d|\-|\s]+)$",
+        r"(nennir þú að hringja í síma )([\d|\-|\s]+)$",
+        r"(nennir þú að hringja í símanúmer )([\d|\-|\s]+)$",
+        r"(nennir þú að hringja í símanúmerið )([\d|\-|\s]+)$",
+        r"(nennir þú að hringja í númerið )([\d|\-|\s]+)$",
+        r"(nennir þú að hringja í númer )([\d|\-|\s]+)$",
         r"(vinsamlegast hringdu í )([\d|\-|\s]+)$",
-        r"(vinsamlegast hringdu í síma )([\d|\-|\s]+)$",
-        r"(nennirðu að hringja í símanúmer )([\d|\-|\s]+)$",
-        r"(nennirðu að hringja í símanúmerið )([\d|\-|\s]+)$",
-        r"(nennirðu að hringja í númerið )([\d|\-|\s]+)$",
-        r"(nennirðu að hringja í númer )([\d|\-|\s]+)$",
-    )
+        r"(vinsamlegast hringdu í síma )([\d|\-|\s]+)$",    )
 )
 
 

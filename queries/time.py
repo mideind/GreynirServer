@@ -51,6 +51,14 @@ _TIME_QUERIES = frozenset((
 ))
 
 
+# _TIMEZONE_QUERIES = frozenset((
+#     "í hvaða tímabelti er ég",
+#     "í hvaða tímabelti er ég staddur",
+#     "hvaða tímabelti er ég í",
+#     "hvaða tímabelti er ég á",
+# ))
+
+
 def handle_plain_text(q):
     """ Handle a plain text query, contained in the q parameter
         which is an instance of the query.Query class.

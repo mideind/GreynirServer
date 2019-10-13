@@ -38,10 +38,14 @@ _STATS_QTYPE = "Stats"
 _NUM_PEOPLE_Q = (
     "hvað þekkirðu margar manneskjur",
     "hvað þekkir þú margar manneskjur",
+    "hvað þekkirðu marga einstaklinga",
+    "hvað þekkir þú marga einstaklinga",
     "hvað þekkirðu mikið af fólki",
     "hvað þekkir þú mikið af fólki",
     "hversu marga einstaklinga þekkirðu",
     "hversu marga einstaklinga þekkir þú",
+    "hversu margar manneskjur þekkirðu",
+    "hversu margar manneskjur þekkir þú",
 )
 
 
@@ -56,6 +60,10 @@ _NUM_QUERIES_Q = (
     "hversu mörgum fyrirspurnum hefur þú svarað",
     "hversu mörgum spurningum hefurðu svarað",
     "hversu mörgum spurningum hefur þú svarað",
+    "hve mörgum fyrirspurnum hefurðu svarað",
+    "hve mörgum fyrirspurnum hefur þú svarað",
+    "hve mörgum spurningum hefurðu svarað",
+    "hve mörgum spurningum hefur þú svarað",
 )
 
 
@@ -66,6 +74,8 @@ _MOST_FREQ_QUERIES_Q = (
     "hvað spyr fólk þig mest um",
     "hvað ertu mest spurð um",
     "hvað ert þú mest spurð um",
+    "hvað ertu aðallega spurð um",
+    "hvað ert þú aðallega spurð um",
     "hvað spyr fólk þig aðallega um",
     "hvaða fyrirspurnir eru algengastar",
     "hvaða spurningar eru algengastar",
@@ -76,6 +86,7 @@ _MOST_FREQ_QUERIES_Q = (
 
 
 def _gen_num_people_answer(q):
+    """ Answer questions about person database. """
     with SessionContext(read_only=True) as session:
         qr = session.query(Person.id).count()
 
@@ -83,6 +94,7 @@ def _gen_num_people_answer(q):
         voice = answer
         response = dict(answer=answer)
 
+        q.set_expires(datetime.utcnow() + timedelta(hours=1))
         q.set_answer(response, answer, voice)
         q.set_qtype(_STATS_QTYPE)
 
@@ -91,6 +103,7 @@ _QUERIES_PERIOD = 30  # days
 
 
 def _gen_num_queries_answer(q):
+    """ Answer questions concerning the number of queries handled. """
     with SessionContext(read_only=True) as session:
         qr = (
             session.query(Query.id)
@@ -128,6 +141,7 @@ _QTYPE_TO_DESC = {
 
 
 def _gen_most_freq_queries_answer(q):
+    """ Answer question concerning most frequent queries. """
     with SessionContext(read_only=True) as session:
         start = datetime.utcnow() - timedelta(days=_QUERIES_PERIOD)
         end = datetime.utcnow()
@@ -142,6 +156,8 @@ def _gen_most_freq_queries_answer(q):
 
         response = dict(answer=answer)
         voice = answer
+
+        q.set_expires(datetime.utcnow() + timedelta(hours=1))
         q.set_answer(response, answer, voice)
         q.set_qtype(_STATS_QTYPE)
 

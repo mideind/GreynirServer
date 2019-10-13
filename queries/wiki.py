@@ -24,7 +24,9 @@
 
 """
 
-from . import query_json_api
+# TODO: Shorten overly long first paragraphs.
+
+from queries import query_json_api
 from datetime import datetime, timedelta
 import re
 
@@ -119,11 +121,13 @@ _WIKI_API_URL = "https://is.wikipedia.org/w/api.php?format=json&action=query&pro
 
 
 def _query_wiki_api(subject):
+    """ Fetch JSON from Wikipedia API """
     url = _WIKI_API_URL.format(subject)
     return query_json_api(url)
 
 
 def get_wiki_summary(subject_nom, subject_dat):
+    """ Fetch summary of subject from Icelandic Wikipedia """
     res = _query_wiki_api(subject_nom)
 
     not_found = "Ég fann ekkert um {0} í Wikipedíu".format(subject_dat)

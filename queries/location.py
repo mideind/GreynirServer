@@ -25,7 +25,6 @@
 
 # TODO: Speech synthesis: "Bárugötu þrjú" ekki "þrír"
 # TODO: "Í hvaða póstnúmeri er ég?" "Í hvaða póstnúmeri er Fiskislóð 31?"
-# TODO: "Í hvaða hverfi er ég?" - "Þú ert í Hlíðunum"
 
 import os
 import re

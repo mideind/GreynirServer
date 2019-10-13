@@ -122,6 +122,14 @@ def QDateHowLongUntil(node, params, result):
     result["howlong"] = True
 
 
+def QDateItem(node, params, result):
+    t = result.find_descendant(t_base="dagsafs")
+    if t:
+        d = terminal_date(t)
+        if d:
+            result["target"] = d
+
+
 def terminal_date(t):
     """ Extract array of date values from terminal token's auxiliary info,
         which is attached as a json-encoded array. Return datetime object. """
@@ -139,15 +147,7 @@ def terminal_date(t):
             if m < now.month or (m == now.month and d < now.day):
                 y += 1
 
-        return date(year=y, month=m, day=d)
-
-
-def QDateItem(node, params, result):
-    t = result.find_descendant(t_base="dagsafs")
-    if t:
-        d = terminal_date(t)
-        if d:
-            result["target"] = d
+        return datetime(year=y, month=m, day=d, hour=0, minute=0, second=0)
 
 
 def date_diff(d1, d2, unit="days"):
@@ -206,7 +206,8 @@ def sentence(state, result):
             # Asking about length of period until a given date
             elif "howlong" and "target" in result:
                 target = result.target
-                days = date_diff(now, target)
+                target.replace(tzinfo=timezone(tz))
+                days = date_diff(now, target, unit="hours")
                 # Date asked about is current date
                 if days == 0:
                     (response, answer, voice) = gen_answer(
