@@ -30,12 +30,14 @@ from db import SessionContext
 from db.models import Person, Query
 from db.queries import QueryTypesQuery
 
-from queries import gen_answer
+from queries import gen_answer, natlang_seq
+from routes.people import top_persons
+
 
 _STATS_QTYPE = "Stats"
 
 
-_NUM_PEOPLE_Q = (
+_NUM_PEOPLE_QUERIES = (
     "hvað þekkirðu margar manneskjur",
     "hvað þekkir þú margar manneskjur",
     "hvað þekkirðu marga einstaklinga",
@@ -46,10 +48,14 @@ _NUM_PEOPLE_Q = (
     "hversu marga einstaklinga þekkir þú",
     "hversu margar manneskjur þekkirðu",
     "hversu margar manneskjur þekkir þú",
+    "hve marga einstaklinga þekkirðu",
+    "hve marga einstaklinga þekkir þú",
+    "hve margar manneskjur þekkirðu",
+    "hve margar manneskjur þekkir þú",
 )
 
 
-_NUM_QUERIES_Q = (
+_NUM_QUERIES = (
     "hvað hefurðu fengið margar fyrirspurnir",
     "hvað hefur þú fengið margar fyrirspurnir",
     "hvað hefurðu fengið margar spurningar",
@@ -67,7 +73,7 @@ _NUM_QUERIES_Q = (
 )
 
 
-_MOST_FREQ_QUERIES_Q = (
+_MOST_FREQ_QUERIES = (
     "hvað er fólk að spyrja þig mest um",
     "hvað er fólk að spyrja mest um",
     "hvað spyr fólk mest um",
@@ -85,6 +91,20 @@ _MOST_FREQ_QUERIES_Q = (
 )
 
 
+_MOST_MENTIONED_PEOPLE_QUERIES = (
+    "um hverja er verið að tala",
+    "um hverja er mest fjallað í fjölmiðlum",
+    "hverjir eru mest áberandi í fjölmiðlum",
+    "hvaða fólk hefur verið mest í fjölmiðlum síðustu daga",
+    "hvaða fólk er umtalaðast á Íslandi",
+    "hverjir eru umtöluðustu einstaklingarnir á Íslandi",
+    "hverjir eru umtalaðastir",
+    "um hverja er mest talað",
+    "um hverja er mest skrifað",
+    # TODO: Expand this
+)
+
+
 def _gen_num_people_answer(q):
     """ Answer questions about person database. """
     with SessionContext(read_only=True) as session:
@@ -96,7 +116,10 @@ def _gen_num_people_answer(q):
 
         q.set_expires(datetime.utcnow() + timedelta(hours=1))
         q.set_answer(response, answer, voice)
+        q.set_key("NumPeople")
         q.set_qtype(_STATS_QTYPE)
+
+        return True
 
 
 _QUERIES_PERIOD = 30  # days
@@ -119,8 +142,11 @@ def _gen_num_queries_answer(q):
         voice = answer
         response = dict(answer=answer)
 
+        q.set_key("NumQueries")
         q.set_answer(response, answer, voice)
         q.set_qtype(_STATS_QTYPE)
+
+        return True
 
 
 _QTYPE_TO_DESC = {
@@ -160,22 +186,48 @@ def _gen_most_freq_queries_answer(q):
         q.set_expires(datetime.utcnow() + timedelta(hours=1))
         q.set_answer(response, answer, voice)
         q.set_qtype(_STATS_QTYPE)
+        q.set_key("FreqQuery")
+
+        return True
+
+
+_MOST_MENTIONED_COUNT = 3  # Individuals
+_MOST_MENTIONED_PERIOD = 7  # Days
+
+
+def _gen_most_mentioned_answer(q):
+    """ Answer questions about the most mentioned/talked about people in Iceland. """
+    top = top_persons(limit=_MOST_MENTIONED_COUNT, days=_MOST_MENTIONED_PERIOD)
+    if not top:
+        return False  # We don't know (empty database?)
+
+    answer = natlang_seq([t.get("name") for t in top])
+    response = dict(answer=answer)
+    voice = "Umtöluðustu einstaklingar síðustu daga eru {0}.".format(answer)
+
+    q.set_expires(datetime.utcnow() + timedelta(hours=1))
+    q.set_answer(response, answer, voice)
+    q.set_qtype(_STATS_QTYPE)
+    q.set_key("MostMentioned")
+
+    return True
+
+
+# Map hashable query category tuple to corresponding handler function
+_Q2HANDLER = {
+    _NUM_PEOPLE_QUERIES: _gen_num_people_answer,
+    _NUM_QUERIES: _gen_num_queries_answer,
+    _MOST_FREQ_QUERIES: _gen_most_freq_queries_answer,
+    _MOST_MENTIONED_PEOPLE_QUERIES: _gen_most_mentioned_answer,
+}
 
 
 def handle_plain_text(q):
     """ Handle a plain text query about query statistics. """
     ql = q.query_lower.rstrip("?")
 
-    if ql in _NUM_PEOPLE_Q:
-        _gen_num_people_answer(q)
-        return True
-
-    if ql in _NUM_QUERIES_Q:
-        _gen_num_queries_answer(q)
-        return True
-
-    if ql in _MOST_FREQ_QUERIES_Q:
-        _gen_most_freq_queries_answer(q)
-        return True
+    for qset, handler in _Q2HANDLER.items():
+        if ql in qset:
+            return handler(q)
 
     return False
