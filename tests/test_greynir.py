@@ -136,7 +136,6 @@ def test_query_api(client):
     json = validate_json(resp)
     assert json["qtype"] == "ArrivalTime"
     assert "answer" in json
-    # assert json["answer"] == "15:33"
     assert json["answer"] == "Staðsetning óþekkt"  # No location info available
     assert "voice" in json
     # assert json["voice"] == "Vagn númer 17 kemur klukkan 15 33"
@@ -148,6 +147,14 @@ def test_query_api(client):
     assert "answer" in json
     assert re.search(r"^\d\d:\d\d$", json["answer"])
     assert "voice" in json
+
+    resp = client.get("/query.api?voice=1&q=Hvað er klukkan núna")
+    json = validate_json(resp)
+    assert json["qtype"] == "Time"
+    assert "answer" in json
+    assert re.search(r"^\d\d:\d\d$", json["answer"])
+    assert "voice" in json
+    assert json["voice"].startswith("Klukkan er")
 
     # Date module
     resp = client.get("/query.api?q=Hver er dagsetningin?")
@@ -223,8 +230,22 @@ def test_query_api(client):
     assert "answer" in json
     assert int(json["answer"]) >= 17 and int(json["answer"]) <= 30
 
+    resp = client.get("/query.api?q=kastaðu teningi")
+    json = validate_json(resp)
+    assert json["qtype"] == "Random"
+    assert "answer" in json
+    assert int(json["answer"]) >= 1 and int(json["answer"]) <= 6
+
     # Telephone module
     resp = client.get("/query.api?q=Hringdu í síma 6 9 9 2 4 2 2")
+    json = validate_json(resp)
+    assert json["qtype"] == "Telephone"
+    assert "answer" in json
+    assert "open_url" in json
+    assert json["open_url"] == "tel:6992422"
+    assert json["q"].endswith("6992422")
+
+    resp = client.get("/query.api?q=hringdu fyrir mig í númerið 69 92 42 2")
     json = validate_json(resp)
     assert json["qtype"] == "Telephone"
     assert "answer" in json
@@ -246,6 +267,17 @@ def test_query_api(client):
     assert json["qtype"] == "Opinion"
     assert "answer" in json
     assert json["answer"].startswith("Ég hef enga sérstaka skoðun")
+
+    # Stats module
+    resp = client.get("/query.api?q=hversu marga einstaklinga þekkirðu?")
+    json = validate_json(resp)
+    assert json["qtype"] == "Stats"
+    assert "answer" in json
+
+    resp = client.get("/query.api?q=Hversu mörgum spurningum hefur þú svarað?")
+    json = validate_json(resp)
+    assert json["qtype"] == "Stats"
+    assert "answer" in json
 
 
 def test_processors():

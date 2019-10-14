@@ -23,7 +23,7 @@
 
 """
 
-# TODO: "Hvað búa margir í/á [BORG/LAND]?" etc.
+# TODO: "Hvað búa margir í/á [BORG/LAND]?" etc. Wiki api?
 
 from datetime import datetime, timedelta
 from cityloc import capital_for_cc
