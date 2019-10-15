@@ -235,7 +235,8 @@
             tooltips: {
                callbacks: {
                   label: function(tooltipItem, data) {
-                     return tooltipItem.yLabel + ' fyrirspurnir';
+                     var desc = String(tooltipItem.yLabel).endsWith('1') ? "fyrirspurn" : "fyrirspurnir";
+                     return tooltipItem.yLabel + ' ' + desc;
                   },
                }
             },
