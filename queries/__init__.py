@@ -112,7 +112,7 @@ def _get_API_key():
     return _API_KEY
 
 
-_MAPS_API_COORDS_URL = "https://maps.googleapis.com/maps/api/geocode/json?latlng={0},{1}&key={2}&language=is"
+_MAPS_API_COORDS_URL = "https://maps.googleapis.com/maps/api/geocode/json?latlng={0},{1}&key={2}&language=is&region=is"
 
 
 def query_geocode_API_coords(lat, lon):
@@ -129,9 +129,7 @@ def query_geocode_API_coords(lat, lon):
     return query_json_api(url)
 
 
-_MAPS_API_ADDR_URL = (
-    "https://maps.googleapis.com/maps/api/geocode/json?address={0}&key={1}&language=is"
-)
+_MAPS_API_ADDR_URL = "https://maps.googleapis.com/maps/api/geocode/json?address={0}&key={1}&language=is&region=is"
 
 
 def query_geocode_API_addr(addr):
