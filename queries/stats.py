@@ -94,6 +94,7 @@ _MOST_FREQ_QUERIES = (
 _MOST_MENTIONED_PEOPLE_QUERIES = (
     "um hverja er verið að tala",
     "um hverja er mest fjallað í fjölmiðlum",
+    "um hverja er mest talað í fjölmiðlum",
     "hverjir eru mest áberandi í fjölmiðlum",
     "hvaða fólk hefur verið mest í fjölmiðlum síðustu daga",
     "hvaða fólk er umtalaðast á Íslandi",

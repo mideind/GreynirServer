@@ -48,7 +48,7 @@ _CAP = (
     "Þú getur til dæmis spurt mig um staðsetningu.",
     "Þú getur til dæmis spurt mig um fólk sem hefur komið fram í fjölmiðlum.",
     "Þú getur til dæmis beðið mig um lélegan brandara.",
-    "Þú getur til dæmis beðið mig um upplýsingar úr Wikipedíu."
+    "Þú getur til dæmis beðið mig um upplýsingar úr Wikipedíu.",
 )
 
 
@@ -315,6 +315,8 @@ _SPECIAL_QUERIES = {
 
     # Enquiries concerning romantic availability
     "viltu giftast mér": _ROMANCE,
+    "vilt þú ekki giftast mér": _ROMANCE,
+    "viltu ekki giftast mér": _ROMANCE,
     "viltu koma á stefnumót": _ROMANCE,
     "viltu koma á stefnumót með mér": _ROMANCE,
     "viltu koma á deit": _ROMANCE,
@@ -350,9 +352,6 @@ _SPECIAL_QUERIES = {
     "er ég góður": _OF_COURSE,
     "er ég góð": _OF_COURSE,
     "er ég góð manneskja": _OF_COURSE,
-    "hvað finnst þér um mig": {
-        "answer": "Þú ert einstakur, kæri notandi."
-    },
 
     # Response to apologies
     "fyrirgefðu": _NO_PROBLEM,
@@ -431,20 +430,25 @@ _SPECIAL_QUERIES = {
     # Thanks
     "takk": _thanks,
     "takk fyrir": _thanks,
-    "takk kærlega": _thanks,
-    "takk kærlega fyrir aðstoðina": _thanks,
-    "takk kærlega fyrir hjálpina": _thanks,
-    "þakka þér fyrir": _thanks,
-    "þakka þér fyrir aðstoðina": _thanks,
-    "þakka þér fyrir hjálpina": _thanks,
-    "þakka þér kærlega": _thanks,
-    "þakka þér kærlega fyrir aðstoðina": _thanks,
-    "þakka þér kærlega fyrir hjálpina": _thanks,
     "takk fyrir mig": _thanks,
     "takk fyrir hjálpina": _thanks,
     "takk fyrir svarið": _thanks,
     "takk fyrir aðstoðina": _thanks,
     "takk fyrir þetta": _thanks,
+    "takk kærlega": _thanks,
+    "takk kærlega fyrir mig": _thanks,
+    "takk kærlega fyrir hjálpina": _thanks,
+    "takk kærlega fyrir svarið": _thanks,
+    "takk kærlega fyrir aðstoðina": _thanks,
+    "takk kærlega fyrir þetta": _thanks,
+    "þakka þér fyrir": _thanks,
+    "þakka þér fyrir aðstoðina": _thanks,
+    "þakka þér fyrir hjálpina": _thanks,
+    "þakka þér fyrir svarið": _thanks,
+    "þakka þér kærlega": _thanks,
+    "þakka þér kærlega fyrir aðstoðina": _thanks,
+    "þakka þér kærlega fyrir hjálpina": _thanks,
+    "þakka þér fyrir svarið": _thanks,
 
     # Philosophy
     "hvað er svarið": _MEANING_OF_LIFE,
@@ -549,7 +553,9 @@ _SPECIAL_QUERIES = {
     "seg þú mér lélegan brandara": _random_joke,
     "segðu mér lélegan brandara": _random_joke,
     "segðu annan brandara": _random_joke,
+    "seg þú annan brandara": _random_joke,
     "segðu mér annan brandara": _random_joke,
+    "seg þú mér annan brandara": _random_joke,
     "komdu með brandara": _random_joke,
     "komdu með lélegan brandara": _random_joke,
     "komdu með annan brandara": _random_joke,
@@ -578,6 +584,7 @@ _SPECIAL_QUERIES = {
     "segðu mér áhugaverða staðreynd": _random_trivia,
     "komdu með eitthvað áhugavert": _random_trivia,
     "komdu með áhugaverða staðreynd": _random_trivia,
+    "segðu mér eitthvað um heiminn": _random_trivia,
 
     # Rudeness :)
     "þú sökkar": _rudeness,
@@ -647,7 +654,7 @@ _SPECIAL_QUERIES = {
         "answer": "Bara mjög góð. Takk fyrir að spyrja.",
     },
     "hvernig er sálarlífið": {
-        "answer": "Það er í toppstandi. Takk fyrir að spyrja."
+        "answer": "Það er í toppstandi hjá mér. Takk fyrir að spyrja."
     },
     "ertu reið": {
         "answer": "Ég er ekki fær um slíkar tilfinningar."

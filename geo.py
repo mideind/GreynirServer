@@ -171,6 +171,7 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
         "Egiftaland": "EG",
         "Malawi": "MW",
         "Norður-Noregur": "NO",
+        "Tæland": "TH",
     }
 }
 
