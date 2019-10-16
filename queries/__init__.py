@@ -149,8 +149,9 @@ def query_geocode_API_addr(addr):
 def strip_trailing_zeros(num_str):
     """ Strip trailing decimal zeros from an Icelandic-style
         float num string, e.g. "17,0" -> "17". """
-    return num_str.rstrip("0").rstrip(",")
-
+    if "," in num_str:
+        return num_str.rstrip("0").rstrip(",")
+    return num_str
 
 def format_icelandic_float(fp_num):
     """ Convert number to Icelandic decimal format. """

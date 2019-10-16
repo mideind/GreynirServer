@@ -102,6 +102,7 @@ _MOST_MENTIONED_PEOPLE_QUERIES = (
     "hverjir eru umtalaðastir",
     "um hverja er mest talað",
     "um hverja er mest skrifað",
+    "hverjir hafa verið áberandi í fjölmiðlum síðustu daga",
     # TODO: Expand this
 )
 
