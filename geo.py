@@ -111,8 +111,8 @@ ICE_REGIONS = frozenset(
     )
 )
 
-# ISO codes for country names that are not
-# included in Icelandic country name UN data
+# ISO codes for country names that are not part of the Icelandic-language
+# country name UN data included in the country_list package
 COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
     ICELANDIC_LANG_ISOCODE: {
         "Mjanmar": "MM",

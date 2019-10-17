@@ -45,7 +45,7 @@ def natlang_seq(words):
 
 def nom2dat(w):
     """ Look up dative form of a noun in BÍN, try
-        lowercase if capitalized form not found. """
+        lowercase if capitalized form is not found. """
     if w:
         b = BIN_Db()
         bin_res = b.lookup_dative(w, cat="no")
@@ -57,8 +57,8 @@ def nom2dat(w):
 
 
 def country_desc(cc):
-    """ Generate description string of being in a particular country
-        with correct preposition and case e.g. 'á Spáni'. """
+    """ Generate Icelandic description string of being in a particular country
+        with correct preposition and case e.g. 'á Spáni', 'í Þýskalandi' """
     cn = country_name_for_isocode(cc)
     prep = iceprep4cc(cc)
     return "{0} {1}".format(prep, nom2dat(cn))
@@ -152,6 +152,7 @@ def strip_trailing_zeros(num_str):
     if "," in num_str:
         return num_str.rstrip("0").rstrip(",")
     return num_str
+
 
 def format_icelandic_float(fp_num):
     """ Convert number to Icelandic decimal format. """

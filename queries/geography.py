@@ -26,6 +26,7 @@
 # TODO: "Hvað búa margir í/á [BORG/LAND]?" etc. Wiki api?
 
 from datetime import datetime, timedelta
+import logging
 from cityloc import capital_for_cc
 from queries import country_desc, nom2dat
 from reynir.bindb import BIN_Db
@@ -81,7 +82,9 @@ QGeoPreposition →
     "í" | "á"
 
 QGeoSubject/fall →
-    Nl/fall
+    Nl/fall 
+    # Hardcoded special case, otherwise identified as adj. "kostaríkur" :)
+    | "kostaríka"
 
 $score(+1) QGeoSubject/fall
 
@@ -122,6 +125,7 @@ def _capital_query(country, q):
     # Get country code
     cc = isocode_for_country_name(country)
     if not cc:
+        logging.warning("No CC for country {0}".format(country))
         return False
 
     # Find capital city, given the country code

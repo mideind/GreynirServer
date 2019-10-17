@@ -225,10 +225,10 @@ _SPECIAL_QUERIES = {
         "answer": "Þú, kæri notandi, ert að sjálfsögðu bestur."
     },
     "hver er ég": {
-        "answer": "Þú ert væntanlega manneskja sem talar íslensku."
+        "answer": "Þú ert væntanlega manneskja sem talar íslensku. Meira veit ég ekki."
     },
     "hvað er ég": {
-        "answer": "Þú ert væntanlega manneskja sem talar íslensku."
+        "answer": "Þú ert væntanlega manneskja sem talar íslensku. Meira veit ég ekki."
     },
     "er guð til": {
         "answer": "Þú ert minn eini guð, kæri notandi."
