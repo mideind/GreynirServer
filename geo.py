@@ -479,10 +479,7 @@ def parse_address_string(addrstr):
     return addr
 
 
-_I_SUFFIXES = (
-    "brekka", "ás", "holt", "tún", "tangi", "nes", "stræti",
-    "Lækjargata",
-)
+_I_SUFFIXES = ("brekka", "ás", "holt", "tún", "tangi", "nes", "stræti", "Lækjargata")
 
 
 def iceprep_for_street(street_name):

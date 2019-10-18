@@ -30,11 +30,11 @@
 
 """
 
+# TODO: Special days should be mentioned by name, not date, in voice answers
 # TODO: Fix pronunciation of ordinal day of month (i.e. "29di" vs "29da")
 # TODO: "How many weeks between April 3 and June 16?"
-# TODO: Find out the date and day of the week of holidays, e.g. "When is Easter?"
-#       or "When is Labour Day?"
-# TODO: "Hvað er langt í jólin?" "Hvað er langt til jóla" "Hvað er langt í áramótin"
+# TODO: Find out the date and day of the week of holidays, e.g. "Hvenær eru páskar?"
+# TODO: Restore timezone-awareness
 
 import json
 import logging
@@ -56,10 +56,13 @@ HANDLE_TREE = True
 GRAMMAR = """
 
 Query →
+    QDate
+
+QDate →
     QDateQuery '?'?
 
 QDateQuery →
-    QDateCurrent | QDateHowLongUntil
+    QDateCurrent | QDateHowLongUntil | QDateHowLongSince
 
 QDateCurrent →
     "hvað" "er" "dagsetningin" QDateNow?
@@ -83,29 +86,55 @@ QDateHowLongUntil →
     | "hversu" "langt" "er" "til" QDateItem
     | "hvað" "eru" "margir" "dagar" "í" QDateItem
     | "hvað" "eru" "margir" "dagar" "til" QDateItem
-    | "hvað" "eru" "margar" "vikur" "í" QDateItem
-    | "hvað" "eru" "margir" "mánuðir" "í" QDateItem
+    # | "hvað" "eru" "margar" "vikur" "í" QDateItem
+    # | "hvað" "eru" "margir" "mánuðir" "í" QDateItem
+
+QDateHowLongSince →
+    "hvað" "er" "langt" "síðan" QDateItem
+    | "hvað" "er" "langt" "um"? "liðið" "frá" QDateItem
+    | "hvað" "er" "langur" "tími" "liðinn" "frá" QDateItem
+    | "hvað" "eru" "margir" "dagar" "liðnir" "frá" QDateItem
+    | "hvað" "eru" "margir" "dagar" "liðnir" "síðan" QDateItem
+    | "hvað" "eru" "margir" "mánuðir" "liðnir" "frá" QDateItem
+    | "hvað" "eru" "margir" "mánuðir" "liðnir" "síðan" QDateItem
+    | "hvað" "eru" "margar" "vikur" "liðnar" "frá" QDateItem
+    | "hvað" "eru" "margar" "vikur" "liðnar" "síðan" QDateItem
 
 QDateItem →
+    QDateAbsOrRel | QDateSpecialDay
+
+QDateAbsOrRel →
     FöstDagsetning | AfstæðDagsetning
 
-# QDateChristmas →
-#     "jól"
+QDateSpecialDay →
+    QDateChristmas 
+    | QDateChristmasDay 
+    | QDateNewYearsEve
+    | QDateNewYearsDay
+    | QDateWorkersDay
+    | QDateEaster
 
-# QDateChristmas →
-#     "jóladagur"
+# TODO: Do this more intelligently
+QDateChristmas →
+    "jól" | "jólum" | "jóla" 
 
-# QDateNewYearsEve →
-#     "gamlárskvöld"
+QDateChristmasDay →
+    "jóladagur" | "jóladag" | "jóladegi" | "jóladags"
 
-# QDateNewYearsDay →
-#     "nýársdagur"
+QDateNewYearsEve →
+    "gamlárskvöld" | "gamlárskvöldi" | "gamlárskvölds"
+
+QDateNewYearsDay →
+    "nýársdagur" | "nýársdag" | "nýársdegi" | "nýársdags"
 
 # # Inject a healthy bit of socialism ;-)
-# QDateWorkersDay →
-#     "baráttudagur" "verkalýðsins"
+QDateWorkersDay →
+    "baráttudagur" "verkalýðsins" | "baráttudag" "verkalýðsins" | "baráttudegi" "verkalýðsins"
 
-$score(+35) QDateQuery
+QDateEaster →
+    "páskar" | "páska" | "páskum" | "páska" | "páskana" | "páskunum" | "páskanna"
+
+$score(+35) QDate
 
 """
 
@@ -119,15 +148,76 @@ def QDateCurrent(node, params, result):
 
 
 def QDateHowLongUntil(node, params, result):
-    result["howlong"] = True
+    result["until"] = True
 
 
-def QDateItem(node, params, result):
+def QDateHowLongSince(node, params, result):
+    result["since"] = True
+
+
+def QDateAbsOrRel(node, params, result):
     t = result.find_descendant(t_base="dagsafs")
+    if not t:
+        t = result.find_descendant(t_base="dagsföst")
     if t:
         d = terminal_date(t)
         if d:
             result["target"] = d
+    else:
+        print("No dagsafs in {0}".format(str(t)))
+
+
+def QDateChristmas(node, params, result):
+    result["target"] = datetime(
+        year=datetime.today().year, month=12, day=24, hour=0, minute=0, second=0
+    )
+
+
+def QDateChristmasDay(node, params, result):
+    result["target"] = datetime(
+        year=datetime.today().year, month=12, day=25, hour=0, minute=0, second=0
+    )
+
+
+def QDateNewYearsEve(node, params, result):
+    result["target"] = datetime(
+        year=datetime.today().year, month=12, day=31, hour=0, minute=0, second=0
+    )
+
+
+def QDateNewYearsDay(node, params, result):
+    result["target"] = datetime(
+        year=datetime.today().year + 1, month=1, day=1, hour=0, minute=0, second=0
+    )
+
+
+def QDateWorkersDay(node, params, result):
+    result["target"] = datetime(
+        year=datetime.today().year + 1, month=5, day=1, hour=0, minute=0, second=0
+    )
+
+def QDateEaster(node, params, result):
+    now = datetime.now()
+    e = calc_easter(now.year)
+    if e < now:
+        e = calc_easter(now.year + 1)
+    result["target"] = e
+
+
+def calc_easter(year):
+    """ An implementation of Butcher's Algorithm for determining the date of Easter 
+        for the Western church. Works for any date in the Gregorian calendar (1583 
+        and onward). Returns a datetime object. 
+        From http://code.activestate.com/recipes/576517-calculate-easter-western-given-a-year/ """
+    a = year % 19
+    b = year // 100
+    c = year % 100
+    d = (19 * a + b - b // 4 - ((b - (b + 8) // 25 + 1) // 3) + 15) % 30
+    e = (32 + 2 * (b % 4) + 2 * (c // 4) - d - (c % 4)) % 7
+    f = d + e - 7 * ((a + 11 * d + 22 * e) // 451) + 114
+    month = f // 31
+    day = f % 31 + 1    
+    return datetime(year=year, month=month, day=day, hour=0, minute=0, second=0)
 
 
 def terminal_date(t):
@@ -153,13 +243,7 @@ def terminal_date(t):
 def date_diff(d1, d2, unit="days"):
     delta = d2 - d1
     cnt = getattr(delta, unit)
-    return abs(cnt)
-
-
-# def _christmas():
-#     return datetime(
-#         year=datetime.today().year, month=12, day=24, hour=0, minute=0, second=0
-#     )
+    return cnt
 
 
 # _CHRISTMAS_QUERIES = {
@@ -181,6 +265,42 @@ def date_diff(d1, d2, unit="days"):
 # }
 
 
+def howlong_desc_answ(target):
+    now = datetime.now()
+    days = date_diff(now, target, unit="days")
+
+    # Diff. strings for singular vs. plural
+    sing = str(days).endswith("1")
+    verb = "er" if sing else "eru"
+    days_desc = "dagur" if sing else "dagar"
+
+    # Format date
+    fmt = "%-d. %B" if now.year == target.year else "%-d. %B %Y"
+    tfmt = target.strftime(fmt)
+
+    # Date asked about is current date
+    if days == 0:
+        return gen_answer("Það er {0} í dag.".format(tfmt))
+    elif days < 0:
+        # It's in the past
+        days = abs(days)
+        passed = "liðinn" if sing else "liðnir"
+        voice = "Það {0} {1} {2} {3} frá {4}.".format(
+            verb, days, days_desc, passed, tfmt
+        )
+        answer = "{0} {1}".format(days, days_desc)
+    else:
+        # It's in the future
+        voice = "Það {0} {1} {2} þar til {3} gengur í garð.".format(
+            verb, days, days_desc, tfmt
+        )
+        answer = "{0} {1}".format(days, days_desc)
+
+    response = dict(answer=answer)
+
+    return (response, answer, voice)
+
+
 def sentence(state, result):
     """ Called when sentence processing is complete """
     q = state["query"]
@@ -193,7 +313,7 @@ def sentence(state, result):
         with changedlocale(category="LC_TIME"):
             # Get timezone and date
             tz = timezone4loc(q.location, fallback="IS")
-            now = datetime.now(timezone(tz))
+            now = datetime.now()  # datetime.now(timezone(tz))
             qkey = None
 
             # Asking about current date
@@ -203,25 +323,14 @@ def sentence(state, result):
                 answer = date_str.capitalize()
                 response = dict(answer=answer)
                 qkey = "CurrentDate"
-            # Asking about length of period until a given date
-            elif "howlong" and "target" in result:
+            # Asking about length of period until/since a given date
+            elif ("until" in result or "since" in result) and "target" in result:
                 target = result.target
-                target.replace(tzinfo=timezone(tz))
-                days = date_diff(now, target, unit="hours")
-                # Date asked about is current date
-                if days == 0:
-                    (response, answer, voice) = gen_answer(
-                        "Það er {0} í dag.".format(target.strftime("%-d. %B"))
-                    )
-                else:
-                    fmt = "%-d. %B" if now.year == target.year else "%-d. %B %Y"
-                    tfmt = target.strftime(fmt)
-                    voice = "Það eru {0} dagar þar til {1} gengur í garð.".format(
-                        days, tfmt
-                    )
-                    answer = "{0} dagar".format(days)
-                    response = dict(answer=answer)
-                qkey = "FutureDate"
+                # target.replace(tzinfo=timezone(tz))
+
+                # Find the number of days until target date
+                (response, answer, voice) = howlong_desc_answ(target)
+                qkey = "FutureDate" if "until" in result else "SinceDate"
             else:
                 # Shouldn't be here
                 raise Exception("Unable to handle date query")
