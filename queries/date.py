@@ -106,17 +106,50 @@ QDateItem →
 QDateAbsOrRel →
     FöstDagsetning | AfstæðDagsetning
 
+# TODO: Order this by time of year
 QDateSpecialDay →
-    QDateChristmas 
+    QDateWhitsun
+    | QDateAscensionDay
+    | QDateAshDay
+    | QDateHalloween
+    | QDateIndependenceDay
+    | QDateFirstDayOfSummer
+    | QDateThorlaksmessa
+    | QDateChristmas 
     | QDateChristmasDay 
     | QDateNewYearsEve
     | QDateNewYearsDay
     | QDateWorkersDay
     | QDateEaster
+    | QDateNationalDay
+    | QDateBankHoliday
+    | QDateCultureNight
 
-# TODO: Do this more intelligently
+# FIXME: Do this more intelligently, use grammar!
+
+QDateWhitsun →
+    "hvítasunnudagur" | "hvítasunnudag" | "hvítasunnudegi" | "hvítasunnudags"
+
+QDateAscensionDay →
+    "uppstigningardagur" | "uppstigningardag" | "uppstigningardegi" | ""uppstigningardags"
+
+QDateAshDay →
+    "öskudagur" | "öskudag" | "öskudegi" | "öskudags"
+
+QDateHalloween →
+    "hrekkjavaka" | "hrekkjavöku"
+
+QDateIndependenceDay →
+    "fullveldisdagurinn" | "fullveldisdaginn" | "fullveldisdeginum"
+
+QDateFirstDayOfSummer →
+    "sumardagurinn" "fyrsti" | "sumardeginum" "fyrsta"
+
+QDateThorlaksmessa →
+    "þorláksmessa" | "þorláksmessu"
+
 QDateChristmas →
-    "jól" | "jólum" | "jóla" 
+    "jól" | "jólum" | "jóla" | "aðfangadagur" "jóla" | "aðfangadag" "jóla" | "aðfangadegi" "jóla"
 
 QDateChristmasDay →
     "jóladagur" | "jóladag" | "jóladegi" | "jóladags"
@@ -127,12 +160,23 @@ QDateNewYearsEve →
 QDateNewYearsDay →
     "nýársdagur" | "nýársdag" | "nýársdegi" | "nýársdags"
 
-# # Inject a healthy bit of socialism ;-)
 QDateWorkersDay →
     "baráttudagur" "verkalýðsins" | "baráttudag" "verkalýðsins" | "baráttudegi" "verkalýðsins"
 
+QDateEasterSunday →
+    "páskadagur" | "páskadag" | "páskadegi" | "páskadags"
+
 QDateEaster →
     "páskar" | "páska" | "páskum" | "páska" | "páskana" | "páskunum" | "páskanna"
+
+QDateNationalDay →
+    "þjóðhátíðardag" | "þjóðhátíðardegi" | "þjóðhátíðardags" | "þjóðhátíðardaginn" | "þjóðhátíðardeginum" | "þjóðhátíðardagsins"
+
+QDateBankHoliday →
+    "verslunarmannahelgi" | "verslunarmannahelgar"
+
+QDateCultureNight →
+    "menningarnótt" | "menningarnætur"
 
 $score(+35) QDate
 
