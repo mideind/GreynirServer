@@ -30,7 +30,7 @@ import os
 import re
 import logging
 
-from queries import gen_answer, query_geocode_API_coords, country_desc, nom2dat
+from queries import gen_answer, query_geocode_api_coords, country_desc, nom2dat
 from iceaddr import iceaddr_lookup
 from geo import iceprep_for_placename, iceprep_for_street
 
@@ -117,7 +117,7 @@ def _addr4voice(addr):
 
 def answer_for_location(loc):
     # Send API request
-    res = query_geocode_API_coords(loc[0], loc[1])
+    res = query_geocode_api_coords(loc[0], loc[1])
 
     # Verify that we have at least one valid result
     if (

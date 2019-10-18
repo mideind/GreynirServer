@@ -24,13 +24,15 @@
 """
 
 # TODO: This module should probably use grammar instead of regexes
+# TODO: Handle travel time queries such as "Hvað er ég lengi að ganga til X?",
+#       or "Hvað er ég lengi að keyra í Y?"
 
 import re
 import logging
 import math
 
 from reynir.bindb import BIN_Db
-from queries import gen_answer, query_geocode_API_addr
+from queries import gen_answer, query_geocode_api_addr
 from geo import distance
 
 
@@ -75,7 +77,7 @@ def answer_for_remote_loc(locname, query):
         return gen_answer("Ég veit ekki hvar þú ert.")
 
     loc_nf = _addr2nom(locname[0].upper() + locname[1:])
-    res = query_geocode_API_addr(loc_nf)
+    res = query_geocode_api_addr(loc_nf)
 
     # Verify sanity of API response
     if (

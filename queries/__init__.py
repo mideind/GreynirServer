@@ -115,7 +115,7 @@ def _get_API_key():
 _MAPS_API_COORDS_URL = "https://maps.googleapis.com/maps/api/geocode/json?latlng={0},{1}&key={2}&language=is&region=is"
 
 
-def query_geocode_API_coords(lat, lon):
+def query_geocode_api_coords(lat, lon):
     """ Look up coordinates in Google's geocode API. """
     # Load API key
     key = _get_API_key()
@@ -132,7 +132,7 @@ def query_geocode_API_coords(lat, lon):
 _MAPS_API_ADDR_URL = "https://maps.googleapis.com/maps/api/geocode/json?address={0}&key={1}&language=is&region=is"
 
 
-def query_geocode_API_addr(addr):
+def query_geocode_api_addr(addr):
     """ Look up address in Google's geocode API. """
     # Load API key
     key = _get_API_key()
@@ -143,6 +143,31 @@ def query_geocode_API_addr(addr):
 
     # Send API request
     url = _MAPS_API_ADDR_URL.format(addr, key)
+    return query_json_api(url)
+
+
+_MAPS_API_DISTANCE_URL = "https://maps.googleapis.com/maps/api/distancematrix/json?units=metric&origins={0}&destinations={1}&mode={2}&key={3}&language=is&region=is"
+
+
+def query_traveltime_api(startloc, endloc, mode="walking"):
+    """ Look up travel time between two places, given a particular mode
+        of transportation, e.g. "walking", "driving, "bicycling", "transit".
+        The location arguments can be names, to be resolved by the API, or
+        a tuple of coordinates, e.g. (64.156742, -21.949426)
+        Uses Google Maps' Distance Matrix API. For details, see:
+        https://developers.google.com/maps/documentation/distance-matrix/intro """
+    # Load API key
+    key = _get_API_key()
+    if not key:
+        # No key, can't query the API
+        logging.warning("No API key for travel time lookup")
+        return None
+
+    p1 = "{0},{1}".format(*startloc) if type(startloc) is tuple else startloc
+    p2 = "{0},{1}".format(*endloc) if type(endloc) is tuple else endloc
+
+    # Send API request
+    url = _MAPS_API_DISTANCE_URL.format(p1, p2, mode, key)
     return query_json_api(url)
 
 

@@ -323,7 +323,7 @@ def sentence(state, result):
                 answer = date_str.capitalize()
                 response = dict(answer=answer)
                 qkey = "CurrentDate"
-            # Asking about length of period until/since a given date
+            # Asking about period until/since a given date
             elif ("until" in result or "since" in result) and "target" in result:
                 target = result.target
                 # target.replace(tzinfo=timezone(tz))
