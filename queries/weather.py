@@ -98,6 +98,19 @@ QWeatherTemperature →
     | "hvað" "er" "hlýtt" QWeatherAnyLoc? QWeatherNow
     | "hvað" "er" "margra" "stiga" "hiti" QWeatherAnyLoc? QWeatherNow?
 
+QWeatherUmbrella →
+    "þarf" QWeatherOne "regnhlíf" QWeatherNow
+    | "væri" "regnhlíf" "gagnleg" QWeatherForMe? QWeatherNow
+    | "væri" "gagn" "af" "regnhlíf" QWeatherForMe? QWeatherNow
+    | "kæmi" "regnhlíf" "að" "gagni" QWeatherForMe? QWeatherNow
+    | "myndi" "regnhlíf" "gagnast" "mér" QWeatherNow
+
+QWeatherOne →
+    "ég" | "maður"
+
+QWeatherForMe →
+    "fyrir" "mig"
+
 QWeatherNow →
     "úti"? "í" "dag" | "úti"? "núna" | "úti"
 
@@ -280,7 +293,7 @@ def get_currweather_answer(query, result):
     res = _curr_observations(query, result)
     if not res:
         return gen_answer(_API_ERRMSG)
-    
+
     try:
         temp = int(round(float(res["T"])))  # Round to nearest whole number
         desc = res["W"].lower()
@@ -378,6 +391,12 @@ def get_forecast_answer(query, result):
     return response, answer, voice
 
 
+def get_umbrella_answer(query, result):
+    """ Handle a query concerning whether an umbrella is needed 
+        for current weather conditions. """
+    return None
+
+
 def QWeather(node, params, result):
     result.qtype = _WEATHER_QTYPE
 
@@ -413,10 +432,15 @@ def QWeatherTemperature(node, params, result):
     result.qkey = "CurrentTemperature"
 
 
+def QWeatherUmbrella(node, params, result):
+    result.qkey = "Umbrella"
+
+
 _HANDLERS = {
     "CurrentTemperature": get_currtemp_answer,
     "CurrentWeather": get_currweather_answer,
     "WeatherForecast": get_forecast_answer,
+    "Umbrella": get_umbrella_answer,
 }
 
 

@@ -114,6 +114,7 @@ def _clean_answer(answer):
     a = re.sub(r"\([^)]+\)", "", a)
     # Normalize whitespace
     a = re.sub(r"\s+", " ", a)
+    a = re.sub(r"\s\.$", ".", a)
     return a
 
 
