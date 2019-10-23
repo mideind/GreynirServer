@@ -197,8 +197,8 @@ _WHERE_AM_I_QUERIES = frozenset(
 _POSTCODE_QUERIES = frozenset(
     (
         "í hvaða póstnúmeri er ég",
-        "í hvaða póstnúmer er ég staddur",
-        "í hvaða póstnúmer er ég stödd",
+        "í hvaða póstnúmeri er ég staddur",
+        "í hvaða póstnúmeri er ég stödd",
         "hvaða póstnúmeri er ég í",
         "hvaða póstnúmeri er ég staddur í",
         "hvaða póstnúmeri er ég stödd í",

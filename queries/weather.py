@@ -84,7 +84,7 @@ QWeatherForecast →
     | "hverjar" "eru" "veður" "horfurnar" QWeatherLocation? QWeatherNextDays?
     | "hvers" "konar" "veðri" "er" "spáð" QWeatherLocation? QWeatherNextDays?
     | "hverskonar" "veðri" "er" "spáð" QWeatherLocation? QWeatherNextDays?
-
+    | "hvers" "kyns" "veðri" "er" "spáð" QWeatherLocation? QWeatherNextDays?
 
 QWeatherTemperature →
     "hvert" "er" "hitastigið" QWeatherAnyLoc? QWeatherNow?

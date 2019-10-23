@@ -266,7 +266,7 @@ def calc_easter(year):
 
 def terminal_date(t):
     """ Extract array of date values from terminal token's auxiliary info,
-        which is attached as a json-encoded array. Return datetime object. """
+        which is attached as a json-encoded array. Returns datetime object. """
     if t and t._node.aux:
         aux = json.loads(t._node.aux)
         if not isinstance(aux, list) or len(aux) < 3:

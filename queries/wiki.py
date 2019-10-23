@@ -112,9 +112,11 @@ def _clean_answer(answer):
         a = ". ".join(a.split(".")[1:])
     # Remove text within parentheses
     a = re.sub(r"\([^)]+\)", "", a)
-    # Normalize whitespace
+    # Fix any whitespace formatting issues created by
+    # removing text within parentheses
     a = re.sub(r"\s+", " ", a)
     a = re.sub(r"\s\.$", ".", a)
+    a = re.sub(r"\s,\s.", ", ", a)
     return a
 
 

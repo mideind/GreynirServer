@@ -73,7 +73,7 @@ _TELEPHONE_QTYPE = "Telephone"
 # TODO: This should be moved over to grammar at some point, too many manually defined, 
 # almost identical commands. But at the moment, the grammar has poor support for phone 
 # numbers, especially  when the numbers are coming out of a speech recognition engine 
-# This module should also be able to handle natural language number words
+# This module should also be able to handle natural language number words.
 _PHONECALL_REGEXES = frozenset(
     (
         r"(hringdu í )([\d|\-|\s]+)$",
