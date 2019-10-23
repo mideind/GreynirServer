@@ -202,7 +202,7 @@ def test_query_api(client):
     json = validate_json(resp)
     assert json["qtype"] == "Weather"
     assert "answer" in json
-    assert re.search(r"^\d+°$", json["answer"])
+    assert re.search(r"^\-?\d+°$", json["answer"])
 
     # Geography module
     resp = client.get("/query.api?q=Hver er höfuðborg Spánar?")
@@ -246,6 +246,14 @@ def test_query_api(client):
     assert json["q"].endswith("6992422")
 
     resp = client.get("/query.api?q=hringdu fyrir mig í númerið 69 92 42 2")
+    json = validate_json(resp)
+    assert json["qtype"] == "Telephone"
+    assert "answer" in json
+    assert "open_url" in json
+    assert json["open_url"] == "tel:6992422"
+    assert json["q"].endswith("6992422")
+
+    resp = client.get("/query.api?q=vinsamlegast hringdu í 699-2422")
     json = validate_json(resp)
     assert json["qtype"] == "Telephone"
     assert "answer" in json
