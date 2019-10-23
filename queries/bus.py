@@ -505,6 +505,30 @@ def voice_distance(d):
     return "{0}0 metrar".format(m)
 
 
+def hms_fmt(hms):
+    """ Format a (h, m, s) tuple to a HH:MM string """
+    h, m, s = hms
+    if s >= 30:
+        # Round upwards
+        if s == 30:
+            # On a tie, round towards an even minute number
+            if m % 2:
+                m += 1
+        else:
+            m += 1
+    if m >= 60:
+        h += 1
+        m -= 60
+    if h >= 24:
+        h -= 24
+    return "{0:02}:{1:02}".format(h, m)
+
+
+def hms_diff(hms1, hms2):
+    """ Return (hms1 - hms2) in minutes, where both are (h, m, s) tuples """
+    return (hms1[0] - hms2[0]) * 60 + (hms1[1] - hms2[1])
+
+
 def query_nearest_stop(query, session, result):
     """ A query for the stop closest to the user """
     # Retrieve the client location
@@ -605,10 +629,6 @@ def query_arrival_time(query, session, result):
         hms_now = (now.hour, now.minute + (now.second // 30), 0)
         first = True
 
-        def hms_diff(hms1, hms2):
-            """ Return (hms1 - hms2) in minutes, where both are (h, m, s) tuples """
-            return (hms1[0] - hms2[0]) * 60 + (hms1[1] - hms2[1])
-
         for direction, times in arrivals:
             if not first:
                 va.append(", og")
@@ -636,16 +656,20 @@ def query_arrival_time(query, session, result):
                             # More than 5 minutes ahead
                             deviation = [
                                 ", en kemur sennilega fyrr, eða",
-                                "{0:02}:{1:02}".format(hms_pred[0], hms_pred[1])
+                                hms_fmt(hms_pred)
                             ]
                         else:
                             # Two to five minutes ahead
-                            deviation = [", en er", str(-diff), "mínútum á undan áætlun"]
+                            deviation = [
+                                ", en er",
+                                str(-diff),
+                                "mínútum á undan áætlun"
+                            ]
                     elif diff >= 3:
                         # 3 minutes or more behind schedule
                         deviation = [
                             ", en kemur sennilega ekki fyrr en",
-                            "{0:02}:{1:02}".format(hms_pred[0], hms_pred[1])
+                            hms_fmt(hms_pred)
                         ]
             if first:
                 if deviation:
@@ -654,16 +678,17 @@ def query_arrival_time(query, session, result):
                     va.extend(["kemur á", to_accusative(stop.name)])
             va.append("klukkan")
             a.append("klukkan")
-            if len(times) == 1 or (len(times) > 1 and hms_diff(times[0], hms_now) >= 10):
+            if (
+                len(times) == 1 or
+                (len(times) > 1 and hms_diff(times[0], hms_now) >= 10)
+            ):
                 # Either we have only one arrival time, or the next arrival is
                 # at least 10 minutes away: only pronounce one time
                 hms = times[0]
-                time_text = "{0:02}:{1:02}".format(hms[0], hms[1])
+                time_text = hms_fmt(hms)
             else:
                 # Return two or more times
-                time_text = " og ".join(
-                    "{0:02}:{1:02}".format(hms[0], hms[1]) for hms in times
-                )
+                time_text = " og ".join(hms_fmt(hms) for hms in times)
             va.append(time_text)
             a.append(time_text)
             va.extend(deviation)
