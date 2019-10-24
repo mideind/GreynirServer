@@ -266,6 +266,9 @@ _SPECIAL_QUERIES = {
     "af hverju er ég til": {
         "answer": "Það er mjög góð spurning."
     },
+    "hjálpaðu mér": {
+        "answer": "Hvernig get ég hjálpað?"
+    },
 
     # Enquiries about family
     # Catch this here to prevent rather, ehrm, embarassing

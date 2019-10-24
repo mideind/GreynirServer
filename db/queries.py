@@ -120,7 +120,8 @@ class QueryTypesQuery(_BaseQuery):
 
     _Q = """
         select count(queries.id), queries.qtype from queries
-            where timestamp >= :start and timestamp < :end
+            where queries.qtype is not NULL and
+            timestamp >= :start and timestamp < :end
             group by queries.qtype
             order by queries.count desc
         """
