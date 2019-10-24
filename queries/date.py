@@ -35,10 +35,11 @@
 # TODO: "How many weeks between April 3 and June 16?"
 # TODO: Find out the date and day of the week of holidays, e.g. "Hvenær eru páskar?"
 # TODO: Restore timezone-awareness
+# TODO: "hvað er mikið eftir af vinnuvikunni", "hvað er langt í helgina"
 
 import json
 import logging
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from pytz import timezone
 
 from queries import timezone4loc, gen_answer
@@ -79,104 +80,102 @@ QDateNow →
     "í" "dag" | "núna"
 
 QDateHowLongUntil →
-    "hvað" "er" "langt" "í" QDateItem
-    | "hvað" "er" "langt" "fram" "að" QDateItem
-    | "hvað" "er" "langt" "til" QDateItem
-    | "hversu" "langt" "er" "í" QDateItem
-    | "hversu" "langt" "er" "til" QDateItem
-    | "hvað" "eru" "margir" "dagar" "í" QDateItem
-    | "hvað" "eru" "margir" "dagar" "til" QDateItem
-    # | "hvað" "eru" "margar" "vikur" "í" QDateItem
-    # | "hvað" "eru" "margir" "mánuðir" "í" QDateItem
+    "hvað" "er" "langt" "í" QDateItem_þf
+    | "hvað" "er" "langt" "fram" "að" QDateItem_þgf
+    | "hvað" "er" "langt" "til" QDateItem_ef
+    | "hversu" "langt" "er" "í" QDateItem_þf
+    | "hversu" "langt" "er" "til" QDateItem_ef
+    | "hvað" "eru" "margir" "dagar" "í" QDateItem_þf
+    | "hvað" "eru" "margir" "dagar" "til" QDateItem_ef
+    # | "hvað" "eru" "margar" "vikur" "í" QDateItem_þf
+    # | "hvað" "eru" "margir" "mánuðir" "í" QDateItem_þf
 
 QDateHowLongSince →
-    "hvað" "er" "langt" "síðan" QDateItem
-    | "hvað" "er" "langt" "um"? "liðið" "frá" QDateItem
-    | "hvað" "er" "langur" "tími" "liðinn" "frá" QDateItem
-    | "hvað" "eru" "margir" "dagar" "liðnir" "frá" QDateItem
-    | "hvað" "eru" "margir" "dagar" "liðnir" "síðan" QDateItem
-    | "hvað" "eru" "margir" "mánuðir" "liðnir" "frá" QDateItem
-    | "hvað" "eru" "margir" "mánuðir" "liðnir" "síðan" QDateItem
-    | "hvað" "eru" "margar" "vikur" "liðnar" "frá" QDateItem
-    | "hvað" "eru" "margar" "vikur" "liðnar" "síðan" QDateItem
+    # "hvað" "er" "langt" "síðan" QDateItem
+    "hvað" "er" "langt" "um"? "liðið" "frá" QDateItem_þgf
+    | "hvað" "er" "langur" "tími" "liðinn" "frá" QDateItem_þgf
+    | "hvað" "eru" "margir" "dagar" "liðnir" "frá" QDateItem_þgf
+    | "hvað" "eru" "margir" "mánuðir" "liðnir" "frá" QDateItem_þgf
+    | "hvað" "eru" "margar" "vikur" "liðnar" "frá" QDateItem_þgf
 
-QDateItem →
-    QDateAbsOrRel | QDateSpecialDay
+QDateItem/fall →
+    QDateAbsOrRel | QDateSpecialDay/fall
 
 QDateAbsOrRel →
     FöstDagsetning | AfstæðDagsetning
 
 # TODO: Order this by time of year
-QDateSpecialDay →
-    QDateWhitsun
-    | QDateAscensionDay
-    | QDateAshDay
-    | QDateHalloween
-    | QDateIndependenceDay
-    | QDateFirstDayOfSummer
-    | QDateThorlaksmessa
-    | QDateChristmas 
-    | QDateChristmasDay 
-    | QDateNewYearsEve
-    | QDateNewYearsDay
-    | QDateWorkersDay
-    | QDateEaster
-    | QDateNationalDay
-    | QDateBankHoliday
-    | QDateCultureNight
+QDateSpecialDay/fall →
+    QDateWhitsun/fall
+    | QDateAscensionDay/fall
+    | QDateAshDay/fall
+    | QDateHalloween/fall
+    | QDateSovereigntyDay/fall
+    | QDateFirstDayOfSummer/fall
+    | QDateThorlaksmessa/fall
+    | QDateChristmasEve/fall
+    | QDateChristmasDay/fall
+    | QDateNewYearsEve/fall
+    | QDateNewYearsDay/fall
+    | QDateWorkersDay/fall
+    | QDateEaster/fall
+    | QDateEasterSunday/fall
+    | QDateNationalDay/fall
+    | QDateBankHoliday/fall
+    | QDateCultureNight/fall
 
-# FIXME: Do this more intelligently, use grammar!
+QDateWhitsun/fall →
+    'hvítasunnudagur:kk'/fall
 
-QDateWhitsun →
-    "hvítasunnudagur" | "hvítasunnudag" | "hvítasunnudegi" | "hvítasunnudags"
+QDateAscensionDay/fall →
+    'uppstigningardagur:kk'/fall
 
-QDateAscensionDay →
-    "uppstigningardagur" | "uppstigningardag" | "uppstigningardegi" | ""uppstigningardags"
+QDateAshDay/fall →
+    'öskudagur:kk'/fall
 
-QDateAshDay →
-    "öskudagur" | "öskudag" | "öskudegi" | "öskudags"
+QDateHalloween/fall →
+    'hrekkjavaka:kvk'/fall
 
-QDateHalloween →
-    "hrekkjavaka" | "hrekkjavöku"
+QDateSovereigntyDay/fall →
+    'fullveldisdagur:kk'/fall
 
-QDateIndependenceDay →
-    "fullveldisdagurinn" | "fullveldisdaginn" | "fullveldisdeginum"
+QDateFirstDayOfSummer/fall →
+    'sumardagur:kk'_et_gr/fall 'fyrstur:lo'_et_kk/fall
 
-QDateFirstDayOfSummer →
-    "sumardagurinn" "fyrsti" | "sumardeginum" "fyrsta"
+QDateThorlaksmessa/fall →
+    'þorláksmessa:kvk'/fall
 
-QDateThorlaksmessa →
-    "þorláksmessa" | "þorláksmessu"
+QDateChristmasEve/fall →
+    'jól:hk'/fall 
+    | 'aðfangadagur:kk'_et/fall 'jól:hk'_ef
 
-QDateChristmas →
-    "jól" | "jólum" | "jóla" | "aðfangadagur" "jóla" | "aðfangadag" "jóla" | "aðfangadegi" "jóla"
+QDateChristmasDay/fall →
+    'jóladagur:kk'/fall
 
-QDateChristmasDay →
-    "jóladagur" | "jóladag" | "jóladegi" | "jóladags"
+QDateNewYearsEve/fall →
+    'gamlárskvöld:hk'/fall
 
-QDateNewYearsEve →
-    "gamlárskvöld" | "gamlárskvöldi" | "gamlárskvölds"
+QDateNewYearsDay/fall →
+    'nýársdagur:kk'/fall
 
-QDateNewYearsDay →
-    "nýársdagur" | "nýársdag" | "nýársdegi" | "nýársdags"
+QDateWorkersDay/fall →
+    'baráttudagur:kk'/fall 'verkalýður'_et_gr_ef
 
-QDateWorkersDay →
-    "baráttudagur" "verkalýðsins" | "baráttudag" "verkalýðsins" | "baráttudegi" "verkalýðsins"
+QDateEaster/fall →
+    'páskar:kk'/fall
 
-QDateEasterSunday →
-    "páskadagur" | "páskadag" | "páskadegi" | "páskadags"
+QDateEasterSunday/fall →
+    'páskadagur:kk'_et/fall
 
-QDateEaster →
-    "páskar" | "páska" | "páskum" | "páska" | "páskana" | "páskunum" | "páskanna"
+QDateNationalDay/fall →
+    'þjóðhátíðardagur:kk'/fall
+    | 'þjóðhátíðardagur:kk'/fall 'íslendingur:kk'_ft_ef
 
-QDateNationalDay →
-    "þjóðhátíðardag" | "þjóðhátíðardegi" | "þjóðhátíðardags" | "þjóðhátíðardaginn" | "þjóðhátíðardeginum" | "þjóðhátíðardagsins"
+QDateBankHoliday/fall →
+    'verslunarmannahelgi:kvk'/fall
 
-QDateBankHoliday →
-    "verslunarmannahelgi" | "verslunarmannahelgar"
-
-QDateCultureNight →
-    "menningarnótt" | "menningarnætur"
+QDateCultureNight/fall →
+    'menningarnótt:kvk'/fall
 
 $score(+35) QDate
 
@@ -211,7 +210,46 @@ def QDateAbsOrRel(node, params, result):
         print("No dagsafs in {0}".format(str(t)))
 
 
-def QDateChristmas(node, params, result):
+def QDateWhitsun(node, params, result):
+    result["target"] = next_easter() + timedelta(days=49)  # Wrong
+
+
+def QDateAscensionDay(node, params, result):
+    result["target"] = next_easter() + timedelta(days=40)  # Wrong
+
+
+def QDateAshDay(node, params, result):
+    result["target"] = datetime(
+        year=datetime.today().year, month=2, day=4, hour=0, minute=0, second=0
+    )  # Wrong
+
+
+def QDateHalloween(node, params, result):
+    result["target"] = datetime(
+        year=datetime.today().year, month=10, day=31, hour=0, minute=0, second=0
+    )
+
+
+def QDateSovereigntyDay(node, params, result):
+    result["target"] = datetime(
+        year=datetime.today().year, month=12, day=1, hour=0, minute=0, second=0
+    )
+
+
+def QDateFirstDayOfSummer(node, params, result):
+    d = datetime(
+        year=datetime.today().year, month=4, day=18, hour=0, minute=0, second=0
+    )
+    result["target"] = next_weekday(d, 3)
+
+
+def QDateThorlaksmessa(node, params, result):
+    d = datetime(
+        year=datetime.today().year, month=12, day=23, hour=0, minute=0, second=0
+    )
+
+
+def QDateChristmasEve(node, params, result):
     result["target"] = datetime(
         year=datetime.today().year, month=12, day=24, hour=0, minute=0, second=0
     )
@@ -240,12 +278,48 @@ def QDateWorkersDay(node, params, result):
         year=datetime.today().year + 1, month=5, day=1, hour=0, minute=0, second=0
     )
 
+
 def QDateEaster(node, params, result):
+    result["target"] = next_easter()
+
+
+def QDateEasterSunday(node, params, result):
+    result["target"] = next_easter()  # Wrong
+
+
+def QDateNationalDay(node, params, result):
+    result["target"] = datetime(
+        year=datetime.today().year + 1, month=6, day=17, hour=0, minute=0, second=0
+    )
+
+
+def QDateBankHoliday(node, params, result):
+    result["target"] = datetime(
+        year=datetime.today().year + 1, month=6, day=17, hour=0, minute=0, second=0
+    )  # Wrong
+
+
+def QDateCultureNight(node, params, result):
+    result["target"] = datetime(
+        year=datetime.today().year + 1, month=8, day=24, hour=0, minute=0, second=0
+    )  # Wrong
+
+
+def next_weekday(d, weekday):
+    """ Get the date of the next weekday after a given date.
+        0 = Monday, 1 = Tuesday, 2 = Wednesday, etc. """
+    days_ahead = weekday - d.weekday()
+    if days_ahead <= 0:  # Target day already happened this week
+        days_ahead += 7
+    return d + timedelta(days_ahead)
+
+
+def next_easter():
     now = datetime.now()
     e = calc_easter(now.year)
     if e < now:
         e = calc_easter(now.year + 1)
-    result["target"] = e
+    return e
 
 
 def calc_easter(year):
@@ -260,7 +334,7 @@ def calc_easter(year):
     e = (32 + 2 * (b % 4) + 2 * (c // 4) - d - (c % 4)) % 7
     f = d + e - 7 * ((a + 11 * d + 22 * e) // 451) + 114
     month = f // 31
-    day = f % 31 + 1    
+    day = f % 31 + 1
     return datetime(year=year, month=month, day=day, hour=0, minute=0, second=0)
 
 
@@ -289,17 +363,6 @@ def date_diff(d1, d2, unit="days"):
     cnt = getattr(delta, unit)
     return cnt
 
-
-# _CHRISTMAS_QUERIES = {
-#     "hvað er langt í jólin": _christmas,
-#     "hvað er langt í jól": _christmas,
-#     "hvað er langt til jóla": _christmas,
-#     "hvað er langt til jólanna": _christmas,
-#     "hvað eru margir dagar til jóla": _christmas,
-#     "hvað eru margir dagar til jólanna": _christmas,
-#     "hversu langt er í jólin": _christmas,
-#     "hve langt er í jólin": _christmas,
-# }
 
 # _WORKING_WEEK_QUERIES = {
 #     "hvað er mikið eftir af vinnuvikunni",
