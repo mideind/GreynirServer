@@ -29,6 +29,8 @@
 
 """
 
+# TODO: "Í hvaða tímabelti er ég?"
+
 from datetime import datetime
 from pytz import country_timezones, timezone
 from reynir.bindb import BIN_Db
@@ -51,14 +53,6 @@ _TIME_QUERIES = frozenset(
         "hvað líður tímanum",
     )
 )
-
-
-# _TIMEZONE_QUERIES = frozenset((
-#     "í hvaða tímabelti er ég",
-#     "í hvaða tímabelti er ég staddur",
-#     "hvaða tímabelti er ég í",
-#     "hvaða tímabelti er ég á",
-# ))
 
 
 def handle_plain_text(q):

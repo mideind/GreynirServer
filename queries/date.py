@@ -63,7 +63,7 @@ QDate →
     QDateQuery '?'?
 
 QDateQuery →
-    QDateCurrent | QDateHowLongUntil | QDateHowLongSince
+    QDateCurrent | QDateHowLongUntil | QDateHowLongSince | QDateWhenIs
 
 QDateCurrent →
     "hvað" "er" "dagsetningin" QDateNow?
@@ -97,6 +97,10 @@ QDateHowLongSince →
     | "hvað" "eru" "margir" "dagar" "liðnir" "frá" QDateItem_þgf
     | "hvað" "eru" "margir" "mánuðir" "liðnir" "frá" QDateItem_þgf
     | "hvað" "eru" "margar" "vikur" "liðnar" "frá" QDateItem_þgf
+
+QDateWhenIs →
+    "hvenær" "er" QDateSpecialDay_nf
+    | "hvenær" "eru" QDateSpecialDay_nf
 
 QDateItem/fall →
     QDateAbsOrRel | QDateSpecialDay/fall
@@ -196,6 +200,10 @@ def QDateHowLongUntil(node, params, result):
 
 def QDateHowLongSince(node, params, result):
     result["since"] = True
+
+
+def QDateWhenIs(node, params, result):
+    result["when"] = True
 
 
 def QDateAbsOrRel(node, params, result):
@@ -438,6 +446,10 @@ def sentence(state, result):
                 # Find the number of days until target date
                 (response, answer, voice) = howlong_desc_answ(target)
                 qkey = "FutureDate" if "until" in result else "SinceDate"
+            elif "when" in result and "target" in result:
+                # TODO: Fix this.
+                date_str = result.target.strftime("%A %-d. %B")
+                (response, answer, voice) = gen_answer(date_str)
             else:
                 # Shouldn't be here
                 raise Exception("Unable to handle date query")

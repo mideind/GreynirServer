@@ -163,6 +163,30 @@ def test_query_api(client):
     assert "answer" in json
     assert json["answer"].endswith(datetime.now().strftime("%Y"))
 
+    resp = client.get("/query.api?q=Hvað eru margir dagar til jóla?")
+    json = validate_json(resp)
+    assert json["qtype"] == "Date"
+    assert "answer" in json
+    assert re.search(r"^\d+", json["answer"])
+
+    resp = client.get("/query.api?q=Hvað er langt fram að verslunarmannahelgi")
+    json = validate_json(resp)
+    assert json["qtype"] == "Date"
+    assert "answer" in json
+    assert re.search(r"^\d+", json["answer"])
+
+    resp = client.get("/query.api?q=hvað er langt liðið frá uppstigningardegi")
+    json = validate_json(resp)
+    assert json["qtype"] == "Date"
+    assert "answer" in json
+    assert re.search(r"^\d+", json["answer"])
+
+    resp = client.get("/query.api?q=hvenær eru jólin")
+    json = validate_json(resp)
+    assert json["qtype"] == "Date"
+    assert "answer" in json
+    assert re.search(r"24", json["answer"])
+
     # Arithmetic module
     ARITHM_QUERIES = {
         "hvað er fimm sinnum tólf": "60",
