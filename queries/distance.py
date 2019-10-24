@@ -39,6 +39,7 @@ from geo import distance
 _DISTANCE_QTYPE = "Distance"
 
 
+# TODO: This may grab queries of the form "Hvað er langt í jólin"!
 _QREGEXES = (
     r"^hvað er ég langt frá (.+)$",
     r"^hvað er ég langt í burtu frá (.+)$",
@@ -95,10 +96,10 @@ def answer_for_remote_loc(locname, query):
 
     # Calculate distance, round it intelligently and format num string
     km_dist = distance(query.location, loc)
-    km_dist = round(km_dist, 1 if km_dist < 10 else 0)
 
     # E.g. 7,3 kílómetra
     if km_dist >= 1.0:
+        km_dist = round(km_dist, 1 if km_dist < 10 else 0)
         dist = str(km_dist).replace(".", ",")
         dist = re.sub(r",0$", "", dist)
         unit = "kílómetra"
