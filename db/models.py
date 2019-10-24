@@ -586,7 +586,7 @@ class Query(Base):
 
     # Interpretations
     # JSON array containing list of possible interpretations
-    # provided by a speech to text engine.
+    # provided by a speech-to-text engine.
     interpretations = Column(JSONB, nullable=True)
 
     # Question

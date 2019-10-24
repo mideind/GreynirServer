@@ -117,6 +117,11 @@ def answer_for_remote_loc(locname, query):
 
     query.set_key(loc_nf)
 
+    # Beautify by capitalizing remote loc name
+    uc = locname.title()
+    bq = query.beautified_query.replace(locname, uc)
+    query.set_beautified_query(bq)
+
     return response, answer, voice
 
 
