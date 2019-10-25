@@ -194,16 +194,16 @@ _WHERE_AM_I_QUERIES = frozenset(
     )
 )
 
-_POSTCODE_QUERIES = frozenset(
-    (
-        "í hvaða póstnúmeri er ég",
-        "í hvaða póstnúmeri er ég staddur",
-        "í hvaða póstnúmeri er ég stödd",
-        "hvaða póstnúmeri er ég í",
-        "hvaða póstnúmeri er ég staddur í",
-        "hvaða póstnúmeri er ég stödd í",
-    )
-)
+# _POSTCODE_QUERIES = frozenset(
+#     (
+#         "í hvaða póstnúmeri er ég",
+#         "í hvaða póstnúmeri er ég staddur",
+#         "í hvaða póstnúmeri er ég stödd",
+#         "hvaða póstnúmeri er ég í",
+#         "hvaða póstnúmeri er ég staddur í",
+#         "hvaða póstnúmeri er ég stödd í",
+#     )
+# )
 
 _LOC_QTYPE = "Location"
 

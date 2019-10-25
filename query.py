@@ -700,7 +700,7 @@ def process_query(
             # This is a single string
             it = [q]
         else:
-            # This should be an iterable of strings,
+            # This should be an array of strings,
             # in decreasing priority order
             it = q
         # Iterate through the submitted query strings,

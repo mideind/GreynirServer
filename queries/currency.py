@@ -79,8 +79,23 @@ Query →
 QCurrency →
     QCurrencyQuery '?'?
 
-# By convention, names of nonterminals in query grammars should
-# start with an uppercase Q
+$score(+35) QCurrency
+
+QCurrencyQuery →
+    # "Hver er gengisvísitalan?"
+    "hver" "er" QCurCurrencyIndex_nf '?'?
+    
+    # "Hvert/hvað/hvernig er gengi X?"
+    | QCurAnyPrefix QCurGeneralRate '?'?
+
+    # "Hvert/hvað/hvernig er gengi X gagnvart Y?"
+    | QCurAnyPrefix QCurExchangeRate '?'?
+
+    # "Hvað eru NUM X margir/margar/mörg Y?"
+    # | QCurGenericPrefix QCurAmountConversion '?'?
+
+    # "Hvað fæ ég marga/margar/mörg X fyrir NUM Y?"
+    # |
 
 QCurGenericPrefix → "hvað" "er" | "hvað" "eru" | "hvernig" "er" | 0
 QCurSpecificPrefix → "hvert" "er" | "hvernig" "er" | 0
@@ -94,50 +109,34 @@ QCurUnit/fall →
 
 QCurISK/fall →
     'króna:kvk'/fall
-    | 'króna:kvk'_gr/fall
     | 'íslenskur:lo'_kvk/fall 'króna:kvk'/fall 
-    | 'íslenskur:lo'_kvk/fall 'króna:kvk'_gr/fall 
 
 QCurUSD/fall →
     'Bandaríkjadalur:kk'/fall 
-    | 'Bandaríkjadalur:kk'_gr/fall 
     | 'Bandaríkjadollari:kk'/fall
-    | 'Bandaríkjadollari:kk'_gr/fall
     | 'dollari:kk'/fall
-    | 'dollari:kk'_gr/fall
+    | 'bandarískur:lo'_kk/fall 'dollari:kk'/fall
 
 QCurEUR/fall →
     'evra:kvk'/fall
-    | 'evra:kvk'_gr/fall
-    | 'evrópumynt:kvk'/fall
-    | 'evrópumynt:kvk'_gr/fall
 
 QCurGBP/fall →
     'pund:hk'/fall 
-    | 'pund:hk'_gr/fall
     | 'breskur:lo'_hk/fall 'pund:hk'/fall 
-    | 'breskur:lo'_hk/fall 'pund:hk'_gr/fall 
     | 'sterlingspund:hk'/fall
-    | 'sterlingspund:hk'_gr/fall
 
 QCurJPY/fall →
     'jen:hk'/fall 
-    | 'jen:hk'_gr/fall
-    # "Japansk jen"
+    | 'japanskur:lo'_hk/fall 'jen:hk'/fall
 
 QCurCHF/fall →
     'franki:kk'/fall 
-    | 'franki:kk'_gr/fall
-    # "Svissneskur franki"
+    | 'svissneskur:lo'_kk/fall 'franki:kk'/fall
 
 QCurCAD/fall →
     'kanadadalur:kk'/fall 
-    | 'kanadadalur:kk'_gr/fall 
     | 'kanadadollari:kk'/fall
-    | 'kanadadollari:kk'_gr/fall
-    | 'kanadískur:lo'_hk/fall 'dollari:kk'/fall 
-    | 'kanadískur:lo'_hk/fall 'dollari:kk'_gr/fall 
-    # "Kanada dollari"
+    | 'kanadískur:lo'_kk/fall 'dollari:kk'/fall 
 
 QCurZAR/fall →
     'rand:hk'/fall 
@@ -149,21 +148,18 @@ QCurPLN/fall →
     'slot:hk'/fall 
     | 'slot:hk'_gr/fall
     | 'pólskur:lo'_hk/fall 'slot:hk'/fall 
-    | 'pólskur:lo'_hk/fall 'slot:hk'_gr/fall 
     | "zloty"
-    # | "slotí"
     
 QCurRUB/fall →
     'rúbla:kvk'/fall 
     | 'rúbla:kvk'_gr/fall
-    # "Rússnesk rúbla"
+    | 'rússneskur:lo'_kvk/fall 'rúbla:kvk'/fall 
 
 QCurCNY/fall →
     'júan:hk'/fall 
-    | 'júan:hk'_gr/fall
+    | 'kínverskur:lo'_hk/fall 'júan:hk'/fall
     | "júan"
     | "yuan"
-    # "Kínverskt júan"
 
 QCurNumberWord →
     # to is a declinable number word ('tveir/tvo/tveim/tveggja')
@@ -185,24 +181,6 @@ QCurGeneralRate →
 
 QCurAmountConversion →
     QCurNumberWord QCurUnit_nf "margar" QCurUnit_nf
-
-QCurrencyQuery →
-    # "Hver er gengisvísitalan?"
-    "hver" "er" QCurCurrencyIndex_nf '?'?
-    
-    # "Hvert/hvað/hvernig er gengi X?"
-    | QCurAnyPrefix QCurGeneralRate '?'?
-
-    # "Hvert/hvað/hvernig er gengi X gagnvart Y?"
-    | QCurAnyPrefix QCurExchangeRate '?'?
-
-    # "Hvað eru NUM X margir/margar/mörg Y?"
-    | QCurGenericPrefix QCurAmountConversion '?'?
-
-    # "Hvað fæ ég marga/margar/mörg X fyrir NUM Y?"
-    # |
-
-$score(+55) QCurrency
 
 """
 
@@ -300,7 +278,7 @@ def _query_exchange_rate(curr1, curr2):
 
     xr = {c["shortName"]: c["value"] for c in res}
 
-    print("{0} gagnvart {1}".format(curr1, curr2))
+    # print("{0} gagnvart {1}".format(curr1, curr2))
 
     if curr1 == "GVT":
         return xr["GVT"]

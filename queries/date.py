@@ -33,7 +33,6 @@
 # TODO: Special days should be mentioned by name, not date, in voice answers
 # TODO: Fix pronunciation of ordinal day of month (i.e. "29di" vs "29da")
 # TODO: "How many weeks between April 3 and June 16?"
-# TODO: Find out the date and day of the week of holidays, e.g. "Hvenær eru páskar?"
 # TODO: Restore timezone-awareness
 # TODO: "hvað er mikið eftir af vinnuvikunni", "hvað er langt í helgina"
 
@@ -372,14 +371,6 @@ def date_diff(d1, d2, unit="days"):
     return cnt
 
 
-# _WORKING_WEEK_QUERIES = {
-#     "hvað er mikið eftir af vinnuvikunni",
-#     "hvað er langt í helgina",
-#     "hvað er langt í helgi",
-#     "hvað á ég mikið eftir af vinnuvikunni",
-# }
-
-
 def howlong_desc_answ(target):
     now = datetime.now()
     days = date_diff(now, target, unit="days")
@@ -427,7 +418,7 @@ def sentence(state, result):
     try:
         with changedlocale(category="LC_TIME"):
             # Get timezone and date
-            tz = timezone4loc(q.location, fallback="IS")
+            # tz = timezone4loc(q.location, fallback="IS")
             now = datetime.now()  # datetime.now(timezone(tz))
             qkey = None
 
