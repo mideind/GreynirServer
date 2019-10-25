@@ -62,7 +62,10 @@ QDate →
     QDateQuery '?'?
 
 QDateQuery →
-    QDateCurrent | QDateHowLongUntil | QDateHowLongSince | QDateWhenIs
+    QDateCurrent 
+    | QDateHowLongUntil 
+    # | QDateHowLongSince  # Disabled for now.
+    | QDateWhenIs
 
 QDateCurrent →
     "hvað" "er" "dagsetningin" QDateNow?
@@ -109,12 +112,12 @@ QDateAbsOrRel →
 
 # TODO: Order this by time of year
 QDateSpecialDay/fall →
-    QDateWhitsun/fall
-    | QDateAscensionDay/fall
-    | QDateAshDay/fall
-    | QDateHalloween/fall
+    QDateHalloween/fall
+    # | QDateWhitsun/fall
+    # | QDateAscensionDay/fall
+    # | QDateAshDay/fall
     | QDateSovereigntyDay/fall
-    | QDateFirstDayOfSummer/fall
+    # | QDateFirstDayOfSummer/fall
     | QDateThorlaksmessa/fall
     | QDateChristmasEve/fall
     | QDateChristmasDay/fall
@@ -122,10 +125,10 @@ QDateSpecialDay/fall →
     | QDateNewYearsDay/fall
     | QDateWorkersDay/fall
     | QDateEaster/fall
-    | QDateEasterSunday/fall
+    # | QDateEasterSunday/fall
     | QDateNationalDay/fall
-    | QDateBankHoliday/fall
-    | QDateCultureNight/fall
+    # | QDateBankHoliday/fall
+    # | QDateCultureNight/fall
 
 QDateWhitsun/fall →
     'hvítasunnudagur:kk'/fall
