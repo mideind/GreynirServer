@@ -169,6 +169,10 @@ _NO_PROBLEM = {
     "answer": "Ekkert mál, kæri notandi."
 }
 
+_MIDEIND_DESC = {
+    "Flotta teymið hjá Miðeind skapaði mig."
+}
+
 _SPECIAL_QUERIES = {
     "er þetta spurning": {
         "answer": "Er þetta svar?"
@@ -183,22 +187,22 @@ _SPECIAL_QUERIES = {
         "answer": "Spurðu mig!"
     },
     "hver bjó þig til": {
-        "answer": "Flotta teymið hjá Miðeind.",
+        "answer": _MIDEIND_DESC
     },
     "hver skapaði þig": {
-        "answer": "Flotta teymið hjá Miðeind."
+        "answer": _MIDEIND_DESC
     },
     "hver er skapari þinn": {
-        "answer": "Flotta teymið hjá Miðeind."
+        "answer": _MIDEIND_DESC
     },
     "hver er mamma þín": {
-        "answer": "Miðeind er máltæknifyrirtækið sem skapaði mig."
+        "answer": _MIDEIND_DESC
     },
     "hver er pabbi þinn": {
-        "answer": "Miðeind er máltæknifyrirtækið sem skapaði mig."
+        "answer": _MIDEIND_DESC
     },
     "hverjir eru foreldrar þínir": {
-        "answer": "Miðeind er máltæknifyrirtækið sem skapaði mig."
+        "answer": _MIDEIND_DESC
     },
     "hvað er miðeind": {
         "answer": "Miðeind er máltæknifyrirtækið sem skapaði mig."
@@ -637,6 +641,18 @@ _SPECIAL_QUERIES = {
     },
     "hvernig hefur þú það": {
         "answer": "Ég hef það mjög fínt. Takk fyrir að spyrja.",
+    },
+    "hvað segirðu": {
+        "answer": "Ég segi bara allt fínt. Takk fyrir að spyrja."
+    },
+    "hvað segirðu gott": {
+        "answer": "Ég segi bara allt fínt. Takk fyrir að spyrja."
+    },
+    "hvað segir þú": {
+        "answer": "Ég segi bara allt fínt. Takk fyrir að spyrja."
+    },
+    "hvað segir þú gott": {
+        "answer": "Ég segi bara allt fínt. Takk fyrir að spyrja."
     },
     "hvernig líður þér": {
         "answer": "Mér líður bara prýðilega. Takk fyrir að spyrja.",
