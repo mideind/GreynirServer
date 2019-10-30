@@ -37,100 +37,108 @@ from routes.people import top_persons
 _STATS_QTYPE = "Stats"
 
 
-_NUM_PEOPLE_QUERIES = (
-    "hvað þekkirðu margar manneskjur",
-    "hvað þekkir þú margar manneskjur",
-    "hvað þekkirðu marga einstaklinga",
-    "hvað þekkir þú marga einstaklinga",
-    "hvað þekkirðu mikið af fólki",
-    "hvað þekkir þú mikið af fólki",
-    "hversu marga einstaklinga þekkirðu",
-    "hversu marga einstaklinga þekkir þú",
-    "hversu margar manneskjur þekkirðu",
-    "hversu margar manneskjur þekkir þú",
-    "hve marga einstaklinga þekkirðu",
-    "hve marga einstaklinga þekkir þú",
-    "hve margar manneskjur þekkirðu",
-    "hve margar manneskjur þekkir þú",
+_NUM_PEOPLE_QUERIES = frozenset(
+    (
+        "hvað þekkirðu margar manneskjur",
+        "hvað þekkir þú margar manneskjur",
+        "hvað þekkirðu marga einstaklinga",
+        "hvað þekkir þú marga einstaklinga",
+        "hvað þekkirðu mikið af fólki",
+        "hvað þekkir þú mikið af fólki",
+        "hversu marga einstaklinga þekkirðu",
+        "hversu marga einstaklinga þekkir þú",
+        "hversu margar manneskjur þekkirðu",
+        "hversu margar manneskjur þekkir þú",
+        "hve marga einstaklinga þekkirðu",
+        "hve marga einstaklinga þekkir þú",
+        "hve margar manneskjur þekkirðu",
+        "hve margar manneskjur þekkir þú",
+    )
 )
 
 
-_NUM_QUERIES = (
-    "hvað hefurðu fengið margar fyrirspurnir",
-    "hvað hefur þú fengið margar fyrirspurnir",
-    "hvað hefurðu fengið margar spurningar",
-    "hvað hefur þú fengið margar spurningar",
-    "hvað hefurðu svarað mörgum spurningum",
-    "hvað hefur þú svarað mörgum spurningum",
-    "hversu mörgum fyrirspurnum hefurðu svarað",
-    "hversu mörgum fyrirspurnum hefur þú svarað",
-    "hversu mörgum spurningum hefurðu svarað",
-    "hversu mörgum spurningum hefur þú svarað",
-    "hve mörgum fyrirspurnum hefurðu svarað",
-    "hve mörgum fyrirspurnum hefur þú svarað",
-    "hve mörgum spurningum hefurðu svarað",
-    "hve mörgum spurningum hefur þú svarað",
+_NUM_QUERIES = frozenset(
+    (
+        "hvað hefurðu fengið margar fyrirspurnir",
+        "hvað hefur þú fengið margar fyrirspurnir",
+        "hvað hefurðu fengið margar spurningar",
+        "hvað hefur þú fengið margar spurningar",
+        "hvað hefurðu svarað mörgum spurningum",
+        "hvað hefur þú svarað mörgum spurningum",
+        "hversu mörgum fyrirspurnum hefurðu svarað",
+        "hversu mörgum fyrirspurnum hefur þú svarað",
+        "hversu mörgum spurningum hefurðu svarað",
+        "hversu mörgum spurningum hefur þú svarað",
+        "hve mörgum fyrirspurnum hefurðu svarað",
+        "hve mörgum fyrirspurnum hefur þú svarað",
+        "hve mörgum spurningum hefurðu svarað",
+        "hve mörgum spurningum hefur þú svarað",
+    )
 )
 
 
-_MOST_FREQ_QUERIES = (
-    "hvað er fólk að spyrja þig mest um",
-    "hvað er fólk að spyrja mest um",
-    "hvað spyr fólk mest um",
-    "hvað spyr fólk þig mest um",
-    "hvað ertu mest spurð um",
-    "hvað ert þú mest spurð um",
-    "hvað ertu aðallega spurð um",
-    "hvað ert þú aðallega spurð um",
-    "hvað spyr fólk þig aðallega um",
-    "hvaða fyrirspurnir eru algengastar",
-    "hvaða spurningar eru algengastar",
-    "hvers konar spurningar eru algengastar",
-    "hvernig spurningar færðu mest af",
-    "hvernig spurningar færð þú mest af",
+_MOST_FREQ_QUERIES = frozenset(
+    (
+        "hvað er fólk að spyrja þig mest um",
+        "hvað er fólk að spyrja mest um",
+        "hvað spyr fólk mest um",
+        "hvað spyr fólk þig mest um",
+        "hvað ertu mest spurð um",
+        "hvað ert þú mest spurð um",
+        "hvað ertu aðallega spurð um",
+        "hvað ert þú aðallega spurð um",
+        "hvað spyr fólk þig aðallega um",
+        "hvaða fyrirspurnir eru algengastar",
+        "hvaða spurningar eru algengastar",
+        "hvers konar spurningar eru algengastar",
+        "hvernig spurningar færðu mest af",
+        "hvernig spurningar færð þú mest af",
+    )
 )
 
 
-_MOST_MENTIONED_PEOPLE_QUERIES = (
-    "um hverja er verið að tala",
-    "um hverja er verið að fjalla í fjölmiðlum",
-    "um hverja er mest fjallað í fjölmiðlum",
-    "um hverja er mest talað í fjölmiðlum",
-    "hverjir eru mest áberandi í fjölmiðlum",
-    "hverjir eru mest áberandi í fjölmiðlum þessa dagana",
-    "hverjir eru áberandi í fjölmiðlum",
-    "hverjir eru áberandi í fjölmiðlum þessa dagana",
-    "hvaða fólk hefur verið mest í fjölmiðlum síðustu daga",
-    "hvaða fólk er mest í fréttum",
-    "hvaða fólk er mest í fréttum þessa dagana",
-    "hvaða fólk hefur verið mest í fréttum",
-    "hvaða fólk hefur verið mest í fréttum nýlega",
-    "hvaða fólk hefur verið mest í fréttum undanfarið",
-    "hvaða fólk hefur verið mest í fréttum upp á síðkastið",
-    "hvaða fólk hefur verið mest í fréttum síðustu daga",
-    "hverjir hafa verið mest í fréttum",
-    "hverjir hafa verið mest í fréttum nýlega",
-    "hverjir hafa verið mest í fréttum undanfarið",
-    "hverjir hafa verið mest í fréttum upp á síðkastið",
-    "hverjir hafa verið mest í fréttum síðustu daga",
-    "hvaða fólk hefur verið mest í fjölmiðlum",
-    "hvaða fólk hefur verið mest í fjölmiðlum nýlega",
-    "hvaða fólk hefur verið mest í fjölmiðlum undanfarið",
-    "hvaða fólk hefur verið mest í fjölmiðlum upp á síðkastið",
-    "hvaða fólk hefur verið mest í fjölmiðlum síðustu daga",
-    "hverjir hafa verið mest í fjölmiðlum",
-    "hverjir hafa verið mest í fjölmiðlum nýlega",
-    "hverjir hafa verið mest í fjölmiðlum undanfarið",
-    "hverjir hafa verið mest í fjölmiðlum upp á síðkastið",
-    "hverjir hafa verið mest í fjölmiðlum síðustu daga",
-    "hverjir eru umtöluðustu einstaklingarnir á Íslandi",
-    "hverjir eru umtalaðastir",
-    "um hverja er mest talað",
-    "um hverja er mest skrifað",
-    "hverjir hafa verið áberandi í fjölmiðlum síðustu daga",
-    "hverjir hafa verið áberandi í fjölmiðlum undanfarið",
-    "hverjir hafa verið áberandi í fjölmiðlum nýlega",
-    "hverjir hafa verið áberandi í fjölmiðlum upp á síðkastið",
+_MOST_MENTIONED_PEOPLE_QUERIES = frozenset(
+    (
+        "um hverja er verið að tala",
+        "um hverja er verið að fjalla í fjölmiðlum",
+        "um hverja er mest fjallað í fjölmiðlum",
+        "um hverja er mest talað í fjölmiðlum",
+        "hverjir eru mest áberandi í fjölmiðlum",
+        "hverjir eru mest áberandi í fjölmiðlum þessa dagana",
+        "hverjir eru áberandi í fjölmiðlum",
+        "hverjir eru áberandi í fjölmiðlum þessa dagana",
+        "hvaða fólk hefur verið mest í fjölmiðlum síðustu daga",
+        "hvaða fólk er mest í fréttum",
+        "hvaða fólk er mest í fréttum þessa dagana",
+        "hvaða fólk hefur verið mest í fréttum",
+        "hvaða fólk hefur verið mest í fréttum nýlega",
+        "hvaða fólk hefur verið mest í fréttum undanfarið",
+        "hvaða fólk hefur verið mest í fréttum upp á síðkastið",
+        "hvaða fólk hefur verið mest í fréttum síðustu daga",
+        "hverjir hafa verið mest í fréttum",
+        "hverjir hafa verið mest í fréttum nýlega",
+        "hverjir hafa verið mest í fréttum undanfarið",
+        "hverjir hafa verið mest í fréttum upp á síðkastið",
+        "hverjir hafa verið mest í fréttum síðustu daga",
+        "hvaða fólk hefur verið mest í fjölmiðlum",
+        "hvaða fólk hefur verið mest í fjölmiðlum nýlega",
+        "hvaða fólk hefur verið mest í fjölmiðlum undanfarið",
+        "hvaða fólk hefur verið mest í fjölmiðlum upp á síðkastið",
+        "hvaða fólk hefur verið mest í fjölmiðlum síðustu daga",
+        "hverjir hafa verið mest í fjölmiðlum",
+        "hverjir hafa verið mest í fjölmiðlum nýlega",
+        "hverjir hafa verið mest í fjölmiðlum undanfarið",
+        "hverjir hafa verið mest í fjölmiðlum upp á síðkastið",
+        "hverjir hafa verið mest í fjölmiðlum síðustu daga",
+        "hverjir eru umtöluðustu einstaklingarnir á Íslandi",
+        "hverjir eru umtalaðastir",
+        "um hverja er mest talað",
+        "um hverja er mest skrifað",
+        "hverjir hafa verið áberandi í fjölmiðlum síðustu daga",
+        "hverjir hafa verið áberandi í fjölmiðlum undanfarið",
+        "hverjir hafa verið áberandi í fjölmiðlum nýlega",
+        "hverjir hafa verið áberandi í fjölmiðlum upp á síðkastið",
+    )
 )
 
 
@@ -198,8 +206,9 @@ _QTYPE_TO_DESC = {
 def _gen_most_freq_queries_answer(q):
     """ Answer question concerning most frequent queries. """
     with SessionContext(read_only=True) as session:
-        start = datetime.utcnow() - timedelta(days=_QUERIES_PERIOD)
-        end = datetime.utcnow()
+        now = datetime.utcnow()
+        start = now - timedelta(days=_QUERIES_PERIOD)
+        end = now
         qr = QueryTypesQuery.period(start=start, end=end, enclosing_session=session)
 
         if qr:
@@ -212,7 +221,7 @@ def _gen_most_freq_queries_answer(q):
         response = dict(answer=answer)
         voice = answer
 
-        q.set_expires(datetime.utcnow() + timedelta(hours=1))
+        q.set_expires(now + timedelta(hours=1))
         q.set_answer(response, answer, voice)
         q.set_qtype(_STATS_QTYPE)
         q.set_key("FreqQuery")
@@ -242,7 +251,7 @@ def _gen_most_mentioned_answer(q):
     return True
 
 
-# Map hashable query category tuple to corresponding handler function
+# Map hashable query category frozenset to corresponding handler function
 _Q2HANDLER = {
     _NUM_PEOPLE_QUERIES: _gen_num_people_answer,
     _NUM_QUERIES: _gen_num_queries_answer,

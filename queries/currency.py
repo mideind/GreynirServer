@@ -83,22 +83,22 @@ $score(+35) QCurrency
 
 QCurrencyQuery →
     # "Hver er gengisvísitalan?"
-    "hver" "er" QCurCurrencyIndex_nf '?'?
+    "hver" "er" QCurCurrencyIndex_nf
     
     # "Hvert/hvað/hvernig er gengi X?"
-    | QCurAnyPrefix QCurGeneralRate '?'?
+    | QCurAnyPrefix? QCurGeneralRate
 
     # "Hvert/hvað/hvernig er gengi X gagnvart Y?"
-    | QCurAnyPrefix QCurExchangeRate '?'?
+    | QCurAnyPrefix? QCurExchangeRate
 
     # "Hvað eru NUM X margir/margar/mörg Y?"
-    # | QCurGenericPrefix QCurAmountConversion '?'?
+    # | QCurGenericPrefix? QCurAmountConversion
 
     # "Hvað fæ ég marga/margar/mörg X fyrir NUM Y?"
     # |
 
-QCurGenericPrefix → "hvað" "er" | "hvað" "eru" | "hvernig" "er" | 0
-QCurSpecificPrefix → "hvert" "er" | "hvernig" "er" | 0
+QCurGenericPrefix → "hvað" "er" | "hvað" "eru" | "hvernig" "er"
+QCurSpecificPrefix → "hvert" "er" | "hvernig" "er"
 QCurAnyPrefix → QCurGenericPrefix | QCurSpecificPrefix
 
 # Supported currencies
@@ -108,57 +108,45 @@ QCurUnit/fall →
     | QCurZAR/fall | QCurPLN/fall | QCurRUB/fall | QCurCNY/fall
 
 QCurISK/fall →
-    'króna:kvk'/fall
-    | 'íslenskur:lo'_kvk/fall 'króna:kvk'/fall 
+    'íslenskur:lo'_kvk/fall? 'króna:kvk'/fall
 
 QCurUSD/fall →
-    'Bandaríkjadalur:kk'/fall 
+    'Bandaríkjadalur:kk'/fall
     | 'Bandaríkjadollari:kk'/fall
-    | 'dollari:kk'/fall
-    | 'bandarískur:lo'_kk/fall 'dollari:kk'/fall
+    | 'bandarískur:lo'_kk/fall? 'dollari:kk'/fall
 
 QCurEUR/fall →
     'evra:kvk'/fall
 
 QCurGBP/fall →
-    'pund:hk'/fall 
-    | 'breskur:lo'_hk/fall 'pund:hk'/fall 
+    'breskur:lo'_hk/fall? 'pund:hk'/fall
     | 'sterlingspund:hk'/fall
 
 QCurJPY/fall →
-    'jen:hk'/fall 
-    | 'japanskur:lo'_hk/fall 'jen:hk'/fall
+    'japanskur:lo'_hk/fall? 'jen:hk'/fall
 
 QCurCHF/fall →
-    'franki:kk'/fall 
-    | 'svissneskur:lo'_kk/fall 'franki:kk'/fall
+    'svissneskur:lo'_kk/fall? 'franki:kk'/fall
 
 QCurCAD/fall →
-    'kanadadalur:kk'/fall 
+    'kanadadalur:kk'/fall
     | 'kanadadollari:kk'/fall
-    | 'kanadískur:lo'_kk/fall 'dollari:kk'/fall 
+    | 'kanadískur:lo'_kk/fall 'dollari:kk'/fall
 
 QCurZAR/fall →
-    'rand:hk'/fall 
-    | 'rand:hk'_gr/fall 
-    | 'suðurafrískur:lo'_hk/fall 'rand:hk'/fall 
-    | 'suðurafrískur:lo'_hk/fall 'rand:hk'_gr/fall 
+    'suðurafrískur:lo'_hk/fall? 'rand:hk'/fall
 
 QCurPLN/fall →
-    'slot:hk'/fall 
-    | 'slot:hk'_gr/fall
-    | 'pólskur:lo'_hk/fall 'slot:hk'/fall 
+    'pólskur:lo'_hk/fall? 'slot:hk'/fall
     | "zloty"
-    
+    | "slotí"
+
 QCurRUB/fall →
-    'rúbla:kvk'/fall 
-    | 'rúbla:kvk'_gr/fall
-    | 'rússneskur:lo'_kvk/fall 'rúbla:kvk'/fall 
+    'rúbla:kvk'/fall
+    | 'rússneskur:lo'_kvk/fall? 'rúbla:kvk'/fall 
 
 QCurCNY/fall →
-    'júan:hk'/fall 
-    | 'kínverskur:lo'_hk/fall 'júan:hk'/fall
-    | "júan"
+    'kínverskur:lo'_hk/fall? 'júan:hk'/fall
     | "yuan"
 
 QCurNumberWord →
@@ -169,7 +157,6 @@ QCurNumberWord →
 
 QCurCurrencyIndex/fall →
     'gengisvísitala:kvk'_et/fall 
-    | 'gengisvísitala:kvk'_et_gr/fall
 
 QCurVisAVis → "gagnvart" | "á" "móti" | "gegn"
 
@@ -199,8 +186,6 @@ def parse_num(num_str):
         # Handle number words ("sautján")
         if num_str in _NUMBER_WORDS:
             num = _NUMBER_WORDS[num_str]
-        else:
-            num = 0
     except Exception as e:
         print("Unexpected exception: {0}".format(e))
         raise
@@ -234,10 +219,12 @@ def QCurNumberWord(node, params, result):
 
 
 def QCurUnit(node, params, result):
-    c = node.first_child(lambda x: True)
-    nt_name = c.string_self()
-    nt_name = nt_name.split("_")[0][-3:]
-    add_currency(nt_name, result)
+    # c = node.first_child(lambda x: True)
+    # nt_name = c.string_self()
+    # nt_name = nt_name.split("_")[0][-3:]
+    assert isinstance(node.child, NonterminalNode)
+    currency = node.child.nt_base[-3:]
+    add_currency(currency, result)
 
 
 def QCurExchangeRate(node, params, result):
@@ -267,12 +254,15 @@ ISK_EXCHRATE = {}
 
 def _query_exchange_rate(curr1, curr2):
     """ Returns exchange rate of two ISO 4217 currencies """
+
+    # A currency is always worth 1 of itself
+    if curr1 == curr2:
+        return 1
+
     # TODO: Add caching
     res = query_json_api(CURR_API_URL)
     if not res:
         return None
-    if curr1 == curr2:
-        return 1
 
     res = res["results"]
 
@@ -286,7 +276,7 @@ def _query_exchange_rate(curr1, curr2):
         return xr[curr2]
     elif curr1 in xr and curr2 == "ISK":
         return xr[curr1]
-    elif curr1 in xr and curr2 in xr:
+    elif curr1 in xr and curr2 in xr and xr[curr2] != 0:
         return xr[curr1] / xr[curr2]
 
     return None
@@ -308,11 +298,6 @@ def sentence(state, result):
         elif result.op == "convert":
             val = _query_exchange_rate(result.currencies[1], result.currencies[0])
             val = val * result.numbers[0]
-            print(
-                "Converting {0} {1} to {2}".format(
-                    result.numbers[0], result.currencies[0], result.currencies[1]
-                )
-            )
         else:
             raise Exception("Unknown operator: {0}".format(result.op))
 

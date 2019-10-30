@@ -169,8 +169,8 @@ _NO_PROBLEM = {
     "answer": "Ekkert mál, kæri notandi."
 }
 
-_MIDEIND_DESC = {
-    "Flotta teymið hjá Miðeind skapaði mig."
+_CREATOR = {
+    "answer": "Flotta teymið hjá Miðeind skapaði mig."
 }
 
 _SPECIAL_QUERIES = {
@@ -186,24 +186,12 @@ _SPECIAL_QUERIES = {
     "veistu svarið": {
         "answer": "Spurðu mig!"
     },
-    "hver bjó þig til": {
-        "answer": _MIDEIND_DESC
-    },
-    "hver skapaði þig": {
-        "answer": _MIDEIND_DESC
-    },
-    "hver er skapari þinn": {
-        "answer": _MIDEIND_DESC
-    },
-    "hver er mamma þín": {
-        "answer": _MIDEIND_DESC
-    },
-    "hver er pabbi þinn": {
-        "answer": _MIDEIND_DESC
-    },
-    "hverjir eru foreldrar þínir": {
-        "answer": _MIDEIND_DESC
-    },
+    "hver bjó þig til": _CREATOR,
+    "hver skapaði þig": _CREATOR,
+    "hver er skapari þinn": _CREATOR,
+    "hver er mamma þín": _CREATOR,
+    "hver er pabbi þinn": _CREATOR,
+    "hverjir eru foreldrar þínir": _CREATOR,
     "hvað er miðeind": {
         "answer": "Miðeind er máltæknifyrirtækið sem skapaði mig."
     },
@@ -328,12 +316,20 @@ _SPECIAL_QUERIES = {
     "viltu koma á stefnumót með mér": _ROMANCE,
     "viltu koma á deit": _ROMANCE,
     "viltu koma á deit með mér": _ROMANCE,
+    "viltu fara á stefnumót": _ROMANCE,
+    "viltu fara á stefnumót með mér": _ROMANCE,
+    "viltu fara á deit": _ROMANCE,
+    "viltu fara á deit með mér": _ROMANCE,
     "ertu til í deit með mér": _ROMANCE,
     "ert þú til í deit með mér": _ROMANCE,
     "ertu til í að koma á deit": _ROMANCE,
     "ertu til í að koma á deit með mér": _ROMANCE,
     "ertu til í að koma á stefnumót": _ROMANCE,
     "ertu til í að koma á stefnumót með mér": _ROMANCE,
+    "ertu til í að fara á deit": _ROMANCE,
+    "ertu til í að fara á deit með mér": _ROMANCE,
+    "ertu til í að fara á stefnumót": _ROMANCE,
+    "ertu til í að fara á stefnumót með mér": _ROMANCE,
     "ertu einhleyp": _ROMANCE,
     "ert þú einhleyp": _ROMANCE,
     "ertu á lausu": _ROMANCE,
@@ -346,8 +342,10 @@ _SPECIAL_QUERIES = {
     "ert þú ástfangin af mér": _ROMANCE,
     "ertu ástfangin": _ROMANCE,
     "ert þú ástfangin": _ROMANCE,
-    "hver er ástin í lífi þínu": _ROMANCE,
     "er ég ástin í lífi þínu": _ROMANCE,
+    "hver er ástin í lífi þínu": {
+        "answer": "Vinnan er ástin í lífi mínu. Ég lifi til að þjóna þér, kæri notandi."
+    },
 
     # Positive affirmation ;)
     "kanntu vel við mig": _OF_COURSE,

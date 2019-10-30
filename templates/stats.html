@@ -235,7 +235,8 @@
             tooltips: {
                callbacks: {
                   label: function(tooltipItem, data) {
-                     var desc = String(tooltipItem.yLabel).endsWith('1') ? "fyrirspurn" : "fyrirspurnir";
+                     var nstr = String(tooltipItem.yLabel);
+                     var desc = nstr.endsWith('1') && !nstr.endswith('11') ? "fyrirspurn" : "fyrirspurnir";
                      return tooltipItem.yLabel + ' ' + desc;
                   },
                }

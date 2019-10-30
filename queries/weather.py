@@ -60,31 +60,49 @@ QWeatherQuery →
     | QWeatherTemperature
 
 QWeatherCurrent →
-    "hvernig" "er" "veðrið" QWeatherAnyLoc? QWeatherNow?
+    QWeatherHowIs "veðrið" QWeatherAnyLoc? QWeatherNow?
     | "hvernig" "veður" "er" QWeatherAnyLoc? QWeatherNow?
-    | "hvað" "getur" "þú" "sagt" "mér" "um" "veðrið" QWeatherAnyLoc? QWeatherNow?
-    | "hvað" "geturðu" "sagt" "mér" "um" "veðrið" QWeatherAnyLoc? QWeatherNow?
+    | QWeatherWhatCanYouTellMeAbout "veðrið" QWeatherAnyLoc? QWeatherNow?
+    | QWeatherWhatCanYouTellMeAbout "veðrið" QWeatherAnyLoc? QWeatherNow?
+
+QWeatherWhatCanYouTellMeAbout →
+    "hvað" "geturðu" "sagt" "mér"? "um"
+    | "hvað" "getur" "þú" "sagt" "mér"? "um"
+    | "hvað" "geturðu" "sagt" "mér"? "varðandi"
+    | "hvað" "getur" "þú" "sagt" "mér"? "varðandi"
 
 QWeatherForecast →
-    "hver" "er" "veðurspáin" QWeatherLocation? QWeatherNextDays?
-    | "hver" "er" "spáin" QWeatherLocation? QWeatherNextDays?
-    | "hvernig" "er" "veðurspáin" QWeatherLocation? QWeatherNextDays?
-    | "hvernig" "er" "spáin" QWeatherLocation? QWeatherNextDays?
-    | "hver" "er" "veðurspá" QWeatherLocation? QWeatherNextDays?
-    | "hver" "er" "veðurspáin" QWeatherLocation? QWeatherNextDays?
-    | "hvernig" "er" "veðrið" QWeatherLocation? QWeatherNextDays
-    | "hvernig" "verður" "veðrið" QWeatherLocation? QWeatherNextDays
-    | "hvernig" "eru" "veðurhorfur" QWeatherLocation? QWeatherNextDays?
-    | "hvernig" "eru" "veður" "horfur" QWeatherLocation? QWeatherNextDays?
-    | "hvernig" "eru" "veðurhorfurnar" QWeatherLocation? QWeatherNextDays?
-    | "hvernig" "eru" "veður" "horfurnar" QWeatherLocation? QWeatherNextDays?
-    | "hverjar" "eru" "veðurhorfur" QWeatherLocation? QWeatherNextDays?
-    | "hverjar" "eru" "veður" "horfur" QWeatherLocation? QWeatherNextDays?
-    | "hverjar" "eru" "veðurhorfurnar" QWeatherLocation? QWeatherNextDays?
-    | "hverjar" "eru" "veður" "horfurnar" QWeatherLocation? QWeatherNextDays?
-    | "hvers" "konar" "veðri" "er" "spáð" QWeatherLocation? QWeatherNextDays?
-    | "hverskonar" "veðri" "er" "spáð" QWeatherLocation? QWeatherNextDays?
-    | "hvers" "kyns" "veðri" "er" "spáð" QWeatherLocation? QWeatherNextDays?
+    QWeatherWhatIs QWeatherConditionSingular QWeatherLocation? QWeatherNextDays?
+    | QWeatherHowIs QWeatherConditionSingular QWeatherLocation? QWeatherNextDays?
+
+    | QWeatherHowAre QWeatherConditionPlural QWeatherLocation? QWeatherNextDays?    
+    | QWeatherWhatAre QWeatherConditionPlural QWeatherLocation? QWeatherNextDays?
+
+    | "hvernig" "verður" "veðrið" QWeatherLocation? QWeatherNextDays    
+
+    | QWeatherWhatKindOfWeather "er" "spáð" QWeatherLocation? QWeatherNextDays?
+    | QWeatherWhatKindOfWeather "má" "búast" "við" QWeatherLocation? QWeatherNextDays?
+
+QWeatherWhatKindOfWeather →
+    "hvers" "konar" "veðri" | "hverskonar" "veðri" | "hvers" "kyns" "veðri" | "hvernig" "veðri"
+
+QWeatherConditionSingular →
+    "veðurspáin" | "spáin" | "veðurspá"
+
+QWeatherConditionPlural →
+    "veðurhorfur" | "veður" "horfur" | "veðurhorfurnar" | "veður" "horfurnar"
+
+QWeatherWhatIs →
+    "hver" "er"
+
+QWeatherHowIs →
+    "hvernig" "er"
+
+QWeatherHowAre →
+    "hvernig" "eru"
+
+QWeatherWhatAre →
+    "hverjar" "eru"
 
 QWeatherTemperature →
     "hvert" "er" "hitastigið" QWeatherAnyLoc? QWeatherNow?
@@ -115,13 +133,15 @@ QWeatherNow →
     "úti"? "í" "dag" | "úti"? "núna" | "úti"
 
 QWeatherNextDays →
-    "næstu" "daga"
+    "á" "næstunni" 
+    | "næstu" "daga"
     | "næstu" "dagana"
     | "fyrir" "næstu" "daga"
+    | "á" "næstu" "dögum"
     | "þessa" "viku" 
     | "þessa" "vikuna"
     | "út" "vikuna" 
-    | "á" "næstunni" 
+    | "í" "vikunni"
     | "á" "morgun"
     | "í" "fyrramálið"
 

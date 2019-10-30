@@ -217,7 +217,7 @@ def QDateAbsOrRel(node, params, result):
         if d:
             result["target"] = d
     else:
-        print("No dagsafs in {0}".format(str(t)))
+        raise Exception("No dagsafs in {0}".format(str(t)))
 
 
 def QDateWhitsun(node, params, result):
@@ -360,7 +360,7 @@ def terminal_date(t):
         (y, m, d) = aux
         if not y:
             now = datetime.now()
-            y = datetime.now().year
+            y = now.year
             # Bump year if month/day in the past
             if m < now.month or (m == now.month and d < now.day):
                 y += 1
@@ -379,7 +379,7 @@ def howlong_desc_answ(target):
     days = date_diff(now, target, unit="days")
 
     # Diff. strings for singular vs. plural
-    sing = str(days).endswith("1")
+    sing = str(days).endswith("1") and not str(days).endswith("11")
     verb = "er" if sing else "eru"
     days_desc = "dagur" if sing else "dagar"
 
