@@ -1,21 +1,21 @@
 
-![Greynir](https://raw.githubusercontent.com/mideind/Reynir/master/static/img/GreynirLogo242x100.png)
+![Greynir](https://raw.githubusercontent.com/mideind/Greynir/master/static/img/GreynirLogo242x100.png)
 
-# Reynir
+# Greynir
 
-[![Build Status](https://travis-ci.com/vthorsteinsson/Reynir.svg?branch=master)](https://travis-ci.com/vthorsteinsson/Reynir) 
+[![Build Status](https://travis-ci.com/mideind/Greynir.svg?branch=master)](https://travis-ci.com/mideind/Greynir) 
 [![Join the chat at https://gitter.im/Greynir/Lobby](https://badges.gitter.im/Greynir/Lobby.svg)](https://gitter.im/Greynir/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 ## Natural language processing for Icelandic
 
-Try Reynir (in Icelandic) at [https://greynir.is](https://greynir.is)
+Try Greynir (in Icelandic) at [https://greynir.is](https://greynir.is)
 
-*Reynir* is an exploratory project that aims to
+*Greynir* is an exploratory project that aims to
 **extract processable information from Icelandic text**, allow
 **natural language querying** of that information and facilitate
 **natural language understanding**.
 
-Reynir periodically scrapes chunks of text from Icelandic news sites on the web.
+Greynir periodically scrapes chunks of text from Icelandic news sites on the web.
 It employs the [Tokenizer](https://github.com/mideind/Tokenizer) and
 [ReynirPackage](https://github.com/mideind/ReynirPackage) modules (by the same authors)
 to tokenize the text and parse the token streams according to a **hand-written context-free grammar**
@@ -28,37 +28,37 @@ of fact and relations between stated facts.
 <img src="static/img/tree-example-small.png" width="400" height="450" alt="Greynir parse tree">
 </a>
 
-*A parse tree as displayed by Reynir. Nouns and noun phrases are blue, verbs and verb phrases are red,
+*A parse tree as displayed by Greynir. Nouns and noun phrases are blue, verbs and verb phrases are red,
 adjectives are green, prepositional and adverbial phrases are grey, etc.*
 
-Reynir is most effective for text that is objective and factual, i.e. has a relatively high
+Greynir is most effective for text that is objective and factual, i.e. has a relatively high
 ratio of concrete concepts such as numbers, amounts, dates, person and entity names,
 etc.
 
-Reynir is innovative in its ability to parse and disambiguate text written in a
+Greynir is innovative in its ability to parse and disambiguate text written in a
 **grammatically complex language**, i.e. Icelandic, which does not lend itself easily
-to statistical parsing methods. Reynir uses grammatical feature agreement (cases, genders,
+to statistical parsing methods. Greynir uses grammatical feature agreement (cases, genders,
 persons, number (singular/plural), verb tenses, modes, etc.) to guide and disambiguate
 parses. Its highly optimized Earley-based parser, implemented in C++, is fast and compact
 enough to make real-time while-you-wait analysis of web pages, as well as bulk
 processing, feasible.
 
-Reynir's goal is to "understand" text to a usable extent by parsing it into
+Greynir's goal is to "understand" text to a usable extent by parsing it into
 structured, recursive trees that directly correspond to the original grammar.
 These trees can then be further processed and acted upon by sets of Python
 functions that are linked to grammar nonterminals.
 
-**Reynir is currently able to parse about *90%* of sentences** in a typical news article from the web,
+**Greynir is currently able to parse about *90%* of sentences** in a typical news article from the web,
 and many well-written articles can be parsed completely. It presently has over 400,000 parsed articles
 in its database, containing 8 million parsed sentences.
 
-Reynir supports natural language querying of its databases. Users can ask about person names, titles and
+Greynir supports natural language querying of its databases. Users can ask about person names, titles and
 entity definitions and get appropriate replies. The HTML5 Web Speech API is supported to allow
 queries to be **recognized from speech** in enabled browsers, such as recent versions of Chrome.
 Similarity queries are also supported, yielding articles that are similar in content to a given
 search phrase or sentence.
 
-Reynir may in due course be expanded, for instance:
+Greynir may in due course be expanded, for instance:
 
 * to make logical inferences from statements in its database;
 * to find statements supporting or refuting a thesis; and/or
@@ -66,12 +66,12 @@ Reynir may in due course be expanded, for instance:
 
 ## Implementation
 
-Reynir is written in [Python 3](https://www.python.org/) except for its core
+Greynir is written in [Python 3](https://www.python.org/) except for its core
 Earley-based parser module which is written in C++ and called
 via [CFFI](https://cffi.readthedocs.org/en/latest/index.html).
-Reynir runs on CPython and [PyPy](http://pypy.org/) with the latter being recommended.
+Greynir runs on CPython and [PyPy](http://pypy.org/) with the latter being recommended.
 
-Reynir works in stages, roughly as follows:
+Greynir works in stages, roughly as follows:
 
 1. **Web scraper**, built on [BeautifulSoup](http://www.crummy.com/software/BeautifulSoup/)
   and [SQLAlchemy](http://www.sqlalchemy.org/) storing data
@@ -89,17 +89,17 @@ Reynir works in stages, roughly as follows:
 6. **Article indexer** that transforms articles from bags-of-words to fixed-dimensional
   topic vectors using [Tf-Idf](http://www.tfidf.com/) and
   [Latent Semantic Analysis](https://en.wikipedia.org/wiki/Latent_semantic_analysis).
-7. **Query processor** that allows natural language queries for entites in Reynir's database.
+7. **Query processor** that allows natural language queries for entites in Greynir's database.
 
-Reynir has an embedded web server that displays news articles recently scraped into its
+Greynir has an embedded web server that displays news articles recently scraped into its
 database, as well as names of people extracted from those articles along with their titles.
-The web UI enables the user to type in any URL and have Reynir scrape it, tokenize it and
+The web UI enables the user to type in any URL and have Greynir scrape it, tokenize it and
 display the result as a web page. Queries can also be entered via the keyboard or using voice
 input. The server runs on the [Flask](http://flask.pocoo.org/) framework, implements WSGI and
 can for instance be plugged into [Gunicorn](http://gunicorn.org/) and
 [nginx](https://www.nginx.com/).
 
-Reynir uses the official BÍN ([Beygingarlýsing íslensks nútímamáls](http://bin.arnastofnun.is))
+Greynir uses the official BÍN ([Beygingarlýsing íslensks nútímamáls](http://bin.arnastofnun.is))
 lexicon and database of Icelandic word forms to identify word forms, and find their
 potential meanings and lemmas. The database is included in
 [ReynirPackage](https://github.com/mideind/ReynirPackage) in compressed form,
@@ -125,7 +125,7 @@ referencing Tomita. It parses ambiguous grammars without restriction and
 returns a compact Shared Packed Parse Forest (SPPF) of parse trees. If a parse
 fails, it identifies the token at which no parse was available.
 
-The Reynir scraper is typically run in a `cron` job every 30 minutes to extract
+The Greynir scraper is typically run in a `cron` job every 30 minutes to extract
 articles automatically from the web, parse them and store the resulting trees
 in a PostgreSQL database for further processing.
 
@@ -133,7 +133,7 @@ Scraper modules for new websites are plugged in by adding Python code to the
 `scrapers/` directory. Currently, the `scrapers/default.py` module supports
 popular Icelandic news sites as well as the site of the Constitutional Council.
 
-Processor modules can be plugged in to Reynir by adding Python code to the
+Processor modules can be plugged in to Greynir by adding Python code to the
 `processors/` directory. The demo in `processors/default.py` extracts person
 names and titles from parse trees for storage in a database table.
 
@@ -166,10 +166,10 @@ names and titles from parse trees for storage in a database table.
 ## Running Greynir
 
 Once you have followed the setup and installation instructions above, change to the 
-Reynir repository and activate the virtual environment:
+Greynir repository and activate the virtual environment:
 
 ```
-cd Reynir
+cd Greynir
 venv/bin/activate
 ```
 
@@ -203,17 +203,17 @@ export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
 ./shell.sh
 ```
 
-Starts an [IPython](https://ipython.org) shell with a database session (`s`), the Reynir 
+Starts an [IPython](https://ipython.org) shell with a database session (`s`), the Greynir 
 parser (`r`) and all SQLAlchemy database models preloaded. For more info, 
 see [Using the Greynir Shell](docs/shell.md).
 
 
 ## Copyright and licensing
 
-Reynir/Greynir is *copyright (C) 2019 by Miðeind ehf.*
+Greynir is *copyright (C) 2019 by Miðeind ehf.*
 The original author of this software is *Vilhjálmur Þorsteinsson*.
 
-![GPLv3](https://raw.githubusercontent.com/mideind/Reynir/master/static/img/GPLv3.png)
+![GPLv3](https://raw.githubusercontent.com/mideind/Greynir/master/static/img/GPLv3.png)
 
 This set of programs is free software: you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the Free
@@ -225,7 +225,7 @@ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FO
 A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
 The full text of the GNU General Public License v3 is
-[included here](https://github.com/mideind/Reynir/blob/master/LICENSE.txt)
+[included here](https://github.com/mideind/Greynir/blob/master/LICENSE.txt)
 and also available here: https://www.gnu.org/licenses/gpl-3.0.html.
 
 If you wish to use this set of programs in ways that are not covered under the
