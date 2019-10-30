@@ -1,5 +1,5 @@
 
-![Greynir](https://raw.githubusercontent.com/mideind/Greynir/master/static/img/GreynirLogo242x100.png)
+![Greynir](https://raw.githubusercontent.com/mideind/Greynir/master/static/img/GreynirLogoVertical200.png)
 
 # Greynir
 
