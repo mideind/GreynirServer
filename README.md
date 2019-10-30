@@ -1,8 +1,6 @@
 
 ![Greynir](https://raw.githubusercontent.com/mideind/Greynir/master/static/img/GreynirLogoVertical200.png)
 
-# Greynir
-
 [![Build Status](https://travis-ci.com/mideind/Greynir.svg?branch=master)](https://travis-ci.com/mideind/Greynir) 
 [![Join the chat at https://gitter.im/Greynir/Lobby](https://badges.gitter.im/Greynir/Lobby.svg)](https://gitter.im/Greynir/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
