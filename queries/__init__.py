@@ -45,7 +45,7 @@ def natlang_seq(words):
 
 def nom2dat(w):
     """ Look up dative form of a noun in BÍN, try
-        lowercase if capitalized form not found. """
+        lowercase if capitalized form is not found. """
     if w:
         b = BIN_Db()
         bin_res = b.lookup_dative(w, cat="no")
@@ -56,9 +56,15 @@ def nom2dat(w):
     return w
 
 
+def is_plural(num):
+    """ Determine whether an Icelandic word following a given number
+         should be plural or not, e.g. "21 maður" vs. "22 menn" """
+    return not str(num).endswith("11") and not str(num).endswith("1")
+
+
 def country_desc(cc):
-    """ Generate description string of being in a particular country
-        with correct preposition and case e.g. 'á Spáni'. """
+    """ Generate Icelandic description string of being in a particular country
+        with correct preposition and case e.g. 'á Spáni', 'í Þýskalandi' """
     cn = country_name_for_isocode(cc)
     prep = iceprep4cc(cc)
     return "{0} {1}".format(prep, nom2dat(cn))
@@ -112,10 +118,10 @@ def _get_API_key():
     return _API_KEY
 
 
-_MAPS_API_COORDS_URL = "https://maps.googleapis.com/maps/api/geocode/json?latlng={0},{1}&key={2}&language=is"
+_MAPS_API_COORDS_URL = "https://maps.googleapis.com/maps/api/geocode/json?latlng={0},{1}&key={2}&language=is&region=is"
 
 
-def query_geocode_API_coords(lat, lon):
+def query_geocode_api_coords(lat, lon):
     """ Look up coordinates in Google's geocode API. """
     # Load API key
     key = _get_API_key()
@@ -129,12 +135,10 @@ def query_geocode_API_coords(lat, lon):
     return query_json_api(url)
 
 
-_MAPS_API_ADDR_URL = (
-    "https://maps.googleapis.com/maps/api/geocode/json?address={0}&key={1}&language=is"
-)
+_MAPS_API_ADDR_URL = "https://maps.googleapis.com/maps/api/geocode/json?address={0}&key={1}&language=is&region=is"
 
 
-def query_geocode_API_addr(addr):
+def query_geocode_api_addr(addr):
     """ Look up address in Google's geocode API. """
     # Load API key
     key = _get_API_key()
@@ -148,10 +152,37 @@ def query_geocode_API_addr(addr):
     return query_json_api(url)
 
 
+_MAPS_API_DISTANCE_URL = "https://maps.googleapis.com/maps/api/distancematrix/json?units=metric&origins={0}&destinations={1}&mode={2}&key={3}&language=is&region=is"
+
+
+def query_traveltime_api(startloc, endloc, mode="walking"):
+    """ Look up travel time between two places, given a particular mode
+        of transportation, e.g. "walking", "driving, "bicycling", "transit".
+        The location arguments can be names, to be resolved by the API, or
+        a tuple of coordinates, e.g. (64.156742, -21.949426)
+        Uses Google Maps' Distance Matrix API. For details, see:
+        https://developers.google.com/maps/documentation/distance-matrix/intro """
+    # Load API key
+    key = _get_API_key()
+    if not key:
+        # No key, can't query the API
+        logging.warning("No API key for travel time lookup")
+        return None
+
+    p1 = "{0},{1}".format(*startloc) if type(startloc) is tuple else startloc
+    p2 = "{0},{1}".format(*endloc) if type(endloc) is tuple else endloc
+
+    # Send API request
+    url = _MAPS_API_DISTANCE_URL.format(p1, p2, mode, key)
+    return query_json_api(url)
+
+
 def strip_trailing_zeros(num_str):
     """ Strip trailing decimal zeros from an Icelandic-style
         float num string, e.g. "17,0" -> "17". """
-    return num_str.rstrip("0").rstrip(",")
+    if "," in num_str:
+        return num_str.rstrip("0").rstrip(",")
+    return num_str
 
 
 def format_icelandic_float(fp_num):

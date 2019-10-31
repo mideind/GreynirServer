@@ -111,8 +111,8 @@ ICE_REGIONS = frozenset(
     )
 )
 
-# ISO codes for country names that are not
-# included in Icelandic country name UN data
+# ISO codes for country names that are not part of the Icelandic-language
+# country name UN data included in the country_list package
 COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
     ICELANDIC_LANG_ISOCODE: {
         "Mjanmar": "MM",
@@ -171,6 +171,7 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
         "Egiftaland": "EG",
         "Malawi": "MW",
         "Norður-Noregur": "NO",
+        "Tæland": "TH",
     }
 }
 
@@ -478,10 +479,7 @@ def parse_address_string(addrstr):
     return addr
 
 
-_I_SUFFIXES = (
-    "brekka", "ás", "holt", "tún", "tangi", "nes", "stræti",
-    "Lækjargata",
-)
+_I_SUFFIXES = ("brekka", "ás", "holt", "tún", "tangi", "nes", "stræti", "Lækjargata")
 
 
 def iceprep_for_street(street_name):

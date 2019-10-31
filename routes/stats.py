@@ -85,7 +85,7 @@ def chart_stats(session=None, num_days=7):
             if start < today - timedelta(days=6):
                 labels.append(start.strftime("%-d. %b"))
             else:
-                labels.append(start.strftime("%A"))
+                labels.append(start.strftime("%A").capitalize())
 
             sent = 0
             parsed = 0

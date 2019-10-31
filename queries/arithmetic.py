@@ -34,6 +34,7 @@ from queries import format_icelandic_float, gen_answer
 
 _ARITHMETIC_QTYPE = "Arithmetic"
 
+
 _NUMBER_WORDS = {
     "núll": 0,
     "einn": 1,
@@ -73,7 +74,7 @@ _NUMBER_WORDS = {
     "milljarður": 1e9,
 }
 
-# Ordinal words in the accusative case
+# Ordinal words in the dative case
 _ORDINAL_WORDS_DATIVE = {
     "fyrsta": 1,
     "öðru": 2,
@@ -269,7 +270,7 @@ def add_num(num, result):
 
 
 def terminal_num(t):
-    """ Extract num value from terminal token's auxiliary info,
+    """ Extract numerical value from terminal token's auxiliary info,
         which is attached as a json-encoded array """
     if t and t._node.aux:
         aux = json.loads(t._node.aux)
@@ -388,7 +389,7 @@ def QArithmetic(node, params, result):
     result.qtype = _ARITHMETIC_QTYPE
 
 
-# Map operator name to python operator
+# Map operator name to corresponding python operator
 _STD_OPERATORS = {"multiply": "*", "divide": "/", "plus": "+", "minus": "-"}
 
 # Number of args required for each operator

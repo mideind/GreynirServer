@@ -698,11 +698,11 @@ def process_query(
         # Try to parse and process as a query
         if isinstance(q, str):
             # This is a single string
-            it = iter([q])
+            it = [q]
         else:
-            # This should be an iterable of strings,
+            # This should be an array of strings,
             # in decreasing priority order
-            it = iter(q)
+            it = q
         # Iterate through the submitted query strings,
         # attempting to execute them in turn until we find
         # one that works (or we're stumped)
@@ -752,6 +752,7 @@ def process_query(
                     try:
                         qrow = QueryRow(
                             timestamp=datetime.utcnow(),
+                            interpretations=it,
                             question=clean_q,
                             # bquestion is the beautified query string
                             bquestion=result["q"],
