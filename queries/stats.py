@@ -30,7 +30,7 @@ from db import SessionContext
 from db.models import Person, Query
 from db.queries import QueryTypesQuery
 
-from queries import gen_answer, natlang_seq
+from queries import gen_answer, natlang_seq, is_plural
 from routes.people import top_persons
 
 
@@ -173,8 +173,9 @@ def _gen_num_queries_answer(q):
             .count()
         )
 
-        answer = "Á síðustu {0} dögum hef ég svarað {1} fyrirspurnum.".format(
-            _QUERIES_PERIOD, qr or "engum"
+        fs = "fyrirspurnum" if is_plural(qr) else "fyrirspurn"
+        answer = "Á síðustu {0} dögum hef ég svarað {1} {2}.".format(
+            _QUERIES_PERIOD, qr or "engum", fs
         )
         voice = answer
         response = dict(answer=answer)

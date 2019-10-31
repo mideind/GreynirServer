@@ -56,6 +56,12 @@ def nom2dat(w):
     return w
 
 
+def is_plural(num):
+    """ Determine whether an Icelandic word following a given number
+         should be plural or not, e.g. "21 maður" vs. "22 menn" """
+    return str(num).endswith("1") and not str(num).endswith("11")
+
+
 def country_desc(cc):
     """ Generate Icelandic description string of being in a particular country
         with correct preposition and case e.g. 'á Spáni', 'í Þýskalandi' """

@@ -35,13 +35,14 @@
 # TODO: "How many weeks between April 3 and June 16?"
 # TODO: Restore timezone-awareness
 # TODO: "hvað er mikið eftir af vinnuvikunni", "hvað er langt í helgina"
+# TODO: "Hvaða vikudagur er DAGSETNING næstkomandi?"
 
 import json
 import logging
 from datetime import datetime, date, timedelta
 from pytz import timezone
 
-from queries import timezone4loc, gen_answer
+from queries import timezone4loc, gen_answer, is_plural
 from settings import changedlocale
 
 
@@ -379,9 +380,9 @@ def howlong_desc_answ(target):
     days = date_diff(now, target, unit="days")
 
     # Diff. strings for singular vs. plural
-    sing = str(days).endswith("1") and not str(days).endswith("11")
-    verb = "er" if sing else "eru"
-    days_desc = "dagur" if sing else "dagar"
+    plural = is_plural(days)
+    verb = "eru" if plural else "er"
+    days_desc = "dagar" if plural else "dagur"
 
     # Format date
     fmt = "%-d. %B" if now.year == target.year else "%-d. %B %Y"

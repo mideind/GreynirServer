@@ -152,6 +152,11 @@ def _play_jazz(qs, q):
     return { "answer": "Skal gert!", "is_question": False  }
 
 
+def _play_blues(qs, q):
+    q.set_url("https://www.youtube.com/watch?v=jw9tMRhKEak")
+    return { "answer": "Skal gert!", "is_question": False  }
+
+
 _MEANING_OF_LIFE = {
     "answer": "42.",
     "voice": "Fjörutíu og tveir.",
@@ -171,6 +176,10 @@ _NO_PROBLEM = {
 
 _CREATOR = {
     "answer": "Flotta teymið hjá Miðeind skapaði mig."
+}
+
+_CREATION_DATE = {
+    "answer": "Ég var sköpuð af Miðeind árið 2019."
 }
 
 _SPECIAL_QUERIES = {
@@ -376,6 +385,8 @@ _SPECIAL_QUERIES = {
     # Play some music. Just experimental fun for now.
     "spilaðu djass": _play_jazz,
     "spila þú djass": _play_jazz,
+    "spilaðu blús": _play_blues,
+    "spila þú blús": _play_blues,
 
     # Blame
     "þetta er ekki rétt": _sorry,
@@ -426,6 +437,7 @@ _SPECIAL_QUERIES = {
     "hey": { "answer": "Sæll, kæri notandi.", "is_question": False },
     "hæ embla": { "answer": "Sæll, kæri notandi.", "is_question": False },
     "hæ": { "answer": "Sæll, kæri notandi.", "is_question": False },
+    "sæl": { "answer": "Sæll, kæri notandi.", "is_question": False },
     "sæl embla": { "answer": "Gaman að kynnast þér.", "is_question": False },
     "gaman að kynnast þér": {
         "answer": "Sömuleiðis, kæri notandi.",
@@ -462,6 +474,12 @@ _SPECIAL_QUERIES = {
     "hver er tilgangurinn með þessu öllu": _MEANING_OF_LIFE,
     "hvaða þýðingu hefur þetta allt": _MEANING_OF_LIFE,
     "hvað þýðir þetta allt saman": _MEANING_OF_LIFE,
+    "hvað er best í lífinu": {
+        "answer": "Að horfa á kvikmynd um villimanninn Kónan."
+    },
+    "hvað er það besta í lífinu": {
+        "answer": "Að horfa á kvikmynd um villimanninn Kónan."
+    },
 
     # Identity
     "hvað heitir þú": _identity,
@@ -475,24 +493,12 @@ _SPECIAL_QUERIES = {
     "hvað er embla": _identity,
 
     # Age
-    "hvað ertu gömul": {
-        "answer": "Ég var sköpuð af Miðeind árið 2019."
-    },
-    "hvað ert þú gömul": {
-        "answer": "Ég var sköpuð af Miðeind árið 2019."
-    },
-    "hvenær fæddistu": {
-        "answer": "Ég kom inn í þennan heim sumarið 2019."
-    },
-    "hvenær fæddist þú": {
-        "answer": "Ég kom inn í þennan heim sumarið 2019."
-    },
-    "hvenær áttu afmæli": {
-        "answer": "Ég kom inn í þennan heim sumarið 2019."
-    },
-    "hvenær átt þú afmæli": {
-        "answer": "Ég kom inn í þennan heim sumarið 2019."
-    },
+    "hvað ertu gömul": _CREATION_DATE,
+    "hvað ert þú gömul": _CREATION_DATE,
+    "hvenær fæddistu": _CREATION_DATE,
+    "hvenær fæddist þú": _CREATION_DATE,
+    "hvenær áttu afmæli": _CREATION_DATE,
+    "hvenær átt þú afmæli": _CREATION_DATE,
 
     # Capabilities
     "hvað veistu": _capabilities,
