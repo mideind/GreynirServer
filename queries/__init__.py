@@ -59,7 +59,7 @@ def nom2dat(w):
 def is_plural(num):
     """ Determine whether an Icelandic word following a given number
          should be plural or not, e.g. "21 maður" vs. "22 menn" """
-    return str(num).endswith("1") and not str(num).endswith("11")
+    return not str(num).endswith("11") and not str(num).endswith("1")
 
 
 def country_desc(cc):

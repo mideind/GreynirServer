@@ -36,6 +36,7 @@
 # TODO: Restore timezone-awareness
 # TODO: "hvað er mikið eftir af vinnuvikunni", "hvað er langt í helgina"
 # TODO: "Hvaða vikudagur er DAGSETNING næstkomandi?"
+# TODO: "Hvað gerðist á þessum degi?"
 
 import json
 import logging
@@ -130,6 +131,7 @@ QDateSpecialDay/fall →
     | QDateWorkersDay/fall
     | QDateEaster/fall
     # | QDateEasterSunday/fall
+    # | QDateGoodFriday/fall
     | QDateNationalDay/fall
     # | QDateBankHoliday/fall
     # | QDateCultureNight/fall
@@ -153,7 +155,7 @@ QDateFirstDayOfSummer/fall →
     'sumardagur:kk'_et_gr/fall 'fyrstur:lo'_et_kk/fall
 
 QDateThorlaksmessa/fall →
-    'þorláksmessa:kvk'_et/fall
+    'þorláksmessa:kvk'/fall
 
 QDateChristmasEve/fall →
     'jól:hk'/fall 
@@ -169,13 +171,16 @@ QDateNewYearsDay/fall →
     'nýársdagur:kk'/fall
 
 QDateWorkersDay/fall →
-    'baráttudagur:kk'/fall 'verkalýður'_et_gr_ef
+    'baráttudagur:kk'/fall 'verkalýður'_et_ef
 
 QDateEaster/fall →
     'páskar:kk'/fall
 
 QDateEasterSunday/fall →
     'páskadagur:kk'_et/fall
+
+QDateGoodFriday/fall →
+    'föstudagur:kk'_et/fall 'langur:lo'_et_kk/fall
 
 QDateNationalDay/fall →
     'þjóðhátíðardagur:kk'/fall
@@ -225,97 +230,138 @@ def QDateAbsOrRel(node, params, result):
 
 
 def QDateWhitsun(node, params, result):
+    result["desc"] = "hvítasunnudagur"
     result["target"] = next_easter() + timedelta(days=49)  # Wrong
 
 
 def QDateAscensionDay(node, params, result):
+    result["desc"] = "uppstigningardagur"
     result["target"] = next_easter() + timedelta(days=40)  # Wrong
 
 
 def QDateAshDay(node, params, result):
-    result["target"] = datetime(
-        year=datetime.today().year, month=2, day=4, hour=0, minute=0, second=0
+    result["desc"] = "öskudagur"
+    result["target"] = dnext(
+        datetime(year=datetime.today().year, month=2, day=4, hour=0, minute=0, second=0)
     )  # Wrong
 
 
 def QDateHalloween(node, params, result):
-    result["target"] = datetime(
-        year=datetime.today().year, month=10, day=31, hour=0, minute=0, second=0
+    result["desc"] = "hrekkjavaka"
+    result["target"] = dnext(
+        datetime(
+            year=datetime.today().year, month=10, day=31, hour=0, minute=0, second=0
+        )
     )
 
 
 def QDateSovereigntyDay(node, params, result):
-    result["target"] = datetime(
-        year=datetime.today().year, month=12, day=1, hour=0, minute=0, second=0
+    result["desc"] = "fullveldisdagur"
+    result["target"] = dnext(
+        datetime(
+            year=datetime.today().year, month=12, day=1, hour=0, minute=0, second=0
+        )
     )
 
 
 def QDateFirstDayOfSummer(node, params, result):
-    d = datetime(
-        year=datetime.today().year, month=4, day=18, hour=0, minute=0, second=0
+    result["desc"] = "sumardagurinn fyrsti"
+    d = dnext(
+        datetime(
+            year=datetime.today().year, month=4, day=18, hour=0, minute=0, second=0
+        )
     )
     result["target"] = next_weekday(d, 3)
 
 
 def QDateThorlaksmessa(node, params, result):
-    d = datetime(
-        year=datetime.today().year, month=12, day=23, hour=0, minute=0, second=0
+    result["desc"] = "þorláksmessa"
+    d = dnext(
+        datetime(
+            year=datetime.today().year, month=12, day=23, hour=0, minute=0, second=0
+        )
     )
 
 
 def QDateChristmasEve(node, params, result):
-    result["target"] = datetime(
-        year=datetime.today().year, month=12, day=24, hour=0, minute=0, second=0
+    result["desc"] = "aðfangadagur"
+    result["target"] = dnext(
+        datetime(
+            year=datetime.today().year, month=12, day=24, hour=0, minute=0, second=0
+        )
     )
 
 
 def QDateChristmasDay(node, params, result):
-    result["target"] = datetime(
-        year=datetime.today().year, month=12, day=25, hour=0, minute=0, second=0
+    result["desc"] = "jóladagur"
+    result["target"] = dnext(
+        datetime(
+            year=datetime.today().year, month=12, day=25, hour=0, minute=0, second=0
+        )
     )
 
 
 def QDateNewYearsEve(node, params, result):
-    result["target"] = datetime(
-        year=datetime.today().year, month=12, day=31, hour=0, minute=0, second=0
+    result["desc"] = "gamlárskvöld"
+    result["target"] = dnext(
+        datetime(
+            year=datetime.today().year, month=12, day=31, hour=0, minute=0, second=0
+        )
     )
 
 
 def QDateNewYearsDay(node, params, result):
-    result["target"] = datetime(
-        year=datetime.today().year + 1, month=1, day=1, hour=0, minute=0, second=0
+    result["desc"] = "nýársdagur"
+    result["target"] = dnext(
+        datetime(
+            year=datetime.today().year + 1, month=1, day=1, hour=0, minute=0, second=0
+        )
     )
 
 
 def QDateWorkersDay(node, params, result):
-    result["target"] = datetime(
-        year=datetime.today().year + 1, month=5, day=1, hour=0, minute=0, second=0
+    result["desc"] = "baráttudagur verkalýðsins"
+    result["target"] = dnext(
+        datetime(
+            year=datetime.today().year + 1, month=5, day=1, hour=0, minute=0, second=0
+        )
     )
 
 
 def QDateEaster(node, params, result):
+    result["desc"] = "páskar"
     result["target"] = next_easter()
 
 
 def QDateEasterSunday(node, params, result):
+    result["desc"] = "páskadagur"
     result["target"] = next_easter()  # Wrong
 
 
 def QDateNationalDay(node, params, result):
-    result["target"] = datetime(
-        year=datetime.today().year + 1, month=6, day=17, hour=0, minute=0, second=0
+    result["desc"] = "þjóðhátíðardagur"
+    result["target"] = dnext(
+        datetime(
+            year=datetime.today().year + 1, month=6, day=17, hour=0, minute=0, second=0
+        )
     )
 
 
 def QDateBankHoliday(node, params, result):
-    result["target"] = datetime(
-        year=datetime.today().year + 1, month=6, day=17, hour=0, minute=0, second=0
+    result["desc"] = "verslunarmannahelgi"
+    result["target"] = dnext(
+        datetime(
+            year=datetime.today().year + 1, month=6, day=17, hour=0, minute=0, second=0
+        )
     )  # Wrong
 
 
 def QDateCultureNight(node, params, result):
-    result["target"] = datetime(
-        year=datetime.today().year + 1, month=8, day=24, hour=0, minute=0, second=0
+    result["desc"] = "menningarnótt"
+    result["target"] = dnext(
+        datetime(
+            year=datetime.today().year + 1, month=8, day=24, hour=0, minute=0, second=0
+        )
     )  # Wrong
 
 
@@ -328,7 +374,17 @@ def next_weekday(d, weekday):
     return d + timedelta(days_ahead)
 
 
+def dnext(datetime):
+    """ Return datetime with year+1 if date was earlier in current year. """
+    now = datetime.now()
+    d = datetime
+    if d < now:
+        d = d.replace(year=d.year + 1)
+    return d
+
+
 def next_easter():
+    """ Find the date of next easter in the Gregorian calendar. """
     now = datetime.now()
     e = calc_easter(now.year)
     if e < now:
@@ -373,12 +429,14 @@ def terminal_date(t):
 
 
 def date_diff(d1, d2, unit="days"):
+    """ Get the time difference between two dates. """
     delta = d2 - d1
     cnt = getattr(delta, unit)
     return cnt
 
 
 def howlong_desc_answ(target):
+    """ Generate answer to a query about length of period to a given date. """
     now = datetime.now()
     days = date_diff(now, target, unit="days")
 
@@ -425,6 +483,7 @@ def sentence(state, result):
     try:
         with changedlocale(category="LC_TIME"):
             # Get timezone and date
+            # TODO: Restore correct timezone handling
             # tz = timezone4loc(q.location, fallback="IS")
             now = datetime.now()  # datetime.now(timezone(tz))
             qkey = None
@@ -440,7 +499,6 @@ def sentence(state, result):
             elif ("until" in result or "since" in result) and "target" in result:
                 target = result.target
                 # target.replace(tzinfo=timezone(tz))
-
                 # Find the number of days until target date
                 (response, answer, voice) = howlong_desc_answ(target)
                 qkey = "FutureDate" if "until" in result else "SinceDate"
