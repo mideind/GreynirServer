@@ -235,7 +235,9 @@
             tooltips: {
                callbacks: {
                   label: function(tooltipItem, data) {
-                     return tooltipItem.yLabel + ' fyrirspurnir';
+                     var nstr = String(tooltipItem.yLabel);
+                     var desc = nstr.endsWith('1') && !nstr.endswith('11') ? "fyrirspurn" : "fyrirspurnir";
+                     return tooltipItem.yLabel + ' ' + desc;
                   },
                }
             },
@@ -245,7 +247,7 @@
                }],
                yAxes: [{
                   ticks: {
-                     stepSize: 1,
+                     stepSize: 50,
                      min: 0,
                      callback: function(tick) {
                         return tick.toString();

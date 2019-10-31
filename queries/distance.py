@@ -24,34 +24,50 @@
 """
 
 # TODO: This module should probably use grammar instead of regexes
+# TODO: Handle travel time queries such as "Hvað er ég lengi að ganga til X?",
+#       or "Hvað er ég lengi að keyra í Y?"
 
 import re
 import logging
 import math
 
 from reynir.bindb import BIN_Db
-from queries import gen_answer, query_geocode_API_addr
+from queries import gen_answer, query_geocode_api_addr
 from geo import distance
 
 
 _DISTANCE_QTYPE = "Distance"
 
 
-_QREGEXES = (
+# TODO: This may grab queries of the form "Hvað er langt í jólin"!
+_QDISTANCE_REGEXES = (
     r"^hvað er ég langt frá (.+)$",
     r"^hvað er ég langt í burtu frá (.+)$",
     r"^hversu langt er ég frá (.+)$",
     r"^hve langt er ég frá (.+)$",
     r"^hvað er langt á (.+)$",
-    r"^hvað er langt í (.+)$",
-    # TODO: Fix response for these two (transform location to genitive)
+    r"^hvað er langt í ([^0-9.].+)$",
+    # TODO: Fix response for these two (transform location from genitive)
     # r"^hvað er langt til (.+)$",
     # r"^hversu langt er til (.+)$",
+)
+
+# TODO: Handle queries of this kind, incl. driving and cycling
+_QTRAVELTIME_REGEXES = (
+    r"^hvað er ég lengi að ganga á (.+)$",
+    r"^hvað er ég lengi að ganga upp á (.+)$",
+    r"^hvað er ég lengi að ganga niður á (.+)$",
+    r"^hvað er ég lengi að ganga í (.+)$",
+    r"^hvað er ég lengi að rölta á (.+)$",
+    r"^hvað er ég lengi að rölta í (.+)$",
 )
 
 
 def _addr2nom(address):
     """ Convert location name to nominative form """
+    # TODO: Implement more intelligently
+    # This is a tad simplistic and mucks up some things,
+    # e.g. "Ráðhús Reykjavíkur" becomes "Ráðhús Reykjavík"
     words = address.split()
     nf = []
     for w in words:
@@ -66,13 +82,10 @@ def _addr2nom(address):
     return " ".join(nf)
 
 
-def answer_for_remote_loc(locname, query):
+def dist_answer_for_loc(locname, query):
     """ Generate response to distance query """
-    if not query.location:
-        return gen_answer("Ég veit ekki hvar þú ert.")
-
-    loc_nf = _addr2nom(locname[:1].upper() + locname[1:])
-    res = query_geocode_API_addr(loc_nf)
+    loc_nf = _addr2nom(locname[0].upper() + locname[1:])
+    res = query_geocode_api_addr(loc_nf)
 
     # Verify sanity of API response
     if (
@@ -90,17 +103,19 @@ def answer_for_remote_loc(locname, query):
 
     # Calculate distance, round it intelligently and format num string
     km_dist = distance(query.location, loc)
-    km_dist = round(km_dist, 1 if km_dist < 10 else 0)
 
+    # E.g. 7,3 kílómetra
     if km_dist >= 1.0:
+        km_dist = round(km_dist, 1 if km_dist < 10 else 0)
         dist = str(km_dist).replace(".", ",")
         dist = re.sub(r",0$", "", dist)
         unit = "kílómetra"
         unit_abbr = "km"
+    # E.g. 940 metra
     else:
         dist = int(math.ceil((km_dist * 1000.0) / 10.0) * 10)  # Round to nearest 10 m
         unit = "metra"
-        unit_abbr = "m"    
+        unit_abbr = "m"
 
     # Generate answer
     answer = "{0} {1}".format(dist, unit_abbr)
@@ -110,6 +125,11 @@ def answer_for_remote_loc(locname, query):
 
     query.set_key(loc_nf)
 
+    # Beautify by capitalizing remote loc name
+    uc = locname.title()
+    bq = query.beautified_query.replace(locname, uc)
+    query.set_beautified_query(bq)
+
     return response, answer, voice
 
 
@@ -118,25 +138,30 @@ def handle_plain_text(q):
     ql = q.query_lower.rstrip("?")
 
     remote_loc = None
-    for rx in _QREGEXES:
+    for rx in _QDISTANCE_REGEXES:
         m = re.search(rx, ql)
         if m:
             remote_loc = m.group(1)
+            handler = dist_answer_for_loc
             break
     else:
+        # Nothing caught by regexes, bail
         return False
 
+    # Look up in geo API
     try:
-        answ = answer_for_remote_loc(remote_loc, q)
+        if q.location:
+            answ = handler(remote_loc, q)
+        else:
+            answ = gen_answer("Ég veit ekki hvar þú ert.")
     except Exception as e:
-        logging.warning("Exception looking up addr in geocode API: {0}".format(e))
+        logging.warning("Exception generating answer from geocode API: {0}".format(e))
         q.set_error("E_EXCEPTION: {0}".format(e))
         answ = None
-    
-    if not answ:
-        return False
 
-    q.set_qtype(_DISTANCE_QTYPE)
-    q.set_answer(*answ)
+    if answ:
+        q.set_qtype(_DISTANCE_QTYPE)
+        q.set_answer(*answ)
+        return True
 
-    return True
+    return False

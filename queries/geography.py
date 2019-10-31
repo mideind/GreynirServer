@@ -23,9 +23,10 @@
 
 """
 
-# TODO: "Hvað búa margir í/á [BORG/LAND]?" etc.
+# TODO: "Hvað búa margir í/á [BORG/LAND]?" etc. Wiki api?
 
 from datetime import datetime, timedelta
+import logging
 from cityloc import capital_for_cc
 from queries import country_desc, nom2dat
 from reynir.bindb import BIN_Db
@@ -81,7 +82,9 @@ QGeoPreposition →
     "í" | "á"
 
 QGeoSubject/fall →
-    Nl/fall
+    Nl/fall 
+    # Hardcoded special case, otherwise identified as adj. "kostaríkur" :)
+    | "kostaríka"
 
 $score(+1) QGeoSubject/fall
 
@@ -117,9 +120,12 @@ def QGeoSubject(node, params, result):
 
 
 def _capital_query(country, q):
+    """ Generate answer to question concerning a country capital. """
+
     # Get country code
     cc = isocode_for_country_name(country)
     if not cc:
+        logging.warning("No CC for country {0}".format(country))
         return False
 
     # Find capital city, given the country code
@@ -145,6 +151,8 @@ def _capital_query(country, q):
 
 
 def _which_country_query(subject, q):
+    """ Generate answer to question concerning the country in which
+        a given placename is located. """
     info = location_info(subject, "placename")
     if not info:
         return False
@@ -168,6 +176,9 @@ def _which_country_query(subject, q):
 
 
 def _which_continent_query(subject, q):
+    """ Generate answer to question concerning the continent on which
+        a given country name or placename is located. """
+
     # Get country code
     cc = isocode_for_country_name(subject)
     is_city = False
@@ -176,7 +187,7 @@ def _which_continent_query(subject, q):
         # Let's see if it's a city
         info = location_info(subject, "placename")
         if not info:
-            return False
+            return False  # We don't know where it is
         cc = info.get("country")
         is_city = True
 
@@ -190,7 +201,9 @@ def _which_continent_query(subject, q):
     answer = continent_dat
     response = dict(answer=answer)
     if is_city:
-        voice = "Borgin {0} er {1}, sem er land í {2}".format(subject, country_desc(cc), continent_dat)
+        voice = "Borgin {0} er {1}, sem er land í {2}".format(
+            subject, country_desc(cc), continent_dat
+        )
     else:
         voice = "Landið {0} er í {1}".format(subject, continent_dat)
 

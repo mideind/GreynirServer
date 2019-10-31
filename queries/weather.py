@@ -60,22 +60,49 @@ QWeatherQuery →
     | QWeatherTemperature
 
 QWeatherCurrent →
-    "hvernig" "er" "veðrið" QWeatherAnyLoc? QWeatherNow?
+    QWeatherHowIs "veðrið" QWeatherAnyLoc? QWeatherNow?
     | "hvernig" "veður" "er" QWeatherAnyLoc? QWeatherNow?
-    | "hvað" "getur" "þú" "sagt" "mér" "um" "veðrið" QWeatherAnyLoc? QWeatherNow?
-    | "hvað" "geturðu" "sagt" "mér" "um" "veðrið" QWeatherAnyLoc? QWeatherNow?
+    | QWeatherWhatCanYouTellMeAbout "veðrið" QWeatherAnyLoc? QWeatherNow?
+    | QWeatherWhatCanYouTellMeAbout "veðrið" QWeatherAnyLoc? QWeatherNow?
+
+QWeatherWhatCanYouTellMeAbout →
+    "hvað" "geturðu" "sagt" "mér"? "um"
+    | "hvað" "getur" "þú" "sagt" "mér"? "um"
+    | "hvað" "geturðu" "sagt" "mér"? "varðandi"
+    | "hvað" "getur" "þú" "sagt" "mér"? "varðandi"
 
 QWeatherForecast →
-    "hver" "er" "veðurspáin" QWeatherLocation? QWeatherNextDays?
-    | "hver" "er" "spáin" QWeatherLocation? QWeatherNextDays?
-    | "hvernig" "er" "veðurspáin" QWeatherLocation? QWeatherNextDays?
-    | "hvernig" "er" "spáin" QWeatherLocation? QWeatherNextDays?
-    | "hver" "er" "veðurspá" QWeatherLocation? QWeatherNextDays?
-    | "hvernig" "er" "veðrið" QWeatherLocation? QWeatherNextDays
-    | "hvernig" "verður" "veðrið" QWeatherLocation? QWeatherNextDays
-    | "hvernig" "eru" "veðurhorfur" QWeatherLocation? QWeatherNextDays?
-    | "hverjar" "eru" "veðurhorfur" QWeatherLocation? QWeatherNextDays?
-    | "hvers" "konar" "veðri" "er" "spáð" QWeatherLocation? QWeatherNextDays?
+    QWeatherWhatIs QWeatherConditionSingular QWeatherLocation? QWeatherNextDays?
+    | QWeatherHowIs QWeatherConditionSingular QWeatherLocation? QWeatherNextDays?
+
+    | QWeatherHowAre QWeatherConditionPlural QWeatherLocation? QWeatherNextDays?    
+    | QWeatherWhatAre QWeatherConditionPlural QWeatherLocation? QWeatherNextDays?
+
+    | "hvernig" "verður" "veðrið" QWeatherLocation? QWeatherNextDays    
+
+    | QWeatherWhatKindOfWeather "er" "spáð" QWeatherLocation? QWeatherNextDays?
+    | QWeatherWhatKindOfWeather "má" "búast" "við" QWeatherLocation? QWeatherNextDays?
+
+QWeatherWhatKindOfWeather →
+    "hvers" "konar" "veðri" | "hverskonar" "veðri" | "hvers" "kyns" "veðri" | "hvernig" "veðri"
+
+QWeatherConditionSingular →
+    "veðurspáin" | "spáin" | "veðurspá"
+
+QWeatherConditionPlural →
+    "veðurhorfur" | "veður" "horfur" | "veðurhorfurnar" | "veður" "horfurnar"
+
+QWeatherWhatIs →
+    "hver" "er"
+
+QWeatherHowIs →
+    "hvernig" "er"
+
+QWeatherHowAre →
+    "hvernig" "eru"
+
+QWeatherWhatAre →
+    "hverjar" "eru"
 
 QWeatherTemperature →
     "hvert" "er" "hitastigið" QWeatherAnyLoc? QWeatherNow?
@@ -89,15 +116,32 @@ QWeatherTemperature →
     | "hvað" "er" "hlýtt" QWeatherAnyLoc? QWeatherNow
     | "hvað" "er" "margra" "stiga" "hiti" QWeatherAnyLoc? QWeatherNow?
 
+QWeatherUmbrella →
+    "þarf" QWeatherOne "regnhlíf" QWeatherNow
+    | "væri" "regnhlíf" "gagnleg" QWeatherForMe? QWeatherNow
+    | "væri" "gagn" "af" "regnhlíf" QWeatherForMe? QWeatherNow
+    | "kæmi" "regnhlíf" "að" "gagni" QWeatherForMe? QWeatherNow
+    | "myndi" "regnhlíf" "gagnast" "mér" QWeatherNow
+
+QWeatherOne →
+    "ég" | "maður"
+
+QWeatherForMe →
+    "fyrir" "mig"
+
 QWeatherNow →
     "úti"? "í" "dag" | "úti"? "núna" | "úti"
 
 QWeatherNextDays →
-    "næstu" "daga"
+    "á" "næstunni" 
+    | "næstu" "daga"
     | "næstu" "dagana"
+    | "fyrir" "næstu" "daga"
+    | "á" "næstu" "dögum"
     | "þessa" "viku" 
+    | "þessa" "vikuna"
     | "út" "vikuna" 
-    | "á" "næstunni" 
+    | "í" "vikunni"
     | "á" "morgun"
     | "í" "fyrramálið"
 
@@ -108,6 +152,7 @@ QWeatherCapitalRegion →
     "á" "höfuðborgarsvæðinu" | "fyrir" "höfuðborgarsvæðið" 
     | "í" "reykjavík" | "fyrir" "reykjavík"
     | "í" "höfuðborginni" | "fyrir" "höfuðborgina"
+    | "á" "reykjavíkursvæðinu" | "í" "borginni" | "fyrir" "borgina"
 
 QWeatherAnyLoc →
     QWeatherCountry > QWeatherCapitalRegion > QWeatherOpenLoc
@@ -198,23 +243,26 @@ def _curr_observations(query, result):
     # User asked about a specific location
     # Try to find a matching Icelandic placename
     if "location" in result and result.location != "Ísland":
-
-        # Some strings should never be interpreted as Icelandic placenames
-        if result.location in ICE_PLACENAME_BLACKLIST:
-            return None
-
-        # Unfortunately, many foreign country names are also Icelandic
-        # placenames, so we automatically exclude country names.
-        cc = isocode_for_country_name(result.location)
-        if cc:
-            return None
-
-        info = placename_lookup(result.location)
-        if info:
-            i = info[0]
-            loc = (i.get("lat_wgs84"), i.get("long_wgs84"))
+        if result.location == "capital":
+            loc = _RVK_COORDS
+            result.subject = "Í Reykjavík"
         else:
-            return None
+            # Some strings should never be interpreted as Icelandic placenames
+            if result.location in ICE_PLACENAME_BLACKLIST:
+                return None
+
+            # Unfortunately, many foreign country names are also Icelandic
+            # placenames, so we automatically exclude country names.
+            cc = isocode_for_country_name(result.location)
+            if cc:
+                return None
+
+            info = placename_lookup(result.location)
+            if info:
+                i = info[0]
+                loc = (i.get("lat_wgs84"), i.get("long_wgs84"))
+            else:
+                return None
 
     # Talk to weather API
     try:
@@ -265,7 +313,7 @@ def get_currweather_answer(query, result):
     res = _curr_observations(query, result)
     if not res:
         return gen_answer(_API_ERRMSG)
-    
+
     try:
         temp = int(round(float(res["T"])))  # Round to nearest whole number
         desc = res["W"].lower()
@@ -363,6 +411,12 @@ def get_forecast_answer(query, result):
     return response, answer, voice
 
 
+def get_umbrella_answer(query, result):
+    """ Handle a query concerning whether an umbrella is needed 
+        for current weather conditions. """
+    return None
+
+
 def QWeather(node, params, result):
     result.qtype = _WEATHER_QTYPE
 
@@ -398,10 +452,15 @@ def QWeatherTemperature(node, params, result):
     result.qkey = "CurrentTemperature"
 
 
+def QWeatherUmbrella(node, params, result):
+    result.qkey = "Umbrella"
+
+
 _HANDLERS = {
     "CurrentTemperature": get_currtemp_answer,
     "CurrentWeather": get_currweather_answer,
     "WeatherForecast": get_forecast_answer,
+    "Umbrella": get_umbrella_answer,
 }
 
 

@@ -27,10 +27,13 @@
 import re
 from datetime import datetime, timedelta
 
+
 _OPINION_QTYPE = "Opinion"
+
 
 _OPINION_REGEXES = (
     r"hvað finnst þér um (.+)$",
+    r"hvað þykir þér um (.+)$",
     r"hvaða skoðun hefurðu á (.+)$",
     r"hvaða skoðun hefur þú á (.+)$",
     r"hvaða skoðun ertu með á (.+)$",
@@ -38,6 +41,16 @@ _OPINION_REGEXES = (
     r"hver er skoðun þín á (.+)$",
     r"hvaða skoðanir hefur þú á (.+)$",
     r"hvaða skoðanir hefurðu á (.+)$",
+    r"ertu reið yfir (.+)$",
+    r"ert þú reið yfir (.+)$",
+    r"ertu bitur yfir (.+)$",
+    r"ert þú bitur yfir (.+)$",
+    r"ertu bitur út af (.+)$",
+    r"ert þú bitur út af (.+)$",
+    r"ertu í uppnámi yfir (.+)$",
+    r"ert þú í uppnámi yfir (.+)$",
+    r"ertu í uppnámi út af (.+)$",
+    r"ert þú í uppnámi út af (.+)$",
 )
 
 

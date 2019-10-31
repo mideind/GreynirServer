@@ -24,7 +24,9 @@
 
 """
 
-from . import query_json_api
+# TODO: Shorten overly long first paragraphs.
+
+from queries import query_json_api
 from datetime import datetime, timedelta
 import re
 
@@ -110,8 +112,11 @@ def _clean_answer(answer):
         a = ". ".join(a.split(".")[1:])
     # Remove text within parentheses
     a = re.sub(r"\([^)]+\)", "", a)
-    # Normalize whitespace
+    # Fix any whitespace formatting issues created by
+    # removing text within parentheses
     a = re.sub(r"\s+", " ", a)
+    a = re.sub(r"\s\.$", ".", a)
+    a = re.sub(r"\s,\s.", ", ", a)
     return a
 
 
@@ -119,11 +124,13 @@ _WIKI_API_URL = "https://is.wikipedia.org/w/api.php?format=json&action=query&pro
 
 
 def _query_wiki_api(subject):
+    """ Fetch JSON from Wikipedia API """
     url = _WIKI_API_URL.format(subject)
     return query_json_api(url)
 
 
 def get_wiki_summary(subject_nom, subject_dat):
+    """ Fetch summary of subject from Icelandic Wikipedia """
     res = _query_wiki_api(subject_nom)
 
     not_found = "Ég fann ekkert um {0} í Wikipedíu".format(subject_dat)
@@ -151,15 +158,17 @@ def sentence(state, result):
         q.set_qtype(result.qtype)
         q.set_key(result.qkey)
 
+        # Fetch from Wikipedia API
         answer = get_wiki_summary(result["subject_nom"], result["subject_dat"])
         response = dict(answer=answer)
-        voice_answer = answer
-        q.set_answer(response, answer, voice_answer)
+        voice = answer
+        q.set_answer(response, answer, voice)
 
         # Beautify query by fixing spelling of Wikipedia
         b = q.beautified_query
         for w in _WIKI_VARIATIONS:
             b = b.replace(w, _WIKIPEDIA_CANONICAL)
+            b = b.replace(w.capitalize(), _WIKIPEDIA_CANONICAL)
         q.set_beautified_query(b)
 
         # Cache reply for 24 hours

@@ -25,12 +25,12 @@
 
 # TODO: Speech synthesis: "Bárugötu þrjú" ekki "þrír"
 # TODO: "Í hvaða póstnúmeri er ég?" "Í hvaða póstnúmeri er Fiskislóð 31?"
-# TODO: "Í hvaða hverfi er ég?" - "Þú ert í Hlíðunum"
 
 import os
+import re
 import logging
 
-from queries import gen_answer, query_geocode_API_coords, country_desc, nom2dat
+from queries import gen_answer, query_geocode_api_coords, country_desc, nom2dat
 from iceaddr import iceaddr_lookup
 from geo import iceprep_for_placename, iceprep_for_street
 
@@ -108,9 +108,16 @@ def street_desc(street_nom, street_num, locality_nom):
     return street_comp
 
 
+def _addr4voice(addr):
+    """ Prepare an address string for voice synthesizer. """
+    # E.g. "Fiskislóð 5-9" becomes "Fiskislóð 5 til 9"
+    s = re.sub(r"(\d+)\-(\d+)", r"\1 til \2", addr)
+    return s
+
+
 def answer_for_location(loc):
     # Send API request
-    res = query_geocode_API_coords(loc[0], loc[1])
+    res = query_geocode_api_coords(loc[0], loc[1])
 
     # Verify that we have at least one valid result
     if (
@@ -161,13 +168,13 @@ def answer_for_location(loc):
         descr = "á" + top.get("formatted_address")
 
     response = dict(answer=descr)
-    voice = "Þú ert {0}".format(descr)
+    voice = "Þú ert {0}".format(_addr4voice(descr))
     answer = descr[0].upper() + descr[1:]
 
     return response, answer, voice
 
 
-_WHERE_AM_I_STRINGS = frozenset(
+_WHERE_AM_I_QUERIES = frozenset(
     (
         "hvar er ég",
         "hvar er ég núna",
@@ -187,6 +194,17 @@ _WHERE_AM_I_STRINGS = frozenset(
     )
 )
 
+# _POSTCODE_QUERIES = frozenset(
+#     (
+#         "í hvaða póstnúmeri er ég",
+#         "í hvaða póstnúmeri er ég staddur",
+#         "í hvaða póstnúmeri er ég stödd",
+#         "hvaða póstnúmeri er ég í",
+#         "hvaða póstnúmeri er ég staddur í",
+#         "hvaða póstnúmeri er ég stödd í",
+#     )
+# )
+
 _LOC_QTYPE = "Location"
 
 
@@ -194,12 +212,11 @@ def handle_plain_text(q):
     """ Handle a plain text query asking about user's current location. """
     ql = q.query_lower.rstrip("?")
 
-    if ql not in _WHERE_AM_I_STRINGS:
+    if ql not in _WHERE_AM_I_QUERIES:
         return False
 
-    loc = q.location
     answ = None
-
+    loc = q.location
     if loc:
         # Get info about this location
         answ = answer_for_location(loc)
