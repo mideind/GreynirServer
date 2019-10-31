@@ -22,6 +22,8 @@
 """
 
 import re
+import cachetools
+
 from queries import query_json_api, format_icelandic_float
 
 
@@ -148,6 +150,7 @@ QCurRUB/fall →
 QCurCNY/fall →
     'kínverskur:lo'_hk/fall? 'júan:hk'/fall
     | "yuan"
+    | "júan"
 
 QCurNumberWord →
     # to is a declinable number word ('tveir/tvo/tveim/tveggja')
@@ -219,10 +222,7 @@ def QCurNumberWord(node, params, result):
 
 
 def QCurUnit(node, params, result):
-    # c = node.first_child(lambda x: True)
-    # nt_name = c.string_self()
-    # nt_name = nt_name.split("_")[0][-3:]
-    assert isinstance(node.child, NonterminalNode)
+    # assert isinstance(node.child, NonterminalNode)
     currency = node.child.nt_base[-3:]
     add_currency(currency, result)
 
@@ -248,34 +248,43 @@ def QCurAmountConversion(node, params, result):
     result.desc = node.contained_text()
 
 
-CURR_API_URL = "https://apis.is/currency/lb"
-ISK_EXCHRATE = {}
+_CURR_API_URL = "https://apis.is/currency/lb"
+_CURR_CACHE_TTL = 3600  # seconds
+
+
+@cachetools.cached(cachetools.TTLCache(1, _CURR_CACHE_TTL))
+def _fetch_exchange_rates():
+    """ Fetch exchange rate data from apis.is and cache it. """
+    print("FETCHING EXCHANGE RATES")
+
+    res = query_json_api(_CURR_API_URL)
+    if not res or "results" not in res:
+        return None
+
+    return {c["shortName"]: c["value"] for c in res["results"]}
 
 
 def _query_exchange_rate(curr1, curr2):
     """ Returns exchange rate of two ISO 4217 currencies """
+    # print("Gengi {0} gagnvart {1}".format(curr1, curr2))
 
     # A currency is always worth 1 of itself
     if curr1 == curr2:
         return 1
 
-    # TODO: Add caching
-    res = query_json_api(CURR_API_URL)
-    if not res:
-        return None
+    # Get exchange rate data
+    xr = _fetch_exchange_rates()
 
-    res = res["results"]
-
-    xr = {c["shortName"]: c["value"] for c in res}
-
-    # print("{0} gagnvart {1}".format(curr1, curr2))
-
-    if curr1 == "GVT":
+    # Gengisvísitala
+    if curr1 == "GVT" and "GVT" in xr:
         return xr["GVT"]
+    # ISK vs. foreign currency
     elif curr1 == "ISK" and curr2 in xr:
         return xr[curr2]
+    # Foreign currency vs. ISK
     elif curr1 in xr and curr2 == "ISK":
         return xr[curr1]
+    # Foreign currency vs. foreign currency
     elif curr1 in xr and curr2 in xr and xr[curr2] != 0:
         return xr[curr1] / xr[curr2]
 
@@ -294,10 +303,11 @@ def sentence(state, result):
         elif result.op == "exchange":
             val = _query_exchange_rate(result.currencies[0], result.currencies[1])
         elif result.op == "general":
+            # TODO: Handle this ("Hvert er gengi krónunnar? Hvert er gengi dollarans?")
             pass
         elif result.op == "convert":
             val = _query_exchange_rate(result.currencies[1], result.currencies[0])
-            val = val * result.numbers[0]
+            val = val * result.numbers[0] if val else None
         else:
             raise Exception("Unknown operator: {0}".format(result.op))
 
@@ -306,7 +316,7 @@ def sentence(state, result):
             response = dict(answer=answer)
             voice_answer = "{0} er {1}".format(result.desc, answer)
             q.set_answer(response, answer, voice_answer)
-            q.set_key("ISK")
+            q.set_key("ISK")  # Fix me
             q.set_qtype(_CURRENCY_QTYPE)
 
         return

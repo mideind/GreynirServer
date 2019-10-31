@@ -104,6 +104,9 @@ QDateHowLongSince →
 QDateWhenIs →
     "hvenær" "er" QDateSpecialDay_nf
     | "hvenær" "eru" QDateSpecialDay_nf
+    | "hvaða" "dagur" "er" QDateSpecialDay_nf
+    | "á" "hvaða" "degi" "er" QDateSpecialDay_nf
+    | "á" "hvaða" "degi" "eru" QDateSpecialDay_nf
 
 QDateItem/fall →
     QDateAbsOrRel | QDateSpecialDay/fall
@@ -132,16 +135,16 @@ QDateSpecialDay/fall →
     # | QDateCultureNight/fall
 
 QDateWhitsun/fall →
-    'hvítasunnudagur:kk'/fall
+    'hvítasunnudagur:kk'_et/fall
 
 QDateAscensionDay/fall →
-    'uppstigningardagur:kk'/fall
+    'uppstigningardagur:kk'_et/fall
 
 QDateAshDay/fall →
-    'öskudagur:kk'/fall
+    'öskudagur:kk'_et/fall
 
 QDateHalloween/fall →
-    'hrekkjavaka:kvk'/fall
+    'hrekkjavaka:kvk'_et/fall
 
 QDateSovereigntyDay/fall →
     'fullveldisdagur:kk'/fall
@@ -150,14 +153,14 @@ QDateFirstDayOfSummer/fall →
     'sumardagur:kk'_et_gr/fall 'fyrstur:lo'_et_kk/fall
 
 QDateThorlaksmessa/fall →
-    'þorláksmessa:kvk'/fall
+    'þorláksmessa:kvk'_et/fall
 
 QDateChristmasEve/fall →
     'jól:hk'/fall 
     | 'aðfangadagur:kk'_et/fall 'jól:hk'_ef
 
 QDateChristmasDay/fall →
-    'jóladagur:kk'/fall
+    'jóladagur:kk'_et/fall
 
 QDateNewYearsEve/fall →
     'gamlárskvöld:hk'/fall
@@ -184,7 +187,7 @@ QDateBankHoliday/fall →
 QDateCultureNight/fall →
     'menningarnótt:kvk'/fall
 
-$score(+35) QDate
+$score(+55) QDate
 
 """
 
@@ -442,8 +445,9 @@ def sentence(state, result):
                 (response, answer, voice) = howlong_desc_answ(target)
                 qkey = "FutureDate" if "until" in result else "SinceDate"
             elif "when" in result and "target" in result:
-                # TODO: Fix this.
-                date_str = result.target.strftime("%A %-d. %B")
+                # TODO: Fix this so it includes weekday, e.g.
+                # "Sunnudaginn 1. október"
+                date_str = result.target.strftime("%-d. %B")
                 (response, answer, voice) = gen_answer(date_str)
             else:
                 # Shouldn't be here

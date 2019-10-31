@@ -171,7 +171,8 @@ _OF_COURSE = {
 }
 
 _NO_PROBLEM = {
-    "answer": "Ekkert mál, kæri notandi."
+    "answer": "Ekkert mál, kæri notandi.",
+    "is_question": False
 }
 
 _CREATOR = {
