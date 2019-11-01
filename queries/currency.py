@@ -255,8 +255,6 @@ _CURR_CACHE_TTL = 3600  # seconds
 @cachetools.cached(cachetools.TTLCache(1, _CURR_CACHE_TTL))
 def _fetch_exchange_rates():
     """ Fetch exchange rate data from apis.is and cache it. """
-    print("FETCHING EXCHANGE RATES")
-
     res = query_json_api(_CURR_API_URL)
     if not res or "results" not in res:
         return None
