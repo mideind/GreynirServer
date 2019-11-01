@@ -1498,6 +1498,10 @@ class HagstofanScraper(ScrapeHelper):
     def _get_content(self, soup_body):
         """ Find the article content (main text) in the soup """
         content = soup_body.article
+        # For some reason, Hagstofan's RSS feed sometimes includes
+        # non-news statistics pages with a non-standard format 
+        if not content:
+            return BeautifulSoup("", _HTML_PARSER)  # Return empty soup.
 
         # Remove tables
         for div in content.find_all("div", {"class": "scrollable"}):
