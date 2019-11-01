@@ -386,6 +386,10 @@ _SPECIAL_QUERIES = {
     # Play some music. Just experimental fun for now.
     "spilaðu djass": _play_jazz,
     "spila þú djass": _play_jazz,
+    "spilaðu jass": _play_jazz,
+    "spila þú jass": _play_jazz,
+    "spilaðu jazz": _play_jazz,
+    "spila þú jazz": _play_jazz,
     "spilaðu blús": _play_blues,
     "spila þú blús": _play_blues,
 
