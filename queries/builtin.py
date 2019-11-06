@@ -845,7 +845,6 @@ QEntityPrefix_nf →
     "hvað" "er"
     | "hvað" "eru"
     # Allowing epsilon here makes this production catch too much
-    # | 0
 
 QEntityPrefix_þf →
     "hvað" "veistu" "um"
@@ -855,7 +854,7 @@ QEntityPrefix_þgf →
     "segðu" "mér"? "frá"
 
 QEntityPrefix_ef →
-    0
+    "" # Never matches
 
 QTitle →
     QTitlePrefix_nf QTitleKey_nf "?"?

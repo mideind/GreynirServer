@@ -47,7 +47,7 @@ _CAP = (
     "Þú getur til dæmis beðið mig um að kasta teningi.",
     "Þú getur til dæmis spurt mig um staðsetningu.",
     "Þú getur til dæmis spurt mig um fólk sem hefur komið fram í fjölmiðlum.",
-    "Þú getur til dæmis beðið mig um lélegan brandara.",
+    "Þú getur til dæmis beðið mig um að segja brandara.",
     "Þú getur til dæmis beðið mig um upplýsingar úr Wikipedíu.",
 )
 
@@ -92,7 +92,17 @@ def _random_trivia(qs, q):
 
 
 def _identity(qs, q):
-    return { "answer": "Ég heiti Embla. Ég skil íslensku og er til þjónustu reiðubúin." }
+    if q.is_voice:
+        # Voice client (Embla)
+        answer = {
+            "answer": "Ég heiti Embla. Ég skil íslensku og er til þjónustu reiðubúin.",
+        }
+    else:
+        # Web client (Greynir)
+        answer = {
+            "answer": "Ég heiti Greynir. Ég er grey sem reynir að greina íslensku.",
+        }
+    return answer
 
 
 _SORRY = (
@@ -427,7 +437,10 @@ _SPECIAL_QUERIES = {
     "þú fórst ekki með rétt mál": _sorry,
     "þú fórst með rangt mál": _sorry,
     "þú ert lygari": _sorry,
+    "þú ert að ljúga": _sorry,
     "þú ert í ruglinu": _sorry,
+    "þú ert að rugla": _sorry,
+    "þú ert að bulla": _sorry,
     "þú ert í tómu rugli": _sorry,
     "þú ert alveg í ruglinu": _sorry,
     "þú ert glötuð": _sorry,
@@ -444,6 +457,10 @@ _SPECIAL_QUERIES = {
     "hæ": { "answer": "Sæll, kæri notandi.", "is_question": False },
     "sæl": { "answer": "Sæll, kæri notandi.", "is_question": False },
     "sæl embla": { "answer": "Gaman að kynnast þér.", "is_question": False },
+    "góðan daginn": { "answer": "Góðan daginn, kæri notandi.", "is_question": False },
+    "góðan dag": { "answer": "Góðan daginn, kæri notandi.", "is_question": False },
+    "gott kvöld": { "answer": "Gott kvöld, kæri notandi.", "is_question": False },
+    "góða nótt": { "answer": "Góða nótt, kæri notandi.", "is_question": False },
     "gaman að kynnast þér": {
         "answer": "Sömuleiðis, kæri notandi.",
         "is_question": False,
@@ -510,7 +527,9 @@ _SPECIAL_QUERIES = {
     "hvað veist þú": _capabilities,
 
     "hvað get ég spurt þig um": _capabilities,
+    "hvað get ég beðið þig um": _capabilities,
     "hvað get ég spurt um": _capabilities,
+    "hvað get ég beðið um": _capabilities,
     "hvað get ég spurt": _capabilities,
     
     "um hvað get ég spurt": _capabilities,
