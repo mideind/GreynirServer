@@ -695,7 +695,7 @@ def process_query(
     client_type=None,
     client_version=None,
     bypass_cache=False,
-    private=False,
+    private=False
 ):
     """ Process an incoming natural language query.
         If voice is True, return a voice-friendly string to
