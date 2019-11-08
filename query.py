@@ -814,11 +814,15 @@ def process_query(
             # Log the failure
             qrow = QueryRow(
                 timestamp=now,
+                interpretations=it,
                 question=first_clean_q,
                 error=result.get("error"),
+                latitude=location[0] if location else None,
+                longitude=location[1] if location else None,
                 # Client identifier
                 client_id=client_id,
                 client_type=client_type or None,
+                client_version=client_version or None,
                 # IP address
                 remote_addr=remote_addr or None
                 # All other fields are set to NULL
