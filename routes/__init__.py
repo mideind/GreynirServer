@@ -32,6 +32,8 @@ _MAX_TEXT_LENGTH_VIA_URL = 512
 _MAX_URL_LENGTH = 512
 _MAX_UUID_LENGTH = 36
 
+_TRUTHY = frozenset(("true", "1", "yes"))
+
 cache = current_app.config["CACHE"]
 routes = Blueprint("routes", __name__)
 
@@ -40,6 +42,7 @@ def max_age(seconds):
     """ Caching decorator for Flask - augments response with a max-age cache header """
 
     def decorator(f):
+
         @wraps(f)
         def decorated_function(*args, **kwargs):
             resp = f(*args, **kwargs)
@@ -61,6 +64,7 @@ def restricted(f):
         if not current_app.config["DEBUG"]:
             return abort(403)
         return f(*args, **kwargs)
+
     return decorated_function
 
 
@@ -72,7 +76,7 @@ def bool_from_request(rq, name, default=False):
     if b is None:
         # Not present in the form: return the default
         return default
-    return isinstance(b, str) and b.lower() in {"true", "1", "yes"}
+    return isinstance(b, str) and b.lower() in _TRUTHY
 
 
 def better_jsonify(**kwargs):

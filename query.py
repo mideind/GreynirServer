@@ -51,6 +51,17 @@ from processor import modules_in_dir
 # The grammar root nonterminal for queries; see Reynir.grammar
 _QUERY_ROOT = "QueryRoot"
 
+
+def beautify_query(query):
+    """ Return a minimally beautified version of the given query string """
+    # Make sure the query starts with an uppercase letter
+    bq = (query[0].upper() + query[1:]) if query else ""
+    # Add a question mark if no other ending punctuation is present
+    if not any(bq.endswith(s) for s in ("?", ".", "!")):
+        bq += "?"
+    return bq
+
+
 # A fixed preamble that is inserted before all query grammar fragments
 _GRAMMAR_PREAMBLE = """
 
@@ -166,12 +177,12 @@ class Query:
         self._session = session
         self._query = query or ""
         self._location = location
-        # Prepare a "beautified query" object, that can be
-        # shown in a client user interface
-        bq = (query[0].upper() + query[1:]) if query else ""
-        if not any(bq.endswith(s) for s in ("?", ".", "!")):
-            bq += "?"
-        self.set_beautified_query(bq)
+        # Prepare a "beautified query" string that can be
+        # shown in a client user interface. By default, this
+        # starts with an uppercase letter and ends with a
+        # question mark, but this can be modified during the
+        # processing of the query.
+        self.set_beautified_query(beautify_query(query))
         self._voice = voice
         self._auto_uppercase = auto_uppercase
         self._error = None
@@ -545,6 +556,11 @@ class Query:
             and return True """
         if Query._parser is None:
             Query.init_class()
+        # By default, the result object contains the 'raw' query
+        # string (the one returned from the speech-to-text processor)
+        # as well as the beautified version of that string - which
+        # usually starts with an uppercase letter and has a trailing
+        # question mark (or other ending punctuation).
         result = dict(q_raw=self.query, q=self.beautified_query)
         # First, try to handle this from plain text, without parsing:
         # shortcut to a successful, plain response
@@ -671,7 +687,8 @@ def to_dative(np, *, meaning_filter_func=None):
 def process_query(
     q,
     voice,
-    auto_uppercase,
+    *,
+    auto_uppercase=False,
     location=None,
     remote_addr=None,
     client_id=None,
@@ -690,12 +707,13 @@ def process_query(
         or an iterable of strings that will be processed in
         order until a successful one is found. """
 
+    now = datetime.utcnow()
+
     with SessionContext(commit=True) as session:
 
         result = None
         client_id = client_id[:256] if client_id else None
 
-        # Try to parse and process as a query
         if isinstance(q, str):
             # This is a single string
             it = [q]
@@ -703,15 +721,24 @@ def process_query(
             # This should be an array of strings,
             # in decreasing priority order
             it = q
+        first_clean_q = None
+        first_qtext = None
+
         # Iterate through the submitted query strings,
         # attempting to execute them in turn until we find
         # one that works (or we're stumped)
-        first_qtext = None
+
         for qtext in it:
             qtext = qtext.strip()
             clean_q = qtext.rstrip("?")
-            if first_qtext is None:
-                first_qtext = clean_q
+            if first_clean_q is None:
+                # Store the first (most likely) query string
+                # that comes in from the speech-to-text processor,
+                # since we want to return that one to the client
+                # if no query string is matched - not the last
+                # (least likely) query string
+                first_clean_q = clean_q
+                first_qtext = qtext
             # First, look in the query cache for the same question
             # (in lower case), having a not-expired answer
             cached_answer = None
@@ -722,7 +749,7 @@ def process_query(
                 cached_answer = (
                     session.query(QueryRow)
                     .filter(QueryRow.question_lc == clean_q.lower())
-                    .filter(QueryRow.expires >= datetime.utcnow())
+                    .filter(QueryRow.expires >= now)
                     .order_by(desc(QueryRow.expires))
                     .one_or_none()
                 )
@@ -747,11 +774,11 @@ def process_query(
             result = query.execute()
             if result["valid"] and "error" not in result:
                 # Successful: our job is done
-                # Log the result
                 if not private:
+                    # If not in private mode, log the result
                     try:
                         qrow = QueryRow(
-                            timestamp=datetime.utcnow(),
+                            timestamp=now,
                             interpretations=it,
                             question=clean_q,
                             # bquestion is the beautified query string
@@ -778,16 +805,16 @@ def process_query(
                         session.add(qrow)
                     except Exception as e:
                         logging.error("Error logging query: {0}".format(e))
-                
                 return result
 
-        # Failed to answer the query
+        # Failed to answer the query, i.e. no query processor
+        # module was able to parse the query and provide an answer
         result = result or dict(valid=False, error="E_NO_RESULT")
-        if first_qtext:
+        if first_clean_q:
             # Log the failure
             qrow = QueryRow(
-                timestamp=datetime.utcnow(),
-                question=first_qtext,
+                timestamp=now,
+                question=first_clean_q,
                 error=result.get("error"),
                 # Client identifier
                 client_id=client_id,
@@ -797,5 +824,11 @@ def process_query(
                 # All other fields are set to NULL
             )
             session.add(qrow)
+            # Re-insert the query data from the first (most likely)
+            # string returned from the speech-to-text processor,
+            # replacing residual data that otherwise would be there
+            # from the last (least likely) query string
+            result["q_raw"] = first_qtext
+            result["q"] = beautify_query(first_qtext)
 
         return result

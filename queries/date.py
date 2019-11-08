@@ -513,6 +513,9 @@ def sentence(state, result):
 
             q.set_key(qkey)
             q.set_answer(response, answer, voice)
+            # Lowercase the query string to avoid 'Dagur' being
+            # displayed with a capital D
+            q.lowercase_beautified_query()
             q.set_qtype(_DATE_QTYPE)
 
     except Exception as e:

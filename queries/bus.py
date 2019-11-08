@@ -59,6 +59,8 @@ HANDLE_TREE = True
 # Translate slightly wrong words that we allow in the grammar in order to
 # make it more resilient
 _WRONG_STOP_WORDS = {
+    "stoppustöð": "stoppistöð",
+    "strætóstoppustöð": "strætóstoppistöð",
     "stoppustuð": "stoppistöð",
     "Stoppustuð": "stoppistöð",
 }
@@ -76,7 +78,7 @@ GRAMMAR = """
 # adding one or more query productions to the Query nonterminal
 
 Query →
-    QBusArrivalTime | QBusNearestStop | QBusWhich
+    QBusArrivalTime | QBusAnyArrivalTime | QBusNearestStop | QBusWhich
 
 # By convention, names of nonterminals in query grammars should
 # start with an uppercase Q
@@ -103,10 +105,10 @@ QBusStop_hk →
     "strætóstopp" | "stopp"
 
 QBusStopTail_kvk →
-    "næst" "mér"? | "nálægust" | "styst" "í" "burtu"
+    "næst" "mér"? | "nálægust" | "styst" "í" "burtu" | "nálægt" "mér"?
 
 QBusStopTail_hk →
-    "næst" "mér"? | "nálægast" | "styst" "í" "burtu"
+    "næst" "mér"? | "nálægast" | "styst" "í" "burtu" | "nálægt" "mér"?
 
 QBusNoun/fall/tala →
     'strætó:kk'/tala/fall
@@ -150,17 +152,11 @@ QBusWhichTailCorrect/tala →
     | 'stoppa:so'_p3_gm_fh_nt/tala "á" QBusStopName_þgf
     | 'stöðva:so'_p3_gm_fh_nt/tala "í" QBusStopName_þgf
     | 'stöðva:so'_p3_gm_fh_nt/tala "á" QBusStopName_þgf
-    | 'aka:so'_p3_gm_fh_nt/tala "í" QBusStopName_þf
-    | 'aka:so'_p3_gm_fh_nt/tala "á" QBusStopName_þf
-    | 'aka:so'_p3_gm_fh_nt/tala "til" QBusStopName_ef
-    | 'aka:so'_p3_gm_fh_nt/tala "frá" QBusStopName_þgf
+    | 'aka:so'_p3_gm_fh_nt/tala QBusAtStopCorrect
     | 'koma:so'_p3_gm_fh_nt/tala "á" QBusStopName_þf
     | 'koma:so'_p3_gm_fh_nt/tala "í" QBusStopName_þf
     | 'koma:so'_p3_gm_fh_nt/tala "til" QBusStopName_ef
-    | 'fara:so'_p3_gm_fh_nt/tala "í" QBusStopName_þf
-    | 'fara:so'_p3_gm_fh_nt/tala "á" QBusStopName_þf
-    | 'fara:so'_p3_gm_fh_nt/tala "frá" QBusStopName_þgf
-    | 'fara:so'_p3_gm_fh_nt/tala "til" QBusStopName_ef
+    | 'fara:so'_p3_gm_fh_nt/tala QBusAtStopCorrect
 
 # It seems to be necessary to allow the nominal case
 # also, because the Google ASR language model doesn't always
@@ -219,12 +215,17 @@ QBusArrivalTime →
     # 'Hvenær er von á fimmunni / vagni númer sex?'
     | "hvenær" "er" "von" "á" QBus_þgf QBusAtStop? '?'?
 
-    # 'Hvenær má búast við leið þrettán?
+    # 'Hvenær má búast við leið þrettán?'
     | "hvenær" "má" "búast" "við" QBus_þgf QBusAtStop? '?'?
+
+QBusAnyArrivalTime →
+    # 'Hvenær kemur/fer strætó?'
+    "hvenær" QBusArrivalVerb QBusNounSingular_nf '?'?
 
 QBusArrivalVerb → "kemur" | "fer" | "stoppar"
 
 $score(+32) QBusArrivalTime
+$score(+16) QBusAnyArrivalTime
 
 # We can specify a bus in different ways, which may require
 # the bus identifier to be in different cases
@@ -307,6 +308,14 @@ def QBusArrivalTime(node, params, result):
         # percolated upwards from a child node (see below).
         # Set the query key
         result.qkey = result.bus_number
+
+
+def QBusAnyArrivalTime(node, params, result):
+    """ Bus arrival time query """
+    # Set the query type
+    result.qtype = "ArrivalTime"
+    # Set the query key to 'Any'
+    result.qkey = result.bus_number = "Any"
 
 
 def QBusWhich(node, params, result):
@@ -542,10 +551,11 @@ def query_nearest_stop(query, session, result):
     # Get the stop closest to the user
     stop = straeto.BusStop.closest_to(location)
     answer = stop.name
+    # Use the same word for the bus stop as in the query
+    stop_word = result.stop_word if "stop_word" in result else "stoppistöð"
     va = [
         "Næsta",
-        # Use the same word for the bus stop as in the query
-        result.stop_word,
+        stop_word,
         "er", stop.name + ";",
         "þangað", "eru",
         voice_distance(straeto.distance(location, stop.location)),
@@ -574,9 +584,6 @@ def query_arrival_time(query, session, result):
             response = dict(answer=answer)
             voice_answer = "Ég veit ekki hvar þú ert."
             return response, answer, voice_answer
-    bus_number = result.bus_number
-    bus_name = result.bus_name
-    bus_name = bus_name[0].upper() + bus_name[1:]
 
     # Obtain today's bus schedule
     global SCHEDULE_TODAY
@@ -599,7 +606,34 @@ def query_arrival_time(query, session, result):
             # This will fetch the single closest stop, regardless of distance
             stops = [straeto.BusStop.closest_to(location)]
 
+    # Handle the case where no bus number was specified (i.e. is 'Any')
+    if result.bus_number == "Any":
+        stop = stops[0]
+        routes = sorted(
+            straeto.BusRoute.lookup(rid).number for rid in stop.visits.keys()
+        )
+        if len(routes) != 1:
+            # More than one route possible: ask user to clarify
+            answer = " ".join(
+                [
+                    "Leiðir",
+                    natlang_seq([str(r) for r in routes]),
+                    "stoppa á",
+                    to_dative(stop.name)
+                ]
+            ) + "; spurðu um eina þeirra."
+            voice_answer = answer
+            response = dict(answer=answer)
+            return response, answer, voice_answer
+        # Only one route: use it as the query subject
+        bus_number = routes[0]
+        bus_name = "strætó númer {0}".format(bus_number)
+    else:
+        bus_number = result.bus_number
+        bus_name = result.bus_name
+
     # Prepare results
+    bus_name = bus_name[0].upper() + bus_name[1:]
     va = [bus_name]
     a = []
     arrivals = []
@@ -733,8 +767,8 @@ def query_which_route(query, session, result):
     bus_noun = result.bus_noun  # 'strætó', 'vagn', 'leið'...
     stops = straeto.BusStop.named(stop_name, fuzzy=True)
     if not stops:
-        answer = stop_name + " þekkist ekki."
-        va = a = [
+        a = [stop_name, "þekkist ekki."]
+        va = [
             "Ég", "þekki", "ekki", "biðstöðina", stop_name.capitalize(),
         ]
     else:
