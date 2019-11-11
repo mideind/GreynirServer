@@ -144,6 +144,7 @@ def test_query_api(client):
     resp = client.get("/query.api?voice=1&q=hvað er klukkan í Kaupmannahöfn?")
     json = validate_json(resp)
     assert json["qtype"] == "Time"
+    assert json["key"] == "Europe/Copenhagen"
     assert "answer" in json
     assert re.search(r"^\d\d:\d\d$", json["answer"])
     assert "voice" in json
@@ -151,6 +152,7 @@ def test_query_api(client):
     resp = client.get("/query.api?voice=1&q=Hvað er klukkan núna")
     json = validate_json(resp)
     assert json["qtype"] == "Time"
+    assert json["key"] == "Atlantic/Reykjavik"
     assert "answer" in json
     assert re.search(r"^\d\d:\d\d$", json["answer"])
     assert "voice" in json
