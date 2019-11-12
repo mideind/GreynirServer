@@ -185,7 +185,7 @@ def test_query_api(client):
     json = validate_json(resp)
     assert json["qtype"] == "Date"
     assert "answer" in json
-    assert re.search(r"24", json["answer"])
+    assert re.search(r"25", json["answer"]) is not None
 
     # Arithmetic module
     ARITHM_QUERIES = {

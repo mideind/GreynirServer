@@ -39,6 +39,7 @@
 # TODO: "Hvað gerðist á þessum degi?"
 
 import json
+import re
 import logging
 from datetime import datetime, date, timedelta
 from pytz import timezone
@@ -102,12 +103,12 @@ QDateHowLongSince →
     | "hvað" "eru" "margir" "mánuðir" "liðnir" "frá" QDateItem_þgf
     | "hvað" "eru" "margar" "vikur" "liðnar" "frá" QDateItem_þgf
 
+QDateIsAre → "er" | "eru"
+
 QDateWhenIs →
-    "hvenær" "er" QDateSpecialDay_nf
-    | "hvenær" "eru" QDateSpecialDay_nf
+    "hvenær" QDateIsAre QDateSpecialDay_nf
     | "hvaða" "dagur" "er" QDateSpecialDay_nf
-    | "á" "hvaða" "degi" "er" QDateSpecialDay_nf
-    | "á" "hvaða" "degi" "eru" QDateSpecialDay_nf
+    | "á" "hvaða" "degi" QDateIsAre QDateSpecialDay_nf
 
 QDateItem/fall →
     QDateAbsOrRel | QDateSpecialDay/fall
@@ -118,8 +119,8 @@ QDateAbsOrRel →
 # TODO: Order this by time of year
 QDateSpecialDay/fall →
     QDateHalloween/fall
-    # | QDateWhitsun/fall
-    # | QDateAscensionDay/fall
+    | QDateWhitsun/fall
+    | QDateAscensionDay/fall
     # | QDateAshDay/fall
     | QDateSovereigntyDay/fall
     # | QDateFirstDayOfSummer/fall
@@ -130,10 +131,11 @@ QDateSpecialDay/fall →
     | QDateNewYearsDay/fall
     | QDateWorkersDay/fall
     | QDateEaster/fall
-    # | QDateEasterSunday/fall
-    # | QDateGoodFriday/fall
+    | QDateEasterSunday/fall
+    | QDateMaundyThursday/fall
+    | QDateGoodFriday/fall
     | QDateNationalDay/fall
-    # | QDateBankHoliday/fall
+    | QDateBankHoliday/fall
     # | QDateCultureNight/fall
 
 QDateWhitsun/fall →
@@ -149,29 +151,29 @@ QDateHalloween/fall →
     'hrekkjavaka:kvk'_et/fall
 
 QDateSovereigntyDay/fall →
-    'fullveldisdagur:kk'/fall
+    'fullveldisdagur:kk'_et/fall
 
 QDateFirstDayOfSummer/fall →
     'sumardagur:kk'_et_gr/fall 'fyrstur:lo'_et_kk/fall
 
 QDateThorlaksmessa/fall →
-    'þorláksmessa:kvk'/fall
+    'þorláksmessa:kvk'_et/fall
 
 QDateChristmasEve/fall →
-    'jól:hk'/fall 
-    | 'aðfangadagur:kk'_et/fall 'jól:hk'_ef
+    'aðfangadagur:kk'_et/fall 'jól:hk'_ef?
 
 QDateChristmasDay/fall →
-    'jóladagur:kk'_et/fall
+    'jól:hk'/fall 
+    | 'jóladagur:kk'_et/fall
 
 QDateNewYearsEve/fall →
-    'gamlárskvöld:hk'/fall
+    'gamlárskvöld:hk'_et/fall
 
 QDateNewYearsDay/fall →
-    'nýársdagur:kk'/fall
+    'nýársdagur:kk'_et/fall
 
 QDateWorkersDay/fall →
-    'baráttudagur:kk'/fall 'verkalýður'_et_ef
+    'baráttudagur:kk'_et/fall 'verkalýður:kk'_et_ef
 
 QDateEaster/fall →
     'páskar:kk'/fall
@@ -179,18 +181,25 @@ QDateEaster/fall →
 QDateEasterSunday/fall →
     'páskadagur:kk'_et/fall
 
+QDateMaundyThursday/fall →
+    'skírdagur:kk'_et/fall
+
 QDateGoodFriday/fall →
-    'föstudagur:kk'_et/fall 'langur:lo'_et_kk/fall
+    'föstudagur:kk'_et_gr/fall 'langur:lo'_et_kk/fall
 
 QDateNationalDay/fall →
-    'þjóðhátíðardagur:kk'/fall
-    | 'þjóðhátíðardagur:kk'/fall 'íslendingur:kk'_ft_ef
+    'þjóðhátíðardagur:kk'_et/fall
+    | 'þjóðhátíðardagur:kk'_et/fall 'Íslendingur:kk'_ft_ef
+    | 'þjóðhátíðardagur:kk'_et/fall 'Ísland:hk'_et_ef
+    | 'þjóðhátíð:kvk'_et/fall 'Íslendingur:kk'_ft_ef
+    | 'þjóðhátíð:kvk'_et/fall 'Ísland:hk'_et_ef
 
 QDateBankHoliday/fall →
-    'verslunarmannahelgi:kvk'/fall
+    'verslunarmannahelgi:kvk'_et/fall
+    | 'frídagur:kk'_et/fall 'verslunarmaður:kk'_ft_ef
 
 QDateCultureNight/fall →
-    'menningarnótt:kvk'/fall
+    'menningarnótt:kvk'_et/fall
 
 $score(+55) QDate
 
@@ -231,18 +240,18 @@ def QDateAbsOrRel(node, params, result):
 
 def QDateWhitsun(node, params, result):
     result["desc"] = "hvítasunnudagur"
-    result["target"] = next_easter() + timedelta(days=49)  # Wrong
+    result["target"] = next_easter() + timedelta(days=49)
 
 
 def QDateAscensionDay(node, params, result):
     result["desc"] = "uppstigningardagur"
-    result["target"] = next_easter() + timedelta(days=40)  # Wrong
+    result["target"] = next_easter() + timedelta(days=39)
 
 
 def QDateAshDay(node, params, result):
     result["desc"] = "öskudagur"
     result["target"] = dnext(
-        datetime(year=datetime.today().year, month=2, day=4, hour=0, minute=0, second=0)
+        datetime(year=datetime.today().year, month=2, day=4)
     )  # Wrong
 
 
@@ -250,16 +259,16 @@ def QDateHalloween(node, params, result):
     result["desc"] = "hrekkjavaka"
     result["target"] = dnext(
         datetime(
-            year=datetime.today().year, month=10, day=31, hour=0, minute=0, second=0
+            year=datetime.today().year, month=10, day=31
         )
     )
 
 
 def QDateSovereigntyDay(node, params, result):
-    result["desc"] = "fullveldisdagur"
+    result["desc"] = "fullveldisdagurinn"
     result["target"] = dnext(
         datetime(
-            year=datetime.today().year, month=12, day=1, hour=0, minute=0, second=0
+            year=datetime.today().year, month=12, day=1
         )
     )
 
@@ -268,7 +277,7 @@ def QDateFirstDayOfSummer(node, params, result):
     result["desc"] = "sumardagurinn fyrsti"
     d = dnext(
         datetime(
-            year=datetime.today().year, month=4, day=18, hour=0, minute=0, second=0
+            year=datetime.today().year, month=4, day=18
         )
     )
     result["target"] = next_weekday(d, 3)
@@ -278,16 +287,16 @@ def QDateThorlaksmessa(node, params, result):
     result["desc"] = "þorláksmessa"
     d = dnext(
         datetime(
-            year=datetime.today().year, month=12, day=23, hour=0, minute=0, second=0
+            year=datetime.today().year, month=12, day=23
         )
     )
 
 
 def QDateChristmasEve(node, params, result):
-    result["desc"] = "aðfangadagur"
+    result["desc"] = "aðfangadagur jóla"
     result["target"] = dnext(
         datetime(
-            year=datetime.today().year, month=12, day=24, hour=0, minute=0, second=0
+            year=datetime.today().year, month=12, day=24
         )
     )
 
@@ -296,7 +305,7 @@ def QDateChristmasDay(node, params, result):
     result["desc"] = "jóladagur"
     result["target"] = dnext(
         datetime(
-            year=datetime.today().year, month=12, day=25, hour=0, minute=0, second=0
+            year=datetime.today().year, month=12, day=25
         )
     )
 
@@ -305,7 +314,7 @@ def QDateNewYearsEve(node, params, result):
     result["desc"] = "gamlárskvöld"
     result["target"] = dnext(
         datetime(
-            year=datetime.today().year, month=12, day=31, hour=0, minute=0, second=0
+            year=datetime.today().year, month=12, day=31
         )
     )
 
@@ -314,7 +323,7 @@ def QDateNewYearsDay(node, params, result):
     result["desc"] = "nýársdagur"
     result["target"] = dnext(
         datetime(
-            year=datetime.today().year + 1, month=1, day=1, hour=0, minute=0, second=0
+            year=datetime.today().year + 1, month=1, day=1
         )
     )
 
@@ -323,44 +332,59 @@ def QDateWorkersDay(node, params, result):
     result["desc"] = "baráttudagur verkalýðsins"
     result["target"] = dnext(
         datetime(
-            year=datetime.today().year + 1, month=5, day=1, hour=0, minute=0, second=0
+            year=datetime.today().year + 1, month=5, day=1
         )
     )
 
 
 def QDateEaster(node, params, result):
     result["desc"] = "páskar"
+    result["is_verb"] = "eru"
     result["target"] = next_easter()
 
 
 def QDateEasterSunday(node, params, result):
     result["desc"] = "páskadagur"
-    result["target"] = next_easter()  # Wrong
+    result["target"] = next_easter()
+
+
+def QDateGoodFriday(node, params, result):
+    result["desc"] = "föstudagurinn langi"
+    result["target"] = next_easter() + timedelta(days=-2)
+
+
+def QDateMaundyThursday(node, params, result):
+    result["desc"] = "skírdagur"
+    result["target"] = next_easter() + timedelta(days=-3)
 
 
 def QDateNationalDay(node, params, result):
-    result["desc"] = "þjóðhátíðardagur"
+    result["desc"] = "þjóðhátíðardagurinn"
     result["target"] = dnext(
         datetime(
-            year=datetime.today().year + 1, month=6, day=17, hour=0, minute=0, second=0
+            year=datetime.today().year + 1, month=6, day=17
         )
     )
 
 
 def QDateBankHoliday(node, params, result):
-    result["desc"] = "verslunarmannahelgi"
-    result["target"] = dnext(
-        datetime(
-            year=datetime.today().year + 1, month=6, day=17, hour=0, minute=0, second=0
-        )
-    )  # Wrong
+    result["desc"] = "frídagur verslunarmanna"
+    # First Monday of August
+    result["target"] = this_or_next_weekday(
+        dnext(
+            datetime(
+                year=datetime.today().year + 1, month=8, day=1
+            )
+        ),
+        0  # Monday
+    )
 
 
 def QDateCultureNight(node, params, result):
     result["desc"] = "menningarnótt"
     result["target"] = dnext(
         datetime(
-            year=datetime.today().year + 1, month=8, day=24, hour=0, minute=0, second=0
+            year=datetime.today().year + 1, month=8, day=24
         )
     )  # Wrong
 
@@ -371,12 +395,21 @@ def next_weekday(d, weekday):
     days_ahead = weekday - d.weekday()
     if days_ahead <= 0:  # Target day already happened this week
         days_ahead += 7
-    return d + timedelta(days_ahead)
+    return d + timedelta(days=days_ahead)
+
+
+def this_or_next_weekday(d, weekday):
+    """ Get the date of the next weekday after or including a given date.
+        0 = Monday, 1 = Tuesday, 2 = Wednesday, etc. """
+    days_ahead = weekday - d.weekday()
+    if days_ahead < 0:  # Target day already happened this week
+        days_ahead += 7
+    return d + timedelta(days=days_ahead)
 
 
 def dnext(datetime):
     """ Return datetime with year+1 if date was earlier in current year. """
-    now = datetime.now()
+    now = datetime.utcnow()
     d = datetime
     if d < now:
         d = d.replace(year=d.year + 1)
@@ -385,7 +418,7 @@ def dnext(datetime):
 
 def next_easter():
     """ Find the date of next easter in the Gregorian calendar. """
-    now = datetime.now()
+    now = datetime.utcnow()
     e = calc_easter(now.year)
     if e < now:
         e = calc_easter(now.year + 1)
@@ -405,7 +438,7 @@ def calc_easter(year):
     f = d + e - 7 * ((a + 11 * d + 22 * e) // 451) + 114
     month = f // 31
     day = f % 31 + 1
-    return datetime(year=year, month=month, day=day, hour=0, minute=0, second=0)
+    return datetime(year=year, month=month, day=day)
 
 
 def terminal_date(t):
@@ -419,13 +452,13 @@ def terminal_date(t):
         # Unpack date array
         (y, m, d) = aux
         if not y:
-            now = datetime.now()
+            now = datetime.utcnow()
             y = now.year
             # Bump year if month/day in the past
             if m < now.month or (m == now.month and d < now.day):
                 y += 1
 
-        return datetime(year=y, month=m, day=d, hour=0, minute=0, second=0)
+        return datetime(year=y, month=m, day=d)
 
 
 def date_diff(d1, d2, unit="days"):
@@ -437,7 +470,7 @@ def date_diff(d1, d2, unit="days"):
 
 def howlong_desc_answ(target):
     """ Generate answer to a query about length of period to a given date. """
-    now = datetime.now()
+    now = datetime.utcnow()
     days = date_diff(now, target, unit="days")
 
     # Diff. strings for singular vs. plural
@@ -472,6 +505,76 @@ def howlong_desc_answ(target):
     return (response, answer, voice)
 
 
+_DAY_INDEX_NOM = {
+    1: "fyrsti",
+    2: "annar",
+    3: "þriðji",
+    4: "fjórði",
+    5: "fimmti",
+    6: "sjötti",
+    7: "sjöundi",
+    8: "áttundi",
+    9: "níundi",
+    10: "tíundi",
+    11: "ellefti",
+    12: "tólfti",
+    13: "þrettándi",
+    14: "fjórtándi",
+    15: "fimmtándi",
+    16: "sextándi",
+    17: "sautjándi",
+    18: "átjándi",
+    19: "nítjándi",
+    20: "tuttugasti",
+    21: "tuttugasti og fyrsti",
+    22: "tuttugasti og annar",
+    23: "tuttugasti og þriðji",
+    24: "tuttugasti og fjórði",
+    25: "tuttugasti og fimmti",
+    26: "tuttugasti og sjötti",
+    27: "tuttugasti og sjöundi",
+    28: "tuttugasti og áttundi",
+    29: "tuttugasti og níundi",
+    30: "þrítugasti",
+    31: "þrítugasti og fyrsti",
+}
+
+
+_DAY_INDEX_ACC = {
+    1: "fyrsta",
+    2: "annan",
+    3: "þriðja",
+    4: "fjórða",
+    5: "fimmta",
+    6: "sjötta",
+    7: "sjöunda",
+    8: "áttunda",
+    9: "níunda",
+    10: "tíunda",
+    11: "ellefta",
+    12: "tólfta",
+    13: "þrettánda",
+    14: "fjórtánda",
+    15: "fimmtánda",
+    16: "sextánda",
+    17: "sautjánda",
+    18: "átjánda",
+    19: "nítjánda",
+    20: "tuttugasta",
+    21: "tuttugasta og fyrsta",
+    22: "tuttugasta og annan",
+    23: "tuttugasta og þriðja",
+    24: "tuttugasta og fjórða",
+    25: "tuttugasta og fimmta",
+    26: "tuttugasta og sjötta",
+    27: "tuttugasta og sjöunda",
+    28: "tuttugasta og áttunda",
+    29: "tuttugasta og níunda",
+    30: "þrítugasta",
+    31: "þrítugasta og fyrsta",
+}
+
+
 def sentence(state, result):
     """ Called when sentence processing is complete """
     q = state["query"]
@@ -485,14 +588,17 @@ def sentence(state, result):
             # Get timezone and date
             # TODO: Restore correct timezone handling
             # tz = timezone4loc(q.location, fallback="IS")
-            now = datetime.now()  # datetime.now(timezone(tz))
+            now = datetime.utcnow()  # datetime.now(timezone(tz))
             qkey = None
 
             # Asking about current date
             if "now" in result:
                 date_str = now.strftime("%A %-d. %B %Y")
-                voice = "Í dag er {0}".format(date_str)
                 answer = date_str.capitalize()
+                voice = "Í dag er {0}".format(date_str)
+                # Put a spelled-out ordinal number instead of the numeric one
+                # to get the grammar right
+                voice = re.sub(r" \d+\. ", " " + _DAY_INDEX_NOM[now.day] + " ", voice)
                 response = dict(answer=answer)
                 qkey = "CurrentDate"
             # Asking about period until/since a given date
@@ -505,8 +611,17 @@ def sentence(state, result):
             elif "when" in result and "target" in result:
                 # TODO: Fix this so it includes weekday, e.g.
                 # "Sunnudaginn 1. október"
-                date_str = result.target.strftime("%-d. %B")
-                (response, answer, voice) = gen_answer(date_str)
+                # Use plural 'eru' for 'páskar'
+                is_verb = "er" if "is_verb" not in result else result.is_verb
+                date_str = (
+                    result.desc + " " + is_verb + " " +
+                    result.target.strftime("%-d. %B")
+                )
+                answer = voice = date_str[0].upper() + date_str[1:].lower()
+                # Put a spelled-out ordinal number instead of the numeric one,
+                # in accusative case
+                voice = re.sub(r"\d+\. ", _DAY_INDEX_ACC[result.target.day] + " ", voice)
+                response = dict(answer=answer)
             else:
                 # Shouldn't be here
                 raise Exception("Unable to handle date query")
