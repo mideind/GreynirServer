@@ -364,10 +364,11 @@ function populateQueryResult(r) {
          searchResult = makeSearchList(r.response.answers);
       }
       else
-      if (r.qtype == "Special" || r.qtype == "ArrivalTime") {
+      if (rlist !== undefined && rlist.length === undefined && rlist.answer !== undefined) {
+         // We have a single text answer
          answer = $("<p class='query-empty'></p>")
             .html("<span class='green glyphicon glyphicon-play'></span>&nbsp;")
-            .append(r.response.answer);
+            .append(rlist.answer);
       }
       else
       if (!rlist || !rlist.length) {

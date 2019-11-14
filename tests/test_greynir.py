@@ -187,7 +187,7 @@ def test_query_api(client):
     json = validate_json(resp)
     assert json["qtype"] == "Date"
     assert "answer" in json
-    assert re.search(r"24", json["answer"])
+    assert re.search(r"25", json["answer"]) is not None
 
     # Arithmetic module
     ARITHM_QUERIES = {
@@ -223,12 +223,19 @@ def test_query_api(client):
     # assert "answer" in json
     # assert json["answer"].startswith("Fiskislóð 31")
 
+    # Currency module
+    resp = client.get("/query.api?q=Hvert er gengi dönsku krónunnar?")
+    json = validate_json(resp)
+    assert json["qtype"] == "Currency"
+    assert "answer" in json
+    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
+
     # Weather module
     resp = client.get("/query.api?q=Hversu hlýtt er úti?")
     json = validate_json(resp)
     assert json["qtype"] == "Weather"
     assert "answer" in json
-    assert re.search(r"^\-?\d+°$", json["answer"])
+    assert re.search(r"^\-?\d+°$", json["answer"]) is not None
 
     # Geography module
     resp = client.get("/query.api?q=Hver er höfuðborg Spánar?")

@@ -37,10 +37,11 @@ from reynir.bindb import BIN_Db
 def natlang_seq(words):
     """ Generate an Icelandic natural language sequence of words e.g.
         "A og B", "A, B og C", "A, B, C og D". No Oxford comma :) """
+    if not words:
+        return ""
     if len(words) == 1:
         return words[0]
-    elif len(words) >= 2:
-        return "{0} og {1}".format(", ".join(words[:-1]), words[-1])
+    return "{0} og {1}".format(", ".join(words[:-1]), words[-1])
 
 
 def nom2dat(w):
@@ -58,8 +59,9 @@ def nom2dat(w):
 
 def is_plural(num):
     """ Determine whether an Icelandic word following a given number
-         should be plural or not, e.g. "21 maður" vs. "22 menn" """
-    return not str(num).endswith("11") and not str(num).endswith("1")
+         should be plural or not, e.g. "21 maður" vs. "22 menn" vs. "11 menn" """
+    sn = str(num)
+    return not (sn.endswith("1") and not sn.endswith("11"))
 
 
 def country_desc(cc):

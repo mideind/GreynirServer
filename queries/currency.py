@@ -25,6 +25,7 @@ import re
 import cachetools
 
 from queries import query_json_api, format_icelandic_float
+from settings import Settings
 
 
 _CURRENCY_QTYPE = "Currency"
@@ -88,13 +89,13 @@ QCurrencyQuery →
     "hver" "er" QCurCurrencyIndex_nf
     
     # "Hvert/hvað/hvernig er gengi X?"
-    | QCurAnyPrefix? QCurGeneralRate
+    | QCurAnyPrefix QCurGeneralRate
 
     # "Hvert/hvað/hvernig er gengi X gagnvart Y?"
-    | QCurAnyPrefix? QCurExchangeRate
+    | QCurAnyPrefix QCurExchangeRate
 
     # "Hvað eru NUM X margir/margar/mörg Y?"
-    # | QCurGenericPrefix? QCurAmountConversion
+    # | QCurGenericPrefix QCurAmountConversion
 
     # "Hvað fæ ég marga/margar/mörg X fyrir NUM Y?"
     # |
@@ -104,53 +105,94 @@ QCurSpecificPrefix → "hvert" "er" | "hvernig" "er"
 QCurAnyPrefix → QCurGenericPrefix | QCurSpecificPrefix
 
 # Supported currencies
+# Note: All child productions of QCurUnit must have valid
+# ISO currency codes as the last three letters in their name
 QCurUnit/fall →
     QCurISK/fall | QCurUSD/fall | QCurEUR/fall | QCurGBP/fall 
     | QCurJPY/fall | QCurRUB/fall | QCurCHF/fall | QCurCAD/fall 
     | QCurZAR/fall | QCurPLN/fall | QCurRUB/fall | QCurCNY/fall
+    | QCurNOK/fall | QCurDKK/fall
 
 QCurISK/fall →
     'íslenskur:lo'_kvk/fall? 'króna:kvk'/fall
+    | currency_isk/fall
+
+QCurNOK/fall →
+    'norskur:lo'_kvk/fall 'króna:kvk'/fall
+    | currency_nok/fall
+
+QCurDKK/fall →
+    'danskur:lo'_kvk/fall 'króna:kvk'/fall
+    | currency_dkk/fall
 
 QCurUSD/fall →
-    'Bandaríkjadalur:kk'/fall
-    | 'Bandaríkjadollari:kk'/fall
+    'bandaríkjadalur:kk'/fall
     | 'bandarískur:lo'_kk/fall? 'dollari:kk'/fall
+    | currency_usd/fall
+
+QCurUSD_þgf →
+    "bandaríkjadollara" | "bandaríkjadollaranum"
+
+QCurUSD_ef →
+    "bandaríkjadollara"
+    | "bandaríkjadollarans"
+    | "bandaríkjadollars"
+    | "bandarísks" "dollars"
 
 QCurEUR/fall →
     'evra:kvk'/fall
+    | currency_eur/fall
 
 QCurGBP/fall →
     'breskur:lo'_hk/fall? 'pund:hk'/fall
+    | 'breskur:lo'_sb_hk/fall? 'pund:hk'_gr/fall
     | 'sterlingspund:hk'/fall
+    | currency_gbp/fall
 
 QCurJPY/fall →
     'japanskur:lo'_hk/fall? 'jen:hk'/fall
+    | currency_jpy/fall
 
 QCurCHF/fall →
     'svissneskur:lo'_kk/fall? 'franki:kk'/fall
+    | currency_chf/fall
 
 QCurCAD/fall →
-    'kanadadalur:kk'/fall
-    | 'kanadadollari:kk'/fall
     | 'kanadískur:lo'_kk/fall 'dollari:kk'/fall
+    | currency_cad/fall
+
+QCurCAD_þgf →
+    "kanadadal" | "kanadadalnum"
+    | "kanadadollara" | "kanadadollaranum"
+
+QCurCAD_ef →
+    "kanadadals" | "kanadadalsins"
+    | "kanadadollars" | "kanadísks" "dollars"
+    | "kanadadollara" | "kanadadollarans"
 
 QCurZAR/fall →
     'suðurafrískur:lo'_hk/fall? 'rand:hk'/fall
+    | currency_zar/fall
 
 QCurPLN/fall →
     'pólskur:lo'_hk/fall? 'slot:hk'/fall
     | "zloty"
     | "slotí"
+    | currency_pln/fall
+
+QCurPLN_ef →
+    'pólskur:lo'_sb_hk_ef? "slotís"
+    | 'pólskur:lo'_vb_hk_ef? "slotísins"
 
 QCurRUB/fall →
-    'rúbla:kvk'/fall
-    | 'rússneskur:lo'_kvk/fall? 'rúbla:kvk'/fall 
+    'rússneskur:lo'_kvk/fall? 'rúbla:kvk'/fall 
+    | currency_rub/fall
 
 QCurCNY/fall →
     'kínverskur:lo'_hk/fall? 'júan:hk'/fall
     | "yuan"
     | "júan"
+    | currency_cny/fall
 
 QCurNumberWord →
     # to is a declinable number word ('tveir/tvo/tveim/tveggja')
@@ -159,15 +201,17 @@ QCurNumberWord →
     to | töl | tala
 
 QCurCurrencyIndex/fall →
-    'gengisvísitala:kvk'_et/fall 
+    'gengisvísitala:kvk'_et/fall QCurISK_ef?
 
 QCurVisAVis → "gagnvart" | "á" "móti" | "gegn"
 
+QCurXch → "gengi" | "gengið"
+
 QCurExchangeRate →
-    "gengi" QCurUnit_ef QCurVisAVis QCurUnit_þgf
+    QCurXch QCurUnit_ef QCurVisAVis QCurUnit_þgf
 
 QCurGeneralRate →
-    "gengi" QCurUnit_ef
+    QCurXch QCurUnit_ef
 
 QCurAmountConversion →
     QCurNumberWord QCurUnit_nf "margar" QCurUnit_nf
@@ -187,10 +231,10 @@ def parse_num(num_str):
             num = float(num_str)
     except ValueError:
         # Handle number words ("sautján")
-        if num_str in _NUMBER_WORDS:
-            num = _NUMBER_WORDS[num_str]
+        num = _NUMBER_WORDS.get(num_str)
     except Exception as e:
-        print("Unexpected exception: {0}".format(e))
+        if Settings.DEBUG:
+            print("Unexpected exception: {0}".format(e))
         raise
     return num
 
@@ -212,7 +256,7 @@ def add_currency(curr, result):
 
 
 def QCurrency(node, params, result):
-    """ Arithmetic query """
+    """ Currency query """
     result.qtype = "Currency"
     result.qkey = result._canonical
 
@@ -222,7 +266,8 @@ def QCurNumberWord(node, params, result):
 
 
 def QCurUnit(node, params, result):
-    # assert isinstance(node.child, NonterminalNode)
+    # Obtain the ISO currency code from the last three
+    # letters in the child nonterminal name
     currency = node.child.nt_base[-3:]
     add_currency(currency, result)
 
@@ -258,7 +303,6 @@ def _fetch_exchange_rates():
     res = query_json_api(_CURR_API_URL)
     if not res or "results" not in res:
         return None
-
     return {c["shortName"]: c["value"] for c in res["results"]}
 
 
@@ -273,7 +317,7 @@ def _query_exchange_rate(curr1, curr2):
     # Get exchange rate data
     xr = _fetch_exchange_rates()
 
-    # Gengisvísitala
+    # ISK currency index (basket), 'gengisvísitala'
     if curr1 == "GVT" and "GVT" in xr:
         return xr["GVT"]
     # ISK vs. foreign currency
@@ -301,8 +345,8 @@ def sentence(state, result):
         elif result.op == "exchange":
             val = _query_exchange_rate(result.currencies[0], result.currencies[1])
         elif result.op == "general":
-            # TODO: Handle this ("Hvert er gengi krónunnar? Hvert er gengi dollarans?")
-            pass
+            # 'Hvert er gengi dollarans?'
+            val = _query_exchange_rate(result.currencies[0], "ISK")
         elif result.op == "convert":
             val = _query_exchange_rate(result.currencies[1], result.currencies[0])
             val = val * result.numbers[0] if val else None
@@ -312,7 +356,11 @@ def sentence(state, result):
         if val:
             answer = format_icelandic_float(val)
             response = dict(answer=answer)
-            voice_answer = "{0} er {1}".format(result.desc, answer)
+            voice_answer = (
+                "{0} er {1}."
+                .format(result.desc, answer)
+                .capitalize()
+            )
             q.set_answer(response, answer, voice_answer)
             q.set_key("ISK")  # Fix me
             q.set_qtype(_CURRENCY_QTYPE)
