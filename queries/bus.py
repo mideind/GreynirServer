@@ -219,8 +219,8 @@ QBusArrivalTime →
     | "hvenær" "má" "búast" "við" QBus_þgf QBusAtStop? '?'?
 
 QBusAnyArrivalTime →
-    # 'Hvenær kemur/fer strætó?'
-    "hvenær" QBusArrivalVerb QBusNounSingular_nf '?'?
+    # 'Hvenær kemur/fer [næsti] strætó?'
+    "hvenær" QBusArrivalVerb "næsti"? QBusNounSingular_nf '?'?
 
 QBusArrivalVerb → "kemur" | "fer" | "stoppar"
 

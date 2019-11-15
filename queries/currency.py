@@ -23,6 +23,7 @@
 
 import re
 import cachetools
+import json
 
 from queries import query_json_api, format_icelandic_float
 from settings import Settings
@@ -34,9 +35,17 @@ _CURRENCY_QTYPE = "Currency"
 _NUMBER_WORDS = {
     "núll": 0,
     "einn": 1,
+    "ein": 1,
+    "eitt": 1,
     "tveir": 2,
+    "tvær": 2,
+    "tvö": 2,
     "þrír": 3,
+    "þrjár": 3,
+    "þrjú": 3,
     "fjórir": 4,
+    "fjórar": 4,
+    "fjögur": 4,
     "fimm": 5,
     "sex": 6,
     "sjö": 7,
@@ -95,7 +104,7 @@ QCurrencyQuery →
     | QCurAnyPrefix QCurExchangeRate
 
     # "Hvað eru NUM X margir/margar/mörg Y?"
-    # | QCurGenericPrefix QCurAmountConversion
+    | QCurGenericPrefix QCurAmountConversion
 
     # "Hvað fæ ég marga/margar/mörg X fyrir NUM Y?"
     # |
@@ -111,7 +120,7 @@ QCurUnit/fall →
     QCurISK/fall | QCurUSD/fall | QCurEUR/fall | QCurGBP/fall 
     | QCurJPY/fall | QCurRUB/fall | QCurCHF/fall | QCurCAD/fall 
     | QCurZAR/fall | QCurPLN/fall | QCurRUB/fall | QCurCNY/fall
-    | QCurNOK/fall | QCurDKK/fall
+    | QCurNOK/fall | QCurDKK/fall | QCurSEK/fall
 
 QCurISK/fall →
     'íslenskur:lo'_kvk/fall? 'króna:kvk'/fall
@@ -124,6 +133,10 @@ QCurNOK/fall →
 QCurDKK/fall →
     'danskur:lo'_kvk/fall 'króna:kvk'/fall
     | currency_dkk/fall
+
+QCurSEK/fall →
+    'sænskur:lo'_kvk/fall 'króna:kvk'/fall
+    | currency_sek/fall
 
 QCurUSD/fall →
     'bandaríkjadalur:kk'/fall
@@ -178,6 +191,7 @@ QCurPLN/fall →
     'pólskur:lo'_hk/fall? 'slot:hk'/fall
     | "zloty"
     | "slotí"
+    | "slot" "í"  # Algeng villa í raddgreiningu
     | currency_pln/fall
 
 QCurPLN_ef →
@@ -213,8 +227,20 @@ QCurExchangeRate →
 QCurGeneralRate →
     QCurXch QCurUnit_ef
 
+QCurConvertAmount →
+    QCurNumberWord QCurUnit_nf
+    | amount
+
+QCurMany →
+    "margir" | "margar" | "mörg"
+
+QCurConvertTo →
+    QCurUnit_nf
+
+$tag(keep) QCurConvertTo # Keep this from being optimized away
+
 QCurAmountConversion →
-    QCurNumberWord QCurUnit_nf "margar" QCurUnit_nf
+    QCurConvertAmount QCurMany QCurConvertTo
 
 """
 
@@ -262,7 +288,7 @@ def QCurrency(node, params, result):
 
 
 def QCurNumberWord(node, params, result):
-    add_num(result._nominative, result)
+    add_num(result._canonical, result)
 
 
 def QCurUnit(node, params, result):
@@ -288,9 +314,32 @@ def QCurCurrencyIndex(node, params, result):
     add_currency("GVT", result)
 
 
+def QCurConvertAmount(node, params, result):
+    # Hvað eru [X] margir [Y] - this is the X part
+    amount = node.first_child(lambda n: n.has_t_base("amount"))
+    if amount is not None:
+        # Found an amount terminal node
+        am = json.loads(amount.aux)
+        result.amount = am[0]
+        add_currency(am[1], result)
+    elif "numbers" in result:
+        # Number words
+        result.amount = result.numbers[0]
+    else:
+        # Error!
+        result.amount = 0
+        # In this case, we assume that a QCurUnit node was present
+        # and the currency code has thus already been picked up
+    result.desc = node.contained_text()
+
+
+def QCurConvertTo(node, params, result):
+    # Hvað eru [X] margir [Y] - this is the Y part
+    result.currency = node.contained_text()
+
+
 def QCurAmountConversion(node, params, result):
     result.op = "convert"
-    result.desc = node.contained_text()
 
 
 _CURR_API_URL = "https://apis.is/currency/lb"
@@ -316,16 +365,11 @@ def _query_exchange_rate(curr1, curr2):
 
     # Get exchange rate data
     xr = _fetch_exchange_rates()
+    xr["ISK"] = 1.0
 
     # ISK currency index (basket), 'gengisvísitala'
     if curr1 == "GVT" and "GVT" in xr:
         return xr["GVT"]
-    # ISK vs. foreign currency
-    elif curr1 == "ISK" and curr2 in xr:
-        return xr[curr2]
-    # Foreign currency vs. ISK
-    elif curr1 in xr and curr2 == "ISK":
-        return xr[curr1]
     # Foreign currency vs. foreign currency
     elif curr1 in xr and curr2 in xr and xr[curr2] != 0:
         return xr[curr1] / xr[curr2]
@@ -336,20 +380,33 @@ def _query_exchange_rate(curr1, curr2):
 def sentence(state, result):
     """ Called when sentence processing is complete """
     q = state["query"]
-    if "qtype" in result:
+    if "qtype" in result and "op" in result:
         # Successfully matched a query type
         val = None
+        target_currency = "ISK"
+        suffix = ""
+        verb = "er"
 
         if result.op == "index":
+            # target_currency = "GVT"
             val = _query_exchange_rate("GVT", None)
         elif result.op == "exchange":
+            # 'Hvert er gengi evru gagnvart dollara?'
+            target_currency = result.currencies[0]
             val = _query_exchange_rate(result.currencies[0], result.currencies[1])
         elif result.op == "general":
             # 'Hvert er gengi dollarans?'
             val = _query_exchange_rate(result.currencies[0], "ISK")
         elif result.op == "convert":
-            val = _query_exchange_rate(result.currencies[1], result.currencies[0])
-            val = val * result.numbers[0] if val else None
+            # 'Hvað eru 100 evrur margar krónur?'
+            suffix = result.currency  # 'krónur'
+            verb = "eru"
+            target_currency = result.currencies[1]
+            val = _query_exchange_rate(result.currencies[0], result.currencies[1])
+            val = val * result.amount if val else None
+            if target_currency == "ISK" and val is not None:
+                # For ISK, round to whole numbers
+                val = round(val, 0)
         else:
             raise Exception("Unknown operator: {0}".format(result.op))
 
@@ -357,14 +414,17 @@ def sentence(state, result):
             answer = format_icelandic_float(val)
             response = dict(answer=answer)
             voice_answer = (
-                "{0} er {1}."
-                .format(result.desc, answer)
+                "{0} {3} {1}{2}."
+                .format(result.desc, answer, (" " + suffix) if suffix else "", verb)
                 .capitalize()
             )
+            voice_answer = voice_answer.replace("slot í", "slotí")
             q.set_answer(response, answer, voice_answer)
-            q.set_key("ISK")  # Fix me
+            q.set_key(target_currency)
+            # Store the amount in the query context
+            q.set_context({"amount": {"currency":target_currency, "number":val}})
             q.set_qtype(_CURRENCY_QTYPE)
 
         return
 
-    state["query"].set_error("E_QUERY_NOT_UNDERSTOOD")
+    q.set_error("E_QUERY_NOT_UNDERSTOOD")
