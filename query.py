@@ -303,9 +303,7 @@ class Query:
             self.set_error("E_EMPTY_QUERY")
             return False
 
-        toklist = tokenize(
-            q, auto_uppercase=self._auto_uppercase and q.islower()
-        )
+        toklist = tokenize(q, auto_uppercase=self._auto_uppercase and q.islower())
         toklist = list(recognize_entities(toklist, enclosing_session=self._session))
 
         actual_q = correct_spaces(" ".join(t.txt for t in toklist if t.txt))
@@ -397,9 +395,9 @@ class Query:
         # Find the newest non-error, no-repeat query result for this client
         q = (
             self._session.query(QueryRow.answer, QueryRow.voice)
-                .filter(QueryRow.client_id == self._client_id)
-                .filter(QueryRow.qtype != "Repeat")
-                .filter(QueryRow.error == None)
+            .filter(QueryRow.client_id == self._client_id)
+            .filter(QueryRow.qtype != "Repeat")
+            .filter(QueryRow.error == None)
         )
         if within_minutes > 0:
             # Apply a timestamp filter
@@ -418,9 +416,9 @@ class Query:
         # Find the newest non-error, no-repeat query result for this client
         q = (
             self._session.query(QueryRow.context)
-                .filter(QueryRow.client_id == self._client_id)
-                .filter(QueryRow.qtype != "Repeat")
-                .filter(QueryRow.error == None)
+            .filter(QueryRow.client_id == self._client_id)
+            .filter(QueryRow.qtype != "Repeat")
+            .filter(QueryRow.error == None)
         )
         if within_minutes > 0:
             # Apply a timestamp filter
@@ -449,7 +447,9 @@ class Query:
     def set_beautified_query(self, q):
         """ Set the query string that will be reflected back to the client """
         self._beautified_query = (
-            q.replace("embla", "Embla").replace("miðeind", "Miðeind")
+            q.replace("embla", "Embla")
+            .replace("miðeind", "Miðeind")
+            .replace("Guðni Th ", "Guðni Th. ")  # By presidential request :)
         )
 
     def lowercase_beautified_query(self):
@@ -670,8 +670,10 @@ def to_accusative(np, *, meaning_filter_func=None):
     """ Return the noun phrase after casting it from nominative to accusative case """
     with BIN_Db.get_db() as db:
         return _to_case(
-            np, db.lookup_word, db.cast_to_accusative,
-            meaning_filter_func=meaning_filter_func
+            np,
+            db.lookup_word,
+            db.cast_to_accusative,
+            meaning_filter_func=meaning_filter_func,
         )
 
 
@@ -679,8 +681,10 @@ def to_dative(np, *, meaning_filter_func=None):
     """ Return the noun phrase after casting it from nominative to dative case """
     with BIN_Db.get_db() as db:
         return _to_case(
-            np, db.lookup_word, db.cast_to_dative,
-            meaning_filter_func=meaning_filter_func
+            np,
+            db.lookup_word,
+            db.cast_to_dative,
+            meaning_filter_func=meaning_filter_func,
         )
 
 
