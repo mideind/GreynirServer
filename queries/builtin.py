@@ -466,6 +466,12 @@ def query_person(query, session, name):
         # Set the context for a subsequent query
         query.set_context({"person_name": name})
     else:
+        if query.is_voice:
+            # Rather than accept this as a voice query
+            # for a person that is not found, return an
+            # error and thereby give other query handlers
+            # a chance to parse this
+            query.set_error("E_PERSON_NOT_FOUND")
         answer = "Nafnið '" + name + "' finnst ekki."
         voice_answer = "Ég veit ekki hver " + name + " er."
     return response, answer, voice_answer
