@@ -91,6 +91,16 @@ def _random_trivia(qs, q):
     return { "answer": choice(_TRIVIA), "is_question": False }
 
 
+# TODO: Add witty quotations here
+_QUOTATIONS = (
+    "Ekki er allt gull sem glóir.",
+    "Hávært tal er heimskra rök, hæst í tómu bylur. Oft er viss í sinni sök sá er ekkert skilur."
+)
+
+def _random_quotation(qs, q):
+    return { "answer": choice(_QUOTATIONS), "is_question": False }
+
+
 def _identity(qs, q):
     if q.is_voice:
         # Voice client (Embla)
@@ -569,6 +579,16 @@ _SPECIAL_QUERIES = {
     "hvers konar fyrirspurnum getur þú svarað": _capabilities,
     "hvers konar fyrirspurnum geturðu svarað": _capabilities,
 
+    "hvað er í gangi": {
+        "answer": "Þú ert að tala við mig, Emblu.",
+    },
+    "hvað er eiginlega í gangi": {
+        "answer": "Þú ert að tala við mig, Emblu.",
+    },
+    "við hvern er ég að tala": {
+        "answer": "Þú ert að tala við mig, Emblu.",
+    },
+
     # Jokes
     "ertu með kímnigáfu": {
         "answer": "Já, en afar takmarkaða.",
@@ -622,6 +642,10 @@ _SPECIAL_QUERIES = {
     "komdu með eitthvað áhugavert": _random_trivia,
     "komdu með áhugaverða staðreynd": _random_trivia,
     "segðu mér eitthvað um heiminn": _random_trivia,
+
+    # Quotations
+    "komdu með tilvitnun": _random_quotation,
+    "komdu með skemmtilega tilvitnun": _random_quotation,
 
     # Rudeness :)
     "þú sökkar": _rudeness,

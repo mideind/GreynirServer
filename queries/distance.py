@@ -46,7 +46,9 @@ _QDISTANCE_REGEXES = (
     r"^hversu langt er ég frá (.+)$",
     r"^hve langt er ég frá (.+)$",
     r"^hvað er langt á (.+)$",
+    r"^hvað er langt upp á (.+)$",
     r"^hvað er langt í ([^0-9.].+)$",
+    r"^hvað er langt upp í (.+)$",
     # TODO: Fix response for these two (transform location from genitive)
     # r"^hvað er langt til (.+)$",
     # r"^hversu langt er til (.+)$",

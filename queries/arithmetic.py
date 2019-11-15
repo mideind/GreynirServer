@@ -192,7 +192,7 @@ QArSumOperator → "summan" "af"
 QArSquareRootOperator →
     "kvaðratrótin" "af" | "kvaðratrót" "af"
     | "ferningsrótin" "af" | "ferningsrót" "af"
-QArPercentOperator → Prósenta "af"?
+QArPercentOperator → Prósenta "af"
 
 QArMultOperator →
     # 'hvað er tvisvar sinnum X?'
