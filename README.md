@@ -11,7 +11,9 @@ Try Greynir (in Icelandic) at [https://greynir.is](https://greynir.is)
 *Greynir* is an exploratory project that aims to
 **extract processable information from Icelandic text**, allow
 **natural language querying** of that information and facilitate
-**natural language understanding**.
+**natural language understanding**. Greynir is the core engine of
+[*Embla*](https://embla.is), a voice-based question answering app
+for smartphones and tablets.
 
 Greynir periodically scrapes chunks of text from Icelandic news sites on the web.
 It employs the [Tokenizer](https://github.com/mideind/Tokenizer) and
@@ -34,7 +36,7 @@ ratio of concrete concepts such as numbers, amounts, dates, person and entity na
 etc.
 
 Greynir is innovative in its ability to parse and disambiguate text written in a
-**grammatically complex language**, i.e. Icelandic, which does not lend itself easily
+**morphologically rich language**, i.e. Icelandic, which does not lend itself easily
 to statistical parsing methods. Greynir uses grammatical feature agreement (cases, genders,
 persons, number (singular/plural), verb tenses, modes, etc.) to guide and disambiguate
 parses. Its highly optimized Earley-based parser, implemented in C++, is fast and compact
@@ -87,7 +89,8 @@ Greynir works in stages, roughly as follows:
 6. **Article indexer** that transforms articles from bags-of-words to fixed-dimensional
   topic vectors using [Tf-Idf](http://www.tfidf.com/) and
   [Latent Semantic Analysis](https://en.wikipedia.org/wiki/Latent_semantic_analysis).
-7. **Query processor** that supports a range of natural language queries (including queries about entities in Greynir's database).
+7. **Query processor** that supports a range of natural language queries
+  (including queries about entities in Greynir's database).
 
 Greynir has an embedded web server that displays news articles recently scraped into its
 database, as well as names of people extracted from those articles along with their titles.
@@ -135,12 +138,19 @@ Processor modules can be plugged in to Greynir by adding Python code to the
 `processors/` directory. The demo in `processors/default.py` extracts person
 names and titles from parse trees for storage in a database table.
 
+Query (question answering) modules can be plugged in to Greynir by adding Python code to the
+`queries/` directory. Reference implementations for several query types can be found in
+that directory, for instance `queries/builtin.py` which supports questions about
+people and titles.
+
 ## File details
 
 * `main.py` : WSGI web server application and main module for command-line invocation
 * `routes/*.py` : Routes for the web application
+* `queries/*.py` : Question answering modules
 * `settings.py` : Management of global settings and configuration data,
   obtained from `config/Reynir.conf`
+* `config/Reynir.conf` : Editable configuration file
 * `scraper.py` : Web scraper, collecting articles from a set of pre-selected websites (roots)
 * `db/*.py`: Scraper database models and functions via SQLAlchemy
 * `nertokenizer.py` : A layer on top of the tokenizer for named entity recognition
@@ -149,8 +159,7 @@ names and titles from parse trees for storage in a database table.
 * `tree.py` : Representation of parse trees for processing
 * `query.py` : Natural language query processor
 * `vectors/builder.py` : Article indexer and LSA topic vector builder
-* `config/Reynir.conf` : Editable configuration file for the tokenizer and parser
-* `doc.py` : Extract text from various document formats
+* `doc.py` : Extracts text from various document formats
 * `geo.py` : Geography and location-related utility functions
 * `fetcher.py` : Utility classes for fetching articles given their URLs
 * `utils/*.py` : Various utility programs
@@ -227,4 +236,4 @@ The full text of the GNU General Public License v3 is
 and also available here: https://www.gnu.org/licenses/gpl-3.0.html.
 
 If you wish to use this set of programs in ways that are not covered under the
-GPL v3 license, please contact the author.
+GNU GPLv3 license, please contact us at *mideind@mideind.is*.
