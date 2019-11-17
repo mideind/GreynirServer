@@ -23,14 +23,16 @@
 
 """
 
-# TODO: Speech synthesis: "Bárugötu þrjú" ekki "þrír"
 # TODO: "Í hvaða póstnúmeri er ég?" "Í hvaða póstnúmeri er Fiskislóð 31?"
 
 import os
 import re
 import logging
 
-from queries import gen_answer, query_geocode_api_coords, country_desc, nom2dat
+from queries import (
+    gen_answer, query_geocode_api_coords, country_desc, nom2dat,
+    numbers_to_neutral
+)
 from iceaddr import iceaddr_lookup
 from geo import iceprep_for_placename, iceprep_for_street
 
@@ -112,7 +114,9 @@ def _addr4voice(addr):
     """ Prepare an address string for voice synthesizer. """
     # E.g. "Fiskislóð 5-9" becomes "Fiskislóð 5 til 9"
     s = re.sub(r"(\d+)\-(\d+)", r"\1 til \2", addr)
-    return s
+    # Convert numbers to neutral gender:
+    # 'Fiskislóð 2 til 4' -> 'Fiskislóð tvö til fjögur'
+    return numbers_to_neutral(s)
 
 
 def answer_for_location(loc):
@@ -165,7 +169,7 @@ def answer_for_location(loc):
 
     if not descr:
         # Fall back on the formatted address string provided by Google
-        descr = "á" + top.get("formatted_address")
+        descr = "á " + top.get("formatted_address")
 
     response = dict(answer=descr)
     voice = "Þú ert {0}".format(_addr4voice(descr))

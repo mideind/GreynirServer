@@ -41,6 +41,7 @@ from collections import defaultdict
 from datetime import datetime
 
 import query
+from queries import NUMBERS_NEUTRAL
 from settings import Settings
 from reynir import correct_spaces
 from reynir.bindb import BIN_Db
@@ -375,50 +376,6 @@ _BUS_WORDS = {
     "sjötíu": 70,
     "áttatíu": 80,
     "níutíu": 90,
-}
-
-# How to pronounce route numbers after 'númer'
-_VOICE_NUMBERS = {
-    "1": "eitt",
-    "2": "tvö",
-    "3": "þrjú",
-    "4": "fjögur",
-    "21": "tuttugu og eitt",
-    "22": "tuttugu og tvö",
-    "23": "tuttugu og þrjú",
-    "24": "tuttugu og fjögur",
-    "31": "þrjátíu og eitt",
-    "32": "þrjátíu og tvö",
-    "33": "þrjátíu og þrjú",
-    "34": "þrjátíu og fjögur",
-    "41": "fjörutíu og eitt",
-    "42": "fjörutíu og tvö",
-    "43": "fjörutíu og þrjú",
-    "44": "fjörutíu og fjögur",
-    "51": "fimmtíu og eitt",
-    "52": "fimmtíu og tvö",
-    "53": "fimmtíu og þrjú",
-    "54": "fimmtíu og fjögur",
-    "61": "sextíu og eitt",
-    "62": "sextíu og tvö",
-    "63": "sextíu og þrjú",
-    "64": "sextíu og fjögur",
-    "71": "sjötíu og eitt",
-    "72": "sjötíu og tvö",
-    "73": "sjötíu og þrjú",
-    "74": "sjötíu og fjögur",
-    "81": "áttatíu og eitt",
-    "82": "áttatíu og tvö",
-    "83": "áttatíu og þrjú",
-    "84": "áttatíu og fjögur",
-    "91": "níutíu og eitt",
-    "92": "níutíu og tvö",
-    "93": "níutíu og þrjú",
-    "94": "níutíu og fjögur",
-    "101": "hundrað og eitt",
-    "102": "hundrað og tvö",
-    "103": "hundrað og þrjú",
-    "104": "hundrað og fjögur",
 }
 
 def QBusWord(node, params, result):
@@ -791,7 +748,7 @@ def query_which_route(query, session, result):
             # We convert inflectable numbers to their text equivalents
             # since the speech engine can't be relied upon to get the
             # inflection of numbers right
-            va.append(_VOICE_NUMBERS.get(rn, rn))
+            va.append(NUMBERS_NEUTRAL.get(rn, rn))
             a.append(rn)
             cnt += 1
         tail = ["stoppar á", to_dative(stop.name)]
