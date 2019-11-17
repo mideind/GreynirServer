@@ -487,9 +487,8 @@ def iceprep_for_street(street_name):
         an Icelandic street name, e.g. "Fiskislóð" """
 
     # TODO: Implement me properly
-    for suffix in _I_SUFFIXES:
-        if street_name.endswith(suffix):
-            return "í"
+    if street_name.endswith(_I_SUFFIXES):
+        return "í"
     return "á"
 
 
