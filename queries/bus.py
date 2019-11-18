@@ -628,6 +628,12 @@ def query_arrival_time(query, session, result):
         hms_now = (now.hour, now.minute + (now.second // 30), 0)
         first = True
 
+        # We may get three (or more) arrivals if there are more than two
+        # endpoints for the bus route in the schedule. To minimize
+        # confusion, we only include the two endpoints that have the
+        # earliest arrival times and skip any additional ones.
+        arrivals = sorted(arrivals, key=lambda t:t[1][0])[:2]
+
         for direction, times in arrivals:
             if not first:
                 va.append(", og")
