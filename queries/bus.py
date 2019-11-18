@@ -251,6 +251,7 @@ QBusWord/fall →
     | 'átta:kvk'_et_gr/fall
     | 'nía:kvk'_et_gr/fall
     | 'tía:kvk'_et_gr/fall
+    | 'ellefa:kvk'_et_gr/fall
     | 'tólfa:kvk'_et_gr/fall
 
 QBusNumber/fall →
@@ -351,6 +352,7 @@ _BUS_WORDS = {
     "átta": 8,
     "nía": 9,
     "tía": 10,
+    "ellefa": 11,
     "tólfa": 12,
     "einn": 1,
     "eitt": 1,
