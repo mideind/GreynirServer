@@ -677,3 +677,43 @@ class Query(Base):
     @classmethod
     def table(cls):
         return cls.__table__
+
+
+class Feedback(Base):
+    """ Represents a feedback form submission. """
+
+    __tablename__ = "feedback"
+
+    # UUID
+    id = Column(
+        psql_UUID(as_uuid=False),
+        index=True,
+        nullable=False,
+        unique=True,
+        primary_key=True,
+        server_default=text("uuid_generate_v1()"),
+    )
+
+    # Timestamp of feedback
+    timestamp = Column(DateTime, index=True, nullable=False)
+
+    # Topic (e.g. Embla/Netskrafl/etc.)
+    topic = Column(String, index=True, nullable=True)
+
+    # Name
+    name = Column(String, index=True, nullable=True)
+
+    # Email
+    email = Column(String, index=True, nullable=True)
+
+    # Comment
+    comment = Column(String, index=False, nullable=True)
+
+    def __repr__(self):
+        return "Feedback(name='{0}', email='{1}', topic='{2}', comment='{3}')".format(
+            self.question, self.answer, self.topic, self.comment
+        )
+
+    @classmethod
+    def table(cls):
+        return cls.__table__

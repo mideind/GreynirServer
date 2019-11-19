@@ -28,7 +28,7 @@ from flask import request, current_app
 import werkzeug
 from tnttagger import ifd_tag
 from db import SessionContext
-from db.models import ArticleTopic, Query
+from db.models import ArticleTopic, Query, Feedback
 from treeutil import TreeUtility
 from correct import check_grammar
 from reynir.binparser import canonicalize_token
@@ -37,7 +37,9 @@ from query import process_query
 from settings import Settings
 from doc import SUPPORTED_DOC_MIMETYPES, MIMETYPE_TO_DOC_CLASS
 from speech import get_synthesized_text_url
+from datetime import datetime
 import logging
+
 
 
 # Maximum number of query string variants
@@ -417,3 +419,34 @@ def query_history_api(version=1):
         )
 
     return better_jsonify(valid=True)
+
+
+@routes.route("/feedback.api", methods=["POST"])
+@routes.route("/feedback.api/v<int:version>", methods=["POST"])
+def feedback_api(version=1):
+    """ Endpoint to accept submitted feedback forms. """
+
+    if not (1 <= version <= 1):
+        return better_jsonify(valid=False, reason="Unsupported version")
+
+    name = request.values.get("name")
+    email = request.values.get("email")
+    comment = request.values.get("comment")
+    topic = request.values.get("topic")
+
+    if comment:
+        with SessionContext(commit=True) as session:
+            try:
+                qrow = Feedback(
+                    timestamp=datetime.utcnow(),
+                    topic=topic,
+                    name=name,
+                    email=email,
+                    comment=comment,
+                )
+                session.add(qrow)
+                return better_jsonify(valid=True)
+            except Exception as e:
+                logging.error("Error saving feedback to db: {0}".format(e))
+
+    return better_jsonify(valid=False)
