@@ -49,9 +49,8 @@ _QDISTANCE_REGEXES = (
     r"^hvað er langt upp á (.+)$",
     r"^hvað er langt í ([^0-9.].+)$",
     r"^hvað er langt upp í (.+)$",
-    # TODO: Fix response for these two (transform location from genitive)
-    # r"^hvað er langt til (.+)$",
-    # r"^hversu langt er til (.+)$",
+    r"^hvað er langt til (.+)$",
+    r"^hversu langt er til (.+)$",
 )
 
 # TODO: Handle queries of this kind, incl. driving and cycling
@@ -70,18 +69,18 @@ def _addr2nom(address):
     # TODO: Implement more intelligently
     # This is a tad simplistic and mucks up some things,
     # e.g. "Ráðhús Reykjavíkur" becomes "Ráðhús Reykjavík"
-    words = address.split()
-    nf = []
-    for w in words:
-        bin_res = BIN_Db().lookup_nominative(w)
-        if not bin_res and not w.islower():
-            # Try lowercase form
-            bin_res = BIN_Db().lookup_nominative(w.lower())
-        if bin_res:
-            nf.append(bin_res[0].ordmynd)
-        else:
-            nf.append(w)
-    return " ".join(nf)
+    with BIN_Db.get_db() as db:
+        nf = []
+        for w in address.split():
+            bin_res = db.lookup_nominative(w)
+            if not bin_res and not w.islower():
+                # Try lowercase form
+                bin_res = db.lookup_nominative(w.lower())
+            if bin_res:
+                nf.append(bin_res[0].ordmynd)
+            else:
+                nf.append(w)
+        return " ".join(nf)
 
 
 def dist_answer_for_loc(locname, query):

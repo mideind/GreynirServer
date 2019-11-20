@@ -24,9 +24,33 @@
 import re
 import cachetools
 import json
+import random
 
 from queries import query_json_api, format_icelandic_float
 from settings import Settings
+
+
+# Lemmas of keywords that could indicate that the user is trying to use this module
+TOPIC_LEMMAS = [
+    "gengi", "gjaldmiðill", "króna", "pund", "sterlingspund", "dollari", "evra",
+    "rand", "jen", "júan", "franki", "gengisvísitala", "dalur", "bandaríkjadalur",
+    "kanadadalur"
+]
+
+
+def help_text(lemma):
+    """ Help text to return when query.py is unable to parse a query but
+        one of the above lemmas is found in it """
+    return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
+        random.choice((
+            "Hvert er gengi dollarans",
+            "Hvert er gengu evru gagnvart dollara",
+            "Hvað eru tíu þúsund krónur margar evrur",
+            "Hvað er einn dollari margar krónur",
+            "Hvert er gengi dönsku krónunnar",
+            "Hvert er gengi pundsins gagnvart krónunni"
+        ))
+    )
 
 
 _CURRENCY_QTYPE = "Currency"

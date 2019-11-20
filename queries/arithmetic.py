@@ -28,11 +28,42 @@ import math
 import json
 import re
 import logging
+import random
 
 from queries import format_icelandic_float, gen_answer
 
 
 _ARITHMETIC_QTYPE = "Arithmetic"
+
+
+# Lemmas of keywords that could indicate that the user is trying to use this module
+TOPIC_LEMMAS = [
+    "plús", "mínus", "margfalda", "deila", "samlagning", "frádráttur", "margföldun",
+    "kvaðratrót", "ferningsrót", "veldi", "rót", "prósent", "prósenta",
+    "hundraðshluti", "hlutfall", "frádreginn", "viðbættur"
+]
+
+
+def help_text(lemma):
+    """ Help text to return when query.py is unable to parse a query but
+        one of the above lemmas is found in it """
+    if lemma in ("kvaðratrót", "ferningsrót"):
+        return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
+            random.choice((
+                "Hver er kvaðratrótin af tuttugu",
+                "Hver er ferningsrótin af áttatíu"
+            ))
+        )
+    return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
+        random.choice((
+            "Hvað eru sautján sinnum þrjátíu og fjórir",
+            "Hvað er tvö hundruð mínus sautján",
+            "Hver er kvaðratrótin af tuttugu",
+            "Hvað eru átján að frádregnum sjö",
+            "Hvað er ellefu plús tvö hundruð og fimm",
+            "Hvað eru níu prósent af tvö þúsund"
+        ))
+    )
 
 
 _NUMBER_WORDS = {
