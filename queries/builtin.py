@@ -704,7 +704,7 @@ def repeat_query(query, session, qkey):
         voice_answer = "Ég hef ekki svarað neinu nýlega."
     else:
         answer, voice_answer = last
-    # Put a colon at the end of the beautified query,
+    # Put a period at the end of the beautified query,
     # instead of a question mark
     query.query_is_command()
     response = dict(answer=answer)
