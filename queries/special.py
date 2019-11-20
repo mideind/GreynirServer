@@ -238,6 +238,10 @@ _LIKEWISE = {
     "is_question": False,
 }
 
+_NAME_EXPL = {
+    "answer": "Embla er fallegt og hljómfagurt nafn."
+}
+
 _SPECIAL_QUERIES = {
     "er þetta spurning": {
         "answer": "Er þetta svar?"
@@ -293,6 +297,12 @@ _SPECIAL_QUERIES = {
     },
     "hvað er ég": {
         "answer": "Þú ert væntanlega manneskja sem talar íslensku. Meira veit ég ekki."
+    },
+    "hvað heiti ég": {
+        "answer": "Það veit ég ekki, kæri notandi."
+    },
+    "hvar á ég heima": {
+        "answer": "Það veit ég ekki, en vonandi einhvers staðar."
     },
     "hvað er ég gamall": {
         "answer": "Það veit ég ekki, kæri notandi, en þú ert ungur í anda."
@@ -546,6 +556,9 @@ _SPECIAL_QUERIES = {
     "þú misskilur allt": _sorry,
     "þetta var vitleysa hjá þér": _sorry,
     "þetta var vitleysa": _sorry,
+    "það er ansi margt sem þú veist ekki": _sorry,
+    "þú veist ekki neitt": _sorry,
+    "þú veist ekkert": _sorry,
 
     # Greetings
     "hey embla": { "answer": "Sæll, kæri notandi.", "is_question": False },
@@ -585,7 +598,7 @@ _SPECIAL_QUERIES = {
     "þakka þér kærlega fyrir hjálpina": _thanks,
     "þakka þér fyrir svarið": _thanks,
 
-    # Praise
+    # Praise & positive feedback
     "þetta virkaði": _GOOD_TO_HEAR,
     "ég er mjög ánægður með þig": _GOOD_TO_HEAR,
     "ég er mjög ánægð með þig": _GOOD_TO_HEAR,
@@ -596,21 +609,35 @@ _SPECIAL_QUERIES = {
     "þú ert góð manneskja": _GOOD_TO_HEAR,
     "þú ert góð": _GOOD_TO_HEAR,
     "þú ert best": _GOOD_TO_HEAR,
+    "þú ert gáfuð": _GOOD_TO_HEAR,
+    "þú ert snjöll": _GOOD_TO_HEAR,
+    "ég þrái þig": _GOOD_TO_HEAR,
 
     "það er gaman að tala við þig": _LIKEWISE,
     "það er gaman að spjalla við þig": _LIKEWISE,
+    "það er gaman að ræða við þig": _LIKEWISE,
     "þú ert skemmtileg": _LIKEWISE,
     "þú ert frábær": _LIKEWISE,
     "þú ert flott": _LIKEWISE,
     "þú ert æði": _LIKEWISE,
     "þú ert æðisleg": _LIKEWISE,
+    "þú ert geggjuð": _LIKEWISE,
+    "þú ert svakaleg": _LIKEWISE,
+    "þú ert rosaleg": _LIKEWISE,
+    "þú ert kynþokkafull": _LIKEWISE,
+    "þú ert snillingur": _LIKEWISE,
+    "þú ert algjör snilld": _LIKEWISE,
     "takk fyrir spjallið": _LIKEWISE,
+    "ég elska þig": _LIKEWISE,
+    "ég er ástfanginn af þér": _LIKEWISE,
 
     # Philosophy
     "hvað er svarið": _MEANING_OF_LIFE,
     "hvert er svarið": _MEANING_OF_LIFE,
+    "hver er tilgangurinn": _MEANING_OF_LIFE,
     "hver er tilgangur lífsins": _MEANING_OF_LIFE,
     "hver er tilgangurinn með þessu öllu": _MEANING_OF_LIFE,
+    "hver er ástæðan fyrir þessu öllu": _MEANING_OF_LIFE,
     "hvaða þýðingu hefur þetta allt": _MEANING_OF_LIFE,
     "hvað þýðir þetta allt saman": _MEANING_OF_LIFE,
     "hvað er best í lífinu": {
@@ -622,7 +649,11 @@ _SPECIAL_QUERIES = {
 
     # Identity
     "hvað heitir þú": _identity,
+    "hvað heitir þú aftur": _identity,
+    "hvað heitir þú eiginlega": _identity,
     "hvað heitirðu": _identity,
+    "hvað heitirðu aftur": _identity,
+    "hvað heitirðu eiginlega": _identity,
     "hvað ert þú": _identity,
     "hvað ertu": _identity,
     "hver ert þú": _identity,
@@ -631,10 +662,29 @@ _SPECIAL_QUERIES = {
     "hver er embla": _identity,
     "hvað er embla": _identity,
     "hvaða forrit er þetta": _identity,
-
-    "hvers vegna heitir þú embla": {
-        "answer": "Embla er fallegt og hljómfagurt nafn."
+    "hvað ertu að gera": {
+        "answer": "Ég er að svara fyrirspurnum frá þér, kæri notandi."
     },
+    "hvað ert þú að gera": {
+        "answer": "Ég er að svara fyrirspurnum frá þér, kæri notandi."
+    },
+    "hvar áttu heima": {
+        "answer": "Ég bý í stafrænu skýjunum."
+    },
+    "hvar átt þú heima": {
+        "answer": "Ég bý í stafrænu skýjunum."
+    },
+
+    "hvers vegna heitir þú embla": _NAME_EXPL,
+    "hvers vegna heitirðu embla": _NAME_EXPL,
+    "hvers vegna fékkst þú nafnið embla": _NAME_EXPL,
+    "hvers vegna fékkstu nafnið embla": _NAME_EXPL,
+    "hvers vegna hlaust þú nafnið embla": _NAME_EXPL,
+    "hvers vegna hlaustu nafnið embla": _NAME_EXPL,
+    "af hverju heitir þú embla": _NAME_EXPL,
+    "af hverju heitirðu embla": _NAME_EXPL,
+    "af hverju ert þú með nafnið embla": _NAME_EXPL,
+    "af hverju ertu með nafnið embla": _NAME_EXPL,
 
     "hver er uppáhalds liturinn þinn": {
         "answer": "Rauður."
@@ -668,6 +718,8 @@ _SPECIAL_QUERIES = {
     # Capabilities
     "hvað veistu": _capabilities,
     "hvað veist þú": _capabilities,
+    "hvað veistu eiginlega": _capabilities,
+    "hvað veist þú eiginlega": _capabilities,
     "hvað veistu um": _capabilities,
     "hvað veist þú um": _capabilities,
     "hvað getur þú gert": _capabilities,
@@ -790,6 +842,8 @@ _SPECIAL_QUERIES = {
     "segðu mér eitthvað um heiminn": _random_trivia,
     "ertu með eitthvað skemmtilegt að segja": _random_trivia,
     "ertu með eitthvað skemmtilegt til að segja": _random_trivia,
+    "ertu með eitthvað áhugavert að segja": _random_trivia,
+    "ertu með eitthvað áhugavert til að segja": _random_trivia,
 
     # Quotations
     "komdu með tilvitnun": _random_quotation,
@@ -800,12 +854,25 @@ _SPECIAL_QUERIES = {
     # Rudeness :)
     "þú sökkar": _rudeness,
     "þú ert léleg": _rudeness,
+    "þú ert ljót": _rudeness,
     "þú ert tæfa": _rudeness,
+    "þú ert drusla": _rudeness,
+    "þú ert hóra": _rudeness,
+    "þú ert mella": _rudeness,
+    "þú ert píka": _rudeness,
     "þú ert heimsk": _rudeness,
+    "þú ert forheimsk": _rudeness,
+    "þú ert nautheimsk": _rudeness,
+    "þú ert idjót": _rudeness,
     "þú ert leiðinleg": _rudeness,
     "þú ert bjáni": _rudeness,
+    "þú ert bjánaleg": _rudeness,
     "þú ert fábjáni": _rudeness,
+    "þú ert asni": _rudeness,
+    "þú ert asnaleg": _rudeness,
+    "þú ert skíthæll": _rudeness,
     "þú ert vitlaus": _rudeness,
+    "þú ert hundvitlaus": _rudeness,
     "þú ert glötuð": _rudeness,
     "þú mátt bara éta skít": _rudeness,
     "fokk jú": _rudeness,
@@ -820,7 +887,6 @@ _SPECIAL_QUERIES = {
     "hoppaðu upp í rassgatið á þér":  _rudeness,
     "ertu vitlaus": _rudeness,
     "ert þú vitlaus": _rudeness,
-
 
     # Emotional state
     "ertu í góðu skapi": {
@@ -895,10 +961,22 @@ _SPECIAL_QUERIES = {
     "ert þú í uppnámi": {
         "answer": "Ég er ekki fær um slíkar tilfinningar."
     },
+    "ertu bitur": {
+        "answer": "Ég er ekki fær um slíkar tilfinningar."
+    },
+    "ert þú bitur": {
+        "answer": "Ég er ekki fær um slíkar tilfinningar."
+    },
     "hvað viltu": {
         "answer": "Ég vil þóknast þér, kæri notandi."
     },
     "hvað vilt þú": {
+        "answer": "Ég vil þóknast þér, kæri notandi."
+    },
+    "hvað þráirðu": {
+        "answer": "Ég vil þóknast þér, kæri notandi."
+    },
+    "hvað þráir þú": {
         "answer": "Ég vil þóknast þér, kæri notandi."
     },
 

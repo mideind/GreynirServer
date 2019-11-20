@@ -30,6 +30,7 @@
 # TODO: "Mun rigna í dag?" "Verður mikið rok í dag?" "Verður kalt í kvöld?" "Þarf ég regnhlíf?"
 # TODO: "Hversu mikið rok er úti?"
 # TODO: "Verður sól á morgun?" "Verður sól í dag?" - sólskin - sést til sólar
+# TODO: "Hvernig er færðin?"
 
 import re
 import logging

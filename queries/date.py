@@ -38,6 +38,7 @@
 # TODO: "Hvaða vikudagur er DAGSETNING næstkomandi?"
 # TODO: "Hvað gerðist á þessum degi?"
 # TODO: "Hvað eru margir dagar eftir af árinu?"
+# TODO: "Hvaða vikudagur var 11. september 2001?" "Hvaða dagur er á morgun?"
 
 import json
 import re
