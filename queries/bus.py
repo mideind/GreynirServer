@@ -262,6 +262,10 @@ QBusArrivalTime →
 QBusAnyArrivalTime →
     # 'Hvenær kemur/fer [næsti] strætó?'
     "hvenær" QBusArrivalVerb "næsti"? QBusNounSingular_nf '?'?
+    # 'Hvað er langt í [næsta] strætó?'
+    | "hvað" "er" "langt" "í" "næsta"? QBusNounSingular_þf '?'?
+    # 'Hvenær er von á [næsta] strætó?'
+    | "hvenær" "er" "von" "á" "næsta"? QBusNounSingular_þgf '?'?
 
 QBusArrivalVerb → "kemur" | "fer" | "stoppar"
 

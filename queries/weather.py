@@ -103,7 +103,7 @@ QWeatherForecast →
     | QWeatherHowAre QWeatherConditionPlural QWeatherLocation? QWeatherNextDays?    
     | QWeatherWhatAre QWeatherConditionPlural QWeatherLocation? QWeatherNextDays?
 
-    | "hvernig" "verður" "veðrið" QWeatherLocation? QWeatherNextDays    
+    | "hvernig" QWeatherIsWill "veðrið" QWeatherLocation? QWeatherNextDays    
 
     | QWeatherWhatKindOfWeather "er" "spáð" QWeatherLocation? QWeatherNextDays?
     | QWeatherWhatKindOfWeather "má" "búast" "við" QWeatherLocation? QWeatherNextDays?
@@ -116,6 +116,9 @@ QWeatherConditionSingular →
 
 QWeatherConditionPlural →
     "veðurhorfur" | "veður" "horfur" | "veðurhorfurnar" | "veður" "horfurnar"
+
+QWeatherIsWill →
+    "er" | "verður"
 
 QWeatherWhatIs →
     "hver" "er"

@@ -455,9 +455,16 @@ def query_person(query, session, name):
             else:
                 answer = voice_answer = "Ég veit ekki við hvert þú átt."
             return response, answer, voice_answer
-    titles = _query_person_titles(session, name)
-    # Now, create a list of articles where this person name appears
-    articles = _query_article_list(session, name)
+    if query.is_voice and not " " in name:
+        # If using voice, do not attempt to answer single-name
+        # queries ('Hver er Guðmundur?') since the answers are almost
+        # always nonsensical
+        titles = []
+        articles = []
+    else:
+        titles = _query_person_titles(session, name)
+        # Now, create a list of articles where this person name appears
+        articles = _query_article_list(session, name)
     response = dict(answers=titles, sources=articles)
     if titles and "answer" in titles[0]:
         # 'Már Guðmundsson er seðlabankastjóri.'

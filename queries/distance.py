@@ -97,6 +97,16 @@ def dist_answer_for_loc(locname, query):
     ):
         return None
 
+    # Try to avoid answering bus queries here
+    loc_lower = locname.lower()
+    if any(
+        s in loc_lower for s in (
+            "strætó", "stoppistöð", "strætisvagn", "biðstöð",
+            "stoppustöð", "stræto", "strædo"
+        )
+    ):
+        return None
+
     # Extract location coordinates from API result
     topres = res["results"][0]
     coords = topres["geometry"]["location"]
