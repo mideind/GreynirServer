@@ -183,6 +183,11 @@ _WHERE_AM_I_QUERIES = frozenset(
         "hvar er ég",
         "hvar er ég núna",
         "hvar er ég nú",
+        "hvar er ég í heiminum",
+        "hvar er ég staddur í heiminum",
+        "hvar er ég stödd í heiminum",
+        "hvar er ég staddur á hnettinum",
+        "hvar er ég stödd á hnettinum",
         "hvar er ég eins og stendur",
         "hvar er ég eiginlega",
         "hvar er ég staddur",
@@ -195,6 +200,7 @@ _WHERE_AM_I_QUERIES = frozenset(
         "hvar er ég niðurkomin",
         "hvar erum við niðurkomin",
         "hvar erum við sem stendur",
+        "staðsetning",
     )
 )
 

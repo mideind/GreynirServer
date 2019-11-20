@@ -23,6 +23,8 @@
 
 """
 
+# TODO: "hvað er 2 í veldinu 64"
+
 
 import math
 import json
