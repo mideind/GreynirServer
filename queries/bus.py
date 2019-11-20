@@ -39,6 +39,7 @@ from threading import Lock
 from functools import lru_cache
 from collections import defaultdict
 from datetime import datetime
+import random
 
 import query
 from queries import NUMBERS_NEUTRAL
@@ -53,9 +54,11 @@ import straeto
 SCHEDULE_TODAY = None
 SCHEDULE_LOCK = Lock()
 
+
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings
 HANDLE_TREE = True
+
 
 # Translate slightly wrong words that we allow in the grammar in order to
 # make it more resilient
@@ -65,6 +68,31 @@ _WRONG_STOP_WORDS = {
     "stoppustuð": "stoppistöð",
     "Stoppustuð": "stoppistöð",
 }
+
+
+# Lemmas of keywords that could indicate that the user is trying to use this module
+TOPIC_LEMMAS = [
+    "strætó", "stoppistöð", "biðstöð", "stoppustöð", "leið", "vagn", "strætisvagn",
+    "ás", "tvistur", "þristur", "fjarki", "fimma", "sexa", "sjöa", "átta", "nía",
+    "tía", "ellefa", "tólfa", "strætóstöð", "strætóstoppustöð", "strætóstoppistöð",
+    "strædo", "stræto", "seinn", "fljótur"
+]
+
+
+def help_text(lemma):
+    """ Help text to return when query.py is unable to parse a query but
+        one of the above lemmas is found in it """
+    return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
+        random.choice((
+            "Hvaða stoppistöð er næst mér",
+            "Hvar stoppar strætó",
+            "Hvenær kemur strætó",
+            "Hvenær fer leið fimmtíu og sjö frá Borgarnesi",
+            "Hvenær kemur fjarkinn á Hlemm",
+            "Hvenær er von á vagni númer fjórtán"
+        ))
+    )
+
 
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """

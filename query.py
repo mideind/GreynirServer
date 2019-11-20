@@ -31,6 +31,8 @@ import logging
 from datetime import datetime, timedelta
 import json
 import re
+import random
+from collections import defaultdict
 
 from settings import Settings
 
@@ -52,17 +54,7 @@ from processor import modules_in_dir
 _QUERY_ROOT = "QueryRoot"
 
 
-def beautify_query(query):
-    """ Return a minimally beautified version of the given query string """
-    # Make sure the query starts with an uppercase letter
-    bq = (query[0].upper() + query[1:]) if query else ""
-    # Add a question mark if no other ending punctuation is present
-    if not any(bq.endswith(s) for s in ("?", ".", "!")):
-        bq += "?"
-    return bq
-
-
-# A fixed preamble that is inserted before all query grammar fragments
+# A fixed preamble that is inserted before the concatenated query grammar fragments
 _GRAMMAR_PREAMBLE = """
 
 QueryRoot →
@@ -72,6 +64,16 @@ QueryRoot →
 $root(QueryRoot)
 
 """
+
+
+def beautify_query(query):
+    """ Return a minimally beautified version of the given query string """
+    # Make sure the query starts with an uppercase letter
+    bq = (query[0].upper() + query[1:]) if query else ""
+    # Add a question mark if no other ending punctuation is present
+    if not any(bq.endswith(s) for s in ("?", ".", "!")):
+        bq += "?"
+    return bq
 
 
 class QueryGrammar(BIN_Grammar):
@@ -172,6 +174,7 @@ class Query:
 
     _parser = None
     _processors = []
+    _help_texts = dict()
 
     def __init__(self, session, query, voice, auto_uppercase, location, client_id):
         self._session = session
@@ -227,8 +230,11 @@ class Query:
         cls._processors = procs
 
         # Obtain query grammar fragments from those processors
-        # that handle parse trees
+        # that handle parse trees. Also collect topic lemmas that
+        # can be used to provide context-sensitive help texts
+        # when queries cannot be parsed.
         grammar_fragments = []
+        help_texts = defaultdict(list)
         for processor in procs:
             handle_tree = getattr(processor, "HANDLE_TREE", None)
             if handle_tree:
@@ -238,6 +244,17 @@ class Query:
                 if fragment and isinstance(fragment, str):
                     # Looks legit: add it to our list
                     grammar_fragments.append(fragment)
+            # Collect topic lemmas and corresponding help text functions
+            topic_lemmas = getattr(processor, "TOPIC_LEMMAS", None)
+            if topic_lemmas:
+                help_text_func = getattr(processor, "help_text", None)
+                # If topic lemmas are given, a help_text function
+                # should also be present
+                assert help_text_func is not None
+                if help_text_func is not None:
+                    for lemma in topic_lemmas:
+                        help_texts[lemma].append(help_text_func)
+        cls._help_texts = help_texts
 
         # Coalesce the grammar additions from the fragments
         grammar_additions = "\n".join(grammar_fragments)
@@ -346,7 +363,8 @@ class Query:
         # Looks good
         # Store the resulting parsed query as a tree
         tree_string = "S1\n" + trees[1]
-        print(tree_string)
+        if Settings.DEBUG:
+            print(tree_string)
         self._tree = Tree()
         self._tree.load(tree_string)
         # Store the token list
@@ -550,6 +568,38 @@ class Query:
         """ Return the context that has been set by self.set_context() """
         return self._context
 
+    @classmethod
+    def try_to_help(cls, query, result):
+        """ Attempt to help the user in the case of a failed query,
+            based on lemmas in the query string """
+        # Collect a set of lemmas that occur in the query string
+        lemmas = set()
+        with BIN_Db.get_db() as db:
+            for token in query.lower().split():
+                if token.isalpha():
+                    m = db.meanings(token)
+                    if not m:
+                        # Try an uppercase version, just in case (pun intended)
+                        m = db.meanings(token.capitalize())
+                    if m:
+                        lemmas |= set(mm.stofn.lower() for mm in m)
+        # Collect a list of potential help text functions from the query modules
+        help_text_funcs = []
+        for lemma in lemmas:
+            help_text_funcs.extend(
+                [
+                    (lemma, help_text_func)
+                    for help_text_func in cls._help_texts.get(lemma, [])
+                ]
+            )
+        if help_text_funcs:
+            # Found at least one help text func matching a lemma in the query
+            # Select a function at random and invoke it with the matched
+            # lemma as a parameter
+            lemma, help_text_func = random.choice(help_text_funcs)
+            result["answer"] = result["voice"] = help_text_func(lemma)
+            result["valid"] = True
+
     def execute(self):
         """ Check whether the parse tree is describes a query, and if so,
             execute the query, store the query answer in the result dictionary
@@ -566,6 +616,7 @@ class Query:
         # shortcut to a successful, plain response
         if not self.execute_from_plain_text():
             if not self.parse(result):
+                # Unable to parse the query
                 if Settings.DEBUG:
                     print("Unable to parse query, error {0}".format(self.error()))
                 result["error"] = self.error()
@@ -834,5 +885,7 @@ def process_query(
             # from the last (least likely) query string
             result["q_raw"] = first_qtext
             result["q"] = beautify_query(first_qtext)
+            # Attempt to include a helpful response in the result
+            Query.try_to_help(first_clean_q, result)
 
         return result

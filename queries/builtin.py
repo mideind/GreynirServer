@@ -704,6 +704,9 @@ def repeat_query(query, session, qkey):
         voice_answer = "Ég hef ekki svarað neinu nýlega."
     else:
         answer, voice_answer = last
+    # Put a colon at the end of the beautified query,
+    # instead of a question mark
+    query.query_is_command()
     response = dict(answer=answer)
     return response, answer, voice_answer
 
@@ -731,6 +734,8 @@ def sentence(state, result):
     q = state["query"]
     if "qtype" in result:
         # Successfully matched a query type
+        q.set_qtype(result.qtype)
+        q.set_key(result.qkey)
         if q.is_voice and result.qtype in _Q_NO_VOICE:
             # We don't do topic searches or word relationship
             # queries via voice; that would be pretty meaningless.
@@ -740,8 +745,6 @@ def sentence(state, result):
             # We don't allow repeat requests in non-voice queries
             q.set_error("E_ONLY_VOICE_SUPPORTED")
             return
-        q.set_qtype(result.qtype)
-        q.set_key(result.qkey)
         if result.qtype == "Search":
             # For searches, don't add a question mark at the end
             if q.beautified_query.endswith("?") and not q.query.endswith("?"):
@@ -893,13 +896,15 @@ QTitleKey_ef →
 QRepeat →
     QRepeatQuery '?'?
 
+QRepeatThis → "þetta" | "síðasta" "svar" | "svarið"
+
 QRepeatQuery →
-    QPlease? "endurtaktu" "þetta"?
-    | QPlease? "segðu" "mér"? "þetta" "aftur"
-    | "geturðu" "endurtekið" "þetta"?
-    | "geturðu" "sagt" "þetta" "aftur"
-    | "gætirðu" "endurtekið" "þetta"?
-    | "gætirðu" "sagt" "þetta" "aftur"
+    QPlease? "endurtaktu" QRepeatThis?
+    | QPlease? "segðu" "mér"? QRepeatThis "aftur"
+    | "geturðu" "endurtekið" QRepeatThis?
+    | "geturðu" "sagt" QRepeatThis "aftur"
+    | "gætirðu" "endurtekið" QRepeatThis?
+    | "gætirðu" "sagt" QRepeatThis "aftur"
 
 QPlease →
     "vinsamlega" | "vinsamlegast"
