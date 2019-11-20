@@ -31,6 +31,7 @@
 # TODO: "Hversu mikið rok er úti?"
 # TODO: "Verður sól á morgun?" "Verður sól í dag?" - sólskin - sést til sólar
 # TODO: "Hvernig er færðin?"
+# TODO: "Hvernig er veðrið heima?" (fyrir þá sem spyrja í útlöndum)
 
 import re
 import logging

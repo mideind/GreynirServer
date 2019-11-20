@@ -39,6 +39,10 @@
 # TODO: "Hvað gerðist á þessum degi?"
 # TODO: "Hvað eru margir dagar eftir af árinu?"
 # TODO: "Hvaða vikudagur var 11. september 2001?" "Hvaða dagur er á morgun?"
+# TODO: "Hvenær eru vetrarsólstöður" + more astronomical dates
+# TODO: "Hvenær er dagur íslenskrar tungu" :)
+# TODO: "Hvað er langt í helgina?" "Hvenær er næsti frídagur?"
+
 
 import json
 import re

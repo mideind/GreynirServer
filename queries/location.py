@@ -23,15 +23,21 @@
 
 """
 
+
 # TODO: "Í hvaða póstnúmeri er ég?" "Í hvaða póstnúmeri er Fiskislóð 31?"
+# TODO: "Í hvaða bæ er ég?" "Hver er næsti bær?"
+
 
 import os
 import re
 import logging
 
 from queries import (
-    gen_answer, query_geocode_api_coords, country_desc, nom2dat,
-    numbers_to_neutral
+    gen_answer,
+    query_geocode_api_coords,
+    country_desc,
+    nom2dat,
+    numbers_to_neutral,
 )
 from iceaddr import iceaddr_lookup
 from geo import iceprep_for_placename, iceprep_for_street
@@ -198,7 +204,7 @@ _WHERE_AM_I_QUERIES = frozenset(
         "hvar erum við",
         "hvar erum við stödd",
         "hvar er ég sem stendur",
-        "hvar er ég niðurkominn", 
+        "hvar er ég niðurkominn",
         "hvar er ég niðurkomin",
         "hvar erum við niðurkomin",
         "hvar erum við sem stendur",
