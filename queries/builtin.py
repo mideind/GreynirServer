@@ -807,10 +807,15 @@ $tag(keep) QPersonPronoun/fall/kyn
 
 QPersonPrefix_nf →
     "hver" "er"
+    | "hver" "var"
     | "hvað" "gerir"
+    | "hvað" "gerði"
     | "hvað" "starfar"
+    | "hvað" "starfaði"
     | "hvaða" "titil" "hefur"
+    | "hvaða" "titil" "hafði"
     | "hvaða" "starfi" "gegnir"
+    | "hvaða" "starfi" "gegndi"
 
 QPersonPrefix_þf →
     "hvað" "veistu" "um"
@@ -818,8 +823,11 @@ QPersonPrefix_þf →
 
 QPersonPrefix_ef →
     "hver" "er" "titill"
+    | "hver" "var" "titill"
     | "hver" "er" "starfstitill"
+    | "hver" "var" "starfstitill"
     | "hvert" "er" "starf"
+    | "hvert" "var" "starf"
 
 QPersonPrefix_þgf →
     "segðu" "mér"? "frá"
@@ -881,6 +889,7 @@ QTitlePrefixFrh_nf →
     "hver" "er"
     | "hver" "var"
     | "hver" "hefur" "verið"
+    | "hvað" "heitir"
 
 QTitlePrefix_ef →
     QSegðuMér? "hver" "gegnir" "starfi"
