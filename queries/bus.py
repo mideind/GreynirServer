@@ -116,13 +116,18 @@ QBusNearestStop →
 
     "hvaða" QBusStop_kvk QBusVarEr QBusStopTail_kvk '?'?
     | "hvaða" QBusStop_hk QBusVarEr QBusStopTail_hk '?'?
+
     | "hvar" "er" "næsta"? QBusStop_kvk '?'?
     | "hver" "er" "næsta" QBusStop_kvk '?'?
     # Leyfa 'hvað er næsta stoppistöð' (algeng misheyrn)
     | "hvað" "er" "næsta" QBusStop_kvk '?'?
+
+    | "hvar" "er" "næsta"? QBusStop_hk '?'?
     | "hvert" "er" "næsta" QBusStop_hk '?'?
+    | "hvað" "er" "næsta" QBusStop_hk '?'?
     # Leyfa 'hver er næsta strætóstopp' (algeng misheyrn)
     | "hver" "er" "næsta" QBusStop_hk '?'?
+
     | "hvar" "stoppar" "strætó" '?'?
 
 $score(+32) QBusNearestStop
@@ -130,7 +135,8 @@ $score(+32) QBusNearestStop
 QBusVarEr → "er" | "var"
 
 QBusStop_kvk →
-    "stoppistöð" | "stoppustöð" | "stoppustuð" | "biðstöð" | "strætóstöð"
+    "stoppistöð" "strætó"? | "stoppustöð" "strætó"? | "stoppustuð" "strætó"?
+    | "biðstöð" "strætó"? | "strætóstöð"
     | "strætóstoppistöð" | "strætóstoppustöð"
 
 QBusStop_hk →

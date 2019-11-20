@@ -526,6 +526,18 @@ _SPECIAL_QUERIES = {
     "hver er embla": _identity,
     "hvað er embla": _identity,
 
+    "hvers vegna heitir þú embla": {
+        "answer": "Embla er fallegt og hljómfagurt nafn."
+    },
+
+    "hver er uppáhalds liturinn þinn": {
+        "answer": "Rauður."
+    },
+
+    "hver er uppáhaldsliturinn þinn": {
+        "answer": "Rauður."
+    },
+
     # Age
     "hvað ertu gömul": _CREATION_DATE,
     "hvað ert þú gömul": _CREATION_DATE,
@@ -552,7 +564,10 @@ _SPECIAL_QUERIES = {
     
     "hvað getur þú sagt mér": _capabilities,
     "hvað geturðu sagt mér": _capabilities,
-    
+
+    "hvað getur þú gert": _capabilities,
+    "hvað geturðu gert": _capabilities,
+
     "hvað kanntu": _capabilities,
     "hvað kannt þú": _capabilities,
 
