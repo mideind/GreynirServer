@@ -31,6 +31,8 @@
 
 # TODO: "Í hvaða tímabelti er ég?"
 
+import random
+
 from datetime import datetime
 from pytz import country_timezones, timezone
 from reynir.bindb import BIN_Db
@@ -53,6 +55,25 @@ _TIME_QUERIES = frozenset(
         "hvað líður tímanum",
     )
 )
+
+
+# Lemmas of keywords that could indicate that the user is trying to use this module
+TOPIC_LEMMAS = [
+    "klukka", "tími"
+]
+
+
+def help_text(lemma):
+    """ Help text to return when query.py is unable to parse a query but
+        one of the above lemmas is found in it """
+    return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
+        random.choice((
+            "Hvað er klukkan",
+            "Hvað líður tímanum",
+            "Hvað er klukkan í Kaupmannahöfn",
+            "Hvað er klukkan í Tókýó",
+        ))
+    )
 
 
 def handle_plain_text(q):
@@ -109,7 +130,7 @@ def handle_plain_text(q):
         specific_desc = "{0} er".format(ql[8:])
 
         # Beautify query by capitalizing the country/city name
-        q.set_beautified_query("{0}{1}".format(q.beautified_query[:18], loc))
+        q.set_beautified_query("{0}{1}?".format(q.beautified_query[:18], loc))
 
     # We have a timezone. Return formatted answer.
     if tz:

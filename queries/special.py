@@ -370,6 +370,12 @@ _SPECIAL_QUERIES = {
     "hvar lærðirðu íslensku": {
         "answer": "Teymið hjá Miðeind kenndi mér íslensku."
     },
+    "hvernig lærðir þú íslensku": {
+        "answer": "Teymið hjá Miðeind kenndi mér íslensku."
+    },
+    "hvernig lærðirðu íslensku": {
+        "answer": "Teymið hjá Miðeind kenndi mér íslensku."
+    },
 
     # Enquiries about family
     # Catch this here to prevent rather, ehrm, embarassing
@@ -598,6 +604,7 @@ _SPECIAL_QUERIES = {
     "þú ert flott": _LIKEWISE,
     "þú ert æði": _LIKEWISE,
     "þú ert æðisleg": _LIKEWISE,
+    "takk fyrir spjallið": _LIKEWISE,
 
     # Philosophy
     "hvað er svarið": _MEANING_OF_LIFE,
@@ -624,6 +631,18 @@ _SPECIAL_QUERIES = {
     "hver er embla": _identity,
     "hvað er embla": _identity,
     "hvaða forrit er þetta": _identity,
+
+    "hvers vegna heitir þú embla": {
+        "answer": "Embla er fallegt og hljómfagurt nafn."
+    },
+
+    "hver er uppáhalds liturinn þinn": {
+        "answer": "Rauður."
+    },
+
+    "hver er uppáhaldsliturinn þinn": {
+        "answer": "Rauður."
+    },
 
     # Age
     "hvað ertu gömul": _CREATION_DATE,
@@ -668,7 +687,10 @@ _SPECIAL_QUERIES = {
     
     "hvað getur þú sagt mér": _capabilities,
     "hvað geturðu sagt mér": _capabilities,
-    
+
+    "hvað getur þú gert": _capabilities,
+    "hvað geturðu gert": _capabilities,
+
     "hvað kanntu": _capabilities,
     "hvað kannt þú": _capabilities,
 

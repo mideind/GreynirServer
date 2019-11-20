@@ -34,6 +34,7 @@
 import re
 import logging
 from datetime import datetime, timedelta
+import random
 
 from queries import gen_answer
 from geo import distance, isocode_for_country_name, ICE_PLACENAME_BLACKLIST
@@ -44,10 +45,34 @@ from iceweather import observation_for_closest, observation_for_station, forecas
 _WEATHER_QTYPE = "Weather"
 
 
-# This module wants to handle parse trees for queries,
+# This module wants to handle parse trees for queries
 HANDLE_TREE = True
 
-# The context-free grammar for the queries recognized by this plug-in module
+
+# Lemmas of keywords that could indicate that the user is trying to use this module
+TOPIC_LEMMAS = [
+    "veður", "veðurspá", "spá", "rigning", "vindur", "regn",
+    "rok", "stormur", "fárviðri", "ofsaveður", "logn", "lygn",
+    "blautur", "bleyta", "rigna",
+    "regnhlíf", "votur", "kaldur", "heitur", "hiti", "kuldi",
+    "veðurhorfur", "hitastig", "vindstig", "væta", "úrkoma",
+    "úrkomumikill", "úrkomulítill"
+]
+
+
+def help_text(lemma):
+    """ Help text to return when query.py is unable to parse a query but
+        one of the above lemmas is found in it """
+    return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
+        random.choice((
+            "Hvernig er veðrið", "Hvernig er veðurspáin",
+            "Hvernig er veðrið á Vopnafirði", "Hvernig eru veðurhorfurnar",
+            "Hversu heitt er í Borgarfirði", "Hvernig veður er á Siglufirði"
+        ))
+    )
+
+
+# The context-free grammar for the queries recognized by this module
 GRAMMAR = """
 
 Query →
@@ -79,7 +104,7 @@ QWeatherForecast →
     | QWeatherHowAre QWeatherConditionPlural QWeatherLocation? QWeatherNextDays?    
     | QWeatherWhatAre QWeatherConditionPlural QWeatherLocation? QWeatherNextDays?
 
-    | "hvernig" "verður" "veðrið" QWeatherLocation? QWeatherNextDays    
+    | "hvernig" QWeatherIsWill "veðrið" QWeatherLocation? QWeatherNextDays    
 
     | QWeatherWhatKindOfWeather "er" "spáð" QWeatherLocation? QWeatherNextDays?
     | QWeatherWhatKindOfWeather "má" "búast" "við" QWeatherLocation? QWeatherNextDays?
@@ -92,6 +117,9 @@ QWeatherConditionSingular →
 
 QWeatherConditionPlural →
     "veðurhorfur" | "veður" "horfur" | "veðurhorfurnar" | "veður" "horfurnar"
+
+QWeatherIsWill →
+    "er" | "verður"
 
 QWeatherWhatIs →
     "hver" "er"
@@ -438,7 +466,19 @@ def QWeatherOpenLoc(node, params, result):
 
 def Nl(node, params, result):
     """ Noun phrase containing name of specific location """
-    result["location"] = result._nominative.capitalize()
+    loc = result._nominative
+    loc = loc[0].upper() + loc[1:]
+    result["location"] = loc
+
+
+def EfLiður(node, params, result):
+    """ Don't change the case of possessive clauses """
+    result._nominative = result._text
+
+
+def FsMeðFallstjórn(node, params, result):
+    """ Don't change the case of prepositional clauses """
+    result._nominative = result._text
 
 
 def QWeatherCurrent(node, params, result):

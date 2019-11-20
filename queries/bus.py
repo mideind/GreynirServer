@@ -39,6 +39,7 @@ from threading import Lock
 from functools import lru_cache
 from collections import defaultdict
 from datetime import datetime
+import random
 
 import query
 from queries import NUMBERS_NEUTRAL
@@ -53,9 +54,11 @@ import straeto
 SCHEDULE_TODAY = None
 SCHEDULE_LOCK = Lock()
 
+
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings
 HANDLE_TREE = True
+
 
 # Translate slightly wrong words that we allow in the grammar in order to
 # make it more resilient
@@ -65,6 +68,31 @@ _WRONG_STOP_WORDS = {
     "stoppustuð": "stoppistöð",
     "Stoppustuð": "stoppistöð",
 }
+
+
+# Lemmas of keywords that could indicate that the user is trying to use this module
+TOPIC_LEMMAS = [
+    "strætó", "stoppistöð", "biðstöð", "stoppustöð", "leið", "vagn", "strætisvagn",
+    "ás", "tvistur", "þristur", "fjarki", "fimma", "sexa", "sjöa", "átta", "nía",
+    "tía", "ellefa", "tólfa", "strætóstöð", "strætóstoppustöð", "strætóstoppistöð",
+    "strædo", "stræto", "seinn", "fljótur"
+]
+
+
+def help_text(lemma):
+    """ Help text to return when query.py is unable to parse a query but
+        one of the above lemmas is found in it """
+    return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
+        random.choice((
+            "Hvaða stoppistöð er næst mér",
+            "Hvar stoppar strætó",
+            "Hvenær kemur strætó",
+            "Hvenær fer leið fimmtíu og sjö frá Borgarnesi",
+            "Hvenær kemur fjarkinn á Hlemm",
+            "Hvenær er von á vagni númer fjórtán"
+        ))
+    )
+
 
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """
@@ -88,13 +116,18 @@ QBusNearestStop →
 
     "hvaða" QBusStop_kvk QBusVarEr QBusStopTail_kvk '?'?
     | "hvaða" QBusStop_hk QBusVarEr QBusStopTail_hk '?'?
+
     | "hvar" "er" "næsta"? QBusStop_kvk '?'?
     | "hver" "er" "næsta" QBusStop_kvk '?'?
     # Leyfa 'hvað er næsta stoppistöð' (algeng misheyrn)
     | "hvað" "er" "næsta" QBusStop_kvk '?'?
+
+    | "hvar" "er" "næsta"? QBusStop_hk '?'?
     | "hvert" "er" "næsta" QBusStop_hk '?'?
+    | "hvað" "er" "næsta" QBusStop_hk '?'?
     # Leyfa 'hver er næsta strætóstopp' (algeng misheyrn)
     | "hver" "er" "næsta" QBusStop_hk '?'?
+
     | "hvar" "stoppar" "strætó" '?'?
 
 $score(+32) QBusNearestStop
@@ -102,7 +135,8 @@ $score(+32) QBusNearestStop
 QBusVarEr → "er" | "var"
 
 QBusStop_kvk →
-    "stoppistöð" | "stoppustöð" | "stoppustuð" | "biðstöð" | "strætóstöð"
+    "stoppistöð" "strætó"? | "stoppustöð" "strætó"? | "stoppustuð" "strætó"?
+    | "biðstöð" "strætó"? | "strætóstöð"
     | "strætóstoppistöð" | "strætóstoppustöð"
 
 QBusStop_hk →
@@ -228,6 +262,10 @@ QBusArrivalTime →
 QBusAnyArrivalTime →
     # 'Hvenær kemur/fer [næsti] strætó?'
     "hvenær" QBusArrivalVerb "næsti"? QBusNounSingular_nf '?'?
+    # 'Hvað er langt í [næsta] strætó?'
+    | "hvað" "er" "langt" "í" "næsta"? QBusNounSingular_þf '?'?
+    # 'Hvenær er von á [næsta] strætó?'
+    | "hvenær" "er" "von" "á" "næsta"? QBusNounSingular_þgf '?'?
 
 QBusArrivalVerb → "kemur" | "fer" | "stoppar"
 

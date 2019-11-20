@@ -42,6 +42,7 @@
 import json
 import re
 import logging
+import random
 from datetime import datetime, date, timedelta
 from pytz import timezone
 
@@ -50,6 +51,50 @@ from settings import changedlocale
 
 
 _DATE_QTYPE = "Date"
+
+
+# Lemmas of keywords that could indicate that the user is trying to use this module
+TOPIC_LEMMAS = [
+    "dagur", "dagsetning",
+    "mánaðardagur", "vikudagur",
+    "vika", "mánuður",
+    "hvítasunnudagur",
+    "uppstigningardagur",
+    "öskudagur",
+    "hrekkjavaka",
+    "fullveldisdagur",
+    "sumardagur",
+    "þorláksmessa",
+    "aðfangadagur",
+    "jól",
+    "jóladagur",
+    "gamlárskvöld",
+    "nýársdagur",
+    "baráttudagur",
+    "páskar",
+    "páskadagur",
+    "skírdagur",
+    "föstudagur",
+    "þjóðhátíðardagur",
+    "þjóðhátíð",
+    "verslunarmannahelgi",
+    "frídagur",
+    "menningarnótt",
+]
+
+
+def help_text(lemma):
+    """ Help text to return when query.py is unable to parse a query but
+        one of the above lemmas is found in it """
+    return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
+        random.choice((
+            "Hvaða dagur er í dag",
+            "Hvað er langt til jóla",
+            "Hvenær eru páskarnir",
+            "Á hvaða degi er frídagur verslunarmanna",
+            "Hvenær er skírdagur"
+        ))
+    )
 
 
 # Indicate that this module wants to handle parse trees for queries,

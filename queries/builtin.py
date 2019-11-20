@@ -455,9 +455,16 @@ def query_person(query, session, name):
             else:
                 answer = voice_answer = "Ég veit ekki við hvert þú átt."
             return response, answer, voice_answer
-    titles = _query_person_titles(session, name)
-    # Now, create a list of articles where this person name appears
-    articles = _query_article_list(session, name)
+    if query.is_voice and not " " in name:
+        # If using voice, do not attempt to answer single-name
+        # queries ('Hver er Guðmundur?') since the answers are almost
+        # always nonsensical
+        titles = []
+        articles = []
+    else:
+        titles = _query_person_titles(session, name)
+        # Now, create a list of articles where this person name appears
+        articles = _query_article_list(session, name)
     response = dict(answers=titles, sources=articles)
     if titles and "answer" in titles[0]:
         # 'Már Guðmundsson er seðlabankastjóri.'
@@ -704,6 +711,9 @@ def repeat_query(query, session, qkey):
         voice_answer = "Ég hef ekki svarað neinu nýlega."
     else:
         answer, voice_answer = last
+    # Put a period at the end of the beautified query,
+    # instead of a question mark
+    query.query_is_command()
     response = dict(answer=answer)
     return response, answer, voice_answer
 
@@ -731,6 +741,8 @@ def sentence(state, result):
     q = state["query"]
     if "qtype" in result:
         # Successfully matched a query type
+        q.set_qtype(result.qtype)
+        q.set_key(result.qkey)
         if q.is_voice and result.qtype in _Q_NO_VOICE:
             # We don't do topic searches or word relationship
             # queries via voice; that would be pretty meaningless.
@@ -740,8 +752,6 @@ def sentence(state, result):
             # We don't allow repeat requests in non-voice queries
             q.set_error("E_ONLY_VOICE_SUPPORTED")
             return
-        q.set_qtype(result.qtype)
-        q.set_key(result.qkey)
         if result.qtype == "Search":
             # For searches, don't add a question mark at the end
             if q.beautified_query.endswith("?") and not q.query.endswith("?"):
@@ -804,10 +814,15 @@ $tag(keep) QPersonPronoun/fall/kyn
 
 QPersonPrefix_nf →
     "hver" "er"
+    | "hver" "var"
     | "hvað" "gerir"
+    | "hvað" "gerði"
     | "hvað" "starfar"
+    | "hvað" "starfaði"
     | "hvaða" "titil" "hefur"
+    | "hvaða" "titil" "hafði"
     | "hvaða" "starfi" "gegnir"
+    | "hvaða" "starfi" "gegndi"
 
 QPersonPrefix_þf →
     "hvað" "veistu" "um"
@@ -815,8 +830,11 @@ QPersonPrefix_þf →
 
 QPersonPrefix_ef →
     "hver" "er" "titill"
+    | "hver" "var" "titill"
     | "hver" "er" "starfstitill"
+    | "hver" "var" "starfstitill"
     | "hvert" "er" "starf"
+    | "hvert" "var" "starf"
 
 QPersonPrefix_þgf →
     "segðu" "mér"? "frá"
@@ -878,6 +896,7 @@ QTitlePrefixFrh_nf →
     "hver" "er"
     | "hver" "var"
     | "hver" "hefur" "verið"
+    | "hvað" "heitir"
 
 QTitlePrefix_ef →
     QSegðuMér? "hver" "gegnir" "starfi"
@@ -893,13 +912,15 @@ QTitleKey_ef →
 QRepeat →
     QRepeatQuery '?'?
 
+QRepeatThis → "þetta" | "síðasta" "svar" | "svarið"
+
 QRepeatQuery →
-    QPlease? "endurtaktu" "þetta"?
-    | QPlease? "segðu" "mér"? "þetta" "aftur"
-    | "geturðu" "endurtekið" "þetta"?
-    | "geturðu" "sagt" "þetta" "aftur"
-    | "gætirðu" "endurtekið" "þetta"?
-    | "gætirðu" "sagt" "þetta" "aftur"
+    QPlease? "endurtaktu" QRepeatThis?
+    | QPlease? "segðu" "mér"? QRepeatThis "aftur"
+    | "geturðu" "endurtekið" QRepeatThis?
+    | "geturðu" "sagt" QRepeatThis "aftur"
+    | "gætirðu" "endurtekið" QRepeatThis?
+    | "gætirðu" "sagt" QRepeatThis "aftur"
 
 QPlease →
     "vinsamlega" | "vinsamlegast"
