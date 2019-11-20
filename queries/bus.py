@@ -140,7 +140,7 @@ QBusStop_kvk →
     | "strætóstoppistöð" | "strætóstoppustöð"
 
 QBusStop_hk →
-    "strætóstopp" | "stopp"
+    "strætóstopp" | "stopp" | "strætóskýli"
 
 QBusStopTail →
     "næst" "mér"? | "styst" "í" "burtu" | "nálægt" "mér"?
@@ -179,25 +179,35 @@ QBusNounSingular_ef →
     QBusNoun_ef_et
 
 QBusWhich →
-    # 'Hvaða strætó stoppar í Einarsnesi'?
-    # 'Hvaða strætisvagnar stoppa á Lækjartorgi'?
+    # 'Hvaða strætó stoppar þar/í Einarsnesi'?
+    # 'Hvaða strætisvagnar stoppa þar/á Lækjartorgi'?
     "hvaða" QBusNoun_nf/tala QBusWhichTail/tala '?'?
 
 $score(+32) QBusWhich
 
 QBusWhichTail/tala →
-    QBusWhichTailCorrect/tala | QBusWhichTailIncorrect/tala
+    QBusWhichTailCorrect/tala
+    | QBusWhichTailIncorrect/tala
 
 QBusWhichTailCorrect/tala →
     'stoppa:so'_p3_gm_fh_nt/tala "í" QBusStopName_þgf
     | 'stoppa:so'_p3_gm_fh_nt/tala "á" QBusStopName_þgf
+    | 'stoppa:so'_p3_gm_fh_nt/tala QBusStopThere
+
     | 'stöðva:so'_p3_gm_fh_nt/tala "í" QBusStopName_þgf
     | 'stöðva:so'_p3_gm_fh_nt/tala "á" QBusStopName_þgf
+    | 'stöðva:so'_p3_gm_fh_nt/tala QBusStopThere
+
     | 'aka:so'_p3_gm_fh_nt/tala QBusAtStopCorrect
+    | 'aka:so'_p3_gm_fh_nt/tala QBusStopToThere
+
     | 'koma:so'_p3_gm_fh_nt/tala "á" QBusStopName_þf
     | 'koma:so'_p3_gm_fh_nt/tala "í" QBusStopName_þf
     | 'koma:so'_p3_gm_fh_nt/tala "til" QBusStopName_ef
+    | 'koma:so'_p3_gm_fh_nt/tala QBusStopToThere
+
     | 'fara:so'_p3_gm_fh_nt/tala QBusAtStopCorrect
+    | 'fara:so'_p3_gm_fh_nt/tala QBusStopToThere
 
 # It seems to be necessary to allow the nominal case
 # also, because the Google ASR language model doesn't always
@@ -223,18 +233,25 @@ QBusWhichTailIncorrect/tala →
 # Prefer the correct forms
 $score(-20) QBusWhichTailIncorrect/tala
 
+QBusStopThere →
+    "þar"
+
+QBusStopToThere →
+    "þangað"
+
 QBusStopName/fall →
     Nl/fall
 
 $score(+1) QBusStopName/fall
 
 QBusAtStop →
-    QBusAtStopCorrect | QBusAtStopIncorrect
+    QBusAtStopCorrect | QBusAtStopIncorrect | QBusStopThere | QBusStopToThere
 
 QBusAtStopCorrect →
     "í" QBusStopName_þf
     | "á" QBusStopName_þf
     | "frá" QBusStopName_þgf
+    | "að" QBusStopName_þgf
     | "til" QBusStopName_ef
 
 QBusAtStopIncorrect →
@@ -327,6 +344,16 @@ def QBusStop(node, params, result):
 def QBusStopName(node, params, result):
     """ Save the bus stop name """
     result.stop_name = result._nominative
+
+
+def QBusStopThere(node, params, result):
+    """ A reference to a bus stop mentioned earlier """
+    result.stop_name = "þar"
+
+
+def QBusStopToThere(node, params, result):
+    """ A reference to a bus stop mentioned earlier """
+    result.stop_name = "þangað"
 
 
 def EfLiður(node, params, result):
@@ -563,6 +590,8 @@ def query_nearest_stop(query, session, result):
         "þangað", "eru",
         voice_distance(straeto.distance(location, stop.location)),
     ]
+    # Store a location coordinate and a bus stop name in the context
+    query.set_context({"location": stop.location, "bus_stop": stop.name})
     voice_answer = " ".join(va) + "."
     response = dict(answer=answer)
     return response, answer, voice_answer
@@ -578,6 +607,18 @@ def query_arrival_time(query, session, result):
     # Retrieve the client location, if available, and the name
     # of the bus stop, if given
     stop_name = result.get("stop_name")
+    stop = None
+
+    if stop_name in {"þar", "þangað"}:
+        # Referring to a bus stop mentioned earlier
+        ctx = query.fetch_context()
+        if ctx and "bus_stop" in ctx:
+            stop_name = ctx["bus_stop"]
+        else:
+            answer = voice_answer = "Ég veit ekki við hvaða stað þú átt."
+            response = dict(answer=answer)
+            return response, answer, voice_answer
+
     if stop_name:
         location = None
     else:
@@ -756,6 +797,10 @@ def query_arrival_time(query, session, result):
         # The bus stop name is not recognized
         va = a = [stop_name.capitalize(), "er ekki biðstöð"]
 
+    if stop is not None:
+        # Store a location coordinate and a bus stop name in the context
+        query.set_context({"location": stop.location, "bus_stop": stop.name})
+
     # Hack: Since we know that the query string contains no uppercase words,
     # adjust it accordingly; otherwise it may erroneously contain capitalized
     # words such as Vagn and Leið.
@@ -773,6 +818,18 @@ def query_arrival_time(query, session, result):
 def query_which_route(query, session, result):
     """ Which routes stop at a given bus stop """
     stop_name = result.stop_name  # 'Einarsnes', 'Fiskislóð'...
+
+    if stop_name in {"þar", "þangað"}:
+        # Referring to a bus stop mentioned earlier
+        ctx = query.fetch_context()
+        if ctx and "bus_stop" in ctx:
+            stop_name = ctx["bus_stop"]
+            result.qkey = stop_name
+        else:
+            answer = voice_answer = "Ég veit ekki við hvaða stað þú átt."
+            response = dict(answer=answer)
+            return response, answer, voice_answer
+
     bus_noun = result.bus_noun  # 'strætó', 'vagn', 'leið'...
     stops = straeto.BusStop.named(stop_name, fuzzy=True)
     if not stops:
@@ -806,6 +863,8 @@ def query_which_route(query, session, result):
         tail = ["stoppar á", to_dative(stop.name)]
         va.extend(tail)
         a.extend(tail)
+        # Store a location coordinate and a bus stop name in the context
+        query.set_context({"location": stop.location, "bus_stop": stop.name})
 
     voice_answer = correct_spaces(" ".join(va) + ".")
     answer = correct_spaces(" ".join(a))

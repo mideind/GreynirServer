@@ -233,7 +233,11 @@ def handle_plain_text(q):
         # Get info about this location
         answ = answer_for_location(loc)
 
-    if not answ:
+    if answ:
+        # For uniformity, store the returned location in the context
+        # !!! TBD: We might want to store an address here as well
+        q.set_context({"location": loc})
+    else:
         # We either don't have a location or no info about
         # the location associated with the query
         answ = gen_answer("Ég veit ekki hvar þú ert.")
