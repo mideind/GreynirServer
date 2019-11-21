@@ -202,6 +202,22 @@ def _play_blues(qs, q):
     return { "answer": "Skal gert!", "is_question": False  }
 
 
+def _play_rock(qs, q):
+    q.set_url("https://www.youtube.com/watch?v=y8OtzJtp-EM")
+    return { "answer": "Skal gert!", "is_question": False  }
+
+
+def _play_classical(qs, q):
+    q.set_url("https://www.youtube.com/watch?v=iwIvS4yIThU")
+    return { "answer": "Skal gert!", "is_question": False  }
+
+
+def _play_music(qs, q):
+    m = [_play_jazz, _play_blues, _play_rock, _play_classical]
+    choice(m)(qs, q)
+    return { "answer": "Skal gert!", "is_question": False  }
+
+
 _MEANING_OF_LIFE = {
     "answer": "42.",
     "voice": "Fjörutíu og tveir.",
@@ -363,6 +379,8 @@ _SPECIAL_QUERIES = {
     "hver er pabbi þinn": _CREATOR,
     "hverjir eru foreldrar þínir": _CREATOR,
     "hver er uppruni þinn": _CREATOR,
+    "hver framleiðir þig": _CREATOR,
+    "hver framleiddi þig": _CREATOR,
     "hvað er miðeind": {
         "answer": "Miðeind er máltæknifyrirtækið sem skapaði mig."
     },
@@ -511,6 +529,19 @@ _SPECIAL_QUERIES = {
     "spila þú jazz": _play_jazz,
     "spilaðu blús": _play_blues,
     "spila þú blús": _play_blues,
+    "spilaðu rokk": _play_rock,
+    "spila þú rokk": _play_rock,
+    "spilaðu klassík": _play_classical,
+    "spila þú klassík": _play_classical,
+    "spilaðu klassíska tónlist": _play_classical,
+    "spila þú klassíska tónlist": _play_classical,
+    "spilaðu tónlist": _play_music,
+    "spila þú tónlist": _play_music,
+    "spilaðu einhverja tónlist": _play_music,
+    "spila þú einhverja tónlist": _play_music,
+    "spilaðu fyrir mig tónlist": _play_music,
+    "spilaðu fyrir mig lag": _play_music,
+    "spilaðu tónlist fyrir mig": _play_music,
 
     # Blame
     "þetta er ekki rétt": _sorry,
@@ -644,6 +675,7 @@ _SPECIAL_QUERIES = {
     "hvert er svarið": _MEANING_OF_LIFE,
     "hver er tilgangurinn": _MEANING_OF_LIFE,
     "hver er tilgangur lífsins": _MEANING_OF_LIFE,
+    "hvað er tilgangur lífsins": _MEANING_OF_LIFE,
     "hver er tilgangurinn með þessu öllu": _MEANING_OF_LIFE,
     "hver er ástæðan fyrir þessu öllu": _MEANING_OF_LIFE,
     "hvaða þýðingu hefur þetta allt": _MEANING_OF_LIFE,
@@ -769,6 +801,8 @@ _SPECIAL_QUERIES = {
     "hvað skilgreinir þú þig sem": _COMPUTER_PROGRAM,
     "hvað ert þú": _COMPUTER_PROGRAM,
     "hvað ertu": _COMPUTER_PROGRAM,
+    "ert þú tölvuforrit": _COMPUTER_PROGRAM,
+    "ertu tölvuforrit": _COMPUTER_PROGRAM,
 
     # Capabilities
     "hvað veistu": _capabilities,
@@ -777,6 +811,7 @@ _SPECIAL_QUERIES = {
     "hvað veist þú eiginlega": _capabilities,
     "hvað veistu um": _capabilities,
     "hvað veist þú um": _capabilities,
+    "hvað veistu þá": _capabilities,
     "hvað getur þú gert": _capabilities,
     "hvað geturðu gert": _capabilities,
 
@@ -917,6 +952,8 @@ _SPECIAL_QUERIES = {
     "getur þú sagt mér brandara": _random_joke,
     "veistu brandara": _random_joke,
     "veist þú brandara": _random_joke,
+    "viltu segja mér brandara": _random_joke,
+    "viltu segja mér annan brandara": _random_joke,
 
     # Trivia
     "vertu skemmtileg": _random_trivia,
@@ -1036,6 +1073,9 @@ _SPECIAL_QUERIES = {
     },
     "hvernig er stemmingin hjá þér": {
         "answer": "Bara mjög góð. Takk fyrir að spyrja.",
+    },
+    "hvernig er stemmarinn": {
+        "answer": "Bara mjög góður. Takk fyrir að spyrja.",
     },
     "hvernig er líðanin": {
         "answer": "Bara mjög góð. Takk fyrir að spyrja.",
