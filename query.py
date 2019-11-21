@@ -165,7 +165,7 @@ class QueryParser(Fast_Parser):
         return cls._grammar_additions
 
 
-IGNORED_QUERY_PREFIXES = ("hæ embla", "hey embla", "embla")
+IGNORED_QUERY_PREFIXES = ("embla", "hæ embla", "hey embla", "sæl embla")
 
 
 class Query:
@@ -220,11 +220,11 @@ class Query:
         """ Preprocess the query string prior to further analysis. """
         if not q:
             return q
-        pfxrx = "|".join(IGNORED_QUERY_PREFIXES)
-        qf = re.sub(pfxrx, '', q, flags=re.IGNORECASE).strip()
+        pfxrx = r"^{0}\s*".format("|".join(IGNORED_QUERY_PREFIXES))
+        qf = re.sub(pfxrx, '', q, flags=re.IGNORECASE)
         if not qf:
             # If stripping the prefixes results in an empty query,
-            # just return original query string unmodified
+            # just return original query string unmodified.
             return q
         return qf
 
