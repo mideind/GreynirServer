@@ -75,6 +75,8 @@ _NUM_QUERIES = frozenset(
         "hvað hefur þú fengið margar spurningar",
         "hvað hefurðu svarað mörgum spurningum",
         "hvað hefur þú svarað mörgum spurningum",
+        "hvað hefurðu svarað mörgum fyrirspurnum",
+        "hvað hefur þú svarað mörgum fyrirspurnum",
         "hversu mörgum fyrirspurnum hefurðu svarað",
         "hversu mörgum fyrirspurnum hefur þú svarað",
         "hversu mörgum spurningum hefurðu svarað",
@@ -83,6 +85,10 @@ _NUM_QUERIES = frozenset(
         "hve mörgum fyrirspurnum hefur þú svarað",
         "hve mörgum spurningum hefurðu svarað",
         "hve mörgum spurningum hefur þú svarað",
+        "hvað ertu búin að svara mörgum spurningum",
+        "hvað ert þú búin að svara mörgum spurningum",
+        "hvað ertu búin að svara mörgum fyrirspurnum",
+        "hvað ert þú búin að svara mörgum fyrirspurnum",
     )
 )
 

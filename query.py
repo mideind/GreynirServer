@@ -221,7 +221,12 @@ class Query:
         if not q:
             return q
         pfxrx = "|".join(IGNORED_QUERY_PREFIXES)
-        return re.sub(pfxrx, '', q, flags=re.IGNORECASE).strip()
+        qf = re.sub(pfxrx, '', q, flags=re.IGNORECASE).strip()
+        if not qf:
+            # If stripping the prefixes results in an empty query,
+            # just return original query string unmodified
+            return q
+        return qf
 
 
     @classmethod
