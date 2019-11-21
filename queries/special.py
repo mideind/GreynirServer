@@ -801,6 +801,8 @@ _SPECIAL_QUERIES = {
     "hvað skilgreinir þú þig sem": _COMPUTER_PROGRAM,
     "hvað ert þú": _COMPUTER_PROGRAM,
     "hvað ertu": _COMPUTER_PROGRAM,
+    "ert þú tölvuforrit": _COMPUTER_PROGRAM,
+    "ertu tölvuforrit": _COMPUTER_PROGRAM,
 
     # Capabilities
     "hvað veistu": _capabilities,
@@ -1071,6 +1073,9 @@ _SPECIAL_QUERIES = {
     },
     "hvernig er stemmingin hjá þér": {
         "answer": "Bara mjög góð. Takk fyrir að spyrja.",
+    },
+    "hvernig er stemmarinn": {
+        "answer": "Bara mjög góður. Takk fyrir að spyrja.",
     },
     "hvernig er líðanin": {
         "answer": "Bara mjög góð. Takk fyrir að spyrja.",
