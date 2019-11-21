@@ -274,7 +274,12 @@ _SPECIAL_QUERIES = {
     "veistu svarið": {
         "answer": "Spurðu mig!"
     },
-
+    "veistu ekki neitt": {
+        "answer": "Ég veit nú eitt og annað. Spurðu mig!"
+    },
+    "veistu ekkert": {
+        "answer": "Ég veit nú eitt og annað. Spurðu mig!"
+    },
     "hver er flottastur": {
         "answer": "Teymið hjá Miðeind."
     },
@@ -518,6 +523,8 @@ _SPECIAL_QUERIES = {
     "þetta var rangt": _sorry,
     "þetta var röng staðhæfing": _sorry,
     "þetta var röng staðhæfing hjá þér": _sorry,
+    "þetta er vitlaust": _sorry,
+    "þetta er vitlaust hjá þér": _sorry,
     "þetta var vitlaust": _sorry,
     "þetta var vitlaust hjá þér": _sorry,
     "þú hefur rangt fyrir þér": _sorry,
@@ -556,6 +563,10 @@ _SPECIAL_QUERIES = {
     "það er ansi margt sem þú veist ekki": _sorry,
     "þú veist ekki neitt": _sorry,
     "þú veist ekkert": _sorry,
+    "af hverju ertu svona fúl": _sorry,
+    "af hverju ertu svona leiðinleg": _sorry,
+    "af hverju ertu svona vitlaus": _sorry,
+    "af hverju ertu svona heimsk": _sorry,
 
     # Greetings
     "hey embla": { "answer": "Sæll, kæri notandi.", "is_question": False },

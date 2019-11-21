@@ -32,7 +32,7 @@
 # TODO: "Verður sól á morgun?" "Verður sól í dag?" - sólskin - sést til sólar
 # TODO: "Hvernig er færðin?"
 # TODO: "Hvernig er veðrið heima?" (fyrir þá sem spyrja í útlöndum)
-# TODO: "HVAÐ er hitastigið á egilsstöðum?"
+# TODO: "HVAÐ er hitastigið á egilsstöðum?" "Hvað er mikill hiti úti?"
 # TODO: "Hvar er heitast á landinu?"
 
 import re

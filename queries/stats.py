@@ -103,6 +103,9 @@ _MOST_MENTIONED_PEOPLE_QUERIES = frozenset(
         "um hverja er verið að fjalla í fjölmiðlum",
         "um hverja er mest fjallað í fjölmiðlum",
         "um hverja er mest talað í fjölmiðlum",
+        "hverjir eru mest í fréttum",
+        "hverjir eru mest í fréttum núna",
+        "hverjir eru mest í fréttum þessa dagana",
         "hverjir eru mest áberandi í fjölmiðlum",
         "hverjir eru mest áberandi í fjölmiðlum þessa dagana",
         "hverjir eru áberandi í fjölmiðlum",
@@ -145,7 +148,7 @@ _MOST_MENTIONED_PEOPLE_QUERIES = frozenset(
 def _gen_num_people_answer(q):
     """ Answer questions about person database. """
     with SessionContext(read_only=True) as session:
-        qr = session.query(Person.id).count()
+        qr = session.query(Person.name).distinct().count()
 
         answer = "Í gagnagrunni mínum eru {0} einstaklingar.".format(qr or "engir")
         voice = answer
