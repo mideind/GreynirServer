@@ -34,6 +34,7 @@
 # TODO: "Hvernig er veðrið heima?" (fyrir þá sem spyrja í útlöndum)
 # TODO: "HVAÐ er hitastigið á egilsstöðum?" "Hvað er mikill hiti úti?"
 # TODO: "Hvar er heitast á landinu?"
+# TODO: "Er gott veður úti?"
 
 import re
 import logging
