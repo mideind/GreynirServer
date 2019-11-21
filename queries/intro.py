@@ -24,6 +24,8 @@
 
 """
 
+# TODO: Gender awareness ("Sæll, Jón", "Sæl, Gunna")
+
 import re
 from random import choice
 

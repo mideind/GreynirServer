@@ -42,7 +42,12 @@
 # TODO: "Hvenær eru vetrarsólstöður" + more astronomical dates
 # TODO: "Hvenær er dagur íslenskrar tungu" :)
 # TODO: "Hvað er langt í helgina?" "Hvenær er næsti frídagur?"
-
+# TODO: "Hvaða dagur var í gær?"
+# TODO: "Hvað eru margir dagar að fram að jólum?"
+# TODO: "Hvenær er næst hlaupár?"
+# TODO: "Hvaða árstíð er"
+# TODO: "Á hvaða vikudegi er jóladagur?"
+# TODO: "Hvað er langt til áramóta?"
 
 import json
 import re

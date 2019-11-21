@@ -23,6 +23,9 @@
 
 """
 
+# TODO: "kastaðu upp á teningnum"
+# TODO: "skjaldarmerki eða fiskur"
+
 import random
 import logging
 import json

@@ -281,6 +281,9 @@ _SPECIAL_QUERIES = {
     "hver eru flottust": {
         "answer": "Teymið hjá Miðeind."
     },
+    "hver er sætust": {
+        "answer": "Ég, Embla, er langsætust."
+    },
     "hver er sætastur": {
         "answer": "Tumi Þorsteinsson.",
         "voice": "Tumi Þorsteinsson er langsætastur."
@@ -301,6 +304,9 @@ _SPECIAL_QUERIES = {
     },
     "hvaða bjór er bestur": {
         "answer": "Ég drekk reyndar ekki en einn skapari minn er hrifinn af Pilsner Urquell frá Tékklandi."
+    },
+    "hvað er það": {
+        "answer": "Hvað er hvað?"
     },
     "hver er ég": {
         "answer": "Þú ert væntanlega manneskja sem talar íslensku. Meira veit ég ekki."
@@ -335,11 +341,19 @@ _SPECIAL_QUERIES = {
     "syngdu fyrir mig": {
         "answer": "Ó sóle míó!"
     },
+    "viltu syngja fyrir mig": {
+        "answer": "Ó sóle míó!"
+    },
 
     # Creator
     "hver bjó þig til": _CREATOR,
+    "hverjir bjuggu þig til": _CREATOR,
+    "hvaða fólk bjó þig til": _CREATOR,
     "hver skapaði þig": _CREATOR,
+    "hverjir sköpuðu þig": _CREATOR,
     "hver er skapari þinn": _CREATOR,
+    "hverra manna ertu": _CREATOR,
+    "hverra manna ert þú": _CREATOR,
     "hver er mamma þín": _CREATOR,
     "hver er pabbi þinn": _CREATOR,
     "hverjir eru foreldrar þínir": _CREATOR,
@@ -363,8 +377,11 @@ _SPECIAL_QUERIES = {
     "skilur þú íslensku": _LANGUAGES,
     "kannt þú ensku": _LANGUAGES,
     "kanntu ensku": _LANGUAGES,
+    "kanntu önnur tungumál en íslensku": _LANGUAGES,
     "talarðu önnur tungumál en íslensku": _LANGUAGES,
     "talar þú önnur tungumál en íslensku": _LANGUAGES,
+    "skilurðu önnur tungumál en íslensku": _LANGUAGES,
+    "skilur þú önnur tungumál en íslensku": _LANGUAGES,
 
     # Enquiries about family
     # Catch this here to prevent rather, ehrm, embarassing
@@ -839,10 +856,16 @@ _SPECIAL_QUERIES = {
     "ertu með húmor": {
         "answer": "Já, en afar takmarkaðan.",
     },
-    "er þú með húmor": {
+    "ert þú með húmor": {
         "answer": "Já, en afar takmarkaðan.",
     },
     "hver prumpaði": {
+        "answer": "Ekki ég."
+    },
+    "hver rak við": {
+        "answer": "Ekki ég."
+    },
+    "hver var að prumpa": {
         "answer": "Ekki ég."
     },
     "segðu brandara": _random_joke,
@@ -863,8 +886,12 @@ _SPECIAL_QUERIES = {
     "segðu mér eitthvað fyndið": _random_joke,
     "kanntu einhverja brandara": _random_joke,
     "kannt þú einhverja brandara": _random_joke,
+    "kanntu einhverja fleiri brandara": _random_joke,
+    "kannt þú einhverja fleiri brandara": _random_joke,
     "kanntu brandara": _random_joke,
     "kannt þú brandara": _random_joke,
+    "kanntu fleiri brandara": _random_joke,
+    "kannt þú fleiri brandara": _random_joke,
     "ertu til í að segja mér brandara": _random_joke,
     "ert þú til í að segja mér brandara": _random_joke,
     "ertu til í að segja brandara": _random_joke,
@@ -874,6 +901,11 @@ _SPECIAL_QUERIES = {
     "segðu mér brandara sem þú kannt": _random_joke,
     "segðu mér annan brandara sem þú kannt": _random_joke,
     "segðu mér hinn brandarann sem þú kannt": _random_joke,
+    "segðu mér einn brandara í viðbót": _random_joke,
+    "geturðu sagt mér brandara": _random_joke,
+    "getur þú sagt mér brandara": _random_joke,
+    "veistu brandara": _random_joke,
+    "veist þú brandara": _random_joke,
 
     # Trivia
     "vertu skemmtileg": _random_trivia,
@@ -967,6 +999,12 @@ _SPECIAL_QUERIES = {
     "hvað segirðu gott": {
         "answer": "Ég segi bara allt fínt. Takk fyrir að spyrja."
     },
+    "hvað segirðu gott í dag": {
+        "answer": "Ég segi bara allt fínt. Takk fyrir að spyrja."
+    },
+    "hvað segir þú gott í dag": {
+        "answer": "Ég segi bara allt fínt. Takk fyrir að spyrja."
+    },
     "hvað segir þú": {
         "answer": "Ég segi bara allt fínt. Takk fyrir að spyrja."
     },
@@ -993,6 +1031,12 @@ _SPECIAL_QUERIES = {
     },
     "hvernig er sálarlífið": {
         "answer": "Það er í toppstandi hjá mér. Takk fyrir að spyrja."
+    },
+    "ertu í stuði": {
+        "answer": "Ég er ávallt í stuði, kæri notandi."
+    },
+    "ert þú í stuði": {
+        "answer": "Ég er ávallt í stuði, kæri notandi."
     },
     "ertu reið": {
         "answer": "Ég er ekki fær um slíkar tilfinningar."
