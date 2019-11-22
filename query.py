@@ -166,7 +166,7 @@ class QueryParser(Fast_Parser):
 
 
 _IGNORED_QUERY_PREFIXES = ("embla", "hæ embla", "hey embla", "sæl embla")
-_IGNORED_PREFIX_RE = r"^({0})\s*".format("|".join(IGNORED_QUERY_PREFIXES))
+_IGNORED_PREFIX_RE = r"^({0})\s*".format("|".join(_IGNORED_QUERY_PREFIXES))
 
 
 class Query:
