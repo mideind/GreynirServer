@@ -165,7 +165,8 @@ class QueryParser(Fast_Parser):
         return cls._grammar_additions
 
 
-IGNORED_QUERY_PREFIXES = ("embla", "hæ embla", "hey embla", "sæl embla")
+_IGNORED_QUERY_PREFIXES = ("embla", "hæ embla", "hey embla", "sæl embla")
+_IGNORED_PREFIX_RE = r"^({0})\s*".format("|".join(_IGNORED_QUERY_PREFIXES))
 
 
 class Query:
@@ -215,19 +216,14 @@ class Query:
         # This should be a dict that can be represented in JSON
         self._context = None
 
-
     def _preprocess_query_string(self, q):
-        """ Preprocess the query string prior to further analysis. """
+        """ Preprocess the query string prior to further analysis """
         if not q:
             return q
-        pfxrx = r"^{0}\s*".format("|".join(IGNORED_QUERY_PREFIXES))
-        qf = re.sub(pfxrx, '', q, flags=re.IGNORECASE)
-        if not qf:
-            # If stripping the prefixes results in an empty query,
-            # just return original query string unmodified.
-            return q
-        return qf
-
+        qf = re.sub(_IGNORED_PREFIX_RE, "", q, flags=re.IGNORECASE)
+        # If stripping the prefixes results in an empty query,
+        # just return original query string unmodified.
+        return qf or q
 
     @classmethod
     def init_class(cls):
