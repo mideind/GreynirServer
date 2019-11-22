@@ -74,6 +74,7 @@ vectors/test.py
 vectors/db
 vectors/settings.py
 vectors/similar.py
+vectors/scraperdb.py
 vectors/Index.conf
 
 # JavaScript & Node stuff
@@ -115,6 +116,7 @@ var/
 *.egg
 log/
 console/
+fonts/
 
 # Virtual environments
 venv/
