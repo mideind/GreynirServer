@@ -26,6 +26,7 @@
 # TODO: This module should probably use grammar instead of regexes
 # TODO: Handle travel time queries such as "Hvað er ég lengi að ganga til X?",
 #       or "Hvað er ég lengi að keyra í Y?"
+# TODO: "Hvað er langt á milli X og Y?"
 
 import re
 import logging

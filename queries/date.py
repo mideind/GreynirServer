@@ -38,6 +38,16 @@
 # TODO: "Hvaða vikudagur er DAGSETNING næstkomandi?"
 # TODO: "Hvað gerðist á þessum degi?"
 # TODO: "Hvað eru margir dagar eftir af árinu?"
+# TODO: "Hvaða vikudagur var 11. september 2001?" "Hvaða dagur er á morgun?"
+# TODO: "Hvenær eru vetrarsólstöður" + more astronomical dates
+# TODO: "Hvenær er dagur íslenskrar tungu" :)
+# TODO: "Hvað er langt í helgina?" "Hvenær er næsti frídagur?"
+# TODO: "Hvaða dagur var í gær?"
+# TODO: "Hvað eru margir dagar að fram að jólum?"
+# TODO: "Hvenær er næst hlaupár?"
+# TODO: "Hvaða árstíð er"
+# TODO: "Á hvaða vikudegi er jóladagur?"
+# TODO: "Hvað er langt til áramóta?"
 
 import json
 import re
@@ -55,9 +65,12 @@ _DATE_QTYPE = "Date"
 
 # Lemmas of keywords that could indicate that the user is trying to use this module
 TOPIC_LEMMAS = [
-    "dagur", "dagsetning",
-    "mánaðardagur", "vikudagur",
-    "vika", "mánuður",
+    "dagur",
+    "dagsetning",
+    "mánaðardagur",
+    "vikudagur",
+    "vika",
+    "mánuður",
     "hvítasunnudagur",
     "uppstigningardagur",
     "öskudagur",
@@ -87,13 +100,15 @@ def help_text(lemma):
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
-        random.choice((
-            "Hvaða dagur er í dag",
-            "Hvað er langt til jóla",
-            "Hvenær eru páskarnir",
-            "Á hvaða degi er frídagur verslunarmanna",
-            "Hvenær er skírdagur"
-        ))
+        random.choice(
+            (
+                "Hvaða dagur er í dag",
+                "Hvað er langt til jóla",
+                "Hvenær eru páskarnir",
+                "Á hvaða degi er frídagur verslunarmanna",
+                "Hvenær er skírdagur",
+            )
+        )
     )
 
 
@@ -303,84 +318,48 @@ def QDateAshDay(node, params, result):
 
 def QDateHalloween(node, params, result):
     result["desc"] = "hrekkjavaka"
-    result["target"] = dnext(
-        datetime(
-            year=datetime.today().year, month=10, day=31
-        )
-    )
+    result["target"] = dnext(datetime(year=datetime.today().year, month=10, day=31))
 
 
 def QDateSovereigntyDay(node, params, result):
     result["desc"] = "fullveldisdagurinn"
-    result["target"] = dnext(
-        datetime(
-            year=datetime.today().year, month=12, day=1
-        )
-    )
+    result["target"] = dnext(datetime(year=datetime.today().year, month=12, day=1))
 
 
 def QDateFirstDayOfSummer(node, params, result):
     result["desc"] = "sumardagurinn fyrsti"
-    d = dnext(
-        datetime(
-            year=datetime.today().year, month=4, day=18
-        )
-    )
+    d = dnext(datetime(year=datetime.today().year, month=4, day=18))
     result["target"] = next_weekday(d, 3)
 
 
 def QDateThorlaksmessa(node, params, result):
     result["desc"] = "þorláksmessa"
-    d = dnext(
-        datetime(
-            year=datetime.today().year, month=12, day=23
-        )
-    )
+    d = dnext(datetime(year=datetime.today().year, month=12, day=23))
 
 
 def QDateChristmasEve(node, params, result):
     result["desc"] = "aðfangadagur jóla"
-    result["target"] = dnext(
-        datetime(
-            year=datetime.today().year, month=12, day=24
-        )
-    )
+    result["target"] = dnext(datetime(year=datetime.today().year, month=12, day=24))
 
 
 def QDateChristmasDay(node, params, result):
     result["desc"] = "jóladagur"
-    result["target"] = dnext(
-        datetime(
-            year=datetime.today().year, month=12, day=25
-        )
-    )
+    result["target"] = dnext(datetime(year=datetime.today().year, month=12, day=25))
 
 
 def QDateNewYearsEve(node, params, result):
     result["desc"] = "gamlárskvöld"
-    result["target"] = dnext(
-        datetime(
-            year=datetime.today().year, month=12, day=31
-        )
-    )
+    result["target"] = dnext(datetime(year=datetime.today().year, month=12, day=31))
 
 
 def QDateNewYearsDay(node, params, result):
     result["desc"] = "nýársdagur"
-    result["target"] = dnext(
-        datetime(
-            year=datetime.today().year + 1, month=1, day=1
-        )
-    )
+    result["target"] = dnext(datetime(year=datetime.today().year + 1, month=1, day=1))
 
 
 def QDateWorkersDay(node, params, result):
     result["desc"] = "baráttudagur verkalýðsins"
-    result["target"] = dnext(
-        datetime(
-            year=datetime.today().year + 1, month=5, day=1
-        )
-    )
+    result["target"] = dnext(datetime(year=datetime.today().year + 1, month=5, day=1))
 
 
 def QDateEaster(node, params, result):
@@ -406,32 +385,21 @@ def QDateMaundyThursday(node, params, result):
 
 def QDateNationalDay(node, params, result):
     result["desc"] = "þjóðhátíðardagurinn"
-    result["target"] = dnext(
-        datetime(
-            year=datetime.today().year + 1, month=6, day=17
-        )
-    )
+    result["target"] = dnext(datetime(year=datetime.today().year + 1, month=6, day=17))
 
 
 def QDateBankHoliday(node, params, result):
     result["desc"] = "frídagur verslunarmanna"
     # First Monday of August
     result["target"] = this_or_next_weekday(
-        dnext(
-            datetime(
-                year=datetime.today().year + 1, month=8, day=1
-            )
-        ),
-        0  # Monday
+        dnext(datetime(year=datetime.today().year + 1, month=8, day=1)), 0  # Monday
     )
 
 
 def QDateCultureNight(node, params, result):
     result["desc"] = "menningarnótt"
     result["target"] = dnext(
-        datetime(
-            year=datetime.today().year + 1, month=8, day=24
-        )
+        datetime(year=datetime.today().year + 1, month=8, day=24)
     )  # Wrong
 
 
@@ -660,13 +628,18 @@ def sentence(state, result):
                 # Use plural 'eru' for 'páskar'
                 is_verb = "er" if "is_verb" not in result else result.is_verb
                 date_str = (
-                    result.desc + " " + is_verb + " " +
-                    result.target.strftime("%-d. %B")
+                    result.desc
+                    + " "
+                    + is_verb
+                    + " "
+                    + result.target.strftime("%-d. %B")
                 )
                 answer = voice = date_str[0].upper() + date_str[1:].lower()
                 # Put a spelled-out ordinal number instead of the numeric one,
                 # in accusative case
-                voice = re.sub(r"\d+\. ", _DAY_INDEX_ACC[result.target.day] + " ", voice)
+                voice = re.sub(
+                    r"\d+\. ", _DAY_INDEX_ACC[result.target.day] + " ", voice
+                )
                 response = dict(answer=answer)
             else:
                 # Shouldn't be here

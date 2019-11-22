@@ -43,8 +43,18 @@ _NUM_PEOPLE_QUERIES = frozenset(
         "hvað þekkir þú margar manneskjur",
         "hvað þekkirðu marga einstaklinga",
         "hvað þekkir þú marga einstaklinga",
+        "þekkirðu margar manneskjur",
+        "þekkir þú margar manneskjur",
+        "þekkirðu marga einstaklinga",
+        "þekkir þú marga einstaklinga",
+        "þekkirðu mikið af fólki",
+        "þekkir þú mikið af fólki",
         "hvað þekkirðu mikið af fólki",
         "hvað þekkir þú mikið af fólki",
+        "þekkirðu margt fólk",
+        "þekkir þú margt fólk",
+        "hvað þekkirðu margt fólk",
+        "hvað þekkir þú margt fólk",
         "hversu marga einstaklinga þekkirðu",
         "hversu marga einstaklinga þekkir þú",
         "hversu margar manneskjur þekkirðu",
@@ -65,6 +75,8 @@ _NUM_QUERIES = frozenset(
         "hvað hefur þú fengið margar spurningar",
         "hvað hefurðu svarað mörgum spurningum",
         "hvað hefur þú svarað mörgum spurningum",
+        "hvað hefurðu svarað mörgum fyrirspurnum",
+        "hvað hefur þú svarað mörgum fyrirspurnum",
         "hversu mörgum fyrirspurnum hefurðu svarað",
         "hversu mörgum fyrirspurnum hefur þú svarað",
         "hversu mörgum spurningum hefurðu svarað",
@@ -73,14 +85,20 @@ _NUM_QUERIES = frozenset(
         "hve mörgum fyrirspurnum hefur þú svarað",
         "hve mörgum spurningum hefurðu svarað",
         "hve mörgum spurningum hefur þú svarað",
+        "hvað ertu búin að svara mörgum spurningum",
+        "hvað ert þú búin að svara mörgum spurningum",
+        "hvað ertu búin að svara mörgum fyrirspurnum",
+        "hvað ert þú búin að svara mörgum fyrirspurnum",
     )
 )
 
 
 _MOST_FREQ_QUERIES = frozenset(
     (
+        "hvað er fólk að spyrja þig um",
         "hvað er fólk að spyrja þig mest um",
         "hvað er fólk að spyrja mest um",
+        "hvað spyr fólk um",
         "hvað spyr fólk mest um",
         "hvað spyr fólk þig mest um",
         "hvað ertu mest spurð um",
@@ -103,6 +121,10 @@ _MOST_MENTIONED_PEOPLE_QUERIES = frozenset(
         "um hverja er verið að fjalla í fjölmiðlum",
         "um hverja er mest fjallað í fjölmiðlum",
         "um hverja er mest talað í fjölmiðlum",
+        "hverjir eru mest í fréttum",
+        "hverjir eru mest í fréttum núna",
+        "hverjir eru mest í fréttum þessa dagana",
+        "hverjir eru mest í fréttum upp á síðkastið",
         "hverjir eru mest áberandi í fjölmiðlum",
         "hverjir eru mest áberandi í fjölmiðlum þessa dagana",
         "hverjir eru áberandi í fjölmiðlum",
@@ -145,7 +167,7 @@ _MOST_MENTIONED_PEOPLE_QUERIES = frozenset(
 def _gen_num_people_answer(q):
     """ Answer questions about person database. """
     with SessionContext(read_only=True) as session:
-        qr = session.query(Person.id).count()
+        qr = session.query(Person.name).distinct().count()
 
         answer = "Í gagnagrunni mínum eru {0} einstaklingar.".format(qr or "engir")
         voice = answer
@@ -194,6 +216,7 @@ _QTYPE_TO_DESC = {
     "Opinion": "spurningum um skoðanir mínar",
     "Random": "beiðnum um tölur af handahófi",
     "Title": "spurningum um einstaklinga",
+    "Person": "spurningum um einstaklinga",
     "Geography": "spurningum um landafræði",
     "Location": "spurningum um staðsetningu",
     "Stats": "spurningum um tölfræði",

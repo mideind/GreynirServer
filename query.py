@@ -165,6 +165,9 @@ class QueryParser(Fast_Parser):
         return cls._grammar_additions
 
 
+IGNORED_QUERY_PREFIXES = ("embla", "hæ embla", "hey embla", "sæl embla")
+
+
 class Query:
 
     """ A Query is initialized by parsing a query string using QueryRoot as the
@@ -177,15 +180,16 @@ class Query:
     _help_texts = dict()
 
     def __init__(self, session, query, voice, auto_uppercase, location, client_id):
+        q = self._preprocess_query_string(query)
         self._session = session
-        self._query = query or ""
+        self._query = q or ""
         self._location = location
         # Prepare a "beautified query" string that can be
         # shown in a client user interface. By default, this
         # starts with an uppercase letter and ends with a
         # question mark, but this can be modified during the
         # processing of the query.
-        self.set_beautified_query(beautify_query(query))
+        self.set_beautified_query(beautify_query(q))
         self._voice = voice
         self._auto_uppercase = auto_uppercase
         self._error = None
@@ -210,6 +214,20 @@ class Query:
         # Query context, which is None until fetched via self.fetch_context()
         # This should be a dict that can be represented in JSON
         self._context = None
+
+
+    def _preprocess_query_string(self, q):
+        """ Preprocess the query string prior to further analysis. """
+        if not q:
+            return q
+        pfxrx = r"^{0}\s*".format("|".join(IGNORED_QUERY_PREFIXES))
+        qf = re.sub(pfxrx, '', q, flags=re.IGNORECASE)
+        if not qf:
+            # If stripping the prefixes results in an empty query,
+            # just return original query string unmodified.
+            return q
+        return qf
+
 
     @classmethod
     def init_class(cls):
