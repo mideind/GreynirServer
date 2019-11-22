@@ -49,7 +49,7 @@ _CAP = (
     "Þú getur til dæmis spurt mig um fólk sem hefur komið fram í fjölmiðlum.",
     "Þú getur til dæmis beðið mig um að segja brandara.",
     "Þú getur til dæmis beðið mig um upplýsingar úr Wikipedíu.",
-    "Þú getur til dæmis beðið mig um að leysa einföld reiknidæmi.",
+    "Þú getur til dæmis beðið mig um að leysa einföld reikningsdæmi.",
 )
 
 
