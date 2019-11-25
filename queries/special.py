@@ -878,6 +878,7 @@ _SPECIAL_QUERIES = {
     # Capabilities
     "hvað veistu": _capabilities,
     "hvað veist þú": _capabilities,
+    "hvað veit embla": _capabilities,
     "hvað veistu eiginlega": _capabilities,
     "hvað veist þú eiginlega": _capabilities,
     "hvað veistu um": _capabilities,
@@ -945,7 +946,6 @@ _SPECIAL_QUERIES = {
     "hvað geturðu gert": _capabilities,
     "hvað getur þú gert fyrir mig": _capabilities,
     "hvað geturðu gert fyrir mig": _capabilities,
-
 
     # Learning
     "geturðu lært": {
