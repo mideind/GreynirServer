@@ -43,6 +43,8 @@ from datetime import datetime
 from flask import Flask, send_from_directory
 from flask_caching import Cache
 
+from werkzeug.contrib.fixers import ProxyFix
+
 import reynir
 from reynir.bindb import BIN_Db
 from reynir.fastparser import Fast_Parser
@@ -59,6 +61,8 @@ RUNNING_AS_SERVER = __name__ != "__main__"
 
 # Initialize and configure Flask app
 app = Flask(__name__)
+# Fix access to client remote_addr when running behind proxy
+app.wsgi_app = ProxyFix(app.wsgi_app)
 
 app.config["JSON_AS_ASCII"] = False  # We're fine with using Unicode/UTF-8
 app.config["MAX_CONTENT_LENGTH"] = 1 * 1024 * 1024  # 1 MB, max upload file size
