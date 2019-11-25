@@ -28,7 +28,7 @@
 # TODO: Add more info to description of current weather conditions?
 # TODO: More detailed forecast, time specific? E.g. "hvernig verður veðrið klukkan þrjú?"
 # TODO: "Mun rigna í dag?" "Verður mikið rok í dag?" "Verður kalt í kvöld?" "Þarf ég regnhlíf?"
-# TODO: "Hversu mikið rok er úti?" "Hversu mikill vindur er úti?"
+# TODO: "Hversu mikið rok er úti?" "Hversu mikill vindur er úti?" "Hvað er mikill vindur núna?"
 # TODO: "Verður sól á morgun?" "Verður sól í dag?" - sólskin - sést til sólar
 # TODO: "Hvernig er færðin?"
 # TODO: "Hvernig er veðrið heima?" (fyrir þá sem spyrja í útlöndum)

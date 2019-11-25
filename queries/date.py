@@ -48,6 +48,9 @@
 # TODO: "Hvaða árstíð er"
 # TODO: "Á hvaða vikudegi er jóladagur?"
 # TODO: "Hvað er langt til áramóta?"
+# TODO: "hvenær er fyrsti í aðventu"
+# TODO: "hvenær koma jólin"
+# TODO: "hvað eru margir dagar í árinu"
 
 import json
 import re

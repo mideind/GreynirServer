@@ -24,7 +24,7 @@
 """
 
 # TODO: "hvað er 2 í veldinu 64"
-
+# TODO: "hvað er einn áttundi af 16"
 
 import math
 import json

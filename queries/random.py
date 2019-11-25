@@ -59,7 +59,7 @@ QRandomForMe →
 
 QRandomDie →
     # Allow "tening" (accusative) to make it a bit more robust. Common error.
-    "teningi" | "tening" | "teningnum"
+    "teningi" | "tening" | "teningnum" | "teningunum"
 
 QRandomDiceSides →
     QRandNumber "hliða"
