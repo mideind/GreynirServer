@@ -165,7 +165,8 @@ class QueryParser(Fast_Parser):
         return cls._grammar_additions
 
 
-IGNORED_QUERY_PREFIXES = ("embla", "hæ embla", "hey embla", "sæl embla")
+_IGNORED_QUERY_PREFIXES = ("embla", "hæ embla", "hey embla", "sæl embla")
+_IGNORED_PREFIX_RE = r"^({0})\s*".format("|".join(_IGNORED_QUERY_PREFIXES))
 
 
 class Query:
@@ -215,19 +216,14 @@ class Query:
         # This should be a dict that can be represented in JSON
         self._context = None
 
-
     def _preprocess_query_string(self, q):
-        """ Preprocess the query string prior to further analysis. """
+        """ Preprocess the query string prior to further analysis """
         if not q:
             return q
-        pfxrx = r"^{0}\s*".format("|".join(IGNORED_QUERY_PREFIXES))
-        qf = re.sub(pfxrx, '', q, flags=re.IGNORECASE)
-        if not qf:
-            # If stripping the prefixes results in an empty query,
-            # just return original query string unmodified.
-            return q
-        return qf
-
+        qf = re.sub(_IGNORED_PREFIX_RE, "", q, flags=re.IGNORECASE)
+        # If stripping the prefixes results in an empty query,
+        # just return original query string unmodified.
+        return qf or q
 
     @classmethod
     def init_class(cls):
@@ -781,11 +777,12 @@ def process_query(
         order until a successful one is found. """
 
     now = datetime.utcnow()
+    result = None
+    client_id = client_id[:256] if client_id else None
+    first_clean_q = None
+    first_qtext = None
 
     with SessionContext(commit=True) as session:
-
-        result = None
-        client_id = client_id[:256] if client_id else None
 
         if isinstance(q, str):
             # This is a single string
@@ -794,14 +791,14 @@ def process_query(
             # This should be an array of strings,
             # in decreasing priority order
             it = q
-        first_clean_q = None
-        first_qtext = None
 
         # Iterate through the submitted query strings,
+        # assuming that they are in decreasing order of probability,
         # attempting to execute them in turn until we find
         # one that works (or we're stumped)
 
         for qtext in it:
+
             qtext = qtext.strip()
             clean_q = qtext.rstrip("?")
             if first_clean_q is None:
@@ -884,11 +881,23 @@ def process_query(
         # module was able to parse the query and provide an answer
         result = result or dict(valid=False, error="E_NO_RESULT")
         if first_clean_q:
+            # Re-insert the query data from the first (most likely)
+            # string returned from the speech-to-text processor,
+            # replacing residual data that otherwise would be there
+            # from the last (least likely) query string
+            result["q_raw"] = first_qtext
+            result["q"] = beautify_query(first_qtext)
+            # Attempt to include a helpful response in the result
+            Query.try_to_help(first_clean_q, result)
+
             # Log the failure
             qrow = QueryRow(
                 timestamp=now,
                 interpretations=it,
                 question=first_clean_q,
+                bquestion=result["q"],
+                answer=result.get("answer"),
+                voice=result.get("voice"),
                 error=result.get("error"),
                 latitude=location[0] if location else None,
                 longitude=location[1] if location else None,
@@ -901,13 +910,5 @@ def process_query(
                 # All other fields are set to NULL
             )
             session.add(qrow)
-            # Re-insert the query data from the first (most likely)
-            # string returned from the speech-to-text processor,
-            # replacing residual data that otherwise would be there
-            # from the last (least likely) query string
-            result["q_raw"] = first_qtext
-            result["q"] = beautify_query(first_qtext)
-            # Attempt to include a helpful response in the result
-            Query.try_to_help(first_clean_q, result)
 
         return result
