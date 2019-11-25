@@ -121,6 +121,7 @@ _QUOTATIONS = (
     "Glöggt er gests augað.",
 )
 
+
 def _random_quotation(qs, q):
     return { "answer": choice(_QUOTATIONS), "is_question": False }
 
@@ -128,14 +129,14 @@ def _random_quotation(qs, q):
 def _identity(qs, q):
     if q.is_voice:
         # Voice client (Embla)
-        answer = {
-            "answer": "Ég heiti Embla. Ég skil íslensku og er til þjónustu reiðubúin.",
-        }
+        a = "Ég heiti Embla. Ég skil íslensku og er til þjónustu reiðubúin."
+        answer = dict(answer=a, voice=a, can_cache=True)
     else:
         # Web client (Greynir)
-        answer = {
-            "answer": "Ég heiti Greynir. Ég er grey sem reynir að greina íslensku.",
-        }
+        answer = dict(
+            answer = "Ég heiti Greynir. Ég er grey sem reynir að greina íslensku.",
+            can_cache=True
+        )
     return answer
 
 
@@ -374,6 +375,7 @@ _SPECIAL_QUERIES = {
 
     # Creator
     "hver bjó þig til": _CREATOR,
+    "hver bjó til emblu": _CREATOR,
     "hver bjó emblu til": _CREATOR,
     "hverjir bjuggu þig til": _CREATOR,
     "hvaða fólk bjó þig til": _CREATOR,
@@ -394,6 +396,7 @@ _SPECIAL_QUERIES = {
     "hverjir eru foreldrar þínir": _CREATOR,
     "hver er uppruni þinn": _CREATOR,
     "hver framleiðir þig": _CREATOR,
+    "hver framleiðir emblu": _CREATOR,
     "hver framleiddi þig": _CREATOR,
     "hvað er miðeind": {
         "answer": "Miðeind er máltæknifyrirtækið sem skapaði mig."
@@ -1265,8 +1268,7 @@ def handle_plain_text(q):
         q.query_is_command()
 
     # Caching for non-dynamic answers
-    if fixed:
+    if fixed or response.get("can_cache", False):
         q.set_expires(datetime.utcnow() + timedelta(hours=24))
 
     return True
-

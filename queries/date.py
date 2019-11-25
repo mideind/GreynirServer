@@ -406,6 +406,84 @@ def QDateCultureNight(node, params, result):
     )  # Wrong
 
 
+# Day indices in nominative case
+_DAY_INDEX_NOM = {
+    1: "fyrsti",
+    2: "annar",
+    3: "þriðji",
+    4: "fjórði",
+    5: "fimmti",
+    6: "sjötti",
+    7: "sjöundi",
+    8: "áttundi",
+    9: "níundi",
+    10: "tíundi",
+    11: "ellefti",
+    12: "tólfti",
+    13: "þrettándi",
+    14: "fjórtándi",
+    15: "fimmtándi",
+    16: "sextándi",
+    17: "sautjándi",
+    18: "átjándi",
+    19: "nítjándi",
+    20: "tuttugasti",
+    21: "tuttugasti og fyrsti",
+    22: "tuttugasti og annar",
+    23: "tuttugasti og þriðji",
+    24: "tuttugasti og fjórði",
+    25: "tuttugasti og fimmti",
+    26: "tuttugasti og sjötti",
+    27: "tuttugasti og sjöundi",
+    28: "tuttugasti og áttundi",
+    29: "tuttugasti og níundi",
+    30: "þrítugasti",
+    31: "þrítugasti og fyrsti",
+}
+
+
+# Day indices in accusative case
+_DAY_INDEX_ACC = {
+    1: "fyrsta",
+    2: "annan",
+    3: "þriðja",
+    4: "fjórða",
+    5: "fimmta",
+    6: "sjötta",
+    7: "sjöunda",
+    8: "áttunda",
+    9: "níunda",
+    10: "tíunda",
+    11: "ellefta",
+    12: "tólfta",
+    13: "þrettánda",
+    14: "fjórtánda",
+    15: "fimmtánda",
+    16: "sextánda",
+    17: "sautjánda",
+    18: "átjánda",
+    19: "nítjánda",
+    20: "tuttugasta",
+    21: "tuttugasta og fyrsta",
+    22: "tuttugasta og annan",
+    23: "tuttugasta og þriðja",
+    24: "tuttugasta og fjórða",
+    25: "tuttugasta og fimmta",
+    26: "tuttugasta og sjötta",
+    27: "tuttugasta og sjöunda",
+    28: "tuttugasta og áttunda",
+    29: "tuttugasta og níunda",
+    30: "þrítugasta",
+    31: "þrítugasta og fyrsta",
+}
+
+
+# Day indices in dative case
+_DAY_INDEX_DAT = _DAY_INDEX_ACC.copy()
+_DAY_INDEX_DAT[2] = "öðrum"
+_DAY_INDEX_DAT[22] = "tuttugasta og öðrum"
+
+
 def next_weekday(d, weekday):
     """ Get the date of the next weekday after a given date.
         0 = Monday, 1 = Tuesday, 2 = Wednesday, etc. """
@@ -509,87 +587,21 @@ def howlong_desc_answ(target):
         voice = "Það {0} {1} {2} {3} frá {4}.".format(
             verb, days, days_desc, passed, tfmt
         )
+        # Convert '25.' to 'tuttugasta og fimmta'
+        voice = re.sub(r" \d+\. ", " " + _DAY_INDEX_DAT[target.day] + " ", voice)
         answer = "{0} {1}".format(days, days_desc)
     else:
         # It's in the future
         voice = "Það {0} {1} {2} þar til {3} gengur í garð.".format(
             verb, days, days_desc, tfmt
         )
+        # Convert '25.' to 'tuttugasti og fimmti'
+        voice = re.sub(r" \d+\. ", " " + _DAY_INDEX_NOM[target.day] + " ", voice)
         answer = "{0} {1}".format(days, days_desc)
 
     response = dict(answer=answer)
 
     return (response, answer, voice)
-
-
-_DAY_INDEX_NOM = {
-    1: "fyrsti",
-    2: "annar",
-    3: "þriðji",
-    4: "fjórði",
-    5: "fimmti",
-    6: "sjötti",
-    7: "sjöundi",
-    8: "áttundi",
-    9: "níundi",
-    10: "tíundi",
-    11: "ellefti",
-    12: "tólfti",
-    13: "þrettándi",
-    14: "fjórtándi",
-    15: "fimmtándi",
-    16: "sextándi",
-    17: "sautjándi",
-    18: "átjándi",
-    19: "nítjándi",
-    20: "tuttugasti",
-    21: "tuttugasti og fyrsti",
-    22: "tuttugasti og annar",
-    23: "tuttugasti og þriðji",
-    24: "tuttugasti og fjórði",
-    25: "tuttugasti og fimmti",
-    26: "tuttugasti og sjötti",
-    27: "tuttugasti og sjöundi",
-    28: "tuttugasti og áttundi",
-    29: "tuttugasti og níundi",
-    30: "þrítugasti",
-    31: "þrítugasti og fyrsti",
-}
-
-
-_DAY_INDEX_ACC = {
-    1: "fyrsta",
-    2: "annan",
-    3: "þriðja",
-    4: "fjórða",
-    5: "fimmta",
-    6: "sjötta",
-    7: "sjöunda",
-    8: "áttunda",
-    9: "níunda",
-    10: "tíunda",
-    11: "ellefta",
-    12: "tólfta",
-    13: "þrettánda",
-    14: "fjórtánda",
-    15: "fimmtánda",
-    16: "sextánda",
-    17: "sautjánda",
-    18: "átjánda",
-    19: "nítjánda",
-    20: "tuttugasta",
-    21: "tuttugasta og fyrsta",
-    22: "tuttugasta og annan",
-    23: "tuttugasta og þriðja",
-    24: "tuttugasta og fjórða",
-    25: "tuttugasta og fimmta",
-    26: "tuttugasta og sjötta",
-    27: "tuttugasta og sjöunda",
-    28: "tuttugasta og áttunda",
-    29: "tuttugasta og níunda",
-    30: "þrítugasta",
-    31: "þrítugasta og fyrsta",
-}
 
 
 def sentence(state, result):
