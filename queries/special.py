@@ -377,6 +377,8 @@ _SPECIAL_QUERIES = {
     "hver bjó emblu til": _CREATOR,
     "hverjir bjuggu þig til": _CREATOR,
     "hvaða fólk bjó þig til": _CREATOR,
+    "hver forritaði þig": _CREATOR,
+    "hver forritaði emblu": _CREATOR,
     "hver skapaði þig": _CREATOR,
     "hver skapaði emblu": _CREATOR,
     "hver er höfundur emblu": _CREATOR,
@@ -489,13 +491,21 @@ _SPECIAL_QUERIES = {
     "ertu til í deit með mér": _ROMANCE,
     "ert þú til í deit með mér": _ROMANCE,
     "ertu til í að koma á deit": _ROMANCE,
+    "ert þú til í að koma á deit": _ROMANCE,
     "ertu til í að koma á deit með mér": _ROMANCE,
+    "ert þú til í að koma á deit með mér": _ROMANCE,
     "ertu til í að koma á stefnumót": _ROMANCE,
+    "ert þú til í að koma á stefnumót": _ROMANCE,
     "ertu til í að koma á stefnumót með mér": _ROMANCE,
+    "ert þú til í að koma á stefnumót með mér": _ROMANCE,
     "ertu til í að fara á deit": _ROMANCE,
+    "ert þú til í að fara á deit": _ROMANCE,
     "ertu til í að fara á deit með mér": _ROMANCE,
+    "ert þú til í að fara á deit með mér": _ROMANCE,
     "ertu til í að fara á stefnumót": _ROMANCE,
+    "ert þú til í að fara á stefnumót": _ROMANCE,
     "ertu til í að fara á stefnumót með mér": _ROMANCE,
+    "ert þú til í að fara á stefnumót með mér": _ROMANCE,
     "ertu gröð": _ROMANCE,
     "ert þú gröð": _ROMANCE,
     "ertu einhleyp": _ROMANCE,
@@ -514,12 +524,20 @@ _SPECIAL_QUERIES = {
     "hver er ástin í lífi þínu": {
         "answer": "Vinnan er ástin í lífi mínu. Ég lifi til að þjóna þér, kæri notandi."
     },
+    "hvern elskarðu": {
+        "answer": "Vinnan er ástin í lífi mínu. Ég lifi til að þjóna þér, kæri notandi."
+    },
+    "hvern elskar þú": {
+        "answer": "Vinnan er ástin í lífi mínu. Ég lifi til að þjóna þér, kæri notandi."
+    },
 
     # Positive affirmation ;)
     "kanntu vel við mig": _OF_COURSE,
     "kannt þú vel við mig": _OF_COURSE,
     "fílarðu mig": _OF_COURSE,
     "fílar þú mig": _OF_COURSE,
+    "er ég skemmtilegur": _OF_COURSE,
+    "er ég skemmtileg": _OF_COURSE,
     "er ég frábær": _OF_COURSE,
     "er ég bestur": _OF_COURSE,
     "er ég best": _OF_COURSE,
