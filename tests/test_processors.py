@@ -120,7 +120,7 @@ def test_entities():
         for sent in p.sentences():
             num_sent += 1
             num_tokens = len(sent)
-            assert sent.parse(), "Sentence does not parse"
+            assert sent.parse(), "Sentence does not parse: " + sent.text
             # Obtain a text representation of the parse tree
             token_dicts = TreeUtility.dump_tokens(
                 sent.tokens, sent.tree
