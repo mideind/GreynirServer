@@ -50,11 +50,13 @@ _TIME_QUERIES = frozenset(
         "hvað er klukkan nákvæmlega",
         "hvað er klukkan eins og stendur",
         "hvað er klukkan núna",
+        "hvað er klukkan hér",
         "hver er klukkan",
         "hver er klukkan núna",
         "hvað er tíminn",
         "hvað er tíminn núna",
         "hvað líður tímanum",
+        "veistu hvað klukkan er",
     )
 )
 
