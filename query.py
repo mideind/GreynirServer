@@ -527,7 +527,7 @@ class Query:
 
     def set_answer(self, response, answer, voice_answer=None):
         """ Set the answer to the query """
-        # Detailed response
+        # Detailed response (this is usually a dict)
         self._response = response
         # Single best answer, as a displayable string
         self._answer = answer
@@ -821,6 +821,7 @@ def process_query(
                     .filter(QueryRow.question_lc == clean_q.lower())
                     .filter(QueryRow.expires >= now)
                     .order_by(desc(QueryRow.expires))
+                    .limit(1)
                     .one_or_none()
                 )
             if cached_answer is not None:
@@ -832,7 +833,7 @@ def process_query(
                     q_raw=qtext,
                     q=a.bquestion,
                     answer=a.answer,
-                    response=a.answer or "",
+                    response=dict(answer=a.answer or ""),
                     voice=a.voice,
                     expires=a.expires,
                     qtype=a.qtype,
