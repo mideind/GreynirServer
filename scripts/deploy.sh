@@ -35,11 +35,17 @@ sudo systemctl stop $SERVICE
 
 cd $DEST
 
-echo "Upgrading the reynir package"
+# echo "Upgrading the reynir package"
 
-source venv/bin/activate
-pip install --upgrade -r requirements.txt
-deactivate
+# source p369/bin/activate
+# pip install --upgrade -r requirements.txt
+# deactivate
+
+
+echo "Removing binary grammar files"
+rm p369/site-packages/reynir/Reynir.grammar.bin
+rm p369/site-packages/reynir/Reynir.grammar.query.bin
+
 
 cd $SRC
 
@@ -78,7 +84,7 @@ cp queries/*.py $DEST/queries/
 
 # Processors are not required for the web server
 # cp processors/*.py $DEST/processors/
-
+# Sync templates and static files
 rsync -av --delete templates/ $DEST/templates/
 rsync -av --delete static/ $DEST/static/
 
