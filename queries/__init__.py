@@ -29,10 +29,12 @@ import requests
 import json
 import os
 import re
+import locale
 from tzwhere import tzwhere
 from pytz import country_timezones
 from geo import country_name_for_isocode, iceprep4cc
 from reynir.bindb import BIN_Db
+from settings import changedlocale
 
 
 def natlang_seq(words):
@@ -262,8 +264,9 @@ def strip_trailing_zeros(num_str):
 
 def format_icelandic_float(fp_num):
     """ Convert number to Icelandic decimal format. """
-    res = "{0:.2f}".format(fp_num).replace(".", ",")
-    return strip_trailing_zeros(res)
+    with changedlocale(category="LC_NUMERIC"):
+        res = locale.format_string("%.2f", fp_num, grouping=True).replace(" ", ".")
+        return strip_trailing_zeros(res)
 
 
 def gen_answer(a):
