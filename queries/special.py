@@ -587,6 +587,7 @@ _SPECIAL_QUERIES = {
     "spilaðu tónlist fyrir mig": _play_music,
 
     # Blame
+    "ekki rétt": _sorry,
     "þetta er ekki rétt": _sorry,
     "þetta var ekki rétt": _sorry,
     "þetta er ekki rétt hjá þér": _sorry,
