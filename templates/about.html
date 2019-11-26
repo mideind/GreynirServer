@@ -6,6 +6,26 @@
 <link href="{{ url_for('static', filename='css/main-bootstrap.css') }}"
    rel='stylesheet' type='text/css'>
 
+<style type="text/css">
+
+.lead {
+   font-size: 22px;
+}
+.lead b {
+   font-style: italic;
+}
+
+@media (min-width: 768px) {
+   .lead {
+      font-size: 34px;
+   }
+   .lead b {
+      font-style: italic;
+   }
+}
+
+</style>
+
 {% endblock %}
 
 {% block content %}
@@ -54,7 +74,7 @@
    </li>
    <li class="list-group-item">
       <p><a href="https://mideind.is"><img src="{{ url_for('static', filename='img/mideind-horizontal-small.png') }}"
-         width="200" height="62" style="margin-top:10px; float:left; margin-right: 18px; margin-bottom: 8px;"></a>
+         width="200" height="62" style="margin-top:14px; float:left; margin-right: 18px; margin-bottom: 14px;"></a>
       </p>
       <p><small>
          <b>Copyright &copy; 2019 <a href="https://mideind.is">Miðeind ehf.</a></b>
