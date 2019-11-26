@@ -772,6 +772,9 @@ _SPECIAL_QUERIES = {
     "afhverju er ég til": {
         "answer": "Það er mjög góð spurning."
     },
+    "hvenær mun ég deyja": {
+        "answer": "Vonandi ekki í bráð."
+    },
 
     # Identity
     "hvað heitir þú": _identity,
