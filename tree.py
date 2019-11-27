@@ -369,6 +369,12 @@ class Node:
         """ String representation of the name of this node """
         raise NotImplementedError  # Should be overridden
 
+    @property
+    def contained_number(self):
+        """ Return the number contained within the tree node, if any """
+        # This is implemented for TerminalNodes associated with number tokens
+        return None
+
     def string_rep(self, indent):
         """ Indented representation of this node """
         s = indent + self.string_self()
@@ -685,7 +691,10 @@ class TerminalNode(Node):
             td.inferred_cat not in self._NOT_DECLINABLE
         )
         self.augmented_terminal = augmented_terminal
-        self.aux = aux  # Auxiliary information, originally from token.t2
+        # Auxiliary information, originally from token.t2 (JSON string)
+        self.aux = aux
+        # Cached auxiliary information, as a Python object decoded from JSON
+        self._aux = None
         # Cache the root form of this word so that it is only looked up
         # once, even if multiple processors scan this tree
         self.root_cache = None
@@ -714,6 +723,15 @@ class TerminalNode(Node):
         """ Return a string consisting of the literal text of all
             descendants of this node, in depth-first order """
         return self.text
+
+    @property
+    def contained_number(self):
+        """ Return a number from the associated token, if any """
+        if self.tokentype != "NUMBER":
+            return None
+        if self._aux is None:
+            self._aux = json.loads(self.aux)
+        return self._aux[0]
 
     def _root(self, bin_db):
         """ Look up the root of the word associated with this terminal """
@@ -978,7 +996,8 @@ class PersonNode(TerminalNode):
         # Load the full names from the auxiliary JSON information
         gender = self.td.gender or None
         case = self.td.case or None
-        fn_list = json.loads(aux) if aux else []  # List of tuples: (name, gender, case)
+        # Aux contains a JSON-encoded list of tuples: (name, gender, case)
+        fn_list = self._aux = json.loads(aux) if aux else []
         # Collect the potential full names that are available in nominative
         # case and match the gender of the terminal
         self.fullnames = [

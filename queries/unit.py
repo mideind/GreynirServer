@@ -25,15 +25,12 @@
 """
 
 import re
-import cachetools
-import json
 import random
 from math import floor, log10
 
 import query
-from queries import query_json_api, format_icelandic_float
+from queries import format_icelandic_float
 from settings import Settings
-from tree import TerminalNode
 
 
 # Lemmas of keywords that could indicate that the user is trying to use this module
@@ -226,7 +223,7 @@ QUnitConversion →
 QUnitFrom/fall → QUnitFrom/fall/kyn
 
 QUnitFrom/fall/kyn →
-    QUnitNumber/kyn/fall QUnit/kyn/fall
+    QUnitNumber/kyn/fall? QUnit/kyn/fall
 
 QUnitTo/fall/kyn →
     QUnit/kyn/fall
@@ -325,15 +322,15 @@ QUnit_kvk/fall →
 
 def parse_num(node, num_str):
     """ Parse Icelandic number string to float or int """
-    num = None
     # If we have a number token as a direct child,
     # return its numeric value directly
-    if isinstance(node.child, TerminalNode):
-        if node.child.tokentype == "NUMBER":
-            aux = json.loads(node.child.aux)
-            return float(aux[0])
+    num = node.child.contained_number
+    if num is not None:
+        return float(num)
     try:
-        # Handle numbers w. Icelandic decimal places ("17,2")
+        # Handle numbers with Icelandic decimal places ("17,2")
+        # and potentially thousands separators as well
+        num_str = num_str.replace(".", "")
         if re.search(r"^\d+,\d+", num_str):
             num = float(num_str.replace(",", "."))
         # Handle digits ("17")
@@ -412,7 +409,10 @@ def sentence(state, result):
     q = state["query"]
     if "qtype" in result and result.qtype == "Unit":
         # Successfully matched a query type
-        val_from = result.number
+        # If no number is mentioned in the query
+        # ('Hvað eru margir metrar í kílómetra?')
+        # we use 1.0
+        val_from = result.get("number", 1.0)
         # Convert between units, getting also the base SI unit and quantity
         valid, val, si_unit, si_quantity = _convert(
             val_from, result.unit_from, result.unit_to

@@ -230,6 +230,13 @@ def test_query_api(client):
     assert "answer" in json
     assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
 
+    # Unit module
+    resp = client.get("/query.api?q=Hvað eru margir metrar í mílu?")
+    json = validate_json(resp)
+    assert json["qtype"] == "Unit"
+    assert "answer" in json
+    assert json["answer"] == "1.610 metrar"
+
     # Weather module
     resp = client.get("/query.api?q=Hversu hlýtt er úti?")
     json = validate_json(resp)
