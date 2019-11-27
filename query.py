@@ -335,7 +335,9 @@ class Query:
             return False
 
         toklist = tokenize(q, auto_uppercase=self._auto_uppercase and q.islower())
-        toklist = list(recognize_entities(toklist, enclosing_session=self._session))
+        toklist = list(toklist)
+        # The following seems not to be needed and may complicate things
+        # toklist = list(recognize_entities(toklist, enclosing_session=self._session))
 
         actual_q = correct_spaces(" ".join(t.txt for t in toklist if t.txt))
         if actual_q:
