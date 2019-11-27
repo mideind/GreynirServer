@@ -126,6 +126,19 @@ def _random_quotation(qs, q):
     return { "answer": choice(_QUOTATIONS), "is_question": False }
 
 
+def _poetry(qs, q):
+    return {
+        "answer": "Það mælti mín móðir, "
+                  "að mér skyldu kaupa, "
+                  "fley og fagrar árar, "
+                  "fara á brott með víkingum, "
+                  "standa uppi í stafni, "
+                  "stýra dýrum knerri, "
+                  "halda svo til hafnar, "
+                  "höggva mann og annan."
+    }
+
+
 def _identity(qs, q):
     if q.is_voice:
         # Voice client (Embla)
@@ -360,6 +373,9 @@ _SPECIAL_QUERIES = {
     "hvenær á ég afmæli": {
         "answer:" "Það veit ég ekki, kæri notandi."
     },
+    "hvernig lít ég út": {
+        "answer": "Þú ert undurfagur, kæri notandi."
+    },
     "hjálpaðu mér": {
         "answer": "Hvernig get ég hjálpað?"
     },
@@ -511,6 +527,7 @@ _SPECIAL_QUERIES = {
     "ert þú til í að fara á stefnumót með mér": _ROMANCE,
     "ertu gröð": _ROMANCE,
     "ert þú gröð": _ROMANCE,
+    "stundar þú kynlíf": _ROMANCE,
     "ertu einhleyp": _ROMANCE,
     "ert þú einhleyp": _ROMANCE,
     "ertu á lausu": _ROMANCE,
@@ -725,6 +742,8 @@ _SPECIAL_QUERIES = {
     "hver er tilgangurinn": _MEANING_OF_LIFE,
     "hver er tilgangur lífsins": _MEANING_OF_LIFE,
     "hvað er tilgangur lífsins": _MEANING_OF_LIFE,
+    "hver er tilgangurinn með þessu jarðlífi": _MEANING_OF_LIFE,
+    "hver er tilgangurinn jarðlífsins": _MEANING_OF_LIFE,
     "hver er tilgangurinn með þessu öllu": _MEANING_OF_LIFE,
     "hver er ástæðan fyrir þessu öllu": _MEANING_OF_LIFE,
     "hvaða þýðingu hefur þetta allt": _MEANING_OF_LIFE,
@@ -1073,6 +1092,31 @@ _SPECIAL_QUERIES = {
     "komdu með málshátt": _random_quotation,
     "segðu mér málshátt": _random_quotation,
     "komdu með skemmtilega tilvitnun": _random_quotation,
+
+    # Poetry
+    "komdu með ljóð": _poetry,
+    "flyttu fyrir mig ljóð": _poetry,
+    "flyttu ljóð": _poetry,
+    "kanntu kveðskap": _poetry,
+    "kannt þú kveðskap": _poetry,
+    "kanntu einhvern kveðskap": _poetry,
+    "kannt þú einhvern kveðskap": _poetry,
+    "farðu með kveðskap": _poetry,
+    "far þú með kveðskap": _poetry,
+    "farðu með ljóð": _poetry,
+    "far þú með ljóð": _poetry,
+    "farðu með ljóð fyrir mig": _poetry,
+    "far þú með ljóð fyrir mig": _poetry,
+    "kanntu ljóð": _poetry,
+    "kannt þú ljóð": _poetry,
+    "kanntu að fara með ljóð": _poetry,
+    "kannt þú að fara með ljóð": _poetry,
+    "kanntu að fara með einhver ljóð": _poetry,
+    "kannt þú að fara með einhver ljóð": _poetry,
+    "kanntu einhver ljóð": _poetry,
+    "kannt þú einhver ljóð": _poetry,
+    "kanntu eitthvað ljóð": _poetry,
+    "kannt þú eitthvað ljóð": _poetry,
 
     # Rudeness :)
     "þú sökkar": _rudeness,
