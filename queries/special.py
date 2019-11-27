@@ -438,6 +438,8 @@ _SPECIAL_QUERIES = {
     "hvað kannt þú mörg tungumál": _LANGUAGES,
     "hvað skilurðu mörg tungumál": _LANGUAGES,
     "hvað skilur þú mörg tungumál": _LANGUAGES,
+    "kanntu að tala íslensku": _LANGUAGES,
+    "kannt þú að tala íslensku": _LANGUAGES,
     "skilurðu íslensku": _LANGUAGES,
     "skilur þú íslensku": _LANGUAGES,
     "kannt þú ensku": _LANGUAGES,

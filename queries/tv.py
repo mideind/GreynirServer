@@ -24,6 +24,8 @@
 
 """
 
+# TODO: Support TV schedule queries for other stations than RÚV
+
 import logging
 import re
 from datetime import datetime, timedelta
@@ -33,14 +35,44 @@ from queries import query_json_api, gen_answer
 _TELEVISION_QTYPE = "Television"
 
 
-_CURR_PROGRAM_QUERIES = (
-    "hvað er í sjónvarpinu",
-    "hvað er í sjónvarpinu núna",
-    "hvað er í sjónvarpinu eins og stendur",
-    "hvað er í gangi á RÚV",
-    "hvað er í gangi á RÚV núna",
-    "hvað er í gangi á RÚV eins og stendur",
-)
+# This module wants to handle parse trees for queries
+HANDLE_TREE = True
+
+# The context-free grammar for the queries recognized by this plug-in module
+GRAMMAR = """
+
+Query →
+    QTelevision
+
+QTelevision → QTelevisionQuery '?'?
+
+QTelevisionQuery →
+    QTVWhatIs QTVEiginlega? QTVBeingShown? QTVonTV QTVNow?
+
+QTVWhatIs →
+    "hvað" "er" | "hvaða" "þáttur" "er" | "hvaða" "þátt" "er" | "hvaða" "dagskrárliður" "er"
+
+QTVonTV →
+    "í" "sjónvarpinu" | "á" "rúv" | "í" "ríkissjónvarpinu"
+
+QTVNow →
+    "núna" | "eins" "og" "stendur" | "í" "augnablikinu" | "eins" "og" "stendur" 
+
+QTVBeingShown →
+    "í" "gangi" | "verið" "að" "sýna" 
+
+QTVEiginlega →
+    "eiginlega"
+
+$score(+35) QTelevision
+
+"""
+
+
+def QTelevisionQuery(node, params, result):
+    # Set the query type
+    result.qtype = _TELEVISION_QTYPE
+    result.qkey = "Dagskrárliður"
 
 
 def _clean_desc(d):
@@ -92,35 +124,37 @@ def _gen_curr_program_answer(q):
 
     prog = _curr_prog(sched)
     if not prog:
-        return gen_answer("Það er ekkert í Ríkissjónvarpinu eins og stendur.")
+        return gen_answer("Það er ekkert í gangi á RÚV eins og stendur.")
 
-    answ = "Á RÚV er þátturinn {0}. {1}.".format(
-        prog["title"], _clean_desc(prog["description"])
+    ep = "" if "fréttir" in prog["title"].lower() else "þáttinn "
+    answ = "RÚV er að sýna {0}{1}. {2}.".format(
+        ep, prog["title"], _clean_desc(prog["description"])
     )
     return gen_answer(answ)
 
 
-# Map hashable query category set to corresponding handler function
-_Q2HANDLER = {_CURR_PROGRAM_QUERIES: _gen_curr_program_answer}
 
-
-def handle_plain_text(q):
-    """ Handle a plain text query about tv schedules. """
-    ql = q.query_lower.rstrip("?")
-    for qset, handler in _Q2HANDLER.items():
-        if ql not in qset:
-            continue
+def sentence(state, result):
+    """ Called when sentence processing is complete """
+    q = state["query"]
+    if "qtype" in result:
+        # Successfully matched a query type
+        q.set_qtype(result.qtype)
+        q.set_key(result.qkey)
 
         try:
-            r = handler(q)
+            r = _gen_curr_program_answer(q)
             if r:
                 q.set_answer(*r)
-                q.set_qtype(_TELEVISION_QTYPE)
-                return True
+                q.set_beautified_query(q._beautified_query.replace("rúv", "RÚV"))
+                # TODO: Set intelligent expiry time
+                # q.set_expires(datetime.utcnow() + timedelta(hours=24))
         except Exception as e:
             logging.warning(
                 "Exception while processing TV schedule query: {0}".format(e)
             )
             q.set_error("E_EXCEPTION: {0}".format(e))
 
-    return False
+    else:
+        state["query"].set_error("E_QUERY_NOT_UNDERSTOOD")
+
