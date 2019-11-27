@@ -320,6 +320,12 @@ def test_query_api(client):
     assert json["qtype"] == "Stats"
     assert "answer" in json
 
+    # Television module
+    resp = client.get("/query.api?q=hvað er í sjónvarpinu núna&voice=1")
+    json = validate_json(resp)
+    assert json["qtype"] == "Television"
+    assert "answer" in json
+
 
 def test_processors():
     """ Try to import all tree/token processors by instantiating Processor object """

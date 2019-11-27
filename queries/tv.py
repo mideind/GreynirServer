@@ -47,12 +47,12 @@ Query →
 QTelevision → QTelevisionQuery '?'?
 
 QTelevisionQuery →
-    QTVWhatIs QTVEiginlega? QTVBeingShown? QTVonTV QTVNow?
+    QTVWhatIs QTVEiginlega? QTVBeingShown? QTVOnTV QTVNow?
 
 QTVWhatIs →
     "hvað" "er" | "hvaða" "þáttur" "er" | "hvaða" "þátt" "er" | "hvaða" "dagskrárliður" "er"
 
-QTVonTV →
+QTVOnTV →
     "í" "sjónvarpinu" | "á" "rúv" | "í" "ríkissjónvarpinu"
 
 QTVNow →
@@ -133,7 +133,6 @@ def _gen_curr_program_answer(q):
     return gen_answer(answ)
 
 
-
 def sentence(state, result):
     """ Called when sentence processing is complete """
     q = state["query"]
@@ -157,4 +156,3 @@ def sentence(state, result):
 
     else:
         state["query"].set_error("E_QUERY_NOT_UNDERSTOOD")
-
