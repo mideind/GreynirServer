@@ -258,13 +258,20 @@ QCurConvertAmount →
 QCurMany →
     "margir" | "margar" | "mörg"
 
-QCurConvertTo →
-    QCurUnit_nf
+QCurConvertTo/fall →
+    QCurUnit/fall
 
-$tag(keep) QCurConvertTo # Keep this from being optimized away
+QCurMuch →
+    "mikið" QCurMuchIn?
+
+QCurMuchIn →
+    "í" QCurConvertTo_þgf
+
+$tag(keep) QCurConvertTo/fall # Keep this from being optimized away
 
 QCurAmountConversion →
-    QCurConvertAmount QCurMany QCurConvertTo
+    QCurConvertAmount QCurMany QCurConvertTo_nf
+    | QCurConvertAmount QCurMuch
 
 """
 
@@ -324,17 +331,17 @@ def QCurUnit(node, params, result):
 
 def QCurExchangeRate(node, params, result):
     result.op = "exchange"
-    result.desc = node.contained_text()
+    result.desc = result._text
 
 
 def QCurGeneralRate(node, params, result):
     result.op = "general"
-    result.desc = node.contained_text()
+    result.desc = result._text
 
 
 def QCurCurrencyIndex(node, params, result):
     result.op = "index"
-    result.desc = node.contained_text()
+    result.desc = result._text
     add_currency("GVT", result)
 
 
@@ -343,9 +350,8 @@ def QCurConvertAmount(node, params, result):
     amount = node.first_child(lambda n: n.has_t_base("amount"))
     if amount is not None:
         # Found an amount terminal node
-        am = json.loads(amount.aux)
-        result.amount = am[0]
-        add_currency(am[1], result)
+        result.amount, curr = amount.contained_amount
+        add_currency(curr, result)
     elif "numbers" in result:
         # Number words
         result.amount = result.numbers[0]
@@ -354,12 +360,20 @@ def QCurConvertAmount(node, params, result):
         result.amount = 0
         # In this case, we assume that a QCurUnit node was present
         # and the currency code has thus already been picked up
-    result.desc = node.contained_text()
+    result.desc = result._text
 
 
 def QCurConvertTo(node, params, result):
     # Hvað eru [X] margir [Y] - this is the Y part
-    result.currency = node.contained_text()
+    result.currency = result._nominative
+
+
+def QCurMuch(node, params, result):
+    # 'Hvað eru þrír dollarar mikið [í evrum]?'
+    # We assume that this means conversion to ISK if no currency is specified
+    if "currency" not in result:
+        result.currency = "krónur"
+        add_currency("ISK", result)
 
 
 def QCurAmountConversion(node, params, result):
