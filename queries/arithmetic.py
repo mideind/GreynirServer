@@ -24,7 +24,6 @@
 """
 
 # TODO: "hvað er 2 í veldinu 64"
-# TODO: "hvað er einn áttundi af 16"
 
 import math
 import json
@@ -40,9 +39,23 @@ _ARITHMETIC_QTYPE = "Arithmetic"
 
 # Lemmas of keywords that could indicate that the user is trying to use this module
 TOPIC_LEMMAS = [
-    "plús", "mínus", "margfalda", "deila", "samlagning", "frádráttur", "margföldun",
-    "kvaðratrót", "ferningsrót", "veldi", "rót", "prósent", "prósenta",
-    "hundraðshluti", "hlutfall", "frádreginn", "viðbættur"
+    "plús",
+    "mínus",
+    "margfalda",
+    "deila",
+    "samlagning",
+    "frádráttur",
+    "margföldun",
+    "kvaðratrót",
+    "ferningsrót",
+    "veldi",
+    "rót",
+    "prósent",
+    "prósenta",
+    "hundraðshluti",
+    "hlutfall",
+    "frádreginn",
+    "viðbættur",
 ]
 
 
@@ -51,20 +64,21 @@ def help_text(lemma):
         one of the above lemmas is found in it """
     if lemma in ("kvaðratrót", "ferningsrót"):
         return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
-            random.choice((
-                "Hver er kvaðratrótin af tuttugu",
-                "Hver er ferningsrótin af áttatíu"
-            ))
+            random.choice(
+                ("Hver er kvaðratrótin af tuttugu", "Hver er ferningsrótin af áttatíu")
+            )
         )
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
-        random.choice((
-            "Hvað eru sautján sinnum þrjátíu og fjórir",
-            "Hvað er tvö hundruð mínus sautján",
-            "Hver er kvaðratrótin af tuttugu",
-            "Hvað eru átján að frádregnum sjö",
-            "Hvað er ellefu plús tvö hundruð og fimm",
-            "Hvað eru níu prósent af tvö þúsund"
-        ))
+        random.choice(
+            (
+                "Hvað eru sautján sinnum þrjátíu og fjórir",
+                "Hvað er tvö hundruð mínus sautján",
+                "Hver er kvaðratrótin af tuttugu",
+                "Hvað eru átján að frádregnum sjö",
+                "Hvað er ellefu plús tvö hundruð og fimm",
+                "Hvað eru níu prósent af tvö þúsund",
+            )
+        )
     )
 
 
@@ -105,6 +119,53 @@ _NUMBER_WORDS = {
     "þúsund": 1000,
     "milljón": 1e6,
     "milljarður": 1e9,
+}
+
+_FRACTION_WORDS = {
+    "helmingur": 1 / 2,
+    "helmingurinn": 1 / 2,
+    "þriðjungur": 1 / 3,
+    "þriðjungurinn": 1 / 3,
+    "fjórðungur": 1 / 4,
+    "fjórðungurinn": 1 / 4,
+    "fimmtungur": 1 / 5,
+    "fimmtungurinn": 1 / 5,
+    "sjöttungur": 1 / 6,
+    "sjöttungurinn": 1 / 6,
+}
+
+# Ordinal words in the nominative case
+_ORDINAL_WORDS_NOM = {
+    "fyrsti": 1,
+    "annar": 2,
+    "þriðji": 3,
+    "fjórði": 4,
+    "fimmti": 5,
+    "sjötti": 6,
+    "sjöundi": 7,
+    "áttundi": 8,
+    "níundi": 9,
+    "tíundi": 10,
+    "ellefti": 11,
+    "tólfti": 12,
+    "þrettándi": 13,
+    "fjórtándi": 14,
+    "fimmtándi": 15,
+    "sextándi": 16,
+    "sautjándi": 17,
+    "átjándi": 18,
+    "nítjándi": 19,
+    "tuttugasti": 20,
+    "þrítugasti": 30,
+    "fertugasti": 40,
+    "fimmtugasti": 50,
+    "sextugasti": 60,
+    "sjötugasti": 70,
+    "áttatugasti": 80,
+    "nítugasti": 90,
+    "hundraðasti": 100,
+    "þúsundasti": 1000,
+    "milljónasti": 1e6,
 }
 
 # Ordinal words in the dative case
@@ -184,6 +245,10 @@ QArithmeticQuery →
     # 'Hvað er(u) 12 prósent af 93'
     | QArGenericPrefix QArPercent
 
+    # 'Hvað er fjórðungurinn af 1220'
+    # 'Hvað er einn tuttugasti af 190'
+    | QArAnyPrefix QArFraction
+
 /arfall = nf þgf
 
 QArGenericPrefix → "hvað" "er" | "hvað" "eru" | 0
@@ -216,6 +281,7 @@ QArMult → QArMultOperator QArNumberWord_nf
 QArSqrt → QArSquareRootOperator QArNumberWordAny
 QArPow → QArPowOperator
 QArPercent → QArPercentOperator QArNumberWordAny
+QArFraction → QArFractionOperator QArNumberWordAny
 
 # Prevent nonterminal from being optimized out of the grammar
 $tag(keep) QArPow
@@ -227,6 +293,9 @@ QArSquareRootOperator →
     | "ferningsrótin" "af" | "ferningsrót" "af"
 QArPercentOperator → Prósenta "af"
 
+QArFractionOperator →
+    QArFractionWord_nf "af"
+
 QArMultOperator →
     # 'hvað er tvisvar sinnum X?'
     # The following phrases are defined in reynir/config/Phrases.conf
@@ -234,6 +303,8 @@ QArMultOperator →
 
 QArPowOperator →
     QArNumberWord_nf "í" QArOrdinalOrNumberWord_þgf "veldi"
+    | QArNumberWord_nf "í" "veldinu" QArNumberWord_nf
+    | QArNumberWord_nf "í" "veldi" QArNumberWord_nf
 
 QArNumberWord/arfall →
     # to is a declinable number word ('tveir/tvo/tveim/tveggja')
@@ -253,14 +324,21 @@ QArLastResult/arfall →
 
 QArNumberWordAny → QArNumberWord/arfall
 
+QArFractionWord_nf →
+    {0} | {1}
+
 QArOrdinalWord_þgf →
-    {0} | raðnr
+    {2} | raðnr
 
 QArOrdinalOrNumberWord_þgf →
     QArNumberWord_þgf | QArOrdinalWord_þgf
 
 """.format(
-    " | ".join('"' + w + '"' for w in _ORDINAL_WORDS_DATIVE.keys())
+    " | ".join('"' + w + '"' for w in _FRACTION_WORDS.keys()),  # Faction words
+    " | ".join(
+        '"einn" ' + '"' + w + '"' for w in _ORDINAL_WORDS_NOM.keys()
+    ),  # "einn þriðji" etc.
+    " | ".join('"' + w + '"' for w in _ORDINAL_WORDS_DATIVE.keys()),  # OrdinalWord
 )
 
 
@@ -287,7 +365,7 @@ def parse_num(num_str):
         else:
             num = 0
     except Exception as e:
-        print("Unexpected exception: {0}".format(e))
+        logging.warning("Unexpected exception: {0}".format(e))
         raise
     return num
 
@@ -326,6 +404,16 @@ def QArNumberWord(node, params, result):
 
 def QArOrdinalWord(node, params, result):
     add_num(result._canonical, result)
+
+
+def QArFractionWord(node, params, result):
+    fn = result._canonical
+    fp = _FRACTION_WORDS.get(fn)
+    if not fp:
+        fp = _ORDINAL_WORDS_NOM.get(fn.lstrip("einn "))
+        if fp:
+            fp = 1 / int(fp)
+    add_num(fp, result)
 
 
 def QArMultOperator(node, params, result):
@@ -381,6 +469,10 @@ def QArPercentOperator(node, params, result):
     result.operator = "percent"
 
 
+def QArFractionOperator(node, params, result):
+    result.operator = "fraction"
+
+
 def Prósenta(node, params, result):
     # Find percentage terminal
     d = result.find_descendant(t_base="prósenta")
@@ -417,6 +509,10 @@ def QArPercent(node, params, result):
     result.desc = result._canonical
 
 
+def QArFraction(node, params, result):
+    result.desc = result._canonical
+
+
 def QArithmetic(node, params, result):
     # Set query type
     result.qtype = _ARITHMETIC_QTYPE
@@ -434,6 +530,7 @@ _OP_NUM_ARGS = {
     "sqrt": 1,
     "pow": 2,
     "percent": 2,
+    "fraction": 2,
 }
 
 
@@ -475,6 +572,9 @@ def calc_arithmetic(query, result):
     # Percent
     elif operator == "percent":
         s = "({0} * {1}) / 100.0".format(nums[0], nums[1])
+
+    elif operator == "fraction":
+        s = "{0} * {1}".format(nums[0], nums[1])
 
     # Addition, subtraction, multiplication, division
     elif operator in _STD_OPERATORS:
@@ -526,6 +626,7 @@ def sentence(state, result):
             else:
                 raise Exception("Arithmetic calculation failed")
         except Exception as e:
+            logging.warning("Exception in arithmetic module: {0}".format(e))
             q.set_error("E_EXCEPTION: {0}".format(e))
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")

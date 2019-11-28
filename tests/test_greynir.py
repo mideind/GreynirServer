@@ -202,7 +202,8 @@ def test_query_api(client):
         "hvað eru 17 prósent af 20": "3,4",
         "hvað er 7000 deilt með 812": "8,62",
         "hvað er þrisvar sinnum sjö": "21",
-        "hvað er fjórðungur af 28": "7", 
+        "hvað er fjórðungur af 28": "7",
+        "hvað er einn tuttugasti af 192": "9,6",
     }
 
     for q, a in ARITHM_QUERIES.items():
@@ -213,15 +214,16 @@ def test_query_api(client):
         assert json["answer"] == a
 
     # Location module
-    resp = client.get(
-        "/query.api?test=1&q=Hvar er ég?&latitude={0}&longitude={1}".format(
-            64.15673429618045, -21.9511777069624
-        )
-    )
-    json = validate_json(resp)
-    assert json["qtype"] == "Location"
-    assert "answer" in json
-    assert json["answer"].startswith("Fiskislóð 31")
+    # NB: No API key on test server
+    # resp = client.get(
+    #     "/query.api?test=1&q=Hvar er ég?&latitude={0}&longitude={1}".format(
+    #         64.15673429618045, -21.9511777069624
+    #     )
+    # )
+    # json = validate_json(resp)
+    # assert json["qtype"] == "Location"
+    # assert "answer" in json
+    # assert json["answer"].startswith("Fiskislóð 31")
 
     # Currency module
     resp = client.get("/query.api?q=Hvert er gengi dönsku krónunnar?")
