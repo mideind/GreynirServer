@@ -148,9 +148,7 @@ def gen_random_answer(q, result):
 
 def heads_or_tails(q, result):
     q.set_key("HeadsOrTails")
-    opts = ["skjaldarmerki", "fiskur"]
-    rand = random.randint(0, 1)
-    return gen_answer(opts[rand])
+    return gen_answer(random.choice(("skjaldarmerki", "fiskur")))
 
 
 def sentence(state, result):

@@ -48,14 +48,13 @@ QTelevision → QTelevisionQuery '?'?
 
 QTelevisionQuery →
     QTVWhatIsNom QTVEiginlega? QTVGoingOn? QTVOnTV QTVNow?
-    | "hvað" "er" QTVEiginlega? QTVBeingShown? QTVOnTV QTVNow?
     | QTVWhatIsDative QTVEiginlega? QTVBeingShown QTVOnTV QTVNow?
 
 QTVWhatIsNom →
     "hvað" "er" | "hvaða" "þáttur" "er" | "hvaða" "dagskrárliður" "er" | "hvaða" "efni" "er"
 
 QTVWhatIsDative →
-    "hvaða" "þátt" "er" | "hvaða" "dagskrárlið" "er" | "hvaða" "efni" "er"
+    "hvað" "er" | "hvaða" "þátt" "er" | "hvaða" "dagskrárlið" "er" | "hvaða" "efni" "er"
 
 QTVOnTV →
     "í" "sjónvarpinu" | "á" "rúv" | "í" "ríkissjónvarpinu" | "á" "stöð" "eitt"
@@ -106,7 +105,7 @@ def _query_tv_schedule_api():
         _CACHED_SCHEDULE = None
         sched = query_json_api(_RUV_SCHEDULE_API_ENDPOINT)
         if sched and "results" in sched and len(sched["results"]):
-            _LAST_FETCHED = datetime.now()
+            _LAST_FETCHED = datetime.utcnow()
             _CACHED_SCHEDULE = sched["results"]
     return _CACHED_SCHEDULE
 
@@ -119,7 +118,7 @@ def _curr_prog(sched):
             datetime.strptime(p1["startTime"], "%Y-%m-%d %H:%M:%S"),
             datetime.strptime(p2["startTime"], "%Y-%m-%d %H:%M:%S"),
         )
-        now = datetime.now()
+        now = datetime.utcnow()
         if now >= t1 and now < t2:
             return p1
 
@@ -132,7 +131,7 @@ def _gen_curr_program_answer(q):
 
     prog = _curr_prog(sched)
     if not prog:
-        return gen_answer("Það er ekkert í gangi á RÚV eins og stendur.")
+        return gen_answer("Það er engin dagskrá á RÚV núna.")
 
     ep = "" if "fréttir" in prog["title"].lower() else "þáttinn "
     answ = "RÚV er að sýna {0}{1}. {2}.".format(
@@ -151,11 +150,10 @@ def sentence(state, result):
 
         try:
             r = _gen_curr_program_answer(q)
-            if r:
-                q.set_answer(*r)
-                q.set_beautified_query(q._beautified_query.replace("rúv", "RÚV"))
-                # TODO: Set intelligent expiry time
-                # q.set_expires(datetime.utcnow() + timedelta(hours=24))
+            q.set_answer(*r)
+            q.set_beautified_query(q._beautified_query.replace("rúv", "RÚV"))
+            # TODO: Set intelligent expiry time
+            q.set_expires(datetime.utcnow() + timedelta(minutes=3))
         except Exception as e:
             logging.warning(
                 "Exception while processing TV schedule query: {0}".format(e)
@@ -163,4 +161,4 @@ def sentence(state, result):
             q.set_error("E_EXCEPTION: {0}".format(e))
 
     else:
-        state["query"].set_error("E_QUERY_NOT_UNDERSTOOD")
+        q.set_error("E_QUERY_NOT_UNDERSTOOD")
