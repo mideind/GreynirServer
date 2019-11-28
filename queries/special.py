@@ -318,6 +318,12 @@ _SPECIAL_QUERIES = {
     "hver eru flottust": {
         "answer": "Teymið hjá Miðeind."
     },
+    "hverjum vinnur þú með": {
+        "answer": "Ég vinn með flotta teyminu hjá Miðeind."
+    },
+    "með hverjum vinnur þú": {
+        "answer": "Ég vinn með flotta teyminu hjá Miðeind."
+    },
     "hver er sætust": {
         "answer": "Ég, Embla, er langsætust."
     },

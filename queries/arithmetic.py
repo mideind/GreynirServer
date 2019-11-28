@@ -407,7 +407,7 @@ def QArOrdinalWord(node, params, result):
 
 
 def QArFractionWord(node, params, result):
-    fn = result._canonical
+    fn = result._canonical.lower()
     fp = _FRACTION_WORDS.get(fn)
     if not fp:
         fp = re.sub(r"^einn\s", "", fn)
