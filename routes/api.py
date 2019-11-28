@@ -40,7 +40,7 @@ from speech import get_synthesized_text_url
 from datetime import datetime
 import logging
 
-
+from nn.nnclient import TranslateClient
 
 # Maximum number of query string variants
 _MAX_QUERY_VARIANTS = 10
@@ -450,3 +450,36 @@ def feedback_api(version=1):
                 logging.error("Error saving feedback to db: {0}".format(e))
 
     return better_jsonify(valid=False)
+
+
+# Note: Endpoints ending with .api are configured not to be cached by nginx
+@routes.route("/nntranslate.api", methods=["GET", "POST"])
+@routes.route("/nntranslate.api/v<int:version>", methods=["GET", "POST"])
+def nntranslate_api(version=1):
+    """ Translate text manually entered by the user, by passing the request
+        to a neural network server and returning its result back """
+    if not (1 <= version <= 1):
+        return better_jsonify(valid=False, reason="Unsupported version")
+
+    try:
+        segmented = True
+        trnsl_src = None
+        if "application/json" in request.headers["Content-Type"]:
+            trnsl_src = request.json["pgs"]
+            src_lang = request.json["src_lang"]
+            tgt_lang = request.json["tgt_lang"]
+        else:
+            segmented = False
+            trnsl_src = text_from_request(request)
+            src_lang = request.form.get("src_lang")
+            tgt_lang = request.form.get("tgt_lang")
+        if not trnsl_src:
+            return better_jsonify(valid=False, reason="Invalid request")
+    except:
+        return better_jsonify(valid=False, reason="Invalid request")
+
+    if segmented:
+        result = TranslateClient.request_segmented(trnsl_src, src_lang, tgt_lang)
+    else:
+        result = TranslateClient.request_text(trnsl_src, src_lang, tgt_lang)
+    return better_jsonify(valid=True, result=result)

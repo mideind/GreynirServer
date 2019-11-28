@@ -164,6 +164,15 @@ def server_error(e):
     return "Eftirfarandi villa kom upp: {0}".format(e), 500
 
 
+@app.context_processor
+def inject_nn_bools():
+    """ Inject bool switches for neural network features """
+    return dict(
+        nn_parsing_enabled=Settings.NN_PARSING_ENABLED,
+        nn_translate_enabled=Settings.NN_TRANSLATE_ENABLED,
+    )
+
+
 # Initialize the main module
 t0 = time.time()
 try:
