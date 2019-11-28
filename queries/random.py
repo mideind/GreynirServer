@@ -48,7 +48,10 @@ Query →
 QRandom → QRandomQuery '?'?
 
 QRandomQuery →
-    QRandomDiceRoll | QRandomBetween
+    QRandomDiceRoll | QRandomBetween | QRandomHeadsOrTails
+
+QRandomHeadsOrTails →
+    "fiskur" "eða" "skjaldarmerki" | "skjaldarmerki" "eða" "fiskur"
 
 QRandomDiceRoll →
     "kastaðu" QRandomDiceSides? QRandomDie QRandomForMe?
@@ -91,6 +94,10 @@ $score(+35) QRandom
 
 def QRandomQuery(node, params, result):
     result.qtype = _RANDOM_QTYPE
+
+
+def QRandomHeadsOrTails(node, params, result):
+    result.action = "headstails"
 
 
 def QRandomBetween(node, params, result):
@@ -139,22 +146,29 @@ def gen_random_answer(q, result):
     return response, answer, voice_answer
 
 
+def heads_or_tails(q, result):
+    q.set_key("HeadsOrTails")
+    opts = ["skjaldarmerki", "fiskur"]
+    rand = random.randint(0, 1)
+    return gen_answer(opts[rand])
+
+
 def sentence(state, result):
     """ Called when sentence processing is complete """
     q = state["query"]
-    if "qtype" in result:
-        # Successfully matched a query type
-        q.set_qtype(result.qtype)
-
-        try:
-            r = gen_random_answer(q, result)
-            if r:
-                q.set_answer(*r)
-        except Exception as e:
-            logging.warning(
-                "Exception while processing random query: {0}".format(e)
-            )
-            q.set_error("E_EXCEPTION: {0}".format(e))
-            raise
-    else:
+    if "qtype" not in result:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
+        return
+
+    # Successfully matched a query type
+    q.set_qtype(result.qtype)
+
+    try:
+        func = heads_or_tails if result.action == "headstails" else gen_random_answer
+        r = func(q, result)
+        if r:
+            q.set_answer(*r)
+    except Exception as e:
+        logging.warning("Exception while processing random query: {0}".format(e))
+        q.set_error("E_EXCEPTION: {0}".format(e))
+        raise
