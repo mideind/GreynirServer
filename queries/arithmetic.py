@@ -410,7 +410,8 @@ def QArFractionWord(node, params, result):
     fn = result._canonical
     fp = _FRACTION_WORDS.get(fn)
     if not fp:
-        fp = _ORDINAL_WORDS_NOM.get(fn.lstrip("einn "))
+        fp = re.sub(r"^einn\s", "", fn)
+        fp = _ORDINAL_WORDS_NOM.get(fp)
         if fp:
             fp = 1 / int(fp)
     add_num(fp, result)
