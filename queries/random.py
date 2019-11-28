@@ -51,7 +51,8 @@ QRandomQuery →
     QRandomDiceRoll | QRandomBetween | QRandomHeadsOrTails
 
 QRandomHeadsOrTails →
-    "fiskur" "eða" "skjaldarmerki" | "skjaldarmerki" "eða" "fiskur"
+    "fiskur" "eða" "skjaldarmerki" | "skjaldarmerki" "eða" "fiskur" 
+    | "kastaðu" "upp"? "peningi" | "kastaðu" "upp"? "pening" | "kastaðu" "upp"? "krónu"
 
 QRandomDiceRoll →
     "kastaðu" QRandomDiceSides? QRandomDie QRandomForMe?
