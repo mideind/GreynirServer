@@ -716,6 +716,10 @@ _SPECIAL_QUERIES = {
     "þakka þér fyrir þetta": _thanks,
     "þakka þér fyrir að segja þetta": _thanks,
     "þakka þér kærlega fyrir að segja þetta": _thanks,
+    "þetta er flott": _thanks,
+    "þetta er flott hjá þér": _thanks,
+    "þetta var flott": _thanks,
+    "þetta var flott hjá þér": _thanks,
 
     # Praise & positive feedback
     "þetta virkaði": _GOOD_TO_HEAR,
