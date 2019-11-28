@@ -47,19 +47,27 @@ Query →
 QTelevision → QTelevisionQuery '?'?
 
 QTelevisionQuery →
-    QTVWhatIs QTVEiginlega? QTVBeingShown? QTVOnTV QTVNow?
+    QTVWhatIsNom QTVEiginlega? QTVGoingOn? QTVOnTV QTVNow?
+    | "hvað" "er" QTVEiginlega? QTVBeingShown? QTVOnTV QTVNow?
+    | QTVWhatIsDative QTVEiginlega? QTVBeingShown QTVOnTV QTVNow?
 
-QTVWhatIs →
-    "hvað" "er" | "hvaða" "þáttur" "er" | "hvaða" "þátt" "er" | "hvaða" "dagskrárliður" "er"
+QTVWhatIsNom →
+    "hvað" "er" | "hvaða" "þáttur" "er" | "hvaða" "dagskrárliður" "er" | "hvaða" "efni" "er"
+
+QTVWhatIsDative →
+    "hvaða" "þátt" "er" | "hvaða" "dagskrárlið" "er" | "hvaða" "efni" "er"
 
 QTVOnTV →
-    "í" "sjónvarpinu" | "á" "rúv" | "í" "ríkissjónvarpinu"
+    "í" "sjónvarpinu" | "á" "rúv" | "í" "ríkissjónvarpinu" | "á" "stöð" "eitt"
 
 QTVNow →
-    "núna" | "eins" "og" "stendur" | "í" "augnablikinu" | "eins" "og" "stendur" 
+    "nákvæmlega"? "núna" | "eins" "og" "stendur" | "í" "augnablikinu"
+
+QTVGoingOn →
+    "í" "gangi"
 
 QTVBeingShown →
-    "í" "gangi" | "verið" "að" "sýna" 
+    "verið" "að" "sýna" 
 
 QTVEiginlega →
     "eiginlega"
@@ -77,7 +85,7 @@ def QTelevisionQuery(node, params, result):
 
 def _clean_desc(d):
     """ Return first sentence in multi-sentence string. """
-    return d.replace("?", ".").split(".")[0]
+    return d.replace("Dr.", "Doktor").replace("?", ".").split(".")[0]
 
 
 _RUV_SCHEDULE_API_ENDPOINT = "https://apis.is/tv/ruv/"
