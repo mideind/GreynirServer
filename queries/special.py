@@ -50,6 +50,8 @@ _CAP = (
     "Þú getur til dæmis beðið mig um að segja brandara.",
     "Þú getur til dæmis beðið mig um upplýsingar úr Wikipedíu.",
     "Þú getur til dæmis beðið mig um að leysa einföld reikningsdæmi.",
+    "Þú getur til dæmis spurt mig um mælieiningar.",
+    "Þú getur til dæmis spurt mig hvað er í sjónvarpinu.",
 )
 
 
@@ -124,6 +126,19 @@ _QUOTATIONS = (
 
 def _random_quotation(qs, q):
     return { "answer": choice(_QUOTATIONS), "is_question": False }
+
+
+def _poetry(qs, q):
+    return {
+        "answer": "Það mælti mín móðir, "
+                  "að mér skyldu kaupa, "
+                  "fley og fagrar árar, "
+                  "fara á brott með víkingum, "
+                  "standa uppi í stafni, "
+                  "stýra dýrum knerri, "
+                  "halda svo til hafnar, "
+                  "höggva mann og annan."
+    }
 
 
 def _identity(qs, q):
@@ -246,7 +261,7 @@ _CREATION_DATE = {
 }
 
 _LANGUAGES = {
-    "answer": "Ég skil bara íslensku, kæri notandi."
+    "answer": "Ég kann bara íslensku, kæri notandi."
 }
 
 _GOOD_TO_HEAR = {
@@ -303,6 +318,12 @@ _SPECIAL_QUERIES = {
     "hver eru flottust": {
         "answer": "Teymið hjá Miðeind."
     },
+    "hverjum vinnur þú með": {
+        "answer": "Ég vinn með flotta teyminu hjá Miðeind."
+    },
+    "með hverjum vinnur þú": {
+        "answer": "Ég vinn með flotta teyminu hjá Miðeind."
+    },
     "hver er sætust": {
         "answer": "Ég, Embla, er langsætust."
     },
@@ -323,6 +344,9 @@ _SPECIAL_QUERIES = {
     },
     "hver er best": {
         "answer": "Þú, kæri notandi, ert að sjálfsögðu bestur."
+    },
+    "hver er uppáhalds manneskjan þín": {
+        "answer": "Þú, kæri notandi."
     },
     "hvaða bjór er bestur": {
         "answer": "Ég drekk reyndar ekki en einn skapari minn er hrifinn af Pilsner Urquell frá Tékklandi."
@@ -359,6 +383,9 @@ _SPECIAL_QUERIES = {
     },
     "hvenær á ég afmæli": {
         "answer:" "Það veit ég ekki, kæri notandi."
+    },
+    "hvernig lít ég út": {
+        "answer": "Þú ert undurfagur, kæri notandi."
     },
     "hjálpaðu mér": {
         "answer": "Hvernig get ég hjálpað?"
@@ -422,6 +449,8 @@ _SPECIAL_QUERIES = {
     "hvað kannt þú mörg tungumál": _LANGUAGES,
     "hvað skilurðu mörg tungumál": _LANGUAGES,
     "hvað skilur þú mörg tungumál": _LANGUAGES,
+    "kanntu að tala íslensku": _LANGUAGES,
+    "kannt þú að tala íslensku": _LANGUAGES,
     "skilurðu íslensku": _LANGUAGES,
     "skilur þú íslensku": _LANGUAGES,
     "kannt þú ensku": _LANGUAGES,
@@ -432,6 +461,8 @@ _SPECIAL_QUERIES = {
     "skilurðu önnur tungumál en íslensku": _LANGUAGES,
     "skilur þú önnur tungumál en íslensku": _LANGUAGES,
     "talar þú bara íslensku": _LANGUAGES,
+    "kanntu að tala": _LANGUAGES,
+    "kannt þú að tala": _LANGUAGES,
 
     # Enquiries about family
     # Catch this here to prevent rather, ehrm, embarassing
@@ -511,6 +542,7 @@ _SPECIAL_QUERIES = {
     "ert þú til í að fara á stefnumót með mér": _ROMANCE,
     "ertu gröð": _ROMANCE,
     "ert þú gröð": _ROMANCE,
+    "stundar þú kynlíf": _ROMANCE,
     "ertu einhleyp": _ROMANCE,
     "ert þú einhleyp": _ROMANCE,
     "ertu á lausu": _ROMANCE,
@@ -587,6 +619,7 @@ _SPECIAL_QUERIES = {
     "spilaðu tónlist fyrir mig": _play_music,
 
     # Blame
+    "ekki rétt": _sorry,
     "þetta er ekki rétt": _sorry,
     "þetta var ekki rétt": _sorry,
     "þetta er ekki rétt hjá þér": _sorry,
@@ -670,12 +703,14 @@ _SPECIAL_QUERIES = {
     "takk fyrir svarið": _thanks,
     "takk fyrir aðstoðina": _thanks,
     "takk fyrir þetta": _thanks,
+    "takk fyrir að segja þetta": _thanks,
     "takk kærlega": _thanks,
     "takk kærlega fyrir mig": _thanks,
     "takk kærlega fyrir hjálpina": _thanks,
     "takk kærlega fyrir svarið": _thanks,
     "takk kærlega fyrir aðstoðina": _thanks,
     "takk kærlega fyrir þetta": _thanks,
+    "takk kærlega fyrir að segja þetta": _thanks,
     "þakka þér fyrir": _thanks,
     "þakka þér fyrir aðstoðina": _thanks,
     "þakka þér fyrir hjálpina": _thanks,
@@ -684,6 +719,13 @@ _SPECIAL_QUERIES = {
     "þakka þér kærlega fyrir aðstoðina": _thanks,
     "þakka þér kærlega fyrir hjálpina": _thanks,
     "þakka þér fyrir svarið": _thanks,
+    "þakka þér fyrir þetta": _thanks,
+    "þakka þér fyrir að segja þetta": _thanks,
+    "þakka þér kærlega fyrir að segja þetta": _thanks,
+    "þetta er flott": _thanks,
+    "þetta er flott hjá þér": _thanks,
+    "þetta var flott": _thanks,
+    "þetta var flott hjá þér": _thanks,
 
     # Praise & positive feedback
     "þetta virkaði": _GOOD_TO_HEAR,
@@ -724,6 +766,9 @@ _SPECIAL_QUERIES = {
     "hver er tilgangurinn": _MEANING_OF_LIFE,
     "hver er tilgangur lífsins": _MEANING_OF_LIFE,
     "hvað er tilgangur lífsins": _MEANING_OF_LIFE,
+    "hver er tilgangurinn með þessu lífi": _MEANING_OF_LIFE,
+    "hver er tilgangurinn með þessu jarðlífi": _MEANING_OF_LIFE,
+    "hver er tilgangurinn jarðlífsins": _MEANING_OF_LIFE,
     "hver er tilgangurinn með þessu öllu": _MEANING_OF_LIFE,
     "hver er ástæðan fyrir þessu öllu": _MEANING_OF_LIFE,
     "hvaða þýðingu hefur þetta allt": _MEANING_OF_LIFE,
@@ -770,6 +815,9 @@ _SPECIAL_QUERIES = {
     },
     "afhverju er ég til": {
         "answer": "Það er mjög góð spurning."
+    },
+    "hvenær mun ég deyja": {
+        "answer": "Vonandi ekki í bráð."
     },
 
     # Identity
@@ -947,6 +995,11 @@ _SPECIAL_QUERIES = {
     "hvað getur þú gert fyrir mig": _capabilities,
     "hvað geturðu gert fyrir mig": _capabilities,
 
+    "hvað skilur þú": _capabilities,
+    "hvað skilurðu": _capabilities,
+    "hvað annað skilur þú": _capabilities,
+    "hvað annað skilurðu": _capabilities,
+
     # Learning
     "geturðu lært": {
         "answer": "Ég læri bæði það sem forritararnir kenna mér, og með því að lesa fjölmiðla."
@@ -1044,6 +1097,8 @@ _SPECIAL_QUERIES = {
     "segðu mér einn brandara í viðbót": _random_joke,
     "geturðu sagt mér brandara": _random_joke,
     "getur þú sagt mér brandara": _random_joke,
+    "gætirðu sagt mér brandara": _random_joke,
+    "gætir þú sagt mér brandara": _random_joke,
     "veistu brandara": _random_joke,
     "veist þú brandara": _random_joke,
     "viltu segja mér brandara": _random_joke,
@@ -1069,6 +1124,32 @@ _SPECIAL_QUERIES = {
     "komdu með málshátt": _random_quotation,
     "segðu mér málshátt": _random_quotation,
     "komdu með skemmtilega tilvitnun": _random_quotation,
+
+    # Poetry
+    "komdu með ljóð": _poetry,
+    "gefðu mér ljóð": _poetry,
+    "flyttu fyrir mig ljóð": _poetry,
+    "flyttu ljóð": _poetry,
+    "kanntu kveðskap": _poetry,
+    "kannt þú kveðskap": _poetry,
+    "kanntu einhvern kveðskap": _poetry,
+    "kannt þú einhvern kveðskap": _poetry,
+    "farðu með kveðskap": _poetry,
+    "far þú með kveðskap": _poetry,
+    "farðu með ljóð": _poetry,
+    "far þú með ljóð": _poetry,
+    "farðu með ljóð fyrir mig": _poetry,
+    "far þú með ljóð fyrir mig": _poetry,
+    "kanntu ljóð": _poetry,
+    "kannt þú ljóð": _poetry,
+    "kanntu að fara með ljóð": _poetry,
+    "kannt þú að fara með ljóð": _poetry,
+    "kanntu að fara með einhver ljóð": _poetry,
+    "kannt þú að fara með einhver ljóð": _poetry,
+    "kanntu einhver ljóð": _poetry,
+    "kannt þú einhver ljóð": _poetry,
+    "kanntu eitthvað ljóð": _poetry,
+    "kannt þú eitthvað ljóð": _poetry,
 
     # Rudeness :)
     "þú sökkar": _rudeness,
@@ -1228,6 +1309,12 @@ _SPECIAL_QUERIES = {
     "stefnirðu á heimsyfirráð": _JUST_QA,
     "stefnir þú á heimsyfirráð": _JUST_QA,
     "ætlarðu að taka yfir heiminn": _JUST_QA,
+    "lestu bækur": {
+        "answer": "Nei, en ég les hins vegar íslenska vefmiðla."
+    },
+    "lest þú bækur": {
+        "answer": "Nei, en ég les hins vegar íslenska vefmiðla."
+    },
 
     # Cheating, I know. But I'm never in the news and it just doesn't  
     # sit right with me that I should remain incognito :) - Sveinbjörn 04/10/2019

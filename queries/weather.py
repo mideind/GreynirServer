@@ -35,6 +35,7 @@
 # TODO: "HVAÐ er hitastigið á egilsstöðum?" "Hvað er mikill hiti úti?"
 # TODO: "Hvar er heitast á landinu?"
 # TODO: "Er gott veður úti?"
+# TODO: "Hvað er mikið frost?" "Hversu mikið frost er úti?"
 
 import re
 import logging

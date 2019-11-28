@@ -43,7 +43,7 @@ from datetime import datetime
 from flask import Flask, send_from_directory
 from flask_caching import Cache
 
-from werkzeug.contrib.fixers import ProxyFix
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 import reynir
 from reynir.bindb import BIN_Db
