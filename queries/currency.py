@@ -47,8 +47,10 @@ def help_text(lemma):
             "Hvert er gengu evru gagnvart dollara",
             "Hvað eru tíu þúsund krónur margar evrur",
             "Hvað er einn dollari margar krónur",
+            "Hvað eru sextán hundruð krónur mikið í evrum",
             "Hvert er gengi dönsku krónunnar",
-            "Hvert er gengi pundsins gagnvart krónunni"
+            "Hvert er gengi pundsins gagnvart krónunni",
+            "Hvað eru sex rúblur mikið"
         ))
     )
 

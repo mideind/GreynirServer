@@ -49,7 +49,9 @@ def help_text(lemma):
         random.choice((
             "Hvað eru fjögur fet margir metrar",
             "Hvað eru þrjú hundruð grömm margar únsur",
-            "hversu margir bollar eru í einum lítra",
+            "Hversu margir bollar eru í einum lítra",
+            "Hvað er hálf míla margir metrar",
+            "Hversu margar teskeiðar eru í einum desilítra",
         ))
     )
 
