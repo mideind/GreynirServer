@@ -57,6 +57,9 @@ QRandomHeadsOrTails →
 QRandomDiceRoll →
     "kastaðu" QRandomDiceSides? QRandomDie QRandomForMe?
     | "kastaðu" QRandomForMe? QRandomDiceSides? QRandomDie
+    | "kasta" QRandomDiceSides? QRandomDie
+    | "geturðu" "kastað" QRandomDiceSides? QRandomDie QRandomForMe?
+    | "geturðu" "kastað" QRandomForMe? QRandomDiceSides? QRandomDie
 
 QRandomForMe →
     "fyrir" "mig"

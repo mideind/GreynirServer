@@ -175,4 +175,4 @@ def sentence(state, result):
         q.set_expires(datetime.utcnow() + timedelta(hours=24))
 
     else:
-        state["query"].set_error("E_QUERY_NOT_UNDERSTOOD")
+        q.set_error("E_QUERY_NOT_UNDERSTOOD")
