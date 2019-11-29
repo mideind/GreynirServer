@@ -36,7 +36,7 @@
 
 @font-face {
    font-family: 'Glyphicons Regular';
-   src:  url('/static/fonts/glyphicons-regular.woff2') format('woff2'), 
+   src:  url('/static/fonts/glyphicons-regular.woff2') format('woff2'),
          url('/static/fonts/glyphicons-regular.woff') format('woff'),
          url('/static/fonts/glyphicons-regular.ttf') format('truetype')
 }
@@ -627,12 +627,12 @@ span.imgreport {
 span.imgreport a {
    color: white !important;
    text-decoration: none;
-   text-shadow: 
-   #000 0px 0px 2px,   
-   #000 0px 0px 2px,   
+   text-shadow:
    #000 0px 0px 2px,
-   #000 0px 0px 2px,   
-   #000 0px 0px 2px,   
+   #000 0px 0px 2px,
+   #000 0px 0px 2px,
+   #000 0px 0px 2px,
+   #000 0px 0px 2px,
    #000 0px 0px 2px;
 }
 
@@ -640,7 +640,8 @@ span.imgreport a:hover {
    text-decoration: none;
 }
 
-div#info {
+div#info,
+div#info-trnsl {
    visibility: hidden;
    position: absolute;
    background-color: #eeeeee;
@@ -654,6 +655,11 @@ div#info {
    padding-bottom: 6px;
    padding-left: 12px;
    padding-right: 12px;
+}
+
+div#info-trnsl
+{
+   margin-top: 4px;
 }
 
 div#info.kk,
@@ -936,8 +942,8 @@ div.result i.p:hover {
 
 div.result i.person:hover {
    /* Special case for person: just make background darker */
-   border-color: #337ab7; 
-   background-color: #337ab7; 
+   border-color: #337ab7;
+   background-color: #337ab7;
 }
 
 div.result i.entity:hover {
@@ -1462,10 +1468,10 @@ div#treegrid table {
      -khtml-user-select: none;
        -moz-user-select: none;
         -ms-user-select: none;
-            user-select: none;       
+            user-select: none;
 }
 
-/* Styling for bootstrap tooltips */ 
+/* Styling for bootstrap tooltips */
 
 .tooltip .tooltip-inner {
    font-size: 1.2em;
@@ -1499,7 +1505,7 @@ div.minheight {
 
 /* Location maps */
 
-div#icemap, div#worldmap { 
+div#icemap, div#worldmap {
    height: 470px;
    width: 100%;
 }

@@ -5,7 +5,7 @@
 
    Common.js
 
-   JS utility functions for token display, formatting, etc. shared by 
+   JS utility functions for token display, formatting, etc. shared by
    the Greynir front-end.
 
    Copyright (C) 2019 Miðeind ehf.
@@ -271,6 +271,37 @@ function serverQuery(requestUrl, jsonData, successFunc, completeFunc, errorFunc)
    });
 }
 
+function serverJsonQuery(requestUrl, jsonData, successFunc, completeFunc, errorFunc) {
+    /* Wraps a simple, standard Ajax request to the server */
+    $.ajax({
+        // The URL for the request
+        url: requestUrl,
+
+        // The data to send
+        data: JSON.stringify(jsonData),
+
+        // Whether this is a POST or GET request
+        type: "POST",
+
+        // The type of data we expect back
+        dataType : "json",
+        contentType : "application/json; charset=utf-8",
+
+        cache: false,
+
+        // Code to run if the request succeeds;
+        // the response is passed to the function
+        success: (!successFunc) ? nullFunc : successFunc,
+
+        // Code to run if the request fails; the raw request and
+        // status codes are passed to the function
+        error: (!errorFunc) ? errFunc : errorFunc,
+
+        // code to run regardless of success or failure
+        complete: (!completeFunc) ? nullCompleteFunc : completeFunc
+    });
+}
+
 function serverPost(url, parameters, new_window) {
    /* Post to the provided URL with the specified parameters */
    var form = $('<form method="post"></form>');
@@ -365,11 +396,11 @@ var currencyCache = undefined;
 
 function getCurrencyValue(currCode, completionHandler) {
    // Get the value of a foreign currency (e.g. USD) in ISK
-   // Fetches Landsbankinn exchange rates and stores in cache 
+   // Fetches Landsbankinn exchange rates and stores in cache
    if (currencyCache === undefined) {
       currencyCache = { "ISK": 1 };
       $.ajax({
-         url: 'https://apis.is/currency/lb', 
+         url: 'https://apis.is/currency/lb',
          type: 'GET',
          dataType: 'json',
          success: function(response) {
