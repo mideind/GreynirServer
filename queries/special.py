@@ -130,13 +130,13 @@ def _random_quotation(qs, q):
 
 def _poetry(qs, q):
     return {
-        "answer": "Það mælti mín móðir, "
-                  "að mér skyldu kaupa, "
-                  "fley og fagrar árar, "
-                  "fara á brott með víkingum, "
-                  "standa uppi í stafni, "
-                  "stýra dýrum knerri, "
-                  "halda svo til hafnar, "
+        "answer": "Það mælti mín móðir, \n"
+                  "að mér skyldu kaupa, \n"
+                  "fley og fagrar árar, \n"
+                  "fara á brott með víkingum, \n"
+                  "standa uppi í stafni, \n"
+                  "stýra dýrum knerri, \n"
+                  "halda svo til hafnar, \n"
                   "höggva mann og annan."
     }
 
@@ -455,6 +455,10 @@ _SPECIAL_QUERIES = {
     "skilur þú íslensku": _LANGUAGES,
     "kannt þú ensku": _LANGUAGES,
     "kanntu ensku": _LANGUAGES,
+    "skilurðu ensku": _LANGUAGES,
+    "skilur þú ensku": _LANGUAGES,
+    "talarðu ensku": _LANGUAGES,
+    "talar þú ensku": _LANGUAGES,
     "kanntu önnur tungumál en íslensku": _LANGUAGES,
     "talarðu önnur tungumál en íslensku": _LANGUAGES,
     "talar þú önnur tungumál en íslensku": _LANGUAGES,
@@ -677,6 +681,8 @@ _SPECIAL_QUERIES = {
     "af hverju ertu svona leiðinleg": _sorry,
     "af hverju ertu svona vitlaus": _sorry,
     "af hverju ertu svona heimsk": _sorry,
+    "þetta er lélegur brandari": _sorry,
+    "þetta var lélegur brandari": _sorry,
 
     # Greetings
     "hey embla": { "answer": "Sæll, kæri notandi.", "is_question": False },

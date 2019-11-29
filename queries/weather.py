@@ -128,7 +128,7 @@ QWeatherIsWill →
     "er" | "verður"
 
 QWeatherWhatIs →
-    "hver" "er"
+    "hver" "er" | "hvað" "er"
 
 QWeatherHowIs →
     "hvernig" "er"
@@ -179,6 +179,7 @@ QWeatherNextDays →
     | "í" "vikunni"
     | "á" "morgun"
     | "í" "fyrramálið"
+    | "fyrir" "morgundaginn"
 
 QWeatherCountry →
     "á" "landinu" | "á" "íslandi" | "hér" "á" "landi" | "á" "landsvísu"
