@@ -51,7 +51,7 @@ _DEFAULT_AUDIO_FORMAT = "mp3"
 _AUDIO_FORMATS = frozenset(("mp3", "ogg_vorbis", "pcm"))
 
 # Text formats
-_DEFAULT_TEXT_FORMAT = "text"
+_DEFAULT_TEXT_FORMAT = "ssml"
 _TEXT_FORMATS = frozenset(("text", "ssml"))
 
 _AWS_URL_TTL = 900  # 15 mins in seconds
@@ -84,13 +84,20 @@ _CACHE_MAXITEMS = 30
 
 
 @cachetools.cached(cachetools.TTLCache(_CACHE_MAXITEMS, _CACHE_TTL))
-def get_synthesized_text_url(text, txt_format="text", voice_id=_DEFAULT_VOICE):
+def get_synthesized_text_url(text, txt_format=_DEFAULT_TEXT_FORMAT, voice_id=_DEFAULT_VOICE):
     """ Returns AWS URL to audio file with speech-synthesised text """
 
     assert txt_format in _TEXT_FORMATS
 
     if voice_id not in _VOICES:
         voice_id = _DEFAULT_VOICE
+
+    # Wrap text in <speak> tag if using SSML
+    if txt_format == "ssml":
+        if not text.startswith("<speak>"):
+            text = "<speak>" + text
+        if not text.endswith("</speak>"):
+            text = text + "</speak>"
 
     client = _intialize_client()  # Set up client lazily
     if not client:
@@ -109,7 +116,7 @@ def get_synthesized_text_url(text, txt_format="text", voice_id=_DEFAULT_VOICE):
         # The default value is "22050".
         # "SampleRate": "",
         # "text" or "ssml"
-        "TextType": "text",
+        "TextType": txt_format,
         # Only required for bilingual voices
         # "LanguageCode": "is-IS"
     }
