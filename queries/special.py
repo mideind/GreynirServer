@@ -357,9 +357,10 @@ _SPECIAL_QUERIES = {
     "hver er ég": {
         "answer": "Þú ert væntanlega manneskja sem talar íslensku. Meira veit ég ekki."
     },
-    "hvað er ég": {
-        "answer": "Þú ert væntanlega manneskja sem talar íslensku. Meira veit ég ekki."
-    },
+    # 'hvað er ég' is now answered as 'hvar er ég' in the location module
+    # "hvað er ég": {
+    #     "answer": "Þú ert væntanlega manneskja sem talar íslensku. Meira veit ég ekki."
+    # },
     "hvað heiti ég": {
         "answer": "Það veit ég ekki, kæri notandi."
     },

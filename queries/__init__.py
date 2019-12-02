@@ -50,13 +50,14 @@ def natlang_seq(words):
 def nom2dat(w):
     """ Look up dative form of a noun in BÍN, try
         lowercase if capitalized form is not found. """
+
+    def sort_by_preference(m_list):
+        """ Discourage rarer declension forms, i.e. ÞGF2 and ÞGF3 """
+        return sorted(m_list, key=lambda m: "2" in m.beyging or "3" in m.beyging)
+
     if w:
-        b = BIN_Db()
-        bin_res = b.lookup_dative(w, cat="no")
-        if not bin_res and not w.islower():
-            bin_res = b.lookup_dative(w.lower(), cat="no")
-        if bin_res:
-            return bin_res[0].ordmynd
+        with BIN_Db().get_db() as db:
+            return db.cast_to_dative(w, meaning_filter_func=sort_by_preference)
     return w
 
 

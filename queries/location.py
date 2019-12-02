@@ -116,6 +116,12 @@ def street_desc(street_nom, street_num, locality_nom):
     return street_comp
 
 
+def locality_desc(locality_nom):
+    """ Return an appropriate preposition plus a locality name in dative case """
+    locality_dat = nom2dat(locality_nom)
+    return iceprep_for_placename(locality_nom) + " " + locality_dat
+
+
 def _addr4voice(addr):
     """ Prepare an address string for voice synthesizer. """
     # E.g. "Fiskislóð 5-9" becomes "Fiskislóð 5 til 9"
@@ -156,7 +162,7 @@ def answer_for_location(loc):
             descr = street_desc(street, num, locality)
         # We at least have a locality (e.g. "Reykjavík")
         elif locality:
-            descr = iceprep_for_placename(locality) + " " + locality
+            descr = locality_desc(locality)
         # Only country
         else:
             descr = country_desc("IS")
@@ -187,6 +193,7 @@ def answer_for_location(loc):
 _WHERE_AM_I_QUERIES = frozenset(
     (
         "hvar er ég",
+        "hvað er ég",  # Too commonly misrecognized by the ASR
         "hvar er ég núna",
         "hvar er ég nú",
         "hvar er ég í heiminum",
@@ -252,6 +259,9 @@ def handle_plain_text(q):
         # the location associated with the query
         answ = gen_answer("Ég veit ekki hvar þú ert.")
 
+    # Hack since we recognize 'hvað er ég' as 'hvar er ég'
+    if ql == "hvað er ég":
+        q.set_beautified_query("Hvar er ég?")
     q.set_qtype(_LOC_QTYPE)
     q.set_key("CurrentPosition")
     q.set_answer(*answ)
