@@ -459,6 +459,12 @@ _SPECIAL_QUERIES = {
     "skilur þú ensku": _LANGUAGES,
     "talarðu ensku": _LANGUAGES,
     "talar þú ensku": _LANGUAGES,
+    "talarðu fleiri tungumál": _LANGUAGES,
+    "talar þú fleiri tungumál": _LANGUAGES,
+    "kanntu önnur tungumál": _LANGUAGES,
+    "kannt þú önnur tungumál": _LANGUAGES,
+    "skilurðu önnur tungumál": _LANGUAGES,
+    "skilur þú önnur tungumál": _LANGUAGES,
     "kanntu önnur tungumál en íslensku": _LANGUAGES,
     "talarðu önnur tungumál en íslensku": _LANGUAGES,
     "talar þú önnur tungumál en íslensku": _LANGUAGES,
@@ -703,6 +709,7 @@ _SPECIAL_QUERIES = {
     
     # Thanks
     "takk": _thanks,
+    "takk elskan": _thanks,
     "takk fyrir": _thanks,
     "takk fyrir mig": _thanks,
     "takk fyrir hjálpina": _thanks,
@@ -732,6 +739,10 @@ _SPECIAL_QUERIES = {
     "þetta er flott hjá þér": _thanks,
     "þetta var flott": _thanks,
     "þetta var flott hjá þér": _thanks,
+    "þú ert fyndin": _thanks,
+    "þú ert svo fyndin": _thanks,
+    "þú ert ágæt": _thanks,
+    "þú ert alveg ágæt": _thanks,
 
     # Praise & positive feedback
     "þetta virkaði": _GOOD_TO_HEAR,
@@ -1193,6 +1204,8 @@ _SPECIAL_QUERIES = {
     "hoppaðu upp í rassgatið á þér":  _rudeness,
     "ertu vitlaus": _rudeness,
     "ert þú vitlaus": _rudeness,
+    "ertu heimsk": _rudeness,
+    "ert þú heimsk": _rudeness,
 
     # Internal & emotional state
     "ertu í góðu skapi": {
