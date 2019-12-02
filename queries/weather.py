@@ -141,15 +141,25 @@ QWeatherWhatAre →
 
 QWeatherTemperature →
     "hvert" "er" "hitastigið" QWeatherAnyLoc? QWeatherNow?
+    | "hvað" "er" "hitastigið" QWeatherAnyLoc? QWeatherNow?
     | "hversu" "heitt" "er" QWeatherAnyLoc? QWeatherNow?
     | "hvað" "er" "heitt" QWeatherAnyLoc? QWeatherNow?
     | "hvaða" "hitastig" "er" QWeatherAnyLoc? QWeatherNow
     | "hversu" "hlýtt" "er" QWeatherAnyLoc? QWeatherNow?
     | "hversu" "heitt" "er" QWeatherAnyLoc? QWeatherNow?
     | "hversu" "kalt" "er" QWeatherAnyLoc? QWeatherNow?
+    | "hversu" "mikið" "frost" "er" QWeatherAnyLoc? QWeatherNow?
     | "hvað" "er" "kalt" QWeatherAnyLoc? QWeatherNow
     | "hvað" "er" "hlýtt" QWeatherAnyLoc? QWeatherNow
     | "hvað" "er" "margra" "stiga" "hiti" QWeatherAnyLoc? QWeatherNow?
+    | "hvað" "er" "mikið" "frost" QWeatherAnyLoc? QWeatherNow?
+    | "hvað" "er" "margra" "stiga" "hiti" QWeatherAnyLoc? QWeatherNow?
+    | "hvað" "er" "margra" "stiga" "frost" QWeatherAnyLoc? QWeatherNow?
+    | "hversu" "margra" "stiga" "hiti" "er" QWeatherAnyLoc? QWeatherNow?
+    | "hversu" "margra" "stiga" "frost" "er" QWeatherAnyLoc? QWeatherNow?
+    | "hve" "margra" "stiga" "hiti" "er" QWeatherAnyLoc? QWeatherNow?
+    | "hve" "margra" "stiga" "frost" "er" QWeatherAnyLoc? QWeatherNow?
+
 
 QWeatherUmbrella →
     "þarf" QWeatherOne "regnhlíf" QWeatherNow
