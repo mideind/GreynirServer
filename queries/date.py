@@ -52,6 +52,7 @@
 # TODO: "hvenær koma jólin"
 # TODO: "hvað eru margir dagar í árinu"
 # TODO: "hvítasunnan", "hvítasunnuhelgin"
+# TODO: "hvenær koma jólin"
 
 import json
 import re

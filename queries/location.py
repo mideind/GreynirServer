@@ -207,6 +207,10 @@ _WHERE_AM_I_QUERIES = frozenset(
         "hvar er ég staddur á landinu",
         "hvar er ég stödd",
         "hvar er ég stödd á landinu",
+        "hvar er ég staðsettur",
+        "hvar er ég staðsett"
+        "hvar er ég staðsettur í heiminum",
+        "hvar er ég staðsett í heiminum",
         "veistu hvar ég er staddur",
         "veistu hvar ég er stödd",
         "veistu hvar ég er staddur núna",
