@@ -37,10 +37,32 @@ from settings import Settings
 
 # Lemmas of keywords that could indicate that the user is trying to use this module
 TOPIC_LEMMAS = [
-    "kíló", "kílógramm", "gramm", "únsa", "tonn", "lítri", "rúmmetri", "desilítri",
-    "millilítri", "metri", "míla", "kílómetri", "sentimetri", "sentímetri", "millimetri",
-    "þumlungur", "tomma", "fet", "ferfet", "fermetri", "fersentimetri", "fersentímetri",
-    "hektari", "bolli", "matskeið", "teskeið",
+    "kíló",
+    "kílógramm",
+    "gramm",
+    "únsa",
+    "tonn",
+    "lítri",
+    "rúmmetri",
+    "desilítri",
+    "millilítri",
+    "metri",
+    "míla",
+    "kílómetri",
+    "sentimetri",
+    "sentímetri",
+    "millimetri",
+    "þumlungur",
+    "tomma",
+    "fet",
+    "ferfet",
+    "fermetri",
+    "fersentimetri",
+    "fersentímetri",
+    "hektari",
+    "bolli",
+    "matskeið",
+    "teskeið",
 ]
 
 
@@ -48,13 +70,15 @@ def help_text(lemma):
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
-        random.choice((
-            "Hvað eru fjögur fet margir metrar",
-            "Hvað eru þrjú hundruð grömm margar únsur",
-            "Hversu margir bollar eru í einum lítra",
-            "Hvað er hálf míla margir metrar",
-            "Hversu margar teskeiðar eru í einum desilítra",
-        ))
+        random.choice(
+            (
+                "Hvað eru fjögur fet margir metrar",
+                "Hvað eru þrjú hundruð grömm margar únsur",
+                "Hversu margir bollar eru í einum lítra",
+                "Hvað er hálf míla margir metrar",
+                "Hversu margar teskeiðar eru í einum desilítra",
+            )
+        )
     )
 
 
@@ -129,12 +153,12 @@ _UNITS = {
     "hektólítri": ("m³", 1.0e-1),
     "rúmmetri": ("m³", 1.0),
     "rúmsentímetri": ("m³", 1.0e-6),
-    "bolli": ("m³", 2.5e-4),        # More exactly 1 US cup is 2.36588e-4 m³
-    "matskeið": ("m³", 15.0e-6),    # Rounded to 15 ml
-    "teskeið": ("m³", 5.0e-6),      # Rounded to 5 ml
-    "tunna": ("m³", 160.0e-3),      # Rounded to 160 liters
-    "gallon": ("m³", 3.8e-3),       # Rounded
-    "gallón": ("m³", 3.8e-3),       # Rounded
+    "bolli": ("m³", 2.5e-4),  # More exactly 1 US cup is 2.36588e-4 m³
+    "matskeið": ("m³", 15.0e-6),  # Rounded to 15 ml
+    "teskeið": ("m³", 5.0e-6),  # Rounded to 5 ml
+    "tunna": ("m³", 160.0e-3),  # Rounded to 160 liters
+    "gallon": ("m³", 3.8e-3),  # Rounded
+    "gallón": ("m³", 3.8e-3),  # Rounded
 
     # Weight (standard unit is kg)
     "kíló": ("kg", 1.0),
@@ -175,13 +199,17 @@ _UNITS = {
     "ferþumlungur": ("m²", 2.54e-2 ** 2),
 
     # Time (standard unit is second)
+    "áratugur": ("sek.", 3600.0 * 24 * 365 * 10),
     "ár": ("sek.", 3600.0 * 24 * 365),
     "mánuður": ("sek.", 3600.0 * 24 * 30),
     "vika": ("sek.", 3600.0 * 24 * 7),
     "dagur": ("sek.", 3600.0 * 24),
+    "sólarhringur": ("sek.", 3600.0 * 24),
     "klukkustund": ("sek.", 3600.0),
     "mínúta": ("sek.", 60.0),
     "sekúnda": ("sek.", 1.0),
+    "sekúndubrot": ("sek.", 1.0 / 100),
+    "millisekúnda": ("sek.", 1.0 / 1000),
 }
 
 # Convert irregular unit forms to canonical ones
@@ -428,7 +456,10 @@ def _convert(quantity, unit_from, unit_to):
     # Round to three significant digits
     # Note that quantity cannot be negative
     return (
-        True, round(result, 2-int(floor(log10(result)))), u_to, quantity * factor_from
+        True,
+        round(result, 2 - int(floor(log10(result)))),
+        u_to,
+        quantity * factor_from,
     )
 
 
@@ -446,12 +477,8 @@ def sentence(state, result):
             val_from, result.unit_from, result.unit_to
         )
         if not valid:
-            answer = voice_answer = (
-                "Það er ekki hægt að umbreyta {0} í {1}."
-                .format(
-                    query.to_dative(result.unit_from),
-                    query.to_accusative(result.unit_to)
-                )
+            answer = voice_answer = "Það er ekki hægt að umbreyta {0} í {1}.".format(
+                query.to_dative(result.unit_from), query.to_accusative(result.unit_to)
             )
             response = dict(answer=answer)
         else:
@@ -471,17 +498,15 @@ def sentence(state, result):
                 verb = "er"
             unit_to = result.unit_to
             response = dict(answer=answer)
-            voice_answer = (
-                "{0} {1} {2}."
-                .format(result.desc, verb, answer)
-                .capitalize()
-            )
+            voice_answer = "{0} {1} {2}.".format(result.desc, verb, answer).capitalize()
             # Store the resulting quantity in the query context
             q.set_context(
                 {
                     "quantity": {
-                        "unit":unit_to, "value":val,
-                        "si_unit":si_unit, "si_value":si_quantity,
+                        "unit": unit_to,
+                        "value": val,
+                        "si_unit": si_unit,
+                        "si_value": si_quantity,
                     }
                 }
             )
