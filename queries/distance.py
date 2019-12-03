@@ -27,6 +27,7 @@
 # TODO: Handle travel time queries such as "Hvað er ég lengi að ganga til X?",
 #       or "Hvað er ég lengi að keyra í Y?"
 # TODO: "Hvað er langt á milli X og Y?"
+# TODO: "Hvað er langt til tunglsins"? "Hvað er langt til Mars?"
 
 import re
 import logging

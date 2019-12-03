@@ -128,6 +128,18 @@ def _random_quotation(qs, q):
     return { "answer": choice(_QUOTATIONS), "is_question": False }
 
 
+_RIDDLES = (
+    "Hvaða farartæki hefur bæði fætur og hjól?",
+    "Hvað er það sem getur gengið liggjandi?",
+    "Hvað hefur háls en ekkert höfuð?",
+    "Hver hefur hatt en ekkert höfuð, aðeins einn fót en engan skó?",
+)
+
+
+def _random_riddle(qs, q):
+    return { "answer": choice(_RIDDLES), "is_question": False }
+
+
 def _poetry(qs, q):
     return {
         "answer": "Það mælti mín móðir, \n"
@@ -351,6 +363,9 @@ _SPECIAL_QUERIES = {
     "hvaða bjór er bestur": {
         "answer": "Ég drekk reyndar ekki en einn skapari minn er hrifinn af Pilsner Urquell frá Tékklandi."
     },
+    "hvað er besti bjórinn": {
+        "answer": "Ég drekk reyndar ekki en einn skapari minn er hrifinn af Pilsner Urquell frá Tékklandi."
+    },
     "hvað er það": {
         "answer": "Hvað er hvað?"
     },
@@ -387,6 +402,9 @@ _SPECIAL_QUERIES = {
     },
     "hvernig lít ég út": {
         "answer": "Þú ert undurfagur, kæri notandi."
+    },
+    "hvað er í matinn": {
+        "answer": "Vonandi eitthvað gott."
     },
     "hjálpaðu mér": {
         "answer": "Hvernig get ég hjálpað?"
@@ -436,6 +454,9 @@ _SPECIAL_QUERIES = {
         "answer": "Miðeind er máltæknifyrirtækið sem skapaði mig."
     },
     "hvaða fyrirtæki skapaði þig": {
+        "answer": "Miðeind er máltæknifyrirtækið sem skapaði mig."
+    },
+    "hvaða fyrirtæki forritaði þig": {
         "answer": "Miðeind er máltæknifyrirtækið sem skapaði mig."
     },
 
@@ -590,6 +611,8 @@ _SPECIAL_QUERIES = {
     "er ég góður": _OF_COURSE,
     "er ég góð": _OF_COURSE,
     "er ég góð manneskja": _OF_COURSE,
+    "er ég bestur": _OF_COURSE,
+    "er ég best": _OF_COURSE,
 
     # Response to apologies
     "fyrirgefðu": _NO_PROBLEM,
@@ -653,6 +676,7 @@ _SPECIAL_QUERIES = {
     "þetta er rangt svar": _sorry,
     "þetta var rangt svar": _sorry,
     "þú gafst mér rangt svar": _sorry,
+    "þú ferð með ósannindi": _sorry,
     "þú fórst með ósannindi": _sorry,
     "þú gafst mér rangar upplýsingar": _sorry,
     "þú gafst mér vitlausar upplýsingar": _sorry,
@@ -693,6 +717,7 @@ _SPECIAL_QUERIES = {
     "af hverju ertu svona heimsk": _sorry,
     "þetta er lélegur brandari": _sorry,
     "þetta var lélegur brandari": _sorry,
+    "þessi brandari var lélegur": _sorry,
 
     # Greetings
     "hey embla": { "answer": "Sæll, kæri notandi.", "is_question": False },
@@ -733,6 +758,7 @@ _SPECIAL_QUERIES = {
     "þakka þér fyrir hjálpina": _thanks,
     "þakka þér fyrir svarið": _thanks,
     "þakka þér kærlega": _thanks,
+    "þakka þér kærlega fyrir": _thanks,
     "þakka þér kærlega fyrir aðstoðina": _thanks,
     "þakka þér kærlega fyrir hjálpina": _thanks,
     "þakka þér fyrir svarið": _thanks,
@@ -771,6 +797,7 @@ _SPECIAL_QUERIES = {
     "þú ert flott": _LIKEWISE,
     "þú ert æði": _LIKEWISE,
     "þú ert æðisleg": _LIKEWISE,
+    "þú ert rosaleg": _LIKEWISE,
     "þú ert geggjuð": _LIKEWISE,
     "þú ert svakaleg": _LIKEWISE,
     "þú ert rosaleg": _LIKEWISE,
@@ -780,6 +807,7 @@ _SPECIAL_QUERIES = {
     "takk fyrir spjallið": _LIKEWISE,
     "ég elska þig": _LIKEWISE,
     "ég er ástfanginn af þér": _LIKEWISE,
+    "ég fíla þig": _LIKEWISE,
 
     # Philosophy
     "hvað er svarið": _MEANING_OF_LIFE,
@@ -849,9 +877,11 @@ _SPECIAL_QUERIES = {
     "hvað heitirðu": _identity,
     "hvað heitirðu aftur": _identity,
     "hvað heitirðu eiginlega": _identity,
-    "hver ert þú": _identity,
+    "hvað heitirðu eiginlega full nafni": _identity,
     "hver ertu": _identity,
+    "hver ert þú": _identity,
     "hver ertu eiginlega": _identity,
+    "hver ert þú eiginlega": _identity,
     "hver er embla": _identity,
     "hvað er embla": _identity,
     "hvaða forrit er þetta": _identity,
@@ -893,6 +923,7 @@ _SPECIAL_QUERIES = {
     "af hverju hlaustu nafnið embla": _NAME_EXPL,
     "afhverju hlaust þú nafnið embla": _NAME_EXPL,
     "afhverju hlaustu nafnið embla": _NAME_EXPL,
+    "embla": _NAME_EXPL,
 
     # Favourite colour
     "hver er uppáhalds liturinn þinn": {
@@ -1048,6 +1079,12 @@ _SPECIAL_QUERIES = {
     "hvað ert þú að gera": {
         "answer": "Ég er að svara fyrirspurn frá þér, kæri notandi."
     },
+    "hvað gerirðu": {
+        "answer": "Ég svara fyrirspurnum frá þér, kæri notandi."
+    },
+    "hvað gerir þú": {
+        "answer": "Ég svara fyrirspurnum frá þér, kæri notandi."
+    },
 
     # Humor
     "ertu með kímnigáfu": {
@@ -1146,6 +1183,12 @@ _SPECIAL_QUERIES = {
     "segðu mér málshátt": _random_quotation,
     "komdu með skemmtilega tilvitnun": _random_quotation,
 
+    # Riddles
+    "segðu gátu": _random_riddle,
+    "segðu mér gátu": _random_riddle,
+    "komdu með gátu": _random_riddle,
+    "komdu með gátu fyrir mig": _random_riddle,
+
     # Poetry
     "komdu með ljóð": _poetry,
     "gefðu mér ljóð": _poetry,
@@ -1171,6 +1214,8 @@ _SPECIAL_QUERIES = {
     "kannt þú einhver ljóð": _poetry,
     "kanntu eitthvað ljóð": _poetry,
     "kannt þú eitthvað ljóð": _poetry,
+    "kanntu eitthvert ljóð": _poetry,
+    "kannt þú eitthvert ljóð": _poetry,
 
     # Rudeness :)
     "þú sökkar": _rudeness,

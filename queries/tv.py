@@ -25,6 +25,7 @@
 """
 
 # TODO: Support TV schedule queries for other stations than RÚV
+# TODO: Support radio schedules
 
 import logging
 import re
@@ -50,6 +51,7 @@ QTelevisionQuery →
     QTVWhatIsNom QTVEiginlega? QTVGoingOn? QTVOnTV QTVNow?
     | QTVWhatIsDative QTVEiginlega? QTVBeingShown QTVOnTV QTVNow?
     | "dagskrá" QTVBeingShown? QTVOnTV? 
+    | "dagskrá" QTVGoingOn? QTVOnTV? 
 
 QTVWhatIsNom →
     "hvað" "er" | "hvaða" "þáttur" "er" | "hvaða" "dagskrárliður" "er" | "hvaða" "efni" "er"
