@@ -43,6 +43,74 @@ from iceaddr import iceaddr_lookup
 from geo import iceprep_for_placename, iceprep_for_street
 
 
+_LOC_QTYPE = "Location"
+
+
+# This module wants to handle parse trees for queries
+HANDLE_TREE = True
+
+# The context-free grammar for the queries recognized by this plug-in module
+GRAMMAR = """
+
+Query →
+    QLocation
+
+QLocation → QLocationQuery '?'?
+
+QLocationQuery →
+    QLocationCurrentQuery | QLocationPostcode
+
+QLocationCurrentQuery →
+    "hvar" "er" "ég" QLocEiginlega? QLocLocated? QLocInTheWorld? QLocNow?
+    | "hvað" "er" "ég" QLocEiginlega? QLocLocated? QLocInTheWorld? QLocNow?
+    | "veistu" "hvar" "ég" "er" QLocEiginlega? QLocInTheWorld? QLocNow?
+    | "veist" "þú" "hvar" "ég" "er" QLocEiginlega? QLocInTheWorld? QLocNow?
+    | "hver" "er" "staðsetning" "mín" QLocEiginlega? QLocInTheWorld? QLocNow?
+    | "hver" "er" "staðsetningin" "mín" QLocEiginlega? QLocInTheWorld? QLocNow?
+    | "hvar" "erum" "við" QLocEiginlega? QLocLocatedFemAndPlural? QLocInTheWorld? QLocNow?
+    | "staðsetning" QLocInTheWorld? QLocNow?
+
+QLocationPostcode →
+    "í" "hvaða" "póstnúmeri" "er" "ég" QLocEiginlega? QLocLocated? QLocNow?
+    | "hvaða" "póstnúmeri" "er" "ég" QLocEiginlega? QLocLocated? "í" QLocNow?
+
+QLocEiginlega →
+    "eiginlega"
+
+QLocLocated →
+    "staddur" | "staðsettur" | "niðurkominn" | "niður" "komin" | QLocLocatedFemAndPlural
+
+QLocLocatedFemAndPlural →
+    "stödd" | "staðsett" | "niðurkomin" | "niður" "komin"
+
+QLocInTheWorld →
+    "í" "heiminum"
+    | "á" "hnettinum"
+    | "á" "jörðinni"
+    | "á" "landinu"
+    | "á" "Íslandi"
+
+QLocNow →
+    "nú"
+    | "nákvæmlega"? "núna"
+    | "nákvæmlega"? "eins" "og" "stendur"
+    | "sem" "stendur"
+    | "nákvæmlega"? "í" "augnablikinu"
+    | "nákvæmlega"? "á" "þessari" "stundu"
+
+$score(+35) QLocation
+
+"""
+
+
+def QLocationQuery(node, params, result):
+    result.qtype = _LOC_QTYPE
+
+
+def QLocationCurrentQuery(node, params, result):
+    result.qkey = "CurrentLocation"
+
+
 def _addrinfo_from_api_result(result):
     """ Extract relevant address components from Google API result """
 
@@ -183,91 +251,52 @@ def answer_for_location(loc):
         # Fall back on the formatted address string provided by Google
         descr = "á " + top.get("formatted_address")
 
-    response = dict(answer=descr)
-    voice = "Þú ert {0}".format(_addr4voice(descr))
     answer = descr[0].upper() + descr[1:]
+    response = dict(answer=answer)
+    voice = "Þú ert {0}".format(_addr4voice(descr))
 
     return response, answer, voice
 
 
-_WHERE_AM_I_QUERIES = frozenset(
-    (
-        "hvar er ég",
-        "hvað er ég",  # Too commonly misrecognized by the ASR
-        "hvar er ég núna",
-        "hvar er ég nú",
-        "hvar er ég í heiminum",
-        "hvar er ég staddur í heiminum",
-        "hvar er ég stödd í heiminum",
-        "hvar er ég staddur á hnettinum",
-        "hvar er ég stödd á hnettinum",
-        "hvar er ég eins og stendur",
-        "hvar er ég eiginlega",
-        "hvar er ég staddur",
-        "hvar er ég staddur á landinu",
-        "hvar er ég stödd",
-        "hvar er ég stödd á landinu",
-        "hvar er ég staðsettur",
-        "hvar er ég staðsett"
-        "hvar er ég staðsettur í heiminum",
-        "hvar er ég staðsett í heiminum",
-        "veistu hvar ég er staddur",
-        "veistu hvar ég er stödd",
-        "veistu hvar ég er staddur núna",
-        "veistu hvar ég er stödd núna",
-        "hver er staðsetning mín",
-        "hvar erum við",
-        "hvar erum við stödd",
-        "hvar er ég sem stendur",
-        "hvar er ég niðurkominn",
-        "hvar er ég niðurkomin",
-        "hvar erum við niðurkomin",
-        "hvar erum við sem stendur",
-        "staðsetning",
-    )
-)
+def sentence(state, result):
+    """ Called when sentence processing is complete """
+    q = state["query"]
+    if "qtype" in result and "qkey" in result:
+        # Successfully matched a query type
+        q.set_qtype(result.qtype)
+        q.set_key(result.qkey)
 
-# _POSTCODE_QUERIES = frozenset(
-#     (
-#         "í hvaða póstnúmeri er ég",
-#         "í hvaða póstnúmeri er ég staddur",
-#         "í hvaða póstnúmeri er ég stödd",
-#         "hvaða póstnúmeri er ég í",
-#         "hvaða póstnúmeri er ég staddur í",
-#         "hvaða póstnúmeri er ég stödd í",
-#     )
-# )
+        try:
+            answ = None
+            loc = q.location
+            if loc:
+                # Get info about this location
+                answ = answer_for_location(loc)
 
-_LOC_QTYPE = "Location"
+            if answ:
+                # For uniformity, store the returned location in the context
+                # !!! TBD: We might want to store an address here as well
+                q.set_context({"location": loc})
+            else:
+                # We either don't have a location or no info about
+                # the location associated with the query
+                answ = gen_answer("Ég veit ekki hvar þú ert.")
 
+            ql = q.query_lower
+            if ql.startswith("hvað er ég"):
+                bq = re.sub(
+                    r"^hvað er ég",
+                    "Hvar er ég",
+                    q.beautified_query(),
+                    flags=re.IGNORECASE,
+                )
+                q.set_beautified_query(bq)
 
-def handle_plain_text(q):
-    """ Handle a plain text query asking about user's current location. """
-    ql = q.query_lower.rstrip("?")
+            q.set_answer(*answ)
 
-    if ql not in _WHERE_AM_I_QUERIES:
-        return False
+        except Exception as e:
+            logging.warning("Exception while processing location query: {0}".format(e))
+            q.set_error("E_EXCEPTION: {0}".format(e))
 
-    answ = None
-    loc = q.location
-    if loc:
-        # Get info about this location
-        answ = answer_for_location(loc)
-
-    if answ:
-        # For uniformity, store the returned location in the context
-        # !!! TBD: We might want to store an address here as well
-        q.set_context({"location": loc})
     else:
-        # We either don't have a location or no info about
-        # the location associated with the query
-        answ = gen_answer("Ég veit ekki hvar þú ert.")
-
-    # Hack since we recognize 'hvað er ég' as 'hvar er ég'
-    if ql == "hvað er ég":
-        q.set_beautified_query("Hvar er ég?")
-    q.set_qtype(_LOC_QTYPE)
-    q.set_key("CurrentPosition")
-    q.set_answer(*answ)
-
-    return True
+        q.set_error("E_QUERY_NOT_UNDERSTOOD")

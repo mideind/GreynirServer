@@ -24,6 +24,8 @@
 
 """
 
+# TODO: Hvað eru margar klukkustundir í ári? Hvað eru margar sekúndur í mínútu? etc.
+
 import re
 import random
 from math import floor, log10
