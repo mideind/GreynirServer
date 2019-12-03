@@ -49,6 +49,7 @@ QTelevision → QTelevisionQuery '?'?
 QTelevisionQuery →
     QTVWhatIsNom QTVEiginlega? QTVGoingOn? QTVOnTV QTVNow?
     | QTVWhatIsDative QTVEiginlega? QTVBeingShown QTVOnTV QTVNow?
+    | "dagskrá" QTVBeingShown? QTVOnTV? 
 
 QTVWhatIsNom →
     "hvað" "er" | "hvaða" "þáttur" "er" | "hvaða" "dagskrárliður" "er" | "hvaða" "efni" "er"
@@ -57,7 +58,7 @@ QTVWhatIsDative →
     "hvað" "er" | "hvaða" "þátt" "er" | "hvaða" "dagskrárlið" "er" | "hvaða" "efni" "er"
 
 QTVOnTV →
-    "í" "sjónvarpinu" | "á" "rúv" | "í" "ríkissjónvarpinu" | "á" "stöð" "eitt"
+    "í" "sjónvarpinu" | "á" "rúv" | "í" "ríkissjónvarpinu" | "á" "stöð" "eitt" | "rúv"
 
 QTVNow →
     "nákvæmlega"? "núna" | "eins" "og" "stendur" | "í" "augnablikinu"
