@@ -39,7 +39,7 @@ from queries import (
     nom2dat,
     numbers_to_neutral,
 )
-from iceaddr import iceaddr_lookup
+from iceaddr import iceaddr_lookup, postcodes
 from geo import iceprep_for_placename, iceprep_for_street
 
 
@@ -73,6 +73,8 @@ QLocationCurrentQuery →
 QLocationPostcode →
     "í" "hvaða" "póstnúmeri" "er" "ég" QLocEiginlega? QLocLocated? QLocNow?
     | "hvaða" "póstnúmeri" "er" "ég" QLocEiginlega? QLocLocated? "í" QLocNow?
+    | "í" "hvaða" "póstnúmeri" "erum" "við" QLocEiginlega? QLocLocated? QLocNow?
+    | "hvaða" "póstnúmeri" "erum" "við" QLocEiginlega? QLocLocated? "í" QLocNow?
 
 QLocEiginlega →
     "eiginlega"
@@ -283,8 +285,12 @@ def answer_for_postcode(loc):
     # Extract address info from top result
     (street, num, locality, postcode, country_code) = _addrinfo_from_api_result(top)
 
-    if country_code:
-        return gen_answer(postcode)
+    if country_code == "IS" and postcode:
+        pc = postcodes.get(int(postcode))
+        pd = "{0} {1}".format(postcode, pc["stadur_nf"])
+        (response, answer, voice) = gen_answer(pd)
+        voice = "Þú ert í {0}".format(pd)
+        return response, answer, voice
     else:
         return gen_answer("Ég veit ekki í hvaða póstnúmeri þú ert.")
 
@@ -320,7 +326,7 @@ def sentence(state, result):
                 bq = re.sub(
                     r"^hvað er ég",
                     "Hvar er ég",
-                    q.beautified_query(),
+                    q.beautified_query,
                     flags=re.IGNORECASE,
                 )
                 q.set_beautified_query(bq)
@@ -330,6 +336,6 @@ def sentence(state, result):
         except Exception as e:
             logging.warning("Exception while processing location query: {0}".format(e))
             q.set_error("E_EXCEPTION: {0}".format(e))
-
+            raise
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
