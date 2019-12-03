@@ -23,6 +23,11 @@
 
 """
 
+import logging
+from datetime import datetime, timedelta
+
+from queries import parse_num
+
 
 _COUNTING_QTYPE = "Counting"
 
@@ -39,21 +44,25 @@ Query →
 QCounting → QCountingQuery '?'? 
 
 QCountingQuery →
-    QCountingUp | QCountingDown
+    QCountingUp | QCountingDown | QCountingBetween
 
 QCountingUp →
-    "teldu" QCountingSpeed? "upp" "að" QCountingNumber
-    | "teldu" QCountingSpeed? "upp" "í" QCountingNumber
+    "teldu" QCountingSpeed? "upp" "að" QCountingFirstNumber
+    | "teldu" QCountingSpeed? "upp" "í" QCountingFirstNumber
 
 QCountingDown →
-    "teldu" QCountingSpeed? "niður" "frá" QCountingNumber
+    "teldu" QCountingSpeed? "niður" "frá" QCountingFirstNumber
 
 QCountingBetween →
-    "teldu" QCountingSpeed? "frá" QCountingNumber "upp"? "til" QCountingNumber
-    | "teldu" QCountingSpeed? "frá" QCountingNumber "upp" "í" QCountingNumber
-    | "teldu" QCountingSpeed? "frá" QCountingNumber "upp" "að" QCountingNumber
+    "teldu" QCountingSpeed? "frá" QCountingFirstNumber "upp"? "til" QCountingSecondNumber
+    | "teldu" QCountingSpeed? "frá" QCountingFirstNumber "upp"? "í" QCountingSecondNumber
+    | "teldu" QCountingSpeed? "frá" QCountingFirstNumber "upp"? "að" QCountingSecondNumber
+    | "teldu" QCountingSpeed? "niður" "frá" QCountingFirstNumber "til" QCountingSecondNumber
 
-QCountingNumber →
+QCountingFirstNumber →
+    to | töl | tala
+
+QCountingSecondNumber →
     to | töl | tala
 
 QCountingSpeed →
@@ -79,10 +88,35 @@ def QCountingDown(node, params, result):
 
 def QCountingBetween(node, params, result):
     result.qkey = "CountBetween"
-  
 
-def _gen_count(q):
-    pass
+
+def QCountingFirstNumber(node, params, result):
+    result.first_num = int(parse_num(node, result._canonical))
+
+
+def QCountingSecondNumber(node, params, result):
+    result.second_num = int(parse_num(node, result._canonical))
+
+
+def _gen_count(q, result):
+    num_range = None
+    if result.qkey == "CountUp":
+        num_range = list(range(1, result.first_num+1))
+    elif result.qkey == "CountDown":
+        num_range = list(range(0, result.first_num))
+    else:
+        num_range = list(range(result.first_num, result.second_num))
+
+    print(num_range)
+
+    answ = "{0}…{1}".format(num_range[0], num_range[-1])
+    response = dict(answer=answ)
+    voice = ""
+    for n in num_range:
+        delay = 0.5
+        voice += "{0} <break time=\"{1}s\"/>".format(n, delay)
+
+    return response, answ, voice
 
 
 def sentence(state, result):
@@ -94,7 +128,7 @@ def sentence(state, result):
         q.set_key(result.qkey)
 
         try:
-            r = _gen_count(q)
+            r = _gen_count(q, result)
             q.set_answer(*r)
             q.set_expires(datetime.utcnow() + timedelta(hours=24))
         except Exception as e:

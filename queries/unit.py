@@ -31,7 +31,7 @@ import random
 from math import floor, log10
 
 import query
-from queries import format_icelandic_float
+from queries import format_icelandic_float, parse_num
 from settings import Settings
 
 
@@ -84,65 +84,6 @@ def help_text(lemma):
 
 _UNIT_QTYPE = "Unit"
 
-
-# The following needs to include at least nominative
-# and dative forms of number words
-_NUMBER_WORDS = {
-    "núll": 0,
-    "hálfur": 0.5,
-    "hálfum": 0.5,
-    "hálf": 0.5,
-    "hálfri": 0.5,
-    "hálft": 0.5,
-    "hálfu": 0.5,
-    "einn": 1,
-    "einum": 1,
-    "ein": 1,
-    "einni": 1,
-    "eitt": 1,
-    "einu": 1,
-    "tveir": 2,
-    "tveim": 2,
-    "tveimur": 2,
-    "tvær": 2,
-    "tvö": 2,
-    "þrír": 3,
-    "þrem": 3,
-    "þremur": 3,
-    "þrjár": 3,
-    "þrjú": 3,
-    "fjórir": 4,
-    "fjórum": 4,
-    "fjórar": 4,
-    "fjögur": 4,
-    "fimm": 5,
-    "sex": 6,
-    "sjö": 7,
-    "átta": 8,
-    "níu": 9,
-    "tíu": 10,
-    "ellefu": 11,
-    "tólf": 12,
-    "þrettán": 13,
-    "fjórtán": 14,
-    "fimmtán": 15,
-    "sextán": 16,
-    "sautján": 17,
-    "átján": 18,
-    "nítján": 19,
-    "tuttugu": 20,
-    "þrjátíu": 30,
-    "fjörutíu": 40,
-    "fimmtíu": 50,
-    "sextíu": 60,
-    "sjötíu": 70,
-    "áttatíu": 80,
-    "níutíu": 90,
-    "hundrað": 100,
-    "þúsund": 1000,
-    "milljón": 1e6,
-    "milljarður": 1e9,
-}
 
 _UNITS = {
     # Volume (standard unit is m³)
@@ -219,6 +160,12 @@ _CONVERT_UNITS = {
     "bolla": "bolli",
     "bollar": "bolli",
     "bollum": "bolli",
+    "dag": "dagur",
+    "daga": "dagur",
+    "degi": "dagur",
+    "dags": "dagur",
+    "dagar": "dagur",
+    "dögum": "dagur",
     "mílu": "míla",
     "sentimetri": "sentímetri",
     "desimetri": "desímetri",
@@ -226,9 +173,6 @@ _CONVERT_UNITS = {
     "desilítri": "desílítri",
     "sentilítri": "sentílítri",
     "rúmsentimetri": "rúmsentímetri",
-    "dag": "dagur",
-    "degi": "dagur",
-    "dags": "dagur",
 }
 
 # Indicate that this module wants to handle parse trees for queries,
@@ -381,34 +325,6 @@ QUnit_kvk/fall →
     | 'vika:kvk'/fall
 
 """
-
-
-def parse_num(node, num_str):
-    """ Parse Icelandic number string to float or int """
-    # If we have a number token as a direct child,
-    # return its numeric value directly
-    num = node.child.contained_number
-    if num is not None:
-        return float(num)
-    try:
-        # Handle numbers with Icelandic decimal places ("17,2")
-        # and potentially thousands separators as well
-        num_str = num_str.replace(".", "")
-        if re.search(r"^\d+,\d+", num_str):
-            num = float(num_str.replace(",", "."))
-        # Handle digits ("17")
-        else:
-            num = float(num_str)
-    except ValueError:
-        # Handle number words ("sautján")
-        num = _NUMBER_WORDS.get(num_str)
-        if num is not None:
-            num = float(num)
-    except Exception as e:
-        if Settings.DEBUG:
-            print("Unexpected exception: {0}".format(e))
-        raise
-    return num
 
 
 def QUnitConversion(node, params, result):
