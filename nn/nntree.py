@@ -422,7 +422,7 @@ def _json_terminal_node(tok, text="placeholder", token_index=None):
 def _json_nonterminal_node(tok):
     new_node = {
         KEY.nonterminal_tag: tok,
-        KEY.nonterminal_name: matcher._DEFAULT_ID_MAP[tok]["name"],
+        KEY.nonterminal_name: matcher._DEFAULT_ID_MAP[tok].get("name", "-"),
         KEY.kind: "NONTERMINAL",
         KEY.children: [],
     }
