@@ -58,15 +58,16 @@ Query →
 QLocation → QLocationQuery '?'?
 
 QLocationQuery →
-    QLocationCurrentQuery | QLocationPostcode
+    QLocationCurrent | QLocationPostcode
 
-QLocationCurrentQuery →
+QLocationCurrent →
     "hvar" "er" "ég" QLocEiginlega? QLocLocated? QLocInTheWorld? QLocNow?
     | "hvað" "er" "ég" QLocEiginlega? QLocLocated? QLocInTheWorld? QLocNow?
     | "veistu" "hvar" "ég" "er" QLocEiginlega? QLocInTheWorld? QLocNow?
     | "veist" "þú" "hvar" "ég" "er" QLocEiginlega? QLocInTheWorld? QLocNow?
-    | "hver" "er" "staðsetning" "mín" QLocEiginlega? QLocInTheWorld? QLocNow?
-    | "hver" "er" "staðsetningin" "mín" QLocEiginlega? QLocInTheWorld? QLocNow?
+    | "hver" "er" "staðsetning" "mín"? QLocEiginlega? QLocInTheWorld? QLocNow?
+    # TODO: Share above
+    | "hver" "er" "staðsetningin" "mín"? QLocEiginlega? QLocInTheWorld? QLocNow?
     | "hvar" "erum" "við" QLocEiginlega? QLocLocatedFemAndPlural? QLocInTheWorld? QLocNow?
     | "staðsetning" QLocInTheWorld? QLocNow?
 
@@ -80,25 +81,27 @@ QLocEiginlega →
     "eiginlega"
 
 QLocLocated →
-    "staddur" | "staðsettur" | "niðurkominn" | "niður" "komin" | QLocLocatedFemAndPlural
+    "staddur" | "staðsettur" | "niðurkominn" | "niður" "kominn" | QLocLocatedFemAndPlural
 
 QLocLocatedFemAndPlural →
     "stödd" | "staðsett" | "niðurkomin" | "niður" "komin"
 
 QLocInTheWorld →
     "í" "heiminum"
+    | "í" "veröldinni"
     | "á" "hnettinum"
     | "á" "jörðinni"
     | "á" "landinu"
     | "á" "Íslandi"
+    | "á" "yfirborði" "jarðar"
+    | "á" "jarðkringlunni"
 
 QLocNow →
-    "nú"
-    | "nákvæmlega"? "núna"
-    | "nákvæmlega"? "eins" "og" "stendur"
-    | "sem" "stendur"
-    | "nákvæmlega"? "í" "augnablikinu"
-    | "nákvæmlega"? "á" "þessari" "stundu"
+    "nákvæmlega"? QLocNowGeneric
+
+QLocNowGeneric →
+    "nú" | "núna" | "eins" "og" "stendur" | "sem" "stendur"
+    | "í" "augnablikinu" | "á" "þessari" "stundu" | "hér" "og" "nú"
 
 $score(+35) QLocation
 
@@ -109,7 +112,7 @@ def QLocationQuery(node, params, result):
     result.qtype = _LOC_QTYPE
 
 
-def QLocationCurrentQuery(node, params, result):
+def QLocationCurrent(node, params, result):
     result.qkey = "CurrentLocation"
 
 
