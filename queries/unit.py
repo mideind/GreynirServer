@@ -24,7 +24,7 @@
 
 """
 
-# TODO: Hvað eru margar klukkustundir í ári? Hvað eru margar sekúndur í mínútu? etc.
+# TODO: Hvað eru margar sekúndur í einum degi
 
 import re
 import random
@@ -226,6 +226,9 @@ _CONVERT_UNITS = {
     "desilítri": "desílítri",
     "sentilítri": "sentílítri",
     "rúmsentimetri": "rúmsentímetri",
+    "dag": "dagur",
+    "degi": "dagur",
+    "dags": "dagur",
 }
 
 # Indicate that this module wants to handle parse trees for queries,
@@ -363,12 +366,16 @@ QUnit_kvk/fall →
 QUnit_kk/fall →
     'mánuður:kk'/fall
     | 'dagur:kk'/fall
+    | 'Dagur'/fall
+    | 'áratugur:kk'/fall
 
 QUnit_hk/fall →
     'ár:hk'/fall
+    | 'sekúndubrot:hk'/fall
 
 QUnit_kvk/fall →
-    'sekúnda:kvk'/fall
+    'millisekúnda:kvk'/fall
+    | 'sekúnda:kvk'/fall
     | 'mínúta:kvk'/fall
     | 'klukkustund:kvk'/fall
     | 'vika:kvk'/fall
