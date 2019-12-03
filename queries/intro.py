@@ -24,10 +24,10 @@
 
 """
 
-# TODO: Gender awareness ("Sæll, Jón", "Sæl, Gunna")
-
 import re
 from random import choice
+
+from reynir.bindb import BIN_Db
 
 
 _LOC_QTYPE = "Introduction"
@@ -35,7 +35,12 @@ _LOC_QTYPE = "Introduction"
 
 _MY_NAME_IS_REGEX = r"^ég heiti (.+)$"
 
-_RESPONSES = ("Gaman að kynnast þér, [X]. Ég heiti Embla.",)
+_RESPONSES = {
+    "hk": "Gaman að kynnast þér, {0}. Ég heiti Embla.",
+    "kk": "Sæll og blessaður, {0}. Ég heiti Embla.",
+    "kvk": "Sæl og blessuð, {0}. Ég heiti Embla.",
+}
+
 
 def handle_plain_text(q):
     ql = q.query_lower.rstrip("?")
@@ -44,14 +49,16 @@ def handle_plain_text(q):
     if not m:
         return False
 
-    name = m.group(1)
-    a = choice(_RESPONSES).replace("[X]", name.title())
+    name = m.group(1).strip()
+    if not name:
+        return False
 
-    response = dict(answer=a)
-    voice = a
-    answer = a
+    with BIN_Db.get_db() as bdb:
+        fn = name.split(" ")[0].title()
+        gender = bdb.lookup_name_gender(fn)
+        a = _RESPONSES[gender].format(fn)
 
-    q.set_answer(response, answer, voice)
-    #query.set_beautified_query(bq)
+    q.set_answer(dict(answer=a), a, a)
+    # query.set_beautified_query(bq)
 
     return True
