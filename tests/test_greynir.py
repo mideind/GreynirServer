@@ -87,7 +87,7 @@ def test_query_api(client):
         assert "qtype" in j
         return j
 
-    # Frivolous module
+    # Special module
     # Note: test=1 ensures that the query bypasses the cache
     resp = client.get("/query.api?test=1&voice=1&q=Hver er sætastur?")
     json = validate_json(resp)
@@ -158,6 +158,15 @@ def test_query_api(client):
     assert "voice" in json
     assert json["voice"].startswith("Klukkan er")
 
+    resp = client.get("/query.api?voice=1&q=Hvað er klukkan í Japan?")
+    json = validate_json(resp)
+    assert json["qtype"] == "Time"
+    assert json["key"] == "Asia/Tokyo"
+    assert "answer" in json
+    assert re.search(r"^\d\d:\d\d$", json["answer"])
+    assert "voice" in json
+    assert json["voice"].startswith("Klukkan í Japan er")
+
     # Date module
     resp = client.get("/query.api?q=Hver er dagsetningin?")
     json = validate_json(resp)
@@ -165,11 +174,13 @@ def test_query_api(client):
     assert "answer" in json
     assert json["answer"].endswith(datetime.now().strftime("%Y"))
 
-    resp = client.get("/query.api?q=Hvað eru margir dagar til jóla?")
+    resp = client.get("/query.api?voice=1&q=Hvað eru margir dagar til jóla?")
     json = validate_json(resp)
     assert json["qtype"] == "Date"
     assert "answer" in json
     assert re.search(r"^\d+", json["answer"])
+    assert "voice" in json
+    assert "dag" in json["voice"]
 
     # resp = client.get("/query.api?q=Hvað er langt fram að verslunarmannahelgi")
     # json = validate_json(resp)
@@ -232,6 +243,12 @@ def test_query_api(client):
     assert "answer" in json
     assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
 
+    resp = client.get("/query.api?q=hvað eru tíu þúsund krónur margir dollarar")
+    json = validate_json(resp)
+    assert json["qtype"] == "Currency"
+    assert "answer" in json
+    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
+
     # Unit module
     resp = client.get("/query.api?q=Hvað eru margir metrar í mílu?")
     json = validate_json(resp)
@@ -239,12 +256,24 @@ def test_query_api(client):
     assert "answer" in json
     assert json["answer"] == "1.610 metrar"
 
+    resp = client.get("/query.api?q=hvað eru margar sekúndur í tveimur dögum?")
+    json = validate_json(resp)
+    assert json["qtype"] == "Unit"
+    assert "answer" in json
+    assert json["answer"] == "173.000 sekúndur"
+
     # Weather module
     resp = client.get("/query.api?q=Hversu hlýtt er úti?")
     json = validate_json(resp)
     assert json["qtype"] == "Weather"
     assert "answer" in json
     assert re.search(r"^\-?\d+°$", json["answer"]) is not None
+
+    resp = client.get("/query.api?q=hver er veðurspáin fyrir morgundaginn")
+    json = validate_json(resp)
+    assert json["qtype"] == "Weather"
+    assert "answer" in json
+    assert len(json["answer"]) > 0 and "." in json["answer"]
 
     # Geography module
     resp = client.get("/query.api?q=Hver er höfuðborg Spánar?")
@@ -285,6 +314,12 @@ def test_query_api(client):
     assert int(json["answer"]) >= 1 and int(json["answer"]) <= 8
 
     resp = client.get("/query.api?q=fiskur eða skjaldarmerki")
+    json = validate_json(resp)
+    assert json["qtype"] == "Random"
+    assert "answer" in json
+    assert "fiskur" in json["answer"] or "skjaldarmerki" in json["answer"]
+
+    resp = client.get("/query.api?q=kastaðu peningi")
     json = validate_json(resp)
     assert json["qtype"] == "Random"
     assert "answer" in json
