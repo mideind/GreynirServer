@@ -173,6 +173,15 @@ _UNITS = {
     "hektari": ("m²", 100.0 ** 2),
     "fertomma": ("m²", 2.54e-2 ** 2),
     "ferþumlungur": ("m²", 2.54e-2 ** 2),
+
+    # Time (standard unit is second)
+    "ár": ("sek.", 3600.0 * 24 * 365),
+    "mánuður": ("sek.", 3600.0 * 24 * 30),
+    "vika": ("sek.", 3600.0 * 24 * 7),
+    "dagur": ("sek.", 3600.0 * 24),
+    "klukkustund": ("sek.", 3600.0),
+    "mínúta": ("sek.", 60.0),
+    "sekúnda": ("sek.", 1.0),
 }
 
 # Convert irregular unit forms to canonical ones
@@ -320,6 +329,21 @@ QUnit_hk/fall →
 QUnit_kvk/fall →
     'fermíla:kvk'/fall
     | 'fertomma:kvk'/fall
+
+# Time
+
+QUnit_kk/fall →
+    'mánuður:kk'/fall
+    | 'dagur:kk'/fall
+
+QUnit_hk/fall →
+    'ár:hk'/fall
+
+QUnit_kvk/fall →
+    'sekúnda:kvk'/fall
+    | 'mínúta:kvk'/fall
+    | 'klukkustund:kvk'/fall
+    | 'vika:kvk'/fall
 
 """
 
