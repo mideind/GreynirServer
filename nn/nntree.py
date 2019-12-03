@@ -3,7 +3,7 @@
 """
     Reynir: Natural language processing for Icelandic
 
-    Neural Network Utilities
+    Neural Network Parsing Utilities
 
     Copyright (C) 2018 Miðeind ehf
 
@@ -29,14 +29,68 @@
 from __future__ import print_function
 from enum import IntEnum
 import logging
+import inspect
 
 import tokenizer
-import grammar_consts
+from reynir import bintokenizer
 from reynir import matcher
-from parsing_subtokens import ParsingSubtokens, MISSING
 
 
-TOKENS = ParsingSubtokens()
+class GRAMMAR:
+    CASES = {"nf", "þf", "þgf", "ef"}
+    GENDERS = {"kk", "kvk", "hk"}
+    NUMBERS = {"et", "ft"}
+    PERSONS = {"p1", "p2", "p3"}
+
+    TENSE = {"þt", "nt"}
+    DEGREE = {"mst", "esb", "evb"}  # fst
+
+    VOICE = {"mm", "gm"}
+    MOOD = {"fh", "lhþt", "lhnt", "vh", "bh"}
+
+    MISC = {"sagnb", "subj", "abbrev", "op", "none"}
+
+
+class KEY:
+    long_terminal = "a"
+    bin_variants = "b"
+    bin_category = "c"
+    bin_fl = "f"
+    nonterminal_tag = "i"  # nonterminal
+    token_index = "ix"
+    kind = "k"  # token or nonterminal kind
+    nonterminal_name = "n"
+    lemma = "s"
+    short_terminal = "t"  # matchable categories
+    text = "x"
+    children = "p"
+
+
+FieldKeyToName = {
+    value: key for (key, value) in inspect.getmembers(KEY) if not key.startswith("_")
+}
+
+
+def flat_is_nonterminal(string):
+    return string.isupper() and "_" not in string
+
+
+def flat_is_terminal(string):
+    return string.islower()
+
+
+def flat_is_left_nonterminal(string):
+    return flat_is_nonterminal(string) and "/" not in string
+
+
+def flat_is_right_nonterminal(string):
+    return flat_is_nonterminal(string) and "/" in string
+
+
+def flat_matching_nonterminal(string):
+    if "/" in string:
+        return string[1:]
+    return "/" + string
 
 
 class Node:
@@ -60,8 +114,11 @@ class Node:
             json_node = _json_terminal_node(self.name, self.data)
         else:
             json_node = _json_nonterminal_node(self.name)
-            json_node["p"] = [c.to_dict() for c in self.children]
+            json_node[KEY.children] = [c.to_dict() for c in self.children]
         return json_node
+
+    def to_simple_tree(self):
+        return matcher.SimpleTree([[self.to_dict()]])
 
     def to_postfix(self):
         """ Export tree to postfix ordering
@@ -122,7 +179,7 @@ class Node:
 
 
 class ParseResult(IntEnum):
-    """ Result types for the parsing of flat parse trees that are return by
+    """ Result types for the parsing of flat parse trees that are returned by
         the NMT parsing model and the corresponding natural language source text
         into a (non) flat parse tree """
 
@@ -151,7 +208,7 @@ def parse_flat_tree_to_nodes(parse_toks, text_toks=None, verbose=False):
 
     vprint = logging.debug if verbose else (lambda *ar, **kw: None)
 
-    if not parse_toks or parse_toks[0] not in TOKENS.NONTERMINALS:
+    if not parse_toks or not flat_is_nonterminal(parse_toks[0]):
         raise ValueError("Invalid parse tokens.")
 
     root = Node(name="ROOT", is_terminal=False)  # Pseudo root
@@ -160,10 +217,7 @@ def parse_flat_tree_to_nodes(parse_toks, text_toks=None, verbose=False):
     txt_count = 0
 
     for idx, tok in enumerate(parse_toks):
-        if tok in MISSING:
-            vprint("Encountered missing token: '{}'".format(tok))
-            continue
-        if tok not in TOKENS.NONTERMINALS:
+        if flat_is_terminal(tok):
             if parent == root:
                 msg = "Error: Tried to parse terminal node {} as descendant of root."
                 vprint(msg.format(tok))
@@ -185,8 +239,7 @@ def parse_flat_tree_to_nodes(parse_toks, text_toks=None, verbose=False):
             parent.add_child(new_node)
             continue
 
-        # tok is in TOKENS.NONTERMINALS and therefore is either a left or right nonterminal token
-        if tok in TOKENS.NONTERM_L:
+        if flat_is_left_nonterminal(tok):
             new_node = Node(tok, is_terminal=False)
             parent.add_child(new_node)
             stack.append(parent)
@@ -197,7 +250,10 @@ def parse_flat_tree_to_nodes(parse_toks, text_toks=None, verbose=False):
 
         # Token must be a legal right nonterminal since it is not a left token
         # A right token must be matched by its corresponding left token
-        if tok not in TOKENS.R_TO_L or parent.name != TOKENS.R_TO_L[tok]:
+        if (
+                not flat_is_right_nonterminal(tok)
+                or flat_matching_nonterminal(parent.name) != tok
+        ):
             msg = "Error: Found illegal nonterminal {}, expected right nonterminal"
             vprint(msg.format(tok))
 
@@ -235,14 +291,13 @@ def parse_tree(flat_parse_str):
     return parse_flat_tree_to_nodes(tokenize_flat_tree(flat_parse_str))
 
 
-def parse_tree_with_text(flat_parse_str, text):
-    parse_toks = tokenize_flat_tree(flat_parse_str)
+def parse_tree_with_text(flat_tree_str, text):
+    text_toks, parse_toks = tokenize_and_merge_possible_mw_tokens(text, flat_tree_str)
     text_toks = [tok.txt for tok in tokenizer.tokenize(text) if tok.txt]
     return parse_flat_tree_to_nodes(parse_toks, text_toks)
 
 
-# TODO: Use cache
-def _json_terminal_node(tok, text="placeholder"):
+def _json_terminal_node(tok, text="placeholder", token_index=None):
     """ first can be:
             abfn
             ao
@@ -276,37 +331,72 @@ def _json_terminal_node(tok, text="placeholder"):
     tail = subtokens[tail_start:]
 
     if first == "no":
-        cat = [t for t in grammar_consts.GENDERS if t in tail]
-        cat = "" if not cat else cat[0]
-        case = [t for t in grammar_consts.CASES if t in tail]
-        case = "" if not case else case[0]
-        number = [t for t in grammar_consts.NUMBERS if t in tail]
-        number = "" if not number else number[0]
+        gender = [t for t in GRAMMAR.GENDERS if t in tail][:1]
+        gender = gender.pop() if gender else ""
+        case = [t for t in GRAMMAR.CASES if t in tail][:1]
+        case = case.pop() if case else ""
+        number = [t for t in GRAMMAR.NUMBERS if t in tail][:1]
+        number = number.pop() if number else ""
         gr = "gr" if "gr" in tail else ""
 
-        b = "-".join([t for t in [case, number, gr] if t])
+        bin_variants = "-".join([t for t in [case, number, gr] if t])
 
-        new_node = dict(t=tok, x=text, k="WORD", b=b, c=cat)
+        new_node = {
+            KEY.bin_category: gender,
+            KEY.short_terminal: tok,
+            KEY.text: text,
+            KEY.kind: "WORD",
+            KEY.bin_variants: bin_variants,
+        }
 
     elif first == "st":
-        new_node = dict(t=tok, x=text, k="WORD", c="st", b="-")
+        new_node = {
+            KEY.short_terminal: tok,
+            KEY.text: text,
+            KEY.kind: "WORD",
+            KEY.bin_variants: "-",
+            KEY.bin_category: "st",
+        }
 
     elif first == "eo":
-        new_node = dict(t=tok, x=text, k="WORD", c="ao", b="ao")
+        new_node = {
+            KEY.short_terminal: tok,
+            KEY.text: text,
+            KEY.kind: "WORD",
+            KEY.bin_variants: "ao",
+            KEY.bin_category: "ao",
+        }
 
     elif first == "entity":
-        new_node = dict(t=tok, x=text, k="ENTITY")
+        new_node = {KEY.short_terminal: tok, KEY.text: text, KEY.kind: "ENTITY"}
+
+    elif first == "person":
+        gender = [t for t in GRAMMAR.GENDERS if t in tail][:1]
+        gender = gender.pop() if gender else ""
+        new_node = {
+            KEY.bin_category: gender or "-",
+            KEY.short_terminal: tok,
+            KEY.kind: "PERSON",
+            KEY.lemma: "s",
+            KEY.text: text,
+        }
 
     elif first == "p":
-        new_node = dict(x=text, k="PUNCTUATION")
+        new_node = {KEY.text: text, KEY.kind: "PUNCTUATION"}
 
     else:
-        b = "-".join([t for t in tail if t])
-        new_node = dict(x=text, t=tok, c=first, k="WORD", b=b)
+        bin_variants = "-".join([t for t in tail if t])
+        new_node = {
+            KEY.text: text,
+            KEY.short_terminal: tok,
+            KEY.bin_category: first,
+            KEY.kind: "WORD",
+            KEY.bin_variants: bin_variants,
+        }
 
-    if "b" in new_node:
-        new_node["b"] = (
-            new_node["b"]
+    if KEY.bin_variants in new_node:
+        new_node[KEY.bin_variants] = (
+            new_node[KEY.bin_variants]
             .upper()
             .replace("GR", "gr")
             .replace("P1", "1P")
@@ -314,23 +404,89 @@ def _json_terminal_node(tok, text="placeholder"):
             .replace("P3", "3P")
         )
 
-    if "k" in new_node and new_node["k"] in ["ENTITY", "WORD"]:
-        new_node["s"] = text if text else "-"
+    if KEY.kind in new_node and new_node[KEY.kind] in ["ENTITY", "WORD", "PERSON"]:
+        new_node[KEY.lemma] = text if text else "-"
+    new_node[KEY.bin_fl] = "alm"
+    new_node[KEY.long_terminal] = tok
+
+    # TODO: refactor flat terminal parsing and use error codesearch
+    if KEY.text in new_node and new_node[KEY.text] is None:
+        new_node[KEY.text] = ""
+
+    if token_index is not None:
+        new_node[KEY.token_index] = token_index
 
     return new_node
 
 
-# TODO: Use cache
 def _json_nonterminal_node(tok):
-    new_node = dict(
-        i=tok, n=matcher._DEFAULT_ID_MAP[tok]["name"], k="NONTERMINAL", p=[]
-    )
+    new_node = {
+        KEY.nonterminal_tag: tok,
+        KEY.nonterminal_name: matcher._DEFAULT_ID_MAP[tok]["name"],
+        KEY.kind: "NONTERMINAL",
+        KEY.children: [],
+    }
     return new_node
 
-def test_parse():
-    sample = "P S-MAIN IP NP-SUBJ pfn_et_nf_p3 /NP-SUBJ /IP /S-MAIN /P"
-    res = parse_tree(sample)
-    print(res)
 
-if __name__ == '__main__':
-    test_parse()
+def tokenize_and_merge_possible_mw_tokens(text, flat_tree):
+    mw_tokens = list(bintokenizer.tokenize(text))
+    mw_tokens = [tok.txt.split(" ") for tok in mw_tokens if tok.txt is not None]
+    sw_tokens = [tok for toks in mw_tokens for tok in toks]  # flatten multiword tokens
+
+    parse_tokens = list(flat_tree.split(" "))
+    parse_terminals = filter(lambda x: x[1][0].islower(), enumerate(parse_tokens))
+    parse_terminals = list(enumerate(parse_terminals))
+
+    term_idx_to_parse_idx = {
+        term_idx: ptok_idx for (term_idx, (ptok_idx, ptok)) in parse_terminals
+    }
+
+    offset = 0
+    merge_list = []
+    for mw_token in mw_tokens:
+        weight = len(mw_token)
+        idxed_mw_token = [(idx + offset, token) for (idx, token) in enumerate(mw_token)]
+        offset += weight
+        if weight == 1:
+            continue
+        merge_info = check_merge_candidate(
+            idxed_mw_token, parse_tokens, term_idx_to_parse_idx
+        )
+        if merge_info is not None:
+            merge_list.append(merge_info)
+
+    # merge in reverse order so we don't have to compute offsets
+    for (pidx, tidx, weight) in reversed(merge_list):
+        print("merging:")
+        print(parse_tokens[pidx : pidx + 1])
+        print([" ".join(sw_tokens[tidx : tidx + weight])])
+        parse_tokens[pidx : pidx + weight] = parse_tokens[pidx : pidx + 1]
+        sw_tokens[tidx : tidx + weight] = [" ".join(sw_tokens[tidx : tidx + weight])]
+
+    return sw_tokens, parse_tokens
+
+
+def check_merge_candidate(idxed_mw_token, parse_tokens, term_idx_to_parse_idx):
+    # idx_mw_tokens has at least two tokens
+    allow_merge = True
+    last_ptok = None
+    last_pidx = None
+    first_pidx = None
+    for (idx, token) in idxed_mw_token:
+        pidx = term_idx_to_parse_idx[idx]
+        last_pidx = pidx - 1 if last_pidx is None else last_pidx
+        ptok = parse_tokens[pidx]
+        last_ptok = ptok if last_ptok is None else last_ptok
+
+        # parse_tokens must be contiguous and must match
+        allow_merge = allow_merge and (last_ptok == ptok) and (last_pidx + 1 == pidx)
+        if not allow_merge:
+            return None
+
+        first_pidx = pidx if first_pidx is None else first_pidx
+        last_pidx = pidx
+        last_ptok = ptok
+    token_idxs, words = list(zip(*idxed_mw_token))
+
+    return (first_pidx, token_idxs[0], len(idxed_mw_token))

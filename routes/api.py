@@ -24,8 +24,7 @@
 
 from . import routes, better_jsonify, text_from_request, bool_from_request, restricted
 from . import _MAX_URL_LENGTH, _MAX_UUID_LENGTH
-from flask import request, current_app
-import werkzeug
+from flask import request
 from tnttagger import ifd_tag
 from db import SessionContext
 from db.models import ArticleTopic, Query, Feedback
@@ -40,7 +39,7 @@ from speech import get_synthesized_text_url
 from datetime import datetime
 import logging
 
-from nn.nnclient import TranslateClient
+from nn.nnclient import ParsingClient, TranslateClient
 
 # Maximum number of query string variants
 _MAX_QUERY_VARIANTS = 10
@@ -453,6 +452,35 @@ def feedback_api(version=1):
 
 
 # Note: Endpoints ending with .api are configured not to be cached by nginx
+@routes.route("/nnparse.api", methods=["GET", "POST"])
+@routes.route("/nnparse.api/v<int:version>", methods=["GET", "POST"])
+def nnparse_api(version=1):
+    """ Analyze text manually entered by the user, by passing the request
+        to a neural network server and returning its result back """
+    if not (1 <= version <= 1):
+        return better_jsonify(valid=False, reason="Unsupported version")
+
+    try:
+        text = text_from_request(request)
+    except:
+        return better_jsonify(valid=False, reason="Invalid request")
+
+    results = ParsingClient.request_sentence(text)
+    if results is None:
+        return better_jsonify(valid=False, reason="Service unavailable")
+    nnTree = results["outputs"]
+    scores = results["scores"]
+    result = {
+        "tree": nnTree.to_dict(),
+        "width": nnTree.width(),
+        "height": nnTree.height(),
+        "scores": scores,
+    }
+
+    return better_jsonify(valid=True, result=result)
+
+
+# Note: Endpoints ending with .api are configured not to be cached by nginx
 @routes.route("/nntranslate.api", methods=["GET", "POST"])
 @routes.route("/nntranslate.api/v<int:version>", methods=["GET", "POST"])
 def nntranslate_api(version=1):
@@ -483,3 +511,5 @@ def nntranslate_api(version=1):
     else:
         result = TranslateClient.request_text(trnsl_src, src_lang, tgt_lang)
     return better_jsonify(valid=True, result=result)
+
+

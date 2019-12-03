@@ -32,8 +32,10 @@ import logging
 from settings import Settings
 import tokenizer
 
-#import nntree
-#from nntree import ParseResult
+from nn import nntree
+from nn.nntree import ParseResult
+from reynir.binparser import BIN_Token
+from reynir import bintokenizer
 
 
 def index_text(text):
@@ -42,7 +44,7 @@ def index_text(text):
             dictionary of sentence indices to sentences
             dictionary of paragraph index to constituent sentence indices"""
     text = "[[ " + " ]] [[ ".join(text.split("\n")) + " ]]"
-    tok_stream = tokenizer.tokenize(text)
+    tok_stream = bintokenizer.tokenize(text)
 
     pgs = tokenizer.paragraphs(tok_stream)
     pg_idx_to_sent_idx = dict()
@@ -53,7 +55,8 @@ def index_text(text):
     for pg in pgs:
         sent_idxs = []
         for (idx, sent) in pg:
-            curr_sent = tokenizer.correct_spaces(" ".join([t.txt for t in sent if t]))
+            curr_sent = list(filter(BIN_Token.is_understood, sent))
+            curr_sent = " ".join([tok.txt for tok in curr_sent])
             sent_idxs.append(curr_sent_idx)
             sent_idx_to_sent[curr_sent_idx] = curr_sent
             curr_sent_idx += 1
@@ -98,22 +101,16 @@ class NnClient:
         resp = requests.post(url, data=payload, headers=headers)
         resp.raise_for_status()
 
-        try:
-            obj = json.loads(resp.text)
-            predictions = obj["predictions"]
-            results = [
-                cls._processResponse(inst, sent)
-                for (inst, sent) in zip(predictions, list(pgs))
-            ]
-
-            return results
-        # TODO(haukurb): More graceful error handling
-        except Exception as e:
-            logging.exception("Error: could not process response from nnserver")
-            import traceback
-
-            traceback.print_exc()
-            return None
+        obj = json.loads(resp.text)
+        if "valid" in obj:
+            raise IOError("Bad response from server")
+        elif "predictions" not in obj:
+            raise ValueError("Invalid request or batch size too large")
+        predictions = obj["predictions"]
+        return [
+            cls._processResponse(inst, sent)
+            for (inst, sent) in zip(predictions, list(pgs))
+        ]
 
     @classmethod
     def _processResponse(cls, instance, sent):
@@ -230,6 +227,7 @@ class ParsingClient(NnClient):
 
             if Settings.DEBUG:
                 print("Received parse tokens from nnserver:", parse_toks)
+                print("ParseResult: ", p_result)
                 print("Parsed by nntree into:")
                 tree.pprint()
                 if p_result != ParseResult.SUCCESS:
@@ -255,6 +253,8 @@ class ParsingClient(NnClient):
             single_sentence = text.split("\n")[0]
         else:
             single_sentence = text
+        toks = cls._normalizeSentence(single_sentence)
+        single_sentence = " ".join(toks)
         sents = [single_sentence]
         results = cls._request(sents)
         if results is None:
@@ -268,31 +268,24 @@ class ParsingClient(NnClient):
         """ Preprocess text and normalize for parsing network """
         pgs = text.split("\n")
         normalized_pgs = [
-            [tok.txt for tok in list(tokenizer.tokenize(pg))] for pg in pgs
-        ]
+            [tok.txt for tok in list(bintokenizer.tokenize(pg))
+                if BIN_Token.is_understood(tok)
+            ] for pg in pgs]
         normalized_pgs = [
             " ".join([tok for tok in npg if tok]) for npg in normalized_pgs
         ]
         return normalized_pgs
 
+    @classmethod
+    def _normalizeSentence(cls, single_sentence):
+        """ Preprocess text and normalize for parsing network """
+        return [
+            tok.txt
+            for tok in bintokenizer.tokenize(single_sentence)
+            if BIN_Token.is_understood(tok)
+        ]
 
-def test_translate_sentence():
-    sample_phrase = "Hæ."
-    print("sample_phrase:", sample_phrase)
-    res = TranslateClient.request_sentence(sample_phrase)
-    # json = "{'predictions':[{'batch_prediction_key':[0],'outputs':'Hi.','scores':-0.946593}]}"
-    print("processed_output:", res)
-    print()
 
-
-def test_translate_text():
-    sample_phrase = "Hæ.\nHvernig?"
-    print('sample_phrase: """', sample_phrase, '"""', sep="")
-    print()
-    res = TranslateClient.request_text(sample_phrase)
-    # json = "{'predictions':[{'batch_prediction_key':[0],'outputs':'Hi.','scores':-0.946593}]}"
-    print("processed_output:", res)
-    print()
 
 
 def send_test_parse():

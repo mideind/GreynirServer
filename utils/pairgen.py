@@ -140,7 +140,7 @@ def write_shuffled_files(outfile_dev, outfile_train, generator, dev_size, train_
     return written
 
 
-def main(dev_size, train_size, shuffle, scores):
+def main(dev_size, train_size, shuffle, scores, parse_date_gt=None):
 
     print("Welcome to the Reynir text and parse tree pair generator")
 
@@ -154,7 +154,12 @@ def main(dev_size, train_size, shuffle, scores):
     # Generate the parse trees from visible roots only,
     # in descending order by time of parse
     stats = { "parsed" : datetime.utcnow() }
-    gen = gen_simple_trees({ "order_by_parse" : True, "visible" : True }, stats)
+
+    criteria = { "order_by_parse" : True, "visible" : True }
+    if parse_date_gt is not None:
+        criteria['parse_date_gt'] = parse_date_gt
+
+    gen = gen_simple_trees(criteria, stats)
 
     if shuffle:
 
@@ -162,7 +167,7 @@ def main(dev_size, train_size, shuffle, scores):
         written = write_shuffled_files(OUTFILE_DEV, OUTFILE_TRAIN, gen, dev_size, train_size, scores)
 
     else:
-    
+
         # Development set
         if dev_size:
             print(f"\nWriting {dev_size} {'shuffled ' if shuffle else ''}sentences to {OUTFILE_DEV}")
@@ -193,6 +198,8 @@ if __name__ == "__main__":
         help="do not shuffle output", default=False)
     parser.add_argument('--scores', dest='SCORES', action="store_true",
         help="include sentence scores", default=False)
+    parser.add_argument('--parse_date_gt', dest='PARSE_DATE_GT', type=str,
+                        help="Cutoff date for parsed field", default=None)
 
     args = parser.parse_args()
 
@@ -200,6 +207,7 @@ if __name__ == "__main__":
         dev_size = args.DEV_SIZE,
         train_size = args.TRAIN_SIZE,
         shuffle = not args.NO_SHUFFLE,
-        scores = args.SCORES
+        scores = args.SCORES,
+        parse_date_gt = args.PARSE_DATE_GT
     )
 
