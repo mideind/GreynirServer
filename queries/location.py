@@ -111,6 +111,10 @@ def QLocationCurrentQuery(node, params, result):
     result.qkey = "CurrentLocation"
 
 
+def QLocationPostcode(node, params, result):
+    result.qkey = "CurrentPostcode"
+
+
 def _addrinfo_from_api_result(result):
     """ Extract relevant address components from Google API result """
 
@@ -258,6 +262,33 @@ def answer_for_location(loc):
     return response, answer, voice
 
 
+def answer_for_postcode(loc):
+    # Send API request
+    res = query_geocode_api_coords(loc[0], loc[1])
+
+    # Verify that we have at least one valid result
+    if (
+        not res
+        or "results" not in res
+        or not len(res["results"])
+        or not res["results"][0]
+    ):
+        return None
+
+    # Grab top result from API call
+    top = res["results"][0]
+    # TODO: Fall back on lower-ranked results from the API
+    # if the top result doesn't even contain a locality.
+
+    # Extract address info from top result
+    (street, num, locality, postcode, country_code) = _addrinfo_from_api_result(top)
+
+    if country_code:
+        return gen_answer(postcode)
+    else:
+        return gen_answer("Ég veit ekki í hvaða póstnúmeri þú ert.")
+
+
 def sentence(state, result):
     """ Called when sentence processing is complete """
     q = state["query"]
@@ -270,9 +301,11 @@ def sentence(state, result):
             answ = None
             loc = q.location
             if loc:
-                # Get info about this location
-                answ = answer_for_location(loc)
-
+                # Get relevant info about this location
+                if result.qkey == "CurrentPostcode":
+                    answ = answer_for_postcode(loc)
+                else:
+                    answ = answer_for_location(loc)
             if answ:
                 # For uniformity, store the returned location in the context
                 # !!! TBD: We might want to store an address here as well
