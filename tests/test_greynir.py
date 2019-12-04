@@ -62,8 +62,10 @@ def test_routes(client):
 
 
 API_CONTENT_TYPE = "application/json"
+API_EXCLUDE_START = "nn"
 API_ROUTES = [
-    r for r in app.url_map.iter_rules() if str(r).endswith(".api") and not r.arguments
+    r for r in app.url_map.iter_rules()
+    if str(r).endswith(".api") and not r.arguments and not str(r).startswith(API_EXCLUDE_START)
 ]
 
 
