@@ -211,9 +211,11 @@ class ParsingClient(NnClient):
     @classmethod
     def _processResponse(cls, instance, sent):
         """ Process the response from a single sentence """
-        scores = instance["scores"]
-        scores = max([float(score) for score in scores])
-        instance["scores"] = scores
+        try:
+            instance["scores"] = max([float(score) for score in instance["scores"]])
+        except TypeError:
+            # Score is not iterable
+            pass
         return instance
 
     @classmethod
@@ -284,8 +286,6 @@ class ParsingClient(NnClient):
             for tok in bintokenizer.tokenize(single_sentence)
             if BIN_Token.is_understood(tok)
         ]
-
-
 
 
 def send_test_parse():
