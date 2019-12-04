@@ -48,7 +48,6 @@ _MAX_QUERY_LENGTH = 512
 # Synthetic location for use in testing
 _MIDEIND_LOCATION = (64.156896, -21.951200)  # Fiskislóð 31, 101 Reykjavík
 
-
 @routes.route("/ifdtag.api", methods=["GET", "POST"])
 @routes.route("/ifdtag.api/v<int:version>", methods=["GET", "POST"])
 def ifdtag_api(version=1):

@@ -43,7 +43,7 @@ from datetime import datetime
 from flask import Flask, send_from_directory
 from flask_caching import Cache
 
-from werkzeug.contrib.fixers import ProxyFix
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 import reynir
 from reynir.bindb import BIN_Db
@@ -184,12 +184,14 @@ except ConfigError as e:
 
 if Settings.DEBUG:
     print(
-        "\nStarting Greynir web app at {5} with debug={0}, host={1}:{2}, db_hostname={3}\n"
-        "Python {4}".format(
+        "\nStarting Greynir web app at {6} with debug={0}, "
+        "host={1}:{2}, db_host={3}:{4}\n"
+        "Python {5}".format(
             Settings.DEBUG,
             Settings.HOST,
             Settings.PORT,
             Settings.DB_HOSTNAME,
+            Settings.DB_PORT,
             sys.version,
             datetime.utcnow(),
         )
@@ -295,11 +297,15 @@ else:
         werkzeug_log.setLevel(logging.WARNING)
 
     # Log our startup
-    log_str = "Reynir instance starting with host={0}:{1}, db_hostname={2} on Python {3}".format(
-        Settings.HOST,
-        Settings.PORT,
-        Settings.DB_HOSTNAME,
-        sys.version.replace("\n", " "),
+    log_str = (
+        "Reynir instance starting with "
+        "host={0}:{1}, db_host={2}:{3} on Python {4}".format(
+            Settings.HOST,
+            Settings.PORT,
+            Settings.DB_HOSTNAME,
+            Settings.DB_PORT,
+            sys.version.replace("\n", " "),
+        )
     )
     logging.info(log_str)
     print(log_str)

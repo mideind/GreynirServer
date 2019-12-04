@@ -78,6 +78,14 @@ class Result:
         r._nominative and similar built-in attributes so that they are only calculated when
         and if required, and then cached. This is an optimization to save database
         reads.
+
+        This class has a mechanism which merges the contents of list, set and dict
+        attributes when navigating upwards from child nodes to their parents.
+        This means that, for instance, two child nodes of a "+" operator could each have
+        an attribute called "operand" containing an operand enclosed in a list,
+        like so: [ op ]. When the "+" operator node is processed, it will automatically
+        get an "operand" attribute containing [ left_op, right_op ].
+
     """
 
     def __init__(self, node, state, params):
@@ -119,11 +127,6 @@ class Result:
         if key in d:
             return d[key]
         # Key not found: try lazy evaluation
-        if key == "_root":
-            # Lazy evaluation of the _root attribute
-            # (Note that it can be overridden by setting it directly)
-            d[key] = val = self._node.root(self._state, self._params)
-            return val
         if key == "_nominative":
             # Lazy evaluation of the _nominative attribute
             # (Note that it can be overridden by setting it directly)
@@ -138,6 +141,16 @@ class Result:
             # Lazy evaluation of the _canonical attribute
             # (Note that it can be overridden by setting it directly)
             d[key] = val = self._node.canonical(self._state, self._params)
+            return val
+        if key == "_root":
+            # Lazy evaluation of the _root attribute
+            # (Note that it can be overridden by setting it directly)
+            d[key] = val = self._node.root(self._state, self._params)
+            return val
+        if key == "_text":
+            # Lazy evaluation of the _text attribute
+            # (Note that it can be overridden by setting it directly)
+            d[key] = val = self._node.contained_text()
             return val
         # Not found in our custom dict
         raise AttributeError("Result object has no attribute named '{0}'".format(key))
@@ -373,6 +386,12 @@ class Node:
     def contained_number(self):
         """ Return the number contained within the tree node, if any """
         # This is implemented for TerminalNodes associated with number tokens
+        return None
+
+    @property
+    def contained_amount(self):
+        """ Return the amount contained within the tree node, if any """
+        # This is implemented for TerminalNodes associated with amount tokens
         return None
 
     def string_rep(self, indent):
@@ -732,6 +751,16 @@ class TerminalNode(Node):
         if self._aux is None:
             self._aux = json.loads(self.aux)
         return self._aux[0]
+
+    @property
+    def contained_amount(self):
+        """ Return an amount from the associated token, if any,
+            as an (amount, currency ISO code) tuple """
+        if self.tokentype != "AMOUNT":
+            return None
+        if self._aux is None:
+            self._aux = json.loads(self.aux)
+        return self._aux[0], self._aux[1]
 
     def _root(self, bin_db):
         """ Look up the root of the word associated with this terminal """

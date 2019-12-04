@@ -42,6 +42,7 @@ from contextlib import contextmanager, closing
 from collections import defaultdict
 from threading import Lock
 
+
 # The locale used by default in the changedlocale function
 _DEFAULT_LOCALE = ("IS_is", "UTF-8")
 # A set of all valid argument cases
@@ -608,7 +609,7 @@ class Settings:
         DB_PORT = int(DB_PORT)
     except ValueError:
         raise ConfigError(
-            "Invalid environment variable value: DB_PORT = {0}"
+            "Invalid environment variable value: DB_PORT={0}"
             .format(DB_PORT)
         )
 
@@ -619,7 +620,7 @@ class Settings:
         PORT = int(PORT)
     except ValueError:
         raise ConfigError(
-            "Invalid environment variable value: GREYNIR_PORT = {0}"
+            "Invalid environment variable value: GREYNIR_PORT={0}"
             .format(PORT)
         )
 
@@ -633,7 +634,7 @@ class Settings:
         SIMSERVER_PORT = int(SIMSERVER_PORT)
     except ValueError:
         raise ConfigError(
-            "Invalid environment variable value: SIMSERVER_PORT = {0}"
+            "Invalid environment variable value: SIMSERVER_PORT={0}"
             .format(SIMSERVER_PORT)
         )
 
@@ -705,7 +706,7 @@ class Settings:
             else:
                 raise ConfigError("Unknown configuration parameter '{0}'".format(par))
         except ValueError:
-            raise ConfigError("Invalid parameter value: {0} = {1}".format(par, val))
+            raise ConfigError("Invalid parameter value: {0}={1}".format(par, val))
 
     @staticmethod
     def _handle_static_phrases(s):

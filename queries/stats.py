@@ -63,6 +63,10 @@ _NUM_PEOPLE_QUERIES = frozenset(
         "hve marga einstaklinga þekkir þú",
         "hve margar manneskjur þekkirðu",
         "hve margar manneskjur þekkir þú",
+        "hvaða fólk þekkir þú",
+        "hvaða fólk þekkirðu",
+        "hvaða einstaklinga þekkir þú",
+        "hvaða einstaklinga þekkirðu",
     )
 )
 
@@ -111,6 +115,8 @@ _MOST_FREQ_QUERIES = frozenset(
         "hvers konar spurningar eru algengastar",
         "hvernig spurningar færðu mest af",
         "hvernig spurningar færð þú mest af",
+        "hvaða spurningum hefur þú svarað",
+        "hvaða spurningum hefurðu svarað",
     )
 )
 
@@ -160,6 +166,11 @@ _MOST_MENTIONED_PEOPLE_QUERIES = frozenset(
         "hverjir hafa verið áberandi í fjölmiðlum undanfarið",
         "hverjir hafa verið áberandi í fjölmiðlum nýlega",
         "hverjir hafa verið áberandi í fjölmiðlum upp á síðkastið",
+        "hverjir hafa verið mikið í fjölmiðlum síðustu daga",
+        "hverjir hafa verið mikið í fjölmiðlum undanfarið",
+        "hverjir hafa verið mikið í fjölmiðlum nýlega",
+        "hverjir hafa verið mikið í fjölmiðlum upp á síðkastið",
+
     )
 )
 
