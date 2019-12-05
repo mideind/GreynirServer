@@ -30,7 +30,7 @@ from random import choice
 from reynir.bindb import BIN_Db
 
 
-_LOC_QTYPE = "Introduction"
+_INTRO_QTYPE = "Introduction"
 
 
 _MY_NAME_IS_REGEX = r"^ég heiti (.+)$"
@@ -59,6 +59,6 @@ def handle_plain_text(q):
         a = _RESPONSES[gender].format(fn)
 
     q.set_answer(dict(answer=a), a, a)
-    # query.set_beautified_query(bq)
+    q.set_qtype(_INTRO_QTYPE)
 
     return True
