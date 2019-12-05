@@ -34,6 +34,8 @@
 
 """
 
+# TODO: Hvar er nálægasta strætóstoppistöð?
+
 import re
 from threading import Lock
 from functools import lru_cache

@@ -44,6 +44,7 @@
 # TODO: "Hvað er langt í helgina?" "Hvenær er næsti frídagur?"
 # TODO: "Hvaða dagur var í gær?"
 # TODO: "Hvað eru margir dagar að fram að jólum?"
+# TODO: "Hvað eru margir dagar eftir af árinu? mánuðinum? vikunni?"
 # TODO: "Hvenær er næst hlaupár?"
 # TODO: "Hvaða árstíð er"
 # TODO: "Á hvaða vikudegi er jóladagur?"
@@ -53,6 +54,7 @@
 # TODO: "hvað eru margir dagar í árinu"
 # TODO: "hvítasunnan", "hvítasunnuhelgin"
 # TODO: "hvenær koma jólin"
+# TODO: "Hvaða öld er núna"
 
 import json
 import re

@@ -24,6 +24,7 @@
 """
 
 # TODO: "Hvað búa margir í/á [BORG/LAND]?" etc. Wiki api?
+# TODO: "Hvað er Ísland?" "Hvar er Japan?"
 
 from datetime import datetime, timedelta
 import logging

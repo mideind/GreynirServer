@@ -177,6 +177,7 @@ QCurUSD_ef →
     | "bandaríkjadollarans"
     | "bandaríkjadollars"
     | "bandarísks" "dollars"
+    | "dollars"
 
 QCurEUR/fall →
     'evra:kvk'/fall

@@ -36,6 +36,7 @@
 # TODO: "Hvar er heitast á landinu?"
 # TODO: "Er gott veður úti?"
 # TODO: "Hvað er mikið frost?" "Hversu mikið frost er úti?"
+# TODO: "Verður snjór á morgun?"
 
 import re
 import logging
@@ -116,13 +117,16 @@ QWeatherForecast →
     | QWeatherWhatKindOfWeather "má" "búast" "við" QWeatherLocation? QWeatherNextDays?
 
 QWeatherWhatKindOfWeather →
-    "hvers" "konar" "veðri" | "hverskonar" "veðri" | "hvers" "kyns" "veðri" | "hvernig" "veðri"
+    "hvers" "konar" "veðri" | "hverskonar" "veðri" 
+    | "hvers" "kyns" "veðri" | "hvernig" "veðri"
 
 QWeatherConditionSingular →
     "veðurspáin" | "spáin" | "veðurspá"
 
 QWeatherConditionPlural →
-    "veðurhorfur" | "veður" "horfur" | "veðurhorfurnar" | "veður" "horfurnar"
+    "veðurhorfur" | "veður" "horfur" 
+    | "veðurhorfurnar" | "veður" "horfurnar" 
+    | "horfur" | "horfurnar"
 
 QWeatherIsWill →
     "er" | "verður"
@@ -163,10 +167,12 @@ QWeatherTemperature →
 
 QWeatherUmbrella →
     "þarf" QWeatherOne "regnhlíf" QWeatherNow
+    | "þarf" "ég" "að" "taka" "með" "mér" "regnhlíf" QWeatherNow 
     | "væri" "regnhlíf" "gagnleg" QWeatherForMe? QWeatherNow
     | "væri" "gagn" "af" "regnhlíf" QWeatherForMe? QWeatherNow
     | "kæmi" "regnhlíf" "að" "gagni" QWeatherForMe? QWeatherNow
     | "myndi" "regnhlíf" "gagnast" "mér" QWeatherNow
+
 
 QWeatherOne →
     "ég" | "maður"
