@@ -139,7 +139,7 @@ def sentence(state, result):
         try:
             r = _gen_count(q, result)
             q.set_answer(*r)
-            # q.set_expires(datetime.utcnow() + timedelta(hours=24))
+            q.set_expires(datetime.utcnow() + timedelta(hours=24))
         except Exception as e:
             logging.warning("Exception while processing counting query: {0}".format(e))
             q.set_error("E_EXCEPTION: {0}".format(e))
