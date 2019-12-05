@@ -74,7 +74,7 @@ _TT_PREFIXES = (
     "hvað tæki það langan tíma að",
     "hversu lengi væri ég að",
     "hve lengi væri ég að",
-    "hversu langan tíma tæki það mig",
+    "hversu langan tíma tæki það mig að",
 )
 
 _TT_MODES = {

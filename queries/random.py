@@ -36,6 +36,25 @@ from queries.arithmetic import add_num, terminal_num
 
 _RANDOM_QTYPE = "Random"
 
+TOPIC_LEMMAS = ["teningur", "skjaldarmerki", "handahóf"]
+
+
+def help_text(lemma):
+    """ Help text to return when query.py is unable to parse a query but
+        one of the above lemmas is found in it """
+    return "Ég get svarað ef þú segir til dæmis: {0}?".format(
+        random.choice(
+            (
+                "Kastaðu teningi",
+                "Kastaðu tíu hliða teningi",
+                "Fiskur eða skjaldarmerki",
+                "Kastaðu peningi",
+                "Veldu tölu á milli sjö og þrettán",
+            )
+        )
+    )
+
+
 # This module wants to handle parse trees for queries
 HANDLE_TREE = True
 

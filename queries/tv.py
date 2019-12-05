@@ -29,11 +29,30 @@
 
 import logging
 import re
+import random
 from datetime import datetime, timedelta
+
 from queries import query_json_api, gen_answer
 
 
 _TELEVISION_QTYPE = "Television"
+
+
+TOPIC_LEMMAS = ["sjónvarp", "sjónvarpsdagskrá", "rúv", "ríkissjónvarp"]
+
+
+def help_text(lemma):
+    """ Help text to return when query.py is unable to parse a query but
+        one of the above lemmas is found in it """
+    return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
+        random.choice(
+            (
+                "Hvað er í sjónvarpinu",
+                "Hvað er á RÚV í augnablikinu",
+                "Hvaða efni er verið að sýna í sjónvarpinu",
+            )
+        )
+    )
 
 
 # This module wants to handle parse trees for queries

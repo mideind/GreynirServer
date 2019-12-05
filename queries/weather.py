@@ -40,8 +40,8 @@
 
 import re
 import logging
-from datetime import datetime, timedelta
 import random
+from datetime import datetime, timedelta
 
 from queries import gen_answer
 from geo import distance, isocode_for_country_name, ICE_PLACENAME_BLACKLIST
