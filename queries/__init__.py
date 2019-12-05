@@ -30,6 +30,7 @@ import json
 import os
 import re
 import locale
+import datetime
 from tzwhere import tzwhere
 from pytz import country_timezones
 from geo import country_name_for_isocode, iceprep4cc
@@ -37,14 +38,16 @@ from reynir.bindb import BIN_Db
 from settings import changedlocale
 
 
-def natlang_seq(words):
+def natlang_seq(words, oxford_comma=False):
     """ Generate an Icelandic natural language sequence of words e.g.
-        "A og B", "A, B og C", "A, B, C og D". No Oxford comma :) """
+        "A og B", "A, B og C", "A, B, C og D". """
     if not words:
         return ""
     if len(words) == 1:
         return words[0]
-    return "{0} og {1}".format(", ".join(words[:-1]), words[-1])
+    return "{0}{1} og {2}".format(
+        ", ".join(words[:-1]), "," if oxford_comma else "", words[-1]
+    )
 
 
 def nom2dat(w):
@@ -233,6 +236,52 @@ def country_desc(cc):
     cn = country_name_for_isocode(cc)
     prep = iceprep4cc(cc)
     return "{0} {1}".format(prep, nom2dat(cn))
+
+
+def time_period_desc(seconds, case="nf", omit_seconds=True):
+    """ Generate Icelandic description of the length of a given time period,
+        e.g. "4 dagar, 6 klukkustundir og 21 mínúta. """
+    case_abbr = ["nf", "þf", "þgf", "ef"]
+    assert case in case_abbr
+    cidx = case_abbr.index(case)
+    seconds = ((seconds // 60) * 60) if omit_seconds else seconds
+
+    nouns = {
+        "w": (["vika", "viku", "viku", "viku"], ["vikur", "vikur", "vikum", "vikna"]),
+        "d": (["dagur", "dag", "degi", "dags"], ["dagar", "daga", "dögum", "daga"]),
+        "h": (
+            ["klukkustund", "klukkustund", "klukkustund", "klukkustundar"],
+            ["klukkustundir", "klukkustundir", "klukkustundum", "klukkustunda"],
+        ),
+        "m": (
+            ["mínúta", "mínútu", "mínútu", "mínútu"],
+            ["mínútur", "mínútur", "mínútum", "mínútna"],
+        ),
+        "s": (
+            ["sekúnda", "sekúndu", "sekúndu", "sekúndu"],
+            ["sekúndur", "sekúndur", "sekúndum", "sekúndna"],
+        ),
+    }
+
+    intervals = (
+        ("w", 604800),  # 60 * 60 * 24 * 7
+        ("d", 86400),  # 60 * 60 * 24
+        ("h", 3600),  # 60 * 60
+        ("m", 60),
+        ("s", 1),
+    )
+
+    # Break it down to weeks, days, hours, mins, secs.
+    result = []
+    for unit, count in intervals:
+        value = seconds // count
+        if value:
+            seconds -= value * count
+            plidx = int(is_plural(value))
+            icename = nouns[unit][plidx][cidx]
+            result.append("{0} {1}".format(value, icename))
+
+    return natlang_seq(result)
 
 
 def query_json_api(url):
