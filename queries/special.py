@@ -543,6 +543,9 @@ _SPECIAL_QUERIES = {
     "hver er frænka mín": {
         "answer": "Ég veit ekki hver er frænka þín."
     },
+    "hver er konan mín": {
+        "answer": "Ég veit ekki hver konan þín er."
+    },
 
     # Enquiries concerning romantic availability
     "viltu giftast mér": _ROMANCE,
@@ -752,6 +755,7 @@ _SPECIAL_QUERIES = {
 
     # Thanks
     "takk": _thanks,
+    "takk embla": _thanks,
     "takk elskan": _thanks,
     "takk fyrir": _thanks,
     "takk fyrir mig": _thanks,
@@ -967,6 +971,7 @@ _SPECIAL_QUERIES = {
     "hve gömul ertu": _CREATION_DATE,
     "hvenær fæddistu": _CREATION_DATE,
     "hvenær fæddist þú": _CREATION_DATE,
+    "hvenær fæddist embla": _CREATION_DATE,
     "hvenær áttu afmæli": _CREATION_DATE,
     "hvenær átt þú afmæli": _CREATION_DATE,
     "hvaða ár fæddistu": _CREATION_DATE,
@@ -1302,6 +1307,10 @@ _SPECIAL_QUERIES = {
     "ert þú vitlaus": _rudeness,
     "ertu heimsk": _rudeness,
     "ert þú heimsk": _rudeness,
+    "ertu rugluð": _rudeness,
+    "ert þú rugluð": _rudeness,
+    "þegiðu": _rudeness,
+    "þegi þú": _rudeness,
 
     # Internal & emotional state
     "ertu í góðu skapi": {
