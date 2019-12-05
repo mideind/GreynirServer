@@ -33,6 +33,7 @@ import locale
 import datetime
 from tzwhere import tzwhere
 from pytz import country_timezones
+
 from geo import country_name_for_isocode, iceprep4cc
 from reynir.bindb import BIN_Db
 from settings import changedlocale
@@ -224,8 +225,8 @@ def numbers_to_neutral(s):
 
 
 def is_plural(num):
-    """ Determine whether an Icelandic word following a given number
-         should be plural or not, e.g. "21 maður" vs. "22 menn" vs. "11 menn" """
+    """ Determine whether an Icelandic word following a given number should
+        be plural or not, e.g. "21 maður" vs. "22 menn" vs. "11 menn" """
     sn = str(num)
     return not (sn.endswith("1") and not sn.endswith("11"))
 
@@ -244,9 +245,12 @@ def time_period_desc(seconds, case="nf", omit_seconds=True):
     case_abbr = ["nf", "þf", "þgf", "ef"]
     assert case in case_abbr
     cidx = case_abbr.index(case)
+    # Round down to nearest minute if omitting second precision
     seconds = ((seconds // 60) * 60) if omit_seconds else seconds
 
-    nouns = {
+    # I suppose this could be done using BÍN lookup, but this is faster,
+    # cleaner and allows for reuse outside the codebase.
+    unit_nouns = {
         "w": (["vika", "viku", "viku", "viku"], ["vikur", "vikur", "vikum", "vikna"]),
         "d": (["dagur", "dag", "degi", "dags"], ["dagar", "daga", "dögum", "daga"]),
         "h": (
@@ -278,7 +282,7 @@ def time_period_desc(seconds, case="nf", omit_seconds=True):
         if value:
             seconds -= value * count
             plidx = int(is_plural(value))
-            icename = nouns[unit][plidx][cidx]
+            icename = unit_nouns[unit][plidx][cidx]
             result.append("{0} {1}".format(value, icename))
 
     return natlang_seq(result)
@@ -332,7 +336,8 @@ def _get_API_key():
     return _API_KEY
 
 
-_MAPS_API_COORDS_URL = "https://maps.googleapis.com/maps/api/geocode/json?latlng={0},{1}&key={2}&language=is&region=is"
+_MAPS_API_COORDS_URL = ("https://maps.googleapis.com/maps/api/geocode/json"
+                       "?latlng={0},{1}&key={2}&language=is&region=is")
 
 
 def query_geocode_api_coords(lat, lon):
@@ -341,7 +346,7 @@ def query_geocode_api_coords(lat, lon):
     key = _get_API_key()
     if not key:
         # No key, can't query Google location API
-        logging.warning("No API key for location lookup")
+        logging.warning("No API key for coordinates lookup")
         return None
 
     # Send API request
@@ -349,7 +354,8 @@ def query_geocode_api_coords(lat, lon):
     return query_json_api(url)
 
 
-_MAPS_API_ADDR_URL = "https://maps.googleapis.com/maps/api/geocode/json?address={0}&key={1}&language=is&region=is"
+_MAPS_API_ADDR_URL = ("https://maps.googleapis.com/maps/api/geocode/json"
+                     "?address={0}&key={1}&language=is&region=is")
 
 
 def query_geocode_api_addr(addr):
@@ -358,7 +364,7 @@ def query_geocode_api_addr(addr):
     key = _get_API_key()
     if not key:
         # No key, can't query the API
-        logging.warning("No API key for location lookup")
+        logging.warning("No API key for address lookup")
         return None
 
     # Send API request
@@ -366,7 +372,8 @@ def query_geocode_api_addr(addr):
     return query_json_api(url)
 
 
-_MAPS_API_DISTANCE_URL = "https://maps.googleapis.com/maps/api/distancematrix/json?units=metric&origins={0}&destinations={1}&mode={2}&key={3}&language=is&region=is"
+_MAPS_API_DISTANCE_URL = ("https://maps.googleapis.com/maps/api/distancematrix/json"
+                         "?units=metric&origins={0}&destinations={1}&mode={2}&key={3}&language=is&region=is")
 
 
 def query_traveltime_api(startloc, endloc, mode="walking"):
