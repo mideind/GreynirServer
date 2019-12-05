@@ -49,6 +49,7 @@ QCountingQuery →
 QCountingUp →
     "teldu" QCountingSpeed? "upp" "að" QCountingFirstNumber
     | "teldu" QCountingSpeed? "upp" "í" QCountingFirstNumber
+    | "teldu" QCountingSpeed? "upp" "til" QCountingFirstNumber
 
 QCountingDown →
     "teldu" QCountingSpeed? "niður" "frá" QCountingFirstNumber
@@ -57,7 +58,6 @@ QCountingBetween →
     "teldu" QCountingSpeed? "frá" QCountingFirstNumber "upp"? "til" QCountingSecondNumber
     | "teldu" QCountingSpeed? "frá" QCountingFirstNumber "upp"? "í" QCountingSecondNumber
     | "teldu" QCountingSpeed? "frá" QCountingFirstNumber "upp"? "að" QCountingSecondNumber
-    | "teldu" QCountingSpeed? "niður" "frá" QCountingFirstNumber "til" QCountingSecondNumber
 
 QCountingFirstNumber →
     to | töl | tala
@@ -98,23 +98,32 @@ def QCountingSecondNumber(node, params, result):
     result.second_num = int(parse_num(node, result._canonical))
 
 
+_SPEED2DELAY = {"mjög hægt": 2.0, "hægt": 1.0, "hratt": 0.1, "mjög hratt": 0.0}
+
+
+def QCountingSpeed(node, params, result):
+    result.delay = _SPEED2DELAY.get(node.contained_text())
+
+
 def _gen_count(q, result):
     num_range = None
     if result.qkey == "CountUp":
-        num_range = list(range(1, result.first_num+1))
+        num_range = list(range(1, result.first_num + 1))
     elif result.qkey == "CountDown":
-        num_range = list(range(0, result.first_num))
+        num_range = list(range(0, result.first_num))[::-1]
     else:
-        num_range = list(range(result.first_num, result.second_num))
-
-    print(num_range)
+        (fn, sn) = (result.first_num, result.second_num)
+        if fn > sn:
+            (fn, sn) = (sn, fn)
+        num_range = list(range(fn, sn + 1))
 
     answ = "{0}…{1}".format(num_range[0], num_range[-1])
     response = dict(answer=answ)
     voice = ""
     for n in num_range:
-        delay = 0.5
-        voice += "{0} <break time=\"{1}s\"/>".format(n, delay)
+        # Default 0.4s delay results in roughly 1 sec per number in count
+        delay = result["delay"] if "delay" in result else 0.4
+        voice += '{0} <break time="{1}s"/>'.format(n, delay)
 
     return response, answ, voice
 
@@ -130,7 +139,7 @@ def sentence(state, result):
         try:
             r = _gen_count(q, result)
             q.set_answer(*r)
-            q.set_expires(datetime.utcnow() + timedelta(hours=24))
+            # q.set_expires(datetime.utcnow() + timedelta(hours=24))
         except Exception as e:
             logging.warning("Exception while processing counting query: {0}".format(e))
             q.set_error("E_EXCEPTION: {0}".format(e))
