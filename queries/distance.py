@@ -61,7 +61,6 @@ _QDISTANCE_REGEXES = (
     r"^hversu langt er til (.+)$",
 )
 
-
 # Travel time questions
 _TT_PREFIXES = (
     "hvað er ég lengi að",
@@ -195,11 +194,7 @@ def dist_answer_for_loc(matches, query):
 
 
 def traveltime_answer_for_loc(matches, query):
-    print(matches.group(1, 2, 3, 4, 5))
     (action_desc, tmode, locname) = matches.group(2, 3, 5)
-    print(action_desc)
-    print(locname)
-    print(tmode)
 
     loc_nf = _addr2nom(locname[0].upper() + locname[1:])
     mode = _TT_MODES.get(tmode, "walking")
@@ -221,17 +216,17 @@ def traveltime_answer_for_loc(matches, query):
     # Extract info we want
     elm = res["rows"][0]["elements"][0]
     if elm["status"] != "OK":
-        print(elm)
-        print("STATUS NOT OK")
         return None
     # dur_desc = elm["duration"]["text"]
     dur_sec = int(elm["duration"]["value"])
     dur_desc = time_period_desc(dur_sec, case="þf")
 
+    # Generate answer
     answer = dur_desc + "."
     response = dict(answer=answer)
     voice = "Að {0} tekur um það bil {1}".format(action_desc, dur_desc)
 
+    # Key is the remote loc in nominative case
     query.set_key(loc_nf)
 
     # Beautify by capitalizing remote loc name
@@ -250,12 +245,14 @@ def handle_plain_text(q):
     travel_mode = None
     matches = None
 
+    # Distance queries
     for rx in _QDISTANCE_REGEXES:
         matches = re.search(rx, ql)
         if matches:
             handler = dist_answer_for_loc
             break
 
+    # Travel time queries
     for rx in _QTRAVELTIME_REGEXES:
         matches = re.search(rx, ql)
         if matches:
