@@ -1,5 +1,5 @@
 """
-    Reynir: Natural language processing for Icelandic
+    Greynir: Natural language processing for Icelandic
 
     MIM corpus test module
 
@@ -13,7 +13,7 @@
 
     This module parses XML files in the TEI format from the
     MIM corpus ('Mörkuð íslensk málheild') and compares the POS
-    tags in the corpus with output from Reynir  
+    tags in the corpus with output from Greynir
 
 """
 
@@ -130,13 +130,13 @@ def parse_tokens(toklist, mim_tags, fast_p):
             # Check whether the token streams are in sync
             if tag_ix < ntags and t[1] != mim_tags[tag_ix][1]:
                 #print("Warning: mismatch between MIM token '{0}' and Reynir token '{1}'".format(mim_tags[tag_ix][1], t[1]))
-                # Attempt to sync again by finding the Reynir token in the MIM tag stream
+                # Attempt to sync again by finding the Greynir token in the MIM tag stream
                 gap = 1
                 MAX_LOOKAHEAD = 4
                 while gap < MAX_LOOKAHEAD and (tag_ix + gap) < ntags and mim_tags[tag_ix + gap][1] != t[1]:
                     gap += 1
                 if gap < MAX_LOOKAHEAD:
-                    # Found the Reynir token ahead
+                    # Found the Greynir token ahead
                     #print("Re-synced by skipping ahead by {0} tokens".format(gap))
                     tag_ix += gap
             if tag_ix < ntags:
@@ -253,7 +253,7 @@ if __name__ == "__main__":
         print("Configuration error: {0}".format(e))
         quit()
 
-    print("Running Reynir with debug={0}, host={1}, db_hostname={2}"
+    print("Running Greynir with debug={0}, host={1}, db_hostname={2}"
         .format(Settings.DEBUG, Settings.HOST, Settings.DB_HOSTNAME))
 
     with Fast_Parser(verbose = False) as fast_p:

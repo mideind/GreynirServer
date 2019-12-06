@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 
-    Reynir: Natural language processing for Icelandic
+    Greynir: Natural language processing for Icelandic
 
     TnT Tagger module
 

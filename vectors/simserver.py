@@ -1,7 +1,7 @@
 #!/usr/bin/env/python
 
 """
-    Reynir: Natural language processing for Icelandic
+    Greynir: Natural language processing for Icelandic
 
     Similarity query server
 
@@ -29,7 +29,7 @@
     For security, this port should be closed from outside access via iptables or
     a firewall. However, the server also requires the client to authenticate
     using a secret key that is loaded from resources/SimilarityServerKey.txt.
-    This file should not be made visible outside the Reynir server (or local
+    This file should not be made visible outside the Greynir server (or local
     network).
 
     To register this program as a service within systemd, create a unit file
@@ -239,7 +239,7 @@ class SimilarityServer:
             )
 
         print(
-            "Reynir similarity server started\nListening for connections on port {0}".format(
+            "Greynir similarity server started\nListening for connections on port {0}".format(
                 port
             )
         )

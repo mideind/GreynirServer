@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 
-    Reynir: Natural language processing for Icelandic
+    Greynir: Natural language processing for Icelandic
 
     Text and parse tree pair generator
 
@@ -142,7 +142,7 @@ def write_shuffled_files(outfile_dev, outfile_train, generator, dev_size, train_
 
 def main(dev_size, train_size, shuffle, scores):
 
-    print("Welcome to the Reynir text and parse tree pair generator")
+    print("Welcome to the Greynir text and parse tree pair generator")
 
     try:
         # Read configuration file

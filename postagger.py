@@ -1,6 +1,6 @@
 """
 
-    Reynir: Natural language processing for Icelandic
+    Greynir: Natural language processing for Icelandic
 
     POS tagger module
 
@@ -19,7 +19,7 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    This module implements a wrapper for Reynir's POS tagging
+    This module implements a wrapper for Greynir's POS tagging
     functionality. It allows clients to simply and cleanly generate POS tags
     from plain text into a Python dict, which can then easily be converted to
     JSON if desired.
@@ -191,7 +191,7 @@ class NgramTagger:
         tokenizer. A parse tree is not required, so the class can
         also tag sentences for which there is no parse. The tagging
         is based on n-gram and lemma statistics harvested from
-        the Reynir article database. """
+        the Greynir article database. """
 
     CASE_TO_TAG = {
         "þf" : "ao",
