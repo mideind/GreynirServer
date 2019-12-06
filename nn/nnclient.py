@@ -66,7 +66,7 @@ def index_text(text):
 
 
 class NnClient:
-    """ A client that connects to the HTTP rest interface of
+    """ A client that connects to the HTTP REST interface of
         a tensorflow model server (using plaintext) """
 
     port = None
@@ -286,20 +286,3 @@ class ParsingClient(NnClient):
             for tok in bintokenizer.tokenize(single_sentence)
             if BIN_Token.is_understood(tok)
         ]
-
-
-def send_test_parse():
-    sample_phrase = (
-        "Eftirfarandi skilaboð voru smíðuð í Nnclient og þau skulu verða þáttuð."
-    )
-    print("Sending test translate phrase to server:", sample_phrase)
-    res = ParsingClient.request_sentence(sample_phrase)
-    print("Received response:")
-    print(res)
-
-
-if __name__ == "__main__":
-    test_translate_sentence()
-    # test_translate_text()
-    pass
-    # manual_test_sentence()

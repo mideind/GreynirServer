@@ -144,7 +144,7 @@ class Node:
 
     def _pprint(self, _prefix="  ", depth=0):
         """ Inner function for pretty printing tree """
-        print("%s%s" % (_prefix * depth, self.__str__()))
+        print("{}{}".format(_prefix * depth, self.__str__()))
         for c in self.children:
             c._pprint(_prefix=_prefix, depth=depth + 1)
 
@@ -250,10 +250,7 @@ def parse_flat_tree_to_nodes(parse_toks, text_toks=None, verbose=False):
 
         # Token must be a legal right nonterminal since it is not a left token
         # A right token must be matched by its corresponding left token
-        if (
-                not flat_is_right_nonterminal(tok)
-                or flat_matching_nonterminal(parent.name) != tok
-        ):
+        if not flat_is_right_nonterminal(tok) or flat_matching_nonterminal(parent.name) != tok:
             msg = "Error: Found illegal nonterminal {}, expected right nonterminal"
             vprint(msg.format(tok))
 

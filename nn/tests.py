@@ -1,7 +1,7 @@
 from __future__ import print_function
 from pprint import pprint
 
-from nn.nnclient import TranslateClient
+from nn.nnclient import TranslateClient, ParsingClient
 from nn.nntree import (
     Node,
     parse_tree_with_text,
@@ -11,6 +11,16 @@ from nn.nntree import (
     flat_is_nonterminal,
     parse_tree
 )
+
+
+def send_test_parse():
+    sample_phrase = (
+        "Eftirfarandi skilaboð voru smíðuð í Nnclient og þau skulu verða þáttuð."
+    )
+    print("Sending test translate phrase to server:", sample_phrase)
+    res = ParsingClient.request_sentence(sample_phrase)
+    print("Received response:")
+    print(res)
 
 
 def test_translate_sentence():
@@ -84,10 +94,6 @@ def test_reynir_terminal():
     print(stree)
     pprint(stree._head)
 
-    # print("flat tree as SimpleTree")
-    # stree = SimpleTree([dtree])
-    # print(stree)
-
 
 def test_nntree_terminal():
     text_tok = "hún"
@@ -116,9 +122,6 @@ def test_parse_with_text():
 
     text = "hún fer"
     nnparser_toks = "P S-MAIN IP NP-SUBJ pfn_et_kvk_nf_p3 /NP-SUBJ VP so_0_et_fh_gm_nt_p3 /VP /IP /S-MAIN /P"
-    reynir_toks = (
-        "P S-MAIN IP NP-SUBJ pfn_kvk_et_nf /NP-SUBJ VP so_0_et_p3 /VP /IP /S-MAIN /P"
-    )
     parse_toks = nnparser_toks
     nntree, presult = parse_tree_with_text(parse_toks, text)
 
@@ -130,7 +133,6 @@ def test_parse_with_text():
     print("parsed flat tree as nntree dict:")
     dtree = nntree.to_dict()
     pprint(dtree)
-    # print(presult)
     print()
 
     print("parsed flat tree as SimpleTree view:")
@@ -160,7 +162,6 @@ def test_nntree_to_simple_tree():
 
 
 def test_parse():
-    # flat tree from reynir.Reynir()
     sample = (
         "P S-MAIN IP NP-SUBJ pfn_kvk_et_nf /NP-SUBJ VP so_0_et_p3 /VP /IP /S-MAIN /P"
     )
