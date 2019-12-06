@@ -1,4 +1,4 @@
-# Reynir configuration file for ipython.
+# Greynir configuration file for ipython.
 
 from platform import python_version, python_implementation
 

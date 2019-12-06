@@ -2,7 +2,7 @@
 
 """
 
-    Reynir: Natural language processing for Icelandic
+    Greynir: Natural language processing for Icelandic
 
     Verb information collector
 
@@ -22,7 +22,7 @@
 
 
     This module reads information about Icelandic verbs from a text
-    file and emits it in a format usable by Reynir.
+    file and emits it in a format usable by Greynir.
 
 """
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 
-    Reynir: Natural language processing for Icelandic
+    Greynir: Natural language processing for Icelandic
 
     Processor module
 
@@ -333,7 +333,7 @@ def process_articles(
     num_workers=None,
 ):
     """ Process multiple articles according to the given parameters """
-    print("------ Reynir starting processing -------")
+    print("------ Greynir starting processing -------")
     if from_date:
         print("From date: {0}".format(from_date))
     if limit:
@@ -400,7 +400,7 @@ def init_db():
 
 __doc__ = """
 
-    Reynir - Natural language processing for Icelandic
+    Greynir - Natural language processing for Icelandic
 
     Processor module
 

@@ -1,6 +1,6 @@
 """
 
-    Reynir: Natural language processing for Icelandic
+    Greynir: Natural language processing for Icelandic
 
     Bus schedule query module
 
@@ -21,7 +21,7 @@
 
 
     This module implements a processor for queries about bus schedules.
-    It also serves as an example of how to plug query grammars into Reynir's
+    It also serves as an example of how to plug query grammars into Greynir's
     query subsystem and how to handle the resulting trees.
 
     The queries supported by the module are as follows:

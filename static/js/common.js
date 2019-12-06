@@ -1,7 +1,7 @@
 
 /*
 
-   Reynir: Natural language processing for Icelandic
+   Greynir: Natural language processing for Icelandic
 
    Common.js
 

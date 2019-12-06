@@ -1,6 +1,6 @@
 """
 
-    Reynir: Natural language processing for Icelandic
+    Greynir: Natural language processing for Icelandic
 
     Article class
 
@@ -49,7 +49,7 @@ MAX_SENTENCE_TOKENS = 100
 class Article:
 
     """ An Article represents a new article typically scraped from a web site,
-        as it is tokenized, parsed and stored in the Reynir database. """
+        as it is tokenized, parsed and stored in the Greynir database. """
 
     _parser = None
 
