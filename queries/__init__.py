@@ -248,7 +248,7 @@ def time_period_desc(seconds, case="nf", omit_seconds=True):
     # Round down to nearest minute if omitting second precision
     seconds = ((seconds // 60) * 60) if omit_seconds else seconds
 
-    # I suppose this could be done using BÍN lookup, but this is faster,
+    # This could be done using BÍN lookup, but this is faster,
     # cleaner and allows for reuse outside the codebase.
     unit_nouns = {
         "w": (["vika", "viku", "viku", "viku"], ["vikur", "vikur", "vikum", "vikna"]),
