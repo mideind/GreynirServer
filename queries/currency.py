@@ -459,7 +459,9 @@ def sentence(state, result):
                 .format(result.desc, answer, (" " + suffix) if suffix else "", verb)
                 .capitalize()
             )
+            # Clean up voice answer
             voice_answer = voice_answer.replace("slot í", "slotí")
+            voice_answer = voice_answer.replace(" dollars ", " Bandaríkjadals ")
             q.set_answer(response, answer, voice_answer)
             q.set_key(target_currency)
             # Store the amount in the query context
