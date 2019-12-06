@@ -89,7 +89,7 @@ class NnClient:
         url = "http://{host}:{port}/{verb}.api".format(
             host=cls.host, port=cls.port, verb=cls.verb
         )
-        headers = {"content-type": "application/json"}
+        headers = {"content-type": "application/json; charset=UTF-8"}
         payload = {"pgs": pgs}
 
         if data is not None:
