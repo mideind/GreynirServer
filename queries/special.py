@@ -409,6 +409,9 @@ _SPECIAL_QUERIES = {
     "hjálpaðu mér": {
         "answer": "Hvernig get ég hjálpað?"
     },
+    "mér líður illa": {
+        "answer": "Það er nú ekki gott að heyra, kæri notandi."
+    },
     "syngdu fyrir mig": {
         "answer": "Ó sóle míó!"
     },
@@ -749,7 +752,9 @@ _SPECIAL_QUERIES = {
 
     # Goodbye
     "bless": { "answer": "Bless, kæri notandi.", "is_question": False },
+    "bless bless": { "answer": "Bless, kæri notandi.", "is_question": False },
     "bless embla": { "answer": "Bless, kæri notandi.", "is_question": False },
+    "bless bless embla": { "answer": "Bless, kæri notandi.", "is_question": False },
     "bæ": { "answer": "Bless, kæri notandi.", "is_question": False },
     "bæ embla": { "answer": "Bless, kæri notandi.", "is_question": False },
 

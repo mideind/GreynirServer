@@ -37,6 +37,7 @@
 # TODO: "Er gott veður úti?"
 # TODO: "Hvað er mikið frost?" "Hversu mikið frost er úti?"
 # TODO: "Verður snjór á morgun?"
+# TODO: "Hvernig er veðurspáin fyrir garðabæ?"
 
 import re
 import logging

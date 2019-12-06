@@ -30,9 +30,27 @@
 
 """
 
+
 import re
 
+
 _TELEPHONE_QTYPE = "Telephone"
+
+
+TOPIC_LEMMAS = ["hringdu", "hringja"]
+
+
+def help_text(lemma):
+    """ Help text to return when query.py is unable to parse a query but
+        one of the above lemmas is found in it """
+    return "Ég get hringt ef þú segir til dæmis: {0}?".format(
+        random.choice(
+            (
+                "Hringdu í 18 18",
+            )
+        )
+    )
+
 
 # # This module wants to handle parse trees for queries,
 # HANDLE_TREE = True

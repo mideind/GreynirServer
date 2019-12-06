@@ -24,7 +24,8 @@
 
 """
 
-# TODO: Hvað eru margar sekúndur í einum degi
+# TODO: Hvað eru fjórir hnútar margir metrar á sekúndu?
+# TODO: Hvað eru 20 metrar á sekúndu mörg vindstig?
 
 import re
 import random

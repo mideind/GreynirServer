@@ -25,7 +25,7 @@
 
 # TODO: Styðja "Köben" :)
 
-
+import re
 import random
 
 
