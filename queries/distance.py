@@ -32,7 +32,6 @@
 import re
 import logging
 import math
-from pprint import pprint
 
 from reynir.bindb import BIN_Db
 from queries import (
@@ -58,7 +57,9 @@ _QDISTANCE_REGEXES = (
     r"^hvað er langt í ([^0-9.].+)$",
     r"^hvað er langt upp í (.+)$",
     r"^hvað er langt til (.+)$",
+    r"^hvað er langt út á ([^0-9.].+)$",
     r"^hversu langt er til (.+)$",
+    r"^hversu langt er út á (.+)$",
 )
 
 # Travel time questions
@@ -247,6 +248,7 @@ def handle_plain_text(q):
     remote_loc = None
     travel_mode = None
     matches = None
+    handler = None
 
     # Distance queries
     for rx in _QDISTANCE_REGEXES:
@@ -256,14 +258,15 @@ def handle_plain_text(q):
             break
 
     # Travel time queries
-    for rx in _QTRAVELTIME_REGEXES:
-        matches = re.search(rx, ql)
-        if matches:
-            handler = traveltime_answer_for_loc
-            break
+    if not handler:
+        for rx in _QTRAVELTIME_REGEXES:
+            matches = re.search(rx, ql)
+            if matches:
+                handler = traveltime_answer_for_loc
+                break
 
     # Nothing caught by regexes, bail
-    if not matches:
+    if not handler or not matches:
         return False
 
     # Look up in geo API
