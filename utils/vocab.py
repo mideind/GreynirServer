@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
     
-    Reynir: Natural language processing for Icelandic
+    Greynir: Natural language processing for Icelandic
 
     Additional vocabulary utility
 
@@ -320,7 +320,7 @@ class Meanings:
 
 if __name__ == "__main__":
 
-    print("Welcome to the Reynir additional vocabulary builder\n")
+    print("Welcome to the Greynir additional vocabulary builder\n")
 
     src = os.path.join(basepath, "config", "Vocab.conf")
     fname = os.path.join(basepath, "resources", "ord.add.csv")

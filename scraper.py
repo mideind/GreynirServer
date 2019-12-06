@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 
-    Reynir: Natural language processing for Icelandic
+    Greynir: Natural language processing for Icelandic
 
     Scraper module
 
@@ -455,7 +455,7 @@ class Scraper:
 
 def scrape_articles(reparse=False, limit=0, urls=None, uuid=None):
 
-    logging.info("------ Reynir starting scrape -------")
+    logging.info("------ Greynir starting scrape -------")
     if uuid is not None:
         logging.info("Parsing single article with UUID {0}".format(uuid))
     elif urls is not None:
@@ -490,7 +490,7 @@ def scrape_articles(reparse=False, limit=0, urls=None, uuid=None):
 
 __doc__ = """
 
-    Reynir - Natural language processing for Icelandic
+    Greynir - Natural language processing for Icelandic
 
     Scraper module
 

@@ -1,6 +1,6 @@
 """
 
-    Reynir: Natural language processing for Icelandic
+    Greynir: Natural language processing for Icelandic
 
     Tree module
 
@@ -1252,7 +1252,7 @@ class TreeBase:
                 self.stack = self.stack[0 : n + 1]
 
     def handle_R(self, n):
-        """ Reynir version info """
+        """ Greynir version info """
         pass
 
     def handle_C(self, n):

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 
-    Reynir: Natural language processing for Icelandic
+    Greynir: Natural language processing for Icelandic
 
     Dumper module
 
@@ -183,7 +183,7 @@ class Dumper:
 
 def process_articles(limit = 0):
 
-    print("------ Reynir starting dump -------")
+    print("------ Greynir starting dump -------")
     print("Output file: {0}".format(OUTPUT_FILE))
     if limit:
         print("Limit: {0} articles".format(limit))
@@ -210,7 +210,7 @@ class Usage(Exception):
 
 __doc__ = """
 
-    Reynir - Natural language processing for Icelandic
+    Greynir - Natural language processing for Icelandic
 
     Dumper module
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-    Reynir: Natural language processing for Icelandic
+    Greynir: Natural language processing for Icelandic
 
     Processor module to extract attributes of objects
 

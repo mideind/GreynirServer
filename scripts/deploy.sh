@@ -35,7 +35,7 @@ sudo systemctl stop $SERVICE
 
 cd $DEST
 
-# echo "Upgrading the reynir package"
+# echo "Upgrading the Greynir package"
 
 # source p369/bin/activate
 # pip install --upgrade -r requirements.txt

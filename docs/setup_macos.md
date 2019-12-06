@@ -30,8 +30,8 @@ Check out source code using [git](https://git-scm.com):
 
 ```
 cd ~
-git clone https://github.com/mideind/Reynir
-cd ~/Reynir
+git clone https://github.com/mideind/Greynir
+cd ~/Greynir
 ```
 
 Create and activate virtual environment, install required Python packages:
@@ -84,16 +84,16 @@ Finally, create the database tables used by Greynir (this will only create
 the tables if needed, and no existing data is erased):
 
 ```
-cd ~/Reynir
+cd ~/Greynir
 python scraper.py --init
 ```
 
 ## Run
 
-Change to the Reynir repo directory and activate the virtual environment:
+Change to the Greynir repo directory and activate the virtual environment:
 
 ```
-cd ~/Reynir
+cd ~/Greynir
 source venv/bin/activate
 ```
 
@@ -126,5 +126,5 @@ export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
 ```
 
 Starts an [IPython](https://ipython.org) shell with a database session (`s`), 
-the Reynir parser (`r`) and all SQLAlchemy database models preloaded. For 
+the Greynir parser (`r`) and all SQLAlchemy database models preloaded. For 
 more info, see [Using the Greynir Shell](shell.md).
