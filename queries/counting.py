@@ -2,7 +2,7 @@
 
     Reynir: Natural language processing for Icelandic
 
-    Television schedule query response module
+    Counting query response module
 
     Copyright (C) 2019 Miðeind ehf.
 

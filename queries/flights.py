@@ -1,6 +1,6 @@
 """
 
-    Reynir: Natural language processing for Icelandic
+    Greynir: Natural language processing for Icelandic
 
     Flight schedule query response module
 
@@ -58,8 +58,6 @@ _LANDING_RX = frozenset(
         r"hver er komutíminn fyrir næstu flugvél frá (.+)$",
         r"hver er komutími næstu vélar frá (.+)$",
         r"hver er komutími næstu flugvélar frá (.+)$",
-
-
     )
 )
 
