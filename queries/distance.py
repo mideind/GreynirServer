@@ -214,7 +214,6 @@ def traveltime_answer_for_loc(matches, query):
         or not res.get("rows")
         or not len(res["rows"])
     ):
-        print("Bad api result")
         return None
 
     # Extract info we want
@@ -274,7 +273,6 @@ def handle_plain_text(q):
         else:
             answ = gen_answer("Ég veit ekki hvar þú ert.")
     except Exception as e:
-        raise
         logging.warning("Exception generating answer from geocode API: {0}".format(e))
         q.set_error("E_EXCEPTION: {0}".format(e))
         answ = None

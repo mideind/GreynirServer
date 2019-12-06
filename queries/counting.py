@@ -1,6 +1,6 @@
 """
 
-    Reynir: Natural language processing for Icelandic
+    Greynir: Natural language processing for Icelandic
 
     Counting query response module
 
@@ -39,7 +39,7 @@ TOPIC_LEMMAS = ["teldu", "telja"]
 def help_text(lemma):
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
-    return "Ég get svarað ef þú segir til dæmis: {0}?".format(
+    return "Ég get svarað ef þú segir til dæmis: {0}".format(
         random.choice(("Teldu upp í tíu", "Teldu niður frá tuttugu"))
     )
 

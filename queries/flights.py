@@ -73,3 +73,53 @@ _DEPARTING_RX = frozenset(
         r"hver er brottfarartími næstu flugvélar til (.+)$",
     )
 )
+
+# https://www.isavia.is/json/flight/?airport=KEF&cargo=0&dateFrom=2019-12-06%2000%3A00&dateTo=2019-12-17%2023%3A59&language=is&arrivals=true
+
+
+
+
+
+def handle_plain_text(q):
+    """ Handle a plain text query, contained in the q parameter """
+    ql = q.query_lower.rstrip("?")
+
+    airport = None
+    departure = False
+
+    # Distance queries
+    for rx in _LANDING_RX:
+        matches = re.search(rx, ql)
+        if matches:
+            airport = matches.group(1)
+            break
+
+    # Travel time queries
+    for rx in _DEPARTING_RX:
+        matches = re.search(rx, ql)
+        if matches:
+            airport = matches.group(1)
+            departure = True
+            break
+
+    # Nothing caught by regexes, bail
+    if not matches:
+        return False
+
+    # Look up in Isavia API for flights at KEF
+    try:
+        pass
+    except Exception as e:
+        logging.warning("Exception generating answer from flight data: {0}".format(e))
+        q.set_error("E_EXCEPTION: {0}".format(e))
+        answ = None
+
+    if answ:
+        q.set_qtype(_FLIGHTS_QTYPE)
+        q.set_answer(*answ)
+        return True
+
+    return False
+
+
+
