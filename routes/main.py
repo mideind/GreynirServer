@@ -1,6 +1,6 @@
 """
 
-    Reynir: Natural language processing for Icelandic
+    Greynir: Natural language processing for Icelandic
 
     Copyright (C) 2019 Miðeind ehf.
 
@@ -17,7 +17,7 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    This module contains the main Flask routes for the Reynir web server.
+    This module contains the main Flask routes for the Greynir web server.
 
 """
 

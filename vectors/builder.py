@@ -1,5 +1,5 @@
 """
-    Reynir: Natural language processing for Icelandic
+    Greynir: Natural language processing for Icelandic
 
     Document index builder & topic tagger module
 
@@ -20,7 +20,7 @@
 
     This module is written in Python 3
 
-    This module reads articles from the Reynir article database as bags-of-words
+    This module reads articles from the Greynir article database as bags-of-words
     and indexes them using Latent Semantic Indexing (LSI, also called Latent Semantic
     Analysis, LSA), with indexes generated with the help of the Gensim document
     processing module.
@@ -78,7 +78,7 @@ def w_from_stem(stem, cat):
 
 class CorpusIterator:
 
-    """ Iterate through the Reynir words database, yielding a bag-of-words
+    """ Iterate through the Greynir words database, yielding a bag-of-words
         for each article """
 
     def __init__(self, dictionary=None):
@@ -559,7 +559,7 @@ class ReynirCorpus:
 def build_model(verbose=False):
     """ Build a new model from the words (and articles) table """
 
-    print("------ Reynir starting model build -------")
+    print("------ Greynir starting model build -------")
     ts = "{0}".format(datetime.utcnow())[0:19]
     print("Time: {0}".format(ts))
 
@@ -589,18 +589,18 @@ def build_model(verbose=False):
 def calculate_topics(verbose=False):
     """ Recalculate topic vectors from keywords """
 
-    print("------ Reynir recalculating topic vectors -------")
+    print("------ Greynir recalculating topic vectors -------")
     rc = ReynirCorpus(verbose=verbose)
     rc.load_lsi_model()
     rc.calculate_topics()
-    print("------ Reynir recalculation complete -------")
+    print("------ Greynir recalculation complete -------")
 
 
 def tag_articles(limit, verbose=False, process_all=False, uuid=None):
     """ Tag all untagged articles or articles that
         have been parsed since they were tagged """
 
-    print("------ Reynir starting tagging -------")
+    print("------ Greynir starting tagging -------")
     if uuid:
         print("Tagging article {0}".format(uuid))
     elif process_all:
@@ -641,7 +641,7 @@ class Usage(Exception):
 
 __doc__ = """
 
-    Reynir - Natural language processing for Icelandic
+    Greynir - Natural language processing for Icelandic
 
     Index builder and tagger module
 

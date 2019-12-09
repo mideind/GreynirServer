@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 
-    Reynir: Natural language processing for Icelandic
+    Greynir: Natural language processing for Icelandic
 
     Web server main module
 
@@ -298,7 +298,7 @@ else:
 
     # Log our startup
     log_str = (
-        "Reynir instance starting with "
+        "Greynir instance starting with "
         "host={0}:{1}, db_host={2}:{3} on Python {4}".format(
             Settings.HOST,
             Settings.PORT,

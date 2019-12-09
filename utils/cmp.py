@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 
-    Reynir: Natural language processing for Icelandic
+    Greynir: Natural language processing for Icelandic
 
     POS tagging accuracy measurement tool
 
@@ -21,7 +21,7 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    This module allows measurement of POS tagging accuracy for Reynir
+    This module allows measurement of POS tagging accuracy for Greynir
     against the Icelandic Frequency Database (IFD), which is a hand-tagged
     corpus containing various types of text.
 
@@ -1342,12 +1342,12 @@ class Comparison():
         corpus = Corpus()
         sentences = corpus.raw_sentence_stream(filter_func = filter_func, skip = skip_func)
         if USE_LOCAL_TAGGER:
-            # Call the Reynir POS tagger directly in-process
+            # Call the Greynir POS tagger directly in-process
             with Tagger.session() as tagger:
                 for sent in sentences:
                     process_func(tagger, sent)
         else:
-            # Use the Reynir HTTP JSON API for POS tagging (/postag.api)
+            # Use the Greynir HTTP JSON API for POS tagging (/postag.api)
             for sent in sentences:
                 process_func(None, sent)
         self.prenta()
