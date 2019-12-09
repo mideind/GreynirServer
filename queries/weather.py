@@ -217,7 +217,7 @@ QWeatherLocation →
     QWeatherCountry | QWeatherCapitalRegion
 
 
-$score(+35) QWeather
+$score(+55) QWeather
 
 """
 

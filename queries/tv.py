@@ -26,6 +26,7 @@
 
 # TODO: Support TV schedule queries for other stations than RÚV
 # TODO: Support radio schedules
+# TODO: "Hvað er í sjónvarpinu í kvöld?"
 
 import logging
 import re

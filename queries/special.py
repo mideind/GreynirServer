@@ -281,6 +281,11 @@ _GOOD_TO_HEAR = {
     "is_question": False,
 }
 
+_GOODBYE = {
+    "answer": "Bless, kæri notandi.",
+    "is_question": False
+}
+
 _COMPUTER_PROGRAM = {
     "answer": "Ég er tölvuforrit."
 }
@@ -378,6 +383,9 @@ _SPECIAL_QUERIES = {
     # },
     "hvað heiti ég": {
         "answer": "Það veit ég ekki, kæri notandi."
+    },
+    "veistu hvað ég heiti": {
+        "answer": "Nei, það veit ég ekki, kæri notandi."
     },
     "hvar á ég heima": {
         "answer": "Það veit ég ekki, en vonandi einhvers staðar."
@@ -611,6 +619,7 @@ _SPECIAL_QUERIES = {
     "kannt þú vel við mig": _OF_COURSE,
     "fílarðu mig": _OF_COURSE,
     "fílar þú mig": _OF_COURSE,
+    "þykir þér vænt um mig": _OF_COURSE,
     "er ég skemmtilegur": _OF_COURSE,
     "er ég skemmtileg": _OF_COURSE,
     "er ég frábær": _OF_COURSE,
@@ -621,6 +630,10 @@ _SPECIAL_QUERIES = {
     "er ég góð manneskja": _OF_COURSE,
     "er ég bestur": _OF_COURSE,
     "er ég best": _OF_COURSE,
+    "ertu vinur minn": _OF_COURSE,
+    "ert þú vinur minn": _OF_COURSE,
+    "ertu vinkona mín": _OF_COURSE,
+    "ert þú vinkona mín": _OF_COURSE,
 
     # Response to apologies
     "fyrirgefðu": _NO_PROBLEM,
@@ -751,12 +764,12 @@ _SPECIAL_QUERIES = {
     "gaman að kynnast þér": _LIKEWISE,
 
     # Goodbye
-    "bless": { "answer": "Bless, kæri notandi.", "is_question": False },
-    "bless bless": { "answer": "Bless, kæri notandi.", "is_question": False },
-    "bless embla": { "answer": "Bless, kæri notandi.", "is_question": False },
-    "bless bless embla": { "answer": "Bless, kæri notandi.", "is_question": False },
-    "bæ": { "answer": "Bless, kæri notandi.", "is_question": False },
-    "bæ embla": { "answer": "Bless, kæri notandi.", "is_question": False },
+    "bless": _GOODBYE,
+    "bless bless": _GOODBYE,
+    "bless embla": _GOODBYE,
+    "bless bless embla": _GOODBYE,
+    "bæ": _GOODBYE,
+    "bæ embla": _GOODBYE,
 
     # Thanks
     "takk": _thanks,
@@ -1012,6 +1025,12 @@ _SPECIAL_QUERIES = {
     "ertu tölva": {
         "answer": "Nei, ég er tölvuforrit."
     },
+    "hvernig líturðu út": {
+        "answer": "Ég er fjallmyndarleg."
+    },
+    "hvernig lítur þú út": {
+        "answer": "Ég er fjallmyndarleg."
+    },
 
     # Capabilities
     "hvað veistu": _capabilities,
@@ -1024,6 +1043,9 @@ _SPECIAL_QUERIES = {
     "hvað veistu þá": _capabilities,
     "hvað getur þú gert": _capabilities,
     "hvað geturðu gert": _capabilities,
+    "hvað veistu ekki": {
+        "answer": "Það er ýmislegt sem ég veit ekki."
+    },
 
     "hvað get ég spurt þig um": _capabilities,
     "hvað get ég beðið þig um": _capabilities,
@@ -1175,6 +1197,8 @@ _SPECIAL_QUERIES = {
     "seg þú brandara": _random_joke,
     "segðu mér brandara": _random_joke,
     "seg þú mér brandara": _random_joke,
+    "segðu mér góðan brandara": _random_joke,
+    "seg þú mér góðan brandara": _random_joke,
     "segðu lélegan brandara": _random_joke,
     "seg þú mér lélegan brandara": _random_joke,
     "segðu mér lélegan brandara": _random_joke,

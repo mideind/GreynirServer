@@ -121,16 +121,16 @@ $score(+35) QCurrency
 
 QCurrencyQuery →
     # "Hver er gengisvísitalan?"
-    "hver" "er" QCurCurrencyIndex_nf
+    "hver" "er" QCurCurrencyIndex_nf | QCurCurrencyIndex_nf
     
     # "Hvert/hvað/hvernig er gengi X?"
-    | QCurAnyPrefix QCurGeneralRate
+    | QCurAnyPrefix? QCurGeneralRate
 
     # "Hvert/hvað/hvernig er gengi X gagnvart Y?"
-    | QCurAnyPrefix QCurExchangeRate
+    | QCurAnyPrefix? QCurExchangeRate
 
     # "Hvað eru NUM X margir/margar/mörg Y?"
-    | QCurGenericPrefix QCurAmountConversion
+    | QCurGenericPrefix? QCurAmountConversion
 
     # "Hvað fæ ég marga/margar/mörg X fyrir NUM Y?"
     # |
