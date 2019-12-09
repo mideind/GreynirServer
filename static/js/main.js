@@ -2,7 +2,7 @@
 
    Main.js
 
-   Reynir/Greynir front page script
+   Greynir front page script
 
     Copyright (C) 2018 Miðeind ehf.
 

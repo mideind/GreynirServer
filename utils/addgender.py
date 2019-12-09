@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-    Reynir: Natural language processing for Icelandic
+    Greynir: Natural language processing for Icelandic
 
     Utility program to populate the gender column of the persons table
 

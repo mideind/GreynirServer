@@ -1,6 +1,6 @@
 """
 
-    Reynir: Natural language processing for Icelandic
+    Greynir: Natural language processing for Icelandic
 
     Copyright (C) 2019 Miðeind ehf.
 

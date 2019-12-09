@@ -1,6 +1,6 @@
 """
 
-    Reynir: Natural language processing for Icelandic
+    Greynir: Natural language processing for Icelandic
 
     Copyright (C) 2019 Miðeind ehf.
 
@@ -17,7 +17,7 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    Tests for code in the Reynir repo.
+    Tests for code in the Greynir repo.
 
 """
 

@@ -1,5 +1,5 @@
 """
-    Reynir: Natural language processing for Icelandic
+    Greynir: Natural language processing for Icelandic
 
     Tree processor module for extraction of person names and titles
 
@@ -22,7 +22,7 @@
     extracts person names and titles.
 
     The processor consists of a set of functions, each having the base name (without
-    variants) of a nonterminal in the Reynir context-free grammar. These functions
+    variants) of a nonterminal in the Greynir context-free grammar. These functions
     will be invoked in turn during a depth-first traversal of the tree. The functions
     are called with three parameters:
 

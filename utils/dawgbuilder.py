@@ -8,7 +8,7 @@
     to store a large set of words in an efficient structure
     in terms of storage and speed.
 
-    Reynir uses three DAWGs to implement its compound word recognizer
+    Greynir uses three DAWGs to implement its compound word recognizer
     for Icelandic. They contain the entire BÍN database of word forms,
     all allowable word prefixes, and all allowable word suffixes,
     respectively.
@@ -844,7 +844,7 @@ class DawgBuilder:
 
 def generate_dawgs():
     """ Build all required DAWGs """
-    print("Starting DAWG build for Reynir")
+    print("Starting DAWG build for Greynir")
     resources_path = os.path.join(basepath, "resources")
     db = DawgBuilder()
 
@@ -886,7 +886,7 @@ def generate_dawgs():
 
 if __name__ == "__main__":
 
-    # Build the DAWGs for the Reynir compound word recognizer.
+    # Build the DAWGs for the Greynir compound word recognizer.
     # !!! Note: We can't use the IS_is.utf8 locale's default
     # collation order, since it is case-insignificant. We must
     # use a collation order that is case-significant for the
