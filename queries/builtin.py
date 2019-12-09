@@ -455,39 +455,72 @@ def query_person(query, session, name):
             else:
                 answer = voice_answer = "Ég veit ekki við hvert þú átt."
             return response, answer, voice_answer
-    if query.is_voice and not " " in name:
-        # If using voice, do not attempt to answer single-name
-        # queries ('Hver er Guðmundur?') since the answers are almost
-        # always nonsensical
-        titles = []
-        articles = []
-    else:
-        titles = _query_person_titles(session, name)
-        # Now, create a list of articles where this person name appears
-        articles = _query_article_list(session, name)
-    response = dict(answers=titles, sources=articles)
-    if titles and "answer" in titles[0]:
-        # 'Már Guðmundsson er seðlabankastjóri.'
-        answer = titles[0]["answer"]
-        voice_answer = name + " er " + answer + "."
-        # Set the context for a subsequent query
-        query.set_context({"person_name": name})
-    else:
-        if query.is_voice:
+    if query.is_voice:
+        # Handle voice query
+        if " " not in name:
+            # If using voice, do not attempt to answer single-name
+            # queries ('Hver er Guðmundur?') since the answers are almost
+            # always nonsensical
+            query.set_error("E_PERSON_NOT_FOUND")
+            return dict(answer=""), "", ""
+        # A name with at least two components
+        title = query_person_title(session, name)
+        if not title:
             # Rather than accept this as a voice query
             # for a person that is not found, return an
             # error and thereby give other query handlers
             # a chance to parse this
             query.set_error("E_PERSON_NOT_FOUND")
-        answer = "Nafnið '" + name + "' finnst ekki."
-        voice_answer = "Ég veit ekki hver " + name + " er."
+            return dict(answer=""), "", ""
+        answer = title
+        voice_answer = name + " er " + answer + "."
+        # Set the context for a subsequent query
+        query.set_context({"person_name": name})
+        response = dict(answer=answer)
+    else:
+        # Not voice
+        voice_answer = ""
+        titles = _query_person_titles(session, name)
+        # Now, create a list of articles where this person name appears
+        articles = _query_article_list(session, name)
+        response = dict(answers=titles, sources=articles)
+        if titles and "answer" in titles[0]:
+            # 'Már Guðmundsson er seðlabankastjóri.'
+            answer = titles[0]["answer"]
+            # Set the context for a subsequent query
+            query.set_context({"person_name": name})
+        else:
+            answer = "Nafnið '" + name + "' finnst ekki."
     return response, answer, voice_answer
+
+
+# Try to avoid titles that simply say that A is the husband/wife of B,
+# or something similar
+_DONT_LIKE_TITLE = (
+    "maki", "eiginmaður", "eiginkona", "kærasti", "kærasta",
+    "sambýlismaður", "sambýliskona"
+)
 
 
 def query_person_title(session, name):
     """ Return the most likely title for a person """
+
+    def we_dont_like(answer):
+        """ Return False if we don't like this title and
+            would prefer another one """
+        # Skip titles that simply say that somebody is the husband or
+        # wife of somebody else
+        return answer.startswith(_DONT_LIKE_TITLE)
+
     rl = _query_person_titles(session, name)
-    return correct_spaces(rl[0]["answer"]) if rl else ""
+    len_rl = len(rl)
+    index = 0
+    while index < len_rl and we_dont_like(rl[index]["answer"]):
+        index += 1
+    if index >= len_rl:
+        # If we don't like any answer anyway, go back to the topmost one
+        index = 0
+    return "" if index >= len_rl else correct_spaces(rl[index]["answer"])
 
 
 def query_title(query, session, title):
