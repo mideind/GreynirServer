@@ -245,8 +245,6 @@ def handle_plain_text(q):
     """ Handle a plain text query, contained in the q parameter """
     ql = q.query_lower.rstrip("?")
 
-    remote_loc = None
-    travel_mode = None
     matches = None
     handler = None
 

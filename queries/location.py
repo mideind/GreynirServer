@@ -288,6 +288,7 @@ def answer_for_postcode(loc):
     # Extract address info from top result
     (street, num, locality, postcode, country_code) = _addrinfo_from_api_result(top)
 
+    # Only support Icelandic postcodes for now
     if country_code == "IS" and postcode:
         pc = postcodes.get(int(postcode))
         pd = "{0} {1}".format(postcode, pc["stadur_nf"])
