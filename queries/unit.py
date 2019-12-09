@@ -104,8 +104,10 @@ _UNITS = {
     "olíutunna": ("m³", 160.0e-3),  # Rounded to 160 liters
     "gallon": ("m³", 3.8e-3),  # Rounded
     "gallón": ("m³", 3.8e-3),  # Rounded
-    "vökvaúnsa": ("m³", 0.0295735 * 1.0e-3),  # US fl. oz.
-    "pint": ("m³", 1.0e-3 * 0.568),  # British pint
+    "vökvaúnsa": ("m³", 0.0295735e-3),  # US fl. oz.
+    "vökva únsa": ("m³", 0.0295735e-3),  # US fl. oz.
+    "vökva únsur": ("m³", 0.0295735e-3),  # US fl. oz.
+    "pint": ("m³", 0.568e-3),  # British pint
 
     # Weight (standard unit is kg)
     "kíló": ("kg", 1.0),
@@ -119,7 +121,7 @@ _UNITS = {
     "pund": ("kg", 454.0e-3),
     "karat": ("kg", 0.2e-3),
     "steinn": ("kg", 6.35),
-    "mark": ("kg", 0.25),
+    "mörk": ("kg", 0.25),
 
     # Distance (standard unit is m)
     "metri": ("m", 1.0),
@@ -149,6 +151,7 @@ _UNITS = {
     "ekra": ("m²", 4047),
 
     # Time (standard unit is second)
+    "öld": ("sek.", 3600.0 * 24 * 365 * 100),
     "áratugur": ("sek.", 3600.0 * 24 * 365 * 10),
     "ár": ("sek.", 3600.0 * 24 * 365),
     "mánuður": ("sek.", 3600.0 * 24 * 30),
@@ -175,12 +178,12 @@ _CONVERT_UNITS = {
     "dags": "dagur",
     "dagar": "dagur",
     "dögum": "dagur",
-    "mörk": "mark",
-    "mörkum": "mark",
-    "marka": "mark",
-    "marki": "mark",
-    "marks": "mark",
+    "merkur": "mörk",
+    "marka": "mörk",
+    "markar": "mörk",
     "mílu": "míla",
+    "aldar": "öld",
+    "aldir": "öld",
     "steinar": "steinn",
     "steina": "steinn",
     "steini": "steinn",
@@ -267,6 +270,8 @@ QUnit_kvk/fall →
     | 'tunna:kvk'/fall
     | 'olíutunna:kvk'/fall
     | 'vökvaúnsa:kvk'/fall
+    | "vökva" "únsa"
+    | "vökva" "únsur"
 
 QUnit_hk/fall →
     'gallon:hk'/fall
@@ -292,8 +297,7 @@ QUnit_hk/fall →
     | 'tonn:hk'/fall
     | 'pund:hk'/fall
     | 'karat:hk'/fall
-    | 'mark:hk'/fall
-    | 'Mark'/fall
+    | 'mörk:kvk'/fall
     | 'Mörk'/fall
 
 # Distance
@@ -310,7 +314,8 @@ QUnit_kk/fall →
     | 'faðmur:kk'/fall
 
 QUnit_kvk/fall →
-    'míla:kvk'/fall | 'Míla'/fall
+    'míla:kvk'/fall 
+    | 'Míla'/fall
     | 'sjómíla:kvk'/fall
     | 'tomma:kvk'/fall
 
@@ -354,6 +359,7 @@ QUnit_kvk/fall →
     | 'mínúta:kvk'/fall
     | 'klukkustund:kvk'/fall
     | 'vika:kvk'/fall
+    | 'öld:kvk'/fall
 
 """
 

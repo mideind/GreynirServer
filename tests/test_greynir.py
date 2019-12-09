@@ -274,7 +274,7 @@ def test_query_api(client):
     assert "answer" in json
     assert json["answer"] == "0,21 lítrar"
 
-    resp = client.get("/query.api?q=hvað eru 18 mörk mörg kíló")
+    resp = client.get("/query.api?q=hvað eru 18 merkur mörg kíló")
     json = validate_json(resp)
     assert json["qtype"] == "Unit"
     assert "answer" in json
