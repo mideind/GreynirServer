@@ -23,13 +23,13 @@
       <!-- The microphone div is not displayed by default.
          It is enabled if the microphone is supported. -->
       <div class="col-xs-2 col-sm-1" style="max-width: 4.2em" id="microphone-div">
-         <button class="btn btn-info btn-lg btn-block" id="microphone"
+         <button class="btn btn-success btn-lg btn-block" id="microphone"
             title="Nota hljóðnema" tabindex="2"><!--
          --><span class="glyphicon glyphicon-microphone"></span> </button>
       </div>
 
       <div class="col-xs-3 col-sm-2">
-         <button class="btn btn-success btn-lg btn-block" id="url-ok" title="Greina" tabindex="3"
+         <button class="btn btn-info btn-lg btn-block" id="url-ok" title="Greina" tabindex="3"
             onclick="urlButtonClick()">Greina</button>
       </div>
 
@@ -126,21 +126,6 @@
 
    function debugMode() {
       return false;
-   }
-
-   function wait(state) {
-      // Start or stop a wait spinner
-      queryInProgress = state;
-      if (state) {
-         $("#url-ok").attr("disabled", "disabled")
-            .html("<span class='glyphicon glyphicon-restart glyphicon-spin-white'></span>");
-         $("#microphone").attr("disabled", "disabled");
-         $("div.guide-empty").css("display", "none");
-      }
-      else {
-         $("#url-ok").removeAttr("disabled").text("Greina");
-         $("#microphone").removeAttr("disabled");
-      }
    }
 
    $(document).ready(initMain);

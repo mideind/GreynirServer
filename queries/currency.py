@@ -48,7 +48,7 @@ def help_text(lemma):
             "Hvað eru tíu þúsund krónur margar evrur",
             "Hvað er einn dollari margar krónur",
             "Hvað eru sextán hundruð krónur mikið í evrum",
-            "Hvert er gengi dönsku krónunnar",
+            "Hvað eru hundrað danskar krónur í evrum",
             "Hvert er gengi pundsins gagnvart krónunni",
             "Hvað eru sex rúblur mikið"
         ))
@@ -176,7 +176,7 @@ QCurUSD_ef →
     "bandaríkjadollara"
     | "bandaríkjadollarans"
     | "bandaríkjadollars"
-    | "bandarísks" "dollars"
+    | "bandarísks"? "dollars"
 
 QCurEUR/fall →
     'evra:kvk'/fall
@@ -263,16 +263,20 @@ QCurMany →
 QCurConvertTo/fall →
     QCurUnit/fall
 
+$tag(keep) QCurConvertTo/fall # Keep this from being optimized away
+
 QCurMuch →
     "mikið" QCurMuchIn?
 
 QCurMuchIn →
     "í" QCurConvertTo_þgf
 
-$tag(keep) QCurConvertTo/fall # Keep this from being optimized away
-
 QCurAmountConversion →
+    # Hvað eru 10 dollarar margar krónur?
     QCurConvertAmount QCurMany QCurConvertTo_nf
+    # Hvað eru 10 dollarar í íslenskum krónum?
+    | QCurConvertAmount QCurMuchIn
+    # Hvað eru 10 dollarar mikið [í evrum]?
     | QCurConvertAmount QCurMuch
 
 """

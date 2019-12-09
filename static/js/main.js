@@ -102,7 +102,7 @@ function initializeSpeech() {
       }
       $("#url").val(txt);
       $("#url").attr("placeholder", "");
-      $("#microphone").removeClass("btn-danger").addClass("btn-info");
+      $("#microphone").removeClass("btn-danger").addClass("btn-success");
       // Send the query to the server
       analyzeQuery({ q: txt, autouppercase: true }); // Ask for auto-uppercasing
    };
@@ -111,10 +111,25 @@ function initializeSpeech() {
       var txt = "Hljóðnemi virkar ekki" + (event.message.length ? (" (" + event.message + ")") : "");
       $("#url").val(txt);
       $("#url").attr("placeholder", "");
-      $("#microphone").removeClass("btn-danger").addClass("btn-info");
+      $("#microphone").removeClass("btn-danger").addClass("btn-success");
    };
    // Successfully initialized
    return true;
+}
+
+function wait(state) {
+   // Start or stop a wait spinner
+   queryInProgress = state;
+   if (state) {
+      $("#url-ok").attr("disabled", "disabled")
+         .html("<span class='glyphicon glyphicon-restart glyphicon-spin-white'></span>");
+      $("#microphone").attr("disabled", "disabled");
+      $("div.guide-empty").css("display", "none");
+   }
+   else {
+      $("#url-ok").removeAttr("disabled").text("Greina");
+      $("#microphone").removeAttr("disabled");
+   }
 }
 
 function handleQueryError(xhr, status, errorThrown) {
@@ -624,7 +639,7 @@ function initMain(jQuery) {
          $("#url")
             .attr("placeholder", "Talaðu í hljóðnemann! Til dæmis: Hver er seðlabankastjóri?");
          $(this)
-            .removeClass("btn-info")
+            .removeClass("btn-success")
             .addClass("btn-danger");
          recognizer.start();
       });
