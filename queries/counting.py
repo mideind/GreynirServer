@@ -27,7 +27,7 @@ import logging
 import random
 from datetime import datetime, timedelta
 
-from queries import parse_num
+from queries import parse_num, gen_answer
 
 
 _COUNTING_QTYPE = "Counting"
@@ -40,7 +40,7 @@ def help_text(lemma):
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú segir til dæmis: {0}".format(
-        random.choice(("Teldu upp í tíu", "Teldu niður frá tuttugu"))
+        random.choice(("Teldu upp að tíu", "Teldu niður frá tuttugu"))
     )
 
 
@@ -111,7 +111,7 @@ def QCountingSecondNumber(node, params, result):
 
 
 _SPEED2DELAY = {"mjög hægt": 2.0, "hægt": 1.0, "hratt": 0.1, "mjög hratt": 0.0}
-
+_MAX_COUNT = 100
 
 def QCountingSpeed(node, params, result):
     result.delay = _SPEED2DELAY.get(node.contained_text())
@@ -128,6 +128,9 @@ def _gen_count(q, result):
         if fn > sn:
             (fn, sn) = (sn, fn)
         num_range = list(range(fn, sn + 1))
+
+    if len(num_range) > _MAX_COUNT:
+        return gen_answer("Ég nenni ekki að telja svona lengi.")
 
     answ = "{0}…{1}".format(num_range[0], num_range[-1])
     response = dict(answer=answ)
