@@ -262,6 +262,24 @@ def test_query_api(client):
     assert "answer" in json
     assert json["answer"] == "173.000 sekúndur"
 
+    resp = client.get("/query.api?q=hvað eru tíu steinar mörg kíló?")
+    json = validate_json(resp)
+    assert json["qtype"] == "Unit"
+    assert "answer" in json
+    assert json["answer"] == "63,5 kíló"
+
+    resp = client.get("/query.api?q=hvað eru sjö vökvaúnsur margir lítrar")
+    json = validate_json(resp)
+    assert json["qtype"] == "Unit"
+    assert "answer" in json
+    assert json["answer"] == "0,21 lítrar"
+
+    resp = client.get("/query.api?q=hvað eru 18 mörk mörg kíló")
+    json = validate_json(resp)
+    assert json["qtype"] == "Unit"
+    assert "answer" in json
+    assert json["answer"] == "4,5 kíló"
+
     # Weather module
     resp = client.get("/query.api?q=Hversu hlýtt er úti?")
     json = validate_json(resp)

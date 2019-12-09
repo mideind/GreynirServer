@@ -64,6 +64,8 @@ TOPIC_LEMMAS = [
     "bolli",
     "matskeið",
     "teskeið",
+    "vökvaúnsa",
+    "pint",
 ]
 
 
@@ -99,8 +101,11 @@ _UNITS = {
     "matskeið": ("m³", 15.0e-6),  # Rounded to 15 ml
     "teskeið": ("m³", 5.0e-6),  # Rounded to 5 ml
     "tunna": ("m³", 160.0e-3),  # Rounded to 160 liters
+    "olíutunna": ("m³", 160.0e-3),  # Rounded to 160 liters
     "gallon": ("m³", 3.8e-3),  # Rounded
     "gallón": ("m³", 3.8e-3),  # Rounded
+    "vökvaúnsa": ("m³", 0.0295735 * 1.0e-3),  # US fl. oz.
+    "pint": ("m³", 1.0e-3 * 0.568),  # British pint
 
     # Weight (standard unit is kg)
     "kíló": ("kg", 1.0),
@@ -113,6 +118,8 @@ _UNITS = {
     "únsa": ("kg", 28.35e-3),
     "pund": ("kg", 454.0e-3),
     "karat": ("kg", 0.2e-3),
+    "steinn": ("kg", 6.35),
+    "mark": ("kg", 0.25),
 
     # Distance (standard unit is m)
     "metri": ("m", 1.0),
@@ -139,6 +146,7 @@ _UNITS = {
     "hektari": ("m²", 100.0 ** 2),
     "fertomma": ("m²", 2.54e-2 ** 2),
     "ferþumlungur": ("m²", 2.54e-2 ** 2),
+    "ekra": ("m²", 4047),
 
     # Time (standard unit is second)
     "áratugur": ("sek.", 3600.0 * 24 * 365 * 10),
@@ -167,7 +175,17 @@ _CONVERT_UNITS = {
     "dags": "dagur",
     "dagar": "dagur",
     "dögum": "dagur",
+    "mörk": "mark",
+    "mörkum": "mark",
+    "marka": "mark",
+    "marki": "mark",
+    "marks": "mark",
     "mílu": "míla",
+    "steinar": "steinn",
+    "steina": "steinn",
+    "steini": "steinn",
+    "steins": "steinn",
+    "steinum": "steinn",
     "sentimetri": "sentímetri",
     "desimetri": "desímetri",
     "fersentimetri": "fersentímetri",
@@ -241,17 +259,25 @@ QUnit_kk/fall →
     | 'rúmsentímetri:kk'/fall
     | 'bolli:kk'/fall
     | 'Bolli'/fall
+    | 'pint:kk'/fall
 
 QUnit_kvk/fall →
     'matskeið:kvk'/fall
     | 'teskeið:kvk'/fall
     | 'tunna:kvk'/fall
+    | 'olíutunna:kvk'/fall
+    | 'vökvaúnsa:kvk'/fall
 
 QUnit_hk/fall →
     'gallon:hk'/fall
     | 'gallón:hk'/fall
 
 # Weight
+
+QUnit_kk/fall →
+    'steinn:kk'/fall
+    | 'Steinn'/fall
+    | 'Steinar'/fall
 
 QUnit_kvk/fall →
     'únsa:kvk'/fall
@@ -266,6 +292,9 @@ QUnit_hk/fall →
     | 'tonn:hk'/fall
     | 'pund:hk'/fall
     | 'karat:hk'/fall
+    | 'mark:hk'/fall
+    | 'Mark'/fall
+    | 'Mörk'/fall
 
 # Distance
 
@@ -305,6 +334,7 @@ QUnit_hk/fall →
 QUnit_kvk/fall →
     'fermíla:kvk'/fall
     | 'fertomma:kvk'/fall
+    | 'ekra:kvk'/fall
 
 # Time
 
