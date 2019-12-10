@@ -22,10 +22,14 @@
 
 """
 
-from . import routes, better_jsonify, text_from_request, bool_from_request, restricted
-from . import _MAX_URL_LENGTH, _MAX_UUID_LENGTH
-from flask import request, current_app
+import sys
+from datetime import datetime
+import logging
+
+from flask import request, current_app, abort
 import werkzeug
+
+from settings import Settings
 from tnttagger import ifd_tag
 from db import SessionContext
 from db.models import ArticleTopic, Query, Feedback
@@ -34,12 +38,11 @@ from correct import check_grammar
 from reynir.binparser import canonicalize_token
 from article import Article as ArticleProxy
 from query import process_query
-from settings import Settings
 from doc import SUPPORTED_DOC_MIMETYPES, MIMETYPE_TO_DOC_CLASS
 from speech import get_synthesized_text_url
-from datetime import datetime
-import logging
 
+from . import routes, better_jsonify, text_from_request, bool_from_request, restricted
+from . import _MAX_URL_LENGTH, _MAX_UUID_LENGTH
 
 
 # Maximum number of query string variants
@@ -48,6 +51,7 @@ _MAX_QUERY_VARIANTS = 10
 _MAX_QUERY_LENGTH = 512
 # Synthetic location for use in testing
 _MIDEIND_LOCATION = (64.156896, -21.951200)  # Fiskislóð 31, 101 Reykjavík
+
 
 @routes.route("/ifdtag.api", methods=["GET", "POST"])
 @routes.route("/ifdtag.api/v<int:version>", methods=["GET", "POST"])
@@ -423,7 +427,7 @@ def query_history_api(version=1):
 @routes.route("/feedback.api", methods=["POST"])
 @routes.route("/feedback.api/v<int:version>", methods=["POST"])
 def feedback_api(version=1):
-    """ Endpoint to accept submitted feedback forms. """
+    """ Endpoint to accept submitted feedback forms """
 
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
@@ -449,3 +453,15 @@ def feedback_api(version=1):
                 logging.error("Error saving feedback to db: {0}".format(e))
 
     return better_jsonify(valid=False)
+
+
+@routes.route("/exit.api", methods=["GET"])
+def exit_api():
+    """ Allow a server to be remotely terminated if running in debug mode """
+    if not Settings.DEBUG:
+        abort(404)
+    shutdown_func = request.environ.get("werkzeug.server.shutdown")
+    if shutdown_func is None:
+        raise RuntimeError("Not running with the Werkzeug Server")
+    shutdown_func()
+    return "The server has shut down"
