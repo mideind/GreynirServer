@@ -39,6 +39,7 @@ def help_text(lemma):
             "Hvenær kemur fyrsti jólasveinninn til byggða",
             "Hvenær kemur Askasleikir",
             "Hvaða jólasveinn kemur fimmtánda desember",
+            "Hvenær er von á Hurðaskelli",
         ))
     )
 
@@ -115,6 +116,16 @@ _ORDINAL_TO_DATE = {
 }
 
 _DATE_TO_ORDINAL = {v: k for k, v in _ORDINAL_TO_DATE.items()}
+# Date in genitive case - turns out only the 22nd is different
+_DATE_TO_ORDINAL_GEN = _DATE_TO_ORDINAL.copy()
+_DATE_TO_ORDINAL_GEN[22] = "tuttugasta og annars"
+
+_TWENTY_PART = {
+    "fyrsta": 1,
+    "annan": 2,
+    "þriðja": 3,
+    "fjórða": 4,
+}
 
 # Lemmas of keywords that could indicate that the user is trying to use this module
 TOPIC_LEMMAS = ["jólasveinn"] + list(_YULE_LADS_BY_NAME.keys())
@@ -180,6 +191,8 @@ QYuleDate →
 QYuleDateRel →
     dagsafs
 
+$score(-4) QYuleDateRel
+
 QYuleNumberOrdinal →
     raðtala | tala
 
@@ -198,6 +211,18 @@ QYuleValidOrdinal →
     | "tuttugasta" "og" "annan"
     | "tuttugasta" "og" "þriðja"
     | "tuttugasta" "og" "fjórða"
+
+$score(+4) QYuleValidOrdinal
+
+QYuleTwentyOrdinal →
+    tala
+    | tala "og" QYuleTwentyPart
+
+QYuleTwentyPart →
+    "fyrsta"
+    | "annan"
+    | "þriðja"
+    | "fjórða"
 
 QYuleInvalidOrdinal →
     "fyrsta"
@@ -219,7 +244,7 @@ QYuleInvalidOrdinal →
     | "þrítugasta" "og" "fyrsta"
 
 QYuleOrdinal →
-    QYuleNumberOrdinal | QYuleValidOrdinal | QYuleInvalidOrdinal
+    QYuleNumberOrdinal | QYuleValidOrdinal | QYuleInvalidOrdinal | QYuleTwentyOrdinal
 
 QYuleWhichLad →
     "hvaða" "jólasveinn"
@@ -236,9 +261,17 @@ QYuleTomorrow →
     | "annað" "kvöld"
     | "aðra" "nótt"
 
+QYuleDay23 →
+    "á" "þorláksmessu"
+
+QYuleDay24 →
+    "á" "aðfangadag"
+
 QYuleDay →
     "þann"? QYuleOrdinal "desember"?
     | "þann"? QYuleDateRel
+    | QYuleDay23
+    | QYuleDay24
     | QYuleToday
     | QYuleTomorrow
 
@@ -249,6 +282,8 @@ QYuleLadFirst →
     QYuleWhichLad "er" "fyrstur"
     | QYuleWhichLad "kemur" "fyrstur"
     | QYuleWhichLad "kemur" "fyrst"
+    | "hver" "er" "fyrsti" "jólasveinninn"
+    | "hver" "er" "fyrstur" "jólasveinanna"
     | "hvenær" "á" "maður"? "að" "setja" 'skór:kk'_þf "út"? "í" 'gluggi:kk'_et_þf
     | "hvenær" "setur" "maður" 'skór:kk'_þf "út"? "í" 'gluggi:kk'_et_þf
     | "hvenær" "fer" 'skór:kk'_et_nf "út"? "í" 'gluggi:kk'_et_þf
@@ -258,6 +293,8 @@ QYuleLadLast →
     QYuleWhichLad "er" "síðastur"
     | QYuleWhichLad "kemur" "síðastur"
     | QYuleWhichLad "kemur" "síðast"
+    | "hver" "er" "síðasti" "jólasveinninn"
+    | "hver" "er" "síðastur" "jólasveinanna"
 
 QYuleLad →
     QYuleLadByDate
@@ -324,6 +361,16 @@ def QYuleInvalidOrdinal(node, params, result):
     result.invalid_date = True
 
 
+def QYuleDay23(node, params, result):
+    result.lad_date = 24  # Yes, correct
+    result.yule_lad = _YULE_LADS_BY_DATE.get(result.lad_date)
+
+
+def QYuleDay24(node, params, result):
+    result.lad_date = 24  # Yes, correct
+    result.yule_lad = _YULE_LADS_BY_DATE.get(result.lad_date)
+
+
 def QYuleToday(node, params, result):
     result.yule_lad = None
     result.lad_date = datetime.utcnow().day
@@ -348,6 +395,32 @@ def QYuleTomorrow(node, params, result):
             # yule lad coming on the eve of the 12th, etc.
             result.lad_date += 1
         result.yule_lad = _YULE_LADS_BY_DATE.get(result.lad_date)
+
+
+def QYuleTwentyPart(node, params, result):
+    result.twenty_part = _TWENTY_PART[result._text]
+
+
+def QYuleTwentyOrdinal(node, params, result):
+    result.yule_lad = None
+    result.lad_date = 0
+    num_node = node.first_child(lambda n: True)
+    if num_node is not None:
+        day = num_node.contained_number
+        if day != 20:
+            # Only accept something like '20 og annar', not '10 og annar'
+            day = 0
+        elif "twenty_part" in result:
+            day += result.twenty_part
+        result.lad_date = day
+        if not(11 <= result.lad_date <= 24):
+            result.invalid_date = True
+        else:
+            if result.lad_date < 24:
+                # If asking about December 11, reply with the
+                # yule lad coming on the eve of the 12th, etc.
+                result.lad_date += 1
+            result.yule_lad = _YULE_LADS_BY_DATE.get(result.lad_date)
 
 
 def QYuleDateRel(node, params, result):
@@ -382,7 +455,7 @@ def sentence(state, result):
         yule_lad = result.yule_lad
         answer = voice_answer = (
             "{0} kemur til byggða aðfaranótt {1} desember."
-            .format(yule_lad, _DATE_TO_ORDINAL[result.lad_date])
+            .format(yule_lad, _DATE_TO_ORDINAL_GEN[result.lad_date])
         )
     elif result.qtype == "YuleLad":
         # 'Hvaða jólasveinn kemur til byggða [á degi x]'
@@ -399,7 +472,7 @@ def sentence(state, result):
             yule_lad = result.yule_lad
             answer = voice_answer = (
                 "{0} kemur til byggða aðfaranótt {1} desember."
-                .format(yule_lad, _DATE_TO_ORDINAL[result.lad_date])
+                .format(yule_lad, _DATE_TO_ORDINAL_GEN[result.lad_date])
             )
         q.lowercase_beautified_query()
 
