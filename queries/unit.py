@@ -24,21 +24,48 @@
 
 """
 
+# TODO: Hvað eru fjórir hnútar margir metrar á sekúndu?
+# TODO: Hvað eru 20 metrar á sekúndu mörg vindstig?
+
 import re
 import random
 from math import floor, log10
 
 import query
-from queries import format_icelandic_float
+from queries import format_icelandic_float, parse_num
 from settings import Settings
 
 
 # Lemmas of keywords that could indicate that the user is trying to use this module
 TOPIC_LEMMAS = [
-    "kíló", "kílógramm", "gramm", "únsa", "tonn", "lítri", "rúmmetri", "desilítri",
-    "millilítri", "metri", "míla", "kílómetri", "sentimetri", "sentímetri", "millimetri",
-    "þumlungur", "tomma", "fet", "ferfet", "fermetri", "fersentimetri", "fersentímetri",
-    "hektari", "bolli", "matskeið", "teskeið",
+    "kíló",
+    "kílógramm",
+    "gramm",
+    "únsa",
+    "tonn",
+    "lítri",
+    "rúmmetri",
+    "desilítri",
+    "millilítri",
+    "metri",
+    "míla",
+    "kílómetri",
+    "sentimetri",
+    "sentímetri",
+    "millimetri",
+    "þumlungur",
+    "tomma",
+    "fet",
+    "ferfet",
+    "fermetri",
+    "fersentimetri",
+    "fersentímetri",
+    "hektari",
+    "bolli",
+    "matskeið",
+    "teskeið",
+    "vökvaúnsa",
+    "pint",
 ]
 
 
@@ -46,77 +73,20 @@ def help_text(lemma):
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
-        random.choice((
-            "Hvað eru fjögur fet margir metrar",
-            "Hvað eru þrjú hundruð grömm margar únsur",
-            "Hversu margir bollar eru í einum lítra",
-            "Hvað er hálf míla margir metrar",
-            "Hversu margar teskeiðar eru í einum desilítra",
-        ))
+        random.choice(
+            (
+                "Hvað eru fjögur fet margir metrar",
+                "Hvað eru þrjú hundruð grömm margar únsur",
+                "Hversu margir bollar eru í einum lítra",
+                "Hvað er hálf míla margir metrar",
+                "Hversu margar teskeiðar eru í einum desilítra",
+            )
+        )
     )
 
 
 _UNIT_QTYPE = "Unit"
 
-
-# The following needs to include at least nominative
-# and dative forms of number words
-_NUMBER_WORDS = {
-    "núll": 0,
-    "hálfur": 0.5,
-    "hálfum": 0.5,
-    "hálf": 0.5,
-    "hálfri": 0.5,
-    "hálft": 0.5,
-    "hálfu": 0.5,
-    "einn": 1,
-    "einum": 1,
-    "ein": 1,
-    "einni": 1,
-    "eitt": 1,
-    "einu": 1,
-    "tveir": 2,
-    "tveim": 2,
-    "tveimur": 2,
-    "tvær": 2,
-    "tvö": 2,
-    "þrír": 3,
-    "þrem": 3,
-    "þremur": 3,
-    "þrjár": 3,
-    "þrjú": 3,
-    "fjórir": 4,
-    "fjórum": 4,
-    "fjórar": 4,
-    "fjögur": 4,
-    "fimm": 5,
-    "sex": 6,
-    "sjö": 7,
-    "átta": 8,
-    "níu": 9,
-    "tíu": 10,
-    "ellefu": 11,
-    "tólf": 12,
-    "þrettán": 13,
-    "fjórtán": 14,
-    "fimmtán": 15,
-    "sextán": 16,
-    "sautján": 17,
-    "átján": 18,
-    "nítján": 19,
-    "tuttugu": 20,
-    "þrjátíu": 30,
-    "fjörutíu": 40,
-    "fimmtíu": 50,
-    "sextíu": 60,
-    "sjötíu": 70,
-    "áttatíu": 80,
-    "níutíu": 90,
-    "hundrað": 100,
-    "þúsund": 1000,
-    "milljón": 1e6,
-    "milljarður": 1e9,
-}
 
 _UNITS = {
     # Volume (standard unit is m³)
@@ -127,12 +97,17 @@ _UNITS = {
     "hektólítri": ("m³", 1.0e-1),
     "rúmmetri": ("m³", 1.0),
     "rúmsentímetri": ("m³", 1.0e-6),
-    "bolli": ("m³", 2.5e-4),        # More exactly 1 US cup is 2.36588e-4 m³
-    "matskeið": ("m³", 15.0e-6),    # Rounded to 15 ml
-    "teskeið": ("m³", 5.0e-6),      # Rounded to 5 ml
-    "tunna": ("m³", 160.0e-3),      # Rounded to 160 liters
-    "gallon": ("m³", 3.8e-3),       # Rounded
-    "gallón": ("m³", 3.8e-3),       # Rounded
+    "bolli": ("m³", 2.5e-4),  # More exactly 1 US cup is 2.36588e-4 m³
+    "matskeið": ("m³", 15.0e-6),  # Rounded to 15 ml
+    "teskeið": ("m³", 5.0e-6),  # Rounded to 5 ml
+    "tunna": ("m³", 160.0e-3),  # Rounded to 160 liters
+    "olíutunna": ("m³", 160.0e-3),  # Rounded to 160 liters
+    "gallon": ("m³", 3.8e-3),  # Rounded
+    "gallón": ("m³", 3.8e-3),  # Rounded
+    "vökvaúnsa": ("m³", 0.0295735e-3),  # US fl. oz.
+    "vökva únsa": ("m³", 0.0295735e-3),  # US fl. oz.
+    "vökva únsur": ("m³", 0.0295735e-3),  # US fl. oz.
+    "pint": ("m³", 0.568e-3),  # British pint
 
     # Weight (standard unit is kg)
     "kíló": ("kg", 1.0),
@@ -145,6 +120,8 @@ _UNITS = {
     "únsa": ("kg", 28.35e-3),
     "pund": ("kg", 454.0e-3),
     "karat": ("kg", 0.2e-3),
+    "steinn": ("kg", 6.35),
+    "mörk": ("kg", 0.25),
 
     # Distance (standard unit is m)
     "metri": ("m", 1.0),
@@ -171,6 +148,21 @@ _UNITS = {
     "hektari": ("m²", 100.0 ** 2),
     "fertomma": ("m²", 2.54e-2 ** 2),
     "ferþumlungur": ("m²", 2.54e-2 ** 2),
+    "ekra": ("m²", 4047.0),
+
+    # Time (standard unit is second)
+    "öld": ("s", 3600.0 * 24 * 365 * 100),
+    "áratugur": ("s", 3600.0 * 24 * 365 * 10),
+    "ár": ("s", 3600.0 * 24 * 365),
+    "mánuður": ("s", 3600.0 * 24 * 30),
+    "vika": ("s", 3600.0 * 24 * 7),
+    "dagur": ("s", 3600.0 * 24),
+    "sólarhringur": ("s", 3600.0 * 24),
+    "klukkustund": ("s", 3600.0),
+    "mínúta": ("s", 60.0),
+    "sekúnda": ("s", 1.0),
+    "sekúndubrot": ("s", 1.0 / 100),
+    "millisekúnda": ("s", 1.0 / 1000),
 }
 
 # Convert irregular unit forms to canonical ones
@@ -180,7 +172,23 @@ _CONVERT_UNITS = {
     "bolla": "bolli",
     "bollar": "bolli",
     "bollum": "bolli",
+    "dag": "dagur",
+    "daga": "dagur",
+    "degi": "dagur",
+    "dags": "dagur",
+    "dagar": "dagur",
+    "dögum": "dagur",
+    "merkur": "mörk",
+    "marka": "mörk",
+    "markar": "mörk",
     "mílu": "míla",
+    "aldar": "öld",
+    "aldir": "öld",
+    "steinar": "steinn",
+    "steina": "steinn",
+    "steini": "steinn",
+    "steins": "steinn",
+    "steinum": "steinn",
     "sentimetri": "sentímetri",
     "desimetri": "desímetri",
     "fersentimetri": "fersentímetri",
@@ -254,17 +262,27 @@ QUnit_kk/fall →
     | 'rúmsentímetri:kk'/fall
     | 'bolli:kk'/fall
     | 'Bolli'/fall
+    | 'pint:kk'/fall
 
 QUnit_kvk/fall →
     'matskeið:kvk'/fall
     | 'teskeið:kvk'/fall
     | 'tunna:kvk'/fall
+    | 'olíutunna:kvk'/fall
+    | 'vökvaúnsa:kvk'/fall
+    | "vökva" "únsa"
+    | "vökva" "únsur"
 
 QUnit_hk/fall →
     'gallon:hk'/fall
     | 'gallón:hk'/fall
 
 # Weight
+
+QUnit_kk/fall →
+    'steinn:kk'/fall
+    | 'Steinn'/fall
+    | 'Steinar'/fall
 
 QUnit_kvk/fall →
     'únsa:kvk'/fall
@@ -279,6 +297,8 @@ QUnit_hk/fall →
     | 'tonn:hk'/fall
     | 'pund:hk'/fall
     | 'karat:hk'/fall
+    | 'mörk:kvk'/fall
+    | 'Mörk'/fall
 
 # Distance
 
@@ -294,7 +314,8 @@ QUnit_kk/fall →
     | 'faðmur:kk'/fall
 
 QUnit_kvk/fall →
-    'míla:kvk'/fall | 'Míla'/fall
+    'míla:kvk'/fall 
+    | 'Míla'/fall
     | 'sjómíla:kvk'/fall
     | 'tomma:kvk'/fall
 
@@ -318,36 +339,29 @@ QUnit_hk/fall →
 QUnit_kvk/fall →
     'fermíla:kvk'/fall
     | 'fertomma:kvk'/fall
+    | 'ekra:kvk'/fall
+
+# Time
+
+QUnit_kk/fall →
+    'mánuður:kk'/fall
+    | 'dagur:kk'/fall
+    | 'Dagur'/fall
+    | 'áratugur:kk'/fall
+
+QUnit_hk/fall →
+    'ár:hk'/fall
+    | 'sekúndubrot:hk'/fall
+
+QUnit_kvk/fall →
+    'millisekúnda:kvk'/fall
+    | 'sekúnda:kvk'/fall
+    | 'mínúta:kvk'/fall
+    | 'klukkustund:kvk'/fall
+    | 'vika:kvk'/fall
+    | 'öld:kvk'/fall
 
 """
-
-
-def parse_num(node, num_str):
-    """ Parse Icelandic number string to float or int """
-    # If we have a number token as a direct child,
-    # return its numeric value directly
-    num = node.child.contained_number
-    if num is not None:
-        return float(num)
-    try:
-        # Handle numbers with Icelandic decimal places ("17,2")
-        # and potentially thousands separators as well
-        num_str = num_str.replace(".", "")
-        if re.search(r"^\d+,\d+", num_str):
-            num = float(num_str.replace(",", "."))
-        # Handle digits ("17")
-        else:
-            num = float(num_str)
-    except ValueError:
-        # Handle number words ("sautján")
-        num = _NUMBER_WORDS.get(num_str)
-        if num is not None:
-            num = float(num)
-    except Exception as e:
-        if Settings.DEBUG:
-            print("Unexpected exception: {0}".format(e))
-        raise
-    return num
 
 
 def QUnitConversion(node, params, result):
@@ -402,7 +416,10 @@ def _convert(quantity, unit_from, unit_to):
     # Round to three significant digits
     # Note that quantity cannot be negative
     return (
-        True, round(result, 2-int(floor(log10(result)))), u_to, quantity * factor_from
+        True,
+        round(result, 2 - int(floor(log10(result)))),
+        u_to,
+        quantity * factor_from,
     )
 
 
@@ -420,12 +437,8 @@ def sentence(state, result):
             val_from, result.unit_from, result.unit_to
         )
         if not valid:
-            answer = voice_answer = (
-                "Það er ekki hægt að umbreyta {0} í {1}."
-                .format(
-                    query.to_dative(result.unit_from),
-                    query.to_accusative(result.unit_to)
-                )
+            answer = voice_answer = "Það er ekki hægt að umbreyta {0} í {1}.".format(
+                query.to_dative(result.unit_from), query.to_accusative(result.unit_to)
             )
             response = dict(answer=answer)
         else:
@@ -445,17 +458,15 @@ def sentence(state, result):
                 verb = "er"
             unit_to = result.unit_to
             response = dict(answer=answer)
-            voice_answer = (
-                "{0} {1} {2}."
-                .format(result.desc, verb, answer)
-                .capitalize()
-            )
+            voice_answer = "{0} {1} {2}.".format(result.desc, verb, answer).capitalize()
             # Store the resulting quantity in the query context
             q.set_context(
                 {
                     "quantity": {
-                        "unit":unit_to, "value":val,
-                        "si_unit":si_unit, "si_value":si_quantity,
+                        "unit": unit_to,
+                        "value": val,
+                        "si_unit": si_unit,
+                        "si_value": si_quantity,
                     }
                 }
             )

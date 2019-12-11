@@ -27,13 +27,20 @@
 # TODO: Handle travel time queries such as "Hvað er ég lengi að ganga til X?",
 #       or "Hvað er ég lengi að keyra í Y?"
 # TODO: "Hvað er langt á milli X og Y?"
+# TODO: "Hvað er langt til tunglsins"? "Hvað er langt til Mars?"
 
 import re
 import logging
 import math
 
 from reynir.bindb import BIN_Db
-from queries import gen_answer, query_geocode_api_addr
+from queries import (
+    gen_answer,
+    time_period_desc,
+    query_geocode_api_addr,
+    query_traveltime_api,
+    capitalize_placename,
+)
 from geo import distance
 
 
@@ -51,17 +58,57 @@ _QDISTANCE_REGEXES = (
     r"^hvað er langt í ([^0-9.].+)$",
     r"^hvað er langt upp í (.+)$",
     r"^hvað er langt til (.+)$",
+    r"^hvað er langt út á ([^0-9.].+)$",
     r"^hversu langt er til (.+)$",
+    r"^hversu langt er út á (.+)$",
 )
 
-# TODO: Handle queries of this kind, incl. driving and cycling
+# Travel time questions
+_TT_PREFIXES = (
+    "hvað er ég lengi að",
+    "hversu lengi er ég að",
+    "hve lengi er ég að"
+    "hvað tekur langan tíma að",
+    "hvað tekur það mig langan tíma að",
+    "hvað tekur mig langan tíma að",
+    "hversu langan tíma tekur það mig að",
+    "hvað væri ég lengi að",
+    "hvað tæki það langan tíma að",
+    "hversu lengi væri ég að",
+    "hve lengi væri ég að",
+    "hversu langan tíma tæki það mig að",
+)
+
+_TT_MODES = {
+    "ganga": "walking",
+    "labba": "walking",
+    "rölta": "walking",
+    "tölta": "walking",
+    "hjóla": "cycling",
+    "keyra": "driving",
+    "aka": "driving",
+    "fara á bílnum": "driving",
+}
+
+_TT_PREPS = (
+    "á",
+    "í",
+    "til",
+    "upp á",
+    "upp í",
+    "upp til",
+    "niður á",
+    "niður í",
+    "niður til",
+)
+
+_PREFIX_RX = r"{0}".format("|".join(_TT_PREFIXES))
+_VERBS_RX = r"{0}".format("|".join(_TT_MODES.keys()))
+_PREPS_RX = r"{0}".format("|".join(_TT_PREPS))
+_DEST_RX = r".+$"
+
 _QTRAVELTIME_REGEXES = (
-    r"^hvað er ég lengi að ganga á (.+)$",
-    r"^hvað er ég lengi að ganga upp á (.+)$",
-    r"^hvað er ég lengi að ganga niður á (.+)$",
-    r"^hvað er ég lengi að ganga í (.+)$",
-    r"^hvað er ég lengi að rölta á (.+)$",
-    r"^hvað er ég lengi að rölta í (.+)$",
+    r"^({0}) (({1}) ({2}) ({3}))".format(_PREFIX_RX, _VERBS_RX, _PREPS_RX, _DEST_RX),
 )
 
 
@@ -84,8 +131,9 @@ def _addr2nom(address):
         return " ".join(nf)
 
 
-def dist_answer_for_loc(locname, query):
+def dist_answer_for_loc(matches, query):
     """ Generate response to distance query """
+    locname = matches.group(1)
     loc_nf = _addr2nom(locname[0].upper() + locname[1:])
     res = query_geocode_api_addr(loc_nf)
 
@@ -101,9 +149,15 @@ def dist_answer_for_loc(locname, query):
     # Try to avoid answering bus queries here
     loc_lower = locname.lower()
     if any(
-        s in loc_lower for s in (
-            "strætó", "stoppistöð", "strætisvagn", "biðstöð",
-            "stoppustöð", "stræto", "strædo"
+        s in loc_lower
+        for s in (
+            "strætó",
+            "stoppistöð",
+            "strætisvagn",
+            "biðstöð",
+            "stoppustöð",
+            "stræto",
+            "strædo",
         )
     ):
         return None
@@ -135,10 +189,53 @@ def dist_answer_for_loc(locname, query):
     loc_nf = loc_nf[0].upper() + loc_nf[1:]
     voice = "{2} er {0} {1} í burtu".format(dist, unit, loc_nf)
 
-    query.set_key(loc_nf)
+    query.set_key(capitalize_placename(loc_nf))
 
     # Beautify by capitalizing remote loc name
-    uc = locname.title()
+    uc = capitalize_placename(locname)
+    bq = query.beautified_query.replace(locname, uc)
+    query.set_beautified_query(bq)
+
+    return response, answer, voice
+
+
+def traveltime_answer_for_loc(matches, query):
+    action_desc, tmode, locname = matches.group(2, 3, 5)
+
+    loc_nf = _addr2nom(locname[0].upper() + locname[1:])
+    mode = _TT_MODES.get(tmode, "walking")
+
+    # Query API
+    res = query_traveltime_api(query.location, loc_nf, mode=mode)
+
+    # Verify sanity of API response
+    if (
+        not res
+        or not "status" in res
+        or res["status"] != "OK"
+        or not res.get("rows")
+        or not len(res["rows"])
+    ):
+        return None
+
+    # Extract info we want
+    elm = res["rows"][0]["elements"][0]
+    if elm["status"] != "OK":
+        return None
+    # dur_desc = elm["duration"]["text"]
+    dur_sec = int(elm["duration"]["value"])
+    dur_desc = time_period_desc(dur_sec, case="þf")
+
+    # Generate answer
+    answer = dur_desc + "."
+    response = dict(answer=answer)
+    voice = "Að {0} tekur um það bil {1}".format(action_desc, dur_desc)
+
+    # Key is the remote loc in nominative case
+    query.set_key(capitalize_placename(loc_nf))
+
+    # Beautify by capitalizing remote loc name
+    uc = capitalize_placename(locname)
     bq = query.beautified_query.replace(locname, uc)
     query.set_beautified_query(bq)
 
@@ -149,21 +246,32 @@ def handle_plain_text(q):
     """ Handle a plain text query, contained in the q parameter """
     ql = q.query_lower.rstrip("?")
 
-    remote_loc = None
+    matches = None
+    handler = None
+
+    # Distance queries
     for rx in _QDISTANCE_REGEXES:
-        m = re.search(rx, ql)
-        if m:
-            remote_loc = m.group(1)
+        matches = re.search(rx, ql)
+        if matches:
             handler = dist_answer_for_loc
             break
-    else:
-        # Nothing caught by regexes, bail
+
+    # Travel time queries
+    if not handler:
+        for rx in _QTRAVELTIME_REGEXES:
+            matches = re.search(rx, ql)
+            if matches:
+                handler = traveltime_answer_for_loc
+                break
+
+    # Nothing caught by regexes, bail
+    if not handler or not matches:
         return False
 
     # Look up in geo API
     try:
         if q.location:
-            answ = handler(remote_loc, q)
+            answ = handler(matches, q)
         else:
             answ = gen_answer("Ég veit ekki hvar þú ert.")
     except Exception as e:

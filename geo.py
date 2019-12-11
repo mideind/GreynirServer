@@ -489,6 +489,7 @@ _I_SUFFIXES = (
     "stræti",
     "Lækjargata",
     "hlíð",
+    "sund",
 )
 
 

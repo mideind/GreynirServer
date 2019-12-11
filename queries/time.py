@@ -32,9 +32,9 @@
 # TODO: "Í hvaða tímabelti er ég?"
 
 import random
-
 from datetime import datetime
 from pytz import country_timezones, timezone
+
 from reynir.bindb import BIN_Db
 from geo import isocode_for_country_name, lookup_city_info
 from queries import timezone4loc

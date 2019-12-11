@@ -25,14 +25,35 @@
 """
 
 # TODO: Support TV schedule queries for other stations than RÚV
+# TODO: Support radio schedules
+# TODO: "Hvað er í sjónvarpinu í kvöld?"
 
 import logging
 import re
+import random
 from datetime import datetime, timedelta
+
 from queries import query_json_api, gen_answer
 
 
 _TELEVISION_QTYPE = "Television"
+
+
+TOPIC_LEMMAS = ["sjónvarp", "sjónvarpsdagskrá", "rúv", "ríkissjónvarp"]
+
+
+def help_text(lemma):
+    """ Help text to return when query.py is unable to parse a query but
+        one of the above lemmas is found in it """
+    return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
+        random.choice(
+            (
+                "Hvað er í sjónvarpinu",
+                "Hvað er á RÚV í augnablikinu",
+                "Hvaða efni er verið að sýna í sjónvarpinu",
+            )
+        )
+    )
 
 
 # This module wants to handle parse trees for queries
@@ -49,6 +70,8 @@ QTelevision → QTelevisionQuery '?'?
 QTelevisionQuery →
     QTVWhatIsNom QTVEiginlega? QTVGoingOn? QTVOnTV QTVNow?
     | QTVWhatIsDative QTVEiginlega? QTVBeingShown QTVOnTV QTVNow?
+    | "dagskrá" QTVBeingShown? QTVOnTV? 
+    | "dagskrá" QTVGoingOn? QTVOnTV? 
 
 QTVWhatIsNom →
     "hvað" "er" | "hvaða" "þáttur" "er" | "hvaða" "dagskrárliður" "er" | "hvaða" "efni" "er"
@@ -57,7 +80,7 @@ QTVWhatIsDative →
     "hvað" "er" | "hvaða" "þátt" "er" | "hvaða" "dagskrárlið" "er" | "hvaða" "efni" "er"
 
 QTVOnTV →
-    "í" "sjónvarpinu" | "á" "rúv" | "í" "ríkissjónvarpinu" | "á" "stöð" "eitt"
+    "í" "sjónvarpinu" | "á" "rúv" | "í" "ríkissjónvarpinu" | "á" "stöð" "eitt" | "rúv"
 
 QTVNow →
     "nákvæmlega"? "núna" | "eins" "og" "stendur" | "í" "augnablikinu"
