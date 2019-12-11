@@ -53,6 +53,9 @@ def handle_plain_text(q):
     if not name:
         return False
 
+    if name.startswith("ekki "):
+        return False
+
     with BIN_Db.get_db() as bdb:
         fn = name.split()[0].title()
         gender = bdb.lookup_name_gender(fn)
