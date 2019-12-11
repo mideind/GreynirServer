@@ -39,6 +39,7 @@ from queries import (
     time_period_desc,
     query_geocode_api_addr,
     query_traveltime_api,
+    capitalize_placename,
 )
 from geo import distance
 
@@ -188,10 +189,10 @@ def dist_answer_for_loc(matches, query):
     loc_nf = loc_nf[0].upper() + loc_nf[1:]
     voice = "{2} er {0} {1} í burtu".format(dist, unit, loc_nf)
 
-    query.set_key(loc_nf)
+    query.set_key(capitalize_placename(loc_nf))
 
     # Beautify by capitalizing remote loc name
-    uc = locname.title()
+    uc = capitalize_placename(locname)
     bq = query.beautified_query.replace(locname, uc)
     query.set_beautified_query(bq)
 
@@ -199,7 +200,7 @@ def dist_answer_for_loc(matches, query):
 
 
 def traveltime_answer_for_loc(matches, query):
-    (action_desc, tmode, locname) = matches.group(2, 3, 5)
+    action_desc, tmode, locname = matches.group(2, 3, 5)
 
     loc_nf = _addr2nom(locname[0].upper() + locname[1:])
     mode = _TT_MODES.get(tmode, "walking")
@@ -231,10 +232,10 @@ def traveltime_answer_for_loc(matches, query):
     voice = "Að {0} tekur um það bil {1}".format(action_desc, dur_desc)
 
     # Key is the remote loc in nominative case
-    query.set_key(loc_nf)
+    query.set_key(capitalize_placename(loc_nf))
 
     # Beautify by capitalizing remote loc name
-    uc = locname.title()
+    uc = capitalize_placename(locname)
     bq = query.beautified_query.replace(locname, uc)
     query.set_beautified_query(bq)
 

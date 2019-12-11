@@ -433,6 +433,13 @@ def test_query_api(client):
     assert "voice" in json
     assert "<break time=" in json["voice"]
 
+    resp = client.get("/query.api?q=teldu upp að 5000&voice=1")
+    json = validate_json(resp)
+    assert json["qtype"] == "Counting"
+    assert "answer" in json
+    assert "voice" in json
+    assert len(json["voice"]) < 100
+
     # Intro module
     resp = client.get("/query.api?q=ég heiti Gunna")
     json = validate_json(resp)

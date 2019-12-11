@@ -1175,7 +1175,7 @@ _SPECIAL_QUERIES = {
         "answer": "Ekkert sérstaklega."
     },
 
-    # Farting
+    # Farting ;)
     "hver prumpaði": {
         "answer": "Ekki ég."
     },
@@ -1190,6 +1190,12 @@ _SPECIAL_QUERIES = {
     },
     "varst þú að prumpa": {
         "answer": "Nei. Þú hlýtur að bera ábyrgð á þessu, kæri notandi."
+    },
+    "ég var að prumpa": {
+        "answer": "Gott hjá þér, kæri notandi."
+    },
+    "ég var að reka við": {
+        "answer": "Gott hjá þér, kæri notandi."
     },
 
     # Jokes

@@ -54,7 +54,7 @@ def handle_plain_text(q):
         return False
 
     with BIN_Db.get_db() as bdb:
-        fn = name.split(" ")[0].title()
+        fn = name.split()[0].title()
         gender = bdb.lookup_name_gender(fn)
         a = _RESPONSES[gender].format(fn)
 

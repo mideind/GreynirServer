@@ -65,6 +65,19 @@ def nom2dat(w):
     return w
 
 
+# Placename components that should not be capitalized
+_PLACENAME_PREPS = ("í", "á", "de")
+
+
+def capitalize_placename(pn):
+    """ Correctly capitalize a lowercase placename, e.g.
+        "rio de janeiro"->"Rio de Janeiro", "vík í mýrdal"->"Vík í Mýrdal" """
+    comp = pn.split()
+    return " ".join(
+        [c[0].upper() + c[1:] if c not in _PLACENAME_PREPS else c for c in comp]
+    )
+
+
 # The following needs to include at least nominative
 # and dative forms of number words
 _NUMBER_WORDS = {
@@ -227,8 +240,7 @@ def numbers_to_neutral(s):
 def is_plural(num):
     """ Determine whether an Icelandic word following a given number should
         be plural or not, e.g. "21 maður" vs. "22 menn" vs. "11 menn" """
-    sn = str(num)
-    return not (sn.endswith("1") and not sn.endswith("11"))
+    return (num % 10 != 1) or (num % 100 == 11)
 
 
 def country_desc(cc):
@@ -239,50 +251,51 @@ def country_desc(cc):
     return "{0} {1}".format(prep, nom2dat(cn))
 
 
+# This could be done at runtime using BÍN lookup, but this is
+# faster, cleaner and allows for reuse outside the codebase.
+_TIMEUNIT_NOUNS = {
+    "w": (["vika", "viku", "viku", "viku"], ["vikur", "vikur", "vikum", "vikna"]),
+    "d": (["dagur", "dag", "degi", "dags"], ["dagar", "daga", "dögum", "daga"]),
+    "h": (
+        ["klukkustund", "klukkustund", "klukkustund", "klukkustundar"],
+        ["klukkustundir", "klukkustundir", "klukkustundum", "klukkustunda"],
+    ),
+    "m": (
+        ["mínúta", "mínútu", "mínútu", "mínútu"],
+        ["mínútur", "mínútur", "mínútum", "mínútna"],
+    ),
+    "s": (
+        ["sekúnda", "sekúndu", "sekúndu", "sekúndu"],
+        ["sekúndur", "sekúndur", "sekúndum", "sekúndna"],
+    ),
+}
+
+_TIMEUNIT_INTERVALS = (
+    ("w", 604800),  # 60 * 60 * 24 * 7
+    ("d", 86400),  # 60 * 60 * 24
+    ("h", 3600),  # 60 * 60
+    ("m", 60),
+    ("s", 1),
+)
+
+
 def time_period_desc(seconds, case="nf", omit_seconds=True):
     """ Generate Icelandic description of the length of a given time period,
         e.g. "4 dagar, 6 klukkustundir og 21 mínúta. """
     case_abbr = ["nf", "þf", "þgf", "ef"]
     assert case in case_abbr
     cidx = case_abbr.index(case)
-    # Round down to nearest minute if omitting second precision
-    seconds = ((seconds // 60) * 60) if omit_seconds else seconds
-
-    # This could be done using BÍN lookup, but this is faster,
-    # cleaner and allows for reuse outside the codebase.
-    unit_nouns = {
-        "w": (["vika", "viku", "viku", "viku"], ["vikur", "vikur", "vikum", "vikna"]),
-        "d": (["dagur", "dag", "degi", "dags"], ["dagar", "daga", "dögum", "daga"]),
-        "h": (
-            ["klukkustund", "klukkustund", "klukkustund", "klukkustundar"],
-            ["klukkustundir", "klukkustundir", "klukkustundum", "klukkustunda"],
-        ),
-        "m": (
-            ["mínúta", "mínútu", "mínútu", "mínútu"],
-            ["mínútur", "mínútur", "mínútum", "mínútna"],
-        ),
-        "s": (
-            ["sekúnda", "sekúndu", "sekúndu", "sekúndu"],
-            ["sekúndur", "sekúndur", "sekúndum", "sekúndna"],
-        ),
-    }
-
-    intervals = (
-        ("w", 604800),  # 60 * 60 * 24 * 7
-        ("d", 86400),  # 60 * 60 * 24
-        ("h", 3600),  # 60 * 60
-        ("m", 60),
-        ("s", 1),
-    )
+    # Round to nearest minute if omitting second precision
+    seconds = ((seconds + 30) // 60) * 60 if omit_seconds else seconds
 
     # Break it down to weeks, days, hours, mins, secs.
     result = []
-    for unit, count in intervals:
+    for unit, count in _TIMEUNIT_INTERVALS:
         value = seconds // count
         if value:
             seconds -= value * count
-            plidx = int(is_plural(value))
-            icename = unit_nouns[unit][plidx][cidx]
+            plidx = 1 if is_plural(value) else 0
+            icename = _TIMEUNIT_NOUNS[unit][plidx][cidx]
             result.append("{0} {1}".format(value, icename))
 
     return natlang_seq(result)
@@ -336,8 +349,10 @@ def _get_API_key():
     return _API_KEY
 
 
-_MAPS_API_COORDS_URL = ("https://maps.googleapis.com/maps/api/geocode/json"
-                       "?latlng={0},{1}&key={2}&language=is&region=is")
+_MAPS_API_COORDS_URL = (
+    "https://maps.googleapis.com/maps/api/geocode/json"
+    "?latlng={0},{1}&key={2}&language=is&region=is"
+)
 
 
 def query_geocode_api_coords(lat, lon):
@@ -354,8 +369,10 @@ def query_geocode_api_coords(lat, lon):
     return query_json_api(url)
 
 
-_MAPS_API_ADDR_URL = ("https://maps.googleapis.com/maps/api/geocode/json"
-                     "?address={0}&key={1}&language=is&region=is")
+_MAPS_API_ADDR_URL = (
+    "https://maps.googleapis.com/maps/api/geocode/json"
+    "?address={0}&key={1}&language=is&region=is"
+)
 
 
 def query_geocode_api_addr(addr):
@@ -372,8 +389,10 @@ def query_geocode_api_addr(addr):
     return query_json_api(url)
 
 
-_MAPS_API_DISTANCE_URL = ("https://maps.googleapis.com/maps/api/distancematrix/json"
-                         "?units=metric&origins={0}&destinations={1}&mode={2}&key={3}&language=is&region=is")
+_MAPS_API_DISTANCE_URL = (
+    "https://maps.googleapis.com/maps/api/distancematrix/json"
+    "?units=metric&origins={0}&destinations={1}&mode={2}&key={3}&language=is&region=is"
+)
 
 
 def query_traveltime_api(startloc, endloc, mode="walking"):

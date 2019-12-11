@@ -37,13 +37,13 @@ import re
 _TELEPHONE_QTYPE = "Telephone"
 
 
-TOPIC_LEMMAS = ["hringdu", "hringja"]
+TOPIC_LEMMAS = ["hringja", "símanúmer", "sími"]
 
 
 def help_text(lemma):
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
-    return "Ég get hringt ef þú segir til dæmis: {0}?".format(
+    return "Ég get hringt ef þú segir til dæmis: {0}".format(
         random.choice(
             (
                 "Hringdu í 18 18",

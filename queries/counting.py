@@ -19,7 +19,7 @@
     along with this program. If not, see http://www.gnu.org/licenses/.
 
 
-    This module handles queries related to counting up or down.
+    This module handles requests to count up or down.
 
 """
 
@@ -33,13 +33,13 @@ from queries import parse_num, gen_answer
 _COUNTING_QTYPE = "Counting"
 
 
-TOPIC_LEMMAS = ["teldu", "telja"]
+TOPIC_LEMMAS = ["telja"]
 
 
 def help_text(lemma):
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
-    return "Ég get svarað ef þú segir til dæmis: {0}".format(
+    return "Ég skil þig ef þú segir til dæmis: {0}".format(
         random.choice(("Teldu upp að tíu", "Teldu niður frá tuttugu"))
     )
 
@@ -110,8 +110,10 @@ def QCountingSecondNumber(node, params, result):
     result.second_num = int(parse_num(node, result._canonical))
 
 
+_DEFAULT_DELAY = 0.4
 _SPEED2DELAY = {"mjög hægt": 2.0, "hægt": 1.0, "hratt": 0.1, "mjög hratt": 0.0}
 _MAX_COUNT = 100
+
 
 def QCountingSpeed(node, params, result):
     result.delay = _SPEED2DELAY.get(node.contained_text())
@@ -134,11 +136,12 @@ def _gen_count(q, result):
 
     answ = "{0}…{1}".format(num_range[0], num_range[-1])
     response = dict(answer=answ)
-    voice = ""
+    components = list()
     for n in num_range:
-        # Default 0.4s delay results in roughly 1 sec per number in count
-        delay = result["delay"] if "delay" in result else 0.4
-        voice += '{0} <break time="{1}s"/>'.format(n, delay)
+        # Default delay results in roughly 1 sec per number in count
+        delay = result.get("delay", _DEFAULT_DELAY)
+        components.append('{0} <break time="{1}s"/>'.format(n, delay))
+    voice = " ".join(components)
 
     return response, answ, voice
 
