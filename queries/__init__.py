@@ -74,7 +74,7 @@ def capitalize_placename(pn):
         "rio de janeiro"->"Rio de Janeiro", "vík í mýrdal"->"Vík í Mýrdal" """
     comp = pn.split()
     return " ".join(
-        [c[0].upper() + c[1:] if c not in _PLACENAME_PREPS else c for c in comp]
+        c[0].upper() + c[1:] if c not in _PLACENAME_PREPS else c for c in comp
     )
 
 

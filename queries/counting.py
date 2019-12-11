@@ -39,7 +39,7 @@ TOPIC_LEMMAS = ["telja"]
 def help_text(lemma):
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
-    return "Ég skil þig ef þú segir til dæmis: {0}".format(
+    return "Ég skil þig ef þú segir til dæmis: {0}.".format(
         random.choice(("Teldu upp að tíu", "Teldu niður frá tuttugu"))
     )
 
@@ -137,9 +137,9 @@ def _gen_count(q, result):
     answ = "{0}…{1}".format(num_range[0], num_range[-1])
     response = dict(answer=answ)
     components = list()
+    delay = result.get("delay", _DEFAULT_DELAY)
     for n in num_range:
         # Default delay results in roughly 1 sec per number in count
-        delay = result.get("delay", _DEFAULT_DELAY)
         components.append('{0} <break time="{1}s"/>'.format(n, delay))
     voice = " ".join(components)
 
