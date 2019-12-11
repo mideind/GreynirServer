@@ -33,7 +33,7 @@ from geo import *
 
 
 # Routes that don't return 200 OK without certain query/post parameters
-SKIP_ROUTES = frozenset(("/staticmap", "/page"))
+SKIP_ROUTES = frozenset(("/staticmap", "/page", "/exit.api"))
 
 REQ_METHODS = frozenset(["GET", "POST"])
 
@@ -48,12 +48,11 @@ def client():
 
 def test_routes(client):
     """ Test all non-argument routes in Flask app by requesting
-        them without passing any query or post parameters. """
+        them without passing any query or post parameters """
     for rule in app.url_map.iter_rules():
         route = str(rule)
         if rule.arguments or route in SKIP_ROUTES:
             continue
-
         for m in [t for t in rule.methods if t in REQ_METHODS]:
             # Make request for each method supported by route
             method = getattr(client, m.lower())
@@ -63,7 +62,8 @@ def test_routes(client):
 
 API_CONTENT_TYPE = "application/json"
 API_ROUTES = [
-    r for r in app.url_map.iter_rules() if str(r).endswith(".api") and not r.arguments
+    r for r in app.url_map.iter_rules()
+    if str(r).endswith(".api") and not r.arguments and str(r) not in SKIP_ROUTES
 ]
 
 
