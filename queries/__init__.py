@@ -49,7 +49,7 @@ def natlang_seq(words, oxford_comma=False):
     if len(words) == 1:
         return words[0]
     return "{0}{1} og {2}".format(
-        ", ".join(words[:-1]), "," if oxford_comma else "", words[-1]
+        ", ".join(words[:-1]), "," if oxford_comma and len(words) > 2 else "", words[-1]
     )
 
 
@@ -349,6 +349,25 @@ def krona_desc(amount, case="nf"):
     return "{0} {1}".format(format_icelandic_float(amount), _KRONA_NOUN[plidx][cidx])
 
 
+def strip_trailing_zeros(num_str):
+    """ Strip trailing decimal zeros from an Icelandic-style
+        float num string, e.g. "17,0" -> "17". """
+    if "," in num_str:
+        return num_str.rstrip("0").rstrip(",")
+    return num_str
+
+
+def format_icelandic_float(fp_num):
+    """ Convert number to Icelandic decimal format. """
+    with changedlocale(category="LC_NUMERIC"):
+        res = locale.format_string("%.2f", fp_num, grouping=True).replace(" ", ".")
+        return strip_trailing_zeros(res)
+
+
+def gen_answer(a):
+    return dict(answer=a), a, a
+
+
 def query_json_api(url):
     """ Request the URL, expecting a json response which is 
         parsed and returned as a Python data structure. """
@@ -463,25 +482,6 @@ def query_traveltime_api(startloc, endloc, mode="walking"):
     # Send API request
     url = _MAPS_API_DISTANCE_URL.format(p1, p2, mode, key)
     return query_json_api(url)
-
-
-def strip_trailing_zeros(num_str):
-    """ Strip trailing decimal zeros from an Icelandic-style
-        float num string, e.g. "17,0" -> "17". """
-    if "," in num_str:
-        return num_str.rstrip("0").rstrip(",")
-    return num_str
-
-
-def format_icelandic_float(fp_num):
-    """ Convert number to Icelandic decimal format. """
-    with changedlocale(category="LC_NUMERIC"):
-        res = locale.format_string("%.2f", fp_num, grouping=True).replace(" ", ".")
-        return strip_trailing_zeros(res)
-
-
-def gen_answer(a):
-    return dict(answer=a), a, a
 
 
 _TZW = None
