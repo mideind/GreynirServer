@@ -367,7 +367,7 @@ def query_api(version=1):
         client_type=client_type,
         client_id=client_id,
         client_version=client_version,
-        bypass_cache=test,
+        bypass_cache=Settings.DEBUG,
         private=private,
     )
 
