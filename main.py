@@ -54,7 +54,6 @@ import reynir_correct
 from settings import Settings, ConfigError
 from article import Article as ArticleProxy
 
-
 # RUNNING_AS_SERVER is True if we're executing under nginx/Gunicorn,
 # but False if the program was invoked directly as a Python main module.
 RUNNING_AS_SERVER = __name__ != "__main__"

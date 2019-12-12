@@ -427,7 +427,6 @@ def suggest(limit=10):
 
 
 @routes.route("/translate")
-@cache.cached(timeout=30 * 60, key_prefix="translate", query_string=True)
 def translate():
     """ Handler for a page with machine translation of user-entered text """
     txt = request.args.get("txt", "")[0:_MAX_TEXT_LENGTH_VIA_URL]

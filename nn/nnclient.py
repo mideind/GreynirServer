@@ -56,7 +56,7 @@ def index_text(text):
         sent_idxs = []
         for (idx, sent) in pg:
             curr_sent = list(filter(BIN_Token.is_understood, sent))
-            curr_sent = " ".join([tok.txt for tok in curr_sent])
+            curr_sent = tokenizer.normalized_text_from_tokens(curr_sent)
             sent_idxs.append(curr_sent_idx)
             sent_idx_to_sent[curr_sent_idx] = curr_sent
             curr_sent_idx += 1
@@ -102,9 +102,7 @@ class NnClient:
         resp.raise_for_status()
 
         obj = json.loads(resp.text)
-        if "valid" in obj:
-            raise IOError("Bad response from server")
-        elif "predictions" not in obj:
+        if obj.get("predictions") is None:
             raise ValueError("Invalid request or batch size too large")
         predictions = obj["predictions"]
         return [
