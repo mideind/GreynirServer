@@ -31,6 +31,8 @@ import os
 import re
 import locale
 import datetime
+import math
+
 from tzwhere import tzwhere
 from pytz import country_timezones
 
@@ -325,10 +327,26 @@ def distance_desc(km_dist, case="nf", in_metres=1.0, abbr=False):
     # E.g. 940 metrar
     else:
         dist = int(math.ceil((km_dist * 1000.0) / 10.0) * 10)  # Round to nearest 10 m
+        plidx = 1 if is_plural(dist) else 0
         unit_long = _METER_NOUN[plidx][cidx]
         unit = "m" if abbr else unit_long
 
     return "{0} {1}".format(dist, unit)
+
+
+_KRONA_NOUN = (
+    ["króna", "krónu", "krónu", "krónur"],
+    ["krónur", "krónur", "krónum", "króna"],
+)
+
+
+def krona_desc(amount, case="nf"):
+    """ Generate description of an amount in krónas, e.g.
+        "213,5 krónur", "361 króna", etc. """
+    assert case in _CASE_ABBR
+    cidx = _CASE_ABBR.index(case)
+    plidx = 1 if is_plural(amount) else 0
+    return "{0} {1}".format(format_icelandic_float(amount), _KRONA_NOUN[plidx][cidx])
 
 
 def query_json_api(url):
