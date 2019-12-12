@@ -396,24 +396,27 @@ def query_json_api(url):
 
 # The Google API identifier (you must obtain your
 # own key if you want to use this code)
-_API_KEY = ""
-_API_KEY_PATH = os.path.join(
+_GOOGLE_API_KEY = ""
+_GOOGLE_API_KEY_PATH = os.path.join(
     os.path.dirname(__file__), "..", "resources", "GoogleServerKey.txt"
 )
 
 
-def _get_API_key():
+def _get_google_api_key():
     """ Read Google API key from file """
-    global _API_KEY
-    if not _API_KEY:
+    global _GOOGLE_API_KEY
+    if not _GOOGLE_API_KEY:
         try:
             # You need to obtain your own key and put it in
             # _API_KEY_PATH if you want to use this code.
-            with open(_API_KEY_PATH) as f:
-                _API_KEY = f.read().rstrip()
+            with open(_GOOGLE_API_KEY_PATH) as f:
+                _GOOGLE_API_KEY = f.read().rstrip()
         except FileNotFoundError:
-            _API_KEY = ""
-    return _API_KEY
+            logging.warning(
+                "Unable to read Google API key at {0}".format(_GOOGLE_API_KEY_PATH)
+            )
+            _GOOGLE_API_KEY = ""
+    return _GOOGLE_API_KEY
 
 
 _MAPS_API_COORDS_URL = (
@@ -425,7 +428,7 @@ _MAPS_API_COORDS_URL = (
 def query_geocode_api_coords(lat, lon):
     """ Look up coordinates in Google's geocode API. """
     # Load API key
-    key = _get_API_key()
+    key = _get_google_api_key()
     if not key:
         # No key, can't query Google location API
         logging.warning("No API key for coordinates lookup")
@@ -445,7 +448,7 @@ _MAPS_API_ADDR_URL = (
 def query_geocode_api_addr(addr):
     """ Look up address in Google's geocode API. """
     # Load API key
-    key = _get_API_key()
+    key = _get_google_api_key()
     if not key:
         # No key, can't query the API
         logging.warning("No API key for address lookup")
@@ -470,7 +473,7 @@ def query_traveltime_api(startloc, endloc, mode="walking"):
         Uses Google Maps' Distance Matrix API. For details, see:
         https://developers.google.com/maps/documentation/distance-matrix/intro """
     # Load API key
-    key = _get_API_key()
+    key = _get_google_api_key()
     if not key:
         # No key, can't query the API
         logging.warning("No API key for travel time lookup")
