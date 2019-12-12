@@ -414,14 +414,12 @@ def _json_terminal_node(tok, text="placeholder", token_index=None):
 
 
 def _json_nonterminal_node(tok):
-    name_obj = matcher._DEFAULT_ID_MAP.get(tok)
     nt_name = "-"
-    if name_obj:
-        nt_name = name _obj["name"]
+    if tok in matcher._DEFAULT_ID_MAP:
+        nt_name = matcher._DEFAULT_ID_MAP[tok]["name"]
     new_node = {
         KEY.nonterminal_tag: tok,
         KEY.nonterminal_name: nt_name,
-        KEY.nonterminal_name: ,
         KEY.kind: "NONTERMINAL",
         KEY.children: [],
     }
