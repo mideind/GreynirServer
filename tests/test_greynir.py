@@ -524,6 +524,24 @@ def test_geo():
         "letter": "c",
     }
 
+    assert iceprep_for_street("Öldugata") == "á"
+    assert iceprep_for_street("Fiskislóð") == "á"
+    assert iceprep_for_street("Austurstræti") == "í"
+    assert iceprep_for_street("Hamrahlíð") == "í"
+
+    assert iceprep_for_placename("Dalvík") == "á"
+    assert iceprep_for_placename("Reykjavík") == "í"
+    assert iceprep_for_placename("Hafnarfjörður") == "í"
+    assert iceprep_for_placename("Ísafjörður") == "á"
+
+    assert iceprep4cc("IS") == "á"
+    assert iceprep4cc("US") == "í"
+    assert iceprep4cc("ES") == "á"
+
+    assert iceprep_for_country("Ítalía") == "á"
+    assert iceprep_for_country("Ísland") == "á"
+    assert iceprep_for_country("Þýskaland") == "í"
+
 
 def test_doc():
     """ Test document-related functions in doc.py """
