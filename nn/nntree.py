@@ -368,6 +368,7 @@ def _json_terminal_node(tok, text="placeholder", token_index=None):
         new_node = {KEY.short_terminal: tok, KEY.text: text, KEY.kind: "ENTITY"}
 
     elif first == "person":
+        new_node = {
             KEY.bin_category: gender or "-",
             KEY.short_terminal: tok,
             KEY.kind: "PERSON",
