@@ -1,8 +1,7 @@
-#!/usr/bin/env python
 """
     Greynir: Natural language processing for Icelandic
 
-    Copyright (c) 2018 Miðeind ehf.
+    Copyright (c) 2019 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -25,6 +24,7 @@
 import re
 from collections import namedtuple
 from datetime import datetime
+
 from db.models import Location
 from tokenizer import TOK
 from geo import location_info
