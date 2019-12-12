@@ -238,9 +238,10 @@ def numbers_to_neutral(s):
 
 
 def is_plural(num):
-    """ Determine whether an Icelandic word following a given number should
-        be plural or not, e.g. "21 maður" vs. "22 menn" vs. "11 menn" """
-    return (num % 10 != 1) or (num % 100 == 11)
+    """ Determine whether an Icelandic word following a given number should be
+        plural or not, e.g. "21 maður", "22 menn", "1,1 kílómetri", "11 menn" etc. """
+    sn = str(num)
+    return not (sn.endswith("1") and not sn.endswith("11"))
 
 
 def country_desc(cc):
@@ -278,13 +279,14 @@ _TIMEUNIT_INTERVALS = (
     ("s", 1),
 )
 
+_CASE_ABBR = ["nf", "þf", "þgf", "ef"]
+
 
 def time_period_desc(seconds, case="nf", omit_seconds=True):
     """ Generate Icelandic description of the length of a given time period,
         e.g. "4 dagar, 6 klukkustundir og 21 mínúta. """
-    case_abbr = ["nf", "þf", "þgf", "ef"]
-    assert case in case_abbr
-    cidx = case_abbr.index(case)
+    assert case in _CASE_ABBR
+    cidx = _CASE_ABBR.index(case)
     # Round to nearest minute if omitting second precision
     seconds = ((seconds + 30) // 60) * 60 if omit_seconds else seconds
 
@@ -299,6 +301,34 @@ def time_period_desc(seconds, case="nf", omit_seconds=True):
             result.append("{0} {1}".format(value, icename))
 
     return natlang_seq(result)
+
+
+_METER_NOUN = (
+    ["metri", "metra", "metra", "metra"],
+    ["metrar", "metra", "metrum", "metra"],
+)
+
+
+def distance_desc(km_dist, case="nf", in_metres=1.0, abbr=False):
+    """ Generate an Icelandic description of distance in km/m w. option to
+        specify case, abbreviations, cutoff for returning desc in metres. """
+    assert case in _CASE_ABBR
+    cidx = _CASE_ABBR.index(case)
+
+    # E.g. 7,3 kílómetrar
+    if km_dist >= in_metres:
+        rounded_km = round(km_dist, 1 if km_dist < 10 else 0)
+        dist = format_icelandic_float(rounded_km)
+        plidx = 1 if is_plural(rounded_km) else 0
+        unit_long = "kíló" + _METER_NOUN[plidx][cidx]
+        unit = "km" if abbr else unit_long
+    # E.g. 940 metrar
+    else:
+        dist = int(math.ceil((km_dist * 1000.0) / 10.0) * 10)  # Round to nearest 10 m
+        unit_long = _METER_NOUN[plidx][cidx]
+        unit = "m" if abbr else unit_long
+
+    return "{0} {1}".format(dist, unit)
 
 
 def query_json_api(url):

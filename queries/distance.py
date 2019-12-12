@@ -37,6 +37,7 @@ from reynir.bindb import BIN_Db
 from queries import (
     gen_answer,
     time_period_desc,
+    distance_desc,
     query_geocode_api_addr,
     query_traveltime_api,
     capitalize_placename,
@@ -67,7 +68,7 @@ _QDISTANCE_REGEXES = (
 _TT_PREFIXES = (
     "hvað er ég lengi að",
     "hversu lengi er ég að",
-    "hve lengi er ég að"
+    "hve lengi er ég að",
     "hvað tekur langan tíma að",
     "hvað tekur það mig langan tíma að",
     "hvað tekur mig langan tíma að",
@@ -170,24 +171,13 @@ def dist_answer_for_loc(matches, query):
     # Calculate distance, round it intelligently and format num string
     km_dist = distance(query.location, loc)
 
-    # E.g. 7,3 kílómetra
-    if km_dist >= 1.0:
-        km_dist = round(km_dist, 1 if km_dist < 10 else 0)
-        dist = str(km_dist).replace(".", ",")
-        dist = re.sub(r",0$", "", dist)
-        unit = "kílómetra"
-        unit_abbr = "km"
-    # E.g. 940 metra
-    else:
-        dist = int(math.ceil((km_dist * 1000.0) / 10.0) * 10)  # Round to nearest 10 m
-        unit = "metra"
-        unit_abbr = "m"
-
     # Generate answer
-    answer = "{0} {1}".format(dist, unit_abbr)
+    answer = distance_desc(km_dist, abbr=True)
     response = dict(answer=answer)
+
     loc_nf = loc_nf[0].upper() + loc_nf[1:]
-    voice = "{2} er {0} {1} í burtu".format(dist, unit, loc_nf)
+    dist = distance_desc(km_dist, case="þf")
+    voice = "{0} er {1} í burtu".format(loc_nf, dist)
 
     query.set_key(capitalize_placename(loc_nf))
 
