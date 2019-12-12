@@ -62,7 +62,8 @@ def test_routes(client):
 
 API_CONTENT_TYPE = "application/json"
 API_ROUTES = [
-    r for r in app.url_map.iter_rules()
+    r
+    for r in app.url_map.iter_rules()
     if str(r).endswith(".api") and not r.arguments and str(r) not in SKIP_ROUTES
 ]
 
@@ -446,6 +447,62 @@ def test_query_api(client):
     assert json["qtype"] == "Introduction"
     assert "answer" in json
     assert json["answer"].startswith("Sæl og blessuð")
+
+    # Tests for various utility functions used by query modules
+
+    assert natlang_seq(["Jón", "Gunna"]) == "Jón og Gunna"
+    assert natlang_seq(["Jón", "Gunna", "Siggi"]) == "Jón, Gunna og Siggi"
+    assert (
+        natlang_seq(["Jón", "Gunna", "Siggi"], oxford_comma=True)
+        == "Jón, Gunna, og Siggi"
+    )
+
+    assert nom2dat("hestur") == "hesti"
+    assert nom2dat("Hvolsvöllur") == "Hvolsvelli"
+
+    assert capitalize_placename("ríó de janeiro") == "Ríó de Janeiro"
+    assert capitalize_placename("vík í mýrdal") == "Vík í Mýrdal"
+
+    assert numbers_to_neutral("Öldugötu 4") == "Öldugötu fjögur"
+    assert numbers_to_neutral("Fiskislóð 31") == "Fiskislóð þrjátíu og eitt"
+
+    assert is_plural(22)
+    assert is_plural("76,3")
+    assert is_plural(27.6)
+    assert not is_plural("276,1")
+    assert not is_plural(22.1)
+
+    assert country_desc("DE") == "í Þýskalandi"
+    assert country_desc("ES") == "á Spáni"
+    assert country_desc("IS") == "á Íslandi"
+    assert country_desc("US") == "í Bandaríkjunum"
+
+    assert time_period_desc(600) == "10 mínútur"
+    assert time_period_desc(610, omit_seconds=False) == "10 mínútur og 10 sekúndur"
+    assert time_period_desc(61, omit_seconds=False) == "1 mínúta og 1 sekúnda"
+    assert (
+        time_period_desc(121, omit_seconds=False, case="þgf")
+        == "2 mínútum og 1 sekúndu"
+    )
+
+    assert distance_desc(1.1) == "1,1 kílómetri"
+    assert distance_desc(1.2) == "1,2 kílómetrar"
+    assert distance_desc(0.7) == "700 metrar"
+    assert distance_desc(0.021) == "20 metrar"
+    assert distance_desc(41, case="þf") == "41 kílómetra"
+    assert distance_desc(0.215, case="þgf") == "220 metrum"
+
+    assert krona_desc(361) == "361 króna"
+    assert krona_desc(28) == "28 krónur"
+    assert krona_desc(4264.2) == "4.264,2 krónur"
+    assert krona_desc(2443681.1) == "2.443.681,1 króna"
+
+    assert strip_trailing_zeros("17,0") == "17"
+    assert strip_trailing_zeros("219.117,0000") == "219.117"
+
+    assert format_icelandic_float(666.0) == "666"
+    assert format_icelandic_float(217.296) == "217,3"
+    assert format_icelandic_float(2528963.9) == "2.528.963,9"
 
 
 def test_processors():
