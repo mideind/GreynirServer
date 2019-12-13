@@ -24,7 +24,6 @@
 """
 
 # TODO: "hvað er X með vaski/virðisaukaskatti?"
-# TODO: "hver er talan pí?"
 
 import math
 import json
