@@ -51,6 +51,7 @@ def help_text(lemma):
                 "Hvar er næsta bensínstöð",
                 "Hvar fæ ég ódýrasta bensínið",
                 "Hvar er ódýrt að fylla tankinn",
+                "Hvar fæ ég ódýrt bensín í nágrenninu"
             )
         )
     )
@@ -119,14 +120,18 @@ QPetrolClosest →
     "næsta" | "nálægasta"
 
 QPetrolNearMe →
-    "nálægt" "mér"? | QPetrolHere? "í" "grenndinni" | QPetrolHere? "í" "grennd"
-    | QPetrolHere "á" "svæðinu" | QPetrolHere? "skammt" "frá" "mér"? | QPetrolHere? "í" "nágrenninu"
+    QPetrolHere? QPetrolAround
+    | QPetrolAround
+
+QPetrolAround →
+    "nálægt" "mér"? | "í" "grenndinni" | "í" "grennd" | "á" "svæðinu" 
+    | "skammt" "frá" "mér"? | "í" "nágrenninu"
 
 QPetrolHere →
     "hér" | "hérna"
 
 QPetrolStation →
-    "bensínstöð" | "bensínstöðin" | "bensínafgreiðsla" 
+    "bensínstöð" | "bensínstöðin"
 
 $score(+35) QPetrol
 

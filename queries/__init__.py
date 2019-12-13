@@ -246,7 +246,7 @@ def is_plural(num):
 
 
 def country_desc(cc):
-    """ Generate Icelandic description string of being in a particular country
+    """ Generate Icelandic description of being in a particular country
         with correct preposition and case e.g. 'á Spáni', 'í Þýskalandi' """
     cn = country_name_for_isocode(cc)
     prep = iceprep_for_cc(cc)
@@ -284,8 +284,8 @@ _CASE_ABBR = ["nf", "þf", "þgf", "ef"]
 
 
 def time_period_desc(seconds, case="nf", omit_seconds=True):
-    """ Generate Icelandic description of the length of a given time period,
-        e.g. "4 dagar, 6 klukkustundir og 21 mínúta. """
+    """ Generate Icelandic description of the length of a given time
+        span, e.g. "4 dagar, 6 klukkustundir og 21 mínúta. """
     assert case in _CASE_ABBR
     cidx = _CASE_ABBR.index(case)
     # Round to nearest minute if omitting second precision
