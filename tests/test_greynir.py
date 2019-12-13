@@ -312,12 +312,14 @@ def test_query_api(client):
     resp = client.get("/query.api?q=fiskur eða skjaldarmerki")
     json = validate_json(resp)
     assert json["qtype"] == "Random"
-    assert "fiskur" in json["answer"] or "skjaldarmerki" in json["answer"]
+    a = json["answer"].lower()
+    assert "fiskur" in a or "skjaldarmerki" in a
 
     resp = client.get("/query.api?q=kastaðu peningi")
     json = validate_json(resp)
     assert json["qtype"] == "Random"
-    assert "fiskur" in json["answer"] or "skjaldarmerki" in json["answer"]
+    a = json["answer"].lower()
+    assert "fiskur" in a or "skjaldarmerki" in a
 
     # Telephone module
     resp = client.get("/query.api?q=Hringdu í síma 6 9 9 2 4 2 2")

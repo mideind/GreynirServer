@@ -325,7 +325,15 @@ def distance_desc(km_dist, case="nf", in_metres=1.0, abbr=False):
         unit = "km" if abbr else unit_long
     # E.g. 940 metrar
     else:
-        dist = int(math.ceil((km_dist * 1000.0) / 10.0) * 10)  # Round to nearest 10 m
+        # Round to nearest 10
+        def rnd(n):
+            rem = n % 10
+            if rem < 5:
+                return int(n / 10) * 10
+            else:
+                return int((n + 10) / 10) * 10
+
+        dist = rnd(int(km_dist * 1000.0))
         plidx = 1 if is_plural(dist) else 0
         unit_long = _METER_NOUN[plidx][cidx]
         unit = "m" if abbr else unit_long

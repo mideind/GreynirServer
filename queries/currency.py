@@ -166,6 +166,7 @@ QCurSEK/fall →
 
 QCurUSD/fall →
     'bandaríkjadalur:kk'/fall
+    | 'dalur:kk'/fall
     | 'bandarískur:lo'_kk/fall? 'dollari:kk'/fall
     | currency_usd/fall
 
