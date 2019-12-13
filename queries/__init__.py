@@ -30,13 +30,12 @@ import json
 import os
 import re
 import locale
-import datetime
 import math
 
 from tzwhere import tzwhere
 from pytz import country_timezones
 
-from geo import country_name_for_isocode, iceprep4cc
+from geo import country_name_for_isocode, iceprep_for_cc
 from reynir.bindb import BIN_Db
 from settings import changedlocale
 
@@ -250,7 +249,7 @@ def country_desc(cc):
     """ Generate Icelandic description string of being in a particular country
         with correct preposition and case e.g. 'á Spáni', 'í Þýskalandi' """
     cn = country_name_for_isocode(cc)
-    prep = iceprep4cc(cc)
+    prep = iceprep_for_cc(cc)
     return "{0} {1}".format(prep, nom2dat(cn))
 
 

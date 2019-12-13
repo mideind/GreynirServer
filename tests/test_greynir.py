@@ -30,6 +30,7 @@ from main import app
 
 # pylint: disable=unused-wildcard-import
 from geo import *
+
 # pylint: disable=unused-wildcard-import
 from queries import *
 
@@ -534,9 +535,9 @@ def test_geo():
     assert iceprep_for_placename("Hafnarfjörður") == "í"
     assert iceprep_for_placename("Ísafjörður") == "á"
 
-    assert iceprep4cc("IS") == "á"
-    assert iceprep4cc("US") == "í"
-    assert iceprep4cc("ES") == "á"
+    assert iceprep_for_cc("IS") == "á"
+    assert iceprep_for_cc("US") == "í"
+    assert iceprep_for_cc("ES") == "á"
 
     assert iceprep_for_country("Ítalía") == "á"
     assert iceprep_for_country("Ísland") == "á"
