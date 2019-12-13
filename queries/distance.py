@@ -72,6 +72,7 @@ _TT_PREFIXES = (
     "hvað tekur langan tíma að",
     "hvað tekur það mig langan tíma að",
     "hvað tekur mig langan tíma að",
+    "hversu langan tíma tekur að",
     "hversu langan tíma tekur það mig að",
     "hvað væri ég lengi að",
     "hvað tæki það langan tíma að",

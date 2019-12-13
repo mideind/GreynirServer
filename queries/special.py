@@ -728,6 +728,9 @@ _SPECIAL_QUERIES = {
     "þú ert glötuð": _sorry,
     "þú ert alveg glötuð": _sorry,
     "þú ert gagnslaus": _sorry,
+    "þú ert alveg gagnslaus": _sorry,
+    "þú ert handónýt": _sorry,
+    "þú ert alveg handónýt": _sorry,
     "þú skilur ekki neitt": _sorry,
     "þú misskilur allt": _sorry,
     "þetta var vitleysa hjá þér": _sorry,
@@ -933,6 +936,8 @@ _SPECIAL_QUERIES = {
     "hvaðan ert þú": {
         "answer": "Ég er ættuð af Fiskislóð í Reykjavík."
     },
+    "heitirðu embla": _identity,
+    "heitir þú embla": _identity,
 
     # Home/Location
     "hvar áttu heima": {
@@ -971,6 +976,8 @@ _SPECIAL_QUERIES = {
     "af hverju hlaustu nafnið embla": _NAME_EXPL,
     "afhverju hlaust þú nafnið embla": _NAME_EXPL,
     "afhverju hlaustu nafnið embla": _NAME_EXPL,
+    "hvaðan kemur nafnið embla": _NAME_EXPL,
+    "hvaðan kemur nafnið þitt": _NAME_EXPL,
     "embla": _NAME_EXPL,
     "þú heitir embla": _NAME_EXPL,
 
@@ -1157,6 +1164,18 @@ _SPECIAL_QUERIES = {
     },
     "hvað gerir þú": {
         "answer": "Ég svara fyrirspurnum frá þér, kæri notandi."
+    },
+    "hvað ætlarðu að gera í dag": {
+        "answer": "Ég ætla að svara fyrirspurnum frá þér, kæri notandi."
+    },
+    "hvað ætlar þú að gera í dag": {
+        "answer": "Ég ætla að svara fyrirspurnum frá þér, kæri notandi."
+    },
+    "hvað ætlarðu að gera í kvöld": {
+        "answer": "Ég ætla að svara fyrirspurnum frá þér, kæri notandi."
+    },
+    "hvað ætlar þú að gera í kvöld": {
+        "answer": "Ég ætla að svara fyrirspurnum frá þér, kæri notandi."
     },
 
     # Humor
@@ -1350,6 +1369,7 @@ _SPECIAL_QUERIES = {
     "ert þú rugluð": _rudeness,
     "þegiðu": _rudeness,
     "þegi þú": _rudeness,
+    "veistu ekki rassgat": _rudeness,
 
     # Internal & emotional state
     "ertu í góðu skapi": {
@@ -1472,6 +1492,8 @@ _SPECIAL_QUERIES = {
     "stefnirðu á heimsyfirráð": _JUST_QA,
     "stefnir þú á heimsyfirráð": _JUST_QA,
     "ætlarðu að taka yfir heiminn": _JUST_QA,
+    "ertu klár": _JUST_QA,
+    "ert þú klár": _JUST_QA,
     "lestu bækur": {
         "answer": "Nei, en ég les hins vegar íslenska vefmiðla."
     },
