@@ -323,7 +323,6 @@ button.btn.btn-success[disabled='disabled'] {
    border-color: #38cb7a;
 }
 
-
 .btn-info {
    background-image: none;
    background-color: #006eff;
@@ -442,6 +441,16 @@ p.header {
 .container > .navbar-header {
    margin-left: -6px;
    margin-right: -6px;
+}
+
+input#url::selection {
+   color: white;
+   background-color: #006eff;
+}
+
+textarea::selection {
+   color: white;
+   background-color: #006eff;
 }
 
 div.input {
