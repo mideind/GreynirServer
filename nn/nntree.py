@@ -34,6 +34,7 @@ import inspect
 import tokenizer
 from reynir import bintokenizer
 from reynir import matcher
+from settings import Settings
 
 
 class GRAMMAR:
@@ -325,19 +326,18 @@ def _json_terminal_node(tok, text="placeholder", token_index=None):
         suffix = head[-1]
         if "_" in head and suffix in "012":
             tail_start += int(suffix)
-    tail = subtokens[tail_start:]
+    tail = set(subtokens[tail_start:])
+
+    gender = GRAMMAR.GENDERS.intersection(tail)
+    gender = gender.pop() if gender else ""
+    case = GRAMMAR.CASES.intersection(tail)
+    case = case.pop() if case else ""
+    number = GRAMMAR.NUMBERS.intersection(tail)
+    number = number.pop() if number else ""
+    gr = "gr" if "gr" in tail else ""
 
     if first == "no":
-        gender = [t for t in GRAMMAR.GENDERS if t in tail][:1]
-        gender = gender.pop() if gender else ""
-        case = [t for t in GRAMMAR.CASES if t in tail][:1]
-        case = case.pop() if case else ""
-        number = [t for t in GRAMMAR.NUMBERS if t in tail][:1]
-        number = number.pop() if number else ""
-        gr = "gr" if "gr" in tail else ""
-
-        bin_variants = "-".join([t for t in [case, number, gr] if t])
-
+        bin_variants = "-".join(t for t in [case, number, gr] if t)
         new_node = {
             KEY.bin_category: gender,
             KEY.short_terminal: tok,
@@ -368,8 +368,6 @@ def _json_terminal_node(tok, text="placeholder", token_index=None):
         new_node = {KEY.short_terminal: tok, KEY.text: text, KEY.kind: "ENTITY"}
 
     elif first == "person":
-        gender = [t for t in GRAMMAR.GENDERS if t in tail][:1]
-        gender = gender.pop() if gender else ""
         new_node = {
             KEY.bin_category: gender or "-",
             KEY.short_terminal: tok,
@@ -382,7 +380,7 @@ def _json_terminal_node(tok, text="placeholder", token_index=None):
         new_node = {KEY.text: text, KEY.kind: "PUNCTUATION"}
 
     else:
-        bin_variants = "-".join([t for t in tail if t])
+        bin_variants = "-".join(t for t in tail if t)
         new_node = {
             KEY.text: text,
             KEY.short_terminal: tok,
@@ -417,9 +415,12 @@ def _json_terminal_node(tok, text="placeholder", token_index=None):
 
 
 def _json_nonterminal_node(tok):
+    nt_name = "-"
+    if tok in matcher._DEFAULT_ID_MAP:
+        nt_name = matcher._DEFAULT_ID_MAP[tok]["name"]
     new_node = {
         KEY.nonterminal_tag: tok,
-        KEY.nonterminal_name: matcher._DEFAULT_ID_MAP.get(tok, {"name": "-"})["name"],
+        KEY.nonterminal_name: nt_name,
         KEY.kind: "NONTERMINAL",
         KEY.children: [],
     }
@@ -427,63 +428,74 @@ def _json_nonterminal_node(tok):
 
 
 def tokenize_and_merge_possible_mw_tokens(text, flat_tree):
-    mw_tokens = list(bintokenizer.tokenize(text))
+    mw_tokens = list(bintokenizer.tokenize(text))  # multi-word tokens
     mw_tokens = [tok.txt.split(" ") for tok in mw_tokens if tok.txt is not None]
-    sw_tokens = [tok for toks in mw_tokens for tok in toks]  # flatten multiword tokens
+    sw_tokens = [tok for toks in mw_tokens for tok in toks]  # single-word tokens
 
     parse_tokens = list(flat_tree.split(" "))
     parse_terminals = filter(lambda x: x[1][0].islower(), enumerate(parse_tokens))
-    parse_terminals = list(enumerate(parse_terminals))
 
-    term_idx_to_parse_idx = {
-        term_idx: ptok_idx for (term_idx, (ptok_idx, ptok)) in parse_terminals
+    leaf_idx_to_parse_idx = {
+        leaf_idx: ptok_idx for (leaf_idx, (ptok_idx, ptok)) in enumerate(parse_terminals)
     }
 
     offset = 0
     merge_list = []
     for mw_token in mw_tokens:
-        weight = len(mw_token)
+        sw_count = len(mw_token)
         idxed_mw_token = [(idx + offset, token) for (idx, token) in enumerate(mw_token)]
-        offset += weight
-        if weight == 1:
+        offset += sw_count
+        if sw_count == 1:
             continue
         merge_info = check_merge_candidate(
-            idxed_mw_token, parse_tokens, term_idx_to_parse_idx
+            idxed_mw_token, parse_tokens, leaf_idx_to_parse_idx
         )
         if merge_info is not None:
             merge_list.append(merge_info)
 
     # merge in reverse order so we don't have to compute offsets
-    for (pidx, tidx, weight) in reversed(merge_list):
-        print("merging:")
-        print(parse_tokens[pidx : pidx + 1])
-        print([" ".join(sw_tokens[tidx : tidx + weight])])
-        parse_tokens[pidx : pidx + weight] = parse_tokens[pidx : pidx + 1]
-        sw_tokens[tidx : tidx + weight] = [" ".join(sw_tokens[tidx : tidx + weight])]
+    for (pidx, leaf_idx, sw_count) in reversed(merge_list):
+        if Settings.DEBUG:
+            print("Merging:")
+            print(parse_tokens[pidx : pidx + 1])
+            print(" ".join(sw_tokens[leaf_idx : leaf_idx + sw_count]))
+        parse_tokens[pidx : pidx + sw_count] = parse_tokens[pidx : pidx + 1]
+        sw_tokens[leaf_idx : leaf_idx + sw_count] = [" ".join(sw_tokens[leaf_idx : leaf_idx + sw_count])]
 
     return sw_tokens, parse_tokens
 
 
-def check_merge_candidate(idxed_mw_token, parse_tokens, term_idx_to_parse_idx):
+def check_merge_candidate(idxed_mw_token, parse_tokens, leaf_idx_to_parse_idx):
+    """Check if candidate multi-word token can be merged according to (possibly incorrect)
+        flattened parse tree.
+    Args:
+        idxed_mw_token: list of tuples (token_index, token_string)
+        parse_tokens: parse tokens from flat parse tree
+        leaf_idx_to_parse_idx: dict from leaf index to index in parse tokens stream
+    Return: None if merge is not allowed, else return a tuple of
+        (starting parse index, starting token index, number of single word tokens)"""
     # idx_mw_tokens has at least two tokens
     allow_merge = True
     last_ptok = None
-    last_pidx = None
-    first_pidx = None
+    last_pidx = None  # last parse token index
+    first_pidx = None  # first parse token indx
     for (idx, token) in idxed_mw_token:
-        pidx = term_idx_to_parse_idx[idx]
-        last_pidx = pidx - 1 if last_pidx is None else last_pidx
+        pidx = leaf_idx_to_parse_idx[idx]
+        if last_pidx is None:
+            last_pdix = pidx - 1
         ptok = parse_tokens[pidx]
-        last_ptok = ptok if last_ptok is None else last_ptok
+        if last_ptok is None:
+            last_ptok = ptok
 
         # parse_tokens must be contiguous and must match
         allow_merge = allow_merge and (last_ptok == ptok) and (last_pidx + 1 == pidx)
         if not allow_merge:
             return None
 
-        first_pidx = pidx if first_pidx is None else first_pidx
+        if first_pidx is None:
+            first_pidx = pidx
         last_pidx = pidx
         last_ptok = ptok
-    token_idxs, words = list(zip(*idxed_mw_token))
 
-    return (first_pidx, token_idxs[0], len(idxed_mw_token))
+    first_token_idx = idxed_mw_token[0][0]
+    return (first_pidx, first_token_idx, len(idxed_mw_token))
