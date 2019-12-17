@@ -647,7 +647,7 @@ class Article:
                 # Order with newest parses first
                 q = q.order_by(desc(ArticleRow.parsed))
 
-            parsed_after = criteria.get("parse_date_gt", None)
+            parsed_after = criteria.get("parse_date_gt")
             if parsed_after is not None:
                 q = q.filter(ArticleRow.parsed >= parsed_after)
 
