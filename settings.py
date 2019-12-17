@@ -656,17 +656,19 @@ class Settings:
     except ValueError:
         raise ConfigError("Invalid environment variable value: NN_PARSING_PORT = {0}".format(NN_PARSING_PORT))
 
-    NN_TRANSLATE_ENABLED = os.environ.get('NN_TRANSLATE_ENABLED', False)
+    NN_TRANSLATION_ENABLED = os.environ.get('NN_TRANSLATION_ENABLED', False)
     try:
-        NN_TRANSLATE_ENABLED = bool(int(NN_TRANSLATE_ENABLED))
+        NN_TRANSLATION_ENABLED = bool(int(NN_TRANSLATION_ENABLED))
     except ValueError:
-        raise ConfigError("Invalid environment variable value: NN_TRANSLATE_ENABLED = {0}".format(NN_TRANSLATE_ENABLED))
-    NN_TRANSLATE_HOST = os.environ.get('NN_TRANSLATE_HOST', 'localhost')
-    NN_TRANSLATE_PORT = os.environ.get('NN_TRANSLATE_PORT', '9001')
+        raise ConfigError(
+            "Invalid environment variable value: NN_TRANSLATION_ENABLED = {0}".format(NN_TRANSLATION_ENABLED)
+        )
+    NN_TRANSLATION_HOST = os.environ.get('NN_TRANSLATION_HOST', 'localhost')
+    NN_TRANSLATION_PORT = os.environ.get('NN_TRANSLATION_PORT', '9001')
     try:
-        NN_TRANSLATE_PORT = int(NN_TRANSLATE_PORT)
+        NN_TRANSLATION_PORT = int(NN_TRANSLATION_PORT)
     except ValueError:
-        raise ConfigError("Invalid environment variable value: NN_TRANSLATE_PORT = {0}".format(NN_TRANSLATE_PORT))
+        raise ConfigError("Invalid environment variable value: NN_TRANSLATION_PORT = {0}".format(NN_TRANSLATION_PORT))
 
     # Configuration settings from the Reynir.conf file
 

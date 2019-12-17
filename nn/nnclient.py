@@ -4,7 +4,7 @@
 
     Neural Network Query Client
 
-    Copyright (C) 2018 Miðeind ehf.
+    Copyright (C) 2019 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -80,18 +80,18 @@ class NnClient:
             raise ValueError("Invalid request or batch size too large")
         predictions = obj["predictions"]
         return [
-            cls._processResponse(inst, sent)
+            cls._process_response(inst, sent)
             for (inst, sent) in zip(predictions, list(pgs))
         ]
 
     @classmethod
-    def _processResponse(cls, instance, sent):
+    def _process_response(cls, instance, sent):
         """ Process the response from a single sentence.
             Abstract method """
         raise NotImplemented
 
     @classmethod
-    def _normalizeText(cls, instance, sent):
+    def _normalize_text(cls, sent):
         """ Preprocess text and normalize for neural network input
             Abstract method """
         raise NotImplemented
@@ -102,12 +102,12 @@ class TranslateClient(NnClient):
         middleware server for a tensorflow model server (using plaintext) that returns
         an English translation of Icelandic text """
 
-    port = Settings.NN_TRANSLATE_PORT
-    host = Settings.NN_TRANSLATE_HOST
+    port = Settings.NN_TRANSLATION_PORT
+    host = Settings.NN_TRANSLATION_HOST
     verb = "translate"
 
     @classmethod
-    def _processResponse(cls, instance, sent):
+    def _process_response(cls, instance, sent):
         """ Process the response from a single sentence """
         result = dict(
             inputs=sent, outputs=instance["outputs"], scores=float(instance["scores"])
@@ -115,7 +115,7 @@ class TranslateClient(NnClient):
         return result
 
     @classmethod
-    def _normalizeText(cls, text):
+    def _normalize_text(cls, text):
         """ Preprocess text and normalize for translation network """
         return text
 
@@ -150,7 +150,7 @@ class TranslateClient(NnClient):
             args:
                 sent_map: either a list of sentences or a dict[key] of sentences"""
         data = dict(src_lang=src_lang, tgt_lang=tgt_lang)
-        if type(sent_map) is dict:
+        if isinstance(sent_map, dict):
             sents = (
                 [tokenizer.correct_spaces(sent) for sent in sent_map.values()]
                 if not verbatim
@@ -181,10 +181,10 @@ class ParsingClient(NnClient):
     verb = "parse"
 
     @classmethod
-    def _processResponse(cls, instance, sent):
+    def _process_response(cls, instance, sent):
         """ Process the response from a single sentence """
         try:
-            instance["scores"] = max([float(score) for score in instance["scores"]])
+            instance["scores"] = max(float(score) for score in instance["scores"])
         except TypeError:
             # Score is not iterable
             pass
@@ -214,7 +214,7 @@ class ParsingClient(NnClient):
     @classmethod
     def request_text(cls, text, flat=False):
         """ Request neural network output for contiguous text """
-        sents = cls._normalizeText(text)
+        sents = cls._normalize_text(text)
         results = cls._request(sents)
         if not flat:
             cls._instances_to_ptrees(results, sents)
@@ -227,7 +227,7 @@ class ParsingClient(NnClient):
             single_sentence = text.split("\n")[0]
         else:
             single_sentence = text
-        toks = cls._normalizeSentence(single_sentence)
+        toks = cls._normalize_sentence(single_sentence)
         single_sentence = " ".join(toks)
         sents = [single_sentence]
         results = cls._request(sents)
@@ -238,7 +238,7 @@ class ParsingClient(NnClient):
         return results[0]
 
     @classmethod
-    def _normalizeText(cls, text):
+    def _normalize_text(cls, text):
         """ Preprocess text and normalize for parsing network """
         pgs = text.split("\n")
         normalized_pgs = [
@@ -251,7 +251,7 @@ class ParsingClient(NnClient):
         return normalized_pgs
 
     @classmethod
-    def _normalizeSentence(cls, single_sentence):
+    def _normalize_sentence(cls, single_sentence):
         """ Preprocess text and normalize for parsing network """
         return [
             tok.txt

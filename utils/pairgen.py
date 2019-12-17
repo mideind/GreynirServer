@@ -199,7 +199,7 @@ if __name__ == "__main__":
     parser.add_argument('--scores', dest='SCORES', action="store_true",
         help="include sentence scores", default=False)
     parser.add_argument('--parse_date_gt', dest='PARSE_DATE_GT', type=str,
-                        help="Cutoff date for parsed field", default=None)
+                        help="Cutoff date for parsed field, format YYYY-MM-DD.", default=None)
 
     args = parser.parse_args()
 

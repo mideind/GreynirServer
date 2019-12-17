@@ -1,11 +1,9 @@
-# -*- coding: utf-8 -*-
-
 """
     Reynir: Natural language processing for Icelandic
 
     Neural Network Parsing Utilities
 
-    Copyright (C) 2018 Miðeind ehf
+    Copyright (C) 2019 Miðeind ehf
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -18,7 +16,6 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see http://www.gnu.org/licenses/.
-
 
     This module contains a handful of useful functions for parsing the
     output from an IceParsing neural network model and working with the
@@ -38,18 +35,18 @@ from settings import Settings
 
 
 class GRAMMAR:
-    CASES = {"nf", "þf", "þgf", "ef"}
-    GENDERS = {"kk", "kvk", "hk"}
-    NUMBERS = {"et", "ft"}
-    PERSONS = {"p1", "p2", "p3"}
+    CASES = frozenset({"nf", "þf", "þgf", "ef"})
+    GENDERS = frozenset({"kk", "kvk", "hk"})
+    NUMBERS = frozenset({"et", "ft"})
+    PERSONS = frozenset({"p1", "p2", "p3"})
 
-    TENSE = {"þt", "nt"}
-    DEGREE = {"mst", "esb", "evb"}  # fst
+    TENSE = frozenset({"þt", "nt"})
+    DEGREE = frozenset({"mst", "esb", "evb"})  # fst
 
-    VOICE = {"mm", "gm"}
-    MOOD = {"fh", "lhþt", "lhnt", "vh", "bh"}
+    VOICE = frozenset({"mm", "gm"})
+    MOOD = frozenset({"fh", "lhþt", "lhnt", "vh", "bh"})
 
-    MISC = {"sagnb", "subj", "abbrev", "op", "none"}
+    MISC = frozenset({"sagnb", "subj", "abbrev", "op", "none"})
 
 
 class KEY:
@@ -81,15 +78,15 @@ def flat_is_terminal(string):
 
 
 def flat_is_left_nonterminal(string):
-    return flat_is_nonterminal(string) and "/" not in string
+    return flat_is_nonterminal(string) and not string.startswith("/")
 
 
 def flat_is_right_nonterminal(string):
-    return flat_is_nonterminal(string) and "/" in string
+    return flat_is_nonterminal(string) and string.startswith("/")
 
 
 def flat_matching_nonterminal(string):
-    if "/" in string:
+    if string.startswith("/"):
         return string[1:]
     return "/" + string
 
@@ -157,7 +154,7 @@ class Node:
         """ Returns number of leaf nodes,
             assumes a correctly formed tree """
         if self.children:
-            return sum([c.width() for c in self.children])
+            return sum(c.width() for c in self.children)
         return 1
 
     def height(self):
@@ -165,7 +162,7 @@ class Node:
             assumes a correctly formed tree """
         if not self.children:
             return 1
-        return 1 + max([c.height() for c in self.children])
+        return 1 + max(c.height() for c in self.children)
 
     @staticmethod
     def contains(forest, name):
@@ -203,7 +200,7 @@ class ParseResult(IntEnum):
 
 
 def parse_flat_tree_to_nodes(parse_toks, text_toks=None, verbose=False):
-    """Parses list of toks (parse_toks) into a legal tree structure or None,
+    """ Parses list of toks (parse_toks) into a legal tree structure or None,
        If the corresponding tokenized source text is provided, it is
        included in the tree"""
 
@@ -233,9 +230,10 @@ def parse_flat_tree_to_nodes(parse_toks, text_toks=None, verbose=False):
             else:
                 new_node = Node(tok)
 
-            string = "{}  {}".format(len(stack) * "    ", tok)
-            string = string if not new_node.data else string + new_node.data
-            vprint(string)
+            if Settings.DEBUG:
+                string = "{}  {}".format(len(stack) * "    ", tok)
+                string = string if not new_node.data else string + new_node.data
+                vprint(string)
 
             parent.add_child(new_node)
             continue
@@ -328,11 +326,11 @@ def _json_terminal_node(tok, text="placeholder", token_index=None):
             tail_start += int(suffix)
     tail = set(subtokens[tail_start:])
 
-    gender = GRAMMAR.GENDERS.intersection(tail)
+    gender = set(GRAMMAR.GENDERS.intersection(tail))
     gender = gender.pop() if gender else ""
-    case = GRAMMAR.CASES.intersection(tail)
+    case = set(GRAMMAR.CASES.intersection(tail))
     case = case.pop() if case else ""
-    number = GRAMMAR.NUMBERS.intersection(tail)
+    number = set(GRAMMAR.NUMBERS.intersection(tail))
     number = number.pop() if number else ""
     gr = "gr" if "gr" in tail else ""
 

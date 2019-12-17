@@ -154,14 +154,14 @@
      clearResult();
      // Launch the query
      serverQuery("{{ url_for('routes.nntranslate_api') }}", // Endpoint with .api suffix are not cached
-                 {
-                     text : txt,
-                     src_lang : "is",
-                     tgt_lang : lang
-                 },
-                 populateResult,
-                 null,
-                 handleError
+         {
+             text : txt,
+             src_lang : "is",
+             tgt_lang : lang
+         },
+         populateResult,
+         null,
+         handleError
      );
  }
 

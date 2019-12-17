@@ -4,7 +4,7 @@
 
     Neural Network Query Client
 
-    Copyright (C) 2018 Miðeind ehf.
+    Copyright (C) 2020 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -29,7 +29,6 @@ import json
 from flask import abort
 import requests
 
-from nn.utils import split_text
 from settings import Settings
 
 
