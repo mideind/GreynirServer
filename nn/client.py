@@ -84,28 +84,9 @@ class ApiClient:
 
         return (True, data)
 
-    def split_up_content(self, data):
-        sentences = []
-        for content in data:
-            if len(content) < 500:
-                # The content is short enough to be handled on its own
-                sentences.append(content)
-                continue
-
-            split_content = split_text(content)
-            for pg in split_content:
-                for sent in pg:
-                    sentences.append(sent)
-        return sentences
-
     def parse_for_remote(self, data):
-        if len(data['contents']) == 1 and len(data['contents']):
-            sentences = self.split_up_content(data['contents'])
-        else:
-            sentences = data['contents']
-
         return {
-            "pgs": sentences
+            "pgs": data['contents']
         }
 
     def get(self, data):
