@@ -23,7 +23,8 @@
 
 """
 
-# TODO: "hvað er 2 í veldinu 64"
+# TODO: "hvað er X með vaski/virðisaukaskatti?"
+# TODO: "hver er talan pí?"
 
 import math
 import json

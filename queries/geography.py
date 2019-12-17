@@ -24,10 +24,13 @@
 """
 
 # TODO: "Hvað búa margir í/á [BORG/LAND]?" etc. Wiki api?
+# TODO: "Hvað er Ísland?" "Hvar er Japan?"
+
 
 from datetime import datetime, timedelta
 import logging
 from cityloc import capital_for_cc
+
 from queries import country_desc, nom2dat
 from reynir.bindb import BIN_Db
 from geo import (
@@ -39,6 +42,22 @@ from geo import (
 )
 
 _GEO_QTYPE = "Geography"
+
+TOPIC_LEMMAS = ["höfuðborg", "land", "heimsálfa"]
+
+
+def help_text(lemma):
+    """ Help text to return when query.py is unable to parse a query but
+        one of the above lemmas is found in it """
+    return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
+        random.choice(
+            (
+                "Hver er höfuðborg Frakklands",
+                "Í hvaða landi er Minsk",
+                "Í hvaða heimsálfu er Kambódía",
+            )
+        )
+    )
 
 
 # This module wants to handle parse trees for queries

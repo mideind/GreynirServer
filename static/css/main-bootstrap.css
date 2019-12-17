@@ -4,7 +4,7 @@
 
    CSS file for Greynir web front-end
 
-   Copyright (C) 2018 Miðeind ehf.
+   Copyright (C) 2019 Miðeind ehf.
 
       This program is free software: you can redistribute it and/or modify
       it under the terms of the GNU General Public License as published by
@@ -17,15 +17,6 @@
 
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see http://www.gnu.org/licenses/.
-
-
-   Bootstrap standard theme colors:
-
-      @brand-primary: darken(#428bca, 6.5%); // #337ab7
-      @brand-success: #5cb85c;
-      @brand-info:    #5bc0de;
-      @brand-warning: #f0ad4e;
-      @brand-danger:  #d9534f;
 
 */
 
@@ -180,7 +171,7 @@
 .glyphicon-spin {
     -webkit-animation: spin 2000ms infinite linear;
     animation: spin 2000ms infinite linear;
-    color: #f0ad4e;
+    color: #ffb400;
 }
 .glyphicon-spin-white {
     -webkit-animation: spin 2000ms infinite linear;
@@ -210,12 +201,39 @@
     }
 }
 
-.red {
-   color: #d9534f;
+@keyframes bob {
+   0% {
+       -webkit-transform: scale(1.00, 1.00);
+       transform: scale(1.00, 1.00);
+   }
+   30% {
+      -webkit-transform: scale(1.00, 1.00);
+      transform: scale(1.00, 1.00);
+   }
+   70% {
+      -webkit-transform: scale(1.03, 1.05);
+      transform: scale(1.03, 1.05);
+   }
+   100% {
+      -webkit-transform: scale(1.00, 1.00);
+      transform: scale(1.00, 1.00);
+   }
 }
 
-.green {
-   color: #53d94f;
+.red, .text-danger {
+   color: #eb3732;
+}
+
+.green, .text-success {
+   color: #00b450;
+}
+
+.blue, .text-info {
+   color: #006eff;
+}
+
+.yellow, .text-warning {
+   color: #ffb400;
 }
 
 html {
@@ -226,6 +244,172 @@ body {
    font-family: "Lato", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
    font-size: 1.5em;
    background-color: white;
+}
+
+a {
+   color: #006eff;
+}
+
+.progress, .progress-bar, .progress-bar-success {
+   background-image: none;
+}
+
+.progress {
+   background-color: #d4d4d4;
+}
+
+.progress-bar {
+   background-color: #006eff;
+}
+
+.progress-bar-success {
+   background-color: #00b450;
+}
+
+.btn-danger, .btn-default, .btn-info, .btn-primary, .btn-success, .btn-warning {
+   text-shadow: none;
+   -webkit-box-shadow: none;
+   box-shadow: none;
+}
+
+.btn-default {
+   background-image: none;
+   background-color: #d4d4d4;
+   border-color: #8c8c8c;
+}
+
+.btn-default:focus {
+   background-color: #d4d4d4;
+   border-color: #8c8c8c;
+}
+
+.btn-default:hover {
+   background-color: #d4d4d4;
+   border-color: #8c8c8c;
+   -webkit-animation: bob 400ms linear;
+   animation: bob 400ms linear;
+}
+
+.dropdown-toggle:hover {
+   -webkit-animation: none;
+   animation: none;
+}
+
+.btn-success {
+   background-image: none;
+   background-color: #00b450;
+   border-color: #00b450;
+}
+
+.btn-success:focus {
+   background-color: #00b450;
+   border-color: #00b450;
+}
+
+.btn-success:hover {
+   background-color: #00b450;
+   border-color: #00b450;
+   -webkit-animation: bob 400ms linear;
+   animation: bob 400ms linear;
+}
+
+button.btn.btn-success:active {
+   background-color: #2e9a5e;
+   border-color: #2e9a5e;
+}
+
+button.btn.btn-success[disabled='disabled'] {
+   background-color: #38cb7a;
+   border-color: #38cb7a;
+}
+
+.btn-info {
+   background-image: none;
+   background-color: #006eff;
+   border-color: #006eff;
+}
+
+.btn-info:focus {
+   background-color: #006eff;
+   border-color: #006eff;
+}
+
+.btn-info:hover {
+   background-color: #006eff;
+   border-color: #006eff;
+   -webkit-animation: bob 400ms linear;
+   animation: bob 400ms linear;
+}
+
+button.btn.btn-info:active {
+   background-color: #0055c5;
+   border-color: #0055c5;
+}
+
+button.btn.btn-info[disabled='disabled'] {
+   background-color: #2b6dc3;
+   border-color: #2b6dc3;
+}
+
+.btn-warning {
+   background-image: none;
+   background-color: #ffb400;
+   border-color: #ffb400;
+}
+
+.btn-warning:focus {
+   background-color: #ffb400;
+   border-color: #ffb400;
+}
+
+.btn-warning:hover {
+   background-color: #ffb400;
+   border-color: #ffb400;
+   -webkit-animation: bob 400ms linear;
+   animation: bob 400ms linear;
+}
+
+.btn-danger {
+   background-image: none;
+   background-color: #eb3732;
+   border-color: #eb3732;
+}
+
+.btn-danger:focus {
+   background-color: #eb3732;
+   border-color: #eb3732;
+}
+
+.btn-danger:hover {
+   background-color: #eb3732;
+   border-color: #eb3732;
+   -webkit-animation: bob 400ms linear;
+   animation: bob 400ms linear;
+}
+
+.dropdown-toggle:hover {
+   -webkit-animation: none;
+   animation: none;
+}
+
+.btn-group.open .dropdown-toggle {
+   -webkit-box-shadow: none;
+   box-shadow: none;
+}
+
+.label-primary {
+   background-color: #006eff;
+}
+
+.panel-info {
+   border-color: #e1eeff;
+}
+
+.panel-info>.panel-heading {
+   background-image: none;
+   color: #006eff;
+   background-color: #e1eeff;
+   border-color: #e1eeff;
 }
 
 a:hover {
@@ -257,6 +441,16 @@ p.header {
 .container > .navbar-header {
    margin-left: -6px;
    margin-right: -6px;
+}
+
+input#url::selection {
+   color: white;
+   background-color: #006eff;
+}
+
+textarea::selection {
+   color: white;
+   background-color: #006eff;
 }
 
 div.input {
@@ -363,7 +557,7 @@ span#url-shadow {
    background-color: #FFEEA9; /* Pale Greynir yellow */
    padding-top: 5px;
    padding-bottom: 0px;
-   color: #00B74F; /* #909090; */
+   color: #00b450;
    white-space: nowrap;
    overflow-x: hidden;
 }
@@ -504,7 +698,7 @@ tr.topitem span.title, tr.topitem td.title {
 #namelist span.name,
 #namelist span.entity,
 #similarlist span.heading {
-   color: #337ab7;
+   color: #006eff ;
    cursor: pointer;
 }
 
@@ -546,11 +740,11 @@ tr.topitem span.title, tr.topitem td.title {
 }
 
 span.glyphicon-gender-male {
-   color: #5bc0de;
+   color: #006eff;
 }
 
 span.glyphicon-gender-female {
-   color: #d9534f;
+   color: #eb3732;
 }
 
 td.gender, th.gender {
@@ -571,7 +765,7 @@ td.domain {
 #entity-body span.entity
  {
    font-weight: 700;
-   color: #337ab7;
+   color: #006eff;
    cursor: pointer;
 }
 
@@ -599,7 +793,7 @@ span.art-link {
 }
 
 span.art-link:hover {
-   outline: #337ab7 solid 1px;
+   outline: #006eff solid 1px;
 }
 
 span.art-link img {
@@ -706,21 +900,21 @@ div#info.person.male #tag,
 div#info.kk #tag,
 div#info.kvk #tag,
 div#info.hk #tag {
-   color: #337ab7;
+   color: #006eff;
 }
 
 div#info.lo #tag {
-   color: #5cb85c;
+   color: #00b450;
 }
 
 div#info.nhm #tag,
 div#info.so #tag,
 div#info.person.female #tag {
-   color: #d9534f;
+   color: #eb3732;
 }
 
 div#info.st #tag {
-   color: #f0ad4e;
+   color: #ffb400;
 }
 
 div#info #lemma {
@@ -785,7 +979,7 @@ span.sent {
 }
 
 span.sent.err {
-   border-color: #CB333B;
+   border-color: #eb3732;
    border-style: dotted;
 }
 
@@ -795,12 +989,12 @@ span.sent.err:hover {
 }
 
 span.sent.err-corr {
-   color: #CB333B; /* Greynir red */
+   color: #eb3732;
 }
 
 span.errtok {
    font-weight: 700;
-   color: #CB333B; /* Greynir red */
+   color: #eb3732;
 }
 
 span.corrtok:before {
@@ -808,16 +1002,16 @@ span.corrtok:before {
    top: 0.4em;
    margin-left: 0.2em;
    font-size: 0.7em;
-   color: #5cb85c; /* Greynir green */
+   color: #00b450;
    content: "\E174";
 }
 
 span.corrtok.unknown:before {
-   color: #CB333B; /* Greynir red */
+   color: #eb3732;
 }
 
 span.corrtok.advisory:before {
-   color: #f0ad4e; /* Greynir yellow */
+   color: #ffb400;
 }
 
 span.sent.parsed:hover {
@@ -847,43 +1041,43 @@ div.result i {
 div.result i.nf {
    /* Word not found */
    font-weight: 700;
-   color: #CB333B; /* Greynir red */
+   color: #eb3732;
 }
 
 div.result i.number {
    font-weight: 700;
-   color: #007F33;
+   color: #00b450;
 }
 
 div.result i.percent {
    font-weight: 700;
-   color: #337ab7;
+   color: #006eff;
 }
 
 div.result i.ordinal {
    font-weight: 700;
-   color: #CCA500;
+   color: #ffb400;
 }
 
 div.result i.date,
 div.result i.time,
 div.result i.timestamp {
    font-weight: 700;
-   color: #CCA500;
+   color: #ffb400;
 }
 
 div.result i.currency {
    font-weight: 700;
-   color: #007F33;
+   color: #00b450;
 }
 
 div.result i.amount {
    font-weight: 700;
-   color: #007F33;
+   color: #00b450;
 }
 
 div.result i.person {
-   color: #337ab7;
+   color: #006eff;
    font-weight: 700;
 }
 
@@ -896,7 +1090,7 @@ div.result i.lönd,
 div.result i.örn,
 div.result i.göt,
 div.result i.borg {
-   color: #774400 !important;
+   color: #e28400 !important;
    font-weight: 700;
 }
 
@@ -925,7 +1119,7 @@ div.result i.warntok {
 
 /* Note: errtok should appear after warntok, since it has higher priority */
 div.result i.errtok {
-   color: #d9534f;
+   color: #eb3732;
 }
 
 div.result i:hover {
@@ -942,8 +1136,8 @@ div.result i.p:hover {
 
 div.result i.person:hover {
    /* Special case for person: just make background darker */
-   border-color: #337ab7;
-   background-color: #337ab7;
+   border-color: #006eff;
+   background-color: #006eff;
 }
 
 div.result i.entity:hover {
@@ -957,27 +1151,27 @@ div.result i.kvk:hover,
 div.result i.hk:hover,
 div.result i.fn:hover,
 div.result i.pfn:hover {
-   border-color: #337ab7;
-   background-color: #337ab7;
+   border-color: #006eff;
+   background-color: #006eff;
 }
 
 /* Verb-type word: red color */
 div.result i.so:hover,
 div.result i.nhm:hover {
-   border-color: #d9534f;
-   background-color: #d9534f;
+   border-color: #eb3732;
+   background-color: #eb3732;
 }
 
 /* Adjective-type word: green color */
 div.result i.lo:hover {
-   border-color: #5cb85c;
-   background-color: #5cb85c;
+   border-color: #00b450;
+   background-color: #00b450;
 }
 
 /* Conjunction-type word: yellow color */
 div.result i.st:hover {
-   border-color: #f0ad4e;
-   background-color: #f0ad4e;
+   border-color: #ffb400;
+   background-color: #ffb400;
 }
 
 div#statistics {
@@ -1012,14 +1206,14 @@ div.canvas {
 
 div.canvas svg g path {
    fill: none;
-   stroke: #d9534f;
+   stroke: #eb3732;
    stroke-dasharray: 3;
    stroke-opacity: 0.4;
    stroke-width: 2px;
 }
 
 div.canvas svg g path.warning {
-   stroke: #e28400;
+   stroke: #ffb400;
 }
 
 div.canvas svg g path.highlight {
@@ -1057,7 +1251,7 @@ span#no-annotations {
 }
 
 span#no-annotations span.glyphicon-circle-ok {
-   color: #3e8f3e; /* green */
+   color: #00b450;
    font-size: 1.5em;
    margin-left: 4px;
    position: relative;
@@ -1084,9 +1278,9 @@ div.correct div.annotation {
 
 div.annotation div {
    font-style: italic;
-   color: #d9534f;
+   color: #eb3732;
    background-color: white;
-   border: 1px solid #d9534f;
+   border: 1px solid #eb3732;
    border-radius: 5px;
    padding: 6px;
    margin-bottom: 0.5em;
@@ -1111,11 +1305,11 @@ div.guide-empty {
 }
 
 div.guide-empty i {
-   color: #337ab7;
+   color: #006eff;
 }
 
 div.guide-empty i:hover {
-   color: #23527c;
+   color: #004db1;
    text-decoration: underline;
    cursor: pointer;
 }
@@ -1134,11 +1328,11 @@ th.count, td.count {
 }
 
 th.male, td.male {
-   color: #5bc0de;
+   color: #006eff;
 }
 
 th.female, td.female {
-   color: #d9534f;
+   color: #eb3732;
 }
 
 th.neutral, td.neutral {
@@ -1168,8 +1362,8 @@ table.table tfoot tr td {
 }
 
 img.villi {
-   margin-left: 8px;
-   margin-bottom: 8px;
+   margin-top: 16px;
+   margin-left: 12px;
 }
 
 h5#meta-url {
@@ -1200,7 +1394,7 @@ p.author {
 }
 
 div#output h3 {
-   color: #337ab7;
+   color: #006eff;
 }
 
 /* Parse grid stuff */
@@ -1230,7 +1424,7 @@ div.grid table {
 }
 
 div.grid table tr td {
-   background-color: #D7FFE7; /* Pale Greynir green */ /* Was #e8ffe8; */
+   background-color: #deffee;
    border-style: solid;
    border-width: 3px;
    border-color: #ffffff;
@@ -1243,13 +1437,13 @@ div.grid table tr td {
 
 div.grid table tr td.error {
    /* Nonterminal marked with an error tag */
-   color: red;
+   color: #eb3732;
 }
 
 div.grid table tr td.t {
    /* Terminal */
    font-style: italic;
-   background-color: #FFEEA9; /* Pale Greynir yellow */
+   background-color: #ffe9b6;
    vertical-align: bottom;
    padding-bottom: 3px;
    position: relative;
@@ -1287,11 +1481,11 @@ span.score {
    right: 2px;
    font-style: normal;
    text-align: right;
-   color: green;
+   color: #00b450;
 }
 
 span.score.neg {
-   color: red;
+   color: #eb3732;
 }
 
 td.t span.tname {
@@ -1305,12 +1499,12 @@ h4.txt {
 }
 
 h4.txt span.glyphicon {
-   color: #337ab7;
+   color: #006eff;
    padding-right: 8px;
 }
 
 h4.txt span.glyphicon:hover {
-   color: #23527c;
+   color: #002e6b;
    cursor: pointer;
 }
 
@@ -1374,7 +1568,7 @@ div.headline {
 
 span.weight20,
 span.weight25 {
-   color: #337ab7;
+   color: #006eff;
 }
 
 span.weight16 {
@@ -1445,19 +1639,20 @@ div#treegrid table {
    overflow: auto;
 }
 
+.autocomplete-suggestions strong {
+   color: #006eff;
+}
+
 .autocomplete-suggestion {
    padding: 2px 5px;
    white-space: nowrap;
    overflow: hidden;
    font-size: 18px;
+   cursor: pointer;
 }
 
 .autocomplete-selected {
    background: #F0F0F0;
-}
-.autocomplete-suggestions strong {
-   /*font-weight: normal; */
-   color: #2aabd2;
 }
 
 /* Disable text selection in element */

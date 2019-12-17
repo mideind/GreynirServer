@@ -48,7 +48,7 @@ def help_text(lemma):
             "Hvað eru tíu þúsund krónur margar evrur",
             "Hvað er einn dollari margar krónur",
             "Hvað eru sextán hundruð krónur mikið í evrum",
-            "Hvert er gengi dönsku krónunnar",
+            "Hvað eru hundrað danskar krónur í evrum",
             "Hvert er gengi pundsins gagnvart krónunni",
             "Hvað eru sex rúblur mikið"
         ))
@@ -121,16 +121,16 @@ $score(+35) QCurrency
 
 QCurrencyQuery →
     # "Hver er gengisvísitalan?"
-    "hver" "er" QCurCurrencyIndex_nf
+    "hver" "er" QCurCurrencyIndex_nf | QCurCurrencyIndex_nf
     
     # "Hvert/hvað/hvernig er gengi X?"
-    | QCurAnyPrefix QCurGeneralRate
+    | QCurAnyPrefix? QCurGeneralRate
 
     # "Hvert/hvað/hvernig er gengi X gagnvart Y?"
-    | QCurAnyPrefix QCurExchangeRate
+    | QCurAnyPrefix? QCurExchangeRate
 
     # "Hvað eru NUM X margir/margar/mörg Y?"
-    | QCurGenericPrefix QCurAmountConversion
+    | QCurGenericPrefix? QCurAmountConversion
 
     # "Hvað fæ ég marga/margar/mörg X fyrir NUM Y?"
     # |
@@ -176,7 +176,7 @@ QCurUSD_ef →
     "bandaríkjadollara"
     | "bandaríkjadollarans"
     | "bandaríkjadollars"
-    | "bandarísks" "dollars"
+    | "bandarísks"? "dollars"
 
 QCurEUR/fall →
     'evra:kvk'/fall
@@ -263,16 +263,20 @@ QCurMany →
 QCurConvertTo/fall →
     QCurUnit/fall
 
+$tag(keep) QCurConvertTo/fall # Keep this from being optimized away
+
 QCurMuch →
     "mikið" QCurMuchIn?
 
 QCurMuchIn →
     "í" QCurConvertTo_þgf
 
-$tag(keep) QCurConvertTo/fall # Keep this from being optimized away
-
 QCurAmountConversion →
+    # Hvað eru 10 dollarar margar krónur?
     QCurConvertAmount QCurMany QCurConvertTo_nf
+    # Hvað eru 10 dollarar í íslenskum krónum?
+    | QCurConvertAmount QCurMuchIn
+    # Hvað eru 10 dollarar mikið [í evrum]?
     | QCurConvertAmount QCurMuch
 
 """
@@ -458,7 +462,9 @@ def sentence(state, result):
                 .format(result.desc, answer, (" " + suffix) if suffix else "", verb)
                 .capitalize()
             )
+            # Clean up voice answer
             voice_answer = voice_answer.replace("slot í", "slotí")
+            voice_answer = voice_answer.replace(" dollars ", " Bandaríkjadals ")
             q.set_answer(response, answer, voice_answer)
             q.set_key(target_currency)
             # Store the amount in the query context

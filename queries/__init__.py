@@ -30,21 +30,25 @@ import json
 import os
 import re
 import locale
+import datetime
 from tzwhere import tzwhere
 from pytz import country_timezones
+
 from geo import country_name_for_isocode, iceprep4cc
 from reynir.bindb import BIN_Db
 from settings import changedlocale
 
 
-def natlang_seq(words):
+def natlang_seq(words, oxford_comma=False):
     """ Generate an Icelandic natural language sequence of words e.g.
-        "A og B", "A, B og C", "A, B, C og D". No Oxford comma :) """
+        "A og B", "A, B og C", "A, B, C og D". """
     if not words:
         return ""
     if len(words) == 1:
         return words[0]
-    return "{0} og {1}".format(", ".join(words[:-1]), words[-1])
+    return "{0}{1} og {2}".format(
+        ", ".join(words[:-1]), "," if oxford_comma else "", words[-1]
+    )
 
 
 def nom2dat(w):
@@ -59,6 +63,106 @@ def nom2dat(w):
         with BIN_Db().get_db() as db:
             return db.cast_to_dative(w, meaning_filter_func=sort_by_preference)
     return w
+
+
+# Placename components that should not be capitalized
+_PLACENAME_PREPS = ("í", "á", "de")
+
+
+def capitalize_placename(pn):
+    """ Correctly capitalize a lowercase placename, e.g.
+        "rio de janeiro"->"Rio de Janeiro", "vík í mýrdal"->"Vík í Mýrdal" """
+    comp = pn.split()
+    return " ".join(
+        c[0].upper() + c[1:] if c not in _PLACENAME_PREPS else c for c in comp
+    )
+
+
+# The following needs to include at least nominative
+# and dative forms of number words
+_NUMBER_WORDS = {
+    "núll": 0,
+    "hálfur": 0.5,
+    "hálfum": 0.5,
+    "hálf": 0.5,
+    "hálfri": 0.5,
+    "hálft": 0.5,
+    "hálfu": 0.5,
+    "einn": 1,
+    "einum": 1,
+    "ein": 1,
+    "einni": 1,
+    "eitt": 1,
+    "einu": 1,
+    "tveir": 2,
+    "tveim": 2,
+    "tveimur": 2,
+    "tvær": 2,
+    "tvö": 2,
+    "þrír": 3,
+    "þrem": 3,
+    "þremur": 3,
+    "þrjár": 3,
+    "þrjú": 3,
+    "fjórir": 4,
+    "fjórum": 4,
+    "fjórar": 4,
+    "fjögur": 4,
+    "fimm": 5,
+    "sex": 6,
+    "sjö": 7,
+    "átta": 8,
+    "níu": 9,
+    "tíu": 10,
+    "ellefu": 11,
+    "tólf": 12,
+    "þrettán": 13,
+    "fjórtán": 14,
+    "fimmtán": 15,
+    "sextán": 16,
+    "sautján": 17,
+    "átján": 18,
+    "nítján": 19,
+    "tuttugu": 20,
+    "þrjátíu": 30,
+    "fjörutíu": 40,
+    "fimmtíu": 50,
+    "sextíu": 60,
+    "sjötíu": 70,
+    "áttatíu": 80,
+    "níutíu": 90,
+    "hundrað": 100,
+    "þúsund": 1000,
+    "milljón": 1e6,
+    "milljarður": 1e9,
+}
+
+
+def parse_num(node, num_str):
+    """ Parse Icelandic number string to float or int """
+    # If we have a number token as a direct child,
+    # return its numeric value directly
+    num = node.child.contained_number
+    if num is not None:
+        return float(num)
+    try:
+        # Handle numbers with Icelandic decimal places ("17,2")
+        # and potentially thousands separators as well
+        num_str = num_str.replace(".", "")
+        if re.search(r"^\d+,\d+", num_str):
+            num = float(num_str.replace(",", "."))
+        # Handle digits ("17")
+        else:
+            num = float(num_str)
+    except ValueError:
+        # Handle number words ("sautján")
+        num = _NUMBER_WORDS.get(num_str)
+        if num is not None:
+            num = float(num)
+    except Exception as e:
+        logging.warning("Unexpected exception: {0}".format(e))
+        raise
+    return num
 
 
 # Neutral gender form of numbers
@@ -134,10 +238,9 @@ def numbers_to_neutral(s):
 
 
 def is_plural(num):
-    """ Determine whether an Icelandic word following a given number
-         should be plural or not, e.g. "21 maður" vs. "22 menn" vs. "11 menn" """
-    sn = str(num)
-    return not (sn.endswith("1") and not sn.endswith("11"))
+    """ Determine whether an Icelandic word following a given number should
+        be plural or not, e.g. "21 maður" vs. "22 menn" vs. "11 menn" """
+    return (num % 10 != 1) or (num % 100 == 11)
 
 
 def country_desc(cc):
@@ -146,6 +249,56 @@ def country_desc(cc):
     cn = country_name_for_isocode(cc)
     prep = iceprep4cc(cc)
     return "{0} {1}".format(prep, nom2dat(cn))
+
+
+# This could be done at runtime using BÍN lookup, but this is
+# faster, cleaner and allows for reuse outside the codebase.
+_TIMEUNIT_NOUNS = {
+    "w": (["vika", "viku", "viku", "viku"], ["vikur", "vikur", "vikum", "vikna"]),
+    "d": (["dagur", "dag", "degi", "dags"], ["dagar", "daga", "dögum", "daga"]),
+    "h": (
+        ["klukkustund", "klukkustund", "klukkustund", "klukkustundar"],
+        ["klukkustundir", "klukkustundir", "klukkustundum", "klukkustunda"],
+    ),
+    "m": (
+        ["mínúta", "mínútu", "mínútu", "mínútu"],
+        ["mínútur", "mínútur", "mínútum", "mínútna"],
+    ),
+    "s": (
+        ["sekúnda", "sekúndu", "sekúndu", "sekúndu"],
+        ["sekúndur", "sekúndur", "sekúndum", "sekúndna"],
+    ),
+}
+
+_TIMEUNIT_INTERVALS = (
+    ("w", 604800),  # 60 * 60 * 24 * 7
+    ("d", 86400),  # 60 * 60 * 24
+    ("h", 3600),  # 60 * 60
+    ("m", 60),
+    ("s", 1),
+)
+
+
+def time_period_desc(seconds, case="nf", omit_seconds=True):
+    """ Generate Icelandic description of the length of a given time period,
+        e.g. "4 dagar, 6 klukkustundir og 21 mínúta. """
+    case_abbr = ["nf", "þf", "þgf", "ef"]
+    assert case in case_abbr
+    cidx = case_abbr.index(case)
+    # Round to nearest minute if omitting second precision
+    seconds = ((seconds + 30) // 60) * 60 if omit_seconds else seconds
+
+    # Break it down to weeks, days, hours, mins, secs.
+    result = []
+    for unit, count in _TIMEUNIT_INTERVALS:
+        value = seconds // count
+        if value:
+            seconds -= value * count
+            plidx = 1 if is_plural(value) else 0
+            icename = _TIMEUNIT_NOUNS[unit][plidx][cidx]
+            result.append("{0} {1}".format(value, icename))
+
+    return natlang_seq(result)
 
 
 def query_json_api(url):
@@ -196,7 +349,10 @@ def _get_API_key():
     return _API_KEY
 
 
-_MAPS_API_COORDS_URL = "https://maps.googleapis.com/maps/api/geocode/json?latlng={0},{1}&key={2}&language=is&region=is"
+_MAPS_API_COORDS_URL = (
+    "https://maps.googleapis.com/maps/api/geocode/json"
+    "?latlng={0},{1}&key={2}&language=is&region=is"
+)
 
 
 def query_geocode_api_coords(lat, lon):
@@ -205,7 +361,7 @@ def query_geocode_api_coords(lat, lon):
     key = _get_API_key()
     if not key:
         # No key, can't query Google location API
-        logging.warning("No API key for location lookup")
+        logging.warning("No API key for coordinates lookup")
         return None
 
     # Send API request
@@ -213,7 +369,10 @@ def query_geocode_api_coords(lat, lon):
     return query_json_api(url)
 
 
-_MAPS_API_ADDR_URL = "https://maps.googleapis.com/maps/api/geocode/json?address={0}&key={1}&language=is&region=is"
+_MAPS_API_ADDR_URL = (
+    "https://maps.googleapis.com/maps/api/geocode/json"
+    "?address={0}&key={1}&language=is&region=is"
+)
 
 
 def query_geocode_api_addr(addr):
@@ -222,7 +381,7 @@ def query_geocode_api_addr(addr):
     key = _get_API_key()
     if not key:
         # No key, can't query the API
-        logging.warning("No API key for location lookup")
+        logging.warning("No API key for address lookup")
         return None
 
     # Send API request
@@ -230,7 +389,10 @@ def query_geocode_api_addr(addr):
     return query_json_api(url)
 
 
-_MAPS_API_DISTANCE_URL = "https://maps.googleapis.com/maps/api/distancematrix/json?units=metric&origins={0}&destinations={1}&mode={2}&key={3}&language=is&region=is"
+_MAPS_API_DISTANCE_URL = (
+    "https://maps.googleapis.com/maps/api/distancematrix/json"
+    "?units=metric&origins={0}&destinations={1}&mode={2}&key={3}&language=is&region=is"
+)
 
 
 def query_traveltime_api(startloc, endloc, mode="walking"):

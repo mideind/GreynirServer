@@ -115,8 +115,18 @@ _MOST_FREQ_QUERIES = frozenset(
         "hvers konar spurningar eru algengastar",
         "hvernig spurningar færðu mest af",
         "hvernig spurningar færð þú mest af",
+        "hvernig fyrirspurnum hefurðu svarað",
+        "hvernig fyrirspurnum hefur þú svarað",
+        "hvernig fyrirspurnum hefurðu svarað nýlega",
+        "hvernig fyrirspurnum hefur þú svarað nýlega",
+        "hvers konar fyrirspurnum hefurðu svarað nýlega",
+        "hvers konar fyrirspurnum hefur þú svarað nýlega",
         "hvaða spurningum hefur þú svarað",
         "hvaða spurningum hefurðu svarað",
+        "hvers konar spurningum hefur þú svarað",
+        "hvers konar spurningum hefurðu svarað",
+        "um hvað ertu mest spurð",
+        "um hvað ert þú mest spurð",
     )
 )
 
@@ -170,7 +180,6 @@ _MOST_MENTIONED_PEOPLE_QUERIES = frozenset(
         "hverjir hafa verið mikið í fjölmiðlum undanfarið",
         "hverjir hafa verið mikið í fjölmiðlum nýlega",
         "hverjir hafa verið mikið í fjölmiðlum upp á síðkastið",
-
     )
 )
 
@@ -228,12 +237,17 @@ _QTYPE_TO_DESC = {
     "Random": "beiðnum um tölur af handahófi",
     "Title": "spurningum um einstaklinga",
     "Person": "spurningum um einstaklinga",
+    "Flights": "spurningum um flugsamgöngur",
     "Geography": "spurningum um landafræði",
     "Location": "spurningum um staðsetningu",
     "Stats": "spurningum um tölfræði",
     "Telephone": "beiðnum um að hringja í símanúmer",
     "Date": "spurningum um dagsetningar",
     "Currency": "spurningum um gjaldmiðla",
+    "Distance": "spurningum um fjarlægðir",
+    "Counting": "beiðnum um að telja",
+    "Television": "spurningum um sjónvarpsdagskrána",
+    "Unit": "spurningum um mælieiningar",
     "Wikipedia": "beiðnum um upplýsingar úr Wikipedíu",
 }
 

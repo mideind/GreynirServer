@@ -762,6 +762,16 @@ class TerminalNode(Node):
             self._aux = json.loads(self.aux)
         return self._aux[0], self._aux[1]
 
+    @property
+    def contained_date(self):
+        """ Return a date from the associated token, if any,
+            as a (year, month, day) tuple """
+        if self.tokentype not in ("DATE", "DATEABS", "DATEREL"):
+            return None
+        if self._aux is None:
+            self._aux = json.loads(self.aux)
+        return self._aux[0], self._aux[1], self._aux[2]
+
     def _root(self, bin_db):
         """ Look up the root of the word associated with this terminal """
         # Lookup the token in the BIN database

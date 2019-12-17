@@ -25,12 +25,18 @@
 """
 
 # TODO: Shorten overly long first paragraphs.
+# TODO: Fix regex that cleans wiki text.
+
+
+import re
+import random
+from datetime import datetime, timedelta
 
 from queries import query_json_api
-from datetime import datetime, timedelta
-import re
+
 
 _WIKI_QTYPE = "Wikipedia"
+
 
 # For end user presentation
 _WIKIPEDIA_CANONICAL = "Wikipedía"
@@ -48,6 +54,23 @@ _WIKI_VARIATIONS = (
     "wikipedia",
     "wikipedía",
 )
+
+
+TOPIC_LEMMAS = _WIKI_VARIATIONS
+
+
+def help_text(lemma):
+    """ Help text to return when query.py is unable to parse a query but
+        one of the above lemmas is found in it """
+    return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
+        random.choice(
+            (
+                "Hvað segir Wikipedía um Berlín",
+                "Hvað getur Wikipedía sagt mér um heimspeki",
+            )
+        )
+    )
+
 
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings
@@ -175,4 +198,4 @@ def sentence(state, result):
         q.set_expires(datetime.utcnow() + timedelta(hours=24))
 
     else:
-        state["query"].set_error("E_QUERY_NOT_UNDERSTOOD")
+        q.set_error("E_QUERY_NOT_UNDERSTOOD")
