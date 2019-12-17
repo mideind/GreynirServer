@@ -62,3 +62,11 @@ def nntranslate_api(version=1):
     else:
         result = TranslateClient.request_text(trnsl_src, src_lang, tgt_lang)
     return better_jsonify(valid=True, result=result)
+
+
+@routes.route("/nn/translate.api", methods=["GET", "POST"])
+@routes.route("/nn/translate.api/v<int:version>", methods=["GET", "POST"])
+def translate_api(version=1):
+    from nn.client import TranslationApiClient
+    tc = TranslationApiClient()
+    return tc.dispatch(request)
