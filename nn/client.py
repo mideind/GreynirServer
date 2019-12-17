@@ -127,8 +127,8 @@ class TranslationApiClient(ApiClient):
         "sourceLanguageCode": "is"
     }
 
-    port = Settings.NN_TRANSLATE_PORT
-    host = Settings.NN_TRANSLATE_HOST
+    port = Settings.NN_TRANSLATION_PORT
+    host = Settings.NN_TRANSLATION_HOST
     action = "translate.api"
 
     https = False

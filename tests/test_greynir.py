@@ -32,7 +32,14 @@ from main import app
 from geo import *
 
 # Routes that don't return 200 OK without certain query/post parameters or external services
-SKIP_ROUTES = frozenset(("/staticmap", "/page", "/nnparse.api", "/nntranslate.api", "/exit.api"))
+SKIP_ROUTES = frozenset((
+    "/staticmap",
+    "/page",
+    "/nnparse.api",
+    "/nntranslate.api",
+    "/nn/translate.api",
+    "/exit.api",
+))
 
 REQ_METHODS = frozenset(["GET", "POST"])
 
