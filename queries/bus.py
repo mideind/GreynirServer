@@ -258,6 +258,7 @@ QBusAtStop_þf →
 QBusAtStop_þgf →
     QBusAtStopCorrect_þgf | QBusAtStopIncorrect_þgf | QBusStopThere
 
+# Movement prepositions
 QBusAtStopCorrect_þf →
     "í" QBusStopName_þf
     | "á" QBusStopName_þf
@@ -265,9 +266,12 @@ QBusAtStopCorrect_þf →
     | "að" QBusStopName_þgf
     | "til" QBusStopName_ef
 
+# Placement prepositions
 QBusAtStopCorrect_þgf →
     "í" QBusStopName_þgf
     | "á" QBusStopName_þgf
+    | "við" QBusStopName_þf
+    | "hjá" QBusStopName_þgf
     | "frá" QBusStopName_þgf
     | "að" QBusStopName_þgf
     | "til" QBusStopName_ef
