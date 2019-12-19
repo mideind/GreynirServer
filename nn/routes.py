@@ -19,6 +19,7 @@
 
 from routes import routes, better_jsonify, text_from_request, bool_from_request, restricted
 from flask import request
+from flask_cors import cross_origin
 
 from nn.nnclient import ParsingClient, TranslateClient
 
@@ -85,6 +86,7 @@ def nntranslate_api(version=1):
 
 @routes.route("/nn/translate.api", methods=["GET", "POST"])
 @routes.route("/nn/translate.api/v<int:version>", methods=["GET", "POST"])
+@cross_origin()
 def translate_api(version=1):
     from nn.client import TranslationApiClient
     tc = TranslationApiClient()

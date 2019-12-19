@@ -136,7 +136,7 @@ class Node:
             return self.__str__()
         result = [self.__str__()]
         for child in self.children:
-            result.extend(child.__repr__())
+            result.append(child.__repr__())
         result.append(Node("/" + self.name).__str__())
         return "".join(result)
 

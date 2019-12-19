@@ -42,6 +42,7 @@ from datetime import datetime
 
 from flask import Flask, send_from_directory
 from flask_caching import Cache
+from flask_cors import CORS
 
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -60,6 +61,11 @@ RUNNING_AS_SERVER = __name__ != "__main__"
 
 # Initialize and configure Flask app
 app = Flask(__name__)
+
+# Enable Cross Origin Resource Sharing for app
+cors = CORS(app)
+app.config['CORS_HEADERS'] = 'Content-Type'
+
 # Fix access to client remote_addr when running behind proxy
 app.wsgi_app = ProxyFix(app.wsgi_app)
 

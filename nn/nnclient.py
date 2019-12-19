@@ -66,9 +66,7 @@ class NnClient:
         headers = {"content-type": "application/json; charset=UTF-8"}
         payload = {"pgs": pgs}
 
-        if data is not None:
-            for (k, v) in data.items():
-                payload[k] = v
+        payload.update(data)
 
         logging.debug(str(payload))
         payload = json.dumps(payload)
@@ -246,7 +244,7 @@ class ParsingClient(NnClient):
                 if BIN_Token.is_understood(tok)
             ] for pg in pgs]
         normalized_pgs = [
-            " ".join([tok for tok in npg if tok]) for npg in normalized_pgs
+            " ".join(tok for tok in npg if tok) for npg in normalized_pgs
         ]
         return normalized_pgs
 

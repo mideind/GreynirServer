@@ -33,14 +33,17 @@ from settings import Settings
 
 
 class ApiClient:
+    """ A client that connects to the HTTP REST interface of
+        a tensorflow model server (using plaintext) """
 
+    # Class defaults that can be overridden in constructor.
     port = None
     host = None
     action = None
     https = True
-    url = None
 
-    data = None
+    _url = None
+    _data = None
 
     required_fields = []
     default_field_values = []
@@ -59,19 +62,23 @@ class ApiClient:
         self._set_url()
 
     def _set_url(self):
-        https_char = ''
-        if self.https:
-            https_char = 's'
-
-        self.url = "http{https_char}://{host}:{port}/{action}".format(
-            https_char=https_char,
+        """ Formats url for remote service based on instance attributes.
+        """
+        self._url = "http{https_char}://{host}:{port}/{action}".format(
+            https_char="s" if self.https else "",
             host=self.host,
             port=self.port,
             action=self.action
         )
 
     def validate(self, request):
+        """ Takes in a flask request object and checks data attributes against
+            self.required fields and populates default fields if needed.
 
+            Returns tuple of type (Boolean, dict), where the first value indicates
+            whether the input was valid and the second is the (possibly)
+            modified data.
+        """
         data = json.loads(request.data)
         required_diff = set(self.required_fields).difference(data.keys())
         if required_diff:
@@ -84,24 +91,32 @@ class ApiClient:
         return (True, data)
 
     def parse_for_remote(self, data):
+        """ Modifies data to comply with the remote server input format.
+        """
         return {
             "pgs": data['contents']
         }
 
     def get(self, data):
-        response = requests.get(self.url, json.dumps(data), headers=self.headers)
+        """ Handler for GET requests.
+        """
+        response = requests.get(self._url, json.dumps(data), headers=self.headers)
         return json.loads(response.text)
 
     def post(self, data):
-        response = requests.post(self.url, json.dumps(data), headers=self.headers)
+        """ Handler for POST requests.
+        """
+        response = requests.post(self._url, json.dumps(data), headers=self.headers)
         return response.text
 
     def dispatch(self, request):
+        """ Dispatches to GET or POST based on incoming request method.
+        """
         valid, data = self.validate(request)
         if not valid:
             return abort(400, data)
 
-        self.data = data
+        self._data = data
 
         parsed_data = self.parse_for_remote(data)
 
@@ -134,7 +149,7 @@ class TranslationApiClient(ApiClient):
     https = False
 
     def post(self, data):
-        response = json.loads(super(TranslationApiClient, self).post(data))
+        response = json.loads(super().post(data))
         return json.dumps(
             {
                 "translations": [
@@ -142,8 +157,8 @@ class TranslationApiClient(ApiClient):
                         "translatedText": val["outputs"],
                         "scores": val["scores"],  # Not part of the Google API
                         "model": "{}-{}".format(
-                            self.data['sourceLanguageCode'],
-                            self.data['targetLanguageCode'],
+                            self._data['sourceLanguageCode'],
+                            self._data['targetLanguageCode'],
                         )
                     } for val in response["predictions"]]
             }

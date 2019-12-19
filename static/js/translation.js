@@ -16,7 +16,6 @@
 
  */
 
-
 var BATCH_SIZE = 10;
 var batches = [];
 var batch_queue = [];
