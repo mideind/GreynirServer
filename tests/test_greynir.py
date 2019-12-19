@@ -410,6 +410,12 @@ def test_query_api(client):
     assert json["qtype"] == "Introduction"
     assert json["answer"].startswith("Sæl og blessuð")
 
+    # Petrol module
+    resp = client.get("/query.api?q=Hvar er næsta bensínstöð?&test=1&voice=1")
+    json = validate_json(resp)
+    assert json["qtype"] == "Petrol"
+    assert "Ánanaust" in json["answer"]
+
     # Tests for various utility functions used by query modules
 
     assert natlang_seq(["Jón", "Gunna"]) == "Jón og Gunna"
@@ -435,10 +441,15 @@ def test_query_api(client):
     assert not is_plural(22.1)
 
     assert country_desc("DE") == "í Þýskalandi"
-    assert country_desc("ES") == "á Spáni"
+    assert country_desc("es") == "á Spáni"
     assert country_desc("IS") == "á Íslandi"
     assert country_desc("US") == "í Bandaríkjunum"
 
+    assert time_period_desc(3751) == "1 klukkustund og 3 mínútur"
+    assert (
+        time_period_desc(3751, omit_seconds=False)
+        == "1 klukkustund, 2 mínútur og 31 sekúnda"
+    )
     assert time_period_desc(600) == "10 mínútur"
     assert time_period_desc(610, omit_seconds=False) == "10 mínútur og 10 sekúndur"
     assert time_period_desc(61, omit_seconds=False) == "1 mínúta og 1 sekúnda"

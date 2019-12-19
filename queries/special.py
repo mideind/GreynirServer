@@ -66,6 +66,7 @@ _JOKES = (
     "Af hverju eru Hafnfirðingar alltaf með stól úti á svölum? Svo sólin geti sest.",
     "Af hverju læðast Hafnfirðingar alltaf fram hjá apótekum? Til að vekja ekki svefnpillurnar.",
     "Af hverju fara Hafnfirðingar alltaf niður í fjöru um jólin? Til þess að bíða eftir jólabókaflóðinu.",
+    "Af hverju setti Hafnfirðingurinn skóna sína í fyrstinn? Hann vildi eignast kuldaskó.",
     "Af hverju hætti tannlæknirinn störfum? Hann reif kjaft.",
     "Sölumaðurinn: Þessi ryksuga flýtir fyrir þér um helming. Kúnninn: Vá! Þá ætla ég að fá tvær.",
     
@@ -157,12 +158,11 @@ def _identity(qs, q):
     if q.is_voice:
         # Voice client (Embla)
         a = "Ég heiti Embla. Ég skil íslensku og er til þjónustu reiðubúin."
-        answer = dict(answer=a, voice=a, can_cache=True)
+        answer = dict(answer=a, voice=a)
     else:
         # Web client (Greynir)
         answer = dict(
-            answer = "Ég heiti Greynir. Ég er grey sem reynir að greina íslensku.",
-            can_cache=True
+            answer = "Ég heiti Greynir. Ég er grey sem reynir að greina íslensku."
         )
     return answer
 

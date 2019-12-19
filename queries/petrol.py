@@ -184,7 +184,11 @@ def _closest_petrol_station(loc):
         return dist_sorted[0]
 
 
-def _cheapest_station():
+def _cheapest_petrol_station():
+    pass
+
+
+def _closest_cheapest_petrol_station():
     pass
 
 
@@ -196,22 +200,28 @@ def _answ_for_petrol_query(q, result):
     if result.qkey == "ClosestStation":
         station = _closest_petrol_station(q.location)
         answer = "{0} {1} ({2}, bensínverð {3})"
-        voice = "Næsta bensínstöð er {0} {1} í u.þ.b. {2} fjarlægð. Þar kostar bensínlítrinn {3}."
+        desc = "Næsta bensínstöð"
     elif result.qkey == "CheapestStation":
-        pass
+        station = _cheapest_petrol_station(q.location)
+        answer = "{0} {1} ({2}, bensínverð {3})"
+        desc = "Ódýrasta bensínstöðin"
     elif result.qkey == "ClosestCheapestStation":
-        pass
+        station = _closest_cheapest_petrol_station(q.location)
+        desc = "Ódýrasta bensínstöðin í grenndinni"
 
     if not station or not "bensin95" in station or not "distance" in station:
         return gen_answer(_ERRMSG)
 
-    dist_nf = distance_desc(station["distance"], case="þf")
+    answ_fmt = "{0} {1} ({2}, bensínverð {3})"
+    voice_fmt = "{0} er {1} {2} í u.þ.b. {3} fjarlægð. Þar kostar bensínlítrinn {4}."
+
+    dist_nf = distance_desc(station["distance"], case="nf")
     dist_þf = distance_desc(station["distance"], case="þf")
     kr_desc = krona_desc(float(station["bensin95"]))
 
-    answer = answer.format(station["company"], station["name"], dist_nf, kr_desc)
+    answer = answ_fmt.format(station["company"], station["name"], dist_nf, kr_desc)
     response = dict(answer=answer)
-    voice = voice.format(station["company"], station["name"], dist_þf, kr_desc)
+    voice = voice_fmt.format(desc, station["company"], station["name"], dist_þf, kr_desc)
 
     return response, answer, voice
 
@@ -223,7 +233,11 @@ def sentence(state, result):
         # Successfully matched a query type
         try:
             loc = q.location
-            answ = _answ_for_petrol_query(q, result)
+            if loc:
+                answ = _answ_for_petrol_query(q, result)
+            else:
+                # We don't have a location
+                answ = gen_answer("Ég veit ekki hvar þú ert.")
             if answ:
                 q.set_qtype(result.qtype)
                 q.set_key(result.qkey)

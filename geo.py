@@ -625,7 +625,7 @@ CC_ICEPREP_A = frozenset(
 def iceprep_for_cc(cc):
     """ Return the right Icelandic preposition ("í" or "á") for
         a country, given its ISO country code, e.g. "IS" """
-    return "á" if cc in CC_ICEPREP_A else "í"
+    return "á" if cc.upper() in CC_ICEPREP_A else "í"
 
 
 def iceprep_for_country(cn):
