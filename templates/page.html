@@ -155,7 +155,19 @@
               </div>
           </div>
      </div>
- {% endif %}
+     {% else %}
+        <div id="result" class="result">
+
+         {% include 'hover-infobox.html' %}
+
+         <div id="pgs">
+            <!-- Result of analysis goes here -->
+            <p>Sæki grein...
+               <span class="glyphicon glyphicon-restart glyphicon-spin"></span>
+            </p>
+         </div>
+        </div>
+     {% endif %}
    </div> <!-- column -->
 
    <div id="register">
