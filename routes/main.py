@@ -424,3 +424,10 @@ def suggest(limit=10):
         suggestions = [{"value": (prefix + p[0] + "?"), "data": ""} for p in q]
 
     return better_jsonify(suggestions=suggestions)
+
+
+@routes.route("/translate")
+def translate():
+    """ Handler for a page with machine translation of user-entered text """
+    txt = request.args.get("txt", "")[0:_MAX_TEXT_LENGTH_VIA_URL]
+    return render_template("translate.html", default_text=txt)

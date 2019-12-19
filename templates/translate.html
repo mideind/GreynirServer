@@ -1,0 +1,258 @@
+
+{% extends "container-normal.html" %}
+
+{% block styles %}
+
+<link href="{{ url_for('static', filename='css/main-bootstrap.css') }}" rel='stylesheet' type='text/css'>
+<style type="text/css" media="screen">
+ #lang-btns>.nav>li>a:focus, .nav>li>a:hover {
+     background-position: 0px;
+ }
+</style>
+
+{% endblock %}
+
+{% block content %}
+
+<div class="input-translation">
+
+    <div class="row">
+
+        <div class="col-xs-12" id="txt-div">
+
+            <textarea rows="8" class="form-control input-lg"
+                      id="txt" tabindex="1" maxlength="4096" autofocus required placeholder="Sláðu inn texta til að þýða">
+            {{- default_text -}}
+            </textarea>
+
+        </div>
+
+    </div>
+
+    <div class="row">
+
+        <div id="lang-btns" class="pull-right">
+            <ul class="nav nav-pills pull-right list-inline language-list">
+                <li id="lang-dropdown-btn" role="presentation" class="list-inline-item dropdown">
+                    <a class="btn btn-default disabled" id="lang-dropdown-a" class="dropdown-toggle" data-toggle="dropdown" data-placeholder="Önnur tungumál"
+                       href="#" role="button" aria-haspopup="true" aria-expanded="false">
+                        Önnur tungumál <span class="caret"></span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li id="lang-btn-fr" data-lang="fr" role="presentation"><a href="#">Franska</a></li>
+                        <li id="lang-btn-no" data-lang="no" role="presentation" class=""><a href="#">Norska</a></li>
+                    </ul>
+                </li>
+                <li class="list-inline-item" id="lang-btn-de" data-lang="de" role="presentation"><a class="btn btn-default disabled" href="#">Þýska</a></li>
+                <li  class="list-inline-item" id="lang-btn-en" data-lang="en" role="presentation"><a class="btn btn-default" href="#">Enska</a></li>
+            </ul>
+        </div>
+
+    </div>
+</div>
+
+<div id="output">
+
+    <h3 class="help">Þýðing <small>Smelltu á orð til að velja aðra þýðingu</small></h3>
+
+    <!-- This pop up will eventually show different beams -->
+    <div id="info">
+    </div>
+
+    <div id="result">
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block endscripts %}
+
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
+<script src="{{ url_for('static', filename='js/page.js') }}"></script>
+
+<script>
+
+ var currentLang = false;
+ var currentLangBtnId = false;
+
+ function wait(state) {
+     // Start or stop a wait spinner
+     if (state) {
+         $("#txt-ok").attr("disabled", "disabled")
+                     .html("<span class='glyphicon glyphicon-restart glyphicon-spin-white'></span>");
+         $("div#output").css("display", "none");
+     }
+     else {
+         $("#txt-ok").removeAttr("disabled")
+                     .text("Greina");
+         $("div#output").css("display", "block");
+     }
+ }
+
+ function clearResult() {
+     // Clear previous result
+     $("div#result").html("");
+     wait(true);
+ }
+
+ function handleError(xhr, status, errorThrown) {
+     /* An error occurred on the server or in the communications */
+     $("div#result").html("<p><b>Villa kom upp</b> í samskiptum við netþjón Greynis</p>");
+     wait(false);
+ }
+
+ function populateResult(json) {
+     wait(false);
+     displayTranslation(json.result.pgs, json.result.results)
+ }
+
+ function normalizeScore(score) {
+     /* Receive float and return linearly normalized score between 0 and 1  */
+     MIN_SCORE = -11.0;
+     MAX_SCORE = 1.0;
+     INTERVAL = MAX_SCORE - MIN_SCORE
+     score = Math.min(MAX_SCORE, score);
+     score = Math.max(MIN_SCORE, score);
+     score = (score - MIN_SCORE)/INTERVAL;
+     return score;
+ }
+
+ function displayTranslation(pgs, sents) {
+     pg_container = $("div#result");
+     $.each(pgs, function (pg_idx, sent_idx_arr) {
+         pg_elem = $(document.createElement("p"));
+
+         for (var idx in sent_idx_arr) {
+             curr_sent = sents[sent_idx_arr[idx]].outputs;
+             sent_elem = $("<i></i>", {"text": curr_sent});
+             sent_score =sents[sent_idx_arr[idx]].scores;
+
+             sent_container = $("<span></span>", {"class": "sent"});
+             sent_container.append(sent_elem);
+             pg_elem.append(sent_container);
+         }
+         pg_container.append(pg_elem);
+     })
+ }
+
+ function style_sentence_score(sent_elem, sent_score) {
+     // Add style to sentence element that depends on translation score
+     // Is currently linear, but should probably depend on quintiles found empirically
+     score = parseFloat(sent_score);
+     score = normalizeScore(score);
+     color_range = 80;
+     min_color = 175;
+     score = Math.floor(color_range * score) + min_color;
+     var rgb_color_str = "rgb(50,50," + score + ")";
+     sent_elem.css("background-color", rgb_color_str);
+     sent_elem.css("color", "white");
+ }
+
+ function translateText(txt, lang) {
+     // Ask the server to translate
+     clearResult();
+     // Launch the query
+     serverQuery("{{ url_for('routes.nntranslate_api') }}", // Endpoint with .api suffix are not cached
+         {
+             text : txt,
+             src_lang : "is",
+             tgt_lang : lang
+         },
+         populateResult,
+         null,
+         handleError
+     );
+ }
+
+ function doTranslation() {
+     // Submit the contents of the textarea to the server
+     // for translation
+     theText = $("#txt").val().trim();
+
+     translateText(theText, currentLang);
+     storeTextInUrl(theText);
+ }
+
+ function storeTextInUrl(theText) {
+     // Store current text in url and add to browser history
+     // allows using back-button to traverse translation history
+     newPage = "translate?txt=" + encodeURIComponent(theText);
+     window.history.pushState("greynir-state", "greynir-title", newPage);
+ }
+
+ function initLangBtns() {
+ }
+
+ function handleLangBtn(e) {
+     btn = e.target.parentElement;
+
+     if (!btn) {
+         // after dropdown button is pressed
+         // clicking elsewhere activates listener
+         // this means a cancelled action
+         e.preventDefault();
+         return false;
+     }
+     if (btn.id !== "lang-btn-en") {
+         /* // languages other than English are not yet available */
+         e.preventDefault();
+         return true;
+     }
+     /* if (btn.id === "lang-dropdown-btn") { */
+     // dropdown button selected, do nothing
+     /* e.preventDefault(); */
+     /* return true; */
+     /* } */
+
+     currentLang = btn.dataset.lang;
+     currentLangBtnId = btn.id;
+     $("#lang-btns > ul > li >  a").removeClass("btn-primary").addClass("btn-default");
+
+     if ($("#lang-dropdown-btn").has(btn).length) {
+         // clicked a button inside dropdown language menu
+         $("#lang-dropdown-a").html(e.target.text + ' <span class="caret"></span>')
+         $("#lang-dropdown-a").addClass("btn-primary");
+         $("#lang-dropdown-a").removeClass("btn-default");
+     } else {
+         // clicked a button that is not part of dropdown menu
+         $(btn).children("a").eq(0).removeClass("btn-default");
+         $(btn).children("a").eq(0).addClass("btn-primary");
+
+         // reset dropdown button text
+         placeholder = $("#lang-dropdown-a").data().placeholder + ' <span class="caret"></span>'
+         $("#lang-dropdown-a").html(placeholder)
+     }
+
+     doTranslation();
+     e.preventDefault();
+ }
+
+ function init() {
+     // Activate the top navbar
+     $("#navid-translate").addClass("active");
+     // Clicking on the info panel makes it disappear
+     // (necessary for touch screens)
+     $("#info").click(function(ev) {
+         ev.stopPropagation();
+         $(this).css("visibility", "hidden");
+     });
+     // Hide the output div until we have something to show
+     $("div#output").css("display", "none");
+     // Add listeners to language buttons that determine the
+     // target language for translation
+     $("#lang-btns").on("click", handleLangBtn);
+     // Display if state of textarea is dirty w.r.t the shown translation
+     /* $("#txt").bind("input propertychange", function (event) { */
+     /* console.log("Change event"); */
+     /* if (currentLangBtnId) { */
+     /* $(currentLangBtnId).addClass("") */
+     /* } */
+     /* }); */
+ }
+
+ $(document).ready(init);
+
+</script>
+
+{% endblock %}
