@@ -66,7 +66,8 @@ class NnClient:
         headers = {"content-type": "application/json; charset=UTF-8"}
         payload = {"pgs": pgs}
 
-        payload.update(data)
+        if data is not None:
+            payload.update(data)
 
         logging.debug(str(payload))
         payload = json.dumps(payload)
