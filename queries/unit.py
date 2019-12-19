@@ -80,6 +80,7 @@ def help_text(lemma):
                 "Hversu margir bollar eru í einum lítra",
                 "Hvað er hálf míla margir metrar",
                 "Hversu margar teskeiðar eru í einum desilítra",
+                "Hvað samsvara 15 pund mörgum kílóum",
             )
         )
     )
@@ -215,13 +216,17 @@ QUnitQuery →
 
 $score(+35) QUnitQuery
 
-QUnitPrefix_nf → "hvað" "er" | "hvað" "eru"
-QUnitPrefix_þgf → "hvað" "jafngildir" | "hvað" "jafngilda"
+QUnitPrefix_nf →
+    "hvað" "er" | "hvað" "eru"
+
+QUnitPrefix_þgf →
+    "hvað" "jafngildir" | "hvað" "jafngilda" | "hvað" "samsvarar" | "hvað" "samsvara"
 
 QUnitMany/fall/kyn → 'margur:lo'_sb_ft/fall/kyn
 
 QUnitConversion →
     # Hvað eru X kíló mörg pund [?]
+    # Hvað eru Y pund mörg kíló [?]
     QUnitPrefix_nf QUnitFrom_nf QUnitMany_nf/kyn QUnitTo_nf/kyn
     # Hvað eru mörg pund í X kílóum [?]
     | QUnitPrefix_nf QUnitMany_nf/kyn QUnitTo_nf/kyn "í" QUnitFrom_þgf
@@ -230,10 +235,17 @@ QUnitConversion →
     # Hvað jafngilda X kíló mörgum pundum [?]
     | QUnitPrefix_þgf QUnitFrom_nf QUnitMany_þgf/kyn QUnitTo_þgf/kyn
 
-QUnitFrom/fall → QUnitFrom/fall/kyn
+QUnitFrom/fall →
+    QUnitFrom/fall/kyn
+    | QUnitFromPounds/fall
 
 QUnitFrom/fall/kyn →
     QUnitNumber/kyn/fall? QUnit/kyn/fall
+
+# Special case hack: '150 pund' is tokenized as an amount
+# (Note that this will also allow '150 sterlingspund' but we let that slide ;-) )
+QUnitFromPounds/fall →
+    amount_gbp/fall
 
 QUnitTo/fall/kyn →
     QUnit/kyn/fall
@@ -393,8 +405,23 @@ def QUnitTo(node, params, result):
 def QUnitFrom(node, params, result):
     if "unit" in result:
         result.unit_from = result.unit
+        result.unit_from_nf = result.unit_nf
         result.desc = result._nominative
         del result["unit"]
+        del result["unit_nf"]
+
+
+def QUnitFromPounds(node, params, result):
+    """ Special hack for the case of '150 pund' which is
+        tokenized as an amount token """
+    amount = node.first_child(lambda n: n.has_t_base("amount"))
+    assert amount is not None
+    # Extract quantity from the amount token associated with the amount terminal
+    result.number, curr = amount.contained_amount
+    assert curr == "GBP"
+    result.unit = "pund"
+    result.unit_nf = "pund"
+    result._nominative = str(result.number).replace(".", ",") + " pund"
 
 
 def _convert(quantity, unit_from, unit_to):

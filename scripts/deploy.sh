@@ -61,8 +61,6 @@ cp correct.py $DEST/correct.py
 cp fetcher.py $DEST/fetcher.py
 cp geo.py $DEST/geo.py
 cp images.py $DEST/images.py
-# incparser.py is no longer needed
-rm $DEST/incparser.py
 cp main.py $DEST/main.py
 cp nertokenizer.py $DEST/nertokenizer.py
 cp postagger.py $DEST/postagger.py
@@ -81,9 +79,11 @@ cp tree.py $DEST/tree.py
 cp treeutil.py $DEST/treeutil.py
 cp scrapers/*.py $DEST/scrapers/
 cp queries/*.py $DEST/queries/
+cp nn/*.py $DEST/nn/
 
 # Processors are not required for the web server
 # cp processors/*.py $DEST/processors/
+
 # Sync templates and static files
 rsync -av --delete templates/ $DEST/templates/
 rsync -av --delete static/ $DEST/static/
