@@ -405,8 +405,10 @@ def QUnitTo(node, params, result):
 def QUnitFrom(node, params, result):
     if "unit" in result:
         result.unit_from = result.unit
+        result.unit_from_nf = result.unit_nf
         result.desc = result._nominative
         del result["unit"]
+        del result["unit_nf"]
 
 
 def QUnitFromPounds(node, params, result):
@@ -419,6 +421,7 @@ def QUnitFromPounds(node, params, result):
     assert curr == "GBP"
     result.unit = "pund"
     result.unit_nf = "pund"
+    result._nominative = str(result.number).replace(".", ",") + " pund"
 
 
 def _convert(quantity, unit_from, unit_to):

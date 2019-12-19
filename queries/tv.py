@@ -221,7 +221,9 @@ def _gen_evening_program_answer(q):
         answ.append(
             "{0} : {1}.".format(p["startTime"][11:16], p["title"])
         )
-    return gen_answer(" ".join(answ))
+    voice_answer = " ".join(answ)
+    answer = " ".join(answ[1:]).replace(" : ", " ")
+    return dict(answer=answer), answer, voice_answer
 
 
 def sentence(state, result):
