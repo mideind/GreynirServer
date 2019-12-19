@@ -16,8 +16,10 @@ html2text>=2018.1.9
 striprtf>=0.0.4
 defusedxml>=0.6.0
 boto3>=1.9
-straeto>=0.0.10
+straeto>=0.0.11
 pytz>=2019.2
 tzwhere>=3.0.3
 iceweather>=0.1.1
 cachetools>=3.1.1
+Flask-Cors==3.0.8
+

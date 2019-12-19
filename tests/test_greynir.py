@@ -34,9 +34,15 @@ from geo import *
 # pylint: disable=unused-wildcard-import
 from queries import *
 
-
-# Routes that don't return 200 OK without certain query/post parameters
-SKIP_ROUTES = frozenset(("/staticmap", "/page", "/exit.api"))
+# Routes that don't return 200 OK without certain query/post parameters or external services
+SKIP_ROUTES = frozenset((
+    "/staticmap",
+    "/page",
+    "/nnparse.api",
+    "/nntranslate.api",
+    "/nn/translate.api",
+    "/exit.api",
+))
 
 REQ_METHODS = frozenset(["GET", "POST"])
 
@@ -64,10 +70,12 @@ def test_routes(client):
 
 
 API_CONTENT_TYPE = "application/json"
+API_EXCLUDE_START = "/nn"
 API_ROUTES = [
     r
     for r in app.url_map.iter_rules()
     if str(r).endswith(".api") and not r.arguments and str(r) not in SKIP_ROUTES
+       and not str(r).startswith(API_EXCLUDE_START)
 ]
 
 
@@ -496,9 +504,10 @@ def test_postagger():
 def test_query():
     from query import Query
     from queries.builtin import HANDLE_TREE
+    from queries.special import handle_plain_text
 
     assert HANDLE_TREE is True
-
+    assert handle_plain_text
 
 def test_scraper():
     from scraper import Scraper

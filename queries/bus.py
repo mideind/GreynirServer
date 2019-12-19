@@ -200,7 +200,7 @@ QBusWhichTailCorrect/tala →
     | 'stöðva:so'_p3_gm_fh_nt/tala "á" QBusStopName_þgf
     | 'stöðva:so'_p3_gm_fh_nt/tala QBusStopThere
 
-    | 'aka:so'_p3_gm_fh_nt/tala QBusAtStopCorrect
+    | 'aka:so'_p3_gm_fh_nt/tala QBusAtStopCorrect_þf
     | 'aka:so'_p3_gm_fh_nt/tala QBusStopToThere
 
     | 'koma:so'_p3_gm_fh_nt/tala "á" QBusStopName_þf
@@ -208,7 +208,7 @@ QBusWhichTailCorrect/tala →
     | 'koma:so'_p3_gm_fh_nt/tala "til" QBusStopName_ef
     | 'koma:so'_p3_gm_fh_nt/tala QBusStopToThere
 
-    | 'fara:so'_p3_gm_fh_nt/tala QBusAtStopCorrect
+    | 'fara:so'_p3_gm_fh_nt/tala QBusAtStopCorrect_þf
     | 'fara:so'_p3_gm_fh_nt/tala QBusStopToThere
 
 # It seems to be necessary to allow the nominal case
@@ -242,21 +242,41 @@ QBusStopToThere →
     "þangað"
 
 QBusStopName/fall →
-    Nl/fall
+    # A bus stop name can consist of two noun phrases,
+    # such as 'Þórunnarstræti sjúkrahús'
+    Nl/fall Nl/fall?
 
 $score(+1) QBusStopName/fall
 
-QBusAtStop →
-    QBusAtStopCorrect | QBusAtStopIncorrect | QBusStopThere | QBusStopToThere
+# Bus stops with prepositions denoting movement, taking an accusative argument:
+# '[kemur] á Hlemm / þangað'
+QBusAtStop_þf →
+    QBusAtStopCorrect_þf | QBusAtStopIncorrect_þf | QBusStopToThere
 
-QBusAtStopCorrect →
+# Bus stops with prepositions denoting placement, taking a dative argument:
+# '[stoppar] á Hlemmi / þar'
+QBusAtStop_þgf →
+    QBusAtStopCorrect_þgf | QBusAtStopIncorrect_þgf | QBusStopThere
+
+# Movement prepositions
+QBusAtStopCorrect_þf →
     "í" QBusStopName_þf
     | "á" QBusStopName_þf
     | "frá" QBusStopName_þgf
     | "að" QBusStopName_þgf
     | "til" QBusStopName_ef
 
-QBusAtStopIncorrect →
+# Placement prepositions
+QBusAtStopCorrect_þgf →
+    "í" QBusStopName_þgf
+    | "á" QBusStopName_þgf
+    | "við" QBusStopName_þf
+    | "hjá" QBusStopName_þgf
+    | "frá" QBusStopName_þgf
+    | "að" QBusStopName_þgf
+    | "til" QBusStopName_ef
+
+QBusAtStopIncorrect_þf →
     "í" QBusStopName_nf
     | "í" QBusStopName_þgf
     | "á" QBusStopName_nf
@@ -264,29 +284,43 @@ QBusAtStopIncorrect →
     | "frá" QBusStopName_nf
     | "til" QBusStopName_nf
 
+QBusAtStopIncorrect_þgf →
+    "í" QBusStopName_nf
+    | "í" QBusStopName_þf
+    | "á" QBusStopName_nf
+    | "á" QBusStopName_þf
+    | "frá" QBusStopName_nf
+    | "til" QBusStopName_nf
+
 # Prefer the correct forms
-$score(-20) QBusAtStopIncorrect
+$score(-20) QBusAtStopIncorrect_þf
+$score(-20) QBusAtStopIncorrect_þgf
 
 QBusArrivalTime →
 
-    # 'Hvenær kemur/fer/stoppar ásinn/sexan/tían/strætó númer tvö [á Hlemmi]?'
-    "hvenær" QBusArrivalVerb QBus_nf QBusAtStop? '?'?
+    # 'Hvenær kemur/fer/stoppar ásinn/sexan/tían/strætó númer tvö [næst] [á Hlemmi]?'
+    "hvenær" QBusArrivalVerb_þf QBus_nf "næst"? QBusAtStop_þf? '?'?
+    | "hvenær" QBusArrivalVerb_þgf QBus_nf "næst"? QBusAtStop_þgf? '?'?
 
-    # 'Hvenær er von á fimmunni / vagni númer sex?'
-    | "hvenær" "er" "von" "á" QBus_þgf QBusAtStop? '?'?
+    # 'Hvenær er [næst] von á fimmunni / vagni númer sex?'
+    | "hvenær" "er" "næst"? "von" "á" QBus_þgf QBusAtStop_þf? '?'?
 
-    # 'Hvenær má búast við leið þrettán?'
-    | "hvenær" "má" "búast" "við" QBus_þgf QBusAtStop? '?'?
+    # 'Hvenær má [næst] búast við leið þrettán?'
+    | "hvenær" "má" "næst"? "búast" "við" QBus_þgf QBusAtStop_þf? '?'?
 
 QBusAnyArrivalTime →
-    # 'Hvenær kemur/fer [næsti] strætó?'
+    # 'Hvenær kemur/fer/stoppar [næsti] strætó?'
     "hvenær" QBusArrivalVerb "næsti"? QBusNounSingular_nf '?'?
     # 'Hvað er langt í [næsta] strætó?'
     | "hvað" "er" "langt" "í" "næsta"? QBusNounSingular_þf '?'?
     # 'Hvenær er von á [næsta] strætó?'
     | "hvenær" "er" "von" "á" "næsta"? QBusNounSingular_þgf '?'?
 
-QBusArrivalVerb → "kemur" | "fer" | "stoppar"
+QBusArrivalVerb → QBusArrivalVerb_þf | QBusArrivalVerb_þgf
+# Movement: verbs control prepositions in accusative case
+QBusArrivalVerb_þf → "kemur" | "fer"
+# Placement: verbs control prepositions in dative case
+QBusArrivalVerb_þgf → "stoppar" | "stöðvar"
 
 $score(+32) QBusArrivalTime
 $score(+16) QBusAnyArrivalTime
@@ -698,7 +732,7 @@ def query_arrival_time(query, session, result):
             # stop, check the 2nd closest stop, if it is close enough
             stop = stops[1]
             arrivals, arrives = SCHEDULE_TODAY.arrivals(route_number, stop)
-        arrivals = arrivals.items()
+        arrivals = list(arrivals.items())
         a = ["Á", to_accusative(stop.name), "í átt að"]
 
     if arrivals:
@@ -870,6 +904,7 @@ def query_which_route(query, session, result):
 
     voice_answer = correct_spaces(" ".join(va) + ".")
     answer = correct_spaces(" ".join(a))
+    answer = answer[0].upper() + answer[1:]
     response = dict(answer=answer)
     return response, answer, voice_answer
 

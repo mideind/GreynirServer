@@ -217,12 +217,9 @@
    }
 
    function isWarning(code) {
-      // Return true if the annotation code should be displayed  as a warning,
+      // Return true if the annotation code should be displayed as a warning,
       // not as an error
-      return code[0] === "T"
-         || code[0] === "W"
-         || code === "P_NT_Komma"
-         || code === "P_NT_Að";
+      return code.endsWith("/w");
    }
 
    function displayAnnotations(j) {

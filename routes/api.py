@@ -22,14 +22,14 @@
 
 """
 
-import sys
+
 from datetime import datetime
 import logging
 
-from flask import request, current_app, abort
-import werkzeug
+from flask import request, abort
 
 from settings import Settings
+
 from tnttagger import ifd_tag
 from db import SessionContext
 from db.models import ArticleTopic, Query, Feedback
@@ -41,9 +41,9 @@ from query import process_query
 from doc import SUPPORTED_DOC_MIMETYPES, MIMETYPE_TO_DOC_CLASS
 from speech import get_synthesized_text_url
 
+
 from . import routes, better_jsonify, text_from_request, bool_from_request, restricted
 from . import _MAX_URL_LENGTH, _MAX_UUID_LENGTH
-
 
 # Maximum number of query string variants
 _MAX_QUERY_VARIANTS = 10

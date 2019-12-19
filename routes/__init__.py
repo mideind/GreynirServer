@@ -119,3 +119,4 @@ from .loc import *
 from .news import *
 from .people import *
 from .stats import *
+from nn.routes import *

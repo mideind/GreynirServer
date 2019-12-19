@@ -473,7 +473,14 @@ def query_person(query, session, name):
             query.set_error("E_PERSON_NOT_FOUND")
             return dict(answer=""), "", ""
         answer = title
-        voice_answer = name + " er " + answer + "."
+        v = answer.split()
+        answer = answer[0].upper() + answer[1:]
+        for i, w in enumerate(v):
+            if len(w) > 1 and w.isupper():
+                # Probably an abbreviation, such as 'FME' or 'BSÍ':
+                # convert to 'F M E'
+                v[i] = " ".join(w)
+        voice_answer = name + " er " + " ".join(v) + "."
         # Set the context for a subsequent query
         query.set_context({"person_name": name})
         response = dict(answer=answer)
@@ -616,12 +623,14 @@ def query_entity(query, session, name):
     if titles and "answer" in titles[0]:
         # 'Mál og menning er bókmenntafélag.'
         answer = titles[0]["answer"]
-        v = answer
-        if len(v) > 1 and v.isupper():
-            # Probably an abbreviation, such as 'FME':
-            # convert to 'F M E'
-            v = " ".join(v)
-        voice_answer = name + " er " + v + "."
+        v = answer.split()
+        answer = answer[0].upper() + answer[1:]
+        for i, w in enumerate(v):
+            if len(w) > 1 and w.isupper():
+                # Probably an abbreviation, such as 'FME' or 'BSÍ':
+                # convert to 'F M E'
+                v[i] = " ".join(w)
+        voice_answer = name[0].upper() + name[1:] + " er " + " ".join(v) + "."
     else:
         answer = "Engin skilgreining finnst á nafninu '" + name + "'."
         voice_answer = "Ég veit ekki hvað " + name + " er."

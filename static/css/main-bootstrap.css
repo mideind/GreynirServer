@@ -27,7 +27,7 @@
 
 @font-face {
    font-family: 'Glyphicons Regular';
-   src:  url('/static/fonts/glyphicons-regular.woff2') format('woff2'), 
+   src:  url('/static/fonts/glyphicons-regular.woff2') format('woff2'),
          url('/static/fonts/glyphicons-regular.woff') format('woff'),
          url('/static/fonts/glyphicons-regular.ttf') format('truetype')
 }
@@ -311,7 +311,7 @@ a {
    border-color: #00b450;
    -webkit-animation: bob 400ms linear;
    animation: bob 400ms linear;
-}   
+}
 
 button.btn.btn-success:active {
    background-color: #2e9a5e;
@@ -322,7 +322,6 @@ button.btn.btn-success[disabled='disabled'] {
    background-color: #38cb7a;
    border-color: #38cb7a;
 }
-
 
 .btn-info {
    background-image: none;
@@ -340,7 +339,7 @@ button.btn.btn-success[disabled='disabled'] {
    border-color: #006eff;
    -webkit-animation: bob 400ms linear;
    animation: bob 400ms linear;
-}   
+}
 
 button.btn.btn-info:active {
    background-color: #0055c5;
@@ -368,7 +367,7 @@ button.btn.btn-info[disabled='disabled'] {
    border-color: #ffb400;
    -webkit-animation: bob 400ms linear;
    animation: bob 400ms linear;
-}   
+}
 
 .btn-danger {
    background-image: none;
@@ -442,6 +441,16 @@ p.header {
 .container > .navbar-header {
    margin-left: -6px;
    margin-right: -6px;
+}
+
+input#url::selection {
+   color: white;
+   background-color: #006eff;
+}
+
+textarea::selection {
+   color: white;
+   background-color: #006eff;
 }
 
 div.input {
@@ -812,12 +821,12 @@ span.imgreport {
 span.imgreport a {
    color: white !important;
    text-decoration: none;
-   text-shadow: 
-   #000 0px 0px 2px,   
-   #000 0px 0px 2px,   
+   text-shadow:
    #000 0px 0px 2px,
-   #000 0px 0px 2px,   
-   #000 0px 0px 2px,   
+   #000 0px 0px 2px,
+   #000 0px 0px 2px,
+   #000 0px 0px 2px,
+   #000 0px 0px 2px,
    #000 0px 0px 2px;
 }
 
@@ -825,7 +834,8 @@ span.imgreport a:hover {
    text-decoration: none;
 }
 
-div#info {
+div#info,
+div#info-trnsl {
    visibility: hidden;
    position: absolute;
    background-color: #eeeeee;
@@ -839,6 +849,11 @@ div#info {
    padding-bottom: 6px;
    padding-left: 12px;
    padding-right: 12px;
+}
+
+div#info-trnsl
+{
+   margin-top: 4px;
 }
 
 div#info.kk,
@@ -1121,8 +1136,8 @@ div.result i.p:hover {
 
 div.result i.person:hover {
    /* Special case for person: just make background darker */
-   border-color: #006eff; 
-   background-color: #006eff; 
+   border-color: #006eff;
+   background-color: #006eff;
 }
 
 div.result i.entity:hover {
@@ -1648,10 +1663,10 @@ div#treegrid table {
      -khtml-user-select: none;
        -moz-user-select: none;
         -ms-user-select: none;
-            user-select: none;       
+            user-select: none;
 }
 
-/* Styling for bootstrap tooltips */ 
+/* Styling for bootstrap tooltips */
 
 .tooltip .tooltip-inner {
    font-size: 1.2em;
@@ -1685,7 +1700,7 @@ div.minheight {
 
 /* Location maps */
 
-div#icemap, div#worldmap { 
+div#icemap, div#worldmap {
    height: 470px;
    width: 100%;
 }

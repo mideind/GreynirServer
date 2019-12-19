@@ -70,9 +70,10 @@ class TokenContainer:
 
     """ Class wrapper around tokens """
 
-    def __init__(self, tokens_json, url=None):
-        self.url = url
+    def __init__(self, tokens_json, url, authority):
         self.tokens = json.loads(tokens_json)
+        self.url = url
+        self.authority = authority
 
     def process(self, session, processor, **kwargs):
         """ Process tokens for an entire article.  Iterate over each paragraph,
@@ -115,6 +116,7 @@ class TokenContainer:
         state = {
             "session": session,
             "url": self.url,
+            "authority": self.authority,
             "processor": processor,
         }
 
@@ -235,7 +237,9 @@ class Processor:
                         tree = Tree(url, article.authority)
                         tree.load(article.tree)
 
-                        token_container = TokenContainer(article.tokens, url)
+                        token_container = TokenContainer(
+                            article.tokens, url, article.authority
+                        )
 
                         # Run all processors in turn
                         for p in self.pmodules:

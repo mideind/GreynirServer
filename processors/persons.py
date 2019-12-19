@@ -200,6 +200,7 @@ def sentence(state, result):
 
     session = state["session"]  # Database session
     url = state["url"]  # URL of the article being processed
+    authority = state.get("authority", 1.0)  # Authority of the source
 
     if "nöfn" in result:
         # Nöfn og titlar fundust í málsgreininni
@@ -211,7 +212,7 @@ def sentence(state, result):
                 title=titill,
                 title_lc=titill.lower(),
                 gender=kyn,
-                authority=1.0,
+                authority=authority,
                 timestamp=datetime.utcnow(),
             )
             session.add(person)
