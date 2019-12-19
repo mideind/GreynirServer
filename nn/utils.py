@@ -56,6 +56,9 @@ def index_text(text):
 
 
 def split_text(text):
+    """ Segments contiguous (Icelandic) text into paragraphs and sentences
+        and returns a list of lists
+    """
     text = prep_text_for_tokenizer(text)
     tok_stream = bintokenizer.tokenize(text)
     pgs = tokenizer.paragraphs(tok_stream)
