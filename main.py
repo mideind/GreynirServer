@@ -42,6 +42,7 @@ from datetime import datetime
 
 from flask import Flask, send_from_directory
 from flask_caching import Cache
+from flask_cors import CORS
 
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -54,13 +55,17 @@ import reynir_correct
 from settings import Settings, ConfigError
 from article import Article as ArticleProxy
 
-
 # RUNNING_AS_SERVER is True if we're executing under nginx/Gunicorn,
 # but False if the program was invoked directly as a Python main module.
 RUNNING_AS_SERVER = __name__ != "__main__"
 
 # Initialize and configure Flask app
 app = Flask(__name__)
+
+# Enable Cross Origin Resource Sharing for app
+cors = CORS(app)
+app.config['CORS_HEADERS'] = 'Content-Type'
+
 # Fix access to client remote_addr when running behind proxy
 app.wsgi_app = ProxyFix(app.wsgi_app)
 
@@ -162,6 +167,15 @@ def page_not_found(e):
 def server_error(e):
     """ Return a custom 500 error """
     return "Eftirfarandi villa kom upp: {0}".format(e), 500
+
+
+@app.context_processor
+def inject_nn_bools():
+    """ Inject bool switches for neural network features """
+    return dict(
+        nn_parsing_enabled=Settings.NN_PARSING_ENABLED,
+        nn_translate_enabled=Settings.NN_TRANSLATION_ENABLED,
+    )
 
 
 # Initialize the main module

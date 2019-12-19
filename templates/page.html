@@ -31,11 +31,38 @@
       font-size: 16px;
    }
 
+   div#result-translation span i {
+      font-style: italic;
+      font-size: 1.05em;
+   }
+   div#result-translation span.good i:hover {
+      background-color: #77FF77;
+      color: black;
+   }
+   div#result-translation span.average i:hover {
+      background-color: #777777;
+      color: white;
+   }
+   div#result-translation span.bad i:hover {
+      color: black;
+      background-color: #FF7777;
+   }
+   div#result-translation span.translated i {
+      font-style: normal;
+   }
+   span#spinner {
+      color: #f0ad4e;
+   }
+
 </style>
 
 {% endblock %}
 
 {% block content %}
+    {% if nn_translate_enabled -%}
+    <div id="info-trnsl">
+    </div>
+    {%- endif -%}
 
 <div id="output">
 
@@ -81,29 +108,54 @@
                <span class="glyphicon glyphicon-eye-open"></span>
             </button>
             {% endif %}
-   
+
          </h5>
       </div>
 
-      <div id="help">
-         <h3 class="help">
-            <small>Smelltu á málsgrein til að sjá trjágreiningu hennar</small>
-         </h3>
+     {% if nn_translate_enabled -%}
+      <div id="language-tabs">
+          <ul id="language-hdr" class="nav nav-tabs" role="tablist">
+              <li role="presentation" class="active">
+                  <a href="#translation-article-src" aria-controls="icelandic" role="tab" data-toggle="tab">
+                      <!-- https://www.countryflags.com/en/iceland-flag-icon.html -->
+                      <img src="{{ url_for('static', filename = 'flag/iceland-flag-icon-32.png') }}" width="32" height="20">&nbsp;Íslenska&nbsp;
+                  </a>
+              </li>
+              <li role="presentation">
+                  <a id="translate-tgt-btn" href="#translation-article-tgt" aria-controls="translation" role="tab" data-toggle="tab">
+                      <!-- https://www.countryflags.com/en/united-states-flag-icon.html -->
+                      <span><img src="{{ url_for('static', filename = 'flag/united-states-of-america-flag-icon-32.png') }}" width="32" height="20">&nbsp;Enska
+                      </span>
+                      &nbsp;<span id="spinner" style="display: none;" class='glyphicon glyphicon-restart glyphicon-spin-white'></span>
+                  </a>
+              </li>
+              <li role="presentation" class="pull-right">
+                  <div id="help">
+                      <h4 class="help"><small>Smelltu á málsgrein til að sjá trjágreiningu hennar</small></h4>
+                  </div>
+              </li>
+          </ul>
       </div>
+     <div class="tab-content">
+        <div role="tabpanel" class="tab-pane active" id="translation-article-src">
+           <div id="result" class="result">
+             {% include 'hover-infobox.html' %}
+             <div id="pgs">
+                <!-- Result of analysis goes here -->
+                <p>Sæki grein...
+                   <span class="glyphicon glyphicon-restart glyphicon-spin"></span>
+                </p>
+             </div>
 
-      <div id="result" class="result">
-
-         {% include 'hover-infobox.html' %}
-
-         <div id="pgs">
-            <!-- Result of analysis goes here -->
-            <p>Sæki grein...
-               <span class="glyphicon glyphicon-restart glyphicon-spin"></span>
-            </p>
-         </div>
-
-      </div>
-
+          </div>
+        </div>
+          <div role="tabpanel" class="tab-pane" id="translation-article-tgt">
+              <div id="result-translation">
+                  <!-- Translated article goes here -->
+              </div>
+          </div>
+     </div>
+ {% endif %}
    </div> <!-- column -->
 
    <div id="register">
@@ -145,9 +197,11 @@
 {% endblock %}
 
 {% block endscripts %}
-
-<script src="{{ url_for('static', filename='js/common.js') }}"></script>
-<script src="{{ url_for('static', filename='js/page.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/common.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/page.js') }}"></script>
+    {% if nn_translate_enabled -%}
+       <script src="{{ url_for('static', filename='js/translation.js') }}"></script>
+    {%- endif %}
 
 <script>
 
@@ -171,7 +225,7 @@
    function handleError(xhr, status, errorThrown) {
       /* An error occurred on the server or in the communications */
       $("div#help").css("display", "none");
-      $("div#pgs").html("<p><b>Villa kom upp</b> í samskiptum við netþjón Greynis</p>"); 
+      $("div#pgs").html("<p><b>Villa kom upp</b> í samskiptum við netþjón Greynis</p>");
       $("button#refresh").removeAttr("disabled");
       $("button#check").removeAttr("disabled");
    }
@@ -249,7 +303,21 @@
       populateStats(stats);
       $("div#statistics").show();
       populateRegister();
+
+       $('#lang-hdr a').click(function() {
+          $(this).tab('show');
+      });
+      $('#lang-hdr a:first').tab('show');
    }
+
+   {% if nn_translate_enabled -%}
+        $("#translate-tgt-btn").click(function (item) {
+            doTranslation();
+        });
+        $("#translation-article-src").click(function (item) {
+            showOriginalArticle();
+        });
+    {% endif %}
 
    $(document).ready(init);
 

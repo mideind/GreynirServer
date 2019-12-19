@@ -644,6 +644,32 @@ class Settings:
             "similarity server on port {0}".format(PORT)
         )
 
+    NN_PARSING_ENABLED = os.environ.get('NN_PARSING_ENABLED', False)
+    try:
+        NN_PARSING_ENABLED = bool(int(NN_PARSING_ENABLED))
+    except ValueError:
+        raise ConfigError("Invalid environment variable value: NN_PARSING_ENABLED = {0}".format(NN_PARSING_ENABLED))
+    NN_PARSING_HOST = os.environ.get('NN_PARSING_HOST', 'localhost')
+    NN_PARSING_PORT = os.environ.get('NN_PARSING_PORT', '9000')
+    try:
+        NN_PARSING_PORT = int(NN_PARSING_PORT)
+    except ValueError:
+        raise ConfigError("Invalid environment variable value: NN_PARSING_PORT = {0}".format(NN_PARSING_PORT))
+
+    NN_TRANSLATION_ENABLED = os.environ.get('NN_TRANSLATION_ENABLED', False)
+    try:
+        NN_TRANSLATION_ENABLED = bool(int(NN_TRANSLATION_ENABLED))
+    except ValueError:
+        raise ConfigError(
+            "Invalid environment variable value: NN_TRANSLATION_ENABLED = {0}".format(NN_TRANSLATION_ENABLED)
+        )
+    NN_TRANSLATION_HOST = os.environ.get('NN_TRANSLATION_HOST', 'localhost')
+    NN_TRANSLATION_PORT = os.environ.get('NN_TRANSLATION_PORT', '9001')
+    try:
+        NN_TRANSLATION_PORT = int(NN_TRANSLATION_PORT)
+    except ValueError:
+        raise ConfigError("Invalid environment variable value: NN_TRANSLATION_PORT = {0}".format(NN_TRANSLATION_PORT))
+
     # Configuration settings from the Reynir.conf file
 
     @staticmethod
