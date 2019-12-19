@@ -51,6 +51,8 @@ _DEFAULT_AUDIO_FORMAT = "mp3"
 _AUDIO_FORMATS = frozenset(("mp3", "ogg_vorbis", "pcm"))
 
 # Text formats
+# For details about SSML markup, see:
+# https://developer.amazon.com/en-US/docs/alexa/custom-skills/speech-synthesis-markup-language-ssml-reference.html
 _DEFAULT_TEXT_FORMAT = "ssml"
 _TEXT_FORMATS = frozenset(("text", "ssml"))
 
@@ -84,7 +86,9 @@ _CACHE_MAXITEMS = 30
 
 
 @cachetools.cached(cachetools.TTLCache(_CACHE_MAXITEMS, _CACHE_TTL))
-def get_synthesized_text_url(text, txt_format=_DEFAULT_TEXT_FORMAT, voice_id=_DEFAULT_VOICE):
+def get_synthesized_text_url(
+    text, txt_format=_DEFAULT_TEXT_FORMAT, voice_id=_DEFAULT_VOICE, speed=1.0
+):
     """ Returns AWS URL to audio file with speech-synthesised text """
 
     assert txt_format in _TEXT_FORMATS
@@ -92,12 +96,17 @@ def get_synthesized_text_url(text, txt_format=_DEFAULT_TEXT_FORMAT, voice_id=_DE
     if voice_id not in _VOICES:
         voice_id = _DEFAULT_VOICE
 
-    # Wrap text in <speak> tag if using SSML
+    # Special preprocessing for SSML markup
     if txt_format == "ssml":
+        # Adjust voice speed as appropriate
+        if speed != 1.0:
+            # Restrict to 50%-150% speed range
+            speed = max(min(1.5, speed), 0.5)
+            perc = int(speed * 100)
+            text = '<prosody rate="{0}%">{1}</prosody>'.format(perc, text)
+        # Wrap text in the required <speak> tag
         if not text.startswith("<speak>"):
-            text = "<speak>" + text
-        if not text.endswith("</speak>"):
-            text = text + "</speak>"
+            text = "<speak>{0}</speak>".format(text)
 
     client = _intialize_client()  # Set up client lazily
     if not client:

@@ -310,6 +310,12 @@ def query_api(version=1):
     voice = bool_from_request(request, "voice")
     # Request a particular voice
     voice_id = request.values.get("voice_id")
+    # Request a particular voice speed
+    try:
+        voice_speed = float(request.values.get("voice_speed", 1.0))
+    except ValueError:
+        voice_speed = 1.0
+
     # If test is set to True (which is only possible in a debug setting), we
     # (1) add a synthetic location, if not given; and
     # (2) bypass the cache
@@ -375,7 +381,11 @@ def query_api(version=1):
     if voice:
         # If the result contains a "voice" key, return it
         audio = result.get("voice")
-        url = get_synthesized_text_url(audio, voice_id=voice_id) if audio else None
+        url = (
+            get_synthesized_text_url(audio, voice_id=voice_id, speed=voice_speed)
+            if audio
+            else None
+        )
         if url:
             result["audio"] = url
         response = result.get("response")
@@ -415,11 +425,7 @@ def query_history_api(version=1):
         return better_jsonify(valid=False, reason="Missing parameters")
 
     with SessionContext(commit=True) as session:
-        session.execute(
-            Query.table()
-            .delete()
-            .where(Query.client_id == client_id)
-        )
+        session.execute(Query.table().delete().where(Query.client_id == client_id))
 
     return better_jsonify(valid=True)
 
