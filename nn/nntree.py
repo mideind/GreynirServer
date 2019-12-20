@@ -289,7 +289,6 @@ def parse_tree(flat_parse_str):
 
 def parse_tree_with_text(flat_tree_str, text):
     text_toks, parse_toks = tokenize_and_merge_possible_mw_tokens(text, flat_tree_str)
-    text_toks = [tok.txt for tok in tokenizer.tokenize(text) if tok.txt]
     return parse_flat_tree_to_nodes(parse_toks, text_toks)
 
 
@@ -451,16 +450,18 @@ def tokenize_and_merge_possible_mw_tokens(text, flat_tree):
         if merge_info is not None:
             merge_list.append(merge_info)
 
+    parse_toks_out = list(parse_tokens)
+    text_toks_out = list(sw_tokens)
     # merge in reverse order so we don't have to compute offsets
     for (pidx, leaf_idx, sw_count) in reversed(merge_list):
         if Settings.DEBUG:
-            print("Merging:")
-            print(parse_tokens[pidx : pidx + 1])
-            print(" ".join(sw_tokens[leaf_idx : leaf_idx + sw_count]))
-        parse_tokens[pidx : pidx + sw_count] = parse_tokens[pidx : pidx + 1]
-        sw_tokens[leaf_idx : leaf_idx + sw_count] = [" ".join(sw_tokens[leaf_idx : leaf_idx + sw_count])]
+            print("Merging:", pidx, leaf_idx, sw_count)
+            print(" ".join(sw_tokens[leaf_idx : leaf_idx + sw_count]).__repr__())
+            print(parse_toks_out[pidx : pidx + 1])
+        parse_toks_out[pidx : pidx + sw_count] = parse_toks_out[pidx : pidx + 1]
+        text_toks_out[leaf_idx : leaf_idx + sw_count] = [" ".join(sw_tokens[leaf_idx : leaf_idx + sw_count])]
 
-    return sw_tokens, parse_tokens
+    return text_toks_out, parse_toks_out
 
 
 def check_merge_candidate(idxed_mw_token, parse_tokens, leaf_idx_to_parse_idx):
@@ -480,7 +481,7 @@ def check_merge_candidate(idxed_mw_token, parse_tokens, leaf_idx_to_parse_idx):
     for (idx, token) in idxed_mw_token:
         pidx = leaf_idx_to_parse_idx[idx]
         if last_pidx is None:
-            last_pdix = pidx - 1
+            last_pidx = pidx - 1
         ptok = parse_tokens[pidx]
         if last_ptok is None:
             last_ptok = ptok
