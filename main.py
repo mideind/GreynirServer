@@ -64,7 +64,7 @@ app = Flask(__name__)
 
 # Enable Cross Origin Resource Sharing for app
 cors = CORS(app)
-app.config['CORS_HEADERS'] = 'Content-Type'
+app.config["CORS_HEADERS"] = "Content-Type"
 
 # Fix access to client remote_addr when running behind proxy
 app.wsgi_app = ProxyFix(app.wsgi_app)
@@ -88,6 +88,7 @@ app.config["CACHE"] = cache
 
 # Register blueprint routes
 from routes import routes, max_age
+
 app.register_blueprint(routes)
 
 
@@ -211,6 +212,7 @@ if not RUNNING_AS_SERVER:
     if os.environ.get("GREYNIR_ATTACH_PTVSD"):
         # Attach to the VSCode PTVSD debugger, enabling remote debugging via SSH
         import ptvsd
+
         ptvsd.enable_attach()
         ptvsd.wait_for_attach()  # Blocks execution until debugger is attached
         ptvsd_attached = True
@@ -295,6 +297,7 @@ if not RUNNING_AS_SERVER:
         BIN_Db.cleanup()
 
 else:
+    app.config["PRODUCTION"] = True
 
     # Suppress information log messages from Werkzeug
     werkzeug_log = logging.getLogger("werkzeug")
