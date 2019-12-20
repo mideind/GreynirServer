@@ -480,7 +480,7 @@ def check_merge_candidate(idxed_mw_token, parse_tokens, leaf_idx_to_parse_idx):
     for (idx, token) in idxed_mw_token:
         pidx = leaf_idx_to_parse_idx[idx]
         if last_pidx is None:
-            last_pdix = pidx - 1
+            last_pidx = pidx - 1
         ptok = parse_tokens[pidx]
         if last_ptok is None:
             last_ptok = ptok
