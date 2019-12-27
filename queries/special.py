@@ -752,6 +752,8 @@ _SPECIAL_QUERIES = {
     "þetta er lélegur brandari": _sorry,
     "þetta var lélegur brandari": _sorry,
     "þessi brandari var lélegur": _sorry,
+    "þú ert kjáni": _sorry,
+    "þú ert nú meiri kjáninn": _sorry,
 
     # Greetings
     "hey embla": { "answer": "Sæll, kæri notandi.", "is_question": False },
@@ -1055,6 +1057,12 @@ _SPECIAL_QUERIES = {
     "hvað veistu þá": _capabilities,
     "hvað getur þú gert": _capabilities,
     "hvað geturðu gert": _capabilities,
+    "hvað geturðu gert fyrir mig": _capabilities,
+    "hvað getur embla gert": _capabilities,
+    "hvað getur embla": _capabilities,
+    "hvað getur embla gert fyrir mig": _capabilities,
+    "hvað kann embla": _capabilities,
+    "hvað kann embla að gera": _capabilities,
     "hvað veistu ekki": {
         "answer": "Það er ýmislegt sem ég veit ekki."
     },
@@ -1329,6 +1337,8 @@ _SPECIAL_QUERIES = {
     "kannt þú eitthvað ljóð": _poetry,
     "kanntu eitthvert ljóð": _poetry,
     "kannt þú eitthvert ljóð": _poetry,
+    "geturðu farið með ljóð": _poetry,
+    "getur þú farið með ljóð": _poetry,
 
     # Rudeness :)
     "þú sökkar": _rudeness,
@@ -1384,6 +1394,7 @@ _SPECIAL_QUERIES = {
     "þegi þú embla": _rudeness,
     "veistu ekki rassgat": _rudeness,
     "veist þú ekki rassgat": _rudeness,
+    "þú ert drasl": _rudeness,
 
     # Internal & emotional state
     "ertu í góðu skapi": {
@@ -1414,6 +1425,9 @@ _SPECIAL_QUERIES = {
         "answer": "Ég hef það mjög fínt. Takk fyrir að spyrja.",
     },
     "hvað segirðu": {
+        "answer": "Ég segi bara allt fínt. Takk fyrir að spyrja."
+    },
+    "hvað segirðu embla": {
         "answer": "Ég segi bara allt fínt. Takk fyrir að spyrja."
     },
     "hvað segirðu gott": {
