@@ -25,7 +25,7 @@ scoring heuristics to find the best parse trees. The trees are then stored in a
 database and processed by grammatical pattern matching modules to obtain statements
 of fact and relations between stated facts.
 
-An overview of the technology behind Greynir can be found in the article
+An overview of the technology behind Greynir can be found in the paper
 [A Wide-Coverage Context-Free Grammar for Icelandic
 and an Accompanying Parsing System](https://acl-bg.org/proceedings/2019/RANLP%202019/pdf/RANLP160.pdf)
 by Vilhjálmur Þorsteinsson, Hulda Óladóttir and Hrafn Loftsson *(Proceedings of Recent Advances in Natural Language Processing, pages 1397–1404, Varna, Bulgaria, Sep 2–4, 2019).*
