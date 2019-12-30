@@ -8,21 +8,27 @@
 
 Try Greynir (in Icelandic) at [https://greynir.is](https://greynir.is)
 
-*Greynir* is an exploratory project that aims to
-**extract processable information from Icelandic text**, allow
-**natural language querying** of that information and facilitate
-**natural language understanding**. Greynir is the core engine of
+*Greynir* is a natural language processing engine that
+**extracts processable information from Icelandic text**, allows
+**natural language querying** of that information and facilitates
+**natural language understanding**. Greynir is the core of
 [*Embla*](https://embla.is), a voice-based question answering app
 for smartphones and tablets.
 
 Greynir periodically scrapes chunks of text from Icelandic news sites on the web.
 It employs the [Tokenizer](https://github.com/mideind/Tokenizer) and
 [ReynirPackage](https://github.com/mideind/ReynirPackage) modules (by the same authors)
-to tokenize the text and parse the token streams according to a **hand-written context-free grammar**
-for the Icelandic language. The resulting parse forests are disambiguated using
+to tokenize the text and parse the token streams according to a
+**hand-written context-free grammar** for the Icelandic language.
+The resulting parse forests are disambiguated using
 scoring heuristics to find the best parse trees. The trees are then stored in a
 database and processed by grammatical pattern matching modules to obtain statements
 of fact and relations between stated facts.
+
+An overview of the technology behind Greynir can be found in the article
+[A Wide-Coverage Context-Free Grammar for Icelandic
+and an Accompanying Parsing System](https://acl-bg.org/proceedings/2019/RANLP%202019/pdf/RANLP160.pdf)
+by Vilhjálmur Þorsteinsson, Hulda Óladóttir and Hrafn Loftsson *(Proceedings of Recent Advances in Natural Language Processing, pages 1397–1404, Varna, Bulgaria, Sep 2–4, 2019).*
 
 <a href="https://raw.githubusercontent.com/mideind/Greynir/master/static/img/tree-example.png" title="Greynir parse tree">
 <img src="static/img/tree-example-small.png" width="400" height="450" alt="Greynir parse tree">

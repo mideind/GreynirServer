@@ -40,10 +40,10 @@ from tree import Tree
 from treeutil import TreeUtility
 
 
-# We don't bother parsing sentences that have more tokens than 85,
+# We don't bother parsing sentences that have more than 100 tokens,
 # since they require lots of memory (>16 GB) and may take
 # minutes to parse
-MAX_SENTENCE_TOKENS = 85
+MAX_SENTENCE_TOKENS = 100
 
 
 class Article:

@@ -31,6 +31,7 @@
 """
 
 import sys
+import os
 import gc
 import getopt
 import time
@@ -38,7 +39,10 @@ import logging
 
 # import traceback
 
-# from multiprocessing.dummy import Pool, cpu_count
+# Uncomment the following to force running in a single process,
+# for instance for debugging
+# from multiprocessing.dummy import Pool
+# cpu_count = lambda: 1
 from multiprocessing import Pool, cpu_count
 
 from settings import Settings, ConfigError
@@ -403,6 +407,7 @@ class Scraper:
     def stats():
         """ Return statistics from the scraping database """
 
+        # pylint: disable=no-member
         db = SessionContext.db
 
         q = "select count(*) from articles;"
@@ -595,4 +600,18 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
+
+    if os.environ.get("GREYNIR_ATTACH_PTVSD"):
+        # Attach to the VSCode PTVSD debugger, enabling remote debugging via SSH
+        # Note that you will probably also need to change the multiprocessing
+        # import to import multiprocessing.dummy
+        import ptvsd
+
+        ptvsd.enable_attach()
+        ptvsd.wait_for_attach()  # Blocks execution until debugger is attached
+        ptvsd_attached = True
+        print("Attached to PTVSD")
+    else:
+        ptvsd_attached = False
+
     sys.exit(main())
