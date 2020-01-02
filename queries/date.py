@@ -48,13 +48,14 @@
 # TODO: "Hvenær er næst hlaupár?"
 # TODO: "Hvaða árstíð er"
 # TODO: "Á hvaða vikudegi er jóladagur?"
-# TODO: "Hvað er langt til áramóta?"
+# TODO: "Hvað er langt til áramóta/í áramótin?"
 # TODO: "hvenær er fyrsti í aðventu"
 # TODO: "hvenær koma jólin"
 # TODO: "hvað eru margir dagar í árinu"
 # TODO: "hvítasunnan", "hvítasunnuhelgin"
 # TODO: "Hvaða öld er núna"
 # TODO: "hvað eru margir mánuðir í sumardaginn fyrsta" "hvað eru margar vikur í skírdag"
+# TODO: "Hvað eru margir dagar eftir af árinu?"
 
 import json
 import re
@@ -299,6 +300,7 @@ def QDateAbsOrRel(node, params, result):
     if not t:
         t = result.find_descendant(t_base="dagsföst")
     if t:
+        # TODO: Use TerminalNode's contained_date property instead
         d = terminal_date(t)
         if d:
             result["target"] = d

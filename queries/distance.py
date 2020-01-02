@@ -269,6 +269,7 @@ def handle_plain_text(q):
     if answ:
         q.set_qtype(_DISTANCE_QTYPE)
         q.set_answer(*answ)
+        q.set_source("Google Maps")
         return True
 
     return False
