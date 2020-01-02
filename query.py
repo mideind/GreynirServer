@@ -212,6 +212,8 @@ class Query:
         self._url = None
         # Client id, if known
         self._client_id = client_id
+        # Source of answer to query
+        self._source = None
         # Query context, which is None until fetched via self.fetch_context()
         # This should be a dict that can be represented in JSON
         self._context = None
@@ -516,6 +518,14 @@ class Query:
         self._url = u
 
     @property
+    def source(self):
+        """ Source of answer to this query """
+        return self._source
+
+    def set_source(self, s):
+        self._source = s
+
+    @property
     def location(self):
         return self._location
 
@@ -669,6 +679,9 @@ class Query:
         # ...and a URL, if any has been set by the query processor
         if self.url:
             result["open_url"] = self.url
+        # .. and the source, if set by query processor
+        if self.source:
+            result["source"] = self.source
         if not self._voice and qt == "Person":
             # For a person query, add an image (if available)
             img = get_image_url(self.key(), enclosing_session=self._session)

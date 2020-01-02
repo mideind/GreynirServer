@@ -193,7 +193,7 @@ def sentence(state, result):
             b = b.replace(w, _WIKIPEDIA_CANONICAL)
             b = b.replace(w.capitalize(), _WIKIPEDIA_CANONICAL)
         q.set_beautified_query(b)
-
+        q.set_source("Wikipedía")
         # Cache reply for 24 hours
         q.set_expires(datetime.utcnow() + timedelta(hours=24))
 
