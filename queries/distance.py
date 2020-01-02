@@ -24,10 +24,9 @@
 """
 
 # TODO: This module should probably use grammar instead of regexes
-# TODO: Handle travel time queries such as "Hvað er ég lengi að ganga til X?",
-#       or "Hvað er ég lengi að keyra í Y?"
 # TODO: "Hvað er langt á milli X og Y?"
 # TODO: "Hvað er langt til tunglsins"? "Hvað er langt til Mars?"
+# TODO: Identify when user is present at the location, respond "Þú ert í/á X"
 
 import re
 import logging
@@ -54,13 +53,13 @@ _QDISTANCE_REGEXES = (
     r"^hvað er ég langt í burtu frá (.+)$",
     r"^hversu langt er ég frá (.+)$",
     r"^hve langt er ég frá (.+)$",
-    r"^hvað er langt á (.+)$",
+    r"^hvað er langt\s?(?:austur|vestur|norður|suður)? á (.+)$",
     r"^hvað er langt upp á (.+)$",
-    r"^hvað er langt í ([^0-9.].+)$",
+    r"^hvað er langt\s?(?:austur|vestur|norður|suður)? í ([^0-9.].+)$",
     r"^hvað er langt upp í (.+)$",
     r"^hvað er langt til (.+)$",
     r"^hvað er langt út á ([^0-9.].+)$",
-    r"^hversu langt er til (.+)$",
+    r"^hversu langt er\s?(?:austur|vestur|norður|suður)? til (.+)$",
     r"^hversu langt er út á (.+)$",
 )
 
@@ -92,17 +91,14 @@ _TT_MODES = {
     "fara á bílnum": "driving",
 }
 
-_TT_PREPS = (
-    "á",
-    "í",
-    "til",
-    "upp á",
-    "upp í",
-    "upp til",
-    "niður á",
-    "niður í",
-    "niður til",
-)
+_PREPS = ("á", "í", "til")
+_TT_PREP_PREFIX = ("upp", "niður", "vestur", "norður", "austur", "suður")
+_TT_PREPS = []
+
+for p in _PREPS:
+    _TT_PREPS.append(p)
+    for pfx in _TT_PREP_PREFIX:
+        _TT_PREPS.append(pfx + " " + p)
 
 _PREFIX_RX = r"{0}".format("|".join(_TT_PREFIXES))
 _VERBS_RX = r"{0}".format("|".join(_TT_MODES.keys()))
