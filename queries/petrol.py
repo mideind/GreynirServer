@@ -23,8 +23,12 @@
 
 """
 
+# TODO: "Hver er ódýrasta bensínstöðin innan X kílómetra?"
+
+
 import logging
 import cachetools
+import random
 
 from geo import distance
 from queries import (
@@ -51,7 +55,7 @@ def help_text(lemma):
                 "Hvar er næsta bensínstöð",
                 "Hvar fæ ég ódýrasta bensínið",
                 "Hvar er ódýrt að fylla tankinn",
-                "Hvar fæ ég ódýrt bensín í nágrenninu"
+                "Hvar fæ ég ódýrt bensín í nágrenninu",
             )
         )
     )
@@ -100,19 +104,28 @@ QPetrolCheapestStation →
 QPetrolClosestCheapestStation →
     "ódýrt" "bensín" QPetrolNearMe?
     | "hvar" "fæ" "ég" "ódýrt" "bensín" QPetrolNearMe?
+    | "hvar" "fæ" "ég" "ódýrasta" "bensínið" QPetrolNearMe
     | "hvar" "fæ" "ég" "bensínlítrann" "ódýrt" QPetrolNearMe?
     | "hvar" "fær" "maður" "ódýrt" "bensín" QPetrolNearMe?
+    | "hvar" "fær" "maður" "ódýrasta" "bensínið" QPetrolNearMe
     | "hvar" "fær" "maður" "bensín" "ódýrt" QPetrolNearMe?
-    | "hvar" "fær" "maður" "bensínlítran" "ódýrt" QPetrolNearMe?
+    | "hvar" "fær" "maður" "bensínið" "ódýrt" QPetrolNearMe
+    | "hvar" "fær" "maður" "bensínlítrann" "ódýrt" QPetrolNearMe?
     | "hvar" "er" "bensínið" "ódýrt" QPetrolNearMe?
+    | "hvar" "er" "bensínið" "ódýrast" QPetrolNearMe
     | "hvar" "er" "bensínlítrinn" "ódýr" QPetrolNearMe?
+    | "hvar" "er" "bensínlítrinn" "ódýrastur" QPetrolNearMe
     | "hvar" "er" "ódýrt" "bensín" QPetrolNearMe?
     | "hvar" "er" "ódýrt" "að" "kaupa" "bensín" QPetrolNearMe?
     | "hvaða" "bensínstöð" QPetrolNearMe? "er" "með" "ódýrt" "bensín"
     | "hvaða" "bensínstöð" QPetrolNearMe? "er" "ódýr"
     | "hvaða" "bensínstöð" QPetrolNearMe? "er" "með" "lágt" "verð"
     | "hvaða" "bensínstöð" QPetrolNearMe? "er" "með" "lágt" "verð" "á" "bensíni"
-    | "hvar" "er" "ódýrast" "að" "fylla" "á"? "tankinn" QPetrolNearMe?
+    | "hvaða" "bensínstöð" "er" "með" "ódýrt" "bensín" QPetrolNearMe?
+    | "hvaða" "bensínstöð" "er" "ódýr" QPetrolNearMe?
+    | "hvaða" "bensínstöð" "er" "með" "lágt" "verð" QPetrolNearMe?
+    | "hvaða" "bensínstöð" "er" "með" "lágt" "verð" "á" "bensíni" QPetrolNearMe?
+    | "hvar" "er" "ódýrast" "að" "fylla" "á"? "tankinn" QPetrolNearMe
     | "hvar" "er" "ódýrt" "að" "fylla" "á"? "tankinn" QPetrolNearMe?
     | "hvar" "get" "ég" "fyllt" "á" "tankinn" "ódýrt" QPetrolNearMe?
 
@@ -158,7 +171,7 @@ _PETROL_API = "https://apis.is/petrol"
 _PETROL_CACHE_TTL = 3600  # seconds
 
 
-# @cachetools.cached(cachetools.TTLCache(1, _PETROL_CACHE_TTL))
+@cachetools.cached(cachetools.TTLCache(1, _PETROL_CACHE_TTL))
 def _get_petrol_station_data():
     """ Fetch list of petrol stations w. prices from apis.is """
     pd = query_json_api(_PETROL_API)
@@ -167,29 +180,60 @@ def _get_petrol_station_data():
     return pd["results"]
 
 
-def _closest_petrol_station(loc):
-    """ Find petrol station closest to the given location. """
+def _stations_with_distance(loc):
+    """ Return list of petrol stations w. added distance data. """
     pd = _get_petrol_station_data()
     if not pd:
         return None
 
-    lat, lon = loc
+    if loc:
+        # Calculate distance of all stations
+        lat, lon = loc
+        for s in pd:
+            s["distance"] = distance((lat, lon), (s["geo"]["lat"], s["geo"]["lon"]))
 
-    # Calculate distance of all stations
-    for s in pd:
-        s["distance"] = distance((lat, lon), (s["geo"]["lat"], s["geo"]["lon"]))
+    return pd
 
-    dist_sorted = sorted(pd, key=lambda s: s["distance"])
+
+def _closest_petrol_station(loc):
+    """ Find petrol station closest to the given location. """
+    stations = _stations_with_distance(loc)
+    if not stations:
+        return None
+
+    # Sort by distance
+    dist_sorted = sorted(stations, key=lambda s: s["distance"])
     if dist_sorted:
         return dist_sorted[0]
 
 
-def _cheapest_petrol_station():
-    pass
+def _cheapest_petrol_station(loc):
+    stations = _stations_with_distance(loc)
+    if not stations:
+        return None
+
+    # Sort by price
+    price_sorted = sorted(stations, key=lambda s: s["bensin95"])
+    if price_sorted:
+        return price_sorted[0]
 
 
-def _closest_cheapest_petrol_station():
-    pass
+# Too liberal?
+_CLOSE_DISTANCE = 5.0  # km
+
+
+def _closest_cheapest_petrol_station(loc):
+    stations = _stations_with_distance(loc)
+    if not stations:
+        return None
+
+    # Filter out all stations that are not close by
+    filtered = filter(lambda x: x["distance"] <= _CLOSE_DISTANCE, stations)
+
+    # Sort by price
+    price_sorted = sorted(filtered, key=lambda s: s["bensin95"])
+    if price_sorted:
+        return price_sorted[0]
 
 
 _ERRMSG = "Ekki tókst að sækja upplýsingar um bensínstöðvar."
@@ -221,7 +265,9 @@ def _answ_for_petrol_query(q, result):
 
     answer = answ_fmt.format(station["company"], station["name"], dist_nf, kr_desc)
     response = dict(answer=answer)
-    voice = voice_fmt.format(desc, station["company"], station["name"], dist_þf, kr_desc)
+    voice = voice_fmt.format(
+        desc, station["company"], station["name"], dist_þf, kr_desc
+    )
 
     return response, answer, voice
 
@@ -242,6 +288,7 @@ def sentence(state, result):
                 q.set_qtype(result.qtype)
                 q.set_key(result.qkey)
                 q.set_answer(*answ)
+                q.set_source("Gasvaktin")
         except Exception as e:
             logging.warning("Exception while processing petrol query: {0}".format(e))
             q.set_error("E_EXCEPTION: {0}".format(e))

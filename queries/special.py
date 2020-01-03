@@ -42,7 +42,7 @@ _CAP = (
     "Þú getur til dæmis spurt mig um höfuðborgir.",
     "Þú getur til dæmis spurt mig um tíma og dagsetningu.",
     "Þú getur til dæmis spurt mig um strætósamgöngur.",
-    "Þú getur til dæmis spurt mig um fjarlægðir.",
+    "Þú getur til dæmis spurt mig um fjarlægðir og ferðatíma.",
     "Þú getur til dæmis spurt mig um gengi gjaldmiðla.",
     "Þú getur til dæmis beðið mig um að kasta teningi.",
     "Þú getur til dæmis spurt mig um staðsetningu.",
@@ -52,6 +52,7 @@ _CAP = (
     "Þú getur til dæmis beðið mig um að leysa einföld reikningsdæmi.",
     "Þú getur til dæmis spurt mig um mælieiningar.",
     "Þú getur til dæmis spurt mig hvað er í sjónvarpinu.",
+    "Þú getur til dæmis spurt mig um bensínverð og bensínstöðvar.",
 )
 
 
