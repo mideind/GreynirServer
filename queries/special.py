@@ -870,6 +870,9 @@ _SPECIAL_QUERIES = {
     "hver er ástæðan fyrir þessu öllu": _MEANING_OF_LIFE,
     "hvaða þýðingu hefur þetta allt": _MEANING_OF_LIFE,
     "hvað þýðir þetta allt saman": _MEANING_OF_LIFE,
+    "hvað er 42": {
+        "answer": "Sex sinnum sjö" # :)
+    },
     "hvað er best í lífinu": {
         "answer": "Að horfa á kvikmynd um villimanninn Kónan."
     },

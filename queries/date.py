@@ -174,8 +174,11 @@ QDateHowLongSince →
 
 QDateIsAre → "er" | "eru"
 
+QDateCome → "koma" | "kemur"
+
 QDateWhenIs →
     "hvenær" QDateIsAre QDateSpecialDay_nf
+    | "hvenær" QDateCome QDateSpecialDay_nf
     | "hvaða" "dagur" "er" QDateSpecialDay_nf
     | "á" "hvaða" "degi" QDateIsAre QDateSpecialDay_nf
 
