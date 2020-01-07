@@ -175,6 +175,31 @@ def test_query_api(client):
     assert json["voice"].lower().startswith("klukkan í japan er")
 
     # Date module
+    SPECIAL_DAYS = (
+        "jólin",
+        "gamlársdagur",
+        "nýársdagur",
+        "hvítasunna",
+        "páskar",
+        "þjóðhátíðardagurinn",
+        "baráttudagur verkalýðsins",
+        "öskudagur",
+        "skírdagur",
+        "sumardagurinn fyrsti",
+        "verslunarmannahelgi",
+        #"þorláksmessa",
+        "föstudagurinn langi",
+        "menningarnótt",
+        "sjómannadagurinn",
+        "dagur íslenskrar tungu",
+        "annar í jólum",
+    )
+    for d in SPECIAL_DAYS:
+        qstr = "hvenær er " + d
+        resp = client.get("/query.api?q=" + qstr)
+        json = validate_json(resp)
+        assert json["qtype"] == "Date"
+
     resp = client.get("/query.api?q=Hver er dagsetningin?")
     json = validate_json(resp)
     assert json["qtype"] == "Date"

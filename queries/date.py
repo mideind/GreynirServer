@@ -53,6 +53,7 @@
 # TODO: "hvað eru margir mánuðir í sumardaginn fyrsta" "hvað eru margar vikur í skírdag"
 # TODO: "Hvað eru margir dagar eftir af árinu?"
 # TODO: "hvaða dagur er á morgun"
+# TODO: "Þorláksmessa" not working
 
 
 import json
