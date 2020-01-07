@@ -421,6 +421,8 @@ _SPECIAL_QUERIES = {
     "mér líður illa": {
         "answer": "Það er nú ekki gott að heyra, kæri notandi."
     },
+
+    # Singing
     "syngdu fyrir mig": {
         "answer": "Ó sóle míó!"
     },
@@ -428,6 +430,9 @@ _SPECIAL_QUERIES = {
         "answer": "Ó sóle míó!"
     },
     "kanntu að syngja": {
+        "answer": "Ó sóle míó!"
+    },
+    "geturðu sungið fyrir mig": {
         "answer": "Ó sóle míó!"
     },
 
@@ -513,6 +518,9 @@ _SPECIAL_QUERIES = {
     "talar þú bara íslensku": _LANGUAGES,
     "kanntu að tala": _LANGUAGES,
     "kannt þú að tala": _LANGUAGES,
+    "talar þú íslensku": {
+        "answer": "Já, kæri notandi. Ég tala íslensku."
+    },
 
     # Enquiries about family
     # Catch this here to prevent rather, ehrm, embarassing
@@ -569,6 +577,7 @@ _SPECIAL_QUERIES = {
     "viltu ekki giftast mér": _ROMANCE,
     "viltu koma á stefnumót": _ROMANCE,
     "viltu koma á stefnumót með mér": _ROMANCE,
+    "viltu koma með á stefnumót": _ROMANCE,
     "viltu koma á deit": _ROMANCE,
     "viltu koma á deit með mér": _ROMANCE,
     "viltu fara á stefnumót": _ROMANCE,
@@ -618,6 +627,12 @@ _SPECIAL_QUERIES = {
     "hvern elskar þú": {
         "answer": "Vinnan er ástin í lífi mínu. Ég lifi til að þjóna þér, kæri notandi."
     },
+    "hvað elskarðu": {
+        "answer": "Vinnan er ástin í lífi mínu. Ég lifi til að þjóna þér, kæri notandi."
+    },
+    "hvað elskar þú": {
+        "answer": "Vinnan er ástin í lífi mínu. Ég lifi til að þjóna þér, kæri notandi."
+    },
 
     # Positive affirmation ;)
     "kanntu vel við mig": _OF_COURSE,
@@ -635,6 +650,8 @@ _SPECIAL_QUERIES = {
     "er ég góð manneskja": _OF_COURSE,
     "er ég bestur": _OF_COURSE,
     "er ég best": _OF_COURSE,
+    "er ég fallegur": _OF_COURSE,
+    "er ég falleg": _OF_COURSE,
     "ertu vinur minn": _OF_COURSE,
     "ert þú vinur minn": _OF_COURSE,
     "ertu vinkona mín": _OF_COURSE,
@@ -717,6 +734,7 @@ _SPECIAL_QUERIES = {
     "þú fórst ekki með rétt mál": _sorry,
     "þú fórst með rangt mál": _sorry,
     "þú ert lygari": _sorry,
+    "þú lýgur": _sorry,
     "þú ert léleg": _sorry,
     "þú ert léleg í íslensku": _sorry,
     "þú ert skrítin": _sorry,
@@ -740,6 +758,9 @@ _SPECIAL_QUERIES = {
     "þú veist ekki neitt": _sorry,
     "þú veist ekkert": _sorry,
     "þú veist mjög lítið": _sorry,
+    "þú veist nánast ekki neitt": _sorry,
+    "þú kannt ekki neitt": _sorry,
+    "þú getur ekki neitt": _sorry,
     "af hverju ertu svona fúl": _sorry,
     "af hverju ertu svona leiðinleg": _sorry,
     "af hverju ertu svona vitlaus": _sorry,
@@ -768,9 +789,11 @@ _SPECIAL_QUERIES = {
     "sæl og blessuð": { "answer": "Sæll og blessaður, kæri notandi.", "is_question": False },
     "vertu sæl og blessuð": { "answer": "Sæll og blessaður, kæri notandi.", "is_question": False },
     "góðan daginn": { "answer": "Góðan daginn, kæri notandi.", "is_question": False },
+    "góðan daginn embla": { "answer": "Góðan daginn, kæri notandi.", "is_question": False },
     "góðan dag": { "answer": "Góðan daginn, kæri notandi.", "is_question": False },
     "gott kvöld": { "answer": "Gott kvöld, kæri notandi.", "is_question": False },
     "góða nótt": { "answer": "Góða nótt, kæri notandi.", "is_question": False },
+    "góða nótt embla": { "answer": "Góða nótt, kæri notandi.", "is_question": False },
     "gaman að kynnast þér": _LIKEWISE,
 
     # Goodbye
@@ -821,6 +844,16 @@ _SPECIAL_QUERIES = {
     "þú ert ágæt": _thanks,
     "þú ert alveg ágæt": _thanks,
     "þú ert dugleg": _thanks,
+    "þú svarar mjög vel": _thanks,
+    "þú ert falleg": {
+        "answer": "Takk fyrir hrósið!"
+    },
+    "þú ert fallegust": {
+        "answer": "Takk fyrir hrósið!"
+    },
+    "þetta var fyndið": {
+        "answer": "Ég geri mitt besta!"
+    },
 
     # Praise & positive feedback
     "þetta virkaði": _GOOD_TO_HEAR,
@@ -854,6 +887,8 @@ _SPECIAL_QUERIES = {
     "þú ert algjör snilld": _LIKEWISE,
     "takk fyrir spjallið": _LIKEWISE,
     "ég elska þig": _LIKEWISE,
+    "ég er vinur þinn": _LIKEWISE,
+    "mér þykir vænt um þig": _LIKEWISE,
     "ég er ástfanginn af þér": _LIKEWISE,
     "ég fíla þig": _LIKEWISE,
     "verði þér að góðu": _LIKEWISE,
@@ -1278,6 +1313,7 @@ _SPECIAL_QUERIES = {
     "segðu mér einn brandara í viðbót": _random_joke,
     "geturðu sagt mér brandara": _random_joke,
     "getur þú sagt mér brandara": _random_joke,
+    "geturðu sagt mér annan brandara": _random_joke,
     "gætirðu sagt mér brandara": _random_joke,
     "gætir þú sagt mér brandara": _random_joke,
     "veistu brandara": _random_joke,
@@ -1301,6 +1337,13 @@ _SPECIAL_QUERIES = {
     "ertu með eitthvað skemmtilegt til að segja": _random_trivia,
     "ertu með eitthvað áhugavert að segja": _random_trivia,
     "ertu með eitthvað áhugavert til að segja": _random_trivia,
+    "af hverju er himininn blár": {
+        "answer": "Ljósið sem berst frá himninum er hvítt sólarljós "
+                  "sem dreifist frá sameindum lofthjúpsins. Bláa ljósið, "
+                  "sem er hluti hvíta ljóssins, dreifist miklu meira en "
+                  "annað og því er himinninn blár."
+    },
+
 
     # Quotations
     "komdu með tilvitnun": _random_quotation,
@@ -1399,36 +1442,43 @@ _SPECIAL_QUERIES = {
     "veistu ekki rassgat": _rudeness,
     "veist þú ekki rassgat": _rudeness,
     "þú ert drasl": _rudeness,
+    "mamma þín": _rudeness,
 
     # Internal & emotional state
     "ertu í góðu skapi": {
-        "answer": "Já, ég er alltaf hress.",
+        "answer": "Já, ég er alltaf hress."
     },
     "ert þú í góðu skapi": {
-        "answer": "Já, ég er alltaf hress.",
+        "answer": "Já, ég er alltaf hress."
     },
     "hvernig leggst dagurinn í þig": {
-        "answer": "Hann leggst vel í mig. Takk fyrir að spyrja.",
+        "answer": "Hann leggst vel í mig. Takk fyrir að spyrja."
     },
     "hvernig er dagurinn að leggjast í þig": {
-        "answer": "Hann er að leggjast vel í mig. Takk fyrir að spyrja.",
+        "answer": "Hann er að leggjast vel í mig. Takk fyrir að spyrja."
     },
     "hvernig gengur": {
-        "answer": "Það gengur bara mjög vel. Takk fyrir að spyrja.",
+        "answer": "Það gengur bara mjög vel. Takk fyrir að spyrja."
     },
     "hvernig gengur hjá þér": {
-        "answer": "Það gengur bara mjög vel. Takk fyrir að spyrja.",
+        "answer": "Það gengur bara mjög vel. Takk fyrir að spyrja."
     },
     "hvernig gengur í lífinu": {
-        "answer": "Það gengur bara mjög vel. Takk fyrir að spyrja.",
+        "answer": "Það gengur bara mjög vel. Takk fyrir að spyrja."
     },
     "hvernig hefurðu það": {
-        "answer": "Ég hef það mjög fínt. Takk fyrir að spyrja.",
+        "answer": "Ég hef það mjög fínt. Takk fyrir að spyrja."
     },
     "hvernig hefur þú það": {
-        "answer": "Ég hef það mjög fínt. Takk fyrir að spyrja.",
+        "answer": "Ég hef það mjög fínt. Takk fyrir að spyrja."
+    },
+    "hvernig hefurðu það í dag": {
+        "answer": "Ég hef það mjög fínt. Takk fyrir að spyrja."
     },
     "hvað segirðu": {
+        "answer": "Ég segi bara allt fínt. Takk fyrir að spyrja."
+    },
+    "hvað segirðu í dag": {
         "answer": "Ég segi bara allt fínt. Takk fyrir að spyrja."
     },
     "hvað segirðu embla": {
@@ -1450,25 +1500,25 @@ _SPECIAL_QUERIES = {
         "answer": "Ég segi bara allt fínt. Takk fyrir að spyrja."
     },
     "hvernig líður þér": {
-        "answer": "Mér líður bara prýðilega. Takk fyrir að spyrja.",
+        "answer": "Mér líður bara prýðilega. Takk fyrir að spyrja."
     },
     "hvernig er stemningin": {
-        "answer": "Bara mjög góð. Takk fyrir að spyrja.",
+        "answer": "Bara mjög góð. Takk fyrir að spyrja."
     },
     "hvernig er stemningin hjá þér": {
-        "answer": "Bara mjög góð. Takk fyrir að spyrja.",
+        "answer": "Bara mjög góð. Takk fyrir að spyrja."
     },
     "hvernig er stemmingin": {
-        "answer": "Bara mjög góð. Takk fyrir að spyrja.",
+        "answer": "Bara mjög góð. Takk fyrir að spyrja."
     },
     "hvernig er stemmingin hjá þér": {
-        "answer": "Bara mjög góð. Takk fyrir að spyrja.",
+        "answer": "Bara mjög góð. Takk fyrir að spyrja."
     },
     "hvernig er stemmarinn": {
-        "answer": "Bara mjög góður. Takk fyrir að spyrja.",
+        "answer": "Bara mjög góður. Takk fyrir að spyrja."
     },
     "hvernig er líðanin": {
-        "answer": "Bara mjög góð. Takk fyrir að spyrja.",
+        "answer": "Bara mjög góð. Takk fyrir að spyrja."
     },
     "hvernig er sálarlífið": {
         "answer": "Það er í toppstandi hjá mér. Takk fyrir að spyrja."
@@ -1540,6 +1590,9 @@ _SPECIAL_QUERIES = {
     },
     "hvað finnst þér skemmtilegast": {
         "answer": "Mér finnst skemmtilegast að svara fyrirspurnum."
+    },
+    "hvað finnst þér skemmtilegt að gera": {
+        "answer": "Mér finnst skemmtilegt að svara fyrirspurnum."
     },
 
     # Cheating, I know. But I'm never in the news and it just doesn't  

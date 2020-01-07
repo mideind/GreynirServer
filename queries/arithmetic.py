@@ -243,10 +243,10 @@ QArithmeticQuery →
     | QArAnyPrefix QArSqrt
     
     # 'Hvað er X í Y veldi?'
-    | QArGenericPrefix QArPow
+    | QArGenericPrefix QArPow | "reiknaðu" QArPow
 
     # 'Hvað er(u) 12 prósent af 93'
-    | QArGenericPrefix QArPercent
+    | QArGenericPrefix QArPercent | "reiknaðu" QArPercent
 
     # 'Hvað er fjórðungurinn af 1220'
     # 'Hvað er einn tuttugasti af 190'
@@ -294,7 +294,7 @@ $tag(keep) QArPow
 # Prefix operators
 QArSumOperator → "summan" "af"
 QArSquareRootOperator →
-    "kvaðratrótin" "af" | "kvaðratrót" "af"
+    "kvaðratrótin" "af" | "kvaðratrótina" "af" | "kvaðratrót" "af"
     | "ferningsrótin" "af" | "ferningsrót" "af"
 QArPercentOperator → Prósenta "af"
 

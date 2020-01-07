@@ -89,6 +89,7 @@ QWikiQuery →
     | "hvaða" "upplýsingum" "býr" QWikipedia "yfir" "varðandi" QWikiSubject
     | "hvað" "myndi" QWikipedia "segja" "mér"? "um" QWikiSubject
     | "fræddu" "mig" "um" QWikiSubject
+    | "geturðu" "frætt" "mig" "um" QWikiSubject
     # | "flettu" "upp" QWikiSubject "í" QWikipedia
     # | "hvað" "er" QWikiSubject "samkvæmt" QWikipedia
     # | "hver" "er QWikiSubject "samkvæmt" QWikipedia
