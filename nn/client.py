@@ -82,7 +82,7 @@ class ApiClient:
         data = json.loads(request.data)
         required_diff = set(self.required_fields).difference(data.keys())
         if required_diff:
-            return (False,  "{} are required fields.".format(", ".join(required_diff)))
+            return (False, "{} are required fields.".format(", ".join(required_diff)))
 
         for field in self.default_field_values:
             if field not in data:
@@ -94,7 +94,10 @@ class ApiClient:
         """ Modifies data to comply with the remote server input format.
         """
         return {
-            "pgs": data['contents']
+            "pgs": data["contents"],
+            "source": data["sourceLanguageCode"],
+            "target": data["targetLanguageCode"],
+            "model": data["model"]
         }
 
     def get(self, data):
@@ -106,7 +109,7 @@ class ApiClient:
     def post(self, data):
         """ Handler for POST requests.
         """
-        response = requests.post(self._url, json.dumps(data), headers=self.headers)
+        response = requests.post(self._url, json.dumps(data), headers=self.headers, timeout=300)
         return response.text
 
     def dispatch(self, request):
@@ -134,12 +137,10 @@ class TranslationApiClient(ApiClient):
         "contents",
     )
 
-    target = "en"
-    source = "is"
-
     default_field_values = {
         "targetLanguageCode": "en",
-        "sourceLanguageCode": "is"
+        "sourceLanguageCode": "is",
+        "model": "transformer"
     }
 
     port = Settings.NN_TRANSLATION_PORT
@@ -156,7 +157,8 @@ class TranslationApiClient(ApiClient):
                     {
                         "translatedText": val["outputs"],
                         "scores": val["scores"],  # Not part of the Google API
-                        "model": "{}-{}".format(
+                        "model": "{}-{}-{}".format(
+                            self._data['model'],
                             self._data['sourceLanguageCode'],
                             self._data['targetLanguageCode'],
                         )
