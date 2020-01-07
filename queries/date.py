@@ -47,14 +47,13 @@
 # TODO: "Hvenær er næst hlaupár?"
 # TODO: "Hvaða árstíð er"
 # TODO: "Á hvaða vikudegi er jóladagur?"
-# TODO: "Hvað er langt til áramóta/í áramótin?"
 # TODO: "hvenær er fyrsti í aðventu"
-# TODO: "hvenær koma jólin"
 # TODO: "hvað eru margir dagar í árinu"
-# TODO: "hvítasunnan", "hvítasunnuhelgin"
 # TODO: "Hvaða öld er núna"
 # TODO: "hvað eru margir mánuðir í sumardaginn fyrsta" "hvað eru margar vikur í skírdag"
 # TODO: "Hvað eru margir dagar eftir af árinu?"
+# TODO: "hvaða dagur er á morgun"
+
 
 import json
 import re
@@ -101,6 +100,8 @@ TOPIC_LEMMAS = [
     "verslunarmannahelgi",
     "frídagur",
     "menningarnótt",
+    "áramót",
+    "ár",
 ]
 
 
@@ -203,6 +204,7 @@ QDateSpecialDay/fall →
     | QDateChristmasDay/fall
     | QDateNewYearsEve/fall
     | QDateNewYearsDay/fall
+    | QDateNewYear/fall
     | QDateWorkersDay/fall
     | QDateEaster/fall
     | QDateEasterSunday/fall
@@ -226,7 +228,9 @@ QDateSpecialDay/fall →
     | QDateWinterSolstice/fall
 
 QDateWhitsun/fall →
-    'hvítasunnudagur:kk'_et/fall
+    'hvítasunnudagur:kk'_et/fall 
+    | 'hvítasunna:kvk'_et/fall 
+    | 'hvítasunnuhelgi:kvk'_et/fall
 
 QDateAscensionDay/fall →
     'uppstigningardagur:kk'_et/fall
@@ -258,10 +262,14 @@ QDateChristmasDay/fall →
     | 'jóladagur:kk'_et/fall
 
 QDateNewYearsEve/fall →
-    'gamlárskvöld:hk'_et/fall
+    'gamlárskvöld:hk'_et/fall 
+    | 'gamlársdagur:kk'_et/fall
 
 QDateNewYearsDay/fall →
     'nýársdagur:kk'_et/fall
+
+QDateNewYear/fall →
+    'áramót:hk'_ft/fall
 
 QDateWorkersDay/fall →
     'baráttudagur:kk'_et/fall 'verkalýður:kk'_et_ef
@@ -423,13 +431,23 @@ def QDateChristmasDay(node, params, result):
 
 
 def QDateNewYearsEve(node, params, result):
-    result["desc"] = "gamlárskvöld"
+    result["desc"] = "gamlársdagur"
     result["target"] = dnext(datetime(year=datetime.today().year, month=12, day=31))
 
 
 def QDateNewYearsDay(node, params, result):
     result["desc"] = "nýársdagur"
     result["target"] = dnext(datetime(year=datetime.today().year + 1, month=1, day=1))
+
+
+def QDateNewYear(node, params, result):
+    result["desc"] = "áramótin"
+    result["is_verb"] = "eru"
+    result["target"] = dnext(
+        datetime(
+            year=datetime.today().year + 1, month=1, day=1, hour=0, minute=0, second=0
+        )
+    )
 
 
 def QDateWorkersDay(node, params, result):
