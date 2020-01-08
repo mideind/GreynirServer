@@ -55,6 +55,7 @@
 # TODO: "hvaða dagur er á morgun"
 # TODO: "Þorláksmessa" not working
 # TODO: "hvenær er næst fullt tungl"
+# TODO: Specify weekday in "hvenær er" queries (e.g. "Sjómannadagurinn er *sunnudaginn* 7. júní")
 
 
 import json
@@ -225,12 +226,12 @@ QDateSpecialDay/fall →
     | QDatePalmSunday/fall
     | QDateMothersDay/fall
     | QDateSeamensDay/fall
-    | QDateFirstDayOfWinter/fall
     | QDateFathersDay/fall
     | QDateIcelandicTongueDay/fall
     | QDateSecondChristmasDay/fall
-    | QDateSummerSolstice/fall
-    | QDateWinterSolstice/fall
+    # | QDateFirstDayOfWinter/fall
+    # | QDateSummerSolstice/fall
+    # | QDateWinterSolstice/fall
 
 QDateWhitsun/fall →
     'hvítasunnudagur:kk'_et/fall 
@@ -332,7 +333,8 @@ QDateFirstDayOfWinter/fall →
     | 'fyrstur:lo'_et_kk/fall 'vetrardagur:kk'_et_gr/fall
 
 QDateFathersDay/fall →
-    'feðradagur:kk'_et/fall
+    'feðradagur:kk'_et/fall # Why doesn't this work? 
+    | "feðradagur" | "feðradagurinn" # Hack
 
 QDateIcelandicTongueDay/fall →
     'dagur:kk'_et/fall "íslenskrar" "tungu"
@@ -508,42 +510,42 @@ def QDateValentinesDay(node, params, result):
 
 def QDateMansDay(node, params, result):
     result["desc"] = "bóndadagur"
-    result["target"] = None  # To be completed
+    jan19 = dnext(datetime(year=datetime.today().year, month=1, day=19))
+    result["target"] = next_weekday(jan19, 4)  # First Friday after Jan 19
 
 
 def QDateWomansDay(node, params, result):
     result["desc"] = "konudagur"
-    result["target"] = None  # To be completed
+    feb18 = dnext(datetime(year=datetime.today().year, month=2, day=18))
+    result["target"] = next_weekday(feb18, 6)  # First Sunday after Feb 18
 
 
 def QDateMardiGrasDay(node, params, result):
     result["desc"] = "sprengidagur"
-    result["target"] = None  # To be completed
+    result["target"] = next_easter() - timedelta(days=47)
 
 
 def QDatePalmSunday(node, params, result):
     result["desc"] = "pálmasunnudagur"
-    result["target"] = None  # To be completed
+    result["target"] = next_easter() - timedelta(days=7)  # Week before Easter Sunday
 
 
 def QDateMothersDay(node, params, result):
     result["desc"] = "mæðradagur"
-    result["target"] = None  # To be completed
+    may8 = dnext(datetime(year=datetime.today().year, month=5, day=8))
+    result["target"] = next_weekday(may8, 6)  # Second Sunday in May
 
 
 def QDateSeamensDay(node, params, result):
     result["desc"] = "sjómannadagur"
-    result["target"] = None  # To be completed
-
-
-def QDateFirstDayOfWinter(node, params, result):
-    result["desc"] = "fyrsti vetrardagur"
-    result["target"] = None  # To be completed
+    june1 = dnext(datetime(year=datetime.today().year, month=6, day=1))
+    result["target"] = next_weekday(june1, 6)  # First Sunday in June
 
 
 def QDateFathersDay(node, params, result):
     result["desc"] = "feðradagur"
-    result["target"] = None  # To be completed
+    nov8 = dnext(datetime(year=datetime.today().year, month=5, day=8))
+    result["target"] = next_weekday(nov8, 6)  # Second Sunday in May
 
 
 def QDateIcelandicTongueDay(node, params, result):
@@ -554,6 +556,11 @@ def QDateIcelandicTongueDay(node, params, result):
 def QDateSecondChristmasDay(node, params, result):
     result["desc"] = "annar í jólum"
     result["target"] = dnext(datetime(year=datetime.today().year, month=12, day=26))
+
+
+def QDateFirstDayOfWinter(node, params, result):
+    result["desc"] = "fyrsti vetrardagur"
+    result["target"] = None  # To be completed
 
 
 def QDateSummerSolstice(node, params, result):
