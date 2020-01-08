@@ -16,6 +16,9 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see http://www.gnu.org/licenses/.
 """
+import os
+import json
+import requests
 
 from routes import routes, better_jsonify, text_from_request, bool_from_request, restricted
 from flask import request
@@ -91,3 +94,21 @@ def translate_api(version=1):
     from nn.client import TranslationApiClient
     tc = TranslationApiClient()
     return tc.dispatch(request)
+
+
+@routes.route("/nn/googletranslate.api", methods=["GET", "POST"])
+@routes.route("/nn/googletranslate.api/v<int:version>", methods=["GET", "POST"])
+@cross_origin()
+def google_translate_api(version=1):
+    """ Thin Google translate API wrapper """
+    url = "https://www.googleapis.com/language/translate/v2"
+    data = json.loads(request.data)
+    params = {
+        "q": data["contents"],
+        "source": data["sourceLanguageCode"],
+        "target": data["targetLanguageCode"],
+        "key": os.environ.get("GOOGLE_TRANSLATE_KEY", "")
+    }
+    headers = {"content-type": "application/json; charset=UTF-8"}
+    r = requests.get(url, params=params, headers=headers)
+    return json.dumps(json.loads(r.text).get("data", {"translations": []}))
