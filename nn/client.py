@@ -29,6 +29,7 @@ import json
 from flask import abort
 import requests
 
+from nn.utils import split_text
 from settings import Settings
 
 
@@ -148,6 +149,13 @@ class TranslationApiClient(ApiClient):
     action = "translate.api"
 
     https = False
+
+    def parse_for_remote(self, data):
+        """ Modifies data to comply with the remote server input format.
+        """
+        data = super().parse_for_remote(data)
+        data["content"] = split_text(data["content"])
+        return data
 
     def post(self, data):
         response = json.loads(super().post(data))
