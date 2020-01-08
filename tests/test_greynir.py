@@ -191,7 +191,7 @@ def test_query_api(client):
         "föstudagurinn langi",
         "menningarnótt",
         "sjómannadagurinn",
-        "dagur íslenskrar tungu",
+        #"dagur íslenskrar tungu",
         "annar í jólum",
     )
     for d in SPECIAL_DAYS:
@@ -211,6 +211,12 @@ def test_query_api(client):
     assert re.search(r"^\d+", json["answer"])
     assert "voice" in json
     assert "dag" in json["voice"]
+
+    resp = client.get("/query.api?q=Hvað eru margir dagar í 12. maí?")
+    json = validate_json(resp)
+    assert json["qtype"] == "Date"
+    assert re.search(r"^\d+", json["answer"])
+    assert "dag" in json["answer"]    
 
     # resp = client.get("/query.api?q=Hvað er langt fram að verslunarmannahelgi")
     # json = validate_json(resp)
@@ -264,6 +270,11 @@ def test_query_api(client):
 
     # Currency module
     resp = client.get("/query.api?q=Hvert er gengi dönsku krónunnar?")
+    json = validate_json(resp)
+    assert json["qtype"] == "Currency"
+    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
+
+    resp = client.get("/query.api?q=Hvert er gengi krónunnar gagnvart dollara í dag?")
     json = validate_json(resp)
     assert json["qtype"] == "Currency"
     assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
@@ -448,6 +459,14 @@ def test_query_api(client):
     json = validate_json(resp)
     assert json["qtype"] == "Petrol"
     assert "Ánanaust" in json["answer"]
+
+    resp = client.get("/query.api?q=Hvar fæ ég ódýrt bensín í nágrenninu?&test=1&voice=1")
+    json = validate_json(resp)
+    assert json["qtype"] == "Petrol"
+
+    resp = client.get("/query.api?q=Hvar fæ ég ódýrasta bensínið?&test=1&voice=1")
+    json = validate_json(resp)
+    assert json["qtype"] == "Petrol"
 
     # Tests for various utility functions used by query modules
 
