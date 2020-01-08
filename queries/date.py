@@ -54,6 +54,7 @@
 # TODO: "Hvað eru margir dagar eftir af árinu?"
 # TODO: "hvaða dagur er á morgun"
 # TODO: "Þorláksmessa" not working
+# TODO: "hvenær er næst fullt tungl"
 
 
 import json
@@ -180,10 +181,13 @@ QDateIsAre → "er" | "eru"
 QDateCome → "koma" | "kemur"
 
 QDateWhenIs →
-    "hvenær" QDateIsAre QDateSpecialDay_nf
-    | "hvenær" QDateCome QDateSpecialDay_nf
-    | "hvaða" "dagur" "er" QDateSpecialDay_nf
-    | "á" "hvaða" "degi" QDateIsAre QDateSpecialDay_nf
+    "hvenær" QDateIsAre QDateSpecialDay_nf QDateThisYear?
+    | "hvenær" QDateCome QDateSpecialDay_nf QDateThisYear?
+    | "hvaða" "dagur" "er" QDateSpecialDay_nf QDateThisYear?
+    | "á" "hvaða" "degi" QDateIsAre QDateSpecialDay_nf QDateThisYear?
+
+QDateThisYear →
+    "núna"? "í" "ár" | "þetta" "ár" | "á" "þessu" "ári" | "þetta" "árið"
 
 QDateItem/fall →
     QDateAbsOrRel | QDateSpecialDay/fall

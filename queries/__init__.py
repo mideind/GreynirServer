@@ -240,7 +240,8 @@ def numbers_to_neutral(s):
 
 def is_plural(num):
     """ Determine whether an Icelandic word following a given number should be
-        plural or not, e.g. "21 maður", "22 menn", "1,1 kílómetri", "11 menn" etc. """
+        plural or not, e.g. "21 maður", "22 menn", "1,1 kílómetri", "11 menn" etc. 
+        Accepts string, float or int as argument. """
     sn = str(num)
     return not (sn.endswith("1") and not sn.endswith("11"))
 

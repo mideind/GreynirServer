@@ -23,6 +23,8 @@
 
 """
 
+# TODO: Transition this module over to using grammar.
+
 
 from datetime import datetime, timedelta
 
@@ -149,6 +151,8 @@ _MOST_MENTIONED_PEOPLE_QUERIES = frozenset(
         "hverjir eru mest áberandi í fjölmiðlum þessa dagana",
         "hverjir eru áberandi í fjölmiðlum",
         "hverjir eru áberandi í fjölmiðlum þessa dagana",
+        "hverjir eru mest í fjölmiðlum núna",
+        "hverjir eru mest í fjölmiðlum þessa dagana",
         "hvaða fólk hefur verið mest í fjölmiðlum síðustu daga",
         "hvaða fólk er mest í fréttum",
         "hvaða fólk er mest í fréttum þessa dagana",

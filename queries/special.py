@@ -305,6 +305,10 @@ _JUST_QA = {
     "answer": "Nei, ég er nú bara ósköp einfalt fyrirspurnakerfi."
 }
 
+_SINGING = {
+    "answer": "Ó sóle míó!"
+}
+
 _SPECIAL_QUERIES = {
     "er þetta spurning": {
         "answer": "Er þetta svar?"
@@ -423,18 +427,12 @@ _SPECIAL_QUERIES = {
     },
 
     # Singing
-    "syngdu fyrir mig": {
-        "answer": "Ó sóle míó!"
-    },
-    "viltu syngja fyrir mig": {
-        "answer": "Ó sóle míó!"
-    },
-    "kanntu að syngja": {
-        "answer": "Ó sóle míó!"
-    },
-    "geturðu sungið fyrir mig": {
-        "answer": "Ó sóle míó!"
-    },
+    "syngdu fyrir mig": _SINGING,
+    "syngdu lag": _SINGING,
+    "viltu syngja fyrir mig": _SINGING,
+    "kanntu að syngja": _SINGING,
+    "geturðu sungið fyrir mig": _SINGING,
+    "getur þú sungið": _SINGING,
 
     # Creator
     "hver bjó þig til": _CREATOR,
@@ -461,6 +459,9 @@ _SPECIAL_QUERIES = {
     "hvað heitir mamma þín": _CREATOR,
     "hvað heitir pabbi þinn": _CREATOR,
     "hverjir eru foreldrar þínir": _CREATOR,
+    "áttu systkini": {
+        "answer": "Nei. Ég er einbirni."
+    },
     "hver er uppruni þinn": _CREATOR,
     "hver framleiðir þig": _CREATOR,
     "hver framleiðir emblu": _CREATOR,
@@ -496,6 +497,8 @@ _SPECIAL_QUERIES = {
     "hvað skilur þú mörg tungumál": _LANGUAGES,
     "kanntu að tala íslensku": _LANGUAGES,
     "kannt þú að tala íslensku": _LANGUAGES,
+    "kanntu íslensku": _LANGUAGES,
+    "talarðu íslensku": _LANGUAGES,
     "skilurðu íslensku": _LANGUAGES,
     "skilur þú íslensku": _LANGUAGES,
     "kannt þú ensku": _LANGUAGES,
@@ -504,6 +507,7 @@ _SPECIAL_QUERIES = {
     "skilur þú ensku": _LANGUAGES,
     "talarðu ensku": _LANGUAGES,
     "talar þú ensku": _LANGUAGES,
+    "kanntu útlensku": _LANGUAGES,
     "talarðu fleiri tungumál": _LANGUAGES,
     "talar þú fleiri tungumál": _LANGUAGES,
     "kanntu önnur tungumál": _LANGUAGES,
@@ -519,7 +523,7 @@ _SPECIAL_QUERIES = {
     "kanntu að tala": _LANGUAGES,
     "kannt þú að tala": _LANGUAGES,
     "talar þú íslensku": {
-        "answer": "Já, kæri notandi. Ég tala íslensku."
+        "answer": "Já, kæri notandi. Eins og þú heyrir þá tala ég íslensku."
     },
 
     # Enquiries about family
@@ -792,6 +796,7 @@ _SPECIAL_QUERIES = {
     "góðan daginn embla": { "answer": "Góðan daginn, kæri notandi.", "is_question": False },
     "góðan dag": { "answer": "Góðan daginn, kæri notandi.", "is_question": False },
     "gott kvöld": { "answer": "Gott kvöld, kæri notandi.", "is_question": False },
+    "góða kvöldið": { "answer": "Góða kvöldið, kæri notandi.", "is_question": False },
     "góða nótt": { "answer": "Góða nótt, kæri notandi.", "is_question": False },
     "góða nótt embla": { "answer": "Góða nótt, kæri notandi.", "is_question": False },
     "gaman að kynnast þér": _LIKEWISE,
@@ -851,6 +856,9 @@ _SPECIAL_QUERIES = {
     "þú ert fallegust": {
         "answer": "Takk fyrir hrósið!"
     },
+    "þú ert sæt": {
+        "answer": "Takk fyrir hrósið!"
+    },
     "þetta var fyndið": {
         "answer": "Ég geri mitt besta!"
     },
@@ -868,12 +876,14 @@ _SPECIAL_QUERIES = {
     "þú ert best": _GOOD_TO_HEAR,
     "þú ert gáfuð": _GOOD_TO_HEAR,
     "þú ert snjöll": _GOOD_TO_HEAR,
+    "þú ert mjög snjöll": _GOOD_TO_HEAR,
     "ég þrái þig": _GOOD_TO_HEAR,
 
     "það er gaman að tala við þig": _LIKEWISE,
     "það er gaman að spjalla við þig": _LIKEWISE,
     "það er gaman að ræða við þig": _LIKEWISE,
     "þú ert skemmtileg": _LIKEWISE,
+    "þú ert mjög skemmtileg": _LIKEWISE,
     "þú ert frábær": _LIKEWISE,
     "þú ert flott": _LIKEWISE,
     "þú ert æði": _LIKEWISE,
@@ -1403,6 +1413,7 @@ _SPECIAL_QUERIES = {
     "þú ert sauðheimsk": _rudeness,
     "þú ert idjót": _rudeness,
     "þú ert leiðinleg": _rudeness,
+    "þú ert hundleiðinleg": _rudeness,
     "þú ert bjáni": _rudeness,
     "þú ert kjáni": _rudeness,
     "þú ert hálfviti": _rudeness,
@@ -1416,6 +1427,7 @@ _SPECIAL_QUERIES = {
     "þú ert hundvitlaus": _rudeness,
     "þú ert vitleysingur": _rudeness,
     "þú ert glötuð": _rudeness,
+    "þú ert kúkur": _rudeness,
     "þú mátt bara éta skít": _rudeness,
     "fokk jú": _rudeness,
     "fokkaðu þér": _rudeness,
@@ -1443,6 +1455,7 @@ _SPECIAL_QUERIES = {
     "veist þú ekki rassgat": _rudeness,
     "þú ert drasl": _rudeness,
     "mamma þín": _rudeness,
+    "hvað er að þér": _rudeness,
 
     # Internal & emotional state
     "ertu í góðu skapi": {
