@@ -329,8 +329,8 @@ QDateSeamensDay/fall →
     'sjómannadagur:kk'_et/fall
 
 QDateFirstDayOfWinter/fall →
-    'fyrstur:lo'_et_kk/fall 'vetrardagur:kk'_et_gr/fall
-    | 'fyrstur:lo'_et_kk/fall 'vetrardagur:kk'_et_gr/fall
+    'fyrstur:lo'_et_kk/fall 'vetrardagur:kk'_et/fall
+    | 'vetrardagur:kk'_et_gr/fall 'fyrstur:lo'_et_kk/fall
 
 QDateFathersDay/fall →
     'feðradagur:kk'_et/fall # Why doesn't this work? 
