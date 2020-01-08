@@ -31,6 +31,7 @@
 # TODO: "Hversu mikið rok er úti?" "Hversu mikill vindur er úti?" "Hvað er mikill vindur núna?"
 # TODO: "Verður sól á morgun?" "Verður sól í dag?" - sólskin - sést til sólar
 # TODO: "Hvernig er færðin?"
+# TODO: "Hversu hvasst er úti?"
 # TODO: "HVAÐ er hitastigið á egilsstöðum?" "Hvað er mikill hiti úti?"
 # TODO: "Hvar er heitast á landinu?"
 # TODO: "Er gott veður úti?"
@@ -45,8 +46,6 @@ import re
 import logging
 import random
 from datetime import datetime, timedelta
-
-import pyowm
 
 from queries import gen_answer, query_json_api
 from geo import distance, isocode_for_country_name, ICE_PLACENAME_BLACKLIST
@@ -81,7 +80,7 @@ TOPIC_LEMMAS = [
     "regnhlíf",
     "votur",
     "kaldur",
-    "heitur",
+    # "heitur", # Clashes with "hvað heitir X" etc.
     "hiti",
     "kuldi",
     "veðurhorfur",
@@ -126,7 +125,7 @@ QWeatherQuery →
     | QWeatherTemperature
 
 QWeatherCurrent →
-    QWeatherHowIs "veðrið" QWeatherAnyLoc? QWeatherNow?
+    QWeatherHowIs? "veðrið" QWeatherAnyLoc? QWeatherNow?
     | "hvernig" "veður" "er" QWeatherAnyLoc? QWeatherNow?
     | QWeatherWhatCanYouTellMeAbout "veðrið" QWeatherAnyLoc? QWeatherNow?
     | QWeatherWhatCanYouTellMeAbout "veðrið" QWeatherAnyLoc? QWeatherNow?
@@ -257,7 +256,6 @@ $score(+55) QWeather
 
 # The OpenWeatherMap API key (you must obtain your
 # own key if you want to use this code)
-_OWM_INSTANCE = None
 _OWM_API_KEY = ""
 _OWM_KEY_PATH = os.path.join(
     os.path.dirname(__file__), "..", "resources", "OpenWeatherMapKey.txt"
@@ -279,16 +277,6 @@ def _get_OWM_API_key():
             )
             _OWM_API_KEY = ""
     return _OWM_API_KEY
-
-
-def _OWM():
-    """ Return initialised OpenWeatherMap singleton object. """
-    global _OWM_INSTANCE
-    if not _OWM_INSTANCE:
-        key = _get_OWM_API_key()
-        if key:
-            _OWM_INSTANCE = pyowm.OWM(key)
-    return _OWM_INSTANCE
 
 
 def _postprocess_owm_data(d):
@@ -408,9 +396,10 @@ def _curr_observations(query, result):
                     loc = (i.get("lat_wgs84"), i.get("long_wgs84"))
             # OK, could be a location abroad
             if not loc:
+                # TODO: Finish this!
+                return None
                 # If it's a country name, get coordinates for capital city
                 # and look that up
-                pass
                 # If not a country name, maybe a foreign city. Look up city
                 # name and get coordinates
 
