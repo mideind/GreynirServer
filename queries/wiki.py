@@ -113,7 +113,7 @@ def QWikiQuery(node, params, result):
 
 
 def QWikiSubject(node, params, result):
-    result["subject_nom"] = result._nominative.title()
+    result["subject_nom"] = result._nominative
     result["subject_dat"] = result._text
 
 
@@ -140,6 +140,15 @@ def _clean_answer(answer):
     a = re.sub(r"\s+", " ", a)
     a = re.sub(r"\s\.$", ".", a)
     a = re.sub(r"\s,\s", ", ", a)
+    a = re.sub(r"\s\.\s", ". ", a)
+    # E.g. "100-700" becomes "100 til 700"
+    a = re.sub(r"(\d+)\-(\d+)", r"\1 til \2", a)
+    return a
+
+
+def _clean_voice_answer(answer):
+    a = answer.replace(" m.a. ", " meðal annars ")
+    a = a.replace(" þ.e. ", " það er ")
     return a
 
 
@@ -154,11 +163,17 @@ def _query_wiki_api(subject):
 
 def get_wiki_summary(subject_nom, subject_dat):
     """ Fetch summary of subject from Icelandic Wikipedia """
+
+    def has_entry(r):
+        return r and "query" in r and "pages" in r["query"]
+
     res = _query_wiki_api(subject_nom)
+    if not has_entry(res):
+        res = _query_wiki_api(subject_nom.title())
 
     not_found = "Ég fann ekkert um {0} í Wikipedíu".format(subject_dat)
 
-    if not res or "query" not in res or "pages" not in res["query"]:
+    if not has_entry(res):
         return not_found
 
     pages = res["query"]["pages"]
@@ -184,7 +199,7 @@ def sentence(state, result):
         # Fetch from Wikipedia API
         answer = get_wiki_summary(result["subject_nom"], result["subject_dat"])
         response = dict(answer=answer)
-        voice = answer
+        voice = _clean_voice_answer(answer)
         q.set_answer(response, answer, voice)
 
         # Beautify query by fixing spelling of Wikipedia
