@@ -26,9 +26,10 @@
 # TODO: "Hvað búa margir í/á [BORG/LAND]?" etc. Wiki api?
 # TODO: "Hvað er Ísland?" "Hvar er Japan?"
 
-
-from datetime import datetime, timedelta
 import logging
+import random
+from datetime import datetime, timedelta
+
 from cityloc import capital_for_cc
 
 from queries import country_desc, nom2dat
