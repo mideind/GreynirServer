@@ -38,6 +38,7 @@ SKIP_ROUTES = frozenset((
     "/nnparse.api",
     "/nntranslate.api",
     "/nn/translate.api",
+    "/nn/googletranslate.api",
     "/exit.api",
 ))
 
