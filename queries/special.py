@@ -432,6 +432,7 @@ _SPECIAL_QUERIES = {
     "viltu syngja fyrir mig": _SINGING,
     "kanntu að syngja": _SINGING,
     "geturðu sungið fyrir mig": _SINGING,
+    "geturðu sungið": _SINGING,
     "getur þú sungið": _SINGING,
 
     # Creator
@@ -656,6 +657,8 @@ _SPECIAL_QUERIES = {
     "er ég best": _OF_COURSE,
     "er ég fallegur": _OF_COURSE,
     "er ég falleg": _OF_COURSE,
+    "er ég sætur": _OF_COURSE,
+    "er ég sæt": _OF_COURSE,
     "ertu vinur minn": _OF_COURSE,
     "ert þú vinur minn": _OF_COURSE,
     "ertu vinkona mín": _OF_COURSE,
@@ -1107,6 +1110,7 @@ _SPECIAL_QUERIES = {
     "hvað getur þú gert": _capabilities,
     "hvað geturðu gert": _capabilities,
     "hvað geturðu gert fyrir mig": _capabilities,
+    "hvað getur þú gert meira": _capabilities,
     "hvað getur embla gert": _capabilities,
     "hvað getur embla": _capabilities,
     "hvað getur embla gert fyrir mig": _capabilities,
@@ -1358,7 +1362,9 @@ _SPECIAL_QUERIES = {
     # Quotations
     "komdu með tilvitnun": _random_quotation,
     "komdu með málshátt": _random_quotation,
+    "komdu með annan málshátt": _random_quotation,
     "segðu mér málshátt": _random_quotation,
+    "segðu mér annan málshátt": _random_quotation,
     "komdu með skemmtilega tilvitnun": _random_quotation,
 
     # Riddles

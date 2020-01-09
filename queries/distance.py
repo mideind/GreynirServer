@@ -67,6 +67,7 @@ _QDISTANCE_REGEXES = (
 _TT_PREFIXES = (
     "hvað er ég lengi að",
     "hversu lengi er ég að",
+    "hversu lengi að",
     "hve lengi er ég að",
     "hvað tekur langan tíma að",
     "hvað tekur það mig langan tíma að",
