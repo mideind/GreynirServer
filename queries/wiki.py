@@ -91,8 +91,7 @@ QWikiQuery →
     | "fræddu" "mig" "um" QWikiSubject
     | "geturðu" "frætt" "mig" "um" QWikiSubject
     # | "flettu" "upp" QWikiSubject "í" QWikipedia
-    # | "hvað" "er" QWikiSubject "samkvæmt" QWikipedia
-    # | "hver" "er QWikiSubject "samkvæmt" QWikipedia
+    # | "geturðu" "flett" "upp" QWikiSubject "í" QWikipedia
 
 QWikiSubject →
     Nl_þf
@@ -140,7 +139,7 @@ def _clean_answer(answer):
     # removing text within parentheses
     a = re.sub(r"\s+", " ", a)
     a = re.sub(r"\s\.$", ".", a)
-    a = re.sub(r"\s,\s.", ", ", a)
+    a = re.sub(r"\s,\s", ", ", a)
     return a
 
 
