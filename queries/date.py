@@ -38,22 +38,25 @@
 # TODO: "Hvaða vikudagur er DAGSETNING næstkomandi?"
 # TODO: "Hvað gerðist á þessum degi?"
 # TODO: "Hvað eru margir dagar eftir af árinu?"
-# TODO: "Hvaða vikudagur var 11. september 2001?" "Hvaða dagur er á morgun?"
+# TODO: "Hvaða vikudagur var 11. september 2001?" "Hvaða (viku)dagur er á morgun?" "Hvaða dagur var í gær?"
 # TODO: "Hvenær eru vetrarsólstöður" + more astronomical dates
-# TODO: "Hvenær er dagur íslenskrar tungu" :)
-# TODO: "Hvað er langt í helgina?" "Hvenær er næsti frídagur?"
-# TODO: "Hvaða dagur var í gær?"
+# TODO: "Hvað er langt í helgina?" "Hvenær er næsti (opinberi) frídagur?"
 # TODO: "Hvað eru margir dagar að fram að jólum?"
 # TODO: "Hvað eru margir dagar eftir af árinu? mánuðinum? vikunni?"
 # TODO: "Hvenær er næst hlaupár?"
 # TODO: "Hvaða árstíð er"
 # TODO: "Á hvaða vikudegi er jóladagur?"
-# TODO: "Hvað er langt til áramóta?"
 # TODO: "hvenær er fyrsti í aðventu"
-# TODO: "hvenær koma jólin"
 # TODO: "hvað eru margir dagar í árinu"
-# TODO: "hvítasunnan", "hvítasunnuhelgin"
 # TODO: "Hvaða öld er núna"
+# TODO: "hvað eru margir mánuðir í sumardaginn fyrsta" "hvað eru margar vikur í skírdag"
+# TODO: "Hvað eru margir dagar eftir af árinu?"
+# TODO: "hvaða dagur er á morgun"
+# TODO: "Þorláksmessa" not working
+# TODO: "hvenær er næst fullt tungl"
+# TODO: Specify weekday in "hvenær er" queries (e.g. "Sjómannadagurinn er *sunnudaginn* 7. júní")
+# TODO: "Hvað eru margar [unit of time measurement] í [dagsetningu]"
+# TODO: "hvenær byrjar þorrinn"
 
 import json
 import re
@@ -80,6 +83,7 @@ TOPIC_LEMMAS = [
     "hvítasunnudagur",
     "uppstigningardagur",
     "öskudagur",
+    "bolludagur",
     "hrekkjavaka",
     "fullveldisdagur",
     "sumardagur",
@@ -99,6 +103,8 @@ TOPIC_LEMMAS = [
     "verslunarmannahelgi",
     "frídagur",
     "menningarnótt",
+    "áramót",
+    "ár",
 ]
 
 
@@ -144,6 +150,7 @@ QDateCurrent →
     | "hvaða" "dagur" "er" QDateNow?
     | "hvaða" "mánaðardagur" "er" QDateNow?
     | "hvaða" "vikudagur" "er" QDateNow?
+    | "hvaða" "mánuður" "er" QDateNow?
     | "hver" "er" "dagurinn" QDateNow?
     | "hver" "er" "mánaðardagurinn" QDateNow?
     | "hver" "er" "vikudagurinn" QDateNow?
@@ -172,10 +179,16 @@ QDateHowLongSince →
 
 QDateIsAre → "er" | "eru"
 
+QDateCome → "koma" | "kemur"
+
 QDateWhenIs →
-    "hvenær" QDateIsAre QDateSpecialDay_nf
-    | "hvaða" "dagur" "er" QDateSpecialDay_nf
-    | "á" "hvaða" "degi" QDateIsAre QDateSpecialDay_nf
+    "hvenær" QDateIsAre QDateSpecialDay_nf QDateThisYear?
+    | "hvenær" QDateCome QDateSpecialDay_nf QDateThisYear?
+    | "hvaða" "dagur" "er" QDateSpecialDay_nf QDateThisYear?
+    | "á" "hvaða" "degi" QDateIsAre QDateSpecialDay_nf QDateThisYear?
+
+QDateThisYear →
+    "núna"? "í" "ár" | "þetta" "ár" | "á" "þessu" "ári" | "þetta" "árið"
 
 QDateItem/fall →
     QDateAbsOrRel | QDateSpecialDay/fall
@@ -188,14 +201,16 @@ QDateSpecialDay/fall →
     QDateHalloween/fall
     | QDateWhitsun/fall
     | QDateAscensionDay/fall
-    # | QDateAshDay/fall
+    | QDateAshDay/fall
+    | QDateBunDay/fall
     | QDateSovereigntyDay/fall
-    # | QDateFirstDayOfSummer/fall
-    | QDateThorlaksmessa/fall
+    | QDateFirstDayOfSummer/fall
+    | QDateThorlaksMass/fall
     | QDateChristmasEve/fall
     | QDateChristmasDay/fall
     | QDateNewYearsEve/fall
     | QDateNewYearsDay/fall
+    | QDateNewYear/fall
     | QDateWorkersDay/fall
     | QDateEaster/fall
     | QDateEasterSunday/fall
@@ -203,10 +218,25 @@ QDateSpecialDay/fall →
     | QDateGoodFriday/fall
     | QDateNationalDay/fall
     | QDateBankHoliday/fall
-    # | QDateCultureNight/fall
+    | QDateCultureNight/fall
+    | QDateValentinesDay/fall
+    | QDateMansDay/fall
+    | QDateWomansDay/fall
+    | QDateMardiGrasDay/fall
+    | QDatePalmSunday/fall
+    | QDateMothersDay/fall
+    | QDateSeamensDay/fall
+    | QDateFathersDay/fall
+    | QDateIcelandicTongueDay/fall
+    | QDateSecondChristmasDay/fall
+    # | QDateFirstDayOfWinter/fall
+    # | QDateSummerSolstice/fall
+    # | QDateWinterSolstice/fall
 
 QDateWhitsun/fall →
-    'hvítasunnudagur:kk'_et/fall
+    'hvítasunnudagur:kk'_et/fall 
+    | 'hvítasunna:kvk'_et/fall 
+    | 'hvítasunnuhelgi:kvk'_et/fall
 
 QDateAscensionDay/fall →
     'uppstigningardagur:kk'_et/fall
@@ -214,8 +244,12 @@ QDateAscensionDay/fall →
 QDateAshDay/fall →
     'öskudagur:kk'_et/fall
 
+QDateBunDay/fall →
+    'bolludagur:kk'_et/fall
+
 QDateHalloween/fall →
     'hrekkjavaka:kvk'_et/fall
+    | "halloween"
 
 QDateSovereigntyDay/fall →
     'fullveldisdagur:kk'_et/fall
@@ -223,7 +257,7 @@ QDateSovereigntyDay/fall →
 QDateFirstDayOfSummer/fall →
     'sumardagur:kk'_et_gr/fall 'fyrstur:lo'_et_kk/fall
 
-QDateThorlaksmessa/fall →
+QDateThorlaksMass/fall →
     'þorláksmessa:kvk'_et/fall
 
 QDateChristmasEve/fall →
@@ -234,10 +268,14 @@ QDateChristmasDay/fall →
     | 'jóladagur:kk'_et/fall
 
 QDateNewYearsEve/fall →
-    'gamlárskvöld:hk'_et/fall
+    'gamlárskvöld:hk'_et/fall 
+    | 'gamlársdagur:kk'_et/fall
 
 QDateNewYearsDay/fall →
     'nýársdagur:kk'_et/fall
+
+QDateNewYear/fall →
+    'áramót:hk'_ft/fall
 
 QDateWorkersDay/fall →
     'baráttudagur:kk'_et/fall 'verkalýður:kk'_et_ef
@@ -267,6 +305,48 @@ QDateBankHoliday/fall →
 
 QDateCultureNight/fall →
     'menningarnótt:kvk'_et/fall
+
+QDateValentinesDay/fall →
+    'valentínusardagur:kk'_et/fall
+
+QDateMansDay/fall →
+    'bóndadagur:kk'_et/fall
+
+QDateWomansDay/fall →
+    'konudagur:kk'_et/fall
+
+QDateMardiGrasDay/fall →
+    'sprengidagur:kk'_et/fall
+    | 'sprengikvöld:hk'_et/fall
+
+QDatePalmSunday/fall →
+    'pálmasunnudagur:kk'_et/fall
+
+QDateMothersDay/fall →
+    'mæðradagur:kk'_et/fall
+
+QDateSeamensDay/fall →
+    'sjómannadagur:kk'_et/fall
+
+QDateFirstDayOfWinter/fall →
+    'fyrstur:lo'_et_kk/fall 'vetrardagur:kk'_et/fall
+    | 'vetrardagur:kk'_et_gr/fall 'fyrstur:lo'_et_kk/fall
+
+QDateFathersDay/fall →
+    'feðradagur:kk'_et/fall # Why doesn't this work? 
+    | "feðradagur" | "feðradagurinn" # Hack
+
+QDateIcelandicTongueDay/fall →
+    'dagur:kk'_et/fall "íslenskrar" "tungu"
+
+QDateSecondChristmasDay/fall →
+    'annar:lo'_et_kk/fall "í" "jólum"
+
+QDateSummerSolstice/fall →
+    'sumarsólstöður:kvk'_ft/fall
+
+QDateWinterSolstice/fall →
+    'vetrarsólstöður:kvk'_ft/fall
 
 $score(+55) QDate
 
@@ -298,11 +378,12 @@ def QDateAbsOrRel(node, params, result):
     if not t:
         t = result.find_descendant(t_base="dagsföst")
     if t:
+        # TODO: Use TerminalNode's contained_date property instead
         d = terminal_date(t)
         if d:
             result["target"] = d
     else:
-        raise Exception("No dagsafs in {0}".format(str(t)))
+        raise Exception("No date in {0}".format(str(t)))
 
 
 def QDateWhitsun(node, params, result):
@@ -317,9 +398,12 @@ def QDateAscensionDay(node, params, result):
 
 def QDateAshDay(node, params, result):
     result["desc"] = "öskudagur"
-    result["target"] = dnext(
-        datetime(year=datetime.today().year, month=2, day=4)
-    )  # Wrong
+    result["target"] = next_easter() - timedelta(days=46)
+
+
+def QDateBunDay(node, params, result):
+    result["desc"] = "bolludagur"
+    result["target"] = next_easter() - timedelta(days=48)  # 7 weeks before easter
 
 
 def QDateHalloween(node, params, result):
@@ -338,7 +422,7 @@ def QDateFirstDayOfSummer(node, params, result):
     result["target"] = next_weekday(d, 3)
 
 
-def QDateThorlaksmessa(node, params, result):
+def QDateThorlaksMass(node, params, result):
     result["desc"] = "þorláksmessa"
     d = dnext(datetime(year=datetime.today().year, month=12, day=23))
 
@@ -354,13 +438,23 @@ def QDateChristmasDay(node, params, result):
 
 
 def QDateNewYearsEve(node, params, result):
-    result["desc"] = "gamlárskvöld"
+    result["desc"] = "gamlársdagur"
     result["target"] = dnext(datetime(year=datetime.today().year, month=12, day=31))
 
 
 def QDateNewYearsDay(node, params, result):
     result["desc"] = "nýársdagur"
     result["target"] = dnext(datetime(year=datetime.today().year + 1, month=1, day=1))
+
+
+def QDateNewYear(node, params, result):
+    result["desc"] = "áramótin"
+    result["is_verb"] = "eru"
+    result["target"] = dnext(
+        datetime(
+            year=datetime.today().year + 1, month=1, day=1, hour=0, minute=0, second=0
+        )
+    )
 
 
 def QDateWorkersDay(node, params, result):
@@ -404,9 +498,81 @@ def QDateBankHoliday(node, params, result):
 
 def QDateCultureNight(node, params, result):
     result["desc"] = "menningarnótt"
-    result["target"] = dnext(
-        datetime(year=datetime.today().year + 1, month=8, day=24)
-    )  # Wrong
+    # Culture night is on the first Saturday after Reykjavík's birthday on Aug 18th
+    aug18 = dnext(datetime(year=datetime.today().year, month=8, day=18))
+    result["target"] = next_weekday(aug18, 5)  # Find the next Saturday
+
+
+def QDateValentinesDay(node, params, result):
+    result["desc"] = "valentínusardagur"
+    result["target"] = dnext(datetime(year=datetime.today().year, month=2, day=14))
+
+
+def QDateMansDay(node, params, result):
+    result["desc"] = "bóndadagur"
+    jan19 = dnext(datetime(year=datetime.today().year, month=1, day=19))
+    result["target"] = next_weekday(jan19, 4)  # First Friday after Jan 19
+
+
+def QDateWomansDay(node, params, result):
+    result["desc"] = "konudagur"
+    feb18 = dnext(datetime(year=datetime.today().year, month=2, day=18))
+    result["target"] = next_weekday(feb18, 6)  # First Sunday after Feb 18
+
+
+def QDateMardiGrasDay(node, params, result):
+    result["desc"] = "sprengidagur"
+    result["target"] = next_easter() - timedelta(days=47)
+
+
+def QDatePalmSunday(node, params, result):
+    result["desc"] = "pálmasunnudagur"
+    result["target"] = next_easter() - timedelta(days=7)  # Week before Easter Sunday
+
+
+def QDateMothersDay(node, params, result):
+    result["desc"] = "mæðradagur"
+    may8 = dnext(datetime(year=datetime.today().year, month=5, day=8))
+    result["target"] = next_weekday(may8, 6)  # Second Sunday in May
+
+
+def QDateSeamensDay(node, params, result):
+    result["desc"] = "sjómannadagur"
+    june1 = dnext(datetime(year=datetime.today().year, month=6, day=1))
+    result["target"] = next_weekday(june1, 6)  # First Sunday in June
+
+
+def QDateFathersDay(node, params, result):
+    result["desc"] = "feðradagur"
+    nov8 = dnext(datetime(year=datetime.today().year, month=5, day=8))
+    result["target"] = next_weekday(nov8, 6)  # Second Sunday in May
+
+
+def QDateIcelandicTongueDay(node, params, result):
+    result["desc"] = "dagur íslenskrar tungu"
+    result["target"] = dnext(datetime(year=datetime.today().year, month=11, day=16))
+
+
+def QDateSecondChristmasDay(node, params, result):
+    result["desc"] = "annar í jólum"
+    result["target"] = dnext(datetime(year=datetime.today().year, month=12, day=26))
+
+
+def QDateFirstDayOfWinter(node, params, result):
+    result["desc"] = "fyrsti vetrardagur"
+    result["target"] = None  # To be completed
+
+
+def QDateSummerSolstice(node, params, result):
+    result["desc"] = "sumarsólstöður"
+    result["is_verb"] = "eru"
+    result["target"] = None  # To be completed
+
+
+def QDateWinterSolstice(node, params, result):
+    result["desc"] = "vetrarsólstöður"
+    result["is_verb"] = "eru"
+    result["target"] = None  # To be completed
 
 
 # Day indices in nominative case

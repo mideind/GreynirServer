@@ -31,20 +31,23 @@
 # TODO: "Hversu mikið rok er úti?" "Hversu mikill vindur er úti?" "Hvað er mikill vindur núna?"
 # TODO: "Verður sól á morgun?" "Verður sól í dag?" - sólskin - sést til sólar
 # TODO: "Hvernig er færðin?"
-# TODO: "Hvernig er veðrið heima?" (fyrir þá sem spyrja í útlöndum)
+# TODO: "Hversu hvasst er úti?"
 # TODO: "HVAÐ er hitastigið á egilsstöðum?" "Hvað er mikill hiti úti?"
 # TODO: "Hvar er heitast á landinu?"
 # TODO: "Er gott veður úti?"
 # TODO: "Hvað er mikið frost?" "Hversu mikið frost er úti?"
 # TODO: "Verður snjór á morgun?"
 # TODO: "Hvernig er veðurspáin fyrir garðabæ?"
+# TODO: "Hvernig er færðin"
+# TODO: "Hvernig eru loftgæðin [í Reykjavík] etc."
 
+import os
 import re
 import logging
 import random
 from datetime import datetime, timedelta
 
-from queries import gen_answer
+from queries import gen_answer, query_json_api
 from geo import distance, isocode_for_country_name, ICE_PLACENAME_BLACKLIST
 from iceaddr import placename_lookup
 from iceweather import observation_for_closest, observation_for_station, forecast_text
@@ -59,12 +62,34 @@ HANDLE_TREE = True
 
 # Lemmas of keywords that could indicate that the user is trying to use this module
 TOPIC_LEMMAS = [
-    "veður", "veðurspá", "spá", "rigning", "vindur", "regn",
-    "rok", "stormur", "fárviðri", "ofsaveður", "logn", "lygn",
-    "blautur", "bleyta", "rigna",
-    "regnhlíf", "votur", "kaldur", "heitur", "hiti", "kuldi",
-    "veðurhorfur", "hitastig", "vindstig", "væta", "úrkoma",
-    "úrkomumikill", "úrkomulítill"
+    "veður",
+    "veðurspá",
+    "spá",
+    "rigning",
+    "vindur",
+    "regn",
+    "rok",
+    "stormur",
+    "fárviðri",
+    "ofsaveður",
+    "logn",
+    "lygn",
+    "blautur",
+    "bleyta",
+    "rigna",
+    "regnhlíf",
+    "votur",
+    "kaldur",
+    # "heitur", # Clashes with "hvað heitir X" etc.
+    "hiti",
+    "kuldi",
+    "veðurhorfur",
+    "hitastig",
+    "vindstig",
+    "væta",
+    "úrkoma",
+    "úrkomumikill",
+    "úrkomulítill",
 ]
 
 
@@ -72,11 +97,17 @@ def help_text(lemma):
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
-        random.choice((
-            "Hvernig er veðrið", "Hvernig er veðurspáin",
-            "Hvernig er veðrið á Vopnafirði", "Hvernig eru veðurhorfurnar",
-            "Hversu heitt er í Borgarfirði", "Hvernig veður er á Siglufirði"
-        ))
+        random.choice(
+            (
+                "Hvernig er veðrið",
+                "Hvernig er veðurspáin",
+                "Hvernig er veðrið á Vopnafirði",
+                "Hvernig eru veðurhorfurnar",
+                "Hversu heitt er í Borgarfirði",
+                "Hvernig veður er á Siglufirði",
+                "Hversu kalt er á Akureyri",
+            )
+        )
     )
 
 
@@ -94,7 +125,7 @@ QWeatherQuery →
     | QWeatherTemperature
 
 QWeatherCurrent →
-    QWeatherHowIs "veðrið" QWeatherAnyLoc? QWeatherNow?
+    QWeatherHowIs? "veðrið" QWeatherAnyLoc? QWeatherNow?
     | "hvernig" "veður" "er" QWeatherAnyLoc? QWeatherNow?
     | QWeatherWhatCanYouTellMeAbout "veðrið" QWeatherAnyLoc? QWeatherNow?
     | QWeatherWhatCanYouTellMeAbout "veðrið" QWeatherAnyLoc? QWeatherNow?
@@ -164,16 +195,19 @@ QWeatherTemperature →
     | "hversu" "margra" "stiga" "frost" "er" QWeatherAnyLoc? QWeatherNow?
     | "hve" "margra" "stiga" "hiti" "er" QWeatherAnyLoc? QWeatherNow?
     | "hve" "margra" "stiga" "frost" "er" QWeatherAnyLoc? QWeatherNow?
-
+    | "er" "heitt" "úti"? QWeatherAnyLoc? QWeatherNow?
+    | "er" "fyrir" "ofan" "frostmark" "úti"? QWeatherAnyLoc? QWeatherNow?
+    | "er" "frost" QWeatherAnyLoc? QWeatherNow?
+    | "er" "fyrir" "neðan" "frostmark" "úti"? QWeatherAnyLoc? QWeatherNow?
 
 QWeatherUmbrella →
     "þarf" QWeatherOne "regnhlíf" QWeatherNow
     | "þarf" "ég" "að" "taka" "með" "mér" "regnhlíf" QWeatherNow 
+    | "þarf" "maður" "að" "taka" "með" "sér" "regnhlíf" QWeatherNow 
     | "væri" "regnhlíf" "gagnleg" QWeatherForMe? QWeatherNow
     | "væri" "gagn" "af" "regnhlíf" QWeatherForMe? QWeatherNow
     | "kæmi" "regnhlíf" "að" "gagni" QWeatherForMe? QWeatherNow
     | "myndi" "regnhlíf" "gagnast" "mér" QWeatherNow
-
 
 QWeatherOne →
     "ég" | "maður"
@@ -199,13 +233,16 @@ QWeatherNextDays →
     | "fyrir" "morgundaginn"
 
 QWeatherCountry →
-    "á" "landinu" | "á" "íslandi" | "hér" "á" "landi" | "á" "landsvísu"
+    "á" "landinu" | "á" "íslandi" | "hér" "á" "landi" | "á" "landsvísu" 
+    | "um" "landið" "allt" | "um" "allt" "land" | "fyrir" "allt" "landið" 
+    | "á" "fróni" | "heima"
 
 QWeatherCapitalRegion →
     "á" "höfuðborgarsvæðinu" | "fyrir" "höfuðborgarsvæðið" 
     | "í" "reykjavík" | "fyrir" "reykjavík"
     | "í" "höfuðborginni" | "fyrir" "höfuðborgina"
-    | "á" "reykjavíkursvæðinu" | "í" "borginni" | "fyrir" "borgina"
+    | "á" "reykjavíkursvæðinu" | "fyrir" "reykjavíkursvæðið"
+    | "í" "borginni" | "fyrir" "borgina"
 
 QWeatherAnyLoc →
     QWeatherCountry > QWeatherCapitalRegion > QWeatherOpenLoc
@@ -220,6 +257,62 @@ QWeatherLocation →
 $score(+55) QWeather
 
 """
+
+
+# The OpenWeatherMap API key (you must obtain your
+# own key if you want to use this code)
+_OWM_API_KEY = ""
+_OWM_KEY_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "resources", "OpenWeatherMapKey.txt"
+)
+
+
+def _get_OWM_API_key():
+    """ Read OpenWeatherMap API key from file """
+    global _OWM_API_KEY
+    if not _OWM_API_KEY:
+        try:
+            # You need to obtain your own key and put it in
+            # _OWM_API_KEY if you want to use this code.
+            with open(_OWM_KEY_PATH) as f:
+                _OWM_API_KEY = f.read().rstrip()
+        except FileNotFoundError:
+            logging.warning(
+                "Could not read OpenWeatherMap API key from {0}".format(_OWM_KEY_PATH)
+            )
+            _OWM_API_KEY = ""
+    return _OWM_API_KEY
+
+
+def _postprocess_owm_data(d):
+    """ Restructure data from OWM API so it matches that provided by
+        the iceweather module. """
+    if not d:
+        return d
+
+    return d
+
+
+_OWM_API_URL_BYNAME = (
+    "https://api.openweathermap.org/data/2.5/weather?q={0},{1}&appid={2}&units=metric"
+)
+
+
+def _query_owm_by_name(city, country_code=None):
+    d = query_json_api(
+        _OWM_API_URL_BYNAME.format(city, country_code or "", _get_OWM_API_key())
+    )
+    return _postprocess_owm_data(d)
+
+
+_OWM_API_URL_BYLOC = (
+    "https://api.openweathermap.org/data/2.5/weather?lat={0}&lon={1}&appid={2}&units=metric"
+)
+
+
+def _query_owm_by_coords(lat, lon):
+    d = query_json_api(_OWM_API_URL_BYLOC.format(lat, lon, _get_OWM_API_key()))
+    return _postprocess_owm_data(d)
 
 
 _BFT_THRESHOLD = (0.3, 1.5, 3.4, 5.4, 7.9, 10.7, 13.8, 17.1, 20.7, 24.4, 28.4, 32.6)
@@ -254,7 +347,7 @@ _BFT_ICEDESC = {
 
 
 def _wind_descr(wind_ms):
-    """ Icelandic-language description of wind conditions given meters 
+    """ Icelandic-language description of wind conditions given metres
         per second. Uses Beaufort scale lookup.
         See https://www.vedur.is/vedur/frodleikur/greinar/nr/1098
     """
@@ -300,22 +393,25 @@ def _curr_observations(query, result):
             loc = _RVK_COORDS
             result.subject = "Í Reykjavík"
         else:
-            # Some strings should never be interpreted as Icelandic placenames
-            if result.location in ICE_PLACENAME_BLACKLIST:
+            # First, check if it could be a location in Iceland
+            if result.location not in ICE_PLACENAME_BLACKLIST:
+                info = placename_lookup(result.location)
+                if info:
+                    i = info[0]
+                    loc = (i.get("lat_wgs84"), i.get("long_wgs84"))
+            # OK, could be a location abroad
+            if not loc:
+                # TODO: Finish this!
                 return None
+                # If it's a country name, get coordinates for capital city
+                # and look that up
+                # If not a country name, maybe a foreign city. Look up city
+                # name and get coordinates
 
-            # Unfortunately, many foreign country names are also Icelandic
-            # placenames, so we automatically exclude country names.
-            cc = isocode_for_country_name(result.location)
-            if cc:
-                return None
-
-            info = placename_lookup(result.location)
-            if info:
-                i = info[0]
-                loc = (i.get("lat_wgs84"), i.get("long_wgs84"))
-            else:
-                return None
+            # if loc within iceland:
+            # talk to iceweather module
+            #  else
+            # fetch data from openweathermap api
 
     # Talk to weather API
     try:
@@ -484,8 +580,8 @@ def QWeatherCountry(node, params, result):
 
 def QWeatherOpenLoc(node, params, result):
     """ Store preposition and placename to use in voice
-        description, e.g. "á Raufarhöfn" """
-    result["subject"] = result._node.contained_text()
+        description, e.g. "Á Raufarhöfn" """
+    result["subject"] = result._node.contained_text().title()
 
 
 def Nl(node, params, result):

@@ -23,6 +23,8 @@
 
 """
 
+# TODO: Transition this module over to using grammar.
+
 
 from datetime import datetime, timedelta
 
@@ -78,6 +80,10 @@ _NUM_QUERIES = frozenset(
         "hvað hefurðu fengið margar spurningar",
         "hvað hefur þú fengið margar spurningar",
         "hvað hefurðu svarað mörgum spurningum",
+        "hvað hefurðu svarað mörgum spurningum á síðustu dögum",
+        "hvað hefur þú svarað mörgum spurningum á síðustu dögum",
+        "hvað hefur þú svarað mörgum spurningum frá upphafi",
+        "hvað hefurðu svarað mörgum spurningum frá upphafi"
         "hvað hefur þú svarað mörgum spurningum",
         "hvað hefurðu svarað mörgum fyrirspurnum",
         "hvað hefur þú svarað mörgum fyrirspurnum",
@@ -145,6 +151,8 @@ _MOST_MENTIONED_PEOPLE_QUERIES = frozenset(
         "hverjir eru mest áberandi í fjölmiðlum þessa dagana",
         "hverjir eru áberandi í fjölmiðlum",
         "hverjir eru áberandi í fjölmiðlum þessa dagana",
+        "hverjir eru mest í fjölmiðlum núna",
+        "hverjir eru mest í fjölmiðlum þessa dagana",
         "hvaða fólk hefur verið mest í fjölmiðlum síðustu daga",
         "hvaða fólk er mest í fréttum",
         "hvaða fólk er mest í fréttum þessa dagana",
@@ -158,6 +166,11 @@ _MOST_MENTIONED_PEOPLE_QUERIES = frozenset(
         "hverjir hafa verið mest í fréttum undanfarið",
         "hverjir hafa verið mest í fréttum upp á síðkastið",
         "hverjir hafa verið mest í fréttum síðustu daga",
+        "hverjir hafa verið mikið í fréttum",
+        "hverjir hafa verið mikið í fréttum nýlega",
+        "hverjir hafa verið mikið í fréttum undanfarið",
+        "hverjir hafa verið mikið í fréttum upp á síðkastið",
+        "hverjir hafa verið mikið í fréttum síðustu daga",
         "hvaða fólk hefur verið mest í fjölmiðlum",
         "hvaða fólk hefur verið mest í fjölmiðlum nýlega",
         "hvaða fólk hefur verið mest í fjölmiðlum undanfarið",

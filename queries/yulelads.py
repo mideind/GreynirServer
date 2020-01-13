@@ -23,6 +23,8 @@
 
 """
 
+# TODO: hvað eru íslensku jólasveinarnir margir
+
 import re
 import random
 

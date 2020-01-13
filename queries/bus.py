@@ -35,6 +35,7 @@
 """
 
 # TODO: Hvar er nálægasta strætóstoppistöð?
+# TODO: Hvað er ég lengi í næsta strætóskýli?
 
 import re
 from threading import Lock

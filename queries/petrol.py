@@ -1,0 +1,312 @@
+"""
+
+    Greynir: Natural language processing for Icelandic
+
+    Petrol query response module
+
+    Copyright (C) 2019 Miðeind ehf.
+
+       This program is free software: you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published by
+       the Free Software Foundation, either version 3 of the License, or
+       (at your option) any later version.
+       This program is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+       GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see http://www.gnu.org/licenses/.
+
+
+    This module handles petrol-related queries.
+
+"""
+
+# TODO: "Hver er ódýrasta bensínstöðin innan X kílómetra?"
+# TODO: Refactor convoluted grammar logic
+# TODO: Díselverð
+
+import logging
+import cachetools
+import random
+
+from geo import distance
+from queries import (
+    query_json_api,
+    format_icelandic_float,
+    gen_answer,
+    distance_desc,
+    krona_desc,
+)
+
+
+_PETROL_QTYPE = "Petrol"
+
+
+TOPIC_LEMMAS = [
+    "bensín",
+    "bensínstöð",
+    "bensínlítri",
+    "dísel",
+    "tankur",
+    "bensíntankur",
+    "bíll",
+    "eldsneyti",
+    "olía",
+    "díselolía",
+    "bifreið",
+]
+
+
+def help_text(lemma):
+    """ Help text to return when query.py is unable to parse a query but
+        one of the above lemmas is found in it """
+    return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
+        random.choice(
+            (
+                "Hvar er næsta bensínstöð",
+                "Hvar fæ ég ódýrasta bensínið",
+                "Hvar er ódýrt að fylla tankinn",
+                "Hvar fæ ég ódýrt bensín í nágrenninu",
+            )
+        )
+    )
+
+
+# This module wants to handle parse trees for queries
+HANDLE_TREE = True
+
+# The context-free grammar for the queries recognized by this plug-in module
+GRAMMAR = """
+
+Query →
+    QPetrol
+
+QPetrol → QPetrolQuery '?'?
+
+QPetrolQuery →
+    QPetrolClosestStation | QPetrolCheapestStation | QPetrolClosestCheapestStation
+
+QPetrolClosestStation →
+    "bensín" QPetrolNearMe?
+    | QPetrolStation QPetrolNearMe
+    | "hvar" "fæ" "ég" "bensín" QPetrolNearMe?
+    | "hvar" "get" "ég" "fengið" "bensín" QPetrolNearMe?
+    | "hvar" "get" "ég" "keypt" "bensín" QPetrolNearMe?
+    | "hvar" "get" "ég" "fyllt" "á"? "tankinn" QPetrolNearMe?
+    | "hvar" "get" "ég" "fyllt" "á"? "bílinn" QPetrolNearMe?
+    | "hvar" "er" QPetrolClosest QPetrolStation
+    | "hver" "er" QPetrolClosest QPetrolStation
+    | "hvaða" QPetrolStation "er" QPetrolNearMe
+
+QPetrolCheapestStation →
+    "ódýrasta" "bensínið"
+    | "hvaða" "bensínstöð" "er" "ódýrust"
+    | "hvaða" "bensínstöð" "er" "með" "ódýrasta" "bensínið"
+    | "hvaða" "bensínstöð" "er" "með" "ódýrasta" "bensínlítrann"
+    | "hvaða" "bensínstöð" "er" "með" "lægsta" "verðið"
+    | "hvaða" "bensínstöð" "er" "með" "lægsta" "verðið" "á" "bensínlítranum"
+    | "hvaða" "bensínstöð" "er" "með" "lægsta" "verðið" "á" "bensíni"
+    | "hvar" "er" "bensín" "ódýrast"
+    | "hvar" "er" "bensínið" "ódýrast"
+    | "hvar" "er" "bensínlítrinn" "ódýrastur"
+    | "hvar" "fæ" "ég" "ódýrasta" "bensínið"
+    | "hvar" "fæ" "ég" "ódýrasta" "bensínlítrann"
+    | "hvar" "er" "ódýrast" "að" "fylla" "á"? QPetrolFillableÞf
+    | "hvar" "get" "ég" "fengið" "ódýrasta" "bensínið"
+    | "hvar" "fæ" "ég" "ódýrasta" "bensínið"
+
+QPetrolClosestCheapestStation →
+    "ódýrt" "bensín" QPetrolNearMe?
+    | "hvar" "fæ" "ég" "ódýrt" "bensín" QPetrolNearMe?
+    | "hvar" "fæ" "ég" "ódýrasta" "bensínið" QPetrolNearMe
+    | "hvar" "fæ" "ég" "bensínlítrann" "ódýrt" QPetrolNearMe?
+    | "hvar" "fær" "maður" "ódýrt" "bensín" QPetrolNearMe?
+    | "hvar" "fær" "maður" "ódýrasta" "bensínið" QPetrolNearMe
+    | "hvar" "fær" "maður" "bensín" "ódýrt" QPetrolNearMe?
+    | "hvar" "fær" "maður" "bensínið" "ódýrt" QPetrolNearMe
+    | "hvar" "fær" "maður" "bensínlítrann" "ódýrt" QPetrolNearMe?
+    | "hvar" "er" "bensínið" "ódýrt" QPetrolNearMe?
+    | "hvar" "er" "bensínið" "ódýrast" QPetrolNearMe
+    | "hvar" "er" "bensínlítrinn" "ódýr" QPetrolNearMe?
+    | "hvar" "er" "bensínlítrinn" "ódýrastur" QPetrolNearMe
+    | "hvar" "er" "ódýrt" "bensín" QPetrolNearMe?
+    | "hvar" "er" "ódýrt" "að" "kaupa" "bensín" QPetrolNearMe?
+    | "hvaða" "bensínstöð" QPetrolNearMe? "er" "með" "ódýrt" "bensín"
+    | "hvaða" "bensínstöð" QPetrolNearMe? "er" "ódýr"
+    | "hvaða" "bensínstöð" QPetrolNearMe? "er" "með" "lágt" "verð"
+    | "hvaða" "bensínstöð" QPetrolNearMe? "er" "með" "lágt" "verð" "á" "bensíni"
+    | "hvaða" "bensínstöð" "er" "með" "ódýrt" "bensín" QPetrolNearMe?
+    | "hvaða" "bensínstöð" "er" "ódýr" QPetrolNearMe?
+    | "hvaða" "bensínstöð" "er" "með" "lágt" "verð" QPetrolNearMe?
+    | "hvaða" "bensínstöð" "er" "með" "lágt" "verð" "á" "bensíni" QPetrolNearMe?
+    | "hvar" "er" "ódýrt" "að" "fylla" "á"? QPetrolFillableÞf QPetrolNearMe?
+    | "hvar" "get" "ég" "fyllt" "á" QPetrolFillableÞf "ódýrt" QPetrolNearMe?
+
+QPetrolClosest →
+    "næsta" | "nálægasta"
+
+QPetrolFillableÞf →
+    "tank" | "tankinn" | "bensíntank" | "bensíntankinn" | "bílinn"
+
+QPetrolNearMe →
+    QPetrolHere? QPetrolAround
+
+QPetrolAround →
+    "nálægt" "mér"? | "í" "grenndinni" | "í" "grennd" | "á" "svæðinu" 
+    | "skammt" "frá" "mér"? | "í" "nágrenninu"
+
+QPetrolHere →
+    "hér" | "hérna"
+
+QPetrolStation →
+    "bensínstöð" | "bensínstöðin"
+
+$score(+35) QPetrol
+
+"""
+
+
+def QPetrolQuery(node, params, result):
+    result.qtype = _PETROL_QTYPE
+
+
+def QPetrolClosestStation(node, params, result):
+    result.qkey = "ClosestStation"
+
+
+def QPetrolCheapestStation(node, params, result):
+    result.qkey = "CheapestStation"
+
+
+def QPetrolClosestCheapestStation(node, params, result):
+    result.qkey = "ClosestCheapestStation"
+
+
+_PETROL_API = "https://apis.is/petrol"
+_PETROL_CACHE_TTL = 3600  # seconds, ttl 1 hour
+
+
+@cachetools.cached(cachetools.TTLCache(1, _PETROL_CACHE_TTL))
+def _get_petrol_station_data():
+    """ Fetch list of petrol stations w. prices from apis.is """
+    pd = query_json_api(_PETROL_API)
+    if not pd or "results" not in pd:
+        return None
+    return pd["results"]
+
+
+def _stations_with_distance(loc):
+    """ Return list of petrol stations w. added distance data. """
+    pd = _get_petrol_station_data()
+    if not pd:
+        return None
+
+    if loc:
+        # Calculate distance of all stations
+        for s in pd:
+            s["distance"] = distance(loc, (s["geo"]["lat"], s["geo"]["lon"]))
+
+    return pd
+
+
+def _closest_petrol_station(loc):
+    """ Find petrol station closest to the given location. """
+    stations = _stations_with_distance(loc)
+    if not stations:
+        return None
+
+    # Sort by distance
+    dist_sorted = sorted(stations, key=lambda s: s["distance"])
+    return dist_sorted[0] if dist_sorted else None
+
+
+def _cheapest_petrol_station():
+    stations = _stations_with_distance(None)
+    if not stations:
+        return None
+
+    # Sort by price
+    price_sorted = sorted(stations, key=lambda s: s["bensin95"])
+    return price_sorted[0] if price_sorted else None
+
+
+# Too liberal?
+_CLOSE_DISTANCE = 5.0  # km
+
+
+def _closest_cheapest_petrol_station(loc):
+    stations = _stations_with_distance(loc)
+    if not stations:
+        return None
+
+    # Filter out all stations that are not close by
+    filtered = filter(lambda x: x["distance"] <= _CLOSE_DISTANCE, stations)
+
+    # Sort by price
+    price_sorted = sorted(filtered, key=lambda s: s["bensin95"])
+    return price_sorted[0] if price_sorted else None
+
+
+_ERRMSG = "Ekki tókst að sækja upplýsingar um bensínstöðvar."
+
+
+def _answ_for_petrol_query(q, result):
+
+    if result.qkey == "ClosestStation":
+        station = _closest_petrol_station(q.location)
+        answer = "{0} {1} ({2}, bensínverð {3})"
+        desc = "Næsta bensínstöð"
+    elif result.qkey == "CheapestStation":
+        station = _cheapest_petrol_station()
+        answer = "{0} {1} ({2}, bensínverð {3})"
+        desc = "Ódýrasta bensínstöðin"
+    elif result.qkey == "ClosestCheapestStation":
+        station = _closest_cheapest_petrol_station(q.location)
+        desc = "Ódýrasta bensínstöðin í grenndinni"
+    else:
+        raise Exception("Unknown petrol query type")
+
+    if not station or not "bensin95" in station or not "distance" in station:
+        return gen_answer(_ERRMSG)
+
+    answ_fmt = "{0} {1} ({2}, bensínverð {3})"
+    voice_fmt = "{0} er {1} {2} í u.þ.b. {3} fjarlægð. Þar kostar bensínlítrinn {4}."
+
+    dist_nf = distance_desc(station["distance"], case="nf")
+    dist_þf = distance_desc(station["distance"], case="þf")
+    kr_desc = krona_desc(float(station["bensin95"]))
+
+    answer = answ_fmt.format(station["company"], station["name"], dist_nf, kr_desc)
+    response = dict(answer=answer)
+    voice = voice_fmt.format(
+        desc, station["company"], station["name"], dist_þf, kr_desc
+    )
+
+    return response, answer, voice
+
+
+def sentence(state, result):
+    """ Called when sentence processing is complete """
+    q = state["query"]
+    if "qtype" in result and "qkey" in result:
+        # Successfully matched a query type
+        try:
+            loc = q.location
+            if result.qkey == "CheapestStation" or loc:
+                answ = _answ_for_petrol_query(q, result)
+            else:
+                # We don't have a location
+                answ = gen_answer("Ég veit ekki hvar þú ert.")
+            if answ:
+                q.set_qtype(result.qtype)
+                q.set_key(result.qkey)
+                q.set_answer(*answ)
+                q.set_source("Gasvaktin")
+        except Exception as e:
+            logging.warning("Exception while processing petrol query: {0}".format(e))
+            q.set_error("E_EXCEPTION: {0}".format(e))
+            raise
+    else:
+        q.set_error("E_QUERY_NOT_UNDERSTOOD")

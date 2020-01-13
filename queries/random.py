@@ -171,7 +171,7 @@ def gen_random_answer(q, result):
 
 def heads_or_tails(q, result):
     q.set_key("HeadsOrTails")
-    return gen_answer(random.choice(("skjaldarmerki", "fiskur")))
+    return gen_answer(random.choice(("Skjaldarmerki", "Fiskur")))
 
 
 def sentence(state, result):

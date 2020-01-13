@@ -24,7 +24,7 @@
 """
 
 # TODO: "hvað er X með vaski/virðisaukaskatti?"
-# TODO: "hver er talan pí?"
+# TODO: Support pi in arithmetic ops ("Hvað er pí í öðru veldi?")
 
 import math
 import json
@@ -220,7 +220,9 @@ GRAMMAR = """
 # adding one or more query productions to the Query nonterminal
 
 Query →
-    QArithmetic
+    QArithmetic 
+    # 'Hvaða tala er pí'
+    | QArPi '?'?
 
 QArithmetic →
     QArithmeticQuery '?'?
@@ -250,10 +252,12 @@ QArithmeticQuery →
     # 'Hvað er einn tuttugasti af 190'
     | QArAnyPrefix QArFraction
 
+
+
 /arfall = nf þgf
 
-QArGenericPrefix → "hvað" "er" | "hvað" "eru" | 0
-QArSpecificPrefix → "hver" "er" | 0
+QArGenericPrefix → "hvað" "er" | "hvað" "eru" | "reiknaðu" | "geturðu" "reiknað" | 0
+QArSpecificPrefix → "hver" "er" | "reiknaðu" | "geturðu" "reiknað" | 0
 QArAnyPrefix → QArGenericPrefix | QArSpecificPrefix
 
 QArStd → QArNumberWord_nf QArOperator/arfall QArNumberWord/arfall
@@ -290,7 +294,7 @@ $tag(keep) QArPow
 # Prefix operators
 QArSumOperator → "summan" "af"
 QArSquareRootOperator →
-    "kvaðratrótin" "af" | "kvaðratrót" "af"
+    "kvaðratrótin" "af" | "kvaðratrótina" "af" | "kvaðratrót" "af"
     | "ferningsrótin" "af" | "ferningsrót" "af"
 QArPercentOperator → Prósenta "af"
 
@@ -334,10 +338,16 @@ QArOrdinalWord_þgf →
 QArOrdinalOrNumberWord_þgf →
     QArNumberWord_þgf | QArOrdinalWord_þgf
 
+QArPi →
+    "hvaða" "tala" "er" "pí"
+    | "hver" "er" "talan" "pí"
+    | "hvað" "er" "pí"
+    | "skilgreindu" "töluna"? "pí"
+
 """.format(
-    " | ".join('"' + w + '"' for w in _FRACTION_WORDS.keys()),  # Faction words
+    " | ".join('"' + w + '"' for w in _FRACTION_WORDS.keys()),  # Fraction words
     " | ".join(
-        '"einn" ' + '"' + w + '"' for w in _ORDINAL_WORDS_NOM.keys()
+        '"einn" ' + '"' + w + '"' for w in _ORDINAL_WORDS_NOM.keys()  # Ordinals
     ),  # "einn þriðji" etc.
     " | ".join('"' + w + '"' for w in _ORDINAL_WORDS_DATIVE.keys()),  # OrdinalWord
 )
@@ -515,6 +525,10 @@ def QArFraction(node, params, result):
     result.desc = result._canonical
 
 
+def QArPi(node, params, result):
+    result.qtype = "PI"
+
+
 def QArithmetic(node, params, result):
     # Set query type
     result.qtype = _ARITHMETIC_QTYPE
@@ -609,6 +623,15 @@ def calc_arithmetic(query, result):
     return response, answer, voice_answer
 
 
+def pi_answer(q, result):
+    """ Define pi (π) """
+    answer = "Talan π („pí“) er stærðfræðilegi fastinn 3,14159265359 eða þar um bil."
+    voice = "Talan pí er stærðfræðilegi fastinn 3,14159265359 eða þar um bil."
+    response = dict(answer=answer, result=math.pi)
+
+    return response, answer, voice
+
+
 def sentence(state, result):
     """ Called when sentence processing is complete """
     q = state["query"]
@@ -617,7 +640,10 @@ def sentence(state, result):
         q.set_qtype(result.qtype)
 
         try:
-            r = calc_arithmetic(q, result)
+            if result.qtype == "PI":
+                r = pi_answer(q, result)
+            else:
+                r = calc_arithmetic(q, result)
             if r is not None:
                 q.set_answer(*r)
                 q.set_key(result.get("qkey"))
@@ -626,7 +652,7 @@ def sentence(state, result):
                     # the 'result' property
                     q.set_context(dict(result=r[0]["result"]))
             else:
-                raise Exception("Arithmetic calculation failed")
+                raise Exception("Failed to answer arithmetic query")
         except Exception as e:
             logging.warning("Exception in arithmetic module: {0}".format(e))
             q.set_error("E_EXCEPTION: {0}".format(e))

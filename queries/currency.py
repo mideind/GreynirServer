@@ -121,13 +121,13 @@ $score(+35) QCurrency
 
 QCurrencyQuery →
     # "Hver er gengisvísitalan?"
-    "hver" "er" QCurCurrencyIndex_nf | QCurCurrencyIndex_nf
+    "hver" "er" QCurCurrencyIndex_nf QCurNow? | QCurCurrencyIndex_nf QCurNow?
     
     # "Hvert/hvað/hvernig er gengi X?"
-    | QCurAnyPrefix? QCurGeneralRate
+    | QCurAnyPrefix? QCurGeneralRate QCurNow?
 
     # "Hvert/hvað/hvernig er gengi X gagnvart Y?"
-    | QCurAnyPrefix? QCurExchangeRate
+    | QCurAnyPrefix? QCurExchangeRate QCurNow?
 
     # "Hvað eru NUM X margir/margar/mörg Y?"
     | QCurGenericPrefix? QCurAmountConversion
@@ -138,6 +138,8 @@ QCurrencyQuery →
 QCurGenericPrefix → "hvað" "er" | "hvað" "eru" | "hvernig" "er"
 QCurSpecificPrefix → "hvert" "er" | "hvernig" "er"
 QCurAnyPrefix → QCurGenericPrefix | QCurSpecificPrefix
+
+QCurNow → "núna" | "nú" | "í" "augnablikinu" | "eins" "og" "stendur" | "í" "dag" 
 
 # Supported currencies
 # Note: All child productions of QCurUnit must have valid
@@ -166,6 +168,7 @@ QCurSEK/fall →
 
 QCurUSD/fall →
     'bandaríkjadalur:kk'/fall
+    | 'dalur:kk'/fall
     | 'bandarískur:lo'_kk/fall? 'dollari:kk'/fall
     | currency_usd/fall
 
