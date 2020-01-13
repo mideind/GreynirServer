@@ -248,6 +248,8 @@ def test_query_api(client):
         "hvað er þrisvar sinnum sjö": "21",
         "hvað er fjórðungur af 28": "7",
         "hvað er einn tuttugasti af 192": "9,6",
+        "reiknaðu 7 sinnum 7": "49",
+        "geturðu reiknað kvaðratrótina af 9": "3",
     }
 
     for q, a in ARITHM_QUERIES.items():

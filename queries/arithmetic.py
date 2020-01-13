@@ -243,10 +243,10 @@ QArithmeticQuery →
     | QArAnyPrefix QArSqrt
     
     # 'Hvað er X í Y veldi?'
-    | QArGenericPrefix QArPow | "reiknaðu" QArPow
+    | QArGenericPrefix QArPow
 
     # 'Hvað er(u) 12 prósent af 93'
-    | QArGenericPrefix QArPercent | "reiknaðu" QArPercent
+    | QArGenericPrefix QArPercent
 
     # 'Hvað er fjórðungurinn af 1220'
     # 'Hvað er einn tuttugasti af 190'
@@ -256,8 +256,8 @@ QArithmeticQuery →
 
 /arfall = nf þgf
 
-QArGenericPrefix → "hvað" "er" | "hvað" "eru" | 0
-QArSpecificPrefix → "hver" "er" | 0
+QArGenericPrefix → "hvað" "er" | "hvað" "eru" | "reiknaðu" | "geturðu" "reiknað" | 0
+QArSpecificPrefix → "hver" "er" | "reiknaðu" | "geturðu" "reiknað" | 0
 QArAnyPrefix → QArGenericPrefix | QArSpecificPrefix
 
 QArStd → QArNumberWord_nf QArOperator/arfall QArNumberWord/arfall
@@ -345,9 +345,9 @@ QArPi →
     | "skilgreindu" "töluna"? "pí"
 
 """.format(
-    " | ".join('"' + w + '"' for w in _FRACTION_WORDS.keys()),  # Faction words
+    " | ".join('"' + w + '"' for w in _FRACTION_WORDS.keys()),  # Fraction words
     " | ".join(
-        '"einn" ' + '"' + w + '"' for w in _ORDINAL_WORDS_NOM.keys()
+        '"einn" ' + '"' + w + '"' for w in _ORDINAL_WORDS_NOM.keys()  # Ordinals
     ),  # "einn þriðji" etc.
     " | ".join('"' + w + '"' for w in _ORDINAL_WORDS_DATIVE.keys()),  # OrdinalWord
 )

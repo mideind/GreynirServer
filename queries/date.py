@@ -40,7 +40,6 @@
 # TODO: "Hvað eru margir dagar eftir af árinu?"
 # TODO: "Hvaða vikudagur var 11. september 2001?" "Hvaða (viku)dagur er á morgun?" "Hvaða dagur var í gær?"
 # TODO: "Hvenær eru vetrarsólstöður" + more astronomical dates
-# TODO: "Hvenær er dagur íslenskrar tungu" :)
 # TODO: "Hvað er langt í helgina?" "Hvenær er næsti (opinberi) frídagur?"
 # TODO: "Hvað eru margir dagar að fram að jólum?"
 # TODO: "Hvað eru margir dagar eftir af árinu? mánuðinum? vikunni?"
@@ -56,7 +55,8 @@
 # TODO: "Þorláksmessa" not working
 # TODO: "hvenær er næst fullt tungl"
 # TODO: Specify weekday in "hvenær er" queries (e.g. "Sjómannadagurinn er *sunnudaginn* 7. júní")
-
+# TODO: "Hvað eru margar [unit of time measurement] í [dagsetningu]"
+# TODO: "hvenær byrjar þorrinn"
 
 import json
 import re
@@ -499,8 +499,8 @@ def QDateBankHoliday(node, params, result):
 def QDateCultureNight(node, params, result):
     result["desc"] = "menningarnótt"
     # Culture night is on the first Saturday after Reykjavík's birthday on Aug 18th
-    aug18 = dnext(datetime(year=datetime.today().year, month=8, day=17))
-    result["target"] = next_weekday(aug18, 5)  # Find the next saturday
+    aug18 = dnext(datetime(year=datetime.today().year, month=8, day=18))
+    result["target"] = next_weekday(aug18, 5)  # Find the next Saturday
 
 
 def QDateValentinesDay(node, params, result):

@@ -40,9 +40,9 @@ _WIKI_QTYPE = "Wikipedia"
 
 # For end user presentation
 _WIKIPEDIA_CANONICAL = "Wikipedía"
-_WIKIPEDIA_VOICE = "Vikipedía"
 
 _WIKI_VARIATIONS = (
+    # Nominative
     "vikipedija",
     "víkípedija",
     "vikípedija",
@@ -53,6 +53,17 @@ _WIKI_VARIATIONS = (
     "vikipedía",
     "wikipedia",
     "wikipedía",
+    # Dative
+    "vikipediju",
+    "víkípediju",
+    "vikípediju",
+    "víkipediju",
+    "víkípedíu",
+    "víkipedíu",
+    "vikípedíu",
+    "vikipedíu",
+    "wikipediu",
+    "wikipedíu",
 )
 
 
@@ -67,6 +78,7 @@ def help_text(lemma):
             (
                 "Hvað segir Wikipedía um Berlín",
                 "Hvað getur Wikipedía sagt mér um heimspeki",
+                "Fræddu mig um afstæðiskenninguna" "Flettu upp ",
             )
         )
     )
@@ -83,18 +95,33 @@ Query →
     QWikiQuery '?'?
 
 QWikiQuery →
-    "hvað" "segir" QWikipedia "um" QWikiSubject
-    | "hvað" "getur" QWikipedia "sagt" "mér"? "um" QWikiSubject
-    | "hvaða" "upplýsingar" "er" QWikipedia "með" "um" QWikiSubject
-    | "hvaða" "upplýsingum" "býr" QWikipedia "yfir" "varðandi" QWikiSubject
-    | "hvað" "myndi" QWikipedia "segja" "mér"? "um" QWikiSubject
-    | "fræddu" "mig" "um" QWikiSubject
-    | "geturðu" "frætt" "mig" "um" QWikiSubject
-    # | "flettu" "upp" QWikiSubject "í" QWikipedia
-    # | "geturðu" "flett" "upp" QWikiSubject "í" QWikipedia
+    # These take the subject in the accusative case
+    "hvað" "segir" QWikipedia "um" QWikiSubjectÞf
+    | "hvað" "getur" "þú" "sagt" "mér"? "um" QWikiSubjectÞf
+    | "hvað" "geturðu" "sagt" "mér"? "um" QWikiSubjectÞf
+    | "hvað" "getur" QWikipedia "sagt" "mér"? "um" QWikiSubjectÞf
+    | "hvaða" "upplýsingar" "ert" "þú" "með" "um" QWikiSubjectÞf
+    | "hvaða" "upplýsingar" "ertu" "með" "um" QWikiSubjectÞf
+    | "hvaða" "upplýsingar" "er" QWikipedia "með" "um" QWikiSubjectÞf
+    | "hvaða" "upplýsingum" "býr" QWikipedia "yfir" "varðandi" QWikiSubjectÞf
+    | "hvaða" "upplýsingum" "býrðu" "yfir" "varðandi" QWikiSubjectÞf
+    | "hvað" "myndi" QWikipedia "segja" "mér"? "um" QWikiSubjectÞf
+    | "fræddu" "mig" "um" QWikiSubjectÞf
+    | "geturðu" "frætt" "mig" "um" QWikiSubjectÞf
+    | "nennirðu" "að" "fræða" "mig" "um" QWikiSubjectÞf
 
-QWikiSubject →
+    # These take the subject in the dative case
+    # | "segðu" "mér" "frá" "QWikiSubjectÞgf
+    # | "flettu" "upp" QWikiSubjectÞgf "í" QWikipedia
+    # | "geturðu" "flett" "upp" QWikiSubjectÞgf "í" QWikipedia
+    # | "nennirðu" "að" "fletta" "upp" QWikiSubjectÞgf "í" QWikipedia
+    # | "gætirðu" "flett" "upp" QWikiSubjectÞgf "í" QWikipedia
+
+QWikiSubjectÞf →
     Nl_þf
+
+# QWikiSubjectÞgf →
+#     Nl_þgf
 
 QWikipedia →
     {0}
@@ -112,7 +139,7 @@ def QWikiQuery(node, params, result):
     result.qkey = result["subject_nom"]
 
 
-def QWikiSubject(node, params, result):
+def QWikiSubjectÞf(node, params, result):
     result["subject_nom"] = result._nominative
     result["subject_dat"] = result._text
 
@@ -142,13 +169,14 @@ def _clean_answer(answer):
     a = re.sub(r"\s,\s", ", ", a)
     a = re.sub(r"\s\.\s", ". ", a)
     # E.g. "100-700" becomes "100 til 700"
-    a = re.sub(r"(\d+)\-(\d+)", r"\1 til \2", a)
+    a = re.sub(r"(\d+)\s?\-\s?(\d+)", r"\1 til \2", a)
     return a
 
 
 def _clean_voice_answer(answer):
     a = answer.replace(" m.a. ", " meðal annars ")
     a = a.replace(" þ.e. ", " það er ")
+    a = a.replace(" t.d. ", " til dæmis ")
     return a
 
 
@@ -167,7 +195,12 @@ def get_wiki_summary(subject_nom, subject_dat):
     def has_entry(r):
         return r and "query" in r and "pages" in r["query"]
 
-    res = _query_wiki_api(subject_nom)
+    # Wiki pages always start with an uppercase character
+    cap_subj = subject_nom[0].upper() + subject_nom[1:]
+    # Talk to API
+    res = _query_wiki_api(cap_subj)
+    # OK, Wikipedia doesn't have anything with current capitalization
+    # or lack thereof. Try uppercasing first character of each word.
     if not has_entry(res):
         res = _query_wiki_api(subject_nom.title())
 
@@ -181,8 +214,8 @@ def get_wiki_summary(subject_nom, subject_dat):
     if not len(keys) or "-1" in keys:
         return not_found
 
+    # Pick first matching entry
     k = sorted(keys)[0]
-
     text = pages[k].get("extract", "")
 
     return _clean_answer(text)

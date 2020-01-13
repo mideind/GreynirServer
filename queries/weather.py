@@ -195,16 +195,19 @@ QWeatherTemperature →
     | "hversu" "margra" "stiga" "frost" "er" QWeatherAnyLoc? QWeatherNow?
     | "hve" "margra" "stiga" "hiti" "er" QWeatherAnyLoc? QWeatherNow?
     | "hve" "margra" "stiga" "frost" "er" QWeatherAnyLoc? QWeatherNow?
-
+    | "er" "heitt" "úti"? QWeatherAnyLoc? QWeatherNow?
+    | "er" "fyrir" "ofan" "frostmark" "úti"? QWeatherAnyLoc? QWeatherNow?
+    | "er" "frost" QWeatherAnyLoc? QWeatherNow?
+    | "er" "fyrir" "neðan" "frostmark" "úti"? QWeatherAnyLoc? QWeatherNow?
 
 QWeatherUmbrella →
     "þarf" QWeatherOne "regnhlíf" QWeatherNow
     | "þarf" "ég" "að" "taka" "með" "mér" "regnhlíf" QWeatherNow 
+    | "þarf" "maður" "að" "taka" "með" "sér" "regnhlíf" QWeatherNow 
     | "væri" "regnhlíf" "gagnleg" QWeatherForMe? QWeatherNow
     | "væri" "gagn" "af" "regnhlíf" QWeatherForMe? QWeatherNow
     | "kæmi" "regnhlíf" "að" "gagni" QWeatherForMe? QWeatherNow
     | "myndi" "regnhlíf" "gagnast" "mér" QWeatherNow
-
 
 QWeatherOne →
     "ég" | "maður"
@@ -230,7 +233,9 @@ QWeatherNextDays →
     | "fyrir" "morgundaginn"
 
 QWeatherCountry →
-    "á" "landinu" | "á" "íslandi" | "hér" "á" "landi" | "á" "landsvísu" | "heima"
+    "á" "landinu" | "á" "íslandi" | "hér" "á" "landi" | "á" "landsvísu" 
+    | "um" "landið" "allt" | "um" "allt" "land" | "fyrir" "allt" "landið" 
+    | "á" "fróni" | "heima"
 
 QWeatherCapitalRegion →
     "á" "höfuðborgarsvæðinu" | "fyrir" "höfuðborgarsvæðið" 

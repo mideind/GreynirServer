@@ -328,11 +328,7 @@ def distance_desc(km_dist, case="nf", in_metres=1.0, abbr=False):
     else:
         # Round to nearest 10
         def rnd(n):
-            rem = n % 10
-            if rem < 5:
-                return int(n / 10) * 10
-            else:
-                return int((n + 10) / 10) * 10
+            return ((n + 5) // 10) * 10
 
         dist = rnd(int(km_dist * 1000.0))
         plidx = 1 if is_plural(dist) else 0

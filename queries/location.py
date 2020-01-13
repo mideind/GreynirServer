@@ -70,14 +70,20 @@ QLocationCurrent →
     | "hver" "er" "staðsetningin" "mín"? QLocEiginlega? QLocInTheWorld? QLocNow?
     | "hvar" "erum" "við" QLocEiginlega? QLocLocatedFemAndPlural? QLocInTheWorld? QLocNow?
     | "staðsetning" QLocInTheWorld? QLocNow?
-    | "á" "hvaða" "götu" "er" "ég" QLocEiginlega? QLocLocated? QLocInTheWorld? QLocNow?
-    | "á" "hvaða" "götu" "erum" "við" QLocEiginlega? QLocLocated? QLocInTheWorld? QLocNow?
+    | QLocWhichStreet QLocEiginlega? QLocLocated? QLocInTheWorld? QLocNow?
 
 QLocationPostcode →
     "í" "hvaða" "póstnúmeri" "er" "ég" QLocEiginlega? QLocLocated? QLocNow?
     | "hvaða" "póstnúmeri" "er" "ég" QLocEiginlega? QLocLocated? "í" QLocNow?
     | "í" "hvaða" "póstnúmeri" "erum" "við" QLocEiginlega? QLocLocated? QLocNow?
     | "hvaða" "póstnúmeri" "erum" "við" QLocEiginlega? QLocLocated? "í" QLocNow?
+
+QLocWhichStreet →
+    QLocPreposition "hvaða" "götu" "er" "ég"
+    | QLocPreposition "hvaða" "götu" "erum" "við"
+
+QLocPreposition →
+    "á" | "í"
 
 QLocEiginlega →
     "eiginlega"

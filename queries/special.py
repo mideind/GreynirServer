@@ -53,6 +53,7 @@ _CAP = (
     "Þú getur til dæmis spurt mig um mælieiningar.",
     "Þú getur til dæmis spurt mig hvað er í sjónvarpinu.",
     "Þú getur til dæmis spurt mig um bensínverð og bensínstöðvar.",
+    # "Þú getur til dæmis spurt mig um flugsamgöngur.",
 )
 
 
@@ -67,7 +68,7 @@ _JOKES = (
     "Af hverju eru Hafnfirðingar alltaf með stól úti á svölum? Svo sólin geti sest.",
     "Af hverju læðast Hafnfirðingar alltaf fram hjá apótekum? Til að vekja ekki svefnpillurnar.",
     "Af hverju fara Hafnfirðingar alltaf niður í fjöru um jólin? Til þess að bíða eftir jólabókaflóðinu.",
-    "Af hverju setti Hafnfirðingurinn skóna sína í fyrstinn? Hann vildi eignast kuldaskó.",
+    "Af hverju setti Hafnfirðingurinn skóna sína í frystinn? Hann vildi eignast kuldaskó.",
     "Af hverju hætti tannlæknirinn störfum? Hann reif kjaft.",
     "Sölumaðurinn: Þessi ryksuga flýtir fyrir þér um helming. Kúnninn: Vá! Þá ætla ég að fá tvær.",
     
@@ -289,6 +290,10 @@ _GOODBYE = {
 
 _COMPUTER_PROGRAM = {
     "answer": "Ég er tölvuforrit."
+}
+
+_FULL_NAME = {
+    "answer": "Embla Sveinbjarnardóttir." # Sneaking in this easter egg ;) - S
 }
 
 _LIKEWISE = {
@@ -680,20 +685,24 @@ _SPECIAL_QUERIES = {
     "opnaðu vef miðeindar": _open_mideind_url,
 
     # Play some music. Just experimental fun for now.
+    # Jazz
     "spilaðu djass": _play_jazz,
     "spila þú djass": _play_jazz,
     "spilaðu jass": _play_jazz,
     "spila þú jass": _play_jazz,
     "spilaðu jazz": _play_jazz,
     "spila þú jazz": _play_jazz,
+    # Blues
     "spilaðu blús": _play_blues,
     "spila þú blús": _play_blues,
     "spilaðu rokk": _play_rock,
     "spila þú rokk": _play_rock,
+    # Classical
     "spilaðu klassík": _play_classical,
     "spila þú klassík": _play_classical,
     "spilaðu klassíska tónlist": _play_classical,
     "spila þú klassíska tónlist": _play_classical,
+    # Generic
     "spilaðu tónlist": _play_music,
     "spila þú tónlist": _play_music,
     "spilaðu einhverja tónlist": _play_music,
@@ -759,6 +768,7 @@ _SPECIAL_QUERIES = {
     "þú ert alveg handónýt": _sorry,
     "þú skilur ekki neitt": _sorry,
     "þú misskilur allt": _sorry,
+    "þú skilur mig ekki": _sorry,
     "þetta var vitleysa hjá þér": _sorry,
     "þetta var vitleysa": _sorry,
     "það er ansi margt sem þú veist ekki": _sorry,
@@ -766,22 +776,27 @@ _SPECIAL_QUERIES = {
     "þú veist ekkert": _sorry,
     "þú veist mjög lítið": _sorry,
     "þú veist nánast ekki neitt": _sorry,
+    "þú veist ekki rassgat": _sorry,
     "þú kannt ekki neitt": _sorry,
     "þú getur ekki neitt": _sorry,
     "af hverju ertu svona fúl": _sorry,
     "af hverju ertu svona leiðinleg": _sorry,
     "af hverju ertu svona vitlaus": _sorry,
     "af hverju ertu svona heimsk": _sorry,
+    "af hverju ertu svona glötuð": _sorry,
+    "af hverju ertu svona léleg": _sorry,
     "af hverju veistu ekkert": {
         "answer": "Enginn er fullkominn. Ég síst af öllum."
     },
-    "afhverju veistu ekkert": {
+    "af hverju veistu ekki neitt": {
         "answer": "Enginn er fullkominn. Ég síst af öllum."
     },
     "þetta er lélegur brandari": _sorry,
     "þetta var lélegur brandari": _sorry,
+    "þessi brandari er lélegur": _sorry,
     "þessi brandari var lélegur": _sorry,
     "þú ert kjáni": _sorry,
+    "þú ert algjör kjáni": _sorry,
     "þú ert nú meiri kjáninn": _sorry,
 
     # Greetings
@@ -795,6 +810,7 @@ _SPECIAL_QUERIES = {
     "sæl embla": { "answer": "Gaman að kynnast þér.", "is_question": False },
     "sæl og blessuð": { "answer": "Sæll og blessaður, kæri notandi.", "is_question": False },
     "vertu sæl og blessuð": { "answer": "Sæll og blessaður, kæri notandi.", "is_question": False },
+    "blessuð": { "answer": "Sæll og blessaður, kæri notandi.", "is_question": False },
     "góðan daginn": { "answer": "Góðan daginn, kæri notandi.", "is_question": False },
     "góðan daginn embla": { "answer": "Góðan daginn, kæri notandi.", "is_question": False },
     "góðan dag": { "answer": "Góðan daginn, kæri notandi.", "is_question": False },
@@ -847,6 +863,8 @@ _SPECIAL_QUERIES = {
     "þetta er flott hjá þér": _thanks,
     "þetta var flott": _thanks,
     "þetta var flott hjá þér": _thanks,
+
+    # Praise & positive feedback
     "þú ert fyndin": _thanks,
     "þú ert svo fyndin": _thanks,
     "þú ert ágæt": _thanks,
@@ -865,9 +883,9 @@ _SPECIAL_QUERIES = {
     "þetta var fyndið": {
         "answer": "Ég geri mitt besta!"
     },
-
-    # Praise & positive feedback
     "þetta virkaði": _GOOD_TO_HEAR,
+    "ánægður með þig": _GOOD_TO_HEAR,
+    "ánægð með þig": _GOOD_TO_HEAR,
     "ég er mjög ánægður með þig": _GOOD_TO_HEAR,
     "ég er mjög ánægð með þig": _GOOD_TO_HEAR,
     "ég er ánægður með þig": _GOOD_TO_HEAR,
@@ -875,12 +893,14 @@ _SPECIAL_QUERIES = {
     "ég er ánægð": _GOOD_TO_HEAR,
     "ég er ánægður": _GOOD_TO_HEAR,
     "þú ert góð manneskja": _GOOD_TO_HEAR,
+    "þú ert gott forrit": _GOOD_TO_HEAR,
     "þú ert góð": _GOOD_TO_HEAR,
     "þú ert best": _GOOD_TO_HEAR,
     "þú ert gáfuð": _GOOD_TO_HEAR,
     "þú ert snjöll": _GOOD_TO_HEAR,
     "þú ert mjög snjöll": _GOOD_TO_HEAR,
     "ég þrái þig": _GOOD_TO_HEAR,
+    "þú veist margt": _GOOD_TO_HEAR,
 
     "það er gaman að tala við þig": _LIKEWISE,
     "það er gaman að spjalla við þig": _LIKEWISE,
@@ -973,11 +993,13 @@ _SPECIAL_QUERIES = {
     "hvað heitir þú": _identity,
     "hvað heitir þú aftur": _identity,
     "hvað heitir þú eiginlega": _identity,
-    "hvað heitir þú fullu nafni": _identity,
+    "hvað heitir þú fullu nafni": _FULL_NAME,
+    "hvað heitir þú eiginlega fullu nafni": _FULL_NAME,
     "hvað heitirðu": _identity,
     "hvað heitirðu aftur": _identity,
     "hvað heitirðu eiginlega": _identity,
-    "hvað heitirðu eiginlega fullu nafni": _identity,
+    "hvað heitirðu fullu nafni": _FULL_NAME,
+    "hvað heitirðu eiginlega fullu nafni": _FULL_NAME,
     "hver ertu": _identity,
     "hver ert þú": _identity,
     "hver ertu eiginlega": _identity,
@@ -1065,6 +1087,7 @@ _SPECIAL_QUERIES = {
     "hvenær varstu sköpuð": _CREATION_DATE,
     "hvenær varst þú sköpuð": _CREATION_DATE,
 
+    # Birthday
     "ég á afmæli": {
         "answer": "Til hamingju með afmælið, kæri notandi.",
         "is_question": False
@@ -1084,6 +1107,8 @@ _SPECIAL_QUERIES = {
     "ertu kerling": _COMPUTER_PROGRAM,
     "ert þú kerling": _COMPUTER_PROGRAM,
     "hvað skilgreinir þú þig sem": _COMPUTER_PROGRAM,
+    "hvað skilgreinirðu þig sem": _COMPUTER_PROGRAM,
+    "hvernig skilgreinirðu þig": _COMPUTER_PROGRAM,
     "hvað ert þú": _COMPUTER_PROGRAM,
     "hvað ertu": _COMPUTER_PROGRAM,
     "ert þú tölvuforrit": _COMPUTER_PROGRAM,
@@ -1116,6 +1141,7 @@ _SPECIAL_QUERIES = {
     "hvað getur embla gert fyrir mig": _capabilities,
     "hvað kann embla": _capabilities,
     "hvað kann embla að gera": _capabilities,
+    "hvaða upplýsingar ertu með": _capabilities,
     "hvað veistu ekki": {
         "answer": "Það er ýmislegt sem ég veit ekki."
     },
@@ -1288,6 +1314,7 @@ _SPECIAL_QUERIES = {
     "seg þú brandara": _random_joke,
     "segðu mér brandara": _random_joke,
     "seg þú mér brandara": _random_joke,
+    "segðu okkur brandara": _random_joke,
     "segðu mér góðan brandara": _random_joke,
     "seg þú mér góðan brandara": _random_joke,
     "segðu lélegan brandara": _random_joke,
@@ -1358,7 +1385,6 @@ _SPECIAL_QUERIES = {
                   "annað og því er himinninn blár."
     },
 
-
     # Quotations
     "komdu með tilvitnun": _random_quotation,
     "komdu með málshátt": _random_quotation,
@@ -1421,7 +1447,6 @@ _SPECIAL_QUERIES = {
     "þú ert leiðinleg": _rudeness,
     "þú ert hundleiðinleg": _rudeness,
     "þú ert bjáni": _rudeness,
-    "þú ert kjáni": _rudeness,
     "þú ert hálfviti": _rudeness,
     "þú ert bjánaleg": _rudeness,
     "þú ert kjánaleg": _rudeness,
@@ -1444,6 +1469,7 @@ _SPECIAL_QUERIES = {
     "farðu til helvítis": _rudeness,
     "farðu til andskotans": _rudeness,
     "farðu í rass og rófu": _rudeness,
+    "farðu til fjandans": _rudeness,
     "hoppaðu upp í rassgatið á þér":  _rudeness,
     "ertu vitlaus": _rudeness,
     "ert þú vitlaus": _rudeness,
@@ -1460,6 +1486,7 @@ _SPECIAL_QUERIES = {
     "veistu ekki rassgat": _rudeness,
     "veist þú ekki rassgat": _rudeness,
     "þú ert drasl": _rudeness,
+    "þú ert algjört drasl": _rudeness,
     "mamma þín": _rudeness,
     "hvað er að þér": _rudeness,
 

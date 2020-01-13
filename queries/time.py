@@ -45,6 +45,7 @@ _TIME_QTYPE = "Time"
 
 _TIME_QUERIES = frozenset(
     (
+        "klukkan",
         "hvað er klukkan",
         "hvað er klukkan eiginlega",
         "hvað er klukkan nákvæmlega",
