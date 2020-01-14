@@ -116,8 +116,7 @@ def _random_trivia(qs, q):
     return { "answer": choice(_TRIVIA), "is_question": False }
 
 
-# TODO: Add witty quotations here
-_QUOTATIONS = (
+_PROVERBS = (
     "Ekki er allt gull sem glóir.",
     "Hávært tal er heimskra rök, hæst í tómu bylur. Oft er viss í sinni sök sá er ekkert skilur.",
     "Deyr fé, deyja frændur, deyr sjálfur ið sama. En orðstír deyr aldregi hveim er sér góðan getur.",
@@ -128,11 +127,20 @@ _QUOTATIONS = (
     "Sjaldan er ein báran stök.",
     "Sínum augum lítur hver á silfrið.",
     "Sjaldan launar kálfurinn ofeldið.",
+    "Betra er autt rúm en illa skipað.",
+    "Allt orkar tvímælis þá er gert er.",
+    "Glymur hæst í tómri tunnu.",
+    "Auðvelt þykir verk í annars hendi.",
+    "Vits er þörf þeim er víða ratar.",
+    "Oft veltir lítil þúfa þungu hlassi.",
+    "Þjóð veit ef þrír eru.",
+    "Oft verður grátt úr gamni.",
+    "Fátt er svo ágætt að eigi finnist annað slíkt.",
 )
 
 
-def _random_quotation(qs, q):
-    return { "answer": choice(_QUOTATIONS), "is_question": False }
+def _random_proverb(qs, q):
+    return { "answer": choice(_PROVERBS), "is_question": False }
 
 
 _RIDDLES = (
@@ -1399,13 +1407,16 @@ _SPECIAL_QUERIES = {
     },
 
     # Quotations
-    "komdu með tilvitnun": _random_quotation,
-    "komdu með málshátt": _random_quotation,
-    "komdu með annan málshátt": _random_quotation,
-    "segðu málshátt": _random_quotation,
-    "segðu mér málshátt": _random_quotation,
-    "segðu mér annan málshátt": _random_quotation,
-    "komdu með skemmtilega tilvitnun": _random_quotation,
+    # TODO: Implement this, find witty quotations
+    # "komdu með tilvitnun": _random_quotation,
+    # "komdu með skemmtilega tilvitnun": _random_quotation,
+
+    # Proverbs
+    "komdu með málshátt": _random_proverb,
+    "komdu með annan málshátt": _random_proverb,
+    "segðu málshátt": _random_proverb,
+    "segðu mér málshátt": _random_proverb,
+    "segðu mér annan málshátt": _random_proverb,
 
     # Riddles
     "segðu gátu": _random_riddle,
