@@ -53,8 +53,7 @@ def natlang_seq(words, oxford_comma=False):
 
 
 def nom2dat(w):
-    """ Look up dative form of a noun in BÍN, try
-        lowercase if capitalized form is not found. """
+    """ Look up dative form of a noun in BÍN. """
 
     def sort_by_preference(m_list):
         """ Discourage rarer declension forms, i.e. ÞGF2 and ÞGF3 """
@@ -64,19 +63,6 @@ def nom2dat(w):
         with BIN_Db().get_db() as db:
             return db.cast_to_dative(w, meaning_filter_func=sort_by_preference)
     return w
-
-
-# Placename components that should not be capitalized
-_PLACENAME_PREPS = ("í", "á", "de")
-
-
-def capitalize_placename(pn):
-    """ Correctly capitalize a lowercase placename, e.g.
-        "rio de janeiro"->"Rio de Janeiro", "vík í mýrdal"->"Vík í Mýrdal" """
-    comp = pn.split()
-    return " ".join(
-        c[0].upper() + c[1:] if c not in _PLACENAME_PREPS else c for c in comp
-    )
 
 
 # The following needs to include at least nominative

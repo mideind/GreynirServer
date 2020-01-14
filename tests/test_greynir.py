@@ -35,14 +35,16 @@ from geo import *
 from queries import *
 
 # Routes that don't return 200 OK without certain query/post parameters or external services
-SKIP_ROUTES = frozenset((
-    "/staticmap",
-    "/page",
-    "/nnparse.api",
-    "/nntranslate.api",
-    "/nn/translate.api",
-    "/exit.api",
-))
+SKIP_ROUTES = frozenset(
+    (
+        "/staticmap",
+        "/page",
+        "/nnparse.api",
+        "/nntranslate.api",
+        "/nn/translate.api",
+        "/exit.api",
+    )
+)
 
 REQ_METHODS = frozenset(["GET", "POST"])
 
@@ -74,8 +76,10 @@ API_EXCLUDE_START = "/nn"
 API_ROUTES = [
     r
     for r in app.url_map.iter_rules()
-    if str(r).endswith(".api") and not r.arguments and str(r) not in SKIP_ROUTES
-       and not str(r).startswith(API_EXCLUDE_START)
+    if str(r).endswith(".api")
+    and not r.arguments
+    and str(r) not in SKIP_ROUTES
+    and not str(r).startswith(API_EXCLUDE_START)
 ]
 
 
@@ -187,11 +191,11 @@ def test_query_api(client):
         "skírdagur",
         "sumardagurinn fyrsti",
         "verslunarmannahelgi",
-        #"þorláksmessa",
+        # "þorláksmessa",
         "föstudagurinn langi",
         "menningarnótt",
         "sjómannadagurinn",
-        #"dagur íslenskrar tungu",
+        # "dagur íslenskrar tungu",
         "annar í jólum",
     )
     for d in SPECIAL_DAYS:
@@ -216,7 +220,7 @@ def test_query_api(client):
     json = validate_json(resp)
     assert json["qtype"] == "Date"
     assert re.search(r"^\d+", json["answer"])
-    assert "dag" in json["answer"]    
+    assert "dag" in json["answer"]
 
     # resp = client.get("/query.api?q=Hvað er langt fram að verslunarmannahelgi")
     # json = validate_json(resp)
@@ -462,7 +466,9 @@ def test_query_api(client):
     assert json["qtype"] == "Petrol"
     assert "Ánanaust" in json["answer"]
 
-    resp = client.get("/query.api?q=Hvar fæ ég ódýrt bensín í nágrenninu?&test=1&voice=1")
+    resp = client.get(
+        "/query.api?q=Hvar fæ ég ódýrt bensín í nágrenninu?&test=1&voice=1"
+    )
     json = validate_json(resp)
     assert json["qtype"] == "Petrol"
 
@@ -481,9 +487,6 @@ def test_query_api(client):
 
     assert nom2dat("hestur") == "hesti"
     assert nom2dat("Hvolsvöllur") == "Hvolsvelli"
-
-    assert capitalize_placename("ríó de janeiro") == "Ríó de Janeiro"
-    assert capitalize_placename("vík í mýrdal") == "Vík í Mýrdal"
 
     assert numbers_to_neutral("Öldugötu 4") == "Öldugötu fjögur"
     assert numbers_to_neutral("Fiskislóð 31") == "Fiskislóð þrjátíu og eitt"
@@ -555,6 +558,7 @@ def test_query():
     assert HANDLE_TREE is True
     assert handle_plain_text
 
+
 def test_scraper():
     from scraper import Scraper
 
@@ -610,6 +614,9 @@ def test_geo():
     assert iceprep_for_country("Ítalía") == "á"
     assert iceprep_for_country("Ísland") == "á"
     assert iceprep_for_country("Þýskaland") == "í"
+
+    assert capitalize_placename("ríó de janeiro") == "Ríó de Janeiro"
+    assert capitalize_placename("vík í mýrdal") == "Vík í Mýrdal"
 
 
 def test_doc():

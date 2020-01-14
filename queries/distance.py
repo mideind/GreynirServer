@@ -39,9 +39,8 @@ from queries import (
     distance_desc,
     query_geocode_api_addr,
     query_traveltime_api,
-    capitalize_placename,
 )
-from geo import distance
+from geo import distance, capitalize_placename
 
 
 _DISTANCE_QTYPE = "Distance"
@@ -132,10 +131,10 @@ _QTRAVELTIME_REGEXES = (
 
 
 def _addr2nom(address):
-    """ Convert location name to nominative form """
-    # TODO: Implement more intelligently
+    """ Convert location name to nominative form. """
+    # TODO: Implement more intelligently.
     # This is a tad simplistic and mucks up some things,
-    # e.g. "Ráðhús Reykjavíkur" becomes "Ráðhús Reykjavík"
+    # e.g. "Ráðhús Reykjavíkur" becomes "Ráðhús Reykjavík".
     with BIN_Db.get_db() as db:
         nf = []
         for w in address.split():
@@ -151,7 +150,7 @@ def _addr2nom(address):
 
 
 def dist_answer_for_loc(matches, query):
-    """ Generate response to distance query """
+    """ Generate response to distance query. """
     locname = matches.group(1)
     loc_nf = _addr2nom(locname[0].upper() + locname[1:])
     res = query_geocode_api_addr(loc_nf)
@@ -251,7 +250,7 @@ def traveltime_answer_for_loc(matches, query):
 
 
 def handle_plain_text(q):
-    """ Handle a plain text query, contained in the q parameter """
+    """ Handle a plain text query, contained in the q parameter. """
     ql = q.query_lower.rstrip("?")
 
     matches = None
