@@ -466,6 +466,7 @@ def sentence(state, result):
             if lad_date < 1 or lad_date > 31:
                 answer = voice_answer = "Þetta er ekki gildur mánaðardagur."
             else:
+                # TODO: Fix, always replies "desember" even during other months
                 answer = voice_answer = (
                     "Enginn jólasveinn kemur til byggða þann {0} desember."
                     .format(_DATE_TO_ORDINAL[result.lad_date])

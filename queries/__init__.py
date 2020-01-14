@@ -41,8 +41,8 @@ from settings import changedlocale
 
 
 def natlang_seq(words, oxford_comma=False):
-    """ Generate an Icelandic natural language sequence of words e.g.
-        "A og B", "A, B og C", "A, B, C og D". """
+    """ Generate an Icelandic natural language sequence of words
+        e.g. "A og B", "A, B og C", "A, B, C og D". """
     if not words:
         return ""
     if len(words) == 1:

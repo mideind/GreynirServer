@@ -66,18 +66,36 @@ _QDISTANCE_REGEXES = (
 # Travel time questions
 _TT_PREFIXES = (
     "hvað er ég lengi að",
+    "hvað er maður lengi að",
+    "hvað erum við lengi að"
     "hversu lengi er ég að",
+    "hversu lengi er maður að",
+    "hversu lengi erum að",
     "hversu lengi að",
+    "hve lengi að",
     "hve lengi er ég að",
+    "hve lengi er maður að",
+    "hve lengi erum við að",
     "hvað tekur langan tíma að",
-    "hvað tekur það mig langan tíma að",
     "hvað tekur mig langan tíma að",
+    "hvað tekur mann langan tíma að",
+    "hvað tekur það langan tíma að",
+    "hvað tekur það mig langan tíma að",
+    "hvað tekur það mann langan tíma að",
     "hversu langan tíma tekur að",
+    "hversu langan tíma tekur það að",
     "hversu langan tíma tekur það mig að",
     "hvað væri ég lengi að",
+    "hvað væri maður lengi að",
     "hvað tæki það langan tíma að",
+    "hvað tæki mann langan tíma að",
+    "hvað tæki það mann langan tíma að",
     "hversu lengi væri ég að",
+    "hversu lengi væri maður að",
     "hve lengi væri ég að",
+    "hve lengi væri maður að",
+    "hversu langan tíma tæki að",
+    "hversu langan tíma tæki það að",
     "hversu langan tíma tæki það mig að",
 )
 
@@ -90,6 +108,8 @@ _TT_MODES = {
     "keyra": "driving",
     "aka": "driving",
     "fara á bílnum": "driving",
+    "ferðast í bíl": "driving",
+    "ferðast á bíl": "driving",
 }
 
 _PREPS = ("á", "í", "til")

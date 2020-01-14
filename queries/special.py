@@ -124,6 +124,10 @@ _QUOTATIONS = (
     "Aldrei er svo djúpur brunnur að ei verði upp ausinn.",
     "Margur verður af aurum api.",
     "Glöggt er gests augað.",
+    "Sjaldan geispar einn þar sem fleiri eru, nema feigur sé eða fátt í milli.",
+    "Sjaldan er ein báran stök.",
+    "Sínum augum lítur hver á silfrið.",
+    "Sjaldan launar kálfurinn ofeldið.",
 )
 
 
@@ -513,6 +517,7 @@ _SPECIAL_QUERIES = {
     "skilur þú ensku": _LANGUAGES,
     "talarðu ensku": _LANGUAGES,
     "talar þú ensku": _LANGUAGES,
+    "getur þú talað ensku": _LANGUAGES,
     "kanntu útlensku": _LANGUAGES,
     "talarðu fleiri tungumál": _LANGUAGES,
     "talar þú fleiri tungumál": _LANGUAGES,
@@ -967,6 +972,9 @@ _SPECIAL_QUERIES = {
     "hver skapaði heiminn": {
         "answer": "Enginn sem ég þekki."
     },
+    "hver er skapari heimsins": {
+        "answer": "Enginn sem ég þekki."
+    },
     "hvar endar alheimurinn": {
         "answer": "Inni í þér."
     },
@@ -1007,14 +1015,14 @@ _SPECIAL_QUERIES = {
     "hver er embla": _identity,
     "hvað er embla": _identity,
     "hvaða forrit er þetta": _identity,
+    "heitirðu embla": _identity,
+    "heitir þú embla": _identity,
     "hvaðan ertu": {
         "answer": "Ég er ættuð af Fiskislóð í Reykjavík."
     },
     "hvaðan ert þú": {
         "answer": "Ég er ættuð af Fiskislóð í Reykjavík."
     },
-    "heitirðu embla": _identity,
-    "heitir þú embla": _identity,
 
     # Home/Location
     "hvar áttu heima": {
@@ -1142,6 +1150,7 @@ _SPECIAL_QUERIES = {
     "hvað kann embla": _capabilities,
     "hvað kann embla að gera": _capabilities,
     "hvaða upplýsingar ertu með": _capabilities,
+    "hvað get ég gert": _capabilities,
     "hvað veistu ekki": {
         "answer": "Það er ýmislegt sem ég veit ekki."
     },
@@ -1212,6 +1221,7 @@ _SPECIAL_QUERIES = {
 
     "hvað getur þú gert": _capabilities,
     "hvað geturðu gert": _capabilities,
+    "hvað geturðu": _capabilities,
     "hvað getur þú gert fyrir mig": _capabilities,
     "hvað geturðu gert fyrir mig": _capabilities,
 
@@ -1245,6 +1255,9 @@ _SPECIAL_QUERIES = {
         "answer": "Ég er að svara fyrirspurn frá þér, kæri notandi."
     },
     "hvað ert þú að gera": {
+        "answer": "Ég er að svara fyrirspurn frá þér, kæri notandi."
+    },
+    "hvað ertu að gera núna": {
         "answer": "Ég er að svara fyrirspurn frá þér, kæri notandi."
     },
     "hvað gerirðu": {
@@ -1389,6 +1402,7 @@ _SPECIAL_QUERIES = {
     "komdu með tilvitnun": _random_quotation,
     "komdu með málshátt": _random_quotation,
     "komdu með annan málshátt": _random_quotation,
+    "segðu málshátt": _random_quotation,
     "segðu mér málshátt": _random_quotation,
     "segðu mér annan málshátt": _random_quotation,
     "komdu með skemmtilega tilvitnun": _random_quotation,
