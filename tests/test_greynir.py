@@ -399,6 +399,7 @@ def test_query_api(client):
     assert json["qtype"] == "Wikipedia"
     assert "Wikipedía" in json["q"]  # Make sure it's being beautified
     assert "tónskáld" in json["answer"]
+    assert "source" in json
 
     resp = client.get("/query.api?q=fræddu mig um Berlín")
     json = validate_json(resp)
@@ -465,6 +466,7 @@ def test_query_api(client):
     json = validate_json(resp)
     assert json["qtype"] == "Petrol"
     assert "Ánanaust" in json["answer"]
+    assert "source" in json
 
     resp = client.get(
         "/query.api?q=Hvar fæ ég ódýrt bensín í nágrenninu?&test=1&voice=1"
@@ -500,14 +502,14 @@ def test_query_api(client):
     assert country_desc("DE") == "í Þýskalandi"
     assert country_desc("es") == "á Spáni"
     assert country_desc("IS") == "á Íslandi"
-    assert country_desc("US") == "í Bandaríkjunum"
+    assert country_desc("us") == "í Bandaríkjunum"
 
     assert time_period_desc(3751) == "1 klukkustund og 3 mínútur"
     assert (
         time_period_desc(3751, omit_seconds=False)
         == "1 klukkustund, 2 mínútur og 31 sekúnda"
     )
-    assert time_period_desc(600) == "10 mínútur"
+    assert time_period_desc(601) == "10 mínútur"
     assert time_period_desc(610, omit_seconds=False) == "10 mínútur og 10 sekúndur"
     assert time_period_desc(61, omit_seconds=False) == "1 mínúta og 1 sekúnda"
     assert (
@@ -529,6 +531,8 @@ def test_query_api(client):
 
     assert strip_trailing_zeros("17,0") == "17"
     assert strip_trailing_zeros("219.117,0000") == "219.117"
+    assert strip_trailing_zeros("170") == "170"
+    assert strip_trailing_zeros("170,0") == "170"
 
     assert format_icelandic_float(666.0) == "666"
     assert format_icelandic_float(217.296) == "217,3"
