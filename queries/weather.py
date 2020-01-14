@@ -47,7 +47,7 @@ import logging
 import random
 from datetime import datetime, timedelta
 
-from queries import gen_answer, query_json_api
+from queries import gen_answer, query_json_api, is_plural
 from geo import distance, isocode_for_country_name, ICE_PLACENAME_BLACKLIST
 from iceaddr import placename_lookup
 from iceweather import observation_for_closest, observation_for_station, forecast_text
@@ -123,6 +123,7 @@ QWeatherQuery →
     QWeatherCurrent
     | QWeatherForecast
     | QWeatherTemperature
+    | QWeatherWind
 
 QWeatherCurrent →
     QWeatherHowIs? "veðrið" QWeatherAnyLoc? QWeatherNow?
@@ -200,6 +201,16 @@ QWeatherTemperature →
     | "er" "frost" QWeatherAnyLoc? QWeatherNow?
     | "er" "fyrir" "neðan" "frostmark" "úti"? QWeatherAnyLoc? QWeatherNow?
 
+QWeatherWind →
+    "hvað"? "er" "mikið"? "rok" QWeatherAnyLoc? QWeatherNow?
+    | "hversu" "mikið" "rok" "er" QWeatherAnyLoc? QWeatherNow?
+    | "hve" "mikið" "rok" "er" QWeatherAnyLoc? QWeatherNow?
+    | "hversu" "hvasst" "er" QWeatherAnyLoc? QWeatherNow?
+    | "er" "mjög"? "hvasst" QWeatherAnyLoc? QWeatherNow?
+    | "hvað" "eru" "mörg" "vindstig" QWeatherAnyLoc? QWeatherNow?
+    | "hversu" "mörg" "vindstig" "eru" QWeatherAnyLoc? QWeatherNow?
+    | "hvað" "er" "mikill" "vindur" QWeatherAnyLoc? QWeatherNow?
+
 QWeatherUmbrella →
     "þarf" QWeatherOne "regnhlíf" QWeatherNow
     | "þarf" "ég" "að" "taka" "með" "mér" "regnhlíf" QWeatherNow 
@@ -216,7 +227,11 @@ QWeatherForMe →
     "fyrir" "mig"
 
 QWeatherNow →
-    "úti"? "í" "dag" | "úti"? "núna" | "úti"
+    "úti"
+    | "úti"? "í" "dag"
+    | "úti"? "núna"
+    | "úti"? "í" "augnablikinu"
+    | "úti"? "eins" "og" "stendur"
 
 QWeatherNextDays →
     "á" "næstunni" 
@@ -305,9 +320,7 @@ def _query_owm_by_name(city, country_code=None):
     return _postprocess_owm_data(d)
 
 
-_OWM_API_URL_BYLOC = (
-    "https://api.openweathermap.org/data/2.5/weather?lat={0}&lon={1}&appid={2}&units=metric"
-)
+_OWM_API_URL_BYLOC = "https://api.openweathermap.org/data/2.5/weather?lat={0}&lon={1}&appid={2}&units=metric"
 
 
 def _query_owm_by_coords(lat, lon):
@@ -365,9 +378,9 @@ def _near_capital_region(loc):
 _ICELAND_COORDS = (64.9957538607, -18.5739616708)
 
 
-def _in_iceland(loc):
+def _in_iceland(loc, km_dist=300):
     """ Check if coordinates are within or very close to Iceland """
-    return distance(loc, _ICELAND_COORDS) < 300
+    return distance(loc, _ICELAND_COORDS) < km_dist
 
 
 def _round_to_nearest_hour(t):
@@ -472,18 +485,29 @@ def get_currweather_answer(query, result):
         return gen_answer(_API_ERRMSG)
 
     wind_desc = _wind_descr(windsp)
+    wind_ms_str = str(windsp).rstrip("0").rstrip(".")
     temp_type = "hiti" if temp >= 0 else "frost"
     mdesc = ", " + desc + "," if desc else ""
 
     locdesc = result.get("subject") or "Úti"
 
-    voice = "{0} er {1} stiga {2}{3} og {4}".format(
-        locdesc.capitalize(), abs(temp), temp_type, mdesc, wind_desc
+    # Meters per second string for voice. Say nothing if "logn".
+    voice_ms = ", {0} {1} á sekúndu".format(
+        wind_ms_str, "metrar" if is_plural(wind_ms_str) else "metri"
+    ) if wind_ms_str != "0" else ""
+
+    # Format voice string
+    voice = "{0} er {1} stiga {2}{3} og {4}{5}".format(
+        locdesc.capitalize(),
+        abs(temp),
+        temp_type,
+        mdesc,
+        wind_desc,
+        voice_ms,
     )
 
-    answer = "{0}°{1} og {2} ({3} m/s)".format(
-        temp, mdesc, wind_desc, str(windsp).rstrip("0").rstrip(".")
-    )
+    # Text answer
+    answer = "{0}°{1} og {2} ({3} m/s)".format(temp, mdesc, wind_desc, wind_ms_str)
 
     response = dict(answer=answer)
 
@@ -516,7 +540,7 @@ def _descr4voice(descr):
     # This formatting error confuses speech synthesis.
     d = re.sub(r"(\S+)\.(\S+)", r"\1. \2", d)
 
-    # Abbreviations
+    # Expand bbreviations
     for k, v in _DESCR_ABBR.items():
         d = d.replace(k, v)
 
@@ -605,6 +629,10 @@ def QWeatherCurrent(node, params, result):
     result.qkey = "CurrentWeather"
 
 
+def QWeatherWind(node, params, result):
+    result.qkey = "CurrentWeather"
+
+
 def QWeatherForecast(node, params, result):
     result.qkey = "WeatherForecast"
 
@@ -633,6 +661,7 @@ def sentence(state, result):
         q.set_qtype(result.qtype)
         q.set_key(result.qkey)
 
+        # Asking for a location outside Iceland
         if q.location and not _in_iceland(q.location):
             return gen_answer("Ég þekki ekki til veðurs utan Íslands")
 
