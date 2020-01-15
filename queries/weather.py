@@ -213,6 +213,8 @@ QWeatherWind →
     | "hvað"? "er" "mikill" "vindur" QWeatherAnyLoc? QWeatherNow?
     | "hvað"? "er" "mikill" "vindhraði" QWeatherAnyLoc? QWeatherNow?
     | "hver" "er" "vindhraðinn" QWeatherAnyLoc? QWeatherNow?
+    | "hvaða"? "vindhraði" "er"? QWeatherAnyLoc? QWeatherNow?
+
 
 QWeatherUmbrella →
     "þarf" QWeatherOne "regnhlíf" QWeatherNow
@@ -590,6 +592,11 @@ def get_forecast_answer(query, result):
 def get_umbrella_answer(query, result):
     """ Handle a query concerning whether an umbrella is needed 
         for current weather conditions. """
+
+    # if rain and high wind: no, not gonna work buddy
+    # if no rain: no, it's not raining or likely to rain
+    # else: yeah, take the umbrella
+
     return None
 
 

@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Spelling and grammar query response module
+    Word properties query response module
 
     Copyright (C) 2020 Miðeind ehf.
 
@@ -19,7 +19,8 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    This module handles queries related to spelling and grammar.
+    This module handles queries related to words and their properties,
+    e.g. spelling, declension, dictionary definitions, etymology, etc.
 
 """
 
@@ -31,9 +32,7 @@ import logging
 from datetime import datetime, timedelta
 
 from queries import gen_answer
-
-
-_SPELLING_QTYPE = "Spelling"
+from reynir.bindb import BIN_Db
 
 
 # Spell out how character names are pronounced
@@ -89,13 +88,47 @@ _SPELLING_RX = (
     r"^hvernig er (.+) skrifað$",
     r"^hvernig er orðið (.+) stafað$",
     r"^hvernig er (.+) stafað$",
+    r"^hvernig stafast orðið (.+)$",
 )
+
+_DECLENSION_RX = (
+    r"^hvernig beygirðu orðið (.+)$",
+    r"^hvernig á ég að beygja orðið (.+)$",
+    r"^hvernig beygir maður orðið (.+)$",
+    r"^hvernig beygist orðið (.+)$",
+    r"^hvernig er orðið (.+) beygt$",
+    r"^hverjar eru beygingarmyndir orðsins (.+)$",
+)
+
+
+def lookup_best_word(word):
+    """ Look up word in BÍN, pick right one acc. to a criterion. """
+    with BIN_Db().get_db() as db:
+        pass
+        # Do lookup
+        # Pick best result (prefer nouns vs. adjectives, etc?)
+
+
+def declension_answer_for_word(word, query):
+    # Look up in BÍN
+    best = lookup_best_word(word)
+
+    # Get all forms of word
+    # Generate answer string
+    # Generate voice string ("hér er maður, um mann, frá manni, til manns")
+
+    query.set_qtype("Declension")
+    query.set_qkey(word)
+
+    return gen_answer("Það veit ég ekki")
 
 
 _PAUSE_BTW_LETTERS = 0.3  # Seconds
 
 
 def spelling_answer_for_word(word, query):
+    """ Spell out a word provided in a query. """
+
     # Generate list of characters in word
     chars = list(word)
 
@@ -109,6 +142,9 @@ def spelling_answer_for_word(word, query):
     voice = "Orðið '{0}' er stafað á eftirfarandi hátt: {1} {2}".format(
         word, jfmt, jfmt.join(v)
     )
+
+    query.set_qtype("Spelling")
+    query.set_qkey(word)
 
     return response, answ, voice
 
@@ -127,6 +163,13 @@ def handle_plain_text(q):
             handler = spelling_answer_for_word
             break
 
+    # Declension queries
+    for rx in _DECLENSION_RX:
+        matches = re.search(rx, ql)
+        if matches:
+            handler = declension_answer_for_word
+            break
+
     # Nothing caught by regexes, bail
     if not handler or not matches:
         return False
@@ -140,7 +183,6 @@ def handle_plain_text(q):
         answ = None
 
     if answ:
-        q.set_qtype(_SPELLING_QTYPE)
         q.set_answer(*answ)
         q.set_expires(datetime.utcnow() + timedelta(hours=24))
         return True
