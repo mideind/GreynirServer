@@ -64,7 +64,7 @@ class NnClient:
             host=cls.host, port=cls.port, verb=cls.verb
         )
         headers = {"content-type": "application/json; charset=UTF-8"}
-        payload = {"pgs": pgs}
+        payload = {"pgs": pgs, "model": "transformer",  "source": "is", "target": "en"}
 
         if data is not None:
             payload.update(data)

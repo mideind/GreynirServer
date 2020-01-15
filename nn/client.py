@@ -163,6 +163,6 @@ class TranslationApiClient(ApiClient):
                             self._data['sourceLanguageCode'],
                             self._data['targetLanguageCode'],
                         )
-                    } for val in response["predictions"]]
+                    } for val in response]
             }
         )
