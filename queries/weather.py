@@ -206,10 +206,12 @@ QWeatherWind →
     | "hversu" "mikið" "rok" "er" QWeatherAnyLoc? QWeatherNow?
     | "hve" "mikið" "rok" "er" QWeatherAnyLoc? QWeatherNow?
     | "hversu" "hvasst" "er" QWeatherAnyLoc? QWeatherNow?
+    | "hvað" "er" "hvasst" QWeatherAnyLoc? QWeatherNow?
     | "er" "mjög"? "hvasst" QWeatherAnyLoc? QWeatherNow?
     | "hvað"? "eru" "mörg" "vindstig" QWeatherAnyLoc? QWeatherNow?
     | "hversu"? "mörg" "vindstig" "eru"? QWeatherAnyLoc? QWeatherNow?
     | "hvað"? "er" "mikill" "vindur" QWeatherAnyLoc? QWeatherNow?
+    | "hvað"? "er" "mikill" "vindhraði" QWeatherAnyLoc? QWeatherNow?
     | "hver" "er" "vindhraðinn" QWeatherAnyLoc? QWeatherNow?
 
 QWeatherUmbrella →

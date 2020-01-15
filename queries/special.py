@@ -533,10 +533,13 @@ _SPECIAL_QUERIES = {
     "kannt þú önnur tungumál": _LANGUAGES,
     "skilurðu önnur tungumál": _LANGUAGES,
     "skilur þú önnur tungumál": _LANGUAGES,
+    "kanntu fleiri tungumál en íslensku": _LANGUAGES,
     "kanntu önnur tungumál en íslensku": _LANGUAGES,
     "talarðu önnur tungumál en íslensku": _LANGUAGES,
+    "talarðu fleiri tungumál en íslensku": _LANGUAGES,
     "talar þú önnur tungumál en íslensku": _LANGUAGES,
     "skilurðu önnur tungumál en íslensku": _LANGUAGES,
+    "skilurðu fleiri tungumál en íslensku": _LANGUAGES,
     "skilur þú önnur tungumál en íslensku": _LANGUAGES,
     "talar þú bara íslensku": _LANGUAGES,
     "kanntu að tala": _LANGUAGES,
@@ -544,6 +547,15 @@ _SPECIAL_QUERIES = {
     "talar þú íslensku": {
         "answer": "Já, kæri notandi. Eins og þú heyrir þá tala ég íslensku."
     },
+
+    # Listening
+    "ertu að hlusta": { "answer": "Já." },
+    "ert þú að hlusta": { "answer": "Já." },
+    "ertu hlustandi": { "answer": "Já." },
+    "ert þú hlustandi": { "answer": "Já." },
+    "heyrirðu í mér": { "answer": "Já." },
+    "heyrirðu það sem ég segi": { "answer": "Já." },
+    "heyrirðu það sem ég er að segja": { "answer": "Já." },
 
     # Enquiries about family
     # Catch this here to prevent rather, ehrm, embarassing
