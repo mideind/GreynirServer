@@ -24,7 +24,8 @@
 
 """
 
-# "Hvernig beygist orðið? X"
+# "Hvernig orð er X", "Hvers konar orð er X"
+# "Er X [tegund af orði]"
 
 
 import re
@@ -35,7 +36,7 @@ from queries import gen_answer
 from reynir.bindb import BIN_Db
 
 
-# Spell out how character names are pronounced
+# Spell out how character names are pronounced in Icelandic
 _CHAR_PRONUNCIATION = {
     "a": "a",
     "á": "á",
@@ -91,13 +92,17 @@ _SPELLING_RX = (
     r"^hvernig stafast orðið (.+)$",
 )
 
+
 _DECLENSION_RX = (
+    r"^hvernig beygi ég orðið (.+)$",
     r"^hvernig beygirðu orðið (.+)$",
+    r"^hvernig á að beygja orðið (.+)$",
     r"^hvernig á ég að beygja orðið (.+)$",
     r"^hvernig beygir maður orðið (.+)$",
     r"^hvernig beygist orðið (.+)$",
     r"^hvernig er orðið (.+) beygt$",
     r"^hverjar eru beygingarmyndir orðsins (.+)$",
+    r"^hvað eru beygingarmyndir orðsins (.+)$",
 )
 
 
@@ -123,6 +128,7 @@ def declension_answer_for_word(word, query):
     return gen_answer("Það veit ég ekki")
 
 
+# Time to pause after reciting each character name
 _PAUSE_BTW_LETTERS = 0.3  # Seconds
 
 
