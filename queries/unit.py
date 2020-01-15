@@ -26,6 +26,7 @@
 
 # TODO: Hvað eru fjórir hnútar margir metrar á sekúndu?
 # TODO: Hvað eru 20 metrar á sekúndu mörg vindstig?
+# TODO: Hvað eru 40 stig á selsíus mörg stig á fahrenheit
 
 import re
 import random
