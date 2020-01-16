@@ -25,6 +25,7 @@
 """
 
 # "Hvernig orð er X", "Hvers konar orð er X"
+# "Hvernig beygist *nafnorðið* X?" "Hvernig beygist lýsingarorðið X?"
 # "Er X [tegund af orði]"
 # TODO: Beautify query by placing word being asked about within quotation marks
 
@@ -79,6 +80,8 @@ _CHAR_PRONUNCIATION = {
 _SPELLING_RX = (
     r"^hvernig stafsetur maður orðið (.+)$",
     r"^hvernig stafsetur maður (.+)$",
+    r"^hvernig skal stafsetja (.+)$",
+    r"^hvernig skal stafsetja orðið (.+)$",
     r"^hvernig skrifar maður orðið (.+)$",
     r"^hvernig skrifar maður (.+)$",
     r"^hvernig stafar maður orðið (.+)$",
@@ -89,6 +92,8 @@ _SPELLING_RX = (
     r"^hvernig er (.+) skrifað$",
     r"^hvernig er orðið (.+) stafað$",
     r"^hvernig er (.+) stafað$",
+    r"^hvernig skal stafa (.+)$",
+    r"^hvernig skal stafa orðið (.+)$",
     r"^hvernig stafast orðið (.+)$",
 )
 
@@ -98,8 +103,10 @@ _DECLENSION_RX = (
     r"^hvernig beygirðu orðið (.+)$",
     r"^hvernig á að beygja orðið (.+)$",
     r"^hvernig á ég að beygja orðið (.+)$",
+    r"^hvernig á maður að beygja orðið (.+)$",
     r"^hvernig beygir maður orðið (.+)$",
     r"^hvernig beygist orðið (.+)$",
+    r"^hvernig skal beygja orðið (.+)$",
     r"^hvernig er orðið (.+) beygt$",
     r"^hverjar eru beygingarmyndir orðsins (.+)$",
     r"^hvað eru beygingarmyndir orðsins (.+)$",
@@ -124,7 +131,7 @@ def lookup_best_word(word):
         """ Discourage rarer declension forms, i.e. ÞGF2 and ÞGF3 """
         return sorted(m_list, key=lambda m: "2" in m.beyging or "3" in m.beyging)
 
-    # Look up all forms in BÍN
+    # Look up all cases of the word in BÍN
     with BIN_Db().get_db() as db:
         nom = m.stofn
         acc = db.cast_to_accusative(nom, meaning_filter_func=sort_by_preference)
@@ -214,7 +221,7 @@ def handle_plain_text(q):
     try:
         answ = handler(matches.group(1), q)
     except Exception as e:
-        logging.warning("Exception generating spelling query answer: {0}".format(e))
+        logging.warning("Exception generating word query answer: {0}".format(e))
         q.set_error("E_EXCEPTION: {0}".format(e))
         answ = None
 
