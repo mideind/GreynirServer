@@ -78,38 +78,40 @@ _CHAR_PRONUNCIATION = {
 
 
 _SPELLING_RX = (
-    r"^hvernig stafsetur maður orðið (.+)$",
+    r"^hvernig stafsetur maður (?:orðið|nafnið) (.+)$",
     r"^hvernig stafsetur maður (.+)$",
     r"^hvernig skal stafsetja (.+)$",
-    r"^hvernig skal stafsetja orðið (.+)$",
-    r"^hvernig skrifar maður orðið (.+)$",
+    r"^hvernig skal stafsetja (?:orðið|nafnið) (.+)$",
+    r"^hvernig skrifar maður (?:orðið|nafnið) (.+)$",
     r"^hvernig skrifar maður (.+)$",
-    r"^hvernig stafar maður orðið (.+)$",
+    r"^hvernig stafar maður (?:orðið|nafnið) (.+)$",
     r"^hvernig stafar maður (.+)$",
-    r"^hvernig er orðið (.+) stafsett$",
+    r"^hvernig er (?:orðið|nafnið) (.+) stafsett$",
     r"^hvernig er (.+) stafsett$",
-    r"^hvernig er orðið (.+) skrifað$",
+    r"^hvernig er (?:orðið|nafnið) (.+) skrifað$",
     r"^hvernig er (.+) skrifað$",
-    r"^hvernig er orðið (.+) stafað$",
+    r"^hvernig er (?:orðið|nafnið) (.+) stafað$",
     r"^hvernig er (.+) stafað$",
     r"^hvernig skal stafa (.+)$",
-    r"^hvernig skal stafa orðið (.+)$",
-    r"^hvernig stafast orðið (.+)$",
+    r"^hvernig skal stafa (?:orðið|nafnið) (.+)$",
+    r"^hvernig stafast (?:orðið|nafnið) (.+)$",
 )
 
+# Add "nafnið" non-capture groups
 
 _DECLENSION_RX = (
-    r"^hvernig beygi ég orðið (.+)$",
-    r"^hvernig beygirðu orðið (.+)$",
-    r"^hvernig á að beygja orðið (.+)$",
-    r"^hvernig á ég að beygja orðið (.+)$",
-    r"^hvernig á maður að beygja orðið (.+)$",
-    r"^hvernig beygir maður orðið (.+)$",
-    r"^hvernig beygist orðið (.+)$",
-    r"^hvernig skal beygja orðið (.+)$",
-    r"^hvernig er orðið (.+) beygt$",
-    r"^hverjar eru beygingarmyndir orðsins (.+)$",
-    r"^hvað eru beygingarmyndir orðsins (.+)$",
+    r"^hvernig beygi ég (?:orðið|nafnið) (.+)$",
+    r"^hvernig beygirðu (?:orðið|nafnið) (.+)$",
+    r"^hvernig á að beygja (?:orðið|nafnið) (.+)$",
+    r"^hvernig á ég að beygja (?:orðið|nafnið) (.+)$",
+    r"^hvernig á maður að beygja (?:orðið|nafnið) (.+)$",
+    r"^hvernig beygir maður (?:orðið|nafnið) (.+)$",
+    r"^hvernig beygir maður (?:orðið|nafnið) (.+)$",
+    r"^hvernig beygist (?:orðið|nafnið) (.+)$",
+    r"^hvernig skal beygja (?:orðið|nafnið) (.+)$",
+    r"^hvernig er (?:orðið|nafnið) (.+) beygt$",
+    r"^hverjar eru beygingarmyndir (?:orðsins|nafnsins) (.+)$",
+    r"^hvað eru beygingarmyndir (?:orðsins|nafnsins) (.+)$",
 )
 
 
@@ -117,7 +119,10 @@ def lookup_best_word(word):
     """ Look up word in BÍN, pick right one acc. to a criterion. """
     res = BIN_Db().lookup_nominative(word)
     if not res:
-        return None
+        # Try with uppercase first char
+        res = BIN_Db().lookup_nominative(word.capitalize())
+        if not res:
+            return None
 
     # OK, we have one or more matching words
     if len(res) == 1:
