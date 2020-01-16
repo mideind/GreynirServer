@@ -141,7 +141,7 @@ Scraper modules for new websites are plugged in by adding Python code to the
 `scrapers/` directory. Currently, the `scrapers/default.py` module supports
 popular Icelandic news sites as well as the site of the Constitutional Council.
 
-Processor modules can be plugged in to Greynir by adding Python code to the
+Processor modules can be plugged into Greynir by adding Python code to the
 `processors/` directory. The demo in `processors/default.py` extracts person
 names and titles from parse trees for storage in a database table.
 
@@ -159,6 +159,7 @@ people and titles.
   obtained from `config/Reynir.conf`
 * `config/Reynir.conf` : Editable configuration file
 * `scraper.py` : Web scraper, collecting articles from a set of pre-selected websites (roots)
+* `fetcher.py` : Utility classes for fetching articles given their URLs
 * `db/*.py`: Scraper database models and functions via SQLAlchemy
 * `nertokenizer.py` : A layer on top of the tokenizer for named entity recognition
 * `processor.py`: Information extraction from parse trees and token streams
@@ -166,10 +167,10 @@ people and titles.
 * `tree.py` : Representation of parse trees for processing
 * `query.py` : Natural language query processor
 * `vectors/builder.py` : Article indexer and LSA topic vector builder
-* `doc.py` : Extracts text from various document formats
+* `doc.py` : Extract plain text from various document formats
 * `geo.py` : Geography and location-related utility functions
-* `fetcher.py` : Utility classes for fetching articles given their URLs
 * `utils/*.py` : Various utility programs
+* `speech.py` : Speech synthesis-related utility functions
 
 ## Installation and setup
 

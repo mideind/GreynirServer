@@ -26,7 +26,7 @@
 
 # "Hvernig orð er X", "Hvers konar orð er X"
 # "Er X [tegund af orði]"
-
+# TODO: Beautify query by placing word being asked about within quotation marks
 
 import re
 import logging
@@ -115,10 +115,12 @@ def lookup_best_word(word):
 
 
 def declension_answer_for_word(word, query):
+    """ Look up all cases and morphological forms of a given word,
+        construct natural language response. """
+
     # Look up in BÍN
     best = lookup_best_word(word)
 
-    # Get all forms of word
     # Generate answer string
     # Generate voice string ("hér er maður, um mann, frá manni, til manns")
 
@@ -138,12 +140,12 @@ def spelling_answer_for_word(word, query):
     # Generate list of characters in word
     chars = list(word)
 
-    # Text answer shows them in uppercase separated by space
+    # Text answer shows chars in uppercase separated by space
     answ = " ".join([c.upper() for c in chars])
     response = dict(answer=answ)
 
     # Piece together SSML for speech synthesis
-    v = [_CHAR_PRONUNCIATION[c] if c in _CHAR_PRONUNCIATION else c for c in chars]
+    v = [_CHAR_PRONUNCIATION.get(c, c) for c in chars]
     jfmt = '<break time="{0}s"/>'.format(_PAUSE_BTW_LETTERS)
     voice = "Orðið '{0}' er stafað á eftirfarandi hátt: {1} {2}".format(
         word, jfmt, jfmt.join(v)
