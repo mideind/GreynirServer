@@ -1,0 +1,181 @@
+import React, {useState} from 'react';
+import ClipLoader from "react-spinners/ClipLoader";
+
+import './App.css';
+import { matchesPattern } from '../../../../../../../Library/Caches/typescript/3.6/node_modules/@babel/types/lib';
+
+const apiKey = process.env.REACT_APP_GOOGLE_TRANSLATE_API_KEY;
+
+/*const projectId = 'vefleit';  // 1037041559327
+const location = 'global';
+const text = 'text to translate';*/
+
+
+const ENGINES = [
+  {
+    url: "http://192.168.1.76:5050/nn/translate.api",
+    name: "Greynir Transformer"
+  },
+  {
+    url: "http://nlp.cs.ru.is/moses/translateText",
+    name: "Moses",
+    extraData: {
+      model: "is-en",
+    }
+  },
+  {
+    url: "https://www.googleapis.com/language/translate/v2",
+    name: "Google v2",
+    extraParam: {
+      method: "GET",
+    },
+    searchParam: {
+      key: apiKey,
+      source: "is",
+      target: "en"
+    },
+  },
+  /*{
+    url: "https://translation.googleapis.com/v3/projects/1037041559327/locations/global:translateText",
+    name: "Google v3 - Broken",
+    extraData: {
+      parent: 'projects/1037041559327/locations/global',
+    },
+    extraHeader: {
+      'Authorization': 'Bearer ' + apiKey
+    }
+  },*/
+]
+
+const LANGUAGE_PAIRS = [
+  ['is', 'en'],
+  ['en', 'is']
+]
+
+const decode = str => {
+  return str.replace(/&#(\d+);/g, function(match, dec) {
+    return String.fromCharCode(dec);
+  });
+}
+
+async function translate(engine, text) {
+  const data = {
+    ...engine.extraData,
+    contents: [text],
+    sourceLanguageCode: "is",
+    targetLanguageCode: "en",
+  };
+  let url = engine.url;
+  let param = {
+    method: 'POST',
+    crossDomain: true,
+    mode: 'cors',
+    ...engine.extraParam,
+    headers: {
+      'Content-Type': 'application/json; utf-8',
+      ...engine.extraHeader
+    }
+  }
+  if (engine.searchParam === undefined) {
+    param.body = JSON.stringify(data)
+  } else {
+    url = new URL(url);
+    Object.keys(engine.searchParam).forEach(key => url.searchParams.append(key, engine.searchParam[key]))
+    url.searchParams.append('q', text);
+  }
+
+  const response = await fetch(url, param);
+  const respData = await response.json();
+  if (engine.searchParam === undefined) {
+    return respData.translations.map(trans => trans.translatedText).join(" ");
+  } else {
+    return respData.data.translations.map(trans => decode(trans.translatedText)).join(" ");
+  }
+}
+
+async function translateMany(engines, text){
+  const translations = await engines.map((engine) => translate(engine, text));
+  return Promise.all(translations).then( (ts) => ts.map((p, i) => ({text: p, engine: engines[i]})));
+}
+
+function App() {
+  const [text, setText] = useState("Framkvæmdastjórn Heilbrigðisstofnunar Suðurlands hefur ákveðið að nýta sér ákvæði í lögum um réttindi og skyldur starfsmanna ríkisins og breyta vinnufyrirkomulagi sjúkraflutningamanna á Suðurlandi sem snýr að yfirvinnu.");
+  const [loading, setLoading] = useState(false);
+  const [trans, setTrans] = useState([]);
+  const [selectedEngines, setEngines] = useState({0: true, 1: true, 2: true})
+  const [source, setSource] = useState('is');
+  const [target, setTarget] = useState('en');
+
+  return (
+    <div className="App">
+      <header className="App-header">
+        <div className="App-content">
+          GreynirTranslate
+        </div>
+      </header>
+      <div className="App-body">
+        <div className="Translate">
+          <div className="Translate-main">
+            <div className="TranslateBox">
+              <div className="TranslateBox-header">Source</div>
+              <textarea className="TranslateBox-area" value={text} onChange={(e) => setText(e.target.value)}></textarea>
+            </div>
+            <div className="TranslateBox">
+              <div className="TranslateBox-header">Translation {loading && <ClipLoader size={10} /> } </div>
+              <div className="TranslateBox-container">
+                {trans.length === 0 && <div className="TranslateBox-area-trans">Press translate to translate</div>}
+                {trans.map((t, i) =>
+                    <div className="TranslateBox-area-blurb" key={"trans-" + i}>
+                      <div className="TranslateBox-area-blurb-header">{t.engine.name}</div>
+                      <div className="TranslateBox-area-trans">{t.text} </div>
+                      </div>
+                    )}
+                </div>
+            </div>
+          </div>
+          <div className="Translate-footer">
+            <div className="Translate-engines">
+              {ENGINES.map( (engine, idx) => (
+                <div className="Checkbox" key={'cb-' + idx}>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={selectedEngines[idx]}
+                      onChange={() => setEngines({ ...selectedEngines, [idx]: !selectedEngines[idx] })}/>
+                    {engine.name} - {engine.url}
+                  </label>
+                </div>
+              ))}
+              <div className="PairPicker">
+                <div className="PairPicker-source">
+                  <div className="PairPicker-label">Source</div>
+                  <select id="PairPicker-source">
+                    {LANGUAGE_PAIRS.map((pair, i) =>  <option key={"source-" + i} value={pair[0]}>{pair[0]}</option>)}
+                  </select>
+                </div>
+                <div className="PairPicer-target">
+                <div className="PairPicker-label">Target</div>
+                  <select id="PairPicker-target">
+                    {LANGUAGE_PAIRS.map((pair, i) =>  <option key={"target-" + i} value={pair[1]}>{pair[1]}</option>)}
+                    </select>
+                </div>
+              </div>
+            </div>
+            <button
+              className="Button TranslateBox-submit"
+              onClick={async () => {
+                setLoading(true);
+                const trans = await translateMany(ENGINES.filter((engine, idx) => selectedEngines[idx] ), text);
+                setTrans(trans);
+                setLoading(trans === [])
+                }}>
+                Translate
+            </button> 
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default App;
