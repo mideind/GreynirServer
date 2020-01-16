@@ -1,12 +1,11 @@
-
-![Greynir](https://raw.githubusercontent.com/mideind/Greynir/master/static/img/GreynirLogoVertical200.png)
-
 [![Build Status](https://travis-ci.com/mideind/Greynir.svg?branch=master)](https://travis-ci.com/mideind/Greynir) 
 [![Join the chat at https://gitter.im/Greynir/Lobby](https://badges.gitter.im/Greynir/Lobby.svg)](https://gitter.im/Greynir/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-## Natural language processing for Icelandic
+<img src="static/img/greynir-logo-large.png" alt="Greynir" width="200" height="200" align="right" style="margin-left:20px; margin-bottom: 20px;">
 
-Try Greynir (in Icelandic) at [https://greynir.is](https://greynir.is)
+# Greynir
+
+### Natural language processing for Icelandic
 
 *Greynir* is a natural language processing engine that
 **extracts processable information from Icelandic text**, allows
@@ -14,6 +13,8 @@ Try Greynir (in Icelandic) at [https://greynir.is](https://greynir.is)
 **natural language understanding**. Greynir is the core of
 [*Embla*](https://embla.is), a voice-based question answering app
 for smartphones and tablets.
+
+Try Greynir (in Icelandic) at [https://greynir.is](https://greynir.is)
 
 Greynir periodically scrapes chunks of text from Icelandic news sites on the web.
 It employs the [Tokenizer](https://github.com/mideind/Tokenizer) and
