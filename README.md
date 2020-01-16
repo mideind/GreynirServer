@@ -159,7 +159,7 @@ people and titles.
 * `config/Reynir.conf` : Editable configuration file
 * `scraper.py` : Web scraper, collecting articles from a set of pre-selected websites (roots)
 * `fetcher.py` : Utility classes for fetching articles given their URLs
-* `db/*.py`: Scraper database models and functions via SQLAlchemy
+* `db/*.py`: Database models and functions via SQLAlchemy
 * `nertokenizer.py` : A layer on top of the tokenizer for named entity recognition
 * `processor.py`: Information extraction from parse trees and token streams
 * `article.py` : Representation of an article through its life cycle
@@ -224,7 +224,7 @@ see [Using the Greynir Shell](docs/shell.md).
 
 ## Copyright and licensing
 
-Greynir is *copyright (C) 2020 by [Miðeind ehf.](https://mideind.is)*
+Greynir is *copyright (C) 2020 [Miðeind ehf.](https://mideind.is)*
 The original author of this software is *Vilhjálmur Þorsteinsson*.
 
 <img src="static/img/GPLv3.png" align="right" style="margin-left:20px;">
