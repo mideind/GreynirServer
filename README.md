@@ -5,7 +5,7 @@
 
 # Greynir
 
-### Natural language processing for Icelandic
+### Natural Language Processing for Icelandic
 
 *Greynir* is a natural language processing engine that
 **extracts processable information from Icelandic text**, allows
@@ -155,8 +155,7 @@ people and titles.
 * `main.py` : WSGI web server application and main module for command-line invocation
 * `routes/*.py` : Routes for the web application
 * `queries/*.py` : Question answering modules
-* `settings.py` : Management of global settings and configuration data,
-  obtained from `config/Reynir.conf`
+* `settings.py` : Management of global settings and configuration data
 * `config/Reynir.conf` : Editable configuration file
 * `scraper.py` : Web scraper, collecting articles from a set of pre-selected websites (roots)
 * `fetcher.py` : Utility classes for fetching articles given their URLs
@@ -225,7 +224,7 @@ see [Using the Greynir Shell](docs/shell.md).
 
 ## Copyright and licensing
 
-Greynir is *copyright (C) 2020 by Miðeind ehf.*
+Greynir is *copyright (C) 2020 by [Miðeind ehf.](https://mideind.is)*
 The original author of this software is *Vilhjálmur Þorsteinsson*.
 
 <img src="static/img/GPLv3.png" align="right" style="margin-left:20px;">
@@ -244,4 +243,4 @@ The full text of the GNU General Public License v3 is
 and also available here: [https://www.gnu.org/licenses/gpl-3.0.html](https://www.gnu.org/licenses/gpl-3.0.html).
 
 If you wish to use this set of programs in ways that are not covered under the
-GNU GPLv3 license, please contact us at *mideind@mideind.is*.
+GNU GPLv3 license, please contact us at [mideind@mideind.is](mailto:mideind@mideind.is).
