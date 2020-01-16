@@ -215,7 +215,7 @@ export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
 ##### Interactive shell
 
 ```
-./shell.sh
+./scripts/shell.sh
 ```
 
 Starts an [IPython](https://ipython.org) shell with a database session (`s`), the Greynir 
@@ -225,10 +225,10 @@ see [Using the Greynir Shell](docs/shell.md).
 
 ## Copyright and licensing
 
-Greynir is *copyright (C) 2019 by Miðeind ehf.*
+Greynir is *copyright (C) 2020 by Miðeind ehf.*
 The original author of this software is *Vilhjálmur Þorsteinsson*.
 
-![GPLv3](https://raw.githubusercontent.com/mideind/Greynir/master/static/img/GPLv3.png)
+<img src="static/img/GPLv3.png" align="right" style="margin-left:20px;">
 
 This set of programs is free software: you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the Free
@@ -241,7 +241,7 @@ A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
 The full text of the GNU General Public License v3 is
 [included here](https://github.com/mideind/Greynir/blob/master/LICENSE.txt)
-and also available here: https://www.gnu.org/licenses/gpl-3.0.html.
+and also available here: [https://www.gnu.org/licenses/gpl-3.0.html](https://www.gnu.org/licenses/gpl-3.0.html).
 
 If you wish to use this set of programs in ways that are not covered under the
 GNU GPLv3 license, please contact us at *mideind@mideind.is*.

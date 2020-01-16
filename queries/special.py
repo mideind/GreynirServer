@@ -136,6 +136,9 @@ _PROVERBS = (
     "Þjóð veit ef þrír eru.",
     "Oft verður grátt úr gamni.",
     "Fátt er svo ágætt að eigi finnist annað slíkt.",
+    "Dramb er falli næst.",
+    "Aldrei er góð vísa of oft kveðin.",
+    "Blindur er bóklaus maður.",
 )
 
 
