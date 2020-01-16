@@ -461,6 +461,11 @@ def test_query_api(client):
     assert json["qtype"] == "Introduction"
     assert json["answer"].startswith("Sæl og blessuð")
 
+    resp = client.get("/query.api?q=ég heiti Gunnar")
+    json = validate_json(resp)
+    assert json["qtype"] == "Introduction"
+    assert json["answer"].startswith("Sæll og blessaður")
+
     # Petrol module
     resp = client.get("/query.api?q=Hvar er næsta bensínstöð?&test=1&voice=1")
     json = validate_json(resp)
@@ -473,10 +478,19 @@ def test_query_api(client):
     )
     json = validate_json(resp)
     assert json["qtype"] == "Petrol"
+    assert "source" in json
 
     resp = client.get("/query.api?q=Hvar fæ ég ódýrasta bensínið?&test=1&voice=1")
     json = validate_json(resp)
     assert json["qtype"] == "Petrol"
+    assert "source" in json
+
+    # Words module
+    resp = client.get("/query.api?q=hvernig stafar maður orðið hestur?&voice=1")
+    json = validate_json(resp)
+    assert json["qtype"] == "Spelling"
+    assert json["answer"] == "H E S T U R"
+    assert "voice" in json and json["voice"].startswith("Orðið 'hestur'")
 
     # Tests for various utility functions used by query modules
 

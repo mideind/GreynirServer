@@ -125,7 +125,7 @@ def declension_answer_for_word(word, query):
     # Generate voice string ("hér er maður, um mann, frá manni, til manns")
 
     query.set_qtype("Declension")
-    query.set_qkey(word)
+    query.set_key(word)
 
     return gen_answer("Það veit ég ekki")
 
@@ -152,7 +152,7 @@ def spelling_answer_for_word(word, query):
     )
 
     query.set_qtype("Spelling")
-    query.set_qkey(word)
+    query.set_key(word)
 
     return response, answ, voice
 
@@ -172,14 +172,15 @@ def handle_plain_text(q):
             break
 
     # Declension queries
-    for rx in _DECLENSION_RX:
-        matches = re.search(rx, ql)
-        if matches:
-            handler = declension_answer_for_word
-            break
+    if not handler:
+        for rx in _DECLENSION_RX:
+            matches = re.search(rx, ql)
+            if matches:
+                handler = declension_answer_for_word
+                break
 
     # Nothing caught by regexes, bail
-    if not handler or not matches:
+    if not handler:
         return False
 
     # Generate answer

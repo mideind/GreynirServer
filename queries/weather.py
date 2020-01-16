@@ -140,6 +140,7 @@ QWeatherWhatCanYouTellMeAbout →
 QWeatherForecast →
     QWeatherWhatIs QWeatherConditionSingular QWeatherLocation? QWeatherNextDays?
     | QWeatherHowIs QWeatherConditionSingular QWeatherLocation? QWeatherNextDays?
+    | QWeatherConditionSingular
 
     | QWeatherHowAre QWeatherConditionPlural QWeatherLocation? QWeatherNextDays?    
     | QWeatherWhatAre QWeatherConditionPlural QWeatherLocation? QWeatherNextDays?
