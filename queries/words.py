@@ -108,26 +108,53 @@ _DECLENSION_RX = (
 
 def lookup_best_word(word):
     """ Look up word in BÍN, pick right one acc. to a criterion. """
+    res = BIN_Db().lookup_nominative(word)
+    if not res:
+        return None
+
+    # OK, we have one or more matching words
+    if len(res) == 1:
+        m = res[0]
+    else:
+        # TODO: Pick best result (prefer nouns vs. adjectives, etc?)
+        m = res[0]  # For now
+
+    # TODO: Fix this. If more than one declesion possible, list them all
+    def sort_by_preference(m_list):
+        """ Discourage rarer declension forms, i.e. ÞGF2 and ÞGF3 """
+        return sorted(m_list, key=lambda m: "2" in m.beyging or "3" in m.beyging)
+
+    # Look up all forms in BÍN
     with BIN_Db().get_db() as db:
-        pass
-        # Do lookup
-        # Pick best result (prefer nouns vs. adjectives, etc?)
+        nom = m.stofn
+        acc = db.cast_to_accusative(nom, meaning_filter_func=sort_by_preference)
+        dat = db.cast_to_dative(nom, meaning_filter_func=sort_by_preference)
+        gen = db.cast_to_genitive(nom, meaning_filter_func=sort_by_preference)
+        return nom, acc, dat, gen
+
+
+_NOT_IN_BIN_MSG = "Orðið '{0}' fannst ekki í Beyingarlýsingu íslensks nútímamáls."
 
 
 def declension_answer_for_word(word, query):
-    """ Look up all cases and morphological forms of a given word,
+    """ Look up all morphological forms of a given word,
         construct natural language response. """
 
     # Look up in BÍN
-    best = lookup_best_word(word)
+    forms = lookup_best_word(word)
 
-    # Generate answer string
-    # Generate voice string ("hér er maður, um mann, frá manni, til manns")
+    if not forms:
+        return gen_answer(_NOT_IN_BIN_MSG.format(word))
+
+    answ = ", ".join(forms)
+    response = dict(answer=answ)
+    cases_desc = "Hér er {0}, um {1}, frá {2}, til {3}".format(*forms)
+    voice = "Orðið '{0}' beygist á eftirfarandi hátt: {1}.".format(word, cases_desc)
 
     query.set_qtype("Declension")
     query.set_key(word)
 
-    return gen_answer("Það veit ég ekki")
+    return response, answ, voice
 
 
 # Time to pause after reciting each character name

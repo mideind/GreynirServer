@@ -492,6 +492,12 @@ def test_query_api(client):
     assert json["answer"] == "H E S T U R"
     assert "voice" in json and json["voice"].startswith("Orðið 'hestur'")
 
+    resp = client.get("/query.api?q=hvernig beygist orðið maður?&voice=1")
+    json = validate_json(resp)
+    assert json["qtype"] == "Declension"
+    assert json["answer"] == "maður, mann, manni, manns"
+    assert "voice" in json and json["voice"].startswith("Orðið 'maður'")
+
     # Tests for various utility functions used by query modules
 
     assert natlang_seq(["Jón", "Gunna"]) == "Jón og Gunna"

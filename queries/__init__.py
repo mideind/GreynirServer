@@ -54,15 +54,15 @@ def natlang_seq(words, oxford_comma=False):
 
 def nom2dat(w):
     """ Look up dative form of a noun in BÍN. """
+    if not w:
+        return None
 
     def sort_by_preference(m_list):
         """ Discourage rarer declension forms, i.e. ÞGF2 and ÞGF3 """
         return sorted(m_list, key=lambda m: "2" in m.beyging or "3" in m.beyging)
 
-    if w:
-        with BIN_Db().get_db() as db:
-            return db.cast_to_dative(w, meaning_filter_func=sort_by_preference)
-    return w
+    with BIN_Db().get_db() as db:
+        return db.cast_to_dative(w, meaning_filter_func=sort_by_preference)
 
 
 # The following needs to include at least nominative
