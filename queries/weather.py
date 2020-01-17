@@ -128,6 +128,7 @@ QWeatherQuery →
 QWeatherCurrent →
     QWeatherHowIs? "veðrið" QWeatherAnyLoc? QWeatherNow?
     | "hvernig" "veður" "er" QWeatherAnyLoc? QWeatherNow?
+    | "hvernig" "viðrar" QWeatherAnyLoc? QWeatherNow?
     | QWeatherWhatCanYouTellMeAbout "veðrið" QWeatherAnyLoc? QWeatherNow?
     | QWeatherWhatCanYouTellMeAbout "veðrið" QWeatherAnyLoc? QWeatherNow?
 
