@@ -55,7 +55,7 @@ def natlang_seq(words, oxford_comma=False):
 def nom2dat(w):
     """ Look up dative form of a noun in BÍN. """
     if not w:
-        return None
+        return ""
 
     def sort_by_preference(m_list):
         """ Discourage rarer declension forms, i.e. ÞGF2 and ÞGF3 """

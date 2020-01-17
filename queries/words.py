@@ -25,9 +25,9 @@
 """
 
 # "Hvernig orð er X", "Hvers konar orð er X"
-# "Hvernig beygist *nafnorðið* X?" "Hvernig beygist lýsingarorðið X?"
 # "Er X [tegund af orði]"
 # TODO: Beautify query by placing word being asked about within quotation marks
+# TODO: Handle numbers ("3" should be spelled as "þrír" etc.)
 
 import re
 import logging
@@ -77,75 +77,70 @@ _CHAR_PRONUNCIATION = {
 }
 
 
+_WORDTYPE_RX_NOM = "(?:orðið|nafnið|nafnorðið|lýsingarorðið)"
+_WORDTYPE_RX_GEN = "(?:orðsins|nafnsins|nafnorðsins|lýsingarorðsins)"
+
+
 _SPELLING_RX = (
-    r"^hvernig stafsetur maður (?:orðið|nafnið) (.+)$",
-    r"^hvernig stafsetur maður (.+)$",
-    r"^hvernig skal stafsetja (.+)$",
-    r"^hvernig skal stafsetja (?:orðið|nafnið) (.+)$",
-    r"^hvernig skrifar maður (?:orðið|nafnið) (.+)$",
-    r"^hvernig skrifar maður (.+)$",
-    r"^hvernig stafar maður (?:orðið|nafnið) (.+)$",
-    r"^hvernig stafar maður (.+)$",
-    r"^hvernig er (?:orðið|nafnið) (.+) stafsett$",
-    r"^hvernig er (.+) stafsett$",
-    r"^hvernig er (?:orðið|nafnið) (.+) skrifað$",
-    r"^hvernig er (.+) skrifað$",
-    r"^hvernig er (?:orðið|nafnið) (.+) stafað$",
-    r"^hvernig er (.+) stafað$",
-    r"^hvernig skal stafa (.+)$",
-    r"^hvernig skal stafa (?:orðið|nafnið) (.+)$",
-    r"^hvernig stafast (?:orðið|nafnið) (.+)$",
+    r"^hvernig stafsetur maður {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig skal stafsetja {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig skrifar maður {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig stafar maður {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig er {0}?\s?(.+) stafsett$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig er {0}?\s?(.+) skrifað$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig er {0}?\s?(.+) stafað$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig skal stafa {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig stafast {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
 )
 
-# Add "nafnið" non-capture groups
 
 _DECLENSION_RX = (
-    r"^hvernig beygi ég (?:orðið|nafnið) (.+)$",
-    r"^hvernig beygirðu (?:orðið|nafnið) (.+)$",
-    r"^hvernig á að beygja (?:orðið|nafnið) (.+)$",
-    r"^hvernig á ég að beygja (?:orðið|nafnið) (.+)$",
-    r"^hvernig á maður að beygja (?:orðið|nafnið) (.+)$",
-    r"^hvernig beygir maður (?:orðið|nafnið) (.+)$",
-    r"^hvernig beygir maður (?:orðið|nafnið) (.+)$",
-    r"^hvernig beygist (?:orðið|nafnið) (.+)$",
-    r"^hvernig skal beygja (?:orðið|nafnið) (.+)$",
-    r"^hvernig er (?:orðið|nafnið) (.+) beygt$",
-    r"^hverjar eru beygingarmyndir (?:orðsins|nafnsins) (.+)$",
-    r"^hvað eru beygingarmyndir (?:orðsins|nafnsins) (.+)$",
+    r"^hvernig beygi ég {0} (.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig beygirðu {0} (.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig á að beygja {0} (.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig á ég að beygja {0} (.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig á maður að beygja {0} (.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig beygir maður {0} (.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig beygist {0} (.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig skal beygja {0} (.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig er {0} (.+) beygt$".format(_WORDTYPE_RX_NOM),
+    r"^hverjar eru beygingarmyndir {0} (.+)$".format(_WORDTYPE_RX_GEN),
+    r"^hvað eru beygingarmyndir {0} (.+)$".format(_WORDTYPE_RX_GEN),
 )
 
 
 def lookup_best_word(word):
     """ Look up word in BÍN, pick right one acc. to a criterion. """
-    res = BIN_Db().lookup_nominative(word)
-    if not res:
-        # Try with uppercase first char
-        res = BIN_Db().lookup_nominative(word.capitalize())
-        if not res:
-            return None
-
-    # OK, we have one or more matching words
-    if len(res) == 1:
-        m = res[0]
-    else:
-        # TODO: Pick best result (prefer nouns vs. adjectives, etc?)
-        m = res[0]  # For now
-
-    # TODO: Fix this. If more than one declesion possible, list them all
-    def sort_by_preference(m_list):
-        """ Discourage rarer declension forms, i.e. ÞGF2 and ÞGF3 """
-        return sorted(m_list, key=lambda m: "2" in m.beyging or "3" in m.beyging)
-
-    # Look up all cases of the word in BÍN
     with BIN_Db().get_db() as db:
-        nom = m.stofn
-        acc = db.cast_to_accusative(nom, meaning_filter_func=sort_by_preference)
-        dat = db.cast_to_dative(nom, meaning_filter_func=sort_by_preference)
-        gen = db.cast_to_genitive(nom, meaning_filter_func=sort_by_preference)
-        return nom, acc, dat, gen
+
+        res = db.lookup_nominative(word)
+        if not res:
+            # Try with uppercase first char
+            res = db.lookup_nominative(word.capitalize())
+            if not res:
+                return None
+
+        # OK, we have one or more matching words
+        if len(res) == 1:
+            m = res[0]
+        else:
+            # TODO: Pick best result (prefer nouns vs. adjectives, etc?)
+            m = res[0]  # For now
+
+        # TODO: If more than one declesion possible, list variations also
+        def sort_by_preference(m_list):
+            """ Discourage rarer declension forms, i.e. ÞGF2 and ÞGF3 """
+            return sorted(m_list, key=lambda m: "2" in m.beyging or "3" in m.beyging)
+
+        # Look up all cases of the word in BÍN
+            nom = m.stofn
+            acc = db.cast_to_accusative(nom, meaning_filter_func=sort_by_preference)
+            dat = db.cast_to_dative(nom, meaning_filter_func=sort_by_preference)
+            gen = db.cast_to_genitive(nom, meaning_filter_func=sort_by_preference)
+            return nom, acc, dat, gen
 
 
-_NOT_IN_BIN_MSG = "Orðið '{0}' fannst ekki í Beyingarlýsingu íslensks nútímamáls."
+_NOT_IN_BIN_MSG = "Orðið '{0}' fannst ekki í Beygingarlýsingu íslensks nútímamáls."
 
 
 def declension_answer_for_word(word, query):
@@ -160,6 +155,7 @@ def declension_answer_for_word(word, query):
 
     answ = ", ".join(forms)
     response = dict(answer=answ)
+    # TODO: Handle plural e.g. "Hér eru"
     cases_desc = "Hér er {0}, um {1}, frá {2}, til {3}".format(*forms)
     voice = "Orðið '{0}' beygist á eftirfarandi hátt: {1}.".format(word, cases_desc)
 

@@ -636,7 +636,7 @@ def iceprep_for_country(cn):
 
 
 # Placename components that should not be capitalized
-_PLACENAME_PREPS = ("í", "á", "de", "la", "am")
+_PLACENAME_PREPS = frozenset(("í", "á", "de", "la", "am"))
 
 
 def capitalize_placename(pn):

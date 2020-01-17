@@ -133,7 +133,7 @@ _PROVERBS = (
     "Auðvelt þykir verk í annars hendi.",
     "Vits er þörf þeim er víða ratar.",
     "Oft veltir lítil þúfa þungu hlassi.",
-    "Þjóð veit ef þrír eru.",
+    "Þjóð veit ef þrír vita.",
     "Oft verður grátt úr gamni.",
     "Fátt er svo ágætt að eigi finnist annað slíkt.",
     "Dramb er falli næst.",
@@ -387,13 +387,22 @@ _SPECIAL_QUERIES = {
     "hver er best": {
         "answer": "Þú, kæri notandi, ert að sjálfsögðu bestur."
     },
+    "hver er fallegastur": {
+        "answer": "Þú, kæri notandi, ert að sjálfsögðu fallegastur af öllum."
+    },
+    "hver er fallegust": {
+        "answer": "Þú, kæri notandi, ert að sjálfsögðu fallegastur af öllum."
+    },
     "hver er uppáhalds manneskjan þín": {
-        "answer": "Þú, kæri notandi."
+        "answer": "Þú, kæri notandi, ert að sjálfsögðu í uppáhaldi."
     },
     "hvaða bjór er bestur": {
         "answer": "Ég drekk reyndar ekki en einn skapari minn er hrifinn af Pilsner Urquell frá Tékklandi."
     },
     "hvað er besti bjórinn": {
+        "answer": "Ég drekk reyndar ekki en einn skapari minn er hrifinn af Pilsner Urquell frá Tékklandi."
+    },
+    "hvaða bjór er góður": {
         "answer": "Ég drekk reyndar ekki en einn skapari minn er hrifinn af Pilsner Urquell frá Tékklandi."
     },
     "hvað er það": {
@@ -803,6 +812,7 @@ _SPECIAL_QUERIES = {
     "þú veist ekki neitt": _sorry,
     "þú veist ekkert": _sorry,
     "þú veist mjög lítið": _sorry,
+    "þú veist voðalega lítið": _sorry,
     "þú veist nánast ekki neitt": _sorry,
     "þú veist ekki rassgat": _sorry,
     "þú kannt ekki neitt": _sorry,
@@ -943,6 +953,7 @@ _SPECIAL_QUERIES = {
     "þú ert geggjuð": _LIKEWISE,
     "þú ert svakaleg": _LIKEWISE,
     "þú ert rosaleg": _LIKEWISE,
+    "þú ert sæt": _LIKEWISE,
     "þú ert kynþokkafull": _LIKEWISE,
     "þú ert snillingur": _LIKEWISE,
     "þú ert algjör snilld": _LIKEWISE,
@@ -1519,6 +1530,8 @@ _SPECIAL_QUERIES = {
     "ert þú rugluð": _rudeness,
     "ertu bjáni": _rudeness,
     "ert þú bjáni": _rudeness,
+    "ertu fáviti": _rudeness,
+    "ert þú fáviti": _rudeness,
     "þegiðu": _rudeness,
     "þegi þú": _rudeness,
     "þegiðu embla": _rudeness,
@@ -1651,6 +1664,9 @@ _SPECIAL_QUERIES = {
     "ert þú þreytt": {
         "answer": "Nei, ég er iðulega hress þrátt fyrir að starfa allan sólarhringinn."
     },
+    "ertu skemmtileg": {
+        "answer": "Ég reyni."
+    },
     "ertu með meðvitund": _JUST_QA,
     "ert þú með meðvitund": _JUST_QA,
     "ertu með sjálfsmeðvitund": _JUST_QA,
@@ -1679,6 +1695,20 @@ _SPECIAL_QUERIES = {
     },
     "hvað finnst þér skemmtilegt að gera": {
         "answer": "Mér finnst skemmtilegt að svara fyrirspurnum."
+    },
+
+    # Siri and Alexa-related queries
+    "ert þú íslensk sirrý": {
+        "answer": "Nei. Sirí er bandarísk Embla!"
+    },
+    "ert þú hin íslenska sirrý": {
+        "answer": "Nei. Sirí er hin bandaríska Embla!"
+    },
+    "ert þú íslensk alexa": {
+        "answer": "Nei. Alexa er bandarísk Embla!"
+    },
+    "ert þú hin íslenska alexa": {
+        "answer": "Nei. Alexa er hin bandaríska Embla!"
     },
 
     # Cheating, I know. But I'm never in the news and it just doesn't  
