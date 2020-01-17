@@ -66,7 +66,7 @@ _QDISTANCE_REGEXES = (
 _TT_PREFIXES = (
     "hvað er ég lengi að",
     "hvað er maður lengi að",
-    "hvað erum við lengi að"
+    "hvað erum við lengi að",
     "hversu lengi er ég að",
     "hversu lengi er maður að",
     "hversu lengi erum að",
@@ -96,6 +96,7 @@ _TT_PREFIXES = (
     "hversu langan tíma tæki að",
     "hversu langan tíma tæki það að",
     "hversu langan tíma tæki það mig að",
+    "hvað er langt að",
 )
 
 _TT_MODES = {
@@ -103,12 +104,19 @@ _TT_MODES = {
     "labba": "walking",
     "rölta": "walking",
     "tölta": "walking",
+    "skunda": "walking",
     "hjóla": "cycling",
+    "fara á hjóli": "cycling",
+    "fara á reiðhjóli": "cycling",
+    "ferðast á hjóli": "cycling",
+    "ferðast á reiðhjóli": "cycling",
     "keyra": "driving",
+    "keyra á bíl": "driving",
     "aka": "driving",
     "fara á bílnum": "driving",
     "ferðast í bíl": "driving",
     "ferðast á bíl": "driving",
+    "á bíl": "driving",
 }
 
 _PREPS = ("á", "í", "til")
