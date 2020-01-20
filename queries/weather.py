@@ -547,7 +547,7 @@ def _descr4voice(descr):
     # This formatting error confuses speech synthesis.
     d = re.sub(r"(\S+)\.(\S+)", r"\1. \2", d)
 
-    # Expand bbreviations
+    # Expand abbreviations
     for k, v in _DESCR_ABBR.items():
         d = d.replace(k, v)
 

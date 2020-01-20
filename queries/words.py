@@ -133,10 +133,15 @@ def lookup_best_word(word):
             # TODO: Pick best result
             m = res[0]  # For now
 
-        # TODO: If more than one declesion form possible (e.g. björns, bjarnar)
+        wid = m.utg
+
+        # TODO: If more than one declesion form possible (e.g. gen. björns vs. bjarnar)
         # we should also list such variations
         def sort_by_preference(m_list):
-            """ Discourage rarer declension forms, i.e. ÞGF2 and ÞGF3 """
+            # Filter out words that don't have the same "utg" i.e. word ID as
+            # the one we successfully looked up in BÍN
+            mns = list(filter(lambda w : w.utg == wid, m_list))
+            # Discourage rarer declension forms, i.e. ÞGF2 and ÞGF3
             return sorted(m_list, key=lambda m: "2" in m.beyging or "3" in m.beyging)
 
         # Look up all cases of the word in BÍN
@@ -205,12 +210,14 @@ def handle_plain_text(q):
 
     matches = None
     handler = None
+    m_regex = None
 
     # Spelling queries
     for rx in _SPELLING_RX:
         matches = re.search(rx, ql)
         if matches:
             handler = spelling_answer_for_word
+            m_regex = rx
             break
 
     # Declension queries
@@ -219,15 +226,18 @@ def handle_plain_text(q):
             matches = re.search(rx, ql)
             if matches:
                 handler = declension_answer_for_word
+                m_regex = rx
                 break
 
     # Nothing caught by regexes, bail
     if not handler:
         return False
 
+    matching_word = matches.group(1)
+
     # Generate answer
     try:
-        answ = handler(matches.group(1), q)
+        answ = handler(matching_word, q)
     except Exception as e:
         logging.warning("Exception generating word query answer: {0}".format(e))
         q.set_error("E_EXCEPTION: {0}".format(e))
@@ -236,6 +246,10 @@ def handle_plain_text(q):
     if answ:
         q.set_answer(*answ)
         q.set_expires(datetime.utcnow() + timedelta(hours=24))
+        # Beautify query by placing word being asked about within Icelandic quotation marks
+        # TODO: This needs to be fixed, mangles the query if asking about "maður", "orð", etc.
+        # bq = re.sub(r"\s({0})".format(matching_word), r" „\1“", q.beautified_query)
+        # q.set_beautified_query(bq)
         return True
 
     return False
