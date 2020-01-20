@@ -50,7 +50,7 @@
 # TODO: "hvað eru margir dagar í árinu"
 # TODO: "Hvaða öld er núna"
 # TODO: "hvað eru margir mánuðir í sumardaginn fyrsta" "hvað eru margar vikur í skírdag"
-# TODO: "Hvað eru margir dagar eftir af árinu?"
+# TODO: "Hvað eru margir dagar eftir af árinu?" "Hvað er mikið eftir af árinu 2020?"
 # TODO: "hvaða dagur er á morgun"
 # TODO: "Þorláksmessa" not working
 # TODO: "hvenær er næst fullt tungl"

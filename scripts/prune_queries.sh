@@ -7,3 +7,4 @@ psql -h 127.0.0.1 -U reynir -d scraper -c \
 "DELETE FROM queries WHERE timestamp < NOW() - INTERVAL '30 days';"
 
 
+

@@ -41,8 +41,8 @@ from settings import changedlocale
 
 
 def natlang_seq(words, oxford_comma=False):
-    """ Generate an Icelandic natural language sequence of words e.g.
-        "A og B", "A, B og C", "A, B, C og D". """
+    """ Generate an Icelandic natural language sequence of words
+        e.g. "A og B", "A, B og C", "A, B, C og D". """
     if not words:
         return ""
     if len(words) == 1:
@@ -53,30 +53,16 @@ def natlang_seq(words, oxford_comma=False):
 
 
 def nom2dat(w):
-    """ Look up dative form of a noun in BÍN, try
-        lowercase if capitalized form is not found. """
+    """ Look up dative form of a noun in BÍN. """
+    if not w:
+        return ""
 
     def sort_by_preference(m_list):
         """ Discourage rarer declension forms, i.e. ÞGF2 and ÞGF3 """
         return sorted(m_list, key=lambda m: "2" in m.beyging or "3" in m.beyging)
 
-    if w:
-        with BIN_Db().get_db() as db:
-            return db.cast_to_dative(w, meaning_filter_func=sort_by_preference)
-    return w
-
-
-# Placename components that should not be capitalized
-_PLACENAME_PREPS = ("í", "á", "de")
-
-
-def capitalize_placename(pn):
-    """ Correctly capitalize a lowercase placename, e.g.
-        "rio de janeiro"->"Rio de Janeiro", "vík í mýrdal"->"Vík í Mýrdal" """
-    comp = pn.split()
-    return " ".join(
-        c[0].upper() + c[1:] if c not in _PLACENAME_PREPS else c for c in comp
-    )
+    with BIN_Db().get_db() as db:
+        return db.cast_to_dative(w, meaning_filter_func=sort_by_preference)
 
 
 # The following needs to include at least nominative

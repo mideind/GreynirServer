@@ -39,9 +39,8 @@ from queries import (
     distance_desc,
     query_geocode_api_addr,
     query_traveltime_api,
-    capitalize_placename,
 )
-from geo import distance
+from geo import distance, capitalize_placename
 
 
 _DISTANCE_QTYPE = "Distance"
@@ -66,19 +65,38 @@ _QDISTANCE_REGEXES = (
 # Travel time questions
 _TT_PREFIXES = (
     "hvað er ég lengi að",
+    "hvað er maður lengi að",
+    "hvað erum við lengi að",
     "hversu lengi er ég að",
+    "hversu lengi er maður að",
+    "hversu lengi erum að",
     "hversu lengi að",
+    "hve lengi að",
     "hve lengi er ég að",
+    "hve lengi er maður að",
+    "hve lengi erum við að",
     "hvað tekur langan tíma að",
-    "hvað tekur það mig langan tíma að",
     "hvað tekur mig langan tíma að",
+    "hvað tekur mann langan tíma að",
+    "hvað tekur það langan tíma að",
+    "hvað tekur það mig langan tíma að",
+    "hvað tekur það mann langan tíma að",
     "hversu langan tíma tekur að",
+    "hversu langan tíma tekur það að",
     "hversu langan tíma tekur það mig að",
     "hvað væri ég lengi að",
+    "hvað væri maður lengi að",
     "hvað tæki það langan tíma að",
+    "hvað tæki mann langan tíma að",
+    "hvað tæki það mann langan tíma að",
     "hversu lengi væri ég að",
+    "hversu lengi væri maður að",
     "hve lengi væri ég að",
+    "hve lengi væri maður að",
+    "hversu langan tíma tæki að",
+    "hversu langan tíma tæki það að",
     "hversu langan tíma tæki það mig að",
+    "hvað er langt að",
 )
 
 _TT_MODES = {
@@ -86,10 +104,19 @@ _TT_MODES = {
     "labba": "walking",
     "rölta": "walking",
     "tölta": "walking",
+    "skunda": "walking",
     "hjóla": "cycling",
+    "fara á hjóli": "cycling",
+    "fara á reiðhjóli": "cycling",
+    "ferðast á hjóli": "cycling",
+    "ferðast á reiðhjóli": "cycling",
     "keyra": "driving",
+    "keyra á bíl": "driving",
     "aka": "driving",
     "fara á bílnum": "driving",
+    "ferðast í bíl": "driving",
+    "ferðast á bíl": "driving",
+    "á bíl": "driving",
 }
 
 _PREPS = ("á", "í", "til")
@@ -112,10 +139,10 @@ _QTRAVELTIME_REGEXES = (
 
 
 def _addr2nom(address):
-    """ Convert location name to nominative form """
-    # TODO: Implement more intelligently
+    """ Convert location name to nominative form. """
+    # TODO: Implement more intelligently.
     # This is a tad simplistic and mucks up some things,
-    # e.g. "Ráðhús Reykjavíkur" becomes "Ráðhús Reykjavík"
+    # e.g. "Ráðhús Reykjavíkur" becomes "Ráðhús Reykjavík".
     with BIN_Db.get_db() as db:
         nf = []
         for w in address.split():
@@ -131,7 +158,7 @@ def _addr2nom(address):
 
 
 def dist_answer_for_loc(matches, query):
-    """ Generate response to distance query """
+    """ Generate response to distance query. """
     locname = matches.group(1)
     loc_nf = _addr2nom(locname[0].upper() + locname[1:])
     res = query_geocode_api_addr(loc_nf)
@@ -231,7 +258,7 @@ def traveltime_answer_for_loc(matches, query):
 
 
 def handle_plain_text(q):
-    """ Handle a plain text query, contained in the q parameter """
+    """ Handle a plain text query, contained in the q parameter. """
     ql = q.query_lower.rstrip("?")
 
     matches = None

@@ -262,6 +262,10 @@ _QTYPE_TO_DESC = {
     "Television": "spurningum um sjónvarpsdagskrána",
     "Unit": "spurningum um mælieiningar",
     "Wikipedia": "beiðnum um upplýsingar úr Wikipedíu",
+    "Petrol": "fyrirspurnum um bensínstöðvar",
+    "Spelling": "fyrirspurnum um stafsetningu",
+    "Places": "spurningum um verslanir og opnunartíma",
+    "News": "fyrirspurnum um fréttir",
 }
 
 
