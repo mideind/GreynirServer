@@ -133,6 +133,8 @@ _MOST_FREQ_QUERIES = frozenset(
         "hvers konar spurningum hefurðu svarað",
         "um hvað ertu mest spurð",
         "um hvað ert þú mest spurð",
+        "um hvað ertu spurð",
+        "um hvað ert þú spurð",
     )
 )
 
@@ -248,8 +250,9 @@ _QTYPE_TO_DESC = {
     "Special": "sérstökum fyrirspurnum",
     "Opinion": "spurningum um skoðanir mínar",
     "Random": "beiðnum um tölur af handahófi",
-    "Title": "spurningum um einstaklinga",
+    "Title": "spurningum um titla",
     "Person": "spurningum um einstaklinga",
+    "Entity": "spurningum um fyrirbæri",
     "Flights": "spurningum um flugsamgöngur",
     "Geography": "spurningum um landafræði",
     "Location": "spurningum um staðsetningu",
