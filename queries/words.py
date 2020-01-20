@@ -26,6 +26,8 @@
 
 # "Hvernig orð er X", "Hvers konar orð er X"
 # "Er X [tegund af orði]"
+# TODO: Handle definite article in declension ("Hvernig beygist orðið 'kötturinn'?")
+# TODO: Declension queries should support adjectives etc.
 # TODO: Beautify query by placing word being asked about within quotation marks
 # TODO: Handle numbers ("3" should be spelled as "þrír" etc.)
 
@@ -77,8 +79,8 @@ _CHAR_PRONUNCIATION = {
 }
 
 
-_WORDTYPE_RX_NOM = "(?:orðið|nafnið|nafnorðið|lýsingarorðið)"
-_WORDTYPE_RX_GEN = "(?:orðsins|nafnsins|nafnorðsins|lýsingarorðsins)"
+_WORDTYPE_RX_NOM = "(?:orðið|nafnið|nafnorðið)"
+_WORDTYPE_RX_GEN = "(?:orðsins|nafnsins|nafnorðsins)"
 
 
 _SPELLING_RX = (
@@ -113,34 +115,39 @@ def lookup_best_word(word):
     """ Look up word in BÍN, pick right one acc. to a criterion. """
     with BIN_Db().get_db() as db:
 
-        res = db.lookup_nominative(word)
+        def nouns_only(bin_meaning):
+            return bin_meaning.ordfl in ("kk", "kvk", "hk")
+
+        res = list(filter(nouns_only, db.lookup_nominative(word)))
         if not res:
             # Try with uppercase first char
-            res = db.lookup_nominative(word.capitalize())
+            capw = word.capitalize()
+            res = list(filter(nouns_only, db.lookup_nominative(capw)))
             if not res:
                 return None
 
-        # OK, we have one or more matching words
+        # OK, we have one or more matching nouns
         if len(res) == 1:
             m = res[0]
         else:
-            # TODO: Pick best result (prefer nouns vs. adjectives, etc?)
+            # TODO: Pick best result
             m = res[0]  # For now
 
-        # TODO: If more than one declesion possible, list variations also
+        # TODO: If more than one declesion form possible (e.g. björns, bjarnar)
+        # we should also list such variations
         def sort_by_preference(m_list):
             """ Discourage rarer declension forms, i.e. ÞGF2 and ÞGF3 """
             return sorted(m_list, key=lambda m: "2" in m.beyging or "3" in m.beyging)
 
         # Look up all cases of the word in BÍN
-            nom = m.stofn
-            acc = db.cast_to_accusative(nom, meaning_filter_func=sort_by_preference)
-            dat = db.cast_to_dative(nom, meaning_filter_func=sort_by_preference)
-            gen = db.cast_to_genitive(nom, meaning_filter_func=sort_by_preference)
-            return nom, acc, dat, gen
+        nom = m.stofn
+        acc = db.cast_to_accusative(nom, meaning_filter_func=sort_by_preference)
+        dat = db.cast_to_dative(nom, meaning_filter_func=sort_by_preference)
+        gen = db.cast_to_genitive(nom, meaning_filter_func=sort_by_preference)
+        return nom, acc, dat, gen
 
 
-_NOT_IN_BIN_MSG = "Orðið '{0}' fannst ekki í Beygingarlýsingu íslensks nútímamáls."
+_NOT_IN_BIN_MSG = "Nafnorðið '{0}' fannst ekki í Beygingarlýsingu íslensks nútímamáls."
 
 
 def declension_answer_for_word(word, query):
@@ -166,7 +173,7 @@ def declension_answer_for_word(word, query):
 
 
 # Time to pause after reciting each character name
-_PAUSE_BTW_LETTERS = 0.3  # Seconds
+_LETTER_INTERVAL = 0.3  # Seconds
 
 
 def spelling_answer_for_word(word, query):
@@ -181,7 +188,7 @@ def spelling_answer_for_word(word, query):
 
     # Piece together SSML for speech synthesis
     v = [_CHAR_PRONUNCIATION.get(c, c) for c in chars]
-    jfmt = '<break time="{0}s"/>'.format(_PAUSE_BTW_LETTERS)
+    jfmt = '<break time="{0}s"/>'.format(_LETTER_INTERVAL)
     voice = "Orðið '{0}' er stafað á eftirfarandi hátt: {1} {2}".format(
         word, jfmt, jfmt.join(v)
     )
