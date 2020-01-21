@@ -4,7 +4,7 @@
 
     Time query response module
 
-    Copyright (C) 2019 Miðeind ehf.
+    Copyright (C) 2020 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -45,6 +45,7 @@ _TIME_QTYPE = "Time"
 
 _TIME_QUERIES = frozenset(
     (
+        "klukkan",
         "hvað er klukkan",
         "hvað er klukkan eiginlega",
         "hvað er klukkan nákvæmlega",

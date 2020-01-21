@@ -4,7 +4,7 @@
 
     Television schedule query response module
 
-    Copyright (C) 2019 Miðeind ehf.
+    Copyright (C) 2020 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -103,8 +103,16 @@ QTVOnSchedule →
     | "í" "boði"
     | "boðið" "upp" "á"
 
+QTVTheSchedule →
+    "dagskráin" | "sjónvarpsdagskráin"
+
+QTVThisEvening →
+    "í" "kvöld"
+
 QTelevisionEveningQuery →
-   "hvað" "er" QTVEiginlega? QTVOnSchedule? QTVOnTV "í" "kvöld"
+   "hvað" "er" QTVEiginlega? QTVOnSchedule? QTVOnTV QTVThisEvening
+   | "hvernig" "er" QTVEiginlega? QTVTheSchedule QTVOnTV? QTVThisEvening
+   | "hver" "er" QTVEiginlega? QTVTheSchedule QTVOnTV? QTVThisEvening
 
 $score(+35) QTelevision
 

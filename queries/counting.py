@@ -4,7 +4,7 @@
 
     Counting query response module
 
-    Copyright (C) 2019 Miðeind ehf.
+    Copyright (C) 2020 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -59,17 +59,16 @@ QCountingQuery →
     QCountingUp | QCountingDown | QCountingBetween
 
 QCountingUp →
-    "teldu" QCountingSpeed? "upp" "að" QCountingFirstNumber
-    | "teldu" QCountingSpeed? "upp" "í" QCountingFirstNumber
-    | "teldu" QCountingSpeed? "upp" "til" QCountingFirstNumber
+    "teldu" QCountingSpeed? QCountingUpTo QCountingFirstNumber QCountingSpeed?
+    | QCountingCanYouCount QCountingSpeed? QCountingUpTo QCountingFirstNumber QCountingSpeed?
 
 QCountingDown →
-    "teldu" QCountingSpeed? "niður" "frá" QCountingFirstNumber
+    "teldu" QCountingSpeed? "niður" "frá" QCountingFirstNumber QCountingSpeed?
+    | QCountingCanYouCount QCountingSpeed? "niður" "frá" QCountingFirstNumber QCountingSpeed?
 
 QCountingBetween →
-    "teldu" QCountingSpeed? "frá" QCountingFirstNumber "upp"? "til" QCountingSecondNumber
-    | "teldu" QCountingSpeed? "frá" QCountingFirstNumber "upp"? "í" QCountingSecondNumber
-    | "teldu" QCountingSpeed? "frá" QCountingFirstNumber "upp"? "að" QCountingSecondNumber
+    "teldu" QCountingSpeed? "frá" QCountingFirstNumber QCountingUpTo QCountingSecondNumber QCountingSpeed?
+    | QCountingCanYouCount QCountingSpeed? "frá" QCountingFirstNumber QCountingUpTo QCountingSecondNumber QCountingSpeed?
 
 QCountingFirstNumber →
     to | töl | tala
@@ -79,6 +78,12 @@ QCountingSecondNumber →
 
 QCountingSpeed →
     "mjög" "hægt" | "hægt" | "hratt" | "mjög" "hratt"
+
+QCountingUpTo →
+    "upp"? "að" | "upp"? "í" | "upp"? "til"
+
+QCountingCanYouCount →
+    "geturðu" "talið" | "getur" "þú" "talið" | "nennirðu" "að" "telja" | "nennir" "þú" "að" "telja"
 
 $score(+35) QCounting
 

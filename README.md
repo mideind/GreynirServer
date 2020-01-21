@@ -1,12 +1,11 @@
-
-![Greynir](https://raw.githubusercontent.com/mideind/Greynir/master/static/img/GreynirLogoVertical200.png)
-
 [![Build Status](https://travis-ci.com/mideind/Greynir.svg?branch=master)](https://travis-ci.com/mideind/Greynir) 
 [![Join the chat at https://gitter.im/Greynir/Lobby](https://badges.gitter.im/Greynir/Lobby.svg)](https://gitter.im/Greynir/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-## Natural language processing for Icelandic
+<img src="static/img/greynir-logo-large.png" alt="Greynir" width="200" height="200" align="right" style="margin-left:20px; margin-bottom: 20px;">
 
-Try Greynir (in Icelandic) at [https://greynir.is](https://greynir.is)
+# Greynir
+
+### Natural Language Processing for Icelandic
 
 *Greynir* is a natural language processing engine that
 **extracts processable information from Icelandic text**, allows
@@ -14,6 +13,8 @@ Try Greynir (in Icelandic) at [https://greynir.is](https://greynir.is)
 **natural language understanding**. Greynir is the core of
 [*Embla*](https://embla.is), a voice-based question answering app
 for smartphones and tablets.
+
+Try Greynir (in Icelandic) at [https://greynir.is](https://greynir.is)
 
 Greynir periodically scrapes chunks of text from Icelandic news sites on the web.
 It employs the [Tokenizer](https://github.com/mideind/Tokenizer) and
@@ -55,8 +56,8 @@ These trees can then be further processed and acted upon by sets of Python
 functions that are linked to grammar nonterminals.
 
 **Greynir is currently able to parse about *90%* of sentences** in a typical news article from the web,
-and many well-written articles can be parsed completely. It presently has around 500,000 parsed articles
-in its database, containing approximately 9 million parsed sentences.
+and many well-written articles can be parsed completely. It presently has more than 500,000 parsed articles
+in its database, containing over 9 million parsed sentences.
 
 Greynir supports natural language querying of its databases. Users can ask about person names, titles and
 entity definitions and get appropriate replies. The HTML5 Web Speech API is supported to allow
@@ -140,7 +141,7 @@ Scraper modules for new websites are plugged in by adding Python code to the
 `scrapers/` directory. Currently, the `scrapers/default.py` module supports
 popular Icelandic news sites as well as the site of the Constitutional Council.
 
-Processor modules can be plugged in to Greynir by adding Python code to the
+Processor modules can be plugged into Greynir by adding Python code to the
 `processors/` directory. The demo in `processors/default.py` extracts person
 names and titles from parse trees for storage in a database table.
 
@@ -154,21 +155,21 @@ people and titles.
 * `main.py` : WSGI web server application and main module for command-line invocation
 * `routes/*.py` : Routes for the web application
 * `queries/*.py` : Question answering modules
-* `settings.py` : Management of global settings and configuration data,
-  obtained from `config/Reynir.conf`
+* `settings.py` : Management of global settings and configuration data
 * `config/Reynir.conf` : Editable configuration file
 * `scraper.py` : Web scraper, collecting articles from a set of pre-selected websites (roots)
-* `db/*.py`: Scraper database models and functions via SQLAlchemy
+* `fetcher.py` : Utility classes for fetching articles given their URLs
+* `db/*.py`: Database models and functions via SQLAlchemy
 * `nertokenizer.py` : A layer on top of the tokenizer for named entity recognition
 * `processor.py`: Information extraction from parse trees and token streams
 * `article.py` : Representation of an article through its life cycle
 * `tree.py` : Representation of parse trees for processing
 * `query.py` : Natural language query processor
 * `vectors/builder.py` : Article indexer and LSA topic vector builder
-* `doc.py` : Extracts text from various document formats
+* `doc.py` : Extract plain text from various document formats
 * `geo.py` : Geography and location-related utility functions
-* `fetcher.py` : Utility classes for fetching articles given their URLs
 * `utils/*.py` : Various utility programs
+* `speech.py` : Speech synthesis-related utility functions
 
 ## Installation and setup
 
@@ -213,7 +214,7 @@ export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
 ##### Interactive shell
 
 ```
-./shell.sh
+./scripts/shell.sh
 ```
 
 Starts an [IPython](https://ipython.org) shell with a database session (`s`), the Greynir 
@@ -223,10 +224,10 @@ see [Using the Greynir Shell](docs/shell.md).
 
 ## Copyright and licensing
 
-Greynir is *copyright (C) 2019 by Miðeind ehf.*
+Greynir is *copyright (C) 2020 [Miðeind ehf.](https://mideind.is)*
 The original author of this software is *Vilhjálmur Þorsteinsson*.
 
-![GPLv3](https://raw.githubusercontent.com/mideind/Greynir/master/static/img/GPLv3.png)
+<img src="static/img/GPLv3.png" align="right" style="margin-left:20px;">
 
 This set of programs is free software: you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the Free
@@ -239,10 +240,10 @@ A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
 The full text of the GNU General Public License v3 is
 [included here](https://github.com/mideind/Greynir/blob/master/LICENSE.txt)
-and also available here: https://www.gnu.org/licenses/gpl-3.0.html.
+and also available here: [https://www.gnu.org/licenses/gpl-3.0.html](https://www.gnu.org/licenses/gpl-3.0.html).
 
 If you wish to use this set of programs in ways that are not covered under the
-GNU GPLv3 license, please contact us at *mideind@mideind.is* to negotiate a
-custom license. This applies for instance if you want to include or use this software,
-in part or in full, in other software that is not licensed under GNU GPLv3 or
-other compatible licenses.
+GNU GPLv3 license, please contact us at [mideind@mideind.is](mailto:mideind@mideind.is)
+to negotiate a custom license. This applies for instance if you want to include or use
+this software, in part or in full, in other software that is not licensed under
+GNU GPLv3 or other compatible licenses.

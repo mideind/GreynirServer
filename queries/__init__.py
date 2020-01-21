@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2019 Miðeind ehf.
+    Copyright (C) 2020 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -30,52 +30,39 @@ import json
 import os
 import re
 import locale
-import datetime
+import math
+
 from tzwhere import tzwhere
 from pytz import country_timezones
 
-from geo import country_name_for_isocode, iceprep4cc
+from geo import country_name_for_isocode, iceprep_for_cc
 from reynir.bindb import BIN_Db
 from settings import changedlocale
 
 
 def natlang_seq(words, oxford_comma=False):
-    """ Generate an Icelandic natural language sequence of words e.g.
-        "A og B", "A, B og C", "A, B, C og D". """
+    """ Generate an Icelandic natural language sequence of words
+        e.g. "A og B", "A, B og C", "A, B, C og D". """
     if not words:
         return ""
     if len(words) == 1:
         return words[0]
     return "{0}{1} og {2}".format(
-        ", ".join(words[:-1]), "," if oxford_comma else "", words[-1]
+        ", ".join(words[:-1]), "," if oxford_comma and len(words) > 2 else "", words[-1]
     )
 
 
 def nom2dat(w):
-    """ Look up dative form of a noun in BÍN, try
-        lowercase if capitalized form is not found. """
+    """ Look up dative form of a noun in BÍN. """
+    if not w:
+        return ""
 
     def sort_by_preference(m_list):
         """ Discourage rarer declension forms, i.e. ÞGF2 and ÞGF3 """
         return sorted(m_list, key=lambda m: "2" in m.beyging or "3" in m.beyging)
 
-    if w:
-        with BIN_Db().get_db() as db:
-            return db.cast_to_dative(w, meaning_filter_func=sort_by_preference)
-    return w
-
-
-# Placename components that should not be capitalized
-_PLACENAME_PREPS = ("í", "á", "de")
-
-
-def capitalize_placename(pn):
-    """ Correctly capitalize a lowercase placename, e.g.
-        "rio de janeiro"->"Rio de Janeiro", "vík í mýrdal"->"Vík í Mýrdal" """
-    comp = pn.split()
-    return " ".join(
-        c[0].upper() + c[1:] if c not in _PLACENAME_PREPS else c for c in comp
-    )
+    with BIN_Db().get_db() as db:
+        return db.cast_to_dative(w, meaning_filter_func=sort_by_preference)
 
 
 # The following needs to include at least nominative
@@ -238,16 +225,18 @@ def numbers_to_neutral(s):
 
 
 def is_plural(num):
-    """ Determine whether an Icelandic word following a given number should
-        be plural or not, e.g. "21 maður" vs. "22 menn" vs. "11 menn" """
-    return (num % 10 != 1) or (num % 100 == 11)
+    """ Determine whether an Icelandic word following a given number should be
+        plural or not, e.g. "21 maður", "22 menn", "1,1 kílómetri", "11 menn" etc. 
+        Accepts string, float or int as argument. """
+    sn = str(num)
+    return not (sn.endswith("1") and not sn.endswith("11"))
 
 
 def country_desc(cc):
-    """ Generate Icelandic description string of being in a particular country
+    """ Generate Icelandic description of being in a particular country
         with correct preposition and case e.g. 'á Spáni', 'í Þýskalandi' """
     cn = country_name_for_isocode(cc)
-    prep = iceprep4cc(cc)
+    prep = iceprep_for_cc(cc)
     return "{0} {1}".format(prep, nom2dat(cn))
 
 
@@ -278,13 +267,14 @@ _TIMEUNIT_INTERVALS = (
     ("s", 1),
 )
 
+_CASE_ABBR = ["nf", "þf", "þgf", "ef"]
+
 
 def time_period_desc(seconds, case="nf", omit_seconds=True):
-    """ Generate Icelandic description of the length of a given time period,
-        e.g. "4 dagar, 6 klukkustundir og 21 mínúta. """
-    case_abbr = ["nf", "þf", "þgf", "ef"]
-    assert case in case_abbr
-    cidx = case_abbr.index(case)
+    """ Generate Icelandic description of the length of a given time
+        span, e.g. "4 dagar, 6 klukkustundir og 21 mínúta. """
+    assert case in _CASE_ABBR
+    cidx = _CASE_ABBR.index(case)
     # Round to nearest minute if omitting second precision
     seconds = ((seconds + 30) // 60) * 60 if omit_seconds else seconds
 
@@ -299,6 +289,73 @@ def time_period_desc(seconds, case="nf", omit_seconds=True):
             result.append("{0} {1}".format(value, icename))
 
     return natlang_seq(result)
+
+
+_METER_NOUN = (
+    ["metri", "metra", "metra", "metra"],
+    ["metrar", "metra", "metrum", "metra"],
+)
+
+
+def distance_desc(km_dist, case="nf", in_metres=1.0, abbr=False):
+    """ Generate an Icelandic description of distance in km/m w. option to
+        specify case, abbreviations, cutoff for returning desc in metres. """
+    assert case in _CASE_ABBR
+    cidx = _CASE_ABBR.index(case)
+
+    # E.g. 7,3 kílómetrar
+    if km_dist >= in_metres:
+        rounded_km = round(km_dist, 1 if km_dist < 10 else 0)
+        dist = format_icelandic_float(rounded_km)
+        plidx = 1 if is_plural(rounded_km) else 0
+        unit_long = "kíló" + _METER_NOUN[plidx][cidx]
+        unit = "km" if abbr else unit_long
+    # E.g. 940 metrar
+    else:
+        # Round to nearest 10
+        def rnd(n):
+            return ((n + 5) // 10) * 10
+
+        dist = rnd(int(km_dist * 1000.0))
+        plidx = 1 if is_plural(dist) else 0
+        unit_long = _METER_NOUN[plidx][cidx]
+        unit = "m" if abbr else unit_long
+
+    return "{0} {1}".format(dist, unit)
+
+
+_KRONA_NOUN = (
+    ["króna", "krónu", "krónu", "krónur"],
+    ["krónur", "krónur", "krónum", "króna"],
+)
+
+
+def krona_desc(amount, case="nf"):
+    """ Generate description of an amount in krónas, e.g.
+        "213,5 krónur", "361 króna", etc. """
+    assert case in _CASE_ABBR
+    cidx = _CASE_ABBR.index(case)
+    plidx = 1 if is_plural(amount) else 0
+    return "{0} {1}".format(format_icelandic_float(amount), _KRONA_NOUN[plidx][cidx])
+
+
+def strip_trailing_zeros(num_str):
+    """ Strip trailing decimal zeros from an Icelandic-style
+        float num string, e.g. "17,0" -> "17". """
+    if "," in num_str:
+        return num_str.rstrip("0").rstrip(",")
+    return num_str
+
+
+def format_icelandic_float(fp_num):
+    """ Convert number to Icelandic decimal format. """
+    with changedlocale(category="LC_NUMERIC"):
+        res = locale.format_string("%.2f", fp_num, grouping=True).replace(" ", ".")
+        return strip_trailing_zeros(res)
+
+
+def gen_answer(a):
+    return dict(answer=a), a, a
 
 
 def query_json_api(url):
@@ -329,24 +386,27 @@ def query_json_api(url):
 
 # The Google API identifier (you must obtain your
 # own key if you want to use this code)
-_API_KEY = ""
-_API_KEY_PATH = os.path.join(
+_GOOGLE_API_KEY = ""
+_GOOGLE_API_KEY_PATH = os.path.join(
     os.path.dirname(__file__), "..", "resources", "GoogleServerKey.txt"
 )
 
 
-def _get_API_key():
+def _get_google_api_key():
     """ Read Google API key from file """
-    global _API_KEY
-    if not _API_KEY:
+    global _GOOGLE_API_KEY
+    if not _GOOGLE_API_KEY:
         try:
             # You need to obtain your own key and put it in
             # _API_KEY_PATH if you want to use this code.
-            with open(_API_KEY_PATH) as f:
-                _API_KEY = f.read().rstrip()
+            with open(_GOOGLE_API_KEY_PATH) as f:
+                _GOOGLE_API_KEY = f.read().rstrip()
         except FileNotFoundError:
-            _API_KEY = ""
-    return _API_KEY
+            logging.warning(
+                "Unable to read Google API key at {0}".format(_GOOGLE_API_KEY_PATH)
+            )
+            _GOOGLE_API_KEY = ""
+    return _GOOGLE_API_KEY
 
 
 _MAPS_API_COORDS_URL = (
@@ -358,7 +418,7 @@ _MAPS_API_COORDS_URL = (
 def query_geocode_api_coords(lat, lon):
     """ Look up coordinates in Google's geocode API. """
     # Load API key
-    key = _get_API_key()
+    key = _get_google_api_key()
     if not key:
         # No key, can't query Google location API
         logging.warning("No API key for coordinates lookup")
@@ -378,7 +438,7 @@ _MAPS_API_ADDR_URL = (
 def query_geocode_api_addr(addr):
     """ Look up address in Google's geocode API. """
     # Load API key
-    key = _get_API_key()
+    key = _get_google_api_key()
     if not key:
         # No key, can't query the API
         logging.warning("No API key for address lookup")
@@ -403,7 +463,7 @@ def query_traveltime_api(startloc, endloc, mode="walking"):
         Uses Google Maps' Distance Matrix API. For details, see:
         https://developers.google.com/maps/documentation/distance-matrix/intro """
     # Load API key
-    key = _get_API_key()
+    key = _get_google_api_key()
     if not key:
         # No key, can't query the API
         logging.warning("No API key for travel time lookup")
@@ -415,25 +475,6 @@ def query_traveltime_api(startloc, endloc, mode="walking"):
     # Send API request
     url = _MAPS_API_DISTANCE_URL.format(p1, p2, mode, key)
     return query_json_api(url)
-
-
-def strip_trailing_zeros(num_str):
-    """ Strip trailing decimal zeros from an Icelandic-style
-        float num string, e.g. "17,0" -> "17". """
-    if "," in num_str:
-        return num_str.rstrip("0").rstrip(",")
-    return num_str
-
-
-def format_icelandic_float(fp_num):
-    """ Convert number to Icelandic decimal format. """
-    with changedlocale(category="LC_NUMERIC"):
-        res = locale.format_string("%.2f", fp_num, grouping=True).replace(" ", ".")
-        return strip_trailing_zeros(res)
-
-
-def gen_answer(a):
-    return dict(answer=a), a, a
 
 
 _TZW = None

@@ -4,7 +4,7 @@
 
     Geography query response module
 
-    Copyright (C) 2019 Miðeind ehf.
+    Copyright (C) 2020 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -26,9 +26,10 @@
 # TODO: "Hvað búa margir í/á [BORG/LAND]?" etc. Wiki api?
 # TODO: "Hvað er Ísland?" "Hvar er Japan?"
 
-
-from datetime import datetime, timedelta
 import logging
+import random
+from datetime import datetime, timedelta
+
 from cityloc import capital_for_cc
 
 from queries import country_desc, nom2dat
