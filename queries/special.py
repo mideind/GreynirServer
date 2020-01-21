@@ -387,6 +387,9 @@ _SPECIAL_QUERIES = {
     "hver er best": {
         "answer": "Þú, kæri notandi, ert að sjálfsögðu bestur."
     },
+    "hver er fallegur": {
+        "answer": "Þú, kæri notandi, ert að sjálfsögðu fallegastur af öllum."
+    },
     "hver er fallegastur": {
         "answer": "Þú, kæri notandi, ert að sjálfsögðu fallegastur af öllum."
     },
@@ -1532,6 +1535,8 @@ _SPECIAL_QUERIES = {
     "ert þú bjáni": _rudeness,
     "ertu fáviti": _rudeness,
     "ert þú fáviti": _rudeness,
+    "ertu hálfviti": _rudeness,
+    "ertu fokking hálfviti": _rudeness,
     "þegiðu": _rudeness,
     "þegi þú": _rudeness,
     "þegiðu embla": _rudeness,
