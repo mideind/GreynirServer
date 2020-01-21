@@ -127,6 +127,8 @@ def test_tnttagger():
 
 def test_geo():
     """ Test geography and location-related functions in geo.py """
+    assert lookup_city_info("Kænugarður")[0]["country"] == "UA"
+    assert icelandic_city_name("London") == "Lundúnir"
     assert continent_for_country("IS") == "EU"
     assert coords_for_country("DE") != None
     assert coords_for_street_name("Austurstræti") != None

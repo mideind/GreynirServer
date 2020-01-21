@@ -458,10 +458,13 @@ def test_query_utility_functions():
     assert numbers_to_neutral("Fiskislóð 31") == "Fiskislóð þrjátíu og eitt"
 
     assert is_plural(22)
+    assert is_plural(11)
     assert is_plural("76,3")
     assert is_plural(27.6)
+    assert is_plural("19,11")
     assert not is_plural("276,1")
     assert not is_plural(22.1)
+    assert not is_plural(22.41)
 
     assert country_desc("DE") == "í Þýskalandi"
     assert country_desc("es") == "á Spáni"
