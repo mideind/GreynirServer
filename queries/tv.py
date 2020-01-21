@@ -107,14 +107,14 @@ QTVTheSchedule →
     "dagskráin" | "sjónvarpsdagskráin"
 
 QTVThisEvening →
-    "í" "kvöld"
+    "núna"? "í" "kvöld"
 
 QTelevisionEveningQuery →
    "hvað" "er" QTVEiginlega? QTVOnSchedule? QTVOnTV QTVThisEvening
    | "hvernig" "er" QTVEiginlega? QTVTheSchedule QTVOnTV? QTVThisEvening
    | "hver" "er" QTVEiginlega? QTVTheSchedule QTVOnTV? QTVThisEvening
 
-$score(+35) QTelevision
+$score(+55) QTelevision
 
 """
 
