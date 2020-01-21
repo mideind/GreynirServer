@@ -185,7 +185,7 @@ def test_query_api(client):
         "föstudagurinn langi",
         "menningarnótt",
         "sjómannadagurinn",
-        # "dagur íslenskrar tungu",
+        "dagur íslenskrar tungu",
         "annar í jólum",
     )
     for d in SPECIAL_DAYS:
@@ -240,9 +240,9 @@ def test_query_api(client):
     assert json["qtype"] == "Geography"
     assert json["answer"] == "Madríd"
 
-    json = qmcall(c, {"q": "Hvað er höfuðborgin í úkraínu"})
+    json = qmcall(c, {"q": "Hvað er höfuðborgin í Bretlandi"})
     assert json["qtype"] == "Geography"
-    assert json["answer"] == "Kænugarður"
+    assert json["answer"] == "Lundúnir"
 
     json = qmcall(c, {"q": "Í hvaða landi er Jóhannesarborg?"})
     assert json["qtype"] == "Geography"

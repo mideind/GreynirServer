@@ -136,7 +136,6 @@ def QGeoSubject(node, params, result):
         n = n.replace(" - ", "-")
         n = n[0].upper() + n[1:]
         result.subject = n
-        print(n)
 
 
 def _capital_query(country, q):

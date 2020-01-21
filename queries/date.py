@@ -344,6 +344,9 @@ QDateFathersDay/fall →
 
 QDateIcelandicTongueDay/fall →
     'dagur:kk'_et/fall "íslenskrar" "tungu"
+    | 'dagur:kk'_et/fall "íslenskrar" 'Tunga'_ef_kvk
+    | 'Dagur'/fall "íslenskrar" "tungu"
+    | 'Dagur'/fall "íslenskrar" 'Tunga'_ef_kvk
 
 QDateSecondChristmasDay/fall →
     'annar:lo'_et_kk/fall "í" "jólum"
