@@ -243,4 +243,7 @@ The full text of the GNU General Public License v3 is
 and also available here: [https://www.gnu.org/licenses/gpl-3.0.html](https://www.gnu.org/licenses/gpl-3.0.html).
 
 If you wish to use this set of programs in ways that are not covered under the
-GNU GPLv3 license, please contact us at [mideind@mideind.is](mailto:mideind@mideind.is).
+GNU GPLv3 license, please contact us at [mideind@mideind.is](mailto:mideind@mideind.is)
+to negotiate a custom license. This applies for instance if you want to include or use
+this software, in part or in full, in other software that is not licensed under
+GNU GPLv3 or other compatible licenses.

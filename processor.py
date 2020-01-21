@@ -489,10 +489,6 @@ def _main(argv=None):
                 # Limit the number of workers
                 num_workers = int(a) if int(a) else None
 
-        # Process arguments
-        for arg in args:
-            pass
-
         if init:
             # Initialize the scraper database
             init_db()
