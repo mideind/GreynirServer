@@ -34,7 +34,7 @@
 # TODO: Fix pronunciation of ordinal day of month (i.e. "29di" vs "29da")
 # TODO: "How many weeks between April 3 and June 16?"
 # TODO: Restore timezone-awareness
-# TODO: "hvað er mikið eftir af vinnuvikunni", "hvað er langt í helgina"
+# TODO: "Hvað er mikið eftir af vinnuvikunni", "hvað er langt í helgina"
 # TODO: "Hvaða vikudagur er DAGSETNING næstkomandi?"
 # TODO: "Hvað gerðist á þessum degi?"
 # TODO: "Hvað eru margir dagar eftir af árinu?"
@@ -43,20 +43,20 @@
 # TODO: "Hvað er langt í helgina?" "Hvenær er næsti (opinberi) frídagur?"
 # TODO: "Hvað eru margir dagar að fram að jólum?"
 # TODO: "Hvað eru margir dagar eftir af árinu? mánuðinum? vikunni?"
-# TODO: "Hvenær er næst hlaupár?"
+# TODO: "Hvenær er næst hlaupár?" "Er hlaupár?"
 # TODO: "Hvaða árstíð er"
 # TODO: "Á hvaða vikudegi er jóladagur?"
-# TODO: "hvenær er fyrsti í aðventu"
-# TODO: "hvað eru margir dagar í árinu"
+# TODO: "Hvenær er fyrsti í aðventu"
+# TODO: "Hvað eru margir dagar í árinu"
 # TODO: "Hvaða öld er núna"
-# TODO: "hvað eru margir mánuðir í sumardaginn fyrsta" "hvað eru margar vikur í skírdag"
+# TODO: "Hvað eru margir mánuðir í sumardaginn fyrsta" "hvað eru margar vikur í skírdag"
 # TODO: "Hvað eru margir dagar eftir af árinu?" "Hvað er mikið eftir af árinu 2020?"
 # TODO: "hvaða dagur er á morgun"
 # TODO: "Þorláksmessa" not working
-# TODO: "hvenær er næst fullt tungl"
+# TODO: "Hvenær er næst fullt tungl"
 # TODO: Specify weekday in "hvenær er" queries (e.g. "Sjómannadagurinn er *sunnudaginn* 7. júní")
 # TODO: "Hvað eru margar [unit of time measurement] í [dagsetningu]"
-# TODO: "hvenær byrjar þorrinn"
+# TODO: "Hvenær byrjar þorrinn"
 
 import json
 import re
@@ -142,6 +142,7 @@ QDateQuery →
     | QDateHowLongUntil 
     # | QDateHowLongSince  # Disabled for now.
     | QDateWhenIs
+    | QDateWhichYear
 
 QDateCurrent →
     "hvað" "er" "dagsetningin" QDateNow?
@@ -156,7 +157,7 @@ QDateCurrent →
     | "hver" "er" "vikudagurinn" QDateNow?
 
 QDateNow →
-    "í" "dag" | "núna"
+    "í" "dag" | "nákvæmlega"? "núna" | "í" "augnablikinu" | "eins" "og" "stendur"
 
 QDateHowLongUntil →
     "hvað" "er" "langt" "í" QDateItem_þf
@@ -189,6 +190,11 @@ QDateWhenIs →
 
 QDateThisYear →
     "núna"? "í" "ár" | "þetta" "ár" | "á" "þessu" "ári" | "þetta" "árið"
+
+QDateWhichYear →
+    "hvaða" "ár" "er" QDateNow?
+    | "hvaða" "ár" "er" "í" "gangi" QDateNow?
+    | "hvaða" "ár" "er" "að" "líða" QDateNow?
 
 QDateItem/fall →
     QDateAbsOrRel | QDateSpecialDay/fall
@@ -338,6 +344,9 @@ QDateFathersDay/fall →
 
 QDateIcelandicTongueDay/fall →
     'dagur:kk'_et/fall "íslenskrar" "tungu"
+    | 'dagur:kk'_et/fall "íslenskrar" 'Tunga'_ef_kvk
+    | 'Dagur'/fall "íslenskrar" "tungu"
+    | 'Dagur'/fall "íslenskrar" 'Tunga'_ef_kvk
 
 QDateSecondChristmasDay/fall →
     'annar:lo'_et_kk/fall "í" "jólum"
@@ -371,6 +380,10 @@ def QDateHowLongSince(node, params, result):
 
 def QDateWhenIs(node, params, result):
     result["when"] = True
+
+
+def QDateWhichYear(node, params, result):
+    result["year"] = True
 
 
 def QDateAbsOrRel(node, params, result):
@@ -806,6 +819,7 @@ def sentence(state, result):
                 # Find the number of days until target date
                 (response, answer, voice) = howlong_desc_answ(target)
                 qkey = "FutureDate" if "until" in result else "SinceDate"
+            # Asking about when a (special) day occurs in the year
             elif "when" in result and "target" in result:
                 # TODO: Fix this so it includes weekday, e.g.
                 # "Sunnudaginn 1. október"
@@ -825,6 +839,12 @@ def sentence(state, result):
                     r"\d+\. ", _DAY_INDEX_ACC[result.target.day] + " ", voice
                 )
                 response = dict(answer=answer)
+            # Asking which year it is
+            elif "year" in result:
+                y = now.year
+                answer = "{0}.".format(y)
+                response = dict(answer=answer)
+                voice = "Það er árið {0}.".format(y)
             else:
                 # Shouldn't be here
                 raise Exception("Unable to handle date query")

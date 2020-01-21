@@ -133,6 +133,8 @@ _MOST_FREQ_QUERIES = frozenset(
         "hvers konar spurningum hefurðu svarað",
         "um hvað ertu mest spurð",
         "um hvað ert þú mest spurð",
+        "um hvað ertu spurð",
+        "um hvað ert þú spurð",
     )
 )
 
@@ -143,6 +145,9 @@ _MOST_MENTIONED_PEOPLE_QUERIES = frozenset(
         "um hverja er verið að fjalla í fjölmiðlum",
         "um hverja er mest fjallað í fjölmiðlum",
         "um hverja er mest talað í fjölmiðlum",
+        "hverjir eru í fréttum",
+        "hverjir eru í fréttum núna",
+        "hverjir eru í fréttum þessa dagana",
         "hverjir eru mest í fréttum",
         "hverjir eru mest í fréttum núna",
         "hverjir eru mest í fréttum þessa dagana",
@@ -183,6 +188,7 @@ _MOST_MENTIONED_PEOPLE_QUERIES = frozenset(
         "hverjir hafa verið mest í fjölmiðlum síðustu daga",
         "hverjir eru umtöluðustu einstaklingarnir á Íslandi",
         "hverjir eru umtalaðastir",
+        "hverjir eru umtalaðastir á Íslandi",
         "um hverja er mest talað",
         "um hverja er mest skrifað",
         "hverjir hafa verið áberandi í fjölmiðlum síðustu daga",
@@ -248,8 +254,9 @@ _QTYPE_TO_DESC = {
     "Special": "sérstökum fyrirspurnum",
     "Opinion": "spurningum um skoðanir mínar",
     "Random": "beiðnum um tölur af handahófi",
-    "Title": "spurningum um einstaklinga",
+    "Title": "spurningum um titla",
     "Person": "spurningum um einstaklinga",
+    "Entity": "spurningum um fyrirbæri",
     "Flights": "spurningum um flugsamgöngur",
     "Geography": "spurningum um landafræði",
     "Location": "spurningum um staðsetningu",
@@ -264,6 +271,7 @@ _QTYPE_TO_DESC = {
     "Wikipedia": "beiðnum um upplýsingar úr Wikipedíu",
     "Petrol": "fyrirspurnum um bensínstöðvar",
     "Spelling": "fyrirspurnum um stafsetningu",
+    "Declension": "fyrirspurnum um beygingarmyndir",
     "Places": "spurningum um verslanir og opnunartíma",
     "News": "fyrirspurnum um fréttir",
 }

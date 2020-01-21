@@ -21,6 +21,8 @@
 
 """
 
+# TODO: "Hvað er gengið á evrunni?" (implicitly "gagnvart krónunni")
+
 import re
 import cachetools
 import json
