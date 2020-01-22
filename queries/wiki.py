@@ -97,6 +97,8 @@ Query →
 QWikiQuery →
     # These take the subject in the accusative case
     "hvað" "segir" QWikipedia "um" QWikiSubjectÞf
+    | "hvað" "stendur" "í" QWikipedia "um" QWikiSubjectÞf
+    | "hvað" "stendur" "um" QWikiSubjectÞf "í" QWikipedia
     | "hvað" "getur" "þú" "sagt" "mér"? "um" QWikiSubjectÞf
     | "hvað" "geturðu" "sagt" "mér"? "um" QWikiSubjectÞf
     | "hvað" "getur" QWikipedia "sagt" "mér"? "um" QWikiSubjectÞf

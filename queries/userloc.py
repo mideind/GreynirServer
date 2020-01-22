@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Location query response module
+    User location query response module
 
     Copyright (C) 2020 Miðeind ehf.
 
@@ -18,15 +18,9 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
-
-    This module handles location-related queries.
+    This module handles queries related to user location ("Where am I?").
 
 """
-
-
-# TODO: "Í hvaða póstnúmeri er ég?" "Í hvaða póstnúmeri er Fiskislóð 31?"
-# TODO: "Í hvaða bæ er ég?" "Hver er næsti bær?"
-
 
 import os
 import re
@@ -43,7 +37,7 @@ from iceaddr import iceaddr_lookup, postcodes
 from geo import iceprep_for_placename, iceprep_for_street
 
 
-_LOC_QTYPE = "Location"
+_LOC_QTYPE = "UserLocation"
 
 
 # This module wants to handle parse trees for queries
@@ -53,48 +47,48 @@ HANDLE_TREE = True
 GRAMMAR = """
 
 Query →
-    QLocation
+    QUserLocation
 
-QLocation → QLocationQuery '?'?
+QUserLocation → QUserLocationQuery '?'?
 
-QLocationQuery →
-    QLocationCurrent | QLocationPostcode
+QUserLocationQuery →
+    QUserLocationCurrent | QUserLocationPostcode
 
-QLocationCurrent →
-    "hvar" "er" "ég" QLocEiginlega? QLocLocated? QLocInTheWorld? QLocNow?
-    | "hvað" "er" "ég" QLocEiginlega? QLocLocated? QLocInTheWorld? QLocNow?
-    | "veistu" "hvar" "ég" "er" QLocEiginlega? QLocInTheWorld? QLocNow?
-    | "veist" "þú" "hvar" "ég" "er" QLocEiginlega? QLocInTheWorld? QLocNow?
-    | "hver" "er" "staðsetning" "mín"? QLocEiginlega? QLocInTheWorld? QLocNow?
+QUserLocationCurrent →
+    "hvar" "er" "ég" QULocEiginlega? QULocLocated? QULocInTheWorld? QULocNow?
+    | "hvað" "er" "ég" QULocEiginlega? QULocLocated? QULocInTheWorld? QULocNow?
+    | "veistu" "hvar" "ég" "er" QULocEiginlega? QULocInTheWorld? QULocNow?
+    | "veist" "þú" "hvar" "ég" "er" QULocEiginlega? QULocInTheWorld? QULocNow?
+    | "hver" "er" "staðsetning" "mín"? QULocEiginlega? QULocInTheWorld? QULocNow?
     # TODO: Share above
-    | "hver" "er" "staðsetningin" "mín"? QLocEiginlega? QLocInTheWorld? QLocNow?
-    | "hvar" "erum" "við" QLocEiginlega? QLocLocatedFemAndPlural? QLocInTheWorld? QLocNow?
-    | "staðsetning" QLocInTheWorld? QLocNow?
-    | QLocWhichStreet QLocEiginlega? QLocLocated? QLocInTheWorld? QLocNow?
+    | "hver" "er" "staðsetningin" "mín"? QULocEiginlega? QULocInTheWorld? QULocNow?
+    | "hvar" "erum" "við" QULocEiginlega? QULocLocatedFemAndPlural? QULocInTheWorld? QULocNow?
+    | "staðsetning" QULocInTheWorld? QULocNow?
+    | QULocWhichStreet QULocEiginlega? QULocLocated? QULocInTheWorld? QULocNow?
 
-QLocationPostcode →
-    "í" "hvaða" "póstnúmeri" "er" "ég" QLocEiginlega? QLocLocated? QLocNow?
-    | "hvaða" "póstnúmeri" "er" "ég" QLocEiginlega? QLocLocated? "í" QLocNow?
-    | "í" "hvaða" "póstnúmeri" "erum" "við" QLocEiginlega? QLocLocated? QLocNow?
-    | "hvaða" "póstnúmeri" "erum" "við" QLocEiginlega? QLocLocated? "í" QLocNow?
+QUserLocationPostcode →
+    "í" "hvaða" "póstnúmeri" "er" "ég" QULocEiginlega? QULocLocated? QULocNow?
+    | "hvaða" "póstnúmeri" "er" "ég" QULocEiginlega? QULocLocated? "í" QULocNow?
+    | "í" "hvaða" "póstnúmeri" "erum" "við" QULocEiginlega? QULocLocated? QULocNow?
+    | "hvaða" "póstnúmeri" "erum" "við" QULocEiginlega? QULocLocated? "í" QULocNow?
 
-QLocWhichStreet →
-    QLocPreposition "hvaða" "götu" "er" "ég"
-    | QLocPreposition "hvaða" "götu" "erum" "við"
+QULocWhichStreet →
+    QULocPreposition "hvaða" "götu" "er" "ég"
+    | QULocPreposition "hvaða" "götu" "erum" "við"
 
-QLocPreposition →
+QULocPreposition →
     "á" | "í"
 
-QLocEiginlega →
+QULocEiginlega →
     "eiginlega"
 
-QLocLocated →
-    "staddur" | "staðsettur" | "niðurkominn" | "niður" "kominn" | QLocLocatedFemAndPlural
+QULocLocated →
+    "staddur" | "staðsettur" | "niðurkominn" | "niður" "kominn" | QULocLocatedFemAndPlural
 
-QLocLocatedFemAndPlural →
+QULocLocatedFemAndPlural →
     "stödd" | "staðsett" | "niðurkomin" | "niður" "komin"
 
-QLocInTheWorld →
+QULocInTheWorld →
     "í" "heiminum"
     | "í" "veröldinni"
     | "á" "hnettinum"
@@ -104,27 +98,27 @@ QLocInTheWorld →
     | "á" "yfirborði" "jarðar"
     | "á" "jarðkringlunni"
 
-QLocNow →
-    "nákvæmlega"? QLocNowGeneric
+QULocNow →
+    "nákvæmlega"? QULocNowGeneric
 
-QLocNowGeneric →
+QULocNowGeneric →
     "nú" | "núna" | "eins" "og" "stendur" | "sem" "stendur"
     | "í" "augnablikinu" | "á" "þessari" "stundu" | "hér" "og" "nú"
 
-$score(+35) QLocation
+$score(+35) QUserLocation
 
 """
 
 
-def QLocationQuery(node, params, result):
+def QUserLocationQuery(node, params, result):
     result.qtype = _LOC_QTYPE
 
 
-def QLocationCurrent(node, params, result):
+def QUserLocationCurrent(node, params, result):
     result.qkey = "CurrentLocation"
 
 
-def QLocationPostcode(node, params, result):
+def QUserLocationPostcode(node, params, result):
     result.qkey = "CurrentPostcode"
 
 
@@ -201,7 +195,7 @@ def street_desc(street_nom, street_num, locality_nom):
     return street_comp
 
 
-def locality_desc(locality_nom):
+def _locality_desc(locality_nom):
     """ Return an appropriate preposition plus a locality name in dative case """
     locality_dat = nom2dat(locality_nom)
     return iceprep_for_placename(locality_nom) + " " + locality_dat
@@ -247,7 +241,7 @@ def answer_for_location(loc):
             descr = street_desc(street, num, locality)
         # We at least have a locality (e.g. "Reykjavík")
         elif locality:
-            descr = locality_desc(locality)
+            descr = _locality_desc(locality)
         # Only country
         else:
             descr = country_desc("IS")

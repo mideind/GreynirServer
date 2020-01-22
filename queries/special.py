@@ -623,8 +623,9 @@ _SPECIAL_QUERIES = {
 
     # Enquiries concerning romantic availability
     "viltu giftast mér": _ROMANCE,
-    "vilt þú ekki giftast mér": _ROMANCE,
+    "vilt þú giftast mér": _ROMANCE,
     "viltu ekki giftast mér": _ROMANCE,
+    "vilt þú ekki giftast mér": _ROMANCE,
     "viltu koma á stefnumót": _ROMANCE,
     "viltu koma á stefnumót með mér": _ROMANCE,
     "viltu koma með á stefnumót": _ROMANCE,
