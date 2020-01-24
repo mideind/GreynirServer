@@ -51,6 +51,10 @@ var TOK_MEASUREMENT = 22;
 var TOK_NUMWLETTER = 23;
 var TOK_DOMAIN = 24;
 var TOK_HASHTAG = 25;
+var TOK_MOLECULE = 26;
+var TOK_SSN = 27;
+var TOK_USERNAME = 28;
+var TOK_SERIALNUMBER = 29;
 
 var tokClass = [];
 
@@ -79,6 +83,10 @@ tokClass[TOK_MEASUREMENT] = "measurement";
 tokClass[TOK_NUMWLETTER] = "numwletter";
 tokClass[TOK_DOMAIN] = "domain";
 tokClass[TOK_HASHTAG] = "hashtag";
+tokClass[TOK_MOLECULE] = "molecule";
+tokClass[TOK_SSN] = "ssn";
+tokClass[TOK_USERNAME] = "username";
+tokClass[TOK_SERIALNUMBER] = "serialnumber";
 
 var tokId = [];
 
@@ -107,6 +115,10 @@ tokId["MEASUREMENT"] = TOK_MEASUREMENT;
 tokId["NUMWLETTER"] = TOK_NUMWLETTER;
 tokId["DOMAIN"] = TOK_DOMAIN;
 tokId["HASHTAG"] = TOK_HASHTAG;
+tokId["MOLECULE"] = TOK_MOLECULE;
+tokId["SSN"] = TOK_SSN;
+tokId["USERNAME"] = TOK_USERNAME;
+tokId["SERIALNUMBER"] = TOK_SERIALNUMBER;
 
 // Maps token type to glyph icon class
 var tokIcons = [];
@@ -136,6 +148,10 @@ tokIcons[TOK_MEASUREMENT] = "glyphicon-weights";
 tokIcons[TOK_NUMWLETTER] = "glyphicon-tag";
 tokIcons[TOK_DOMAIN] = "glyphicon-world";
 tokIcons[TOK_HASHTAG] = "glyphicon-world";
+tokIcons[TOK_MOLECULE] = "glyphicon-world";   // TODO check for a more appropriate icon
+tokIcons[TOK_SSN] = "glyphicon-world";    // TODO check for a more appropriate icon
+tokIcons[TOK_USERNAME] = "glyphicon-world";   // TODO check for a more appropriate icon
+tokIcons[TOK_SERIALNUMBER] = "glyphicon-world";   // TODO check for a more appropriate icon
 
 var wordClass = {
    "no" : "óþekkt nafnorð",
@@ -164,7 +180,13 @@ var wordClass = {
    "entity" : "sérnafn",
    "gata" : "götuheiti",
    "fyrirtæki" : "fyrirtæki",
-   "sequence" : "raðtala"
+   "sequence" : "raðtala",
+   "domain" : "lén",
+   "url" : "vefslóð",
+   "email" : "tölvupóstfang",
+   "serialnumber" : "vörunúmer",
+   "molecule" : "sameind",
+   "ssn" : "kennitala",
 };
 
 var variantDesc = [
@@ -540,6 +562,25 @@ function tokenInfo(t, nameDict) {
       r.lemma = t.x;
       r.details = r.lemma.endsWith(".is") ? "íslenskt lén" : "lén";
    }
+
+   else
+   if (t.k = TOK_SERIALNUMBER) {
+    r.lemma = t.x;
+    r.details = "vörunúmer";
+   }
+
+   else
+   if (t.k = TOK_MOLECULE) {
+    r.lemma = t.x;
+    r.details = "sameind";
+   }
+
+   else
+   if (t.k = TOK_SSN) {
+    r.lemma = t.x;
+    r.details = "kennitala";
+   }
+
    else
    if (t.k == TOK_HASHTAG) {
       r.lemma = t.x;
