@@ -564,19 +564,19 @@ function tokenInfo(t, nameDict) {
    }
 
    else
-   if (t.k = TOK_SERIALNUMBER) {
+   if (t.k == TOK_SERIALNUMBER) {
     r.lemma = t.x;
     r.details = "vörunúmer";
    }
 
    else
-   if (t.k = TOK_MOLECULE) {
+   if (t.k == TOK_MOLECULE) {
     r.lemma = t.x;
     r.details = "sameind";
    }
 
    else
-   if (t.k = TOK_SSN) {
+   if (t.k == TOK_SSN) {
     r.lemma = t.x;
     r.details = "kennitala";
    }
