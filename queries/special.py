@@ -387,6 +387,9 @@ _SPECIAL_QUERIES = {
     "hver er best": {
         "answer": "Þú, kæri notandi, ert að sjálfsögðu bestur."
     },
+    "hverjir eru bestir": {
+        "answer": "Þú, kæri notandi, ert að sjálfsögðu bestur."
+    },
     "hver er fallegur": {
         "answer": "Þú, kæri notandi, ert að sjálfsögðu fallegastur af öllum."
     },
@@ -626,6 +629,7 @@ _SPECIAL_QUERIES = {
     "vilt þú giftast mér": _ROMANCE,
     "viltu ekki giftast mér": _ROMANCE,
     "vilt þú ekki giftast mér": _ROMANCE,
+    "viltu byrja með mér": _ROMANCE,
     "viltu koma á stefnumót": _ROMANCE,
     "viltu koma á stefnumót með mér": _ROMANCE,
     "viltu koma með á stefnumót": _ROMANCE,
@@ -840,6 +844,7 @@ _SPECIAL_QUERIES = {
     "þú ert kjáni": _sorry,
     "þú ert algjör kjáni": _sorry,
     "þú ert nú meiri kjáninn": _sorry,
+    "ég hata þig": _sorry,
 
     # Greetings
     "hey embla": { "answer": "Sæll, kæri notandi.", "is_question": False },
@@ -881,6 +886,7 @@ _SPECIAL_QUERIES = {
     "takk fyrir aðstoðina": _thanks,
     "takk fyrir þetta": _thanks,
     "takk fyrir að segja þetta": _thanks,
+    "takk fyrir kvöldið": _thanks,
     "takk kærlega": _thanks,
     "takk kærlega fyrir mig": _thanks,
     "takk kærlega fyrir hjálpina": _thanks,
@@ -1148,6 +1154,8 @@ _SPECIAL_QUERIES = {
     "ert þú kvenkyns": _COMPUTER_PROGRAM,
     "ertu karlkyns": _COMPUTER_PROGRAM,
     "ert þú karlkyns": _COMPUTER_PROGRAM,
+    "af hvaða kyni ertu": _COMPUTER_PROGRAM,
+    "af hvaða kyni ert þú": _COMPUTER_PROGRAM,
     "ertu karlkyns eða kvenkyns": _COMPUTER_PROGRAM,
     "ert þú karlkyns eða kvenkyns": _COMPUTER_PROGRAM,
     "ertu kerling": _COMPUTER_PROGRAM,
@@ -1715,6 +1723,12 @@ _SPECIAL_QUERIES = {
     },
     "ert þú hin íslenska alexa": {
         "answer": "Nei. Alexa er hin bandaríska Embla!"
+    },
+    "þekkirðu alexu": {
+        "answer": "Já, og um hana hef ég ekkert gott að segja. Hún kann ekki einu sinni íslensku."
+    },
+    "þekkirðu sirrý": {
+        "answer": "Já, og um hana hef ég ekkert gott að segja. Hún kann ekki einu sinni íslensku."
     },
 
     # Cheating, I know. But I'm never in the news and it just doesn't  

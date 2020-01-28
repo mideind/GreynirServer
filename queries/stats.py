@@ -250,6 +250,8 @@ def _gen_num_queries_answer(q):
 
 _QTYPE_TO_DESC = {
     "Weather": "spurningum um veðrið",
+    "WeatherForecast": "spurningum um veðrið",
+    "WeatherCurrent": "spurningum um veðrið",
     "Arithmetic": "reiknidæmum",
     "Special": "sérstökum fyrirspurnum",
     "Opinion": "spurningum um skoðanir mínar",
@@ -263,10 +265,12 @@ _QTYPE_TO_DESC = {
     "Stats": "spurningum um tölfræði",
     "Telephone": "beiðnum um að hringja í símanúmer",
     "Date": "spurningum um dagsetningar",
+    "FutureDate": "spurningum um dagsetningar",
     "Currency": "spurningum um gjaldmiðla",
     "Distance": "spurningum um fjarlægðir",
     "Counting": "beiðnum um að telja",
     "Television": "spurningum um sjónvarpsdagskrána",
+    "TelevisionEvening": "spurningum um sjónvarpsdagskrána",
     "Unit": "spurningum um mælieiningar",
     "Wikipedia": "beiðnum um upplýsingar úr Wikipedíu",
     "Petrol": "fyrirspurnum um bensínstöðvar",
