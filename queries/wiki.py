@@ -113,17 +113,17 @@ QWikiQuery →
     | "nennirðu" "að" "fræða" "mig" "um" QWikiSubjectÞf
 
     # These take the subject in the dative case
-    # | "segðu" "mér" "frá" "QWikiSubjectÞgf
-    # | "flettu" "upp" QWikiSubjectÞgf "í" QWikipedia
-    # | "geturðu" "flett" "upp" QWikiSubjectÞgf "í" QWikipedia
-    # | "nennirðu" "að" "fletta" "upp" QWikiSubjectÞgf "í" QWikipedia
-    # | "gætirðu" "flett" "upp" QWikiSubjectÞgf "í" QWikipedia
+    | "segðu" "mér" "frá" QWikiSubjectÞgf
+    | "flettu" "upp" QWikiSubjectÞgf "í" QWikipedia
+    | "geturðu" "flett" "upp" QWikiSubjectÞgf "í" QWikipedia
+    | "nennirðu" "að" "fletta" "upp" QWikiSubjectÞgf "í" QWikipedia
+    | "gætirðu" "flett" "upp" QWikiSubjectÞgf "í" QWikipedia
 
 QWikiSubjectÞf →
     Nl_þf
 
-# QWikiSubjectÞgf →
-#     Nl_þgf
+QWikiSubjectÞgf →
+    Nl_þgf
 
 QWikipedia →
     {0}
@@ -142,6 +142,11 @@ def QWikiQuery(node, params, result):
 
 
 def QWikiSubjectÞf(node, params, result):
+    result["subject_nom"] = result._nominative
+    result["subject_dat"] = result._text
+
+
+def QWikiSubjectÞgf(node, params, result):
     result["subject_nom"] = result._nominative
     result["subject_dat"] = result._text
 
