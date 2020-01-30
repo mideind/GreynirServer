@@ -230,16 +230,16 @@ QArithmetic →
 $score(+35) QArithmetic
 
 QArithmeticQuery →
-    # 'Hvað er X sinnum/deilt með/plús/mínus Y?'
+    # 'Hvað er X sinnum/deilt með/plús/mínus Y'
     QArGenericPrefix QArStd
 
-    # 'Hver er summan af X og Y?'
+    # 'Hver er summan af X og Y'
     | QArAnyPrefix QArSum
 
-    # 'Hvað er tvisvar/þrisvar/fjórum sinnum Y?'
+    # 'Hvað er tvisvar/þrisvar/fjórum sinnum Y'
     | QArAnyPrefix QArMult
 
-    # 'Hver/Hvað er kvaðratrótin af X?'
+    # 'Hver/Hvað er kvaðratrótin af X'
     | QArAnyPrefix QArSqrt
     
     # 'Hvað er X í Y veldi?'
@@ -252,6 +252,8 @@ QArithmeticQuery →
     # 'Hvað er einn tuttugasti af 190'
     | QArAnyPrefix QArFraction
 
+    # 'Hvað er 8900 með vaski/virðisaukaskatti'
+    | QArGenericPrefix? QArVAT
 
 
 /arfall = nf þgf
@@ -287,6 +289,7 @@ QArSqrt → QArSquareRootOperator QArNumberWordAny
 QArPow → QArPowOperator
 QArPercent → QArPercentOperator QArNumberWordAny
 QArFraction → QArFractionOperator QArNumberWordAny
+QArVAT → QArCurrencyOrNum QArWithVAT
 
 # Prevent nonterminal from being optimized out of the grammar
 $tag(keep) QArPow
@@ -337,6 +340,12 @@ QArOrdinalWord_þgf →
 
 QArOrdinalOrNumberWord_þgf →
     QArNumberWord_þgf | QArOrdinalWord_þgf
+
+QArWithVAT →
+    "með" "vaski" | "með" "virðisaukaskatti"
+
+QArCurrencyOrNum →
+    currency_isk_nf | QArNumberWordAny "krónur"? | QArNumberWordAny "íslenskar" "krónur"
 
 QArPi →
     "hvaða" "tala" "er" "pí"
@@ -529,6 +538,12 @@ def QArPi(node, params, result):
     result.qtype = "PI"
 
 
+def QArVAT(node, params, result):
+    result.operator = "vat"
+    result.desc = result._canonical
+    result.qtype = "VSK"
+
+
 def QArithmetic(node, params, result):
     # Set query type
     result.qtype = _ARITHMETIC_QTYPE
@@ -547,7 +562,12 @@ _OP_NUM_ARGS = {
     "pow": 2,
     "percent": 2,
     "fraction": 2,
+    "vat": 1,
 }
+
+
+# Value added tax multiplier
+_VAT_MULT = 1.24
 
 
 def calc_arithmetic(query, result):
@@ -589,8 +609,13 @@ def calc_arithmetic(query, result):
     elif operator == "percent":
         s = "({0} * {1}) / 100.0".format(nums[0], nums[1])
 
+    # Fraction
     elif operator == "fraction":
         s = "{0} * {1}".format(nums[0], nums[1])
+
+    # VAT calculation
+    elif operator == "vat":
+        s = "{0} * {1}".format(_VAT_MULT, nums[0])
 
     # Addition, subtraction, multiplication, division
     elif operator in _STD_OPERATORS:
@@ -628,7 +653,6 @@ def pi_answer(q, result):
     answer = "Talan π („pí“) er stærðfræðilegi fastinn 3,14159265359 eða þar um bil."
     voice = "Talan pí er stærðfræðilegi fastinn 3,14159265359 eða þar um bil."
     response = dict(answer=answer, result=math.pi)
-
     return response, answer, voice
 
 
