@@ -95,8 +95,11 @@ Query →
     QWikiQuery '?'?
 
 QWikiQuery →
+    # These take the subject in the nominative case
+    QWikiSubjectNf "í" QWikipedia
+
     # These take the subject in the accusative case
-    "hvað" "segir" QWikipedia "um" QWikiSubjectÞf
+    | "hvað" "segir" QWikipedia "um" QWikiSubjectÞf
     | "hvað" "stendur" "í" QWikipedia "um" QWikiSubjectÞf
     | "hvað" "stendur" "um" QWikiSubjectÞf "í" QWikipedia
     | "hvað" "getur" "þú" "sagt" "mér"? "um" QWikiSubjectÞf
@@ -118,6 +121,9 @@ QWikiQuery →
     | "geturðu" "flett" "upp" QWikiSubjectÞgf "í" QWikipedia
     | "nennirðu" "að" "fletta" "upp" QWikiSubjectÞgf "í" QWikipedia
     | "gætirðu" "flett" "upp" QWikiSubjectÞgf "í" QWikipedia
+
+QWikiSubjectNf →
+    Nl_nf
 
 QWikiSubjectÞf →
     Nl_þf
@@ -141,14 +147,18 @@ def QWikiQuery(node, params, result):
     result.qkey = result["subject_nom"]
 
 
+def QWikiSubjectNf(node, params, result):
+    result["subject_nom"] = result._nominative
+
+
 def QWikiSubjectÞf(node, params, result):
     result["subject_nom"] = result._nominative
-    result["subject_dat"] = result._text
+    # result["subject_acc"] = result._text
 
 
 def QWikiSubjectÞgf(node, params, result):
     result["subject_nom"] = result._nominative
-    result["subject_dat"] = result._text
+    # result["subject_dat"] = result._text
 
 
 def EfLiður(node, params, result):
@@ -196,7 +206,7 @@ def _query_wiki_api(subject):
     return query_json_api(url)
 
 
-def get_wiki_summary(subject_nom, subject_dat):
+def get_wiki_summary(subject_nom):
     """ Fetch summary of subject from Icelandic Wikipedia """
 
     def has_entry(r):
@@ -211,7 +221,7 @@ def get_wiki_summary(subject_nom, subject_dat):
     if not has_entry(res):
         res = _query_wiki_api(subject_nom.title())
 
-    not_found = "Ég fann ekkert um {0} í Wikipedíu".format(subject_dat)
+    not_found = "Ég fann ekkert um '{0}' í Wikipedíu".format(subject_nom)
 
     if not has_entry(res):
         return not_found
@@ -237,7 +247,7 @@ def sentence(state, result):
         q.set_key(result.qkey)
 
         # Fetch from Wikipedia API
-        answer = get_wiki_summary(result["subject_nom"], result["subject_dat"])
+        answer = get_wiki_summary(result["subject_nom"])
         response = dict(answer=answer)
         voice = _clean_voice_answer(answer)
         q.set_answer(response, answer, voice)
