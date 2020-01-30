@@ -31,6 +31,8 @@ import os
 import re
 import locale
 import math
+from urllib.parse import urlencode
+from functools import lru_cache
 
 from tzwhere import tzwhere
 from pytz import country_timezones
@@ -482,6 +484,80 @@ def query_traveltime_api(startloc, endloc, mode="walking"):
 
     # Send API request
     res = query_json_api(_MAPS_API_TRAVELTIME_URL.format(p1, p2, mode, key))
+
+    return res
+
+
+_PLACES_API_URL = (
+    "https://maps.googleapis.com/maps/api/place/findplacefromtext/json?{0}"
+)
+
+_PLACES_LOCBIAS_RADIUS = 2000  # Metres
+
+
+def query_places_api(
+    placename, userloc=None, radius=_PLACES_LOCBIAS_RADIUS, fields=None
+):
+    """ Look up a placename in Google's Places API. For details, see:
+        https://developers.google.com/places/web-service/search """
+
+    if not fields:
+        # Default fields requested from API
+        fields = "place_id,opening_hours,geometry/location,formatted_address"
+
+    # Load API key
+    key = _get_google_api_key()
+    if not key:
+        # No key, can't query the API
+        logging.warning("No API key for Google Places lookup")
+        return None
+
+    # Generate query string
+    qdict = {
+        "input": placename,
+        "inputtype": "textquery",
+        "fields": fields,
+        "key": key,
+        "language": "is",
+    }
+    if userloc:
+        qdict["locationbias"] = "circle:{0}@{1},{2}".format(
+            radius, userloc[0], userloc[1]
+        )
+    qstr = urlencode(qdict)
+
+    # Send API request
+    url = _PLACES_API_URL.format(qstr)
+    res = query_json_api(url)
+
+    return res
+
+
+_PLACEDETAILS_API_URL = "https://maps.googleapis.com/maps/api/place/details/json?{0}"
+
+
+@lru_cache(maxsize=32)
+def query_place_details(place_id, fields=None):
+    """ Look up place details by ID in Google's Place Details API. If "fields"
+        parameter is omitted, *all* fields are returned. For details, see
+        https://developers.google.com/places/web-service/details """
+
+    # Load API key
+    key = _get_google_api_key()
+    if not key:
+        # No key, can't query the API
+        logging.warning("No API key for Google Place Details lookup")
+        return None
+
+    # Generate query string
+    qdict = {"place_id": place_id, "key": key, "language": "is"}
+    if fields:
+        qdict["fields"] = fields
+    qstr = urlencode(qdict)
+
+    # Send API request
+    url = _PLACEDETAILS_API_URL.format(qstr)
+    res = query_json_api(url)
 
     return res
 
