@@ -40,7 +40,7 @@ from tree import Tree
 from treeutil import TreeUtility
 
 
-# We don't bother parsing sentences that have more tokens than 100,
+# We don't bother parsing sentences that have more than 100 tokens,
 # since they require lots of memory (>16 GB) and may take
 # minutes to parse
 MAX_SENTENCE_TOKENS = 100
@@ -294,9 +294,9 @@ class Article:
                     num_sent += 1
                     num_tokens = len(sent)
 
-                    # We don't attempt to parse very long sentences (>100 tokens)
+                    # We don't attempt to parse very long sentences (>85 tokens)
                     # since they are memory intensive (>16 GB) and may take
-                    # minutest to process
+                    # minutes to process
                     if num_tokens <= MAX_SENTENCE_TOKENS and sent.parse():
                         # Obtain a text representation of the parse tree
                         token_dicts = TreeUtility.dump_tokens(

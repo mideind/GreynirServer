@@ -1,0 +1,140 @@
+body {
+  margin: 0;
+}
+
+.App {
+  font-family: "Lato", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 1.5em;
+  background-color: #f1f1f1 !important;
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.App-header {
+  background-color: #fff;
+  min-height: 10vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.App-content{
+  width: 800px;
+  margin: 0 auto;
+}
+
+.App-body{
+  max-width: 800px;
+  margin: 0 auto;
+  margin-top: 50px;
+}
+
+.Translate-main{
+  display: flex;
+  justify-content: space-between;
+}
+
+.Translate-footer{
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.TranslateBox{
+  width: 350px;
+}
+
+.TranslateBox-header{
+  text-align: left;
+  margin-bottom: 20px;
+}
+
+.TranslateBox-area{
+  width: 350px;
+  height: 300px;
+  margin-top: 12px;
+  padding: 12px;
+}
+
+.TranslateBox-area-trans{
+  width: 350px;
+  padding: 12px;
+  margin-bottom: 20px;
+  font-size: 0.5em;
+}
+
+.TranslateBox-area-trans-sent{
+  margin-bottom: 10px;
+}
+
+.TranslateBox-area-blurb-header{
+  font-size: 0.5em;
+}
+
+.TranslateBox-submit{
+  background: #006eff;
+  color: white;
+  font-weight: 600;
+  border-radius: 4px;
+  text-shadow: none;
+  -webkit-box-shadow: none;
+  box-shadow: none;
+  padding: 10px 16px;
+  font-size: 18px;
+  line-height: 1.3333333;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  height: 50px;
+}
+
+.Checkbox{
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.PairPicker{
+  font-size: 14px;
+  display: flex;
+  width: 120px;
+  justify-content: space-between;
+}
+
+.Footer{
+  margin-top: 100px;
+  font-size: 0.6em;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 50px;
+  text-align: center;
+  
+}
+
+.Footer a{
+  color: #333333;
+}

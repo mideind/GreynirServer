@@ -1,0 +1,140 @@
+.Translator{
+    margin-bottom: 40px;
+}
+
+.Translator-container{
+    display: flex;
+    justify-content: space-between;
+}
+
+.TranslatorSide{
+    display: inline-block;
+    width: calc(50% - 6px);
+    line-height: 1.5;
+    position: relative;
+}
+
+.TranslatorSide-lang{
+    font-size: 15px;
+    padding-bottom: 20px;
+}
+
+.TranslatorSide-container{
+    border-top-left-radius: 3px;
+    border-bottom-left-radius: 3px;
+    box-shadow: 0px 14px 16px rgba(0, 0, 0, 0.06) !important;
+    border: 2px solid
+    transparent !important;
+    background-color: #fff;
+    border: 1px solid #bbb;
+    transition: border 75ms ease-out;
+    position: relative;
+    font-size: 100%;
+}
+
+.TranslatorSide-text{
+    position: relative;
+    -webkit-text-size-adjust: none;
+}
+
+.TranslatorSide-text textarea {
+    padding: 16px 32px 60px 24px;
+    padding-bottom: 60px;
+    color: #333;
+    line-height: 1.5;
+    min-height: 300px;
+    font-weight: 400;
+    font-size: 26px;
+    transition: height 100ms linear, min-height 100ms linear;
+    padding-bottom: 80px;
+    font-family: "Open Sans", sans-serif;
+    white-space: pre-wrap;
+    white-space: -moz-pre-wrap;
+    white-space: -pre-wrap;
+    white-space: -o-pre-wrap;
+    word-wrap: break-word;
+    font-variant-ligatures: none;
+    display: inline-block;
+    -webkit-appearance: none;
+    appearance: none;
+    box-shadow: none;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+    border: none;
+    background-color: transparent;
+    background: transparent;
+    vertical-align: top;
+    text-align: left;
+    font-size: 100%;
+    position: relative;
+    resize: none;
+    margin: 0;
+    -webkit-text-size-adjust: none;
+}
+
+.TranslatorSide-text-wrapper{
+    position: relative;
+}
+
+.TranslatorSide-text-wrapper span{
+    font-size: 12px;
+    width: 61px;
+    padding-top: 4px;
+}
+
+.TranslatorSide-clear{
+    top: 4px;
+    right: 6px;
+    font-weight: 400;
+    color:#D1D2D4;
+    position: absolute;
+    font-size: 30px;
+    font-weight: 400;
+    width: 24px;
+    height: 24px;
+    outline: none;
+    border: none;
+    background-color:
+    transparent;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    cursor: pointer;
+}
+
+.TranslatorSide-clear span{
+    display: inline-block;
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    height: 26px;
+    padding-right: 10px;
+}
+
+.LanguagePicker{
+    display: inline-block;
+    cursor: pointer;
+}
+
+.LanguagePicker-container{
+    font-weight: 600;
+}
+
+.LanguagePicker-menu{
+    background: white;
+    padding: 12px;
+    position: absolute;
+    z-index: 10;
+    border: 1px solid #bbb;
+    border-radius: 4px;
+    margin-top: 5px;
+}
+
+.LanguagePicker-menu-item{
+    margin-bottom: 4px;
+}
+
+.LanguagePicker-menu-item:hover{
+    text-decoration: underline;
+}
