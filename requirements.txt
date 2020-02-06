@@ -13,7 +13,7 @@ country-list>=0.1.1
 cityloc>=0.1.1
 feedparser>=5.2.1
 html2text==2019.9.26
-striprtf>=0.0.4
+striprtf==0.0.6
 defusedxml>=0.6.0
 boto3>=1.9
 straeto>=0.0.11
