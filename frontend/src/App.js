@@ -12,28 +12,28 @@ const baseDevURL = "velthyding.mideind.is";
 
 const ENGINES = [
   {
-    url: `https://${baseDevURL}/nn/translate.api`,
+    url: `//${baseDevURL}/nn/translate.api`,
     name: "Greynir Transformer",
     extraData: {
       model: "transformer"
     }
   },
   {
-    url: `https://${baseDevURL}/nn/translate.api`,
+    url: `//${baseDevURL}/nn/translate.api`,
     name: "Greynir Bi-LSTM",
     extraData: {
       model: "bilstm"
     }
   },
   {
-    url: "https://nlp.cs.ru.is/moses/translateText",
+    url: "//nlp.cs.ru.is/moses/translateText",
     name: "Moses",
     extraData: {
       model: "moses"
     }
   },
   {
-    url: `https://${baseDevURL}/nn/googletranslate.api`,
+    url: `//${baseDevURL}/nn/googletranslate.api`,
     name: "Google v2",
   }
 ]
@@ -44,6 +44,7 @@ const decode = str => {
     return String.fromCharCode(dec);
   });
 }
+
 
 async function translate(engine, text, source, target) {
   const data = {
@@ -126,7 +127,7 @@ function App() {
         </div>
       </header>
       <div className="App-body">
-{loading && <ClipLoader size={10} /> }
+{loading && <div className="Translate-loader"> <ClipLoader size={10} /></div> }
         <Translator
           sourceText={text}
           targetText={trans}

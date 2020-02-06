@@ -6,10 +6,16 @@
     display: flex;
     justify-content: space-between;
 }
+@media (max-width: 450px){
+    .Translator-container{
+        flex-direction: column;
+    }
+}
 
 .TranslatorSide{
     display: inline-block;
     width: calc(50% - 6px);
+    min-width: 300px;
     line-height: 1.5;
     position: relative;
 }
@@ -35,6 +41,7 @@
 .TranslatorSide-text{
     position: relative;
     -webkit-text-size-adjust: none;
+    min-width: 300px;
 }
 
 .TranslatorSide-text textarea {

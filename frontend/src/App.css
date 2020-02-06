@@ -1,11 +1,11 @@
 body {
   margin: 0;
+    background-color: #f1f1f1 !important;
 }
 
 .App {
   font-family: "Lato", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-size: 1.5em;
-  background-color: #f1f1f1 !important;
 }
 
 .App-logo {
@@ -44,7 +44,7 @@ body {
 }
 
 .App-content{
-  width: 800px;
+  max-width: 800px;
   margin: 0 auto;
 }
 
@@ -52,6 +52,7 @@ body {
   max-width: 800px;
   margin: 0 auto;
   margin-top: 50px;
+  position: relative;
 }
 
 .Translate-main{
@@ -137,4 +138,9 @@ body {
 
 .Footer a{
   color: #333333;
+}
+
+.Translate-loader{
+  position: absolute;
+  right: 0;
 }

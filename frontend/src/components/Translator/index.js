@@ -32,7 +32,8 @@ function LanguagePicker(props) {
 
 function TranslatorSide (props) {
     const [profileState, setProfileState] = useState(props);
-    
+    let ref;
+
     useEffect(() => {
         setProfileState(props);
     }, [props]);
@@ -47,13 +48,19 @@ function TranslatorSide (props) {
             <div className="TranslatorSide-container">
                 <div className="TranslatorSide-text">
                     {profileState.source && <textarea
+                        ref={el => ref=el}
                         height="300"
                         lang={profileState.language}
                         autoFocus={true}
                         tabIndex="110"
                         style={{height: 300}}
-                        onChange={(e) => profileState.setText(e.target.value)}
-                        defaultValue={profileState.text}
+                        onChange={(e) => {
+                            profileState.setText(e.target.value)
+                        }}
+                        onClick={(e) => {
+                            console.log(ref.selectionStart) // TODO use this to find current word for beam search handling
+                        }}
+                        value={profileState.text}
                         acceptCharset="utf-8">
                     </textarea>}
                 {(!profileState.source && profileState.text.length !== 0) && profileState.text.map(a => 
@@ -65,6 +72,7 @@ function TranslatorSide (props) {
                                 autoFocus=""
                                 tabIndex="110"
                                 style={{height: 300}}
+                                onChange={(e) => console.log(e.target)}
                                 defaultValue={a.text}>
                             </textarea>
                         </div>)}
