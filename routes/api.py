@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2019 Miðeind ehf.
+    Copyright (C) 2020 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -418,7 +418,7 @@ def query_history_api(version=1):
 
     action = request.values.get("action")
     client_type = request.values.get("client_type")
-    client_version = request.values.get("client_version")
+    # client_version = request.values.get("client_version")
     client_id = request.values.get("client_id")
 
     if action != "clear" or not client_type or not client_id or len(client_id) < 18:

@@ -4,7 +4,7 @@
 
     Distance query response module
 
-    Copyright (C) 2019 Miðeind ehf.
+    Copyright (C) 2020 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -24,10 +24,9 @@
 """
 
 # TODO: This module should probably use grammar instead of regexes
-# TODO: Handle travel time queries such as "Hvað er ég lengi að ganga til X?",
-#       or "Hvað er ég lengi að keyra í Y?"
 # TODO: "Hvað er langt á milli X og Y?"
 # TODO: "Hvað er langt til tunglsins"? "Hvað er langt til Mars?"
+# TODO: Identify when user is present at the location, respond "Þú ert í/á X"
 
 import re
 import logging
@@ -37,11 +36,11 @@ from reynir.bindb import BIN_Db
 from queries import (
     gen_answer,
     time_period_desc,
+    distance_desc,
     query_geocode_api_addr,
     query_traveltime_api,
-    capitalize_placename,
 )
-from geo import distance
+from geo import distance, capitalize_placename
 
 
 _DISTANCE_QTYPE = "Distance"
@@ -53,30 +52,51 @@ _QDISTANCE_REGEXES = (
     r"^hvað er ég langt í burtu frá (.+)$",
     r"^hversu langt er ég frá (.+)$",
     r"^hve langt er ég frá (.+)$",
-    r"^hvað er langt á (.+)$",
+    r"^hvað er langt\s?(?:austur|vestur|norður|suður)? á (.+)$",
     r"^hvað er langt upp á (.+)$",
-    r"^hvað er langt í ([^0-9.].+)$",
+    r"^hvað er langt\s?(?:austur|vestur|norður|suður)? í ([^0-9.].+)$",
     r"^hvað er langt upp í (.+)$",
     r"^hvað er langt til (.+)$",
     r"^hvað er langt út á ([^0-9.].+)$",
-    r"^hversu langt er til (.+)$",
+    r"^hversu langt er\s?(?:austur|vestur|norður|suður)? til (.+)$",
     r"^hversu langt er út á (.+)$",
 )
 
 # Travel time questions
 _TT_PREFIXES = (
     "hvað er ég lengi að",
+    "hvað er maður lengi að",
+    "hvað erum við lengi að",
     "hversu lengi er ég að",
-    "hve lengi er ég að"
+    "hversu lengi er maður að",
+    "hversu lengi erum að",
+    "hversu lengi að",
+    "hve lengi að",
+    "hve lengi er ég að",
+    "hve lengi er maður að",
+    "hve lengi erum við að",
     "hvað tekur langan tíma að",
-    "hvað tekur það mig langan tíma að",
     "hvað tekur mig langan tíma að",
+    "hvað tekur mann langan tíma að",
+    "hvað tekur það langan tíma að",
+    "hvað tekur það mig langan tíma að",
+    "hvað tekur það mann langan tíma að",
+    "hversu langan tíma tekur að",
+    "hversu langan tíma tekur það að",
     "hversu langan tíma tekur það mig að",
     "hvað væri ég lengi að",
+    "hvað væri maður lengi að",
     "hvað tæki það langan tíma að",
+    "hvað tæki mann langan tíma að",
+    "hvað tæki það mann langan tíma að",
     "hversu lengi væri ég að",
+    "hversu lengi væri maður að",
     "hve lengi væri ég að",
+    "hve lengi væri maður að",
+    "hversu langan tíma tæki að",
+    "hversu langan tíma tæki það að",
     "hversu langan tíma tæki það mig að",
+    "hvað er langt að",
 )
 
 _TT_MODES = {
@@ -84,23 +104,29 @@ _TT_MODES = {
     "labba": "walking",
     "rölta": "walking",
     "tölta": "walking",
+    "skunda": "walking",
     "hjóla": "cycling",
+    "fara á hjóli": "cycling",
+    "fara á reiðhjóli": "cycling",
+    "ferðast á hjóli": "cycling",
+    "ferðast á reiðhjóli": "cycling",
     "keyra": "driving",
+    "keyra á bíl": "driving",
     "aka": "driving",
     "fara á bílnum": "driving",
+    "ferðast í bíl": "driving",
+    "ferðast á bíl": "driving",
+    "á bíl": "driving",
 }
 
-_TT_PREPS = (
-    "á",
-    "í",
-    "til",
-    "upp á",
-    "upp í",
-    "upp til",
-    "niður á",
-    "niður í",
-    "niður til",
-)
+_PREPS = ("á", "í", "til")
+_TT_PREP_PREFIX = ("upp", "niður", "vestur", "norður", "austur", "suður")
+_TT_PREPS = []
+
+for p in _PREPS:
+    _TT_PREPS.append(p)
+    for pfx in _TT_PREP_PREFIX:
+        _TT_PREPS.append(pfx + " " + p)
 
 _PREFIX_RX = r"{0}".format("|".join(_TT_PREFIXES))
 _VERBS_RX = r"{0}".format("|".join(_TT_MODES.keys()))
@@ -113,10 +139,10 @@ _QTRAVELTIME_REGEXES = (
 
 
 def _addr2nom(address):
-    """ Convert location name to nominative form """
-    # TODO: Implement more intelligently
+    """ Convert location name to nominative form. """
+    # TODO: Implement more intelligently.
     # This is a tad simplistic and mucks up some things,
-    # e.g. "Ráðhús Reykjavíkur" becomes "Ráðhús Reykjavík"
+    # e.g. "Ráðhús Reykjavíkur" becomes "Ráðhús Reykjavík".
     with BIN_Db.get_db() as db:
         nf = []
         for w in address.split():
@@ -132,7 +158,7 @@ def _addr2nom(address):
 
 
 def dist_answer_for_loc(matches, query):
-    """ Generate response to distance query """
+    """ Generate response to distance query. """
     locname = matches.group(1)
     loc_nf = _addr2nom(locname[0].upper() + locname[1:])
     res = query_geocode_api_addr(loc_nf)
@@ -170,24 +196,13 @@ def dist_answer_for_loc(matches, query):
     # Calculate distance, round it intelligently and format num string
     km_dist = distance(query.location, loc)
 
-    # E.g. 7,3 kílómetra
-    if km_dist >= 1.0:
-        km_dist = round(km_dist, 1 if km_dist < 10 else 0)
-        dist = str(km_dist).replace(".", ",")
-        dist = re.sub(r",0$", "", dist)
-        unit = "kílómetra"
-        unit_abbr = "km"
-    # E.g. 940 metra
-    else:
-        dist = int(math.ceil((km_dist * 1000.0) / 10.0) * 10)  # Round to nearest 10 m
-        unit = "metra"
-        unit_abbr = "m"
-
     # Generate answer
-    answer = "{0} {1}".format(dist, unit_abbr)
+    answer = distance_desc(km_dist, abbr=True)
     response = dict(answer=answer)
+
     loc_nf = loc_nf[0].upper() + loc_nf[1:]
-    voice = "{2} er {0} {1} í burtu".format(dist, unit, loc_nf)
+    dist = distance_desc(km_dist, case="þf")
+    voice = "{0} er {1} í burtu".format(loc_nf, dist)
 
     query.set_key(capitalize_placename(loc_nf))
 
@@ -243,7 +258,7 @@ def traveltime_answer_for_loc(matches, query):
 
 
 def handle_plain_text(q):
-    """ Handle a plain text query, contained in the q parameter """
+    """ Handle a plain text query, contained in the q parameter. """
     ql = q.query_lower.rstrip("?")
 
     matches = None
@@ -282,6 +297,7 @@ def handle_plain_text(q):
     if answ:
         q.set_qtype(_DISTANCE_QTYPE)
         q.set_answer(*answ)
+        q.set_source("Google Maps")
         return True
 
     return False

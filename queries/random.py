@@ -4,7 +4,7 @@
 
     Randomness query response module
 
-    Copyright (C) 2019 Miðeind ehf.
+    Copyright (C) 2020 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -171,7 +171,7 @@ def gen_random_answer(q, result):
 
 def heads_or_tails(q, result):
     q.set_key("HeadsOrTails")
-    return gen_answer(random.choice(("skjaldarmerki", "fiskur")))
+    return gen_answer(random.choice(("Skjaldarmerki", "Fiskur")))
 
 
 def sentence(state, result):

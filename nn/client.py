@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-    Reynir: Natural language processing for Icelandic
+    Greynir: Natural language processing for Icelandic
 
     Neural Network Query Client
 

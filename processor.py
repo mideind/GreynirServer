@@ -5,7 +5,7 @@
 
     Processor module
 
-    Copyright (C) 2019 Miðeind ehf.
+    Copyright (C) 2020 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -488,10 +488,6 @@ def _main(argv=None):
             elif o in ("-w", "--workers"):
                 # Limit the number of workers
                 num_workers = int(a) if int(a) else None
-
-        # Process arguments
-        for arg in args:
-            pass
 
         if init:
             # Initialize the scraper database

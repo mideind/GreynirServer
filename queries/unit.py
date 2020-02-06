@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2019 Miðeind ehf.
+    Copyright (C) 2020 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@
 
 # TODO: Hvað eru fjórir hnútar margir metrar á sekúndu?
 # TODO: Hvað eru 20 metrar á sekúndu mörg vindstig?
+# TODO: Hvað eru 40 stig á selsíus mörg stig á fahrenheit
 
 import re
 import random
@@ -155,7 +156,7 @@ _UNITS = {
     "öld": ("s", 3600.0 * 24 * 365 * 100),
     "áratugur": ("s", 3600.0 * 24 * 365 * 10),
     "ár": ("s", 3600.0 * 24 * 365),
-    "mánuður": ("s", 3600.0 * 24 * 30),
+    "mánuður": ("s", 3600.0 * 24 * (365/12.0)), # Average length of month
     "vika": ("s", 3600.0 * 24 * 7),
     "dagur": ("s", 3600.0 * 24),
     "sólarhringur": ("s", 3600.0 * 24),

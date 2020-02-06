@@ -1,9 +1,9 @@
 """
-    Reynir: Natural language processing for Icelandic
+    Greynir: Natural language processing for Icelandic
 
     Neural Network Parsing Utilities
 
-    Copyright (C) 2019 Miðeind ehf
+    Copyright (C) 2020 Miðeind ehf
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by

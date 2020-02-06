@@ -4,7 +4,7 @@
 
     Location query response module
 
-    Copyright (C) 2019 Miðeind ehf.
+    Copyright (C) 2020 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -70,12 +70,20 @@ QLocationCurrent →
     | "hver" "er" "staðsetningin" "mín"? QLocEiginlega? QLocInTheWorld? QLocNow?
     | "hvar" "erum" "við" QLocEiginlega? QLocLocatedFemAndPlural? QLocInTheWorld? QLocNow?
     | "staðsetning" QLocInTheWorld? QLocNow?
+    | QLocWhichStreet QLocEiginlega? QLocLocated? QLocInTheWorld? QLocNow?
 
 QLocationPostcode →
     "í" "hvaða" "póstnúmeri" "er" "ég" QLocEiginlega? QLocLocated? QLocNow?
     | "hvaða" "póstnúmeri" "er" "ég" QLocEiginlega? QLocLocated? "í" QLocNow?
     | "í" "hvaða" "póstnúmeri" "erum" "við" QLocEiginlega? QLocLocated? QLocNow?
     | "hvaða" "póstnúmeri" "erum" "við" QLocEiginlega? QLocLocated? "í" QLocNow?
+
+QLocWhichStreet →
+    QLocPreposition "hvaða" "götu" "er" "ég"
+    | QLocPreposition "hvaða" "götu" "erum" "við"
+
+QLocPreposition →
+    "á" | "í"
 
 QLocEiginlega →
     "eiginlega"

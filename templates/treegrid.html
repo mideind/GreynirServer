@@ -1,7 +1,7 @@
 
 {% extends "container-fluid.html" %}
 
-/* Copyright (C) 2019 Miðeind ehf. */
+/* Copyright (C) 2020 Miðeind ehf. */
 
 {% block styles %}
 
@@ -248,6 +248,11 @@
    .node-terminal.daterel text.symbol,
    .node-terminal.measurement text.symbol,
    .node-terminal.domain text.symbol,
+   .node-terminal.url text.symbol,
+   .node-terminal.email text.symbol,
+   .node-terminal.serialnumber text.symbol,
+   .node-terminal.molecule text.symbol,
+   .node-terminal.ssn text.symbol,
    .node-terminal.hashtag text.symbol
    {
       fill: #888;
@@ -775,6 +780,21 @@ function d3_update(g, source, _tree_fn) {
                if (firstPart == "lén")
                   classes.push("domain");
                else
+               if (firstPart == "vefslóð")
+                  classes.push("url");
+               else
+               if (firstPart == "tölvupóstfang")
+                  classes.push("email");
+               else
+               if (firstPart == "vörunúmer")
+                  classes.push("serialnumber");
+               else
+               if (firstPart == "sameind")
+                  classes.push("molecule");
+               else
+               if (firstPart == "kennitala")
+                  classes.push("ssn");
+               else
                if (firstPart == "myllumerki")
                   classes.push("hashtag");
                else
@@ -852,6 +872,11 @@ function d3_update(g, source, _tree_fn) {
       ["percent", "%"], // percent sign
       ["measurement", "\uE332"], // dashboard
       ["domain", "\uE372"], // global
+      ["url", "\uE372"], // global
+      ["email", "\uE372"], // global
+      ["serialnumber", "\uE372"], // global     //TODO pick a more relevant symbol
+      ["molecule", "\uE372"], // global      //TODO pick a more relevant symbol
+      ["ssn", "\uE372"], // global     //TODO pick a more relevant symbol
       ["hashtag", "\uE372"], // global
       ["uh", "!"], // exclamation mark
    ]

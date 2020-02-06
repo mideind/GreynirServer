@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2019 Miðeind ehf.
+    Copyright (C) 2020 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -22,6 +22,8 @@
     parents.
 
 """
+
+# TODO: hvað eru íslensku jólasveinarnir margir
 
 import re
 import random
@@ -464,6 +466,7 @@ def sentence(state, result):
             if lad_date < 1 or lad_date > 31:
                 answer = voice_answer = "Þetta er ekki gildur mánaðardagur."
             else:
+                # TODO: Fix, always replies "desember" even during other months
                 answer = voice_answer = (
                     "Enginn jólasveinn kemur til byggða þann {0} desember."
                     .format(_DATE_TO_ORDINAL[result.lad_date])

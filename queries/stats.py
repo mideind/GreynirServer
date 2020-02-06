@@ -4,7 +4,7 @@
 
     Stats query response module
 
-    Copyright (C) 2019 Miðeind ehf.
+    Copyright (C) 2020 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -22,6 +22,8 @@
     This module handles queries related to statistics about the query mechanism.
 
 """
+
+# TODO: Transition this module over to using grammar.
 
 
 from datetime import datetime, timedelta
@@ -78,6 +80,10 @@ _NUM_QUERIES = frozenset(
         "hvað hefurðu fengið margar spurningar",
         "hvað hefur þú fengið margar spurningar",
         "hvað hefurðu svarað mörgum spurningum",
+        "hvað hefurðu svarað mörgum spurningum á síðustu dögum",
+        "hvað hefur þú svarað mörgum spurningum á síðustu dögum",
+        "hvað hefur þú svarað mörgum spurningum frá upphafi",
+        "hvað hefurðu svarað mörgum spurningum frá upphafi"
         "hvað hefur þú svarað mörgum spurningum",
         "hvað hefurðu svarað mörgum fyrirspurnum",
         "hvað hefur þú svarað mörgum fyrirspurnum",
@@ -127,6 +133,8 @@ _MOST_FREQ_QUERIES = frozenset(
         "hvers konar spurningum hefurðu svarað",
         "um hvað ertu mest spurð",
         "um hvað ert þú mest spurð",
+        "um hvað ertu spurð",
+        "um hvað ert þú spurð",
     )
 )
 
@@ -137,6 +145,9 @@ _MOST_MENTIONED_PEOPLE_QUERIES = frozenset(
         "um hverja er verið að fjalla í fjölmiðlum",
         "um hverja er mest fjallað í fjölmiðlum",
         "um hverja er mest talað í fjölmiðlum",
+        "hverjir eru í fréttum",
+        "hverjir eru í fréttum núna",
+        "hverjir eru í fréttum þessa dagana",
         "hverjir eru mest í fréttum",
         "hverjir eru mest í fréttum núna",
         "hverjir eru mest í fréttum þessa dagana",
@@ -145,6 +156,8 @@ _MOST_MENTIONED_PEOPLE_QUERIES = frozenset(
         "hverjir eru mest áberandi í fjölmiðlum þessa dagana",
         "hverjir eru áberandi í fjölmiðlum",
         "hverjir eru áberandi í fjölmiðlum þessa dagana",
+        "hverjir eru mest í fjölmiðlum núna",
+        "hverjir eru mest í fjölmiðlum þessa dagana",
         "hvaða fólk hefur verið mest í fjölmiðlum síðustu daga",
         "hvaða fólk er mest í fréttum",
         "hvaða fólk er mest í fréttum þessa dagana",
@@ -158,6 +171,11 @@ _MOST_MENTIONED_PEOPLE_QUERIES = frozenset(
         "hverjir hafa verið mest í fréttum undanfarið",
         "hverjir hafa verið mest í fréttum upp á síðkastið",
         "hverjir hafa verið mest í fréttum síðustu daga",
+        "hverjir hafa verið mikið í fréttum",
+        "hverjir hafa verið mikið í fréttum nýlega",
+        "hverjir hafa verið mikið í fréttum undanfarið",
+        "hverjir hafa verið mikið í fréttum upp á síðkastið",
+        "hverjir hafa verið mikið í fréttum síðustu daga",
         "hvaða fólk hefur verið mest í fjölmiðlum",
         "hvaða fólk hefur verið mest í fjölmiðlum nýlega",
         "hvaða fólk hefur verið mest í fjölmiðlum undanfarið",
@@ -170,6 +188,7 @@ _MOST_MENTIONED_PEOPLE_QUERIES = frozenset(
         "hverjir hafa verið mest í fjölmiðlum síðustu daga",
         "hverjir eru umtöluðustu einstaklingarnir á Íslandi",
         "hverjir eru umtalaðastir",
+        "hverjir eru umtalaðastir á Íslandi",
         "um hverja er mest talað",
         "um hverja er mest skrifað",
         "hverjir hafa verið áberandi í fjölmiðlum síðustu daga",
@@ -235,8 +254,9 @@ _QTYPE_TO_DESC = {
     "Special": "sérstökum fyrirspurnum",
     "Opinion": "spurningum um skoðanir mínar",
     "Random": "beiðnum um tölur af handahófi",
-    "Title": "spurningum um einstaklinga",
+    "Title": "spurningum um titla",
     "Person": "spurningum um einstaklinga",
+    "Entity": "spurningum um fyrirbæri",
     "Flights": "spurningum um flugsamgöngur",
     "Geography": "spurningum um landafræði",
     "Location": "spurningum um staðsetningu",
@@ -249,6 +269,11 @@ _QTYPE_TO_DESC = {
     "Television": "spurningum um sjónvarpsdagskrána",
     "Unit": "spurningum um mælieiningar",
     "Wikipedia": "beiðnum um upplýsingar úr Wikipedíu",
+    "Petrol": "fyrirspurnum um bensínstöðvar",
+    "Spelling": "fyrirspurnum um stafsetningu",
+    "Declension": "fyrirspurnum um beygingarmyndir",
+    "Places": "spurningum um verslanir og opnunartíma",
+    "News": "fyrirspurnum um fréttir",
 }
 
 

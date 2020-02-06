@@ -622,17 +622,30 @@ CC_ICEPREP_A = frozenset(
 )
 
 
-def iceprep4cc(cc):
+def iceprep_for_cc(cc):
     """ Return the right Icelandic preposition ("í" or "á") for
         a country, given its ISO country code, e.g. "IS" """
-    return "á" if cc in CC_ICEPREP_A else "í"
+    return "á" if cc.upper() in CC_ICEPREP_A else "í"
 
 
 def iceprep_for_country(cn):
     """ Return the right Icelandic preposition ("í" or "á") for
         a country, given its Icelandic name in the nominative
         case, e.g. "Ítalía" """
-    return iceprep4cc(isocode_for_country_name(cn))
+    return iceprep_for_cc(isocode_for_country_name(cn))
+
+
+# Placename components that should not be capitalized
+_PLACENAME_PREPS = frozenset(("í", "á", "de", "la", "am"))
+
+
+def capitalize_placename(pn):
+    """ Correctly capitalize a lowercase placename, e.g.
+        "rio de janeiro"->"Rio de Janeiro", "vík í mýrdal"->"Vík í Mýrdal" """
+    comp = pn.split()
+    return " ".join(
+        c[0].upper() + c[1:] if c not in _PLACENAME_PREPS else c for c in comp
+    )
 
 
 _EARTH_RADIUS = 6371.0088  # Earth's radius in km
