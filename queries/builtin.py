@@ -339,7 +339,7 @@ def add_name_to_register(name, register, session, all_names=False):
         # Already have a title for this exact name; don't bother
         return
     # Use the query module to return titles for a person
-    title = query_person_title(session, name)
+    title, _ = query_person_title(session, name)
     name_key = name_key_to_update(register, name)
     if name_key is not None:
         if title:
@@ -464,7 +464,7 @@ def query_person(query, session, name):
             query.set_error("E_PERSON_NOT_FOUND")
             return dict(answer=""), "", ""
         # A name with at least two components
-        title = query_person_title(session, name)
+        title, source = query_person_title(session, name)
         if not title:
             # Rather than accept this as a voice query
             # for a person that is not found, return an
@@ -483,6 +483,8 @@ def query_person(query, session, name):
         voice_answer = name + " er " + " ".join(v) + "."
         # Set the context for a subsequent query
         query.set_context({"person_name": name})
+        # Set source
+        query.set_source(source)
         response = dict(answer=answer)
     else:
         # Not voice
@@ -527,7 +529,9 @@ def query_person_title(session, name):
     if index >= len_rl:
         # If we don't like any answer anyway, go back to the topmost one
         index = 0
-    return "" if index >= len_rl else correct_spaces(rl[index]["answer"])
+    if index >= len_rl:
+        return "", None
+    return correct_spaces(rl[index]["answer"]), rl[index]["sources"][0]["domain"]
 
 
 def query_title(query, session, title):
@@ -580,13 +584,17 @@ def query_title(query, session, title):
     append_names(rd, q, prop_func=lambda x: x.name)
     response = make_response_list(rd)
     if response and title and "answer" in response[0]:
+        first_response = response[0]
         # Return 'Seðlabankastjóri er Már Guðmundsson.'
         upper_title = title[0].upper() + title[1:]
-        answer = response[0]["answer"]
+        answer = first_response["answer"]
         voice_answer = upper_title + " er " + answer + "."
         # Store the person name in the query context
         # so it can be referred to in subsequent queries
         query.set_context({"person_name": answer})
+        if "sources" in first_response and len(first_response["sources"]):
+            first_source = first_response["sources"][0]["domain"]
+            query.set_source(first_source)
     else:
         answer = "Ekkert nafn finnst með titilinn '" + title + "'."
         voice_answer = "Ég veit ekki hver er " + title + "."
@@ -631,6 +639,9 @@ def query_entity(query, session, name):
                 # convert to 'F M E'
                 v[i] = " ".join(w)
         voice_answer = name[0].upper() + name[1:] + " er " + " ".join(v) + "."
+        if "sources" in titles[0]:
+            source = titles[0]["sources"][0]["domain"]
+            query.set_source(source)
     else:
         answer = "Engin skilgreining finnst á nafninu '" + name + "'."
         voice_answer = "Ég veit ekki hvað " + name + " er."
