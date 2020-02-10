@@ -75,6 +75,7 @@ QTelevisionQuery →
     | QTVWhatIsDative QTVEiginlega? QTVBeingShown QTVOnTV QTVNow?
     | "dagskrá" QTVBeingShown? QTVOnTV? 
     | "dagskrá" QTVGoingOn? QTVOnTV? 
+    | "hvað" "er" "á" "dagskrá" QTVOnTV
 
 QTVWhatIsNom →
     "hvað" "er" | "hvaða" "þáttur" "er" | "hvaða" "dagskrárliður" "er" | "hvaða" "efni" "er"

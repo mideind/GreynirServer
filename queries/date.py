@@ -682,10 +682,10 @@ def this_or_next_weekday(d, weekday):
     return d + timedelta(days=days_ahead)
 
 
-def dnext(datetime):
+def dnext(dt):
     """ Return datetime with year+1 if date was earlier in current year. """
     now = datetime.utcnow()
-    d = datetime
+    d = dt
     if d < now:
         d = d.replace(year=d.year + 1)
     return d

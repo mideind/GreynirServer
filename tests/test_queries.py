@@ -46,7 +46,7 @@ API_CONTENT_TYPE = "application/json"
 
 def qmcall(c, qdict):
     """ Use passed client object to call query API with 
-        query string parameters in dict arg. """
+        query string key value pairs provided in dict arg. """
 
     # Create query string
     # test=1 ensures that we bypass the cache and have a (fixed) location
@@ -93,6 +93,9 @@ def test_query_api(client):
         "hvað er einn tuttugasti af 192": "9,6",
         "reiknaðu 7 sinnum 7": "49",
         "geturðu reiknað kvaðratrótina af 9": "3",
+        "hvað er 8900 með vaski": "11.036",
+        # TODO: Fix this in arithmetic module
+        # "hvað eru 7500 krónur með virðisaukaskatti": "9.300",
     }
 
     for q, a in ARITHM_QUERIES.items():
@@ -425,6 +428,10 @@ def test_query_api(client):
     json = qmcall(c, {"q": "fræddu mig um Berlín"})
     assert json["qtype"] == "Wikipedia"
     assert "Berlín" in json["answer"]
+
+    json = qmcall(c, {"q": "Katrín Jakobsdóttir í vikipediju"})
+    assert json["qtype"] == "Wikipedia"
+    assert "Katrín Jakobsdóttir" in json["answer"]
 
     # Words module
     json = qmcall(c, {"q": "hvernig stafar maður orðið hestur", "voice": True})

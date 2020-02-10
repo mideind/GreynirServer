@@ -85,8 +85,10 @@ _WORDTYPE_RX_GEN = "(?:orðsins|nafnsins|nafnorðsins)"
 
 _SPELLING_RX = (
     r"^hvernig stafsetur maður {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig stafset ég {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
     r"^hvernig skal stafsetja {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
     r"^hvernig skrifar maður {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig skrifa ég {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
     r"^hvernig stafar maður {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
     r"^hvernig er {0}?\s?(.+) stafsett$".format(_WORDTYPE_RX_NOM),
     r"^hvernig er {0}?\s?(.+) skrifað$".format(_WORDTYPE_RX_NOM),
