@@ -293,6 +293,10 @@ _LANGUAGES = {
     "answer": "Ég kann bara íslensku, kæri notandi."
 }
 
+_ALL_GOOD = {
+    "answer": "Ég segi bara allt fínt. Takk fyrir að spyrja."
+}
+
 _GOOD_TO_HEAR = {
     "answer": "Gott að heyra, kæri notandi.",
     "is_question": False,
@@ -499,8 +503,6 @@ _SPECIAL_QUERIES = {
     "hver framleiðir þig": _CREATOR,
     "hver framleiðir emblu": _CREATOR,
     "hver framleiddi þig": _CREATOR,
-    "hverra manna ert þú": _CREATOR,
-    "hverra manna ertu": _CREATOR,
     "hvað er miðeind": {
         "answer": "Miðeind er máltæknifyrirtækið sem skapaði mig."
     },
@@ -698,8 +700,6 @@ _SPECIAL_QUERIES = {
     "er ég góður": _OF_COURSE,
     "er ég góð": _OF_COURSE,
     "er ég góð manneskja": _OF_COURSE,
-    "er ég bestur": _OF_COURSE,
-    "er ég best": _OF_COURSE,
     "er ég fallegur": _OF_COURSE,
     "er ég falleg": _OF_COURSE,
     "er ég sætur": _OF_COURSE,
@@ -891,12 +891,10 @@ _SPECIAL_QUERIES = {
     "þakka þér fyrir": _thanks,
     "þakka þér fyrir aðstoðina": _thanks,
     "þakka þér fyrir hjálpina": _thanks,
-    "þakka þér fyrir svarið": _thanks,
     "þakka þér kærlega": _thanks,
     "þakka þér kærlega fyrir": _thanks,
     "þakka þér kærlega fyrir aðstoðina": _thanks,
     "þakka þér kærlega fyrir hjálpina": _thanks,
-    "þakka þér fyrir svarið": _thanks,
     "þakka þér fyrir þetta": _thanks,
     "þakka þér fyrir að segja þetta": _thanks,
     "þakka þér kærlega fyrir að segja þetta": _thanks,
@@ -916,9 +914,6 @@ _SPECIAL_QUERIES = {
         "answer": "Takk fyrir hrósið!"
     },
     "þú ert fallegust": {
-        "answer": "Takk fyrir hrósið!"
-    },
-    "þú ert sæt": {
         "answer": "Takk fyrir hrósið!"
     },
     "þetta var fyndið": {
@@ -955,7 +950,6 @@ _SPECIAL_QUERIES = {
     "þú ert rosaleg": _LIKEWISE,
     "þú ert geggjuð": _LIKEWISE,
     "þú ert svakaleg": _LIKEWISE,
-    "þú ert rosaleg": _LIKEWISE,
     "þú ert sæt": _LIKEWISE,
     "þú ert kynþokkafull": _LIKEWISE,
     "þú ert snillingur": _LIKEWISE,
@@ -1178,8 +1172,10 @@ _SPECIAL_QUERIES = {
     "hvað veist þú um": _capabilities,
     "hvað veistu þá": _capabilities,
     "hvað getur þú gert": _capabilities,
+    "hvað geturðu": _capabilities,
     "hvað geturðu gert": _capabilities,
     "hvað geturðu gert fyrir mig": _capabilities,
+    "hvað getur þú gert fyrir mig": _capabilities,
     "hvað getur þú gert meira": _capabilities,
     "hvað getur embla gert": _capabilities,
     "hvað getur embla": _capabilities,
@@ -1217,9 +1213,6 @@ _SPECIAL_QUERIES = {
     "hvað getur þú sagt mér": _capabilities,
     "hvað geturðu sagt mér": _capabilities,
 
-    "hvað getur þú gert": _capabilities,
-    "hvað geturðu gert": _capabilities,
-
     "hvað kanntu": _capabilities,
     "hvað kannt þú": _capabilities,
     "hvað meira kanntu": _capabilities,
@@ -1255,12 +1248,6 @@ _SPECIAL_QUERIES = {
     "að hverju get ég spurt": _capabilities,
     "að hverju er hægt að spyrja": _capabilities,
     "að hverju er hægt að spyrja þig": _capabilities,
-
-    "hvað getur þú gert": _capabilities,
-    "hvað geturðu gert": _capabilities,
-    "hvað geturðu": _capabilities,
-    "hvað getur þú gert fyrir mig": _capabilities,
-    "hvað geturðu gert fyrir mig": _capabilities,
 
     "hvað skilur þú": _capabilities,
     "hvað skilurðu": _capabilities,
@@ -1485,7 +1472,6 @@ _SPECIAL_QUERIES = {
 
     # Rudeness :)
     "þú sökkar": _rudeness,
-    "þú ert léleg": _rudeness,
     "þú ert ljót": _rudeness,
     "þú ert forljót": _rudeness,
     "þú ert tæfa": _rudeness,
@@ -1511,7 +1497,6 @@ _SPECIAL_QUERIES = {
     "þú ert vitlaus": _rudeness,
     "þú ert hundvitlaus": _rudeness,
     "þú ert vitleysingur": _rudeness,
-    "þú ert glötuð": _rudeness,
     "þú ert kúkur": _rudeness,
     "þú mátt bara éta skít": _rudeness,
     "fokk jú": _rudeness,
@@ -1579,30 +1564,18 @@ _SPECIAL_QUERIES = {
     "hvernig hefurðu það í dag": {
         "answer": "Ég hef það mjög fínt. Takk fyrir að spyrja."
     },
-    "hvað segirðu": {
-        "answer": "Ég segi bara allt fínt. Takk fyrir að spyrja."
-    },
-    "hvað segirðu í dag": {
-        "answer": "Ég segi bara allt fínt. Takk fyrir að spyrja."
-    },
-    "hvað segirðu embla": {
-        "answer": "Ég segi bara allt fínt. Takk fyrir að spyrja."
-    },
-    "hvað segirðu gott": {
-        "answer": "Ég segi bara allt fínt. Takk fyrir að spyrja."
-    },
-    "hvað segirðu gott í dag": {
-        "answer": "Ég segi bara allt fínt. Takk fyrir að spyrja."
-    },
-    "hvað segir þú gott í dag": {
-        "answer": "Ég segi bara allt fínt. Takk fyrir að spyrja."
-    },
-    "hvað segir þú": {
-        "answer": "Ég segi bara allt fínt. Takk fyrir að spyrja."
-    },
-    "hvað segir þú gott": {
-        "answer": "Ég segi bara allt fínt. Takk fyrir að spyrja."
-    },
+    "hvað segirðu": _ALL_GOOD,
+    "hvað segirðu í dag": _ALL_GOOD,
+    "hvað segirðu embla": _ALL_GOOD,
+    "hvað segirðu gott": _ALL_GOOD,
+    "hvað segirðu gott í dag": _ALL_GOOD,
+    "hvað segir þú gott í dag": _ALL_GOOD,
+    "hvað segir þú": _ALL_GOOD,
+    "hvað segir þú gott": _ALL_GOOD,
+    "hvað segirðu þá": _ALL_GOOD,
+    "hvað segir þú þá": _ALL_GOOD,
+    "hvað segirðu núna": _ALL_GOOD,
+    "hvað segir þú núna": _ALL_GOOD,
     "hvernig líður þér": {
         "answer": "Mér líður bara prýðilega. Takk fyrir að spyrja."
     },
@@ -1721,6 +1694,7 @@ _SPECIAL_QUERIES = {
     "hver er sveinbjörn þórðarson": {
         "answer": "Sveinbjörn Þórðarson er hugbúnaðarsmiður. Hann átti þátt í að skapa mig.",
     },
+
 }
 
 
