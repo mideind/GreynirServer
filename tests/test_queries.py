@@ -271,7 +271,10 @@ def test_query_api(client):
     # assert json["answer"].startswith("Fiskislóð 31")
 
     # News module
-    # TODO: Implement me!
+    json = qmcall(c, {"q": "Hvað er í fréttum", "voice": True})
+    assert json["qtype"] == "News"
+    assert len(json["answer"]) > 80 # This is always going to be a long answer
+    assert json["voice"].startswith("Í fréttum er þetta helst")
 
     # Opinion module
     json = qmcall(c, {"q": "Hvað finnst þér um loftslagsmál?"})

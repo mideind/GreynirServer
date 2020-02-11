@@ -177,8 +177,8 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
 
 
 def location_description(loc):
-    """ Return a description string (in Icelandic) for a location.
-        Argument is a dictionary with at least "name" and "kind" keys """
+    """ Return a natural language description string (in Icelandic) for a given
+        location. Argument is a dictionary with at least "name" and "kind" keys """
 
     if "kind" not in loc or "name" not in loc:
         return "staðarheiti"
