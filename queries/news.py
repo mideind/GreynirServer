@@ -47,15 +47,27 @@ QNewsQuery →
     QNewsLatest
 
 QNewsLatest →
-    QNewsTellMe? "hvað" "er" QNewsQualifiers? "í" "fréttum"
-    | QNewsTellMe? "hvað" "er" QNewsQualifiers? "að" "frétta"
-    | QNewsTellMe? "hverjar" "eru" QNewsQualifiers? "nýjustu" "fréttir"
+    QNewsTellMe? "hvað" "er" QNewsQualifiers? "í" "fréttum" QNewsRUV?
+    | QNewsTellMe? "hvað" "er" QNewsQualifiers? "að" "frétta" QNewsRUV?
+    | QNewsTellMe? "hverjar" "eru" QNewsQualifiersDef? "fréttir" QNewsRUV?
+    | QNewsTellMe? "hverjar" "eru" QNewsQualifiersDef? "fréttirnar" QNewsRUV?
 
 QNewsTellMe →
     "segðu" "mér"
 
 QNewsQualifiers →
     "helst" | "eiginlega" | "núna"
+
+QNewsQualifiersDef →
+    "helstu" | "nýjustu" | "síðustu" | "allranýjustu"
+
+QNewsRUV →
+    "á" "rúv"
+    | "hjá" "rúv"
+    | "á" "ríkisútvarpinu"
+    | "hjá" "ríkisútvarpinu"
+    | "á" "vef" "rúv"
+    | "á" "vef" "ríkisútvarpsins"
 
 $score(+35) QNewsQuery
 
@@ -67,7 +79,7 @@ def QNewsQuery(node, params, result):
 
 
 _NEWS_API = "https://ruv.is/json/frettir/hladbord"
-_NEWS_CACHE_TTL = 300  # seconds, ttl 5 mins
+_NEWS_CACHE_TTL = 300  # seconds, ttl = 5 mins
 
 
 @cachetools.cached(cachetools.TTLCache(1, _NEWS_CACHE_TTL))
@@ -90,7 +102,7 @@ def top_news_answer():
         return None
 
     answer = "".join([h["intro"] + " " for h in headlines])
-    voice = "Í fréttum er þetta helst: " + answer
+    voice = "Í fréttum rúv er þetta helst: " + answer
     response = dict(answer=answer)
 
     return response, answer, voice
@@ -111,6 +123,7 @@ def sentence(state, result):
             else:
                 errmsg = "Ekki tókst að sækja upplýsingar um fréttir".format()
                 q.set_answer(gen_answer(errmsg))
+                q.set_source("RÚV")
         except Exception as e:
             logging.warning("Exception answering news query: {0}".format(e))
             q.set_error("E_EXCEPTION: {0}".format(e))
