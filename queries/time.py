@@ -104,6 +104,7 @@ def handle_plain_text(q):
         # Capitalize each word in country/city name
         # TODO: Fix, this mangles lookup for city names such as "Rio de Janeiro"
         loc = " ".join([c.capitalize() for c in loc.strip().split()])
+        loc = "-".join([c.capitalize() for c in loc.strip().split("-")])
 
         # Look up nominative
         # TODO: This only works for single-word city/country names found
