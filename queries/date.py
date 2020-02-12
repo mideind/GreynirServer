@@ -555,8 +555,8 @@ def QDateSeamensDay(node, params, result):
 
 def QDateFathersDay(node, params, result):
     result["desc"] = "feðradagur"
-    nov8 = dnext(datetime(year=datetime.today().year, month=5, day=8))
-    result["target"] = next_weekday(nov8, 6)  # Second Sunday in May
+    nov8 = dnext(datetime(year=datetime.today().year, month=11, day=1))
+    result["target"] = next_weekday(nov8, 6)  # Second Sunday in November
 
 
 def QDateIcelandicTongueDay(node, params, result):

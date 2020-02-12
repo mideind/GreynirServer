@@ -178,7 +178,7 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
 
 def location_description(loc):
     """ Return a natural language description string (in Icelandic) for a given
-        location. Argument is a dictionary with at least "name" and "kind" keys """
+        location. Argument is a dictionary with at least "name" and "kind" keys. """
 
     if "kind" not in loc or "name" not in loc:
         return "staðarheiti"
@@ -336,7 +336,7 @@ COUNTRY_DATA_JSONPATH = os.path.join(
 
 
 def _load_country_data():
-    """ Load country data from JSON file """
+    """ Load country data from JSON file. """
     global COUNTRY_DATA
     if COUNTRY_DATA is None:
         with open(COUNTRY_DATA_JSONPATH) as f:
@@ -345,7 +345,7 @@ def _load_country_data():
 
 
 def continent_for_country(iso_code):
-    """ Return two-char continent code, given a two-char country code """
+    """ Return two-char continent code, given a two-char country code. """
     assert len(iso_code) == 2
     iso_code = iso_code.upper()
     data = _load_country_data()  # Lazy-load
@@ -355,7 +355,7 @@ def continent_for_country(iso_code):
 
 
 def coords_for_country(iso_code):
-    """ Return coordinates for a given country code """
+    """ Return coordinates for a given country code. """
     assert len(iso_code) == 2
     iso_code = iso_code.upper()
     # Lazy-loaded
@@ -396,14 +396,14 @@ def coords_for_street_name(street_name, placename=None, placename_hints=[]):
 
 
 def coords_from_addr_info(info):
-    """ Get coordinates from the address dict provided by iceaddr """
+    """ Get coordinates from the address dict provided by iceaddr package. """
     if info is not None and "lat_wgs84" in info and "long_wgs84" in info:
         return (info["lat_wgs84"], info["long_wgs84"])
     return None
 
 
 def country_name_for_isocode(iso_code, lang=ICELANDIC_LANG_ISOCODE):
-    """ Return country name for an ISO 3166-1 alpha-2 code """
+    """ Return country name for an ISO 3166-1 alpha-2 code. """
     assert len(iso_code) == 2
     assert len(lang) == 2
     iso_code = iso_code.upper()
@@ -416,7 +416,7 @@ def country_name_for_isocode(iso_code, lang=ICELANDIC_LANG_ISOCODE):
 
 def isocode_for_country_name(country_name, lang=ICELANDIC_LANG_ISOCODE):
     """ Return the ISO 3166-1 alpha-2 code for a country
-        name in the specified language (two-char ISO 639-1) """
+        name in the specified language (two-char ISO 639-1). """
     assert len(lang) == 2
     lang = lang.lower()
     if lang not in available_languages():
@@ -459,7 +459,7 @@ def icelandic_addr_info(addr_str, placename=None, placename_hints=[]):
 
 
 def parse_address_string(addrstr):
-    """ Break Icelandic address string down to its components """
+    """ Break Icelandic address string down to its components. """
     addr = {"street": addrstr}
 
     comp = addrstr.split()
@@ -495,7 +495,7 @@ _I_SUFFIXES = (
 
 def iceprep_for_street(street_name):
     """ Return the right preposition ("í" or "á") for
-        an Icelandic street name, e.g. "Fiskislóð" """
+        an Icelandic street name, e.g. "Fiskislóð". """
 
     # TODO: Implement me properly
     if street_name.endswith(_I_SUFFIXES):
@@ -537,7 +537,7 @@ _SUFFIX2PREP = {
 
 def iceprep_for_placename(pn):
     """ Attempt to return the right preposition ("í" or "á")
-        for an Icelandic placename, e.g. "Akureyri" """
+        for an Icelandic placename, e.g. "Akureyri". """
     place2prep = _load_placename_prepositions()  # Lazy-load
     if pn in place2prep:
         return place2prep[pn]
@@ -624,14 +624,14 @@ CC_ICEPREP_A = frozenset(
 
 def iceprep_for_cc(cc):
     """ Return the right Icelandic preposition ("í" or "á") for
-        a country, given its ISO country code, e.g. "IS" """
+        a country, given its ISO country code, e.g. "IS". """
     return "á" if cc.upper() in CC_ICEPREP_A else "í"
 
 
 def iceprep_for_country(cn):
     """ Return the right Icelandic preposition ("í" or "á") for
         a country, given its Icelandic name in the nominative
-        case, e.g. "Ítalía" """
+        case, e.g. "Ítalía". """
     return iceprep_for_cc(isocode_for_country_name(cn))
 
 
@@ -641,7 +641,7 @@ _PLACENAME_PREPS = frozenset(("í", "á", "de", "la", "am"))
 
 def capitalize_placename(pn):
     """ Correctly capitalize a lowercase placename, e.g.
-        "rio de janeiro"->"Rio de Janeiro", "vík í mýrdal"->"Vík í Mýrdal" """
+        "rio de janeiro"->"Rio de Janeiro", "vík í mýrdal"->"Vík í Mýrdal". """
     comp = pn.split()
     return " ".join(
         c[0].upper() + c[1:] if c not in _PLACENAME_PREPS else c for c in comp
@@ -689,7 +689,7 @@ def distance(loc1, loc2):
 
 
 if __name__ == "__main__":
-    """ Test location info lookup via command line """
+    """ Test location info lookup via command line. """
     name = sys.argv[1] if len(sys.argv) > 1 else None
     kind = sys.argv[2] if len(sys.argv) > 2 else None
 
