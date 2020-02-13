@@ -243,6 +243,10 @@ def test_query_api(client):
     assert json["qtype"] == "Geography"
     assert json["answer"] == "Madríd"
 
+    json = qmcall(c, {"q": "Hver er höfuðborg norður-makedóníu?"})
+    assert json["qtype"] == "Geography"
+    assert json["answer"] == "Skopje"
+
     json = qmcall(c, {"q": "Hvað er höfuðborgin í Bretlandi"})
     assert json["qtype"] == "Geography"
     assert json["answer"] == "Lundúnir"

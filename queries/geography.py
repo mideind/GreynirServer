@@ -40,6 +40,7 @@ from geo import (
     continent_for_country,
     ISO_TO_CONTINENT,
     location_info,
+    capitalize_placename,
 )
 
 _GEO_QTYPE = "Geography"
@@ -131,11 +132,10 @@ def QGeoContinentQuery(node, params, result):
 
 
 def QGeoSubject(node, params, result):
-    n = result._nominative
-    if n:
-        n = n.replace(" - ", "-")
-        n = n[0].upper() + n[1:]
-        result.subject = n
+    n = capitalize_placename(result._text)
+    bin_res = BIN_Db().lookup_nominative(n)
+    res = bin_res[0].stofn if bin_res else n
+    result.subject = res
 
 
 def _capital_query(country, q):

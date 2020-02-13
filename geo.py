@@ -636,16 +636,17 @@ def iceprep_for_country(cn):
 
 
 # Placename components that should not be capitalized
-_PLACENAME_PREPS = frozenset(("í", "á", "de", "la", "am"))
+_PLACENAME_PREPS = frozenset(("í", "á", "de", "la", "am", "og"))
 
 
 def capitalize_placename(pn):
     """ Correctly capitalize a lowercase placename, e.g.
         "rio de janeiro"->"Rio de Janeiro", "vík í mýrdal"->"Vík í Mýrdal". """
     comp = pn.split()
-    return " ".join(
+    ucpn = " ".join(
         c[0].upper() + c[1:] if c not in _PLACENAME_PREPS else c for c in comp
     )
+    return "-".join([c[0].upper() + c[1:] for c in ucpn.strip().split("-")])
 
 
 _EARTH_RADIUS = 6371.0088  # Earth's radius in km
