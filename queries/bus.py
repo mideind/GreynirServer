@@ -45,7 +45,7 @@ from datetime import datetime
 import random
 
 import query
-from queries import NUMBERS_NEUTRAL
+from queries import NUMBERS_NEUTRAL, natlang_seq
 from settings import Settings
 from reynir import correct_spaces
 from reynir.bindb import BIN_Db
