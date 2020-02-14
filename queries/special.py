@@ -447,7 +447,7 @@ _SPECIAL_QUERIES = {
         "answer": "Það veit ég ekki, kæri notandi, en þú ert ung í anda."
     },
     "hvenær á ég afmæli": {
-        "answer:" "Það veit ég ekki, kæri notandi."
+        "answer": "Það veit ég ekki, kæri notandi."
     },
     "hvernig lít ég út": {
         "answer": "Þú ert undurfagur, kæri notandi."
