@@ -53,7 +53,7 @@ def natlang_seq(words, oxford_comma=False):
 
 
 def nom2dat(w):
-    """ Look up dative form of a noun in BÍN. """
+    """ Look up the dative form of a noun in BÍN. """
     if not w:
         return ""
 
