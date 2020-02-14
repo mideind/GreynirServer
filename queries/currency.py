@@ -27,6 +27,7 @@ import re
 import cachetools
 import json
 import random
+import logging
 
 from queries import query_json_api, format_icelandic_float
 from settings import Settings
@@ -400,6 +401,9 @@ def _fetch_exchange_rates():
     """ Fetch exchange rate data from apis.is and cache it. """
     res = query_json_api(_CURR_API_URL)
     if not res or "results" not in res:
+        logging.warning(
+            "Unable to fetch exchange rate data from {0}".format(_CURR_API_URL)
+        )
         return None
     return {c["shortName"]: c["value"] for c in res["results"]}
 
@@ -414,6 +418,9 @@ def _query_exchange_rate(curr1, curr2):
 
     # Get exchange rate data
     xr = _fetch_exchange_rates()
+    if xr is None:
+        return None
+
     xr["ISK"] = 1.0
 
     # ISK currency index (basket), 'gengisvísitala'
