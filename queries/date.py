@@ -262,7 +262,8 @@ QDateFirstDayOfSummer/fall →
     'sumardagur:kk'_et_gr/fall 'fyrstur:lo'_et_kk/fall
 
 QDateThorlaksMass/fall →
-    'þorláksmessa:kvk'_et/fall
+    'þorláksmessa:kvk'_et/fall # This doesn't work, for some reason
+    | "þorláksmessa" | "þorláksmessu"
 
 QDateChristmasEve/fall →
     'aðfangadagur:kk'_et/fall 'jól:hk'_ef?
@@ -436,7 +437,7 @@ def QDateFirstDayOfSummer(node, params, result):
 def QDateThorlaksMass(node, params, result):
     result["desc"] = "þorláksmessa"
     d = dnext(datetime(year=datetime.today().year, month=12, day=23))
-
+    result["target"] = d
 
 def QDateChristmasEve(node, params, result):
     result["desc"] = "aðfangadagur jóla"
