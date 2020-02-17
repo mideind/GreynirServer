@@ -857,5 +857,7 @@ def sentence(state, result):
             q.set_qtype(_DATE_QTYPE)
 
     except Exception as e:
-        logging.warning("Exception while processing date query: {0}".format(e))
+        logging.warning(
+            "Exception {0} while processing date query '{1}'".format(e, q.query)
+        )
         q.set_error("E_EXCEPTION: {0}".format(e))
