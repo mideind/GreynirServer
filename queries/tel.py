@@ -32,6 +32,7 @@
 
 
 import re
+import random
 
 
 _TELEPHONE_QTYPE = "Telephone"

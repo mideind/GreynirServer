@@ -45,7 +45,7 @@ from datetime import datetime
 import random
 
 import query
-from queries import NUMBERS_NEUTRAL
+from queries import natlang_seq, numbers_to_neutral
 from settings import Settings
 from reynir import correct_spaces
 from reynir.bindb import BIN_Db
@@ -105,6 +105,8 @@ GRAMMAR = """
 # Query grammar for bus-related queries
 #
 # ----------------------------------------------
+
+/þfþgf = þf þgf
 
 # A plug-in query grammar always starts with the following,
 # adding one or more query productions to the Query nonterminal
@@ -294,14 +296,12 @@ QBusAtStopIncorrect_þgf →
     | "til" QBusStopName_nf
 
 # Prefer the correct forms
-$score(-20) QBusAtStopIncorrect_þf
-$score(-20) QBusAtStopIncorrect_þgf
+$score(-20) QBusAtStopIncorrect/þfþgf
 
 QBusArrivalTime →
 
     # 'Hvenær kemur/fer/stoppar ásinn/sexan/tían/strætó númer tvö [næst] [á Hlemmi]?'
-    "hvenær" QBusArrivalVerb_þf QBus_nf "næst"? QBusAtStop_þf? '?'?
-    | "hvenær" QBusArrivalVerb_þgf QBus_nf "næst"? QBusAtStop_þgf? '?'?
+    "hvenær" QBusArrivalVerb/þfþgf QBus_nf "næst"? QBusAtStop/þfþgf? '?'?
 
     # 'Hvenær er [næst] von á fimmunni / vagni númer sex?'
     | "hvenær" "er" "næst"? "von" "á" QBus_þgf QBusAtStop_þf? '?'?
@@ -310,14 +310,15 @@ QBusArrivalTime →
     | "hvenær" "má" "næst"? "búast" "við" QBus_þgf QBusAtStop_þf? '?'?
 
 QBusAnyArrivalTime →
-    # 'Hvenær kemur/fer/stoppar [næsti] strætó?'
-    "hvenær" QBusArrivalVerb "næsti"? QBusNounSingular_nf '?'?
-    # 'Hvað er langt í [næsta] strætó?'
-    | "hvað" "er" "langt" "í" "næsta"? QBusNounSingular_þf '?'?
-    # 'Hvenær er von á [næsta] strætó?'
-    | "hvenær" "er" "von" "á" "næsta"? QBusNounSingular_þgf '?'?
+    # 'Hvenær kemur/fer/stoppar [næsti] strætó [á Hlemmi]?'
+    "hvenær" QBusArrivalVerb/þfþgf "næsti"? QBusNounSingular_nf QBusAtStop/þfþgf? '?'?
+    # 'Hvað er langt í [næsta] strætó [á Hlemm / á Hlemmi]?'
+    | "hvað" "er" "langt" "í" "næsta"? QBusNounSingular_þf QBusAtStop/þfþgf? '?'?
+    # 'Hvenær er von á [næsta] strætó [á Hlemm]?'
+    | "hvenær" "er" "von" "á" "næsta"? QBusNounSingular_þgf QBusAtStop_þf? '?'?
 
-QBusArrivalVerb → QBusArrivalVerb_þf | QBusArrivalVerb_þgf
+QBusArrivalVerb → QBusArrivalVerb/þfþgf
+
 # Movement: verbs control prepositions in accusative case
 QBusArrivalVerb_þf → "kemur" | "fer"
 # Placement: verbs control prepositions in dative case
@@ -486,6 +487,19 @@ _BUS_WORDS = {
     "sjötíu": 70,
     "áttatíu": 80,
     "níutíu": 90,
+    # Hack to catch common ASR error
+    "hundrað eitt": 101,
+    "hundrað tvö": 102,
+    "hundrað þrjú": 103,
+    "hundrað fjögur": 104,
+    "hundrað fimm": 105,
+    "hundrað sex": 106,
+    "hundrað og eitt": 101,
+    "hundrað og tvö": 102,
+    "hundrað og þrjú": 103,
+    "hundrað og fjögur": 104,
+    "hundrað og fimm": 105,
+    "hundrað og sex": 106,
 }
 
 def QBusWord(node, params, result):
@@ -640,6 +654,7 @@ def query_arrival_time(query, session, result):
     # Examples:
     # 'Hvenær kemur strætó númer 12?'
     # 'Hvenær kemur leið sautján á Hlemm?'
+    # 'Hvenær kemur næsti strætó í Einarsnes?'
 
     # Retrieve the client location, if available, and the name
     # of the bus stop, if given
@@ -688,30 +703,39 @@ def query_arrival_time(query, session, result):
             stops = [straeto.BusStop.closest_to(location)]
 
     # Handle the case where no bus number was specified (i.e. is 'Any')
-    if result.bus_number == "Any":
+    if result.bus_number == "Any" and stops:
         stop = stops[0]
         routes = sorted(
-            straeto.BusRoute.lookup(rid).number for rid in stop.visits.keys()
+            (straeto.BusRoute.lookup(rid).number for rid in stop.visits.keys()),
+            key=lambda r:int(r)
         )
         if len(routes) != 1:
             # More than one route possible: ask user to clarify
+            route_seq = natlang_seq(list(map(str, routes)))
             answer = " ".join(
                 [
                     "Leiðir",
-                    natlang_seq([str(r) for r in routes]),
+                    route_seq,
                     "stoppa á",
                     to_dative(stop.name)
                 ]
-            ) + "; spurðu um eina þeirra."
-            voice_answer = answer
+            ) + ". Spurðu um eina þeirra."
+            voice_answer = " ".join(
+                [
+                    "Leiðir",
+                    numbers_to_neutral(route_seq),
+                    "stoppa á",
+                    to_dative(stop.name)
+                ]
+            ) + ". Spurðu um eina þeirra."
             response = dict(answer=answer)
             return response, answer, voice_answer
         # Only one route: use it as the query subject
         bus_number = routes[0]
         bus_name = "strætó númer {0}".format(bus_number)
     else:
-        bus_number = result.bus_number
-        bus_name = result.bus_name
+        bus_number = result.bus_number if "bus_number" in result else 0
+        bus_name = result.bus_name if "bus_name" in result else "Óþekkt"
 
     # Prepare results
     bus_name = bus_name[0].upper() + bus_name[1:]
@@ -894,7 +918,7 @@ def query_which_route(query, session, result):
             # We convert inflectable numbers to their text equivalents
             # since the speech engine can't be relied upon to get the
             # inflection of numbers right
-            va.append(NUMBERS_NEUTRAL.get(rn, rn))
+            va.append(numbers_to_neutral(rn))
             a.append(rn)
             cnt += 1
         tail = ["stoppar á", to_dative(stop.name)]

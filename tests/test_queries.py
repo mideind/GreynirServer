@@ -184,7 +184,7 @@ def test_query_api(client):
         "skírdagur",
         "sumardagurinn fyrsti",
         "verslunarmannahelgi",
-        # "þorláksmessa",
+        "þorláksmessa",
         "föstudagurinn langi",
         "menningarnótt",
         "sjómannadagurinn",

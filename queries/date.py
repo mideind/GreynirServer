@@ -260,10 +260,10 @@ QDateSovereigntyDay/fall →
 
 QDateFirstDayOfSummer/fall →
     'sumardagur:kk'_et_gr/fall 'fyrstur:lo'_et_kk/fall
+    | 'fyrstur:lo'_et_kk/fall 'sumardagur:kk'_et/fall
 
 QDateThorlaksMass/fall →
-    'þorláksmessa:kvk'_et/fall # This doesn't work, for some reason
-    | "þorláksmessa" | "þorláksmessu"
+    'Þorláksmessa:kvk'_et/fall
 
 QDateChristmasEve/fall →
     'aðfangadagur:kk'_et/fall 'jól:hk'_ef?
@@ -312,7 +312,9 @@ QDateCultureNight/fall →
     'menningarnótt:kvk'_et/fall
 
 QDateValentinesDay/fall →
-    'valentínusardagur:kk'_et/fall
+    'Valentínusardagur:kk'_et/fall
+    | 'Dagur'/fall 'elskandi:kk'_ft_ef
+    | 'dagur:kk'_et/fall 'elskandi:kk'_ft_ef
 
 QDateMansDay/fall →
     'bóndadagur:kk'_et/fall
@@ -338,8 +340,8 @@ QDateFirstDayOfWinter/fall →
     | 'vetrardagur:kk'_et_gr/fall 'fyrstur:lo'_et_kk/fall
 
 QDateFathersDay/fall →
-    'feðradagur:kk'_et/fall # Why doesn't this work? 
-    | "feðradagur" | "feðradagurinn" # Hack
+    'feðra-dagur:kk'_et/fall  # Hack because 'feðradagur' isn't in BÍN
+    | 'feðradagur:kk'_et/fall
 
 QDateIcelandicTongueDay/fall →
     'dagur:kk'_et/fall "íslenskrar" "tungu"
@@ -430,14 +432,15 @@ def QDateSovereigntyDay(node, params, result):
 
 def QDateFirstDayOfSummer(node, params, result):
     result["desc"] = "sumardagurinn fyrsti"
+    # !!! BUG: This is not correct in all cases
     d = dnext(datetime(year=datetime.today().year, month=4, day=18))
     result["target"] = next_weekday(d, 3)
 
 
 def QDateThorlaksMass(node, params, result):
     result["desc"] = "þorláksmessa"
-    d = dnext(datetime(year=datetime.today().year, month=12, day=23))
-    result["target"] = d
+    result["target"] = dnext(datetime(year=datetime.today().year, month=12, day=23))
+
 
 def QDateChristmasEve(node, params, result):
     result["desc"] = "aðfangadagur jóla"
@@ -456,22 +459,18 @@ def QDateNewYearsEve(node, params, result):
 
 def QDateNewYearsDay(node, params, result):
     result["desc"] = "nýársdagur"
-    result["target"] = dnext(datetime(year=datetime.today().year + 1, month=1, day=1))
+    result["target"] = dnext(datetime(year=datetime.today().year, month=1, day=1))
 
 
 def QDateNewYear(node, params, result):
     result["desc"] = "áramótin"
     result["is_verb"] = "eru"
-    result["target"] = dnext(
-        datetime(
-            year=datetime.today().year + 1, month=1, day=1, hour=0, minute=0, second=0
-        )
-    )
+    result["target"] = dnext(datetime(year=datetime.today().year, month=1, day=1))
 
 
 def QDateWorkersDay(node, params, result):
     result["desc"] = "baráttudagur verkalýðsins"
-    result["target"] = dnext(datetime(year=datetime.today().year + 1, month=5, day=1))
+    result["target"] = dnext(datetime(year=datetime.today().year, month=5, day=1))
 
 
 def QDateEaster(node, params, result):
@@ -497,14 +496,14 @@ def QDateMaundyThursday(node, params, result):
 
 def QDateNationalDay(node, params, result):
     result["desc"] = "þjóðhátíðardagurinn"
-    result["target"] = dnext(datetime(year=datetime.today().year + 1, month=6, day=17))
+    result["target"] = dnext(datetime(year=datetime.today().year, month=6, day=17))
 
 
 def QDateBankHoliday(node, params, result):
     result["desc"] = "frídagur verslunarmanna"
     # First Monday of August
     result["target"] = this_or_next_weekday(
-        dnext(datetime(year=datetime.today().year + 1, month=8, day=1)), 0  # Monday
+        dnext(datetime(year=datetime.today().year, month=8, day=1)), 0  # Monday
     )
 
 
@@ -512,6 +511,7 @@ def QDateCultureNight(node, params, result):
     result["desc"] = "menningarnótt"
     # Culture night is on the first Saturday after Reykjavík's birthday on Aug 18th
     aug18 = dnext(datetime(year=datetime.today().year, month=8, day=18))
+    # !!! Is culture night never on Aug 18th?
     result["target"] = next_weekday(aug18, 5)  # Find the next Saturday
 
 
@@ -542,22 +542,22 @@ def QDatePalmSunday(node, params, result):
     result["target"] = next_easter() - timedelta(days=7)  # Week before Easter Sunday
 
 
-def QDateMothersDay(node, params, result):
-    result["desc"] = "mæðradagur"
-    may8 = dnext(datetime(year=datetime.today().year, month=5, day=8))
-    result["target"] = next_weekday(may8, 6)  # Second Sunday in May
-
-
 def QDateSeamensDay(node, params, result):
     result["desc"] = "sjómannadagur"
     june1 = dnext(datetime(year=datetime.today().year, month=6, day=1))
-    result["target"] = next_weekday(june1, 6)  # First Sunday in June
+    result["target"] = this_or_next_weekday(june1, 6)  # First Sunday in June
+
+
+def QDateMothersDay(node, params, result):
+    result["desc"] = "mæðradagur"
+    may8 = dnext(datetime(year=datetime.today().year, month=5, day=8))
+    result["target"] = this_or_next_weekday(may8, 6)  # Second Sunday in May
 
 
 def QDateFathersDay(node, params, result):
     result["desc"] = "feðradagur"
-    nov8 = dnext(datetime(year=datetime.today().year, month=11, day=1))
-    result["target"] = next_weekday(nov8, 6)  # Second Sunday in November
+    nov8 = dnext(datetime(year=datetime.today().year, month=11, day=8))
+    result["target"] = this_or_next_weekday(nov8, 6)  # Second Sunday in November
 
 
 def QDateIcelandicTongueDay(node, params, result):
@@ -669,7 +669,7 @@ def next_weekday(d, weekday):
     """ Get the date of the next weekday after a given date.
         0 = Monday, 1 = Tuesday, 2 = Wednesday, etc. """
     days_ahead = weekday - d.weekday()
-    if days_ahead <= 0:  # Target day already happened this week
+    if days_ahead <= 0:  # Target day is today, or already happened this week
         days_ahead += 7
     return d + timedelta(days=days_ahead)
 
@@ -683,11 +683,9 @@ def this_or_next_weekday(d, weekday):
     return d + timedelta(days=days_ahead)
 
 
-def dnext(dt):
+def dnext(d):
     """ Return datetime with year+1 if date was earlier in current year. """
-    now = datetime.utcnow()
-    d = dt
-    if d < now:
+    if d < datetime.utcnow():
         d = d.replace(year=d.year + 1)
     return d
 
@@ -764,7 +762,7 @@ def howlong_desc_answ(target):
     elif days < 0:
         # It's in the past
         days = abs(days)
-        passed = "liðinn" if sing else "liðnir"
+        passed = "liðnir" if plural else "liðinn"
         voice = "Það {0} {1} {2} {3} frá {4}.".format(
             verb, days, days_desc, passed, tfmt
         )
@@ -856,5 +854,7 @@ def sentence(state, result):
             q.set_qtype(_DATE_QTYPE)
 
     except Exception as e:
-        logging.warning("Exception while processing date query: {0}".format(e))
+        logging.warning(
+            "Exception {0} while processing date query '{1}'".format(e, q.query)
+        )
         q.set_error("E_EXCEPTION: {0}".format(e))

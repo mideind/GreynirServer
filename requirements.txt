@@ -16,7 +16,7 @@ html2text>=2018.1.9
 striprtf==0.0.6
 defusedxml>=0.6.0
 boto3>=1.9
-straeto>=0.0.11
+straeto>=1.0.0
 pytz>=2019.2
 Shapely==1.6.4.post2
 tzwhere>=3.0.3
