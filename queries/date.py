@@ -437,7 +437,7 @@ def QDateFirstDayOfSummer(node, params, result):
 
 def QDateThorlaksMass(node, params, result):
     result["desc"] = "þorláksmessa"
-    d = dnext(datetime(year=datetime.today().year, month=12, day=23))
+    result["target"] = dnext(datetime(year=datetime.today().year, month=12, day=23))
 
 
 def QDateChristmasEve(node, params, result):
@@ -765,7 +765,7 @@ def howlong_desc_answ(target):
     elif days < 0:
         # It's in the past
         days = abs(days)
-        passed = "liðinn" if sing else "liðnir"
+        passed = "liðnir" if plural else "liðinn"
         voice = "Það {0} {1} {2} {3} frá {4}.".format(
             verb, days, days_desc, passed, tfmt
         )
