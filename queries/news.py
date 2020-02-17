@@ -56,7 +56,7 @@ QNewsTellMe →
     "segðu" "mér"
 
 QNewsQualifiers →
-    "helst" | "eiginlega" | "núna"
+    "helst" | "eiginlega" | "núna" | "nýjast"
 
 QNewsQualifiersDef →
     "helstu" | "nýjustu" | "síðustu" | "allranýjustu"
@@ -64,6 +64,7 @@ QNewsQualifiersDef →
 QNewsRUV →
     "á" "rúv"
     | "hjá" "rúv"
+    | "í" "ríkisútvarpinu"
     | "á" "ríkisútvarpinu"
     | "hjá" "ríkisútvarpinu"
     | "á" "vef" "rúv"
