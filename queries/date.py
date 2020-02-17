@@ -262,9 +262,10 @@ QDateSovereigntyDay/fall →
 
 QDateFirstDayOfSummer/fall →
     'sumardagur:kk'_et_gr/fall 'fyrstur:lo'_et_kk/fall
+    | 'fyrstur:lo'_et_kk/fall 'sumardagur:kk'_et/fall
 
 QDateThorlaksMass/fall →
-    'þorláksmessa:kvk'_et/fall
+    'Þorláksmessa:kvk'_et/fall
 
 QDateChristmasEve/fall →
     'aðfangadagur:kk'_et/fall 'jól:hk'_ef?
@@ -313,7 +314,9 @@ QDateCultureNight/fall →
     'menningarnótt:kvk'_et/fall
 
 QDateValentinesDay/fall →
-    'valentínusardagur:kk'_et/fall
+    'Valentínusardagur:kk'_et/fall
+    | 'Dagur'/fall 'elskandi:kk'_ft_ef
+    | 'dagur:kk'_et/fall 'elskandi:kk'_ft_ef
 
 QDateMansDay/fall →
     'bóndadagur:kk'_et/fall
@@ -339,8 +342,8 @@ QDateFirstDayOfWinter/fall →
     | 'vetrardagur:kk'_et_gr/fall 'fyrstur:lo'_et_kk/fall
 
 QDateFathersDay/fall →
-    'feðradagur:kk'_et/fall # Why doesn't this work? 
-    | "feðradagur" | "feðradagurinn" # Hack
+    'feðra-dagur:kk'_et/fall  # Hack because 'feðradagur' isn't in BÍN
+    | 'feðradagur:kk'_et/fall
 
 QDateIcelandicTongueDay/fall →
     'dagur:kk'_et/fall "íslenskrar" "tungu"
