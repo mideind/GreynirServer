@@ -55,6 +55,7 @@
 # TODO: Specify weekday in "hvenær er" queries (e.g. "Sjómannadagurinn er *sunnudaginn* 7. júní")
 # TODO: "Hvað eru margar [unit of time measurement] í [dagsetningu]"
 # TODO: "Hvenær byrjar þorrinn"
+# TODO: "Hvaða frídagar/helgidagar/etc eru í febrúar"
 
 import json
 import re
