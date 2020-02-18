@@ -201,7 +201,16 @@ def init_roots(wait=False):
             "scrapers.default",
             "BBScraper",
             True,
-        )
+        ),
+        # (
+        #     "http://lemurinn.is/",
+        #     "lemurinn.is",
+        #     "Lemúrinn",
+        #     0.4,
+        #     "scrapers.default",
+        #     "LemurinnScraper",
+        #     True,
+        # ),
     ]
 
     # Do no more than 36 retries (~3 minutes) before giving up and returning an error code
