@@ -63,6 +63,7 @@ import logging
 import random
 from datetime import datetime, date, timedelta
 from pytz import timezone
+from calendar import monthrange
 
 from queries import timezone4loc, gen_answer, is_plural
 from settings import changedlocale
@@ -199,7 +200,7 @@ QDateItem/fall →
     QDateAbsOrRel | QDateSpecialDay/fall
 
 QDateAbsOrRel →
-    FöstDagsetning | AfstæðDagsetning
+    dagsföst | dagsafs
 
 # TODO: Order this by time of year
 QDateSpecialDay/fall →
@@ -389,16 +390,27 @@ def QDateWhichYear(node, params, result):
 
 
 def QDateAbsOrRel(node, params, result):
-    t = result.find_descendant(t_base="dagsafs")
-    if not t:
-        t = result.find_descendant(t_base="dagsföst")
-    if t:
-        # TODO: Use TerminalNode's contained_date property instead
-        d = terminal_date(t)
-        if d:
-            result["target"] = d
+    datenode = node.first_child(lambda n: True)
+    if datenode:
+        y, m, d = datenode.contained_date
+        now = datetime.utcnow()
+        if not y:
+            y = now.year
+        # This is a date that contains at least month & mday
+        if d and m:
+            # Bump year if month/day in the past
+            if m < now.month or (m == now.month and d < now.day):
+                y += 1
+            result["target"] = datetime(day=d, month=m, year=y)
+        elif m:
+            # Only contains month
+            if m < now.month:
+                y += 1
+            ndays = monthrange(y, m)[1]
+            result["days_in_month"] = ndays
+            result["target"] = datetime(day=1, month=m, year=y)
     else:
-        raise Exception("No date in {0}".format(str(t)))
+        raise Exception("No date in {0}".format(str(datenode)))
 
 
 def QDateWhitsun(node, params, result):
@@ -793,7 +805,7 @@ def sentence(state, result):
 
     # Successfully matched a query type
     try:
-        with changedlocale(category="LC_TIME"):
+        with changedlocale(category="LC_ALL"):
             # Get timezone and date
             # TODO: Restore correct timezone handling
             # tz = timezone4loc(q.location, fallback="IS")
@@ -810,6 +822,17 @@ def sentence(state, result):
                 voice = re.sub(r" \d+\. ", " " + _DAY_INDEX_NOM[now.day] + " ", voice)
                 response = dict(answer=answer)
                 qkey = "CurrentDate"
+
+            # Asking about the number of days in a given month
+            elif "days_in_month" in result and "target" in result:
+                # TODO: Implement me
+                ndays = result["days_in_month"]
+                mnum = result["target"].month
+                mname = result["target"].strftime("%B")
+                answer = "{0} dagar.".format(result["days_in_month"])
+                voice = "Það eru {0} dagar í {1} {2}".format(ndays, mname, result["target"].year)
+                response = dict(answer=answer)
+
             # Asking about period until/since a given date
             elif ("until" in result or "since" in result) and "target" in result:
                 target = result.target
@@ -817,8 +840,13 @@ def sentence(state, result):
                 # Find the number of days until target date
                 (response, answer, voice) = howlong_desc_answ(target)
                 qkey = "FutureDate" if "until" in result else "SinceDate"
+
             # Asking about when a (special) day occurs in the year
-            elif "when" in result and "target" in result:
+            elif (
+                "when" in result
+                and "target" in result
+                and isinstance(result["target"], datetime)
+            ):
                 # TODO: Fix this so it includes weekday, e.g.
                 # "Sunnudaginn 1. október"
                 # Use plural 'eru' for 'páskar'
@@ -837,6 +865,7 @@ def sentence(state, result):
                     r"\d+\. ", _DAY_INDEX_ACC[result.target.day] + " ", voice
                 )
                 response = dict(answer=answer)
+
             # Asking which year it is
             elif "year" in result:
                 y = now.year
