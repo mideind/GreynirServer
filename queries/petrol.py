@@ -4,7 +4,7 @@
 
     Petrol query response module
 
-    Copyright (C) 2019 Miðeind ehf.
+    Copyright (C) 2020 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -24,8 +24,7 @@
 """
 
 # TODO: "Hver er ódýrasta bensínstöðin innan X kílómetra?"
-# TODO: Refactor convoluted grammar logic
-# TODO: Díselverð
+# TODO: Laga krónutölur og fjarlægðartölur f. talgervil
 
 import logging
 import cachetools
@@ -184,16 +183,26 @@ def QPetrolClosestCheapestStation(node, params, result):
     result.qkey = "ClosestCheapestStation"
 
 
+_COMPANY_NAME_FIXES = {"Costco Iceland": "Costco"}
+
+
 _PETROL_API = "https://apis.is/petrol"
 _PETROL_CACHE_TTL = 3600  # seconds, ttl 1 hour
 
 
 @cachetools.cached(cachetools.TTLCache(1, _PETROL_CACHE_TTL))
 def _get_petrol_station_data():
-    """ Fetch list of petrol stations w. prices from apis.is """
+    """ Fetch list of petrol stations w. prices from apis.is (Gasvaktin) """
     pd = query_json_api(_PETROL_API)
     if not pd or "results" not in pd:
         return None
+
+    # Fix company names
+    for s in pd["results"]:
+        name = s.get("company")
+        if name in _COMPANY_NAME_FIXES:
+            s["company"] = _COMPANY_NAME_FIXES[name]
+
     return pd["results"]
 
 
@@ -223,7 +232,7 @@ def _closest_petrol_station(loc):
 
 
 def _cheapest_petrol_station():
-    stations = _stations_with_distance(None)
+    stations = _get_petrol_station_data()
     if not stations:
         return None
 
@@ -253,7 +262,7 @@ _ERRMSG = "Ekki tókst að sækja upplýsingar um bensínstöðvar."
 
 
 def _answ_for_petrol_query(q, result):
-
+    req_distance = True
     if result.qkey == "ClosestStation":
         station = _closest_petrol_station(q.location)
         answer = "{0} {1} ({2}, bensínverð {3})"
@@ -262,27 +271,50 @@ def _answ_for_petrol_query(q, result):
         station = _cheapest_petrol_station()
         answer = "{0} {1} ({2}, bensínverð {3})"
         desc = "Ódýrasta bensínstöðin"
+        req_distance = False
     elif result.qkey == "ClosestCheapestStation":
         station = _closest_cheapest_petrol_station(q.location)
         desc = "Ódýrasta bensínstöðin í grenndinni"
     else:
         raise Exception("Unknown petrol query type")
 
-    if not station or not "bensin95" in station or not "distance" in station:
+    if (
+        not station
+        or not "bensin95" in station
+        or (req_distance and "distance" not in station)
+    ):
         return gen_answer(_ERRMSG)
 
-    answ_fmt = "{0} {1} ({2}, bensínverð {3})"
-    voice_fmt = "{0} er {1} {2} í u.þ.b. {3} fjarlægð. Þar kostar bensínlítrinn {4}."
+    bensin_kr_desc = krona_desc(float(station["bensin95"]))
+    diesel_kr_desc = krona_desc(float(station["diesel"]))
 
-    dist_nf = distance_desc(station["distance"], case="nf")
-    dist_þf = distance_desc(station["distance"], case="þf")
-    kr_desc = krona_desc(float(station["bensin95"]))
+    if req_distance:
+        answ_fmt = "{0} {1} ({2}, bensínverð {3}, díselverð {4})"
+        voice_fmt = "{0} er {1} {2} í u.þ.b. {3} fjarlægð. Þar kostar bensínlítrinn {4} og dísel-lítrinn {5}."
+        dist_nf = distance_desc(station["distance"], case="nf")
+        dist_þf = distance_desc(station["distance"], case="þf")
+        answer = answ_fmt.format(
+            station["company"], station["name"], dist_nf, bensin_kr_desc, diesel_kr_desc
+        )
+        voice = voice_fmt.format(
+            desc,
+            station["company"],
+            station["name"],
+            dist_þf,
+            bensin_kr_desc,
+            diesel_kr_desc,
+        )
+    else:
+        answ_fmt = "{0} {1} (bensínverð {2}, díselverð {3})"
+        voice_fmt = "{0} er {1} {2}. Þar kostar bensínlítrinn {3} og dísel-lítrinn {4}."
+        answer = answ_fmt.format(
+            station["company"], station["name"], bensin_kr_desc, diesel_kr_desc
+        )
+        voice = voice_fmt.format(
+            desc, station["company"], station["name"], bensin_kr_desc, diesel_kr_desc
+        )
 
-    answer = answ_fmt.format(station["company"], station["name"], dist_nf, kr_desc)
     response = dict(answer=answer)
-    voice = voice_fmt.format(
-        desc, station["company"], station["name"], dist_þf, kr_desc
-    )
 
     return response, answer, voice
 
@@ -297,7 +329,7 @@ def sentence(state, result):
             if result.qkey == "CheapestStation" or loc:
                 answ = _answ_for_petrol_query(q, result)
             else:
-                # We don't have a location
+                # We need a location but don't have one
                 answ = gen_answer("Ég veit ekki hvar þú ert.")
             if answ:
                 q.set_qtype(result.qtype)
