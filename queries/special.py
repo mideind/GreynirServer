@@ -55,6 +55,7 @@ _CAP = (
     "Þú getur til dæmis spurt mig um bensínverð og bensínstöðvar.",
     "Þú getur til dæmis spurt mig hvað er í fréttum.",
     "Þú getur til dæmis spurt mig um opnunartíma verslana.",
+    "Þú getur til dæmis spurt mig um stafsetningu og beygingu orða.",
     # "Þú getur til dæmis spurt mig um flugsamgöngur.",
 )
 
@@ -337,6 +338,10 @@ _SINGING = {
     "answer": "Ó sóle míó!"
 }
 
+_DUNNO = {
+    "answer": "Það veit ég ekki, kæri notandi."
+}
+
 _SPECIAL_QUERIES = {
     "er þetta spurning": {
         "answer": "Er þetta svar?"
@@ -425,16 +430,13 @@ _SPECIAL_QUERIES = {
     "hver er ég": {
         "answer": "Þú ert væntanlega manneskja sem talar íslensku. Meira veit ég ekki."
     },
-    # 'hvað er ég' is now answered as 'hvar er ég' in the location module
-    # "hvað er ég": {
-    #     "answer": "Þú ert væntanlega manneskja sem talar íslensku. Meira veit ég ekki."
-    # },
-    "hvað heiti ég": {
-        "answer": "Það veit ég ekki, kæri notandi."
-    },
-    "veistu hvað ég heiti": {
-        "answer": "Nei, það veit ég ekki, kæri notandi."
-    },
+    "hvað heiti ég": _DUNNO,
+    "veistu hvað ég heiti": _DUNNO,
+    "hvað heitir konan mín": _DUNNO,
+    "hvað heitir maðurinn minn": _DUNNO,
+    "hvað heitir eiginkona mín": _DUNNO,
+    "hvað heitir eiginmaður minn": _DUNNO,
+    "hvenær á ég afmæli": _DUNNO,
     "hvar á ég heima": {
         "answer": "Það veit ég ekki, en vonandi einhvers staðar."
     },
@@ -452,9 +454,6 @@ _SPECIAL_QUERIES = {
     },
     "hversu gömul er ég": {
         "answer": "Það veit ég ekki, kæri notandi, en þú ert ung í anda."
-    },
-    "hvenær á ég afmæli": {
-        "answer": "Það veit ég ekki, kæri notandi."
     },
     "hvernig lít ég út": {
         "answer": "Þú ert undurfagur, kæri notandi."
@@ -1200,6 +1199,12 @@ _SPECIAL_QUERIES = {
         "answer": "Ég er fjallmyndarleg."
     },
     "hvernig lítur þú út": {
+        "answer": "Ég er fjallmyndarleg."
+    },
+    "ertu sæt": {
+        "answer": "Ég er fjallmyndarleg."
+    },
+    "ertu falleg": {
         "answer": "Ég er fjallmyndarleg."
     },
 
