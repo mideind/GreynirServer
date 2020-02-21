@@ -830,7 +830,9 @@ def sentence(state, result):
                 mnum = result["target"].month
                 mname = result["target"].strftime("%B")
                 answer = "{0} dagar.".format(result["days_in_month"])
-                voice = "Það eru {0} dagar í {1} {2}".format(ndays, mname, result["target"].year)
+                voice = "Það eru {0} dagar í {1} {2}".format(
+                    ndays, mname, result["target"].year
+                )
                 response = dict(answer=answer)
 
             # Asking about period until/since a given date
@@ -842,11 +844,7 @@ def sentence(state, result):
                 qkey = "FutureDate" if "until" in result else "SinceDate"
 
             # Asking about when a (special) day occurs in the year
-            elif (
-                "when" in result
-                and "target" in result
-                and isinstance(result["target"], datetime)
-            ):
+            elif "when" in result and "target" in result:
                 # TODO: Fix this so it includes weekday, e.g.
                 # "Sunnudaginn 1. október"
                 # Use plural 'eru' for 'páskar'

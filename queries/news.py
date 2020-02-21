@@ -47,13 +47,13 @@ QNewsQuery →
     QNewsLatest
 
 QNewsLatest →
-    QNewsTellMe? "hvað" "er" QNewsQualifiers? "í" "fréttum" QNewsRUV?
-    | QNewsTellMe? "hvað" "er" QNewsQualifiers? "að" "frétta" QNewsRUV?
-    | QNewsTellMe? "hverjar" "eru" QNewsQualifiersDef? "fréttir" QNewsRUV?
-    | QNewsTellMe? "hverjar" "eru" QNewsQualifiersDef? "fréttirnar" QNewsRUV?
+    QNewsTellMe? "hvað" "er" QNewsQualifiers? "í" "fréttum" QNewsRUV? "núna"?
+    | QNewsTellMe? "hvað" "er" QNewsQualifiers? "að" "frétta" QNewsRUV? "núna"?
+    | QNewsTellMe? "hverjar" "eru" QNewsQualifiersDef? "fréttir" QNewsRUV? "núna"?
+    | QNewsTellMe? "hverjar" "eru" QNewsQualifiersDef? "fréttirnar" QNewsRUV? "núna"?
 
 QNewsTellMe →
-    "segðu" "mér"
+    "segðu" "mér" | "geturðu" "sagt" "mér"
 
 QNewsQualifiers →
     "helst" | "eiginlega" | "núna" | "nýjast"
@@ -62,13 +62,14 @@ QNewsQualifiersDef →
     "helstu" | "nýjustu" | "síðustu" | "allranýjustu"
 
 QNewsRUV →
-    "á" "rúv"
+    "á"? "rúv"
     | "hjá" "rúv"
     | "í" "ríkisútvarpinu"
     | "á" "ríkisútvarpinu"
     | "hjá" "ríkisútvarpinu"
     | "á" "vef" "rúv"
     | "á" "vef" "ríkisútvarpsins"
+    | "ríkisútvarpsins"
 
 $score(+35) QNewsQuery
 
@@ -97,13 +98,27 @@ def _get_news_data(max_items=8):
     return items[:max_items]
 
 
+def _clean_text(txt):
+    txt = txt.replace("\r", "").replace("\n", "")
+    return txt.strip()
+
+
+_BREAK_LENGTH = 1.0  # Seconds
+
+
 def top_news_answer():
     headlines = _get_news_data()
     if not headlines:
         return None
 
-    answer = "".join([h["intro"] + " " for h in headlines])
-    voice = "Í fréttum rúv er þetta helst: " + answer
+    items = [_clean_text(h["intro"]) + " " for h in headlines]
+    news = "".join(items)
+    # Add a pause between individual news items
+    br = '<break time="{0}s"/>'.format(_BREAK_LENGTH)
+    voice_news = br.join(items)
+
+    answer = news
+    voice = "Í fréttum rúv er þetta helst: {0}".format(voice_news)
     response = dict(answer=answer)
 
     return response, answer, voice
@@ -115,7 +130,7 @@ def sentence(state, result):
     if "qtype" in result:
         # Successfully matched a query type
         q.set_qtype(result.qtype)
-        q.set_key("LatestHeadlines")
+        q.set_key("LatestNews")
 
         try:
             res = top_news_answer()
