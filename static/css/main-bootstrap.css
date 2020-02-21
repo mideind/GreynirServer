@@ -960,6 +960,11 @@ div#help h3.help {
    text-align: right;
 }
 
+div#output h3 {
+   margin-top: 0.75em;
+   margin-bottom: 0.75em;
+}
+
 h3.help small {
    font-style: italic;
 }
@@ -1024,7 +1029,6 @@ div.result {
    line-height: 1.6;
    padding-top: 0.2em;
    padding-bottom: 0.8em;
-   margin-top: 1.5em;
 }
 
 div.result i {
@@ -1371,7 +1375,7 @@ h5#meta-url {
    vertical-align: middle;
    font-size: 16px;
    line-height: 1.3;
-   margin-bottom: 0;
+   margin-bottom: 0.8em;
 }
 
 h5#meta-url button {
