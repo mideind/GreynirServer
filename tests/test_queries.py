@@ -190,6 +190,8 @@ def test_query_api(client):
         "sjómannadagurinn",
         "dagur íslenskrar tungu",
         "annar í jólum",
+        "feðradagur",
+        "mæðradagurinn",
     )
     for d in SPECIAL_DAYS:
         qstr = "hvenær er " + d
@@ -210,9 +212,19 @@ def test_query_api(client):
     assert re.search(r"^\d+", json["answer"])
     assert "dag" in json["answer"]
 
-    # json = qmcall(c, {"q": "Hvað er langt fram að verslunarmannahelgi"})
-    # assert json["qtype"] == "Date"
-    # assert re.search(r"^\d+", json["answer"])
+    json = qmcall(c, {"q": "hvað eru margir dagar í desember"})
+    assert json["qtype"] == "Date"
+    assert json["answer"].startswith("31")
+    assert "dag" in json["answer"]
+
+    json = qmcall(c, {"q": "hvað eru margir dagar í febrúar 2024"})
+    assert json["qtype"] == "Date"
+    assert json["answer"].startswith("29")
+    assert "dag" in json["answer"]
+
+    json = qmcall(c, {"q": "Hvað er langt fram að verslunarmannahelgi"})
+    assert json["qtype"] == "Date"
+    assert re.search(r"^\d+", json["answer"])
 
     # json = qmcall(c, {"q": "hvað er langt liðið frá uppstigningardegi"})
     # assert json["qtype"] == "Date"
