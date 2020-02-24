@@ -491,8 +491,10 @@
             <tr><td>Fjöldi mögulegra trjáa</td><td class="count">{{ stats.num_combinations | format_is }}</td></tr>
             <tr><td>Stig besta trés</td><td class="count">{{ stats.total_score | format_is }}</td></tr>
             <tr><td>Margræðnistuðull</td><td class="count">{{ stats.ambiguity | format_is(2) }}</td></tr>
+{% if stats.num_combinations > 0 %}
             <tr><td class="explain" colspan="2">
                ({{ stats.ambiguity | format_is(2) }} ^ {{ stats.num_tokens | format_is}} ≈ {{ stats.num_combinations | format_is }})</td></tr>
+{% endif %}
          </tbody>
          </table>
          </div>

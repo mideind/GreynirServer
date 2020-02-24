@@ -41,7 +41,7 @@ def init_roots(wait=False):
     ROOTS = [
         # Root URL, top-level domain, description, authority
         (
-            "http://kjarninn.is",
+            "https://kjarninn.is",
             "kjarninn.is",
             "Kjarninn",
             1.0,
@@ -50,7 +50,7 @@ def init_roots(wait=False):
             True,
         ),
         (
-            "http://www.ruv.is",
+            "https://www.ruv.is",
             "ruv.is",
             "RÚV",
             1.0,
@@ -59,7 +59,7 @@ def init_roots(wait=False):
             True,
         ),
         (
-            "http://www.visir.is",
+            "https://www.visir.is",
             "visir.is",
             "Vísir",
             0.8,
@@ -68,7 +68,7 @@ def init_roots(wait=False):
             True,
         ),
         (
-            "http://www.mbl.is/frettir/",
+            "https://www.mbl.is/frettir/",
             "mbl.is",
             "Morgunblaðið",
             0.6,
@@ -77,7 +77,7 @@ def init_roots(wait=False):
             True,
         ),
         (
-            "http://kvennabladid.is",
+            "https://kvennabladid.is",
             "kvennabladid.is",
             "Kvennablaðið",
             0.4,
@@ -131,7 +131,7 @@ def init_roots(wait=False):
             False,
         ),
         (
-            "http://althingi.is",
+            "https://althingi.is",
             "althingi.is",
             "Alþingi",
             1.0,
@@ -140,7 +140,7 @@ def init_roots(wait=False):
             False,
         ),
         (
-            "http://stundin.is",
+            "https://stundin.is",
             "stundin.is",
             "Stundin",
             1.0,
@@ -149,7 +149,7 @@ def init_roots(wait=False):
             True,
         ),
         (
-            "http://hringbraut.is",
+            "https://hringbraut.frettabladid.is",
             "hringbraut.is",
             "Hringbraut",
             1.0,
@@ -221,6 +221,7 @@ def init_roots(wait=False):
         try:
 
             db = SessionContext.db
+            # pylint: disable=no-member
             db.create_tables()
 
             with SessionContext() as session:
