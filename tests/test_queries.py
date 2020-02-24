@@ -255,7 +255,7 @@ def test_query_api(client):
     assert json["qtype"] == "Geography"
     assert json["answer"] == "Madríd"
 
-    json = qmcall(c, {"q": "Hver er höfuðborg norður-makedóníu?"})
+    json = qmcall(c, {"q": "hver er höfuðborg norður-makedóníu?"})
     assert json["qtype"] == "Geography"
     assert json["answer"] == "Skopje"
 

@@ -145,7 +145,9 @@ QDateQuery →
     | QDateWhichYear
 
 QDateCurrent →
-    "hvað" "er" "dagsetningin" QDateNow?
+    "dagsetning" QDateNow?
+    | "dagsetningin" QDateNow?
+    |"hvað" "er" "dagsetningin" QDateNow?
     | "hver" "er" "dagsetningin" QDateNow?
     | "hvaða" "dagsetning" "er" QDateNow?
     | "hvaða" "dagur" "er" QDateNow?
@@ -825,15 +827,16 @@ def sentence(state, result):
 
             # Asking about the number of days in a given month
             elif "days_in_month" in result and "target" in result:
-                # TODO: Implement me
                 ndays = result["days_in_month"]
-                mnum = result["target"].month
-                mname = result["target"].strftime("%B")
-                answer = "{0} dagar.".format(result["days_in_month"])
+                t = result["target"]
+                mnum = t.month
+                mname = t.strftime("%B")
+                answer = "{0} dagar.".format(ndays)
                 voice = "Það eru {0} dagar í {1} {2}".format(
-                    ndays, mname, result["target"].year
+                    ndays, mname, t.year
                 )
                 response = dict(answer=answer)
+                qkey = "DaysInMonth"
 
             # Asking about period until/since a given date
             elif ("until" in result or "since" in result) and "target" in result:
