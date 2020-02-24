@@ -80,9 +80,10 @@ class Scraper:
             Otherwise, the URLs are found by scraping the root website and
             searching for links to subpages. """
         fetch_set = set()
-        feeds = helper.feeds
+        feeds = None if helper is None else helper.feeds
 
         if feeds:
+
             for feed_url in feeds:
                 logging.info("Fetching feed {0}".format(feed_url))
                 try:
@@ -92,11 +93,12 @@ class Scraper:
                         "Error fetching/parsing feed {0}: {1}".format(feed_url, str(e))
                     )
                     continue
-
                 for entry in d.entries:
                     if entry.link and not helper.skip_rss_entry(entry):
                         fetch_set.add(entry.link)
+
         else:
+
             # Fetch the root URL and scrape all child URLs
             # that refer to the same domain suffix
             logging.info("Fetching root {0}".format(root.url))
@@ -132,19 +134,24 @@ class Scraper:
                     # The helper doesn't want this URL
                     continue
 
+                if url.startswith("http:") and ("https:" + url[5:]) in fetch_set:
+                    # Don't fetch both http and https versions of the same article
+                    continue
+
                 # noinspection PyBroadException
                 try:
                     article = ArticleRow(url=url, root_id=root.id)
                     # Leave article.scraped as NULL for later retrieval
                     session.add(article)
                     session.commit()
-                except IntegrityError as e:
+                except IntegrityError:
                     # Article URL already exists in database:
                     # roll back and continue
                     session.rollback()
                 except Exception as e:
                     logging.warning(
-                        "Roll back due to exception in scrape_root: {0}".format(e)
+                        "Rollback due to exception when handling URL '{1}': {0}"
+                        .format(e, url)
                     )
                     session.rollback()
 
@@ -530,7 +537,9 @@ def main(argv=None):
     try:
         try:
             opts, args = getopt.getopt(
-                argv[1:], "hirl:u:d:", ["help", "init", "reparse", "limit=", "urls=", "uuid="]
+                argv[1:],
+                "hirl:u:d:",
+                ["help", "init", "reparse", "limit=", "urls=", "uuid="],
             )
         except getopt.error as msg:
             raise Usage(msg)
@@ -601,6 +610,7 @@ def main(argv=None):
 
 if __name__ == "__main__":
 
+    # pylint: disable=import-error
     if os.environ.get("GREYNIR_ATTACH_PTVSD"):
         # Attach to the VSCode PTVSD debugger, enabling remote debugging via SSH
         # Note that you will probably also need to change the multiprocessing

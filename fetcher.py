@@ -25,6 +25,7 @@
 
 import re
 import importlib
+import logging
 
 import requests
 import urllib.parse as urlparse
@@ -206,30 +207,31 @@ class Fetcher:
             # Normal external HTTP/HTTPS fetch
             r = requests.get(url)
             if r is None:
-                print("No document returned for URL {0}".format(url))
+                logging.warning("No document returned for URL {0}".format(url))
                 return None
+            # pylint: disable=no-member
             if r.status_code == requests.codes.ok:
                 html_doc = r.text
             else:
-                print("HTTP status {0} for URL {1}".format(r.status_code, url))
+                logging.warning("HTTP status {0} for URL {1}".format(r.status_code, url))
 
         except requests.exceptions.ConnectionError as e:
-            print("ConnectionError: {0} for URL {1}".format(e, url))
+            logging.error("ConnectionError: {0} for URL {1}".format(e, url))
             html_doc = None
         except requests.exceptions.ChunkedEncodingError as e:
-            print("ChunkedEncodingError: {0} for URL {1}".format(e, url))
+            logging.error("ChunkedEncodingError: {0} for URL {1}".format(e, url))
             html_doc = None
         except HTTPError as e:
-            print("HTTPError: {0} for URL {1}".format(e, url))
+            logging.error("HTTPError: {0} for URL {1}".format(e, url))
             html_doc = None
         except UnicodeEncodeError as e:
-            print(
+            logging.error(
                 "Exception when opening URL {0}: {1}"
                 .format(url, e)
             )
             html_doc = None
         except UnicodeDecodeError as e:
-            print(
+            logging.error(
                 "Exception when decoding HTML of {0}: {1}"
                 .format(url, e)
             )
@@ -251,7 +253,7 @@ class Fetcher:
             helper = helper_class(root) if helper_class else None
             Fetcher._helpers[helper_id] = helper
             if not helper:
-                print("Unable to instantiate helper {0}".format(helper_id))
+                logging.error("Unable to instantiate helper {0}".format(helper_id))
         return helper
 
     @staticmethod
@@ -395,7 +397,7 @@ class Fetcher:
             # Parse the HTML
             soup = Fetcher.make_soup(html_doc, helper)
             if soup is None:
-                print("Fetcher.fetch_article({0}): No soup".format(url))
+                logging.warning("Fetcher.fetch_article({0}): No soup".format(url))
                 return (None, None, None)
 
             # Obtain the metadata and the content from the resulting soup
@@ -425,7 +427,7 @@ class Fetcher:
             # Parse the HTML
             soup = Fetcher.make_soup(html_doc, helper)
             if soup is None:
-                print("Fetcher.fetch_url({0}): No soup or no soup.html".format(url))
+                logging.warning("Fetcher.fetch_url({0}): No soup or no soup.html".format(url))
                 return None
 
             # Obtain the metadata and the content from the resulting soup
@@ -455,7 +457,7 @@ class Fetcher:
             # Parse the HTML
             soup = Fetcher.make_soup(html_doc, helper)
             if soup is None:
-                print("Fetcher.fetch_url_html({0}): No soup".format(url))
+                logging.warning("Fetcher.fetch_url_html({0}): No soup".format(url))
                 return (None, None, None)
 
             # Obtain the metadata from the resulting soup
