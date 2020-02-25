@@ -445,11 +445,15 @@ def test_query_api(client):
     assert "tónskáld" in json["answer"]
     assert "source" in json and "wiki" in json["source"].lower()
 
-    json = qmcall(c, {"q": "fræddu mig um Berlín"})
+    json = qmcall(c, {"q": "hvað segir vikipedija um jóhann sigurjónsson"})
+    assert json["qtype"] == "Wikipedia"
+    assert "Jóhann" in json["answer"]
+
+    json = qmcall(c, {"q": "fræddu mig um berlín"})
     assert json["qtype"] == "Wikipedia"
     assert "Berlín" in json["answer"]
 
-    json = qmcall(c, {"q": "Katrín Jakobsdóttir í vikipediju"})
+    json = qmcall(c, {"q": "katrín Jakobsdóttir í vikipediju"})
     assert json["qtype"] == "Wikipedia"
     assert "Katrín Jakobsdóttir" in json["answer"]
 

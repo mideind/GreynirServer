@@ -26,6 +26,7 @@
 
 # TODO: Shorten overly long first paragraphs.
 # TODO: Fix regex that cleans wiki text.
+# TODO: "Segðu mér meira um X" - Return more article text
 
 
 import re
@@ -210,7 +211,12 @@ def get_wiki_summary(subject_nom):
     """ Fetch summary of subject from Icelandic Wikipedia """
 
     def has_entry(r):
-        return r and "query" in r and "pages" in r["query"]
+        return (
+            r
+            and "query" in r
+            and "pages" in r["query"]
+            and "-1" not in r["query"]["pages"]
+        )
 
     # Wiki pages always start with an uppercase character
     cap_subj = subject_nom[0].upper() + subject_nom[1:]
@@ -218,8 +224,9 @@ def get_wiki_summary(subject_nom):
     res = _query_wiki_api(cap_subj)
     # OK, Wikipedia doesn't have anything with current capitalization
     # or lack thereof. Try uppercasing first character of each word.
-    if not has_entry(res):
-        res = _query_wiki_api(subject_nom.title())
+    titled_subj =  subject_nom.title()
+    if not has_entry(res) and cap_subj != titled_subj:
+        res = _query_wiki_api()
 
     not_found = "Ég fann ekkert um '{0}' í Wikipedíu".format(subject_nom)
 
