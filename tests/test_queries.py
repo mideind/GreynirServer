@@ -63,6 +63,7 @@ def qmcall(c, qdict):
     json = r.get_json()
     assert "valid" in json
     assert json["valid"] == True
+    assert "error" not in json
     assert "qtype" in json  # All query modules should set a query type
     assert "answer" in json
     if "voice" in qdict and qdict["voice"]:

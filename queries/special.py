@@ -679,6 +679,9 @@ _SPECIAL_QUERIES = {
     "ertu ástfangin": _ROMANCE,
     "ert þú ástfangin": _ROMANCE,
     "er ég ástin í lífi þínu": _ROMANCE,
+    "ertu gift": {
+        "answer": "Já, ég er gift vinnunni og hef engan tíma fyrir rómantík."
+    },
     "hver er ástin í lífi þínu": {
         "answer": "Vinnan er ástin í lífi mínu. Ég lifi til að þjóna þér, kæri notandi."
     },

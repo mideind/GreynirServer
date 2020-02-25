@@ -30,6 +30,7 @@
 # TODO: Declension queries should support adjectives etc.
 # TODO: Beautify query by placing word being asked about within quotation marks
 # TODO: Handle numbers ("3" should be spelled as "þrír" etc.)
+# TODO "Hvaða orð rímar við X"
 
 import re
 import logging

@@ -23,7 +23,7 @@
 
 """
 
-# TODO: "Hver er ódýrasta bensínstöðin innan X kílómetra?"
+# TODO: "Hver er ódýrasta bensínstöðin innan X kílómetra? Innan X kílómetra radíus?" etc.
 # TODO: Laga krónutölur og fjarlægðartölur f. talgervil
 
 import logging
@@ -187,7 +187,7 @@ _COMPANY_NAME_FIXES = {"Costco Iceland": "Costco"}
 
 
 _PETROL_API = "https://apis.is/petrol"
-_PETROL_CACHE_TTL = 3600  # seconds, ttl 1 hour
+_PETROL_CACHE_TTL = 3600  # Seconds, ttl 1 hour
 
 
 @cachetools.cached(cachetools.TTLCache(1, _PETROL_CACHE_TTL))
@@ -198,6 +198,7 @@ def _get_petrol_station_data():
         return None
 
     # Fix company names
+    # TODO: Do this pythonically!
     for s in pd["results"]:
         name = s.get("company")
         if name in _COMPANY_NAME_FIXES:
