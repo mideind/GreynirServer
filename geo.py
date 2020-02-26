@@ -422,8 +422,9 @@ def isocode_for_country_name(country_name, lang=ICELANDIC_LANG_ISOCODE):
     if lang not in available_languages():
         return None
     countries = countries_for_language(lang)  # This is cached by module
+    uc_cn = capitalize_placename(country_name)
     for iso_code, name in countries:
-        if name == country_name:
+        if name == country_name or name == uc_cn:
             return iso_code
     if lang in COUNTRY_NAME_TO_ISOCODE_ADDITIONS:
         return COUNTRY_NAME_TO_ISOCODE_ADDITIONS[lang].get(country_name)
@@ -632,7 +633,8 @@ def iceprep_for_country(cn):
     """ Return the right Icelandic preposition ("í" or "á") for
         a country, given its Icelandic name in the nominative
         case, e.g. "Ítalía". """
-    return iceprep_for_cc(isocode_for_country_name(cn))
+    cc = isocode_for_country_name(cn)
+    return iceprep_for_cc(cc) if cc else None
 
 
 # Placename components that should not be capitalized

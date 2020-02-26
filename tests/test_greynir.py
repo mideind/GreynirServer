@@ -172,9 +172,12 @@ def test_geo():
     assert iceprep_for_country("Ítalía") == "á"
     assert iceprep_for_country("Ísland") == "á"
     assert iceprep_for_country("Þýskaland") == "í"
+    assert iceprep_for_country("Japan") == "í"
+    assert iceprep_for_country("spánn") == "á"
 
     assert capitalize_placename("ríó de janeiro") == "Ríó de Janeiro"
     assert capitalize_placename("vík í mýrdal") == "Vík í Mýrdal"
+    assert capitalize_placename("Vík í mýrdal") == "Vík í Mýrdal"
     assert capitalize_placename("frankfúrt am main") == "Frankfúrt am Main"
     assert capitalize_placename("mið-afríkulýðveldið") == "Mið-Afríkulýðveldið"
     assert capitalize_placename("Norður-kórea") == "Norður-Kórea"
