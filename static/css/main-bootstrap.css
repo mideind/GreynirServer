@@ -1281,7 +1281,7 @@ div.correct div.annotation {
    padding-right: 8px;
 }
 
-div.annotation div {
+div.annotation div.ann-text {
    font-style: italic;
    color: #eb3732;
    background-color: white;
@@ -1292,17 +1292,21 @@ div.annotation div {
    cursor: pointer;
 }
 
-div.annotation div:hover {
+div.annotation div.ann-text:hover {
    background-color: rgba(217, 83, 79, 0.10);
 }
 
-div.annotation div.warning {
+div.annotation div.ann-text.warning {
    color: #e28400;
    border: 1px solid #e28400;
 }
 
-div.annotation div.warning:hover {
+div.annotation div.ann-text.warning:hover {
    background-color: #ffeed6;
+}
+
+div.annotation div.ann-detail {
+   display: none;
 }
 
 div.guide-empty {

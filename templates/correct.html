@@ -297,7 +297,9 @@
                if (a.code !== "U001" || unknownWords[a.text] === undefined) {
                   var cls = isWarning(a.code) ? " class='warning'" : "";
                   right += "<div id='a" + annSpan.length + "'" + cls + ">" +
-                     formatAnnotation(a.text) + "</div>\n";
+                     "<div class='ann-text'>" + formatAnnotation(a.text) + "</div>" +
+                     "<div class='ann-detail'>" + formatAnnotation(a.detail || "") + "</div>" +
+                     "</div>\n";
                   // Add a path to the canvas (empty at this point
                   // but will be defined in repositionAnnotations())
                   canvas += "<path id='p" + annSpan.length + "'" + cls + "></path>\n";

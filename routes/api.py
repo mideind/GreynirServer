@@ -100,6 +100,7 @@ def correct_api(version=1):
 
     file = request.files.get("file")
     if file is not None:
+
         # file is a Werkzeug FileStorage object
         mimetype = file.content_type
         if mimetype not in SUPPORTED_DOC_MIMETYPES:
@@ -115,7 +116,9 @@ def correct_api(version=1):
         except Exception as e:
             logging.warning("Exception in correct_api(): {0}".format(e))
             return better_jsonify(valid=False, reason="Error reading file")
+
     else:
+
         try:
             text = text_from_request(request)
         except Exception as e:
