@@ -178,6 +178,7 @@ def test_geo():
     assert capitalize_placename("frankfúrt am main") == "Frankfúrt am Main"
     assert capitalize_placename("mið-afríkulýðveldið") == "Mið-Afríkulýðveldið"
     assert capitalize_placename("Norður-kórea") == "Norður-Kórea"
+    assert capitalize_placename("norður-Kórea") == "Norður-Kórea"
     assert capitalize_placename("bosnía og hersegóvína") == "Bosnía og Hersegóvína"
     assert capitalize_placename("Norður-Makedónía") == "Norður-Makedónía"
 

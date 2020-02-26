@@ -404,8 +404,8 @@ def QDateAbsOrRel(node, params, result):
             if m < now.month or (m == now.month and d < now.day):
                 y += 1
             result["target"] = datetime(day=d, month=m, year=y)
+        # Only contains month
         elif m:
-            # Only contains month
             if m < now.month:
                 y += 1
             ndays = monthrange(y, m)[1]

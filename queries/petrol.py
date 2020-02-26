@@ -210,7 +210,7 @@ _COMPANY_NAME_FIXES = {"Costco Iceland": "Costco"}
 
 
 _PETROL_API = "https://apis.is/petrol"
-_PETROL_CACHE_TTL = 3600  # Seconds, ttl 1 hour
+_PETROL_CACHE_TTL = 3600  # seconds, ttl 1 hour
 
 
 @cachetools.cached(cachetools.TTLCache(1, _PETROL_CACHE_TTL))
