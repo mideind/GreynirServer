@@ -202,7 +202,7 @@ QWeatherTemperature →
     | "er" "mjög"? "kalt" "úti"? QWeatherAnyLoc? QWeatherNow?
     | "er" "mikill"? "kuldi" "úti"? QWeatherAnyLoc? QWeatherNow?
     | "er" "mikill"? "hiti" "úti"? QWeatherAnyLoc? QWeatherNow?
-    | "er" "mikið"? "frost" QWeatherAnyLoc? QWeatherNow?
+    | "er" "mikið"? "frost" "úti"? QWeatherAnyLoc? QWeatherNow?
     | "er" "fyrir" "ofan" "frostmark" "úti"? QWeatherAnyLoc? QWeatherNow?
     | "er" "fyrir" "neðan" "frostmark" "úti"? QWeatherAnyLoc? QWeatherNow?
 

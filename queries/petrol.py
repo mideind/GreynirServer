@@ -148,7 +148,7 @@ QPetrolWhereIs →
 
 QPetrolCanIGet →
     "fæ" "ég" | "fær" "maður" | "get" "ég" "fengið" | "getur" "maður" "fengið" 
-    | "kaupi" "ég" | "kaupir" "maður"
+    | "kaupi" "ég" | "kaupir" "maður" | "get" "ég" "keypt" | "getur" "maður" "keypt"
 
 QPetrolHas →
     "er" "með" | "hefur" | "býður" "upp" "á"

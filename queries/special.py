@@ -54,8 +54,8 @@ _CAP = (
     "Þú getur til dæmis spurt mig hvað er í sjónvarpinu.",
     "Þú getur til dæmis spurt mig um bensínverð og bensínstöðvar.",
     "Þú getur til dæmis spurt mig hvað er í fréttum.",
-    "Þú getur til dæmis spurt mig um opnunartíma verslana.",
     "Þú getur til dæmis spurt mig um stafsetningu og beygingu orða.",
+    #"Þú getur til dæmis spurt mig um opnunartíma verslana.",
     # "Þú getur til dæmis spurt mig um flugsamgöngur.",
 )
 
