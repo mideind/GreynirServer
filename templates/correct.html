@@ -72,6 +72,8 @@
                </span>
             </div>
             <div id="pgs"></div>
+            <!-- Annotation detail hover box -->
+            <div id="detail"></div>
          </div>
 
          <div id="statistics">
@@ -222,6 +224,27 @@
       return code.endsWith("/w");
    }
 
+   function detailHoverIn() {
+      // Hovering over an annotation text div that has a detail (info) icon
+      // Obtain html to display from the ann-detail div
+      var html = $(this).parent().find("div.ann-detail").html();
+      var frame = $(this).parent().parent().parent();
+      $("#detail").html(html);
+      var top = frame.position().top - 24 - $("#detail").height() +
+         $(this).parent().position().top;
+      var left = $(this).offset().left - frame.offset().left;
+      // Position the detail popup
+      $("#detail")
+         .css("top", "" + top + "px")
+         .css("left", "" + left + "px")
+         .css("visibility", "visible");
+   }
+
+   function detailHoverOut() {
+      // Stop hovering over an annotation text div
+      $("#detail").css("visibility", "hidden");
+   }
+
    function displayAnnotations(j) {
       // Generate HTML for the token list given in j,
       // and insert it into the <div> with id 'pgs'.
@@ -296,9 +319,19 @@
                // We do not show repeated annotations for unknown words
                if (a.code !== "U001" || unknownWords[a.text] === undefined) {
                   var cls = isWarning(a.code) ? " class='warning'" : "";
+                  var detail = "";
+                  var info = "";
+                  if (a.detail) {
+                     // Add detailed text to the annotation, if available,
+                     // along with an info icon
+                     detail = "<div class='ann-detail'>" +
+                        formatAnnotation(a.detail) +
+                        "</div>";
+                     info = "<span class='ann-info glyphicon glyphicon-info'></span>";
+                  }
                   right += "<div id='a" + annSpan.length + "'" + cls + ">" +
-                     "<div class='ann-text'>" + formatAnnotation(a.text) + "</div>" +
-                     "<div class='ann-detail'>" + formatAnnotation(a.detail || "") + "</div>" +
+                     "<div class='ann-text'>" + info + formatAnnotation(a.text) + "</div>" +
+                     detail +
                      "</div>\n";
                   // Add a path to the canvas (empty at this point
                   // but will be defined in repositionAnnotations())
@@ -337,6 +370,8 @@
       $(window).resize(repositionAnnotations);
       // Put a hover handler on each annotation
       $("div.annotation div").hover(annHoverIn, annHoverOut);
+      // Put a hover handler on each annotation text that has an info button
+      $("span.ann-info").closest("div.ann-text").hover(detailHoverIn, detailHoverOut);
       // Put a click handler on each sentence
       $("span.sent").click(showParse);
    }
@@ -491,6 +526,15 @@
          var file = event.originalEvent.dataTransfer.files[0];
          uploadFile(file);
       });
+
+      // Clicking on the annotation detail popup should make it disappear
+      $("#detail").on("click touchend", function(ev) {
+         $(this).css("visibility", "hidden");
+         ev.stopPropagation();
+         ev.preventDefault();
+         return false;
+      });
+
    }
 
    $(document).ready(init);

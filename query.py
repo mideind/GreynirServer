@@ -41,7 +41,7 @@ from db.models import Query as QueryRow
 
 from tree import Tree
 from reynir import TOK, tokenize, correct_spaces
-from reynir.fastparser import Fast_Parser, ParseForestDumper, ParseError
+from reynir.fastparser import Fast_Parser, ParseForestDumper, ParseError, ffi
 from reynir.binparser import BIN_Grammar, GrammarError
 from reynir.reducer import Reducer
 from reynir.bindb import BIN_Db
@@ -148,7 +148,7 @@ class QueryParser(Fast_Parser):
     _grammar_class = QueryGrammar
 
     # Also keep separate class instances of the C grammar and its timestamp
-    _c_grammar = None
+    _c_grammar = ffi.NULL
     _c_grammar_ts = None
 
     # Store the grammar additions for queries
