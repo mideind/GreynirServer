@@ -428,6 +428,10 @@ def test_query_api(client):
     assert json["qtype"] == "Unit"
     assert json["answer"] == "4,5 kíló"
 
+    json = qmcall(c, {"q": "hvað eru mörg korter í einum degi"})
+    assert json["qtype"] == "Unit"
+    assert json["answer"].startswith("96")
+
     # Weather module
     json = qmcall(c, {"q": "Hversu hlýtt er úti?"})
     assert json["qtype"] == "Weather"

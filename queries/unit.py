@@ -110,7 +110,6 @@ _UNITS = {
     "vökva únsa": ("m³", 0.0295735e-3),  # US fl. oz.
     "vökva únsur": ("m³", 0.0295735e-3),  # US fl. oz.
     "pint": ("m³", 0.568e-3),  # British pint
-
     # Weight (standard unit is kg)
     "kíló": ("kg", 1.0),
     "kílógramm": ("kg", 1.0),
@@ -124,7 +123,6 @@ _UNITS = {
     "karat": ("kg", 0.2e-3),
     "steinn": ("kg", 6.35),
     "mörk": ("kg", 0.25),
-
     # Distance (standard unit is m)
     "metri": ("m", 1.0),
     "kílómetri": ("m", 1.0e3),
@@ -140,7 +138,6 @@ _UNITS = {
     "tomma": ("m", 2.54e-2),
     "þumlungur": ("m", 2.54e-2),
     "faðmur": ("m", 1.829),
-
     # Area (standard unit is m²)
     "fermetri": ("m²", 1.0),
     "fersentímetri": ("m²", 1.0e-4),
@@ -151,20 +148,26 @@ _UNITS = {
     "fertomma": ("m²", 2.54e-2 ** 2),
     "ferþumlungur": ("m²", 2.54e-2 ** 2),
     "ekra": ("m²", 4047.0),
-
     # Time (standard unit is second)
+    "árþúsund": ("s", 3600.0 * 24 * 365 * 1000),
     "öld": ("s", 3600.0 * 24 * 365 * 100),
     "áratugur": ("s", 3600.0 * 24 * 365 * 10),
     "ár": ("s", 3600.0 * 24 * 365),
-    "mánuður": ("s", 3600.0 * 24 * (365/12.0)), # Average length of month
+    "mánuður": ("s", 3600.0 * 24 * (365 / 12.0)),  # Average length of month
     "vika": ("s", 3600.0 * 24 * 7),
     "dagur": ("s", 3600.0 * 24),
     "sólarhringur": ("s", 3600.0 * 24),
     "klukkustund": ("s", 3600.0),
+    "klukkutími": ("s", 3600.0),
+    "hálftími": ("s", 1800.0),
+    "kortér": ("s", 900.0),
+    "stundarfjórðungur": ("s", 900.0),
     "mínúta": ("s", 60.0),
     "sekúnda": ("s", 1.0),
     "sekúndubrot": ("s", 1.0 / 100),
     "millisekúnda": ("s", 1.0 / 1000),
+    "míkrósekúnda": ("s", 1.0 / 1.0e6),
+    "nanósekúnda": ("s", 1.0 / 1.0e9),
 }
 
 # Convert irregular unit forms to canonical ones
@@ -197,6 +200,7 @@ _CONVERT_UNITS = {
     "desilítri": "desílítri",
     "sentilítri": "sentílítri",
     "rúmsentimetri": "rúmsentímetri",
+    "korter": "kortér",
 }
 
 # Indicate that this module wants to handle parse trees for queries,
@@ -361,13 +365,20 @@ QUnit_kk/fall →
     | 'dagur:kk'/fall
     | 'Dagur'/fall
     | 'áratugur:kk'/fall
+    | 'klukkutími:kk'/fall
+    | 'hálftími:kk'/fall
+    | 'stundarfjórðungur:kk'/fall
 
 QUnit_hk/fall →
-    'ár:hk'/fall
+    'árþúsund:hk'/fall | "árþúsund" # Often incorrectly declined
+    | 'ár:hk'/fall
     | 'sekúndubrot:hk'/fall
+    | 'kortér:hk'/fall | "korter"
 
 QUnit_kvk/fall →
-    'millisekúnda:kvk'/fall
+    'nanósekúnda:kvk'/fall
+    | 'míkrósekúnda:kvk'/fall
+    | 'millisekúnda:kvk'/fall
     | 'sekúnda:kvk'/fall
     | 'mínúta:kvk'/fall
     | 'klukkustund:kvk'/fall
