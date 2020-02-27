@@ -336,7 +336,7 @@ COUNTRY_DATA_JSONPATH = os.path.join(
 
 
 def _load_country_data():
-    """ Load country data from JSON file. """
+    """ Load country coordinates and ISO country code data from JSON file. """
     global COUNTRY_DATA
     if COUNTRY_DATA is None:
         with open(COUNTRY_DATA_JSONPATH) as f:
@@ -642,14 +642,15 @@ _PLACENAME_PREPS = frozenset(("í", "á", "de", "la", "am", "og"))
 
 
 def capitalize_placename(pn):
-    """ Correctly capitalize a lowercase placename, e.g.
-        "rio de janeiro"->"Rio de Janeiro", "vík í mýrdal"->"Vík í Mýrdal". """
+    """ Correctly capitalize an Icelandic-language lowercase placename, e.g.
+        "vík í mýrdal"->"Vík í Mýrdal", "bosnía og hersegóvína"->"Bosnía og Hersegóvína", 
+        "norður-makedónía"->"Norður-Makedónía", "rio de janeiro"->"Rio de Janeiro", etc. """
     comp = pn.split()
     # Uppercase each individual word (w. some exceptions)
     ucpn = " ".join(
         c[0].upper() + c[1:] if c not in _PLACENAME_PREPS else c for c in comp
     )
-    # Uppercase each component in words containing a hyphen 
+    # Uppercase each component in words containing a hyphen
     # e.g. "norður-makedónía" -> "Norður-Makedónía"
     ucpn = "-".join([c[0].upper() + c[1:] for c in ucpn.strip().split("-")])
     return ucpn

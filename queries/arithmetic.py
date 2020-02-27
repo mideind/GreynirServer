@@ -207,13 +207,8 @@ _ORDINAL_WORDS_DATIVE = {
 HANDLE_TREE = True
 
 # The context-free grammar for the queries recognized by this plug-in module
+# Uses "QAr" as prefix for grammar namespace
 GRAMMAR = """
-
-# ----------------------------------------------
-#
-# Query grammar for arithmetic-related queries
-#
-# ----------------------------------------------
 
 # A plug-in query grammar always starts with the following,
 # adding one or more query productions to the Query nonterminal
