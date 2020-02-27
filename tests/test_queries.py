@@ -437,13 +437,17 @@ def test_query_api(client):
     assert json["answer"].startswith("526.000 mínútur")
 
     # Weather module
+    json = qmcall(c, {"q": "hvernig er veðrið í Reykjavík?"})
+    assert json["qtype"] == "Weather"
+    assert re.search(r"^\-?\d+°", json["answer"]) is not None 
+
     json = qmcall(c, {"q": "Hversu hlýtt er úti?"})
     assert json["qtype"] == "Weather"
-    assert "°" in json["answer"]
+    assert re.search(r"^\-?\d+°", json["answer"]) is not None 
 
     json = qmcall(c, {"q": "hver er veðurspáin fyrir morgundaginn"})
     assert json["qtype"] == "Weather"
-    assert len(json["answer"]) > 0 and "." in json["answer"]
+    assert len(json["answer"]) > 20 and "." in json["answer"]
 
     # Wikipedia module
     json = qmcall(c, {"q": "Hvað segir wikipedia um Jón Leifs?"})
