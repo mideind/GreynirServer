@@ -147,7 +147,8 @@ QPetrolWhereIs →
     "hvar" "er"
 
 QPetrolCanIGet →
-    "fæ" "ég" | "fær" "maður" | "get" "ég" "fengið" | "getur" "maður" "fengið"
+    "fæ" "ég" | "fær" "maður" | "get" "ég" "fengið" | "getur" "maður" "fengið" 
+    | "kaupi" "ég" | "kaupir" "maður"
 
 QPetrolHas →
     "er" "með" | "hefur" | "býður" "upp" "á"
@@ -173,7 +174,7 @@ QPetrolHere →
     "hér" | "hérna"
 
 QPetrolStation →
-    "bensínstöð" | "bensínstöðin"
+    "bensínstöð" | "bensínstöðin" | "bensínafgreiðslustöð"
 
 QPetrolWhichStation →
     "hvaða" "bensínstöð" | "hvaða" "bensínafgreiðslustöð"
@@ -183,7 +184,8 @@ QPetrolLowPriceÞf →
     | "sæmilegt" "verð" | "sæmilegan" "prís"
 
 QPetrolBestPriceÞf →
-    "lægsta" "verðið" | "besta" "verðið"  | "lægsta" "prísinn" | "besta" "prísinn"
+    "lægsta" "verðið" | "besta" "verðið" | "besta" "verð" | "lægsta" "verð" 
+    | "lægsta" "prísinn" | "besta" "prísinn" | "lægsta" "prís" | "besta" "prís"
 
 $score(+35) QPetrol
 

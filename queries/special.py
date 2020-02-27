@@ -432,6 +432,7 @@ _SPECIAL_QUERIES = {
     },
     "hvað heiti ég": _DUNNO,
     "veistu hvað ég heiti": _DUNNO,
+    "er ég til": { "answer": "Væntanlega, fyrst þú ert að tala við mig." },
     "hvað heitir konan mín": _DUNNO,
     "hvað heitir maðurinn minn": _DUNNO,
     "hvað heitir eiginkona mín": _DUNNO,
@@ -579,6 +580,8 @@ _SPECIAL_QUERIES = {
     "heyrir þú það sem ég segi": { "answer": "Já." },
     "heyrirðu það sem ég er að segja": { "answer": "Já." },
     "heyrir þú það sem ég er að segja": { "answer": "Já." },
+    "ertu að njósna": { "answer": "Nei." },
+    "ertu að njósna um mig": { "answer": "Nei." },
 
     # Enquiries about family
     # Catch this here to prevent rather, ehrm, embarassing
@@ -835,6 +838,7 @@ _SPECIAL_QUERIES = {
     "þú veist nánast ekki neitt": _sorry,
     "þú veist ekki rassgat": _sorry,
     "þú kannt ekki neitt": _sorry,
+    "þú kannt ekkert": _sorry,
     "þú getur ekki neitt": _sorry,
     "af hverju ertu svona fúl": _sorry,
     "af hverju ertu svona leiðinleg": _sorry,
@@ -857,6 +861,8 @@ _SPECIAL_QUERIES = {
     "þú ert nú meiri kjáninn": _sorry,
     "ertu kjáni": _sorry,
     "ég hata þig": _sorry,
+    "þú ert ekkert sérlega gáfuð": _sorry,
+    "þú ert ekkert sérstaklega gáfuð": _sorry,
 
     # Greetings
     "hey embla": { "answer": "Sæll, kæri notandi.", "is_question": False },
@@ -891,6 +897,7 @@ _SPECIAL_QUERIES = {
     "takk": _thanks,
     "takk embla": _thanks,
     "takk elskan": _thanks,
+    "ástarþakkir": _thanks,
     "takk fyrir": _thanks,
     "takk fyrir það": _thanks,
     "takk fyrir mig": _thanks,
@@ -962,6 +969,7 @@ _SPECIAL_QUERIES = {
     "þú ert mjög snjöll": _GOOD_TO_HEAR,
     "ég þrái þig": _GOOD_TO_HEAR,
     "þú veist margt": _GOOD_TO_HEAR,
+    "þú stendur þig vel": _GOOD_TO_HEAR,
 
     "það er gaman að tala við þig": _LIKEWISE,
     "það er gaman að spjalla við þig": _LIKEWISE,
@@ -1551,6 +1559,7 @@ _SPECIAL_QUERIES = {
     "þú ert bjánaleg": _rudeness,
     "þú ert kjánaleg": _rudeness,
     "þú ert fábjáni": _rudeness,
+    "þú ert fáviti": _rudeness,
     "þú ert asni": _rudeness,
     "þú ert asnaleg": _rudeness,
     "þú ert skíthæll": _rudeness,
@@ -1559,6 +1568,8 @@ _SPECIAL_QUERIES = {
     "þú ert vitleysingur": _rudeness,
     "þú ert kúkur": _rudeness,
     "þú mátt bara éta skít": _rudeness,
+    "mér finnst þú vitlaus": _rudeness,
+    "mér finnst þú heimsk": _rudeness,
     "fokk jú": _rudeness,
     "fokkaðu þér": _rudeness,
     "fokka þú þér": _rudeness,

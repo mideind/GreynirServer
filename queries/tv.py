@@ -100,6 +100,7 @@ QTVEiginlega →
 
 QTVOnSchedule →
     "á" "dagskrá"
+    | "í" "dagskrá"
     | "á" "dagskránni"
     | "í" "boði"
     | "boðið" "upp" "á"

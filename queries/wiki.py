@@ -100,7 +100,7 @@ QWikiQuery →
     QWikiSubjectNf "í" QWikipedia
 
     # These take the subject in the accusative case
-    | "hvað" "segir" QWikipedia "um" QWikiSubjectÞf
+    | "hvað" "segir" QWikipedia "um"? QWikiSubjectÞf
     | "hvað" "stendur" "í" QWikipedia "um" QWikiSubjectÞf
     | "hvað" "stendur" "um" QWikiSubjectÞf "í" QWikipedia
     | "hvað" "getur" "þú" "sagt" "mér"? "um" QWikiSubjectÞf
@@ -226,7 +226,7 @@ def get_wiki_summary(subject_nom):
     # or lack thereof. Try uppercasing first character of each word.
     titled_subj =  subject_nom.title()
     if not has_entry(res) and cap_subj != titled_subj:
-        res = _query_wiki_api()
+        res = _query_wiki_api(titled_subj)
 
     not_found = "Ég fann ekkert um '{0}' í Wikipedíu".format(subject_nom)
 
