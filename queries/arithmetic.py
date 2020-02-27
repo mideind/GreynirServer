@@ -50,7 +50,6 @@ TOPIC_LEMMAS = [
     "kvaðratrót",
     "ferningsrót",
     "veldi",
-    "rót",
     "prósent",
     "prósenta",
     "hundraðshluti",

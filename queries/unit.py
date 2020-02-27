@@ -263,6 +263,7 @@ QUnitNumber/kyn/fall →
     # tala is a number ('17')
     to/kyn/fall | töl | tala
     | 'hálfur:lo'_sb/kyn/fall
+    | 'Eina:kvk'
 
 # Volume
 

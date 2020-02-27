@@ -129,6 +129,11 @@ _NUMBER_WORDS = {
 
 def parse_num(node, num_str):
     """ Parse Icelandic number string to float or int """
+
+    # Hack to handle the word "eina" being identified as f. name "Eina"
+    if num_str in ["Eina", "Einu"]:
+        return 1
+
     # If we have a number token as a direct child,
     # return its numeric value directly
     num = node.child.contained_number

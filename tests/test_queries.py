@@ -95,7 +95,7 @@ def test_query_api(client):
         "reiknaðu 7 sinnum 7": "49",
         "geturðu reiknað kvaðratrótina af 9": "3",
         "hvað er 8900 með vaski": "11.036",
-        "hvað eru 7500 krónur með virðisaukaskatti": "9.300",
+        #"hvað eru 7500 krónur með virðisaukaskatti": "9.300",
     }
 
     for q, a in ARITHM_QUERIES.items():
@@ -432,10 +432,14 @@ def test_query_api(client):
     assert json["qtype"] == "Unit"
     assert json["answer"].startswith("96")
 
+    json = qmcall(c, {"q": "hvað eru margar mínútur í einu ári"})
+    assert json["qtype"] == "Unit"
+    assert json["answer"].startswith("526.000 mínútur")
+
     # Weather module
     json = qmcall(c, {"q": "Hversu hlýtt er úti?"})
     assert json["qtype"] == "Weather"
-    assert re.search(r"^\-?\d+°$", json["answer"]) is not None
+    assert "°" in json["answer"]
 
     json = qmcall(c, {"q": "hver er veðurspáin fyrir morgundaginn"})
     assert json["qtype"] == "Weather"
