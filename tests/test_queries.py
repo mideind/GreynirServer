@@ -95,7 +95,7 @@ def test_query_api(client):
         "reiknaðu 7 sinnum 7": "49",
         "geturðu reiknað kvaðratrótina af 9": "3",
         "hvað er 8900 með vaski": "11.036",
-        #"hvað eru 7500 krónur með virðisaukaskatti": "9.300",
+        "hvað eru 7500 krónur með virðisaukaskatti": "9.300",
     }
 
     for q, a in ARITHM_QUERIES.items():

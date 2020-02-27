@@ -344,7 +344,7 @@ QArWithVAT →
     "með" "vaski" | "með" "virðisaukaskatti"
 
 QArCurrencyOrNum →
-    currency_isk_nf | QArNumberWordAny "krónur"? | QArNumberWordAny "íslenskar" "krónur"
+    QArNumberWordAny "krónur"? | QArNumberWordAny "íslenskar" "krónur" | amount
 
 QArPi →
     "hvaða" "tala" "er" "pí"
@@ -501,6 +501,14 @@ def Prósenta(node, params, result):
     else:
         # We shouldn't be here. Something went horriby wrong somewhere.
         raise ValueError("No auxiliary information in percentage token")
+
+
+def QArCurrencyOrNum(node, params, result):
+    amount = node.first_child(lambda n: n.has_t_base("amount"))
+    if amount is not None:
+        # Found an amount terminal node
+        result.amount, curr = amount.contained_amount
+        add_num(result.amount, result)
 
 
 def QArStd(node, params, result):
