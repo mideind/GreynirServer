@@ -835,7 +835,8 @@ span.imgreport a:hover {
 }
 
 div#info,
-div#info-trnsl {
+div#info-trnsl,
+div#detail {
    visibility: hidden;
    position: absolute;
    background-color: #eeeeee;
@@ -851,10 +852,28 @@ div#info-trnsl {
    padding-right: 12px;
 }
 
-div#info-trnsl
+div#info-trnsl,
+div#detail
 {
    margin-top: 4px;
 }
+
+/*
+   Experimental: speech bubble style
+   (see https://codepen.io/mchernin34/pen/ojXvLq)
+
+div#detail:after {
+   content:"";
+   position:absolute;
+   bottom:-20px;
+   left:50px;
+   border-width:20px 0 0 20px;
+   border-style:solid;
+   border-color:#eeeeee transparent;
+   display:block;
+   width:0;
+}
+*/
 
 div#info.kk,
 div#info.kvk,
@@ -1277,8 +1296,7 @@ div.correct div.annotation {
    width: 30%;
    margin-left: 0;
    margin-right: 0;
-   padding-left: 8px;
-   padding-right: 8px;
+   padding-left: 16px;
 }
 
 div.annotation div.ann-text {
@@ -1307,6 +1325,12 @@ div.annotation div.ann-text.warning:hover {
 
 div.annotation div.ann-detail {
    display: none;
+}
+
+div.annotation span.ann-info {
+   float: right;
+   padding-left: 4px;
+   padding-bottom: 4px;
 }
 
 div.guide-empty {
