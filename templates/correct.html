@@ -318,7 +318,7 @@
                // Annotation a
                // We do not show repeated annotations for unknown words
                if (a.code !== "U001" || unknownWords[a.text] === undefined) {
-                  var cls = isWarning(a.code) ? " class='warning'" : "";
+                  var cls = isWarning(a.code) ? " warning" : "";
                   var detail = "";
                   var info = "";
                   if (a.detail) {
@@ -329,8 +329,8 @@
                         "</div>";
                      info = "<span class='ann-info glyphicon glyphicon-info'></span>";
                   }
-                  right += "<div id='a" + annSpan.length + "'" + cls + ">" +
-                     "<div class='ann-text'>" + info + formatAnnotation(a.text) + "</div>" +
+                  right += "<div id='a" + annSpan.length + "'>" +
+                     "<div class='ann-text" + cls + "'>" + info + formatAnnotation(a.text) + "</div>" +
                      detail +
                      "</div>\n";
                   // Add a path to the canvas (empty at this point
