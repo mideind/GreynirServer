@@ -95,7 +95,9 @@ def check_grammar(text):
                     start=ann.start,
                     end=ann.end,
                     code=ann.code,
-                    text=ann.text
+                    text=ann.text,
+                    detail=ann.detail,
+                    suggest=ann.suggest,
                 )
                 for ann in sent.annotations
             ]
