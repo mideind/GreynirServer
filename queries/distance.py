@@ -237,12 +237,14 @@ def traveltime_answer_for_loc(matches, query):
     elm = res["rows"][0]["elements"][0]
     if elm["status"] != "OK":
         return None
+
     # dur_desc = elm["duration"]["text"]
     dur_sec = int(elm["duration"]["value"])
     dur_desc = time_period_desc(dur_sec, case="þf")
+    dist_desc = elm["distance"]["text"]
 
     # Generate answer
-    answer = dur_desc + "."
+    answer = "{0} ({1}).".format(dur_desc, dist_desc)
     response = dict(answer=answer)
     voice = "Að {0} tekur um það bil {1}".format(action_desc, dur_desc)
 

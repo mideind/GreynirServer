@@ -419,6 +419,9 @@ def isocode_for_country_name(country_name, lang=ICELANDIC_LANG_ISOCODE):
         name in the specified language (two-char ISO 639-1). """
     assert len(lang) == 2
     lang = lang.lower()
+    # Hardcoded mappings take precedence
+    if lang in COUNTRY_NAME_TO_ISOCODE_ADDITIONS:
+        return COUNTRY_NAME_TO_ISOCODE_ADDITIONS[lang].get(country_name)
     if lang not in available_languages():
         return None
     countries = countries_for_language(lang)  # This is cached by module
@@ -426,8 +429,6 @@ def isocode_for_country_name(country_name, lang=ICELANDIC_LANG_ISOCODE):
     for iso_code, name in countries:
         if name == country_name or name == uc_cn:
             return iso_code
-    if lang in COUNTRY_NAME_TO_ISOCODE_ADDITIONS:
-        return COUNTRY_NAME_TO_ISOCODE_ADDITIONS[lang].get(country_name)
     return None
 
 
