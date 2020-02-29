@@ -1548,6 +1548,7 @@ _SPECIAL_QUERIES = {
     "þú ert mella": _rudeness,
     "þú ert píka": _rudeness,
     "þú ert heimsk": _rudeness,
+    "þú ert ótrúlega heimsk": _rudeness,
     "þú ert forheimsk": _rudeness,
     "þú ert nautheimsk": _rudeness,
     "þú ert sauðheimsk": _rudeness,

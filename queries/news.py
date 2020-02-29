@@ -24,6 +24,8 @@
 
 """
 
+# TODO: Fyrirsagnir, og að styðja "Segðu mér meira um X"
+
 import logging
 import cachetools
 
@@ -31,6 +33,17 @@ from queries import gen_answer, query_json_api
 
 
 _NEWS_QTYPE = "News"
+
+
+TOPIC_LEMMAS = ["fréttir", "fregnir", "handahóf"]
+
+
+def help_text(lemma):
+    """ Help text to return when query.py is unable to parse a query but
+        one of the above lemmas is found in it """
+    return "Ég skil þig ef þú segir til dæmis: {0}?".format(
+        random.choice(("Hvað er í fréttum", "Hvað er að frétta"))
+    )
 
 
 # Indicate that this module wants to handle parse trees for queries,
@@ -47,8 +60,10 @@ QNewsQuery →
     QNewsLatest
 
 QNewsLatest →
-    QNewsTellMe? "hvað" "er" QNewsQualifiers? "í" "fréttum" QNewsRUV? "núna"?
+    QNewsTellMe? QNewsQualifiersDef? "fréttir"
+    | QNewsTellMe? "hvað" "er" QNewsQualifiers? "í" "fréttum" QNewsRUV? "núna"?
     | QNewsTellMe? "hvað" "er" QNewsQualifiers? "að" "frétta" QNewsRUV? "núna"?
+    | QNewsTellMe? "hvaða" "fréttir" "eru" QNewsQualifiers? QNewsRUV "núna"?
     | QNewsTellMe? "hverjar" "eru" QNewsQualifiersDef? "fréttir" QNewsRUV? "núna"?
     | QNewsTellMe? "hverjar" "eru" QNewsQualifiersDef? "fréttirnar" QNewsRUV? "núna"?
 
@@ -59,10 +74,11 @@ QNewsQualifiers →
     "helst" | "eiginlega" | "núna" | "nýjast"
 
 QNewsQualifiersDef →
-    "helstu" | "nýjustu" | "síðustu" | "allranýjustu"
+    "helstu" | "nýjustu" | "síðustu" | "allranýjustu" | "seinustu"
 
 QNewsRUV →
     "á"? "rúv"
+    | "í" "rúv"
     | "hjá" "rúv"
     | "í" "ríkisútvarpinu"
     | "á" "ríkisútvarpinu"
@@ -112,10 +128,10 @@ def top_news_answer():
         return None
 
     items = [_clean_text(h["intro"]) + " " for h in headlines]
-    news = "".join(items)
+    news = "".join(items).strip()
     # Add a pause between individual news items
     br = '<break time="{0}s"/>'.format(_BREAK_LENGTH)
-    voice_news = br.join(items)
+    voice_news = br.join(items).strip()
 
     answer = news
     voice = "Í fréttum rúv er þetta helst: {0}".format(voice_news)
