@@ -102,7 +102,7 @@ QULocNow →
     "nákvæmlega"? QULocNowGeneric
 
 QULocNowGeneric →
-    "nú" | "núna" | "eins" "og" "stendur" | "sem" "stendur"
+    "nú" | "akkúrat"? "núna" | "eins" "og" "stendur" | "sem" "stendur"
     | "í" "augnablikinu" | "á" "þessari" "stundu" | "hér" "og" "nú"
 
 $score(+35) QUserLocation

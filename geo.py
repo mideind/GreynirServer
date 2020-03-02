@@ -419,11 +419,12 @@ def isocode_for_country_name(country_name, lang=ICELANDIC_LANG_ISOCODE):
         name in the specified language (two-char ISO 639-1). """
     assert len(lang) == 2
     lang = lang.lower()
-    # Hardcoded mappings take precedence
-    if lang in COUNTRY_NAME_TO_ISOCODE_ADDITIONS:
-        return COUNTRY_NAME_TO_ISOCODE_ADDITIONS[lang].get(country_name)
     if lang not in available_languages():
         return None
+    # Hardcoded mappings take precedence
+    if lang in COUNTRY_NAME_TO_ISOCODE_ADDITIONS:
+        if country_name in COUNTRY_NAME_TO_ISOCODE_ADDITIONS[lang]:
+            return COUNTRY_NAME_TO_ISOCODE_ADDITIONS[lang][country_name]
     countries = countries_for_language(lang)  # This is cached by module
     uc_cn = capitalize_placename(country_name)
     for iso_code, name in countries:
@@ -653,7 +654,7 @@ def capitalize_placename(pn):
     )
     # Uppercase each component in words containing a hyphen
     # e.g. "norður-makedónía" -> "Norður-Makedónía"
-    ucpn = "-".join([c[0].upper() + c[1:] for c in ucpn.strip().split("-")])
+    ucpn = "-".join([c[0].upper() + c[1:] for c in ucpn.split("-")])
     return ucpn
 
 

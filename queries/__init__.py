@@ -463,7 +463,7 @@ _MAPS_API_TRAVELTIME_URL = (
     "?units=metric&origins={0}&destinations={1}&mode={2}&key={3}&language=is&region=is"
 )
 
-_TRAVEL_MODES = ["walking", "driving", "bicycling", "transit"]
+_TRAVEL_MODES = frozenset(("walking", "driving", "bicycling", "transit"))
 
 
 def query_traveltime_api(startloc, endloc, mode="walking"):

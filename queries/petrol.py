@@ -154,7 +154,8 @@ QPetrolHas →
     "er" "með" | "hefur" | "býður" "upp" "á"
 
 QPetrolPetrol →
-    "bensín" | "bensínið" | "eldsneyti" | "eldsneytið" | "dísel" | "díselið"
+    "bensín" | "bensínið" | "eldsneyti" | "eldsneytið" | "dísel" | "díselið" 
+    | "díselolía" | "díselolíu"
 
 QPetrolClosest →
     "næsta" | "nálægasta"
@@ -223,11 +224,9 @@ def _get_petrol_station_data():
         return None
 
     # Fix company names
-    # TODO: Do this pythonically!
     for s in pd["results"]:
-        name = s.get("company")
-        if name in _COMPANY_NAME_FIXES:
-            s["company"] = _COMPANY_NAME_FIXES[name]
+        name = s.get("company", "")
+        s["company"] = _COMPANY_NAME_FIXES.get(name, name)
 
     return pd["results"]
 
@@ -307,6 +306,7 @@ def _answ_for_petrol_query(q, result):
     if (
         not station
         or not "bensin95" in station
+        or not "diesel" in station
         or (req_distance and "distance" not in station)
     ):
         return gen_answer(_ERRMSG)
@@ -316,7 +316,7 @@ def _answ_for_petrol_query(q, result):
 
     if req_distance:
         answ_fmt = "{0} {1} ({2}, bensínverð {3}, díselverð {4})"
-        voice_fmt = "{0} er {1} {2} í u.þ.b. {3} fjarlægð. Þar kostar bensínlítrinn {4} og dísel-lítrinn {5}."
+        voice_fmt = "{0} er {1} {2} í um það bil {3} fjarlægð. Þar kostar bensínlítrinn {4} og dísel-lítrinn {5}."
         dist_nf = distance_desc(station["distance"], case="nf")
         dist_þf = distance_desc(station["distance"], case="þf")
         answer = answ_fmt.format(

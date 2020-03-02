@@ -592,7 +592,7 @@ def query_title(query, session, title):
         # Store the person name in the query context
         # so it can be referred to in subsequent queries
         query.set_context({"person_name": answer})
-        if "sources" in first_response and len(first_response["sources"]):
+        if first_response.get("sources"):
             first_source = first_response["sources"][0]["domain"]
             query.set_source(first_source)
     else:

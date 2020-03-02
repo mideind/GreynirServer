@@ -64,25 +64,36 @@ def help_text(lemma):
 HANDLE_TREE = True
 
 # The context-free grammar for the queries recognized by this plug-in module
+# Uses "QSch" as prefix for grammar namespace
 GRAMMAR = """
 
 Query →
     QSchedule '?'?
 
 QSchedule →
-    QScheduleTV
-    # | QScheduleRadio
+    QScheduleTV | QScheduleRadio
 
 QScheduleTV →
-    QTelevisionQuery
-    | QTelevisionEveningQuery
+    QSchTelevisionQuery
+    | QSchTelevisionEveningQuery
 
-QTelevisionQuery →
+QSchTelevisionQuery →
     QSchWhatIsNom QSchEiginlega? QSchGoingOn? QSchOnTV QSchNow?
     | QSchWhatIsDative QSchEiginlega? QSchBeingShown QSchOnTV QSchNow?
-    | "dagskrá" QSchBeingShown? QSchOnTV? 
-    | "dagskrá" QSchGoingOn? QSchOnTV? 
-    | "hvað" "er" "á" "dagskrá" QSchOnTV
+    | "dagskrá" QSchBeingShown? QSchOnTV? QSchNow?
+    | "dagskrá" QSchGoingOn? QSchOnTV? QSchNow?
+    | QSchWhatIsNom "á" "dagskrá" QSchOnTV QSchNow?
+
+QSchTelevisionEveningQuery →
+   "hvað" "er" QSchEiginlega? QSchOnSchedule? QSchOnTV QSchThisEvening
+   | "hvernig" "er" QSchEiginlega? QSchTheSchedule QSchOnTV? QSchThisEvening
+   | "hver" "er" QSchEiginlega? QSchTheSchedule QSchOnTV? QSchThisEvening
+
+QScheduleRadio →
+    QSchRadioStationNowQuery
+
+QSchRadioStationNowQuery →
+    QSchWhatIsNom QSchEiginlega? "á" QRadioStation
 
 QSchWhatIsNom →
     "hvað" "er" | "hvaða" "þáttur" "er" | "hvaða" "dagskrárliður" "er" | "hvaða" "efni" "er"
@@ -91,8 +102,27 @@ QSchWhatIsDative →
     "hvað" "er" | "hvaða" "þátt" "er" | "hvaða" "dagskrárlið" "er" | "hvaða" "efni" "er"
 
 QSchOnTV →
-    "í" "sjónvarpinu" | "á" "rúv" | "í" "ríkissjónvarpinu" 
-    | "á" "stöð" "eitt" | "hjá"? "rúv" | "sjónvarpsins"
+    QSchOnRUV | QSchOnStod2
+
+QSchOnRUV →
+    "í" "sjónvarpinu" | "á" "rúv" | "í" "ríkissjónvarpinu"
+    | "á" "stöð" "eitt" | "hjá"? "rúv" | "sjónvarpsins" | "sjónvarps"
+
+QSchOnStod2 →
+    "á" "stöð" "tvö" | "á" "stöð" "2"
+
+QSchOnRadio →
+    "í" "útvarpinu" | "í" "ríkisútvarpinu" | "á" "ríkisútvarpinu"
+
+# Supported radio stations
+QRadioStation →
+    QSchRas1 | QSchRas2
+
+QSchRas2 →
+    "rás" "tvö" | "rás" "2"
+
+QSchRas1 →
+    "rás" "eitt" | "rás" "1"
 
 QSchNow →
     "nákvæmlega"? "núna" | "eins" "og" "stendur" | "í" "augnablikinu"
@@ -119,23 +149,18 @@ QSchTheSchedule →
 QSchThisEvening →
     "núna"? "í" "kvöld"
 
-QTelevisionEveningQuery →
-   "hvað" "er" QSchEiginlega? QSchOnSchedule? QSchOnTV QSchThisEvening
-   | "hvernig" "er" QSchEiginlega? QSchTheSchedule QSchOnTV? QSchThisEvening
-   | "hver" "er" QSchEiginlega? QSchTheSchedule QSchOnTV? QSchThisEvening
-
 $score(+55) QSchedule
 
 """
 
 
-def QTelevisionQuery(node, params, result):
+def QSchTelevisionQuery(node, params, result):
     # Set the query type
     result.qtype = _SCHEDULES_QTYPE
     result.qkey = _TELEVISION_QKEY
 
 
-def QTelevisionEveningQuery(node, params, result):
+def QSchTelevisionEveningQuery(node, params, result):
     # Set the query type
     result.qtype = _SCHEDULES_QTYPE
     result.qkey = _TELEVISION_EVENING_QKEY
@@ -217,7 +242,7 @@ def _gen_curr_program_answer(q):
         return gen_answer("Það er engin dagskrá á RÚV núna.")
 
     title = prog["title"]
-    ep = "" if "fréttir" in title.lower() else "þáttinn "
+    ep = "" if "fréttir" in title.lower() else ""
     answ = "RÚV er að sýna {0}{1}. {2}.".format(
         ep, title, _clean_desc(prog["description"])
     )
@@ -232,7 +257,7 @@ def _gen_evening_program_answer(q):
 
     prog = _evening_prog(sched)
     if not prog:
-        return gen_answer("Það er enginn þáttur eftir á dagskránni.")
+        return gen_answer("Það er enginn liður eftir á dagskrá RÚV.")
 
     answ = ["Klukkan"]
     for p in prog:

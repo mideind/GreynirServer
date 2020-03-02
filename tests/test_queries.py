@@ -394,15 +394,24 @@ def test_query_api(client):
     assert re.search(r"^\d\d:\d\d$", json["answer"])
     assert json["voice"].lower().startswith("klukkan í japan er")
 
-    # Television module
+    # Schedules module
     json = qmcall(c, {"q": "hvað er í sjónvarpinu núna", "voice": True})
-    assert json["qtype"] == "Television"
+    assert json["qtype"] == "Schedule"
 
     json = qmcall(c, {"q": "Hvaða þáttur er eiginlega á rúv núna"})
-    assert json["qtype"] == "Television"
+    assert json["qtype"] == "Schedule"
 
     json = qmcall(c, {"q": "hvað er í sjónvarpinu í kvöld?"})
-    assert json["qtype"] == "TelevisionEvening"
+    assert json["qtype"] == "Schedule"
+
+    json = qmcall(c, {"q": "hver er sjónvarpsdagskráin í kvöld?"})
+    assert json["qtype"] == "Schedule"
+
+    # json = qmcall(c, {"q": "hvað er eiginlega í gangi á rás eitt?"})
+    # assert json["qtype"] == "Schedule"
+
+    # json = qmcall(c, {"q": "hvað er á daskrá á rás 2?"})
+    # assert json["qtype"] == "Schedule"
 
     # json = qmcall(c, {"q": "Hvað er í sjónvarpinu núna í kvöld?"})
     # assert json["qtype"] == "TelevisionEvening"

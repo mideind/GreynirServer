@@ -35,13 +35,13 @@ from queries import gen_answer, query_json_api
 _NEWS_QTYPE = "News"
 
 
-TOPIC_LEMMAS = ["fréttir", "fregnir", "handahóf"]
+TOPIC_LEMMAS = ["fréttir", "fregnir", "frétta"]
 
 
 def help_text(lemma):
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
-    return "Ég skil þig ef þú segir til dæmis: {0}?".format(
+    return "Ég skil þig ef þú spyrð til dæmis: {0}?".format(
         random.choice(("Hvað er í fréttum", "Hvað er að frétta"))
     )
 
@@ -61,14 +61,18 @@ QNewsQuery →
 
 QNewsLatest →
     QNewsTellMe? QNewsQualifiersDef? "fréttir"
-    | QNewsTellMe? "hvað" "er" QNewsQualifiers? "í" "fréttum" QNewsRUV? "núna"?
-    | QNewsTellMe? "hvað" "er" QNewsQualifiers? "að" "frétta" QNewsRUV? "núna"?
-    | QNewsTellMe? "hvaða" "fréttir" "eru" QNewsQualifiers? QNewsRUV "núna"?
-    | QNewsTellMe? "hverjar" "eru" QNewsQualifiersDef? "fréttir" QNewsRUV? "núna"?
-    | QNewsTellMe? "hverjar" "eru" QNewsQualifiersDef? "fréttirnar" QNewsRUV? "núna"?
+    | QNewsTellMe? "hvað" "er" QNewsQualifiers? "í" "fréttum" QNewsRUV? QNewsNow?
+    | QNewsTellMe? "hvað" "er" QNewsQualifiers? "að" "frétta" QNewsRUV? QNewsNow?
+    | QNewsTellMe? "hvað" "er" "að" "gerast" QNewsNow?
+    | QNewsTellMe? "hvaða" "fréttir" "eru" QNewsQualifiers? QNewsRUV QNewsNow?
+    | QNewsTellMe? "hverjar" "eru" QNewsQualifiersDef? "fréttir" QNewsRUV? QNewsNow?
+    | QNewsTellMe? "hverjar" "eru" QNewsQualifiersDef? "fréttirnar" QNewsRUV? QNewsNow?
 
 QNewsTellMe →
     "segðu" "mér" | "geturðu" "sagt" "mér"
+
+QNewsNow →
+    "núna" | "þessa" "stundina"
 
 QNewsQualifiers →
     "helst" | "eiginlega" | "núna" | "nýjast"
@@ -115,11 +119,12 @@ def _get_news_data(max_items=8):
 
 
 def _clean_text(txt):
-    txt = txt.replace("\r", "").replace("\n", "")
+    txt = txt.replace("\r", " ").replace("\n", " ").replace("  ", " ")
     return txt.strip()
 
 
 _BREAK_LENGTH = 1.0  # Seconds
+_BREAK_SSML = '<break time="{0}s"/>'.format(_BREAK_LENGTH)
 
 
 def top_news_answer():
@@ -130,8 +135,7 @@ def top_news_answer():
     items = [_clean_text(h["intro"]) + " " for h in headlines]
     news = "".join(items).strip()
     # Add a pause between individual news items
-    br = '<break time="{0}s"/>'.format(_BREAK_LENGTH)
-    voice_news = br.join(items).strip()
+    voice_news = _BREAK_SSML.join(items).strip()
 
     answer = news
     voice = "Í fréttum rúv er þetta helst: {0}".format(voice_news)
@@ -153,7 +157,7 @@ def sentence(state, result):
             if res:
                 q.set_answer(*res)
             else:
-                errmsg = "Ekki tókst að sækja upplýsingar um fréttir".format()
+                errmsg = "Ekki tókst að sækja fréttir"
                 q.set_answer(gen_answer(errmsg))
                 q.set_source("RÚV")
         except Exception as e:

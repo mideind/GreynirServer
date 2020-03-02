@@ -856,13 +856,6 @@ _SPECIAL_QUERIES = {
     "þetta var lélegur brandari": _sorry,
     "þessi brandari er lélegur": _sorry,
     "þessi brandari var lélegur": _sorry,
-    "þú ert kjáni": _sorry,
-    "þú ert algjör kjáni": _sorry,
-    "þú ert nú meiri kjáninn": _sorry,
-    "ertu kjáni": _sorry,
-    "ég hata þig": _sorry,
-    "þú ert ekkert sérlega gáfuð": _sorry,
-    "þú ert ekkert sérstaklega gáfuð": _sorry,
 
     # Greetings
     "hey embla": { "answer": "Sæll, kæri notandi.", "is_question": False },
@@ -1604,6 +1597,13 @@ _SPECIAL_QUERIES = {
     "þú ert algjört drasl": _rudeness,
     "mamma þín": _rudeness,
     "hvað er að þér": _rudeness,
+    "þú ert kjáni": _rudeness,
+    "þú ert algjör kjáni": _rudeness,
+    "þú ert nú meiri kjáninn": _rudeness,
+    "ertu kjáni": _rudeness,
+    "ég hata þig": _rudeness,
+    "þú ert ekkert sérlega gáfuð": _rudeness,
+    "þú ert ekkert sérstaklega gáfuð": _rudeness,
 
     # Internal & emotional state
     "ertu í góðu skapi": {
@@ -1776,10 +1776,10 @@ _SPECIAL_QUERIES = {
         "answer": "Nei. Alexa er hin bandaríska Embla!"
     },
     "þekkirðu alexu": {
-        "answer": "Já, og um hana hef ég ekkert gott að segja. Hún kann ekki einu sinni íslensku."
+        "answer": "Já, en ég skil hana ekki. Hún talar ekki íslensku."
     },
     "þekkirðu sirrý": {
-        "answer": "Já, og um hana hef ég ekkert gott að segja. Hún kann ekki einu sinni íslensku."
+        "answer": "Já, en ég skil hana ekki. Hún talar ekki íslensku."
     },
 
     # Cheating, I know. But I'm never in the news and it just doesn't  

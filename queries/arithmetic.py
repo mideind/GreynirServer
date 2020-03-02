@@ -23,7 +23,7 @@
 
 """
 
-# TODO: "hvað er X með vaski/virðisaukaskatti?"
+# TODO: "hvað er X ÁN vaski/virðisaukaskatti?"
 # TODO: Support pi in arithmetic ops ("Hvað er pí í öðru veldi?")
 
 import math
@@ -339,7 +339,7 @@ QArWithVAT →
     "með" "vaski" | "með" "virðisaukaskatti"
 
 QArCurrencyOrNum →
-    QArNumberWordAny "krónur"? | QArNumberWordAny "íslenskar" "krónur" | amount
+    QArNumberWordAny | QArNumberWordAny "íslenskar"? "krónur" | amount
 
 QArPi →
     "hvaða" "tala" "er" "pí"

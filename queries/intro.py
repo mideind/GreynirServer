@@ -33,14 +33,12 @@ from reynir.bindb import BIN_Db
 _INTRO_QTYPE = "Introduction"
 
 
-_MY_NAME_IS_REGEXES = frozenset(
-    (
-        r"^ég heiti (.+)$",
-        r"^nafn mitt er (.+)$",
-        r"^nafnið mitt er (.+)$",
-        r"^ég ber heitið (.+)$",
-        r"^ég ber nafnið (.+)$",
-    )
+_MY_NAME_IS_REGEXES = (
+    r"^ég heiti (.+)$",
+    r"^nafn mitt er (.+)$",
+    r"^nafnið mitt er (.+)$",
+    r"^ég ber heitið (.+)$",
+    r"^ég ber nafnið (.+)$",
 )
 
 _RESPONSES = {

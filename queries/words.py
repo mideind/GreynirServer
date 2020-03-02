@@ -108,7 +108,7 @@ _DECLENSION_RX = (
     r"^hvernig beygirðu {0} (.+)$".format(_WORDTYPE_RX_NOM),
     r"^hvernig fallbeygirðu {0} (.+)$".format(_WORDTYPE_RX_NOM),
     r"^hvernig á að beygja {0} (.+)$".format(_WORDTYPE_RX_NOM),
-    r"^hvernig á að falbeygja {0} (.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig á að fallbeygja {0} (.+)$".format(_WORDTYPE_RX_NOM),
     r"^hvernig á ég að beygja {0} (.+)$".format(_WORDTYPE_RX_NOM),
     r"^hvernig á ég að fallbeygja {0} (.+)$".format(_WORDTYPE_RX_NOM),
     r"^hvernig á maður að beygja {0} (.+)$".format(_WORDTYPE_RX_NOM),

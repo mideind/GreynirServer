@@ -396,18 +396,21 @@ def QDateAbsOrRel(node, params, result):
     if datenode:
         y, m, d = datenode.contained_date
         now = datetime.utcnow()
-        if not y:
-            y = now.year
+        
         # This is a date that contains at least month & mday
         if d and m:
-            # Bump year if month/day in the past
-            if m < now.month or (m == now.month and d < now.day):
-                y += 1
+            if not y:
+                y = now.year
+                # Bump year if month/day in the past
+                if m < now.month or (m == now.month and d < now.day):
+                    y += 1
             result["target"] = datetime(day=d, month=m, year=y)
         # Only contains month
         elif m:
-            if m < now.month:
-                y += 1
+            if not y:
+                y = now.year
+                if m < now.month:
+                    y += 1
             ndays = monthrange(y, m)[1]
             result["days_in_month"] = ndays
             result["target"] = datetime(day=1, month=m, year=y)
@@ -807,7 +810,7 @@ def sentence(state, result):
 
     # Successfully matched a query type
     try:
-        with changedlocale(category="LC_ALL"):
+        with changedlocale(category="LC_TIME"):
             # Get timezone and date
             # TODO: Restore correct timezone handling
             # tz = timezone4loc(q.location, fallback="IS")
