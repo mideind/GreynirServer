@@ -66,7 +66,7 @@ def test_routes(client):
             # Make request for each method supported by route
             method = getattr(client, m.lower())
             resp = method(route)
-            assert resp.status == "200 OK"
+            assert resp.status in ("200 OK", "202 ACCEPTED")
 
 
 API_CONTENT_TYPE = "application/json"
