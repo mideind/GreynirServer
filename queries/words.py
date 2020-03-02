@@ -30,6 +30,7 @@
 # TODO: Declension queries should support adjectives etc.
 # TODO: Beautify query by placing word being asked about within quotation marks
 # TODO: Handle numbers ("3" should be spelled as "þrír" etc.)
+# TODO "Hvaða orð rímar við X"
 
 import re
 import logging
@@ -85,8 +86,13 @@ _WORDTYPE_RX_GEN = "(?:orðsins|nafnsins|nafnorðsins)"
 
 _SPELLING_RX = (
     r"^hvernig stafsetur maður {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig stafset ég {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig stafa ég {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig stafar þú {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig stafarðu {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
     r"^hvernig skal stafsetja {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
     r"^hvernig skrifar maður {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig skrifa ég {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
     r"^hvernig stafar maður {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
     r"^hvernig er {0}?\s?(.+) stafsett$".format(_WORDTYPE_RX_NOM),
     r"^hvernig er {0}?\s?(.+) skrifað$".format(_WORDTYPE_RX_NOM),
@@ -98,14 +104,23 @@ _SPELLING_RX = (
 
 _DECLENSION_RX = (
     r"^hvernig beygi ég {0} (.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig fallbeygi ég {0} (.+)$".format(_WORDTYPE_RX_NOM),
     r"^hvernig beygirðu {0} (.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig fallbeygirðu {0} (.+)$".format(_WORDTYPE_RX_NOM),
     r"^hvernig á að beygja {0} (.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig á að fallbeygja {0} (.+)$".format(_WORDTYPE_RX_NOM),
     r"^hvernig á ég að beygja {0} (.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig á ég að fallbeygja {0} (.+)$".format(_WORDTYPE_RX_NOM),
     r"^hvernig á maður að beygja {0} (.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig á maður að fallbeygja {0} (.+)$".format(_WORDTYPE_RX_NOM),
     r"^hvernig beygir maður {0} (.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig fallbeygir maður {0} (.+)$".format(_WORDTYPE_RX_NOM),
     r"^hvernig beygist {0} (.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig fallbeygist {0} (.+)$".format(_WORDTYPE_RX_NOM),
     r"^hvernig skal beygja {0} (.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig skal fallbeygja {0} (.+)$".format(_WORDTYPE_RX_NOM),
     r"^hvernig er {0} (.+) beygt$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig er {0} (.+) fallbeygt$".format(_WORDTYPE_RX_NOM),
     r"^hverjar eru beygingarmyndir {0} (.+)$".format(_WORDTYPE_RX_GEN),
     r"^hvað eru beygingarmyndir {0} (.+)$".format(_WORDTYPE_RX_GEN),
 )

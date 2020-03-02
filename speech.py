@@ -56,7 +56,7 @@ _AUDIO_FORMATS = frozenset(("mp3", "ogg_vorbis", "pcm"))
 _DEFAULT_TEXT_FORMAT = "ssml"
 _TEXT_FORMATS = frozenset(("text", "ssml"))
 
-_AWS_URL_TTL = 900  # 15 mins in seconds
+_AWS_URL_TTL = 300  # 5 mins in seconds
 
 
 def _intialize_client():

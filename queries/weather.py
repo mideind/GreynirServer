@@ -198,9 +198,12 @@ QWeatherTemperature →
     | "hversu" "margra" "stiga" "frost" "er" QWeatherAnyLoc? QWeatherNow?
     | "hve" "margra" "stiga" "hiti" "er" QWeatherAnyLoc? QWeatherNow?
     | "hve" "margra" "stiga" "frost" "er" QWeatherAnyLoc? QWeatherNow?
-    | "er" "heitt" "úti"? QWeatherAnyLoc? QWeatherNow?
+    | "er" "mjög"? "heitt" "úti"? QWeatherAnyLoc? QWeatherNow?
+    | "er" "mjög"? "kalt" "úti"? QWeatherAnyLoc? QWeatherNow?
+    | "er" "mikill"? "kuldi" "úti"? QWeatherAnyLoc? QWeatherNow?
+    | "er" "mikill"? "hiti" "úti"? QWeatherAnyLoc? QWeatherNow?
+    | "er" "mikið"? "frost" "úti"? QWeatherAnyLoc? QWeatherNow?
     | "er" "fyrir" "ofan" "frostmark" "úti"? QWeatherAnyLoc? QWeatherNow?
-    | "er" "frost" QWeatherAnyLoc? QWeatherNow?
     | "er" "fyrir" "neðan" "frostmark" "úti"? QWeatherAnyLoc? QWeatherNow?
 
 QWeatherWind →
@@ -459,24 +462,6 @@ def _curr_observations(query, result):
 _API_ERRMSG = "Ekki tókst að sækja veðurupplýsingar."
 
 
-def get_currtemp_answer(query, result):
-    """ Handle queries concerning temperature """
-    res = _curr_observations(query, result)
-    if not res:
-        return gen_answer(_API_ERRMSG)
-
-    temp = int(round(float(res["T"])))  # Round to nearest whole number
-    temp_type = "hiti" if temp >= 0 else "frost"
-
-    locdesc = result.get("subject") or "Úti"
-
-    voice = "{0} er {1} stiga {2}".format(locdesc.capitalize(), abs(temp), temp_type)
-    answer = "{0}°".format(temp)
-    response = dict(answer=answer)
-
-    return response, answer, voice
-
-
 def get_currweather_answer(query, result):
     """ Handle queries concerning current weather conditions """
     res = _curr_observations(query, result)
@@ -650,7 +635,7 @@ def QWeatherForecast(node, params, result):
 
 
 def QWeatherTemperature(node, params, result):
-    result.qkey = "CurrentTemperature"
+    result.qkey = "CurrentWeather"
 
 
 def QWeatherUmbrella(node, params, result):
@@ -658,7 +643,6 @@ def QWeatherUmbrella(node, params, result):
 
 
 _HANDLERS = {
-    "CurrentTemperature": get_currtemp_answer,
     "CurrentWeather": get_currweather_answer,
     "WeatherForecast": get_forecast_answer,
     "Umbrella": get_umbrella_answer,

@@ -127,8 +127,12 @@ def test_tnttagger():
 
 def test_geo():
     """ Test geography and location-related functions in geo.py """
+    assert lookup_city_info("Kænugarður")[0]["country"] == "UA"
+    assert icelandic_city_name("London") == "Lundúnir"
     assert continent_for_country("IS") == "EU"
+    assert continent_for_country("no") == "EU"
     assert coords_for_country("DE") != None
+    assert coords_for_country("it") != None
     assert coords_for_street_name("Austurstræti") != None
     assert country_name_for_isocode("DE", lang="is") == "Þýskaland"
     assert isocode_for_country_name("Danmörk", lang="is") == "DK"
@@ -163,13 +167,23 @@ def test_geo():
     assert iceprep_for_cc("IS") == "á"
     assert iceprep_for_cc("US") == "í"
     assert iceprep_for_cc("ES") == "á"
+    assert iceprep_for_cc("es") == "á"
 
     assert iceprep_for_country("Ítalía") == "á"
     assert iceprep_for_country("Ísland") == "á"
     assert iceprep_for_country("Þýskaland") == "í"
+    assert iceprep_for_country("Japan") == "í"
+    assert iceprep_for_country("spánn") == "á"
 
     assert capitalize_placename("ríó de janeiro") == "Ríó de Janeiro"
     assert capitalize_placename("vík í mýrdal") == "Vík í Mýrdal"
+    assert capitalize_placename("Vík í mýrdal") == "Vík í Mýrdal"
+    assert capitalize_placename("frankfúrt am main") == "Frankfúrt am Main"
+    assert capitalize_placename("mið-afríkulýðveldið") == "Mið-Afríkulýðveldið"
+    assert capitalize_placename("Norður-kórea") == "Norður-Kórea"
+    assert capitalize_placename("norður-Kórea") == "Norður-Kórea"
+    assert capitalize_placename("bosnía og hersegóvína") == "Bosnía og Hersegóvína"
+    assert capitalize_placename("Norður-Makedónía") == "Norður-Makedónía"
 
 
 def test_doc():

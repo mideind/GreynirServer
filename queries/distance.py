@@ -52,12 +52,12 @@ _QDISTANCE_REGEXES = (
     r"^hvað er ég langt í burtu frá (.+)$",
     r"^hversu langt er ég frá (.+)$",
     r"^hve langt er ég frá (.+)$",
-    r"^hvað er langt\s?(?:austur|vestur|norður|suður)? á (.+)$",
-    r"^hvað er langt upp á (.+)$",
-    r"^hvað er langt\s?(?:austur|vestur|norður|suður)? í ([^0-9.].+)$",
-    r"^hvað er langt upp í (.+)$",
-    r"^hvað er langt til (.+)$",
-    r"^hvað er langt út á ([^0-9.].+)$",
+    r"^hvað er langt\s?(?:héðan)?\s?(?:austur|vestur|norður|suður)? á (.+)$",
+    r"^hvað er langt\s?(?:héðan)? upp á (.+)$",
+    r"^hvað er langt\s?(?:héðan)?\s?(?:austur|vestur|norður|suður)? í ([^0-9.].+)$",
+    r"^hvað er langt\s?(?:héðan)? upp í (.+)$",
+    r"^hvað er langt\s?(?:héðan)? til (.+)$",
+    r"^hvað er langt\s?(?:héðan)? út á ([^0-9.].+)$",
     r"^hversu langt er\s?(?:austur|vestur|norður|suður)? til (.+)$",
     r"^hversu langt er út á (.+)$",
 )
@@ -237,12 +237,14 @@ def traveltime_answer_for_loc(matches, query):
     elm = res["rows"][0]["elements"][0]
     if elm["status"] != "OK":
         return None
+
     # dur_desc = elm["duration"]["text"]
     dur_sec = int(elm["duration"]["value"])
     dur_desc = time_period_desc(dur_sec, case="þf")
+    dist_desc = elm["distance"]["text"]
 
     # Generate answer
-    answer = dur_desc + "."
+    answer = "{0} ({1}).".format(dur_desc, dist_desc)
     response = dict(answer=answer)
     voice = "Að {0} tekur um það bil {1}".format(action_desc, dur_desc)
 

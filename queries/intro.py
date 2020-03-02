@@ -33,7 +33,13 @@ from reynir.bindb import BIN_Db
 _INTRO_QTYPE = "Introduction"
 
 
-_MY_NAME_IS_REGEX = r"^ég heiti (.+)$"
+_MY_NAME_IS_REGEXES = (
+    r"^ég heiti (.+)$",
+    r"^nafn mitt er (.+)$",
+    r"^nafnið mitt er (.+)$",
+    r"^ég ber heitið (.+)$",
+    r"^ég ber nafnið (.+)$",
+)
 
 _RESPONSES = {
     "hk": "Gaman að kynnast þér, {0}. Ég heiti Embla.",
@@ -45,7 +51,11 @@ _RESPONSES = {
 def handle_plain_text(q):
     ql = q.query_lower.rstrip("?")
 
-    m = re.search(_MY_NAME_IS_REGEX, ql)
+    for rx in _MY_NAME_IS_REGEXES:
+        m = re.search(rx, ql)
+        if m:
+            break
+
     if not m:
         return False
 
@@ -61,7 +71,8 @@ def handle_plain_text(q):
         gender = bdb.lookup_name_gender(fn)
         a = _RESPONSES[gender].format(fn)
 
-    q.set_answer(dict(answer=a), a, a)
+    voice = a.replace(",", "")
+    q.set_answer(dict(answer=a), a, voice)
     q.set_qtype(_INTRO_QTYPE)
 
     return True

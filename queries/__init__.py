@@ -31,6 +31,8 @@ import os
 import re
 import locale
 import math
+from urllib.parse import urlencode
+from functools import lru_cache
 
 from tzwhere import tzwhere
 from pytz import country_timezones
@@ -127,6 +129,11 @@ _NUMBER_WORDS = {
 
 def parse_num(node, num_str):
     """ Parse Icelandic number string to float or int """
+
+    # Hack to handle the word "eina" being identified as f. name "Eina"
+    if num_str in ["Eina", "Einu"]:
+        return 1
+
     # If we have a number token as a direct child,
     # return its numeric value directly
     num = node.child.contained_number
@@ -425,8 +432,9 @@ def query_geocode_api_coords(lat, lon):
         return None
 
     # Send API request
-    url = _MAPS_API_COORDS_URL.format(lat, lon, key)
-    return query_json_api(url)
+    res = query_json_api(_MAPS_API_COORDS_URL.format(lat, lon, key))
+
+    return res
 
 
 _MAPS_API_ADDR_URL = (
@@ -445,23 +453,29 @@ def query_geocode_api_addr(addr):
         return None
 
     # Send API request
-    url = _MAPS_API_ADDR_URL.format(addr, key)
-    return query_json_api(url)
+    res = query_json_api(_MAPS_API_ADDR_URL.format(addr, key))
+
+    return res
 
 
-_MAPS_API_DISTANCE_URL = (
+_MAPS_API_TRAVELTIME_URL = (
     "https://maps.googleapis.com/maps/api/distancematrix/json"
     "?units=metric&origins={0}&destinations={1}&mode={2}&key={3}&language=is&region=is"
 )
 
+_TRAVEL_MODES = frozenset(("walking", "driving", "bicycling", "transit"))
+
 
 def query_traveltime_api(startloc, endloc, mode="walking"):
     """ Look up travel time between two places, given a particular mode
-        of transportation, e.g. "walking", "driving, "bicycling", "transit".
+        of transportation, i.e. one of the modes in _TRAVEL_MODES.
         The location arguments can be names, to be resolved by the API, or
         a tuple of coordinates, e.g. (64.156742, -21.949426)
-        Uses Google Maps' Distance Matrix API. For details, see:
-        https://developers.google.com/maps/documentation/distance-matrix/intro """
+        Uses Google Maps' Distance Matrix API. For more info, see:
+        https://developers.google.com/maps/documentation/distance-matrix/intro
+    """
+    assert mode in _TRAVEL_MODES
+
     # Load API key
     key = _get_google_api_key()
     if not key:
@@ -469,12 +483,88 @@ def query_traveltime_api(startloc, endloc, mode="walking"):
         logging.warning("No API key for travel time lookup")
         return None
 
+    # Format query string args
     p1 = "{0},{1}".format(*startloc) if type(startloc) is tuple else startloc
     p2 = "{0},{1}".format(*endloc) if type(endloc) is tuple else endloc
 
     # Send API request
-    url = _MAPS_API_DISTANCE_URL.format(p1, p2, mode, key)
-    return query_json_api(url)
+    res = query_json_api(_MAPS_API_TRAVELTIME_URL.format(p1, p2, mode, key))
+
+    return res
+
+
+_PLACES_API_URL = (
+    "https://maps.googleapis.com/maps/api/place/findplacefromtext/json?{0}"
+)
+
+_PLACES_LOCBIAS_RADIUS = 2000  # Metres
+
+
+def query_places_api(
+    placename, userloc=None, radius=_PLACES_LOCBIAS_RADIUS, fields=None
+):
+    """ Look up a placename in Google's Places API. For details, see:
+        https://developers.google.com/places/web-service/search """
+
+    if not fields:
+        # Default fields requested from API
+        fields = "place_id,opening_hours,geometry/location,formatted_address"
+
+    # Load API key
+    key = _get_google_api_key()
+    if not key:
+        # No key, can't query the API
+        logging.warning("No API key for Google Places lookup")
+        return None
+
+    # Generate query string
+    qdict = {
+        "input": placename,
+        "inputtype": "textquery",
+        "fields": fields,
+        "key": key,
+        "language": "is",
+    }
+    if userloc:
+        qdict["locationbias"] = "circle:{0}@{1},{2}".format(
+            radius, userloc[0], userloc[1]
+        )
+    qstr = urlencode(qdict)
+
+    # Send API request
+    url = _PLACES_API_URL.format(qstr)
+    res = query_json_api(url)
+
+    return res
+
+
+_PLACEDETAILS_API_URL = "https://maps.googleapis.com/maps/api/place/details/json?{0}"
+
+
+@lru_cache(maxsize=32)
+def query_place_details(place_id, fields=None):
+    """ Look up place details by ID in Google's Place Details API. If "fields"
+        parameter is omitted, *all* fields are returned. For details, see
+        https://developers.google.com/places/web-service/details """
+
+    # Load API key
+    key = _get_google_api_key()
+    if not key:
+        # No key, can't query the API
+        logging.warning("No API key for Google Place Details lookup")
+        return None
+
+    # Generate query string
+    qdict = {"place_id": place_id, "key": key, "language": "is"}
+    if fields:
+        qdict["fields"] = fields
+    qstr = urlencode(qdict)
+
+    # Send API request
+    url = _PLACEDETAILS_API_URL.format(qstr)
+    res = query_json_api(url)
+
+    return res
 
 
 _TZW = None
