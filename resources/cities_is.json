@@ -69,7 +69,6 @@
   "Bagdad": "Baghdad",
   "París": "Paris",
   "Singapúr": "Singapore",
-  "Sjanghæ": "Shanghai",
   "Aleppó": "Aleppo",
   "Lúanda": "Luanda",
   "Líma": "Lima",
@@ -173,7 +172,6 @@
   "Teheran": "Tehran",
   "Ríad": "Riyadh",
   "Edinborg": "Edinburgh",
-  "Vilníus": "Vilnius",
   "Núrnberg": "Nurnberg",
   "Feneyjar": "Venice",
   "Fíladelfía": "Philadelphia",
@@ -189,5 +187,7 @@
   "Höfðaborg": "Cape Town",
   "Jóhannesarborg": "Johannesburg",
   "Pétursborg": "St. Petersburg",
-  "Sankti Pétursborg": "St. Petersburg"
+  "Sankti Pétursborg": "St. Petersburg",
+  "Veróna": "Verona",
+  "Valensía": "Valencia"
 }

@@ -44,6 +44,7 @@ from speech import get_synthesized_text_url
 
 from . import routes, better_jsonify, text_from_request, bool_from_request, restricted
 from . import _MAX_URL_LENGTH, _MAX_UUID_LENGTH
+from . import async_task
 
 # Maximum number of query string variants
 _MAX_QUERY_VARIANTS = 10
@@ -90,7 +91,7 @@ def analyze_api(version=1):
 
 @routes.route("/correct.api", methods=["GET", "POST"])
 @routes.route("/correct.api/v<int:version>", methods=["GET", "POST"])
-@restricted
+@restricted  # Route is only valid when running on a development server
 def correct_api(version=1):
     """ Correct text provided by the user, i.e. not coming from an article.
         This can be either an uploaded file or a string.
@@ -126,6 +127,51 @@ def correct_api(version=1):
             return better_jsonify(valid=False, reason="Invalid request")
 
     pgs, stats = check_grammar(text)
+
+    # Return the annotated paragraphs/sentences and stats
+    # in a JSON structure to the client
+    return better_jsonify(valid=True, result=pgs, stats=stats, text=text)
+
+
+@routes.route("/correct.task", methods=["POST"])
+@routes.route("/correct.task/v<int:version>", methods=["POST"])
+@restricted  # Route is only valid when running on a development server
+@async_task
+def correct_task(version=1, progress_func=None):
+    """ Correct text provided by the user, i.e. not coming from an article.
+        This can be either an uploaded file or a string.
+        This is a lower level API used by the Greynir web front-end. """
+    if not (1 <= version <= 1):
+        return better_jsonify(valid=False, reason="Unsupported version")
+
+    file = request.files.get("file")
+    if file is not None:
+
+        # file is a Werkzeug FileStorage object
+        mimetype = file.content_type
+        if mimetype not in SUPPORTED_DOC_MIMETYPES:
+            return better_jsonify(valid=False, reason="File type not supported")
+
+        # Create document object from file and extract text
+        try:
+            # Instantiate appropriate class for mime type from file data
+            # filename = werkzeug.secure_filename(file.filename)
+            doc_class = MIMETYPE_TO_DOC_CLASS[mimetype]
+            doc = doc_class(file.read())
+            text = doc.extract_text()
+        except Exception as e:
+            logging.warning("Exception in correct_task(): {0}".format(e))
+            return better_jsonify(valid=False, reason="Error reading file")
+
+    else:
+
+        try:
+            text = text_from_request(request)
+        except Exception as e:
+            logging.warning("Exception in correct_task(): {0}".format(e))
+            return better_jsonify(valid=False, reason="Invalid request")
+
+    pgs, stats = check_grammar(text, progress_func=progress_func)
 
     # Return the annotated paragraphs/sentences and stats
     # in a JSON structure to the client

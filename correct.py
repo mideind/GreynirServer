@@ -60,15 +60,18 @@ class NERCorrect(reynir_correct.ReynirCorrect):
         return pipeline.tokenize()
 
 
-def check_grammar(text):
+def check_grammar(text, *, progress_func=None):
     """ Check the grammar and spelling of the given text and return
         a list of annotated paragraphs, containing sentences, containing
-        tokens """
+        tokens. The progress_func, if given, will be called periodically
+        during processing to indicate progress, with a ratio parameter
+        which is a float in the range 0.0..1.0. """
 
     result = reynir_correct.check_with_custom_parser(
         text,
         split_paragraphs=True,
-        parser_class=NERCorrect
+        parser_class=NERCorrect,
+        progress_func=progress_func
     )
 
     def encode_sentence(sent):
