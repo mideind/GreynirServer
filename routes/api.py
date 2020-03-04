@@ -135,8 +135,8 @@ def correct_api(version=1):
 
 @routes.route("/correct.task", methods=["POST"])
 @routes.route("/correct.task/v<int:version>", methods=["POST"])
-@restricted  # Route is only valid when running on a development server
-@async_task
+@restricted  # This means that the route is only visible on a development server
+@async_task  # This means that the function is automatically run on a separate thread
 def correct_task(version=1, progress_func=None):
     """ Correct text provided by the user, i.e. not coming from an article.
         This can be either an uploaded file or a string.
@@ -147,15 +147,15 @@ def correct_task(version=1, progress_func=None):
     file = request.files.get("file")
     if file is not None:
 
-        # file is a Werkzeug FileStorage object
-        mimetype = file.content_type
+        # Handle uploaded file
+        # file is a proxy object that emulates a Werkzeug FileStorage object
+        mimetype = file.mimetype
         if mimetype not in SUPPORTED_DOC_MIMETYPES:
             return better_jsonify(valid=False, reason="File type not supported")
 
-        # Create document object from file and extract text
+        # Create document object from an uploaded file and extract its text
         try:
-            # Instantiate appropriate class for mime type from file data
-            # filename = werkzeug.secure_filename(file.filename)
+            # Instantiate an appropriate class for the MIME type of the file
             doc_class = MIMETYPE_TO_DOC_CLASS[mimetype]
             doc = doc_class(file.read())
             text = doc.extract_text()
@@ -165,6 +165,7 @@ def correct_task(version=1, progress_func=None):
 
     else:
 
+        # Handle POSTed form data or plain text string
         try:
             text = text_from_request(request)
         except Exception as e:

@@ -18,12 +18,16 @@
 
 
     This module contains all routes for the Greynir Flask web application.
+    It also contains a number of utility functions and decorators,
+    including @async_task which encapsulates a route in an asynchronous
+    wrapper.
 
 """
 
 import threading
 import time
 import uuid
+import io
 from functools import wraps
 from datetime import datetime, timedelta
 
@@ -31,6 +35,7 @@ from flask import (
     Blueprint, jsonify, make_response, current_app, Response,
     abort, request, url_for, _request_ctx_stack
 )
+from flask.ctx import RequestContext
 from werkzeug.exceptions import HTTPException, InternalServerError
 
 
@@ -48,7 +53,8 @@ routes = Blueprint("routes", __name__)
 
 
 def max_age(seconds):
-    """ Caching decorator for Flask - augments response with a max-age cache header """
+    """ Caching decorator for Flask - augments response
+        with a max-age cache header """
 
     def decorator(f):
 
@@ -95,28 +101,31 @@ def better_jsonify(**kwargs):
     return resp
 
 
-def text_from_request(request, *, post_field=None, get_field=None):
+def text_from_request(rq, *, post_field=None, get_field=None):
     """ Return text passed in a HTTP request, either using GET or POST.
         When using GET, the default parameter name is 't'. This can
         be overridden using the get_field parameter.
         When using POST, the default form field name is 'text'. This can
         be overridden using the post_field paramter.
     """
-    if request.method == "POST":
-        if request.headers.get("Content-Type") == "text/plain":
+    if rq.method == "POST":
+        if rq.headers.get("Content-Type") == "text/plain":
             # Accept plain text POSTs, UTF-8 encoded.
             # Example usage:
             # curl -d @example.txt https://greynir.is/postag.api \
             #     --header "Content-Type: text/plain"
-            text = request.data.decode("utf-8")
+            text = rq.data.decode("utf-8")
         else:
             # Also accept form/url-encoded requests:
             # curl -d "text=Í dag er ágætt veður en mikil hálka er á götum." \
             #     https://greynir.is/postag.api
-            text = request.form.get(post_field or "text", "")
+            text = rq.form.get(post_field or "text", "")
         text = text[0:_MAX_TEXT_LENGTH]
+    elif rq.method == "GET":
+        text = rq.args.get(get_field or "t", "")[0:_MAX_TEXT_LENGTH_VIA_URL]
     else:
-        text = request.args.get(get_field or "t", "")[0:_MAX_TEXT_LENGTH_VIA_URL]
+        # Unknown/unsupported method
+        text = ""
 
     return text
 
@@ -125,32 +134,8 @@ def text_from_request(request, *, post_field=None, get_field=None):
 # PyCon 2016 "Flask at Scale" tutorial: https://github.com/miguelgrinberg/flack
 
 # A dictionary of currently living tasks
-tasks = dict()
-tasks_lock = threading.Lock()
-
-
-@routes.before_app_first_request
-def before_first_request():
-    """ Start a background thread that cleans up old tasks """
-
-    def clean_old_tasks():
-        """ This function cleans up old tasks from an in-memory data structure """
-        global tasks
-        while True:
-            # Only keep tasks that are running or that finished less than 5
-            # minutes ago.
-            five_min_ago = datetime.utcnow() - timedelta(minutes=5)
-            with tasks_lock:
-                tasks = {
-                    task_id: task
-                    for task_id, task in tasks.items()
-                    if 't' not in task or task['t'] > five_min_ago
-                }
-            time.sleep(60)
-
-    if not current_app.config['TESTING']:
-        thread = threading.Thread(target=clean_old_tasks)
-        thread.start()
+_tasks = dict()
+_tasks_lock = threading.Lock()
 
 
 def fancy_url_for(*args, **kwargs):
@@ -168,6 +153,87 @@ def fancy_url_for(*args, **kwargs):
     return url_for(*args, **kwargs)
 
 
+@routes.before_app_first_request
+def before_first_request():
+    """ Start a background thread that cleans up old tasks """
+
+    def clean_old_tasks():
+        """ This function cleans up old tasks from an in-memory data structure """
+        global _tasks
+        while True:
+            # Only keep tasks that are running or
+            # that finished less than 5 minutes ago
+            five_min_ago = datetime.utcnow() - timedelta(minutes=5)
+            with _tasks_lock:
+                _tasks = {
+                    task_id: task
+                    for task_id, task in _tasks.items()
+                    if 't' not in task or task['t'] > five_min_ago
+                }
+            time.sleep(60)
+
+    thread = threading.Thread(target=clean_old_tasks)
+    thread.start()
+
+
+class _FileProxy:
+
+    """ A hack that implements an in-memory proxy object for a Werkzeug FileStorage
+        instance, enabling it to be passed between threads """
+
+    def __init__(self, fs):
+        # Initialize the file proxy object from a Werkzeug FileStorage instance,
+        # cf. https://werkzeug.palletsprojects.com/en/1.0.x/datastructures/#werkzeug.datastructures.FileStorage
+        self._mimetype = fs.mimetype
+        self._mimetype_params = fs.mimetype_params
+        self._content_type = fs.content_type
+        # Note: this reads the entire file stream into memory
+        self._bytes = fs.read()
+
+    @property
+    def mimetype(self):
+        return self._mimetype
+
+    @property
+    def mimetype_params(self):
+        return self._mimetype_params
+
+    @property
+    def content_type(self):
+        return self._content_type
+
+    def read(self):
+        return self._bytes
+
+
+class _RequestProxy:
+
+    """ A hack to emulate a Flask Request object with a data structure
+        that can be passed safely between threads """
+
+    def __init__(self, rq):
+        """ Create an instance that walks and quacks like the Request object in rq """
+        self.method = rq.method
+        self.headers = { k: v for k, v in rq.headers }
+        self.environ = rq.environ
+        self.blueprint = rq.blueprint
+        if rq.method == "POST":
+            if rq.headers.get("Content-Type") == "text/plain":
+                self.data = rq.data
+                self.form = dict()
+            else:
+                self.data = b""
+                self.form = rq.form.copy()
+        else:
+            self.data = b""
+            self.form = dict()
+        self.args = rq.args.copy()
+        # Make a copy of the passed-in files, if any, so that they
+        # can be accessed and processed offline (after the original
+        # request has been completed and temporary files deleted)
+        self.files = { k: _FileProxy(v) for k, v in rq.files.items() }
+
+
 def async_task(f):
     """ This decorator transforms a sync route into an asynchronous one
         by running it in a background thread """
@@ -175,29 +241,36 @@ def async_task(f):
     @wraps(f)
     def wrapped(*args, **kwargs):
 
-        # Assign a unique id to the asynchronous task
+        # Assign a unique id to each asynchronous task
         task_id = uuid.uuid4().hex
 
         def progress(ratio):
             """ Function to call from the worker task to indicate progress. """
             # ratio is a float from 0.0 (just started) to 1.0 (finished)
-            tasks[task_id]["progress"] = ratio
+            _tasks[task_id]["progress"] = ratio
 
-        def task(app, environ):
-            # Create a request context similar to that of the original request
-            # so that the task can have access to flask.g, flask.request, etc.
-            this_task = tasks[task_id]
-            with app.request_context(environ):
+        def task(app, rq):
+            """ Run the decorated route function in a new thread """
+            this_task = _tasks[task_id]
+            # Pretty ugly hack, but no better solution was apparent:
+            # Create a fresh Flask RequestContext object, wrapping our
+            # custom _RequestProxy object that can be safely passed between threads
+            with RequestContext(app, rq.environ, request=rq):
                 try:
-                    # Run the route function and record the response
-                    this_task["rv"] = f(*args, progress_func=progress, **kwargs)
+                    # Run the original route function and record
+                    # the response (return value)
+                    this_task["rv"] = f(
+                        *args,
+                        progress_func=progress,
+                        **kwargs
+                    )
                 except HTTPException as e:
                     this_task["rv"] = current_app.handle_http_exception(e)
                 except Exception as e:
                     # The function raised an exception, so we set a 500 error
                     this_task["rv"] = InternalServerError()
                     if current_app.debug:
-                        # We want to find out if something happened so reraise
+                        # We want to find out if something happened, so reraise
                         raise
                 finally:
                     # We record the time of the response, to help in garbage
@@ -205,24 +278,27 @@ def async_task(f):
                     this_task["t"] = datetime.utcnow()
 
         # Record the task, and then launch it
-        with tasks_lock:
-            tasks[task_id] = {
+        with _tasks_lock:
+            _tasks[task_id] = {
                 "progress": 0.0,
             }
+            # Create our own request proxy object that can be safely
+            # passed between threads, keeping the form data and uploaded files
+            # intact and available even after the original request has been closed
+            rq = _RequestProxy(request)
             new_task = threading.Thread(
                 target=task,
-                args=(
-                    current_app._get_current_object(),
-                    request.environ,
-                )
+                args=(current_app._get_current_object(), rq)
             )
+
         new_task.start()
 
-        # Return a 202 response, with a link that the client can use to
-        # obtain task status
+        # After starting the task on a new thread, we return a 202 response,
+        # with a link in the 'Location' header that the client can use
+        # to obtain task status
         return (
             json.dumps(dict(progress=0.0)),
-            202,
+            202,  # ACCEPTED
             {
                 "Location": fancy_url_for("routes.get_status", task=task_id),
                 "Content-Type": "application/json; charset=utf-8",
@@ -234,12 +310,13 @@ def async_task(f):
 
 @routes.route('/status/<task>', methods=['GET'])
 def get_status(task):
-    """ Return status about an asynchronous task. If this request returns a 202
-        status code, it means that task hasn't finished yet. Else, the response
-        from the task is returned. """
+    """ Return the status of an asynchronous task. If this request returns a
+        202 ACCEPTED status code, it means that task hasn't finished yet.
+        Else, the response from the task is returned (normally with a
+        200 OK status). """
     task_id = task
-    with tasks_lock:
-        task = tasks.get(task_id)
+    with _tasks_lock:
+        task = _tasks.get(task_id)
         if task is None:
             abort(404)
         if "rv" in task:
@@ -248,7 +325,7 @@ def get_status(task):
         # Not completed: report progress
         return (
             json.dumps(dict(progress=task["progress"])),
-            202,
+            202,  # ACCEPTED
             {
                 "Location": fancy_url_for("routes.get_status", task=task_id),
                 "Content-Type": "application/json; charset=utf-8",

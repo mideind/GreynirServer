@@ -74,7 +74,7 @@ API_EXCLUDE_PREFIX = "/nn"
 API_ROUTES = [
     r
     for r in app.url_map.iter_rules()
-    if str(r).endswith(".api")
+    if str(r).endswith(".api") or str(r).endswith(".task")
     and not r.arguments
     and str(r) not in SKIP_ROUTES
     and not str(r).startswith(API_EXCLUDE_PREFIX)
