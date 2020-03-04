@@ -26,6 +26,7 @@
 
 # TODO: Shorten overly long first paragraphs.
 # TODO: Fix regex that cleans wiki text.
+# TODO: "Segðu mér meira um X" - Return more article text
 
 
 import re
@@ -95,8 +96,13 @@ Query →
     QWikiQuery '?'?
 
 QWikiQuery →
+    # These take the subject in the nominative case
+    QWikiSubjectNf "í" QWikipedia
+
     # These take the subject in the accusative case
-    "hvað" "segir" QWikipedia "um" QWikiSubjectÞf
+    | "hvað" "segir" QWikipedia "um"? QWikiSubjectÞf
+    | "hvað" "stendur" "í" QWikipedia "um" QWikiSubjectÞf
+    | "hvað" "stendur" "um" QWikiSubjectÞf "í" QWikipedia
     | "hvað" "getur" "þú" "sagt" "mér"? "um" QWikiSubjectÞf
     | "hvað" "geturðu" "sagt" "mér"? "um" QWikiSubjectÞf
     | "hvað" "getur" QWikipedia "sagt" "mér"? "um" QWikiSubjectÞf
@@ -111,17 +117,20 @@ QWikiQuery →
     | "nennirðu" "að" "fræða" "mig" "um" QWikiSubjectÞf
 
     # These take the subject in the dative case
-    # | "segðu" "mér" "frá" "QWikiSubjectÞgf
-    # | "flettu" "upp" QWikiSubjectÞgf "í" QWikipedia
-    # | "geturðu" "flett" "upp" QWikiSubjectÞgf "í" QWikipedia
-    # | "nennirðu" "að" "fletta" "upp" QWikiSubjectÞgf "í" QWikipedia
-    # | "gætirðu" "flett" "upp" QWikiSubjectÞgf "í" QWikipedia
+    | "segðu" "mér" "frá" QWikiSubjectÞgf
+    | "flettu" "upp" QWikiSubjectÞgf "í" QWikipedia
+    | "geturðu" "flett" "upp" QWikiSubjectÞgf "í" QWikipedia
+    | "nennirðu" "að" "fletta" "upp" QWikiSubjectÞgf "í" QWikipedia
+    | "gætirðu" "flett" "upp" QWikiSubjectÞgf "í" QWikipedia
+
+QWikiSubjectNf →
+    Nl_nf
 
 QWikiSubjectÞf →
     Nl_þf
 
-# QWikiSubjectÞgf →
-#     Nl_þgf
+QWikiSubjectÞgf →
+    Nl_þgf
 
 QWikipedia →
     {0}
@@ -139,9 +148,18 @@ def QWikiQuery(node, params, result):
     result.qkey = result["subject_nom"]
 
 
+def QWikiSubjectNf(node, params, result):
+    result["subject_nom"] = result._nominative
+
+
 def QWikiSubjectÞf(node, params, result):
     result["subject_nom"] = result._nominative
-    result["subject_dat"] = result._text
+    # result["subject_acc"] = result._text
+
+
+def QWikiSubjectÞgf(node, params, result):
+    result["subject_nom"] = result._nominative
+    # result["subject_dat"] = result._text
 
 
 def EfLiður(node, params, result):
@@ -189,11 +207,16 @@ def _query_wiki_api(subject):
     return query_json_api(url)
 
 
-def get_wiki_summary(subject_nom, subject_dat):
+def get_wiki_summary(subject_nom):
     """ Fetch summary of subject from Icelandic Wikipedia """
 
     def has_entry(r):
-        return r and "query" in r and "pages" in r["query"]
+        return (
+            r
+            and "query" in r
+            and "pages" in r["query"]
+            and "-1" not in r["query"]["pages"]
+        )
 
     # Wiki pages always start with an uppercase character
     cap_subj = subject_nom[0].upper() + subject_nom[1:]
@@ -201,10 +224,11 @@ def get_wiki_summary(subject_nom, subject_dat):
     res = _query_wiki_api(cap_subj)
     # OK, Wikipedia doesn't have anything with current capitalization
     # or lack thereof. Try uppercasing first character of each word.
-    if not has_entry(res):
-        res = _query_wiki_api(subject_nom.title())
+    titled_subj =  subject_nom.title()
+    if not has_entry(res) and cap_subj != titled_subj:
+        res = _query_wiki_api(titled_subj)
 
-    not_found = "Ég fann ekkert um {0} í Wikipedíu".format(subject_dat)
+    not_found = "Ég fann ekkert um '{0}' í Wikipedíu".format(subject_nom)
 
     if not has_entry(res):
         return not_found
@@ -230,7 +254,7 @@ def sentence(state, result):
         q.set_key(result.qkey)
 
         # Fetch from Wikipedia API
-        answer = get_wiki_summary(result["subject_nom"], result["subject_dat"])
+        answer = get_wiki_summary(result["subject_nom"])
         response = dict(answer=answer)
         voice = _clean_voice_answer(answer)
         q.set_answer(response, answer, voice)

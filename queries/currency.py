@@ -21,7 +21,8 @@
 
 """
 
-# TODO: "Hvað er gengið á evrunni?" (implicitly "gagnvart krónunni")
+# TODO: "Hvað/hvert er gengið á evrunni?" (implicitly "gagnvart krónunni")
+# TODO: Bug: "30 dollarar eru 3.801 krónUR." [!!!]
 
 import re
 import cachetools

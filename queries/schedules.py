@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Television schedule query response module
+    TV & radio schedule query response module
 
     Copyright (C) 2020 Miðeind ehf.
 
@@ -19,14 +19,15 @@
     along with this program. If not, see http://www.gnu.org/licenses/.
 
 
-    This module handles queries related to television schedules.
-    Only handles RÚV (for now).
+    This module handles queries related to television and radio schedules.
+    Only handles RÚV television (for now).
 
 """
 
 # TODO: Support TV schedule queries for other stations than RÚV
 # TODO: Support radio schedules
 # TODO: "Hvað er í sjónvarpinu í kvöld?"
+# TODO: Fix formatting issues w. trailing spaces, periods at the end of answer str.
 
 import logging
 import re
@@ -36,8 +37,10 @@ from datetime import datetime, timedelta
 from queries import query_json_api, gen_answer
 
 
-_TELEVISION_QTYPE = "Television"
-_TELEVISION_EVENING_QTYPE = "TelevisionEvening"
+_SCHEDULES_QTYPE = "Schedule"
+
+_TELEVISION_QKEY = "TelevisionSchedule"
+_TELEVISION_EVENING_QKEY = "TelevisionEvening"
 
 
 TOPIC_LEMMAS = ["sjónvarp", "sjónvarpsdagskrá", "dagskrá", "rúv", "ríkissjónvarp"]
@@ -61,74 +64,106 @@ def help_text(lemma):
 HANDLE_TREE = True
 
 # The context-free grammar for the queries recognized by this plug-in module
+# Uses "QSch" as prefix for grammar namespace
 GRAMMAR = """
 
 Query →
-    QTelevision '?'?
+    QSchedule '?'?
 
-QTelevision →
-    QTelevisionQuery
-    | QTelevisionEveningQuery
+QSchedule →
+    QScheduleTV | QScheduleRadio
 
-QTelevisionQuery →
-    QTVWhatIsNom QTVEiginlega? QTVGoingOn? QTVOnTV QTVNow?
-    | QTVWhatIsDative QTVEiginlega? QTVBeingShown QTVOnTV QTVNow?
-    | "dagskrá" QTVBeingShown? QTVOnTV? 
-    | "dagskrá" QTVGoingOn? QTVOnTV? 
+QScheduleTV →
+    QSchTelevisionQuery
+    | QSchTelevisionEveningQuery
 
-QTVWhatIsNom →
+QSchTelevisionQuery →
+    QSchWhatIsNom QSchEiginlega? QSchGoingOn? QSchOnTV QSchNow?
+    | QSchWhatIsDative QSchEiginlega? QSchBeingShown QSchOnTV QSchNow?
+    | "dagskrá" QSchBeingShown? QSchOnTV? QSchNow?
+    | "dagskrá" QSchGoingOn? QSchOnTV? QSchNow?
+    | QSchWhatIsNom "á" "dagskrá" QSchOnTV QSchNow?
+
+QSchTelevisionEveningQuery →
+   "hvað" "er" QSchEiginlega? QSchOnSchedule? QSchOnTV QSchThisEvening
+   | "hvernig" "er" QSchEiginlega? QSchTheSchedule QSchOnTV? QSchThisEvening
+   | "hver" "er" QSchEiginlega? QSchTheSchedule QSchOnTV? QSchThisEvening
+
+QScheduleRadio →
+    QSchRadioStationNowQuery
+
+QSchRadioStationNowQuery →
+    QSchWhatIsNom QSchEiginlega? "á" QRadioStation
+
+QSchWhatIsNom →
     "hvað" "er" | "hvaða" "þáttur" "er" | "hvaða" "dagskrárliður" "er" | "hvaða" "efni" "er"
 
-QTVWhatIsDative →
+QSchWhatIsDative →
     "hvað" "er" | "hvaða" "þátt" "er" | "hvaða" "dagskrárlið" "er" | "hvaða" "efni" "er"
 
-QTVOnTV →
-    "í" "sjónvarpinu" | "á" "rúv" | "í" "ríkissjónvarpinu" | "á" "stöð" "eitt" | "hjá"? "rúv"
+QSchOnTV →
+    QSchOnRUV | QSchOnStod2
 
-QTVNow →
+QSchOnRUV →
+    "í" "sjónvarpinu" | "á" "rúv" | "í" "ríkissjónvarpinu"
+    | "á" "stöð" "eitt" | "hjá"? "rúv" | "sjónvarpsins" | "sjónvarps"
+
+QSchOnStod2 →
+    "á" "stöð" "tvö" | "á" "stöð" "2"
+
+QSchOnRadio →
+    "í" "útvarpinu" | "í" "ríkisútvarpinu" | "á" "ríkisútvarpinu"
+
+# Supported radio stations
+QRadioStation →
+    QSchRas1 | QSchRas2
+
+QSchRas2 →
+    "rás" "tvö" | "rás" "2"
+
+QSchRas1 →
+    "rás" "eitt" | "rás" "1"
+
+QSchNow →
     "nákvæmlega"? "núna" | "eins" "og" "stendur" | "í" "augnablikinu"
 
-QTVGoingOn →
+QSchGoingOn →
     "í" "gangi"
 
-QTVBeingShown →
+QSchBeingShown →
     "verið" "að" "sýna" 
 
-QTVEiginlega →
+QSchEiginlega →
     "eiginlega"
 
-QTVOnSchedule →
+QSchOnSchedule →
     "á" "dagskrá"
+    | "í" "dagskrá"
     | "á" "dagskránni"
     | "í" "boði"
     | "boðið" "upp" "á"
 
-QTVTheSchedule →
+QSchTheSchedule →
     "dagskráin" | "sjónvarpsdagskráin"
 
-QTVThisEvening →
+QSchThisEvening →
     "núna"? "í" "kvöld"
 
-QTelevisionEveningQuery →
-   "hvað" "er" QTVEiginlega? QTVOnSchedule? QTVOnTV QTVThisEvening
-   | "hvernig" "er" QTVEiginlega? QTVTheSchedule QTVOnTV? QTVThisEvening
-   | "hver" "er" QTVEiginlega? QTVTheSchedule QTVOnTV? QTVThisEvening
-
-$score(+55) QTelevision
+$score(+55) QSchedule
 
 """
 
 
-def QTelevisionQuery(node, params, result):
+def QSchTelevisionQuery(node, params, result):
     # Set the query type
-    result.qtype = _TELEVISION_QTYPE
-    result.qkey = "Dagskrárliður"
+    result.qtype = _SCHEDULES_QTYPE
+    result.qkey = _TELEVISION_QKEY
 
 
-def QTelevisionEveningQuery(node, params, result):
+def QSchTelevisionEveningQuery(node, params, result):
     # Set the query type
-    result.qtype = _TELEVISION_EVENING_QTYPE
-    result.qkey = "Kvölddagskrá"
+    result.qtype = _SCHEDULES_QTYPE
+    result.qkey = _TELEVISION_EVENING_QKEY
 
 
 def _clean_desc(d):
@@ -168,7 +203,7 @@ def _span(p):
 
 
 def _curr_prog(sched):
-    """ Return current tv program, given a TV schedule 
+    """ Return current TV program, given a TV schedule 
         i.e. a list of programs in chronological sequence. """
     now = datetime.utcnow()
     for p in sched:
@@ -207,7 +242,7 @@ def _gen_curr_program_answer(q):
         return gen_answer("Það er engin dagskrá á RÚV núna.")
 
     title = prog["title"]
-    ep = "" if "fréttir" in title.lower() else "þáttinn "
+    ep = "" if "fréttir" in title.lower() else ""
     answ = "RÚV er að sýna {0}{1}. {2}.".format(
         ep, title, _clean_desc(prog["description"])
     )
@@ -222,15 +257,15 @@ def _gen_evening_program_answer(q):
 
     prog = _evening_prog(sched)
     if not prog:
-        return gen_answer("Það er enginn þáttur eftir á dagskránni.")
+        return gen_answer("Það er enginn liður eftir á dagskrá RÚV.")
 
     answ = ["Klukkan"]
     for p in prog:
         answ.append(
-            "{0} : {1}.".format(p["startTime"][11:16], p["title"])
+            "{0} : {1}.\n".format(p["startTime"][11:16], p["title"])
         )
-    voice_answer = " ".join(answ)
-    answer = " ".join(answ[1:]).replace(" : ", " ")
+    voice_answer = "".join(answ)
+    answer = "".join(answ[1:]).replace(" : ", " ")
     return dict(answer=answer), answer, voice_answer
 
 
@@ -243,7 +278,7 @@ def sentence(state, result):
         q.set_key(result.qkey)
 
         try:
-            if result.qtype == _TELEVISION_QTYPE:
+            if result.qkey == _TELEVISION_QKEY:
                 r = _gen_curr_program_answer(q)
             else:
                 r = _gen_evening_program_answer(q)

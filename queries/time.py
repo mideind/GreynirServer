@@ -36,7 +36,7 @@ from datetime import datetime
 from pytz import country_timezones, timezone
 
 from reynir.bindb import BIN_Db
-from geo import isocode_for_country_name, lookup_city_info
+from geo import isocode_for_country_name, lookup_city_info, capitalize_placename
 from queries import timezone4loc
 
 
@@ -100,13 +100,11 @@ def handle_plain_text(q):
         tz = timezone4loc(q.location, fallback="IS")
     elif ql.startswith("hvað er klukkan á ") or ql.startswith("hvað er klukkan í "):
         # Query about the time in a particular location, i.e. country or city
-        loc = ql[18:]
+        loc = ql[18:] # Cut away question prefix, leaving only placename
         # Capitalize each word in country/city name
-        # TODO: Fix, this mangles lookup for city names such as "Rio de Janeiro"
-        loc = " ".join([c.capitalize() for c in loc.strip().split()])
-
+        loc = capitalize_placename(loc)
         # Look up nominative
-        # TODO: This only works for single-word city/country names found
+        # This only works for single-word city/country names found
         # in BÍN and could be improved (e.g. fails for "Nýju Jórvík")
         bin_res = BIN_Db().lookup_nominative(loc)
         words = [m.stofn for m in bin_res]

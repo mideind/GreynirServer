@@ -37,26 +37,25 @@
 # TODO: "Hvað er mikið eftir af vinnuvikunni", "hvað er langt í helgina"
 # TODO: "Hvaða vikudagur er DAGSETNING næstkomandi?"
 # TODO: "Hvað gerðist á þessum degi?"
-# TODO: "Hvað eru margir dagar eftir af árinu?"
 # TODO: "Hvaða vikudagur var 11. september 2001?" "Hvaða (viku)dagur er á morgun?" "Hvaða dagur var í gær?"
 # TODO: "Hvenær eru vetrarsólstöður" + more astronomical dates
 # TODO: "Hvað er langt í helgina?" "Hvenær er næsti (opinberi) frídagur?"
 # TODO: "Hvað eru margir dagar að fram að jólum?"
 # TODO: "Hvað eru margir dagar eftir af árinu? mánuðinum? vikunni?"
+# TODO: "Hvað eru margir dagar eftir af árinu?" "Hvað er mikið eftir af árinu 2020?"
 # TODO: "Hvenær er næst hlaupár?" "Er hlaupár?"
 # TODO: "Hvaða árstíð er"
 # TODO: "Á hvaða vikudegi er jóladagur?"
 # TODO: "Hvenær er fyrsti í aðventu"
-# TODO: "Hvað eru margir dagar í árinu"
 # TODO: "Hvaða öld er núna"
 # TODO: "Hvað eru margir mánuðir í sumardaginn fyrsta" "hvað eru margar vikur í skírdag"
-# TODO: "Hvað eru margir dagar eftir af árinu?" "Hvað er mikið eftir af árinu 2020?"
 # TODO: "hvaða dagur er á morgun"
 # TODO: "Þorláksmessa" not working
 # TODO: "Hvenær er næst fullt tungl"
 # TODO: Specify weekday in "hvenær er" queries (e.g. "Sjómannadagurinn er *sunnudaginn* 7. júní")
 # TODO: "Hvað eru margar [unit of time measurement] í [dagsetningu]"
 # TODO: "Hvenær byrjar þorrinn"
+# TODO: "Hvaða frídagar/helgidagar/etc eru í febrúar"
 
 import json
 import re
@@ -64,6 +63,7 @@ import logging
 import random
 from datetime import datetime, date, timedelta
 from pytz import timezone
+from calendar import monthrange
 
 from queries import timezone4loc, gen_answer, is_plural
 from settings import changedlocale
@@ -145,7 +145,9 @@ QDateQuery →
     | QDateWhichYear
 
 QDateCurrent →
-    "hvað" "er" "dagsetningin" QDateNow?
+    "dagsetning" QDateNow?
+    | "dagsetningin" QDateNow?
+    |"hvað" "er" "dagsetningin" QDateNow?
     | "hver" "er" "dagsetningin" QDateNow?
     | "hvaða" "dagsetning" "er" QDateNow?
     | "hvaða" "dagur" "er" QDateNow?
@@ -200,7 +202,7 @@ QDateItem/fall →
     QDateAbsOrRel | QDateSpecialDay/fall
 
 QDateAbsOrRel →
-    FöstDagsetning | AfstæðDagsetning
+    dagsföst | dagsafs
 
 # TODO: Order this by time of year
 QDateSpecialDay/fall →
@@ -390,16 +392,30 @@ def QDateWhichYear(node, params, result):
 
 
 def QDateAbsOrRel(node, params, result):
-    t = result.find_descendant(t_base="dagsafs")
-    if not t:
-        t = result.find_descendant(t_base="dagsföst")
-    if t:
-        # TODO: Use TerminalNode's contained_date property instead
-        d = terminal_date(t)
-        if d:
-            result["target"] = d
+    datenode = node.first_child(lambda n: True)
+    if datenode:
+        y, m, d = datenode.contained_date
+        now = datetime.utcnow()
+        
+        # This is a date that contains at least month & mday
+        if d and m:
+            if not y:
+                y = now.year
+                # Bump year if month/day in the past
+                if m < now.month or (m == now.month and d < now.day):
+                    y += 1
+            result["target"] = datetime(day=d, month=m, year=y)
+        # Only contains month
+        elif m:
+            if not y:
+                y = now.year
+                if m < now.month:
+                    y += 1
+            ndays = monthrange(y, m)[1]
+            result["days_in_month"] = ndays
+            result["target"] = datetime(day=1, month=m, year=y)
     else:
-        raise Exception("No date in {0}".format(str(t)))
+        raise Exception("No date in {0}".format(str(datenode)))
 
 
 def QDateWhitsun(node, params, result):
@@ -811,6 +827,20 @@ def sentence(state, result):
                 voice = re.sub(r" \d+\. ", " " + _DAY_INDEX_NOM[now.day] + " ", voice)
                 response = dict(answer=answer)
                 qkey = "CurrentDate"
+
+            # Asking about the number of days in a given month
+            elif "days_in_month" in result and "target" in result:
+                ndays = result["days_in_month"]
+                t = result["target"]
+                mnum = t.month
+                mname = t.strftime("%B")
+                answer = "{0} dagar.".format(ndays)
+                voice = "Það eru {0} dagar í {1} {2}".format(
+                    ndays, mname, t.year
+                )
+                response = dict(answer=answer)
+                qkey = "DaysInMonth"
+
             # Asking about period until/since a given date
             elif ("until" in result or "since" in result) and "target" in result:
                 target = result.target
@@ -818,6 +848,7 @@ def sentence(state, result):
                 # Find the number of days until target date
                 (response, answer, voice) = howlong_desc_answ(target)
                 qkey = "FutureDate" if "until" in result else "SinceDate"
+
             # Asking about when a (special) day occurs in the year
             elif "when" in result and "target" in result:
                 # TODO: Fix this so it includes weekday, e.g.
@@ -838,6 +869,7 @@ def sentence(state, result):
                     r"\d+\. ", _DAY_INDEX_ACC[result.target.day] + " ", voice
                 )
                 response = dict(answer=answer)
+
             # Asking which year it is
             elif "year" in result:
                 y = now.year

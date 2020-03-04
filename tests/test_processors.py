@@ -27,10 +27,11 @@ from collections import OrderedDict
 if __name__ == "__main__":
     # Hack to allow this program to be run from the tests/ subdirectory
     import os, sys
+
     basepath, _ = os.path.split(os.path.realpath(__file__))
     _TESTS = os.sep + "tests"
     if basepath.endswith(_TESTS):
-        basepath = basepath[0:-len(_TESTS)]
+        basepath = basepath[0 : -len(_TESTS)]
         sys.path.append(basepath)
 
 
@@ -122,28 +123,18 @@ def test_entities():
             num_tokens = len(sent)
             assert sent.parse(), "Sentence does not parse: " + sent.text
             # Obtain a text representation of the parse tree
-            token_dicts = TreeUtility.dump_tokens(
-                sent.tokens, sent.tree
-            )
+            token_dicts = TreeUtility.dump_tokens(sent.tokens, sent.tree)
             # Create a verbose text representation of
             # the highest scoring parse tree
-            tree = ParseForestDumper.dump_forest(
-                sent.tree, token_dicts=token_dicts
-            )
+            tree = ParseForestDumper.dump_forest(sent.tree, token_dicts=token_dicts)
             # Add information about the sentence tree's score
             # and the number of tokens
             trees[num_sent] = "\n".join(
-                [
-                    "C{0}".format(sent.score),
-                    "L{0}".format(num_tokens),
-                    tree
-                ]
+                ["C{0}".format(sent.score), "L{0}".format(num_tokens), tree]
             )
     # Create a tree representation string out of
     # all the accumulated parse trees
-    tree_string = "".join(
-        "S{0}\n{1}\n".format(key, val) for key, val in trees.items()
-    )
+    tree_string = "".join("S{0}\n{1}\n".format(key, val) for key, val in trees.items())
 
     tree = Tree()
     tree.load(tree_string)
