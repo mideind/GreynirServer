@@ -172,8 +172,10 @@ def before_first_request():
                 }
             time.sleep(60)
 
-    thread = threading.Thread(target=clean_old_tasks)
-    thread.start()
+    # Don't start the cleanup thread if we're only running tests
+    if not current_app.config["TESTING"]:
+        thread = threading.Thread(target=clean_old_tasks)
+        thread.start()
 
 
 class _FileProxy:

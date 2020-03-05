@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 """
     Greynir: Natural language processing for Icelandic
 
@@ -33,10 +34,11 @@ from settings import Settings
 
 
 class ApiClient:
+
     """ A client that connects to the HTTP REST interface of
         a tensorflow model server (using plaintext) """
 
-    # Class defaults that can be overridden in constructor.
+    # Class defaults that can be overridden in constructor
     port = None
     host = None
     action = None
@@ -47,7 +49,7 @@ class ApiClient:
 
     required_fields = []
     default_field_values = []
-    headers = {"content-type": "application/json; charset=UTF-8"}
+    headers = {"Content-Type": "application/json; charset=utf-8"}
 
     def __init__(self, port=None, host=None, https=None, action=None):
         if port is not None:
@@ -58,12 +60,10 @@ class ApiClient:
             self.https = https
         if action is not None:
             self.action = action
-
         self._set_url()
 
     def _set_url(self):
-        """ Formats url for remote service based on instance attributes.
-        """
+        """ Format url for remote service based on instance attributes """
         self._url = "http{https_char}://{host}:{port}/{action}".format(
             https_char="s" if self.https else "",
             host=self.host,
@@ -72,7 +72,7 @@ class ApiClient:
         )
 
     def validate(self, request):
-        """ Takes in a flask request object and checks data attributes against
+        """ Takes in a Flask request object and checks data attributes against
             self.required fields and populates default fields if needed.
 
             Returns tuple of type (Boolean, dict), where the first value indicates
@@ -91,27 +91,23 @@ class ApiClient:
         return (True, data)
 
     def parse_for_remote(self, data):
-        """ Modifies data to comply with the remote server input format.
-        """
+        """ Modifies data to comply with the remote server input format """
         return {
             "pgs": data['contents']
         }
 
     def get(self, data):
-        """ Handler for GET requests.
-        """
+        """ Handler for GET requests """
         response = requests.get(self._url, json.dumps(data), headers=self.headers)
         return json.loads(response.text)
 
     def post(self, data):
-        """ Handler for POST requests.
-        """
+        """ Handler for POST requests """
         response = requests.post(self._url, json.dumps(data), headers=self.headers)
         return response.text
 
     def dispatch(self, request):
-        """ Dispatches to GET or POST based on incoming request method.
-        """
+        """ Dispatches to GET or POST based on incoming request method """
         valid, data = self.validate(request)
         if not valid:
             return abort(400, data)
@@ -130,6 +126,7 @@ class ApiClient:
 
 
 class TranslationApiClient(ApiClient):
+
     required_fields = (
         "contents",
     )
@@ -160,6 +157,7 @@ class TranslationApiClient(ApiClient):
                             self._data['sourceLanguageCode'],
                             self._data['targetLanguageCode'],
                         )
-                    } for val in response["predictions"]]
+                    } for val in response["predictions"]
+                ]
             }
         )
