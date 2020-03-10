@@ -213,14 +213,9 @@ export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
 
 ##### Interactive shell
 
-```
-./scripts/shell.sh
-```
-
-Starts an [IPython](https://ipython.org) shell with a database session (`s`), the Greynir 
-parser (`r`) and all SQLAlchemy database models preloaded. For more info, 
-see [Using the Greynir Shell](docs/shell.md).
-
+You can launch an [IPython](https://ipython.org) REPL shell with a database session (`s`), the Greynir 
+parser (`r`) and all SQLAlchemy database models preloaded. See [Using the Greynir Shell](docs/shell.md) 
+for instructions.
 
 ## Copyright and licensing
 
