@@ -538,7 +538,7 @@ p.fetch-terms span.glyphicon {
 <script>
 
     function fetchTerms() {
-        window.open("/static/files/Greynir-Terms-2020-03-11.pdf", "_blank");
+        window.open("{{ url_for('static', filename='files/Greynir-Terms-2020-03-11.pdf') }}", "_blank");
     }
 
     function openSmallprint() {
