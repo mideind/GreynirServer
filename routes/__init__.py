@@ -189,7 +189,9 @@ class _FileProxy:
         self._mimetype = fs.mimetype
         self._mimetype_params = fs.mimetype_params
         self._content_type = fs.content_type
-        # Note: this reads the entire file stream into memory
+        # !!! Note: this reads the entire file stream into memory.
+        # !!! A fancier method using temporary files could be applied here
+        # !!! when and if needed.
         self._bytes = fs.read()
 
     @property
@@ -211,29 +213,41 @@ class _FileProxy:
 class _RequestProxy:
 
     """ A hack to emulate a Flask Request object with a data structure
-        that can be passed safely between threads """
+        that can be passed safely between threads, while retaining
+        the ability to read uploaded files and form data """
 
     def __init__(self, rq):
-        """ Create an instance that walks and quacks like the Request object in rq """
+        """ Create an instance that walks and quacks sufficiently similarly
+            to the Flask Request object in rq """
         self.method = rq.method
         self.headers = { k: v for k, v in rq.headers }
         self.environ = rq.environ
         self.blueprint = rq.blueprint
+        self.progress_func = None
         if rq.method == "POST":
+            # Copy POSTed data between requests
             if rq.headers.get("Content-Type") == "text/plain":
+                # Text data
                 self.data = rq.data
                 self.form = dict()
             else:
+                # Form data
                 self.data = b""
                 self.form = rq.form.copy()
         else:
+            # GET request, no data needs to be copied
             self.data = b""
             self.form = dict()
+        # Copy URL arguments
         self.args = rq.args.copy()
         # Make a copy of the passed-in files, if any, so that they
         # can be accessed and processed offline (after the original
         # request has been completed and temporary files deleted)
         self.files = { k: _FileProxy(v) for k, v in rq.files.items() }
+
+    def set_progress_func(self, progress_func):
+        """ Set a function to call during processing of asynchronous requests """
+        self.progress_func = progress_func
 
 
 def async_task(f):
@@ -254,18 +268,15 @@ def async_task(f):
         def task(app, rq):
             """ Run the decorated route function in a new thread """
             this_task = _tasks[task_id]
-            # Pretty ugly hack, but no better solution was apparent:
+            # Pretty ugly hack, but no better solution is apparent:
             # Create a fresh Flask RequestContext object, wrapping our
             # custom _RequestProxy object that can be safely passed between threads
             with RequestContext(app, rq.environ, request=rq):
                 try:
                     # Run the original route function and record
                     # the response (return value)
-                    this_task["rv"] = f(
-                        *args,
-                        progress_func=progress,
-                        **kwargs
-                    )
+                    rq.set_progress_func(progress)
+                    this_task["rv"] = f(*args, **kwargs)
                 except HTTPException as e:
                     this_task["rv"] = current_app.handle_http_exception(e)
                 except Exception as e:
@@ -281,9 +292,7 @@ def async_task(f):
 
         # Record the task, and then launch it
         with _tasks_lock:
-            _tasks[task_id] = {
-                "progress": 0.0,
-            }
+            _tasks[task_id] = dict(progress=0.0)
             # Create our own request proxy object that can be safely
             # passed between threads, keeping the form data and uploaded files
             # intact and available even after the original request has been closed

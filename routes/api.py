@@ -137,7 +137,7 @@ def correct_api(version=1):
 @routes.route("/correct.task/v<int:version>", methods=["POST"])
 @restricted  # This means that the route is only visible on a development server
 @async_task  # This means that the function is automatically run on a separate thread
-def correct_task(version=1, progress_func=None):
+def correct_task(version=1):
     """ Correct text provided by the user, i.e. not coming from an article.
         This can be either an uploaded file or a string.
         This is a lower level API used by the Greynir web front-end. """
@@ -172,7 +172,7 @@ def correct_task(version=1, progress_func=None):
             logging.warning("Exception in correct_task(): {0}".format(e))
             return better_jsonify(valid=False, reason="Invalid request")
 
-    pgs, stats = check_grammar(text, progress_func=progress_func)
+    pgs, stats = check_grammar(text, progress_func=request.progress_func)
 
     # Return the annotated paragraphs/sentences and stats
     # in a JSON structure to the client
