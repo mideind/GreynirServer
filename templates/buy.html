@@ -230,6 +230,7 @@ em {
     line-height: 1.4;
     font-weight: 300;
     text-align: left;
+    margin-bottom: 6rem;
 }
 
 p.close-smallprint {
@@ -251,7 +252,30 @@ p.close-smallprint {
     cursor: pointer;
 }
 
-p.close-smallprint span.glyphicon-ok {
+p.fetch-terms {
+    display: block;
+    position: absolute;
+    left: 0;
+    text-align: left;
+    margin-top: 2rem;
+    margin-left: 3rem;
+    margin-bottom: 2rem;
+    width: 19rem;
+    padding: 1rem;
+    padding-left: 2rem;
+    border-radius: 4px;
+    background-color: #006EFF;
+    font-weight: 700;
+    font-size: 1.8rem;
+    color: white;
+    cursor: pointer;
+}
+
+p.close-smallprint span.glyphicon {
+    padding-right: 1rem;
+}
+
+p.fetch-terms span.glyphicon {
     padding-right: 1rem;
 }
 
@@ -494,6 +518,7 @@ p.close-smallprint span.glyphicon-ok {
         GNU GPLv3 leyfisins.
     </p>
     <p class="close-smallprint" onclick="closeSmallprint()"><span class="glyphicon glyphicon-ok"></span>Loka</p>
+    <p class="fetch-terms" onclick="fetchTerms()"><span class="glyphicon glyphicon-file"></span>Sækja sem PDF</p>
 </div> <!-- smallprint-->
 
 </div> <!-- product-row -->
@@ -511,6 +536,10 @@ p.close-smallprint span.glyphicon-ok {
 <script src="https://cdn.salescloud.is/js/salescloud.js"></script>
 
 <script>
+
+    function fetchTerms() {
+        window.open("/static/files/Greynir-Terms-2020-03-11.pdf", "_blank");
+    }
 
     function openSmallprint() {
         $("div.smallprint").css("visibility", "visible");

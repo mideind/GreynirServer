@@ -61,7 +61,30 @@ p.close-smallprint {
     cursor: pointer;
 }
 
-p.close-smallprint span.glyphicon-ok {
+p.fetch-terms {
+    display: block;
+    position: absolute;
+    left: 0;
+    text-align: left;
+    margin-top: 2rem;
+    margin-left: 3rem;
+    margin-bottom: 2rem;
+    width: 19rem;
+    padding: 1rem;
+    padding-left: 2rem;
+    border-radius: 4px;
+    background-color: #006EFF;
+    font-weight: 700;
+    font-size: 1.8rem;
+    color: white;
+    cursor: pointer;
+}
+
+p.close-smallprint span.glyphicon {
+    padding-right: 1rem;
+}
+
+p.fetch-terms span.glyphicon {
     padding-right: 1rem;
 }
 
@@ -74,7 +97,7 @@ p.close-smallprint span.glyphicon-ok {
 <div class="product-row">
 
 <div class="smallprint">
-    <p><em>Smáa letrið:</em>
+    <p><em>Skilmálar:</em>
         Hugbúnaðurinn Greynir er höfundarréttarvarin eign (copyright &copy; 2020)
         Miðeindar ehf., kt. 591213-1480, Fiskislóð 31, rými B/304, 101 Reykjavík,
         VSK númer 137060, tölvupóstfang
@@ -134,6 +157,7 @@ p.close-smallprint span.glyphicon-ok {
         GNU GPLv3 leyfisins.
     </p>
     <p class="close-smallprint" onclick="closeSmallprint()"><span class="glyphicon glyphicon-ok"></span>Loka</p>
+    <p class="fetch-terms" onclick="fetchTerms()"><span class="glyphicon glyphicon-file"></span>Sækja sem PDF</p>
 </div> <!-- smallprint-->
 
 </div> <!-- product-row -->
@@ -143,6 +167,10 @@ p.close-smallprint span.glyphicon-ok {
 {% block endscripts %}
 
 <script>
+
+    function fetchTerms() {
+        window.open("/static/files/Greynir-Terms-2020-03-11.pdf", "_blank");
+    }
 
     function closeSmallprint() {
         $("div.smallprint").css("visibility", "hidden");
