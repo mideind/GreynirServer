@@ -83,29 +83,28 @@
          <b>Höfundaréttur &copy; 2020 Miðeind ehf.</b>
          <br>
          <span>[Þróunarútgáfa]</span> <!-- This text is replaced by a date stamp in deploy.sh -->
-         &bull; 
 {%- if reynir_version %}
+         &bull;
          <span>ReynirPackage {{ reynir_version }}</span>
 {%- endif -%}
 {%- if python_version %}
-         &bull; <span>
-            Python {{ python_version }}</a>
-         </span>
+         &bull;
+         <span>Python {{ python_version }}</a></span>
 {%- endif -%}
       </p>
-      <p>Frumforrit Greynis og tengdar skrár eru
-         <a href="https://github.com/mideind/Greynir" target="_blank">opin á GitHub</a>.
-            Samhengisfrjálsa málfræði (<i>context-free grammar</i>) Greynis fyrir íslensku má
-         <a href="https://github.com/mideind/ReynirPackage/blob/master/src/reynir/Reynir.grammar"
-         target="_blank">sjá hér</a>.
+      <p>Frumforrit Greynis og tengdar skrár eru opin og 
+         <a href="https://github.com/mideind/Greynir" target="_blank">aðgengileg á GitHub</a>.
       </p>
       <p>
          Greynir byggir á <a href="https://greynir.is/doc/" target="_blank">Python-pakkanum
-            <b>Reyni</b></a> sem er einnig opinn og frjáls hugbúnaður.</p>
+            <b>Reyni</b></a> sem er einnig opinn og frjáls hugbúnaður. Samhengisfrjálsa málfræði 
+            (<i>context-free grammar</i>) Greynis fyrir íslensku má
+         <a href="https://github.com/mideind/ReynirPackage/blob/master/src/reynir/Reynir.grammar"
+         target="_blank">sjá hér</a>.</p>
 
       <a href="https://www.gnu.org/licenses/gpl-3.0.html"
          target="_blank"><img src="{{ url_for('static', filename='img/GPLv3.png') }}"
-         width="151" height="60" style="float:right; margin-top: -40px"></a>
+         width="151" height="60" style="float:right;"></a>
 
       <p>Forritaskil (API) Greynis eru <a href="{{ url_for('routes.apidoc') }}">skjöluð
             hér</a>.
@@ -114,6 +113,7 @@
          Um frumforrit og tengdar skrár gildir notkunarleyfið
             <a href="https://www.gnu.org/licenses/gpl-3.0.html"
             target="_blank">GNU General Public License v3</a>.
+            <br>Ef þú vilt nota Greyni í lokuðum hugbúnaði þá erum við sveigjanleg í samningum um slíkt.
       </p>
    </li>
    <li class="list-group-item">
