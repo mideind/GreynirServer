@@ -288,7 +288,7 @@ def main():
 
     try:
         # Read configuration file
-        Settings.read(os.path.join(basepath, "config", "ReynirSimple.conf"))
+        Settings.read(os.path.join(basepath, "config", "GreynirSimple.conf"))
     except ConfigError as e:
         print("Configuration error: {0}".format(e))
         quit()

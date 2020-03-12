@@ -253,7 +253,7 @@ class Article:
                     # We do not index closed word categories and non-distinctive constructs
                     continue
                 if (word.stem, word.cat) in NoIndexWords.SET:
-                    # Specifically excluded from indexing in Reynir.conf (Main.conf)
+                    # Specifically excluded from indexing in Greynir.conf (Main.conf)
                     continue
                 if len(word.stem) > Word.MAX_WORD_LEN:
                     # Shield the database from too long words

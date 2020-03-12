@@ -9,7 +9,7 @@
 # Defaults to deploying to production.
 # Run with argument "staging" to deploy to staging
 
-SRC=~/github/Reynir
+SRC=~/github/Greynir
 MODE="PRODUCTION"
 DEST=/usr/share/nginx/greynir.is # Production
 SERVICE="greynir"
@@ -53,7 +53,7 @@ echo "Copying files"
 
 cp config/Adjectives.conf $DEST/config/Adjectives.conf
 cp config/Index.conf $DEST/config/Index.conf
-# Note: config/Reynir.conf is not copied
+# Note: config/Greynir.conf is not copied
 cp config/TnT-model.pickle $DEST/config/TnT-model.pickle
 
 cp article.py $DEST/article.py

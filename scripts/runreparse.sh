@@ -2,7 +2,7 @@
 #
 # This is run once every morning by cron
 #
-cd ~/github/Reynir
+cd ~/github/Greynir
 source p3510/bin/activate
 timeout 120m python scraper.py --reparse --limit=5000
 timeout 40m python processor.py --update --limit=10000

@@ -261,7 +261,7 @@ def main(argv = None):
         # Read the configuration settings file
 
         try:
-            Settings.read("config/ReynirSimple.conf")
+            Settings.read("config/GreynirSimple.conf")
             # Don't run the processor in debug mode
             Settings.DEBUG = False
         except ConfigError as e:

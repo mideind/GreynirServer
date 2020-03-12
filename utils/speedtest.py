@@ -47,7 +47,7 @@ def speed_test(uuid):
 
 print("Welcome to speedtest")
 
-Settings.read(os.path.join(basepath, "config/Reynir.conf"))
+Settings.read(os.path.join(basepath, "config/Greynir.conf"))
 with Fast_Parser() as fp:
     pass
 

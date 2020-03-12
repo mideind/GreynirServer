@@ -146,7 +146,7 @@ def main(dev_size, train_size, shuffle, scores, parse_date_gt=None):
 
     try:
         # Read configuration file
-        Settings.read(os.path.join(basepath, "config/ReynirSimple.conf"))
+        Settings.read(os.path.join(basepath, "config/GreynirSimple.conf"))
     except ConfigError as e:
         print("Configuration error: {0}".format(e))
         quit()

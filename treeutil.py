@@ -429,7 +429,7 @@ class TreeUtility:
     def simple_parse(text):
         """ No-frills parse of text, returning a SimpleTree object """
         if not Settings.loaded:
-            Settings.read("config/Reynir.conf")
+            Settings.read("config/Greynir.conf")
         with SessionContext(read_only=True) as session:
             return SimpleTree(*TreeUtility.parse_text(session, text))
 

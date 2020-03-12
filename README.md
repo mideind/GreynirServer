@@ -156,7 +156,7 @@ people and titles.
 * `routes/*.py` : Routes for the web application
 * `queries/*.py` : Question answering modules
 * `settings.py` : Management of global settings and configuration data
-* `config/Reynir.conf` : Editable configuration file
+* `config/Greynir.conf` : Editable configuration file
 * `scraper.py` : Web scraper, collecting articles from a set of pre-selected websites (roots)
 * `fetcher.py` : Utility classes for fetching articles given their URLs
 * `db/*.py`: Database models and functions via SQLAlchemy
@@ -196,7 +196,7 @@ python main.py
 ```
 
 Defaults to running on [`localhost:5000`](http://localhost:5000) but this can be 
-changed in `config/Reynir.conf`.
+changed in `config/Greynir.conf`.
 
 ##### Scrapers
 

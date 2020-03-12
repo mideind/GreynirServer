@@ -581,7 +581,7 @@ def main(argv=None):
 
         # Read the configuration settings file
         try:
-            Settings.read("config/Reynir.conf")
+            Settings.read("config/Greynir.conf")
             # Don't run the scraper in debug mode
             Settings.DEBUG = False
         except ConfigError as e:
