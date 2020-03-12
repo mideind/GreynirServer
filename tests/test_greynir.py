@@ -74,10 +74,10 @@ API_EXCLUDE_PREFIX = "/nn"
 API_ROUTES = [
     r
     for r in app.url_map.iter_rules()
-    if str(r).endswith(".api")
-    and not r.arguments
-    and str(r) not in SKIP_ROUTES
-    and not str(r).startswith(API_EXCLUDE_PREFIX)
+    if (str(r).endswith(".api") or str(r).endswith(".task"))
+    and (not r.arguments)
+    and (str(r) not in SKIP_ROUTES)
+    and (not str(r).startswith(API_EXCLUDE_PREFIX))
 ]
 
 
@@ -85,6 +85,8 @@ def test_api(client):
     """ Call API routes and validate response. """
     # TODO: Route-specific validation of JSON responses
     for r in API_ROUTES:
+        # BUG: As-is, this makes pretty little sense
+        # since no data is posted to the APIs
         resp = client.post(str(r))
         assert resp.content_type.startswith(API_CONTENT_TYPE)
 

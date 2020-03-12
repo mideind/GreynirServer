@@ -1,0 +1,182 @@
+
+{% extends "container-normal.html" %}
+
+{% block navbar %}
+{% endblock %}
+
+{% block styles %}
+
+<link href="{{ url_for('static', filename='css/main-bootstrap.css') }}"
+    rel='stylesheet' type='text/css'>
+
+<style>
+
+em {
+    font-style: italic;
+    font-weight: 700;
+    color: #006EFFFF;
+}
+
+.product-row {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 4rem;
+}
+
+.smallprint {
+    top: 0rem;
+    position: relative;
+    background-color: white;
+    border-style: solid;
+    border-color: #c0c0c0;
+    border-width: 2px;
+    border-radius: 8px;
+    z-index: 100;
+    padding-top: 4rem;
+    padding-bottom: 10rem;
+    padding-left: 3rem;
+    padding-right: 3rem;
+    font-size: 1.6rem;
+    line-height: 1.4;
+    font-weight: 300;
+    text-align: left;
+}
+
+p.close-smallprint {
+    display: block;
+    position: absolute;
+    right: 0;
+    text-align: right;
+    margin-top: 2rem;
+    margin-right: 3rem;
+    margin-bottom: 2rem;
+    width: 10.5rem;
+    padding: 1rem;
+    padding-right: 2rem;
+    border-radius: 4px;
+    background-color: #00b450;
+    font-weight: 700;
+    font-size: 1.8rem;
+    color: white;
+    cursor: pointer;
+}
+
+p.fetch-terms {
+    display: block;
+    position: absolute;
+    left: 0;
+    text-align: left;
+    margin-top: 2rem;
+    margin-left: 3rem;
+    margin-bottom: 2rem;
+    width: 19rem;
+    padding: 1rem;
+    padding-left: 2rem;
+    border-radius: 4px;
+    background-color: #006EFF;
+    font-weight: 700;
+    font-size: 1.8rem;
+    color: white;
+    cursor: pointer;
+}
+
+p.close-smallprint span.glyphicon {
+    padding-right: 1rem;
+}
+
+p.fetch-terms span.glyphicon {
+    padding-right: 1rem;
+}
+
+</style>
+
+{% endblock %}
+
+{% block content %}
+
+<div class="product-row">
+
+<div class="smallprint">
+    <p><em>Skilmálar:</em>
+        Hugbúnaðurinn Greynir er höfundarréttarvarin eign (copyright &copy; 2020)
+        Miðeindar ehf., kt. 591213-1480, Fiskislóð 31, rými B/304, 101 Reykjavík,
+        VSK númer 137060, tölvupóstfang
+        <a href="mailto:mideind@mideind.is">mideind@mideind.is</a>.
+    </p>
+    <p>Greynir er öllum opinn og ókeypis til notkunar undir
+        <a href="https://www.gnu.org/licenses/gpl-3.0.en.html" target="_blank">GNU GPLv3 hugbúnaðarleyfi</a>,
+        sbr. skilmála þess.</p>
+    <p><em>GNU GPLv3 leyfið veitir ekki rétt til notkunar í lokuðum hugbúnaðarkerfum eða
+        í vefjum þar sem frumforrit eru ekki með sama eða sambærilegum hætti
+        opin og aðgengileg öllum.</em></p>
+    <p>Þrátt fyrir ákvæði GNU GPLv3 leyfisins veitir
+        Miðeind ehf. sérstök tímabundin leyfi til
+        notkunar Greynis í þeim tilvikum sem lýst er á þessari vefsíðu. Slík sérstök
+        leyfi fela í sér afmarkaða undanþágu frá ákvæðum GNU GPLv3 leyfisins eins og
+        hér er nánar lýst, en GNU GPLv3 leyfið gildir að öðru leyti áfram eftir því sem
+        við á.</p>
+    <p>Með áskrift að sérstöku hugbúnaðarleyfi öðlast leyfishafi úr hendi Miðeindar ehf.
+        rétt til notkunar Greynis í einn almanaksmánuð í senn,
+        sbr. gjaldskrá og þessa skilmála. Gjald fyrir leyfið er innheimt
+        mánaðarlega fyrirfram, uns leyfishafi óskar skriflega eftir því við Miðeind ehf.
+        að segja upp leyfinu og hætta notkun hugbúnaðarins. Áður greidd afnotagjöld
+        eru óafturkræf. Greiði leyfishafi ekki fyrir tiltekinn mánuð fellur
+        leyfið niður við lok þess mánaðar. Er leyfishafa þá skylt að hætta allri
+        notkun Greynis sem leyfið náði til, en vera ella brotlegur við höfundarrétt
+        Miðeindar ehf.</p>
+    <p>Sérstakt hugbúnaðarleyfi er aðeins
+        veitt þeim lögaðila sem kaupir það eða nýtir í sínu nafni,
+        og er óframseljanlegt. Leyfið veitir ekki
+        heimild til að dreifa Greyni, hvort sem er í
+        óbreyttri eða breyttri mynd, áfram til annarra en leyfishafa sjálfs.</p>
+    <p>Hvert sérstakt leyfi gildir fyrir öll hugbúnaðarverkefni
+        sem unnin eru og notuð eingöngu innanhúss hjá leyfishafa,
+        og/eða fyrir einn vef í hans eigu.
+        Með einum vef er átt við eitt grunnlén, svo sem xyz.is. Undirlén grunnléna,
+        svo sem www.xyz.is, teljast tilheyra grunnléni. Hyggist leyfishafi nota
+        Greyni á tveimur eða fleiri vefjum í sinni eigu, þ.e. á tveimur eða fleiri
+        grunnlénum, ber honum að kaupa jafnmörg leyfi sem gilda samtímis.
+    </p>
+    <p>Ef þú óskar eftir að nota Greyni í tilvikum þar sem óljóst er hvort ofangreindir
+        skilmálar eigi við, hvetjum við þig til að hafa samband við Miðeind ehf.
+        (<a href="mailto:mideind@mideind.is">mideind@mideind.is</a>) til að fá nánari
+        útskýringar, eða, eftir atvikum, sérsniðið leyfi.
+    </p>
+    <p>Miðeind ehf. ábyrgist að verð þegar stofnaðra áskrifta, sem gilt hafa samfleytt,
+        muni ekki hækka umfram hækkun á vísitölu neysluverðs
+        sem Hagstofa Íslands reiknar og birtir, á hverju 12 mánaða tímabili.
+        Miðeind ehf. áskilur sér rétt til að breyta verði nýrra áskrifta hvenær sem er.
+    </p>
+    <p>Miðeind ehf. ábyrgist að gera það sem í hennar valdi stendur til að frumforrit
+        Greynis verði áfram aðgengileg þótt fyrirtækið hætti þróun eða útgáfu
+        hugbúnaðarins, þ.m.t. vegna slita, samruna, sölu eða annarra ástæðna.
+    </p>
+    <p>Áréttað er að sérstök hugbúnaðarleyfi þau sem hér er um fjallað fela ekki
+        í sér frávik frá ákvæðum GNU GPLv3 leyfisins varðandi ábyrgð á virkni
+        hugbúnaðarins eða ábyrgð á afleiddu tjóni, sbr. m.a. 15., 16. og 17. grein
+        GNU GPLv3 leyfisins.
+    </p>
+    <p class="close-smallprint" onclick="closeSmallprint()"><span class="glyphicon glyphicon-ok"></span>Loka</p>
+    <p class="fetch-terms" onclick="fetchTerms()"><span class="glyphicon glyphicon-file"></span>Sækja sem PDF</p>
+</div> <!-- smallprint-->
+
+</div> <!-- product-row -->
+
+{% endblock %}
+
+{% block endscripts %}
+
+<script>
+
+    function fetchTerms() {
+        window.open("{{ url_for('static', filename='files/Greynir-Terms-2020-03-11.pdf') }}", "_blank");
+    }
+
+    function closeSmallprint() {
+        $("div.smallprint").css("visibility", "hidden");
+    }
+
+</script>
+
+{% endblock %}
+

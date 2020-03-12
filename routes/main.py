@@ -317,6 +317,20 @@ def apidoc():
     return render_template("apidoc.html")
 
 
+@routes.route("/buy")
+# @max_age(seconds=10 * 60)
+def buy():
+    """ Handler for a subscription purchase page """
+    return render_template("buy.html")
+
+
+@routes.route("/terms")
+# @max_age(seconds=10 * 60)
+def terms():
+    """ Handler for terms & conditions page """
+    return render_template("terms.html")
+
+
 @routes.route("/about")
 @max_age(seconds=10 * 60)
 def about():

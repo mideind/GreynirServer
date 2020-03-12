@@ -597,6 +597,10 @@ div#plist {
    padding-top: 16px;
 }
 
+div#correct-progress {
+   display: none;
+}
+
 div#output {
    padding-top: 16px;
    margin-bottom: 24px;

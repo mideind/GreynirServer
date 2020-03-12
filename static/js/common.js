@@ -324,6 +324,25 @@ function serverJsonQuery(requestUrl, jsonData, successFunc, completeFunc, errorF
     });
 }
 
+function serverGet(requestUrl, successFunc, errorFunc) {
+   /* Wraps a simple, standard Ajax GET request to the server */
+   $.ajax({
+      // The URL for the request
+      url: requestUrl,
+      type: "GET",
+      // The type of data we expect back
+      dataType : "json",
+      cache: false,
+      // Code to run if the request succeeds;
+      // the response is passed to the function
+      success: (!successFunc) ? nullFunc : successFunc,
+      // Code to run if the request fails; the raw request and
+      // status codes are passed to the function
+      error: (!errorFunc) ? errFunc : errorFunc,
+      complete: nullCompleteFunc
+   });
+}
+
 function serverPost(url, parameters, new_window) {
    /* Post to the provided URL with the specified parameters */
    var form = $('<form method="post"></form>');

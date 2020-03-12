@@ -1,0 +1,560 @@
+
+{% extends "container-normal.html" %}
+
+{% block styles %}
+
+<link href="{{ url_for('static', filename='css/main-bootstrap.css') }}"
+    rel='stylesheet' type='text/css'>
+
+<style>
+
+em {
+    font-style: italic;
+    font-weight: 700;
+    color: #006EFFFF;
+}
+
+.header-row {
+    font-weight: 300;
+    margin-bottom: 2em;
+}
+
+.header-row h1 {
+    margin-top: 4rem;
+    margin-bottom: 4rem;
+    font-size: 4.5rem;
+    /* font-style: italic; */
+    font-weight: 200;
+    text-align: center;
+    line-height: 1.6;
+}
+
+.header-row h1 em {
+    font-weight: 900;
+}
+
+.header-row h2 {
+    margin-top: 3rem;
+    margin-bottom: 3rem;
+    font-size: 2.6rem;
+    /* font-style: italic; */
+    font-weight: 200;
+    text-align: center;
+    line-height: 1.6;
+}
+
+.header-row .img-row {
+    text-align: center;
+}
+
+.header-row .img-row img {
+    display: inline-block;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+    width: 70%;
+    padding: 0.6rem;
+    border-radius: 6px;
+    border-style: solid;
+    border-width: 0.8px;
+}
+
+.header-row ul {
+    margin-top: 4rem;
+    margin-bottom: 4rem;
+    margin-left: 8rem;
+    margin-right: 8rem;
+    font-size: 2.2rem;
+    font-style: italic;
+    line-height: 1.6;
+}
+
+.header-row h3 {
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+    margin-left: 4rem;
+    margin-right: 4rem;
+    font-size: 1.8rem;
+    line-height: 1.6;
+}
+
+.header-row h3 em {
+    font-style: normal;
+    font-weight: 700;
+    color: black;
+}
+
+.header-row h3.center {
+    text-align: center;
+    font-style: italic;
+}
+
+.product-row {
+    position: absolute;
+    text-align: center;
+    margin-bottom: 4rem;
+}
+
+.product-column {
+    display: inline-block;
+    width: 22rem;
+    vertical-align: top;
+    padding-top: 2rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    margin-left: 0.5rem;
+    margin-right: 0.5rem;
+    border-radius: 4px;
+}
+
+#buy-oss {
+    background-color: #f8f8f8;
+}
+
+#buy-private {
+    background-color: #f0f0f0;
+}
+
+#buy-small {
+    background-color: rgba(0, 110, 255, 0.10);
+}
+
+#buy-large {
+    background-color: rgba(0, 110, 255, 0.20);
+}
+
+.product-header {
+    width: 100%;
+    height: 20rem;
+    font-size: 2.5rem;
+    line-height: 1.5;
+    font-weight: 400;
+    font-style: italic;
+    text-align: center;
+}
+
+.product-header em {
+    color: black;
+}
+
+.product-description {
+    font-size: 1.6rem;
+    font-weight: 300;
+    line-height: 1.5;
+    width: 100%;
+    height: 34rem;
+}
+
+.product-description em {
+    font-weight: 300;
+    font-style: italic;
+    color: black;
+}
+
+.product-price {
+    width: 100%;
+    height: 15rem;
+    font-weight: 300;
+    text-align: center;
+    font-size: 1.8rem;
+    margin-bottom: 3rem;
+}
+
+.product-price em {
+    font-size: 2.8rem;
+}
+
+#buy-oss .product-price,
+#buy-private .product-price {
+    display: table;
+    border-style: solid;
+    border-width: 1px;
+    border-radius: 4px;
+}
+
+.product-price span {
+    display: table-cell;
+    vertical-align: middle;
+}
+
+.product-price button {
+    vertical-align: middle;
+    width: 100%;
+    padding: 0.4em;
+    height: 15rem;
+    background-color: rgba(0, 110, 255, 0.01);
+    border-color:rgba(0, 110, 255, 0.60);
+    border-style: solid;
+    border-width: 1.5px;
+    border-radius: 4px;
+    font-size: 1.8rem;
+}
+
+.definitions {
+    font-size: 1.4rem;
+    font-style: italic;
+    font-weight: 300;
+    line-height: 1.4;
+    width: 100%;
+    text-align: left;
+    margin-top: 3rem;
+    margin-left: 4rem;
+    margin-right: 4rem;
+}
+
+.definitions em {
+    font-weight: 400;
+    color: black;
+}
+
+.product-description sup {
+    margin-left: 0.15rem;
+    font-size: 1.0rem;
+}
+
+.smallprint {
+    visibility: hidden;
+    position: absolute;
+    top: 0rem;
+    width: 100%;
+    background-color: white;
+    border-style: solid;
+    border-color: #c0c0c0;
+    border-width: 2px;
+    border-radius: 8px;
+    z-index: 100;
+    padding-top: 4rem;
+    padding-bottom: 10rem;
+    padding-left: 3rem;
+    padding-right: 3rem;
+    font-size: 1.6rem;
+    line-height: 1.4;
+    font-weight: 300;
+    text-align: left;
+    margin-bottom: 6rem;
+}
+
+p.close-smallprint {
+    display: block;
+    position: absolute;
+    right: 0;
+    text-align: right;
+    margin-top: 2rem;
+    margin-right: 3rem;
+    margin-bottom: 2rem;
+    width: 10.5rem;
+    padding: 1rem;
+    padding-right: 2rem;
+    border-radius: 4px;
+    background-color: #00b450;
+    font-weight: 700;
+    font-size: 1.8rem;
+    color: white;
+    cursor: pointer;
+}
+
+p.fetch-terms {
+    display: block;
+    position: absolute;
+    left: 0;
+    text-align: left;
+    margin-top: 2rem;
+    margin-left: 3rem;
+    margin-bottom: 2rem;
+    width: 19rem;
+    padding: 1rem;
+    padding-left: 2rem;
+    border-radius: 4px;
+    background-color: #006EFF;
+    font-weight: 700;
+    font-size: 1.8rem;
+    color: white;
+    cursor: pointer;
+}
+
+p.close-smallprint span.glyphicon {
+    padding-right: 1rem;
+}
+
+p.fetch-terms span.glyphicon {
+    padding-right: 1rem;
+}
+
+#buy-oss .product-price,
+#buy-private .product-price {
+    background-color: #f8f8f8;
+    border-color: #c0c0c0;
+}
+
+#buy-oss .product-price em,
+#buy-private .product-price em {
+    color: #606060;
+}
+
+#buy-small .product-price {
+    background-color: rgba(0, 110, 255, 0.05);
+    border-color: rgba(0, 110, 255, 0.8);
+    cursor: pointer;
+}
+
+#buy-large .product-price {
+    background-color: rgba(0, 110, 255, 0.025);
+    border-color: rgba(0, 110, 255, 0.8);
+    cursor: pointer;
+}
+
+#buy-small .product-price em,
+#buy-large .product-price em {
+    color: black;
+}
+
+#buy-small .product-price:hover button,
+#buy-large .product-price:hover button {
+    background-color:rgba(0, 110, 255, 1.0);
+    border-color:rgba(0, 110, 255, 1.0);
+    color: white;
+}
+
+#buy-small .product-price:hover button em,
+#buy-large .product-price:hover button em {
+    color: white;
+}
+
+#SalesCloud-Inline-Checkout {
+    z-index: 200;
+}
+
+</style>
+
+{% endblock %}
+
+{% block content %}
+
+<div class="header-row">
+    <h1>Styddu <em>íslenskuna okkar</em></h1>
+    <h2>Með hjálp Greynis verður leikur einn<br>
+        að <em>nota óaðfinnanlega íslensku</em><br>
+        á vefnum þínum.</h2>
+    <div class="img-row">
+        <img src="/static/img/Blurb1.png">
+    </div>
+    <ul>
+        <li>Birtu nöfn, heimilisföng, vöruheiti o.s.frv. í <em>réttum föllum</em> eftir samhengi.</li>
+        <li>Bjóddu betri <em>leit eftir vöru og þjónustu</em> óháð falli, tölu og greini.</li>
+        <li>Búðu til <em>spjallmenni</em> sem veitir lipra þjónustu á góðri íslensku.</li>
+        <li>...og margt fleira; Greynir er <em>fjölhæfur</em> og sveigjanlegur að þínum þörfum.</li>
+    </ul>
+    <h3>Fyrir <em>lága mánaðarlega upphæð</em> - eða ókeypis eftir atvikum - getur þú notað
+        Greyni í vefi eða önnur hugbúnaðarverkefni. Með þínu framlagi færð þú ekki
+        aðeins aðgang að öflugum hugbúnaði heldur styður þú líka við
+        <em>áframhaldandi þróun máltækni</em> fyrir íslensku.
+    </h3>
+    <h3 class="center">Notkun Greynis er háð hugbúnaðarleyfum eins og hér segir,
+        sbr. <a href="javascript:openSmallprint()">nánari skilmála</a>:</h3>
+</div>
+
+<div class="product-row" id="product-row-id">
+
+<div class="product-column" id="buy-oss">
+    <div class="product-header">
+        <em>Opinn</em> hugbúnaður
+    </div>
+    <div class="product-description">
+        <p>
+        Þú mátt nota Greyni frjálst og ókeypis sem hluta af opnum hugbúnaði.
+        Þar er átt við búnað sem er undir
+        <a href="https://www.gnu.org/licenses/gpl-3.0.en.html" target="_blank">GNU GPLv3</a>
+        eða samhæfðu leyfi.
+        </p>
+        <p>
+        <em>Athugaðu að MIT, Apache og sambærileg leyfi sem heimila
+        lokaða notkun eru ekki samhæfð GNU GPLv3.</em>
+        </p>
+    </div>
+    <div class="product-price"><span><em>Ókeypis</em></span></div>
+</div>
+
+<div class="product-column" id="buy-private">
+    <div class="product-header">
+        <em>Einkanot</em> og afnot aðila sem <em>ekki eru reknir í hagnaðar&shy;skyni</em>
+    </div>
+    <div class="product-description">
+        <p>
+        Greynir er ókeypis til einkanota í verkefnum og vefjum á vegum
+        og í eigu einstaklinga.
+        Hann er jafnframt ókeypis til afnota í vefjum og kerfum
+        frjálsra félaga&shy;samtaka sem ekki
+        eru rekin í hagnaðar&shy;skyni.
+        </p>
+        <p>
+        <em>Athugaðu að í þessu leyfi felst ekki réttur til endur&shy;dreifingar
+        Greynis, hvorki í uppruna&shy;legri né breyttri mynd.</em>
+        </p>
+    </div>
+    <div class="product-price"><span><em>Ókeypis</em></span></div>
+</div>
+
+<div class="product-column" id="buy-small">
+    <div class="product-header">
+        Afnot í <em>smærri vefjum</em> og innanhúss&shy;verkefnum
+    </div>
+    <div class="product-description">
+        <p>
+            Undir þetta leyfi falla afnot í vefjum smærri lög&shy;aðila og öðrum litlum
+            vefjum. Jafnframt falla hér undir innan&shy;húss&shy;verkefni lög&shy;aðila,
+            stórra sem smárra.
+        </p>
+        <p>
+            <em>Nánari skilmála má sjá <a href="javascript:openSmallprint()">hér</a>.</em>
+        </p>
+    </div>
+    <div class="product-price">
+        <button class="salescloud-action" data-action-triggers="click"
+            data-action-components='{"channel": "d69570c4-ca97-4bb2-b604-a06da4a50867", "product_id":"5ada3a9c-913a-4244-9aac-5ee90d3a92b1", "quantity": 1, "commit": 1, "buy_now": 1, "language": "is"}'
+            data-loading-text="Í vinnslu..."
+            data-action-on-processed='[{"type": "initWidget", "target": "#SalesCloud-Inline-Checkout"}, {"type": "scrollTo", "target": "#SalesCloud-Inline-Checkout"}, {"type": "css", "target": "#SalesCloud-Inline-Checkout", "name": "display", "value": "block"}, {"type": "css", "target": "#product-row-id", "name": "visibility", "value": "hidden"}]'
+            type="button">
+            <em>3.450 kr.</em><br>á mánuði með VSK<br>fyrir hvert lén
+        </button>
+    </div>
+</div>
+
+<div class="product-column" id="buy-large">
+    <div class="product-header">
+        Afnot í <em>stærri vefjum</em> og hjá <em>opinberum aðilum</em>
+    </div>
+    <div class="product-description">
+        <p>
+            Undir þetta leyfi falla afnot í vefjum og verkefnum stærri lögaðila,
+            þ.e. vefir umfram tiltekin aðsóknar&shy;mörk<sup>1)</sup> og verkefni aðila af til&shy;tekinni
+            stærð<sup>2)</sup>. Jafnframt falla hér undir opin&shy;berir aðilar, þ.e. ríki,
+            sveitar&shy;félög, opinber hluta&shy;félög o.þ.h.
+        </p>
+        <p>
+            <em>Nánari skilmála má sjá <a href="javascript:openSmallprint()">hér</a>.</em>
+        </p>
+    </div>
+    <div class="product-price">
+        <button class="salescloud-action" data-action-triggers="click"
+        data-action-components='{"channel": "d69570c4-ca97-4bb2-b604-a06da4a50867", "product_id":"14cf069b-637e-428a-bd54-554823b1aef3", "quantity": 1, "commit": 1, "buy_now": 1, "language": "is"}'
+        data-loading-text="Í vinnslu..."
+        data-action-on-processed='[{"type": "initWidget", "target": "#SalesCloud-Inline-Checkout"}, {"type": "scrollTo", "target": "#SalesCloud-Inline-Checkout"}, {"type": "css", "target": "#SalesCloud-Inline-Checkout", "name": "display", "value": "block"}, {"type": "css", "target": "#product-row-id", "name": "visibility", "value": "hidden"}]'
+        type="button">
+            <em>14.900 kr.</em><br>á mánuði með VSK<br>fyrir hvert lén
+        </button>
+    </div>
+</div>
+
+<div class="definitions">
+    <p>
+        1) Með <em>vefjum umfram tiltekin aðsóknarmörk</em> er átt við vefi
+        sem fá a.m.k. 15.000 innlit að meðaltali vikulega.
+    </p>
+    <p>
+        2) Með <em>stærri lögaðilum</em> er átt við aðila sem er skylt
+        að kjósa sér endurskoðanda skv. 1.–3. mgr.
+        <a href="https://www.althingi.is/lagas/nuna/2006003.html#G98" target="_blank">98. gr. laga nr. 3/2006</a>,
+        um ársreikninga.
+    </p>
+</div>
+
+<div class="smallprint">
+    <p><em>Smáa letrið:</em>
+        Hugbúnaðurinn Greynir er höfundarréttarvarin eign (copyright &copy; 2020)
+        Miðeindar ehf., kt. 591213-1480, Fiskislóð 31, rými B/304, 101 Reykjavík,
+        VSK númer 137060, tölvupóstfang
+        <a href="mailto:mideind@mideind.is">mideind@mideind.is</a>.
+    </p>
+    <p>Greynir er öllum opinn og ókeypis til notkunar undir
+        <a href="https://www.gnu.org/licenses/gpl-3.0.en.html" target="_blank">GNU GPLv3 hugbúnaðarleyfi</a>,
+        sbr. skilmála þess.</p>
+    <p><em>GNU GPLv3 leyfið veitir ekki rétt til notkunar í lokuðum hugbúnaðarkerfum eða
+        í vefjum þar sem frumforrit eru ekki með sama eða sambærilegum hætti
+        opin og aðgengileg öllum.</em></p>
+    <p>Þrátt fyrir ákvæði GNU GPLv3 leyfisins veitir
+        Miðeind ehf. sérstök tímabundin leyfi til
+        notkunar Greynis í þeim tilvikum sem lýst er á þessari vefsíðu. Slík sérstök
+        leyfi fela í sér afmarkaða undanþágu frá ákvæðum GNU GPLv3 leyfisins eins og
+        hér er nánar lýst, en GNU GPLv3 leyfið gildir að öðru leyti áfram eftir því sem
+        við á.</p>
+    <p>Með áskrift að sérstöku hugbúnaðarleyfi öðlast leyfishafi úr hendi Miðeindar ehf.
+        rétt til notkunar Greynis í einn almanaksmánuð í senn,
+        sbr. gjaldskrá og þessa skilmála. Gjald fyrir leyfið er innheimt
+        mánaðarlega fyrirfram, uns leyfishafi óskar skriflega eftir því við Miðeind ehf.
+        að segja upp leyfinu og hætta notkun hugbúnaðarins. Áður greidd afnotagjöld
+        eru óafturkræf. Greiði leyfishafi ekki fyrir tiltekinn mánuð fellur
+        leyfið niður við lok þess mánaðar. Er leyfishafa þá skylt að hætta allri
+        notkun Greynis sem leyfið náði til, en vera ella brotlegur við höfundarrétt
+        Miðeindar ehf.</p>
+    <p>Sérstakt hugbúnaðarleyfi er aðeins
+        veitt þeim lögaðila sem kaupir það eða nýtir í sínu nafni,
+        og er óframseljanlegt. Leyfið veitir ekki
+        heimild til að dreifa Greyni, hvort sem er í
+        óbreyttri eða breyttri mynd, áfram til annarra en leyfishafa sjálfs.</p>
+    <p>Hvert sérstakt leyfi gildir fyrir öll hugbúnaðarverkefni
+        sem unnin eru og notuð eingöngu innanhúss hjá leyfishafa,
+        og/eða fyrir einn vef í hans eigu.
+        Með einum vef er átt við eitt grunnlén, svo sem xyz.is. Undirlén grunnléna,
+        svo sem www.xyz.is, teljast tilheyra grunnléni. Hyggist leyfishafi nota
+        Greyni á tveimur eða fleiri vefjum í sinni eigu, þ.e. á tveimur eða fleiri
+        grunnlénum, ber honum að kaupa jafnmörg leyfi sem gilda samtímis.
+    </p>
+    <p>Ef þú óskar eftir að nota Greyni í tilvikum þar sem óljóst er hvort ofangreindir
+        skilmálar eigi við, hvetjum við þig til að hafa samband við Miðeind ehf.
+        (<a href="mailto:mideind@mideind.is">mideind@mideind.is</a>) til að fá nánari
+        útskýringar, eða, eftir atvikum, sérsniðið leyfi.
+    </p>
+    <p>Miðeind ehf. ábyrgist að verð þegar stofnaðra áskrifta, sem gilt hafa samfleytt,
+        muni ekki hækka umfram hækkun á vísitölu neysluverðs
+        sem Hagstofa Íslands reiknar og birtir, á hverju 12 mánaða tímabili.
+        Miðeind ehf. áskilur sér rétt til að breyta verði nýrra áskrifta hvenær sem er.
+    </p>
+    <p>Miðeind ehf. ábyrgist að gera það sem í hennar valdi stendur til að frumforrit
+        Greynis verði áfram aðgengileg þótt fyrirtækið hætti þróun eða útgáfu
+        hugbúnaðarins, þ.m.t. vegna slita, samruna, sölu eða annarra ástæðna.
+    </p>
+    <p>Áréttað er að sérstök hugbúnaðarleyfi þau sem hér er um fjallað fela ekki
+        í sér frávik frá ákvæðum GNU GPLv3 leyfisins varðandi ábyrgð á virkni
+        hugbúnaðarins eða ábyrgð á afleiddu tjóni, sbr. m.a. 15., 16. og 17. grein
+        GNU GPLv3 leyfisins.
+    </p>
+    <p class="close-smallprint" onclick="closeSmallprint()"><span class="glyphicon glyphicon-ok"></span>Loka</p>
+    <p class="fetch-terms" onclick="fetchTerms()"><span class="glyphicon glyphicon-file"></span>Sækja sem PDF</p>
+</div> <!-- smallprint-->
+
+</div> <!-- product-row -->
+
+
+<div id="SalesCloud-Inline-Checkout"
+    data-widget="432" data-language="is" data-follow="true"
+    data-spinner="true" data-resize="true">
+</div>
+
+{% endblock %}
+
+{% block endscripts %}
+
+<script src="https://cdn.salescloud.is/js/salescloud.js"></script>
+
+<script>
+
+    function fetchTerms() {
+        window.open("{{ url_for('static', filename='files/Greynir-Terms-2020-03-11.pdf') }}", "_blank");
+    }
+
+    function openSmallprint() {
+        $("div.smallprint").css("visibility", "visible");
+    }
+
+    function closeSmallprint() {
+        $("div.smallprint").css("visibility", "hidden");
+    }
+
+    function init() {
+    }
+
+    $(document).ready(init);
+
+</script>
+
+{% endblock %}
+

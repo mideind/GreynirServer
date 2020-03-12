@@ -25,29 +25,45 @@
 
    </div>
 
-   <div class="row buttons">
+   <div id="correct-buttons" class="row buttons">
       <div class="col-xs-4 col-sm-3 col-md-2 pull-right">
          <button class="btn btn-info btn-lg btn-block"
             id="txt-ok" title="Lesa yfir texta" tabindex="3"
             onclick="correct()">
-            <span class='glyphicon glyphicon-restart glyphicon-spin-white spin' style="display:none;"></span>
+            <span class='glyphicon glyphicon-restart glyphicon-spin-white' style="display:none;"></span>
             <span class="glyphicon glyphicon-eye-open normal"></span> Lesa yfir
          </button>
       </div>
 
-      <form id="uploadForm" class="hidden">
+      <form class="hidden" enctype="multipart/form-data" method="post" action="#">
          <input id="file-input" type="file" name="filename" onChange="uploadFile()" accept="">
       </form>
 
       <div class="col-xs-4 col-sm-3 col-md-2 pull-right">
          <button class="btn btn-success btn-lg btn-block" id="file-ok" 
-         title="Smelltu hér til þess að hlaða upp skjali til yfirlestrar (styður TXT, RTF, HTML og DOCX snið)" 
-         tabindex="3"onclick="selectFile()">
-            <span class='glyphicon glyphicon-restart glyphicon-spin-white spin' style="display:none;"></span>
+            title="Smelltu hér til þess að hlaða upp skjali til yfirlestrar (styður TXT, RTF, HTML og DOCX snið)" 
+            tabindex="3" onclick="selectFile()">
+            <span class='glyphicon glyphicon-restart glyphicon-spin-white' style="display:none;"></span>
             <span class="glyphicon glyphicon-upload normal"></span> Skjal
          </button>
       </div>
 
+   </div>
+
+   <div id="correct-progress" class="row">
+      <div class="col-xs-12">
+         <h4>Lestur texta stendur yfir...</h4>
+      </div>
+      <div class="col-xs-12">
+         <div class="progress">
+            <div id="correct-progress-value"
+               class="progress-bar progress-bar-warning progress-bar-striped active"
+               role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"
+               style="min-width: 2em; width: 0%">
+            0%
+            </div>
+         </div>
+      </div>
    </div>
 
 </div>
@@ -104,63 +120,207 @@
 
 <script>
 
-   var supported_mime_types = {{ supported_mime_types | tojson }}; 
+   var supported_mime_types = {{ supported_mime_types | tojson }};
 
    // Global array linking annotations to token span indices
    var annSpan = [];
 
-   function wait(state, button) {
-      // Start or stop a wait spinner
-      if (state) {
-         // Disable textarea and buttons
-         $("#txt-ok, #file-ok, #txt").attr("disabled", "disabled");
-         $("div#output").hide();
+   var CorrectionTask = (function() {
 
-         // Activate spinner on relevant button
-         var sel = button || "#txt-ok";
-         $(sel).find('.spin').show();
-         $(sel).find('.normal').hide();
+      "use strict";
+
+      /* Class to wrap the status and progress of a correction task
+         that is being run asynchronously on the server */
+
+      function CorrectionTask() {
+         this.url = null;
+         this.progress = 0.0;
+         this.ival = null;
       }
-      else {
-         // Re-enable textarea and buttons
-         $("#txt-ok, #file-ok, #txt").removeAttr("disabled");
-         $("div#output").show();
 
-         // Deactivate spinners
-         var sel = "#txt-ok, #file-ok";
-         $(sel).find('.spin').hide();
-         $(sel).find('.normal').show();
-      }
-   }
+      CorrectionTask.prototype.submitText = function(txt) {
+         this.clearResult();
+         this.updateProgress();
+         // Note: the following should not be a serverJsonQuery call,
+         // this is done via a HTTP form post
+         // Endpoints with .task suffix are not cached
+         serverQuery('/correct.task',
+            {
+               text : txt
+            },
+            this.start.bind(this),
+            null,
+            this.handleError.bind(this)
+         );
+      };
 
-   function clearResult() {
-      // Clear previous result
-      $("div#pgs").html("");
-      $("#no-annotations").hide();
-      $(window).off("resize");
-      annSpan = [];
-      $("div#statistics").hide();
-      // Display progress indicator
-      wait(true);
-   }
+      CorrectionTask.prototype.submitFile = function(fd) {
+         this.clearResult();
+         this.updateProgress();
+         // Send off ajax request
+         $.ajax({
+            url: '/correct.task',  
+            type: 'POST',
+            data: fd,
+            success: this.start.bind(this),
+            error: this.handleError.bind(this),
+            cache: false,
+            contentType: false,
+            processData: false
+         });
+         /*
+         serverQuery('/correct.task',
+            fd,
+            this.start.bind(this),
+            null,
+            this.handleError.bind(this)
+         );
+         */
+      };
 
-   function handleError(xhr, status, errorThrown) {
-      // An error occurred on the server or in the communications
-      var msg = "<b>Villa kom upp</b> í samskiptum við netþjón Greynis";
-      // http status code 413: Payload too large
-      if (xhr.status == 413) {
-         msg = "<b>Skjalið er of stórt</b> (>1.0 megabæti)";
-      }
-      wait(false);
-      showError(msg);
-   }
+      CorrectionTask.prototype.clearResult = function() {
+         // Clear previous result
+         $("div#pgs").html("");
+         $("#no-annotations").hide();
+         $(window).off("resize");
+         annSpan = [];
+         $("div#statistics").hide();
+         this.wait(true);
+      };
+
+      CorrectionTask.prototype.start = function(json, status, resp) {
+         // Called when the task has been started and we're being informed
+         // of the status (polling) URL to use
+         if (resp.status == 202) {
+            // This is the expected status: obtain the status URL
+            // from the Location header
+            this.url = resp.getResponseHeader("Location");
+            this.updateProgress();
+            // Initiate a progress check every 2 seconds
+            this.ival = setInterval(this.poll.bind(this), 2000);
+         }
+         else {
+            // Something is wrong here
+            this.wait(false);
+            showError("<b>Samband næst ekki</b> við netþjón Greynis");
+         }
+      };
+
+      CorrectionTask.prototype.handleError = function(resp) {
+         // An error occurred: stop polling and update the UI
+         this.stop();
+         this.progress = 1.0;
+         this.updateProgress();
+         // An error occurred on the server or in the communications
+         var msg;
+         // http status code 413: Payload too large
+         if (resp.status == 413)
+            msg = "<b>Skjalið er of stórt</b> (>1.0 megabæti)";
+         else
+            msg = "<b>Villa kom upp</b> í samskiptum við netþjón Greynis";
+         this.wait(false);
+         showError(msg);
+      };
+
+      CorrectionTask.prototype.poll = function() {
+         // Called every few seconds to query the server about its progress
+         serverGet(this.url,
+            this.checkProgress.bind(this),
+            this.handleError.bind(this)
+         );
+      };
+
+      CorrectionTask.prototype.checkProgress = function(json, status, resp) {
+         // Response from the server to a progress check
+         if (resp.status == 202) {
+            // Still in progress
+            this.progress = json.progress;
+            this.updateProgress();
+            return;
+         }
+         // Either we're done, or an error has occurred
+         this.stop();
+         this.progress = 1.0;
+         this.updateProgress();
+         if (resp.status == 200) {
+            // This is the final and complete response
+            // Show the results after a 0.5-second wait
+            setTimeout(this.populateResult.bind(this), 500, json)
+         }
+         else {
+            // Something is wrong
+            this.wait(false);
+            showError("<b>Villa kom upp</b> í samskiptum við netþjón Greynis");
+         }
+      };
+
+      CorrectionTask.prototype.updateProgress = function() {
+         // Update the UI with the current progress
+         var percent = "" + Math.round(this.progress * 100.0);
+         $("#correct-progress-value")
+            .css("width", percent + "%")
+            .attr("aria-valuenow", percent)
+            .html(percent + "%");
+      };
+
+      CorrectionTask.prototype.stop = function () {
+         // Stop the progress polling and quiet down
+         if (this.ival !== null) {
+            clearInterval(this.ival);
+            this.ival = null;
+         }
+      };
+
+      CorrectionTask.prototype.wait = function(state) {
+         // Update UI when waiting for result vs. showing it
+         if (state) {
+            // Waiting for result: disable textarea and buttons
+            $("#txt-ok, #file-ok, #txt").attr("disabled", "disabled");
+            $("div#output").hide();
+            // Hide buttons
+            $("div#correct-buttons").css("display", "none");
+            // Show progress bar
+            $("div#correct-progress").css("display", "block");
+         }
+         else {
+            // Re-enable textarea and buttons
+            $("#txt-ok, #file-ok, #txt").removeAttr("disabled");
+            $("div#output").show();
+            // Show buttons
+            $("div#correct-buttons").css("display", "block");
+            // Show progress bar
+            $("div#correct-progress").css("display", "none");
+         }
+      };
+
+      CorrectionTask.prototype.populateResult = function(json) {
+         // Processing completed: display the result
+         this.wait(false);
+         if (!json.valid || json.result === undefined || json.result === null) {
+            showError("<b>Villa kom upp</b> í samskiptum við netþjón Greynis");
+         }
+         else {
+            // Display the paragraphs, sentences and tokens
+            // along with the sentence-level annotations
+            displayAnnotations(json.result);
+            populateStats(json.stats);
+            // Replace text in text field
+            if (json.text) {
+               $("#txt").val(json.text);
+            }
+         }
+      };
+
+      return CorrectionTask;
+
+   } ());
 
    function showError(errStr) {
       // Hide any current results and show error message
       $("div#output").show();
       $("#no-annotations").hide();
       $("div#statistics").hide();
-      $("div#pgs").html("<p style='color:#cc0000;'>" + errStr + "</p>");
+      $("div#pgs").html("<p style='color:#cc0000'>" + errStr + "</p>");
    }
 
    function formatAnnotation(txt) {
@@ -432,44 +592,13 @@
       });
    }
 
-   function populateResult(json) {
-      wait(false);
-      if (!json.valid || json.result === undefined || json.result === null) {
-         $("div#pgs").html("<p><b>Villa kom upp</b> í samskiptum við netþjón Greynis</p>");
-      }
-      else {
-         // Display the paragraphs, sentences and tokens
-         // along with the sentence-level annotations
-         displayAnnotations(json.result);
-         populateStats(json.stats);
-
-         // Replace text in text field
-         if (json.text) {
-            $("#txt").val(json.text);
-         }
-      }
-   }
-
-   function correctText(txt) {
-      // Ask the server to tokenize and parse the given text
-      clearResult();
-      // Launch the query
-      serverQuery('/correct.api', // Endpoint with .api suffix are not cached
-         {
-            text : txt
-         },
-         populateResult,
-         null,
-         handleError
-      );
-   }
-
    function correct() {
       // Submit the contents of the textarea to the server
       // for tokenization and parsing
       var s = $("#txt").val().trim();
       if (s && s.length) {
-         correctText(s);
+         // Ask the server to tokenize and parse the given text, asynchronously
+         new CorrectionTask().submitText(s);
       } else {
          $("#txt").focus();
       }
@@ -499,19 +628,8 @@
 
       fd.set('file', f);   
       $("#txt").val("");
-      wait(true, "#file-ok");
 
-      // Send off ajax request
-      $.ajax({
-         url: '/correct.api',  
-         type: 'POST',
-         data: fd,
-         success:populateResult,
-         error:handleError,
-         cache: false,
-         contentType: false,
-         processData: false
-      });
+      new CorrectionTask().submitFile(fd);
    }
 
    function init() {
