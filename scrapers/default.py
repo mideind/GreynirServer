@@ -503,8 +503,12 @@ class RuvScraper(ScrapeHelper):
         ScrapeHelper.del_div_class(content, "pane-menningin-faerslur-panel-pane-16")
         ScrapeHelper.del_div_class(content, "region-conditional-stack")
         ScrapeHelper.del_div_class(content, "pane-author")
-        # Remove hidden taxonomy list at bottom of article
+        ScrapeHelper.del_div_class(content, "user-profile")
+        ScrapeHelper.del_div_class(content, "pane-node-created")
+        # Remove hidden taxonomy/sharing lists at bottom of article
         for ul in content.find_all("ul", {"class": "links"}):
+            ul.decompose()
+        for ul in content.find_all("ul", {"class": "rrssb-buttons"}):
             ul.decompose()
         return content
 
