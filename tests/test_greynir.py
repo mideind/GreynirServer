@@ -49,6 +49,8 @@ SKIP_ROUTES = frozenset(
         "/nntranslate.api",
         "/nn/translate.api",
         "/exit.api",
+        "/salescloud/nyskraning",
+        "/salescloud/breyting",
     )
 )
 

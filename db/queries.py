@@ -27,6 +27,9 @@ from . import SessionContext
 
 
 class _BaseQuery:
+
+    _Q = ""
+
     def __init__(self):
         pass
 

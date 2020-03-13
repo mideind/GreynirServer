@@ -78,7 +78,7 @@ class _Secret:
 _SECRET = _Secret()
 
 
-def request_valid(
+def validate_request(
     method, url, payload,
     xsc_date, xsc_key, xsc_digest,
     max_time=_MAX_TIME_WINDOW
@@ -125,18 +125,11 @@ def request_valid(
     return xsc_digest == my_digest
 
 
-@routes.route("/salescloud/nyskraning", methods=["POST"])
-def sales_create():
-    """ Webhook handler for SalesCloud """
-    return better_jsonify(success=True)
-
-
-@routes.route("/salescloud/breyting", methods=["POST"])
-def sales_modify():
-    """ Webhook handler for SalesCloud """
+def handle_request(request):
+    """ Handle a SalesCloud request, extracting its contents """
     # Validate the request
     if request.headers.get("User-Agent") != "SalesCloud":
-        return better_jsonify(
+        return dict(
             success=False,
             reason="Unknown user agent"
         ), 403  # Forbidden
@@ -151,19 +144,53 @@ def sales_modify():
             payload = request.get_data(cache=False, as_text=False)
     except Exception:
         # Something is wrong with the Content-length header or the request body
-        return better_jsonify(success=False), 400  # Bad request
+        return dict(success=False), 400  # Bad request
     # Do the signature/digest validation
-    if not request_valid(
+    if not validate_request(
         request.method, request.url, payload, xsc_date, xsc_key, xsc_digest
     ):
         logging.error("Invalid signature received")
-        return better_jsonify(
+        return dict(
             success=False,
             reason="Invalid signature"
         ), 403  # Forbidden
 
-    # The request is formally valid: let's see whether the content is acceptable
+    # The request is formally valid: return the contents
     j = json.loads(payload.decode("utf-8")) if payload else None
+    return j, 200  # OK
+
+
+@routes.route("/salescloud/nyskraning", methods=["POST"])
+def sales_create():
+    """ Webhook handler for SalesCloud """
+    j, status = handle_request(request)
+    if status != 200:
+        return better_jsonify(**j), status
+    if j is None or j.get("type") != "subscription_created":
+        return better_jsonify(
+            success=False,
+            reason="Unknown request type"
+        ), 400  # Bad request
+
+    # Example JSON:
+    # {
+    #     'after_renewal': '2020-04-13T13:23:04+00:00',
+    #     'before_renewal': '',
+    #     'customer_id': '294824',
+    #     'customer_label': '',
+    #     'product_id': '21154',
+    #     'subscription_status': 'true',
+    #     'type': 'subscription_created'
+    # }
+    return better_jsonify(success=True)
+
+
+@routes.route("/salescloud/breyting", methods=["POST"])
+def sales_modify():
+    """ Webhook handler for SalesCloud """
+    j, status = handle_request(request)
+    if status != 200:
+        return better_jsonify(**j), status
     if j is None or j.get("type") != "subscription_updated":
         return better_jsonify(
             success=False,

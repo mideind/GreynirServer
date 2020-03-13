@@ -604,7 +604,7 @@ class Query(Base):
     bquestion = Column(String, index=False, nullable=True)
 
     # Answer
-    answer = Column(String, index=True, nullable=True)
+    answer = Column(String, index=False, nullable=True)
 
     @hybrid_property
     def answer_lc(self):
@@ -615,7 +615,7 @@ class Query(Base):
         return CaseInsensitiveComparator(cls.answer)
 
     # Voice answer
-    voice = Column(String, index=True, nullable=True)
+    voice = Column(String, index=False, nullable=True)
 
     @hybrid_property
     def voice_lc(self):
@@ -663,11 +663,15 @@ class Query(Base):
     # Add an index on the question in lower case
     question_lc_index = Index('ix_queries_question_lc', func.lower(question))
 
+    # !!! The following indices don't work since answers can become
+    # !!! very long (thousands of characters) and PostgreSQL has a
+    # !!! limit on index entry size vs. its page size.
+
     # Add an index on the answer in lower case
-    answer_lc_index = Index('ix_queries_answer_lc', func.lower(answer))
+    # answer_lc_index = Index('ix_queries_answer_lc', func.lower(answer))
 
     # Add an index on the voice answer in lower case
-    voice_lc_index = Index('ix_queries_voice_lc', func.lower(voice))
+    # voice_lc_index = Index('ix_queries_voice_lc', func.lower(voice))
 
     def __repr__(self):
         return "Query(question='{0}', answer='{1}')".format(
