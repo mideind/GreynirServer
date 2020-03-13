@@ -16,7 +16,7 @@ from settings import Settings
 from db import SessionContext
 from treeutil import TreeUtility as tu
 
-Settings.read(os.path.join(basepath, "config", "Reynir.conf"))
+Settings.read(os.path.join(basepath, "config", "Greynir.conf"))
 Settings.DEBUG = False
 TEXTI = 'þróunarsafn_texti.txt'
 SBR = 'þróunarsafn.txt'

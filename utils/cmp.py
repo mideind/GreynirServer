@@ -1408,7 +1408,7 @@ def start_flokkar():
 
 
 if __name__ == "__main__":
-    Settings.read("config/Reynir.conf")
+    Settings.read("config/Greynir.conf")
     print("\nCMP.PY Copyright (C) 2017 Miðeind ehf.\n"
         "Mæling á mörkunarárangri Greynis með íslenska orðtíðnisafnið IFD sem viðmið\n")
     #for thing in StaticPhrases.DETAILS:

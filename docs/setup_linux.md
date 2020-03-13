@@ -173,7 +173,7 @@ python main.py
 ```
 
 Defaults to running on [`localhost:5000`](http://localhost:5000) but this 
-can be changed in `config/Reynir.conf`.
+can be changed in `config/Greynir.conf`.
 
 ##### Scrapers
 

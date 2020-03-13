@@ -25,7 +25,7 @@
     for BÍN, i.e. entries that are missing from the regular BÍN .csv file.
 
     The source data is read from the [meanings] section in the Vocab.conf
-    settings file (which is usually included in Reynir.conf) and written
+    settings file (which is usually included in Greynir.conf) and written
     to the file resources/ord.add.csv. That file is then read by the
     bincompress.py program, merged with the main BÍN file (ord.csv) and
     compressed into the binary trie file ord.compressed.
@@ -329,7 +329,7 @@ if __name__ == "__main__":
 
     try:
         # Read configuration file
-        Settings.read(os.path.join(basepath, "config", "ReynirSimple.conf"))
+        Settings.read(os.path.join(basepath, "config", "GreynirSimple.conf"))
         print(
             "Accessing BÍN database at {0}:{1}"
             .format(Settings.DB_HOSTNAME, Settings.DB_PORT)

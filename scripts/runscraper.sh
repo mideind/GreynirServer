@@ -1,16 +1,16 @@
 #!/bin/bash
 # Scraper
-cd ~/github/Reynir
+cd ~/github/Greynir
 source p369/bin/activate
 timeout 20m python scraper.py --limit=2500
 deactivate
 # Tagger
-cd ~/github/Reynir/vectors
+cd ~/github/Greynir/vectors
 source venv/bin/activate
 timeout 20m python builder.py --limit=2500 --notify tag
 deactivate
 # Processor
-cd ~/github/Reynir
+cd ~/github/Greynir
 source p369/bin/activate
 timeout 20m python processor.py --limit=3000
 deactivate

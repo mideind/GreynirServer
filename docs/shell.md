@@ -44,7 +44,7 @@ Out[1]:
  ('Óttar ekki áfram hjá Trelleborg')]
 ```
 
-Show recent persons:
+Show recent persons identified by Greynir's Named Entity Recognition module:
 
 ```
 In [1]: s.query(Person.name, Person.title) \

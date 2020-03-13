@@ -88,7 +88,7 @@ if __name__ == "__main__":
 
     try:
         # Read configuration file
-        Settings.read(os.path.join(basepath, "config", "Reynir.conf"))
+        Settings.read(os.path.join(basepath, "config", "Greynir.conf"))
     except ConfigError as e:
         print("Configuration error: {0}".format(e))
         quit()

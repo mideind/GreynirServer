@@ -152,24 +152,24 @@ people and titles.
 
 ## File details
 
-* `main.py` : WSGI web server application and main module for command-line invocation
-* `routes/*.py` : Routes for the web application
-* `queries/*.py` : Question answering modules
-* `settings.py` : Management of global settings and configuration data
-* `config/Reynir.conf` : Editable configuration file
-* `scraper.py` : Web scraper, collecting articles from a set of pre-selected websites (roots)
-* `fetcher.py` : Utility classes for fetching articles given their URLs
+* `main.py`: WSGI web server application and main module for command-line invocation
+* `routes/*.py`: Routes for the web application
+* `queries/*.py`: Question answering modules
+* `settings.py`: Management of global settings and configuration data
+* `config/Greynir.conf`: Editable configuration file
+* `scraper.py`: Web scraper, collecting articles from a set of pre-selected websites (roots)
+* `fetcher.py`: Utility classes for fetching articles given their URLs
 * `db/*.py`: Database models and functions via SQLAlchemy
-* `nertokenizer.py` : A layer on top of the tokenizer for named entity recognition
+* `nertokenizer.py`: A layer on top of the tokenizer for named entity recognition
 * `processor.py`: Information extraction from parse trees and token streams
-* `article.py` : Representation of an article through its life cycle
-* `tree.py` : Representation of parse trees for processing
-* `query.py` : Natural language query processor
-* `vectors/builder.py` : Article indexer and LSA topic vector builder
-* `doc.py` : Extract plain text from various document formats
-* `geo.py` : Geography and location-related utility functions
-* `utils/*.py` : Various utility programs
-* `speech.py` : Speech synthesis-related utility functions
+* `article.py`: Representation of an article through its life cycle
+* `tree.py`: Representation of parse trees for processing
+* `query.py`: Natural language query processor
+* `vectors/builder.py`: Article indexer and LSA topic vector builder
+* `doc.py`: Extract plain text from various document formats
+* `geo.py`: Geography and location-related utility functions
+* `utils/*.py`: Various utility programs
+* `speech.py`: Speech synthesis-related utility functions
 
 ## Installation and setup
 
@@ -196,7 +196,7 @@ python main.py
 ```
 
 Defaults to running on [`localhost:5000`](http://localhost:5000) but this can be 
-changed in `config/Reynir.conf`.
+changed in `config/Greynir.conf`.
 
 ##### Scrapers
 
@@ -213,14 +213,9 @@ export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
 
 ##### Interactive shell
 
-```
-./scripts/shell.sh
-```
-
-Starts an [IPython](https://ipython.org) shell with a database session (`s`), the Greynir 
-parser (`r`) and all SQLAlchemy database models preloaded. For more info, 
-see [Using the Greynir Shell](docs/shell.md).
-
+You can launch an [IPython](https://ipython.org) REPL shell with a database session (`s`), the Greynir 
+parser (`r`) and all SQLAlchemy database models preloaded. See [Using the Greynir Shell](docs/shell.md) 
+for instructions.
 
 ## Copyright and licensing
 

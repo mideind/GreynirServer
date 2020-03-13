@@ -172,7 +172,7 @@ def check_missing(verbs):
 def main():
     """ Main program """
     try:
-        Settings.read("config/Reynir.conf")
+        Settings.read("config/Greynir.conf")
     except ConfigError as e:
         print("Configuration error: {0}".format(e), file = sys.stderr)
         return 2

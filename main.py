@@ -183,7 +183,7 @@ def inject_nn_bools():
 t0 = time.time()
 try:
     # Read configuration file
-    Settings.read(os.path.join("config", "Reynir.conf"))
+    Settings.read(os.path.join("config", "Greynir.conf"))
 except ConfigError as e:
     logging.error("Greynir did not start due to a configuration error:\n{0}".format(e))
     sys.exit(1)
@@ -225,7 +225,7 @@ if not RUNNING_AS_SERVER:
     # Additional files that should cause a reload of the web server application
     # Note: Reynir.grammar is automatically reloaded if its timestamp changes
     extra_files = [
-        "Reynir.conf",
+        "Greynir.conf",
         "ReynirPackage.conf",
         "Index.conf",
         "Verbs.conf",
@@ -284,7 +284,7 @@ if not RUNNING_AS_SERVER:
     except socket_error as e:
         if e.errno == errno.EADDRINUSE:  # Address already in use
             logging.error(
-                "Reynir is already running at host {0}:{1}".format(
+                "Greynir web app is already running at host {0}:{1}".format(
                     Settings.HOST, Settings.PORT
                 )
             )
