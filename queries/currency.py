@@ -30,15 +30,27 @@ import json
 import random
 import logging
 
-from queries import query_json_api, format_icelandic_float
+from queries import query_json_api, format_icelandic_float, is_plural
 from settings import Settings
 
 
 # Lemmas of keywords that could indicate that the user is trying to use this module
 TOPIC_LEMMAS = [
-    "gengi", "gjaldmiðill", "króna", "pund", "sterlingspund", "dollari", "evra",
-    "rand", "jen", "júan", "franki", "gengisvísitala", "dalur", "bandaríkjadalur",
-    "kanadadalur"
+    "gengi",
+    "gjaldmiðill",
+    "króna",
+    "pund",
+    "sterlingspund",
+    "dollari",
+    "evra",
+    "rand",
+    "jen",
+    "júan",
+    "franki",
+    "gengisvísitala",
+    "dalur",
+    "bandaríkjadalur",
+    "kanadadalur",
 ]
 
 
@@ -46,16 +58,18 @@ def help_text(lemma):
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
-        random.choice((
-            "Hvert er gengi dollarans",
-            "Hvert er gengu evru gagnvart dollara",
-            "Hvað eru tíu þúsund krónur margar evrur",
-            "Hvað er einn dollari margar krónur",
-            "Hvað eru sextán hundruð krónur mikið í evrum",
-            "Hvað eru hundrað danskar krónur í evrum",
-            "Hvert er gengi pundsins gagnvart krónunni",
-            "Hvað eru sex rúblur mikið"
-        ))
+        random.choice(
+            (
+                "Hvert er gengi dollarans",
+                "Hvert er gengu evru gagnvart dollara",
+                "Hvað eru tíu þúsund krónur margar evrur",
+                "Hvað er einn dollari margar krónur",
+                "Hvað eru sextán hundruð krónur mikið í evrum",
+                "Hvað eru hundrað danskar krónur í evrum",
+                "Hvert er gengi pundsins gagnvart krónunni",
+                "Hvað eru sex rúblur mikið",
+            )
+        )
     )
 
 
@@ -129,6 +143,7 @@ QCurrencyQuery →
     
     # "Hvert/hvað/hvernig er gengi X?"
     | QCurAnyPrefix? QCurGeneralRate QCurNow?
+    | QCurCostPrefix QCurGeneralCost QCurNow?
 
     # "Hvert/hvað/hvernig er gengi X gagnvart Y?"
     | QCurAnyPrefix? QCurExchangeRate QCurNow?
@@ -142,6 +157,7 @@ QCurrencyQuery →
 QCurGenericPrefix → "hvað" "er" | "hvað" "eru" | "hvernig" "er"
 QCurSpecificPrefix → "hvert" "er" | "hvernig" "er"
 QCurAnyPrefix → QCurGenericPrefix | QCurSpecificPrefix
+QCurCostPrefix → "hvað" "kostar"
 
 QCurNow → "núna" | "nú" | "í" "augnablikinu" | "eins" "og" "stendur" | "í" "dag" 
 
@@ -260,6 +276,9 @@ QCurExchangeRate →
 QCurGeneralRate →
     QCurXch QCurUnit_ef
 
+QCurGeneralCost →
+    QCurUnit_nf
+
 QCurConvertAmount →
     QCurNumberWord QCurUnit_nf
     | amount
@@ -348,6 +367,11 @@ def QCurExchangeRate(node, params, result):
 
 
 def QCurGeneralRate(node, params, result):
+    result.op = "general"
+    result.desc = result._text
+
+
+def QCurGeneralCost(node, params, result):
     result.op = "general"
     result.desc = result._text
 
@@ -454,6 +478,7 @@ def sentence(state, result):
         elif result.op == "general":
             # 'Hvert er gengi dollarans?'
             val = _query_exchange_rate(result.currencies[0], "ISK")
+            suffix = "krónur" if is_plural(format_icelandic_float(val)) else "króna"
         elif result.op == "convert":
             # 'Hvað eru 100 evrur margar krónur?'
             suffix = result.currency  # 'krónur'
@@ -470,18 +495,16 @@ def sentence(state, result):
         if val:
             answer = format_icelandic_float(val)
             response = dict(answer=answer)
-            voice_answer = (
-                "{0} {3} {1}{2}."
-                .format(result.desc, answer, (" " + suffix) if suffix else "", verb)
-                .capitalize()
-            )
+            voice_answer = "{0} {3} {1}{2}.".format(
+                result.desc, answer, (" " + suffix) if suffix else "", verb
+            ).capitalize()
             # Clean up voice answer
             voice_answer = voice_answer.replace("slot í", "slotí")
             voice_answer = voice_answer.replace(" dollars ", " Bandaríkjadals ")
             q.set_answer(response, answer, voice_answer)
             q.set_key(target_currency)
             # Store the amount in the query context
-            q.set_context({"amount": {"currency":target_currency, "number":val}})
+            q.set_context({"amount": {"currency": target_currency, "number": val}})
             q.set_qtype(_CURRENCY_QTYPE)
 
         return
