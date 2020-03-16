@@ -452,11 +452,11 @@ def test_query_api(client):
     # Weather module
     json = qmcall(c, {"q": "hvernig er veðrið í Reykjavík?"})
     assert json["qtype"] == "Weather"
-    assert re.search(r"^\-?\d+°", json["answer"]) is not None 
+    assert re.search(r"^\-?\d+°", json["answer"]) is not None
 
     json = qmcall(c, {"q": "Hversu hlýtt er úti?"})
     assert json["qtype"] == "Weather"
-    assert re.search(r"^\-?\d+°", json["answer"]) is not None 
+    assert re.search(r"^\-?\d+°", json["answer"]) is not None
 
     json = qmcall(c, {"q": "hver er veðurspáin fyrir morgundaginn"})
     assert json["qtype"] == "Weather"

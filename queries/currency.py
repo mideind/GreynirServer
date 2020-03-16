@@ -21,8 +21,8 @@
 
 """
 
-# TODO: "Hvað/hvert er gengið á evrunni?" (implicitly "gagnvart krónunni")
-# TODO: Bug: "30 dollarar eru 3.801 krónUR." [!!!]
+# TODO: Bug: "30 dollarar eru 3.801 krónUR." [!!!] Fix using is_plural
+# TODO: Answer for exch rate should be of the form ISK 2000 = USD 14,65
 
 import re
 import cachetools
@@ -144,6 +144,7 @@ QCurrencyQuery →
     
     # "Hvert/hvað/hvernig er gengi X?"
     | QCurAnyPrefix? QCurGeneralRate QCurNow?
+    # "Hvað kostar X?"
     | QCurCostPrefix QCurGeneralCost QCurNow?
 
     # "Hvert/hvað/hvernig er gengi X gagnvart Y?"
@@ -158,7 +159,7 @@ QCurrencyQuery →
 QCurGenericPrefix → "hvað" "er" | "hvað" "eru" | "hvernig" "er"
 QCurSpecificPrefix → "hvert" "er" | "hvernig" "er"
 QCurAnyPrefix → QCurGenericPrefix | QCurSpecificPrefix
-QCurCostPrefix → "hvað" "kostar"
+QCurCostPrefix → "hvað" "kostar" | "hversu" "mikið" "kostar" | "hve" "mikið" "kostar"
 
 QCurNow → "núna" | "nú" | "í" "augnablikinu" | "eins" "og" "stendur" | "í" "dag" 
 
@@ -279,9 +280,11 @@ QCurXch → "gengi" | "gengið"
 
 QCurExchangeRate →
     QCurXch QCurUnit_ef QCurVisAVis QCurUnit_þgf
+    | "gengið" "á" QCurUnit_þgf QCurVisAVis QCurUnit_þgf
 
 QCurGeneralRate →
     QCurXch QCurUnit_ef
+    | "gengið" "á" QCurUnit_þgf
 
 QCurGeneralCost →
     QCurUnit_nf
