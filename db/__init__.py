@@ -23,8 +23,6 @@
 
 """
 
-import platform
-
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -39,17 +37,17 @@ from sqlalchemy import func as dbfunc
 
 from .models import Base
 
+
 class Scraper_DB:
     """ Wrapper around the SQLAlchemy connection, engine and session """
 
     def __init__(self):
         """ Initialize the SQLAlchemy connection to the scraper database """
 
-        # Assemble the right connection string for CPython/psycopg2 vs.
-        # PyPy/psycopg2cffi, respectively
-        # is_pypy = platform.python_implementation() == "PyPy"
+        # Assemble the connection string, using psycopg2cffi which
+        # supports both PyPy and CPython
         conn_str = "postgresql+{0}://reynir:reynir@{1}:{2}/scraper".format(
-            "psycopg2cffi", # if is_pypy else "psycopg2",
+            "psycopg2cffi",
             Settings.DB_HOSTNAME,
             Settings.DB_PORT,
         )
@@ -73,6 +71,7 @@ class Scraper_DB:
 
 
 class classproperty:
+
     def __init__(self, f):
         self.f = f
 
