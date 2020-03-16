@@ -37,6 +37,7 @@ from settings import Settings
 # Lemmas of keywords that could indicate that the user is trying to use this module
 TOPIC_LEMMAS = [
     "gengi",
+    "gengisvísitala",
     "gjaldmiðill",
     "króna",
     "pund",
@@ -47,10 +48,10 @@ TOPIC_LEMMAS = [
     "jen",
     "júan",
     "franki",
-    "gengisvísitala",
     "dalur",
     "bandaríkjadalur",
     "kanadadalur",
+    "rúbla",
 ]
 
 
@@ -221,10 +222,16 @@ QCurCHF/fall →
 
 QCurCAD/fall →
     | 'kanadískur:lo'_kk/fall 'dollari:kk'/fall
+    | 'kanadadalur:no'_kk/fall
+    | 'kanadadollari:no'_kk/fall
     | currency_cad/fall
 
+QCurCAD_nf →
+    "kanadadalur" | "kanadadalurinn"
+    | "kanadadollari" | "kanadadollarinn"
+
 QCurCAD_þgf →
-    "kanadadal" | "kanadadalnum"
+    "kanadadal" | "kanadadalnum" | "kanadadollar"
     | "kanadadollara" | "kanadadollaranum"
 
 QCurCAD_ef →

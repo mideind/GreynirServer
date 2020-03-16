@@ -159,6 +159,10 @@ def test_query_api(client):
     assert json["qtype"] == "Currency"
     assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
 
+    json = qmcall(c, {"q": "hvað kostar evran"})
+    assert json["qtype"] == "Currency"
+    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
+
     json = qmcall(c, {"q": "Hvert er gengi krónunnar gagnvart dollara í dag?"})
     assert json["qtype"] == "Currency"
     assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
