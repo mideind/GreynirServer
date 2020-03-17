@@ -25,7 +25,6 @@
 
 # TODO: "hvað er X ÁN vaski/virðisaukaskatti?"
 # TODO: Support pi in arithmetic ops ("Hvað er pí í öðru veldi?")
-# TODO: "hvað er hundrað deilt með tveim" svarar "ekki má deila með núlli"
 
 import math
 import json
