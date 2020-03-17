@@ -86,9 +86,9 @@ LOCATION_TAXONOMY = frozenset(
 # Location names that exist in Iceland but should
 # not be looked up as Icelandic place/street names
 ICE_PLACENAME_BLACKLIST = frozenset(
-    ("Norðurlönd", "París", "Svalbarði", "Höfðaborg", "Hamborg")
+    ("Norðurlönd", "París", "Svalbarði", "Höfðaborg", "Hamborg", "Pétursborg", "Stöð"),
 )
-ICE_STREETNAME_BLACKLIST = frozenset(("Sjáland", "Feney"))
+ICE_STREETNAME_BLACKLIST = frozenset(("Sjáland", "Feney", "Ráðhúsið"))
 
 ALWAYS_STREET_ADDR = frozenset(("Skeifan", "Bessastaðir", "Kringlan"))
 
@@ -116,6 +116,7 @@ ICE_REGIONS = frozenset(
 COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
     ICELANDIC_LANG_ISOCODE: {
         "Mjanmar": "MM",
+        "Bahrain": "BH",
         "Búrma": "MM",
         "Burma": "MM",
         "Ameríka": "US",
@@ -172,6 +173,10 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
         "Malawi": "MW",
         "Norður-Noregur": "NO",
         "Tæland": "TH",
+        "Aserbaísjan": "AZ",
+        "Kanarí": "IC",
+        "Jómfrúaeyjar": "US",
+        "Norður-Ítalía": "IT",
     }
 }
 
