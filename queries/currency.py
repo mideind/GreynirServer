@@ -23,6 +23,7 @@
 
 # TODO: Bug: "30 dollarar eru 3.801 krónUR." [!!!] Fix using is_plural
 # TODO: Answer for exch rate should be of the form ISK 2000 = USD 14,65
+# TODO: "hvað eru 10 evrur í íslenskum krónum"
 
 import re
 import cachetools
@@ -145,7 +146,7 @@ QCurrencyQuery →
     # "Hvert/hvað/hvernig er gengi X?"
     | QCurAnyPrefix? QCurGeneralRate QCurNow?
     # "Hvað kostar X?"
-    | QCurCostPrefix QCurGeneralCost QCurNow?
+    | QCurCostPrefix QCurGeneralCost "mikið"? QCurNow?
 
     # "Hvert/hvað/hvernig er gengi X gagnvart Y?"
     | QCurAnyPrefix? QCurExchangeRate QCurNow?
@@ -314,6 +315,8 @@ QCurAmountConversion →
     | QCurConvertAmount QCurMuchIn
     # Hvað eru 10 dollarar mikið [í evrum]?
     | QCurConvertAmount QCurMuch
+    # Hvað fæ ég margar krónur fyrir 10 dollara?
+    # | "hvað" "fæ" "ég" QCurMany "krónur" fyrir
 
 """
 

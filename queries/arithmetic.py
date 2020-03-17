@@ -25,6 +25,7 @@
 
 # TODO: "hvað er X ÁN vaski/virðisaukaskatti?"
 # TODO: Support pi in arithmetic ops ("Hvað er pí í öðru veldi?")
+# TODO: "hvað er hundrað deilt með tveim" svarar "ekki má deila með núlli"
 
 import math
 import json
@@ -87,6 +88,7 @@ _NUMBER_WORDS = {
     "einn": 1,
     "einu": 1,
     "tveir": 2,
+    "tveim": 2,
     "tvisvar sinnum": 2,
     "þrír": 3,
     "þrisvar sinnum": 3,
@@ -346,6 +348,8 @@ QArPi →
     | "hver" "er" "talan" "pí"
     | "hvað" "er" "pí"
     | "skilgreindu" "töluna"? "pí"
+    | "hvað" "eru" "margir" "aukastafir" "í" "pí"
+    | "hvað" "eru" "margir" "tölustafir" "í" "pí"
 
 """.format(
     " | ".join('"' + w + '"' for w in _FRACTION_WORDS.keys()),  # Fraction words

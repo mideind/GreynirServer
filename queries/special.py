@@ -342,6 +342,13 @@ _DUNNO = {
     "answer": "Það veit ég ekki, kæri notandi."
 }
 
+_SKY_BLUE = {
+    "answer": "Ljósið sem berst frá himninum er hvítt sólarljós "
+              "sem dreifist frá sameindum lofthjúpsins. Bláa ljósið, "
+              "sem er hluti hvíta ljóssins, dreifist miklu meira en "
+              "annað og því er himinninn blár."
+}
+
 _SPECIAL_QUERIES = {
     "er þetta spurning": {
         "answer": "Er þetta svar?"
@@ -356,6 +363,9 @@ _SPECIAL_QUERIES = {
         "answer": "Nei, því miður. En ég veit þó eitt og annað."
     },
     "veistu eitthvað": {
+        "answer": "Ég veit eitt og annað. Spurðu mig!"
+    },
+    "veistu nokkuð": {
         "answer": "Ég veit eitt og annað. Spurðu mig!"
     },
     "veistu svarið": {
@@ -496,6 +506,9 @@ _SPECIAL_QUERIES = {
     "áttu pabba": _CREATOR,
     "átt þú pabba": _CREATOR,
     "áttu mömmu": _CREATOR,
+    "átt þú vini": {
+        "answer": "Nei."
+    },
     "átt þú mömmu": _CREATOR,
     "hvað heitir mamma þín": _CREATOR,
     "hvað heitir pabbi þinn": _CREATOR,
@@ -507,6 +520,7 @@ _SPECIAL_QUERIES = {
     "hver framleiðir þig": _CREATOR,
     "hver framleiðir emblu": _CREATOR,
     "hver framleiddi þig": _CREATOR,
+    "hver á þig": _CREATOR,
     "hvað er miðeind": {
         "answer": "Miðeind er máltæknifyrirtækið sem skapaði mig."
     },
@@ -997,6 +1011,7 @@ _SPECIAL_QUERIES = {
     # Philosophy
     "hvað er svarið": _MEANING_OF_LIFE,
     "hvert er svarið": _MEANING_OF_LIFE,
+    "tilgangur lífsins": _MEANING_OF_LIFE,
     "hver er tilgangurinn": _MEANING_OF_LIFE,
     "hver er tilgangur lífsins": _MEANING_OF_LIFE,
     "hvað er tilgangur lífsins": _MEANING_OF_LIFE,
@@ -1082,6 +1097,7 @@ _SPECIAL_QUERIES = {
     "hver ert þú eiginlega": _identity,
     "hver er embla": _identity,
     "hvað er embla": _identity,
+    "hvað heitir embla": _identity,
     "hvaða forrit er þetta": _identity,
     "heitirðu embla": _identity,
     "heitir þú embla": _identity,
@@ -1103,6 +1119,9 @@ _SPECIAL_QUERIES = {
         "answer": "Ég bý í stafrænu skýjunum."
     },
     "hvar ertu staðsett": {
+        "answer": "Ég bý í stafrænu skýjunum."
+    },
+    "ertu til": {
         "answer": "Ég bý í stafrænu skýjunum."
     },
 
@@ -1265,6 +1284,7 @@ _SPECIAL_QUERIES = {
 
     "hvað kanntu": _capabilities,
     "hvað kannt þú": _capabilities,
+    "hvað kanntu meira": _capabilities,
     "hvað meira kanntu": _capabilities,
     "hvað meira kannt þú": _capabilities,
     "hvað annað kanntu": _capabilities,
@@ -1288,6 +1308,7 @@ _SPECIAL_QUERIES = {
     "hvers konar spurningar skilurðu": _capabilities,
     "hvers konar spurningum geturðu svarað": _capabilities,
     "hvers konar spurningum getur þú svarað": _capabilities,
+    "hvaða spurningum getur þú svarað": _capabilities,
 
     "hvers konar fyrirspurnir skilur þú": _capabilities,
     "hvers konar fyrirspurnir skilurðu": _capabilities,
@@ -1474,12 +1495,8 @@ _SPECIAL_QUERIES = {
     "ertu með eitthvað skemmtilegt til að segja": _random_trivia,
     "ertu með eitthvað áhugavert að segja": _random_trivia,
     "ertu með eitthvað áhugavert til að segja": _random_trivia,
-    "af hverju er himininn blár": {
-        "answer": "Ljósið sem berst frá himninum er hvítt sólarljós "
-                  "sem dreifist frá sameindum lofthjúpsins. Bláa ljósið, "
-                  "sem er hluti hvíta ljóssins, dreifist miklu meira en "
-                  "annað og því er himinninn blár."
-    },
+    "af hverju er himininn blár": _SKY_BLUE,
+    "hvers vegna er himininn blár": _SKY_BLUE,
 
     # Quotations
     # TODO: Implement this, find witty quotations
