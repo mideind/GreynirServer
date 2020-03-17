@@ -194,6 +194,8 @@ QCurUSD/fall →
     | 'dalur:kk'/fall
     | 'bandarískur:lo'_kk/fall? 'dollari:kk'/fall
     | currency_usd/fall
+    | "dollar" # Common mistake
+    | "bandaríkjadollar" # Common mistake
 
 QCurUSD_þgf →
     "bandaríkjadollara" | "bandaríkjadollaranum"
@@ -226,6 +228,7 @@ QCurCAD/fall →
     | 'kanadískur:lo'_kk/fall 'dollari:kk'/fall
     | 'kanadadalur:no'_kk/fall
     | 'kanadadollari:no'_kk/fall
+    | "kanadadollar" # Common mistake
     | currency_cad/fall
 
 QCurCAD_nf →
