@@ -1175,17 +1175,15 @@ class StundinScraper(ScrapeHelper):
         heading = self.unescape(heading)
 
         # Extract author name, if available
-        name = soup.find("div", {"class": "journalist-name"})
-        if not name:
-            name = soup.find("h3", {"class": "entry-columnist-headline"})
+        name = soup.find("div", {"class": "journalist__name"})
         author = name.get_text() if name else None
+        if not author:
+            author = "Ritstjórn Stundarinnar"
 
         # Timestamp
         timestamp = datetime.utcnow()
         try:
-            info = soup.find("div", {"class": "info"})
-            time_el = info.find("time", {"class": "datetime"})
-
+            time_el = soup.find("time", {"class": "datetime"})
             ts = time_el["datetime"]
 
             # Example: "2019-01-18 09:55"
@@ -1209,13 +1207,14 @@ class StundinScraper(ScrapeHelper):
 
     def _get_content(self, soup_body):
         """ Find the article content (main text) in the soup """
-        article = ScrapeHelper.div_class(soup_body, "body")
+        article = ScrapeHelper.div_class(soup_body, "article__body__text")
 
         # Delete these elements
         ScrapeHelper.del_tag(article, "figure")
         ScrapeHelper.del_tag(article, "aside")
         ScrapeHelper.del_tag(article, "h2")
         ScrapeHelper.del_tag(article, "h3")
+        ScrapeHelper.del_div_class(article, "inline-wrap")
 
         return article
 
