@@ -343,12 +343,14 @@ QArCurrencyOrNum →
     QArNumberWordAny | QArNumberWordAny "íslenskar"? "krónur" | amount
 
 QArPi →
-    "hvaða" "tala" "er" "pí"
-    | "hver" "er" "talan" "pí"
-    | "hvað" "er" "pí"
+    "hvað" "er" "pí"
+    | "hvaða" "tala" "er" "pí"
+    | "hver" "er" "talan"? "pí"
     | "skilgreindu" "töluna"? "pí"
-    | "hvað" "eru" "margir" "aukastafir" "í" "pí"
-    | "hvað" "eru" "margir" "tölustafir" "í" "pí"
+    | "hvað" "eru" "margir" "aukastafir" "í" "tölunni"? "pí"
+    | "hvað" "eru" "margir" "tölustafir" "í" "tölunni"? "pí"
+    | "hvað" "hefur" "talan"? "pí" "marga" "aukastafi"
+    | "hversu" "marga" "aukastafi" "hefur" "talan"? "pí"
 
 """.format(
     " | ".join('"' + w + '"' for w in _FRACTION_WORDS.keys()),  # Fraction words
