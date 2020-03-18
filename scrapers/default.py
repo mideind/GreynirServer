@@ -505,6 +505,8 @@ class RuvScraper(ScrapeHelper):
         ScrapeHelper.del_div_class(content, "pane-author")
         ScrapeHelper.del_div_class(content, "user-profile")
         ScrapeHelper.del_div_class(content, "pane-node-created")
+        ScrapeHelper.del_div_class(content, "field-name-video-player-sip-vefur")
+        ScrapeHelper.del_div_class(content, "field-name-sip-vefur-image-credit")
         # Remove hidden taxonomy/sharing lists at bottom of article
         for ul in content.find_all("ul", {"class": "links"}):
             ul.decompose()
