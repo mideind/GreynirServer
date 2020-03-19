@@ -86,7 +86,17 @@ LOCATION_TAXONOMY = frozenset(
 # Location names that exist in Iceland but should
 # not be looked up as Icelandic place/street names
 ICE_PLACENAME_BLACKLIST = frozenset(
-    ("Norðurlönd", "París", "Svalbarði", "Höfðaborg", "Hamborg", "Pétursborg", "Stöð"),
+    (
+        "Norðurlönd",
+        "París",
+        "Svalbarði",
+        "Höfðaborg",
+        "Hamborg",
+        "Pétursborg",
+        "Stöð",
+        "Álaborg",
+        "Árósar",
+    )
 )
 ICE_STREETNAME_BLACKLIST = frozenset(("Sjáland", "Feney", "Ráðhúsið"))
 
