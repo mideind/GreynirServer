@@ -506,6 +506,7 @@ class RuvScraper(ScrapeHelper):
         ScrapeHelper.del_div_class(content, "user-profile")
         ScrapeHelper.del_div_class(content, "pane-node-created")
         ScrapeHelper.del_div_class(content, "field-name-video-player-sip-vefur")
+        ScrapeHelper.del_div_class(content, "pane-node-field-authors")
         # Remove hidden taxonomy/sharing lists at bottom of article
         for ul in content.find_all("ul", {"class": "links"}):
             ul.decompose()
@@ -1177,6 +1178,8 @@ class StundinScraper(ScrapeHelper):
 
         # Extract author name, if available
         name = soup.find("div", {"class": "journalist__name"})
+        if not name:
+            name = soup.find("h3", {"class": "article__columnist__name"})
         author = name.get_text() if name else None
         if not author:
             author = "Ritstjórn Stundarinnar"
