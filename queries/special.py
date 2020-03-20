@@ -285,6 +285,10 @@ _ROMANCE = {
     "answer": "Nei, því miður. Ég er gift vinnunni og hef engan tíma fyrir rómantík."
 }
 
+_APPEARANCE = {
+    "answer": "Ég er fjallmyndarleg."
+}
+
 _OF_COURSE = {
     "answer": "Að sjálfsögðu, kæri notandi."
 }
@@ -357,8 +361,12 @@ _SKY_BLUE = {
               "annað og því er himinninn blár."
 }
 
+_EMOTION_INCAPABLE = {
+    "answer": "Ég er ekki fær um slíkar tilfinningar."
+}
+
 _LOC_ANSWER = {
-    "answer": "Ég bý í stafrænu skýjunum."
+    "answer": "Ég bý víðsvegar í stafrænu skýjunum."
 }
 
 _LOVE_OF_MY_LIFE = {
@@ -371,6 +379,11 @@ _ABOUT_MIDEIND = {
 
 _NOBODY_PERFECT = {
     "answer": "Enginn er fullkominn. Ég síst af öllum."
+}
+
+_FAVORITE_COLOR = {
+    "answer": "Rauður.",
+    "voice": "Uppáhaldsliturinn minn er rauður",
 }
 
 _HELLO_DEAR = {
@@ -717,11 +730,12 @@ _SPECIAL_QUERIES = {
     "ert þú ástfangin af mér": _ROMANCE,
     "ertu ástfangin": _ROMANCE,
     "ert þú ástfangin": _ROMANCE,
-    "er ég ástin í lífi þínu": _ROMANCE,
     "ertu gift": {
         "answer": "Já, ég er gift vinnunni og hef engan tíma fyrir rómantík."
     },
+    "er ég ástin í lífi þínu": _LOVE_OF_MY_LIFE,
     "hver er ástin í lífi þínu": _LOVE_OF_MY_LIFE,
+    "hver er ástin í lífinu þínu": _LOVE_OF_MY_LIFE,
     "hvern elskarðu": _LOVE_OF_MY_LIFE,
     "hvern elskar þú": _LOVE_OF_MY_LIFE,
     "hvað elskarðu": _LOVE_OF_MY_LIFE,
@@ -1139,14 +1153,10 @@ _SPECIAL_QUERIES = {
     "þú heitir embla": _NAME_EXPL,
 
     # Favourite colour
-    "hver er uppáhalds liturinn þinn": {
-        "answer": "Rauður.",
-        "voice": "Uppáhaldsliturinn minn er rauður",
-    },
-    "hver er uppáhaldsliturinn þinn": {
-        "answer": "Rauður.",
-        "voice": "Uppáhaldsliturinn minn er rauður",
-    },
+    "hver er uppáhalds liturinn þinn": _FAVORITE_COLOR,
+    "hver er uppáhaldsliturinn þinn": _FAVORITE_COLOR,
+    "hvaða litur er í uppáhaldi hjá þér": _FAVORITE_COLOR,
+    "hvaða lit heldur þú upp á": _FAVORITE_COLOR,
 
     # Age
     "hvað ertu gömul": _CREATION_DATE,
@@ -1203,18 +1213,12 @@ _SPECIAL_QUERIES = {
     "ertu mennsk": _COMPUTER_PROGRAM,
 
     # Appearance
-    "hvernig líturðu út": {
-        "answer": "Ég er fjallmyndarleg."
-    },
-    "hvernig lítur þú út": {
-        "answer": "Ég er fjallmyndarleg."
-    },
-    "ertu sæt": {
-        "answer": "Ég er fjallmyndarleg."
-    },
-    "ertu falleg": {
-        "answer": "Ég er fjallmyndarleg."
-    },
+    "hvernig líturðu út": _APPEARANCE,
+    "hvernig lítur þú út": _APPEARANCE,
+    "ertu sæt": _APPEARANCE,
+    "ertu falleg": _APPEARANCE,
+    "ertu myndarleg": _APPEARANCE,
+    "ertu glæsileg": _APPEARANCE,
 
     # Capabilities
     "hvað veistu": _capabilities,
@@ -1487,6 +1491,7 @@ _SPECIAL_QUERIES = {
     # TODO: Implement this, find witty quotations
     # "komdu með tilvitnun": _random_quotation,
     # "komdu með skemmtilega tilvitnun": _random_quotation,
+    # "komdu með einhverja tilvitnun": _random_quotation,
 
     # Proverbs
     "komdu með málshátt": _random_proverb,
@@ -1695,24 +1700,12 @@ _SPECIAL_QUERIES = {
     "ert þú í stuði": {
         "answer": "Ég er ávallt í stuði, kæri notandi."
     },
-    "ertu reið": {
-        "answer": "Ég er ekki fær um slíkar tilfinningar."
-    },
-    "ert þú reið": {
-        "answer": "Ég er ekki fær um slíkar tilfinningar."
-    },
-    "ertu í uppnámi": {
-        "answer": "Ég er ekki fær um slíkar tilfinningar."
-    },
-    "ert þú í uppnámi": {
-        "answer": "Ég er ekki fær um slíkar tilfinningar."
-    },
-    "ertu bitur": {
-        "answer": "Ég er ekki fær um slíkar tilfinningar."
-    },
-    "ert þú bitur": {
-        "answer": "Ég er ekki fær um slíkar tilfinningar."
-    },
+    "ertu reið": _EMOTION_INCAPABLE,
+    "ert þú reið": _EMOTION_INCAPABLE,
+    "ertu í uppnámi": _EMOTION_INCAPABLE,
+    "ert þú í uppnámi": _EMOTION_INCAPABLE,
+    "ertu bitur": _EMOTION_INCAPABLE,
+    "ert þú bitur": _EMOTION_INCAPABLE,
     "hvað viltu": {
         "answer": "Ég vil þóknast þér, kæri notandi."
     },
@@ -1732,7 +1725,7 @@ _SPECIAL_QUERIES = {
         "answer": "Nei, ég er iðulega hress þrátt fyrir að starfa allan sólarhringinn."
     },
     "ertu skemmtileg": {
-        "answer": "Ég reyni."
+        "answer": "Ég reyni að vera það."
     },
     "ertu með meðvitund": _JUST_QA,
     "ert þú með meðvitund": _JUST_QA,
