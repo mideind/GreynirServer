@@ -318,14 +318,14 @@ def apidoc():
 
 
 @routes.route("/buy")
-# @max_age(seconds=10 * 60)
+@max_age(seconds=10 * 60)
 def buy():
     """ Handler for a subscription purchase page """
     return render_template("buy.html")
 
 
 @routes.route("/terms")
-# @max_age(seconds=10 * 60)
+@max_age(seconds=10 * 60)
 def terms():
     """ Handler for terms & conditions page """
     return render_template("terms.html")
@@ -441,6 +441,7 @@ def suggest(limit=10):
 
 
 @routes.route("/translate")
+@restricted
 def translate():
     """ Handler for a page with machine translation of user-entered text """
     txt = request.args.get("txt", "")[0:_MAX_TEXT_LENGTH_VIA_URL]

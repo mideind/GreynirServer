@@ -32,8 +32,10 @@ from collections import defaultdict
 from contextlib import contextmanager
 from datetime import datetime
 
-from settings import Settings, changedlocale, sort_strings, \
+from settings import (
+    Settings, changedlocale, sort_strings, ConfigError,
     VerbObjects, Prepositions
+)
 
 
 class Verb:
