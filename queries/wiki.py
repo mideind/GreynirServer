@@ -125,21 +125,21 @@ QWikiQuery →
     | "gætirðu" "flett" "upp" QWikiSubjectÞgf "í" QWikipedia
 
 QWikiSubjectNf →
-    QWikiPrevSubjectNf | QWikiSubjectNl_nf
+    QWikiPrevSubjectNf | QWikiSubjectNlNom
 
-QWikiSubjectNl_nf →
+QWikiSubjectNlNom →
     Nl_nf
 
 QWikiSubjectÞf →
-    QWikiPrevSubjectÞf | QWikiSubjectNl_þf
+    QWikiPrevSubjectÞf | QWikiSubjectNlAcc
 
-QWikiSubjectNl_þf →
+QWikiSubjectNlAcc →
     Nl_þf
 
 QWikiSubjectÞgf →
-    QWikiPrevSubjectÞgf | QWikiSubjectNl_þgf 
+    QWikiPrevSubjectÞgf | QWikiSubjectNlDat
 
-QWikiSubjectNl_þgf →
+QWikiSubjectNlDat →
     Nl_þgf
 
 QWikiPrevSubjectNf →
@@ -158,7 +158,6 @@ $score(+35) QWikiPrevSubjectNf
 $score(+35) QWikiPrevSubjectÞf
 $score(+35) QWikiPrevSubjectÞf
 
-
 $score(+35) QWikiQuery
 
 """.format(
@@ -172,9 +171,11 @@ def QWikiQuery(node, params, result):
     result.qkey = result.get("subject_nom")
 
 
-def QWikiSubjectNl(node, params, result):
+def QWikiSubjectNlNom(node, params, result):
     result["subject_nom"] = result._nominative
 
+
+QWikiSubjectNlAcc = QWikiSubjectNlDat = QWikiSubjectNlNom
 
 
 def QWikiPrevSubjectNf(node, params, result):
@@ -182,12 +183,13 @@ def QWikiPrevSubjectNf(node, params, result):
         pronouns ('Hvað segir Wikipedía um hann/hana/það?'). """
     q = result.state.get("query")
     ctx = q is not None and q.fetch_context()
-    if ctx is None or "person_name" not in ctx:
+    print(ctx)
+    if ctx is None or ("person_name" not in ctx and "subject" not in ctx):
         # There is a reference to a previous result
         # which is not available: flag an error
         result.error_context_reference = True
     else:
-        result["subject_nom"] = ctx["person_name"]
+        result["subject_nom"] = ctx.get("subject") or ctx.get("person_name")
         result.context_reference = True
 
 
@@ -280,29 +282,37 @@ def get_wiki_summary(subject_nom):
 def sentence(state, result):
     """ Called when sentence processing is complete """
     q = state["query"]
-    if "qtype" in result:
-        # Successfully matched a query type
-        q.set_qtype(result.qtype)
-
-        if "error_context_reference" in result:
-            q.set_answer(*gen_answer("Ég veit ekki til hvers þú vísar."))
-        else:
-            # Fetch data from Wikipedia API
-            answer = get_wiki_summary(result["subject_nom"])
-            response = dict(answer=answer)
-            voice = _clean_voice_answer(answer)
-            q.set_answer(response, answer, voice)
-            q.set_key(result.qkey)
-
-            # Beautify query by fixing spelling of Wikipedia
-            b = q.beautified_query
-            for w in _WIKI_VARIATIONS:
-                b = b.replace(w, _WIKIPEDIA_CANONICAL)
-                b = b.replace(w.capitalize(), _WIKIPEDIA_CANONICAL)
-            q.set_beautified_query(b)
-            q.set_source("Wikipedía")
-            # Cache reply for 24 hours
-            q.set_expires(datetime.utcnow() + timedelta(hours=24))
-
-    else:
+    if "qtype" not in result:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
+        return
+
+    # Successfully matched a query type
+    q.set_qtype(result.qtype)
+
+    # Check for error in context ref
+    if "error_context_reference" in result:
+        q.set_answer(*gen_answer("Ég veit ekki til hvers þú vísar."))
+        return
+
+    # We have a subject
+    if "subject_nom" in result:
+        # Fetch data from Wikipedia API
+        answer = get_wiki_summary(result["subject_nom"])
+        response = dict(answer=answer)
+        voice = _clean_voice_answer(answer)
+        q.set_answer(response, answer, voice)
+        q.set_key(result.qkey)
+        q.set_context(dict(subject=result["subject_nom"]))
+
+        # Beautify query by fixing spelling of Wikipedia
+        b = q.beautified_query
+        for w in _WIKI_VARIATIONS:
+            b = b.replace(w, _WIKIPEDIA_CANONICAL)
+            b = b.replace(w.capitalize(), _WIKIPEDIA_CANONICAL)
+        q.set_beautified_query(b)
+        q.set_source("Wikipedía")
+        # Cache reply for 24 hours
+        q.set_expires(datetime.utcnow() + timedelta(hours=24))
+        return
+
+    q.set_error("E_QUERY_NOT_UNDERSTOOD")
