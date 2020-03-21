@@ -31,7 +31,7 @@ import logging
 import urllib.parse as urlparse
 import requests
 from datetime import datetime
-from bs4 import BeautifulSoup, NavigableString
+from bs4 import BeautifulSoup, NavigableString, Tag
 
 
 MODULE_NAME = __name__
@@ -430,6 +430,11 @@ class KjarninnScraper(ScrapeHelper):
         ScrapeHelper.del_div_class(content, "tag_list_block")
         # Delete div.ad-container tags from the content
         ScrapeHelper.del_div_class(content, "ad-container")
+        # Delete sub-headlines
+        ScrapeHelper.del_tag(article, "h2")
+        ScrapeHelper.del_tag(content, "h3")
+        ScrapeHelper.del_tag(content, "h4")
+
         return content
 
 
@@ -1417,6 +1422,7 @@ class FrettabladidScraper(ScrapeHelper):
             return BeautifulSoup("", _HTML_PARSER)  # Return empty soup.
 
         # Get rid of stuff we don't want
+        ScrapeHelper.del_tag(content, "h3")
         ScrapeHelper.del_tag(content, "figure")
         ScrapeHelper.del_div_class(content, "embed")
 
@@ -1716,5 +1722,86 @@ class LemurinnScraper(ScrapeHelper):
     def _get_content(self, soup_body):
         """ Find the article content (main text) in the soup """
         content = ScrapeHelper.div_class(soup_body, "post-content")
+
+        return content
+
+
+class VisindavefurScraper(ScrapeHelper):
+    """ Scraping helper for visindavefur.hi.is """
+
+    def __init__(self, root):
+        super().__init__(root)
+        # Can't use due to weird redirects from URLs provided in feed
+        # self._feeds = ["https://visindavefur.is/visindavefur.rss"]
+
+    def skip_url(self, url):
+        """ Return True if this URL should not be scraped """
+        s = urlparse.urlsplit(url)
+        p = s.path
+        # Only scrape urls with the right path prefix
+        if p and p.startswith("/svar.php"):
+            return False  # Don't skip
+        return True
+
+    def get_metadata(self, soup):
+        """ Analyze the article soup and return metadata """
+        metadata = super().get_metadata(soup)
+
+        # Extract the heading from the OpenGraph og:title meta property
+        heading = ScrapeHelper.meta_property(soup, "og:title") or ""
+
+        # Author
+        author = "Vísindavefurinn"
+        auth_tag = ScrapeHelper.div_class(soup, "au-name")
+        if auth_tag:
+            author = auth_tag.get_text()         
+
+        timestamp = None
+        now = datetime.utcnow()
+        try:
+            # Extract date (no timestamp available) from pubdate tag
+            pubdate_tag = soup.find("div", {"class": "publish-date"})
+            dtxt = None
+            if pubdate_tag:
+                d = list(pubdate_tag.find_all("p"))
+                if d:
+                    dtxt = d[0].get_text()
+            if dtxt:
+                (mday, m, y) = dtxt.split(".")
+                timestamp = datetime(
+                    year=int(y),
+                    month=int(m),
+                    day=int(mday),
+                    hour=now.hour,
+                    minute=now.minute,
+                    second=now.second,
+                )
+        except Exception as e:
+            logging.warning(
+                "Exception when obtaining date of visindavefur.is article: {1}".format(
+                    e
+                )
+            )
+
+        if not timestamp:
+            timestamp = now
+
+        metadata.heading = heading
+        metadata.author = author
+        metadata.timestamp = timestamp
+
+        return metadata
+
+    def _get_content(self, soup_body):
+        """ Find the article content (main text) in the soup """
+        for p in soup_body.find_all("p", {"class": "br"}):
+            p.replace_with(Tag(soup_body, name="br"))
+
+        content = soup_body.find("section", {"class": "article-text"})
+        ScrapeHelper.del_div_class(content, "article-img")
+        ScrapeHelper.del_tag(content, "center")
+        ScrapeHelper.del_tag(content, "img")
+        ScrapeHelper.del_tag(content, "table")
+        ScrapeHelper.del_tag(content, "ul")
 
         return content
