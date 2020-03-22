@@ -183,7 +183,6 @@ def QWikiPrevSubjectNf(node, params, result):
         pronouns ('Hvað segir Wikipedía um hann/hana/það?'). """
     q = result.state.get("query")
     ctx = q is not None and q.fetch_context()
-    print(ctx)
     if ctx is None or ("person_name" not in ctx and "subject" not in ctx):
         # There is a reference to a previous result
         # which is not available: flag an error
@@ -286,8 +285,15 @@ def sentence(state, result):
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
 
-    # Successfully matched a query type
+    # Successfully matched a query type, we're handling it...
     q.set_qtype(result.qtype)
+
+    # Beautify query by fixing spelling of Wikipedia
+    b = q.beautified_query
+    for w in _WIKI_VARIATIONS:
+        b = b.replace(w, _WIKIPEDIA_CANONICAL)
+        b = b.replace(w.capitalize(), _WIKIPEDIA_CANONICAL)
+    q.set_beautified_query(b)
 
     # Check for error in context ref
     if "error_context_reference" in result:
@@ -297,19 +303,14 @@ def sentence(state, result):
     # We have a subject
     if "subject_nom" in result:
         # Fetch data from Wikipedia API
-        answer = get_wiki_summary(result["subject_nom"])
+        subj = result["subject_nom"]
+        answer = get_wiki_summary(subj)
         response = dict(answer=answer)
         voice = _clean_voice_answer(answer)
+        # Set query answer
         q.set_answer(response, answer, voice)
-        q.set_key(result.qkey)
-        q.set_context(dict(subject=result["subject_nom"]))
-
-        # Beautify query by fixing spelling of Wikipedia
-        b = q.beautified_query
-        for w in _WIKI_VARIATIONS:
-            b = b.replace(w, _WIKIPEDIA_CANONICAL)
-            b = b.replace(w.capitalize(), _WIKIPEDIA_CANONICAL)
-        q.set_beautified_query(b)
+        q.set_key(subj)
+        q.set_context(dict(subject=subj))
         q.set_source("Wikipedía")
         # Cache reply for 24 hours
         q.set_expires(datetime.utcnow() + timedelta(hours=24))

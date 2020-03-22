@@ -34,7 +34,7 @@ before_script:
   - cp tests/test_files/testdb_persons.csv /tmp/
   - psql -d scraper -c "copy persons from '/tmp/testdb_persons.csv' delimiter ',' csv;"
   - cp tests/test_files/testdb_queries.csv /tmp/
-  - psql -d scraper -c "copy persons from '/tmp/testdb_queries.csv' delimiter ',' csv;"
+  - psql -d scraper -c "copy queries from '/tmp/testdb_queries.csv' delimiter ',' csv;"
 
 script:
   - python -m pytest
