@@ -183,13 +183,16 @@ def QWikiPrevSubjectNf(node, params, result):
         pronouns ('Hvað segir Wikipedía um hann/hana/það?'). """
     q = result.state.get("query")
     ctx = q is not None and q.fetch_context()
-    if ctx is None or ("person_name" not in ctx and "subject" not in ctx):
+    ctx_keys = ["person_name", "entity_name", "subject"]
+    if ctx:
+        keys = list(filter(lambda k: k in ctx, ctx_keys))
+        if keys:
+            result.context_reference = True
+            result["subject_nom"] = ctx[keys[0]]
+    if not "subject_nom" in result:
         # There is a reference to a previous result
         # which is not available: flag an error
         result.error_context_reference = True
-    else:
-        result["subject_nom"] = ctx.get("subject") or ctx.get("person_name")
-        result.context_reference = True
 
 
 QWikiPrevSubjectÞgf = QWikiPrevSubjectÞf = QWikiPrevSubjectNf

@@ -633,15 +633,17 @@ def query_entity(query, session, name):
         answer = titles[0]["answer"]
         v = answer.split()
         answer = answer[0].upper() + answer[1:]
+        uc_name = name[0].upper() + name[1:]
         for i, w in enumerate(v):
             if len(w) > 1 and w.isupper():
                 # Probably an abbreviation, such as 'FME' or 'BSÍ':
                 # convert to 'F M E'
                 v[i] = " ".join(w)
-        voice_answer = name[0].upper() + name[1:] + " er " + " ".join(v) + "."
+        voice_answer = uc_name + " er " + " ".join(v) + "."
         if "sources" in titles[0]:
             source = titles[0]["sources"][0]["domain"]
             query.set_source(source)
+        query.set_context({"entity_name": uc_name})
     else:
         answer = "Engin skilgreining finnst á nafninu '" + name + "'."
         voice_answer = "Ég veit ekki hvað " + name + " er."

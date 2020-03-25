@@ -165,6 +165,7 @@ def _capital_query(country, q):
 
     q.set_answer(response, answer, voice)
     q.set_key("Höfuðborg {0}".format(country_gen))
+    q.set_context(dict(subject=ice_cname))
 
     return True
 
@@ -190,6 +191,7 @@ def _which_country_query(subject, q):
 
     q.set_answer(response, answer, voice)
     q.set_key(subject)
+    q.set_context(dict(subject=country_name_for_isocode(cc)))
 
     return True
 
@@ -228,6 +230,7 @@ def _which_continent_query(subject, q):
 
     q.set_answer(response, answer, voice)
     q.set_key(subject)
+    q.set_context(dict(subject=continent))
 
     return True
 
