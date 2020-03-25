@@ -20,6 +20,9 @@
 
 """
 
+# TODO: Handle generic direction prefixes for country names and map to
+# corresponding country code, e.g. "Norður-Ítalía" -> "IT"
+
 
 import json
 import re
@@ -183,10 +186,9 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
         "Malawi": "MW",
         "Norður-Noregur": "NO",
         "Tæland": "TH",
-        "Aserbaísjan": "AZ",
+        "Aserbaísjan": "AZ", # Til svona stafsett í BÍN
         "Kanarí": "IC",
         "Jómfrúaeyjar": "US",
-        "Norður-Ítalía": "IT",
     }
 }
 

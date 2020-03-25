@@ -24,7 +24,6 @@
 """
 
 # TODO: "Hvað búa margir í/á [BORG/LAND]?" etc. Wiki api?
-# TODO: "Hvað er Ísland?" "Hvar er Japan?"
 
 import logging
 import random
