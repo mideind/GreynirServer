@@ -77,6 +77,7 @@ QGeoQuery →
     QGeoCapitalQuery
     | QGeoCountryQuery
     | QGeoContinentQuery
+    | QGeoCountryDescQuery
 
 QGeoCapitalQuery →
     # "hvað/hver er höfuðborgin í/á Spáni?"
@@ -93,11 +94,17 @@ QGeoCountryQuery →
 QGeoContinentQuery →
     "í" "hvaða" "heimsálfu" "er" QGeoCountryOrCity? QGeoSubject_nf
 
+QGeoCountryDescQuery →
+    QGeoWhereIs QGeoSubject_nf
+
 QGeoCountryOrCity →
     "landið" | "ríkið" | "borgin"
 
 QGeoWhatIs →
     "hver" "er" | "hvað" "er" | "hvað" "heitir" | 0
+
+QGeoWhereIs →
+    "hvar" "er" | "hvað" "er"
 
 QGeoPreposition →
     "í" | "á"
@@ -129,6 +136,10 @@ def QGeoCountryQuery(node, params, result):
 
 def QGeoContinentQuery(node, params, result):
     result["geo_qtype"] = "continent"
+
+
+def QGeoCountryDescQuery(node, params, result):
+    result["geo_qtype"] = "country_desc"
 
 
 def QGeoSubject(node, params, result):
@@ -214,8 +225,6 @@ def _which_continent_query(subject, q):
 
     contcode = continent_for_country(cc)
     continent = ISO_TO_CONTINENT[contcode]
-
-    # Look up dative continent name
     continent_dat = nom2dat(continent)
 
     # Format answer
@@ -235,10 +244,32 @@ def _which_continent_query(subject, q):
     return True
 
 
+def _country_desc_query(subject, q):
+    # Get country code
+    cc = isocode_for_country_name(subject)
+    if not cc:
+        return False
+
+    contcode = continent_for_country(cc)
+    continent = ISO_TO_CONTINENT[contcode]
+    continent_dat = nom2dat(continent)
+
+    answer = "{0} er land í {1}.".format(subject, continent_dat)
+    voice = answer
+    response = dict(answer=answer)
+
+    q.set_answer(response, answer, voice)
+    q.set_key(subject)
+    q.set_context(dict(subject=subject))
+
+    return True
+
+
 _HANDLERS = {
     "capital": _capital_query,
     "country": _which_country_query,
     "continent": _which_continent_query,
+    "country_desc": _country_desc_query,
 }
 
 
