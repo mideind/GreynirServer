@@ -29,8 +29,9 @@ import json
 from flask import abort
 import requests
 
+from nn.utils import split_text
+from nn.utils import index_text
 from settings import Settings
-
 
 class ApiClient:
     """ A client that connects to the HTTP REST interface of
@@ -96,6 +97,7 @@ class ApiClient:
 
         return {
             "pgs": data["contents"],
+            "tgt_pgs": data.get("contents_tgt", ""),
             "source": data["sourceLanguageCode"],
             "target": data["targetLanguageCode"],
             "model": data["model"]
@@ -122,13 +124,30 @@ class ApiClient:
 
         self._data = data
 
+        parsed_text = [index_text(t) for t in data["contents"]]
+        sentences = [v for p in parsed_text for k, v in p[1].items()]
+        data["contents"] = sentences
+
         parsed_data = self.parse_for_remote(data)
+        response = None
 
         if request.method == 'POST':
-            return self.post(parsed_data)
+            response = self.post(parsed_data)
 
         if request.method == 'GET':
-            return self.get(parsed_data)
+            response = self.get(parsed_data)
+
+        parsed_response = []
+        if response is not None:
+            response = json.loads(response)
+            tot = 0
+            for i in range(len(parsed_text)):
+                p = parsed_text[i]
+                len_pg = len(p[1])
+                pg = [j["translatedText"] for j in response["translations"][tot:tot + len_pg]]
+                tot += len_pg
+                parsed_response.append({"translatedText": " ".join(pg), "model": ""})
+            return json.dumps({"translations": parsed_response})
 
         return abort(400, 'Bad method {}'.format(request.method))
 

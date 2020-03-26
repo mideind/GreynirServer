@@ -1,0 +1,33 @@
+.Login{
+    display: flex;
+    justify-content: center;
+}
+
+.Login-container{
+    width: 300px;
+}
+
+.InputRow{
+    width: 300px;
+    display: flex;
+    justify-content: space-between;
+    flex-direction: column;
+    margin-bottom: 10px;
+}
+
+.InputRow label {
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.InputRow input {
+    padding: 4px;
+}
+
+.Message-error {
+    padding: 10px;
+    border: 1px solid #ffafaf;
+    background-color: #ffdede;;
+    margin-bottom: 20px;
+    font-size: 14px;
+}
