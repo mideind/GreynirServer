@@ -6,6 +6,7 @@ import { login, logout } from 'features/login/loginSlice';
 
 const URL = "http://localhost:8000/";
 //import { CSRF } from '../config/Api';
+//const URL = "https://velthyding.mideind.is:8000/";
 const CSRF = "csrf/";
 
 axios.defaults.xsrfHeaderName = 'X-CSRFToken';
@@ -109,11 +110,24 @@ export async function storeTranslation(language_pair, model, source_text, target
         const ac = apiClient();
         return ac.post("api/translations/usertranslations/", {language_pair, model, source_text, target_text})
           .then((response) => {
-            //store.dispatch(setLoginStatus(false));
             resolve(response);
           })
           .catch((error) => {
             reject(error);
           });
       }));
+}
+
+
+export async function getTranslations() {
+    return new Promise(((resolve, reject) => {
+        const ac = apiClient();
+        return ac.get("api/translations/usertranslations/", {})
+          .then((response) => {
+            resolve(response);
+          })
+          .catch((error) => {
+            reject(error);
+          });
+    }));
 }
