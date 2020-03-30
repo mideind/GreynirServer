@@ -275,6 +275,14 @@ def test_query_api(client):
     assert json["qtype"] == "Geography"
     assert json["answer"].startswith("Eyjaálfu")
 
+    json = qmcall(c, {"q": "Hvar er máritanía?"})
+    assert json["qtype"] == "Geography"
+    assert "Afríku" in json["answer"]
+
+    json = qmcall(c, {"q": "Hvar er Kaupmannahöfn?"})
+    assert json["qtype"] == "Geography"
+    assert "Danmörku" in json["answer"]
+
     # Intro module
     json = qmcall(c, {"q": "ég heiti Gunna"})
     assert json["qtype"] == "Introduction"
@@ -283,6 +291,10 @@ def test_query_api(client):
     json = qmcall(c, {"q": "ég heiti Gunnar"})
     assert json["qtype"] == "Introduction"
     assert json["answer"].startswith("Sæll og blessaður")
+
+    json = qmcall(c, {"q": "ég heiti Boutros Boutros-Ghali"})
+    assert json["qtype"] == "Introduction"
+    assert json["answer"].startswith("Gaman að kynnast") and "Boutros" in json["answer"]
 
     # Location module
     # NB: No Google API key on test server

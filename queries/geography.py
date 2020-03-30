@@ -36,6 +36,7 @@ from reynir.bindb import BIN_Db
 from geo import (
     icelandic_city_name,
     isocode_for_country_name,
+    country_name_for_isocode,
     continent_for_country,
     ISO_TO_CONTINENT,
     location_info,
@@ -44,7 +45,7 @@ from geo import (
 
 _GEO_QTYPE = "Geography"
 
-TOPIC_LEMMAS = ["höfuðborg", "land", "heimsálfa"]
+TOPIC_LEMMAS = ["höfuðborg", "land", "heimsálfa", "borg"]
 
 
 def help_text(lemma):
@@ -56,6 +57,8 @@ def help_text(lemma):
                 "Hver er höfuðborg Frakklands",
                 "Í hvaða landi er Minsk",
                 "Í hvaða heimsálfu er Kambódía",
+                "Hvar er Kaupmannahöfn",
+                "Hvar er Máritanía",
             )
         )
     )
@@ -76,7 +79,7 @@ QGeoQuery →
     QGeoCapitalQuery
     | QGeoCountryQuery
     | QGeoContinentQuery
-    | QGeoCountryDescQuery
+    | QGeoLocationDescQuery
 
 QGeoCapitalQuery →
     # "hvað/hver er höfuðborgin í/á Spáni?"
@@ -93,8 +96,8 @@ QGeoCountryQuery →
 QGeoContinentQuery →
     "í" "hvaða" "heimsálfu" "er" QGeoCountryOrCity? QGeoSubject_nf
 
-QGeoCountryDescQuery →
-    QGeoWhereIs QGeoSubject_nf
+QGeoLocationDescQuery →
+    QGeoWhereIs QGeoCountryOrCity? QGeoSubject_nf
 
 QGeoCountryOrCity →
     "landið" | "ríkið" | "borgin"
@@ -111,7 +114,7 @@ QGeoPreposition →
 QGeoSubject/fall →
     Nl/fall 
     # Hardcoded special case, otherwise identified as adj. "kostaríkur" :)
-    | "kostaríka"
+    | "kostaríka" | "kostaríku"
 
 $score(+1) QGeoSubject/fall
 
@@ -137,8 +140,8 @@ def QGeoContinentQuery(node, params, result):
     result["geo_qtype"] = "continent"
 
 
-def QGeoCountryDescQuery(node, params, result):
-    result["geo_qtype"] = "country_desc"
+def QGeoLocationDescQuery(node, params, result):
+    result["geo_qtype"] = "loc_desc"
 
 
 def QGeoSubject(node, params, result):
@@ -243,11 +246,15 @@ def _which_continent_query(subject, q):
     return True
 
 
-def _country_desc_query(subject, q):
+def _loc_desc_query(subject, q):
+    """ Generate answer to a question about where a
+        country or placename is located. """
+
     # Get country code
     cc = isocode_for_country_name(subject)
     if not cc:
-        return False
+        # Not a country, try placename lookup
+        return _which_country_query(subject, q)
 
     contcode = continent_for_country(cc)
     continent = ISO_TO_CONTINENT[contcode]
@@ -268,7 +275,7 @@ _HANDLERS = {
     "capital": _capital_query,
     "country": _which_country_query,
     "continent": _which_continent_query,
-    "country_desc": _country_desc_query,
+    "loc_desc": _loc_desc_query,
 }
 
 
