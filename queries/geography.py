@@ -117,6 +117,7 @@ QGeoSubject/fall →
     | "kostaríka" | "kostaríku"
 
 $score(+1) QGeoSubject/fall
+$score(-100) QGeoLocationDescQuery
 
 $score(+35) QGeo
 

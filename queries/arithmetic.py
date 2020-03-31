@@ -222,7 +222,8 @@ Query →
 QArithmetic →
     QArithmeticQuery '?'?
 
-$score(+35) QArithmetic
+$score(+55) QArithmetic
+$score(+55) QArPi
 
 QArithmeticQuery →
     # 'Hvað er X sinnum/deilt með/plús/mínus Y'
