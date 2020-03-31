@@ -1,0 +1,127 @@
+
+{% extends "container-normal.html" %}
+
+
+{% block meta %}
+
+{% endblock %}
+
+
+{% block styles %}
+
+<link href="{{ url_for('static', filename='css/main-bootstrap.css') }}" rel='stylesheet' type='text/css'>
+
+{% endblock %}
+
+{% block content %}
+
+
+<div class="panel panel-default">
+   <div class="panel-heading">
+      Orðtíðni
+   </div>
+   <table class="table table-hover" id="dtable">
+      <div style="padding:10px;">
+         Orð:
+         <input>
+
+         <input type="radio" id="week" name="period" value="week" checked>
+         <label for="male">Vika</label>
+         <input type="radio" id="month" name="period" value="month">
+         <label for="female">Mánuður</label>
+         <input type="radio" id="range" name="period" value="period">
+         <label for="other">Tilgreina:</label>
+         Frá:
+         <input>
+         til
+         <input>
+      </div>
+      <div style="padding:25px;">
+               <canvas id="wfreq_chart_canvas"></canvas>
+      </div>
+   </table>
+</div>
+
+               
+
+
+{% endblock %}
+
+{% block endscripts %}
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.bundle.min.js"></script>
+
+<script>
+
+   function initCharts() {
+      var datapoints = [0, 20, 20, 60, 60, 120, 0, 180, 120, 125, 105, 110, 170];
+      var config = {
+         type: 'line',
+         data: {
+            labels: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'],
+            datasets: [{
+               label: 'Cubic interpolation (monotone)',
+               data: datapoints,
+               backgroundColor: 'rgba(0, 0, 0, 0)',
+               fill: false,
+               cubicInterpolationMode: 'monotone'
+            }, {
+               label: 'Cubic interpolation (default)',
+               data: datapoints,
+               backgroundColor: 'rgba(0, 0, 0, 0)',
+               fill: false,
+            }, {
+               label: 'Linear interpolation',
+               data: datapoints,
+               backgroundColor: 'rgba(0, 0, 0, 0)',
+               fill: false,
+               lineTension: 0
+            }]
+         },
+         options: {
+            responsive: true,
+            title: {
+               display: true,
+               text: 'Chart.js Line Chart - Cubic interpolation mode'
+            },
+            tooltips: {
+               mode: 'index'
+            },
+            scales: {
+               xAxes: [{
+                  display: true,
+                  scaleLabel: {
+                     display: true
+                  }
+               }],
+               yAxes: [{
+                  display: true,
+                  scaleLabel: {
+                     display: true,
+                     labelString: 'Value'
+                  },
+                  ticks: {
+                     suggestedMin: -10,
+                     suggestedMax: 200,
+                  }
+               }]
+            }
+         }
+      };
+
+      var wfreqCtx =  $('#wfreq_chart_canvas').get(0).getContext('2d');
+      // parseChartData.datasets[0].fill = true;
+      var wfreqChart = new Chart(wfreqCtx, config);
+   }
+
+   $(document).ready(function() {
+      // Activate the top navbar
+      $("#navid-words").addClass("active");
+
+      initCharts();
+   });
+
+</script>
+
+{% endblock %}
+
