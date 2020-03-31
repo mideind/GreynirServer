@@ -48,10 +48,17 @@ def qmcall(c, qdict):
     """ Use passed client object to call query API with 
         query string key value pairs provided in dict arg. """
 
-    # Create query string
     # test=1 ensures that we bypass the cache and have a (fixed) location
     if "test" not in qdict:
         qdict["test"] = True
+
+    # private=1 makes sure the query isn't logged. This prevents the tests from
+    # populating the local database query logging table. Some tests may rely
+    # on query history, in which case private=0 should be explicitly specified.
+    if "private" not in qdict:
+        qdict["private"] = True
+
+    # Create query string
     qstr = urlencode(qdict)
 
     # Use client to call API endpoint
