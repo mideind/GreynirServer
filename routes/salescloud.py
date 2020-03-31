@@ -28,6 +28,7 @@ import hmac
 import hashlib
 
 from db import SessionContext
+
 # from db.models import Customer, Subscription
 
 from . import routes, better_jsonify, request, datetime
@@ -79,9 +80,7 @@ _SECRET = _Secret()
 
 
 def validate_request(
-    method, url, payload,
-    xsc_date, xsc_key, xsc_digest,
-    max_time=_MAX_TIME_WINDOW
+    method, url, payload, xsc_date, xsc_key, xsc_digest, max_time=_MAX_TIME_WINDOW
 ):
     """ Validate an incoming request against our secret key. All parameters
         are assumed to be strings (str) except payload and xsc_digest,
@@ -109,8 +108,9 @@ def validate_request(
         # processed). Anything outside this will be rejected. This makes a
         # brute force attack on the SHA256 hash harder.
         logging.warning(
-            "Subscription request outside timestamp window, delta is {0:.1f}"
-            .format(delta)
+            "Subscription request outside timestamp window, delta is {0:.1f}".format(
+                delta
+            )
         )
         return False
 
@@ -129,10 +129,7 @@ def handle_request(request):
     """ Handle a SalesCloud request, extracting its contents """
     # Validate the request
     if request.headers.get("User-Agent") != "SalesCloud":
-        return dict(
-            success=False,
-            reason="Unknown user agent"
-        ), 403  # Forbidden
+        return dict(success=False, reason="Unknown user agent"), 403  # Forbidden
     xsc_key = request.headers.get("X-SalesCloud-Access-Key", "")[0:256]
     xsc_date = request.headers.get("X-SalesCloud-Date", "")[0:256]
     xsc_digest = request.headers.get("X-SalesCloud-Signature", "")[0:256]
@@ -150,10 +147,7 @@ def handle_request(request):
         request.method, request.url, payload, xsc_date, xsc_key, xsc_digest
     ):
         logging.error("Invalid signature received")
-        return dict(
-            success=False,
-            reason="Invalid signature"
-        ), 403  # Forbidden
+        return dict(success=False, reason="Invalid signature"), 403  # Forbidden
 
     # The request is formally valid: return the contents
     j = json.loads(payload.decode("utf-8")) if payload else None
@@ -167,10 +161,10 @@ def sales_create():
     if status != 200:
         return better_jsonify(**j), status
     if j is None or j.get("type") != "subscription_created":
-        return better_jsonify(
-            success=False,
-            reason="Unknown request type"
-        ), 400  # Bad request
+        return (
+            better_jsonify(success=False, reason="Unknown request type"),
+            400,
+        )  # Bad request
 
     # Example JSON:
     # {
@@ -192,10 +186,10 @@ def sales_modify():
     if status != 200:
         return better_jsonify(**j), status
     if j is None or j.get("type") != "subscription_updated":
-        return better_jsonify(
-            success=False,
-            reason="Unknown request type"
-        ), 400  # Bad request
+        return (
+            better_jsonify(success=False, reason="Unknown request type"),
+            400,
+        )  # Bad request
 
     # Handle a subscription update
     # !!! TBD
@@ -215,4 +209,3 @@ def sales_modify():
     # subscription.customer_label = j["customer_label"]
     # subscription.subscription_status = j["subscription_status"]
     return better_jsonify(success=True)
-
