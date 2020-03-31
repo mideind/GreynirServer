@@ -45,9 +45,9 @@
         Type=simple
         User=[YOUR USERNAME]
         Group=[YOUR GROUPNAME]
-        WorkingDirectory=/home/[YOUR USERNAME]/Reynir/vectors
-        ExecStart=/home/[YOUR USERNAME]/Reynir/vectors/venv/bin/python simserver.py
-        Environment="PATH=/home/[YOUR USERNAME]/Reynir/vectors/venv/bin"
+        WorkingDirectory=/home/[YOUR USERNAME]/Greynir/vectors
+        ExecStart=/home/[YOUR USERNAME]/Greynir/vectors/venv/bin/python simserver.py
+        Environment="PATH=/home/[YOUR USERNAME]/Greynir/vectors/venv/bin"
         Environment="PYTHONIOENCODING=utf-8"
         Environment="PYTHONUNBUFFERED=True"
         StandardOutput=syslog
