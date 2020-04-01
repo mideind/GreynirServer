@@ -29,6 +29,7 @@ from collections import defaultdict
 import json
 
 from flask import request, render_template, abort, send_file
+from country_list import countries_for_language
 
 from db import SessionContext, dbfunc, desc
 from db.models import Location, Article, Root
@@ -41,7 +42,6 @@ from geo import (
     ICE_REGIONS,
     ISO_TO_CONTINENT,
 )
-from country_list import countries_for_language
 
 from images import get_staticmap_image
 

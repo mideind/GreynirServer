@@ -10,6 +10,10 @@
 {% block styles %}
 
 <link href="{{ url_for('static', filename='css/main-bootstrap.css') }}" rel='stylesheet' type='text/css'>
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+
+<script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js" defer></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js" defer></script>
 
 {% endblock %}
 
@@ -22,19 +26,10 @@
    </div>
    <table class="table table-hover" id="dtable">
       <div style="padding:10px;">
-         Orð:
-         <input>
 
-         <input type="radio" id="week" name="period" value="week" checked>
-         <label for="male">Vika</label>
-         <input type="radio" id="month" name="period" value="month">
-         <label for="female">Mánuður</label>
-         <input type="radio" id="range" name="period" value="period">
-         <label for="other">Tilgreina:</label>
-         Frá:
-         <input>
-         til
-         <input>
+         Orð: <input name="words" value="efnahagur,smit" style="margin-right: 20px;">
+         Tímabil: <input name="daterange" id="daterange">
+         <!--<input type="button" value="Uppfæra">-->
       </div>
       <div style="padding:25px;">
                <canvas id="wfreq_chart_canvas"></canvas>
@@ -55,23 +50,27 @@
 
    function initCharts() {
       var datapoints = [0, 20, 20, 60, 60, 120, 0, 180, 120, 125, 105, 110, 170];
+      var datapoints2 = [1, 12, 21, 33, 69, 90, 19, 133, 99, 15, 75, 100, 70];
+
       var config = {
          type: 'line',
          data: {
             labels: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'],
             datasets: [{
-               label: 'Cubic interpolation (monotone)',
+               label: 'A',
                data: datapoints,
                backgroundColor: 'rgba(0, 0, 0, 0)',
                fill: false,
-               cubicInterpolationMode: 'monotone'
+               //cubicInterpolationMode: 'monotone'
+               lineTension: 0
             }, {
-               label: 'Cubic interpolation (default)',
-               data: datapoints,
+               label: 'B',
+               data: datapoints2,
                backgroundColor: 'rgba(0, 0, 0, 0)',
                fill: false,
+               lineTension: 0
             }, {
-               label: 'Linear interpolation',
+               label: 'C',
                data: datapoints,
                backgroundColor: 'rgba(0, 0, 0, 0)',
                fill: false,
@@ -80,10 +79,6 @@
          },
          options: {
             responsive: true,
-            title: {
-               display: true,
-               text: 'Chart.js Line Chart - Cubic interpolation mode'
-            },
             tooltips: {
                mode: 'index'
             },
@@ -114,10 +109,72 @@
       var wfreqChart = new Chart(wfreqCtx, config);
    }
 
+   function initDatePicker() {
+      var start = moment().subtract(29, 'days');
+      var end = moment();
+
+      var locale = {
+        "format": "DD/MM/YYYY",
+        "separator": " - ",
+        "applyLabel": "Vista",
+        "cancelLabel": "Hætta við",
+        "fromLabel": "Frá",
+        "toLabel": "til",
+        "customRangeLabel": "Sérsníða",
+        "weekLabel": "V",
+        "daysOfWeek": [
+            "Sun",
+            "Mán",
+            "Þri",
+            "Mið",
+            "Fim",
+            "Fös",
+            "Lau"
+        ],
+        "monthNames": [
+            "Janúar",
+            "Febrúar",
+            "Mars",
+            "Apríl",
+            "Maí",
+            "Júní",
+            "Júlí",
+            "Ágúst",
+            "September",
+            "Oktober",
+            "November",
+            "Desember"
+        ],
+        "firstDay": 1
+      };
+
+      $('#daterange').daterangepicker({
+         startDate: start,
+         endDate: end,
+         locale: locale,
+         maxSpan: {
+            "days": 365
+         },
+         ranges: {
+           'Síðastliðin vika': [moment().subtract(6, 'days'), moment()],
+           'Síðustu 30 dagar': [moment().subtract(29, 'days'), moment()],
+           'Síðustu 3 mánuðir': [moment().subtract(89, 'days'), moment()],
+         }
+      });
+
+      $('#daterange').on('apply.daterangepicker', updateChart);
+   }
+
+   function updateChart(ev, picker) {
+      console.log(picker.startDate.format('YYYY-MM-DD'));
+      console.log(picker.endDate.format('YYYY-MM-DD'));
+   }
+
    $(document).ready(function() {
       // Activate the top navbar
       $("#navid-words").addClass("active");
 
+      initDatePicker();
       initCharts();
    });
 
