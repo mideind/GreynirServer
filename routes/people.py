@@ -208,7 +208,7 @@ def graph_data(num_persons=_DEFAULT_NUM_PERSONS_GRAPH):
         return dataset
 
 
-@routes.route("/people")
+@routes.route("/people_recent")
 @cache.cached(timeout=10 * 60, key_prefix="people", query_string=True)
 @max_age(seconds=10 * 60)
 def people_recent():
@@ -216,7 +216,7 @@ def people_recent():
     return render_template("people/people-recent.html", persons=recent_persons())
 
 
-@routes.route("/people_top")
+@routes.route("/people")
 @cache.cached(timeout=30 * 60, key_prefix="people_top", query_string=True)
 @max_age(seconds=10 * 60)
 def people_top():
