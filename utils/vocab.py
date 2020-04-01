@@ -39,13 +39,13 @@ from collections import defaultdict, namedtuple
 
 # Import the Psycopg2 connector for PostgreSQL
 try:
-    # For CPython
-    import psycopg2.extensions as psycopg2ext
-    import psycopg2
-except ImportError:
-    # For PyPy
+    # Prefer Psycopg2cffi, which should work both for PyPy and CPython
     import psycopg2cffi.extensions as psycopg2ext
     import psycopg2cffi as psycopg2
+except ImportError:
+    # Try plain Psycopg2 for CPython
+    import psycopg2.extensions as psycopg2ext
+    import psycopg2
 
 
 # Make Psycopg2 and PostgreSQL happy with UTF-8
@@ -342,7 +342,10 @@ if __name__ == "__main__":
         quit()
 
     if len(Meanings.DICT) == 0:
-        print("No vocabulary entries ([meanings] section) found in " "Vocab.conf file")
+        print(
+            "No vocabulary entries ([meanings] section) found in "
+            "Vocab.conf file"
+        )
         quit()
 
     with open(fname, "w") as f:
