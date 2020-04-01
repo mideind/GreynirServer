@@ -21,6 +21,8 @@
 
 """
 
+import random
+
 from . import routes, better_jsonify, cache
 
 from datetime import datetime, timedelta
@@ -48,15 +50,26 @@ def wordfreq():
     warg = request.args.get("words")
     if not warg:
         return better_jsonify(**resp)
-    words = [w.trim() for w in warg.split(",")]
+    words = [w.strip() for w in warg.split(",")]
 
     # Parse date arguments
     try:
-        date_from = datetime.fromisoformat(request.args.get("date_from"))
-        date_to = datetime.fromisoformat(request.args.get("date_to"))
-    except:
+        date_from = datetime.strptime(request.args.get("date_from"), "%Y-%m-%d")
+        date_to = datetime.strptime(request.args.get("date_to"), "%Y-%m-%d")
+    except Exception as e:
+        print(e)
         return better_jsonify(**resp)
 
     # Fetch data
+    delta = date_to - date_from
+    days = delta.days
+
+    wdata = list()
+    for w in words:
+        d = [random.randint(0, 30) for i in range(0, days + 1)]
+        wdata.append(d)
+
+    resp["data"] = wdata
+    resp["err"] = False
 
     return better_jsonify(**resp)
