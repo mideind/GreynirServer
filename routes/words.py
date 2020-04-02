@@ -40,7 +40,7 @@ def words():
     return render_template("words.html")
 
 
-_LINE_COLORS = frozenset(("#f00", "#00f", "#0f0", "#ff0", "#0ff", "#f0f"))
+_LINE_COLORS = frozenset(("#eb3732", "#006eff", "#00b450", "#ff0", "#0ff", "#f0f"))
 
 
 @routes.route("/wordfreq", methods=["GET", "POST"])
@@ -54,6 +54,7 @@ def wordfreq():
     if not warg:
         return better_jsonify(**resp)
     words = [w.strip() for w in warg.split(",")][:6]  # Max 6 words
+    # TODO: Look up words, make sure
 
     # Create datetime objects from query string args
     try:
@@ -69,14 +70,17 @@ def wordfreq():
     # Generate date labels
     labels = [i for i in range(0, days + 1)]
 
-    # Create datasets to be loaded into front-end chart
+    # Create datasets that are loaded into front-end chart
     data = dict(labels=labels, datasets=[])
     for w in words:
         ds = dict(label=w, fill=False, lineTension=0)
         ds["borderColor"] = ds["backgroundColor"] = colors.pop(0)
         ds["data"] = [random.randint(0, 50) for i in range(0, days + 1)]
         data["datasets"].append(ds)
+
+    # Create response
     resp["data"] = data
+    resp["words"] = ",".join(words)
     resp["err"] = False
 
     return better_jsonify(**resp)
