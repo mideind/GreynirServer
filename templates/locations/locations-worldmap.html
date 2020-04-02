@@ -130,8 +130,6 @@ function onRegionClick(e, code) {
    }
 
    var flag_img = $('<img>').attr('src', flagURL4cc(code)).attr("class", "titleflag");
-   console.log(flag_img);
-
    $('#map-results-title').html(flag_img).append(countryNames[code]);
 
    $('#map-results-progress')

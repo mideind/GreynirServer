@@ -37,39 +37,46 @@ from db.models import Article, Root, Location, ArticleTopic, Topic
 @routes.route("/words")
 def words():
     """ Handler for word frequency page. """
-
     return render_template("words.html")
+
+
+_LINE_COLORS = frozenset(("#f00", "#00f", "#0f0", "#ff0", "#0ff", "#f0f"))
 
 
 @routes.route("/wordfreq", methods=["GET", "POST"])
 @cache.cached(timeout=60 * 60 * 4, key_prefix="wordfreq", query_string=True)
 def wordfreq():
-    """ Return word frequency data for a given time period. """
+    """ Return word frequency chart data for a given time period. """
     resp = dict(err=True)
 
+    # Words parameter should be 1-6 diff. word lemmas
     warg = request.args.get("words")
     if not warg:
         return better_jsonify(**resp)
-    words = [w.strip() for w in warg.split(",")]
+    words = [w.strip() for w in warg.split(",")][:6]  # Max 6 words
 
-    # Parse date arguments
+    # Create datetime objects from query string args
     try:
-        date_from = datetime.strptime(request.args.get("date_from"), "%Y-%m-%d")
-        date_to = datetime.strptime(request.args.get("date_to"), "%Y-%m-%d")
+        date_from = datetime.strptime(request.args.get("date_from"), "%d/%m/%Y")
+        date_to = datetime.strptime(request.args.get("date_to"), "%d/%m/%Y")
     except Exception as e:
         print(e)
         return better_jsonify(**resp)
 
-    # Fetch data
-    delta = date_to - date_from
-    days = delta.days
+    days = (date_to - date_from).days
+    colors = list(_LINE_COLORS)
 
-    wdata = list()
+    # Generate date labels
+    labels = [i for i in range(0, days + 1)]
+
+    # Create datasets to be loaded into front-end chart
+    data = dict(labels=labels, datasets=[])
     for w in words:
-        d = [random.randint(0, 30) for i in range(0, days + 1)]
-        wdata.append(d)
-
-    resp["data"] = wdata
+        ds = dict(label=w, fill=False, lineTension=0)
+        ds["borderColor"] = ds["backgroundColor"] = colors.pop(0)
+        ds["data"] = [random.randint(0, 50) for i in range(0, days + 1)]
+        data["datasets"].append(ds)
+    resp["data"] = data
     resp["err"] = False
 
     return better_jsonify(**resp)
