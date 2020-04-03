@@ -21,8 +21,9 @@
 
 """
 
-# TODO: "Hvað/hvert er gengið á evrunni?" (implicitly "gagnvart krónunni")
-# TODO: Bug: "30 dollarar eru 3.801 krónUR." [!!!]
+# TODO: Bug: "30 dollarar eru 3.801 krónUR." [!!!] Fix using is_plural
+# TODO: Answer for exch rate should be of the form ISK 2000 = USD 14,65
+# TODO: "hvað eru 10 evrur í íslenskum krónum"
 
 import re
 import cachetools
@@ -30,15 +31,28 @@ import json
 import random
 import logging
 
-from queries import query_json_api, format_icelandic_float
+from queries import query_json_api, format_icelandic_float, is_plural
 from settings import Settings
 
 
 # Lemmas of keywords that could indicate that the user is trying to use this module
 TOPIC_LEMMAS = [
-    "gengi", "gjaldmiðill", "króna", "pund", "sterlingspund", "dollari", "evra",
-    "rand", "jen", "júan", "franki", "gengisvísitala", "dalur", "bandaríkjadalur",
-    "kanadadalur"
+    "gengi",
+    "gengisvísitala",
+    "gjaldmiðill",
+    "króna",
+    "pund",
+    "sterlingspund",
+    "dollari",
+    "evra",
+    "rand",
+    "jen",
+    "júan",
+    "franki",
+    "dalur",
+    "bandaríkjadalur",
+    "kanadadalur",
+    "rúbla",
 ]
 
 
@@ -46,16 +60,18 @@ def help_text(lemma):
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
-        random.choice((
-            "Hvert er gengi dollarans",
-            "Hvert er gengu evru gagnvart dollara",
-            "Hvað eru tíu þúsund krónur margar evrur",
-            "Hvað er einn dollari margar krónur",
-            "Hvað eru sextán hundruð krónur mikið í evrum",
-            "Hvað eru hundrað danskar krónur í evrum",
-            "Hvert er gengi pundsins gagnvart krónunni",
-            "Hvað eru sex rúblur mikið"
-        ))
+        random.choice(
+            (
+                "Hvert er gengi dollarans",
+                "Hvert er gengu evru gagnvart dollara",
+                "Hvað eru tíu þúsund krónur margar evrur",
+                "Hvað er einn dollari margar krónur",
+                "Hvað eru sextán hundruð krónur mikið í evrum",
+                "Hvað eru hundrað danskar krónur í evrum",
+                "Hvert er gengi pundsins gagnvart krónunni",
+                "Hvað eru sex rúblur mikið",
+            )
+        )
     )
 
 
@@ -129,6 +145,8 @@ QCurrencyQuery →
     
     # "Hvert/hvað/hvernig er gengi X?"
     | QCurAnyPrefix? QCurGeneralRate QCurNow?
+    # "Hvað kostar X?"
+    | QCurCostPrefix QCurGeneralCost "mikið"? QCurNow?
 
     # "Hvert/hvað/hvernig er gengi X gagnvart Y?"
     | QCurAnyPrefix? QCurExchangeRate QCurNow?
@@ -142,6 +160,7 @@ QCurrencyQuery →
 QCurGenericPrefix → "hvað" "er" | "hvað" "eru" | "hvernig" "er"
 QCurSpecificPrefix → "hvert" "er" | "hvernig" "er"
 QCurAnyPrefix → QCurGenericPrefix | QCurSpecificPrefix
+QCurCostPrefix → "hvað" "kostar" | "hversu" "mikið" "kostar" | "hve" "mikið" "kostar"
 
 QCurNow → "núna" | "nú" | "í" "augnablikinu" | "eins" "og" "stendur" | "í" "dag" 
 
@@ -175,6 +194,8 @@ QCurUSD/fall →
     | 'dalur:kk'/fall
     | 'bandarískur:lo'_kk/fall? 'dollari:kk'/fall
     | currency_usd/fall
+    | "dollar" # Common mistake
+    | "bandaríkjadollar" # Common mistake
 
 QCurUSD_þgf →
     "bandaríkjadollara" | "bandaríkjadollaranum"
@@ -205,7 +226,14 @@ QCurCHF/fall →
 
 QCurCAD/fall →
     | 'kanadískur:lo'_kk/fall 'dollari:kk'/fall
+    | 'kanadadalur:kk'_kk/fall
+    | 'kanadadollari:kk'_kk/fall
+    | "kanadadollar" # Common mistake
     | currency_cad/fall
+
+QCurCAD_nf →
+    "kanadadalur" | "kanadadalurinn"
+    | "kanadadollari" | "kanadadollarinn"
 
 QCurCAD_þgf →
     "kanadadal" | "kanadadalnum"
@@ -256,9 +284,14 @@ QCurXch → "gengi" | "gengið"
 
 QCurExchangeRate →
     QCurXch QCurUnit_ef QCurVisAVis QCurUnit_þgf
+    | "gengið" "á" QCurUnit_þgf QCurVisAVis QCurUnit_þgf
 
 QCurGeneralRate →
     QCurXch QCurUnit_ef
+    | "gengið" "á" QCurUnit_þgf
+
+QCurGeneralCost →
+    QCurUnit_nf
 
 QCurConvertAmount →
     QCurNumberWord QCurUnit_nf
@@ -285,6 +318,8 @@ QCurAmountConversion →
     | QCurConvertAmount QCurMuchIn
     # Hvað eru 10 dollarar mikið [í evrum]?
     | QCurConvertAmount QCurMuch
+    # Hvað fæ ég margar krónur fyrir 10 dollara?
+    # | "hvað" "fæ" "ég" QCurMany "krónur" "fyrir"
 
 """
 
@@ -348,6 +383,11 @@ def QCurExchangeRate(node, params, result):
 
 
 def QCurGeneralRate(node, params, result):
+    result.op = "general"
+    result.desc = result._text
+
+
+def QCurGeneralCost(node, params, result):
     result.op = "general"
     result.desc = result._text
 
@@ -454,6 +494,7 @@ def sentence(state, result):
         elif result.op == "general":
             # 'Hvert er gengi dollarans?'
             val = _query_exchange_rate(result.currencies[0], "ISK")
+            suffix = "krónur" if is_plural(format_icelandic_float(val)) else "króna"
         elif result.op == "convert":
             # 'Hvað eru 100 evrur margar krónur?'
             suffix = result.currency  # 'krónur'
@@ -470,18 +511,16 @@ def sentence(state, result):
         if val:
             answer = format_icelandic_float(val)
             response = dict(answer=answer)
-            voice_answer = (
-                "{0} {3} {1}{2}."
-                .format(result.desc, answer, (" " + suffix) if suffix else "", verb)
-                .capitalize()
-            )
+            voice_answer = "{0} {3} {1}{2}.".format(
+                result.desc, answer, (" " + suffix) if suffix else "", verb
+            ).capitalize()
             # Clean up voice answer
             voice_answer = voice_answer.replace("slot í", "slotí")
             voice_answer = voice_answer.replace(" dollars ", " Bandaríkjadals ")
             q.set_answer(response, answer, voice_answer)
             q.set_key(target_currency)
             # Store the amount in the query context
-            q.set_context({"amount": {"currency":target_currency, "number":val}})
+            q.set_context({"amount": {"currency": target_currency, "number": val}})
             q.set_qtype(_CURRENCY_QTYPE)
 
         return

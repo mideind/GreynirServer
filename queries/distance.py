@@ -210,6 +210,7 @@ def dist_answer_for_loc(matches, query):
     uc = capitalize_placename(locname)
     bq = query.beautified_query.replace(locname, uc)
     query.set_beautified_query(bq)
+    query.set_context(dict(subject=loc_nf))
 
     return response, answer, voice
 
@@ -255,6 +256,7 @@ def traveltime_answer_for_loc(matches, query):
     uc = capitalize_placename(locname)
     bq = query.beautified_query.replace(locname, uc)
     query.set_beautified_query(bq)
+    query.set_context(dict(subject=loc_nf))
 
     return response, answer, voice
 

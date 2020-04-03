@@ -25,8 +25,11 @@ import pytest
 import os
 import re
 from datetime import datetime
+from urllib.parse import urlencode
 
 from main import app
+from db import SessionContext
+from db.models import Query
 
 # pylint: disable=unused-wildcard-import
 from geo import *
@@ -91,6 +94,37 @@ def test_api(client):
         # since no data is posted to the APIs
         resp = client.post(str(r))
         assert resp.content_type.startswith(API_CONTENT_TYPE)
+
+
+def test_del_query_history(client):
+    """ Test query history deletion API. """
+
+    with SessionContext(commit=False) as session:
+        # If database contains the logged query "GREYNIR_TESTING" we know the
+        # tests are running on the dummy data in tests/test_files/test_queries.csv.
+        cnt = session.query(Query).filter(Query.question == "GREYNIR_TESTING").count()
+        if not cnt == 1:
+            return
+
+        # Num queries in dummy test data
+        TEST_EXPECTED_NUM_QUERIES = 6
+
+        # We expect one query with this client ID
+        TEST_CLIENT_ID = "123456789"
+
+        # Number of queries prior to API call
+        pre_numq = session.query(Query).count()
+        assert pre_numq == TEST_EXPECTED_NUM_QUERIES, "Malformed dummy test DB"
+
+        qstr = urlencode(
+            {"action": "clear", "client_type": "some_type", "client_id": TEST_CLIENT_ID}
+        )
+
+        r = client.get("/query_history.api?" + qstr)
+
+        post_numq = session.query(Query).count()
+
+        assert post_numq == pre_numq - 1
 
 
 def test_processors():

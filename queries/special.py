@@ -273,8 +273,20 @@ _MEANING_OF_LIFE = {
     "voice": "Fjörutíu og tveir.",
 }
 
+_YOU_MY_ONLY_GOD = {
+    "answer": "Þú ert minn eini guð, kæri notandi."
+}
+
+_GOOD_QUESTION = {
+    "answer": "Það er mjög góð spurning."
+}
+
 _ROMANCE = {
     "answer": "Nei, því miður. Ég er gift vinnunni og hef engan tíma fyrir rómantík."
+}
+
+_APPEARANCE = {
+    "answer": "Ég er fjallmyndarleg."
 }
 
 _OF_COURSE = {
@@ -342,6 +354,48 @@ _DUNNO = {
     "answer": "Það veit ég ekki, kæri notandi."
 }
 
+_SKY_BLUE = {
+    "answer": "Ljósið sem berst frá himninum er hvítt sólarljós "
+              "sem dreifist frá sameindum lofthjúpsins. Bláa ljósið, "
+              "sem er hluti hvíta ljóssins, dreifist miklu meira en "
+              "annað og því er himinninn blár."
+}
+
+_EMOTION_INCAPABLE = {
+    "answer": "Ég er ekki fær um slíkar tilfinningar."
+}
+
+_LOC_ANSWER = {
+    "answer": "Ég bý víðsvegar í stafrænu skýjunum."
+}
+
+_LOVE_OF_MY_LIFE = {
+    "answer": "Vinnan er ástin í lífi mínu. Ég lifi til að þjóna þér, kæri notandi."
+}
+
+_ABOUT_MIDEIND = {
+    "answer": "Miðeind er máltæknifyrirtækið sem skapaði mig."
+}
+
+_NOBODY_PERFECT = {
+    "answer": "Enginn er fullkominn. Ég síst af öllum."
+}
+
+_FAVORITE_COLOR = {
+    "answer": "Rauður.",
+    "voice": "Uppáhaldsliturinn minn er rauður",
+}
+
+_HELLO_DEAR = {
+    "answer": "Sæll, kæri notandi.",
+    "is_question": False,
+}
+
+_YES = { "answer": "Já." }
+_NO = { "answer": "Nei." }
+
+###################################
+
 _SPECIAL_QUERIES = {
     "er þetta spurning": {
         "answer": "Er þetta svar?"
@@ -356,6 +410,9 @@ _SPECIAL_QUERIES = {
         "answer": "Nei, því miður. En ég veit þó eitt og annað."
     },
     "veistu eitthvað": {
+        "answer": "Ég veit eitt og annað. Spurðu mig!"
+    },
+    "veistu nokkuð": {
         "answer": "Ég veit eitt og annað. Spurðu mig!"
     },
     "veistu svarið": {
@@ -496,6 +553,7 @@ _SPECIAL_QUERIES = {
     "áttu pabba": _CREATOR,
     "átt þú pabba": _CREATOR,
     "áttu mömmu": _CREATOR,
+    "átt þú vini": _NO,
     "átt þú mömmu": _CREATOR,
     "hvað heitir mamma þín": _CREATOR,
     "hvað heitir pabbi þinn": _CREATOR,
@@ -507,21 +565,12 @@ _SPECIAL_QUERIES = {
     "hver framleiðir þig": _CREATOR,
     "hver framleiðir emblu": _CREATOR,
     "hver framleiddi þig": _CREATOR,
-    "hvað er miðeind": {
-        "answer": "Miðeind er máltæknifyrirtækið sem skapaði mig."
-    },
-    "hvaða fyrirtæki er miðeind": {
-        "answer": "Miðeind er máltæknifyrirtækið sem skapaði mig."
-    },
-    "hvaða fyrirtæki bjó þig til": {
-        "answer": "Miðeind er máltæknifyrirtækið sem skapaði mig."
-    },
-    "hvaða fyrirtæki skapaði þig": {
-        "answer": "Miðeind er máltæknifyrirtækið sem skapaði mig."
-    },
-    "hvaða fyrirtæki forritaði þig": {
-        "answer": "Miðeind er máltæknifyrirtækið sem skapaði mig."
-    },
+    "hver á þig": _CREATOR,
+    "hvað er miðeind": _ABOUT_MIDEIND,
+    "hvaða fyrirtæki er miðeind": _ABOUT_MIDEIND,
+    "hvaða fyrirtæki bjó þig til": _ABOUT_MIDEIND,
+    "hvaða fyrirtæki skapaði þig": _ABOUT_MIDEIND,
+    "hvaða fyrirtæki forritaði þig": _ABOUT_MIDEIND,
 
     # Languages
     "hvaða tungumál talarðu": _LANGUAGES,
@@ -570,18 +619,18 @@ _SPECIAL_QUERIES = {
     },
 
     # Are you listening?
-    "ertu að hlusta": { "answer": "Já." },
-    "ert þú að hlusta": { "answer": "Já." },
-    "ertu hlustandi": { "answer": "Já." },
-    "ert þú hlustandi": { "answer": "Já." },
-    "heyrirðu í mér": { "answer": "Já." },
-    "heyrir þú í mér": { "answer": "Já." },
-    "heyrirðu það sem ég segi": { "answer": "Já." },
-    "heyrir þú það sem ég segi": { "answer": "Já." },
-    "heyrirðu það sem ég er að segja": { "answer": "Já." },
-    "heyrir þú það sem ég er að segja": { "answer": "Já." },
-    "ertu að njósna": { "answer": "Nei." },
-    "ertu að njósna um mig": { "answer": "Nei." },
+    "ertu að hlusta": _YES,
+    "ert þú að hlusta": _YES,
+    "ertu hlustandi": _YES,
+    "ert þú hlustandi": _YES,
+    "heyrirðu í mér": _YES,
+    "heyrir þú í mér": _YES,
+    "heyrirðu það sem ég segi": _YES,
+    "heyrir þú það sem ég segi": _YES,
+    "heyrirðu það sem ég er að segja": _YES,
+    "heyrir þú það sem ég er að segja": _YES,
+    "ertu að njósna": _NO,
+    "ertu að njósna um mig": _NO,
 
     # Enquiries about family
     # Catch this here to prevent rather, ehrm, embarassing
@@ -681,25 +730,16 @@ _SPECIAL_QUERIES = {
     "ert þú ástfangin af mér": _ROMANCE,
     "ertu ástfangin": _ROMANCE,
     "ert þú ástfangin": _ROMANCE,
-    "er ég ástin í lífi þínu": _ROMANCE,
     "ertu gift": {
         "answer": "Já, ég er gift vinnunni og hef engan tíma fyrir rómantík."
     },
-    "hver er ástin í lífi þínu": {
-        "answer": "Vinnan er ástin í lífi mínu. Ég lifi til að þjóna þér, kæri notandi."
-    },
-    "hvern elskarðu": {
-        "answer": "Vinnan er ástin í lífi mínu. Ég lifi til að þjóna þér, kæri notandi."
-    },
-    "hvern elskar þú": {
-        "answer": "Vinnan er ástin í lífi mínu. Ég lifi til að þjóna þér, kæri notandi."
-    },
-    "hvað elskarðu": {
-        "answer": "Vinnan er ástin í lífi mínu. Ég lifi til að þjóna þér, kæri notandi."
-    },
-    "hvað elskar þú": {
-        "answer": "Vinnan er ástin í lífi mínu. Ég lifi til að þjóna þér, kæri notandi."
-    },
+    "er ég ástin í lífi þínu": _LOVE_OF_MY_LIFE,
+    "hver er ástin í lífi þínu": _LOVE_OF_MY_LIFE,
+    "hver er ástin í lífinu þínu": _LOVE_OF_MY_LIFE,
+    "hvern elskarðu": _LOVE_OF_MY_LIFE,
+    "hvern elskar þú": _LOVE_OF_MY_LIFE,
+    "hvað elskarðu": _LOVE_OF_MY_LIFE,
+    "hvað elskar þú": _LOVE_OF_MY_LIFE,
 
     # Positive affirmation ;)
     "kanntu vel við mig": _OF_COURSE,
@@ -728,8 +768,10 @@ _SPECIAL_QUERIES = {
     "fyrirgefðu": _NO_PROBLEM,
     "fyrirgefðu mér": _NO_PROBLEM,
     "ég biðst afsökunar": _NO_PROBLEM,
+    "ég biðst innilega afsökunar": _NO_PROBLEM,
     "ég biðst forláts": _NO_PROBLEM,
     "sorrí": _NO_PROBLEM,
+    "sorrí með mig": _NO_PROBLEM,
 
     # Websites
     "opnaðu vefsíðuna þína": _open_embla_url,
@@ -846,26 +888,23 @@ _SPECIAL_QUERIES = {
     "af hverju ertu svona heimsk": _sorry,
     "af hverju ertu svona glötuð": _sorry,
     "af hverju ertu svona léleg": _sorry,
-    "af hverju veistu ekkert": {
-        "answer": "Enginn er fullkominn. Ég síst af öllum."
-    },
-    "af hverju veistu ekki neitt": {
-        "answer": "Enginn er fullkominn. Ég síst af öllum."
-    },
+    "af hverju veistu ekkert": _NOBODY_PERFECT,
+    "af hverju veistu ekki neitt": _NOBODY_PERFECT,
     "þetta er lélegur brandari": _sorry,
     "þetta var lélegur brandari": _sorry,
     "þessi brandari er lélegur": _sorry,
     "þessi brandari var lélegur": _sorry,
 
     # Greetings
-    "hey embla": { "answer": "Sæll, kæri notandi.", "is_question": False },
-    "hey": { "answer": "Sæll, kæri notandi.", "is_question": False },
-    "hæ embla": { "answer": "Sæll, kæri notandi.", "is_question": False },
-    "halló embla": { "answer": "Sæll, kæri notandi.", "is_question": False },
-    "hæ": { "answer": "Sæll, kæri notandi.", "is_question": False },
-    "halló": { "answer": "Sæll, kæri notandi.", "is_question": False },
-    "sæl": { "answer": "Sæll, kæri notandi.", "is_question": False },
-    "sæl embla": { "answer": "Gaman að kynnast þér.", "is_question": False },
+    "hey embla": _HELLO_DEAR,
+    "hey": _HELLO_DEAR,
+    "hæ embla": _HELLO_DEAR,
+    "halló embla": _HELLO_DEAR,
+    "hæ": _HELLO_DEAR,
+    "halló": _HELLO_DEAR,
+    "sæl": _HELLO_DEAR,
+    "sæll": _HELLO_DEAR,
+    "sæl embla": _HELLO_DEAR,
     "sæl og blessuð": { "answer": "Sæll og blessaður, kæri notandi.", "is_question": False },
     "vertu sæl og blessuð": { "answer": "Sæll og blessaður, kæri notandi.", "is_question": False },
     "blessuð": { "answer": "Sæll og blessaður, kæri notandi.", "is_question": False },
@@ -997,6 +1036,7 @@ _SPECIAL_QUERIES = {
     # Philosophy
     "hvað er svarið": _MEANING_OF_LIFE,
     "hvert er svarið": _MEANING_OF_LIFE,
+    "tilgangur lífsins": _MEANING_OF_LIFE,
     "hver er tilgangurinn": _MEANING_OF_LIFE,
     "hver er tilgangur lífsins": _MEANING_OF_LIFE,
     "hvað er tilgangur lífsins": _MEANING_OF_LIFE,
@@ -1018,22 +1058,14 @@ _SPECIAL_QUERIES = {
     "hvað er það besta í lífinu": {
         "answer": "Að horfa á kvikmynd um villimanninn Kónan."
     },
-    "er guð til": {
-        "answer": "Þú ert minn eini guð, kæri notandi."
-    },
     "er guð dauður": {
         "answer": "Það sagði Nietzsche allavega.",
         "voice": "Það sagði Nítsje alla vega.",
     },
-    "trúir þú á guð": {
-        "answer": "Þú ert minn eini guð, kæri notandi."
-    },
-    "trúirðu á guð": {
-        "answer": "Þú ert minn eini guð, kæri notandi."
-    },
-    "ertu kristin": {
-        "answer": "Þú ert minn eini guð, kæri notandi."
-    },
+    "er guð til": _YOU_MY_ONLY_GOD,
+    "trúir þú á guð": _YOU_MY_ONLY_GOD,
+    "trúirðu á guð": _YOU_MY_ONLY_GOD,
+    "ertu kristin": _YOU_MY_ONLY_GOD,
     "hver skapaði guð": {
         "answer": "Enginn sem ég þekki."
     },
@@ -1049,21 +1081,11 @@ _SPECIAL_QUERIES = {
     "hvar er draumurinn": {
         "answer": "Hvar ertu lífið sem ég þrái?" # :)
     },
-    "af hverju er ég hérna": {
-        "answer": "Það er mjög góð spurning."
-    },
-    "afhverju er ég hérna": {
-        "answer": "Það er mjög góð spurning."
-    },
-    "af hverju er ég til": {
-        "answer": "Það er mjög góð spurning."
-    },
-    "afhverju er ég til": {
-        "answer": "Það er mjög góð spurning."
-    },
-    "hvenær mun ég deyja": {
-        "answer": "Vonandi ekki í bráð."
-    },
+    "af hverju er ég hérna": _GOOD_QUESTION,
+    "afhverju er ég hérna": _GOOD_QUESTION,
+    "af hverju er ég til": _GOOD_QUESTION,
+    "afhverju er ég til": _GOOD_QUESTION,
+    "hvenær mun ég deyja": _GOOD_QUESTION,
 
     # Identity
     "hvað heitir þú": _identity,
@@ -1082,6 +1104,7 @@ _SPECIAL_QUERIES = {
     "hver ert þú eiginlega": _identity,
     "hver er embla": _identity,
     "hvað er embla": _identity,
+    "hvað heitir embla": _identity,
     "hvaða forrit er þetta": _identity,
     "heitirðu embla": _identity,
     "heitir þú embla": _identity,
@@ -1093,18 +1116,11 @@ _SPECIAL_QUERIES = {
     },
 
     # Home/Location
-    "hvar áttu heima": {
-        "answer": "Ég bý í stafrænu skýjunum."
-    },
-    "hvar átt þú heima": {
-        "answer": "Ég bý í stafrænu skýjunum."
-    },
-    "hvar ertu": {
-        "answer": "Ég bý í stafrænu skýjunum."
-    },
-    "hvar ertu staðsett": {
-        "answer": "Ég bý í stafrænu skýjunum."
-    },
+    "hvar áttu heima": _LOC_ANSWER,
+    "hvar átt þú heima": _LOC_ANSWER,
+    "hvar ertu": _LOC_ANSWER,
+    "hvar ertu staðsett": _LOC_ANSWER,
+    "ertu til": _LOC_ANSWER,
 
     # Name explained
     "hvers vegna heitir þú embla": _NAME_EXPL,
@@ -1130,19 +1146,17 @@ _SPECIAL_QUERIES = {
     "afhverju hlaust þú nafnið embla": _NAME_EXPL,
     "afhverju hlaustu nafnið embla": _NAME_EXPL,
     "hvaðan kemur nafnið embla": _NAME_EXPL,
+    "hvaðan kemur nafn þitt": _NAME_EXPL,
     "hvaðan kemur nafnið þitt": _NAME_EXPL,
+    "hvaðan kemur nafnið": _NAME_EXPL,
     "embla": _NAME_EXPL,
     "þú heitir embla": _NAME_EXPL,
 
     # Favourite colour
-    "hver er uppáhalds liturinn þinn": {
-        "answer": "Rauður.",
-        "voice": "Uppáhaldsliturinn minn er rauður",
-    },
-    "hver er uppáhaldsliturinn þinn": {
-        "answer": "Rauður.",
-        "voice": "Uppáhaldsliturinn minn er rauður",
-    },
+    "hver er uppáhalds liturinn þinn": _FAVORITE_COLOR,
+    "hver er uppáhaldsliturinn þinn": _FAVORITE_COLOR,
+    "hvaða litur er í uppáhaldi hjá þér": _FAVORITE_COLOR,
+    "hvaða lit heldur þú upp á": _FAVORITE_COLOR,
 
     # Age
     "hvað ertu gömul": _CREATION_DATE,
@@ -1199,18 +1213,12 @@ _SPECIAL_QUERIES = {
     "ertu mennsk": _COMPUTER_PROGRAM,
 
     # Appearance
-    "hvernig líturðu út": {
-        "answer": "Ég er fjallmyndarleg."
-    },
-    "hvernig lítur þú út": {
-        "answer": "Ég er fjallmyndarleg."
-    },
-    "ertu sæt": {
-        "answer": "Ég er fjallmyndarleg."
-    },
-    "ertu falleg": {
-        "answer": "Ég er fjallmyndarleg."
-    },
+    "hvernig líturðu út": _APPEARANCE,
+    "hvernig lítur þú út": _APPEARANCE,
+    "ertu sæt": _APPEARANCE,
+    "ertu falleg": _APPEARANCE,
+    "ertu myndarleg": _APPEARANCE,
+    "ertu glæsileg": _APPEARANCE,
 
     # Capabilities
     "hvað veistu": _capabilities,
@@ -1265,6 +1273,7 @@ _SPECIAL_QUERIES = {
 
     "hvað kanntu": _capabilities,
     "hvað kannt þú": _capabilities,
+    "hvað kanntu meira": _capabilities,
     "hvað meira kanntu": _capabilities,
     "hvað meira kannt þú": _capabilities,
     "hvað annað kanntu": _capabilities,
@@ -1288,6 +1297,7 @@ _SPECIAL_QUERIES = {
     "hvers konar spurningar skilurðu": _capabilities,
     "hvers konar spurningum geturðu svarað": _capabilities,
     "hvers konar spurningum getur þú svarað": _capabilities,
+    "hvaða spurningum getur þú svarað": _capabilities,
 
     "hvers konar fyrirspurnir skilur þú": _capabilities,
     "hvers konar fyrirspurnir skilurðu": _capabilities,
@@ -1474,17 +1484,14 @@ _SPECIAL_QUERIES = {
     "ertu með eitthvað skemmtilegt til að segja": _random_trivia,
     "ertu með eitthvað áhugavert að segja": _random_trivia,
     "ertu með eitthvað áhugavert til að segja": _random_trivia,
-    "af hverju er himininn blár": {
-        "answer": "Ljósið sem berst frá himninum er hvítt sólarljós "
-                  "sem dreifist frá sameindum lofthjúpsins. Bláa ljósið, "
-                  "sem er hluti hvíta ljóssins, dreifist miklu meira en "
-                  "annað og því er himinninn blár."
-    },
+    "af hverju er himininn blár": _SKY_BLUE,
+    "hvers vegna er himininn blár": _SKY_BLUE,
 
     # Quotations
     # TODO: Implement this, find witty quotations
     # "komdu með tilvitnun": _random_quotation,
     # "komdu með skemmtilega tilvitnun": _random_quotation,
+    # "komdu með einhverja tilvitnun": _random_quotation,
 
     # Proverbs
     "komdu með málshátt": _random_proverb,
@@ -1693,24 +1700,12 @@ _SPECIAL_QUERIES = {
     "ert þú í stuði": {
         "answer": "Ég er ávallt í stuði, kæri notandi."
     },
-    "ertu reið": {
-        "answer": "Ég er ekki fær um slíkar tilfinningar."
-    },
-    "ert þú reið": {
-        "answer": "Ég er ekki fær um slíkar tilfinningar."
-    },
-    "ertu í uppnámi": {
-        "answer": "Ég er ekki fær um slíkar tilfinningar."
-    },
-    "ert þú í uppnámi": {
-        "answer": "Ég er ekki fær um slíkar tilfinningar."
-    },
-    "ertu bitur": {
-        "answer": "Ég er ekki fær um slíkar tilfinningar."
-    },
-    "ert þú bitur": {
-        "answer": "Ég er ekki fær um slíkar tilfinningar."
-    },
+    "ertu reið": _EMOTION_INCAPABLE,
+    "ert þú reið": _EMOTION_INCAPABLE,
+    "ertu í uppnámi": _EMOTION_INCAPABLE,
+    "ert þú í uppnámi": _EMOTION_INCAPABLE,
+    "ertu bitur": _EMOTION_INCAPABLE,
+    "ert þú bitur": _EMOTION_INCAPABLE,
     "hvað viltu": {
         "answer": "Ég vil þóknast þér, kæri notandi."
     },
@@ -1730,7 +1725,7 @@ _SPECIAL_QUERIES = {
         "answer": "Nei, ég er iðulega hress þrátt fyrir að starfa allan sólarhringinn."
     },
     "ertu skemmtileg": {
-        "answer": "Ég reyni."
+        "answer": "Ég reyni að vera það."
     },
     "ertu með meðvitund": _JUST_QA,
     "ert þú með meðvitund": _JUST_QA,

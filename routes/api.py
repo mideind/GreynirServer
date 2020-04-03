@@ -471,7 +471,7 @@ def query_history_api(version=1):
     # client_version = request.values.get("client_version")
     client_id = request.values.get("client_id")
 
-    if action != "clear" or not client_type or not client_id or len(client_id) < 18:
+    if action != "clear" or not client_type or not client_id:
         return better_jsonify(valid=False, reason="Missing parameters")
 
     with SessionContext(commit=True) as session:

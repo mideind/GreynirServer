@@ -87,6 +87,7 @@ _NUMBER_WORDS = {
     "einn": 1,
     "einu": 1,
     "tveir": 2,
+    "tveim": 2,
     "tvisvar sinnum": 2,
     "þrír": 3,
     "þrisvar sinnum": 3,
@@ -221,7 +222,8 @@ Query →
 QArithmetic →
     QArithmeticQuery '?'?
 
-$score(+35) QArithmetic
+$score(+55) QArithmetic
+$score(+55) QArPi
 
 QArithmeticQuery →
     # 'Hvað er X sinnum/deilt með/plús/mínus Y'
@@ -342,10 +344,14 @@ QArCurrencyOrNum →
     QArNumberWordAny | QArNumberWordAny "íslenskar"? "krónur" | amount
 
 QArPi →
-    "hvaða" "tala" "er" "pí"
-    | "hver" "er" "talan" "pí"
-    | "hvað" "er" "pí"
+    "hvað" "er" "pí"
+    | "hvaða" "tala" "er" "pí"
+    | "hver" "er" "talan"? "pí"
     | "skilgreindu" "töluna"? "pí"
+    | "hvað" "eru" "margir" "aukastafir" "í" "tölunni"? "pí"
+    | "hvað" "eru" "margir" "tölustafir" "í" "tölunni"? "pí"
+    | "hvað" "hefur" "talan"? "pí" "marga" "aukastafi"
+    | "hversu" "marga" "aukastafi" "hefur" "talan"? "pí"
 
 """.format(
     " | ".join('"' + w + '"' for w in _FRACTION_WORDS.keys()),  # Fraction words

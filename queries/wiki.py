@@ -25,6 +25,7 @@
 """
 
 # TODO: Shorten overly long first paragraphs.
+# TODO: Handle redirection and disambiguation page results better.
 # TODO: Fix regex that cleans wiki text.
 # TODO: "Segðu mér meira um X" - Return more article text
 
@@ -33,7 +34,7 @@ import re
 import random
 from datetime import datetime, timedelta
 
-from queries import query_json_api
+from queries import query_json_api, gen_answer
 
 
 _WIKI_QTYPE = "Wikipedia"
@@ -124,16 +125,38 @@ QWikiQuery →
     | "gætirðu" "flett" "upp" QWikiSubjectÞgf "í" QWikipedia
 
 QWikiSubjectNf →
+    QWikiPrevSubjectNf | QWikiSubjectNlNf
+
+QWikiSubjectNlNf →
     Nl_nf
 
 QWikiSubjectÞf →
+    QWikiPrevSubjectÞf | QWikiSubjectNlÞf
+
+QWikiSubjectNlÞf →
     Nl_þf
 
 QWikiSubjectÞgf →
+    QWikiPrevSubjectÞgf | QWikiSubjectNlÞgf
+
+QWikiSubjectNlÞgf →
     Nl_þgf
+
+QWikiPrevSubjectNf →
+    "hann" | "hún" | "það"
+
+QWikiPrevSubjectÞf →
+    "hann" | "hana" | "það"
+
+QWikiPrevSubjectÞgf →
+    "honum" | "henni" | "því"
 
 QWikipedia →
     {0}
+
+$score(+35) QWikiPrevSubjectNf
+$score(+35) QWikiPrevSubjectÞf
+$score(+35) QWikiPrevSubjectÞf
 
 $score(+35) QWikiQuery
 
@@ -145,21 +168,34 @@ $score(+35) QWikiQuery
 def QWikiQuery(node, params, result):
     # Set the query type
     result.qtype = _WIKI_QTYPE
-    result.qkey = result["subject_nom"]
+    result.qkey = result.get("subject_nom")
 
 
-def QWikiSubjectNf(node, params, result):
+def QWikiSubjectNlNf(node, params, result):
     result["subject_nom"] = result._nominative
 
 
-def QWikiSubjectÞf(node, params, result):
-    result["subject_nom"] = result._nominative
-    # result["subject_acc"] = result._text
+QWikiSubjectNlÞf = QWikiSubjectNlÞgf = QWikiSubjectNlNf
 
 
-def QWikiSubjectÞgf(node, params, result):
-    result["subject_nom"] = result._nominative
-    # result["subject_dat"] = result._text
+def QWikiPrevSubjectNf(node, params, result):
+    """ Reference to previous result, usually via personal
+        pronouns ('Hvað segir Wikipedía um hann/hana/það?'). """
+    q = result.state.get("query")
+    ctx = q is not None and q.fetch_context()
+    ctx_keys = ["person_name", "entity_name", "subject"]
+    if ctx:
+        keys = list(filter(lambda k: k in ctx, ctx_keys))
+        if keys:
+            result.context_reference = True
+            result["subject_nom"] = ctx[keys[0]]
+    if not "subject_nom" in result:
+        # There is a reference to a previous result
+        # which is not available: flag an error
+        result.error_context_reference = True
+
+
+QWikiPrevSubjectÞgf = QWikiPrevSubjectÞf = QWikiPrevSubjectNf
 
 
 def EfLiður(node, params, result):
@@ -224,7 +260,7 @@ def get_wiki_summary(subject_nom):
     res = _query_wiki_api(cap_subj)
     # OK, Wikipedia doesn't have anything with current capitalization
     # or lack thereof. Try uppercasing first character of each word.
-    titled_subj =  subject_nom.title()
+    titled_subj = subject_nom.title()
     if not has_entry(res) and cap_subj != titled_subj:
         res = _query_wiki_api(titled_subj)
 
@@ -248,26 +284,39 @@ def get_wiki_summary(subject_nom):
 def sentence(state, result):
     """ Called when sentence processing is complete """
     q = state["query"]
-    if "qtype" in result and "subject_nom" in result:
-        # Successfully matched a query type
-        q.set_qtype(result.qtype)
-        q.set_key(result.qkey)
+    if "qtype" not in result:
+        q.set_error("E_QUERY_NOT_UNDERSTOOD")
+        return
 
-        # Fetch from Wikipedia API
-        answer = get_wiki_summary(result["subject_nom"])
+    # Successfully matched a query type, we're handling it...
+    q.set_qtype(result.qtype)
+
+    # Beautify query by fixing spelling of Wikipedia
+    b = q.beautified_query
+    for w in _WIKI_VARIATIONS:
+        b = b.replace(w, _WIKIPEDIA_CANONICAL)
+        b = b.replace(w.capitalize(), _WIKIPEDIA_CANONICAL)
+    q.set_beautified_query(b)
+
+    # Check for error in context ref
+    if "error_context_reference" in result:
+        q.set_answer(*gen_answer("Ég veit ekki til hvers þú vísar."))
+        return
+
+    # We have a subject
+    if "subject_nom" in result:
+        # Fetch data from Wikipedia API
+        subj = result["subject_nom"]
+        answer = get_wiki_summary(subj)
         response = dict(answer=answer)
         voice = _clean_voice_answer(answer)
+        # Set query answer
         q.set_answer(response, answer, voice)
-
-        # Beautify query by fixing spelling of Wikipedia
-        b = q.beautified_query
-        for w in _WIKI_VARIATIONS:
-            b = b.replace(w, _WIKIPEDIA_CANONICAL)
-            b = b.replace(w.capitalize(), _WIKIPEDIA_CANONICAL)
-        q.set_beautified_query(b)
+        q.set_key(subj)
+        q.set_context(dict(subject=subj))
         q.set_source("Wikipedía")
         # Cache reply for 24 hours
         q.set_expires(datetime.utcnow() + timedelta(hours=24))
+        return
 
-    else:
-        q.set_error("E_QUERY_NOT_UNDERSTOOD")
+    q.set_error("E_QUERY_NOT_UNDERSTOOD")

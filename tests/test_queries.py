@@ -48,10 +48,17 @@ def qmcall(c, qdict):
     """ Use passed client object to call query API with 
         query string key value pairs provided in dict arg. """
 
-    # Create query string
     # test=1 ensures that we bypass the cache and have a (fixed) location
     if "test" not in qdict:
         qdict["test"] = True
+
+    # private=1 makes sure the query isn't logged. This prevents the tests from
+    # populating the local database query logging table. Some tests may rely
+    # on query history, in which case private=0 should be explicitly specified.
+    if "private" not in qdict:
+        qdict["private"] = True
+
+    # Create query string
     qstr = urlencode(qdict)
 
     # Use client to call API endpoint
@@ -156,6 +163,10 @@ def test_query_api(client):
 
     # Currency module
     json = qmcall(c, {"q": "Hvert er gengi dönsku krónunnar?"})
+    assert json["qtype"] == "Currency"
+    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
+
+    json = qmcall(c, {"q": "hvað kostar evran"})
     assert json["qtype"] == "Currency"
     assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
 
@@ -271,6 +282,14 @@ def test_query_api(client):
     assert json["qtype"] == "Geography"
     assert json["answer"].startswith("Eyjaálfu")
 
+    json = qmcall(c, {"q": "Hvar er máritanía?"})
+    assert json["qtype"] == "Geography"
+    assert "Afríku" in json["answer"]
+
+    json = qmcall(c, {"q": "Hvar er Kaupmannahöfn?"})
+    assert json["qtype"] == "Geography"
+    assert "Danmörku" in json["answer"]
+
     # Intro module
     json = qmcall(c, {"q": "ég heiti Gunna"})
     assert json["qtype"] == "Introduction"
@@ -279,6 +298,10 @@ def test_query_api(client):
     json = qmcall(c, {"q": "ég heiti Gunnar"})
     assert json["qtype"] == "Introduction"
     assert json["answer"].startswith("Sæll og blessaður")
+
+    json = qmcall(c, {"q": "ég heiti Boutros Boutros-Ghali"})
+    assert json["qtype"] == "Introduction"
+    assert json["answer"].startswith("Gaman að kynnast") and "Boutros" in json["answer"]
 
     # Location module
     # NB: No Google API key on test server
@@ -448,11 +471,11 @@ def test_query_api(client):
     # Weather module
     json = qmcall(c, {"q": "hvernig er veðrið í Reykjavík?"})
     assert json["qtype"] == "Weather"
-    assert re.search(r"^\-?\d+°", json["answer"]) is not None 
+    assert re.search(r"^\-?\d+°", json["answer"]) is not None
 
     json = qmcall(c, {"q": "Hversu hlýtt er úti?"})
     assert json["qtype"] == "Weather"
-    assert re.search(r"^\-?\d+°", json["answer"]) is not None 
+    assert re.search(r"^\-?\d+°", json["answer"]) is not None
 
     json = qmcall(c, {"q": "hver er veðurspáin fyrir morgundaginn"})
     assert json["qtype"] == "Weather"

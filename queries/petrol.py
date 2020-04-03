@@ -85,7 +85,7 @@ Query →
 QPetrol → QPetrolQuery '?'?
 
 QPetrolQuery →
-    QPetrolClosestStation | QPetrolCheapestStation | QPetrolClosestCheapestStation
+    QPetrolClosestStation | QPetrolCheapestStation QPetrolNow? | QPetrolClosestCheapestStation
 
 QPetrolClosestStation →
     QPetrolPetrol QPetrolNearMe?
@@ -173,6 +173,9 @@ QPetrolAround →
 
 QPetrolHere →
     "hér" | "hérna"
+
+QPetrolNow →
+    "núna" | "í" "dag" | "eins" "og" "stendur" | "í" "augnablikinu" | "þessa" "dagana"
 
 QPetrolStation →
     "bensínstöð" | "bensínstöðin" | "bensínafgreiðslustöð"
