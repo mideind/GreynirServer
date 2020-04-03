@@ -244,32 +244,35 @@ def locinfo():
     name = request.args.get("name")
     kind = request.args.get("kind")
 
-    if name and kind and kind in LOCATION_TAXONOMY:
-        loc = location_info(name, kind)
-        if loc:
-            resp["found"] = True
-            resp["country"] = loc.get("country")
-            resp["continent"] = loc.get("continent")
-            resp["desc"] = location_description(loc)
-            lat, lon = loc.get("latitude"), loc.get("longitude")
-            # We have coords
-            if lat and lon:
-                z = ZOOM_FOR_LOC_KIND.get(loc.get("kind"))
-                # We want a slightly lower zoom level for foreign placenames
-                if resp["country"] != ICELAND_ISOCODE and kind == "placename":
-                    z -= 1
-                resp["map"] = STATIC_MAP_URL.format(lat, lon, z)
-            # Icelandic region
-            elif name in ICE_REGIONS:
-                resp["map"] = "/static/img/maps/regions/" + name + ".png"
-            # Continent
-            elif (
-                resp["country"] is None
-                and resp["continent"]
-                and resp["continent"] in ISO_TO_CONTINENT
-            ):
-                resp["map"] = (
-                    "/static/img/maps/continents/" + resp["continent"] + ".png"
-                )
+    # Bail if we don't have the args
+    if not (name and kind and kind in LOCATION_TAXONOMY):
+        return better_jsonify(**resp)
+
+    # Try to find some info on loc
+    loc = location_info(name, kind)
+    if not loc:
+        return better_jsonify(**resp)
+
+    # We've found it
+    resp["found"] = True
+    resp["country"] = loc.get("country")
+    resp["continent"] = loc.get("continent")
+    resp["desc"] = location_description(loc)
+    lat, lon = loc.get("latitude"), loc.get("longitude")
+    # We have coords
+    if lat and lon:
+        z = ZOOM_FOR_LOC_KIND.get(loc.get("kind"))
+        # We want a slightly lower zoom level for foreign placenames
+        if resp["country"] != ICELAND_ISOCODE and kind == "placename":
+            z -= 1
+        resp["map"] = STATIC_MAP_URL.format(lat, lon, z)
+    # Icelandic region
+    elif name in ICE_REGIONS:
+        resp["map"] = "/static/img/maps/regions/" + name + ".png"
+    # Continent
+    elif resp["country"] is None and resp["continent"] in ISO_TO_CONTINENT:
+        resp["map"] = (
+            "/static/img/maps/continents/" + resp["continent"] + ".png"
+        )
 
     return better_jsonify(**resp)

@@ -226,8 +226,8 @@ QCurCHF/fall →
 
 QCurCAD/fall →
     | 'kanadískur:lo'_kk/fall 'dollari:kk'/fall
-    | 'kanadadalur:no'_kk/fall
-    | 'kanadadollari:no'_kk/fall
+    | 'kanadadalur:kk'_kk/fall
+    | 'kanadadollari:kk'_kk/fall
     | "kanadadollar" # Common mistake
     | currency_cad/fall
 
@@ -236,7 +236,7 @@ QCurCAD_nf →
     | "kanadadollari" | "kanadadollarinn"
 
 QCurCAD_þgf →
-    "kanadadal" | "kanadadalnum" | "kanadadollar"
+    "kanadadal" | "kanadadalnum"
     | "kanadadollara" | "kanadadollaranum"
 
 QCurCAD_ef →
@@ -319,7 +319,7 @@ QCurAmountConversion →
     # Hvað eru 10 dollarar mikið [í evrum]?
     | QCurConvertAmount QCurMuch
     # Hvað fæ ég margar krónur fyrir 10 dollara?
-    # | "hvað" "fæ" "ég" QCurMany "krónur" fyrir
+    # | "hvað" "fæ" "ég" QCurMany "krónur" "fyrir"
 
 """
 

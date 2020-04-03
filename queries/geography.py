@@ -257,8 +257,7 @@ def _loc_desc_query(subject, q):
         # Not a country, try placename lookup
         return _which_country_query(subject, q)
 
-    contcode = continent_for_country(cc)
-    continent = ISO_TO_CONTINENT[contcode]
+    continent = ISO_TO_CONTINENT[continent_for_country(cc)]
     continent_dat = nom2dat(continent)
 
     answer = "{0} er land í {1}.".format(subject, continent_dat)
@@ -272,6 +271,7 @@ def _loc_desc_query(subject, q):
     return True
 
 
+# Map handler functions to query types
 _HANDLERS = {
     "capital": _capital_query,
     "country": _which_country_query,

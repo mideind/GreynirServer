@@ -31,7 +31,7 @@ import logging
 import urllib.parse as urlparse
 import requests
 from datetime import datetime
-from bs4 import BeautifulSoup, NavigableString, Tag
+from bs4 import BeautifulSoup, NavigableString
 
 
 MODULE_NAME = __name__
@@ -302,8 +302,8 @@ class ScrapeHelper:
 
     @staticmethod
     def del_tag_prop_val(soup, tag, prop, val):
-        """ Delete all occurrences of the tag having the property
-            with the given value """
+        """ Delete all occurrences of the tag that have
+            a property with the given value """
         if soup is None:
             return
         while True:

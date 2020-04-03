@@ -175,7 +175,7 @@ QPetrolHere →
     "hér" | "hérna"
 
 QPetrolNow →
-    "í" "dag" | "eins" "og" "stendur" | "í" "augnablikinu" | "þessa" "dagana"
+    "núna" | "í" "dag" | "eins" "og" "stendur" | "í" "augnablikinu" | "þessa" "dagana"
 
 QPetrolStation →
     "bensínstöð" | "bensínstöðin" | "bensínafgreiðslustöð"
