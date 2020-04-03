@@ -125,21 +125,21 @@ QWikiQuery →
     | "gætirðu" "flett" "upp" QWikiSubjectÞgf "í" QWikipedia
 
 QWikiSubjectNf →
-    QWikiPrevSubjectNf | QWikiSubjectNlNom
+    QWikiPrevSubjectNf | QWikiSubjectNlNf
 
-QWikiSubjectNlNom →
+QWikiSubjectNlNf →
     Nl_nf
 
 QWikiSubjectÞf →
-    QWikiPrevSubjectÞf | QWikiSubjectNlAcc
+    QWikiPrevSubjectÞf | QWikiSubjectNlÞf
 
-QWikiSubjectNlAcc →
+QWikiSubjectNlÞf →
     Nl_þf
 
 QWikiSubjectÞgf →
-    QWikiPrevSubjectÞgf | QWikiSubjectNlDat
+    QWikiPrevSubjectÞgf | QWikiSubjectNlÞgf
 
-QWikiSubjectNlDat →
+QWikiSubjectNlÞgf →
     Nl_þgf
 
 QWikiPrevSubjectNf →
@@ -171,11 +171,11 @@ def QWikiQuery(node, params, result):
     result.qkey = result.get("subject_nom")
 
 
-def QWikiSubjectNlNom(node, params, result):
+def QWikiSubjectNlNf(node, params, result):
     result["subject_nom"] = result._nominative
 
 
-QWikiSubjectNlAcc = QWikiSubjectNlDat = QWikiSubjectNlNom
+QWikiSubjectNlÞf = QWikiSubjectNlÞgf = QWikiSubjectNlNf
 
 
 def QWikiPrevSubjectNf(node, params, result):
