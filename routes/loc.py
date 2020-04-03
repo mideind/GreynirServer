@@ -56,7 +56,7 @@ GMAPS_PLACE_URL = "https://www.google.com/maps/place/{0}?hl=is"
 
 def top_locations(limit=_TOP_LOC_LENGTH, kind=None, days=_TOP_LOC_PERIOD):
     """ Return a list of recent locations along with the list of
-        articles in which they are mentioned """
+        articles in which they are mentioned. """
 
     with SessionContext(read_only=True) as session:
         q = (
@@ -121,7 +121,7 @@ def top_locations(limit=_TOP_LOC_LENGTH, kind=None, days=_TOP_LOC_PERIOD):
 
 
 def icemap_markers(days=_TOP_LOC_PERIOD):
-    """ Return a list of recent Icelandic locations and their coordinates """
+    """ Return a list of recent Icelandic locations and their coordinates. """
     with SessionContext(read_only=True) as session:
         q = (
             session.query(Location.name, Location.latitude, Location.longitude)
@@ -145,7 +145,7 @@ def icemap_markers(days=_TOP_LOC_PERIOD):
 
 
 def world_map_data(days=_TOP_LOC_PERIOD):
-    """ Return data for world map. List of country iso codes with article count """
+    """ Return data for world map. List of country iso codes with article count. """
     with SessionContext(read_only=True) as session:
         q = (
             session.query(Location.country, dbfunc.count(Location.id))
@@ -168,7 +168,7 @@ def world_map_data(days=_TOP_LOC_PERIOD):
 @cache.cached(timeout=30 * 60, key_prefix="locations", query_string=True)
 @max_age(seconds=30 * 60)
 def locations():
-    """ Render locations page """
+    """ Render locations page. """
     kind = request.args.get("kind")
     kind = kind if kind in LOCATION_TAXONOMY else None
 
@@ -185,7 +185,7 @@ def locations():
 @routes.route("/locations_icemap", methods=["GET"])
 @cache.cached(timeout=30 * 60, key_prefix="icemap", query_string=True)
 def locations_icemap():
-    """ Render Icelandic map locations page """
+    """ Render Icelandic map locations page. """
     period = request.args.get("period")
     days = 7 if period == "week" else _TOP_LOC_PERIOD
 
@@ -198,7 +198,7 @@ def locations_icemap():
 @routes.route("/locations_worldmap", methods=["GET"])
 @cache.cached(timeout=30 * 60, key_prefix="worldmap", query_string=True)
 def locations_worldmap():
-    """ Render world map locations page """
+    """ Render world map locations page. """
     period = request.args.get("period")
     days = 7 if period == "week" else _TOP_LOC_PERIOD
 
@@ -215,7 +215,7 @@ def locations_worldmap():
 @routes.route("/staticmap", methods=["GET"])
 @cache.cached(timeout=60 * 60 * 24, key_prefix="staticmap", query_string=True)
 def staticmap():
-    """ Proxy for Google Static Maps API """
+    """ Proxy for Google Static Maps API. """
     try:
         lat = float(request.args.get("lat"))
         lon = float(request.args.get("lon"))
@@ -238,31 +238,41 @@ ZOOM_FOR_LOC_KIND = {"street": 11, "address": 12, "placename": 5, "country": 2}
 @routes.route("/locinfo", methods=["GET"])
 @cache.cached(timeout=60 * 60 * 24, key_prefix="locinfo", query_string=True)
 def locinfo():
-    """ Return info about a location as JSON """
+    """ Return info about a location as JSON. """
     resp = dict(found=False)
 
     name = request.args.get("name")
     kind = request.args.get("kind")
 
-    if name and kind and kind in LOCATION_TAXONOMY:
-        loc = location_info(name, kind)
-        if loc:
-            resp["found"] = True
-            resp["country"] = loc.get("country")
-            resp["continent"] = loc.get("continent")
-            resp["desc"] = location_description(loc)
-            lat, lon = loc.get("latitude"), loc.get("longitude")
-            if lat and lon:
-                z = ZOOM_FOR_LOC_KIND.get(loc.get("kind"))
-                # We want a slightly lower zoom level for foreign placenames
-                if resp["country"] != ICELAND_ISOCODE and kind == "placename":
-                    z -= 1
-                resp["map"] = STATIC_MAP_URL.format(lat, lon, z)
-            elif name in ICE_REGIONS:
-                resp["map"] = "/static/img/maps/regions/" + name + ".png"
-            elif kind == "continent" and resp["continent"] and resp["continent"] in ISO_TO_CONTINENT:
-                resp["map"] = (
-                    "/static/img/maps/continents/" + resp["continent"] + ".png"
-                )
+    # Bail if we don't have the args
+    if not (name and kind and kind in LOCATION_TAXONOMY):
+        return better_jsonify(**resp)
+
+    # Try to find some info on loc
+    loc = location_info(name, kind)
+    if not loc:
+        return better_jsonify(**resp)
+
+    # We've found it
+    resp["found"] = True
+    resp["country"] = loc.get("country")
+    resp["continent"] = loc.get("continent")
+    resp["desc"] = location_description(loc)
+    lat, lon = loc.get("latitude"), loc.get("longitude")
+    # We have coords
+    if lat and lon:
+        z = ZOOM_FOR_LOC_KIND.get(loc.get("kind"))
+        # We want a slightly lower zoom level for foreign placenames
+        if resp["country"] != ICELAND_ISOCODE and kind == "placename":
+            z -= 1
+        resp["map"] = STATIC_MAP_URL.format(lat, lon, z)
+    # Icelandic region
+    elif name in ICE_REGIONS:
+        resp["map"] = "/static/img/maps/regions/" + name + ".png"
+    # Continent
+    elif resp["country"] is None and resp["continent"] in ISO_TO_CONTINENT:
+        resp["map"] = (
+            "/static/img/maps/continents/" + resp["continent"] + ".png"
+        )
 
     return better_jsonify(**resp)

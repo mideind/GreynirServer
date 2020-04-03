@@ -56,6 +56,7 @@
 # TODO: "Hvað eru margar [unit of time measurement] í [dagsetningu]"
 # TODO: "Hvenær byrjar þorrinn"
 # TODO: "Hvaða frídagar/helgidagar/etc eru í febrúar"
+# TODO: "hvenær eru páskar 2035"
 
 import json
 import re

@@ -20,6 +20,9 @@
 
 """
 
+# TODO: Handle generic direction prefixes for country names and map to
+# corresponding country code, e.g. "Norður-Ítalía" -> "IT"
+
 
 import json
 import re
@@ -86,9 +89,19 @@ LOCATION_TAXONOMY = frozenset(
 # Location names that exist in Iceland but should
 # not be looked up as Icelandic place/street names
 ICE_PLACENAME_BLACKLIST = frozenset(
-    ("Norðurlönd", "París", "Svalbarði", "Höfðaborg", "Hamborg")
+    (
+        "Norðurlönd",
+        "París",
+        "Svalbarði",
+        "Höfðaborg",
+        "Hamborg",
+        "Pétursborg",
+        "Stöð",
+        "Álaborg",
+        "Árósar",
+    )
 )
-ICE_STREETNAME_BLACKLIST = frozenset(("Sjáland", "Feney"))
+ICE_STREETNAME_BLACKLIST = frozenset(("Sjáland", "Feney", "Ráðhúsið"))
 
 ALWAYS_STREET_ADDR = frozenset(("Skeifan", "Bessastaðir", "Kringlan"))
 
@@ -116,6 +129,7 @@ ICE_REGIONS = frozenset(
 COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
     ICELANDIC_LANG_ISOCODE: {
         "Mjanmar": "MM",
+        "Bahrain": "BH",
         "Búrma": "MM",
         "Burma": "MM",
         "Ameríka": "US",
@@ -172,6 +186,9 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
         "Malawi": "MW",
         "Norður-Noregur": "NO",
         "Tæland": "TH",
+        "Aserbaísjan": "AZ", # Til svona stafsett í BÍN
+        "Kanarí": "IC",
+        "Jómfrúaeyjar": "US",
     }
 }
 

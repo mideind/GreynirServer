@@ -37,7 +37,7 @@ import getopt
 import time
 import logging
 
-# import traceback
+import traceback
 
 # Uncomment the following to force running in a single process,
 # for instance for debugging
@@ -150,8 +150,9 @@ class Scraper:
                     session.rollback()
                 except Exception as e:
                     logging.warning(
-                        "Rollback due to exception when handling URL '{1}': {0}"
-                        .format(e, url)
+                        "Rollback due to exception when handling URL '{1}': {0}".format(
+                            e, url
+                        )
                     )
                     session.rollback()
 
@@ -234,6 +235,8 @@ class Scraper:
                     d.url, e, d.seq
                 )
             )
+            if Settings.DEBUG:
+                traceback.print_stack()
 
     def _parse_single_article(self, d):
         """ Single article parser that will be called by a process within a

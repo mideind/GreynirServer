@@ -24,7 +24,6 @@
 """
 
 # TODO: "Hvað búa margir í/á [BORG/LAND]?" etc. Wiki api?
-# TODO: "Hvað er Ísland?" "Hvar er Japan?"
 
 import logging
 import random
@@ -37,6 +36,7 @@ from reynir.bindb import BIN_Db
 from geo import (
     icelandic_city_name,
     isocode_for_country_name,
+    country_name_for_isocode,
     continent_for_country,
     ISO_TO_CONTINENT,
     location_info,
@@ -45,7 +45,7 @@ from geo import (
 
 _GEO_QTYPE = "Geography"
 
-TOPIC_LEMMAS = ["höfuðborg", "land", "heimsálfa"]
+TOPIC_LEMMAS = ["höfuðborg", "land", "heimsálfa", "borg"]
 
 
 def help_text(lemma):
@@ -57,6 +57,8 @@ def help_text(lemma):
                 "Hver er höfuðborg Frakklands",
                 "Í hvaða landi er Minsk",
                 "Í hvaða heimsálfu er Kambódía",
+                "Hvar er Kaupmannahöfn",
+                "Hvar er Máritanía",
             )
         )
     )
@@ -77,6 +79,7 @@ QGeoQuery →
     QGeoCapitalQuery
     | QGeoCountryQuery
     | QGeoContinentQuery
+    | QGeoLocationDescQuery
 
 QGeoCapitalQuery →
     # "hvað/hver er höfuðborgin í/á Spáni?"
@@ -93,11 +96,17 @@ QGeoCountryQuery →
 QGeoContinentQuery →
     "í" "hvaða" "heimsálfu" "er" QGeoCountryOrCity? QGeoSubject_nf
 
+QGeoLocationDescQuery →
+    QGeoWhereIs QGeoCountryOrCity? QGeoSubject_nf
+
 QGeoCountryOrCity →
     "landið" | "ríkið" | "borgin"
 
 QGeoWhatIs →
     "hver" "er" | "hvað" "er" | "hvað" "heitir" | 0
+
+QGeoWhereIs →
+    "hvar" "er" | "hvað" "er"
 
 QGeoPreposition →
     "í" | "á"
@@ -105,9 +114,10 @@ QGeoPreposition →
 QGeoSubject/fall →
     Nl/fall 
     # Hardcoded special case, otherwise identified as adj. "kostaríkur" :)
-    | "kostaríka"
+    | "kostaríka" | "kostaríku"
 
 $score(+1) QGeoSubject/fall
+$score(-100) QGeoLocationDescQuery
 
 $score(+35) QGeo
 
@@ -129,6 +139,10 @@ def QGeoCountryQuery(node, params, result):
 
 def QGeoContinentQuery(node, params, result):
     result["geo_qtype"] = "continent"
+
+
+def QGeoLocationDescQuery(node, params, result):
+    result["geo_qtype"] = "loc_desc"
 
 
 def QGeoSubject(node, params, result):
@@ -165,6 +179,7 @@ def _capital_query(country, q):
 
     q.set_answer(response, answer, voice)
     q.set_key("Höfuðborg {0}".format(country_gen))
+    q.set_context(dict(subject=ice_cname))
 
     return True
 
@@ -190,6 +205,7 @@ def _which_country_query(subject, q):
 
     q.set_answer(response, answer, voice)
     q.set_key(subject)
+    q.set_context(dict(subject=country_name_for_isocode(cc)))
 
     return True
 
@@ -212,8 +228,6 @@ def _which_continent_query(subject, q):
 
     contcode = continent_for_country(cc)
     continent = ISO_TO_CONTINENT[contcode]
-
-    # Look up dative continent name
     continent_dat = nom2dat(continent)
 
     # Format answer
@@ -228,14 +242,41 @@ def _which_continent_query(subject, q):
 
     q.set_answer(response, answer, voice)
     q.set_key(subject)
+    q.set_context(dict(subject=continent))
 
     return True
 
 
+def _loc_desc_query(subject, q):
+    """ Generate answer to a question about where a
+        country or placename is located. """
+
+    # Get country code
+    cc = isocode_for_country_name(subject)
+    if not cc:
+        # Not a country, try placename lookup
+        return _which_country_query(subject, q)
+
+    continent = ISO_TO_CONTINENT[continent_for_country(cc)]
+    continent_dat = nom2dat(continent)
+
+    answer = "{0} er land í {1}.".format(subject, continent_dat)
+    voice = answer
+    response = dict(answer=answer)
+
+    q.set_answer(response, answer, voice)
+    q.set_key(subject)
+    q.set_context(dict(subject=subject))
+
+    return True
+
+
+# Map handler functions to query types
 _HANDLERS = {
     "capital": _capital_query,
     "country": _which_country_query,
     "continent": _which_continent_query,
+    "loc_desc": _loc_desc_query,
 }
 
 

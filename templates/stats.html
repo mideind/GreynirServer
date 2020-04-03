@@ -223,36 +223,35 @@
 
       // Queries chart
       var queriesCtx =  $('#queries_chart_canvas').get(0).getContext('2d');
-      queriesChartData.datasets[0].backgroundColor = 'rgba(200, 222, 255, 0.5)';
+      
+      queriesChartData.datasets[0].backgroundColor = '#eb3732';
       // parseChartData.datasets[0].fill = true;
       var queriesChart = new Chart(queriesCtx, {
-         type: 'line',
+         type: 'bar',
          data: queriesChartData,
          options: {
             legend: {
                display: false,
+               position: 'bottom',
             },
             tooltips: {
-               callbacks: {
-                  label: function(tooltipItem, data) {
-                     var nstr = String(tooltipItem.yLabel);
-                     var desc = nstr.endsWith('1') && !nstr.endswith('11') ? "fyrirspurn" : "fyrirspurnir";
-                     return tooltipItem.yLabel + ' ' + desc;
-                  },
-               }
+               mode: 'index',
+               intersect: false,
             },
+            responsive: true,
             scales: {
                xAxes: [{
-                  distribution: 'series',
+                  stacked: true,
                }],
                yAxes: [{
                   ticks: {
-                     stepSize: 250,
+                     stepSize: 50,
                      min: 0,
                      callback: function(tick) {
                         return tick.toString();
                      }
-                  }
+                  },
+                  stacked: true,
                }]
             }
          }
