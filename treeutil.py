@@ -38,7 +38,13 @@ from reynir import TOK, mark_paragraphs, tokenize
 from reynir.binparser import augment_terminal
 from reynir.fastparser import Fast_Parser
 from reynir.incparser import IncrementalParser
-from reynir.matcher import Annotator, Simplifier, SimpleTree
+
+# !!! TODO: Temporary hack while versions are being synchronized
+try:
+    from reynir.simpletree import Annotator, Simplifier, SimpleTree
+except ImportError:
+    from reynir.matcher import Annotator, Simplifier, SimpleTree
+
 from reynir.bintokenizer import describe_token
 
 
