@@ -40,7 +40,7 @@ import re
 import logging
 from datetime import datetime
 
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, render_template
 from flask_caching import Cache
 from flask_cors import CORS
 
@@ -160,14 +160,14 @@ def send_font(path):
 @app.errorhandler(404)
 def page_not_found(e):
     """ Return a custom 404 error """
-    return "Þessi vefslóð er ekki rétt", 404
+    return render_template("404.html")
 
 
 # Custom 500 error handler
 @app.errorhandler(500)
 def server_error(e):
     """ Return a custom 500 error """
-    return "Eftirfarandi villa kom upp: {0}".format(e), 500
+    return render_template("500.html")
 
 
 @app.context_processor
@@ -267,7 +267,6 @@ if not RUNNING_AS_SERVER:
     import errno
 
     try:
-
         # Suppress information log messages from Werkzeug
         werkzeug_log = logging.getLogger("werkzeug")
         if werkzeug_log:
@@ -280,7 +279,6 @@ if not RUNNING_AS_SERVER:
             use_reloader=not ptvsd_attached,
             extra_files=extra_files,
         )
-
     except socket_error as e:
         if e.errno == errno.EADDRINUSE:  # Address already in use
             logging.error(
@@ -291,7 +289,6 @@ if not RUNNING_AS_SERVER:
             sys.exit(1)
         else:
             raise
-
     finally:
         ArticleProxy.cleanup()
         BIN_Db.cleanup()
