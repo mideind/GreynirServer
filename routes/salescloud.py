@@ -114,15 +114,20 @@ def validate_request(
         )
         return False
 
-    # Reconstruct the signature, which is a bytes object
-    xsc_signature = (xsc_date + xsc_key + method + url).encode("ascii") + payload
-    # Hash it using the secret key
-    my_digest = hmac.new(_SECRET.key, xsc_signature, hashlib.sha256).hexdigest()
-    # Compare with the signature from the client and return True if they match
-    if hasattr(hmac, "compare_digest"):
-        # Better to use the compare_digest function, if available
-        return hmac.compare_digest(xsc_digest, my_digest)
-    return xsc_digest == my_digest
+    # !!! NOTE: We currently skip the signature check, because we don't actually
+    # !!! do anything with the posted data from SalesCloud. Modify this when and if
+    # !!! actual processing of subscription data is added.
+    return True
+
+    # # Reconstruct the signature, which is a bytes object
+    # xsc_signature = (xsc_date + xsc_key + method + url).encode("ascii") + payload
+    # # Hash it using the secret key
+    # my_digest = hmac.new(_SECRET.key, xsc_signature, hashlib.sha256).hexdigest()
+    # # Compare with the signature from the client and return True if they match
+    # if hasattr(hmac, "compare_digest"):
+    #     # Better to use the compare_digest function, if available
+    #     return hmac.compare_digest(xsc_digest, my_digest)
+    # return xsc_digest == my_digest
 
 
 def handle_request(request):
