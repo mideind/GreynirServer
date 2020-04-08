@@ -79,6 +79,9 @@ def qmcall(c, qdict):
     return json
 
 
+DUMMY_CLIENT_ID = 123
+
+
 def test_query_api(client):
     """ Make various query API calls and validate response. """
 
@@ -110,9 +113,14 @@ def test_query_api(client):
         assert json["qtype"] == "Arithmetic"
         assert json["answer"] == a
 
-    json = qmcall(c, {"q": "hvað er pí"})
+    json = qmcall(c, {"q": "hvað er pí", "client_id": DUMMY_CLIENT_ID, "private": False})
     assert "π" in json["answer"]
+    assert json["qtype"] == "PI"
     assert "3,14159" in json["answer"]
+
+    json = qmcall(c, {"q": "hvað er það sinnum tveir", "client_id": DUMMY_CLIENT_ID, "private": False})
+    assert json["qtype"] == "Arithmetic"
+    assert json["answer"].startswith("6,")
 
     # Person and entity title queries are tested using a dummy database
     # populated with data from CSV files stored in tests/test_files/testdb_*.csv
@@ -496,7 +504,11 @@ def test_query_api(client):
     assert json["qtype"] == "Wikipedia"
     assert "Berlín" in json["answer"]
 
-    json = qmcall(c, {"q": "katrín Jakobsdóttir í vikipediju"})
+    json = qmcall(c, {"q": "katrín Jakobsdóttir í vikipediju", "client_id": DUMMY_CLIENT_ID, "private": False})
+    assert json["qtype"] == "Wikipedia"
+    assert "Katrín Jakobsdóttir" in json["answer"]
+
+    json = qmcall(c, {"q": "hvað segir wikipedía um hana", "client_id": DUMMY_CLIENT_ID, "private": False})
     assert json["qtype"] == "Wikipedia"
     assert "Katrín Jakobsdóttir" in json["answer"]
 
@@ -513,6 +525,9 @@ def test_query_api(client):
 
     # Yule lads module
     # TODO: Implement me!
+
+    # TODO: Delete any queries logged as result of tests
+
 
 
 def test_query_utility_functions():

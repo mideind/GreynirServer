@@ -661,6 +661,7 @@ def pi_answer(q, result):
     answer = "Talan π („pí“) er stærðfræðilegi fastinn 3,14159265359 eða þar um bil."
     voice = "Talan pí er stærðfræðilegi fastinn 3,14159265359 eða þar um bil."
     response = dict(answer=answer, result=math.pi)
+    q.set_context(dict(result=3.14159265359))
     return response, answer, voice
 
 

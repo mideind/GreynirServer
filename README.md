@@ -138,8 +138,8 @@ articles automatically from the web, parse them and store the resulting trees
 in a PostgreSQL database for further processing.
 
 Scraper modules for new websites are plugged in by adding Python code to the
-`scrapers/` directory. Currently, the `scrapers/default.py` module supports
-popular Icelandic news sites as well as the site of the Constitutional Council.
+`scrapers/` directory. Currently, the `scrapers/default.py` module supports a wide
+range of popular Icelandic news sites.
 
 Processor modules can be plugged into Greynir by adding Python code to the
 `processors/` directory. The demo in `processors/default.py` extracts person
@@ -189,7 +189,7 @@ venv/bin/activate
 
 You should now be able to run Greynir.
 
-##### Web application
+### Web application
 
 ```
 python main.py
@@ -198,7 +198,7 @@ python main.py
 Defaults to running on [`localhost:5000`](http://localhost:5000) but this can be 
 changed in `config/Greynir.conf`.
 
-##### Scrapers
+### Scrapers
 
 ```
 python scraper.py
@@ -211,7 +211,7 @@ This can be fixed by setting the following environment variable in your shell:
 export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
 ```
 
-##### Interactive shell
+### Interactive shell
 
 You can launch an [IPython](https://ipython.org) REPL shell with a database session (`s`), the Greynir 
 parser (`r`) and all SQLAlchemy database models preloaded. See [Using the Greynir Shell](docs/shell.md) 
