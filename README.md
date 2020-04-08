@@ -217,6 +217,10 @@ You can launch an [IPython](https://ipython.org) REPL shell with a database sess
 parser (`r`) and all SQLAlchemy database models preloaded. See [Using the Greynir Shell](docs/shell.md) 
 for instructions.
 
+## Contributing
+
+See [Contributing to Greynir](CONTRIBUTING.md).
+
 ## Copyright and licensing
 
 Greynir is *copyright (C) 2020 [Miðeind ehf.](https://mideind.is)*
