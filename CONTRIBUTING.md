@@ -1,7 +1,7 @@
 # Contributing to Greynir
 
 Your contributions to this software, in the form of pull requests to
-[our GitHub repository](https://github.com/mideind/ReynirPackage) or by other
+[our GitHub repository](https://github.com/mideind/Greynir) or by other
 comparable means, are very much appreciated. However, you should be aware that 
 [Miðeind ehf.](https://mideind.is) reserves the right to negotiate alternative 
 licensing agreements, besides the GNU GPLv3, with parties who wish to use this 
