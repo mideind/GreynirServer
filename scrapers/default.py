@@ -403,25 +403,30 @@ class KjarninnScraper(ScrapeHelper):
     # noinspection PyMethodMayBeStatic
     def _get_content(self, soup_body):
         """ Find the article content (main text) in the soup """
+        article = soup_body.find("article")
+        if not article:
+            article = ScrapeHelper.div_class(soup_body, "article-body")
+
         # soup_body has already been sanitized in the ScrapeHelper base class
-        if soup_body.article is None:
-            logging.warning("_get_content: soup_body.article is None")
+        if article is None:
+            logging.warning("Kjarninn scraper: soup_body article is None")
             return None
+
         # Delete div.container.title-container tags from the content
-        soup = ScrapeHelper.div_class(
-            soup_body.article, ("container", "title-container")
+        title_cont = ScrapeHelper.div_class(
+            article, ("container", "title-container")
         )
-        if soup is not None:
+        if title_cont is not None:
             soup.decompose()
         # Delete div.container.quote-container tags from the content
-        ScrapeHelper.del_div_class(soup_body.article, ("container", "quote-container"))
+        ScrapeHelper.del_div_class(article, ("container", "quote-container"))
         # Delete div.container-fluid tags from the content
-        ScrapeHelper.del_div_class(soup_body.article, "container-fluid")
+        ScrapeHelper.del_div_class(article, "container-fluid")
         # Get the content itself
-        content = ScrapeHelper.div_class(soup_body.article, "article-body")
+        content = ScrapeHelper.div_class(article, "article-body")
         if content is None:
             # No div.article-body present
-            content = soup_body.article
+            content = article
         # Delete div.category-snippet tags from the content
         ScrapeHelper.del_div_class(content, "category_snippet")
         # Delete image containers from content
