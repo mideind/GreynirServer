@@ -1088,8 +1088,12 @@ div.result i.ordinal {
 }
 
 div.result i.date,
+div.result i.dateabs,
+div.result i.daterel,
 div.result i.time,
-div.result i.timestamp {
+div.result i.timestamp,
+div.result i.timestampabs,
+div.result i.timestamprel, {
    font-weight: 700;
    color: #ffb400;
 }

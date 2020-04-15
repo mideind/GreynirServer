@@ -24,6 +24,7 @@
 """
 
 # TODO: "Hvað búa margir í/á [BORG/LAND]?" etc. Wiki api?
+# TODO: "Clean up country names with two components e.g. 'norður kórea' -> "Norður-Kórea"
 
 import logging
 import random
