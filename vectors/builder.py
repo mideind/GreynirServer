@@ -116,7 +116,7 @@ class CorpusIterator:
                     bag.append(w)
                 else:
                     bag.extend([w] * cnt)
-            if last_uuid is not None:
+            if (last_uuid is not None) and bag:
                 # print("Yielding bag of {0} words".format(len(bag)))
                 yield xform(bag)
         print("Finished iteration through corpus from words table")
