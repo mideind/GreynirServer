@@ -76,7 +76,7 @@ PARSEFAIL_MAX = 250
 @max_age(seconds=60)
 def main():
     """ Handler for the main (index) page """
-    txt = request.args.get("txt", None)
+    txt = request.args.get("txt")
     if txt:
         txt = txt.strip()
     if not txt:
@@ -108,12 +108,35 @@ def correct():
     )
 
 
+@routes.route("/similar", methods=["GET", "POST"])
+def similar():
+    """ Return rendered HTML list of articles similar to a given article, given a UUID """
+    resp = dict(err=True)
+
+    # Parse query args
+    try:
+        uuid = request.values.get("id")
+        uuid = uuid.strip()[0:_MAX_UUID_LENGTH]
+    except Exception as e:
+        resp["errmsg"] = "Missing or invalid article UUID"
+        return better_jsonify(**resp)
+
+    with SessionContext(commit=True) as session:
+        MAX_SIM_ARTICLES = 10  # Display at most 10 similarity matches
+        similar = Search.list_similar_to_article(session, uuid, n=MAX_SIM_ARTICLES)
+
+    resp["payload"] = render_template("similar.html", similar=similar)
+    resp["err"] = False
+
+    return better_jsonify(**resp)
+
+
 @routes.route("/page")
 def page():
     """ Handler for a page displaying the parse of an arbitrary web
         page by URL or an already scraped article by UUID """
-    url = request.args.get("url", None)
-    uuid = request.args.get("id", None)
+    url = request.args.get("url")
+    uuid = request.args.get("id")
     if url:
         url = url.strip()[0:_MAX_URL_LENGTH]
     if uuid:
@@ -131,6 +154,8 @@ def page():
             a = ArticleProxy.load_from_uuid(uuid, session)
         elif url.startswith("http:") or url.startswith("https:"):
             # Forces a new scrape
+            # TODO: This is technically a violation of the HTTP spec
+            # since all GET requests should be idempotent
             a = ArticleProxy.scrape_from_url(url, session)
         else:
             a = None
@@ -149,13 +174,7 @@ def page():
         )
         topics = [dict(name=t.topic.name, id=t.topic.identifier) for t in topics]
 
-        # Fetch similar (related) articles, if any
-        DISPLAY = 10  # Display at most 10 matches
-        similar = Search.list_similar_to_article(session, a.uuid, n=DISPLAY)
-
-        return render_template(
-            "page.html", article=a, register=register, topics=topics, similar=similar
-        )
+        return render_template("page.html", article=a, register=register, topics=topics)
 
 
 @routes.route("/treegrid", methods=["GET"])
@@ -354,9 +373,9 @@ def reportimage():
     """ Notification that a (person) image is wrong or broken """
     resp = dict(found_new=False)
 
-    name = request.form.get("name", "")
-    url = request.form.get("url", "")
-    status = request.form.get("status", "")
+    name = request.form.get("name")
+    url = request.form.get("url")
+    status = request.form.get("status")
 
     if name and url and status:
         if status == "broken":
@@ -375,7 +394,7 @@ def image():
     """ Get image for (person) name """
     resp = dict(found=False)
 
-    name = request.args.get("name", "")
+    name = request.args.get("name")
     try:
         thumb = int(request.args.get("thumb", 0))
     except:
