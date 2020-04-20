@@ -271,8 +271,6 @@ def locinfo():
         resp["map"] = "/static/img/maps/regions/" + name + ".png"
     # Continent
     elif resp["country"] is None and resp["continent"] in ISO_TO_CONTINENT:
-        resp["map"] = (
-            "/static/img/maps/continents/" + resp["continent"] + ".png"
-        )
+        resp["map"] = "/static/img/maps/continents/" + resp["continent"] + ".png"
 
     return better_jsonify(**resp)
