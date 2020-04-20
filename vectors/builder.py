@@ -3,7 +3,8 @@
 
     Document index builder & topic tagger module
 
-    Copyright (C) 2016 Vilhjálmur Þorsteinsson
+    Copyright (C) 2020 Miðeind ehf.
+    Original author: Vilhjálmur Þorsteinsson
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -115,7 +116,7 @@ class CorpusIterator:
                     bag.append(w)
                 else:
                     bag.extend([w] * cnt)
-            if last_uuid is not None:
+            if (last_uuid is not None) and bag:
                 # print("Yielding bag of {0} words".format(len(bag)))
                 yield xform(bag)
         print("Finished iteration through corpus from words table")
@@ -296,7 +297,7 @@ class ReynirCorpus:
                 if self._verbose:
                     if self._model_name == "lda":
                         print("LDA: {0}".format(vec))
-                        for t, prob in vec:
+                        for t, _ in vec:
                             print("Topic #{0}".format(t))
                             wt = self._model.get_topic_terms(t, topn=25)
                             for word, wprob in wt:
@@ -690,7 +691,7 @@ def _main(argv=None):
                 try:
                     limit = int(a)
                     limit_specified = True
-                except ValueError as e:
+                except ValueError:
                     pass
             elif o in ("-v", "--verbose"):
                 verbose = True
