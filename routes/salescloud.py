@@ -56,7 +56,7 @@ class _Secret:
                 cls._SC_SECRET_KEY = f.readline().strip().encode("ascii")
                 cls._SC_PUBLIC_KEY = f.readline().strip()
         except Exception:
-            logging.error(u"Unable to read file resources/salescloud_key.bin")
+            logging.error("Unable to read file resources/salescloud_key.bin")
             cls._SC_SECRET_KEY = b""
             cls._SC_PUBLIC_KEY = ""
 
@@ -114,20 +114,15 @@ def validate_request(
         )
         return False
 
-    # !!! NOTE: We currently skip the signature check, because we don't actually
-    # !!! do anything with the posted data from SalesCloud. Modify this when and if
-    # !!! actual processing of subscription data is added.
-    return True
-
-    # # Reconstruct the signature, which is a bytes object
-    # xsc_signature = (xsc_date + xsc_key + method + url).encode("ascii") + payload
-    # # Hash it using the secret key
-    # my_digest = hmac.new(_SECRET.key, xsc_signature, hashlib.sha256).hexdigest()
-    # # Compare with the signature from the client and return True if they match
-    # if hasattr(hmac, "compare_digest"):
-    #     # Better to use the compare_digest function, if available
-    #     return hmac.compare_digest(xsc_digest, my_digest)
-    # return xsc_digest == my_digest
+    # Reconstruct the signature, which is a bytes object
+    xsc_signature = (xsc_date + xsc_key + method + url).encode("ascii") + payload
+    # Hash it using the secret key
+    my_digest = hmac.new(_SECRET.key, xsc_signature, hashlib.sha256).hexdigest()
+    # Compare with the signature from the client and return True if they match
+    if hasattr(hmac, "compare_digest"):
+        # Better to use the compare_digest function, if available
+        return hmac.compare_digest(xsc_digest, my_digest)
+    return xsc_digest == my_digest
 
 
 def handle_request(request):
@@ -151,8 +146,14 @@ def handle_request(request):
         # Something is wrong with the Content-length header or the request body
         return dict(success=False), 400  # Bad request
     # Do the signature/digest validation
+    # Be careful with the URL: since we go through an nginx proxy,
+    # the request URL we see has the HTTP protocol, even though the
+    # original URL used to generate the signature was HTTPS
+    url = request.url
+    if url.startswith("http:"):
+        url = "https:" + url[5:]
     if not validate_request(
-        request.method, request.url, payload, xsc_date, xsc_key, xsc_digest
+        request.method, url, payload, xsc_date, xsc_key, xsc_digest
     ):
         logging.error("Invalid signature received")
         return dict(

@@ -97,6 +97,7 @@ reduce.txt
 reduce-dup.txt
 input.txt
 nohup.out
+postfile.txt
 
 # Distribution / packaging
 .Python
