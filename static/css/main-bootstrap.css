@@ -443,18 +443,18 @@ p.header {
    margin-right: -6px;
 }
 
-input#url::selection {
+input::selection {
    color: white;
-   background-color: #005eff;;
+   background-color: #005eff;
 }
 
 textarea::selection {
    color: white;
-   background-color: #005eff;;
+   background-color: #005eff;
 }
 
 .form-control:focus {
-   border-color: #005eff;;
+   border-color: #005eff;
 }
 
 div.input {
@@ -701,6 +701,10 @@ tr.topitem span.title, tr.topitem td.title {
    white-space: nowrap;
    overflow-x: hidden;
    text-overflow: ellipsis;
+}
+
+.query-empty {
+   2.0em;
 }
 
 #namelist span.name,
@@ -1171,13 +1175,13 @@ div.result i.p:hover {
 }
 
 div.result i.person:hover {
-   /* Special case for person: just make background darker */
+   /* Special case for person */
    border-color: #005eff;;
    background-color: #005eff;;
 }
 
 div.result i.entity:hover {
-   /* Special case for entity: just make background darker */
+   /* Special case for entity */
    border-color: #fbe9d0;
 }
 
@@ -1781,4 +1785,9 @@ p.no-results {
 
 .hidden {
    display: none;
+}
+
+.daterangepicker .ranges li.active,
+.daterangepicker td.active {
+    background-color: #005eff !important;
 }
