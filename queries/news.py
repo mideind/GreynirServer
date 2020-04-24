@@ -28,6 +28,7 @@
 
 import logging
 import cachetools
+import random
 
 from queries import gen_answer, query_json_api
 
