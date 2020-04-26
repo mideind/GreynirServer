@@ -154,22 +154,23 @@ people and titles.
 
 * `main.py`: WSGI web server application and main module for command-line invocation
 * `routes/*.py`: Routes for the web application
+* `query.py`: Natural language query processor
 * `queries/*.py`: Question answering modules
+* `db/*.py`: Database models and functions via SQLAlchemy
+* `scraper.py`: Web scraper, collecting articles from a set of pre-selected websites (roots)
+* `scrapers/*.py`: Scrapers code for various websites
 * `settings.py`: Management of global settings and configuration data
 * `config/Greynir.conf`: Editable configuration file
-* `scraper.py`: Web scraper, collecting articles from a set of pre-selected websites (roots)
 * `fetcher.py`: Utility classes for fetching articles given their URLs
-* `db/*.py`: Database models and functions via SQLAlchemy
 * `nertokenizer.py`: A layer on top of the tokenizer for named entity recognition
 * `processor.py`: Information extraction from parse trees and token streams
 * `article.py`: Representation of an article through its life cycle
 * `tree.py`: Representation of parse trees for processing
-* `query.py`: Natural language query processor
 * `vectors/builder.py`: Article indexer and LSA topic vector builder
 * `doc.py`: Extract plain text from various document formats
 * `geo.py`: Geography and location-related utility functions
-* `utils/*.py`: Various utility programs
 * `speech.py`: Speech synthesis-related utility functions
+* `utils/*.py`: Various utility programs
 
 ## Installation and setup
 
@@ -223,7 +224,7 @@ See [Contributing to Greynir](CONTRIBUTING.md).
 
 ## Copyright and licensing
 
-Greynir is *copyright (C) 2020 [Miðeind ehf.](https://mideind.is)*
+Greynir is Copyright (C) 2020 [Miðeind ehf.](https://mideind.is)
 The original author of this software is *Vilhjálmur Þorsteinsson*.
 
 <img src="static/img/GPLv3.png" align="right" style="margin-left:20px;">
