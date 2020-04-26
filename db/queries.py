@@ -278,8 +278,8 @@ class WordFrequencyQuery(_BaseQuery):
         with days as (
             select to_char(d, 'YYYY-MM-DD') date
             from generate_series(
-                :start::timestamp,
-                :end::timestamp,
+                :start,
+                :end,
                 '1 day'::interval
             ) d
         ),
@@ -295,6 +295,6 @@ class WordFrequencyQuery(_BaseQuery):
         """
 
     @classmethod
-    def period(cls, stem, cat, start, end, enclosing_session=None):
+    def fetch(cls, stem=None, cat=None, start=None, end=None, enclosing_session=None):
         with SessionContext(session=enclosing_session, commit=False) as session:
             return cls().execute(session, stem=stem, cat=cat, start=start, end=end)
