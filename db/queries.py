@@ -158,9 +158,13 @@ class BestAuthorsQuery(_BaseQuery):
         """
 
     @classmethod
-    def period(cls, start, end, min_articles=_MIN_ARTICLE_COUNT, enclosing_session=None):
+    def period(
+        cls, start, end, min_articles=_MIN_ARTICLE_COUNT, enclosing_session=None
+    ):
         with SessionContext(session=enclosing_session, commit=False) as session:
-            return cls().execute(session, start=start, end=end, min_articles=min_articles)
+            return cls().execute(
+                session, start=start, end=end, min_articles=min_articles
+            )
 
 
 class RelatedWordsQuery(_BaseQuery):
@@ -264,3 +268,33 @@ class ArticleListQuery(_BaseQuery):
             return cls().execute_q(
                 session, cls._Q_upper, stem=stem, lstem=stem.lower(), limit=limit
             )
+
+
+class WordFrequencyQuery(_BaseQuery):
+    """ A query yielding the number of times a given word occurs in
+        articles over a given period of time, broken down by day. """
+
+    _Q = """
+        with days as (
+            select to_char(d, 'YYYY-MM-DD') date
+            from generate_series(
+                :start::timestamp,
+                :end::timestamp,
+                '1 day'::interval
+            ) d
+        ),
+        appearances as (
+            select to_char(a.timestamp, 'YYYY-MM-DD') date, coalesce(sum(w.cnt),0) cnt
+            from words w, articles a
+            where w.stem = :stem and w.cat = :cat and w.article_id = a.id
+            group by date
+            order by date
+        )
+        select days.date, appearances.cnt from days
+        left outer join appearances on days.date = appearances.date;
+        """
+
+    @classmethod
+    def period(cls, stem, cat, start, end, enclosing_session=None):
+        with SessionContext(session=enclosing_session, commit=False) as session:
+            return cls().execute(session, stem=stem, cat=cat, start=start, end=end)
