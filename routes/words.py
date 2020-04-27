@@ -84,7 +84,7 @@ def wordfreq():
     # Get word category (ordfl) for each word, if needed
     valid_cats = ["kk", "kvk", "hk", "lo", "so"]
     for i, w in enumerate(words):
-        if not len(w) == 2 or w[1] not in valid_cats:
+        if len(w) < 2 or w[1] not in valid_cats:
             words[i] = (w[0], cat4word(w[0]))
 
     colors = list(_LINE_COLORS)
@@ -105,11 +105,7 @@ def wordfreq():
         for w in words:
             # Look up frequency of word for the given period
             res = WordFrequencyQuery.fetch(
-                stem=w[0],
-                cat=w[1],
-                start=date_from,
-                end=date_to,
-                enclosing_session=session,
+                w[0], w[1], date_from, date_to, enclosing_session=session
             )
             # Generate data and config for chart
             ds = dict(label=w[0], fill=False, lineTension=0)

@@ -300,7 +300,7 @@
          { id : "{{ article.uuid | safe }}" },
          function(resp) {
             html = errmsg;
-            if (resp && resp["err"] == false) {
+            if (resp && resp["err"] === false) {
                html = resp["payload"];
             }
             $("#similar-content").html(html);

@@ -108,6 +108,9 @@ def correct():
     )
 
 
+MAX_SIM_ARTICLES = 10  # Display at most 10 similarity matches
+
+
 @routes.route("/similar", methods=["GET", "POST"])
 def similar():
     """ Return rendered HTML list of articles similar to a given article, given a UUID """
@@ -122,7 +125,6 @@ def similar():
         return better_jsonify(**resp)
 
     with SessionContext(commit=True) as session:
-        MAX_SIM_ARTICLES = 10  # Display at most 10 similarity matches
         similar = Search.list_similar_to_article(session, uuid, n=MAX_SIM_ARTICLES)
 
     resp["payload"] = render_template("similar.html", similar=similar)
@@ -154,8 +156,6 @@ def page():
             a = ArticleProxy.load_from_uuid(uuid, session)
         elif url.startswith("http:") or url.startswith("https:"):
             # Forces a new scrape
-            # TODO: This is technically a violation of the HTTP spec
-            # since all GET requests should be idempotent
             a = ArticleProxy.scrape_from_url(url, session)
         else:
             a = None

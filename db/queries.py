@@ -284,7 +284,7 @@ class WordFrequencyQuery(_BaseQuery):
             ) d
         ),
         appearances as (
-            select to_char(a.timestamp, 'YYYY-MM-DD') date, coalesce(sum(w.cnt),0) cnt
+            select to_char(a.timestamp, 'YYYY-MM-DD') date, coalesce(sum(coalesce(w.cnt,0)),0) cnt
             from words w, articles a
             where w.stem = :stem and w.cat = :cat and w.article_id = a.id
             group by date
@@ -295,6 +295,6 @@ class WordFrequencyQuery(_BaseQuery):
         """
 
     @classmethod
-    def fetch(cls, stem=None, cat=None, start=None, end=None, enclosing_session=None):
+    def fetch(cls, stem, cat, start, end, enclosing_session=None):
         with SessionContext(session=enclosing_session, commit=False) as session:
             return cls().execute(session, stem=stem, cat=cat, start=start, end=end)

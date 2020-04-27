@@ -229,7 +229,7 @@
 }
 
 .blue, .text-info {
-   color: #005eff;;
+   color: #005eff;
 }
 
 .yellow, .text-warning {
@@ -247,7 +247,7 @@ body {
 }
 
 a {
-   color: #005eff;;
+   color: #005eff;
 }
 
 .progress, .progress-bar, .progress-bar-success {
@@ -259,7 +259,7 @@ a {
 }
 
 .progress-bar {
-   background-color: #005eff;;
+   background-color: #005eff;
 }
 
 .progress-bar-success {
@@ -325,18 +325,18 @@ button.btn.btn-success[disabled='disabled'] {
 
 .btn-info {
    background-image: none;
-   background-color: #005eff;;
-   border-color: #005eff;;
+   background-color: #005eff;
+   border-color: #005eff;
 }
 
 .btn-info:focus {
-   background-color: #005eff;;
-   border-color: #005eff;;
+   background-color: #005eff;
+   border-color: #005eff;
 }
 
 .btn-info:hover {
-   background-color: #005eff;;
-   border-color: #005eff;;
+   background-color: #005eff;
+   border-color: #005eff;
    -webkit-animation: bob 400ms linear;
    animation: bob 400ms linear;
 }
@@ -398,7 +398,7 @@ button.btn.btn-info[disabled='disabled'] {
 }
 
 .label-primary {
-   background-color: #005eff;;
+   background-color: #005eff;
 }
 
 .panel-info {
@@ -407,7 +407,7 @@ button.btn.btn-info[disabled='disabled'] {
 
 .panel-info>.panel-heading {
    background-image: none;
-   color: #005eff;;
+   color: #005eff;
    background-color: #e1eeff;
    border-color: #e1eeff;
 }
@@ -704,7 +704,7 @@ tr.topitem span.title, tr.topitem td.title {
 }
 
 .query-empty {
-   2.0em;
+   font-size: 24px;
 }
 
 #namelist span.name,
@@ -752,7 +752,7 @@ tr.topitem span.title, tr.topitem td.title {
 }
 
 span.glyphicon-gender-male {
-   color: #005eff;;
+   color: #005eff;
 }
 
 span.glyphicon-gender-female {
@@ -777,7 +777,7 @@ td.domain {
 #entity-body span.entity
  {
    font-weight: 700;
-   color: #005eff;;
+   color: #005eff;
    cursor: pointer;
 }
 
@@ -931,7 +931,7 @@ div#info.person.male #tag,
 div#info.kk #tag,
 div#info.kvk #tag,
 div#info.hk #tag {
-   color: #005eff;;
+   color: #005eff;
 }
 
 div#info.lo #tag {
@@ -1087,7 +1087,7 @@ div.result i.number {
 
 div.result i.percent {
    font-weight: 700;
-   color: #005eff;;
+   color: #005eff;
 }
 
 div.result i.ordinal {
@@ -1117,7 +1117,7 @@ div.result i.amount {
 }
 
 div.result i.person {
-   color: #005eff;;
+   color: #005eff;
    font-weight: 700;
 }
 
@@ -1176,8 +1176,8 @@ div.result i.p:hover {
 
 div.result i.person:hover {
    /* Special case for person */
-   border-color: #005eff;;
-   background-color: #005eff;;
+   border-color: #005eff;
+   background-color: #005eff;
 }
 
 div.result i.entity:hover {
@@ -1191,8 +1191,8 @@ div.result i.kvk:hover,
 div.result i.hk:hover,
 div.result i.fn:hover,
 div.result i.pfn:hover {
-   border-color: #005eff;;
-   background-color: #005eff;;
+   border-color: #005eff;
+   background-color: #005eff;
 }
 
 /* Verb-type word: red color */
@@ -1354,7 +1354,7 @@ div.guide-empty {
 }
 
 div.guide-empty i {
-   color: #005eff;;
+   color: #005eff;
 }
 
 div.guide-empty i:hover {
@@ -1377,7 +1377,7 @@ th.count, td.count {
 }
 
 th.male, td.male {
-   color: #005eff;;
+   color: #005eff;
 }
 
 th.female, td.female {
@@ -1443,7 +1443,7 @@ p.author {
 }
 
 div#output h3 {
-   color: #005eff;;
+   color: #005eff;
 }
 
 /* Parse grid stuff */
@@ -1548,7 +1548,7 @@ h4.txt {
 }
 
 h4.txt span.glyphicon {
-   color: #005eff;;
+   color: #005eff;
    padding-right: 8px;
 }
 
@@ -1617,7 +1617,7 @@ div.headline {
 
 span.weight20,
 span.weight25 {
-   color: #005eff;;
+   color: #005eff;
 }
 
 span.weight16 {
@@ -1689,7 +1689,7 @@ div#treegrid table {
 }
 
 .autocomplete-suggestions strong {
-   color: #005eff;;
+   color: #005eff;
 }
 
 .autocomplete-suggestion {
