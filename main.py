@@ -33,6 +33,7 @@
 
 """
 
+from typing import Callable
 import sys
 import os
 import time
@@ -67,7 +68,7 @@ cors = CORS(app)
 app.config["CORS_HEADERS"] = "Content-Type"
 
 # Fix access to client remote_addr when running behind proxy
-app.wsgi_app = ProxyFix(app.wsgi_app)
+setattr(app, "wsgi_app", ProxyFix(app.wsgi_app))
 
 app.config["JSON_AS_ASCII"] = False  # We're fine with using Unicode/UTF-8
 app.config["MAX_CONTENT_LENGTH"] = 1 * 1024 * 1024  # 1 MB, max upload file size
@@ -211,10 +212,10 @@ if not RUNNING_AS_SERVER:
 
     if os.environ.get("GREYNIR_ATTACH_PTVSD"):
         # Attach to the VSCode PTVSD debugger, enabling remote debugging via SSH
-        import ptvsd
+        # import ptvsd
 
-        ptvsd.enable_attach()
-        ptvsd.wait_for_attach()  # Blocks execution until debugger is attached
+        # ptvsd.enable_attach()
+        # ptvsd.wait_for_attach()  # Blocks execution until debugger is attached
         ptvsd_attached = True
         print("Attached to PTVSD")
     else:
@@ -239,8 +240,11 @@ if not RUNNING_AS_SERVER:
         "ReynirCorrect.conf",
     ]
 
+    # Hack to satisfy the Mypy type checker, which sometimes confuses str and AnyStr
+    _dirname = lambda s: os.path.dirname(s)  # type: Callable[[str], str]
+
     dirs = list(
-        map(os.path.dirname, [__file__, reynir.__file__, reynir_correct.__file__])
+        map(_dirname, [__file__, reynir.__file__, reynir_correct.__file__])
     )
     for i, fname in enumerate(extra_files):
         # Look for the extra file in the different package directories

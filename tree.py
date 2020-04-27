@@ -36,13 +36,7 @@ from collections import OrderedDict, namedtuple
 from settings import Settings, DisallowedNames, VerbObjects
 from reynir.bindb import BIN_Db
 from reynir.binparser import BIN_Token
-
-# !!! TODO: Temporary hack while versions are being synchronized
-try:
-    from reynir.simpletree import SimpleTreeBuilder
-except ImportError:
-    from reynir.matcher import SimpleTreeBuilder
-
+from reynir.simpletree import SimpleTreeBuilder
 from reynir.cache import LRU_Cache
 
 
