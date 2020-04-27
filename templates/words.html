@@ -28,10 +28,10 @@
    </div>
    <table class="table table-hover" id="dtable">
       <div style="padding:10px;">
-
          Orð <input id="words" name="words" value="veira:kvk, smit:hk" style="margin-right: 10px; width:310px;">
          Tímabil <input name="daterange" id="daterange" style="width:210px; margin-right: 10px;">
          <input type="button" value="Sækja" onClick="reloadData();">
+         <span id="in-progress" style="margin-left:10px;"></span>
       </div>
       <hr style="margin:0">
       <div style="padding:25px; padding-top: 15px;">
@@ -154,6 +154,9 @@
       if (reloadData.request) {
          reloadData.request.abort();
       }
+
+      $('#in-progress').html("<span class='glyphicon glyphicon-restart glyphicon-spin'></span>");
+
       // The date range picker plugin produces values of the form
       // "DD/MM/YYYY - DD/MM/YYYY" which we split into two date strings.
       var res = $("#daterange").val().split(" - ");
@@ -167,6 +170,7 @@
       reloadData.request = $.getJSON("/wordfreq?" + qstr, function(r) {
          loadChartData(r["data"]);
          $("#words").val(r["words"]);
+         $('#in-progress').html("");
       });
    }
 
