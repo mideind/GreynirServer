@@ -44,7 +44,9 @@ def words():
     return render_template("words.html")
 
 
-_LINE_COLORS = frozenset(("#006eff", "#eb3732", "#00b450", "#ffb400", "#4600c8", "#f0f"))
+_LINE_COLORS = frozenset(
+    ("#006eff", "#eb3732", "#00b450", "#ffb400", "#4600c8", "#f0f")
+)
 
 
 @routes.route("/wordfreq", methods=["GET", "POST"])
@@ -85,11 +87,17 @@ def wordfreq():
         if not len(w) == 2 or w[1] not in valid_cats:
             words[i] = (w[0], cat4word(w[0]))
 
-    days = (date_to - date_from).days
     colors = list(_LINE_COLORS)
 
     # Generate date labels
-    labels = [i for i in range(0, days + 1)]
+    now = datetime.utcnow()
+    delta = date_to - date_from
+    labels = [date_from + timedelta(days=i) for i in range(delta.days + 1)]
+    with changedlocale(category="LC_TIME"):
+        labels = [
+            l.strftime("%-d. %b") if l.year == now.year else l.strftime("%-d. %b %Y")
+            for l in labels
+        ]
 
     # Create datasets for front-end chart
     with SessionContext(commit=False) as session:
