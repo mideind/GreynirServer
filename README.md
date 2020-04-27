@@ -158,7 +158,7 @@ people and titles.
 * `queries/*.py`: Question answering modules
 * `db/*.py`: Database models and functions via SQLAlchemy
 * `scraper.py`: Web scraper, collecting articles from a set of pre-selected websites (roots)
-* `scrapers/*.py`: Scrapers code for various websites
+* `scrapers/*.py`: Scraper code for various websites
 * `settings.py`: Management of global settings and configuration data
 * `config/Greynir.conf`: Editable configuration file
 * `fetcher.py`: Utility classes for fetching articles given their URLs
