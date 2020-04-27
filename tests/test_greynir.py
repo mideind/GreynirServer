@@ -114,7 +114,7 @@ def test_del_query_history(client):
 
         # Number of queries prior to API call
         pre_numq = session.query(Query).count()
-        assert pre_numq == TEST_EXPECTED_NUM_QUERIES, "Malformed dummy test DB"
+        assert pre_numq == TEST_EXPECTED_NUM_QUERIES, "Malformed dummy test data"
 
         qstr = urlencode(
             {"action": "clear", "client_type": "some_type", "client_id": TEST_CLIENT_ID}
@@ -167,15 +167,25 @@ def test_tnttagger():
 
 def test_geo():
     """ Test geography and location-related functions in geo.py """
-
     assert icelandic_city_name("London") == "Lundúnir"
+    assert icelandic_city_name("Rome") == "Róm"
+
     assert continent_for_country("IS") == "EU"
     assert continent_for_country("no") == "EU"
+    assert continent_for_country("MX") == "NA"
+
     assert coords_for_country("DE") != None
     assert coords_for_country("it") != None
+
     assert coords_for_street_name("Austurstræti") != None
+    assert coords_for_street_name("Háaleitisbraut") != None
+
     assert country_name_for_isocode("DE", lang="is") == "Þýskaland"
+    assert country_name_for_isocode("DE") == "Þýskaland"
+
     assert isocode_for_country_name("Danmörk", lang="is") == "DK"
+    assert isocode_for_country_name("Danmörk", lang="IS") == "DK"
+    assert isocode_for_country_name("Noregur") == "NO"
 
     addr_info = icelandic_addr_info("Fiskislóð 31")
     assert addr_info and addr_info["stadur_tgf"] == "Reykjavík"
@@ -218,17 +228,12 @@ def test_geo():
 
     # Test prepositions for placenames
     assert iceprep_for_placename("Dalvík") == "á"
+    assert iceprep_for_placename("Akureyri") == "á"
+    assert iceprep_for_placename("Ísafjörður") == "á"
     assert iceprep_for_placename("Reykjavík") == "í"
     assert iceprep_for_placename("Hafnarfjörður") == "í"
-    assert iceprep_for_placename("Ísafjörður") == "á"
     assert iceprep_for_placename("London") == "í"
     assert iceprep_for_placename("Dyflinni") == "í"
-
-    # Test prepositions for countries, queried by CC
-    assert iceprep_for_cc("IS") == "á"
-    assert iceprep_for_cc("US") == "í"
-    assert iceprep_for_cc("ES") == "á"
-    assert iceprep_for_cc("es") == "á"
 
     # Test prepositions for countries
     assert iceprep_for_country("Ítalía") == "á"
@@ -236,6 +241,12 @@ def test_geo():
     assert iceprep_for_country("Þýskaland") == "í"
     assert iceprep_for_country("Japan") == "í"
     assert iceprep_for_country("spánn") == "á"
+
+    # Test prepositions for countries, queried by CC
+    assert iceprep_for_cc("IS") == "á"
+    assert iceprep_for_cc("US") == "í"
+    assert iceprep_for_cc("ES") == "á"
+    assert iceprep_for_cc("es") == "á"
 
     # Test placename capitalization
     assert capitalize_placename("ríó de janeiro") == "Ríó de Janeiro"
