@@ -57,8 +57,9 @@ def wordfreq():
 
     # Create datetime objects from query string args
     try:
-        date_from = datetime.strptime(request.args.get("date_from"), "%d/%m/%Y")
-        date_to = datetime.strptime(request.args.get("date_to"), "%d/%m/%Y")
+        date_fmt = "%Y-%m-%d"
+        date_from = datetime.strptime(request.args.get("date_from"), date_fmt)
+        date_to = datetime.strptime(request.args.get("date_to"), date_fmt)
     except Exception as e:
         logging.warning("Failed to parse date arg: {0}".format(e))
         return better_jsonify(**resp)

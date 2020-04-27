@@ -99,7 +99,7 @@
       var end = moment();
 
       var locale = {
-        "format": "DD/MM/YYYY",
+        "format": "YYYY-MM-DD",
         "separator": " - ",
         "applyLabel": "Vista",
         "cancelLabel": "Hætta við",
@@ -153,6 +153,7 @@
    }
 
    function reloadData() {
+      // Kill any previous ongoing request
       if (reloadData.request) {
          reloadData.request.abort();
       }
@@ -163,6 +164,7 @@
       // "DD/MM/YYYY - DD/MM/YYYY" which we split into two date strings.
       var res = $("#daterange").val().split(" - ");
 
+      // Send request
       var params = {
          words: $("#words").val(),
          date_from: res[0].trim(),
