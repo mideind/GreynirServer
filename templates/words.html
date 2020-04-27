@@ -29,7 +29,7 @@
    <table class="table table-hover" id="dtable">
       <div style="padding:10px;">
 
-         Orð <input id="words" name="words" value="efnahagur,smit" style="margin-right: 10px; width:310px;">
+         Orð <input id="words" name="words" value="veira:kvk, smit:hk" style="margin-right: 10px; width:310px;">
          Tímabil <input name="daterange" id="daterange" style="width:210px; margin-right: 10px;">
          <input type="button" value="Sækja" onClick="reloadData();">
       </div>
@@ -95,7 +95,7 @@
    }
 
    function initDatePicker() {
-      var start = moment().subtract(29, 'days');
+      var start = moment().subtract(3, 'months');
       var end = moment();
 
       var locale = {
@@ -180,30 +180,15 @@
       var datapoints = [0, 20, 20, 60, 60, 120, 0, 180, 120, 125, 105, 110, 170];
       var datapoints2 = [1, 12, 21, 33, 69, 90, 19, 133, 99, 15, 75, 100, 70];
 
-      var startingData = {
-         labels: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'],
-         datasets: [{
-            label: 'A',
-            data: datapoints,
-            backgroundColor: 'rgba(0, 0, 0, 0)',
-            fill: false,
-            //cubicInterpolationMode: 'monotone'
-            lineTension: 0
-         }, {
-            label: 'B',
-            data: datapoints2,
-            backgroundColor: 'rgba(0, 0, 0, 0)',
-            fill: false,
-            lineTension: 0
-         }, {
-            label: 'C',
-            data: datapoints,
-            backgroundColor: 'rgba(0, 0, 0, 0)',
-            fill: false,
-            lineTension: 0
-         }]
-      };
-      initChart(startingData);
+      $('#words').keypress(function(event){
+         var keycode = (event.keyCode ? event.keyCode : event.which);
+         if (keycode == '13'){
+            reloadData();
+         }
+      });
+
+      initChart(null);
+      reloadData();
    });
 
 </script>
