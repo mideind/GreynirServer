@@ -95,7 +95,7 @@
    }
 
    function initDatePicker() {
-      var start = moment().subtract(3, 'months');
+      var start = moment().subtract(89, 'days');
       var end = moment();
 
       var locale = {
@@ -144,6 +144,7 @@
            'Síðastliðin vika': [moment().subtract(6, 'days'), moment()],
            'Síðustu 30 dagar': [moment().subtract(29, 'days'), moment()],
            'Síðustu 3 mánuðir': [moment().subtract(89, 'days'), moment()],
+           'Síðustu 6 mánuðir': [moment().subtract(182, 'days'), moment()],
          }
       });
 
@@ -154,7 +155,7 @@
       if (reloadData.request) {
          reloadData.request.abort();
       }
-
+      // Set off progress indicator
       $('#in-progress').html("<span class='glyphicon glyphicon-restart glyphicon-spin'></span>");
 
       // The date range picker plugin produces values of the form
@@ -163,13 +164,14 @@
 
       var params = {
          words: $("#words").val(),
-         date_from: res[0],
-         date_to: res[1]
+         date_from: res[0].trim(),
+         date_to: res[1].trim(),
       }
-      var qstr = $.param(params);
-      reloadData.request = $.getJSON("/wordfreq?" + qstr, function(r) {
+      reloadData.request = $.getJSON("/wordfreq?" + $.param(params), function(r) {
          loadChartData(r["data"]);
+         // Update word input field w. string from server
          $("#words").val(r["words"]);
+         // Stop progress indicator
          $('#in-progress').html("");
       });
    }
@@ -180,10 +182,10 @@
       $("#navid-words").addClass("active");
 
       initDatePicker();
+      initChart(null);
+      reloadData();
 
-      var datapoints = [0, 20, 20, 60, 60, 120, 0, 180, 120, 125, 105, 110, 170];
-      var datapoints2 = [1, 12, 21, 33, 69, 90, 19, 133, 99, 15, 75, 100, 70];
-
+      // Reload on Enter keypress while focus on input field
       $('#words').keypress(function(event){
          var keycode = (event.keyCode ? event.keyCode : event.which);
          if (keycode == '13'){
@@ -191,8 +193,6 @@
          }
       });
 
-      initChart(null);
-      reloadData();
    });
 
 </script>
