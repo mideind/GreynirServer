@@ -337,7 +337,7 @@ def lookup_city_info(name):
         city names (e.g. "Lundúnir") to their corresponding
         English/international name before querying. """
     cnames = _load_city_names()  # Lazy-load
-    cn = cnames.get(name, name)
+    cn = cnames.get(name.strip(), name)
     return city_lookup(cn)
 
 
@@ -345,6 +345,7 @@ def lookup_city_info(name):
 def icelandic_city_name(name):
     """ Look up the Icelandic name of a city, given its
         English/international name. """
+    name = name.strip()
     cnames = _load_city_names()  # Lazy-load
     for ice, n in cnames.items():
         if n == name:

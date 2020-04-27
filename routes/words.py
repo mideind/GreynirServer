@@ -37,13 +37,14 @@ from db import SessionContext, desc
 from db.models import Article, Root, Location, ArticleTopic, Topic
 from db.queries import WordFrequencyQuery
 
+
 @routes.route("/words")
 def words():
     """ Handler for word frequency page. """
     return render_template("words.html")
 
 
-_LINE_COLORS = frozenset(("#eb3732", "#006eff", "#00b450", "#ff0", "#0ff", "#f0f"))
+_LINE_COLORS = frozenset(("#006eff", "#eb3732", "#00b450", "#ffb400", "#4600c8", "#f0f"))
 
 
 @routes.route("/wordfreq", methods=["GET", "POST"])
@@ -52,27 +53,6 @@ def wordfreq():
     """ Return word frequency chart data for a given time period. """
     resp = dict(err=True)
 
-    # Words parameter should be 1-6 diff. word lemmas (w. optional category)
-    warg = request.args.get("words")
-    if not warg:
-        return better_jsonify(**resp)
-    # Split on comma or whitespace, limit to max 6 words
-    warg = warg.replace("  ", " ").replace(",", " ")
-    words = [w.strip() for w in warg.split()][:6]
-    # Word categories can be specified thusly: "maður:kk"
-    words = [tuple(w.split(":")) for w in words]
-
-    def cat4word(w):
-        with BIN_Db.get_db() as db:
-            meanings = db.meanings(w)
-            if meanings:
-                return meanings[0].ordfl
-
-    valid_cats = ["kvk", "kk", "hk", "lo", "so"]
-    for i, w in enumerate(words):
-        if not len(w) == 2 or w[1] not in valid_cats:
-            words[i] = (w[0], cat4word(w[0]))
-
     # Create datetime objects from query string args
     try:
         date_from = datetime.strptime(request.args.get("date_from"), "%d/%m/%Y")
@@ -80,6 +60,30 @@ def wordfreq():
     except Exception as e:
         logging.warning("Failed to parse date arg: {0}".format(e))
         return better_jsonify(**resp)
+
+    # Words parameter should be 1-6 diff. word lemmas (w. optional category)
+    warg = request.args.get("words")
+    if not warg:
+        return better_jsonify(**resp)
+
+    # Split on comma or whitespace, limit to max 6 words
+    warg = warg.strip().replace("  ", " ").replace(",", " ")
+    words = [w.strip() for w in warg.split()][:6]
+    # Word categories can be specified thus: "maður:kk"
+    words = [tuple(w.split(":")) for w in words]
+
+    def cat4word(w):
+        with BIN_Db.get_db() as db:
+            meanings = db.meanings(w)
+            if meanings:
+                return meanings[0].ordfl
+        return "hk"
+
+    # Get word category (ordfl) for each word, if needed
+    valid_cats = ["kk", "kvk", "hk", "lo", "so"]
+    for i, w in enumerate(words):
+        if not len(w) == 2 or w[1] not in valid_cats:
+            words[i] = (w[0], cat4word(w[0]))
 
     days = (date_to - date_from).days
     colors = list(_LINE_COLORS)

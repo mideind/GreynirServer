@@ -34,5 +34,5 @@ attention to the following before you decide to contribute to our repository:
 ---
 
 If you have question regarding this, please do not hesitate to contact
-us at [mideind@mideind.is](mailto:mideind@mideind.is) for any clarifications,
+us at [mideind@mideind.is](mailto:mideind@mideind.is) for any clarifications
 before making your contribution.
