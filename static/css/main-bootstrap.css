@@ -267,6 +267,7 @@ a {
 
 .progress-bar {
    background-color: #005eff;
+   opacity: 0.8;
 }
 
 .progress-bar-success {

@@ -104,6 +104,15 @@ def wordfreq():
             for l in labels
         ]
 
+    # More human readble description of word categories
+    CAT_DESC = {
+        "kk": "kk. no.",
+        "kvk": "kvk. no.",
+        "hk": "hk. no.",
+        "lo": "lo.",
+        "so": "so.",
+    }
+
     # Create datasets for front-end chart
     with SessionContext(commit=False) as session:
         data = dict(labels=labels, datasets=[])
@@ -113,7 +122,8 @@ def wordfreq():
                 w[0], w[1], date_from, date_to, enclosing_session=session
             )
             # Generate data and config for chart
-            ds = dict(label=w[0], fill=False, lineTension=0)
+            label = "{0} ({1})".format(w[0], CAT_DESC.get(w[1]))
+            ds = dict(label=label, fill=False, lineTension=0)
             ds["borderColor"] = ds["backgroundColor"] = colors.pop(0)
             ds["data"] = [r[1] for r in res]
             data["datasets"].append(ds)
