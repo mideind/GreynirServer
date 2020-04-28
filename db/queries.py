@@ -285,7 +285,7 @@ class WordFrequencyQuery(_BaseQuery):
             ) d
         ),
         appearances as (
-            select to_char(a.timestamp, 'YYYY-MM-DD') date, coalesce(sum(coalesce(w.cnt,0)),0) cnt
+            select to_char(a.timestamp, 'YYYY-MM-DD') date, sum(w.cnt) cnt
             from words w, articles a
             where w.stem = :stem
             and w.cat = :cat
@@ -295,7 +295,7 @@ class WordFrequencyQuery(_BaseQuery):
             group by date
             order by date
         )
-        select days.date, appearances.cnt from days
+        select days.date, coalesce(appearances.cnt,0) from days
         left outer join appearances on days.date = appearances.date;
         """
 

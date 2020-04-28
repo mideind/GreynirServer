@@ -64,7 +64,7 @@ def wordfreq():
         logging.warning("Failed to parse date arg: {0}".format(e))
         return better_jsonify(**resp)
 
-    # Words parameter should be 1-6 diff. word lemmas (w. optional category)
+    # Words parameter should be one or more word lemmas (w. optional category)
     warg = request.args.get("words")
     if not warg:
         return better_jsonify(**resp)
@@ -76,10 +76,14 @@ def wordfreq():
     words = [tuple(w.split(":")) for w in words]
 
     with BIN_Db.get_db() as db:
+
         def cat4word(w):
             _, meanings = db.lookup_word(w, auto_uppercase=True)
             if meanings:
-                return meanings[0].ordfl
+                # Give precedence to lemmas, e.g. interpret "reima" as
+                # verb rather than gen. pl. of fem. noun "reim"
+                lemmas = list(filter(lambda x: x.stofn == w, meanings))
+                return lemmas[0].ordfl if lemmas else meanings[0].ordfl
             return "hk"
 
         # Get word category (ordfl) for each word, if needed
@@ -111,7 +115,7 @@ def wordfreq():
             # Generate data and config for chart
             ds = dict(label=w[0], fill=False, lineTension=0)
             ds["borderColor"] = ds["backgroundColor"] = colors.pop(0)
-            ds["data"] = [r[1] or 0 for r in res]
+            ds["data"] = [r[1] for r in res]
             data["datasets"].append(ds)
 
     # Create response
