@@ -196,8 +196,8 @@
             // from the Location header
             this.url = resp.getResponseHeader("Location");
             this.updateProgress();
-            // Initiate a progress check every 2 seconds
-            this.ival = setInterval(this.poll.bind(this), 2000);
+            // Initiate a progress check every 1.5 seconds
+            this.ival = setInterval(this.poll.bind(this), 1500);
          }
          else {
             // Something is wrong here
@@ -209,6 +209,7 @@
       CorrectionTask.prototype.handleError = function(resp) {
          // An error occurred: stop polling and update the UI
          this.stop();
+         // Progress complete
          this.progress = 1.0;
          this.updateProgress();
          // An error occurred on the server or in the communications
@@ -240,6 +241,7 @@
          }
          // Either we're done, or an error has occurred
          this.stop();
+         // Progress complete
          this.progress = 1.0;
          this.updateProgress();
          if (resp.status == 200) {
@@ -390,8 +392,9 @@
       var html = $(this).parent().find("div.ann-detail").html();
       var frame = $(this).parent().parent().parent();
       $("#detail").html(html);
-      var top = frame.position().top - 24 - $("#detail").height() +
-         $(this).parent().position().top;
+      var top = frame.position().top
+         - ($("#detail").height() + 30)
+         + $(this).position().top;
       var left = $(this).offset().left - frame.offset().left;
       // Position the detail popup
       $("#detail")

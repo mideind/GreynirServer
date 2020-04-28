@@ -246,6 +246,7 @@ class Entity(Base):
     def name_lc(self):
         return self.name.lower()
 
+    # pylint: disable=no-self-argument
     @name_lc.comparator
     def name_lc(cls):
         return CaseInsensitiveComparator(cls.name)
@@ -596,6 +597,7 @@ class Query(Base):
     def question_lc(self):
         return self.question.lower()
 
+    # pylint: disable=no-self-argument
     @question_lc.comparator
     def question_lc(cls):
         return CaseInsensitiveComparator(cls.question)
@@ -610,6 +612,7 @@ class Query(Base):
     def answer_lc(self):
         return self.answer.lower()
 
+    # pylint: disable=no-self-argument
     @answer_lc.comparator
     def answer_lc(cls):
         return CaseInsensitiveComparator(cls.answer)
@@ -621,6 +624,7 @@ class Query(Base):
     def voice_lc(self):
         return self.voice.lower()
 
+    # pylint: disable=no-self-argument
     @voice_lc.comparator
     def voice_lc(cls):
         return CaseInsensitiveComparator(cls.voice)

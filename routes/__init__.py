@@ -24,6 +24,7 @@
 
 """
 
+from typing import Dict
 import threading
 import time
 import uuid
@@ -135,7 +136,7 @@ def text_from_request(rq, *, post_field=None, get_field=None):
 # PyCon 2016 "Flask at Scale" tutorial: https://github.com/miguelgrinberg/flack
 
 # A dictionary of currently living tasks
-_tasks = dict()
+_tasks = dict()  # type: Dict[str, Dict]
 _tasks_lock = threading.Lock()
 
 
@@ -354,4 +355,4 @@ from .loc import *
 from .words import *
 from .stats import *
 from .salescloud import *
-from nn.routes import *
+from nn.api import *

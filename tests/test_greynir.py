@@ -120,7 +120,7 @@ def test_del_query_history(client):
             {"action": "clear", "client_type": "some_type", "client_id": TEST_CLIENT_ID}
         )
 
-        r = client.get("/query_history.api?" + qstr)
+        _ = client.get("/query_history.api?" + qstr)
 
         post_numq = session.query(Query).count()
 

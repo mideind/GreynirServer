@@ -27,6 +27,7 @@
 
 """
 
+from typing import Dict
 import json
 import re
 
@@ -36,13 +37,7 @@ from collections import OrderedDict, namedtuple
 from settings import Settings, DisallowedNames, VerbObjects
 from reynir.bindb import BIN_Db
 from reynir.binparser import BIN_Token
-
-# !!! TODO: Temporary hack while versions are being synchronized
-try:
-    from reynir.simpletree import SimpleTreeBuilder
-except ImportError:
-    from reynir.matcher import SimpleTreeBuilder
-
+from reynir.simpletree import SimpleTreeBuilder
 from reynir.cache import LRU_Cache
 
 
@@ -693,7 +688,8 @@ class TerminalNode(Node):
     _NOT_DECLINABLE = frozenset(
         ["ao", "eo", "spao", "fs", "st", "stt", "nhm", "uh", "töl"]
     )
-    _TD = dict()  # Cache of terminal descriptors
+    # Cache of terminal descriptors
+    _TD = dict()  # type: Dict[str, TerminalDescriptor]
 
     # Cache of word roots (stems) keyed by (word, at_start, terminal)
     _root_cache = LRU_Cache(_root_lookup, maxsize=16384)

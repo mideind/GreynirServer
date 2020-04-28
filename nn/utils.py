@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
     Greynir: Natural language processing for Icelandic
 
@@ -44,7 +43,7 @@ def index_text(text):
 
     for pg in pgs:
         sent_idxs = []
-        for (idx, sent) in pg:
+        for _, sent in pg:
             curr_sent = list(filter(BIN_Token.is_understood, sent))
             curr_sent = tokenizer.normalized_text_from_tokens(curr_sent)
             sent_idxs.append(curr_sent_idx)
@@ -65,7 +64,7 @@ def split_text(text):
     data = []
     for pg in pgs:
         pg_data = []
-        for (i, sentence) in pg:
+        for _, sentence in pg:
             sentence = list(filter(BIN_Token.is_understood, sentence))
             sentence = tokenizer.normalized_text_from_tokens(sentence)
             pg_data.append(sentence)

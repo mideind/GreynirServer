@@ -17,8 +17,6 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 """
 
-from __future__ import print_function
-
 from nn.nntree import (
     tokenize_and_merge_possible_mw_tokens,
     flat_matching_nonterminal,
