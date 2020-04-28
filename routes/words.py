@@ -77,7 +77,7 @@ def wordfreq():
 
     with BIN_Db.get_db() as db:
         def cat4word(w):
-            meanings = db.meanings(w)
+            _, meanings = db.lookup_word(w, auto_uppercase=True)
             if meanings:
                 return meanings[0].ordfl
             return "hk"
