@@ -2,7 +2,7 @@
 
    main-bootstrap.css
 
-   CSS file for Greynir web front-end
+   CSS file for Greynir web interface
 
    Copyright (C) 2020 Miðeind ehf.
 
@@ -421,7 +421,7 @@ button.btn.btn-info[disabled='disabled'] {
    border-color: #e1eeff;
 }
 
-.panel-info>.panel-heading {
+.panel-info > .panel-heading {
    background-image: none;
    color: #005eff;
    background-color: #e1eeff;
@@ -534,10 +534,6 @@ div#stats-panel {
       /* Dropdown menu items */
       padding-left: 22px;
    }
-
-}
-
-@media(max-width: 992px) {
 
 }
 

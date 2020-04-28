@@ -89,7 +89,7 @@ def main():
 def analysis():
     """ Handler for a page with grammatical analysis of user-entered text """
     txt = request.args.get("txt", "")[0:_MAX_TEXT_LENGTH_VIA_URL]
-    return render_template("analysis.html", default_text=txt)
+    return render_template("analysis.html", title="Málgreining", default_text=txt)
 
 
 @routes.route("/correct", methods=["GET", "POST"])
@@ -103,6 +103,7 @@ def correct():
         txt = ""
     return render_template(
         "correct.html",
+        title="Yfirlestur",
         default_text=txt,
         supported_mime_types=list(SUPPORTED_DOC_MIMETYPES),
     )
@@ -174,7 +175,9 @@ def page():
         )
         topics = [dict(name=t.topic.name, id=t.topic.identifier) for t in topics]
 
-        return render_template("page.html", article=a, register=register, topics=topics)
+        return render_template(
+            "page.html", title=a.heading, article=a, register=register, topics=topics
+        )
 
 
 @routes.route("/treegrid", methods=["GET"])
@@ -273,6 +276,7 @@ def tree_grid():
 
     return render_template(
         "treegrid.html",
+        title="Tré",
         txt=txt,
         tree=tree,
         stats=stats,
@@ -326,28 +330,30 @@ def parsefail():
                                 sfails.append([s])
                                 break
 
-    return render_template("parsefail.html", sentences=sfails, num=num)
+    return render_template(
+        "parsefail.html", title="Ógreindar setningar", sentences=sfails, num=num
+    )
 
 
 @routes.route("/apidoc")
 @max_age(seconds=10 * 60)
 def apidoc():
     """ Handler for an API documentation page """
-    return render_template("apidoc.html")
+    return render_template("apidoc.html", title="Forritaskil (API)")
 
 
 @routes.route("/buy")
 @max_age(seconds=10 * 60)
 def buy():
     """ Handler for a subscription purchase page """
-    return render_template("buy.html")
+    return render_template("buy.html", title="Afnot")
 
 
 @routes.route("/terms")
 @max_age(seconds=10 * 60)
 def terms():
     """ Handler for terms & conditions page """
-    return render_template("terms.html")
+    return render_template("terms.html", title="Skilmálar")
 
 
 @routes.route("/about")
@@ -364,7 +370,10 @@ def about():
         reynir_version = ""
         python_version = ""
     return render_template(
-        "about.html", reynir_version=reynir_version, python_version=python_version
+        "about.html",
+        title="Um Greyni",
+        reynir_version=reynir_version,
+        python_version=python_version,
     )
 
 
@@ -464,4 +473,4 @@ def suggest(limit=10):
 def translate():
     """ Handler for a page with machine translation of user-entered text """
     txt = request.args.get("txt", "")[0:_MAX_TEXT_LENGTH_VIA_URL]
-    return render_template("translate.html", default_text=txt)
+    return render_template("translate.html", title="Vélþýðing", default_text=txt)

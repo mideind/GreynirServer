@@ -210,6 +210,7 @@ def news():
 
     return render_template(
         "news.html",
+        title="Fréttir",
         articles=articles,
         topics=topics,
         display_time=display_time,

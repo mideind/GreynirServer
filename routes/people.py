@@ -213,7 +213,9 @@ def graph_data(num_persons=_DEFAULT_NUM_PERSONS_GRAPH):
 @max_age(seconds=10 * 60)
 def people_recent():
     """ Page with a list of people recently appearing in articles """
-    return render_template("people/people-recent.html", persons=recent_persons())
+    return render_template(
+        "people/people-recent.html", title="Fólk - Nýlegt", persons=recent_persons()
+    )
 
 
 @routes.route("/people")
@@ -224,7 +226,10 @@ def people_top():
     period = request.args.get("period")
     days = 7 if period == "week" else _TOP_PERSONS_PERIOD
     return render_template(
-        "people/people-top.html", persons=top_persons(days=days), period=period
+        "people/people-top.html",
+        title="Fólk",
+        persons=top_persons(days=days),
+        period=period,
     )
 
 

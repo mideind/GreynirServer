@@ -41,7 +41,7 @@ from db.queries import WordFrequencyQuery
 @routes.route("/words")
 def words():
     """ Handler for word frequency page. """
-    return render_template("words.html")
+    return render_template("words.html", title="Orð")
 
 
 _LINE_COLORS = frozenset(

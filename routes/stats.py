@@ -192,6 +192,7 @@ def stats():
 
         return render_template(
             "stats.html",
+            title="Tölfræði",
             result=result,
             total=total,
             gresult=gresult,
