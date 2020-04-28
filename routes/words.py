@@ -75,18 +75,18 @@ def wordfreq():
     # Word categories can be specified thus: "maður:kk"
     words = [tuple(w.split(":")) for w in words]
 
-    def cat4word(w):
-        with BIN_Db.get_db() as db:
+    with BIN_Db.get_db() as db:
+        def cat4word(w):
             meanings = db.meanings(w)
             if meanings:
                 return meanings[0].ordfl
-        return "hk"
+            return "hk"
 
-    # Get word category (ordfl) for each word, if needed
-    valid_cats = ["kk", "kvk", "hk", "lo", "so"]
-    for i, w in enumerate(words):
-        if len(w) < 2 or w[1] not in valid_cats:
-            words[i] = (w[0], cat4word(w[0]))
+        # Get word category (ordfl) for each word, if needed
+        valid_cats = ["kk", "kvk", "hk", "lo", "so"]
+        for i, w in enumerate(words):
+            if len(w) < 2 or w[1] not in valid_cats:
+                words[i] = (w[0], cat4word(w[0]))
 
     colors = list(_LINE_COLORS)
 

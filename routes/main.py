@@ -122,7 +122,10 @@ def similar():
         uuid = request.values.get("id")
         uuid = uuid.strip()[0:_MAX_UUID_LENGTH]
     except Exception as e:
-        resp["errmsg"] = "Missing or invalid article UUID"
+        uuid = None
+
+    if not uuid:
+        resp["errmsg"] = "Missing or invalid article UUID."
         return better_jsonify(**resp)
 
     with SessionContext(commit=True) as session:

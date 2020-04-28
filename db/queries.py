@@ -239,7 +239,7 @@ class ArticleCountQuery(_BaseQuery):
 
 class ArticleListQuery(_BaseQuery):
     """ A query returning a list of the newest articles that contain
-        a particular word stem """
+        a particular word stem. """
 
     _Q_lower = """
         select distinct a.id, a.heading, a.timestamp, r.domain, a.url
@@ -272,7 +272,8 @@ class ArticleListQuery(_BaseQuery):
 
 class WordFrequencyQuery(_BaseQuery):
     """ A query yielding the number of times a given word occurs in
-        articles over a given period of time, broken down by day. """
+        articles over a given period of time, broken down by day
+        (or longer periods, specified via the by_num_days arg). """
 
     _Q = """
         with days as (
@@ -280,13 +281,17 @@ class WordFrequencyQuery(_BaseQuery):
             from generate_series(
                 :start,
                 :end,
-                '1 day'::interval
+                ':by_num_days day'::interval
             ) d
         ),
         appearances as (
             select to_char(a.timestamp, 'YYYY-MM-DD') date, coalesce(sum(coalesce(w.cnt,0)),0) cnt
             from words w, articles a
-            where w.stem = :stem and w.cat = :cat and w.article_id = a.id
+            where w.stem = :stem
+            and w.cat = :cat
+            and w.article_id = a.id
+            and a.timestamp >= :start
+            and a.timestamp <= :end
             group by date
             order by date
         )
@@ -295,6 +300,13 @@ class WordFrequencyQuery(_BaseQuery):
         """
 
     @classmethod
-    def fetch(cls, stem, cat, start, end, enclosing_session=None):
+    def fetch(cls, stem, cat, start, end, by_num_days=1, enclosing_session=None):
         with SessionContext(session=enclosing_session, commit=False) as session:
-            return cls().execute(session, stem=stem, cat=cat, start=start, end=end)
+            return cls().execute(
+                session,
+                stem=stem,
+                cat=cat,
+                start=start,
+                end=end,
+                by_num_days=by_num_days,
+            )
