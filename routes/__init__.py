@@ -349,9 +349,10 @@ def get_status(task):
 # Import routes from other files
 from .api import *
 from .main import *
-from .loc import *
 from .news import *
 from .people import *
+from .loc import *
+from .words import *
 from .stats import *
 from .salescloud import *
 from nn.api import *

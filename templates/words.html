@@ -1,0 +1,204 @@
+
+{% extends "container-normal.html" %}
+
+
+{% block meta %}
+
+{% endblock %}
+
+
+{% block styles %}
+
+<link href="{{ url_for('static', filename='css/main-bootstrap.css') }}" rel='stylesheet' type='text/css'>
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+
+<script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js" defer></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js" defer></script>
+
+{% endblock %}
+
+{% block content %}
+
+
+<div class="panel panel-default">
+   <div class="panel-heading">
+      Orðtíðni í fréttum vefmiðla
+      <br>
+      <small>Sláðu inn eitt eða fleiri orð og veldu tímabil</small>
+   </div>
+   <table class="table table-hover" id="dtable">
+      <div style="padding:10px;">
+         Orð <input id="words" name="words" value="veira:kvk, smit:hk" style="margin-right: 10px; width:310px;">
+         Tímabil <input name="daterange" id="daterange" style="width:210px; margin-right: 10px;">
+         <input type="button" value="Sækja" onClick="reloadData();">
+         <span id="in-progress" style="margin-left:10px;"></span>
+      </div>
+      <hr style="margin:0">
+      <div style="padding:25px; padding-top: 15px;">
+         <canvas id="wfreq_chart_canvas"></canvas>
+      </div>
+   </table>
+</div>
+
+               
+
+
+{% endblock %}
+
+{% block endscripts %}
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.bundle.min.js"></script>
+
+<script>
+
+   var wfreqChart;
+
+   function initChart(data) {
+      var config = {
+         type: 'line',
+         data: data,
+         options: {
+            responsive: true,
+            tooltips: {
+               mode: 'index'
+            },
+            scales: {
+               xAxes: [{
+                  display: true,
+                  scaleLabel: {
+                     display: true
+                  }
+               }],
+               yAxes: [{
+                  display: true,
+                  scaleLabel: {
+                     display: true,
+                     labelString: 'Tíðni orða'
+                  },
+                  ticks: {
+                     suggestedMin: 0,
+                     // suggestedMax: 200,
+                  }
+               }]
+            }
+         }
+      };
+
+      var wfreqCtx =  $('#wfreq_chart_canvas').get(0).getContext('2d');
+      // parseChartData.datasets[0].fill = true;
+      wfreqChart = new Chart(wfreqCtx, config);
+   }
+
+   function loadChartData(data) {
+      wfreqChart.config.data = data;
+      wfreqChart.update();
+   }
+
+   function initDatePicker() {
+      var start = moment().subtract(89, 'days');
+      var end = moment();
+
+      var locale = {
+        "format": "YYYY-MM-DD",
+        "separator": " - ",
+        "applyLabel": "Vista",
+        "cancelLabel": "Hætta við",
+        "fromLabel": "Frá",
+        "toLabel": "til",
+        "customRangeLabel": "Velja",
+        "weekLabel": "V",
+        "daysOfWeek": [
+            "Sun",
+            "Mán",
+            "Þri",
+            "Mið",
+            "Fim",
+            "Fös",
+            "Lau"
+        ],
+        "monthNames": [
+            "Janúar",
+            "Febrúar",
+            "Mars",
+            "Apríl",
+            "Maí",
+            "Júní",
+            "Júlí",
+            "Ágúst",
+            "September",
+            "Oktober",
+            "November",
+            "Desember"
+        ],
+        "firstDay": 1
+      };
+
+      $('#daterange').daterangepicker({
+         startDate: start,
+         endDate: end,
+         locale: locale,
+         maxSpan: {
+            "days": 365
+         },
+         ranges: {
+           'Síðastliðin vika': [moment().subtract(6, 'days'), moment()],
+           'Síðustu 30 dagar': [moment().subtract(29, 'days'), moment()],
+           'Síðustu 3 mánuðir': [moment().subtract(89, 'days'), moment()],
+           'Síðustu 6 mánuðir': [moment().subtract(182, 'days'), moment()],
+           'Síðasta ár': [moment().subtract(364, 'days'), moment()],
+         }
+      });
+
+      $('#daterange').on('apply.daterangepicker', reloadData);
+   }
+
+   function reloadData() {
+      // Kill any previous ongoing request
+      if (reloadData.request) {
+         reloadData.request.abort();
+      }
+      // Set off progress indicator
+      $('#in-progress').html("<span class='glyphicon glyphicon-restart glyphicon-spin'></span>");
+
+      // The date range picker plugin produces values of the form
+      // "DD/MM/YYYY - DD/MM/YYYY" which we split into two date strings.
+      var res = $("#daterange").val().split(" - ");
+
+      // Send request
+      var params = {
+         words: $("#words").val(),
+         date_from: res[0].trim(),
+         date_to: res[1].trim(),
+      }
+      reloadData.request = $.getJSON("/wordfreq?" + $.param(params), function(r) {
+         loadChartData(r["data"]);
+         // Update word input field w. string from server
+         $("#words").val(r["words"]);
+         // Stop progress indicator
+         $('#in-progress').html("");
+      });
+   }
+
+
+   $(document).ready(function() {
+      // Activate the top navbar
+      $("#navid-words").addClass("active");
+
+      initDatePicker();
+      initChart(null);
+      reloadData();
+
+      // Reload on Enter keypress while focus on input field
+      $('#words').keypress(function(event){
+         var keycode = (event.keyCode ? event.keyCode : event.which);
+         if (keycode == '13'){
+            reloadData();
+         }
+      });
+
+   });
+
+</script>
+
+{% endblock %}
+

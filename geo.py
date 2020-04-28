@@ -129,6 +129,7 @@ ICE_REGIONS = frozenset(
 COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
     ICELANDIC_LANG_ISOCODE: {
         "Mjanmar": "MM",
+        "Myanmar": "MM",
         "Bahrain": "BH",
         "Búrma": "MM",
         "Burma": "MM",
@@ -148,6 +149,9 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
         "Páfastóll": "VA",
         "Páfaríki": "VA",
         "Vatíkan": "VA",
+        "Vatíkanríki": "VA", # Formal name
+        "Vatikan": "VA",
+        "Vatikanríki": "VA", # Formal name
         "Papúa": "PG",
         "Nevis": "KN",
         "Chile": "CL",
@@ -186,9 +190,12 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
         "Malawi": "MW",
         "Norður-Noregur": "NO",
         "Tæland": "TH",
-        "Aserbaísjan": "AZ", # Til svona stafsett í BÍN
+        "Aserbaísjan": "AZ",  # Til svona stafsett í BÍN
+        "Azerbaijan": "AZ",
         "Kanarí": "IC",
         "Jómfrúaeyjar": "US",
+        "Ghana": "GH",
+        "Kosovo": "XK",
     }
 }
 
@@ -330,7 +337,7 @@ def lookup_city_info(name):
         city names (e.g. "Lundúnir") to their corresponding
         English/international name before querying. """
     cnames = _load_city_names()  # Lazy-load
-    cn = cnames.get(name, name)
+    cn = cnames.get(name.strip(), name)
     return city_lookup(cn)
 
 
@@ -338,6 +345,7 @@ def lookup_city_info(name):
 def icelandic_city_name(name):
     """ Look up the Icelandic name of a city, given its
         English/international name. """
+    name = name.strip()
     cnames = _load_city_names()  # Lazy-load
     for ice, n in cnames.items():
         if n == name:

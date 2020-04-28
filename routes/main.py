@@ -76,7 +76,7 @@ PARSEFAIL_MAX = 250
 @max_age(seconds=60)
 def main():
     """ Handler for the main (index) page """
-    txt = request.args.get("txt", None)
+    txt = request.args.get("txt")
     if txt:
         txt = txt.strip()
     if not txt:
@@ -89,7 +89,7 @@ def main():
 def analysis():
     """ Handler for a page with grammatical analysis of user-entered text """
     txt = request.args.get("txt", "")[0:_MAX_TEXT_LENGTH_VIA_URL]
-    return render_template("analysis.html", default_text=txt)
+    return render_template("analysis.html", title="Málgreining", default_text=txt)
 
 
 @routes.route("/correct", methods=["GET", "POST"])
@@ -103,17 +103,46 @@ def correct():
         txt = ""
     return render_template(
         "correct.html",
+        title="Yfirlestur",
         default_text=txt,
         supported_mime_types=list(SUPPORTED_DOC_MIMETYPES),
     )
+
+
+MAX_SIM_ARTICLES = 10  # Display at most 10 similarity matches
+
+
+@routes.route("/similar", methods=["GET", "POST"])
+def similar():
+    """ Return rendered HTML list of articles similar to a given article, given a UUID """
+    resp = dict(err=True)
+
+    # Parse query args
+    try:
+        uuid = request.values.get("id")
+        uuid = uuid.strip()[0:_MAX_UUID_LENGTH]
+    except Exception as e:
+        uuid = None
+
+    if not uuid:
+        resp["errmsg"] = "Missing or invalid article UUID."
+        return better_jsonify(**resp)
+
+    with SessionContext(commit=True) as session:
+        similar = Search.list_similar_to_article(session, uuid, n=MAX_SIM_ARTICLES)
+
+    resp["payload"] = render_template("similar.html", similar=similar)
+    resp["err"] = False
+
+    return better_jsonify(**resp)
 
 
 @routes.route("/page")
 def page():
     """ Handler for a page displaying the parse of an arbitrary web
         page by URL or an already scraped article by UUID """
-    url = request.args.get("url", None)
-    uuid = request.args.get("id", None)
+    url = request.args.get("url")
+    uuid = request.args.get("id")
     if url:
         url = url.strip()[0:_MAX_URL_LENGTH]
     if uuid:
@@ -149,12 +178,8 @@ def page():
         )
         topics = [dict(name=t.topic.name, id=t.topic.identifier) for t in topics]
 
-        # Fetch similar (related) articles, if any
-        DISPLAY = 10  # Display at most 10 matches
-        similar = Search.list_similar_to_article(session, a.uuid, n=DISPLAY)
-
         return render_template(
-            "page.html", article=a, register=register, topics=topics, similar=similar
+            "page.html", title=a.heading, article=a, register=register, topics=topics
         )
 
 
@@ -254,6 +279,7 @@ def tree_grid():
 
     return render_template(
         "treegrid.html",
+        title="Tré",
         txt=txt,
         tree=tree,
         stats=stats,
@@ -307,28 +333,30 @@ def parsefail():
                                 sfails.append([s])
                                 break
 
-    return render_template("parsefail.html", sentences=sfails, num=num)
+    return render_template(
+        "parsefail.html", title="Ógreindar setningar", sentences=sfails, num=num
+    )
 
 
 @routes.route("/apidoc")
 @max_age(seconds=10 * 60)
 def apidoc():
     """ Handler for an API documentation page """
-    return render_template("apidoc.html")
+    return render_template("apidoc.html", title="Forritaskil (API)")
 
 
 @routes.route("/buy")
 @max_age(seconds=10 * 60)
 def buy():
     """ Handler for a subscription purchase page """
-    return render_template("buy.html")
+    return render_template("buy.html", title="Afnot")
 
 
 @routes.route("/terms")
 @max_age(seconds=10 * 60)
 def terms():
     """ Handler for terms & conditions page """
-    return render_template("terms.html")
+    return render_template("terms.html", title="Skilmálar")
 
 
 @routes.route("/about")
@@ -345,7 +373,10 @@ def about():
         reynir_version = ""
         python_version = ""
     return render_template(
-        "about.html", reynir_version=reynir_version, python_version=python_version
+        "about.html",
+        title="Um Greyni",
+        reynir_version=reynir_version,
+        python_version=python_version,
     )
 
 
@@ -354,9 +385,9 @@ def reportimage():
     """ Notification that a (person) image is wrong or broken """
     resp = dict(found_new=False)
 
-    name = request.form.get("name", "")
-    url = request.form.get("url", "")
-    status = request.form.get("status", "")
+    name = request.form.get("name")
+    url = request.form.get("url")
+    status = request.form.get("status")
 
     if name and url and status:
         if status == "broken":
@@ -375,7 +406,7 @@ def image():
     """ Get image for (person) name """
     resp = dict(found=False)
 
-    name = request.args.get("name", "")
+    name = request.args.get("name")
     try:
         thumb = int(request.args.get("thumb", 0))
     except:
@@ -445,4 +476,4 @@ def suggest(limit=10):
 def translate():
     """ Handler for a page with machine translation of user-entered text """
     txt = request.args.get("txt", "")[0:_MAX_TEXT_LENGTH_VIA_URL]
-    return render_template("translate.html", default_text=txt)
+    return render_template("translate.html", title="Vélþýðing", default_text=txt)

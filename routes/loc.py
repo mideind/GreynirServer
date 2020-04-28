@@ -29,6 +29,7 @@ from collections import defaultdict
 import json
 
 from flask import request, render_template, abort, send_file
+from country_list import countries_for_language
 
 from db import SessionContext, dbfunc, desc
 from db.models import Location, Article, Root
@@ -41,7 +42,6 @@ from geo import (
     ICE_REGIONS,
     ISO_TO_CONTINENT,
 )
-from country_list import countries_for_language
 
 from images import get_staticmap_image
 
@@ -178,7 +178,11 @@ def locations():
     locs = top_locations(kind=kind, days=days)
 
     return render_template(
-        "locations/locations.html", locations=locs, period=period, kind=kind
+        "locations/locations.html",
+        title="Staðir",
+        locations=locs,
+        period=period,
+        kind=kind,
     )
 
 
@@ -191,7 +195,10 @@ def locations_icemap():
 
     markers = icemap_markers(days=days)
     return render_template(
-        "locations/locations-icemap.html", markers=json.dumps(markers), period=period
+        "locations/locations-icemap.html",
+        title="Íslandskort",
+        markers=json.dumps(markers),
+        period=period,
     )
 
 
@@ -206,6 +213,7 @@ def locations_worldmap():
     n = dict(countries_for_language("is"))
     return render_template(
         "locations/locations-worldmap.html",
+        title="Heimskort",
         country_data=d,
         country_names=n,
         period=period,
@@ -271,8 +279,6 @@ def locinfo():
         resp["map"] = "/static/img/maps/regions/" + name + ".png"
     # Continent
     elif resp["country"] is None and resp["continent"] in ISO_TO_CONTINENT:
-        resp["map"] = (
-            "/static/img/maps/continents/" + resp["continent"] + ".png"
-        )
+        resp["map"] = "/static/img/maps/continents/" + resp["continent"] + ".png"
 
     return better_jsonify(**resp)

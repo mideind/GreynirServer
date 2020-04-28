@@ -7,7 +7,7 @@
 <meta name="description" content="Málgreining fyrir íslensku, greining ritaðrar íslensku, málfræði, stafsetning">
 <meta name="application-name" content="Greynir">
 
-<title>Greynir - Málgreining fyrir íslensku</title>
+<title>Greynir - {{ title or "Málgreining fyrir íslensku" }}</title>
 
 <link rel="apple-touch-icon" sizes="57x57" href="/static/img/apple-icon-57x57.png">
 <link rel="apple-touch-icon" sizes="60x60" href="/static/img/apple-icon-60x60.png">
@@ -36,11 +36,11 @@
 <link href="https://fonts.googleapis.com/css?family=Lato:200,200i,300,300i,400,400i,700,700i,900,900i&display=swap" rel="stylesheet" crossorigin>
 
 <!-- Bootstrap main CSS -->
-<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css"
-   integrity="sha384-PmY9l28YgO4JwMKbTvgaS7XNZJ30MK9FAZjjzXtlqyZCqBY6X6bXIkM++IkyinN+" crossorigin="anonymous">
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" 
+   integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
 <!-- Bootstrap theme CSS -->
-<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap-theme.min.css"
-   integrity="sha384-jzngWsPS6op3fgRCDTESqrEJwRKck+CILhJVO5VvaAZCq8JYf8HsR/HPpBOOPZfR" crossorigin="anonymous">
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap-theme.min.css" 
+   integrity="sha384-6pzBo3FDv/PJ8r2KRkGHifhEocL+1X2rVCTTkUfGk7/0pbek5mMa1upzvWbrUbOZ" crossorigin="anonymous">
 
 {% block styles %}
 {% endblock %}
@@ -69,10 +69,11 @@
       </div>
       <div id="navbar" class="navbar-collapse collapse">
          <ul class="nav navbar-nav">
-            <li id="navid-main"><a href="{{ url_for('routes.main') }}">Heim</a></li>
-            <li id="navid-news"><a href="{{ url_for('routes.news') }}">Nýjast</a></li>
-            <li id="navid-people"><a href="{{ url_for('routes.people_recent') }}">Fólk</a></li>
+            <!--<li id="navid-main"><a href="{{ url_for('routes.main') }}">Heim</a></li> -->
+            <li id="navid-news"><a href="{{ url_for('routes.news') }}">Fréttir</a></li>
+            <li id="navid-people"><a href="{{ url_for('routes.people_top') }}">Fólk</a></li>
             <li id="navid-locations"><a href="{{ url_for('routes.locations') }}">Staðir</a></li>
+            <li id="navid-words"><a href="{{ url_for('routes.words') }}">Orð</a></li>
             <li id="navid-analysis"><a href="{{ url_for('routes.analysis') }}">Málgreining</a></li>
             {% if not config.PRODUCTION %}
                 <li id="navid-correct"><a href="{{ url_for('routes.correct') }}">Yfirlestur</a></li>
@@ -92,12 +93,11 @@
 {%- endblock %}
 
 <!-- jQuery -->
-<script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js" 
+   integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"></script>
 <!-- Bootstrap -->
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"
-   integrity="sha384-vhJnz1OVIdLktyixHY4Uk3OHEwdQqPppqYR8+5mjsauETgLOcEynD9oPHhhz18Nw"
-   crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js" 
+   integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5bApTppSuUkhZXN0VxHd" crossorigin="anonymous"></script>
 
 {% block endscripts -%}
 {%- endblock %}

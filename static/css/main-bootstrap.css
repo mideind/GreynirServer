@@ -2,7 +2,7 @@
 
    main-bootstrap.css
 
-   CSS file for Greynir web front-end
+   CSS file for Greynir web interface
 
    Copyright (C) 2020 Miðeind ehf.
 
@@ -25,11 +25,13 @@
    fieldset { display: table-cell; }
 }
 
+/* Glyph icons */
+
 @font-face {
    font-family: 'Glyphicons Regular';
-   src:  url('/static/fonts/glyphicons-regular.woff2') format('woff2'),
-         url('/static/fonts/glyphicons-regular.woff') format('woff'),
-         url('/static/fonts/glyphicons-regular.ttf') format('truetype')
+   src: url('/static/fonts/glyphicons-regular.woff2') format('woff2'),
+        url('/static/fonts/glyphicons-regular.woff') format('woff'),
+        url('/static/fonts/glyphicons-regular.ttf') format('truetype');
 }
 
 .glyphicon {
@@ -67,10 +69,11 @@
    content: "\E174";
 }
 .glyphicon-reverse-play {
-   transform: scaleX(-1);
+   -o-transform: scaleX(-1);
    -moz-transform: scaleX(-1);
    -webkit-transform: scaleX(-1);
    -ms-transform: scaleX(-1);
+   transform: scaleX(-1);
 }
 .glyphicon-info:before {
    content: "\E196";
@@ -169,36 +172,40 @@
    content: "\E372";
 }
 .glyphicon-spin {
-    -webkit-animation: spin 2000ms infinite linear;
-    animation: spin 2000ms infinite linear;
-    color: #ffb400;
+   -webkit-animation: spin 2000ms infinite linear;
+   -moz-animation: spin 2000ms infinite linear;
+   animation: spin 2000ms infinite linear;
+   color: #ffb400;
 }
 .glyphicon-spin-white {
-    -webkit-animation: spin 2000ms infinite linear;
-    animation: spin 2000ms infinite linear;
-    color: white;
+   -webkit-animation: spin 2000ms infinite linear;
+   -moz-animation: spin 2000ms infinite linear;
+   animation: spin 2000ms infinite linear;
+   color: white;
 }
 
+/* CSS animations */
+
 @-webkit-keyframes spin {
-    0% {
-        -webkit-transform: rotate(0deg);
-        transform: rotate(0deg);
-    }
-    100% {
-        -webkit-transform: rotate(-360deg);
-        transform: rotate(-360deg);
-    }
+   0% {
+      -webkit-transform: rotate(0deg);
+      transform: rotate(0deg);
+   }
+   100% {
+      -webkit-transform: rotate(-360deg);
+      transform: rotate(-360deg);
+   }
 }
 
 @keyframes spin {
-    0% {
-        -webkit-transform: rotate(0deg);
-        transform: rotate(0deg);
-    }
-    100% {
-        -webkit-transform: rotate(-360deg);
-        transform: rotate(-360deg);
-    }
+   0% {
+      -webkit-transform: rotate(0deg);
+      transform: rotate(0deg);
+   }
+   100% {
+      -webkit-transform: rotate(-360deg);
+      transform: rotate(-360deg);
+   }
 }
 
 @keyframes bob {
@@ -229,7 +236,7 @@
 }
 
 .blue, .text-info {
-   color: #006eff;
+   color: #005eff;
 }
 
 .yellow, .text-warning {
@@ -247,7 +254,7 @@ body {
 }
 
 a {
-   color: #006eff;
+   color: #005eff;
 }
 
 .progress, .progress-bar, .progress-bar-success {
@@ -259,7 +266,8 @@ a {
 }
 
 .progress-bar {
-   background-color: #006eff;
+   background-color: #005eff;
+   opacity: 0.8;
 }
 
 .progress-bar-success {
@@ -269,6 +277,7 @@ a {
 .btn-danger, .btn-default, .btn-info, .btn-primary, .btn-success, .btn-warning {
    text-shadow: none;
    -webkit-box-shadow: none;
+   -moz-box-shadow: none;
    box-shadow: none;
 }
 
@@ -287,11 +296,13 @@ a {
    background-color: #d4d4d4;
    border-color: #8c8c8c;
    -webkit-animation: bob 400ms linear;
+   -moz-animation: bob 400ms linear;
    animation: bob 400ms linear;
 }
 
 .dropdown-toggle:hover {
    -webkit-animation: none;
+   -moz-animation: none;
    animation: none;
 }
 
@@ -310,6 +321,7 @@ a {
    background-color: #00b450;
    border-color: #00b450;
    -webkit-animation: bob 400ms linear;
+   -moz-animation: bob 400ms linear;
    animation: bob 400ms linear;
 }
 
@@ -325,19 +337,20 @@ button.btn.btn-success[disabled='disabled'] {
 
 .btn-info {
    background-image: none;
-   background-color: #006eff;
-   border-color: #006eff;
+   background-color: #005eff;
+   border-color: #005eff;
 }
 
 .btn-info:focus {
-   background-color: #006eff;
-   border-color: #006eff;
+   background-color: #005eff;
+   border-color: #005eff;
 }
 
 .btn-info:hover {
-   background-color: #006eff;
-   border-color: #006eff;
+   background-color: #005eff;
+   border-color: #005eff;
    -webkit-animation: bob 400ms linear;
+   -moz-animation: bob 400ms linear;
    animation: bob 400ms linear;
 }
 
@@ -366,6 +379,7 @@ button.btn.btn-info[disabled='disabled'] {
    background-color: #ffb400;
    border-color: #ffb400;
    -webkit-animation: bob 400ms linear;
+   -moz-animation: bob 400ms linear;
    animation: bob 400ms linear;
 }
 
@@ -384,30 +398,33 @@ button.btn.btn-info[disabled='disabled'] {
    background-color: #eb3732;
    border-color: #eb3732;
    -webkit-animation: bob 400ms linear;
+   -moz-animation: bob 400ms linear;
    animation: bob 400ms linear;
 }
 
 .dropdown-toggle:hover {
    -webkit-animation: none;
+   -moz-animation: none;
    animation: none;
 }
 
 .btn-group.open .dropdown-toggle {
    -webkit-box-shadow: none;
+   -moz-box-shadow: none;
    box-shadow: none;
 }
 
 .label-primary {
-   background-color: #006eff;
+   background-color: #005eff;
 }
 
 .panel-info {
    border-color: #e1eeff;
 }
 
-.panel-info>.panel-heading {
+.panel-info > .panel-heading {
    background-image: none;
-   color: #006eff;
+   color: #005eff;
    background-color: #e1eeff;
    border-color: #e1eeff;
 }
@@ -443,14 +460,18 @@ p.header {
    margin-right: -6px;
 }
 
-input#url::selection {
+input::selection {
    color: white;
-   background-color: #006eff;
+   background-color: #005eff;
 }
 
 textarea::selection {
    color: white;
-   background-color: #006eff;
+   background-color: #005eff;
+}
+
+.form-control:focus {
+   border-color: #005eff;
 }
 
 div.input {
@@ -473,11 +494,11 @@ div.input .col-xs-4, div.input .col-xs-5, div.input .col-xs-6, div.input .col-xs
 
 div.input-analysis {
    padding-top: 18px;
-   padding-bottom: 0px;
+   padding-bottom: 0;
 }
 
 div.input-parsegrid {
-   padding-top: 0px;
+   padding-top: 0;
    padding-bottom: 6px;
 }
 
@@ -517,10 +538,6 @@ div#stats-panel {
 
 }
 
-@media(max-width: 992px) {
-
-}
-
 @media(max-width: 768px) {
 
    div.container.text-container {
@@ -556,7 +573,7 @@ span#url-shadow {
    border-color: transparent;
    background-color: #FFEEA9; /* Pale Greynir yellow */
    padding-top: 5px;
-   padding-bottom: 0px;
+   padding-bottom: 0;
    color: #00b450;
    white-space: nowrap;
    overflow-x: hidden;
@@ -613,7 +630,7 @@ div#output li {
 div#column {
    /* Keep columns reasonably narrow for ease of reading */
    max-width: 720px;
-   margin-left: 0px;
+   margin-left: 0;
    margin-right: auto;
 }
 
@@ -699,6 +716,10 @@ tr.topitem span.title, tr.topitem td.title {
    text-overflow: ellipsis;
 }
 
+.query-empty {
+   font-size: 24px;
+}
+
 #namelist span.name,
 #namelist span.entity,
 #similarlist span.heading {
@@ -744,7 +765,7 @@ tr.topitem span.title, tr.topitem td.title {
 }
 
 span.glyphicon-gender-male {
-   color: #006eff;
+   color: #005eff;
 }
 
 span.glyphicon-gender-female {
@@ -769,7 +790,7 @@ td.domain {
 #entity-body span.entity
  {
    font-weight: 700;
-   color: #006eff;
+   color: #005eff;
    cursor: pointer;
 }
 
@@ -826,12 +847,12 @@ span.imgreport a {
    color: white !important;
    text-decoration: none;
    text-shadow:
-   #000 0px 0px 2px,
-   #000 0px 0px 2px,
-   #000 0px 0px 2px,
-   #000 0px 0px 2px,
-   #000 0px 0px 2px,
-   #000 0px 0px 2px;
+   #000 0 0 2px,
+   #000 0 0 2px,
+   #000 0 0 2px,
+   #000 0 0 2px,
+   #000 0 0 2px,
+   #000 0 0 2px;
 }
 
 span.imgreport a:hover {
@@ -857,27 +878,9 @@ div#detail {
 }
 
 div#info-trnsl,
-div#detail
-{
+div#detail {
    margin-top: 4px;
 }
-
-/*
-   Experimental: speech bubble style
-   (see https://codepen.io/mchernin34/pen/ojXvLq)
-
-div#detail:after {
-   content:"";
-   position:absolute;
-   bottom:-20px;
-   left:50px;
-   border-width:20px 0 0 20px;
-   border-style:solid;
-   border-color:#eeeeee transparent;
-   display:block;
-   width:0;
-}
-*/
 
 div#info.kk,
 div#info.kvk,
@@ -904,7 +907,7 @@ div#info.st {
 }
 
 div#info p {
-   margin-top: 0px;
+   margin-top: 0;
    margin-bottom: 4px;
    padding: 0;
 }
@@ -923,7 +926,7 @@ div#info.person.male #tag,
 div#info.kk #tag,
 div#info.kvk #tag,
 div#info.hk #tag {
-   color: #006eff;
+   color: #005eff;
 }
 
 div#info.lo #tag {
@@ -1079,7 +1082,7 @@ div.result i.number {
 
 div.result i.percent {
    font-weight: 700;
-   color: #006eff;
+   color: #005eff;
 }
 
 div.result i.ordinal {
@@ -1088,8 +1091,12 @@ div.result i.ordinal {
 }
 
 div.result i.date,
+div.result i.dateabs,
+div.result i.daterel,
 div.result i.time,
-div.result i.timestamp {
+div.result i.timestamp,
+div.result i.timestampabs,
+div.result i.timestamprel {
    font-weight: 700;
    color: #ffb400;
 }
@@ -1105,7 +1112,7 @@ div.result i.amount {
 }
 
 div.result i.person {
-   color: #006eff;
+   color: #005eff;
    font-weight: 700;
 }
 
@@ -1132,7 +1139,8 @@ div.result i.borg:hover {
 div.result i.year,
 div.result i.telno,
 div.result i.email,
-div.result i.url {
+div.result i.url,
+div.result i.domain {
    color: #777777;
    font-weight: 700;
 }
@@ -1163,13 +1171,13 @@ div.result i.p:hover {
 }
 
 div.result i.person:hover {
-   /* Special case for person: just make background darker */
-   border-color: #006eff;
-   background-color: #006eff;
+   /* Special case for person */
+   border-color: #005eff;
+   background-color: #005eff;
 }
 
 div.result i.entity:hover {
-   /* Special case for entity: just make background darker */
+   /* Special case for entity */
    border-color: #fbe9d0;
 }
 
@@ -1179,8 +1187,8 @@ div.result i.kvk:hover,
 div.result i.hk:hover,
 div.result i.fn:hover,
 div.result i.pfn:hover {
-   border-color: #006eff;
-   background-color: #006eff;
+   border-color: #005eff;
+   background-color: #005eff;
 }
 
 /* Verb-type word: red color */
@@ -1342,7 +1350,7 @@ div.guide-empty {
 }
 
 div.guide-empty i {
-   color: #006eff;
+   color: #005eff;
 }
 
 div.guide-empty i:hover {
@@ -1365,7 +1373,7 @@ th.count, td.count {
 }
 
 th.male, td.male {
-   color: #006eff;
+   color: #005eff;
 }
 
 th.female, td.female {
@@ -1431,7 +1439,7 @@ p.author {
 }
 
 div#output h3 {
-   color: #006eff;
+   color: #005eff;
 }
 
 /* Parse grid stuff */
@@ -1530,13 +1538,13 @@ td.t span.tname {
 }
 
 h4.txt {
-   margin-top: 0px;
+   margin-top: 0;
    margin-bottom: 15px;
    line-height: 1.4;
 }
 
 h4.txt span.glyphicon {
-   color: #006eff;
+   color: #005eff;
    padding-right: 8px;
 }
 
@@ -1555,7 +1563,7 @@ div#metadata button.btn {
 }
 
 div#metadata button.btn span.glyphicon {
-   top: 0px;
+   top: 0;
 }
 
 button.btn.btn-lg.btn-block span.glyphicon {
@@ -1563,7 +1571,7 @@ button.btn.btn-lg.btn-block span.glyphicon {
 }
 
 h3.query {
-   margin-top: 0px;
+   margin-top: 0;
    margin-bottom: 20px;
 }
 
@@ -1605,7 +1613,7 @@ div.headline {
 
 span.weight20,
 span.weight25 {
-   color: #006eff;
+   color: #005eff;
 }
 
 span.weight16 {
@@ -1677,7 +1685,7 @@ div#treegrid table {
 }
 
 .autocomplete-suggestions strong {
-   color: #006eff;
+   color: #005eff;
 }
 
 .autocomplete-suggestion {
@@ -1773,4 +1781,9 @@ p.no-results {
 
 .hidden {
    display: none;
+}
+
+.daterangepicker .ranges li.active,
+.daterangepicker td.active {
+   background-color: #005eff !important;
 }

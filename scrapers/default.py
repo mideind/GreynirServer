@@ -413,9 +413,7 @@ class KjarninnScraper(ScrapeHelper):
             return None
 
         # Delete div.container.title-container tags from the content
-        title_cont = ScrapeHelper.div_class(
-            article, ("container", "title-container")
-        )
+        title_cont = ScrapeHelper.div_class(article, ("container", "title-container"))
         if title_cont is not None:
             soup.decompose()
         # Delete div.container.quote-container tags from the content
@@ -1693,15 +1691,25 @@ class BBScraper(ScrapeHelper):
 class LemurinnScraper(ScrapeHelper):
     """ Scraping helper for lemurinn.is """
 
+    def __init__(self, root):
+        super().__init__(root)
+        self._feeds = ["http://lemurinn.is/allfeed/"]
+
     def get_metadata(self, soup):
         """ Analyze the article soup and return metadata """
         metadata = super().get_metadata(soup)
 
-        # Author
-        author = "Ritstjórn Lemúrsins"
-
         # Extract the heading from the OpenGraph og:title meta property
         heading = ScrapeHelper.meta_property(soup, "og:title") or ""
+
+        # Author
+        author = "Ritstjórn Lemúrsins"
+        auth_tag = soup.find("a", {"class": "author"})
+        if auth_tag:
+            author = auth_tag.get_text().strip()
+            # Capitalize if necessary
+            if not author[0].isupper():
+                author = author[0].upper() + author[1:]
 
         # Extract the publication time from the article:published_time meta property
         timestamp = datetime.utcnow()
@@ -1760,7 +1768,7 @@ class VisindavefurScraper(ScrapeHelper):
         author = "Vísindavefurinn"
         auth_tag = ScrapeHelper.div_class(soup, "au-name")
         if auth_tag:
-            author = auth_tag.get_text()         
+            author = auth_tag.get_text()
 
         timestamp = None
         now = datetime.utcnow()
