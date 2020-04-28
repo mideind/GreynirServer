@@ -27,6 +27,7 @@
 
 """
 
+from typing import Dict
 import json
 import re
 
@@ -687,7 +688,8 @@ class TerminalNode(Node):
     _NOT_DECLINABLE = frozenset(
         ["ao", "eo", "spao", "fs", "st", "stt", "nhm", "uh", "töl"]
     )
-    _TD = dict()  # Cache of terminal descriptors
+    # Cache of terminal descriptors
+    _TD = dict()  # type: Dict[str, TerminalDescriptor]
 
     # Cache of word roots (stems) keyed by (word, at_start, terminal)
     _root_cache = LRU_Cache(_root_lookup, maxsize=16384)

@@ -17,10 +17,12 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 """
 
-from routes import routes, better_jsonify, text_from_request, bool_from_request, restricted
 from flask import request
 from flask_cors import cross_origin
 
+from routes import (
+    routes, better_jsonify, text_from_request, bool_from_request, restricted
+)
 from nn.nnclient import ParsingClient, TranslateClient
 
 

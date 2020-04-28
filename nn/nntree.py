@@ -23,18 +23,18 @@
 
 """
 
-from __future__ import print_function
 from enum import IntEnum
 import logging
 import inspect
 
 import tokenizer
 from reynir import bintokenizer
-from reynir import matcher
+from reynir import simpletree
 from settings import Settings
 
 
 class GRAMMAR:
+
     CASES = frozenset({"nf", "þf", "þgf", "ef"})
     GENDERS = frozenset({"kk", "kvk", "hk"})
     NUMBERS = frozenset({"et", "ft"})
@@ -50,6 +50,7 @@ class GRAMMAR:
 
 
 class KEY:
+
     long_terminal = "a"
     bin_variants = "b"
     bin_category = "c"
@@ -92,6 +93,7 @@ def flat_matching_nonterminal(string):
 
 
 class Node:
+
     """ Generic tree implementation """
 
     def __init__(self, name, is_terminal=False, data=None):
@@ -116,7 +118,7 @@ class Node:
         return json_node
 
     def to_simple_tree(self):
-        return matcher.SimpleTree([[self.to_dict()]])
+        return simpletree.SimpleTree([[self.to_dict()]])
 
     def to_postfix(self):
         """ Export tree to postfix ordering
@@ -413,8 +415,8 @@ def _json_terminal_node(tok, text="placeholder", token_index=None):
 
 def _json_nonterminal_node(tok):
     nt_name = "-"
-    if tok in matcher._DEFAULT_ID_MAP:
-        nt_name = matcher._DEFAULT_ID_MAP[tok]["name"]
+    if tok in simpletree._DEFAULT_ID_MAP:
+        nt_name = simpletree._DEFAULT_ID_MAP[tok]["name"]
     new_node = {
         KEY.nonterminal_tag: tok,
         KEY.nonterminal_name: nt_name,
@@ -478,7 +480,7 @@ def check_merge_candidate(idxed_mw_token, parse_tokens, leaf_idx_to_parse_idx):
     last_ptok = None
     last_pidx = None  # last parse token index
     first_pidx = None  # first parse token indx
-    for (idx, token) in idxed_mw_token:
+    for idx, _ in idxed_mw_token:
         pidx = leaf_idx_to_parse_idx[idx]
         if last_pidx is None:
             last_pidx = pidx - 1
