@@ -83,14 +83,15 @@ def wordfreq():
                 # Give precedence to lemmas, e.g. interpret "reima" as
                 # verb rather than gen. pl. of fem. noun "reim"
                 lemmas = list(filter(lambda x: x.stofn == w, meanings))
-                return lemmas[0].ordfl if lemmas else meanings[0].ordfl
-            return "hk"
+                m = lemmas[0] if lemmas else meanings[0]
+                return m.stofn.replace("-",""), m.ordfl
+            return w, "??"
 
         # Get word category (ordfl) for each word, if needed
         valid_cats = ["kk", "kvk", "hk", "lo", "so"]
         for i, w in enumerate(words):
             if len(w) < 2 or w[1] not in valid_cats:
-                words[i] = (w[0], cat4word(w[0]))
+                words[i] = tuple(cat4word(w[0]))
 
     colors = list(_LINE_COLORS)
 
@@ -111,6 +112,7 @@ def wordfreq():
         "hk": "hk. no.",
         "lo": "lo.",
         "so": "so.",
+        "??": "óþekkt",
     }
 
     # Create datasets for front-end chart
