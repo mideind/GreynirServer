@@ -48,6 +48,16 @@ _LINE_COLORS = frozenset(
     ("#006eff", "#eb3732", "#00b450", "#ffb400", "#4600c8", "#f0f")
 )
 
+# More human readble description of word categories
+CAT_DESC = {
+    "kk": "kk. no.",
+    "kvk": "kvk. no.",
+    "hk": "hk. no.",
+    "lo": "lo.",
+    "so": "so.",
+    "??": "óþekkt",
+}
+
 
 @routes.route("/wordfreq", methods=["GET", "POST"])
 @cache.cached(timeout=60 * 60 * 4, key_prefix="wordfreq", query_string=True)
@@ -84,7 +94,7 @@ def wordfreq():
                 # verb rather than gen. pl. of fem. noun "reim"
                 lemmas = list(filter(lambda x: x.stofn == w, meanings))
                 m = lemmas[0] if lemmas else meanings[0]
-                return m.stofn.replace("-",""), m.ordfl
+                return m.stofn.replace("-", ""), m.ordfl
             return w, "??"
 
         # Get word category (ordfl) for each word, if needed
@@ -98,33 +108,37 @@ def wordfreq():
     # Generate date labels
     now = datetime.utcnow()
     delta = date_to - date_from
-    labels = [date_from + timedelta(days=i) for i in range(delta.days + 1)]
+    # Show results grouped by weeks if period longer than 3 months
+    if delta.days >= 90:
+        timeunit = "week"
+        label_dates = [
+            date_from + timedelta(days=i * 7) for i in range(int((delta.days + 1) / 7))
+        ]
+    else:
+        timeunit = "day"
+        label_dates = [date_from + timedelta(days=i) for i in range(delta.days + 1)]
     with changedlocale(category="LC_TIME"):
         labels = [
             l.strftime("%-d. %b") if l.year == now.year else l.strftime("%-d. %b %Y")
-            for l in labels
+            for l in label_dates
         ]
-
-    # More human readble description of word categories
-    CAT_DESC = {
-        "kk": "kk. no.",
-        "kvk": "kvk. no.",
-        "hk": "hk. no.",
-        "lo": "lo.",
-        "so": "so.",
-        "??": "óþekkt",
-    }
 
     # Create datasets for front-end chart
     with SessionContext(commit=False) as session:
         data = dict(labels=labels, datasets=[])
         for w in words:
             # Look up frequency of word for the given period
-            res = WordFrequencyQuery.fetch(
-                w[0], w[1], date_from, date_to, enclosing_session=session
+            (wd, cat) = w
+            res = WordFrequencyQuery.frequency(
+                wd,
+                cat,
+                date_from,
+                date_to,
+                timeunit=timeunit,
+                enclosing_session=session,
             )
             # Generate data and config for chart
-            label = "{0} ({1})".format(w[0], CAT_DESC.get(w[1]))
+            label = "{0} ({1})".format(wd, CAT_DESC.get(cat))
             ds = dict(label=label, fill=False, lineTension=0)
             ds["borderColor"] = ds["backgroundColor"] = colors.pop(0)
             ds["data"] = [r[1] for r in res]
