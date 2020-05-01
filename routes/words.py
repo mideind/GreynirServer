@@ -109,23 +109,43 @@ def wordfreq():
     now = datetime.utcnow()
     delta = date_to - date_from
     # Show results grouped by weeks if period longer than 3 months
-    if delta.days >= 90:
-        timeunit = "week"
-        label_dates = [
-            date_from + timedelta(days=i * 7) for i in range(int((delta.days + 1) / 7))
-        ]
-    else:
-        timeunit = "day"
-        label_dates = [date_from + timedelta(days=i) for i in range(delta.days + 1)]
     with changedlocale(category="LC_TIME"):
-        labels = [
-            l.strftime("%-d. %b") if l.year == now.year else l.strftime("%-d. %b %Y")
-            for l in label_dates
-        ]
+        if delta.days >= 90:
+            timeunit = "week"
+
+            label_dates = [
+                (
+                    (date_from + timedelta(days=i * 7)),
+                    (date_from + timedelta(days=(i * 7) + 6)),
+                )
+                for i in range(int((delta.days + 1) / 7))
+            ]
+            # Construct elegant week date labels w. no superfluous information
+            labels = []
+            for (d1, d2) in label_dates:
+                if d1.month == d2.month:
+                    d1fmt = "%-d."
+                    d2fmt = "%-d. %b"
+                else:
+                    d1fmt = d2fmt = "%-d. %b"
+                if d1.year != now.year and d1.year != d2.year:
+                    d1fmt += " %Y"
+                if d2.year != now.year:
+                    d2fmt += " %Y"
+                labels.append("{0}-{1}".format(d1.strftime(d1fmt), d2.strftime(d2fmt)))
+        else:
+            timeunit = "day"
+            label_dates = [date_from + timedelta(days=i) for i in range(delta.days)]
+            labels = [
+                d.strftime("%-d. %b")
+                if d.year == now.year
+                else d.strftime("%-d. %b %Y")
+                for d in label_dates
+            ]
 
     # Create datasets for front-end chart
     with SessionContext(commit=False) as session:
-        data = dict(labels=labels, datasets=[])
+        data = dict(labels=labels, labelDates=label_dates, datasets=[])
         for w in words:
             # Look up frequency of word for the given period
             (wd, cat) = w
