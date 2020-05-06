@@ -37,6 +37,10 @@
 
 */
 
+// import { correctPlural } from "./main"
+
+var correctPlural = require("./main")
+
 // Punctuation types
 
 var TP_LEFT = 1;
@@ -440,22 +444,16 @@ function displayTokens(j) {
 }
 
 function populateStats(stats) {
-   $("#tok-num").text(format_is(stats.num_tokens));
-   $("#tok-contained").text(stats.num_tokens === 1 ? " eind " : " eindir ")
-   $("#num-sent").text(format_is(stats.num_sentences))
-   $("#paragraphs-contained").text(stats.num_sentences === 1 ? "málsgrein." : "málsgreinum.")
-   $("#num-parsed-sent").text(format_is(stats.num_parsed));
-   if (stats.num_parsed == 1) {
-      $("#paragraphs-analyzed").text("málsgrein")
-   } else {
-      $("#paragraphs-analyzed").text("málsgreinar");
-   }
-   if (stats.num_sentences > 0) {
-      $("#num-parsed-ratio").text(format_is(100.0 * stats.num_parsed / stats.num_sentences, 1));
-   } else {
-      $("#num-parsed-ratio").text("0.0");
-   }
-   $("#avg-ambig-factor").text(format_is(stats.ambiguity, 2));
+   var parsedRatio = stats.num_sentences > 0 ? format_is(100.0 * stats.num_parsed / stats.num_sentences, 1) : "0.0"
+   $("#statistics-summary").append(
+      `<li>Textinn inniheldur ${correctPlural(stats.num_tokens, "eina", "eind", "eindir")} í ${correctPlural(stats.num_sentences, "einni", "málsgrein.", "málsgreinum")}</li>`
+   )
+   $("#statistics-summary").append(
+      `<li>Það tókst að trjágreina ${stats.num_parsed, "eina", "málsgrein", "málsgreinar"} eða ${parsedRatio}%.</li>`
+   )
+   $("#statistics-summary").append(
+      `<li>Margræðnistuðull var ${format_is(stats.ambiguity, 2)}.</li>`
+   )
    $("div#statistics").css("display", "block");
 }
 
