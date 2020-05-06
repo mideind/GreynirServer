@@ -442,11 +442,12 @@ function displayTokens(j) {
 function populateStats(stats) {
    $("#tok-num").text(format_is(stats.num_tokens));
    $("#num-sent").text(format_is(stats.num_sentences));
+   $("#paragraphs-contained").text(stats.num_sentences === 1 ? "málsgrein." : "málsgreinum.")
    $("#num-parsed-sent").text(format_is(stats.num_parsed));
    if (stats.num_parsed == 1) {
-      $("#paragraphs").text("málsgrein")
+      $("#paragraphs-analyzed").text("málsgrein")
    } else {
-      $("#paragraphs").text("málsgreinar");
+      $("#paragraphs-analyzed").text("málsgreinar");
    }
    if (stats.num_sentences > 0) {
       $("#num-parsed-ratio").text(format_is(100.0 * stats.num_parsed / stats.num_sentences, 1));
