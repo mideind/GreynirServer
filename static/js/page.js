@@ -37,8 +37,6 @@
 
 */
 
-var correctPlural = require("./main")
-
 // Punctuation types
 
 var TP_LEFT = 1;
@@ -447,7 +445,7 @@ function populateStats(stats) {
       `<li>Textinn inniheldur ${correctPlural(stats.num_tokens, "eina", "eind", "eindir")} í ${correctPlural(stats.num_sentences, "einni", "málsgrein.", "málsgreinum")}</li>`
    )
    $("#statistics-summary").append(
-      `<li>Það tókst að trjágreina ${stats.num_parsed, "eina", "málsgrein", "málsgreinar"} eða ${parsedRatio}%.</li>`
+      `<li>Það tókst að trjágreina ${correctPlural(stats.num_parsed, "eina", "málsgrein", "málsgreinar")} eða ${parsedRatio}%.</li>`
    )
    $("#statistics-summary").append(
       `<li>Margræðnistuðull var ${format_is(stats.ambiguity, 2)}.</li>`

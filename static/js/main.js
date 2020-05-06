@@ -188,7 +188,7 @@ function correctPlural(c, one, singular, plural) {
    // 11 greinum, 7 greinum
    return c.toString() + " " + plural;
 }
-exports.correctPlural = correctPlural
+
 function makeSourceList(sources) {
    // Return a HTML rendering of a list of articles where the person or entity name appears
    if (!sources)
