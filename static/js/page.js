@@ -37,8 +37,6 @@
 
 */
 
-// import { correctPlural } from "./main"
-
 var correctPlural = require("./main")
 
 // Punctuation types
