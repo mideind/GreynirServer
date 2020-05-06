@@ -441,7 +441,8 @@ function displayTokens(j) {
 
 function populateStats(stats) {
    $("#tok-num").text(format_is(stats.num_tokens));
-   $("#num-sent").text(format_is(stats.num_sentences));
+   $("#tok-contained").text(stats.num_tokens === 1 ? " eind " : " eindir ")
+   $("#num-sent").text(format_is(stats.num_sentences))
    $("#paragraphs-contained").text(stats.num_sentences === 1 ? "málsgrein." : "málsgreinum.")
    $("#num-parsed-sent").text(format_is(stats.num_parsed));
    if (stats.num_parsed == 1) {
