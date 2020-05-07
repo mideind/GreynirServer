@@ -441,13 +441,14 @@ function displayTokens(j) {
 
 function populateStats(stats) {
    var parsedRatio = stats.num_sentences > 0 ? format_is(100.0 * stats.num_parsed / stats.num_sentences, 1) : "0.0"
-   $("#statistics-summary").append(
+   var statisticsSummary = $("#statistics-summary")
+   statisticsSummary.append(
       `<li>Textinn inniheldur ${correctPlural(stats.num_tokens, "eina", "eind", "eindir")} í ${correctPlural(stats.num_sentences, "einni", "málsgrein.", "málsgreinum")}</li>`
    )
-   $("#statistics-summary").append(
+   statisticsSummary.append(
       `<li>Það tókst að trjágreina ${correctPlural(stats.num_parsed, "eina", "málsgrein", "málsgreinar")} eða ${parsedRatio}%.</li>`
    )
-   $("#statistics-summary").append(
+   statisticsSummary.append(
       `<li>Margræðnistuðull var ${format_is(stats.ambiguity, 2)}.</li>`
    )
    $("div#statistics").css("display", "block");
