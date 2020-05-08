@@ -61,6 +61,11 @@ class CaseInsensitiveComparator(Comparator):
 # Create the SQLAlchemy ORM Base class
 Base = declarative_base()
 
+# Add a table() function to the Base class, returning the __table__ member.
+# Note that this hack is necessary because SqlAlchemy doesn't readily allow
+# intermediate base classes between Base and the concrete table classes.
+setattr(Base, "table", classmethod(lambda cls: cls.__table__))
+
 
 class Root(Base):
     """ Represents a scraper root, i.e. a base domain and root URL """
@@ -217,10 +222,6 @@ class Person(Base):
             self.id, self.name, self.title
         )
 
-    @classmethod
-    def table(cls):
-        return cls.__table__
-
 
 class Entity(Base):
     """ Represents a named entity """
@@ -272,10 +273,6 @@ class Entity(Base):
         return "Entity(id='{0}', name='{1}', verb='{2}', definition='{3}')".format(
             self.id, self.name, self.verb, self.definition
         )
-
-    @classmethod
-    def table(cls):
-        return cls.__table__
 
 
 class Location(Base):
@@ -334,10 +331,6 @@ class Location(Base):
             self.id, self.name, self.kind, self.country
         )
 
-    @classmethod
-    def table(cls):
-        return cls.__table__
-
 
 class Word(Base):
     """ Represents a word occurring in an article """
@@ -374,10 +367,6 @@ class Word(Base):
             self.stem, self.cat, self.cnt
         )
 
-    @classmethod
-    def table(cls):
-        return cls.__table__
-
 
 class Topic(Base):
     """ Represents a topic for an article """
@@ -408,10 +397,6 @@ class Topic(Base):
 
     def __repr__(self):
         return "Topic(name='{0}')".format(self.name)
-
-    @classmethod
-    def table(cls):
-        return cls.__table__
 
 
 class ArticleTopic(Base):
@@ -444,10 +429,6 @@ class ArticleTopic(Base):
 
     def __repr__(self):
         return "ArticleTopic()"
-
-    @classmethod
-    def table(cls):
-        return cls.__table__
 
 
 class Trigram(Base):
@@ -503,10 +484,6 @@ class Trigram(Base):
     def __repr__(self):
         return "Trigram(t1='{0}', t2='{1}', t3='{2}')".format(self.t1, self.t2, self.t3)
 
-    @classmethod
-    def table(cls):
-        return cls.__table__
-
 
 class Link(Base):
     """ Represents a (content-type, key) to URL mapping,
@@ -533,10 +510,6 @@ class Link(Base):
             self.ctype, self.key, self.content, self.timestamp
         )
 
-    @classmethod
-    def table(cls):
-        return cls.__table__
-
 
 class BlacklistedLink(Base):
     """ Represents a link blacklisted for a particular key """
@@ -561,10 +534,6 @@ class BlacklistedLink(Base):
         return "BlacklistedLink(key='{0}', url='{1}', type='{2}', ts='{3}')".format(
             self.key, self.url, self.link_type, self.timestamp
         )
-
-    @classmethod
-    def table(cls):
-        return cls.__table__
 
 
 class Query(Base):
@@ -682,10 +651,6 @@ class Query(Base):
             self.question, self.answer
         )
 
-    @classmethod
-    def table(cls):
-        return cls.__table__
-
 
 class Feedback(Base):
     """ Represents a feedback form submission. """
@@ -722,6 +687,3 @@ class Feedback(Base):
             self.question, self.answer, self.topic, self.comment
         )
 
-    @classmethod
-    def table(cls):
-        return cls.__table__

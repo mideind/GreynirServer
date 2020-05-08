@@ -1,15 +1,60 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# Býr til orðasöfnin sem þarf til samsetningar.
+#!/usr/bin/env python3
+"""
 
+    Greynir: Natural language processing for Icelandic
+
+    Compmaker.py: A utility to create formers.txt and last.txt files
+    from BÍN and additional source files
+
+    Copyright (C) 2020 Miðeind ehf.
+
+       This program is free software: you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published by
+       the Free Software Foundation, either version 3 of the License, or
+       (at your option) any later version.
+       This program is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+       GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see http://www.gnu.org/licenses/.
+
+
+    This program reads the Database of Modern Icelandic Inflection (DMII/BÍN)
+    source file (ord.csv) and additional source files, and outputs the files
+    formers.txt for prefixes and last.txt for suffixes of composite words.
+    These files are then read by dawgbuilder.py to create Directed Acyclic
+    Word Graphs (DAWGs) in compressed binary format.
+
+"""
 
 import os
 import sys
+from functools import partial
 
+
+# Hack to make this Python program executable from the utils subdirectory
+basepath, _ = os.path.split(os.path.realpath(__file__))
+if basepath.endswith(os.sep + "utils"):
+    basepath = basepath[0:-6]
+    sys.path.append(basepath)
+resources_path = os.path.join(basepath, "resources")
+resources_file = partial(os.path.join, resources_path)
+
+# Open word categories, i.e. ones that are extensible with compound words
 OPEN_CLASSES = frozenset(("kk", "kvk", "hk", "so", "lo", "ao"))
 
+# Note: the hyphen ('-') is considered legal here; that may be unnecessarily lenient
+ILLEGAL_CHARS = frozenset(("_", "|", ":", "/", ".", "1", "2", "3", "4", "5", "ü"))
+
 # Hlutar BÍN sem leyfast ekki sem fyrri hlutar nema í eignarfalli
-FORBIDDEN_CATEGORIES = frozenset(("föð", "móð", "ætt", "dyr", "göt", "fyr", "ism", "erm"))
+FORBIDDEN_CATEGORIES = frozenset(
+    (
+        "föð", "móð", "ætt", "dýr", "örn", "heö",
+        "lönd", "göt", "fyr", "ism", "erm", "bibl",
+    )
+)
 
 # Orðflokkar sem leyfast hvergi í samsetningum
 # Atviksorð sem geta staðið í samsetningum eru svo fá að best er að handvelja þau 
@@ -247,7 +292,7 @@ OUTFORMERS = frozenset((
     "fjármálapólitík", "fjöld", "forsetafrú", "framboðshlið", "færð", "félag", "félagsá", "fés", "fær", "fótaaðgerð", "gali", 
     "gistu", "gal", "grimmd", "gönguá", "heill", "heiður", "hlust", "jáeind", "korter", "kosningaspá", "lækja", "líkan", 
     "markmið", "nýr", "nýtpólitík", "rekstur", "samtal", "samúð", "sjálfvirk", "staðreynd", "stjórnarskrá", "stjörnuspá", 
-    "umtal", "vernd", "ábyrgð", "áhrif", "árekstur", "ári", "ásýndóbyggð", "úrval", "úttekt", "komment", "pels", "böð", "búi", "fló",  
+    "umtal", "vernd", "ábyrgð", "áhrif", "árekstur", "ári", "ásýndóbyggð", "úrval", "úttekt", "komment", "pels", "böð", "búi", "fló",
 ))
 
 OUTLATTERS = frozenset((
@@ -266,13 +311,15 @@ OUTLATTERS = frozenset((
 ))
 
 CONSONANTS = "bdðfghjklmnprstvxzþ"
-UPPERS = "AÁBDÐEÉFGHIÍJKLMNOÓPRSTUÚVXYÝZÞÆÖ"
+
 BADS_LO = frozenset((
     "ddur", "ftur", "fður", "gdur", "gður", "ktur", "gtur", "ltur", "ptur", "ldur", "ndur", "rtur", 
     "stur", "rður", "ttur", "áður", "æður", "éður"
 ))
+
 FORMERS_TO_ADD = frozenset((
-    "aðal", 
+    "aðal",
+    "aðjúnkta",
     "af", 
     "afar",         # villa, tek á í WRONG_FORMERS í errtokenizer.py
     "afbragðs",
@@ -378,6 +425,7 @@ FORMERS_TO_ADD = frozenset((
     "gegn",
     "gegnum",
     "ger",
+    "gistinátta",
     "gjör",
     "grjóta",
     "gær",
@@ -401,6 +449,7 @@ FORMERS_TO_ADD = frozenset((
     "hægri",
     "hér",
     "héðan",
+    "hreinsi",
     "inn",
     "innan",
     "innbyrðis",
@@ -430,6 +479,7 @@ FORMERS_TO_ADD = frozenset((
     "líkams",
     "lítt",
     "loftlags", # villa
+    "loftslagsvár",
     "Lundúnar", # villa
     "lundúnar", # villa
     "mandarín",
@@ -454,6 +504,7 @@ FORMERS_TO_ADD = frozenset((
     "mót",
     "nanó",
     "nauða",
+    "náttúruvár",
     "nei",
     "neðan",
     "neðra",
@@ -633,9 +684,11 @@ FORMERS_TO_ADD = frozenset((
     "þúsund",
     "þúsunda",
 ))
+
 LATTERS_TO_ADD = frozenset((
     "setur",
 ))
+
 
 class Fixer():
 
@@ -656,7 +709,7 @@ class Fixer():
         # X  margorða myndir (hvor annar o.fl.)
 
         print("Sieving")
-        self.sieve_parts()  # Bætir við gildum myndum úr tilraun.csv
+        self.sieve_parts()  # Bætir við gildum myndum úr csv skrám
         print("Adding other forms")
         self.other_forms()  # Bætir öðrum myndum við
         print("Printing")
@@ -676,7 +729,7 @@ class Fixer():
         # Valin atviksorð
         # Sleppa sérnöfnum
         
-        if "ü" in y[4] or y[4] in OUTFORMERS:
+        if y[4] in OUTFORMERS:
             return
         # Nafnorð
         if y[2] in {"kk", "kvk", "hk"} and not "gr" in y[5]: # Fann nafnorð, mark er í y[5]
@@ -687,11 +740,12 @@ class Fixer():
                 return
             # Stofnmyndir
             if y[2] == "kvk" and "ÞFET" in y[5]:            # Stofn kvenkynsorða
-                if y[0].endswith("un") or y[0].endswith("an") or y[0].endswith("ing") or y[0].endswith("ung"): # Ath. truflar 'baun', 'laun'...
+                if y[0].endswith(("un", "an", "ing", "ung", "öll")): # Ath. truflar 'baun', 'laun'...
                     return
                 if self.ends_in_consonant(y[0]):
                     if "ö" in y[0][-3:]:                    # Orð eins og tönn, sök, dvöl, höfn... samsetningar nota 'a' í staðinn
-                        subbed = y[0][:y[0].rfind('ö')] + "a" + y[0][y[0].rfind('ö')+1]
+                        oindex = y[0].rfind('ö')
+                        subbed = y[0][:oindex] + "a" + y[0][oindex+1:]
                         self.former_parts.add(subbed)
                     else:
                         self.former_parts.add(y[4])             # Orð sem enda á samhljóða, eins og urð, ... Stofninn er nefnimyndin.
@@ -710,7 +764,7 @@ class Fixer():
                     return
                 self.former_parts.add(y[4])                 # Orð eins og hús, rán, haf; firma, nammi, vé, sjampó, ... stofninn er nefnimyndin
             elif y[2] == "kk" and "ÞFET" in y[5]:
-                if y[0].endswith("ingur") or y[0].endswith("ungur") or y[0].endswith("aður") or y[0].endswith("uður") or y[0].endswith("angur"):
+                if y[0].endswith(("ingur", "ungur", "aður", "uður", "angur")):
                     return
                 if y[0].endswith("ur"):
                     self.former_parts.add(y[4])             # Orð eins og hestur, fögnuður, maður, vegur, ... stofninn er þolfallsmyndin.
@@ -720,15 +774,14 @@ class Fixer():
                 elif "ö" in y[0][-5:]:                    # Orð eins og vörður, völlur, köstur, ... samsetningar nota 'a' í staðinn
                     subbed = y[0][:y[0].rfind('ö')] + "a" + y[0][y[0].rfind('ö')+1]
                     self.former_parts.add(subbed)
-
                 else:
                     self.former_parts.add(y[4])             # Orð eins og þistill, bróðir, skór, steinn, jökull, aftann, karl, víðir, herra, ... stofn er þolfallsmyndin.
 
         # Lýsingarorð        
         elif y[2] == "lo":
-            if y[0].endswith("andi") or y[0].endswith("legur") or y[0].endswith("aður") or y[0].endswith("inn") or y[0].endswith("kvæmur") \
-                or y[0].endswith("samur") or y[0].endswith("gengur") or y[0].endswith("mennur") or y[0].endswith("rænn") or y[0].endswith("nægur") \
-                or y[0].endswith("lægur") or y[0].endswith("látur") or y[0].endswith("drægur") or y[0][-4:] in BADS_LO:
+            if y[0].endswith(("andi", "legur", "aður", "inn", "kvæmur",
+                "samur", "gengur", "mennur", "rænn", "nægur",
+                "lægur", "látur", "drægur")) or y[0][-4:] in BADS_LO:
                 return
             if "FSB-KVK-NFET" in y[5]:
                 if y[0].endswith("ur"):                
@@ -748,8 +801,6 @@ class Fixer():
                         self.former_parts.add(y[4])
                         #print("3C:\t{}".format(y[4]))
                         #print("\t3C:\t{}".format(y))
-            else:
-                return
         # Sagnorð
         elif y[2] == "so":
             pass            # Sleppi sagnasamsetningum í bili. Hef ekki rekið mig á að það sé að hjálpa.
@@ -778,63 +829,37 @@ class Fixer():
         # Ath. að neðst í skjali eru alls konar ao sem ganga ekki sem seinni hluti; agnir, setningaratviksorð og annað. Taka út handvirkt eftir á.
         if y[2] == "ao" and y[3] == "ob":
             return
-        if y[1] in FORBIDDEN_IDS or y[4] in OUTLATTERS or "GM-BH-ST" in y[5] or "MM-SAGNB" in y[5] or "ü" in y[4]:
+        if y[1] in FORBIDDEN_IDS or y[4] in OUTLATTERS or "GM-BH-ST" in y[5] or "MM-SAGNB" in y[5]:
             return
         self.latter_parts.add(y[4])
 
     def sieve_parts(self):
+
+        def sieve(filename):
+            with open(resources_file(filename), 'r', encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    y = line.split(";")
+                    if len(y) < 6:
+                        print("Ignoring line '{0}'".format(line))
+                        continue
+                    if y[2] in FORBIDDEN_CLASSES or " " in y[0] or (set(y[4]) & ILLEGAL_CHARS):
+                        continue
+                    self.former(y)
+                    if y[2] in OPEN_CLASSES and y[4].islower():
+                        # Only emit lower case words as potential suffixes
+                        self.latter(y)
+
         print("ord.csv ...")
-        with open('ord.csv', 'r') as tilraun:
-            while True:
-                x = tilraun.readline()
-                y = x.split(";")
-                if not y[0]:
-                    break
-                if y[2] in FORBIDDEN_CLASSES or " " in y[0]:
-                    continue
-                else:
-                    self.former(y)
-                    if y[2] in OPEN_CLASSES:
-                        self.latter(y)
+        sieve("ord.csv")
         print("ord.auka.csv ...")
-        with open('ord.auka.csv', 'r') as auka:
-            while True:
-                x = auka.readline()
-                y = x.split(";")
-                if not y[0]:
-                    break
-                if len(y) < 2 or y[2] in FORBIDDEN_CLASSES or " " in y[0]:
-                    continue
-                else:
-                    self.former(y)
-                    if y[2] in OPEN_CLASSES:
-                        self.latter(y)
+        sieve("ord.auka.csv")
         print("ord.add.csv ...")
-        with open('ord.add.csv', 'r') as add:
-            while True:
-                x = add.readline()
-                y = x.split(";")
-                if not y[0]:
-                    break
-                if len(y) < 2 or y[2] in FORBIDDEN_CLASSES or " " in y[0]:
-                    continue
-                else:
-                    self.former(y)
-                    if y[2] in OPEN_CLASSES:
-                        self.latter(y)
+        sieve("ord.add.csv")
         print("systematic_additions ...")
-        with open('systematic_additions.csv', 'r') as kerfis:
-            while True:
-                x = kerfis.readline()
-                y = x.split(";")
-                if not y[0]:
-                    break
-                if len(y) < 2 or y[2] in FORBIDDEN_CLASSES or " " in y[0]:
-                    continue
-                else:
-                    self.former(y)
-                    if y[2] in OPEN_CLASSES:
-                        self.latter(y)
+        sieve("systematic_additions.csv")
 
     def other_forms(self):
         self.former_parts -= FORBIDDEN_FORMS
@@ -843,18 +868,16 @@ class Fixer():
         self.latter_parts |= LATTERS_TO_ADD
 
     def print_parts(self):
-        with open('formers.txt', 'w+') as formers:
+        with open(resources_file('formers.txt'), 'w', encoding="utf-8") as formers:
             for item in self.former_parts:
                 formers.write("{}\n".format(item))
-        with open('last.txt', 'w+') as latters:
+        with open(resources_file('last.txt'), 'w', encoding="utf-8") as latters:
             for item in self.latter_parts:
                 latters.write("{}\n".format(item))
 
     def ends_in_consonant(self, word):
         return word[-1] in CONSONANTS
 
-    def is_uppercase(self, word):
-        return word[0] in UPPERS
 
 if __name__ == "__main__":
     start = Fixer()

@@ -1,6 +1,7 @@
-#!/usr/bin/env pypy3
+#!/usr/bin/env python3
+"""
 
-""" DAWG dictionary builder
+    DAWG dictionary builder
 
     Copyright (C) 2020 Miðeind ehf.
 
@@ -108,6 +109,7 @@ import io
 import codecs
 import struct
 import time
+import binascii
 
 from collections import defaultdict
 
@@ -212,7 +214,7 @@ class _Dawg:
         self._lastlen = 0
         self._root = dict()
         # Initialize empty list of starting dictionaries
-        self._dicts = [None] * MAXLEN
+        self._dicts = [ None for _ in range(MAXLEN) ]
         self._dicts[0] = self._root
         # Initialize the result list of unique nodes
         self._unique_nodes = dict()
