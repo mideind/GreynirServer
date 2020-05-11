@@ -44,7 +44,7 @@ from db.queries import WordFrequencyQuery
 @routes.route("/words")
 def words():
     """ Handler for word frequency page. """
-    return render_template("words.html", title="Orð")
+    return render_template("words/words.html", title="Orð")
 
 
 _LINE_COLORS = frozenset(
@@ -259,5 +259,5 @@ def wordfreq_details():
             )
 
     resp["err"] = False
-    resp["payload"] = render_template("words_details.html", words=wlist)
+    resp["payload"] = render_template("words/details.html", words=wlist)
     return better_jsonify(**resp)
