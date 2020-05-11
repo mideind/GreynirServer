@@ -21,7 +21,6 @@
 
 """
 
-import random
 import logging
 
 from . import routes, better_jsonify, cache
@@ -43,15 +42,17 @@ from db.queries import WordFrequencyQuery
 
 @routes.route("/words")
 def words():
-    """ Handler for word frequency page. """
+    """ Handler for word frequency main page. """
     return render_template("words/words.html", title="Orð")
 
 
-_LINE_COLORS = frozenset(
-    ("#006eff", "#eb3732", "#00b450", "#ffb400", "#4600c8", "#f0f")
+# Word categories permitted in word frequency search
+_VALID_WCATS = frozenset(
+    ("kk", "kvk", "hk", "lo", "so", "person_kk", "person_kvk", "entity")
 )
 
 # More human readble description of word categories
+CAT_UNKNOWN = "??"
 CAT_DESC = {
     "kk": "kk. no.",
     "kvk": "kvk. no.",
@@ -61,14 +62,45 @@ CAT_DESC = {
     "person_kk": "kk. nafn",
     "person_kvk": "kvk. nafn",
     "entity": "fyrirbæri",
-    "??": "óþekkt",
+    CAT_UNKNOWN: "óþekkt",
 }
 
-_VALID_TOKENS = frozenset((TOK.WORD, TOK.PERSON))
-_VALID_WCATS = frozenset(
-    ("kk", "kvk", "hk", "lo", "so", "person_kk", "person_kvk", "entity")
-)
+# Tokens that should not be ignored
+_VALID_TOKENS = frozenset((TOK.WORD, TOK.PERSON, TOK.ENTITY))
+
+# Max number of words to request frequency data for simultaneously
 _MAX_NUM_WORDS = 6
+
+# Word frequency chart line colors (Miðeind colors)
+_LINE_COLORS = frozenset(
+    ("#006eff", "#eb3732", "#00b450", "#ffb400", "#4600c8", "#f0f")
+)
+
+
+def _str2words(wstr):
+    """ Parse string of the form 'w1:cat1, w2:cat2, ...' into a list
+        of word/category tuples. """
+    if not wstr:
+        return None
+    ws = wstr.strip()
+    if not ws:
+        return None
+    words = " ".join([w.strip() for w in ws.split(",")]).split()
+    return [
+        w.split(":") if len(w.split(":")) == 2 else (w, CAT_UNKNOWN) for w in words
+    ][:_MAX_NUM_WORDS]
+
+
+def _words2str(words):
+    """ Create comma-separated string from (word,cat) tuple list,
+        e.g. "[(a,b),(c,d)] -> "a:b, c:d". """
+    return ", ".join([":".join(w[:2]) if len(w) >= 2 else (w, None) for w in words])
+
+
+def _desc4word(wc):
+    """ Create a human-friendly description of a word + category tuple. """
+    return "{0} ({1})".format(wc[0], CAT_DESC.get(wc[1]))
+
 
 @routes.route("/wordfreq", methods=["GET", "POST"])
 @cache.cached(timeout=60 * 60 * 4, key_prefix="wordfreq", query_string=True)
@@ -85,54 +117,44 @@ def wordfreq():
         logging.warning("Failed to parse date arg: {0}".format(e))
         return better_jsonify(**resp)
 
-    # Words parameter should be one or more word lemmas (w. optional category)
+    # Words param should contain one or more word lemmas (w. optional category)
     warg = request.args.get("words")
     if not warg:
         return better_jsonify(**resp)
-    # Tokenize words
-    tokens = list(filter(lambda x: x.kind in _VALID_TOKENS, tokenize(warg)))
+
+    # Get the list of specified cats for each word lemma
+
+    wds, spec_cats = zip(*_str2words(warg))
+
+    # Tokenize words w/o user-specified categories
+    wds_only = " ".join(wds)
+    tokens = list(filter(lambda x: x.kind in _VALID_TOKENS, tokenize(wds_only)))
 
     # Create word/cat pairs from each token
     def cat4token(t):
         w = t.txt
         if t.kind == TOK.WORD:
             val = list(filter(lambda m: m.stofn == m.ordmynd, t.val)) or t.val
-            cat = val[0].ordfl if len(val) else "??"
+            cat = val[0].ordfl if len(val) else CAT_UNKNOWN
             w = val[0].stofn if len(val) else t.txt
         elif t.kind == TOK.PERSON:
-            cat = "person_kk"
+            cat = "person_" + t.val[0].gender
+        elif t.kind == TOK.ENTITY:
+            cat = "entity"
         return (w, cat)
 
-    words = [cat4token(t) for t in tokens]
+    # Create word/cat tuples, overwriting word cat with
+    # user-specified category, if provided
+    words = []
+    for i, t in enumerate(tokens):
+        (w, c) = cat4token(t)
+        c = spec_cats[i] if spec_cats[i] and spec_cats[i] != CAT_UNKNOWN else c
+        words.append((w, c))
 
     # Filter all words not in allowed category
     words = list(filter(lambda x: x[1] in _VALID_WCATS, words))
     words = words[:_MAX_NUM_WORDS]
 
-    # Split on comma or whitespace, limit to max 6 words
-    # warg = warg.strip().replace("  ", " ").replace(",", " ")
-    # words = [w.strip() for w in warg.split()][:6]
-    # # Word categories can be specified thus: "hestur:kk"
-    # words = [tuple(w.split(":")) for w in words]
-
-    # with BIN_Db.get_db() as db:
-
-    #     def cat4word(w):
-    #         _, meanings = db.lookup_word(w, auto_uppercase=True)
-    #         if meanings:
-    #             # Give precedence to lemmas, e.g. interpret "reima" as
-    #             # verb rather than gen. pl. of fem. noun "reim"
-    #             lemmas = list(filter(lambda x: x.stofn == w, meanings))
-    #             m = lemmas[0] if lemmas else meanings[0]
-    #             return m.stofn.replace("-", ""), m.ordfl
-    #         return w, "??"
-
-    #     # Get word category (ordfl) for each word, if needed
-    #     for i, w in enumerate(words):
-    #         if len(w) < 2 or w[1] not in _VALID_WCATS:
-    #             words[i] = tuple(cat4word(w[0]))
-
-    colors = list(_LINE_COLORS)
 
     # Generate date labels
     now = datetime.utcnow()
@@ -176,6 +198,7 @@ def wordfreq():
 
     # Create datasets for front-end chart
     with SessionContext(commit=False) as session:
+        colors = list(_LINE_COLORS)
         data = dict(labels=labels, labelDates=label_dates, datasets=[])
         for w in words:
             # Look up frequency of word for the given period
@@ -199,21 +222,9 @@ def wordfreq():
     # Create response
     resp["err"] = False
     resp["data"] = data
-    # Update word list client-side
-    resp["words"] = ", ".join([":".join(w) for w in words])
+    resp["words"] = _words2str(words)
 
     return better_jsonify(**resp)
-
-
-def _parse_words(wstr):
-    """ Parse string of the form 'w1:cat1, w2:cat2 ...' into list of tuples. """
-    if not wstr:
-        return None
-    ws = wstr.strip()
-    if not ws:
-        return None
-    words = [w.strip() for w in ws.split(",")]
-    return [w.split(":") for w in words][:_MAX_NUM_WORDS]
 
 
 @routes.route("/wordfreq_details", methods=["GET", "POST"])
@@ -221,7 +232,7 @@ def wordfreq_details():
     """ Return list of articles containing certain words over a given period. """
     resp = dict(err=True)
 
-    words = _parse_words(request.args.get("words"))
+    words = _str2words(request.args.get("words"))
     if not words:
         return better_jsonify(**resp)
 
@@ -256,7 +267,13 @@ def wordfreq_details():
             )
             articles = [{"id": a[1], "heading": a[2], "domain": a[3]} for a in q.all()]
             wlist.append(
-                {"word": wd, "cat": cat, "articles": articles, "color": colors.pop(0)}
+                {
+                    "word": wd,
+                    "cat": cat,
+                    "articles": articles,
+                    "color": colors.pop(0),
+                    "desc": _desc4word((wd, cat)),
+                }
             )
 
     resp["err"] = False
