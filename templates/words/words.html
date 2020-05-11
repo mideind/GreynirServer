@@ -94,16 +94,12 @@
       // Make ajax call to web app, get full list of articles
       // Send request
       fetchDetails.request = $.getJSON("/wordfreq_details?" + $.param(params), function(r) {
-         console.log(r);
-         // Set off progress indicator
+         // Stop off progress indicator
          $('#art-progress').html("");
+         // Server returns heavy pre-rendered HTML payload
          $("#wfreq-details").html(r["payload"]);
-         // Update word input field w. string from server
-         // $("#words").val(r["words"]);
-         // // Stop progress indicator
-         // $('#in-progress').html("");
-         // Create elms w. article links
-         // Inject into DOM
+         // Activate bootstrap tooltips for article icons post hoc
+         $('[data-toggle="tooltip"]').tooltip({ 'animation': false });
       });
    }
 

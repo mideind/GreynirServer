@@ -2,7 +2,7 @@
    <div class="panel panel-default" style="padding: 20px;">
       <div class="wfreq-header">
          <div style="width: 45px; height: 20px; background-color: {{ word_dict["color"] }}; float: left; margin-right: 8px;"></div>
-         <div style="font-weight: bold; line-height: 20px;">{{ word_dict["desc"] }}</div>
+         <div style="font-weight: bold; line-height: 20px;">{{ word_dict["desc"] }} - {{ "0" }} tilfelli í {{ "0" }} grein(um)</div>
       </div>
       <div class="rank-article-items" style="display: block;">
          {% for a in word_dict["articles"] %}

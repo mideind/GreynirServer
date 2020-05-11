@@ -77,7 +77,7 @@ _LINE_COLORS = frozenset(
 )
 
 
-def _str2words(wstr):
+def _str2words(wstr, separate_on_whitespace=False):
     """ Parse string of the form 'w1:cat1, w2:cat2, ...' into a list
         of word/category tuples. """
     if not wstr:
@@ -85,7 +85,9 @@ def _str2words(wstr):
     ws = wstr.strip()
     if not ws:
         return None
-    words = " ".join([w.strip() for w in ws.split(",")]).split()
+    words = [w.strip() for w in ws.split(",")]
+    if separate_on_whitespace:
+        words = " ".join(words).split()
     return [
         w.split(":") if len(w.split(":")) == 2 else (w, CAT_UNKNOWN) for w in words
     ][:_MAX_NUM_WORDS]
@@ -98,7 +100,7 @@ def _words2str(words):
 
 
 def _desc4word(wc):
-    """ Create a human-friendly description of a word + category tuple. """
+    """ Create a human-friendly description string for a word/category tuple. """
     return "{0} ({1})".format(wc[0], CAT_DESC.get(wc[1]))
 
 
@@ -124,9 +126,9 @@ def wordfreq():
 
     # Get the list of specified cats for each word lemma
 
-    wds, spec_cats = zip(*_str2words(warg))
+    wds, spec_cats = zip(*_str2words(warg, separate_on_whitespace=True))
 
-    # Tokenize words w/o user-specified categories
+    # Tokenize words all words
     wds_only = " ".join(wds)
     tokens = list(filter(lambda x: x.kind in _VALID_TOKENS, tokenize(wds_only)))
 
@@ -143,8 +145,8 @@ def wordfreq():
             cat = "entity"
         return (w, cat)
 
-    # Create word/cat tuples, overwriting word cat with
-    # user-specified category, if provided
+    # Create word/cat tuples, overwriting word category with
+    # a user-specified category, if provided
     words = []
     for i, t in enumerate(tokens):
         (w, c) = cat4token(t)
@@ -154,7 +156,6 @@ def wordfreq():
     # Filter all words not in allowed category
     words = list(filter(lambda x: x[1] in _VALID_WCATS, words))
     words = words[:_MAX_NUM_WORDS]
-
 
     # Generate date labels
     now = datetime.utcnow()
@@ -201,7 +202,7 @@ def wordfreq():
         colors = list(_LINE_COLORS)
         data = dict(labels=labels, labelDates=label_dates, datasets=[])
         for w in words:
-            # Look up frequency of word for the given period
+            # Look up frequency of the word for the given period
             (wd, cat) = w
             res = WordFrequencyQuery.frequency(
                 wd,
