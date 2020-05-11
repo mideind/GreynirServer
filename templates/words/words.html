@@ -42,12 +42,14 @@
    </div>
 </div>
 
-<h3>
-   <span id="wfreq-period-text"></span>
-   <span id="art-progress" style="margin-left:10px;"></span>
-</h3>
+<div id="wfreq-details-container" style="display:none;">
+   <h3>
+      <span id="wfreq-period-text"></span>
+      <span id="art-progress" style="margin-left:10px;"></span>
+   </h3>
 
-<div id="wfreq-details"></div>
+   <div id="wfreq-details"></div>
+</div>
 
 {% endblock %}
 
@@ -65,10 +67,10 @@
       }
 
       // Update header and set off progress indicator
+      $('#wfreq-details-container').show();
       $('#wfreq-period-text').html(wfreqChart.config.data.labels[elms[0]._index])
       $('#art-progress').html("<span class='glyphicon glyphicon-restart glyphicon-spin'></span>");
 
-      console.log(elms);
       // Clicked chart elements contain the info we need
       for (var i = 0; i < elms.length; i++) {
          var label = wfreqChart.config.data.datasets[i].label;
@@ -214,6 +216,9 @@
       }
       // Set off progress indicator
       $('#in-progress').html("<span class='glyphicon glyphicon-restart glyphicon-spin'></span>");
+
+      // Hide details view
+      $('#wfreq-details-container').hide();
 
       // The date range picker plugin produces string
       // containing two hyphen-separated ISO dates

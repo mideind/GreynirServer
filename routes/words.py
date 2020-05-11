@@ -68,7 +68,7 @@ _VALID_TOKENS = frozenset((TOK.WORD, TOK.PERSON))
 _VALID_WCATS = frozenset(
     ("kk", "kvk", "hk", "lo", "so", "person_kk", "person_kvk", "entity")
 )
-
+_MAX_NUM_WORDS = 6
 
 @routes.route("/wordfreq", methods=["GET", "POST"])
 @cache.cached(timeout=60 * 60 * 4, key_prefix="wordfreq", query_string=True)
@@ -107,6 +107,7 @@ def wordfreq():
 
     # Filter all words not in allowed category
     words = list(filter(lambda x: x[1] in _VALID_WCATS, words))
+    words = words[:_MAX_NUM_WORDS]
 
     # Split on comma or whitespace, limit to max 6 words
     # warg = warg.strip().replace("  ", " ").replace(",", " ")
@@ -212,7 +213,7 @@ def _parse_words(wstr):
     if not ws:
         return None
     words = [w.strip() for w in ws.split(",")]
-    return [w.split(":") for w in words]
+    return [w.split(":") for w in words][:_MAX_NUM_WORDS]
 
 
 @routes.route("/wordfreq_details", methods=["GET", "POST"])
