@@ -10,10 +10,12 @@
 {% block styles %}
 
 <link href="{{ url_for('static', filename='css/main-bootstrap.css') }}" rel='stylesheet' type='text/css'>
-<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
 
+<!-- moment.js library used by Date Picker -->
 <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js" defer></script>
+<!-- Date Range Picker from https://www.daterangepicker.com/ -->
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js" defer></script>
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
 
 {% endblock %}
 
@@ -28,7 +30,7 @@
    </div>
    <div style="padding:10px;">
       <span>
-         Orð <input id="words" name="words" value="veira, smit" style="margin-right: 10px; width:400px;">
+         Orð <input id="words" name="words" value="veira, smit" style="margin-right: 10px; width:450px;">
       </span>
       <span>
          Tímabil <input name="daterange" id="daterange" style="width:210px; margin-right: 10px;">
@@ -65,19 +67,12 @@
       if (elms.length === 0) {
          return;
       }
-
       // Update header and set off progress indicator
       $('#wfreq-details-container').show();
       $('#wfreq-period-text').html(wfreqChart.config.data.labels[elms[0]._index])
       $('#art-progress').html("<span class='glyphicon glyphicon-restart glyphicon-spin'></span>");
 
-      // Clicked chart elements contain the info we need
-      for (var i = 0; i < elms.length; i++) {
-         var label = wfreqChart.config.data.datasets[i].label;
-         var idx = elms[i]._index;
-         var dateLabel = wfreqChart.config.data.labels[idx];
-         var date = wfreqChart.config.data.labelDates[idx];
-      }
+      // Clicked chart elements contain the info we need to fetch details
       var params = {
          date_from: wfreqChart.config.data.labelDates[elms[0]._index],
          words: $("#words").data("words"),
@@ -92,18 +87,18 @@
          fetchDetails.request.abort();
       }
       // Make ajax call to web app, get full list of articles
-      // Send request
       fetchDetails.request = $.getJSON("/wordfreq_details?" + $.param(params), function(r) {
          // Stop off progress indicator
          $('#art-progress').html("");
-         // Server returns heavy pre-rendered HTML payload
+         // Server returns pre-rendered HTML payload which we inject into DOM
          $("#wfreq-details").html(r["payload"]);
-         // Activate bootstrap tooltips for article icons post hoc
+         // Activate bootstrap tooltips for article icon elements ajax'd in from server
          $('[data-toggle="tooltip"]').tooltip({ 'animation': false });
       });
    }
 
    function initChart(data) {
+      // Create Chart.js chart
       Chart.defaults.global.defaultFontFamily = "Lato";
       var config = {
          type: 'line',
@@ -151,6 +146,7 @@
       var start = moment().subtract(89, 'days');
       var end = moment();
 
+      // Icelandic localization
       var locale = {
         "format": "YYYY-MM-DD",
         "separator": " - ",
@@ -186,6 +182,7 @@
         "firstDay": 1
       };
 
+      // Init Date Picker
       $('#daterange').daterangepicker({
          startDate: start,
          endDate: end,
@@ -202,6 +199,7 @@
          }
       });
 
+      // Reload chart data when date range changes
       $('#daterange').on('apply.daterangepicker', reloadData);
    }
 
@@ -229,6 +227,7 @@
       reloadData.request = $.getJSON("/wordfreq?" + $.param(params), function(r) {
          // Update word input field w. string from server
          $("#words").val(r["words"]);
+         // Save latest loaded words as data attr on input elm
          $("#words").data("words", r["words"]);
          // Stop progress indicator
          $('#in-progress').html("");
@@ -244,7 +243,7 @@
       initChart(null);
       reloadData();
 
-      // Reload on Enter keypress while focus on input field
+      // Reload on Enter when focus in word input field
       $('#words').keypress(function(event){
          var keycode = (event.keyCode ? event.keyCode : event.which);
          if (keycode == '13'){

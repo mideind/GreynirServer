@@ -251,13 +251,13 @@ def wordfreq_details():
         logging.warning("Failed to parse date arg: {0}".format(e))
         return better_jsonify(**resp)
 
-    # Fetch articles for each word for given period
+    # Fetch list of articles for each word for the given period
     wlist = list()
     colors = list(_LINE_COLORS)
     with SessionContext(read_only=True) as session:
         for wd, cat in words:
             q = (
-                session.query(Word.stem, Article.id, Article.heading, Root.domain)
+                session.query(Article.id, Article.heading, Root.domain, Word.cnt, Word.stem)
                 .join(Article, Article.id == Word.article_id)
                 .filter(Article.timestamp >= date_from)
                 .filter(Article.timestamp < date_to)
@@ -266,11 +266,12 @@ def wordfreq_details():
                 .join(Root)
                 .order_by(desc(Article.timestamp))
             )
-            articles = [{"id": a[1], "heading": a[2], "domain": a[3]} for a in q.all()]
+            articles = [{"id": a[0], "heading": a[1], "domain": a[2], "cnt": a[3]} for a in q.all()]
             wlist.append(
                 {
                     "word": wd,
                     "cat": cat,
+                    "cnt": sum([a["cnt"] for a in articles]),
                     "articles": articles,
                     "color": colors.pop(0),
                     "desc": _desc4word((wd, cat)),
