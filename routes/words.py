@@ -71,6 +71,9 @@ _VALID_TOKENS = frozenset((TOK.WORD, TOK.PERSON, TOK.ENTITY))
 # Max number of words to request frequency data for simultaneously
 _MAX_NUM_WORDS = 6
 
+# Max period length before grouping chart stats by week
+_SHOW_WEEKS_CUTOFF = 90  # days
+
 # Word frequency chart line colors (Miðeind colors)
 _LINE_COLORS = frozenset(
     ("#006eff", "#eb3732", "#00b450", "#ffb400", "#4600c8", "#f0f")
@@ -128,7 +131,7 @@ def wordfreq():
 
     wds, spec_cats = zip(*_str2words(warg, separate_on_whitespace=True))
 
-    # Tokenize words all words
+    # Tokenize all words
     wds_only = " ".join(wds)
     tokens = list(filter(lambda x: x.kind in _VALID_TOKENS, tokenize(wds_only)))
 
@@ -162,7 +165,7 @@ def wordfreq():
     delta = date_to - date_from
     with changedlocale(category="LC_TIME"):
         # Group by week if period longer than 3 months
-        if delta.days >= 90:
+        if delta.days >= _SHOW_WEEKS_CUTOFF:
             timeunit = "week"
 
             label_dates = [
@@ -257,7 +260,9 @@ def wordfreq_details():
     with SessionContext(read_only=True) as session:
         for wd, cat in words:
             q = (
-                session.query(Article.id, Article.heading, Root.domain, Word.cnt, Word.stem)
+                session.query(
+                    Article.id, Article.heading, Root.domain, Word.cnt, Word.stem
+                )
                 .join(Article, Article.id == Word.article_id)
                 .filter(Article.timestamp >= date_from)
                 .filter(Article.timestamp < date_to)
@@ -266,7 +271,10 @@ def wordfreq_details():
                 .join(Root)
                 .order_by(desc(Article.timestamp))
             )
-            articles = [{"id": a[0], "heading": a[1], "domain": a[2], "cnt": a[3]} for a in q.all()]
+            articles = [
+                {"id": a[0], "heading": a[1], "domain": a[2], "cnt": a[3]}
+                for a in q.all()
+            ]
             wlist.append(
                 {
                     "word": wd,

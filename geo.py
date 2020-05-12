@@ -101,7 +101,7 @@ ICE_PLACENAME_BLACKLIST = frozenset(
         "Árósar",
     )
 )
-ICE_STREETNAME_BLACKLIST = frozenset(("Sjáland", "Feney", "Ráðhúsið"))
+ICE_STREETNAME_BLACKLIST = frozenset(("Sjáland", "Feney", "Ráðhúsið", "Húsið"))
 
 ALWAYS_STREET_ADDR = frozenset(("Skeifan", "Bessastaðir", "Kringlan"))
 
