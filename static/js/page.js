@@ -445,13 +445,13 @@ function populateStats(stats) {
    statisticsSummary.html("");
    statisticsSummary.append(
       `<li>Textinn inniheldur ${correctPlural(stats.num_tokens, "eina", "eind", "eindir")} í ${correctPlural(stats.num_sentences, "einni", "málsgrein.", "málsgreinum")}</li>`
-   )
+   );
    statisticsSummary.append(
       `<li>Það tókst að trjágreina ${correctPlural(stats.num_parsed, "eina", "málsgrein", "málsgreinar")} eða ${parsedRatio}%.</li>`
-   )
+   );
    statisticsSummary.append(
       `<li>Margræðnistuðull var ${format_is(stats.ambiguity, 2)}.</li>`
-   )
+   );
    $("div#statistics").css("display", "block");
 }
 
