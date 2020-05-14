@@ -118,7 +118,6 @@ def _desc4word(wc):
 def wordfreq():
     """ Return word frequency chart data for a given time period. """
     resp = dict(err=True)
-
     # Create datetime objects from query string args
     try:
         date_fmt = "%Y-%m-%d"

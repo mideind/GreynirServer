@@ -80,6 +80,7 @@
 <script>
 
    var wfreqChart;
+   var errMsg = "<span class='red'>Villa kom upp í samskiptum við netþjón</span>";
 
    function chartClicked(e, elms) {
       if (elms.length === 0) {
@@ -106,12 +107,18 @@
       }
       // Make ajax call to web app, get full list of articles
       fetchDetails.request = $.getJSON("/wordfreq_details?" + $.param(params), function(r) {
-         // Stop off progress indicator
-         $('#art-progress').html("");
-         // Server returns pre-rendered HTML payload which we inject into DOM
-         $("#wfreq-details").html(r["payload"]);
-         // Activate bootstrap tooltips for article icon elements ajax'd in from server
-         $('[data-toggle="tooltip"]').tooltip({ 'animation': false });
+         if (r["err"] === false) {
+            // Stop off progress indicator
+            $('#art-progress').html("");
+            // Server returns pre-rendered HTML payload which we inject into DOM
+            $("#wfreq-details").html(r["payload"]);
+            // Activate bootstrap tooltips for article icon elements ajax'd in from server
+            $('[data-toggle="tooltip"]').tooltip({ 'animation': false });
+         } else {
+            $('#art-progress').html(errMsg);
+         }
+      }).fail(function() {
+         $('#art-progress').html(errMsg);
       });
    }
 
@@ -236,21 +243,28 @@
       // containing two hyphen-separated ISO dates
       var res = $("#daterange").val().split(" - ");
 
-      // Send request
+      // Construct request params
       var params = {
          words: $("#words").val(),
          date_from: res[0].trim(),
          date_to: res[1].trim(),
       };
+      // Send request
       reloadData.request = $.getJSON("/wordfreq?" + $.param(params), function(r) {
-         // Update word input field w. string from server
-         $("#words").val(r["words"]);
-         // Save latest loaded words as data attr on input elm
-         $("#words").data("words", r["words"]);
-         // Stop progress indicator
-         $('#in-progress').html("");
-         loadChartData(r["data"]);
-      });
+         if (r["err"] === false) { 
+            // Update word input field w. string from server
+            $("#words").val(r["words"]);
+            // Save latest loaded words as data attr on input elm
+            $("#words").data("words", r["words"]);
+            // Stop progress indicator
+            $('#in-progress').html("");
+            loadChartData(r["data"]);
+         } else {
+            $('#in-progress').html(errMsg);
+         }
+      }).fail(function() {
+         $('#in-progress').html(errMsg);
+      })
    }
 
    $(document).ready(function() {

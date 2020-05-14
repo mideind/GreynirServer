@@ -235,11 +235,11 @@ def test_query_api(client):
     now = datetime.utcnow()
     with changedlocale(category="LC_TIME"):
         # Today
-        dstr = now.strftime("%-d. %B")
+        dstr = now.date().strftime("%-d. %B")
         json = qmcall(c, {"q": "Hvað eru margir dagar í " + dstr})
         assert "í dag" in json["answer"]
         # Tomorrow
-        dstr = (now + timedelta(days=1)).strftime("%-d. %B")
+        dstr = (now.date() + timedelta(days=1)).strftime("%-d. %B")
         json = qmcall(c, {"q": "Hvað eru margir dagar í " + dstr})
         assert "á morgun" in json["answer"]
 
