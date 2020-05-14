@@ -24,13 +24,15 @@
 import pytest
 import os
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from urllib.parse import urlencode
 
 from main import app
 
 # pylint: disable=unused-wildcard-import
 from queries import *
+
+from settings import changedlocale
 
 
 @pytest.fixture
@@ -228,8 +230,18 @@ def test_query_api(client):
 
     json = qmcall(c, {"q": "Hvað eru margir dagar í 12. maí?"})
     assert json["qtype"] == "Date"
-    assert re.search(r"^\d+", json["answer"])
-    assert "dag" in json["answer"]
+    assert "dag" in json["answer"] or "á morgun" in answer 
+
+    now = datetime.utcnow()
+    with changedlocale(category="LC_TIME"):
+        # Today
+        dstr = now.strftime("%-d. %B")
+        json = qmcall(c, {"q": "Hvað eru margir dagar í " + dstr})
+        assert "í dag" in json["answer"]
+        # Tomorrow
+        dstr = (now + timedelta(days=1)).strftime("%-d. %B")
+        json = qmcall(c, {"q": "Hvað eru margir dagar í " + dstr})
+        assert "á morgun" in json["answer"]
 
     json = qmcall(c, {"q": "hvað eru margir dagar í desember"})
     assert json["qtype"] == "Date"

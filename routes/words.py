@@ -285,7 +285,7 @@ def wordfreq_details():
                 {
                     "word": wd,
                     "cat": cat,
-                    "cnt": sum([a["cnt"] for a in articles]),
+                    "cnt": sum(a["cnt"] for a in articles),
                     "articles": articles,
                     "color": colors.pop(0),
                     "desc": _desc4word((wd, cat)),

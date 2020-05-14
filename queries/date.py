@@ -397,7 +397,7 @@ def QDateAbsOrRel(node, params, result):
     if datenode:
         y, m, d = datenode.contained_date
         now = datetime.utcnow()
-        
+
         # This is a date that contains at least month & mday
         if d and m:
             if not y:
@@ -719,10 +719,10 @@ def next_easter():
 
 
 def calc_easter(year):
-    """ An implementation of Butcher's Algorithm for determining the date of Easter 
-        for the Western church. Works for any date in the Gregorian calendar (1583 
-        and onward). Returns a datetime object. 
-        From http://code.activestate.com/recipes/576517-calculate-easter-western-given-a-year/ """
+    """ An implementation of Butcher's Algorithm for determining the date of
+        Easter for the Western church. Works for any date in the Gregorian
+        calendar (1583 and onward). Returns a datetime object.
+        http://code.activestate.com/recipes/576517-calculate-easter-western-given-a-year/ """
     a = year % 19
     b = year // 100
     c = year % 100
@@ -732,26 +732,6 @@ def calc_easter(year):
     month = f // 31
     day = f % 31 + 1
     return datetime(year=year, month=month, day=day)
-
-
-def terminal_date(t):
-    """ Extract array of date values from terminal token's auxiliary info,
-        which is attached as a json-encoded array. Returns datetime object. """
-    if t and t._node.aux:
-        aux = json.loads(t._node.aux)
-        if not isinstance(aux, list) or len(aux) < 3:
-            raise Exception("Malformed token aux info")
-
-        # Unpack date array
-        (y, m, d) = aux
-        if not y:
-            now = datetime.utcnow()
-            y = now.year
-            # Bump year if month/day in the past
-            if m < now.month or (m == now.month and d < now.day):
-                y += 1
-
-        return datetime(year=y, month=m, day=d)
 
 
 def date_diff(d1, d2, unit="days"):
@@ -764,7 +744,17 @@ def date_diff(d1, d2, unit="days"):
 def howlong_desc_answ(target):
     """ Generate answer to a query about length of period to a given date. """
     now = datetime.utcnow()
-    days = date_diff(now, target, unit="days")
+
+    # Check if it's today
+    if target.date() == now.date():
+        return gen_answer("Það er {0} í dag.".format(target.strftime("%-d. %B")))
+    # Check if it's tomorrow
+    # TODO: Maybe return num hours until tomorrow?
+    if target.date() == now.date() + timedelta(days=1):
+        return gen_answer("Það er {0} á morgun.".format(target.strftime("%-d. %B")))
+
+    # Returns num days rounded down, so we increment by one.
+    days = date_diff(now, target, unit="days") + 1
 
     # Diff. strings for singular vs. plural
     plural = is_plural(days)
@@ -775,25 +765,22 @@ def howlong_desc_answ(target):
     fmt = "%-d. %B" if now.year == target.year else "%-d. %B %Y"
     tfmt = target.strftime(fmt)
 
-    # Date asked about is current date
-    if days == 0:
-        return gen_answer("Það er {0} í dag.".format(tfmt))
-    elif days < 0:
-        # It's in the past
+    # Date asked about is in the past
+    if days < 0:
         days = abs(days)
         passed = "liðnir" if plural else "liðinn"
         voice = "Það {0} {1} {2} {3} frá {4}.".format(
             verb, days, days_desc, passed, tfmt
         )
-        # Convert '25.' to 'tuttugasta og fimmta'
+        # Convert e.g. '25.' to 'tuttugasta og fimmta'
         voice = re.sub(r" \d+\. ", " " + _DAY_INDEX_DAT[target.day] + " ", voice)
         answer = "{0} {1}".format(days, days_desc)
+    # It's in the future
     else:
-        # It's in the future
         voice = "Það {0} {1} {2} þar til {3} gengur í garð.".format(
             verb, days, days_desc, tfmt
         )
-        # Convert '25.' to 'tuttugasti og fimmti'
+        # Convert e.g. '25.' to 'tuttugasti og fimmti'
         voice = re.sub(r" \d+\. ", " " + _DAY_INDEX_NOM[target.day] + " ", voice)
         answer = "{0} {1}".format(days, days_desc)
 
@@ -836,9 +823,7 @@ def sentence(state, result):
                 mnum = t.month
                 mname = t.strftime("%B")
                 answer = "{0} dagar.".format(ndays)
-                voice = "Það eru {0} dagar í {1} {2}".format(
-                    ndays, mname, t.year
-                )
+                voice = "Það eru {0} dagar í {1} {2}".format(ndays, mname, t.year)
                 response = dict(answer=answer)
                 qkey = "DaysInMonth"
 
