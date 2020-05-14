@@ -21,6 +21,22 @@
 
 {% block content %}
 
+<!--<div>
+   <ul class="nav nav-tabs" role="tablist">
+      <li role="presentation" class="active">
+         <a href="{{ url_for('routes.words') }}">
+            Orðtíðni
+         </a>
+      </li>
+      <li role="presentation">
+         <a href="{{ url_for('routes.words_trends') }}">
+            Stefnur
+         </a>
+      </li>
+   </ul>
+</div>-->
+
+<div role="tabpanel" class="tab-pane active">
 
 <div class="panel panel-default">
    <div class="panel-heading">
@@ -51,6 +67,8 @@
    </h3>
 
    <div id="wfreq-details"></div>
+</div>
+
 </div>
 
 {% endblock %}
