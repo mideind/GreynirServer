@@ -403,8 +403,8 @@ def QDateLeapYear(node, params, result):
 
 
 def Árið(node, params, result):
-    artal_node = node.first_child(lambda n: True)
-    y = artal_node.contained_year
+    y_node = node.first_child(lambda n: True)
+    y = y_node.contained_year
     if not y:
         raise Exception("No year number associated with YEAR token.")
     result["target"] = datetime(day=1, month=1, year=y)
@@ -752,27 +752,34 @@ def calc_easter(year):
     return datetime(year=year, month=month, day=day)
 
 
-def date_diff(d1, d2, unit="days"):
+def _date_diff(d1, d2, unit="days"):
     """ Get the time difference between two dates. """
     delta = d2 - d1
     cnt = getattr(delta, unit)
     return cnt
 
 
-def howlong_desc_answ(target):
-    """ Generate answer to a query about length of period to a given date. """
+def howlong_answ(q, result):
+    """ Generate answer to a query about number of days since/until a given date. """
     now = datetime.utcnow()
+    target = result["target"]
+
+    q.set_key("HowLongUntilDate" if "until" in result else "HowLongSinceDate")
 
     # Check if it's today
     if target.date() == now.date():
-        return gen_answer("Það er {0} í dag.".format(target.strftime("%-d. %B")))
+        return q.set_answer(
+            *gen_answer("Það er {0} í dag.".format(target.strftime("%-d. %B")))
+        )
     # Check if it's tomorrow
     # TODO: Maybe return num hours until tomorrow?
     if target.date() == now.date() + timedelta(days=1):
-        return gen_answer("Það er {0} á morgun.".format(target.strftime("%-d. %B")))
+        return q.set_answer(
+            *gen_answer("Það er {0} á morgun.".format(target.strftime("%-d. %B")))
+        )
 
     # Returns num days rounded down, so we increment by one.
-    days = date_diff(now, target, unit="days") + 1
+    days = _date_diff(now, target, unit="days") + 1
 
     # Diff. strings for singular vs. plural
     plural = is_plural(days)
@@ -804,7 +811,86 @@ def howlong_desc_answ(target):
 
     response = dict(answer=answer)
 
-    return (response, answer, voice)
+    q.set_answer(response, answer, voice)
+
+
+def when_answ(q, result):
+    # TODO: Fix this so it includes weekday, e.g.
+    # "Sunnudaginn 1. október"
+    # Use plural 'eru' for 'páskar', 'jól' etc.
+    is_verb = "er" if "is_verb" not in result else result.is_verb
+    date_str = result.desc + " " + is_verb + " " + result.target.strftime("%-d. %B")
+    answer = voice = date_str[0].upper() + date_str[1:].lower()
+    # Put a spelled-out ordinal number instead of the numeric one,
+    # in accusative case
+    voice = re.sub(r"\d+\. ", _DAY_INDEX_ACC[result.target.day] + " ", voice)
+    response = dict(answer=answer)
+
+    q.set_key("WhenSpecialDay")
+    q.set_answer(response, answer, voice)
+
+
+def currdate_answ(q, result):
+    now = datetime.utcnow()
+    date_str = now.strftime("%A %-d. %B %Y")
+    answer = date_str.capitalize()
+    response = dict(answer=answer)
+    voice = "Í dag er {0}".format(date_str)
+
+    # Put a spelled-out ordinal number instead of the numeric one
+    # to get the grammar right
+    voice = re.sub(r" \d+\. ", " " + _DAY_INDEX_NOM[now.day] + " ", voice)
+
+    q.set_key("CurrentDate")
+    q.set_answer(response, answer, voice)
+
+
+def days_in_month_answ(q, result):
+    ndays = result["days_in_month"]
+    t = result["target"]
+    mnum = t.month
+    mname = t.strftime("%B")
+    answer = "{0} dagar.".format(ndays)
+    response = dict(answer=answer)
+    voice = "Það eru {0} dagar í {1} {2}".format(ndays, mname, t.year)
+
+    q.set_key("DaysInMonth")
+    q.set_answer(response, answer, voice)
+
+
+def year_answ(q, result):
+    now = datetime.utcnow()
+    y = now.year
+    answer = "{0}.".format(y)
+    response = dict(answer=answer)
+    voice = "Það er árið {0}.".format(y)
+
+    q.set_key("WhichYear")
+    q.set_answer(response, answer, voice)
+
+
+def leap_answ(q, result):
+    now = datetime.utcnow()
+    t = result.get("target")
+    y = t.year if t else now.year
+    verb = "er" if y >= now.year else "var"
+    answer = "Árið {0} {1} {2}hlaupár.".format(y, verb, "" if isleap(y) else "ekki ")
+    response = dict(answer=answer)
+    voice = answer
+
+    q.set_key("IsLeapYear")
+    q.set_answer(response, answer, voice)
+
+
+_Q2FN_MAP = {
+    "now": currdate_answ,
+    "days_in_month": days_in_month_answ,
+    "until": howlong_answ,
+    "since": howlong_answ,
+    "when": when_answ,
+    "year": year_answ,
+    "leap": leap_answ,
+}
 
 
 def sentence(state, result):
@@ -817,91 +903,15 @@ def sentence(state, result):
     # Successfully matched a query type
     try:
         with changedlocale(category="LC_TIME"):
-            # Get timezone and date
-            # TODO: Restore correct timezone handling
-            # tz = timezone4loc(q.location, fallback="IS")
-            now = datetime.utcnow()  # datetime.now(timezone(tz))
-            qkey = None
-
-            # Asking about current date
-            if "now" in result:
-                date_str = now.strftime("%A %-d. %B %Y")
-                answer = date_str.capitalize()
-                voice = "Í dag er {0}".format(date_str)
-                # Put a spelled-out ordinal number instead of the numeric one
-                # to get the grammar right
-                voice = re.sub(r" \d+\. ", " " + _DAY_INDEX_NOM[now.day] + " ", voice)
-                response = dict(answer=answer)
-                qkey = "CurrentDate"
-
-            # Asking about the number of days in a given month
-            elif "days_in_month" in result and "target" in result:
-                ndays = result["days_in_month"]
-                t = result["target"]
-                mnum = t.month
-                mname = t.strftime("%B")
-                answer = "{0} dagar.".format(ndays)
-                voice = "Það eru {0} dagar í {1} {2}".format(ndays, mname, t.year)
-                response = dict(answer=answer)
-                qkey = "DaysInMonth"
-
-            # Asking about period until/since a given date
-            elif ("until" in result or "since" in result) and "target" in result:
-                target = result.target
-                # target.replace(tzinfo=timezone(tz))
-                # Find the number of days until target date
-                (response, answer, voice) = howlong_desc_answ(target)
-                qkey = "FutureDate" if "until" in result else "SinceDate"
-
-            # Asking about when a (special) day occurs in the year
-            elif "when" in result and "target" in result:
-                # TODO: Fix this so it includes weekday, e.g.
-                # "Sunnudaginn 1. október"
-                # Use plural 'eru' for 'páskar'
-                is_verb = "er" if "is_verb" not in result else result.is_verb
-                date_str = (
-                    result.desc
-                    + " "
-                    + is_verb
-                    + " "
-                    + result.target.strftime("%-d. %B")
-                )
-                answer = voice = date_str[0].upper() + date_str[1:].lower()
-                # Put a spelled-out ordinal number instead of the numeric one,
-                # in accusative case
-                voice = re.sub(
-                    r"\d+\. ", _DAY_INDEX_ACC[result.target.day] + " ", voice
-                )
-                response = dict(answer=answer)
-
-            # Asking which year it is
-            elif "year" in result:
-                y = now.year
-                answer = "{0}.".format(y)
-                response = dict(answer=answer)
-                voice = "Það er árið {0}.".format(y)
-                qkey = "WhichYear"
-            # Is year a leap year?
-            elif "leap" in result:
-                t = result.get("target")
-                y = t.year if t else now.year
-                verb = "er" if y >= now.year else "var"
-                answer = "Árið {0} {1} {2}hlaupár.".format(
-                    y, verb, "" if isleap(y) else "ekki "
-                )
-                response = dict(answer=answer)
-                voice = answer
-                qkey = "IsLeapYear"
-            else:
-                # Shouldn't be here
-                raise Exception("Unable to handle date query")
-
-            q.set_key(qkey)
-            q.set_answer(response, answer, voice)
-            # Lowercase the query string to avoid 'Dagur' being
-            # displayed with a capital D
-            q.lowercase_beautified_query()
-            q.set_qtype(_DATE_QTYPE)
+            for k in _Q2FN_MAP.keys():
+                if k in result:
+                    # Hand query object over to handler function
+                    _Q2FN_MAP[k](q, result)
+                    # Lowercase the query string to avoid 'Dagur' being
+                    # displayed with a capital D
+                    q.lowercase_beautified_query()
+                    q.set_qtype(_DATE_QTYPE)
+                    break
 
     except Exception as e:
         logging.warning(

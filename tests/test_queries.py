@@ -248,10 +248,6 @@ def test_query_api(client):
     assert json["qtype"] == "Date"
     assert str(now.year) in json["answer"]
 
-    json = qmcall(c, {"q": "hvaða ár er núna?"})
-    assert json["qtype"] == "Date"
-    assert str(now.year) in json["answer"]
-
     json = qmcall(c, {"q": "er hlaupár?"})
     assert json["qtype"] == "Date"
     assert str(now.year) in json["answer"]
