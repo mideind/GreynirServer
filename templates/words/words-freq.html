@@ -81,15 +81,16 @@
 
    var wfreqChart;
    var errMsg = "<span class='red'>Villa kom upp í samskiptum við netþjón</span>";
+   var progressIndicator = "<span class='glyphicon glyphicon-restart glyphicon-spin'></span>";
 
    function chartClicked(e, elms) {
       if (elms.length === 0) {
          return;
       }
       // Update header and set off progress indicator
-      $('#wfreq-details-container').show();
-      $('#wfreq-period-text').html(wfreqChart.config.data.labels[elms[0]._index])
-      $('#art-progress').html("<span class='glyphicon glyphicon-restart glyphicon-spin'></span>");
+      $("#wfreq-details-container").show();
+      $("#wfreq-period-text").html(wfreqChart.config.data.labels[elms[0]._index])
+      $("#art-progress").html(progressIndicator);
 
       // Clicked chart elements contain the info we need to fetch details
       var params = {
@@ -109,16 +110,16 @@
       fetchDetails.request = $.getJSON("/wordfreq_details?" + $.param(params), function(r) {
          if (r["err"] === false) {
             // Stop off progress indicator
-            $('#art-progress').html("");
+            $("#art-progress").html("");
             // Server returns pre-rendered HTML payload which we inject into DOM
             $("#wfreq-details").html(r["payload"]);
             // Activate bootstrap tooltips for article icon elements ajax'd in from server
-            $('[data-toggle="tooltip"]').tooltip({ 'animation': false });
+            $("[data-toggle='tooltip']").tooltip({ "animation": false });
          } else {
-            $('#art-progress').html(errMsg);
+            $("#art-progress").html(errMsg);
          }
       }).fail(function() {
-         $('#art-progress').html(errMsg);
+         $("#art-progress").html(errMsg);
       });
    }
 
@@ -126,13 +127,13 @@
       // Create Chart.js chart
       Chart.defaults.global.defaultFontFamily = "Lato";
       var config = {
-         type: 'line',
+         type: "line",
          data: data,
          options: {
             onClick: chartClicked,
             responsive: true,
             tooltips: {
-               mode: 'index'
+               mode: "index"
             },
             scales: {
                xAxes: [{
@@ -149,7 +150,7 @@
                   display: true,
                   scaleLabel: {
                      display: true,
-                     labelString: 'Tíðni orða'
+                     labelString: "Tíðni orða"
                   },
                   ticks: {
                      suggestedMin: 0,
@@ -158,7 +159,7 @@
             }
          }
       };
-      var wfreqCtx =  $('#wfreq_chart_canvas').get(0).getContext('2d');
+      var wfreqCtx =  $("#wfreq_chart_canvas").get(0).getContext("2d");
       wfreqChart = new Chart(wfreqCtx, config);
    }
 
@@ -168,7 +169,7 @@
    }
 
    function initDatePicker() {
-      var start = moment().subtract(89, 'days');
+      var start = moment().subtract(89, "days");
       var end = moment();
 
       // Icelandic localization
@@ -208,7 +209,7 @@
       };
 
       // Init Date Picker
-      $('#daterange').daterangepicker({
+      $("#daterange").daterangepicker({
          startDate: start,
          endDate: end,
          locale: locale,
@@ -216,16 +217,16 @@
             "days": 365
          },
          ranges: {
-           'Síðastliðin vika': [moment().subtract(6, 'days'), moment()],
-           'Síðustu 30 dagar': [moment().subtract(29, 'days'), moment()],
-           'Síðustu 3 mánuðir': [moment().subtract(89, 'days'), moment()],
-           'Síðustu 6 mánuðir': [moment().subtract(182, 'days'), moment()],
-           'Síðasta ár': [moment().subtract(364, 'days'), moment()],
+           "Síðastliðin vika": [moment().subtract(6, "days"), moment()],
+           "Síðustu 30 dagar": [moment().subtract(29, "days"), moment()],
+           "Síðustu 3 mánuðir": [moment().subtract(89, "days"), moment()],
+           "Síðustu 6 mánuðir": [moment().subtract(182, "days"), moment()],
+           "Síðasta ár": [moment().subtract(364, "days"), moment()],
          }
       });
 
       // Reload chart data when date range changes
-      $('#daterange').on('apply.daterangepicker', reloadData);
+      $("#daterange").on("apply.daterangepicker", reloadData);
    }
 
    function reloadData() {
@@ -234,10 +235,10 @@
          reloadData.request.abort();
       }
       // Set off progress indicator
-      $('#in-progress').html("<span class='glyphicon glyphicon-restart glyphicon-spin'></span>");
+      $("#in-progress").html(progressIndicator);
 
       // Hide details view
-      $('#wfreq-details-container').hide();
+      $("#wfreq-details-container").hide();
 
       // The date range picker plugin produces string
       // containing two hyphen-separated ISO dates
@@ -256,15 +257,15 @@
             $("#words").val(r["words"]);
             // Save latest loaded words as data attr on input elm
             $("#words").data("words", r["words"]);
-            // Stop progress indicator
-            $('#in-progress').html("");
+            // Remove progress indicator
+            $("#in-progress").html("");
             loadChartData(r["data"]);
          } else {
-            $('#in-progress').html(errMsg);
+            $("#in-progress").html(errMsg);
          }
       }).fail(function() {
-         $('#in-progress').html(errMsg);
-      })
+         $("#in-progress").html(errMsg);
+      });
    }
 
    $(document).ready(function() {
@@ -276,13 +277,12 @@
       reloadData();
 
       // Reload on Enter when focus in word input field
-      $('#words').keypress(function(event){
+      $("#words").keypress(function(event){
          var keycode = (event.keyCode ? event.keyCode : event.which);
          if (keycode == '13'){
             reloadData();
          }
       });
-
    });
 
 </script>
