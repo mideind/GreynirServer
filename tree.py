@@ -774,6 +774,16 @@ class TerminalNode(Node):
             self._aux = json.loads(self.aux)
         return self._aux[0], self._aux[1], self._aux[2]
 
+    @property
+    def contained_year(self):
+        """ Return a yera from the associated token, if any,
+            as an int """
+        if self.tokentype not in ("YEAR"):
+            return None
+        if self._aux is None:
+            self._aux = json.loads(self.aux)
+        return self._aux
+
     def _root(self, bin_db):
         """ Look up the root of the word associated with this terminal """
         # Lookup the token in the BIN database

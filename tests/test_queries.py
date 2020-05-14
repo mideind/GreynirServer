@@ -233,6 +233,7 @@ def test_query_api(client):
     assert "dag" in json["answer"] or "á morgun" in answer 
 
     now = datetime.utcnow()
+
     with changedlocale(category="LC_TIME"):
         # Today
         dstr = now.date().strftime("%-d. %B")
@@ -243,6 +244,26 @@ def test_query_api(client):
         json = qmcall(c, {"q": "Hvað eru margir dagar í " + dstr})
         assert "á morgun" in json["answer"]
 
+    json = qmcall(c, {"q": "hvaða ár er núna?"})
+    assert json["qtype"] == "Date"
+    assert str(now.year) in json["answer"]
+
+    json = qmcall(c, {"q": "hvaða ár er núna?"})
+    assert json["qtype"] == "Date"
+    assert str(now.year) in json["answer"]
+
+    json = qmcall(c, {"q": "er hlaupár?"})
+    assert json["qtype"] == "Date"
+    assert str(now.year) in json["answer"]
+
+    json = qmcall(c, {"q": "er 2020 hlaupár?"})
+    assert json["qtype"] == "Date"
+    assert "er hlaupár" in json["answer"]
+
+    json = qmcall(c, {"q": "var árið 1999 hlaupár?"})
+    assert json["qtype"] == "Date"
+    assert "ekki hlaupár" in json["answer"]
+
     json = qmcall(c, {"q": "hvað eru margir dagar í desember"})
     assert json["qtype"] == "Date"
     assert json["answer"].startswith("31")
@@ -252,6 +273,7 @@ def test_query_api(client):
     assert json["qtype"] == "Date"
     assert json["answer"].startswith("29")
     assert "dag" in json["answer"]
+
 
     json = qmcall(c, {"q": "Hvað er langt fram að verslunarmannahelgi"})
     assert json["qtype"] == "Date"

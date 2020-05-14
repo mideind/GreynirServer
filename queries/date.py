@@ -43,7 +43,7 @@
 # TODO: "Hvað eru margir dagar að fram að jólum?"
 # TODO: "Hvað eru margir dagar eftir af árinu? mánuðinum? vikunni?"
 # TODO: "Hvað eru margir dagar eftir af árinu?" "Hvað er mikið eftir af árinu 2020?"
-# TODO: "Hvenær er næst hlaupár?" "Er hlaupár?"
+# TODO: "Hvenær er næst hlaupár?"
 # TODO: "Hvaða árstíð er"
 # TODO: "Á hvaða vikudegi er jóladagur?"
 # TODO: "Hvenær er fyrsti í aðventu"
@@ -64,7 +64,7 @@ import logging
 import random
 from datetime import datetime, date, timedelta
 from pytz import timezone
-from calendar import monthrange
+from calendar import monthrange, isleap
 
 from queries import timezone4loc, gen_answer, is_plural
 from settings import changedlocale
@@ -144,6 +144,7 @@ QDateQuery →
     # | QDateHowLongSince  # Disabled for now.
     | QDateWhenIs
     | QDateWhichYear
+    | QDateLeapYear
 
 QDateCurrent →
     "dagsetning" QDateNow?
@@ -182,7 +183,7 @@ QDateHowLongSince →
     | "hvað" "eru" "margar" "vikur" "liðnar" "frá" QDateItem_þgf
 
 QDateIsAre → "er" | "eru"
-
+QDateIsWas → "er" | "var"
 QDateCome → "koma" | "kemur"
 
 QDateWhenIs →
@@ -198,6 +199,11 @@ QDateWhichYear →
     "hvaða" "ár" "er" QDateNow?
     | "hvaða" "ár" "er" "í" "gangi" QDateNow?
     | "hvaða" "ár" "er" "að" "líða" QDateNow?
+
+QDateLeapYear →
+    QDateIsWas "hlaupár" QDateNow?
+    | QDateIsWas Árið_nf "hlaupár"
+    | QDateIsWas "hlaupár" Árið_nf
 
 QDateItem/fall →
     QDateAbsOrRel | QDateSpecialDay/fall
@@ -390,6 +396,18 @@ def QDateWhenIs(node, params, result):
 
 def QDateWhichYear(node, params, result):
     result["year"] = True
+
+
+def QDateLeapYear(node, params, result):
+    result["leap"] = True
+
+
+def Árið(node, params, result):
+    artal_node = node.first_child(lambda n: True)
+    y = artal_node.contained_year
+    if not y:
+        raise Exception("No year number associated with YEAR token.")
+    result["target"] = datetime(day=1, month=1, year=y)
 
 
 def QDateAbsOrRel(node, params, result):
@@ -862,6 +880,18 @@ def sentence(state, result):
                 answer = "{0}.".format(y)
                 response = dict(answer=answer)
                 voice = "Það er árið {0}.".format(y)
+                qkey = "WhichYear"
+            # Is year a leap year?
+            elif "leap" in result:
+                t = result.get("target")
+                y = t.year if t else now.year
+                verb = "er" if y >= now.year else "var"
+                answer = "Árið {0} {1} {2}hlaupár.".format(
+                    y, verb, "" if isleap(y) else "ekki "
+                )
+                response = dict(answer=answer)
+                voice = answer
+                qkey = "IsLeapYear"
             else:
                 # Shouldn't be here
                 raise Exception("Unable to handle date query")
