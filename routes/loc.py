@@ -178,11 +178,7 @@ def locations():
     locs = top_locations(kind=kind, days=days)
 
     return render_template(
-        "locations/locations.html",
-        title="Staðir",
-        locations=locs,
-        period=period,
-        kind=kind,
+        "locations/top.html", title="Staðir", locations=locs, period=period, kind=kind
     )
 
 
@@ -195,7 +191,7 @@ def locations_icemap():
 
     markers = icemap_markers(days=days)
     return render_template(
-        "locations/locations-icemap.html",
+        "locations/icemap.html",
         title="Íslandskort",
         markers=json.dumps(markers),
         period=period,
@@ -212,7 +208,7 @@ def locations_worldmap():
     d = world_map_data(days=days)
     n = dict(countries_for_language("is"))
     return render_template(
-        "locations/locations-worldmap.html",
+        "locations/worldmap.html",
         title="Heimskort",
         country_data=d,
         country_names=n,

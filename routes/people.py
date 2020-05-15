@@ -214,7 +214,7 @@ def graph_data(num_persons=_DEFAULT_NUM_PERSONS_GRAPH):
 def people_recent():
     """ Page with a list of people recently appearing in articles """
     return render_template(
-        "people/people-recent.html", title="Fólk - Nýlegt", persons=recent_persons()
+        "people/recent.html", title="Fólk - Nýlegt", persons=recent_persons()
     )
 
 
@@ -226,10 +226,7 @@ def people_top():
     period = request.args.get("period")
     days = 7 if period == "week" else _TOP_PERSONS_PERIOD
     return render_template(
-        "people/people-top.html",
-        title="Fólk",
-        persons=top_persons(days=days),
-        period=period,
+        "people/top.html", title="Fólk", persons=top_persons(days=days), period=period
     )
 
 
@@ -239,7 +236,7 @@ def people_top():
 def people_graph():
     """ Page with a weighted, force directed graph of relations 
         between people via mentions in articles. """
-    return render_template("people/people-graph.html", graph_data=graph_data())
+    return render_template("people/graph.html", graph_data=graph_data())
 
 
 @routes.route("/people_timeline")
@@ -247,4 +244,4 @@ def people_graph():
 @max_age(seconds=10 * 60)
 def people_timeline():
     """ Person timeline page. """
-    return render_template("people/people-timeline.html")
+    return render_template("people/timeline.html")

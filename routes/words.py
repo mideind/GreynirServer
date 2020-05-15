@@ -43,13 +43,13 @@ from db.queries import WordFrequencyQuery
 @routes.route("/words")
 def words():
     """ Handler for word frequency main page. """
-    return render_template("words/words-freq.html", title="Orð")
+    return render_template("words/freq.html", title="Orð")
 
 
 @routes.route("/words_trends")
 def words_trends():
     """ Handler for word frequency main page. """
-    return render_template("words/words-trends.html", title="Orð")
+    return render_template("words/trends.html", title="Orð")
 
 
 # Word categories permitted in word frequency search
@@ -57,7 +57,7 @@ _VALID_WCATS = frozenset(
     ("kk", "kvk", "hk", "lo", "so", "person_kk", "person_kvk", "entity")
 )
 
-# More human readble description of word categories
+# Human-readable descriptions of word categories
 CAT_UNKNOWN = "??"
 CAT_DESC = {
     "kk": "kk. no.",
@@ -133,7 +133,6 @@ def wordfreq():
         return better_jsonify(**resp)
 
     # Get the list of specified cats for each word lemma
-
     wds, spec_cats = zip(*_str2words(warg, separate_on_whitespace=True))
 
     # Tokenize all words
@@ -153,8 +152,8 @@ def wordfreq():
             cat = "entity"
         return (w, cat)
 
-    # Create word/cat tuples, overwriting word category with
-    # a user-specified category, if provided
+    # Create word/cat tuples, overwriting word category
+    # with a user-specified category, if provided
     words = []
     for i, t in enumerate(tokens):
         (w, c) = cat4token(t)
@@ -210,7 +209,7 @@ def wordfreq():
         colors = list(_LINE_COLORS)
         data = dict(labels=labels, labelDates=label_dates, datasets=[])
         for w in words:
-            # Look up frequency of the word for the given period
+            # Look up frequency of word for the given period
             (wd, cat) = w
             res = WordFrequencyQuery.frequency(
                 wd,
@@ -292,5 +291,5 @@ def wordfreq_details():
             )
 
     resp["err"] = False
-    resp["payload"] = render_template("words/words-details.html", words=wlist)
+    resp["payload"] = render_template("words/details.html", words=wlist)
     return better_jsonify(**resp)

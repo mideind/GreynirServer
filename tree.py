@@ -776,8 +776,8 @@ class TerminalNode(Node):
 
     @property
     def contained_year(self):
-        """ Return a yera from the associated token, if any,
-            as an int """
+        """ Return a year from the associated token, if any,
+            as an integer """
         if self.tokentype not in ("YEAR"):
             return None
         if self._aux is None:
