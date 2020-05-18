@@ -23,7 +23,7 @@ To enable auto-reloading of modules prior to every command, run the following co
 The shell has been configured to automatically import Greynir's database models and create a (commit-disabled) database session when launched. The Greynir parser is also imported.
 
 * `s` - SQLAlchemy database session
-* `r` - Instance of the [Greynir](https://github.com/mideind/ReynirPackage) parser.
+* `g` - Instance of the [Greynir](https://github.com/mideind/ReynirPackage) parser.
 
 For an overview of Greynir's database models, see `db/models.py`.
 
@@ -60,7 +60,7 @@ Out[6]:
 ### Parsing with Greynir
 
 ```
-In [1]: sent = r.parse_single("Mikið væri það skemmtilegt fyrir Gunna.")
+In [1]: sent = g.parse_single("Mikið væri það skemmtilegt fyrir Gunna.")
 In [2]: print(sent.tree.view)
 Out[2]:
 P

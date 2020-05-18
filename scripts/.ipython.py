@@ -14,6 +14,6 @@ c.InteractiveShellApp.exec_lines = [
     'from db import *',
     'from db.models import *',
     's = SessionContext(commit=False).__enter__()',
-    'from reynir import Reynir',
-    'r = Reynir()'
+    'from reynir import Greynir',
+    'g = Greynir()'
 ]

@@ -18,7 +18,7 @@ install:
   - pip install -r requirements.txt
   - pip install --upgrade git+https://github.com/mideind/Tokenizer#egg=tokenizer
   - pip install --upgrade git+https://github.com/mideind/ReynirPackage#egg=reynir
-  - pip install --upgrade git+https://github.com/mideind/ReynirCorrect#egg=reynir-correct
+  - pip install --upgrade git+https://github.com/mideind/GreynirCorrect#egg=reynir-correct
 
 before_script:
   - sudo apt-get install language-pack-is

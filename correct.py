@@ -31,7 +31,7 @@ import nertokenizer
 class RecognitionPipeline(reynir_correct.CorrectionPipeline):
 
     """ Derived class that adds a named entity recognition pass
-        to the ReynirCorrect tokenization pipeline """
+        to the GreynirCorrect tokenization pipeline """
 
     def __init__(self, text):
         super().__init__(text)
@@ -45,10 +45,10 @@ class RecognitionPipeline(reynir_correct.CorrectionPipeline):
         )
 
 
-class NERCorrect(reynir_correct.ReynirCorrect):
+class NERCorrect(reynir_correct.GreynirCorrect):
 
     """ Derived class to override the default tokenization of
-        ReynirCorrect to perform named entity recognition """
+        GreynirCorrect to perform named entity recognition """
 
     def __init__(self):
         super().__init__()

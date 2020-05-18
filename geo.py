@@ -581,7 +581,7 @@ def iceprep_for_placename(pn):
 # the preposition "á" in Icelandic (mostly islands, with
 # notable exceptions such as "Spánn" and "Ítalía")
 # TODO: This should be in a separate file, and should
-# probably be part of the ReynirCorrect package going forward
+# probably be part of the GreynirCorrect package going forward
 CC_ICEPREP_A = frozenset(
     (
         "AG",  # Antígva og Barbúda
