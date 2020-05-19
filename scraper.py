@@ -580,10 +580,6 @@ def main(argv=None):
                 # Max number of processes to fork when parsing
                 numprocs = parse_int(a)
 
-        # Process arguments
-        for _ in args:
-            pass
-
         # Set logging format
         logging.basicConfig(
             format="%(asctime)s %(levelname)s:%(message)s", level=logging.INFO
