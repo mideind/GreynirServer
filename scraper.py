@@ -261,9 +261,8 @@ class Scraper:
             # raise
         return True
 
-    def go(self, reparse=False, limit=0, urls=None, uuid=None):
+    def go(self, reparse=False, limit=0, urls=None, uuid=None, numprocs=None):
         """ Run a scraping pass from all roots in the scraping database """
-
         version = Article.parser_version()
 
         with SessionContext(commit=True) as session:
@@ -364,8 +363,9 @@ class Scraper:
             # Use a multiprocessing pool to parse the articles.
             # Let the pool work on chunks of articles, recycling the
             # processes after each chunk to contain memory creep.
+            # Default to using as many processes as there are CPUs
+            CPU_COUNT = numprocs or cpu_count()
 
-            CPU_COUNT = cpu_count()
             # Distribute the load between the CPUs, although never exceeding
             # 100 articles per CPU per process cycle
             if limit > 0:
@@ -395,8 +395,7 @@ class Scraper:
                     logging.info(
                         "Parser processes forking, chunk of {0} articles".format(lcnt)
                     )
-                    # Defaults to using as many processes as there are CPUs
-                    pool = Pool()
+                    pool = Pool(CPU_COUNT)
                     try:
                         pool.imap_unordered(self._parse_single_article, adlist)
                     except Exception as e:
@@ -468,7 +467,8 @@ class Scraper:
         )
 
 
-def scrape_articles(reparse=False, limit=0, urls=None, uuid=None):
+def scrape_articles(reparse=False, limit=0, urls=None, uuid=None, numprocs=None):
+    kwargs = dict(locals())  # Create kwarg dict
 
     logging.info("------ Greynir starting scrape -------")
     if uuid is not None:
@@ -476,14 +476,14 @@ def scrape_articles(reparse=False, limit=0, urls=None, uuid=None):
     elif urls is not None:
         logging.info("URLs read from: {0}".format(urls))
     else:
-        logging.info("Limit: {0}, reparse: {1}".format(limit, reparse))
+        logging.info("Limit: {0}, reparse: {1}".format(limit, reparse, numprocs))
     t0 = time.time()
     count = 0
 
     try:
         sc = Scraper()
         try:
-            count = sc.go(reparse=reparse, limit=limit, urls=urls, uuid=uuid)
+            count = sc.go(**kwargs)
             # Successful finish: print stats
             sc.stats()
         except KeyboardInterrupt:
@@ -541,8 +541,8 @@ def main(argv=None):
         try:
             opts, args = getopt.getopt(
                 argv[1:],
-                "hirl:u:d:",
-                ["help", "init", "reparse", "limit=", "urls=", "uuid="],
+                "hirl:u:d:n:",
+                ["help", "init", "reparse", "limit=", "urls=", "uuid=", "numprocs="],
             )
         except getopt.error as msg:
             raise Usage(msg)
@@ -552,6 +552,13 @@ def main(argv=None):
         reparse = False
         urls = None
         uuid = None
+        numprocs = None
+
+        def parse_int(i):
+            try:
+                return int(a)
+            except ValueError:
+                return None
 
         # Process options
         for o, a in opts:
@@ -564,14 +571,14 @@ def main(argv=None):
                 reparse = True
             elif o in ("-l", "--limit"):
                 # Maximum number of articles to parse
-                try:
-                    limit = int(a)
-                except ValueError:
-                    pass
+                limit = parse_int(a)
             elif o in ("-u", "--urls"):
                 urls = a  # Text file with list of URLs
             elif o in ("-d", "--uuid"):
                 uuid = a  # UUID of article to reparse
+            elif o in ("-n", "--numprocs"):
+                # Max number of processes to fork when parsing
+                numprocs = parse_int(a)
 
         # Process arguments
         for _ in args:
@@ -596,7 +603,9 @@ def main(argv=None):
             init_roots()
         else:
             # Run the scraper
-            scrape_articles(reparse=reparse, limit=limit, urls=urls, uuid=uuid)
+            scrape_articles(
+                reparse=reparse, limit=limit, urls=urls, uuid=uuid, numprocs=numprocs
+            )
 
     except Usage as err:
         print(err.msg, file=sys.stderr)
