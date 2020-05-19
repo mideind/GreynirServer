@@ -203,7 +203,7 @@ if Settings.DEBUG:
             datetime.utcnow(),
         )
     )
-    # Clobber Settings.DEBUG in ReynirPackage and ReynirCorrect
+    # Clobber Settings.DEBUG in ReynirPackage and GreynirCorrect
     reynir.Settings.DEBUG = True
     reynir_correct.Settings.DEBUG = True
 
@@ -237,7 +237,7 @@ if not RUNNING_AS_SERVER:
         "Phrases.conf",
         "Vocab.conf",
         "Names.conf",
-        "ReynirCorrect.conf",
+        "GreynirCorrect.conf",
     ]
 
     # Hack to satisfy the Mypy type checker, which sometimes confuses str and AnyStr
