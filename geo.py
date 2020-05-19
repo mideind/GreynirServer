@@ -131,6 +131,7 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
         "Mjanmar": "MM",
         "Myanmar": "MM",
         "Bahrain": "BH",
+        "Bandaríki Norður-Ameríku": "US",
         "Búrma": "MM",
         "Burma": "MM",
         "Ameríka": "US",
@@ -191,8 +192,10 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
         "Norður-Noregur": "NO",
         "Tæland": "TH",
         "Aserbaísjan": "AZ",  # Til svona stafsett í BÍN
+        "Aserbædjan": "AZ",
         "Azerbaijan": "AZ",
         "Kanarí": "IC",
+        "Kanaríeyjar": "IC",
         "Jómfrúaeyjar": "US",
         "Ghana": "GH",
         "Kosovo": "XK",
