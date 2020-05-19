@@ -882,15 +882,15 @@ def leap_answ(q, result):
     q.set_answer(response, answer, voice)
 
 
-_Q2FN_MAP = {
-    "now": currdate_answ,
-    "days_in_month": days_in_month_answ,
-    "until": howlong_answ,
-    "since": howlong_answ,
-    "when": when_answ,
-    "year": year_answ,
-    "leap": leap_answ,
-}
+_Q2FN_MAP = [
+    ("now", currdate_answ),
+    ("days_in_month", days_in_month_answ),
+    ("until", howlong_answ),
+    ("since", howlong_answ),
+    ("when", when_answ),
+    ("year", year_answ),
+    ("leap", leap_answ),
+]
 
 
 def sentence(state, result):
@@ -903,10 +903,10 @@ def sentence(state, result):
     # Successfully matched a query type
     try:
         with changedlocale(category="LC_TIME"):
-            for k in _Q2FN_MAP.keys():
+            for k, handler_func in _Q2FN_MAP:
                 if k in result:
                     # Hand query object over to handler function
-                    _Q2FN_MAP[k](q, result)
+                    handler_func(q, result)
                     # Lowercase the query string to avoid 'Dagur' being
                     # displayed with a capital D
                     q.lowercase_beautified_query()
