@@ -43,7 +43,7 @@ from treeutil import TreeUtility
 # We don't bother parsing sentences that have more than 100 tokens,
 # since they require lots of memory (>16 GB) and may take
 # minutes to parse
-MAX_SENTENCE_TOKENS = 100
+MAX_SENTENCE_TOKENS = 90
 
 
 class Article:

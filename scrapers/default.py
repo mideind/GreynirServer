@@ -500,6 +500,10 @@ class RuvScraper(ScrapeHelper):
         if content is None:
             # Fallback to outermost block
             content = ScrapeHelper.div_class(soup_body, ("block", "block-system"))
+        # Still no content? Return empty soup
+        if content is None:
+            return BeautifulSoup("", _HTML_PARSER)
+
         ScrapeHelper.del_div_class(
             content, "pane-custom"
         )  # Sharing stuff at bottom of page
