@@ -48,13 +48,19 @@
          <div class="btn-group pull-right">
             <span class="hidden-xs">
                <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                  {{ "Undanfarna viku" if period == 'week' else "Síðasta sólarhring" }} 
+                  {% if period == 'week' %}
+                     Undanfarna viku
+                  {% elif period == 'month' %}
+                     Síðastliðinn mánuð
+                  {% else %}
+                     Síðasta sólarhring
+                  {% endif %}
                   <span class="caret"></span>
                </button>
-
                <ul class="dropdown-menu">
                   <li><a href="{{ url_for('routes.locations_worldmap') | safe }}">Síðasta sólarhring</a></li>
                   <li><a href="{{ url_for('routes.locations_worldmap', period='week') | safe }}">Undanfarna viku</a></li>
+                  <li><a href="{{ url_for('routes.locations_worldmap', period='month') | safe }}">Síðastliðinn mánuð</a></li>
                </ul>
             </span>
          </div>

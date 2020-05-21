@@ -173,7 +173,11 @@ def locations():
     kind = kind if kind in LOCATION_TAXONOMY else None
 
     period = request.args.get("period")
-    days = 7 if period == "week" else _TOP_LOC_PERIOD
+    days = _TOP_LOC_PERIOD
+    if period == "week":
+        days = 7
+    elif period == "month":
+        days = 30
 
     locs = top_locations(kind=kind, days=days)
 
@@ -187,7 +191,11 @@ def locations():
 def locations_icemap():
     """ Render Icelandic map locations page. """
     period = request.args.get("period")
-    days = 7 if period == "week" else _TOP_LOC_PERIOD
+    days = _TOP_LOC_PERIOD
+    if period == "week":
+        days = 7
+    elif period == "month":
+        days = 30
 
     markers = icemap_markers(days=days)
     return render_template(
@@ -203,7 +211,11 @@ def locations_icemap():
 def locations_worldmap():
     """ Render world map locations page. """
     period = request.args.get("period")
-    days = 7 if period == "week" else _TOP_LOC_PERIOD
+    days = _TOP_LOC_PERIOD
+    if period == "week":
+        days = 7
+    elif period == "month":
+        days = 30
 
     d = world_map_data(days=days)
     n = dict(countries_for_language("is"))

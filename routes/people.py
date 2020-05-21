@@ -224,7 +224,11 @@ def people_recent():
 def people_top():
     """ Page showing people most frequently mentioned in recent articles """
     period = request.args.get("period")
-    days = 7 if period == "week" else _TOP_PERSONS_PERIOD
+    days = _TOP_PERSONS_PERIOD
+    if period == "week":
+        days = 7
+    elif period == "month":
+        days = 30
     return render_template(
         "people/top.html", title="Fólk", persons=top_persons(days=days), period=period
     )
