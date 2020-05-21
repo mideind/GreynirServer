@@ -22,7 +22,7 @@
 """
 
 
-from . import routes, max_age, cache, restricted
+from . import routes, max_age, cache, restricted, days_from_period_arg
 
 import json
 from pprint import pprint
@@ -42,7 +42,7 @@ from reynir.bindb import BIN_Db
 
 
 # Default number of persons to show in /people
-_RECENT_PERSONS_LENGTH = 20
+_RECENT_PERSONS_LENGTH = 50
 _MAX_TITLE_LENGTH = 64
 
 # Defaults for /people_top
@@ -224,13 +224,11 @@ def people_recent():
 def people_top():
     """ Page showing people most frequently mentioned in recent articles """
     period = request.args.get("period")
-    days = _TOP_PERSONS_PERIOD
-    if period == "week":
-        days = 7
-    elif period == "month":
-        days = 30
+    days = days_from_period_arg(period, _TOP_PERSONS_PERIOD)
+    persons = top_persons(days=days)
+
     return render_template(
-        "people/top.html", title="Fólk", persons=top_persons(days=days), period=period
+        "people/top.html", title="Fólk", persons=persons, period=period
     )
 
 

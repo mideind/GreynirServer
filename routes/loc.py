@@ -22,7 +22,7 @@
 """
 
 
-from . import routes, max_age, better_jsonify, cache
+from . import routes, max_age, better_jsonify, cache, days_from_period_arg
 
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -173,12 +173,7 @@ def locations():
     kind = kind if kind in LOCATION_TAXONOMY else None
 
     period = request.args.get("period")
-    days = _TOP_LOC_PERIOD
-    if period == "week":
-        days = 7
-    elif period == "month":
-        days = 30
-
+    days = days_from_period_arg(period, _TOP_LOC_PERIOD)
     locs = top_locations(kind=kind, days=days)
 
     return render_template(
@@ -191,13 +186,9 @@ def locations():
 def locations_icemap():
     """ Render Icelandic map locations page. """
     period = request.args.get("period")
-    days = _TOP_LOC_PERIOD
-    if period == "week":
-        days = 7
-    elif period == "month":
-        days = 30
-
+    days = days_from_period_arg(period, _TOP_LOC_PERIOD)
     markers = icemap_markers(days=days)
+
     return render_template(
         "locations/icemap.html",
         title="Íslandskort",
@@ -211,14 +202,11 @@ def locations_icemap():
 def locations_worldmap():
     """ Render world map locations page. """
     period = request.args.get("period")
-    days = _TOP_LOC_PERIOD
-    if period == "week":
-        days = 7
-    elif period == "month":
-        days = 30
+    days = days_from_period_arg(period, _TOP_LOC_PERIOD)
 
     d = world_map_data(days=days)
     n = dict(countries_for_language("is"))
+
     return render_template(
         "locations/worldmap.html",
         title="Heimskort",

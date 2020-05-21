@@ -96,6 +96,19 @@ def bool_from_request(rq, name, default=False):
     return isinstance(b, str) and b.lower() in _TRUTHY
 
 
+_NATLANG_PERIODS = {
+    "day": 1,
+    "week": 7,
+    "month": 30
+}
+
+
+def days_from_period_arg(arg, default=1):
+    if not arg or arg not in _NATLANG_PERIODS:
+        return default
+    return _NATLANG_PERIODS[arg]
+
+
 def better_jsonify(**kwargs):
     """ Ensure that the Content-Type header includes 'charset=utf-8' """
     resp = jsonify(**kwargs)
