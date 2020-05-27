@@ -35,7 +35,6 @@
 import os
 import sys
 import random
-from datetime import datetime
 import gc
 
 # Hack to make this Python program executable from the utils subdirectory
@@ -49,10 +48,22 @@ from settings import Settings
 from article import Article
 from tree import Tree
 
+# To make this work, clone Miðeind Annotald repo, enter the Greynir
+# virtualenv and run "python setup.py develop" from the Annotald repo root
 from annotald.reynir_utils import reynir_sentence_to_annotree, simpleTree2NLTK
 from annotald.annotree import AnnoTree
 
 
+# Min num tokens in sentence
+MIN_SENT_LENGTH = 3
+
+# Num sentences per batch to shuffle
+MAX_BATCH = 10000
+
+# Separator for sentence trees in output file
+SEPARATOR = "\n\n"
+
+# Skip sentences containing these tokens
 ENGLISH_WORDS = frozenset(
     [
         "the",
@@ -67,6 +78,8 @@ ENGLISH_WORDS = frozenset(
         "this",
         "that",
         "they",
+        "what",
+        "when",
         "s",
         "t",
         "don't",
@@ -80,7 +93,6 @@ ENGLISH_WORDS = frozenset(
     ]
 )
 
-
 def gen_simple_trees(criteria):
     """ Generate simplified parse trees from articles matching the criteria """
     for a in Article.articles(criteria):
@@ -91,23 +103,19 @@ def gen_simple_trees(criteria):
             or "lemurinn" in a.root_domain
         ):
             continue
-
+        # Load tree from article
         tree = Tree(url=a.url, authority=a.authority)
-        # Note the parse timestamp
         tree.load(a.tree)
+        # Yield simple trees
         for ix, stree in tree.simple_trees():
             text = stree.text
             tokens = text.split()
-            if len(tokens) > 2:
+            if len(tokens) >= MIN_SENT_LENGTH:
                 wordset = set([t.lower() for t in tokens])
                 # Only return sentences without our bag of English words
                 if not (wordset & ENGLISH_WORDS):
                     yield stree, tree.score(ix), tree.length(ix), a.uuid, a.url, ix
 
-
-MIN_SENT_LENGTH = 3
-MAX_BATCH = 10000  # Num sentences per batch to shuffle
-SEPARATOR = "\n\n"
 
 
 def main(num_sent, parse_date_gt, outfile):
@@ -133,11 +141,8 @@ def main(num_sent, parse_date_gt, outfile):
     skipped = 0
 
     with open(outfile, "w") as f:
-        # Consume from generator
+        # Consume sentence trees from generator
         for i, (tree, score, ln, aid, aurl, snum) in enumerate(gen):
-            if ln < MIN_SENT_LENGTH:
-                skipped += 1
-                continue
 
             # Create Annotald tree
             meta_node = AnnoTree(
@@ -160,8 +165,10 @@ def main(num_sent, parse_date_gt, outfile):
             accnum = len(accumulated)
             final_batch = (accnum + total) >= num_sent
 
+            # We have a batch
             if accnum == MAX_BATCH or final_batch:
-                # Shuffle the batch
+
+                # Shuffle it
                 random.shuffle(accumulated)
 
                 # Write to file
@@ -205,7 +212,6 @@ if __name__ == "__main__":
         dest="OUTFILE",
         type=str,
         help="Output filename",
-        default=7_000_000,
         required=True,
     )
 

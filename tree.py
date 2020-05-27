@@ -1011,11 +1011,11 @@ class TerminalNode(Node):
                 d["a"] = a
             else:
                 d["a"] = t
-            # if t[0] == '"' or t[0] == "'":
-            #     assert False, (
-            #         "Wrong terminal: {0}, text is '{1}', token {2}, tokentype {3}"
-            #         .format(self.td.terminal, self.text, self.token, self.tokentype)
-            #     )
+            if t[0] == '"' or t[0] == "'":
+                assert False, (
+                    "Wrong terminal: {0}, text is '{1}', token {2}, tokentype {3}"
+                    .format(self.td.terminal, self.text, self.token, self.tokentype)
+                )
             # Category
             d["c"] = self.cat
             if self.tokentype == "WORD":
