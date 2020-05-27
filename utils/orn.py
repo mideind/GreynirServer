@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-    Fetch all Icelandic placenames (örnefni) from iaceaddr database
+    Fetch all Icelandic placenames (örnefni) from iceaddr database
     and try to lookup them up using ReynirPackage's bindb module.
     Print any placenames that could not be found in either
     BÍN proper or using the word combinator (samsetjari).
