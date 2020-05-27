@@ -93,6 +93,7 @@ ENGLISH_WORDS = frozenset(
     ]
 )
 
+
 def gen_simple_trees(criteria):
     """ Generate simplified parse trees from articles matching the criteria """
     for a in Article.articles(criteria):
@@ -103,9 +104,15 @@ def gen_simple_trees(criteria):
             or "lemurinn" in a.root_domain
         ):
             continue
+
         # Load tree from article
-        tree = Tree(url=a.url, authority=a.authority)
-        tree.load(a.tree)
+        try:
+            tree = Tree(url=a.url, authority=a.authority)
+            tree.load(a.tree)
+        except Exception as e:
+            print("Exception loading tree in {0}: {1}".format(a.url, e))
+            continue
+
         # Yield simple trees
         for ix, stree in tree.simple_trees():
             text = stree.text
@@ -115,7 +122,6 @@ def gen_simple_trees(criteria):
                 # Only return sentences without our bag of English words
                 if not (wordset & ENGLISH_WORDS):
                     yield stree, tree.score(ix), tree.length(ix), a.uuid, a.url, ix
-
 
 
 def main(num_sent, parse_date_gt, outfile):
@@ -208,11 +214,7 @@ if __name__ == "__main__":
         default="1970-01-01",
     )
     parser.add_argument(
-        "--outfile",
-        dest="OUTFILE",
-        type=str,
-        help="Output filename",
-        required=True,
+        "--outfile", dest="OUTFILE", type=str, help="Output filename", required=True
     )
 
     args = parser.parse_args()
