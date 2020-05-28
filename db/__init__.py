@@ -46,8 +46,10 @@ class Scraper_DB:
 
         # Assemble the connection string, using psycopg2cffi which
         # supports both PyPy and CPython
-        conn_str = "postgresql+{0}://reynir:reynir@{1}:{2}/scraper".format(
+        conn_str = "postgresql+{0}://{1}:{2}@{3}:{4}/scraper".format(
             "psycopg2cffi",
+            Settings.DB_USERNAME,
+            Settings.DB_PASSWORD,
             Settings.DB_HOSTNAME,
             Settings.DB_PORT,
         )
