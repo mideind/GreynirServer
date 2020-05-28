@@ -196,7 +196,7 @@ if __name__ == "__main__":
 
     import argparse
 
-    parser = argparse.ArgumentParser(description="Generates training data files")
+    parser = argparse.ArgumentParser(description="Generates GreynirCorpus file")
     parser.add_argument(
         "--num",
         dest="NUM_SENT",
