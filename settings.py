@@ -604,6 +604,8 @@ class Settings:
     # Postgres SQL database server hostname and port
     DB_HOSTNAME = os.environ.get("GREYNIR_DB_HOST", "localhost")
     DB_PORT = os.environ.get("GREYNIR_DB_PORT", "5432")  # Default PostgreSQL port
+    DB_USERNAME = os.environ.get("GREYNIR_DB_USERNAME", "reynir")
+    DB_PASSWORD = os.environ.get("GREYNIR_DB_PASSWORD", "reynir")
 
     try:
         DB_PORT = int(DB_PORT)
