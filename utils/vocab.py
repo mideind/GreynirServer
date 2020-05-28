@@ -81,8 +81,8 @@ class Meanings:
     _cursor = None
     _DB_NAME = "bin"
     # This user typically has only SELECT privileges on the database
-    _DB_USER = "reynir"
-    _DB_PWD = "reynir"
+    _DB_USER = Settings.DB_USERNAME
+    _DB_PWD = Settings.DB_PASSWORD
     _DB_TABLE = "ord"
     _DB_Q_FORMS = (
         "SELECT stofn, utg, ordfl, fl, ordmynd, beyging "
