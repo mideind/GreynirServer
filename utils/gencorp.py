@@ -3,8 +3,6 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Text and parse tree pair generator
-
     Copyright (C) 2020 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
@@ -128,7 +126,7 @@ def main(num_sent, parse_date_gt, outfile):
 
     try:
         # Read configuration file
-        Settings.read(os.path.join(basepath, "config/GreynirSimple.conf"))
+        Settings.read(os.path.join(basepath, "config", "GreynirSimple.conf"))
     except ConfigError as e:
         print("Configuration error: {0}".format(e))
         quit()
@@ -146,7 +144,7 @@ def main(num_sent, parse_date_gt, outfile):
     total = 0
     skipped = 0
 
-    with open(outfile, "w") as f:
+    with open(outfile, "w", encoding="utf-8") as f:
         # Consume sentence trees from generator
         for i, (tree, score, ln, aid, aurl, snum) in enumerate(gen):
 
@@ -167,7 +165,7 @@ def main(num_sent, parse_date_gt, outfile):
             # print("")
 
             # Accumulate tree strings until we have enough
-            accumulated.append(meta_tree.__str__() + SEPARATOR)
+            accumulated.append(str(meta_tree) + SEPARATOR)
             accnum = len(accumulated)
             final_batch = (accnum + total) >= num_sent
 
