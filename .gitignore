@@ -124,6 +124,7 @@ fonts/
 venv/
 p3*/
 p7*/
+cpython*/
 
 # Installer logs
 pip-log.txt

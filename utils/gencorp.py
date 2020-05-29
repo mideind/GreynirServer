@@ -56,9 +56,9 @@ from annotald.annotree import AnnoTree
 # Min num tokens in sentence
 MIN_SENT_LENGTH = 3
 
-# Num sentences to shuffle per batch
+# Num sentences to batch and shuffle
 # Control memory usage i.e. how many sentence texts
-# are accumulated in memory before shuffling.
+# are accumulated in memory prior to shuffling.
 MAX_BATCH = 10000
 
 # Separator for sentence trees in output file
@@ -189,7 +189,7 @@ def main(num_sent, parse_date_gt, outfile, count):
 
             total += accnum
             accumulated = []
-            gc.collect()
+            gc.collect()  # Trigger manual garbage collection
 
             print("Dumping sentence trees: %d\r" % total, end="")
 
@@ -199,7 +199,8 @@ def main(num_sent, parse_date_gt, outfile, count):
     fh.close()
 
     # print("Skipped {0}".format(skipped))
-    print("\nDumped {0} trees to file '{1}'".format(total, outfile))
+    fsize = os.path.getsize(outfile) / pow(1024.0, 2)
+    print("\nDumped {0} trees to file '{1}' ({2:.1f} MB)".format(total, outfile, fsize))
 
 
 if __name__ == "__main__":
