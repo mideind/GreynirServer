@@ -32,8 +32,8 @@
 
 import os
 import sys
-import random
 import gc
+from random import shuffle
 
 # Hack to make this Python program executable from the utils subdirectory
 basepath, _ = os.path.split(os.path.realpath(__file__))
@@ -46,8 +46,9 @@ from settings import Settings
 from article import Article
 from tree import Tree
 
-# To make this work, clone Miðeind Annotald repo, enter the Greynir
+# To make this work, clone Miðeind's Annotald repo, enter the Greynir
 # virtualenv and run "python setup.py develop" from the Annotald repo root
+# https://github.com/mideind/Annotald
 from annotald.reynir_utils import reynir_sentence_to_annotree, simpleTree2NLTK
 from annotald.annotree import AnnoTree
 
@@ -55,7 +56,9 @@ from annotald.annotree import AnnoTree
 # Min num tokens in sentence
 MIN_SENT_LENGTH = 3
 
-# Num sentences per batch to shuffle
+# Num sentences to shuffle per batch
+# Control memory usage i.e. how many sentence texts
+# are accumulated in memory before shuffling.
 MAX_BATCH = 10000
 
 # Separator for sentence trees in output file
@@ -65,8 +68,7 @@ SEPARATOR = "\n\n"
 ENGLISH_WORDS = frozenset(
     [
         "the",
-        "a",
-        "is",
+        "she",
         "each",
         "year",
         "our",
@@ -78,6 +80,7 @@ ENGLISH_WORDS = frozenset(
         "they",
         "what",
         "when",
+        "which",
         "s",
         "t",
         "don't",
@@ -109,20 +112,26 @@ def gen_simple_trees(criteria):
             tree.load(a.tree)
         except Exception as e:
             print("Exception loading tree in {0}: {1}".format(a.url, e))
+            # Skip it
             continue
 
-        # Yield simple trees
+        # Yield simple trees for each article sentence
         for ix, stree in tree.simple_trees():
             text = stree.text
             tokens = text.split()
-            if len(tokens) >= MIN_SENT_LENGTH:
-                wordset = set([t.lower() for t in tokens])
-                # Only return sentences without our bag of English words
-                if not (wordset & ENGLISH_WORDS):
-                    yield stree, tree.score(ix), tree.length(ix), a.uuid, a.url, ix
+            # Make sure it has enough tokens
+            if not len(tokens) >= MIN_SENT_LENGTH:
+                continue
+
+            # Skip sentences containing something in our bag of English words
+            wordset = set([t.lower() for t in tokens])
+            if wordset & ENGLISH_WORDS:
+                continue
+
+            yield stree, tree.score(ix), tree.length(ix), a.uuid, a.url, ix
 
 
-def main(num_sent, parse_date_gt, outfile):
+def main(num_sent, parse_date_gt, outfile, count):
 
     try:
         # Read configuration file
@@ -131,7 +140,7 @@ def main(num_sent, parse_date_gt, outfile):
         print("Configuration error: {0}".format(e))
         quit()
 
-    # Generate the parse trees from visible roots only,
+    # Generate parse trees from visible roots only,
     # in descending order by time of parse
     criteria = {"order_by_parse": True, "visible": True}
     if parse_date_gt is not None:
@@ -144,49 +153,49 @@ def main(num_sent, parse_date_gt, outfile):
     total = 0
     skipped = 0
 
-    with open(outfile, "w", encoding="utf-8") as f:
-        # Consume sentence trees from generator
-        for i, (tree, score, ln, aid, aurl, snum) in enumerate(gen):
+    fh = open(outfile, "w", encoding="utf-8")
 
-            # Create Annotald tree
-            meta_node = AnnoTree(
-                "META",
-                [
-                    AnnoTree("ID-CORPUS", [str(aid) + "." + str(snum)]),
-                    # AnnoTree("ID-LOCAL", [outfile]),
-                    AnnoTree("URL", [aurl]),
-                    # AnnoTree("COMMENT", [""]),
-                ],
-            )
-            nltk_tree = simpleTree2NLTK(tree)
-            meta_tree = AnnoTree("", [meta_node, nltk_tree])
+    # Consume sentence trees from generator
+    for i, (tree, score, ln, aid, aurl, snum) in enumerate(gen):
 
-            # print(meta_tree)
-            # print("")
+        # Create Annotald tree
+        meta_node = AnnoTree(
+            "META",
+            [
+                AnnoTree("ID-CORPUS", [str(aid) + "." + str(snum)]),
+                # AnnoTree("ID-LOCAL", [outfile]),
+                AnnoTree("URL", [aurl]),
+                # AnnoTree("COMMENT", [""]),
+            ],
+        )
+        nltk_tree = simpleTree2NLTK(tree)
+        meta_tree = AnnoTree("", [meta_node, nltk_tree])
 
-            # Accumulate tree strings until we have enough
-            accumulated.append(str(meta_tree) + SEPARATOR)
-            accnum = len(accumulated)
-            final_batch = (accnum + total) >= num_sent
+        # print(meta_tree)
+        # print("")
 
-            # We have a batch
-            if accnum == MAX_BATCH or final_batch:
+        # Accumulate tree strings until we have enough
+        accumulated.append(str(meta_tree) + SEPARATOR)
+        accnum = len(accumulated)
+        final_batch = (accnum + total) >= num_sent
 
-                # Shuffle it
-                random.shuffle(accumulated)
+        # We have a batch
+        if accnum == MAX_BATCH or final_batch:
+            # Shuffle and write to file
+            shuffle(accumulated)
+            for tree_str in accumulated:
+                fh.write(tree_str)
 
-                # Write to file
-                for tree_str in accumulated:
-                    f.write(tree_str)
+            total += len(accumulated)
+            accumulated = []
+            gc.collect()
 
-                total += len(accumulated)
-                accumulated = []
-                gc.collect()
+            print("Dumping sentence trees: %d\r" % total, end="")
 
-                print("Dumping sentence trees: %d\r" % total, end="")
+        if final_batch:
+            break
 
-            if final_batch:
-                break
+    fh.close()
 
     # print("Skipped {0}".format(skipped))
     print("\nDumped {0} trees to file '{1}'".format(total, outfile))
@@ -214,7 +223,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--outfile", dest="OUTFILE", type=str, help="Output filename", required=True
     )
+    parser.add_argument(
+        "--count",
+        dest="COUNT",
+        type=str,
+        help="Count the number of available sentences meeting criteria, print and exit",
+    )
 
     args = parser.parse_args()
 
-    main(args.NUM_SENT, args.PARSE_DATE_GT, args.OUTFILE)
+    main(args.NUM_SENT, args.PARSE_DATE_GT, args.OUTFILE, args.COUNT)
