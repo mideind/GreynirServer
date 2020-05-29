@@ -49,7 +49,7 @@ from tree import Tree
 # To make this work, clone Miðeind's Annotald repo, enter the Greynir
 # virtualenv and run "python setup.py develop" from the Annotald repo root
 # https://github.com/mideind/Annotald
-from annotald.reynir_utils import reynir_sentence_to_annotree, simpleTree2NLTK
+from annotald.reynir_utils import simpleTree2NLTK
 from annotald.annotree import AnnoTree
 
 
@@ -159,10 +159,11 @@ def main(num_sent, parse_date_gt, outfile, count):
     for i, (tree, score, ln, aid, aurl, snum) in enumerate(gen):
 
         # Create Annotald tree
+        id_str = str(aid) + "." + str(snum)
         meta_node = AnnoTree(
             "META",
             [
-                AnnoTree("ID-CORPUS", [str(aid) + "." + str(snum)]),
+                AnnoTree("ID-CORPUS", [id_str]),
                 # AnnoTree("ID-LOCAL", [outfile]),
                 AnnoTree("URL", [aurl]),
                 # AnnoTree("COMMENT", [""]),
@@ -186,7 +187,7 @@ def main(num_sent, parse_date_gt, outfile, count):
             for tree_str in accumulated:
                 fh.write(tree_str)
 
-            total += len(accumulated)
+            total += accnum
             accumulated = []
             gc.collect()
 
