@@ -171,6 +171,15 @@
 .glyphicon-world:before {
    content: "\E372";
 }
+.glyphicon-chemistry:before {
+   content:"\E534";
+}
+.glyphicon-barcode:before {
+   content:"\E260";
+}
+.glyphicon-userhandle:before {
+   content:"\E524";
+}
 .glyphicon-spin {
    -webkit-animation: spin 2000ms infinite linear;
    -moz-animation: spin 2000ms infinite linear;

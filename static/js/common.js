@@ -150,10 +150,9 @@ tokIcons[TOK_MEASUREMENT] = "glyphicon-weights";
 tokIcons[TOK_NUMWLETTER] = "glyphicon-tag";
 tokIcons[TOK_DOMAIN] = "glyphicon-world";
 tokIcons[TOK_HASHTAG] = "glyphicon-world";
-tokIcons[TOK_MOLECULE] = "glyphicon-world";   // TODO check for a more appropriate icon
+tokIcons[TOK_MOLECULE] = "glyphicon-chemistry";
 tokIcons[TOK_SSN] = "glyphicon-world";    // TODO check for a more appropriate icon
-tokIcons[TOK_USERNAME] = "glyphicon-world";   // TODO check for a more appropriate icon
-tokIcons[TOK_SERIALNUMBER] = "glyphicon-world";   // TODO check for a more appropriate icon
+tokIcons[TOK_SERIALNUMBER] = "glyphicon-barcode";
 
 var wordClass = {
    "no" : "óþekkt nafnorð",
