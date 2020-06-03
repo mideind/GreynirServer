@@ -24,6 +24,8 @@
 
 */
 
+"use strict";
+
 // Token kinds
 
 var TOK_PUNCTUATION = 1;
@@ -407,16 +409,18 @@ function grammar(cat, terminal) {
       // Look for each feature that we want to document
       $.each(variantDesc, function(ix, val) {
          if (t.indexOf(val.k) > -1) {
-            if (cat == "fs") {
+            if (cat === "fs") {
                // For prepositions, show "stýrir þágufalli" instead of "þágufall"
                // Avoid special case for "synthetic" prepositions (fs_nh)
-               if ("_nf_þf_þgf_ef".indexOf(val.k) >= 0)
+               if ("_nf_þf_þgf_ef".indexOf(val.k) >= 0) {
                   g.push("stýrir " + val.t + "i");
+               }
             }
             else
-            if (cat !== "so" || "_nf_þf_þgf_ef".indexOf(val.k) < 0)
+            if (cat !== "so" || "_nf_þf_þgf_ef".indexOf(val.k) < 0) {
                // For verbs, skip the cases that they control
                g.push(val.t);
+            }
             t = t.replace(val.k, "");
          }
       });
@@ -433,7 +437,7 @@ function makePercentGraph(percent) {
    $("#percent .progress-bar span.sr-only").text(percent.toString() + "%");
 }
 
-var currencyCache = undefined;
+var currencyCache;
 
 function getCurrencyValue(currCode, completionHandler) {
    // Get the value of a foreign currency (e.g. USD) in ISK
@@ -527,14 +531,14 @@ function tokenInfo(t, nameDict) {
    // Add glyphicon class for token type
    r.tagClass = tokIcons[t.k] || "glyphicon-tag";
 
-   if (first == "sequence") {
+   if (first === "sequence") {
       // Special case for 'sequence' terminals since they
       // can match more than one token type
       r.lemma = t.x;
       r.details = "raðtala";
    }
    else
-   if (!t.k || t.k == TOK_WORD) {
+   if (!t.k || t.k === TOK_WORD) {
       // TOK_WORD
       // t.m[1] is the word category (kk, kvk, hk, so, lo...)
       var wcat = (t.m && t.m[1]) ? t.m[1] : first;
@@ -544,69 +548,68 @@ function tokenInfo(t, nameDict) {
       }
       // Special case: for adverbs, if they match a tao (temporal) or
       // spao (interrogative) adverb terminal, show that information
-      if (wcat == "ao" && terminal)
-         if (terminal == "tao" || terminal == "spao")
+      if (wcat === "ao" && terminal) {
+         if (terminal === "tao" || terminal === "spao") {
             wcat = terminal;
+         }
+      }
       var wcls = (wcat && wordClass[wcat]) ? wordClass[wcat] : "óþekkt";
       if (t.m && t.m[1]) {
          r.class = t.m[1];
          // Special case for adverbs: if multi-word adverb phrase,
          // say 'atviksliður' instead of 'atviksorð'
-         if (r.class == "ao" && t.m[0].indexOf(" ") > -1)
+         if (r.class === "ao" && t.m[0].indexOf(" ") > -1) {
             wcls = "atviksliður";
-         else
-         if (r.class == "tao" && t.m[0].indexOf(" ") > -1)
+         }
+         else if (r.class === "tao" && t.m[0].indexOf(" ") > -1) {
             wcls = "tímaatviksliður";
-         else
-         if (r.class == "fs" && t.m[0].indexOf(" ") > -1)
+         }
+         else if (r.class === "fs" && t.m[0].indexOf(" ") > -1) {
             wcls = "fleiryrt forsetning";
+         }
          r.grammar = grammar(r.class, terminal);
       }
       r.lemma = (t.m && t.m[0]) ? t.m[0] : t.x;
       r.details = wcls;
    }
    else
-   if (t.k == TOK_NUMBER) {
+   if (t.k === TOK_NUMBER) {
       r.lemma = t.x;
       // Show the parsed floating-point number to 2 decimal places
       r.details = format_is(t.v[0], 2);
    }
    else
-   if (t.k == TOK_NUMWLETTER) {
+   if (t.k === TOK_NUMWLETTER) {
       r.lemma = t.x;
       r.details = "tala með bókstaf";
    }
    else
-   if (t.k == TOK_DOMAIN) {
+   if (t.k === TOK_DOMAIN) {
       r.lemma = t.x;
       r.details = r.lemma.endsWith(".is") ? "íslenskt lén" : "lén";
    }
-
    else
-   if (t.k == TOK_SERIALNUMBER) {
+   if (t.k === TOK_SERIALNUMBER) {
     r.lemma = t.x;
     r.details = "vörunúmer";
    }
-
    else
-   if (t.k == TOK_MOLECULE) {
+   if (t.k === TOK_MOLECULE) {
     r.lemma = t.x;
     r.details = "sameind";
    }
-
    else
-   if (t.k == TOK_SSN) {
+   if (t.k === TOK_SSN) {
     r.lemma = t.x;
     r.details = "kennitala";
    }
-
    else
-   if (t.k == TOK_HASHTAG) {
+   if (t.k === TOK_HASHTAG) {
       r.lemma = t.x;
       r.details = "myllumerki";
    }
    else
-   if (t.k == TOK_PERCENT) {
+   if (t.k === TOK_PERCENT) {
       r.lemma = t.x;
       r.details = "hundraðshluti";
       // Obtain the percentage from token val field (t.v[0]),
@@ -618,111 +621,118 @@ function tokenInfo(t, nameDict) {
       r.percent = pc;
    }
    else
-   if (t.k == TOK_ORDINAL) {
+   if (t.k === TOK_ORDINAL) {
       r.lemma = t.x;
-      if ("0123456789".indexOf(t.x[0]) == -1)
+      if ("0123456789".indexOf(t.x[0]) === -1) {
          // Roman numeral
          r.details = "raðtala (" + t.v + ".)";
-      else
+      }
+      else {
          r.details = "raðtala";
+      }
    }
    else
-   if (t.k == TOK_DATE || t.k == TOK_DATEABS) {
+   if (t.k === TOK_DATE || t.k === TOK_DATEABS) {
       r.lemma = t.x;
       // Show the date in ISO format
       bc = (t.v[0] < 0) ? " f.Kr." : "";
       r.details = "dags. " + iso_date(t.v) + bc;
    }
    else
-   if (t.k == TOK_DATEREL) {
+   if (t.k === TOK_DATEREL) {
       r.lemma = t.x;
       r.details = "afstæð dagsetning";
    }
    else
-   if (t.k == TOK_TIME) {
+   if (t.k === TOK_TIME) {
       r.lemma = t.x;
       // Show the time in ISO format
       r.details = "kl. " + iso_time(t.v);
    }
    else
-   if (t.k == TOK_YEAR) {
+   if (t.k === TOK_YEAR) {
       r.lemma = t.x;
       r.details = "ártal";
    }
    else
-   if (t.k == TOK_EMAIL) {
+   if (t.k === TOK_EMAIL) {
       r.lemma = t.x;
       r.details = "tölvupóstfang";
    }
    else
-   if (t.k == TOK_URL) {
+   if (t.k === TOK_URL) {
       r.lemma = t.x;
       r.details = "vefslóð";
    }
    else
-   if (t.k == TOK_TELNO) {
+   if (t.k === TOK_TELNO) {
       r.lemma = t.x;
       r.details = "símanúmer";
    }
    else
-   if (t.k == TOK_CURRENCY) {
+   if (t.k === TOK_CURRENCY) {
       r.lemma = t.x;
       // Show the ISO code for the currency
       r.details = "gjaldmiðillinn " + t.v[0];
    }
    else
-   if (t.k == TOK_AMOUNT) {
+   if (t.k === TOK_AMOUNT) {
       r.lemma = t.x;
       // Show the amount as well as the ISO code for its currency
       r.details = t.v[1] + " " + format_is(t.v[0], 2, true);
    }
    else
-   if (t.k == TOK_PERSON) {
+   if (t.k === TOK_PERSON) {
       r.class = "person";
       var gender = "";
       if (t.g) {
          // No associated terminal: There might be a g field with gender information
-         if (t.g == "kk")
+         if (t.g === "kk") {
             gender = "male";
-         else
-         if (t.g == "kvk")
+         }
+         else if (t.g === "kvk") {
             gender = "female";
+         }
       }
       else
       if (terminal) {
          // Obtain gender info from the associated terminal
-         if (terminal.slice(-3) == "_kk")
+         if (terminal.slice(-3) === "_kk") {
             gender = "male";
+         }
          else
-         if (terminal.slice(-4) == "_kvk")
+         if (terminal.slice(-4) === "_kvk") {
             gender = "female";
+         }
       }
       if (gender) {
          r.class += " " + gender;
          r.tagClass = "glyphicon-gender-" + gender;
       }
-      if (!t.v || !t.v.length)
+      if (!t.v || !t.v.length) {
          // Cut whitespace around hyphens in person names
          r.lemma = t.x.replace(" - ", "-");
+      }
       else {
          // Show full name and title
          var name = t.v;
          title = (nameDict && nameDict[name]) ? (nameDict[name].title || "") : "";
-         if (!title.length)
+         if (!title.length) {
             if (!gender) {
                title = "mannsnafn";
             } else {
-               title = (gender == "male") ? "karl" : "kona";
+               title = (gender === "male") ? "karl" : "kona";
             }
+         }
          // Cut whitespace around hyphens in person names
          r.lemma = name.replace(" - ", "-");
          r.details = title;
       }
    }
    else
-   if (t.k == TOK_ENTITY) {
+   if (t.k === TOK_ENTITY) {
       var nd = nameDict ? nameDict[t.x] : undefined;
-      if (nd && nd.kind == "ref") {
+      if (nd && nd.kind === "ref") {
          // Last name reference to a full name entity
          // ('Clinton' -> 'Hillary Rodham Clinton')
          r.lemma = nd.fullname;
@@ -733,34 +743,37 @@ function tokenInfo(t, nameDict) {
          r.lemma = t.x.replace(" - ", "-");
       }
       title = nd ? (nd.title || "") : "";
-      if (!title.length)
+      if (!title.length) {
          title = "sérnafn";
+      }
       r.details = title;
    }
    else
-   if (t.k == TOK_TIMESTAMP || t.k == TOK_TIMESTAMPABS) {
+   if (t.k === TOK_TIMESTAMP || t.k === TOK_TIMESTAMPABS) {
       r.lemma = t.x;
       // Show the timestamp in ISO format
       bc = (t.v && t.v[0] < 0) ? " f.Kr." : "";
       r.details = t.v ? (iso_timestamp(t.v) + bc) : "";
    }
    else
-   if (t.k == TOK_TIMESTAMPREL) {
+   if (t.k === TOK_TIMESTAMPREL) {
       r.lemma = t.x;
       r.details = "afstæð tímasetning";
    }
    else
-   if (t.k == TOK_MEASUREMENT) {
+   if (t.k === TOK_MEASUREMENT) {
       r.lemma = t.x;
       r.details = format_is(t.v[1], 3) + " " + t.v[0]; // Value, unit
    }
    if (t.corr !== undefined) {
       // A correction applies to this token:
       // add the "corr" class to it
-      if (!r.class)
+      if (!r.class) {
          r.class = "corr";
-      else
+      }
+      else {
          r.class += " corr";
+      }
       // Copy the correction info (code, description) from the token
       r.corr = t.corr;
    }
