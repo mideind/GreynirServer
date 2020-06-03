@@ -186,19 +186,6 @@ function showEntity(ev) {
    ev.stopPropagation();
 }
 
-function correctPlural(c, one, singular, plural) {
-   // Yield a correct plural/singular text corresponding to number c
-   if (c === 1) {
-      return one + " " + singular; // einni grein
-   }
-   if ((c % 10 === 1) && (c !== 11)) {
-      // 21 grein, 131 grein
-      return c.toString() + " " + singular;
-   }
-   // 11 greinum, 7 greinum
-   return c.toString() + " " + plural;
-}
-
 function makeSourceList(sources) {
    // Return a HTML rendering of a list of articles where the person or entity name appears
    if (!sources) {
