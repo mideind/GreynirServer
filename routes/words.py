@@ -42,13 +42,13 @@ from db.queries import WordFrequencyQuery
 
 @routes.route("/words")
 def words():
-    """ Handler for word frequency main page. """
+    """ Handler for word frequency page. """
     return render_template("words/freq.html", title="Orð")
 
 
 @routes.route("/words_trends")
 def words_trends():
-    """ Handler for word frequency main page. """
+    """ Handler for word trends page. """
     return render_template("words/trends.html", title="Orð")
 
 
@@ -65,8 +65,8 @@ CAT_DESC = {
     "hk": "hk. no.",
     "lo": "lo.",
     "so": "so.",
-    "person_kk": "kk. nafn",
-    "person_kvk": "kvk. nafn",
+    "person_kk": "kk. manneskja",
+    "person_kvk": "kvk. manneskja",
     "entity": "fyrirbæri",
     CAT_UNKNOWN: "óþekkt",
 }
@@ -127,13 +127,19 @@ def wordfreq():
         logging.warning("Failed to parse date arg: {0}".format(e))
         return better_jsonify(**resp)
 
-    # Words param should contain one or more word lemmas (w. optional category)
+    # Words param should contain one or more comma-separated word
+    # lemmas with optional category specified with :cat suffix
     warg = request.args.get("words")
     if not warg:
         return better_jsonify(**resp)
 
     # Get the list of specified cats for each word lemma
-    wds, spec_cats = zip(*_str2words(warg, separate_on_whitespace=True))
+    wds, spec_cats = zip(*_str2words(warg))
+
+    # Try to tokenize each item
+    for ix, w in enumerate(wds):
+        tokens = tokenize(w)
+
 
     # Tokenize all words
     wds_only = " ".join(wds)
