@@ -36,11 +36,9 @@ before_script:
   - psql -d scraper -c "copy persons from '/tmp/testdb_persons.csv' delimiter ',' csv;"
   - cp tests/test_files/testdb_queries.csv /tmp/
   - psql -d scraper -c "copy queries from '/tmp/testdb_queries.csv' delimiter ',' csv;"
-  - npm i -g eslint
 
 script:
   - python -m pytest
-  - cat static/js/common.js static/js/main.js static/js/page.js | eslint --stdin
 
 notifications:
   slack: greynir:38FfPr1S8oZRNFMmt47mzT3z

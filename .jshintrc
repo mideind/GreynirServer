@@ -24,12 +24,12 @@
                                 //   true     : ensure whatever is used is consistent
                                 //   "single" : require single quotes
                                 //   "double" : require double quotes
-    "undef"         : true,     // true: Require all non-global variables to be declared (prevents global leaks)
-    "unused"        : false,     // Unused variables:
+    "undef"         : false,    // true: Require all non-global variables to be declared (prevents global leaks)
+    "unused"        : false,    // Unused variables:
                                 //   true     : all variables, last function parameter
                                 //   "vars"   : all variables only
                                 //   "strict" : all variables, all function parameters
-    "strict"        : false,     // true: Requires all functions run in ES5 Strict Mode
+    "strict"        : true,     // true: Requires all functions run in ES5 Strict Mode
     "maxparams"     : false,    // {int} Max number of formal params allowed per function
     "maxdepth"      : false,    // {int} Max depth of nested blocks (within functions)
     "maxstatements" : false,    // {int} Max number statements per function
@@ -60,9 +60,9 @@
     "proto"         : false,     // true: Tolerate using the `__proto__` property
     "scripturl"     : false,     // true: Tolerate script-targeted URLs
     "shadow"        : false,     // true: Allows re-define variables later in code e.g. `var x=1; x=2;`
-    "sub"           : true,     // true: Tolerate using `[]` notation when it can still be expressed in dot notation
+    "sub"           : true,      // true: Tolerate using `[]` notation when it can still be expressed in dot notation
     "supernew"      : false,     // true: Tolerate `new function () { ... };` and `new Object;`
-    "validthis"     : false,     // true: Tolerate using this in a non-constructor function
+    "validthis"     : true,      // true: Tolerate using this in a non-constructor function
 
     // Environments
     "browser"       : true,     // Web Browser (window, document, etc)
@@ -72,7 +72,7 @@
     "dojo"          : false,    // Dojo Toolkit
     "jasmine"       : false,    // Jasmine
     "jquery"        : true,     // jQuery
-    "mocha"         : false,     // Mocha
+    "mocha"         : false,    // Mocha
     "mootools"      : false,    // MooTools
     "node"          : false,    // Node.js
     "nonstandard"   : false,    // Widely adopted globals (escape, unescape, etc)
@@ -87,5 +87,6 @@
     "yui"           : false,    // Yahoo User Interface
 
     // Custom Globals
-    "globals"       : {}        // additional predefined global variables
+    "predef"       : [
+    ]
 }

@@ -152,3 +152,6 @@ $RECYCLE.BIN/
 resources/GoogleServerKey.txt
 resources/aws_polly_keys.*.json
 resources/salescloud_key.bin
+
+# JSHint config
+#.jshintrc
