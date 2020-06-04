@@ -42,7 +42,7 @@
    <div class="panel-heading">
       Orðtíðni í fréttum vefmiðla
       <br>
-      <small>Sláðu inn eitt eða fleiri orð og veldu tímabil</small>
+      <small>Sláðu inn eitt eða fleiri orð aðgreind með kommu, og veldu síðan tímabil</small>
    </div>
    <div style="padding:10px;">
       <span>
@@ -50,7 +50,7 @@
       </span>
       <span>
          Tímabil <input name="daterange" id="daterange" style="width:210px; margin-right: 10px;">
-         <input type="button" value="Sækja" onClick="reloadData();">
+         <input id="datefield" type="button" value="Sækja" onClick="reloadData();">
          <span id="in-progress" style="margin-left:10px;"></span>
       </span>
    </div>
@@ -240,7 +240,7 @@
       // Hide details view
       $("#wfreq-details-container").hide();
 
-      // The date range picker plugin produces string
+      // The date range picker plugin produces a string
       // containing two hyphen-separated ISO dates
       var res = $("#daterange").val().split(" - ");
 
@@ -276,8 +276,8 @@
       initChart(null);
       reloadData();
 
-      // Reload on Enter when focus in word input field
-      $("#words").keypress(function(event){
+      // Reload on Enter when focus in word/date input fields
+      $("#words, #datefield").keypress(function rld(event) {
          var keycode = (event.keyCode ? event.keyCode : event.which);
          if (keycode == '13'){
             reloadData();
