@@ -41,6 +41,7 @@ def test_merge_ao():
 
 def test_no_merge():
     from reynir import bintokenizer
+
     text = "Ingibjörg Sólrún Gísladóttir mun a.m.k. hitta hópinn á morgun"
     flat_tree = "P S-MAIN IP NP-SUBJ person_kvk_nf no_kvk_nf person_kvk_nf /NP-SUBJ VP-SEQ VP so_et_fh_gm_nt_p3 ADVP ao /ADVP so_1_þf_gm_nh NP-OBJ no_et_gr_kk_þf /NP-OBJ /VP ADVP ADVP-DATE-REL fs ao /ADVP-DATE-REL /ADVP /VP-SEQ /IP /S-MAIN /P"
     text_toks, parse_toks = tokenize_and_merge_possible_mw_tokens(text, flat_tree)

@@ -484,18 +484,17 @@ def get_currweather_answer(query, result):
     locdesc = result.get("subject") or "Úti"
 
     # Meters per second string for voice. Say nothing if "logn".
-    voice_ms = ", {0} {1} á sekúndu".format(
-        wind_ms_str, "metrar" if is_plural(wind_ms_str) else "metri"
-    ) if wind_ms_str != "0" else ""
+    voice_ms = (
+        ", {0} {1} á sekúndu".format(
+            wind_ms_str, "metrar" if is_plural(wind_ms_str) else "metri"
+        )
+        if wind_ms_str != "0"
+        else ""
+    )
 
     # Format voice string
     voice = "{0} er {1} stiga {2}{3} og {4}{5}".format(
-        locdesc.capitalize(),
-        abs(temp),
-        temp_type,
-        mdesc,
-        wind_desc,
-        voice_ms,
+        locdesc.capitalize(), abs(temp), temp_type, mdesc, wind_desc, voice_ms
     )
 
     # Text answer

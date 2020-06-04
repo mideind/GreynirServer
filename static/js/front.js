@@ -20,6 +20,7 @@
 
 */
 
+"use strict";
 
 // Waiting for query result?
 var queryInProgress = false;
@@ -80,12 +81,14 @@ var recognizer = null;
 
 function initializeSpeech() {
    // Attempt to detect and initialize HTML5 speech recognition, if available in the browser
-   if (recognizer !== null)
+   if (recognizer !== null) {
       // Already initialized
       return true;
+   }
    SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition || null;
-   if (SpeechRecognition === null)
+   if (SpeechRecognition === null) {
       return false;
+   }
    recognizer = new SpeechRecognition();
    // Recognizer stops listening when the user pauses
    recognizer.continuous = false;
@@ -95,10 +98,12 @@ function initializeSpeech() {
    recognizer.onresult = function(event) {
       var txt = "";
       for (var i = event.resultIndex; i < event.results.length; i++) {
-         if (event.results[i].isFinal)
+         if (event.results[i].isFinal) {
             txt = event.results[i][0].transcript; // + ' (Confidence: ' + event.results[i][0].confidence + ')';
-         else
+         }
+         else {
             txt += event.results[i][0].transcript;
+         }
       }
       $("#url").val(txt);
       $("#url").attr("placeholder", "");
@@ -155,18 +160,21 @@ function showPerson(ev) {
    // Send a query to the server
    var wId = $(this).attr("id"); // Check for token id
    var name;
-   if (wId === undefined)
+   if (wId === undefined) {
       name = $(this).text(); // No associated token: use the contained text
+   }
    else {
       // Obtain the name in nominative case from the token
       var ix = parseInt(wId.slice(1));
       var out = $("div#result");
       var tokens = out.data("tokens");
       var wl = tokens[ix];
-      if (!wl[2].length)
+      if (!wl[2].length) {
          name = wl[1];
-      else
+      }
+      else {
          name = wl[2][0][0];
+      }
    }
    queryPerson(name);
    ev.stopPropagation();
@@ -178,21 +186,11 @@ function showEntity(ev) {
    ev.stopPropagation();
 }
 
-function correctPlural(c, one, singular, plural) {
-   // Yield a correct plural/singular text corresponding to number c
-   if (c == 1)
-      return one + " " + singular; // einni grein
-   if ((c % 10 == 1) && (c != 11))
-      // 21 grein, 131 grein
-      return c.toString() + " " + singular;
-   // 11 greinum, 7 greinum
-   return c.toString() + " " + plural;
-}
-
 function makeSourceList(sources) {
    // Return a HTML rendering of a list of articles where the person or entity name appears
-   if (!sources)
+   if (!sources) {
       return undefined;
+   }
    var $table = $("<table class='table table-hover'>")
       .append($("<thead>")
          .append($("<tr>")
@@ -216,8 +214,9 @@ function makeSourceList(sources) {
 
 function makeSearchList(results) {
    // Return a HTML rendering of a list of articles in a search result
-   if (!results)
+   if (!results) {
       return undefined;
+   }
    var $table = $("<table class='table table-hover'>")
       .append($("<thead>")
          .append($("<tr>")
@@ -307,7 +306,7 @@ function displayImage(p, img_info) {
             .attr("width", img_info.width)
             .attr("height", img_info.height)
             .attr("title", img_info.name)
-            .attr("onerror", "imgError(this);")
+            .attr("onerror", "imgError(this);");
    p.append(
       $("<a></a>")
       .attr("href", img_info.link)
@@ -341,6 +340,8 @@ function populateQueryResult(r) {
    var answer;
    var searchResult;
    var key = "";
+   var articles;
+
    if (r.valid) {
       // This is a valid query response: present the response items in a bulleted list
       if (r.image !== undefined) {
@@ -349,8 +350,7 @@ function populateQueryResult(r) {
       }
       answer = $("<ul></ul>");
       var rlist;
-      var articles = undefined;
-      if (r.qtype == "Word") {
+      if (r.qtype === "Word") {
          rlist = r.response.answers;
          if (rlist && rlist.length) {
             var c = r.response.count;
@@ -360,16 +360,17 @@ function populateQueryResult(r) {
          }
       }
       else
-      if (r.qtype == "Person" || r.qtype == "Entity") {
+      if (r.qtype === "Person" || r.qtype === "Entity") {
          // Title or definition list
          rlist = r.response.answers;
          articles = makeSourceList(r.response.sources);
          key = r.key;
       }
       else
-      if (r.qtype != "Search")
+      if (r.qtype !== "Search") {
          rlist = r.response;
-      if (r.qtype == "Search" && r.response.answers.length > 0) {
+      }
+      if (r.qtype === "Search" && r.response.answers.length > 0) {
          // Article search by terms
          q = $("<h3 class='query'>");
          $.each(r.response.weights, function(i, t) {
@@ -393,21 +394,26 @@ function populateQueryResult(r) {
       else {
          $.each(rlist, function(ix, obj) {
             var li;
-            if (r.qtype == "Word") {
-               if (obj.cat.startsWith("person_"))
+            if (r.qtype === "Word") {
+               if (obj.cat.startsWith("person_")) {
                   li = $("<li>").html($("<span class='name'></span>").text(obj.stem));
+               }
                else
-               if (obj.cat.startsWith("entity") || obj.cat.startsWith("sérnafn"))
+               if (obj.cat.startsWith("entity") || obj.cat.startsWith("sérnafn")) {
                   li = $("<li>").html($("<span class='entity'></span>").text(obj.stem));
-               else
+               }
+               else {
                   li = $("<li>").text(obj.stem + " ").append($("<small></small>").text(obj.cat));
+               }
             }
             else {
-               if (r.qtype == "Title")
+               if (r.qtype === "Title") {
                   // For person names, generate a 'name' span
                   li = $("<li>").html($("<span class='name'></span>").text(obj.answer));
-               else
+               }
+               else {
                   li = $("<li>").text(obj.answer);
+               }
                var urlList = obj.sources;
                var artList = li.append($("<span class='art-list'></span>")).children().last();
                for (var i = 0; i < urlList.length; i++) {
@@ -429,13 +435,15 @@ function populateQueryResult(r) {
    else {
       // An error occurred
       answer = $("<p class='query-error'></p>");
-      if (r.error === undefined)
+      if (r.error === undefined) {
          answer.html("<span class='red glyphicon glyphicon-play'></span>&nbsp;")
             .append("Þetta er ekki fyrirspurn sem Greynir skilur. ")
             .append($("<a></a>").attr("href", "/analysis?txt=" + r.q).text("Smelltu hér til að málgreina."));
-      else
+      }
+      else {
          answer.html("<span class='red glyphicon glyphicon-play'></span>&nbsp;")
             .text(r.error);
+      }
    }
    $("div.guide-empty").css("display", "none");
    // Show the original query
@@ -502,9 +510,10 @@ var funcToUrl = {
 };
 
 function navToHistory(func, q) {
-   if (urlToFunc[func] === undefined)
+   if (urlToFunc[func] === undefined) {
       // Invalid function
       return;
+   }
    // Navigate to a previous state encoded in a URL
    $("#url").val(q.q); // Go back to original query string
    // Execute the original query function again
@@ -569,8 +578,8 @@ function autoCompleteLookup(q, done)  {
    var whois = 'hver er ';
    var whatis = 'hvað er ';
    var minqlen = Math.max(whois.length, whatis.length) + 1;
-   var valid = (q.toLowerCase().startsWith(whois) || q.toLowerCase().startsWith(whatis))
-               && q.length >= minqlen && !q.endsWith('?');
+   var valid = (q.toLowerCase().startsWith(whois) || q.toLowerCase().startsWith(whatis)) &&
+               q.length >= minqlen && !q.endsWith('?');
    if (!valid) {
       done(none);
       return;
@@ -610,12 +619,12 @@ function initMain(jQuery) {
          var start = this.selectionStart;
          var end = this.selectionEnd;
          var len = this.value.length;
-         if ((start == 0 && end == 0) || (start == len && end == len)) {
+         if ((start === 0 && end === 0) || (start === len && end === len)) {
             this.setSelectionRange(0, len);
          }
       })
       .keydown(function(ev) {
-         if (ev.which == 13) {
+         if (ev.which === 13) {
             var q = this.value.trim();
             analyzeQuery({ q: q, autouppercase: false });
             ev.preventDefault();

@@ -65,7 +65,7 @@ from postagger import IFD_Tagset, NgramTagger
 
 
 @contextmanager
-def timeit(description = "Timing"):
+def timeit(description="Timing"):
     t0 = time.time()
     yield
     t1 = time.time()
@@ -73,12 +73,14 @@ def timeit(description = "Timing"):
 
 
 class FreqDist(defaultdict):
-    
+
     """ A frequency distribution for the outcomes of an experiment.  A
         frequency distribution records the number of times each outcome of
         an experiment has occurred. """
 
-    def __init__(self, cls = int): # Note: the cls parameter seems to be required for pickling to work
+    def __init__(
+        self, cls=int
+    ):  # Note: the cls parameter seems to be required for pickling to work
         """ Construct a new frequency distribution.  If ``samples`` is
             given, then the frequency distribution will be initialized
             with the count of each object in ``samples``; otherwise, it
@@ -107,7 +109,9 @@ class ConditionalFreqDist(defaultdict):
     """ A collection of frequency distributions for a single experiment
         run under different conditions. """
 
-    def __init__(self, cls = FreqDist): # Note: the cls parameter seems to be required for pickling to work
+    def __init__(
+        self, cls=FreqDist
+    ):  # Note: the cls parameter seems to be required for pickling to work
         """ Construct a new empty conditional frequency distribution. """
         super().__init__(cls)
 
@@ -124,11 +128,10 @@ class ConditionalFreqDist(defaultdict):
 
 
 class UnknownWordTagger:
-
     def __init__(self):
         self._ngram_tagger = NgramTagger()
 
-    def tagset(self, word, at_sentence_start = False):
+    def tagset(self, word, at_sentence_start=False):
         """ Return a list of (probability, tag) tuples for the given word """
         toklist = list(parse_tokens(" ".join(word)))
         token = toklist[0]
@@ -142,18 +145,18 @@ class UnknownWordTagger:
             token = TOK.Word(w, m)
         return self._ngram_tagger.tag_single_token(token)
 
-    def tag(self, word, at_sentence_start = False):
+    def tag(self, word, at_sentence_start=False):
         """ Return a list with a single (word, tag) tuple for the given
             word list, containing a single word """
         taglist = self.tagset(word, at_sentence_start)
         w = word[0]
         if taglist:
             # Sort in descending order of probability
-            taglist.sort(key = lambda x: x[1], reverse = True)
+            taglist.sort(key=lambda x: x[1], reverse=True)
             # Return the most likely tag
-            return [ (w, taglist[0][0]) ]
+            return [(w, taglist[0][0])]
         # No taglist: give up and return 'Unk' as the tag
-        return [ (w, 'Unk') ]
+        return [(w, "Unk")]
 
 
 class TnT:
@@ -186,7 +189,7 @@ class TnT:
     """
 
     def __init__(self, N=1000, C=False):
-        '''
+        """
         Construct a TnT statistical tagger. Tagger must be trained
         before being used to tag input.
         :param unk: instance of a POS tagger, conforms to TaggerI
@@ -206,21 +209,21 @@ class TnT:
         information for tagging.
         NOTE: using capitalization may not increase the accuracy
         of the tagger
-        '''
-        self._uni  = FreqDist()
-        self._bi   = ConditionalFreqDist()
-        self._tri  = ConditionalFreqDist()
-        self._wd   = ConditionalFreqDist()
-        self._l1   = 0.0
-        self._l2   = 0.0
-        self._l3   = 0.0
-        self._N    = N
-        self._C    = C
+        """
+        self._uni = FreqDist()
+        self._bi = ConditionalFreqDist()
+        self._tri = ConditionalFreqDist()
+        self._wd = ConditionalFreqDist()
+        self._l1 = 0.0
+        self._l2 = 0.0
+        self._l3 = 0.0
+        self._N = N
+        self._C = C
 
         self._unk = UnknownWordTagger()
 
-        self._training = True # In training phase?
-        self._count = 0 # Trained sentences
+        self._training = True  # In training phase?
+        self._count = 0  # Trained sentences
 
         # statistical tools (ignore or delete me)
         self.unknown = 0
@@ -229,7 +232,7 @@ class TnT:
     def __getstate__(self):
         """ Obtain the state of this object to be pickled """
         state = self.__dict__.copy()
-        del state['_unk']
+        del state["_unk"]
         return state
 
     def __setstate__(self, state):
@@ -260,7 +263,7 @@ class TnT:
         """ Store a previously trained model in a file """
         self._finish_training()
         with open(filename, "wb") as file:
-            pickle.dump(self, file, protocol = pickle.HIGHEST_PROTOCOL)
+            pickle.dump(self, file, protocol=pickle.HIGHEST_PROTOCOL)
 
     @staticmethod
     def load(filename):
@@ -275,13 +278,13 @@ class TnT:
             return None
 
     def train(self, sentences):
-        '''
+        """
         Uses a set of tagged data to train the tagger.
         :param data: List of lists of (word, tag) tuples
         :type data: tuple(str)
-        '''
+        """
         for sent in sentences:
-            history = (('BOS',False), ('BOS',False))
+            history = (("BOS", False), ("BOS", False))
             self._count += 1
             for w, t in sent:
 
@@ -289,7 +292,7 @@ class TnT:
                 # and the word begins with a capital
                 # set local flag C to True
                 C = self._C and w[0].isupper()
-                tC = (t,C)
+                tC = (t, C)
 
                 self._wd[w][t] += 1
                 self._uni[tC] += 1
@@ -299,7 +302,7 @@ class TnT:
                 history = (history[1], tC)
 
     def _compute_lambda(self):
-        '''
+        """
         creates lambda values based upon training data
         NOTE: no need to explicitly reference C,
         it is contained within the tag variable :: tag == (tag,C)
@@ -312,7 +315,7 @@ class TnT:
         ISSUES -- Resolutions:
         if 2 values are equal, increment both lambda values
         by (f(t1,t2,t3) / 2)
-        '''
+        """
 
         # temporary lambda variables
         tl1 = 0.0
@@ -375,7 +378,7 @@ class TnT:
                 # otherwise there might be a problem
                 # eg: all values = 0
                 else:
-                    #print "Problem", c1, c2 ,c3
+                    # print "Problem", c1, c2 ,c3
                     pass
 
         # Lambda normalisation:
@@ -385,14 +388,14 @@ class TnT:
         self._l3 = tl3 / (tl1 + tl2 + tl3)
 
     def _safe_div(self, v1, v2):
-        '''
+        """
         Safe floating point division function, does not allow division by 0
         returns -1 if the denominator is 0
-        '''
+        """
         return -1 if v2 == 0 else v1 / v2
 
     def tag_sents(self, sentences):
-        '''
+        """
         Tags each sentence in a list of sentences
         :param data:list of list of words
         :type data: [[string,],]
@@ -400,11 +403,11 @@ class TnT:
         Invokes tag(sent) function for each sentence
         compiles the results into a list of tagged sentences
         each tagged sentence is a list of (word, tag) tuples
-        '''
-        return [ self.tag(sent) for sent in sentences ]
+        """
+        return [self.tag(sent) for sent in sentences]
 
     def tag(self, sentence):
-        '''
+        """
         Tags a single sentence
         :param data: list of words
         :type data: [string,]
@@ -414,7 +417,7 @@ class TnT:
         Associates the sequence of returned tags
         with the correct words in the input sequence
         returns a list of (word, tag) tuples
-        '''
+        """
         if self._training:
             self._finish_training()
 
@@ -425,7 +428,7 @@ class TnT:
         _tri = self._tri
         _C = self._C
 
-        current_state = [(0.0, [('BOS',False), ('BOS',False)])]
+        current_state = [(0.0, [("BOS", False), ("BOS", False)])]
         keyfunc = lambda x: x[0]
 
         for index, word in enumerate(sent):
@@ -448,7 +451,7 @@ class TnT:
                     h2 = tuple(history[-2:])
 
                     for t in _wd[word]:
-                        tC = (t,C)
+                        tC = (t, C)
                         p_uni = _uni.freq(tC)
                         p_bi = _bi[h1].freq(tC)
                         p_tri = _tri[h2].freq(tC)
@@ -456,7 +459,7 @@ class TnT:
                         p = self._l1 * p_uni + self._l2 * p_bi + self._l3 * p_tri
                         p2 = log(p) + log(p_wd)
 
-                        new_state.append((curr_sent_logprob + p2, history + [ tC ]))
+                        new_state.append((curr_sent_logprob + p2, history + [tC]))
 
             else:
                 # otherwise a new word, set of possible tags is unknown
@@ -469,11 +472,13 @@ class TnT:
                 if not taglist:
                     # if no unknown word tagger has been specified
                     # or no tag is found, use the tag 'Unk'
-                    taglist = [ ('Unk', 1.0) ]
+                    taglist = [("Unk", 1.0)]
 
                 for (curr_sent_logprob, history) in current_state:
                     for t, prob in taglist:
-                        new_state.append((curr_sent_logprob + log(prob), history + [ (t,C) ]))
+                        new_state.append(
+                            (curr_sent_logprob + log(prob), history + [(t, C)])
+                        )
 
             # now have computed a set of possible new_states
 
@@ -483,44 +488,46 @@ class TnT:
             # set is now ordered greatest to least log probability
             # del everything after N (threshold)
             # this is the beam search cut
-            current_state = new_state[0:self._N]
+            current_state = new_state[0 : self._N]
 
         # return the most probable tag history
         tags = current_state[0][1]
-        return [ (w, tags[i + 2][0]) for i, w in enumerate(sent) ]
+        return [(w, tags[i + 2][0]) for i, w in enumerate(sent)]
 
 
 # Global tagger singleton instance
 _TAGGER = None
 # Translation dictionary
-_XLT = { "—" : "-", "–" : "-" }
+_XLT = {"—": "-", "–": "-"}
+
 
 def ifd_tag(text):
     """ Tokenize the given text and use a global singleton TnT tagger to tag it """
     global _TAGGER
     if _TAGGER is None:
         # Load the tagger from a pickle the first time it's used
-        logging.info("Loading TnT model from {0}".format("config" + os.sep + "TnT-model.pickle"))
+        logging.info(
+            "Loading TnT model from {0}".format("config" + os.sep + "TnT-model.pickle")
+        )
         _TAGGER = TnT.load("config" + os.sep + "TnT-model.pickle")
         if _TAGGER is None:
-            return [] # No tagger model - unable to tag
+            return []  # No tagger model - unable to tag
     token_stream = raw_tokenize(text)
     result = []
 
     def xlt(txt):
         """ Translate the token text as required before tagging it """
-        if txt[0] == '[' and txt[-1] == ']':
+        if txt[0] == "[" and txt[-1] == "]":
             # Abbreviation enclosed in square brackets: remove'em
             return txt[1:-1]
         return _XLT.get(txt, txt)
 
     for pg in paragraphs(token_stream):
         for _, sent in pg:
-            toklist = [ xlt(t.txt) for t in sent if t.txt ]
+            toklist = [xlt(t.txt) for t in sent if t.txt]
             # print(f"Toklist: {toklist}")
             tagged = _TAGGER.tag(toklist)
             result.append(tagged)
 
     # Return a list of paragraphs, consisting of sentences, consisting of tokens
     return result
-

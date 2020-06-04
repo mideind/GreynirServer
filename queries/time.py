@@ -63,21 +63,21 @@ _TIME_QUERIES = frozenset(
 
 
 # Lemmas of keywords that could indicate that the user is trying to use this module
-TOPIC_LEMMAS = [
-    "klukka", "tími"
-]
+TOPIC_LEMMAS = ["klukka", "tími"]
 
 
 def help_text(lemma):
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
-        random.choice((
-            "Hvað er klukkan",
-            "Hvað líður tímanum",
-            "Hvað er klukkan í Kaupmannahöfn",
-            "Hvað er klukkan í Tókýó",
-        ))
+        random.choice(
+            (
+                "Hvað er klukkan",
+                "Hvað líður tímanum",
+                "Hvað er klukkan í Kaupmannahöfn",
+                "Hvað er klukkan í Tókýó",
+            )
+        )
     )
 
 
@@ -100,7 +100,7 @@ def handle_plain_text(q):
         tz = timezone4loc(q.location, fallback="IS")
     elif ql.startswith("hvað er klukkan á ") or ql.startswith("hvað er klukkan í "):
         # Query about the time in a particular location, i.e. country or city
-        loc = ql[18:] # Cut away question prefix, leaving only placename
+        loc = ql[18:]  # Cut away question prefix, leaving only placename
         # Capitalize each word in country/city name
         loc = capitalize_placename(loc)
         # Look up nominative

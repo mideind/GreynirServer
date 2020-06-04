@@ -155,7 +155,7 @@ def lookup_best_word(word):
         def sort_by_preference(m_list):
             # Filter out words that don't have the same "utg" i.e. word ID as
             # the one we successfully looked up in BÍN
-            mns = list(filter(lambda w : w.utg == wid, m_list))
+            mns = list(filter(lambda w: w.utg == wid, m_list))
             # Discourage rarer declension forms, i.e. ÞGF2 and ÞGF3
             return sorted(m_list, key=lambda m: "2" in m.beyging or "3" in m.beyging)
 

@@ -34,8 +34,15 @@ from functools import wraps
 from datetime import datetime, timedelta
 
 from flask import (
-    Blueprint, jsonify, make_response, current_app, Response,
-    abort, request, url_for, _request_ctx_stack
+    Blueprint,
+    jsonify,
+    make_response,
+    current_app,
+    Response,
+    abort,
+    request,
+    url_for,
+    _request_ctx_stack,
 )
 from flask.ctx import RequestContext
 from werkzeug.exceptions import HTTPException, InternalServerError
@@ -59,7 +66,6 @@ def max_age(seconds):
         with a max-age cache header """
 
     def decorator(f):
-
         @wraps(f)
         def decorated_function(*args, **kwargs):
             resp = f(*args, **kwargs)
@@ -183,7 +189,7 @@ def before_first_request():
                 _tasks = {
                     task_id: task
                     for task_id, task in _tasks.items()
-                    if 't' not in task or task['t'] > five_min_ago
+                    if "t" not in task or task["t"] > five_min_ago
                 }
             time.sleep(60)
 
@@ -235,7 +241,7 @@ class _RequestProxy:
         """ Create an instance that walks and quacks sufficiently similarly
             to the Flask Request object in rq """
         self.method = rq.method
-        self.headers = { k: v for k, v in rq.headers }
+        self.headers = {k: v for k, v in rq.headers}
         self.environ = rq.environ
         self.blueprint = rq.blueprint
         self.progress_func = None
@@ -258,7 +264,7 @@ class _RequestProxy:
         # Make a copy of the passed-in files, if any, so that they
         # can be accessed and processed offline (after the original
         # request has been completed and temporary files deleted)
-        self.files = { k: _FileProxy(v) for k, v in rq.files.items() }
+        self.files = {k: _FileProxy(v) for k, v in rq.files.items()}
 
     def set_progress_func(self, progress_func):
         """ Set a function to call during processing of asynchronous requests """
@@ -313,8 +319,7 @@ def async_task(f):
             # intact and available even after the original request has been closed
             rq = _RequestProxy(request)
             new_task = threading.Thread(
-                target=task,
-                args=(current_app._get_current_object(), rq)
+                target=task, args=(current_app._get_current_object(), rq)
             )
 
         new_task.start()
@@ -328,13 +333,13 @@ def async_task(f):
             {
                 "Location": fancy_url_for("routes.get_status", task=task_id),
                 "Content-Type": "application/json; charset=utf-8",
-            }
+            },
         )
 
     return wrapped
 
 
-@routes.route('/status/<task>', methods=['GET'])
+@routes.route("/status/<task>", methods=["GET"])
 def get_status(task):
     """ Return the status of an asynchronous task. If this request returns a
         202 ACCEPTED status code, it means that task hasn't finished yet.
@@ -355,7 +360,7 @@ def get_status(task):
             {
                 "Location": fancy_url_for("routes.get_status", task=task_id),
                 "Content-Type": "application/json; charset=utf-8",
-            }
+            },
         )
 
 

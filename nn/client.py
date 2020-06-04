@@ -68,7 +68,7 @@ class ApiClient:
             https_char="s" if self.https else "",
             host=self.host,
             port=self.port,
-            action=self.action
+            action=self.action,
         )
 
     def validate(self, request):
@@ -82,7 +82,7 @@ class ApiClient:
         data = json.loads(request.data)
         required_diff = set(self.required_fields).difference(data.keys())
         if required_diff:
-            return (False,  "{} are required fields.".format(", ".join(required_diff)))
+            return (False, "{} are required fields.".format(", ".join(required_diff)))
 
         for field in self.default_field_values:
             if field not in data:
@@ -92,9 +92,7 @@ class ApiClient:
 
     def parse_for_remote(self, data):
         """ Modifies data to comply with the remote server input format """
-        return {
-            "pgs": data['contents']
-        }
+        return {"pgs": data["contents"]}
 
     def get(self, data):
         """ Handler for GET requests """
@@ -116,28 +114,23 @@ class ApiClient:
 
         parsed_data = self.parse_for_remote(data)
 
-        if request.method == 'POST':
+        if request.method == "POST":
             return self.post(parsed_data)
 
-        if request.method == 'GET':
+        if request.method == "GET":
             return self.get(parsed_data)
 
-        return abort(400, 'Bad method {}'.format(request.method))
+        return abort(400, "Bad method {}".format(request.method))
 
 
 class TranslationApiClient(ApiClient):
 
-    required_fields = (
-        "contents",
-    )
+    required_fields = ("contents",)
 
     target = "en"
     source = "is"
 
-    default_field_values = {
-        "targetLanguageCode": "en",
-        "sourceLanguageCode": "is"
-    }
+    default_field_values = {"targetLanguageCode": "en", "sourceLanguageCode": "is"}
 
     port = Settings.NN_TRANSLATION_PORT
     host = Settings.NN_TRANSLATION_HOST
@@ -154,10 +147,11 @@ class TranslationApiClient(ApiClient):
                         "translatedText": val["outputs"],
                         "scores": val["scores"],  # Not part of the Google API
                         "model": "{}-{}".format(
-                            self._data['sourceLanguageCode'],
-                            self._data['targetLanguageCode'],
-                        )
-                    } for val in response["predictions"]
+                            self._data["sourceLanguageCode"],
+                            self._data["targetLanguageCode"],
+                        ),
+                    }
+                    for val in response["predictions"]
                 ]
             }
         )

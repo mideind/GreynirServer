@@ -213,7 +213,9 @@ class Fetcher:
             if r.status_code == requests.codes.ok:
                 html_doc = r.text
             else:
-                logging.warning("HTTP status {0} for URL {1}".format(r.status_code, url))
+                logging.warning(
+                    "HTTP status {0} for URL {1}".format(r.status_code, url)
+                )
 
         except requests.exceptions.ConnectionError as e:
             logging.error("ConnectionError: {0} for URL {1}".format(e, url))
@@ -225,16 +227,10 @@ class Fetcher:
             logging.error("HTTPError: {0} for URL {1}".format(e, url))
             html_doc = None
         except UnicodeEncodeError as e:
-            logging.error(
-                "Exception when opening URL {0}: {1}"
-                .format(url, e)
-            )
+            logging.error("Exception when opening URL {0}: {1}".format(url, e))
             html_doc = None
         except UnicodeDecodeError as e:
-            logging.error(
-                "Exception when decoding HTML of {0}: {1}"
-                .format(url, e)
-            )
+            logging.error("Exception when decoding HTML of {0}: {1}".format(url, e))
             html_doc = None
         return html_doc
 
@@ -329,7 +325,7 @@ class Fetcher:
                 s.netloc or root_s.netloc,
                 newpath,
                 s.query,
-                ""
+                "",
             )
             # Make a complete new URL to fetch
             url = urlparse.urlunsplit(newurl)
@@ -364,8 +360,7 @@ class Fetcher:
         """ Return a scraped article object, if found, else None """
         with SessionContext(enclosing_session, commit=True) as session:
             article = (
-                session
-                .query(ArticleRow)
+                session.query(ArticleRow)
                 .filter_by(url=url)
                 .filter(ArticleRow.scraped != None)
                 .one_or_none()
@@ -427,7 +422,9 @@ class Fetcher:
             # Parse the HTML
             soup = Fetcher.make_soup(html_doc, helper)
             if soup is None:
-                logging.warning("Fetcher.fetch_url({0}): No soup or no soup.html".format(url))
+                logging.warning(
+                    "Fetcher.fetch_url({0}): No soup or no soup.html".format(url)
+                )
                 return None
 
             # Obtain the metadata and the content from the resulting soup

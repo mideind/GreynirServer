@@ -73,7 +73,6 @@ class Scraper_DB:
 
 
 class classproperty:
-
     def __init__(self, f):
         self.f = f
 
@@ -104,7 +103,9 @@ class SessionContext:
             # Create a new session that will be automatically committed
             # (if commit == True) and closed upon exit from the context
             # pylint: disable=no-member
-            self._session = self.db.session  # Creates a new Scraper_DB instance if needed
+            self._session = (
+                self.db.session
+            )  # Creates a new Scraper_DB instance if needed
             self._new_session = True
             if read_only:
                 # Set the transaction as read only, which can save resources

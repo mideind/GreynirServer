@@ -118,15 +118,17 @@ class LineReader:
             if self._outer_fname:
                 # This is an include file within an outer config file
                 c = ConfigError(
-                    "Error while opening or reading include file '{0}'"
-                    .format(self._fname)
+                    "Error while opening or reading include file '{0}'".format(
+                        self._fname
+                    )
                 )
                 c.set_pos(self._outer_fname, self._outer_line)
             else:
                 # This is an outermost config file
                 c = ConfigError(
-                    "Error while opening or reading config file '{0}'"
-                    .format(self._fname)
+                    "Error while opening or reading config file '{0}'".format(
+                        self._fname
+                    )
                 )
             raise c
 
@@ -158,8 +160,7 @@ class VerbObjects:
             for case in args:
                 if case not in _ALL_CASES:
                     raise ConfigError(
-                        "Invalid case for verb argument: '{0}'"
-                        .format(case)
+                        "Invalid case for verb argument: '{0}'".format(case)
                     )
             # Append a possible argument list
             arglists = VerbObjects.VERBS[la][verb]
@@ -487,8 +488,9 @@ class Topics:
 
 # Magic stuff to change locale context temporarily
 
+
 @contextmanager
-def changedlocale(new_locale=None, category='LC_COLLATE'):
+def changedlocale(new_locale=None, category="LC_COLLATE"):
     """ Change locale temporarily within a context (with-statement) """
     # The new locale parameter should be a tuple, e.g. ('is_IS', 'UTF-8')
     # The category should be a string such as 'LC_TIME', 'LC_NUMERIC' etc.
@@ -611,8 +613,7 @@ class Settings:
         DB_PORT = int(DB_PORT)
     except ValueError:
         raise ConfigError(
-            "Invalid environment variable value: DB_PORT={0}"
-            .format(DB_PORT)
+            "Invalid environment variable value: DB_PORT={0}".format(DB_PORT)
         )
 
     # Flask server host and port
@@ -622,8 +623,7 @@ class Settings:
         PORT = int(PORT)
     except ValueError:
         raise ConfigError(
-            "Invalid environment variable value: GREYNIR_PORT={0}"
-            .format(PORT)
+            "Invalid environment variable value: GREYNIR_PORT={0}".format(PORT)
         )
 
     # Flask debug parameter
@@ -636,8 +636,9 @@ class Settings:
         SIMSERVER_PORT = int(SIMSERVER_PORT)
     except ValueError:
         raise ConfigError(
-            "Invalid environment variable value: SIMSERVER_PORT={0}"
-            .format(SIMSERVER_PORT)
+            "Invalid environment variable value: SIMSERVER_PORT={0}".format(
+                SIMSERVER_PORT
+            )
         )
 
     if SIMSERVER_PORT == PORT:
@@ -646,31 +647,45 @@ class Settings:
             "similarity server on port {0}".format(PORT)
         )
 
-    NN_PARSING_ENABLED = os.environ.get('NN_PARSING_ENABLED', False)
+    NN_PARSING_ENABLED = os.environ.get("NN_PARSING_ENABLED", False)
     try:
         NN_PARSING_ENABLED = bool(int(NN_PARSING_ENABLED))
     except ValueError:
-        raise ConfigError("Invalid environment variable value: NN_PARSING_ENABLED = {0}".format(NN_PARSING_ENABLED))
-    NN_PARSING_HOST = os.environ.get('NN_PARSING_HOST', 'localhost')
-    NN_PARSING_PORT = os.environ.get('NN_PARSING_PORT', '9000')
+        raise ConfigError(
+            "Invalid environment variable value: NN_PARSING_ENABLED = {0}".format(
+                NN_PARSING_ENABLED
+            )
+        )
+    NN_PARSING_HOST = os.environ.get("NN_PARSING_HOST", "localhost")
+    NN_PARSING_PORT = os.environ.get("NN_PARSING_PORT", "9000")
     try:
         NN_PARSING_PORT = int(NN_PARSING_PORT)
     except ValueError:
-        raise ConfigError("Invalid environment variable value: NN_PARSING_PORT = {0}".format(NN_PARSING_PORT))
+        raise ConfigError(
+            "Invalid environment variable value: NN_PARSING_PORT = {0}".format(
+                NN_PARSING_PORT
+            )
+        )
 
-    NN_TRANSLATION_ENABLED = os.environ.get('NN_TRANSLATION_ENABLED', False)
+    NN_TRANSLATION_ENABLED = os.environ.get("NN_TRANSLATION_ENABLED", False)
     try:
         NN_TRANSLATION_ENABLED = bool(int(NN_TRANSLATION_ENABLED))
     except ValueError:
         raise ConfigError(
-            "Invalid environment variable value: NN_TRANSLATION_ENABLED = {0}".format(NN_TRANSLATION_ENABLED)
+            "Invalid environment variable value: NN_TRANSLATION_ENABLED = {0}".format(
+                NN_TRANSLATION_ENABLED
+            )
         )
-    NN_TRANSLATION_HOST = os.environ.get('NN_TRANSLATION_HOST', 'localhost')
-    NN_TRANSLATION_PORT = os.environ.get('NN_TRANSLATION_PORT', '9001')
+    NN_TRANSLATION_HOST = os.environ.get("NN_TRANSLATION_HOST", "localhost")
+    NN_TRANSLATION_PORT = os.environ.get("NN_TRANSLATION_PORT", "9001")
     try:
         NN_TRANSLATION_PORT = int(NN_TRANSLATION_PORT)
     except ValueError:
-        raise ConfigError("Invalid environment variable value: NN_TRANSLATION_PORT = {0}".format(NN_TRANSLATION_PORT))
+        raise ConfigError(
+            "Invalid environment variable value: NN_TRANSLATION_PORT = {0}".format(
+                NN_TRANSLATION_PORT
+            )
+        )
 
     # Configuration settings from the Greynir.conf file
 
@@ -730,8 +745,7 @@ class Settings:
                 raise ConfigError("Meaning in static_phrases should have 3 arguments")
         else:
             raise ConfigError(
-                "Unknown configuration parameter '{0}' in static_phrases"
-                .format(par)
+                "Unknown configuration parameter '{0}' in static_phrases".format(par)
             )
 
     @staticmethod
@@ -950,8 +964,9 @@ class Settings:
         cats = s[q + 1 :].strip().lower().split()
         if len(words) != len(cats):
             raise ConfigError(
-                "Ambiguous phrase has {0} words but {1} categories"
-                .format(len(words), len(cats))
+                "Ambiguous phrase has {0} words but {1} categories".format(
+                    len(words), len(cats)
+                )
             )
         if len(words) < 2:
             raise ConfigError("Ambiguous phrase must contain at least two words")

@@ -38,9 +38,11 @@ before_script:
   - psql -d scraper -c "copy persons from '/tmp/testdb_persons.csv' delimiter ',' csv;"
   - cp tests/test_files/testdb_queries.csv /tmp/
   - psql -d scraper -c "copy queries from '/tmp/testdb_queries.csv' delimiter ',' csv;"
+  - npm i -g jshint
 
 script:
   - python -m pytest
+  - jshint static/js/common.js
 
 notifications:
   slack: greynir:38FfPr1S8oZRNFMmt47mzT3z

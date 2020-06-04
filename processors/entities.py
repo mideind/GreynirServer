@@ -98,10 +98,7 @@ NOT_ENTITIES = {
 
 # Lower-case abbreviations that are allowed to be a part of entity names
 ALLOWED_PARTS = frozenset(
-    (
-        "hf.", "ehf.", "sf.", "slhf.", "svf.",
-        "hf", "ehf", "sf", "slhf", "svf"
-    )
+    ("hf.", "ehf.", "sf.", "slhf.", "svf.", "hf", "ehf", "sf", "slhf", "svf")
 )
 
 

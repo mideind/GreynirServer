@@ -261,9 +261,7 @@ def _gen_evening_program_answer(q):
 
     answ = ["Klukkan"]
     for p in prog:
-        answ.append(
-            "{0} : {1}.\n".format(p["startTime"][11:16], p["title"])
-        )
+        answ.append("{0} : {1}.\n".format(p["startTime"][11:16], p["title"]))
     voice_answer = "".join(answ)
     answer = "".join(answ[1:]).replace(" : ", " ")
     return dict(answer=answer), answer, voice_answer

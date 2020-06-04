@@ -37,12 +37,14 @@ def help_text(lemma):
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
-        random.choice((
-            "Hvenær kemur fyrsti jólasveinninn til byggða",
-            "Hvenær kemur Askasleikir",
-            "Hvaða jólasveinn kemur fimmtánda desember",
-            "Hvenær er von á Hurðaskelli",
-        ))
+        random.choice(
+            (
+                "Hvenær kemur fyrsti jólasveinninn til byggða",
+                "Hvenær kemur Askasleikir",
+                "Hvaða jólasveinn kemur fimmtánda desember",
+                "Hvenær er von á Hurðaskelli",
+            )
+        )
     )
 
 
@@ -122,12 +124,7 @@ _DATE_TO_ORDINAL = {v: k for k, v in _ORDINAL_TO_DATE.items()}
 _DATE_TO_ORDINAL_GEN = _DATE_TO_ORDINAL.copy()
 _DATE_TO_ORDINAL_GEN[22] = "tuttugasta og annars"
 
-_TWENTY_PART = {
-    "fyrsta": 1,
-    "annan": 2,
-    "þriðja": 3,
-    "fjórða": 4,
-}
+_TWENTY_PART = {"fyrsta": 1, "annan": 2, "þriðja": 3, "fjórða": 4}
 
 # Lemmas of keywords that could indicate that the user is trying to use this module
 TOPIC_LEMMAS = ["jólasveinn"] + list(_YULE_LADS_BY_NAME.keys())
@@ -303,7 +300,9 @@ QYuleLad →
     | QYuleLadFirst QYuleSuffix?
     | QYuleLadLast QYuleSuffix?
 
-""".format(" | ".join("'{0}'/fall".format(name) for name in _YULE_LADS_BY_NAME.keys()))
+""".format(
+    " | ".join("'{0}'/fall".format(name) for name in _YULE_LADS_BY_NAME.keys())
+)
 
 
 def QYuleDate(node, params, result):
@@ -344,7 +343,7 @@ def QYuleNumberOrdinal(node, params, result):
         # yule lad coming on the eve of the 12th, etc.
         result.lad_date += 1
     result.yule_lad = _YULE_LADS_BY_DATE.get(result.lad_date)
-    if not(11 <= result.lad_date <= 24):
+    if not (11 <= result.lad_date <= 24):
         result.invalid_date = True
 
 
@@ -376,7 +375,7 @@ def QYuleDay24(node, params, result):
 def QYuleToday(node, params, result):
     result.yule_lad = None
     result.lad_date = datetime.utcnow().day
-    if not(11 <= result.lad_date <= 24):
+    if not (11 <= result.lad_date <= 24):
         result.invalid_date = True
     else:
         if result.lad_date < 24:
@@ -389,7 +388,7 @@ def QYuleToday(node, params, result):
 def QYuleTomorrow(node, params, result):
     result.yule_lad = None
     result.lad_date = datetime.utcnow().day + 1
-    if not(11 <= result.lad_date <= 24):
+    if not (11 <= result.lad_date <= 24):
         result.invalid_date = True
     else:
         if result.lad_date < 24:
@@ -415,7 +414,7 @@ def QYuleTwentyOrdinal(node, params, result):
         elif "twenty_part" in result:
             day += result.twenty_part
         result.lad_date = day
-        if not(11 <= result.lad_date <= 24):
+        if not (11 <= result.lad_date <= 24):
             result.invalid_date = True
         else:
             if result.lad_date < 24:
@@ -432,7 +431,7 @@ def QYuleDateRel(node, params, result):
         year, month, result.lad_date = daterel.contained_date
         if year != 0 or month != 12:
             result.invalid_date = True
-        elif not(11 <= result.lad_date <= 24):
+        elif not (11 <= result.lad_date <= 24):
             result.invalid_date = True
         else:
             if result.lad_date < 24:
@@ -455,9 +454,8 @@ def sentence(state, result):
     if result.qtype == "YuleDate":
         # 'Hvenær kemur [jólasveinn X]'
         yule_lad = result.yule_lad
-        answer = voice_answer = (
-            "{0} kemur til byggða aðfaranótt {1} desember."
-            .format(yule_lad, _DATE_TO_ORDINAL_GEN[result.lad_date])
+        answer = voice_answer = "{0} kemur til byggða aðfaranótt {1} desember.".format(
+            yule_lad, _DATE_TO_ORDINAL_GEN[result.lad_date]
         )
     elif result.qtype == "YuleLad":
         # 'Hvaða jólasveinn kemur til byggða [á degi x]'
@@ -467,15 +465,17 @@ def sentence(state, result):
                 answer = voice_answer = "Þetta er ekki gildur mánaðardagur."
             else:
                 # TODO: Fix, always replies "desember" even during other months
-                answer = voice_answer = (
-                    "Enginn jólasveinn kemur til byggða þann {0} desember."
-                    .format(_DATE_TO_ORDINAL[result.lad_date])
+                answer = (
+                    voice_answer
+                ) = "Enginn jólasveinn kemur til byggða þann {0} desember.".format(
+                    _DATE_TO_ORDINAL[result.lad_date]
                 )
         else:
             yule_lad = result.yule_lad
-            answer = voice_answer = (
-                "{0} kemur til byggða aðfaranótt {1} desember."
-                .format(yule_lad, _DATE_TO_ORDINAL_GEN[result.lad_date])
+            answer = (
+                voice_answer
+            ) = "{0} kemur til byggða aðfaranótt {1} desember.".format(
+                yule_lad, _DATE_TO_ORDINAL_GEN[result.lad_date]
             )
         q.lowercase_beautified_query()
 

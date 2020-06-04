@@ -24,7 +24,7 @@ from reynir import bintokenizer
 
 
 def prep_text_for_tokenizer(text):
-   return "[[ " + " ]] [[ ".join(text.split("\n")) + " ]]"
+    return "[[ " + " ]] [[ ".join(text.split("\n")) + " ]]"
 
 
 def index_text(text):

@@ -182,4 +182,3 @@ class SimilarityClient:
         if self._conn is not None:
             self._conn.close()
             self._conn = None
-

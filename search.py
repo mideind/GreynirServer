@@ -40,11 +40,9 @@ class Search:
     # Similarity query client
     similarity_client = None
 
-
     def __init__(self):
         """ This class is normally not instantiated """
         pass
-
 
     @classmethod
     def _connect(cls):
@@ -52,28 +50,25 @@ class Search:
         if cls.similarity_client is None:
             cls.similarity_client = SimilarityClient()
 
-
     @classmethod
     def list_similar_to_article(cls, session, uuid, n):
         """ List n articles that are similar to the article with the given id """
         cls._connect()
         # Returns a list of tuples: (article_id, similarity)
-        result = cls.similarity_client.list_similar_to_article(uuid, n = n + 5)
+        result = cls.similarity_client.list_similar_to_article(uuid, n=n + 5)
         result = result.get("articles", [])
         # Convert the result tuples into article descriptors
         return cls.list_articles(session, result, n)
-
 
     @classmethod
     def list_similar_to_topic(cls, session, topic_vector, n):
         """ List n articles that are similar to the given topic vector """
         cls._connect()
         # Returns a list of tuples: (article_id, similarity)
-        result = cls.similarity_client.list_similar_to_topic(topic_vector, n = n + 5)
+        result = cls.similarity_client.list_similar_to_topic(topic_vector, n=n + 5)
         result = result.get("articles", [])
         # Convert the result tuples into article descriptors
         return cls.list_articles(session, result, n)
-
 
     @classmethod
     def list_similar_to_terms(cls, session, terms, n):
@@ -81,14 +76,12 @@ class Search:
             terms are expected to be a list of (stem, category) tuples. """
         cls._connect()
         # Returns a list of tuples: (article_id, similarity)
-        result = cls.similarity_client.list_similar_to_terms(terms, n = n + 5)
+        result = cls.similarity_client.list_similar_to_terms(terms, n=n + 5)
         # Convert the result tuples into article descriptors
         articles = result.get("articles", [])
         # Obtain the search term weights
         weights = result.get("weights", [])
-        return dict(weights = weights,
-            articles = cls.list_articles(session, articles, n))
-
+        return dict(weights=weights, articles=cls.list_articles(session, articles, n))
 
     @classmethod
     def list_articles(cls, session, result, n):
@@ -100,7 +93,9 @@ class Search:
                 continue
             q = session.query(Article).join(Root).filter(Article.id == sid)
             sa = q.one_or_none()
-            if sa and sa.heading and sa.heading.strip(): # Skip articles without headings
+            if (
+                sa and sa.heading and sa.heading.strip()
+            ):  # Skip articles without headings
                 # Similarity in percent
                 spercent = 100.0 * similarity
 
@@ -110,16 +105,24 @@ class Search:
                     if last["domain"] != sa.root.domain:
                         # Another root domain: can't be the same content
                         return False
-                    if abs(last["ts"] - sa.timestamp) > timedelta(minutes = 10):
+                    if abs(last["ts"] - sa.timestamp) > timedelta(minutes=10):
                         # More than 10 minutes timestamp difference
                         return False
                     # Quite similar: probably the same article
-                    ratio = (spercent / last["similarity"])
+                    ratio = spercent / last["similarity"]
                     if ratio > 0.993:
                         if Settings.DEBUG:
-                            print("Rejecting {0}, domain {1}, ts {2} because of similarity with {3}, {4}, {5}; ratio is {6:.3f}"
-                                .format(sa.heading, sa.root.domain, sa.timestamp,
-                                    last["heading"], last["domain"], last["ts"], ratio))
+                            print(
+                                "Rejecting {0}, domain {1}, ts {2} because of similarity with {3}, {4}, {5}; ratio is {6:.3f}".format(
+                                    sa.heading,
+                                    sa.root.domain,
+                                    sa.timestamp,
+                                    last["heading"],
+                                    last["domain"],
+                                    last["ts"],
+                                    ratio,
+                                )
+                            )
                         return True
                     return False
 
@@ -129,10 +132,14 @@ class Search:
                         if is_probably_same_as(p):
                             yield (ix, p)
 
-                d = dict(heading = sa.heading, url = sa.url,
-                    uuid = sid, domain = sa.root.domain,
-                    ts = sa.timestamp, ts_text = sa.timestamp.isoformat()[0:10],
-                    similarity = spercent
+                d = dict(
+                    heading=sa.heading,
+                    url=sa.url,
+                    uuid=sid,
+                    domain=sa.root.domain,
+                    ts=sa.timestamp,
+                    ts_text=sa.timestamp.isoformat()[0:10],
+                    similarity=spercent,
                 )
                 # Don't add another article with practically the same similarity
                 # as the previous one, as it is very probably a duplicate
@@ -155,6 +162,7 @@ class Search:
                     pass
 
         if Settings.DEBUG and similar:
-            print("Similar list is:\n   {0}".format("\n   ".join(str(s) for s in similar)))
+            print(
+                "Similar list is:\n   {0}".format("\n   ".join(str(s) for s in similar))
+            )
         return similar
-
