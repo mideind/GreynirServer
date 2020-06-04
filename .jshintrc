@@ -1,5 +1,5 @@
 {
-    // JSHint Default Configuration File (as on JSHint website)
+    // JSHint Configuration File
     // See http://jshint.com/docs/ for more details
 
     "maxerr"        : 50,       // {int} Maximum error before stopping
