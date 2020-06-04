@@ -243,9 +243,7 @@ if not RUNNING_AS_SERVER:
     # Hack to satisfy the Mypy type checker, which sometimes confuses str and AnyStr
     _dirname = lambda s: os.path.dirname(s)  # type: Callable[[str], str]
 
-    dirs = list(
-        map(_dirname, [__file__, reynir.__file__, reynir_correct.__file__])
-    )
+    dirs = list(map(_dirname, [__file__, reynir.__file__, reynir_correct.__file__]))
     for i, fname in enumerate(extra_files):
         # Look for the extra file in the different package directories
         for directory in dirs:

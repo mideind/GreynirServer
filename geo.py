@@ -149,9 +149,9 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
         "Páfastóll": "VA",
         "Páfaríki": "VA",
         "Vatíkan": "VA",
-        "Vatíkanríki": "VA", # Formal name
+        "Vatíkanríki": "VA",  # Formal name
         "Vatikan": "VA",
-        "Vatikanríki": "VA", # Formal name
+        "Vatikanríki": "VA",  # Formal name
         "Papúa": "PG",
         "Nevis": "KN",
         "Chile": "CL",

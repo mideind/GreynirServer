@@ -193,8 +193,7 @@ class Article:
         with SessionContext(enclosing_session) as session:
             try:
                 ar = (
-                    session
-                    .query(ArticleRow)
+                    session.query(ArticleRow)
                     .filter(ArticleRow.id == uuid)
                     .one_or_none()
                 )
@@ -310,11 +309,7 @@ class Article:
                         # Add information about the sentence tree's score
                         # and the number of tokens
                         trees[num_sent] = "\n".join(
-                            [
-                                "C{0}".format(sent.score),
-                                "L{0}".format(num_tokens),
-                                tree
-                            ]
+                            ["C{0}".format(sent.score), "L{0}".format(num_tokens), tree]
                         )
                     else:
                         # Error, sentence too long or no parse:
@@ -397,8 +392,7 @@ class Article:
 
             # Update an already existing row by UUID
             ar = (
-                session
-                .query(ArticleRow)
+                session.query(ArticleRow)
                 .filter(ArticleRow.id == self._uuid)
                 .one_or_none()
             )
@@ -538,8 +532,7 @@ class Article:
         with SessionContext(commit=True, read_only=True) as session:
 
             q = (
-                session
-                .query(ArticleRow.url, ArticleRow.parsed, ArticleRow.tokens)
+                session.query(ArticleRow.url, ArticleRow.parsed, ArticleRow.tokens)
                 .filter(ArticleRow.tokens != None)
                 .order_by(desc(ArticleRow.parsed))
                 .yield_per(200)
@@ -572,8 +565,7 @@ class Article:
         with SessionContext(commit=True, read_only=True) as session:
 
             q = (
-                session
-                .query(ArticleRow.url, ArticleRow.parsed, ArticleRow.tokens)
+                session.query(ArticleRow.url, ArticleRow.parsed, ArticleRow.tokens)
                 .filter(ArticleRow.tokens != None)
                 .order_by(desc(ArticleRow.parsed))
                 .yield_per(200)
@@ -619,10 +611,8 @@ class Article:
             # timestamp is assumed to contain a tuple: (from, to)
             if criteria and "timestamp" in criteria:
                 ts = criteria["timestamp"]
-                q = (
-                    q
-                    .filter(ArticleRow.timestamp >= ts[0])
-                    .filter(ArticleRow.timestamp < ts[1])
+                q = q.filter(ArticleRow.timestamp >= ts[0]).filter(
+                    ArticleRow.timestamp < ts[1]
                 )
 
             if criteria and "author" in criteria:

@@ -45,11 +45,7 @@ def help_text(lemma):
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get hringt ef þú segir til dæmis: {0}".format(
-        random.choice(
-            (
-                "Hringdu í 18 18",
-            )
-        )
+        random.choice(("Hringdu í 18 18",))
     )
 
 
@@ -77,10 +73,10 @@ def help_text(lemma):
 # # To be implemented
 
 # QTelCmd →
-#     "hringdu" 
-#     | "hringdu" "fyrir" mig" 
+#     "hringdu"
+#     | "hringdu" "fyrir" mig"
 #     | "værirðu" "til" "í" "að" "hringja"
-#     | "værir" "þú" "til" "í" "að" "hringja" 
+#     | "værir" "þú" "til" "í" "að" "hringja"
 #     | "geturðu" "hringt"
 #     | "getur" "þú" "hringt"
 #     | "nennirðu" "að" "hringja"
@@ -89,9 +85,9 @@ def help_text(lemma):
 
 # """
 
-# TODO: This should be moved over to grammar at some point, too many manually defined, 
-# almost identical commands. But at the moment, the grammar has poor support for phone 
-# numbers, especially  when the numbers are coming out of a speech recognition engine 
+# TODO: This should be moved over to grammar at some point, too many manually defined,
+# almost identical commands. But at the moment, the grammar has poor support for phone
+# numbers, especially  when the numbers are coming out of a speech recognition engine
 # This module should also be able to handle natural language number words.
 _PHONECALL_REGEXES = frozenset(
     (
@@ -142,7 +138,8 @@ _PHONECALL_REGEXES = frozenset(
         r"(nennir þú að hringja í númerið )([\d|\-|\s]+)$",
         r"(nennir þú að hringja í númer )([\d|\-|\s]+)$",
         r"(vinsamlegast hringdu í )([\d|\-|\s]+)$",
-        r"(vinsamlegast hringdu í síma )([\d|\-|\s]+)$",    )
+        r"(vinsamlegast hringdu í síma )([\d|\-|\s]+)$",
+    )
 )
 
 
@@ -177,4 +174,3 @@ def handle_plain_text(q):
     q.set_url(tel_url)
 
     return True
-

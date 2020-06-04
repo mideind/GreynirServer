@@ -816,7 +816,9 @@ class TerminalNode(Node):
                     # looking for. It also must be the same word category and
                     # the same stem and identifier ('utg'). In fact the 'utg' check
                     # alone should be sufficient, but better safe than sorry.
-                    n = bin_db.lookup_raw_nominative(parts[-1])  # Note: this call is cached
+                    n = bin_db.lookup_raw_nominative(
+                        parts[-1]
+                    )  # Note: this call is cached
                     r = [
                         nm
                         for nm in n
@@ -1012,9 +1014,10 @@ class TerminalNode(Node):
             else:
                 d["a"] = t
             if t[0] == '"' or t[0] == "'":
-                assert False, (
-                    "Wrong terminal: {0}, text is '{1}', token {2}, tokentype {3}"
-                    .format(self.td.terminal, self.text, self.token, self.tokentype)
+                assert (
+                    False
+                ), "Wrong terminal: {0}, text is '{1}', token {2}, tokentype {3}".format(
+                    self.td.terminal, self.text, self.token, self.tokentype
                 )
             # Category
             d["c"] = self.cat
@@ -1194,8 +1197,10 @@ class NonterminalNode(Node):
                 try:
                     func(self, params, result)
                 except TypeError as ex:
-                    print("Attempt to call {0}() in processor raised exception {1}"
-                        .format(func.__qualname__, ex)
+                    print(
+                        "Attempt to call {0}() in processor raised exception {1}".format(
+                            func.__qualname__, ex
+                        )
                     )
                     raise
         return result

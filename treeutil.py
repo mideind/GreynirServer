@@ -209,7 +209,9 @@ class TreeUtility:
                         # resolved from the preposition list in Main.conf, not from BÍN
                         wt = WordTuple(stem=meaning.ordmynd, cat="fs")
                     else:
-                        wt = WordTuple(stem=meaning.stofn.replace("-", ""), cat=meaning.ordfl)
+                        wt = WordTuple(
+                            stem=meaning.stofn.replace("-", ""), cat=meaning.ordfl
+                        )
                 elif t.kind == TOK.ENTITY:
                     wt = WordTuple(stem=t.txt, cat="entity")
         if t.val is not None and t.kind == TOK.PERSON:
@@ -281,9 +283,7 @@ class TreeUtility:
             if meaning is not None and "x" in d:
                 # Also return the augmented terminal name
                 d["a"] = augment_terminal(
-                    terminal.name,
-                    d["x"].lower(),
-                    meaning.beyging
+                    terminal.name, d["x"].lower(), meaning.beyging
                 )
             dump.append(d)
         return dump
@@ -294,9 +294,7 @@ class TreeUtility:
             normalized terminal leaves """
         if tree is None:
             return None
-        s = Simplifier(
-            tokens, nt_map=nt_map, id_map=id_map, terminal_map=terminal_map
-        )
+        s = Simplifier(tokens, nt_map=nt_map, id_map=id_map, terminal_map=terminal_map)
         s.go(tree)
         return s.result
 
@@ -347,6 +345,7 @@ class TreeUtility:
             register = None
         else:
             from queries.builtin import create_name_register
+
             register = create_name_register(toklist, session, all_names=all_names)
 
         t2 = time.time()
@@ -366,9 +365,7 @@ class TreeUtility:
                 normalized tokens for the sentence """
             return TreeUtility.dump_tokens(tokens, tree, error_index=err_index)
 
-        return TreeUtility._process_text(
-            parser, session, text, all_names, xform
-        )
+        return TreeUtility._process_text(parser, session, text, all_names, xform)
 
     @staticmethod
     def tag_text(session, text, all_names=False):
@@ -376,9 +373,7 @@ class TreeUtility:
             where each sentence is a list of tagged tokens """
         # Don't emit diagnostic messages
         with Fast_Parser(verbose=False) as parser:
-            return TreeUtility.raw_tag_text(
-                parser, session, text, all_names=all_names
-            )
+            return TreeUtility.raw_tag_text(parser, session, text, all_names=all_names)
 
     @staticmethod
     def tag_toklist(session, toklist, all_names=False):
@@ -393,6 +388,7 @@ class TreeUtility:
         with Fast_Parser(verbose=False) as parser:  # Don't emit diagnostic messages
             pgs, stats = TreeUtility._process_toklist(parser, session, toklist, xform)
         from queries.builtin import create_name_register
+
         register = create_name_register(toklist, session, all_names=all_names)
         return pgs, stats, register
 

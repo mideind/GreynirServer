@@ -33,11 +33,13 @@
 """
 
 from datetime import datetime
+
 # from scraperdb import Attribute
 
 
 MODULE_NAME = __name__
 PROCESSOR_TYPE = "tree"
+
 
 def article_begin(state):
     """ Called at the beginning of article processing """
@@ -47,20 +49,22 @@ def article_begin(state):
     # Delete all existing attributes for this article
     # session.execute(Attribute.table().delete().where(Attribute.article_url == url))
 
+
 def article_end(state):
     """ Called at the end of article processing """
     pass
 
+
 def sentence(state, result):
     """ Called at the end of sentence processing """
 
-    session = state["session"] # Database session
-    url = state["url"] # URL of the article being processed
+    session = state["session"]  # Database session
+    url = state["url"]  # URL of the article being processed
 
     if "attribs" in result:
         # Attributes where found
         for a in result.attribs:
-            #print("Attribute: '{0}'".format(attrib))
+            # print("Attribute: '{0}'".format(attrib))
             _ = """
             attrib = Attribute(
                 article_url = url,
@@ -80,44 +84,49 @@ def sentence(state, result):
 # They will be called during processing (depth-first) of a complete parsed
 # tree for a sentence.
 
+
 def FsLiður(node, params, result):
     """ Ekki breyta forsetningarliðum í nefnifall """
     result._nominative = result._text
     # Ekki leyfa eignarfallsliðum að lifa í gegn um forsetningarliði á
     # leið upp tréð
-    result.del_attribs(('ef_nom', 'ef_text'))
+    result.del_attribs(("ef_nom", "ef_text"))
+
 
 def EfLiður(node, params, result):
     """ Eignarfallsliður eftir nafnlið """
     result.ef_nom = result._nominative
     result.ef_text = result._text
 
+
 def Tengiliður(node, params, result):
     """ Tengiliður ("sem" setning) """
     result.del_attribs(("ef_nom", "ef_text"))
+
 
 def SvigaInnihald(node, params, result):
     """ Tengiliður ("sem" setning) """
     result.del_attribs(("ef_nom", "ef_text"))
 
+
 def Setning(node, params, result):
     """ Meðhöndla setningar á forminu 'eitthvað einhvers fsliðir* er-sögn eitthvað' """
 
-    #return # !!! TODO - DEBUG
+    # return # !!! TODO - DEBUG
 
-    frumlag = result.find_child(nt_base = "Nl", variant = "nf")
+    frumlag = result.find_child(nt_base="Nl", variant="nf")
     if not frumlag:
         return
 
-    #print("Frumlag er {0}".format(frumlag._text))
+    # print("Frumlag er {0}".format(frumlag._text))
 
     einhvers = frumlag.get("ef_nom")
 
     if not einhvers:
         return
 
-    fsliðir = result.all_children(nt_base = "FsAtv")
-    sagnruna = result.find_child(nt_base = "SagnRuna")
+    fsliðir = result.all_children(nt_base="FsAtv")
+    sagnruna = result.find_child(nt_base="SagnRuna")
 
     if not sagnruna:
         return
@@ -125,20 +134,20 @@ def Setning(node, params, result):
     # print("Frumlag er '{0}', einhvers er '{1}'".format(frumlag._text, einhvers))
     # print("Sagnruna er '{0}'".format(sagnruna._text))
 
-    sögn = sagnruna.find_descendant(nt_base = "Sögn", variant = "1")
+    sögn = sagnruna.find_descendant(nt_base="Sögn", variant="1")
 
     if not sögn:
         return
 
-    sagnorð = sögn.find_descendant(t_base = "so")
+    sagnorð = sögn.find_descendant(t_base="so")
 
-    #if sagnorð:
+    # if sagnorð:
     #    print("Sagnorð er '{0}'".format(sagnorð._text))
 
-    if not sagnorð or sagnorð._text not in { "er", "eru", "var", "voru", "sé", "séu" }:
+    if not sagnorð or sagnorð._text not in {"er", "eru", "var", "voru", "sé", "séu"}:
         return
 
-    andlag = sögn.find_child(nt_base = "Nl", variant = "nf")
+    andlag = sögn.find_child(nt_base="Nl", variant="nf")
 
     if not andlag:
         return
@@ -148,12 +157,15 @@ def Setning(node, params, result):
     # Reikna út endanlegt frumlag
     frumlag_text = frumlag._text
     # print("Frumlag_text er '{0}', frumlag.ef_text er '{1}'".format(frumlag_text, frumlag.ef_text))
-    frumlag_text = frumlag_text[:-1 -len(frumlag.ef_text)]
+    frumlag_text = frumlag_text[: -1 - len(frumlag.ef_text)]
 
     # Halda forsetningarliðum til haga
     qual = ""
     if fsliðir:
         qual = " (" + ", ".join(f._text for f in fsliðir) + ")"
 
-    print("'{0}'->'{1}'{2} {4} '{3}'".format(einhvers, frumlag_text, qual, andlag._text, sagnorð._text))
-
+    print(
+        "'{0}'->'{1}'{2} {4} '{3}'".format(
+            einhvers, frumlag_text, qual, andlag._text, sagnorð._text
+        )
+    )

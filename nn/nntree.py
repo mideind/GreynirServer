@@ -251,7 +251,10 @@ def parse_flat_tree_to_nodes(parse_toks, text_toks=None, verbose=False):
 
         # Token must be a legal right nonterminal since it is not a left token
         # A right token must be matched by its corresponding left token
-        if not flat_is_right_nonterminal(tok) or flat_matching_nonterminal(parent.name) != tok:
+        if (
+            not flat_is_right_nonterminal(tok)
+            or flat_matching_nonterminal(parent.name) != tok
+        ):
             msg = "Error: Found illegal nonterminal {}, expected right nonterminal"
             vprint(msg.format(tok))
 
@@ -435,7 +438,8 @@ def tokenize_and_merge_possible_mw_tokens(text, flat_tree):
     parse_terminals = filter(lambda x: x[1][0].islower(), enumerate(parse_tokens))
 
     leaf_idx_to_parse_idx = {
-        leaf_idx: ptok_idx for (leaf_idx, (ptok_idx, ptok)) in enumerate(parse_terminals)
+        leaf_idx: ptok_idx
+        for (leaf_idx, (ptok_idx, ptok)) in enumerate(parse_terminals)
     }
 
     offset = 0
@@ -461,7 +465,9 @@ def tokenize_and_merge_possible_mw_tokens(text, flat_tree):
             print(" ".join(sw_tokens[leaf_idx : leaf_idx + sw_count]).__repr__())
             print(parse_toks_out[pidx : pidx + 1])
         parse_toks_out[pidx : pidx + sw_count] = parse_toks_out[pidx : pidx + 1]
-        text_toks_out[leaf_idx : leaf_idx + sw_count] = [" ".join(sw_tokens[leaf_idx : leaf_idx + sw_count])]
+        text_toks_out[leaf_idx : leaf_idx + sw_count] = [
+            " ".join(sw_tokens[leaf_idx : leaf_idx + sw_count])
+        ]
 
     return text_toks_out, parse_toks_out
 

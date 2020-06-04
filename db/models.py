@@ -40,7 +40,7 @@ from sqlalchemy import (
     Index,
     ForeignKey,
     PrimaryKeyConstraint,
-    func
+    func,
 )
 from sqlalchemy.dialects.postgresql import JSONB, INET
 from sqlalchemy.dialects.postgresql import UUID as psql_UUID
@@ -267,7 +267,7 @@ class Entity(Base):
     article = relationship("Article", backref=backref("entities", order_by=name))
 
     # Add an index on the entity name in lower case
-    name_lc_index = Index('ix_entities_name_lc', func.lower(name))
+    name_lc_index = Index("ix_entities_name_lc", func.lower(name))
 
     def __repr__(self):
         return "Entity(id='{0}', name='{1}', verb='{2}', definition='{3}')".format(
@@ -634,7 +634,7 @@ class Query(Base):
     context = Column(JSONB, nullable=True)
 
     # Add an index on the question in lower case
-    question_lc_index = Index('ix_queries_question_lc', func.lower(question))
+    question_lc_index = Index("ix_queries_question_lc", func.lower(question))
 
     # !!! The following indices don't work since answers can become
     # !!! very long (thousands of characters) and PostgreSQL has a
@@ -647,9 +647,7 @@ class Query(Base):
     # voice_lc_index = Index('ix_queries_voice_lc', func.lower(voice))
 
     def __repr__(self):
-        return "Query(question='{0}', answer='{1}')".format(
-            self.question, self.answer
-        )
+        return "Query(question='{0}', answer='{1}')".format(self.question, self.answer)
 
 
 class Feedback(Base):
@@ -686,4 +684,3 @@ class Feedback(Base):
         return "Feedback(name='{0}', email='{1}', topic='{2}', comment='{3}')".format(
             self.question, self.answer, self.topic, self.comment
         )
-

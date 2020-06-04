@@ -71,7 +71,7 @@ def check_grammar(text, *, progress_func=None):
         text,
         split_paragraphs=True,
         parser_class=NERCorrect,
-        progress_func=progress_func
+        progress_func=progress_func,
     )
 
     def encode_sentence(sent):
@@ -84,12 +84,10 @@ def check_grammar(text, *, progress_func=None):
             # Successfully parsed: use the text from the terminals (where available)
             # since we have more info there, for instance on em/en dashes.
             # Create a map of token indices to corresponding terminal text
-            token_map = {t.index : t.text for t in sent.terminals}
+            token_map = {t.index: t.text for t in sent.terminals}
             tokens = [
-                dict(
-                    k=d.kind,
-                    x=token_map.get(ix, d.txt)
-                ) for ix, d in enumerate(sent.tokens)
+                dict(k=d.kind, x=token_map.get(ix, d.txt))
+                for ix, d in enumerate(sent.tokens)
             ]
         return dict(
             tokens=tokens,
@@ -103,19 +101,16 @@ def check_grammar(text, *, progress_func=None):
                     suggest=ann.suggest,
                 )
                 for ann in sent.annotations
-            ]
+            ],
         )
 
-    pgs = [
-        [encode_sentence(sent) for sent in pg]
-        for pg in result["paragraphs"]
-    ]
+    pgs = [[encode_sentence(sent) for sent in pg] for pg in result["paragraphs"]]
 
     stats = dict(
         num_tokens=result["num_tokens"],
         num_sentences=result["num_sentences"],
         num_parsed=result["num_parsed"],
-        ambiguity=result["ambiguity"]
+        ambiguity=result["ambiguity"],
     )
 
     return pgs, stats

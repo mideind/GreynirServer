@@ -397,7 +397,7 @@ def QDateAbsOrRel(node, params, result):
     if datenode:
         y, m, d = datenode.contained_date
         now = datetime.utcnow()
-        
+
         # This is a date that contains at least month & mday
         if d and m:
             if not y:
@@ -836,9 +836,7 @@ def sentence(state, result):
                 mnum = t.month
                 mname = t.strftime("%B")
                 answer = "{0} dagar.".format(ndays)
-                voice = "Það eru {0} dagar í {1} {2}".format(
-                    ndays, mname, t.year
-                )
+                voice = "Það eru {0} dagar í {1} {2}".format(ndays, mname, t.year)
                 response = dict(answer=answer)
                 qkey = "DaysInMonth"
 

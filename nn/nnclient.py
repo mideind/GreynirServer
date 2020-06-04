@@ -241,12 +241,14 @@ class ParsingClient(NnClient):
         """ Preprocess text and normalize for parsing network """
         pgs = text.split("\n")
         normalized_pgs = [
-            [tok.txt for tok in list(bintokenizer.tokenize(pg))
+            [
+                tok.txt
+                for tok in list(bintokenizer.tokenize(pg))
                 if BIN_Token.is_understood(tok)
-            ] for pg in pgs]
-        normalized_pgs = [
-            " ".join(tok for tok in npg if tok) for npg in normalized_pgs
+            ]
+            for pg in pgs
         ]
+        normalized_pgs = [" ".join(tok for tok in npg if tok) for npg in normalized_pgs]
         return normalized_pgs
 
     @classmethod

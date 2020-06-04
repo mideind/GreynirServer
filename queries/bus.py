@@ -75,10 +75,32 @@ _WRONG_STOP_WORDS = {
 
 # Lemmas of keywords that could indicate that the user is trying to use this module
 TOPIC_LEMMAS = [
-    "strætó", "stoppistöð", "biðstöð", "stoppustöð", "leið", "vagn", "strætisvagn",
-    "ás", "tvistur", "þristur", "fjarki", "fimma", "sexa", "sjöa", "átta", "nía",
-    "tía", "ellefa", "tólfa", "strætóstöð", "strætóstoppustöð", "strætóstoppistöð",
-    "strædo", "stræto", "seinn", "fljótur"
+    "strætó",
+    "stoppistöð",
+    "biðstöð",
+    "stoppustöð",
+    "leið",
+    "vagn",
+    "strætisvagn",
+    "ás",
+    "tvistur",
+    "þristur",
+    "fjarki",
+    "fimma",
+    "sexa",
+    "sjöa",
+    "átta",
+    "nía",
+    "tía",
+    "ellefa",
+    "tólfa",
+    "strætóstöð",
+    "strætóstoppustöð",
+    "strætóstoppistöð",
+    "strædo",
+    "stræto",
+    "seinn",
+    "fljótur",
 ]
 
 
@@ -86,14 +108,16 @@ def help_text(lemma):
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
-        random.choice((
-            "Hvaða stoppistöð er næst mér",
-            "Hvar stoppar strætó",
-            "Hvenær kemur strætó",
-            "Hvenær fer leið fimmtíu og sjö frá Borgarnesi",
-            "Hvenær kemur fjarkinn á Hlemm",
-            "Hvenær er von á vagni númer fjórtán"
-        ))
+        random.choice(
+            (
+                "Hvaða stoppistöð er næst mér",
+                "Hvar stoppar strætó",
+                "Hvenær kemur strætó",
+                "Hvenær fer leið fimmtíu og sjö frá Borgarnesi",
+                "Hvenær kemur fjarkinn á Hlemm",
+                "Hvenær er von á vagni númer fjórtán",
+            )
+        )
     )
 
 
@@ -502,6 +526,7 @@ _BUS_WORDS = {
     "hundrað og sex": 106,
 }
 
+
 def QBusWord(node, params, result):
     """ Handle buses specified in single words,
         such as 'tvisturinn' or 'fimman' """
@@ -637,8 +662,10 @@ def query_nearest_stop(query, session, result):
     va = [
         "Næsta",
         stop_word,
-        "er", stop.name + ";",
-        "þangað", "eru",
+        "er",
+        stop.name + ";",
+        "þangað",
+        "eru",
         voice_distance(straeto.distance(location, stop.location)),
     ]
     # Store a location coordinate and a bus stop name in the context
@@ -707,27 +734,26 @@ def query_arrival_time(query, session, result):
         stop = stops[0]
         routes = sorted(
             (straeto.BusRoute.lookup(rid).number for rid in stop.visits.keys()),
-            key=lambda r:int(r)
+            key=lambda r: int(r),
         )
         if len(routes) != 1:
             # More than one route possible: ask user to clarify
             route_seq = natlang_seq(list(map(str, routes)))
-            answer = " ".join(
-                [
-                    "Leiðir",
-                    route_seq,
-                    "stoppa á",
-                    to_dative(stop.name)
-                ]
-            ) + ". Spurðu um eina þeirra."
-            voice_answer = " ".join(
-                [
-                    "Leiðir",
-                    numbers_to_neutral(route_seq),
-                    "stoppa á",
-                    to_dative(stop.name)
-                ]
-            ) + ". Spurðu um eina þeirra."
+            answer = (
+                " ".join(["Leiðir", route_seq, "stoppa á", to_dative(stop.name)])
+                + ". Spurðu um eina þeirra."
+            )
+            voice_answer = (
+                " ".join(
+                    [
+                        "Leiðir",
+                        numbers_to_neutral(route_seq),
+                        "stoppa á",
+                        to_dative(stop.name),
+                    ]
+                )
+                + ". Spurðu um eina þeirra."
+            )
             response = dict(answer=answer)
             return response, answer, voice_answer
         # Only one route: use it as the query subject
@@ -772,7 +798,7 @@ def query_arrival_time(query, session, result):
         # endpoints for the bus route in the schedule. To minimize
         # confusion, we only include the two endpoints that have the
         # earliest arrival times and skip any additional ones.
-        arrivals = sorted(arrivals, key=lambda t:t[1][0])[:2]
+        arrivals = sorted(arrivals, key=lambda t: t[1][0])[:2]
 
         for direction, times in arrivals:
             if not first:
@@ -801,20 +827,20 @@ def query_arrival_time(query, session, result):
                             # More than 5 minutes ahead
                             deviation = [
                                 ", en kemur sennilega fyrr, eða",
-                                hms_fmt(hms_pred)
+                                hms_fmt(hms_pred),
                             ]
                         else:
                             # Two to five minutes ahead
                             deviation = [
                                 ", en er",
                                 str(-diff),
-                                "mínútum á undan áætlun"
+                                "mínútum á undan áætlun",
                             ]
                     elif diff >= 3:
                         # 3 minutes or more behind schedule
                         deviation = [
                             ", en kemur sennilega ekki fyrr en",
-                            hms_fmt(hms_pred)
+                            hms_fmt(hms_pred),
                         ]
             if first:
                 if deviation:
@@ -823,9 +849,8 @@ def query_arrival_time(query, session, result):
                     va.extend(["kemur á", to_accusative(stop.name)])
             va.append("klukkan")
             a.append("klukkan")
-            if (
-                len(times) == 1 or
-                (len(times) > 1 and hms_diff(times[0], hms_now) >= 10)
+            if len(times) == 1 or (
+                len(times) > 1 and hms_diff(times[0], hms_now) >= 10
             ):
                 # Either we have only one arrival time, or the next arrival is
                 # at least 10 minutes away: only pronounce one time
@@ -895,9 +920,7 @@ def query_which_route(query, session, result):
     stops = straeto.BusStop.named(stop_name, fuzzy=True)
     if not stops:
         a = [stop_name, "þekkist ekki."]
-        va = [
-            "Ég", "þekki", "ekki", "biðstöðina", stop_name.capitalize(),
-        ]
+        va = ["Ég", "þekki", "ekki", "biðstöðina", stop_name.capitalize()]
     else:
         routes = set()
         if query.location:
@@ -943,6 +966,7 @@ _QFUNC = {
 
 # The following function is called after processing the parse
 # tree for a query sentence that is handled in this module
+
 
 def sentence(state, result):
     """ Called when sentence processing is complete """

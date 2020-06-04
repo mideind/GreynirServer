@@ -239,7 +239,9 @@ def token(state, paragraph, sentence, token, idx):
     if kind == "street" and idx != len(sentence) - 1:  # not last token in sentence
         next_tok = sentence[idx + 1]
         next_word = next_tok["x"]
-        if "k" in next_tok and (next_tok["k"] == TOK.NUMBER or next_tok["k"] == TOK.NUMWLETTER):
+        if "k" in next_tok and (
+            next_tok["k"] == TOK.NUMBER or next_tok["k"] == TOK.NUMWLETTER
+        ):
             name = "{0} {1}".format(name, next_word)
             kind = "address"
 

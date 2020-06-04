@@ -147,7 +147,9 @@ def get_image_url(
                 key=key,
             )
             if Settings.DEBUG:
-                print("Sending Google image search request for '{0}'".format(search_str))
+                print(
+                    "Sending Google image search request for '{0}'".format(search_str)
+                )
             jdoc = _server_query("https://www.googleapis.com/customsearch/v1", q)
             if Settings.DEBUG:
                 print("Back from Google image search for '{0}'".format(search_str))

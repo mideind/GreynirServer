@@ -447,7 +447,7 @@ def query_person(query, session, name):
             name = ctx["person_name"]
         else:
             # No - give up
-            response=dict(answers=[], sources=[])
+            response = dict(answers=[], sources=[])
             if name == "hann":
                 answer = voice_answer = "Ég veit ekki við hvern þú átt."
             elif name == "hún":
@@ -506,8 +506,13 @@ def query_person(query, session, name):
 # Try to avoid titles that simply say that A is the husband/wife of B,
 # or something similar
 _DONT_LIKE_TITLE = (
-    "maki", "eiginmaður", "eiginkona", "kærasti", "kærasta",
-    "sambýlismaður", "sambýliskona"
+    "maki",
+    "eiginmaður",
+    "eiginkona",
+    "kærasti",
+    "kærasta",
+    "sambýlismaður",
+    "sambýliskona",
 )
 
 
@@ -713,9 +718,7 @@ def query_word(query, session, stem):
 
 def launch_search(query, session, qkey):
     """ Launch a search with the given search terms """
-    pgs, _ = TreeUtility.raw_tag_toklist(
-        session, query.token_list,  # root=_QUERY_ROOT
-    )
+    pgs, _ = TreeUtility.raw_tag_toklist(session, query.token_list)  # root=_QUERY_ROOT
 
     # Collect the list of search terms
     terms = []
