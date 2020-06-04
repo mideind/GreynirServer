@@ -1,0 +1,136 @@
+
+{% extends "container-normal.html" %}
+
+{% block styles %}
+
+<link href="{{ url_for('static', filename='css/main-bootstrap.css') }}" rel='stylesheet' type='text/css'>
+
+{% endblock %}
+
+{% block content %}
+
+<div class="input">
+
+   <div class="row">
+
+      <div class="col-xs-9 col-sm-10" id="url-div">
+
+         <input class="text-input form-control input-lg" type="text" name="url" id="url" tabindex="1"
+            maxlength=512 autofocus required value="{{ default_text }}">
+
+      </div>
+
+      <!-- The microphone div is not displayed by default.
+         It is enabled if the microphone is supported. -->
+      <div class="col-xs-2 col-sm-1" style="max-width: 4.2em" id="microphone-div">
+         <button class="btn btn-success btn-lg btn-block" id="microphone"
+            title="Nota hljóðnema" tabindex="2"><!--
+         --><span class="glyphicon glyphicon-microphone"></span> </button>
+      </div>
+
+      <div class="col-xs-3 col-sm-2">
+         <button class="btn btn-info btn-lg btn-block" id="url-ok" title="Greina" tabindex="3"
+            onclick="urlButtonClick()">Greina</button>
+      </div>
+
+   </div>
+
+</div>
+
+<div id="entity-body">
+
+   <div class="panel panel-info guide-empty">
+      <div class="panel-heading"><span class="glyphicon glyphicon-info"></span>
+         Sláðu inn <b>leitarstreng</b> eða spurningu um <b>mannanöfn, titla, starfsheiti</b> eða <b>sérnöfn</b> hér að ofan.
+      </div>
+      <div class="panel-body">
+         <p>Leitarvél Greynis byggir á <b>umfjöllunarefnum</b> (þemum) frekar en bókstaflegum
+         leitarorðum. Bestu niðurstöður fást með því að <b>skrifa hnitmiðaðar setningar</b> sem líkjast
+         þeim niðurstöðum sem óskað er eftir. Mannanöfn og sérnöfn hafa þó sérstaka vigt.</p>
+         <ul class="guide-example-list">
+         <li><b>Dæmi um leitarstrengi:</b>
+            <i>Portúgal sigraði Eurovision með hugljúfu lagi</i>,
+            <i>Einkaneysla fer hraðvaxandi</i>,
+            <i>Mig langar að elda fisk í kvöldmatinn</i>,
+            <i>Verið er að byggja fjölda hótela á landinu</i>
+         </li>
+         <li><b>Dæmi um spurningar:</b>
+            <i>Hver er forseti Finnlands?</i>,
+            <i>Hver er Þórunn Ólafsdóttir?</i>,
+            <i>Hvað er UNESCO?</i>
+         </li>
+         </ul>
+         <p>Einnig má slá inn <b>vefslóð</b> til að málgreina texta af vefnum.</p>
+      </div>
+   </div>
+
+   <!-- The original query text -->
+   <div id="result-query"></div>
+
+   <div id="result-tabs">
+
+      <ul id="result-hdr" class="nav nav-tabs" role="tablist">
+         <li role="presentation" class="active">
+            <a href="#titles" aria-controls="titles" role="tab" data-toggle="tab">
+               <span class="glyphicon glyphicon-info"></span>&nbsp;Svör
+            </a>
+         </li>
+         <li role="presentation" id="tab-li-articles">
+            <a href="#articles" aria-controls="articles" role="tab" data-toggle="tab" id="tab-a-articles">
+               <span class="glyphicon glyphicon-show-lines"></span>&nbsp;Greinar
+            </a>
+         </li>
+      </ul>
+
+      <!-- Tab panes -->
+      <div class="tab-content">
+         <div role="tabpanel" class="tab-pane active" id="titles">
+            <!-- Titles go here -->
+         </div>
+         <div role="tabpanel" class="tab-pane" id="articles">
+            <div class="panel panel-default table-responsive">
+               <div class="panel-heading">
+                  <!-- Show full heading or shorter one depending on viewport width -->
+                  <div class="headline">Nýlegar greinar þar sem <span id="article-key"></span> kemur fyrir</div>
+               </div>
+               <div id="article-list">
+                  <!-- Articles go here -->
+               </div>
+            </div>
+         </div>
+      </div>
+
+   </div>
+
+   <div id="search-result">
+      <div class="panel panel-default table-responsive">
+         <div id="search-result-list">
+            <!-- Articles go here -->
+         </div>
+      </div>
+   </div>
+
+</div>
+
+{% endblock %}
+
+{% block endscripts %}
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.devbridge-autocomplete/1.4.9/jquery.autocomplete.min.js"></script>
+
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
+<script src="{{ url_for('static', filename='js/front.js') }}"></script>
+
+
+<script>
+
+   function debugMode() {
+      return false;
+   }
+
+   $(document).ready(initMain);
+
+</script>
+
+{% endblock %}
+
