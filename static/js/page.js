@@ -37,6 +37,8 @@
 
 */
 
+"use strict";
+
 // Punctuation types
 
 var TP_LEFT = 1;
@@ -94,14 +96,18 @@ function debugMode() {
 
 function spacing(t) {
    // Determine the spacing requirements of a token
-   if (t.k != TOK_PUNCTUATION)
+   if (t.k !== TOK_PUNCTUATION) {
       return TP_WORD;
-   if (LEFT_PUNCTUATION.indexOf(t.x) > -1)
+   }
+   if (LEFT_PUNCTUATION.indexOf(t.x) > -1) {
       return TP_LEFT;
-   if (RIGHT_PUNCTUATION.indexOf(t.x) > -1)
+   }
+   if (RIGHT_PUNCTUATION.indexOf(t.x) > -1) {
       return TP_RIGHT;
-   if (NONE_PUNCTUATION.indexOf(t.x) > -1)
+   }
+   if (NONE_PUNCTUATION.indexOf(t.x) > -1) {
       return TP_NONE;
+   }
    return TP_CENTER;
 }
 
@@ -127,7 +133,7 @@ function showParse(ev) {
 
 function showPerson(ev) {
    // A person name has been clicked
-   var name = undefined;
+   var name;
    var wId = $(this).attr("id"); // Check for token id
    if (wId !== undefined) {
       // Obtain the name in nominative case from the token
@@ -146,7 +152,7 @@ function showEntity(ev) {
    // An entity name has been clicked
    var ename = $(this).text();
    var nd = nameDict[ename];
-   if (nd && nd.kind == "ref") {
+   if (nd && nd.kind === "ref") {
       // Last name reference to a full name entity
       // ('Clinton' -> 'Hillary Rodham Clinton')
       // In this case, we assume that we're asking about a person
@@ -199,7 +205,7 @@ function hoverIn() {
    }
 
    // If foreign currency amount, show rough equivalent in ISK
-   if (t.k == TOK_AMOUNT && t.v[1] !== "ISK") {
+   if (t.k === TOK_AMOUNT && t.v[1] !== "ISK") {
       getCurrencyValue(t.v[1], function(val) {
          if (val !== undefined) {
             var desc = friendlyISKDescription(t.v[0] * val);
@@ -209,7 +215,7 @@ function hoverIn() {
    }
 
    // Try to fetch image if person (and at least two names)
-   if (t.k == TOK_PERSON && t.v.split(' ').length > 1) {
+   if (t.k === TOK_PERSON && t.v.split(' ').length > 1) {
       getPersonImage(r.lemma, function(img) {
          $("#info-image").html(
             $("<img>").attr('src', img[0])
@@ -345,7 +351,7 @@ function displayTokens(j) {
    var x = ""; // Result text
    var lastSp;
    w = [];
-   if (j !== null)
+   if (j !== null) {
       $.each(j, function(pix, p) {
          // Paragraph p
          x += "<p>\n";
@@ -355,69 +361,78 @@ function displayTokens(j) {
             lastSp = TP_NONE;
             // Check whether the sentence has an error or was fully parsed
             $.each(s, function(tix, t) {
-               if (t.err == 1) {
+               if (t.err === 1) {
                   err = true;
                   return false; // Break the iteration
                }
             });
-            if (err)
+            if (err) {
                x += "<span class='sent err'>";
-            else
+            }
+            else {
                x += "<span class='sent parsed'>";
+            }
             $.each(s, function(tix, t) {
                // Token t
                var thisSp = spacing(t);
                // Insert a space in front of this word if required
                // (but never at the start of a sentence)
-               if (TP_SPACE[lastSp - 1][thisSp - 1] && tix)
+               if (TP_SPACE[lastSp - 1][thisSp - 1] && tix) {
                   x += " ";
+               }
                lastSp = thisSp;
-               if (t.err)
+               if (t.err) {
                   // Mark an error token
                   x += "<span class='errtok'>";
-               if (t.k == TOK_PUNCTUATION)
+               }
+               if (t.k === TOK_PUNCTUATION) {
                    // Add space around em-dash
-                  x += "<i class='p'>" + ((t.x == "—") ? " — " : t.x) + "</i>";
+                  x += "<i class='p'>" + ((t.x === "—") ? " — " : t.x) + "</i>";
+               }
                else {
                   var cls;
                   var tx = t.x;
                   var first = t.t ? t.t.split("_")[0] : undefined;
-                  if (first == "sequence") {
+                  if (first === "sequence") {
                      // Special case to display tokens matching 'sequence' terminals
                      cls = " class='sequence'";
                   }
                   else
                   if (!t.k) {
                      // TOK_WORD
-                     if (err)
+                     if (err) {
                         // If the sentence was not parsed successfully,
                         // we don't have an unambiguous interpretation of
                         // the token (PoS tag or terminal name)
                         cls = "";
+                     }
                      else
                      if (t.m) {
                         // Word class (noun, verb, adjective...)
                         cls = " class='" + t.m[1] + ' ' + t.m[2] + "'";
                      }
                      else
-                     if (first == "sérnafn") {
+                     if (first === "sérnafn") {
                         // Special case to display 'sérnafn' as 'entity'
                         cls = " class='entity'";
                         tx = tx.replace(" - ", "-"); // Tight hyphen, no whitespace
                      }
-                     else
+                     else {
                         // Not found
                         cls = " class='nf'";
+                     }
                   }
                   else {
                      cls = " class='" + tokClass[t.k] + "'";
-                     if (t.k == TOK_ENTITY)
+                     if (t.k === TOK_ENTITY) {
                         tx = tx.replace(" - ", "-"); // Tight hyphen, no whitespace
+                     }
                   }
                   x += "<i id='w" + w.length + "'" + cls + ">" + tx + "</i>";
                }
-               if (t.err)
+               if (t.err) {
                   x += "</span>";
+               }
                // Append to word/token list
                w.push(t);
             });
@@ -427,6 +442,7 @@ function displayTokens(j) {
          // Finish paragraph
          x += "</p>\n";
       });
+   }
    // Show the page text
    $("div#pgs").html(x);
    // Put a hover handler on each word
@@ -444,13 +460,23 @@ function populateStats(stats) {
    var statisticsSummary = $("#statistics-summary");
    statisticsSummary.html("");
    statisticsSummary.append(
-      `<li>Textinn inniheldur ${correctPlural(stats.num_tokens, "eina", "eind", "eindir")} í ${correctPlural(stats.num_sentences, "einni", "málsgrein.", "málsgreinum")}</li>`
+      "<li>Textinn inniheldur " +
+      correctPlural(stats.num_tokens, "eina", "eind", "eindir") +
+      " í " +
+      correctPlural(stats.num_sentences, "einni", "málsgrein.", "málsgreinum") +
+      "</li>"
    );
    statisticsSummary.append(
-      `<li>Það tókst að trjágreina ${correctPlural(stats.num_parsed, "eina", "málsgrein", "málsgreinar")} eða ${parsedRatio}%.</li>`
+      "<li>Það tókst að trjágreina " +
+      correctPlural(stats.num_parsed, "eina", "málsgrein", "málsgreinar") +
+      " eða " +
+      parsedRatio +
+      "%.</li>"
    );
    statisticsSummary.append(
-      `<li>Margræðnistuðull var ${format_is(stats.ambiguity, 2)}.</li>`
+      "<li>Margræðnistuðull var " +
+      format_is(stats.ambiguity, 2) +
+      ".</li>"
    );
    $("div#statistics").css("display", "block");
 }
@@ -462,7 +488,7 @@ function populateRegister() {
    $("#namelist").html("");
    $.each(nameDict, function(name, desc) {
       // kind is 'ref', 'name' or 'entity'
-      if (desc.kind != "ref")
+      if (desc.kind !== "ref") {
          // We don't display references to full names
          // Whitespace around hyphens is eliminated for display
          register.push(
@@ -472,6 +498,7 @@ function populateRegister() {
                kind: desc.kind
             }
          );
+      }
    });
    register.sort(function(a, b) {
       return a.name.localeCompare(b.name);
