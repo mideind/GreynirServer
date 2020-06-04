@@ -16,6 +16,8 @@
  
  */
 
+"use strict";
+
 var BATCH_SIZE = 10;
 var batches = [];
 var batch_queue = [];
@@ -63,9 +65,9 @@ function extract_segmented_paragraphs(pgs_obj) {
             map from pgs_id to array of sent_obj */
    var pg_map = {};
    var sent_map = {};
-   var sent_idx = 1
+   var sent_idx = 1;
    $.each(pgs_obj, function(pg_cursor, pg_obj) {
-      pg_map[pg_cursor] = []
+      pg_map[pg_cursor] = [];
       $.each(pg_obj, function(sent_cursor, sent_obj) {
          var toks = [];
          $.each(sent_obj, function(tok_cursor, tok_obj) {
@@ -75,15 +77,15 @@ function extract_segmented_paragraphs(pgs_obj) {
          });
          sent_map[sent_idx] = {
             is: toks.join(" ")
-         }
-         pg_map[pg_cursor].push(sent_idx)
+         };
+         pg_map[pg_cursor].push(sent_idx);
          sent_idx++;
       });
    });
    return {
       "pg_map": pg_map,
       "sent_map": sent_map
-   }
+   };
 }
 
 function populateTargets(pg_map, sent_map) {
@@ -108,13 +110,13 @@ function populateTargets(pg_map, sent_map) {
 
 function make_batches(sent_map, batch_size) {
    var parseIntDec = function(str) {
-      return parseInt(str, 10)
+      return parseInt(str, 10);
    };
    var cmpInt = function(a, b) {
-      return a - b
+      return a - b;
    };
    var isInt = function(n) {
-      return !isNaN(n)
+      return !isNaN(n);
    };
    var idxs = Object.keys(sent_map)
       .map(parseIntDec)
@@ -169,7 +171,7 @@ function translateBatch(batch, callback) {
       },
       null,
       function handleError(json) {
-         console.log(json)
+         console.log(json);
          wait_translation(false);
       }
    );
@@ -189,10 +191,10 @@ function populateBatchResults(results, callback) {
          $("#trnsl" + sent_key).addClass("translated " + score_class)
             .children("i")
             .eq(0)
-            .text(outputs)
+            .text(outputs);
       } else {
          // replace article head
-         $("#meta-heading").text(obj.outputs)
+         $("#meta-heading").text(obj.outputs);
       }
    });
    callback();
@@ -201,11 +203,11 @@ function populateBatchResults(results, callback) {
 function scoreClass(_score) {
    score = parseFloat(_score);
    if (score <= -8.5) {
-      return "bad err"
+      return "bad err";
    } else if (score <= -4.0) {
-      return "average"
+      return "average";
    } else {
-      return "good"
+      return "good";
    }
 }
 
@@ -217,17 +219,17 @@ function doTranslation() {
       var pg_seg = extract_segmented_paragraphs(j);
       pg_map = pg_seg["pg_map"];
       sent_map = pg_seg["sent_map"];
-      var a_title = $("#meta-heading").text()
+      var a_title = $("#meta-heading").text();
       sent_map[0] = a_title;
       populateTargets(pg_map, sent_map);
       batches = make_batches(sent_map, BATCH_SIZE);
-      batch_queue = Array.from(Array(batches.length).keys()).reverse()
+      batch_queue = Array.from(Array(batches.length).keys()).reverse();
       is_translating = true;
       translateNext();
    } else {
       is_translating = true;
       batches = make_batches(sent_map, BATCH_SIZE);
-      batch_queue = Array.from(Array(batches.length).keys()).reverse()
+      batch_queue = Array.from(Array(batches.length).keys()).reverse();
       translateNext();
    }
 }
@@ -235,6 +237,6 @@ function doTranslation() {
 function showOriginalArticle() {
    if (!$.isEmptyObject(sent_map)) {
       is_translating = false;
-      $("#meta-heading").text(sent_map[0])
+      $("#meta-heading").text(sent_map[0]);
    }
 }
