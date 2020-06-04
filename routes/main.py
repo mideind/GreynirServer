@@ -76,20 +76,13 @@ PARSEFAIL_MAX = 250
 @max_age(seconds=60)
 def main():
     """ Handler for the main (index) page """
-    return render_template("main.html")
-
-
-@routes.route("/queries")
-@max_age(seconds=60)
-def queries():
-    """ Handler for the queries page """
     txt = request.args.get("txt")
     if txt:
         txt = txt.strip()
     if not txt:
         # Select a random default text
         txt = _DEFAULT_TEXTS[random.randint(0, len(_DEFAULT_TEXTS) - 1)]
-    return render_template("queries.html", default_text=txt)
+    return render_template("main.html", default_text=txt)
 
 
 @routes.route("/analysis")
