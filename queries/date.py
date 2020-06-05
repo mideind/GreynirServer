@@ -815,6 +815,7 @@ def howlong_answ(q, result):
 
 
 def when_answ(q, result):
+    """ Generate answer to a question of the form "Hvenær er(u) [hátíðardagur]?" etc. """
     # TODO: Fix this so it includes weekday, e.g.
     # "Sunnudaginn 1. október"
     # Use plural 'eru' for 'páskar', 'jól' etc.
@@ -831,6 +832,7 @@ def when_answ(q, result):
 
 
 def currdate_answ(q, result):
+    """ Generate answer to a question of the form "Hver er dagsetningin?" etc. """
     now = datetime.utcnow()
     date_str = now.strftime("%A %-d. %B %Y")
     answer = date_str.capitalize()
@@ -846,6 +848,7 @@ def currdate_answ(q, result):
 
 
 def days_in_month_answ(q, result):
+    """ Generate answer to a question of the form "Hvað eru margir dagar í [MÁNUÐI]?" etc. """
     ndays = result["days_in_month"]
     t = result["target"]
     mnum = t.month
@@ -859,6 +862,7 @@ def days_in_month_answ(q, result):
 
 
 def year_answ(q, result):
+    """ Generate answer to a question of the form "Hvaða ár er núna?" etc. """
     now = datetime.utcnow()
     y = now.year
     answer = "{0}.".format(y)
@@ -870,6 +874,7 @@ def year_answ(q, result):
 
 
 def leap_answ(q, result):
+    """ Generate answer to a question of the form "Er hlaupár?" etc. """
     now = datetime.utcnow()
     t = result.get("target")
     y = t.year if t else now.year

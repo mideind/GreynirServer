@@ -57,7 +57,7 @@ from annotald.annotree import AnnoTree
 MIN_SENT_LENGTH = 3
 
 # Num sentences to batch and shuffle
-# Control memory usage i.e. how many sentence texts
+# Controls memory usage i.e. how many sentences
 # are accumulated in memory prior to shuffling.
 MAX_BATCH = 10000
 

@@ -1697,7 +1697,7 @@ class LemurinnScraper(ScrapeHelper):
 
     def __init__(self, root):
         super().__init__(root)
-        self._feeds = ["http://lemurinn.is/feed/"]
+        self._feeds = ["https://lemurinn.is/feed/"]
 
     def get_metadata(self, soup):
         """ Analyze the article soup and return metadata """
