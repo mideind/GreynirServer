@@ -54,7 +54,7 @@ def words_trends():
 
 # Word categories permitted in word frequency search
 _VALID_WCATS = frozenset(
-    ("kk", "kvk", "hk", "lo", "so", "person_kk", "person_kvk", "entity")
+    ("kk", "kvk", "hk", "lo", "so", "person_kk", "person_kvk", "entity", "??")
 )
 
 # Human-readable descriptions of word categories
@@ -133,20 +133,9 @@ def wordfreq():
     if not warg:
         return better_jsonify(**resp)
 
-    # Get the list of specified cats for each word lemma
-    wds, spec_cats = zip(*_str2words(warg))
-
-    # Try to tokenize each item
-    for ix, w in enumerate(wds):
-        tokens = tokenize(w)
-
-
-    # Tokenize all words
-    wds_only = " ".join(wds)
-    tokens = list(filter(lambda x: x.kind in _VALID_TOKENS, tokenize(wds_only)))
-
-    # Create word/cat pairs from each token
+    # Create word/cat pair from token
     def cat4token(t):
+        # TODO: Use ReynirPackage lemma lookup function for this
         w = t.txt
         if t.kind == TOK.WORD:
             val = list(filter(lambda m: m.stofn == m.ordmynd, t.val)) or t.val
@@ -158,16 +147,22 @@ def wordfreq():
             cat = "entity"
         return (w, cat)
 
-    # Create word/cat tuples, overwriting word category
-    # with a user-specified category, if provided
-    words = []
-    for i, t in enumerate(tokens):
-        (w, c) = cat4token(t)
-        c = spec_cats[i] if spec_cats[i] and spec_cats[i] != CAT_UNKNOWN else c
-        words.append((w, c))
+    # Parse arg string into word/cat tuples
+    wds = _str2words(warg)
 
-    # Filter all words not in allowed category
-    words = list(filter(lambda x: x[1] in _VALID_WCATS, words))
+    # Try to tokenize each item that doesn't have a category
+    nwds = []
+    for w, c in wds:
+        if c is None or c == CAT_UNKNOWN:
+            # Try to tokenize
+            tokens = list(filter(lambda x: x.kind in _VALID_TOKENS, tokenize(w)))
+            for t in tokens:
+                nwds.append(cat4token(t))
+        else:
+            nwds.append((w, c))
+
+    # Filter all words not in allowed category and restrict no. words
+    words = list(filter(lambda x: x[1] in _VALID_WCATS, nwds))
     words = words[:_MAX_NUM_WORDS]
 
     # Generate date labels
