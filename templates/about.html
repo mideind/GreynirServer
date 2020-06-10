@@ -99,8 +99,13 @@ blockquote cite {
 {%- endif -%}
 {%- if python_version %}
          &bull;
-         <span>Python {{ python_version }}</a></span>
+         <span>Python {{ python_version }}</span>
 {%- endif -%}
+{%- if platform_name %}
+         &bull;
+         <span>{{ platform_name }}</a></span>
+{%- endif -%}
+
       </p>
       <p>
          Frumforrit Greynis og tengdar skrár eru opin og 
