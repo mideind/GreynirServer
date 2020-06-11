@@ -50,18 +50,18 @@ var TP_WORD = 5;
 // Token spacing
 
 var TP_SPACE = [
-    // Next token is:
-    // LEFT    CENTER  RIGHT   NONE    WORD
-    // Last token was TP_LEFT:
-    [ false,  true,   false,  false,  false],
-    // Last token was TP_CENTER:
-    [ true,   true,   true,   true,   true],
-    // Last token was TP_RIGHT:
-    [ true,   true,   false,  false,  true],
-    // Last token was TP_NONE:
-    [ false,  true,   false,  false,  false],
-    // Last token was TP_WORD:
-    [ true,   true,   false,  false,  true]
+   // Next token is:
+   // LEFT    CENTER  RIGHT   NONE    WORD
+   // Last token was TP_LEFT:
+   [ false,  true,   false,  false,  false],
+   // Last token was TP_CENTER:
+   [ true,   true,   true,   true,   true],
+   // Last token was TP_RIGHT:
+   [ true,   true,   false,  false,  true],
+   // Last token was TP_NONE:
+   [ false,  true,   false,  false,  false],
+   // Last token was TP_WORD:
+   [ true,   true,   false,  false,  true]
 ];
 
 var LEFT_PUNCTUATION = "([„«#$€<";

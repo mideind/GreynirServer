@@ -154,6 +154,8 @@
 
    function initCharts() {
 
+      Chart.defaults.global.defaultFontFamily = "Lato";
+
       var scrapeChartData = {{ scraped_chart_data | safe }};
       
       var parseChartData = {{ parsed_chart_data | safe }};

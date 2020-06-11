@@ -203,7 +203,7 @@ def init_roots(wait=False):
             True,
         ),
         (
-            "http://lemurinn.is/",
+            "https://lemurinn.is/",
             "lemurinn.is",
             "Lemúrinn",
             0.4,

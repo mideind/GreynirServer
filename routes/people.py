@@ -22,7 +22,7 @@
 """
 
 
-from . import routes, max_age, cache, restricted
+from . import routes, max_age, cache, restricted, days_from_period_arg
 
 import json
 from pprint import pprint
@@ -42,7 +42,7 @@ from reynir.bindb import BIN_Db
 
 
 # Default number of persons to show in /people
-_RECENT_PERSONS_LENGTH = 20
+_RECENT_PERSONS_LENGTH = 50
 _MAX_TITLE_LENGTH = 64
 
 # Defaults for /people_top
@@ -214,7 +214,7 @@ def graph_data(num_persons=_DEFAULT_NUM_PERSONS_GRAPH):
 def people_recent():
     """ Page with a list of people recently appearing in articles """
     return render_template(
-        "people/people-recent.html", title="Fólk - Nýlegt", persons=recent_persons()
+        "people/recent.html", title="Fólk - Nýlegt", persons=recent_persons()
     )
 
 
@@ -224,12 +224,11 @@ def people_recent():
 def people_top():
     """ Page showing people most frequently mentioned in recent articles """
     period = request.args.get("period")
-    days = 7 if period == "week" else _TOP_PERSONS_PERIOD
+    days = days_from_period_arg(period, _TOP_PERSONS_PERIOD)
+    persons = top_persons(days=days)
+
     return render_template(
-        "people/people-top.html",
-        title="Fólk",
-        persons=top_persons(days=days),
-        period=period,
+        "people/top.html", title="Fólk", persons=persons, period=period
     )
 
 
@@ -239,7 +238,7 @@ def people_top():
 def people_graph():
     """ Page with a weighted, force directed graph of relations 
         between people via mentions in articles. """
-    return render_template("people/people-graph.html", graph_data=graph_data())
+    return render_template("people/graph.html", graph_data=graph_data())
 
 
 @routes.route("/people_timeline")
@@ -247,4 +246,4 @@ def people_graph():
 @max_age(seconds=10 * 60)
 def people_timeline():
     """ Person timeline page. """
-    return render_template("people/people-timeline.html")
+    return render_template("people/timeline.html")

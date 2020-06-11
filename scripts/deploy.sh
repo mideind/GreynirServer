@@ -93,6 +93,7 @@ cp resources/*.json $DEST/resources/
 # Put a version identifier (date and time) into the about.html template
 # TODO: Put Git commit hash / revision count here as well as date and time
 sed -i "s/\[Þróunarútgáfa\]/Útgáfa `date "+%Y-%m-%d %H:%M"`/g" $DEST/templates/about.html
+sed -i "s/\[Gitútgáfa\]/`git rev-parse HEAD`/g" $DEST/templates/about.html
 
 echo "Deployment done"
 echo "Starting gunicorn server..."
