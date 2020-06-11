@@ -1,0 +1,291 @@
+
+{% extends "container-normal.html" %}
+
+
+{% block meta %}
+
+{% endblock %}
+
+
+{% block styles %}
+
+<link href="{{ url_for('static', filename='css/main-bootstrap.css') }}" rel='stylesheet' type='text/css'>
+
+<!-- moment.js library used by Date Picker -->
+<script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js" defer></script>
+<!-- Date Range Picker from https://www.daterangepicker.com/ -->
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js" defer></script>
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+
+{% endblock %}
+
+{% block content %}
+
+<!--<div>
+   <ul class="nav nav-tabs" role="tablist">
+      <li role="presentation" class="active">
+         <a href="{{ url_for('routes.words') }}">
+            Orðtíðni
+         </a>
+      </li>
+      <li role="presentation">
+         <a href="{{ url_for('routes.words_trends') }}">
+            Stefnur
+         </a>
+      </li>
+   </ul>
+</div>-->
+
+<div role="tabpanel" class="tab-pane active">
+
+<div class="panel panel-default">
+   <div class="panel-heading">
+      Orðtíðni í fréttum vefmiðla
+      <br>
+      <small>Sláðu inn eitt eða fleiri orð aðgreind með kommu, og veldu síðan tímabil</small>
+   </div>
+   <div style="padding:10px;">
+      <span>
+         Orð <input id="words" name="words" value="veira, smit" style="margin-right: 10px; width:450px;">
+      </span>
+      <span>
+         Tímabil <input name="daterange" id="daterange" style="width:210px; margin-right: 10px;">
+         <input id="datefield" type="button" value="Sækja" onClick="reloadData();">
+         <span id="in-progress" style="margin-left:10px;"></span>
+      </span>
+   </div>
+   <hr style="margin:0">
+   <div style="padding:25px; padding-top: 15px;">
+      <canvas id="wfreq_chart_canvas"></canvas>
+   </div>
+</div>
+
+<div id="wfreq-details-container" style="display:none;">
+   <h3>
+      <span id="wfreq-period-text"></span>
+      <span id="art-progress" style="margin-left:10px;"></span>
+   </h3>
+
+   <div id="wfreq-details"></div>
+</div>
+
+</div>
+
+{% endblock %}
+
+{% block endscripts %}
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.bundle.min.js"></script>
+
+<script>
+
+   var wfreqChart;
+   var errMsg = "<span class='red'>Villa kom upp í samskiptum við netþjón</span>";
+   var progressIndicator = "<span class='glyphicon glyphicon-restart glyphicon-spin'></span>";
+
+   function chartClicked(e, elms) {
+      if (elms.length === 0) {
+         return;
+      }
+      // Update header and set off progress indicator
+      $("#wfreq-details-container").show();
+      $("#wfreq-period-text").html(wfreqChart.config.data.labels[elms[0]._index])
+      $("#art-progress").html(progressIndicator);
+
+      // Clicked chart elements contain the info we need to fetch details
+      var params = {
+         date_from: wfreqChart.config.data.labelDates[elms[0]._index],
+         words: $("#words").data("words"),
+      };
+
+      fetchDetails(params);
+   }
+
+   function fetchDetails(params) {
+      // Kill any previous ongoing request
+      if (fetchDetails.request) {
+         fetchDetails.request.abort();
+      }
+      // Make ajax call to web app, get full list of articles
+      fetchDetails.request = $.getJSON("/wordfreq_details?" + $.param(params), function(r) {
+         if (r["err"] === false) {
+            // Stop off progress indicator
+            $("#art-progress").html("");
+            // Server returns pre-rendered HTML payload which we inject into DOM
+            $("#wfreq-details").html(r["payload"]);
+            // Activate bootstrap tooltips for article icon elements ajax'd in from server
+            $("[data-toggle='tooltip']").tooltip({ "animation": false });
+         } else {
+            $("#art-progress").html(errMsg);
+         }
+      }).fail(function() {
+         $("#art-progress").html(errMsg);
+      });
+   }
+
+   function initChart(data) {
+      // Create Chart.js chart
+      Chart.defaults.global.defaultFontFamily = "Lato";
+      var config = {
+         type: "line",
+         data: data,
+         options: {
+            onClick: chartClicked,
+            responsive: true,
+            tooltips: {
+               mode: "index"
+            },
+            scales: {
+               xAxes: [{
+                  display: true,
+                  scaleLabel: {
+                     display: true
+                  },
+                  ticks: {
+                     autoSkip: true,
+                     autoSkipPadding: -5,
+                  },
+               }],
+               yAxes: [{
+                  display: true,
+                  scaleLabel: {
+                     display: true,
+                     labelString: "Tíðni orða"
+                  },
+                  ticks: {
+                     suggestedMin: 0,
+                  }
+               }]
+            }
+         }
+      };
+      var wfreqCtx =  $("#wfreq_chart_canvas").get(0).getContext("2d");
+      wfreqChart = new Chart(wfreqCtx, config);
+   }
+
+   function loadChartData(data) {
+      wfreqChart.config.data = data;
+      wfreqChart.update();
+   }
+
+   function initDatePicker() {
+      var start = moment().subtract(89, "days");
+      var end = moment();
+
+      // Icelandic localization
+      var locale = {
+        "format": "YYYY-MM-DD",
+        "separator": " - ",
+        "applyLabel": "Vista",
+        "cancelLabel": "Hætta við",
+        "fromLabel": "Frá",
+        "toLabel": "til",
+        "customRangeLabel": "Velja",
+        "weekLabel": "V",
+        "daysOfWeek": [
+            "Sun",
+            "Mán",
+            "Þri",
+            "Mið",
+            "Fim",
+            "Fös",
+            "Lau"
+        ],
+        "monthNames": [
+            "Janúar",
+            "Febrúar",
+            "Mars",
+            "Apríl",
+            "Maí",
+            "Júní",
+            "Júlí",
+            "Ágúst",
+            "September",
+            "Oktober",
+            "November",
+            "Desember"
+        ],
+        "firstDay": 1
+      };
+
+      // Init Date Picker
+      $("#daterange").daterangepicker({
+         startDate: start,
+         endDate: end,
+         locale: locale,
+         maxSpan: {
+            "days": 365
+         },
+         ranges: {
+           "Síðastliðin vika": [moment().subtract(6, "days"), moment()],
+           "Síðustu 30 dagar": [moment().subtract(29, "days"), moment()],
+           "Síðustu 3 mánuðir": [moment().subtract(89, "days"), moment()],
+           "Síðustu 6 mánuðir": [moment().subtract(182, "days"), moment()],
+           "Síðasta ár": [moment().subtract(364, "days"), moment()],
+         }
+      });
+
+      // Reload chart data when date range changes
+      $("#daterange").on("apply.daterangepicker", reloadData);
+   }
+
+   function reloadData() {
+      // Kill any previous ongoing request
+      if (reloadData.request) {
+         reloadData.request.abort();
+      }
+      // Set off progress indicator
+      $("#in-progress").html(progressIndicator);
+
+      // Hide details view
+      $("#wfreq-details-container").hide();
+
+      // The date range picker plugin produces a string
+      // containing two hyphen-separated ISO dates
+      var res = $("#daterange").val().split(" - ");
+
+      // Construct request params
+      var params = {
+         words: $("#words").val(),
+         date_from: res[0].trim(),
+         date_to: res[1].trim(),
+      };
+      // Send request
+      reloadData.request = $.getJSON("/wordfreq?" + $.param(params), function(r) {
+         if (r["err"] === false) { 
+            // Update word input field w. string from server
+            $("#words").val(r["words"]);
+            // Save latest loaded words as data attr on input elm
+            $("#words").data("words", r["words"]);
+            // Remove progress indicator
+            $("#in-progress").html("");
+            loadChartData(r["data"]);
+         } else {
+            $("#in-progress").html(errMsg);
+         }
+      }).fail(function() {
+         $("#in-progress").html(errMsg);
+      });
+   }
+
+   $(document).ready(function() {
+      // Activate the top navbar
+      $("#navid-words").addClass("active");
+
+      initDatePicker();
+      initChart(null);
+      reloadData();
+
+      // Reload on Enter when focus in word/date input fields
+      $("#words, #datefield").keypress(function rld(event) {
+         var keycode = (event.keyCode ? event.keyCode : event.which);
+         if (keycode == '13'){
+            reloadData();
+         }
+      });
+   });
+
+</script>
+
+{% endblock %}
+

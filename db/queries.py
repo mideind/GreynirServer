@@ -272,20 +272,20 @@ class ArticleListQuery(_BaseQuery):
 
 class WordFrequencyQuery(_BaseQuery):
     """ A query yielding the number of times a given word occurs in
-        articles over a given period of time, broken down by day
-        (or longer periods, specified via the by_num_days arg). """
+        articles over a given period of time, broken down by either
+        day or week. """
 
     _Q = """
         with days as (
-            select to_char(d, 'YYYY-MM-DD') date
+            select to_char(d, :datefmt) date
             from generate_series(
                 :start,
                 :end,
-                ':by_num_days day'::interval
+                :timeunit
             ) d
         ),
         appearances as (
-            select to_char(a.timestamp, 'YYYY-MM-DD') date, sum(w.cnt) cnt
+            select to_char(a.timestamp, :datefmt) date, sum(w.cnt) cnt
             from words w, articles a
             where w.stem = :stem
             and w.cat = :cat
@@ -300,13 +300,17 @@ class WordFrequencyQuery(_BaseQuery):
         """
 
     @classmethod
-    def fetch(cls, stem, cat, start, end, by_num_days=1, enclosing_session=None):
+    def frequency(cls, stem, cat, start, end, timeunit="day", enclosing_session=None):
         with SessionContext(session=enclosing_session, commit=False) as session:
+            assert timeunit in ["week", "day"]
+            datefmt = "IYYY-IW" if timeunit == "week" else "YYYY-MM-DD"
+            tu = "1 {0}".format(timeunit)
             return cls().execute(
                 session,
                 stem=stem,
                 cat=cat,
                 start=start,
                 end=end,
-                by_num_days=by_num_days,
+                timeunit=tu,
+                datefmt=datefmt,
             )

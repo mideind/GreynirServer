@@ -23,6 +23,7 @@
 
 import platform
 import sys
+import platform
 import random
 import json
 from datetime import datetime
@@ -369,14 +370,17 @@ def about():
             ".".join(str(n) for n in sys.version_info[:3]),
             platform.python_implementation(),
         )
+        platform_name = platform.system()
     except AttributeError:
         reynir_version = ""
         python_version = ""
+        platform_name = ""
     return render_template(
         "about.html",
         title="Um Greyni",
         reynir_version=reynir_version,
         python_version=python_version,
+        platform_name=platform_name,
     )
 
 

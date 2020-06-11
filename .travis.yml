@@ -21,15 +21,17 @@ install:
   - pip install --upgrade git+https://github.com/mideind/GreynirCorrect#egg=reynir-correct
 
 before_script:
+  # Configure locale
   - sudo apt-get install language-pack-is
   - sudo locale-gen is_IS.UTF-8
   - sudo update-locale
+  # Start postgres and init database
   - sudo systemctl start postgresql
   - psql -c "create database scraper with encoding 'UTF8' LC_COLLATE='is_IS.UTF-8' LC_CTYPE='is_IS.UTF-8' TEMPLATE=template0;" -U postgres
   - psql -d scraper -c "create extension if not exists \"uuid-ossp\";" -U postgres
   - psql -c "create user reynir with password 'reynir';" -U postgres
   - python scraper.py --init
-  # Create dummy DB data
+  # Insert dummy database data from CSV files
   - cp tests/test_files/testdb_articles.csv /tmp/
   - psql -d scraper -c "copy articles from '/tmp/testdb_articles.csv' delimiter ',' csv;"
   - cp tests/test_files/testdb_persons.csv /tmp/

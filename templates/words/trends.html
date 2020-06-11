@@ -1,0 +1,36 @@
+{% extends "container-normal.html" %}
+
+
+{% block meta %}
+
+{% endblock %}
+
+
+{% block styles %}
+
+<link href="{{ url_for('static', filename='css/main-bootstrap.css') }}" rel='stylesheet' type='text/css'>
+
+{% endblock %}
+
+{% block content %}
+
+<div>
+   <ul class="nav nav-tabs" role="tablist">
+      <li role="presentation">
+         <a href="{{ url_for('routes.words') }}">
+            Orðtíðni
+         </a>
+      </li>
+      <li role="presentation" class="active">
+         <a href="{{ url_for('routes.words_trends') }}">
+            Stefnur
+         </a>
+      </li>
+   </ul>
+</div>
+
+{% endblock %}
+
+{% block endscripts %}
+
+{% endblock %}

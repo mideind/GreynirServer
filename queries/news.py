@@ -162,7 +162,7 @@ def sentence(state, result):
                 q.set_answer(gen_answer(errmsg))
                 q.set_source("RÚV")
         except Exception as e:
-            logging.warning("Exception answering news query: {0}".format(e))
+            logging.warning("Exception answering news query '{0}': {1}".format(q, e))
             q.set_error("E_EXCEPTION: {0}".format(e))
             return
     else:
