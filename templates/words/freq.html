@@ -93,10 +93,18 @@
       $("#art-progress").html(progressIndicator);
 
       // Clicked chart elements contain the info we need to fetch details
+      var ld = wfreqChart.config.data.labelDates[elms[0]._index];
       var params = {
-         date_from: wfreqChart.config.data.labelDates[elms[0]._index],
          words: $("#words").data("words"),
       };
+      // If the period is a single day, we have a single date.
+      // If it's a week, we have a start date and an end date in an array
+      if (Array.isArray(ld)) {
+         params["date_from"] = ld[0];
+         params["date_to"] = ld[1];
+      } else {
+         params["date_from"] = ld;
+      }
 
       fetchDetails(params);
    }

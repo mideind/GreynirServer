@@ -81,6 +81,8 @@ ENGLISH_WORDS = frozenset(
         "what",
         "when",
         "which",
+        "how",
+        "why",
         "s",
         "t",
         "don't",

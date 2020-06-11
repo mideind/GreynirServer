@@ -206,6 +206,8 @@ def wordfreq():
                 if d2.year != now.year:
                     d2fmt += " %Y"
                 labels.append("{0}-{1}".format(d1.strftime(d1fmt), d2.strftime(d2fmt)))
+            # Convert dates to strings for client-side
+            label_dates = [(df.strftime("%Y-%m-%d"), dt.strftime("%Y-%m-%d")) for df, dt in label_dates]
         # Group by day
         else:
             timeunit = "day"
