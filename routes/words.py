@@ -54,7 +54,18 @@ def words_trends():
 
 # Word categories permitted in word frequency search
 _VALID_WCATS = frozenset(
-    ("kk", "kvk", "hk", "lo", "so", "person_kk", "person_kvk", "entity", "??")
+    (
+        "kk",
+        "kvk",
+        "hk",
+        "lo",
+        "so",
+        "person_kk",
+        "person_kvk",
+        "person_hk",
+        "entity",
+        "??",
+    )
 )
 
 # Human-readable descriptions of word categories
@@ -67,6 +78,7 @@ CAT_DESC = {
     "so": "so.",
     "person_kk": "kk. manneskja",
     "person_kvk": "kvk. manneskja",
+    "person_hk": "hk. manneskja",
     "entity": "fyrirbæri",
     CAT_UNKNOWN: "óþekkt",
 }
@@ -94,7 +106,7 @@ def _str2words(wstr, separate_on_whitespace=False):
     ws = wstr.strip()
     if not ws:
         return None
-    words = [w.strip() for w in ws.split(",")]
+    words = [w.strip() for w in ws.split(",") if w.strip()]
     if separate_on_whitespace:
         words = " ".join(words).split()
     return [
@@ -105,7 +117,7 @@ def _str2words(wstr, separate_on_whitespace=False):
 def _words2str(words):
     """ Create comma-separated string from (word,cat) tuple list,
         e.g. "[(a,b),(c,d)] -> "a:b, c:d". """
-    return ", ".join([":".join(w[:2]) if len(w) >= 2 else (w, None) for w in words])
+    return ", ".join([":".join(w[:2]) if len(w) >= 2 else w[0] for w in words])
 
 
 def _desc4word(wc):
@@ -135,6 +147,7 @@ def wordfreq():
 
     # Create word/cat pair from token
     def cat4token(t):
+        assert t.kind in (TOK.WORD, TOK.PERSON, TOK.ENTITY)
         # TODO: Use ReynirPackage lemma lookup function for this
         w = t.txt
         if t.kind == TOK.WORD:

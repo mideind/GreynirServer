@@ -51,7 +51,7 @@
                   {% if period == 'week' %}
                      Undanfarna viku
                   {% elif period == 'month' %}
-                     Síðastliðinn mánuð
+                     Síðustu 30 daga
                   {% else %}
                      Síðasta sólarhring
                   {% endif %}
@@ -60,7 +60,7 @@
                <ul class="dropdown-menu">
                   <li><a href="{{ url_for('routes.locations_worldmap') | safe }}">Síðasta sólarhring</a></li>
                   <li><a href="{{ url_for('routes.locations_worldmap', period='week') | safe }}">Undanfarna viku</a></li>
-                  <li><a href="{{ url_for('routes.locations_worldmap', period='month') | safe }}">Síðastliðinn mánuð</a></li>
+                  <li><a href="{{ url_for('routes.locations_worldmap', period='month') | safe }}">Síðustu 30 daga</a></li>
                </ul>
             </span>
          </div>

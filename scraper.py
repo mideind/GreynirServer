@@ -554,7 +554,7 @@ def main(argv=None):
         uuid = None
         numprocs = None
 
-        def parse_int(i, fallback):
+        def parse_int(i):
             try:
                 return int(a)
             except ValueError:
@@ -571,7 +571,7 @@ def main(argv=None):
                 reparse = True
             elif o in ("-l", "--limit"):
                 # Maximum number of articles to parse
-                limit = parse_int(a) or limit
+                limit = parse_int(a)
             elif o in ("-u", "--urls"):
                 urls = a  # Text file with list of URLs
             elif o in ("-d", "--uuid"):

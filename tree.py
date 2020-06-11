@@ -778,7 +778,7 @@ class TerminalNode(Node):
     def contained_year(self):
         """ Return a year from the associated token, if any,
             as an integer """
-        if self.tokentype not in ("YEAR"):
+        if self.tokentype != "YEAR":
             return None
         if self._aux is None:
             self._aux = json.loads(self.aux)
