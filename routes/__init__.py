@@ -102,17 +102,11 @@ def bool_from_request(rq, name, default=False):
     return isinstance(b, str) and b.lower() in _TRUTHY
 
 
-_NATLANG_PERIODS = {
-    "day": 1,
-    "week": 7,
-    "month": 30
-}
+_NATLANG_PERIODS = {"day": 1, "week": 7, "month": 30}
 
 
 def days_from_period_arg(arg, default=1):
-    if not arg or arg not in _NATLANG_PERIODS:
-        return default
-    return _NATLANG_PERIODS[arg]
+    return _NATLANG_PERIODS.get(arg, default)
 
 
 def better_jsonify(**kwargs):
