@@ -154,6 +154,15 @@ def wordfreq():
             val = list(filter(lambda m: m.stofn == m.ordmynd, t.val)) or t.val
             cat = val[0].ordfl if len(val) else CAT_UNKNOWN
             w = val[0].stofn if len(val) else t.txt
+            # Hack to fix combined word, remove hyphens added by combinator
+            if w.count("-") > t.txt.count("-"):
+                san = ""
+                txtlen = len(t.txt)
+                for i, char in enumerate(w):
+                    if char == "-" and i < txtlen and t.txt[i] != "-":
+                        continue
+                    san += char
+                w = san
         elif t.kind == TOK.PERSON:
             cat = "person_" + t.val[0].gender
         elif t.kind == TOK.ENTITY:
