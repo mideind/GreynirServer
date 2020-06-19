@@ -123,6 +123,7 @@ tokId["MOLECULE"] = TOK_MOLECULE;
 tokId["SSN"] = TOK_SSN;
 tokId["USERNAME"] = TOK_USERNAME;
 tokId["SERIALNUMBER"] = TOK_SERIALNUMBER;
+tokID["COMPANY"] = TOK_COMPANY;
 
 // Maps token type to glyph icon class
 var tokIcons = [];
@@ -156,6 +157,7 @@ tokIcons[TOK_MOLECULE] = "glyphicon-chemistry";
 tokIcons[TOK_USERNAME] = "glyphicon-userhandle";
 tokIcons[TOK_SSN] = "glyphicon-world";    // TODO check for a more appropriate icon
 tokIcons[TOK_SERIALNUMBER] = "glyphicon-barcode";
+tokIcons[TOK_COMPANY] = "glyphicon-tag";
 
 var wordClass = {
    "no" : "óþekkt nafnorð",
@@ -184,13 +186,20 @@ var wordClass = {
    "entity" : "sérnafn",
    "gata" : "götuheiti",
    "fyrirtæki" : "fyrirtæki",
+   "company" : "fyrirtæki",
    "sequence" : "raðtala",
    "domain" : "lén",
+   "lén" : "lén",
    "url" : "vefslóð",
+   "vefslóð" : "vefslóð",
    "email" : "tölvupóstfang",
+   "tölvupóstfang" : "tölvupóstfang",
    "serialnumber" : "vörunúmer",
+   "vörunúmer" : "vörunúmer",
    "molecule" : "sameind",
+   "sameind" : "sameind"
    "ssn" : "kennitala",
+   "kennitala" : "kennitala",
 };
 
 var variantDesc = [
