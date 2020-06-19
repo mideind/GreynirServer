@@ -57,6 +57,7 @@ var TOK_MOLECULE = 26;
 var TOK_SSN = 27;
 var TOK_USERNAME = 28;
 var TOK_SERIALNUMBER = 29;
+var TOK_COMPANY = 30;
 
 var tokClass = [];
 
@@ -89,6 +90,7 @@ tokClass[TOK_MOLECULE] = "molecule";
 tokClass[TOK_SSN] = "ssn";
 tokClass[TOK_USERNAME] = "username";
 tokClass[TOK_SERIALNUMBER] = "serialnumber";
+tokClass[TOK_COMPANY] = "company";
 
 var tokId = [];
 
@@ -778,6 +780,12 @@ function tokenInfo(t, nameDict) {
       r.lemma = t.x;
       r.details = format_is(t.v[1], 3) + " " + t.v[0]; // Value, unit
    }
+   else
+   if (t.k == TOK_COMPANY) {
+      r.lemma = t.x;
+      r.details = "fyrirtæki";
+
+   }  
    if (t.corr !== undefined) {
       // A correction applies to this token:
       // add the "corr" class to it
