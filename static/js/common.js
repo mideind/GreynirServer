@@ -790,7 +790,7 @@ function tokenInfo(t, nameDict) {
       r.details = format_is(t.v[1], 3) + " " + t.v[0]; // Value, unit
    }
    else
-   if (t.k == TOK_COMPANY) {
+   if (t.k === TOK_COMPANY) {
       r.lemma = t.x;
       r.details = "fyrirtæki";
 
