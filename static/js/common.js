@@ -123,7 +123,7 @@ tokId["MOLECULE"] = TOK_MOLECULE;
 tokId["SSN"] = TOK_SSN;
 tokId["USERNAME"] = TOK_USERNAME;
 tokId["SERIALNUMBER"] = TOK_SERIALNUMBER;
-tokID["COMPANY"] = TOK_COMPANY;
+tokId["COMPANY"] = TOK_COMPANY;
 
 // Maps token type to glyph icon class
 var tokIcons = [];
@@ -197,7 +197,7 @@ var wordClass = {
    "serialnumber" : "vörunúmer",
    "vörunúmer" : "vörunúmer",
    "molecule" : "sameind",
-   "sameind" : "sameind"
+   "sameind" : "sameind",
    "ssn" : "kennitala",
    "kennitala" : "kennitala",
 };
