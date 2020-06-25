@@ -391,6 +391,10 @@ _HELLO_DEAR = {
     "is_question": False,
 }
 
+_HOW_CAN_I_HELP = {
+    "Hvernig get ég hjálpað þér?"
+}
+
 _YES = { "answer": "Já." }
 _NO = { "answer": "Nei." }
 
@@ -515,9 +519,6 @@ _SPECIAL_QUERIES = {
     },
     "hvernig lít ég út": {
         "answer": "Þú ert undurfagur, kæri notandi."
-    },
-    "hjálpaðu mér": {
-        "answer": "Hvernig get ég hjálpað?"
     },
     "mér líður illa": {
         "answer": "Það er nú ekki gott að heyra, kæri notandi."
@@ -906,8 +907,11 @@ _SPECIAL_QUERIES = {
     "sæll": _HELLO_DEAR,
     "sæl embla": _HELLO_DEAR,
     "sæl og blessuð": { "answer": "Sæll og blessaður, kæri notandi.", "is_question": False },
+    "sæll og blessaður": { "answer": "Sæll og blessaður, kæri notandi.", "is_question": False },
     "vertu sæl og blessuð": { "answer": "Sæll og blessaður, kæri notandi.", "is_question": False },
+    "vertu sæll og blessaður": { "answer": "Sæll og blessaður, kæri notandi.", "is_question": False },
     "blessuð": { "answer": "Sæll og blessaður, kæri notandi.", "is_question": False },
+    "blessaður": { "answer": "Sæll og blessaður, kæri notandi.", "is_question": False },
     "góðan daginn": { "answer": "Góðan daginn, kæri notandi.", "is_question": False },
     "góðan daginn embla": { "answer": "Góðan daginn, kæri notandi.", "is_question": False },
     "góðan dag": { "answer": "Góðan daginn, kæri notandi.", "is_question": False },
@@ -924,6 +928,14 @@ _SPECIAL_QUERIES = {
     "bless bless embla": _GOODBYE,
     "bæ": _GOODBYE,
     "bæ embla": _GOODBYE,
+    "vertu sæl": _GOODBYE,
+    "vertu sæl embla": _GOODBYE,
+
+    # Help
+    "hjálp": _HOW_CAN_I_HELP,
+    "hjálpaðu mér": _HOW_CAN_I_HELP,
+    "geturðu hjálpað mér": _HOW_CAN_I_HELP,
+    "getur þú hjálpað mér": _HOW_CAN_I_HELP,
 
     # Thanks
     "takk": _thanks,
