@@ -62,7 +62,8 @@ def main():
 
         # Zero sentences
         print("Deleting all articles with zero sentences")
-        session.execute(ArticleModel.table().delete().where(ArticleModel.num_sentences == 0))
+        res = session.execute(ArticleModel.table().delete().where(ArticleModel.num_sentences == 0))
+        print(str(res.rowcount) + " deleted")
 
         # Non-Icelandic
 
