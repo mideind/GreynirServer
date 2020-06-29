@@ -81,19 +81,17 @@ cp scrapers/*.py $DEST/scrapers/
 cp queries/*.py $DEST/queries/
 cp nn/*.py $DEST/nn/
 
-# Processors are not required for the web server
-# cp processors/*.py $DEST/processors/
-
 # Sync templates and static files
 rsync -av --delete templates/ $DEST/templates/
 rsync -av --delete static/ $DEST/static/
 
 cp resources/*.json $DEST/resources/
 
-# Put a version identifier (date and time) into the about.html template
-# TODO: Put Git commit hash / revision count here as well as date and time
+# Put a version identifier (date + commit ID) into the about.html template
 sed -i "s/\[Þróunarútgáfa\]/Útgáfa `date "+%Y-%m-%d %H:%M"`/g" $DEST/templates/about.html
-sed -i "s/\[Gitútgáfa\]/`git rev-parse HEAD`/g" $DEST/templates/about.html
+GITVERS=`git rev-parse HEAD` # Get git commit ID
+GITVERS=${GITVERS:0:7} # Truncate it
+sed -i "s/\[Gitútgáfa\]/${GITVERS}/g" $DEST/templates/about.html
 
 echo "Deployment done"
 echo "Starting gunicorn server..."
