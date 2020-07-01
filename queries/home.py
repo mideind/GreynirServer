@@ -3,7 +3,7 @@
 
 
 
-
+from queries import read_jsfile
 
 
 
@@ -32,7 +32,9 @@ def handle_plain_text(q):
 
         q.set_answer(dict(answer=answer), answer, answer)
 
-        q.set_command("2+2")
+        js = read_jsfile("test.js")
+
+        q.set_command(js)
 
 
     return True

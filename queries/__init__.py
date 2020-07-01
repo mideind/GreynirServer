@@ -586,3 +586,13 @@ def timezone4loc(loc, fallback=None):
     if fallback and fallback in country_timezones:
         return country_timezones[fallback][0]
     return None
+
+
+def read_jsfile(filename):
+    basepath, _ = os.path.split(os.path.realpath(__file__))
+    _JSDIR = basepath + os.sep + "js"
+    fpath = _JSDIR + os.sep + filename
+    file = open(fpath, mode="r")
+    filetext = file.read()
+    file.close()
+    return filetext
