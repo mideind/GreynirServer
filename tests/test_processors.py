@@ -154,7 +154,7 @@ def test_entities():
     session.check(("Norðurál", "er", "álverksmiðjan í Hvalfirði"))
     session.check(("Lax", "er", "stór fiskur af ætt laxfiska"))
     session.check(("Geysir", "er", "gamall goshver"))
-    session.check(("Eimskipafélag Íslands hf", "er", "skipafélag"))
+    session.check(("Eimskipafélag Íslands hf.", "er", "skipafélag"))
     session.check(("Origo", "er", "fyrirtæki"))
     session.check(("Apple-búðin", "er", "fyrirtæki"))
     session.check(("AirBerlin", "er", "flugfélag"))
