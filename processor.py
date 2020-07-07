@@ -430,7 +430,7 @@ def _main(argv=None):
         argv = sys.argv
     try:
         try:
-            opts, args = getopt.getopt(
+            opts, _ = getopt.getopt(
                 argv[1:],
                 "hifl:u:p:t:w:",
                 [
