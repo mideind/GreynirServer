@@ -128,6 +128,7 @@ class ConditionalFreqDist(defaultdict):
 
 
 class UnknownWordTagger:
+
     def __init__(self):
         self._ngram_tagger = NgramTagger()
 
@@ -506,12 +507,12 @@ def ifd_tag(text):
     global _TAGGER
     if _TAGGER is None:
         # Load the tagger from a pickle the first time it's used
-        logging.info(
-            "Loading TnT model from {0}".format("config" + os.sep + "TnT-model.pickle")
-        )
-        _TAGGER = TnT.load("config" + os.sep + "TnT-model.pickle")
+        fname = os.path.join("config", "TnT-model.pickle")
+        logging.info("Loading TnT model from {0}".format(fname))
+        _TAGGER = TnT.load(fname)
         if _TAGGER is None:
             return []  # No tagger model - unable to tag
+
     token_stream = raw_tokenize(text)
     result = []
 
