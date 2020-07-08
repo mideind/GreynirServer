@@ -81,7 +81,6 @@ vectors/Index.conf
 # JavaScript & Node stuff
 .eslintrc.js
 package-lock.json
-package.json
 
 # Scratch work files
 *.bin
