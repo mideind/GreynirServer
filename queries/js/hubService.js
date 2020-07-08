@@ -83,17 +83,12 @@ function connectHub() {
     let deviceInfo = getSmartDeviceAddress();
 
     try {
-        let username = createNewDeveloper(deviceInfo.internalipaddress);
-        
-        if (username.success){
-            serviceStorage.username = username.success.username;
-        } else {
-            return 'Ýttu á \'Philips\' takkan á tengiboxinu og reyndu aftur'
-        }
-        
-        return 'Tenging við snjalltæki tókst';
+        let username = createNewDeveloper(deviceInfo.internalipaddress)
+        serviceStorage.username = username.success.username;
+        return username;
     } catch(error) {
-        return 'Ekki tókst að tengja snjalltæki';
+        serviceStorage.username = null;
+        return {error:error.message};
     }
     // errors for connectHub
     // {"error":{"address":"","description":"link button not pressed","type":101}}
