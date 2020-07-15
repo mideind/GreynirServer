@@ -314,7 +314,7 @@ QArNumberWord/arfall →
     # to is a declinable number word ('tveir/tvo/tveim/tveggja')
     # töl is an undeclinable number word ('sautján')
     # tala is a number ('17')
-    to/arfall | töl | tala
+    to/arfall | töl | tala | "pí"
 
 QArNumberWord_nf →
     "núll" | QArLastResult_nf
@@ -366,8 +366,11 @@ def parse_num(num_str):
     """ Parse Icelandic number string to float or int """
     num = None
     try:
+        # Pi
+        if num_str == "pí":
+            num = math.pi
         # Handle numbers w. Icelandic decimal places ("17,2")
-        if re.search(r"^\d+,\d+", num_str):
+        elif re.search(r"^\d+,\d+", num_str):
             num = float(num_str.replace(",", "."))
         # Handle digits ("17")
         else:

@@ -108,6 +108,9 @@ def test_query_api(client):
         "geturðu reiknað kvaðratrótina af 9": "3",
         "hvað er 8900 með vaski": "11.036",
         "hvað eru 7500 krónur með virðisaukaskatti": "9.300",
+        "hvað er pí deilt með pí": "1",
+        "hvað er pí sinnum tveir": "6,28",
+        "hvað er tíu deilt með pí": "3,18",
     }
 
     for q, a in ARITHM_QUERIES.items():
