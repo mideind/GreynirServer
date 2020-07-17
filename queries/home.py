@@ -140,7 +140,7 @@ _COLOR_NAME_TO_CIE = {
     'gulur': 60 * 65535/360,
     'grænn': 120 * 65535/360,
     'ljósblár': 180 * 65535/360,
-    'blá': 240 * 65535/360,
+    'blár': 240 * 65535/360,
     'bleikur': 300 * 65535/360, 
     'rauður': 360 * 65535/360,
 }
@@ -259,7 +259,11 @@ def sentence(state, result):
                 stofn_name = token[2][0].stofn
                 stofn_name = _FIX_MAP.get(stofn_name) or stofn_name
             if token.txt == result.color:
-                stofn_color = token[2][2].stofn
+                options = token[2]
+                for word_variation in options:
+                    if word_variation.ordfl == 'lo' and word_variation.stofn in _COLOR_NAME_TO_CIE.keys():
+                        stofn_color = word_variation.stofn
+                        break
         
         js = read_jsfile("lightService.js")
         js += f'main(\'{stofn_name}\', true, null, {_COLOR_NAME_TO_CIE[stofn_color.lower()]});'
