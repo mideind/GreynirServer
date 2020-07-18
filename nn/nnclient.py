@@ -25,6 +25,8 @@
 
 """
 
+from typing import Optional
+
 import json
 import requests
 import logging
@@ -43,19 +45,19 @@ class NnClient:
     """ A client that connects to the HTTP REST interface of
         a tensorflow model server (using plaintext) """
 
-    port = None
-    host = None
-    verb = None
+    port = None  # type: Optional[str]
+    host = None  # type: Optional[str]
+    verb = None  # type: Optional[str]
 
     @classmethod
     def request_sentence(cls, text):
         """ Request neural network output for a single sentence """
-        raise NotImplemented
+        raise NotImplementedError
 
     @classmethod
     def request_text(cls, text):
         """ Request neural network output for contiguous text """
-        raise NotImplemented
+        raise NotImplementedError
 
     @classmethod
     def _request(cls, pgs, data=None):
@@ -70,8 +72,8 @@ class NnClient:
             payload.update(data)
 
         logging.debug(str(payload))
-        payload = json.dumps(payload)
-        resp = requests.post(url, data=payload, headers=headers)
+        payload_json = json.dumps(payload)
+        resp = requests.post(url, data=payload_json, headers=headers)
         resp.raise_for_status()
 
         obj = json.loads(resp.text)
@@ -87,13 +89,13 @@ class NnClient:
     def _process_response(cls, instance, sent):
         """ Process the response from a single sentence.
             Abstract method """
-        raise NotImplemented
+        raise NotImplementedError
 
     @classmethod
     def _normalize_text(cls, sent):
         """ Preprocess text and normalize for neural network input
             Abstract method """
-        raise NotImplemented
+        raise NotImplementedError
 
 
 class TranslateClient(NnClient):
@@ -248,8 +250,9 @@ class ParsingClient(NnClient):
             ]
             for pg in pgs
         ]
-        normalized_pgs = [" ".join(tok for tok in npg if tok) for npg in normalized_pgs]
-        return normalized_pgs
+        return [
+            " ".join(tok for tok in npg if tok) for npg in normalized_pgs
+        ]
 
     @classmethod
     def _normalize_sentence(cls, single_sentence):

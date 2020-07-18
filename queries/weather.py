@@ -472,7 +472,7 @@ def get_currweather_answer(query, result):
         temp = int(round(float(res["T"])))  # Round to nearest whole number
         desc = res["W"].lower()
         windsp = float(res["F"])
-    except:
+    except Exception as e:
         logging.warning("Exception parsing weather API result: {0}".format(e))
         return gen_answer(_API_ERRMSG)
 

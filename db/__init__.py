@@ -23,6 +23,8 @@
 
 """
 
+from typing import Optional
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -83,29 +85,29 @@ class classproperty:
 class SessionContext:
     """ Context manager for database sessions """
 
-    _db = None  # Singleton instance of Scraper_DB
+    # Singleton instance of Scraper_DB
+    _db = None  # type: Optional[Scraper_DB]
 
     # pylint: disable=no-self-argument
     @classproperty
-    def db(cls):
+    def db(cls) -> Scraper_DB:
         if cls._db is None:
             cls._db = Scraper_DB()
         return cls._db
 
     @classmethod
-    def cleanup(cls):
+    def cleanup(cls) -> None:
         """ Clean up the reference to the singleton Scraper_DB instance """
         cls._db = None
 
-    def __init__(self, session=None, commit=False, read_only=False):
+    def __init__(self, session=None, commit=False, read_only=False) -> None:
 
         if session is None:
             # Create a new session that will be automatically committed
             # (if commit == True) and closed upon exit from the context
             # pylint: disable=no-member
-            self._session = (
-                self.db.session
-            )  # Creates a new Scraper_DB instance if needed
+            # Creates a new Scraper_DB instance if needed
+            self._session = self.db.session
             self._new_session = True
             if read_only:
                 # Set the transaction as read only, which can save resources

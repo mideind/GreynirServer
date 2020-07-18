@@ -17,17 +17,19 @@
 
 """
 
+from typing import List, Tuple, Dict
+
 import tokenizer
 
-from reynir.binparser import BIN_Token
+from reynir.binparser import BIN_Token, Tok
 from reynir import bintokenizer
 
 
-def prep_text_for_tokenizer(text):
+def prep_text_for_tokenizer(text: str) -> str:
     return "[[ " + " ]] [[ ".join(text.split("\n")) + " ]]"
 
 
-def index_text(text):
+def index_text(text: str) -> Tuple[Dict[int, List[int]], Dict[int, str]]:
     """ Segments contiguous (Icelandic) text into paragraphs and sentences
         and returns:
             dictionary of sentence indices to sentences
@@ -36,37 +38,37 @@ def index_text(text):
     tok_stream = bintokenizer.tokenize(text)
 
     pgs = tokenizer.paragraphs(tok_stream)
-    pg_idx_to_sent_idx = dict()
-    sent_idx_to_sent = dict()
+    pg_idx_to_sent_idx = dict()  # type: Dict[int, List[int]]
+    sent_idx_to_sent = dict()  # type: Dict[int, str]
     curr_sent_idx = 0
     curr_pg_idx = 0
 
     for pg in pgs:
         sent_idxs = []
         for _, sent in pg:
-            curr_sent = list(filter(BIN_Token.is_understood, sent))
-            curr_sent = tokenizer.normalized_text_from_tokens(curr_sent)
+            curr_sent = list(filter(BIN_Token.is_understood, sent))  # type: List[Tok]
+            curr_sent_text = tokenizer.normalized_text_from_tokens(curr_sent)
             sent_idxs.append(curr_sent_idx)
-            sent_idx_to_sent[curr_sent_idx] = curr_sent
+            sent_idx_to_sent[curr_sent_idx] = curr_sent_text
             curr_sent_idx += 1
         pg_idx_to_sent_idx[curr_pg_idx] = sent_idxs
         curr_pg_idx += 1
     return pg_idx_to_sent_idx, sent_idx_to_sent
 
 
-def split_text(text):
+def split_text(text: str) -> List[List[str]]:
     """ Segments contiguous (Icelandic) text into paragraphs and sentences
         and returns a list of lists
     """
     text = prep_text_for_tokenizer(text)
     tok_stream = bintokenizer.tokenize(text)
     pgs = tokenizer.paragraphs(tok_stream)
-    data = []
+    data = []  # type: List[List[str]]
     for pg in pgs:
-        pg_data = []
+        pg_data = []  # type: List[str]
         for _, sentence in pg:
             sentence = list(filter(BIN_Token.is_understood, sentence))
-            sentence = tokenizer.normalized_text_from_tokens(sentence)
-            pg_data.append(sentence)
+            sentence_text = tokenizer.normalized_text_from_tokens(sentence)
+            pg_data.append(sentence_text)
         data.append(pg_data)
     return data

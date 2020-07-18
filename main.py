@@ -143,7 +143,7 @@ def hashed_url_for_static_file(endpoint, values):
             # if blueprint:
             #     static_folder = app.blueprints[blueprint].static_folder
             # else:
-            static_folder = app.static_folder
+            static_folder = app.static_folder or "."
 
             param_name = "h"
             while param_name in values:

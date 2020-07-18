@@ -37,6 +37,8 @@
 # TODO: Hvar er nálægasta strætóstoppistöð?
 # TODO: Hvað er ég lengi í næsta strætóskýli?
 
+from typing import Optional, List
+
 import re
 from threading import Lock
 from functools import lru_cache
@@ -686,7 +688,7 @@ def query_arrival_time(query, session, result):
     # Retrieve the client location, if available, and the name
     # of the bus stop, if given
     stop_name = result.get("stop_name")
-    stop = None
+    stop = None  # type: Optional[straeto.BusStop]
 
     if stop_name in {"þar", "þangað"}:
         # Referring to a bus stop mentioned earlier
@@ -716,6 +718,7 @@ def query_arrival_time(query, session, result):
             SCHEDULE_TODAY = straeto.BusSchedule()
 
     # Obtain the set of stops that the user may be referring to
+    stops = []  # type: List[straeto.BusStop]
     if stop_name:
         stops = straeto.BusStop.named(stop_name, fuzzy=True)
         if query.location is not None:
@@ -777,13 +780,13 @@ def query_arrival_time(query, session, result):
     # !!! route '1' would mean 'AL.1' instead of 'ST.1'.
     if stops:
         stop = stops[0]
-        arrivals, arrives = SCHEDULE_TODAY.arrivals(route_number, stop)
+        arrivals_dict, arrives = SCHEDULE_TODAY.arrivals(route_number, stop)
         if not arrives and len(stops) > 1:
             # If the requested bus doesn't stop at all at the closest
             # stop, check the 2nd closest stop, if it is close enough
             stop = stops[1]
-            arrivals, arrives = SCHEDULE_TODAY.arrivals(route_number, stop)
-        arrivals = list(arrivals.items())
+            arrivals_dict, arrives = SCHEDULE_TODAY.arrivals(route_number, stop)
+        arrivals = list(arrivals_dict.items())
         a = ["Á", to_accusative(stop.name), "í átt að"]
 
     if arrivals:
