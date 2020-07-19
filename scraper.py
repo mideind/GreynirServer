@@ -267,6 +267,12 @@ class Scraper:
 
         with SessionContext(commit=True) as session:
 
+            # Use a multiprocessing pool to parse the articles.
+            # Let the pool work on chunks of articles, recycling the
+            # processes after each chunk to contain memory creep.
+            # Default to using as many processes as there are CPUs
+            CPU_COUNT = numprocs or cpu_count()
+
             if urls is None and uuid is None and not reparse:
 
                 # Go through the roots and scrape them, inserting into the articles table
@@ -278,7 +284,7 @@ class Scraper:
 
                 # Use a multiprocessing pool to scrape the roots
 
-                pool = Pool(4)
+                pool = Pool(CPU_COUNT)
                 pool.imap_unordered(self._scrape_single_root, iter_roots())
                 pool.close()
                 pool.join()
@@ -301,7 +307,7 @@ class Scraper:
 
                 # Use a multiprocessing pool to scrape the articles
 
-                pool = Pool(8)
+                pool = Pool(CPU_COUNT)
                 pool.imap_unordered(
                     self._scrape_single_article, iter_unscraped_articles()
                 )
@@ -359,12 +365,6 @@ class Scraper:
                 if a is not None:
                     # Found the article: yield it
                     yield ArticleDescr(0, a.root, a.url)
-
-            # Use a multiprocessing pool to parse the articles.
-            # Let the pool work on chunks of articles, recycling the
-            # processes after each chunk to contain memory creep.
-            # Default to using as many processes as there are CPUs
-            CPU_COUNT = numprocs or cpu_count()
 
             # Distribute the load between the CPUs, although never exceeding
             # 100 articles per CPU per process cycle
@@ -468,7 +468,9 @@ class Scraper:
 
 
 def scrape_articles(reparse=False, limit=0, urls=None, uuid=None, numprocs=None):
-    kwargs = dict(locals())  # Create kwarg dict
+
+    # Create kwargs dict that will be passed to Scraper.go()
+    kwargs = dict(locals())
 
     logging.info("------ Greynir starting scrape -------")
     if uuid is not None:
@@ -476,7 +478,11 @@ def scrape_articles(reparse=False, limit=0, urls=None, uuid=None, numprocs=None)
     elif urls is not None:
         logging.info("URLs read from: {0}".format(urls))
     else:
-        logging.info("Limit: {0}, reparse: {1}".format(limit, reparse, numprocs))
+        ncpus = numprocs or cpu_count()
+        logging.info(
+            "Limit: {0}, reparse: {1}, processes/CPU cores: {2}"
+            .format(limit, reparse, ncpus)
+        )
     t0 = time.time()
     count = 0
 
@@ -539,7 +545,7 @@ def main(argv=None):
         argv = sys.argv
     try:
         try:
-            opts, args = getopt.getopt(
+            opts, _ = getopt.getopt(
                 argv[1:],
                 "hirl:u:d:n:",
                 ["help", "init", "reparse", "limit=", "urls=", "uuid=", "numprocs="],
@@ -566,18 +572,23 @@ def main(argv=None):
                 print(__doc__)
                 sys.exit(0)
             elif o in ("-i", "--init"):
+                # Initialize database (without overwriting existing data)
                 init = True
             elif o in ("-r", "--reparse"):
+                # Reparse already parsed articles, oldest first
                 reparse = True
             elif o in ("-l", "--limit"):
                 # Maximum number of articles to parse
                 limit = parse_int(a)
             elif o in ("-u", "--urls"):
-                urls = a  # Text file with list of URLs
+                # Text file with list of URLs
+                urls = a
             elif o in ("-d", "--uuid"):
-                uuid = a  # UUID of article to reparse
+                # UUID of a single article to reparse
+                uuid = a
             elif o in ("-n", "--numprocs"):
                 # Max number of processes to fork when parsing
+                # (default: use all CPU cores)
                 numprocs = parse_int(a)
 
         # Set logging format

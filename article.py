@@ -24,7 +24,7 @@
 
 """
 
-from typing import Optional
+from typing import Optional, List, Dict, Any, Tuple
 
 import json
 import uuid
@@ -233,8 +233,10 @@ class Article:
 
     def create_register(self, session, all_names=False):
         """ Create a name register dictionary for this article """
-        register = {}
-        from queries.builtin import add_name_to_register, add_entity_to_register
+        from queries.builtin import (
+            add_name_to_register, add_entity_to_register, RegisterType
+        )
+        register = {}  # type: RegisterType
 
         for name in self.person_names():
             add_name_to_register(name, register, session, all_names=all_names)
@@ -277,14 +279,14 @@ class Article:
             # List of paragraphs containing a list of sentences containing
             # token lists for sentences in string dump format
             # (1-based paragraph and sentence indices)
-            pgs = []
+            pgs = []  # type: List[List[Dict[str, Any]]]
 
             # Dict of parse trees in string dump format,
             # stored by sentence index (1-based)
             trees = OrderedDict()
 
             # Word stem dictionary, indexed by (stem, cat)
-            words = defaultdict(int)
+            words = defaultdict(int)  # type: Dict[Tuple[str, str], int]
             num_sent = 0
 
             for p in ip.paragraphs():

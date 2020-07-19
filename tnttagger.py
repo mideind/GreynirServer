@@ -50,6 +50,8 @@
 
 """
 
+from typing import Optional
+
 import os
 import time
 import pickle
@@ -497,7 +499,8 @@ class TnT:
 
 
 # Global tagger singleton instance
-_TAGGER = None
+_TAGGER = None  # type: Optional[TnT]
+
 # Translation dictionary
 _XLT = {"—": "-", "–": "-"}
 

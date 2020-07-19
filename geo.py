@@ -23,6 +23,7 @@
 # TODO: Handle generic direction prefixes for country names and map to
 # corresponding country code, e.g. "Norður-Ítalía" -> "IT"
 
+from typing import Optional, Dict, Union, Tuple
 
 import json
 import re
@@ -319,7 +320,7 @@ def location_info(name, kind, placename_hints=None):
     return loc
 
 
-ICE_CITY_NAMES = None
+ICE_CITY_NAMES = None  # type: Optional[Dict[str, str]]
 ICE_CITIES_JSONPATH = os.path.join(
     os.path.dirname(__file__), "resources", "cities_is.json"
 )
@@ -357,7 +358,7 @@ def icelandic_city_name(name):
 
 
 # Data about countries, loaded from JSON data file
-COUNTRY_DATA = None
+COUNTRY_DATA = None  # type: Optional[Dict[str, Dict[str, Union[Tuple[float, float], str]]]]
 COUNTRY_DATA_JSONPATH = os.path.join(
     os.path.dirname(__file__), "resources", "country_data.json"
 )
@@ -534,7 +535,7 @@ def iceprep_for_street(street_name):
     return "á"
 
 
-ICELOC_PREP = None
+ICELOC_PREP = None  # type: Optional[Dict[str, str]]
 ICELOC_PREP_JSONPATH = os.path.join(
     os.path.dirname(__file__), "resources", "iceloc_prep.json"
 )

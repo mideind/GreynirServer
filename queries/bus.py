@@ -56,7 +56,7 @@ import straeto
 
 
 # Today's bus schedule, cached
-SCHEDULE_TODAY = None
+SCHEDULE_TODAY = None  # type: Optional[straeto.BusSchedule]
 SCHEDULE_LOCK = Lock()
 
 
@@ -846,6 +846,7 @@ def query_arrival_time(query, session, result):
                             hms_fmt(hms_pred),
                         ]
             if first:
+                assert stop is not None
                 if deviation:
                     va.extend(["á að koma á", to_accusative(stop.name)])
                 else:

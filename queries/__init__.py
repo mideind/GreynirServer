@@ -24,6 +24,8 @@
 
 """
 
+from typing import Optional
+
 import logging
 import requests
 import json
@@ -567,7 +569,7 @@ def query_place_details(place_id, fields=None):
     return res
 
 
-_TZW = None
+_TZW = None  # type: Optional[tzwhere.tzwhere]
 
 
 def tzwhere_singleton():
