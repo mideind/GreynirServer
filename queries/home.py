@@ -19,45 +19,80 @@ QSmartDeviceQuery →
     | QLightOffQuery
     | QLightDimQuery
     | QLightColorQuery
+    | QHubInfoQuery
+    | QHomeLightSaturationQuery
 
+# 'Connect smart device grammar'
 QConnectQuery →
     "tengdu" "snjalltæki" | "tengdu" QLightQuery
 
+# 'Lightswitch grammar'
 QLightOnQuery →
-    "kveiktu" "á"? QLightQuery? "í" QLightOnPhenonmenon
-    | "kveiktu" "á" QLightOnPhenonmenon
+    "kveiktu" "á"? QLightQuery QHomeInOrOnQuery QLightOnPhenonmenon
+    | "kveiktu" QHomeInOrOnQuery QHomeDeviceQuery_þgf
 
 QLightOffQuery →
-    "slökktu" "á"? QLightQuery? "í" QLightOffPhenonmenon
-    | "slökktu" "á" QLightOffPhenonmenon
+    "slökktu" "á"? QLightQuery QHomeInOrOnQuery QLightOffPhenonmenon
+    | "slökktu" QHomeInOrOnQuery QHomeDeviceQuery_þgf
 
+QLightOnPhenonmenon → Nl
+
+# $tag(keep) QLightOnPhenomenon
+ 
+QLightOffPhenonmenon → Nl
+
+# 'Dimmer switch grammar'
 QLightDimQuery →
-    "settu" QLightQuery "í" QLightNamePhenonmenon "í" QLightPercentage
-    | "settu" QLightNamePhenonmenon "í" QLightPercentage
+    "settu" QLightQuery QHomeWhereDeviceQuery "í" QLightPercentage
+    | "settu" QHomeDeviceQuery_þf "í" QLightPercentage
+    | "settu" "birtuna" QHomeWhereDeviceQuery "í" QLightPercentage
 
 QLightPercentage →
     töl | to | tala
 
+QHomeDeviceQuery/fall → Fyrirbæri/fall/kyn
+ 
+QHomeWhereDeviceQuery → FsLiður
+
+# 'Color change query'
+QLightColorQuery →
+    "settu"? QColorName_nf "ljós" "í" QLightOnPhenonmenon
+
+QColorName/fall →
+    Lo/fall/tala/kyn
+
+$tag(keep) QColorName/fall
+
+# Set the saturation of a light or group
+QHomeLightSaturationQuery →
+    "settu" QHomeLightSaturation QHomeWhereDeviceQuery "í" QLightPercentage
+
+QHomeLightSaturation →
+    'mettun' | 'mettunina'
+
+QLightPercentage →
+    töl | to | tala
+
+QHomeDeviceQuery/fall → Fyrirbæri/fall/kyn
+ 
+QHomeWhereDeviceQuery → FsLiður
+
+# 'information about hub grammar'
+QHubInfoQuery →
+    "hvaða" QLightOrGroup "eru" "tengdir" 
+    | "hvað" "er" "tengt"
+
+QLightOrGroup →
+    "ljós" | "hóp" | "hópa"
+
+# 'Helper functions'
 QLightQuery → 
     "ljós" | "ljósið" | "ljósin" | "ljósunum"
 
-QLightOnPhenonmenon → Nl
- 
-QLightOffPhenonmenon → Nl
-
 QLightNamePhenonmenon → Nl
 
-QLightColorQuery →
-    QColorName "ljós" "í" QLightOnPhenonmenon |
-    QColorName QLightOnPhenonmenon
-
-QColorName →
-    'gulur:lo'/fall |
-    'rauður:lo'/fall |
-    'blár:lo'/fall |
-    'grænn:lo'/fall |
-    'ljósblár:lo'/fall |
-    'bleikur:lo'/fall
+QHomeInOrOnQuery →
+    "í" | "á"
 
 """
 
@@ -66,11 +101,15 @@ def QConnectQuery(node, params, result):
     result.qtype = "ConnectSmartDevice"
 
 def QLightOnPhenonmenon(node, params, result):
-    result.qtype = "LightOn"
     result.subject = node.contained_text()
 
-def QLightOffPhenonmenon(node, params, result):
+def QLightOnQuery(node, params, result):
+    result.qtype = "LightOn"
+
+def QLightOffQuery(node, params, result):
     result.qtype = "LightOff"
+
+def QLightOffPhenonmenon(node, params, result):
     result.subject = node.contained_text()
 
 def QLightNamePhenonmenon(node, params, result):
@@ -92,8 +131,21 @@ def QLightColorQuery(node, params, result):
 def QColorName(node, params, result):
     result.color = node.contained_text()
 
+def QHubInfoQuery(node, params, result):
+    result.qtype = "HubInfo"
+
+def QHomeWhereDeviceQuery(node, params, result):
+    result.subject = node.contained_text().split(" ")[1]
+
+def QHomeDeviceQuery(node, params, result):
+    result.subject = node.contained_text()
+
+def QHomeLightSaturationQuery(node, params, result):
+    result.qtype = "LightSaturation"
+
 _FIX_MAP = {
-    'Skrifstofan': 'skrifstofa'
+    'Skrifstofan': 'skrifstofa',
+    'Húsið': 'hús'
 }
 
 _NUMBER_WORDS = {
@@ -200,9 +252,9 @@ def sentence(state, result):
         q.set_command(js)
         q.set_answer(dict(answer=answer), answer, answer)
 
-    elif "qtype" in result and result.qtype == "LightOn":
-        answer = result.subject
-        q.set_answer(dict(answer=answer), answer, answer)
+    elif "qtype" in result and (result.qtype == "LightOn" or result.qtype == "LightOff"):
+
+        onOrOff = 'true' if result.qtype == 'LightOn' else 'false'
 
         stofn = None
 
@@ -212,24 +264,12 @@ def sentence(state, result):
                 stofn = _FIX_MAP.get(stofn) or stofn
 
         js = read_jsfile("lightService.js")
-        js += f'main(\'{stofn}\', true);'
+        js += f'main(\'{stofn}\', {onOrOff});'
         print('js')
-        q.set_command(js)
 
-    elif "qtype" in result and result.qtype == "LightOff":
-        answer = result.subject
+        answer = f'{stofn} {onOrOff}'
+
         q.set_answer(dict(answer=answer), answer, answer)
-
-        stofn = None
-
-        for i, token in enumerate(q.token_list):
-            if token.txt == result.subject:
-                stofn = token[2][0].stofn
-                stofn = _FIX_MAP.get(stofn) or stofn
-
-        js = read_jsfile("lightService.js")
-        js += f'main(\'{stofn}\', false);'
-        print('js')
         q.set_command(js)
 
     elif "qtype" in result and result.qtype == "LightDim":
@@ -272,6 +312,32 @@ def sentence(state, result):
         q.set_answer(dict(answer=answer), answer, answer)
         q.set_command(js)
         print(js)
+
+    elif "qtype" in result and result.qtype == "HubInfo":
+        answer = "Skal gert"
+
+        js = read_jsfile("lightInfo.js")
+
+        q.set_command(js)
+        q.set_answer(dict(answer=answer), answer, answer)
+
+    elif "qtype" in result and result.qtype == "LightSaturation":
+        number = result.numbers[0]
+        stofn = None
+
+        for i, token in enumerate(q.token_list):
+            if token.txt == result.subject:
+                stofn = token[2][0].stofn
+                stofn = _FIX_MAP.get(stofn) or stofn
+
+        js = read_jsfile("lightService.js")
+        js += f'main(\'{stofn}\', undefined, undefined, undefined, sat = {number});'
+        print('js')
+
+        answer = f'{stofn} {number}'
+
+        q.set_answer(dict(answer=answer), answer, answer)
+        q.set_command(js)
 
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")

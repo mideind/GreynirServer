@@ -1,53 +1,7 @@
-
-async function getSmartDeviceInfo(ipAddress, username) {
-
-    const headers = {
-        'headers':'application/json'
-    }
-
-    const response = await fetch(
-        `http://${ipAddress}/api/${username}`,
-        {
-            method: 'GET',
-        }
-    )
-    .catch((error) =>{
-        console.log('error');
-        console.log(error);
-    });
-    return response.json()
-}
-
-async function changeLight(ipAddress, username, on) {
-    const headers = {
-        'headers':'application/json'
-    }
-
-    const body = {
-        on: on,
-        bri:40,
-        hue: 65280,
-        sat: 254,
-        effect: 'colorloop'
-
-    }
-
-    const response = await fetch(
-        `http://${ipAddress}/api/${username}/lights/1/state`,
-        {
-            method: 'PUT',
-            body: JSON.stringify(body)
-        }
-    )
-    .catch((error) =>{
-        console.log('error');
-        console.log(error);
-    });
-    return response.json()
-}
+//const XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 
 function getSmartDeviceAddress() {
-    var request = new XMLHttpRequest();
+    let request = new XMLHttpRequest();
     request.open('GET', 'https://discovery.meethue.com', false);  // `false` makes the request synchronous
     request.send(null);
 
@@ -65,7 +19,7 @@ function createNewDeveloper(ipAddress) {
         'devicetype': 'mideind_hue_communication#smartdevice'
     });
 
-    var request = new XMLHttpRequest();
+    let request = new XMLHttpRequest();
     request.open('POST', `http://${ipAddress}/api`, false);  // `false` makes the request synchronous
     request.send(body);
     
@@ -83,7 +37,9 @@ function connectHub() {
     let deviceInfo = getSmartDeviceAddress();
 
     try {
-        let username = createNewDeveloper(deviceInfo.internalipaddress)
+        let username = createNewDeveloper(deviceInfo.internalipaddress);
+        console.log('username');
+        console.log(username);
         serviceStorage.username = username.success.username;
         return username;
     } catch(error) {

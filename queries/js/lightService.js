@@ -28,7 +28,7 @@ function getIdByName(ipAddress, username, name) {
 
 }
 
-function changeGroup(ipAddress, username, groupId, on = null, bri = null, hue = null) {
+function changeGroup(ipAddress, username, groupId, on = null, bri = null, hue = null, sat = null) {
 
     let body = {};
 
@@ -40,25 +40,29 @@ function changeGroup(ipAddress, username, groupId, on = null, bri = null, hue = 
         body.bri = parseInt(parseInt(bri) * 254/100);
     }
 
-    if (hue) {
+    if (hue !== null) {
         body.hue = parseInt(hue);
         body.sat = 254;
     }
 
+    if (sat !== null) {
+        body.sat = parseInt(parseInt(sat) * (254/100));
+    }
+    console.log('body');
+    console.log(body);
     let request = new XMLHttpRequest();
     request.open('PUT', `http://${ipAddress}/api/${username}/groups/${groupId}/action`, false);  // `false` makes the request synchronous
     request.send(JSON.stringify(body));
-    console.log(body);
+
     if (request.status === 200) {
         let result = JSON.parse(request.responseText);
-        console.log(result);
         return 'Tókst';
     }
     throw new Error('Hópur fannst ekki');
 
 }
 
-function changeLight(ipAddress, username, lightId, on = null, bri = null, hue = null) {
+function changeLight(ipAddress, username, lightId, on = null, bri = null, hue = null, sat = null) {
 
     let body = {};
 
@@ -67,40 +71,37 @@ function changeLight(ipAddress, username, lightId, on = null, bri = null, hue = 
     }
 
     if (bri !== null) {
-        body.bri = parseInt(parseInt(bri) * 254/100)
+        body.bri = parseInt(parseInt(bri) * 254/100);
     }
 
-    if (hue) {
+    if (hue !== null) {
         body.hue = parseInt(hue);
         body.sat = 254;
     }
 
-    /*
-    const body = JSON.stringify({
-        on: on,
-        bri:254,
-        hue: 65280,
-        sat: 254,
-
-    });
-    */
-
+    if (sat !== null) {
+        body.sat = parseInt(parseInt(sat) * 254/100);
+    }
+    console.log('body');
+    console.log(body);
     let request = new XMLHttpRequest();
     request.open('PUT', `http://${ipAddress}/api/${username}/lights/${lightId}/state`, false);  // `false` makes the request synchronous
     request.send(JSON.stringify(body));
 
+    if (request.status === 200) {
+        let result = JSON.parse(request.responseText);
+        return 'Tókst';
+    }
+    throw new Error('Hópur fannst ekki');
+
 }
+
 /*
-serviceStorage = {
-    username: 'oL27u8MQOYqD486TKcg7ki8OosDx982M5l2oqToP',
-    ipAddress: '192.168.1.140'
-}
 */
-function main(name = null, on = null, bri = null, hue = null) {
+function main(name = null, on = null, bri = null, hue = null, sat = null) {
     if (!serviceStorage) {
         return 'Snjalltæki er ekki tengt'
     }
-
     let { ipAddress, username } = serviceStorage;
 
     if ( !ipAddress || !username) {
@@ -111,13 +112,12 @@ function main(name = null, on = null, bri = null, hue = null) {
         try {
             let idDict = getIdByName(ipAddress, username, name);
             if (idDict.groupId) {
-                return changeGroup(ipAddress, username, idDict.groupId, on, bri, hue);
+                return changeGroup(ipAddress, username, idDict.groupId, on, bri, hue, sat);
             }
             if (idDict.lightId) {
-                return changeLight(ipAddress, username, idDict.lightId, on, bri, hue);
+                return changeLight(ipAddress, username, idDict.lightId, on, bri, hue, sat);
             }
         } catch(error) {
-            console.log(error)
             return error.message;
         }
     }
