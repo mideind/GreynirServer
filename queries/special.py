@@ -28,21 +28,30 @@
 
 """
 
+from typing import TYPE_CHECKING
 from typing import Dict, Union, Callable, Any, cast
 
 from datetime import datetime, timedelta
 from inspect import isfunction
 from random import choice
 
-from query import Query
+
+if TYPE_CHECKING:
+    # This section is parsed when type checking using Mypy
+    from query import Query
+    AnswerEntry = Union[str, bool]
+    AnswerType = Dict[str, AnswerEntry]
+    AnswerCallable = Callable[[str, Query], AnswerType]
+else:
+    # At run-time, this section is parsed
+    # (and type information is not used or needed)
+    Query = ...
+    AnswerEntry = ...
+    AnswerType = ...
+    AnswerCallable = ...
 
 
 _SPECIAL_QTYPE = "Special"
-
-
-AnswerEntry = Union[str, bool]
-AnswerType = Dict[str, AnswerEntry]
-AnswerCallable = Callable[[str, Query], AnswerType]
 
 
 # TODO: Extend this list as the range of queries is expanded

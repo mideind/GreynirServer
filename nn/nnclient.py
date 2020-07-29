@@ -45,7 +45,7 @@ class NnClient:
     """ A client that connects to the HTTP REST interface of
         a tensorflow model server (using plaintext) """
 
-    port = None  # type: Optional[str]
+    port = None  # type: Optional[int]
     host = None  # type: Optional[str]
     verb = None  # type: Optional[str]
 

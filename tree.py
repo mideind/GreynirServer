@@ -35,7 +35,7 @@ import re
 from contextlib import closing
 from collections import OrderedDict, namedtuple
 
-from settings import Settings, DisallowedNames, VerbObjects
+from settings import Settings
 from reynir.bindb import BIN_Db
 from reynir.binparser import BIN_Token
 from reynir.simpletree import SimpleTreeBuilder
@@ -597,25 +597,11 @@ class TerminalDescriptor:
                         # Terminal specified a non-argument case but the token doesn't have it:
                         # no match
                         return False
-                return True
-            nargs = int(self.varlist[0])
-            if m.stofn in VerbObjects.VERBS[nargs]:
-                if nargs == 0 or len(self.varlist) < 2:
-                    # No arguments: we're done
-                    return True
-                for argspec in VerbObjects.VERBS[nargs][m.stofn]:
-                    if all(self.varlist[1 + ix] == c for ix, c in enumerate(argspec)):
-                        # This verb takes arguments that match the terminal
-                        return True
-                return False
-            for i in range(0, nargs):
-                if m.stofn in VerbObjects.VERBS[i]:
-                    # This verb takes fewer arguments than the terminal requires, so no match
-                    return False
-            # Unknown verb: allow it to match
+            # We can't check the arguments here, but assume that is not necessary
+            # to disambiguate between verbs
             return True
 
-        # Check person match
+        # Check person (p1/p2/p3) match
         if self.person is not None:
             person = self.person.upper()
             person = person[1] + person[0]  # Turn p3 into 3P
@@ -643,6 +629,7 @@ class TerminalDescriptor:
         if self.variant_gr:
             if "gr" not in m.beyging:
                 return False
+
         return True
 
     def stem(self, bindb, word, at_start=False):
@@ -1099,10 +1086,10 @@ class PersonNode(TerminalNode):
                     if x.ordfl == gender and case in x.beyging and "ET" in x.beyging
                     # Do not accept 'Sigmund' as a valid stem for word forms that
                     # are identical with the stem 'Sigmundur'
-                    and (
-                        x.stofn not in DisallowedNames.STEMS
-                        or self.td.case not in DisallowedNames.STEMS[x.stofn]
-                    )
+                    # and (
+                    #     x.stofn not in DisallowedNames.STEMS
+                    #     or self.td.case not in DisallowedNames.STEMS[x.stofn]
+                    # )
                 ]
             if m:
                 w = m[0].stofn
