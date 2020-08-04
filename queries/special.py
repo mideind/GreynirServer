@@ -1512,6 +1512,10 @@ _SPECIAL_QUERIES = {
     "segðu mér málshátt": _random_proverb,
     "segðu mér annan málshátt": _random_proverb,
     "kanntu málshátt": _random_proverb,
+    "kannt þú málshátt": _random_proverb,
+    "kanntu annan málshátt": _random_proverb,
+    "farðu með málshátt": _random_proverb,
+    "farðu með annan málshátt": _random_proverb,
 
     # Riddles
     "segðu gátu": _random_riddle,

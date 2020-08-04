@@ -97,6 +97,8 @@ _TT_PREFIXES = (
     "hversu langan tíma tæki það að",
     "hversu langan tíma tæki það mig að",
     "hvað er langt að",
+    "hversu lengi tekur að",
+    "hversu lengi tekur það að",
 )
 
 _TT_MODES = {
@@ -120,7 +122,7 @@ _TT_MODES = {
 }
 
 _PREPS = ("á", "í", "til")
-_TT_PREP_PREFIX = ("upp", "niður", "vestur", "norður", "austur", "suður")
+_TT_PREP_PREFIX = ("upp", "niður", "vestur", "norður", "austur", "suður", "út")
 _TT_PREPS = []
 
 for p in _PREPS:

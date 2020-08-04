@@ -109,7 +109,7 @@ def test_query_api(client):
         "hvað er 8900 með vaski": "11.036",
         "hvað eru 7500 krónur með virðisaukaskatti": "9.300",
         "hvað er pí deilt með pí": "1",
-        "hvað er pí sinnum tveir": "6,28",
+        "hvað er pí í öðru veldi": "9,87",
         "hvað er tíu deilt með pí": "3,18",
     }
 
@@ -118,12 +118,21 @@ def test_query_api(client):
         assert json["qtype"] == "Arithmetic"
         assert json["answer"] == a
 
-    json = qmcall(c, {"q": "hvað er pí", "client_id": DUMMY_CLIENT_ID, "private": False})
+    json = qmcall(
+        c, {"q": "hvað er pí", "client_id": DUMMY_CLIENT_ID, "private": False}
+    )
     assert "π" in json["answer"]
     assert json["qtype"] == "PI"
     assert "3,14159" in json["answer"]
 
-    json = qmcall(c, {"q": "hvað er það sinnum tveir", "client_id": DUMMY_CLIENT_ID, "private": False})
+    json = qmcall(
+        c,
+        {
+            "q": "hvað er það sinnum tveir",
+            "client_id": DUMMY_CLIENT_ID,
+            "private": False,
+        },
+    )
     assert json["qtype"] == "Arithmetic"
     assert json["answer"].startswith("6,")
 
@@ -233,7 +242,7 @@ def test_query_api(client):
 
     json = qmcall(c, {"q": "Hvað eru margir dagar í 12. maí?"})
     assert json["qtype"] == "Date"
-    assert "dag" in json["answer"] or "á morgun" in answer 
+    assert "dag" in json["answer"] or "á morgun" in answer
 
     now = datetime.utcnow()
 
@@ -272,7 +281,6 @@ def test_query_api(client):
     assert json["qtype"] == "Date"
     assert json["answer"].startswith("29")
     assert "dag" in json["answer"]
-
 
     json = qmcall(c, {"q": "Hvað er langt fram að verslunarmannahelgi"})
     assert json["qtype"] == "Date"
@@ -537,11 +545,25 @@ def test_query_api(client):
     assert json["qtype"] == "Wikipedia"
     assert "Berlín" in json["answer"]
 
-    json = qmcall(c, {"q": "katrín Jakobsdóttir í vikipediju", "client_id": DUMMY_CLIENT_ID, "private": False})
+    json = qmcall(
+        c,
+        {
+            "q": "katrín Jakobsdóttir í vikipediju",
+            "client_id": DUMMY_CLIENT_ID,
+            "private": False,
+        },
+    )
     assert json["qtype"] == "Wikipedia"
     assert "Katrín Jakobsdóttir" in json["answer"]
 
-    json = qmcall(c, {"q": "hvað segir wikipedía um hana", "client_id": DUMMY_CLIENT_ID, "private": False})
+    json = qmcall(
+        c,
+        {
+            "q": "hvað segir wikipedía um hana",
+            "client_id": DUMMY_CLIENT_ID,
+            "private": False,
+        },
+    )
     assert json["qtype"] == "Wikipedia"
     assert "Katrín Jakobsdóttir" in json["answer"]
 
@@ -560,7 +582,6 @@ def test_query_api(client):
     # TODO: Implement me!
 
     # TODO: Delete any queries logged as result of tests
-
 
 
 def test_query_utility_functions():
