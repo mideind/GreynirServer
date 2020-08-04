@@ -21,9 +21,9 @@
     Utility script that inspects articles in Greynir's database
     and removes those that are:
 
-    * Duplicates (e.g. https & http URLs)
-    * Non-Icelandic
     * Don't contain any sentences
+    * Duplicates (e.g. https vs http URLs)
+    * Non-Icelandic
     * Contain lots of "chaff", i.e. many very short sentences (prob. scraper issues)
 
 """
@@ -62,18 +62,23 @@ def main():
 
         # Zero sentences
         print("Deleting all articles with zero sentences")
-        res = session.execute(ArticleModel.table().delete().where(ArticleModel.num_sentences == 0))
-        print(str(res.rowcount) + " deleted")
+        res = session.execute(
+            ArticleModel.table().delete().where(ArticleModel.num_sentences == 0)
+        )
+        print(str(res.rowcount) + " articles deleted")
 
         # Non-Icelandic
-
+        # TODO: Implement me!
 
         # Duplicates
-        # For each article, check whether there is a corresponding 
+        # For each article, check whether there is a corresponding
         # article URL with https instead of http and vice versa
+        # TODO: Implement me!
 
         # Chaff
         # ???
+        # TODO: Implement me!
+
 
 if __name__ == "__main__":
     main()
