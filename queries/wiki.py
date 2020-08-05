@@ -104,25 +104,32 @@ QWikiQuery →
     | "hvað" "segir" QWikipedia "um"? QWikiSubjectÞf
     | "hvað" "stendur" "í" QWikipedia "um" QWikiSubjectÞf
     | "hvað" "stendur" "um" QWikiSubjectÞf "í" QWikipedia
-    | "hvað" "getur" "þú" "sagt" "mér"? "um" QWikiSubjectÞf
-    | "hvað" "geturðu" "sagt" "mér"? "um" QWikiSubjectÞf
-    | "hvað" "getur" QWikipedia "sagt" "mér"? "um" QWikiSubjectÞf
+    | "hvað" "getur" "þú" "sagt" QWikiMeOrUsÞgf? "um" QWikiSubjectÞf
+    | "hvað" "geturðu" "sagt" QWikiMeOrUsÞgf? "um" QWikiSubjectÞf
+    | "hvað" "getur" QWikipedia "sagt" QWikiMeOrUsÞgf? "um" QWikiSubjectÞf
     | "hvaða" "upplýsingar" "ert" "þú" "með" "um" QWikiSubjectÞf
     | "hvaða" "upplýsingar" "ertu" "með" "um" QWikiSubjectÞf
     | "hvaða" "upplýsingar" "er" QWikipedia "með" "um" QWikiSubjectÞf
     | "hvaða" "upplýsingum" "býr" QWikipedia "yfir" "varðandi" QWikiSubjectÞf
     | "hvaða" "upplýsingum" "býrðu" "yfir" "varðandi" QWikiSubjectÞf
-    | "hvað" "myndi" QWikipedia "segja" "mér"? "um" QWikiSubjectÞf
-    | "fræddu" "mig" "um" QWikiSubjectÞf
-    | "geturðu" "frætt" "mig" "um" QWikiSubjectÞf
-    | "nennirðu" "að" "fræða" "mig" "um" QWikiSubjectÞf
+    | "hvað" "myndi" QWikipedia "segja" QWikiMeOrUsÞgf? "um" QWikiSubjectÞf
+    | "fræddu" QWikiMeOrUsÞf "um" QWikiSubjectÞf
+    | "geturðu" "frætt" QWikiMeOrUsÞf "um" QWikiSubjectÞf
+    | "nennirðu" "að" "fræða" QWikiMeOrUsÞf "um" QWikiSubjectÞf
 
     # These take the subject in the dative case
-    | "segðu" "mér" "frá" QWikiSubjectÞgf
+    | "segðu" QWikiMeOrUsÞgf "frá" QWikiSubjectÞgf
+    | "segðu" QWikiMeOrUsÞgf "eitthvað" "um" QWikiSubjectÞf
     | "flettu" "upp" QWikiSubjectÞgf "í" QWikipedia
     | "geturðu" "flett" "upp" QWikiSubjectÞgf "í" QWikipedia
     | "nennirðu" "að" "fletta" "upp" QWikiSubjectÞgf "í" QWikipedia
     | "gætirðu" "flett" "upp" QWikiSubjectÞgf "í" QWikipedia
+
+QWikiMeOrUsÞgf →
+    "mér" | "okkur"
+
+QWikiMeOrUsÞf →
+    "mig" | "okkur"
 
 QWikiSubjectNf →
     QWikiPrevSubjectNf | QWikiSubjectNlNf
