@@ -1128,11 +1128,15 @@ _SPECIAL_QUERIES = {
     },
 
     # Home/Location
+    "hvar býrðu": _LOC_ANSWER,
     "hvar áttu heima": _LOC_ANSWER,
     "hvar átt þú heima": _LOC_ANSWER,
     "hvar ertu": _LOC_ANSWER,
+    "hvar ert þú": _LOC_ANSWER,
     "hvar ertu staðsett": _LOC_ANSWER,
+    "hvar ertu stödd": _LOC_ANSWER,
     "ertu til": _LOC_ANSWER,
+    "í hverju ertu": _LOC_ANSWER,
 
     # Name explained
     "hvers vegna heitir þú embla": _NAME_EXPL,
@@ -1161,8 +1165,10 @@ _SPECIAL_QUERIES = {
     "hvaðan kemur nafn þitt": _NAME_EXPL,
     "hvaðan kemur nafnið þitt": _NAME_EXPL,
     "hvaðan kemur nafnið": _NAME_EXPL,
+    "hví heitirðu embla": _NAME_EXPL,
     "embla": _NAME_EXPL,
     "þú heitir embla": _NAME_EXPL,
+    "af hverju fékkstu það nafn": _NAME_EXPL,
 
     # Favourite colour
     "hver er uppáhalds liturinn þinn": _FAVORITE_COLOR,
