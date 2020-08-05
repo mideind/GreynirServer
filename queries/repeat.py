@@ -31,38 +31,38 @@ _REPEAT_QTYPE = "Repeat"
 
 _REPEAT_PREFIXES = tuple(
     (
-        "segðu eftirfarandi",
+        "segðu orðið",
         "segðu setninguna",
+        "segðu eftirfarandi",
         "endurtaktu eftirfarandi",
         "endurtaktu setninguna",
         "endurtaktu eftir mér",
         "endurtaktu",
+        # "segðu",
     )
 )
 
-_BLACKLIST = frozenset(("segðu mér", "segðu okkur", "segðu eitthvað"))
+_PREFIX_BLACKLIST = frozenset(
+    ("segðu mér", "segðu okkur", "segðu eitthvað", "segðu frá")
+)
 
 
-def gen_repeat_answ(text, q):
-    atxt = text[:1] + text[1:]
+def gen_repeat_answ(text, cmd_prefix, q):
+    atxt = text[:1].upper() + text[1:]
     q.set_answer(*gen_answer(atxt))
     q.set_qtype(_REPEAT_QTYPE)
     q.set_key("Repeat")
-    # q.set_expires(datetime.utcnow() + timedelta(hours=24))
+    q.set_expires(datetime.utcnow() + timedelta(hours=24))
 
     # Beautify query by placing text to repeat within quotation marks
-    # b = q.beautified_query
-    # for w in _WIKI_VARIATIONS:
-    #     b = b.replace(w, _WIKIPEDIA_CANONICAL)
-    #     b = b.replace(w.capitalize(), _WIKIPEDIA_CANONICAL)
-    # q.set_beautified_query(b)
+    q.set_beautified_query("{0}„{1}“".format(cmd_prefix.capitalize(), atxt))
 
 
 def handle_plain_text(q):
     """ Handles a plain text query. """
     ql = q.query_lower.rstrip("?")
 
-    for blw in _BLACKLIST:
+    for blw in _PREFIX_BLACKLIST:
         if ql.startswith(blw):
             return False
 
@@ -74,7 +74,7 @@ def handle_plain_text(q):
         # print("Does '" + ql + "' start with " + pfx)
         if ql.startswith(pfx) and qlen > plen:
             rtxt = q.query[plen:]
-            gen_repeat_answ(rtxt, q)
+            gen_repeat_answ(rtxt, pfx, q)
             return True
 
     return False
