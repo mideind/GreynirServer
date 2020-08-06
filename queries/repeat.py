@@ -25,6 +25,7 @@
 """
 
 from queries import gen_answer
+from datetime import datetime, timedelta
 
 _REPEAT_QTYPE = "Repeat"
 
@@ -38,7 +39,7 @@ _REPEAT_PREFIXES = tuple(
         "endurtaktu setninguna",
         "endurtaktu eftir mér",
         "endurtaktu",
-        # "segðu",
+        #"segðu",
     )
 )
 
@@ -48,14 +49,15 @@ _PREFIX_BLACKLIST = frozenset(
 
 
 def gen_repeat_answ(text, cmd_prefix, q):
-    atxt = text[:1].upper() + text[1:]
+    atxt = text.strip()
+    atxt = text[:1].upper() + text[1:]  # Capitalize first character
     q.set_answer(*gen_answer(atxt))
     q.set_qtype(_REPEAT_QTYPE)
     q.set_key("Repeat")
     q.set_expires(datetime.utcnow() + timedelta(hours=24))
 
     # Beautify query by placing text to repeat within quotation marks
-    q.set_beautified_query("{0}„{1}“".format(cmd_prefix.capitalize(), atxt))
+    q.set_beautified_query("{0}„{1}.“".format(cmd_prefix.capitalize(), atxt))
 
 
 def handle_plain_text(q):
