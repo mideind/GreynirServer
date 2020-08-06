@@ -33,19 +33,22 @@ _REPEAT_QTYPE = "Repeat"
 _REPEAT_PREFIXES = tuple(
     (
         "segðu orðið",
+        "segðu orðin",
         "segðu setninguna",
         "segðu eftirfarandi",
         "endurtaktu eftirfarandi",
         "endurtaktu setninguna",
         "endurtaktu eftir mér",
+        "endurtaktu orðið",
+        "endurtaktu orðin",
         "endurtaktu",
-        #"segðu",
+        # "segðu",
     )
 )
 
-_PREFIX_BLACKLIST = frozenset(
-    ("segðu mér", "segðu okkur", "segðu eitthvað", "segðu frá")
-)
+# _PREFIX_BLACKLIST = frozenset(
+#     ("segðu mér", "segðu okkur", "segðu eitthvað", "segðu frá")
+# )
 
 
 def gen_repeat_answ(text, cmd_prefix, q):
@@ -64,16 +67,15 @@ def handle_plain_text(q):
     """ Handles a plain text query. """
     ql = q.query_lower.rstrip("?")
 
-    for blw in _PREFIX_BLACKLIST:
-        if ql.startswith(blw):
-            return False
+    # for blw in _PREFIX_BLACKLIST:
+    #     if ql.startswith(blw):
+    #         return False
 
     qlen = len(ql)
 
     for r in _REPEAT_PREFIXES:
         pfx = r + " "
         plen = len(pfx)
-        # print("Does '" + ql + "' start with " + pfx)
         if ql.startswith(pfx) and qlen > plen:
             rtxt = q.query[plen:]
             gen_repeat_answ(rtxt, pfx, q)
