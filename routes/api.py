@@ -522,8 +522,9 @@ def speech_api(version=1):
         except:
             speed = 1.0
 
-    if key != _speech_api_key():
-        reply["errmsg"] = "Invalid API key."
+    sak = _speech_api_key()
+    if not sak or key != sak:
+        reply["errmsg"] = "Invalid or missing API key."
         return better_jsonify(**reply)
 
     try:

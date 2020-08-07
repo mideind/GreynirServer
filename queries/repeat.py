@@ -27,6 +27,7 @@
 from queries import gen_answer
 from datetime import datetime, timedelta
 
+
 _REPEAT_QTYPE = "Repeat"
 
 
