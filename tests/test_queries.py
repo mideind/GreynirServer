@@ -33,6 +33,8 @@ from main import app
 from queries import *
 
 from settings import changedlocale
+from db import SessionContext
+from db.models import Query
 
 
 @pytest.fixture
@@ -84,7 +86,7 @@ def qmcall(c, qdict, qtype=None):
     return json
 
 
-DUMMY_CLIENT_ID = 123
+DUMMY_CLIENT_ID = "QueryTesting123"
 
 
 def test_query_api(client):
@@ -509,7 +511,9 @@ def test_query_api(client):
     # Yule lads module
     # TODO: Implement me!
 
-    # TODO: Delete any queries logged as result of tests
+    # Delete any queries logged as result of these tests
+    with SessionContext(commit=True) as session:
+        session.execute(Query.table().delete().where(Query.client_id == DUMMY_CLIENT_ID))
 
 
 def test_query_utility_functions():
