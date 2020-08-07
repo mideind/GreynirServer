@@ -297,6 +297,7 @@ _QTYPE_TO_DESC = {
     "Declension": "fyrirspurnum um beygingarmyndir",
     "Places": "spurningum um verslanir og opnunartíma",
     "News": "fyrirspurnum um fréttir",
+    "Repeat": "beiðnum um að endurtaka setningar",
 }
 
 
@@ -333,8 +334,13 @@ _MOST_MENTIONED_PERIOD = 7  # Days
 def _gen_most_mentioned_answer(q):
     """ Answer questions about the most mentioned/talked about people in Iceland. """
     top = top_persons(limit=_MOST_MENTIONED_COUNT, days=_MOST_MENTIONED_PERIOD)
+
+    q.set_qtype(_STATS_QTYPE)
+    q.set_key("MostMentioned")
+
     if not top:
-        return False  # We don't know (empty database?)
+        q.set_answer(*gen_answer("Engar manneskjur fundust í gagnagrunni"))
+        return True  # We don't know (empty database?)
 
     answer = natlang_seq([t.get("name") for t in top])
     response = dict(answer=answer)
@@ -342,8 +348,6 @@ def _gen_most_mentioned_answer(q):
 
     q.set_expires(datetime.utcnow() + timedelta(hours=1))
     q.set_answer(response, answer, voice)
-    q.set_qtype(_STATS_QTYPE)
-    q.set_key("MostMentioned")
 
     return True
 

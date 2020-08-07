@@ -386,6 +386,7 @@ def test_query_api(client):
     json = qmcall(c, {"q": "hversu marga einstaklinga þekkirðu?"}, "Stats")
     json = qmcall(c, {"q": "Hversu mörgum spurningum hefur þú svarað?"}, "Stats")
     json = qmcall(c, {"q": "hvað ertu aðallega spurð um?"}, "Stats")
+    json = qmcall(c, {"q": "hvaða fólk er mest í fréttum"}, "Stats")
 
     # Telephone module
     json = qmcall(c, {"q": "Hringdu í síma 6 9 9 2 4 2 2"}, "Telephone")
