@@ -373,8 +373,9 @@ def test_query_api(client):
     assert "fiskur" in a or "skjaldarmerki" in a
 
     # Repeat module
-    json = qmcall(c, {"q": "Veldu tölu milli sautján og 30"}, "Random")
-    assert int(json["answer"]) >= 17 and int(json["answer"]) <= 30
+    json = qmcall(c, {"q": "segðu setninguna simmi er bjálfi"}, "Repeat")
+    assert json["answer"] == "Simmi er bjálfi"
+    assert json["q"] == "Segðu setninguna „Simmi er bjálfi.“"
 
     # Special module
     json = qmcall(client, {"q": "Hver er sætastur?", "voice": True}, "Special")
