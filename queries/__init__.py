@@ -399,7 +399,7 @@ def query_json_api(url):
 
 def fetch_xml(url):
     """ Request the URL, expecting an XML response which is 
-        parsed and returned as a data structure. """
+        parsed and returned as an XML document object. """
 
     # Send request
     try:

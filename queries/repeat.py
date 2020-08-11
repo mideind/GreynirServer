@@ -33,10 +33,14 @@ _REPEAT_QTYPE = "Repeat"
 
 _REPEAT_PREFIXES = tuple(
     (
+        "segðu eftirfarandi orð"
         "segðu orðið",
         "segðu orðin",
         "segðu setninguna",
+        "segðu eftirfarandi setningu",
         "segðu eftirfarandi",
+        "endurtaktu eftirfarandi setningu",
+        "endurtaktu eftirfarandi orð",
         "endurtaktu eftirfarandi",
         "endurtaktu setninguna",
         "endurtaktu eftir mér",
@@ -54,7 +58,7 @@ _REPEAT_PREFIXES = tuple(
 
 def gen_repeat_answ(text, cmd_prefix, q):
     atxt = text.strip()
-    atxt = text[:1].upper() + text[1:]  # Capitalize first character
+    atxt = atxt[:1].upper() + atxt[1:]  # Capitalize first character
     q.set_answer(*gen_answer(atxt))
     q.set_qtype(_REPEAT_QTYPE)
     q.set_key("Repeat")
