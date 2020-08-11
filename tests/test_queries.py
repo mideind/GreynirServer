@@ -191,7 +191,7 @@ def test_query_api(client):
     json = qmcall(c, {"q": "hvað eru tíu þúsund krónur margir dollarar"}, "Currency")
     assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
 
-    json = qmcall(c, {"q": "hvað eru 79 dollarar margir evrur?"}, "Currency")
+    json = qmcall(c, {"q": "hvað eru 79 dollarar margar evrur?"}, "Currency")
     assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
 
     # Date module
@@ -373,6 +373,9 @@ def test_query_api(client):
     assert json["answer"] == "Simmi er bjálfi"
     assert json["q"] == "Segðu setninguna „Simmi er bjálfi.“"
 
+    json = qmcall(c, {"q": "segðu eitthvað skemmtilegt"})
+    assert json["qtype"] != "Repeat"
+
     # Special module
     json = qmcall(client, {"q": "Hver er sætastur?", "voice": True}, "Special")
     assert json["answer"] == "Tumi Þorsteinsson."
@@ -488,11 +491,7 @@ def test_query_api(client):
 
     json = qmcall(
         c,
-        {
-            "q": "hvað segir wikipedía um hana",
-            "client_id": DUMMY_CLIENT_ID,
-            "private": False,
-        },
+        {"q": "hvað segir wikipedía um hana", "client_id": DUMMY_CLIENT_ID},
         "Wikipedia",
     )
     assert "Katrín Jakobsdóttir" in json["answer"]
