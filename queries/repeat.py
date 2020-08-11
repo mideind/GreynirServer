@@ -24,7 +24,7 @@
 
 """
 
-from queries import gen_answer
+from queries import gen_answer, icequote
 from datetime import datetime, timedelta
 
 
@@ -61,7 +61,9 @@ def gen_repeat_answ(text, cmd_prefix, q):
     q.set_expires(datetime.utcnow() + timedelta(hours=24))
 
     # Beautify query by placing text to repeat within quotation marks
-    q.set_beautified_query("{0}„{1}.“".format(cmd_prefix.capitalize(), atxt))
+    q.set_beautified_query(
+        "{0}{1}".format(cmd_prefix.capitalize(), icequote(atxt + "."))
+    )
 
 
 def handle_plain_text(q):

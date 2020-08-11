@@ -417,13 +417,13 @@ def test_query_api(client):
 
     # Schedules module
     json = qmcall(c, {"q": "hvað er í sjónvarpinu núna", "voice": True}, "Schedule")
-    assert json["qkey"] == "TelevisionSchedule"
+    assert json["key"] == "TelevisionSchedule"
     json = qmcall(c, {"q": "Hvaða þáttur er eiginlega á rúv núna"}, "Schedule")
-    assert json["qkey"] == "TelevisionSchedule"
+    assert json["key"] == "TelevisionSchedule"
     json = qmcall(c, {"q": "hvað er í sjónvarpinu í kvöld?"}, "Schedule")
-    assert json["qkey"] == "TelevisionEvening"
+    assert json["key"] == "TelevisionEvening"
     json = qmcall(c, {"q": "hver er sjónvarpsdagskráin í kvöld?"}, "Schedule")
-    assert json["qkey"] == "TelevisionEvening"
+    assert json["key"] == "TelevisionEvening"
     # json = qmcall(c, {"q": "hvað er í útvarpinu núna?"}, "Schedule")
     # assert json["qkey"] == "RadioSchedule"
     # json = qmcall(c, {"q": "hvað er eiginlega í gangi á rás eitt?"}, "Schedule")
@@ -581,3 +581,13 @@ def test_query_utility_functions():
     assert format_icelandic_float(666.0) == "666"
     assert format_icelandic_float(217.296) == "217,3"
     assert format_icelandic_float(2528963.9) == "2.528.963,9"
+    assert format_icelandic_float(666.00, strip_zeros=False) == "666,00"
+    assert format_icelandic_float(123.12341, decimal_places=4) == "123,1234"
+    assert format_icelandic_float(123.0000, strip_zeros=True) == "123"
+    assert (
+        format_icelandic_float(123.000, decimal_places=4, strip_zeros=False)
+        == "123,0000"
+    )
+
+    assert icequote("sæll") == "„sæll“"
+    assert icequote(" Góðan daginn ") == "„Góðan daginn“"

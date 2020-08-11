@@ -359,8 +359,12 @@ def format_icelandic_float(fp_num, decimal_places=2, strip_zeros=True):
     """ Convert number to Icelandic decimal format string. """
     with changedlocale(category="LC_NUMERIC"):
         fmt = "%.{0}f".format(decimal_places)
-        res = locale.format_string(fmt, fp_num, grouping=True).replace(" ", ".")
+        res = locale.format_string(fmt, float(fp_num), grouping=True).replace(" ", ".")
         return strip_trailing_zeros(res) if strip_zeros else res
+
+
+def icequote(s):
+    return "„{0}“".format(s.strip())
 
 
 def gen_answer(a):
