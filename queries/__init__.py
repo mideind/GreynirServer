@@ -33,6 +33,7 @@ import locale
 import math
 from urllib.parse import urlencode
 from functools import lru_cache
+from xml.dom import minidom
 
 from tzwhere import tzwhere
 from pytz import country_timezones
@@ -354,11 +355,12 @@ def strip_trailing_zeros(num_str):
     return num_str
 
 
-def format_icelandic_float(fp_num):
-    """ Convert number to Icelandic decimal format. """
+def format_icelandic_float(fp_num, decimal_places=2, strip_zeros=True):
+    """ Convert number to Icelandic decimal format string. """
     with changedlocale(category="LC_NUMERIC"):
-        res = locale.format_string("%.2f", fp_num, grouping=True).replace(" ", ".")
-        return strip_trailing_zeros(res)
+        fmt = "%.{0}f".format(decimal_places)
+        res = locale.format_string(fmt, fp_num, grouping=True).replace(" ", ".")
+        return strip_trailing_zeros(res) if strip_zeros else res
 
 
 def gen_answer(a):
@@ -387,6 +389,32 @@ def query_json_api(url):
         return res
     except Exception as e:
         logging.warning("Error parsing JSON API response: {0}".format(e))
+
+    return None
+
+
+def fetch_xml(url):
+    """ Request the URL, expecting an XML response which is 
+        parsed and returned as a data structure. """
+
+    # Send request
+    try:
+        r = requests.get(url)
+    except Exception as e:
+        logging.warning(str(e))
+        return None
+
+    # Verify that status is OK
+    if r.status_code != 200:
+        logging.warning("Received status {0} from server".format(r.status_code))
+        return None
+
+    # Parse json API response
+    try:
+        xmldoc = minidom.parseString(r.text)
+        return xmldoc
+    except Exception as e:
+        logging.warning("Error parsing XML response: {0}".format(e))
 
     return None
 

@@ -28,7 +28,6 @@
 # TODO: Support radio schedules
 # http://muninn.ruv.is/files/xml/ras1/2020-08-05/
 # http://muninn.ruv.is/files/xml/ras2/2020-08-05/
-# TODO: "Hvað er í sjónvarpinu í kvöld?"
 # TODO: Fix formatting issues w. trailing spaces, periods at the end of answer str.
 
 import logging
@@ -36,16 +35,24 @@ import re
 import random
 from datetime import datetime, timedelta
 
-from queries import query_json_api, gen_answer
+from queries import query_json_api, fetch_xml, gen_answer
 
 
 _SCHEDULES_QTYPE = "Schedule"
 
 _TELEVISION_QKEY = "TelevisionSchedule"
 _TELEVISION_EVENING_QKEY = "TelevisionEvening"
+_RADIO_QKEY = "RadioSchedule"
 
-
-TOPIC_LEMMAS = ["sjónvarp", "sjónvarpsdagskrá", "dagskrá", "rúv", "ríkissjónvarp"]
+TOPIC_LEMMAS = [
+    "sjónvarp",
+    "sjónvarpsdagskrá",
+    "dagskrá",
+    "rúv",
+    "ríkissjónvarp",
+    "útvarp",
+    "ríkisútvarp",
+]
 
 
 def help_text(lemma):
@@ -55,8 +62,11 @@ def help_text(lemma):
         random.choice(
             (
                 "Hvað er í sjónvarpinu í kvöld",
+                "Hvað er í útvarpinu",
+                "Hvað er á Rás 1 í augnablikinu",
                 "Hvað er á RÚV í augnablikinu",
                 "Hvaða efni er verið að sýna í sjónvarpinu",
+                "Hvaða efni er verið að spila í útvarpinu",
             )
         )
     )
@@ -104,7 +114,7 @@ QSchWhatIsDative →
     "hvað" "er" | "hvaða" "þátt" "er" | "hvaða" "dagskrárlið" "er" | "hvaða" "efni" "er"
 
 QSchOnTV →
-    QSchOnRUV | QSchOnStod2
+    QSchOnRUV # | QSchOnStod2
 
 QSchOnRUV →
     "í" "sjónvarpinu" | "á" "rúv" | "í" "ríkissjónvarpinu"
@@ -157,15 +167,18 @@ $score(+55) QSchedule
 
 
 def QSchTelevisionQuery(node, params, result):
-    # Set the query type
     result.qtype = _SCHEDULES_QTYPE
     result.qkey = _TELEVISION_QKEY
 
 
 def QSchTelevisionEveningQuery(node, params, result):
-    # Set the query type
     result.qtype = _SCHEDULES_QTYPE
     result.qkey = _TELEVISION_EVENING_QKEY
+
+
+def QSchRadioStationNowQuery(node, params, result):
+    result.qtype = _SCHEDULES_QTYPE
+    result.qkey = _RADIO_QKEY
 
 
 def _clean_desc(d):
@@ -173,27 +186,59 @@ def _clean_desc(d):
     return d.replace("Dr.", "Doktor").replace("?", ".").split(".")[0]
 
 
-_RUV_SCHEDULE_API_ENDPOINT = "https://apis.is/tv/ruv/"
-_API_ERRMSG = "Ekki tókst að sækja sjónvarpsdagskrá."
-_CACHED_SCHEDULE = None
-_LAST_FETCHED = None
+_RUV_TV_SCHEDULE_API_ENDPOINT = "https://apis.is/tv/ruv/"
+_TV_API_ERRMSG = "Ekki tókst að sækja sjónvarpsdagskrá."
+_CACHED_TV_SCHEDULE = None
+_TV_LAST_FETCHED = None
 
 
 def _query_tv_schedule_api():
     """ Fetch current television schedule from API, or return cached copy. """
-    global _CACHED_SCHEDULE
-    global _LAST_FETCHED
+    global _CACHED_TV_SCHEDULE
+    global _TV_LAST_FETCHED
     if (
-        not _CACHED_SCHEDULE
-        or not _LAST_FETCHED
-        or _LAST_FETCHED.date() != datetime.today().date()
+        not _CACHED_TV_SCHEDULE
+        or not _TV_LAST_FETCHED
+        or _TV_LAST_FETCHED.date() != datetime.today().date()
     ):
-        _CACHED_SCHEDULE = None
-        sched = query_json_api(_RUV_SCHEDULE_API_ENDPOINT)
+        # Not cached. Fetch data.
+        _CACHED_TV_SCHEDULE = None
+        sched = query_json_api(_RUV_TV_SCHEDULE_API_ENDPOINT)
         if sched and "results" in sched and len(sched["results"]):
-            _LAST_FETCHED = datetime.utcnow()
-            _CACHED_SCHEDULE = sched["results"]
-    return _CACHED_SCHEDULE
+            _TV_LAST_FETCHED = datetime.utcnow()
+            _CACHED_TV_SCHEDULE = sched["results"]
+    return _CACHED_TV_SCHEDULE
+
+
+_RUV_RADIO_SCHEDULE_API_ENDPOINT = "https://muninn.ruv.is/files/xml/{0}/{1}/"
+_RADIO_API_ERRMSG = "Ekki tókst að sækja útvarpsdagskrá."
+_RADIO_SCHED_CACHE = {}
+_RADIO_LAST_FETCHED = {}
+
+
+def _query_radio_schedule_api(channel):
+    """ Fetch current radio schedule from API, or return cached copy. """
+    assert channel in ("ras1", "ras2")
+    global _RADIO_SCHED_CACHE
+    global _RADIO_LAST_FETCHED
+
+    if (
+        not _RADIO_SCHED_CACHE.get(channel)
+        or not _RADIO_LAST_FETCHED.get(channel)
+        or _RADIO_LAST_FETCHED[channel].date() != datetime.today().date()
+    ):
+        # Not cached. Fetch data.
+        date_str = datetime.today().strftime("%Y-%m-%d")
+        print(date_str)
+        url = _RUV_RADIO_SCHEDULE_API_ENDPOINT.format(channel, date_str)
+        print(url)
+        xmldoc = fetch_xml(url)
+        # TODO: Validate XML format
+        if xmldoc:
+            _RADIO_LAST_FETCHED[channel] = datetime.utcnow()
+            _RADIO_SCHED_CACHE[channel] = xmldoc
+
+    return _RADIO_SCHED_CACHE[channel]
 
 
 def _span(p):
@@ -233,11 +278,11 @@ def _evening_prog(sched):
     return result
 
 
-def _gen_curr_program_answer(q):
+def _gen_curr_tv_program_answer(q):
     """ Generate answer to query about current TV program """
     sched = _query_tv_schedule_api()
     if not sched:
-        return gen_answer(_API_ERRMSG)
+        return gen_answer(_TV_API_ERRMSG)
 
     prog = _curr_prog(sched)
     if not prog:
@@ -251,11 +296,11 @@ def _gen_curr_program_answer(q):
     return gen_answer(answ)
 
 
-def _gen_evening_program_answer(q):
+def _gen_evening_tv_program_answer(q):
     """ Generate answer to query about the evening's TV programs """
     sched = _query_tv_schedule_api()
     if not sched:
-        return gen_answer(_API_ERRMSG)
+        return gen_answer(_TV_API_ERRMSG)
 
     prog = _evening_prog(sched)
     if not prog:
@@ -269,19 +314,30 @@ def _gen_evening_program_answer(q):
     return dict(answer=answer), answer, voice_answer
 
 
+def _gen_curr_radio_program_answer(q):
+    xmldoc = _query_radio_schedule_api("ras1")
+    print(xmldoc)
+    return None
+
+
+_HANDLER_MAP = {
+    _TELEVISION_QKEY: _gen_curr_tv_program_answer,
+    _TELEVISION_EVENING_QKEY: _gen_evening_tv_program_answer,
+    _RADIO_QKEY: _gen_curr_radio_program_answer,
+}
+
+
 def sentence(state, result):
     """ Called when sentence processing is complete """
     q = state["query"]
-    if "qtype" in result:
+    handler_keys = _HANDLER_MAP.keys()
+    if "qtype" in result and "qkey" in result and result["qkey"] in handler_keys:
         # Successfully matched a query type
         q.set_qtype(result.qtype)
         q.set_key(result.qkey)
 
         try:
-            if result.qkey == _TELEVISION_QKEY:
-                r = _gen_curr_program_answer(q)
-            else:
-                r = _gen_evening_program_answer(q)
+            r = _HANDLER_MAP[result.qkey](q)
             q.set_answer(*r)
             q.set_beautified_query(q._beautified_query.replace("rúv", "RÚV"))
             # TODO: Set intelligent expiry time
