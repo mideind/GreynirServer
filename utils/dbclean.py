@@ -30,7 +30,7 @@
 
 import os
 import sys
-import gc
+import re
 from random import shuffle
 
 # Hack to make this Python program executable from the utils subdirectory
@@ -41,10 +41,9 @@ if basepath.endswith(_UTILS):
     sys.path.append(basepath)
 
 from settings import Settings
-from article import Article
-from db.models import Article as ArticleModel
-
+# from article import Article
 from db import SessionContext
+from db.models import Article as ArticleModel
 
 from reynir.bintokenizer import tokens_are_foreign
 
@@ -71,9 +70,18 @@ def main():
         # TODO: Implement me!
 
         # Duplicates
-        # For each article, check whether there is a corresponding
-        # article URL with https instead of http and vice versa
-        # TODO: Implement me!
+        # For each https article, check whether there is a corresponding
+        # article URL with http URI scheme
+        dupl = 0
+        q = session.query(ArticleModel.url).filter(ArticleModel.url.like("https://%"))
+        for r in q.all():
+            url = re.sub(r"^https://", r"http://", r.url)
+            # c = session.query(ArticleModel.url).filter(ArticleModel.url == url).count()
+            res = session.execute(
+                ArticleModel.table().delete().where(ArticleModel.url == url)
+            )
+            dupl += res.rowcount
+        print("{0} duplicate URLs w. HTTP scheme removed".format(dupl))
 
         # Chaff
         # ???
