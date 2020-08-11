@@ -129,13 +129,7 @@ def test_query_api(client):
     assert "3,14159" in json["answer"]
 
     json = qmcall(
-        c,
-        {
-            "q": "hvað er það sinnum tveir",
-            "client_id": DUMMY_CLIENT_ID,
-            "private": False,
-        },
-        "Arithmetic",
+        c, {"q": "hvað er það sinnum tveir", "client_id": DUMMY_CLIENT_ID}, "Arithmetic"
     )
     assert json["answer"].startswith("6,")
 
@@ -423,13 +417,19 @@ def test_query_api(client):
 
     # Schedules module
     json = qmcall(c, {"q": "hvað er í sjónvarpinu núna", "voice": True}, "Schedule")
+    assert json["qkey"] == "TelevisionSchedule"
     json = qmcall(c, {"q": "Hvaða þáttur er eiginlega á rúv núna"}, "Schedule")
+    assert json["qkey"] == "TelevisionSchedule"
     json = qmcall(c, {"q": "hvað er í sjónvarpinu í kvöld?"}, "Schedule")
+    assert json["qkey"] == "TelevisionEvening"
     json = qmcall(c, {"q": "hver er sjónvarpsdagskráin í kvöld?"}, "Schedule")
-
+    assert json["qkey"] == "TelevisionEvening"
+    # json = qmcall(c, {"q": "hvað er í útvarpinu núna?"}, "Schedule")
+    # assert json["qkey"] == "RadioSchedule"
     # json = qmcall(c, {"q": "hvað er eiginlega í gangi á rás eitt?"}, "Schedule")
-    # json = qmcall(c, {"q": "hvað er á daskrá á rás 2?"}, "Schedule")
-    # json = qmcall(c, {"q": "Hvað er í sjónvarpinu núna í kvöld?"}, "TelevisionEvening")
+    # assert json["qkey"] == "RadioSchedule"
+    # json = qmcall(c, {"q": "hvað er á dagskrá á rás 2?"}, "Schedule")
+    # assert json["qkey"] == "RadioSchedule"
 
     # Unit module
     json = qmcall(c, {"q": "Hvað eru margir metrar í mílu?"}, "Unit")
@@ -513,7 +513,9 @@ def test_query_api(client):
 
     # Delete any queries logged as result of these tests
     with SessionContext(commit=True) as session:
-        session.execute(Query.table().delete().where(Query.client_id == DUMMY_CLIENT_ID))
+        session.execute(
+            Query.table().delete().where(Query.client_id == DUMMY_CLIENT_ID)
+        )
 
 
 def test_query_utility_functions():
