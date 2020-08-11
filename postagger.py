@@ -52,6 +52,7 @@ import xml.etree.ElementTree as ET
 from reynir import TOK, tokenize
 from reynir.binparser import canonicalize_token
 from reynir.ifdtagger import IFD_Tagset
+from reynir.settings import Prepositions
 
 from treeutil import TreeUtility
 
@@ -506,12 +507,10 @@ class NgramTagger:
                 return [("e", 1.0)]
             s = set(ifd_tag(TOK.WORD, txt, m) for m in mlist)
             ltxt = txt.lower()
-            # !!! TODO: Revisit the following; prepositions are no longer
-            # !!! stored in the settings file (Greynir.conf)
-            # if ltxt in Prepositions.PP:
-            #     for case in Prepositions.PP[ltxt]:
-            #         if case in self.CASE_TO_TAG:
-            #             s.add(self.CASE_TO_TAG[case])
+            if ltxt in Prepositions.PP:
+                for case in Prepositions.PP[ltxt]:
+                    if case in self.CASE_TO_TAG:
+                        s.add(self.CASE_TO_TAG[case])
             if ltxt in self._CONJ_REF:
                 # For referential conjunctions,
                 # add 'ct' as a possibility (it does not come directly from a BÍN mark)

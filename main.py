@@ -34,6 +34,7 @@
 """
 
 from typing import Callable
+
 import sys
 import os
 import time
@@ -42,8 +43,8 @@ import logging
 from datetime import datetime
 
 from flask import Flask, send_from_directory, render_template
-from flask_caching import Cache
-from flask_cors import CORS
+from flask_caching import Cache  # type: ignore
+from flask_cors import CORS  # type: ignore
 
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -134,7 +135,7 @@ def hashed_url_for_static_file(endpoint, values):
 
     if "static" == endpoint or endpoint.endswith(".static"):
         filename = values.get("filename")
-        if filename and (filename.endswith(".js") or filename.endswith(".css")):
+        if filename and filename.endswith((".js", ".css")):
             # if "." in endpoint:  # has higher priority
             #     blueprint = endpoint.rsplit(".", 1)[0]
             # else:
@@ -144,8 +145,8 @@ def hashed_url_for_static_file(endpoint, values):
             #     static_folder = app.blueprints[blueprint].static_folder
             # else:
             static_folder = app.static_folder or "."
-
             param_name = "h"
+            # Add underscores in front of the param name until it is unique
             while param_name in values:
                 param_name = "_" + param_name
             values[param_name] = static_file_hash(os.path.join(static_folder, filename))
@@ -154,7 +155,7 @@ def hashed_url_for_static_file(endpoint, values):
 @app.route("/static/fonts/<path:path>")
 @max_age(seconds=24 * 60 * 60)  # Cache font for 24 hours
 def send_font(path):
-    return send_from_directory("static/fonts", path)
+    return send_from_directory(os.path.join("static", "fonts"), path)
 
 
 # Custom 404 error handler
