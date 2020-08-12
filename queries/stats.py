@@ -311,7 +311,7 @@ def _gen_most_freq_queries_answer(q):
 
         if qr:
             top_qtype = qr[0][1]
-            desc = _QTYPE_TO_DESC.get(top_qtype) or "óskilgreindum fyrirspurnum"
+            desc = _QTYPE_TO_DESC.get(top_qtype, "óskilgreindum fyrirspurnum")
             answer = "Undanfarið hef ég mest svarað {0}.".format(desc)
         else:
             answer = "Ég hef ekki svarað neinum fyrirspurnum upp á síðkastið."

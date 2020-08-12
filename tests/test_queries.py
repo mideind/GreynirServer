@@ -578,14 +578,13 @@ def test_query_utility_functions():
     assert strip_trailing_zeros("170,0") == "170"
 
     assert format_icelandic_float(666.0) == "666"
+    assert format_icelandic_float(666, strip_zeros=False) == "666,00"
     assert format_icelandic_float(217.296) == "217,3"
     assert format_icelandic_float(2528963.9) == "2.528.963,9"
-    assert format_icelandic_float(666.00, strip_zeros=False) == "666,00"
     assert format_icelandic_float(123.12341, decimal_places=4) == "123,1234"
-    assert format_icelandic_float(123.0000, strip_zeros=True) == "123"
+    assert format_icelandic_float(123.1000, strip_zeros=True) == "123,1"
     assert (
-        format_icelandic_float(123.000, decimal_places=4, strip_zeros=False)
-        == "123,0000"
+        format_icelandic_float(123.0, decimal_places=4, strip_zeros=False) == "123,0000"
     )
 
     assert icequote("sæll") == "„sæll“"
