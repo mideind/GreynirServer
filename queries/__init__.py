@@ -529,7 +529,7 @@ _PLACES_API_URL = (
     "https://maps.googleapis.com/maps/api/place/findplacefromtext/json?{0}"
 )
 
-_PLACES_LOCBIAS_RADIUS = 2000  # Metres
+_PLACES_LOCBIAS_RADIUS = 3000  # Metres
 
 
 def query_places_api(
@@ -556,6 +556,7 @@ def query_places_api(
         "fields": fields,
         "key": key,
         "language": "is",
+        "region": "is",
     }
     if userloc:
         qdict["locationbias"] = "circle:{0}@{1},{2}".format(

@@ -81,7 +81,8 @@ QPlacesAddress →
     | "hvað" "er" "heimilisfang" QPlacesSubjectEf
     | "hvar" "er" QPlacesSubjectNf "til" "húsa"
     | "hvar" "er" QPlacesSubjectNf "staðsett" 
-    | "hvar" "er" QPlacesSubjectNf "staðsettur" 
+    | "hvar" "er" QPlacesSubjectNf "staðsettur"
+    | QPlacesPreposition "hvaða" "götu" "er" QPlacesSubjectNf
 
 QPlacesPrepAndSubject →
     QPlacesPreposition QPlacesSubjectÞgf
@@ -96,7 +97,7 @@ QPlacesSubjectEf →
     Nl_ef
 
 QPlacesPreposition →
-    "á" | "í" | "hjá"
+    "á" | "í" | "hjá" | "við"
 
 QPlacesOpen →
     "opið" | "opin" | "opinn"
@@ -146,7 +147,7 @@ def answ_openhours(placename, loc, qtype):
     # Look up placename in places API
     res = query_places_api(placename, userloc=loc)
 
-    if "candidates" not in res or not res["candidates"] or res["status"] != "OK":
+    if res["status"] != "OK" or "candidates" not in res or not res["candidates"]:
         return gen_answer(_PLACES_API_ERRMSG)
 
     # Use top result
@@ -158,7 +159,7 @@ def answ_openhours(placename, loc, qtype):
 
     # Look up place ID in Place Details API to get more information
     res = query_place_details(place_id, fields="opening_hours")
-    if not res:
+    if res["status"] != "OK" or not res or "result" not in res:
         return gen_answer(_PLACES_API_ERRMSG)
 
     now = datetime.utcnow()
@@ -185,6 +186,7 @@ def answ_openhours(placename, loc, qtype):
     if qtype == "OpeningHours":
         answer = p_desc
         voice = today_desc
+    # Is X open? Is X closed?
     elif qtype == "IsOpen" or qtype == "IsClosed":
         yes_no = (
             "Já"
@@ -209,6 +211,7 @@ def sentence(state, result):
             res = answ_openhours(subj, q.location, result.qkey)
             if res:
                 q.set_answer(*res)
+                q.set_source("Google")
             else:
                 errmsg = "Ekki tókst að fletta upp opnunartímum fyrir {0}".format(
                     icequote(subj)

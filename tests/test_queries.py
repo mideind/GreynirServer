@@ -348,7 +348,9 @@ def test_query_api(client):
     assert "source" in json and json["source"].startswith("Gasvaktin")
 
     # Places module
-    # TODO: Implement me!
+    # NB: No Google API key on test server
+    # json = qmcall(c, {"q": "Hvað er opið lengi í Melabúðinni"}, "Places")
+    # json = qmcall(c, {"q": "Er lokað á Forréttabarnum?"}, "Places")
 
     # Random module
     json = qmcall(c, {"q": "Veldu tölu milli sautján og 30"}, "Random")
