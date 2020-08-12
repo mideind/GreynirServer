@@ -143,9 +143,17 @@ QPlacesSubjectÞgf = QPlacesSubjectNf
 _PLACES_API_ERRMSG = "Ekki tókst að fletta upp viðkomandi stað"
 
 
-def answ_openhours(placename, loc, qtype):
+def answ_address(placename, loc, qtype):
     # Look up placename in places API
     res = query_places_api(placename, userloc=loc)
+
+    if res["status"] != "OK" or "candidates" not in res or not res["candidates"]:
+        return gen_answer(_PLACES_API_ERRMSG)
+
+
+def answ_openhours(placename, loc, qtype):
+    # Look up placename in places API
+    res = query_places_api(placename, userloc=loc, fields="formatted_address")
 
     if res["status"] != "OK" or "candidates" not in res or not res["candidates"]:
         return gen_answer(_PLACES_API_ERRMSG)

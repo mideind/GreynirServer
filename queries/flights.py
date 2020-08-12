@@ -62,7 +62,7 @@ _LANDING_RX = frozenset(
         r"hver er komutíminn fyrir næsta flug frá (.+)$",
         r"hver er komutími næstu vélar frá (.+)$",
         r"hver er komutími næstu flugvélar frá (.+)$",
-        r"hver er komutími næstu flugs frá (.+)$",
+        r"hver er komutími næsta flugs frá (.+)$",
     )
 )
 
@@ -83,7 +83,10 @@ _DEPARTING_RX = frozenset(
     )
 )
 
-_ISAVIA_URL = "https://www.isavia.is/json/flight/?cargo=0&airport={0}&dateFrom={1}&dateTo={2}&language=is&arrivals={3}"
+_ISAVIA_URL = (
+    "https://www.isavia.is/json/flight/?cargo=0&airport={0}"
+    "&dateFrom={1}&dateTo={2}&language=is&arrivals={3}"
+)
 
 
 def _fetch_flight_info(from_date, to_date, ftype="arrivals"):
@@ -141,7 +144,6 @@ def handle_plain_text(q):
     # Look up in Isavia API for flights at KEF
     try:
         answ = False
-        print("FETCHING FLIGHT INFO")
         _fetch_flight_info(datetime.utcnow(), datetime.utcnow() + timedelta(hours=24))
     except Exception as e:
         logging.warning("Exception generating answer from flight data: {0}".format(e))

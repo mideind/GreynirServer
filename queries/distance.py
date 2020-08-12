@@ -27,6 +27,7 @@
 # TODO: "Hvað er langt á milli X og Y?"
 # TODO: "Hvað er langt til tunglsins"? "Hvað er langt til Mars?"
 # TODO: Identify when user is present at the location, respond "Þú ert í/á X"
+# TODO: "Hvað er langur/margra kílómetra göngutúr í/á X?"
 
 import re
 import logging
