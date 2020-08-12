@@ -47,7 +47,7 @@ Query →
     QPlacesQuery '?'?
 
 QPlacesQuery →
-    QPlacesOpeningHours | QPlacesIsOpen | QPlacesIsClosed
+    QPlacesOpeningHours | QPlacesIsOpen | QPlacesIsClosed #| QPlacesAddress
 
 QPlacesOpeningHours →
     "hvað" "er" "opið" "lengi" QPlacesPrepAndSubject
@@ -74,6 +74,15 @@ QPlacesIsClosed →
     "er" "lokað" QPlacesPrepAndSubject
     | "er" QPlacesSubjectNf QPlacesClosed
 
+QPlacesAddress →
+    "hvert" "er" "heimilisfangið" QPlacesPrepAndSubject
+    | "hvað" "er" "heimilisfangið" QPlacesPrepAndSubject
+    | "hvert" "er" "heimilisfang" QPlacesSubjectEf
+    | "hvað" "er" "heimilisfang" QPlacesSubjectEf
+    | "hvar" "er" QPlacesSubjectNf "til" "húsa"
+    | "hvar" "er" QPlacesSubjectNf "staðsett" 
+    | "hvar" "er" QPlacesSubjectNf "staðsettur" 
+
 QPlacesPrepAndSubject →
     QPlacesPreposition QPlacesSubjectÞgf
 
@@ -83,8 +92,11 @@ QPlacesSubjectÞgf →
 QPlacesSubjectNf →
     Nl_nf
 
+QPlacesSubjectEf →
+    Nl_ef
+
 QPlacesPreposition →
-    "á" | "í"
+    "á" | "í" | "hjá"
 
 QPlacesOpen →
     "opið" | "opin" | "opinn"
