@@ -22,10 +22,13 @@
 
 """
 
+from typing import Optional
+
 import sys
 import os
 import json
 import logging
+from threading import Lock
 
 import cachetools
 import boto3
@@ -40,7 +43,8 @@ from botocore.exceptions import ClientError
 # }
 #
 _API_KEYS_PATH = os.path.join("resources", "aws_polly_keys.mideind.json")
-_api_client = None
+_api_client = None  # type: Optional[boto3.Session]
+_api_client_lock = Lock()
 
 # Voices
 _DEFAULT_VOICE = "Dora"
@@ -59,23 +63,24 @@ _TEXT_FORMATS = frozenset(("text", "ssml"))
 _AWS_URL_TTL = 300  # 5 mins in seconds
 
 
-def _intialize_client():
+def _initialize_client() -> Optional[boto3.Session]:
     """ Set up AWS Polly client """
     global _api_client
-    if _api_client:
+
+    # Make sure that only one thread is messing with the global variable
+    with _api_client_lock:
+        if _api_client is None:
+            # Read AWS Polly API keys from file
+            aws_config = {}
+            try:
+                with open(_API_KEYS_PATH) as json_file:
+                    aws_config = json.load(json_file)
+            except FileNotFoundError:
+                logging.warning("Unable to read AWS Polly keys")
+                return None
+            _api_client = boto3.Session(**aws_config).client("polly")
+        # Return client instance
         return _api_client
-
-    # Read AWS Polly API keys from file
-    aws_config = None
-    try:
-        with open(_API_KEYS_PATH) as json_file:
-            aws_config = json.load(json_file)
-    except FileNotFoundError:
-        logging.warning("Unable to read AWS Polly keys")
-        return None
-
-    # Return client instance
-    return boto3.Session(**aws_config).client("polly")
 
 
 # TTL (in seconds) for get_synthesized_text_url caching
@@ -87,11 +92,16 @@ _CACHE_MAXITEMS = 30
 
 @cachetools.cached(cachetools.TTLCache(_CACHE_MAXITEMS, _CACHE_TTL))
 def get_synthesized_text_url(
-    text, txt_format=_DEFAULT_TEXT_FORMAT, voice_id=_DEFAULT_VOICE, speed=1.0
-):
+    text: str, txt_format=_DEFAULT_TEXT_FORMAT, voice_id=_DEFAULT_VOICE, speed=1.0
+) -> Optional[str]:
     """ Returns AWS URL to audio file with speech-synthesised text """
 
     assert txt_format in _TEXT_FORMATS
+
+    client = _initialize_client()  # Set up client lazily
+    if client is None:
+        logging.warning("Unable to instantiate AWS client")
+        return None
 
     if voice_id not in _VOICES:
         voice_id = _DEFAULT_VOICE
@@ -107,11 +117,6 @@ def get_synthesized_text_url(
         # Wrap text in the required <speak> tag
         if not text.startswith("<speak>"):
             text = "<speak>{0}</speak>".format(text)
-
-    client = _intialize_client()  # Set up client lazily
-    if not client:
-        logging.warning("Unable to instantiate AWS client")
-        return None
 
     # Configure query string parameters for AWS request
     params = {

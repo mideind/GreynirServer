@@ -25,6 +25,8 @@
 
 """
 
+from typing import List
+
 import time
 import threading
 from collections import namedtuple
@@ -35,10 +37,10 @@ from db import SessionContext
 from settings import Settings
 
 from reynir import TOK, mark_paragraphs, tokenize
-from reynir.binparser import augment_terminal
+from reynir.binparser import BIN_Token, augment_terminal
 from reynir.fastparser import Fast_Parser
 from reynir.incparser import IncrementalParser
-from reynir.simpletree import Annotator, Simplifier, SimpleTree
+from reynir.simpletree import Annotator, Simplifier, SimpleTree, TerminalMap
 from reynir.bintokenizer import describe_token
 
 
@@ -234,7 +236,7 @@ class TreeUtility:
     def _terminal_map(tree):
         """ Return a dict containing a map from original token indices
             to matched terminals """
-        tmap = dict()
+        tmap = dict()  # type: TerminalMap
         if tree is not None:
             Annotator(tmap).go(tree)
         return tmap
@@ -302,7 +304,8 @@ class TreeUtility:
     def _process_toklist(parser, session, toklist, xform):
         """ Low-level utility function to parse token lists and return
             the result of a transformation function (xform) for each sentence """
-        pgs = []  # Paragraph list, containing sentences, containing tokens
+        # Paragraph list, containing sentences, containing tokens
+        pgs = []  # type: List[List[BIN_Token]]
         ip = IncrementalParser(parser, toklist, verbose=True)
         for p in ip.paragraphs():
             pgs.append([])

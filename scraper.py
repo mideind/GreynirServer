@@ -634,7 +634,7 @@ if __name__ == "__main__":
         # Attach to the VSCode PTVSD debugger, enabling remote debugging via SSH
         # Note that you will probably also need to change the multiprocessing
         # import to import multiprocessing.dummy
-        import ptvsd
+        import ptvsd  # type: ignore
 
         ptvsd.enable_attach()
         ptvsd.wait_for_attach()  # Blocks execution until debugger is attached
