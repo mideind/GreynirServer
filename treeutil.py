@@ -25,7 +25,7 @@
 
 """
 
-from typing import List
+from typing import TYPE_CHECKING, List
 
 import time
 import threading
@@ -40,8 +40,11 @@ from reynir import TOK, mark_paragraphs, tokenize
 from reynir.binparser import BIN_Token, augment_terminal
 from reynir.fastparser import Fast_Parser
 from reynir.incparser import IncrementalParser
-from reynir.simpletree import Annotator, Simplifier, SimpleTree, TerminalMap
+from reynir.simpletree import Annotator, Simplifier, SimpleTree
 from reynir.bintokenizer import describe_token
+
+if TYPE_CHECKING:
+    from reynir.simpletree import TerminalMap
 
 
 WordTuple = namedtuple("WordTuple", ["stem", "cat"])
