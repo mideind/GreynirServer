@@ -25,6 +25,7 @@
 
 import re
 import random
+import logging
 from datetime import datetime, timedelta
 
 from queries import query_json_api
@@ -130,12 +131,13 @@ def handle_plain_text(q):
             break
 
     # Flight departure queries
-    for rx in _DEPARTING_RX:
-        matches = re.search(rx, ql)
-        if matches:
-            airport = matches.group(1)
-            departure = True
-            break
+    if not airport:
+        for rx in _DEPARTING_RX:
+            matches = re.search(rx, ql)
+            if matches:
+                airport = matches.group(1)
+                departure = True
+                break
 
     # Nothing caught by regexes, bail
     if not matches:

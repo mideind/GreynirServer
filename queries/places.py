@@ -53,6 +53,7 @@ QPlacesOpeningHours →
     "hvað" "er" "opið" "lengi" QPlacesPrepAndSubject
     | "hvað" "er" "lengi" "opið" QPlacesPrepAndSubject
     | "hverjir" "eru" "opnunartímar" QPlacesPrepAndSubject
+    | "hverjir" "eru" "opnunartímar" QPlacesSubjectEf
     | "hvaða" "opnunartímar" "eru" QPlacesPrepAndSubject
     | "hversu" "lengi" "er" "opið" QPlacesPrepAndSubject
     | "hve" "lengi" "er" "opið" QPlacesPrepAndSubject
@@ -65,6 +66,9 @@ QPlacesOpeningHours →
     | "klukkan" "hvað" "lokar" QPlacesPrepAndSubject
     | "klukkan" "hvað" "lokar" QPlacesSubjectNf
     | "hversu" "langt" "er" "í" "lokun" QPlacesPrepAndSubject
+    | "hversu" "langt" "er" "í" "lokun" QPlacesSubjectEf
+    | "hvað" "er" "langt" "í" "lokun" QPlacesPrepAndSubject
+    | "hvað" "er" "langt" "í" "lokun" QPlacesSubjectEf
 
 QPlacesIsOpen →
     "er" "opið" QPlacesPrepAndSubject
@@ -114,7 +118,8 @@ _PLACENAME_MAP = {}
 
 
 def _fix_placename(pn):
-    return _PLACENAME_MAP.get(pn, pn)
+    p = pn.capitalize()
+    return _PLACENAME_MAP.get(p, p)
 
 
 def QPlacesQuery(node, params, result):
@@ -153,7 +158,7 @@ def answ_address(placename, loc, qtype):
 
 def answ_openhours(placename, loc, qtype):
     # Look up placename in places API
-    res = query_places_api(placename, userloc=loc, fields="formatted_address")
+    res = query_places_api(placename, userloc=loc, fields="opening_hours,place_id")
 
     if res["status"] != "OK" or "candidates" not in res or not res["candidates"]:
         return gen_answer(_PLACES_API_ERRMSG)
@@ -228,6 +233,7 @@ def sentence(state, result):
             q.set_qtype(result.qtype)
             q.set_key(subj)
         except Exception as e:
+            raise
             logging.warning("Exception answering places query: {0}".format(e))
             q.set_error("E_EXCEPTION: {0}".format(e))
             return
