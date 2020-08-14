@@ -110,7 +110,7 @@ def test_ifdtag_api(client):
     assert resp.status_code == 200
     assert resp.content_type == "application/json; charset=utf-8"
     assert "valid" in resp.json
-    assert resp.json["valid"] is True
+    assert resp.json["valid"]
     assert "result" in resp.json
     assert len(resp.json["result"]) == 1
     assert len(resp.json["result"][0]) == 5
