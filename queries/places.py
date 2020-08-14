@@ -28,6 +28,7 @@
 # TODO: "Á hvaða götu er Slippbarinn?"
 
 import logging
+import re
 from datetime import datetime, timedelta
 
 from queries import gen_answer, query_places_api, query_place_details, icequote
@@ -47,7 +48,7 @@ Query →
     QPlacesQuery '?'?
 
 QPlacesQuery →
-    QPlacesOpeningHours | QPlacesIsOpen | QPlacesIsClosed #| QPlacesAddress
+    QPlacesOpeningHours | QPlacesIsOpen | QPlacesIsClosed | QPlacesAddress
 
 QPlacesOpeningHours →
     "hvað" "er" "opið" "lengi" QPlacesPrepAndSubject
@@ -69,6 +70,8 @@ QPlacesOpeningHours →
     | "hversu" "langt" "er" "í" "lokun" QPlacesSubjectEf
     | "hvað" "er" "langt" "í" "lokun" QPlacesPrepAndSubject
     | "hvað" "er" "langt" "í" "lokun" QPlacesSubjectEf
+    | "hvenær" "er" "opið" QPlacesPrepAndSubject
+    | "hvað" "er" QPlacesSubjectNf QPlacesOpen "lengi"
 
 QPlacesIsOpen →
     "er" "opið" QPlacesPrepAndSubject
@@ -87,6 +90,7 @@ QPlacesAddress →
     | "hvar" "er" QPlacesSubjectNf "staðsett" 
     | "hvar" "er" QPlacesSubjectNf "staðsettur"
     | QPlacesPreposition "hvaða" "götu" "er" QPlacesSubjectNf
+    | QPlacesPreposition "hvaða" "stræti" "er" QPlacesSubjectNf
 
 QPlacesPrepAndSubject →
     QPlacesPreposition QPlacesSubjectÞgf
@@ -138,11 +142,15 @@ def QPlacesIsClosed(node, params, result):
     result["qkey"] = "IsClosed"
 
 
+def QPlacesAddress(node, params, result):
+    result["qkey"] = "PlaceAddress"
+
+
 def QPlacesSubjectNf(node, params, result):
     result["subject_nom"] = _fix_placename(result._nominative)
 
 
-QPlacesSubjectÞgf = QPlacesSubjectNf
+QPlacesSubjectÞgf = QPlacesSubjectEf = QPlacesSubjectNf
 
 
 _PLACES_API_ERRMSG = "Ekki tókst að fletta upp viðkomandi stað"
@@ -150,10 +158,19 @@ _PLACES_API_ERRMSG = "Ekki tókst að fletta upp viðkomandi stað"
 
 def answ_address(placename, loc, qtype):
     # Look up placename in places API
-    res = query_places_api(placename, userloc=loc)
+    res = query_places_api(placename, userloc=loc, fields="formatted_address")
 
     if res["status"] != "OK" or "candidates" not in res or not res["candidates"]:
         return gen_answer(_PLACES_API_ERRMSG)
+
+    # Use top result
+    place = res["candidates"][0]
+    addr = re.sub(r", Ísland$", "", place["formatted_address"])
+
+    answer = voice = addr
+    response = dict(answer=answer)
+
+    return response, answer, voice
 
 
 def answ_openhours(placename, loc, qtype):
@@ -214,6 +231,14 @@ def answ_openhours(placename, loc, qtype):
     return response, answer, voice
 
 
+_HANDLER_MAP = {
+    "OpeningHours": answ_openhours,
+    "IsOpen": answ_openhours,
+    "IsClosed": answ_openhours,
+    "PlaceAddress": answ_address,
+}
+
+
 def sentence(state, result):
     """ Called when sentence processing is complete """
     q = state["query"]
@@ -221,15 +246,14 @@ def sentence(state, result):
         # Successfully matched a query type
         subj = result["subject_nom"]
         try:
-            res = answ_openhours(subj, q.location, result.qkey)
+            handlerfunc = _HANDLER_MAP[result.qkey]
+            res = handlerfunc(subj, q.location, result.qkey)
             if res:
                 q.set_answer(*res)
                 q.set_source("Google")
             else:
-                errmsg = "Ekki tókst að fletta upp opnunartímum fyrir {0}".format(
-                    icequote(subj)
-                )
-                q.set_answer(gen_answer(errmsg))
+                errmsg = "Ekki tókst að fletta upp staðnum {0}".format(icequote(subj))
+                q.set_answer(*gen_answer(errmsg))
             q.set_qtype(result.qtype)
             q.set_key(subj)
         except Exception as e:
