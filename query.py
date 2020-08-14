@@ -210,6 +210,8 @@ class Query:
         # URL assocated with query, can be set by query response handler
         # and subsequently provided to the remote client
         self._url = None
+        # Command returned by query
+        self._command = None
         # Client id, if known
         self._client_id = client_id
         # Source of answer to query
@@ -518,6 +520,14 @@ class Query:
         self._url = u
 
     @property
+    def command(self):
+        """ JS command associated with this query """
+        return self._command
+
+    def set_command(self, u):
+        self._command = u
+
+    @property
     def source(self):
         """ Source of answer to this query """
         return self._source
@@ -679,6 +689,9 @@ class Query:
         # ...and a URL, if any has been set by the query processor
         if self.url:
             result["open_url"] = self.url
+        # ...and a command, if any has been set
+        if self.command:
+            result["command"] = self.command
         # .. and the source, if set by query processor
         if self.source:
             result["source"] = self.source
