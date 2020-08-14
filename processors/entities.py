@@ -96,6 +96,15 @@ NOT_ENTITIES = {
     "hvers",
     "ekki",
     "ja",
+    "hundrað",
+    "hundruð",
+    "hundruðir",
+    "þúsund",
+    "þúsundir",
+    "milljón",
+    "milljónir",
+    "milljarður",
+    "milljarðar",
 }
 
 # Lower-case abbreviations that are allowed to be a part of entity names
