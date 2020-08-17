@@ -48,7 +48,7 @@ import random
 from datetime import datetime, timedelta
 
 from queries import gen_answer, query_json_api, is_plural
-from geo import distance, isocode_for_country_name, ICE_PLACENAME_BLACKLIST
+from geo import distance, in_iceland, isocode_for_country_name, ICE_PLACENAME_BLACKLIST
 from iceaddr import placename_lookup
 from iceweather import observation_for_closest, observation_for_station, forecast_text
 
@@ -383,14 +383,6 @@ _RVK_COORDS = (64.133097, -21.898145)
 def _near_capital_region(loc):
     """ Returns true if location coordinates are within 30 km of central Rvk """
     return distance(loc, _RVK_COORDS) < 30
-
-
-_ICELAND_COORDS = (64.9957538607, -18.5739616708)
-
-
-def _in_iceland(loc, km_dist=300):
-    """ Check if coordinates are within or very close to Iceland """
-    return distance(loc, _ICELAND_COORDS) < km_dist
 
 
 def _round_to_nearest_hour(t):

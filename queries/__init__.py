@@ -529,7 +529,7 @@ _PLACES_API_URL = (
     "https://maps.googleapis.com/maps/api/place/findplacefromtext/json?{0}"
 )
 
-_PLACES_LOCBIAS_RADIUS = 3000  # Metres
+_PLACES_LOCBIAS_RADIUS = 10000  # Metres
 
 
 def query_places_api(

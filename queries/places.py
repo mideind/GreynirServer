@@ -31,8 +31,9 @@ import logging
 import re
 from datetime import datetime, timedelta
 
+from geo import in_iceland, iceprep_for_street
 from queries import gen_answer, query_places_api, query_place_details, icequote
-
+from reynir import NounPhrase
 
 _PLACES_QTYPE = "Places"
 
@@ -175,7 +176,7 @@ def answ_address(placename, loc, qtype):
 
 def answ_openhours(placename, loc, qtype):
     # Look up placename in places API
-    res = query_places_api(placename, userloc=loc, fields="opening_hours,place_id")
+    res = query_places_api(placename, userloc=loc)  # , fields="opening_hours,place_id")
 
     if res["status"] != "OK" or "candidates" not in res or not res["candidates"]:
         return gen_answer(_PLACES_API_ERRMSG)
@@ -183,19 +184,42 @@ def answ_openhours(placename, loc, qtype):
     # Use top result
     place = res["candidates"][0]
     place_id = place["place_id"]
-
-    # Check whether the place is currently open
     is_open = place["opening_hours"]["open_now"]
+    needs_disambig = len(res["candidates"]) > 1
+    fmt_addr = place["formatted_address"]
+    street = fmt_addr.split()[0]
+    street_þgf = "{nl:þf}".format(nl=NounPhrase(street))
+
+    # from pprint import pprint
+    # pprint(res["candidates"])
+
+    # Get place coords
+    lat, lng = (None, None)
+    try:
+        lat = float(place["geometry"]["location"]["lat"])
+        lng = float(place["geometry"]["location"]["lng"])
+    except:
+        return gen_answer(_PLACES_API_ERRMSG)
+
+    # Make sure it's in Iceland
+    if not in_iceland((lat, lng)):
+        return gen_answer("Enginn staður með þetta heiti fannst á Íslandi")
+
+    print(place)
 
     # Look up place ID in Place Details API to get more information
-    res = query_place_details(place_id, fields="opening_hours")
+    res = query_place_details(place_id, fields="opening_hours,name")
     if res["status"] != "OK" or not res or "result" not in res:
         return gen_answer(_PLACES_API_ERRMSG)
 
     now = datetime.utcnow()
-    wday = now.weekday()
+    wday = int(now.strftime("%w"))  # Sun is index 0, as req. by Google API
 
     try:
+        name = res["result"]["name"]
+        if needs_disambig:
+            name = "{0} {1} {2}".format(name, iceprep_for_street(street), street_þgf)
+
         # Get opening hours for current weekday
         periods = res["result"]["opening_hours"]["periods"]
         p = periods[wday]
@@ -207,7 +231,7 @@ def answ_openhours(placename, loc, qtype):
         closestr = closes[:2] + ":" + opens[2:]
         p_desc = "{0} - {1}".format(openstr, closestr)
         p_voice = p_desc.replace("-", "til")
-        today_desc = "Í dag er opið frá {0}".format(p_voice)
+        today_desc = "Í dag er {0} opin frá {1}".format(name, p_voice)
     except:
         logging.warning("Exception generating answer for opening hours: {0}".format(e))
         return gen_answer(_PLACES_API_ERRMSG)

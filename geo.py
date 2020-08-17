@@ -726,6 +726,14 @@ def distance(loc1, loc2):
     return _EARTH_RADIUS * c
 
 
+ICELAND_COORDS = (64.9957538607, -18.5739616708)
+
+
+def in_iceland(loc, km_dist=300):
+    """ Check if coordinates are within or very close to Iceland """
+    return distance(loc, ICELAND_COORDS) < km_dist
+
+
 if __name__ == "__main__":
     """ Test location info lookup via command line. """
     name = sys.argv[1] if len(sys.argv) > 1 else None
