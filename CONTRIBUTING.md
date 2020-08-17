@@ -4,8 +4,8 @@ Greynir is open source software, licensed under the GNU GPLv3 license.
 
 Your contributions to this software, via pull requests to
 [our GitHub repository](https://github.com/mideind/Greynir) or by other
-means, are greatly appreciated. They help the Icelandic
-language to survive and thrive in a digital world.
+means, are greatly appreciated. They help the Icelandic language to survive
+and thrive in a digital world.
 
 That said, and to avoid any misunderstanding, we would like to bring your
 attention to the following before you decide to contribute to our repository:
@@ -33,6 +33,6 @@ attention to the following before you decide to contribute to our repository:
 
 ---
 
-If you have question regarding this, please do not hesitate to contact
-us at [mideind@mideind.is](mailto:mideind@mideind.is) for any clarifications
-before making your contribution.
+If you have question regarding this, please do not hesitate to contact us at
+[mideind@mideind.is](mailto:mideind@mideind.is) for any clarifications before
+making your contribution.
