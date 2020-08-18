@@ -24,16 +24,21 @@
 
 """
 
-# TODO: "Hvert er heimilisfangið á Forréttabarnum?"
-# TODO: "Á hvaða götu er Slippbarinn?"
 
 import logging
 import re
 from datetime import datetime, timedelta
 
 from geo import in_iceland, iceprep_for_street
-from queries import gen_answer, query_places_api, query_place_details, icequote
+from queries import (
+    gen_answer,
+    query_places_api,
+    query_place_details,
+    icequote,
+    numbers_to_neutral,
+)
 from reynir import NounPhrase
+
 
 _PLACES_QTYPE = "Places"
 
@@ -72,15 +77,15 @@ QPlacesOpeningHours →
     | "hvað" "er" "langt" "í" "lokun" QPlacesPrepAndSubject
     | "hvað" "er" "langt" "í" "lokun" QPlacesSubjectEf
     | "hvenær" "er" "opið" QPlacesPrepAndSubject
-    | "hvað" "er" QPlacesSubjectNf QPlacesOpen "lengi"
+    | "hvað" "er" QPlacesSubjectNf QPlOpen "lengi"
 
 QPlacesIsOpen →
     "er" "opið" QPlacesPrepAndSubject
-    | "er" QPlacesSubjectNf QPlacesOpen
+    | "er" QPlacesSubjectNf QPlOpen
 
 QPlacesIsClosed →
     "er" "lokað" QPlacesPrepAndSubject
-    | "er" QPlacesSubjectNf QPlacesClosed
+    | "er" QPlacesSubjectNf QPlClosed
 
 QPlacesAddress →
     "hvert" "er" "heimilisfangið" QPlacesPrepAndSubject
@@ -94,24 +99,34 @@ QPlacesAddress →
     | QPlacesPreposition "hvaða" "stræti" "er" QPlacesSubjectNf
 
 QPlacesPrepAndSubject →
-    QPlacesPreposition QPlacesSubjectÞgf
-
-QPlacesSubjectÞgf →
-    Nl_þgf
+    QPlacesPrepWithÞgf QPlacesSubjectÞgf
+    | QPlacesPrepWithÞf QPlacesSubjectÞf
 
 QPlacesSubjectNf →
     Nl_nf
+
+QPlacesSubjectÞf →
+    Nl_þf
+
+QPlacesSubjectÞgf →
+    Nl_þgf
 
 QPlacesSubjectEf →
     Nl_ef
 
 QPlacesPreposition →
-    "á" | "í" | "hjá" | "við" | "fyrir"
+    QPlacesPrepWithÞf | QPlacesPrepWithÞgf
 
-QPlacesOpen →
+QPlacesPrepWithÞgf →
+    "á" | "í" | "hjá"
+
+QPlacesPrepWithÞf →
+    "við" | "fyrir"
+
+QPlOpen →
     "opið" | "opin" | "opinn"
 
-QPlacesClosed →
+QPlClosed →
     "lokað" | "lokuð" | "lokaður"
 
 $score(+35) QPlacesQuery
@@ -151,25 +166,57 @@ def QPlacesSubjectNf(node, params, result):
     result["subject_nom"] = _fix_placename(result._nominative)
 
 
-QPlacesSubjectÞgf = QPlacesSubjectEf = QPlacesSubjectNf
+QPlacesSubjectEf = QPlacesSubjectÞgf = QPlacesSubjectÞf = QPlacesSubjectNf
 
 
 _PLACES_API_ERRMSG = "Ekki tókst að fletta upp viðkomandi stað"
 _NOT_ICELAND_ERRMSG = "Enginn staður með þetta heiti fannst á Íslandi"
 
 
+def _parse_coords(place_dict):
+    lat, lng = (None, None)
+    try:
+        lat = float(place["geometry"]["location"]["lat"])
+        lng = float(place["geometry"]["location"]["lng"])
+    except:
+        pass
+    return (lat, lng)
+
+
 def answ_address(placename, loc, qtype):
     # Look up placename in places API
-    res = query_places_api(placename, userloc=loc, fields="formatted_address")
+    res = query_places_api(
+        placename, userloc=loc, fields="formatted_address,name,geometry"
+    )
 
     if res["status"] != "OK" or "candidates" not in res or not res["candidates"]:
         return gen_answer(_PLACES_API_ERRMSG)
 
     # Use top result
     place = res["candidates"][0]
-    addr = re.sub(r", Ísland$", "", place["formatted_address"])
 
-    answer = voice = addr
+    # Make sure it's in Iceland. We can't properly handle foreign
+    # placenames with Icelandic speech recognition/synthesis anway.
+    coords = _parse_coords(place)
+    if None in coords or not in_iceland(coords):
+        return gen_answer(_NOT_ICELAND_ERRMSG)
+
+    # Remove superfluous "Ísland" in addr string
+    addr = re.sub(r", Ísland$", "", place["formatted_address"])
+    # Get street name without number to get preposition
+    street_name = addr.split()[0].rstrip(",")
+    prep = iceprep_for_street(street_name)
+    # Split addr into street name w. number, and remainder
+    street_addr = addr.split(",")[0]
+    remaining = re.sub(r"^{0}".format(street_addr), "", addr)
+    # Get street name in dative case
+    addr_þgf = NounPhrase(street_addr).dative
+    # Assemble final address
+    final_addr = "{0}{1}".format(addr_þgf, remaining)
+
+    # Create answer
+    answer = final_addr
+    voice = "{0} er {1} {2}".format(placename, prep, numbers_to_neutral(final_addr))
     response = dict(answer=answer)
 
     return response, answer, voice
@@ -195,17 +242,9 @@ def answ_openhours(placename, loc, qtype):
     # from pprint import pprint
     # pprint(res["candidates"])
 
-    # Get place coords
-    lat, lng = (None, None)
-    try:
-        lat = float(place["geometry"]["location"]["lat"])
-        lng = float(place["geometry"]["location"]["lng"])
-    except:
-        return gen_answer(_PLACES_API_ERRMSG)
-    coords = (lat, lng)
-
     # Make sure it's in Iceland. We can't properly handle foreign
-    # placenames with Icelandic speech recognition anway.
+    # placenames with Icelandic speech recognition/synthesis anway.
+    coords = _parse_coords(place)
     if None in coords or not in_iceland(coords):
         return gen_answer(_NOT_ICELAND_ERRMSG)
 
