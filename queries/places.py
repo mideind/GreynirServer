@@ -106,7 +106,7 @@ QPlacesSubjectEf →
     Nl_ef
 
 QPlacesPreposition →
-    "á" | "í" | "hjá" | "við"
+    "á" | "í" | "hjá" | "við" | "fyrir"
 
 QPlacesOpen →
     "opið" | "opin" | "opinn"
@@ -210,7 +210,7 @@ def answ_openhours(placename, loc, qtype):
         return gen_answer(_NOT_ICELAND_ERRMSG)
 
     # Look up place ID in Place Details API to get more information
-    res = query_place_details(place_id, fields="opening_hours,name,business_status")
+    res = query_place_details(place_id, fields="opening_hours,name")
     if res["status"] != "OK" or not res or "result" not in res:
         return gen_answer(_PLACES_API_ERRMSG)
 
@@ -218,7 +218,6 @@ def answ_openhours(placename, loc, qtype):
 
     now = datetime.utcnow()
     # Sun is index 0, as req. by Google API
-    # The weekday() function starts w. Monday
     wday = int(now.strftime("%w"))
 
     try:
@@ -242,7 +241,7 @@ def answ_openhours(placename, loc, qtype):
         p_voice = p_desc.replace("-", "til")
         # TODO: opin vs. opinn vs. opið
         today_desc = "Í dag er {0} opin frá {1}".format(name, p_voice)
-    except:
+    except Exception as e:
         logging.warning("Exception generating answer for opening hours: {0}".format(e))
         return gen_answer(_PLACES_API_ERRMSG)
 

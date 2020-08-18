@@ -259,6 +259,11 @@ def test_geo():
     assert capitalize_placename("bosnía og hersegóvína") == "Bosnía og Hersegóvína"
     assert capitalize_placename("Norður-Makedónía") == "Norður-Makedónía"
 
+    # Distance
+    assert int(distance((64.141439, -21.943944), (65.688131, -18.102528))) == 249
+    assert in_iceland((66.462205, -15.968417))
+    assert not in_iceland((62.010846, -6.776709))
+    assert not in_iceland((62.031342, -18.539553))
 
 def test_doc():
     """ Test document-related functions in doc.py """

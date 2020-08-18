@@ -649,7 +649,7 @@ def sentence(state, result):
         q.set_key(result.qkey)
 
         # Asking for a location outside Iceland
-        if q.location and not _in_iceland(q.location):
+        if q.location and not in_iceland(q.location):
             return gen_answer("Ég þekki ekki til veðurs utan Íslands")
 
         handler_func = _HANDLERS[result.qkey]
