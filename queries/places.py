@@ -173,7 +173,7 @@ _PLACES_API_ERRMSG = "Ekki tókst að fletta upp viðkomandi stað"
 _NOT_ICELAND_ERRMSG = "Enginn staður með þetta heiti fannst á Íslandi"
 
 
-def _parse_coords(place_dict):
+def _parse_coords(place):
     lat, lng = (None, None)
     try:
         lat = float(place["geometry"]["location"]["lat"])
@@ -195,8 +195,7 @@ def answ_address(placename, loc, qtype):
     # Use top result
     place = res["candidates"][0]
 
-    # Make sure it's in Iceland. We can't properly handle foreign
-    # placenames with Icelandic speech recognition/synthesis anway.
+    # Make sure it's in Iceland
     coords = _parse_coords(place)
     if None in coords or not in_iceland(coords):
         return gen_answer(_NOT_ICELAND_ERRMSG)
@@ -236,14 +235,13 @@ def answ_openhours(placename, loc, qtype):
     place = res["candidates"][0]
     place_id = place["place_id"]
     is_open = place["opening_hours"]["open_now"]
-    needs_disambig = len(res["candidates"]) > 1
+    # needs_disambig = len(res["candidates"]) > 1
     fmt_addr = place["formatted_address"]
 
     # from pprint import pprint
     # pprint(res["candidates"])
 
-    # Make sure it's in Iceland. We can't properly handle foreign
-    # placenames with Icelandic speech recognition/synthesis anway.
+    # Make sure it's in Iceland
     coords = _parse_coords(place)
     if None in coords or not in_iceland(coords):
         return gen_answer(_NOT_ICELAND_ERRMSG)
@@ -253,19 +251,16 @@ def answ_openhours(placename, loc, qtype):
     if res["status"] != "OK" or not res or "result" not in res:
         return gen_answer(_PLACES_API_ERRMSG)
 
-    print(res)
-
     now = datetime.utcnow()
     # Sun is index 0, as req. by Google API
     wday = int(now.strftime("%w"))
 
     try:
         name = res["result"]["name"]
-        if True or needs_disambig:
-            # E.g. "Forréttabarinn á Nýlendugötu"
-            street = fmt_addr.split()[0].rstrip(",")
-            street_þgf = "{nl:þgf}".format(nl=NounPhrase(street))
-            name = "{0} {1} {2}".format(name, iceprep_for_street(street), street_þgf)
+        # Generate placename w. street, e.g. "Forréttabarinn á Nýlendugötu"
+        street = fmt_addr.split()[0].rstrip(",")
+        street_þgf = "{nl:þgf}".format(nl=NounPhrase(street))
+        name = "{0} {1} {2}".format(name, iceprep_for_street(street), street_þgf)
 
         # Get opening hours for current weekday
         periods = res["result"]["opening_hours"]["periods"]
