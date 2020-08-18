@@ -53,8 +53,8 @@ For example:
 ```
 mkdir ~/pypy
 cd ~/pypy
-wget https://bitbucket.org/pypy/pypy/downloads/pypy3-v6.0.0-linux64.tar.bz2
-tar --strip-components=1 -xvf pypy3-v6.0.0-linux64.tar.bz2
+wget https://bitbucket.org/pypy/pypy/downloads/pypy3.6-v7.3.1-linux64.tar.bz2
+tar --strip-components=1 -xvf pypy3.6-v7.3.1-linux64.tar.bz2
 ```
 
 The PyPy binary should now be installed in `~/pypy/bin/pypy3`.
