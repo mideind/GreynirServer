@@ -20,7 +20,7 @@
 
 
     This module handles queries related to places (shops, businesses, etc.)
-    such as opening hours, location, distance, etc. Uses Google's Places API.
+    such as opening hours, location, address, etc. Uses Google's Places API.
 
 """
 
@@ -54,7 +54,7 @@ Query →
     QPlacesQuery '?'?
 
 QPlacesQuery →
-    QPlacesOpeningHours | QPlacesIsOpen | QPlacesIsClosed | QPlacesAddress
+    QPlacesOpeningHours QPlToday? | QPlacesIsOpen | QPlacesIsClosed | QPlacesAddress
 
 QPlacesOpeningHours →
     "hvað" "er" "opið" "lengi" QPlacesPrepAndSubject
@@ -80,12 +80,12 @@ QPlacesOpeningHours →
     | "hvað" "er" QPlacesSubjectNf QPlOpen "lengi"
 
 QPlacesIsOpen →
-    "er" "opið" QPlacesPrepAndSubject
-    | "er" QPlacesSubjectNf QPlOpen
+    "er" "opið" QPlacesPrepAndSubject QPlNow?
+    | "er" QPlacesSubjectNf QPlOpen QPlNow?
 
 QPlacesIsClosed →
-    "er" "lokað" QPlacesPrepAndSubject
-    | "er" QPlacesSubjectNf QPlClosed
+    "er" "lokað" QPlacesPrepAndSubject QPlNow?
+    | "er" QPlacesSubjectNf QPlClosed QPlNow?
 
 QPlacesAddress →
     "hvert" "er" "heimilisfangið" QPlacesPrepAndSubject
@@ -128,6 +128,12 @@ QPlOpen →
 
 QPlClosed →
     "lokað" | "lokuð" | "lokaður"
+
+QPlNow →
+    "núna" | "í" "augnablikinu" | "eins" "og" "stendur" | "nú"
+
+QPlToday →
+    "núna"? "í" "dag"
 
 $score(+35) QPlacesQuery
 
@@ -174,13 +180,13 @@ _NOT_ICELAND_ERRMSG = "Enginn staður með þetta heiti fannst á Íslandi"
 
 
 def _parse_coords(place):
-    lat, lng = (None, None)
     try:
         lat = float(place["geometry"]["location"]["lat"])
         lng = float(place["geometry"]["location"]["lng"])
-    except:
-        pass
-    return (lat, lng)
+        return (lat, lng)
+    except Exception as e:
+        logging.warning("Unable to parse place coords for place {0}: {1}".format(place, e))
+        return None
 
 
 def answ_address(placename, loc, qtype):
@@ -197,7 +203,7 @@ def answ_address(placename, loc, qtype):
 
     # Make sure it's in Iceland
     coords = _parse_coords(place)
-    if None in coords or not in_iceland(coords):
+    if not coords or not in_iceland(coords):
         return gen_answer(_NOT_ICELAND_ERRMSG)
 
     # Remove superfluous "Ísland" in addr string
@@ -243,7 +249,7 @@ def answ_openhours(placename, loc, qtype):
 
     # Make sure it's in Iceland
     coords = _parse_coords(place)
-    if None in coords or not in_iceland(coords):
+    if not coords or not in_iceland(coords):
         return gen_answer(_NOT_ICELAND_ERRMSG)
 
     # Look up place ID in Place Details API to get more information
