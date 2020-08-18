@@ -521,6 +521,8 @@ _I_SUFFIXES = (
     "Lækjargata",
     "hlíð",
     "sund",
+    "garður",
+    "múli",
 )
 
 

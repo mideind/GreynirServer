@@ -155,6 +155,7 @@ QPlacesSubjectÞgf = QPlacesSubjectEf = QPlacesSubjectNf
 
 
 _PLACES_API_ERRMSG = "Ekki tókst að fletta upp viðkomandi stað"
+_NOT_ICELAND_ERRMSG = "Enginn staður með þetta heiti fannst á Íslandi"
 
 
 def answ_address(placename, loc, qtype):
@@ -176,8 +177,11 @@ def answ_address(placename, loc, qtype):
 
 def answ_openhours(placename, loc, qtype):
     # Look up placename in places API
-    res = query_places_api(placename, userloc=loc)  # , fields="opening_hours,place_id")
-
+    res = query_places_api(
+        placename,
+        userloc=loc,
+        fields="opening_hours,place_id,formatted_address,geometry",
+    )
     if res["status"] != "OK" or "candidates" not in res or not res["candidates"]:
         return gen_answer(_PLACES_API_ERRMSG)
 
@@ -187,8 +191,6 @@ def answ_openhours(placename, loc, qtype):
     is_open = place["opening_hours"]["open_now"]
     needs_disambig = len(res["candidates"]) > 1
     fmt_addr = place["formatted_address"]
-    street = fmt_addr.split()[0]
-    street_þgf = "{nl:þf}".format(nl=NounPhrase(street))
 
     # from pprint import pprint
     # pprint(res["candidates"])
@@ -200,24 +202,31 @@ def answ_openhours(placename, loc, qtype):
         lng = float(place["geometry"]["location"]["lng"])
     except:
         return gen_answer(_PLACES_API_ERRMSG)
+    coords = (lat, lng)
 
-    # Make sure it's in Iceland
-    if not in_iceland((lat, lng)):
-        return gen_answer("Enginn staður með þetta heiti fannst á Íslandi")
-
-    print(place)
+    # Make sure it's in Iceland. We can't properly handle foreign
+    # placenames with Icelandic speech recognition anway.
+    if None in coords or not in_iceland(coords):
+        return gen_answer(_NOT_ICELAND_ERRMSG)
 
     # Look up place ID in Place Details API to get more information
-    res = query_place_details(place_id, fields="opening_hours,name")
+    res = query_place_details(place_id, fields="opening_hours,name,business_status")
     if res["status"] != "OK" or not res or "result" not in res:
         return gen_answer(_PLACES_API_ERRMSG)
 
+    print(res)
+
     now = datetime.utcnow()
-    wday = int(now.strftime("%w"))  # Sun is index 0, as req. by Google API
+    # Sun is index 0, as req. by Google API
+    # The weekday() function starts w. Monday
+    wday = int(now.strftime("%w"))
 
     try:
         name = res["result"]["name"]
-        if needs_disambig:
+        if True or needs_disambig:
+            # E.g. "Forréttabarinn á Nýlendugötu"
+            street = fmt_addr.split()[0].rstrip(",")
+            street_þgf = "{nl:þgf}".format(nl=NounPhrase(street))
             name = "{0} {1} {2}".format(name, iceprep_for_street(street), street_þgf)
 
         # Get opening hours for current weekday
@@ -231,6 +240,7 @@ def answ_openhours(placename, loc, qtype):
         closestr = closes[:2] + ":" + opens[2:]
         p_desc = "{0} - {1}".format(openstr, closestr)
         p_voice = p_desc.replace("-", "til")
+        # TODO: opin vs. opinn vs. opið
         today_desc = "Í dag er {0} opin frá {1}".format(name, p_voice)
     except:
         logging.warning("Exception generating answer for opening hours: {0}".format(e))
