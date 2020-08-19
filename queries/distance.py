@@ -55,6 +55,7 @@ _QDISTANCE_REGEXES = (
     r"^hve langt er ég frá (.+)$",
     r"^hvað er langt\s?(?:héðan)?\s?(?:austur|vestur|norður|suður)? á (.+)$",
     r"^hvað er langt\s?(?:héðan)? upp á (.+)$",
+    r"^hvað er langt\s?(?:héðan)? niður á (.+)$",
     r"^hvað er langt\s?(?:héðan)?\s?(?:austur|vestur|norður|suður)? í ([^0-9.].+)$",
     r"^hvað er langt\s?(?:héðan)? upp í (.+)$",
     r"^hvað er langt\s?(?:héðan)? til (.+)$",

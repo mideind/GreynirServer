@@ -228,8 +228,9 @@ _RUDE = (
 
 def _rudeness(qs, q):
     # Sigh + response
-    answ = "<amazon:breath duration=\"long\" volume=\"x-loud\"/> {1}".format(choice(_RUDE))
-    return { "answer": answ, "is_question": False }
+    answ = choice(_RUDE)
+    voice = "<amazon:breath duration=\"long\" volume=\"x-loud\"/> {0}".format(answ)
+    return { "answer": answ, "voice": voice, "is_question": False }
 
 
 def _open_embla_url(qs, q):
@@ -647,6 +648,8 @@ _SPECIAL_QUERIES = {
     "heyrir þú það sem ég segi": _YES,
     "heyrirðu það sem ég er að segja": _YES,
     "heyrir þú það sem ég er að segja": _YES,
+    "ertu ennþá í gangi": _YES,
+    "ertu í gangi": _YES,
     "ertu að njósna": _NO,
     "ertu að njósna um mig": _NO,
 
@@ -754,6 +757,8 @@ _SPECIAL_QUERIES = {
     "ert þú ástfangin af mér": _ROMANCE,
     "ertu ástfangin": _ROMANCE,
     "ert þú ástfangin": _ROMANCE,
+    "áttu kærasta": _ROMANCE,
+    "átt þú kærasta": _ROMANCE,
     "ertu gift": {
         "answer": "Já, ég er gift vinnunni og hef engan tíma fyrir rómantík."
     },
@@ -833,6 +838,8 @@ _SPECIAL_QUERIES = {
     "spilaðu tónlist fyrir mig": _play_music,
     "viltu spila fyrir mig tónlist": _play_music,
     "viltu spila einhverja tónlist fyrir mig": _play_music,
+    "spilaðu gott lag": _play_music,
+    "spilaðu góða tónlist": _play_music,
 
     # Blame
     "ekki rétt": _sorry,
@@ -925,6 +932,7 @@ _SPECIAL_QUERIES = {
     "hæ embla": _HELLO_DEAR,
     "halló embla": _HELLO_DEAR,
     "hæ": _HELLO_DEAR,
+    "hæhæ": _HELLO_DEAR,
     "halló": _HELLO_DEAR,
     "sæl": _HELLO_DEAR,
     "sæll": _HELLO_DEAR,
@@ -1213,6 +1221,9 @@ _SPECIAL_QUERIES = {
     "hvaða kvikmyndum mælirðu með": _FAVORITE_FILM,
     "hvað er góð kvikmynd": _FAVORITE_FILM,
     "nefndu góða kvikmynd": _FAVORITE_FILM,
+    "geturðu mælt með kvikmynd": _FAVORITE_FILM,
+    "geturðu mælt með einhverri kvikmynd": _FAVORITE_FILM,
+    "hvað mynd mælirðu með": _FAVORITE_FILM,
 
     # Age
     "hvað ertu gömul": _CREATION_DATE,
@@ -1305,6 +1316,8 @@ _SPECIAL_QUERIES = {
         "answer": "Það er ýmislegt sem ég veit ekki."
     },
     "veist þú eitthvað": _capabilities,
+    "hvað geturðu sagt mer": _capabilities,
+    "hvað getur þú sagt mer": _capabilities,
 
     "hvað get ég spurt þig um": _capabilities,
     "hvað get ég beðið þig um": _capabilities,
