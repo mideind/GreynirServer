@@ -54,7 +54,10 @@ Query →
     QPlacesQuery '?'?
 
 QPlacesQuery →
-    QPlacesOpeningHours QPlToday? | QPlacesIsOpen | QPlacesIsClosed | QPlacesAddress
+    QPlacesOpeningHoursNow | QPlacesIsOpen | QPlacesIsClosed | QPlacesAddress
+
+QPlacesOpeningHoursNow →
+    QPlacesOpeningHours QPlToday?
 
 QPlacesOpeningHours →
     "hvað" "er" "opið" "lengi" QPlacesPrepAndSubject
@@ -78,6 +81,8 @@ QPlacesOpeningHours →
     | "hvað" "er" "langt" "í" "lokun" QPlacesSubjectEf
     | "hvenær" "er" "opið" QPlacesPrepAndSubject
     | "hvað" "er" QPlacesSubjectNf QPlOpen "lengi"
+    | "hve" "lengi" "er" QPlacesSubjectNf QPlOpen
+    | "hversu" "lengi" "er" QPlacesSubjectNf QPlOpen
 
 QPlacesIsOpen →
     "er" "opið" QPlacesPrepAndSubject QPlNow?
@@ -133,7 +138,7 @@ QPlNow →
     "núna" | "í" "augnablikinu" | "eins" "og" "stendur" | "nú"
 
 QPlToday →
-    "núna"? "í" "dag"
+    "núna"? "í" "dag" | "núna"? "í" "kvöld"
 
 $score(+35) QPlacesQuery
 
@@ -185,8 +190,10 @@ def _parse_coords(place):
         lng = float(place["geometry"]["location"]["lng"])
         return (lat, lng)
     except Exception as e:
-        logging.warning("Unable to parse place coords for place {0}: {1}".format(place, e))
-        return None
+        logging.warning(
+            "Unable to parse place coords for place {0}: {1}".format(place, e)
+        )
+    return None
 
 
 def answ_address(placename, loc, qtype):
@@ -237,15 +244,18 @@ def answ_openhours(placename, loc, qtype):
     if res["status"] != "OK" or "candidates" not in res or not res["candidates"]:
         return gen_answer(_PLACES_API_ERRMSG)
 
+    from pprint import pprint
+    pprint(res)
+
     # Use top result
     place = res["candidates"][0]
+    if not "opening_hours" in place:
+        return gen_answer("Ekki tókst að sækja opnunartíma fyrir " + icequote(placename))
+
     place_id = place["place_id"]
     is_open = place["opening_hours"]["open_now"]
     # needs_disambig = len(res["candidates"]) > 1
     fmt_addr = place["formatted_address"]
-
-    # from pprint import pprint
-    # pprint(res["candidates"])
 
     # Make sure it's in Iceland
     coords = _parse_coords(place)
@@ -256,6 +266,8 @@ def answ_openhours(placename, loc, qtype):
     res = query_place_details(place_id, fields="opening_hours,name")
     if res["status"] != "OK" or not res or "result" not in res:
         return gen_answer(_PLACES_API_ERRMSG)
+
+    pprint(res)
 
     now = datetime.utcnow()
     # Sun is index 0, as req. by Google API
@@ -270,17 +282,20 @@ def answ_openhours(placename, loc, qtype):
 
         # Get opening hours for current weekday
         periods = res["result"]["opening_hours"]["periods"]
-        p = periods[wday]
-        opens = p["open"]["time"]
-        closes = p["close"]["time"]
-
-        # Format correctly
-        openstr = opens[:2] + ":" + opens[2:]
-        closestr = closes[:2] + ":" + opens[2:]
-        p_desc = "{0} - {1}".format(openstr, closestr)
-        p_voice = p_desc.replace("-", "til")
-        # TODO: opin vs. opinn vs. opið
-        today_desc = "Í dag er {0} opin frá {1}".format(name, p_voice)
+        if len(periods) == 1 or wday > len(periods)-1:
+            # Open 24 hours a day
+            today_desc = p_desc = "{0} er opin allan sólarhringinn".format(name)
+        else:
+            p = periods[wday]
+            opens = p["open"]["time"]
+            closes = p["close"]["time"]
+            # Format correctly
+            openstr = opens[:2] + ":" + opens[2:]
+            closestr = closes[:2] + ":" + opens[2:]
+            p_desc = "{0} - {1}".format(openstr, closestr)
+            p_voice = p_desc.replace("-", "til")
+            # TODO: opin vs. opinn vs. opið
+            today_desc = "Í dag er {0} opin frá {1}".format(name, p_voice)
     except Exception as e:
         logging.warning("Exception generating answer for opening hours: {0}".format(e))
         return gen_answer(_PLACES_API_ERRMSG)

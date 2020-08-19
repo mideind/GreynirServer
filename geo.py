@@ -518,11 +518,13 @@ _I_SUFFIXES = (
     "tangi",
     "nes",
     "stræti",
-    "Lækjargata",
     "hlíð",
     "sund",
     "garður",
     "múli",
+    "fen",
+    "Lækjargata",
+    "Skeifan",
 )
 
 
