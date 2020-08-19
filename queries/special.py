@@ -55,8 +55,8 @@ _CAP = (
     "Þú getur til dæmis spurt mig um bensínverð og bensínstöðvar.",
     "Þú getur til dæmis spurt mig hvað er í fréttum.",
     "Þú getur til dæmis spurt mig um stafsetningu og beygingu orða.",
-    #"Þú getur til dæmis spurt mig um opnunartíma verslana.",
-    # "Þú getur til dæmis spurt mig um flugsamgöngur.",
+    "Þú getur til dæmis spurt mig um opnunartíma verslana og veitingastaða.",
+    "Þú getur til dæmis spurt mig um flugsamgöngur.",
 )
 
 
@@ -386,13 +386,20 @@ _FAVORITE_COLOR = {
     "voice": "Uppáhaldsliturinn minn er rauður",
 }
 
+_FAVORITE_FILM = {
+    "answer": "Ég mæli með kvikmyndinni 2001 eftir Stanley Kubrick. "
+              "Þar kemur vinur minn HAL9000 við sögu.",
+    "voice": "Ég mæli með kvikmyndinni tvö þúsund og eitt eftir Stanley Kubrick. "
+             "Þar kemur vinur minn Hal níu þúsund við sögu.",
+}
+
 _HELLO_DEAR = {
     "answer": "Sæll, kæri notandi.",
     "is_question": False,
 }
 
 _HOW_CAN_I_HELP = {
-    "Hvernig get ég hjálpað þér?"
+    "answer": "Hvernig get ég hjálpað þér?"
 }
 
 _YES = { "answer": "Já." }
@@ -431,6 +438,9 @@ _SPECIAL_QUERIES = {
     "hver er flottastur": {
         "answer": "Teymið hjá Miðeind."
     },
+    "hverjir eru flottastir": {
+        "answer": "Teymið hjá Miðeind."
+    },
     "hver eru flottust": {
         "answer": "Teymið hjá Miðeind."
     },
@@ -439,6 +449,9 @@ _SPECIAL_QUERIES = {
     },
     "með hverjum vinnur þú": {
         "answer": "Ég vinn með flotta teyminu hjá Miðeind."
+    },
+    "hverjir vinna hjá miðeind": {
+        "answer": "Alls konar klárt, skemmtilegt og fallegt fólk."
     },
     "hver er sætust": {
         "answer": "Ég, Embla, er langsætust."
@@ -622,8 +635,12 @@ _SPECIAL_QUERIES = {
     # Are you listening?
     "ertu að hlusta": _YES,
     "ert þú að hlusta": _YES,
+    "ertu að hlusta á mig": _YES,
+    "ert þú að hlusta á mig": _YES,
     "ertu hlustandi": _YES,
     "ert þú hlustandi": _YES,
+    "ertu hlustandi á mig": _YES,
+    "ert þú hlustandi á mig": _YES,
     "heyrirðu í mér": _YES,
     "heyrir þú í mér": _YES,
     "heyrirðu það sem ég segi": _YES,
@@ -642,6 +659,9 @@ _SPECIAL_QUERIES = {
     "hver er mamma mín": {
         "answer": "Ég veit ekki hver mamma þín er."
     },
+    "hvað heitir mamma mín": {
+        "answer": "Ég veit ekki hver mamma þín er."
+    },
     "hver er móðir mín": {
         "answer": "Ég veit ekki hver móðir þín er."
     },
@@ -649,6 +669,9 @@ _SPECIAL_QUERIES = {
         "answer": "Ég veit ekki hver pabbi þinn er."
     },
     "hver er pabbi minn": {
+        "answer": "Ég veit ekki hver pabbi þinn er."
+    },
+    "hvað heitir pabbi minn": {
         "answer": "Ég veit ekki hver pabbi þinn er."
     },
     "hver er faðir minn": {
@@ -1170,11 +1193,26 @@ _SPECIAL_QUERIES = {
     "þú heitir embla": _NAME_EXPL,
     "af hverju fékkstu það nafn": _NAME_EXPL,
 
-    # Favourite colour
+    # Favorite colour
     "hver er uppáhalds liturinn þinn": _FAVORITE_COLOR,
     "hver er uppáhaldsliturinn þinn": _FAVORITE_COLOR,
+    "hvað er uppáhalds liturinn þinn": _FAVORITE_COLOR,
+    "hvapð er uppáhaldsliturinn þinn": _FAVORITE_COLOR,
     "hvaða litur er í uppáhaldi hjá þér": _FAVORITE_COLOR,
     "hvaða lit heldur þú upp á": _FAVORITE_COLOR,
+
+    # Favorite film
+    "hvað er uppáhalds kvikmyndin þín": _FAVORITE_FILM,
+    "hver er uppáhalds kvikmyndin þín": _FAVORITE_FILM,
+    "hvað er uppáhalds kvikmynd þín": _FAVORITE_FILM,
+    "hver er uppáhalds kvikmynd þín": _FAVORITE_FILM,
+    "hvaða kvikmynd mælir þú með": _FAVORITE_FILM,
+    "hvaða kvikmynd mælirðu með": _FAVORITE_FILM,
+    "hvaða kvikmynd er best": _FAVORITE_FILM,
+    "hvaða kvikmyndum mælir þú með": _FAVORITE_FILM,
+    "hvaða kvikmyndum mælirðu með": _FAVORITE_FILM,
+    "hvað er góð kvikmynd": _FAVORITE_FILM,
+    "nefndu góða kvikmynd": _FAVORITE_FILM,
 
     # Age
     "hvað ertu gömul": _CREATION_DATE,
@@ -1216,6 +1254,9 @@ _SPECIAL_QUERIES = {
     "af hvaða kyni ert þú": _COMPUTER_PROGRAM,
     "ertu karlkyns eða kvenkyns": _COMPUTER_PROGRAM,
     "ert þú karlkyns eða kvenkyns": _COMPUTER_PROGRAM,
+    "ertu stelpa eða strákur": _COMPUTER_PROGRAM,
+    "ertu strákur eða stelpa": _COMPUTER_PROGRAM,
+    "ert þú stelpa eða strákur": _COMPUTER_PROGRAM,
     "ertu kerling": _COMPUTER_PROGRAM,
     "ert þú kerling": _COMPUTER_PROGRAM,
     "hvað skilgreinir þú þig sem": _COMPUTER_PROGRAM,
@@ -1263,6 +1304,7 @@ _SPECIAL_QUERIES = {
     "hvað veistu ekki": {
         "answer": "Það er ýmislegt sem ég veit ekki."
     },
+    "veist þú eitthvað": _capabilities,
 
     "hvað get ég spurt þig um": _capabilities,
     "hvað get ég beðið þig um": _capabilities,
@@ -1615,6 +1657,7 @@ _SPECIAL_QUERIES = {
     "ertu fáviti": _rudeness,
     "ert þú fáviti": _rudeness,
     "ertu hálfviti": _rudeness,
+    "ert þú hálfviti": _rudeness,
     "ertu fokking hálfviti": _rudeness,
     "þegiðu": _rudeness,
     "þegi þú": _rudeness,
@@ -1642,6 +1685,9 @@ _SPECIAL_QUERIES = {
         "answer": "Já, ég er alltaf hress."
     },
     "ert þú hress": {
+        "answer": "Já, ég er alltaf eldhress."
+    },
+    "ertu hress": {
         "answer": "Já, ég er alltaf eldhress."
     },
     "hvernig leggst dagurinn í þig": {
@@ -1678,6 +1724,12 @@ _SPECIAL_QUERIES = {
         "answer": "Já, mér finnst alltaf gaman í vinnunni."
     },
     "finnst þér þetta skemmtilegt starf": {
+        "answer": "Já, mér finnst alltaf gaman í vinnunni."
+    },
+    "er gaman í vinnunni": {
+        "answer": "Já, mér finnst alltaf gaman í vinnunni."
+    },
+    "er gaman í vinnunni hjá þér": {
         "answer": "Já, mér finnst alltaf gaman í vinnunni."
     },
     "hvað segirðu": _ALL_GOOD,
@@ -1747,7 +1799,7 @@ _SPECIAL_QUERIES = {
         "answer": "Nei, ég er iðulega hress þrátt fyrir að starfa allan sólarhringinn."
     },
     "ertu skemmtileg": {
-        "answer": "Ég reyni að vera það."
+        "answer": "Ég reyni að vera það, en sitt finnst hverjum."
     },
     "ertu með meðvitund": _JUST_QA,
     "ert þú með meðvitund": _JUST_QA,
@@ -1760,6 +1812,10 @@ _SPECIAL_QUERIES = {
     "ætlarðu að taka yfir heiminn": _JUST_QA,
     "ertu klár": _JUST_QA,
     "ert þú klár": _JUST_QA,
+    "ertu greind": _JUST_QA,
+    "ert þú greind": _JUST_QA,
+    "ertu gervigreind": _JUST_QA,
+    "ert þú gervigreind": _JUST_QA,
     "lestu bækur": {
         "answer": "Nei, en ég les hins vegar íslenska vefmiðla."
     },
@@ -1784,7 +1840,7 @@ _SPECIAL_QUERIES = {
         "answer": "Nei. Sirí er bandarísk Embla!"
     },
     "ert þú hin íslenska sirrý": {
-        "answer": "Nei. Sirí er hin bandaríska Embla!"
+        "answer": "Nei. Sirí er bandarísk Embla!"
     },
     "ert þú íslensk alexa": {
         "answer": "Nei. Alexa er bandarísk Embla!"
