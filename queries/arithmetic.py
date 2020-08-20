@@ -33,7 +33,7 @@ import re
 import logging
 import random
 
-from queries import format_icelandic_float, gen_answer
+from queries import iceformat_float, gen_answer
 
 
 _ARITHMETIC_QTYPE = "Arithmetic"
@@ -650,7 +650,7 @@ def calc_arithmetic(query, result):
 
     if isinstance(res, float):
         # Convert result to Icelandic decimal format
-        answer = format_icelandic_float(res)
+        answer = iceformat_float(res)
     else:
         answer = str(res)
 

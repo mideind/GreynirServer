@@ -316,7 +316,7 @@ def distance_desc(km_dist, case="nf", in_metres=1.0, abbr=False):
     # E.g. 7,3 kílómetrar
     if km_dist >= in_metres:
         rounded_km = round(km_dist, 1 if km_dist < 10 else 0)
-        dist = format_icelandic_float(rounded_km)
+        dist = iceformat_float(rounded_km)
         plidx = 1 if is_plural(rounded_km) else 0
         unit_long = "kíló" + _METER_NOUN[plidx][cidx]
         unit = "km" if abbr else unit_long
@@ -346,7 +346,7 @@ def krona_desc(amount, case="nf"):
     assert case in _CASE_ABBR
     cidx = _CASE_ABBR.index(case)
     plidx = 1 if is_plural(amount) else 0
-    return "{0} {1}".format(format_icelandic_float(amount), _KRONA_NOUN[plidx][cidx])
+    return "{0} {1}".format(iceformat_float(amount), _KRONA_NOUN[plidx][cidx])
 
 
 def strip_trailing_zeros(num_str):
@@ -357,7 +357,7 @@ def strip_trailing_zeros(num_str):
     return num_str
 
 
-def format_icelandic_float(fp_num, decimal_places=2, strip_zeros=True):
+def iceformat_float(fp_num, decimal_places=2, strip_zeros=True):
     """ Convert number to Icelandic decimal format string. """
     with changedlocale(category="LC_NUMERIC"):
         fmt = "%.{0}f".format(decimal_places)
@@ -366,6 +366,7 @@ def format_icelandic_float(fp_num, decimal_places=2, strip_zeros=True):
 
 
 def icequote(s):
+    """ Return string surrounded by Icelandic-style quotation marks. """
     return "„{0}“".format(s.strip())
 
 

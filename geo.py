@@ -735,9 +735,9 @@ def distance(loc1, loc2):
 ICELAND_COORDS = (64.9957538607, -18.5739616708)
 
 
-def in_iceland(loc, km_dist=300):
-    """ Check if coordinates are within or very close to Iceland """
-    return distance(loc, ICELAND_COORDS) < km_dist
+def in_iceland(loc, km_radius=300):
+    """ Check if coordinates are within or very close to Iceland. """
+    return distance(loc, ICELAND_COORDS) <= km_radius
 
 
 if __name__ == "__main__":

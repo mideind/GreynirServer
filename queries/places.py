@@ -345,7 +345,6 @@ def sentence(state, result):
             q.set_qtype(result.qtype)
             q.set_key(subj)
         except Exception as e:
-            raise
             logging.warning("Exception answering places query: {0}".format(e))
             q.set_error("E_EXCEPTION: {0}".format(e))
             return
