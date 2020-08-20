@@ -118,6 +118,8 @@ _AIRPORT_ABBR_MAP = {"Köben": "Kaupmannahöfn"}
 
 def handle_plain_text(q):
     """ Handle a plain text query, contained in the q parameter """
+    return False  # This module is disabled for now
+
     ql = q.query_lower.rstrip("?")
 
     airport = None

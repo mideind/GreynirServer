@@ -25,10 +25,7 @@
 """
 
 # TODO: Support TV schedule queries for other stations than RÚV
-# TODO: Support radio schedules
-# http://muninn.ruv.is/files/xml/ras1/2020-08-05/
-# http://muninn.ruv.is/files/xml/ras2/2020-08-05/
-# TODO: Fix formatting issues w. trailing spaces, periods at the end of answer str.
+# TODO: Fix formatting issues w. trailing spaces, periods at the end of answer str
 
 import logging
 import re
@@ -83,7 +80,7 @@ Query →
     QSchedule '?'?
 
 QSchedule →
-    QScheduleTV | QScheduleRadio
+    QScheduleTV # | QScheduleRadio
 
 QScheduleTV →
     QSchTelevisionQuery
