@@ -126,7 +126,7 @@ _TT_MODES = {
 }
 
 _PREPS = ("á", "í", "til")
-_TT_PREP_PREFIX = ("upp", "niður", "vestur", "norður", "austur", "suður", "út")
+_TT_PREP_PREFIX = ("út", "upp", "niður", "vestur", "norður", "austur", "suður")
 _TT_PREPS = []
 
 for p in _PREPS:

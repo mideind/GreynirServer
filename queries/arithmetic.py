@@ -23,8 +23,7 @@
 
 """
 
-# TODO: "hvað er X ÁN vaski/virðisaukaskatti?"
-# TODO: Support pi in arithmetic ops ("Hvað er pí í öðru veldi?")
+# TODO: "hvað er X ÁN vasks/virðisaukaskatts?"
 
 import math
 import json

@@ -75,7 +75,6 @@ _DATE_QTYPE = "Date"
 
 # Lemmas of keywords that could indicate that the user is trying to use this module
 TOPIC_LEMMAS = [
-    "dagur",
     "dagsetning",
     "mánaðardagur",
     "vikudagur",

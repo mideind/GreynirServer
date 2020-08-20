@@ -413,7 +413,7 @@ def fetch_xml(url):
         logging.warning("Received status {0} from server".format(r.status_code))
         return None
 
-    # Parse json API response
+    # Parse XML response
     try:
         xmldoc = minidom.parseString(r.text)
         return xmldoc
@@ -529,7 +529,7 @@ _PLACES_API_URL = (
     "https://maps.googleapis.com/maps/api/place/findplacefromtext/json?{0}"
 )
 
-_PLACES_LOCBIAS_RADIUS = 10000  # Metres
+_PLACES_LOCBIAS_RADIUS = 5000  # Metres
 
 
 def query_places_api(
