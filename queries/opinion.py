@@ -33,6 +33,7 @@ _OPINION_QTYPE = "Opinion"
 
 _OPINION_REGEXES = (
     r"hvað finnst þér um (.+)$",
+    r"hvað finnst þér eiginlega um (.+)$",
     r"hvað þykir þér um (.+)$",
     r"hvaða skoðun hefurðu á (.+)$",
     r"hvaða skoðun hefur þú á (.+)$",
@@ -41,6 +42,8 @@ _OPINION_REGEXES = (
     r"hver er skoðun þín á (.+)$",
     r"hvaða skoðanir hefur þú á (.+)$",
     r"hvaða skoðanir hefurðu á (.+)$",
+    r"hvert er álit þitt á (.+)$",
+    r"hvaða álit hefurðu á (.+)$",
     r"ertu reið yfir (.+)$",
     r"ert þú reið yfir (.+)$",
     r"ertu bitur yfir (.+)$",

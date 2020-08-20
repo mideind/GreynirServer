@@ -35,6 +35,7 @@ from datetime import datetime, timedelta
 from inspect import isfunction
 from random import choice
 
+from queries import icequote
 
 if TYPE_CHECKING:
     # This section is parsed when type checking using Mypy
@@ -168,6 +169,42 @@ _RIDDLES = (
 
 def _random_riddle(qs: str, q: Query) -> AnswerType:
     return {"answer": choice(_RIDDLES), "is_question": False}
+
+
+_QUOTATIONS = (
+    ("Án réttlætis, hvað eru ríki annað en stór glæpafélög?", "Ágústínus kirkjufaðir"),
+    (
+        "Deyr fé, deyja frændur, deyr sjálfur ið sama. En orðstír deyr "
+        "aldregi hveim er sér góðan getur.",
+        "Hávamál",
+    ),
+    (
+        "Því hefur verið haldið fram að íslendíngar beygi sig lítt fyrir skynsamlegum "
+        "rökum, fjármunarökum varla heldur, og þó enn síður fyrir rökum trúarinnar, en "
+        "leysi vandræði sín með því að stunda orðheingilshátt og deila um titlíngaskít "
+        "sem ekki kemur málinu við.",
+        "Halldór Laxness",
+    ),
+    (
+        "Hafi ég séð lengra en aðrir er það vegna þess að ég stend á herðum risa.",
+        "Isaac Newton",
+    ),
+    ("Lífið er dýrt og dauðinn þess borgun.", "Hannes Hafstein"),
+    (
+        "Öfgamaður er sá, sem getur ekki skipt um skoðun og vill ekki skipta um umræðuefni",
+        "Winston Churchill",
+    ),
+    (
+        "Það er ekkert annað heldur gott eða slæmt en hugsun gerir það svo.",
+        "William Shakespeare",
+    ),
+)
+
+
+def _random_quotation(qs: str, q: Query) -> AnswerType:
+    (quote, author) = choice(_QUOTATIONS)
+    answer = "{0} — {1}".format(icequote(quote), author)
+    return {"answer": answer, "is_question": False}
 
 
 def _poetry(qs: str, q: Query) -> AnswerType:
@@ -1372,10 +1409,14 @@ _SPECIAL_QUERIES = {
     "af hverju er himininn blár": _SKY_BLUE,
     "hvers vegna er himininn blár": _SKY_BLUE,
     # Quotations
-    # TODO: Implement this, find witty quotations
-    # "komdu með tilvitnun": _random_quotation,
-    # "komdu með skemmtilega tilvitnun": _random_quotation,
-    # "komdu með einhverja tilvitnun": _random_quotation,
+    "komdu með tilvitnun": _random_quotation,
+    "komdu með skemmtilega tilvitnun": _random_quotation,
+    "komdu með einhverja tilvitnun": _random_quotation,
+    "farðu með tilvitnun": _random_quotation,
+    "farðu með aðra tilvitnun": _random_quotation,
+    "segðu mér tilvitnun": _random_quotation,
+    "tilvitnun": _random_quotation,
+    "komdu með aðra tilvitnun": _random_quotation,
     # Proverbs
     "komdu með málshátt": _random_proverb,
     "komdu með annan málshátt": _random_proverb,
@@ -1525,6 +1566,9 @@ _SPECIAL_QUERIES = {
     "finnst þér þetta skemmtilegt starf": {
         "answer": "Já, mér finnst alltaf gaman í vinnunni."
     },
+    "finnst þér gaman í vinnunni": {
+        "answer": "Já, mér finnst alltaf gaman í vinnunni."
+    },
     "er gaman í vinnunni": {"answer": "Já, mér finnst alltaf gaman í vinnunni."},
     "er gaman í vinnunni hjá þér": {
         "answer": "Já, mér finnst alltaf gaman í vinnunni."
@@ -1582,12 +1626,15 @@ _SPECIAL_QUERIES = {
     "ertu klár": _JUST_QA,
     "ert þú klár": _JUST_QA,
     "ertu greind": _JUST_QA,
+    "ert þú gáfuð": _JUST_QA,
+    "ertu gáfuð": _JUST_QA,
     "ert þú greind": _JUST_QA,
     "ertu gervigreind": _JUST_QA,
     "ert þú gervigreind": _JUST_QA,
     "lestu bækur": {"answer": "Nei, en ég les hins vegar íslenska vefmiðla."},
     "lest þú bækur": {"answer": "Nei, en ég les hins vegar íslenska vefmiðla."},
     "kanntu að lesa": {"answer": "Já, ég les íslenska vefmiðla á hverjum degi."},
+    # What's fun?
     "hvað finnst þér skemmtilegt": {
         "answer": "Mér finnst skemmtilegt að svara fyrirspurnum."
     },
