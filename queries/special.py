@@ -376,7 +376,13 @@ _HELLO_DEAR = {
     "is_question": False,
 }  # type: AnswerType
 
+_CAN_I_LEARN = {
+    "answer": "Ég læri bæði það sem forritararnir kenna mér, og með því að lesa fjölmiðla."
+}  # type: AnswerType
+
 _HOW_CAN_I_HELP = {"answer": "Hvernig get ég hjálpað þér?"}  # type: AnswerType
+
+_SPEAKING_TO_ME = {"answer": "Þú ert að tala við mig, Emblu."}  # type: AnswerType
 
 _YES = {"answer": "Já."}  # type: AnswerType
 _NO = {"answer": "Nei."}  # type: AnswerType
@@ -506,6 +512,7 @@ _SPECIAL_QUERIES = {
     "hver framleiðir emblu": _CREATOR,
     "hver framleiddi þig": _CREATOR,
     "hver á þig": _CREATOR,
+    # Miðeind
     "hvað er miðeind": _ABOUT_MIDEIND,
     "hvaða fyrirtæki er miðeind": _ABOUT_MIDEIND,
     "hvaða fyrirtæki bjó þig til": _ABOUT_MIDEIND,
@@ -646,9 +653,7 @@ _SPECIAL_QUERIES = {
     "ert þú ástfangin": _ROMANCE,
     "áttu kærasta": _ROMANCE,
     "átt þú kærasta": _ROMANCE,
-    "ertu gift": {
-        "answer": "Já, ég er gift vinnunni og hef engan tíma fyrir rómantík."
-    },
+    # Love
     "er ég ástin í lífi þínu": _LOVE_OF_MY_LIFE,
     "hver er ástin í lífi þínu": _LOVE_OF_MY_LIFE,
     "hver er ástin í lífinu þínu": _LOVE_OF_MY_LIFE,
@@ -656,7 +661,11 @@ _SPECIAL_QUERIES = {
     "hvern elskar þú": _LOVE_OF_MY_LIFE,
     "hvað elskarðu": _LOVE_OF_MY_LIFE,
     "hvað elskar þú": _LOVE_OF_MY_LIFE,
-    # Positive affirmation ;)
+    # Marital status
+    "ertu gift": {
+        "answer": "Já, ég er gift vinnunni og hef engan tíma fyrir rómantík."
+    },
+    # Positive affirmation
     "kanntu vel við mig": _OF_COURSE,
     "kannt þú vel við mig": _OF_COURSE,
     "fílarðu mig": _OF_COURSE,
@@ -977,10 +986,12 @@ _SPECIAL_QUERIES = {
     "hvað er leyndarmál lífsins": _MEANING_OF_LIFE,
     "hvert er leyndarmál lífsins": _MEANING_OF_LIFE,
     "hvað er 42": {"answer": "Sex sinnum sjö"},  # :)
+    # What is best in life?
     "hvað er best í lífinu": {"answer": "Að horfa á kvikmynd um villimanninn Kónan."},
     "hvað er það besta í lífinu": {
         "answer": "Að horfa á kvikmynd um villimanninn Kónan."
     },
+    # God
     "er guð dauður": {
         "answer": "Það sagði Nietzsche allavega.",
         "voice": "Það sagði Nítsje alla vega.",
@@ -994,6 +1005,7 @@ _SPECIAL_QUERIES = {
     "hver er skapari heimsins": {"answer": "Enginn sem ég þekki."},
     "hvar endar alheimurinn": {"answer": "Inni í þér."},
     "hvar er draumurinn": {"answer": "Hvar ertu lífið sem ég þrái?"},  # :)
+    # Why am I here?
     "af hverju er ég hérna": _GOOD_QUESTION,
     "afhverju er ég hérna": _GOOD_QUESTION,
     "af hverju er ég til": _GOOD_QUESTION,
@@ -1085,7 +1097,7 @@ _SPECIAL_QUERIES = {
     "geturðu mælt með kvikmynd": _FAVORITE_FILM,
     "geturðu mælt með einhverri kvikmynd": _FAVORITE_FILM,
     "hvað mynd mælirðu með": _FAVORITE_FILM,
-    # Age
+    # Age / genesis
     "hvað ertu gömul": _CREATION_DATE,
     "hvað ert þú gömul": _CREATION_DATE,
     "hversu gömul ert þú": _CREATION_DATE,
@@ -1103,8 +1115,12 @@ _SPECIAL_QUERIES = {
     "hvenær varst þú búin til": _CREATION_DATE,
     "hvenær varstu sköpuð": _CREATION_DATE,
     "hvenær varst þú sköpuð": _CREATION_DATE,
-    # Birthday
+    # User birthday
     "ég á afmæli": {
+        "answer": "Til hamingju með afmælið, kæri notandi.",
+        "is_question": False,
+    },
+    "ég á afmæli í dag": {
         "answer": "Til hamingju með afmælið, kæri notandi.",
         "is_question": False,
     },
@@ -1229,20 +1245,21 @@ _SPECIAL_QUERIES = {
     "hvað annað skilur þú": _capabilities,
     "hvað annað skilurðu": _capabilities,
     # Learning
-    "geturðu lært": {
-        "answer": "Ég læri bæði það sem forritararnir kenna mér, og með því að lesa fjölmiðla."
-    },
-    "getur þú lært": {
-        "answer": "Ég læri bæði það sem forritararnir kenna mér, og með því að lesa fjölmiðla."
-    },
+    "geturðu lært": _CAN_I_LEARN,
+    "getur þú lært": _CAN_I_LEARN,
+    "geturðu lært hluti": _CAN_I_LEARN,
+    "geturðu lært nýja hluti": _CAN_I_LEARN,
+    "ertu fær um að læra": _CAN_I_LEARN,
+    "ertu fær um að læra hluti": _CAN_I_LEARN,
+    "ertu fær um að læra nýja hluti": _CAN_I_LEARN,
     # Food
     "hvað er í matinn": {"answer": "Vonandi eitthvað gott."},
     "hvað er í kvöldmat": {"answer": "Vonandi eitthvað gott."},
     # What's going on?
-    "hvað er í gangi": {"answer": "Þú ert að tala við mig, Emblu."},
-    "hvað er eiginlega í gangi": {"answer": "Þú ert að tala við mig, Emblu."},
-    "við hvern er ég að tala": {"answer": "Þú ert að tala við mig, Emblu."},
-    "við hvern er ég eiginlega að tala": {"answer": "Þú ert að tala við mig, Emblu."},
+    "hvað er í gangi": _SPEAKING_TO_ME,
+    "hvað er eiginlega í gangi": _SPEAKING_TO_ME,
+    "við hvern er ég að tala": _SPEAKING_TO_ME,
+    "við hvern er ég eiginlega að tala": _SPEAKING_TO_ME,
     "hvað ertu að gera": {"answer": "Ég er að svara fyrirspurn frá þér, kæri notandi."},
     "hvað ert þú að gera": {
         "answer": "Ég er að svara fyrirspurn frá þér, kæri notandi."
