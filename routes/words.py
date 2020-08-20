@@ -21,6 +21,8 @@
 
 """
 
+from typing import List, Union, Tuple, Dict, Any
+
 import logging
 
 from . import routes, better_jsonify, cache
@@ -129,12 +131,12 @@ def _desc4word(wc):
 @cache.cached(timeout=60 * 60 * 4, key_prefix="wordfreq", query_string=True)
 def wordfreq():
     """ Return word frequency chart data for a given time period. """
-    resp = dict(err=True)
+    resp = dict(err=True)  # type: Dict[str, Any]
     # Create datetime objects from query string args
     try:
         date_fmt = "%Y-%m-%d"
-        date_from = datetime.strptime(request.args.get("date_from"), date_fmt)
-        date_to = datetime.strptime(request.args.get("date_to"), date_fmt)
+        date_from = datetime.strptime(request.args.get("date_from", ""), date_fmt)
+        date_to = datetime.strptime(request.args.get("date_to", ""), date_fmt)
     except Exception as e:
         logging.warning("Failed to parse date arg: {0}".format(e))
         return better_jsonify(**resp)
@@ -192,9 +194,9 @@ def wordfreq():
     delta = date_to - date_from
     with changedlocale(category="LC_TIME"):
         # Group by week if period longer than 3 months
+        label_date_strings = []  # type: List[Union[str, Tuple[str, str]]]
         if delta.days >= _SHOW_WEEKS_CUTOFF:
             timeunit = "week"
-
             label_dates = [
                 (
                     (date_from + timedelta(days=i * 7)),
@@ -216,23 +218,31 @@ def wordfreq():
                     d2fmt += " %Y"
                 labels.append("{0}-{1}".format(d1.strftime(d1fmt), d2.strftime(d2fmt)))
             # Convert dates to strings for client-side
-            label_dates = [(df.strftime("%Y-%m-%d"), dt.strftime("%Y-%m-%d")) for df, dt in label_dates]
+            label_date_strings = [
+                (df.strftime("%Y-%m-%d"), dt.strftime("%Y-%m-%d"))
+                for df, dt in label_dates
+            ]
         # Group by day
         else:
             timeunit = "day"
-            label_dates = [date_from + timedelta(days=i) for i in range(delta.days)]
+            label_days = [
+                date_from + timedelta(days=i)
+                for i in range(delta.days)
+            ]
             labels = [
                 d.strftime("%-d. %b")
                 if d.year == now.year
                 else d.strftime("%-d. %b %Y")
-                for d in label_dates
+                for d in label_days
             ]
-            label_dates = [d.strftime("%Y-%m-%d") for d in label_dates]
+            label_date_strings = [d.strftime("%Y-%m-%d") for d in label_days]
 
     # Create datasets for front-end chart
     with SessionContext(commit=False) as session:
         colors = list(_LINE_COLORS)
-        data = dict(labels=labels, labelDates=label_dates, datasets=[])
+        data = dict(
+            labels=labels, labelDates=label_date_strings, datasets=[]
+        )  # type: Dict[str, Any]
         for w in words:
             # Look up frequency of word for the given period
             (wd, cat) = w
@@ -263,7 +273,7 @@ def wordfreq():
 @routes.route("/wordfreq_details", methods=["GET", "POST"])
 def wordfreq_details():
     """ Return list of articles containing certain words over a given period. """
-    resp = dict(err=True)
+    resp = dict(err=True)  # type: Dict[str, Any]
 
     words = _str2words(request.args.get("words"))
     if not words:
@@ -272,7 +282,7 @@ def wordfreq_details():
     # Parse date args
     try:
         date_fmt = "%Y-%m-%d"
-        date_from = datetime.strptime(request.args.get("date_from"), date_fmt)
+        date_from = datetime.strptime(request.args.get("date_from", ""), date_fmt)
         dto = request.args.get("date_to")
         if dto:
             date_to = datetime.strptime(dto, date_fmt)

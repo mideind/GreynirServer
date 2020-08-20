@@ -70,6 +70,7 @@ NOT_DEFINITIONS = {
     "hjónanna",
 }
 
+# The following set should contain lowercase words
 NOT_ENTITIES = {
     "þeir",
     "þær",
@@ -94,6 +95,16 @@ NOT_ENTITIES = {
     "hverju",
     "hvers",
     "ekki",
+    "ja",
+    "hundrað",
+    "hundruð",
+    "hundruðir",
+    "þúsund",
+    "þúsundir",
+    "milljón",
+    "milljónir",
+    "milljarður",
+    "milljarðar",
 }
 
 # Lower-case abbreviations that are allowed to be a part of entity names
@@ -107,6 +118,7 @@ def article_begin(state):
     session = state["session"]  # Database session
     url = state["url"]  # URL of the article being processed
     # Delete all existing entities for this article
+    # pylint: disable=no-member
     session.execute(Entity.table().delete().where(Entity.article_url == url))
     # Create a name mapping dict for the article
     state["names"] = dict()  # Last name -> full name
@@ -141,15 +153,29 @@ def sentence(state, result):
                 # Map "Clinton->Hillary Rodham Clinton"
                 names[a[-1]] = n
 
+    DEL_PHRASES = (
+        " sem framleiddur var",
+        " sem framleidd var",
+        " sem framleitt var",
+        " sem haldinn var",
+        " sem haldin var",
+        " sem haldið var",
+        " sem lagt var",
+        " sem var",
+        " sem er",
+        " var",
+    )
+    DEL_PUNCTUATION = (" ,", " .", " :", " !", " ?")
+
     # Process potential entities
     for entity, verb, definition in result.entities:
 
         # Cut off ending punctuation
-        while any(entity.endswith(p) for p in (" ,", " .", " :", " !", " ?")):
+        if entity.endswith(DEL_PUNCTUATION):
             entity = entity[:-2]
 
         # Cut off ending punctuation
-        while any(definition.endswith(p) for p in (" ,", " .", " :", " !", " ?")):
+        if definition.endswith(DEL_PUNCTUATION):
             definition = definition[:-2]
 
         # Cut phrases off the front of the definition
@@ -159,15 +185,28 @@ def sentence(state, result):
                 break
 
         # Cut phrases off the back of the entity
-        for p in (
-            " sem framleiddur var" " sem haldin var",
-            " sem lagt var",
-            " sem var",
-            " var",
-        ):
+        cut = False
+        for p in DEL_PHRASES:
             if entity.endswith(p):
                 entity = entity[: -len(p)]
+                cut = True
                 break
+
+        # Cut off ending punctuation
+        if cut and entity.endswith(DEL_PUNCTUATION):
+            entity = entity[:-2]
+
+        # Cut phrases off the back of the definition
+        cut = False
+        for p in DEL_PHRASES:
+            if definition.endswith(p):
+                definition = definition[: -len(p)]
+                cut = True
+                break
+
+        # Cut off ending punctuation
+        if cut and definition.endswith(DEL_PUNCTUATION):
+            definition = definition[:-2]
 
         # Eliminate white space around hyphens
         entity = entity.replace(" - ", "-")

@@ -25,6 +25,8 @@
 
 # TODO: "hvað er X ÁN vasks/virðisaukaskatts?"
 
+from typing import Dict, Any
+
 import math
 import json
 import re
@@ -432,8 +434,8 @@ def QArFractionWord(node, params, result):
     fn = result._canonical.lower()
     fp = _FRACTION_WORDS.get(fn)
     if not fp:
-        fp = re.sub(r"^einn\s", "", fn)
-        fp = _ORDINAL_WORDS_NOM.get(fp)
+        s = re.sub(r"^einn\s", "", fn)
+        fp = _ORDINAL_WORDS_NOM.get(s)
         if fp:
             fp = 1 / int(fp)
     add_num(fp, result)
@@ -449,7 +451,7 @@ def QArLastResult(node, params, result):
     """ Reference to previous result, usually via the words
         'það' or 'því' ('Hvað er það sinnum sautján?') """
     q = result.state.get("query")
-    ctx = q is not None and q.fetch_context()
+    ctx = None if q is None else q.fetch_context()
     if ctx is None or "result" not in ctx:
         # There is a reference to a previous result
         # which is not available: flag an error
@@ -596,7 +598,7 @@ def calc_arithmetic(query, result):
 
     # Global namespace for eval
     # Block access to all builtins
-    eval_globals = {"__builtins__": None}
+    eval_globals = {"__builtins__": None}  # type: Dict[str, Any]
 
     # Square root calculation
     if operator == "sqrt":

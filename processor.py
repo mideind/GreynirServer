@@ -31,6 +31,9 @@
 
 """
 
+from typing import Optional, List
+from types import ModuleType
+
 import getopt
 import importlib
 import json
@@ -70,12 +73,12 @@ class TokenContainer:
 
     """ Class wrapper around tokens """
 
-    def __init__(self, tokens_json, url, authority):
+    def __init__(self, tokens_json, url, authority) -> None:
         self.tokens = json.loads(tokens_json)
         self.url = url
         self.authority = authority
 
-    def process(self, session, processor, **kwargs):
+    def process(self, session, processor, **kwargs) -> None:
         """ Process tokens for an entire article.  Iterate over each paragraph,
             sentence and token, calling revelant functions in processor module. """
 
@@ -110,7 +113,7 @@ class TokenContainer:
                     str(processor)
                 )
             )
-            return None
+            return
 
         # Initialize state that we keep throughout processing
         state = {
@@ -152,26 +155,28 @@ class Processor:
 
     """ The worker class that processes parsed articles """
 
-    _db = None
+    _db = None  # type: Optional[Scraper_DB]
 
     @classmethod
-    def _init_class(cls):
+    def _init_class(cls) -> None:
         """ Initialize class attributes """
         if cls._db is None:
             cls._db = Scraper_DB()
 
     @classmethod
-    def cleanup(cls):
+    def cleanup(cls) -> None:
         """ Perform any cleanup """
         cls._db = None
 
-    def __init__(self, processor_directory, single_processor=None, num_workers=None):
+    def __init__(
+        self, processor_directory, single_processor=None, num_workers=None
+    ) -> None:
 
         Processor._init_class()
         self.num_workers = num_workers
 
         self.processors = []
-        self.pmodules = None
+        self.pmodules = None  # type: Optional[List[ModuleType]]
 
         # Find .py files in the processor directory
         modnames = modules_in_dir(processor_directory)
@@ -185,17 +190,18 @@ class Processor:
             try:
                 # Try import before we start
                 m = importlib.import_module(modname)
-                ptype = m.PROCESSOR_TYPE
-                print("Imported processor module {0} ({1})".format(modname, ptype))
-                # Successful
-                # Note: we can't append the module object m directly to the
-                # processors list, as it will be shared between processes and
-                # CPython 3 can't pickle module references for IPC transfer.
-                # (PyPy 3.5 does this without problem, however.)
-                # We therefore store just the module names and postpone the
-                # actual import until we go_single() on the first article within
-                # each child process.
-                self.processors.append(modname)
+                ptype = getattr(m, "PROCESSOR_TYPE")
+                if ptype is not None:
+                    print("Imported processor module {0} ({1})".format(modname, ptype))
+                    # Successful
+                    # Note: we can't append the module object m directly to the
+                    # processors list, as it will be shared between processes and
+                    # CPython 3 can't pickle module references for IPC transfer.
+                    # (PyPy 3.5 does this without problem, however.)
+                    # We therefore store just the module names and postpone the
+                    # actual import until we go_single() on the first article within
+                    # each child process.
+                    self.processors.append(modname)
             except Exception as e:
                 print("Error importing processor module {0}: {1}".format(modname, e))
 
@@ -211,9 +217,11 @@ class Processor:
                     "No processors found in directory {0}".format(processor_directory)
                 )
 
-    def go_single(self, url):
+    def go_single(self, url: str) -> None:
         """ Single article processor that will be called by a process within a
             multiprocessing pool """
+
+        assert self._db is not None
 
         print("Processing article {0}".format(url))
         sys.stdout.flush()
@@ -243,15 +251,15 @@ class Processor:
 
                         # Run all processors in turn
                         for p in self.pmodules:
-                            if p.PROCESSOR_TYPE == "tree":
+                            ptype = getattr(p, "PROCESSOR_TYPE")  # type: str
+                            if ptype == "tree":
                                 tree.process(session, p)
-                            elif p.PROCESSOR_TYPE == "token":
+                            elif ptype == "token":
                                 token_container.process(session, p)
                             else:
                                 assert False, (
-                                    "Unknown processor type '"
-                                    + p.PROCESSOR_TYPE
-                                    + "' (should be 'tree' or 'token')"
+                                    "Unknown processor type '{0}'; should be 'tree' or 'token'"
+                                    .format(ptype)
                                 )
 
                     # Mark the article as being processed
@@ -272,11 +280,15 @@ class Processor:
 
         sys.stdout.flush()
 
-    def go(self, from_date=None, limit=0, force=False, update=False, title=None):
+    def go(
+        self, from_date=None, limit=0, force=False, update=False, title=None
+    ) -> None:
         """ Process already parsed articles from the database """
 
         # noinspection PyComparisonWithNone,PyShadowingNames
         def iter_parsed_articles():
+
+            assert self._db is not None
 
             with closing(self._db.session) as session:
                 """ Go through parsed articles and process them """
@@ -335,7 +347,7 @@ def process_articles(
     title=None,
     processor=None,
     num_workers=None,
-):
+) -> None:
     """ Process multiple articles according to the given parameters """
     print("------ Greynir starting processing -------")
     if from_date:
@@ -366,7 +378,7 @@ def process_articles(
         )
         proc.go(from_date, limit=limit, force=force, update=update, title=title)
     finally:
-        proc = None
+        del proc
         Processor.cleanup()
 
     t1 = time.time()
@@ -377,22 +389,22 @@ def process_articles(
     print("Time: {0}\n".format(ts))
 
 
-def process_article(url, processor=None):
+def process_article(url: str, processor=None) -> None:
     """ Process a single article, eventually with a single processor """
     try:
         proc = Processor(processor_directory="processors", single_processor=processor)
         proc.go_single(url)
     finally:
-        proc = None
+        del proc
         Processor.cleanup()
 
 
 class Usage(Exception):
-    def __init__(self, msg):
+    def __init__(self, msg: str) -> None:
         self.msg = msg
 
 
-def init_db():
+def init_db() -> None:
     """ Initialize the database, to the extent required """
     db = Scraper_DB()
     try:
@@ -424,13 +436,13 @@ __doc__ = """
 """
 
 
-def _main(argv=None):
+def _main(argv=None) -> int:
     """ Guido van Rossum's pattern for a Python main function """
     if argv is None:
         argv = sys.argv
     try:
         try:
-            opts, args = getopt.getopt(
+            opts, _ = getopt.getopt(
                 argv[1:],
                 "hifl:u:p:t:w:",
                 [
@@ -446,7 +458,7 @@ def _main(argv=None):
                 ],
             )
         except getopt.error as msg:
-            raise Usage(msg)
+            raise Usage(str(msg))
         limit = 10  # Default number of articles to parse, unless otherwise specified
         init = False
         url = None
@@ -536,7 +548,7 @@ def _main(argv=None):
     return 0
 
 
-def main():
+def main() -> None:
     """ Main function to invoke for profiling """
     import cProfile as profile
     import pstats

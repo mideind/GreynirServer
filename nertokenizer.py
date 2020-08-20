@@ -29,17 +29,21 @@
 
 """
 
+from typing import List, Iterator, Dict, Union, Tuple
+
 from collections import defaultdict
 import logging
 
-from reynir import Abbreviations, TOK
+from reynir import Abbreviations, TOK, Tok
 from reynir.bindb import BIN_Db
 
 from db import SessionContext, OperationalError
 from db.models import Entity
 
 
-def recognize_entities(token_stream, enclosing_session=None, token_ctor=TOK):
+def recognize_entities(
+    token_stream: Iterator[Tok], enclosing_session=None, token_ctor=TOK
+) -> Iterator[Tok]:
 
     """ Parse a stream of tokens looking for (capitalized) entity names
         The algorithm implements N-token lookahead where N is the
@@ -50,21 +54,21 @@ def recognize_entities(token_stream, enclosing_session=None, token_ctor=TOK):
     """
 
     # Token queue
-    tq = []
+    tq = []  # type: List[Tok]
     # Phrases we're considering. Note that an entry of None
     # indicates that the accumulated phrase so far is a complete
     # and valid known entity name.
-    state = defaultdict(list)
+    state = defaultdict(list)  # type: Dict[Union[str, None], List[Tuple[List[str], Entity]]]
     # Entitiy definition cache
-    ecache = dict()
+    ecache = dict()  # type: Dict[str, List[Entity]]
     # Last name to full name mapping ('Clinton' -> 'Hillary Clinton')
-    lastnames = dict()
+    lastnames = dict()  # type: Dict[str, str]
 
     with BIN_Db.get_db() as db, SessionContext(
         session=enclosing_session, commit=True, read_only=True
     ) as session:
 
-        def fetch_entities(w, fuzzy=True):
+        def fetch_entities(w: str, fuzzy=True) -> List[Entity]:
             """ Return a list of entities matching the word(s) given,
                 exactly if fuzzy = False, otherwise also as a starting word(s) """
             try:
@@ -198,7 +202,7 @@ def recognize_entities(token_stream, enclosing_session=None, token_ctor=TOK):
                     weak = True
                     cnt = 1
                     upper = w and w[0].isupper()
-                    parts = None
+                    parts = []
 
                     if upper and " " in w:
                         # For all uppercase phrases (words, entities, persons),

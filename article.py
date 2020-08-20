@@ -24,6 +24,8 @@
 
 """
 
+from typing import Optional, List, Dict, Any, Tuple
+
 import json
 import uuid
 from datetime import datetime
@@ -52,22 +54,22 @@ class Article:
     """ An Article represents a new article typically scraped from a web site,
         as it is tokenized, parsed and stored in the Greynir database. """
 
-    _parser = None
+    _parser = None  # type: Optional[Fast_Parser]
 
     @classmethod
-    def _init_class(cls):
+    def _init_class(cls) -> None:
         """ Initialize class attributes """
         if cls._parser is None:
             cls._parser = Fast_Parser(verbose=False)  # Don't emit diagnostic messages
 
     @classmethod
-    def cleanup(cls):
+    def cleanup(cls) -> None:
         if cls._parser is not None:
             cls._parser.cleanup()
             cls._parser = None
 
     @classmethod
-    def get_parser(cls):
+    def get_parser(cls) -> Fast_Parser:
         if cls._parser is None:
             cls._init_class()
         return cls._parser
@@ -82,6 +84,7 @@ class Article:
     def parser_version(cls):
         """ Return the current grammar timestamp + parser version """
         cls._init_class()
+        assert cls._parser is not None
         return cls._parser.version
 
     def __init__(self, uuid=None, url=None):
@@ -231,8 +234,10 @@ class Article:
 
     def create_register(self, session, all_names=False):
         """ Create a name register dictionary for this article """
-        register = {}
-        from queries.builtin import add_name_to_register, add_entity_to_register
+        from queries.builtin import (
+            add_name_to_register, add_entity_to_register, RegisterType
+        )
+        register = {}  # type: RegisterType
 
         for name in self.person_names():
             add_name_to_register(name, register, session, all_names=all_names)
@@ -275,14 +280,14 @@ class Article:
             # List of paragraphs containing a list of sentences containing
             # token lists for sentences in string dump format
             # (1-based paragraph and sentence indices)
-            pgs = []
+            pgs = []  # type: List[List[Dict[str, Any]]]
 
             # Dict of parse trees in string dump format,
             # stored by sentence index (1-based)
             trees = OrderedDict()
 
             # Word stem dictionary, indexed by (stem, cat)
-            words = defaultdict(int)
+            words = defaultdict(int)  # type: Dict[Tuple[str, str], int]
             num_sent = 0
 
             for p in ip.paragraphs():

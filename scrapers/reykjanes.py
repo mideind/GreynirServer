@@ -10,6 +10,8 @@
 
 """
 
+from typing import Optional
+
 import sys
 import os
 import platform
@@ -93,10 +95,11 @@ class SessionContext:
 
     """ Context manager for database sessions """
 
-    _db = None  # Singleton instance of Reykjanes_DB
+    # Singleton instance of Reykjanes_DB
+    _db = None  # type: Optional[Reykjanes_DB]
 
     @classproperty
-    def db(cls):
+    def db(cls):  # pylint: disable(no-self-argument)
         if cls._db is None:
             cls._db = Reykjanes_DB()
         return cls._db

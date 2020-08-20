@@ -22,6 +22,8 @@
 
 """
 
+from typing import Optional
+
 import logging
 import json
 import hmac
@@ -43,8 +45,8 @@ class _Secret:
     """ A wrapper for private and public key data used
         in communications with SalesCloud """
 
-    _SC_SECRET_KEY = None
-    _SC_PUBLIC_KEY = None
+    _SC_SECRET_KEY = None  # type: Optional[bytes]
+    _SC_PUBLIC_KEY = None  # type: Optional[str]
 
     def __init__(self):
         pass

@@ -157,7 +157,7 @@ def lookup_best_word(word):
             # the one we successfully looked up in BÍN
             mns = list(filter(lambda w: w.utg == wid, m_list))
             # Discourage rarer declension forms, i.e. ÞGF2 and ÞGF3
-            return sorted(m_list, key=lambda m: "2" in m.beyging or "3" in m.beyging)
+            return sorted(mns, key=lambda m: "2" in m.beyging or "3" in m.beyging)
 
         # Look up all cases of the word in BÍN
         nom = m.stofn
@@ -225,29 +225,27 @@ def handle_plain_text(q):
 
     matches = None
     handler = None
-    m_regex = None
 
     # Spelling queries
     for rx in _SPELLING_RX:
         matches = re.search(rx, ql)
         if matches:
             handler = spelling_answer_for_word
-            m_regex = rx
             break
 
     # Declension queries
-    if not handler:
+    if handler is None:
         for rx in _DECLENSION_RX:
             matches = re.search(rx, ql)
             if matches:
                 handler = declension_answer_for_word
-                m_regex = rx
                 break
 
     # Nothing caught by regexes, bail
-    if not handler:
+    if handler is None:
         return False
 
+    assert matches is not None
     matching_word = matches.group(1)
 
     # Generate answer

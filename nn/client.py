@@ -25,6 +25,8 @@
 
 """
 
+from typing import Optional, Dict, Any, List, Union
+
 import json
 
 from flask import abort
@@ -39,16 +41,16 @@ class ApiClient:
         a tensorflow model server (using plaintext) """
 
     # Class defaults that can be overridden in constructor
-    port = None
-    host = None
-    action = None
+    port = None  # type: Optional[Union[int, str]]
+    host = None  # type: Optional[str]
+    action = None  # type: Optional[str]
     https = True
 
-    _url = None
-    _data = None
+    _url = None  # type: Optional[str]
+    _data = None  # type: Dict[str, Any]
 
-    required_fields = []
-    default_field_values = []
+    required_fields = []  # type: List[str]
+    default_field_values = {}  # type: Dict[str, Any]
     headers = {"Content-Type": "application/json; charset=utf-8"}
 
     def __init__(self, port=None, host=None, https=None, action=None):
@@ -96,11 +98,13 @@ class ApiClient:
 
     def get(self, data):
         """ Handler for GET requests """
+        assert self._url is not None
         response = requests.get(self._url, json.dumps(data), headers=self.headers)
         return json.loads(response.text)
 
     def post(self, data):
         """ Handler for POST requests """
+        assert self._url is not None
         response = requests.post(self._url, json.dumps(data), headers=self.headers)
         return response.text
 
@@ -125,7 +129,7 @@ class ApiClient:
 
 class TranslationApiClient(ApiClient):
 
-    required_fields = ("contents",)
+    required_fields = ["contents"]
 
     target = "en"
     source = "is"

@@ -682,5 +682,5 @@ class Feedback(Base):
 
     def __repr__(self):
         return "Feedback(name='{0}', email='{1}', topic='{2}', comment='{3}')".format(
-            self.question, self.answer, self.topic, self.comment
+            self.name, self.email, self.topic, self.comment
         )

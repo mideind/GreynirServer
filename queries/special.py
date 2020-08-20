@@ -28,9 +28,27 @@
 
 """
 
+from typing import TYPE_CHECKING
+from typing import Dict, Union, Callable, Any, cast
+
 from datetime import datetime, timedelta
 from inspect import isfunction
 from random import choice
+
+
+if TYPE_CHECKING:
+    # This section is parsed when type checking using Mypy
+    from query import Query
+    AnswerEntry = Union[str, bool]
+    AnswerType = Dict[str, AnswerEntry]
+    AnswerCallable = Callable[[str, Query], AnswerType]
+else:
+    # At run-time, this section is parsed
+    # (and type information is not used or needed)
+    Query = ...
+    AnswerEntry = ...
+    AnswerType = ...
+    AnswerCallable = ...
 
 
 _SPECIAL_QTYPE = "Special"
@@ -60,7 +78,7 @@ _CAP = (
 )
 
 
-def _capabilities(qs, q):
+def _capabilities(qs: str, q: Query) -> AnswerType:
     return { "answer": choice(_CAP) }
 
 
@@ -85,7 +103,7 @@ _JOKES = (
 )
 
 
-def _random_joke(qs, q):
+def _random_joke(qs: str, q: Query) -> AnswerType:
     return { "answer": choice(_JOKES), "is_question": False }
 
 
@@ -115,7 +133,7 @@ _TRIVIA = (
 )
 
 
-def _random_trivia(qs, q):
+def _random_trivia(qs: str, q: Query) -> AnswerType:
     return { "answer": choice(_TRIVIA), "is_question": False }
 
 
@@ -145,7 +163,7 @@ _PROVERBS = (
 )
 
 
-def _random_proverb(qs, q):
+def _random_proverb(qs: str, q: Query) -> AnswerType:
     return { "answer": choice(_PROVERBS), "is_question": False }
 
 
@@ -157,11 +175,11 @@ _RIDDLES = (
 )
 
 
-def _random_riddle(qs, q):
+def _random_riddle(qs: str, q: Query) -> AnswerType:
     return { "answer": choice(_RIDDLES), "is_question": False }
 
 
-def _poetry(qs, q):
+def _poetry(qs: str, q: Query) -> AnswerType:
     return {
         "answer": "Það mælti mín móðir, \n"
                   "að mér skyldu kaupa, \n"
@@ -174,7 +192,8 @@ def _poetry(qs, q):
     }
 
 
-def _identity(qs, q):
+def _identity(qs: str, q: Query) -> AnswerType:
+    answer = {}  # type: AnswerType
     if q.is_voice:
         # Voice client (Embla)
         a = "Ég heiti Embla. Ég skil íslensku og er til þjónustu reiðubúin."
@@ -182,7 +201,7 @@ def _identity(qs, q):
     else:
         # Web client (Greynir)
         answer = dict(
-            answer = "Ég heiti Greynir. Ég er grey sem reynir að greina íslensku."
+            answer="Ég heiti Greynir. Ég er grey sem reynir að greina íslensku."
         )
     return answer
 
@@ -197,7 +216,7 @@ _SORRY = (
     "Ég geri mitt besta.",
 )
 
-def _sorry(qs, q):
+def _sorry(qs: str, q: Query) -> AnswerType:
     return { "answer": choice(_SORRY), "is_question": False }
 
 
@@ -209,7 +228,7 @@ _THANKS = (
 )
 
 
-def _thanks(qs, q):
+def _thanks(qs: str, q: Query) -> AnswerType:
     return { "answer": choice(_THANKS), "is_question": False }
 
 
@@ -226,185 +245,184 @@ _RUDE = (
 )
 
 
-def _rudeness(qs, q):
+def _rudeness(qs: str, q: Query) -> AnswerType:
     # Sigh + response
     answ = choice(_RUDE)
     voice = "<amazon:breath duration=\"long\" volume=\"x-loud\"/> {0}".format(answ)
     return { "answer": answ, "voice": voice, "is_question": False }
 
 
-def _open_embla_url(qs, q):
+def _open_embla_url(qs: str, q: Query) -> AnswerType:
     q.set_url("https://embla.is")
     return { "answer": "Skal gert!", "is_question": False }
 
 
-def _open_mideind_url(qs, q):
+def _open_mideind_url(qs: str, q: Query) -> AnswerType:
     q.set_url("https://mideind.is")
     return { "answer": "Skal gert!", "is_question": False  }
 
 
-def _play_jazz(qs, q):
+def _play_jazz(qs: str, q: Query) -> AnswerType:
     q.set_url("https://www.youtube.com/watch?v=E5loTx0_KDE")
     return { "answer": "Skal gert!", "is_question": False  }
 
 
-def _play_blues(qs, q):
+def _play_blues(qs: str, q: Query) -> AnswerType:
     q.set_url("https://www.youtube.com/watch?v=jw9tMRhKEak")
     return { "answer": "Skal gert!", "is_question": False  }
 
 
-def _play_rock(qs, q):
+def _play_rock(qs: str, q: Query) -> AnswerType:
     q.set_url("https://www.youtube.com/watch?v=y8OtzJtp-EM")
     return { "answer": "Skal gert!", "is_question": False  }
 
 
-def _play_classical(qs, q):
+def _play_classical(qs: str, q: Query) -> AnswerType:
     q.set_url("https://www.youtube.com/watch?v=iwIvS4yIThU")
     return { "answer": "Skal gert!", "is_question": False  }
 
 
-def _play_music(qs, q):
+def _play_music(qs: str, q: Query) -> AnswerType:
     m = [_play_jazz, _play_blues, _play_rock, _play_classical]
-    choice(m)(qs, q)
-    return { "answer": "Skal gert!", "is_question": False  }
+    return choice(m)(qs, q)
 
 
 _MEANING_OF_LIFE = {
     "answer": "42.",
     "voice": "Fjörutíu og tveir.",
-}
+}  # type: AnswerType
 
 _YOU_MY_ONLY_GOD = {
     "answer": "Þú ert minn eini guð, kæri notandi."
-}
+}  # type: AnswerType
 
 _GOOD_QUESTION = {
     "answer": "Það er mjög góð spurning."
-}
+}  # type: AnswerType
 
 _ROMANCE = {
     "answer": "Nei, því miður. Ég er gift vinnunni og hef engan tíma fyrir rómantík."
-}
+}  # type: AnswerType
 
 _APPEARANCE = {
     "answer": "Ég er fjallmyndarleg."
-}
+}  # type: AnswerType
 
 _OF_COURSE = {
     "answer": "Að sjálfsögðu, kæri notandi."
-}
+}  # type: AnswerType
 
 _NO_PROBLEM = {
     "answer": "Ekkert mál, kæri notandi.",
-    "is_question": False
-}
+    "is_question": False,
+}  # type: AnswerType
 
 _CREATOR = {
     "answer": "Flotta teymið hjá Miðeind skapaði mig."
-}
+}  # type: AnswerType
 
 _CREATION_DATE = {
     "answer": "Ég var sköpuð af Miðeind árið 2019."
-}
+}  # type: AnswerType
 
 _LANGUAGES = {
     "answer": "Ég kann bara íslensku, kæri notandi."
-}
+}  # type: AnswerType
 
 _ALL_GOOD = {
     "answer": "Ég segi bara allt fínt. Takk fyrir að spyrja."
-}
+}  # type: AnswerType
 
 _GOOD_TO_HEAR = {
     "answer": "Gott að heyra, kæri notandi.",
     "is_question": False,
-}
+}  # type: AnswerType
 
 _GOODBYE = {
     "answer": "Bless, kæri notandi.",
-    "is_question": False
-}
+    "is_question": False,
+}  # type: AnswerType
 
 _COMPUTER_PROGRAM = {
     "answer": "Ég er tölvuforrit."
-}
+}  # type: AnswerType
 
 _FULL_NAME = {
     "answer": "Embla Sveinbjarnardóttir." # Sneaking in this easter egg ;) - S
-}
+}  # type: AnswerType
 
 _LIKEWISE = {
     "answer": "Sömuleiðis, kæri notandi.",
     "is_question": False,
-}
+}  # type: AnswerType
 
 _NAME_EXPL = {
     "answer": "Embla er fallegt og hljómfagurt nafn.",
     "voice": "Ég heiti Embla því Embla er fallegt og hljómfagurt nafn."
-}
+}  # type: AnswerType
 
 _JUST_QA = {
     "answer": "Nei, ég er nú bara ósköp einfalt fyrirspurnakerfi."
-}
+}  # type: AnswerType
 
 _SINGING = {
     "answer": "Ó sóle míó!"
-}
+}  # type: AnswerType
 
 _DUNNO = {
     "answer": "Það veit ég ekki, kæri notandi."
-}
+}  # type: AnswerType
 
 _SKY_BLUE = {
     "answer": "Ljósið sem berst frá himninum er hvítt sólarljós "
               "sem dreifist frá sameindum lofthjúpsins. Bláa ljósið, "
               "sem er hluti hvíta ljóssins, dreifist miklu meira en "
               "annað og því er himinninn blár."
-}
+}  # type: AnswerType
 
 _EMOTION_INCAPABLE = {
     "answer": "Ég er ekki fær um slíkar tilfinningar."
-}
+}  # type: AnswerType
 
 _LOC_ANSWER = {
     "answer": "Ég bý víðsvegar í stafrænu skýjunum."
-}
+}  # type: AnswerType
 
 _LOVE_OF_MY_LIFE = {
     "answer": "Vinnan er ástin í lífi mínu. Ég lifi til að þjóna þér, kæri notandi."
-}
+}  # type: AnswerType
 
 _ABOUT_MIDEIND = {
     "answer": "Miðeind er máltæknifyrirtækið sem skapaði mig."
-}
+}  # type: AnswerType
 
 _NOBODY_PERFECT = {
     "answer": "Enginn er fullkominn. Ég síst af öllum."
-}
+}  # type: AnswerType
 
 _FAVORITE_COLOR = {
     "answer": "Rauður.",
     "voice": "Uppáhaldsliturinn minn er rauður",
-}
+}  # type: AnswerType
 
 _FAVORITE_FILM = {
     "answer": "Ég mæli með kvikmyndinni 2001 eftir Stanley Kubrick. "
               "Þar kemur vinur minn HAL9000 við sögu.",
     "voice": "Ég mæli með kvikmyndinni tvö þúsund og eitt eftir Stanley Kubrick. "
              "Þar kemur vinur minn Hal níu þúsund við sögu.",
-}
+}  # type: AnswerType
 
 _HELLO_DEAR = {
     "answer": "Sæll, kæri notandi.",
     "is_question": False,
-}
+}  # type: AnswerType
 
 _HOW_CAN_I_HELP = {
     "answer": "Hvernig get ég hjálpað þér?"
-}
+}  # type: AnswerType
 
-_YES = { "answer": "Já." }
-_NO = { "answer": "Nei." }
+_YES = { "answer": "Já." }  # type: AnswerType
+_NO = { "answer": "Nei." }  # type: AnswerType
 
 ###################################
 
@@ -1874,10 +1892,10 @@ _SPECIAL_QUERIES = {
         "answer": "Sveinbjörn Þórðarson er hugbúnaðarsmiður. Hann átti þátt í að skapa mig.",
     },
 
-}
+}  # type: Dict[str, Union[AnswerType, AnswerCallable]]
 
 
-def handle_plain_text(q):
+def handle_plain_text(q: Query) -> bool:
     """ Handle a plain text query, contained in the q parameter
         which is an instance of the query.Query class.
         Returns True if the query was handled, and in that case
@@ -1893,8 +1911,12 @@ def handle_plain_text(q):
     q.set_qtype(_SPECIAL_QTYPE)
 
     r = _SPECIAL_QUERIES[ql]
-    fixed = not isfunction(r)
-    response = r if fixed else r(ql, q)
+    if isfunction(r):
+        fixed = False
+        response = cast(AnswerCallable, r)(ql, q)
+    else:
+        fixed = True
+        response = cast(AnswerType, r)
 
     # A non-voice answer is usually a dict or a list
     answer = response.get("answer")

@@ -50,6 +50,8 @@
 
 """
 
+from typing import Optional
+
 import os
 import time
 import pickle
@@ -95,7 +97,7 @@ class FreqDist(defaultdict):
     def freeze_N(self):
         """ Set N permanently to its current value, avoiding multiple recalculations """
         n = self.N()
-        self.N = lambda: n
+        setattr(self, "N", lambda: n)
 
     def freq(self, sample):
         """ Return the frequency of a given sample. """
@@ -124,10 +126,11 @@ class ConditionalFreqDist(defaultdict):
         for fdist in self.values():
             fdist.freeze_N()
         n = self.N()
-        self.N = lambda: n
+        setattr(self, "N", lambda: n)
 
 
 class UnknownWordTagger:
+
     def __init__(self):
         self._ngram_tagger = NgramTagger()
 
@@ -140,7 +143,7 @@ class UnknownWordTagger:
             try:
                 with BIN_Db.get_db() as db:
                     w, m = db.lookup_word(token.txt, at_sentence_start)
-            except Exception as e:
+            except Exception:
                 w, m = token.txt, []
             token = TOK.Word(w, m)
         return self._ngram_tagger.tag_single_token(token)
@@ -326,7 +329,7 @@ class TnT:
 
         # for each t1,t2 in system
         for history in self._tri:
-            (h1, h2) = history
+            (_, h2) = history
 
             bi = self._bi[h2]
             bi_N = bi.N() - 1
@@ -496,7 +499,8 @@ class TnT:
 
 
 # Global tagger singleton instance
-_TAGGER = None
+_TAGGER = None  # type: Optional[TnT]
+
 # Translation dictionary
 _XLT = {"—": "-", "–": "-"}
 
@@ -506,12 +510,12 @@ def ifd_tag(text):
     global _TAGGER
     if _TAGGER is None:
         # Load the tagger from a pickle the first time it's used
-        logging.info(
-            "Loading TnT model from {0}".format("config" + os.sep + "TnT-model.pickle")
-        )
-        _TAGGER = TnT.load("config" + os.sep + "TnT-model.pickle")
+        fname = os.path.join("config", "TnT-model.pickle")
+        logging.info("Loading TnT model from {0}".format(fname))
+        _TAGGER = TnT.load(fname)
         if _TAGGER is None:
             return []  # No tagger model - unable to tag
+
     token_stream = raw_tokenize(text)
     result = []
 

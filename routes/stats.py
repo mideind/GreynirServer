@@ -21,6 +21,7 @@
 
 """
 
+from typing import Dict, List
 
 from . import routes, max_age, cache
 
@@ -67,7 +68,7 @@ def chart_stats(session=None, num_days=7):
     """ Return scraping and parsing stats for charts """
     today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     labels = []
-    sources = {}
+    sources = {}  # type: Dict[str, List[int]]
     parsed_data = []
     query_data = []
 
@@ -157,7 +158,7 @@ def stats():
     """ Render a page containing various statistics from the Greynir database. """
     days = _DEFAULT_STATS_PERIOD
     try:
-        days = min(_MAX_STATS_PERIOD, int(request.args.get("days")))
+        days = min(_MAX_STATS_PERIOD, int(request.args.get("days", "1")))
     except:
         pass
 

@@ -96,6 +96,26 @@ def test_api(client):
         assert resp.content_type.startswith(API_CONTENT_TYPE)
 
 
+def test_postag_api(client):
+    resp = client.get("/postag.api?t=Hér sé ást og friður")
+    assert resp.status_code == 200
+    assert resp.content_type == "application/json; charset=utf-8"
+    assert "result" in resp.json
+    assert len(resp.json["result"]) == 1
+    assert len(resp.json["result"][0]) == 5
+
+
+def test_ifdtag_api(client):
+    resp = client.get("/ifdtag.api?t=Hér sé ást og friður")
+    assert resp.status_code == 200
+    assert resp.content_type == "application/json; charset=utf-8"
+    assert "valid" in resp.json
+    assert resp.json["valid"]
+    assert "result" in resp.json
+    assert len(resp.json["result"]) == 1
+    assert len(resp.json["result"][0]) == 5
+
+
 def test_del_query_history(client):
     """ Test query history deletion API. """
 

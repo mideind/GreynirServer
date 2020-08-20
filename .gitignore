@@ -16,6 +16,9 @@ __pycache__/
 # ngram models
 ngram*.txt
 
+# Mypy
+mypy.ini
+
 # Training data files
 *.pairs
 *.tgz

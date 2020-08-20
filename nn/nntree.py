@@ -23,6 +23,8 @@
 
 """
 
+from typing import List
+
 from enum import IntEnum
 import logging
 import inspect
@@ -212,7 +214,7 @@ def parse_flat_tree_to_nodes(parse_toks, text_toks=None, verbose=False):
         raise ValueError("Invalid parse tokens.")
 
     root = Node(name="ROOT", is_terminal=False)  # Pseudo root
-    stack = []
+    stack = []  # type: List[Node]
     parent = root
     txt_count = 0
 
@@ -260,14 +262,16 @@ def parse_flat_tree_to_nodes(parse_toks, text_toks=None, verbose=False):
 
             tree = root.children[0] if root.children else None
             return tree, ParseResult.UNOPENED_RTOKEN
+
         # Empty NONTERMINALS are not allowed
         if not parent.has_children():
-            msg = ["{}{}".format(len(stack) * "    ", tok) for tok in parse_toks[idx:]]
-            vprint("\n".join(msg))
+            msg_list = ["{}{}".format(len(stack) * "    ", tok) for tok in parse_toks[idx:]]
+            vprint("\n".join(msg_list))
             vprint("Error: Tried to close empty nonterminal {}".format(tok))
 
             tree = root.children[0] if root.children else None
             return tree, ParseResult.EMPTY_NONTERM
+
         parent = stack.pop()
 
     if len(stack) > 1:
@@ -330,12 +334,12 @@ def _json_terminal_node(tok, text="placeholder", token_index=None):
             tail_start += int(suffix)
     tail = set(subtokens[tail_start:])
 
-    gender = set(GRAMMAR.GENDERS.intersection(tail))
-    gender = gender.pop() if gender else ""
-    case = set(GRAMMAR.CASES.intersection(tail))
-    case = case.pop() if case else ""
-    number = set(GRAMMAR.NUMBERS.intersection(tail))
-    number = number.pop() if number else ""
+    gender_set = set(GRAMMAR.GENDERS.intersection(tail))
+    gender = gender_set.pop() if gender_set else ""
+    case_set = set(GRAMMAR.CASES.intersection(tail))
+    case = case_set.pop() if case_set else ""
+    number_set = set(GRAMMAR.NUMBERS.intersection(tail))
+    number = number_set.pop() if number_set else ""
     gr = "gr" if "gr" in tail else ""
 
     if first == "no":

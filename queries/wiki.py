@@ -35,10 +35,10 @@ import random
 from datetime import datetime, timedelta
 
 from queries import query_json_api, gen_answer
+from query import Query
 
 
 _WIKI_QTYPE = "Wikipedia"
-
 
 # For end user presentation
 _WIKIPEDIA_CANONICAL = "Wikipedía"
@@ -80,7 +80,7 @@ def help_text(lemma):
             (
                 "Hvað segir Wikipedía um Berlín",
                 "Hvað getur Wikipedía sagt mér um heimspeki",
-                "Fræddu mig um afstæðiskenninguna" "Flettu upp ",
+                "Fræddu mig um afstæðiskenninguna",
             )
         )
     )
@@ -188,10 +188,10 @@ QWikiSubjectNlÞf = QWikiSubjectNlÞgf = QWikiSubjectNlNf
 def QWikiPrevSubjectNf(node, params, result):
     """ Reference to previous result, usually via personal
         pronouns ('Hvað segir Wikipedía um hann/hana/það?'). """
-    q = result.state.get("query")
-    ctx = q is not None and q.fetch_context()
+    q = result.state.get("query")  # type: Query
+    ctx = None if q is None else q.fetch_context()
     ctx_keys = ["person_name", "entity_name", "subject"]
-    if ctx:
+    if ctx is not None:
         keys = list(filter(lambda k: k in ctx, ctx_keys))
         if keys:
             result.context_reference = True
