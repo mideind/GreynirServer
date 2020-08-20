@@ -684,3 +684,26 @@ class Feedback(Base):
         return "Feedback(name='{0}', email='{1}', topic='{2}', comment='{3}')".format(
             self.question, self.answer, self.topic, self.comment
         )
+
+class DeviceData(Base):
+
+    __tablename__ = "device_data"
+
+    device_id = Column(
+        psql_UUID(as_uuid=False),
+        index=True,
+        nullable=False,
+        primary_key=True,
+    )
+
+    # Key to distinguish between different types of json data that can be stored
+    key = Column(String, nullable=False, primary_key=True)
+
+    # created
+    created = Column(DateTime, nullable=False)
+
+    # Last modified
+    last_modified = Column(DateTime, nullable=False)
+
+    # data
+    data = Column(JSONB, nullable=False)

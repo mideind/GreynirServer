@@ -574,6 +574,10 @@ class Query:
         """ Return True if this is a voice query """
         return self._voice
 
+    @property
+    def client_id(self):
+        return self._client_id
+
     def response(self):
         """ Return the detailed query answer """
         return self._response

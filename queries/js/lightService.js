@@ -82,8 +82,7 @@ function changeLight(ipAddress, username, lightId, on = null, bri = null, hue = 
     if (sat !== null) {
         body.sat = parseInt(parseInt(sat) * 254/100);
     }
-    console.log('body');
-    console.log(body);
+
     let request = new XMLHttpRequest();
     request.open('PUT', `http://${ipAddress}/api/${username}/lights/${lightId}/state`, false);  // `false` makes the request synchronous
     request.send(JSON.stringify(body));
@@ -96,13 +95,7 @@ function changeLight(ipAddress, username, lightId, on = null, bri = null, hue = 
 
 }
 
-/*
-*/
-function main(name = null, on = null, bri = null, hue = null, sat = null) {
-    if (!serviceStorage) {
-        return 'Snjalltæki er ekki tengt'
-    }
-    let { ipAddress, username } = serviceStorage;
+function main(ipAddress = null, username = null, name = null, on = null, bri = null, hue = null, sat = null) {
 
     if ( !ipAddress || !username) {
         return 'Snjalltæki er ekki tengt';

@@ -1,8 +1,15 @@
 import logging
 import re
 import json
+import flask
 
 from queries import gen_answer, read_jsfile
+from db import SessionContext
+from db.models import DeviceData
+
+# TODO remove fstring
+# TODO expand functionality for more devices
+# TODO add more functionality provided by the philips hue api
 
 # This module wants to handle parse trees for queries
 HANDLE_TREE = True
@@ -96,7 +103,8 @@ QHomeInOrOnQuery →
 
 """
 
-
+# Catches active query and assigns the correct variables
+# to be used when performing an action on lights
 def QConnectQuery(node, params, result):
     result.qtype = "ConnectSmartDevice"
 
@@ -143,6 +151,8 @@ def QHomeDeviceQuery(node, params, result):
 def QHomeLightSaturationQuery(node, params, result):
     result.qtype = "LightSaturation"
 
+# fix common stofn errors when stofn from a company or entity is used instead
+# of the correct stofn
 _FIX_MAP = {
     'Skrifstofan': 'skrifstofa',
     'Húsið': 'hús'
@@ -188,6 +198,7 @@ _NUMBER_WORDS = {
     "milljarður": 1e9,
 }
 
+# convert color name into hue
 _COLOR_NAME_TO_CIE = {
     'gulur': 60 * 65535/360,
     'grænn': 120 * 65535/360,
@@ -239,20 +250,57 @@ def terminal_num(t):
             return aux
         return aux[0]
 
+# fetch the data column containing the json data stored in the device_data table
+def fetch_device_data(device_id, smartdevice_type):
+    device_data = None
+
+    with SessionContext(read_only=True) as session:
+
+        try:
+            client_data = (session.query(DeviceData).filter(DeviceData.key == smartdevice_type).filter(DeviceData.device_id == device_id)).first()
+            device_data = client_data.data
+
+        except Exception as e:
+            logging.error("Error fetching data from db: {0}".format(e))
+
+
+
+    return device_data
+
 def sentence(state, result):
     """ Called when sentence processing is complete """
     q = state["query"]
 
+    # TODO hardcoded while only one device type is supported
+    smartdevice_type = 'smartlights'
+
+    # fetch relevant data from the device_data table to perform an action on the lights
+    device_data = fetch_device_data(q.client_id, smartdevice_type)
+    selected_light = device_data['smartlights']['selected_light']
+    hue_credentials = device_data['smartlights'].get('philips_hue')
+
+    # connect smartdevice action
     if "qtype" in result and result.qtype == "ConnectSmartDevice":
-        # A non-voice answer is usually a dict or a list
+
         answer = "Skal gert"
+        host = flask.request.host
 
         js = read_jsfile("connectHub.js")
+
+        # function from the javascript file needs to be called with 
+        # relevant variables
+        js += f'connectHub(\'{q.client_id}\',\'{host}\')'
 
         q.set_command(js)
         q.set_answer(dict(answer=answer), answer, answer)
 
-    elif "qtype" in result and (result.qtype == "LightOn" or result.qtype == "LightOff"):
+    elif not device_data:
+        answer = 'Ekkert snjalltæki fannst'
+
+        q.set_answer(dict(answer=answer), answer, answer)
+
+    # light on or off action
+    elif "qtype" in result and (result.qtype == "LightOn" or result.qtype == "LightOff") and device_data['smartlights']['selected_light'] == 'philips_hue':
 
         onOrOff = 'true' if result.qtype == 'LightOn' else 'false'
 
@@ -264,7 +312,8 @@ def sentence(state, result):
                 stofn = _FIX_MAP.get(stofn) or stofn
 
         js = read_jsfile("lightService.js")
-        js += f'main(\'{stofn}\', {onOrOff});'
+
+        js += f'main(\'{hue_credentials["ipAddress"]}\',\'{hue_credentials["username"]}\',\'{stofn}\', {onOrOff});'
         print('js')
 
         answer = f'{stofn} {onOrOff}'
@@ -272,7 +321,8 @@ def sentence(state, result):
         q.set_answer(dict(answer=answer), answer, answer)
         q.set_command(js)
 
-    elif "qtype" in result and result.qtype == "LightDim":
+    # alter light dimmer action
+    elif "qtype" in result and result.qtype == "LightDim" and device_data['smartlights']['selected_light'] == 'philips_hue':
 
         number = result.numbers[0]
 
@@ -284,13 +334,14 @@ def sentence(state, result):
                 stofn = _FIX_MAP.get(stofn) or stofn
 
         js = read_jsfile("lightService.js")
-        js += f'main(\'{stofn}\', true, {number});'
-        print('js')
+        js += f'main(\'{hue_credentials["ipAddress"]}\',\'{hue_credentials["username"]}\',\'{stofn}\', true, {number});'
+
         answer = stofn
         q.set_answer(dict(answer=answer), answer, answer)
         q.set_command(js)
 
-    elif "qtype" in result and result.qtype == "LightColor":
+    # alter light color action
+    elif "qtype" in result and result.qtype == "LightColor" and device_data['smartlights']['selected_light'] == 'philips_hue':
         stofn_name = None
         stofn_color = None
 
@@ -306,14 +357,14 @@ def sentence(state, result):
                         break
         
         js = read_jsfile("lightService.js")
-        js += f'main(\'{stofn_name}\', true, null, {_COLOR_NAME_TO_CIE[stofn_color.lower()]});'
+        js += f'main(\'{hue_credentials["ipAddress"]}\',\'{hue_credentials["username"]}\',\'{stofn_name}\', true, null, {_COLOR_NAME_TO_CIE[stofn_color.lower()]});'
 
         answer = f'{stofn_color} {stofn_name}'
         q.set_answer(dict(answer=answer), answer, answer)
         q.set_command(js)
-        print(js)
 
-    elif "qtype" in result and result.qtype == "HubInfo":
+    # connected lights info action
+    elif "qtype" in result and result.qtype == "HubInfo" and device_data['smartlights']['selected_light'] == 'philips_hue':
         answer = "Skal gert"
 
         js = read_jsfile("lightInfo.js")
@@ -321,7 +372,8 @@ def sentence(state, result):
         q.set_command(js)
         q.set_answer(dict(answer=answer), answer, answer)
 
-    elif "qtype" in result and result.qtype == "LightSaturation":
+    # alter saturation action
+    elif "qtype" in result and result.qtype == "LightSaturation" and device_data['smartlights']['selected_light'] == 'philips_hue':
         number = result.numbers[0]
         stofn = None
 
@@ -331,8 +383,7 @@ def sentence(state, result):
                 stofn = _FIX_MAP.get(stofn) or stofn
 
         js = read_jsfile("lightService.js")
-        js += f'main(\'{stofn}\', undefined, undefined, undefined, sat = {number});'
-        print('js')
+        js += f'main(\'{hue_credentials["ipAddress"]}\',\'{hue_credentials["username"]}\',\'{stofn}\', undefined, undefined, undefined, sat = {number});'
 
         answer = f'{stofn} {number}'
 

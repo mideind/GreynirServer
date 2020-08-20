@@ -1,4 +1,4 @@
-
+//const XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 
 function getSmartDeviceAddress() {
     var request = new XMLHttpRequest();
@@ -28,26 +28,58 @@ function createNewDeveloper(ipAddress) {
         return JSON.parse(request.responseText)[0];
     }
     else {
-        throw new Error('Error while creating new user')
+        throw new Error('Error while creating new user');
     }
 }
 
-function connectHub() {
-    serviceStorage = {};
+function storeDevice(data, requestURL) {
+
+    let request = new XMLHttpRequest();
+    
+    request.open('POST', `http://${requestURL}/register_smartdevice.api`, false);
+    request.setRequestHeader('Content-Type', 'application/json');
+
+    request.send(JSON.stringify(data));
+
+    if (request.status === 200) {
+        return JSON.parse(request.responseText);
+    }
+    else {
+        throw new Error('Error while storing user');
+    }
+
+}
+
+function connectHub(device_id, requestURL) {
+
     let deviceInfo = getSmartDeviceAddress();
 
     try {
         let username = createNewDeveloper(deviceInfo.internalipaddress);
         
-        if (username.success){
-            serviceStorage.username = username.success.username;
-            serviceStorage.ipAddress = deviceInfo.internalipaddress;
-        } else {
+        if (!username.success) {
             return 'Ýttu á \'Philips\' takkan á tengiboxinu og reyndu aftur'
         }
-        
+
+        const data = {
+            'device_id': device_id,
+            'key': 'smartlights',
+            'data': {
+                'smartlights': {
+                    'selected_light': 'philips_hue',
+                    'philips_hue': {
+                        'username':username.success.username,
+                        'ipAddress':deviceInfo.internalipaddress
+                    }
+                }
+            }
+        }
+
+        const result = storeDevice(data, requestURL);
+
         return 'Tenging við snjalltæki tókst';
     } catch(error) {
+        console.log(error);
         return 'Ekki tókst að tengja snjalltæki';
     }
     // errors for connectHub
@@ -56,4 +88,3 @@ function connectHub() {
     // {"success":{"username":"2GTB-NVq68YwLRA43AZLPHmMiuvRL8yaZJykuJBg"}}
 }
 
-connectHub();
