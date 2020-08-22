@@ -525,16 +525,16 @@ _I_SUFFIXES = (
     "garðar",
     "múli",
     "fen",
+    "vogur",
     "Lækjargata",
     "Skeifan",
+    "Kringlan",
 )
 
 
 def iceprep_for_street(street_name):
     """ Return the right preposition ("í" or "á") for
         an Icelandic street name, e.g. "Fiskislóð". """
-
-    # TODO: Implement me properly
     if street_name.endswith(_I_SUFFIXES):
         return "í"
     return "á"

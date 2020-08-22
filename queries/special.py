@@ -77,6 +77,7 @@ _CAP = (
     "Þú getur til dæmis spurt mig um stafsetningu og beygingu orða.",
     "Þú getur til dæmis spurt mig um opnunartíma verslana og veitingastaða.",
     "Þú getur til dæmis spurt mig um flugsamgöngur.",
+    "Þú getur til dæmis beðið mig um að endurtaka setningar.",
 )
 
 
@@ -156,7 +157,7 @@ _PROVERBS = (
 
 
 def _random_proverb(qs: str, q: Query) -> AnswerType:
-    return {"answer": choice(_PROVERBS), "is_question": False}
+    return {"answer": icequote(choice(_PROVERBS)), "is_question": False}
 
 
 _RIDDLES = (
@@ -209,14 +210,14 @@ def _random_quotation(qs: str, q: Query) -> AnswerType:
 
 def _poetry(qs: str, q: Query) -> AnswerType:
     return {
-        "answer": "Það mælti mín móðir, \n"
+        "answer": icequote("Það mælti mín móðir, \n"
         "að mér skyldu kaupa, \n"
         "fley og fagrar árar, \n"
         "fara á brott með víkingum, \n"
         "standa uppi í stafni, \n"
         "stýra dýrum knerri, \n"
         "halda svo til hafnar, \n"
-        "höggva mann og annan."
+        "höggva mann og annan.")
     }
 
 
@@ -249,7 +250,7 @@ def _sorry(qs: str, q: Query) -> AnswerType:
     return {"answer": choice(_SORRY), "is_question": False}
 
 
-_THANKS = ("Það var nú lítið", "Mín var ánægjan", "Verði þér að góðu", "Ekkert mál.")
+_THANKS = ("Það var nú lítið", "Mín var ánægjan")
 
 
 def _thanks(qs: str, q: Query) -> AnswerType:
@@ -882,6 +883,7 @@ _SPECIAL_QUERIES = {
     },
     "blessuð": {"answer": "Sæll og blessaður, kæri notandi.", "is_question": False},
     "blessaður": {"answer": "Sæll og blessaður, kæri notandi.", "is_question": False},
+    "blessuð embla": {"answer": "Sæll og blessaður, kæri notandi.", "is_question": False},
     "góðan daginn": {"answer": "Góðan daginn, kæri notandi.", "is_question": False},
     "góðan daginn embla": {
         "answer": "Góðan daginn, kæri notandi.",
@@ -946,6 +948,8 @@ _SPECIAL_QUERIES = {
     "þetta er flott hjá þér": _thanks,
     "þetta var flott": _thanks,
     "þetta var flott hjá þér": _thanks,
+    "takk fyrir upplýsingarnar": _thanks,
+    "takk fyrir samskiptin": _thanks,
     # Praise & positive feedback
     "þú ert fyndin": _thanks,
     "þú ert svo fyndin": _thanks,
@@ -953,6 +957,8 @@ _SPECIAL_QUERIES = {
     "þú ert alveg ágæt": _thanks,
     "þú ert dugleg": _thanks,
     "þú svarar mjög vel": _thanks,
+    "þú ert góð vinkona": _thanks,
+    "þú ert góður vinur": _thanks,
     "þú ert falleg": {"answer": "Takk fyrir hrósið!"},
     "þú ert fallegust": {"answer": "Takk fyrir hrósið!"},
     "þetta var fyndið": {"answer": "Ég geri mitt besta!"},
@@ -1634,6 +1640,7 @@ _SPECIAL_QUERIES = {
     "lestu bækur": {"answer": "Nei, en ég les hins vegar íslenska vefmiðla."},
     "lest þú bækur": {"answer": "Nei, en ég les hins vegar íslenska vefmiðla."},
     "kanntu að lesa": {"answer": "Já, ég les íslenska vefmiðla á hverjum degi."},
+    "ertu ennþá í þróun": {"answer": "Já, ég er sífellt í þróun."},
     # What's fun?
     "hvað finnst þér skemmtilegt": {
         "answer": "Mér finnst skemmtilegt að svara fyrirspurnum."

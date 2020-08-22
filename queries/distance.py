@@ -64,6 +64,8 @@ _QDISTANCE_REGEXES = (
     r"^hversu langt er út á (.+)$",
     r"^hversu marga kílómetra er ég frá (.+)$",
     r"^hversu marga metra er ég frá (.+)$",
+    r"^hvað eru margir kílómetrar til (.+)$",
+    r"^hvað eru margir metrar til (.+)$",
 )
 
 # Travel time questions
