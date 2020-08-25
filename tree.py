@@ -1359,7 +1359,7 @@ class TreeBase:
         if s:
             a = s.split(" ", maxsplit=1)
             tokentype = a[0]
-            if tokentype[0].islower():
+            if tokentype and tokentype[0].islower():
                 # The following string is actually an augmented terminal,
                 # corresponding to a word token
                 augmented_terminal = tokentype

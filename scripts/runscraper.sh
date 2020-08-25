@@ -2,7 +2,9 @@
 # Scraper
 cd ~/github/Greynir
 source p369/bin/activate
-timeout 20m python scraper.py --limit=2500
+#timeout 20m python scraper.py --limit=2500
+# Use control group to limit memory usage and swap
+timeout 20m cgexec -g "memory:scraper" python scraper.py --limit=2500
 deactivate
 # Tagger
 cd ~/github/Greynir/vectors
