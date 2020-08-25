@@ -59,11 +59,11 @@ def help_text(lemma):
         random.choice(
             (
                 "Hvað er í sjónvarpinu í kvöld",
-                "Hvað er í útvarpinu",
-                "Hvað er á Rás 1 í augnablikinu",
                 "Hvað er á RÚV í augnablikinu",
                 "Hvaða efni er verið að sýna í sjónvarpinu",
-                "Hvaða efni er verið að spila í útvarpinu",
+                # "Hvaða efni er verið að spila í útvarpinu",
+                # "Hvað er í útvarpinu",
+                # "Hvað er á Rás 1 í augnablikinu",
             )
         )
     )
