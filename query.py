@@ -539,8 +539,8 @@ class Query:
         """ JS command associated with this query """
         return self._command
 
-    def set_command(self, u):
-        self._command = u
+    def set_command(self, c):
+        self._command = c
 
     @property
     def source(self):

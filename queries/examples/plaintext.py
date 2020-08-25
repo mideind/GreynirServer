@@ -62,6 +62,12 @@ def handle_plain_text(q):
         # Beautify query for end user display (optional)
         # q.set_beautified_query(ql.upper())
 
+        # Javascript command to execute client-side (optional)
+        # q.set_command("2 + 2")
+
+        # URL to be opened by client (optional)
+        # q.set_url("https://miðeind.is")
+
         return True
 
     return False
