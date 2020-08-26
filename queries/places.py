@@ -43,6 +43,23 @@ from reynir import NounPhrase
 _PLACES_QTYPE = "Places"
 
 
+TOPIC_LEMMAS = ["opnunartími", "opna", "loka"]
+
+
+def help_text(lemma):
+    """ Help text to return when query.py is unable to parse a query but
+        one of the above lemmas is found in it """
+    return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
+        random.choice(
+            (
+                "Hvað er opið lengi á Forréttabarnum",
+                "Hvenær lokar Bónus á Fiskislóð",
+                "",
+            )
+        )
+    )
+
+
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings
 HANDLE_TREE = True
@@ -63,61 +80,54 @@ QPlacesOpeningHours →
     "hvað" "er" "opið" "lengi" QPlacesPrepAndSubject
     | "hvað" "er" "lengi" "opið" QPlacesPrepAndSubject
     | "hverjir" "eru" "opnunartímar" QPlacesPrepAndSubject
-    | "hverjir" "eru" "opnunartímar" QPlacesSubjectEf
+    | "hverjir" "eru" "opnunartímar" QPlacesSubject_ef
     | "hvaða" "opnunartímar" "eru" QPlacesPrepAndSubject
     | "hversu" "lengi" "er" "opið" QPlacesPrepAndSubject
     | "hve" "lengi" "er" "opið" QPlacesPrepAndSubject
     | "klukkan" "hvað" "opnar" QPlacesPrepAndSubject
-    | "klukkan" "hvað" "opnar" QPlacesSubjectNf
+    | "klukkan" "hvað" "opnar" QPlacesSubject_nf
     | "hvenær" "lokar" QPlacesPrepAndSubject
-    | "hvenær" "lokar" QPlacesSubjectNf
+    | "hvenær" "lokar" QPlacesSubject_nf
     | "hvenær" "opnar" QPlacesPrepAndSubject
-    | "hvenær" "opnar" QPlacesSubjectNf
+    | "hvenær" "opnar" QPlacesSubject_nf
     | "klukkan" "hvað" "lokar" QPlacesPrepAndSubject
-    | "klukkan" "hvað" "lokar" QPlacesSubjectNf
+    | "klukkan" "hvað" "lokar" QPlacesSubject_nf
     | "hversu" "langt" "er" "í" "lokun" QPlacesPrepAndSubject
-    | "hversu" "langt" "er" "í" "lokun" QPlacesSubjectEf
+    | "hversu" "langt" "er" "í" "lokun" QPlacesSubject_ef
     | "hvað" "er" "langt" "í" "lokun" QPlacesPrepAndSubject
-    | "hvað" "er" "langt" "í" "lokun" QPlacesSubjectEf
+    | "hvað" "er" "langt" "í" "lokun" QPlacesSubject_ef
     | "hvenær" "er" "opið" QPlacesPrepAndSubject
-    | "hvað" "er" QPlacesSubjectNf QPlOpen "lengi"
-    | "hve" "lengi" "er" QPlacesSubjectNf QPlOpen
-    | "hversu" "lengi" "er" QPlacesSubjectNf QPlOpen
+    | "hvað" "er" QPlacesSubject_nf QPlOpen "lengi"
+    | "hve" "lengi" "er" QPlacesSubject_nf QPlOpen
+    | "hversu" "lengi" "er" QPlacesSubject_nf QPlOpen
 
 QPlacesIsOpen →
     "er" "opið" QPlacesPrepAndSubject QPlNow?
-    | "er" QPlacesSubjectNf QPlOpen QPlNow?
+    | "er" QPlacesSubject_nf QPlOpen QPlNow?
 
 QPlacesIsClosed →
     "er" "lokað" QPlacesPrepAndSubject QPlNow?
-    | "er" QPlacesSubjectNf QPlClosed QPlNow?
+    | "er" QPlacesSubject_nf QPlClosed QPlNow?
 
 QPlacesAddress →
     "hvert" "er" "heimilisfangið" QPlacesPrepAndSubject
     | "hvað" "er" "heimilisfangið" QPlacesPrepAndSubject
-    | "hvert" "er" "heimilisfang" QPlacesSubjectEf
-    | "hvað" "er" "heimilisfang" QPlacesSubjectEf
-    | "hvar" "er" QPlacesSubjectNf "til" "húsa"
-    | "hvar" "er" QPlacesSubjectNf "staðsett" 
-    | "hvar" "er" QPlacesSubjectNf "staðsettur"
-    | QPlacesPreposition "hvaða" "götu" "er" QPlacesSubjectNf
-    | QPlacesPreposition "hvaða" "stræti" "er" QPlacesSubjectNf
+    | "hvert" "er" "heimilisfang" QPlacesSubject_ef
+    | "hvað" "er" "heimilisfang" QPlacesSubject_ef
+    | "hvar" "er" QPlacesSubject_nf "til" "húsa"
+    | "hvar" "er" QPlacesSubject_nf "staðsett" 
+    | "hvar" "er" QPlacesSubject_nf "staðsettur"
+    | QPlacesPreposition "hvaða" "götu" "er" QPlacesSubject_nf
+    | QPlacesPreposition "hvaða" "stræti" "er" QPlacesSubject_nf
 
 QPlacesPrepAndSubject →
-    QPlacesPrepWithÞgf QPlacesSubjectÞgf
-    | QPlacesPrepWithÞf QPlacesSubjectÞf
+    QPlacesPrepWithÞgf QPlacesSubject_þgf
+    | QPlacesPrepWithÞf QPlacesSubject_þf
 
-QPlacesSubjectNf →
-    Nl_nf
+QPlacesSubject/fall →
+    Nl/fall
 
-QPlacesSubjectÞf →
-    Nl_þf
-
-QPlacesSubjectÞgf →
-    Nl_þgf
-
-QPlacesSubjectEf →
-    Nl_ef
+$tag(keep) QPlacesSubject/fall
 
 QPlacesPreposition →
     QPlacesPrepWithÞf | QPlacesPrepWithÞgf
@@ -173,18 +183,17 @@ def QPlacesAddress(node, params, result):
     result["qkey"] = "PlaceAddress"
 
 
-def QPlacesSubjectNf(node, params, result):
+def QPlacesSubject(node, params, result):
     result["subject_nom"] = _fix_placename(result._nominative)
 
 
-QPlacesSubjectEf = QPlacesSubjectÞgf = QPlacesSubjectÞf = QPlacesSubjectNf
-
-
 _PLACES_API_ERRMSG = "Ekki tókst að fletta upp viðkomandi stað"
-_NOT_ICELAND_ERRMSG = "Enginn staður með þetta heiti fannst á Íslandi"
+_NOT_IN_ICELAND_ERRMSG = "Enginn staður með þetta heiti fannst á Íslandi"
 
 
 def _parse_coords(place):
+    """ Return tuple of coordinates given a place info data structure
+        from Google's Places API. """
     try:
         lat = float(place["geometry"]["location"]["lat"])
         lng = float(place["geometry"]["location"]["lng"])
@@ -196,22 +205,33 @@ def _parse_coords(place):
     return None
 
 
+def _top_candidate(cand):
+    """ Return first place in Iceland in Google Places Search API results. """
+    for place in cand:
+        coords = _parse_coords(place)
+        if coords and in_iceland(coords):
+            return place
+
+
 def answ_address(placename, loc, qtype):
+    """ Generate answer to a question concerning the address of a place. """
     # Look up placename in places API
     res = query_places_api(
         placename, userloc=loc, fields="formatted_address,name,geometry"
     )
 
-    if res["status"] != "OK" or "candidates" not in res or not res["candidates"]:
+    if (
+        not res
+        or res["status"] != "OK"
+        or "candidates" not in res
+        or not res["candidates"]
+    ):
         return gen_answer(_PLACES_API_ERRMSG)
 
-    # Use top result
-    place = res["candidates"][0]
-
-    # Make sure it's in Iceland
-    coords = _parse_coords(place)
-    if not coords or not in_iceland(coords):
-        return gen_answer(_NOT_ICELAND_ERRMSG)
+    # Use top result in Iceland
+    place = _top_candidate(res["candidates"])
+    if not place:
+        return gen_answer(_NOT_IN_ICELAND_ERRMSG)
 
     # Remove superfluous "Ísland" in addr string
     addr = re.sub(r", Ísland$", "", place["formatted_address"])
@@ -235,6 +255,7 @@ def answ_address(placename, loc, qtype):
 
 
 def answ_openhours(placename, loc, qtype):
+    """ Generate answer to a question concerning the opening hours of a place. """
     # Look up placename in places API
     res = query_places_api(
         placename,
@@ -244,30 +265,25 @@ def answ_openhours(placename, loc, qtype):
     if res["status"] != "OK" or "candidates" not in res or not res["candidates"]:
         return gen_answer(_PLACES_API_ERRMSG)
 
-    from pprint import pprint
-    pprint(res)
-
     # Use top result
-    place = res["candidates"][0]
+    place = _top_candidate(res["candidates"])
+    if place is None:
+        return gen_answer(_NOT_IN_ICELAND_ERRMSG)
+
     if not "opening_hours" in place:
-        return gen_answer("Ekki tókst að sækja opnunartíma fyrir " + icequote(placename))
+        return gen_answer(
+            "Ekki tókst að sækja opnunartíma fyrir " + icequote(placename)
+        )
 
     place_id = place["place_id"]
     is_open = place["opening_hours"]["open_now"]
     # needs_disambig = len(res["candidates"]) > 1
     fmt_addr = place["formatted_address"]
 
-    # Make sure it's in Iceland
-    coords = _parse_coords(place)
-    if not coords or not in_iceland(coords):
-        return gen_answer(_NOT_ICELAND_ERRMSG)
-
     # Look up place ID in Place Details API to get more information
     res = query_place_details(place_id, fields="opening_hours,name")
-    if res["status"] != "OK" or not res or "result" not in res:
+    if not res or res.get("status") != "OK" or "result" not in res:
         return gen_answer(_PLACES_API_ERRMSG)
-
-    pprint(res)
 
     now = datetime.utcnow()
     # Sun is index 0, as req. by Google API
@@ -275,27 +291,37 @@ def answ_openhours(placename, loc, qtype):
 
     try:
         name = res["result"]["name"]
+        
         # Generate placename w. street, e.g. "Forréttabarinn á Nýlendugötu"
         street = fmt_addr.split()[0].rstrip(",")
-        street_þgf = "{nl:þgf}".format(nl=NounPhrase(street))
+        street_np = NounPhrase(street)
+        street_þgf = street_np.dative
+        street_gender = street_np.gender
+
         name = "{0} {1} {2}".format(name, iceprep_for_street(street), street_þgf)
+
+        # Get correct "open" adjective for place name
+        open_adj_map = { "kk": "opinn", "kvk": "opin", "hk": "opið"}
+        open_adj = open_adj_map.get(street_gender) or "opið"
 
         # Get opening hours for current weekday
         periods = res["result"]["opening_hours"]["periods"]
-        if len(periods) == 1 or wday > len(periods)-1:
+        if len(periods) == 1 or wday > len(periods):
             # Open 24 hours a day
-            today_desc = p_desc = "{0} er opin allan sólarhringinn".format(name)
+            today_desc = p_desc = "{0} er {1} allan sólarhringinn".format(name, open_adj)
         else:
+            # Get period
             p = periods[wday]
             opens = p["open"]["time"]
             closes = p["close"]["time"]
-            # Format correctly
+
+            # Format correctly, e.g. "12:00 - 19:00"
             openstr = opens[:2] + ":" + opens[2:]
             closestr = closes[:2] + ":" + opens[2:]
             p_desc = "{0} - {1}".format(openstr, closestr)
             p_voice = p_desc.replace("-", "til")
-            # TODO: opin vs. opinn vs. opið
-            today_desc = "Í dag er {0} opin frá {1}".format(name, p_voice)
+
+            today_desc = "Í dag er {0} {1} frá {2}".format(name, open_adj, p_voice)
     except Exception as e:
         logging.warning("Exception generating answer for opening hours: {0}".format(e))
         return gen_answer(_PLACES_API_ERRMSG)
@@ -308,7 +334,9 @@ def answ_openhours(placename, loc, qtype):
     elif qtype == "IsOpen" or qtype == "IsClosed":
         yes_no = (
             "Já"
-            if (is_open and qtype == "IsOpen" or not is_open and qtype == "IsClosed")
+            if (
+                (is_open and qtype == "IsOpen") or (not is_open and qtype == "IsClosed")
+            )
             else "Nei"
         )
         answer = "{0}. {1}.".format(yes_no, today_desc)
@@ -338,7 +366,7 @@ def sentence(state, result):
             res = handlerfunc(subj, q.location, result.qkey)
             if res:
                 q.set_answer(*res)
-                q.set_source("Google")
+                q.set_source("Google Maps")
             else:
                 errmsg = "Ekki tókst að fletta upp staðnum {0}".format(icequote(subj))
                 q.set_answer(*gen_answer(errmsg))

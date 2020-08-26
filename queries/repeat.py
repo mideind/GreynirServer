@@ -47,6 +47,7 @@ _REPEAT_PREFIXES = tuple(
         "endurtaktu orðið",
         "endurtaktu orðin",
         "endurtaktu",
+        "hermdu eftir mér",
         # "segðu",
     )
 )

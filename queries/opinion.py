@@ -27,23 +27,24 @@
 import re
 from datetime import datetime, timedelta
 
+from queries import gen_answer
+
 
 _OPINION_QTYPE = "Opinion"
 
 
 _OPINION_REGEXES = (
-    r"hvað finnst þér um (.+)$",
-    r"hvað finnst þér eiginlega um (.+)$",
-    r"hvað þykir þér um (.+)$",
-    r"hvaða skoðun hefurðu á (.+)$",
-    r"hvaða skoðun hefur þú á (.+)$",
-    r"hvaða skoðun ertu með á (.+)$",
-    r"hvaða skoðun ert þú með á (.+)$",
+    r"hvað finnst þér (?:eiginlega)?\s?um (.+)$",
+    r"hvað þykir þér (?:eiginlega)?\s?um (.+)$",
+    r"hvaða skoðun hefurðu (?:eiginlega)?\s?á (.+)$",
+    r"hvaða skoðun hefur þú (?:eiginlega)?\s?á (.+)$",
+    r"hvaða skoðun ertu með (?:eiginlega)?\s?á (.+)$",
+    r"hvaða skoðun ert þú (?:eiginlega)?\s?með á (.+)$",
     r"hver er skoðun þín á (.+)$",
-    r"hvaða skoðanir hefur þú á (.+)$",
-    r"hvaða skoðanir hefurðu á (.+)$",
+    r"hvaða skoðanir hefur þú (?:eiginlega)?\s?á (.+)$",
+    r"hvaða skoðanir hefurðu á (?:eiginlega)?\s?(.+)$",
     r"hvert er álit þitt á (.+)$",
-    r"hvaða álit hefurðu á (.+)$",
+    r"hvaða álit hefurðu (?:eiginlega)?\s?á (.+)$",
     r"ertu reið yfir (.+)$",
     r"ert þú reið yfir (.+)$",
     r"ertu bitur yfir (.+)$",
@@ -72,10 +73,7 @@ def handle_plain_text(q):
         return False
 
     answer = "Ég hef enga sérstaka skoðun í þeim efnum."
-    voice = answer
-    response = dict(answer=answer)
-
-    q.set_answer(response, answer, voice)
+    q.set_answer(*gen_answer(answer))
     q.set_qtype(_OPINION_QTYPE)
     q.set_expires(datetime.utcnow() + timedelta(hours=24))
 
