@@ -12,7 +12,7 @@
 **extracts processable information from Icelandic text**, allows
 **natural language querying** of that information and facilitates
 **natural language understanding**. Greynir is the core of
-[*Embla*](https://embla.is), a voice-based question answering app
+[*Embla*](https://embla.is), a voice-driven virtual assistant app
 for smartphones and tablets.
 
 Try Greynir (in Icelandic) at [https://greynir.is](https://greynir.is)

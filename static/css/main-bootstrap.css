@@ -1173,7 +1173,8 @@ div.result i.person {
    font-weight: 700;
 }
 
-div.result i.entity {
+div.result i.entity,
+div.result i.company {
    color: #777777;
    font-weight: 700;
 }

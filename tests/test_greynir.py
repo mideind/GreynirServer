@@ -96,6 +96,30 @@ def test_api(client):
         assert resp.content_type.startswith(API_CONTENT_TYPE)
 
 
+def test_postag_api(client):
+    resp = client.get(r"/postag.api?t=Hér%20sé%20ást%20og%20friður")
+    assert resp.status_code == 200
+    assert resp.content_type == "application/json; charset=utf-8"
+    assert "result" in resp.json
+    assert len(resp.json["result"]) == 1
+    assert len(resp.json["result"][0]) == 5
+
+
+def test_ifdtag_api(client):
+    resp = client.get(r"/ifdtag.api?t=Hér%20sé%20ást%20og%20friður")
+    assert resp.status_code == 200
+    assert resp.content_type == "application/json; charset=utf-8"
+    assert "valid" in resp.json
+    # The IFD tagger doesn't work out of the box, i.e. directly from
+    # a git clone. It needs the config/TnT-model.pickle file, which is
+    # generated separately. The test will thus not produce a tagged
+    # result, without further preparation.
+    # assert resp.json["valid"]
+    # assert "result" in resp.json
+    # assert len(resp.json["result"]) == 1
+    # assert len(resp.json["result"][0]) == 5
+
+
 def test_del_query_history(client):
     """ Test query history deletion API. """
 
@@ -259,6 +283,11 @@ def test_geo():
     assert capitalize_placename("bosnía og hersegóvína") == "Bosnía og Hersegóvína"
     assert capitalize_placename("Norður-Makedónía") == "Norður-Makedónía"
 
+    # Distance
+    assert int(distance((64.141439, -21.943944), (65.688131, -18.102528))) == 249
+    assert in_iceland((66.462205, -15.968417))
+    assert not in_iceland((62.010846, -6.776709))
+    assert not in_iceland((62.031342, -18.539553))
 
 def test_doc():
     """ Test document-related functions in doc.py """

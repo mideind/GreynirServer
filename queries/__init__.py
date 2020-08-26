@@ -24,6 +24,8 @@
 
 """
 
+from typing import Optional
+
 import logging
 import requests
 import json
@@ -33,6 +35,7 @@ import locale
 import math
 from urllib.parse import urlencode
 from functools import lru_cache
+from xml.dom import minidom
 
 from tzwhere import tzwhere
 from pytz import country_timezones
@@ -313,7 +316,7 @@ def distance_desc(km_dist, case="nf", in_metres=1.0, abbr=False):
     # E.g. 7,3 kílómetrar
     if km_dist >= in_metres:
         rounded_km = round(km_dist, 1 if km_dist < 10 else 0)
-        dist = format_icelandic_float(rounded_km)
+        dist = iceformat_float(rounded_km)
         plidx = 1 if is_plural(rounded_km) else 0
         unit_long = "kíló" + _METER_NOUN[plidx][cidx]
         unit = "km" if abbr else unit_long
@@ -343,7 +346,7 @@ def krona_desc(amount, case="nf"):
     assert case in _CASE_ABBR
     cidx = _CASE_ABBR.index(case)
     plidx = 1 if is_plural(amount) else 0
-    return "{0} {1}".format(format_icelandic_float(amount), _KRONA_NOUN[plidx][cidx])
+    return "{0} {1}".format(iceformat_float(amount), _KRONA_NOUN[plidx][cidx])
 
 
 def strip_trailing_zeros(num_str):
@@ -354,11 +357,17 @@ def strip_trailing_zeros(num_str):
     return num_str
 
 
-def format_icelandic_float(fp_num):
-    """ Convert number to Icelandic decimal format. """
+def iceformat_float(fp_num, decimal_places=2, strip_zeros=True):
+    """ Convert number to Icelandic decimal format string. """
     with changedlocale(category="LC_NUMERIC"):
-        res = locale.format_string("%.2f", fp_num, grouping=True).replace(" ", ".")
-        return strip_trailing_zeros(res)
+        fmt = "%.{0}f".format(decimal_places)
+        res = locale.format_string(fmt, float(fp_num), grouping=True).replace(" ", ".")
+        return strip_trailing_zeros(res) if strip_zeros else res
+
+
+def icequote(s):
+    """ Return string surrounded by Icelandic-style quotation marks. """
+    return "„{0}“".format(s.strip())
 
 
 def gen_answer(a):
@@ -387,6 +396,32 @@ def query_json_api(url):
         return res
     except Exception as e:
         logging.warning("Error parsing JSON API response: {0}".format(e))
+
+    return None
+
+
+def fetch_xml(url):
+    """ Request the URL, expecting an XML response which is 
+        parsed and returned as an XML document object. """
+
+    # Send request
+    try:
+        r = requests.get(url)
+    except Exception as e:
+        logging.warning(str(e))
+        return None
+
+    # Verify that status is OK
+    if r.status_code != 200:
+        logging.warning("Received status {0} from server".format(r.status_code))
+        return None
+
+    # Parse XML response
+    try:
+        xmldoc = minidom.parseString(r.text)
+        return xmldoc
+    except Exception as e:
+        logging.warning("Error parsing XML response: {0}".format(e))
 
     return None
 
@@ -497,7 +532,7 @@ _PLACES_API_URL = (
     "https://maps.googleapis.com/maps/api/place/findplacefromtext/json?{0}"
 )
 
-_PLACES_LOCBIAS_RADIUS = 2000  # Metres
+_PLACES_LOCBIAS_RADIUS = 5000  # Metres
 
 
 def query_places_api(
@@ -524,6 +559,7 @@ def query_places_api(
         "fields": fields,
         "key": key,
         "language": "is",
+        "region": "is",
     }
     if userloc:
         qdict["locationbias"] = "circle:{0}@{1},{2}".format(
@@ -567,7 +603,7 @@ def query_place_details(place_id, fields=None):
     return res
 
 
-_TZW = None
+_TZW = None  # type: Optional[tzwhere.tzwhere]
 
 
 def tzwhere_singleton():

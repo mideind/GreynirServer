@@ -25,6 +25,7 @@
 
 from datetime import datetime
 import logging
+import os
 
 from flask import request, abort
 
@@ -478,6 +479,65 @@ def query_history_api(version=1):
         session.execute(Query.table().delete().where(Query.client_id == client_id))
 
     return better_jsonify(valid=True)
+
+
+_SPEECH_API_KEY = None
+_SPEECH_API_KEY_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "resources", "GreynirSpeechKey.txt"
+)
+
+
+def _speech_api_key():
+    """ Load speech key from file. """
+    global _SPEECH_API_KEY
+    if _SPEECH_API_KEY is None:
+        with open(_SPEECH_API_KEY_PATH) as f:
+            _SPEECH_API_KEY = f.read().strip()
+    return _SPEECH_API_KEY
+
+
+@routes.route("/speech.api", methods=["GET", "POST"])
+@routes.route("/speech.api/v<int:version>", methods=["GET", "POST"])
+def speech_api(version=1):
+    """ Send in text, receive URL to speech-synthesised audio file. """
+
+    if not (1 <= version <= 1):
+        return better_jsonify(valid=False, reason="Unsupported version")
+
+    reply = dict(err=True)
+
+    text = request.values.get("text")
+    if not text:
+        return better_jsonify(**reply)
+
+    key = request.values.get("key")
+    fmt = request.values.get("format", "ssml")
+    if fmt not in ["text", "ssml"]:
+        fmt = "ssml"
+    voice_id = request.values.get("voice_id", "Dora")
+    speed = request.values.get("voice_id", 1.0)
+    if not isinstance(speed, float):
+        try:
+            speed = float(speed)
+        except:
+            speed = 1.0
+
+    sak = _speech_api_key()
+    if not sak or key != sak:
+        reply["errmsg"] = "Invalid or missing API key."
+        return better_jsonify(**reply)
+
+    try:
+        url = get_synthesized_text_url(
+            text, txt_format=fmt, voice_id=voice_id, speed=speed
+        )
+    except:
+        return better_jsonify(**reply)
+
+    reply["audio_url"] = url
+    reply["err"] = False
+
+    return better_jsonify(**reply)
 
 
 @routes.route("/feedback.api", methods=["POST"])

@@ -4,7 +4,8 @@
 
     Search module
 
-    Copyright (C) 2016 Vilhjálmur Þorsteinsson
+    Copyright (C) 2020 Miðeind ehf.
+    Original author: Vilhjálmur Þorsteinsson
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -25,6 +26,8 @@
 
 """
 
+from typing import Optional, List, Dict, Any
+
 from datetime import timedelta
 
 from settings import Settings
@@ -38,9 +41,9 @@ class Search:
         via the similarity client. """
 
     # Similarity query client
-    similarity_client = None
+    similarity_client = None  # type: Optional[SimilarityClient]
 
-    def __init__(self):
+    def __init__(self) -> None:
         """ This class is normally not instantiated """
         pass
 
@@ -55,6 +58,7 @@ class Search:
         """ List n articles that are similar to the article with the given id """
         cls._connect()
         # Returns a list of tuples: (article_id, similarity)
+        assert cls.similarity_client is not None
         result = cls.similarity_client.list_similar_to_article(uuid, n=n + 5)
         result = result.get("articles", [])
         # Convert the result tuples into article descriptors
@@ -65,6 +69,7 @@ class Search:
         """ List n articles that are similar to the given topic vector """
         cls._connect()
         # Returns a list of tuples: (article_id, similarity)
+        assert cls.similarity_client is not None
         result = cls.similarity_client.list_similar_to_topic(topic_vector, n=n + 5)
         result = result.get("articles", [])
         # Convert the result tuples into article descriptors
@@ -76,6 +81,7 @@ class Search:
             terms are expected to be a list of (stem, category) tuples. """
         cls._connect()
         # Returns a list of tuples: (article_id, similarity)
+        assert cls.similarity_client is not None
         result = cls.similarity_client.list_similar_to_terms(terms, n=n + 5)
         # Convert the result tuples into article descriptors
         articles = result.get("articles", [])
@@ -86,7 +92,7 @@ class Search:
     @classmethod
     def list_articles(cls, session, result, n):
         """ Convert similarity result tuples into article descriptors """
-        similar = []
+        similar = []  # type: List[Dict[str, Any]]
         for sid, similarity in result:
             if similarity > 0.9999:
                 # The original article (or at least a verbatim copy of it)

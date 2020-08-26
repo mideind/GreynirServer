@@ -35,10 +35,10 @@ import random
 from datetime import datetime, timedelta
 
 from queries import query_json_api, gen_answer
+from query import Query
 
 
 _WIKI_QTYPE = "Wikipedia"
-
 
 # For end user presentation
 _WIKIPEDIA_CANONICAL = "Wikipedía"
@@ -80,7 +80,7 @@ def help_text(lemma):
             (
                 "Hvað segir Wikipedía um Berlín",
                 "Hvað getur Wikipedía sagt mér um heimspeki",
-                "Fræddu mig um afstæðiskenninguna" "Flettu upp ",
+                "Fræddu mig um afstæðiskenninguna",
             )
         )
     )
@@ -104,25 +104,32 @@ QWikiQuery →
     | "hvað" "segir" QWikipedia "um"? QWikiSubjectÞf
     | "hvað" "stendur" "í" QWikipedia "um" QWikiSubjectÞf
     | "hvað" "stendur" "um" QWikiSubjectÞf "í" QWikipedia
-    | "hvað" "getur" "þú" "sagt" "mér"? "um" QWikiSubjectÞf
-    | "hvað" "geturðu" "sagt" "mér"? "um" QWikiSubjectÞf
-    | "hvað" "getur" QWikipedia "sagt" "mér"? "um" QWikiSubjectÞf
+    | "hvað" "getur" "þú" "sagt" QWikiMeOrUsÞgf? "um" QWikiSubjectÞf
+    | "hvað" "geturðu" "sagt" QWikiMeOrUsÞgf? "um" QWikiSubjectÞf
+    | "hvað" "getur" QWikipedia "sagt" QWikiMeOrUsÞgf? "um" QWikiSubjectÞf
     | "hvaða" "upplýsingar" "ert" "þú" "með" "um" QWikiSubjectÞf
     | "hvaða" "upplýsingar" "ertu" "með" "um" QWikiSubjectÞf
     | "hvaða" "upplýsingar" "er" QWikipedia "með" "um" QWikiSubjectÞf
     | "hvaða" "upplýsingum" "býr" QWikipedia "yfir" "varðandi" QWikiSubjectÞf
     | "hvaða" "upplýsingum" "býrðu" "yfir" "varðandi" QWikiSubjectÞf
-    | "hvað" "myndi" QWikipedia "segja" "mér"? "um" QWikiSubjectÞf
-    | "fræddu" "mig" "um" QWikiSubjectÞf
-    | "geturðu" "frætt" "mig" "um" QWikiSubjectÞf
-    | "nennirðu" "að" "fræða" "mig" "um" QWikiSubjectÞf
+    | "hvað" "myndi" QWikipedia "segja" QWikiMeOrUsÞgf? "um" QWikiSubjectÞf
+    | "fræddu" QWikiMeOrUsÞf "um" QWikiSubjectÞf
+    | "geturðu" "frætt" QWikiMeOrUsÞf "um" QWikiSubjectÞf
+    | "nennirðu" "að" "fræða" QWikiMeOrUsÞf "um" QWikiSubjectÞf
 
     # These take the subject in the dative case
-    | "segðu" "mér" "frá" QWikiSubjectÞgf
+    | "segðu" QWikiMeOrUsÞgf "frá" QWikiSubjectÞgf
+    | "segðu" QWikiMeOrUsÞgf "eitthvað" "um" QWikiSubjectÞf
     | "flettu" "upp" QWikiSubjectÞgf "í" QWikipedia
     | "geturðu" "flett" "upp" QWikiSubjectÞgf "í" QWikipedia
     | "nennirðu" "að" "fletta" "upp" QWikiSubjectÞgf "í" QWikipedia
     | "gætirðu" "flett" "upp" QWikiSubjectÞgf "í" QWikipedia
+
+QWikiMeOrUsÞgf →
+    "mér" | "okkur"
+
+QWikiMeOrUsÞf →
+    "mig" | "okkur"
 
 QWikiSubjectNf →
     QWikiPrevSubjectNf | QWikiSubjectNlNf
@@ -181,10 +188,10 @@ QWikiSubjectNlÞf = QWikiSubjectNlÞgf = QWikiSubjectNlNf
 def QWikiPrevSubjectNf(node, params, result):
     """ Reference to previous result, usually via personal
         pronouns ('Hvað segir Wikipedía um hann/hana/það?'). """
-    q = result.state.get("query")
-    ctx = q is not None and q.fetch_context()
+    q = result.state.get("query")  # type: Query
+    ctx = None if q is None else q.fetch_context()
     ctx_keys = ["person_name", "entity_name", "subject"]
-    if ctx:
+    if ctx is not None:
         keys = list(filter(lambda k: k in ctx, ctx_keys))
         if keys:
             result.context_reference = True

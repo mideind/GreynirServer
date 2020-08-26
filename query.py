@@ -26,6 +26,10 @@
 
 """
 
+from typing import Optional, Tuple, List, Dict, Callable, Any
+
+from types import ModuleType
+
 import importlib
 import logging
 from datetime import datetime, timedelta
@@ -40,7 +44,7 @@ from db import SessionContext, desc
 from db.models import Query as QueryRow
 
 from tree import Tree
-from reynir import TOK, tokenize, correct_spaces
+from reynir import TOK, Tok, tokenize, correct_spaces
 from reynir.fastparser import Fast_Parser, ParseForestDumper, ParseError, ffi
 from reynir.binparser import BIN_Grammar, GrammarError
 from reynir.reducer import Reducer
@@ -49,6 +53,9 @@ from nertokenizer import recognize_entities
 from images import get_image_url
 from processor import modules_in_dir
 
+
+# Latitude, longitude
+LocationType = Tuple[float, float]
 
 # The grammar root nonterminal for queries; see Reynir.grammar
 _QUERY_ROOT = "QueryRoot"
@@ -176,11 +183,18 @@ class Query:
         the best parse tree using the nonterminal handlers given above, returning a
         result object if successful. """
 
-    _parser = None
-    _processors = []
-    _help_texts = dict()
+    _parser = None  # type: Optional[QueryParser]
+    _processors = []  # type: List[ModuleType]
+    _help_texts = dict()  # type: Dict[str, List[Callable]]
 
-    def __init__(self, session, query, voice, auto_uppercase, location, client_id):
+    def __init__(
+        self, session,
+        query: str, voice: str,
+        auto_uppercase: bool,
+        location: Optional[LocationType],
+        client_id: str
+    ) -> None:
+
         q = self._preprocess_query_string(query)
         self._session = session
         self._query = q or ""
@@ -201,7 +215,7 @@ class Query:
         # A version of self._answer that can be
         # fed to a voice synthesizer
         self._voice_answer = None
-        self._tree = None
+        self._tree = None  # type: Optional[Tree]
         self._qtype = None
         self._key = None
         self._toklist = None
@@ -284,11 +298,12 @@ class Query:
     def _parse(toklist):
         """ Parse a token list as a query """
         bp = Query._parser
+        assert bp is not None
         num_sent = 0
         num_parsed_sent = 0
         rdc = Reducer(bp.grammar)
         trees = dict()
-        sent = []
+        sent = []  # type: List[Tok]
 
         for t in toklist:
             if t[0] == TOK.S_BEGIN:
@@ -521,11 +536,11 @@ class Query:
 
     @property
     def command(self):
-        """ URL answer associated with this query """
+        """ JS command associated with this query """
         return self._command
 
-    def set_command(self, u):
-        self._command = u
+    def set_command(self, c):
+        self._command = c
 
     @property
     def source(self):
@@ -640,7 +655,7 @@ class Query:
             result["answer"] = result["voice"] = help_text_func(lemma)
             result["valid"] = True
 
-    def execute(self):
+    def execute(self) -> Dict[str, Any]:
         """ Check whether the parse tree is describes a query, and if so,
             execute the query, store the query answer in the result dictionary
             and return True """

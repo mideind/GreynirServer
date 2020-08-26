@@ -34,7 +34,7 @@ import random
 from math import floor, log10
 
 import query
-from queries import format_icelandic_float, parse_num
+from queries import iceformat_float, parse_num
 from settings import Settings
 
 
@@ -483,7 +483,7 @@ def sentence(state, result):
             )
             response = dict(answer=answer)
         else:
-            answer = format_icelandic_float(val)
+            answer = iceformat_float(val)
             if (0.0 < val < 1.0e-3) or (val > 0.0 and answer == "0"):
                 answer = "næstum núll " + result.unit_to_nf
                 val = 0.0

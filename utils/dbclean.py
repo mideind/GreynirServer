@@ -19,18 +19,18 @@
 
 
     Utility script that inspects articles in Greynir's database
-    and removes those that are:
+    and removes those that:
 
-    * Duplicates (e.g. https & http URLs)
-    * Non-Icelandic
     * Don't contain any sentences
+    * Are duplicates (e.g. https vs http URLs)
+    * Are non-Icelandic
     * Contain lots of "chaff", i.e. many very short sentences (prob. scraper issues)
 
 """
 
 import os
 import sys
-import gc
+import re
 from random import shuffle
 
 # Hack to make this Python program executable from the utils subdirectory
@@ -41,10 +41,9 @@ if basepath.endswith(_UTILS):
     sys.path.append(basepath)
 
 from settings import Settings
-from article import Article
-from db.models import Article as ArticleModel
-
+# from article import Article
 from db import SessionContext
+from db.models import Article as ArticleModel
 
 from reynir.bintokenizer import tokens_are_foreign
 
@@ -62,18 +61,32 @@ def main():
 
         # Zero sentences
         print("Deleting all articles with zero sentences")
-        res = session.execute(ArticleModel.table().delete().where(ArticleModel.num_sentences == 0))
-        print(str(res.rowcount) + " deleted")
+        res = session.execute(
+            ArticleModel.table().delete().where(ArticleModel.num_sentences == 0)
+        )
+        print(str(res.rowcount) + " articles deleted")
 
         # Non-Icelandic
-
+        # TODO: Implement me!
 
         # Duplicates
-        # For each article, check whether there is a corresponding 
-        # article URL with https instead of http and vice versa
+        # For each https article, check whether there is a corresponding
+        # article URL with http URI scheme
+        dupl = 0
+        q = session.query(ArticleModel.url).filter(ArticleModel.url.like("https://%"))
+        for r in q.all():
+            url = re.sub(r"^https://", r"http://", r.url)
+            # c = session.query(ArticleModel.url).filter(ArticleModel.url == url).count()
+            res = session.execute(
+                ArticleModel.table().delete().where(ArticleModel.url == url)
+            )
+            dupl += res.rowcount
+        print("{0} duplicate URLs w. HTTP scheme removed".format(dupl))
 
         # Chaff
         # ???
+        # TODO: Implement me!
+
 
 if __name__ == "__main__":
     main()

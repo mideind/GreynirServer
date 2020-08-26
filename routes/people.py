@@ -21,6 +21,7 @@
 
 """
 
+from typing import Dict, Tuple, cast, Counter as CounterType
 
 from . import routes, max_age, cache, restricted, days_from_period_arg
 
@@ -52,7 +53,7 @@ _TOP_PERSONS_PERIOD = 1  # in days
 
 def recent_persons(limit=_RECENT_PERSONS_LENGTH):
     """ Return a list of names and titles appearing recently in the news """
-    toplist = dict()
+    toplist = dict()  # type: Dict[str, Tuple[str, str, str, str]]
 
     with SessionContext(read_only=True) as session:
 
@@ -165,7 +166,7 @@ def graph_data(num_persons=_DEFAULT_NUM_PERSONS_GRAPH):
         res = q.all()
 
         # Count number of occurrences of each name
-        cnt = Counter()
+        cnt = Counter()  # type: CounterType[str]
         for name, _, _ in res:
             cnt[name] += 1
 
@@ -179,8 +180,8 @@ def graph_data(num_persons=_DEFAULT_NUM_PERSONS_GRAPH):
                 articles[art_id].add(name)
 
         # Find all links
-        nlinks = defaultdict(int)
-        for a_id, persons in articles.items():
+        nlinks = defaultdict(int)  # type: Dict[Tuple[int, int], int]
+        for _, persons in articles.items():
             if len(persons) < 2:
                 # We need at least two names to establish link
                 continue
@@ -191,7 +192,7 @@ def graph_data(num_persons=_DEFAULT_NUM_PERSONS_GRAPH):
                 # We use a sorted tuple as hashable dict key when
                 # counting number of connections between any two names
                 k = tuple(sorted([names.index(a), names.index(b)]))
-                nlinks[k] += 1
+                nlinks[cast(Tuple[int, int], k)] += 1
 
         # Create final link and node data structures
         links = [
