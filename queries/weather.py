@@ -48,7 +48,7 @@ import random
 from datetime import datetime, timedelta
 
 from queries import gen_answer, query_json_api, is_plural
-from geo import distance, isocode_for_country_name, ICE_PLACENAME_BLACKLIST
+from geo import distance, in_iceland, isocode_for_country_name, ICE_PLACENAME_BLACKLIST
 from iceaddr import placename_lookup
 from iceweather import observation_for_closest, observation_for_station, forecast_text
 
@@ -385,14 +385,6 @@ def _near_capital_region(loc):
     return distance(loc, _RVK_COORDS) < 30
 
 
-_ICELAND_COORDS = (64.9957538607, -18.5739616708)
-
-
-def _in_iceland(loc, km_dist=300):
-    """ Check if coordinates are within or very close to Iceland """
-    return distance(loc, _ICELAND_COORDS) < km_dist
-
-
 def _round_to_nearest_hour(t):
     """ Round datetime to nearest hour """
     return t.replace(second=0, microsecond=0, minute=0, hour=t.hour) + timedelta(
@@ -657,7 +649,7 @@ def sentence(state, result):
         q.set_key(result.qkey)
 
         # Asking for a location outside Iceland
-        if q.location and not _in_iceland(q.location):
+        if q.location and not in_iceland(q.location):
             return gen_answer("Ég þekki ekki til veðurs utan Íslands")
 
         handler_func = _HANDLERS[result.qkey]

@@ -519,17 +519,22 @@ _I_SUFFIXES = (
     "tangi",
     "nes",
     "stræti",
-    "Lækjargata",
     "hlíð",
     "sund",
+    "garður",
+    "garðar",
+    "múli",
+    "fen",
+    "vogur",
+    "Lækjargata",
+    "Skeifan",
+    "Kringlan",
 )
 
 
 def iceprep_for_street(street_name):
     """ Return the right preposition ("í" or "á") for
         an Icelandic street name, e.g. "Fiskislóð". """
-
-    # TODO: Implement me properly
     if street_name.endswith(_I_SUFFIXES):
         return "í"
     return "á"
@@ -725,6 +730,14 @@ def distance(loc1, loc2):
     )
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return _EARTH_RADIUS * c
+
+
+ICELAND_COORDS = (64.9957538607, -18.5739616708)
+
+
+def in_iceland(loc, km_radius=300.0):
+    """ Check if coordinates are within or very close to Iceland. """
+    return distance(loc, ICELAND_COORDS) <= km_radius
 
 
 if __name__ == "__main__":

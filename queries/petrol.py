@@ -31,13 +31,7 @@ import cachetools
 import random
 
 from geo import distance
-from queries import (
-    query_json_api,
-    format_icelandic_float,
-    gen_answer,
-    distance_desc,
-    krona_desc,
-)
+from queries import query_json_api, gen_answer, distance_desc, krona_desc
 
 
 _PETROL_QTYPE = "Petrol"

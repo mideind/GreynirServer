@@ -793,8 +793,7 @@ function tokenInfo(t, nameDict) {
    if (t.k === TOK_COMPANY) {
       r.lemma = t.x;
       r.details = "fyrirtæki";
-
-   }  
+   }
    if (t.corr !== undefined) {
       // A correction applies to this token:
       // add the "corr" class to it

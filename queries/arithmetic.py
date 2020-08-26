@@ -23,8 +23,7 @@
 
 """
 
-# TODO: "hvað er X ÁN vaski/virðisaukaskatti?"
-# TODO: Support pi in arithmetic ops ("Hvað er pí í öðru veldi?")
+# TODO: "hvað er X ÁN vasks/virðisaukaskatts?"
 
 from typing import Dict, Any
 
@@ -34,7 +33,7 @@ import re
 import logging
 import random
 
-from queries import format_icelandic_float, gen_answer
+from queries import iceformat_float, gen_answer
 
 
 _ARITHMETIC_QTYPE = "Arithmetic"
@@ -316,7 +315,7 @@ QArNumberWord/arfall →
     # to is a declinable number word ('tveir/tvo/tveim/tveggja')
     # töl is an undeclinable number word ('sautján')
     # tala is a number ('17')
-    to/arfall | töl | tala
+    to/arfall | töl | tala | "pí"
 
 QArNumberWord_nf →
     "núll" | QArLastResult_nf
@@ -368,8 +367,11 @@ def parse_num(num_str):
     """ Parse Icelandic number string to float or int """
     num = None
     try:
+        # Pi
+        if num_str == "pí":
+            num = math.pi
         # Handle numbers w. Icelandic decimal places ("17,2")
-        if re.search(r"^\d+,\d+", num_str):
+        elif re.search(r"^\d+,\d+$", num_str):
             num = float(num_str.replace(",", "."))
         # Handle digits ("17")
         else:
@@ -648,7 +650,7 @@ def calc_arithmetic(query, result):
 
     if isinstance(res, float):
         # Convert result to Icelandic decimal format
-        answer = format_icelandic_float(res)
+        answer = iceformat_float(res)
     else:
         answer = str(res)
 

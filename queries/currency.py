@@ -31,7 +31,7 @@ import json
 import random
 import logging
 
-from queries import query_json_api, format_icelandic_float, is_plural
+from queries import query_json_api, iceformat_float, is_plural
 from settings import Settings
 
 
@@ -494,7 +494,7 @@ def sentence(state, result):
         elif result.op == "general":
             # 'Hvert er gengi dollarans?'
             val = _query_exchange_rate(result.currencies[0], "ISK")
-            suffix = "krónur" if is_plural(format_icelandic_float(val)) else "króna"
+            suffix = "krónur" if is_plural(iceformat_float(val)) else "króna"
         elif result.op == "convert":
             # 'Hvað eru 100 evrur margar krónur?'
             suffix = result.currency  # 'krónur'
@@ -509,7 +509,7 @@ def sentence(state, result):
             raise Exception("Unknown operator: {0}".format(result.op))
 
         if val:
-            answer = format_icelandic_float(val)
+            answer = iceformat_float(val)
             response = dict(answer=answer)
             voice_answer = "{0} {3} {1}{2}.".format(
                 result.desc, answer, (" " + suffix) if suffix else "", verb

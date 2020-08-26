@@ -40,6 +40,7 @@ from reynir.fastparser import Fast_Parser, ParseError, ParseForestDumper
 from reynir.incparser import IncrementalParser
 from tree import Tree
 from treeutil import TreeUtility
+from tokenizer import __version__ as tokenizer_version
 
 
 # We don't bother parsing sentences that have more than 100 tokens,
@@ -335,7 +336,7 @@ class Article:
             # parse_time = ip.parse_time
 
             self._parsed = datetime.utcnow()
-            self._parser_version = bp.version
+            self._parser_version = "{0}/{1}".format(bp.version, tokenizer_version)
             self._num_tokens = ip.num_tokens
             self._num_sentences = ip.num_sentences
             self._num_parsed = ip.num_parsed

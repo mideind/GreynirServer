@@ -152,7 +152,7 @@ class Article(Base):
     # Version of scraper class
     scr_version = Column(String(16))
     # Version of parser/grammar/config
-    parser_version = Column(String(32))
+    parser_version = Column(String(64))
     # Parse statistics
     num_sentences = Column(Integer)
     num_parsed = Column(Integer)
