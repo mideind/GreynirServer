@@ -271,7 +271,7 @@ class Scraper:
             # Let the pool work on chunks of articles, recycling the
             # processes after each chunk to contain memory creep.
             # Default to using as many processes as there are CPUs
-            CPU_COUNT = numprocs or cpu_count()
+            CPU_COUNT = numprocs or cpu_count() or 1
 
             if urls is None and uuid is None and not reparse:
 
@@ -284,10 +284,16 @@ class Scraper:
 
                 # Use a multiprocessing pool to scrape the roots
 
-                pool = Pool(CPU_COUNT)
-                pool.imap_unordered(self._scrape_single_root, iter_roots())
-                pool.close()
-                pool.join()
+                with Pool(CPU_COUNT) as pool:
+                    try:
+                        for _ in pool.imap_unordered(
+                            self._scrape_single_root, iter_roots()
+                        ):
+                            pass
+                    except Exception as e:
+                        logging.warning("Caught exception: {0}".format(e))
+                    pool.close()
+                    pool.join()
 
                 # noinspection PyComparisonWithNone
                 def iter_unscraped_articles():
@@ -307,12 +313,16 @@ class Scraper:
 
                 # Use a multiprocessing pool to scrape the articles
 
-                pool = Pool(CPU_COUNT)
-                pool.imap_unordered(
-                    self._scrape_single_article, iter_unscraped_articles()
-                )
-                pool.close()
-                pool.join()
+                with Pool(CPU_COUNT) as pool:
+                    try:
+                        for _ in pool.imap_unordered(
+                            self._scrape_single_article, iter_unscraped_articles()
+                        ):
+                            pass
+                    except Exception as e:
+                        logging.warning("Caught exception: {0}".format(e))
+                    pool.close()
+                    pool.join()
 
             # noinspection PyComparisonWithNone
             def iter_unparsed_articles(reparse, limit):
@@ -395,13 +405,14 @@ class Scraper:
                     logging.info(
                         "Parser processes forking, chunk of {0} articles".format(lcnt)
                     )
-                    pool = Pool(CPU_COUNT)
-                    try:
-                        pool.imap_unordered(self._parse_single_article, adlist)
-                    except Exception as e:
-                        logging.warning("Caught exception: {0}".format(e))
-                    pool.close()
-                    pool.join()
+                    with Pool(CPU_COUNT) as pool:
+                        try:
+                            for _ in pool.imap_unordered(self._parse_single_article, adlist):
+                                pass
+                        except Exception as e:
+                            logging.warning("Caught exception: {0}".format(e))
+                        pool.close()
+                        pool.join()
                     cnt += lcnt
                     logging.info(
                         "Parser processes joined, chunk of {0} articles parsed, "
