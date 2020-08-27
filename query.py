@@ -42,6 +42,7 @@ from settings import Settings
 
 from db import SessionContext, desc
 from db.models import Query as QueryRow
+from db.models import QueryData
 
 from tree import Tree
 from reynir import TOK, Tok, tokenize, correct_spaces
@@ -188,11 +189,13 @@ class Query:
     _help_texts = dict()  # type: Dict[str, List[Callable]]
 
     def __init__(
-        self, session,
-        query: str, voice: str,
+        self,
+        session,
+        query: str,
+        voice: str,
         auto_uppercase: bool,
         location: Optional[LocationType],
-        client_id: str
+        client_id: str,
     ) -> None:
 
         q = self._preprocess_query_string(query)
@@ -631,7 +634,11 @@ class Query:
                 if client_data is not None:
                     query_data = client_data.data
             except Exception as e:
-                logging.error("Error fetching query data for key '{0}' from db: {0}".format(key, e))
+                logging.error(
+                    "Error fetching query data for key '{0}' from db: {0}".format(
+                        key, e
+                    )
+                )
         return query_data
 
     @property
