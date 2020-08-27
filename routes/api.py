@@ -515,10 +515,12 @@ def speech_api(version=1):
     if fmt not in ["text", "ssml"]:
         fmt = "ssml"
     voice_id = request.values.get("voice_id", "Dora")
-    speed = request.values.get("voice_id", 1.0)
+    speed = request.values.get("speed", 1.0)
     if not isinstance(speed, float):
         try:
             speed = float(speed)
+            if speed < 0.1 or speed > 3.0:
+                speed = 1.0
         except:
             speed = 1.0
 
