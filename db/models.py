@@ -685,6 +685,7 @@ class Feedback(Base):
             self.name, self.email, self.topic, self.comment
         )
 
+
 class QueryData(Base):
 
     __tablename__ = "query_data"
@@ -704,3 +705,8 @@ class QueryData(Base):
 
     # JSON data
     data = Column(JSONB, nullable=False)
+
+    def __repr__(self):
+        return "QueryData(client_id='{0}', key='{1}', modified='{2}', data='{3}')".format(
+            self.client_id, self.key, self.modified, self.data
+        )
