@@ -265,27 +265,6 @@ def terminal_num(t):
         return aux[0]
 
 
-# fetch the data column containing the json data stored in the device_data table
-def fetch_device_data(device_id, smartdevice_type):
-    device_data = None
-
-    with SessionContext(read_only=True) as session:
-
-        try:
-            client_data = (
-                session.query(QueryData)
-                .filter(QueryData.key == smartdevice_type)
-                .filter(QueryData.client_id == device_id)
-            ).one_or_none()
-            if client_data is not None:
-                device_data = client_data.data
-
-        except Exception as e:
-            logging.error("Error fetching data from db: {0}".format(e))
-
-    return device_data
-
-
 def sentence(state, result):
     """ Called when sentence processing is complete """
     q = state["query"]
@@ -293,8 +272,8 @@ def sentence(state, result):
     # TODO hardcoded while only one device type is supported
     smartdevice_type = "smartlights"
 
-    # fetch relevant data from the device_data table to perform an action on the lights
-    device_data = fetch_device_data(q.client_id, smartdevice_type)
+    # Fetch relevant data from the device_data table to perform an action on the lights
+    device_data = q.data(smartdevice_type)
 
     selected_light = None
     hue_credentials = None
@@ -304,7 +283,7 @@ def sentence(state, result):
         selected_light = device_data["smartlights"].get("selected_light")
         hue_credentials = device_data["smartlights"].get("philips_hue")
 
-    # connect smartdevice action
+    # Connect smartdevice action
     if "qtype" in result and result.qtype == "ConnectSmartDevice":
 
         answer = "Skal gert"

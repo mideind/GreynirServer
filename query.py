@@ -618,6 +618,22 @@ class Query:
             to the next query from the same client """
         self._context = ctx
 
+    def data(self, key):
+        """ fetch the data column containing the json data stored in the device_data table """
+        query_data = None
+        with SessionContext(read_only=True) as session:
+            try:
+                client_data = (
+                    session.query(QueryData)
+                    .filter(QueryData.key == key)
+                    .filter(QueryData.client_id == self.client_id)
+                ).one_or_none()
+                if client_data is not None:
+                    query_data = client_data.data
+            except Exception as e:
+                logging.error("Error fetching query data for key '{0}' from db: {0}".format(key, e))
+        return query_data
+
     @property
     def context(self):
         """ Return the context that has been set by self.set_context() """
