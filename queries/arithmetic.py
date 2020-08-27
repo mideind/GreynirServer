@@ -371,7 +371,7 @@ def parse_num(num_str):
         if num_str == "pí":
             num = math.pi
         # Handle numbers w. Icelandic decimal places ("17,2")
-        elif re.search(r"^\d+,\d+", num_str):
+        elif re.search(r"^\d+,\d+$", num_str):
             num = float(num_str.replace(",", "."))
         # Handle digits ("17")
         else:

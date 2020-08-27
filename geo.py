@@ -102,8 +102,11 @@ ICE_PLACENAME_BLACKLIST = frozenset(
         "Árósar",
     )
 )
+
+# These should *never* be interpreted as Icelandic street names
 ICE_STREETNAME_BLACKLIST = frozenset(("Sjáland", "Feney", "Ráðhúsið", "Húsið"))
 
+# These should *always* be interpreted as Icelandic street names
 ALWAYS_STREET_ADDR = frozenset(("Skeifan", "Bessastaðir", "Kringlan"))
 
 # Names that should always be identified
@@ -735,7 +738,7 @@ def distance(loc1, loc2):
 ICELAND_COORDS = (64.9957538607, -18.5739616708)
 
 
-def in_iceland(loc, km_radius=300):
+def in_iceland(loc, km_radius=300.0):
     """ Check if coordinates are within or very close to Iceland. """
     return distance(loc, ICELAND_COORDS) <= km_radius
 

@@ -86,7 +86,7 @@ def _initialize_client() -> Optional[boto3.Session]:
 # TTL (in seconds) for get_synthesized_text_url caching
 # Add a safe 30 second margin to ensure that clients are never provided with an
 # audio URL that's just about to expire and could do so before playback starts.
-_CACHE_TTL = _AWS_URL_TTL - 30
+_CACHE_TTL = _AWS_URL_TTL - 30  # seconds
 _CACHE_MAXITEMS = 30
 
 

@@ -397,8 +397,6 @@ def query_json_api(url):
     except Exception as e:
         logging.warning("Error parsing JSON API response: {0}".format(e))
 
-    return None
-
 
 def fetch_xml(url):
     """ Request the URL, expecting an XML response which is 
@@ -413,17 +411,17 @@ def fetch_xml(url):
 
     # Verify that status is OK
     if r.status_code != 200:
-        logging.warning("Received status {0} from server".format(r.status_code))
+        logging.warning(
+            "Received status {0} from remote URL {1}".format(r.status_code, url)
+        )
         return None
 
-    # Parse XML response
+    # Parse XML response text
     try:
         xmldoc = minidom.parseString(r.text)
         return xmldoc
     except Exception as e:
-        logging.warning("Error parsing XML response: {0}".format(e))
-
-    return None
+        logging.warning("Error parsing XML response from {0}: {1}".format(url, e))
 
 
 # The Google API identifier (you must obtain your

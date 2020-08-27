@@ -19,11 +19,11 @@
 
 
     Utility script that inspects articles in Greynir's database
-    and removes those that are:
+    and removes those that:
 
     * Don't contain any sentences
-    * Duplicates (e.g. https vs http URLs)
-    * Non-Icelandic
+    * Are duplicates (e.g. https vs http URLs)
+    * Are non-Icelandic
     * Contain lots of "chaff", i.e. many very short sentences (prob. scraper issues)
 
 """

@@ -21,8 +21,6 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    This module is written in Python 3 and is compatible with PyPy3.
-
     This is the main module of the Greynir web application. It uses Flask
     as its web server and templating engine. In production, this module is
     typically run inside Gunicorn (using servlets) under nginx or a

@@ -31,6 +31,18 @@
 # as opposed to simple literal text strings
 HANDLE_TREE = True
 
+
+TOPIC_LEMMAS = ["prufa"]
+
+
+def help_text(lemma):
+    """ Help text to return when query.py is unable to parse a query but
+        one of the above lemmas is found in it """
+    return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
+        random.choice(("Er þetta prufa", "Gæti þetta verið prufa"))
+    )
+
+
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """
 
@@ -69,7 +81,7 @@ def QGrammarExampleNotTest(node, params, result):
 def sentence(state, result):
     """ Called when sentence processing is complete """
     q = state["query"]
-    if "qtype" in result and qkey in result:
+    if "qtype" in result and "qkey" in result and result.qtype == "GrammarTest":
         # Successfully matched this query type, we're handling it...
         q.set_qtype(result.qtype)
 
