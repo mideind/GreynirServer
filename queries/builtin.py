@@ -26,6 +26,8 @@
 
 """
 
+from typing import Dict, Optional, List, Any, Tuple, cast
+
 import math
 from datetime import datetime
 from collections import defaultdict
@@ -44,6 +46,9 @@ from search import Search
 from query import _QUERY_ROOT
 
 
+# The type of a name/entity register
+RegisterType = Dict[str, Dict[str, Any]]
+
 # Indicate that this module wants to handle parse trees for queries
 HANDLE_TREE = True
 
@@ -61,7 +66,7 @@ _MAX_URLS = 5
 _MAX_MENTIONS = 5
 
 
-def append_answers(rd, q, prop_func):
+def append_answers(rd: RegisterType, q, prop_func) -> None:
     """ Iterate over query results and add them to the result dictionary rd """
     for p in q:
         s = correct_spaces(prop_func(p))
@@ -76,7 +81,7 @@ def append_answers(rd, q, prop_func):
         rd[s][p.id] = ai  # Add to a dict of UUIDs
 
 
-def name_key_to_update(register, name):
+def name_key_to_update(register: RegisterType, name: str) -> str:
     """ Return the name register dictionary key to update with data about
         the given person name. This may be an existing key within the
         dictionary, the given key, or None if no update should happen. """
@@ -118,7 +123,7 @@ def name_key_to_update(register, name):
 
         # Both have middle names
 
-        def has_correspondence(n, nlist):
+        def has_correspondence(n: str, nlist: List[str]) -> bool:
             """ Return True if the middle name or abbreviation n can
                 correspond to any middle name or abbreviation in nlist """
             if n.endswith("."):
@@ -156,7 +161,7 @@ def name_key_to_update(register, name):
     return name
 
 
-def append_names(rd, q, prop_func):
+def append_names(rd: RegisterType, q, prop_func) -> None:
     """ Iterate over query results and add them to the result dictionary rd,
         assuming that the key is a person name """
     for p in q:
@@ -177,7 +182,7 @@ def append_names(rd, q, prop_func):
             rd[s][p.id] = ai  # Add to a dict of UUIDs
 
 
-def make_response_list(rd):
+def make_response_list(rd: RegisterType) -> List[Dict[str, Any]]:
     """ Create a response list from the result dictionary rd """
     # rd is { result: { article_id : article_descriptor } }
     # where article_descriptor is a dict
@@ -189,7 +194,7 @@ def make_response_list(rd):
     #   as a partial mention of both
     # * Longer results are better than shorter ones
 
-    def contained(needle, haystack):
+    def contained(needle: str, haystack: str) -> bool:
         """ Return True if whole needles are contained in the haystack """
         return (" " + needle.lower() + " ") in (" " + haystack.lower() + " ")
 
@@ -197,13 +202,13 @@ def make_response_list(rd):
         """ Sort the individual article URLs so that the newest one appears first """
         return sorted(articles.values(), key=lambda x: x["timestamp"], reverse=True)
 
-    def length_weight(result):
+    def length_weight(result: str) -> float:
         """ Longer results are better than shorter ones, but only to a point """
         return min(math.e * math.log(len(result)), 10.0)
 
     now = datetime.utcnow()
 
-    def mention_weight(articles):
+    def mention_weight(articles) -> float:
         """ Newer mentions are better than older ones """
         w = 0.0
         newest_mentions = sort_articles(articles)[0:_MAX_MENTIONS]
@@ -274,7 +279,7 @@ def make_response_list(rd):
                     break
 
     # Sort by decreasing score
-    rl = sorted(
+    rl_sorted = sorted(
         [(s, sort_articles(articles)) for s, articles in rd.items()],
         key=lambda x: scores[x[0]],
         reverse=True,
@@ -282,21 +287,26 @@ def make_response_list(rd):
 
     # If we have 5 or more titles/definitions with more than one associated URL,
     # cut off those that have only one source URL
-    if len(rl) > _CUTOFF_AFTER and len(rl[_CUTOFF_AFTER][1]) > 1:
-        rl = [val for val in rl if len(val[1]) > 1]
+    if len(rl_sorted) > _CUTOFF_AFTER and len(rl_sorted[_CUTOFF_AFTER][1]) > 1:
+        rl_sorted = [val for val in rl_sorted if len(val[1]) > 1]
 
     # Crop the article url lists down to _MAX_URLS
-    return [dict(answer=a[0], sources=a[1][0:_MAX_URLS]) for a in rl[0:_MAXLEN_ANSWER]]
+    return [
+        dict(answer=a[0], sources=a[1][0:_MAX_URLS])
+        for a in rl_sorted[0:_MAXLEN_ANSWER]
+    ]
 
 
 def prepare_response(q, prop_func):
     """ Prepare and return a simple (one-query) response """
-    rd = defaultdict(dict)
+    rd = defaultdict(dict)  # type: RegisterType
     append_answers(rd, q, prop_func)
     return make_response_list(rd)
 
 
-def add_entity_to_register(name, register, session, all_names=False):
+def add_entity_to_register(
+    name: str, register: RegisterType, session, all_names=False
+) -> None:
     """ Add the entity name and the 'best' definition to the given
         name register dictionary. If all_names is True, we add
         all names that occur even if no title is found. """
@@ -333,7 +343,9 @@ def add_entity_to_register(name, register, session, all_names=False):
         register[name] = dict(kind="entity", title=None)
 
 
-def add_name_to_register(name, register, session, all_names=False):
+def add_name_to_register(
+    name, register: RegisterType, session, all_names=False
+) -> None:
     """ Add the name and the 'best' title to the given name register dictionary """
     if name in register:
         # Already have a title for this exact name; don't bother
@@ -348,10 +360,10 @@ def add_name_to_register(name, register, session, all_names=False):
             register[name_key] = dict(kind="name", title=None)
 
 
-def create_name_register(tokens, session, all_names=False):
+def create_name_register(tokens, session, all_names=False) -> RegisterType:
     """ Assemble a dictionary of person and entity names
         occurring in the token list """
-    register = {}
+    register = {}  # type: RegisterType
     for t in tokens:
         if t.kind == TOK.PERSON:
             gn = t.val
@@ -362,11 +374,11 @@ def create_name_register(tokens, session, all_names=False):
     return register
 
 
-def _query_person_titles(session, name):
+def _query_person_titles(session, name: str):
     """ Return a list of all titles for a person """
     # This list should never become very long, so we don't
     # apply a limit here
-    rd = defaultdict(dict)
+    rd = defaultdict(dict)  # type: RegisterType
     try:
         q = (
             session.query(
@@ -414,7 +426,7 @@ def _query_person_titles(session, name):
     return make_response_list(rd)
 
 
-def _query_article_list(session, name):
+def _query_article_list(session, name: str):
     """ Return a list of dicts with information about articles
         where the given name appears """
     articles = ArticleListQuery.articles(
@@ -436,8 +448,9 @@ def _query_article_list(session, name):
     return sorted(adict.values(), key=lambda x: x["ts"], reverse=True)
 
 
-def query_person(query, session, name):
+def query_person(query, session, name: str) -> Tuple[Dict[str, Any], str, str]:
     """ A query for a person by name """
+    response = dict(answers=[], sources=[])  # type: Dict[str, Any]
     if name in {"hann", "hún", "hán", "það"}:
         # Using a personal pronoun: check whether we can infer
         # the name from the query context, i.e. from a recent query result
@@ -447,7 +460,6 @@ def query_person(query, session, name):
             name = ctx["person_name"]
         else:
             # No - give up
-            response = dict(answers=[], sources=[])
             if name == "hann":
                 answer = voice_answer = "Ég veit ekki við hvern þú átt."
             elif name == "hún":
@@ -516,10 +528,10 @@ _DONT_LIKE_TITLE = (
 )
 
 
-def query_person_title(session, name):
+def query_person_title(session, name: str) -> Tuple[str, Optional[str]]:
     """ Return the most likely title for a person """
 
-    def we_dont_like(answer):
+    def we_dont_like(answer: str) -> bool:
         """ Return False if we don't like this title and
             would prefer another one """
         # Skip titles that simply say that somebody is the husband or
@@ -539,7 +551,7 @@ def query_person_title(session, name):
     return correct_spaces(rl[index]["answer"]), rl[index]["sources"][0]["domain"]
 
 
-def query_title(query, session, title):
+def query_title(query, session, title: str) -> Tuple[List[Dict[str, Any]], str, str]:
     """ A query for a person by title """
     # !!! Consider doing a LIKE '%title%', not just LIKE 'title%'
     # We impose a LIMIT of 1024 on each query result,
@@ -547,7 +559,7 @@ def query_title(query, session, title):
     # and getting more name mentions than this is not likely to significantly
     # affect the outcome.
     QUERY_LIMIT = 1024
-    rd = defaultdict(dict)
+    rd = defaultdict(dict)  # type: RegisterType
     title_lc = title.lower()  # Query by lowercase title
     q = (
         session.query(
@@ -606,7 +618,7 @@ def query_title(query, session, title):
     return response, answer, voice_answer
 
 
-def _query_entity_definitions(session, name):
+def _query_entity_definitions(session, name: str):
     """ A query for definitions of an entity by name """
     q = (
         session.query(
@@ -628,7 +640,7 @@ def _query_entity_definitions(session, name):
     return prepare_response(q, prop_func=lambda x: x.definition)
 
 
-def query_entity(query, session, name):
+def query_entity(query, session, name: str) -> Tuple[Dict[str, Any], str, str]:
     """ A query for an entity by name """
     titles = _query_entity_definitions(session, name)
     articles = _query_article_list(session, name)
@@ -661,13 +673,13 @@ def query_entity(query, session, name):
     return response, answer, voice_answer
 
 
-def query_entity_def(session, name):
+def query_entity_def(session, name: str) -> str:
     """ Return a single (best) definition of an entity """
     rl = _query_entity_definitions(session, name)
     return correct_spaces(rl[0]["answer"]) if rl else ""
 
 
-def query_company(query, session, name):
+def query_company(query, session, name: str) -> Tuple[Dict[str, Any], str, str]:
     """ A query for an company in the entities table """
     # Create a query name by cutting off periods at the end
     # (hf. -> hf) and adding a percent pattern match at the end
@@ -701,7 +713,7 @@ def query_company(query, session, name):
     return response, answer, voice_answer
 
 
-def query_word(query, session, stem):
+def query_word(query, session, stem: str) -> Dict[str, Any]:
     """ A query for words related to the given stem """
     # Count the articles where the stem occurs
     acnt = ArticleCountQuery.count(stem, enclosing_session=session)
@@ -716,7 +728,7 @@ def query_word(query, session, stem):
     )
 
 
-def launch_search(query, session, qkey):
+def launch_search(query, session, qkey: str) -> Dict[str, Any]:
     """ Launch a search with the given search terms """
     pgs, _ = TreeUtility.raw_tag_toklist(session, query.token_list)  # root=_QUERY_ROOT
 
@@ -761,7 +773,7 @@ def launch_search(query, session, qkey):
     return dict(answers=result["articles"], weights=tweights)
 
 
-def repeat_query(query, session, qkey):
+def repeat_query(query, session, qkey: str) -> Tuple[Dict[str, Any], str, str]:
     """ Request to repeat the result of the last query """
     last = query.last_answer()
     if last is None:
@@ -794,7 +806,7 @@ _Q_NO_VOICE = frozenset(("Search", "Word"))
 _Q_ONLY_VOICE = frozenset(("Repeat",))
 
 
-def sentence(state, result):
+def sentence(state, result) -> None:
     """ Called when sentence processing is complete """
     q = state["query"]
     if "qtype" in result:
@@ -825,10 +837,12 @@ def sentence(state, result):
             try:
                 answer = None
                 voice_answer = None
-                response = qfunc(q, session, result.qkey)
-                if isinstance(response, tuple):
+                rtuple = qfunc(q, session, result.qkey)
+                if isinstance(rtuple, tuple):
                     # We have both a normal and a voice answer
-                    response, answer, voice_answer = response
+                    response, answer, voice_answer = rtuple
+                else:
+                    response = cast(Dict[str, Any], rtuple)
                 q.set_answer(response, answer, voice_answer)
             except AssertionError:
                 raise
@@ -1108,7 +1122,7 @@ QSearchToken →
 # and are called during tree processing (depth-first, i.e. bottom-up navigation)
 
 
-def QPerson(node, params, result):
+def QPerson(node, params, result) -> None:
     """ Person query """
     result.qtype = "Person"
     if "mannsnafn" in result:
@@ -1121,87 +1135,87 @@ def QPerson(node, params, result):
         assert False
 
 
-def QPersonPronoun(node, params, result):
+def QPersonPronoun(node, params, result) -> None:
     """ Persónufornafn: hann, hún, það """
     result.persónufornafn = result._nominative
 
 
-def QCompany(node, params, result):
+def QCompany(node, params, result) -> None:
     result.qtype = "Company"
     result.qkey = result.fyrirtæki
 
 
-def QEntity(node, params, result):
+def QEntity(node, params, result) -> None:
     result.qtype = "Entity"
     assert "qkey" in result
 
 
-def QTitle(node, params, result):
+def QTitle(node, params, result) -> None:
     result.qtype = "Title"
     result.qkey = result.titill
 
 
-def QWord(node, params, result):
+def QWord(node, params, result) -> None:
     result.qtype = "Word"
     assert "qkey" in result
 
 
-def QSearch(node, params, result):
+def QSearch(node, params, result) -> None:
     result.qtype = "Search"
     # Return the entire query text as the search key
     result.qkey = result._text
 
 
-def QRepeat(node, params, result):
+def QRepeat(node, params, result) -> None:
     """ Request to repeat the last query answer """
     result.qkey = ""
     result.qtype = "Repeat"
 
 
-def Sérnafn(node, params, result):
+def Sérnafn(node, params, result) -> None:
     """ Sérnafn, stutt eða langt """
     result.sérnafn = result._nominative
 
 
-def Fyrirtæki(node, params, result):
+def Fyrirtæki(node, params, result) -> None:
     """ Fyrirtækisnafn, þ.e. sérnafn + ehf./hf./Inc. o.s.frv. """
     result.fyrirtæki = result._nominative
 
 
-def Mannsnafn(node, params, result):
+def Mannsnafn(node, params, result) -> None:
     """ Hreint mannsnafn, þ.e. án ávarps og titils """
     result.mannsnafn = result._nominative
 
 
-def EfLiður(node, params, result):
+def EfLiður(node, params, result) -> None:
     """ Eignarfallsliðir haldast óbreyttir,
         þ.e. þeim á ekki að breyta í nefnifall """
     result._nominative = result._text
 
 
-def FsMeðFallstjórn(node, params, result):
+def FsMeðFallstjórn(node, params, result) -> None:
     """ Forsetningarliðir haldast óbreyttir,
         þ.e. þeim á ekki að breyta í nefnifall """
     result._nominative = result._text
 
 
-def QEntityKey(node, params, result):
+def QEntityKey(node, params, result) -> None:
     if "sérnafn" in result:
         result.qkey = result.sérnafn
     else:
         result.qkey = result._nominative
 
 
-def QTitleKey(node, params, result):
+def QTitleKey(node, params, result) -> None:
     """ Titill """
     result.titill = result._nominative
 
 
-def QWordNounKey(node, params, result):
+def QWordNounKey(node, params, result) -> None:
     result.qkey = result._canonical
 
 
-def QWordPersonKey(node, params, result):
+def QWordPersonKey(node, params, result) -> None:
     if "mannsnafn" in result:
         result.qkey = result.mannsnafn
     elif "sérnafn" in result:
@@ -1210,9 +1224,9 @@ def QWordPersonKey(node, params, result):
         result.qkey = result._nominative
 
 
-def QWordEntityKey(node, params, result):
+def QWordEntityKey(node, params, result) -> None:
     result.qkey = result._nominative
 
 
-def QWordVerbKey(node, params, result):
+def QWordVerbKey(node, params, result) -> None:
     result.qkey = result._root

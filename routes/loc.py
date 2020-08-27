@@ -21,6 +21,7 @@
 
 """
 
+from typing import Dict, Any
 
 from . import routes, max_age, better_jsonify, cache, days_from_period_arg
 
@@ -221,9 +222,9 @@ def locations_worldmap():
 def staticmap():
     """ Proxy for Google Static Maps API. """
     try:
-        lat = float(request.args.get("lat"))
-        lon = float(request.args.get("lon"))
-        zoom = int(request.args.get("z", 7))
+        lat = float(request.args.get("lat", "0.0"))
+        lon = float(request.args.get("lon", "0.0"))
+        zoom = int(request.args.get("z", "7"))
     except:
         return abort(400)
 
@@ -243,7 +244,7 @@ ZOOM_FOR_LOC_KIND = {"street": 11, "address": 12, "placename": 5, "country": 2}
 @cache.cached(timeout=60 * 60 * 24, key_prefix="locinfo", query_string=True)
 def locinfo():
     """ Return info about a location as JSON. """
-    resp = dict(found=False)
+    resp = dict(found=False)  # type: Dict[str, Any]
 
     name = request.args.get("name")
     kind = request.args.get("kind")
@@ -265,7 +266,7 @@ def locinfo():
     lat, lon = loc.get("latitude"), loc.get("longitude")
     # We have coords
     if lat and lon:
-        z = ZOOM_FOR_LOC_KIND.get(loc.get("kind"))
+        z = ZOOM_FOR_LOC_KIND[loc.get("kind", "street")]
         # We want a slightly lower zoom level for foreign placenames
         if resp["country"] != ICELAND_ISOCODE and kind == "placename":
             z -= 1

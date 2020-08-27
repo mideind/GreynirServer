@@ -41,6 +41,8 @@
 
 """
 
+from typing import Dict, Tuple, Any, Iterable, Iterator
+
 import math
 import os
 from collections import defaultdict
@@ -50,8 +52,8 @@ import xml.etree.ElementTree as ET
 from reynir import TOK, tokenize
 from reynir.binparser import canonicalize_token
 from reynir.ifdtagger import IFD_Tagset
+from reynir.settings import Prepositions
 
-from settings import Prepositions
 from treeutil import TreeUtility
 
 
@@ -144,23 +146,23 @@ class NgramCounter:
         counts. The container can store and load itself from a compact
         text file. """
 
-    def __init__(self):
-        self._d = defaultdict(int)
+    def __init__(self) -> None:
+        self._d = defaultdict(int)  # type: Dict[Tuple[str, ...], int]
 
     @property
-    def size(self):
+    def size(self) -> int:
         return len(self._d)
 
-    def add(self, ngram):
+    def add(self, ngram: Tuple[str, ...]) -> None:
         self._d[ngram] += 1
 
-    def count(self, ngram):
+    def count(self, ngram: Tuple[str, ...]) -> int:
         return self._d.get(ngram, 0)
 
-    def store(self, f):
+    def store(self, f) -> None:
         """ Store the ngram dictionary in a compact text format """
         d = self._d
-        vocab = dict()
+        vocab = dict()  # type: Dict[str, int]
         # First, store the vocabulary (the distinct ngram tags)
         for ngram in d:
             for w in ngram:
@@ -176,7 +178,7 @@ class NgramCounter:
         for ngram, cnt in d.items():
             f.write(";".join(str(vocab[w]) for w in ngram) + ";" + str(cnt) + "\n")
 
-    def load(self, f):
+    def load(self, f) -> None:
         cnt = int(f.readline()[:-1])
         vocab = []
         self._d = dict()
@@ -203,7 +205,7 @@ class NgramTagger:
 
     CASE_TO_TAG = {"þf": "ao", "þgf": "aþ", "ef": "ae"}
 
-    def __init__(self, n=3, verbose=False):
+    def __init__(self, n=3, verbose=False) -> None:
         """ n indicates the n-gram size, i.e. 3 for trigrams, etc. """
         self.n = n
         self._verbose = verbose
@@ -212,13 +214,13 @@ class NgramTagger:
         # self.cnt = defaultdict(int)
         self.cnt = NgramCounter()
         # { lemma: { tag : count} }
-        self.lemma_cnt = defaultdict(lambda: defaultdict(int))
+        self.lemma_cnt = defaultdict(lambda: defaultdict(int))  # type: Dict[str, Dict[str, int]]
 
-    def lemma_tags(self, lemma):
+    def lemma_tags(self, lemma: str) -> Dict[str, int]:
         """ Return a dict of tags and counts for this lemma """
         return self.lemma_cnt.get(lemma, dict())
 
-    def lemma_count(self, lemma):
+    def lemma_count(self, lemma: str) -> int:
         """ Return the total occurrence count for a lemma """
         d = self.lemma_cnt.get(lemma)
         return 0 if d is None else sum(d.values())
@@ -229,13 +231,13 @@ class NgramTagger:
 
         n = self.n
 
-        def tag_stream(sentence_stream):
+        def tag_stream(sentence_stream: Iterable[Iterable[Dict[str, Any]]]) -> Iterator[str]:
             """ Generator for tag stream from a token stream """
             for sent in sentence_stream:
                 if not sent:
                     continue
                 # For each sentence, start and end with empty strings
-                for i in range(n - 1):
+                for _ in range(n - 1):
                     yield ""
                 for t in sent:
                     tag = None
@@ -247,7 +249,7 @@ class NgramTagger:
                             self.lemma_cnt[t["x"]][tag] += 1
                     if tag:
                         yield tag
-                for i in range(n - 1):
+                for _ in range(n - 1):
                     yield ""
 
         def ngrams(iterable):

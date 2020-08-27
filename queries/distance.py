@@ -27,6 +27,7 @@
 # TODO: "Hvað er langt á milli X og Y?"
 # TODO: "Hvað er langt til tunglsins"? "Hvað er langt til Mars?"
 # TODO: Identify when user is present at the location, respond "Þú ert í/á X"
+# TODO: "Hvað er langur/margra kílómetra göngutúr í/á X?"
 
 import re
 import logging
@@ -54,12 +55,17 @@ _QDISTANCE_REGEXES = (
     r"^hve langt er ég frá (.+)$",
     r"^hvað er langt\s?(?:héðan)?\s?(?:austur|vestur|norður|suður)? á (.+)$",
     r"^hvað er langt\s?(?:héðan)? upp á (.+)$",
+    r"^hvað er langt\s?(?:héðan)? niður á (.+)$",
     r"^hvað er langt\s?(?:héðan)?\s?(?:austur|vestur|norður|suður)? í ([^0-9.].+)$",
     r"^hvað er langt\s?(?:héðan)? upp í (.+)$",
     r"^hvað er langt\s?(?:héðan)? til (.+)$",
     r"^hvað er langt\s?(?:héðan)? út á ([^0-9.].+)$",
     r"^hversu langt er\s?(?:austur|vestur|norður|suður)? til (.+)$",
     r"^hversu langt er út á (.+)$",
+    r"^hversu marga kílómetra er ég frá (.+)$",
+    r"^hversu marga metra er ég frá (.+)$",
+    r"^hvað eru margir kílómetrar til (.+)$",
+    r"^hvað eru margir metrar til (.+)$",
 )
 
 # Travel time questions
@@ -97,6 +103,8 @@ _TT_PREFIXES = (
     "hversu langan tíma tæki það að",
     "hversu langan tíma tæki það mig að",
     "hvað er langt að",
+    "hversu lengi tekur að",
+    "hversu lengi tekur það að",
 )
 
 _TT_MODES = {
@@ -120,7 +128,7 @@ _TT_MODES = {
 }
 
 _PREPS = ("á", "í", "til")
-_TT_PREP_PREFIX = ("upp", "niður", "vestur", "norður", "austur", "suður")
+_TT_PREP_PREFIX = ("út", "upp", "niður", "vestur", "norður", "austur", "suður")
 _TT_PREPS = []
 
 for p in _PREPS:

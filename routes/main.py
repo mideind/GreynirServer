@@ -21,6 +21,8 @@
 
 """
 
+from typing import Dict, Any, List, Tuple
+
 import platform
 import sys
 import platform
@@ -117,13 +119,13 @@ MAX_SIM_ARTICLES = 10  # Display at most 10 similarity matches
 @routes.route("/similar", methods=["GET", "POST"])
 def similar():
     """ Return rendered HTML list of articles similar to a given article, given a UUID """
-    resp = dict(err=True)
+    resp = dict(err=True)  # type: Dict[str, Any]
 
     # Parse query args
     try:
         uuid = request.values.get("id")
         uuid = uuid.strip()[0:_MAX_UUID_LENGTH]
-    except Exception as e:
+    except Exception:
         uuid = None
 
     if not uuid:
@@ -201,6 +203,7 @@ def tree_grid():
     def _wrap_build_tbl(
         tbl, root, is_nt_func, children_func, nt_info_func, t_info_func
     ):
+
         def _build_tbl(level, offset, nodelist):
             """ Add the tree node data to be displayed at a particular
                 level (row) in the result table """
@@ -240,8 +243,8 @@ def tree_grid():
                 row.append((1, None))
                 rw += 1
 
-    tbl = []
-    full_tbl = []
+    tbl = []  # type: List[List[Tuple[int, Any]]]
+    full_tbl = []  # type: List[List[Tuple[int, Any]]]
     if tree is None:
         full_tree = None
         width = 0
@@ -436,7 +439,7 @@ def suggest(limit=10):
     limit = request.args.get("limit", limit)
     txt = request.args.get("q", "").strip()
 
-    suggestions = list()
+    suggestions = []  # type: List[Dict[str, str]]
     whois_prefix = "hver er "
     whatis_prefix = "hvað er "
 
@@ -463,6 +466,8 @@ def suggest(limit=10):
         elif prefix is whatis_prefix:
             model_col = Entity.name
 
+        assert model_col is not None
+
         q = (
             session.query(model_col, dbfunc.count(Article.id).label("total"))
             .filter(model_col.ilike(name + "%"))
@@ -474,7 +479,9 @@ def suggest(limit=10):
         )
 
         prefix = prefix[:1].upper() + prefix[1:].lower()
-        suggestions = [{"value": (prefix + p[0] + "?"), "data": ""} for p in q]
+        suggestions = [
+            {"value": (prefix + p[0] + "?"), "data": ""} for p in q
+        ]
 
     return better_jsonify(suggestions=suggestions)
 

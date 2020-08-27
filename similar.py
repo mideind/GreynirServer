@@ -42,12 +42,10 @@ from settings import Settings
 
 try:
     import eventlet
-
     USING_EVENTLET = True
     socket = eventlet.patcher.original("socket")
 except ImportError:
-    import socket
-
+    import socket  # type: ignore
     USING_EVENTLET = False
 
 # The following two functions replicate and hack/tweak corresponding functions

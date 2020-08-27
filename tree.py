@@ -27,14 +27,15 @@
 
 """
 
-from typing import Dict
+from typing import Dict, Optional, List, Any, Union
+
 import json
 import re
 
 from contextlib import closing
 from collections import OrderedDict, namedtuple
 
-from settings import Settings, DisallowedNames, VerbObjects
+from settings import Settings
 from reynir.bindb import BIN_Db
 from reynir.binparser import BIN_Token
 from reynir.simpletree import SimpleTreeBuilder
@@ -426,7 +427,7 @@ class TerminalDescriptor:
     _NUMBERS = {"et", "ft"}
     _PERSONS = {"p1", "p2", "p3"}
 
-    def __init__(self, terminal):
+    def __init__(self, terminal: str) -> None:
         self.terminal = terminal
         self.is_literal = terminal[0] == '"'  # Literal terminal, i.e. "sem", "og"
         self.is_stem = terminal[0] == "'"  # Stem terminal, i.e. 'vera'_et_p3
@@ -458,20 +459,20 @@ class TerminalDescriptor:
         self.bin_cat = BIN_ORDFL.get(self.inferred_cat, None)
 
         # clean_terminal property cache
-        self._clean_terminal = None
+        self._clean_terminal = None  # type: Optional[str]
 
         # clean_cat property cache
-        self._clean_cat = None
+        self._clean_cat = None  # type: Optional[str]
 
         # Gender of terminal
-        self.gender = None
+        self.gender = None  # type: Optional[str]
         gender = self.variants & self._GENDERS
         assert 0 <= len(gender) <= 1
         if gender:
             self.gender = next(iter(gender))
 
         # Case of terminal
-        self.case = None
+        self.case = None  # type: Optional[str]
         if self.inferred_cat not in {"so", "fs"}:
             # We do not check cases for verbs, except so_lhþt ones
             case = self.variants & self._CASES
@@ -482,14 +483,14 @@ class TerminalDescriptor:
         self.case_nf = self.case == "nf"
 
         # Person of terminal
-        self.person = None
+        self.person = None  # type: Optional[str]
         person = self.variants & self._PERSONS
         assert 0 <= len(person) <= 1
         if person:
             self.person = next(iter(person))
 
         # Number of terminal
-        self.number = None
+        self.number = None  # type: Optional[str]
         number = self.variants & self._NUMBERS
         assert 0 <= len(number) <= 1
         if number:
@@ -596,25 +597,11 @@ class TerminalDescriptor:
                         # Terminal specified a non-argument case but the token doesn't have it:
                         # no match
                         return False
-                return True
-            nargs = int(self.varlist[0])
-            if m.stofn in VerbObjects.VERBS[nargs]:
-                if nargs == 0 or len(self.varlist) < 2:
-                    # No arguments: we're done
-                    return True
-                for argspec in VerbObjects.VERBS[nargs][m.stofn]:
-                    if all(self.varlist[1 + ix] == c for ix, c in enumerate(argspec)):
-                        # This verb takes arguments that match the terminal
-                        return True
-                return False
-            for i in range(0, nargs):
-                if m.stofn in VerbObjects.VERBS[i]:
-                    # This verb takes fewer arguments than the terminal requires, so no match
-                    return False
-            # Unknown verb: allow it to match
+            # We can't check the arguments here, but assume that is not necessary
+            # to disambiguate between verbs
             return True
 
-        # Check person match
+        # Check person (p1/p2/p3) match
         if self.person is not None:
             person = self.person.upper()
             person = person[1] + person[0]  # Turn p3 into 3P
@@ -642,6 +629,7 @@ class TerminalDescriptor:
         if self.variant_gr:
             if "gr" not in m.beyging:
                 return False
+
         return True
 
     def stem(self, bindb, word, at_start=False):
@@ -694,14 +682,24 @@ class TerminalNode(Node):
     # Cache of word roots (stems) keyed by (word, at_start, terminal)
     _root_cache = LRU_Cache(_root_lookup, maxsize=16384)
 
-    def __init__(self, terminal, augmented_terminal, token, tokentype, aux, at_start):
+    def __init__(
+        self,
+        terminal: str,
+        augmented_terminal: str,
+        token: str,
+        tokentype: str,
+        aux: str,
+        at_start: bool
+    ) -> None:
+
         super().__init__()
+
         td = self._TD.get(terminal)
         if td is None:
             # Not found in cache: make a new one
             td = TerminalDescriptor(terminal)
             self._TD[terminal] = td
-        self.td = td
+        self.td = td  # type: TerminalDescriptor
         self.token = token
         self.text = token[1:-1]  # Cut off quotes
         self._at_start = at_start
@@ -715,7 +713,7 @@ class TerminalNode(Node):
         # Auxiliary information, originally from token.t2 (JSON string)
         self.aux = aux
         # Cached auxiliary information, as a Python object decoded from JSON
-        self._aux = None
+        self._aux = None  # type: Optional[List[Any]]
         # Cache the root form of this word so that it is only looked up
         # once, even if multiple processors scan this tree
         self.root_cache = None
@@ -1072,6 +1070,7 @@ class PersonNode(TerminalNode):
             # of knowing which one is correct, so we simply return the first one
             return self.fullnames[0]
         gender = self.td.gender
+        assert self.td.case is not None
         case = self.td.case.upper()
         # Lookup the token in the BIN database
         # Look up each part of the name
@@ -1087,10 +1086,10 @@ class PersonNode(TerminalNode):
                     if x.ordfl == gender and case in x.beyging and "ET" in x.beyging
                     # Do not accept 'Sigmund' as a valid stem for word forms that
                     # are identical with the stem 'Sigmundur'
-                    and (
-                        x.stofn not in DisallowedNames.STEMS
-                        or self.td.case not in DisallowedNames.STEMS[x.stofn]
-                    )
+                    # and (
+                    #     x.stofn not in DisallowedNames.STEMS
+                    #     or self.td.case not in DisallowedNames.STEMS[x.stofn]
+                    # )
                 ]
             if m:
                 w = m[0].stofn
@@ -1193,8 +1192,11 @@ class NonterminalNode(Node):
             if p is not None:
                 result.copy_from(p)
         # Invoke a processor function for this nonterminal, if
-        # present in the given processor module
-        if params and not self.is_repeated:
+        # present in the given processor module. The check for 'Query'
+        # catches a corner case where the processor may have imported
+        # the Query class, so it is available as an attribute, but it
+        # should not be called!
+        if params and not self.is_repeated and self.nt_base != "Query":
             # Don't invoke if this is an epsilon nonterminal (i.e. has no children),
             # or if this is a repetition parent (X?, X* or X+)
             processor = state["processor"]
@@ -1227,7 +1229,7 @@ class TreeBase:
         self.s = OrderedDict()  # Sentence dictionary
         self.scores = dict()  # Sentence scores
         self.lengths = dict()  # Sentence lengths, in tokens
-        self.stack = None
+        self.stack = None  # type: Optional[List[Union[Node, TreeToken]]]
         self.n = None  # Index of current sentence
         self.at_start = False  # First token of sentence?
 
@@ -1265,6 +1267,7 @@ class TreeBase:
 
     def push(self, n, node):
         """ Add a node into the tree at the right level """
+        assert self.stack is not None
         if n == len(self.stack):
             # First child of parent
             if n:
@@ -1306,6 +1309,7 @@ class TreeBase:
         # in the dictionary
         assert self.n is not None
         assert self.n not in self.s
+        assert self.stack is not None
         self.s[self.n] = self.stack[0]
         self.stack = None
         self.n = None
@@ -1355,7 +1359,7 @@ class TreeBase:
         if s:
             a = s.split(" ", maxsplit=1)
             tokentype = a[0]
-            if tokentype[0].islower():
+            if tokentype and tokentype[0].islower():
                 # The following string is actually an augmented terminal,
                 # corresponding to a word token
                 augmented_terminal = tokentype
@@ -1528,7 +1532,8 @@ class TreeGist(TreeBase):
 
 
 TreeToken = namedtuple(
-    "TreeToken", ["terminal", "augmented_terminal", "token", "tokentype", "aux", "cat"]
+    "TreeToken",
+    ["terminal", "augmented_terminal", "token", "tokentype", "aux", "cat"]
 )
 
 

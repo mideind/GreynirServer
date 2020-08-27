@@ -152,7 +152,7 @@ class Article(Base):
     # Version of scraper class
     scr_version = Column(String(16))
     # Version of parser/grammar/config
-    parser_version = Column(String(32))
+    parser_version = Column(String(64))
     # Parse statistics
     num_sentences = Column(Integer)
     num_parsed = Column(Integer)
@@ -682,7 +682,7 @@ class Feedback(Base):
 
     def __repr__(self):
         return "Feedback(name='{0}', email='{1}', topic='{2}', comment='{3}')".format(
-            self.question, self.answer, self.topic, self.comment
+            self.name, self.email, self.topic, self.comment
         )
 
 class QueryData(Base):
