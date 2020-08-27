@@ -32,7 +32,7 @@ from settings import Settings
 
 from tnttagger import ifd_tag
 from db import SessionContext
-from db.models import ArticleTopic, Query, Feedback, DeviceData
+from db.models import ArticleTopic, Query, Feedback, QueryData
 from treeutil import TreeUtility
 from correct import check_grammar
 from reynir.binparser import canonicalize_token
@@ -522,6 +522,7 @@ def exit_api():
     shutdown_func()
     return "The server has shut down"
 
+
 @routes.route("/register_smartdevice.api", methods=["POST"])
 def register_smartdevice_api():
     """
@@ -541,42 +542,50 @@ def register_smartdevice_api():
         }
     }
     
-    
     """
     device_data = request.json
 
-    if 'data' not in device_data or 'key' not in device_data or 'device_id' not in device_data:
-        return better_jsonify(valid=False, reason='Missing parameters')
+    if (
+        "data" not in device_data
+        or "key" not in device_data
+        or "device_id" not in device_data
+    ):
+        return better_jsonify(valid=False, reason="Missing parameters")
 
     with SessionContext(commit=True) as session:
         try:
             stored_data = (
-                    session.query(DeviceData)
-                    .filter(DeviceData.key == device_data['key'])
-                    .filter(DeviceData.device_id == device_data['device_id'])
-                ).first()
+                session.query(QueryData)
+                .filter(QueryData.key == device_data["key"])
+                .filter(QueryData.client_id == device_data["device_id"])
+            ).one_or_none()
             if not stored_data:
                 curr_time = datetime.utcnow()
-                qrow = DeviceData(
-                    device_id=device_data['device_id'],
-                    key=device_data['key'],
+                qrow = QueryData(
+                    client_id=device_data["device_id"],
+                    key=device_data["key"],
                     created=curr_time,
-                    last_modified=curr_time,
-                    data=device_data['data']
+                    modified=curr_time,
+                    data=device_data["data"],
                 )
                 session.add(qrow)
-                return better_jsonify(valid=True, action='added')
+                return better_jsonify(valid=True, action="added")
 
             else:
                 stored_json = stored_data.data
-                stored_json[device_data['key']].update(device_data['data'][device_data['key']])
+                stored_json[device_data["key"]].update(
+                    device_data["data"][device_data["key"]]
+                )
 
                 stored_data.data = stored_json
 
-                session.query(DeviceData).filter(DeviceData.key == device_data['key']).filter(DeviceData.device_id == device_data['device_id']).update({'data': stored_json, 'last_modified':datetime.utcnow()})
-                
+                session.query(QueryData).filter(
+                    QueryData.key == device_data["key"]
+                ).filter(QueryData.client_id == device_data["device_id"]).update(
+                    {"data": stored_json, "modified": datetime.utcnow()}
+                )
 
-                return better_jsonify(valid=True, action='updated')
+                return better_jsonify(valid=True, action="updated")
 
         except Exception as e:
             logging.error("Error saving feedback to db: {0}".format(e))

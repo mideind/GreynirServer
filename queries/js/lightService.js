@@ -1,9 +1,11 @@
+"use strict";
+
 //const XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 
 // returns ID of lights and groups with the provided name
 function getIdByName(ipAddress, username, name) {
 
-    let ids = {}
+    let ids = {};
 
     let request = new XMLHttpRequest();
 
@@ -14,12 +16,12 @@ function getIdByName(ipAddress, username, name) {
         let hub = JSON.parse(request.responseText);
         let groupId = Object.keys(hub.groups).find(key => hub.groups[key].name.toLowerCase() === name.toLowerCase());
         if (groupId) {
-            ids.groupId = groupId
+            ids.groupId = groupId;
         } 
 
         let lightId = Object.keys(hub.lights).find(key => hub.lights[key].name.toLowerCase() === name.toLowerCase());
         if (lightId) {
-            ids.lightId = lightId
+            ids.lightId = lightId;
         } 
 
         return ids;
@@ -33,7 +35,7 @@ function changeGroup(ipAddress, username, groupId, on = null, bri = null, hue = 
     let body = {};
 
     if(on !== null) {
-        body.on = on
+        body.on = on;
     }
 
     if (bri !== null) {
@@ -67,7 +69,7 @@ function changeLight(ipAddress, username, lightId, on = null, bri = null, hue = 
     let body = {};
 
     if(on !== null) {
-        body.on = on
+        body.on = on;
     }
 
     if (bri !== null) {
@@ -115,6 +117,6 @@ function main(ipAddress = null, username = null, name = null, on = null, bri = n
         }
     }
 
-    return `Hópur eða ljós ${name} fannst ekki.`
+    return `Hópur eða ljós ${name} fannst ekki.`;
 
 }

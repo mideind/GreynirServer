@@ -588,6 +588,7 @@ def timezone4loc(loc, fallback=None):
     return None
 
 
+@lru_cache(maxsize=32)
 def read_jsfile(filename):
     basepath, _ = os.path.split(os.path.realpath(__file__))
     _JSDIR = basepath + os.sep + "js"

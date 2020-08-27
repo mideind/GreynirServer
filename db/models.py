@@ -685,25 +685,22 @@ class Feedback(Base):
             self.question, self.answer, self.topic, self.comment
         )
 
-class DeviceData(Base):
+class QueryData(Base):
 
-    __tablename__ = "device_data"
+    __tablename__ = "query_data"
 
-    device_id = Column(
-        psql_UUID(as_uuid=False),
-        index=True,
-        nullable=False,
-        primary_key=True,
-    )
+    __table_args__ = (PrimaryKeyConstraint("client_id", "key", name="querydata_pkey"),)
+
+    client_id = Column(String, nullable=False, primary_key=True)
 
     # Key to distinguish between different types of json data that can be stored
     key = Column(String, nullable=False, primary_key=True)
 
-    # created
+    # Created timestamp
     created = Column(DateTime, nullable=False)
 
-    # Last modified
-    last_modified = Column(DateTime, nullable=False)
+    # Last modified timestamp
+    modified = Column(DateTime, nullable=False)
 
-    # data
+    # JSON data
     data = Column(JSONB, nullable=False)

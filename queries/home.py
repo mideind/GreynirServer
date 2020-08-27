@@ -5,7 +5,7 @@ import flask
 
 from queries import gen_answer, read_jsfile
 from db import SessionContext
-from db.models import DeviceData
+from db.models import QueryData
 
 # TODO remove fstring
 # TODO expand functionality for more devices
@@ -108,23 +108,30 @@ QHomeInOrOnQuery →
 def QConnectQuery(node, params, result):
     result.qtype = "ConnectSmartDevice"
 
+
 def QLightOnPhenonmenon(node, params, result):
     result.subject = node.contained_text()
+
 
 def QLightOnQuery(node, params, result):
     result.qtype = "LightOn"
 
+
 def QLightOffQuery(node, params, result):
     result.qtype = "LightOff"
+
 
 def QLightOffPhenonmenon(node, params, result):
     result.subject = node.contained_text()
 
+
 def QLightNamePhenonmenon(node, params, result):
     result.subject = node.contained_text()
 
+
 def QLightDimQuery(node, params, result):
     result.qtype = "LightDim"
+
 
 def QLightPercentage(node, params, result):
     d = result.find_descendant(t_base="tala")
@@ -133,30 +140,34 @@ def QLightPercentage(node, params, result):
     else:
         add_num(result._nominative, result)
 
+
 def QLightColorQuery(node, params, result):
     result.qtype = "LightColor"
+
 
 def QColorName(node, params, result):
     result.color = node.contained_text()
 
+
 def QHubInfoQuery(node, params, result):
     result.qtype = "HubInfo"
+
 
 def QHomeWhereDeviceQuery(node, params, result):
     result.subject = node.contained_text().split(" ")[1]
 
+
 def QHomeDeviceQuery(node, params, result):
     result.subject = node.contained_text()
+
 
 def QHomeLightSaturationQuery(node, params, result):
     result.qtype = "LightSaturation"
 
+
 # fix common stofn errors when stofn from a company or entity is used instead
 # of the correct stofn
-_FIX_MAP = {
-    'Skrifstofan': 'skrifstofa',
-    'Húsið': 'hús'
-}
+_FIX_MAP = {"Skrifstofan": "skrifstofa", "Húsið": "hús"}
 
 _NUMBER_WORDS = {
     "núll": 0,
@@ -200,13 +211,14 @@ _NUMBER_WORDS = {
 
 # convert color name into hue
 _COLOR_NAME_TO_CIE = {
-    'gulur': 60 * 65535/360,
-    'grænn': 120 * 65535/360,
-    'ljósblár': 180 * 65535/360,
-    'blár': 240 * 65535/360,
-    'bleikur': 300 * 65535/360, 
-    'rauður': 360 * 65535/360,
+    "gulur": 60 * 65535 / 360,
+    "grænn": 120 * 65535 / 360,
+    "ljósblár": 180 * 65535 / 360,
+    "blár": 240 * 65535 / 360,
+    "bleikur": 300 * 65535 / 360,
+    "rauður": 360 * 65535 / 360,
 }
+
 
 def parse_num(num_str):
     """ Parse Icelandic number string to float or int """
@@ -232,6 +244,7 @@ def parse_num(num_str):
         raise
     return num
 
+
 def add_num(num, result):
     """ Add a number to accumulated number args """
     if "numbers" not in result:
@@ -240,6 +253,7 @@ def add_num(num, result):
         result.numbers.append(parse_num(num))
     else:
         result.numbers.append(num)
+
 
 def terminal_num(t):
     """ Extract numerical value from terminal token's auxiliary info,
@@ -250,6 +264,7 @@ def terminal_num(t):
             return aux
         return aux[0]
 
+
 # fetch the data column containing the json data stored in the device_data table
 def fetch_device_data(device_id, smartdevice_type):
     device_data = None
@@ -257,27 +272,37 @@ def fetch_device_data(device_id, smartdevice_type):
     with SessionContext(read_only=True) as session:
 
         try:
-            client_data = (session.query(DeviceData).filter(DeviceData.key == smartdevice_type).filter(DeviceData.device_id == device_id)).first()
-            device_data = client_data.data
+            client_data = (
+                session.query(QueryData)
+                .filter(QueryData.key == smartdevice_type)
+                .filter(QueryData.client_id == device_id)
+            ).one_or_none()
+            if client_data is not None:
+                device_data = client_data.data
 
         except Exception as e:
             logging.error("Error fetching data from db: {0}".format(e))
 
-
-
     return device_data
+
 
 def sentence(state, result):
     """ Called when sentence processing is complete """
     q = state["query"]
 
     # TODO hardcoded while only one device type is supported
-    smartdevice_type = 'smartlights'
+    smartdevice_type = "smartlights"
 
     # fetch relevant data from the device_data table to perform an action on the lights
     device_data = fetch_device_data(q.client_id, smartdevice_type)
-    selected_light = device_data['smartlights']['selected_light']
-    hue_credentials = device_data['smartlights'].get('philips_hue')
+
+    selected_light = None
+    hue_credentials = None
+
+    if device_data is not None:
+
+        selected_light = device_data["smartlights"].get("selected_light")
+        hue_credentials = device_data["smartlights"].get("philips_hue")
 
     # connect smartdevice action
     if "qtype" in result and result.qtype == "ConnectSmartDevice":
@@ -287,42 +312,51 @@ def sentence(state, result):
 
         js = read_jsfile("connectHub.js")
 
-        # function from the javascript file needs to be called with 
+        # function from the javascript file needs to be called with
         # relevant variables
-        js += f'connectHub(\'{q.client_id}\',\'{host}\')'
+        js += "connectHub('{0}','{1}')".format(q.client_id, host)
 
         q.set_command(js)
-        q.set_answer(dict(answer=answer), answer, answer)
+        q.set_answer(*gen_answer(answer))
 
     elif not device_data:
-        answer = 'Ekkert snjalltæki fannst'
+        answer = "Ekkert snjalltæki fannst"
 
-        q.set_answer(dict(answer=answer), answer, answer)
+        q.set_answer(*gen_answer(answer))
 
     # light on or off action
-    elif "qtype" in result and (result.qtype == "LightOn" or result.qtype == "LightOff") and device_data['smartlights']['selected_light'] == 'philips_hue':
+    elif (
+        "qtype" in result
+        and (result.qtype == "LightOn" or result.qtype == "LightOff")
+        and device_data["smartlights"]["selected_light"] == "philips_hue"
+    ):
 
-        onOrOff = 'true' if result.qtype == 'LightOn' else 'false'
+        onOrOff = "true" if result.qtype == "LightOn" else "false"
 
         stofn = None
 
         for i, token in enumerate(q.token_list):
             if token.txt == result.subject:
                 stofn = token[2][0].stofn
-                stofn = _FIX_MAP.get(stofn) or stofn
+                stofn = _FIX_MAP.get(stofn, stofn)
 
         js = read_jsfile("lightService.js")
 
-        js += f'main(\'{hue_credentials["ipAddress"]}\',\'{hue_credentials["username"]}\',\'{stofn}\', {onOrOff});'
-        print('js')
+        js += "main('{0}','{1}','{2}', {3});".format(
+            hue_credentials["ipAddress"], hue_credentials["username"], stofn, onOrOff
+        )
 
-        answer = f'{stofn} {onOrOff}'
+        answer = "{0} {1}".format(stofn, onOrOff)
 
-        q.set_answer(dict(answer=answer), answer, answer)
+        q.set_answer(*gen_answer(answer))
         q.set_command(js)
 
     # alter light dimmer action
-    elif "qtype" in result and result.qtype == "LightDim" and device_data['smartlights']['selected_light'] == 'philips_hue':
+    elif (
+        "qtype" in result
+        and result.qtype == "LightDim"
+        and device_data["smartlights"]["selected_light"] == "philips_hue"
+    ):
 
         number = result.numbers[0]
 
@@ -331,17 +365,23 @@ def sentence(state, result):
         for i, token in enumerate(q.token_list):
             if token.txt == result.subject:
                 stofn = token[2][0].stofn
-                stofn = _FIX_MAP.get(stofn) or stofn
+                stofn = _FIX_MAP.get(stofn, stofn)
 
         js = read_jsfile("lightService.js")
-        js += f'main(\'{hue_credentials["ipAddress"]}\',\'{hue_credentials["username"]}\',\'{stofn}\', true, {number});'
+        js += "main('{0}','{1}','{2}', true, {3});".format(
+            hue_credentials["ipAddress"], hue_credentials["username"], stofn, number
+        )
 
         answer = stofn
-        q.set_answer(dict(answer=answer), answer, answer)
+        q.set_answer(*gen_answer(answer))
         q.set_command(js)
 
     # alter light color action
-    elif "qtype" in result and result.qtype == "LightColor" and device_data['smartlights']['selected_light'] == 'philips_hue':
+    elif (
+        "qtype" in result
+        and result.qtype == "LightColor"
+        and device_data["smartlights"]["selected_light"] == "philips_hue"
+    ):
         stofn_name = None
         stofn_color = None
 
@@ -352,42 +392,60 @@ def sentence(state, result):
             if token.txt == result.color:
                 options = token[2]
                 for word_variation in options:
-                    if word_variation.ordfl == 'lo' and word_variation.stofn in _COLOR_NAME_TO_CIE.keys():
+                    if (
+                        word_variation.ordfl == "lo"
+                        and word_variation.stofn in _COLOR_NAME_TO_CIE.keys()
+                    ):
                         stofn_color = word_variation.stofn
                         break
-        
-        js = read_jsfile("lightService.js")
-        js += f'main(\'{hue_credentials["ipAddress"]}\',\'{hue_credentials["username"]}\',\'{stofn_name}\', true, null, {_COLOR_NAME_TO_CIE[stofn_color.lower()]});'
 
-        answer = f'{stofn_color} {stofn_name}'
-        q.set_answer(dict(answer=answer), answer, answer)
+        js = read_jsfile("lightService.js")
+        js += "main('{0}','{1}','{2}', true, null, {3});".format(
+            hue_credentials["ipAddress"],
+            hue_credentials["username"],
+            stofn_name,
+            _COLOR_NAME_TO_CIE[stofn_color.lower()],
+        )
+
+        answer = "{0} {1}".format(stofn_color, stofn_name)
+        q.set_answer(*gen_answer(answer))
         q.set_command(js)
 
     # connected lights info action
-    elif "qtype" in result and result.qtype == "HubInfo" and device_data['smartlights']['selected_light'] == 'philips_hue':
+    elif (
+        "qtype" in result
+        and result.qtype == "HubInfo"
+        and device_data["smartlights"]["selected_light"] == "philips_hue"
+    ):
         answer = "Skal gert"
 
         js = read_jsfile("lightInfo.js")
 
         q.set_command(js)
-        q.set_answer(dict(answer=answer), answer, answer)
+        q.set_answer(*gen_answer(answer))
 
     # alter saturation action
-    elif "qtype" in result and result.qtype == "LightSaturation" and device_data['smartlights']['selected_light'] == 'philips_hue':
+    elif (
+        "qtype" in result
+        and result.qtype == "LightSaturation"
+        and device_data["smartlights"]["selected_light"] == "philips_hue"
+    ):
         number = result.numbers[0]
         stofn = None
 
         for i, token in enumerate(q.token_list):
             if token.txt == result.subject:
                 stofn = token[2][0].stofn
-                stofn = _FIX_MAP.get(stofn) or stofn
+                stofn = _FIX_MAP.get(stofn, stofn)
 
         js = read_jsfile("lightService.js")
-        js += f'main(\'{hue_credentials["ipAddress"]}\',\'{hue_credentials["username"]}\',\'{stofn}\', undefined, undefined, undefined, sat = {number});'
+        js += "main('{0}','{1}','{2}', undefined, undefined, undefined, {3});".format(
+            hue_credentials["ipAddress"], hue_credentials["username"], stofn, number
+        )
 
-        answer = f'{stofn} {number}'
+        answer = "{0} {1}".format(stofn, number)
 
-        q.set_answer(dict(answer=answer), answer, answer)
+        q.set_answer(*gen_answer(answer))
         q.set_command(js)
 
     else:

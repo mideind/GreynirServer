@@ -1,3 +1,5 @@
+"use strict";
+
 //const XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 
 function getSmartDeviceAddress() {
@@ -9,7 +11,7 @@ function getSmartDeviceAddress() {
         return JSON.parse(request.responseText)[0];
     }
     else {
-        return 'No smart device found'
+        return 'No smart device found';
     }
 }
 
@@ -58,7 +60,7 @@ function connectHub(device_id, requestURL) {
         let username = createNewDeveloper(deviceInfo.internalipaddress);
         
         if (!username.success) {
-            return 'Ýttu á \'Philips\' takkan á tengiboxinu og reyndu aftur'
+            return 'Ýttu á \'Philips\' takkann á tengiboxinu og reyndu aftur';
         }
 
         const data = {
@@ -73,7 +75,7 @@ function connectHub(device_id, requestURL) {
                     }
                 }
             }
-        }
+        };
 
         const result = storeDevice(data, requestURL);
 
