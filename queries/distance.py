@@ -50,8 +50,10 @@ _DISTANCE_QTYPE = "Distance"
 # TODO: This may grab queries of the form "Hvað er langt í jólin"!
 _QDISTANCE_REGEXES = (
     r"^hvað er ég langt frá (.+)$",
+    r"^hvað er langt frá (.+)$",
     r"^hvað er ég langt í burtu frá (.+)$",
     r"^hversu langt er ég frá (.+)$",
+    r"^hversu langt í burtu er (.+)$",
     r"^hve langt er ég frá (.+)$",
     r"^hvað er langt\s?(?:héðan)?\s?(?:austur|vestur|norður|suður)? á (.+)$",
     r"^hvað er langt\s?(?:héðan)? upp á (.+)$",
@@ -66,6 +68,7 @@ _QDISTANCE_REGEXES = (
     r"^hversu marga metra er ég frá (.+)$",
     r"^hvað eru margir kílómetrar til (.+)$",
     r"^hvað eru margir metrar til (.+)$",
+    r"^hvað er (.+) langt í burtu$",
 )
 
 # Travel time questions

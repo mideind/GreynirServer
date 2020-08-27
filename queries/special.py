@@ -470,6 +470,18 @@ _SPECIAL_QUERIES = {
     "hver er fallegust": {
         "answer": "Þú, kæri notandi, ert að sjálfsögðu fallegastur af öllum."
     },
+    "hver er fallegastur af öllum": {
+        "answer": "Þú, kæri notandi, ert að sjálfsögðu fallegastur af öllum."
+    },
+    "hver er fallegust af öllum": {
+        "answer": "Þú, kæri notandi, ert að sjálfsögðu fallegastur af öllum."
+    },
+    "hver er langfallegastur": {
+        "answer": "Þú, kæri notandi, ert að sjálfsögðu fallegastur af öllum."
+    },
+    "hver er langfallegust": {
+        "answer": "Þú, kæri notandi, ert að sjálfsögðu fallegastur af öllum."
+    },
     "hver er uppáhalds manneskjan þín": {
         "answer": "Þú, kæri notandi, ert að sjálfsögðu í uppáhaldi."
     },
@@ -1412,6 +1424,20 @@ _SPECIAL_QUERIES = {
     "ertu með eitthvað skemmtilegt til að segja": _random_trivia,
     "ertu með eitthvað áhugavert að segja": _random_trivia,
     "ertu með eitthvað áhugavert til að segja": _random_trivia,
+    # What is fun?
+    "hvað er skemmtilegt að gera": {
+        "answer": "Það er til dæmis skemmtilegt að spyrja mig um hluti"
+    },
+    "hvað er skemmtilegt": {
+        "answer": "Það er til dæmis skemmtilegt að spyrja mig um hluti"
+    },
+    "hvað er gaman að gera": {
+        "answer": "Það er til dæmis gaman að spyrja mig um hluti"
+    },
+    "hvað er gaman": {
+        "answer": "Það er til dæmis gaman að spyrja mig um hluti"
+    },
+    # Why is the sky blue?
     "af hverju er himininn blár": _SKY_BLUE,
     "hvers vegna er himininn blár": _SKY_BLUE,
     # Quotations

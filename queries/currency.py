@@ -24,6 +24,7 @@
 # TODO: Bug: "30 dollarar eru 3.801 krónUR." [!!!] Fix using is_plural
 # TODO: Answer for exch rate should be of the form ISK 2000 = USD 14,65
 # TODO: "hvað eru 10 evrur í íslenskum krónum"
+# TODO: "Hvert er gengi krónunnar?"
 
 import re
 import cachetools
