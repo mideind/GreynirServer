@@ -269,6 +269,10 @@ def sentence(state, result):
     """ Called when sentence processing is complete """
     q = state["query"]
 
+    if "qtype" not in result:
+        q.set_error("E_QUERY_NOT_UNDERSTOOD")
+        return
+
     # TODO hardcoded while only one device type is supported
     smartdevice_type = "smartlights"
 
