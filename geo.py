@@ -102,8 +102,11 @@ ICE_PLACENAME_BLACKLIST = frozenset(
         "Árósar",
     )
 )
+
+# These should *never* be interpreted as Icelandic street names
 ICE_STREETNAME_BLACKLIST = frozenset(("Sjáland", "Feney", "Ráðhúsið", "Húsið"))
 
+# These should *always* be interpreted as Icelandic street names
 ALWAYS_STREET_ADDR = frozenset(("Skeifan", "Bessastaðir", "Kringlan"))
 
 # Names that should always be identified

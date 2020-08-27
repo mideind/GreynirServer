@@ -306,7 +306,7 @@ def answ_openhours(placename, loc, qtype):
 
         # Get opening hours for current weekday
         periods = res["result"]["opening_hours"]["periods"]
-        if len(periods) == 1 or wday > len(periods):
+        if len(periods) == 1 or wday >= len(periods):
             # Open 24 hours a day
             today_desc = p_desc = "{0} er {1} allan sólarhringinn".format(name, open_adj)
         else:
