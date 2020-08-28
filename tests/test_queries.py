@@ -183,12 +183,15 @@ def test_query_api(client):
     json = qmcall(c, {"q": "hvað kostar evran"}, "Currency")
     assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
 
+    json = qmcall(c, {"q": "hvað kostar bandaríkjadalur mikið í krónum"}, "Currency")
+    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
+
     json = qmcall(
         c, {"q": "Hvert er gengi krónunnar gagnvart dollara í dag?"}, "Currency"
     )
     assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
 
-    json = qmcall(c, {"q": "hvað eru tíu þúsund krónur margir dollarar"}, "Currency")
+    json = qmcall(c, {"q": "hvað eru tíu þúsund krónur margir dalir"}, "Currency")
     assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
 
     json = qmcall(c, {"q": "hvað eru 79 dollarar margar evrur?"}, "Currency")
