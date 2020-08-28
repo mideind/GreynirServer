@@ -7,10 +7,6 @@ from queries import gen_answer, read_jsfile
 from db import SessionContext
 from db.models import QueryData
 
-# TODO remove fstring
-# TODO expand functionality for more devices
-# TODO add more functionality provided by the philips hue api
-
 # This module wants to handle parse trees for queries
 HANDLE_TREE = True
 
@@ -165,7 +161,7 @@ def QHomeLightSaturationQuery(node, params, result):
     result.qtype = "LightSaturation"
 
 
-# fix common stofn errors when stofn from a company or entity is used instead
+# Fix common stofn errors when stofn from a company or entity is used instead
 # of the correct stofn
 _FIX_MAP = {"Skrifstofan": "skrifstofa", "Húsið": "hús"}
 
@@ -209,7 +205,7 @@ _NUMBER_WORDS = {
     "milljarður": 1e9,
 }
 
-# convert color name into hue
+# Convert color name into hue
 _COLOR_NAME_TO_CIE = {
     "gulur": 60 * 65535 / 360,
     "grænn": 120 * 65535 / 360,
@@ -295,7 +291,7 @@ def sentence(state, result):
 
         js = read_jsfile("connectHub.js")
 
-        # function from the javascript file needs to be called with
+        # Function from the javascript file needs to be called with
         # relevant variables
         js += "connectHub('{0}','{1}')".format(q.client_id, host)
 
@@ -307,7 +303,7 @@ def sentence(state, result):
 
         q.set_answer(*gen_answer(answer))
 
-    # light on or off action
+    # Light on or off action
     elif (
         "qtype" in result
         and (result.qtype == "LightOn" or result.qtype == "LightOff")
@@ -334,7 +330,7 @@ def sentence(state, result):
         q.set_answer(*gen_answer(answer))
         q.set_command(js)
 
-    # alter light dimmer action
+    # Alter light dimmer action
     elif (
         "qtype" in result
         and result.qtype == "LightDim"
@@ -359,7 +355,7 @@ def sentence(state, result):
         q.set_answer(*gen_answer(answer))
         q.set_command(js)
 
-    # alter light color action
+    # Alter light color action
     elif (
         "qtype" in result
         and result.qtype == "LightColor"
@@ -394,7 +390,7 @@ def sentence(state, result):
         q.set_answer(*gen_answer(answer))
         q.set_command(js)
 
-    # connected lights info action
+    # Connected lights info action
     elif (
         "qtype" in result
         and result.qtype == "HubInfo"
@@ -407,7 +403,7 @@ def sentence(state, result):
         q.set_command(js)
         q.set_answer(*gen_answer(answer))
 
-    # alter saturation action
+    # Alter saturation action
     elif (
         "qtype" in result
         and result.qtype == "LightSaturation"
