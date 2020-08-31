@@ -621,8 +621,8 @@ class Query:
             to the next query from the same client """
         self._context = ctx
 
-    def data(self, key):
-        """ fetch the data column containing the json data stored in the device_data table """
+    def client_data(self, key):
+        """ Fetch the data column containing the json data stored in the query_data table """
         query_data = None
         with SessionContext(read_only=True) as session:
             try:
@@ -635,11 +635,15 @@ class Query:
                     query_data = client_data.data
             except Exception as e:
                 logging.error(
-                    "Error fetching query data for key '{0}' from db: {0}".format(
-                        key, e
+                    "Error fetching client '{0}' query data for key '{1}' from db: {2}".format(
+                        self.client_id, key, e
                     )
                 )
         return query_data
+
+    def set_client_data(self, key, json):
+        """ Setter for client query data """
+        pass
 
     @property
     def context(self):

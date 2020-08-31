@@ -299,13 +299,12 @@ def sentence(state, result):
     smartdevice_type = "smartlights"
 
     # Fetch relevant data from the device_data table to perform an action on the lights
-    device_data = q.data(smartdevice_type)
+    device_data = q.client_data(smartdevice_type)
 
     selected_light = None
     hue_credentials = None
 
     if device_data is not None:
-
         selected_light = device_data["smartlights"].get("selected_light")
         hue_credentials = device_data["smartlights"].get("philips_hue")
 
