@@ -40,7 +40,7 @@ from tzwhere import tzwhere
 from pytz import country_timezones
 
 from geo import country_name_for_isocode, iceprep_for_cc
-from reynir.bindb import BIN_Db
+from reynir import NounPhrase
 from settings import changedlocale
 
 
@@ -58,15 +58,11 @@ def natlang_seq(words, oxford_comma=False):
 
 def nom2dat(w):
     """ Look up the dative form of a noun in BÍN. """
-    if not w:
-        return ""
-
-    def sort_by_preference(m_list):
-        """ Discourage rarer declension forms, i.e. ÞGF2 and ÞGF3 """
-        return sorted(m_list, key=lambda m: "2" in m.beyging or "3" in m.beyging)
-
-    with BIN_Db().get_db() as db:
-        return db.cast_to_dative(w, meaning_filter_func=sort_by_preference)
+    try:
+        return NounPhrase(w).dative
+    except Exception:
+        pass
+    return ""
 
 
 # The following needs to include at least nominative
@@ -247,6 +243,13 @@ def country_desc(cc):
     cn = country_name_for_isocode(cc)
     prep = iceprep_for_cc(cc)
     return "{0} {1}".format(prep, nom2dat(cn))
+
+
+def cap_first(s):
+    """ Capitalize first character in a string. """
+    if not s:
+        return s
+    return s[0].upper() + s[1:]
 
 
 # This could be done at runtime using BÍN lookup, but this is

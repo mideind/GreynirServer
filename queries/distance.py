@@ -32,9 +32,10 @@
 import re
 import logging
 
-from reynir.bindb import BIN_Db
+from reynir import NounPhrase
 from queries import (
     gen_answer,
+    cap_first,
     time_period_desc,
     distance_desc,
     query_geocode_api_addr,
@@ -49,7 +50,7 @@ _DISTANCE_QTYPE = "Distance"
 # TODO: This may grab queries of the form "Hvað er langt í jólin"!
 _QDISTANCE_REGEXES = (
     r"^hvað er ég langt frá (.+)$",
-    r"^hvað er langt frá (.+)$",
+    r"^hvað er langt frá (.+)$",  # Voice recognition often misses "ég" in this context
     r"^hvað er ég langt í burtu frá (.+)$",
     r"^hversu langt er ég frá (.+)$",
     r"^hversu langt í burtu er (.+)$",
@@ -150,27 +151,14 @@ _QTRAVELTIME_REGEXES = (
 
 def _addr2nom(address):
     """ Convert location name to nominative form. """
-    # TODO: Implement more intelligently.
-    # This is a tad simplistic and mucks up some things,
-    # e.g. "Ráðhús Reykjavíkur" becomes "Ráðhús Reykjavík".
-    with BIN_Db.get_db() as db:
-        nf = []
-        for w in address.split():
-            bin_res = db.lookup_nominative(w)
-            if not bin_res and not w.islower():
-                # Try lowercase form
-                bin_res = db.lookup_nominative(w.lower())
-            if bin_res:
-                nf.append(bin_res[0].ordmynd)
-            else:
-                nf.append(w)
-        return " ".join(nf)
+    return NounPhrase(cap_first(address)).nominative
 
 
 def dist_answer_for_loc(matches, query):
-    """ Generate response to distance query. """
+    """ Generate response to distance query, e.g.
+        "Hvað er ég langt frá X?" """
     locname = matches.group(1)
-    loc_nf = _addr2nom(locname[0].upper() + locname[1:])
+    loc_nf = _addr2nom(locname)
     res = query_geocode_api_addr(loc_nf)
 
     # Verify sanity of API response
@@ -219,6 +207,12 @@ def dist_answer_for_loc(matches, query):
     # Beautify by capitalizing remote loc name
     uc = capitalize_placename(locname)
     bq = query.beautified_query.replace(locname, uc)
+
+    # Hack to fix the fact that the voice recognition often misses "ég"
+    prefix_fix = "Hvað er langt frá"
+    if bq.startswith(prefix_fix):
+        bq = bq.replace("Hvað er langt frá", "Hvað er ég langt frá")
+
     query.set_beautified_query(bq)
     query.set_context(dict(subject=loc_nf))
 
@@ -226,9 +220,11 @@ def dist_answer_for_loc(matches, query):
 
 
 def traveltime_answer_for_loc(matches, query):
+    """ Generate answer to travel time query e.g.
+        "Hvað er ég lengi að ganga í X?" """
     action_desc, tmode, locname = matches.group(2, 3, 5)
 
-    loc_nf = _addr2nom(locname[0].upper() + locname[1:])
+    loc_nf = _addr2nom(locname)
     mode = _TT_MODES.get(tmode, "walking")
 
     # Query API
