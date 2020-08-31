@@ -62,16 +62,17 @@ def handle_plain_text(q):
     """ Handle a plain text query concerning opinion on any subject. """
     ql = q.query_lower.rstrip("?")
 
-    subj = None
+    # subj = None
 
     for rx in _OPINION_REGEXES:
         m = re.search(rx, ql)
         if m:
-            subj = m.group(1)
+            # subj = m.group(1)
             break
     else:
         return False
 
+    # We always give the same answer
     answer = "Ég hef enga sérstaka skoðun í þeim efnum."
     q.set_answer(*gen_answer(answer))
     q.set_qtype(_OPINION_QTYPE)

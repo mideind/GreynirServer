@@ -32,7 +32,6 @@ import json
 import os
 import re
 import locale
-import math
 from urllib.parse import urlencode
 from functools import lru_cache
 from xml.dom import minidom
@@ -236,7 +235,7 @@ def numbers_to_neutral(s):
 
 def is_plural(num):
     """ Determine whether an Icelandic word following a given number should be
-        plural or not, e.g. "21 maður", "22 menn", "1,1 kílómetri", "11 menn" etc. 
+        plural or not, e.g. "21 maður", "22 menn", "1,1 kílómetri", "11 menn" etc.
         Accepts string, float or int as argument. """
     sn = str(num)
     return not (sn.endswith("1") and not sn.endswith("11"))
@@ -375,7 +374,7 @@ def gen_answer(a):
 
 
 def query_json_api(url):
-    """ Request the URL, expecting a json response which is 
+    """ Request the URL, expecting a json response which is
         parsed and returned as a Python data structure. """
 
     # Send request
@@ -399,7 +398,7 @@ def query_json_api(url):
 
 
 def fetch_xml(url):
-    """ Request the URL, expecting an XML response which is 
+    """ Request the URL, expecting an XML response which is
         parsed and returned as an XML document object. """
 
     # Send request
@@ -613,7 +612,7 @@ def tzwhere_singleton():
 
 
 def timezone4loc(loc, fallback=None):
-    """ Returns timezone string given a tuple of coordinates. 
+    """ Returns timezone string given a tuple of coordinates.
         Fallback argument should be an ISO country code."""
     if loc:
         return tzwhere_singleton().tzNameAt(loc[0], loc[1], forceTZ=True)

@@ -238,7 +238,7 @@ QArithmeticQuery →
 
     # 'Hver/Hvað er kvaðratrótin af X'
     | QArAnyPrefix QArSqrt
-    
+
     # 'Hvað er X í Y veldi?'
     | QArGenericPrefix QArPow
 
@@ -261,11 +261,11 @@ QArAnyPrefix → QArGenericPrefix | QArSpecificPrefix
 
 QArStd → QArNumberWord_nf QArOperator/arfall QArNumberWord/arfall
 
-QArOperator/arfall → 
+QArOperator/arfall →
     QArPlusOperator/arfall
     | QArMinusOperator/arfall
     | QArMultiplicationOperator/arfall
-QArOperator_þgf → 
+QArOperator_þgf →
     QArDivisionOperator_þgf
 
 # Infix operators

@@ -39,10 +39,8 @@
 
 from typing import Optional, List
 
-import re
 from threading import Lock
 from functools import lru_cache
-from collections import defaultdict
 from datetime import datetime
 import random
 
@@ -50,7 +48,6 @@ import query
 from queries import natlang_seq, numbers_to_neutral
 from settings import Settings
 from reynir import correct_spaces
-from reynir.bindb import BIN_Db
 
 import straeto
 

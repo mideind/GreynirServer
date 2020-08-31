@@ -19,13 +19,12 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    This module generates a polite introductory response to statements 
+    This module generates a polite introductory response to statements
     of the form "Ég heiti X" ("My name is X").
 
 """
 
 import re
-from random import choice
 
 from reynir.bindb import BIN_Db
 

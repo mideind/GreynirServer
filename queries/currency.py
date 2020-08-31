@@ -28,7 +28,6 @@
 
 import re
 import cachetools
-import json
 import random
 import logging
 
@@ -143,7 +142,6 @@ $score(+35) QCurrency
 QCurrencyQuery →
     # "Hver er gengisvísitalan?"
     QCurSpecificPrefix? QCurCurrencyIndex_nf QCurNow?
-    
     # "Hvert/hvað/hvernig er gengi X?"
     | QCurAnyPrefix? QCurGeneralRate QCurNow?
     # "Hvað kostar X?"
@@ -164,14 +162,14 @@ QCurAnyPrefix → QCurGenericPrefix | QCurSpecificPrefix
 QCurCostPrefix → "hvað" "kostar" | "hversu" "mikið" "kostar" | "hve" "mikið" "kostar"
 QCurInKronas → "í" "krónum"
 
-QCurNow → "núna" | "nú" | "í" "augnablikinu" | "eins" "og" "stendur" | "í" "dag" 
+QCurNow → "núna" | "nú" | "í" "augnablikinu" | "eins" "og" "stendur" | "í" "dag"
 
 # Supported currencies
 # Note: All child productions of QCurUnit must have valid
 # ISO currency codes as the last three letters in their name
 QCurUnit/fall →
-    QCurISK/fall | QCurUSD/fall | QCurEUR/fall | QCurGBP/fall 
-    | QCurJPY/fall | QCurRUB/fall | QCurCHF/fall | QCurCAD/fall 
+    QCurISK/fall | QCurUSD/fall | QCurEUR/fall | QCurGBP/fall
+    | QCurJPY/fall | QCurRUB/fall | QCurCHF/fall | QCurCAD/fall
     | QCurZAR/fall | QCurPLN/fall | QCurRUB/fall | QCurCNY/fall
     | QCurNOK/fall | QCurDKK/fall | QCurSEK/fall
 
@@ -262,7 +260,7 @@ QCurPLN_ef →
     | 'pólskur:lo'_vb_hk_ef? "slotísins"
 
 QCurRUB/fall →
-    'rússneskur:lo'_kvk/fall? 'rúbla:kvk'/fall 
+    'rússneskur:lo'_kvk/fall? 'rúbla:kvk'/fall
     | currency_rub/fall
 
 QCurCNY/fall →

@@ -26,9 +26,8 @@
 # TODO: "kastaðu upp á teningnum"
 # TODO: "skjaldarmerki eða fiskur"
 
-import random
 import logging
-import json
+import random
 
 from queries import gen_answer
 from queries.arithmetic import add_num, terminal_num
@@ -70,7 +69,7 @@ QRandomQuery →
     QRandomDiceRoll | QRandomBetween | QRandomHeadsOrTails
 
 QRandomHeadsOrTails →
-    "fiskur" "eða" "skjaldarmerki" | "skjaldarmerki" "eða" "fiskur" 
+    "fiskur" "eða" "skjaldarmerki" | "skjaldarmerki" "eða" "fiskur"
     | "kastaðu" "upp"? "peningi" | "kastaðu" "upp"? "pening" | "kastaðu" "upp"? "krónu"
 
 QRandomDiceRoll →
@@ -96,8 +95,8 @@ QRandomBetween →
     | QRandAction QRandRand? "tölu" "á"? "milli" QRandNumber "og" QRandNumber
 
 QRandAction →
-    "veldu" | "veldu" "fyrir" "mig" | "nefndu" | "nefndu" "fyrir" "mig" 
-    | "gefðu" "mér" | "komdu" "með" | "getur" "þú" "gefið" "mér" 
+    "veldu" | "veldu" "fyrir" "mig" | "nefndu" | "nefndu" "fyrir" "mig"
+    | "gefðu" "mér" | "komdu" "með" | "getur" "þú" "gefið" "mér"
     | "geturðu" "gefið" "mér" | "segðu" "mér"
 
 QRandRand →

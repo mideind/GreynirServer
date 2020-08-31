@@ -19,7 +19,7 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    This module handles queries related to current news & news headlines. 
+    This module handles queries related to current news & news headlines.
     Uses RÚV's JSON API to fetch top headlines on the ruv.is front page.
 
 """

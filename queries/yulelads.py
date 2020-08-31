@@ -25,11 +25,7 @@
 
 # TODO: hvað eru íslensku jólasveinarnir margir
 
-import re
 import random
-
-import query
-from settings import Settings
 from datetime import datetime
 
 

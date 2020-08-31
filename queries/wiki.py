@@ -196,7 +196,7 @@ def QWikiPrevSubjectNf(node, params, result):
         if keys:
             result.context_reference = True
             result["subject_nom"] = ctx[keys[0]]
-    if not "subject_nom" in result:
+    if "subject_nom" not in result:
         # There is a reference to a previous result
         # which is not available: flag an error
         result.error_context_reference = True
@@ -241,7 +241,10 @@ def _clean_voice_answer(answer):
     return a
 
 
-_WIKI_API_URL = "https://is.wikipedia.org/w/api.php?format=json&action=query&prop=extracts&exintro&explaintext&redirects=1&titles={0}"
+_WIKI_API_URL = (
+    "https://is.wikipedia.org/w/api.php?format=json&action=query"
+    "&prop=extracts&exintro&explaintext&redirects=1&titles={0}"
+)
 
 
 def _query_wiki_api(subject):

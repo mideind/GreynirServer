@@ -141,28 +141,28 @@ QPetrolWhereIs →
     "hvar" "er"
 
 QPetrolCanIGet →
-    "fæ" "ég" | "fær" "maður" | "get" "ég" "fengið" | "getur" "maður" "fengið" 
+    "fæ" "ég" | "fær" "maður" | "get" "ég" "fengið" | "getur" "maður" "fengið"
     | "kaupi" "ég" | "kaupir" "maður" | "get" "ég" "keypt" | "getur" "maður" "keypt"
 
 QPetrolHas →
     "er" "með" | "hefur" | "býður" "upp" "á"
 
 QPetrolPetrol →
-    "bensín" | "bensínið" | "eldsneyti" | "eldsneytið" | "dísel" | "díselið" 
+    "bensín" | "bensínið" | "eldsneyti" | "eldsneytið" | "dísel" | "díselið"
     | "díselolía" | "díselolíu"
 
 QPetrolClosest →
     "næsta" | "nálægasta"
 
 QPetrolFillableÞf →
-    "tank" | "tankinn" | "bensíntank" | "bensíntankinn" 
+    "tank" | "tankinn" | "bensíntank" | "bensíntankinn"
     | "bílinn" | "bifreiðina" | "eldsneytið" | "eldsneytistankinn"
 
 QPetrolNearMe →
     QPetrolHere? QPetrolAround
 
 QPetrolAround →
-    "nálægt" "mér"? | "í" "grenndinni" | "í" "grennd" | "á" "svæðinu" 
+    "nálægt" "mér"? | "í" "grenndinni" | "í" "grennd" | "á" "svæðinu"
     | "skammt" "frá" "mér"? | "í" "nágrenninu"
 
 QPetrolHere →
@@ -182,7 +182,7 @@ QPetrolLowPriceÞf →
     | "sæmilegt" "verð" | "sæmilegan" "prís"
 
 QPetrolBestPriceÞf →
-    "lægsta" "verðið" | "besta" "verðið" | "besta" "verð" | "lægsta" "verð" 
+    "lægsta" "verðið" | "besta" "verðið" | "besta" "verð" | "lægsta" "verð"
     | "lægsta" "prísinn" | "besta" "prísinn" | "lægsta" "prís" | "besta" "prís"
 
 $score(+35) QPetrol
@@ -302,8 +302,8 @@ def _answ_for_petrol_query(q, result):
 
     if (
         not station
-        or not "bensin95" in station
-        or not "diesel" in station
+        or "bensin95" not in station
+        or "diesel" not in station
         or (req_distance and "distance" not in station)
     ):
         return gen_answer(_ERRMSG)
@@ -313,7 +313,10 @@ def _answ_for_petrol_query(q, result):
 
     if req_distance:
         answ_fmt = "{0} {1} ({2}, bensínverð {3}, díselverð {4})"
-        voice_fmt = "{0} er {1} {2} í um það bil {3} fjarlægð. Þar kostar bensínlítrinn {4} og dísel-lítrinn {5}."
+        voice_fmt = (
+            "{0} er {1} {2} í um það bil {3} fjarlægð. "
+            "Þar kostar bensínlítrinn {4} og dísel-lítrinn {5}."
+        )
         dist_nf = distance_desc(station["distance"], case="nf")
         dist_þf = distance_desc(station["distance"], case="þf")
         answer = answ_fmt.format(

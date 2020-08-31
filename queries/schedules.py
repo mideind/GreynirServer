@@ -28,7 +28,6 @@
 # TODO: Fix formatting issues w. trailing spaces, periods at the end of answer str
 
 import logging
-import re
 import random
 from datetime import datetime, timedelta
 
@@ -140,7 +139,7 @@ QSchGoingOn →
     "í" "gangi"
 
 QSchBeingShown →
-    "verið" "að" "sýna" 
+    "verið" "að" "sýna"
 
 QSchEiginlega →
     "eiginlega"
@@ -247,7 +246,7 @@ def _span(p):
 
 
 def _curr_prog(sched):
-    """ Return current TV program, given a TV schedule 
+    """ Return current TV program, given a TV schedule
         i.e. a list of programs in chronological sequence. """
     now = datetime.utcnow()
     for p in sched:
