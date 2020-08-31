@@ -1,11 +1,35 @@
+"""
+
+    Greynir: Natural language processing for Icelandic
+
+    Smarthome control query response module
+
+    Copyright (C) 2020 Miðeind ehf.
+
+       This program is free software: you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published by
+       the Free Software Foundation, either version 3 of the License, or
+       (at your option) any later version.
+       This program is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+       GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see http://www.gnu.org/licenses/.
+
+
+    This module handles queries and commands related to controlling
+    smarthome devices.
+
+"""
+
 import logging
 import re
 import json
 import flask
 
 from queries import gen_answer, read_jsfile
-from db import SessionContext
-from db.models import QueryData
 
 # This module wants to handle parse trees for queries
 HANDLE_TREE = True
@@ -41,7 +65,7 @@ QLightOffQuery →
 QLightOnPhenonmenon → Nl
 
 # $tag(keep) QLightOnPhenomenon
- 
+
 QLightOffPhenonmenon → Nl
 
 # 'Dimmer switch grammar'
@@ -54,7 +78,7 @@ QLightPercentage →
     töl | to | tala
 
 QHomeDeviceQuery/fall → Fyrirbæri/fall/kyn
- 
+
 QHomeWhereDeviceQuery → FsLiður
 
 # 'Color change query'
@@ -77,19 +101,19 @@ QLightPercentage →
     töl | to | tala
 
 QHomeDeviceQuery/fall → Fyrirbæri/fall/kyn
- 
+
 QHomeWhereDeviceQuery → FsLiður
 
 # 'information about hub grammar'
 QHubInfoQuery →
-    "hvaða" QLightOrGroup "eru" "tengdir" 
+    "hvaða" QLightOrGroup "eru" "tengdir"
     | "hvað" "er" "tengt"
 
 QLightOrGroup →
     "ljós" | "hóp" | "hópa"
 
 # 'Helper functions'
-QLightQuery → 
+QLightQuery →
     "ljós" | "ljósið" | "ljósin" | "ljósunum"
 
 QLightNamePhenonmenon → Nl
@@ -101,6 +125,8 @@ QHomeInOrOnQuery →
 
 # Catches active query and assigns the correct variables
 # to be used when performing an action on lights
+
+
 def QConnectQuery(node, params, result):
     result.qtype = "ConnectSmartDevice"
 
