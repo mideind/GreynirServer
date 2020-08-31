@@ -239,21 +239,22 @@ def is_plural(num):
 
 def country_desc(cc):
     """ Generate Icelandic description of being in a particular country
-        with correct preposition and case e.g. 'á Spáni', 'í Þýskalandi' """
+        with correct preposition and case e.g. 'á Spáni', 'í Þýskalandi'. """
     cn = country_name_for_isocode(cc)
     prep = iceprep_for_cc(cc)
     return "{0} {1}".format(prep, nom2dat(cn))
 
 
 def cap_first(s):
-    """ Capitalize first character in a string. """
+    """ Capitalize first character in a string. Why Python doesn't include
+        this in the standard library is unfathomable to me. """
     if not s:
         return s
     return s[0].upper() + s[1:]
 
 
 # This could be done at runtime using BÍN lookup, but this is
-# faster, cleaner and allows for reuse outside the codebase.
+# faster, cleaner, and allows for reuse outside the codebase.
 _TIMEUNIT_NOUNS = {
     "w": (["vika", "viku", "viku", "viku"], ["vikur", "vikur", "vikum", "vikna"]),
     "d": (["dagur", "dag", "degi", "dags"], ["dagar", "daga", "dögum", "daga"]),
@@ -337,7 +338,7 @@ def distance_desc(km_dist, case="nf", in_metres=1.0, abbr=False):
 
 
 _KRONA_NOUN = (
-    ["króna", "krónu", "krónu", "krónur"],
+    ["króna", "krónu", "krónu", "krónu"],
     ["krónur", "krónur", "krónum", "króna"],
 )
 
@@ -373,11 +374,12 @@ def icequote(s):
 
 
 def gen_answer(a):
+    """ Convenience function for query modules: response, answer, voice answer """
     return dict(answer=a), a, a
 
 
 def query_json_api(url):
-    """ Request the URL, expecting a json response which is
+    """ Request the URL, expecting a JSON response which is
         parsed and returned as a Python data structure. """
 
     # Send request
@@ -400,7 +402,7 @@ def query_json_api(url):
         logging.warning("Error parsing JSON API response: {0}".format(e))
 
 
-def fetch_xml(url):
+def query_xml_api(url):
     """ Request the URL, expecting an XML response which is
         parsed and returned as an XML document object. """
 
@@ -616,7 +618,7 @@ def tzwhere_singleton():
 
 def timezone4loc(loc, fallback=None):
     """ Returns timezone string given a tuple of coordinates.
-        Fallback argument should be an ISO country code."""
+        Fallback argument should be a 2-char ISO 3166 country code."""
     if loc:
         return tzwhere_singleton().tzNameAt(loc[0], loc[1], forceTZ=True)
     if fallback and fallback in country_timezones:

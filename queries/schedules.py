@@ -31,7 +31,7 @@ import logging
 import random
 from datetime import datetime, timedelta
 
-from queries import query_json_api, fetch_xml, gen_answer
+from queries import query_json_api, query_xml_api, gen_answer
 
 
 _SCHEDULES_QTYPE = "Schedule"
@@ -228,7 +228,7 @@ def _query_radio_schedule_api(channel):
         print(date_str)
         url = _RUV_RADIO_SCHEDULE_API_ENDPOINT.format(channel, date_str)
         print(url)
-        xmldoc = fetch_xml(url)
+        xmldoc = query_xml_api(url)
         # TODO: Validate XML format
         if xmldoc:
             _RADIO_LAST_FETCHED[channel] = datetime.utcnow()
