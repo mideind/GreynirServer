@@ -27,6 +27,7 @@
 
 import logging
 import re
+import random
 from datetime import datetime, timedelta
 
 from geo import in_iceland, iceprep_for_street
@@ -54,7 +55,6 @@ def help_text(lemma):
             (
                 "Hvað er opið lengi á Forréttabarnum",
                 "Hvenær lokar Bónus á Fiskislóð",
-                "",
             )
         )
     )

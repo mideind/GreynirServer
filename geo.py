@@ -528,6 +528,7 @@ _I_SUFFIXES = (
     "garðar",
     "múli",
     "fen",
+    "vík",
     "vogur",
     "Lækjargata",
     "Skeifan",
