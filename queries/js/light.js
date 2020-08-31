@@ -1,13 +1,15 @@
+"use strict";
+
 function changeLight(ipAddress, username, on = null, dimmer) {
 
     let body = {};
 
-    if(on) {
-        body.on = on
+    if (on) {
+        body.on = on;
     }
 
     if (dimmer) {
-        body.dimmer = parseInt(parseInt(dimmer) * 1/254)
+        body.dimmer = parseInt(parseInt(dimmer) * 1/254);
     }
     /*
     const body = JSON.stringify({
@@ -27,12 +29,12 @@ function changeLight(ipAddress, username, on = null, dimmer) {
 
 function main(on = null, dimmer = null) {
     if (!window.serviceStorage) {
-        return 'Snjalltæki er ekki tengt'
+        return 'Snjalltæki er ekki tengt';
     }
 
     let { ipAddress, username } = serviceStorage;
 
-    if ( !ipAddress || !username) {
+    if (!ipAddress || !username) {
         return 'Snjalltæki er ekki tengt';
     }
     else {

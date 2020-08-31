@@ -84,7 +84,7 @@ function connectHub(device_id, requestURL) {
         console.log(error);
         return 'Ekki tókst að tengja snjalltæki';
     }
-    // errors for connectHub
+    // Errors for connectHub
     // {"error":{"address":"","description":"link button not pressed","type":101}}
     // {"error":"Failed to execute 'send' on 'XMLHttpRequest': Failed to load 'http://192.168.1.140/api'."}
     // {"success":{"username":"2GTB-NVq68YwLRA43AZLPHmMiuvRL8yaZJykuJBg"}}

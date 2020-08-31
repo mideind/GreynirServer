@@ -1,3 +1,5 @@
+"use strict";
+
 const XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 
 function lightInfo(ipAddress, username) {
@@ -10,7 +12,7 @@ function lightInfo(ipAddress, username) {
         return JSON.parse(request.responseText);
     }
     else {
-        throw new Error('Error while fetchin light info')
+        throw new Error('Error while fetchin light info');
     }
 
 }
@@ -35,12 +37,12 @@ serviceStorage = {
 */
 function main() {
     if (!serviceStorage) {
-        return 'Snjalltæki ekki tengt'
+        return 'Snjalltæki ekki tengt';
     }
     let { username, ipAddress } = serviceStorage;
 
     if (!username || !ipAddress) {
-        return 'Snjalltæki ekki tengt'
+        return 'Snjalltæki ekki tengt';
     }
 
     let lights = null;
@@ -50,7 +52,7 @@ function main() {
     try {
         lights = lightInfo(ipAddress, username);
     } catch(error) {
-        return 'Villa kom upp í samskiptum við snjalltæki'
+        return 'Villa kom upp í samskiptum við snjalltæki';
     }
 
     for (let key in lights) {
@@ -66,7 +68,7 @@ function main() {
 
     deviceString = deviceString.slice(0, -1);
 
-    deviceString += ' Hópar:'
+    deviceString += ' Hópar:';
 
     for (let key in groups) {
         deviceString += ` ${groups[key].name},`;
@@ -74,7 +76,7 @@ function main() {
 
     deviceString = deviceString.slice(0, -1);
 
-    return deviceString
+    return deviceString;
 
 }
 main();

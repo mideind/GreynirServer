@@ -1,9 +1,10 @@
+"use strict";
 
 async function getSmartDeviceInfo(ipAddress, username) {
 
     const headers = {
         'headers':'application/json'
-    }
+    };
 
     const response = await fetch(
         `http://${ipAddress}/api/${username}`,
@@ -15,13 +16,13 @@ async function getSmartDeviceInfo(ipAddress, username) {
         console.log('error');
         console.log(error);
     });
-    return response.json()
+    return response.json();
 }
 
 async function changeLight(ipAddress, username, on) {
     const headers = {
         'headers':'application/json'
-    }
+    };
 
     const body = {
         on: on,
@@ -29,8 +30,7 @@ async function changeLight(ipAddress, username, on) {
         hue: 65280,
         sat: 254,
         effect: 'colorloop'
-
-    }
+    };
 
     const response = await fetch(
         `http://${ipAddress}/api/${username}/lights/1/state`,
@@ -43,7 +43,7 @@ async function changeLight(ipAddress, username, on) {
         console.log('error');
         console.log(error);
     });
-    return response.json()
+    return response.json();
 }
 
 function getSmartDeviceAddress() {
@@ -55,7 +55,7 @@ function getSmartDeviceAddress() {
         return JSON.parse(request.responseText)[0];
     }
     else {
-        return 'No smart device found'
+        return 'No smart device found';
     }
 }
 
@@ -74,7 +74,7 @@ function createNewDeveloper(ipAddress) {
         return JSON.parse(request.responseText)[0];
     }
     else {
-        throw new Error('Error while creating new user')
+        throw new Error('Error while creating new user');
     }
 }
 
@@ -88,14 +88,14 @@ function connectHub() {
         if (username.success){
             serviceStorage.username = username.success.username;
         } else {
-            return 'Ýttu á \'Philips\' takkan á tengiboxinu og reyndu aftur'
+            return 'Ýttu á \'Philips\' takkan á tengiboxinu og reyndu aftur';
         }
         
         return 'Tenging við snjalltæki tókst';
     } catch(error) {
         return 'Ekki tókst að tengja snjalltæki';
     }
-    // errors for connectHub
+    // Errors for connectHub
     // {"error":{"address":"","description":"link button not pressed","type":101}}
     // {"error":"Failed to execute 'send' on 'XMLHttpRequest': Failed to load 'http://192.168.1.140/api'."}
     // {"success":{"username":"2GTB-NVq68YwLRA43AZLPHmMiuvRL8yaZJykuJBg"}}

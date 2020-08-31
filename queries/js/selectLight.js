@@ -1,3 +1,5 @@
+"use strict";
+
 function changeLight(ipAddress, username, lightNo) {
 
     const body = JSON.stringify({
@@ -10,10 +12,10 @@ function changeLight(ipAddress, username, lightNo) {
 
 }
 // lightNo: int
-// if authorized then light with id lightNo will blink
+// If authorized then light with id lightNo will blink
 function main(lightNo) {
     if (!window.serviceStorage) {
-        return 'Snjalltæki er ekki tengt'
+        return 'Snjalltæki er ekki tengt';
     }
 
     let { ipAddress, username } = serviceStorage;

@@ -2,7 +2,7 @@
 
 //const XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 
-// returns ID of lights and groups with the provided name
+// Returns ID of lights and groups with the provided name
 function getIdByName(ipAddress, username, name) {
 
     let ids = {};
@@ -34,7 +34,7 @@ function changeGroup(ipAddress, username, groupId, on = null, bri = null, hue = 
 
     let body = {};
 
-    if(on !== null) {
+    if (on !== null) {
         body.on = on;
     }
 
@@ -50,8 +50,8 @@ function changeGroup(ipAddress, username, groupId, on = null, bri = null, hue = 
     if (sat !== null) {
         body.sat = parseInt(parseInt(sat) * (254/100));
     }
-    console.log('body');
-    console.log(body);
+    //console.log('body');
+    //console.log(body);
     let request = new XMLHttpRequest();
     request.open('PUT', `http://${ipAddress}/api/${username}/groups/${groupId}/action`, false);  // `false` makes the request synchronous
     request.send(JSON.stringify(body));
@@ -68,7 +68,7 @@ function changeLight(ipAddress, username, lightId, on = null, bri = null, hue = 
 
     let body = {};
 
-    if(on !== null) {
+    if (on !== null) {
         body.on = on;
     }
 

@@ -1,3 +1,5 @@
+"use strict";
+
 //const XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 
 function getSmartDeviceAddress() {
@@ -9,7 +11,7 @@ function getSmartDeviceAddress() {
         return JSON.parse(request.responseText)[0];
     }
     else {
-        return 'No smart device found'
+        return 'No smart device found';
     }
 }
 
@@ -28,7 +30,7 @@ function createNewDeveloper(ipAddress) {
         return JSON.parse(request.responseText)[0];
     }
     else {
-        throw new Error('Error while creating new user')
+        throw new Error('Error while creating new user');
     }
 }
 
@@ -46,7 +48,7 @@ function connectHub() {
         serviceStorage.username = null;
         return {error:error.message};
     }
-    // errors for connectHub
+    // Errors for connectHub
     // {"error":{"address":"","description":"link button not pressed","type":101}}
     // {"error":"Failed to execute 'send' on 'XMLHttpRequest': Failed to load 'http://192.168.1.140/api'."}
     // {"success":{"username":"2GTB-NVq68YwLRA43AZLPHmMiuvRL8yaZJykuJBg"}}
