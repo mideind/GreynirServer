@@ -29,7 +29,7 @@
 """
 
 from typing import TYPE_CHECKING
-from typing import Dict, Union, Callable, Any, cast
+from typing import Dict, Union, Callable, cast
 
 from datetime import datetime, timedelta
 from inspect import isfunction
@@ -210,14 +210,16 @@ def _random_quotation(qs: str, q: Query) -> AnswerType:
 
 def _poetry(qs: str, q: Query) -> AnswerType:
     return {
-        "answer": icequote("Það mælti mín móðir, \n"
-        "að mér skyldu kaupa, \n"
-        "fley og fagrar árar, \n"
-        "fara á brott með víkingum, \n"
-        "standa uppi í stafni, \n"
-        "stýra dýrum knerri, \n"
-        "halda svo til hafnar, \n"
-        "höggva mann og annan.")
+        "answer": icequote(
+            "Það mælti mín móðir, \n"
+            "að mér skyldu kaupa, \n"
+            "fley og fagrar árar, \n"
+            "fara á brott með víkingum, \n"
+            "standa uppi í stafni, \n"
+            "stýra dýrum knerri, \n"
+            "halda svo til hafnar, \n"
+            "höggva mann og annan."
+        )
     }
 
 
@@ -883,7 +885,10 @@ _SPECIAL_QUERIES = {
     },
     "blessuð": {"answer": "Sæll og blessaður, kæri notandi.", "is_question": False},
     "blessaður": {"answer": "Sæll og blessaður, kæri notandi.", "is_question": False},
-    "blessuð embla": {"answer": "Sæll og blessaður, kæri notandi.", "is_question": False},
+    "blessuð embla": {
+        "answer": "Sæll og blessaður, kæri notandi.",
+        "is_question": False,
+    },
     "góðan daginn": {"answer": "Góðan daginn, kæri notandi.", "is_question": False},
     "góðan daginn embla": {
         "answer": "Góðan daginn, kæri notandi.",

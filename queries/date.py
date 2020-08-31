@@ -58,11 +58,10 @@
 # TODO: "Hvaða frídagar/helgidagar/etc eru í febrúar"
 # TODO: "hvenær eru páskar 2035"
 
-import json
 import re
 import logging
 import random
-from datetime import datetime, date, timedelta
+from datetime import datetime, timedelta
 from pytz import timezone
 from calendar import monthrange, isleap
 
@@ -138,8 +137,8 @@ QDate →
     QDateQuery '?'?
 
 QDateQuery →
-    QDateCurrent 
-    | QDateHowLongUntil 
+    QDateCurrent
+    | QDateHowLongUntil
     # | QDateHowLongSince  # Disabled for now.
     | QDateWhenIs
     | QDateWhichYear
@@ -248,8 +247,8 @@ QDateSpecialDay/fall →
     # | QDateWinterSolstice/fall
 
 QDateWhitsun/fall →
-    'hvítasunnudagur:kk'_et/fall 
-    | 'hvítasunna:kvk'_et/fall 
+    'hvítasunnudagur:kk'_et/fall
+    | 'hvítasunna:kvk'_et/fall
     | 'hvítasunnuhelgi:kvk'_et/fall
 
 QDateAscensionDay/fall →
@@ -279,11 +278,11 @@ QDateChristmasEve/fall →
     'aðfangadagur:kk'_et/fall 'jól:hk'_ef?
 
 QDateChristmasDay/fall →
-    'jól:hk'/fall 
+    'jól:hk'/fall
     | 'jóladagur:kk'_et/fall
 
 QDateNewYearsEve/fall →
-    'gamlárskvöld:hk'_et/fall 
+    'gamlárskvöld:hk'_et/fall
     | 'gamlársdagur:kk'_et/fall
 
 QDateNewYearsDay/fall →
@@ -850,7 +849,6 @@ def days_in_month_answ(q, result):
     """ Generate answer to a question of the form "Hvað eru margir dagar í [MÁNUÐI]?" etc. """
     ndays = result["days_in_month"]
     t = result["target"]
-    mnum = t.month
     mname = t.strftime("%B")
     answer = "{0} dagar.".format(ndays)
     response = dict(answer=answer)

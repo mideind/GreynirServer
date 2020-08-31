@@ -113,7 +113,7 @@ QGeoPreposition →
     "í" | "á"
 
 QGeoSubject/fall →
-    Nl/fall 
+    Nl/fall
     # Hardcoded special case, otherwise identified as adj. "kostaríkur" :)
     | "kostaríka" | "kostaríku"
 

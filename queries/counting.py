@@ -53,7 +53,7 @@ GRAMMAR = """
 Query →
     QCounting
 
-QCounting → QCountingQuery '?'? 
+QCounting → QCountingQuery '?'?
 
 QCountingQuery →
     QCountingUp | QCountingDown | QCountingBetween

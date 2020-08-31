@@ -28,7 +28,7 @@
 import logging
 import re
 import random
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from geo import in_iceland, iceprep_for_street
 from queries import (
@@ -44,7 +44,7 @@ from reynir import NounPhrase
 _PLACES_QTYPE = "Places"
 
 
-TOPIC_LEMMAS = ["opnunartími", "opna", "loka"]
+TOPIC_LEMMAS = ["opnunartími", "opna", "loka", "lokunartími"]
 
 
 def help_text(lemma):
@@ -52,10 +52,7 @@ def help_text(lemma):
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
         random.choice(
-            (
-                "Hvað er opið lengi á Forréttabarnum",
-                "Hvenær lokar Bónus á Fiskislóð",
-            )
+            ("Hvað er opið lengi á Forréttabarnum", "Hvenær lokar Bónus á Fiskislóð",)
         )
     )
 
@@ -115,7 +112,7 @@ QPlacesAddress →
     | "hvert" "er" "heimilisfang" QPlacesSubject_ef
     | "hvað" "er" "heimilisfang" QPlacesSubject_ef
     | "hvar" "er" QPlacesSubject_nf "til" "húsa"
-    | "hvar" "er" QPlacesSubject_nf "staðsett" 
+    | "hvar" "er" QPlacesSubject_nf "staðsett"
     | "hvar" "er" QPlacesSubject_nf "staðsettur"
     | QPlacesPreposition "hvaða" "götu" "er" QPlacesSubject_nf
     | QPlacesPreposition "hvaða" "stræti" "er" QPlacesSubject_nf
@@ -270,7 +267,7 @@ def answ_openhours(placename, loc, qtype):
     if place is None:
         return gen_answer(_NOT_IN_ICELAND_ERRMSG)
 
-    if not "opening_hours" in place:
+    if "opening_hours" not in place:
         return gen_answer(
             "Ekki tókst að sækja opnunartíma fyrir " + icequote(placename)
         )
@@ -291,7 +288,7 @@ def answ_openhours(placename, loc, qtype):
 
     try:
         name = res["result"]["name"]
-        
+
         # Generate placename w. street, e.g. "Forréttabarinn á Nýlendugötu"
         street = fmt_addr.split()[0].rstrip(",")
         street_np = NounPhrase(street)
@@ -301,14 +298,16 @@ def answ_openhours(placename, loc, qtype):
         name = "{0} {1} {2}".format(name, iceprep_for_street(street), street_þgf)
 
         # Get correct "open" adjective for place name
-        open_adj_map = { "kk": "opinn", "kvk": "opin", "hk": "opið"}
+        open_adj_map = {"kk": "opinn", "kvk": "opin", "hk": "opið"}
         open_adj = open_adj_map.get(street_gender) or "opið"
 
         # Get opening hours for current weekday
         periods = res["result"]["opening_hours"]["periods"]
         if len(periods) == 1 or wday >= len(periods):
             # Open 24 hours a day
-            today_desc = p_desc = "{0} er {1} allan sólarhringinn".format(name, open_adj)
+            today_desc = p_desc = "{0} er {1} allan sólarhringinn".format(
+                name, open_adj
+            )
         else:
             # Get period
             p = periods[wday]

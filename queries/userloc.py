@@ -22,7 +22,6 @@
 
 """
 
-import os
 import re
 import logging
 
@@ -134,7 +133,7 @@ def _addrinfo_from_api_result(result):
     postcode = None
 
     for c in comp:
-        if not "types" in c:
+        if "types" not in c:
             continue
 
         types = c["types"]
@@ -159,7 +158,7 @@ def _addrinfo_from_api_result(result):
 
 
 def street_desc(street_nom, street_num, locality_nom):
-    """ Generate description of being on a particular (Icelandic) street with 
+    """ Generate description of being on a particular (Icelandic) street with
         correct preposition and case + locality e.g. 'á Fiskislóð 31 í Reykjavík'. """
     street_dat = None
     locality_dat = None

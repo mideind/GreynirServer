@@ -29,13 +29,11 @@
 # TODO: Hvað eru 40 stig á selsíus mörg stig á fahrenheit
 # TODO: "hvað eru 3 metrar í tommum"
 
-import re
 import random
 from math import floor, log10
 
 import query
 from queries import iceformat_float, parse_num
-from settings import Settings
 
 
 # Lemmas of keywords that could indicate that the user is trying to use this module
@@ -333,7 +331,7 @@ QUnit_kk/fall →
     | 'faðmur:kk'/fall
 
 QUnit_kvk/fall →
-    'míla:kvk'/fall 
+    'míla:kvk'/fall
     | 'Míla'/fall
     | 'sjómíla:kvk'/fall
     | 'tomma:kvk'/fall

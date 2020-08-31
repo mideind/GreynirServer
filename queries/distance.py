@@ -31,7 +31,6 @@
 
 import re
 import logging
-import math
 
 from reynir.bindb import BIN_Db
 from queries import (
@@ -174,7 +173,7 @@ def dist_answer_for_loc(matches, query):
     # Verify sanity of API response
     if (
         not res
-        or not "status" in res
+        or "status" not in res
         or res["status"] != "OK"
         or not res.get("results")
     ):
@@ -235,7 +234,7 @@ def traveltime_answer_for_loc(matches, query):
     # Verify sanity of API response
     if (
         not res
-        or not "status" in res
+        or "status" not in res
         or res["status"] != "OK"
         or not res.get("rows")
         or not len(res["rows"])
