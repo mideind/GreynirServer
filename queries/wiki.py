@@ -34,7 +34,7 @@ import re
 import random
 from datetime import datetime, timedelta
 
-from queries import query_json_api, gen_answer
+from queries import query_json_api, gen_answer, cap_first
 from query import Query
 
 
@@ -265,7 +265,7 @@ def get_wiki_summary(subject_nom):
         )
 
     # Wiki pages always start with an uppercase character
-    cap_subj = subject_nom[0].upper() + subject_nom[1:]
+    cap_subj = cap_first(subject_nom)
     # Talk to API
     res = _query_wiki_api(cap_subj)
     # OK, Wikipedia doesn't have anything with current capitalization

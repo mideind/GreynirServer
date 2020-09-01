@@ -198,7 +198,7 @@ def dist_answer_for_loc(matches, query):
     answer = distance_desc(km_dist, abbr=True)
     response = dict(answer=answer)
 
-    loc_nf = loc_nf[0].upper() + loc_nf[1:]
+    loc_nf = cap_first(loc_nf)
     dist = distance_desc(km_dist, case="þf")
     voice = "{0} er {1} í burtu".format(loc_nf, dist)
 

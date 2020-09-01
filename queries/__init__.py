@@ -62,7 +62,7 @@ def nom2dat(w):
         return NounPhrase(w).dative
     except Exception:
         pass
-    return ""
+    return w
 
 
 # The following needs to include at least nominative
@@ -126,7 +126,9 @@ _NUMBER_WORDS = {
 
 
 def parse_num(node, num_str):
-    """ Parse Icelandic number string to float or int """
+    """ Parse Icelandic number string to float or int.
+        TODO: This needs to be a more capable, generic function. There are
+        several mildly differing implementions in various query modules. """
 
     # Hack to handle the word "eina" being identified as f. name "Eina"
     if num_str in ["Eina", "Einu"]:
@@ -345,7 +347,7 @@ _KRONA_NOUN = (
 
 def krona_desc(amount, case="nf"):
     """ Generate description of an amount in krónas, e.g.
-        "213,5 krónur", "361 króna", etc. """
+        "213,5 krónur", "361 króna", "70,11 krónur", etc. """
     assert case in _CASE_ABBR
     cidx = _CASE_ABBR.index(case)
     plidx = 1 if is_plural(amount) else 0

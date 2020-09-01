@@ -764,7 +764,7 @@ def query_arrival_time(query, session, result):
         bus_name = result.bus_name if "bus_name" in result else "Óþekkt"
 
     # Prepare results
-    bus_name = bus_name[0].upper() + bus_name[1:]
+    bus_name = cap_first(bus_name)
     va = [bus_name]
     a = []
     arrivals = []
@@ -953,7 +953,7 @@ def query_which_route(query, session, result):
 
     voice_answer = correct_spaces(" ".join(va) + ".")
     answer = correct_spaces(" ".join(a))
-    answer = answer[0].upper() + answer[1:]
+    answer = cap_first(answer[0])
     response = dict(answer=answer)
     return response, answer, voice_answer
 

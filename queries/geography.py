@@ -32,8 +32,7 @@ from datetime import datetime, timedelta
 
 from cityloc import capital_for_cc
 
-from queries import country_desc, nom2dat
-from reynir.bindb import BIN_Db
+from queries import country_desc, nom2dat, cap_first
 from geo import (
     icelandic_city_name,
     isocode_for_country_name,
@@ -43,6 +42,8 @@ from geo import (
     location_info,
     capitalize_placename,
 )
+
+from reynir.bindb import BIN_Db
 
 _GEO_QTYPE = "Geography"
 
@@ -200,7 +201,7 @@ def _which_country_query(subject, q):
     desc = country_desc(cc)
 
     # Format answer
-    answer = desc[0].upper() + desc[1:]
+    answer = cap_first(desc)
     response = dict(answer=answer)
     voice = "{0} er {1}".format(subject, desc)
 
