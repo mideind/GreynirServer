@@ -153,6 +153,16 @@ _PROVERBS = (
     "Dramb er falli næst.",
     "Aldrei er góð vísa of oft kveðin.",
     "Blindur er bóklaus maður.",
+    "Enginn verður óbarinn biskup.",
+    "Sjaldan er það, að einskis sé áfátt.",
+    "Öllu gamni fylgir einhver alvara.",
+    "Fátt er svo með öllu ill, að ekki boði nokkuð gott.",
+    "Eigi fellur tré við hið fyrsta högg.",
+    "Svo uppsker hver sem sáir.",
+    "Sjón er sögu ríkari.",
+    "Fáum þykir sinn sjóður of þungur.",
+    "Árinni kennir illur ræðari.",
+    "Frelsi er fé betra.",
 )
 
 
@@ -1439,9 +1449,7 @@ _SPECIAL_QUERIES = {
     "hvað er gaman að gera": {
         "answer": "Það er til dæmis gaman að spyrja mig um hluti"
     },
-    "hvað er gaman": {
-        "answer": "Það er til dæmis gaman að spyrja mig um hluti"
-    },
+    "hvað er gaman": {"answer": "Það er til dæmis gaman að spyrja mig um hluti"},
     # Why is the sky blue?
     "af hverju er himininn blár": _SKY_BLUE,
     "hvers vegna er himininn blár": _SKY_BLUE,
