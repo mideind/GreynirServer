@@ -685,6 +685,8 @@ def capitalize_placename(pn):
     """ Correctly capitalize an Icelandic-language lowercase placename, e.g.
         "vík í mýrdal"->"Vík í Mýrdal", "bosnía og hersegóvína"->"Bosnía og Hersegóvína", 
         "norður-makedónía"->"Norður-Makedónía", "rio de janeiro"->"Rio de Janeiro", etc. """
+    if not pn:
+        return pn
     comp = pn.split()
     # Uppercase each individual word (w. some exceptions)
     ucpn = " ".join(

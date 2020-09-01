@@ -158,7 +158,7 @@ def dist_answer_for_loc(matches, query):
     """ Generate response to distance query, e.g.
         "Hvað er ég langt frá X?" """
     locname = matches.group(1)
-    loc_nf = _addr2nom(locname)
+    loc_nf = _addr2nom(locname) or locname
     res = query_geocode_api_addr(loc_nf)
 
     # Verify sanity of API response
@@ -198,11 +198,11 @@ def dist_answer_for_loc(matches, query):
     answer = distance_desc(km_dist, abbr=True)
     response = dict(answer=answer)
 
-    loc_nf = cap_first(loc_nf)
+    loc_nf = capitalize_placename(loc_nf)
     dist = distance_desc(km_dist, case="þf")
     voice = "{0} er {1} í burtu".format(loc_nf, dist)
 
-    query.set_key(capitalize_placename(loc_nf))
+    query.set_key(loc_nf)
 
     # Beautify by capitalizing remote loc name
     uc = capitalize_placename(locname)
