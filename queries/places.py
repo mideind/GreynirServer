@@ -288,18 +288,17 @@ def answ_openhours(placename, loc, qtype):
 
     try:
         name = res["result"]["name"]
+        name_gender = NounPhrase(name).gender
 
         # Generate placename w. street, e.g. "Forréttabarinn á Nýlendugötu"
         street = fmt_addr.split()[0].rstrip(",")
-        street_np = NounPhrase(street)
-        street_þgf = street_np.dative
-        street_gender = street_np.gender
+        street_þgf = NounPhrase(street).dative
 
         name = "{0} {1} {2}".format(name, iceprep_for_street(street), street_þgf)
 
         # Get correct "open" adjective for place name
         open_adj_map = {"kk": "opinn", "kvk": "opin", "hk": "opið"}
-        open_adj = open_adj_map.get(street_gender) or "opið"
+        open_adj = open_adj_map.get(name_gender) or "opið"
 
         # Get opening hours for current weekday
         periods = res["result"]["opening_hours"]["periods"]
