@@ -248,11 +248,8 @@ def country_desc(cc):
 
 
 def cap_first(s):
-    """ Capitalize first character in a string. Why Python doesn't include
-        this in the standard library is unfathomable to me. """
-    if not s:
-        return s
-    return s[0].upper() + s[1:]
+    """ Capitalize first character in a string. """
+    return s[0].upper() + s[1:] if s else s
 
 
 # This could be done at runtime using BÍN lookup, but this is
