@@ -196,7 +196,7 @@ def dist_answer_for_loc(matches, query):
 
     # Generate answer
     answer = distance_desc(km_dist, abbr=True)
-    response = dict(answer=answer)
+    response = dict(answer=answer, distance=km_dist)
 
     loc_nf = capitalize_placename(loc_nf)
     dist = distance_desc(km_dist, case="þf")
@@ -252,7 +252,7 @@ def traveltime_answer_for_loc(matches, query):
 
     # Generate answer
     answer = "{0} ({1}).".format(dur_desc, dist_desc)
-    response = dict(answer=answer)
+    response = dict(answer=answer, duration=dur_sec)
     voice = "Að {0} tekur um það bil {1}".format(action_desc, dur_desc)
 
     # Key is the remote loc in nominative case

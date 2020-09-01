@@ -43,7 +43,8 @@ from treeutil import TreeUtility
 from reynir import TOK, correct_spaces
 from reynir.bintokenizer import stems_of_token
 from search import Search
-from query import _QUERY_ROOT
+
+# from query import _QUERY_ROOT
 from queries import cap_first
 
 # The type of a name/entity register
