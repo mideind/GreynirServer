@@ -322,7 +322,15 @@ def test_query_api(client):
 
     # Location module
     # NB: No Google API key on test server
-    # json = qmcall(c, {"q": "Hvar er ég", "latitude": 64.15673429618045, "longitude": -21.9511777069624}, "Location")
+    # json = qmcall(
+    #     c,
+    #     {
+    #         "q": "Hvar er ég",
+    #         "latitude": 64.15673429618045,
+    #         "longitude": -21.9511777069624,
+    #     },
+    #     "Location",
+    # )
     # assert json["answer"].startswith("Fiskislóð 31")
 
     # News module
@@ -331,11 +339,13 @@ def test_query_api(client):
     assert json["voice"].startswith("Í fréttum rúv er þetta helst")
 
     # Opinion module
-    json = qmcall(c, {"q": "Hvað finnst þér um loftslagsmál?"}, "Opinion")
-    assert json["answer"].startswith("Ég hef enga sérstaka skoðun")
-
     json = qmcall(c, {"q": "hvaða skoðun hefurðu á þriðja orkupakkanum"}, "Opinion")
     assert json["answer"].startswith("Ég hef enga sérstaka skoðun")
+    assert json["key"] == "þriðji orkupakkinn"
+
+    json = qmcall(c, {"q": "hvað finnst þér eiginlega um Katrínu Jakobsdóttur"}, "Opinion")
+    assert json["answer"].startswith("Ég hef enga sérstaka skoðun")
+    assert json["key"] == "Katrín Jakobsdóttir"
 
     # Petrol module
     json = qmcall(c, {"q": "Hvar er næsta bensínstöð", "voice": True}, "Petrol")

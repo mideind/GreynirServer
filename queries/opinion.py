@@ -24,7 +24,6 @@
 """
 
 
-import re
 from datetime import datetime, timedelta
 
 from queries import gen_answer
@@ -33,49 +32,67 @@ from queries import gen_answer
 _OPINION_QTYPE = "Opinion"
 
 
-_OPINION_REGEXES = (
-    r"hvað finnst þér (?:eiginlega)?\s?um (.+)$",
-    r"hvað þykir þér (?:eiginlega)?\s?um (.+)$",
-    r"hvaða skoðun hefurðu (?:eiginlega)?\s?á (.+)$",
-    r"hvaða skoðun hefur þú (?:eiginlega)?\s?á (.+)$",
-    r"hvaða skoðun ertu með (?:eiginlega)?\s?á (.+)$",
-    r"hvaða skoðun ert þú (?:eiginlega)?\s?með á (.+)$",
-    r"hver er skoðun þín á (.+)$",
-    r"hvaða skoðanir hefur þú (?:eiginlega)?\s?á (.+)$",
-    r"hvaða skoðanir hefurðu á (?:eiginlega)?\s?(.+)$",
-    r"hvert er álit þitt á (.+)$",
-    r"hvaða álit hefurðu (?:eiginlega)?\s?á (.+)$",
-    r"ertu reið yfir (.+)$",
-    r"ert þú reið yfir (.+)$",
-    r"ertu bitur yfir (.+)$",
-    r"ert þú bitur yfir (.+)$",
-    r"ertu bitur út af (.+)$",
-    r"ert þú bitur út af (.+)$",
-    r"ertu í uppnámi yfir (.+)$",
-    r"ert þú í uppnámi yfir (.+)$",
-    r"ertu í uppnámi út af (.+)$",
-    r"ert þú í uppnámi út af (.+)$",
-)
+# Indicate that this module wants to handle parse trees for queries,
+# as opposed to simple literal text strings
+HANDLE_TREE = True
+
+# The context-free grammar for the queries recognized by this plug-in module
+GRAMMAR = """
+
+Query →
+    QOpinionQuery '?'?
+
+QOpinionQuery →
+    "hvað" "finnst" "þér" "eiginlega"? "um" QOpinionSubject_þf
+    | "hvað" "þykir" "þér" "eiginlega"? "um" QOpinionSubject_þf
+    | "hvaða" "skoðun" QOpinionWhichDoYouHave "eiginlega"? "á" QOpinionSubject_þgf
+    | "hver" "er" "skoðun" "þín" "á" QOpinionSubject_þgf
+    | "hvaða" "skoðanir" QOpinionWhichDoYouHave? "eiginlega"? "á" QOpinionSubject_þgf
+    | "hvert" "er" "álit" "þitt" "á" QOpinionSubject_þgf
+    | "hvaða" "álit" QOpinionWhichDoYouHave? "eiginlega"? "á" QOpinionSubject_þgf
+    | QOpinionAreYou QOpinionEmotions QOpinionDueTo QOpinionSubject_þgf
+
+QOpinionSubject/fall →
+    Nl/fall
+
+QOpinionAreYou →
+    "ertu" | "ert" "þú"
+
+QOpinionWhichDoYouHave →
+    "hefurðu" | "hefur" "þú" | "ertu" "með" | "ertu" "þú" "með"
+
+QOpinionEmotions →
+    "reið" | "bitur" | "í" "uppnámi" | "brjáluð" | "vonsvikin"
+
+QOpinionDueTo →
+    "út" "af" | "yfir"
+
+$tag(keep) QOpinionSubject/fall
+
+"""
 
 
-def handle_plain_text(q):
-    """ Handle a plain text query concerning opinion on any subject. """
-    ql = q.query_lower.rstrip("?")
+def QOpinionQuery(node, params, result):
+    result["qtype"] = _OPINION_QTYPE
 
-    # subj = None
 
-    for rx in _OPINION_REGEXES:
-        m = re.search(rx, ql)
-        if m:
-            # subj = m.group(1)
-            break
-    else:
-        return False
+def QOpinionSubject(node, params, result):
+    result["subject_nom"] = result._nominative
 
-    # We always give the same answer
+
+def sentence(state, result):
+    """ Called when sentence processing is complete """
+    q = state["query"]
+
+    if "qtype" not in result or "subject_nom" not in result:
+        q.set_error("E_QUERY_NOT_UNDERSTOOD")
+        return
+
+    # OK, we've successfully matched a query type
+    subj = result["subject_nom"]
     answer = "Ég hef enga sérstaka skoðun í þeim efnum."
     q.set_answer(*gen_answer(answer))
     q.set_qtype(_OPINION_QTYPE)
+    q.set_context(dict(subject=subj))
+    q.set_key(subj)
     q.set_expires(datetime.utcnow() + timedelta(hours=24))
-
-    return True
