@@ -148,7 +148,7 @@ Processor modules can be plugged into Greynir by adding Python code to the
 `processors/` directory. The demo in `processors/default.py` extracts person
 names and titles from parse trees for storage in a database table.
 
-Query (question answering) modules can be plugged in to Greynir
+Query (question answering) modules can be plugged into Greynir
 by adding Python code to the `queries/` directory. Reference implementations for
 several query types can be found in that directory, for instance `queries/builtin.py`
 which supports questions about people and titles. Example query modules can be viewed

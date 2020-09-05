@@ -50,7 +50,7 @@ _DISTANCE_QTYPE = "Distance"
 # TODO: This may grab queries of the form "Hvað er langt í jólin"!
 _QDISTANCE_REGEXES = (
     r"^hvað er ég langt frá (.+)$",
-    r"^hvað er langt frá (.+)$",  # Voice recognition often misses "ég" in this context
+    r"^hvað er langt frá (.+)$",  # Speech recognition often misses "ég" in this context
     r"^hvað er ég langt í burtu frá (.+)$",
     r"^hversu langt er ég frá (.+)$",
     r"^hversu langt í burtu er (.+)$",

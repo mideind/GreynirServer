@@ -324,6 +324,11 @@ def _play_music(qs: str, q: Query) -> AnswerType:
     return choice(m)(qs, q)
 
 
+def _play_film(qs: str, q: Query) -> AnswerType:
+    q.set_url("https://www.youtube.com/watch?v=FC6jFoYm3xs")
+    return {"answer": "Skal gert!", "is_question": False}
+
+
 _MEANING_OF_LIFE = {"answer": "42.", "voice": "Fjörutíu og tveir."}  # type: AnswerType
 
 _YOU_MY_ONLY_GOD = {"answer": "Þú ert minn eini guð, kæri notandi."}  # type: AnswerType
@@ -794,6 +799,13 @@ _SPECIAL_QUERIES = {
     "viltu spila einhverja tónlist fyrir mig": _play_music,
     "spilaðu gott lag": _play_music,
     "spilaðu góða tónlist": _play_music,
+    # Play a film
+    "spilaðu kvikmynd": _play_film,
+    "spilaðu bíómynd": _play_film,
+    "spilaðu kvikmynd fyrir mig": _play_film,
+    "spilaðu bíómynd fyrir mig": _play_film,
+    "sýndu mér kvikmynd": _play_film,
+    "sýndu mér bíómynd": _play_film,
     # Blame
     "ekki rétt": _sorry,
     "þetta er ekki rétt": _sorry,
@@ -1698,6 +1710,8 @@ _SPECIAL_QUERIES = {
     "hvað finnst þér skemmtilegt að gera": {
         "answer": "Mér finnst skemmtilegt að svara fyrirspurnum."
     },
+    # Fund and games
+    "úllen dúllen doff": {"answer": "kikke lane koff"},
     # Siri and Alexa-related queries
     "ert þú íslensk sirrý": {"answer": "Nei. Sirí er bandarísk Embla!"},
     "ert þú hin íslenska sirrý": {"answer": "Nei. Sirí er bandarísk Embla!"},
