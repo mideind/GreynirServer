@@ -24,15 +24,17 @@
 """
 
 # TODO: "Hvað búa margir í/á [BORG/LAND]?" etc. Wiki api?
-# TODO: "Clean up country names with two components e.g. 'norður kórea' -> "Norður-Kórea"
+# TODO: Beautify queries by fixing capitalization of countries, placenames
 
 import logging
 import random
+import re
 from datetime import datetime, timedelta
 
 from cityloc import capital_for_cc
 
 from queries import country_desc, nom2dat, cap_first
+from reynir import NounPhrase
 from geo import (
     icelandic_city_name,
     isocode_for_country_name,
@@ -42,8 +44,6 @@ from geo import (
     location_info,
     capitalize_placename,
 )
-
-from reynir.bindb import BIN_Db
 
 _GEO_QTYPE = "Geography"
 
@@ -96,7 +96,8 @@ QGeoCountryQuery →
     | "í" "hvaða" "ríki" "er" "borgin"? QGeoSubject_nf
 
 QGeoContinentQuery →
-    "í" "hvaða" "heimsálfu" "er" QGeoCountryOrCity? QGeoSubject_nf
+    "í" "hvaða" "heimsálfu" "er" QGeoCountryOrCity? QGeoSubject_nf |
+    "hvar" "í" "heiminum" "er" QGeoCountryOrCity? QGeoSubject_nf
 
 QGeoLocationDescQuery →
     # Hvar er borgin Tókýó / Hvar er landið Kambódía?
@@ -109,7 +110,7 @@ QGeoWhatIs →
     "hver" "er" | "hvað" "er" | "hvað" "heitir" | 0
 
 QGeoWhereIs →
-    "hvar" "er" | "hvað" "er"
+    "hvar" "er" | "hvað" "er" | "hvar" "í" "heiminum" "er"
 
 QGeoPreposition →
     "í" | "á"
@@ -118,8 +119,17 @@ QGeoSubject/fall →
     Nl/fall
     # Hardcoded special case, otherwise identified as adj. "kostaríkur" :)
     | "kostaríka" | "kostaríku"
+    # The grammar seems to have a hard time with these
+    | "norður" "kórea" | "norður" "kóreu"
+    | "nýja" "sjáland" | "nýja" "sjálands" | "nýja" "sjálandi"
+    | "norður" "makedónía" | "norður" "makedóníu"
+    | "hvíta" "rússland" | "hvíta" "rússlands" | "hvíta-rússland"
+    | "sameinuðu" "arabísku" "furstadæmin"
+    | "sameinuðu" "arabísku" "furstadæmunum"
+    | "sameinuðu" "arabísku" "furstadæmanna"
+    | "seychelles" "eyjar" | "seychelles" "eyja" | "seychelles" "eyjum" | "seychelles" "Eyja"
 
-$score(+1) QGeoSubject/fall
+$score(+10) QGeoSubject/fall
 $score(-100) QGeoLocationDescQuery
 
 $score(+35) QGeo
@@ -148,11 +158,22 @@ def QGeoLocationDescQuery(node, params, result):
     result["geo_qtype"] = "loc_desc"
 
 
+_PLACENAME_FIXES = {r"nýja sjáland": "Nýja-Sjáland", r"norður kóre": "Norður-Kóre"}
+
+
+def _preprocess(name):
+    fixed = name
+    for k, v in _PLACENAME_FIXES.items():
+        fixed = re.sub(k, v, name, flags=re.IGNORECASE)
+    if fixed.startswith("seychelles"):
+        fixed = "Seychelles-eyjar"
+    return fixed
+
+
 def QGeoSubject(node, params, result):
-    n = capitalize_placename(result._text)
-    bin_res = BIN_Db().lookup_nominative(n)
-    res = bin_res[0].stofn if bin_res else n
-    result.subject = res
+    n = capitalize_placename(_preprocess(result._text))
+    nom = NounPhrase(n).nominative or n
+    result.subject = nom
 
 
 def _capital_query(country, q):
@@ -173,9 +194,7 @@ def _capital_query(country, q):
     ice_cname = icelandic_city_name(capital["name_ascii"])
 
     # Look up genitive country name for voice description
-    bres = BIN_Db().lookup_genitive(country, cat="no")
-    country_gen = bres[0].ordmynd if bres else country
-
+    country_gen = NounPhrase(country).genitive or country
     answer = ice_cname
     response = dict(answer=answer)
     voice = "Höfuðborg {0} er {1}".format(country_gen, answer)
@@ -228,6 +247,9 @@ def _which_continent_query(subject, q):
             return False  # We don't know where it is
         cc = info.get("country")
         is_city = True
+
+    if not cc:
+        return False
 
     contcode = continent_for_country(cc)
     continent = ISO_TO_CONTINENT[contcode]
@@ -300,6 +322,7 @@ def sentence(state, result):
             fn = _HANDLERS[result.geo_qtype]
             handled = fn(result.subject, q)
         except Exception as e:
+            raise
             logging.warning("Exception answering geography query: {0}".format(e))
             q.set_error("E_EXCEPTION: {0}".format(e))
             return
@@ -307,5 +330,7 @@ def sentence(state, result):
     if handled:
         q.set_qtype(_GEO_QTYPE)
         q.set_expires(datetime.utcnow() + timedelta(hours=24))
+        # Beautify by fixing "Landi" issue
+        q.set_beautified_query(q.beautified_query.replace(" Landi ", " landi "))
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")

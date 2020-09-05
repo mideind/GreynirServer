@@ -203,6 +203,8 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
         "Jómfrúaeyjar": "US",
         "Ghana": "GH",
         "Kosovo": "XK",
+        "Sameinuðu Arabísku Furstadæmin": "AE",
+        "Norður-Súdan": "SD",
     }
 }
 
