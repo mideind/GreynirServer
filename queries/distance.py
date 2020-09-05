@@ -151,7 +151,7 @@ _QTRAVELTIME_REGEXES = (
 
 def _addr2nom(address):
     """ Convert location name to nominative form. """
-    return NounPhrase(cap_first(address)).nominative
+    return NounPhrase(cap_first(address)).nominative or address
 
 
 def dist_answer_for_loc(matches, query):

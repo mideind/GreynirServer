@@ -73,9 +73,9 @@ class HTMLDocument(Document):
     """ HTML document """
 
     @staticmethod
-    def remove_header_prefixes(text):
-        """ Removes all line starting with '#'. Annoyingly, html2text
-            adds markdown-style headers for <h*> tags """
+    def _remove_header_prefixes(text):
+        """ Removes '#' in all lines starting with '#'. Annoyingly,
+            html2text adds markdown-style headers for <h*> tags. """
         lines = text.split("\n")
         for i, line in enumerate(lines):
             if line.startswith("#"):
@@ -97,7 +97,7 @@ class HTMLDocument(Document):
 
         text = h.handle(html)
 
-        return self.remove_header_prefixes(text)
+        return self._remove_header_prefixes(text)
 
 
 class RTFDocument(Document):
@@ -167,7 +167,7 @@ MIMETYPE_TO_DOC_CLASS = {
     "application/rtf": RTFDocument,
     # "application/pdf": PDFDocument,
     # "application/x-pdf": PDFDocument,
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": DocxDocument,
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": DocxDocument,  # Yes, really
 }
 
 SUPPORTED_DOC_MIMETYPES = frozenset(MIMETYPE_TO_DOC_CLASS.keys())

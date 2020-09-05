@@ -156,7 +156,7 @@ _PROVERBS = (
     "Enginn verður óbarinn biskup.",
     "Sjaldan er það, að einskis sé áfátt.",
     "Öllu gamni fylgir einhver alvara.",
-    "Fátt er svo með öllu ill, að ekki boði nokkuð gott.",
+    "Fátt er svo með öllu illt, að ekki boði nokkuð gott.",
     "Eigi fellur tré við hið fyrsta högg.",
     "Svo uppsker hver sem sáir.",
     "Sjón er sögu ríkari.",
@@ -1710,7 +1710,7 @@ _SPECIAL_QUERIES = {
     "hvað finnst þér skemmtilegt að gera": {
         "answer": "Mér finnst skemmtilegt að svara fyrirspurnum."
     },
-    # Fund and games
+    # Fun and games
     "úllen dúllen doff": {"answer": "kikke lane koff"},
     # Siri and Alexa-related queries
     "ert þú íslensk sirrý": {"answer": "Nei. Sirí er bandarísk Embla!"},
