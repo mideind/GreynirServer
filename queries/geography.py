@@ -104,7 +104,7 @@ QGeoLocationDescQuery →
     QGeoWhereIs QGeoCountryOrCity? QGeoSubject_nf
 
 QGeoCountryOrCity →
-    "landið" | "ríkið" | "borgin"
+    "landið" | "ríkið" | "borgin" | "bærinn" | "kaupstaðurinn"
 
 $score(+100) QGeoCountryOrCity
 

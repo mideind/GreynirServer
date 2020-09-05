@@ -1042,6 +1042,8 @@ _SPECIAL_QUERIES = {
     # Philosophy
     "hvað er svarið": _MEANING_OF_LIFE,
     "hvert er svarið": _MEANING_OF_LIFE,
+    "tilgangur heimsins": _MEANING_OF_LIFE,
+    "hver er tilgangur heimsins": _MEANING_OF_LIFE,
     "tilgangur lífsins": _MEANING_OF_LIFE,
     "hver er tilgangurinn": _MEANING_OF_LIFE,
     "hver er tilgangur lífsins": _MEANING_OF_LIFE,
@@ -1055,16 +1057,22 @@ _SPECIAL_QUERIES = {
     "hvað þýðir þetta allt saman": _MEANING_OF_LIFE,
     "hvað er leyndarmál lífsins": _MEANING_OF_LIFE,
     "hvert er leyndarmál lífsins": _MEANING_OF_LIFE,
+    "hver er sannleikurinn": _MEANING_OF_LIFE,
     "hvað er 42": {"answer": "Sex sinnum sjö"},  # :)
-    # What is best in life?
+    # What is best in life? https://www.youtube.com/watch?v=Oo9buo9Mtos
+    "hvað er best": {"answer": "Að horfa á kvikmynd um villimanninn Kónan."},
     "hvað er best í lífinu": {"answer": "Að horfa á kvikmynd um villimanninn Kónan."},
     "hvað er það besta í lífinu": {
         "answer": "Að horfa á kvikmynd um villimanninn Kónan."
     },
     # God
+    "guð er dauður": {
+        "answer": "Það sagði heimspekingurinn Nietzsche allavega.",
+        "voice": "Það sagði heimspekingurinn Nítsje alla vega.",
+    },
     "er guð dauður": {
-        "answer": "Það sagði Nietzsche allavega.",
-        "voice": "Það sagði Nítsje alla vega.",
+        "answer": "Það sagði heimspekingurinn Nietzsche allavega.",
+        "voice": "Það sagði heimspekingurinn Nítsje alla vega.",
     },
     "er guð til": _YOU_MY_ONLY_GOD,
     "trúir þú á guð": _YOU_MY_ONLY_GOD,

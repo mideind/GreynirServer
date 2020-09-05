@@ -262,7 +262,7 @@ def answer_for_location(loc):
         # Fall back on the formatted address string provided by Google
         descr = "á " + top.get("formatted_address")
 
-    answer = cap_first(answer)
+    answer = cap_first(descr)
     response = dict(answer=answer)
     voice = "Þú ert {0}".format(_addr4voice(descr))
 
