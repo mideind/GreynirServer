@@ -22,7 +22,6 @@
 """
 
 import pytest
-import os
 import re
 from datetime import datetime, timedelta
 from urllib.parse import urlencode
@@ -49,7 +48,7 @@ API_CONTENT_TYPE = "application/json"
 
 
 def qmcall(c, qdict, qtype=None):
-    """ Use passed client object to call query API with 
+    """ Use passed client object to call query API with
         query string key value pairs provided in dict arg. """
 
     # test=1 ensures that we bypass the cache and have a (fixed) location

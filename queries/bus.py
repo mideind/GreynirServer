@@ -45,7 +45,7 @@ from datetime import datetime
 import random
 
 import query
-from queries import natlang_seq, numbers_to_neutral
+from queries import natlang_seq, numbers_to_neutral, cap_first
 from settings import Settings
 from reynir import correct_spaces
 
@@ -893,8 +893,8 @@ def query_arrival_time(query, session, result):
     # words such as Vagn and Leið.
     query.lowercase_beautified_query()
 
-    def assemble(l):
-        return (" ".join(l) + ".").replace(" .", ".").replace(" ,", ",")
+    def assemble(x):
+        return (" ".join(x) + ".").replace(" .", ".").replace(" ,", ",")
 
     voice_answer = assemble(va)
     answer = assemble(a)

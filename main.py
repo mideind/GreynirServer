@@ -35,7 +35,6 @@ from typing import Callable
 
 import sys
 import os
-import platform
 import time
 import re
 import logging

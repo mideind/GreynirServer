@@ -28,10 +28,8 @@
 from typing import TYPE_CHECKING, List
 
 import time
-import threading
 from collections import namedtuple
 
-from fetcher import Fetcher
 from nertokenizer import recognize_entities
 from db import SessionContext
 from settings import Settings

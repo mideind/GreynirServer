@@ -363,7 +363,9 @@ def icelandic_city_name(name):
 
 
 # Data about countries, loaded from JSON data file
-COUNTRY_DATA = None  # type: Optional[Dict[str, Dict[str, Union[Tuple[float, float], str]]]]
+COUNTRY_DATA = (
+    None
+)  # type: Optional[Dict[str, Dict[str, Union[Tuple[float, float], str]]]]
 COUNTRY_DATA_JSONPATH = os.path.join(
     os.path.dirname(__file__), "resources", "country_data.json"
 )
@@ -685,7 +687,7 @@ _PLACENAME_PREPS = frozenset(("í", "á", "de", "la", "am", "og"))
 
 def capitalize_placename(pn):
     """ Correctly capitalize an Icelandic-language lowercase placename, e.g.
-        "vík í mýrdal"->"Vík í Mýrdal", "bosnía og hersegóvína"->"Bosnía og Hersegóvína", 
+        "vík í mýrdal"->"Vík í Mýrdal", "bosnía og hersegóvína"->"Bosnía og Hersegóvína",
         "norður-makedónía"->"Norður-Makedónía", "rio de janeiro"->"Rio de Janeiro", etc. """
     if not pn:
         return pn

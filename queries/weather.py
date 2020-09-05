@@ -45,7 +45,7 @@ import os
 import re
 import logging
 import random
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from queries import gen_answer, query_json_api, is_plural, cap_first
 from geo import distance, in_iceland, ICE_PLACENAME_BLACKLIST

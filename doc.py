@@ -16,7 +16,7 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    This module contains code to extract text from documents 
+    This module contains code to extract text from documents
     such as plain text, html, rtf and docx files.
 
 """
@@ -25,7 +25,6 @@ import abc
 from io import BytesIO
 import re
 from zipfile import ZipFile
-from pathlib import Path
 import html2text
 from striprtf.striprtf import rtf_to_text
 
@@ -75,7 +74,7 @@ class HTMLDocument(Document):
 
     @staticmethod
     def remove_header_prefixes(text):
-        """ Removes all line starting with '#'. Annoyingly, html2text 
+        """ Removes all line starting with '#'. Annoyingly, html2text
             adds markdown-style headers for <h*> tags """
         lines = text.split("\n")
         for i, line in enumerate(lines):
