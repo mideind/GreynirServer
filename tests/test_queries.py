@@ -295,6 +295,14 @@ def test_query_api(client):
     json = qmcall(c, {"q": "hver er höfuðborg norður-makedóníu?"}, "Geography")
     assert json["answer"] == "Skopje"
 
+    json = qmcall(c, {"q": "hver er höfuðborg norður kóreu?"}, "Geography")
+    assert json["answer"] == "Pjongjang"
+
+    json = qmcall(
+        c, {"q": "hver er höfuðborg sameinuðu arabísku furstadæmanna"}, "Geography"
+    )
+    assert json["answer"] == "Abú Dabí"
+
     json = qmcall(c, {"q": "Hvað er höfuðborgin í Bretlandi"}, "Geography")
     assert json["answer"] == "Lundúnir"
 
@@ -304,7 +312,7 @@ def test_query_api(client):
     json = qmcall(c, {"q": "Í hvaða heimsálfu er míkrónesía?"}, "Geography")
     assert json["answer"].startswith("Eyjaálfu")
 
-    json = qmcall(c, {"q": "Hvar er máritanía?"}, "Geography")
+    json = qmcall(c, {"q": "Hvar í heiminum er máritanía?"}, "Geography")
     assert "Afríku" in json["answer"]
 
     json = qmcall(c, {"q": "Hvar er Kaupmannahöfn?"}, "Geography")
@@ -343,7 +351,9 @@ def test_query_api(client):
     assert json["answer"].startswith("Ég hef enga sérstaka skoðun")
     assert json["key"] == "þriðji orkupakkinn"
 
-    json = qmcall(c, {"q": "hvað finnst þér eiginlega um Katrínu Jakobsdóttur"}, "Opinion")
+    json = qmcall(
+        c, {"q": "hvað finnst þér eiginlega um Katrínu Jakobsdóttur"}, "Opinion"
+    )
     assert json["answer"].startswith("Ég hef enga sérstaka skoðun")
     assert json["key"] == "Katrín Jakobsdóttir"
 

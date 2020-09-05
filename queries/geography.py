@@ -106,11 +106,15 @@ QGeoLocationDescQuery →
 QGeoCountryOrCity →
     "landið" | "ríkið" | "borgin"
 
+$score(+100) QGeoCountryOrCity
+
 QGeoWhatIs →
     "hver" "er" | "hvað" "er" | "hvað" "heitir" | 0
 
 QGeoWhereIs →
-    "hvar" "er" | "hvað" "er" | "hvar" "í" "heiminum" "er"
+    "hvar" "er" | "hvar" "eru" | "hvað" "er"
+    | "hvar" "í" "heiminum" "er"
+    | "hvar" "í" "heiminum" "eru"
 
 QGeoPreposition →
     "í" | "á"
@@ -127,7 +131,7 @@ QGeoSubject/fall →
     | "sameinuðu" "arabísku" "furstadæmin"
     | "sameinuðu" "arabísku" "furstadæmunum"
     | "sameinuðu" "arabísku" "furstadæmanna"
-    | "seychelles" "eyjar" | "seychelles" "eyja" | "seychelles" "eyjum" | "seychelles" "Eyja"
+    | "seychelles" "eyjar" | "seychelles" "eyja" | "seychelles" "eyjum"
 
 $score(+10) QGeoSubject/fall
 $score(-100) QGeoLocationDescQuery
@@ -259,9 +263,11 @@ def _which_continent_query(subject, q):
     answer = continent_dat
     response = dict(answer=answer)
     if is_city:
+        cd = country_desc(cc)
         voice = "Borgin {0} er {1}, sem er land í {2}".format(
-            subject, country_desc(cc), continent_dat
+            subject, cd, continent_dat
         )
+        answer = "{0}, {1}".format(cd, continent_dat)
     else:
         voice = "Landið {0} er í {1}".format(subject, continent_dat)
 
@@ -322,7 +328,6 @@ def sentence(state, result):
             fn = _HANDLERS[result.geo_qtype]
             handled = fn(result.subject, q)
         except Exception as e:
-            raise
             logging.warning("Exception answering geography query: {0}".format(e))
             q.set_error("E_EXCEPTION: {0}".format(e))
             return
