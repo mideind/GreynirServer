@@ -524,6 +524,7 @@ class Query:
         return self._expires
 
     def set_expires(self, ts):
+        """ Set an expiration time stamp for this query answer """
         self._expires = ts
 
     @property
@@ -532,30 +533,35 @@ class Query:
         return self._url
 
     def set_url(self, u):
+        """ Set the URL answer associated with this query """
         self._url = u
 
     @property
     def command(self):
-        """ JS command associated with this query """
+        """ JavaScript command associated with this query """
         return self._command
 
     def set_command(self, c):
+        """ Set the JavaScript command associated with this query """
         self._command = c
 
     @property
     def source(self):
-        """ Source of answer to this query """
+        """ Return the source of the answer to this query """
         return self._source
 
     def set_source(self, s):
+        """ Set the source for the answer to this query """
         self._source = s
 
     @property
     def location(self):
+        """ The client location, if known, as a (lat, lon) tuple """
         return self._location
 
     @property
     def token_list(self):
+        """ The original token list for the query """
         return self._toklist
 
     def set_qtype(self, qtype):
