@@ -159,7 +159,7 @@ def stats():
     days = _DEFAULT_STATS_PERIOD
     try:
         days = min(_MAX_STATS_PERIOD, int(request.args.get("days", _DEFAULT_STATS_PERIOD)))
-    except:
+    except Exception:
         pass
 
     with SessionContext(read_only=True) as session:
