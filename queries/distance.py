@@ -54,6 +54,9 @@ _QDISTANCE_REGEXES = (
     r"^hvað er ég langt í burtu frá (.+)$",
     r"^hversu langt er ég frá (.+)$",
     r"^hversu langt í burtu er (.+)$",
+    r"^hve langt í burtu er (.+)$",
+    r"^hversu langt frá (.+) er ég$",
+    r"^hve langt frá (.+) er ég$",
     r"^hve langt er ég frá (.+)$",
     r"^hvað er langt\s?(?:héðan)?\s?(?:austur|vestur|norður|suður)? á (.+)$",
     r"^hvað er langt\s?(?:héðan)? upp á (.+)$",
@@ -212,8 +215,8 @@ def dist_answer_for_loc(matches, query):
     prefix_fix = "Hvað er langt frá"
     if bq.startswith(prefix_fix):
         bq = bq.replace("Hvað er langt frá", "Hvað er ég langt frá")
-
     query.set_beautified_query(bq)
+
     query.set_context(dict(subject=loc_nf))
 
     return response, answer, voice
@@ -221,7 +224,7 @@ def dist_answer_for_loc(matches, query):
 
 def traveltime_answer_for_loc(matches, query):
     """ Generate answer to travel time query e.g.
-        "Hvað er ég lengi að ganga í X?" """
+        "Hvað er ég lengi að ganga/hjóla/keyra í X?" """
     action_desc, tmode, locname = matches.group(2, 3, 5)
 
     loc_nf = _addr2nom(locname)
@@ -293,14 +296,14 @@ def handle_plain_text(q):
     if not handler or not matches:
         return False
 
-    # Look up in geo API
+    # Look up answer in geo API
     try:
         if q.location:
             answ = handler(matches, q)
         else:
             answ = gen_answer("Ég veit ekki hvar þú ert.")
     except Exception as e:
-        logging.warning("Exception generating answer from geocode API: {0}".format(e))
+        logging.warning("Exception gen. answer from geocode API: {0}".format(e))
         q.set_error("E_EXCEPTION: {0}".format(e))
         answ = None
 

@@ -96,8 +96,8 @@ QGeoCountryQuery →
     | "í" "hvaða" "ríki" "er" "borgin"? QGeoSubject_nf
 
 QGeoContinentQuery →
-    "í" "hvaða" "heimsálfu" "er" QGeoCountryOrCity? QGeoSubject_nf |
-    "hvar" "í" "heiminum" "er" QGeoCountryOrCity? QGeoSubject_nf
+    "í" "hvaða" "heimsálfu" "er" QGeoCountryOrCity? QGeoSubject_nf
+    | "hvar" "í" "heiminum" "er" QGeoCountryOrCity? QGeoSubject_nf
 
 QGeoLocationDescQuery →
     # Hvar er borgin Tókýó / Hvar er landið Kambódía?
