@@ -29,7 +29,7 @@
 """
 
 from typing import TYPE_CHECKING
-from typing import Dict, Union, Callable, Any, cast
+from typing import Dict, Union, Callable, cast
 
 from datetime import datetime, timedelta
 from inspect import isfunction
@@ -153,6 +153,16 @@ _PROVERBS = (
     "Dramb er falli næst.",
     "Aldrei er góð vísa of oft kveðin.",
     "Blindur er bóklaus maður.",
+    "Enginn verður óbarinn biskup.",
+    "Sjaldan er það, að einskis sé áfátt.",
+    "Öllu gamni fylgir einhver alvara.",
+    "Fátt er svo með öllu illt, að ekki boði nokkuð gott.",
+    "Eigi fellur tré við hið fyrsta högg.",
+    "Svo uppsker hver sem sáir.",
+    "Sjón er sögu ríkari.",
+    "Fáum þykir sinn sjóður of þungur.",
+    "Árinni kennir illur ræðari.",
+    "Frelsi er fé betra.",
 )
 
 
@@ -210,14 +220,16 @@ def _random_quotation(qs: str, q: Query) -> AnswerType:
 
 def _poetry(qs: str, q: Query) -> AnswerType:
     return {
-        "answer": icequote("Það mælti mín móðir, \n"
-        "að mér skyldu kaupa, \n"
-        "fley og fagrar árar, \n"
-        "fara á brott með víkingum, \n"
-        "standa uppi í stafni, \n"
-        "stýra dýrum knerri, \n"
-        "halda svo til hafnar, \n"
-        "höggva mann og annan.")
+        "answer": icequote(
+            "Það mælti mín móðir, \n"
+            "að mér skyldu kaupa, \n"
+            "fley og fagrar árar, \n"
+            "fara á brott með víkingum, \n"
+            "standa uppi í stafni, \n"
+            "stýra dýrum knerri, \n"
+            "halda svo til hafnar, \n"
+            "höggva mann og annan."
+        )
     }
 
 
@@ -310,6 +322,11 @@ def _play_classical(qs: str, q: Query) -> AnswerType:
 def _play_music(qs: str, q: Query) -> AnswerType:
     m = [_play_jazz, _play_blues, _play_rock, _play_classical]
     return choice(m)(qs, q)
+
+
+def _play_film(qs: str, q: Query) -> AnswerType:
+    q.set_url("https://www.youtube.com/watch?v=FC6jFoYm3xs")
+    return {"answer": "Skal gert!", "is_question": False}
 
 
 _MEANING_OF_LIFE = {"answer": "42.", "voice": "Fjörutíu og tveir."}  # type: AnswerType
@@ -468,6 +485,18 @@ _SPECIAL_QUERIES = {
         "answer": "Þú, kæri notandi, ert að sjálfsögðu fallegastur af öllum."
     },
     "hver er fallegust": {
+        "answer": "Þú, kæri notandi, ert að sjálfsögðu fallegastur af öllum."
+    },
+    "hver er fallegastur af öllum": {
+        "answer": "Þú, kæri notandi, ert að sjálfsögðu fallegastur af öllum."
+    },
+    "hver er fallegust af öllum": {
+        "answer": "Þú, kæri notandi, ert að sjálfsögðu fallegastur af öllum."
+    },
+    "hver er langfallegastur": {
+        "answer": "Þú, kæri notandi, ert að sjálfsögðu fallegastur af öllum."
+    },
+    "hver er langfallegust": {
         "answer": "Þú, kæri notandi, ert að sjálfsögðu fallegastur af öllum."
     },
     "hver er uppáhalds manneskjan þín": {
@@ -770,6 +799,13 @@ _SPECIAL_QUERIES = {
     "viltu spila einhverja tónlist fyrir mig": _play_music,
     "spilaðu gott lag": _play_music,
     "spilaðu góða tónlist": _play_music,
+    # Play a film
+    "spilaðu kvikmynd": _play_film,
+    "spilaðu bíómynd": _play_film,
+    "spilaðu kvikmynd fyrir mig": _play_film,
+    "spilaðu bíómynd fyrir mig": _play_film,
+    "sýndu mér kvikmynd": _play_film,
+    "sýndu mér bíómynd": _play_film,
     # Blame
     "ekki rétt": _sorry,
     "þetta er ekki rétt": _sorry,
@@ -883,7 +919,10 @@ _SPECIAL_QUERIES = {
     },
     "blessuð": {"answer": "Sæll og blessaður, kæri notandi.", "is_question": False},
     "blessaður": {"answer": "Sæll og blessaður, kæri notandi.", "is_question": False},
-    "blessuð embla": {"answer": "Sæll og blessaður, kæri notandi.", "is_question": False},
+    "blessuð embla": {
+        "answer": "Sæll og blessaður, kæri notandi.",
+        "is_question": False,
+    },
     "góðan daginn": {"answer": "Góðan daginn, kæri notandi.", "is_question": False},
     "góðan daginn embla": {
         "answer": "Góðan daginn, kæri notandi.",
@@ -1015,6 +1054,8 @@ _SPECIAL_QUERIES = {
     # Philosophy
     "hvað er svarið": _MEANING_OF_LIFE,
     "hvert er svarið": _MEANING_OF_LIFE,
+    "tilgangur heimsins": _MEANING_OF_LIFE,
+    "hver er tilgangur heimsins": _MEANING_OF_LIFE,
     "tilgangur lífsins": _MEANING_OF_LIFE,
     "hver er tilgangurinn": _MEANING_OF_LIFE,
     "hver er tilgangur lífsins": _MEANING_OF_LIFE,
@@ -1028,16 +1069,22 @@ _SPECIAL_QUERIES = {
     "hvað þýðir þetta allt saman": _MEANING_OF_LIFE,
     "hvað er leyndarmál lífsins": _MEANING_OF_LIFE,
     "hvert er leyndarmál lífsins": _MEANING_OF_LIFE,
+    "hver er sannleikurinn": _MEANING_OF_LIFE,
     "hvað er 42": {"answer": "Sex sinnum sjö"},  # :)
-    # What is best in life?
+    # What is best in life? https://www.youtube.com/watch?v=Oo9buo9Mtos
+    "hvað er best": {"answer": "Að horfa á kvikmynd um villimanninn Kónan."},
     "hvað er best í lífinu": {"answer": "Að horfa á kvikmynd um villimanninn Kónan."},
     "hvað er það besta í lífinu": {
         "answer": "Að horfa á kvikmynd um villimanninn Kónan."
     },
     # God
+    "guð er dauður": {
+        "answer": "Það sagði heimspekingurinn Nietzsche allavega.",
+        "voice": "Það sagði heimspekingurinn Nítsje alla vega.",
+    },
     "er guð dauður": {
-        "answer": "Það sagði Nietzsche allavega.",
-        "voice": "Það sagði Nítsje alla vega.",
+        "answer": "Það sagði heimspekingurinn Nietzsche allavega.",
+        "voice": "Það sagði heimspekingurinn Nítsje alla vega.",
     },
     "er guð til": _YOU_MY_ONLY_GOD,
     "trúir þú á guð": _YOU_MY_ONLY_GOD,
@@ -1412,6 +1459,18 @@ _SPECIAL_QUERIES = {
     "ertu með eitthvað skemmtilegt til að segja": _random_trivia,
     "ertu með eitthvað áhugavert að segja": _random_trivia,
     "ertu með eitthvað áhugavert til að segja": _random_trivia,
+    # What is fun?
+    "hvað er skemmtilegt að gera": {
+        "answer": "Það er til dæmis skemmtilegt að spyrja mig um hluti"
+    },
+    "hvað er skemmtilegt": {
+        "answer": "Það er til dæmis skemmtilegt að spyrja mig um hluti"
+    },
+    "hvað er gaman að gera": {
+        "answer": "Það er til dæmis gaman að spyrja mig um hluti"
+    },
+    "hvað er gaman": {"answer": "Það er til dæmis gaman að spyrja mig um hluti"},
+    # Why is the sky blue?
     "af hverju er himininn blár": _SKY_BLUE,
     "hvers vegna er himininn blár": _SKY_BLUE,
     # Quotations
@@ -1651,6 +1710,8 @@ _SPECIAL_QUERIES = {
     "hvað finnst þér skemmtilegt að gera": {
         "answer": "Mér finnst skemmtilegt að svara fyrirspurnum."
     },
+    # Fun and games
+    "úllen dúllen doff": {"answer": "kikke lane koff"},
     # Siri and Alexa-related queries
     "ert þú íslensk sirrý": {"answer": "Nei. Sirí er bandarísk Embla!"},
     "ert þú hin íslenska sirrý": {"answer": "Nei. Sirí er bandarísk Embla!"},

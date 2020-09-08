@@ -37,7 +37,8 @@
 # TODO: "Hvað er mikið eftir af vinnuvikunni", "hvað er langt í helgina"
 # TODO: "Hvaða vikudagur er DAGSETNING næstkomandi?"
 # TODO: "Hvað gerðist á þessum degi?"
-# TODO: "Hvaða vikudagur var 11. september 2001?" "Hvaða (viku)dagur er á morgun?" "Hvaða dagur var í gær?"
+# TODO: "Hvaða vikudagur var 11. september 2001?" "Hvaða (viku)dagur er á morgun?" 
+#       "Hvaða dagur var í gær?"
 # TODO: "Hvenær eru vetrarsólstöður" + more astronomical dates
 # TODO: "Hvað er langt í helgina?" "Hvenær er næsti (opinberi) frídagur?"
 # TODO: "Hvað eru margir dagar að fram að jólum?"
@@ -58,15 +59,14 @@
 # TODO: "Hvaða frídagar/helgidagar/etc eru í febrúar"
 # TODO: "hvenær eru páskar 2035"
 
-import json
 import re
 import logging
 import random
-from datetime import datetime, date, timedelta
+from datetime import datetime, timedelta
 from pytz import timezone
 from calendar import monthrange, isleap
 
-from queries import timezone4loc, gen_answer, is_plural
+from queries import timezone4loc, gen_answer, is_plural, cap_first
 from settings import changedlocale
 
 
@@ -138,8 +138,8 @@ QDate →
     QDateQuery '?'?
 
 QDateQuery →
-    QDateCurrent 
-    | QDateHowLongUntil 
+    QDateCurrent
+    | QDateHowLongUntil
     # | QDateHowLongSince  # Disabled for now.
     | QDateWhenIs
     | QDateWhichYear
@@ -248,8 +248,8 @@ QDateSpecialDay/fall →
     # | QDateWinterSolstice/fall
 
 QDateWhitsun/fall →
-    'hvítasunnudagur:kk'_et/fall 
-    | 'hvítasunna:kvk'_et/fall 
+    'hvítasunnudagur:kk'_et/fall
+    | 'hvítasunna:kvk'_et/fall
     | 'hvítasunnuhelgi:kvk'_et/fall
 
 QDateAscensionDay/fall →
@@ -279,11 +279,11 @@ QDateChristmasEve/fall →
     'aðfangadagur:kk'_et/fall 'jól:hk'_ef?
 
 QDateChristmasDay/fall →
-    'jól:hk'/fall 
+    'jól:hk'/fall
     | 'jóladagur:kk'_et/fall
 
 QDateNewYearsEve/fall →
-    'gamlárskvöld:hk'_et/fall 
+    'gamlárskvöld:hk'_et/fall
     | 'gamlársdagur:kk'_et/fall
 
 QDateNewYearsDay/fall →
@@ -820,7 +820,7 @@ def when_answ(q, result):
     # Use plural 'eru' for 'páskar', 'jól' etc.
     is_verb = "er" if "is_verb" not in result else result.is_verb
     date_str = result.desc + " " + is_verb + " " + result.target.strftime("%-d. %B")
-    answer = voice = date_str[0].upper() + date_str[1:].lower()
+    answer = voice = cap_first(date_str)
     # Put a spelled-out ordinal number instead of the numeric one,
     # in accusative case
     voice = re.sub(r"\d+\. ", _DAY_INDEX_ACC[result.target.day] + " ", voice)
@@ -850,7 +850,6 @@ def days_in_month_answ(q, result):
     """ Generate answer to a question of the form "Hvað eru margir dagar í [MÁNUÐI]?" etc. """
     ndays = result["days_in_month"]
     t = result["target"]
-    mnum = t.month
     mname = t.strftime("%B")
     answer = "{0} dagar.".format(ndays)
     response = dict(answer=answer)

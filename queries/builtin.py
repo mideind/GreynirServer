@@ -43,8 +43,9 @@ from treeutil import TreeUtility
 from reynir import TOK, correct_spaces
 from reynir.bintokenizer import stems_of_token
 from search import Search
-from query import _QUERY_ROOT
 
+# from query import _QUERY_ROOT
+from queries import cap_first
 
 # The type of a name/entity register
 RegisterType = Dict[str, Dict[str, Any]]
@@ -486,7 +487,7 @@ def query_person(query, session, name: str) -> Tuple[Dict[str, Any], str, str]:
             return dict(answer=""), "", ""
         answer = title
         v = answer.split()
-        answer = answer[0].upper() + answer[1:]
+        answer = cap_first(answer)
         for i, w in enumerate(v):
             if len(w) > 1 and w.isupper():
                 # Probably an abbreviation, such as 'FME' or 'BSÍ':
@@ -603,7 +604,7 @@ def query_title(query, session, title: str) -> Tuple[List[Dict[str, Any]], str, 
     if response and title and "answer" in response[0]:
         first_response = response[0]
         # Return 'Seðlabankastjóri er Már Guðmundsson.'
-        upper_title = title[0].upper() + title[1:]
+        upper_title = cap_first(title)
         answer = first_response["answer"]
         voice_answer = upper_title + " er " + answer + "."
         # Store the person name in the query context
@@ -649,8 +650,8 @@ def query_entity(query, session, name: str) -> Tuple[Dict[str, Any], str, str]:
         # 'Mál og menning er bókmenntafélag.'
         answer = titles[0]["answer"]
         v = answer.split()
-        answer = answer[0].upper() + answer[1:]
-        uc_name = name[0].upper() + name[1:]
+        answer = cap_first(answer)
+        uc_name = cap_first(name)
         for i, w in enumerate(v):
             if len(w) > 1 and w.isupper():
                 # Probably an abbreviation, such as 'FME' or 'BSÍ':

@@ -57,8 +57,9 @@ These trees can then be further processed and acted upon by sets of Python
 functions that are linked to grammar nonterminals.
 
 **Greynir is currently able to parse about *90%* of sentences** in a typical news article from the web,
-and many well-written articles can be parsed completely. It presently has more than 500,000 parsed articles
-in its database, containing over 9 million parsed sentences.
+and many well-written articles can be parsed completely. It presently has more than 600,000 parsed articles
+in its database, containing over 10 million parsed sentences. A recent version of this database is available
+via the [GreynirCorpus](https://github.com/mideind/GreynirCorpus) project.
 
 Greynir supports natural language querying of its databases. Users can ask about person names, titles and
 entity definitions and get appropriate replies. The HTML5 Web Speech API is supported to allow
@@ -78,6 +79,7 @@ Greynir is written in [Python 3](https://www.python.org/) except for its core
 Earley-based parser module which is written in C++ and called
 via [CFFI](https://cffi.readthedocs.org/en/latest/index.html).
 Greynir runs on CPython and [PyPy](http://pypy.org/) with the latter being recommended.
+Requires Python 3.5 or later.
 
 Greynir works in stages, roughly as follows:
 
@@ -146,10 +148,11 @@ Processor modules can be plugged into Greynir by adding Python code to the
 `processors/` directory. The demo in `processors/default.py` extracts person
 names and titles from parse trees for storage in a database table.
 
-Query (question answering) modules can be plugged in to Greynir by adding Python code to the
-`queries/` directory. Reference implementations for several query types can be found in
-that directory, for instance `queries/builtin.py` which supports questions about
-people and titles.
+Query (question answering) modules can be plugged into Greynir
+by adding Python code to the `queries/` directory. Reference implementations for
+several query types can be found in that directory, for instance `queries/builtin.py`
+which supports questions about people and titles. Example query modules can be viewed
+in `queries/examples`.
 
 ## File details
 

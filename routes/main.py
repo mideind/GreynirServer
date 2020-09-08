@@ -25,7 +25,6 @@ from typing import Dict, Any, List, Tuple
 
 import platform
 import sys
-import platform
 import random
 import json
 from datetime import datetime
@@ -103,7 +102,7 @@ def correct():
         of user-entered text """
     try:
         txt = text_from_request(request, post_field="txt", get_field="txt")
-    except:
+    except Exception:
         txt = ""
     return render_template(
         "correct.html",
@@ -203,7 +202,6 @@ def tree_grid():
     def _wrap_build_tbl(
         tbl, root, is_nt_func, children_func, nt_info_func, t_info_func
     ):
-
         def _build_tbl(level, offset, nodelist):
             """ Add the tree node data to be displayed at a particular
                 level (row) in the result table """
@@ -302,7 +300,7 @@ def parsefail():
     num = request.args.get("num", PARSEFAIL_DEFAULT)
     try:
         num = min(int(num), PARSEFAIL_MAX)
-    except:
+    except Exception:
         num = PARSEFAIL_DEFAULT
 
     with SessionContext(read_only=True) as session:
@@ -323,7 +321,7 @@ def parsefail():
         for a in q.all():
             try:
                 tokens = json.loads(a.tokens)
-            except:
+            except Exception:
                 continue
             # Paragraphs
             for p in tokens:
@@ -420,7 +418,7 @@ def image():
     name = request.args.get("name")
     try:
         thumb = int(request.args.get("thumb", 0))
-    except:
+    except Exception:
         thumb = 0
 
     if name:
@@ -479,9 +477,7 @@ def suggest(limit=10):
         )
 
         prefix = prefix[:1].upper() + prefix[1:].lower()
-        suggestions = [
-            {"value": (prefix + p[0] + "?"), "data": ""} for p in q
-        ]
+        suggestions = [{"value": (prefix + p[0] + "?"), "data": ""} for p in q]
 
     return better_jsonify(suggestions=suggestions)
 

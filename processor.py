@@ -272,9 +272,8 @@ class Processor:
                 # If an exception occurred, roll back the transaction
                 session.rollback()
                 print(
-                    "Exception in article {0}, transaction rolled back\nException: {1}".format(
-                        url, e
-                    )
+                    "Exception in article {0}, transaction rolled back\nException: {1}"
+                    .format(url, e)
                 )
                 raise
 
@@ -333,10 +332,11 @@ class Processor:
         else:
             # Use a multiprocessing pool to process the articles
             # Defaults to using as many processes as there are CPUs
-            pool = Pool(self.num_workers)
-            pool.map(self.go_single, iter_parsed_articles())
-            pool.close()
-            pool.join()
+            with Pool(self.num_workers) as pool:
+                for _ in pool.imap_unordered(self.go_single, iter_parsed_articles()):
+                    pass
+                pool.close()
+                pool.join()
 
 
 def process_articles(
@@ -482,7 +482,7 @@ def _main(argv=None) -> int:
                 # Maximum number of articles to parse
                 try:
                     limit = int(a)
-                except ValueError as e:
+                except ValueError:
                     pass
             elif o in ("-u", "--url"):
                 # Single URL to process

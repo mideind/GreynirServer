@@ -38,9 +38,7 @@ import codecs
 import locale
 import threading
 
-from contextlib import contextmanager, closing
-from collections import defaultdict
-from threading import Lock
+from contextlib import contextmanager
 
 
 # The locale used by default in the changedlocale function

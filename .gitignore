@@ -76,9 +76,8 @@ vectors/test.py
 
 # Files that are symlinked into the vectors directory
 vectors/db
-vectors/settings.py
+# vectors/settings.py
 vectors/similar.py
-vectors/scraperdb.py
 vectors/Index.conf
 
 # JavaScript & Node stuff

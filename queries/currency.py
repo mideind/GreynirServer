@@ -24,10 +24,10 @@
 # TODO: Bug: "30 dollarar eru 3.801 krónUR." [!!!] Fix using is_plural
 # TODO: Answer for exch rate should be of the form ISK 2000 = USD 14,65
 # TODO: "hvað eru 10 evrur í íslenskum krónum"
+# TODO: "Hvert er gengi krónunnar?"
 
 import re
 import cachetools
-import json
 import random
 import logging
 
@@ -141,12 +141,11 @@ $score(+35) QCurrency
 
 QCurrencyQuery →
     # "Hver er gengisvísitalan?"
-    "hver" "er" QCurCurrencyIndex_nf QCurNow? | QCurCurrencyIndex_nf QCurNow?
-    
+    QCurSpecificPrefix? QCurCurrencyIndex_nf QCurNow?
     # "Hvert/hvað/hvernig er gengi X?"
     | QCurAnyPrefix? QCurGeneralRate QCurNow?
     # "Hvað kostar X?"
-    | QCurCostPrefix QCurGeneralCost "mikið"? QCurNow?
+    | QCurCostPrefix QCurGeneralCost "mikið"? QCurInKronas? QCurNow?
 
     # "Hvert/hvað/hvernig er gengi X gagnvart Y?"
     | QCurAnyPrefix? QCurExchangeRate QCurNow?
@@ -158,18 +157,19 @@ QCurrencyQuery →
     # |
 
 QCurGenericPrefix → "hvað" "er" | "hvað" "eru" | "hvernig" "er"
-QCurSpecificPrefix → "hvert" "er" | "hvernig" "er"
+QCurSpecificPrefix → "hvert" "er" | "hvernig" "er" | "hver" "er"
 QCurAnyPrefix → QCurGenericPrefix | QCurSpecificPrefix
 QCurCostPrefix → "hvað" "kostar" | "hversu" "mikið" "kostar" | "hve" "mikið" "kostar"
+QCurInKronas → "í" "krónum"
 
-QCurNow → "núna" | "nú" | "í" "augnablikinu" | "eins" "og" "stendur" | "í" "dag" 
+QCurNow → "núna" | "nú" | "í" "augnablikinu" | "eins" "og" "stendur" | "í" "dag"
 
 # Supported currencies
 # Note: All child productions of QCurUnit must have valid
 # ISO currency codes as the last three letters in their name
 QCurUnit/fall →
-    QCurISK/fall | QCurUSD/fall | QCurEUR/fall | QCurGBP/fall 
-    | QCurJPY/fall | QCurRUB/fall | QCurCHF/fall | QCurCAD/fall 
+    QCurISK/fall | QCurUSD/fall | QCurEUR/fall | QCurGBP/fall
+    | QCurJPY/fall | QCurRUB/fall | QCurCHF/fall | QCurCAD/fall
     | QCurZAR/fall | QCurPLN/fall | QCurRUB/fall | QCurCNY/fall
     | QCurNOK/fall | QCurDKK/fall | QCurSEK/fall
 
@@ -198,7 +198,7 @@ QCurUSD/fall →
     | "bandaríkjadollar" # Common mistake
 
 QCurUSD_þgf →
-    "bandaríkjadollara" | "bandaríkjadollaranum"
+    "bandaríkjadollara" | "bandaríkjadollaranum" | "bandaríkjadollarnum"
 
 QCurUSD_ef →
     "bandaríkjadollara"
@@ -260,7 +260,7 @@ QCurPLN_ef →
     | 'pólskur:lo'_vb_hk_ef? "slotísins"
 
 QCurRUB/fall →
-    'rússneskur:lo'_kvk/fall? 'rúbla:kvk'/fall 
+    'rússneskur:lo'_kvk/fall? 'rúbla:kvk'/fall
     | currency_rub/fall
 
 QCurCNY/fall →

@@ -45,10 +45,10 @@ import os
 import re
 import logging
 import random
-from datetime import datetime, timedelta
+from datetime import timedelta
 
-from queries import gen_answer, query_json_api, is_plural
-from geo import distance, in_iceland, isocode_for_country_name, ICE_PLACENAME_BLACKLIST
+from queries import gen_answer, query_json_api, is_plural, cap_first
+from geo import distance, in_iceland, ICE_PLACENAME_BLACKLIST
 from iceaddr import placename_lookup
 from iceweather import observation_for_closest, observation_for_station, forecast_text
 
@@ -143,24 +143,24 @@ QWeatherForecast →
     | QWeatherHowIs QWeatherConditionSingular QWeatherLocation? QWeatherNextDays?
     | QWeatherConditionSingular
 
-    | QWeatherHowAre QWeatherConditionPlural QWeatherLocation? QWeatherNextDays?    
+    | QWeatherHowAre QWeatherConditionPlural QWeatherLocation? QWeatherNextDays?
     | QWeatherWhatAre QWeatherConditionPlural QWeatherLocation? QWeatherNextDays?
 
-    | "hvernig" QWeatherIsWill "veðrið" QWeatherLocation? QWeatherNextDays    
+    | "hvernig" QWeatherIsWill "veðrið" QWeatherLocation? QWeatherNextDays
 
     | QWeatherWhatKindOfWeather "er" "spáð" QWeatherLocation? QWeatherNextDays?
     | QWeatherWhatKindOfWeather "má" "búast" "við" QWeatherLocation? QWeatherNextDays?
 
 QWeatherWhatKindOfWeather →
-    "hvers" "konar" "veðri" | "hverskonar" "veðri" 
+    "hvers" "konar" "veðri" | "hverskonar" "veðri"
     | "hvers" "kyns" "veðri" | "hvernig" "veðri"
 
 QWeatherConditionSingular →
     "veðurspáin" | "spáin" | "veðurspá"
 
 QWeatherConditionPlural →
-    "veðurhorfur" | "veður" "horfur" 
-    | "veðurhorfurnar" | "veður" "horfurnar" 
+    "veðurhorfur" | "veður" "horfur"
+    | "veðurhorfurnar" | "veður" "horfurnar"
     | "horfur" | "horfurnar"
 
 QWeatherIsWill →
@@ -223,8 +223,8 @@ QWeatherWind →
 
 QWeatherUmbrella →
     "þarf" QWeatherOne "regnhlíf" QWeatherNow
-    | "þarf" "ég" "að" "taka" "með" "mér" "regnhlíf" QWeatherNow 
-    | "þarf" "maður" "að" "taka" "með" "sér" "regnhlíf" QWeatherNow 
+    | "þarf" "ég" "að" "taka" "með" "mér" "regnhlíf" QWeatherNow
+    | "þarf" "maður" "að" "taka" "með" "sér" "regnhlíf" QWeatherNow
     | "væri" "regnhlíf" "gagnleg" QWeatherForMe? QWeatherNow
     | "væri" "gagn" "af" "regnhlíf" QWeatherForMe? QWeatherNow
     | "kæmi" "regnhlíf" "að" "gagni" QWeatherForMe? QWeatherNow
@@ -244,26 +244,26 @@ QWeatherNow →
     | "úti"? "eins" "og" "stendur"
 
 QWeatherNextDays →
-    "á" "næstunni" 
+    "á" "næstunni"
     | "næstu" "daga"
     | "næstu" "dagana"
     | "fyrir" "næstu" "daga"
     | "á" "næstu" "dögum"
-    | "þessa" "viku" 
+    | "þessa" "viku"
     | "þessa" "vikuna"
-    | "út" "vikuna" 
+    | "út" "vikuna"
     | "í" "vikunni"
     | "á" "morgun"
     | "í" "fyrramálið"
     | "fyrir" "morgundaginn"
 
 QWeatherCountry →
-    "á" "landinu" | "á" "íslandi" | "hér" "á" "landi" | "á" "landsvísu" 
-    | "um" "landið" "allt" | "um" "allt" "land" | "fyrir" "allt" "landið" 
+    "á" "landinu" | "á" "íslandi" | "hér" "á" "landi" | "á" "landsvísu"
+    | "um" "landið" "allt" | "um" "allt" "land" | "fyrir" "allt" "landið"
     | "á" "fróni" | "heima"
 
 QWeatherCapitalRegion →
-    "á" "höfuðborgarsvæðinu" | "fyrir" "höfuðborgarsvæðið" 
+    "á" "höfuðborgarsvæðinu" | "fyrir" "höfuðborgarsvæðið"
     | "í" "reykjavík" | "fyrir" "reykjavík"
     | "í" "höfuðborginni" | "fyrir" "höfuðborgina"
     | "á" "reykjavíkursvæðinu" | "fyrir" "reykjavíkursvæðið"
@@ -330,7 +330,10 @@ def _query_owm_by_name(city, country_code=None):
     return _postprocess_owm_data(d)
 
 
-_OWM_API_URL_BYLOC = "https://api.openweathermap.org/data/2.5/weather?lat={0}&lon={1}&appid={2}&units=metric"
+_OWM_API_URL_BYLOC = (
+    "https://api.openweathermap.org/data/2.5/weather?"
+    "lat={0}&lon={1}&appid={2}&units=metric"
+)
 
 
 def _query_owm_by_coords(lat, lon):
@@ -397,7 +400,7 @@ _RVK_STATION_ID = 1
 
 def _curr_observations(query, result):
     """ Fetch latest weather observation data from weather station closest
-        to the location associated with the query (i.e. either user location 
+        to the location associated with the query (i.e. either user location
         coordinates or a specific placename) """
     loc = query.location
 
@@ -513,7 +516,7 @@ _DESCR_ABBR = {
 
 
 def _descr4voice(descr):
-    """ Prepare natural language weather description for speech synthesizer 
+    """ Prepare natural language weather description for speech synthesizer
         by rewriting/expanding abbreviations, etc. """
 
     # E.g. "8-13" becomes "8 til 13"
@@ -554,7 +557,7 @@ def get_forecast_answer(query, result):
 
     if (
         not res
-        or not "results" in res
+        or "results" not in res
         or not len(res["results"])
         or "content" not in res["results"][0]
     ):
@@ -568,7 +571,7 @@ def get_forecast_answer(query, result):
 
 
 def get_umbrella_answer(query, result):
-    """ Handle a query concerning whether an umbrella is needed 
+    """ Handle a query concerning whether an umbrella is needed
         for current weather conditions. """
 
     # if rain and high wind: no, not gonna work buddy
@@ -598,9 +601,7 @@ def QWeatherOpenLoc(node, params, result):
 
 def Nl(node, params, result):
     """ Noun phrase containing name of specific location """
-    loc = result._nominative
-    loc = loc[0].upper() + loc[1:]
-    result["location"] = loc
+    result["location"] = cap_first(result._nominative)
 
 
 def EfLiður(node, params, result):

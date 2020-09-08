@@ -28,11 +28,10 @@
 # TODO: Fix formatting issues w. trailing spaces, periods at the end of answer str
 
 import logging
-import re
 import random
 from datetime import datetime, timedelta
 
-from queries import query_json_api, fetch_xml, gen_answer
+from queries import query_json_api, query_xml_api, gen_answer
 
 
 _SCHEDULES_QTYPE = "Schedule"
@@ -140,7 +139,7 @@ QSchGoingOn →
     "í" "gangi"
 
 QSchBeingShown →
-    "verið" "að" "sýna" 
+    "verið" "að" "sýna"
 
 QSchEiginlega →
     "eiginlega"
@@ -229,7 +228,7 @@ def _query_radio_schedule_api(channel):
         print(date_str)
         url = _RUV_RADIO_SCHEDULE_API_ENDPOINT.format(channel, date_str)
         print(url)
-        xmldoc = fetch_xml(url)
+        xmldoc = query_xml_api(url)
         # TODO: Validate XML format
         if xmldoc:
             _RADIO_LAST_FETCHED[channel] = datetime.utcnow()
@@ -247,7 +246,7 @@ def _span(p):
 
 
 def _curr_prog(sched):
-    """ Return current TV program, given a TV schedule 
+    """ Return current TV program, given a TV schedule
         i.e. a list of programs in chronological sequence. """
     now = datetime.utcnow()
     for p in sched:

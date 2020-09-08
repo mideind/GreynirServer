@@ -252,7 +252,8 @@ class ArticleListQuery(_BaseQuery):
     _Q_upper = """
         select distinct a.id, a.heading, a.timestamp, r.domain, a.url
             from words w, articles a, roots r
-            where (w.stem = :stem or w.stem = :lstem) and w.article_id = a.id and a.root_id = r.id and r.visible
+            where (w.stem = :stem or w.stem = :lstem) and w.article_id = a.id
+            and a.root_id = r.id and r.visible
             order by a.timestamp desc
             limit :limit;
         """

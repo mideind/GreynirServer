@@ -34,7 +34,7 @@ import re
 import random
 from datetime import datetime, timedelta
 
-from queries import query_json_api, gen_answer
+from queries import query_json_api, gen_answer, cap_first
 from query import Query
 
 
@@ -196,7 +196,7 @@ def QWikiPrevSubjectNf(node, params, result):
         if keys:
             result.context_reference = True
             result["subject_nom"] = ctx[keys[0]]
-    if not "subject_nom" in result:
+    if "subject_nom" not in result:
         # There is a reference to a previous result
         # which is not available: flag an error
         result.error_context_reference = True
@@ -241,7 +241,10 @@ def _clean_voice_answer(answer):
     return a
 
 
-_WIKI_API_URL = "https://is.wikipedia.org/w/api.php?format=json&action=query&prop=extracts&exintro&explaintext&redirects=1&titles={0}"
+_WIKI_API_URL = (
+    "https://is.wikipedia.org/w/api.php?format=json&action=query"
+    "&prop=extracts&exintro&explaintext&redirects=1&titles={0}"
+)
 
 
 def _query_wiki_api(subject):
@@ -262,7 +265,7 @@ def get_wiki_summary(subject_nom):
         )
 
     # Wiki pages always start with an uppercase character
-    cap_subj = subject_nom[0].upper() + subject_nom[1:]
+    cap_subj = cap_first(subject_nom)
     # Talk to API
     res = _query_wiki_api(cap_subj)
     # OK, Wikipedia doesn't have anything with current capitalization

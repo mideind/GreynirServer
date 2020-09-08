@@ -105,7 +105,8 @@ class Root(Base):
 
 
 class Article(Base):
-    """ Represents an article from one of the roots, to be scraped or having already been scraped """
+    """ Represents an article from one of the roots, to be scraped
+        or having already been scraped """
 
     __tablename__ = "articles"
 

@@ -39,6 +39,7 @@ _REPEAT_PREFIXES = tuple(
         "segðu setninguna",
         "segðu eftirfarandi setningu",
         "segðu eftirfarandi",
+        "farðu með setninguna",
         "endurtaktu eftirfarandi setningu",
         "endurtaktu eftirfarandi orð",
         "endurtaktu eftirfarandi",
@@ -62,12 +63,12 @@ def gen_repeat_answ(text, cmd_prefix, q):
     atxt = atxt[:1].upper() + atxt[1:]  # Capitalize first character
     q.set_answer(*gen_answer(atxt))
     q.set_qtype(_REPEAT_QTYPE)
-    q.set_key("Repeat")
+    q.set_key(atxt)
     q.set_expires(datetime.utcnow() + timedelta(hours=24))
-
+    q.set_context(dict(subject=text))
     # Beautify query by placing text to repeat within quotation marks
     q.set_beautified_query(
-        "{0}{1}".format(cmd_prefix.capitalize(), icequote(atxt + "."))
+        "{0}{1}".format(cmd_prefix.capitalize(), icequote(atxt.rstrip(".") + "."))
     )
 
 

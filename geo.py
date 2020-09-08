@@ -102,8 +102,11 @@ ICE_PLACENAME_BLACKLIST = frozenset(
         "Árósar",
     )
 )
+
+# These should *never* be interpreted as Icelandic street names
 ICE_STREETNAME_BLACKLIST = frozenset(("Sjáland", "Feney", "Ráðhúsið", "Húsið"))
 
+# These should *always* be interpreted as Icelandic street names
 ALWAYS_STREET_ADDR = frozenset(("Skeifan", "Bessastaðir", "Kringlan"))
 
 # Names that should always be identified
@@ -175,6 +178,7 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
         "Trínidad": "TT",
         "Tóbagó": "TT",
         "Seychelleseyjar": "SC",
+        "Seychelles": "SC",
         "Salvador": "SV",
         "Mikrónesía": "FM",
         "Lýbía": "LY",
@@ -200,6 +204,8 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
         "Jómfrúaeyjar": "US",
         "Ghana": "GH",
         "Kosovo": "XK",
+        "Sameinuðu Arabísku Furstadæmin": "AE",
+        "Norður-Súdan": "SD",
     }
 }
 
@@ -358,7 +364,9 @@ def icelandic_city_name(name):
 
 
 # Data about countries, loaded from JSON data file
-COUNTRY_DATA = None  # type: Optional[Dict[str, Dict[str, Union[Tuple[float, float], str]]]]
+COUNTRY_DATA = (
+    None
+)  # type: Optional[Dict[str, Dict[str, Union[Tuple[float, float], str]]]]
 COUNTRY_DATA_JSONPATH = os.path.join(
     os.path.dirname(__file__), "resources", "country_data.json"
 )
@@ -525,6 +533,7 @@ _I_SUFFIXES = (
     "garðar",
     "múli",
     "fen",
+    "vík",
     "vogur",
     "Lækjargata",
     "Skeifan",
@@ -679,8 +688,10 @@ _PLACENAME_PREPS = frozenset(("í", "á", "de", "la", "am", "og"))
 
 def capitalize_placename(pn):
     """ Correctly capitalize an Icelandic-language lowercase placename, e.g.
-        "vík í mýrdal"->"Vík í Mýrdal", "bosnía og hersegóvína"->"Bosnía og Hersegóvína", 
+        "vík í mýrdal"->"Vík í Mýrdal", "bosnía og hersegóvína"->"Bosnía og Hersegóvína",
         "norður-makedónía"->"Norður-Makedónía", "rio de janeiro"->"Rio de Janeiro", etc. """
+    if not pn:
+        return pn
     comp = pn.split()
     # Uppercase each individual word (w. some exceptions)
     ucpn = " ".join(

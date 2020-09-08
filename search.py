@@ -119,7 +119,8 @@ class Search:
                     if ratio > 0.993:
                         if Settings.DEBUG:
                             print(
-                                "Rejecting {0}, domain {1}, ts {2} because of similarity with {3}, {4}, {5}; ratio is {6:.3f}".format(
+                                "Rejecting {0}, domain {1}, ts {2} because of similarity with {3},"
+                                " {4}, {5}; ratio is {6:.3f}".format(
                                     sa.heading,
                                     sa.root.domain,
                                     sa.timestamp,
@@ -133,7 +134,8 @@ class Search:
                     return False
 
                 def gen_similar():
-                    """ Generate the entries in the result list that are probably the same as the one we are considering """
+                    """ Generate the entries in the result list that are probably
+                        the same as the one we are considering """
                     for ix, p in enumerate(similar):
                         if is_probably_same_as(p):
                             yield (ix, p)
@@ -157,12 +159,14 @@ class Search:
                         # Enough articles: we're done
                         break
                 elif d["ts"] > same[1]["ts"]:
-                    # Similar article, and the one we're considering is newer: replace the one in the list
+                    # Similar article, and the one we're considering is
+                    # newer: replace the one in the list
                     if Settings.DEBUG:
                         print("Replacing: {0} ({1:.2f})".format(sa.heading, spercent))
                     similar[same[0]] = d
                 else:
-                    # Similar article, and the previous one is newer: drop the one we're considering
+                    # Similar article, and the previous one is newer:
+                    # drop the one we're considering
                     if Settings.DEBUG:
                         print("Ignoring: {0} ({1:.2f})".format(sa.heading, spercent))
                     pass

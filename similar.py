@@ -80,7 +80,7 @@ class SimilarityClient:
         TCP socket, typically on port 5001 """
 
     BASE_PATH = os.path.dirname(os.path.realpath(__file__))
-    KEY_FILE = os.path.join(BASE_PATH, "resources/SimilarityServerKey.txt")
+    KEY_FILE = os.path.join(BASE_PATH, "resources", "SimilarityServerKey.txt")
 
     def __init__(self):
         self._conn = None

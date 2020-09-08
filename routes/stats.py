@@ -158,8 +158,8 @@ def stats():
     """ Render a page containing various statistics from the Greynir database. """
     days = _DEFAULT_STATS_PERIOD
     try:
-        days = min(_MAX_STATS_PERIOD, int(request.args.get("days", "1")))
-    except:
+        days = min(_MAX_STATS_PERIOD, int(request.args.get("days", _DEFAULT_STATS_PERIOD)))
+    except Exception:
         pass
 
     with SessionContext(read_only=True) as session:

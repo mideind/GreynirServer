@@ -19,13 +19,12 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    This module generates a polite introductory response to statements 
+    This module generates a polite introductory response to statements
     of the form "Ég heiti X" ("My name is X").
 
 """
 
 import re
-from random import choice
 
 from reynir.bindb import BIN_Db
 
@@ -49,14 +48,15 @@ _RESPONSES = {
 
 
 def handle_plain_text(q):
+    """ Handle the user introducing herself """
     ql = q.query_lower.rstrip("?")
 
     for rx in _MY_NAME_IS_REGEXES:
         m = re.search(rx, ql)
         if m:
             break
-
-    if not m:
+    else:
+        # Not understood
         return False
 
     name = m.group(1).strip()
@@ -69,10 +69,11 @@ def handle_plain_text(q):
     with BIN_Db.get_db() as bdb:
         fn = name.split()[0].title()
         gender = bdb.lookup_name_gender(fn)
-        a = _RESPONSES[gender].format(fn)
+        a = _RESPONSES[gender or "hk"].format(fn)
 
     voice = a.replace(",", "")
     q.set_answer(dict(answer=a), a, voice)
     q.set_qtype(_INTRO_QTYPE)
+    q.query_is_command()
 
     return True
