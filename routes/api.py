@@ -585,10 +585,12 @@ def exit_api():
     return "The server has shut down"
 
 
-@routes.route("/register_smartdevice.api", methods=["POST"])
-def register_smartdevice_api():
+@routes.route("/register_query_data.api", methods=["POST"])
+def register_query_data_api():
     """
-    Stores or updates for the given client ID
+    Stores or updates query data for the given client ID
+
+    Hinrik's comment:
     Data format example from js code
     {
         'device_id': device_id,
@@ -603,14 +605,15 @@ def register_smartdevice_api():
             }
         }
     }
-    
+
     """
-    device_data = request.json
+    qdata = request.json
 
     if (
-        "data" not in device_data
-        or "key" not in device_data
-        or "device_id" not in device_data
+        not qdata
+        or "data" not in qdata
+        or "key" not in qdata
+        or "client_id" not in qdata
     ):
         return better_jsonify(valid=False, reason="Missing parameters")
 
@@ -618,38 +621,35 @@ def register_smartdevice_api():
         try:
             stored_data = (
                 session.query(QueryData)
-                .filter(QueryData.key == device_data["key"])
-                .filter(QueryData.client_id == device_data["device_id"])
+                .filter(QueryData.key == qdata["key"])
+                .filter(QueryData.client_id == qdata["client_id"])
             ).one_or_none()
+            
             if not stored_data:
                 curr_time = datetime.utcnow()
                 qrow = QueryData(
-                    client_id=device_data["device_id"],
-                    key=device_data["key"],
+                    client_id=qdata["client_id"],
+                    key=qdata["key"],
                     created=curr_time,
                     modified=curr_time,
-                    data=device_data["data"],
+                    data=qdata["data"],
                 )
                 session.add(qrow)
                 return better_jsonify(valid=True, action="added")
 
             else:
                 stored_json = stored_data.data
-                stored_json[device_data["key"]].update(
-                    device_data["data"][device_data["key"]]
-                )
+                stored_json[qdata["key"]].update(qdata["data"][qdata["key"]])
 
                 stored_data.data = stored_json
 
-                session.query(QueryData).filter(
-                    QueryData.key == device_data["key"]
-                ).filter(QueryData.client_id == device_data["device_id"]).update(
-                    {"data": stored_json, "modified": datetime.utcnow()}
-                )
+                session.query(QueryData).filter(QueryData.key == qdata["key"]).filter(
+                    QueryData.client_id == qdata["client_id"]
+                ).update({"data": stored_json, "modified": datetime.utcnow()})
 
                 return better_jsonify(valid=True, action="updated")
 
         except Exception as e:
-            logging.error("Error saving feedback to db: {0}".format(e))
+            logging.error("Error saving to db: {0}".format(e))
 
     return better_jsonify(valid=False)
