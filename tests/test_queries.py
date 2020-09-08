@@ -85,10 +85,7 @@ def qmcall(c, qdict, qtype=None):
 
 def has_google_api_key():
     basepath, _ = os.path.split(os.path.realpath(__file__))
-    keypath = (
-        basepath + os.sep + ".." + os.sep + "resources" + os.sep + "GoogleServerKey.txt"
-    )
-    print(keypath)
+    keypath = os.path.join(basepath, "..", "resources", "GoogleServerKey.txt")
     return os.path.isfile(keypath)
 
 

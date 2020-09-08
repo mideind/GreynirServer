@@ -154,7 +154,13 @@ _QTRAVELTIME_REGEXES = (
 
 def _addr2nom(address):
     """ Convert location name to nominative form. """
-    return NounPhrase(cap_first(address)).nominative or address
+    if address is None or address == "":
+        return address
+    try:
+        nom = NounPhrase(cap_first(address)).nominative
+    except Exception:
+        nom = address
+    return nom
 
 
 def dist_answer_for_loc(matches, query):
@@ -214,7 +220,7 @@ def dist_answer_for_loc(matches, query):
     # Hack to fix the fact that the voice recognition often misses "ég"
     prefix_fix = "Hvað er langt frá"
     if bq.startswith(prefix_fix):
-        bq = bq.replace("Hvað er langt frá", "Hvað er ég langt frá")
+        bq = bq.replace(prefix_fix, "Hvað er ég langt frá")
     query.set_beautified_query(bq)
 
     query.set_context(dict(subject=loc_nf))

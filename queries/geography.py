@@ -112,9 +112,15 @@ QGeoWhatIs →
     "hver" "er" | "hvað" "er" | "hvað" "heitir" | 0
 
 QGeoWhereIs →
-    "hvar" "er" | "hvar" "eru" | "hvað" "er"
+    "hvar" "er"
+    | "hvar" "eru"
+    | "hvað" "er"
     | "hvar" "í" "heiminum" "er"
     | "hvar" "í" "heiminum" "eru"
+    | "hvar" "á" "jörðinni" "er"
+    | "hvar" "á" "jörðinni" "eru"
+    | "hvar" "á" "plánetunni" "er"
+    | "hvar" "á" "plánetunni" "eru"
 
 QGeoPreposition →
     "í" | "á"
@@ -171,6 +177,8 @@ _PLACENAME_FIXES = [
 
 
 def _preprocess(name):
+    """ Change country/city names mangled by speech recognition to
+        the canonical spelling so lookup works. """
     fixed = name
     for k, v in _PLACENAME_FIXES:
         fixed = re.sub(k, v, fixed, flags=re.IGNORECASE)

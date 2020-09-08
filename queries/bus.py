@@ -894,6 +894,7 @@ def query_arrival_time(query, session, result):
     query.lowercase_beautified_query()
 
     def assemble(x):
+        """ Intelligently join answer string components. """
         return (" ".join(x) + ".").replace(" .", ".").replace(" ,", ",")
 
     voice_answer = assemble(va)
@@ -953,7 +954,7 @@ def query_which_route(query, session, result):
 
     voice_answer = correct_spaces(" ".join(va) + ".")
     answer = correct_spaces(" ".join(a))
-    answer = cap_first(answer[0])
+    answer = cap_first(answer)
     response = dict(answer=answer)
     return response, answer, voice_answer
 
