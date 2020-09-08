@@ -29,9 +29,6 @@ from urllib.parse import urlencode
 
 from main import app
 
-# pylint: disable=unused-wildcard-import
-from queries import *
-
 from settings import changedlocale
 from db import SessionContext
 from db.models import Query
@@ -567,6 +564,22 @@ def test_query_api(client):
 def test_query_utility_functions():
     """ Tests for various utility functions used by query modules. """
 
+    from queries import (
+        natlang_seq,
+        nom2dat,
+        numbers_to_neutral,
+        is_plural,
+        country_desc,
+        cap_first,
+        time_period_desc,
+        distance_desc,
+        krona_desc,
+        strip_trailing_zeros,
+        iceformat_float,
+        icequote,
+        timezone4loc,
+    )
+
     assert natlang_seq(["Jón", "Gunna"]) == "Jón og Gunna"
     assert natlang_seq(["Jón", "Gunna", "Siggi"]) == "Jón, Gunna og Siggi"
     assert (
@@ -576,6 +589,10 @@ def test_query_utility_functions():
 
     assert nom2dat("hestur") == "hesti"
     assert nom2dat("Hvolsvöllur") == "Hvolsvelli"
+
+    # assert parse_num("11") == 11
+    # assert parse_num("17,33") == 17.33
+    # assert parse_num
 
     assert numbers_to_neutral("Öldugötu 4") == "Öldugötu fjögur"
     assert numbers_to_neutral("Fiskislóð 31") == "Fiskislóð þrjátíu og eitt"
@@ -593,6 +610,10 @@ def test_query_utility_functions():
     assert country_desc("es") == "á Spáni"
     assert country_desc("IS") == "á Íslandi"
     assert country_desc("us") == "í Bandaríkjunum"
+
+    assert cap_first("yolo") == "Yolo"
+    assert cap_first("YOLO") == "YOLO"
+    assert cap_first("Yolo") == "Yolo"
 
     assert time_period_desc(3751) == "1 klukkustund og 3 mínútur"
     assert (
@@ -634,3 +655,6 @@ def test_query_utility_functions():
 
     assert icequote("sæll") == "„sæll“"
     assert icequote(" Góðan daginn ") == "„Góðan daginn“"
+
+    assert timezone4loc((64.157202, -21.948536)) == "Atlantic/Reykjavik"
+    assert timezone4loc((40.093368, 57.000067)) == "Asia/Ashgabat"

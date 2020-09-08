@@ -178,6 +178,7 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
         "Trínidad": "TT",
         "Tóbagó": "TT",
         "Seychelleseyjar": "SC",
+        "Seychelles": "SC",
         "Salvador": "SV",
         "Mikrónesía": "FM",
         "Lýbía": "LY",

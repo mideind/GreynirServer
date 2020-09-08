@@ -47,7 +47,7 @@ from geo import (
 
 _GEO_QTYPE = "Geography"
 
-TOPIC_LEMMAS = ["höfuðborg", "land", "heimsálfa", "borg"]
+TOPIC_LEMMAS = ["höfuðborg", "land", "heimsálfa", "borg", "landafræði"]
 
 
 def help_text(lemma):
@@ -60,7 +60,7 @@ def help_text(lemma):
                 "Í hvaða landi er Minsk",
                 "Í hvaða heimsálfu er Kambódía",
                 "Hvar er Kaupmannahöfn",
-                "Hvar er Máritanía",
+                "Hvar er í heiminum er Máritanía",
             )
         )
     )
@@ -162,15 +162,18 @@ def QGeoLocationDescQuery(node, params, result):
     result["geo_qtype"] = "loc_desc"
 
 
-_PLACENAME_FIXES = {r"nýja sjáland": "Nýja-Sjáland", r"norður kóre": "Norður-Kóre"}
+_PLACENAME_FIXES = [
+    (r"nýja sjáland", "Nýja-Sjáland"),
+    (r"norður kóre", "Norður-Kóre"),
+    (r"norður kaledón", "Norður-Kaledón"),
+    (r"^seychelles.+$", "Seychelles"),
+]
 
 
 def _preprocess(name):
     fixed = name
-    for k, v in _PLACENAME_FIXES.items():
-        fixed = re.sub(k, v, name, flags=re.IGNORECASE)
-    if fixed.startswith("seychelles"):
-        fixed = "Seychelles-eyjar"
+    for k, v in _PLACENAME_FIXES:
+        fixed = re.sub(k, v, fixed, flags=re.IGNORECASE)
     return fixed
 
 
