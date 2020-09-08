@@ -53,7 +53,7 @@ For example:
 ```
 mkdir ~/pypy
 cd ~/pypy
-wget https://bitbucket.org/pypy/pypy/downloads/pypy3.6-v7.3.1-linux64.tar.bz2
+wget https://downloads.python.org/pypy/pypy3.6-v7.3.1-linux64.tar.bz2
 tar --strip-components=1 -xvf pypy3.6-v7.3.1-linux64.tar.bz2
 ```
 

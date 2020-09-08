@@ -10,7 +10,7 @@ Using [Homebrew](https://brew.sh):
 brew install python3 pypy3 postgresql ossp-uuid
 ```
 
-Alternately, you can install these packages manually:
+Alternatively, you can install these packages manually:
 
 * [Python 3](https://www.python.org/downloads/mac-osx/)
 * [PyPy 3.5](https://pypy.org/download.html)
