@@ -32,9 +32,10 @@
 import re
 import logging
 
-from reynir.bindb import BIN_Db
+from reynir import NounPhrase
 from queries import (
     gen_answer,
+    cap_first,
     time_period_desc,
     distance_desc,
     query_geocode_api_addr,
@@ -49,8 +50,13 @@ _DISTANCE_QTYPE = "Distance"
 # TODO: This may grab queries of the form "Hvað er langt í jólin"!
 _QDISTANCE_REGEXES = (
     r"^hvað er ég langt frá (.+)$",
+    r"^hvað er langt frá (.+)$",  # Speech recognition often misses "ég" in this context
     r"^hvað er ég langt í burtu frá (.+)$",
     r"^hversu langt er ég frá (.+)$",
+    r"^hversu langt í burtu er (.+)$",
+    r"^hve langt í burtu er (.+)$",
+    r"^hversu langt frá (.+) er ég$",
+    r"^hve langt frá (.+) er ég$",
     r"^hve langt er ég frá (.+)$",
     r"^hvað er langt\s?(?:héðan)?\s?(?:austur|vestur|norður|suður)? á (.+)$",
     r"^hvað er langt\s?(?:héðan)? upp á (.+)$",
@@ -65,6 +71,7 @@ _QDISTANCE_REGEXES = (
     r"^hversu marga metra er ég frá (.+)$",
     r"^hvað eru margir kílómetrar til (.+)$",
     r"^hvað eru margir metrar til (.+)$",
+    r"^hvað er (.+) langt í burtu$",
 )
 
 # Travel time questions
@@ -147,27 +154,20 @@ _QTRAVELTIME_REGEXES = (
 
 def _addr2nom(address):
     """ Convert location name to nominative form. """
-    # TODO: Implement more intelligently.
-    # This is a tad simplistic and mucks up some things,
-    # e.g. "Ráðhús Reykjavíkur" becomes "Ráðhús Reykjavík".
-    with BIN_Db.get_db() as db:
-        nf = []
-        for w in address.split():
-            bin_res = db.lookup_nominative(w)
-            if not bin_res and not w.islower():
-                # Try lowercase form
-                bin_res = db.lookup_nominative(w.lower())
-            if bin_res:
-                nf.append(bin_res[0].ordmynd)
-            else:
-                nf.append(w)
-        return " ".join(nf)
+    if address is None or address == "":
+        return address
+    try:
+        nom = NounPhrase(cap_first(address)).nominative
+    except Exception:
+        nom = address
+    return nom
 
 
 def dist_answer_for_loc(matches, query):
-    """ Generate response to distance query. """
+    """ Generate response to distance query, e.g.
+        "Hvað er ég langt frá X?" """
     locname = matches.group(1)
-    loc_nf = _addr2nom(locname[0].upper() + locname[1:])
+    loc_nf = _addr2nom(locname) or locname
     res = query_geocode_api_addr(loc_nf)
 
     # Verify sanity of API response
@@ -205,27 +205,35 @@ def dist_answer_for_loc(matches, query):
 
     # Generate answer
     answer = distance_desc(km_dist, abbr=True)
-    response = dict(answer=answer)
+    response = dict(answer=answer, distance=km_dist)
 
-    loc_nf = loc_nf[0].upper() + loc_nf[1:]
+    loc_nf = capitalize_placename(loc_nf)
     dist = distance_desc(km_dist, case="þf")
     voice = "{0} er {1} í burtu".format(loc_nf, dist)
 
-    query.set_key(capitalize_placename(loc_nf))
+    query.set_key(loc_nf)
 
     # Beautify by capitalizing remote loc name
     uc = capitalize_placename(locname)
     bq = query.beautified_query.replace(locname, uc)
+
+    # Hack to fix the fact that the voice recognition often misses "ég"
+    prefix_fix = "Hvað er langt frá"
+    if bq.startswith(prefix_fix):
+        bq = bq.replace(prefix_fix, "Hvað er ég langt frá")
     query.set_beautified_query(bq)
+
     query.set_context(dict(subject=loc_nf))
 
     return response, answer, voice
 
 
 def traveltime_answer_for_loc(matches, query):
+    """ Generate answer to travel time query e.g.
+        "Hvað er ég lengi að ganga/hjóla/keyra í X?" """
     action_desc, tmode, locname = matches.group(2, 3, 5)
 
-    loc_nf = _addr2nom(locname[0].upper() + locname[1:])
+    loc_nf = _addr2nom(locname)
     mode = _TT_MODES.get(tmode, "walking")
 
     # Query API
@@ -253,7 +261,7 @@ def traveltime_answer_for_loc(matches, query):
 
     # Generate answer
     answer = "{0} ({1}).".format(dur_desc, dist_desc)
-    response = dict(answer=answer)
+    response = dict(answer=answer, duration=dur_sec)
     voice = "Að {0} tekur um það bil {1}".format(action_desc, dur_desc)
 
     # Key is the remote loc in nominative case
@@ -294,14 +302,14 @@ def handle_plain_text(q):
     if not handler or not matches:
         return False
 
-    # Look up in geo API
+    # Look up answer in geo API
     try:
         if q.location:
             answ = handler(matches, q)
         else:
             answ = gen_answer("Ég veit ekki hvar þú ert.")
     except Exception as e:
-        logging.warning("Exception generating answer from geocode API: {0}".format(e))
+        logging.warning("Exception gen. answer from geocode API: {0}".format(e))
         q.set_error("E_EXCEPTION: {0}".format(e))
         answ = None
 

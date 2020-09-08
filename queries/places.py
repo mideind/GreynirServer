@@ -24,6 +24,8 @@
 
 """
 
+# TODO: Handle opening hours with intervals, e.g. 10:00-14:00 and 18:00-22:00
+
 
 import logging
 import re
@@ -283,25 +285,24 @@ def answ_openhours(placename, loc, qtype):
         return gen_answer(_PLACES_API_ERRMSG)
 
     now = datetime.utcnow()
-    # Sun is index 0, as req. by Google API
-    wday = int(now.strftime("%w"))
+    wday = now.weekday()
 
     try:
         name = res["result"]["name"]
+        name_gender = NounPhrase(name).gender
 
         # Generate placename w. street, e.g. "Forréttabarinn á Nýlendugötu"
         street = fmt_addr.split()[0].rstrip(",")
-        street_np = NounPhrase(street)
-        street_þgf = street_np.dative
-        street_gender = street_np.gender
+        street_þgf = NounPhrase(street).dative
 
         name = "{0} {1} {2}".format(name, iceprep_for_street(street), street_þgf)
 
         # Get correct "open" adjective for place name
         open_adj_map = {"kk": "opinn", "kvk": "opin", "hk": "opið"}
-        open_adj = open_adj_map.get(street_gender) or "opið"
+        open_adj = open_adj_map.get(name_gender) or "opið"
 
         # Get opening hours for current weekday
+        # TODO: Handle when place is closed (no entry in periods)
         periods = res["result"]["opening_hours"]["periods"]
         if len(periods) == 1 or wday >= len(periods):
             # Open 24 hours a day

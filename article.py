@@ -36,7 +36,7 @@ from db import SessionContext, DataError, desc
 from db.models import Article as ArticleRow, Word, Root
 from fetcher import Fetcher
 from reynir import TOK
-from reynir.fastparser import Fast_Parser, ParseError, ParseForestDumper
+from reynir.fastparser import Fast_Parser, ParseForestDumper
 from reynir.incparser import IncrementalParser
 from tree import Tree
 from treeutil import TreeUtility

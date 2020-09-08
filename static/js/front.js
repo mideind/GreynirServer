@@ -94,18 +94,27 @@ function initializeSpeech() {
    recognizer.continuous = false;
    recognizer.interimResults = false;
    recognizer.lang = "is-IS";
+   recognizer.maxAlternatives = 10;
    // Results of speech recognition
    recognizer.onresult = function(event) {
       var txt = "";
+      var first = "";
       for (var i = event.resultIndex; i < event.results.length; i++) {
          if (event.results[i].isFinal) {
-            txt = event.results[i][0].transcript; // + ' (Confidence: ' + event.results[i][0].confidence + ')';
+            // Accumulate top results
+            for (var j = 0; j < event.results[i].length; j++) {
+               // Note top suggestion to place in query input field
+               if (j === 0) {
+                  first = event.results[i][j].transcript;
+               }
+               txt += event.results[i][j].transcript + "|"
+            }
          }
          else {
             txt += event.results[i][0].transcript;
          }
       }
-      $("#url").val(txt);
+      $("#url").val(first);
       $("#url").attr("placeholder", "");
       $("#microphone").removeClass("btn-danger").addClass("btn-success");
       // Send the query to the server

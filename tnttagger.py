@@ -63,7 +63,7 @@ from contextlib import contextmanager
 
 from reynir.bindb import BIN_Db
 from reynir.bintokenizer import raw_tokenize, parse_tokens, paragraphs, TOK
-from postagger import IFD_Tagset, NgramTagger
+from postagger import NgramTagger
 
 
 @contextmanager

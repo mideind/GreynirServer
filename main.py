@@ -21,10 +21,10 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    This is the main module of the Greynir web server. It uses Flask
+    This is the main module of the Greynir web application. It uses Flask
     as its web server and templating engine. In production, this module is
     typically run inside Gunicorn (using servlets) under nginx or a
-    compatible WSGi HTTP(S) server. For development, it can be run
+    compatible WSGI HTTP(S) server. For development, it can be run
     directly from the command line and accessed through port 5000.
 
     Flask routes are imported from routes/*
@@ -54,6 +54,10 @@ import reynir_correct
 
 from settings import Settings, ConfigError
 from article import Article as ArticleProxy
+
+from platform import system as os_name
+from reynir import __version__ as greynir_version
+from tokenizer import __version__ as tokenizer_version
 
 # RUNNING_AS_SERVER is True if we're executing under nginx/Gunicorn,
 # but False if the program was invoked directly as a Python main module.
@@ -151,7 +155,7 @@ def hashed_url_for_static_file(endpoint, values):
 
 
 @app.route("/static/fonts/<path:path>")
-@max_age(seconds=24 * 60 * 60)  # Cache font for 24 hours
+@max_age(seconds=24 * 60 * 60)  # Client should cache font for 24 hours
 def send_font(path):
     return send_from_directory(os.path.join("static", "fonts"), path)
 
@@ -190,16 +194,20 @@ except ConfigError as e:
 
 if Settings.DEBUG:
     print(
-        "\nStarting Greynir web app at {6} with debug={0}, "
-        "host={1}:{2}, db_host={3}:{4}\n"
-        "Python {5}".format(
+        "\nStarting Greynir web app at {0} with debug={1}, "
+        "host={2}:{3}, db_host={4}:{5}\n"
+        "Python {6} on {7}\n{8}".format(
+            datetime.utcnow(),
             Settings.DEBUG,
             Settings.HOST,
             Settings.PORT,
             Settings.DB_HOSTNAME,
             Settings.DB_PORT,
             sys.version,
-            datetime.utcnow(),
+            os_name(),
+            "ReynirPackage {0} - Tokenizer {1}".format(
+                greynir_version, tokenizer_version
+            ),
         )
     )
     # Clobber Settings.DEBUG in ReynirPackage and GreynirCorrect

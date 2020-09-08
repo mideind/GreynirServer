@@ -45,9 +45,9 @@ import os
 import re
 import logging
 import random
-from datetime import datetime, timedelta
+from datetime import timedelta
 
-from queries import gen_answer, query_json_api, is_plural
+from queries import gen_answer, query_json_api, is_plural, cap_first
 from geo import distance, in_iceland, ICE_PLACENAME_BLACKLIST
 from iceaddr import placename_lookup
 from iceweather import observation_for_closest, observation_for_station, forecast_text
@@ -601,9 +601,7 @@ def QWeatherOpenLoc(node, params, result):
 
 def Nl(node, params, result):
     """ Noun phrase containing name of specific location """
-    loc = result._nominative
-    loc = loc[0].upper() + loc[1:]
-    result["location"] = loc
+    result["location"] = cap_first(result._nominative)
 
 
 def EfLiður(node, params, result):

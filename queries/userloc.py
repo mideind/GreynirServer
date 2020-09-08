@@ -31,6 +31,7 @@ from queries import (
     country_desc,
     nom2dat,
     numbers_to_neutral,
+    cap_first
 )
 from iceaddr import iceaddr_lookup, postcodes
 from geo import iceprep_for_placename, iceprep_for_street
@@ -261,7 +262,7 @@ def answer_for_location(loc):
         # Fall back on the formatted address string provided by Google
         descr = "á " + top.get("formatted_address")
 
-    answer = descr[0].upper() + descr[1:]
+    answer = cap_first(descr)
     response = dict(answer=answer)
     voice = "Þú ert {0}".format(_addr4voice(descr))
 

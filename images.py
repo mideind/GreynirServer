@@ -230,7 +230,7 @@ def check_image_url(url):
     try:
         response = urllib.request.urlopen(req, timeout=2.0)
         return response.status == 200
-    except:
+    except Exception:
         pass
 
     return False

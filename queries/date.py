@@ -37,7 +37,8 @@
 # TODO: "Hvað er mikið eftir af vinnuvikunni", "hvað er langt í helgina"
 # TODO: "Hvaða vikudagur er DAGSETNING næstkomandi?"
 # TODO: "Hvað gerðist á þessum degi?"
-# TODO: "Hvaða vikudagur var 11. september 2001?" "Hvaða (viku)dagur er á morgun?" "Hvaða dagur var í gær?"
+# TODO: "Hvaða vikudagur var 11. september 2001?" "Hvaða (viku)dagur er á morgun?" 
+#       "Hvaða dagur var í gær?"
 # TODO: "Hvenær eru vetrarsólstöður" + more astronomical dates
 # TODO: "Hvað er langt í helgina?" "Hvenær er næsti (opinberi) frídagur?"
 # TODO: "Hvað eru margir dagar að fram að jólum?"
@@ -65,7 +66,7 @@ from datetime import datetime, timedelta
 from pytz import timezone
 from calendar import monthrange, isleap
 
-from queries import timezone4loc, gen_answer, is_plural
+from queries import timezone4loc, gen_answer, is_plural, cap_first
 from settings import changedlocale
 
 
@@ -819,7 +820,7 @@ def when_answ(q, result):
     # Use plural 'eru' for 'páskar', 'jól' etc.
     is_verb = "er" if "is_verb" not in result else result.is_verb
     date_str = result.desc + " " + is_verb + " " + result.target.strftime("%-d. %B")
-    answer = voice = date_str[0].upper() + date_str[1:].lower()
+    answer = voice = cap_first(date_str)
     # Put a spelled-out ordinal number instead of the numeric one,
     # in accusative case
     voice = re.sub(r"\d+\. ", _DAY_INDEX_ACC[result.target.day] + " ", voice)

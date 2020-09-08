@@ -32,10 +32,8 @@ from typing import Dict, Optional, List, Any, Union
 import json
 import re
 
-from contextlib import closing
 from collections import OrderedDict, namedtuple
 
-from settings import Settings
 from reynir.bindb import BIN_Db
 from reynir.binparser import BIN_Token
 from reynir.simpletree import SimpleTreeBuilder
@@ -689,7 +687,7 @@ class TerminalNode(Node):
         token: str,
         tokentype: str,
         aux: str,
-        at_start: bool
+        at_start: bool,
     ) -> None:
 
         super().__init__()
@@ -947,7 +945,8 @@ class TerminalNode(Node):
             assert False
 
         def replace_beyging(b, by_case="NF"):
-            """ Change a 'beyging' string to specify a different case, without the definitive article """
+            """ Change a 'beyging' string to specify a different case,
+                without the definitive article """
             for case in ("NF", "ÞF", "ÞGF", "EF"):
                 if case != by_case and case in b:
                     return (
@@ -1161,23 +1160,27 @@ class NonterminalNode(Node):
         return self.nt
 
     def root(self, state, params):
-        """ The root form of a nonterminal is a sequence of the root forms of its children (parameters) """
+        """ The root form of a nonterminal is a sequence of the root
+            forms of its children (parameters) """
         return " ".join(p._root for p in params if p is not None and p._root)
 
     def nominative(self, state, params):
-        """ The nominative form of a nonterminal is a sequence of the nominative forms of its children (parameters) """
+        """ The nominative form of a nonterminal is a sequence of the
+            nominative forms of its children (parameters) """
         return " ".join(
             p._nominative for p in params if p is not None and p._nominative
         )
 
     def indefinite(self, state, params):
-        """ The indefinite form of a nonterminal is a sequence of the indefinite forms of its children (parameters) """
+        """ The indefinite form of a nonterminal is a sequence of the
+            indefinite forms of its children (parameters) """
         return " ".join(
             p._indefinite for p in params if p is not None and p._indefinite
         )
 
     def canonical(self, state, params):
-        """ The canonical form of a nonterminal is a sequence of the canonical forms of its children (parameters) """
+        """ The canonical form of a nonterminal is a sequence of the canonical
+            forms of its children (parameters) """
         return " ".join(p._canonical for p in params if p is not None and p._canonical)
 
     def process(self, state, params):
@@ -1532,8 +1535,7 @@ class TreeGist(TreeBase):
 
 
 TreeToken = namedtuple(
-    "TreeToken",
-    ["terminal", "augmented_terminal", "token", "tokentype", "aux", "cat"]
+    "TreeToken", ["terminal", "augmented_terminal", "token", "tokentype", "aux", "cat"]
 )
 
 

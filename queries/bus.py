@@ -45,7 +45,7 @@ from datetime import datetime
 import random
 
 import query
-from queries import natlang_seq, numbers_to_neutral
+from queries import natlang_seq, numbers_to_neutral, cap_first
 from settings import Settings
 from reynir import correct_spaces
 
@@ -764,7 +764,7 @@ def query_arrival_time(query, session, result):
         bus_name = result.bus_name if "bus_name" in result else "Óþekkt"
 
     # Prepare results
-    bus_name = bus_name[0].upper() + bus_name[1:]
+    bus_name = cap_first(bus_name)
     va = [bus_name]
     a = []
     arrivals = []
@@ -893,8 +893,9 @@ def query_arrival_time(query, session, result):
     # words such as Vagn and Leið.
     query.lowercase_beautified_query()
 
-    def assemble(l):
-        return (" ".join(l) + ".").replace(" .", ".").replace(" ,", ",")
+    def assemble(x):
+        """ Intelligently join answer string components. """
+        return (" ".join(x) + ".").replace(" .", ".").replace(" ,", ",")
 
     voice_answer = assemble(va)
     answer = assemble(a)
@@ -953,7 +954,7 @@ def query_which_route(query, session, result):
 
     voice_answer = correct_spaces(" ".join(va) + ".")
     answer = correct_spaces(" ".join(a))
-    answer = answer[0].upper() + answer[1:]
+    answer = cap_first(answer)
     response = dict(answer=answer)
     return response, answer, voice_answer
 

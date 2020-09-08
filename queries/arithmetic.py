@@ -216,7 +216,7 @@ GRAMMAR = """
 # adding one or more query productions to the Query nonterminal
 
 Query →
-    QArithmetic 
+    QArithmetic
     # 'Hvaða tala er pí'
     | QArPi '?'?
 

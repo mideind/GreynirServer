@@ -40,7 +40,7 @@ from tzwhere import tzwhere
 from pytz import country_timezones
 
 from geo import country_name_for_isocode, iceprep_for_cc
-from reynir.bindb import BIN_Db
+from reynir import NounPhrase
 from settings import changedlocale
 
 
@@ -58,15 +58,11 @@ def natlang_seq(words, oxford_comma=False):
 
 def nom2dat(w):
     """ Look up the dative form of a noun in BÍN. """
-    if not w:
-        return ""
-
-    def sort_by_preference(m_list):
-        """ Discourage rarer declension forms, i.e. ÞGF2 and ÞGF3 """
-        return sorted(m_list, key=lambda m: "2" in m.beyging or "3" in m.beyging)
-
-    with BIN_Db().get_db() as db:
-        return db.cast_to_dative(w, meaning_filter_func=sort_by_preference)
+    try:
+        return NounPhrase(w).dative
+    except Exception:
+        pass
+    return w
 
 
 # The following needs to include at least nominative
@@ -130,7 +126,9 @@ _NUMBER_WORDS = {
 
 
 def parse_num(node, num_str):
-    """ Parse Icelandic number string to float or int """
+    """ Parse Icelandic number string to float or int.
+        TODO: This needs to be a more capable, generic function. There are
+        several mildly differing implementions in various query modules. """
 
     # Hack to handle the word "eina" being identified as f. name "Eina"
     if num_str in ["Eina", "Einu"]:
@@ -243,14 +241,19 @@ def is_plural(num):
 
 def country_desc(cc):
     """ Generate Icelandic description of being in a particular country
-        with correct preposition and case e.g. 'á Spáni', 'í Þýskalandi' """
+        with correct preposition and case e.g. 'á Spáni', 'í Þýskalandi'. """
     cn = country_name_for_isocode(cc)
     prep = iceprep_for_cc(cc)
     return "{0} {1}".format(prep, nom2dat(cn))
 
 
+def cap_first(s):
+    """ Capitalize first character in a string. """
+    return s[0].upper() + s[1:] if s else s
+
+
 # This could be done at runtime using BÍN lookup, but this is
-# faster, cleaner and allows for reuse outside the codebase.
+# faster, cleaner, and allows for reuse outside the codebase.
 _TIMEUNIT_NOUNS = {
     "w": (["vika", "viku", "viku", "viku"], ["vikur", "vikur", "vikum", "vikna"]),
     "d": (["dagur", "dag", "degi", "dags"], ["dagar", "daga", "dögum", "daga"]),
@@ -334,14 +337,14 @@ def distance_desc(km_dist, case="nf", in_metres=1.0, abbr=False):
 
 
 _KRONA_NOUN = (
-    ["króna", "krónu", "krónu", "krónur"],
+    ["króna", "krónu", "krónu", "krónu"],
     ["krónur", "krónur", "krónum", "króna"],
 )
 
 
 def krona_desc(amount, case="nf"):
     """ Generate description of an amount in krónas, e.g.
-        "213,5 krónur", "361 króna", etc. """
+        "213,5 krónur", "361 króna", "70,11 krónur", etc. """
     assert case in _CASE_ABBR
     cidx = _CASE_ABBR.index(case)
     plidx = 1 if is_plural(amount) else 0
@@ -370,11 +373,12 @@ def icequote(s):
 
 
 def gen_answer(a):
+    """ Convenience function for query modules: response, answer, voice answer """
     return dict(answer=a), a, a
 
 
 def query_json_api(url):
-    """ Request the URL, expecting a json response which is
+    """ Request the URL, expecting a JSON response which is
         parsed and returned as a Python data structure. """
 
     # Send request
@@ -397,7 +401,7 @@ def query_json_api(url):
         logging.warning("Error parsing JSON API response: {0}".format(e))
 
 
-def fetch_xml(url):
+def query_xml_api(url):
     """ Request the URL, expecting an XML response which is
         parsed and returned as an XML document object. """
 
@@ -613,7 +617,7 @@ def tzwhere_singleton():
 
 def timezone4loc(loc, fallback=None):
     """ Returns timezone string given a tuple of coordinates.
-        Fallback argument should be an ISO country code."""
+        Fallback argument should be a 2-char ISO 3166 country code."""
     if loc:
         return tzwhere_singleton().tzNameAt(loc[0], loc[1], forceTZ=True)
     if fallback and fallback in country_timezones:

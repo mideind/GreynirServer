@@ -23,8 +23,6 @@
 
 import pytest
 import os
-import re
-from datetime import datetime
 from urllib.parse import urlencode
 
 from main import app
