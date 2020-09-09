@@ -206,6 +206,7 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
         "Kosovo": "XK",
         "Sameinuðu Arabísku Furstadæmin": "AE",
         "Norður-Súdan": "SD",
+        "Taiwan": "TW",
     }
 }
 

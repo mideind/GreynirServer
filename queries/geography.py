@@ -173,6 +173,7 @@ _PLACENAME_FIXES = [
     (r"norður kóre", "Norður-Kóre"),
     (r"norður kaledón", "Norður-Kaledón"),
     (r"^seychelles.+$", "Seychelles"),
+    (r"^taiwans$", "Taiwan"),
 ]
 
 

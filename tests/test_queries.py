@@ -106,6 +106,7 @@ def test_query_api(client):
         "hvað er nítján plús 3": "22",
         "hvað er hundrað mínus sautján": "83",
         "hvað er 17 deilt með fjórum": "4,25",
+        "hvað er 18 deilt með þrem": "6",
         "hver er kvaðratrótin af 256": "16",
         "hvað er 12 í þriðja veldi": "1728",
         "hvað eru tveir í tíunda veldi": "1024",
@@ -118,6 +119,7 @@ def test_query_api(client):
         "geturðu reiknað kvaðratrótina af 9": "3",
         "hvað er 8900 með vaski": "11.036",
         "hvað eru 7500 krónur með virðisaukaskatti": "9.300",
+        # "hvað eru tíu þúsund krónur án vasks": "8.064,51",
         "hvað er pí deilt með pí": "1",
         "hvað er pí í öðru veldi": "9,87",
         "hvað er tíu deilt með pí": "3,18",
@@ -311,8 +313,8 @@ def test_query_api(client):
     # TODO: Implement me!
 
     # Geography module
-    json = qmcall(c, {"q": "Hver er höfuðborg Spánar?"}, "Geography")
-    assert json["answer"] == "Madríd"
+    json = qmcall(c, {"q": "Hver er höfuðborg taiwan?"}, "Geography")
+    assert json["answer"] == "Taípei"
 
     json = qmcall(c, {"q": "hver er höfuðborg norður-makedóníu?"}, "Geography")
     assert json["answer"] == "Skopje"
@@ -546,7 +548,7 @@ def test_query_api(client):
 
     json = qmcall(c, {"q": "hvernig beygist orðið maður", "voice": True}, "Declension")
     assert json["answer"].lower() == "maður, mann, manni, manns"
-    assert json["voice"].startswith("Orðið 'maður'")
+    assert json["voice"].startswith("Orðið „maður“")
 
     # Yule lads module
     # TODO: Implement me!
