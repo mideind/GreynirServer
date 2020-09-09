@@ -67,6 +67,8 @@ _NUM_PEOPLE_QUERIES = frozenset(
         "hve margar manneskjur þekkir þú",
         "hvaða fólk þekkir þú",
         "hvaða fólk þekkirðu",
+        "hverja þekkir þú",
+        "hverja þekkirðu",
         "hvaða einstaklinga þekkir þú",
         "hvaða einstaklinga þekkirðu",
     )
@@ -227,7 +229,10 @@ def _gen_num_people_answer(q):
     with SessionContext(read_only=True) as session:
         qr = session.query(Person.name).distinct().count()
 
-        answer = "Í gagnagrunni mínum eru {0} einstaklingar.".format(qr or "engir")
+        pl = is_plural(qr)
+        verb = "eru" if pl else "er"
+        indiv = "einstaklingar" if pl else "einstaklingur"
+        answer = "Í gagnagrunni mínum {0} {1} {2}.".format(verb, qr or "engir", indiv)
         voice = answer
         response = dict(answer=answer)
 

@@ -71,6 +71,7 @@ _QDISTANCE_REGEXES = (
     r"^hversu marga metra er ég frá (.+)$",
     r"^hvað eru margir kílómetrar til (.+)$",
     r"^hvað eru margir metrar til (.+)$",
+    r"^hvað er (.+) langt í burtu frá mér$"
     r"^hvað er (.+) langt í burtu$",
 )
 
@@ -119,11 +120,11 @@ _TT_MODES = {
     "rölta": "walking",
     "tölta": "walking",
     "skunda": "walking",
-    "hjóla": "cycling",
-    "fara á hjóli": "cycling",
-    "fara á reiðhjóli": "cycling",
-    "ferðast á hjóli": "cycling",
-    "ferðast á reiðhjóli": "cycling",
+    "hjóla": "bicycling",
+    "fara á hjóli": "bicycling",
+    "fara á reiðhjóli": "bicycling",
+    "ferðast á hjóli": "bicycling",
+    "ferðast á reiðhjóli": "bicycling",
     "keyra": "driving",
     "keyra á bíl": "driving",
     "aka": "driving",
