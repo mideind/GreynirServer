@@ -297,7 +297,7 @@ _QTYPE_TO_DESC = {
     "Declension": "fyrirspurnum um beygingarmyndir",
     "Places": "spurningum um verslanir og opnunartíma",
     "News": "fyrirspurnum um fréttir",
-    "Repeat": "beiðnum um að endurtaka setningar",
+    "Parrot": "beiðnum um að endurtaka setningar",
 }
 
 
