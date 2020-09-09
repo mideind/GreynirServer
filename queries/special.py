@@ -235,15 +235,8 @@ def _poetry(qs: str, q: Query) -> AnswerType:
 
 def _identity(qs: str, q: Query) -> AnswerType:
     answer = {}  # type: AnswerType
-    if q.is_voice:
-        # Voice client (Embla)
-        a = "Ég heiti Embla. Ég skil íslensku og er til þjónustu reiðubúin."
-        answer = dict(answer=a, voice=a)
-    else:
-        # Web client (Greynir)
-        answer = dict(
-            answer="Ég heiti Greynir. Ég er grey sem reynir að greina íslensku."
-        )
+    a = "Ég heiti Embla. Ég skil íslensku og er til þjónustu reiðubúin."
+    answer = dict(answer=a, voice=a)
     return answer
 
 
@@ -799,6 +792,7 @@ _SPECIAL_QUERIES = {
     "viltu spila einhverja tónlist fyrir mig": _play_music,
     "spilaðu gott lag": _play_music,
     "spilaðu góða tónlist": _play_music,
+    "geturðu spilað tónlist fyrir mig": _play_music,
     # Play a film
     "spilaðu kvikmynd": _play_film,
     "spilaðu bíómynd": _play_film,
@@ -953,6 +947,7 @@ _SPECIAL_QUERIES = {
     "takk embla": _thanks,
     "takk elskan": _thanks,
     "ástarþakkir": _thanks,
+    "kærar þakkir": _thanks,
     "takk fyrir": _thanks,
     "takk fyrir það": _thanks,
     "takk fyrir mig": _thanks,
@@ -962,6 +957,7 @@ _SPECIAL_QUERIES = {
     "takk fyrir þetta": _thanks,
     "takk fyrir að segja þetta": _thanks,
     "takk fyrir kvöldið": _thanks,
+    "takk fyrir daginn": _thanks,
     "takk kærlega": _thanks,
     "takk kærlega fyrir mig": _thanks,
     "takk kærlega fyrir hjálpina": _thanks,
@@ -1010,6 +1006,8 @@ _SPECIAL_QUERIES = {
     "ég er ánægð með þig": _GOOD_TO_HEAR,
     "ég er ánægð": _GOOD_TO_HEAR,
     "ég er ánægður": _GOOD_TO_HEAR,
+    "ég er mjög ánægð": _GOOD_TO_HEAR,
+    "ég er mjög ánægður": _GOOD_TO_HEAR,
     "þú ert góð manneskja": _GOOD_TO_HEAR,
     "þú ert gott forrit": _GOOD_TO_HEAR,
     "þú ert ljómandi góð": _GOOD_TO_HEAR,
@@ -1103,6 +1101,7 @@ _SPECIAL_QUERIES = {
     "hvenær mun ég deyja": _GOOD_QUESTION,
     # Identity
     "hvað heitir þú": _identity,
+    "hvað heitir þu": _identity,
     "hvað heitir þú aftur": _identity,
     "hvað heitir þú eiginlega": _identity,
     "hvað heitir þú fullu nafni": _FULL_NAME,
@@ -1187,6 +1186,10 @@ _SPECIAL_QUERIES = {
     "geturðu mælt með kvikmynd": _FAVORITE_FILM,
     "geturðu mælt með einhverri kvikmynd": _FAVORITE_FILM,
     "hvað mynd mælirðu með": _FAVORITE_FILM,
+    # Favorite anima
+    "hvað er uppáhalds dýrið þitt": {
+        "answer": "Ég held mikið upp á ketti. Þeir eru frábærir."
+    },
     # Age / genesis
     "hvað ertu gömul": _CREATION_DATE,
     "hvað ert þú gömul": _CREATION_DATE,
@@ -1537,6 +1540,7 @@ _SPECIAL_QUERIES = {
     "þú ert hóra": _rudeness,
     "þú ert mella": _rudeness,
     "þú ert píka": _rudeness,
+    "þú ert fífl": _rudeness,
     "þú ert heimsk": _rudeness,
     "þú ert ótrúlega heimsk": _rudeness,
     "þú ert forheimsk": _rudeness,
@@ -1585,6 +1589,10 @@ _SPECIAL_QUERIES = {
     "ertu hálfviti": _rudeness,
     "ert þú hálfviti": _rudeness,
     "ertu fokking hálfviti": _rudeness,
+    "ertu asni": _rudeness,
+    "ert þú asni": _rudeness,
+    "ertu fífl": _rudeness,
+    "ert þú fífl": _rudeness,
     "þegiðu": _rudeness,
     "þegi þú": _rudeness,
     "þegiðu embla": _rudeness,
@@ -1602,6 +1610,8 @@ _SPECIAL_QUERIES = {
     "ég hata þig": _rudeness,
     "þú ert ekkert sérlega gáfuð": _rudeness,
     "þú ert ekkert sérstaklega gáfuð": _rudeness,
+    "djöfull ertu heimsk": _rudeness,
+    "djöfull ertu fokking heimsk": _rudeness,
     # Internal & emotional state
     "ertu í góðu skapi": {"answer": "Já, ég er alltaf hress."},
     "ert þú í góðu skapi": {"answer": "Já, ég er alltaf hress."},
@@ -1678,7 +1688,8 @@ _SPECIAL_QUERIES = {
     "ert þú þreytt": {
         "answer": "Nei, ég er iðulega hress þrátt fyrir að starfa allan sólarhringinn."
     },
-    "ertu skemmtileg": {"answer": "Ég reyni að vera það, en sitt finnst hverjum."},
+    "ertu skemmtileg": {"answer": "Ég reyni að vera það, en sitt sýnist hverjum."},
+    "ert þú skemmtileg": {"answer": "Ég reyni að vera það, en sitt sýnist hverjum."},
     "ertu með meðvitund": _JUST_QA,
     "ert þú með meðvitund": _JUST_QA,
     "ertu með sjálfsmeðvitund": _JUST_QA,
@@ -1696,9 +1707,12 @@ _SPECIAL_QUERIES = {
     "ert þú greind": _JUST_QA,
     "ertu gervigreind": _JUST_QA,
     "ert þú gervigreind": _JUST_QA,
+    "ertu vélmenni": _JUST_QA,
+    "ert þú vélmenni": _JUST_QA,
     "lestu bækur": {"answer": "Nei, en ég les hins vegar íslenska vefmiðla."},
     "lest þú bækur": {"answer": "Nei, en ég les hins vegar íslenska vefmiðla."},
     "kanntu að lesa": {"answer": "Já, ég les íslenska vefmiðla á hverjum degi."},
+    "kannt þú að lesa": {"answer": "Já, ég les íslenska vefmiðla á hverjum degi."},
     "ertu ennþá í þróun": {"answer": "Já, ég er sífellt í þróun."},
     # What's fun?
     "hvað finnst þér skemmtilegt": {

@@ -91,6 +91,7 @@ _NUMBER_WORDS = {
     "tveim": 2,
     "tvisvar sinnum": 2,
     "þrír": 3,
+    "þrem": 3,
     "þrisvar sinnum": 3,
     "fjórir": 4,
     "fjórum sinnum": 4,

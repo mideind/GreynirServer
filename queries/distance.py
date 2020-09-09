@@ -78,6 +78,7 @@ _QDISTANCE_REGEXES = (
 # Travel time questions
 _TT_PREFIXES = (
     "hvað er ég lengi að",
+    "hvað er lengi að",
     "hvað er maður lengi að",
     "hvað erum við lengi að",
     "hversu lengi er ég að",
@@ -271,7 +272,12 @@ def traveltime_answer_for_loc(matches, query):
     # Beautify by capitalizing remote loc name
     uc = capitalize_placename(locname)
     bq = query.beautified_query.replace(locname, uc)
+    # Hack to fix common mistake in speech recognition
+    prefix_fix = "Hvað er lengi "
+    if bq.startswith(prefix_fix):
+        bq = bq.replace(prefix_fix, "Hvað er ég lengi ")
     query.set_beautified_query(bq)
+
     query.set_context(dict(subject=loc_nf))
 
     return response, answer, voice
