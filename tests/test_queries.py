@@ -70,7 +70,7 @@ def qmcall(c, qdict, qtype=None):
     assert r.is_json
     json = r.get_json()
     assert "valid" in json
-    assert json["valid"] == True
+    assert json["valid"]
     assert "error" not in json
     assert "qtype" in json  # All query modules should set a query type
     assert "answer" in json
@@ -92,7 +92,7 @@ def has_google_api_key():
 DUMMY_CLIENT_ID = "QueryTesting123"
 
 
-def test_query_api(client):
+def test_query_api(c):
     """ Make various query API calls and validate response. """
 
     c = client
@@ -238,7 +238,7 @@ def test_query_api(client):
     assert "dag" in json["voice"]
 
     json = qmcall(c, {"q": "Hvað eru margir dagar í 12. maí?"}, "Date")
-    assert "dag" in json["answer"] or "á morgun" in answer
+    assert "dag" in json["answer"] or "á morgun" in json["answer"]
 
     now = datetime.utcnow()
 
@@ -496,7 +496,7 @@ def test_query_api(client):
     # User location module
     # NB: No Google API key on test server
     if google_key:
-        json = qmcall(c, {"q": "Hvar er ég",}, "UserLocation",)
+        json = qmcall(c, {"q": "Hvar er ég"}, "UserLocation",)
         assert "Fiskislóð 31" in json["answer"]
 
     # Weather module
