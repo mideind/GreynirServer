@@ -92,7 +92,7 @@ def has_google_api_key():
 DUMMY_CLIENT_ID = "QueryTesting123"
 
 
-def test_query_api(c):
+def test_query_api(client):
     """ Make various query API calls and validate response. """
 
     c = client
@@ -119,7 +119,7 @@ def test_query_api(c):
         "geturðu reiknað kvaðratrótina af 9": "3",
         "hvað er 8900 með vaski": "11.036",
         "hvað eru 7500 krónur með virðisaukaskatti": "9.300",
-        # "hvað eru tíu þúsund krónur án vasks": "8.064,51",
+        "hvað er 9300 án vasks": "7.500",
         "hvað er pí deilt með pí": "1",
         "hvað er pí í öðru veldi": "9,87",
         "hvað er tíu deilt með pí": "3,18",

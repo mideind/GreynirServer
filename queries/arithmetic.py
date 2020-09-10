@@ -289,7 +289,7 @@ QArSqrt → QArSquareRootOperator QArNumberWordAny
 QArPow → QArPowOperator
 QArPercent → QArPercentOperator QArNumberWordAny
 QArFraction → QArFractionOperator QArNumberWordAny
-QArVAT → QArCurrencyOrNum QArWithVAT
+QArVAT → QArCurrencyOrNum QArWithVAT | QArCurrencyOrNum QArWithoutVAT
 
 # Prevent nonterminal from being optimized out of the grammar
 $tag(keep) QArPow
@@ -342,7 +342,10 @@ QArOrdinalOrNumberWord_þgf →
     QArNumberWord_þgf | QArOrdinalWord_þgf
 
 QArWithVAT →
-    "með" "vaski" | "með" "virðisaukaskatti"
+    "með" "vaski" | "með" "vask" | "með" "virðisaukaskatti"
+
+QArWithoutVAT →
+    "án" "vasks" | "án" "vask" | "án" "virðisaukaskatts"
 
 QArCurrencyOrNum →
     QArNumberWordAny | QArNumberWordAny "íslenskar"? "krónur" | amount
@@ -553,8 +556,15 @@ def QArPi(node, params, result):
     result.qtype = "PI"
 
 
+def QArWithVAT(node, params, result):
+    result.operator = "with_vat"
+
+
+def QArWithoutVAT(node, params, result):
+    result.operator = "without_vat"
+
+
 def QArVAT(node, params, result):
-    result.operator = "vat"
     result.desc = result._canonical
     result.qtype = "VSK"
 
@@ -577,7 +587,8 @@ _OP_NUM_ARGS = {
     "pow": 2,
     "percent": 2,
     "fraction": 2,
-    "vat": 1,
+    "with_vat": 1,
+    "without_vat": 1,
 }
 
 
@@ -628,9 +639,13 @@ def calc_arithmetic(query, result):
     elif operator == "fraction":
         s = "{0} * {1}".format(nums[0], nums[1])
 
-    # VAT calculation
-    elif operator == "vat":
-        s = "{0} * {1}".format(_VAT_MULT, nums[0])
+    # Add VAT to sum
+    elif operator == "with_vat":
+        s = "{0} * {1}".format(nums[0], _VAT_MULT)
+
+    # Subtract VAT from sum
+    elif operator == "without_vat":
+        s = "{0} / {1}".format(nums[0], _VAT_MULT)
 
     # Addition, subtraction, multiplication, division
     elif operator in _STD_OPERATORS:
