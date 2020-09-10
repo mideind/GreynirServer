@@ -40,7 +40,7 @@ function main(on = null, dimmer = null) {
     else {
         try {
             changeLight(ipAddress, username, on, dimmer);
-            return 'skal gert';
+            return 'Skal gert';
         } catch(error) {
             return error.message;
         }

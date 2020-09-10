@@ -629,7 +629,6 @@ def timezone4loc(loc, fallback=None):
 def read_jsfile(filename):
     from rjsmin import jsmin
     basepath, _ = os.path.split(os.path.realpath(__file__))
-    _JSDIR = basepath + os.sep + "js"
-    fpath = _JSDIR + os.sep + filename
+    fpath = os.path.join(basepath, "js", filename)
     with open(fpath, mode="r") as file:
         return jsmin(file.read())

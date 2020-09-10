@@ -26,7 +26,7 @@ function main(lightNo) {
     else {
         try {
             changeLight(ipAddress, username, lightNo);
-            return 'skal gert';
+            return 'Skal gert';
         } catch(error) {
             return error.message;
         }

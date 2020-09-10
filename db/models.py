@@ -689,14 +689,14 @@ class Feedback(Base):
 
 class QueryData(Base):
 
-    __tablename__ = "query_data"
+    __tablename__ = "querydata"
 
     __table_args__ = (PrimaryKeyConstraint("client_id", "key", name="querydata_pkey"),)
 
     client_id = Column(String, nullable=False, primary_key=True)
 
     # Key to distinguish between different types of json data that can be stored
-    key = Column(String, nullable=False, primary_key=True)
+    key = Column(String(64), nullable=False, primary_key=True)
 
     # Created timestamp
     created = Column(DateTime, nullable=False)

@@ -12,7 +12,7 @@ function lightInfo(ipAddress, username) {
         return JSON.parse(request.responseText);
     }
     else {
-        throw new Error('Error while fetchin light info');
+        throw new Error('Error while fetching light info');
     }
 
 }

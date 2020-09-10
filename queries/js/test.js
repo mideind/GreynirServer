@@ -88,7 +88,7 @@ function connectHub() {
         if (username.success){
             serviceStorage.username = username.success.username;
         } else {
-            return 'Ýttu á \'Philips\' takkan á tengiboxinu og reyndu aftur';
+            return 'Ýttu á \'Philips\' takkann á tengiboxinu og reyndu aftur';
         }
         
         return 'Tenging við snjalltæki tókst';
