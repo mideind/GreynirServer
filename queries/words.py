@@ -184,14 +184,15 @@ def declension_answer_for_word(word, query):
     response = dict(answer=answ)
     # TODO: Handle plural e.g. "Hér eru"
     cases_desc = "Hér er {0}, um {1}, frá {2}, til {3}".format(*forms)
-    voice = "Orðið {0} beygist á eftirfarandi hátt: {1}.".format(icequote(word), cases_desc)
+    voice = "Orðið {0} beygist á eftirfarandi hátt: {1}.".format(
+        icequote(word), cases_desc
+    )
 
     query.set_qtype("Declension")
     query.set_key(word)
 
     # Beautify by placing word in query within quotation marks
-    bq = query.beautified_query
-    bq = re.sub(word + r"\??$", icequote(word) + "?", bq)
+    bq = re.sub(word + r"\??$", icequote(word) + "?", query.beautified_query)
     query.set_beautified_query(bq)
 
     return response, answ, voice
@@ -222,8 +223,7 @@ def spelling_answer_for_word(word, query):
     query.set_key(word)
 
     # Beautify by placing word in query within quotation marks
-    bq = query.beautified_query
-    bq = re.sub(word + r"\??$", icequote(word) + "?", bq)
+    bq = re.sub(word + r"\??$", icequote(word) + "?", query.beautified_query)
     query.set_beautified_query(bq)
 
     return response, answ, voice

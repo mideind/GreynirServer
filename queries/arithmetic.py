@@ -23,8 +23,6 @@
 
 """
 
-# TODO: "hvað er X ÁN vasks/virðisaukaskatts?"
-
 from typing import Dict, Any
 
 import math
