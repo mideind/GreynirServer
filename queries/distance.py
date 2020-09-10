@@ -40,6 +40,7 @@ from queries import (
     distance_desc,
     query_geocode_api_addr,
     query_traveltime_api,
+    numbers_to_neutral,
 )
 from geo import distance, capitalize_placename
 
@@ -71,7 +72,7 @@ _QDISTANCE_REGEXES = (
     r"^hversu marga metra er ég frá (.+)$",
     r"^hvað eru margir kílómetrar til (.+)$",
     r"^hvað eru margir metrar til (.+)$",
-    r"^hvað er (.+) langt í burtu frá mér$"
+    r"^hvað er (.+) langt í burtu frá mér$",
     r"^hvað er (.+) langt í burtu$",
 )
 
@@ -170,16 +171,6 @@ def dist_answer_for_loc(matches, query):
         "Hvað er ég langt frá X?" """
     locname = matches.group(1)
     loc_nf = _addr2nom(locname) or locname
-    res = query_geocode_api_addr(loc_nf)
-
-    # Verify sanity of API response
-    if (
-        not res
-        or "status" not in res
-        or res["status"] != "OK"
-        or not res.get("results")
-    ):
-        return None
 
     # Try to avoid answering bus queries here
     loc_lower = locname.lower()
@@ -197,6 +188,17 @@ def dist_answer_for_loc(matches, query):
     ):
         return None
 
+    res = query_geocode_api_addr(loc_nf)
+
+    # Verify sanity of API response
+    if (
+        not res
+        or "status" not in res
+        or res["status"] != "OK"
+        or not res.get("results")
+    ):
+        return None
+
     # Extract location coordinates from API result
     topres = res["results"][0]
     coords = topres["geometry"]["location"]
@@ -211,7 +213,7 @@ def dist_answer_for_loc(matches, query):
 
     loc_nf = capitalize_placename(loc_nf)
     dist = distance_desc(km_dist, case="þf")
-    voice = "{0} er {1} í burtu".format(loc_nf, dist)
+    voice = "{0} er {1} í burtu".format(numbers_to_neutral(loc_nf), dist)
 
     query.set_key(loc_nf)
 
@@ -232,7 +234,7 @@ def dist_answer_for_loc(matches, query):
 
 def traveltime_answer_for_loc(matches, query):
     """ Generate answer to travel time query e.g.
-        "Hvað er ég lengi að ganga/hjóla/keyra í X?" """
+        "Hvað er ég lengi að ganga/keyra í/til X?" """
     action_desc, tmode, locname = matches.group(2, 3, 5)
 
     loc_nf = _addr2nom(locname)
@@ -256,7 +258,7 @@ def traveltime_answer_for_loc(matches, query):
     if elm["status"] != "OK":
         return None
 
-    # dur_desc = elm["duration"]["text"]
+    # dur_desc = elm["duration"]["text"]  # API duration description
     dur_sec = int(elm["duration"]["value"])
     dur_desc = time_period_desc(dur_sec, case="þf")
     dist_desc = elm["distance"]["text"]
@@ -270,8 +272,8 @@ def traveltime_answer_for_loc(matches, query):
     query.set_key(capitalize_placename(loc_nf))
 
     # Beautify by capitalizing remote loc name
-    uc = capitalize_placename(locname)
-    bq = query.beautified_query.replace(locname, uc)
+    bq = query.beautified_query.replace(locname, capitalize_placename(locname))
+
     # Hack to fix common mistake in speech recognition
     prefix_fix = "Hvað er lengi "
     if bq.startswith(prefix_fix):

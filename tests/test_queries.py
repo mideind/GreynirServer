@@ -119,14 +119,14 @@ def test_query_api(client):
         "geturðu reiknað kvaðratrótina af 9": "3",
         "hvað er 8900 með vaski": "11.036",
         "hvað eru 7500 krónur með virðisaukaskatti": "9.300",
-        "hvað er 9300 án vasks": "7.500",
+        "hvað er 9300 án vask": "7.500",
         "hvað er pí deilt með pí": "1",
         "hvað er pí í öðru veldi": "9,87",
         "hvað er tíu deilt með pí": "3,18",
     }
 
     for q, a in ARITHM_QUERIES.items():
-        json = qmcall(c, {"q": q, "voice": True}, "Arithmetic")
+        json = qmcall(c, {"q": q}, "Arithmetic")
         assert json["answer"] == a
 
     json = qmcall(
