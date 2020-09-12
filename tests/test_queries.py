@@ -406,12 +406,12 @@ def test_query_api(client):
     assert "fiskur" in a or "skjaldarmerki" in a
 
     # Repeat module
-    json = qmcall(c, {"q": "segðu setninguna simmi er bjálfi"}, "Repeat")
+    json = qmcall(c, {"q": "segðu setninguna simmi er bjálfi"}, "Parrot")
     assert json["answer"] == "Simmi er bjálfi"
     assert json["q"] == "Segðu setninguna „Simmi er bjálfi.“"
 
     json = qmcall(c, {"q": "segðu eitthvað skemmtilegt"})
-    assert json["qtype"] != "Repeat"
+    assert json["qtype"] != "Parrot"
 
     # Schedules module
     json = qmcall(c, {"q": "hvað er í sjónvarpinu núna", "voice": True}, "Schedule")
