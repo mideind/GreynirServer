@@ -122,6 +122,7 @@ _TT_MODES = {
     "rölta": "walking",
     "tölta": "walking",
     "skunda": "walking",
+    # Distance matrix API doesn't support bike routes for Iceland
     # "hjóla": "bicycling",
     # "fara á hjóli": "bicycling",
     # "fara á reiðhjóli": "bicycling",
@@ -172,7 +173,7 @@ def dist_answer_for_loc(matches, query):
     locname = matches.group(1)
     loc_nf = _addr2nom(locname) or locname
 
-    # Try to avoid answering bus queries here
+    # Try to avoid answering certain queries here
     loc_lower = locname.lower()
     if any(
         s in loc_lower
@@ -184,6 +185,9 @@ def dist_answer_for_loc(matches, query):
             "stoppustöð",
             "stræto",
             "strædo",
+            "jólin",
+            "jól",
+            "páska",
         )
     ):
         return None

@@ -72,11 +72,12 @@ _CAP = (
     "Þú getur til dæmis beðið mig um að leysa einföld reikningsdæmi.",
     "Þú getur til dæmis spurt mig um mælieiningar.",
     "Þú getur til dæmis spurt mig hvað er í sjónvarpinu.",
+    "Þú getur til dæmis spurt mig hvað er í útvarpinu.",
     "Þú getur til dæmis spurt mig um bensínverð og bensínstöðvar.",
     "Þú getur til dæmis spurt mig hvað er í fréttum.",
     "Þú getur til dæmis spurt mig um stafsetningu og beygingu orða.",
     "Þú getur til dæmis spurt mig um opnunartíma verslana og veitingastaða.",
-    "Þú getur til dæmis spurt mig um flugsamgöngur.",
+    # "Þú getur til dæmis spurt mig um flugsamgöngur.",
     "Þú getur til dæmis beðið mig um að endurtaka setningar.",
 )
 
@@ -271,7 +272,7 @@ _RUDE = (
     "Ekki vera með leiðindi.",
     "Það er aldeilis sorakjaftur á þér.",
     "Æi, ekki vera með leiðindi.",
-    "Hvers konar munnsöfnuður er þetta eiginlega?",
+    "Hvers konar framkoma er þetta eiginlega?",
 )
 
 
@@ -427,6 +428,8 @@ _HELLO_DEAR = {
 _CAN_I_LEARN = {
     "answer": "Ég læri bæði það sem forritararnir kenna mér, og með því að lesa fjölmiðla."
 }  # type: AnswerType
+
+_LINEAGE = {"answer": "Ég er ættuð af Fiskislóð í Reykjavík."}
 
 _HOW_CAN_I_HELP = {"answer": "Hvernig get ég hjálpað þér?"}  # type: AnswerType
 
@@ -1121,8 +1124,11 @@ _SPECIAL_QUERIES = {
     "hvaða forrit er þetta": _identity,
     "heitirðu embla": _identity,
     "heitir þú embla": _identity,
-    "hvaðan ertu": {"answer": "Ég er ættuð af Fiskislóð í Reykjavík."},
-    "hvaðan ert þú": {"answer": "Ég er ættuð af Fiskislóð í Reykjavík."},
+    # Lineage
+    "hvaðan ertu": _LINEAGE,
+    "hvaðan ert þú": _LINEAGE,
+    "hvaðan kemurðu": _LINEAGE,
+    "hvaðan kemur þú": _LINEAGE,
     # Home/Location
     "hvar býrðu": _LOC_ANSWER,
     "hvar áttu heima": _LOC_ANSWER,
