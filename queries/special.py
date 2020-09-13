@@ -1192,8 +1192,11 @@ _SPECIAL_QUERIES = {
     "geturðu mælt með kvikmynd": _FAVORITE_FILM,
     "geturðu mælt með einhverri kvikmynd": _FAVORITE_FILM,
     "hvað mynd mælirðu með": _FAVORITE_FILM,
-    # Favorite anima
+    # Favorite animal
     "hvað er uppáhalds dýrið þitt": {
+        "answer": "Ég held mikið upp á ketti. Þeir eru frábærir."
+    },
+    "hvert er uppáhalds dýrið þitt": {
         "answer": "Ég held mikið upp á ketti. Þeir eru frábærir."
     },
     # Age / genesis
