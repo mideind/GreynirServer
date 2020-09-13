@@ -1,8 +1,8 @@
 beautifulsoup4>=4.8.0
 Flask==1.1.2
 flask-caching>=1.4.0
-greenlet==0.4.13
-eventlet==0.23.0
+greenlet==0.4.16
+eventlet==0.27.0
 psycopg2cffi==2.8.1
 requests==2.24.0
 reynir>=2.5.0
@@ -22,4 +22,3 @@ tzwhere>=3.0.3
 iceweather>=0.1.1
 cachetools>=3.1.1
 Flask-Cors>=3.0.8
-
