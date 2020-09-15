@@ -23,8 +23,7 @@
 
 """
 
-# TODO: "kastaðu upp á teningnum"
-# TODO: "skjaldarmerki eða fiskur"
+# TODO: Suport Kastaðu tveir d6, D&D style die rolling
 
 import logging
 import random
@@ -47,6 +46,7 @@ def help_text(lemma):
                 "Kastaðu teningi",
                 "Kastaðu tíu hliða teningi",
                 "Fiskur eða skjaldarmerki",
+                "Kastaðu teningi",
                 "Kastaðu peningi",
                 "Veldu tölu á milli sjö og þrettán",
             )
@@ -78,6 +78,8 @@ QRandomDiceRoll →
     | "kasta" QRandomDiceSides? QRandomDie
     | "geturðu" "kastað" QRandomDiceSides? QRandomDie QRandomForMe?
     | "geturðu" "kastað" QRandomForMe? QRandomDiceSides? QRandomDie
+    | "kastaðu" "upp" "á" "teningnum" QRandomForMe?
+    | "kastaðu" "upp" "á" "teningi" QRandomForMe?
 
 QRandomForMe →
     "fyrir" "mig"

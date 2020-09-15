@@ -237,7 +237,7 @@ def _poetry(qs: str, q: Query) -> AnswerType:
 
 def _identity(qs: str, q: Query) -> AnswerType:
     answer = {}  # type: AnswerType
-    a = "Ég heiti Embla. Ég skil íslensku og er til þjónustu reiðubúin."
+    a = "Ég heiti Embla. Ég skil íslensku og get tekið við fyrirspurnum og skipunum frá þér."
     answer = dict(answer=a, voice=a)
     return answer
 
@@ -521,6 +521,7 @@ _SPECIAL_QUERIES = {
     "hvað heitir eiginmaður minn": _DUNNO,
     "hvenær á ég afmæli": _DUNNO,
     "hvar á ég heima": {"answer": "Það veit ég ekki, en vonandi einhvers staðar."},
+    "veistu hvar ég á heima?": {"answer": "Það veit ég ekki, en vonandi einhvers staðar."},
     "hvar bý ég": {"answer": "Það veit ég ekki, en vonandi einhvers staðar."},
     "hvað er ég gamall": {
         "answer": "Það veit ég ekki, kæri notandi, en þú ert ungur í anda."
@@ -1110,6 +1111,7 @@ _SPECIAL_QUERIES = {
     "hvað heitir þu": _identity,
     "hvað heitir þú aftur": _identity,
     "hvað heitir þú eiginlega": _identity,
+    "hvað heitir þú eigin lega": _identity, # Common error in speech recognition
     "hvað heitir þú fullu nafni": _FULL_NAME,
     "hvað heitir þú eiginlega fullu nafni": _FULL_NAME,
     "hvað heitirðu": _identity,
@@ -1500,6 +1502,7 @@ _SPECIAL_QUERIES = {
     "hvers vegna er himininn blár": _SKY_BLUE,
     # Quotations
     "komdu með tilvitnun": _random_quotation,
+    "komdu með góða tilvitnun": _random_quotation,
     "komdu með skemmtilega tilvitnun": _random_quotation,
     "komdu með einhverja tilvitnun": _random_quotation,
     "farðu með tilvitnun": _random_quotation,
@@ -1509,14 +1512,21 @@ _SPECIAL_QUERIES = {
     "komdu með aðra tilvitnun": _random_quotation,
     # Proverbs
     "komdu með málshátt": _random_proverb,
+    "komdu með góðan málshátt": _random_proverb,
     "komdu með annan málshátt": _random_proverb,
     "segðu málshátt": _random_proverb,
     "segðu mér málshátt": _random_proverb,
+    "segðu mér góðan málshátt": _random_proverb,
     "segðu mér annan málshátt": _random_proverb,
     "kanntu málshátt": _random_proverb,
+    "kanntu einhvern málshátt": _random_proverb,
+    "kanntu góðan málshátt": _random_proverb,
+    "kanntu einhvern góðan málshátt": _random_proverb,
     "kannt þú málshátt": _random_proverb,
     "kanntu annan málshátt": _random_proverb,
     "farðu með málshátt": _random_proverb,
+    "farðu með góðan málshátt": _random_proverb,
+    "farðu með einhvern málshátt": _random_proverb,
     "farðu með annan málshátt": _random_proverb,
     # Riddles
     "segðu gátu": _random_riddle,
