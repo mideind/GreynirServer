@@ -36,7 +36,7 @@ import re
 import logging
 from datetime import datetime, timedelta
 
-from queries import gen_answer
+from queries import gen_answer, icequote
 from reynir.bindb import BIN_Db
 
 
@@ -167,7 +167,7 @@ def lookup_best_word(word):
         return nom, acc, dat, gen
 
 
-_NOT_IN_BIN_MSG = "Nafnorðið '{0}' fannst ekki í Beygingarlýsingu íslensks nútímamáls."
+_NOT_IN_BIN_MSG = "Nafnorðið „{0}“ fannst ekki í Beygingarlýsingu íslensks nútímamáls."
 
 
 def declension_answer_for_word(word, query):
@@ -184,10 +184,16 @@ def declension_answer_for_word(word, query):
     response = dict(answer=answ)
     # TODO: Handle plural e.g. "Hér eru"
     cases_desc = "Hér er {0}, um {1}, frá {2}, til {3}".format(*forms)
-    voice = "Orðið '{0}' beygist á eftirfarandi hátt: {1}.".format(word, cases_desc)
+    voice = "Orðið {0} beygist á eftirfarandi hátt: {1}.".format(
+        icequote(word), cases_desc
+    )
 
     query.set_qtype("Declension")
     query.set_key(word)
+
+    # Beautify by placing word in query within quotation marks
+    bq = re.sub(word + r"\??$", icequote(word) + "?", query.beautified_query)
+    query.set_beautified_query(bq)
 
     return response, answ, voice
 
@@ -209,12 +215,16 @@ def spelling_answer_for_word(word, query):
     # Piece together SSML for speech synthesis
     v = [_CHAR_PRONUNCIATION.get(c, c) for c in chars]
     jfmt = '<break time="{0}s"/>'.format(_LETTER_INTERVAL)
-    voice = "Orðið '{0}' er stafað á eftirfarandi hátt: {1} {2}".format(
-        word, jfmt, jfmt.join(v)
+    voice = "Orðið {0} er stafað á eftirfarandi hátt: {1} {2}".format(
+        icequote(word), jfmt, jfmt.join(v)
     )
 
     query.set_qtype("Spelling")
     query.set_key(word)
+
+    # Beautify by placing word in query within quotation marks
+    bq = re.sub(word + r"\??$", icequote(word) + "?", query.beautified_query)
+    query.set_beautified_query(bq)
 
     return response, answ, voice
 

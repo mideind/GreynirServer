@@ -57,7 +57,7 @@ def natlang_seq(words, oxford_comma=False):
 
 
 def nom2dat(w):
-    """ Look up the dative form of a noun in BÍN. """
+    """ Look up the dative form of a noun. """
     try:
         return NounPhrase(w).dative
     except Exception:
@@ -489,7 +489,8 @@ def query_geocode_api_addr(addr):
         return None
 
     # Send API request
-    res = query_json_api(_MAPS_API_ADDR_URL.format(addr, key))
+    url = _MAPS_API_ADDR_URL.format(addr, key)
+    res = query_json_api(url)
 
     return res
 
@@ -524,7 +525,8 @@ def query_traveltime_api(startloc, endloc, mode="walking"):
     p2 = "{0},{1}".format(*endloc) if type(endloc) is tuple else endloc
 
     # Send API request
-    res = query_json_api(_MAPS_API_TRAVELTIME_URL.format(p1, p2, mode, key))
+    url = _MAPS_API_TRAVELTIME_URL.format(p1, p2, mode, key)
+    res = query_json_api(url)
 
     return res
 

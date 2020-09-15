@@ -47,7 +47,7 @@ from geo import (
 
 _GEO_QTYPE = "Geography"
 
-TOPIC_LEMMAS = ["höfuðborg", "land", "heimsálfa", "borg", "landafræði"]
+TOPIC_LEMMAS = ["höfuðborg", "heimsálfa", "borg", "landafræði"]
 
 
 def help_text(lemma):
@@ -173,6 +173,7 @@ _PLACENAME_FIXES = [
     (r"norður kóre", "Norður-Kóre"),
     (r"norður kaledón", "Norður-Kaledón"),
     (r"^seychelles.+$", "Seychelles"),
+    (r"^taiwans$", "Taiwan"),
 ]
 
 

@@ -47,7 +47,7 @@ Install [git](https://git-scm.com) if it's not already installed:
 sudo apt-get install git
 ```
 
-Install PyPy 3.5 or later ([available here](http://pypy.org/download.html)). 
+Install PyPy 3.6 or later ([available here](http://pypy.org/download.html)).
 For example:
 
 ```

@@ -28,6 +28,8 @@
 # TODO: "Hvað er langt til tunglsins"? "Hvað er langt til Mars?"
 # TODO: Identify when user is present at the location, respond "Þú ert í/á X"
 # TODO: "Hvað er langur/margra kílómetra göngutúr í/á X?"
+# TODO: Fix issue where answer complains about lack of location despite query
+#       being handable by another module, error checking should take place earlier
 
 import re
 import logging
@@ -40,6 +42,7 @@ from queries import (
     distance_desc,
     query_geocode_api_addr,
     query_traveltime_api,
+    numbers_to_neutral,
 )
 from geo import distance, capitalize_placename
 
@@ -47,7 +50,6 @@ from geo import distance, capitalize_placename
 _DISTANCE_QTYPE = "Distance"
 
 
-# TODO: This may grab queries of the form "Hvað er langt í jólin"!
 _QDISTANCE_REGEXES = (
     r"^hvað er ég langt frá (.+)$",
     r"^hvað er langt frá (.+)$",  # Speech recognition often misses "ég" in this context
@@ -58,25 +60,27 @@ _QDISTANCE_REGEXES = (
     r"^hversu langt frá (.+) er ég$",
     r"^hve langt frá (.+) er ég$",
     r"^hve langt er ég frá (.+)$",
-    r"^hvað er langt\s?(?:héðan)?\s?(?:austur|vestur|norður|suður)? á (.+)$",
+    r"^hvað er langt\s?(?:héðan)?\s?(?:austur|vestur|norður|suður|upp|niður)? á (.+)$",
     r"^hvað er langt\s?(?:héðan)? upp á (.+)$",
     r"^hvað er langt\s?(?:héðan)? niður á (.+)$",
-    r"^hvað er langt\s?(?:héðan)?\s?(?:austur|vestur|norður|suður)? í ([^0-9.].+)$",
+    r"^hvað er langt\s?(?:héðan)?\s?(?:austur|vestur|norður|suður|upp|niður)? í ([^0-9.].+)$",
     r"^hvað er langt\s?(?:héðan)? upp í (.+)$",
     r"^hvað er langt\s?(?:héðan)? til (.+)$",
     r"^hvað er langt\s?(?:héðan)? út á ([^0-9.].+)$",
-    r"^hversu langt er\s?(?:austur|vestur|norður|suður)? til (.+)$",
+    r"^hversu langt er\s?(?:austur|vestur|norður|suður|upp|niður)? til (.+)$",
     r"^hversu langt er út á (.+)$",
     r"^hversu marga kílómetra er ég frá (.+)$",
     r"^hversu marga metra er ég frá (.+)$",
     r"^hvað eru margir kílómetrar til (.+)$",
     r"^hvað eru margir metrar til (.+)$",
+    r"^hvað er (.+) langt í burtu frá mér$",
     r"^hvað er (.+) langt í burtu$",
 )
 
 # Travel time questions
 _TT_PREFIXES = (
     "hvað er ég lengi að",
+    "hvað er lengi að",
     "hvað er maður lengi að",
     "hvað erum við lengi að",
     "hversu lengi er ég að",
@@ -119,11 +123,12 @@ _TT_MODES = {
     "rölta": "walking",
     "tölta": "walking",
     "skunda": "walking",
-    "hjóla": "cycling",
-    "fara á hjóli": "cycling",
-    "fara á reiðhjóli": "cycling",
-    "ferðast á hjóli": "cycling",
-    "ferðast á reiðhjóli": "cycling",
+    # Distance matrix API doesn't support bike routes for Iceland
+    # "hjóla": "bicycling",
+    # "fara á hjóli": "bicycling",
+    # "fara á reiðhjóli": "bicycling",
+    # "ferðast á hjóli": "bicycling",
+    # "ferðast á reiðhjóli": "bicycling",
     "keyra": "driving",
     "keyra á bíl": "driving",
     "aka": "driving",
@@ -137,6 +142,7 @@ _PREPS = ("á", "í", "til")
 _TT_PREP_PREFIX = ("út", "upp", "niður", "vestur", "norður", "austur", "suður")
 _TT_PREPS = []
 
+# Construct complex regexes for travel time queries
 for p in _PREPS:
     _TT_PREPS.append(p)
     for pfx in _TT_PREP_PREFIX:
@@ -168,19 +174,10 @@ def dist_answer_for_loc(matches, query):
         "Hvað er ég langt frá X?" """
     locname = matches.group(1)
     loc_nf = _addr2nom(locname) or locname
-    res = query_geocode_api_addr(loc_nf)
 
-    # Verify sanity of API response
-    if (
-        not res
-        or "status" not in res
-        or res["status"] != "OK"
-        or not res.get("results")
-    ):
-        return None
-
-    # Try to avoid answering bus queries here
+    # Try to avoid answering certain queries here
     loc_lower = locname.lower()
+    # TODO: Solve this by configuring qmodule priority
     if any(
         s in loc_lower
         for s in (
@@ -191,7 +188,21 @@ def dist_answer_for_loc(matches, query):
             "stoppustöð",
             "stræto",
             "strædo",
+            "jólin",
+            "jól",
+            "páska",
         )
+    ):
+        return None
+
+    res = query_geocode_api_addr(loc_nf)
+
+    # Verify sanity of API response
+    if (
+        not res
+        or "status" not in res
+        or res["status"] != "OK"
+        or not res.get("results")
     ):
         return None
 
@@ -209,7 +220,7 @@ def dist_answer_for_loc(matches, query):
 
     loc_nf = capitalize_placename(loc_nf)
     dist = distance_desc(km_dist, case="þf")
-    voice = "{0} er {1} í burtu".format(loc_nf, dist)
+    voice = "{0} er {1} í burtu".format(numbers_to_neutral(loc_nf), dist)
 
     query.set_key(loc_nf)
 
@@ -230,7 +241,7 @@ def dist_answer_for_loc(matches, query):
 
 def traveltime_answer_for_loc(matches, query):
     """ Generate answer to travel time query e.g.
-        "Hvað er ég lengi að ganga/hjóla/keyra í X?" """
+        "Hvað er ég lengi að ganga/keyra í/til X?" """
     action_desc, tmode, locname = matches.group(2, 3, 5)
 
     loc_nf = _addr2nom(locname)
@@ -254,7 +265,7 @@ def traveltime_answer_for_loc(matches, query):
     if elm["status"] != "OK":
         return None
 
-    # dur_desc = elm["duration"]["text"]
+    # dur_desc = elm["duration"]["text"]  # API duration description
     dur_sec = int(elm["duration"]["value"])
     dur_desc = time_period_desc(dur_sec, case="þf")
     dist_desc = elm["distance"]["text"]
@@ -268,9 +279,14 @@ def traveltime_answer_for_loc(matches, query):
     query.set_key(capitalize_placename(loc_nf))
 
     # Beautify by capitalizing remote loc name
-    uc = capitalize_placename(locname)
-    bq = query.beautified_query.replace(locname, uc)
+    bq = query.beautified_query.replace(locname, capitalize_placename(locname))
+
+    # Hack to fix common mistake in speech recognition
+    prefix_fix = "Hvað er lengi "
+    if bq.startswith(prefix_fix):
+        bq = bq.replace(prefix_fix, "Hvað er ég lengi ")
     query.set_beautified_query(bq)
+
     query.set_context(dict(subject=loc_nf))
 
     return response, answer, voice
