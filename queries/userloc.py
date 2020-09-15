@@ -56,15 +56,14 @@ QUserLocationQuery →
 
 QUserLocationCurrent →
     "hvar" "er" "ég" QULocEiginlega? QULocLocated? QULocInTheWorld? QULocNow?
-    | "hvar" QULocInTheWorld? "er" "ég" QULocEiginlega QULocLocated? QULocNow?
+    | "hvar" QULocInTheWorld? "er" "ég" QULocEiginlega? QULocLocated? QULocNow?
     | "hvað" "er" "ég" QULocEiginlega? QULocLocated? QULocInTheWorld? QULocNow?
     | "veistu" "hvar" "ég" "er" QULocEiginlega? QULocInTheWorld? QULocNow?
     | "veist" "þú" "hvar" "ég" "er" QULocEiginlega? QULocInTheWorld? QULocNow?
     | "hver" "er" "staðsetning" "mín"? QULocEiginlega? QULocInTheWorld? QULocNow?
-    # TODO: Share above
     | "hver" "er" "staðsetningin" "mín"? QULocEiginlega? QULocInTheWorld? QULocNow?
     | "hvar" "erum" "við" QULocEiginlega? QULocLocatedFemAndPlural? QULocInTheWorld? QULocNow?
-    | "staðsetning" QULocInTheWorld? QULocNow?
+    | "staðsetning" "mín"? QULocInTheWorld? QULocNow?
     | QULocWhichStreet QULocEiginlega? QULocLocated? QULocInTheWorld? QULocNow?
 
 QUserLocationPostcode →

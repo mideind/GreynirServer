@@ -536,6 +536,7 @@ _I_SUFFIXES = (
     "fen",
     "vík",
     "vogur",
+    "borg",
     "Lækjargata",
     "Skeifan",
     "Kringlan",
@@ -579,6 +580,7 @@ _SUFFIX2PREP = {
     "eyjar": "í",
     "ey": "í",
     "nes": "á",
+    "borg": "í",
 }
 
 

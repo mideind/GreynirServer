@@ -47,7 +47,7 @@ from geo import (
 
 _GEO_QTYPE = "Geography"
 
-TOPIC_LEMMAS = ["höfuðborg", "land", "heimsálfa", "borg", "landafræði"]
+TOPIC_LEMMAS = ["höfuðborg", "heimsálfa", "borg", "landafræði"]
 
 
 def help_text(lemma):

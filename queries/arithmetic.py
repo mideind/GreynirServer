@@ -256,8 +256,8 @@ QArithmeticQuery →
 
 /arfall = nf þgf
 
-QArGenericPrefix → "hvað" "er" | "hvað" "eru" | "reiknaðu" | "geturðu" "reiknað" | 0
-QArSpecificPrefix → "hver" "er" | "reiknaðu" | "geturðu" "reiknað" | 0
+QArGenericPrefix → "hvað" "er"? | "hvað" "eru" | "reiknaðu" | "geturðu" "reiknað" | 0
+QArSpecificPrefix → "hver" "er"? | "reiknaðu" | "geturðu" "reiknað" | 0
 QArAnyPrefix → QArGenericPrefix | QArSpecificPrefix
 
 QArStd → QArNumberWord_nf QArOperator/arfall QArNumberWord/arfall

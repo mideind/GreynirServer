@@ -555,11 +555,13 @@ def test_query_api(client):
         c, {"q": "hvernig stafar maður orðið hestur", "voice": True}, "Spelling"
     )
     assert json["answer"] == "H E S T U R"
-    assert json["voice"].startswith("Orðið 'hestur'")
+    assert json["voice"].startswith("Orðið „hestur“ ")
 
     json = qmcall(c, {"q": "hvernig beygist orðið maður", "voice": True}, "Declension")
     assert json["answer"].lower() == "maður, mann, manni, manns"
     assert json["voice"].startswith("Orðið „maður“")
+    json = qmcall(c, {"q": "hvernig beygir maður nafnorðið splorglobb?", "voice": True})
+    assert json["voice"].startswith("Nafnorðið „splorglobb“ fannst ekki")
 
     # Yule lads module
     # TODO: Implement me!

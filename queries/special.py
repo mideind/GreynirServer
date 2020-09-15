@@ -1290,6 +1290,8 @@ _SPECIAL_QUERIES = {
     "hvað kann embla": _capabilities,
     "hvað kann embla að gera": _capabilities,
     "hvaða upplýsingar ertu með": _capabilities,
+    "hvaða upplýsingar hefurðu": _capabilities,
+    "hvaða upplýsingar hefur þú": _capabilities,
     "hvað get ég gert": _capabilities,
     "hvað veistu ekki": {"answer": "Það er ýmislegt sem ég veit ekki."},
     "veist þú eitthvað": _capabilities,
@@ -1409,6 +1411,7 @@ _SPECIAL_QUERIES = {
     "ég var að reka við": {"answer": "Gott hjá þér, kæri notandi."},
     # Jokes
     "segðu brandara": _random_joke,
+    "segðu fimmaurabrandara": _random_joke,
     "seg þú brandara": _random_joke,
     "segðu mér brandara": _random_joke,
     "seg þú mér brandara": _random_joke,
@@ -1441,6 +1444,8 @@ _SPECIAL_QUERIES = {
     "kannt þú annan brandara": _random_joke,
     "kanntu nýjan brandara": _random_joke,
     "kannt þú nýjan brandara": _random_joke,
+    "kanntu annan": _random_joke,
+    "kannt þú annan": _random_joke,
     "ertu til í að segja mér brandara": _random_joke,
     "ert þú til í að segja mér brandara": _random_joke,
     "ertu til í að segja brandara": _random_joke,
@@ -1462,6 +1467,9 @@ _SPECIAL_QUERIES = {
     "viltu segja mér annan brandara": _random_joke,
     "brandara": _random_joke,
     "brandari": _random_joke,
+    # Tell me a story
+    "segðu sögu": _story,
+    "segðu mér sögu": _story,
     # Trivia
     "vertu skemmtileg": _random_trivia,
     "segðu eitthvað skemmtilegt": _random_trivia,

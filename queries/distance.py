@@ -28,6 +28,8 @@
 # TODO: "Hvað er langt til tunglsins"? "Hvað er langt til Mars?"
 # TODO: Identify when user is present at the location, respond "Þú ert í/á X"
 # TODO: "Hvað er langur/margra kílómetra göngutúr í/á X?"
+# TODO: Fix issue where answer complains about lack of location despite query
+#       being handable by another module, error checking should take place earlier
 
 import re
 import logging
@@ -48,7 +50,6 @@ from geo import distance, capitalize_placename
 _DISTANCE_QTYPE = "Distance"
 
 
-# TODO: This may grab queries of the form "Hvað er langt í jólin"!
 _QDISTANCE_REGEXES = (
     r"^hvað er ég langt frá (.+)$",
     r"^hvað er langt frá (.+)$",  # Speech recognition often misses "ég" in this context
@@ -59,14 +60,14 @@ _QDISTANCE_REGEXES = (
     r"^hversu langt frá (.+) er ég$",
     r"^hve langt frá (.+) er ég$",
     r"^hve langt er ég frá (.+)$",
-    r"^hvað er langt\s?(?:héðan)?\s?(?:austur|vestur|norður|suður)? á (.+)$",
+    r"^hvað er langt\s?(?:héðan)?\s?(?:austur|vestur|norður|suður|upp|niður)? á (.+)$",
     r"^hvað er langt\s?(?:héðan)? upp á (.+)$",
     r"^hvað er langt\s?(?:héðan)? niður á (.+)$",
-    r"^hvað er langt\s?(?:héðan)?\s?(?:austur|vestur|norður|suður)? í ([^0-9.].+)$",
+    r"^hvað er langt\s?(?:héðan)?\s?(?:austur|vestur|norður|suður|upp|niður)? í ([^0-9.].+)$",
     r"^hvað er langt\s?(?:héðan)? upp í (.+)$",
     r"^hvað er langt\s?(?:héðan)? til (.+)$",
     r"^hvað er langt\s?(?:héðan)? út á ([^0-9.].+)$",
-    r"^hversu langt er\s?(?:austur|vestur|norður|suður)? til (.+)$",
+    r"^hversu langt er\s?(?:austur|vestur|norður|suður|upp|niður)? til (.+)$",
     r"^hversu langt er út á (.+)$",
     r"^hversu marga kílómetra er ég frá (.+)$",
     r"^hversu marga metra er ég frá (.+)$",
@@ -141,6 +142,7 @@ _PREPS = ("á", "í", "til")
 _TT_PREP_PREFIX = ("út", "upp", "niður", "vestur", "norður", "austur", "suður")
 _TT_PREPS = []
 
+# Construct complex regexes for travel time queries
 for p in _PREPS:
     _TT_PREPS.append(p)
     for pfx in _TT_PREP_PREFIX:
@@ -175,6 +177,7 @@ def dist_answer_for_loc(matches, query):
 
     # Try to avoid answering certain queries here
     loc_lower = locname.lower()
+    # TODO: Solve this by configuring qmodule priority
     if any(
         s in loc_lower
         for s in (
