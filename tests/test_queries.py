@@ -240,6 +240,10 @@ def test_query_api(client):
     json = qmcall(c, {"q": "Hvað eru margir dagar í 12. maí?"}, "Date")
     assert "dag" in json["answer"] or "á morgun" in json["answer"]
 
+    # Test to make sure this kind of query isn't caught by the distance module
+    json = qmcall(c, {"q": "Hvað er langt í jólin?"}, "Date")
+    json = qmcall(c, {"q": "Hvað er langt í páska?"}, "Date")
+
     now = datetime.utcnow()
 
     with changedlocale(category="LC_TIME"):
@@ -313,6 +317,9 @@ def test_query_api(client):
     # TODO: Implement me!
 
     # Geography module
+    json = qmcall(c, {"q": "Hver er höfuðborg Spánar?"}, "Geography")
+    assert json["answer"] == "Madríd"
+
     json = qmcall(c, {"q": "Hver er höfuðborg taiwan?"}, "Geography")
     assert json["answer"] == "Taípei"
 
@@ -426,7 +433,7 @@ def test_query_api(client):
     # assert json["qkey"] == "RadioSchedule"
     # json = qmcall(c, {"q": "hvað er eiginlega í gangi á rás eitt?"}, "Schedule")
     # assert json["qkey"] == "RadioSchedule"
-    # json = qmcall(c, {"q": "hvað er á dagskrá á rás 2?"}, "Schedule")
+    # json = qmcall(c, {"q": "hvað er á dagskrá á rás tvö?"}, "Schedule")
     # assert json["qkey"] == "RadioSchedule"
 
     # Special module
@@ -496,7 +503,11 @@ def test_query_api(client):
     # User location module
     # NB: No Google API key on test server
     if google_key:
-        json = qmcall(c, {"q": "Hvar er ég"}, "UserLocation",)
+        json = qmcall(c, {"q": "Hvar er ég"}, "UserLocation")
+        assert "Fiskislóð 31" in json["answer"]
+        json = qmcall(
+            c, {"q": "Hvar í heiminum er ég eiginlega staddur?"}, "UserLocation"
+        )
         assert "Fiskislóð 31" in json["answer"]
 
     # Weather module
