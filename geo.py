@@ -227,6 +227,10 @@ def location_description(loc):
     if name in ICE_REGIONS:
         return "landshluti"
 
+    sc = code_for_us_state(name)
+    if sc:
+        return f"Fylki í Bandaríkjunum ({sc})"
+
     if kind == "country":
         desc = "landsvæði"
         c = loc.get("continent")
@@ -279,6 +283,13 @@ def location_info(name, kind, placename_hints=None):
         if code:
             loc["country"] = code
             coords = coords_for_country(code)
+        else:
+            # Check if it's a US state (marked as "lönd" in BÍN)
+            sc = code_for_us_state(name)
+            if sc:
+                loc["country"] = "US"
+                loc["continent"] = "NA"
+                coords = coords_for_us_state_code(sc)
 
     # Heimsálfa
     elif kind == "continent":
@@ -354,13 +365,13 @@ def lookup_city_info(name):
 
 US_STATE_NAMES = None  # type: Optional[Dict[str, str]]
 US_STATES_JSONPATH = os.path.join(
-    os.path.dirname(__file__), "resources", "geo", "cities_is.json"
+    os.path.dirname(__file__), "resources", "geo", "us_state_name2code.json"
 )
 
 
 def _load_us_state_names():
-    """ Load data from JSON file mapping Icelandic city names
-        to their corresponding English/international name. """
+    """ Load data from JSON file mapping US state names, canonical
+        and Icelandic, to their to their corresponding 2-char code. """
     global US_STATE_NAMES
     if US_STATE_NAMES is None:
         with open(US_STATES_JSONPATH) as f:
@@ -369,6 +380,8 @@ def _load_us_state_names():
 
 
 def code_for_us_state(name):
+    """ Given a US state name, canonical or Icelandicized,
+        return the state's 2-char code. """
     names = _load_us_state_names()  # Lazy-load
     return names.get(name.strip())
 
