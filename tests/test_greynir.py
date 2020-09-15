@@ -287,6 +287,13 @@ def test_geo():
     assert not in_iceland((62.010846, -6.776709))
     assert not in_iceland((62.031342, -18.539553))
 
+    # US States
+    code_for_us_state("Flórída") == "FL"
+    code_for_us_state("Norður-Karólína") == "NC"
+    code_for_us_state("Kalifornía") == "CA"
+    coords_for_us_state_code("CA") == [36.778261, -119.417932]
+
+
 def test_doc():
     """ Test document-related functions in doc.py """
     from doc import PlainTextDocument, DocxDocument

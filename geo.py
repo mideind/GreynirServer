@@ -352,6 +352,49 @@ def lookup_city_info(name):
     return city_lookup(cn)
 
 
+US_STATE_NAMES = None  # type: Optional[Dict[str, str]]
+US_STATES_JSONPATH = os.path.join(
+    os.path.dirname(__file__), "resources", "geo", "cities_is.json"
+)
+
+
+def _load_us_state_names():
+    """ Load data from JSON file mapping Icelandic city names
+        to their corresponding English/international name. """
+    global US_STATE_NAMES
+    if US_STATE_NAMES is None:
+        with open(US_STATES_JSONPATH) as f:
+            US_STATE_NAMES = json.load(f)
+    return US_STATE_NAMES
+
+
+def code_for_us_state(name):
+    names = _load_us_state_names()  # Lazy-load
+    return names.get(name.strip())
+
+
+US_STATE_COORDS = None  # type: Optional[Dict[str, str]]
+US_STATE_COORDS_JSONPATH = os.path.join(
+    os.path.dirname(__file__), "resources", "geo", "us_state_coords.json"
+)
+
+
+def _load_us_state_coords():
+    """ Load data from JSON file mapping Icelandic city names
+        to their corresponding English/international name. """
+    global US_STATE_COORDS
+    if US_STATE_COORDS is None:
+        with open(US_STATE_COORDS_JSONPATH) as f:
+            US_STATE_COORDS = json.load(f)
+    return US_STATE_COORDS
+
+
+def coords_for_us_state_code(code):
+    assert len(code) == 2
+    state_coords = _load_us_state_coords()
+    return state_coords.get(code.upper())
+
+
 @lru_cache(maxsize=32)
 def icelandic_city_name(name):
     """ Look up the Icelandic name of a city, given its
