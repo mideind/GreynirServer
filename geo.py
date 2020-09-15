@@ -22,6 +22,7 @@
 
 # TODO: Handle generic direction prefixes for country names and map to
 # corresponding country code, e.g. "Norður-Ítalía" -> "IT"
+# TODO: Most of this stuff should go into its own module, iceloc or something
 
 from typing import Optional, Dict, Union, Tuple
 
@@ -34,7 +35,6 @@ from iceaddr import iceaddr_lookup, placename_lookup
 from cityloc import city_lookup
 from country_list import countries_for_language, available_languages
 from functools import lru_cache
-
 
 ICELAND_ISOCODE = "IS"  # ISO 3166-1 alpha-2
 ICELANDIC_LANG_ISOCODE = "is"  # ISO 639-1
@@ -229,7 +229,7 @@ def location_description(loc):
 
     sc = code_for_us_state(name)
     if sc:
-        return f"Fylki í Bandaríkjunum ({sc})"
+        return f"fylki í Bandaríkjunum ({sc})"
 
     if kind == "country":
         desc = "landsvæði"
@@ -277,19 +277,20 @@ def location_info(name, kind, placename_hints=None):
             coords = coords_from_addr_info(info)
         loc["data"] = info
 
+    # Check if it's a US state (marked as either "lönd" or "örn" in BÍN)
+    # It might be worth fixing this in the parser module's BinErrata.conf
+    elif kind == "country" or kind == "placename" and name != "Georgía":
+        sc = code_for_us_state(name)
+        if sc:
+            loc["country"] = "US"
+            coords = tuple(coords_for_us_state_code(sc))
+
     # Land
     elif kind == "country":
         code = isocode_for_country_name(name)
         if code:
             loc["country"] = code
             coords = coords_for_country(code)
-        else:
-            # Check if it's a US state (marked as "lönd" in BÍN)
-            sc = code_for_us_state(name)
-            if sc:
-                loc["country"] = "US"
-                loc["continent"] = "NA"
-                coords = coords_for_us_state_code(sc)
 
     # Heimsálfa
     elif kind == "continent":
