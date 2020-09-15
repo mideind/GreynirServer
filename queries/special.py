@@ -71,7 +71,7 @@ _CAP = (
     "Þú getur til dæmis beðið mig um upplýsingar úr Wikipedíu.",
     "Þú getur til dæmis beðið mig um að leysa einföld reikningsdæmi.",
     "Þú getur til dæmis spurt mig um mælieiningar.",
-    "Þú getur til dæmis spurt mig um hvað er í sjónvarpinu.",
+    "Þú getur til dæmis spurt mig hvað er í sjónvarpinu.",
     # "Þú getur til dæmis spurt mig um hvað er í útvarpinu.",
     "Þú getur til dæmis spurt mig um bensínverð og bensínstöðvar.",
     "Þú getur til dæmis spurt mig um hvað sé í fréttum.",
@@ -1468,8 +1468,8 @@ _SPECIAL_QUERIES = {
     "brandara": _random_joke,
     "brandari": _random_joke,
     # Tell me a story
-    "segðu sögu": _story,
-    "segðu mér sögu": _story,
+    # "segðu sögu": _story,
+    # "segðu mér sögu": _story,
     # Trivia
     "vertu skemmtileg": _random_trivia,
     "segðu eitthvað skemmtilegt": _random_trivia,

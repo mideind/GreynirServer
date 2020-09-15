@@ -56,7 +56,7 @@ QUserLocationQuery →
 
 QUserLocationCurrent →
     "hvar" "er" "ég" QULocEiginlega? QULocLocated? QULocInTheWorld? QULocNow?
-    | "hvar" QULocInTheWorld? "er" "ég" QULocEiginlega? QULocLocated? QULocNow?
+    | "hvar" QULocInTheWorld "er" "ég" QULocEiginlega? QULocLocated? QULocNow?
     | "hvað" "er" "ég" QULocEiginlega? QULocLocated? QULocInTheWorld? QULocNow?
     | "veistu" "hvar" "ég" "er" QULocEiginlega? QULocInTheWorld? QULocNow?
     | "veist" "þú" "hvar" "ég" "er" QULocEiginlega? QULocInTheWorld? QULocNow?
