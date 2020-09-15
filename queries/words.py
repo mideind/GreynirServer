@@ -167,7 +167,7 @@ def lookup_best_word(word):
         return nom, acc, dat, gen
 
 
-_NOT_IN_BIN_MSG = "Nafnorðið '{0}' fannst ekki í Beygingarlýsingu íslensks nútímamáls."
+_NOT_IN_BIN_MSG = "Nafnorðið „{0}“ fannst ekki í Beygingarlýsingu íslensks nútímamáls."
 
 
 def declension_answer_for_word(word, query):
@@ -215,8 +215,8 @@ def spelling_answer_for_word(word, query):
     # Piece together SSML for speech synthesis
     v = [_CHAR_PRONUNCIATION.get(c, c) for c in chars]
     jfmt = '<break time="{0}s"/>'.format(_LETTER_INTERVAL)
-    voice = "Orðið '{0}' er stafað á eftirfarandi hátt: {1} {2}".format(
-        word, jfmt, jfmt.join(v)
+    voice = "Orðið {0} er stafað á eftirfarandi hátt: {1} {2}".format(
+        icequote(word), jfmt, jfmt.join(v)
     )
 
     query.set_qtype("Spelling")
