@@ -329,7 +329,7 @@ def location_info(name, kind, placename_hints=None):
 
 ICE_CITY_NAMES = None  # type: Optional[Dict[str, str]]
 ICE_CITIES_JSONPATH = os.path.join(
-    os.path.dirname(__file__), "resources", "cities_is.json"
+    os.path.dirname(__file__), "resources", "geo", "cities_is.json"
 )
 
 
@@ -369,7 +369,7 @@ COUNTRY_DATA = (
     None
 )  # type: Optional[Dict[str, Dict[str, Union[Tuple[float, float], str]]]]
 COUNTRY_DATA_JSONPATH = os.path.join(
-    os.path.dirname(__file__), "resources", "country_data.json"
+    os.path.dirname(__file__), "resources", "geo", "country_data.json"
 )
 
 
@@ -553,7 +553,7 @@ def iceprep_for_street(street_name):
 
 ICELOC_PREP = None  # type: Optional[Dict[str, str]]
 ICELOC_PREP_JSONPATH = os.path.join(
-    os.path.dirname(__file__), "resources", "iceloc_prep.json"
+    os.path.dirname(__file__), "resources", "geo", "iceloc_prep.json"
 )
 
 
