@@ -340,6 +340,9 @@ def test_query_api(client):
     json = qmcall(c, {"q": "Í hvaða landi er Jóhannesarborg?"}, "Geography")
     assert json["answer"].endswith("Suður-Afríku")
 
+    json = qmcall(c, {"q": "Í hvaða landi er Kalifornía?"}, "Geography")
+    assert "Bandaríkjunum" in json["answer"] and json["key"] == "Kalifornía"
+
     json = qmcall(c, {"q": "Í hvaða heimsálfu er míkrónesía?"}, "Geography")
     assert json["answer"].startswith("Eyjaálfu")
 
