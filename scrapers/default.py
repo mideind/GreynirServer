@@ -611,7 +611,9 @@ class MblScraper(ScrapeHelper):
         # Extract the publication time from the article:published_time meta property
         # A dateline from mbl.is looks like this: Viðskipti | mbl | 24.8.2015 | 10:48
         dateline_elem = ScrapeHelper.div_class(soup.html.body, "dateline")
-        dateline = "".join(dateline_elem.stripped_strings).split("|") if dateline_elem else ""
+        dateline = (
+            "".join(dateline_elem.stripped_strings).split("|") if dateline_elem else ""
+        )
         timestamp = None
         if dateline:
             ix = 0
@@ -921,7 +923,9 @@ class EyjanScraper(ScrapeHelper):
         # Extract the publication time from the <span class='date'></span> contents
         dateline_elem = ScrapeHelper.div_class(soup, "article-full")
         dateline_elem = ScrapeHelper.tag_class(dateline_elem, "span", "date")
-        dateline = "".join(dateline_elem.stripped_strings).split() if dateline_elem else ""
+        dateline = (
+            "".join(dateline_elem.stripped_strings).split() if dateline_elem else ""
+        )
         timestamp = None
         if dateline:
             # Example: Þriðjudagur 15.12.2015 - 14:14
@@ -1336,6 +1340,7 @@ class FrettabladidScraper(ScrapeHelper):
 
     def __init__(self, root):
         super().__init__(root)
+        self._feeds = ["https://www.frettabladid.is/rss/"]
 
     def skip_url(self, url):
         """ Return True if this URL should not be scraped """
@@ -1375,6 +1380,8 @@ class FrettabladidScraper(ScrapeHelper):
         name = soup.find("div", {"class": "article-byline"})
         if not name:
             name = soup.find("div", {"class": "bylineblock-heading"})
+        if not name:
+            name = soup.find("div", {"class": "author-name"})
         author = name.get_text() if name else "Ritstjórn Fréttablaðsins"
 
         # Timestamp
@@ -1450,6 +1457,18 @@ class FrettabladidScraper(ScrapeHelper):
 
         for div in content.find_all("div", {"class": "img-block"}):
             div.decompose()
+
+        for div in content.find_all("div", {"class": "strap"}):
+            div.decompose()
+
+        for div in content.find_all("div", {"class": "author-wrapper"}):
+            div.decompose()
+
+        for div in content.find_all("div", {"class": "share-buttons-wrapper"}):
+            div.decompose()
+
+        for h2 in content.find_all("h2"):
+            h2.decompose()
 
         # Insert it in the first paragraph
         ptag = content.find("p")
@@ -1796,8 +1815,9 @@ class VisindavefurScraper(ScrapeHelper):
                 )
         except Exception as e:
             logging.warning(
-                "Exception when obtaining date of visindavefur.is article: {0}"
-                .format(e)
+                "Exception when obtaining date of visindavefur.is article: {0}".format(
+                    e
+                )
             )
 
         if not timestamp:
