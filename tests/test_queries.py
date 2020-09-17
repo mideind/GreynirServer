@@ -70,7 +70,7 @@ def qmcall(c, qdict, qtype=None):
     assert r.is_json
     json = r.get_json()
     assert "valid" in json
-    assert json["valid"] == True
+    assert json["valid"]
     assert "error" not in json
     assert "qtype" in json  # All query modules should set a query type
     assert "answer" in json
@@ -106,6 +106,7 @@ def test_query_api(client):
         "hvað er nítján plús 3": "22",
         "hvað er hundrað mínus sautján": "83",
         "hvað er 17 deilt með fjórum": "4,25",
+        "hvað er 18 deilt með þrem": "6",
         "hver er kvaðratrótin af 256": "16",
         "hvað er 12 í þriðja veldi": "1728",
         "hvað eru tveir í tíunda veldi": "1024",
@@ -118,13 +119,14 @@ def test_query_api(client):
         "geturðu reiknað kvaðratrótina af 9": "3",
         "hvað er 8900 með vaski": "11.036",
         "hvað eru 7500 krónur með virðisaukaskatti": "9.300",
+        "hvað er 9300 án vask": "7.500",
         "hvað er pí deilt með pí": "1",
         "hvað er pí í öðru veldi": "9,87",
         "hvað er tíu deilt með pí": "3,18",
     }
 
     for q, a in ARITHM_QUERIES.items():
-        json = qmcall(c, {"q": q, "voice": True}, "Arithmetic")
+        json = qmcall(c, {"q": q}, "Arithmetic")
         assert json["answer"] == a
 
     json = qmcall(
@@ -236,7 +238,11 @@ def test_query_api(client):
     assert "dag" in json["voice"]
 
     json = qmcall(c, {"q": "Hvað eru margir dagar í 12. maí?"}, "Date")
-    assert "dag" in json["answer"] or "á morgun" in answer
+    assert "dag" in json["answer"] or "á morgun" in json["answer"]
+
+    # Test to make sure this kind of query isn't caught by the distance module
+    json = qmcall(c, {"q": "Hvað er langt í jólin?"}, "Date")
+    json = qmcall(c, {"q": "Hvað er langt í páska?"}, "Date")
 
     now = datetime.utcnow()
 
@@ -313,6 +319,9 @@ def test_query_api(client):
     # Geography module
     json = qmcall(c, {"q": "Hver er höfuðborg Spánar?"}, "Geography")
     assert json["answer"] == "Madríd"
+
+    json = qmcall(c, {"q": "Hver er höfuðborg taiwan?"}, "Geography")
+    assert json["answer"] == "Taípei"
 
     json = qmcall(c, {"q": "hver er höfuðborg norður-makedóníu?"}, "Geography")
     assert json["answer"] == "Skopje"
@@ -424,7 +433,7 @@ def test_query_api(client):
     # assert json["qkey"] == "RadioSchedule"
     # json = qmcall(c, {"q": "hvað er eiginlega í gangi á rás eitt?"}, "Schedule")
     # assert json["qkey"] == "RadioSchedule"
-    # json = qmcall(c, {"q": "hvað er á dagskrá á rás 2?"}, "Schedule")
+    # json = qmcall(c, {"q": "hvað er á dagskrá á rás tvö?"}, "Schedule")
     # assert json["qkey"] == "RadioSchedule"
 
     # Special module
@@ -494,7 +503,11 @@ def test_query_api(client):
     # User location module
     # NB: No Google API key on test server
     if google_key:
-        json = qmcall(c, {"q": "Hvar er ég",}, "UserLocation",)
+        json = qmcall(c, {"q": "Hvar er ég"}, "UserLocation")
+        assert "Fiskislóð 31" in json["answer"]
+        json = qmcall(
+            c, {"q": "Hvar í heiminum er ég eiginlega staddur?"}, "UserLocation"
+        )
         assert "Fiskislóð 31" in json["answer"]
 
     # Weather module
@@ -542,11 +555,13 @@ def test_query_api(client):
         c, {"q": "hvernig stafar maður orðið hestur", "voice": True}, "Spelling"
     )
     assert json["answer"] == "H E S T U R"
-    assert json["voice"].startswith("Orðið 'hestur'")
+    assert json["voice"].startswith("Orðið „hestur“ ")
 
     json = qmcall(c, {"q": "hvernig beygist orðið maður", "voice": True}, "Declension")
     assert json["answer"].lower() == "maður, mann, manni, manns"
-    assert json["voice"].startswith("Orðið 'maður'")
+    assert json["voice"].startswith("Orðið „maður“")
+    json = qmcall(c, {"q": "hvernig beygir maður nafnorðið splorglobb?", "voice": True})
+    assert json["voice"].startswith("Nafnorðið „splorglobb“ fannst ekki")
 
     # Yule lads module
     # TODO: Implement me!

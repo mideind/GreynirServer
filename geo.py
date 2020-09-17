@@ -206,6 +206,7 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
         "Kosovo": "XK",
         "Sameinuðu Arabísku Furstadæmin": "AE",
         "Norður-Súdan": "SD",
+        "Taiwan": "TW",
     }
 }
 
@@ -535,6 +536,7 @@ _I_SUFFIXES = (
     "fen",
     "vík",
     "vogur",
+    "borg",
     "Lækjargata",
     "Skeifan",
     "Kringlan",
@@ -578,6 +580,7 @@ _SUFFIX2PREP = {
     "eyjar": "í",
     "ey": "í",
     "nes": "á",
+    "borg": "í",
 }
 
 
