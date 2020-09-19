@@ -37,7 +37,7 @@
 # TODO: "Hvað er mikið eftir af vinnuvikunni", "hvað er langt í helgina"
 # TODO: "Hvaða vikudagur er DAGSETNING næstkomandi?"
 # TODO: "Hvað gerðist á þessum degi?"
-# TODO: "Hvaða vikudagur var 11. september 2001?" "Hvaða (viku)dagur er á morgun?" 
+# TODO: "Hvaða vikudagur var 11. september 2001?" "Hvaða (viku)dagur er á morgun?"
 #       "Hvaða dagur var í gær?"
 # TODO: "Hvenær eru vetrarsólstöður" + more astronomical dates
 # TODO: "Hvað er langt í helgina?" "Hvenær er næsti (opinberi) frídagur?"
@@ -58,6 +58,7 @@
 # TODO: "Hvenær byrjar þorrinn"
 # TODO: "Hvaða frídagar/helgidagar/etc eru í febrúar"
 # TODO: "hvenær eru páskar 2035"
+# TODO: "Hvað eru margir dagar eftir af árinu?"
 
 import re
 import logging

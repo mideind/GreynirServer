@@ -55,7 +55,7 @@ QUserLocationQuery →
     QUserLocationCurrent | QUserLocationPostcode
 
 QUserLocationCurrent →
-    "hvar" "er" "ég" QULocEiginlega? QULocLocated? QULocInTheWorld? QULocNow?
+    "hvar" "er" "ég"? QULocEiginlega? QULocLocated? QULocInTheWorld? QULocNow?
     | "hvar" QULocInTheWorld "er" "ég" QULocEiginlega? QULocLocated? QULocNow?
     | "hvað" "er" "ég" QULocEiginlega? QULocLocated? QULocInTheWorld? QULocNow?
     | "veistu" "hvar" "ég" "er" QULocEiginlega? QULocInTheWorld? QULocNow?

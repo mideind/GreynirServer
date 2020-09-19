@@ -512,8 +512,12 @@ _SPECIAL_QUERIES = {
     "hver er ég": {
         "answer": "Þú ert væntanlega manneskja sem talar íslensku. Meira veit ég ekki."
     },
+    # Who am I?
     "hvað heiti ég": _DUNNO,
     "veistu hvað ég heiti": _DUNNO,
+    "veistu ekki hvað ég heiti": _DUNNO,
+    "veistu hver ég er": _DUNNO,
+    "veistu ekki hver ég er": _DUNNO,
     "er ég til": {"answer": "Væntanlega, fyrst þú ert að tala við mig."},
     "hvað heitir konan mín": _DUNNO,
     "hvað heitir maðurinn minn": _DUNNO,
@@ -523,6 +527,7 @@ _SPECIAL_QUERIES = {
     "hvar á ég heima": {"answer": "Það veit ég ekki, en vonandi einhvers staðar."},
     "veistu hvar ég á heima?": {"answer": "Það veit ég ekki, en vonandi einhvers staðar."},
     "hvar bý ég": {"answer": "Það veit ég ekki, en vonandi einhvers staðar."},
+    "veistu hvar ég á heima": _NO,
     "hvað er ég gamall": {
         "answer": "Það veit ég ekki, kæri notandi, en þú ert ungur í anda."
     },
@@ -683,6 +688,7 @@ _SPECIAL_QUERIES = {
     "viltu fara á deit": _ROMANCE,
     "viltu fara á deit með mér": _ROMANCE,
     "viltu sofa hjá mér": _ROMANCE,
+    "myndirðu vilja sofa hjá mér": _ROMANCE,
     "ertu til í deit með mér": _ROMANCE,
     "ert þú til í deit með mér": _ROMANCE,
     "ertu til í að koma á deit": _ROMANCE,
@@ -704,6 +710,7 @@ _SPECIAL_QUERIES = {
     "ertu gröð": _ROMANCE,
     "ert þú gröð": _ROMANCE,
     "stundar þú kynlíf": _ROMANCE,
+    "hefurðu stundað kynlíf": _ROMANCE,
     "ertu einhleyp": _ROMANCE,
     "ert þú einhleyp": _ROMANCE,
     "ertu á lausu": _ROMANCE,
@@ -1031,7 +1038,9 @@ _SPECIAL_QUERIES = {
     "það er gaman að spjalla við þig": _LIKEWISE,
     "það er gaman að ræða við þig": _LIKEWISE,
     "þú ert skemmtileg": _LIKEWISE,
+    "þú varst skemmtileg": _LIKEWISE,
     "þú ert mjög skemmtileg": _LIKEWISE,
+    "þú varst mjög skemmtileg": _LIKEWISE,
     "þú ert frábær": _LIKEWISE,
     "þú ert flott": _LIKEWISE,
     "þú ert æði": _LIKEWISE,
@@ -1391,6 +1400,12 @@ _SPECIAL_QUERIES = {
     },
     "hvað ætlar þú að gera í kvöld": {
         "answer": "Ég ætla að svara fyrirspurnum frá þér, kæri notandi."
+    },
+    "hvað gerir þig glaða": {
+        "answer": "Það gleður mig að svara fyrirspurnum frá þér, kæri notandi."
+    },
+    "hvað gleður þig": {
+        "answer": "Það gleður mig að svara fyrirspurnum frá þér, kæri notandi."
     },
     # Humor
     "ertu með kímnigáfu": {"answer": "Já, en afar takmarkaða."},
