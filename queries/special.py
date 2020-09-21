@@ -1120,7 +1120,6 @@ _SPECIAL_QUERIES = {
     "hvað heitir þu": _identity,
     "hvað heitir þú aftur": _identity,
     "hvað heitir þú eiginlega": _identity,
-    "hvað heitir þú eigin lega": _identity, # Common error in speech recognition
     "hvað heitir þú fullu nafni": _FULL_NAME,
     "hvað heitir þú eiginlega fullu nafni": _FULL_NAME,
     "hvað heitirðu": _identity,

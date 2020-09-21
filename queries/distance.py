@@ -111,7 +111,7 @@ _TT_PREFIXES = (
     "hversu langan tíma tekur að",
     "hversu langan tíma tekur það að",
     "hversu langan tíma tekur það mig að",
-    "hversu langan tíma tekur það okkar að",
+    "hversu langan tíma tekur það okkur að",
     "hvað væri ég lengi að",
     "hvað værum við lengi að",
     "hvað væri maður lengi að",

@@ -23,7 +23,7 @@
 
 """
 
-# TODO: Suport Kastaðu tveir d6, D&D style die rolling
+# TODO: Suport commands of the form "Kastaðu tveir dé 6", D&D style die rolling lingo
 
 import logging
 import random
