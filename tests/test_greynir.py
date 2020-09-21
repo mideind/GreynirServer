@@ -159,9 +159,13 @@ def test_processors():
 def test_nertokenizer():
     from nertokenizer import recognize_entities
 
+    assert recognize_entities
+
 
 def test_postagger():
     from postagger import NgramTagger
+
+    assert NgramTagger
 
 
 def test_query():
@@ -173,22 +177,51 @@ def test_query():
 
     assert HANDLE_TREE is True
     assert handle_plain_text
+    assert Query  # Silence linter
 
 
 def test_scraper():
     from scraper import Scraper
 
+    assert Scraper
+
 
 def test_search():
     from search import Search
+
+    assert Search  # Silence linter
 
 
 def test_tnttagger():
     from tnttagger import TnT
 
+    assert TnT  # Silence linter
+
 
 def test_geo():
     """ Test geography and location-related functions in geo.py """
+    from geo import (
+        icelandic_city_name,
+        continent_for_country,
+        coords_for_country,
+        coords_for_street_name,
+        country_name_for_isocode,
+        isocode_for_country_name,
+        icelandic_addr_info,
+        lookup_city_info,
+        parse_address_string,
+        iceprep_for_street,
+        iceprep_for_placename,
+        iceprep_for_country,
+        iceprep_for_cc,
+        capitalize_placename,
+        distance,
+        in_iceland,
+        code_for_us_state,
+        coords_for_us_state_code,
+        location_info,
+    )
+
     assert icelandic_city_name("London") == "Lundúnir"
     assert icelandic_city_name("Rome") == "Róm"
 
@@ -196,11 +229,11 @@ def test_geo():
     assert continent_for_country("no") == "EU"
     assert continent_for_country("MX") == "NA"
 
-    assert coords_for_country("DE") != None
-    assert coords_for_country("it") != None
+    assert coords_for_country("DE") is not None
+    assert coords_for_country("it") is not None
 
-    assert coords_for_street_name("Austurstræti") != None
-    assert coords_for_street_name("Háaleitisbraut") != None
+    assert coords_for_street_name("Austurstræti") is not None
+    assert coords_for_street_name("Háaleitisbraut") is not None
 
     assert country_name_for_isocode("DE", lang="is") == "Þýskaland"
     assert country_name_for_isocode("DE") == "Þýskaland"
@@ -288,10 +321,21 @@ def test_geo():
     assert not in_iceland((62.031342, -18.539553))
 
     # US States
-    code_for_us_state("Flórída") == "FL"
-    code_for_us_state("Norður-Karólína") == "NC"
-    code_for_us_state("Kalifornía") == "CA"
-    coords_for_us_state_code("CA") == [36.778261, -119.417932]
+    assert code_for_us_state("Flórída") == "FL"
+    assert code_for_us_state("Norður-Karólína") == "NC"
+    assert code_for_us_state("Kalifornía") == "CA"
+    assert coords_for_us_state_code("CA") == [36.778261, -119.417932]
+
+    # Generic location info lookup functions
+    assert "country" in location_info("Reykjavík", "placename")
+    assert "continent" in location_info("Minsk", "placename")
+    assert location_info("Japan", "country")["continent"] == "AS"
+    assert location_info("Danmörk", "country")["continent"] == "EU"
+    assert location_info("Mexíkó", "country")["continent"] == "NA"
+    assert location_info("ísafjörður", "placename")["continent"] == "EU"
+    assert location_info("Virginía", "placename")["country"] == "US"
+    assert location_info("Kænugarður", "placename")["continent"] == "EU"
+    assert location_info("Fiskislóð 31", "address")["country"] == "IS"
 
 
 def test_doc():
@@ -315,167 +359,3 @@ def test_doc():
 
     # Change back to previous directory
     os.chdir(prev_dir)
-
-
-def test_numbers():
-    """ Test number handling functionality in queries """
-    from queries import numbers_to_neutral
-
-    assert numbers_to_neutral("Baugatangi 1, Reykjavík") == "Baugatangi eitt, Reykjavík"
-    assert numbers_to_neutral("Baugatangi 2, Reykjavík") == "Baugatangi tvö, Reykjavík"
-    assert numbers_to_neutral("Baugatangi 3, Reykjavík") == "Baugatangi þrjú, Reykjavík"
-    assert (
-        numbers_to_neutral("Baugatangi 4, Reykjavík") == "Baugatangi fjögur, Reykjavík"
-    )
-    assert numbers_to_neutral("Baugatangi 5, Reykjavík") == "Baugatangi 5, Reykjavík"
-    assert numbers_to_neutral("Baugatangi 10, Reykjavík") == "Baugatangi 10, Reykjavík"
-    assert numbers_to_neutral("Baugatangi 11, Reykjavík") == "Baugatangi 11, Reykjavík"
-    assert numbers_to_neutral("Baugatangi 12, Reykjavík") == "Baugatangi 12, Reykjavík"
-    assert numbers_to_neutral("Baugatangi 13, Reykjavík") == "Baugatangi 13, Reykjavík"
-    assert numbers_to_neutral("Baugatangi 14, Reykjavík") == "Baugatangi 14, Reykjavík"
-    assert numbers_to_neutral("Baugatangi 15, Reykjavík") == "Baugatangi 15, Reykjavík"
-    assert numbers_to_neutral("Baugatangi 20, Reykjavík") == "Baugatangi 20, Reykjavík"
-    assert (
-        numbers_to_neutral("Baugatangi 21, Reykjavík")
-        == "Baugatangi tuttugu og eitt, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 22, Reykjavík")
-        == "Baugatangi tuttugu og tvö, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 23, Reykjavík")
-        == "Baugatangi tuttugu og þrjú, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 24, Reykjavík")
-        == "Baugatangi tuttugu og fjögur, Reykjavík"
-    )
-    assert numbers_to_neutral("Baugatangi 25, Reykjavík") == "Baugatangi 25, Reykjavík"
-    assert (
-        numbers_to_neutral("Baugatangi 100, Reykjavík") == "Baugatangi 100, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 101, Reykjavík")
-        == "Baugatangi hundrað og eitt, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 102, Reykjavík")
-        == "Baugatangi hundrað og tvö, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 103, Reykjavík")
-        == "Baugatangi hundrað og þrjú, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 104, Reykjavík")
-        == "Baugatangi hundrað og fjögur, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 105, Reykjavík") == "Baugatangi 105, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 111, Reykjavík") == "Baugatangi 111, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 112, Reykjavík") == "Baugatangi 112, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 113, Reykjavík") == "Baugatangi 113, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 114, Reykjavík") == "Baugatangi 114, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 115, Reykjavík") == "Baugatangi 115, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 121, Reykjavík")
-        == "Baugatangi hundrað tuttugu og eitt, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 174, Reykjavík")
-        == "Baugatangi hundrað sjötíu og fjögur, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 200, Reykjavík") == "Baugatangi 200, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 201, Reykjavík")
-        == "Baugatangi tvö hundruð og eitt, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 202, Reykjavík")
-        == "Baugatangi tvö hundruð og tvö, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 203, Reykjavík")
-        == "Baugatangi tvö hundruð og þrjú, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 204, Reykjavík")
-        == "Baugatangi tvö hundruð og fjögur, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 205, Reykjavík") == "Baugatangi 205, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 211, Reykjavík") == "Baugatangi 211, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 212, Reykjavík") == "Baugatangi 212, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 213, Reykjavík") == "Baugatangi 213, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 214, Reykjavík") == "Baugatangi 214, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 215, Reykjavík") == "Baugatangi 215, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 700, Reykjavík") == "Baugatangi 700, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 701, Reykjavík")
-        == "Baugatangi sjö hundruð og eitt, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 702, Reykjavík")
-        == "Baugatangi sjö hundruð og tvö, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 703, Reykjavík")
-        == "Baugatangi sjö hundruð og þrjú, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 704, Reykjavík")
-        == "Baugatangi sjö hundruð og fjögur, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 705, Reykjavík") == "Baugatangi 705, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 711, Reykjavík") == "Baugatangi 711, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 712, Reykjavík") == "Baugatangi 712, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 713, Reykjavík") == "Baugatangi 713, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 714, Reykjavík") == "Baugatangi 714, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 715, Reykjavík") == "Baugatangi 715, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 1-4, Reykjavík")
-        == "Baugatangi eitt-fjögur, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 1-17, Reykjavík")
-        == "Baugatangi eitt-17, Reykjavík"
-    )
