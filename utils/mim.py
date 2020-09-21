@@ -104,6 +104,7 @@ def parse_tokens(toklist, mim_tags, fast_p):
 
                 except ParseError as e:
                     forest = None
+                    num = 0
                     # Obtain the index of the offending token
                     err_index = e.token_index
 
