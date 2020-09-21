@@ -210,6 +210,9 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
     }
 }
 
+# The following names should never be identified as US states
+NEVER_US_STATE = frozenset(("Georgía",))
+
 
 def location_description(loc):
     """ Return a natural language description string (in Icelandic) for a given
@@ -227,9 +230,10 @@ def location_description(loc):
     if name in ICE_REGIONS:
         return "landshluti"
 
-    sc = code_for_us_state(name)
-    if sc:
-        return f"fylki í Bandaríkjunum ({sc})"
+    if name not in NEVER_US_STATE:
+        sc = code_for_us_state(name)
+        if sc:
+            return f"fylki í Bandaríkjunum ({sc})"
 
     if kind == "country":
         desc = "landsvæði"

@@ -333,7 +333,10 @@ def test_geo():
     assert location_info("Danmörk", "country")["continent"] == "EU"
     assert location_info("Mexíkó", "country")["continent"] == "NA"
     assert location_info("ísafjörður", "placename")["continent"] == "EU"
+    assert location_info("Meðalfellsvatn", "placename")["country"] == "IS"
+    assert location_info("Georgía", "country")["country"] != "US"
     assert location_info("Virginía", "placename")["country"] == "US"
+    assert location_info("Norður-Dakóta", "country")["country"] == "US"
     assert location_info("Kænugarður", "placename")["continent"] == "EU"
     assert location_info("Fiskislóð 31", "address")["country"] == "IS"
 
