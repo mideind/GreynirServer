@@ -150,7 +150,7 @@ def wordfreq():
     # Create word/cat pair from token
     def cat4token(t):
         assert t.kind in (TOK.WORD, TOK.PERSON, TOK.ENTITY)
-        # TODO: Use ReynirPackage lemma lookup function for this
+        # TODO: Use GreynirPackage lemma lookup function for this
         w = t.txt
         if t.kind == TOK.WORD:
             val = list(filter(lambda m: m.stofn == m.ordmynd, t.val)) or t.val

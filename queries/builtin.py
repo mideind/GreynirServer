@@ -1119,7 +1119,7 @@ QSearchToken →
 """
 
 
-# The following functions correspond to grammar nonterminals (see Reynir.grammar)
+# The following functions correspond to grammar nonterminals (see Greynir.grammar)
 # and are called during tree processing (depth-first, i.e. bottom-up navigation)
 
 

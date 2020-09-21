@@ -129,7 +129,7 @@ def parse_tokens(toklist, mim_tags, fast_p):
             sent.append(t)
             # Check whether the token streams are in sync
             if tag_ix < ntags and t[1] != mim_tags[tag_ix][1]:
-                #print("Warning: mismatch between MIM token '{0}' and Reynir token '{1}'".format(mim_tags[tag_ix][1], t[1]))
+                #print("Warning: mismatch between MIM token '{0}' and Greynir token '{1}'".format(mim_tags[tag_ix][1], t[1]))
                 # Attempt to sync again by finding the Greynir token in the MIM tag stream
                 gap = 1
                 MAX_LOOKAHEAD = 4
@@ -260,7 +260,7 @@ if __name__ == "__main__":
 
         g = fast_p.grammar
 
-        print("Reynir.grammar has {0} nonterminals, {1} terminals, {2} productions"
+        print("Greynir.grammar has {0} nonterminals, {1} terminals, {2} productions"
             .format(g.num_nonterminals, g.num_terminals, g.num_productions))
 
         # Attempt to parse all XML files in subdirectories within mim/

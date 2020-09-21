@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-    
+
     Greynir: Natural language processing for Icelandic
 
     Additional vocabulary utility
@@ -60,7 +60,7 @@ if basepath.endswith(_UTILS):
     sys.path.append(basepath)
 
 
-# Note: We can't use settings from ReynirPackage because it
+# Note: We can't use settings from GreynirPackage because it
 # reads package resource streams, not plain text files
 from settings import Settings, LineReader, ConfigError
 
@@ -278,7 +278,7 @@ class Meanings:
             fl = a[3]
             beyging = a[4] if len(a) >= 5 else None
 
-        if utg is not None and not "-" in ordmynd:
+        if utg is not None and "-" not in ordmynd:
             raise ConfigError(
                 "An id number (utg) should only be specified for a composite word"
             )

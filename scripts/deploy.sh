@@ -43,8 +43,8 @@ cd $DEST
 
 
 echo "Removing binary grammar files"
-rm p369/site-packages/reynir/Reynir.grammar.bin
-rm p369/site-packages/reynir/Reynir.grammar.query.bin
+rm p369/site-packages/reynir/Greynir.grammar.bin
+rm p369/site-packages/reynir/Greynir.grammar.query.bin
 
 
 cd $SRC

@@ -1,5 +1,5 @@
 """
-    Reynir: Natural language processing for Icelandic
+    Greynir: Natural language processing for Icelandic
 
     Settings module
 
@@ -20,7 +20,7 @@
 
     This module is written in Python 3
 
-    This module reads and interprets the Reynir.conf configuration file.
+    This module reads and interprets the Greynir.conf configuration file.
     The file can include other files using the $include directive,
     making it easier to arrange configuration sections into logical
     and manageable pieces.
@@ -47,6 +47,7 @@ _DEFAULT_SORT_LOCALE = ('IS_is', 'UTF-8')
 # A set of all valid argument cases
 _ALL_CASES = frozenset(("nf", "þf", "þgf", "ef"))
 _ALL_GENDERS = frozenset(("kk", "kvk", "hk"))
+
 
 class ConfigError(Exception):
 
@@ -137,7 +138,6 @@ class NoIndexWords:
         "kk", "kvk", "hk", "person_kk", "person_kvk", "entity",
         "lo", "so"
     ))
-
 
     @staticmethod
     def set_cat(cat):

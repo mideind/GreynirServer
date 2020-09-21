@@ -25,7 +25,7 @@
 
     Named entity recognition requires access to the SQL scraper database
     and is thus not appropriate for inclusion in reynir.bintokenizer,
-    as ReynirPackage does not (and should not) require a database to be present.
+    as GreynirPackage does not (and should not) require a database to be present.
 
 """
 

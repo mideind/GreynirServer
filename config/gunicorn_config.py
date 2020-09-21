@@ -15,13 +15,13 @@ with open(DIR + "gunicorn_user.txt") as f:
 
 pidfile = DIR + "gunicorn.pid"
 
-# Remove the Reynir.grammar.bin file to ensure that
+# Remove the Greynir.grammar.bin file to ensure that
 # the grammar will be reparsed and a fresh copy generated
 
 import os
 
 try:
-    os.remove(DIR + "Reynir.grammar.bin")
+    os.remove(DIR + "Greynir.grammar.bin")
 except OSError:
     # File probably didn't exist
     pass

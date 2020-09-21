@@ -1,7 +1,7 @@
 %YAML 1.2
 ---
 # http://www.sublimetext.com/docs/3/syntax.html
-name: Reynir grammar
+name: Greynir grammar
 file_extensions:
   - grammar
 scope: source.grammar

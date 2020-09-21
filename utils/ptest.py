@@ -237,7 +237,7 @@ def test3():
 
         g = fast_p.grammar
 
-        print("Reynir.grammar has {0} nonterminals, {1} terminals, {2} productions"
+        print("Greynir.grammar has {0} nonterminals, {1} terminals, {2} productions"
             .format(g.num_nonterminals, g.num_terminals, g.num_productions))
 
         # g.follow_set(g.root)

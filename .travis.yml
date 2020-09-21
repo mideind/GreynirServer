@@ -17,7 +17,7 @@ python:
 install:
   - pip install -r requirements.txt
   - pip install --upgrade git+https://github.com/mideind/Tokenizer#egg=tokenizer
-  - pip install --upgrade git+https://github.com/mideind/ReynirPackage#egg=reynir
+  - pip install --upgrade git+https://github.com/mideind/GreynirPackage#egg=reynir
   - pip install --upgrade git+https://github.com/mideind/GreynirCorrect#egg=reynir-correct
 
 before_script:
