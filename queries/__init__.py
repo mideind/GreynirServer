@@ -57,7 +57,7 @@ def natlang_seq(words, oxford_comma=False):
 
 
 def nom2dat(w):
-    """ Look up the dative form of an Icelandic noun. """
+    """ Look up the dative of an Icelandic noun given its nominative form. """
     try:
         return NounPhrase(w).dative
     except Exception:

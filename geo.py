@@ -250,6 +250,12 @@ def location_description(loc):
 
     if kind == "street":
         if "country" in loc and loc["country"] == ICELAND_ISOCODE:
+            info = iceaddr_lookup(name, limit=200)
+            if info:
+                places = set([i["stadur_tgf"] for i in info])
+                if len(places) == 1:
+                    p = places.pop()
+                    return f"gata {iceprep_for_placename(p)} {p}"
             return "gata á Íslandi"
         return "gata"
 
