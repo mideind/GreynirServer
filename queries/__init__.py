@@ -76,7 +76,7 @@ def is_plural(num):
 def sing_or_plur(num, sing, pl):
     """ Utility function that returns a formatted string w. num and correct
         singular or plural noun, e.g. "1 einstaklingur", "2 einstaklingar" """
-    return f"{num} {pl if is_plural(num) else sing}"
+    return f"{iceformat_float(num)} {pl if is_plural(num) else sing}"
 
 
 # The following needs to include at least nominative

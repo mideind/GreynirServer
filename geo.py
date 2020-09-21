@@ -277,14 +277,6 @@ def location_info(name, kind, placename_hints=None):
             coords = coords_from_addr_info(info)
         loc["data"] = info
 
-    # Check if it's a US state (marked as either "lönd" or "örn" in BÍN)
-    # It might be worth fixing this in the parser module's BinErrata.conf
-    elif kind == "country" or kind == "placename" and name != "Georgía":
-        sc = code_for_us_state(name)
-        if sc:
-            loc["country"] = "US"
-            coords = tuple(coords_for_us_state_code(sc))
-
     # Land
     elif kind == "country":
         code = isocode_for_country_name(name)
@@ -328,6 +320,13 @@ def location_info(name, kind, placename_hints=None):
                 c = cities[0]
                 loc["country"] = c.get("country")
                 coords = coords_from_addr_info(c)
+
+    # Check if it's a US state (marked as either "lönd" or "örn" in BÍN)
+    if "country" not in loc and (kind == "country" or kind == "placename"):
+        sc = code_for_us_state(name)
+        if sc:
+            loc["country"] = "US"
+            coords = tuple(coords_for_us_state_code(sc))
 
     # Look up continent code for country
     if "country" in loc:
