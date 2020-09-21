@@ -57,12 +57,26 @@ def natlang_seq(words, oxford_comma=False):
 
 
 def nom2dat(w):
-    """ Look up the dative form of a noun. """
+    """ Look up the dative form of an Icelandic noun. """
     try:
         return NounPhrase(w).dative
     except Exception:
         pass
     return w
+
+
+def is_plural(num):
+    """ Determine whether an Icelandic word following a given number should be
+        plural or not, e.g. "21 maður", "22 menn", "1,1 kílómetri", "11 menn" etc.
+        Accepts string, float or int as argument. """
+    sn = str(num)
+    return not (sn.endswith("1") and not sn.endswith("11"))
+
+
+def sing_or_plur(num, sing, pl):
+    """ Utility function that returns a formatted string w. num and correct
+        singular or plural noun, e.g. "1 einstaklingur", "2 einstaklingar" """
+    return f"{num} {pl if is_plural(num) else sing}"
 
 
 # The following needs to include at least nominative
@@ -229,14 +243,6 @@ def numbers_to_neutral(s):
         return prefix + NUMBERS_NEUTRAL.get(match, match)
 
     return re.sub(r"(\d+)", convert, s)
-
-
-def is_plural(num):
-    """ Determine whether an Icelandic word following a given number should be
-        plural or not, e.g. "21 maður", "22 menn", "1,1 kílómetri", "11 menn" etc.
-        Accepts string, float or int as argument. """
-    sn = str(num)
-    return not (sn.endswith("1") and not sn.endswith("11"))
 
 
 def country_desc(cc):
