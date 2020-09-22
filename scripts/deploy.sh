@@ -37,14 +37,14 @@ cd $DEST
 
 # echo "Upgrading the Greynir package"
 
-# source p369/bin/activate
+# source venv/bin/activate
 # pip install --upgrade -r requirements.txt
 # deactivate
 
 
 echo "Removing binary grammar files"
-rm p369/site-packages/reynir/Greynir.grammar.bin
-rm p369/site-packages/reynir/Greynir.grammar.query.bin
+rm venv/site-packages/reynir/Greynir.grammar.bin
+rm venv/site-packages/reynir/Greynir.grammar.query.bin
 
 
 cd $SRC
@@ -86,6 +86,7 @@ rsync -av --delete templates/ $DEST/templates/
 rsync -av --delete static/ $DEST/static/
 
 cp resources/*.json $DEST/resources/
+cp -r resources/geo $DEST/resources/
 
 # Put a version identifier (date + commit ID) into the about.html template
 sed -i "s/\[Þróunarútgáfa\]/Útgáfa `date "+%Y-%m-%d %H:%M"`/g" $DEST/templates/about.html
