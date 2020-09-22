@@ -205,12 +205,12 @@ if Settings.DEBUG:
             Settings.DB_PORT,
             sys.version,
             os_name(),
-            "ReynirPackage {0} - Tokenizer {1}".format(
+            "GreynirPackage {0} - Tokenizer {1}".format(
                 greynir_version, tokenizer_version
             ),
         )
     )
-    # Clobber Settings.DEBUG in ReynirPackage and GreynirCorrect
+    # Clobber Settings.DEBUG in GreynirPackage and GreynirCorrect
     reynir.Settings.DEBUG = True
     reynir_correct.Settings.DEBUG = True
 
@@ -231,10 +231,10 @@ if not RUNNING_AS_SERVER:
     # Run a default Flask web server for testing if invoked directly as a main program
 
     # Additional files that should cause a reload of the web server application
-    # Note: Reynir.grammar is automatically reloaded if its timestamp changes
+    # Note: Greynir.grammar is automatically reloaded if its timestamp changes
     extra_files = [
         "Greynir.conf",
-        "ReynirPackage.conf",
+        "GreynirPackage.conf",
         "Index.conf",
         "Verbs.conf",
         "Adjectives.conf",
