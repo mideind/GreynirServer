@@ -57,7 +57,7 @@ from processor import modules_in_dir
 # Latitude, longitude
 LocationType = Tuple[float, float]
 
-# The grammar root nonterminal for queries; see Reynir.grammar
+# The grammar root nonterminal for queries; see Greynir.grammar in GreynirPackage
 _QUERY_ROOT = "QueryRoot"
 
 # A fixed preamble that is inserted before the concatenated query grammar fragments

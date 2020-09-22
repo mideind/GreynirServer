@@ -48,6 +48,7 @@ _DEFAULT_SORT_LOCALE = ('IS_is', 'UTF-8')
 _ALL_CASES = frozenset(("nf", "þf", "þgf", "ef"))
 _ALL_GENDERS = frozenset(("kk", "kvk", "hk"))
 
+
 class ConfigError(Exception):
 
     """ Exception class for configuration errors """
@@ -137,7 +138,6 @@ class NoIndexWords:
         "kk", "kvk", "hk", "person_kk", "person_kvk", "entity",
         "lo", "so"
     ))
-
 
     @staticmethod
     def set_cat(cat):
