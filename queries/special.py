@@ -237,7 +237,7 @@ def _poetry(qs: str, q: Query) -> AnswerType:
 
 def _identity(qs: str, q: Query) -> AnswerType:
     answer = {}  # type: AnswerType
-    a = "Ég heiti Embla. Ég skil íslensku og er til þjónustu reiðubúin."
+    a = "Ég heiti Embla. Ég skil íslensku og get tekið við fyrirspurnum og skipunum frá þér."
     answer = dict(answer=a, voice=a)
     return answer
 
@@ -512,8 +512,12 @@ _SPECIAL_QUERIES = {
     "hver er ég": {
         "answer": "Þú ert væntanlega manneskja sem talar íslensku. Meira veit ég ekki."
     },
+    # Who am I?
     "hvað heiti ég": _DUNNO,
     "veistu hvað ég heiti": _DUNNO,
+    "veistu ekki hvað ég heiti": _DUNNO,
+    "veistu hver ég er": _DUNNO,
+    "veistu ekki hver ég er": _DUNNO,
     "er ég til": {"answer": "Væntanlega, fyrst þú ert að tala við mig."},
     "hvað heitir konan mín": _DUNNO,
     "hvað heitir maðurinn minn": _DUNNO,
@@ -521,7 +525,9 @@ _SPECIAL_QUERIES = {
     "hvað heitir eiginmaður minn": _DUNNO,
     "hvenær á ég afmæli": _DUNNO,
     "hvar á ég heima": {"answer": "Það veit ég ekki, en vonandi einhvers staðar."},
+    "veistu hvar ég á heima?": {"answer": "Það veit ég ekki, en vonandi einhvers staðar."},
     "hvar bý ég": {"answer": "Það veit ég ekki, en vonandi einhvers staðar."},
+    "veistu hvar ég á heima": _NO,
     "hvað er ég gamall": {
         "answer": "Það veit ég ekki, kæri notandi, en þú ert ungur í anda."
     },
@@ -682,6 +688,7 @@ _SPECIAL_QUERIES = {
     "viltu fara á deit": _ROMANCE,
     "viltu fara á deit með mér": _ROMANCE,
     "viltu sofa hjá mér": _ROMANCE,
+    "myndirðu vilja sofa hjá mér": _ROMANCE,
     "ertu til í deit með mér": _ROMANCE,
     "ert þú til í deit með mér": _ROMANCE,
     "ertu til í að koma á deit": _ROMANCE,
@@ -703,6 +710,7 @@ _SPECIAL_QUERIES = {
     "ertu gröð": _ROMANCE,
     "ert þú gröð": _ROMANCE,
     "stundar þú kynlíf": _ROMANCE,
+    "hefurðu stundað kynlíf": _ROMANCE,
     "ertu einhleyp": _ROMANCE,
     "ert þú einhleyp": _ROMANCE,
     "ertu á lausu": _ROMANCE,
@@ -1030,7 +1038,9 @@ _SPECIAL_QUERIES = {
     "það er gaman að spjalla við þig": _LIKEWISE,
     "það er gaman að ræða við þig": _LIKEWISE,
     "þú ert skemmtileg": _LIKEWISE,
+    "þú varst skemmtileg": _LIKEWISE,
     "þú ert mjög skemmtileg": _LIKEWISE,
+    "þú varst mjög skemmtileg": _LIKEWISE,
     "þú ert frábær": _LIKEWISE,
     "þú ert flott": _LIKEWISE,
     "þú ert æði": _LIKEWISE,
@@ -1390,6 +1400,12 @@ _SPECIAL_QUERIES = {
     "hvað ætlar þú að gera í kvöld": {
         "answer": "Ég ætla að svara fyrirspurnum frá þér, kæri notandi."
     },
+    "hvað gerir þig glaða": {
+        "answer": "Það gleður mig að svara fyrirspurnum frá þér, kæri notandi."
+    },
+    "hvað gleður þig": {
+        "answer": "Það gleður mig að svara fyrirspurnum frá þér, kæri notandi."
+    },
     # Humor
     "ertu með kímnigáfu": {"answer": "Já, en afar takmarkaða."},
     "ert þú með kímnigáfu": {"answer": "Já, en afar takmarkaða."},
@@ -1500,6 +1516,7 @@ _SPECIAL_QUERIES = {
     "hvers vegna er himininn blár": _SKY_BLUE,
     # Quotations
     "komdu með tilvitnun": _random_quotation,
+    "komdu með góða tilvitnun": _random_quotation,
     "komdu með skemmtilega tilvitnun": _random_quotation,
     "komdu með einhverja tilvitnun": _random_quotation,
     "farðu með tilvitnun": _random_quotation,
@@ -1509,14 +1526,21 @@ _SPECIAL_QUERIES = {
     "komdu með aðra tilvitnun": _random_quotation,
     # Proverbs
     "komdu með málshátt": _random_proverb,
+    "komdu með góðan málshátt": _random_proverb,
     "komdu með annan málshátt": _random_proverb,
     "segðu málshátt": _random_proverb,
     "segðu mér málshátt": _random_proverb,
+    "segðu mér góðan málshátt": _random_proverb,
     "segðu mér annan málshátt": _random_proverb,
     "kanntu málshátt": _random_proverb,
+    "kanntu einhvern málshátt": _random_proverb,
+    "kanntu góðan málshátt": _random_proverb,
+    "kanntu einhvern góðan málshátt": _random_proverb,
     "kannt þú málshátt": _random_proverb,
     "kanntu annan málshátt": _random_proverb,
     "farðu með málshátt": _random_proverb,
+    "farðu með góðan málshátt": _random_proverb,
+    "farðu með einhvern málshátt": _random_proverb,
     "farðu með annan málshátt": _random_proverb,
     # Riddles
     "segðu gátu": _random_riddle,
