@@ -248,10 +248,12 @@ def location_description(loc):
         return "heimilisfang"
 
     if kind == "street":
-        if "country" in loc and loc["country"] == ICELAND_ISOCODE:
+        if loc.get("country") == ICELAND_ISOCODE:
+            # Icelandic address
             info = iceaddr_lookup(name, limit=200)
             if info:
                 places = set([i["stadur_tgf"] for i in info])
+                # Disambugiate placename for description if we can
                 if len(places) == 1:
                     p = places.pop()
                     return f"gata {iceprep_for_placename(p)} {p}"
@@ -373,7 +375,7 @@ def lookup_city_info(name):
     return city_lookup(cn)
 
 
-US_STATE_NAMES = None  # type: Optional[Dict[str, str]]
+US_STATE_NAMES: Optional[Dict[str, str]] = None
 US_STATES_JSONPATH = os.path.join(
     os.path.dirname(__file__), "resources", "geo", "us_state_name2code.json"
 )
@@ -396,7 +398,7 @@ def code_for_us_state(name):
     return names.get(name.strip())
 
 
-US_STATE_COORDS = None  # type: Optional[Dict[str, str]]
+US_STATE_COORDS: Optional[Dict[str, list]] = None
 US_STATE_COORDS_JSONPATH = os.path.join(
     os.path.dirname(__file__), "resources", "geo", "us_state_coords.json"
 )

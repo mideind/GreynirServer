@@ -623,6 +623,8 @@ def test_query_utility_functions():
     assert not is_plural(22.41)
 
     assert sing_or_plur(21, "maður", "menn") == "21 maður"
+    assert sing_or_plur(11, "köttur", "kettir") == "11 kettir"
+    assert sing_or_plur(2.11, "króna", "krónur") == "2,11 krónur"
     assert sing_or_plur(172, "einstaklingur", "einstaklingar") == "172 einstaklingar"
     assert sing_or_plur(72.1, "gráða", "gráður") == "72,1 gráða"
 

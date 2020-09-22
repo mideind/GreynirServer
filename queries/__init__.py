@@ -74,9 +74,9 @@ def is_plural(num):
 
 
 def sing_or_plur(num, sing, pl):
-    """ Utility function that returns a formatted string w. Icelandic number and a
-        subsequent singular or plural noun, as appropriate, e.g. "1 einstaklingur",
-        "2 einstaklingar", "21 einstaklingur" etc. Accepts both floats and ints as argument. """
+    """ Utility function that returns a formatted string w. Icelandic number and a subsequent
+        singular or plural noun, as appropriate, e.g. "1 einstaklingur", "2 einstaklingar",
+        "21 einstaklingur" etc. Accepts both floats and ints as first argument. """
     return f"{iceformat_float(num)} {pl if is_plural(num) else sing}"
 
 
@@ -615,7 +615,7 @@ def query_place_details(place_id, fields=None):
 _TZW = None  # type: Optional[tzwhere.tzwhere]
 
 
-def tzwhere_singleton():
+def _tzwhere_singleton():
     """ Lazy-load location/timezone database. """
     global _TZW
     if not _TZW:
@@ -627,7 +627,7 @@ def timezone4loc(loc, fallback=None):
     """ Returns timezone string given a tuple of coordinates.
         Fallback argument should be a 2-char ISO 3166 country code."""
     if loc:
-        return tzwhere_singleton().tzNameAt(loc[0], loc[1], forceTZ=True)
+        return _tzwhere_singleton().tzNameAt(loc[0], loc[1], forceTZ=True)
     if fallback and fallback in country_timezones:
         return country_timezones[fallback][0]
     return None
