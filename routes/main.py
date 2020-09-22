@@ -367,7 +367,7 @@ def terms():
 def about():
     """ Handler for the 'About' page """
     try:
-        reynir_version = reynir.__version__
+        parser_version = reynir.__version__
         tokenizer_version = tokenizer.__version__
         python_version = "{0} ({1})".format(
             ".".join(str(n) for n in sys.version_info[:3]),
@@ -375,14 +375,14 @@ def about():
         )
         platform_name = platform.system()
     except AttributeError:
-        reynir_version = ""
+        parser_version = ""
         tokenizer_version = ""
         python_version = ""
         platform_name = ""
     return render_template(
         "about.html",
         title="Um Greyni",
-        reynir_version=reynir_version,
+        parser_version=parser_version,
         tokenizer_version=tokenizer_version,
         python_version=python_version,
         platform_name=platform_name,
