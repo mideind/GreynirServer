@@ -1,5 +1,5 @@
 """
-    Reynir: Natural language processing for Icelandic
+    Greynir: Natural language processing for Icelandic
 
     Settings module
 
@@ -20,7 +20,7 @@
 
     This module is written in Python 3
 
-    This module reads and interprets the Reynir.conf configuration file.
+    This module reads and interprets the Greynir.conf configuration file.
     The file can include other files using the $include directive,
     making it easier to arrange configuration sections into logical
     and manageable pieces.
@@ -242,7 +242,7 @@ class Settings:
     except ValueError:
         raise ConfigError("Invalid environment variable value: SIMSERVER_PORT = {0}".format(SIMSERVER_PORT))
 
-    # Configuration settings from the Reynir.conf file
+    # Configuration settings from the Greynir.conf file
 
     @staticmethod
     def _handle_settings(s):
