@@ -339,6 +339,7 @@ class Query:
                             forest = rdc.go(forest)
                 except ParseError:
                     forest = None
+                    num = 0
                 if num > 0:
                     num_parsed_sent += 1
                     # Obtain a text representation of the parse tree

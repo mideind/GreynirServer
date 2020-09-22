@@ -53,7 +53,7 @@ from db import SessionContext, IntegrityError
 from db.models import Root, Article as ArticleRow
 from db.setup import init_roots
 
-import feedparser
+import feedparser  # type: ignore
 
 
 class ArticleDescr:
@@ -558,8 +558,8 @@ def main(argv=None):
         try:
             opts, _ = getopt.getopt(
                 argv[1:],
-                "hirl:u:d:n:",
-                ["help", "init", "reparse", "limit=", "urls=", "uuid=", "numprocs="],
+                "hirbl:u:d:n:",
+                ["help", "init", "reparse", "debug", "limit=", "urls=", "uuid=", "numprocs="],
             )
         except getopt.error as msg:
             raise Usage(msg)
@@ -570,6 +570,7 @@ def main(argv=None):
         urls = None
         uuid = None
         numprocs = None
+        debug = False
 
         def parse_int(i):
             try:
@@ -585,6 +586,9 @@ def main(argv=None):
             elif o in ("-i", "--init"):
                 # Initialize database (without overwriting existing data)
                 init = True
+            elif o in ("-b", "--debug"):
+                # Run in debug mode
+                debug = True
             elif o in ("-r", "--reparse"):
                 # Reparse already parsed articles, oldest first
                 reparse = True
@@ -610,8 +614,8 @@ def main(argv=None):
         # Read the configuration settings file
         try:
             Settings.read("config/Greynir.conf")
-            # Don't run the scraper in debug mode
-            Settings.DEBUG = False
+            # Don't run the scraper in debug mode unless --debug is specified
+            Settings.DEBUG = debug
         except ConfigError as e:
             print("Configuration error: {0}".format(e), file=sys.stderr)
             return 2

@@ -242,7 +242,7 @@ class Settings:
     except ValueError:
         raise ConfigError("Invalid environment variable value: SIMSERVER_PORT = {0}".format(SIMSERVER_PORT))
 
-    # Configuration settings from the Reynir.conf file
+    # Configuration settings from the Greynir.conf file
 
     @staticmethod
     def _handle_settings(s):
