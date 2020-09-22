@@ -47,7 +47,7 @@ import logging
 import random
 from datetime import timedelta
 
-from queries import gen_answer, query_json_api, is_plural, cap_first
+from queries import gen_answer, query_json_api, cap_first, sing_or_plur
 from geo import distance, in_iceland, ICE_PLACENAME_BLACKLIST
 from iceaddr import placename_lookup
 from iceweather import observation_for_closest, observation_for_station, forecast_text
@@ -479,9 +479,10 @@ def get_currweather_answer(query, result):
     locdesc = result.get("subject") or "Úti"
 
     # Meters per second string for voice. Say nothing if "logn".
+
     voice_ms = (
-        ", {0} {1} á sekúndu".format(
-            wind_ms_str, "metrar" if is_plural(wind_ms_str) else "metri"
+        ", {0} á sekúndu".format(
+            sing_or_plur(wind_ms_str, "metri", "metrar")
         )
         if wind_ms_str != "0"
         else ""

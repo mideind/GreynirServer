@@ -40,11 +40,12 @@ from reynir.fastparser import Fast_Parser, ParseForestDumper
 from reynir.incparser import IncrementalParser
 from tree import Tree
 from treeutil import TreeUtility
+from settings import Settings
 from tokenizer import __version__ as tokenizer_version
 
 
-# We don't bother parsing sentences that have more than 100 tokens,
-# since they require lots of memory (>16 GB) and may take
+# We don't bother parsing sentences that have more than 90 tokens,
+# since they may require lots of memory (>16 GB) and take
 # minutes to parse
 MAX_SENTENCE_TOKENS = 90
 
@@ -302,6 +303,8 @@ class Article:
                     # We don't attempt to parse very long sentences (>85 tokens)
                     # since they are memory intensive (>16 GB) and may take
                     # minutes to process
+                    if Settings.DEBUG:
+                        print(f"#{num_sent:03} ({num_tokens:3}) {sent.text}")
                     if num_tokens <= MAX_SENTENCE_TOKENS and sent.parse():
                         # Obtain a text representation of the parse tree
                         token_dicts = TreeUtility.dump_tokens(

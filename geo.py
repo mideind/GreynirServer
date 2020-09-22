@@ -1,7 +1,7 @@
 """
     Greynir: Natural language processing for Icelandic
 
-    Copyright (c) 2018 Miðeind ehf.
+    Copyright (c) 2020 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 
 # TODO: Handle generic direction prefixes for country names and map to
 # corresponding country code, e.g. "Norður-Ítalía" -> "IT"
+# TODO: Most of this stuff should go into its own module, iceloc or something
 
 from typing import Optional, Dict, Union, Tuple
 
@@ -34,7 +35,6 @@ from iceaddr import iceaddr_lookup, placename_lookup
 from cityloc import city_lookup
 from country_list import countries_for_language, available_languages
 from functools import lru_cache
-
 
 ICELAND_ISOCODE = "IS"  # ISO 3166-1 alpha-2
 ICELANDIC_LANG_ISOCODE = "is"  # ISO 639-1
@@ -206,14 +206,17 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
         "Kosovo": "XK",
         "Sameinuðu Arabísku Furstadæmin": "AE",
         "Norður-Súdan": "SD",
+        "Taiwan": "TW",
     }
 }
+
+# The following names should never be identified as US states
+NEVER_US_STATE = frozenset(("Georgía", "Georgia",))
 
 
 def location_description(loc):
     """ Return a natural language description string (in Icelandic) for a given
         location. Argument is a dictionary with at least "name" and "kind" keys. """
-
     if "kind" not in loc or "name" not in loc:
         return "staðarheiti"
 
@@ -225,6 +228,11 @@ def location_description(loc):
 
     if name in ICE_REGIONS:
         return "landshluti"
+
+    if name not in NEVER_US_STATE:
+        sc = code_for_us_state(name)
+        if sc:
+            return f"fylki í Bandaríkjunum ({sc})"
 
     if kind == "country":
         desc = "landsvæði"
@@ -240,7 +248,15 @@ def location_description(loc):
         return "heimilisfang"
 
     if kind == "street":
-        if "country" in loc and loc["country"] == ICELAND_ISOCODE:
+        if loc.get("country") == ICELAND_ISOCODE:
+            # Icelandic address
+            info = iceaddr_lookup(name, limit=200)
+            if info:
+                places = set([i["stadur_tgf"] for i in info])
+                # Disambugiate placename for description if we can
+                if len(places) == 1:
+                    p = places.pop()
+                    return f"gata {iceprep_for_placename(p)} {p}"
             return "gata á Íslandi"
         return "gata"
 
@@ -251,8 +267,9 @@ def location_description(loc):
 
 
 def location_info(name, kind, placename_hints=None):
-    """ Returns dict with info about a location, given name and kind.
+    """ Returns dict with info about a location, given name and, preferably, kind.
         Info includes ISO country and continent code, GPS coordinates, etc. """
+    assert name
 
     # Continents are marked as "lönd" in BÍN, so we set kind manually
     if name in CONTINENTS:
@@ -316,6 +333,13 @@ def location_info(name, kind, placename_hints=None):
                 loc["country"] = c.get("country")
                 coords = coords_from_addr_info(c)
 
+    # Check if it's a US state (marked as either "lönd" or "örn" in BÍN)
+    if "country" not in loc and (kind == "country" or kind == "placename"):
+        sc = code_for_us_state(name)
+        if sc:
+            loc["country"] = "US"
+            coords = tuple(coords_for_us_state_code(sc))
+
     # Look up continent code for country
     if "country" in loc:
         loc["continent"] = continent_for_country(loc["country"])
@@ -328,7 +352,7 @@ def location_info(name, kind, placename_hints=None):
 
 ICE_CITY_NAMES = None  # type: Optional[Dict[str, str]]
 ICE_CITIES_JSONPATH = os.path.join(
-    os.path.dirname(__file__), "resources", "cities_is.json"
+    os.path.dirname(__file__), "resources", "geo", "cities_is.json"
 )
 
 
@@ -351,6 +375,52 @@ def lookup_city_info(name):
     return city_lookup(cn)
 
 
+US_STATE_NAMES: Optional[Dict[str, str]] = None
+US_STATES_JSONPATH = os.path.join(
+    os.path.dirname(__file__), "resources", "geo", "us_state_name2code.json"
+)
+
+
+def _load_us_state_names():
+    """ Load data from JSON file mapping US state names, canonical
+        and Icelandic, to their to their corresponding 2-char code. """
+    global US_STATE_NAMES
+    if US_STATE_NAMES is None:
+        with open(US_STATES_JSONPATH) as f:
+            US_STATE_NAMES = json.load(f)
+    return US_STATE_NAMES
+
+
+def code_for_us_state(name):
+    """ Given a US state name string, canonical or Icelandicized,
+        return the state's 2-char code. """
+    names = _load_us_state_names()  # Lazy-load
+    return names.get(name.strip())
+
+
+US_STATE_COORDS: Optional[Dict[str, list]] = None
+US_STATE_COORDS_JSONPATH = os.path.join(
+    os.path.dirname(__file__), "resources", "geo", "us_state_coords.json"
+)
+
+
+def _load_us_state_coords():
+    """ Load data from JSON file mapping two-char US state codes
+        to geographic coordinates. """
+    global US_STATE_COORDS
+    if US_STATE_COORDS is None:
+        with open(US_STATE_COORDS_JSONPATH) as f:
+            US_STATE_COORDS = json.load(f)
+    return US_STATE_COORDS
+
+
+def coords_for_us_state_code(code):
+    """ Return the coordinates of a US state given the two-char state code. """
+    assert len(code) == 2
+    state_coords = _load_us_state_coords()
+    return state_coords.get(code.upper())
+
+
 @lru_cache(maxsize=32)
 def icelandic_city_name(name):
     """ Look up the Icelandic name of a city, given its
@@ -368,7 +438,7 @@ COUNTRY_DATA = (
     None
 )  # type: Optional[Dict[str, Dict[str, Union[Tuple[float, float], str]]]]
 COUNTRY_DATA_JSONPATH = os.path.join(
-    os.path.dirname(__file__), "resources", "country_data.json"
+    os.path.dirname(__file__), "resources", "geo", "country_data.json"
 )
 
 
@@ -535,6 +605,7 @@ _I_SUFFIXES = (
     "fen",
     "vík",
     "vogur",
+    "borg",
     "Lækjargata",
     "Skeifan",
     "Kringlan",
@@ -551,7 +622,7 @@ def iceprep_for_street(street_name):
 
 ICELOC_PREP = None  # type: Optional[Dict[str, str]]
 ICELOC_PREP_JSONPATH = os.path.join(
-    os.path.dirname(__file__), "resources", "iceloc_prep.json"
+    os.path.dirname(__file__), "resources", "geo", "iceloc_prep.json"
 )
 
 
@@ -578,6 +649,7 @@ _SUFFIX2PREP = {
     "eyjar": "í",
     "ey": "í",
     "nes": "á",
+    "borg": "í",
 }
 
 

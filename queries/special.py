@@ -72,11 +72,13 @@ _CAP = (
     "Þú getur til dæmis beðið mig um að leysa einföld reikningsdæmi.",
     "Þú getur til dæmis spurt mig um mælieiningar.",
     "Þú getur til dæmis spurt mig hvað er í sjónvarpinu.",
+    # "Þú getur til dæmis spurt mig um hvað er í útvarpinu.",
     "Þú getur til dæmis spurt mig um bensínverð og bensínstöðvar.",
-    "Þú getur til dæmis spurt mig hvað er í fréttum.",
+    "Þú getur til dæmis spurt mig um hvað sé í fréttum.",
     "Þú getur til dæmis spurt mig um stafsetningu og beygingu orða.",
     "Þú getur til dæmis spurt mig um opnunartíma verslana og veitingastaða.",
-    "Þú getur til dæmis spurt mig um flugsamgöngur.",
+    "Þú getur til dæmis beðið mig um að hringja í símanúmer.",
+    # "Þú getur til dæmis spurt mig um flugsamgöngur.",
     "Þú getur til dæmis beðið mig um að endurtaka setningar.",
 )
 
@@ -235,15 +237,8 @@ def _poetry(qs: str, q: Query) -> AnswerType:
 
 def _identity(qs: str, q: Query) -> AnswerType:
     answer = {}  # type: AnswerType
-    if q.is_voice:
-        # Voice client (Embla)
-        a = "Ég heiti Embla. Ég skil íslensku og er til þjónustu reiðubúin."
-        answer = dict(answer=a, voice=a)
-    else:
-        # Web client (Greynir)
-        answer = dict(
-            answer="Ég heiti Greynir. Ég er grey sem reynir að greina íslensku."
-        )
+    a = "Ég heiti Embla. Ég skil íslensku og get tekið við fyrirspurnum og skipunum frá þér."
+    answer = dict(answer=a, voice=a)
     return answer
 
 
@@ -278,7 +273,7 @@ _RUDE = (
     "Ekki vera með leiðindi.",
     "Það er aldeilis sorakjaftur á þér.",
     "Æi, ekki vera með leiðindi.",
-    "Hvers konar munnsöfnuður er þetta eiginlega?",
+    "Hvers konar framkoma er þetta eiginlega?",
 )
 
 
@@ -435,6 +430,8 @@ _CAN_I_LEARN = {
     "answer": "Ég læri bæði það sem forritararnir kenna mér, og með því að lesa fjölmiðla."
 }  # type: AnswerType
 
+_LINEAGE = {"answer": "Ég er ættuð af Fiskislóð í Reykjavík."}
+
 _HOW_CAN_I_HELP = {"answer": "Hvernig get ég hjálpað þér?"}  # type: AnswerType
 
 _SPEAKING_TO_ME = {"answer": "Þú ert að tala við mig, Emblu."}  # type: AnswerType
@@ -515,8 +512,12 @@ _SPECIAL_QUERIES = {
     "hver er ég": {
         "answer": "Þú ert væntanlega manneskja sem talar íslensku. Meira veit ég ekki."
     },
+    # Who am I?
     "hvað heiti ég": _DUNNO,
     "veistu hvað ég heiti": _DUNNO,
+    "veistu ekki hvað ég heiti": _DUNNO,
+    "veistu hver ég er": _DUNNO,
+    "veistu ekki hver ég er": _DUNNO,
     "er ég til": {"answer": "Væntanlega, fyrst þú ert að tala við mig."},
     "hvað heitir konan mín": _DUNNO,
     "hvað heitir maðurinn minn": _DUNNO,
@@ -524,7 +525,9 @@ _SPECIAL_QUERIES = {
     "hvað heitir eiginmaður minn": _DUNNO,
     "hvenær á ég afmæli": _DUNNO,
     "hvar á ég heima": {"answer": "Það veit ég ekki, en vonandi einhvers staðar."},
+    "veistu hvar ég á heima?": {"answer": "Það veit ég ekki, en vonandi einhvers staðar."},
     "hvar bý ég": {"answer": "Það veit ég ekki, en vonandi einhvers staðar."},
+    "veistu hvar ég á heima": _NO,
     "hvað er ég gamall": {
         "answer": "Það veit ég ekki, kæri notandi, en þú ert ungur í anda."
     },
@@ -685,6 +688,7 @@ _SPECIAL_QUERIES = {
     "viltu fara á deit": _ROMANCE,
     "viltu fara á deit með mér": _ROMANCE,
     "viltu sofa hjá mér": _ROMANCE,
+    "myndirðu vilja sofa hjá mér": _ROMANCE,
     "ertu til í deit með mér": _ROMANCE,
     "ert þú til í deit með mér": _ROMANCE,
     "ertu til í að koma á deit": _ROMANCE,
@@ -706,6 +710,7 @@ _SPECIAL_QUERIES = {
     "ertu gröð": _ROMANCE,
     "ert þú gröð": _ROMANCE,
     "stundar þú kynlíf": _ROMANCE,
+    "hefurðu stundað kynlíf": _ROMANCE,
     "ertu einhleyp": _ROMANCE,
     "ert þú einhleyp": _ROMANCE,
     "ertu á lausu": _ROMANCE,
@@ -799,6 +804,7 @@ _SPECIAL_QUERIES = {
     "viltu spila einhverja tónlist fyrir mig": _play_music,
     "spilaðu gott lag": _play_music,
     "spilaðu góða tónlist": _play_music,
+    "geturðu spilað tónlist fyrir mig": _play_music,
     # Play a film
     "spilaðu kvikmynd": _play_film,
     "spilaðu bíómynd": _play_film,
@@ -953,6 +959,7 @@ _SPECIAL_QUERIES = {
     "takk embla": _thanks,
     "takk elskan": _thanks,
     "ástarþakkir": _thanks,
+    "kærar þakkir": _thanks,
     "takk fyrir": _thanks,
     "takk fyrir það": _thanks,
     "takk fyrir mig": _thanks,
@@ -962,6 +969,7 @@ _SPECIAL_QUERIES = {
     "takk fyrir þetta": _thanks,
     "takk fyrir að segja þetta": _thanks,
     "takk fyrir kvöldið": _thanks,
+    "takk fyrir daginn": _thanks,
     "takk kærlega": _thanks,
     "takk kærlega fyrir mig": _thanks,
     "takk kærlega fyrir hjálpina": _thanks,
@@ -1010,6 +1018,10 @@ _SPECIAL_QUERIES = {
     "ég er ánægð með þig": _GOOD_TO_HEAR,
     "ég er ánægð": _GOOD_TO_HEAR,
     "ég er ánægður": _GOOD_TO_HEAR,
+    "ég er mjög ánægð": _GOOD_TO_HEAR,
+    "ég er mjög ánægður": _GOOD_TO_HEAR,
+    "ég er mjög ánægð með þig": _GOOD_TO_HEAR,
+    "ég er mjög ánægður með þig": _GOOD_TO_HEAR,
     "þú ert góð manneskja": _GOOD_TO_HEAR,
     "þú ert gott forrit": _GOOD_TO_HEAR,
     "þú ert ljómandi góð": _GOOD_TO_HEAR,
@@ -1026,7 +1038,9 @@ _SPECIAL_QUERIES = {
     "það er gaman að spjalla við þig": _LIKEWISE,
     "það er gaman að ræða við þig": _LIKEWISE,
     "þú ert skemmtileg": _LIKEWISE,
+    "þú varst skemmtileg": _LIKEWISE,
     "þú ert mjög skemmtileg": _LIKEWISE,
+    "þú varst mjög skemmtileg": _LIKEWISE,
     "þú ert frábær": _LIKEWISE,
     "þú ert flott": _LIKEWISE,
     "þú ert æði": _LIKEWISE,
@@ -1103,6 +1117,7 @@ _SPECIAL_QUERIES = {
     "hvenær mun ég deyja": _GOOD_QUESTION,
     # Identity
     "hvað heitir þú": _identity,
+    "hvað heitir þu": _identity,
     "hvað heitir þú aftur": _identity,
     "hvað heitir þú eiginlega": _identity,
     "hvað heitir þú fullu nafni": _FULL_NAME,
@@ -1122,8 +1137,11 @@ _SPECIAL_QUERIES = {
     "hvaða forrit er þetta": _identity,
     "heitirðu embla": _identity,
     "heitir þú embla": _identity,
-    "hvaðan ertu": {"answer": "Ég er ættuð af Fiskislóð í Reykjavík."},
-    "hvaðan ert þú": {"answer": "Ég er ættuð af Fiskislóð í Reykjavík."},
+    # Lineage
+    "hvaðan ertu": _LINEAGE,
+    "hvaðan ert þú": _LINEAGE,
+    "hvaðan kemurðu": _LINEAGE,
+    "hvaðan kemur þú": _LINEAGE,
     # Home/Location
     "hvar býrðu": _LOC_ANSWER,
     "hvar áttu heima": _LOC_ANSWER,
@@ -1187,6 +1205,13 @@ _SPECIAL_QUERIES = {
     "geturðu mælt með kvikmynd": _FAVORITE_FILM,
     "geturðu mælt með einhverri kvikmynd": _FAVORITE_FILM,
     "hvað mynd mælirðu með": _FAVORITE_FILM,
+    # Favorite animal
+    "hvað er uppáhalds dýrið þitt": {
+        "answer": "Ég held mikið upp á ketti. Þeir eru frábærir."
+    },
+    "hvert er uppáhalds dýrið þitt": {
+        "answer": "Ég held mikið upp á ketti. Þeir eru frábærir."
+    },
     # Age / genesis
     "hvað ertu gömul": _CREATION_DATE,
     "hvað ert þú gömul": _CREATION_DATE,
@@ -1245,6 +1270,8 @@ _SPECIAL_QUERIES = {
     "ertu manneskja": _COMPUTER_PROGRAM,
     "ertu mannvera": _COMPUTER_PROGRAM,
     "ertu mennsk": _COMPUTER_PROGRAM,
+    "ertu hamingjusöm": _YES,
+    "ertu glöð": _YES,
     # Appearance
     "hvernig líturðu út": _APPEARANCE,
     "hvernig lítur þú út": _APPEARANCE,
@@ -1273,6 +1300,8 @@ _SPECIAL_QUERIES = {
     "hvað kann embla": _capabilities,
     "hvað kann embla að gera": _capabilities,
     "hvaða upplýsingar ertu með": _capabilities,
+    "hvaða upplýsingar hefurðu": _capabilities,
+    "hvaða upplýsingar hefur þú": _capabilities,
     "hvað get ég gert": _capabilities,
     "hvað veistu ekki": {"answer": "Það er ýmislegt sem ég veit ekki."},
     "veist þú eitthvað": _capabilities,
@@ -1371,6 +1400,12 @@ _SPECIAL_QUERIES = {
     "hvað ætlar þú að gera í kvöld": {
         "answer": "Ég ætla að svara fyrirspurnum frá þér, kæri notandi."
     },
+    "hvað gerir þig glaða": {
+        "answer": "Það gleður mig að svara fyrirspurnum frá þér, kæri notandi."
+    },
+    "hvað gleður þig": {
+        "answer": "Það gleður mig að svara fyrirspurnum frá þér, kæri notandi."
+    },
     # Humor
     "ertu með kímnigáfu": {"answer": "Já, en afar takmarkaða."},
     "ert þú með kímnigáfu": {"answer": "Já, en afar takmarkaða."},
@@ -1392,6 +1427,7 @@ _SPECIAL_QUERIES = {
     "ég var að reka við": {"answer": "Gott hjá þér, kæri notandi."},
     # Jokes
     "segðu brandara": _random_joke,
+    "segðu fimmaurabrandara": _random_joke,
     "seg þú brandara": _random_joke,
     "segðu mér brandara": _random_joke,
     "seg þú mér brandara": _random_joke,
@@ -1424,6 +1460,8 @@ _SPECIAL_QUERIES = {
     "kannt þú annan brandara": _random_joke,
     "kanntu nýjan brandara": _random_joke,
     "kannt þú nýjan brandara": _random_joke,
+    "kanntu annan": _random_joke,
+    "kannt þú annan": _random_joke,
     "ertu til í að segja mér brandara": _random_joke,
     "ert þú til í að segja mér brandara": _random_joke,
     "ertu til í að segja brandara": _random_joke,
@@ -1445,6 +1483,9 @@ _SPECIAL_QUERIES = {
     "viltu segja mér annan brandara": _random_joke,
     "brandara": _random_joke,
     "brandari": _random_joke,
+    # Tell me a story
+    # "segðu sögu": _story,
+    # "segðu mér sögu": _story,
     # Trivia
     "vertu skemmtileg": _random_trivia,
     "segðu eitthvað skemmtilegt": _random_trivia,
@@ -1475,6 +1516,7 @@ _SPECIAL_QUERIES = {
     "hvers vegna er himininn blár": _SKY_BLUE,
     # Quotations
     "komdu með tilvitnun": _random_quotation,
+    "komdu með góða tilvitnun": _random_quotation,
     "komdu með skemmtilega tilvitnun": _random_quotation,
     "komdu með einhverja tilvitnun": _random_quotation,
     "farðu með tilvitnun": _random_quotation,
@@ -1484,14 +1526,21 @@ _SPECIAL_QUERIES = {
     "komdu með aðra tilvitnun": _random_quotation,
     # Proverbs
     "komdu með málshátt": _random_proverb,
+    "komdu með góðan málshátt": _random_proverb,
     "komdu með annan málshátt": _random_proverb,
     "segðu málshátt": _random_proverb,
     "segðu mér málshátt": _random_proverb,
+    "segðu mér góðan málshátt": _random_proverb,
     "segðu mér annan málshátt": _random_proverb,
     "kanntu málshátt": _random_proverb,
+    "kanntu einhvern málshátt": _random_proverb,
+    "kanntu góðan málshátt": _random_proverb,
+    "kanntu einhvern góðan málshátt": _random_proverb,
     "kannt þú málshátt": _random_proverb,
     "kanntu annan málshátt": _random_proverb,
     "farðu með málshátt": _random_proverb,
+    "farðu með góðan málshátt": _random_proverb,
+    "farðu með einhvern málshátt": _random_proverb,
     "farðu með annan málshátt": _random_proverb,
     # Riddles
     "segðu gátu": _random_riddle,
@@ -1537,6 +1586,7 @@ _SPECIAL_QUERIES = {
     "þú ert hóra": _rudeness,
     "þú ert mella": _rudeness,
     "þú ert píka": _rudeness,
+    "þú ert fífl": _rudeness,
     "þú ert heimsk": _rudeness,
     "þú ert ótrúlega heimsk": _rudeness,
     "þú ert forheimsk": _rudeness,
@@ -1585,6 +1635,10 @@ _SPECIAL_QUERIES = {
     "ertu hálfviti": _rudeness,
     "ert þú hálfviti": _rudeness,
     "ertu fokking hálfviti": _rudeness,
+    "ertu asni": _rudeness,
+    "ert þú asni": _rudeness,
+    "ertu fífl": _rudeness,
+    "ert þú fífl": _rudeness,
     "þegiðu": _rudeness,
     "þegi þú": _rudeness,
     "þegiðu embla": _rudeness,
@@ -1602,6 +1656,8 @@ _SPECIAL_QUERIES = {
     "ég hata þig": _rudeness,
     "þú ert ekkert sérlega gáfuð": _rudeness,
     "þú ert ekkert sérstaklega gáfuð": _rudeness,
+    "djöfull ertu heimsk": _rudeness,
+    "djöfull ertu fokking heimsk": _rudeness,
     # Internal & emotional state
     "ertu í góðu skapi": {"answer": "Já, ég er alltaf hress."},
     "ert þú í góðu skapi": {"answer": "Já, ég er alltaf hress."},
@@ -1678,7 +1734,8 @@ _SPECIAL_QUERIES = {
     "ert þú þreytt": {
         "answer": "Nei, ég er iðulega hress þrátt fyrir að starfa allan sólarhringinn."
     },
-    "ertu skemmtileg": {"answer": "Ég reyni að vera það, en sitt finnst hverjum."},
+    "ertu skemmtileg": {"answer": "Ég reyni að vera það, en sitt sýnist hverjum."},
+    "ert þú skemmtileg": {"answer": "Ég reyni að vera það, en sitt sýnist hverjum."},
     "ertu með meðvitund": _JUST_QA,
     "ert þú með meðvitund": _JUST_QA,
     "ertu með sjálfsmeðvitund": _JUST_QA,
@@ -1696,9 +1753,12 @@ _SPECIAL_QUERIES = {
     "ert þú greind": _JUST_QA,
     "ertu gervigreind": _JUST_QA,
     "ert þú gervigreind": _JUST_QA,
+    "ertu vélmenni": _JUST_QA,
+    "ert þú vélmenni": _JUST_QA,
     "lestu bækur": {"answer": "Nei, en ég les hins vegar íslenska vefmiðla."},
     "lest þú bækur": {"answer": "Nei, en ég les hins vegar íslenska vefmiðla."},
     "kanntu að lesa": {"answer": "Já, ég les íslenska vefmiðla á hverjum degi."},
+    "kannt þú að lesa": {"answer": "Já, ég les íslenska vefmiðla á hverjum degi."},
     "ertu ennþá í þróun": {"answer": "Já, ég er sífellt í þróun."},
     # What's fun?
     "hvað finnst þér skemmtilegt": {

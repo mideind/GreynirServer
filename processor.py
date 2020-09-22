@@ -197,7 +197,7 @@ class Processor:
                     # Note: we can't append the module object m directly to the
                     # processors list, as it will be shared between processes and
                     # CPython 3 can't pickle module references for IPC transfer.
-                    # (PyPy 3.5 does this without problem, however.)
+                    # (PyPy 3.6 does this without problem, however.)
                     # We therefore store just the module names and postpone the
                     # actual import until we go_single() on the first article within
                     # each child process.

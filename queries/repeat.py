@@ -28,7 +28,7 @@ from queries import gen_answer, icequote
 from datetime import datetime, timedelta
 
 
-_REPEAT_QTYPE = "Repeat"
+_REPEAT_QTYPE = "Parrot"  # 'Repeat' is already taken for repeating the last answer
 
 
 _REPEAT_PREFIXES = tuple(

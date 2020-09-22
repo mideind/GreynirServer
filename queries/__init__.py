@@ -57,7 +57,7 @@ def natlang_seq(words, oxford_comma=False):
 
 
 def nom2dat(w):
-    """ Look up the dative form of a noun in BÍN. """
+    """ Look up the dative of an Icelandic noun given its nominative form. """
     try:
         return NounPhrase(w).dative
     except Exception:
@@ -65,8 +65,22 @@ def nom2dat(w):
     return w
 
 
-# The following needs to include at least nominative
-# and dative forms of number words
+def is_plural(num):
+    """ Determine whether an Icelandic word following a given number should be
+        plural or not, e.g. "21 maður", "22 menn", "1,1 kílómetri", "11 menn" etc.
+        Accepts string, float or int as argument. """
+    sn = str(num)
+    return not (sn.endswith("1") and not sn.endswith("11"))
+
+
+def sing_or_plur(num, sing, pl):
+    """ Utility function that returns a formatted string w. Icelandic number and a subsequent
+        singular or plural noun, as appropriate, e.g. "1 einstaklingur", "2 einstaklingar",
+        "21 einstaklingur" etc. Accepts both floats and ints as first argument. """
+    return f"{iceformat_float(num)} {pl if is_plural(num) else sing}"
+
+
+# The following needs to include at least nominative and dative forms of number words
 _NUMBER_WORDS = {
     "núll": 0,
     "hálfur": 0.5,
@@ -229,14 +243,6 @@ def numbers_to_neutral(s):
         return prefix + NUMBERS_NEUTRAL.get(match, match)
 
     return re.sub(r"(\d+)", convert, s)
-
-
-def is_plural(num):
-    """ Determine whether an Icelandic word following a given number should be
-        plural or not, e.g. "21 maður", "22 menn", "1,1 kílómetri", "11 menn" etc.
-        Accepts string, float or int as argument. """
-    sn = str(num)
-    return not (sn.endswith("1") and not sn.endswith("11"))
 
 
 def country_desc(cc):
@@ -489,7 +495,8 @@ def query_geocode_api_addr(addr):
         return None
 
     # Send API request
-    res = query_json_api(_MAPS_API_ADDR_URL.format(addr, key))
+    url = _MAPS_API_ADDR_URL.format(addr, key)
+    res = query_json_api(url)
 
     return res
 
@@ -524,7 +531,8 @@ def query_traveltime_api(startloc, endloc, mode="walking"):
     p2 = "{0},{1}".format(*endloc) if type(endloc) is tuple else endloc
 
     # Send API request
-    res = query_json_api(_MAPS_API_TRAVELTIME_URL.format(p1, p2, mode, key))
+    url = _MAPS_API_TRAVELTIME_URL.format(p1, p2, mode, key)
+    res = query_json_api(url)
 
     return res
 
@@ -607,7 +615,7 @@ def query_place_details(place_id, fields=None):
 _TZW = None  # type: Optional[tzwhere.tzwhere]
 
 
-def tzwhere_singleton():
+def _tzwhere_singleton():
     """ Lazy-load location/timezone database. """
     global _TZW
     if not _TZW:
@@ -619,7 +627,7 @@ def timezone4loc(loc, fallback=None):
     """ Returns timezone string given a tuple of coordinates.
         Fallback argument should be a 2-char ISO 3166 country code."""
     if loc:
-        return tzwhere_singleton().tzNameAt(loc[0], loc[1], forceTZ=True)
+        return _tzwhere_singleton().tzNameAt(loc[0], loc[1], forceTZ=True)
     if fallback and fallback in country_timezones:
         return country_timezones[fallback][0]
     return None

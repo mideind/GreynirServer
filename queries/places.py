@@ -236,12 +236,13 @@ def answ_address(placename, loc, qtype):
     addr = re.sub(r", Ísland$", "", place["formatted_address"])
     # Get street name without number to get preposition
     street_name = addr.split()[0].rstrip(",")
-    prep = iceprep_for_street(street_name)
+    maybe_postcode = (re.search(r"^\d\d\d", street_name) is not None)
+    prep = "í" if maybe_postcode else iceprep_for_street(street_name)
     # Split addr into street name w. number, and remainder
     street_addr = addr.split(",")[0]
     remaining = re.sub(r"^{0}".format(street_addr), "", addr)
     # Get street name in dative case
-    addr_þgf = NounPhrase(street_addr).dative
+    addr_þgf = NounPhrase(street_addr).dative or street_addr
     # Assemble final address
     final_addr = "{0}{1}".format(addr_þgf, remaining)
 
@@ -289,11 +290,11 @@ def answ_openhours(placename, loc, qtype):
 
     try:
         name = res["result"]["name"]
-        name_gender = NounPhrase(name).gender
+        name_gender = NounPhrase(name).gender or "hk"
 
         # Generate placename w. street, e.g. "Forréttabarinn á Nýlendugötu"
         street = fmt_addr.split()[0].rstrip(",")
-        street_þgf = NounPhrase(street).dative
+        street_þgf = NounPhrase(street).dative or street
 
         name = "{0} {1} {2}".format(name, iceprep_for_street(street), street_þgf)
 

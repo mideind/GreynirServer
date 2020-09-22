@@ -61,7 +61,6 @@ LocationType = Tuple[float, float]
 # The grammar root nonterminal for queries; see Reynir.grammar
 _QUERY_ROOT = "QueryRoot"
 
-
 # A fixed preamble that is inserted before the concatenated query grammar fragments
 _GRAMMAR_PREAMBLE = """
 
@@ -184,8 +183,13 @@ class Query:
         the best parse tree using the nonterminal handlers given above, returning a
         result object if successful. """
 
+    # Processors that handle parse trees
+    _tree_processors = []  # type: List[ModuleType]
+    # Handler functions within processors that handle plain text
+    _text_processors = []  # type: List[Callable[[Query], bool]]
+    # Singleton instance of the query parser
     _parser = None  # type: Optional[QueryParser]
-    _processors = []  # type: List[ModuleType]
+    # Help texts associated with lemmas
     _help_texts = dict()  # type: Dict[str, List[Callable]]
 
     def __init__(
@@ -250,35 +254,45 @@ class Query:
     def init_class(cls):
         """ Initialize singleton data, i.e. the list of query
             processor modules and the query parser instance """
-        procs = []
+        all_procs = []
+        tree_procs = []
+        text_procs = []
         # Load the query processor modules found in the
-        # queries directory
+        # queries directory. The modules can be tree and/or text processors,
+        # and we sort them into two lists, accordingly.
         modnames = modules_in_dir("queries")
         for modname in sorted(modnames):
             try:
                 m = importlib.import_module(modname)
-                procs.append(m)
+                all_procs.append(m)
+                if getattr(m, "HANDLE_TREE", False):
+                    # This is a tree processor
+                    tree_procs.append(m)
+                handle_plain_text = getattr(m, "handle_plain_text", None)
+                if handle_plain_text is not None:
+                    # This is a text processor:
+                    # store a reference to its handler function
+                    text_procs.append(handle_plain_text)
             except ImportError as e:
                 logging.error(
                     "Error importing query processor module {0}: {1}".format(modname, e)
                 )
-        cls._processors = procs
+        cls._tree_processors = tree_procs
+        cls._text_processors = text_procs
 
-        # Obtain query grammar fragments from those processors
-        # that handle parse trees. Also collect topic lemmas that
-        # can be used to provide context-sensitive help texts
-        # when queries cannot be parsed.
+        # Obtain query grammar fragments from the tree processors
         grammar_fragments = []
+        for processor in tree_procs:
+            # Check whether this tree processor supplies a query grammar fragment
+            fragment = getattr(processor, "GRAMMAR", None)
+            if fragment and isinstance(fragment, str):
+                # Looks legit: add it to our list
+                grammar_fragments.append(fragment)
+
+        # Collect topic lemmas that can be used to provide
+        # context-sensitive help texts when queries cannot be parsed
         help_texts = defaultdict(list)
-        for processor in procs:
-            handle_tree = getattr(processor, "HANDLE_TREE", None)
-            if handle_tree:
-                # Check whether this processor supplies
-                # a query grammar fragment
-                fragment = getattr(processor, "GRAMMAR", None)
-                if fragment and isinstance(fragment, str):
-                    # Looks legit: add it to our list
-                    grammar_fragments.append(fragment)
+        for processor in all_procs:
             # Collect topic lemmas and corresponding help text functions
             topic_lemmas = getattr(processor, "TOPIC_LEMMAS", None)
             if topic_lemmas:
@@ -328,6 +342,7 @@ class Query:
                             forest = rdc.go(forest)
                 except ParseError:
                     forest = None
+                    num = 0
                 if num > 0:
                     num_parsed_sent += 1
                     # Obtain a text representation of the parse tree
@@ -411,15 +426,11 @@ class Query:
         """ Attempt to execute a plain text query, without having to parse it """
         if not self._query:
             return False
-        for processor in self._processors:
-            handle_plain_text = getattr(processor, "handle_plain_text", None)
-            if handle_plain_text is not None:
-                # This processor has a handle_plain_text function:
-                # call it
-                if handle_plain_text(self):
-                    # Successfully handled: we're done
-                    return True
-        return False
+        # Call the handle_plain_text() function in each text processor,
+        # until we find one that returns True, or return False otherwise
+        return any(
+            handle_plain_text(self) for handle_plain_text in self._text_processors
+        )
 
     def execute_from_tree(self):
         """ Execute the query contained in the previously parsed tree;
@@ -427,18 +438,14 @@ class Query:
         if self._tree is None:
             self.set_error("E_QUERY_NOT_PARSED")
             return False
-        for processor in self._processors:
+        for processor in self._tree_processors:
             self._error = None
             self._qtype = None
-            # If a processor defines HANDLE_TREE and sets it to
-            # a truthy value, it wants to handle parse trees
-            handle_tree = getattr(processor, "HANDLE_TREE", None)
-            if handle_tree:
-                # Process the tree, which has only one sentence
-                self._tree.process(self._session, processor, query=self)
-                if self._answer and self._error is None:
-                    # The processor successfully answered the query
-                    return True
+            # Process the tree, which has only one sentence
+            self._tree.process(self._session, processor, query=self)
+            if self._answer and self._error is None:
+                # The processor successfully answered the query
+                return True
         # No processor was able to answer the query
         return False
 
@@ -482,17 +489,17 @@ class Query:
             q = q.filter(QueryRow.timestamp >= since)
         # Sort to get the newest query that fulfills the criteria
         ctx = q.order_by(desc(QueryRow.timestamp)).limit(1).one_or_none()
-        if ctx is None:
-            return None
         # This function normally returns a dict that has been decoded from JSON
         return None if ctx is None else ctx[0]
 
     @property
     def query(self):
+        """ The query text, in its original form """
         return self._query
 
     @property
     def query_lower(self):
+        """ The query text, all lower case """
         return self._query.lower()
 
     @property
@@ -670,7 +677,7 @@ class Query:
                         # Try an uppercase version, just in case (pun intended)
                         m = db.meanings(token.capitalize())
                     if m:
-                        lemmas |= set(mm.stofn.lower() for mm in m)
+                        lemmas |= set(mm.stofn.lower().replace("-", "") for mm in m)
         # Collect a list of potential help text functions from the query modules
         help_text_funcs = []
         for lemma in lemmas:
@@ -889,6 +896,7 @@ def process_query(
                 # (least likely) query string
                 first_clean_q = clean_q
                 first_qtext = qtext
+
             # First, look in the query cache for the same question
             # (in lower case), having a not-expired answer
             cached_answer = None
@@ -921,6 +929,8 @@ def process_query(
                 )
                 # !!! TBD: Log the cached answer as well?
                 return result
+
+            # The answer is not found in the cache: Handle the query
             query = Query(session, qtext, voice, auto_uppercase, location, client_id)
             result = query.execute()
             if result["valid"] and "error" not in result:

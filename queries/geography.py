@@ -47,7 +47,7 @@ from geo import (
 
 _GEO_QTYPE = "Geography"
 
-TOPIC_LEMMAS = ["höfuðborg", "land", "heimsálfa", "borg", "landafræði"]
+TOPIC_LEMMAS = ["höfuðborg", "heimsálfa", "borg", "landafræði"]
 
 
 def help_text(lemma):
@@ -173,6 +173,7 @@ _PLACENAME_FIXES = [
     (r"norður kóre", "Norður-Kóre"),
     (r"norður kaledón", "Norður-Kaledón"),
     (r"^seychelles.+$", "Seychelles"),
+    (r"^taiwans$", "Taiwan"),
 ]
 
 
@@ -253,15 +254,15 @@ def _which_continent_query(subject, q):
 
     # Get country code
     cc = isocode_for_country_name(subject)
-    is_city = False
+    is_placename = False
     if not cc:
         # OK, the subject is not a country
-        # Let's see if it's a city
+        # Let's see if it's a placename
         info = location_info(subject, "placename")
         if not info:
             return False  # We don't know where it is
         cc = info.get("country")
-        is_city = True
+        is_placename = True
 
     if not cc:
         return False
@@ -273,9 +274,9 @@ def _which_continent_query(subject, q):
     # Format answer
     answer = continent_dat
     response = dict(answer=answer)
-    if is_city:
+    if is_placename:
         cd = country_desc(cc)
-        voice = "Borgin {0} er {1}, sem er land í {2}".format(
+        voice = "Staðurinn {0} er {1}, sem er land í {2}".format(
             subject, cd, continent_dat
         )
         answer = "{0}, {1}".format(cd, continent_dat)
