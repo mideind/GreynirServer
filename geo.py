@@ -211,13 +211,12 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
 }
 
 # The following names should never be identified as US states
-NEVER_US_STATE = frozenset(("Georgía",))
+NEVER_US_STATE = frozenset(("Georgía", "Georgia",))
 
 
 def location_description(loc):
     """ Return a natural language description string (in Icelandic) for a given
         location. Argument is a dictionary with at least "name" and "kind" keys. """
-
     if "kind" not in loc or "name" not in loc:
         return "staðarheiti"
 
@@ -266,8 +265,9 @@ def location_description(loc):
 
 
 def location_info(name, kind, placename_hints=None):
-    """ Returns dict with info about a location, given name and kind.
+    """ Returns dict with info about a location, given name and, preferably, kind.
         Info includes ISO country and continent code, GPS coordinates, etc. """
+    assert name
 
     # Continents are marked as "lönd" in BÍN, so we set kind manually
     if name in CONTINENTS:
@@ -390,7 +390,7 @@ def _load_us_state_names():
 
 
 def code_for_us_state(name):
-    """ Given a US state name, canonical or Icelandicized,
+    """ Given a US state name string, canonical or Icelandicized,
         return the state's 2-char code. """
     names = _load_us_state_names()  # Lazy-load
     return names.get(name.strip())
@@ -403,8 +403,8 @@ US_STATE_COORDS_JSONPATH = os.path.join(
 
 
 def _load_us_state_coords():
-    """ Load data from JSON file mapping Icelandic city names
-        to their corresponding English/international name. """
+    """ Load data from JSON file mapping two-char US state codes
+        to geographic coordinates. """
     global US_STATE_COORDS
     if US_STATE_COORDS is None:
         with open(US_STATE_COORDS_JSONPATH) as f:
@@ -413,6 +413,7 @@ def _load_us_state_coords():
 
 
 def coords_for_us_state_code(code):
+    """ Return the coordinates of a US state given the two-char state code. """
     assert len(code) == 2
     state_coords = _load_us_state_coords()
     return state_coords.get(code.upper())

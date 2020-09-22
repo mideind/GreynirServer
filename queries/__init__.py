@@ -74,13 +74,13 @@ def is_plural(num):
 
 
 def sing_or_plur(num, sing, pl):
-    """ Utility function that returns a formatted string w. num and correct
-        singular or plural noun, e.g. "1 einstaklingur", "2 einstaklingar" """
+    """ Utility function that returns a formatted string w. Icelandic number and a
+        subsequent singular or plural noun, as appropriate, e.g. "1 einstaklingur",
+        "2 einstaklingar", "21 einstaklingur" etc. Accepts both floats and ints as argument. """
     return f"{iceformat_float(num)} {pl if is_plural(num) else sing}"
 
 
-# The following needs to include at least nominative
-# and dative forms of number words
+# The following needs to include at least nominative and dative forms of number words
 _NUMBER_WORDS = {
     "núll": 0,
     "hálfur": 0.5,
