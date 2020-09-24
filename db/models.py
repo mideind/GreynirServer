@@ -708,6 +708,6 @@ class QueryData(Base):
     data = Column(JSONB, nullable=False)
 
     def __repr__(self):
-        return "QueryData(client_id='{0}', key='{1}', modified='{2}', data='{3}')".format(
-            self.client_id, self.key, self.modified, self.data
+        return "QueryData(client_id='{0}', created='{1}', modified='{2}', key='{3}', data='{4}')".format(
+            self.client_id, self.created, self.modified, self.key, self.data
         )
