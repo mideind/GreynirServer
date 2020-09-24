@@ -635,8 +635,9 @@ class Query:
         self._context = ctx
 
     def client_data(self, key):
-        """ Fetch the data column containing the json data stored in the query_data table """
-        query_data = None
+        """ Fetch client_id-associated data stored in the querydata table """
+        if not self.client_id:
+            return None
         with SessionContext(read_only=True) as session:
             try:
                 client_data = (
@@ -644,15 +645,13 @@ class Query:
                     .filter(QueryData.key == key)
                     .filter(QueryData.client_id == self.client_id)
                 ).one_or_none()
-                if client_data is not None:
-                    query_data = client_data.data
+                return client_data.data
             except Exception as e:
                 logging.error(
                     "Error fetching client '{0}' query data for key '{1}' from db: {2}".format(
                         self.client_id, key, e
                     )
                 )
-        return query_data
 
     def set_client_data(self, key, json):
         """ Setter for client query data """

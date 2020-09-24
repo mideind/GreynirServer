@@ -477,6 +477,7 @@ def query_history_api(version=1):
 
     with SessionContext(commit=True) as session:
         session.execute(Query.table().delete().where(Query.client_id == client_id))
+        session.execute(QueryData.table().delete().where(QueryData.client_id == client_id))
 
     return better_jsonify(valid=True)
 
