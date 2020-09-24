@@ -114,13 +114,14 @@ QGeoWhatIs →
 QGeoWhereIs →
     "hvar" "er"
     | "hvar" "eru"
-    | "hvað" "er"
     | "hvar" "í" "heiminum" "er"
     | "hvar" "í" "heiminum" "eru"
     | "hvar" "á" "jörðinni" "er"
     | "hvar" "á" "jörðinni" "eru"
     | "hvar" "á" "plánetunni" "er"
     | "hvar" "á" "plánetunni" "eru"
+    | "hvar" "á" "hnettinum" "er"
+    | "hvar" "á" "hnettinum" "eru"
 
 QGeoPreposition →
     "í" | "á"
@@ -279,7 +280,7 @@ def _which_continent_query(subject, q):
         voice = "Staðurinn {0} er {1}, sem er land í {2}".format(
             subject, cd, continent_dat
         )
-        answer = "{0}, {1}".format(cd, continent_dat)
+        answer = "{0}, {1}".format(cap_first(cd), continent_dat)
     else:
         voice = "Landið {0} er í {1}".format(subject, continent_dat)
 

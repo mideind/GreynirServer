@@ -456,7 +456,7 @@ function displayTokens(j) {
 }
 
 function populateStats(stats) {
-   var parsedRatio = stats.num_sentences > 0 ? format_is(10 * stats.num_parsed / stats.num_sentences, 1) : "0,0";
+   var parsedRatio = stats.num_sentences > 0 ? format_is(100 * stats.num_parsed / stats.num_sentences, 1) : "0,0";
    var statisticsSummary = $("#statistics-summary");
    statisticsSummary.html("");
    statisticsSummary.append(

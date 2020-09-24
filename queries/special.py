@@ -1577,6 +1577,7 @@ _SPECIAL_QUERIES = {
     "kannt þú eitthvert ljóð": _poetry,
     "geturðu farið með ljóð": _poetry,
     "getur þú farið með ljóð": _poetry,
+    "ljóð fyrir mig": _poetry,
     # Rudeness :)
     "þú sökkar": _rudeness,
     "þú ert ljót": _rudeness,
