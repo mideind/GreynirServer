@@ -29,7 +29,7 @@ import requests
 from db import SessionContext
 from db.models import Link, BlacklistedLink
 from settings import Settings
-
+from util import google_api_key
 
 # HTTP request timeout
 QUERY_TIMEOUT = 4.0
@@ -61,25 +61,6 @@ def _server_query(url, q):
     except HTTPError as ex:
         logging.warning("server_query exception: {0}".format(ex))
     return doc
-
-
-# The Google API identifier (you must obtain your own key if you want to use this code)
-_API_KEY = ""
-_API_KEY_PATH = "resources/GoogleServerKey.txt"
-
-
-def _get_API_key():
-    """ Read Google API key from file """
-    global _API_KEY
-    if not _API_KEY:
-        try:
-            # You need to obtain your own key and put it in
-            # _API_KEY_PATH if you want to use this code
-            with open(_API_KEY_PATH) as f:
-                _API_KEY = f.read().rstrip()
-        except FileNotFoundError:
-            _API_KEY = ""
-    return _API_KEY
 
 
 # Google Custom Search Engine identifier
@@ -126,7 +107,7 @@ def get_image_url(
 
         if not jdoc:
             # Not found in cache: prepare to ask Google
-            key = _get_API_key()
+            key = google_api_key()
             if not key:
                 # No API key: can't ask for an image
                 logging.warning("No API key for image lookup")
@@ -288,7 +269,7 @@ STATICMAP_URL = (
 
 def get_staticmap_image(latitude, longitude, zoom=6, width=180, height=180):
     """ Request image from Google Static Maps API, return image data as bytes """
-    key = _get_API_key()
+    key = google_api_key()
     if not key:
         return None
 

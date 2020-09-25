@@ -176,7 +176,8 @@ in `queries/examples`.
 * `doc.py`: Extract plain text from various document formats
 * `geo.py`: Geography and location-related utility functions
 * `speech.py`: Speech synthesis-related utility functions
-* `utils/*.py`: Various utility programs
+* `tools/*.py`: Various command line tools
+* `util.py`: Various utility functions
 
 ## Installation and setup
 

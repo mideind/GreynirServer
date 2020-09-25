@@ -42,6 +42,7 @@ from pytz import country_timezones
 from geo import country_name_for_isocode, iceprep_for_cc
 from reynir import NounPhrase
 from settings import changedlocale
+from util import google_api_key
 
 
 def natlang_seq(words, oxford_comma=False):
@@ -433,31 +434,6 @@ def query_xml_api(url):
         logging.warning("Error parsing XML response from {0}: {1}".format(url, e))
 
 
-# The Google API identifier (you must obtain your
-# own key if you want to use this code)
-_GOOGLE_API_KEY = ""
-_GOOGLE_API_KEY_PATH = os.path.join(
-    os.path.dirname(__file__), "..", "resources", "GoogleServerKey.txt"
-)
-
-
-def _get_google_api_key():
-    """ Read Google API key from file """
-    global _GOOGLE_API_KEY
-    if not _GOOGLE_API_KEY:
-        try:
-            # You need to obtain your own key and put it in
-            # _API_KEY_PATH if you want to use this code.
-            with open(_GOOGLE_API_KEY_PATH) as f:
-                _GOOGLE_API_KEY = f.read().rstrip()
-        except FileNotFoundError:
-            logging.warning(
-                "Unable to read Google API key at {0}".format(_GOOGLE_API_KEY_PATH)
-            )
-            _GOOGLE_API_KEY = ""
-    return _GOOGLE_API_KEY
-
-
 _MAPS_API_COORDS_URL = (
     "https://maps.googleapis.com/maps/api/geocode/json"
     "?latlng={0},{1}&key={2}&language=is&region=is"
@@ -467,7 +443,7 @@ _MAPS_API_COORDS_URL = (
 def query_geocode_api_coords(lat, lon):
     """ Look up coordinates in Google's geocode API. """
     # Load API key
-    key = _get_google_api_key()
+    key = google_api_key()
     if not key:
         # No key, can't query Google location API
         logging.warning("No API key for coordinates lookup")
@@ -488,7 +464,7 @@ _MAPS_API_ADDR_URL = (
 def query_geocode_api_addr(addr):
     """ Look up address in Google's geocode API. """
     # Load API key
-    key = _get_google_api_key()
+    key = google_api_key()
     if not key:
         # No key, can't query the API
         logging.warning("No API key for address lookup")
@@ -520,7 +496,7 @@ def query_traveltime_api(startloc, endloc, mode="walking"):
     assert mode in _TRAVEL_MODES
 
     # Load API key
-    key = _get_google_api_key()
+    key = google_api_key()
     if not key:
         # No key, can't query the API
         logging.warning("No API key for travel time lookup")
@@ -555,7 +531,7 @@ def query_places_api(
         fields = "place_id,opening_hours,geometry/location,formatted_address"
 
     # Load API key
-    key = _get_google_api_key()
+    key = google_api_key()
     if not key:
         # No key, can't query the API
         logging.warning("No API key for Google Places lookup")
@@ -593,7 +569,7 @@ def query_place_details(place_id, fields=None):
         https://developers.google.com/places/web-service/details """
 
     # Load API key
-    key = _get_google_api_key()
+    key = google_api_key()
     if not key:
         # No key, can't query the API
         logging.warning("No API key for Google Place Details lookup")
@@ -636,6 +612,7 @@ def timezone4loc(loc, fallback=None):
 @lru_cache(maxsize=32)
 def read_jsfile(filename):
     from rjsmin import jsmin
+
     basepath, _ = os.path.split(os.path.realpath(__file__))
     fpath = os.path.join(basepath, "js", filename)
     with open(fpath, mode="r") as file:

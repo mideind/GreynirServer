@@ -25,7 +25,6 @@
 
 from datetime import datetime
 import logging
-import os
 
 from flask import request, abort
 
@@ -41,7 +40,7 @@ from article import Article as ArticleProxy
 from query import process_query
 from doc import SUPPORTED_DOC_MIMETYPES, MIMETYPE_TO_DOC_CLASS
 from speech import get_synthesized_text_url
-
+from util import greynir_api_key
 
 from . import routes, better_jsonify, text_from_request, bool_from_request, restricted
 from . import _MAX_URL_LENGTH, _MAX_UUID_LENGTH
@@ -65,7 +64,7 @@ def ifdtag_api(version=1):
 
     try:
         text = text_from_request(request)
-    except:
+    except Exception:
         return better_jsonify(valid=False, reason="Invalid request")
 
     pgs = ifd_tag(text)
@@ -190,7 +189,7 @@ def postag_api(version=1):
 
     try:
         text = text_from_request(request)
-    except:
+    except Exception:
         return better_jsonify(valid=False, reason="Invalid request")
 
     with SessionContext(commit=True) as session:
@@ -227,7 +226,7 @@ def parse_api(version=1):
 
     try:
         text = text_from_request(request)
-    except:
+    except Exception:
         return better_jsonify(valid=False, reason="Invalid request")
 
     with SessionContext(commit=True) as session:
@@ -467,34 +466,30 @@ def query_history_api(version=1):
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
 
+    resp = dict(valid=True)
+
     action = request.values.get("action")
     client_type = request.values.get("client_type")
     # client_version = request.values.get("client_version")
     client_id = request.values.get("client_id")
+
+    # TODO: Require Greynir API key once clients have been updated
+    # key = request.values.get("key")
+    # gak = greynir_api_key()
+    # if not gak or key != gak:
+    #     resp["errmsg"] = "Invalid or missing API key."
+    #     return better_jsonify(**resp)
 
     if action != "clear" or not client_type or not client_id:
         return better_jsonify(valid=False, reason="Missing parameters")
 
     with SessionContext(commit=True) as session:
         session.execute(Query.table().delete().where(Query.client_id == client_id))
-        session.execute(QueryData.table().delete().where(QueryData.client_id == client_id))
+        session.execute(
+            QueryData.table().delete().where(QueryData.client_id == client_id)
+        )
 
-    return better_jsonify(valid=True)
-
-
-_SPEECH_API_KEY = None
-_SPEECH_API_KEY_PATH = os.path.join(
-    os.path.dirname(__file__), "..", "resources", "GreynirSpeechKey.txt"
-)
-
-
-def _speech_api_key():
-    """ Load speech key from file. """
-    global _SPEECH_API_KEY
-    if _SPEECH_API_KEY is None:
-        with open(_SPEECH_API_KEY_PATH) as f:
-            _SPEECH_API_KEY = f.read().strip()
-    return _SPEECH_API_KEY
+    return better_jsonify(**resp)
 
 
 @routes.route("/speech.api", methods=["GET", "POST"])
@@ -522,11 +517,11 @@ def speech_api(version=1):
             speed = float(speed)
             if speed < 0.1 or speed > 3.0:
                 speed = 1.0
-        except:
+        except Exception:
             speed = 1.0
 
-    sak = _speech_api_key()
-    if not sak or key != sak:
+    gak = greynir_api_key()
+    if not gak or key != gak:
         reply["errmsg"] = "Invalid or missing API key."
         return better_jsonify(**reply)
 
@@ -534,7 +529,7 @@ def speech_api(version=1):
         url = get_synthesized_text_url(
             text, txt_format=fmt, voice_id=voice_id, speed=speed
         )
-    except:
+    except Exception:
         return better_jsonify(**reply)
 
     reply["audio_url"] = url
@@ -625,7 +620,7 @@ def register_query_data_api():
                 .filter(QueryData.key == qdata["key"])
                 .filter(QueryData.client_id == qdata["client_id"])
             ).one_or_none()
-            
+
             if not stored_data:
                 curr_time = datetime.utcnow()
                 qrow = QueryData(
