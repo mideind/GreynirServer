@@ -50,7 +50,8 @@ from reynir.fastparser import Fast_Parser, ParseForestDumper, ParseError, ffi
 from reynir.binparser import BIN_Grammar, GrammarError
 from reynir.reducer import Reducer
 from reynir.bindb import BIN_Db
-from nertokenizer import recognize_entities
+
+# from nertokenizer import recognize_entities
 from images import get_image_url
 from processor import modules_in_dir
 
@@ -645,7 +646,7 @@ class Query:
                     .filter(QueryData.key == key)
                     .filter(QueryData.client_id == self.client_id)
                 ).one_or_none()
-                return client_data.data
+                return None if client_data is None else client_data.data
             except Exception as e:
                 logging.error(
                     "Error fetching client '{0}' query data for key '{1}' from db: {2}".format(
