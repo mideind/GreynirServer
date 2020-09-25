@@ -611,7 +611,13 @@ def register_query_data_api():
         or "key" not in qdata
         or "client_id" not in qdata
     ):
-        return better_jsonify(valid=False, reason="Missing parameters")
+        return better_jsonify(valid=False, errmsg="Missing parameters.")
+
+    # Calling this endpoint requires Greynir API key
+    key = qdata.get("key")
+    gak = greynir_api_key()
+    if not gak or key != gak:
+        return better_jsonify(valid=False, errmsg="Invalid or missing API key.")
 
     with SessionContext(commit=True) as session:
         try:
@@ -632,7 +638,6 @@ def register_query_data_api():
                 )
                 session.add(qrow)
                 return better_jsonify(valid=True, action="added")
-
             else:
                 stored_json = stored_data.data
                 stored_json[qdata["key"]].update(qdata["data"][qdata["key"]])
