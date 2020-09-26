@@ -28,52 +28,85 @@ import re
 
 from reynir.bindb import BIN_Db
 
+from . import gen_answer
 
 _INTRO_QTYPE = "Introduction"
 
 
-_MY_NAME_IS_REGEXES = (
-    r"^ég heiti (.+)$",
-    r"^nafn mitt er (.+)$",
-    r"^nafnið mitt er (.+)$",
-    r"^ég ber heitið (.+)$",
-    r"^ég ber nafnið (.+)$",
+_MY_NAME_IS_REGEXES = frozenset(
+    (
+        r"^ég heiti (.+)$",
+        r"^nafn mitt er (.+)$",
+        r"^nafnið mitt er (.+)$",
+        r"^ég ber heitið (.+)$",
+        r"^ég ber nafnið (.+)$",
+        r"^(.+) heiti ég$",  # Might grab wrong queries?
+    )
 )
 
-_RESPONSES = {
+_INTRODUCTION_RESPONSES = {
     "hk": "Gaman að kynnast þér, {0}. Ég heiti Embla.",
     "kk": "Sæll og blessaður, {0}. Ég heiti Embla.",
     "kvk": "Sæl og blessuð, {0}. Ég heiti Embla.",
 }
+
+_WHATS_MY_NAME = frozenset(
+    (
+        "hvað heiti ég",
+        "veistu hvað ég heiti",
+        "veistu ekki hvað ég heiti",
+        "hver er ég",
+        "veistu hver ég er",
+        "veistu ekki hver ég er",
+    )
+)
+
+_DUNNO = "Ég veit ekki hvað þú heitir."
 
 
 def handle_plain_text(q):
     """ Handle the user introducing herself """
     ql = q.query_lower.rstrip("?")
 
+    # Is it a statement where the user provides his name?
     for rx in _MY_NAME_IS_REGEXES:
         m = re.search(rx, ql)
         if m:
             break
-    else:
-        # Not understood
-        return False
+    if m:
+        name = m.group(1).strip()
+        # TODO: Strip any non alphabetic chars?
+        if not name:
+            return False
 
-    name = m.group(1).strip()
-    if not name:
-        return False
+        # Get first name, look up gender for a gender-tailored response
+        with BIN_Db.get_db() as bdb:
+            fn = name.split()[0].title()
+            gender = bdb.lookup_name_gender(fn) or "hk"
+            answ = _INTRODUCTION_RESPONSES[gender].format(fn)
 
-    if name.startswith("ekki "):
-        return False
+        # Save this info about user to query data table
+        if q.client_id:
+            qdata = dict(full=name.title(), first=fn, gender=gender)
+            q.set_client_data("name", qdata)
 
-    with BIN_Db.get_db() as bdb:
-        fn = name.split()[0].title()
-        gender = bdb.lookup_name_gender(fn)
-        a = _RESPONSES[gender or "hk"].format(fn)
+        # Generate answer
+        voice = answ.replace(",", "")
+        q.set_answer(dict(answer=answ), answ, voice)
+        q.set_qtype(_INTRO_QTYPE)
+        q.query_is_command()
+        return True
 
-    voice = a.replace(",", "")
-    q.set_answer(dict(answer=a), a, voice)
-    q.set_qtype(_INTRO_QTYPE)
-    q.query_is_command()
+    # A query concerning the user's name?
+    elif ql in _WHATS_MY_NAME:
+        answ = None
+        nd = q.client_data("name")
+        if nd and "full" in nd:
+            answ = f"Þú heitir {nd['full']}"
+        else:
+            answ = _DUNNO
+        q.set_answer(*gen_answer(answ))
+        q.set_qtype(_INTRO_QTYPE)
+        return True
 
-    return True
+    return False

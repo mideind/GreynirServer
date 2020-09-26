@@ -509,9 +509,6 @@ _SPECIAL_QUERIES = {
         "answer": "Ég drekk reyndar ekki en einn skapari minn er hrifinn af Pilsner Urquell frá Tékklandi."
     },
     "hvað er það": {"answer": "Hvað er hvað?"},
-    "hver er ég": {
-        "answer": "Þú ert væntanlega manneskja sem talar íslensku. Meira veit ég ekki."
-    },
     # Who am I?
     "hvað heiti ég": _DUNNO,
     "veistu hvað ég heiti": _DUNNO,
