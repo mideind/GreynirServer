@@ -467,19 +467,19 @@ def query_history_api(version=1):
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
 
+    # TODO: Require Greynir API key once clients have been updated
+    # key = request.values.get("api_key")
+    # gak = greynir_api_key()
+    # if not gak or key != gak:
+    #     resp["errmsg"] = "Invalid or missing API key."
+    #     return better_jsonify(**resp)
+
     resp = dict(valid=True)
 
     action = request.values.get("action")
     client_type = request.values.get("client_type")
     # client_version = request.values.get("client_version")
     client_id = request.values.get("client_id")
-
-    # TODO: Require Greynir API key once clients have been updated
-    # key = request.values.get("key")
-    # gak = greynir_api_key()
-    # if not gak or key != gak:
-    #     resp["errmsg"] = "Invalid or missing API key."
-    #     return better_jsonify(**resp)
 
     if action != "clear" or not client_type or not client_id:
         return better_jsonify(valid=False, reason="Missing parameters")
@@ -503,11 +503,16 @@ def speech_api(version=1):
 
     reply = dict(err=True)
 
+    key = request.values.get("api_key")
+    gak = greynir_api_key()
+    if not gak or key != gak:
+        reply["errmsg"] = "Invalid or missing API key."
+        return better_jsonify(**reply)
+
     text = request.values.get("text")
     if not text:
         return better_jsonify(**reply)
 
-    key = request.values.get("key")
     fmt = request.values.get("format", "ssml")
     if fmt not in ["text", "ssml"]:
         fmt = "ssml"
@@ -520,11 +525,6 @@ def speech_api(version=1):
                 speed = 1.0
         except Exception:
             speed = 1.0
-
-    gak = greynir_api_key()
-    if not gak or key != gak:
-        reply["errmsg"] = "Invalid or missing API key."
-        return better_jsonify(**reply)
 
     try:
         url = get_synthesized_text_url(
@@ -605,6 +605,14 @@ def register_query_data_api():
 
     """
     qdata = request.json
+    if qdata is None:
+        return better_jsonify(valid=False, errmsg="Empty request.")
+
+    # Calling this endpoint requires the Greynir API key
+    key = qdata.get("api_key")
+    gak = greynir_api_key()
+    if not gak or key != gak:
+        return better_jsonify(valid=False, errmsg="Invalid or missing API key.")
 
     if (
         not qdata
@@ -613,12 +621,6 @@ def register_query_data_api():
         or "client_id" not in qdata
     ):
         return better_jsonify(valid=False, errmsg="Missing parameters.")
-
-    # Calling this endpoint requires the Greynir API key
-    key = qdata.get("api_key")
-    gak = greynir_api_key()
-    if not gak or key != gak:
-        return better_jsonify(valid=False, errmsg="Invalid or missing API key.")
 
     success = QueryObject.save_query_data(qdata["client_id"], qdata["key"], qdata["data"])
     if success:
