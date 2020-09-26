@@ -38,7 +38,7 @@ function storeDevice(data, requestURL) {
 
     let request = new XMLHttpRequest();
     
-    request.open('POST', `http://${requestURL}/register_smartdevice.api`, false);
+    request.open('POST', `http://${requestURL}/register_query_data.api`, false);
     request.setRequestHeader('Content-Type', 'application/json');
 
     request.send(JSON.stringify(data));

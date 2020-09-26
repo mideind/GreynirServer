@@ -467,7 +467,8 @@ def query_history_api(version=1):
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
 
-    # TODO: Require Greynir API key once clients have been updated
+    # Calling this endpoint requires the Greynir API key
+    # TODO: Enable once clients have been updated
     # key = request.values.get("api_key")
     # gak = greynir_api_key()
     # if not gak or key != gak:
@@ -503,6 +504,7 @@ def speech_api(version=1):
 
     reply = dict(err=True)
 
+    # Calling this endpoint requires the Greynir API key
     key = request.values.get("api_key")
     gak = greynir_api_key()
     if not gak or key != gak:
@@ -583,7 +585,8 @@ def exit_api():
 
 
 @routes.route("/register_query_data.api", methods=["POST"])
-def register_query_data_api():
+@routes.route("/register_query_data.api/v<int:version>", methods=["POST"])
+def register_query_data_api(version=1):
     """
     Stores or updates query data for the given client ID
 
@@ -604,6 +607,10 @@ def register_query_data_api():
     }
 
     """
+
+    if not (1 <= version <= 1):
+        return better_jsonify(valid=False, reason="Unsupported version")
+
     qdata = request.json
     if qdata is None:
         return better_jsonify(valid=False, errmsg="Empty request.")

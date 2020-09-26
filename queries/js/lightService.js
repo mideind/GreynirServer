@@ -25,7 +25,6 @@ function getIdByName(ipAddress, username, name) {
         } 
 
         return ids;
-
     }
 
 }
