@@ -42,6 +42,7 @@ from settings import Settings
 
 from db import SessionContext, desc
 from db.models import Query as QueryRow
+from db.models import QueryData
 
 from tree import Tree
 from reynir import TOK, Tok, tokenize, correct_spaces
@@ -49,7 +50,8 @@ from reynir.fastparser import Fast_Parser, ParseForestDumper, ParseError, ffi
 from reynir.binparser import BIN_Grammar, GrammarError
 from reynir.reducer import Reducer
 from reynir.bindb import BIN_Db
-from nertokenizer import recognize_entities
+
+# from nertokenizer import recognize_entities
 from images import get_image_url
 from processor import modules_in_dir
 
@@ -192,11 +194,13 @@ class Query:
     _help_texts = dict()  # type: Dict[str, List[Callable]]
 
     def __init__(
-        self, session,
-        query: str, voice: str,
+        self,
+        session,
+        query: str,
+        voice: str,
         auto_uppercase: bool,
         location: Optional[LocationType],
-        client_id: str
+        client_id: str,
     ) -> None:
 
         q = self._preprocess_query_string(query)
@@ -602,6 +606,10 @@ class Query:
         """ Return True if this is a voice query """
         return self._voice
 
+    @property
+    def client_id(self):
+        return self._client_id
+
     def response(self):
         """ Return the detailed query answer """
         return self._response
@@ -626,6 +634,57 @@ class Query:
         """ Set a query context that will be stored and made available
             to the next query from the same client """
         self._context = ctx
+
+    def client_data(self, key):
+        """ Fetch client_id-associated data stored in the querydata table """
+        if not self.client_id:
+            return None
+        with SessionContext(read_only=True) as session:
+            try:
+                client_data = (
+                    session.query(QueryData)
+                    .filter(QueryData.key == key)
+                    .filter(QueryData.client_id == self.client_id)
+                ).one_or_none()
+                return None if client_data is None else client_data.data
+            except Exception as e:
+                logging.error(
+                    "Error fetching client '{0}' query data for key '{1}' from db: {2}".format(
+                        self.client_id, key, e
+                    )
+                )
+
+    def set_client_data(self, key, data):
+        """ Setter for client query data """
+        Query.save_query_data(self.client_id, key, data)
+
+    @staticmethod
+    def save_query_data(client_id, key, data):
+        with SessionContext(commit=True) as session:
+            try:
+                row = (
+                    session.query(QueryData)
+                    .filter(QueryData.key == key)
+                    .filter(QueryData.client_id == client_id)
+                ).one_or_none()
+
+                now = datetime.utcnow()
+                if not row:
+                    row = QueryData(
+                        client_id=client_id,
+                        key=key,
+                        created=now,
+                        modified=now,
+                        data=data,
+                    )
+                    session.add(row)
+                else:
+                    row.data = data
+                    row.modified = now
+                session.commit()
+                return row
+            except Exception as e:
+                logging.error("Error saving query data to db: {0}".format(e))
 
     @property
     def context(self):

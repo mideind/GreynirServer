@@ -23,6 +23,7 @@
 
 import pytest
 import os
+import json
 from urllib.parse import urlencode
 
 from main import app
@@ -118,7 +119,38 @@ def test_ifdtag_api(client):
     # assert len(resp.json["result"][0]) == 5
 
 
-def test_del_query_history(client):
+_KEY_RESTRICTED_ROUTES = frozenset(
+    (
+        # "/query_history.api",  # Disabled for now until clients are updated w. API key
+        "/speech.api",
+    )
+)
+
+
+def test_api_key_restriction(client):
+    """ Make calls to routes that are API key restricted, make sure they complain
+        if no API key is provided as a parameter. """
+    for path in _KEY_RESTRICTED_ROUTES:
+        resp = client.post(path)
+        assert resp.status_code == 200
+        assert resp.content_type == "application/json; charset=utf-8"
+        assert "errmsg" in resp.json and "missing API key" in resp.json["errmsg"]
+
+    # TODO: Add API key check that makes successful call w. correct key.
+    # This requires generating a key for the test and calling w. matching key
+
+    # This route requires special handling since it receives JSON via POST
+    resp = client.post(
+        "/register_query_data.api",
+        data=json.dumps(dict()),
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+    assert resp.content_type == "application/json; charset=utf-8"
+    assert "errmsg" in resp.json and "missing API key" in resp.json["errmsg"]
+
+
+def test_query_history_api(client):
     """ Test query history deletion API. """
 
     with SessionContext(commit=False) as session:

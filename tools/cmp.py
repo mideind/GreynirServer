@@ -29,13 +29,13 @@
     tag text via the /postag.api/v1?t=xxx URL. To specify a different server,
     set the TAGGER environment variable. For instance,
 
-    TAGGER=greynir.is python utils/cmp.py
+    TAGGER=greynir.is python tools/cmp.py
 
     will use the main https://greynir.is server as a POS tagger. It is
     also possible to avoid HTTP RPC and use local, in-process tagging by
     invoking
 
-    TAGGER=local python utils/cmp.py
+    TAGGER=local python tools/cmp.py
 
 """
 
@@ -50,9 +50,9 @@ from urllib.parse import quote
 from timeit import default_timer as timer
 from contextlib import contextmanager
 
-# Hack to make this Python program executable from the utils subdirectory
+# Hack to make this Python program executable from the tools subdirectory
 basepath, _ = os.path.split(os.path.realpath(__file__))
-_UTILS = os.sep + "utils"
+_UTILS = os.sep + "tools"
 if basepath.endswith(_UTILS):
     basepath = basepath[0:-len(_UTILS)]
     sys.path.append(basepath)

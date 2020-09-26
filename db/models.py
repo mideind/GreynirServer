@@ -685,3 +685,29 @@ class Feedback(Base):
         return "Feedback(name='{0}', email='{1}', topic='{2}', comment='{3}')".format(
             self.name, self.email, self.topic, self.comment
         )
+
+
+class QueryData(Base):
+
+    __tablename__ = "querydata"
+
+    __table_args__ = (PrimaryKeyConstraint("client_id", "key", name="querydata_pkey"),)
+
+    client_id = Column(String, nullable=False, primary_key=True)
+
+    # Key to distinguish between different types of json data that can be stored
+    key = Column(String(64), nullable=False, primary_key=True)
+
+    # Created timestamp
+    created = Column(DateTime, nullable=False)
+
+    # Last modified timestamp
+    modified = Column(DateTime, nullable=False)
+
+    # JSON data
+    data = Column(JSONB, nullable=False)
+
+    def __repr__(self):
+        return "QueryData(client_id='{0}', created='{1}', modified='{2}', key='{3}', data='{4}')".format(
+            self.client_id, self.created, self.modified, self.key, self.data
+        )

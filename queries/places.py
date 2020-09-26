@@ -99,6 +99,7 @@ QPlacesOpeningHours →
     | "hvað" "er" QPlacesSubject_nf QPlOpen "lengi"
     | "hve" "lengi" "er" QPlacesSubject_nf QPlOpen
     | "hversu" "lengi" "er" QPlacesSubject_nf QPlOpen
+    | "hvenær" "er" QPlacesSubject_nf QPlOpen
 
 QPlacesIsOpen →
     "er" "opið" QPlacesPrepAndSubject QPlNow?

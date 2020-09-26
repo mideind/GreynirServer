@@ -32,10 +32,10 @@ import json
 import collections 
 
 
-# Hack to make this Python program executable from the utils subdirectory
+# Hack to make this Python program executable from the tools subdirectory
 if __name__ == "__main__":
     basepath, _ = os.path.split(os.path.realpath(__file__))
-    if basepath.endswith("/utils") or basepath.endswith("\\utils"):
+    if basepath.endswith("/tools") or basepath.endswith("\\tools"):
         basepath = basepath[0:-6]
         sys.path.append(basepath)
 else:

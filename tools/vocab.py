@@ -52,11 +52,11 @@ except ImportError:
 psycopg2ext.register_type(psycopg2ext.UNICODE)
 psycopg2ext.register_type(psycopg2ext.UNICODEARRAY)
 
-# Hack to make this Python program executable from the utils subdirectory
+# Hack to make this Python program executable from the tools subdirectory
 basepath, _ = os.path.split(os.path.realpath(__file__))
-_UTILS = os.sep + "utils"
-if basepath.endswith(_UTILS):
-    basepath = basepath[0 : -len(_UTILS)]
+_TOOLS = os.sep + "tools"
+if basepath.endswith(_TOOLS):
+    basepath = basepath[0 : -len(_TOOLS)]
     sys.path.append(basepath)
 
 

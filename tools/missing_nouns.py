@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-    Read tokens for all articles in database, look for nouns 
+    Read tokens for all articles in database, look for nouns
     and check if they could be found in vocabulary. If not,
     add them to a dictionary and spit it out.
 """
