@@ -176,7 +176,9 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
         "Kórea": "KR",  # South Korea :)
         "Moldavía": "MD",
         "Trínidad": "TT",
+        "Trinidad": "TT",
         "Tóbagó": "TT",
+        "Tobago": "TT",
         "Seychelleseyjar": "SC",
         "Seychelles": "SC",
         "Salvador": "SV",
@@ -207,6 +209,7 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
         "Sameinuðu Arabísku Furstadæmin": "AE",
         "Norður-Súdan": "SD",
         "Taiwan": "TW",
+        "San Marino": "SM",
     }
 }
 
