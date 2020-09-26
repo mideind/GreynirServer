@@ -30,6 +30,7 @@ import logging
 import cachetools
 import random
 
+from query import Query
 from queries import gen_answer, query_json_api
 
 
@@ -106,7 +107,7 @@ _NEWS_CACHE_TTL = 300  # seconds, ttl = 5 mins
 
 
 @cachetools.cached(cachetools.TTLCache(1, _NEWS_CACHE_TTL))
-def _get_news_data(max_items=8):
+def _get_news_data(max_items: int = 8) -> list:
     """ Fetch news headline data from RÚV, preprocess it. """
     res = query_json_api(_NEWS_API)
     if not res or "nodes" not in res or not len(res["nodes"]):
@@ -119,7 +120,7 @@ def _get_news_data(max_items=8):
     return items[:max_items]
 
 
-def _clean_text(txt):
+def _clean_text(txt) -> str:
     txt = txt.replace("\r", " ").replace("\n", " ").replace("  ", " ")
     return txt.strip()
 
@@ -147,7 +148,7 @@ def top_news_answer():
 
 def sentence(state, result):
     """ Called when sentence processing is complete """
-    q = state["query"]
+    q: Query = state["query"]
     if "qtype" in result:
         # Successfully matched a query type
         q.set_qtype(result.qtype)

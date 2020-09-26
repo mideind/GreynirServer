@@ -28,7 +28,9 @@ import re
 
 from reynir.bindb import BIN_Db
 
+from query import Query
 from . import gen_answer
+
 
 _INTRO_QTYPE = "Introduction"
 
@@ -70,7 +72,7 @@ _WHATS_MY_NAME = frozenset(
 _DUNNO = "Ég veit ekki hvað þú heitir."
 
 
-def handle_plain_text(q):
+def handle_plain_text(q: Query) -> bool:
     """ Handle the user introducing herself """
     ql = q.query_lower.rstrip("?")
 

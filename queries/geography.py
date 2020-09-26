@@ -33,6 +33,7 @@ from datetime import datetime, timedelta
 
 from cityloc import capital_for_cc
 
+from query import Query
 from queries import country_desc, nom2dat, cap_first
 from reynir import NounPhrase
 from geo import (
@@ -50,7 +51,7 @@ _GEO_QTYPE = "Geography"
 TOPIC_LEMMAS = ["höfuðborg", "heimsálfa", "borg", "landafræði"]
 
 
-def help_text(lemma):
+def help_text(lemma: str):
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
@@ -178,7 +179,7 @@ _PLACENAME_FIXES = [
 ]
 
 
-def _preprocess(name):
+def _preprocess(name: str) -> str:
     """ Change country/city names mangled by speech recognition to
         the canonical spelling so lookup works. """
     fixed = name
@@ -193,7 +194,7 @@ def QGeoSubject(node, params, result):
     result.subject = nom
 
 
-def _capital_query(country, q):
+def _capital_query(country: str, q: Query):
     """ Generate answer to question concerning a country capital. """
 
     # Get country code
@@ -223,7 +224,7 @@ def _capital_query(country, q):
     return True
 
 
-def _which_country_query(subject, q):
+def _which_country_query(subject: str, q: Query):
     """ Generate answer to question concerning the country in which
         a given placename is located. """
     info = location_info(subject, "placename")
@@ -249,7 +250,7 @@ def _which_country_query(subject, q):
     return True
 
 
-def _which_continent_query(subject, q):
+def _which_continent_query(subject: str, q: Query):
     """ Generate answer to question concerning the continent on which
         a given country name or placename is located. """
 
@@ -291,7 +292,7 @@ def _which_continent_query(subject, q):
     return True
 
 
-def _loc_desc_query(subject, q):
+def _loc_desc_query(subject: str, q: Query):
     """ Generate answer to a question about where a
         country or placename is located. """
 
@@ -326,7 +327,7 @@ _HANDLERS = {
 
 def sentence(state, result):
     """ Called when sentence processing is complete """
-    q = state["query"]
+    q: Query = state["query"]
 
     handled = False
 

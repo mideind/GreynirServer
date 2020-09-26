@@ -35,6 +35,7 @@ import re
 import logging
 
 from reynir import NounPhrase
+from query import Query
 from queries import (
     gen_answer,
     cap_first,
@@ -173,7 +174,7 @@ _QTRAVELTIME_REGEXES = (
 )
 
 
-def _addr2nom(address):
+def _addr2nom(address: str) -> str:
     """ Convert location name to nominative form. """
     if address is None or address == "":
         return address
@@ -184,7 +185,7 @@ def _addr2nom(address):
     return nom
 
 
-def dist_answer_for_loc(matches, query):
+def dist_answer_for_loc(matches, query: Query):
     """ Generate response to distance query, e.g.
         "Hvað er ég langt frá X?" """
     locname = matches.group(1)
@@ -254,7 +255,7 @@ def dist_answer_for_loc(matches, query):
     return response, answer, voice
 
 
-def traveltime_answer_for_loc(matches, query):
+def traveltime_answer_for_loc(matches, query: Query):
     """ Generate answer to travel time query e.g.
         "Hvað er ég lengi að ganga/keyra í/til X?" """
     action_desc, tmode, locname = matches.group(2, 3, 5)
@@ -307,7 +308,7 @@ def traveltime_answer_for_loc(matches, query):
     return response, answer, voice
 
 
-def handle_plain_text(q):
+def handle_plain_text(q: Query) -> bool:
     """ Handle a plain text query, contained in the q parameter. """
     ql = q.query_lower.rstrip("?")
 

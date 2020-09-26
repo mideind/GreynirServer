@@ -45,6 +45,7 @@ from datetime import datetime
 import random
 
 import query
+from query import Query
 from queries import natlang_seq, numbers_to_neutral, cap_first
 from settings import Settings
 from reynir import correct_spaces
@@ -103,7 +104,7 @@ TOPIC_LEMMAS = [
 ]
 
 
-def help_text(lemma):
+def help_text(lemma: str):
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
@@ -587,7 +588,7 @@ def _meaning_filter_func(mm):
 
 
 @lru_cache(maxsize=None)
-def to_accusative(np):
+def to_accusative(np: str):
     """ Return the noun phrase after casting it from nominative to accusative case """
     np = straeto.BusStop.voice(np)
     return query.to_accusative(np, meaning_filter_func=_meaning_filter_func)
@@ -619,7 +620,7 @@ def voice_distance(d):
     return "{0}0 metrar".format(m)
 
 
-def hms_fmt(hms):
+def hms_fmt(hms: tuple) -> str:
     """ Format a (h, m, s) tuple to a HH:MM string """
     h, m, s = hms
     if s >= 30:
@@ -638,12 +639,12 @@ def hms_fmt(hms):
     return "{0:02}:{1:02}".format(h, m)
 
 
-def hms_diff(hms1, hms2):
+def hms_diff(hms1: tuple, hms2: tuple) -> int:
     """ Return (hms1 - hms2) in minutes, where both are (h, m, s) tuples """
     return (hms1[0] - hms2[0]) * 60 + (hms1[1] - hms2[1])
 
 
-def query_nearest_stop(query, session, result):
+def query_nearest_stop(query: Query, session, result):
     """ A query for the stop closest to the user """
     # Retrieve the client location
     location = query.location
@@ -674,7 +675,7 @@ def query_nearest_stop(query, session, result):
     return response, answer, voice_answer
 
 
-def query_arrival_time(query, session, result):
+def query_arrival_time(query: Query, session, result):
     """ Answers a query for the arrival time of a bus """
 
     # Examples:
@@ -903,7 +904,7 @@ def query_arrival_time(query, session, result):
     return response, answer, voice_answer
 
 
-def query_which_route(query, session, result):
+def query_which_route(query: Query, session, result):
     """ Which routes stop at a given bus stop """
     stop_name = result.stop_name  # 'Einarsnes', 'Fiskislóð'...
 
@@ -972,7 +973,7 @@ _QFUNC = {
 
 def sentence(state, result):
     """ Called when sentence processing is complete """
-    q = state["query"]
+    q: Query = state["query"]
     if "qtype" in result:
         # Successfully matched a query type
         q.set_qtype(result.qtype)

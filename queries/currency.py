@@ -31,6 +31,7 @@ import cachetools
 import random
 import logging
 
+from query import Query
 from queries import query_json_api, iceformat_float, is_plural
 from settings import Settings
 
@@ -324,7 +325,7 @@ QCurAmountConversion →
 """
 
 
-def parse_num(num_str):
+def parse_num(num_str: str):
     """ Parse Icelandic number string to float or int """
     num = None
     try:
@@ -354,7 +355,7 @@ def add_num(num, result):
         result.numbers.append(num)
 
 
-def add_currency(curr, result):
+def add_currency(curr: str, result):
     if "currencies" not in result:
         result.currencies = []
     result.currencies.append(curr)
@@ -438,7 +439,7 @@ _CURR_CACHE_TTL = 3600  # seconds
 
 
 @cachetools.cached(cachetools.TTLCache(1, _CURR_CACHE_TTL))
-def _fetch_exchange_rates():
+def _fetch_exchange_rates() -> dict:
     """ Fetch exchange rate data from apis.is and cache it. """
     res = query_json_api(_CURR_API_URL)
     if not res or "results" not in res:
@@ -449,7 +450,7 @@ def _fetch_exchange_rates():
     return {c["shortName"]: c["value"] for c in res["results"]}
 
 
-def _query_exchange_rate(curr1, curr2):
+def _query_exchange_rate(curr1: str, curr2: str):
     """ Returns exchange rate of two ISO 4217 currencies """
     # print("Gengi {0} gagnvart {1}".format(curr1, curr2))
 
@@ -476,7 +477,7 @@ def _query_exchange_rate(curr1, curr2):
 
 def sentence(state, result):
     """ Called when sentence processing is complete """
-    q = state["query"]
+    q: Query = state["query"]
     if "qtype" in result and "op" in result:
         # Successfully matched a query type
         val = None

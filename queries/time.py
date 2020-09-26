@@ -37,6 +37,7 @@ from pytz import country_timezones, timezone
 
 from reynir.bindb import BIN_Db
 from geo import isocode_for_country_name, lookup_city_info, capitalize_placename
+from query import Query
 from queries import timezone4loc
 
 
@@ -66,7 +67,7 @@ _TIME_QUERIES = frozenset(
 TOPIC_LEMMAS = ["klukka", "tími"]
 
 
-def help_text(lemma):
+def help_text(lemma: str):
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
@@ -81,7 +82,7 @@ def help_text(lemma):
     )
 
 
-def handle_plain_text(q):
+def handle_plain_text(q: Query) -> bool:
     """ Handle a plain text query, contained in the q parameter
         which is an instance of the query.Query class.
         Returns True if the query was handled, and in that case

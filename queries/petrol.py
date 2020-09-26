@@ -31,6 +31,7 @@ import cachetools
 import random
 
 from geo import distance
+from query import Query
 from queries import query_json_api, gen_answer, distance_desc, krona_desc
 
 
@@ -52,7 +53,7 @@ TOPIC_LEMMAS = [
 ]
 
 
-def help_text(lemma):
+def help_text(lemma: str):
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
@@ -214,7 +215,7 @@ _PETROL_CACHE_TTL = 3600  # seconds, ttl 1 hour
 
 
 @cachetools.cached(cachetools.TTLCache(1, _PETROL_CACHE_TTL))
-def _get_petrol_station_data():
+def _get_petrol_station_data() -> list:
     """ Fetch list of petrol stations w. prices from apis.is (Gasvaktin) """
     pd = query_json_api(_PETROL_API)
     if not pd or "results" not in pd:
@@ -228,7 +229,7 @@ def _get_petrol_station_data():
     return pd["results"]
 
 
-def _stations_with_distance(loc):
+def _stations_with_distance(loc: tuple) -> list:
     """ Return list of petrol stations w. added distance data. """
     pd = _get_petrol_station_data()
     if not pd:
@@ -242,7 +243,7 @@ def _stations_with_distance(loc):
     return pd
 
 
-def _closest_petrol_station(loc):
+def _closest_petrol_station(loc: tuple) -> dict:
     """ Find petrol station closest to the given location. """
     stations = _stations_with_distance(loc)
     if not stations:
@@ -253,7 +254,7 @@ def _closest_petrol_station(loc):
     return dist_sorted[0] if dist_sorted else None
 
 
-def _cheapest_petrol_station():
+def _cheapest_petrol_station() -> dict:
     stations = _get_petrol_station_data()
     if not stations:
         return None
@@ -267,7 +268,7 @@ def _cheapest_petrol_station():
 _CLOSE_DISTANCE = 5.0  # km
 
 
-def _closest_cheapest_petrol_station(loc):
+def _closest_cheapest_petrol_station(loc: tuple) -> dict:
     stations = _stations_with_distance(loc)
     if not stations:
         return None
@@ -283,7 +284,7 @@ def _closest_cheapest_petrol_station(loc):
 _ERRMSG = "Ekki tókst að sækja upplýsingar um bensínstöðvar."
 
 
-def _answ_for_petrol_query(q, result):
+def _answ_for_petrol_query(q: Query, result):
     req_distance = True
     if result.qkey == "ClosestStation":
         station = _closest_petrol_station(q.location)
@@ -347,7 +348,7 @@ def _answ_for_petrol_query(q, result):
 
 def sentence(state, result):
     """ Called when sentence processing is complete """
-    q = state["query"]
+    q: Query = state["query"]
     if "qtype" in result and "qkey" in result:
         # Successfully matched a query type
         try:

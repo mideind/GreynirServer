@@ -28,8 +28,9 @@
 import random
 from datetime import datetime
 
+from query import Query
 
-def help_text(lemma):
+def help_text(lemma: str):
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
@@ -442,7 +443,7 @@ def QYuleDateRel(node, params, result):
 
 def sentence(state, result):
     """ Called when sentence processing is complete """
-    q = state["query"]
+    q: Query = state["query"]
     if "qtype" not in result:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return

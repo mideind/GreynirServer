@@ -33,6 +33,7 @@ import random
 from datetime import datetime
 
 from geo import in_iceland, iceprep_for_street
+from query import Query
 from queries import (
     gen_answer,
     query_places_api,
@@ -49,7 +50,7 @@ _PLACES_QTYPE = "Places"
 TOPIC_LEMMAS = ["opnunartími", "opna", "loka", "lokunartími"]
 
 
-def help_text(lemma):
+def help_text(lemma: str):
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
@@ -158,7 +159,7 @@ $score(+35) QPlacesQuery
 _PLACENAME_MAP = {}
 
 
-def _fix_placename(pn):
+def _fix_placename(pn: str) -> str:
     p = pn.capitalize()
     return _PLACENAME_MAP.get(p, p)
 
@@ -191,7 +192,7 @@ _PLACES_API_ERRMSG = "Ekki tókst að fletta upp viðkomandi stað"
 _NOT_IN_ICELAND_ERRMSG = "Enginn staður með þetta heiti fannst á Íslandi"
 
 
-def _parse_coords(place):
+def _parse_coords(place: dict) -> tuple:
     """ Return tuple of coordinates given a place info data structure
         from Google's Places API. """
     try:
@@ -205,7 +206,7 @@ def _parse_coords(place):
     return None
 
 
-def _top_candidate(cand):
+def _top_candidate(cand: list) -> dict:
     """ Return first place in Iceland in Google Places Search API results. """
     for place in cand:
         coords = _parse_coords(place)
@@ -213,7 +214,7 @@ def _top_candidate(cand):
             return place
 
 
-def answ_address(placename, loc, qtype):
+def answ_address(placename: str, loc: tuple, qtype: str):
     """ Generate answer to a question concerning the address of a place. """
     # Look up placename in places API
     res = query_places_api(
@@ -255,7 +256,7 @@ def answ_address(placename, loc, qtype):
     return response, answer, voice
 
 
-def answ_openhours(placename, loc, qtype):
+def answ_openhours(placename: str, loc: tuple, qtype: str):
     """ Generate answer to a question concerning the opening hours of a place. """
     # Look up placename in places API
     res = query_places_api(
@@ -359,7 +360,7 @@ _HANDLER_MAP = {
 
 def sentence(state, result):
     """ Called when sentence processing is complete """
-    q = state["query"]
+    q: Query = state["query"]
     if "qtype" in result and "qkey" in result and "subject_nom" in result:
         # Successfully matched a query type
         subj = result["subject_nom"]

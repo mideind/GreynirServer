@@ -45,7 +45,7 @@ from settings import changedlocale
 from util import google_api_key
 
 
-def natlang_seq(words, oxford_comma=False):
+def natlang_seq(words: list, oxford_comma: bool = False) -> str:
     """ Generate an Icelandic natural language sequence of words
         e.g. "A og B", "A, B og C", "A, B, C og D". """
     if not words:
@@ -57,7 +57,7 @@ def natlang_seq(words, oxford_comma=False):
     )
 
 
-def nom2dat(w):
+def nom2dat(w: str) -> str:
     """ Look up the dative of an Icelandic noun given its nominative form. """
     try:
         return NounPhrase(w).dative
@@ -66,7 +66,7 @@ def nom2dat(w):
     return w
 
 
-def is_plural(num):
+def is_plural(num) -> bool:
     """ Determine whether an Icelandic word following a given number should be
         plural or not, e.g. "21 maður", "22 menn", "1,1 kílómetri", "11 menn" etc.
         Accepts string, float or int as argument. """
@@ -74,7 +74,7 @@ def is_plural(num):
     return not (sn.endswith("1") and not sn.endswith("11"))
 
 
-def sing_or_plur(num, sing, pl):
+def sing_or_plur(num, sing: str, pl: str) -> str:
     """ Utility function that returns a formatted string w. Icelandic number and a subsequent
         singular or plural noun, as appropriate, e.g. "1 einstaklingur", "2 einstaklingar",
         "21 einstaklingur" etc. Accepts both floats and ints as first argument. """
@@ -140,7 +140,7 @@ _NUMBER_WORDS = {
 }
 
 
-def parse_num(node, num_str):
+def parse_num(node, num_str: str) -> float:
     """ Parse Icelandic number string to float or int.
         TODO: This needs to be a more capable, generic function. There are
         several mildly differing implementions in various query modules. """
@@ -221,7 +221,7 @@ NUMBERS_NEUTRAL = {
 HUNDREDS = ("tvö", "þrjú", "fjögur", "fimm", "sex", "sjö", "átta", "níu")
 
 
-def numbers_to_neutral(s):
+def numbers_to_neutral(s: str) -> str:
     """ Convert integers within the string s to voice
         representations using neutral gender, i.e.
         4 -> 'fjögur', 21 -> 'tuttugu og eitt' """
@@ -246,7 +246,7 @@ def numbers_to_neutral(s):
     return re.sub(r"(\d+)", convert, s)
 
 
-def country_desc(cc):
+def country_desc(cc: str) -> str:
     """ Generate Icelandic description of being in a particular country
         with correct preposition and case e.g. 'á Spáni', 'í Þýskalandi'. """
     cn = country_name_for_isocode(cc)
@@ -254,7 +254,7 @@ def country_desc(cc):
     return "{0} {1}".format(prep, nom2dat(cn))
 
 
-def cap_first(s):
+def cap_first(s: str) -> str:
     """ Capitalize first character in a string. """
     return s[0].upper() + s[1:] if s else s
 
@@ -289,7 +289,7 @@ _TIMEUNIT_INTERVALS = (
 _CASE_ABBR = ["nf", "þf", "þgf", "ef"]
 
 
-def time_period_desc(seconds, case="nf", omit_seconds=True):
+def time_period_desc(seconds: int, case: str = "nf", omit_seconds: bool = True) -> str:
     """ Generate Icelandic description of the length of a given time
         span, e.g. "4 dagar, 6 klukkustundir og 21 mínúta. """
     assert case in _CASE_ABBR
@@ -316,7 +316,9 @@ _METER_NOUN = (
 )
 
 
-def distance_desc(km_dist, case="nf", in_metres=1.0, abbr=False):
+def distance_desc(
+    km_dist: float, case: str = "nf", in_metres: float = 1.0, abbr: bool = False
+) -> str:
     """ Generate an Icelandic description of distance in km/m w. option to
         specify case, abbreviations, cutoff for returning desc in metres. """
     assert case in _CASE_ABBR
@@ -349,7 +351,7 @@ _KRONA_NOUN = (
 )
 
 
-def krona_desc(amount, case="nf"):
+def krona_desc(amount: float, case: str = "nf") -> str:
     """ Generate description of an amount in krónas, e.g.
         "213,5 krónur", "361 króna", "70,11 krónur", etc. """
     assert case in _CASE_ABBR
@@ -358,7 +360,7 @@ def krona_desc(amount, case="nf"):
     return "{0} {1}".format(iceformat_float(amount), _KRONA_NOUN[plidx][cidx])
 
 
-def strip_trailing_zeros(num_str):
+def strip_trailing_zeros(num_str: str) -> str:
     """ Strip trailing decimal zeros from an Icelandic-style
         float num string, e.g. "17,0" -> "17". """
     if "," in num_str:
@@ -366,7 +368,9 @@ def strip_trailing_zeros(num_str):
     return num_str
 
 
-def iceformat_float(fp_num, decimal_places=2, strip_zeros=True):
+def iceformat_float(
+    fp_num: float, decimal_places: int = 2, strip_zeros: bool = True
+) -> str:
     """ Convert number to Icelandic decimal format string. """
     with changedlocale(category="LC_NUMERIC"):
         fmt = "%.{0}f".format(decimal_places)
@@ -374,17 +378,17 @@ def iceformat_float(fp_num, decimal_places=2, strip_zeros=True):
         return strip_trailing_zeros(res) if strip_zeros else res
 
 
-def icequote(s):
+def icequote(s: str) -> str:
     """ Return string surrounded by Icelandic-style quotation marks. """
     return "„{0}“".format(s.strip())
 
 
-def gen_answer(a):
+def gen_answer(a: str) -> dict:
     """ Convenience function for query modules: response, answer, voice answer """
     return dict(answer=a), a, a
 
 
-def query_json_api(url):
+def query_json_api(url: str):
     """ Request the URL, expecting a JSON response which is
         parsed and returned as a Python data structure. """
 
@@ -408,7 +412,7 @@ def query_json_api(url):
         logging.warning("Error parsing JSON API response: {0}".format(e))
 
 
-def query_xml_api(url):
+def query_xml_api(url: str):
     """ Request the URL, expecting an XML response which is
         parsed and returned as an XML document object. """
 
@@ -440,7 +444,7 @@ _MAPS_API_COORDS_URL = (
 )
 
 
-def query_geocode_api_coords(lat, lon):
+def query_geocode_api_coords(lat: float, lon: float) -> dict:
     """ Look up coordinates in Google's geocode API. """
     # Load API key
     key = google_api_key()
@@ -461,7 +465,7 @@ _MAPS_API_ADDR_URL = (
 )
 
 
-def query_geocode_api_addr(addr):
+def query_geocode_api_addr(addr: str) -> dict:
     """ Look up address in Google's geocode API. """
     # Load API key
     key = google_api_key()
@@ -485,7 +489,7 @@ _MAPS_API_TRAVELTIME_URL = (
 _TRAVEL_MODES = frozenset(("walking", "driving", "bicycling", "transit"))
 
 
-def query_traveltime_api(startloc, endloc, mode="walking"):
+def query_traveltime_api(startloc: tuple, endloc: tuple, mode: str = "walking") -> dict:
     """ Look up travel time between two places, given a particular mode
         of transportation, i.e. one of the modes in _TRAVEL_MODES.
         The location arguments can be names, to be resolved by the API, or
@@ -521,8 +525,11 @@ _PLACES_LOCBIAS_RADIUS = 5000  # Metres
 
 
 def query_places_api(
-    placename, userloc=None, radius=_PLACES_LOCBIAS_RADIUS, fields=None
-):
+    placename: str,
+    userloc: tuple = None,
+    radius: float = _PLACES_LOCBIAS_RADIUS,
+    fields: str = None,
+) -> dict:
     """ Look up a placename in Google's Places API. For details, see:
         https://developers.google.com/places/web-service/search """
 
@@ -563,7 +570,7 @@ _PLACEDETAILS_API_URL = "https://maps.googleapis.com/maps/api/place/details/json
 
 
 @lru_cache(maxsize=32)
-def query_place_details(place_id, fields=None):
+def query_place_details(place_id, fields: str = None) -> dict:
     """ Look up place details by ID in Google's Place Details API. If "fields"
         parameter is omitted, *all* fields are returned. For details, see
         https://developers.google.com/places/web-service/details """
@@ -599,7 +606,7 @@ def _tzwhere_singleton():
     return _TZW
 
 
-def timezone4loc(loc, fallback=None):
+def timezone4loc(loc: tuple, fallback: str = None):
     """ Returns timezone string given a tuple of coordinates.
         Fallback argument should be a 2-char ISO 3166 country code."""
     if loc:
@@ -610,7 +617,7 @@ def timezone4loc(loc, fallback=None):
 
 
 @lru_cache(maxsize=32)
-def read_jsfile(filename):
+def read_jsfile(filename: str) -> str:
     from rjsmin import jsmin
 
     basepath, _ = os.path.split(os.path.realpath(__file__))

@@ -31,6 +31,7 @@ import re
 import logging
 import random
 
+from query import Query
 from queries import iceformat_float, gen_answer
 
 
@@ -58,7 +59,7 @@ TOPIC_LEMMAS = [
 ]
 
 
-def help_text(lemma):
+def help_text(lemma: str):
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     if lemma in ("kvaðratrót", "ferningsrót"):
@@ -367,7 +368,7 @@ QArPi →
 )
 
 
-def parse_num(num_str):
+def parse_num(num_str: str):
     """ Parse Icelandic number string to float or int """
     num = None
     try:
@@ -594,7 +595,7 @@ _OP_NUM_ARGS = {
 _VAT_MULT = 1.24
 
 
-def calc_arithmetic(query, result):
+def calc_arithmetic(query: Query, result):
     """ Calculate the answer to an arithmetic query """
     operator = result.operator
     nums = result.numbers
@@ -676,7 +677,7 @@ def calc_arithmetic(query, result):
     return response, answer, voice_answer
 
 
-def pi_answer(q, result):
+def pi_answer(q: Query, result):
     """ Define pi (π) """
     answer = "Talan π („pí“) er stærðfræðilegi fastinn 3,14159265359 eða þar um bil."
     voice = "Talan pí er stærðfræðilegi fastinn 3,14159265359 eða þar um bil."
@@ -687,7 +688,7 @@ def pi_answer(q, result):
 
 def sentence(state, result):
     """ Called when sentence processing is complete """
-    q = state["query"]
+    q: Query = state["query"]
     if "qtype" in result:
         # Successfully matched a query type
         q.set_qtype(result.qtype)

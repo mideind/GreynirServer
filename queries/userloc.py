@@ -25,6 +25,7 @@
 import re
 import logging
 
+from query import Query
 from queries import (
     gen_answer,
     query_geocode_api_coords,
@@ -122,7 +123,7 @@ def QUserLocationPostcode(node, params, result):
     result.qkey = "CurrentPostcode"
 
 
-def _addrinfo_from_api_result(result):
+def _addrinfo_from_api_result(result) -> tuple:
     """ Extract relevant address components from Google API result """
 
     comp = result["address_components"]
@@ -158,7 +159,7 @@ def _addrinfo_from_api_result(result):
     return (street, num, locality, postcode, country)
 
 
-def street_desc(street_nom, street_num, locality_nom):
+def street_desc(street_nom: str, street_num: int, locality_nom: str) -> str:
     """ Generate description of being on a particular (Icelandic) street with
         correct preposition and case + locality e.g. 'á Fiskislóð 31 í Reykjavík'. """
     street_dat = None
@@ -195,13 +196,13 @@ def street_desc(street_nom, street_num, locality_nom):
     return street_comp
 
 
-def _locality_desc(locality_nom):
+def _locality_desc(locality_nom: str) -> str:
     """ Return an appropriate preposition plus a locality name in dative case """
     locality_dat = nom2dat(locality_nom)
     return iceprep_for_placename(locality_nom) + " " + locality_dat
 
 
-def _addr4voice(addr):
+def _addr4voice(addr: str) -> str:
     """ Prepare an address string for voice synthesizer. """
     # E.g. "Fiskislóð 5-9" becomes "Fiskislóð 5 til 9"
     s = re.sub(r"(\d+)\-(\d+)", r"\1 til \2", addr)
@@ -210,7 +211,7 @@ def _addr4voice(addr):
     return numbers_to_neutral(s)
 
 
-def answer_for_location(loc):
+def answer_for_location(loc: tuple):
     # Send API request
     res = query_geocode_api_coords(loc[0], loc[1])
 
@@ -269,7 +270,7 @@ def answer_for_location(loc):
     return response, answer, voice
 
 
-def answer_for_postcode(loc):
+def answer_for_postcode(loc: tuple):
     # Send API request
     res = query_geocode_api_coords(loc[0], loc[1])
 
@@ -303,7 +304,7 @@ def answer_for_postcode(loc):
 
 def sentence(state, result):
     """ Called when sentence processing is complete """
-    q = state["query"]
+    q: Query = state["query"]
     if "qtype" in result and "qkey" in result:
         # Successfully matched a query type
         q.set_qtype(result.qtype)

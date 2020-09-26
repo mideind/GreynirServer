@@ -116,7 +116,7 @@ def _fetch_flight_info(from_date, to_date, ftype="arrivals"):
 _AIRPORT_ABBR_MAP = {"Köben": "Kaupmannahöfn"}
 
 
-def handle_plain_text(q):
+def handle_plain_text(q) -> bool:
     """ Handle a plain text query, contained in the q parameter """
     return False  # This module is disabled for now
 

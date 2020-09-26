@@ -43,6 +43,7 @@ from treeutil import TreeUtility
 from reynir import TOK, correct_spaces
 from reynir.bintokenizer import stems_of_token
 from search import Search
+from query import Query
 
 # from query import _QUERY_ROOT
 from queries import cap_first
@@ -809,7 +810,7 @@ _Q_ONLY_VOICE = frozenset(("Repeat",))
 
 def sentence(state, result) -> None:
     """ Called when sentence processing is complete """
-    q = state["query"]
+    q: Query = state["query"]
     if "qtype" in result:
         # Successfully matched a query type
         q.set_qtype(result.qtype)

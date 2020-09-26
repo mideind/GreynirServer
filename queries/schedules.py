@@ -32,6 +32,7 @@ import logging
 import random
 from datetime import datetime, timedelta
 
+from query import Query
 from queries import query_json_api, query_xml_api, gen_answer
 
 
@@ -52,7 +53,7 @@ TOPIC_LEMMAS = [
 ]
 
 
-def help_text(lemma):
+def help_text(lemma: str):
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
@@ -178,7 +179,7 @@ def QSchRadioStationNowQuery(node, params, result):
     result.qkey = _RADIO_QKEY
 
 
-def _clean_desc(d):
+def _clean_desc(d: str) -> str:
     """ Return first sentence in multi-sentence string. """
     return d.replace("Dr.", "Doktor").replace("?", ".").split(".")[0]
 
@@ -189,7 +190,7 @@ _CACHED_TV_SCHEDULE = None
 _TV_LAST_FETCHED = None
 
 
-def _query_tv_schedule_api():
+def _query_tv_schedule_api() -> list:
     """ Fetch current television schedule from API, or return cached copy. """
     global _CACHED_TV_SCHEDULE
     global _TV_LAST_FETCHED
@@ -213,7 +214,7 @@ _RADIO_SCHED_CACHE = {}
 _RADIO_LAST_FETCHED = {}
 
 
-def _query_radio_schedule_api(channel):
+def _query_radio_schedule_api(channel: str) -> list:
     """ Fetch current radio schedule from API, or return cached copy. """
     assert channel in ("ras1", "ras2")
     global _RADIO_SCHED_CACHE
@@ -238,7 +239,7 @@ def _query_radio_schedule_api(channel):
     return _RADIO_SCHED_CACHE[channel]
 
 
-def _span(p):
+def _span(p: dict):
     """ Return the time span of a program """
     start = datetime.strptime(p["startTime"], "%Y-%m-%d %H:%M:%S")
     h, m, s = p["duration"].split(":")
@@ -246,7 +247,7 @@ def _span(p):
     return start, start + dur
 
 
-def _curr_prog(sched):
+def _curr_prog(sched: list) -> dict:
     """ Return current TV program, given a TV schedule
         i.e. a list of programs in chronological sequence. """
     now = datetime.utcnow()
@@ -260,7 +261,7 @@ def _curr_prog(sched):
     return None
 
 
-def _evening_prog(sched):
+def _evening_prog(sched: list) -> list:
     """ Return programs on a TV schedule starting from 19:00,
         or at the current time if later """
     start = datetime.utcnow()
@@ -275,7 +276,7 @@ def _evening_prog(sched):
     return result
 
 
-def _gen_curr_tv_program_answer(q):
+def _gen_curr_tv_program_answer(q: Query):
     """ Generate answer to query about current TV program """
     sched = _query_tv_schedule_api()
     if not sched:
@@ -293,7 +294,7 @@ def _gen_curr_tv_program_answer(q):
     return gen_answer(answ)
 
 
-def _gen_evening_tv_program_answer(q):
+def _gen_evening_tv_program_answer(q: Query) -> dict:
     """ Generate answer to query about the evening's TV programs """
     sched = _query_tv_schedule_api()
     if not sched:
@@ -311,10 +312,9 @@ def _gen_evening_tv_program_answer(q):
     return dict(answer=answer), answer, voice_answer
 
 
-def _gen_curr_radio_program_answer(q):
+def _gen_curr_radio_program_answer(q: Query):
     xmldoc = _query_radio_schedule_api("ras1")
-    print(xmldoc)
-    return None
+    return xmldoc
 
 
 _HANDLER_MAP = {
@@ -326,7 +326,7 @@ _HANDLER_MAP = {
 
 def sentence(state, result):
     """ Called when sentence processing is complete """
-    q = state["query"]
+    q: Query = state["query"]
     handler_keys = _HANDLER_MAP.keys()
     if "qtype" in result and "qkey" in result and result["qkey"] in handler_keys:
         # Successfully matched a query type

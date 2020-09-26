@@ -34,6 +34,7 @@
 import re
 import random
 
+from query import Query
 
 _TELEPHONE_QTYPE = "Telephone"
 
@@ -41,7 +42,7 @@ _TELEPHONE_QTYPE = "Telephone"
 TOPIC_LEMMAS = ["hringja", "símanúmer", "sími"]
 
 
-def help_text(lemma):
+def help_text(lemma: str):
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get hringt ef þú segir til dæmis: {0}".format(
@@ -143,7 +144,7 @@ _PHONECALL_REGEXES = frozenset(
 )
 
 
-def handle_plain_text(q):
+def handle_plain_text(q: Query) -> bool:
     """ Handle a plain text query requesting a call to a telephone number. """
     ql = q.query_lower.rstrip("?")
 
