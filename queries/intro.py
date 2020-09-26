@@ -40,7 +40,6 @@ _MY_NAME_IS_REGEXES = frozenset(
         r"^nafnið mitt er (.+)$",
         r"^ég ber heitið (.+)$",
         r"^ég ber nafnið (.+)$",
-        r"^(.+) heiti ég$",  # Might grab wrong queries?
     )
 )
 
@@ -52,12 +51,19 @@ _INTRODUCTION_RESPONSES = {
 
 _WHATS_MY_NAME = frozenset(
     (
+        "hvað heiti ég fullu nafni",
         "hvað heiti ég",
         "veistu hvað ég heiti",
+        "veistu hvaða ég heiti fullu nafni"
         "veistu ekki hvað ég heiti",
         "hver er ég",
         "veistu hver ég er",
         "veistu ekki hver ég er",
+        "hvaða nafn er ég með",
+        "hvaða nafni heiti ég",
+        "veistu hvaða nafni ég heiti",
+        "hvað heiti ég eiginlega",
+        "hvaða nafn ber ég",
     )
 )
 

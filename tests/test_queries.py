@@ -353,11 +353,23 @@ def test_query_api(client):
     assert "Danmörku" in json["answer"]
 
     # Intro module
-    json = qmcall(c, {"q": "ég heiti Gunna"}, "Introduction")
+    json = qmcall(
+        c,
+        {"q": "ég heiti Gunna Jónsdóttir", "client_id": DUMMY_CLIENT_ID},
+        "Introduction",
+    )
     assert json["answer"].startswith("Sæl og blessuð")
 
-    json = qmcall(c, {"q": "ég heiti Gunnar"}, "Introduction")
+    json = qmcall(c, {"q": "hvað heiti ég", "client_id": DUMMY_CLIENT_ID})
+    assert "Gunna Jónsdóttir" in json["answer"]
+
+    json = qmcall(
+        c, {"q": "Nafn mitt er Gunnar", "client_id": DUMMY_CLIENT_ID}, "Introduction"
+    )
     assert json["answer"].startswith("Sæll og blessaður")
+
+    json = qmcall(c, {"q": "veistu hvað ég heiti", "client_id": DUMMY_CLIENT_ID})
+    assert json["answer"].startswith("Þú heitir Gunnar")
 
     json = qmcall(c, {"q": "ég heiti Boutros Boutros-Ghali"}, "Introduction")
     assert json["answer"].startswith("Gaman að kynnast") and "Boutros" in json["answer"]
