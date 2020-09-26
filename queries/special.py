@@ -280,6 +280,10 @@ _RUDE = (
 def _rudeness(qs: str, q: Query) -> AnswerType:
     # Sigh + response
     answ = choice(_RUDE)
+    nd = q.client_data("name")
+    if nd and "first" in nd:
+        name = nd["first"]
+        answ = f"Æi, {name}. {answ}"
     voice = '<amazon:breath duration="long" volume="x-loud"/> {0}'.format(answ)
     return {"answer": answ, "voice": voice, "is_question": False}
 
