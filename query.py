@@ -654,9 +654,37 @@ class Query:
                     )
                 )
 
-    def set_client_data(self, key, json):
+    def set_client_data(self, key, data):
         """ Setter for client query data """
-        pass
+        Query.save_query_data(self.client_id, key, data)
+
+    @staticmethod
+    def save_query_data(client_id, key, data):
+        with SessionContext(commit=True) as session:
+            try:
+                row = (
+                    session.query(QueryData)
+                    .filter(QueryData.key == key)
+                    .filter(QueryData.client_id == client_id)
+                ).one_or_none()
+
+                now = datetime.utcnow()
+                if not row:
+                    row = QueryData(
+                        client_id=client_id,
+                        key=key,
+                        created=now,
+                        modified=now,
+                        data=data,
+                    )
+                    session.add(row)
+                else:
+                    row.data = data
+                    row.modified = now
+                session.commit()
+                return row
+            except Exception as e:
+                logging.error("Error saving query data to db: {0}".format(e))
 
     @property
     def context(self):

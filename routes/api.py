@@ -38,6 +38,7 @@ from correct import check_grammar
 from reynir.binparser import canonicalize_token
 from article import Article as ArticleProxy
 from query import process_query
+from query import Query as QueryObject
 from doc import SUPPORTED_DOC_MIMETYPES, MIMETYPE_TO_DOC_CLASS
 from speech import get_synthesized_text_url
 from util import greynir_api_key
@@ -613,44 +614,14 @@ def register_query_data_api():
     ):
         return better_jsonify(valid=False, errmsg="Missing parameters.")
 
-    # Calling this endpoint requires Greynir API key
-    key = qdata.get("key")
+    # Calling this endpoint requires the Greynir API key
+    key = qdata.get("api_key")
     gak = greynir_api_key()
     if not gak or key != gak:
         return better_jsonify(valid=False, errmsg="Invalid or missing API key.")
 
-    with SessionContext(commit=True) as session:
-        try:
-            stored_data = (
-                session.query(QueryData)
-                .filter(QueryData.key == qdata["key"])
-                .filter(QueryData.client_id == qdata["client_id"])
-            ).one_or_none()
+    success = QueryObject.save_query_data(qdata["client_id"], qdata["key"], qdata["data"])
+    if success:
+        return better_jsonify(valid=True, msg="Query data registered")
 
-            if not stored_data:
-                curr_time = datetime.utcnow()
-                qrow = QueryData(
-                    client_id=qdata["client_id"],
-                    key=qdata["key"],
-                    created=curr_time,
-                    modified=curr_time,
-                    data=qdata["data"],
-                )
-                session.add(qrow)
-                return better_jsonify(valid=True, action="added")
-            else:
-                stored_json = stored_data.data
-                stored_json[qdata["key"]].update(qdata["data"][qdata["key"]])
-
-                stored_data.data = stored_json
-
-                session.query(QueryData).filter(QueryData.key == qdata["key"]).filter(
-                    QueryData.client_id == qdata["client_id"]
-                ).update({"data": stored_json, "modified": datetime.utcnow()})
-
-                return better_jsonify(valid=True, action="updated")
-
-        except Exception as e:
-            logging.error("Error saving to db: {0}".format(e))
-
-    return better_jsonify(valid=False)
+    return better_jsonify(valid=False, errmsg="Error registering query data.")
