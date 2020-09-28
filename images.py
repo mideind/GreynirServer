@@ -248,7 +248,7 @@ def _get_cached_entry(name: str, url: str, enclosing_session=None):
         )
 
 
-def _purge_single(key: str, ctype: str = None, enclosing_session=None):
+def _purge_single(key: str, ctype: Optional[str] = None, enclosing_session=None):
     """ Remove cache entry """
     with SessionContext(commit=True, session=enclosing_session) as session:
         filters = [Link.key == key]

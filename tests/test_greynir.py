@@ -294,7 +294,7 @@ def test_geo():
     assert parse_address_string("   Fiskislóð  31") == {
         "street": "Fiskislóð",
         "number": 31,
-        "letter": None,
+        "letter": "",
     }
     assert parse_address_string("Öldugata 19c ") == {
         "street": "Öldugata",
@@ -304,7 +304,7 @@ def test_geo():
     assert parse_address_string("    Dúfnahólar   10   ") == {
         "street": "Dúfnahólar",
         "number": 10,
-        "letter": None,
+        "letter": "",
     }
 
     # Test prepositions for street names

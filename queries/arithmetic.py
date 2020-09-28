@@ -611,7 +611,7 @@ def calc_arithmetic(query: Query, result):
 
     # Global namespace for eval
     # Block access to all builtins
-    eval_globals = {"__builtins__": None}  # type: Dict[str, Any]
+    eval_globals: Dict[str, Any] = {"__builtins__": None}
 
     # Square root calculation
     if operator == "sqrt":

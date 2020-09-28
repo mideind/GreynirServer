@@ -241,7 +241,7 @@ def answ_address(placename: str, loc: Tuple, qtype: str):
     addr = re.sub(r", Ísland$", "", place["formatted_address"])
     # Get street name without number to get preposition
     street_name = addr.split()[0].rstrip(",")
-    maybe_postcode = (re.search(r"^\d\d\d", street_name) is not None)
+    maybe_postcode = re.search(r"^\d\d\d", street_name) is not None
     prep = "í" if maybe_postcode else iceprep_for_street(street_name)
     # Split addr into street name w. number, and remainder
     street_addr = addr.split(",")[0]

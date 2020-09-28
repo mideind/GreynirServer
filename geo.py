@@ -352,7 +352,7 @@ def location_info(
     return loc
 
 
-ICE_CITY_NAMES = None  # type: Optional[Dict[str, str]]
+ICE_CITY_NAMES: Optional[Dict[str, str]] = None
 ICE_CITIES_JSONPATH = os.path.join(
     os.path.dirname(__file__), "resources", "geo", "cities_is.json"
 )
@@ -436,9 +436,7 @@ def icelandic_city_name(name: str) -> str:
 
 
 # Data about countries, loaded from JSON data file
-COUNTRY_DATA = (
-    None
-)  # type: Optional[Dict[str, Dict[str, Union[Tuple[float, float], str]]]]
+COUNTRY_DATA: Optional[Dict[str, Dict[str, Union[Tuple[float, float], str]]]] = None
 COUNTRY_DATA_JSONPATH = os.path.join(
     os.path.dirname(__file__), "resources", "geo", "country_data.json"
 )
@@ -475,7 +473,9 @@ def coords_for_country(iso_code: str) -> Optional[Tuple]:
 
 
 def coords_for_street_name(
-    street_name: str, placename: str = None, placename_hints: Optional[List[str]] = []
+    street_name: str,
+    placename: Optional[str] = None,
+    placename_hints: Optional[List[str]] = [],
 ) -> Optional[Tuple]:
     """ Return coordinates for an Icelandic street name as a tuple. As some
         street names exist in more than one place, we try to narrow it down
@@ -549,7 +549,9 @@ def isocode_for_country_name(
 
 
 def icelandic_addr_info(
-    addr_str: str, placename: str = None, placename_hints: Optional[List[str]] = []
+    addr_str: str,
+    placename: Optional[str] = None,
+    placename_hints: Optional[List[str]] = [],
 ) -> Optional[Dict]:
     """ Look up info about a specific Icelandic address in Staðfangaskrá via
         the iceaddr package. We want either a single definite match or nothing. """
@@ -592,7 +594,7 @@ def parse_address_string(addrstr: str) -> Dict[str, Any]:
     r = re.search(r"^(\d+)([a-zA-Z]?)$", last)
     if r:
         addr["number"] = int(r.group(1))
-        addr["letter"] = r.group(2)
+        addr["letter"] = r.group(2) or ""
         # Non-numeric earlier components must be the street name
         addr["street"] = " ".join(comp[:-1])
 
@@ -630,7 +632,7 @@ def iceprep_for_street(street_name: str) -> str:
     return "á"
 
 
-ICELOC_PREP = None  # type: Optional[Dict[str, str]]
+ICELOC_PREP: Optional[Dict[str, str]] = None
 ICELOC_PREP_JSONPATH = os.path.join(
     os.path.dirname(__file__), "resources", "geo", "iceloc_prep.json"
 )

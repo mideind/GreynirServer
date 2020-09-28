@@ -490,7 +490,9 @@ _MAPS_API_TRAVELTIME_URL = (
 _TRAVEL_MODES = frozenset(("walking", "driving", "bicycling", "transit"))
 
 
-def query_traveltime_api(startloc: Tuple, endloc: Tuple, mode: str = "walking") -> Optional[Dict]:
+def query_traveltime_api(
+    startloc: Tuple, endloc: Tuple, mode: str = "walking"
+) -> Optional[Dict]:
     """ Look up travel time between two places, given a particular mode
         of transportation, i.e. one of the modes in _TRAVEL_MODES.
         The location arguments can be names, to be resolved by the API, or
@@ -527,9 +529,9 @@ _PLACES_LOCBIAS_RADIUS = 5000  # Metres
 
 def query_places_api(
     placename: str,
-    userloc: Tuple = None,
+    userloc: Optional[Tuple] = None,
     radius: float = _PLACES_LOCBIAS_RADIUS,
-    fields: str = None,
+    fields: Optional[str] = None,
 ) -> Optional[Dict]:
     """ Look up a placename in Google's Places API. For details, see:
         https://developers.google.com/places/web-service/search """
@@ -571,7 +573,7 @@ _PLACEDETAILS_API_URL = "https://maps.googleapis.com/maps/api/place/details/json
 
 
 @lru_cache(maxsize=32)
-def query_place_details(place_id, fields: str = None) -> Optional[Dict]:
+def query_place_details(place_id, fields: Optional[str] = None) -> Optional[Dict]:
     """ Look up place details by ID in Google's Place Details API. If "fields"
         parameter is omitted, *all* fields are returned. For details, see
         https://developers.google.com/places/web-service/details """
@@ -596,7 +598,7 @@ def query_place_details(place_id, fields: str = None) -> Optional[Dict]:
     return res
 
 
-_TZW = None  # type: Optional[tzwhere.tzwhere]
+_TZW: Optional[tzwhere.tzwhere] = None
 
 
 def _tzwhere_singleton():
@@ -607,7 +609,7 @@ def _tzwhere_singleton():
     return _TZW
 
 
-def timezone4loc(loc: Tuple, fallback: str = None):
+def timezone4loc(loc: Tuple, fallback: Optional[str] = None):
     """ Returns timezone string given a tuple of coordinates.
         Fallback argument should be a 2-char ISO 3166 country code."""
     if loc:

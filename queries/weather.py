@@ -326,7 +326,7 @@ _OWM_API_URL_BYNAME = (
 )
 
 
-def _query_owm_by_name(city: str, country_code: str = None):
+def _query_owm_by_name(city: str, country_code: Optional[str] = None):
     d = query_json_api(
         _OWM_API_URL_BYNAME.format(city, country_code or "", _get_OWM_API_key())
     )

@@ -118,7 +118,7 @@ MAX_SIM_ARTICLES = 10  # Display at most 10 similarity matches
 @routes.route("/similar", methods=["GET", "POST"])
 def similar():
     """ Return rendered HTML list of articles similar to a given article, given a UUID """
-    resp = dict(err=True)  # type: Dict[str, Any]
+    resp: Dict[str, Any] = dict(err=True)
 
     # Parse query args
     try:
@@ -241,8 +241,8 @@ def tree_grid():
                 row.append((1, None))
                 rw += 1
 
-    tbl = []  # type: List[List[Tuple[int, Any]]]
-    full_tbl = []  # type: List[List[Tuple[int, Any]]]
+    tbl: List[List[Tuple[int, Any]]] = []
+    full_tbl: List[List[Tuple[int, Any]]] = []
     if tree is None:
         full_tree = None
         width = 0
@@ -437,7 +437,7 @@ def suggest(limit=10):
     limit = request.args.get("limit", limit)
     txt = request.args.get("q", "").strip()
 
-    suggestions = []  # type: List[Dict[str, str]]
+    suggestions: List[Dict[str, str]] = []
     whois_prefix = "hver er "
     whatis_prefix = "hvað er "
 

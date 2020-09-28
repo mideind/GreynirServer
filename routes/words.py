@@ -131,7 +131,7 @@ def _desc4word(wc):
 @cache.cached(timeout=60 * 60 * 4, key_prefix="wordfreq", query_string=True)
 def wordfreq():
     """ Return word frequency chart data for a given time period. """
-    resp = dict(err=True)  # type: Dict[str, Any]
+    resp: Dict[str, Any] = dict(err=True)
     # Create datetime objects from query string args
     try:
         date_fmt = "%Y-%m-%d"

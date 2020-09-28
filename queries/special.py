@@ -526,7 +526,9 @@ _SPECIAL_QUERIES = {
     "hvað heitir eiginmaður minn": _DUNNO,
     "hvenær á ég afmæli": _DUNNO,
     "hvar á ég heima": {"answer": "Það veit ég ekki, en vonandi einhvers staðar."},
-    "veistu hvar ég á heima?": {"answer": "Það veit ég ekki, en vonandi einhvers staðar."},
+    "veistu hvar ég á heima?": {
+        "answer": "Það veit ég ekki, en vonandi einhvers staðar."
+    },
     "hvar bý ég": {"answer": "Það veit ég ekki, en vonandi einhvers staðar."},
     "veistu hvar ég á heima": _NO,
     "hvað er ég gamall": {

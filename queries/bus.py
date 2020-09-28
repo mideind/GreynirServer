@@ -54,7 +54,7 @@ import straeto
 
 
 # Today's bus schedule, cached
-SCHEDULE_TODAY = None  # type: Optional[straeto.BusSchedule]
+SCHEDULE_TODAY: Optional[straeto.BusSchedule] = None
 SCHEDULE_LOCK = Lock()
 
 
@@ -686,7 +686,7 @@ def query_arrival_time(query: Query, session, result):
     # Retrieve the client location, if available, and the name
     # of the bus stop, if given
     stop_name = result.get("stop_name")
-    stop = None  # type: Optional[straeto.BusStop]
+    stop: Optional[straeto.BusStop] = None
 
     if stop_name in {"þar", "þangað"}:
         # Referring to a bus stop mentioned earlier
@@ -716,7 +716,7 @@ def query_arrival_time(query: Query, session, result):
             SCHEDULE_TODAY = straeto.BusSchedule()
 
     # Obtain the set of stops that the user may be referring to
-    stops = []  # type: List[straeto.BusStop]
+    stops: List[straeto.BusStop] = []
     if stop_name:
         stops = straeto.BusStop.named(stop_name, fuzzy=True)
         if query.location is not None:
