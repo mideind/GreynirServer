@@ -41,8 +41,7 @@
 # TODO: "Hvernig er færðin"
 # TODO: "Hvernig eru loftgæðin [í Reykjavík] etc."
 
-from typing import Tuple
-
+from typing import Tuple, Optional
 
 import os
 import re
@@ -376,7 +375,7 @@ _BFT_ICEDESC = {
 }
 
 
-def _wind_descr(wind_ms: int) -> str:
+def _wind_descr(wind_ms: float) -> Optional[str]:
     """ Icelandic-language description of wind conditions given metres
         per second. Uses Beaufort scale lookup.
         See https://www.vedur.is/vedur/frodleikur/greinar/nr/1098

@@ -28,7 +28,7 @@
 # TODO: Fix formatting issues w. trailing spaces, periods at the end of answer str
 # TODO: "Hvað er á dagskrá á rúv annað kvöld?"
 
-from typing import List, Dict
+from typing import List, Dict, Optional, Tuple, Any
 
 import logging
 import random
@@ -192,7 +192,7 @@ _CACHED_TV_SCHEDULE = None
 _TV_LAST_FETCHED = None
 
 
-def _query_tv_schedule_api() -> List:
+def _query_tv_schedule_api() -> Optional[List]:
     """ Fetch current television schedule from API, or return cached copy. """
     global _CACHED_TV_SCHEDULE
     global _TV_LAST_FETCHED
@@ -212,8 +212,8 @@ def _query_tv_schedule_api() -> List:
 
 _RUV_RADIO_SCHEDULE_API_ENDPOINT = "https://muninn.ruv.is/files/xml/{0}/{1}/"
 _RADIO_API_ERRMSG = "Ekki tókst að sækja útvarpsdagskrá."
-_RADIO_SCHED_CACHE = {}
-_RADIO_LAST_FETCHED = {}
+_RADIO_SCHED_CACHE: Dict[str, Any] = {}
+_RADIO_LAST_FETCHED: Dict[str, datetime] = {}
 
 
 def _query_radio_schedule_api(channel: str) -> List:
@@ -249,7 +249,7 @@ def _span(p: dict):
     return start, start + dur
 
 
-def _curr_prog(sched: List) -> Dict:
+def _curr_prog(sched: List) -> Optional[Dict]:
     """ Return current TV program, given a TV schedule
         i.e. a list of programs in chronological sequence. """
     now = datetime.utcnow()
@@ -296,7 +296,7 @@ def _gen_curr_tv_program_answer(q: Query):
     return gen_answer(answ)
 
 
-def _gen_evening_tv_program_answer(q: Query) -> dict:
+def _gen_evening_tv_program_answer(q: Query) -> Tuple:
     """ Generate answer to query about the evening's TV programs """
     sched = _query_tv_schedule_api()
     if not sched:

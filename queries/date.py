@@ -760,7 +760,7 @@ def _date_diff(d1: datetime, d2: datetime, unit: str = "days") -> int:
     return cnt
 
 
-def howlong_answ(q: Query, result) -> int:
+def howlong_answ(q: Query, result):
     """ Generate answer to a query about number of days since/until a given date. """
     now = datetime.utcnow()
     target = result["target"]

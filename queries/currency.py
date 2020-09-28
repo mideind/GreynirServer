@@ -26,7 +26,7 @@
 # TODO: "hvað eru 10 evrur í íslenskum krónum"
 # TODO: "Hvert er gengi krónunnar?"
 
-from typing import Dict
+from typing import Dict, Optional
 
 import re
 import cachetools
@@ -441,7 +441,7 @@ _CURR_CACHE_TTL = 3600  # seconds
 
 
 @cachetools.cached(cachetools.TTLCache(1, _CURR_CACHE_TTL))
-def _fetch_exchange_rates() -> Dict:
+def _fetch_exchange_rates() -> Optional[Dict]:
     """ Fetch exchange rate data from apis.is and cache it. """
     res = query_json_api(_CURR_API_URL)
     if not res or "results" not in res:
@@ -452,7 +452,7 @@ def _fetch_exchange_rates() -> Dict:
     return {c["shortName"]: c["value"] for c in res["results"]}
 
 
-def _query_exchange_rate(curr1: str, curr2: str):
+def _query_exchange_rate(curr1: str, curr2: str) -> Optional[float]:
     """ Returns exchange rate of two ISO 4217 currencies """
     # print("Gengi {0} gagnvart {1}".format(curr1, curr2))
 

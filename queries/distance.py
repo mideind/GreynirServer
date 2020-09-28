@@ -179,7 +179,7 @@ def _addr2nom(address: str) -> str:
     if address is None or address == "":
         return address
     try:
-        nom = NounPhrase(cap_first(address)).nominative
+        nom = NounPhrase(cap_first(address)).nominative or address
     except Exception:
         nom = address
     return nom

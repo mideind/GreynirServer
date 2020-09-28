@@ -22,7 +22,7 @@
 
 """
 
-from typing import Tuple
+from typing import Tuple, Optional
 
 import re
 import logging
@@ -188,7 +188,7 @@ def street_desc(street_nom: str, street_num: int, locality_nom: str) -> str:
     # Create street descr. ("á Fiskislóð 31")
     street_comp = iceprep_for_street(street_nom) + " " + street_dat
     if street_num:
-        street_comp += " " + street_num
+        street_comp += " " + str(street_num)
 
     # Append locality if available ("í Reykjavík")
     if locality_dat:
@@ -204,13 +204,13 @@ def _locality_desc(locality_nom: str) -> str:
     return iceprep_for_placename(locality_nom) + " " + locality_dat
 
 
-def _addr4voice(addr: str) -> str:
+def _addr4voice(addr: str) -> Optional[str]:
     """ Prepare an address string for voice synthesizer. """
     # E.g. "Fiskislóð 5-9" becomes "Fiskislóð 5 til 9"
     s = re.sub(r"(\d+)\-(\d+)", r"\1 til \2", addr)
     # Convert numbers to neutral gender:
     # 'Fiskislóð 2 til 4' -> 'Fiskislóð tvö til fjögur'
-    return numbers_to_neutral(s)
+    return numbers_to_neutral(s) if s else None
 
 
 def answer_for_location(loc: Tuple):
@@ -234,7 +234,7 @@ def answer_for_location(loc: Tuple):
     # Extract address info from top result
     street, num, locality, postcode, country_code = _addrinfo_from_api_result(top)
 
-    descr = None
+    descr = ""
 
     # Special handling of Icelandic locations since we have more info
     # about them and street/locality names need to be declined.

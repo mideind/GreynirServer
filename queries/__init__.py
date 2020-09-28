@@ -60,7 +60,8 @@ def natlang_seq(words: List[str], oxford_comma: bool = False) -> str:
 def nom2dat(w: str) -> str:
     """ Look up the dative of an Icelandic noun given its nominative form. """
     try:
-        return NounPhrase(w).dative
+        d = NounPhrase(w).dative
+        return d or w
     except Exception:
         pass
     return w
@@ -383,7 +384,7 @@ def icequote(s: str) -> str:
     return "„{0}“".format(s.strip())
 
 
-def gen_answer(a: str) -> Dict:
+def gen_answer(a: str) -> Tuple[Dict, str, str]:
     """ Convenience function for query modules: response, answer, voice answer """
     return dict(answer=a), a, a
 
@@ -444,7 +445,7 @@ _MAPS_API_COORDS_URL = (
 )
 
 
-def query_geocode_api_coords(lat: float, lon: float) -> Dict:
+def query_geocode_api_coords(lat: float, lon: float) -> Optional[Dict]:
     """ Look up coordinates in Google's geocode API. """
     # Load API key
     key = google_api_key()
@@ -465,7 +466,7 @@ _MAPS_API_ADDR_URL = (
 )
 
 
-def query_geocode_api_addr(addr: str) -> Dict:
+def query_geocode_api_addr(addr: str) -> Optional[Dict]:
     """ Look up address in Google's geocode API. """
     # Load API key
     key = google_api_key()
@@ -489,7 +490,7 @@ _MAPS_API_TRAVELTIME_URL = (
 _TRAVEL_MODES = frozenset(("walking", "driving", "bicycling", "transit"))
 
 
-def query_traveltime_api(startloc: Tuple, endloc: Tuple, mode: str = "walking") -> Dict:
+def query_traveltime_api(startloc: Tuple, endloc: Tuple, mode: str = "walking") -> Optional[Dict]:
     """ Look up travel time between two places, given a particular mode
         of transportation, i.e. one of the modes in _TRAVEL_MODES.
         The location arguments can be names, to be resolved by the API, or
@@ -529,7 +530,7 @@ def query_places_api(
     userloc: Tuple = None,
     radius: float = _PLACES_LOCBIAS_RADIUS,
     fields: str = None,
-) -> Dict:
+) -> Optional[Dict]:
     """ Look up a placename in Google's Places API. For details, see:
         https://developers.google.com/places/web-service/search """
 
@@ -570,7 +571,7 @@ _PLACEDETAILS_API_URL = "https://maps.googleapis.com/maps/api/place/details/json
 
 
 @lru_cache(maxsize=32)
-def query_place_details(place_id, fields: str = None) -> dict:
+def query_place_details(place_id, fields: str = None) -> Optional[Dict]:
     """ Look up place details by ID in Google's Place Details API. If "fields"
         parameter is omitted, *all* fields are returned. For details, see
         https://developers.google.com/places/web-service/details """

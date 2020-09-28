@@ -26,7 +26,7 @@
 
 # TODO: Fyrirsagnir, og að styðja "Segðu mér meira um X"
 
-from typing import List
+from typing import List, Optional, Dict
 
 import logging
 import cachetools
@@ -109,7 +109,7 @@ _NEWS_CACHE_TTL = 300  # seconds, ttl = 5 mins
 
 
 @cachetools.cached(cachetools.TTLCache(1, _NEWS_CACHE_TTL))
-def _get_news_data(max_items: int = 8) -> List:
+def _get_news_data(max_items: int = 8) -> Optional[List[Dict]]:
     """ Fetch news headline data from RÚV, preprocess it. """
     res = query_json_api(_NEWS_API)
     if not res or "nodes" not in res or not len(res["nodes"]):

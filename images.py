@@ -208,6 +208,7 @@ def update_broken_image_url(name: str, url: str) -> Optional[str]:
                 blacklist_image_url(name, url)
                 _purge_single(name, ctype=r.ctype, enclosing_session=session)
                 return get_image_url(name)
+    return None
 
 
 def check_image_url(url: str) -> bool:
@@ -278,7 +279,7 @@ def get_staticmap_image(
     zoom: int = 6,
     width: int = 180,
     height: int = 180,
-) -> Optional[bytes]:
+) -> Optional[BytesIO]:
     """ Request image from Google Static Maps API, return image data as bytes """
     key = google_api_key()
     if not key:

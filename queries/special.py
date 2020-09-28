@@ -434,7 +434,7 @@ _CAN_I_LEARN = {
     "answer": "Ég læri bæði það sem forritararnir kenna mér, og með því að lesa fjölmiðla."
 }  # type: AnswerType
 
-_LINEAGE = {"answer": "Ég er ættuð af Fiskislóð í Reykjavík."}
+_LINEAGE = {"answer": "Ég er ættuð af Fiskislóð í Reykjavík."}  # type: AnswerType
 
 _HOW_CAN_I_HELP = {"answer": "Hvernig get ég hjálpað þér?"}  # type: AnswerType
 

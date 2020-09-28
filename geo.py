@@ -24,7 +24,7 @@
 # corresponding country code, e.g. "Norður-Ítalía" -> "IT"
 # TODO: Most of this stuff should go into its own module, iceloc or something
 
-from typing import Optional, Dict, Union, Tuple, List
+from typing import Optional, Dict, Union, Tuple, List, Any
 
 import json
 import re
@@ -266,7 +266,9 @@ def location_description(loc: Dict) -> str:
     return "staðarheiti"
 
 
-def location_info(name: str, kind: str, placename_hints: List[str] = None) -> Dict:
+def location_info(
+    name: str, kind: Optional[str], placename_hints: Optional[List[str]] = None
+) -> Dict:
     """ Returns dict with info about a location, given name and, preferably, kind.
         Info includes ISO country and continent code, GPS coordinates, etc. """
     assert name
@@ -277,7 +279,7 @@ def location_info(name: str, kind: str, placename_hints: List[str] = None) -> Di
     elif name in ALWAYS_STREET_ADDR:
         kind = "street"
 
-    loc = dict(name=name, kind=kind)
+    loc: Dict[str, Any] = dict(name=name, kind=kind)
     coords = None
 
     # Heimilisfang
@@ -338,7 +340,7 @@ def location_info(name: str, kind: str, placename_hints: List[str] = None) -> Di
         sc = code_for_us_state(name)
         if sc:
             loc["country"] = "US"
-            coords = tuple(coords_for_us_state_code(sc))
+            coords = coords_for_us_state_code(sc)
 
     # Look up continent code for country
     if "country" in loc:
@@ -366,7 +368,7 @@ def _load_city_names() -> Dict:
     return ICE_CITY_NAMES
 
 
-def lookup_city_info(name: str) -> Dict:
+def lookup_city_info(name: str) -> Optional[Dict]:
     """ Look up name in city database. Convert Icelandic-specific
         city names (e.g. "Lundúnir") to their corresponding
         English/international name before querying. """
@@ -391,7 +393,7 @@ def _load_us_state_names() -> Dict:
     return US_STATE_NAMES
 
 
-def code_for_us_state(name: str) -> str:
+def code_for_us_state(name: str) -> Optional[str]:
     """ Given a US state name string, canonical or Icelandicized,
         return the state's 2-char code. """
     names = _load_us_state_names()  # Lazy-load
@@ -414,7 +416,7 @@ def _load_us_state_coords() -> Dict:
     return US_STATE_COORDS
 
 
-def coords_for_us_state_code(code: str) -> Tuple:
+def coords_for_us_state_code(code: str) -> Optional[Tuple]:
     """ Return the coordinates of a US state given the two-char state code. """
     assert len(code) == 2
     state_coords = _load_us_state_coords()
@@ -422,7 +424,7 @@ def coords_for_us_state_code(code: str) -> Tuple:
 
 
 @lru_cache(maxsize=32)
-def icelandic_city_name(name: str):
+def icelandic_city_name(name: str) -> str:
     """ Look up the Icelandic name of a city, given its
         English/international name. """
     name = name.strip()
@@ -451,7 +453,7 @@ def _load_country_data() -> Dict:
     return COUNTRY_DATA
 
 
-def continent_for_country(iso_code: str) -> str:
+def continent_for_country(iso_code: str) -> Optional[str]:
     """ Return two-char continent code, given a two-char country code. """
     assert len(iso_code) == 2
     iso_code = iso_code.upper()
@@ -461,7 +463,7 @@ def continent_for_country(iso_code: str) -> str:
     return None
 
 
-def coords_for_country(iso_code: str) -> Tuple:
+def coords_for_country(iso_code: str) -> Optional[Tuple]:
     """ Return coordinates for a given country code. """
     assert len(iso_code) == 2
     iso_code = iso_code.upper()
@@ -473,8 +475,8 @@ def coords_for_country(iso_code: str) -> Tuple:
 
 
 def coords_for_street_name(
-    street_name: str, placename: str = None, placename_hints: List[str] = []
-) -> Tuple:
+    street_name: str, placename: str = None, placename_hints: Optional[List[str]] = []
+) -> Optional[Tuple]:
     """ Return coordinates for an Icelandic street name as a tuple. As some
         street names exist in more than one place, we try to narrow it down
         to a single street if possible. Street coordinates are the coordinates
@@ -504,14 +506,16 @@ def coords_for_street_name(
     return coords_from_addr_info(addr)
 
 
-def coords_from_addr_info(info: Dict) -> Tuple:
+def coords_from_addr_info(info: Optional[Dict]) -> Optional[Tuple]:
     """ Get coordinates from the address dict provided by iceaddr package. """
     if info is not None and "lat_wgs84" in info and "long_wgs84" in info:
         return (info["lat_wgs84"], info["long_wgs84"])
     return None
 
 
-def country_name_for_isocode(iso_code: str, lang: str = ICELANDIC_LANG_ISOCODE) -> str:
+def country_name_for_isocode(
+    iso_code: str, lang: str = ICELANDIC_LANG_ISOCODE
+) -> Optional[str]:
     """ Return country name for an ISO 3166-1 alpha-2 code. """
     assert len(iso_code) == 2
     assert len(lang) == 2
@@ -525,7 +529,7 @@ def country_name_for_isocode(iso_code: str, lang: str = ICELANDIC_LANG_ISOCODE) 
 
 def isocode_for_country_name(
     country_name: str, lang: str = ICELANDIC_LANG_ISOCODE
-) -> str:
+) -> Optional[str]:
     """ Return the ISO 3166-1 alpha-2 code for a country
         name in the specified language (two-char ISO 639-1). """
     assert len(lang) == 2
@@ -545,8 +549,8 @@ def isocode_for_country_name(
 
 
 def icelandic_addr_info(
-    addr_str: str, placename: str = None, placename_hints: List[str] = []
-) -> Dict:
+    addr_str: str, placename: str = None, placename_hints: Optional[List[str]] = []
+) -> Optional[Dict]:
     """ Look up info about a specific Icelandic address in Staðfangaskrá via
         the iceaddr package. We want either a single definite match or nothing. """
     addr = parse_address_string(addr_str)
@@ -574,9 +578,9 @@ def icelandic_addr_info(
     return res
 
 
-def parse_address_string(addrstr: str) -> Dict:
+def parse_address_string(addrstr: str) -> Dict[str, Any]:
     """ Break Icelandic address string down to its components. """
-    addr = {"street": addrstr}
+    addr: Dict[str, Any] = {"street": addrstr}
 
     comp = addrstr.split()
     if len(comp) == 1:
@@ -588,7 +592,7 @@ def parse_address_string(addrstr: str) -> Dict:
     r = re.search(r"^(\d+)([a-zA-Z]?)$", last)
     if r:
         addr["number"] = int(r.group(1))
-        addr["letter"] = r.group(2) or None
+        addr["letter"] = r.group(2)
         # Non-numeric earlier components must be the street name
         addr["street"] = " ".join(comp[:-1])
 
@@ -752,7 +756,7 @@ def iceprep_for_cc(cc: str) -> str:
     return "á" if cc.upper() in CC_ICEPREP_A else "í"
 
 
-def iceprep_for_country(cn: str) -> str:
+def iceprep_for_country(cn: str) -> Optional[str]:
     """ Return the right Icelandic preposition ("í" or "á") for
         a country, given its Icelandic name in the nominative
         case, e.g. "Ítalía". """
