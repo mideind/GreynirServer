@@ -31,7 +31,7 @@ from main import app
 
 from settings import changedlocale
 from db import SessionContext
-from db.models import Query
+from db.models import Query, QueryData
 
 
 @pytest.fixture
@@ -358,7 +358,7 @@ def test_query_api(client):
         {"q": "ég heiti Gunna Jónsdóttir", "client_id": DUMMY_CLIENT_ID},
         "Introduction",
     )
-    assert json["answer"].startswith("Sæl og blessuð")
+    assert json["answer"].startswith("Sæl og blessuð") and "Gunna" in json["answer"]
 
     json = qmcall(c, {"q": "hvað heiti ég", "client_id": DUMMY_CLIENT_ID})
     assert "Gunna Jónsdóttir" in json["answer"]
@@ -581,10 +581,13 @@ def test_query_api(client):
     # Yule lads module
     # TODO: Implement me!
 
-    # Delete any queries logged as result of these tests
+    # Delete any queries or query data logged as result of these tests
     with SessionContext(commit=True) as session:
         session.execute(
             Query.table().delete().where(Query.client_id == DUMMY_CLIENT_ID)
+        )
+        session.execute(
+            QueryData.table().delete().where(Query.client_id == DUMMY_CLIENT_ID)
         )
 
 

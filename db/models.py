@@ -693,10 +693,10 @@ class QueryData(Base):
 
     __table_args__ = (PrimaryKeyConstraint("client_id", "key", name="querydata_pkey"),)
 
-    client_id = Column(String(256), nullable=False, primary_key=True)
+    client_id = Column(String(256), nullable=False)
 
-    # Key to distinguish between different types of json data that can be stored
-    key = Column(String(64), nullable=False, primary_key=True)
+    # Key to distinguish between different types of JSON data that can be stored
+    key = Column(String(64), nullable=False)
 
     # Created timestamp
     created = Column(DateTime, nullable=False)
