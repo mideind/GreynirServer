@@ -29,6 +29,8 @@
 # TODO: Hvað eru 40 stig á selsíus mörg stig á fahrenheit
 # TODO: "hvað eru 3 metrar í tommum"
 
+from typing import Tuple
+
 import random
 from math import floor, log10
 
@@ -437,7 +439,7 @@ def QUnitFromPounds(node, params, result):
     result._nominative = str(result.number).replace(".", ",") + " pund"
 
 
-def _convert(quantity: float, unit_from: str, unit_to: str) -> tuple:
+def _convert(quantity: float, unit_from: str, unit_to: str) -> Tuple:
     """ Converts a quantity from unit_from to unit_to, returning a tuple of:
         valid, result, si_unit, si_quantity """
     u_from, factor_from = _UNITS[unit_from]

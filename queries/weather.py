@@ -41,6 +41,9 @@
 # TODO: "Hvernig er færðin"
 # TODO: "Hvernig eru loftgæðin [í Reykjavík] etc."
 
+from typing import Tuple
+
+
 import os
 import re
 import logging
@@ -384,7 +387,7 @@ def _wind_descr(wind_ms: int) -> str:
 _RVK_COORDS = (64.133097, -21.898145)
 
 
-def _near_capital_region(loc: tuple) -> bool:
+def _near_capital_region(loc: Tuple) -> bool:
     """ Returns true if location coordinates are within 30 km of central Rvk """
     return distance(loc, _RVK_COORDS) < 30
 

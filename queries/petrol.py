@@ -26,6 +26,8 @@
 # TODO: "Hver er ódýrasta bensínstöðin innan X kílómetra? Innan X kílómetra radíus?" etc.
 # TODO: Laga krónutölur og fjarlægðartölur f. talgervil
 
+from typing import List, Dict, Tuple
+
 import logging
 import cachetools
 import random
@@ -215,7 +217,7 @@ _PETROL_CACHE_TTL = 3600  # seconds, ttl 1 hour
 
 
 @cachetools.cached(cachetools.TTLCache(1, _PETROL_CACHE_TTL))
-def _get_petrol_station_data() -> list:
+def _get_petrol_station_data() -> List:
     """ Fetch list of petrol stations w. prices from apis.is (Gasvaktin) """
     pd = query_json_api(_PETROL_API)
     if not pd or "results" not in pd:
@@ -229,7 +231,7 @@ def _get_petrol_station_data() -> list:
     return pd["results"]
 
 
-def _stations_with_distance(loc: tuple) -> list:
+def _stations_with_distance(loc: Tuple) -> List:
     """ Return list of petrol stations w. added distance data. """
     pd = _get_petrol_station_data()
     if not pd:
@@ -243,7 +245,7 @@ def _stations_with_distance(loc: tuple) -> list:
     return pd
 
 
-def _closest_petrol_station(loc: tuple) -> dict:
+def _closest_petrol_station(loc: Tuple) -> Dict:
     """ Find petrol station closest to the given location. """
     stations = _stations_with_distance(loc)
     if not stations:
@@ -254,7 +256,7 @@ def _closest_petrol_station(loc: tuple) -> dict:
     return dist_sorted[0] if dist_sorted else None
 
 
-def _cheapest_petrol_station() -> dict:
+def _cheapest_petrol_station() -> Dict:
     stations = _get_petrol_station_data()
     if not stations:
         return None
@@ -268,7 +270,7 @@ def _cheapest_petrol_station() -> dict:
 _CLOSE_DISTANCE = 5.0  # km
 
 
-def _closest_cheapest_petrol_station(loc: tuple) -> dict:
+def _closest_cheapest_petrol_station(loc: Tuple) -> Dict:
     stations = _stations_with_distance(loc)
     if not stations:
         return None

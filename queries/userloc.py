@@ -22,6 +22,8 @@
 
 """
 
+from typing import Tuple
+
 import re
 import logging
 
@@ -123,7 +125,7 @@ def QUserLocationPostcode(node, params, result):
     result.qkey = "CurrentPostcode"
 
 
-def _addrinfo_from_api_result(result) -> tuple:
+def _addrinfo_from_api_result(result) -> Tuple:
     """ Extract relevant address components from Google API result """
 
     comp = result["address_components"]
@@ -211,7 +213,7 @@ def _addr4voice(addr: str) -> str:
     return numbers_to_neutral(s)
 
 
-def answer_for_location(loc: tuple):
+def answer_for_location(loc: Tuple):
     # Send API request
     res = query_geocode_api_coords(loc[0], loc[1])
 
@@ -270,7 +272,7 @@ def answer_for_location(loc: tuple):
     return response, answer, voice
 
 
-def answer_for_postcode(loc: tuple):
+def answer_for_postcode(loc: Tuple):
     # Send API request
     res = query_geocode_api_coords(loc[0], loc[1])
 

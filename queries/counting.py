@@ -36,7 +36,7 @@ _COUNTING_QTYPE = "Counting"
 TOPIC_LEMMAS = ["telja"]
 
 
-def help_text(lemma):
+def help_text(lemma: str):
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég skil þig ef þú segir til dæmis: {0}.".format(

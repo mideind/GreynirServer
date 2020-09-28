@@ -30,6 +30,7 @@ from datetime import datetime
 
 from query import Query
 
+
 def help_text(lemma: str):
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """

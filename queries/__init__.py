@@ -24,7 +24,7 @@
 
 """
 
-from typing import Optional
+from typing import Optional, List, Dict, Tuple
 
 import logging
 import requests
@@ -45,7 +45,7 @@ from settings import changedlocale
 from util import google_api_key
 
 
-def natlang_seq(words: list, oxford_comma: bool = False) -> str:
+def natlang_seq(words: List[str], oxford_comma: bool = False) -> str:
     """ Generate an Icelandic natural language sequence of words
         e.g. "A og B", "A, B og C", "A, B, C og D". """
     if not words:
@@ -383,7 +383,7 @@ def icequote(s: str) -> str:
     return "„{0}“".format(s.strip())
 
 
-def gen_answer(a: str) -> dict:
+def gen_answer(a: str) -> Dict:
     """ Convenience function for query modules: response, answer, voice answer """
     return dict(answer=a), a, a
 
@@ -444,7 +444,7 @@ _MAPS_API_COORDS_URL = (
 )
 
 
-def query_geocode_api_coords(lat: float, lon: float) -> dict:
+def query_geocode_api_coords(lat: float, lon: float) -> Dict:
     """ Look up coordinates in Google's geocode API. """
     # Load API key
     key = google_api_key()
@@ -465,7 +465,7 @@ _MAPS_API_ADDR_URL = (
 )
 
 
-def query_geocode_api_addr(addr: str) -> dict:
+def query_geocode_api_addr(addr: str) -> Dict:
     """ Look up address in Google's geocode API. """
     # Load API key
     key = google_api_key()
@@ -489,7 +489,7 @@ _MAPS_API_TRAVELTIME_URL = (
 _TRAVEL_MODES = frozenset(("walking", "driving", "bicycling", "transit"))
 
 
-def query_traveltime_api(startloc: tuple, endloc: tuple, mode: str = "walking") -> dict:
+def query_traveltime_api(startloc: Tuple, endloc: Tuple, mode: str = "walking") -> Dict:
     """ Look up travel time between two places, given a particular mode
         of transportation, i.e. one of the modes in _TRAVEL_MODES.
         The location arguments can be names, to be resolved by the API, or
@@ -526,10 +526,10 @@ _PLACES_LOCBIAS_RADIUS = 5000  # Metres
 
 def query_places_api(
     placename: str,
-    userloc: tuple = None,
+    userloc: Tuple = None,
     radius: float = _PLACES_LOCBIAS_RADIUS,
     fields: str = None,
-) -> dict:
+) -> Dict:
     """ Look up a placename in Google's Places API. For details, see:
         https://developers.google.com/places/web-service/search """
 
@@ -606,7 +606,7 @@ def _tzwhere_singleton():
     return _TZW
 
 
-def timezone4loc(loc: tuple, fallback: str = None):
+def timezone4loc(loc: Tuple, fallback: str = None):
     """ Returns timezone string given a tuple of coordinates.
         Fallback argument should be a 2-char ISO 3166 country code."""
     if loc:

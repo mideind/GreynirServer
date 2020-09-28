@@ -37,7 +37,7 @@
 # TODO: Hvar er nálægasta strætóstoppistöð?
 # TODO: Hvað er ég lengi í næsta strætóskýli?
 
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
 from threading import Lock
 from functools import lru_cache
@@ -620,7 +620,7 @@ def voice_distance(d):
     return "{0}0 metrar".format(m)
 
 
-def hms_fmt(hms: tuple) -> str:
+def hms_fmt(hms: Tuple) -> str:
     """ Format a (h, m, s) tuple to a HH:MM string """
     h, m, s = hms
     if s >= 30:
@@ -639,7 +639,7 @@ def hms_fmt(hms: tuple) -> str:
     return "{0:02}:{1:02}".format(h, m)
 
 
-def hms_diff(hms1: tuple, hms2: tuple) -> int:
+def hms_diff(hms1: Tuple, hms2: Tuple) -> int:
     """ Return (hms1 - hms2) in minutes, where both are (h, m, s) tuples """
     return (hms1[0] - hms2[0]) * 60 + (hms1[1] - hms2[1])
 

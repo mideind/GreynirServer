@@ -873,7 +873,7 @@ BuiltinQueries →
 QPerson →
     Mannsnafn_nf/nkyn
     | QPersonPrefix/fall QPersonKey/fall "?"?
-    
+
 QPersonKey/fall →
     Mannsnafn/fall/nkyn
     | QPersonPronoun/fall/kyn

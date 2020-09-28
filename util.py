@@ -30,7 +30,7 @@ _GREYNIR_API_KEY_PATH = os.path.join(
 )
 
 
-def greynir_api_key():
+def greynir_api_key() -> str:
     """ Lazy-load Greynir API key from file. """
     global _GREYNIR_API_KEY
     if _GREYNIR_API_KEY is None:
@@ -49,7 +49,7 @@ _GOOGLE_API_KEY_PATH = os.path.join(
 )
 
 
-def google_api_key():
+def google_api_key() -> str:
     """ Lazy-load Google API key from file """
     global _GOOGLE_API_KEY
     if not _GOOGLE_API_KEY:

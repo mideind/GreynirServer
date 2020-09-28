@@ -53,11 +53,11 @@ class Document(abc.ABC):
             self.data = path_or_bytes
 
     @abc.abstractmethod
-    def extract_text(self):
+    def extract_text(self) -> str:
         """ All subclasses must implement this method """
         pass
 
-    def write_to_file(self, path):
+    def write_to_file(self, path: str):
         with open(path, "wb") as f:
             f.write(self.data)
 
@@ -73,7 +73,7 @@ class HTMLDocument(Document):
     """ HTML document """
 
     @staticmethod
-    def _remove_header_prefixes(text):
+    def _remove_header_prefixes(text: str) -> str:
         """ Removes '#' in all lines starting with '#'. Annoyingly,
             html2text adds markdown-style headers for <h*> tags. """
         lines = text.split("\n")
@@ -167,7 +167,8 @@ MIMETYPE_TO_DOC_CLASS = {
     "application/rtf": RTFDocument,
     # "application/pdf": PDFDocument,
     # "application/x-pdf": PDFDocument,
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": DocxDocument,  # Yes, really
+    # Yes, really!
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": DocxDocument,
 }
 
 SUPPORTED_DOC_MIMETYPES = frozenset(MIMETYPE_TO_DOC_CLASS.keys())

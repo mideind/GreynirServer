@@ -28,6 +28,8 @@
 # TODO: Fix formatting issues w. trailing spaces, periods at the end of answer str
 # TODO: "Hvað er á dagskrá á rúv annað kvöld?"
 
+from typing import List, Dict
+
 import logging
 import random
 from datetime import datetime, timedelta
@@ -190,7 +192,7 @@ _CACHED_TV_SCHEDULE = None
 _TV_LAST_FETCHED = None
 
 
-def _query_tv_schedule_api() -> list:
+def _query_tv_schedule_api() -> List:
     """ Fetch current television schedule from API, or return cached copy. """
     global _CACHED_TV_SCHEDULE
     global _TV_LAST_FETCHED
@@ -214,7 +216,7 @@ _RADIO_SCHED_CACHE = {}
 _RADIO_LAST_FETCHED = {}
 
 
-def _query_radio_schedule_api(channel: str) -> list:
+def _query_radio_schedule_api(channel: str) -> List:
     """ Fetch current radio schedule from API, or return cached copy. """
     assert channel in ("ras1", "ras2")
     global _RADIO_SCHED_CACHE
@@ -247,7 +249,7 @@ def _span(p: dict):
     return start, start + dur
 
 
-def _curr_prog(sched: list) -> dict:
+def _curr_prog(sched: List) -> Dict:
     """ Return current TV program, given a TV schedule
         i.e. a list of programs in chronological sequence. """
     now = datetime.utcnow()
@@ -261,7 +263,7 @@ def _curr_prog(sched: list) -> dict:
     return None
 
 
-def _evening_prog(sched: list) -> list:
+def _evening_prog(sched: List) -> List:
     """ Return programs on a TV schedule starting from 19:00,
         or at the current time if later """
     start = datetime.utcnow()

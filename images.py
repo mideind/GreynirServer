@@ -15,6 +15,8 @@
 
 """
 
+from typing import List, Dict, Optional
+
 import sys
 import json
 import logging
@@ -35,8 +37,8 @@ from util import google_api_key
 QUERY_TIMEOUT = 4.0
 
 
-def _server_query(url, q):
-    """ Query a server via HTTP GET with a URL-encoded query string obtained from the dict q """
+def _server_query(url: str, q: Dict) -> Optional[bytes]:
+    """ Query a server via HTTP GET with a URL-encoded query string obtained q """
     doc = None
     if len(q):
         url += "?" + urllib.parse.urlencode(q)
@@ -80,7 +82,12 @@ Img = namedtuple("Img", ["src", "width", "height", "link", "origin", "name"])
 
 
 def get_image_url(
-    name, hints=[], size="large", thumb=False, enclosing_session=None, cache_only=False
+    name: str,
+    hints: List = [],
+    size: str = "large",
+    thumb: bool = False,
+    enclosing_session=None,
+    cache_only: bool = False,
 ):
     """ Use Google Custom Search API to obtain an image corresponding to a (person) name """
     jdoc = None
@@ -166,7 +173,7 @@ def get_image_url(
     return None
 
 
-def blacklist_image_url(name, url):
+def blacklist_image_url(name: str, url: str) -> Optional[str]:
     """ Blacklist image URL for a given key """
 
     with SessionContext(commit=True) as session:
@@ -187,7 +194,7 @@ def blacklist_image_url(name, url):
         return get_image_url(name, enclosing_session=session)
 
 
-def update_broken_image_url(name, url):
+def update_broken_image_url(name: str, url: str) -> Optional[str]:
     """ Refetch image URL for name if broken """
 
     with SessionContext() as session:
@@ -202,10 +209,8 @@ def update_broken_image_url(name, url):
                 _purge_single(name, ctype=r.ctype, enclosing_session=session)
                 return get_image_url(name)
 
-    return None
 
-
-def check_image_url(url):
+def check_image_url(url: str) -> bool:
     """ Check if image exists at URL by sending HEAD request """
     req = urllib.request.Request(url, method="HEAD")
     try:
@@ -217,7 +222,7 @@ def check_image_url(url):
     return False
 
 
-def _blacklisted_urls_for_key(key, enclosing_session=None):
+def _blacklisted_urls_for_key(key: str, enclosing_session=None) -> List[str]:
     """ Fetch blacklisted urls for a given key """
     with SessionContext(commit=True, session=enclosing_session) as session:
         q = (
@@ -229,7 +234,7 @@ def _blacklisted_urls_for_key(key, enclosing_session=None):
         return [r for (r,) in q]
 
 
-def _get_cached_entry(name, url, enclosing_session=None):
+def _get_cached_entry(name: str, url: str, enclosing_session=None):
     """ Fetch cached entry by key and url """
     with SessionContext(commit=True, session=enclosing_session) as session:
         # TODO: content column should be converted to jsonb
@@ -242,7 +247,7 @@ def _get_cached_entry(name, url, enclosing_session=None):
         )
 
 
-def _purge_single(key, ctype=None, enclosing_session=None):
+def _purge_single(key: str, ctype: str = None, enclosing_session=None):
     """ Remove cache entry """
     with SessionContext(commit=True, session=enclosing_session) as session:
         filters = [Link.key == key]
@@ -267,7 +272,13 @@ STATICMAP_URL = (
 )
 
 
-def get_staticmap_image(latitude, longitude, zoom=6, width=180, height=180):
+def get_staticmap_image(
+    latitude: float,
+    longitude: float,
+    zoom: int = 6,
+    width: int = 180,
+    height: int = 180,
+) -> Optional[bytes]:
     """ Request image from Google Static Maps API, return image data as bytes """
     key = google_api_key()
     if not key:

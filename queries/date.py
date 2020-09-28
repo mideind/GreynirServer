@@ -110,7 +110,7 @@ TOPIC_LEMMAS = [
 ]
 
 
-def help_text(lemma):
+def help_text(lemma: str):
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
@@ -753,7 +753,7 @@ def calc_easter(year: int) -> datetime:
     return datetime(year=year, month=month, day=day)
 
 
-def _date_diff(d1: datetime, d2: datetime, unit="days") -> int:
+def _date_diff(d1: datetime, d2: datetime, unit: str = "days") -> int:
     """ Get the time difference between two dates. """
     delta = d2 - d1
     cnt = getattr(delta, unit)

@@ -25,7 +25,6 @@
 
 # TODO: Transition this module over to using grammar.
 
-
 from datetime import datetime, timedelta
 
 from db import SessionContext

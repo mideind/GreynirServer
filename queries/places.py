@@ -26,6 +26,8 @@
 
 # TODO: Handle opening hours with intervals, e.g. 10:00-14:00 and 18:00-22:00
 
+from typing import List, Dict, Tuple
+
 
 import logging
 import re
@@ -192,7 +194,7 @@ _PLACES_API_ERRMSG = "Ekki tókst að fletta upp viðkomandi stað"
 _NOT_IN_ICELAND_ERRMSG = "Enginn staður með þetta heiti fannst á Íslandi"
 
 
-def _parse_coords(place: dict) -> tuple:
+def _parse_coords(place: Dict) -> Tuple:
     """ Return tuple of coordinates given a place info data structure
         from Google's Places API. """
     try:
@@ -206,7 +208,7 @@ def _parse_coords(place: dict) -> tuple:
     return None
 
 
-def _top_candidate(cand: list) -> dict:
+def _top_candidate(cand: List) -> Dict:
     """ Return first place in Iceland in Google Places Search API results. """
     for place in cand:
         coords = _parse_coords(place)
@@ -214,7 +216,7 @@ def _top_candidate(cand: list) -> dict:
             return place
 
 
-def answ_address(placename: str, loc: tuple, qtype: str):
+def answ_address(placename: str, loc: Tuple, qtype: str):
     """ Generate answer to a question concerning the address of a place. """
     # Look up placename in places API
     res = query_places_api(
@@ -256,7 +258,7 @@ def answ_address(placename: str, loc: tuple, qtype: str):
     return response, answer, voice
 
 
-def answ_openhours(placename: str, loc: tuple, qtype: str):
+def answ_openhours(placename: str, loc: Tuple, qtype: str):
     """ Generate answer to a question concerning the opening hours of a place. """
     # Look up placename in places API
     res = query_places_api(

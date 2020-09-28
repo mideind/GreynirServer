@@ -26,6 +26,8 @@
 
 # TODO: Fyrirsagnir, og að styðja "Segðu mér meira um X"
 
+from typing import List
+
 import logging
 import cachetools
 import random
@@ -107,7 +109,7 @@ _NEWS_CACHE_TTL = 300  # seconds, ttl = 5 mins
 
 
 @cachetools.cached(cachetools.TTLCache(1, _NEWS_CACHE_TTL))
-def _get_news_data(max_items: int = 8) -> list:
+def _get_news_data(max_items: int = 8) -> List:
     """ Fetch news headline data from RÚV, preprocess it. """
     res = query_json_api(_NEWS_API)
     if not res or "nodes" not in res or not len(res["nodes"]):
@@ -120,7 +122,7 @@ def _get_news_data(max_items: int = 8) -> list:
     return items[:max_items]
 
 
-def _clean_text(txt) -> str:
+def _clean_text(txt: str) -> str:
     txt = txt.replace("\r", " ").replace("\n", " ").replace("  ", " ")
     return txt.strip()
 
@@ -150,18 +152,17 @@ def sentence(state, result):
     """ Called when sentence processing is complete """
     q: Query = state["query"]
     if "qtype" in result:
-        # Successfully matched a query type
-        q.set_qtype(result.qtype)
-        q.set_key("LatestNews")
-
         try:
             res = top_news_answer()
             if res:
+                # We've successfully answered a query
+                q.set_qtype(result.qtype)
+                q.set_key("LatestNews")
                 q.set_answer(*res)
             else:
                 errmsg = "Ekki tókst að sækja fréttir"
                 q.set_answer(gen_answer(errmsg))
-                q.set_source("RÚV")
+            q.set_source("RÚV")
         except Exception as e:
             logging.warning("Exception answering news query '{0}': {1}".format(q, e))
             q.set_error("E_EXCEPTION: {0}".format(e))

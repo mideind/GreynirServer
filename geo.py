@@ -24,7 +24,7 @@
 # corresponding country code, e.g. "Norður-Ítalía" -> "IT"
 # TODO: Most of this stuff should go into its own module, iceloc or something
 
-from typing import Optional, Dict, Union, Tuple
+from typing import Optional, Dict, Union, Tuple, List
 
 import json
 import re
@@ -214,7 +214,7 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
 NEVER_US_STATE = frozenset(("Georgía", "Georgia",))
 
 
-def location_description(loc):
+def location_description(loc: Dict) -> str:
     """ Return a natural language description string (in Icelandic) for a given
         location. Argument is a dictionary with at least "name" and "kind" keys. """
     if "kind" not in loc or "name" not in loc:
@@ -266,7 +266,7 @@ def location_description(loc):
     return "staðarheiti"
 
 
-def location_info(name, kind, placename_hints=None):
+def location_info(name: str, kind: str, placename_hints: List[str] = None) -> Dict:
     """ Returns dict with info about a location, given name and, preferably, kind.
         Info includes ISO country and continent code, GPS coordinates, etc. """
     assert name
@@ -356,7 +356,7 @@ ICE_CITIES_JSONPATH = os.path.join(
 )
 
 
-def _load_city_names():
+def _load_city_names() -> Dict:
     """ Load data from JSON file mapping Icelandic city names
         to their corresponding English/international name. """
     global ICE_CITY_NAMES
@@ -366,7 +366,7 @@ def _load_city_names():
     return ICE_CITY_NAMES
 
 
-def lookup_city_info(name):
+def lookup_city_info(name: str) -> Dict:
     """ Look up name in city database. Convert Icelandic-specific
         city names (e.g. "Lundúnir") to their corresponding
         English/international name before querying. """
@@ -381,7 +381,7 @@ US_STATES_JSONPATH = os.path.join(
 )
 
 
-def _load_us_state_names():
+def _load_us_state_names() -> Dict:
     """ Load data from JSON file mapping US state names, canonical
         and Icelandic, to their to their corresponding 2-char code. """
     global US_STATE_NAMES
@@ -391,7 +391,7 @@ def _load_us_state_names():
     return US_STATE_NAMES
 
 
-def code_for_us_state(name):
+def code_for_us_state(name: str) -> str:
     """ Given a US state name string, canonical or Icelandicized,
         return the state's 2-char code. """
     names = _load_us_state_names()  # Lazy-load
@@ -404,7 +404,7 @@ US_STATE_COORDS_JSONPATH = os.path.join(
 )
 
 
-def _load_us_state_coords():
+def _load_us_state_coords() -> Dict:
     """ Load data from JSON file mapping two-char US state codes
         to geographic coordinates. """
     global US_STATE_COORDS
@@ -414,7 +414,7 @@ def _load_us_state_coords():
     return US_STATE_COORDS
 
 
-def coords_for_us_state_code(code):
+def coords_for_us_state_code(code: str) -> Tuple:
     """ Return the coordinates of a US state given the two-char state code. """
     assert len(code) == 2
     state_coords = _load_us_state_coords()
@@ -422,7 +422,7 @@ def coords_for_us_state_code(code):
 
 
 @lru_cache(maxsize=32)
-def icelandic_city_name(name):
+def icelandic_city_name(name: str):
     """ Look up the Icelandic name of a city, given its
         English/international name. """
     name = name.strip()
@@ -442,7 +442,7 @@ COUNTRY_DATA_JSONPATH = os.path.join(
 )
 
 
-def _load_country_data():
+def _load_country_data() -> Dict:
     """ Load country coordinates and ISO country code data from JSON file. """
     global COUNTRY_DATA
     if COUNTRY_DATA is None:
@@ -451,7 +451,7 @@ def _load_country_data():
     return COUNTRY_DATA
 
 
-def continent_for_country(iso_code):
+def continent_for_country(iso_code: str) -> str:
     """ Return two-char continent code, given a two-char country code. """
     assert len(iso_code) == 2
     iso_code = iso_code.upper()
@@ -461,7 +461,7 @@ def continent_for_country(iso_code):
     return None
 
 
-def coords_for_country(iso_code):
+def coords_for_country(iso_code: str) -> Tuple:
     """ Return coordinates for a given country code. """
     assert len(iso_code) == 2
     iso_code = iso_code.upper()
@@ -472,7 +472,9 @@ def coords_for_country(iso_code):
     return None
 
 
-def coords_for_street_name(street_name, placename=None, placename_hints=[]):
+def coords_for_street_name(
+    street_name: str, placename: str = None, placename_hints: List[str] = []
+) -> Tuple:
     """ Return coordinates for an Icelandic street name as a tuple. As some
         street names exist in more than one place, we try to narrow it down
         to a single street if possible. Street coordinates are the coordinates
@@ -502,14 +504,14 @@ def coords_for_street_name(street_name, placename=None, placename_hints=[]):
     return coords_from_addr_info(addr)
 
 
-def coords_from_addr_info(info):
+def coords_from_addr_info(info: Dict) -> Tuple:
     """ Get coordinates from the address dict provided by iceaddr package. """
     if info is not None and "lat_wgs84" in info and "long_wgs84" in info:
         return (info["lat_wgs84"], info["long_wgs84"])
     return None
 
 
-def country_name_for_isocode(iso_code, lang=ICELANDIC_LANG_ISOCODE):
+def country_name_for_isocode(iso_code: str, lang: str = ICELANDIC_LANG_ISOCODE) -> str:
     """ Return country name for an ISO 3166-1 alpha-2 code. """
     assert len(iso_code) == 2
     assert len(lang) == 2
@@ -521,7 +523,9 @@ def country_name_for_isocode(iso_code, lang=ICELANDIC_LANG_ISOCODE):
     return countries.get(iso_code)
 
 
-def isocode_for_country_name(country_name, lang=ICELANDIC_LANG_ISOCODE):
+def isocode_for_country_name(
+    country_name: str, lang: str = ICELANDIC_LANG_ISOCODE
+) -> str:
     """ Return the ISO 3166-1 alpha-2 code for a country
         name in the specified language (two-char ISO 639-1). """
     assert len(lang) == 2
@@ -540,7 +544,9 @@ def isocode_for_country_name(country_name, lang=ICELANDIC_LANG_ISOCODE):
     return None
 
 
-def icelandic_addr_info(addr_str, placename=None, placename_hints=[]):
+def icelandic_addr_info(
+    addr_str: str, placename: str = None, placename_hints: List[str] = []
+) -> Dict:
     """ Look up info about a specific Icelandic address in Staðfangaskrá via
         the iceaddr package. We want either a single definite match or nothing. """
     addr = parse_address_string(addr_str)
@@ -568,7 +574,7 @@ def icelandic_addr_info(addr_str, placename=None, placename_hints=[]):
     return res
 
 
-def parse_address_string(addrstr):
+def parse_address_string(addrstr: str) -> Dict:
     """ Break Icelandic address string down to its components. """
     addr = {"street": addrstr}
 
@@ -612,7 +618,7 @@ _I_SUFFIXES = (
 )
 
 
-def iceprep_for_street(street_name):
+def iceprep_for_street(street_name: str) -> str:
     """ Return the right preposition ("í" or "á") for
         an Icelandic street name, e.g. "Fiskislóð". """
     if street_name.endswith(_I_SUFFIXES):
@@ -626,7 +632,7 @@ ICELOC_PREP_JSONPATH = os.path.join(
 )
 
 
-def _load_placename_prepositions():
+def _load_placename_prepositions() -> Dict:
     """ Load data mapping Icelandic placenames to the correct
         prepositions ("á" or "í") from JSON file. """
     global ICELOC_PREP
@@ -653,7 +659,7 @@ _SUFFIX2PREP = {
 }
 
 
-def iceprep_for_placename(pn):
+def iceprep_for_placename(pn: str) -> str:
     """ Attempt to return the right preposition ("í" or "á")
         for an Icelandic placename, e.g. "Akureyri". """
     place2prep = _load_placename_prepositions()  # Lazy-load
@@ -740,13 +746,13 @@ CC_ICEPREP_A = frozenset(
 )
 
 
-def iceprep_for_cc(cc):
+def iceprep_for_cc(cc: str) -> str:
     """ Return the right Icelandic preposition ("í" or "á") for
         a country, given its ISO country code, e.g. "IS". """
     return "á" if cc.upper() in CC_ICEPREP_A else "í"
 
 
-def iceprep_for_country(cn):
+def iceprep_for_country(cn: str) -> str:
     """ Return the right Icelandic preposition ("í" or "á") for
         a country, given its Icelandic name in the nominative
         case, e.g. "Ítalía". """
@@ -758,7 +764,7 @@ def iceprep_for_country(cn):
 _PLACENAME_PREPS = frozenset(("í", "á", "de", "la", "am", "og"))
 
 
-def capitalize_placename(pn):
+def capitalize_placename(pn: str) -> str:
     """ Correctly capitalize an Icelandic-language lowercase placename, e.g.
         "vík í mýrdal"->"Vík í Mýrdal", "bosnía og hersegóvína"->"Bosnía og Hersegóvína",
         "norður-makedónía"->"Norður-Makedónía", "rio de janeiro"->"Rio de Janeiro", etc. """
@@ -778,7 +784,7 @@ def capitalize_placename(pn):
 _EARTH_RADIUS = 6371.0088  # Earth's radius in km
 
 
-def distance(loc1, loc2):
+def distance(loc1: Tuple, loc2: Tuple) -> float:
     """
     Calculate the Haversine distance.
     Parameters
@@ -818,7 +824,7 @@ def distance(loc1, loc2):
 ICELAND_COORDS = (64.9957538607, -18.5739616708)
 
 
-def in_iceland(loc, km_radius=300.0):
+def in_iceland(loc: Tuple, km_radius: float = 300.0) -> bool:
     """ Check if coordinates are within or very close to Iceland. """
     return distance(loc, ICELAND_COORDS) <= km_radius
 

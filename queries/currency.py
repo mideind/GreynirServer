@@ -26,6 +26,8 @@
 # TODO: "hvað eru 10 evrur í íslenskum krónum"
 # TODO: "Hvert er gengi krónunnar?"
 
+from typing import Dict
+
 import re
 import cachetools
 import random
@@ -57,7 +59,7 @@ TOPIC_LEMMAS = [
 ]
 
 
-def help_text(lemma):
+def help_text(lemma: str):
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
@@ -439,7 +441,7 @@ _CURR_CACHE_TTL = 3600  # seconds
 
 
 @cachetools.cached(cachetools.TTLCache(1, _CURR_CACHE_TTL))
-def _fetch_exchange_rates() -> dict:
+def _fetch_exchange_rates() -> Dict:
     """ Fetch exchange rate data from apis.is and cache it. """
     res = query_json_api(_CURR_API_URL)
     if not res or "results" not in res:
