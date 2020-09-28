@@ -468,10 +468,10 @@ def query_history_api(version=1):
         return better_jsonify(valid=False, reason="Unsupported version")
 
     # Calling this endpoint requires the Greynir API key
-    # TODO: Enable once clients have been updated
+    # TODO: Enable when clients (iOS, Android) have been updated
     # key = request.values.get("api_key")
     # gak = greynir_api_key()
-    # if not gak or key != gak:
+    # if not gak or not key or key != gak:
     #     resp["errmsg"] = "Invalid or missing API key."
     #     return better_jsonify(**resp)
 
@@ -514,7 +514,7 @@ def speech_api(version=1):
     # Calling this endpoint requires the Greynir API key
     key = request.values.get("api_key")
     gak = greynir_api_key()
-    if not gak or key != gak:
+    if not gak or not key or key != gak:
         reply["errmsg"] = "Invalid or missing API key."
         return better_jsonify(**reply)
 
@@ -625,7 +625,7 @@ def register_query_data_api(version=1):
     # Calling this endpoint requires the Greynir API key
     key = qdata.get("api_key")
     gak = greynir_api_key()
-    if not gak or key != gak:
+    if not gak or not key or key != gak:
         return better_jsonify(valid=False, errmsg="Invalid or missing API key.")
 
     if (

@@ -28,7 +28,7 @@ from urllib.parse import urlencode
 
 from main import app
 from db import SessionContext
-from db.models import Query
+from db.models import Query, QueryData
 
 # pylint: disable=unused-wildcard-import
 from geo import *
@@ -153,25 +153,26 @@ def test_api_key_restriction(client):
 def test_query_history_api(client):
     """ Test query history deletion API. """
 
+    _TEST_CLIENT_ID = "123456789"
+
     with SessionContext(commit=False) as session:
         # If database contains the logged query "GREYNIR_TESTING" we know the
-        # tests are running on the dummy data in tests/test_files/test_queries.csv.
+        # tests are running on the dummy data loaded from tests/test_files/*.csv.
         cnt = session.query(Query).filter(Query.question == "GREYNIR_TESTING").count()
-        if not cnt == 1:
+        ci_environment = (cnt == 1)
+        if not ci_environment:
             return
 
+        # First test API w. "clear" action (which clears query history only)
         # Num queries in dummy test data
         TEST_EXPECTED_NUM_QUERIES = 6
 
-        # We expect one query with this client ID
-        TEST_CLIENT_ID = "123456789"
-
         # Number of queries prior to API call
         pre_numq = session.query(Query).count()
-        assert pre_numq == TEST_EXPECTED_NUM_QUERIES, "Malformed dummy test data"
+        assert pre_numq == TEST_EXPECTED_NUM_QUERIES, "Malformed queries dummy test data"
 
         qstr = urlencode(
-            {"action": "clear", "client_type": "some_type", "client_id": TEST_CLIENT_ID}
+            {"action": "clear", "client_id": _TEST_CLIENT_ID}
         )
 
         _ = client.get("/query_history.api?" + qstr)
@@ -179,6 +180,24 @@ def test_query_history_api(client):
         post_numq = session.query(Query).count()
 
         assert post_numq == pre_numq - 1
+
+        # Test API w. "clear_all" action (which clears query both history and querydata)
+        # Num queries in dummy test data
+        TEST_EXPECTED_NUM_QUERYDATA = 2
+
+        # Number of querydata rows prior to API call
+        pre_numq = session.query(QueryData).count()
+        assert pre_numq == TEST_EXPECTED_NUM_QUERYDATA, "Malformed querydata dummy test data"
+
+        qstr = urlencode(
+            {"action": "clear_all", "client_id": _TEST_CLIENT_ID}
+        )
+
+        _ = client.get("/query_history.api?" + qstr)
+
+        post_numqdata_cnt = session.query(QueryData).count()
+
+        assert post_numqdata_cnt == pre_numq - 1
 
 
 def test_processors():

@@ -38,6 +38,9 @@ before_script:
   - psql -d scraper -c "copy persons from '/tmp/testdb_persons.csv' delimiter ',' csv;"
   - cp tests/test_files/testdb_queries.csv /tmp/
   - psql -d scraper -c "copy queries from '/tmp/testdb_queries.csv' delimiter ',' csv;"
+  - cp tests/test_files/testdb_querydata.csv /tmp/
+  - psql -d scraper -c "copy querydata from '/tmp/testdb_querydata.csv' delimiter ',' csv;"
+  # Install jshint for for JavaScript linting
   - npm i -g jshint
 
 script:
