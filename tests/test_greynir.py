@@ -42,7 +42,28 @@ def client():
     return app.test_client()
 
 
-# Routes that don't return 200 OK without certain query/post parameters or external services
+# See .travis.yml, this value is dumped to the api key path during CI testing
+DUMMY_API_KEY = "123456789"
+DUMMY_API_KEY_PATH = "resources/GreynirServerKey.txt"
+
+
+def in_ci_environment() -> bool:
+    """ This function determines whether the tests are running in the
+        continuous integration environment by checking if the API key
+        is a dummy value (set in .travis.yml). """
+    global DUMMY_API_KEY
+    try:
+        with open(DUMMY_API_KEY_PATH, mode="r") as file:
+            return file.read().strip() == DUMMY_API_KEY
+    except Exception:
+        return False
+
+
+IN_CI_TESTING_ENV = in_ci_environment()
+
+
+# Routes that don't return 200 OK without certain
+# query/post parameters or external services
 SKIP_ROUTES = frozenset(
     (
         "/staticmap",
@@ -128,16 +149,28 @@ _KEY_RESTRICTED_ROUTES = frozenset(
 
 
 def test_api_key_restriction(client):
-    """ Make calls to routes that are API key restricted, make sure they complain
-        if no API key is provided as a parameter. """
+    """ Make calls to routes that are API key restricted, make sure they complain if no
+        API key is provided as a parameter and accept when correct API key is provided. """
+
+    # Try routes without API key, expect complain about missing API key
     for path in _KEY_RESTRICTED_ROUTES:
         resp = client.post(path)
         assert resp.status_code == 200
         assert resp.content_type == "application/json; charset=utf-8"
         assert "errmsg" in resp.json and "missing API key" in resp.json["errmsg"]
 
-    # TODO: Add API key check that makes successful call w. correct key.
-    # This requires generating a key for the test and calling w. matching key
+    # Try routes w. correct API key, expect no complaints about missing API key
+    # This only runs in the CI testing environment, which creates the dummy key
+    global DUMMY_API_KEY
+    if IN_CI_TESTING_ENV:
+        for path in _KEY_RESTRICTED_ROUTES:
+            resp = client.post(f"{path}?key={DUMMY_API_KEY}")
+            assert resp.status_code == 200
+            assert resp.content_type == "application/json; charset=utf-8"
+            assert (
+                "errmsg" not in resp.json
+                or "missing API key" not in resp.json["errmsg"]
+            )
 
     # This route requires special handling since it receives JSON via POST
     resp = client.post(
@@ -151,29 +184,27 @@ def test_api_key_restriction(client):
 
 
 def test_query_history_api(client):
-    """ Test query history deletion API. """
+    """ Test query history and query data deletion API. """
+
+    # We don't run these tests except during the CI testing process, for fear of
+    # corrupting existing data when developers run them on their local machine.
+    if not IN_CI_TESTING_ENV:
+        return
 
     _TEST_CLIENT_ID = "123456789"
 
     with SessionContext(commit=False) as session:
-        # If database contains the logged query "GREYNIR_TESTING" we know the
-        # tests are running on the dummy data loaded from tests/test_files/*.csv.
-        cnt = session.query(Query).filter(Query.question == "GREYNIR_TESTING").count()
-        ci_environment = (cnt == 1)
-        if not ci_environment:
-            return
-
         # First test API w. "clear" action (which clears query history only)
         # Num queries in dummy test data
         TEST_EXPECTED_NUM_QUERIES = 6
 
         # Number of queries prior to API call
         pre_numq = session.query(Query).count()
-        assert pre_numq == TEST_EXPECTED_NUM_QUERIES, "Malformed queries dummy test data"
+        assert (
+            pre_numq == TEST_EXPECTED_NUM_QUERIES
+        ), "Malformed queries dummy test data"
 
-        qstr = urlencode(
-            {"action": "clear", "client_id": _TEST_CLIENT_ID}
-        )
+        qstr = urlencode({"action": "clear", "client_id": _TEST_CLIENT_ID})
 
         _ = client.get("/query_history.api?" + qstr)
 
@@ -187,11 +218,11 @@ def test_query_history_api(client):
 
         # Number of querydata rows prior to API call
         pre_numq = session.query(QueryData).count()
-        assert pre_numq == TEST_EXPECTED_NUM_QUERYDATA, "Malformed querydata dummy test data"
+        assert (
+            pre_numq == TEST_EXPECTED_NUM_QUERYDATA
+        ), "Malformed querydata dummy test data"
 
-        qstr = urlencode(
-            {"action": "clear_all", "client_id": _TEST_CLIENT_ID}
-        )
+        qstr = urlencode({"action": "clear_all", "client_id": _TEST_CLIENT_ID})
 
         _ = client.get("/query_history.api?" + qstr)
 

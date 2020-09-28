@@ -40,6 +40,8 @@ before_script:
   - psql -d scraper -c "copy queries from '/tmp/testdb_queries.csv' delimiter ',' csv;"
   - cp tests/test_files/testdb_querydata.csv /tmp/
   - psql -d scraper -c "copy querydata from '/tmp/testdb_querydata.csv' delimiter ',' csv;"
+  # Create dummy Greynir API key
+  - cat "tests/test_files/dummy_greynir_api_key.txt" > "resources/GreynirServerKey.txt"
   # Install jshint for for JavaScript linting
   - npm i -g jshint
 
