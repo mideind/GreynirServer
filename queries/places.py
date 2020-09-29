@@ -26,6 +26,7 @@
 
 # TODO: Handle opening hours with intervals, e.g. 10:00-14:00 and 18:00-22:00
 
+from typing import Dict
 
 import logging
 import re
@@ -155,10 +156,10 @@ $score(+35) QPlacesQuery
 """
 
 
-_PLACENAME_MAP = {}
+_PLACENAME_MAP: Dict[str, str] = {}
 
 
-def _fix_placename(pn):
+def _fix_placename(pn: str) -> str:
     p = pn.capitalize()
     return _PLACENAME_MAP.get(p, p)
 

@@ -426,22 +426,22 @@ _HELLO_DEAR = {
     "is_question": False,
 }  # type: AnswerType
 
-_CAN_I_LEARN = {
+_CAN_I_LEARN: AnswerType = {
     "answer": "Ég læri bæði það sem forritararnir kenna mér, og með því að lesa fjölmiðla."
-}  # type: AnswerType
+}
 
-_LINEAGE = {"answer": "Ég er ættuð af Fiskislóð í Reykjavík."}
+_LINEAGE: AnswerType = {"answer": "Ég er ættuð af Fiskislóð í Reykjavík."}
 
-_HOW_CAN_I_HELP = {"answer": "Hvernig get ég hjálpað þér?"}  # type: AnswerType
+_HOW_CAN_I_HELP: AnswerType = {"answer": "Hvernig get ég hjálpað þér?"}
 
-_SPEAKING_TO_ME = {"answer": "Þú ert að tala við mig, Emblu."}  # type: AnswerType
+_SPEAKING_TO_ME: AnswerType = {"answer": "Þú ert að tala við mig, Emblu."}
 
-_YES = {"answer": "Já."}  # type: AnswerType
-_NO = {"answer": "Nei."}  # type: AnswerType
+_YES: AnswerType = {"answer": "Já."}
+_NO: AnswerType = {"answer": "Nei."}
 
 ###################################
 
-_SPECIAL_QUERIES = {
+_SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "er þetta spurning": {"answer": "Er þetta svar?"},
     "er þetta svar": {"answer": "Er þetta spurning?"},
     "veistu allt": {"answer": "Nei, því miður. En ég veit þó eitt og annað."},
@@ -1785,7 +1785,7 @@ _SPECIAL_QUERIES = {
     "hver er sveinbjörn þórðarson": {
         "answer": "Sveinbjörn Þórðarson er hugbúnaðarsmiður. Hann átti þátt í að skapa mig."
     },
-}  # type: Dict[str, Union[AnswerType, AnswerCallable]]
+}
 
 
 def handle_plain_text(q: Query) -> bool:

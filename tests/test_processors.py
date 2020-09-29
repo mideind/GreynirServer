@@ -22,18 +22,14 @@
 """
 
 from collections import OrderedDict
+import os, sys
 
-
-if __name__ == "__main__":
-    # Hack to allow this program to be run from the tests/ subdirectory
-    import os, sys
-
-    basepath, _ = os.path.split(os.path.realpath(__file__))
-    _TESTS = os.sep + "tests"
-    if basepath.endswith(_TESTS):
-        basepath = basepath[0 : -len(_TESTS)]
-        sys.path.append(basepath)
-
+# Shenanigans to enable Pytest to discover modules in the
+# main workspace directory (the parent of /tests)
+basepath, _ = os.path.split(os.path.realpath(__file__))
+mainpath = os.path.join(basepath, "..")
+if mainpath not in sys.path:
+    sys.path.insert(0, mainpath)
 
 from reynir import tokenize
 from reynir.incparser import IncrementalParser

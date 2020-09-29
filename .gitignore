@@ -126,6 +126,7 @@ fonts/
 venv/
 p3*/
 p7*/
+pypy/
 cpython*/
 
 # Installer logs
