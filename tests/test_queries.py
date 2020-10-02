@@ -22,10 +22,17 @@
 """
 
 import re
-import os
+import os, sys
 import pytest
 from datetime import datetime, timedelta
 from urllib.parse import urlencode
+
+# Shenanigans to enable Pytest to discover modules in the
+# main workspace directory (the parent of /tests)
+basepath, _ = os.path.split(os.path.realpath(__file__))
+mainpath = os.path.join(basepath, "..")
+if mainpath not in sys.path:
+    sys.path.insert(0, mainpath)
 
 from main import app
 

@@ -21,10 +21,12 @@
 
 """
 
+from typing import Optional
+
 import os
 
 # Greynir API key, used to control client access to certain API endpoints
-_GREYNIR_API_KEY = None
+_GREYNIR_API_KEY: Optional[str] = None
 _GREYNIR_API_KEY_PATH = os.path.join(
     os.path.dirname(__file__), "resources", "GreynirServerKey.txt"
 )

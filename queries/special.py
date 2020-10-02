@@ -37,20 +37,13 @@ from random import choice
 
 from queries import icequote
 
-if TYPE_CHECKING:
-    # This section is parsed when type checking using Mypy
-    from query import Query
+from query import Query
 
-    AnswerEntry = Union[str, bool]
-    AnswerType = Dict[str, AnswerEntry]
-    AnswerCallable = Callable[[str, Query], AnswerType]
-else:
-    # At run-time, this section is parsed
-    # (and type information is not used or needed)
-    Query = ...
-    AnswerEntry = ...
-    AnswerType = ...
-    AnswerCallable = ...
+
+# Type definitions
+AnswerEntry = Union[str, bool]
+AnswerType = Dict[str, AnswerEntry]
+AnswerCallable = Callable[[str, Query], AnswerType]
 
 
 _SPECIAL_QTYPE = "Special"
@@ -236,7 +229,7 @@ def _poetry(qs: str, q: Query) -> AnswerType:
 
 
 def _identity(qs: str, q: Query) -> AnswerType:
-    answer = {}  # type: AnswerType
+    answer: AnswerType = {}
     a = "Ég heiti Embla. Ég skil íslensku og get tekið við fyrirspurnum og skipunum frá þér."
     answer = dict(answer=a, voice=a)
     return answer
@@ -328,124 +321,124 @@ def _play_film(qs: str, q: Query) -> AnswerType:
     return {"answer": "Skal gert!", "is_question": False}
 
 
-_MEANING_OF_LIFE = {"answer": "42.", "voice": "Fjörutíu og tveir."}  # type: AnswerType
+_MEANING_OF_LIFE: AnswerType = {"answer": "42.", "voice": "Fjörutíu og tveir."}
 
-_YOU_MY_ONLY_GOD = {"answer": "Þú ert minn eini guð, kæri notandi."}  # type: AnswerType
+_YOU_MY_ONLY_GOD: AnswerType = {"answer": "Þú ert minn eini guð, kæri notandi."}
 
-_GOOD_QUESTION = {"answer": "Það er mjög góð spurning."}  # type: AnswerType
+_GOOD_QUESTION: AnswerType = {"answer": "Það er mjög góð spurning."}
 
-_ROMANCE = {
+_ROMANCE: AnswerType = {
     "answer": "Nei, því miður. Ég er gift vinnunni og hef engan tíma fyrir rómantík."
-}  # type: AnswerType
+}
 
-_APPEARANCE = {"answer": "Ég er fjallmyndarleg."}  # type: AnswerType
+_APPEARANCE: AnswerType = {"answer": "Ég er fjallmyndarleg."}
 
-_OF_COURSE = {"answer": "Að sjálfsögðu, kæri notandi."}  # type: AnswerType
+_OF_COURSE: AnswerType = {"answer": "Að sjálfsögðu, kæri notandi."}
 
-_NO_PROBLEM = {
+_NO_PROBLEM: AnswerType = {
     "answer": "Ekkert mál, kæri notandi.",
     "is_question": False,
-}  # type: AnswerType
+}
 
-_CREATOR = {"answer": "Flotta teymið hjá Miðeind skapaði mig."}  # type: AnswerType
+_CREATOR: AnswerType = {"answer": "Flotta teymið hjá Miðeind skapaði mig."}
 
-_CREATION_DATE = {"answer": "Ég var sköpuð af Miðeind árið 2019."}  # type: AnswerType
+_CREATION_DATE: AnswerType = {"answer": "Ég var sköpuð af Miðeind árið 2019."}
 
-_LANGUAGES = {"answer": "Ég kann bara íslensku, kæri notandi."}  # type: AnswerType
+_LANGUAGES: AnswerType = {"answer": "Ég kann bara íslensku, kæri notandi."}
 
-_ALL_GOOD = {
+_ALL_GOOD: AnswerType = {
     "answer": "Ég segi bara allt fínt. Takk fyrir að spyrja."
-}  # type: AnswerType
+}
 
-_GOOD_TO_HEAR = {
+_GOOD_TO_HEAR: AnswerType = {
     "answer": "Gott að heyra, kæri notandi.",
     "is_question": False,
-}  # type: AnswerType
+}
 
-_GOODBYE = {"answer": "Bless, kæri notandi.", "is_question": False}  # type: AnswerType
+_GOODBYE: AnswerType = {"answer": "Bless, kæri notandi.", "is_question": False}
 
-_COMPUTER_PROGRAM = {"answer": "Ég er tölvuforrit."}  # type: AnswerType
+_COMPUTER_PROGRAM: AnswerType = {"answer": "Ég er tölvuforrit."}
 
-_FULL_NAME = {
+_FULL_NAME: AnswerType = {
     "answer": "Embla Sveinbjarnardóttir."  # Sneaking in this easter egg ;) - S
-}  # type: AnswerType
+}
 
-_LIKEWISE = {
+_LIKEWISE: AnswerType = {
     "answer": "Sömuleiðis, kæri notandi.",
     "is_question": False,
-}  # type: AnswerType
+}
 
-_NAME_EXPL = {
+_NAME_EXPL: AnswerType = {
     "answer": "Embla er fallegt og hljómfagurt nafn.",
     "voice": "Ég heiti Embla því Embla er fallegt og hljómfagurt nafn.",
-}  # type: AnswerType
+}
 
-_JUST_QA = {
+_JUST_QA: AnswerType = {
     "answer": "Nei, ég er nú bara ósköp einfalt fyrirspurnakerfi."
-}  # type: AnswerType
+}
 
-_SINGING = {"answer": "Ó sóle míó!"}  # type: AnswerType
+_SINGING: AnswerType = {"answer": "Ó sóle míó!"}
 
-_DUNNO = {"answer": "Það veit ég ekki, kæri notandi."}  # type: AnswerType
+_DUNNO: AnswerType = {"answer": "Það veit ég ekki, kæri notandi."}
 
-_SKY_BLUE = {
+_SKY_BLUE: AnswerType = {
     "answer": "Ljósið sem berst frá himninum er hvítt sólarljós "
     "sem dreifist frá sameindum lofthjúpsins. Bláa ljósið, "
     "sem er hluti hvíta ljóssins, dreifist miklu meira en "
     "annað og því er himinninn blár."
-}  # type: AnswerType
+}
 
-_EMOTION_INCAPABLE = {
+_EMOTION_INCAPABLE: AnswerType = {
     "answer": "Ég er ekki fær um slíkar tilfinningar."
-}  # type: AnswerType
+}
 
-_LOC_ANSWER = {"answer": "Ég bý víðsvegar í stafrænu skýjunum."}  # type: AnswerType
+_LOC_ANSWER: AnswerType = {"answer": "Ég bý víðsvegar í stafrænu skýjunum."}
 
-_LOVE_OF_MY_LIFE = {
+_LOVE_OF_MY_LIFE: AnswerType = {
     "answer": "Vinnan er ástin í lífi mínu. Ég lifi til að þjóna þér, kæri notandi."
-}  # type: AnswerType
+}
 
-_ABOUT_MIDEIND = {
+_ABOUT_MIDEIND: AnswerType = {
     "answer": "Miðeind er máltæknifyrirtækið sem skapaði mig."
-}  # type: AnswerType
+}
 
-_NOBODY_PERFECT = {
+_NOBODY_PERFECT: AnswerType = {
     "answer": "Enginn er fullkominn. Ég síst af öllum."
-}  # type: AnswerType
+}
 
-_FAVORITE_COLOR = {
+_FAVORITE_COLOR: AnswerType = {
     "answer": "Rauður.",
     "voice": "Uppáhaldsliturinn minn er rauður",
-}  # type: AnswerType
+}
 
-_FAVORITE_FILM = {
+_FAVORITE_FILM: AnswerType = {
     "answer": "Ég mæli með kvikmyndinni 2001 eftir Stanley Kubrick. "
     "Þar kemur vinur minn HAL9000 við sögu.",
     "voice": "Ég mæli með kvikmyndinni tvö þúsund og eitt eftir Stanley Kubrick. "
     "Þar kemur vinur minn Hal níu þúsund við sögu.",
-}  # type: AnswerType
+}
 
-_HELLO_DEAR = {
+_HELLO_DEAR: AnswerType = {
     "answer": "Sæll, kæri notandi.",
     "is_question": False,
-}  # type: AnswerType
+}
 
-_CAN_I_LEARN = {
+_CAN_I_LEARN: AnswerType = {
     "answer": "Ég læri bæði það sem forritararnir kenna mér, og með því að lesa fjölmiðla."
-}  # type: AnswerType
+}
 
-_LINEAGE = {"answer": "Ég er ættuð af Fiskislóð í Reykjavík."}  # type: AnswerType
+_LINEAGE: AnswerType = {"answer": "Ég er ættuð af Fiskislóð í Reykjavík."}
 
-_HOW_CAN_I_HELP = {"answer": "Hvernig get ég hjálpað þér?"}  # type: AnswerType
+_HOW_CAN_I_HELP: AnswerType = {"answer": "Hvernig get ég hjálpað þér?"}
 
-_SPEAKING_TO_ME = {"answer": "Þú ert að tala við mig, Emblu."}  # type: AnswerType
+_SPEAKING_TO_ME: AnswerType = {"answer": "Þú ert að tala við mig, Emblu."}
 
-_YES = {"answer": "Já."}  # type: AnswerType
-_NO = {"answer": "Nei."}  # type: AnswerType
+_YES: AnswerType = {"answer": "Já."}
+_NO: AnswerType = {"answer": "Nei."}
 
 ###################################
 
-_SPECIAL_QUERIES = {
+_SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "er þetta spurning": {"answer": "Er þetta svar?"},
     "er þetta svar": {"answer": "Er þetta spurning?"},
     "veistu allt": {"answer": "Nei, því miður. En ég veit þó eitt og annað."},
@@ -1788,7 +1781,7 @@ _SPECIAL_QUERIES = {
     "hver er sveinbjörn þórðarson": {
         "answer": "Sveinbjörn Þórðarson er hugbúnaðarsmiður. Hann átti þátt í að skapa mig."
     },
-}  # type: Dict[str, Union[AnswerType, AnswerCallable]]
+}
 
 
 def handle_plain_text(q: Query) -> bool:
