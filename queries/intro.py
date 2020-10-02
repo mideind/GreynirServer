@@ -56,7 +56,7 @@ _WHATS_MY_NAME = frozenset(
         "hvað heiti ég fullu nafni",
         "hvað heiti ég",
         "veistu hvað ég heiti",
-        "veistu hvaða ég heiti fullu nafni"
+        "veistu hvað ég heiti fullu nafni"
         "veistu ekki hvað ég heiti",
         "hver er ég",
         "veistu hver ég er",
@@ -69,7 +69,18 @@ _WHATS_MY_NAME = frozenset(
     )
 )
 
-_DUNNO = "Ég veit ekki hvað þú heitir."
+# TODO: Implement this
+# _DUNNO_NAME = "Ég veit ekki hvað þú heitir."
+
+# _I_LIVE_AT_REGEXES = (
+#     r"ég á heima á (.+)$",
+#     r"ég á heima í (.+)$",
+#     r"heimilisfang mitt er á (.+)$",
+#     r"heimilisfang mitt er í (.+)$",
+#     r"heimilisfang mitt er (.+)$",
+# )
+
+# _DUNNO_ADDRESS = "Ég veit ekki hvar þú átt heima."
 
 
 def handle_plain_text(q: Query) -> bool:
@@ -112,7 +123,7 @@ def handle_plain_text(q: Query) -> bool:
         if nd and "full" in nd:
             answ = f"Þú heitir {nd['full']}"
         else:
-            answ = _DUNNO
+            answ = _DUNNO_NAME
         q.set_answer(*gen_answer(answ))
         q.set_qtype(_INTRO_QTYPE)
         return True
