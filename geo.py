@@ -477,7 +477,7 @@ def coords_for_country(iso_code: str) -> Optional[LatLonTuple]:
 def coords_for_street_name(
     street_name: str,
     placename: Optional[str] = None,
-    placename_hints: List[str] = [],
+    placename_hints: Optional[List[str]] = None,
 ) -> Optional[LatLonTuple]:
     """ Return coordinates for an Icelandic street name as a tuple. As some
         street names exist in more than one place, we try to narrow it down

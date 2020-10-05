@@ -44,8 +44,8 @@ def greynir_api_key() -> str:
     return _GREYNIR_API_KEY
 
 
-# Google API key (you must obtain your own key if you want to use this code)
-_GOOGLE_API_KEY = ""
+# Google API key (third parties must obtain own key)
+_GOOGLE_API_KEY: Optional[str] = None
 _GOOGLE_API_KEY_PATH = os.path.join(
     os.path.dirname(__file__), "resources", "GoogleServerKey.txt"
 )

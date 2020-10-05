@@ -848,6 +848,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "þú fórst með rangt mál": _sorry,
     "þú ert lygari": _sorry,
     "þú lýgur": _sorry,
+    "þú virkar ekki": _sorry,
     "þú ert léleg": _sorry,
     "þú ert léleg í íslensku": _sorry,
     "þú ert skrítin": _sorry,
@@ -993,6 +994,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "þetta var flott hjá þér": _thanks,
     "takk fyrir upplýsingarnar": _thanks,
     "takk fyrir samskiptin": _thanks,
+    "gott hjá þér": _thanks,
     # Praise & positive feedback
     "þú ert fyndin": _thanks,
     "þú ert svo fyndin": _thanks,
