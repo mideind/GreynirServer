@@ -37,7 +37,7 @@ from util import google_api_key
 QUERY_TIMEOUT = 4.0
 
 
-def _server_query(url: str, q: Dict) -> Optional[bytes]:
+def _server_query(url: str, q: Dict[str, str]) -> Optional[bytes]:
     """ Query a server via HTTP GET with a URL-encoded query string obtained q """
     doc = None
     if len(q):
@@ -83,10 +83,11 @@ Img = namedtuple("Img", ["src", "width", "height", "link", "origin", "name"])
 
 def get_image_url(
     name: str,
+    *,
     hints: List = [],
     size: str = "large",
     thumb: bool = False,
-    enclosing_session=None,
+    enclosing_session: Optional[SessionContext] = None,
     cache_only: bool = False,
 ):
     """ Use Google Custom Search API to obtain an image corresponding to a (person) name """
@@ -223,7 +224,9 @@ def check_image_url(url: str) -> bool:
     return False
 
 
-def _blacklisted_urls_for_key(key: str, enclosing_session=None) -> List[str]:
+def _blacklisted_urls_for_key(
+    key: str, enclosing_session: Optional[SessionContext] = None
+) -> List[str]:
     """ Fetch blacklisted urls for a given key """
     with SessionContext(commit=True, session=enclosing_session) as session:
         q = (
@@ -235,7 +238,9 @@ def _blacklisted_urls_for_key(key: str, enclosing_session=None) -> List[str]:
         return [r for (r,) in q]
 
 
-def _get_cached_entry(name: str, url: str, enclosing_session=None):
+def _get_cached_entry(
+    name: str, url: str, enclosing_session: Optional[SessionContext] = None
+):
     """ Fetch cached entry by key and url """
     with SessionContext(commit=True, session=enclosing_session) as session:
         # TODO: content column should be converted to jsonb
@@ -248,7 +253,11 @@ def _get_cached_entry(name: str, url: str, enclosing_session=None):
         )
 
 
-def _purge_single(key: str, ctype: Optional[str] = None, enclosing_session=None):
+def _purge_single(
+    key: str,
+    ctype: Optional[str] = None,
+    enclosing_session: Optional[SessionContext] = None,
+):
     """ Remove cache entry """
     with SessionContext(commit=True, session=enclosing_session) as session:
         filters = [Link.key == key]

@@ -57,7 +57,7 @@ class Document(abc.ABC):
         """ All subclasses must implement this method """
         pass
 
-    def write_to_file(self, path: str):
+    def write_to_file(self, path: str) -> None:
         with open(path, "wb") as f:
             f.write(self.data)
 

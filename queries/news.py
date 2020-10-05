@@ -42,7 +42,7 @@ _NEWS_QTYPE = "News"
 TOPIC_LEMMAS = ["fréttir", "fregnir", "frétta"]
 
 
-def help_text(lemma):
+def help_text(lemma) -> str:
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég skil þig ef þú spyrð til dæmis: {0}?".format(

@@ -104,7 +104,7 @@ TOPIC_LEMMAS = [
 ]
 
 
-def help_text(lemma: str):
+def help_text(lemma: str) -> str:
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
@@ -588,14 +588,14 @@ def _meaning_filter_func(mm):
 
 
 @lru_cache(maxsize=None)
-def to_accusative(np: str):
+def to_accusative(np: str) -> str:
     """ Return the noun phrase after casting it from nominative to accusative case """
     np = straeto.BusStop.voice(np)
     return query.to_accusative(np, meaning_filter_func=_meaning_filter_func)
 
 
 @lru_cache(maxsize=None)
-def to_dative(np):
+def to_dative(np: str) -> str:
     """ Return the noun phrase after casting it from nominative to dative case """
     np = straeto.BusStop.voice(np)
     return query.to_dative(np, meaning_filter_func=_meaning_filter_func)
@@ -620,7 +620,7 @@ def voice_distance(d):
     return "{0}0 metrar".format(m)
 
 
-def hms_fmt(hms: Tuple) -> str:
+def hms_fmt(hms: Tuple[int, int, int]) -> str:
     """ Format a (h, m, s) tuple to a HH:MM string """
     h, m, s = hms
     if s >= 30:

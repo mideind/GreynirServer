@@ -24,7 +24,7 @@
 
 """
 
-from typing import Optional, List, Dict, Tuple
+from typing import Optional, List, Dict, Tuple, Union
 
 import logging
 import requests
@@ -67,7 +67,7 @@ def nom2dat(w: str) -> str:
     return w
 
 
-def is_plural(num) -> bool:
+def is_plural(num: Union[str, int, float]) -> bool:
     """ Determine whether an Icelandic word following a given number should be
         plural or not, e.g. "21 maður", "22 menn", "1,1 kílómetri", "11 menn" etc.
         Accepts string, float or int as argument. """
@@ -75,7 +75,7 @@ def is_plural(num) -> bool:
     return not (sn.endswith("1") and not sn.endswith("11"))
 
 
-def sing_or_plur(num, sing: str, pl: str) -> str:
+def sing_or_plur(num: Union[ int, float], sing: str, pl: str) -> str:
     """ Utility function that returns a formatted string w. Icelandic number and a subsequent
         singular or plural noun, as appropriate, e.g. "1 einstaklingur", "2 einstaklingar",
         "21 einstaklingur" etc. Accepts both floats and ints as first argument. """

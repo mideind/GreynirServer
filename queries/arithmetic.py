@@ -59,7 +59,7 @@ TOPIC_LEMMAS = [
 ]
 
 
-def help_text(lemma: str):
+def help_text(lemma: str) -> str:
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     if lemma in ("kvaðratrót", "ferningsrót"):

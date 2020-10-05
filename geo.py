@@ -36,6 +36,8 @@ from cityloc import city_lookup
 from country_list import countries_for_language, available_languages
 from functools import lru_cache
 
+LatLonTuple = Tuple[float, float]
+
 ICELAND_ISOCODE = "IS"  # ISO 3166-1 alpha-2
 ICELANDIC_LANG_ISOCODE = "is"  # ISO 639-1
 
@@ -358,7 +360,7 @@ ICE_CITIES_JSONPATH = os.path.join(
 )
 
 
-def _load_city_names() -> Dict:
+def _load_city_names() -> Dict[str, str]:
     """ Load data from JSON file mapping Icelandic city names
         to their corresponding English/international name. """
     global ICE_CITY_NAMES
@@ -416,7 +418,7 @@ def _load_us_state_coords() -> Dict:
     return US_STATE_COORDS
 
 
-def coords_for_us_state_code(code: str) -> Optional[Tuple]:
+def coords_for_us_state_code(code: str) -> Optional[LatLonTuple]:
     """ Return the coordinates of a US state given the two-char state code. """
     assert len(code) == 2
     state_coords = _load_us_state_coords()
@@ -436,7 +438,7 @@ def icelandic_city_name(name: str) -> str:
 
 
 # Data about countries, loaded from JSON data file
-COUNTRY_DATA: Optional[Dict[str, Dict[str, Union[Tuple[float, float], str]]]] = None
+COUNTRY_DATA: Optional[Dict[str, Dict[str, Union[LatLonTuple, str]]]] = None
 COUNTRY_DATA_JSONPATH = os.path.join(
     os.path.dirname(__file__), "resources", "geo", "country_data.json"
 )
@@ -461,7 +463,7 @@ def continent_for_country(iso_code: str) -> Optional[str]:
     return None
 
 
-def coords_for_country(iso_code: str) -> Optional[Tuple]:
+def coords_for_country(iso_code: str) -> Optional[LatLonTuple]:
     """ Return coordinates for a given country code. """
     assert len(iso_code) == 2
     iso_code = iso_code.upper()
@@ -475,8 +477,8 @@ def coords_for_country(iso_code: str) -> Optional[Tuple]:
 def coords_for_street_name(
     street_name: str,
     placename: Optional[str] = None,
-    placename_hints: Optional[List[str]] = [],
-) -> Optional[Tuple]:
+    placename_hints: List[str] = [],
+) -> Optional[LatLonTuple]:
     """ Return coordinates for an Icelandic street name as a tuple. As some
         street names exist in more than one place, we try to narrow it down
         to a single street if possible. Street coordinates are the coordinates
@@ -506,7 +508,7 @@ def coords_for_street_name(
     return coords_from_addr_info(addr)
 
 
-def coords_from_addr_info(info: Optional[Dict]) -> Optional[Tuple]:
+def coords_from_addr_info(info: Optional[Dict]) -> Optional[LatLonTuple]:
     """ Get coordinates from the address dict provided by iceaddr package. """
     if info is not None and "lat_wgs84" in info and "long_wgs84" in info:
         return (info["lat_wgs84"], info["long_wgs84"])
@@ -790,7 +792,7 @@ def capitalize_placename(pn: str) -> str:
 _EARTH_RADIUS = 6371.0088  # Earth's radius in km
 
 
-def distance(loc1: Tuple, loc2: Tuple) -> float:
+def distance(loc1: LatLonTuple, loc2: LatLonTuple) -> float:
     """
     Calculate the Haversine distance.
     Parameters
@@ -830,7 +832,7 @@ def distance(loc1: Tuple, loc2: Tuple) -> float:
 ICELAND_COORDS = (64.9957538607, -18.5739616708)
 
 
-def in_iceland(loc: Tuple, km_radius: float = 300.0) -> bool:
+def in_iceland(loc: LatLonTuple, km_radius: float = 300.0) -> bool:
     """ Check if coordinates are within or very close to Iceland. """
     return distance(loc, ICELAND_COORDS) <= km_radius
 
