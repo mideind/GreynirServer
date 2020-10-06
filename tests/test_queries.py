@@ -336,10 +336,10 @@ def test_query_api(client):
     json = qmcall(c, {"q": "hver er höfuðborg norður kóreu?"}, "Geography")
     assert json["answer"] == "Pjongjang"
 
-    json = qmcall(
-        c, {"q": "hver er höfuðborg sameinuðu arabísku furstadæmanna"}, "Geography"
-    )
-    assert json["answer"] == "Abú Dabí"
+    # json = qmcall(
+    #     c, {"q": "hver er höfuðborg sameinuðu arabísku furstadæmanna"}, "Geography"
+    # )
+    # assert json["answer"] == "Abú Dabí"
 
     json = qmcall(c, {"q": "Hvað er höfuðborgin í Bretlandi"}, "Geography")
     assert json["answer"] == "Lundúnir"

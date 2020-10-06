@@ -37,6 +37,7 @@ if mainpath not in sys.path:
 from main import app
 from db import SessionContext
 from db.models import Query, QueryData
+from util import greynir_api_key
 
 # pylint: disable=unused-wildcard-import
 from geo import *
@@ -50,9 +51,8 @@ def client():
     return app.test_client()
 
 
-# See .travis.yml, this value is dumped to the api key path during CI testing
+# See .travis.yml, this value is dumped to the API key path during CI testing
 DUMMY_API_KEY = "123456789"
-DUMMY_API_KEY_PATH = "resources/GreynirServerKey.txt"
 
 
 def in_ci_environment() -> bool:
@@ -61,8 +61,7 @@ def in_ci_environment() -> bool:
         is a dummy value (set in .travis.yml). """
     global DUMMY_API_KEY
     try:
-        with open(DUMMY_API_KEY_PATH, mode="r") as file:
-            return file.read().strip() == DUMMY_API_KEY
+        greynir_api_key() == DUMMY_API_KEY
     except Exception:
         return False
 
@@ -160,12 +159,13 @@ def test_api_key_restriction(client):
     """ Make calls to routes that are API key restricted, make sure they complain if no
         API key is provided as a parameter and accept when correct API key is provided. """
 
-    # Try routes without API key, expect complain about missing API key
+    # Try routes without API key, expect complaint about missing API key
     for path in _KEY_RESTRICTED_ROUTES:
         resp = client.post(path)
         assert resp.status_code == 200
         assert resp.content_type == "application/json; charset=utf-8"
-        assert "errmsg" in resp.json and "missing API key" in resp.json["errmsg"]
+        assert isinstance(resp.json, dict)
+        assert "errmsg" in resp.json.keys() and "missing API key" in resp.json["errmsg"]
 
     # Try routes w. correct API key, expect no complaints about missing API key
     # This only runs in the CI testing environment, which creates the dummy key
@@ -175,10 +175,8 @@ def test_api_key_restriction(client):
             resp = client.post(f"{path}?key={DUMMY_API_KEY}")
             assert resp.status_code == 200
             assert resp.content_type == "application/json; charset=utf-8"
-            assert (
-                "errmsg" not in resp.json
-                or "missing API key" not in resp.json["errmsg"]
-            )
+            assert isinstance(resp.json, dict)
+            assert "errmsg" not in resp.json.keys()
 
     # This route requires special handling since it receives JSON via POST
     resp = client.post(
