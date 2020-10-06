@@ -25,6 +25,7 @@
 """
 
 # TODO: Fyrirsagnir, og að styðja "Segðu mér meira um X"
+# TODO: Hvað er helst í fréttum í dag? Fréttir dagsins?
 
 from typing import List, Optional, Dict
 

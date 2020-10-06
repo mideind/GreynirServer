@@ -46,9 +46,10 @@ import random
 
 import query
 from query import Query
-from queries import natlang_seq, numbers_to_neutral, cap_first
+from queries import natlang_seq, numbers_to_neutral, cap_first, gen_answer
 from settings import Settings
 from reynir import correct_spaces
+from geo import in_iceland
 
 import straeto
 
@@ -654,6 +655,10 @@ def query_nearest_stop(query: Query, session, result):
         response = dict(answer=answer)
         voice_answer = "Ég veit ekki hvar þú ert."
         return response, answer, voice_answer
+    if not in_iceland(location):
+        # User's location is not in Iceland
+        return gen_answer("Ég þekki ekki strætósamgöngur utan Íslands.")
+
     # Get the stop closest to the user
     stop = straeto.BusStop.closest_to(location)
     answer = stop.name

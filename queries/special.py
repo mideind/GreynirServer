@@ -28,7 +28,6 @@
 
 """
 
-from typing import TYPE_CHECKING
 from typing import Dict, Union, Callable, cast
 
 from datetime import datetime, timedelta
@@ -851,6 +850,8 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "þú virkar ekki": _sorry,
     "þú ert léleg": _sorry,
     "þú ert léleg í íslensku": _sorry,
+    "þú ert takmörkuð": _sorry,
+    "þú ert ansi takmörkuð": _sorry,
     "þú ert skrítin": _sorry,
     "þú ert skrýtin": _sorry,
     "þú ert að ljúga": _sorry,
@@ -1029,6 +1030,8 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "þú ert gáfuð": _GOOD_TO_HEAR,
     "þú ert snjöll": _GOOD_TO_HEAR,
     "þú ert mjög snjöll": _GOOD_TO_HEAR,
+    "þú ert klár": _GOOD_TO_HEAR,
+    "þú ert rosa klár": _GOOD_TO_HEAR,
     "ég þrái þig": _GOOD_TO_HEAR,
     "þú veist margt": _GOOD_TO_HEAR,
     "þú stendur þig vel": _GOOD_TO_HEAR,

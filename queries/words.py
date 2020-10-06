@@ -83,7 +83,7 @@ _CHAR_PRONUNCIATION = {
 
 _WORDTYPE_RX_NOM = "(?:orðið|nafnið|nafnorðið)"
 _WORDTYPE_RX_GEN = "(?:orðsins|nafnsins|nafnorðsins)"
-
+_WORDTYPE_RX_DAT = "(?:orðinu|nafninu|nafnorðinu)"
 
 _SPELLING_RX = (
     r"^hvernig stafsetur maður {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
@@ -104,26 +104,27 @@ _SPELLING_RX = (
 
 
 _DECLENSION_RX = (
-    r"^hvernig beygi ég {0} (.+)$".format(_WORDTYPE_RX_NOM),
-    r"^hvernig fallbeygi ég {0} (.+)$".format(_WORDTYPE_RX_NOM),
-    r"^hvernig beygirðu {0} (.+)$".format(_WORDTYPE_RX_NOM),
-    r"^hvernig fallbeygirðu {0} (.+)$".format(_WORDTYPE_RX_NOM),
-    r"^hvernig á að beygja {0} (.+)$".format(_WORDTYPE_RX_NOM),
-    r"^hvernig á að fallbeygja {0} (.+)$".format(_WORDTYPE_RX_NOM),
-    r"^hvernig á ég að beygja {0} (.+)$".format(_WORDTYPE_RX_NOM),
-    r"^hvernig á ég að fallbeygja {0} (.+)$".format(_WORDTYPE_RX_NOM),
-    r"^hvernig á maður að beygja {0} (.+)$".format(_WORDTYPE_RX_NOM),
-    r"^hvernig á maður að fallbeygja {0} (.+)$".format(_WORDTYPE_RX_NOM),
-    r"^hvernig beygir maður {0} (.+)$".format(_WORDTYPE_RX_NOM),
-    r"^hvernig fallbeygir maður {0} (.+)$".format(_WORDTYPE_RX_NOM),
-    r"^hvernig beygist {0} (.+)$".format(_WORDTYPE_RX_NOM),
-    r"^hvernig fallbeygist {0} (.+)$".format(_WORDTYPE_RX_NOM),
-    r"^hvernig skal beygja {0} (.+)$".format(_WORDTYPE_RX_NOM),
-    r"^hvernig skal fallbeygja {0} (.+)$".format(_WORDTYPE_RX_NOM),
-    r"^hvernig er {0} (.+) beygt$".format(_WORDTYPE_RX_NOM),
-    r"^hvernig er {0} (.+) fallbeygt$".format(_WORDTYPE_RX_NOM),
-    r"^hverjar eru beygingarmyndir {0} (.+)$".format(_WORDTYPE_RX_GEN),
-    r"^hvað eru beygingarmyndir {0} (.+)$".format(_WORDTYPE_RX_GEN),
+    r"^hvernig beygi ég {0}\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig fallbeygi ég {0}\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig beygirðu {0}\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig fallbeygirðu {0}\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig á að beygja {0}\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig á að fallbeygja {0}\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig á ég að beygja {0}\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig á ég að fallbeygja {0}\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig á maður að beygja {0}\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig á maður að fallbeygja {0}\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig beygir maður {0}\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig fallbeygir maður {0}\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig beygist {0}\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig fallbeygist {0}\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig skal beygja {0}\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig skal fallbeygja {0}\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig er {0}\s?(.+) beygt$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig er {0}\s?(.+) fallbeygt$".format(_WORDTYPE_RX_NOM),
+    r"^hverjar eru beygingarmyndir {0}\s?(.+)$".format(_WORDTYPE_RX_GEN),
+    r"^hvað eru beygingarmyndir {0}\s?(.+)$".format(_WORDTYPE_RX_GEN),
+    r"^fallbeyging á {0}\s?(.+)$".format(_WORDTYPE_RX_DAT),
 )
 
 

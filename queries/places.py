@@ -25,6 +25,7 @@
 """
 
 # TODO: Handle opening hours with intervals, e.g. 10:00-14:00 and 18:00-22:00
+# TODO: "Hvenær er X opið?"
 
 from typing import List, Dict, Tuple, Optional
 
