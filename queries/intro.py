@@ -56,8 +56,7 @@ _WHATS_MY_NAME = frozenset(
         "hvað heiti ég fullu nafni",
         "hvað heiti ég",
         "veistu hvað ég heiti",
-        "veistu hvað ég heiti fullu nafni"
-        "veistu ekki hvað ég heiti",
+        "veistu hvað ég heiti fullu nafni" "veistu ekki hvað ég heiti",
         "hver er ég",
         "veistu hver ég er",
         "veistu ekki hver ég er",
@@ -69,9 +68,10 @@ _WHATS_MY_NAME = frozenset(
     )
 )
 
-# TODO: Implement this
-# _DUNNO_NAME = "Ég veit ekki hvað þú heitir."
+_DUNNO_NAME = "Ég veit ekki hvað þú heitir."
 
+
+# TODO: Implement this
 # _I_LIVE_AT_REGEXES = (
 #     r"ég á heima á (.+)$",
 #     r"ég á heima í (.+)$",
